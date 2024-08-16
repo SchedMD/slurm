@@ -3716,12 +3716,12 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 	on_job_state_change(job_ptr, job_ptr->job_state);
 }
 
-static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
-				     bitstr_t **select_node_bitmap,
-				     char **err_msg,
-				     int *best_rc,
-				     int *rc,
-				     int *part_limits_rc)
+static int _select_nodes_base(job_record_t *job_ptr, bool *test_only,
+			      bitstr_t **select_node_bitmap,
+			      char **err_msg,
+			      int *best_rc,
+			      int *rc,
+			      int *part_limits_rc)
 {
 	*part_limits_rc = job_limits_check(&job_ptr, false);
 
@@ -3807,13 +3807,13 @@ static int _select_nodes_resvs(job_record_t *job_ptr, bool *test_only,
 	int loc_rc = SLURM_ERROR;
 
 	if (!job_ptr->resv_list)
-		return _select_nodes_parts_resvs(job_ptr,
-						 test_only,
-						 select_node_bitmap,
-						 err_msg,
-						 best_rc,
-						 rc,
-						 part_limits_rc);
+		return _select_nodes_base(job_ptr,
+					  test_only,
+					  select_node_bitmap,
+					  err_msg,
+					  best_rc,
+					  rc,
+					  part_limits_rc);
 
 
 	iter = list_iterator_create(job_ptr->resv_list);
@@ -3827,13 +3827,13 @@ static int _select_nodes_resvs(job_record_t *job_ptr, bool *test_only,
 		debug2("Try %pJ on next reservation %s",
 		       job_ptr, resv_ptr->name);
 
-		if ((loc_rc = _select_nodes_parts_resvs(job_ptr,
-							test_only,
-							select_node_bitmap,
-							err_msg,
-							best_rc,
-							rc,
-							part_limits_rc)) ==
+		if ((loc_rc = _select_nodes_base(job_ptr,
+						 test_only,
+						 select_node_bitmap,
+						 err_msg,
+						 best_rc,
+						 rc,
+						 part_limits_rc)) ==
 		    SLURM_SUCCESS) {
 			if ((*rc != ESLURM_RESERVATION_NOT_USABLE) &&
 			    (*rc != ESLURM_RESERVATION_BUSY))
