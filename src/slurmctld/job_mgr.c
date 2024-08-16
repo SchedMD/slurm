@@ -3891,7 +3891,7 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 			rc = best_rc;
 		else if (part_limits_rc == WAIT_PART_DOWN)
 			rc = ESLURM_PARTITION_DOWN;
-	} else if (job_ptr->resv_list) {
+	} else {
 		/*
 		 * We don't need to check the return code of this as the rc we
 		 * are sending in is the rc we care about.
@@ -3907,19 +3907,6 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 			rc = best_rc;
 		else if (part_limits_rc == WAIT_PART_DOWN)
 			rc = ESLURM_PARTITION_DOWN;
-	} else {
-		part_limits_rc = job_limits_check(&job_ptr, false);
-		if (part_limits_rc == WAIT_NO_REASON) {
-			rc = select_nodes(job_ptr, test_only,
-					  select_node_bitmap, err_msg, true,
-					  SLURMDB_JOB_FLAG_SUBMIT);
-		} else if (part_limits_rc == WAIT_PART_DOWN) {
-			rc = select_nodes(job_ptr, true,
-					  select_node_bitmap, err_msg, true,
-					  SLURMDB_JOB_FLAG_SUBMIT);
-			if (rc == SLURM_SUCCESS)
-				rc = ESLURM_PARTITION_DOWN;
-		}
 	}
 
 	if (rc == ESLURM_NODES_BUSY)
