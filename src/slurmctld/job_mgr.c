@@ -3717,7 +3717,6 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 }
 
 static int _select_nodes_base(job_record_t *job_ptr, bool *test_only,
-			      bitstr_t **select_node_bitmap,
 			      char **err_msg,
 			      int *best_rc,
 			      int *rc,
@@ -3741,12 +3740,12 @@ static int _select_nodes_base(job_record_t *job_ptr, bool *test_only,
 
 	if (*part_limits_rc == WAIT_NO_REASON) {
 		*rc = select_nodes(job_ptr, *test_only,
-				   select_node_bitmap, err_msg,
+				   err_msg,
 				   true,
 				   SLURMDB_JOB_FLAG_SUBMIT);
 	} else {
 		*rc = select_nodes(job_ptr, true,
-				   select_node_bitmap, err_msg,
+				   err_msg,
 				   true,
 				   SLURMDB_JOB_FLAG_SUBMIT);
 		if ((*rc == SLURM_SUCCESS) &&
@@ -3796,7 +3795,6 @@ static int _select_nodes_base(job_record_t *job_ptr, bool *test_only,
 }
 
 static int _select_nodes_resvs(job_record_t *job_ptr, bool *test_only,
-			       bitstr_t **select_node_bitmap,
 			       char **err_msg,
 			       int *best_rc,
 			       int *rc,
@@ -3809,7 +3807,6 @@ static int _select_nodes_resvs(job_record_t *job_ptr, bool *test_only,
 	if (!job_ptr->resv_list)
 		return _select_nodes_base(job_ptr,
 					  test_only,
-					  select_node_bitmap,
 					  err_msg,
 					  best_rc,
 					  rc,
@@ -3829,7 +3826,6 @@ static int _select_nodes_resvs(job_record_t *job_ptr, bool *test_only,
 
 		if ((loc_rc = _select_nodes_base(job_ptr,
 						 test_only,
-						 select_node_bitmap,
 						 err_msg,
 						 best_rc,
 						 rc,
@@ -3851,13 +3847,10 @@ static int _select_nodes_resvs(job_record_t *job_ptr, bool *test_only,
  * IN job_ptr - pointer to the job record
  * IN test_only - if set do not allocate nodes, just confirm they
  *	could be allocated now
- * IN select_node_bitmap - bitmap of nodes to be used for the
- *	job's resource allocation (not returned if NULL), caller
- *	must free
  * OUT err_msg - error message for job, caller must xfree
  */
 static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
-			       bitstr_t **select_node_bitmap, char **err_msg)
+			       char **err_msg)
 {
 	part_record_t *part_ptr;
 	list_itr_t *iter;
@@ -3878,7 +3871,6 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 
 			if (_select_nodes_resvs(job_ptr,
 						&test_only,
-						select_node_bitmap,
 						err_msg,
 						&best_rc,
 						&rc,
@@ -3898,7 +3890,6 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 		 */
 		(void)_select_nodes_resvs(job_ptr,
 					  &test_only,
-					  select_node_bitmap,
 					  err_msg,
 					  &best_rc,
 					  &rc,
@@ -4172,7 +4163,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 	 */
 	set_job_features_use(job_ptr->details);
 
-	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL, err_msg);
+	error_code = _select_nodes_parts(job_ptr, no_alloc, err_msg);
 
 	if ((error_code == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 	    (job_ptr->details->features_use == job_ptr->details->prefer) &&
@@ -4180,8 +4171,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		job_ptr->details->features_use = job_ptr->details->features;
 		job_ptr->details->feature_list_use =
 			job_ptr->details->feature_list;
-		error_code = _select_nodes_parts(job_ptr, no_alloc, NULL,
-						 err_msg);
+		error_code = _select_nodes_parts(job_ptr, no_alloc, err_msg);
 		set_job_features_use(job_ptr->details);
 	}
 

@@ -121,9 +121,6 @@ extern void re_kill_job(job_record_t *job_ptr);
  * IN job_ptr - pointer to the job record
  * IN test_only - if set do not allocate nodes, just confirm they
  *	could be allocated now
- * IN select_node_bitmap - bitmap of nodes to be used for the
- *	job's resource allocation (not returned if NULL), caller
- *	must free
  * IN submission - if set ignore reservations
  * IN scheduler_type - which scheduler is calling this
  *      (i.e. SLURMDB_JOB_FLAG_BACKFILL, SLURMDB_JOB_FLAG_SCHED, etc)
@@ -141,7 +138,7 @@ extern void re_kill_job(job_record_t *job_ptr);
  *	3) Call allocate_nodes() to perform the actual allocation
  */
 extern int select_nodes(job_record_t *job_ptr, bool test_only,
-			bitstr_t **select_node_bitmap, char **err_msg,
+			char **err_msg,
 			bool submission, uint32_t scheduler_type);
 
 /*

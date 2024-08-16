@@ -2527,7 +2527,7 @@ static int _get_resv_mpi_ports(job_record_t *job_ptr,
  *	3) Call allocate_nodes() to perform the actual allocation
  */
 extern int select_nodes(job_record_t *job_ptr, bool test_only,
-			bitstr_t **select_node_bitmap, char **err_msg,
+		        char **err_msg,
 			bool submission, uint32_t scheduler_type)
 {
 	int bb, error_code = SLURM_SUCCESS, i, node_set_size = 0;
@@ -3099,10 +3099,8 @@ cleanup:
 		job_ptr->array_task_id = NO_VAL;
 	}
 	FREE_NULL_LIST(preemptee_job_list);
-	if (select_node_bitmap)
-		*select_node_bitmap = select_bitmap;
-	else
-		FREE_NULL_BITMAP(select_bitmap);
+	FREE_NULL_BITMAP(select_bitmap);
+
 	if (node_set_ptr) {
 		for (i = 0; i < node_set_size; i++) {
 			xfree(node_set_ptr[i].features);

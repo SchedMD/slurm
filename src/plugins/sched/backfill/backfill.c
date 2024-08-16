@@ -3270,7 +3270,7 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 		job_ptr->details->exc_node_bitmap = bit_copy(resv_bitmap);
 	if (job_ptr->array_recs)
 		is_job_array_head = true;
-	rc = select_nodes(job_ptr, false, NULL, NULL, false,
+	rc = select_nodes(job_ptr, false, NULL, false,
 			  SLURMDB_JOB_FLAG_BACKFILL);
 	if (is_job_array_head && job_ptr->details) {
 		job_record_t *base_job_ptr;

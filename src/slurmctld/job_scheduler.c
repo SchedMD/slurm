@@ -1768,7 +1768,7 @@ next_task:
 			goto skip_start;
 		}
 
-		error_code = select_nodes(job_ptr, false, NULL, NULL, false,
+		error_code = select_nodes(job_ptr, false, NULL, false,
 					  SLURMDB_JOB_FLAG_SCHED);
 
 		if (error_code == SLURM_SUCCESS) {
