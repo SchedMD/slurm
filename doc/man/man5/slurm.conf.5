@@ -3741,7 +3741,7 @@ preferential treatment in scheduling).
 
 Note that this operation does not update the \fBPriority\fR values of the
 heterogeneous job components, only their order within the list, so the output of
-the sprio command will not be effected.
+the sprio command will not be affected.
 
 Heterogeneous jobs have special scheduling properties: they are only scheduled
 by the backfill scheduling plugin, each of their components is considered
@@ -7459,13 +7459,13 @@ job allocated 8GB will be billed 2048 (8192MB *.25) units. A memory weight of
 Negative values are allowed.
 
 When a job is allocated 1 CPU and 8 GB of memory on a partition configured with
-TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0", the billable TRES will be:
-(1*1.0) + (8*0.25) + (0*2.0) = 3.0.
+TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0,license/licA=1.5", the
+billable TRES will be: (1*1.0) + (8*0.25) + (0*2.0) + (0*1.5) = 3.0.
 
 If PriorityFlags=MAX_TRES is configured, the billable TRES is calculated as the
 MAX of individual TRESs on a node (e.g. cpus, mem, gres) plus the sum of all
 global TRESs (e.g. licenses). Using the same example above the billable TRES
-will be MAX(1*1.0, 8*0.25) + (0*2.0) = 2.0.
+will be MAX(1*1.0, 8*0.25, 0*2.0) + (0*1.5) = 2.0.
 
 If TRESBillingWeights is not defined then the job is billed against the total
 number of allocated CPUs.

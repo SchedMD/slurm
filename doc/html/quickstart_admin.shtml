@@ -117,6 +117,9 @@ plugins and what is required to build them.</p>
 		present.</li>
 <li> <b>HTML Man Pages</b> HTML versions of the man pages will be generated if
 		the <i>man2html</i> command is present.</li>
+<li> <b>HPE Slingshot</b> The <i>switch/hpe_slingshot</i> plugin will be built
+		if the <i>cray-libcxi</i>, <i>curl</i>, and <i>json-c</i>
+		development libraries are present.</li>
 <li> <b>InfiniBand Accounting</b> The <i>acct_gather_interconnect/ofed</i>
 		InfiniBand accounting plugin will be built if the
 		<i>libibmad</i> and <i>libibumad</i> development libraries are
@@ -147,7 +150,8 @@ plugins and what is required to build them.</p>
 <li> <b>PAM Support</b> PAM support will be added if the <i>PAM</i> development
 		library is installed.</li>
 <li> <b>PMIx</b> PMIx support will be added if the <i>pmix</i> development
-		library is installed.</li>
+		library is installed and the <code>--with-pmix</code> flag is
+		provided at build time.</li>
 <li> <b>Readline Support</b> Readline support in scontrol and sacctmgr's
 		interactive modes will be available if the <i>readline</i>
 		development library is present.</li>
@@ -791,6 +795,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 16 July 2024</p>
+<p style="text-align:center;">Last modified 16 August 2024</p>
 
 <!--#include virtual="footer.txt"-->
