@@ -352,8 +352,9 @@ static void _pick_shared_gres_topo(sock_gres_t *sock_gres, bool use_busy_dev,
 		if (use_busy_dev && (gres_ns->topo_gres_cnt_alloc[t] == 0))
 			continue;
 		cnt_avail = gres_ns->topo_gres_cnt_avail[t] -
-			gres_ns->topo_gres_cnt_alloc[t] -
 			gres_js->gres_per_bit_select[node_inx][t];
+		if (!sock_gres->use_total_gres) /* Subtract other jobs */
+			cnt_avail -= gres_ns->topo_gres_cnt_alloc[t];
 		if  (cnt_avail < (use_single_dev ? *gres_needed : 1))
 			continue; /* Insufficient resources */
 		if (!bit_test(sock_bits, t))
@@ -726,9 +727,11 @@ static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, int gres_needed,
 		int g = sorted_gres ? sorted_gres[i] : i;
 		if (!bit_test(sock_bits, g))
 			continue; /* GRES not on this socket */
-		if (bit_test(gres_js->gres_bit_select[node_inx], g) ||
+		if (bit_test(gres_js->gres_bit_select[node_inx], g))
+			continue; /* Already selected for this job */
+		if (!sock_gres->use_total_gres &&
 		    bit_test(gres_ns->gres_bit_alloc, g))
-			continue; /* Already allocated GRES */
+			continue; /* Already allocated to other jobs */
 		bit_set(gres_js->gres_bit_select[node_inx], g);
 		gres_js->gres_cnt_node_select[node_inx]++;
 		gres_still_needed--;
