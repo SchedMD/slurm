@@ -55,6 +55,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/fd.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/pack.h"
@@ -75,6 +76,15 @@ static const struct {
 } con_types[] = {
 	T(CON_TYPE_RAW),
 	T(CON_TYPE_RPC),
+};
+#undef T
+
+#define T(flag) { flag, XSTRINGIFY(flag) }
+static const struct {
+	con_flags_t flag;
+	const char *string;
+} con_flags[] = {
+	T(FLAG_NONE),
 };
 #undef T
 
@@ -112,6 +122,38 @@ extern const char *conmgr_con_type_string(conmgr_con_type_t type)
 			return con_types[i].string;
 
 	fatal_abort("invalid type");
+}
+static const char *_con_flag_string(con_flags_t flag)
+{
+	for (int i = 0; i < ARRAY_SIZE(con_flags); i++)
+		if (con_flags[i].flag == flag)
+			return con_flags[i].string;
+
+	fatal_abort("invalid type");
+}
+
+extern char *con_flags_string(const con_flags_t flags)
+{
+	char *str = NULL, *at = NULL;
+	uint32_t matched = 0;
+
+	if (flags == FLAG_NONE)
+		return xstrdup(_con_flag_string(FLAG_NONE));
+
+	/* skip FLAG_NONE */
+	for (int i = 1; i < ARRAY_SIZE(con_flags); i++) {
+		if ((con_flags[i].flag & flags) == con_flags[i].flag) {
+			xstrfmtcatat(str, &at, "%s%s", (str ? "|" : ""),
+				     con_flags[i].string);
+			matched |= con_flags[i].flag;
+		}
+	}
+
+	if (flags ^ matched)
+		xstrfmtcatat(str, &at, "%s0x%08"PRIx32, (str ? "|" : ""),
+			     (flags ^ matched));
+
+	return str;
 }
 
 /*
@@ -419,6 +461,7 @@ extern int add_connection(conmgr_con_type_t type,
 		.type = type,
 		.polling_input_fd = PCTL_TYPE_NONE,
 		.polling_output_fd = PCTL_TYPE_NONE,
+		.flags = FLAG_NONE,
 	};
 
 	if (!is_listen) {

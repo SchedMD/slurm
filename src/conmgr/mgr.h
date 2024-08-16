@@ -78,6 +78,29 @@ typedef struct {
 } work_t;
 
 /*
+ * WARNING: flags overlap with with conmgr_con_flags_t with con_flags_t being
+ * used to avoid exporting conmgr private flags outside of conmgr.
+ */
+typedef enum {
+	FLAG_NONE = CON_FLAG_NONE,
+} con_flags_t;
+
+/* con_flags_t macro helpers to test, set, and unset flags */
+#define con_flag(con, flag) ((con)->flags & (flag))
+#define con_set_flag(con, flag) ((con)->flags |= (flag))
+#define con_unset_flag(con, flag) ((con)->flags &= ~(flag))
+#define con_assign_flag(con, flag, value) \
+	((con)->flags = ((con)->flags & ~(flag)) | ((!!value) * (flag)))
+
+
+/*
+ * Convert flags to printable string
+ * IN flags - connection flags
+ * RET string of flags (must xfree())
+ */
+extern char *con_flags_string(const con_flags_t flags);
+
+/*
  * Connection tracking structure
  */
 struct conmgr_fd_s {
@@ -158,6 +181,9 @@ struct conmgr_fd_s {
 	 * type: work_t*
 	 */
 	list_t *write_complete_work;
+
+	/* Flags set for connection */
+	con_flags_t flags;
 };
 
 typedef struct {

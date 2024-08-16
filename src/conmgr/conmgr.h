@@ -271,6 +271,11 @@ typedef enum {
 } conmgr_con_type_t;
 extern const char *conmgr_con_type_string(conmgr_con_type_t type);
 
+/* WARNING: flags overlap with con_flags_t */
+typedef enum {
+	CON_FLAG_NONE = 0,
+} conmgr_con_flags_t;
+
 /*
  * Initialise global connection manager
  * IN thread_count - number of thread workers to run
