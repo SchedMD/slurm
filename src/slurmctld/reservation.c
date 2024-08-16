@@ -7227,7 +7227,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			 * Check if we are able to use this reservation's
 			 * resources even though we didn't request it.
 			 */
-			if ((job_ptr->warn_time <= resv_ptr->max_start_delay) &&
+			if (resv_ptr->max_start_delay &&
+			    (job_ptr->warn_time <= resv_ptr->max_start_delay) &&
 			    (job_ptr->warn_flags & KILL_JOB_RESV)) {
 				continue;
 			}

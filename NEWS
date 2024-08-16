@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix unnecessary message protocol downgrade for unregistered nodes.
  -- Fix unnecessarily packing alias addrs when terminating jobs with a mix of
     non-cloud/dynamic nodes and powered down cloud/dynamic nodes.
+ -- Fix allowing access to reservations without MaxStartDelay set.
 
 * Changes in Slurm 23.11.9
 ==========================
