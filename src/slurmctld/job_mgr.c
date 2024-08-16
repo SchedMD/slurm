@@ -3794,38 +3794,45 @@ static int _select_nodes_base(job_node_select_t *job_node_select)
 	return SLURM_ERROR;
 }
 
+static int _foreach_select_nodes_resvs(void *object, void *args)
+{
+	slurmctld_resv_t *resv_ptr = object;
+	job_node_select_t *job_node_select = args;
+	job_record_t *job_ptr = job_node_select->job_ptr;
+
+	job_ptr->resv_ptr = resv_ptr;
+	job_ptr->resv_id = resv_ptr->resv_id;
+
+	if ((job_ptr->bit_flags & JOB_PART_ASSIGNED) && resv_ptr->part_ptr)
+		job_ptr->part_ptr = resv_ptr->part_ptr;
+
+	debug2("Try %pJ on next reservation %s", job_ptr, resv_ptr->name);
+
+	if ((job_node_select->rc_resv =
+	     _select_nodes_base(job_node_select)) == SLURM_SUCCESS) {
+		/* break if success */
+		if ((job_node_select->rc != ESLURM_RESERVATION_NOT_USABLE) &&
+		    (job_node_select->rc != ESLURM_RESERVATION_BUSY)) {
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 static int _select_nodes_resvs(job_node_select_t *job_node_select)
 {
 	job_record_t *job_ptr = job_node_select->job_ptr;
-	slurmctld_resv_t *resv_ptr;
-	list_itr_t *iter;
-	int loc_rc = SLURM_ERROR;
 
 	if (!job_ptr->resv_list)
 		return _select_nodes_base(job_node_select);
 
-	iter = list_iterator_create(job_ptr->resv_list);
-	while ((resv_ptr = list_next(iter))) {
-		job_ptr->resv_ptr = resv_ptr;
-		job_ptr->resv_id = resv_ptr->resv_id;
-		if ((job_ptr->bit_flags & JOB_PART_ASSIGNED) &&
-		    resv_ptr->part_ptr)
-			job_ptr->part_ptr = resv_ptr->part_ptr;
+	job_node_select->rc_resv = SLURM_ERROR;
+	(void) list_for_each(job_ptr->resv_list,
+			     _foreach_select_nodes_resvs,
+			     job_node_select);
 
-		debug2("Try %pJ on next reservation %s",
-		       job_ptr, resv_ptr->name);
-
-		if ((loc_rc = _select_nodes_base(job_node_select)) ==
-		    SLURM_SUCCESS) {
-			if ((job_node_select->rc !=
-			     ESLURM_RESERVATION_NOT_USABLE) &&
-			    (job_node_select->rc != ESLURM_RESERVATION_BUSY))
-				break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return loc_rc;
+	return job_node_select->rc_resv;
 }
 
 /*
