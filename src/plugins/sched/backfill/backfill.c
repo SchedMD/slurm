@@ -3262,7 +3262,9 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 	bitstr_t *orig_exc_nodes = NULL;
 	bool is_job_array_head = false;
 	static uint32_t fail_jobid = 0;
-
+	job_node_select_t job_node_select = {
+		.job_ptr = job_ptr,
+	};
 	if (job_ptr->details->exc_node_bitmap) {
 		orig_exc_nodes = bit_copy(job_ptr->details->exc_node_bitmap);
 		bit_or(job_ptr->details->exc_node_bitmap, resv_bitmap);
@@ -3270,8 +3272,9 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 		job_ptr->details->exc_node_bitmap = bit_copy(resv_bitmap);
 	if (job_ptr->array_recs)
 		is_job_array_head = true;
-	rc = select_nodes(job_ptr, false, NULL, false,
+	rc = select_nodes(&job_node_select, false, false,
 			  SLURMDB_JOB_FLAG_BACKFILL);
+
 	if (is_job_array_head && job_ptr->details) {
 		job_record_t *base_job_ptr;
 		base_job_ptr = find_job_record(job_ptr->array_job_id);

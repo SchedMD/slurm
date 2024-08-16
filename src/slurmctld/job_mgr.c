@@ -3716,102 +3716,93 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 	on_job_state_change(job_ptr, job_ptr->job_state);
 }
 
-static int _select_nodes_base(job_record_t *job_ptr, bool *test_only,
-			      char **err_msg,
-			      int *best_rc,
-			      int *rc,
-			      int *part_limits_rc)
+static int _select_nodes_base(job_node_select_t *job_node_select)
 {
-	*part_limits_rc = job_limits_check(&job_ptr, false);
+	job_node_select->rc_part_limits =
+		job_limits_check(&job_node_select->job_ptr, false);
 
-	if ((*part_limits_rc != WAIT_NO_REASON) &&
+	if ((job_node_select->rc_part_limits != WAIT_NO_REASON) &&
 	    (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY))
 		return SLURM_ERROR;
 
-	if ((*part_limits_rc != WAIT_NO_REASON) &&
+	if ((job_node_select->rc_part_limits != WAIT_NO_REASON) &&
 	    (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ALL)) {
-		if (*part_limits_rc != WAIT_PART_DOWN) {
-			*best_rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		if (job_node_select->rc_part_limits != WAIT_PART_DOWN) {
+			job_node_select->rc_best =
+				ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 			return SLURM_SUCCESS;
 		} else {
-			*best_rc = ESLURM_PARTITION_DOWN;
+			job_node_select->rc_best = ESLURM_PARTITION_DOWN;
 		}
 	}
 
-	if (*part_limits_rc == WAIT_NO_REASON) {
-		*rc = select_nodes(job_ptr, *test_only,
-				   err_msg,
-				   true,
-				   SLURMDB_JOB_FLAG_SUBMIT);
+	if (job_node_select->rc_part_limits == WAIT_NO_REASON) {
+		job_node_select->rc = select_nodes(job_node_select,
+						   job_node_select->test_only,
+						   true,
+						   SLURMDB_JOB_FLAG_SUBMIT);
 	} else {
-		*rc = select_nodes(job_ptr, true,
-				   err_msg,
-				   true,
-				   SLURMDB_JOB_FLAG_SUBMIT);
-		if ((*rc == SLURM_SUCCESS) &&
-		    (*part_limits_rc == WAIT_PART_DOWN))
-			*rc = ESLURM_PARTITION_DOWN;
+		job_node_select->rc = select_nodes(job_node_select,
+						   true,
+						   true,
+						   SLURMDB_JOB_FLAG_SUBMIT);
+		if ((job_node_select->rc == SLURM_SUCCESS) &&
+		    (job_node_select->rc_part_limits == WAIT_PART_DOWN))
+			job_node_select->rc = ESLURM_PARTITION_DOWN;
 	}
-	if ((*rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+	if ((job_node_select->rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 	    (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ALL)) {
-		*best_rc = *rc;	/* Job can not run */
+		/* Job can not run */
+		job_node_select->rc_best = job_node_select->rc;
 		return SLURM_SUCCESS;
 	}
-	if ((*rc != ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
-	    (*rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-	    (*rc != ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE) &&
-	    (*rc != ESLURM_RESERVATION_BUSY) &&
-	    (*rc != ESLURM_NODES_BUSY)) {
-		*best_rc = *rc;	/* Job can run now */
+	if ((job_node_select->rc != ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
+	    (job_node_select->rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+	    (job_node_select->rc != ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE) &&
+	    (job_node_select->rc != ESLURM_RESERVATION_BUSY) &&
+	    (job_node_select->rc != ESLURM_NODES_BUSY)) {
+		/* Job can run now */
+		job_node_select->rc_best = job_node_select->rc;
 		if ((slurm_conf.enforce_part_limits ==
 		     PARTITION_ENFORCE_ANY) ||
 		    (slurm_conf.enforce_part_limits ==
 		     PARTITION_ENFORCE_NONE) ||
-		    (!*test_only &&
-		     (*part_limits_rc == WAIT_NO_REASON)))
+		    (!job_node_select->test_only &&
+		     (job_node_select->rc_part_limits == WAIT_NO_REASON)))
 			return SLURM_SUCCESS;
 	}
-	if (((*rc == ESLURM_NODES_BUSY) ||
-	     (*rc == ESLURM_RESERVATION_BUSY) ||
-	     (*rc == ESLURM_PORTS_BUSY)) &&
-	    (*best_rc == -1) &&
+	if (((job_node_select->rc == ESLURM_NODES_BUSY) ||
+	     (job_node_select->rc == ESLURM_RESERVATION_BUSY) ||
+	     (job_node_select->rc == ESLURM_PORTS_BUSY)) &&
+	    (job_node_select->rc_best == -1) &&
 	    ((slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY) ||
 	     (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_NONE))) {
-		if (*test_only)
+		if (job_node_select->test_only)
 			return SLURM_SUCCESS;
 
-		*best_rc = *rc;	/* Keep looking for partition
-				 * where job can start now */
+		/* Keep looking for partition where job can start now */
+		job_node_select->rc_best = job_node_select->rc;
 	}
-	if ((job_ptr->preempt_in_progress) &&
-	    (*rc != ESLURM_NODES_BUSY)) {
+	if ((job_node_select->job_ptr->preempt_in_progress) &&
+	    (job_node_select->rc != ESLURM_NODES_BUSY)) {
 		/* Already started preempting jobs, don't
 		 * consider starting this job in another
 		 * partition as we iterator over others. */
-		*test_only = true;
+		job_node_select->test_only = true;
 	}
 
 	return SLURM_ERROR;
 }
 
-static int _select_nodes_resvs(job_record_t *job_ptr, bool *test_only,
-			       char **err_msg,
-			       int *best_rc,
-			       int *rc,
-			       int *part_limits_rc)
+static int _select_nodes_resvs(job_node_select_t *job_node_select)
 {
+	job_record_t *job_ptr = job_node_select->job_ptr;
 	slurmctld_resv_t *resv_ptr;
 	list_itr_t *iter;
 	int loc_rc = SLURM_ERROR;
 
 	if (!job_ptr->resv_list)
-		return _select_nodes_base(job_ptr,
-					  test_only,
-					  err_msg,
-					  best_rc,
-					  rc,
-					  part_limits_rc);
-
+		return _select_nodes_base(job_node_select);
 
 	iter = list_iterator_create(job_ptr->resv_list);
 	while ((resv_ptr = list_next(iter))) {
@@ -3824,15 +3815,11 @@ static int _select_nodes_resvs(job_record_t *job_ptr, bool *test_only,
 		debug2("Try %pJ on next reservation %s",
 		       job_ptr, resv_ptr->name);
 
-		if ((loc_rc = _select_nodes_base(job_ptr,
-						 test_only,
-						 err_msg,
-						 best_rc,
-						 rc,
-						 part_limits_rc)) ==
+		if ((loc_rc = _select_nodes_base(job_node_select)) ==
 		    SLURM_SUCCESS) {
-			if ((*rc != ESLURM_RESERVATION_NOT_USABLE) &&
-			    (*rc != ESLURM_RESERVATION_BUSY))
+			if ((job_node_select->rc !=
+			     ESLURM_RESERVATION_NOT_USABLE) &&
+			    (job_node_select->rc != ESLURM_RESERVATION_BUSY))
 				break;
 		}
 	}
@@ -3854,8 +3841,15 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 {
 	part_record_t *part_ptr;
 	list_itr_t *iter;
-	int rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-	int best_rc = -1, part_limits_rc = WAIT_NO_REASON;
+	job_node_select_t job_node_select = {
+		.err_msg = err_msg,
+		.job_ptr = job_ptr,
+		.rc_part_limits = WAIT_NO_REASON,
+		.rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE,
+		.rc_best = -1,
+		.test_only = test_only,
+	};
+	int rc, best_rc, part_limits_rc;
 	bitstr_t *save_avail_node_bitmap = NULL;
 
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
@@ -3869,12 +3863,7 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 			debug2("Try %pJ on next partition %s",
 			       job_ptr, part_ptr->name);
 
-			if (_select_nodes_resvs(job_ptr,
-						&test_only,
-						err_msg,
-						&best_rc,
-						&rc,
-						&part_limits_rc) ==
+			if (_select_nodes_resvs(&job_node_select) ==
 			    SLURM_SUCCESS)
 				break;
 		}
@@ -3884,14 +3873,12 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 		 * We don't need to check the return code of this as the rc we
 		 * are sending in is the rc we care about.
 		 */
-		(void)_select_nodes_resvs(job_ptr,
-					  &test_only,
-					  err_msg,
-					  &best_rc,
-					  &rc,
-					  &part_limits_rc);
+		(void)_select_nodes_resvs(&job_node_select);
 	}
 
+	rc = job_node_select.rc;
+	best_rc = job_node_select.rc_best;
+	part_limits_rc = job_node_select.rc_part_limits;
 	if (best_rc != -1)
 		rc = best_rc;
 	else if (part_limits_rc == WAIT_PART_DOWN)

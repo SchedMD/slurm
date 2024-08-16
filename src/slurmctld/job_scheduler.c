@@ -1163,6 +1163,7 @@ static int _schedule(bool full_queue)
 	uint32_t deadline_time_limit, save_time_limit = 0;
 	uint32_t prio_reserve;
 	DEF_TIMERS;
+	job_node_select_t job_node_select = { 0 };
 
 	if (slurmctld_config.shutdown_time)
 		return 0;
@@ -1768,7 +1769,9 @@ next_task:
 			goto skip_start;
 		}
 
-		error_code = select_nodes(job_ptr, false, NULL, false,
+		job_node_select.job_ptr = job_ptr;
+		error_code = select_nodes(&job_node_select,
+					  false, false,
 					  SLURMDB_JOB_FLAG_SCHED);
 
 		if (error_code == SLURM_SUCCESS) {
