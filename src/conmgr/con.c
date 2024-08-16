@@ -890,9 +890,9 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, addrinfo_to_string(addr));
 
-		rc = conmgr_process_fd_listen(fd, type, events,
-			(const slurm_addr_t *) addr->ai_addr, addr->ai_addrlen,
-			arg);
+		rc = add_connection(type, NULL, fd, -1, events,
+				    (const slurm_addr_t *) addr->ai_addr,
+				    addr->ai_addrlen, true, NULL, arg);
 	}
 
 	freeaddrinfo(addrlist);
