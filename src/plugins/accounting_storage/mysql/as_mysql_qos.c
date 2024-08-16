@@ -1136,10 +1136,10 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		else
 			xstrfmtcat(assoc_char, " || id_qos='%s'", row[0]);
 		xstrfmtcat(extra,
-			   ", qos=replace(qos, ',%s,', '')"
-			   ", delta_qos=replace(delta_qos, ',+%s,', '')"
-			   ", delta_qos=replace(delta_qos, ',-%s,', '')",
-			   row[0], row[0], row[0]);
+			   ", qos=replace(qos, ',%s,', if(qos=',%s,', '', ','))"
+			   ", delta_qos=replace(delta_qos, ',+%s,', if(delta_qos=',+%s,', '', ','))"
+			   ", delta_qos=replace(delta_qos, ',-%s,', if(delta_qos=',-%s,', '', ','))",
+			   row[0], row[0], row[0], row[0], row[0], row[0]);
 
 		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
 		/* we only need id when removing no real need to init */
