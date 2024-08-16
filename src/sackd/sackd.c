@@ -271,7 +271,7 @@ static void _listen_for_reconf(void)
 	}
 
 	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, events,
-					   NULL, 0, NULL)))
+					   NULL)))
 		fatal("%s: conmgr refused fd=%d: %s",
 		      __func__, listen_fd, slurm_strerror(rc));
 }

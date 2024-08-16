@@ -318,9 +318,7 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
-				    const conmgr_events_t events,
-				    const slurm_addr_t *addr,
-				    socklen_t addrlen, void *arg);
+				    const conmgr_events_t events, void *arg);
 
 /*
  * Queue up work to receive new connection (file descriptor via socket)

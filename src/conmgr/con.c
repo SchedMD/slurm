@@ -520,12 +520,10 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
-				    const conmgr_events_t events,
-				    const slurm_addr_t *addr,
-				    socklen_t addrlen, void *arg)
+				    const conmgr_events_t events, void *arg)
 {
-	return add_connection(type, NULL, fd, -1, events, addr, addrlen, true,
-			      NULL, arg);
+	return add_connection(type, NULL, fd, -1, events, NULL, 0, true, NULL,
+			      arg);
 }
 
 static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
