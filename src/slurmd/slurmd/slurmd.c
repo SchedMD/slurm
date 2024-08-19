@@ -926,10 +926,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->sockets	 = conf->sockets;
 	msg->cores	 = conf->cores;
 	msg->threads	 = conf->threads;
-	if (res_abs_cpus[0] == '\0')
-		msg->cpu_spec_list = NULL;
-	else
-		msg->cpu_spec_list = xstrdup(res_abs_cpus);
+	msg->cpu_spec_list = xstrdup(conf->cpu_spec_list);
 	msg->real_memory = conf->physical_memory_size;
 	msg->tmp_disk    = conf->tmp_disk_space;
 	msg->hash_val = slurm_conf.hash_val;
