@@ -35,6 +35,7 @@
 
 #define _GNU_SOURCE
 #include <limits.h>
+#include <stdbool.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -1367,9 +1368,9 @@ extern void extract_con_fd(conmgr_fd_t *con)
 
 	log_flag(CONMGR, "%s: extracting input_fd=%d output_fd=%d read_eof=%c can_read=%c can_write=%c on_data_tried=%c work_active=%c func=%s()",
 		 __func__, con->input_fd, con->output_fd,
-		 (con->read_eof ? 'T' : 'F'), (con->can_read ? 'T' : 'F'),
-		 (con->can_write ? 'T' : 'F'), (con->on_data_tried ? 'T' : 'F'),
-		 (con->work_active ? 'T' : 'F'), extract->func_name);
+		 BOOL_CHARIFY(con->read_eof), BOOL_CHARIFY(con->can_read),
+		 BOOL_CHARIFY(con->can_write), BOOL_CHARIFY(con->on_data_tried),
+		 BOOL_CHARIFY(con->work_active), extract->func_name);
 
 	/* clear all polling states */
 	con->read_eof = true;
