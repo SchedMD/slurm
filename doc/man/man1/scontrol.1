@@ -293,7 +293,7 @@ The "ASAP" option adds the "DRAIN" flag to each node's state, preventing
 additional jobs from running on the node so it can be
 rebooted and returned to service "As Soon As Possible" (i.e. ASAP).
 "ASAP" will also set the node reason to "Reboot ASAP" if the "reason" option
-isn't specified.
+isn't specified and will set nextstate=UNDRAIN if nextstate isn't specified.
 If the "nextstate" option is specified
 as "DOWN", then the node will remain in a down state after rebooting. If
 "nextstate" is specified as "RESUME", then the nodes will resume as normal

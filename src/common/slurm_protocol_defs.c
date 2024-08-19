@@ -3490,6 +3490,8 @@ extern char *node_state_string(uint32_t inx)
 		return "POWERED_DOWN";
 	if (inx == NODE_STATE_POWERING_UP)
 		return "POWERING_UP";
+	if (inx == NODE_STATE_UNDRAIN)
+		return "UNDRAIN";
 	if (base == NODE_STATE_DOWN) {
 		if (maint_flag)
 			return "DOWN$";
