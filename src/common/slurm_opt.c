@@ -3210,7 +3210,7 @@ static void arg_reset_segment_size(slurm_opt_t *opt)
 static slurm_cli_opt_t slurm_opt_segment_size = {
 	.name = "segment",
 	.has_arg = required_argument,
-	.val = LONG_OPT_SEND_LIBS,
+	.val = LONG_OPT_SEGMENT_SIZE,
 	.set_func = arg_set_segment_size,
 	.get_func = arg_get_segment_size,
 	.reset_func = arg_reset_segment_size,
