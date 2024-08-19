@@ -1,4 +1,4 @@
-.TH sreport "1" "Slurm Commands" "October 2022" "Slurm Commands"
+.TH sreport "1" "Slurm Commands" "August 2024" "Slurm Commands"
 
 .SH "NAME"
 sreport \- Generate reports from the slurm accounting data.
@@ -820,52 +820,111 @@ The location of the Slurm configuration file.
 Report number of jobs per account according to different job size bins:
 .IP
 .nf
-$ sreport job sizesbyaccount
+$ sreport job sizesbyaccount Start=11:00
+--------------------------------------------------------------------------------
+Job Sizes 2024-08-19T11:00:00 - 2024-08-19T11:59:59 (3600 secs)
+Time reported in Minutes
+--------------------------------------------------------------------------------
+  Cluster   Account     0-49 CPUs   50-249 CPUs  250-499 CPUs  500-999 CPUs  >= 1000 CPUs % of cluster
+--------- --------- ------------- ------------- ------------- ------------- ------------- ------------
+minesofm+      root           770             0             0             0             0      100.00%
 .fi
 
 .TP
 Report cluster utilization:
 .IP
 .nf
-$ sreport cluster utilization
+$ sreport cluster utilization Start=11:00
+--------------------------------------------------------------------------------
+Cluster Utilization 2024-08-19T11:00:00 - 2024-08-19T11:59:59
+Usage reported in CPU Minutes
+--------------------------------------------------------------------------------
+  Cluster Allocate     Down  Planned     Idle  Planned Reported
+--------- -------- -------- -------- -------- -------- --------
+minesofm+      770      120      239     3791      239     4920
 .fi
 
 .TP
 Report top usage:
 .IP
 .nf
-$ sreport user top
+$ sreport user top Start=11:00
+--------------------------------------------------------------------------------
+Top 10 Users 2024-08-19T11:00:00 - 2024-08-19T11:59:59 (3600 secs)
+Usage reported in CPU Minutes
+--------------------------------------------------------------------------------
+  Cluster     Login     Proper Name         Account     Used   Energy
+--------- --------- --------------- --------------- -------- --------
+minesofm+   stephen             ,,,            main      538        0
+minesofm+   phteven             ,,,            main      145        0
+minesofm+   phteven             ,,,       rivendell       45        0
+minesofm+   stephen             ,,,       rivendell       41        0
 .fi
 
 .TP
-Report number of jobs by user gore1 within the environ account:
+Report jobs by size from specific user and account:
 .IP
 .nf
-$ sreport job sizesbyaccount All_Clusters users=gore1 account=environ PrintJobCount
+$ sreport job sizesbyaccount All_Clusters users=stephen account=main PrintJobCount Start=11:00
+--------------------------------------------------------------------------------
+Job Sizes 2024-08-19T11:00:00 - 2024-08-19T11:59:59 (3600 secs)
+Units are in number of jobs ran
+--------------------------------------------------------------------------------
+  Cluster   Account     0-49 CPUs   50-249 CPUs  250-499 CPUs  500-999 CPUs  >= 1000 CPUs % of cluster
+--------- --------- ------------- ------------- ------------- ------------- ------------- ------------
+minesofm+      main            12             0             0             0             0      100.00%
 .fi
 
 .TP
-Report cluster account utilization with the specified fields during the \
-specified 24 hour day of February 23, 2009, by user gore1:
+Report cluster account utilization with the specified fields during the
+specified day and by the specified user:
 .IP
 .nf
-$ sreport cluster AccountUtilizationByUser cluster=zeus user=gore1 \
-start=2/23/09 end=2/24/09 format=Accounts,Cluster,TresCount,Login,Proper,Used
+$ sreport cluster AccountUtilizationByUser start=7/10 end=7/11 \
+cluster=minesofmoria user=stephen format=Account,Cluster,TresCount,Login,Proper,Used
+--------------------------------------------------------------------------------
+Cluster/Account/User Utilization 2024-07-10T00:00:00 - 2024-07-10T23:59:59 (86400 secs)
+Usage reported in CPU Minutes
+--------------------------------------------------------------------------------
+        Account   Cluster TRES Count     Login     Proper Name     Used
+--------------- --------- ---------- --------- --------------- --------
+           main minesofm+              stephen             ,,,       38
+      rivendell minesofm+              stephen             ,,,        1
+          arwen minesofm+              stephen             ,,,        1
+         elrond minesofm+              stephen             ,,,        1
 .fi
 
 .TP
-Report cluster account utilization by user in the LC account on cluster zeus:
+Report cluster account utilization by user for a specific account during a
+1\-week period:
 .IP
 .nf
-$ sreport cluster AccountUtilizationByUser cluster=zeus accounts=lc \
-start=2/23/09 end=2/24/09
+$ sreport cluster AccountUtilizationByUser start=7/23 end=7/24 \
+cluster=minesofmoria account=main
+--------------------------------------------------------------------------------
+Cluster/Account/User Utilization 2024-07-23T00:00:00 - 2024-07-23T23:59:59 (86400 secs)
+Usage reported in CPU Minutes
+--------------------------------------------------------------------------------
+  Cluster         Account     Login     Proper Name     Used   Energy
+--------- --------------- --------- --------------- -------- --------
+minesofm+            main                                148        0
+minesofm+            main   phteven             ,,,        2        0
+minesofm+            main   stephen             ,,,      146        0
 .fi
 
 .TP
-Report top usage in percent of the lc account during the specified week:
+Report top usage in percent for a specific account:
 .IP
 .nf
-$ sreport user topusage start=2/16/09 end=2/23/09 \-t percent account=lc
+$ sreport user topusage start=11:00 -t percent account=main
+--------------------------------------------------------------------------------
+Top 10 Users 2024-08-19T11:00:00 - 2024-08-19T11:59:59 (3600 secs)
+Usage reported in Percentage of Total
+--------------------------------------------------------------------------------
+  Cluster     Login     Proper Name         Account     Used   Energy
+--------- --------- --------------- --------------- -------- --------
+minesofm+   stephen             ,,,            main   10.94%    0.00%
+minesofm+   phteven             ,,,            main    2.95%    0.00%
 .fi
 
 .SH "COPYING"
