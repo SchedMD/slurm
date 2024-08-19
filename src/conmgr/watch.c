@@ -478,8 +478,8 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 		}
 
 		log_flag(CONMGR, "%s: [%s] listener fd=%u can_read=%s read_eof=%s",
-			 __func__, con->name, fd, (con->can_read ? "T" : "F"),
-			 (con->read_eof ? "T" : "F"));
+			 __func__, con->name, fd, BOOL_STRINGIFY(con->can_read),
+			 BOOL_STRINGIFY(con->read_eof));
 
 		return SLURM_SUCCESS;
 	}
@@ -495,8 +495,8 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 		con->can_write = pollctl_events_can_write(events);
 
 	log_flag(CONMGR, "%s: [%s] fd=%u can_read=%s can_write=%s read_eof=%s",
-		 __func__, con->name, fd, (con->can_read ? "T" : "F"),
-		 (con->can_write ? "T" : "F"), (con->read_eof ? "T" : "F"));
+		 __func__, con->name, fd, BOOL_STRINGIFY(con->can_read),
+		 BOOL_STRINGIFY(con->can_write), BOOL_STRINGIFY(con->read_eof));
 
 	return SLURM_SUCCESS;
 }
