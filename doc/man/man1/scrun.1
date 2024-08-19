@@ -1,4 +1,4 @@
-.TH scrun "1" "Slurm Commands" "July 2024" "Slurm Commands"
+.TH scrun "1" "Slurm Commands" "August 2024" "Slurm Commands"
 
 .SH "NAME"
 \fBscrun\fR \- an OCI runtime proxy for Slurm.
@@ -45,14 +45,14 @@ Perform OCI runtime operations against \fIcontainer-id\fR per:
 https://github.com/opencontainers/runtime-spec/blob/main/runtime.md
 
 \fBscrun\fR attempts to mimic the commandline behavior as closely as possible
-to \fBcrun\fR(1) and \fBrunc\fR(1) in order to maintain in place replacement
-compatibility with \fBDOCKER\fR(1) and \fBpodman\fR(1). All commandline
-arguments for \fBcrun\fR(1) and \fBrunc\fR(1) will be accepted for compatibility
+to \fBcrun\fR and \fBrunc\fR in order to maintain in place replacement
+compatibility with \fBDOCKER\fR and \fBpodman\fR. All commandline
+arguments for \fBcrun\fR and \fBrunc\fR will be accepted for compatibility
 but may be ignored depending on their applicability.
 
 .SH "DESCRIPTION"
 \fBscrun\fR is an OCI runtime proxy for Slurm. It acts as a common interface to
-\fBDOCKER\fR(1) or \fBpodman\fR(1) to allow container operations to be executed
+\fBDOCKER\fR or \fBpodman\fR to allow container operations to be executed
 under Slurm as jobs. \fBscrun\fR will accept all commands as an OCI compliant
 runtime but will proxy the container and all STDIO to Slurm for scheduling and
 execution. The containers will be executed remotely on Slurm compute nodes
@@ -911,7 +911,7 @@ Set to the value of \fB\-\-tres\-per\-task\fR. If \fB\-\-cpus\-per\-task\fR or
 .LP
 /etc/slurm/\fBscrun.lua\fR must be present on any node
 where \fBscrun\fR will be invoked. \fBscrun.lua\fR must be a compliant
-\fBlua\fR(1) script.
+\fBlua\fR script.
 
 .SS "Required functions"
 The following functions must be defined.
@@ -1093,12 +1093,16 @@ Parse \fITIME_STRING\fR into number of minutes as \fIMINUTES\fR. Valid formats:
 
 .TP
 Full Container staging example using rsync:
-This full example will stage a container as given by \fBdocker\fR(1) or
-\fBpodman\fR(1). The container's config.json is modified to remove unwanted
-functions that may cause the container run to under \fBcrun\fR(1) or
-\fBrunc\fR(1).
-The script uses \fBrsync\fR(1) to move the container to a shared filesystem
+This full example will stage a container as given by \fBdocker\fR or
+\fBpodman\fR. The container's config.json is modified to remove unwanted
+functions that may cause the container run to under \fBcrun\fR or
+\fBrunc\fR.
+The script uses \fBrsync\fR to move the container to a shared filesystem
 under the \fIscratch_path\fR variable.
+
+\fBNOTE\fR: Support for JSON in liblua must generally be installed before Slurm
+is compiled. scrun.lua's syntax and ability to load JSON support should be
+tested by directly calling the script using \fBlua\fR outside of Slurm.
 
 .nf
 local json = require 'json'
@@ -1359,5 +1363,5 @@ details.
 
 .SH "SEE ALSO"
 .LP
-\fBSlurm\fR(1), \fBoci.conf\fR(5), \fBsrun\fR(1), \fBcrun\fR(1), \fBrunc\fR(1),
-\fBDOCKER\fR(1) and \fBpodman\fR(1)
+\fBslurm\fR(1), \fBoci.conf\fR(5), \fBsrun\fR(1), \fBcrun\fR, \fBrunc\fR,
+\fBDOCKER\fR and \fBpodman\fR

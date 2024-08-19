@@ -108,10 +108,14 @@ Slurm to catch when container execution is complete.
 The examples provided have been tested to work but are only suggestions. Sites
 are expected to ensure that the resultant root directory used will be secure
 from cross user viewing and modifications. The examples provided point to
-"/run/user/%U" where %U will be replaced with the numeric user id which should
-be created and managed by systemd independently of Slurm. Be aware that the
-directory in this example will be cleaned up by systemd once the user logs
-out of the node.
+"/run/user/%U" where %U will be replaced with the numeric user id. Systemd
+manages "/run/user/" (independently of Slurm) and will likely need additional
+configuration to ensure the directories exist on compute nodes when the users
+will not log in to the nodes directly. This configuration is generally achieved
+by calling
+<a href="https://www.freedesktop.org/software/systemd/man/latest/loginctl.html#enable-linger%20USER%E2%80%A6">
+loginctl to enable lingering sessions</a>. Be aware that the directory in this
+example will be cleaned up by systemd once the user session ends on the node.
 </p>
 
 <h3 id="runc_create_start">oci.conf example for runc using create/start:
@@ -571,6 +575,10 @@ host networking</a></li>
 <a href="https://podman.io/docs/installation"> Install and configure
 Podman</a><br>Podman must be fully operational and able to run containers
 before continuing.</li>
+<li>
+<a href="https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md">
+Configure rootless Podman</a><br>Podman must be in rootless mode to be able
+to interact with Slurm via scrun.</li>
 <li>
 Configure Podman to call scrun instead of the <a
 href="https://github.com/opencontainers/runtime-spec"> default OCI runtime</a>.
