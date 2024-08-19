@@ -136,6 +136,8 @@
 
 decl_static_data(usage_txt);
 
+#define SLURMCTLD_CONMGR_DEFAULT_THREADS 256
+#define SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to
 				 * check-in before we ping them */
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
@@ -511,7 +513,9 @@ int main(int argc, char **argv)
 		sched_debug("slurmctld starting");
 	}
 
-	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
+	conmgr_init(SLURMCTLD_CONMGR_DEFAULT_THREADS,
+		    SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS,
+		    (conmgr_callbacks_t) {0});
 
 	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 
