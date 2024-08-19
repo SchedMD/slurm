@@ -1402,11 +1402,13 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	xassert(!con->work_active);
 	xassert(con->is_connected);
 
-	log_flag(CONMGR, "%s: extracting input_fd=%d output_fd=%d read_eof=%c can_read=%c can_write=%c on_data_tried=%c work_active=%c func=%s()",
-		 __func__, con->input_fd, con->output_fd,
-		 BOOL_CHARIFY(con->read_eof), BOOL_CHARIFY(con->can_read),
-		 BOOL_CHARIFY(con->can_write), BOOL_CHARIFY(con->on_data_tried),
-		 BOOL_CHARIFY(con->work_active), extract->func_name);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *flags = con_flags_string(con->flags);
+		log_flag(CONMGR, "%s: extracting input_fd=%d output_fd=%d func=%s() flags=%s",
+			 __func__, con->input_fd, con->output_fd,
+			 extract->func_name, flags);
+		xfree(flags);
+	}
 
 	/* clear all polling states */
 	con->read_eof = true;
