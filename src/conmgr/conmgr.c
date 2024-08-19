@@ -33,7 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "stdlib.h"
+#include <signal.h>
+#include <stdlib.h>
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -49,6 +50,9 @@
 
 conmgr_t mgr = CONMGR_DEFAULT;
 
+static sig_atomic_t enabled_init = 0;
+static bool enabled_status = false;
+
 static void _atfork_child(void)
 {
 	/*
@@ -56,6 +60,8 @@ static void _atfork_child(void)
 	 * forking as all of the prior state is completely unusable.
 	 */
 	mgr = CONMGR_DEFAULT;
+	enabled_init = 0;
+	enabled_status = false;
 }
 
 extern void conmgr_init(int thread_count, int max_connections,
@@ -269,18 +275,16 @@ extern int conmgr_get_error(void)
 
 extern bool conmgr_enabled(void)
 {
-	static bool init = false;
-	static bool enabled = false;
-
-	if (init)
-		return enabled;
+	if (enabled_init)
+		return enabled_status;
 
 	slurm_mutex_lock(&mgr.mutex);
-	enabled = (mgr.one_time_initialized || mgr.initialized);
+	enabled_status = (mgr.one_time_initialized || mgr.initialized);
 	slurm_mutex_unlock(&mgr.mutex);
 
-	log_flag(CONMGR, "%s: enabled=%c", __func__, (enabled ? 'T' : 'F'));
+	log_flag(CONMGR, "%s: enabled=%c",
+		 __func__, (enabled_status ? 'T' : 'F'));
 
-	init = true;
-	return enabled;
+	enabled_init = true;
+	return enabled_status;
 }

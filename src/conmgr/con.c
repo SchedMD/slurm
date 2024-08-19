@@ -35,6 +35,7 @@
 
 #define _GNU_SOURCE
 #include <limits.h>
+#include <stdbool.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -519,22 +520,10 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
-				    const conmgr_events_t events,
-				    const slurm_addr_t *addr,
-				    socklen_t addrlen, void *arg)
+				    const conmgr_events_t events, void *arg)
 {
-	return add_connection(type, NULL, fd, -1, events, addr, addrlen, true,
-			      NULL, arg);
-}
-
-extern int conmgr_process_fd_unix_listen(conmgr_con_type_t type, int fd,
-					  const conmgr_events_t events,
-					  const slurm_addr_t *addr,
-					  socklen_t addrlen, const char *path,
-					  void *arg)
-{
-	return add_connection(type, NULL, fd, -1, events, addr, addrlen, true,
-			      path, arg);
+	return add_connection(type, NULL, fd, -1, events, NULL, 0, true, NULL,
+			      arg);
 }
 
 static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
@@ -841,9 +830,8 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, listen_on);
 
-		return conmgr_process_fd_unix_listen(type, fd, events, &addr,
-						     sizeof(addr), unixsock,
-						     arg);
+		return add_connection(type, NULL, fd, -1, events, &addr,
+				      sizeof(addr), true, unixsock, arg);
 	} else {
 		/* split up host and port */
 		if (!(parsed_hp = callbacks.parse(listen_on)))
@@ -900,9 +888,9 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, addrinfo_to_string(addr));
 
-		rc = conmgr_process_fd_listen(fd, type, events,
-			(const slurm_addr_t *) addr->ai_addr, addr->ai_addrlen,
-			arg);
+		rc = add_connection(type, NULL, fd, -1, events,
+				    (const slurm_addr_t *) addr->ai_addr,
+				    addr->ai_addrlen, true, NULL, arg);
 	}
 
 	freeaddrinfo(addrlist);
@@ -1367,9 +1355,9 @@ extern void extract_con_fd(conmgr_fd_t *con)
 
 	log_flag(CONMGR, "%s: extracting input_fd=%d output_fd=%d read_eof=%c can_read=%c can_write=%c on_data_tried=%c work_active=%c func=%s()",
 		 __func__, con->input_fd, con->output_fd,
-		 (con->read_eof ? 'T' : 'F'), (con->can_read ? 'T' : 'F'),
-		 (con->can_write ? 'T' : 'F'), (con->on_data_tried ? 'T' : 'F'),
-		 (con->work_active ? 'T' : 'F'), extract->func_name);
+		 BOOL_CHARIFY(con->read_eof), BOOL_CHARIFY(con->can_read),
+		 BOOL_CHARIFY(con->can_write), BOOL_CHARIFY(con->on_data_tried),
+		 BOOL_CHARIFY(con->work_active), extract->func_name);
 
 	/* clear all polling states */
 	con->read_eof = true;

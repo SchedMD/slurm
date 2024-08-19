@@ -132,11 +132,15 @@
 
 decl_static_data(usage_txt);
 
+
+
 #define MAX_THREADS		256
 #define TIMEOUT_SIGUSR2 5000000
 #define TIMEOUT_RECONFIG 5000000
 #define ENV_DAEMON_FIELD "SLURMD_DAEMONIZED"
 #define ENV_DAEMON_VALUE "1"
+#define SLURMD_CONMGR_DEFAULT_THREADS MAX_THREADS
+#define SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
 
 #define _free_and_set(__dst, __src)		\
 	do {					\
@@ -420,7 +424,9 @@ main (int argc, char **argv)
 	info("slurmd version %s started", SLURM_VERSION_STRING);
 	debug3("finished daemonize");
 
-	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
+	conmgr_init(SLURMD_CONMGR_DEFAULT_THREADS,
+		    SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS,
+		    (conmgr_callbacks_t) {0});
 
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
@@ -2048,7 +2054,7 @@ static void _create_msg_socket(run_args_t *args)
 	}
 
 	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, events,
-					   NULL, 0, args)))
+					   args)))
 		fatal("%s: unable to process fd:%d error:%s",
 		      __func__, conf->lfd, slurm_strerror(rc));
 }

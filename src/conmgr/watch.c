@@ -256,10 +256,10 @@ static int _handle_connection(void *x, void *arg)
 			log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u work_active=%c can_read=%c can_write=%c on_data_tried=%c work=%d write_complete_work=%d",
 				 __func__, con->name, get_buf_offset(con->in),
 				 list_count(con->out),
-				 (con->work_active ? 'T' : 'F'),
-				 (con->can_read ? 'T' : 'F'),
-				 (con->can_write ? 'T' : 'F'),
-				 (con->on_data_tried ? 'T' : 'F'),
+				 BOOL_CHARIFY(con->work_active),
+				 BOOL_CHARIFY(con->can_read),
+				 BOOL_CHARIFY(con->can_write),
+				 BOOL_CHARIFY(con->on_data_tried),
 				 list_count(con->work),
 				 list_count(con->write_complete_work));
 		}
@@ -478,8 +478,8 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 		}
 
 		log_flag(CONMGR, "%s: [%s] listener fd=%u can_read=%s read_eof=%s",
-			 __func__, con->name, fd, (con->can_read ? "T" : "F"),
-			 (con->read_eof ? "T" : "F"));
+			 __func__, con->name, fd, BOOL_STRINGIFY(con->can_read),
+			 BOOL_STRINGIFY(con->read_eof));
 
 		return SLURM_SUCCESS;
 	}
@@ -495,10 +495,17 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 		con->can_write = pollctl_events_can_write(events);
 
 	log_flag(CONMGR, "%s: [%s] fd=%u can_read=%s can_write=%s read_eof=%s",
-		 __func__, con->name, fd, (con->can_read ? "T" : "F"),
-		 (con->can_write ? "T" : "F"), (con->read_eof ? "T" : "F"));
+		 __func__, con->name, fd, BOOL_STRINGIFY(con->can_read),
+		 BOOL_STRINGIFY(con->can_write), BOOL_STRINGIFY(con->read_eof));
 
 	return SLURM_SUCCESS;
+}
+
+/* caller must hold mgr.mutex lock */
+static bool _is_poll_interrupt(void)
+{
+	return (mgr.quiesced || mgr.shutdown_requested ||
+		(mgr.waiting_on_work && (mgr.workers.active == 1)));
 }
 
 /* Poll all connections */
@@ -511,9 +518,8 @@ static void _poll_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.poll_active);
 
-	if (mgr.quiesced) {
-		log_flag(CONMGR, "%s: skipping poll() while quiesced",
-			 __func__);
+	if (_is_poll_interrupt()) {
+		log_flag(CONMGR, "%s: skipping poll()", __func__);
 		goto done;
 	} else if (list_is_empty(mgr.connections) &&
 		   list_is_empty(mgr.listen_conns)) {
@@ -697,9 +703,7 @@ extern void *watch(void *arg)
 	add_work_fifo(true, signal_mgr_start, NULL);
 
 	while (_watch_loop()) {
-		if (mgr.poll_active &&
-		    (mgr.quiesced || mgr.shutdown_requested ||
-		     (mgr.waiting_on_work && (mgr.workers.active == 1)))) {
+		if (mgr.poll_active && _is_poll_interrupt()) {
 			/*
 			 * poll() hasn't returned yet but we want to
 			 * shutdown. Send interrupt before sleeping or
@@ -715,19 +719,19 @@ extern void *watch(void *arg)
 				 list_count(mgr.connections),
 				 list_count(mgr.listen_conns),
 				 list_count(mgr.complete_conns),
-				 (mgr.poll_active ? 'T' : 'F'),
-				 (mgr.inspecting ? 'T' : 'F'),
-				 (mgr.shutdown_requested ? 'T' : 'F'),
-				 (mgr.quiesced ? 'T' : 'F'),
+				 BOOL_CHARIFY(mgr.poll_active),
+				 BOOL_CHARIFY(mgr.inspecting),
+				 BOOL_CHARIFY(mgr.shutdown_requested),
+				 BOOL_CHARIFY(mgr.quiesced),
 				 list_count(mgr.quiesced_work),
-				 (mgr.waiting_on_work ? 'T' : 'F'));
+				 BOOL_CHARIFY(mgr.waiting_on_work));
 
 		EVENT_WAIT(&mgr.watch_sleep, &mgr.mutex);
 		mgr.waiting_on_work = false;
 	}
 
 	log_flag(CONMGR, "%s: returning shutdown_requested=%c connections=%u listen_conns=%u",
-		 __func__, (mgr.shutdown_requested ? 'T' : 'F'),
+		 __func__, BOOL_CHARIFY(mgr.shutdown_requested),
 		 list_count(mgr.connections), list_count(mgr.listen_conns));
 
 	xassert(mgr.watch_thread == pthread_self());

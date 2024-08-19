@@ -80,7 +80,6 @@
 #include "src/common/track_script.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
-#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
 
@@ -137,6 +136,8 @@
 
 decl_static_data(usage_txt);
 
+#define SLURMCTLD_CONMGR_DEFAULT_THREADS 256
+#define SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to
 				 * check-in before we ping them */
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
@@ -183,8 +184,6 @@ bool cloud_dns = false;
 uint32_t cluster_cpus = 0;
 time_t	control_time = 0;
 bool disable_remote_singleton = false;
-int listen_nports = 0;
-struct pollfd *listen_fds = NULL;
 int max_depend_depth = 10;
 time_t	last_proc_req_start = 0;
 uint32_t max_powered_nodes = NO_VAL;
@@ -193,7 +192,7 @@ pthread_cond_t purge_thread_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t purge_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t check_bf_running_lock = PTHREAD_MUTEX_INITIALIZER;
 int	sched_interval = 60;
-slurmctld_config_t slurmctld_config;
+slurmctld_config_t slurmctld_config = {0};
 diag_stats_t slurmctld_diag_stats;
 bool slurmctld_primary = true;
 bool	want_nodes_reboot = true;
@@ -234,7 +233,6 @@ static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *	slurm_conf_filename;
 static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t reconfig_cond = PTHREAD_COND_INITIALIZER;
-static bool waiting_conmgr_quiesce = false;
 static int reconfig_threads = 0;
 static int reconfig_rc = SLURM_SUCCESS;
 static bool reconfig = false;
@@ -242,15 +240,11 @@ static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
 static bool under_systemd = false;
 
-/*
- * Static list of signals to block in this process
- * *Must be zero-terminated*
- */
-static int controller_sigarray[] = {
-	SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
-	SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
-	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0
-};
+/* Array of listening sockets */
+static struct {
+	int count;
+	int *fd;
+} listeners;
 
 typedef struct primary_thread_arg {
 	pid_t cpid;
@@ -261,7 +255,6 @@ static int          _accounting_cluster_ready();
 static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
 static int          _controller_index(void);
-static void _close_ports(void);
 static void         _create_clustername_file(void);
 static void _flush_rpcs(void);
 static void         _get_fed_updates();
@@ -279,12 +272,11 @@ static void         _remove_qos(slurmdb_qos_rec_t *rec);
 static void         _restore_job_dependencies(void);
 static void         _run_primary_prog(bool primary_on);
 static void         _send_future_cloud_to_db();
-static void *       _service_connection(void *arg);
+static void _service_connection(conmgr_callback_args_t conmgr_args,
+				int input_fd, int output_fd, void *arg);
 static void         _set_work_dir(void);
 static int          _shutdown_backup_controller(void);
 static void *       _slurmctld_background(void *no_data);
-static void *       _slurmctld_rpc_mgr(void *no_data);
-static void *       _slurmctld_signal_hand(void *no_data);
 static void         _test_thread_limit(void);
 static int _try_to_reconfig(void);
 static void         _update_assoc(slurmdb_assoc_rec_t *rec);
@@ -295,39 +287,13 @@ static void _update_pidfile(void);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
 static void _usage(void);
 static bool         _verify_clustername(void);
-static bool         _wait_for_server_thread(void);
 static void *       _wait_primary_prog(void *arg);
-
-static void _try_to_reconfig_deferred(conmgr_callback_args_t conmgr_args,
-				      void *arg)
-{
-	if (conmgr_args.status != CONMGR_WORK_STATUS_CANCELLED)
-		reconfig_rc = _try_to_reconfig();
-
-	slurm_mutex_lock(&reconfig_mutex);
-	xassert(waiting_conmgr_quiesce);
-	waiting_conmgr_quiesce = false;
-	slurm_cond_broadcast(&reconfig_cond);
-	slurm_mutex_unlock(&reconfig_mutex);
-}
 
 static void _attempt_reconfig(void)
 {
 	info("Attempting to reconfigure");
 
-	if (conmgr_enabled()) {
-		slurm_mutex_lock(&reconfig_mutex);
-		if (!waiting_conmgr_quiesce) {
-			waiting_conmgr_quiesce = true;
-			slurm_mutex_unlock(&reconfig_mutex);
-			conmgr_add_work_quiesced_fifo(_try_to_reconfig_deferred,
-						      NULL);
-		} else {
-			slurm_mutex_unlock(&reconfig_mutex);
-		}
-	} else {
-		reconfig_rc = _try_to_reconfig();
-	}
+	reconfig_rc = _try_to_reconfig();
 
 	slurm_mutex_lock(&reconfig_mutex);
 	while (reconfig_threads) {
@@ -342,6 +308,110 @@ static void _attempt_reconfig(void)
 	}
 
 	recover = 2;
+}
+
+static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Terminate signal SIGINT received");
+	slurmctld_shutdown();
+}
+
+static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Terminate signal SIGTERM received");
+	slurmctld_shutdown();
+}
+
+static void _on_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGCHLD. Ignoring");
+}
+
+static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Terminate signal SIGQUIT received");
+	slurmctld_shutdown();
+}
+
+static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGTSTP. Ignoring");
+}
+
+static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Reconfigure signal (SIGHUP) received");
+
+	if (!slurmctld_primary) {
+		backup_on_sighup();
+		return;
+	}
+
+	reconfig = true;
+	slurmctld_shutdown();
+}
+
+static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGUSR1. Ignoring.");
+}
+
+static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	static const slurmctld_lock_t conf_write_lock = {
+		.conf = WRITE_LOCK,
+	};
+
+	info("Logrotate signal (SIGUSR2) received");
+
+	lock_slurmctld(conf_write_lock);
+	update_logging();
+	if (slurmctld_primary)
+		slurmscriptd_update_log_level(slurm_conf.slurmctld_debug, true);
+	unlock_slurmctld(conf_write_lock);
+
+	if (slurmctld_primary && jobcomp_g_set_location())
+		error("%s: JobComp set location operation failed on SIGUSR2",
+		      __func__);
+}
+
+static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("Caught SIGPIPE. Ignoring.");
+}
+
+static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug("Caught SIGTTIN. Ignoring.");
+}
+
+static void _on_sigxcpu(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug("Caught SIGXCPU. Ignoring.");
+}
+
+static void _on_sigabrt(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	info("SIGABRT received");
+	slurmctld_shutdown();
+	dump_core = true;
+}
+
+static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
+				      void *arg)
+{
+	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
+	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
+	conmgr_add_work_signal(SIGCHLD, _on_sigchld, NULL);
+	conmgr_add_work_signal(SIGQUIT, _on_sigquit, NULL);
+	conmgr_add_work_signal(SIGTSTP, _on_sigtstp, NULL);
+	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
+	conmgr_add_work_signal(SIGUSR1, _on_sigusr1, NULL);
+	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
+	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
+	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
+	conmgr_add_work_signal(SIGXCPU, _on_sigxcpu, NULL);
+	conmgr_add_work_signal(SIGABRT, _on_sigabrt, NULL);
 }
 
 /* main - slurmctld main function, start various threads and process RPCs */
@@ -443,12 +513,11 @@ int main(int argc, char **argv)
 		sched_debug("slurmctld starting");
 	}
 
-	/*
-	 * This must happen before we spawn any threads
-	* which are not designed to handle them
-	*/
-	if (xsignal_block(controller_sigarray) < 0)
-		error("Unable to block signals");
+	conmgr_init(SLURMCTLD_CONMGR_DEFAULT_THREADS,
+		    SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS,
+		    (conmgr_callbacks_t) {0});
+
+	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
@@ -468,8 +537,13 @@ int main(int argc, char **argv)
 		become_slurm_user();
 	}
 
+	rate_limit_init();
+	rpc_queue_init();
+
 	/* open ports must happen after become_slurm_user() */
 	 _open_ports();
+
+	conmgr_run(false);
 
 	/*
 	 * Create StateSaveLocation directory if necessary.
@@ -733,18 +807,6 @@ int main(int argc, char **argv)
 			fatal("failed to initialize mcs plugin");
 
 		/*
-		 * create attached thread to process RPCs
-		 */
-		slurm_thread_create(&slurmctld_config.thread_id_rpc,
-				    _slurmctld_rpc_mgr, NULL);
-
-		/*
-		 * create attached thread for signal handling
-		 */
-		slurm_thread_create(&slurmctld_config.thread_id_sig,
-				    _slurmctld_signal_hand, NULL);
-
-		/*
 		 * create attached thread for state save
 		 */
 		slurm_thread_create(&slurmctld_config.thread_id_save,
@@ -791,8 +853,6 @@ int main(int argc, char **argv)
 		agent_fini();
 
 		/* termination of controller */
-		slurm_thread_join(slurmctld_config.thread_id_rpc);
-		slurmctld_config.thread_id_rpc = (pthread_t) 0;
 		switch_g_save();
 		priority_g_fini();
 		shutdown_state_save();
@@ -800,7 +860,6 @@ int main(int argc, char **argv)
 		slurm_cond_signal(&purge_thread_cond); /* wake up last time */
 		slurm_mutex_unlock(&purge_thread_lock);
 		slurm_thread_join(slurmctld_config.thread_id_purge_files);
-		slurm_thread_join(slurmctld_config.thread_id_sig);
 		slurm_thread_join(slurmctld_config.thread_id_save);
 		slurm_mutex_lock(&slurmctld_config.acct_update_lock);
 		slurm_cond_broadcast(&slurmctld_config.acct_update_cond);
@@ -928,8 +987,12 @@ int main(int argc, char **argv)
 }
 #endif
 
-	_close_ports();
+	conmgr_request_shutdown();
 
+	conmgr_fini();
+
+	rate_limit_shutdown();
+	rpc_queue_shutdown();
 	log_fini();
 	sched_log_fini();
 
@@ -1057,8 +1120,6 @@ static void  _init_config(void)
 	slurm_mutex_init(&slurmctld_config.thread_count_lock);
 	slurm_cond_init(&slurmctld_config.thread_count_cond, NULL);
 	slurmctld_config.thread_id_main    = (pthread_t) 0;
-	slurmctld_config.thread_id_sig     = (pthread_t) 0;
-	slurmctld_config.thread_id_rpc     = (pthread_t) 0;
 }
 
 static int _try_to_reconfig(void)
@@ -1080,13 +1141,13 @@ static int _try_to_reconfig(void)
 		setenvf(&child_env, "SLURMCTLD_RECONF_PIDFD", "%d", pidfd);
 		fd_set_noclose_on_exec(pidfd);
 	}
-	if (listen_nports) {
+	if (listeners.count) {
 		char *ports = NULL, *pos = NULL;
 		setenvf(&child_env, "SLURMCTLD_RECONF_LISTEN_COUNT", "%d",
-			listen_nports);
-		for (int i = 0; i < listen_nports; i++) {
-			xstrfmtcatat(ports, &pos, "%d,", listen_fds[i].fd);
-			fd_set_noclose_on_exec(listen_fds[i].fd);
+			listeners.count);
+		for (int i = 0; i < listeners.count; i++) {
+			xstrfmtcatat(ports, &pos, "%d,", listeners.fd[i]);
+			fd_set_noclose_on_exec(listeners.fd[i]);
 		}
 		setenvf(&child_env, "SLURMCTLD_RECONF_LISTEN_FDS", "%s", ports);
 		xfree(ports);
@@ -1154,8 +1215,8 @@ start_child:
 			continue;
 		if (fd == pidfd)
 			continue;
-		for (int i = 0; i < listen_nports; i++) {
-			if (fd == listen_fds[i].fd) {
+		for (int i = 0; i < listeners.count; i++) {
+			if (fd == listeners.fd[i]) {
 				match = true;
 				break;
 			}
@@ -1207,8 +1268,7 @@ extern void reconfigure_slurm(slurm_msg_t *msg)
 {
 	xassert(msg);
 
-	if (slurmctld_config.thread_id_sig)
-		pthread_kill(slurmctld_config.thread_id_sig, SIGHUP);
+	pthread_kill(pthread_self(), SIGHUP);
 
 	if (!daemonize && !under_systemd) {
 		/*
@@ -1247,73 +1307,77 @@ extern void queue_job_scheduler(void)
 	slurm_mutex_unlock(&sched_cnt_mutex);
 }
 
-/* _slurmctld_signal_hand - Process daemon-wide signals */
-static void *_slurmctld_signal_hand(void *no_data)
+static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 {
-	int sig;
-	int i, rc;
-	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, SIGUSR2, 0};
-	sigset_t set;
-	slurmctld_lock_t conf_write_lock = { .conf = WRITE_LOCK };
+	debug3("%s: [%s] Successfully opened RPC listener",
+	       __func__, conmgr_fd_get_name(con));
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "sigmgr", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "sigmgr");
-	}
-#endif
-
-	/* Make sure no required signals are ignored (possibly inherited) */
-	for (i = 0; sig_array[i]; i++)
-		xsignal_default(sig_array[i]);
-
-	sigfillset(&set);
-	xsignal_set_mask(&set);
-	xsignal_sigset_create(sig_array, &set);
-
-	while (1) {
-		rc = sigwait(&set, &sig);
-		if (rc == EINTR)
-			continue;
-		switch (sig) {
-		case SIGINT:	/* kill -2  or <CTRL-C> */
-		case SIGTERM:	/* kill -15 */
-			info("Terminate signal (SIGINT or SIGTERM) received");
-			slurmctld_config.shutdown_time = time(NULL);
-			slurmctld_shutdown();
-			return NULL;	/* Normal termination */
-			break;
-		case SIGHUP:	/* kill -1 */
-			info("Reconfigure signal (SIGHUP) received");
-			reconfig = true;
-			slurmctld_config.shutdown_time = time(NULL);
-			slurmctld_shutdown();
-			return NULL;
-			break;
-		case SIGABRT:	/* abort */
-			info("SIGABRT received");
-			slurmctld_config.shutdown_time = time(NULL);
-			slurmctld_shutdown();
-			dump_core = true;
-			return NULL;
-		case SIGUSR2:
-			info("Logrotate signal (SIGUSR2) received");
-			lock_slurmctld(conf_write_lock);
-			update_logging();
-			slurmscriptd_update_log_level(
-				slurm_conf.slurmctld_debug, true);
-			unlock_slurmctld(conf_write_lock);
-			if (jobcomp_g_set_location() != SLURM_SUCCESS)
-				error("%s: JobComp set location operation failed on SIGUSR2",
-				      __func__);
-			break;
-		default:
-			error("Invalid signal (%d) received", sig);
-		}
-	}
+	return con;
 }
 
-static void _sig_handler(int signal)
+static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 {
+	xassert(con == arg);
+
+	debug3("%s: [%s] Closed RPC listener",
+	       __func__, conmgr_fd_get_name(con));
+}
+
+static void *_on_primary_connection(conmgr_fd_t *con, void *arg)
+{
+	int rc;
+
+	debug3("%s: [%s] PRIMARY: New RPC connection",
+	       __func__, conmgr_fd_get_name(con));
+
+	if (slurmctld_primary)
+
+	if ((rc = conmgr_queue_extract_con_fd(con, _service_connection,
+					      XSTRINGIFY(_service_connection),
+					      NULL))) {
+		error("%s: [%s] Extracting FDs failed: %s",
+		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
+		return NULL;
+	}
+
+	return con;
+}
+
+static void _on_primary_finish(conmgr_fd_t *con, void *arg)
+{
+	xassert(arg == con);
+
+	debug3("%s: [%s] PRIMARY: RPC connection closed",
+	       __func__, conmgr_fd_get_name(con));
+}
+
+static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
+{
+	fatal_abort("should never happen");
+}
+
+static void *_on_connection(conmgr_fd_t *con, void *arg)
+{
+	if (slurmctld_primary)
+		return _on_primary_connection(con, arg);
+	else
+		return on_backup_connection(con, arg);
+}
+
+static void _on_finish(conmgr_fd_t *con, void *arg)
+{
+	if (slurmctld_primary)
+		return _on_primary_finish(con, arg);
+	else
+		return on_backup_finish(con, arg);
+}
+
+static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
+{
+	if (slurmctld_primary)
+		return _on_primary_msg(con, msg, arg);
+	else
+		return on_backup_msg(con, msg, arg);
 }
 
 /*
@@ -1321,127 +1385,42 @@ static void _sig_handler(int signal)
  */
 static void _open_ports(void)
 {
-	slurm_addr_t srv_addr;
+	static const conmgr_events_t events = {
+		.on_listen_connect = _on_listen_connect,
+		.on_listen_finish = _on_listen_finish,
+		.on_connection = _on_connection,
+		.on_msg = _on_msg,
+		.on_finish = _on_finish,
+	};
 
 	/* initialize ports for RPCs */
 	if (original) {
-		if (!(listen_nports = slurm_conf.slurmctld_port_count))
+		if (!(listeners.count = slurm_conf.slurmctld_port_count))
 			fatal("slurmctld port count is zero");
-		listen_fds = xcalloc(listen_nports, sizeof(struct pollfd));
-		for (int i = 0; i < listen_nports; i++) {
-			listen_fds[i].fd = slurm_init_msg_engine_port(
+		listeners.fd = xcalloc(listeners.count, sizeof(*listeners.fd));
+		for (int i = 0; i < listeners.count; i++) {
+			listeners.fd[i] = slurm_init_msg_engine_port(
 				slurm_conf.slurmctld_port + i);
-			listen_fds[i].events = POLLIN;
-			if (listen_fds[i].fd == SLURM_ERROR)
-				fatal("slurm_init_msg_engine_port: error %m");
-			if (slurm_get_stream_addr(listen_fds[i].fd,
-						  &srv_addr)) {
-				error("slurm_get_stream_addr error %m");
-			} else {
-				debug2("slurmctld listening on %pA", &srv_addr);
-			}
 		}
 	} else {
 		char *pos = getenv("SLURMCTLD_RECONF_LISTEN_FDS");
-		listen_nports = atoi(getenv("SLURMCTLD_RECONF_LISTEN_COUNT"));
-		listen_fds = xcalloc(listen_nports, sizeof(struct pollfd));
-		for (int i = 0; i < listen_nports; i++) {
-			listen_fds[i].fd = strtol(pos, &pos, 10);
-			listen_fds[i].events = POLLIN;
+		listeners.count = atoi(getenv("SLURMCTLD_RECONF_LISTEN_COUNT"));
+		listeners.fd = xcalloc(listeners.count, sizeof(*listeners.fd));
+		for (int i = 0; i < listeners.count; i++) {
+			listeners.fd[i] = strtol(pos, &pos, 10);
 			pos++; /* skip comma */
 		}
 	}
-}
 
-static void _close_ports(void)
-{
-	for (int i = 0; i < listen_nports; i++)
-		close(listen_fds[i].fd);
-	xfree(listen_fds);
-}
+	for (int i = 0; i < listeners.count; i++) {
+		int rc;
 
-
-/*
- * _slurmctld_rpc_mgr - Read incoming RPCs and create pthread for each
- */
-static void *_slurmctld_rpc_mgr(void *no_data)
-{
-	int *newsockfd;
-	slurm_addr_t cli_addr;
-	int fd_next = 0, i;
-	/* Locks: Read config */
-	int sigarray[] = {SIGUSR1, 0};
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "rpcmgr", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "rpcmgr");
+		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
+						   CON_TYPE_RPC, events,
+						   NULL)))
+			fatal("%s: unable to process fd:%d error:%s",
+			      __func__, listeners.fd[i], slurm_strerror(rc));
 	}
-#endif
-
-	debug3("%s pid = %u", __func__, getpid());
-
-	rate_limit_init();
-	rpc_queue_init();
-
-	/*
-	 * Prepare to catch SIGUSR1 to interrupt accept().
-	 * This signal is generated by the slurmctld signal
-	 * handler thread upon receipt of SIGABRT, SIGINT,
-	 * or SIGTERM. That thread does all processing of
-	 * all signals.
-	 */
-	xsignal(SIGUSR1, _sig_handler);
-	xsignal_unblock(sigarray);
-
-	/*
-	 * Process incoming RPCs until told to shutdown
-	 */
-	while (_wait_for_server_thread()) {
-		if (poll(listen_fds, listen_nports, -1) == -1) {
-			if (errno != EINTR)
-				error("slurm_accept_msg_conn poll: %m");
-			server_thread_decr();
-			continue;
-		}
-
-		/* find one to process */
-		for (i = 0; i < listen_nports; i++) {
-			if (listen_fds[(fd_next + i) % listen_nports].revents) {
-				i = (fd_next + i) % listen_nports;
-				break;
-			}
-		}
-		fd_next = (i + 1) % listen_nports;
-
-		newsockfd = xmalloc(sizeof(*newsockfd));
-		if ((*newsockfd = slurm_accept_msg_conn(listen_fds[i].fd,
-							&cli_addr))
-		    == SLURM_ERROR) {
-			if (errno != EINTR)
-				error("slurm_accept_msg_conn: %m");
-			server_thread_decr();
-			xfree(newsockfd);
-			continue;
-		}
-
-		log_flag(PROTOCOL, "%s: accept() connection from %pA",
-			 __func__, &cli_addr);
-
-		if (slurmctld_config.shutdown_time) {
-			slurmctld_diag_stats.proc_req_raw++;
-			_service_connection(newsockfd);
-		} else {
-			slurm_thread_create_detached(_service_connection,
-						     newsockfd);
-		}
-	}
-
-	debug3("%s shutting down", __func__);
-
-	rate_limit_shutdown();
-	rpc_queue_shutdown();
-
-	return NULL;
 }
 
 /*
@@ -1450,17 +1429,15 @@ static void *_slurmctld_rpc_mgr(void *no_data)
  *	upon completion
  * RET - NULL
  */
-static void *_service_connection(void *arg)
+static void _service_connection(conmgr_callback_args_t conmgr_args,
+				int input_fd, int output_fd, void *arg)
 {
-	int fd = *((int *) arg);
+	int fd = input_fd;
 	slurm_msg_t *msg = xmalloc(sizeof *msg);
 	xfree(arg);
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "srvcn", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "srvcn");
-	}
-#endif
+	xassert(input_fd == output_fd);
+
 	slurm_msg_t_init(msg);
 	msg->flags |= SLURM_MSG_KEEP_BUFFER;
 	/*
@@ -1496,8 +1473,7 @@ static void *_service_connection(void *arg)
 		int rc = rpc_enqueue(msg);
 
 		if (rc == SLURM_SUCCESS) {
-			server_thread_decr();
-			return NULL;
+			return;
 		} else if (rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) {
 			slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
 		} else if (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP) {
@@ -1513,51 +1489,6 @@ static void *_service_connection(void *arg)
 
 cleanup:
 	slurm_free_msg(msg);
-	server_thread_decr();
-
-	return NULL;
-}
-
-/* Increment slurmctld_config.server_thread_count and don't return
- * until its value is no larger than MAX_SERVER_THREADS,
- * RET true unless shutdown in progress */
-static bool _wait_for_server_thread(void)
-{
-	bool print_it = true;
-	bool rc = true;
-
-	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
-	while (1) {
-		if (slurmctld_config.shutdown_time) {
-			rc = false;
-			break;
-		}
-		if (slurmctld_config.server_thread_count < max_server_threads) {
-			slurmctld_config.server_thread_count++;
-			break;
-		}
-
-		/*
-		 * Wait for state change and retry, this is just a delay and
-		 * not an error. This can happen when the epilog completes on
-		 * a bunch of nodes at the same time, which can easily happen
-		 * for highly parallel jobs.
-		 */
-		if (print_it) {
-			static time_t last_print_time = 0;
-			time_t now = time(NULL);
-			if (difftime(now, last_print_time) > 2) {
-				verbose("server_thread_count over limit (%d), waiting",
-					slurmctld_config.server_thread_count);
-				last_print_time = now;
-			}
-			print_it = false;
-		}
-		slurm_cond_wait(&slurmctld_config.thread_count_cond,
-				&slurmctld_config.thread_count_lock);
-	}
-	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
-	return rc;
 }
 
 /* Decrement slurmctld thread count (as applies to thread limit) */
@@ -2755,14 +2686,10 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 int slurmctld_shutdown(void)
 {
 	sched_debug("slurmctld terminating");
+	slurmctld_config.shutdown_time = time(NULL);
 	slurm_cond_signal(&shutdown_cond);
-	if (slurmctld_config.thread_id_rpc) {
-		pthread_kill(slurmctld_config.thread_id_rpc, SIGUSR1);
-		return SLURM_SUCCESS;
-	} else {
-		error("thread_id_rpc not set");
-		return SLURM_ERROR;
-	}
+	pthread_kill(pthread_self(), SIGUSR1);
+	return SLURM_SUCCESS;
 }
 
 /*

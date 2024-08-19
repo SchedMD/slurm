@@ -54,7 +54,6 @@ extern bool pollctl_events_has_hangup(pollctl_events_t events);
 /*
  * Create new polling controller.
  * IN max_connections - Max connections same as mgr.max_connections
- * RET ptr to polling controller (ptcl). Must be released via pollctl_fini().
  */
 extern void pollctl_init(const int max_connections);
 
