@@ -703,7 +703,6 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 	job_record_t *job_ptr = NULL;
 	struct timeval start_tv = {0, 0};
 	int tested_jobs = 0;
-	int job_part_pairs = 0;
 	split_job_t split_job = { 0 };
 	build_job_queue_for_part_t setup_job = {
 		.backfill = backfill,
@@ -759,7 +758,8 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 				     "of %d jobs tested, %d job-partition "
 				     "pairs added",
 				     __func__, build_queue_timeout, tested_jobs,
-				     list_count(job_list), job_part_pairs);
+				     list_count(job_list),
+				     setup_job.job_part_pairs);
 				last_log_time = setup_job.now;
 			}
 			break;
