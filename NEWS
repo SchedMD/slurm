@@ -98,6 +98,8 @@ documents those changes that are of interest to users and administrators.
     when loading data_parser plugins fail due to NULL dereference.
  -- Add autodetected gpus to the output of slurmd -C
  -- Remove burst_buffer/lua call slurm.job_info_to_string().
+ -- Add SchedulerParameters=bf_allow_magnetic_slot option. It allows jobs in
+    magnetic reservations to be planned by backfill scheduler.
 
 * Changes in Slurm 24.05.3
 ==========================

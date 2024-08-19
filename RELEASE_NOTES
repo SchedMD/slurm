@@ -26,6 +26,8 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
+ -- Add SchedulerParameters=bf_allow_magnetic_slot option. It allows jobs in
+    magnetic reservations to be planned by backfill scheduler.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
