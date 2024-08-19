@@ -719,19 +719,19 @@ extern void *watch(void *arg)
 				 list_count(mgr.connections),
 				 list_count(mgr.listen_conns),
 				 list_count(mgr.complete_conns),
-				 (mgr.poll_active ? 'T' : 'F'),
-				 (mgr.inspecting ? 'T' : 'F'),
-				 (mgr.shutdown_requested ? 'T' : 'F'),
-				 (mgr.quiesced ? 'T' : 'F'),
+				 BOOL_CHARIFY(mgr.poll_active),
+				 BOOL_CHARIFY(mgr.inspecting),
+				 BOOL_CHARIFY(mgr.shutdown_requested),
+				 BOOL_CHARIFY(mgr.quiesced),
 				 list_count(mgr.quiesced_work),
-				 (mgr.waiting_on_work ? 'T' : 'F'));
+				 BOOL_CHARIFY(mgr.waiting_on_work));
 
 		EVENT_WAIT(&mgr.watch_sleep, &mgr.mutex);
 		mgr.waiting_on_work = false;
 	}
 
 	log_flag(CONMGR, "%s: returning shutdown_requested=%c connections=%u listen_conns=%u",
-		 __func__, (mgr.shutdown_requested ? 'T' : 'F'),
+		 __func__, BOOL_CHARIFY(mgr.shutdown_requested),
 		 list_count(mgr.connections), list_count(mgr.listen_conns));
 
 	xassert(mgr.watch_thread == pthread_self());
