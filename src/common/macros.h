@@ -394,4 +394,9 @@ do {				\
 #define XSTRINGIFY(s) XSTRINGIFY2(s)
 #define XSTRINGIFY2(s) #s
 
+/* Macro to stringify bool for logging */
+#define BOOL_CHARIFY(s) ((s) ? 'T' : 'F')
+/* Macro to stringify bool for logging */
+#define BOOL_STRINGIFY(s) ((s) ? "True" : "False")
+
 #endif /* !_MACROS_H */
