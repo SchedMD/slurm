@@ -143,8 +143,6 @@ typedef struct {
 
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
-static void _job_queue_append(list_t *job_queue, job_record_t *job_ptr,
-			      part_record_t *part_ptr, uint32_t priority);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
 static bool	_job_runnable_test2(job_record_t *job_ptr, time_t now,
 				    bool check_min_time);
@@ -265,11 +263,11 @@ static int _queue_resv_list(void *x, void *key)
 }
 
 static void _job_queue_append(list_t *job_queue, job_record_t *job_ptr,
-			      part_record_t *part_ptr, uint32_t prio)
+			      uint32_t prio)
 {
 	job_queue_req_t job_queue_req = { .job_ptr = job_ptr,
 					  .job_queue = job_queue,
-					  .part_ptr = part_ptr,
+					  .part_ptr = job_ptr->part_ptr,
 					  .prio = prio };
 
 	/* We have multiple reservations, process and end here */
@@ -556,12 +554,10 @@ static int _build_job_queue_for_part(void *x, void *arg)
 	setup_job->job_part_pairs++;
 	if (job_ptr->part_prio && job_ptr->part_prio->priority_array) {
 		_job_queue_append(setup_job->job_queue, job_ptr,
-				  job_ptr->part_ptr,
 				  job_ptr->part_prio->
 				  priority_array[setup_job->part_inx]);
 	} else {
 		_job_queue_append(setup_job->job_queue, job_ptr,
-				  job_ptr->part_ptr,
 				  job_ptr->priority);
 	}
 
