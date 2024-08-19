@@ -10103,9 +10103,9 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 				end_time = MAX(dump_job_ptr->end_time,
 					       (start_time + time_limit * 60));
 			}
-		} else if (begin_time > time(NULL)) {
+		} else if (dump_job_ptr->details->begin_time > time(NULL)) {
 			/* earliest start time in the future */
-			start_time = begin_time;
+			start_time = dump_job_ptr->details->begin_time;
 			if (time_limit != NO_VAL) {
 				end_time = MAX(dump_job_ptr->end_time,
 					       (start_time + time_limit * 60));
