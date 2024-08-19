@@ -256,10 +256,10 @@ static int _handle_connection(void *x, void *arg)
 			log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u work_active=%c can_read=%c can_write=%c on_data_tried=%c work=%d write_complete_work=%d",
 				 __func__, con->name, get_buf_offset(con->in),
 				 list_count(con->out),
-				 (con->work_active ? 'T' : 'F'),
-				 (con->can_read ? 'T' : 'F'),
-				 (con->can_write ? 'T' : 'F'),
-				 (con->on_data_tried ? 'T' : 'F'),
+				 BOOL_CHARIFY(con->work_active),
+				 BOOL_CHARIFY(con->can_read),
+				 BOOL_CHARIFY(con->can_write),
+				 BOOL_CHARIFY(con->on_data_tried),
 				 list_count(con->work),
 				 list_count(con->write_complete_work));
 		}
