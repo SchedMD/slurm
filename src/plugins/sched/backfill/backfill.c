@@ -1690,7 +1690,7 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 	 * Don't count queue records for magnetic reservation against
 	 * backfill limits.
 	 */
-	if (job_ptr->bit_flags & JOB_MAGNETIC)
+	if ((job_ptr->bit_flags & JOB_MAGNETIC) && !bf_allow_magnetic_slot)
 		return false;
 
 	/* Increment our user/partition limit counters as needed */
@@ -2174,7 +2174,8 @@ next_task:
 		 * Don't count queue records for magnetic reservation against
 		 * backfill limits.
 		 */
-		if (job_ptr->bit_flags & JOB_MAGNETIC) {
+		if ((job_ptr->bit_flags & JOB_MAGNETIC) &&
+		    !bf_allow_magnetic_slot) {
 			already_counted = true;
 		} else {
 			job_test_count++;
