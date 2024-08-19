@@ -699,7 +699,6 @@ extern void job_queue_rec_resv_list(job_queue_rec_t *job_queue_rec)
 extern list_t *build_job_queue(bool clear_start, bool backfill)
 {
 	static time_t last_log_time = 0;
-	list_t *job_queue = NULL;
 	list_itr_t *job_iterator;
 	job_record_t *job_ptr = NULL;
 	struct timeval start_tv = {0, 0};
@@ -707,9 +706,13 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 	int job_part_pairs = 0;
 	time_t now = time(NULL);
 	split_job_t split_job = { 0 };
+	build_job_queue_for_part_t setup_job = {
+		.backfill = backfill,
+		.now = time(NULL),
+	};
 	/* init the timer */
 	(void) slurm_delta_tv(&start_tv);
-	job_queue = list_create(xfree_ptr);
+	setup_job.job_queue = list_create(xfree_ptr);
 
 	(void) list_for_each(job_list, _split_job_on_schedule, &split_job);
 
@@ -731,6 +734,8 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 	 */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
+		setup_job.job_ptr = job_ptr;
+
 		if (IS_JOB_PENDING(job_ptr)) {
 			/* Remove backfill flag */
 			job_ptr->bit_flags &= ~BACKFILL_SCHED;
@@ -769,15 +774,8 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 		if (!_job_runnable_test1(job_ptr, clear_start))
 			continue;
 
+		setup_job.part_inx = -1;
 		if (job_ptr->part_ptr_list) {
-			build_job_queue_for_part_t setup_job = {
-				.backfill = backfill,
-				.job_ptr = job_ptr,
-				.job_queue = job_queue,
-				.part_inx = -1,
-				.now = time(NULL),
-			};
-
 			(void) list_for_each(job_ptr->part_ptr_list,
 					     _build_job_queue_for_part,
 					     &setup_job);
@@ -796,16 +794,13 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 				job_ptr->bit_flags |= JOB_PART_ASSIGNED;
 
 			}
-			if (!_job_runnable_test2(job_ptr, now, backfill))
-				continue;
-			job_part_pairs++;
-			_job_queue_append(job_queue, job_ptr,
-					  job_ptr->part_ptr, job_ptr->priority);
+			(void) _build_job_queue_for_part(job_ptr->part_ptr,
+							 &setup_job);
 		}
 	}
 	list_iterator_destroy(job_iterator);
 
-	return job_queue;
+	return setup_job.job_queue;
 }
 
 /*
