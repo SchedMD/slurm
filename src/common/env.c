@@ -2140,6 +2140,7 @@ static int _child_fn(void *arg)
 static int _clone_env_child(child_args_t *child_args)
 {
 	char *child_stack;
+	int rc = 0;
 	child_stack = mmap(NULL, STACK_SIZE, PROT_READ | PROT_WRITE,
 			   MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
 	if (child_stack == MAP_FAILED) {
@@ -2155,8 +2156,12 @@ static int _clone_env_child(child_args_t *child_args)
 	 * Killing the 'child' pid will kill all the namespace, since in the
 	 * namespace, this 'child' is pid 1.
 	 */
-	return clone(_child_fn, child_stack + STACK_SIZE,
-		     (SIGCHLD|CLONE_NEWPID|CLONE_NEWNS), child_args);
+	rc = clone(_child_fn, child_stack + STACK_SIZE,
+		   (SIGCHLD|CLONE_NEWPID|CLONE_NEWNS), child_args);
+	/* Memory deallocated only in parent address space, child unaffected */
+	if (munmap(child_stack, STACK_SIZE))
+		error("%s: failed to munmap child stack: %m", __func__);
+	return rc;
 }
 #endif
 
