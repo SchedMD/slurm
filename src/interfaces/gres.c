@@ -227,6 +227,7 @@ typedef struct {
 
 typedef struct {
 	int core_cnt;
+	int cores_per_sock;
 	bool cpu_config_err;
 	int cpus_config;
 	uint64_t dev_cnt;
@@ -238,6 +239,7 @@ typedef struct {
 	char *node_name;
 	int rc;
 	char **reason_down;
+	int sock_cnt;
 	uint64_t tot_gres_cnt;
 } rebuild_topo_t;
 
@@ -3591,6 +3593,27 @@ static int _foreach_rebuild_topo(void *x, void *args)
 				gres_ns->topo_core_bitmap[topo_cnt]);
 			gres_ns->topo_core_bitmap[topo_cnt] = tmp_bitmap;
 		}
+		/*
+		 * Check to make sure topo_core_bitmap either
+		 * fills the socket or doesn't at all.
+		 */
+		for (int i = 0; (i < rebuild_topo->sock_cnt); i++) {
+			int set_cnt = bit_set_count_range(
+				tmp_bitmap, i * rebuild_topo->cores_per_sock,
+				(i + 1) * rebuild_topo->cores_per_sock);
+			if (set_cnt &&
+			    (set_cnt != rebuild_topo->cores_per_sock)) {
+				error("%s: %s: GRES core specification %s doesn't match socket boundaries. (Socket %d is cores %d-%d)",
+				      __func__, gres_ctx->gres_type,
+				      bit_fmt_full(tmp_bitmap), i,
+				      i * rebuild_topo->cores_per_sock,
+				      (i + 1) * rebuild_topo->cores_per_sock);
+				FREE_NULL_BITMAP(
+					gres_ns->topo_core_bitmap[topo_cnt]);
+				rebuild_topo->rc = ESLURM_INVALID_GRES;
+				return -1;
+			}
+		}
 		rebuild_topo->cpus_config = rebuild_topo->core_cnt;
 	} else if (rebuild_topo->cpus_config && !rebuild_topo->cpu_config_err) {
 		rebuild_topo->cpu_config_err = true;
@@ -3726,6 +3749,7 @@ static int _foreach_add_gres_info(void *x, void *args)
 static int _node_config_validate(char *node_name, char *orig_config,
 				 gres_state_t *gres_state_node,
 				 int cpu_cnt, int core_cnt, int sock_cnt,
+				 int cores_per_sock,
 				 bool config_overrides, char **reason_down,
 				 slurm_gres_context_t *gres_ctx)
 {
@@ -3926,6 +3950,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	if (rebuild_topo) {
 		rebuild_topo_t rebuild_topo = {
 			.core_cnt = core_cnt,
+			.cores_per_sock = cores_per_sock,
 			.dev_cnt = dev_cnt,
 			.gres_ctx = gres_ctx,
 			.gres_ns = gres_ns,
@@ -3933,6 +3958,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			.node_name = node_name,
 			.rc = rc,
 			.reason_down = reason_down,
+			.sock_cnt = sock_cnt,
 			.tot_gres_cnt = slurmd_conf_tot.gres_cnt,
 		};
 		(void) list_for_each(gres_conf_list, _foreach_rebuild_topo,
@@ -4208,7 +4234,8 @@ extern int gres_node_config_validate(char *node_name,
 		}
 		rc2 = _node_config_validate(node_name, orig_config,
 					    gres_state_node, cpu_cnt, core_cnt,
-					    sock_cnt, config_overrides,
+					    sock_cnt, cores_per_sock,
+					    config_overrides,
 					    reason_down, &gres_context[i]);
 		rc = MAX(rc, rc2);
 		if (gres_id_sharing(gres_state_node->plugin_id))
