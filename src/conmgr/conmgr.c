@@ -46,6 +46,7 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
+#include "src/conmgr/polling.h"
 
 #define MAX_CONNECTIONS_DEFAULT 150
 
@@ -320,6 +321,9 @@ extern int conmgr_apply_params(const char *params)
 			slurm_mutex_unlock(&mgr.mutex);
 
 			log_flag(CONMGR, "%s: %s activated with %zu threads", __func__, tok, count);
+		} else if (!xstrcasecmp(tok, CONMGR_PARAM_POLL_ONLY)) {
+			log_flag(CONMGR, "%s: %s activated", __func__, tok);
+			pollctl_set_mode(POLL_MODE_POLL);
 		} else {
 			log_flag(CONMGR, "%s: Ignoring parameter %s",
 				 __func__, tok);

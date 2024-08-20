@@ -722,6 +722,7 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
 				       const char *func_name,
 				       void *func_arg);
 
+#define CONMGR_PARAM_POLL_ONLY "CONMGR_USE_POLL"
 #define CONMGR_PARAM_THREADS "CONMGR_THREADS="
 #define CONMGR_PARAM_MAX_CONN "CONMGR_MAX_CONNECTIONS="
 
