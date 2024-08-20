@@ -1067,11 +1067,15 @@ static void _setup_eio(int fd)
 }
 
 __attribute__((noreturn))
-static void _slurmscriptd_mainloop(int argc, char **argv, char *binary_path)
+extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
+					  char *binary_path)
 {
 	ssize_t i;
 	int rc = SLURM_ERROR, ack;
 	char *failed_plugin = NULL;
+
+	slurmscriptd_writefd = STDOUT_FILENO;
+	slurmscriptd_readfd = STDIN_FILENO;
 
 	_change_proc_name(argc, argv, "slurmscriptd");
 
@@ -1689,8 +1693,17 @@ extern int slurmscriptd_init(int argc, char **argv, char *binary_path)
 			      __func__);
 			_exit(1);
 		}
-		/* Main loop */
-		_slurmscriptd_mainloop(argc, argv, binary_path);
+		/*
+		 * Dup needed file descriptors and re-exec self.
+		 * We do not need to closeall() here because it will happen on
+		 * the re-exec.
+		 */
+		dup2(slurmscriptd_readfd, STDIN_FILENO);
+		dup2(slurmscriptd_writefd, STDOUT_FILENO);
+		dup2(slurmscriptd_writefd, STDERR_FILENO);
+		setenv(SLURMSCRIPTD_MODE_ENV, "1", 1);
+		execv(binary_path, argv);
+		fatal("%s: execv() failed: %m", __func__);
 		/* Never returns */
 	}
 

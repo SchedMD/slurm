@@ -430,6 +430,7 @@ int main(int argc, char **argv)
 	};
 	bool create_clustername_file;
 	bool backup_has_control = false;
+	bool slurmscriptd_mode = false;
 	char *conf_file;
 	stepmgr_ops_t stepmgr_ops = {0};
 
@@ -446,12 +447,14 @@ int main(int argc, char **argv)
 
 	if (getenv("SLURMCTLD_RECONF"))
 		original = false;
+	if (getenv(SLURMSCRIPTD_MODE_ENV))
+		slurmscriptd_mode = true;
 
 	/*
 	 * Make sure we have no extra open files which
 	 * would be propagated to spawned tasks.
 	 */
-	if (original)
+	if (original || slurmscriptd_mode)
 		closeall(3);
 
 	/*
@@ -474,6 +477,13 @@ int main(int argc, char **argv)
 	lock_slurmctld(config_write_lock);
 	update_logging();
 	unlock_slurmctld(config_write_lock);
+
+	if (slurmscriptd_mode) {
+		/* Cleanup env */
+		(void) unsetenv(SLURMSCRIPTD_MODE_ENV);
+		/* Execute in slurmscriptd mode. */
+		slurmscriptd_run_slurmscriptd(argc, argv, binary);
+	}
 
 	memset(&slurmctld_diag_stats, 0, sizeof(slurmctld_diag_stats));
 	/*

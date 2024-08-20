@@ -36,6 +36,16 @@
 #ifndef _HAVE_SLURMSCRIPTD_H
 #define _HAVE_SLURMSCRIPTD_H
 
+#define SLURMSCRIPTD_MODE_ENV "SLURMSCRIPTD_MODE"
+
+/*
+ * Run the the slurmscriptd main loop.
+ * Does not return - calls exit.
+ */
+__attribute__((noreturn))
+extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
+					  char *binary_path);
+
 extern int slurmscriptd_init(int argc, char **argv, char *binary_path);
 
 extern int slurmscriptd_fini(void);
