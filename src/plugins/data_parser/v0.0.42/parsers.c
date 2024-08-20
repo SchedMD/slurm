@@ -1102,7 +1102,7 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 
 			/*
 			 * There is a race condition here where the global
-			 * QOS list could have changed betwen the query of the
+			 * QOS list could have changed between the query of the
 			 * list and the bitstrs. Just error and have the user
 			 * try again if they want.
 			 */
@@ -9326,7 +9326,7 @@ static const parser_t PARSER_ARRAY(JOB_ALLOC_REQ)[] = {
 	add_parser(rtype, OPENAPI_WARNINGS, false, warnings, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME), "Query warnings")
 
 /*
- * Generic response when there is only possiblity of warnings/errors
+ * Generic response when there is only possibility of warnings/errors
  * and HTTP status code.
  */
 static const parser_t PARSER_ARRAY(OPENAPI_RESP)[] = {                            \
