@@ -4676,7 +4676,7 @@ static int PARSE_FUNC(JOB_DESC_MSG_CPU_FREQ)(const parser_t *const parser,
 					  &job->cpu_freq_gov))) {
 		xfree(str);
 		return parse_error(parser, args, parent_path, rc,
-				   "Invalid cpu_freuency");
+				   "Invalid cpu_frequency");
 	}
 
 	xfree(str);
