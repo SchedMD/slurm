@@ -130,6 +130,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmd - Fix node going into invalid state when using CPUSpecList and
     setting CPUs to the # of cores on a multithreaded node
  -- Fix reboot asap nodes being considered in backfill after a restart.
+ -- Fix --clusters/-M queries for clusters outside of a federation when
+    fed_display is configured.
 
 * Changes in Slurm 24.05.2
 ==========================
