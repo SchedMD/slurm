@@ -480,9 +480,13 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 			fatal_abort("should never happen");
 		}
 
-		log_flag(CONMGR, "%s: [%s] listener fd=%u can_read=%s read_eof=%s",
-			 __func__, con->name, fd, BOOL_STRINGIFY(con->can_read),
-			 BOOL_STRINGIFY(con->read_eof));
+
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char *flags = con_flags_string(con->flags);
+			log_flag(CONMGR, "%s: [%s] listener fd=%u flags=%s",
+				 __func__, con->name, fd, flags);
+			xfree(flags);
+		}
 
 		return SLURM_SUCCESS;
 	}
