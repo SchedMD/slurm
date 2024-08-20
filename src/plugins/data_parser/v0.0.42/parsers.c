@@ -639,7 +639,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->pointer_type);
 		xassert(!parser->array_type);
-		xassert(!parser->obj_openapi);
+		xassert(parser->obj_openapi == OPENAPI_FORMAT_ARRAY);
 	} else if (parser->model == PARSER_MODEL_LIST) {
 		/* parser of a List */
 		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
@@ -9750,6 +9750,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_ALLOC_RESP)[] = {
 		.type = DATA_PARSER_##typev,                                   \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = XSTRINGIFY(typet),                          \
+		.obj_openapi = OPENAPI_FORMAT_ARRAY,                           \
 		.size = sizeof(typet),                                         \
 		.needs = NEED_NONE,                                            \
 		.flag_bit_array = PARSER_FLAG_ARRAY(typev),                    \
