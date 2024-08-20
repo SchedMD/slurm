@@ -1682,17 +1682,6 @@ extern int slurmscriptd_init(int argc, char **argv, char *binary_path)
 				    _slurmctld_listener_thread, NULL);
 		debug("slurmctld: slurmscriptd fork()'d and initialized.");
 	} else { /* child (slurmscriptd_pid == 0) */
-		/* Close extra fd's. */
-		if (close(to_slurmscriptd[1]) < 0) {
-			error("%s: slurmscriptd: Unable to close write to_slurmscriptd in child: %m",
-			      __func__);
-			_exit(1);
-		}
-		if (close(to_slurmctld[0]) < 0) {
-			error("%s: slurmscriptd: Unable to close read to_slurmctld in child: %m",
-			      __func__);
-			_exit(1);
-		}
 		/*
 		 * Dup needed file descriptors and re-exec self.
 		 * We do not need to closeall() here because it will happen on
