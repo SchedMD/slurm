@@ -324,7 +324,7 @@ static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	info("Caught SIGCHLD. Ignoring");
+	debug5("Caught SIGCHLD. Ignoring");
 }
 
 static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
