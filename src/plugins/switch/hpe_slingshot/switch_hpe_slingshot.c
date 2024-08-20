@@ -130,7 +130,6 @@ extern int fini(void)
 	if (running_in_slurmctld() || active_outside_ctld) {
 		FREE_NULL_BITMAP(slingshot_state.vni_table);
 		xfree(slingshot_state.job_vnis);
-		slingshot_fini_instant_on();
 		slingshot_fini_collectives();
 		slingshot_free_config();
 	} else
@@ -572,7 +571,6 @@ extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 	job_record_t *job_ptr;
 	uint32_t job_id;
 	uint32_t node_cnt;
-	char *node_list;
 
 	if (!step_ptr) {
 		fatal("%s: step_ptr NULL not supported", __func__);
@@ -603,7 +601,6 @@ extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 		if (_copy_het_job_stepinfo(job, step_ptr))
 			return SLURM_SUCCESS;
 
-		node_list = NULL;
 		node_cnt = _get_het_job_node_cnt(step_ptr);
 		job_id = job_ptr->het_job_id;
 	} else if (step_ptr->step_id.step_het_comp != NO_VAL) {
@@ -611,12 +608,10 @@ extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 		if (_copy_het_step_stepinfo(job, step_ptr))
 			return SLURM_SUCCESS;
 
-		node_list = NULL;
 		node_cnt = job_ptr->node_cnt;
 		job_id = job_ptr->job_id;
 	} else {
 		/* This is a non-het step in a non-het job */
-		node_list = step_layout->node_list;
 		node_cnt = step_layout->node_cnt;
 		job_id = job_ptr->job_id;
 	}
@@ -633,12 +628,6 @@ extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 					 step_ptr->step_id.step_id))
 		return SLURM_ERROR;
 
-	/*
-	 * Fetch any Instant On data if configured;
-	 * don't fail launch on Instant On failure
-	 */
-	if (node_list)
-		slingshot_fetch_instant_on(job, node_list, node_cnt);
 	return SLURM_SUCCESS;
 }
 

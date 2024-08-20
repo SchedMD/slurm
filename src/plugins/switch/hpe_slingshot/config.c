@@ -820,9 +820,6 @@ extern bool slingshot_setup_config(const char *switch_params)
 	/* If fm_url is set, set up default values for fm_auth{dir} */
 	_config_fm_defaults();
 
-	/* Set up connection to jackaloped */
-	if (!slingshot_init_instant_on())
-		goto err;
 	/* Set up connection to fabric manager */
 	if (!slingshot_init_collectives())
 		goto err;

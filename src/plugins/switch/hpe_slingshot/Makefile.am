@@ -17,7 +17,6 @@ switch_hpe_slingshot_la_SOURCES = \
 	apinfo.c \
 	collectives.c \
 	config.c \
-	instant_on.c \
 	rest.c \
 	rest.h \
 	setup_nic.c \

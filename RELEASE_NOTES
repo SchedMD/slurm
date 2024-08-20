@@ -25,6 +25,7 @@ HIGHLIGHTS
  -- Add autodetected gpus to the output of slurmd -C
  -- Add ability to submit jobs with multiple QOS. These are sorted by priority
     highest being the first.
+ -- Removed the instant on feature from switch/hpe_slingshot.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
