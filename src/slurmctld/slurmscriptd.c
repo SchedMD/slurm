@@ -1066,8 +1066,61 @@ static void _setup_eio(int fd)
 	eio_new_initial_obj(msg_handle, eio_obj);
 }
 
-static void _slurmscriptd_mainloop(char *binary_path)
+__attribute__((noreturn))
+extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
+					  char *binary_path)
 {
+	ssize_t i;
+	int rc = SLURM_ERROR, ack;
+	char *failed_plugin = NULL;
+
+	slurmscriptd_writefd = STDOUT_FILENO;
+	slurmscriptd_readfd = STDIN_FILENO;
+
+	_change_proc_name(argc, argv, "slurmscriptd");
+
+	/* Test communications with slurmctld. */
+	ack = SLURM_SUCCESS;
+	i = write(slurmscriptd_writefd, &ack, sizeof(int));
+	if (i != sizeof(int)) {
+		error("%s: slurmscriptd: failed to send return code to slurmctld: %m",
+		      __func__);
+		_exit(1);
+	}
+	i = read(slurmscriptd_readfd, &rc, sizeof(int));
+	if (i < 0) {
+		error("%s: slurmscriptd: Can not read ack from slurmctld: %m",
+		      __func__);
+		_exit(1);
+	} else if (i != sizeof(int)) {
+		error("%s: slurmscriptd: slurmctld failed to send ack: %m",
+		      __func__);
+		_exit(1);
+	}
+
+	debug("slurmscriptd: Got ack from slurmctld");
+
+	/*
+	 * Initialize required plugins to avoid lazy linking.
+	 * If plugins fail to initialize, send an error to slurmctld.
+	 */
+	if (bb_g_init() != SLURM_SUCCESS) {
+		failed_plugin = "burst_buffer";
+		ack = SLURM_ERROR;
+	}
+
+	i = write(slurmscriptd_writefd, &ack, sizeof(int));
+	if (i != sizeof(int))
+		fatal("%s: Failed to send initialization code to slurmctld",
+		      __func__);
+	if (ack != SLURM_SUCCESS)
+		fatal("%s: Failed to initialize %s plugin",
+		      __func__, failed_plugin);
+
+	debug("Initialization successful");
+
+	slurm_mutex_init(&powersave_script_count_mutex);
+	slurm_mutex_init(&write_mutex);
 	if ((run_command_init(0, NULL, binary_path) != SLURM_SUCCESS) &&
 	    binary_path && binary_path[0])
 		fatal("%s: Unable to reliably execute %s",
@@ -1078,6 +1131,14 @@ static void _slurmscriptd_mainloop(char *binary_path)
 	debug("%s: started", __func__);
 	eio_handle_mainloop(msg_handle);
 	debug("%s: finished", __func__);
+
+#ifdef MEMORY_LEAK_DEBUG
+	track_script_fini();
+	slurm_mutex_destroy(&powersave_script_count_mutex);
+#endif
+
+	/* We never want to return from here, only exit. */
+	_exit(0);
 }
 
 static void *_slurmctld_listener_thread(void *x)
@@ -1540,7 +1601,7 @@ extern void slurmscriptd_update_log_level(int debug_level, bool log_rotate)
 			      false, NULL, NULL);
 }
 
-extern int slurmscriptd_init(int argc, char **argv, char *binary_path)
+extern int slurmscriptd_init(char **argv, char *binary_path)
 {
 	int to_slurmscriptd[2] = {-1, -1};
 	int to_slurmctld[2] = {-1, -1};
@@ -1621,74 +1682,18 @@ extern int slurmscriptd_init(int argc, char **argv, char *binary_path)
 				    _slurmctld_listener_thread, NULL);
 		debug("slurmctld: slurmscriptd fork()'d and initialized.");
 	} else { /* child (slurmscriptd_pid == 0) */
-		ssize_t i;
-		int rc = SLURM_ERROR, ack;
-		char *failed_plugin = NULL;
-
-		_change_proc_name(argc, argv, "slurmscriptd");
-
-		/* Close extra fd's. */
-		if (close(to_slurmscriptd[1]) < 0) {
-			error("%s: slurmscriptd: Unable to close write to_slurmscriptd in child: %m",
-			      __func__);
-			_exit(1);
-		}
-		if (close(to_slurmctld[0]) < 0) {
-			error("%s: slurmscriptd: Unable to close read to_slurmctld in child: %m",
-			      __func__);
-			_exit(1);
-		}
-		/* Test communiations with slurmctld. */
-		ack = SLURM_SUCCESS;
-		i = write(slurmscriptd_writefd, &ack, sizeof(int));
-		if (i != sizeof(int)) {
-			error("%s: slurmscriptd: failed to send return code to slurmctld: %m",
-			      __func__);
-			_exit(1);
-		}
-		i = read(slurmscriptd_readfd, &rc, sizeof(int));
-		if (i < 0) {
-			error("%s: slurmscriptd: Can not read ack from slurmctld: %m",
-			      __func__);
-			_exit(1);
-		} else if (i != sizeof(int)) {
-			error("%s: slurmscriptd: slurmctld failed to send ack: %m",
-			      __func__);
-			_exit(1);
-		}
-
-		debug("slurmscriptd: Got ack from slurmctld");
-
 		/*
-		 * Initialize required plugins to avoid lazy linking.
-		 * If plugins fail to initialize, send an error to slurmctld.
+		 * Dup needed file descriptors and re-exec self.
+		 * We do not need to closeall() here because it will happen on
+		 * the re-exec.
 		 */
-		if (bb_g_init() != SLURM_SUCCESS) {
-			failed_plugin = "burst_buffer";
-			ack = SLURM_ERROR;
-		}
-
-		i = write(slurmscriptd_writefd, &ack, sizeof(int));
-		if (i != sizeof(int))
-			fatal("%s: Failed to send initialization code to slurmctld",
-			      __func__);
-		if (ack != SLURM_SUCCESS)
-			fatal("%s: Failed to initialize %s plugin",
-			      __func__, failed_plugin);
-
-		debug("Initialization successful");
-
-		slurm_mutex_init(&powersave_script_count_mutex);
-		slurm_mutex_init(&write_mutex);
-		_slurmscriptd_mainloop(binary_path);
-
-#ifdef MEMORY_LEAK_DEBUG
-		track_script_fini();
-		slurm_mutex_destroy(&powersave_script_count_mutex);
-#endif
-
-		/* We never want to return from here, only exit. */
-		_exit(0);
+		dup2(slurmscriptd_readfd, STDIN_FILENO);
+		dup2(slurmscriptd_writefd, STDOUT_FILENO);
+		dup2(slurmscriptd_writefd, STDERR_FILENO);
+		setenv(SLURMSCRIPTD_MODE_ENV, "1", 1);
+		execv(binary_path, argv);
+		fatal("%s: execv() failed: %m", __func__);
+		/* Never returns */
 	}
 
 	return SLURM_SUCCESS;
