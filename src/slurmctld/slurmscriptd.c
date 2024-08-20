@@ -1601,7 +1601,7 @@ extern void slurmscriptd_update_log_level(int debug_level, bool log_rotate)
 			      false, NULL, NULL);
 }
 
-extern int slurmscriptd_init(int argc, char **argv, char *binary_path)
+extern int slurmscriptd_init(char **argv, char *binary_path)
 {
 	int to_slurmscriptd[2] = {-1, -1};
 	int to_slurmctld[2] = {-1, -1};

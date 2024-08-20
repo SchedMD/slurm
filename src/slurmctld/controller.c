@@ -597,7 +597,7 @@ int main(int argc, char **argv)
 	 * happen after we block signals so that thread doesn't catch any
 	 * signals.
 	 */
-	slurmscriptd_init(argc, argv, binary);
+	slurmscriptd_init(argv, binary);
 	if ((run_command_init(argc, argv, binary) != SLURM_SUCCESS) &&
 	    binary[0])
 		fatal("%s: Unable to reliably execute %s", __func__, binary);

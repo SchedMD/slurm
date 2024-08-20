@@ -46,7 +46,7 @@ __attribute__((noreturn))
 extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 					  char *binary_path);
 
-extern int slurmscriptd_init(int argc, char **argv, char *binary_path);
+extern int slurmscriptd_init(char **argv, char *binary_path);
 
 extern int slurmscriptd_fini(void);
 
