@@ -18635,7 +18635,7 @@ static int _overlap_and_running_internal(void *x, void *arg)
 	/* We always break if we find something not running */
 	if ((!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
 		overlap_args->rc = 0;
-		return 1;
+		return -1;
 	}
 
 	/*
