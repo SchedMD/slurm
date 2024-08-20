@@ -848,7 +848,7 @@ static char *_print_data_json(const data_t *d, char *buffer, int size)
 
 extern char *vxstrfmt(const char *fmt, va_list ap)
 {
-	char	*intermediate_fmt = NULL;
+	char *intermediate_fmt = NULL, *intermediate_pos = NULL;
 	char	*out_string = NULL;
 	char	*p;
 	bool found_other_formats = false;
@@ -863,7 +863,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 			 * no more format sequences, append the rest of
 			 * fmt and exit the loop:
 			 */
-			xstrcat(intermediate_fmt, fmt);
+			xstrcatat(intermediate_fmt, &intermediate_pos, fmt);
 			break;
 		}
 
@@ -918,7 +918,8 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 			 * append anything from fmt up to p to the intermediate
 			 * format string:
 			 */
-			xstrncat(intermediate_fmt, fmt, p - fmt);
+			xstrncatat(intermediate_fmt, &intermediate_pos,
+				   fmt, p - fmt);
 			fmt = p + 1;
 
 			/*
@@ -939,7 +940,9 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					for (int i = 0; i < cnt; i++ )
 						ptr = va_arg(ap_copy, void *);
 					addr_ptr = ptr;
-					xstrcat(intermediate_fmt,
+					xstrcatat(
+						intermediate_fmt,
+						&intermediate_pos,
 						_addr2fmt(
 							addr_ptr,
 							substitute_on_stack,
@@ -955,7 +958,9 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					va_copy(ap_copy, ap);
 					for (int i = 0; i < cnt; i++ )
 						d = va_arg(ap_copy, void *);
-					xstrcat(intermediate_fmt,
+					xstrcatat(
+						intermediate_fmt,
+						&intermediate_pos,
 						_print_data_json(
 							d,
 							substitute_on_stack,
@@ -971,7 +976,9 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					va_copy(ap_copy, ap);
 					for (int i = 0; i < cnt; i++ )
 						d = va_arg(ap_copy, void *);
-					xstrcat(intermediate_fmt,
+					xstrcatat(
+						intermediate_fmt,
+						&intermediate_pos,
 						_print_data_t(
 							d,
 							substitute_on_stack,
@@ -990,7 +997,9 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					for (i = 0; i < cnt; i++ )
 						ptr = va_arg(ap_copy, void *);
 					job_ptr = ptr;
-					xstrcat(intermediate_fmt,
+					xstrcatat(
+						intermediate_fmt,
+						&intermediate_pos,
 						_jobid2fmt(
 							job_ptr,
 							substitute_on_stack,
@@ -1013,7 +1022,9 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					for (i = 0; i < cnt; i++ )
 						ptr = va_arg(ap_copy, void *);
 					step_id = ptr;
-					xstrcat(intermediate_fmt,
+					xstrcatat(
+						intermediate_fmt,
+						&intermediate_pos,
 						log_build_step_id_str(
 							step_id,
 							substitute_on_stack,
@@ -1041,12 +1052,16 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					if (step_ptr &&
 					    (step_ptr->magic == STEP_MAGIC))
 						job_ptr = step_ptr->job_ptr;
-					xstrcat(intermediate_fmt,
+					xstrcatat(
+						intermediate_fmt,
+						&intermediate_pos,
 						_jobid2fmt(
 							job_ptr,
 							substitute_on_stack,
 							sizeof(substitute_on_stack)));
-					xstrcat(intermediate_fmt,
+					xstrcatat(
+						intermediate_fmt,
+						&intermediate_pos,
 						_stepid2fmt(
 							step_ptr,
 							substitute_on_stack,
@@ -1131,13 +1146,16 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 
 				while (*s && (p = (char *)strchr(s, '%'))) {
 					/* append up through the '%' */
-					xstrncat(intermediate_fmt, s, p - s);
-					xstrcat(intermediate_fmt, "%%");
+					xstrncatat(intermediate_fmt,
+						   &intermediate_pos, s, p - s);
+					xstrcatat(intermediate_fmt,
+						  &intermediate_pos, "%%");
 					s = p + 1;
 				}
 				if (*s) {
 					/* append whatever's left of the substitution: */
-					xstrcat(intermediate_fmt, s);
+					xstrcatat(intermediate_fmt,
+						  &intermediate_pos, s);
 				}
 
 				/* deallocate substitute if necessary: */
@@ -1150,7 +1168,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 			 * no more format sequences for us, append the rest of
 			 * fmt and exit the loop:
 			 */
-			xstrcat(intermediate_fmt, fmt);
+			xstrcatat(intermediate_fmt, &intermediate_pos, fmt);
 			break;
 		}
 	}
