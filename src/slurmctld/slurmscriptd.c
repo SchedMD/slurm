@@ -1075,7 +1075,7 @@ static void _slurmscriptd_mainloop(int argc, char **argv, char *binary_path)
 
 	_change_proc_name(argc, argv, "slurmscriptd");
 
-	/* Test communiations with slurmctld. */
+	/* Test communications with slurmctld. */
 	ack = SLURM_SUCCESS;
 	i = write(slurmscriptd_writefd, &ack, sizeof(int));
 	if (i != sizeof(int)) {
