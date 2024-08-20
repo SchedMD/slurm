@@ -67,8 +67,8 @@
  * for details.
  */
 strong_alias(_xstrcat,		slurm_xstrcat);
-strong_alias(_xstrcatat,	slurm_xstrcatat);
 strong_alias(_xstrncat,		slurm_xstrncat);
+strong_alias(_xstrncatat,	slurm_xstrncatat);
 strong_alias(_xstrcatchar,	slurm_xstrcatchar);
 strong_alias(_xstrftimecat,	slurm_xstrftimecat);
 strong_alias(_xiso8601timecat,	slurm_xiso8601timecat);
@@ -149,18 +149,19 @@ void _xstrcat(char **str1, const char *str2)
  * sensitive, as xstrcat() needs to re-seek to the end of str making the string
  * construction worse by another O(log(strlen)) factor.
  */
-void _xstrcatat(char **str, char **pos, const char *str2)
+void _xstrncatat(char **str, char **pos, const char *str2, ssize_t append_len)
 {
-	size_t orig_len, append_len;
+	size_t orig_len;
 
 	if (!str2)
 		return;
 
-	append_len = strlen(str2);
+	if (append_len < 0)
+		append_len = strlen(str2);
 
 	/* No string yet to append to, so return a copy of str2. */
 	if (!*str) {
-		*str = xstrdup(str2);
+		*str = xstrndup(str2, append_len);
 		*pos = *str + append_len;
 		return;
 	}
