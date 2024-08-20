@@ -64,6 +64,7 @@ static int _match_and_setup_cluster_rec(void *x, void *key)
 
 static int _get_clusters_from_fed(list_t **cluster_records, char *cluster_names)
 {
+	int transfer_count = 0;
 	list_t *cluster_list = list_create(slurmdb_destroy_cluster_rec);
 	list_t *cluster_name_list = NULL;
 	slurmdb_federation_rec_t *fed = NULL;
@@ -74,12 +75,21 @@ static int _get_clusters_from_fed(list_t **cluster_records, char *cluster_names)
 		return SLURM_ERROR;
 	}
 
-	if (xstrcasecmp(cluster_names, "all")) {
-		cluster_name_list = list_create(xfree_ptr);
-		slurm_addto_char_list(cluster_name_list, cluster_names);
+	cluster_name_list = list_create(xfree_ptr);
+	slurm_addto_char_list(cluster_name_list, cluster_names);
+
+	transfer_count = list_transfer_match(fed->cluster_list, cluster_list,
+					     _match_and_setup_cluster_rec,
+					     cluster_name_list);
+	if (transfer_count != list_count(cluster_name_list)) {
+		/*
+		 * One of the requested clusters isn't part of the federation.
+		 * Go ask the dbd about it.
+		 */
+		FREE_NULL_LIST(cluster_list);
+		FREE_NULL_LIST(cluster_name_list);
+		return SLURM_ERROR;
 	}
-	list_transfer_match(fed->cluster_list, cluster_list,
-			    _match_and_setup_cluster_rec, cluster_name_list);
 
 	*cluster_records = cluster_list;
 
@@ -97,8 +107,9 @@ extern int slurm_get_cluster_info(list_t **cluster_records, char *cluster_names,
 		return SLURM_ERROR;
 
 	/* get cluster records from slurmctld federation record */
-	if ((show_flags & SHOW_FEDERATION) ||
-	    (xstrstr(slurm_conf.fed_params, "fed_display"))) {
+	if (xstrcasecmp(cluster_names, "all") &&
+	    ((show_flags & SHOW_FEDERATION) ||
+	     (xstrstr(slurm_conf.fed_params, "fed_display")))) {
 		if (!_get_clusters_from_fed(cluster_records, cluster_names))
 			return SLURM_SUCCESS;
 	}
