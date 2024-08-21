@@ -1652,19 +1652,19 @@ extern int slurmscriptd_init(char **argv, char *binary_path)
 			rc = errno;
 			killpg(slurmscriptd_pid, SIGKILL);
 			errno = rc;
-			fatal("%s: slurmctld: Can not read return code from slurmscriptd: %m",
-			      __func__);
+			fatal_abort("%s: slurmctld: Can not read return code from slurmscriptd: %m",
+				    __func__);
 		} else if (i != sizeof(int)) {
 			rc = errno;
 			killpg(slurmscriptd_pid, SIGKILL);
 			errno = rc;
-			fatal("%s: slurmctld: slurmscriptd failed to send return code: %m",
-			      __func__);
+			fatal_abort("%s: slurmctld: slurmscriptd failed to send return code: %m",
+				    __func__);
 		}
 		if (rc != SLURM_SUCCESS) {
 			killpg(slurmscriptd_pid, SIGKILL);
-			fatal("%s: slurmctld: slurmscriptd did not initialize",
-			      __func__);
+			fatal_abort("%s: slurmctld: slurmscriptd did not initialize",
+				    __func__);
 		}
 		ack = SLURM_SUCCESS;
 		i = write(slurmctld_writefd, &ack, sizeof(int));
@@ -1672,8 +1672,8 @@ extern int slurmscriptd_init(char **argv, char *binary_path)
 			rc = errno;
 			killpg(slurmscriptd_pid, SIGKILL);
 			errno = rc;
-			fatal("%s: slurmctld: failed to send ack to slurmscriptd: %m",
-			      __func__);
+			fatal_abort("%s: slurmctld: failed to send ack to slurmscriptd: %m",
+				    __func__);
 		}
 
 		/* Get slurmscriptd initialization status */
