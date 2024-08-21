@@ -454,8 +454,10 @@ int main(int argc, char **argv)
 	 * Make sure we have no extra open files which
 	 * would be propagated to spawned tasks.
 	 */
-	if (original || slurmscriptd_mode)
-		closeall(3);
+	if (original || slurmscriptd_mode) {
+		closeall(slurmscriptd_mode ? SLURMSCRIPT_CLOSEALL :
+			 (STDERR_FILENO + 1));
+	}
 
 	/*
 	 * Establish initial configuration

@@ -36,7 +36,12 @@
 #ifndef _HAVE_SLURMSCRIPTD_H
 #define _HAVE_SLURMSCRIPTD_H
 
+#include <unistd.h>
+
 #define SLURMSCRIPTD_MODE_ENV "SLURMSCRIPTD_MODE"
+#define SLURMSCRIPT_READ_FD (STDERR_FILENO + 1)
+#define SLURMSCRIPT_WRITE_FD (STDERR_FILENO + 2)
+#define SLURMSCRIPT_CLOSEALL (STDERR_FILENO + 3)
 
 /*
  * Run the the slurmscriptd main loop.

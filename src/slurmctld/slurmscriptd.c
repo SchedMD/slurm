@@ -1074,8 +1074,8 @@ extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 	int rc = SLURM_ERROR, ack;
 	char *failed_plugin = NULL;
 
-	slurmscriptd_writefd = STDOUT_FILENO;
-	slurmscriptd_readfd = STDIN_FILENO;
+	slurmscriptd_writefd = SLURMSCRIPT_WRITE_FD;
+	slurmscriptd_readfd = SLURMSCRIPT_READ_FD;
 
 	_change_proc_name(argc, argv, "slurmscriptd");
 
@@ -1700,9 +1700,8 @@ extern int slurmscriptd_init(char **argv, char *binary_path)
 		 * We do not need to closeall() here because it will happen on
 		 * the re-exec.
 		 */
-		dup2(slurmscriptd_readfd, STDIN_FILENO);
-		dup2(slurmscriptd_writefd, STDOUT_FILENO);
-		dup2(slurmscriptd_writefd, STDERR_FILENO);
+		dup2(slurmscriptd_readfd, SLURMSCRIPT_READ_FD);
+		dup2(slurmscriptd_writefd, SLURMSCRIPT_WRITE_FD);
 		setenv(SLURMSCRIPTD_MODE_ENV, "1", 1);
 		execv(binary_path, argv);
 		fatal("%s: execv() failed: %m", __func__);
