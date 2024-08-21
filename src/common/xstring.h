@@ -79,7 +79,7 @@ void _xstrcat(char **str1, const char *str2);
  * Append str2 onto str at pos, * expanding buf as needed. pos is updated to the
  * end of the appended string.
  *
- * Meant to be used in loops contructing longer strings that are performance
+ * Meant to be used in loops constructing longer strings that are performance
  * sensitive, as xstrcat() needs to re-seek to the end of str making the string
  * construction worse by another O(log(strlen)) factor.
  */
