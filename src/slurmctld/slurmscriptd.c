@@ -1627,14 +1627,21 @@ extern int slurmscriptd_init(char **argv, char *binary_path)
 		 * slurmctld writes data to slurmscriptd with the
 		 * to_slurmscriptd pipe and slurmscriptd writes data to
 		 * slurmctld with the to_slurmctld pipe.
+		 * If there is a failure with startup, SIGKILL the slurmscriptd
+		 * and then exit. The slurmscriptd pid will be adopted and then
+		 * reaped by init, so we don't need to call waitpid().
 		 */
 		if (close(to_slurmscriptd[0]) < 0) {
-			_kill_slurmscriptd();
+			rc = errno;
+			killpg(slurmscriptd_pid, SIGKILL);
+			errno = rc;
 			fatal("%s: slurmctld: Unable to close read to_slurmscriptd in parent: %m",
 			      __func__);
 		}
 		if (close(to_slurmctld[1]) < 0) {
-			_kill_slurmscriptd();
+			rc = errno;
+			killpg(slurmscriptd_pid, SIGKILL);
+			errno = rc;
 			fatal("%s: slurmctld: Unable to close write to_slurmctld in parent: %m",
 			      __func__);
 		}
@@ -1642,23 +1649,29 @@ extern int slurmscriptd_init(char **argv, char *binary_path)
 		/* Test communications with slurmscriptd. */
 		i = read(slurmctld_readfd, &rc, sizeof(int));
 		if (i < 0) {
-			_kill_slurmscriptd();
+			rc = errno;
+			killpg(slurmscriptd_pid, SIGKILL);
+			errno = rc;
 			fatal("%s: slurmctld: Can not read return code from slurmscriptd: %m",
 			      __func__);
 		} else if (i != sizeof(int)) {
-			_kill_slurmscriptd();
+			rc = errno;
+			killpg(slurmscriptd_pid, SIGKILL);
+			errno = rc;
 			fatal("%s: slurmctld: slurmscriptd failed to send return code: %m",
 			      __func__);
 		}
 		if (rc != SLURM_SUCCESS) {
-			_kill_slurmscriptd();
+			killpg(slurmscriptd_pid, SIGKILL);
 			fatal("%s: slurmctld: slurmscriptd did not initialize",
 			      __func__);
 		}
 		ack = SLURM_SUCCESS;
 		i = write(slurmctld_writefd, &ack, sizeof(int));
 		if (i != sizeof(int)) {
-			_kill_slurmscriptd();
+			rc = errno;
+			killpg(slurmscriptd_pid, SIGKILL);
+			errno = rc;
 			fatal("%s: slurmctld: failed to send ack to slurmscriptd: %m",
 			      __func__);
 		}
