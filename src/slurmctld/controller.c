@@ -143,6 +143,9 @@ decl_static_data(usage_txt);
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
 #define JOB_COUNT_INTERVAL 30   /* Time to update running job count */
 
+#define DEV_TTY_PATH "/dev/tty"
+#define DEV_NULL_PATH "/dev/null"
+
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
  * "configure --enable-memory-leak-debug" then execute
@@ -414,6 +417,36 @@ static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
 	conmgr_add_work_signal(SIGABRT, _on_sigabrt, NULL);
 }
 
+static void _reopen_stdio(void)
+{
+	int devnull = -1;
+	bool had_tty = isatty(STDOUT_FILENO);
+
+	if ((devnull = open(DEV_NULL_PATH, O_RDWR)) < 0)
+		fatal_abort("Unable to open %s: %m", DEV_NULL_PATH);
+
+	dup2(devnull, STDIN_FILENO);
+	dup2(devnull, STDOUT_FILENO);
+	dup2(devnull, STDERR_FILENO);
+
+	if (devnull > STDERR_FILENO)
+		fd_close(&devnull);
+
+#ifdef __linux__
+	if (had_tty && !daemonize) {
+		int tty = -1;
+
+		if ((tty = open(DEV_TTY_PATH, O_WRONLY)) > 0 && isatty(tty)) {
+			dup2(tty, STDOUT_FILENO);
+			dup2(tty, STDERR_FILENO);
+		}
+
+		if (tty > STDERR_FILENO)
+			fd_close(&tty);
+	}
+#endif /* __linux__ */
+}
+
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
@@ -458,6 +491,9 @@ int main(int argc, char **argv)
 		closeall(slurmscriptd_mode ? SLURMSCRIPT_CLOSEALL :
 			 (STDERR_FILENO + 1));
 	}
+
+	if (slurmscriptd_mode)
+		_reopen_stdio();
 
 	/*
 	 * Establish initial configuration

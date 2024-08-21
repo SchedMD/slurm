@@ -41,6 +41,7 @@
 #  include <sys/prctl.h>
 #endif
 
+#include <fcntl.h>
 #include <poll.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -53,6 +54,7 @@
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
 #include "src/common/log.h"
+#include "src/common/msg_type.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_protocol_pack.h"
