@@ -1894,6 +1894,7 @@ static void _attempt_backfill(void)
 		bool get_boot_time = false;
 		bool licenses_unavail;
 		bool use_prefer = false;
+		slurmctld_resv_t *resv_ptr = NULL;
 
 		/* Run some final guaranteed logic after each job iteration */
 		if (job_ptr) {
@@ -2026,6 +2027,7 @@ static void _attempt_backfill(void)
 			job_queue_rec_resv_list(job_queue_rec);
 		else
 			job_queue_rec_magnetic_resv(job_queue_rec);
+		resv_ptr = job_ptr->resv_ptr;
 		xfree(job_queue_rec);
 
 		job_ptr->bit_flags |= BACKFILL_SCHED;
@@ -2191,14 +2193,14 @@ next_task:
 			    (reject_array_job->array_job_id ==
 				job_ptr->array_job_id) &&
 			    (reject_array_part == part_ptr) &&
-			    (reject_array_resv == job_ptr->resv_ptr) &&
+			    (reject_array_resv == resv_ptr) &&
 			    (reject_array_use_prefer == use_prefer))
 				continue;  /* already rejected array element */
 
 			/* assume reject whole array for now, clear if OK */
 			reject_array_job = job_ptr;
 			reject_array_part = part_ptr;
-			reject_array_resv = job_ptr->resv_ptr;
+			reject_array_resv = resv_ptr;
 			reject_array_use_prefer = use_prefer;
 
 			if (!job_array_start_test(job_ptr))
@@ -2209,6 +2211,10 @@ next_task:
 		 * the same way as we did it before.
 		 */
 		job_ptr->part_ptr = part_ptr;
+		job_ptr->resv_ptr = resv_ptr;
+		if (resv_ptr)
+			job_ptr->resv_id = resv_ptr->resv_id;
+
 		if (job_limits_check(&job_ptr, true) != WAIT_NO_REASON) {
 			/* should never happen */
 			continue;
@@ -2333,7 +2339,6 @@ next_task:
 
 		if (many_rpcs || (slurm_delta_tv(&start_tv) >= yield_interval)) {
 			uint32_t save_time_limit = job_ptr->time_limit;
-			slurmctld_resv_t *save_resv_ptr = job_ptr->resv_ptr;
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
@@ -2390,7 +2395,9 @@ next_task:
 			 * locks restore the pointers we were last on just in
 			 * case the main scheduler changed them.
 			 */
-			job_ptr->resv_ptr = save_resv_ptr;
+			job_ptr->resv_ptr = resv_ptr;
+			if (resv_ptr)
+				job_ptr->resv_id = resv_ptr->resv_id;
 			if (!_job_part_valid(job_ptr, part_ptr))
 				continue;	/* Partition change during lock yield */
 			if (!job_independent(job_ptr)) {
