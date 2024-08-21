@@ -553,8 +553,6 @@ int main(int argc, char **argv)
 	/* open ports must happen after become_slurm_user() */
 	 _open_ports();
 
-	conmgr_run(false);
-
 	/*
 	 * Create StateSaveLocation directory if necessary.
 	 */
@@ -686,6 +684,8 @@ int main(int argc, char **argv)
 
 	if (original && under_systemd)
 		xsystemd_change_mainpid(getpid());
+
+	conmgr_run(false);
 
 	while (1) {
 		bool reconfiguring = reconfig;
