@@ -2204,6 +2204,10 @@ next_task:
 			if (!job_array_start_test(job_ptr))
 				continue;
 		}
+		/*
+		 * If we are on a different task (see goto next_task) set it up
+		 * the same way as we did it before.
+		 */
 		job_ptr->part_ptr = part_ptr;
 		if (job_limits_check(&job_ptr, true) != WAIT_NO_REASON) {
 			/* should never happen */
@@ -2380,6 +2384,12 @@ next_task:
 					 job_ptr);
 				continue;	/* No available frontend */
 			}
+
+			/*
+			 * If the job wasn't scheduled while we didn't have the
+			 * locks restore the pointers we were last on just in
+			 * case the main scheduler changed them.
+			 */
 			job_ptr->resv_ptr = save_resv_ptr;
 			if (!_job_part_valid(job_ptr, part_ptr))
 				continue;	/* Partition change during lock yield */
