@@ -252,7 +252,6 @@ unpack_error:
 
 extern void init_sack_conmgr(void)
 {
-	conmgr_callbacks_t callbacks = {NULL, NULL};
 	conmgr_events_t events = {
 		.on_data = _on_connection_data,
 	};
@@ -271,7 +270,7 @@ extern void init_sack_conmgr(void)
 		path = SLURM_SACK_SOCKET;
 	}
 
-	conmgr_init(0, 0, callbacks);
+	xassert(conmgr_enabled());
 
 	mask = umask(0);
 
@@ -281,8 +280,4 @@ extern void init_sack_conmgr(void)
 		      __func__, path, slurm_strerror(rc));
 
 	umask(mask);
-
-	if ((rc = conmgr_run(false)))
-		fatal("%s: conmgr run failed: %s",
-		      __func__, slurm_strerror(rc));
 }
