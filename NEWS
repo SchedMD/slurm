@@ -148,6 +148,8 @@ documents those changes that are of interest to users and administrators.
  -- Add "sacctmgr ping" command to query status of slurmdbd.
  -- Generate an error message when a NodeSet name conflicts with a NodeName, and
     prevent the controller from starting if such a conflict exists.
+ -- slurmd - properly detect slurmd restarts in the energy gathering logic
+    which caused bad numbers in accounting.
 
 * Changes in Slurm 24.05.4
 ==========================
