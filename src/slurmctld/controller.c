@@ -484,6 +484,7 @@ int main(int argc, char **argv)
 		/* Cleanup env */
 		(void) unsetenv(SLURMSCRIPTD_MODE_ENV);
 		/* Execute in slurmscriptd mode. */
+		become_slurm_user();
 		slurmscriptd_run_slurmscriptd(argc, argv, binary);
 	}
 
