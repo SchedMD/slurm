@@ -14642,6 +14642,10 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_desc->cpus_per_task != NO_VAL16) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
+		} else if (job_desc->cpus_per_task == 0) {
+			error("%s: trying to set cpus_per_task to an erroneous value: %u",
+			      __func__, job_desc->cpus_per_task);
+			error_code = ESLURM_INVALID_CPU_COUNT;
 		} else if (detail_ptr->cpus_per_task !=
 			   job_desc->cpus_per_task) {
 			info("%s: setting cpus_per_task from %u to %u for %pJ",
