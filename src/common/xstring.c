@@ -168,7 +168,6 @@ void _xstrncatat(char **str, char **pos, const char *str2, ssize_t append_len)
 
 	if (!*pos) {
 		orig_len = strlen(*str);
-		*pos = *str + orig_len;
 	} else {
 		xassert(*pos >= *str);
 		orig_len = *pos - *str;
@@ -387,7 +386,6 @@ void _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
 
 	if (!*pos) {
 		orig_len = strlen(*str);
-		*pos = *str + orig_len;
 	} else {
 		xassert(*pos >= *str);
 		orig_len = *pos - *str;
