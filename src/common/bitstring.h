@@ -44,8 +44,7 @@
  * A bitstr_t is an array of configurable size words.  The first two words
  * are for internal use.  Word 0 is a magic cookie used to validate that the
  * bitstr_t is properly initialized.  Word 1 is the number of valid bits in
- * the bitstr_t This limts the capacity of a bitstr_t to 4 gigabits if using
- * 32 bit words.
+ * the bitstr_t.
  *
  * bitstrings are zero origin
  *
