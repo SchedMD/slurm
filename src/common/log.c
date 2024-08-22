@@ -1284,6 +1284,13 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 	char *eol = "\n";
 	int priority = LOG_INFO;
 
+	/*
+	 * Construct the message outside the lock as this can be slow.
+	 * The format_print() macro should ensure that we're always going
+	 * to print the resulting message through one or more channels.
+	 */
+	buf = vxstrfmt(fmt, args);
+
 	slurm_mutex_lock(&log_lock);
 
 	if (!LOG_INITIALIZED) {
@@ -1296,7 +1303,6 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 
 	if (SCHED_LOG_INITIALIZED && sched &&
 	    (highest_sched_log_level > LOG_LEVEL_QUIET)) {
-		buf = vxstrfmt(fmt, args);
 		xlogfmtcat(&msgbuf, "[%M] %s%s", sched_log->prefix, pfx);
 		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,
 			    "sched: %s%s\n", msgbuf, buf);
@@ -1361,12 +1367,6 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 			break;
 		}
 
-	}
-
-	if (!buf) {
-		/* format the basic message,
-		 * if not already done for scheduling log */
-		buf = vxstrfmt(fmt, args);
 	}
 
 	if (level <= log->opt.stderr_level) {
