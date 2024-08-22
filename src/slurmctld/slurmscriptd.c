@@ -62,6 +62,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/hash.h"
 
@@ -714,6 +716,7 @@ static int _handle_shutdown(slurmscriptd_msg_t *recv_msg)
 	_wait_for_powersave_scripts();
 	track_script_flush();
 
+	conmgr_request_shutdown();
 	eio_signal_shutdown(msg_handle);
 
 	return SLURM_ERROR; /* Don't handle any more requests. */
@@ -1068,6 +1071,58 @@ static void _setup_eio(int fd)
 	eio_new_initial_obj(msg_handle, eio_obj);
 }
 
+static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(SCRIPT, "Caught SIGINT. Ignoring.");
+}
+
+static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(SCRIPT, "Caught SIGTERM. Ignoring.");
+}
+
+static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(SCRIPT, "Caught SIGQUIT. Ignoring.");
+}
+
+static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(SCRIPT, "Caught SIGHUP. Ignoring.");
+}
+
+static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(SCRIPT, "Caught SIGUSR2. Ignoring.");
+}
+
+static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	/* debug5 to avoid polluting the SCRIPT debug flag */
+	debug5("Caught SIGPIPE. Ignoring.");
+}
+
+
+static void _init_slurmscriptd_conmgr(void)
+{
+	conmgr_callbacks_t callbacks = { NULL, NULL };
+
+	conmgr_init(0, 0, callbacks);
+
+	/*
+	 * Ignore signals. slurmscriptd should only handle requests directly
+	 * from slurmctld.
+	 */
+	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
+	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
+	conmgr_add_work_signal(SIGQUIT, _on_sigquit, NULL);
+	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
+	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
+	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
+
+	conmgr_run(false);
+}
+
 __attribute__((noreturn))
 extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 					  char *binary_path)
@@ -1118,6 +1173,8 @@ extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 	if (ack != SLURM_SUCCESS)
 		fatal("%s: Failed to initialize %s plugin",
 		      __func__, failed_plugin);
+
+	_init_slurmscriptd_conmgr();
 
 	debug("Initialization successful");
 
