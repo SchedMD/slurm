@@ -236,10 +236,11 @@ bitstr_t *bit_alloc(bitoff_t nbits)
 	bitstr_t *new;
 
 	_assert_valid_size(nbits);
-	new = xmalloc(_bitstr_words(nbits) * sizeof(bitstr_t));
+	new = xcalloc(_bitstr_words(nbits), sizeof(bitstr_t));
 
 	_bitstr_magic(new) = BITSTR_MAGIC;
 	_bitstr_bits(new) = nbits;
+
 	return new;
 }
 
