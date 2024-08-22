@@ -9,7 +9,12 @@ sreport \- Generate reports from the slurm accounting data.
 .SH "DESCRIPTION"
 \fBsreport\fR is used to generate reports of job usage and cluster
 utilization for Slurm jobs saved to the Slurm Database,
-\fBslurmdbd\fR.
+\fBslurmdbd\fR. Report data comes from hourly, daily, and monthly rollups of
+accounting data that occur automatically in the background. Data will be pulled
+from the rollup table with the longest interval that can satisfy the requested
+report period. For example, a report on the time range "Start=01/01 End=03/01"
+will be able to pull from the monthly rollup table, while a report with
+"Start=01/01-03:00 End=03/01" will need to use the hourly rollup table.
 
 .SH "OPTIONS"
 
