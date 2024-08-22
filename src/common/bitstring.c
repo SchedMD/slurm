@@ -1140,7 +1140,6 @@ bit_rotate_copy(bitstr_t *b1, int32_t n, bitoff_t nbits)
 	}
 
 	new = bit_alloc(nbits);
-	bit_nclear(new,0,nbits-1);
 
 	/* bits shifting up */
 	for (bit = 0; bit < (bitsize-wrapbits); bit++) {
