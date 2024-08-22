@@ -39,6 +39,7 @@ generated_html = \
 	job_exit_code.html \
 	job_launch.html \
 	job_reason_codes.html \
+	job_state_codes.html \
 	job_submit_plugins.html \
 	jwt.html \
 	kubernetes.html \
