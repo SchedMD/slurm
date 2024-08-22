@@ -381,7 +381,9 @@ List of clusters to include in report. Default is local cluster.
 
 .TP
 .B End=<OPT>
-Period ending for report. Default is 23:59:59 of previous day.
+Period ending for report. Default is 23:59:59 of previous day. Note that while
+minutes and seconds are recognized, they will be rounded to the nearest hour as
+reports cannot be generated for a more specific time range.
 Valid time formats are...
 .sp
 HH:MM[:SS] [AM|PM]
@@ -408,7 +410,9 @@ justified. A \-30 will print 30 characters left justified.
 
 .TP
 .B Start=<OPT>
-Period start for report. Default is 00:00:00 of previous day.
+Period start for report. Default is 00:00:00 of previous day. Note that while
+minutes and seconds are recognized, they will be rounded to the nearest hour as
+reports cannot be generated for a more specific time range.
 Valid time formats are...
 .sp
 HH:MM[:SS] [AM|PM]
