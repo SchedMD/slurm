@@ -244,6 +244,19 @@ bitstr_t *bit_alloc(bitoff_t nbits)
 	return new;
 }
 
+static bitstr_t *bit_alloc_nz(bitoff_t nbits)
+{
+	bitstr_t *new;
+
+	_assert_valid_size(nbits);
+	new = xcalloc_nz(_bitstr_words(nbits), sizeof(bitstr_t));
+
+	_bitstr_magic(new) = BITSTR_MAGIC;
+	_bitstr_bits(new) = nbits;
+
+	return new;
+}
+
 /*
  * Reallocate a bitstring (expand or contract size).
  *   b (IN)		pointer to old bitstring
@@ -878,7 +891,7 @@ bit_copy(bitstr_t *b)
 
 	newsize_bits  = bit_size(b);
 	len = (_bitstr_words(newsize_bits) - BITSTR_OVERHEAD)*sizeof(bitstr_t);
-	new = bit_alloc(newsize_bits);
+	new = bit_alloc_nz(newsize_bits);
 	memcpy(&new[BITSTR_OVERHEAD], &b[BITSTR_OVERHEAD], len);
 
 	return new;
