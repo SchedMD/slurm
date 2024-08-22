@@ -317,16 +317,27 @@ static void _dump_job_sched(job_record_t *job_ptr, time_t end_time,
 }
 
 static void _dump_job_test(job_record_t *job_ptr, bitstr_t *avail_bitmap,
-			   time_t start_time)
+			   time_t start_time, time_t later_start)
 {
 	char begin_buf[256], *node_list;
+	char end_buf[256];
+	char later_buf[256];
 
 	if (start_time == 0)
 		strcpy(begin_buf, "NOW");
 	else
 		slurm_make_time_str(&start_time, begin_buf, sizeof(begin_buf));
+	if (later_start == 0)
+		strcpy(later_buf, "NO");
+	else
+		slurm_make_time_str(&later_start, later_buf, sizeof(later_buf));
+	if (later_start)
+		later_start += job_ptr->time_limit * 60;
+	slurm_make_time_str(&later_start, end_buf, sizeof(end_buf));
+
 	node_list = bitmap2node_name(avail_bitmap);
-	info("Test %pJ at %s on %s", job_ptr, begin_buf, node_list);
+	info("Test %pJ at %s to %s (later_start: %s) on %s",
+	     job_ptr, begin_buf, end_buf, later_buf, node_list);
 	xfree(node_list);
 }
 
@@ -2860,7 +2871,8 @@ TRY_LATER:
 			already_counted = true;
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL_MAP)
-			_dump_job_test(job_ptr, avail_bitmap, start_res);
+			_dump_job_test(job_ptr, avail_bitmap, start_res,
+				       later_start);
 		test_fini = -1;
 		build_active_feature_bitmap(job_ptr, avail_bitmap,
 					    &active_bitmap);
