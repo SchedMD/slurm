@@ -1270,8 +1270,12 @@ start_child:
 				break;
 			}
 		}
-		if (!match)
-			(void) close(fd);
+		if (!match) {
+			struct stat st;
+
+			if (!fstat(fd, &st))
+				fd_set_close_on_exec(fd);
+		}
 	}
 
 	/*
@@ -1485,6 +1489,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	slurm_msg_t *msg = xmalloc(sizeof *msg);
 	xfree(arg);
 
+	server_thread_incr();
 	xassert(input_fd == output_fd);
 
 	slurm_msg_t_init(msg);
@@ -1522,6 +1527,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 		int rc = rpc_enqueue(msg);
 
 		if (rc == SLURM_SUCCESS) {
+			server_thread_decr();
 			return;
 		} else if (rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) {
 			slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
@@ -1537,6 +1543,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 		error("close(%d): %m", msg->conn_fd);
 
 cleanup:
+	server_thread_decr();
 	slurm_free_msg(msg);
 }
 
