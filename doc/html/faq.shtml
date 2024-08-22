@@ -4,7 +4,9 @@
 
 <h2>For Management</h2>
 <ul>
-<li><a href="#foss">Why should I use Slurm or other Free Open Source Software (FOSS)?</a></li>
+<li><a href="#free">Is Slurm really free?</a></li>
+<li><a href="#foss">Why should I use Slurm or other free software?</a></li>
+<li><a href="#support">Why should I pay for free software?</a></li>
 <li><a href="#acronym">What does "Slurm" stand for?</a></li>
 </ul>
 
@@ -245,24 +247,47 @@
 </ul>
 
 <h2>For Management</h2>
-<p><a id="foss"><b>Why should I use Slurm or other Free Open Source Software (FOSS)?</b></a><br>
-Free Open Source Software (FOSS) does not mean that it is without cost.
-It does mean that the you have access to the code so that you are free to
-use it, study it, and/or enhance it.
-These reasons contribute to Slurm (and FOSS in general) being subject to
-active research and development worldwide, displacing proprietary software
-in many environments.
-If the software is large and complex, like Slurm or the Linux kernel,
-then while there is no license fee, its use is not without cost.</p>
-<p>If your work is important, you'll want the leading Slurm experts at your
-disposal to keep your systems operating at peak efficiency.
-While Slurm has a global development community incorporating leading edge
-technology, <a href="https://www.schedmd.com">SchedMD</a> personnel have developed
-most of the code and can provide competitively priced commercial support.
-SchedMD works with various organizations to provide a range of support
-options.
-Customers switching from commercial workload mangers to Slurm typically
-report higher scalability, better performance and lower costs.</p>
+<p><a id="free"><b>Is Slurm really free?</b></a><br>
+Yes, Slurm is free and open source:
+<ul>
+<li>Slurm is free as defined by the
+  <a href="https://www.gnu.org/philosophy/free-sw.en.html">Free Software
+  Foundation</a></li>
+<li>Slurm’s <a href="https://github.com/SchedMD/slurm">source code</a> and
+  <a href="https://slurm.schedmd.com/documentation.html">documentation</a> are
+  publicly available under the GNU GPL v2</li>
+<li>Slurm can be <a href="https://www.schedmd.com/download-slurm/">
+  downloaded</a>, used, modified, and redistributed at no monetary cost</li>
+</ul></p>
+
+<p><a id="foss"><b>Why should I use Slurm or other free software?</b></a><br>
+Free software, as with proprietary software, varies widely in quality, but the
+mechanism itself has proven to be capable of producing high-quality software
+that is trusted by companies around the world. The Linux kernel is a prominent
+example, which is often trusted on web servers, infrastructure servers,
+supercomputers, and mobile devices.</p>
+
+<p>Likewise, Slurm has become a trusted tool in the supercomputing world since
+its initial release in 2002 and the founding of SchedMD in 2010 to continue
+developing Slurm. Today, Slurm powers a majority of the
+<a href="https://www.top500.org/">TOP500</a> supercomputers. Customers switching
+from commercial workload managers to Slurm typically report higher scalability,
+better performance and lower costs.</p>
+
+<p><a id="support"><b>Why should I pay for free software?</b></a><br>
+Free software does not mean that it is without cost. Software requires
+significant time and expertise to write, test, distribute, and maintain. If the
+software is large and complex, like Slurm or the Linux kernel, these costs can
+become very substantial.</p>
+
+<p>Slurm is often used for highly important tasks at major computing clusters
+around the world. Due to the extensive features available and the complexity of
+the code required to provide those features, many organizations prefer to have
+experts available to provide tailored recommendations and troubleshooting
+assistance. While Slurm has a global development community incorporating leading
+edge technology, <a href="https://www.schedmd.com">SchedMD</a> personnel have
+developed most of the code and can provide competitively priced commercial
+support and on-site training.</p>
 
 <p><a id="acronym"><b>What does "Slurm" stand for?</b></a><br>
 Nothing.</p>
