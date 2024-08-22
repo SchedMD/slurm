@@ -41,6 +41,7 @@
 #  include <sys/prctl.h>
 #endif
 
+#include <fcntl.h>
 #include <poll.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -53,12 +54,15 @@
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
 #include "src/common/log.h"
+#include "src/common/msg_type.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/track_script.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/hash.h"
@@ -712,6 +716,7 @@ static int _handle_shutdown(slurmscriptd_msg_t *recv_msg)
 	_wait_for_powersave_scripts();
 	track_script_flush();
 
+	conmgr_request_shutdown();
 	eio_signal_shutdown(msg_handle);
 
 	return SLURM_ERROR; /* Don't handle any more requests. */
@@ -1066,6 +1071,58 @@ static void _setup_eio(int fd)
 	eio_new_initial_obj(msg_handle, eio_obj);
 }
 
+static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(SCRIPT, "Caught SIGINT. Ignoring.");
+}
+
+static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(SCRIPT, "Caught SIGTERM. Ignoring.");
+}
+
+static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(SCRIPT, "Caught SIGQUIT. Ignoring.");
+}
+
+static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(SCRIPT, "Caught SIGHUP. Ignoring.");
+}
+
+static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(SCRIPT, "Caught SIGUSR2. Ignoring.");
+}
+
+static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	/* debug5 to avoid polluting the SCRIPT debug flag */
+	debug5("Caught SIGPIPE. Ignoring.");
+}
+
+
+static void _init_slurmscriptd_conmgr(void)
+{
+	conmgr_callbacks_t callbacks = { NULL, NULL };
+
+	conmgr_init(0, 0, callbacks);
+
+	/*
+	 * Ignore signals. slurmscriptd should only handle requests directly
+	 * from slurmctld.
+	 */
+	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
+	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
+	conmgr_add_work_signal(SIGQUIT, _on_sigquit, NULL);
+	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
+	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
+	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
+
+	conmgr_run(false);
+}
+
 __attribute__((noreturn))
 extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 					  char *binary_path)
@@ -1074,8 +1131,8 @@ extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 	int rc = SLURM_ERROR, ack;
 	char *failed_plugin = NULL;
 
-	slurmscriptd_writefd = STDOUT_FILENO;
-	slurmscriptd_readfd = STDIN_FILENO;
+	slurmscriptd_writefd = SLURMSCRIPT_WRITE_FD;
+	slurmscriptd_readfd = SLURMSCRIPT_READ_FD;
 
 	_change_proc_name(argc, argv, "slurmscriptd");
 
@@ -1116,6 +1173,8 @@ extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 	if (ack != SLURM_SUCCESS)
 		fatal("%s: Failed to initialize %s plugin",
 		      __func__, failed_plugin);
+
+	_init_slurmscriptd_conmgr();
 
 	debug("Initialization successful");
 
@@ -1627,14 +1686,21 @@ extern int slurmscriptd_init(char **argv, char *binary_path)
 		 * slurmctld writes data to slurmscriptd with the
 		 * to_slurmscriptd pipe and slurmscriptd writes data to
 		 * slurmctld with the to_slurmctld pipe.
+		 * If there is a failure with startup, SIGKILL the slurmscriptd
+		 * and then exit. The slurmscriptd pid will be adopted and then
+		 * reaped by init, so we don't need to call waitpid().
 		 */
 		if (close(to_slurmscriptd[0]) < 0) {
-			_kill_slurmscriptd();
+			rc = errno;
+			killpg(slurmscriptd_pid, SIGKILL);
+			errno = rc;
 			fatal("%s: slurmctld: Unable to close read to_slurmscriptd in parent: %m",
 			      __func__);
 		}
 		if (close(to_slurmctld[1]) < 0) {
-			_kill_slurmscriptd();
+			rc = errno;
+			killpg(slurmscriptd_pid, SIGKILL);
+			errno = rc;
 			fatal("%s: slurmctld: Unable to close write to_slurmctld in parent: %m",
 			      __func__);
 		}
@@ -1642,25 +1708,31 @@ extern int slurmscriptd_init(char **argv, char *binary_path)
 		/* Test communications with slurmscriptd. */
 		i = read(slurmctld_readfd, &rc, sizeof(int));
 		if (i < 0) {
-			_kill_slurmscriptd();
-			fatal("%s: slurmctld: Can not read return code from slurmscriptd: %m",
-			      __func__);
+			rc = errno;
+			killpg(slurmscriptd_pid, SIGKILL);
+			errno = rc;
+			fatal_abort("%s: slurmctld: Can not read return code from slurmscriptd: %m",
+				    __func__);
 		} else if (i != sizeof(int)) {
-			_kill_slurmscriptd();
-			fatal("%s: slurmctld: slurmscriptd failed to send return code: %m",
-			      __func__);
+			rc = errno;
+			killpg(slurmscriptd_pid, SIGKILL);
+			errno = rc;
+			fatal_abort("%s: slurmctld: slurmscriptd failed to send return code: %m",
+				    __func__);
 		}
 		if (rc != SLURM_SUCCESS) {
-			_kill_slurmscriptd();
-			fatal("%s: slurmctld: slurmscriptd did not initialize",
-			      __func__);
+			killpg(slurmscriptd_pid, SIGKILL);
+			fatal_abort("%s: slurmctld: slurmscriptd did not initialize",
+				    __func__);
 		}
 		ack = SLURM_SUCCESS;
 		i = write(slurmctld_writefd, &ack, sizeof(int));
 		if (i != sizeof(int)) {
-			_kill_slurmscriptd();
-			fatal("%s: slurmctld: failed to send ack to slurmscriptd: %m",
-			      __func__);
+			rc = errno;
+			killpg(slurmscriptd_pid, SIGKILL);
+			errno = rc;
+			fatal_abort("%s: slurmctld: failed to send ack to slurmscriptd: %m",
+				    __func__);
 		}
 
 		/* Get slurmscriptd initialization status */
@@ -1687,9 +1759,8 @@ extern int slurmscriptd_init(char **argv, char *binary_path)
 		 * We do not need to closeall() here because it will happen on
 		 * the re-exec.
 		 */
-		dup2(slurmscriptd_readfd, STDIN_FILENO);
-		dup2(slurmscriptd_writefd, STDOUT_FILENO);
-		dup2(slurmscriptd_writefd, STDERR_FILENO);
+		dup2(slurmscriptd_readfd, SLURMSCRIPT_READ_FD);
+		dup2(slurmscriptd_writefd, SLURMSCRIPT_WRITE_FD);
 		setenv(SLURMSCRIPTD_MODE_ENV, "1", 1);
 		execv(binary_path, argv);
 		fatal("%s: execv() failed: %m", __func__);
