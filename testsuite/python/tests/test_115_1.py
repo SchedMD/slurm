@@ -141,7 +141,7 @@ federation1 = "federation1"
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-#    atf.require_accounting(modify=True)
+    atf.require_accounting(modify=True)
     atf.require_config_parameter("TrackWCKey", "Yes", source="slurmdbd")
     atf.require_slurm_running()
 
@@ -478,9 +478,7 @@ class TestFederation:
         output = atf.run_command_output(
             command, user=atf.properties["slurm-user"], fatal=True
         )
-        pattern = (
-            rf"{self.cluster}|{wckey1}|0|{self.wckey_allocated_duration}|0|{self.wckey_allocated_duration}|100.00%"
-        )
+        pattern = rf"{self.cluster}|{wckey1}|0|{self.wckey_allocated_duration}|0|{self.wckey_allocated_duration}|100.00%"
         assert (
             re.search(pattern, output) is not None
         ), f'Command output for "{command}" did not match expected pattern "{pattern}"'
