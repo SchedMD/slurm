@@ -252,6 +252,7 @@ unpack_error:
 
 extern void init_sack_conmgr(void)
 {
+	conmgr_callbacks_t callbacks = {NULL, NULL};
 	conmgr_events_t events = {
 		.on_data = _on_connection_data,
 	};
@@ -270,7 +271,7 @@ extern void init_sack_conmgr(void)
 		path = SLURM_SACK_SOCKET;
 	}
 
-	xassert(conmgr_enabled());
+	conmgr_init(0, 0, callbacks);
 
 	mask = umask(0);
 
@@ -280,4 +281,9 @@ extern void init_sack_conmgr(void)
 		      __func__, path, slurm_strerror(rc));
 
 	umask(mask);
+
+	/*
+	 * We do not need to call conmgr_run() here since only the daemons
+	 * get here, and all the daemons call conmgr_run() separately.
+	 */
 }

@@ -55,8 +55,6 @@
 #include "src/common/xassert.h"
 #include "src/common/read_config.h"
 
-#include "src/conmgr/conmgr.h"
-
 /*
  * Double-fork and go into background.
  * Caller is responsible for umasks
@@ -64,8 +62,6 @@
 int xdaemon(void)
 {
 	int devnull;
-
-	xassert(!conmgr_enabled());
 
 	switch (fork()) {
 		case  0 : break;        /* child */
