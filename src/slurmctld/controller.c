@@ -1270,8 +1270,12 @@ start_child:
 				break;
 			}
 		}
-		if (!match)
-			(void) close(fd);
+		if (!match) {
+			struct stat st;
+
+			if (!fstat(fd, &st))
+				fd_set_close_on_exec(fd);
+		}
 	}
 
 	/*
