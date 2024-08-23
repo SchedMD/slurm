@@ -93,8 +93,8 @@ static int _handle_connection(void *x, void *arg)
 
 	if (con->is_connected) {
 		/* continue on to follow other checks */
-	} else if (!con->is_socket || con->can_read || con->can_write ||
-		   con->is_listen) {
+	} else if (!con_flag(con, FLAG_IS_SOCKET) || con->can_read ||
+		   con->can_write || con->is_listen) {
 		/*
 		 * Only sockets need special handling to know when they are
 		 * connected. Enqueue on_connect callback if defined.
@@ -102,7 +102,7 @@ static int _handle_connection(void *x, void *arg)
 		con->is_connected = true;
 
 		/* Query outbound MSS now kernel should know the answer */
-		if (con->is_socket && (con->output_fd != -1))
+		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1))
 			con->mss = fd_get_maxmss(con->output_fd, con->name);
 
 		if (con->is_listen) {

@@ -86,6 +86,7 @@ static const struct {
 } con_flags[] = {
 	T(FLAG_NONE),
 	T(FLAG_ON_DATA_TRIED),
+	T(FLAG_IS_SOCKET),
 };
 #undef T
 
@@ -225,7 +226,8 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		if (close(con->input_fd) == -1)
 			log_flag(CONMGR, "%s: [%s] unable to close input fd %d: %m",
 				 __func__, con->name, con->output_fd);
-	} else if (con->is_socket && shutdown(con->input_fd, SHUT_RD) == -1) {
+	} else if (con_flag(con, FLAG_IS_SOCKET) &&
+		   (shutdown(con->input_fd, SHUT_RD) == -1)) {
 		/* shutdown input on sockets */
 		log_flag(CONMGR, "%s: [%s] unable to shutdown read: %m",
 			 __func__, con->name);
@@ -311,7 +313,7 @@ static void _set_connection_name(conmgr_fd_t *con, struct stat *in_stat,
 	}
 
 	/* grab socket peer if possible */
-	if (con->is_socket && has_out)
+	if (con_flag(con, FLAG_IS_SOCKET) && has_out)
 		out_str = fd_resolve_peer(con->output_fd);
 
 	if (has_out && !out_str)
@@ -452,8 +454,6 @@ extern int add_connection(conmgr_con_type_t type,
 		.read_eof = !has_in,
 		.output_fd = output_fd,
 		.events = events,
-		/* save socket type to avoid calling fstat() again */
-		.is_socket = is_socket,
 		.mss = NO_VAL,
 		.is_listen = is_listen,
 		.work = list_create(NULL),
@@ -465,6 +465,9 @@ extern int add_connection(conmgr_con_type_t type,
 		.flags = FLAG_NONE,
 	};
 
+	/* save if connection is a socket type to avoid calling fstat() again */
+	con_assign_flag(con, FLAG_IS_SOCKET, is_socket);
+
 	if (!is_listen) {
 		con->in = create_buf(xmalloc(BUFFER_START_SIZE),
 				     BUFFER_START_SIZE);
@@ -473,7 +476,7 @@ extern int add_connection(conmgr_con_type_t type,
 
 	/* listen on unix socket */
 	if (unix_socket_path) {
-		xassert(con->is_socket);
+		xassert(con_flag(con, FLAG_IS_SOCKET));
 		xassert(addr->ss_family == AF_LOCAL);
 		con->unix_socket = xstrdup(unix_socket_path);
 	}
@@ -628,7 +631,7 @@ extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
 
 	/* Reject obviously invalid states immediately */
 
-	if (!src->is_socket) {
+	if (!con_flag(src, FLAG_IS_SOCKET)) {
 		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on non-socket",
 			 __func__, src->name);
 		rc = EAFNOSUPPORT;
@@ -697,7 +700,7 @@ extern int conmgr_queue_send_fd(conmgr_fd_t *con, int fd)
 		log_flag(CONMGR, "%s: [%s] Unable to send invalid file descriptor %d",
 			 __func__, con->name, fd);
 		rc = EINVAL;
-	} else if (!con->is_socket) {
+	} else if (!con_flag(con, FLAG_IS_SOCKET)) {
 		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over non-socket",
 			 __func__, con->name, fd);
 		rc = EAFNOSUPPORT;
@@ -1100,7 +1103,7 @@ extern const char *conmgr_fd_get_name(const conmgr_fd_t *con)
 extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 {
 	conmgr_fd_status_t status = {
-		.is_socket = con->is_socket,
+		.is_socket = con_flag(con, FLAG_IS_SOCKET),
 		.unix_socket = con->unix_socket,
 		.is_listen = con->is_listen,
 		.read_eof = con->read_eof,
@@ -1139,7 +1142,7 @@ extern conmgr_fd_t *con_find_by_fd(int fd)
 
 extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 {
-	if (con->is_socket) {
+	if (con_flag(con, FLAG_IS_SOCKET)) {
 		/* Ask kernel for socket error */
 		int rc = SLURM_ERROR, err = SLURM_ERROR;
 

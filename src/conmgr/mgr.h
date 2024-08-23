@@ -85,6 +85,8 @@ typedef enum {
 	FLAG_NONE = CON_FLAG_NONE,
 	/* has on_data() already tried to parse data */
 	FLAG_ON_DATA_TRIED = SLURM_BIT(0),
+	/* connection is a socket file descriptor */
+	FLAG_IS_SOCKET = SLURM_BIT(1),
 } con_flags_t;
 
 /* con_flags_t macro helpers to test, set, and unset flags */
@@ -128,8 +130,6 @@ struct conmgr_fd_s {
 	list_t *out;
 	/* socket maximum segment size (MSS) or NO_VAL if not known */
 	int mss;
-	/* this is a socket fd */
-	bool is_socket;
 	/* path to unix socket if it is one */
 	char *unix_socket;
 	/* this is a listen only socket */
