@@ -65,7 +65,7 @@ static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	slurm_mutex_lock(&mgr.mutex);
-	con->wait_on_finish = false;
+	con_unset_flag(con, FLAG_WAIT_ON_FINISH);
 	/* on_finish must free arg */
 	con->arg = NULL;
 	slurm_mutex_unlock(&mgr.mutex);
@@ -283,7 +283,7 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
-	if (con->wait_on_finish) {
+	if (con_flag(con, FLAG_WAIT_ON_FINISH)) {
 		log_flag(CONMGR, "%s: [%s] waiting for %s",
 			 __func__, con->name,
 			 (con_flag(con, FLAG_IS_LISTEN) ? "on_finish()" :
@@ -297,7 +297,7 @@ static int _handle_connection(void *x, void *arg)
 			 (con_flag(con, FLAG_IS_LISTEN) ? "on_finish()" :
 			  "on_listen_finish()"));
 
-		con->wait_on_finish = true;
+		con_set_flag(con, FLAG_WAIT_ON_FINISH);
 
 		/* notify caller of closing */
 		add_work_con_fifo(true, con, _on_finish_wrapper, con->arg);

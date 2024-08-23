@@ -88,6 +88,7 @@ static const struct {
 	T(FLAG_ON_DATA_TRIED),
 	T(FLAG_IS_SOCKET),
 	T(FLAG_IS_LISTEN),
+	T(FLAG_WAIT_ON_FINISH),
 };
 #undef T
 

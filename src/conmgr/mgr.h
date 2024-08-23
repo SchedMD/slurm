@@ -89,6 +89,8 @@ typedef enum {
 	FLAG_IS_SOCKET = SLURM_BIT(1),
 	/* connection is a listening only socket */
 	FLAG_IS_LISTEN = SLURM_BIT(2),
+	/* connection is waiting for on_finish() to complete */
+	FLAG_WAIT_ON_FINISH = SLURM_BIT(3),
 } con_flags_t;
 
 /* con_flags_t macro helpers to test, set, and unset flags */
@@ -134,8 +136,6 @@ struct conmgr_fd_s {
 	int mss;
 	/* path to unix socket if it is one */
 	char *unix_socket;
-	/* connection is waiting for on_finish() to complete */
-	bool wait_on_finish;
 	/* poll has indicated write is possible */
 	bool can_write;
 	/* poll has indicated read is possible */
