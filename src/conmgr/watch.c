@@ -57,7 +57,7 @@ static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	if (con->is_listen) {
+	if (con_flag(con, FLAG_IS_LISTEN)) {
 		if (con->events.on_listen_finish)
 			con->events.on_listen_finish(con, arg);
 	} else if (con->events.on_finish) {
@@ -94,7 +94,7 @@ static int _handle_connection(void *x, void *arg)
 	if (con->is_connected) {
 		/* continue on to follow other checks */
 	} else if (!con_flag(con, FLAG_IS_SOCKET) || con->can_read ||
-		   con->can_write || con->is_listen) {
+		   con->can_write || con_flag(con, FLAG_IS_LISTEN)) {
 		/*
 		 * Only sockets need special handling to know when they are
 		 * connected. Enqueue on_connect callback if defined.
@@ -105,7 +105,7 @@ static int _handle_connection(void *x, void *arg)
 		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1))
 			con->mss = fd_get_maxmss(con->output_fd, con->name);
 
-		if (con->is_listen) {
+		if (con_flag(con, FLAG_IS_LISTEN)) {
 			if (con->events.on_listen_connect) {
 				/* disable polling until on_listen_connect() */
 				con_set_polling(con, PCTL_TYPE_CONNECTED,
@@ -181,7 +181,7 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* handle out going data */
-	if (!con->is_listen && (con->output_fd >= 0) &&
+	if (!con_flag(con, FLAG_IS_LISTEN) && (con->output_fd >= 0) &&
 	    !list_is_empty(con->out)) {
 		if (con->can_write ||
 		    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
@@ -203,7 +203,8 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
-	if (!con->is_listen && (count = list_count(con->write_complete_work))) {
+	if (!con_flag(con, FLAG_IS_LISTEN) &&
+	    (count = list_count(con->write_complete_work))) {
 		log_flag(CONMGR, "%s: [%s] queuing pending write complete work: %u total",
 			 __func__, con->name, count);
 
@@ -212,7 +213,7 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* check if there is new connection waiting   */
-	if (con->is_listen && !con->read_eof && con->can_read) {
+	if (con_flag(con, FLAG_IS_LISTEN) && !con->read_eof && con->can_read) {
 		log_flag(CONMGR, "%s: [%s] listener has incoming connection",
 			 __func__, con->name);
 
@@ -225,7 +226,7 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* read as much data as possible before processing */
-	if (!con->is_listen && !con->read_eof &&
+	if (!con_flag(con, FLAG_IS_LISTEN) && !con->read_eof &&
 	    (con->can_read ||
 	     (con->polling_input_fd == PCTL_TYPE_UNSUPPORTED))) {
 		log_flag(CONMGR, "%s: [%s] queuing read", __func__, con->name);
@@ -236,7 +237,7 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* handle already read data */
-	if (!con->is_listen && get_buf_offset(con->in) &&
+	if (!con_flag(con, FLAG_IS_LISTEN) && get_buf_offset(con->in) &&
 	    !con_flag(con, FLAG_ON_DATA_TRIED)) {
 		log_flag(CONMGR, "%s: [%s] need to process %u bytes",
 			 __func__, con->name, get_buf_offset(con->in));
@@ -248,7 +249,7 @@ static int _handle_connection(void *x, void *arg)
 		xassert(con->input_fd != -1);
 
 		/* must wait until poll allows read from this socket */
-		if (con->is_listen) {
+		if (con_flag(con, FLAG_IS_LISTEN)) {
 			con_set_polling(con, PCTL_TYPE_LISTEN, __func__);
 			log_flag(CONMGR, "%s: [%s] waiting for new connection",
 				 __func__, con->name);
@@ -285,14 +286,15 @@ static int _handle_connection(void *x, void *arg)
 	if (con->wait_on_finish) {
 		log_flag(CONMGR, "%s: [%s] waiting for %s",
 			 __func__, con->name,
-			 (con->is_listen ? "on_finish()" :
+			 (con_flag(con, FLAG_IS_LISTEN) ? "on_finish()" :
 			  "on_listen_finish()"));
 		return 0;
 	}
 
 	if (con->arg) {
 		log_flag(CONMGR, "%s: [%s] queuing up %s",
-			 __func__, con->name, (con->is_listen ? "on_finish()" :
+			 __func__, con->name,
+			 (con_flag(con, FLAG_IS_LISTEN) ? "on_finish()" :
 			  "on_listen_finish()"));
 
 		con->wait_on_finish = true;
@@ -469,7 +471,7 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 		return SLURM_SUCCESS;
 	}
 
-	if (con->is_listen) {
+	if (con_flag(con, FLAG_IS_LISTEN)) {
 		/* Special handling for listening sockets */
 		if (pollctl_events_has_hangup(events)) {
 			log_flag(CONMGR, "%s: [%s] listener HANGUP",

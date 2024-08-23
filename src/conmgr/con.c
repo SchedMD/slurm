@@ -87,6 +87,7 @@ static const struct {
 	T(FLAG_NONE),
 	T(FLAG_ON_DATA_TRIED),
 	T(FLAG_IS_SOCKET),
+	T(FLAG_IS_LISTEN),
 };
 #undef T
 
@@ -197,7 +198,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	log_flag(CONMGR, "%s: [%s] closing input", __func__, con->name);
 
 	/* unlink listener sockets to avoid leaving ghost socket */
-	if (con->is_listen && con->unix_socket &&
+	if (con_flag(con, FLAG_IS_LISTEN) && con->unix_socket &&
 	    (unlink(con->unix_socket) == -1))
 		error("%s: unable to unlink %s: %m",
 		      __func__, con->unix_socket);
@@ -216,7 +217,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	if (con->in)
 		set_buf_offset(con->in, 0);
 
-	if (con->is_listen) {
+	if (con_flag(con, FLAG_IS_LISTEN)) {
 		if (close(con->input_fd) == -1)
 			log_flag(CONMGR, "%s: [%s] unable to close listen fd %d: %m",
 				 __func__, con->name, con->output_fd);
@@ -455,7 +456,6 @@ extern int add_connection(conmgr_con_type_t type,
 		.output_fd = output_fd,
 		.events = events,
 		.mss = NO_VAL,
-		.is_listen = is_listen,
 		.work = list_create(NULL),
 		.write_complete_work = list_create(NULL),
 		.new_arg = arg,
@@ -467,6 +467,7 @@ extern int add_connection(conmgr_con_type_t type,
 
 	/* save if connection is a socket type to avoid calling fstat() again */
 	con_assign_flag(con, FLAG_IS_SOCKET, is_socket);
+	con_assign_flag(con, FLAG_IS_LISTEN, is_listen);
 
 	if (!is_listen) {
 		con->in = create_buf(xmalloc(BUFFER_START_SIZE),
@@ -525,7 +526,7 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	if (con->is_listen) {
+	if (con_flag(con, FLAG_IS_LISTEN)) {
 		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
 			 __func__, con->name,
 			 (uintptr_t) con->events.on_listen_connect);
@@ -1105,7 +1106,7 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 	conmgr_fd_status_t status = {
 		.is_socket = con_flag(con, FLAG_IS_SOCKET),
 		.unix_socket = con->unix_socket,
-		.is_listen = con->is_listen,
+		.is_listen = con_flag(con, FLAG_IS_LISTEN),
 		.read_eof = con->read_eof,
 		.is_connected = con->is_connected,
 	};
@@ -1292,7 +1293,7 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 		}
 		break;
 	case PCTL_TYPE_LISTEN:
-		xassert(con->is_listen);
+		xassert(con_flag(con, FLAG_IS_LISTEN));
 		in_type = PCTL_TYPE_LISTEN;
 		break;
 	case PCTL_TYPE_INVALID:
