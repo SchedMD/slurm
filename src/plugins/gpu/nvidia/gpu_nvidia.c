@@ -41,6 +41,8 @@
 
 #define NVIDIA_PROC_DRIVER_PREFIX "/proc/driver/nvidia/gpus/"
 #define NVIDIA_INFORMATION_PREFIX "/proc/driver/nvidia/gpus/%s/information"
+#define NVIDIA_CPULIST_PREFIX "/sys/bus/pci/drivers/nvidia/%s/local_cpulist"
+#define MAX_CPUS 0x8000
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -89,6 +91,55 @@ static int _count_devices(unsigned int *dev_count)
 	}
 	closedir(dr);
 	return SLURM_SUCCESS;
+}
+
+static void _set_cpu_affinity(node_config_load_t *node_conf, char *bus_id,
+			      char **cpus)
+{
+	FILE *f;
+	char buffer[2000];
+	char *cpu_aff_mac_range = NULL, *path = NULL;
+	bitstr_t *enabled_cpus_bits = NULL, *cpus_bitmap = NULL;
+
+	if (!(slurm_conf.conf_flags & CONF_FLAG_ECORE)) {
+		enabled_cpus_bits = bit_alloc(MAX_CPUS);
+		for (int i = 0; i < conf->block_map_size; i++) {
+			bit_set(enabled_cpus_bits, conf->block_map[i]);
+		}
+	}
+
+	path = xstrdup_printf(NVIDIA_CPULIST_PREFIX, bus_id);
+	f = fopen(path, "r");
+	cpus_bitmap = bit_alloc(MAX_CPUS);
+
+	while (fgets(buffer, sizeof(buffer), f) != NULL) {
+		if (bit_unfmt(cpus_bitmap, buffer))
+			error("Unable to parse cpu list in %s", path);
+	}
+
+	if (enabled_cpus_bits) {
+		/*
+		 * Mask out E-cores that may be included from nvml's cpu
+		 * affinity bitstring.
+		 */
+		bit_and(cpus_bitmap, enabled_cpus_bits);
+	}
+
+	// Convert from bitstr_t to cpu range str
+	cpu_aff_mac_range = bit_fmt_full(cpus_bitmap);
+
+	// Convert cpu range str from machine to abstract(slurm) format
+	if (node_conf->xcpuinfo_mac_to_abs(cpu_aff_mac_range, cpus)) {
+		error("Conversion from machine to abstract failed");
+	}
+
+	debug2("CPU Affinity Range - Machine: %s", cpu_aff_mac_range);
+	debug2("Core Affinity Range - Abstract: %s", *cpus);
+
+	FREE_NULL_BITMAP(enabled_cpus_bits);
+	FREE_NULL_BITMAP(cpus_bitmap);
+	xfree(cpu_aff_mac_range);
+	xfree(path);
 }
 
 static void _set_name_and_file(node_config_load_t *node_conf, char *bus_id,
@@ -147,6 +198,8 @@ static list_t *_get_system_gpu_list_nvidia(node_config_load_t *node_conf)
 		_set_name_and_file(node_conf, de->d_name,
 				   &gres_slurmd_conf.type_name,
 				   &gres_slurmd_conf.file);
+		_set_cpu_affinity(node_conf, de->d_name,
+				  &gres_slurmd_conf.cpus);
 
 		if (!gres_list_system)
 			gres_list_system = list_create(
@@ -157,6 +210,7 @@ static list_t *_get_system_gpu_list_nvidia(node_config_load_t *node_conf)
 
 		xfree(gres_slurmd_conf.file);
 		xfree(gres_slurmd_conf.type_name);
+		xfree(gres_slurmd_conf.cpus);
 	}
 	closedir(dr);
 
