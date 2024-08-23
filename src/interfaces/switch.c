@@ -348,8 +348,6 @@ extern int  switch_g_duplicate_jobinfo(dynamic_plugin_data_t *source,
 
 extern void switch_g_free_jobinfo(dynamic_plugin_data_t *jobinfo)
 {
-	xassert(switch_context);
-
 	if (jobinfo) {
 		if (jobinfo->data)
 			(*(ops[jobinfo->plugin_id].free_jobinfo))

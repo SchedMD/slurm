@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.02.9
 ==========================
+ -- sattach - Fix regression from 24.05.2 security fix leading to crash.
 
 * Changes in Slurm 23.02.8
 ==========================
