@@ -94,7 +94,8 @@ static int _handle_connection(void *x, void *arg)
 	if (con->is_connected) {
 		/* continue on to follow other checks */
 	} else if (!con_flag(con, FLAG_IS_SOCKET) || con->can_read ||
-		   con->can_write || con_flag(con, FLAG_IS_LISTEN)) {
+		   con_flag(con, FLAG_CAN_WRITE) ||
+		   con_flag(con, FLAG_IS_LISTEN)) {
 		/*
 		 * Only sockets need special handling to know when they are
 		 * connected. Enqueue on_connect callback if defined.
@@ -140,7 +141,7 @@ static int _handle_connection(void *x, void *arg)
 			 */
 		}
 	} else {
-		xassert(!con->can_read && !con->can_write);
+		xassert(!con->can_read && !con_flag(con, FLAG_CAN_WRITE));
 
 		/*
 		 * Need to wait for connection to establish or fail.
@@ -183,7 +184,7 @@ static int _handle_connection(void *x, void *arg)
 	/* handle out going data */
 	if (!con_flag(con, FLAG_IS_LISTEN) && (con->output_fd >= 0) &&
 	    !list_is_empty(con->out)) {
-		if (con->can_write ||
+		if (con_flag(con, FLAG_CAN_WRITE) ||
 		    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
 			log_flag(CONMGR, "%s: [%s] %u pending writes",
 				 __func__, con->name, list_count(con->out));
@@ -463,7 +464,7 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 	}
 
 	con->can_read = false;
-	con->can_write = false;
+	con_unset_flag(con, FLAG_CAN_WRITE);
 
 	if (pollctl_events_has_error(events)) {
 		con_close_on_poll_error(con, fd);
@@ -502,7 +503,8 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 			con->read_eof = pollctl_events_has_hangup(events);
 	}
 	if (fd == con->output_fd)
-		con->can_write = pollctl_events_can_write(events);
+		con_assign_flag(con, FLAG_CAN_WRITE,
+				pollctl_events_can_write(events));
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *flags = con_flags_string(con->flags);

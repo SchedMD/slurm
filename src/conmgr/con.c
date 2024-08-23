@@ -89,6 +89,7 @@ static const struct {
 	T(FLAG_IS_SOCKET),
 	T(FLAG_IS_LISTEN),
 	T(FLAG_WAIT_ON_FINISH),
+	T(FLAG_CAN_WRITE),
 };
 #undef T
 
@@ -1419,7 +1420,7 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	/* clear all polling states */
 	con->read_eof = true;
 	con->can_read = false;
-	con->can_write = false;
+	con_unset_flag(con, FLAG_CAN_WRITE);
 	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
 	/* clear any buffered input/outputs */
