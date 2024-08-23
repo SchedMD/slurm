@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
@@ -250,7 +251,8 @@ static void _handle_work_pending(work_t *work)
 	if (depend & CONMGR_WORK_DEP_CON_WRITE_COMPLETE) {
 		xassert(con);
 		_log_work(work, __func__, "Enqueueing connection write complete work. work_active=%c pending_writes=%u pending_write_complete_work:%u",
-			 (con->work_active ? 'T' : 'F'), list_count(con->out), list_count(con->write_complete_work));
+			 BOOL_CHARIFY(con->work_active), list_count(con->out),
+			 list_count(con->write_complete_work));
 		list_append(con->write_complete_work, work);
 		return;
 	}
@@ -273,7 +275,7 @@ static void _handle_work_pending(work_t *work)
 
 	if (con) {
 		_log_work(work, __func__, "Enqueueing connection work. work_active=%c pending_work:%u",
-			 (con->work_active ? 'T' : 'F'), list_count(con->work));
+			 BOOL_CHARIFY(con->work_active), list_count(con->work));
 		list_append(con->work, work);
 
 		/* trigger watch() if there is a connection involved */
