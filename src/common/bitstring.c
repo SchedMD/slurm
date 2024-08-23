@@ -1362,7 +1362,7 @@ char *bit_fmt_full(bitstr_t *b)
 {
 	int32_t word;
 	bitoff_t start, bit;
-	char *str = NULL, *comma = "";
+	char *str = NULL, *pos = NULL, *comma = "";
 	_assert_bitstr_valid(b);
 
 	for (bit = 0; bit < _bitstr_bits(b); ) {
@@ -1378,11 +1378,12 @@ char *bit_fmt_full(bitstr_t *b)
 				bit++;
 			}
 			if (bit == start)	/* add single bit position */
-				xstrfmtcat(str, "%s%"BITSTR_FMT"",
-					   comma, start);
+				xstrfmtcatat(str, &pos, "%s%"BITSTR_FMT"",
+					     comma, start);
 			else 			/* add bit position range */
-				xstrfmtcat(str, "%s%"BITSTR_FMT"-%"BITSTR_FMT,
-					   comma, start, bit);
+				xstrfmtcatat(str, &pos,
+					     "%s%"BITSTR_FMT"-%"BITSTR_FMT,
+					     comma, start, bit);
 			comma = ",";
 		}
 		bit++;
@@ -1401,7 +1402,7 @@ char *bit_fmt_range(bitstr_t *b, int offset, int len)
 {
 	int32_t word;
 	bitoff_t start, fini_bit, bit;
-	char *str = NULL, *comma = "";
+	char *str = NULL, *pos = NULL, *comma = "";
 	_assert_bitstr_valid(b);
 
 	fini_bit = MIN(_bitstr_bits(b), offset + len);
@@ -1418,12 +1419,13 @@ char *bit_fmt_range(bitstr_t *b, int offset, int len)
 				bit++;
 			}
 			if (bit == start) {	/* add single bit position */
-				xstrfmtcat(str, "%s%"BITSTR_FMT"",
-					   comma, (start - offset));
+				xstrfmtcatat(str, &pos, "%s%"BITSTR_FMT"",
+					     comma, (start - offset));
 			} else {		/* add bit position range */
-				xstrfmtcat(str, "%s%"BITSTR_FMT"-%"BITSTR_FMT,
-					   comma, (start - offset),
-					   (bit - offset));
+				xstrfmtcatat(str, &pos,
+					     "%s%"BITSTR_FMT"-%"BITSTR_FMT,
+					     comma, (start - offset),
+					     (bit - offset));
 			}
 			comma = ",";
 		}
