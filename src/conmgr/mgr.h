@@ -83,6 +83,8 @@ typedef struct {
  */
 typedef enum {
 	FLAG_NONE = CON_FLAG_NONE,
+	/* has on_data() already tried to parse data */
+	FLAG_ON_DATA_TRIED = SLURM_BIT(0),
 } con_flags_t;
 
 /* con_flags_t macro helpers to test, set, and unset flags */
@@ -122,8 +124,6 @@ struct conmgr_fd_s {
 	conmgr_events_t events;
 	/* buffer holding incoming already read data */
 	buf_t *in;
-	/* has on_data already tried to parse data */
-	bool on_data_tried;
 	/* list of buf_t to write (in order) */
 	list_t *out;
 	/* socket maximum segment size (MSS) or NO_VAL if not known */
@@ -167,7 +167,7 @@ struct conmgr_fd_s {
 	 * 	mgr (will not be moved)
 	 * 	con (will not be moved)
 	 * 	arg
-	 *	on_data_tried
+	 *	FLAG_ON_DATA_TRIED
 	 *
 	 */
 	bool work_active;

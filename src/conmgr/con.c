@@ -85,6 +85,7 @@ static const struct {
 	const char *string;
 } con_flags[] = {
 	T(FLAG_NONE),
+	T(FLAG_ON_DATA_TRIED),
 };
 #undef T
 
@@ -1414,7 +1415,7 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	con->read_eof = true;
 	con->can_read = false;
 	con->can_write = false;
-	con->on_data_tried = false;
+	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
 	/* clear any buffered input/outputs */
 	list_flush(con->out);

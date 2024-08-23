@@ -230,13 +230,14 @@ static int _handle_connection(void *x, void *arg)
 	     (con->polling_input_fd == PCTL_TYPE_UNSUPPORTED))) {
 		log_flag(CONMGR, "%s: [%s] queuing read", __func__, con->name);
 		/* reset if data has already been tried if about to read data */
-		con->on_data_tried = false;
+		con_unset_flag(con, FLAG_ON_DATA_TRIED);
 		add_work_con_fifo(true, con, handle_read, con);
 		return 0;
 	}
 
 	/* handle already read data */
-	if (!con->is_listen && get_buf_offset(con->in) && !con->on_data_tried) {
+	if (!con->is_listen && get_buf_offset(con->in) &&
+	    !con_flag(con, FLAG_ON_DATA_TRIED)) {
 		log_flag(CONMGR, "%s: [%s] need to process %u bytes",
 			 __func__, con->name, get_buf_offset(con->in));
 		add_work_con_fifo(true, con, wrap_on_data, con);
