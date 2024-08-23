@@ -371,8 +371,6 @@ extern void switch_g_duplicate_stepinfo(dynamic_plugin_data_t *source,
 
 extern void switch_g_free_stepinfo(dynamic_plugin_data_t *stepinfo)
 {
-	xassert(switch_context_cnt >= 0);
-
 	if (!switch_context_cnt)
 		return;
 
