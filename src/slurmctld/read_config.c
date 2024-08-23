@@ -570,6 +570,9 @@ static void _build_bitmaps(void)
 		     IS_NODE_REBOOT_ISSUED(node_ptr)) &&
 		    ((node_ptr->next_state & NODE_STATE_FLAGS) & NODE_RESUME))
 			bit_set(rs_node_bitmap, node_ptr->index);
+
+		if (IS_NODE_REBOOT_ASAP(node_ptr))
+			bit_set(asap_node_bitmap, node_ptr->index);
 	}
 }
 
