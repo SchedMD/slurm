@@ -25,8 +25,6 @@
 ############################################################################
 source ./globals
 
-set timeout	60
-
 set jobid1 0
 set jobid2 0
 
@@ -50,76 +48,31 @@ proc cleanup {} {
 	cancel_job [list $jobid1 $jobid2]
 }
 
-proc sub_job { state } {
-	global number sbatch test_id bin_sleep node
-
-	set jobid 0
-	spawn $sbatch -J$test_id -o/dev/null -e/dev/null -w $node --exclusive --wrap "$bin_sleep 300"
-	expect {
-		-re "Submitted batch job ($number)" {
-			set jobid $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "sbatch not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$jobid == 0} {
-		fail "Did not get sbatch jobid"
-	}
-
-	wait_for_job -fail $jobid $state
-
-	return $jobid
-}
-
-
 proc sprio_args { args regex match_cnt } {
 	global sprio
 
-	if [wait_for_command "$sprio $args" "\[regexp -all {$regex} \[dict get \$result output\]\] == $match_cnt"] {
-		fail "sprio did not match"
-	}
+	wait_for_command -subtest "$sprio $args" "\[regexp -all {$regex} \[dict get \$result output\]\] == $match_cnt"
 }
 
 proc update_job { jobid prio {error ""} } {
 	global scontrol
 
-	set matches 0
-
-	spawn $scontrol update jobid=$jobid sitefactor=$prio
-	set tmp_re ".*"
-	if {$error != ""} {
-		set tmp_re $error
-	}
-	expect {
-		-re $tmp_re {
-			incr matches
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {($error != "") && !$matches} {
-		fail "Didn't get expected error '$error'"
+	set cmd "$scontrol update jobid=$jobid sitefactor=$prio"
+	if {$error == ""} {
+		set result [run_command $cmd]
+		subtest {[dict get $result "exit_code"] == 0} "Verify that scontrol was a success"
+	} else {
+		set result [run_command -xfail $cmd]
+		subtest {[dict get $result "exit_code"] != 0} "Verify that scontrol failed"
+		subtest {[regexp $error [dict get $result "output"]]} "Validate the scontrol returns the expected error"
 	}
 }
 
 ################################################################
-set jobid1 [sub_job RUNNING]
-set jobid2 [sub_job PENDING]
-
-if {[info exists env(SPRIO_FORMAT)]} {
-    unset env(SPRIO_FORMAT)
-}
+set jobid1 [submit_job -fail "-J$test_id -o/dev/null -e/dev/null -w $node --exclusive --wrap '$bin_sleep 300'"]
+wait_for_job -fail $jobid1 "RUNNING"
+set jobid2 [submit_job -fail "-J$test_id -o/dev/null -e/dev/null -w $node --exclusive --wrap '$bin_sleep 300'"]
+wait_for_job -fail $jobid2 "PENDING"
 
 sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 \[-\]*$number" 1
 update_job $jobid2 100
