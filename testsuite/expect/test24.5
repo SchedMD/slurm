@@ -31,22 +31,18 @@ set jobid1 0
 set jobid2 0
 
 #
-# Check accounting config and bail if not found.
+# Check priority config and bail if not found.
 #
-if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
-	skip "This test can't be run without a usable AccountStorageType"
-}
 if {[get_config_param "PriorityType"] ne "priority/multifactor"} {
 	skip "This test can't be run without a usable PriorityType"
 }
 
-#
-# This test needs to be modified to use the core counts rather than CPU counts
-#
-set select_type_params [get_select_type_params ""]
-if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
-	skip "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
+# Get the node to submit exclusive jobs to
+set node_list [get_nodes_by_request "-c1 -N1 --exclusive"]
+if { [llength $node_list] != 1 } {
+	skip "Insufficient nodes in default partition ($nodes)"
 }
+set node [lindex $node_list 0]
 
 proc cleanup {} {
 	global jobid1 jobid2
@@ -54,11 +50,11 @@ proc cleanup {} {
 	cancel_job [list $jobid1 $jobid2]
 }
 
-proc sub_job { cpu_cnt state } {
-	global number sbatch test_id bin_sleep
+proc sub_job { state } {
+	global number sbatch test_id bin_sleep node
 
 	set jobid 0
-	spawn $sbatch -J$test_id -o/dev/null -e/dev/null -n $cpu_cnt --exclusive --wrap "$bin_sleep 300"
+	spawn $sbatch -J$test_id -o/dev/null -e/dev/null -w $node --exclusive --wrap "$bin_sleep 300"
 	expect {
 		-re "Submitted batch job ($number)" {
 			set jobid $expect_out(1,string)
@@ -118,9 +114,8 @@ proc update_job { jobid prio {error ""} } {
 }
 
 ################################################################
-set cpu_cnt [get_total_cpus]
-set jobid1 [sub_job $cpu_cnt RUNNING]
-set jobid2 [sub_job $cpu_cnt PENDING]
+set jobid1 [sub_job RUNNING]
+set jobid2 [sub_job PENDING]
 
 if {[info exists env(SPRIO_FORMAT)]} {
     unset env(SPRIO_FORMAT)
