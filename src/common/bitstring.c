@@ -137,8 +137,6 @@ strong_alias(bitfmt2int,	slurm_bitfmt2int);
 strong_alias(bit_fmt_hexmask,	slurm_bit_fmt_hexmask);
 strong_alias(bit_fmt_hexmask_trim, slurm_bit_fmt_hexmask_trim);
 strong_alias(bit_unfmt_hexmask,	slurm_bit_unfmt_hexmask);
-strong_alias(bit_fmt_binmask,	slurm_bit_fmt_binmask);
-strong_alias(bit_unfmt_binmask,	slurm_bit_unfmt_binmask);
 strong_alias(bit_fls,		slurm_bit_fls);
 strong_alias(bit_fls_from_bit,	slurm_bit_fls_from_bit);
 strong_alias(bit_fill_gaps,	slurm_bit_fill_gaps);
@@ -1801,67 +1799,6 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 		bit_index += 4;
 	}
 	return rc;
-}
-
-/* bit_fmt_binmask
- *
- * Given a bitstr_t, allocate and return a binary string in the form of:
- *                            "0001010\0"
- *                             ^     ^
- *                             |     |
- *                            MSB   LSB
- *   bitmap (IN)  bitmap to format
- *   RETURN       formatted string
- */
-char * bit_fmt_binmask(bitstr_t * bitmap)
-{
-	char *retstr, *ptr;
-	char current;
-	bitoff_t i;
-	bitoff_t bitsize = bit_size(bitmap);
-
-	/* 1 bits per ASCII '0'-'1' */
-	bitoff_t charsize = bitsize;
-
-	retstr = xmalloc(charsize + 1);
-
-	retstr[charsize] = '\0';
-	ptr = &retstr[charsize - 1];
-	for (i=0; i < bitsize;) {
-		current = 0;
-		if (bit_test(bitmap,i++)) current |= 0x1;
-		current += '0';
-		*ptr-- = current;
-	}
-
-	return retstr;
-}
-
-/* bit_unfmt_binmask
- *
- * Given a binary mask string "0001010\0", convert to a bitstr_t *
- *                             ^     ^
- *                             |     |
- *                            MSB   LSB
- *   bitmap (OUT)  bitmap to update
- *   str (IN)      hex mask string to unformat
- */
-void bit_unfmt_binmask(bitstr_t * bitmap, const char* str)
-{
-	int32_t bit_index = 0, len = strlen(str);
-	const char *curpos = str + len - 1;
-	char current;
-	bitoff_t bitsize = bit_size(bitmap);
-
-	bit_nclear(bitmap, 0, bitsize - 1);
-	while (curpos >= str) {
-		current = (int32_t) *curpos;
-		current -= '0';
-		if ((current & 1) && (bit_index   < bitsize))
-			bit_set(bitmap, bit_index);
-		curpos--;
-		bit_index++;
-	}
 }
 
 /* Find the bit set at pos (0 - bitstr_bits) in bitstr b.

@@ -99,8 +99,6 @@
 #define	bit_fmt_hexmask		slurm_bit_fmt_hexmask
 #define	bit_fmt_hexmask_trim	slurm_bit_fmt_hexmask_trim
 #define bit_unfmt_hexmask	slurm_bit_unfmt_hexmask
-#define	bit_fmt_binmask		slurm_bit_fmt_binmask
-#define bit_unfmt_binmask	slurm_bit_unfmt_binmask
 #define	bit_fls			slurm_bit_fls
 #define	bit_fls_from_bit	slurm_bit_fls_from_bit
 #define	bit_fill_gaps		slurm_bit_fill_gaps

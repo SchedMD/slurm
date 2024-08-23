@@ -145,8 +145,6 @@ int32_t *bitstr2inx(bitstr_t *b);
 char	*bit_fmt_hexmask(bitstr_t *b);
 char    *bit_fmt_hexmask_trim(bitstr_t *b);
 int 	bit_unfmt_hexmask(bitstr_t *b, const char *str);
-char	*bit_fmt_binmask(bitstr_t *b);
-void 	bit_unfmt_binmask(bitstr_t *b, const char *str);
 bitoff_t bit_ffs_from_bit(bitstr_t *b, bitoff_t bit);
 bitoff_t bit_fls(bitstr_t *b);
 bitoff_t bit_fls_from_bit(bitstr_t *b, bitoff_t bit);

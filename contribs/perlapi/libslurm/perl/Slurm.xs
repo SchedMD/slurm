@@ -2028,24 +2028,6 @@ slurm_bit_fmt_hexmask(bitstr_t *b)
 int
 slurm_bit_unfmt_hexmask(bitstr_t *b, char *str)
 
-char *
-slurm_bit_fmt_binmask(bitstr_t *b)
-	PREINIT:
-		char *tmp_str;
-		int len;
-	CODE:
-		tmp_str = slurm_bit_fmt_binmask(b);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		xfree(tmp_str);
-	OUTPUT:
-		RETVAL
-
-# ditto
-void
-slurm_bit_unfmt_binmask(bitstr_t *b, char *str)
-
 void
 slurm_bit_fill_gaps(bitstr_t *b)
 
