@@ -1525,34 +1525,6 @@ extern int32_t *bitfmt2int(const char *bit_str_ptr)
 	return bit_int_ptr;
 }
 
-/*
- * intbitfmt - convert a array of integer (start/end) pairs
- *	terminated by -1 (e.g. "0, 30, 45, 45, 50, 60, -1") to a
- *	string describing bitmap (output from bit_fmt, e.g. "0-30,45,50-60")
- * input: int array
- * output: char *
- * NOTE: the caller must xfree the returned memory
- */
-char *
-inx2bitfmt (int32_t *inx)
-{
-	int32_t j = 0;
-	char *bit_char_ptr = NULL;
-
-	if (inx == NULL)
-		return NULL;
-
-	while (inx[j] >= 0) {
-		if (bit_char_ptr)
-			xstrfmtcat(bit_char_ptr, ",%d-%d", inx[j], inx[j+1]);
-		else
-			xstrfmtcat(bit_char_ptr, "%d-%d", inx[j], inx[j+1]);
-		j += 2;
-	}
-
-	return bit_char_ptr;
-}
-
 int inx2bitstr(bitstr_t *b, int32_t *inx)
 {
 	int32_t *p, bit_cnt;
