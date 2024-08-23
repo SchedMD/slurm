@@ -196,6 +196,8 @@
 	(_X->comp_job_cnt || _X->run_job_cnt || _X->sus_job_cnt)
 #define IS_NODE_RES(_X)		\
 	(_X->node_state & NODE_STATE_RES)
+#define IS_NODE_REBOOT_ASAP(_X) \
+	(IS_NODE_REBOOT_REQUESTED(_X) && IS_NODE_DRAIN(_X))
 
 #define THIS_FILE ((strrchr(__FILE__, '/') ?: __FILE__ - 1) + 1)
 #define INFO_LINE(fmt, ...) \
