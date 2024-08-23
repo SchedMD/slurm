@@ -97,7 +97,7 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 	ssize_t read_c;
 	int rc, readable;
 
-	con->can_read = false;
+	con_unset_flag(con, FLAG_CAN_READ);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	if (con->input_fd < 0) {

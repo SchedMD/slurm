@@ -93,6 +93,8 @@ typedef enum {
 	FLAG_WAIT_ON_FINISH = SLURM_BIT(3),
 	/* poll has indicated write is possible */
 	FLAG_CAN_WRITE = SLURM_BIT(4),
+	/* poll has indicated read is possible */
+	FLAG_CAN_READ = SLURM_BIT(5),
 } con_flags_t;
 
 /* con_flags_t macro helpers to test, set, and unset flags */
@@ -138,8 +140,6 @@ struct conmgr_fd_s {
 	int mss;
 	/* path to unix socket if it is one */
 	char *unix_socket;
-	/* poll has indicated read is possible */
-	bool can_read;
 	/* has this connection received read EOF */
 	bool read_eof;
 

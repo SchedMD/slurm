@@ -90,6 +90,7 @@ static const struct {
 	T(FLAG_IS_LISTEN),
 	T(FLAG_WAIT_ON_FINISH),
 	T(FLAG_CAN_WRITE),
+	T(FLAG_CAN_READ),
 };
 #undef T
 
@@ -191,7 +192,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 
 	if (con->input_fd < 0) {
 		xassert(con->read_eof);
-		xassert(!con->can_read);
+		xassert(!con_flag(con, FLAG_CAN_READ));
 		log_flag(CONMGR, "%s: [%s] ignoring duplicate close request",
 			 __func__, con->name);
 		goto cleanup;
@@ -213,7 +214,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 
 	/* mark it as EOF even if it hasn't */
 	con->read_eof = true;
-	con->can_read = false;
+	con_unset_flag(con, FLAG_CAN_READ);
 
 	/* drop any unprocessed input buffer */
 	if (con->in)
@@ -1419,7 +1420,7 @@ extern void extract_con_fd(conmgr_fd_t *con)
 
 	/* clear all polling states */
 	con->read_eof = true;
-	con->can_read = false;
+	con_unset_flag(con, FLAG_CAN_READ);
 	con_unset_flag(con, FLAG_CAN_WRITE);
 	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
