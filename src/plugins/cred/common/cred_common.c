@@ -99,6 +99,10 @@ static int _unpackstr_and_switch(char **string, void **switch_step,
 	if (!*string)
 		return SLURM_SUCCESS;
 
+	/* Ignore this in client commands and slurmd. Only stepd needs it. */
+	if (!running_in_slurmstepd())
+		return SLURM_SUCCESS;
+
 	string_len = strlen(*string) + 1;
 
 	if (len > string_len) {

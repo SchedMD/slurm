@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
     non-cloud/dynamic nodes and powered down cloud/dynamic nodes.
  -- Fix allowing access to reservations without MaxStartDelay set.
  -- Fix scontrol allowing updating job with bad cpus-per-task value.
+ -- sattach - Fix regression from 23.11.9 security fix leading to crash.
 
 * Changes in Slurm 23.11.9
 ==========================
