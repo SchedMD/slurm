@@ -283,7 +283,7 @@ extern bool conmgr_enabled(void)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(CONMGR, "%s: enabled=%c",
-		 __func__, (enabled_status ? 'T' : 'F'));
+		 __func__, BOOL_CHARIFY(enabled_status));
 
 	enabled_init = true;
 	return enabled_status;
