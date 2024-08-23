@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     when SlurmUser was not root.
  -- mpi/pmix fix race conditions with het jobs at step start/end which could
     make srun to hang.
+ -- Fix not showing some SelectTypeParameters in scontrol show config.
 
 * Changes in Slurm 24.05.3
 ==========================
