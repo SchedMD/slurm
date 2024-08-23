@@ -137,7 +137,7 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 
 		slurm_mutex_lock(&mgr.mutex);
 		/* lock to tell mgr that we are done */
-		con->read_eof = true;
+		con_set_flag(con, FLAG_READ_EOF);
 		slurm_mutex_unlock(&mgr.mutex);
 	} else {
 		log_flag(NET, "%s: [%s] read %zd bytes with %u bytes to process already in buffer",

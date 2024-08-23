@@ -216,7 +216,7 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* check if there is new connection waiting   */
-	if (con_flag(con, FLAG_IS_LISTEN) && !con->read_eof &&
+	if (con_flag(con, FLAG_IS_LISTEN) && !con_flag(con, FLAG_READ_EOF) &&
 	    con_flag(con, FLAG_CAN_READ)) {
 		log_flag(CONMGR, "%s: [%s] listener has incoming connection",
 			 __func__, con->name);
@@ -230,7 +230,7 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* read as much data as possible before processing */
-	if (!con_flag(con, FLAG_IS_LISTEN) && !con->read_eof &&
+	if (!con_flag(con, FLAG_IS_LISTEN) && !con_flag(con, FLAG_READ_EOF) &&
 	    (con_flag(con, FLAG_CAN_READ) ||
 	     (con->polling_input_fd == PCTL_TYPE_UNSUPPORTED))) {
 		log_flag(CONMGR, "%s: [%s] queuing read", __func__, con->name);
@@ -249,7 +249,7 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
-	if (!con->read_eof) {
+	if (!con_flag(con, FLAG_READ_EOF)) {
 		xassert(con->input_fd != -1);
 
 		/* must wait until poll allows read from this socket */
@@ -282,7 +282,7 @@ static int _handle_connection(void *x, void *arg)
 	if (con->input_fd != -1) {
 		log_flag(CONMGR, "%s: [%s] closing incoming on connection input_fd=%d",
 			 __func__, con->name, con->input_fd);
-		xassert(con->read_eof);
+		xassert(con_flag(con, FLAG_READ_EOF));
 		close_con(true, con);
 		return 0;
 	}
@@ -480,7 +480,7 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 		if (pollctl_events_has_hangup(events)) {
 			log_flag(CONMGR, "%s: [%s] listener HANGUP",
 				 __func__, con->name);
-			con->read_eof = true;
+			con_set_flag(con, FLAG_READ_EOF);
 		} else if (pollctl_events_can_read(events)) {
 			con_set_flag(con, FLAG_CAN_READ);
 		} else {
@@ -502,9 +502,11 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 		con_assign_flag(con, FLAG_CAN_READ,
 				pollctl_events_can_read(events));
 
-		/* Avoid setting read_eof if FLAG_CAN_READ set */
-		if (!con_flag(con, FLAG_CAN_READ) && !con->read_eof)
-			con->read_eof = pollctl_events_has_hangup(events);
+		/* Avoid setting FLAG_READ_EOF if FLAG_CAN_READ */
+		if (!con_flag(con, FLAG_CAN_READ) &&
+		    !con_flag(con, FLAG_READ_EOF))
+			con_assign_flag(con, FLAG_READ_EOF,
+					pollctl_events_has_hangup(events));
 	}
 	if (fd == con->output_fd)
 		con_assign_flag(con, FLAG_CAN_WRITE,

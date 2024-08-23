@@ -91,6 +91,7 @@ static const struct {
 	T(FLAG_WAIT_ON_FINISH),
 	T(FLAG_CAN_WRITE),
 	T(FLAG_CAN_READ),
+	T(FLAG_READ_EOF),
 };
 #undef T
 
@@ -191,7 +192,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		slurm_mutex_lock(&mgr.mutex);
 
 	if (con->input_fd < 0) {
-		xassert(con->read_eof);
+		xassert(con_flag(con, FLAG_READ_EOF));
 		xassert(!con_flag(con, FLAG_CAN_READ));
 		log_flag(CONMGR, "%s: [%s] ignoring duplicate close request",
 			 __func__, con->name);
@@ -213,7 +214,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 
 	/* mark it as EOF even if it hasn't */
-	con->read_eof = true;
+	con_set_flag(con, FLAG_READ_EOF);
 	con_unset_flag(con, FLAG_CAN_READ);
 
 	/* drop any unprocessed input buffer */
@@ -455,7 +456,6 @@ extern int add_connection(conmgr_con_type_t type,
 		.magic = MAGIC_CON_MGR_FD,
 
 		.input_fd = input_fd,
-		.read_eof = !has_in,
 		.output_fd = output_fd,
 		.events = events,
 		.mss = NO_VAL,
@@ -471,6 +471,7 @@ extern int add_connection(conmgr_con_type_t type,
 	/* save if connection is a socket type to avoid calling fstat() again */
 	con_assign_flag(con, FLAG_IS_SOCKET, is_socket);
 	con_assign_flag(con, FLAG_IS_LISTEN, is_listen);
+	con_assign_flag(con, FLAG_READ_EOF, !has_in);
 
 	if (!is_listen) {
 		con->in = create_buf(xmalloc(BUFFER_START_SIZE),
@@ -595,7 +596,7 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		log_flag(CONMGR, "%s: [%s] Canceled receive new file descriptor",
 			 __func__, src->name);
-	} else if (src->read_eof) {
+	} else if (con_flag(src, FLAG_READ_EOF)) {
 		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on SHUT_RD input_fd=%d",
 			 __func__, src->name, src->input_fd);
 	} else if (src->input_fd < 0) {
@@ -639,7 +640,7 @@ extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
 		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on non-socket",
 			 __func__, src->name);
 		rc = EAFNOSUPPORT;
-	} else if (src->read_eof) {
+	} else if (con_flag(src, FLAG_READ_EOF)) {
 		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on SHUT_RD input_fd=%d",
 			 __func__, src->name, src->input_fd);
 		rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
@@ -1110,7 +1111,7 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 		.is_socket = con_flag(con, FLAG_IS_SOCKET),
 		.unix_socket = con->unix_socket,
 		.is_listen = con_flag(con, FLAG_IS_LISTEN),
-		.read_eof = con->read_eof,
+		.read_eof = con_flag(con, FLAG_READ_EOF),
 		.is_connected = con->is_connected,
 	};
 
@@ -1419,7 +1420,7 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	}
 
 	/* clear all polling states */
-	con->read_eof = true;
+	con_set_flag(con, FLAG_READ_EOF);
 	con_unset_flag(con, FLAG_CAN_READ);
 	con_unset_flag(con, FLAG_CAN_WRITE);
 	con_unset_flag(con, FLAG_ON_DATA_TRIED);
