@@ -564,6 +564,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix unnecessarily packing alias addrs when terminating jobs with a mix of
     non-cloud/dynamic nodes and powered down cloud/dynamic nodes.
  -- Fix allowing access to reservations without MaxStartDelay set.
+ -- Fix scontrol allowing updating job with bad cpus-per-task value.
 
 * Changes in Slurm 23.11.9
 ==========================
