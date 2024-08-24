@@ -2969,6 +2969,13 @@ skip_start:
 		end_reserve = (end_reserve / backfill_resolution) *
 			      backfill_resolution;
 
+		/*
+		 * Ensure that the job always occupies at least one
+		 * bf_resolution slot within the map.
+		 */
+		if (end_reserve < (start_time + backfill_resolution))
+			end_reserve = start_time + backfill_resolution;
+
 		if (job_ptr->start_time > (sched_start + backfill_window)) {
 			/* Starts too far in the future to worry about */
 			if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)
