@@ -91,7 +91,7 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
-	if (con->is_connected) {
+	if (con_flag(con, FLAG_IS_CONNECTED)) {
 		/* continue on to follow other checks */
 	} else if (!con_flag(con, FLAG_IS_SOCKET) ||
 		   con_flag(con, FLAG_CAN_READ) ||
@@ -101,7 +101,7 @@ static int _handle_connection(void *x, void *arg)
 		 * Only sockets need special handling to know when they are
 		 * connected. Enqueue on_connect callback if defined.
 		 */
-		con->is_connected = true;
+		con_set_flag(con, FLAG_IS_CONNECTED);
 
 		/* Query outbound MSS now kernel should know the answer */
 		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1))

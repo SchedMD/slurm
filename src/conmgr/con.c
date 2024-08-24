@@ -92,6 +92,7 @@ static const struct {
 	T(FLAG_CAN_WRITE),
 	T(FLAG_CAN_READ),
 	T(FLAG_READ_EOF),
+	T(FLAG_IS_CONNECTED),
 };
 #undef T
 
@@ -1112,7 +1113,7 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 		.unix_socket = con->unix_socket,
 		.is_listen = con_flag(con, FLAG_IS_LISTEN),
 		.read_eof = con_flag(con, FLAG_READ_EOF),
-		.is_connected = con->is_connected,
+		.is_connected = con_flag(con, FLAG_IS_CONNECTED),
 	};
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
@@ -1409,7 +1410,7 @@ extern void extract_con_fd(conmgr_fd_t *con)
 
 	/* can't extract safely when work running or not connected */
 	xassert(!con->work_active);
-	xassert(con->is_connected);
+	xassert(con_flag(con, FLAG_IS_CONNECTED));
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *flags = con_flags_string(con->flags);

@@ -97,6 +97,8 @@ typedef enum {
 	FLAG_CAN_READ = SLURM_BIT(5),
 	/* connection received read EOF for input_fd */
 	FLAG_READ_EOF = SLURM_BIT(6),
+	/* is connection established and enqueued on_connection() */
+	FLAG_IS_CONNECTED = SLURM_BIT(7),
 } con_flags_t;
 
 /* con_flags_t macro helpers to test, set, and unset flags */
@@ -152,8 +154,6 @@ struct conmgr_fd_s {
 	 */
 	pollctl_fd_type_t polling_input_fd;
 	pollctl_fd_type_t polling_output_fd;
-	/* has this connection been established and enqueued on_connection() */
-	bool is_connected;
 	/*
 	 * has pending work:
 	 * there must only be 1 thread at a time working on this connection
