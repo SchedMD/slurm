@@ -401,7 +401,7 @@ extern void conmgr_fd_get_in_buffer(const conmgr_fd_t *con,
 				    const void **data_ptr, size_t *bytes_ptr)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->work_active);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 
 	if (data_ptr)
 		*data_ptr = get_buf_data(con->in) + get_buf_offset(con->in);
@@ -412,7 +412,7 @@ extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->type == CON_TYPE_RAW);
-	xassert(con->work_active);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 
 	return create_shadow_buf((get_buf_data(con->in) + con->in->processed),
 				 (size_buf(con->in) - con->in->processed));
@@ -424,7 +424,7 @@ extern void conmgr_fd_mark_consumed_in_buffer(const conmgr_fd_t *con,
 	size_t offset;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->work_active);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 
 	offset = get_buf_offset(con->in) + bytes;
 	xassert(offset <= size_buf(con->in));
@@ -441,7 +441,7 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->type == CON_TYPE_RAW);
-	xassert(con->work_active);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 
 	xassert(buffer_ptr);
 	if (!buffer_ptr)
@@ -496,13 +496,13 @@ extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 extern int conmgr_fd_get_input_fd(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->work_active);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 	return con->input_fd;
 }
 
 extern int conmgr_fd_get_output_fd(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->work_active);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 	return con->output_fd;
 }

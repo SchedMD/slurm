@@ -99,6 +99,23 @@ typedef enum {
 	FLAG_READ_EOF = SLURM_BIT(6),
 	/* is connection established and enqueued on_connection() */
 	FLAG_IS_CONNECTED = SLURM_BIT(7),
+	/*
+	 * has pending work:
+	 * there must only be 1 thread at a time working on this connection
+	 * directly.
+	 *
+	 * While this is true, the following must not be changed except by the
+	 * callback thread:
+	 * 	in
+	 * 	out
+	 * 	name (will never change for life of connection)
+	 * 	mgr (will not be moved)
+	 * 	con (will not be moved)
+	 * 	arg
+	 *	FLAG_ON_DATA_TRIED
+	 *
+	 */
+	FLAG_WORK_ACTIVE = SLURM_BIT(8),
 } con_flags_t;
 
 /* con_flags_t macro helpers to test, set, and unset flags */
@@ -154,23 +171,6 @@ struct conmgr_fd_s {
 	 */
 	pollctl_fd_type_t polling_input_fd;
 	pollctl_fd_type_t polling_output_fd;
-	/*
-	 * has pending work:
-	 * there must only be 1 thread at a time working on this connection
-	 * directly.
-	 *
-	 * While this is true, the following must not be changed except by the
-	 * callback thread:
-	 * 	in
-	 * 	out
-	 * 	name (will never change for life of connection)
-	 * 	mgr (will not be moved)
-	 * 	con (will not be moved)
-	 * 	arg
-	 *	FLAG_ON_DATA_TRIED
-	 *
-	 */
-	bool work_active;
 	/*
 	 * list of non-IO work pending
 	 * type: work_t*

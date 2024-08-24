@@ -85,7 +85,7 @@ static int _handle_connection(void *x, void *arg)
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	/* connection may have a running thread, do nothing */
-	if (con->work_active) {
+	if (con_flag(con, FLAG_WORK_ACTIVE)) {
 		log_flag(CONMGR, "%s: [%s] connection has work to do",
 			 __func__, con->name);
 		return 0;
@@ -171,7 +171,9 @@ static int _handle_connection(void *x, void *arg)
 			 __func__, con->name, count);
 
 		work->status = CONMGR_WORK_STATUS_RUN;
-		con->work_active = true; /* unset by _wrap_con_work() */
+		/* unset by _wrap_con_work() */
+		xassert(!con_flag(con, FLAG_WORK_ACTIVE));
+		con_set_flag(con, FLAG_WORK_ACTIVE);
 
 		handle_work(true, work);
 		return 0;

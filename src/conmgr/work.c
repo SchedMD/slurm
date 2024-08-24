@@ -188,7 +188,7 @@ extern void wrap_work(work_t *work)
 
 	if (con) {
 		slurm_mutex_lock(&mgr.mutex);
-		con->work_active = false;
+		con_unset_flag(con, FLAG_WORK_ACTIVE);
 		/* con may be xfree()ed any time once lock is released */
 
 		EVENT_SIGNAL(&mgr.watch_sleep);

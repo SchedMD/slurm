@@ -93,6 +93,7 @@ static const struct {
 	T(FLAG_CAN_READ),
 	T(FLAG_READ_EOF),
 	T(FLAG_IS_CONNECTED),
+	T(FLAG_WORK_ACTIVE),
 };
 #undef T
 
@@ -734,7 +735,7 @@ static void _deferred_close_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 
 	slurm_mutex_lock(&mgr.mutex);
-	if (con->work_active) {
+	if (con_flag(con, FLAG_WORK_ACTIVE)) {
 		slurm_mutex_unlock(&mgr.mutex);
 		conmgr_queue_close_fd(con);
 	} else {
@@ -748,7 +749,7 @@ extern void conmgr_queue_close_fd(conmgr_fd_t *con)
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	slurm_mutex_lock(&mgr.mutex);
-	if (!con->work_active) {
+	if (!con_flag(con, FLAG_WORK_ACTIVE)) {
 		/*
 		 * Defer request to close connection until connection is no
 		 * longer actively doing work as closing connection would change
@@ -1117,7 +1118,7 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 	};
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->work_active);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 	return status;
 }
 
@@ -1409,7 +1410,7 @@ extern void extract_con_fd(conmgr_fd_t *con)
 		(con->polling_output_fd == PCTL_TYPE_UNSUPPORTED));
 
 	/* can't extract safely when work running or not connected */
-	xassert(!con->work_active);
+	xassert(!con_flag(con, FLAG_WORK_ACTIVE));
 	xassert(con_flag(con, FLAG_IS_CONNECTED));
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
