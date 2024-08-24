@@ -274,6 +274,13 @@ extern const char *conmgr_con_type_string(conmgr_con_type_t type);
 /* WARNING: flags overlap with con_flags_t */
 typedef enum {
 	CON_FLAG_NONE = 0,
+	/*
+	 * Copy entire message into slurm_msg_t after parsing.
+	 * Allocate buffer and copy entire message into msg->buffer.
+	 * Sets SLURM_MSG_KEEP_BUFFER in msg->flags.
+	 * Only applies to CON_TYPE_RPC connections.
+	 */
+	CON_FLAG_RPC_KEEP_BUFFER = SLURM_BIT(9),
 } conmgr_con_flags_t;
 
 /*

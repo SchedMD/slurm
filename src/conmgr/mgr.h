@@ -116,6 +116,8 @@ typedef enum {
 	 *
 	 */
 	FLAG_WORK_ACTIVE = SLURM_BIT(8),
+	/* @see CON_FLAG_RPC_KEEP_BUFFER */
+	FLAG_RPC_KEEP_BUFFER = CON_FLAG_RPC_KEEP_BUFFER,
 } con_flags_t;
 
 /* Mask over flags that track connection state */
