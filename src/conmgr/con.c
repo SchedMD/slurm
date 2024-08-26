@@ -574,11 +574,12 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 
 extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 			     int output_fd, const conmgr_events_t events,
+			     conmgr_con_flags_t flags,
 			     const slurm_addr_t *addr, socklen_t addrlen,
 			     void *arg)
 {
 	return add_connection(type, NULL, input_fd, output_fd, events,
-			      CON_FLAG_NONE, addr, addrlen, false, NULL, arg);
+			      flags, addr, addrlen, false, NULL, arg);
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,

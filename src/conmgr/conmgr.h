@@ -302,6 +302,7 @@ extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
  * IN input_fd file descriptor to have conmgr take ownership and read from
  * IN output_fd file descriptor to have conmgr take ownership and write to
  * IN events call backs on events of fd
+ * IN flags bit-or'ed flags to apply to connection
  * IN addr socket address (if known or NULL) (will always xfree())
  * IN addrlen sizeof addr or 0 if addr is NULL
  * IN arg ptr handed to on_connection callback
@@ -309,6 +310,7 @@ extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
  */
 extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 			     int output_fd, const conmgr_events_t events,
+			     conmgr_con_flags_t flags,
 			     const slurm_addr_t *addr, socklen_t addrlen,
 			     void *arg);
 
