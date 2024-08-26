@@ -575,7 +575,7 @@ static void _check_user(void)
 	if (!getuid())
 		fatal("slurmrestd should not be run as the root user.");
 	if (!getgid())
-		fatal("slurmrestd should not be run with the root goup.");
+		fatal("slurmrestd should not be run with the root group.");
 
 	if ((gid_count = getgroups(0, NULL)) > 0) {
 		gid_t *list = xcalloc(gid_count, sizeof(*list));
