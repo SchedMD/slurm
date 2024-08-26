@@ -2163,7 +2163,6 @@ static int _clone_env_child(child_args_t *child_args)
 		error("%s: failed to munmap child stack: %m", __func__);
 	return rc;
 }
-#endif
 
 static bool _ns_path_disabled(const char *ns_path)
 {
@@ -2222,6 +2221,7 @@ static bool _ns_disabled()
 
 	return disabled;
 }
+#endif
 
 /*
  * Return an array of strings representing the specified user's default
