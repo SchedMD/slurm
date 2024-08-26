@@ -551,19 +551,28 @@ static void _lock_down(void)
 
 	if (become_user && getuid())
 		fatal("slurmrestd must run as root in become_user mode");
-	else if (check_user && (slurm_conf.slurm_user_id == getuid()))
-		fatal("slurmrestd should not be run as SlurmUser");
 
 	if (become_user && getgid())
 		fatal("slurmrestd must run as root in become_user mode");
-	else if (check_user &&
-		 (gid_from_uid(slurm_conf.slurm_user_id) == getgid()))
-		fatal("slurmrestd should not be run with SlurmUser's group.");
 
 #ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		error("%s: Unable to set process as dumpable: %m", __func__);
 #endif
+}
+
+/*
+ * Check slurmrestd is not running as SlurmUser unless check_user is false.
+ */
+static void _check_user(void)
+{
+	if (!check_user)
+		return;
+
+	if (slurm_conf.slurm_user_id == getuid())
+		fatal("slurmrestd should not be run as SlurmUser");
+	if (gid_from_uid(slurm_conf.slurm_user_id) == getgid())
+		fatal("slurmrestd should not be run with SlurmUser's group.");
 }
 
 /* simple wrapper to hand over operations router in http context */
@@ -638,6 +647,7 @@ int main(int argc, char **argv)
 	run_mode.listen = !list_is_empty(socket_listen);
 
 	slurm_init(slurm_conf_filename);
+	_check_user();
 
 	if (thread_count < 2)
 		fatal("Request at least 2 threads for processing");
