@@ -562,6 +562,8 @@ static void _lock_down(void)
  */
 static void _check_user(void)
 {
+	int gid_count = 0;
+
 	if (!check_user)
 		return;
 
@@ -574,6 +576,25 @@ static void _check_user(void)
 		fatal("slurmrestd should not be run as the root user.");
 	if (!getgid())
 		fatal("slurmrestd should not be run with the root goup.");
+
+	if ((gid_count = getgroups(0, NULL)) > 0) {
+		gid_t *list = xcalloc(gid_count, sizeof(*list));
+
+		if (getgroups(gid_count, list) != gid_count)
+			fatal_abort("Inconsistent getgroups() group counts. This should never happen");
+
+		for (int i = 0; i < gid_count; i++) {
+			if (list[i] == slurm_conf.slurm_user_id)
+				fatal("slurmrestd should not be run with SlurmUser's group.");
+
+			if (!list[i])
+				fatal("slurmrestd should not be run with the root group.");
+		}
+
+		xfree(list);
+	} else if (gid_count < 0) {
+		fatal_abort("getgroups()=%d failed[%d]: %m", errno, gid_count);
+	}
 }
 
 /* simple wrapper to hand over operations router in http context */
