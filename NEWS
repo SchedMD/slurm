@@ -135,7 +135,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix --clusters/-M queries for clusters outside of a federation when
     fed_display is configured.
  -- Fix scontrol allowing updating job with bad cpus-per-task value.
- -- sattach - Fix regression from 23.11.9 security fix leading to crash.
+ -- sattach - Fix regression from 24.05.2 security fix leading to crash.
  -- mpi/pmix - Fix assertion when built under --enable-debug.
 
 * Changes in Slurm 24.05.2
