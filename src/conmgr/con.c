@@ -583,9 +583,10 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
-				    const conmgr_events_t events, void *arg)
+				    const conmgr_events_t events,
+				    conmgr_con_flags_t flags, void *arg)
 {
-	return add_connection(type, NULL, fd, -1, events, CON_FLAG_NONE, NULL,
+	return add_connection(type, NULL, fd, -1, events, flags, NULL,
 			      0, true, NULL, arg);
 }
 

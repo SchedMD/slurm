@@ -1472,7 +1472,7 @@ static void _open_ports(void)
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
 						   CON_TYPE_RPC, events,
-						   NULL)))
+						   CON_FLAG_NONE, NULL)))
 			fatal("%s: unable to process fd:%d error:%s",
 			      __func__, listeners.fd[i], slurm_strerror(rc));
 	}
