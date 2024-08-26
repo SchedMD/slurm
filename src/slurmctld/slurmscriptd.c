@@ -511,10 +511,6 @@ static void _send_bb_script_msg(int write_fd, void *cb_arg)
 	run_script_msg_t *script_msg = cb_arg;
 	buf_t *buffer = init_buf(0);
 	bb_script_info_msg_t bb_msg = {
-		.authalttypes = slurm_conf.authalttypes,
-		.authinfo = slurm_conf.authinfo,
-		.authalt_params = slurm_conf.authalt_params,
-		.authtype = slurm_conf.authtype,
 		.cluster_name = slurm_conf.cluster_name,
 		.extra_buf = script_msg->extra_buf,
 		.extra_buf_size = script_msg->extra_buf_size,
@@ -1345,10 +1341,6 @@ static void _init_bb_script_config(char **function, uint32_t *job_id,
 	*job_id = bb_msg->job_id;
 	*job_info = _unpack_bb_job_info(bb_msg);
 
-	slurm_conf.authalttypes = bb_msg->authalttypes;
-	slurm_conf.authinfo = bb_msg->authinfo;
-	slurm_conf.authalt_params = bb_msg->authalt_params;
-	slurm_conf.authtype = bb_msg->authtype;
 	slurm_conf.cluster_name = bb_msg->cluster_name;
 	slurm_conf.slurmctld_debug = bb_msg->slurmctld_debug;
 	slurm_conf.slurmctld_logfile = bb_msg->slurmctld_logfile;
@@ -1420,14 +1412,7 @@ extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv)
 
 	/*
 	 * Initialize plugins.
-	 * Lua plugins may call slurm_sprint_job_info() which calls
-	 * slurm_load_jobs() which makes an RPC to slurmctld, and that uses
-	 * the auth and hash plugins.
 	 */
-	if (auth_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize auth plugin");
-	if (hash_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize hash plugin");
 	slurm_conf.bb_type = "burst_buffer/lua";
 	if (bb_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize burst_buffer plugin");
