@@ -1102,7 +1102,7 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 
 			/*
 			 * There is a race condition here where the global
-			 * QOS list could have changed betwen the query of the
+			 * QOS list could have changed between the query of the
 			 * list and the bitstrs. Just error and have the user
 			 * try again if they want.
 			 */
@@ -4676,7 +4676,7 @@ static int PARSE_FUNC(JOB_DESC_MSG_CPU_FREQ)(const parser_t *const parser,
 					  &job->cpu_freq_gov))) {
 		xfree(str);
 		return parse_error(parser, args, parent_path, rc,
-				   "Invalid cpu_freuency");
+				   "Invalid cpu_frequency");
 	}
 
 	xfree(str);
@@ -7598,7 +7598,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_FLAGS)[] = {
 	add_flag_bit(BF_WHOLE_NODE_TEST, "TESTING_WHOLE_NODE_BACKFILL"),
 	add_flag_bit(TOP_PRIO_TMP, "TOP_PRIORITY_JOB"),
 	add_flag_bit(JOB_ACCRUE_OVER, "ACCRUE_COUNT_CLEARED"),
-	add_flag_bit(GRES_DISABLE_BIND, "GRED_BINDING_DISABLED"),
+	add_flag_bit(GRES_DISABLE_BIND, "GRES_BINDING_DISABLED"),
 	add_flag_bit(JOB_WAS_RUNNING, "JOB_WAS_RUNNING"),
 	add_flag_bit(RESET_ACCRUE_TIME, "JOB_ACCRUE_TIME_RESET"),
 	add_flag_bit(CRON_JOB, "CRON_JOB"),
@@ -9326,7 +9326,7 @@ static const parser_t PARSER_ARRAY(JOB_ALLOC_REQ)[] = {
 	add_parser(rtype, OPENAPI_WARNINGS, false, warnings, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME), "Query warnings")
 
 /*
- * Generic response when there is only possiblity of warnings/errors
+ * Generic response when there is only possibility of warnings/errors
  * and HTTP status code.
  */
 static const parser_t PARSER_ARRAY(OPENAPI_RESP)[] = {                            \
