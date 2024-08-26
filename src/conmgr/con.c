@@ -237,7 +237,7 @@ static char *_resolve_fd(int fd, struct stat *stat_ptr)
 		return xstrdup_printf("device:%u.%u", major(stat_ptr->st_dev),
 				      minor(stat_ptr->st_dev));
 #else /* !__linux__ */
-		return xstrdup_printf("device:0x%x", stat_ptr->st_dev);
+		return xstrdup_printf("device:0x%"PRIx64, stat_ptr->st_dev);
 #endif /* !__linux__ */
 	}
 
