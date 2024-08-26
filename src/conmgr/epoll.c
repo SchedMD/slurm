@@ -106,7 +106,9 @@ static const struct {
 	T(EPOLLET),
 	T(EPOLLONESHOT),
 	T(EPOLLWAKEUP),
+#ifdef EPOLLEXCLUSIVE
 	T(EPOLLEXCLUSIVE),
+#endif
 };
 #undef T
 
