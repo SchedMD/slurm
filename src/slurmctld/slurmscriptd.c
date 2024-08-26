@@ -1125,7 +1125,6 @@ extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 {
 	ssize_t i;
 	int rc = SLURM_ERROR, ack;
-	char *failed_plugin = NULL;
 
 	slurmscriptd_writefd = SLURMSCRIPT_WRITE_FD;
 	slurmscriptd_readfd = SLURMSCRIPT_READ_FD;
@@ -1153,22 +1152,10 @@ extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 
 	debug("slurmscriptd: Got ack from slurmctld");
 
-	/*
-	 * Initialize required plugins to avoid lazy linking.
-	 * If plugins fail to initialize, send an error to slurmctld.
-	 */
-	if (bb_g_init() != SLURM_SUCCESS) {
-		failed_plugin = "burst_buffer";
-		ack = SLURM_ERROR;
-	}
-
 	i = write(slurmscriptd_writefd, &ack, sizeof(int));
 	if (i != sizeof(int))
 		fatal("%s: Failed to send initialization code to slurmctld",
 		      __func__);
-	if (ack != SLURM_SUCCESS)
-		fatal("%s: Failed to initialize %s plugin",
-		      __func__, failed_plugin);
 
 	_init_slurmscriptd_conmgr();
 
