@@ -57,7 +57,7 @@ static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	if (con->is_listen) {
+	if (con_flag(con, FLAG_IS_LISTEN)) {
 		if (con->events.on_listen_finish)
 			con->events.on_listen_finish(con, arg);
 	} else if (con->events.on_finish) {
@@ -65,7 +65,7 @@ static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	slurm_mutex_lock(&mgr.mutex);
-	con->wait_on_finish = false;
+	con_unset_flag(con, FLAG_WAIT_ON_FINISH);
 	/* on_finish must free arg */
 	con->arg = NULL;
 	slurm_mutex_unlock(&mgr.mutex);
@@ -85,27 +85,29 @@ static int _handle_connection(void *x, void *arg)
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	/* connection may have a running thread, do nothing */
-	if (con->work_active) {
+	if (con_flag(con, FLAG_WORK_ACTIVE)) {
 		log_flag(CONMGR, "%s: [%s] connection has work to do",
 			 __func__, con->name);
 		return 0;
 	}
 
-	if (con->is_connected) {
+	if (con_flag(con, FLAG_IS_CONNECTED)) {
 		/* continue on to follow other checks */
-	} else if (!con->is_socket || con->can_read || con->can_write ||
-		   con->is_listen) {
+	} else if (!con_flag(con, FLAG_IS_SOCKET) ||
+		   con_flag(con, FLAG_CAN_READ) ||
+		   con_flag(con, FLAG_CAN_WRITE) ||
+		   con_flag(con, FLAG_IS_LISTEN)) {
 		/*
 		 * Only sockets need special handling to know when they are
 		 * connected. Enqueue on_connect callback if defined.
 		 */
-		con->is_connected = true;
+		con_set_flag(con, FLAG_IS_CONNECTED);
 
 		/* Query outbound MSS now kernel should know the answer */
-		if (con->is_socket && (con->output_fd != -1))
+		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1))
 			con->mss = fd_get_maxmss(con->output_fd, con->name);
 
-		if (con->is_listen) {
+		if (con_flag(con, FLAG_IS_LISTEN)) {
 			if (con->events.on_listen_connect) {
 				/* disable polling until on_listen_connect() */
 				con_set_polling(con, PCTL_TYPE_CONNECTED,
@@ -140,7 +142,8 @@ static int _handle_connection(void *x, void *arg)
 			 */
 		}
 	} else {
-		xassert(!con->can_read && !con->can_write);
+		xassert(!con_flag(con, FLAG_CAN_READ) &&
+			!con_flag(con, FLAG_CAN_WRITE));
 
 		/*
 		 * Need to wait for connection to establish or fail.
@@ -168,7 +171,9 @@ static int _handle_connection(void *x, void *arg)
 			 __func__, con->name, count);
 
 		work->status = CONMGR_WORK_STATUS_RUN;
-		con->work_active = true; /* unset by _wrap_con_work() */
+		/* unset by _wrap_con_work() */
+		xassert(!con_flag(con, FLAG_WORK_ACTIVE));
+		con_set_flag(con, FLAG_WORK_ACTIVE);
 
 		handle_work(true, work);
 		return 0;
@@ -181,9 +186,9 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* handle out going data */
-	if (!con->is_listen && (con->output_fd >= 0) &&
+	if (!con_flag(con, FLAG_IS_LISTEN) && (con->output_fd >= 0) &&
 	    !list_is_empty(con->out)) {
-		if (con->can_write ||
+		if (con_flag(con, FLAG_CAN_WRITE) ||
 		    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
 			log_flag(CONMGR, "%s: [%s] %u pending writes",
 				 __func__, con->name, list_count(con->out));
@@ -203,7 +208,8 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
-	if (!con->is_listen && (count = list_count(con->write_complete_work))) {
+	if (!con_flag(con, FLAG_IS_LISTEN) &&
+	    (count = list_count(con->write_complete_work))) {
 		log_flag(CONMGR, "%s: [%s] queuing pending write complete work: %u total",
 			 __func__, con->name, count);
 
@@ -212,56 +218,61 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* check if there is new connection waiting   */
-	if (con->is_listen && !con->read_eof && con->can_read) {
+	if (con_flag(con, FLAG_IS_LISTEN) && !con_flag(con, FLAG_READ_EOF) &&
+	    con_flag(con, FLAG_CAN_READ)) {
 		log_flag(CONMGR, "%s: [%s] listener has incoming connection",
 			 __func__, con->name);
 
 		/* disable polling until _listen_accept() completes */
 		con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
-		con->can_read = false;
+		con_unset_flag(con, FLAG_CAN_READ);
 
 		add_work_con_fifo(true, con, _listen_accept, con);
 		return 0;
 	}
 
 	/* read as much data as possible before processing */
-	if (!con->is_listen && !con->read_eof &&
-	    (con->can_read ||
+	if (!con_flag(con, FLAG_IS_LISTEN) && !con_flag(con, FLAG_READ_EOF) &&
+	    (con_flag(con, FLAG_CAN_READ) ||
 	     (con->polling_input_fd == PCTL_TYPE_UNSUPPORTED))) {
 		log_flag(CONMGR, "%s: [%s] queuing read", __func__, con->name);
 		/* reset if data has already been tried if about to read data */
-		con->on_data_tried = false;
+		con_unset_flag(con, FLAG_ON_DATA_TRIED);
 		add_work_con_fifo(true, con, handle_read, con);
 		return 0;
 	}
 
 	/* handle already read data */
-	if (!con->is_listen && get_buf_offset(con->in) && !con->on_data_tried) {
+	if (!con_flag(con, FLAG_IS_LISTEN) && get_buf_offset(con->in) &&
+	    !con_flag(con, FLAG_ON_DATA_TRIED)) {
 		log_flag(CONMGR, "%s: [%s] need to process %u bytes",
 			 __func__, con->name, get_buf_offset(con->in));
 		add_work_con_fifo(true, con, wrap_on_data, con);
 		return 0;
 	}
 
-	if (!con->read_eof) {
+	if (!con_flag(con, FLAG_READ_EOF)) {
 		xassert(con->input_fd != -1);
 
 		/* must wait until poll allows read from this socket */
-		if (con->is_listen) {
+		if (con_flag(con, FLAG_IS_LISTEN)) {
 			con_set_polling(con, PCTL_TYPE_LISTEN, __func__);
 			log_flag(CONMGR, "%s: [%s] waiting for new connection",
 				 __func__, con->name);
 		} else {
 			con_set_polling(con, PCTL_TYPE_READ_ONLY, __func__);
-			log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u work_active=%c can_read=%c can_write=%c on_data_tried=%c work=%d write_complete_work=%d",
-				 __func__, con->name, get_buf_offset(con->in),
-				 list_count(con->out),
-				 BOOL_CHARIFY(con->work_active),
-				 BOOL_CHARIFY(con->can_read),
-				 BOOL_CHARIFY(con->can_write),
-				 BOOL_CHARIFY(con->on_data_tried),
-				 list_count(con->work),
-				 list_count(con->write_complete_work));
+
+			if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+				char *flags = con_flags_string(con->flags);
+				log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u work=%d write_complete_work=%d flags=%s",
+					 __func__, con->name,
+					 get_buf_offset(con->in),
+					 list_count(con->out),
+					 list_count(con->work),
+					 list_count(con->write_complete_work),
+					 flags);
+				xfree(flags);
+			}
 		}
 		return 0;
 	}
@@ -273,25 +284,26 @@ static int _handle_connection(void *x, void *arg)
 	if (con->input_fd != -1) {
 		log_flag(CONMGR, "%s: [%s] closing incoming on connection input_fd=%d",
 			 __func__, con->name, con->input_fd);
-		xassert(con->read_eof);
+		xassert(con_flag(con, FLAG_READ_EOF));
 		close_con(true, con);
 		return 0;
 	}
 
-	if (con->wait_on_finish) {
+	if (con_flag(con, FLAG_WAIT_ON_FINISH)) {
 		log_flag(CONMGR, "%s: [%s] waiting for %s",
 			 __func__, con->name,
-			 (con->is_listen ? "on_finish()" :
+			 (con_flag(con, FLAG_IS_LISTEN) ? "on_finish()" :
 			  "on_listen_finish()"));
 		return 0;
 	}
 
 	if (con->arg) {
 		log_flag(CONMGR, "%s: [%s] queuing up %s",
-			 __func__, con->name, (con->is_listen ? "on_finish()" :
+			 __func__, con->name,
+			 (con_flag(con, FLAG_IS_LISTEN) ? "on_finish()" :
 			  "on_listen_finish()"));
 
-		con->wait_on_finish = true;
+		con_set_flag(con, FLAG_WAIT_ON_FINISH);
 
 		/* notify caller of closing */
 		add_work_con_fifo(true, con, _on_finish_wrapper, con->arg);
@@ -456,8 +468,8 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 		return SLURM_SUCCESS;
 	}
 
-	con->can_read = false;
-	con->can_write = false;
+	con_unset_flag(con, FLAG_CAN_READ);
+	con_unset_flag(con, FLAG_CAN_WRITE);
 
 	if (pollctl_events_has_error(events)) {
 		con_close_on_poll_error(con, fd);
@@ -465,38 +477,49 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 		return SLURM_SUCCESS;
 	}
 
-	if (con->is_listen) {
+	if (con_flag(con, FLAG_IS_LISTEN)) {
 		/* Special handling for listening sockets */
 		if (pollctl_events_has_hangup(events)) {
 			log_flag(CONMGR, "%s: [%s] listener HANGUP",
 				 __func__, con->name);
-			con->read_eof = true;
+			con_set_flag(con, FLAG_READ_EOF);
 		} else if (pollctl_events_can_read(events)) {
-			con->can_read = true;
+			con_set_flag(con, FLAG_CAN_READ);
 		} else {
 			fatal_abort("should never happen");
 		}
 
-		log_flag(CONMGR, "%s: [%s] listener fd=%u can_read=%s read_eof=%s",
-			 __func__, con->name, fd, BOOL_STRINGIFY(con->can_read),
-			 BOOL_STRINGIFY(con->read_eof));
+
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char *flags = con_flags_string(con->flags);
+			log_flag(CONMGR, "%s: [%s] listener fd=%u flags=%s",
+				 __func__, con->name, fd, flags);
+			xfree(flags);
+		}
 
 		return SLURM_SUCCESS;
 	}
 
 	if (fd == con->input_fd) {
-		con->can_read = pollctl_events_can_read(events);
+		con_assign_flag(con, FLAG_CAN_READ,
+				pollctl_events_can_read(events));
 
-		/* Avoid setting read_eof if can_read=true */
-		if (!con->can_read && !con->read_eof)
-			con->read_eof = pollctl_events_has_hangup(events);
+		/* Avoid setting FLAG_READ_EOF if FLAG_CAN_READ */
+		if (!con_flag(con, FLAG_CAN_READ) &&
+		    !con_flag(con, FLAG_READ_EOF))
+			con_assign_flag(con, FLAG_READ_EOF,
+					pollctl_events_has_hangup(events));
 	}
 	if (fd == con->output_fd)
-		con->can_write = pollctl_events_can_write(events);
+		con_assign_flag(con, FLAG_CAN_WRITE,
+				pollctl_events_can_write(events));
 
-	log_flag(CONMGR, "%s: [%s] fd=%u can_read=%s can_write=%s read_eof=%s",
-		 __func__, con->name, fd, BOOL_STRINGIFY(con->can_read),
-		 BOOL_STRINGIFY(con->can_write), BOOL_STRINGIFY(con->read_eof));
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *flags = con_flags_string(con->flags);
+		log_flag(CONMGR, "%s: [%s] fd=%d flags=%s",
+			 __func__, con->name, fd, flags);
+		xfree(flags);
+	}
 
 	return SLURM_SUCCESS;
 }

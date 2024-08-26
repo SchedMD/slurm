@@ -78,6 +78,62 @@ typedef struct {
 } work_t;
 
 /*
+ * WARNING: flags overlap with with conmgr_con_flags_t with con_flags_t being
+ * used to avoid exporting conmgr private flags outside of conmgr.
+ */
+typedef enum {
+	FLAG_NONE = CON_FLAG_NONE,
+	/* has on_data() already tried to parse data */
+	FLAG_ON_DATA_TRIED = SLURM_BIT(0),
+	/* connection is a socket file descriptor */
+	FLAG_IS_SOCKET = SLURM_BIT(1),
+	/* connection is a listening only socket */
+	FLAG_IS_LISTEN = SLURM_BIT(2),
+	/* connection is waiting for on_finish() to complete */
+	FLAG_WAIT_ON_FINISH = SLURM_BIT(3),
+	/* poll has indicated write is possible */
+	FLAG_CAN_WRITE = SLURM_BIT(4),
+	/* poll has indicated read is possible */
+	FLAG_CAN_READ = SLURM_BIT(5),
+	/* connection received read EOF for input_fd */
+	FLAG_READ_EOF = SLURM_BIT(6),
+	/* is connection established and enqueued on_connection() */
+	FLAG_IS_CONNECTED = SLURM_BIT(7),
+	/*
+	 * has pending work:
+	 * there must only be 1 thread at a time working on this connection
+	 * directly.
+	 *
+	 * While this is true, the following must not be changed except by the
+	 * callback thread:
+	 * 	in
+	 * 	out
+	 * 	name (will never change for life of connection)
+	 * 	mgr (will not be moved)
+	 * 	con (will not be moved)
+	 * 	arg
+	 *	FLAG_ON_DATA_TRIED
+	 *
+	 */
+	FLAG_WORK_ACTIVE = SLURM_BIT(8),
+} con_flags_t;
+
+/* con_flags_t macro helpers to test, set, and unset flags */
+#define con_flag(con, flag) ((con)->flags & (flag))
+#define con_set_flag(con, flag) ((con)->flags |= (flag))
+#define con_unset_flag(con, flag) ((con)->flags &= ~(flag))
+#define con_assign_flag(con, flag, value) \
+	((con)->flags = ((con)->flags & ~(flag)) | ((!!value) * (flag)))
+
+
+/*
+ * Convert flags to printable string
+ * IN flags - connection flags
+ * RET string of flags (must xfree())
+ */
+extern char *con_flags_string(const con_flags_t flags);
+
+/*
  * Connection tracking structure
  */
 struct conmgr_fd_s {
@@ -99,26 +155,12 @@ struct conmgr_fd_s {
 	conmgr_events_t events;
 	/* buffer holding incoming already read data */
 	buf_t *in;
-	/* has on_data already tried to parse data */
-	bool on_data_tried;
 	/* list of buf_t to write (in order) */
 	list_t *out;
 	/* socket maximum segment size (MSS) or NO_VAL if not known */
 	int mss;
-	/* this is a socket fd */
-	bool is_socket;
 	/* path to unix socket if it is one */
 	char *unix_socket;
-	/* this is a listen only socket */
-	bool is_listen;
-	/* connection is waiting for on_finish() to complete */
-	bool wait_on_finish;
-	/* poll has indicated write is possible */
-	bool can_write;
-	/* poll has indicated read is possible */
-	bool can_read;
-	/* has this connection received read EOF */
-	bool read_eof;
 
 	/* queued extraction of input_fd/output_fd request */
 	extract_fd_t *extract;
@@ -129,25 +171,6 @@ struct conmgr_fd_s {
 	 */
 	pollctl_fd_type_t polling_input_fd;
 	pollctl_fd_type_t polling_output_fd;
-	/* has this connection been established and enqueued on_connection() */
-	bool is_connected;
-	/*
-	 * has pending work:
-	 * there must only be 1 thread at a time working on this connection
-	 * directly.
-	 *
-	 * While this is true, the following must not be changed except by the
-	 * callback thread:
-	 * 	in
-	 * 	out
-	 * 	name (will never change for life of connection)
-	 * 	mgr (will not be moved)
-	 * 	con (will not be moved)
-	 * 	arg
-	 *	on_data_tried
-	 *
-	 */
-	bool work_active;
 	/*
 	 * list of non-IO work pending
 	 * type: work_t*
@@ -158,6 +181,9 @@ struct conmgr_fd_s {
 	 * type: work_t*
 	 */
 	list_t *write_complete_work;
+
+	/* Flags set for connection */
+	con_flags_t flags;
 };
 
 typedef struct {

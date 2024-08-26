@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
@@ -187,7 +188,7 @@ extern void wrap_work(work_t *work)
 
 	if (con) {
 		slurm_mutex_lock(&mgr.mutex);
-		con->work_active = false;
+		con_unset_flag(con, FLAG_WORK_ACTIVE);
 		/* con may be xfree()ed any time once lock is released */
 
 		EVENT_SIGNAL(&mgr.watch_sleep);
@@ -249,8 +250,15 @@ static void _handle_work_pending(work_t *work)
 
 	if (depend & CONMGR_WORK_DEP_CON_WRITE_COMPLETE) {
 		xassert(con);
-		_log_work(work, __func__, "Enqueueing connection write complete work. work_active=%c pending_writes=%u pending_write_complete_work:%u",
-			 (con->work_active ? 'T' : 'F'), list_count(con->out), list_count(con->write_complete_work));
+
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char *flags = con_flags_string(con->flags);
+			_log_work(work, __func__, "Enqueueing connection write complete work. pending_writes=%u pending_write_complete_work:%u flags=%s",
+				  list_count(con->out),
+				  list_count(con->write_complete_work), flags);
+			xfree(flags);
+		}
+
 		list_append(con->write_complete_work, work);
 		return;
 	}
@@ -272,8 +280,13 @@ static void _handle_work_pending(work_t *work)
 	}
 
 	if (con) {
-		_log_work(work, __func__, "Enqueueing connection work. work_active=%c pending_work:%u",
-			 (con->work_active ? 'T' : 'F'), list_count(con->work));
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char *flags = con_flags_string(con->flags);
+			_log_work(work, __func__, "Enqueueing connection work. pending_work:%u flags=%s",
+				  list_count(con->work), flags);
+			xfree(flags);
+		}
+
 		list_append(con->work, work);
 
 		/* trigger watch() if there is a connection involved */

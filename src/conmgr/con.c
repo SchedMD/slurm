@@ -55,6 +55,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/fd.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/pack.h"
@@ -75,6 +76,24 @@ static const struct {
 } con_types[] = {
 	T(CON_TYPE_RAW),
 	T(CON_TYPE_RPC),
+};
+#undef T
+
+#define T(flag) { flag, XSTRINGIFY(flag) }
+static const struct {
+	con_flags_t flag;
+	const char *string;
+} con_flags[] = {
+	T(FLAG_NONE),
+	T(FLAG_ON_DATA_TRIED),
+	T(FLAG_IS_SOCKET),
+	T(FLAG_IS_LISTEN),
+	T(FLAG_WAIT_ON_FINISH),
+	T(FLAG_CAN_WRITE),
+	T(FLAG_CAN_READ),
+	T(FLAG_READ_EOF),
+	T(FLAG_IS_CONNECTED),
+	T(FLAG_WORK_ACTIVE),
 };
 #undef T
 
@@ -113,6 +132,38 @@ extern const char *conmgr_con_type_string(conmgr_con_type_t type)
 
 	fatal_abort("invalid type");
 }
+static const char *_con_flag_string(con_flags_t flag)
+{
+	for (int i = 0; i < ARRAY_SIZE(con_flags); i++)
+		if (con_flags[i].flag == flag)
+			return con_flags[i].string;
+
+	fatal_abort("invalid type");
+}
+
+extern char *con_flags_string(const con_flags_t flags)
+{
+	char *str = NULL, *at = NULL;
+	uint32_t matched = 0;
+
+	if (flags == FLAG_NONE)
+		return xstrdup(_con_flag_string(FLAG_NONE));
+
+	/* skip FLAG_NONE */
+	for (int i = 1; i < ARRAY_SIZE(con_flags); i++) {
+		if ((con_flags[i].flag & flags) == con_flags[i].flag) {
+			xstrfmtcatat(str, &at, "%s%s", (str ? "|" : ""),
+				     con_flags[i].string);
+			matched |= con_flags[i].flag;
+		}
+	}
+
+	if (flags ^ matched)
+		xstrfmtcatat(str, &at, "%s0x%08"PRIx32, (str ? "|" : ""),
+			     (flags ^ matched));
+
+	return str;
+}
 
 /*
  * Close all connections (for_each)
@@ -143,8 +194,8 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		slurm_mutex_lock(&mgr.mutex);
 
 	if (con->input_fd < 0) {
-		xassert(con->read_eof);
-		xassert(!con->can_read);
+		xassert(con_flag(con, FLAG_READ_EOF));
+		xassert(!con_flag(con, FLAG_CAN_READ));
 		log_flag(CONMGR, "%s: [%s] ignoring duplicate close request",
 			 __func__, con->name);
 		goto cleanup;
@@ -153,7 +204,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	log_flag(CONMGR, "%s: [%s] closing input", __func__, con->name);
 
 	/* unlink listener sockets to avoid leaving ghost socket */
-	if (con->is_listen && con->unix_socket &&
+	if (con_flag(con, FLAG_IS_LISTEN) && con->unix_socket &&
 	    (unlink(con->unix_socket) == -1))
 		error("%s: unable to unlink %s: %m",
 		      __func__, con->unix_socket);
@@ -165,14 +216,14 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 
 	/* mark it as EOF even if it hasn't */
-	con->read_eof = true;
-	con->can_read = false;
+	con_set_flag(con, FLAG_READ_EOF);
+	con_unset_flag(con, FLAG_CAN_READ);
 
 	/* drop any unprocessed input buffer */
 	if (con->in)
 		set_buf_offset(con->in, 0);
 
-	if (con->is_listen) {
+	if (con_flag(con, FLAG_IS_LISTEN)) {
 		if (close(con->input_fd) == -1)
 			log_flag(CONMGR, "%s: [%s] unable to close listen fd %d: %m",
 				 __func__, con->name, con->output_fd);
@@ -182,7 +233,8 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		if (close(con->input_fd) == -1)
 			log_flag(CONMGR, "%s: [%s] unable to close input fd %d: %m",
 				 __func__, con->name, con->output_fd);
-	} else if (con->is_socket && shutdown(con->input_fd, SHUT_RD) == -1) {
+	} else if (con_flag(con, FLAG_IS_SOCKET) &&
+		   (shutdown(con->input_fd, SHUT_RD) == -1)) {
 		/* shutdown input on sockets */
 		log_flag(CONMGR, "%s: [%s] unable to shutdown read: %m",
 			 __func__, con->name);
@@ -268,7 +320,7 @@ static void _set_connection_name(conmgr_fd_t *con, struct stat *in_stat,
 	}
 
 	/* grab socket peer if possible */
-	if (con->is_socket && has_out)
+	if (con_flag(con, FLAG_IS_SOCKET) && has_out)
 		out_str = fd_resolve_peer(con->output_fd);
 
 	if (has_out && !out_str)
@@ -406,20 +458,22 @@ extern int add_connection(conmgr_con_type_t type,
 		.magic = MAGIC_CON_MGR_FD,
 
 		.input_fd = input_fd,
-		.read_eof = !has_in,
 		.output_fd = output_fd,
 		.events = events,
-		/* save socket type to avoid calling fstat() again */
-		.is_socket = is_socket,
 		.mss = NO_VAL,
-		.is_listen = is_listen,
 		.work = list_create(NULL),
 		.write_complete_work = list_create(NULL),
 		.new_arg = arg,
 		.type = type,
 		.polling_input_fd = PCTL_TYPE_NONE,
 		.polling_output_fd = PCTL_TYPE_NONE,
+		.flags = FLAG_NONE,
 	};
+
+	/* save if connection is a socket type to avoid calling fstat() again */
+	con_assign_flag(con, FLAG_IS_SOCKET, is_socket);
+	con_assign_flag(con, FLAG_IS_LISTEN, is_listen);
+	con_assign_flag(con, FLAG_READ_EOF, !has_in);
 
 	if (!is_listen) {
 		con->in = create_buf(xmalloc(BUFFER_START_SIZE),
@@ -429,7 +483,7 @@ extern int add_connection(conmgr_con_type_t type,
 
 	/* listen on unix socket */
 	if (unix_socket_path) {
-		xassert(con->is_socket);
+		xassert(con_flag(con, FLAG_IS_SOCKET));
 		xassert(addr->ss_family == AF_LOCAL);
 		con->unix_socket = xstrdup(unix_socket_path);
 	}
@@ -449,8 +503,14 @@ extern int add_connection(conmgr_con_type_t type,
 
 	_check_con_type(con, type);
 
-	log_flag(CONMGR, "%s: [%s] new connection input_fd=%u output_fd=%u",
-		 __func__, con->name, input_fd, output_fd);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *flags = con_flags_string(con->flags);
+
+		log_flag(CONMGR, "%s: [%s] new connection input_fd=%u output_fd=%u flags=%s",
+			 __func__, con->name, input_fd, output_fd, flags);
+
+		xfree(flags);
+	}
 
 	slurm_mutex_lock(&mgr.mutex);
 	if (is_listen) {
@@ -472,7 +532,7 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	if (con->is_listen) {
+	if (con_flag(con, FLAG_IS_LISTEN)) {
 		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
 			 __func__, con->name,
 			 (uintptr_t) con->events.on_listen_connect);
@@ -538,7 +598,7 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		log_flag(CONMGR, "%s: [%s] Canceled receive new file descriptor",
 			 __func__, src->name);
-	} else if (src->read_eof) {
+	} else if (con_flag(src, FLAG_READ_EOF)) {
 		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on SHUT_RD input_fd=%d",
 			 __func__, src->name, src->input_fd);
 	} else if (src->input_fd < 0) {
@@ -578,11 +638,11 @@ extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
 
 	/* Reject obviously invalid states immediately */
 
-	if (!src->is_socket) {
+	if (!con_flag(src, FLAG_IS_SOCKET)) {
 		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on non-socket",
 			 __func__, src->name);
 		rc = EAFNOSUPPORT;
-	} else if (src->read_eof) {
+	} else if (con_flag(src, FLAG_READ_EOF)) {
 		log_flag(CONMGR, "%s: [%s] Unable to receive new file descriptor on SHUT_RD input_fd=%d",
 			 __func__, src->name, src->input_fd);
 		rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
@@ -647,7 +707,7 @@ extern int conmgr_queue_send_fd(conmgr_fd_t *con, int fd)
 		log_flag(CONMGR, "%s: [%s] Unable to send invalid file descriptor %d",
 			 __func__, con->name, fd);
 		rc = EINVAL;
-	} else if (!con->is_socket) {
+	} else if (!con_flag(con, FLAG_IS_SOCKET)) {
 		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over non-socket",
 			 __func__, con->name, fd);
 		rc = EAFNOSUPPORT;
@@ -675,7 +735,7 @@ static void _deferred_close_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 
 	slurm_mutex_lock(&mgr.mutex);
-	if (con->work_active) {
+	if (con_flag(con, FLAG_WORK_ACTIVE)) {
 		slurm_mutex_unlock(&mgr.mutex);
 		conmgr_queue_close_fd(con);
 	} else {
@@ -689,7 +749,7 @@ extern void conmgr_queue_close_fd(conmgr_fd_t *con)
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	slurm_mutex_lock(&mgr.mutex);
-	if (!con->work_active) {
+	if (!con_flag(con, FLAG_WORK_ACTIVE)) {
 		/*
 		 * Defer request to close connection until connection is no
 		 * longer actively doing work as closing connection would change
@@ -1050,15 +1110,15 @@ extern const char *conmgr_fd_get_name(const conmgr_fd_t *con)
 extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 {
 	conmgr_fd_status_t status = {
-		.is_socket = con->is_socket,
+		.is_socket = con_flag(con, FLAG_IS_SOCKET),
 		.unix_socket = con->unix_socket,
-		.is_listen = con->is_listen,
-		.read_eof = con->read_eof,
-		.is_connected = con->is_connected,
+		.is_listen = con_flag(con, FLAG_IS_LISTEN),
+		.read_eof = con_flag(con, FLAG_READ_EOF),
+		.is_connected = con_flag(con, FLAG_IS_CONNECTED),
 	};
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->work_active);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 	return status;
 }
 
@@ -1089,7 +1149,7 @@ extern conmgr_fd_t *con_find_by_fd(int fd)
 
 extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 {
-	if (con->is_socket) {
+	if (con_flag(con, FLAG_IS_SOCKET)) {
 		/* Ask kernel for socket error */
 		int rc = SLURM_ERROR, err = SLURM_ERROR;
 
@@ -1239,7 +1299,7 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 		}
 		break;
 	case PCTL_TYPE_LISTEN:
-		xassert(con->is_listen);
+		xassert(con_flag(con, FLAG_IS_LISTEN));
 		in_type = PCTL_TYPE_LISTEN;
 		break;
 	case PCTL_TYPE_INVALID:
@@ -1350,20 +1410,22 @@ extern void extract_con_fd(conmgr_fd_t *con)
 		(con->polling_output_fd == PCTL_TYPE_UNSUPPORTED));
 
 	/* can't extract safely when work running or not connected */
-	xassert(!con->work_active);
-	xassert(con->is_connected);
+	xassert(!con_flag(con, FLAG_WORK_ACTIVE));
+	xassert(con_flag(con, FLAG_IS_CONNECTED));
 
-	log_flag(CONMGR, "%s: extracting input_fd=%d output_fd=%d read_eof=%c can_read=%c can_write=%c on_data_tried=%c work_active=%c func=%s()",
-		 __func__, con->input_fd, con->output_fd,
-		 BOOL_CHARIFY(con->read_eof), BOOL_CHARIFY(con->can_read),
-		 BOOL_CHARIFY(con->can_write), BOOL_CHARIFY(con->on_data_tried),
-		 BOOL_CHARIFY(con->work_active), extract->func_name);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *flags = con_flags_string(con->flags);
+		log_flag(CONMGR, "%s: extracting input_fd=%d output_fd=%d func=%s() flags=%s",
+			 __func__, con->input_fd, con->output_fd,
+			 extract->func_name, flags);
+		xfree(flags);
+	}
 
 	/* clear all polling states */
-	con->read_eof = true;
-	con->can_read = false;
-	con->can_write = false;
-	con->on_data_tried = false;
+	con_set_flag(con, FLAG_READ_EOF);
+	con_unset_flag(con, FLAG_CAN_READ);
+	con_unset_flag(con, FLAG_CAN_WRITE);
+	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
 	/* clear any buffered input/outputs */
 	list_flush(con->out);
