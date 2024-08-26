@@ -50,6 +50,11 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types batch_gpus } 
 	# sent immediately to the database, but job start records get queued and
 	# can take longer.
 	wait_for_command_match -fail "$sacct -X -n -o ReqTRES --parsable2 -j $job_id" "gres/gpu"
+	# Also wait for steps to show up in the DB
+	wait_for_command_match -fail "$sacct -n -o JobId --parsable2 -j $job_id" "$job_id.batch"
+	if {$step_gpus != -1} {
+		wait_for_command_match -fail "$sacct -n -o JobId --parsable2 -j $job_id" "$job_id.0"
+	}
 
 	set output [run_command_output -fail "$sacct --job=$job_id --parsable2 --start=now-15minutes --format JobID,ReqTRES,AllocTRES --noheader"]
 	set job_tres_dict [dict create]
