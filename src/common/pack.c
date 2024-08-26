@@ -239,7 +239,6 @@ extern int try_grow_buf(buf_t *buffer, uint32_t size)
 extern int try_grow_buf_remaining(buf_t *buffer, uint32_t size)
 {
 	xassert(buffer->magic == BUF_MAGIC);
-	xassert(size > 0);
 
 	if (remaining_buf(buffer) < size)
 		return try_grow_buf(buffer, size);
