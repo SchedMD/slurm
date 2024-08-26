@@ -567,6 +567,13 @@ static void _check_user(void)
 	if (!check_user)
 		return;
 
+	if (getuid() == SLURM_AUTH_NOBODY)
+		fatal("slurmrestd should not be run as nobody(%d)",
+		      SLURM_AUTH_NOBODY);
+	if (getgid() == SLURM_AUTH_NOBODY)
+		fatal("slurmrestd should not be run with nobody(%d) group.",
+		      SLURM_AUTH_NOBODY);
+
 	if (slurm_conf.slurm_user_id == getuid())
 		fatal("slurmrestd should not be run as SlurmUser");
 	if (gid_from_uid(slurm_conf.slurm_user_id) == getgid())
@@ -589,6 +596,10 @@ static void _check_user(void)
 
 			if (!list[i])
 				fatal("slurmrestd should not be run with the root group.");
+
+			if (list[i] == SLURM_AUTH_NOBODY)
+				fatal("slurmrestd should not be run with nobody(%d) group.",
+				      SLURM_AUTH_NOBODY);
 		}
 
 		xfree(list);
