@@ -1105,6 +1105,9 @@ static void _init_slurmscriptd_conmgr(void)
 
 	conmgr_init(0, 0, callbacks);
 
+	if (slurm_conf.slurmctld_params)
+		conmgr_apply_params(slurm_conf.slurmctld_params);
+
 	/*
 	 * Ignore signals. slurmscriptd should only handle requests directly
 	 * from slurmctld.
