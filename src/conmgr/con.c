@@ -407,6 +407,7 @@ extern int add_connection(conmgr_con_type_t type,
 			  conmgr_fd_t *source, int input_fd,
 			  int output_fd,
 			  const conmgr_events_t events,
+			  conmgr_con_flags_t flags,
 			  const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,
 			  const char *unix_socket_path, void *arg)
@@ -467,7 +468,8 @@ extern int add_connection(conmgr_con_type_t type,
 		.type = type,
 		.polling_input_fd = PCTL_TYPE_NONE,
 		.polling_output_fd = PCTL_TYPE_NONE,
-		.flags = FLAG_NONE,
+		/* Set flags not related to connection state tracking */
+		.flags = (flags & ~FLAGS_MASK_STATE),
 	};
 
 	/* save if connection is a socket type to avoid calling fstat() again */
@@ -575,15 +577,15 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 			     const slurm_addr_t *addr, socklen_t addrlen,
 			     void *arg)
 {
-	return add_connection(type, NULL, input_fd, output_fd, events, addr,
-			      addrlen, false, NULL, arg);
+	return add_connection(type, NULL, input_fd, output_fd, events,
+			      CON_FLAG_NONE, addr, addrlen, false, NULL, arg);
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 				    const conmgr_events_t events, void *arg)
 {
-	return add_connection(type, NULL, fd, -1, events, NULL, 0, true, NULL,
-			      arg);
+	return add_connection(type, NULL, fd, -1, events, CON_FLAG_NONE, NULL,
+			      0, true, NULL, arg);
 }
 
 static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
@@ -612,8 +614,8 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 		 * connection is now in an unknown state
 		 */
 		close_con(false, src);
-	} else if (add_connection(args->type, NULL, fd, fd,
-				  args->events, NULL, 0, false, NULL,
+	} else if (add_connection(args->type, NULL, fd, fd, args->events,
+				  CON_FLAG_NONE, NULL, 0, false, NULL,
 				  args->arg) != SLURM_SUCCESS) {
 		/*
 		 * Error already logged by add_connection() and there is no
@@ -890,8 +892,8 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, listen_on);
 
-		return add_connection(type, NULL, fd, -1, events, &addr,
-				      sizeof(addr), true, unixsock, arg);
+		return add_connection(type, NULL, fd, -1, events, CON_FLAG_NONE,
+				      &addr, sizeof(addr), true, unixsock, arg);
 	} else {
 		/* split up host and port */
 		if (!(parsed_hp = callbacks.parse(listen_on)))
@@ -948,7 +950,7 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, addrinfo_to_string(addr));
 
-		rc = add_connection(type, NULL, fd, -1, events,
+		rc = add_connection(type, NULL, fd, -1, events, CON_FLAG_NONE,
 				    (const slurm_addr_t *) addr->ai_addr,
 				    addr->ai_addrlen, true, NULL, arg);
 	}
@@ -1051,8 +1053,8 @@ again:
 		/* delayed connect() completion is expected */
 	}
 
-	return add_connection(type, NULL, fd, fd, events, addr, addrlen,
-			      false, NULL, arg);
+	return add_connection(type, NULL, fd, fd, events, CON_FLAG_NONE, addr,
+			      addrlen, false, NULL, arg);
 }
 
 extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con,
