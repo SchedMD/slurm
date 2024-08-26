@@ -544,10 +544,6 @@ static void _lock_down(void)
 		fatal("Unable to setgid: %m");
 	if (uid != 0 && setuid(uid))
 		fatal("Unable to setuid: %m");
-	if (check_user && !become_user && (getuid() == 0))
-		fatal("slurmrestd should not be run as the root user.");
-	if (check_user && !become_user && (getgid() == 0))
-		fatal("slurmrestd should not be run with the root goup.");
 
 	if (become_user && getuid())
 		fatal("slurmrestd must run as root in become_user mode");
@@ -573,6 +569,11 @@ static void _check_user(void)
 		fatal("slurmrestd should not be run as SlurmUser");
 	if (gid_from_uid(slurm_conf.slurm_user_id) == getgid())
 		fatal("slurmrestd should not be run with SlurmUser's group.");
+
+	if (!getuid())
+		fatal("slurmrestd should not be run as the root user.");
+	if (!getgid())
+		fatal("slurmrestd should not be run with the root goup.");
 }
 
 /* simple wrapper to hand over operations router in http context */
