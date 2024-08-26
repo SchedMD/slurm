@@ -134,12 +134,8 @@ extern void conmgr_fini(void)
 {
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (!mgr.initialized) {
-		log_flag(CONMGR, "%s: Ignoring duplicate shutdown request",
-			 __func__);
-		slurm_mutex_unlock(&mgr.mutex);
-		return;
-	}
+	if (!mgr.initialized)
+		fatal_abort("%s: duplicate shutdown request", __func__);
 
 	mgr.shutdown_requested = true;
 
