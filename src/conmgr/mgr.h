@@ -118,6 +118,12 @@ typedef enum {
 	FLAG_WORK_ACTIVE = SLURM_BIT(8),
 } con_flags_t;
 
+/* Mask over flags that track connection state */
+#define FLAGS_MASK_STATE \
+	( FLAG_ON_DATA_TRIED | FLAG_IS_SOCKET | FLAG_IS_LISTEN | \
+	  FLAG_WAIT_ON_FINISH | FLAG_CAN_WRITE | FLAG_CAN_READ | \
+	  FLAG_READ_EOF | FLAG_IS_CONNECTED | FLAG_WORK_ACTIVE )
+
 /* con_flags_t macro helpers to test, set, and unset flags */
 #define con_flag(con, flag) ((con)->flags & (flag))
 #define con_set_flag(con, flag) ((con)->flags |= (flag))
