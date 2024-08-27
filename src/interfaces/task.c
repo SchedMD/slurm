@@ -93,7 +93,7 @@ static pthread_mutex_t		g_task_context_lock = PTHREAD_MUTEX_INITIALIZER;
  *
  * RET - slurm error code
  */
-extern int slurmd_task_init(void)
+extern int task_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "task";
@@ -139,7 +139,7 @@ extern int slurmd_task_init(void)
 	xfree(task_plugin_type);
 
 	if (retval != SLURM_SUCCESS)
-		slurmd_task_fini();
+		task_g_fini();
 
 	return retval;
 }
@@ -149,7 +149,7 @@ extern int slurmd_task_init(void)
  *
  * RET - slurm error code
  */
-extern int slurmd_task_fini(void)
+extern int task_g_fini(void)
 {
 	int i, rc = SLURM_SUCCESS, rc2;
 

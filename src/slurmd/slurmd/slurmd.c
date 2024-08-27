@@ -2544,7 +2544,7 @@ _slurmd_init(void)
 
 	if (proctrack_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	if (slurmd_task_init() != SLURM_SUCCESS)
+	if (task_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (spank_slurmd_init() < 0)
 		return SLURM_ERROR;
@@ -2608,7 +2608,7 @@ _slurmd_fini(void)
 	acct_gather_profile_fini();
 	cred_state_fini();
 	switch_g_fini();
-	slurmd_task_fini();
+	task_g_fini();
 	slurm_conf_destroy();
 	proctrack_g_fini();
 	auth_g_fini();

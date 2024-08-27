@@ -56,14 +56,14 @@ typedef cpuset_t cpu_set_t;
  *
  * RET - slurm error code
  */
-extern int slurmd_task_init( void );
+extern int task_g_init(void);
 
 /*
  * Terminate the task plugin, free memory.
  *
  * RET - slurm error code
  */
-extern int slurmd_task_fini(void);
+extern int task_g_fini(void);
 
 /*
  **************************************************************************
