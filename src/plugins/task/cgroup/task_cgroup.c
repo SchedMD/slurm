@@ -147,16 +147,6 @@ extern int task_p_slurmd_launch_request(launch_tasks_request_msg_t *req,
 	return SLURM_SUCCESS;
 }
 
-extern int task_p_slurmd_suspend_job(uint32_t job_id)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int task_p_slurmd_resume_job(uint32_t job_id)
-{
-	return SLURM_SUCCESS;
-}
-
 /*
  * task_p_pre_setuid() is called as root before setting the UID for the user to
  * launch his jobs. Use this to create the cgroup hierarchy and set the owner

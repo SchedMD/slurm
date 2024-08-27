@@ -5068,9 +5068,6 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	if (req->op == SUSPEND_JOB)
 		_launch_complete_wait(req->job_id);
 
-	if (req->op == SUSPEND_JOB)
-		(void) task_g_slurmd_suspend_job(req->job_id);
-
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume
 	 * as appropriate. Since the "suspend" action may contains a sleep
@@ -5179,9 +5176,6 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	}
 	list_iterator_destroy(i);
 	FREE_NULL_LIST(steps);
-
-	if (req->op == RESUME_JOB) /* Call task plugin after processes resume */
-		(void) task_g_slurmd_resume_job(req->job_id);
 
 	_unlock_suspend_job(req->job_id);
 

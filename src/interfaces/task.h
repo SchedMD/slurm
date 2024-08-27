@@ -87,20 +87,6 @@ extern int task_g_slurmd_launch_request(launch_tasks_request_msg_t *req,
 					uint32_t node_id, char **err_msg);
 
 /*
- * Slurmd is suspending a job.
- *
- * RET - slurm error code
- */
-extern int task_g_slurmd_suspend_job(uint32_t job_id);
-
-/*
- * Slurmd is resuming a previously suspended job.
- *
- * RET - slurm error code
- */
-extern int task_g_slurmd_resume_job(uint32_t job_id);
-
-/*
  * Note that a task launch is about to occur.
  * Run before setting UID to the user.
  *
