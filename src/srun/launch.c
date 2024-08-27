@@ -630,16 +630,6 @@ static void _wait_all_het_job_comps_started(slurm_opt_t *opt_local)
 	slurm_mutex_unlock(&start_mutex);
 }
 
-/*
- * Initialize context for plugin
- */
-extern int launch_init(void)
-{
-	int retval = SLURM_SUCCESS;
-
-	return retval;
-}
-
 extern int location_fini(void)
 {
 	FREE_NULL_LIST(task_state_list);

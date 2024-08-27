@@ -818,10 +818,6 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	if (!rest && !sropt.test_only)
 		fatal("No command given to execute.");
 
-	if (launch_init() != SLURM_SUCCESS) {
-		fatal("Unable to load launch plugin, check LaunchType "
-		      "configuration");
-	}
 	command_pos = launch_g_setup_srun_opt(rest, &opt);
 
 	/* make sure we have allocated things correctly */
