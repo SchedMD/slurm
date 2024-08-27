@@ -487,8 +487,9 @@ extern void stop_anchor(int status)
 	if (state.startup_con) {
 		int rc;
 
-		debug("%s: sending pid to parent due to container stopped before running",
-		      __func__);
+		debug4("%s: sending pid %"PRIu64" to parent due to container stopped in state %s",
+		      __func__, (uint64_t) state.pid,
+		      slurm_container_status_to_str(state.status));
 
 		/* send the pid now since due to failure */
 		if ((rc = conmgr_queue_write_data(state.startup_con, &state.pid,
