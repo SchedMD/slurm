@@ -48,3 +48,4 @@ SLURMRESTD CHANGES
     data_parser/v0.0.41.
  -- Rename v0.0.42 JOB_INFO field "minimum_switches" to "required_switches"
     to reflect the actual behavior.
+ -- Rename v0.0.42 ACCOUNT_CONDITION field "assocation" to "association" (typo).
