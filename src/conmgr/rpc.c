@@ -95,6 +95,7 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 	msg = xmalloc(sizeof(*msg));
 	slurm_msg_t_init(msg);
 	msg->conmgr_fd = con;
+	memcpy(&msg->address, &con->address, sizeof(con->address));
 
 	log_flag_hex(NET_RAW, get_buf_data(rpc), size_buf(rpc),
 		     "%s: [%s] unpacking RPC", __func__, con->name);
