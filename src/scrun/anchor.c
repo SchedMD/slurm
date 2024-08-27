@@ -1528,9 +1528,6 @@ extern int spawn_anchor(void)
 		rc = _anchor_child(pipe_fd);
 
 done:
-	debug("%s: anchor exiting: %s", __func__, slurm_strerror(rc));
-	debug("%s: exit[%d]: %s", __func__, rc, slurm_strerror(rc));
-
 	spank_rc = spank_fini(NULL);
 	destroy_lua();
 
