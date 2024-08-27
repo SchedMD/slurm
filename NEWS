@@ -560,6 +560,9 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Fix possible memory leak from failed job allocation requests to
     'POST /slurm/v0.0.{39,40,41}/job/allocate'.
 
+* Changes in Slurm 23.11.11
+===========================
+
 * Changes in Slurm 23.11.10
 ===========================
  -- switch/hpe_slingshot - Fix issue that could result in a 0 length state file.
