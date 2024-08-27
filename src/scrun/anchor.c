@@ -1361,13 +1361,17 @@ static int _wait_create_pid(int fd, pid_t child)
 	if (close(fd))
 		fatal("close(%u) failed: %m", fd);
 
-	debug("%s: anchor pid %"PRIu64" ready", __func__, (uint64_t) pid);
 	debug4("%s: goodbye cruel lamp", __func__);
 
-	if (pid > 0)
+	if (pid > 0) {
+		debug("%s: anchor pid %"PRIu64" ready",
+		      __func__, (uint64_t) pid);
 		return SLURM_SUCCESS;
-	else
+	} else {
+		debug("%s: received failure signal pid %"PRIi64,
+		      __func__, (int64_t) pid);
 		goto check_pid;
+	}
 rwfail:
 	rc = errno;
 	debug("%s: pipe read(%d) error while waiting for pid from child process %"PRIu64" failed: %s",
