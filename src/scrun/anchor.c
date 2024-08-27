@@ -1392,11 +1392,15 @@ check_pid:
 		return rc;
 	}
 
-	if (!rc) {
-		debug("anchor %d successfully left session", child);
-	} else if (!WIFEXITED(status)) {
-		debug("anchor %d already exited", child);
+	xassert(child == rc);
+	rc = SLURM_SUCCESS;
+
+	debug("anchor %d successfully left session", child);
+
+	if (WIFEXITED(status)) {
 		rc = WEXITSTATUS(status);
+		debug("%s: anchor %"PRIu64" exited[%d]=%s",
+		      __func__, (uint64_t) child, rc, slurm_strerror(rc));
 	} else if (WIFSIGNALED(status)) {
 		fatal("%s: anchor %"PRIu64" killed by signal %d",
 		      __func__, (uint64_t) child, WTERMSIG(status));
