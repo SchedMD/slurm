@@ -104,6 +104,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 24.05.4
 ==========================
  -- Fix generic int sort functions.
+ -- Fix user look up using possible unrealized uid in the dbd.
 
 * Changes in Slurm 24.05.3
 ==========================

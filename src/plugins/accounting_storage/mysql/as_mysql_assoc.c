@@ -3417,7 +3417,13 @@ static int _add_assoc_cond_user(void *x, void *arg)
 		 */
 		memset(&check_object, 0, sizeof(check_object));
 		check_object.name = add_assoc_cond->add_assoc->assoc.user;
-		check_object.uid = add_assoc_cond->add_assoc->assoc.uid;
+		/*
+		 * We have to use uid = NO_VAL here to avoid potential issues
+		 * where a user is added to the system after it was originally
+		 * added to the Slurm database and the assoc_mgr hasn't updated
+		 * the uid yet.
+		 */
+		check_object.uid = NO_VAL;
 		rc = assoc_mgr_fill_in_user(add_assoc_cond->mysql_conn,
 					    &check_object,
 					    ACCOUNTING_ENFORCE_ASSOCS,
