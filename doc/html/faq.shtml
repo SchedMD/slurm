@@ -214,32 +214,28 @@
 </ul>
 <h3>Error Messages</h3>
 <ul>
-<li><a href="#inc_plugin">When the Slurm daemon starts, it prints
-  &quot;cannot resolve X plugin operations&quot; and exits. What does this mean?</a></li>
-<li><a href="#credential_replayed">What does a &quot;credential replayed&quot;
-  error in the <i>SlurmdLogFile</i> indicate?</a></li>
-<li><a href="#cred_invalid">Why are &quot;Invalid job credential&quot; errors
-  generated?</a></li>
-<li><a href="#cred_replay">Why are &quot;Task launch failed on node ... Job
-  credential replayed&quot; errors generated?</a></li>
-<li><a href="#file_limit">What causes the error
-  &quot;Unable to accept new connection: Too many open files&quot;?</a></li>
-<li><a href="#slurmd_log">Why does the setting of <i>SlurmdDebug</i> fail
-  to log job step information at the appropriate level?</a></li>
-<li><a href="#batch_lost">What is the meaning of the error
-  &quot;Batch JobId=# missing from batch node &lt;node&gt; (not found
-  BatchStartTime after startup)&quot;?</a></li>
-<li><a href="#opencl_pmix">Why is Multi-Instance GPU not working with Slurm and
-  PMIx, and complaining about GPUs being 'In use by another client'?</a></li>
-<li><a href="#accept_again">What does the message
-  &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
-  indicate?</a></li>
-<li><a href="#large_time">What does &quot;Warning: Note very large processing
-  time&quot; in the <i>SlurmctldLogFile</i> indicate?</a></li>
-<li><a href="#mysql_duplicate">Slurmdbd is failing to start with a 'Duplicate entry'
-  error in the database. How do I fix that?</a></li>
-<li><a href="#json_serializer">Why am I getting the following error: "Unable to
-  find plugin: serializer/json"?</a></li>
+<li><a href="#inc_plugin">&quot;Cannot resolve X plugin operations&quot; on
+  daemon startup</a></li>
+<li><a href="#credential_replayed">&quot;Credential replayed&quot; in
+  <i>SlurmdLogFile</i></a></li>
+<li><a href="#cred_invalid">&quot;Invalid job credential&quot;</a></li>
+<li><a href="#cred_replay">&quot;Task launch failed on node ... Job credential
+  replayed&quot;</a></li>
+<li><a href="#file_limit">&quot;Unable to accept new connection: Too many open
+  files&quot;</a></li>
+<li><a href="#slurmd_log"><i>SlurmdDebug</i> fails to log job step information
+  at the appropriate level</a></li>
+<li><a href="#batch_lost">&quot;Batch JobId=# missing from batch node &lt;node&gt;
+  (not found BatchStartTime after startup)&quot;</a></li>
+<li><a href="#opencl_pmix">Multi-Instance GPU not working with Slurm and
+  PMIx; GPUs are &quot;In use by another client&quot;</a></li>
+<li><a href="#accept_again">&quot;srun: error: Unable to accept connection:
+  Resources temporarily unavailable&quot;</a></li>
+<li><a href="#large_time">&quot;Warning: Note very large processing time&quot;
+  in <i>SlurmctldLogFile</i></a></li>
+<li><a href="#mysql_duplicate">&quot;Duplicate entry&quot; causes slurmdbd to
+  fail</a></li>
+<li><a href="#json_serializer">&quot;Unable to find plugin: serializer/json&quot;</a></li>
 </ul>
 <h3>Third Party Integrations</h3>
 <ul>
@@ -2204,9 +2200,8 @@ gdb -ex 't a a bt' -batch -p $(pidof slurmctld)
 
 <h3>Error Messages</h3>
 
-<p><a id="inc_plugin"><b>When the Slurm daemon starts, it
-prints &quot;cannot resolve X plugin operations&quot; and exits.
-What does this mean?</b></a><br>
+<p><a id="inc_plugin"><b>&quot;Cannot resolve X plugin operations&quot; on
+  daemon startup</b></a><br>
 This means that symbols expected in the plugin were
 not found by the daemon. This typically happens when the
 plugin was built or installed improperly or the configuration
@@ -2214,9 +2209,8 @@ file is telling the plugin to use an old plugin (say from the
 previous version of Slurm). Restart the daemon in verbose mode
 for more information (e.g. &quot;slurmctld -Dvvvvv&quot;).</p>
 
-<p><a id="credential_replayed"><b>What does a
-&quot;credential replayed&quot;
-error in the <i>SlurmdLogFile</i> indicate?</b></a><br>
+<p><a id="credential_replayed"><b>&quot;Credential replayed&quot; in
+  <i>SlurmdLogFile</i></b></a><br>
 This error is indicative of the <i>slurmd</i> daemon not being able
 to respond to job initiation requests from the <i>srun</i> command
 in a timely fashion (a few seconds).
@@ -2237,16 +2231,14 @@ including</p>
 <p>Configure <i>MessageTimeout</i> in slurm.conf to a value higher than the
 default 10 seconds.</p>
 
-<p><a id="cred_invalid"><b>Why are &quot;Invalid job credential&quot;
-errors generated?</b></a><br>
+<p><a id="cred_invalid"><b>&quot;Invalid job credential&quot;</b></a><br>
 This error is indicative of Slurm's job credential files being inconsistent across
 the cluster. All nodes in the cluster must have the matching public and private
 keys as defined by <b>JobCredPrivateKey</b> and <b>JobCredPublicKey</b> in the
 Slurm configuration file <b>slurm.conf</b>.</p>
 
-<p><a id="cred_replay"><b>Why are
-&quot;Task launch failed on node ... Job credential replayed&quot;
-errors generated?</b></a><br>
+<p><a id="cred_replay"><b>&quot;Task launch failed on node ... Job credential
+  replayed&quot;</b></a><br>
 This error indicates that a job credential generated by the slurmctld daemon
 corresponds to a job that the slurmd daemon has already revoked.
 The slurmctld daemon selects job ID values based upon the configured
@@ -2265,15 +2257,15 @@ for jobs that it considers terminated.
 This solution to this problem is to cold-start all slurmd daemons whenever
 the slurmctld daemon is cold-started.</p>
 
-<p><a id="file_limit"><b>What causes the error
-&quot;Unable to accept new connection: Too many open files&quot;?</b></a><br>
+<p><a id="file_limit"><b>&quot;Unable to accept new connection: Too many open
+  files&quot;</b></a><br>
 The srun command automatically increases its open file limit to
 the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p><a id="slurmd_log"><b>Why does the setting of <i>SlurmdDebug</i>
-fail to log job step information at the appropriate level?</b></a><br>
+<p><a id="slurmd_log"><b><i>SlurmdDebug</i> fails to log job step information
+  at the appropriate level</b></a><br>
 There are two programs involved here. One is <b>slurmd</b>, which is
 a persistent daemon running at the desired debug level. The second
 program is <b>slurmstepd</b>, which executes the user job and its
@@ -2282,9 +2274,8 @@ an option of <i>--debug=#</i> will result in the desired level of
 detail being logged in the <i>SlurmdLogFile</i> plus the output
 of the program.</p>
 
-<p><a id="batch_lost"><b>What is the meaning of the error
-&quot;Batch JobId=# missing from batch node &lt;node&gt; (not found
-  BatchStartTime after startup)&quot;?</b></a><br>
+<p><a id="batch_lost"><b>&quot;Batch JobId=# missing from batch node &lt;node&gt;
+  (not found BatchStartTime after startup)&quot;</b></a><br>
 A shell is launched on node zero of a job's allocation to execute
 the submitted program. The <i>slurmd</i> daemon executing on each compute
 node will periodically report to the <i>slurmctld</i> what programs it
@@ -2294,9 +2285,8 @@ message above will be logged and the job canceled. This typically is
 associated with exhausting memory on the node or some other critical
 failure that cannot be recovered from.</p>
 
-<p><a id="opencl_pmix"><b>Why is Multi-Instance GPU not working with Slurm and
-  PMIx, and complaining about GPUs being 'In use by another client'?</b></a>
-<br/>
+<p><a id="opencl_pmix"><b>Multi-Instance GPU not working with Slurm and PMIx;
+  GPUs are &quot;In use by another client&quot;</b></a><br/>
 PMIx uses the <b>hwloc API</b> for different purposes, including
 <i>OS device</i> features like querying sysfs folders (such as
 <i>/sys/class/net</i> and <i>/sys/class/infiniband</i>) to get the names of
@@ -2316,16 +2306,14 @@ to not query OpenCL devices by setting the
 variable for slurmd, i.e. setting this variable in systemd unit file for slurmd.
 </p>
 
-<p><a id="accept_again"><b>What does the message
-&quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
-indicate?</b></a><br>
+<p><a id="accept_again"><b>&quot;srun: error: Unable to accept connection:
+  Resources temporarily unavailable&quot;</b></a><br>
 This has been reported on some larger clusters running SUSE Linux when
 a user's resource limits are reached. You may need to increase limits
 for locked memory and stack size to resolve this problem.</p>
 
-<p><a id="large_time"><b>What does
-&quot;Warning: Note very large processing time&quot;
-in the <i>SlurmctldLogFile</i> indicate?</b></a><br>
+<p><a id="large_time"><b>&quot;Warning: Note very large processing time&quot;
+  in <i>SlurmctldLogFile</i></b></a><br>
 This error is indicative of some operation taking an unexpectedly
 long time to complete, over one second to be specific.
 Setting the value of the <i>SlurmctldDebug</i> configuration parameter
@@ -2337,8 +2325,8 @@ Another possibility is that the node on which the slurmctld
 daemon executes has exhausted memory and is paging.
 Try running the program <i>top</i> to check for this possibility.</p>
 
-<p><a id="mysql_duplicate"><b>Slurmdbd is failing to start with a 'Duplicate entry'
-  error in the database. How do I fix that?</b></a><br>
+<p><a id="mysql_duplicate"><b>&quot;Duplicate entry&quot; causes slurmdbd to
+  fail</b></a><br>
 This problem has been rarely observed with MySQL, but not MariaDB.
 The root cause of the failure seems to be reaching the upper limit on the auto increment field.
 Upgrading to MariaDB is recommended.
@@ -2372,9 +2360,8 @@ Bye
 $ mysql -u&lt;user&gt; -p&lt;user&gt; &lt;/tmp/slurm_db_backup.sql
 </pre>
 
-<p><a id="json_serializer"><b>Why am I getting the following error: "Unable to
-  find plugin: serializer/json"?</b></a>
-<br/>
+<p><a id="json_serializer"><b>&quot;Unable to find plugin: serializer/json&quot;
+  </b></a><br/>
 Several parts of Slurm have swapped to using our centralized serializer
 code. JSON or YAML plugins are only required if one of the functions that
 require it is executed. If one of the functions is executed it will fail to
@@ -2447,6 +2434,6 @@ dset TV::parallel_configs {
 }
 !-->
 
-<p style="text-align:center;">Last modified 14 August 2024</p>
+<p style="text-align:center;">Last modified 27 August 2024</p>
 
 <!--#include virtual="footer.txt"-->
