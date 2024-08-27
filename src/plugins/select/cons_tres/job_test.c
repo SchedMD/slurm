@@ -43,6 +43,7 @@
 #include "gres_sock_list.h"
 
 #include "src/slurmctld/licenses.h"
+#include "src/common/slurm_time.h"
 
 typedef struct {
 	int action;
@@ -2479,13 +2480,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			}
 			if (!last_job_ptr)	/* Should never happen */
 				break;
-			do {
-				if (bf_window_scale)
-					time_window += bf_window_scale;
-				else
-					time_window *= 2;
-			} while (next_job_ptr && next_job_ptr->end_time >
-				 (end_time + time_window));
+
 			rc = _job_test(job_ptr, node_bitmap, min_nodes,
 				       max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN, tmp_cr_type,
@@ -2504,11 +2499,32 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				}
 				break;
 			}
+
+			do {
+				if (bf_window_scale)
+					time_window += bf_window_scale;
+				else
+					time_window *= 2;
+			} while (next_job_ptr && next_job_ptr->end_time >
+				 (end_time + time_window));
 timer_check:
 			END_TIMER;
 			if (DELTA_TIMER >= 2000000)
 				break;	/* Quit after 2 seconds wall time */
 		}
+
+		if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE ||
+		    ((job_ptr->bit_flags & BACKFILL_TEST) &&
+		     slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)) {
+			/*
+			 * When time_window gets large it could result in
+			 * delaying jobs regardless of priority. Setting
+			 * bf_window_linear could help mitigate this.
+			 */
+			verbose("%pJ considered resources from running jobs ending within %d seconds of %s",
+				job_ptr, time_window, slurm_ctime2(&end_time));
+		}
+
 		list_iterator_destroy(job_iterator);
 		FREE_NULL_BITMAP(efctv_bitmap);
 	}
