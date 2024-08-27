@@ -1377,8 +1377,12 @@ check_pid:
 		debug("%s: waitpid(%" PRIu64 ") interrupted",
 		      __func__, (uint64_t) child);
 
-	if (rc == -1)
+	if (rc == -1) {
 		rc = errno;
+		debug("%s: waitpid(%"PRIu64") failed[%d]: %s",
+		      __func__, (uint64_t) child, rc, slurm_strerror(rc));
+		return rc;
+	}
 
 	if (!rc) {
 		debug("anchor %d successfully left session", child);
