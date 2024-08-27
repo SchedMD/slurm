@@ -7809,7 +7809,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(BOOL, reboot, "reboot", "Node reboot requested before start"),
 	add_parse(STRING, req_nodes, "required_nodes", "Comma separated list of required nodes"),
 	add_skip(req_node_inx),
-	add_parse(UINT32, req_switch, "minimum_switches", "Maximum number of switches (the 'minimum' in the key is incorrect)"),
+	add_parse(UINT32, req_switch, "required_switches", "Maximum number of switches"),
 	add_parse(BOOL16, requeue, "requeue", "Determines whether the job may be requeued"),
 	add_parse(TIMESTAMP_NO_VAL, resize_time, "resize_time", "Time of last size change (UNIX timestamp)"),
 	add_parse(UINT16, restart_cnt, "restart_cnt", "Number of job restarts"),

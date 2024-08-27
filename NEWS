@@ -121,6 +121,8 @@ documents those changes that are of interest to users and administrators.
     flags).
  -- Fix LaunchParameters=batch_step_set_cpu_freq.
  -- Clearer seff warning message for running jobs.
+ -- data_parser/v0.0.42 - Rename JOB_INFO field "minimum_switches" to
+    "required_switches" to reflect the actual behavior.
 
 * Changes in Slurm 24.05.4
 ==========================

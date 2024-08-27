@@ -50,6 +50,34 @@
 <h4>Modified Fields</h4>
 <table class="tchange">
 <tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_job_info_resp"].properties.jobs.items.properties.minimum_switches = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_job_info_resp"].properties.jobs.items.properties.minimum_switches.description = "Maximum number of switches (the 'minimum' in the key is incorrect)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_job_info_resp"].properties.jobs.items.properties.minimum_switches.format = "int32";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_job_info_resp"].properties.jobs.items.properties.required_switches = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_job_info_resp"].properties.jobs.items.properties.required_switches.description = "Maximum number of switches";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_job_info_resp"].properties.jobs.items.properties.required_switches.format = "int32";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_job_info_resp"].properties.jobs.items.properties.required_switches.type = "integer";</td>
+</tr>
+<tr class="trchange">
 	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.paths["/slurmdb/v0.0.42/association/"].get.parameters[3].allowEmptyValue = true;</td>
 </tr>
