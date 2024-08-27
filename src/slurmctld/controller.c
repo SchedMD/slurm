@@ -420,7 +420,6 @@ static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
 static void _reopen_stdio(void)
 {
 	int devnull = -1;
-	bool had_tty = isatty(STDOUT_FILENO);
 
 	if ((devnull = open(DEV_NULL_PATH, O_RDWR)) < 0)
 		fatal_abort("Unable to open %s: %m", DEV_NULL_PATH);
@@ -433,7 +432,7 @@ static void _reopen_stdio(void)
 		fd_close(&devnull);
 
 #ifdef __linux__
-	if (had_tty && !daemonize) {
+	if (isatty(STDOUT_FILENO) && !daemonize) {
 		int tty = -1;
 
 		if ((tty = open(DEV_TTY_PATH, O_WRONLY)) > 0 && isatty(tty)) {
