@@ -1525,5 +1525,18 @@ done:
 	spank_rc = spank_fini(NULL);
 	destroy_lua();
 
-	return rc ? rc : spank_rc;
+	debug2("%s: rc[%d]=%s spank_rc[%d]=%s srun_rc[%d]=%s",
+	      __func__,
+	      rc, slurm_strerror(rc),
+	      spank_rc, slurm_strerror(spank_rc),
+	      state.srun_rc, slurm_strerror(state.srun_rc));
+
+	if (rc)
+		return rc;
+	else if (spank_rc)
+		return spank_rc;
+	else if (state.srun_rc)
+		return state.srun_rc;
+
+	return SLURM_SUCCESS;
 }
