@@ -156,6 +156,13 @@ X_AC_HTTP_PARSER
 dnl Check for yaml parser
 X_AC_YAML
 
+dnl Check for epoll support
+AX_HAVE_EPOLL()
+if test "x$ax_cv_have_epoll" = "xyes"; then
+	AC_DEFINE(HAVE_EPOLL, 1, [Define to 1 if we have epoll(7) support])
+fi
+AM_CONDITIONAL(HAVE_EPOLL, [test "x$ax_cv_have_epoll" = "xyes" ])
+
 dnl Checks for compiler characteristics.
 dnl
 AC_PROG_GCC_TRADITIONAL([])

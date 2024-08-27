@@ -4804,6 +4804,24 @@ DNS, this step can be avoided by configuring this option.
 .IP
 
 .TP
+\fBconmgr_max_connections\fR=\fI<connection_count>\fR
+Specify the maximum number of connections to be processed at any given time.
+This does not influence the maxmimum number of pending connections as that is
+controlled by the kernel.
+.IP
+
+.TP
+\fBconmgr_threads\fR=\fI<thread_count>\fR
+The number of process threads to use for the receiving connections on the
+listening socket.
+.IP
+
+.TP
+\fBconmgr_use_poll\fR
+Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
+.IP
+
+.TP
 \fBdisable_triggers\fR
 Disable the ability to register new triggers.
 .IP
@@ -5179,6 +5197,24 @@ slurm.conf configuration file and any node with less than the
 configured resources will \fBnot\fR be set to INVAL/INVALID_REG.
 This option is generally only useful for testing purposes.
 Equivalent to the now deprecated FastSchedule=2 option.
+.IP
+
+.TP
+\fBconmgr_max_connections\fR=\fI<connection_count>\fR
+Specify the maximum number of connections to be processed at any given time.
+This does not influence the maxmimum number of pending connections as that is
+controlled by the kernel.
+.IP
+
+.TP
+\fBconmgr_threads\fR=\fI<thread_count>\fR
+The number of process threads to use for the receiving connections on the
+listening socket.
+.IP
+
+.TP
+\fBconmgr_use_poll\fR
+Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
 .IP
 
 .TP

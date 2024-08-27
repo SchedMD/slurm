@@ -18,13 +18,18 @@ libconmgr_la_SOURCES = \
 	io.c \
 	mgr.h \
 	poll.c \
-	poll.h \
+	polling.c \
+	polling.h \
 	rpc.c \
 	signals.c \
 	signals.h \
 	watch.c \
 	work.c \
 	workers.c
+
+if HAVE_EPOLL
+libconmgr_la_SOURCES += epoll.c
+endif
 
 libconmgr_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 

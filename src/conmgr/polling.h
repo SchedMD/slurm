@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  poll.h - Internal declarations for poll() handlers
+ *  polling.h - Internal declarations for polling handlers
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -33,14 +33,21 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONMGR_POLL_H
-#define _CONMGR_POLL_H
+#ifndef _CONMGR_POLLING_H
+#define _CONMGR_POLLING_H
 
 #include <stdbool.h>
 #include <stdint.h>
 
 /* typedef for the type of events returned by epoll */
 typedef uint32_t pollctl_events_t;
+
+typedef enum {
+	POLL_MODE_INVALID = 0,
+	POLL_MODE_EPOLL,
+	POLL_MODE_POLL,
+	POLL_MODE_INVALID_MAX,
+} poll_mode_t;
 
 /* If events indicate connection is ready for READ operation */
 extern bool pollctl_events_can_read(pollctl_events_t events);
@@ -56,6 +63,12 @@ extern bool pollctl_events_has_hangup(pollctl_events_t events);
  * IN max_connections - Max connections same as mgr.max_connections
  */
 extern void pollctl_init(const int max_connections);
+
+/*
+ * Modify max connections count
+ * IN max_connections - Max connections same as mgr.max_connections
+ */
+extern void pollctl_modify_max_connections(const int max_connections);
 
 /*
  * Release memory and resources of polling controller
@@ -152,4 +165,32 @@ extern int pollctl_for_each_event(pollctl_event_func_t func, void *arg,
  */
 extern void pollctl_interrupt(const char *caller);
 
-#endif /* _CONMGR_POLL_H */
+/*
+ * Change active polling mode
+ * WARNING: Only call before pollctl_link_fd() is called.
+ * IN mode - set to polling mode
+ */
+extern void pollctl_set_mode(poll_mode_t mode);
+
+typedef struct {
+	poll_mode_t mode;
+	bool (*events_can_read)(pollctl_events_t events);
+	bool (*events_can_write)(pollctl_events_t events);
+	bool (*events_has_error)(pollctl_events_t events);
+	bool (*events_has_hangup)(pollctl_events_t events);
+	void (*init)(const int max_connections);
+	void (*modify_max_connections)(const int max_connections);
+	void (*fini)(void);
+	const char *(*type_to_string)(pollctl_fd_type_t type);
+	int (*link_fd)(int fd, pollctl_fd_type_t type, const char *con_name,
+		       const char *caller);
+	void (*relink_fd)(int fd, pollctl_fd_type_t type, const char *con_name,
+			  const char *caller);
+	void (*unlink_fd)(int fd, const char *con_name, const char *caller);
+	int (*poll)(const char *caller);
+	int (*for_each_event)(pollctl_event_func_t func, void *arg,
+			      const char *func_name, const char *caller);
+	void (*interrupt)(const char *caller);
+} poll_funcs_t;
+
+#endif /* _CONMGR_POLLING_H */

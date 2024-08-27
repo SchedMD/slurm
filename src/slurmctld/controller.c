@@ -565,6 +565,9 @@ int main(int argc, char **argv)
 		    SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS,
 		    (conmgr_callbacks_t) {0});
 
+	if (slurm_conf.slurmctld_params)
+		conmgr_apply_params(slurm_conf.slurmctld_params);
+
 	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 
 	if (auth_g_init() != SLURM_SUCCESS)

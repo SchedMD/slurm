@@ -53,7 +53,7 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/events.h"
-#include "src/conmgr/poll.h"
+#include "src/conmgr/polling.h"
 
 /* Default buffer to 1 page */
 #define BUFFER_START_SIZE 4096

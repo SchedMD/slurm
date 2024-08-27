@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  poll.c - Definitions for poll() handlers
+ *  epoll.c - Definitions for epoll_*() handlers
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -34,11 +34,10 @@
 \*****************************************************************************/
 
 #include <fcntl.h>
-#include <poll.h>
 #include <pthread.h>
-#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/epoll.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -52,8 +51,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/conmgr/events.h"
 #include "src/conmgr/polling.h"
+#include "src/conmgr/events.h"
 
 /*
  * Size event count for 1 input and 1 output per connection and
@@ -73,7 +72,6 @@
 
 /* Flags to be used for each type of fd */
 #define T(type, events) { type, XSTRINGIFY(type), events, XSTRINGIFY(events) }
-
 static const struct {
 	pollctl_fd_type_t type;
 	const char *type_string;
@@ -83,38 +81,43 @@ static const struct {
 	T(PCTL_TYPE_INVALID, 0),
 	T(PCTL_TYPE_UNSUPPORTED, 0),
 	T(PCTL_TYPE_NONE, 0),
-	T(PCTL_TYPE_CONNECTED, (POLLHUP | POLLERR)),
-	T(PCTL_TYPE_READ_ONLY, (POLLIN | POLLHUP | POLLERR)),
-	T(PCTL_TYPE_READ_WRITE, (POLLIN | POLLOUT | POLLHUP | POLLERR)),
-	T(PCTL_TYPE_WRITE_ONLY, (POLLOUT | POLLHUP | POLLERR)),
-	T(PCTL_TYPE_LISTEN, (POLLIN | POLLHUP | POLLERR)),
+	T(PCTL_TYPE_CONNECTED, (EPOLLHUP | EPOLLERR | EPOLLET)),
+	T(PCTL_TYPE_READ_ONLY, (EPOLLIN | EPOLLRDHUP | EPOLLHUP | EPOLLERR |
+				EPOLLET)),
+	T(PCTL_TYPE_READ_WRITE,
+	  (EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLHUP | EPOLLERR | EPOLLET)),
+	T(PCTL_TYPE_WRITE_ONLY, (EPOLLOUT | EPOLLHUP | EPOLLERR | EPOLLET)),
+	T(PCTL_TYPE_LISTEN, (EPOLLIN | EPOLLHUP | EPOLLERR | EPOLLET)),
 	T(PCTL_TYPE_INVALID_MAX, 0),
 };
-
 #undef T
 
 #define T(flag) { flag, XSTRINGIFY(flag) }
-
 static const struct {
 	uint32_t flag;
 	const char *string;
-} poll_events[] = {
-	T(POLLIN),     T(POLLPRI),    T(POLLOUT),    T(POLLERR),
-	T(POLLHUP),    T(POLLNVAL),
-#ifdef _XOPEN_SOURCE
-#ifdef __linux__
-	T(POLLRDHUP),
-#endif /* __linux__ */
-	T(POLLRDNORM), T(POLLRDBAND), T(POLLWRNORM), T(POLLWRBAND),
-#endif /* _XOPEN_SOURCE */
+} epoll_events[] = {
+	T(EPOLLIN),
+	T(EPOLLOUT),
+	T(EPOLLPRI),
+	T(EPOLLERR),
+	T(EPOLLHUP),
+	T(EPOLLRDHUP),
+	T(EPOLLET),
+	T(EPOLLONESHOT),
+	T(EPOLLWAKEUP),
+#ifdef EPOLLEXCLUSIVE
+	T(EPOLLEXCLUSIVE),
+#endif
 };
 #undef T
 
 #define PCTL_INITIALIZER \
-	{ \
+{ \
 	.mutex = PTHREAD_MUTEX_INITIALIZER, \
 	.poll_return = EVENT_INITIALIZER("POLL_RETURN"), \
 	.interrupt_return = EVENT_INITIALIZER("INTERRUPT_RETURN"), \
+	.epoll = -1, \
 	.interrupt =  { \
 		.send = -1, \
 		.receive = 1, \
@@ -134,23 +137,22 @@ static struct pctl_s {
 
 	/* True if actively polling() */
 	bool polling;
-
-	/* array of pollfd structs */
-	struct pollfd *events;
+	/* file descriptor for epoll */
+	int epoll;
+	/* array holding results of epoll */
+	struct epoll_event *events;
 	/* number of elements in events array */
 	int events_count;
-
-	/* array of file descriptors and polling type to poll() */
-	struct {
-		pollctl_fd_type_t type;
-		int fd;
-	} *fds;
-
+	/*
+	 * Number of elements triggred in last epoll_wait().
+	 * Only set when polling=true.
+	 */
+	int events_triggered;
 	/* number of file descriptors currently registered */
 	int fd_count;
 
 	struct {
-		/* pipe() used to break out of poll() */
+		/* pipe() used to break out of epoll() */
 		int send;
 		int receive;
 
@@ -165,7 +167,6 @@ static struct pctl_s {
 static int _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 		    const char *caller);
 static void _unlink_fd(int fd, const char *con_name, const char *caller);
-static void _interrupt(const char *caller);
 
 static const char *_type_to_string(pollctl_fd_type_t type)
 {
@@ -176,7 +177,7 @@ static const char *_type_to_string(pollctl_fd_type_t type)
 	fatal_abort("should never execute");
 }
 
-static char *_poll_events_to_string(uint32_t events)
+static char *_epoll_events_to_string(uint32_t events)
 {
 	char *str = NULL, *at = NULL;
 	uint32_t matched = 0;
@@ -184,16 +185,16 @@ static char *_poll_events_to_string(uint32_t events)
 	if (!events)
 		return xstrdup_printf("0");
 
-	for (int i = 0; i < ARRAY_SIZE(poll_events); i++) {
-		if ((poll_events[i].flag & events) == poll_events[i].flag) {
+	for (int i = 0; i < ARRAY_SIZE(epoll_events); i++) {
+		if ((epoll_events[i].flag & events) == epoll_events[i].flag) {
 			xstrfmtcatat(str, &at, "%s%s", (str ? "|" : ""),
-				     poll_events[i].string);
-			matched |= poll_events[i].flag;
+				     epoll_events[i].string);
+			matched |= epoll_events[i].flag;
 		}
 	}
 
 	if (events ^ matched)
-		xstrfmtcatat(str, &at, "%s0x%08" PRIx32, (str ? "|" : ""),
+		xstrfmtcatat(str, &at, "%s0x%08"PRIx32, (str ? "|" : ""),
 			     (events ^ matched));
 
 	return str;
@@ -231,10 +232,14 @@ static void _check_pctl_magic(void)
 #ifndef NDEBUG
 	/* check file descriptors are not sane */
 	xassert(pctl.initialized);
+	xassert(pctl.epoll >= 0);
 	xassert(pctl.interrupt.send >= 0);
 	xassert(pctl.interrupt.receive >= 0);
+	xassert(pctl.epoll != pctl.interrupt.send);
+	xassert(pctl.epoll != pctl.interrupt.receive);
 	xassert(pctl.interrupt.send != pctl.interrupt.receive);
 	xassert(pctl.fd_count >= 0);
+
 	xassert(pctl.interrupt.requested >= 0);
 #endif /* !NDEBUG */
 }
@@ -246,22 +251,6 @@ static void _atfork_child(void)
 	 * forking as all of the prior state is completely unusable.
 	 */
 	pctl = (struct pctl_s) PCTL_INITIALIZER;
-}
-
-static void _init_events(void)
-{
-	for (int i = 0; i < pctl.events_count; i++) {
-		if (pctl.events[i].fd != pctl.interrupt.receive) {
-			pctl.events[i].fd = -1;
-			pctl.events[i].events = 0;
-			pctl.events[i].revents = 0;
-		}
-
-		if (pctl.fds[i].fd != pctl.interrupt.receive) {
-			pctl.fds[i].fd = -1;
-			pctl.fds[i].type = PCTL_TYPE_NONE;
-		}
-	}
 }
 
 static void _init(const int max_connections)
@@ -279,8 +268,8 @@ static void _init(const int max_connections)
 	pctl.events_count = MAX_POLL_EVENTS(max_connections);
 
 	if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
-		fatal_abort("%s: pthread_atfork() failed: %s", __func__,
-			    slurm_strerror(rc));
+		fatal_abort("%s: pthread_atfork() failed: %s",
+			    __func__, slurm_strerror(rc));
 
 	{
 		int fd[2] = { -1, -1 };
@@ -296,9 +285,11 @@ static void _init(const int max_connections)
 		pctl.interrupt.send = fd[1];
 	}
 
+	if ((pctl.epoll = epoll_create1(EPOLL_CLOEXEC)) < 0)
+		fatal_abort("%s: epoll_create1(FD_CLOEXEC) failed which should never happen: %m",
+			    __func__);
+
 	pctl.events = xcalloc(pctl.events_count, sizeof(*pctl.events));
-	pctl.fds = xcalloc(pctl.events_count, sizeof(*pctl.fds));
-	_init_events();
 	pctl.initialized = true;
 
 	_check_pctl_magic();
@@ -315,12 +306,9 @@ static void _modify_max_connections(const int max_connections)
 	slurm_mutex_lock(&pctl.mutex);
 	xassert(pctl.initialized);
 	xassert(!pctl.polling);
-	xassert(pctl.fd_count <= 1);
 
 	pctl.events_count = MAX_POLL_EVENTS(max_connections);
 	xrecalloc(pctl.events, pctl.events_count, sizeof(*pctl.events));
-	xrecalloc(pctl.fds, pctl.events_count, sizeof(*pctl.fds));
-	_init_events();
 
 	slurm_mutex_unlock(&pctl.mutex);
 }
@@ -346,9 +334,9 @@ static void _fini(void)
 
 	fd_close(&pctl.interrupt.receive);
 	fd_close(&pctl.interrupt.send);
+	fd_close(&pctl.epoll);
 
 	xfree(pctl.events);
-	xfree(pctl.fds);
 	EVENT_FREE_MEMBERS(&pctl.poll_return);
 	EVENT_FREE_MEMBERS(&pctl.interrupt_return);
 
@@ -367,25 +355,27 @@ static void _fini(void)
 static int _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 		    const char *caller)
 {
-	for (int i = 0; i < pctl.events_count; i++) {
-		xassert(pctl.fds[i].fd != fd);
+	struct epoll_event ev = {
+		.events = _fd_type_to_events(type),
+		.data.fd = fd,
+	};
 
-		if (pctl.fds[i].fd != -1)
-			continue;
+	if (epoll_ctl(pctl.epoll, EPOLL_CTL_ADD, ev.data.fd, &ev)) {
+		int rc = errno;
 
-		log_flag(CONMGR,
-			 "%s->%s: [POLL:%s] registered fd[%s]:%d for %s events",
+		log_flag(CONMGR, "%s->%s: [EPOLL:%s] epoll_ctl(EPOLL_CTL_ADD, %d, %s) failed: %s",
+			 caller, __func__, con_name, ev.data.fd,
+			 _fd_type_to_events_string(type), slurm_strerror(rc));
+
+		return rc;
+	} else if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
+		log_flag(CONMGR, "%s->%s: [EPOLL:%s] registered fd[%s]:%d for %s events",
 			 caller, __func__, con_name,
 			 _fd_type_to_type_string(type), fd,
 			 _fd_type_to_events_string(type));
 
-		pctl.fds[i].fd = fd;
-		pctl.fds[i].type = type;
-		pctl.fd_count++;
-		return SLURM_SUCCESS;
-	}
-
-	fatal_abort("should never happen");
+	pctl.fd_count++;
+	return SLURM_SUCCESS;
 }
 
 static int _lock_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
@@ -397,55 +387,46 @@ static int _lock_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 	_check_pctl_magic();
 	rc = _link_fd(fd, type, con_name, caller);
 	slurm_mutex_unlock(&pctl.mutex);
-	_interrupt(caller);
 
 	return rc;
 }
 
-static void _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
-		       const char *caller)
+static void _relink_fd(int fd, pollctl_fd_type_t type,
+			    const char *con_name, const char *caller)
 {
+	struct epoll_event ev = {
+		.events = _fd_type_to_events(type),
+		.data.fd = fd,
+	};
+
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
 
-	for (int i = 0; i < pctl.events_count; i++) {
-		if (pctl.fds[i].fd != fd)
-			continue;
-
-		log_flag(CONMGR,
-			 "%s->%s: [POLL:%s] Modified fd[%s]:%d for %s events",
+	if (epoll_ctl(pctl.epoll, EPOLL_CTL_MOD, ev.data.fd, &ev)) {
+		fatal_abort("%s->%s: [EPOLL:%s] epoll_ctl(EPOLL_CTL_MOD, %d, %s) failed: %m",
+			    caller, __func__, con_name,
+			    ev.data.fd, _fd_type_to_events_string(type));
+	} else if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
+		log_flag(CONMGR, "%s->%s: [EPOLL:%s] Modified fd[%s]:%d for %s events",
 			 caller, __func__, con_name,
 			 _fd_type_to_type_string(type), fd,
 			 _fd_type_to_events_string(type));
 
-		pctl.fds[i].type = type;
-		slurm_mutex_unlock(&pctl.mutex);
-		_interrupt(caller);
-		return;
-	}
-
-	fatal_abort("should never happen");
+	slurm_mutex_unlock(&pctl.mutex);
 }
 
 /* caller must hold pctl.mutex */
 static void _unlink_fd(int fd, const char *con_name, const char *caller)
 {
-	int i = -1;
-
 	_check_pctl_magic();
 
-	for (i = 0; i < pctl.events_count; i++)
-		if (pctl.fds[i].fd == fd)
-			break;
+	if (epoll_ctl(pctl.epoll, EPOLL_CTL_DEL, fd, NULL))
+		fatal_abort("%s->%s: [EPOLL:%s] epoll_ctl(EPOLL_CTL_DEL, %d) failed: %m",
+			    caller, __func__, con_name, fd);
+	else if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
+		log_flag(CONMGR, "%s->%s: [EPOLL:%s] deregistered fd:%d events",
+			 caller, __func__, con_name, fd);
 
-	if (i >= pctl.events_count)
-		fatal_abort("should never happen");
-
-	log_flag(CONMGR, "%s->%s: [POLL:%s] deregistered fd:%d events", caller,
-		 __func__, con_name, fd);
-
-	pctl.fds[i].fd = -1;
-	pctl.fds[i].type = PCTL_TYPE_NONE;
 	pctl.fd_count--;
 }
 
@@ -453,9 +434,10 @@ static void _lock_unlink_fd(int fd, const char *con_name, const char *caller)
 {
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
+
 	_unlink_fd(fd, con_name, caller);
+
 	slurm_mutex_unlock(&pctl.mutex);
-	_interrupt(caller);
 }
 
 static void _flush_interrupt(int intr_fd, uint32_t events, const char *caller)
@@ -474,11 +456,10 @@ static void _flush_interrupt(int intr_fd, uint32_t events, const char *caller)
 
 	slurm_mutex_lock(&pctl.mutex);
 
-	log_flag(
-		CONMGR,
-		"%s->%s: [POLL:%s] read %zd bytes representing %d pending requests while sending=%c",
-		caller, __func__, INTERRUPT_CON_NAME, event_read,
-		pctl.interrupt.requested, (pctl.interrupt.sending ? 'T' : 'F'));
+	log_flag(CONMGR, "%s->%s: [EPOLL:%s] read %zd bytes representing %d pending requests while sending=%c",
+		 caller, __func__, INTERRUPT_CON_NAME, event_read,
+		 pctl.interrupt.requested,
+		 (pctl.interrupt.sending ? 'T' : 'F'));
 
 	/* reset counter */
 	pctl.interrupt.requested = 0;
@@ -488,9 +469,9 @@ static void _flush_interrupt(int intr_fd, uint32_t events, const char *caller)
 
 static int _poll(const char *caller)
 {
-	int nfds = -1, rc = SLURM_SUCCESS, events_count = 0;
+	int nfds = -1, rc = SLURM_SUCCESS, events_count = 0, epoll = -1;
 	int fd_count = 0;
-	struct pollfd *events = NULL;
+	struct epoll_event *events = NULL;
 
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
@@ -500,78 +481,55 @@ static int _poll(const char *caller)
 	 * holding the mutex so poll can be done without the lock.
 	 */
 	xassert(!pctl.polling);
+	xassert(!pctl.events_triggered);
 	pctl.polling = true;
-	events = pctl.events;
 	events_count = pctl.events_count;
+	epoll = pctl.epoll;
 	fd_count = pctl.fd_count;
+	events = pctl.events;
 
-	if (!events_count || (fd_count <= 1)) {
-		/*
-		 * No point in running poll() when only file descriptor is the
-		 * interrupt pipe or none at all
-		 */
-		slurm_mutex_unlock(&pctl.mutex);
-
-		log_flag(
-			CONMGR,
-			"%s->%s: [POLL] skipping poll() with %d/%d file descriptors",
-			caller, __func__, fd_count, events_count);
-		return SLURM_SUCCESS;
-	}
-
-	log_flag(CONMGR,
-		 "%s->%s: [POLL] BEGIN: poll() with %d file descriptors",
-		 caller, __func__, pctl.fd_count);
-
-	for (int i = 0, t = 0; i < pctl.events_count; i++) {
-		if ((pctl.fds[i].fd < 0))
-			continue;
-
-		xassert(pctl.fds[i].type > PCTL_TYPE_INVALID);
-		xassert(pctl.fds[i].type < PCTL_TYPE_INVALID_MAX);
-		xassert(pctl.fds[i].type != PCTL_TYPE_NONE);
-		xassert(pctl.fds[i].type != PCTL_TYPE_UNSUPPORTED);
-		xassert(t < fd_count);
-
-		pctl.events[t].fd = pctl.fds[i].fd;
-		pctl.events[t].events = _fd_type_to_events(pctl.fds[i].type);
-		pctl.events[t].revents = 0;
-		t++;
-	}
+	log_flag(CONMGR, "%s->%s: [EPOLL] BEGIN: epoll_wait() with %d file descriptors",
+		    caller, __func__, pctl.fd_count);
 
 	slurm_mutex_unlock(&pctl.mutex);
 
-	xassert(fd_count > 0);
+	xassert(events_count > 0);
 
-	if ((nfds = poll(events, fd_count, -1)) < 0)
+	if (fd_count <= 1) {
+		/*
+		 * No point in running poll() when only file descriptor is the
+		 * interrupt pipe
+		 */
+		log_flag(CONMGR, "%s->%s: [EPOLL] skipping epoll_wait() with %d file descriptors",
+			    caller, __func__, fd_count);
+		nfds = 0;
+	} else if ((nfds = epoll_wait(epoll, events, events_count, -1)) < 0) {
 		rc = errno;
+	}
 
 	slurm_mutex_lock(&pctl.mutex);
 
-	xassert(rc || (nfds <= pctl.events_count));
+	xassert(nfds <= pctl.events_count);
 
-	log_flag(
-		CONMGR,
-		"%s->%s: [POLL] END: poll() with events for %d/%d file descriptors",
-		caller, __func__, nfds, pctl.fd_count);
+	log_flag(CONMGR, "%s->%s: [EPOLL] END: epoll_wait() with events for %d/%d file descriptors",
+		   caller, __func__, nfds, pctl.fd_count);
 
 	if (nfds > 0) {
 		/* wait for pollctl_for_each_event() to do anything */
+		pctl.events_triggered = nfds;
 	} else if (!nfds) {
-		log_flag(
-			CONMGR,
-			"%s->%s: [POLL] END: poll() reported 0 events for %d file descriptors",
-			caller, __func__, pctl.fd_count);
+		log_flag(CONMGR, "%s->%s: [EPOLL] END: epoll_wait() reported 0 events for %d file descriptors",
+			    caller, __func__, pctl.fd_count);
 	} else if (rc == EINTR) {
 		/* Treat EINTR as no events detected */
+		nfds = 0;
 		rc = SLURM_SUCCESS;
 
-		log_flag(CONMGR,
-			 "%s->%s: [POLL] END: poll() interrupted by signal",
-			 caller, __func__);
+		log_flag(CONMGR, "%s->%s: [EPOLL] END: epoll_wait() interrupted by signal",
+			    caller, __func__);
 	} else {
-		fatal_abort("%s->%s: [POLL] END: poll() failed: %m", caller,
-			    __func__);
+		fatal_abort("%s->%s: [EPOLL] END: epoll_wait() failed: %m",
+			    caller, __func__);
 	}
 
 	/* pctl.polling is set to false by pollctl_for_each_event() */
@@ -584,8 +542,8 @@ static int _poll(const char *caller)
 static int _for_each_event(pollctl_event_func_t func, void *arg,
 			   const char *func_name, const char *caller)
 {
-	int rc = SLURM_SUCCESS, intr_fd = -1;
-	struct pollfd *events = NULL;
+	int nfds = -1, rc = SLURM_SUCCESS, intr_fd = -1;
+	struct epoll_event *events = NULL;
 	event_signal_t *poll_return = NULL;
 
 	slurm_mutex_lock(&pctl.mutex);
@@ -594,38 +552,30 @@ static int _for_each_event(pollctl_event_func_t func, void *arg,
 	xassert(pctl.polling);
 
 	events = pctl.events;
+	nfds = pctl.events_triggered;
 	intr_fd = pctl.interrupt.receive;
 	slurm_mutex_unlock(&pctl.mutex);
 
-	for (int i = 0; !rc && (i < pctl.fd_count); ++i) {
+	for (int i = 0; !rc && (i < nfds); ++i) {
 		char *events_str = NULL;
 
-		if (!events[i].revents)
-			continue;
-
-		if (events[i].fd == intr_fd) {
-			_flush_interrupt(intr_fd, events[i].revents, caller);
+		if (events[i].data.fd == intr_fd) {
+			_flush_interrupt(intr_fd, events[i].events, caller);
 			continue;
 		}
 
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
-			events_str = _poll_events_to_string(events[i].revents);
+			events_str = _epoll_events_to_string(events[i].events);
 
-		log_flag(
-			CONMGR,
-			"%s->%s: [POLL] BEGIN: calling %s(fd:%d, (%s), 0x%" PRIxPTR
-			")",
-			caller, __func__, func_name, events[i].fd, events_str,
-			(uintptr_t) arg);
+		log_flag(CONMGR, "%s->%s: [EPOLL] BEGIN: calling %s(fd:%d, (%s), 0x%"PRIxPTR")",
+			 caller, __func__, func_name, events[i].data.fd,
+			 events_str, (uintptr_t) arg);
 
-		rc = func(events[i].fd, events[i].revents, arg);
+		rc = func(events[i].data.fd, events[i].events, arg);
 
-		log_flag(
-			CONMGR,
-			"%s->%s: [POLL] END: called %s(fd:%d, (%s), 0x%" PRIxPTR
-			")=%s",
-			caller, __func__, func_name, events[i].fd, events_str,
-			(uintptr_t) arg, slurm_strerror(rc));
+		log_flag(CONMGR, "%s->%s: [EPOLL] END: called %s(fd:%d, (%s), 0x%"PRIxPTR")=%s",
+			 caller, __func__, func_name, events[i].data.fd,
+			 events_str, (uintptr_t) arg, slurm_strerror(rc));
 
 		xfree(events_str);
 	}
@@ -634,6 +584,7 @@ static int _for_each_event(pollctl_event_func_t func, void *arg,
 
 	xassert(pctl.polling);
 	pctl.polling = false;
+	pctl.events_triggered = 0;
 	poll_return = &pctl.poll_return;
 
 	EVENT_BROADCAST(poll_return);
@@ -656,7 +607,7 @@ static int _intr_send_byte(int fd, const char *caller)
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		END_TIMER3(NULL, 0);
-		log_flag(CONMGR, "%s->%s: [POLL] interrupt byte sent in %s",
+		log_flag(CONMGR, "%s->%s: [EPOLL] interrupt byte sent in %s",
 			 caller, __func__, TIME_STR);
 	}
 
@@ -670,13 +621,12 @@ static void _interrupt(const char *caller)
 	event_signal_t *interrupt_return = NULL;
 	int rc, fd = -1;
 
+	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
 
 	if (!pctl.polling) {
-		log_flag(
-			CONMGR,
-			"%s->%s: [POLL] skipping sending interrupt when not actively poll()ing",
-			caller, __func__);
+		log_flag(CONMGR, "%s->%s: [EPOLL] skipping sending interrupt when not actively poll()ing",
+			 caller, __func__);
 	} else {
 		pctl.interrupt.requested++;
 
@@ -687,27 +637,31 @@ static void _interrupt(const char *caller)
 			pctl.interrupt.sending = true;
 			interrupt_return = &pctl.interrupt_return;
 
-			log_flag(CONMGR,
-				 "%s->%s: [POLL] sending interrupt requests=%d",
-				 caller, __func__, pctl.interrupt.requested);
+			log_flag(CONMGR, "%s->%s: [EPOLL] sending interrupt requests=%d",
+				 caller, __func__,
+				 pctl.interrupt.requested);
 		} else {
-			log_flag(
-				CONMGR,
-				"%s->%s: [POLL] skipping sending another interrupt requests=%d sending=%c",
-				caller, __func__, pctl.interrupt.requested,
-				(pctl.interrupt.sending ? 'T' : 'F'));
+			log_flag(CONMGR, "%s->%s: [EPOLL] skipping sending another interrupt requests=%d sending=%c",
+				 caller, __func__,
+				 pctl.interrupt.requested,
+				 (pctl.interrupt.sending ? 'T' : 'F'));
 		}
 	}
+
+	slurm_mutex_unlock(&pctl.mutex);
 
 	if (fd < 0)
 		return;
 
 	if ((rc = _intr_send_byte(fd, caller))) {
-		error("%s->%s: [POLL] write(%d) failed: %s", caller, __func__,
-		      fd, slurm_strerror(errno));
+		error("%s->%s: [EPOLL] write(%d) failed: %s",
+		      caller, __func__, fd, slurm_strerror(errno));
 	}
 
-	log_flag(CONMGR, "%s->%s: [POLL] interrupt sent requests=%d polling=%c",
+	slurm_mutex_lock(&pctl.mutex);
+	_check_pctl_magic();
+
+	log_flag(CONMGR, "%s->%s: [EPOLL] interrupt sent requests=%d polling=%c",
 		 caller, __func__, pctl.interrupt.requested,
 		 (pctl.polling ? 'T' : 'F'));
 
@@ -716,38 +670,36 @@ static void _interrupt(const char *caller)
 	pctl.interrupt.sending = false;
 
 	EVENT_BROADCAST(interrupt_return);
-}
-
-static void _lock_interrupt(const char *caller)
-{
-	slurm_mutex_lock(&pctl.mutex);
-	_check_pctl_magic();
-	_interrupt(caller);
 	slurm_mutex_unlock(&pctl.mutex);
 }
 
 static bool _events_can_read(pollctl_events_t events)
 {
-	return (events & (POLLIN | POLLHUP));
+	/*
+	 * Allow read()/write() to catch EPOLLRDHUP AND EPOLLHUP as there may
+	 * still be more bytes the fd's buffers and we don't want to close() the
+	 * connection yet either to drop those buffers on the floor.
+	 */
+	return (events & (EPOLLIN | EPOLLRDHUP | EPOLLHUP));
 }
 
 static bool _events_can_write(pollctl_events_t events)
 {
-	return (events & (POLLOUT | POLLHUP));
+	return (events & (EPOLLOUT | EPOLLRDHUP | EPOLLHUP));
 }
 
 static bool _events_has_error(pollctl_events_t events)
 {
-	return (events & POLLERR);
+	return (events & EPOLLERR);
 }
 
 static bool _events_has_hangup(pollctl_events_t events)
 {
-	return (events & POLLHUP);
+	return (events & (EPOLLRDHUP | EPOLLHUP));
 }
 
-const poll_funcs_t poll_funcs = {
-	.mode = POLL_MODE_POLL,
+const poll_funcs_t epoll_funcs = {
+	.mode = POLL_MODE_EPOLL,
 	.init = _init,
 	.fini = _fini,
 	.type_to_string = _type_to_string,
@@ -757,7 +709,7 @@ const poll_funcs_t poll_funcs = {
 	.unlink_fd = _lock_unlink_fd,
 	.poll = _poll,
 	.for_each_event = _for_each_event,
-	.interrupt = _lock_interrupt,
+	.interrupt = _interrupt,
 	.events_can_read = _events_can_read,
 	.events_can_write = _events_can_write,
 	.events_has_error = _events_has_error,
