@@ -312,7 +312,8 @@ extern void block_record_validate(void)
 			      ptr->block_name);
 		}
 	}
-
+	if (!bblock_node_cnt)
+		fatal("Block not contains any nodes");
 	if (blocks_nodes_bitmap) {
 		i = bit_clear_count(blocks_nodes_bitmap);
 		if (i > 0) {
