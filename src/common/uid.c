@@ -211,8 +211,12 @@ extern char *uid_to_string_cached(uid_t uid)
 	uid_cache_entry_t target = {uid, NULL};
 
 	slurm_mutex_lock(&uid_lock);
+	/* 
+	 * bsearch and qsort depend on the first field of uid_cache_entry
+	 * being a 16 bit integer uid
+	 */
 	entry = bsearch(&target, uid_cache, uid_cache_used,
-			sizeof(uid_cache_entry_t), slurm_sort_uint_list_asc);
+			sizeof(uid_cache_entry_t), slurm_sort_uint16_list_asc);
 	if (entry == NULL) {
 		uid_cache_entry_t new_entry = {uid, uid_to_string(uid)};
 		uid_cache_used++;
@@ -220,7 +224,7 @@ extern char *uid_to_string_cached(uid_t uid)
 				     sizeof(uid_cache_entry_t)*uid_cache_used);
 		uid_cache[uid_cache_used-1] = new_entry;
 		qsort(uid_cache, uid_cache_used, sizeof(uid_cache_entry_t),
-		      slurm_sort_uint_list_asc);
+		      slurm_sort_uint16_list_asc);
 		slurm_mutex_unlock(&uid_lock);
 		return new_entry.username;
 	}

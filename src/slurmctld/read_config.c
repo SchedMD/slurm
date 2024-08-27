@@ -206,7 +206,7 @@ static int _sort_nodes_by_rank(const void *a, const void *b)
 	if (!n2)
 		return -1;
 
-	return slurm_sort_uint_list_asc(&n1->node_rank, &n2->node_rank);
+	return slurm_sort_uint32_list_asc(&n1->node_rank, &n2->node_rank);
 }
 
 /*

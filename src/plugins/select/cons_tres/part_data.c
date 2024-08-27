@@ -59,7 +59,7 @@ static int _compare_support(const void *v1, const void *v2)
 	if (rc)
 		return rc;
 
-	rc = slurm_sort_uint_list_asc(&s1->tmpjobs->ncpus, &s2->tmpjobs->ncpus);
+	rc = slurm_sort_uint32_list_asc(&s1->tmpjobs->ncpus, &s2->tmpjobs->ncpus);
 	if (rc)
 		return rc;
 

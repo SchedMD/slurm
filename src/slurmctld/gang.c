@@ -612,7 +612,7 @@ static int _sort_partitions(void *part1, void *part2)
 	g1 = *(struct gs_part **)part1;
 	g2 = *(struct gs_part **)part2;
 
-	return slurm_sort_uint_list_desc(&g1->priority, &g2->priority);
+	return slurm_sort_uint16_list_desc(&g1->priority, &g2->priority);
 }
 
 /* Scan the partition list. Add the given job as a "shadow" to every

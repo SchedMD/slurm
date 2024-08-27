@@ -103,6 +103,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 24.05.4
 ==========================
+ -- Fix generic int sort functions.
 
 * Changes in Slurm 24.05.3
 ==========================
