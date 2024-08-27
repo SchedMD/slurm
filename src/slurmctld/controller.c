@@ -561,12 +561,12 @@ int main(int argc, char **argv)
 		sched_debug("slurmctld starting");
 	}
 
+	if (slurm_conf.slurmctld_params)
+		conmgr_set_params(slurm_conf.slurmctld_params);
+
 	conmgr_init(SLURMCTLD_CONMGR_DEFAULT_THREADS,
 		    SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS,
 		    (conmgr_callbacks_t) {0});
-
-	if (slurm_conf.slurmctld_params)
-		conmgr_apply_params(slurm_conf.slurmctld_params);
 
 	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 

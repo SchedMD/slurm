@@ -438,9 +438,6 @@ main (int argc, char **argv)
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
 	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
 
-	if (slurm_conf.slurmd_params)
-		conmgr_apply_params(slurm_conf.slurmd_params);
-
 	conmgr_add_work_fifo(_run, &args);
 
 	while (!_shutdown)
@@ -2457,6 +2454,13 @@ _slurmd_init(void)
 		log_flag(CGROUP, "cgroup conf was already initialized.");
 
 	xcpuinfo_refresh_hwloc(original);
+
+	/*
+	 * auth/slurm calls conmgr_init and we need to apply conmgr params
+	 * before conmgr init.
+	 */
+	if (slurm_conf.slurmd_params)
+		conmgr_set_params(slurm_conf.slurmd_params);
 
 	/*
 	 * auth and hash plugins must be initialized before the first dynamic

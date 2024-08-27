@@ -69,13 +69,18 @@ static void _atfork_child(void)
 extern void conmgr_init(int thread_count, int max_connections,
 			conmgr_callbacks_t callbacks)
 {
-	if (max_connections < 1)
+	/* The configured value takes the highest precedence */
+	if (mgr.conf_max_connections > 0)
+		max_connections = mgr.conf_max_connections;
+	else if (max_connections < 1)
 		max_connections = MAX_CONNECTIONS_DEFAULT;
 
 	slurm_mutex_lock(&mgr.mutex);
 
 	mgr.shutdown_requested = false;
 
+	if (mgr.workers.conf_threads > 0)
+		thread_count = mgr.workers.conf_threads;
 	workers_init(thread_count);
 
 	if (!mgr.one_time_initialized) {
@@ -97,6 +102,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 		mgr.one_time_initialized = true;
 	} else {
 		/* already initialized */
+
 		mgr.max_connections = MAX(max_connections, mgr.max_connections);
 
 		/* Catch if callbacks are different while ignoring NULLS */
@@ -287,9 +293,15 @@ extern bool conmgr_enabled(void)
 	return enabled_status;
 }
 
-extern int conmgr_apply_params(const char *params)
+extern int conmgr_set_params(const char *params)
 {
 	char *tmp_str = NULL, *tok = NULL, *saveptr = NULL;
+
+	/*
+	 * This should be called before conmgr is initialized so that params
+	 * are applied on initialization.
+	 */
+	xassert(!mgr.initialized);
 
 	tmp_str = xstrdup(params);
 	tok = strtok_r(tmp_str, ",", &saveptr);
@@ -300,20 +312,18 @@ extern int conmgr_apply_params(const char *params)
 				slurm_atoul(tok + strlen(CONMGR_PARAM_THREADS));
 
 			slurm_mutex_lock(&mgr.mutex);
-			xassert(mgr.initialized);
-			workers_init(count);
+			mgr.workers.conf_threads = count;
 			slurm_mutex_unlock(&mgr.mutex);
 
-			log_flag(CONMGR, "%s: %s activated with %zu threads", __func__, tok, count);
+			log_flag(CONMGR, "%s: %s set %zu threads",
+				 __func__, tok, count);
 		} else if (!xstrncasecmp(tok, CONMGR_PARAM_MAX_CONN,
 				  strlen(CONMGR_PARAM_MAX_CONN))) {
 			const unsigned long count =
 				slurm_atoul(tok + strlen(CONMGR_PARAM_MAX_CONN));
 
 			slurm_mutex_lock(&mgr.mutex);
-			xassert(mgr.initialized);
-			mgr.max_connections = count;
-			pollctl_modify_max_connections(mgr.max_connections);
+			mgr.conf_max_connections = count;
 			slurm_mutex_unlock(&mgr.mutex);
 
 			log_flag(CONMGR, "%s: %s activated with %zu threads", __func__, tok, count);

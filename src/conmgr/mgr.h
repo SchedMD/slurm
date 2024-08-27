@@ -199,6 +199,9 @@ typedef struct {
  * Global instance of conmgr
  */
 typedef struct {
+	/* Configured value for max connections */
+	int conf_max_connections;
+
 	/* Max number of connections at any one time allowed */
 	int max_connections;
 	/*
@@ -262,6 +265,9 @@ typedef struct {
 	pthread_mutex_t mutex;
 
 	struct {
+		/* Configured value of threads */
+		int conf_threads;
+
 		/* list of worker_t */
 		list_t *workers;
 
@@ -287,11 +293,13 @@ typedef struct {
 
 #define CONMGR_DEFAULT \
 	(conmgr_t) {\
+		.conf_max_connections = -1,\
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
 		.error = SLURM_SUCCESS,\
 		.quiesced = false,\
 		.shutdown_requested = true,\
+		.workers.conf_threads = -1,\
 		.watch_sleep = EVENT_INITIALIZER("WATCH_SLEEP"), \
 		.watch_return = EVENT_INITIALIZER("WATCH_RETURN"), \
 		.worker_sleep = EVENT_INITIALIZER("WORKER_SLEEP"), \

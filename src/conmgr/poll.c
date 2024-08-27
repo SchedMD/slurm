@@ -310,21 +310,6 @@ static void _init(const int max_connections)
 	slurm_mutex_unlock(&pctl.mutex);
 }
 
-static void _modify_max_connections(const int max_connections)
-{
-	slurm_mutex_lock(&pctl.mutex);
-	xassert(pctl.initialized);
-	xassert(!pctl.polling);
-	xassert(pctl.fd_count <= 1);
-
-	pctl.events_count = MAX_POLL_EVENTS(max_connections);
-	xrecalloc(pctl.events, pctl.events_count, sizeof(*pctl.events));
-	xrecalloc(pctl.fds, pctl.events_count, sizeof(*pctl.fds));
-	_init_events();
-
-	slurm_mutex_unlock(&pctl.mutex);
-}
-
 static void _fini(void)
 {
 	slurm_mutex_lock(&pctl.mutex);
@@ -751,7 +736,6 @@ const poll_funcs_t poll_funcs = {
 	.init = _init,
 	.fini = _fini,
 	.type_to_string = _type_to_string,
-	.modify_max_connections = _modify_max_connections,
 	.link_fd = _lock_link_fd,
 	.relink_fd = _relink_fd,
 	.unlink_fd = _lock_unlink_fd,
