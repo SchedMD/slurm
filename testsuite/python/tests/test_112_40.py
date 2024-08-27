@@ -71,6 +71,12 @@ def setup():
         partition_name = "debug"
 
 
+@pytest.fixture(scope="function", autouse=True)
+def cancel_jobs(setup):
+    yield
+    atf.cancel_all_jobs()
+
+
 @pytest.fixture(scope="function")
 def slurm(setup):
     yield atf.openapi_slurm()
@@ -1054,6 +1060,11 @@ def test_jobs(slurm, slurmdb):
 
 @pytest.fixture(scope="function")
 def reservation(setup):
+    # Ensure that ALL nodes are idle before reserving them (or scontrol may return an error)
+    nodes = atf.get_nodes()
+    for node in nodes:
+        atf.wait_for_node_state(node, "IDLE", fatal=True)
+
     atf.run_command(
         f"scontrol create reservation starttime=now duration=120 user=root nodes=ALL ReservationName={resv_name}",
         fatal=True,
