@@ -52,6 +52,7 @@
 #include <poll.h>
 #include <pthread.h>
 #include <pwd.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
