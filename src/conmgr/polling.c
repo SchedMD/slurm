@@ -60,7 +60,7 @@ static const struct {
 
 extern const poll_funcs_t poll_funcs;
 
-static poll_mode_t mode = DEFAULT_POLLING_MODE;
+static poll_mode_t mode = POLL_MODE_INVALID;
 static int max_connections = 0;
 static const poll_funcs_t *polling_funcs[] = {
 #ifdef HAVE_EPOLL
@@ -94,35 +94,28 @@ extern const char *pollctl_type_to_string(pollctl_fd_type_t type)
 
 extern void pollctl_init(const int new_max_connections)
 {
-	log_flag(CONMGR, "%s: [%s] Initializing", __func__, _mode_string(mode));
+	if (mode == POLL_MODE_INVALID)
+		mode = DEFAULT_POLLING_MODE;
+	log_flag(CONMGR, "%s: [%s] Initializing with connection count %d",
+		 __func__, _mode_string(mode), new_max_connections);
 	max_connections = new_max_connections;
 	_get_funcs()->init(max_connections);
-}
-
-extern void pollctl_modify_max_connections(const int new_max_connections)
-{
-	log_flag(CONMGR, "%s: [%s] Changing max_connections: %d -> %d",
-		 __func__, _mode_string(mode), max_connections,
-		 new_max_connections);
-
-	max_connections = new_max_connections;
-	_get_funcs()->modify_max_connections(max_connections);
 }
 
 extern void pollctl_set_mode(poll_mode_t new_mode)
 {
+	/* This should only be called before polling has been initialized */
+	xassert(mode == POLL_MODE_INVALID);
 	xassert(new_mode > POLL_MODE_INVALID);
 	xassert(new_mode < POLL_MODE_INVALID_MAX);
 
-	if (mode == new_mode)
+	mode = new_mode;
+	if (mode == DEFAULT_POLLING_MODE)
 		return;
 
 	log_flag(CONMGR, "%s: Changing polling type: %s -> %s",
-		 __func__, _mode_string(mode), _mode_string(new_mode));
-
-	_get_funcs()->fini();
-	mode = new_mode;
-	_get_funcs()->init(max_connections);
+		 __func__, _mode_string(DEFAULT_POLLING_MODE),
+		 _mode_string(mode));
 }
 
 extern void pollctl_fini(void)

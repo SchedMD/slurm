@@ -136,6 +136,7 @@ extern void workers_init(int count)
 		return;
 	}
 
+	log_flag(CONMGR, "%s: Initializing with %d workers", __func__, count);
 	xassert(!mgr.workers.workers);
 	mgr.workers.workers = list_create(_worker_free);
 	mgr.workers.threads = count;
