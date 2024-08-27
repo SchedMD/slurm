@@ -1398,8 +1398,8 @@ check_pid:
 		debug("anchor %d already exited", child);
 		rc = WEXITSTATUS(status);
 	} else if (WIFSIGNALED(status)) {
-		fatal("anchor %d killed by signal %d",
-		      child, WTERMSIG(status));
+		fatal("%s: anchor %"PRIu64" killed by signal %d",
+		      __func__, (uint64_t) child, WTERMSIG(status));
 	}
 
 	return rc;
