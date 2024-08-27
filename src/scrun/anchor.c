@@ -1378,6 +1378,9 @@ rwfail:
 	      __func__, fd, (uint64_t) child, slurm_strerror(rc));
 check_pid:
 	/* check what happened to the child process */
+	debug("%s: waiting for anchor process %u to terminate",
+	      __func__, child);
+
 	while (((rc = waitpid(child, &status, 0)) < 0) && (errno == EINTR))
 		debug("%s: waitpid(%" PRIu64 ") interrupted",
 		      __func__, (uint64_t) child);
