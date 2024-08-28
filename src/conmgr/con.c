@@ -95,6 +95,7 @@ static const struct {
 	T(FLAG_IS_CONNECTED),
 	T(FLAG_WORK_ACTIVE),
 	T(FLAG_RPC_KEEP_BUFFER),
+	T(FLAG_QUIESCE),
 };
 #undef T
 

@@ -281,6 +281,14 @@ typedef enum {
 	 * Only applies to CON_TYPE_RPC connections.
 	 */
 	CON_FLAG_RPC_KEEP_BUFFER = SLURM_BIT(9),
+	/*
+	 * Connection will not be poll()'ed for changes and all pending work
+	 * will remained queued until unset. New work can still be added. If the
+	 * connection is requested to be closed, then the flag will be removed
+	 * automatically.
+	 * Note: This flag is unrelated to CONMGR_WORK_DEP_QUIESCED.
+	 */
+	CON_FLAG_QUIESCE = SLURM_BIT(10),
 } conmgr_con_flags_t;
 
 /*
