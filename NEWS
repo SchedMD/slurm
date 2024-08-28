@@ -106,6 +106,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix generic int sort functions.
  -- Fix user look up using possible unrealized uid in the dbd.
  -- Fix FreeBSD compile issue with tls/none plugin.
+ -- slurmrestd - Fix regressions that allowed slurmrestd to be run as SlurmUser
+    when SlurmUser was not root.
 
 * Changes in Slurm 24.05.3
 ==========================
