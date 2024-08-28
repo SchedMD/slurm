@@ -50,6 +50,7 @@
 #include <poll.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -248,6 +249,7 @@ static struct {
 	pthread_mutex_t mutex;
 	int count;
 	int *fd;
+	conmgr_fd_t **cons;
 } listeners = {
 	.mutex = PTHREAD_MUTEX_INITIALIZER,
 };
@@ -1371,18 +1373,36 @@ extern void queue_job_scheduler(void)
 
 static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 {
+	const int *i_ptr = arg;
+	const int i = *i_ptr;
+
 	debug3("%s: [%s] Successfully opened RPC listener",
 	       __func__, conmgr_fd_get_name(con));
 
-	return con;
+	slurm_mutex_lock(&listeners.mutex);
+
+	xassert(!listeners.cons[i]);
+	listeners.cons[i] = con;
+
+	slurm_mutex_unlock(&listeners.mutex);
+
+	return arg;
 }
 
 static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 {
-	xassert(con == arg);
+	int *i_ptr = arg;
+	const int i = *i_ptr;
 
 	debug3("%s: [%s] Closed RPC listener",
 	       __func__, conmgr_fd_get_name(con));
+
+	slurm_mutex_lock(&listeners.mutex);
+	xassert(listeners.cons[i] == con);
+	listeners.cons[i] = NULL;
+	slurm_mutex_unlock(&listeners.mutex);
+
+	xfree(i_ptr);
 }
 
 static void *_on_primary_connection(conmgr_fd_t *con, void *arg)
@@ -1395,8 +1415,6 @@ static void *_on_primary_connection(conmgr_fd_t *con, void *arg)
 
 static void _on_primary_finish(conmgr_fd_t *con, void *arg)
 {
-	xassert(arg == con);
-
 	debug3("%s: [%s] PRIMARY: RPC connection closed",
 	       __func__, conmgr_fd_get_name(con));
 }
@@ -1485,6 +1503,8 @@ static void _open_ports(void)
 		if (!(listeners.count = slurm_conf.slurmctld_port_count))
 			fatal("slurmctld port count is zero");
 		listeners.fd = xcalloc(listeners.count, sizeof(*listeners.fd));
+		listeners.cons = xcalloc(listeners.count,
+					 sizeof(*listeners.cons));
 		for (int i = 0; i < listeners.count; i++) {
 			listeners.fd[i] = slurm_init_msg_engine_port(
 				slurm_conf.slurmctld_port + i);
@@ -1493,6 +1513,8 @@ static void _open_ports(void)
 		char *pos = getenv("SLURMCTLD_RECONF_LISTEN_FDS");
 		listeners.count = atoi(getenv("SLURMCTLD_RECONF_LISTEN_COUNT"));
 		listeners.fd = xcalloc(listeners.count, sizeof(*listeners.fd));
+		listeners.cons = xcalloc(listeners.count,
+					 sizeof(*listeners.cons));
 		for (int i = 0; i < listeners.count; i++) {
 			listeners.fd[i] = strtol(pos, &pos, 10);
 			pos++; /* skip comma */
@@ -1500,12 +1522,15 @@ static void _open_ports(void)
 	}
 
 	for (int i = 0; i < listeners.count; i++) {
-		int rc;
+		int rc, *index_ptr;
+
+		index_ptr = xmalloc(sizeof(*index_ptr));
+		*index_ptr = i;
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
 						   CON_TYPE_RPC, events,
 						   CON_FLAG_RPC_KEEP_BUFFER,
-						   NULL)))
+						   index_ptr)))
 			fatal("%s: unable to process fd:%d error:%s",
 			      __func__, listeners.fd[i], slurm_strerror(rc));
 	}
