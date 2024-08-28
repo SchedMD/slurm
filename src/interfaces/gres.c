@@ -241,6 +241,11 @@ typedef struct {
 	uint64_t tot_gres_cnt;
 } rebuild_topo_t;
 
+typedef struct {
+	slurm_gres_context_t *gres_ctx;
+	gres_node_state_t *gres_ns;
+} add_gres_info_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -3686,6 +3691,36 @@ static int _foreach_rebuild_topo_no_cpus(void *x, void *args)
 	return 0;
 }
 
+static int _foreach_add_gres_info(void *x, void *args)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	add_gres_info_t *add_gres_info = args;
+	slurm_gres_context_t *gres_ctx = add_gres_info->gres_ctx;
+	gres_node_state_t *gres_ns = add_gres_info->gres_ns;
+	uint32_t type_id;
+	int i;
+
+	if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
+		return 0;
+
+	type_id = gres_build_id(gres_slurmd_conf->type_name);
+
+	for (i = 0; i < gres_ns->type_cnt; i++) {
+		if (type_id == gres_ns->type_id[i])
+			break;
+	}
+	if (i < gres_ns->type_cnt) {
+		/* Update count as needed */
+		gres_ns->type_cnt_avail[i] = gres_slurmd_conf->count;
+	} else {
+		gres_add_type(gres_slurmd_conf->type_name,
+			      gres_ns,
+			      gres_slurmd_conf->count);
+	}
+
+	return 0;
+}
+
 static int _node_config_validate(char *node_name, char *orig_config,
 				 gres_state_t *gres_state_node,
 				 int cpu_cnt, int core_cnt, int sock_cnt,
@@ -3696,10 +3731,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	uint64_t dev_cnt;
 	bool updated_config = false;
 	gres_node_state_t *gres_ns;
-	list_itr_t *iter;
-	gres_slurmd_conf_t *gres_slurmd_conf;
 	bool has_file, has_type, first_time = false, rebuild_topo = false;
-	uint32_t type_id;
 	tot_from_slurmd_conf_t slurmd_conf_tot = {
 		.plugin_id = gres_ctx->plugin_id,
 	};
@@ -3916,31 +3948,14 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					     &rebuild_topo);
 		}
 	} else if (!has_file && has_type) {
+		add_gres_info_t add_gres_info = {
+			.gres_ctx = gres_ctx,
+			.gres_ns = gres_ns,
+		};
 		/* Add GRES Type information as needed */
-		iter = list_iterator_create(gres_conf_list);
-		while ((gres_slurmd_conf = (gres_slurmd_conf_t *)
-			list_next(iter))) {
-			if (gres_slurmd_conf->plugin_id !=
-			    gres_ctx->plugin_id)
-				continue;
-			type_id = gres_build_id(
-				gres_slurmd_conf->type_name);
-			for (i = 0; i < gres_ns->type_cnt; i++) {
-				if (type_id == gres_ns->type_id[i])
-					break;
-			}
-			if (i < gres_ns->type_cnt) {
-				/* Update count as needed */
-				gres_ns->type_cnt_avail[i] =
-					gres_slurmd_conf->count;
-			} else {
-				gres_add_type(gres_slurmd_conf->type_name,
-					      gres_ns,
-					      gres_slurmd_conf->count);
-			}
-
-		}
-		list_iterator_destroy(iter);
+		(void) list_for_each(gres_conf_list,
+				     _foreach_add_gres_info,
+				     &add_gres_info);
 	}
 
 	if ((orig_config == NULL) || (orig_config[0] == '\0'))
