@@ -245,9 +245,12 @@ static bool under_systemd = false;
 
 /* Array of listening sockets */
 static struct {
+	pthread_mutex_t mutex;
 	int count;
 	int *fd;
-} listeners;
+} listeners = {
+	.mutex = PTHREAD_MUTEX_INITIALIZER,
+};
 
 typedef struct primary_thread_arg {
 	pid_t cpid;
@@ -1192,6 +1195,7 @@ static int _try_to_reconfig(void)
 		setenvf(&child_env, "SLURMCTLD_RECONF_PIDFD", "%d", pidfd);
 		fd_set_noclose_on_exec(pidfd);
 	}
+	slurm_mutex_lock(&listeners.mutex);
 	if (listeners.count) {
 		char *ports = NULL, *pos = NULL;
 		setenvf(&child_env, "SLURMCTLD_RECONF_LISTEN_COUNT", "%d",
@@ -1203,6 +1207,7 @@ static int _try_to_reconfig(void)
 		setenvf(&child_env, "SLURMCTLD_RECONF_LISTEN_FDS", "%s", ports);
 		xfree(ports);
 	}
+	slurm_mutex_unlock(&listeners.mutex);
 	for (int i = 0; i < 3; i++)
 		fd_set_noclose_on_exec(i);
 	if (!daemonize && !under_systemd) {
@@ -1266,12 +1271,14 @@ start_child:
 			continue;
 		if (fd == pidfd)
 			continue;
+		slurm_mutex_lock(&listeners.mutex);
 		for (int i = 0; i < listeners.count; i++) {
 			if (fd == listeners.fd[i]) {
 				match = true;
 				break;
 			}
 		}
+		slurm_mutex_unlock(&listeners.mutex);
 		if (!match) {
 			struct stat st;
 
@@ -1471,6 +1478,8 @@ static void _open_ports(void)
 		.on_finish = _on_finish,
 	};
 
+	slurm_mutex_lock(&listeners.mutex);
+
 	/* initialize ports for RPCs */
 	if (original) {
 		if (!(listeners.count = slurm_conf.slurmctld_port_count))
@@ -1500,6 +1509,8 @@ static void _open_ports(void)
 			fatal("%s: unable to process fd:%d error:%s",
 			      __func__, listeners.fd[i], slurm_strerror(rc));
 	}
+
+	slurm_mutex_unlock(&listeners.mutex);
 }
 
 /*
