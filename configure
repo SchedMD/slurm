@@ -24847,7 +24847,7 @@ fi
 
 
 
-  _x_ac_rdkafka_dirs="/usr"
+  _x_ac_rdkafka_dirs="/usr /usr/local"
   _x_ac_rdkafka_lib_dirs="lib/x86_64-linux-gnu lib"
 
 

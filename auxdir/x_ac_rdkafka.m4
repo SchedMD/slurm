@@ -12,7 +12,7 @@
 AC_DEFUN([X_AC_RDKAFKA],
 [
 
-  _x_ac_rdkafka_dirs="/usr"
+  _x_ac_rdkafka_dirs="/usr /usr/local"
   _x_ac_rdkafka_lib_dirs="lib/x86_64-linux-gnu lib"
 
   AC_ARG_WITH([rdkafka],
