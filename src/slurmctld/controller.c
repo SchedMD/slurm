@@ -1521,15 +1521,16 @@ static void _open_ports(void)
 		}
 	}
 
-	for (int i = 0; i < listeners.count; i++) {
+	for (uint64_t i = 0; i < listeners.count; i++) {
+		static const conmgr_con_flags_t flags =
+			(CON_FLAG_RPC_KEEP_BUFFER | CON_FLAG_QUIESCE);
 		int rc, *index_ptr;
 
 		index_ptr = xmalloc(sizeof(*index_ptr));
 		*index_ptr = i;
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
-						   CON_TYPE_RPC, events,
-						   CON_FLAG_RPC_KEEP_BUFFER,
+						   CON_TYPE_RPC, events, flags,
 						   index_ptr)))
 			fatal("%s: unable to process fd:%d error:%s",
 			      __func__, listeners.fd[i], slurm_strerror(rc));
