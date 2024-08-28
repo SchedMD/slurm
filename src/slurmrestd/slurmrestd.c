@@ -544,10 +544,6 @@ static void _lock_down(void)
 		fatal("Unable to setgid: %m");
 	if (uid != 0 && setuid(uid))
 		fatal("Unable to setuid: %m");
-	if (check_user && !become_user && (getuid() == 0))
-		fatal("slurmrestd should not be run as the root user.");
-	if (check_user && !become_user && (getgid() == 0))
-		fatal("slurmrestd should not be run with the root goup.");
 
 	if (become_user && getuid())
 		fatal("slurmrestd must run as root in become_user mode");
@@ -566,13 +562,50 @@ static void _lock_down(void)
  */
 static void _check_user(void)
 {
+	int gid_count = 0;
+
 	if (!check_user)
 		return;
+
+	if (getuid() == SLURM_AUTH_NOBODY)
+		fatal("slurmrestd should not be run as nobody(%d)",
+		      SLURM_AUTH_NOBODY);
+	if (getgid() == SLURM_AUTH_NOBODY)
+		fatal("slurmrestd should not be run with nobody(%d) group.",
+		      SLURM_AUTH_NOBODY);
 
 	if (slurm_conf.slurm_user_id == getuid())
 		fatal("slurmrestd should not be run as SlurmUser");
 	if (gid_from_uid(slurm_conf.slurm_user_id) == getgid())
 		fatal("slurmrestd should not be run with SlurmUser's group.");
+
+	if (!getuid())
+		fatal("slurmrestd should not be run as the root user.");
+	if (!getgid())
+		fatal("slurmrestd should not be run with the root group.");
+
+	if ((gid_count = getgroups(0, NULL)) > 0) {
+		gid_t *list = xcalloc(gid_count, sizeof(*list));
+
+		if (getgroups(gid_count, list) != gid_count)
+			fatal_abort("Inconsistent getgroups() group counts. This should never happen");
+
+		for (int i = 0; i < gid_count; i++) {
+			if (list[i] == slurm_conf.slurm_user_id)
+				fatal("slurmrestd should not be run with SlurmUser's group.");
+
+			if (!list[i])
+				fatal("slurmrestd should not be run with the root group.");
+
+			if (list[i] == SLURM_AUTH_NOBODY)
+				fatal("slurmrestd should not be run with nobody(%d) group.",
+				      SLURM_AUTH_NOBODY);
+		}
+
+		xfree(list);
+	} else if (gid_count < 0) {
+		fatal_abort("getgroups()=%d failed[%d]: %m", errno, gid_count);
+	}
 }
 
 /* simple wrapper to hand over operations router in http context */

@@ -100,6 +100,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove burst_buffer/lua call slurm.job_info_to_string().
  -- Add SchedulerParameters=bf_allow_magnetic_slot option. It allows jobs in
     magnetic reservations to be planned by backfill scheduler.
+ -- slurmrestd - Refuse to run as root, SlurmUser, and nobody(99).
 
 * Changes in Slurm 24.05.4
 ==========================
