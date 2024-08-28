@@ -225,6 +225,22 @@ typedef struct {
 	uint64_t topo_cnt;
 } tot_from_slurmd_conf_t;
 
+typedef struct {
+	int core_cnt;
+	bool cpu_config_err;
+	int cpus_config;
+	uint64_t dev_cnt;
+	slurm_gres_context_t *gres_ctx;
+	gres_node_state_t *gres_ns;
+	int gres_inx;
+	int topo_cnt;
+	bool has_file;
+	char *node_name;
+	int rc;
+	char **reason_down;
+	uint64_t tot_gres_cnt;
+} rebuild_topo_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -3539,15 +3555,125 @@ static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
 		bit_realloc(gres_ns->gres_bit_alloc, gres_bits);
 }
 
+static int _foreach_rebuild_topo(void *x, void *args)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	rebuild_topo_t *rebuild_topo = args;
+	slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
+	gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
+	int topo_cnt = rebuild_topo->topo_cnt;
+
+	if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
+		return 0;
+
+	if (gres_ns->gres_bit_alloc && !gres_id_shared(gres_ctx->config_flags))
+		gres_ns->topo_gres_cnt_alloc[topo_cnt] = 0;
+	gres_ns->topo_gres_cnt_avail[topo_cnt] = gres_slurmd_conf->count;
+	if (gres_slurmd_conf->cpus) {
+		/* NOTE: gres_slurmd_conf->cpus is cores */
+		bitstr_t *tmp_bitmap = bit_alloc(rebuild_topo->core_cnt);
+		int ret = bit_unfmt(tmp_bitmap, gres_slurmd_conf->cpus);
+		if (ret != SLURM_SUCCESS) {
+			error("%s: %s: invalid GRES core specification (%s) on node %s",
+			      __func__, gres_ctx->gres_type,
+			      gres_slurmd_conf->cpus,
+			      rebuild_topo->node_name);
+			FREE_NULL_BITMAP(tmp_bitmap);
+		} else {
+			FREE_NULL_BITMAP(
+				gres_ns->topo_core_bitmap[topo_cnt]);
+			gres_ns->topo_core_bitmap[topo_cnt] = tmp_bitmap;
+		}
+		rebuild_topo->cpus_config = rebuild_topo->core_cnt;
+	} else if (rebuild_topo->cpus_config && !rebuild_topo->cpu_config_err) {
+		rebuild_topo->cpu_config_err = true;
+		error("%s: %s: has CPUs configured for only some of the records on node %s",
+		      __func__, gres_ctx->gres_type, rebuild_topo->node_name);
+	}
+
+	if (gres_slurmd_conf->links) {
+		if (gres_ns->links_cnt &&
+		    (gres_ns->link_len != rebuild_topo->tot_gres_cnt)) {
+			/* Size changed, need to rebuild */
+			for (int j = 0; j < gres_ns->link_len; j++)
+				xfree(gres_ns->links_cnt[j]);
+			xfree(gres_ns->links_cnt);
+		}
+		if (!gres_ns->links_cnt) {
+			gres_ns->link_len = rebuild_topo->tot_gres_cnt;
+			gres_ns->links_cnt = xcalloc(rebuild_topo->tot_gres_cnt,
+						     sizeof(int *));
+			for (int j = 0; j < rebuild_topo->tot_gres_cnt; j++) {
+				gres_ns->links_cnt[j] =
+					xcalloc(rebuild_topo->tot_gres_cnt,
+						sizeof(int));
+			}
+		}
+	}
+	if (gres_id_shared(gres_slurmd_conf->config_flags)) {
+		/* If running jobs recovered then already set */
+		if (!gres_ns->topo_gres_bitmap[topo_cnt]) {
+			gres_ns->topo_gres_bitmap[topo_cnt] =
+				bit_alloc(rebuild_topo->dev_cnt);
+			bit_set(gres_ns->topo_gres_bitmap[topo_cnt],
+				rebuild_topo->gres_inx);
+		}
+		rebuild_topo->gres_inx++;
+	} else if (!rebuild_topo->dev_cnt) {
+		/*
+		 * Slurmd found GRES, but slurmctld can't use
+		 * them. Avoid creating zero-size bitmaps.
+		 */
+		rebuild_topo->has_file = false;
+	} else {
+		FREE_NULL_BITMAP(gres_ns->topo_gres_bitmap[topo_cnt]);
+		gres_ns->topo_gres_bitmap[topo_cnt] =
+			bit_alloc(rebuild_topo->dev_cnt);
+		for (int j = 0; j < gres_slurmd_conf->count; j++) {
+			if (rebuild_topo->gres_inx >= rebuild_topo->dev_cnt) {
+				/* Ignore excess GRES on node */
+				break;
+			}
+			bit_set(gres_ns->topo_gres_bitmap[topo_cnt],
+				rebuild_topo->gres_inx);
+			if (gres_ns->gres_bit_alloc &&
+			    bit_test(gres_ns->gres_bit_alloc,
+				     rebuild_topo->gres_inx)) {
+				/* Set by recovered job */
+				gres_ns->topo_gres_cnt_alloc[topo_cnt]++;
+			}
+			if (_links_str2array(
+				    gres_slurmd_conf->links,
+				    rebuild_topo->node_name, gres_ns,
+				    rebuild_topo->gres_inx,
+				    rebuild_topo->tot_gres_cnt,
+				    rebuild_topo->reason_down) != SLURM_SUCCESS)
+				rebuild_topo->rc = EINVAL;
+
+			rebuild_topo->gres_inx++;
+		}
+	}
+	gres_ns->topo_type_id[topo_cnt] =
+		gres_build_id(gres_slurmd_conf->type_name);
+	xfree(gres_ns->topo_type_name[topo_cnt]);
+	gres_ns->topo_type_name[topo_cnt] =
+		xstrdup(gres_slurmd_conf->type_name);
+	rebuild_topo->topo_cnt++;
+	if (rebuild_topo->topo_cnt >= gres_ns->topo_cnt)
+		return -1;
+
+	return 0;
+}
+
 static int _node_config_validate(char *node_name, char *orig_config,
 				 gres_state_t *gres_state_node,
 				 int cpu_cnt, int core_cnt, int sock_cnt,
 				 bool config_overrides, char **reason_down,
 				 slurm_gres_context_t *gres_ctx)
 {
-	int cpus_config = 0, i, j, gres_inx, rc = SLURM_SUCCESS;
+	int i, j, rc = SLURM_SUCCESS;
 	uint64_t dev_cnt;
-	bool cpu_config_err = false, updated_config = false;
+	bool updated_config = false;
 	gres_node_state_t *gres_ns;
 	list_itr_t *iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
@@ -3743,125 +3869,23 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	}
 
 	if (rebuild_topo) {
-		iter = list_iterator_create(gres_conf_list);
-		gres_inx = i = 0;
-		while ((gres_slurmd_conf = (gres_slurmd_conf_t *)
-			list_next(iter))) {
-			if (gres_slurmd_conf->plugin_id !=
-			    gres_ctx->plugin_id)
-				continue;
-			if ((gres_ns->gres_bit_alloc) &&
-			    !gres_id_shared(gres_ctx->config_flags))
-				gres_ns->topo_gres_cnt_alloc[i] = 0;
-			gres_ns->topo_gres_cnt_avail[i] =
-				gres_slurmd_conf->count;
-			if (gres_slurmd_conf->cpus) {
-				/* NOTE: gres_slurmd_conf->cpus is cores */
-				bitstr_t *tmp_bitmap = bit_alloc(core_cnt);
-				int ret = bit_unfmt(tmp_bitmap,
-						    gres_slurmd_conf->cpus);
-				if (ret != SLURM_SUCCESS) {
-					error("%s: %s: invalid GRES core specification (%s) on node %s",
-					      __func__, gres_ctx->gres_type,
-					      gres_slurmd_conf->cpus,
-					      node_name);
-					FREE_NULL_BITMAP(tmp_bitmap);
-				} else {
-					FREE_NULL_BITMAP(
-						gres_ns->topo_core_bitmap[i]);
-					gres_ns->topo_core_bitmap[i] =
-						tmp_bitmap;
-				}
-				cpus_config = core_cnt;
-			} else if (cpus_config && !cpu_config_err) {
-				cpu_config_err = true;
-				error("%s: %s: has CPUs configured for only some of the records on node %s",
-				      __func__, gres_ctx->gres_type,
-				      node_name);
-			}
+		rebuild_topo_t rebuild_topo = {
+			.core_cnt = core_cnt,
+			.dev_cnt = dev_cnt,
+			.gres_ctx = gres_ctx,
+			.gres_ns = gres_ns,
+			.has_file = has_file,
+			.node_name = node_name,
+			.rc = rc,
+			.reason_down = reason_down,
+			.tot_gres_cnt = slurmd_conf_tot.gres_cnt,
+		};
+		(void) list_for_each(gres_conf_list, _foreach_rebuild_topo,
+				     &rebuild_topo);
+		rc = rebuild_topo.rc;
+		has_file = rebuild_topo.has_file;
 
-			if (gres_slurmd_conf->links) {
-				if (gres_ns->links_cnt &&
-				    (gres_ns->link_len !=
-				     slurmd_conf_tot.gres_cnt)) {
-					/* Size changed, need to rebuild */
-					for (j = 0; j < gres_ns->link_len;j++)
-						xfree(gres_ns->links_cnt[j]);
-					xfree(gres_ns->links_cnt);
-				}
-				if (!gres_ns->links_cnt) {
-					gres_ns->link_len =
-						slurmd_conf_tot.gres_cnt;
-					gres_ns->links_cnt =
-						xcalloc(slurmd_conf_tot.
-							gres_cnt,
-							sizeof(int *));
-					for (j = 0;
-					     j < slurmd_conf_tot.gres_cnt;
-					     j++) {
-						gres_ns->links_cnt[j] =
-							xcalloc(slurmd_conf_tot.
-								gres_cnt,
-								sizeof(int));
-					}
-				}
-			}
-			if (gres_id_shared(gres_slurmd_conf->config_flags)) {
-				/* If running jobs recovered then already set */
-				if (!gres_ns->topo_gres_bitmap[i]) {
-					gres_ns->topo_gres_bitmap[i] =
-						bit_alloc(dev_cnt);
-					bit_set(gres_ns->topo_gres_bitmap[i],
-						gres_inx);
-				}
-				gres_inx++;
-			} else if (dev_cnt == 0) {
-				/*
-				 * Slurmd found GRES, but slurmctld can't use
-				 * them. Avoid creating zero-size bitmaps.
-				 */
-				has_file = false;
-			} else {
-				FREE_NULL_BITMAP(gres_ns->topo_gres_bitmap[i]);
-				gres_ns->topo_gres_bitmap[i] =
-					bit_alloc(dev_cnt);
-				for (j = 0; j < gres_slurmd_conf->count; j++) {
-					if (gres_inx >= dev_cnt) {
-						/* Ignore excess GRES on node */
-						break;
-					}
-					bit_set(gres_ns->topo_gres_bitmap[i],
-						gres_inx);
-					if (gres_ns->gres_bit_alloc &&
-					    bit_test(gres_ns->gres_bit_alloc,
-						     gres_inx)) {
-						/* Set by recovered job */
-						gres_ns->topo_gres_cnt_alloc[i]++;
-					}
-					if (_links_str2array(
-						    gres_slurmd_conf->links,
-						    node_name, gres_ns,
-						    gres_inx,
-						    slurmd_conf_tot.gres_cnt,
-						    reason_down) !=
-					    SLURM_SUCCESS)
-						rc = EINVAL;
-
-					gres_inx++;
-				}
-			}
-			gres_ns->topo_type_id[i] =
-				gres_build_id(gres_slurmd_conf->
-					      type_name);
-			xfree(gres_ns->topo_type_name[i]);
-			gres_ns->topo_type_name[i] =
-				xstrdup(gres_slurmd_conf->type_name);
-			i++;
-			if (i >= gres_ns->topo_cnt)
-				break;
-		}
-		list_iterator_destroy(iter);
-		if (cpu_config_err) {
+		if (rebuild_topo.cpu_config_err) {
 			/*
 			 * Some GRES of this type have "CPUs" configured. Set
 			 * topo_core_bitmap for all others with all bits set.
@@ -3872,7 +3896,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				if (gres_slurmd_conf->plugin_id !=
 				    gres_ctx->plugin_id)
 					continue;
-				for (j = 0; j < i; j++) {
+				for (j = 0; j < rebuild_topo.topo_cnt; j++) {
 					if (gres_ns->topo_core_bitmap[j])
 						continue;
 					gres_ns->topo_core_bitmap[j] =
