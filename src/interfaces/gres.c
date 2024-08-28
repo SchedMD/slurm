@@ -3665,13 +3665,34 @@ static int _foreach_rebuild_topo(void *x, void *args)
 	return 0;
 }
 
+static int _foreach_rebuild_topo_no_cpus(void *x, void *args)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	rebuild_topo_t *rebuild_topo = args;
+	slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
+	gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
+
+	if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
+		return 0;
+
+	for (int j = 0; j < rebuild_topo->topo_cnt; j++) {
+		if (gres_ns->topo_core_bitmap[j])
+			continue;
+		gres_ns->topo_core_bitmap[j] =
+			bit_alloc(rebuild_topo->core_cnt);
+		bit_set_all(gres_ns->topo_core_bitmap[j]);
+	}
+
+	return 0;
+}
+
 static int _node_config_validate(char *node_name, char *orig_config,
 				 gres_state_t *gres_state_node,
 				 int cpu_cnt, int core_cnt, int sock_cnt,
 				 bool config_overrides, char **reason_down,
 				 slurm_gres_context_t *gres_ctx)
 {
-	int i, j, rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
 	uint64_t dev_cnt;
 	bool updated_config = false;
 	gres_node_state_t *gres_ns;
@@ -3890,22 +3911,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			 * Some GRES of this type have "CPUs" configured. Set
 			 * topo_core_bitmap for all others with all bits set.
 			 */
-			iter = list_iterator_create(gres_conf_list);
-			while ((gres_slurmd_conf = (gres_slurmd_conf_t *)
-				list_next(iter))) {
-				if (gres_slurmd_conf->plugin_id !=
-				    gres_ctx->plugin_id)
-					continue;
-				for (j = 0; j < rebuild_topo.topo_cnt; j++) {
-					if (gres_ns->topo_core_bitmap[j])
-						continue;
-					gres_ns->topo_core_bitmap[j] =
-						bit_alloc(core_cnt);
-					bit_set_all(gres_ns->
-						    topo_core_bitmap[j]);
-				}
-			}
-			list_iterator_destroy(iter);
+			(void) list_for_each(gres_conf_list,
+					     _foreach_rebuild_topo_no_cpus,
+					     &rebuild_topo);
 		}
 	} else if (!has_file && has_type) {
 		/* Add GRES Type information as needed */
