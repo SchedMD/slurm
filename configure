@@ -24023,8 +24023,8 @@ fi
 
 
 
-  _x_ac_oneapi_dirs="/usr"
-  _x_ac_oneapi_lib_dirs="x86_64-linux-gnu lib64"
+  _x_ac_oneapi_dirs="/usr /usr/local"
+  _x_ac_oneapi_lib_dirs="x86_64-linux-gnu lib64 lib"
 
 
 # Check whether --with-oneapi was given.

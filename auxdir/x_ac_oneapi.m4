@@ -12,8 +12,8 @@
 AC_DEFUN([X_AC_ONEAPI],
 [
 
-  _x_ac_oneapi_dirs="/usr"
-  _x_ac_oneapi_lib_dirs="x86_64-linux-gnu lib64"
+  _x_ac_oneapi_dirs="/usr /usr/local"
+  _x_ac_oneapi_lib_dirs="x86_64-linux-gnu lib64 lib"
 
   AC_ARG_WITH(
     [oneapi],
