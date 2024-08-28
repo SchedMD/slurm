@@ -541,7 +541,7 @@ to run containers as jobs. No special user permissions are required and
 </p>
 <h3>Prerequisites</h3>
 <ol>
-<li>Slurm must be fully configured and running on host running dockerd.</li>
+<li>Slurm must be fully configured and running on host running podman.</li>
 <li><a href="slurm.conf.html">slurm.conf</a> must be configured to use Munge
 authentication.<pre>AuthType=auth/munge</pre></li>
 <li><a href="scrun.html">scrun.lua</a> must be configured for site storage
