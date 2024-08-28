@@ -2189,7 +2189,7 @@ extern const data_t *data_resolve_dict_path_const(const data_t *data,
 		xstrtrim(token);
 
 		if (!found || (found->type != TYPE_DICT)) {
-			found = false;
+			found = NULL;
 			break;
 		}
 
