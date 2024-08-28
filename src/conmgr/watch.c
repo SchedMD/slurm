@@ -179,6 +179,22 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
+	/*
+	 * Skip all monitoring when FLAG_QUIESCE set but only if there is
+	 * at least 1 file descriptor to avoid stopping a closed connection.
+	 */
+	if (con_flag(con, FLAG_QUIESCE) && ((con->input_fd >= 0) ||
+					    (con->output_fd >= 0))) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char *flags = con_flags_string(con->flags);
+			log_flag(CONMGR, "%s: connection is quiesced flags=%s",
+				 __func__, flags);
+			xfree(flags);
+		}
+		con_set_polling(con, PCTL_TYPE_NONE, __func__);
+		return 0;
+	}
+
 	if (con->extract) {
 		/* extraction of file descriptors requested */
 		extract_con_fd(con);
