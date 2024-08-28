@@ -1380,20 +1380,8 @@ static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 
 static void *_on_primary_connection(conmgr_fd_t *con, void *arg)
 {
-	int rc;
-
 	debug3("%s: [%s] PRIMARY: New RPC connection",
 	       __func__, conmgr_fd_get_name(con));
-
-	if (slurmctld_primary)
-
-	if ((rc = conmgr_queue_extract_con_fd(con, _service_connection,
-					      XSTRINGIFY(_service_connection),
-					      NULL))) {
-		error("%s: [%s] Extracting FDs failed: %s",
-		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
-		return NULL;
-	}
 
 	return con;
 }
@@ -1406,9 +1394,44 @@ static void _on_primary_finish(conmgr_fd_t *con, void *arg)
 	       __func__, conmgr_fd_get_name(con));
 }
 
+/*
+ * Process incoming primary RPCs.
+ *
+ * WARNING: conmgr will read all available incoming data and could process
+ * multiple RPCs on a single connection but the current RPC model of the
+ * controller is to only have 1 incoming RPC and then to reply and close the
+ * connection. This is not ideal if the RPC handler should try to read from the
+ * extracted fd since conmgr may have already read some data it expects. This
+ * currently does not appear to be an issue but may be one in the future until
+ * all of the RPC handlers are converted to conmgr fully.
+ */
 static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 {
-	fatal_abort("should never happen");
+	int rc = SLURM_SUCCESS;
+
+	if (!msg->auth_ids_set)
+		return ESLURM_AUTH_CRED_INVALID;
+
+	log_flag(AUDIT_RPCS, "[%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
+		 conmgr_fd_get_name(con), rpc_num2string(msg->msg_type),
+		 msg->auth_uid, &msg->address, msg->protocol_version);
+
+	/*
+	 * Check msg against the rate limit. Tell client to retry in a second
+	 * to minimize controller disruption.
+	 */
+	if (rate_limit_exceeded(msg)) {
+		rc = SLURMCTLD_COMMUNICATIONS_BACKOFF;
+		slurm_send_rc_msg(msg, rc);
+		slurm_free_msg(msg);
+	} else if ((rc = conmgr_queue_extract_con_fd(
+			    con, _service_connection,
+			    XSTRINGIFY(_service_connection), msg))) {
+		error("%s: [%s] Extracting FDs failed: %s",
+		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
+	}
+
+	return rc;
 }
 
 static void *_on_connection(conmgr_fd_t *con, void *arg)
@@ -1472,6 +1495,7 @@ static void _open_ports(void)
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
 						   CON_TYPE_RPC, events,
+						   CON_FLAG_RPC_KEEP_BUFFER,
 						   NULL)))
 			fatal("%s: unable to process fd:%d error:%s",
 			      __func__, listeners.fd[i], slurm_strerror(rc));
@@ -1487,64 +1511,36 @@ static void _open_ports(void)
 static void _service_connection(conmgr_callback_args_t conmgr_args,
 				int input_fd, int output_fd, void *arg)
 {
-	int fd = input_fd;
-	slurm_msg_t *msg = xmalloc(sizeof *msg);
-	xfree(arg);
+	int rc;
+	slurm_msg_t *msg = arg;
+
+	/*
+	 * The fd was extracted from conmgr, so the conmgr connection is
+	 * invalid.
+	 */
+	msg->conmgr_fd = NULL;
+	msg->conn_fd = input_fd;
 
 	server_thread_incr();
 	xassert(input_fd == output_fd);
 
-	slurm_msg_t_init(msg);
-	msg->flags |= SLURM_MSG_KEEP_BUFFER;
-	/*
-	 * slurm_receive_msg sets msg connection fd to accepted fd. This allows
-	 * possibility for slurmctld_req() to close accepted connection.
-	 */
-	if (slurm_receive_msg(fd, msg, 0)) {
-		slurm_addr_t cli_addr;
-		(void) slurm_get_peer_addr(fd, &cli_addr);
-		error("slurm_receive_msg [%pA]: %m", &cli_addr);
-		if (errno == SLURM_PROTOCOL_AUTHENTICATION_ERROR)
-			slurm_send_rc_msg(msg, SLURM_PROTOCOL_AUTHENTICATION_ERROR);
-		/* close the new socket */
-		close(fd);
-		goto cleanup;
+	if (!(rc = rpc_enqueue(msg))) {
+		server_thread_decr();
+		return;
 	}
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
-		slurm_addr_t cli_addr;
-		(void) slurm_get_peer_addr(fd, &cli_addr);
-		log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
-			 rpc_num2string(msg->msg_type), msg->auth_uid,
-			 &cli_addr, msg->protocol_version);
-	}
-
-	/*
-	 * Check msg against the rate limit. Tell client to retry in a second
-	 * to minimize controller disruption.
-	 */
-	if (rate_limit_exceeded(msg)) {
+	if (rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) {
 		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
+	} else if (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP) {
+		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_HARD_DROP);
 	} else {
-		int rc = rpc_enqueue(msg);
-
-		if (rc == SLURM_SUCCESS) {
-			server_thread_decr();
-			return;
-		} else if (rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) {
-			slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
-		} else if (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP) {
-			slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_HARD_DROP);
-		} else {
-			/* directly process the request */
-			slurmctld_req(msg);
-		}
+		/* directly process the request */
+		slurmctld_req(msg);
 	}
 
 	if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
 		error("close(%d): %m", msg->conn_fd);
 
-cleanup:
 	server_thread_decr();
 	slurm_free_msg(msg);
 }

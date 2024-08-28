@@ -748,7 +748,8 @@ int main(int argc, char **argv)
 
 	if (!run_mode.listen) {
 		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
-					    STDOUT_FILENO, inet_events, NULL, 0,
+					    STDOUT_FILENO, inet_events,
+					    CON_FLAG_NONE, NULL, 0,
 					    operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));

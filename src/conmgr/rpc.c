@@ -95,6 +95,7 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 	msg = xmalloc(sizeof(*msg));
 	slurm_msg_t_init(msg);
 	msg->conmgr_fd = con;
+	memcpy(&msg->address, &con->address, sizeof(con->address));
 
 	log_flag_hex(NET_RAW, get_buf_data(rpc), size_buf(rpc),
 		     "%s: [%s] unpacking RPC", __func__, con->name);
@@ -109,6 +110,14 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 		log_flag(NET, "%s: [%s] unpacked %u bytes containing %s RPC",
 			 __func__, con->name, need,
 			 rpc_num2string(msg->msg_type));
+
+		if (con_flag(con, FLAG_RPC_KEEP_BUFFER)) {
+			xassert(!msg->buffer);
+			msg->buffer = init_buf(size_buf(rpc));
+			memcpy(get_buf_data(msg->buffer), get_buf_data(rpc),
+			       size_buf(rpc));
+			msg->flags |= SLURM_MSG_KEEP_BUFFER;
+		}
 	}
 
 	/* notify conmgr we processed some data */

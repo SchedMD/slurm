@@ -2054,7 +2054,7 @@ static void _create_msg_socket(run_args_t *args)
 	}
 
 	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, events,
-					   args)))
+					   CON_FLAG_NONE, args)))
 		fatal("%s: unable to process fd:%d error:%s",
 		      __func__, conf->lfd, slurm_strerror(rc));
 }

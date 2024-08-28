@@ -329,8 +329,8 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_rwlock_unlock(&lock);
 
-	if (add_connection(CON_TYPE_RAW, NULL, fd[0], -1, events, NULL,
-			   0, false, NULL, NULL) != SLURM_SUCCESS) {
+	if (add_connection(CON_TYPE_RAW, NULL, fd[0], -1, events,
+			    CON_FLAG_NONE, NULL, 0, false, NULL, NULL)) {
 		fatal_abort("%s: [fd:%d] unable to a register new connection",
 			    __func__, fd[0]);
 	}

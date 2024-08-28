@@ -274,6 +274,13 @@ extern const char *conmgr_con_type_string(conmgr_con_type_t type);
 /* WARNING: flags overlap with con_flags_t */
 typedef enum {
 	CON_FLAG_NONE = 0,
+	/*
+	 * Copy entire message into slurm_msg_t after parsing.
+	 * Allocate buffer and copy entire message into msg->buffer.
+	 * Sets SLURM_MSG_KEEP_BUFFER in msg->flags.
+	 * Only applies to CON_TYPE_RPC connections.
+	 */
+	CON_FLAG_RPC_KEEP_BUFFER = SLURM_BIT(9),
 } conmgr_con_flags_t;
 
 /*
@@ -302,6 +309,7 @@ extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
  * IN input_fd file descriptor to have conmgr take ownership and read from
  * IN output_fd file descriptor to have conmgr take ownership and write to
  * IN events call backs on events of fd
+ * IN flags bit-or'ed flags to apply to connection
  * IN addr socket address (if known or NULL) (will always xfree())
  * IN addrlen sizeof addr or 0 if addr is NULL
  * IN arg ptr handed to on_connection callback
@@ -309,6 +317,7 @@ extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
  */
 extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 			     int output_fd, const conmgr_events_t events,
+			     conmgr_con_flags_t flags,
 			     const slurm_addr_t *addr, socklen_t addrlen,
 			     void *arg);
 
@@ -317,13 +326,15 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
  * IN type connection type for fd
  * IN fd file descriptor to have conmgr take ownership of
  * IN events call backs on events of fd
+ * IN flags bit-or'ed flags to apply to connection
  * IN addr socket listen address (will not xfree())
  * IN addrlen sizeof addr or 0 if addr is NULL
  * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
-				    const conmgr_events_t events, void *arg);
+				    const conmgr_events_t events,
+				    conmgr_con_flags_t flags, void *arg);
 
 /*
  * Queue up work to receive new connection (file descriptor via socket)

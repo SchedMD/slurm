@@ -662,7 +662,7 @@ static void _queue_send_console_socket(void)
 		fatal("%s: [%s] Unable to connect() to console socket: %m",
 		      __func__, addr.sun_path);
 
-	if ((rc = conmgr_process_fd(CON_TYPE_RAW, fd, fd, events,
+	if ((rc = conmgr_process_fd(CON_TYPE_RAW, fd, fd, events, CON_FLAG_NONE,
 				    (slurm_addr_t *) &addr, sizeof(addr),
 				    NULL)))
 		fatal("%s: [%s] unable to initialize console socket: %s",
@@ -1450,7 +1450,8 @@ static int _anchor_child(int pipe_fd[2])
 	conmgr_add_work_signal(SIGCHLD, _catch_sigchld, &state);
 
 	if ((rc = conmgr_process_fd(CON_TYPE_RAW, pipe_fd[1], pipe_fd[1],
-				    conmgr_startup_events, NULL, 0, NULL)))
+				    conmgr_startup_events, CON_FLAG_NONE, NULL,
+				    0, NULL)))
 		fatal("%s: unable to initialize RPC listener: %s",
 		      __func__, slurm_strerror(rc));
 
