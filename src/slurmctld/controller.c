@@ -902,10 +902,14 @@ int main(int argc, char **argv)
 			_post_reconfig();
 		}
 
+		unquiesce_rpcs();
+
 		/*
 		 * process slurm background activities, could run as pthread
 		 */
 		_slurmctld_background(NULL);
+
+		quiesce_rpcs();
 
 		controller_fini_scheduling(); /* Stop all scheduling */
 		agent_fini();
