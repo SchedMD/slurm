@@ -753,4 +753,20 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
  */
 extern int conmgr_set_params(const char *params);
 
+/*
+ * Mark connection as quiesced
+ * @see CON_FLAG_QUIESCE for details
+ * IN con - connection to set CON_FLAG_QUIESCE flag
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_quiesce_fd(conmgr_fd_t *con);
+
+/*
+ * Remove queisced flag from connection
+ * @see CON_FLAG_QUIESCE for details
+ * IN con - connection to unset CON_FLAG_QUIESCE flag
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_unquiesce_fd(conmgr_fd_t *con);
+
 #endif /* _CONMGR_H */

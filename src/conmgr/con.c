@@ -1450,3 +1450,13 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	 */
 	add_work_fifo(true, _wrap_on_extract, extract);
 }
+
+extern int conmgr_unquiesce_fd(conmgr_fd_t *con)
+{
+	return SLURM_ERROR;
+}
+
+extern int conmgr_quiesce_fd(conmgr_fd_t *con)
+{
+	return SLURM_ERROR;
+}
