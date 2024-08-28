@@ -247,11 +247,13 @@ static bool under_systemd = false;
 /* Array of listening sockets */
 static struct {
 	pthread_mutex_t mutex;
+	bool quiesced;
 	int count;
 	int *fd;
 	conmgr_fd_t **cons;
 } listeners = {
 	.mutex = PTHREAD_MUTEX_INITIALIZER,
+	.quiesced = true,
 };
 
 typedef struct primary_thread_arg {
@@ -1481,6 +1483,48 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		return _on_primary_msg(con, msg, arg);
 	else
 		return on_backup_msg(con, msg, arg);
+}
+
+extern void quiesce_rpcs(void)
+{
+	slurm_mutex_lock(&listeners.mutex);
+
+	listeners.quiesced = true;
+
+	for (int i = 0; i < listeners.count; i++) {
+		int rc;
+
+		if (!listeners.cons[i])
+			continue;
+
+		if ((rc = conmgr_quiesce_fd(listeners.cons[i])))
+			fatal_abort("%s: [%s] unable to quiesce error:%s",
+			      __func__, conmgr_fd_get_name(listeners.cons[i]),
+			      slurm_strerror(rc));
+	}
+
+	slurm_mutex_unlock(&listeners.mutex);
+}
+
+extern void unquiesce_rpcs(void)
+{
+	slurm_mutex_lock(&listeners.mutex);
+
+	listeners.quiesced = false;
+
+	for (int i = 0; i < listeners.count; i++) {
+		int rc;
+
+		if (!listeners.cons[i])
+			continue;
+
+		if ((rc = conmgr_unquiesce_fd(listeners.cons[i])))
+			fatal_abort("%s: [%s] unable to unquiesce error:%s",
+			      __func__, conmgr_fd_get_name(listeners.cons[i]),
+			      slurm_strerror(rc));
+	}
+
+	slurm_mutex_unlock(&listeners.mutex);
 }
 
 /*
