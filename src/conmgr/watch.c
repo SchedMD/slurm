@@ -436,8 +436,12 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	/* hand over FD for normal processing */
-	if (!add_connection(con->type, con, fd, fd, con->events,
-			    (conmgr_con_flags_t) con->flags,
+	if (!add_connection(con->type, con, fd, fd, (conmgr_events_t) {
+				.on_connection = con->events.on_connection,
+				.on_finish = con->events.on_finish,
+				.on_msg = con->events.on_msg,
+				.on_data = con->events.on_data,
+			    }, (conmgr_con_flags_t) con->flags,
 			   &addr, addrlen, false, unix_path, con->new_arg)) {
 		log_flag(CONMGR, "%s: [fd:%d] unable to a register new connection",
 			 __func__, fd);
