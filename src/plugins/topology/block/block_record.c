@@ -153,7 +153,7 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 
 			str_bsize = strtok_r(NULL, ",", &save_ptr);
 		}
-		if (bsize < 0) {
+		if (bsize <= 0) {
 			s_p_hashtbl_destroy(conf_hashtbl);
 			fatal("Invalid BlockLevels");
 		}
