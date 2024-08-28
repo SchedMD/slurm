@@ -1377,6 +1377,7 @@ static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 {
 	const int *i_ptr = arg;
 	const int i = *i_ptr;
+	int rc;
 
 	debug3("%s: [%s] Successfully opened RPC listener",
 	       __func__, conmgr_fd_get_name(con));
@@ -1385,6 +1386,12 @@ static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 
 	xassert(!listeners.cons[i]);
 	listeners.cons[i] = con;
+
+	/* Detect if connection happens after unquiesce_rpcs() already called */
+	if (!listeners.quiesced && (rc = conmgr_unquiesce_fd(con)))
+		fatal_abort("%s: [%s] unable to unquiesce error:%s",
+			    __func__, conmgr_fd_get_name(con),
+			    slurm_strerror(rc));
 
 	slurm_mutex_unlock(&listeners.mutex);
 
