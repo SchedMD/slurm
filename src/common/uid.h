@@ -65,25 +65,25 @@ extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
  * Returns uid int uidp after verifying presence in /etc/passwd, or
  *  -1 on failure.
  */
-int uid_from_string(const char *name, uid_t *uidp);
+extern int uid_from_string(const char *name, uid_t *uidp);
 
 /*
  * Return the primary group id for a given user id, or
  * (gid_t) -1 on failure.
  */
-gid_t gid_from_uid (uid_t uid);
+extern gid_t gid_from_uid (uid_t uid);
 
 /*
  * Same as uid_from_name(), but for group name/id.
  */
-int gid_from_string(const char *name, gid_t *gidp);
+extern int gid_from_string(const char *name, gid_t *gidp);
 
 /*
  * Translate uid to user name.
  * Will return NULL on error.
  * NOTE: xfree the return value.
  */
-char *uid_to_string_or_null(uid_t uid);
+extern char *uid_to_string_or_null(uid_t uid);
 
 /*
  * Translate uid to user name,
@@ -125,6 +125,6 @@ extern char *gid_to_string(gid_t gid);
  * Will return NULL on error.
  * NOTE: xfree the return value.
  */
-char *gid_to_string_or_null(gid_t gid);
+extern char *gid_to_string_or_null(gid_t gid);
 
 #endif /*__SLURM_UID_UTILITY_H__*/

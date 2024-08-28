@@ -142,12 +142,9 @@ int uid_from_string(const char *name, uid_t *uidp)
 	 *  If username was not valid, check for a valid UID.
 	 */
 	errno = 0;
-	l = strtol (name, &p, 10);
-	if (((errno == ERANGE) && ((l == LONG_MIN) || (l == LONG_MAX)))
-	   || (name == p)
-	   || (*p != '\0')
-	   || (l < 0)
-	   || (l > UINT32_MAX))
+	l = strtol(name, &p, 10);
+	if (((errno == ERANGE) && ((l == LONG_MIN) || (l == LONG_MAX))) ||
+	    (name == p) || (*p != '\0') || (l < 0) || (l > UINT32_MAX))
 		return -1;
 
 	/*
@@ -260,8 +257,7 @@ extern char *uid_to_shell(uid_t uid)
 	return shell;
 }
 
-gid_t
-gid_from_uid (uid_t uid)
+gid_t gid_from_uid(uid_t uid)
 {
 	struct passwd pwd, *result;
 	char buffer[PW_BUF_SIZE];
