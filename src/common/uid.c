@@ -65,6 +65,37 @@ static pthread_mutex_t uid_lock = PTHREAD_MUTEX_INITIALIZER;
 static uid_cache_entry_t *uid_cache = NULL;
 static int uid_cache_used = 0;
 
+static void _getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
+			char **buf_malloc, size_t *bufsize,
+			struct passwd **result)
+{
+	DEF_TIMERS;
+
+	START_TIMER;
+	while (true) {
+		int rc = getpwuid_r(uid, pwd, *curr_buf, *bufsize, result);
+		if (!rc && *result)
+			break;
+		if (rc == EINTR) {
+			continue;
+		} else if (rc == ERANGE) {
+			*bufsize *= 2;
+			*curr_buf = xrealloc(*buf_malloc, *bufsize);
+			continue;
+		} else if ((rc == 0) || (rc == ENOENT) || (rc == ESRCH) ||
+			   (rc == EBADF) || (rc == EPERM)) {
+			debug2("%s: getpwuid_r(%u): no record found",
+			       __func__, uid);
+		} else {
+			error("%s: getpwuid_r(%u): %s",
+			      __func__, uid, slurm_strerror(rc));
+		}
+		*result = NULL;
+		break;
+	}
+	END_TIMER2("getpwuid_r");
+}
+
 extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
 			     size_t bufsiz, struct passwd **result)
 {
@@ -134,27 +165,28 @@ int uid_from_string(const char *name, uid_t *uidp)
 		return 0;
 	}
 
-	xfree(buf_malloc);
-	curr_buf = buf_stack;
-	bufsize = PW_BUF_SIZE;
-
 	/*
 	 *  If username was not valid, check for a valid UID.
 	 */
 	errno = 0;
 	l = strtol(name, &p, 10);
 	if (((errno == ERANGE) && ((l == LONG_MIN) || (l == LONG_MAX))) ||
-	    (name == p) || (*p != '\0') || (l < 0) || (l > UINT32_MAX))
+	    (name == p) || (*p != '\0') || (l < 0) || (l > UINT32_MAX)) {
+		xfree(buf_malloc);
 		return -1;
+	}
 
 	/*
 	 *  Now ensure the supplied uid is in the user database
 	 */
-	if ((slurm_getpwuid_r(l, &pwd, curr_buf, bufsize, &result) != 0) ||
-	    (result == NULL))
+	_getpwuid_r(l, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
+	if (!result) {
+		xfree(buf_malloc);
 		return -1;
+	}
 
 	*uidp = (uid_t) l;
+	xfree(buf_malloc);
 	return 0;
 }
 
@@ -165,17 +197,21 @@ int uid_from_string(const char *name, uid_t *uidp)
 char *uid_to_string_or_null(uid_t uid)
 {
 	struct passwd pwd, *result;
-	char buffer[PW_BUF_SIZE];
+	char buf_stack[PW_BUF_SIZE];
+	char *buf_malloc = NULL;
+	size_t bufsize = PW_BUF_SIZE;
+	char *curr_buf = buf_stack;
 	char *ustring = NULL;
-	int rc;
 
 	/* Suse Linux does not handle multiple users with UID=0 well */
 	if (uid == 0)
 		return xstrdup("root");
 
-	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
-	if (result && (rc == 0))
+	_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
+	if (result)
 		ustring = xstrdup(result->pw_name);
+
+	xfree(buf_malloc);
 
 	return ustring;
 }
@@ -232,13 +268,17 @@ extern char *uid_to_string_cached(uid_t uid)
 extern char *uid_to_dir(uid_t uid)
 {
 	struct passwd pwd, *result;
-	char buffer[PW_BUF_SIZE];
+	char buf_stack[PW_BUF_SIZE];
+	char *buf_malloc = NULL;
+	size_t bufsize = PW_BUF_SIZE;
+	char *curr_buf = buf_stack;
 	char *dir = NULL;
-	int rc;
 
-	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
-	if (result && (rc == 0))
+	_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
+	if (result)
 		dir = xstrdup(result->pw_dir);
+
+	xfree(buf_malloc);
 
 	return dir;
 }
@@ -246,13 +286,17 @@ extern char *uid_to_dir(uid_t uid)
 extern char *uid_to_shell(uid_t uid)
 {
 	struct passwd pwd, *result;
-	char buffer[PW_BUF_SIZE];
+	char buf_stack[PW_BUF_SIZE];
+	char *buf_malloc = NULL;
+	size_t bufsize = PW_BUF_SIZE;
+	char *curr_buf = buf_stack;
 	char *shell = NULL;
-	int rc;
 
-	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
-	if (result && (rc == 0))
+	_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
+	if (result)
 		shell = xstrdup(result->pw_shell);
+
+	xfree(buf_malloc);
 
 	return shell;
 }
@@ -260,15 +304,19 @@ extern char *uid_to_shell(uid_t uid)
 gid_t gid_from_uid(uid_t uid)
 {
 	struct passwd pwd, *result;
-	char buffer[PW_BUF_SIZE];
+	char buf_stack[PW_BUF_SIZE];
+	char *buf_malloc = NULL;
+	size_t bufsize = PW_BUF_SIZE;
+	char *curr_buf = buf_stack;
 	gid_t gid;
-	int rc;
 
-	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
-	if (result && (rc == 0))
+	_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
+	if (result)
 		gid = result->pw_gid;
 	else
 		gid = (gid_t) -1;
+
+	xfree(buf_malloc);
 
 	return gid;
 }
