@@ -52,12 +52,17 @@
  */
 #define PW_BUF_SIZE 65536
 
-/* Retry getpwuid_r while return code is EINTR so we always get the
- * info.  Return return code of getpwuid_r.
+/*
+ * Handle EINTR and ERANGE when possible for getpwuid_r().
+ * This accepts a pointer to the buffer currently being used as well as one that
+ * can be xmalloxed if we encounter ERANGE.  The caller is expected to free
+ * buf_malloc() at the appropriate time.
+ *
+ * If this fails, *result will be NULL.
  */
-extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
-			     size_t bufsiz, struct passwd **result);
-
+extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
+			     char **buf_malloc, size_t *bufsize,
+			     struct passwd **result);
 /*
  * Return validated uid_t for string in ``name'' which contains
  *  either the UID number or user name

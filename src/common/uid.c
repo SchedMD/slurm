@@ -65,9 +65,9 @@ static pthread_mutex_t uid_lock = PTHREAD_MUTEX_INITIALIZER;
 static uid_cache_entry_t *uid_cache = NULL;
 static int uid_cache_used = 0;
 
-static void _getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
-			char **buf_malloc, size_t *bufsize,
-			struct passwd **result)
+extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
+			     char **buf_malloc, size_t *bufsize,
+			     struct passwd **result)
 {
 	DEF_TIMERS;
 
@@ -94,28 +94,6 @@ static void _getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
 		break;
 	}
 	END_TIMER2("getpwuid_r");
-}
-
-extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
-			     size_t bufsiz, struct passwd **result)
-{
-	DEF_TIMERS;
-	int rc;
-
-	START_TIMER;
-
-	while (1) {
-		rc = getpwuid_r(uid, pwd, buf, bufsiz, result);
-		if (rc == EINTR)
-			continue;
-		if (rc != 0)
-			*result = NULL;
-		break;
-	}
-
-	END_TIMER2(__func__);
-
-	return rc;
 }
 
 int uid_from_string(const char *name, uid_t *uidp)
@@ -179,7 +157,7 @@ int uid_from_string(const char *name, uid_t *uidp)
 	/*
 	 *  Now ensure the supplied uid is in the user database
 	 */
-	_getpwuid_r(l, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
+	slurm_getpwuid_r(l, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
 	if (!result) {
 		xfree(buf_malloc);
 		return -1;
@@ -207,7 +185,7 @@ char *uid_to_string_or_null(uid_t uid)
 	if (uid == 0)
 		return xstrdup("root");
 
-	_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
+	slurm_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
 	if (result)
 		ustring = xstrdup(result->pw_name);
 
@@ -274,7 +252,7 @@ extern char *uid_to_dir(uid_t uid)
 	char *curr_buf = buf_stack;
 	char *dir = NULL;
 
-	_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
+	slurm_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
 	if (result)
 		dir = xstrdup(result->pw_dir);
 
@@ -292,7 +270,7 @@ extern char *uid_to_shell(uid_t uid)
 	char *curr_buf = buf_stack;
 	char *shell = NULL;
 
-	_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
+	slurm_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
 	if (result)
 		shell = xstrdup(result->pw_shell);
 
@@ -310,7 +288,7 @@ gid_t gid_from_uid(uid_t uid)
 	char *curr_buf = buf_stack;
 	gid_t gid;
 
-	_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
+	slurm_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
 	if (result)
 		gid = result->pw_gid;
 	else
