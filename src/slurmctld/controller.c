@@ -575,6 +575,8 @@ int main(int argc, char **argv)
 
 	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 
+	conmgr_run(false);
+
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
 	if (hash_g_init() != SLURM_SUCCESS)
@@ -730,8 +732,6 @@ int main(int argc, char **argv)
 
 	if (original && under_systemd)
 		xsystemd_change_mainpid(getpid());
-
-	conmgr_run(false);
 
 	while (1) {
 		bool reconfiguring = reconfig;
