@@ -407,6 +407,26 @@ extern char *select_type_param_string(uint16_t select_type_param)
 			strcat(select_str, ",");
 		strcat(select_str, "CR_PACK_NODES");
 	}
+	if (select_type_param & LL_SHARED_GRES) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "LL_SHARED_GRES");
+	}
+	if (select_type_param & MULTIPLE_SHARING_GRES_PJ) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "MULTIPLE_SHARING_GRES_PJ");
+	}
+	if (select_type_param & ENFORCE_BINDING_GRES) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "ENFORCE_BINDING_GRES");
+	}
+	if (select_type_param & ONE_TASK_PER_SHARING_GRES) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "ONE_TASK_PER_SHARING_GRES");
+	}
 	if (select_str[0] == '\0')
 		strcat(select_str, "NONE");
 
