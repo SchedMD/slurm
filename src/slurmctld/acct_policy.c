@@ -2998,10 +2998,12 @@ static void _get_accrue_create_cnt(uint32_t *max_jobs_accrue, int *create_cnt,
 				   uint32_t in_accrue, uint32_t in_used)
 {
 	/*
-	 * If we already set max_jobs_accrue then call it good.
 	 * If in_accrue is INFINITE we don't have a limit
+	 * If we already set max_jobs_accrue and it is the least restrictive,
+	 * then call it good.
 	 */
-	if ((*max_jobs_accrue != INFINITE) || (in_accrue == INFINITE))
+	if ((in_accrue == INFINITE) ||
+	    ((*max_jobs_accrue != INFINITE) && (*max_jobs_accrue <= in_accrue)))
 		return;
 
 	*max_jobs_accrue = in_accrue;
