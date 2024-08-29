@@ -112,6 +112,7 @@ documents those changes that are of interest to users and administrators.
  -- mpi/pmix fix race conditions with het jobs at step start/end which could
     make srun to hang.
  -- Fix not showing some SelectTypeParameters in scontrol show config.
+ -- Avoid assert when dumping removed certain fields in JSON/YAML.
 
 * Changes in Slurm 24.05.3
 ==========================

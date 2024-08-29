@@ -45,6 +45,7 @@
 #include "src/common/data.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
+#include "src/common/openapi.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
 #include "src/common/print_fields.h"
@@ -9874,7 +9875,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_ALLOC_RESP)[] = {
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_desc = desc,                                              \
 		.obj_type_string = XSTRINGIFY(typet),                          \
-		.obj_openapi = OPENAPI_FORMAT_INVALID,                         \
+		.obj_openapi = OPENAPI_FORMAT_ARRAY,                           \
 		.size = sizeof(typet),                                         \
 		.needs = need,                                                 \
 		.parse = PARSE_FUNC(typev),                                    \
