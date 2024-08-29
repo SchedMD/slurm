@@ -1519,3 +1519,16 @@ extern int conmgr_quiesce_fd(conmgr_fd_t *con)
 
 	return rc;
 }
+
+extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
+{
+	bool open;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+	open = (con->output_fd >= 0);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return open;
+}
