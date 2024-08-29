@@ -45,6 +45,7 @@
 #include "src/common/data.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
+#include "src/common/openapi.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -6387,7 +6388,7 @@ static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_desc = desc,                                              \
 		.obj_type_string = XSTRINGIFY(typet),                          \
-		.obj_openapi = OPENAPI_FORMAT_INVALID,                         \
+		.obj_openapi = OPENAPI_FORMAT_ARRAY,                           \
 		.size = sizeof(typet),                                         \
 		.needs = need,                                                 \
 		.parse = PARSE_FUNC(typev),                                    \
