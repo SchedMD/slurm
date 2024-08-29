@@ -7934,6 +7934,17 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 			} else if (!use_total_gres) {
 				gres_tmp = 0;
 			}
+			if (gres_id_shared(gres_state_job->config_flags) &&
+			    gres_js->gres_per_task) {
+				/*
+				 * Remove remaining shared gres_per_task
+				 * Because we don't allocate shared
+				 * gres_per_task across multiple sharing gres.
+				 * See _set_shared_task_bits() in
+				 * gres_select_filter.c
+				 */
+				gres_tmp -= (gres_tmp % gres_js->gres_per_task);
+			}
 			if (gres_tmp == 0) {
 				error("gres/%s: topology allocation error on node %s",
 				      gres_name, node_name);

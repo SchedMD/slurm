@@ -43,12 +43,20 @@ static uint64_t _shared_gres_task_limit(gres_job_state_t *gres_js,
 					gres_node_state_t *gres_ns)
 {
 	int task_limit = 0, cnt, task_cnt;
+	gres_node_state_t *alt_gres_ns =
+		gres_ns->alt_gres ? gres_ns->alt_gres->gres_data : NULL;
+
 	for (int i = 0; i < gres_ns->topo_cnt; i++)
 	{
 		if (gres_js->type_id &&
 		    gres_js->type_id != gres_ns->topo_type_id[i])
 			continue;
-
+		if (!use_total_gres &&
+		    alt_gres_ns && alt_gres_ns->gres_bit_alloc &&
+		    gres_ns->topo_gres_bitmap && gres_ns->topo_gres_bitmap[i] &&
+		    bit_overlap_any(gres_ns->topo_gres_bitmap[i],
+				    alt_gres_ns->gres_bit_alloc))
+			continue; /* Skip alt gres that are currently used */
 		cnt = gres_ns->topo_gres_cnt_avail[i];
 
 		if (!use_total_gres)

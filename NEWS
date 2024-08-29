@@ -113,6 +113,7 @@ documents those changes that are of interest to users and administrators.
     make srun to hang.
  -- Fix not showing some SelectTypeParameters in scontrol show config.
  -- Avoid assert when dumping removed certain fields in JSON/YAML.
+ -- Improve how shards are scheduled with affinity in mind.
 
 * Changes in Slurm 24.05.3
 ==========================
