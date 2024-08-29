@@ -206,6 +206,13 @@ static bool plugins_registered = false;
 bool refresh_cached_features = true;
 pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static struct {
+	pthread_mutex_t mutex;
+	conmgr_fd_t *con;
+} listener = {
+	.mutex = PTHREAD_MUTEX_INITIALIZER,
+};
+
 static int       _convert_spec_cores(void);
 static int       _core_spec_init(void);
 static void _create_msg_socket(run_args_t *args);
@@ -1980,6 +1987,11 @@ static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 
 	xassert(args->magic == RUN_ARGS_MAGIC);
 
+	slurm_mutex_lock(&listener.mutex);
+	xassert(!listener.con);
+	listener.con = con;
+	slurm_mutex_unlock(&listener.mutex);
+
 	debug3("%s: [%s] Successfully opened slurm listen port %u",
 	       __func__, conmgr_fd_get_name(con), conf->port);
 
@@ -2000,6 +2012,11 @@ static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 	conf->lfd = -1;
 
 	conmgr_add_work_fifo(_run_fini, args);
+
+	slurm_mutex_lock(&listener.mutex);
+	xassert(listener.con == con);
+	listener.con = NULL;
+	slurm_mutex_unlock(&listener.mutex);
 }
 
 static void *_on_connection(conmgr_fd_t *con, void *arg)
