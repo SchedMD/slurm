@@ -1201,7 +1201,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 	bool do_unlock = false;
 	bool reject_job = false;
 	job_record_t *job_ptr = NULL;
-	slurm_addr_t resp_addr;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 
 	START_TIMER;
@@ -1257,11 +1256,11 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 
 	if (error_code) {
 		reject_job = true;
-	} else if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
+	} else if (msg->address.ss_family != AF_UNSPEC) {
 		/* resp_host could already be set from a federated cluster */
 		if (!job_desc_msg->resp_host) {
 			job_desc_msg->resp_host = xmalloc(INET6_ADDRSTRLEN);
-			slurm_get_ip_str(&resp_addr, job_desc_msg->resp_host,
+			slurm_get_ip_str(&msg->address, job_desc_msg->resp_host,
 					 INET6_ADDRSTRLEN);
 		}
 		dump_job_desc(job_desc_msg);
@@ -1299,10 +1298,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 		END_TIMER2(__func__);
 	} else {
 		reject_job = true;
-		if (errno)
-			error_code = errno;
-		else
-			error_code = SLURM_ERROR;
+		error_code = SLURM_UNKNOWN_FORWARD_ADDR;
 	}
 
 send_msg:
