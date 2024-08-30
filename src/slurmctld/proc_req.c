@@ -4659,7 +4659,7 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		error_code = job_suspend2(msg, sus_ptr, msg->auth_uid, true,
 					  msg->protocol_version);
 	} else {
-		error_code = job_suspend(sus_ptr, msg->auth_uid, msg->conn_fd,
+		error_code = job_suspend(msg, sus_ptr, msg->auth_uid,
 					 true, msg->protocol_version);
 	}
 	unlock_slurmctld(job_write_lock);

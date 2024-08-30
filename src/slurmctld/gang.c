@@ -506,7 +506,7 @@ static int _suspend_job(job_record_t *job_ptr)
 	msg.job_id = job_ptr->job_id;
 	msg.job_id_str = NULL;
 	msg.op = SUSPEND_JOB;
-	rc = job_suspend(&msg, 0, -1, false, NO_VAL16);
+	rc = job_suspend(NULL, &msg, 0, false, NO_VAL16);
 	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
 	if (rc == SLURM_SUCCESS) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_GANG)
@@ -528,7 +528,7 @@ static void _resume_job(job_record_t *job_ptr)
 	msg.job_id = job_ptr->job_id;
 	msg.job_id_str = NULL;
 	msg.op = RESUME_JOB;
-	rc = job_suspend(&msg, 0, -1, false, NO_VAL16);
+	rc = job_suspend(NULL, &msg, 0, false, NO_VAL16);
 	if (rc == SLURM_SUCCESS) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_GANG)
 			info("gang: resuming %pJ", job_ptr);

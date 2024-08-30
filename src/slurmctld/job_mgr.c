@@ -16754,24 +16754,20 @@ static int _job_suspend(job_record_t *job_ptr, uint16_t op, bool indf_susp)
  * job_suspend - perform some suspend/resume operation
  * NOTE: job_suspend  - Uses the job_id field and ignores job_id_str
  *
+ * IN msg - original msg
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
- * IN conn_fd - file descriptor on which to send reply,
- *              -1 if none
  * indf_susp IN - set if job is being suspended indefinitely by user or admin
  *                and we should clear it's priority, otherwise suspended
  *		  temporarily for gang scheduling
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
-		       int conn_fd, bool indf_susp,
-		       uint16_t protocol_version)
+extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
+		       bool indf_susp, uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
 	job_record_t *job_ptr = NULL;
-	slurm_msg_t resp_msg;
-	return_code_msg_t rc_msg;
 
 	xfree(sus_ptr->job_id_str);
 	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->job_id);
@@ -16801,16 +16797,9 @@ reply:
 	   memory */
 	xfree(sus_ptr->job_id_str);
 
-	if (conn_fd >= 0) {
-		slurm_msg_t_init(&resp_msg);
-		resp_msg.protocol_version = protocol_version;
-		resp_msg.msg_type  = RESPONSE_SLURM_RC;
-		memset(&rc_msg, 0, sizeof(rc_msg));
-		rc_msg.return_code = rc;
-		resp_msg.data      = &rc_msg;
-		slurm_msg_set_r_uid(&resp_msg, uid);
-		slurm_send_node_msg(conn_fd, &resp_msg);
-	}
+	if (msg)
+		slurm_send_rc_msg(msg, rc);
+
 	return rc;
 }
 
