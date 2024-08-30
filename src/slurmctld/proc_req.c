@@ -4656,8 +4656,8 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		      job_ptr->fed_details->cluster_lock);
 		error_code = ESLURM_INVALID_CLUSTER_NAME;
 	} else if (sus_ptr->job_id_str) {
-		error_code = job_suspend2(sus_ptr, msg->auth_uid, msg->conn_fd,
-					  true, msg->protocol_version);
+		error_code = job_suspend2(msg, sus_ptr, msg->auth_uid, true,
+					  msg->protocol_version);
 	} else {
 		error_code = job_suspend(sus_ptr, msg->auth_uid, msg->conn_fd,
 					 true, msg->protocol_version);

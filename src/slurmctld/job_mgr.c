@@ -16818,19 +16818,17 @@ reply:
  * job_suspend2 - perform some suspend/resume operation
  * NB job_suspend2 - Ignores the job_id field and uses job_id_str
  *
+ * IN msg - original msg
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
- * IN conn_fd - file descriptor on which to send reply,
- *              -1 if none
  * indf_susp IN - set if job is being suspended indefinitely by user or admin
  *                and we should clear it's priority, otherwise suspended
  *		  temporarily for gang scheduling
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
-			int conn_fd, bool indf_susp,
-			uint16_t protocol_version)
+extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
+			bool indf_susp, uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS, rc2;
 	job_record_t *job_ptr = NULL;
@@ -16838,8 +16836,6 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	uint32_t job_id = 0;
 	char *end_ptr = NULL;
 	bitstr_t *array_bitmap = NULL;
-	slurm_msg_t resp_msg;
-	return_code_msg_t rc_msg;
 	resp_array_struct_t *resp_array = NULL;
 	job_array_resp_msg_t *resp_array_msg = NULL;
 
@@ -16933,26 +16929,12 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	}
 
 reply:
-	if (conn_fd >= 0) {
-		slurm_msg_t_init(&resp_msg);
-		resp_msg.protocol_version = protocol_version;
-		if (resp_array) {
-			resp_array_msg = _resp_array_xlate(resp_array, job_id);
-			resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
-			resp_msg.data      = resp_array_msg;
-		} else {
-			resp_msg.msg_type  = RESPONSE_SLURM_RC;
-			rc_msg.return_code = rc;
-			resp_msg.data      = &rc_msg;
-		}
-		slurm_msg_set_r_uid(&resp_msg, uid);
-		slurm_send_node_msg(conn_fd, &resp_msg);
+	if (resp_array)
+		(void) send_msg_response(msg, RESPONSE_JOB_ARRAY_ERRORS,
+					 resp_array_msg);
+	else
+		slurm_send_rc_msg(msg, rc);
 
-		if (resp_array_msg) {
-			slurm_free_job_array_resp(resp_array_msg);
-			resp_msg.data = NULL;
-		}
-	}
 	_resp_array_free(resp_array);
 
 	FREE_NULL_BITMAP(array_bitmap);

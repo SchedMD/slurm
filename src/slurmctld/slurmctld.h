@@ -1110,8 +1110,6 @@ extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
  *
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
- * IN conn_fd - file descriptor on which to send reply,
- *              -1 if none
  * indf_susp IN - set if job is being suspended indefinitely by user or admin
  *                and we should clear it's priority, otherwise suspended
  *		  temporarily for gang scheduling
@@ -1121,9 +1119,8 @@ extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		       int conn_fd, bool indf_susp,
 		       uint16_t protocol_version);
-extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
-			int conn_fd, bool indf_susp,
-			uint16_t protocol_version);
+extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
+			bool indf_susp, uint16_t protocol_version);
 
 /*
  * job_complete - note the normal termination the specified job
