@@ -782,4 +782,33 @@ extern int conmgr_quiesce_fd(conmgr_fd_t *con);
  */
 extern int conmgr_unquiesce_fd(conmgr_fd_t *con);
 
+/*
+ * Connection reference.
+ * Opaque struct - do not access directly.
+ * While exists: the conmgr_fd_t ptr will remain valid.
+ */
+typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
+
+/*
+ * Create new reference to conmgr connection
+ * Will ensure that conmgr_fd_t will remain valid until released.
+ * IN con - connection to create reference
+ * RET ptr to new reference (must be released by conmgr_fd_free_ref())
+ */
+extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con);
+/*
+ * Release reference to conmgr connection
+ * WARNING: Connection may not exist after this called
+ * IN ref_ptr - ptr to reference to release (will be set to NULL)
+ */
+extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr);
+/*
+ * Get conmgr_fd_t pointer from reference
+ */
+extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref);
+
+/* Get connection name from reference */
+#define conmgr_ref_get_name(ref) \
+	conmgr_fd_get_name(conmgr_fd_get_ref(ref))
+
 #endif /* _CONMGR_H */

@@ -339,6 +339,20 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
+	if (con->refs && (bit_ffs(con->refs) >= 0)) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char *refs = bit_fmt_full(con->refs);
+			char *flags = con_flags_string(con->flags);
+			log_flag(CONMGR, "%s: [%s] waiting on outstanding references[%d]:%s flags=%s",
+				 __func__, con->name, bit_set_count(con->refs),
+				 refs, flags);
+			xfree(refs);
+			xfree(flags);
+		}
+
+		return 0;
+	}
+
 	/*
 	 * This connection has no more pending work or possible IO:
 	 * Remove the connection and close everything.
@@ -628,6 +642,9 @@ static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
 	FREE_NULL_LIST(con->write_complete_work);
 	xfree(con->name);
 	xfree(con->unix_socket);
+	xassert(!con->refs || !bit_set_count(con->refs));
+	if (con->refs)
+		bit_free(con->refs);
 
 	con->magic = ~MAGIC_CON_MGR_FD;
 	xfree(con);

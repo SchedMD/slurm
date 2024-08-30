@@ -1532,3 +1532,96 @@ extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
 
 	return open;
 }
+
+static conmgr_fd_ref_t *_fd_new_ref(conmgr_fd_t *con)
+{
+	conmgr_fd_ref_t *ref;
+	bitoff_t bit;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (!con->refs)
+		con->refs = bit_alloc(CONMGR_FD_REFS_MAX);
+
+	if ((bit = bit_ffc(con->refs)) < 0)
+		fatal_abort("overflow");
+
+	bit_set(con->refs, bit);
+
+	ref = xmalloc(sizeof(*ref));
+	*ref = (conmgr_fd_ref_t) {
+		.magic = MAGIC_CON_MGR_FD_REF,
+		.con = con,
+		.bit = bit,
+	};
+
+	return ref;
+}
+
+extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con)
+{
+	conmgr_fd_ref_t *ref = NULL;
+
+	if (!con)
+		fatal_abort("con must not be null");
+
+	slurm_mutex_lock(&mgr.mutex);
+	ref = _fd_new_ref(con);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return ref;
+}
+
+static void _fd_free_ref(conmgr_fd_ref_t **ref_ptr)
+{
+	conmgr_fd_ref_t *ref = *ref_ptr;
+	conmgr_fd_t *con = ref->con;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->refs);
+	xassert(bit_test(con->refs, ref->bit));
+
+	bit_clear(con->refs, ref->bit);
+	/* not free()ing con->refs to avoid many re-allocs */
+	ref->magic = ~MAGIC_CON_MGR_FD_REF;
+	xfree(ref);
+	*ref_ptr = NULL;
+}
+
+extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr)
+{
+
+	if (!ref_ptr)
+		fatal_abort("ref_ptr must not be null");
+
+	/* check if already released */
+	if (!*ref_ptr)
+		return;
+
+	slurm_mutex_lock(&mgr.mutex);
+	_fd_free_ref(ref_ptr);
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
+extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref)
+{
+	conmgr_fd_t *con = NULL;
+
+	if (!ref)
+		return NULL;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con);
+
+	con = ref->con;
+
+#ifndef NDEBUG
+	slurm_mutex_lock(&mgr.mutex);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->refs);
+	xassert(bit_test(con->refs, ref->bit));
+	slurm_mutex_unlock(&mgr.mutex);
+#endif
+
+	return con;
+}
