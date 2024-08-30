@@ -787,6 +787,10 @@ threads per CPU for a total of two tasks.
 there are configurations and options which can result in inconsistent
 allocations when \-c has a value greater than \-c on salloc or sbatch.
 
+\fBNOTE\fR: If \fB\-\-mem\-per\-cpu\fR is also specified, the number of
+allocated cpus can be increased if \fBMaxMemPerCPU\fR is exceeded. In the case
+\fB\-n\fR is not specified, the number of tasks can be higher than expected.
+
 This option applies to job and step allocations.
 .IP
 
