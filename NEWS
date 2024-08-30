@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
       'GET /slurmdb/v0.0.41/jobs'
  -- Ignore --json and --yaml options for scontrol show config to prevent mixing
     output types.
+ -- Fix not considering nodes in reservations with Maintenance or Overlap flags
+    when creating new reservations with nodecnt or when they replace down nodes.
 
 * Changes in Slurm 24.05.3
 ==========================
