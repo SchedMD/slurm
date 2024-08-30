@@ -17554,14 +17554,13 @@ static int _set_top(list_t *top_job_list, uid_t uid)
  * job_set_top - Move the specified jobs to the top of the queue (at least
  *	for that user ID, partition, account, and QOS).
  *
+ * IN msg - original request msg
  * IN top_ptr - user request
  * IN uid - user id of the user issuing the RPC
- * IN conn_fd - file descriptor on which to send reply,
- *              -1 if none
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
+extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid,
 		       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
@@ -17570,8 +17569,6 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 	job_record_t *job_ptr = NULL;
 	long int long_id;
 	uint32_t job_id = 0, task_id = 0;
-	slurm_msg_t resp_msg;
-	return_code_msg_t rc_msg;
 	uid_t job_uid = uid;
 
 	if (validate_operator(uid)) {
@@ -17634,17 +17631,7 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 
 reply:	FREE_NULL_LIST(top_job_list);
 	xfree(job_str_tmp);
-	if (conn_fd >= 0) {
-		slurm_msg_t_init(&resp_msg);
-		resp_msg.protocol_version = protocol_version;
-		resp_msg.msg_type  = RESPONSE_SLURM_RC;
-		memset(&rc_msg, 0, sizeof(rc_msg));
-		rc_msg.return_code = rc;
-		resp_msg.data      = &rc_msg;
-		slurm_msg_set_r_uid(&resp_msg, uid);
-		slurm_send_node_msg(conn_fd, &resp_msg);
-	}
-
+	slurm_send_rc_msg(msg, rc);
 	return rc;
 }
 

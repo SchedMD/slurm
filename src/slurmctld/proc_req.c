@@ -4693,7 +4693,7 @@ static void _slurm_rpc_top_job(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
-	error_code = job_set_top(top_ptr, msg->auth_uid, msg->conn_fd,
+	error_code = job_set_top(msg, top_ptr, msg->auth_uid,
 				 msg->protocol_version);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);
