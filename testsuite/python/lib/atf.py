@@ -652,6 +652,15 @@ def start_slurm(clean=False, quiet=False):
             ):
                 pytest.fail(f"Slurmd -N {slurmd_name} is not running")
 
+            # Verify that the slurmd is registered correctly
+            if not repeat_until(
+                lambda: get_node_parameter(slurmd_name, "State"),
+                lambda state: state == "IDLE",
+            ):
+                pytest.fail(
+                    f"Node {slurmd_name} was not able to register correctly, not IDLE."
+                )
+
 
 def stop_slurmctld(quiet=False):
     """Stops the Slurm controller daemon (slurmctld).
