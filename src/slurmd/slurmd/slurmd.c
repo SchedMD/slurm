@@ -206,6 +206,15 @@ static bool plugins_registered = false;
 bool refresh_cached_features = true;
 pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static struct {
+	pthread_mutex_t mutex;
+	conmgr_fd_t *con;
+	bool quiesced;
+} listener = {
+	.mutex = PTHREAD_MUTEX_INITIALIZER,
+	.quiesced = true,
+};
+
 static int       _convert_spec_cores(void);
 static int       _core_spec_init(void);
 static void _create_msg_socket(run_args_t *args);
@@ -456,6 +465,7 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 	char **argv = args->argv;
 	char *oom_value;
 	char time_stamp[256];
+	int rc;
 
 	xassert(args->magic == RUN_ARGS_MAGIC);
 
@@ -529,6 +539,14 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 
 	record_launched_jobs();
 	slurm_thread_create_detached(_registration_engine, NULL);
+
+	slurm_mutex_lock(&listener.mutex);
+	xassert(listener.quiesced);
+	listener.quiesced = false;
+	if (listener.con && (rc = conmgr_unquiesce_fd(listener.con)))
+		fatal_abort("%s: conmgr_unquiesce_fd() failed: %s",
+			    __func__, slurm_strerror(rc));
+	slurm_mutex_unlock(&listener.mutex);
 }
 
 static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg)
@@ -1977,8 +1995,19 @@ _process_cmdline(int ac, char **av)
 static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 {
 	run_args_t *args = arg;
+	int rc;
 
 	xassert(args->magic == RUN_ARGS_MAGIC);
+
+	slurm_mutex_lock(&listener.mutex);
+	xassert(!listener.con);
+	listener.con = con;
+
+	if (!listener.quiesced && (rc = conmgr_unquiesce_fd(con)))
+		fatal_abort("%s: conmgr_unquiesce_fd() failed: %s",
+			    __func__, slurm_strerror(rc));
+
+	slurm_mutex_unlock(&listener.mutex);
 
 	debug3("%s: [%s] Successfully opened slurm listen port %u",
 	       __func__, conmgr_fd_get_name(con), conf->port);
@@ -2000,6 +2029,11 @@ static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 	conf->lfd = -1;
 
 	conmgr_add_work_fifo(_run_fini, args);
+
+	slurm_mutex_lock(&listener.mutex);
+	xassert(listener.con == con);
+	listener.con = NULL;
+	slurm_mutex_unlock(&listener.mutex);
 }
 
 static void *_on_connection(conmgr_fd_t *con, void *arg)
@@ -2054,7 +2088,7 @@ static void _create_msg_socket(run_args_t *args)
 	}
 
 	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, events,
-					   CON_FLAG_NONE, args)))
+					   CON_FLAG_QUIESCE, args)))
 		fatal("%s: unable to process fd:%d error:%s",
 		      __func__, conf->lfd, slurm_strerror(rc));
 }

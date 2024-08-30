@@ -2367,4 +2367,10 @@ extern void controller_reconfig_scheduling(void);
  */
 extern char *part_list_to_xstr(list_t *list);
 
+/* Quiesce all RPC listeners */
+extern void quiesce_rpcs(void);
+
+/* Unquiesce all RPC listeners */
+extern void unquiesce_rpcs(void);
+
 #endif /* !_HAVE_SLURMCTLD_H */

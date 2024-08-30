@@ -95,6 +95,7 @@ static const struct {
 	T(FLAG_IS_CONNECTED),
 	T(FLAG_WORK_ACTIVE),
 	T(FLAG_RPC_KEEP_BUFFER),
+	T(FLAG_QUIESCE),
 };
 #undef T
 
@@ -1448,4 +1449,73 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	 * cleanup the connection.
 	 */
 	add_work_fifo(true, _wrap_on_extract, extract);
+}
+
+static int _unquiesce_fd(conmgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (!con_flag(con, FLAG_QUIESCE))
+		return SLURM_SUCCESS;
+
+	con_unset_flag(con, FLAG_QUIESCE);
+	EVENT_SIGNAL(&mgr.watch_sleep);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *flags = con_flags_string(con->flags);
+		log_flag(CONMGR, "%s: unquiesced connection flags=%s",
+			 __func__, flags);
+		xfree(flags);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int conmgr_unquiesce_fd(conmgr_fd_t *con)
+{
+	int rc;
+
+	if (!con)
+		return EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+	rc = _unquiesce_fd(con);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
+}
+
+static int _quiesce_fd(conmgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (con_flag(con, FLAG_QUIESCE))
+		return SLURM_SUCCESS;
+
+	con_set_flag(con, FLAG_QUIESCE);
+	con_set_polling(con, PCTL_TYPE_NONE, __func__);
+	EVENT_SIGNAL(&mgr.watch_sleep);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *flags = con_flags_string(con->flags);
+		log_flag(CONMGR, "%s: quiesced connection flags=%s",
+			 __func__, flags);
+		xfree(flags);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int conmgr_quiesce_fd(conmgr_fd_t *con)
+{
+	int rc;
+
+	if (!con)
+		return EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+	rc = _quiesce_fd(con);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
 }

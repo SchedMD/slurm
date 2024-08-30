@@ -149,6 +149,8 @@ void run_backup(void)
 
 	slurm_thread_create_detached(_trigger_slurmctld_event, NULL);
 
+	unquiesce_rpcs();
+
 	/* wait for the heartbeat file to exist before starting */
 	while (!get_last_heartbeat(NULL) &&
 	       (slurmctld_config.shutdown_time == 0)) {
@@ -271,6 +273,7 @@ void run_backup(void)
 	trigger_primary_ctld_fail();
 	trigger_backup_ctld_as_ctrl();
 
+	quiesce_rpcs();
 	pthread_kill(pthread_self(), SIGTERM);
 
 	/*

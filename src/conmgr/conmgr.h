@@ -281,6 +281,14 @@ typedef enum {
 	 * Only applies to CON_TYPE_RPC connections.
 	 */
 	CON_FLAG_RPC_KEEP_BUFFER = SLURM_BIT(9),
+	/*
+	 * Connection will not be poll()'ed for changes and all pending work
+	 * will remained queued until unset. New work can still be added. If the
+	 * connection is requested to be closed, then the flag will be removed
+	 * automatically.
+	 * Note: This flag is unrelated to CONMGR_WORK_DEP_QUIESCED.
+	 */
+	CON_FLAG_QUIESCE = SLURM_BIT(10),
 } conmgr_con_flags_t;
 
 /*
@@ -744,5 +752,21 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_set_params(const char *params);
+
+/*
+ * Mark connection as quiesced
+ * @see CON_FLAG_QUIESCE for details
+ * IN con - connection to set CON_FLAG_QUIESCE flag
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_quiesce_fd(conmgr_fd_t *con);
+
+/*
+ * Remove queisced flag from connection
+ * @see CON_FLAG_QUIESCE for details
+ * IN con - connection to unset CON_FLAG_QUIESCE flag
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_unquiesce_fd(conmgr_fd_t *con);
 
 #endif /* _CONMGR_H */

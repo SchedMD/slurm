@@ -50,6 +50,7 @@
 #include <poll.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -245,9 +246,15 @@ static bool under_systemd = false;
 
 /* Array of listening sockets */
 static struct {
+	pthread_mutex_t mutex;
+	bool quiesced;
 	int count;
 	int *fd;
-} listeners;
+	conmgr_fd_t **cons;
+} listeners = {
+	.mutex = PTHREAD_MUTEX_INITIALIZER,
+	.quiesced = true,
+};
 
 typedef struct primary_thread_arg {
 	pid_t cpid;
@@ -570,6 +577,8 @@ int main(int argc, char **argv)
 
 	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 
+	conmgr_run(false);
+
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
 	if (hash_g_init() != SLURM_SUCCESS)
@@ -725,8 +734,6 @@ int main(int argc, char **argv)
 
 	if (original && under_systemd)
 		xsystemd_change_mainpid(getpid());
-
-	conmgr_run(false);
 
 	while (1) {
 		bool reconfiguring = reconfig;
@@ -895,10 +902,14 @@ int main(int argc, char **argv)
 			_post_reconfig();
 		}
 
+		unquiesce_rpcs();
+
 		/*
 		 * process slurm background activities, could run as pthread
 		 */
 		_slurmctld_background(NULL);
+
+		quiesce_rpcs();
 
 		controller_fini_scheduling(); /* Stop all scheduling */
 		agent_fini();
@@ -1192,6 +1203,7 @@ static int _try_to_reconfig(void)
 		setenvf(&child_env, "SLURMCTLD_RECONF_PIDFD", "%d", pidfd);
 		fd_set_noclose_on_exec(pidfd);
 	}
+	slurm_mutex_lock(&listeners.mutex);
 	if (listeners.count) {
 		char *ports = NULL, *pos = NULL;
 		setenvf(&child_env, "SLURMCTLD_RECONF_LISTEN_COUNT", "%d",
@@ -1203,6 +1215,7 @@ static int _try_to_reconfig(void)
 		setenvf(&child_env, "SLURMCTLD_RECONF_LISTEN_FDS", "%s", ports);
 		xfree(ports);
 	}
+	slurm_mutex_unlock(&listeners.mutex);
 	for (int i = 0; i < 3; i++)
 		fd_set_noclose_on_exec(i);
 	if (!daemonize && !under_systemd) {
@@ -1266,12 +1279,14 @@ start_child:
 			continue;
 		if (fd == pidfd)
 			continue;
+		slurm_mutex_lock(&listeners.mutex);
 		for (int i = 0; i < listeners.count; i++) {
 			if (fd == listeners.fd[i]) {
 				match = true;
 				break;
 			}
 		}
+		slurm_mutex_unlock(&listeners.mutex);
 		if (!match) {
 			struct stat st;
 
@@ -1364,18 +1379,43 @@ extern void queue_job_scheduler(void)
 
 static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 {
+	const int *i_ptr = arg;
+	const int i = *i_ptr;
+	int rc;
+
 	debug3("%s: [%s] Successfully opened RPC listener",
 	       __func__, conmgr_fd_get_name(con));
 
-	return con;
+	slurm_mutex_lock(&listeners.mutex);
+
+	xassert(!listeners.cons[i]);
+	listeners.cons[i] = con;
+
+	/* Detect if connection happens after unquiesce_rpcs() already called */
+	if (!listeners.quiesced && (rc = conmgr_unquiesce_fd(con)))
+		fatal_abort("%s: [%s] unable to unquiesce error:%s",
+			    __func__, conmgr_fd_get_name(con),
+			    slurm_strerror(rc));
+
+	slurm_mutex_unlock(&listeners.mutex);
+
+	return arg;
 }
 
 static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 {
-	xassert(con == arg);
+	int *i_ptr = arg;
+	const int i = *i_ptr;
 
 	debug3("%s: [%s] Closed RPC listener",
 	       __func__, conmgr_fd_get_name(con));
+
+	slurm_mutex_lock(&listeners.mutex);
+	xassert(listeners.cons[i] == con);
+	listeners.cons[i] = NULL;
+	slurm_mutex_unlock(&listeners.mutex);
+
+	xfree(i_ptr);
 }
 
 static void *_on_primary_connection(conmgr_fd_t *con, void *arg)
@@ -1388,8 +1428,6 @@ static void *_on_primary_connection(conmgr_fd_t *con, void *arg)
 
 static void _on_primary_finish(conmgr_fd_t *con, void *arg)
 {
-	xassert(arg == con);
-
 	debug3("%s: [%s] PRIMARY: RPC connection closed",
 	       __func__, conmgr_fd_get_name(con));
 }
@@ -1458,6 +1496,48 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		return on_backup_msg(con, msg, arg);
 }
 
+extern void quiesce_rpcs(void)
+{
+	slurm_mutex_lock(&listeners.mutex);
+
+	listeners.quiesced = true;
+
+	for (int i = 0; i < listeners.count; i++) {
+		int rc;
+
+		if (!listeners.cons[i])
+			continue;
+
+		if ((rc = conmgr_quiesce_fd(listeners.cons[i])))
+			fatal_abort("%s: [%s] unable to quiesce error:%s",
+			      __func__, conmgr_fd_get_name(listeners.cons[i]),
+			      slurm_strerror(rc));
+	}
+
+	slurm_mutex_unlock(&listeners.mutex);
+}
+
+extern void unquiesce_rpcs(void)
+{
+	slurm_mutex_lock(&listeners.mutex);
+
+	listeners.quiesced = false;
+
+	for (int i = 0; i < listeners.count; i++) {
+		int rc;
+
+		if (!listeners.cons[i])
+			continue;
+
+		if ((rc = conmgr_unquiesce_fd(listeners.cons[i])))
+			fatal_abort("%s: [%s] unable to unquiesce error:%s",
+			      __func__, conmgr_fd_get_name(listeners.cons[i]),
+			      slurm_strerror(rc));
+	}
+
+	slurm_mutex_unlock(&listeners.mutex);
+}
+
 /*
  * _open_ports - Open all ports for the slurmctld to listen on.
  */
@@ -1471,11 +1551,15 @@ static void _open_ports(void)
 		.on_finish = _on_finish,
 	};
 
+	slurm_mutex_lock(&listeners.mutex);
+
 	/* initialize ports for RPCs */
 	if (original) {
 		if (!(listeners.count = slurm_conf.slurmctld_port_count))
 			fatal("slurmctld port count is zero");
 		listeners.fd = xcalloc(listeners.count, sizeof(*listeners.fd));
+		listeners.cons = xcalloc(listeners.count,
+					 sizeof(*listeners.cons));
 		for (int i = 0; i < listeners.count; i++) {
 			listeners.fd[i] = slurm_init_msg_engine_port(
 				slurm_conf.slurmctld_port + i);
@@ -1484,22 +1568,30 @@ static void _open_ports(void)
 		char *pos = getenv("SLURMCTLD_RECONF_LISTEN_FDS");
 		listeners.count = atoi(getenv("SLURMCTLD_RECONF_LISTEN_COUNT"));
 		listeners.fd = xcalloc(listeners.count, sizeof(*listeners.fd));
+		listeners.cons = xcalloc(listeners.count,
+					 sizeof(*listeners.cons));
 		for (int i = 0; i < listeners.count; i++) {
 			listeners.fd[i] = strtol(pos, &pos, 10);
 			pos++; /* skip comma */
 		}
 	}
 
-	for (int i = 0; i < listeners.count; i++) {
-		int rc;
+	for (uint64_t i = 0; i < listeners.count; i++) {
+		static const conmgr_con_flags_t flags =
+			(CON_FLAG_RPC_KEEP_BUFFER | CON_FLAG_QUIESCE);
+		int rc, *index_ptr;
+
+		index_ptr = xmalloc(sizeof(*index_ptr));
+		*index_ptr = i;
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
-						   CON_TYPE_RPC, events,
-						   CON_FLAG_RPC_KEEP_BUFFER,
-						   NULL)))
+						   CON_TYPE_RPC, events, flags,
+						   index_ptr)))
 			fatal("%s: unable to process fd:%d error:%s",
 			      __func__, listeners.fd[i], slurm_strerror(rc));
 	}
+
+	slurm_mutex_unlock(&listeners.mutex);
 }
 
 /*
