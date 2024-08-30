@@ -2386,7 +2386,6 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	/* Locks: Read config, write job, write node, read partition, read fed*/
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	slurm_addr_t resp_addr;
 	will_run_response_msg_t *resp = NULL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 
@@ -2424,9 +2423,9 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	if (err_msg)
 		job_submit_user_msg = xstrdup(err_msg);
 
-	if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
+	if (msg->address.ss_family != AF_UNSPEC) {
 		job_desc_msg->resp_host = xmalloc(INET6_ADDRSTRLEN);
-		slurm_get_ip_str(&resp_addr, job_desc_msg->resp_host,
+		slurm_get_ip_str(&msg->address, job_desc_msg->resp_host,
 				 INET6_ADDRSTRLEN);
 		dump_job_desc(job_desc_msg);
 		if (error_code == SLURM_SUCCESS) {
@@ -2446,10 +2445,9 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 			unlock_slurmctld(job_write_lock);
 			END_TIMER2(__func__);
 		}
-	} else if (errno)
-		error_code = errno;
-	else
-		error_code = SLURM_ERROR;
+	} else {
+		error_code = SLURM_UNKNOWN_FORWARD_ADDR;
+	}
 
 send_reply:
 
