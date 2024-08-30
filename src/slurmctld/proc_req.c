@@ -2530,8 +2530,7 @@ static int _find_avail_future_node(slurm_msg_t *msg)
 				continue;
 
 			/* Get IP of slurmd */
-			if (msg->conn_fd >= 0 &&
-			    !slurm_get_peer_addr(msg->conn_fd, &addr)) {
+			if (msg->address.ss_family != AF_UNSPEC) {
 				comm_name = xmalloc(INET6_ADDRSTRLEN);
 				slurm_get_ip_str(&addr, comm_name,
 						 INET6_ADDRSTRLEN);
