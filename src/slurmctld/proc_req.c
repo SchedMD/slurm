@@ -939,7 +939,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	hostset_t *jobid_hostset = NULL;
 	char tmp_str[32];
 	list_t *resp = NULL;
-	slurm_addr_t resp_addr;
 	char resp_host[INET6_ADDRSTRLEN];
 	char *het_job_id_set = NULL;
 
@@ -962,8 +961,8 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		error_code = SLURM_ERROR;
 		goto send_msg;
 	}
-	if (slurm_get_peer_addr(msg->conn_fd, &resp_addr) == 0) {
-		slurm_get_ip_str(&resp_addr, resp_host, sizeof(resp_host));
+	if (msg->address.ss_family != AF_UNSPEC) {
+		slurm_get_ip_str(&msg->address, resp_host, sizeof(resp_host));
 	} else {
 		info("REQUEST_HET_JOB_ALLOCATION from uid=%u, can't get peer addr",
 		     msg->auth_uid);
