@@ -114,6 +114,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix not showing some SelectTypeParameters in scontrol show config.
  -- Avoid assert when dumping removed certain fields in JSON/YAML.
  -- Improve how shards are scheduled with affinity in mind.
+ -- Fix MaxJobsAccruePU not being respected when MaxJobsAccruePA is set
+    in the same QOS.
 
 * Changes in Slurm 24.05.3
 ==========================
