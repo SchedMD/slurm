@@ -2995,6 +2995,33 @@ def wait_for_step_accounted(job_id, step_id, **repeat_until_kwargs):
     )
 
 
+def wait_for_job_accounted(job_id, **repeat_until_kwargs):
+    """Wait for specified job to appear in accounting database (`sacct`).
+
+    Continuously polls the database until the job is accounted for or until a
+    timeout occurs.
+
+    Args:
+        job_id (integer): The id of the job.
+
+    Returns:
+        A boolean value indicating whether the specified job is accounted for
+        in the database or not.
+
+    Example:
+        >>> wait_for_job_accounted(1234, timeout=60, poll_interval=5, fatal=True)
+        True
+        >>> wait_for_job_accounted(5678, timeout=30)
+        False
+    """
+
+    return repeat_until(
+        lambda: run_command_output(f"sacct -Xj {job_id} -o JobID"),
+        lambda out: re.search(rf"{job_id}", out) is not None,
+        **repeat_until_kwargs,
+    )
+
+
 def wait_for_job_state(
     job_id,
     desired_job_state,
