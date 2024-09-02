@@ -1031,6 +1031,9 @@ def test_jobs(slurm, slurmdb):
         assert job.user_name == local_user_name
         assert job.job_state == ["CANCELLED"]
 
+    # Ensure that job is in the DB before quering it
+    atf.wait_for_job_accounted(jobid, fatal=True)
+
     resp = slurmdb.slurmdb_v0040_get_jobs()
     assert len(resp.errors) == 0
 
