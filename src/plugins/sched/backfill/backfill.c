@@ -350,8 +350,9 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 				    end_buf, sizeof(end_buf));
 		node_list = bitmap2node_name(node_space_ptr[i].avail_bitmap);
 		licenses = bf_licenses_to_string(node_space_ptr[i].licenses);
-		info("Begin:%s End:%s Nodes:%s Licenses:%s",
-		     begin_buf, end_buf, node_list, licenses);
+		info("Begin:%s End:%s Nodes:%s Licenses:%s Fragmentation:%u",
+		     begin_buf, end_buf, node_list, licenses,
+		     node_space_ptr[i].fragmentation);
 		xfree(node_list);
 		xfree(licenses);
 		if ((i = node_space_ptr[i].next) == 0)
@@ -2143,6 +2144,11 @@ static void _attempt_backfill(void)
 		node_space[0].licenses =
 			bf_licenses_initial(bf_running_job_reserve);
 
+	if (bf_topopt_enable) {
+		node_space[0].fragmentation = topology_g_get_fragmentation(
+			node_space[0].avail_bitmap);
+	}
+
 	node_space[0].next = 0;
 	node_space_recs = 1;
 
@@ -3816,6 +3822,8 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 				    node_space[j].avail_bitmap);
 			node_space[i].licenses =
 				bf_licenses_copy(node_space[j].licenses);
+			node_space[i].fragmentation =
+				node_space[j].fragmentation;
 			node_space[i].next = node_space[j].next;
 			node_space[j].next = i;
 			(*node_space_recs)++;
@@ -3843,6 +3851,8 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 				    node_space[j].avail_bitmap);
 			node_space[i].licenses =
 				bf_licenses_copy(node_space[j].licenses);
+			node_space[i].fragmentation =
+				node_space[j].fragmentation;
 			node_space[i].next = node_space[j].next;
 			node_space[j].next = i;
 			(*node_space_recs)++;
@@ -3852,6 +3862,11 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 		if (res_bitmap) {
 			bit_and(node_space[j].avail_bitmap, res_bitmap);
 			bf_licenses_deduct(node_space[j].licenses, job_ptr);
+			if (bf_topopt_enable) {
+				node_space[j].fragmentation =
+					topology_g_get_fragmentation(
+						node_space[j].avail_bitmap);
+			}
 		} else {
 			/* setting up reservation licenses */
 			bf_licenses_transfer(node_space[j].licenses, job_ptr);

@@ -48,6 +48,7 @@ typedef struct {
 	time_t end_time;
 	bitstr_t *avail_bitmap;
 	bf_licenses_t *licenses;
+	uint32_t fragmentation;
 	int next; /* next record, by time, zero termination */
 } node_space_map_t;
 
