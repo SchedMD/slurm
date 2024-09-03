@@ -6256,11 +6256,7 @@ static int DUMP_FUNC(JOB_STATE_RESP_JOB_JOB_ID)(const parser_t *const parser,
 static void *NEW_FUNC(KILL_JOBS_MSG)(void)
 {
 	kill_jobs_msg_t *msg = xmalloc_nz(sizeof(*msg));
-	*msg = (kill_jobs_msg_t) {
-		.signal = SIGKILL,
-		.state = JOB_END,
-		.user_id = SLURM_AUTH_NOBODY,
-	};
+	*msg = (kill_jobs_msg_t) KILL_JOB_MSG_INITIALIZER;
 	return msg;
 }
 
