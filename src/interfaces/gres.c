@@ -3584,6 +3584,8 @@ static int _foreach_rebuild_topo(void *x, void *args)
 			      gres_slurmd_conf->cpus,
 			      rebuild_topo->node_name);
 			FREE_NULL_BITMAP(tmp_bitmap);
+			rebuild_topo->rc = ESLURM_INVALID_GRES;
+			return -1;
 		} else {
 			FREE_NULL_BITMAP(
 				gres_ns->topo_core_bitmap[topo_cnt]);
