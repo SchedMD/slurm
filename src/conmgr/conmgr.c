@@ -297,6 +297,7 @@ extern int conmgr_set_params(const char *params)
 {
 	char *tmp_str = NULL, *tok = NULL, *saveptr = NULL;
 
+	slurm_mutex_lock(&mgr.mutex);
 	/*
 	 * This should be called before conmgr is initialized so that params
 	 * are applied on initialization.
@@ -311,9 +312,7 @@ extern int conmgr_set_params(const char *params)
 			const unsigned long count =
 				slurm_atoul(tok + strlen(CONMGR_PARAM_THREADS));
 
-			slurm_mutex_lock(&mgr.mutex);
 			mgr.workers.conf_threads = count;
-			slurm_mutex_unlock(&mgr.mutex);
 
 			log_flag(CONMGR, "%s: %s set %zu threads",
 				 __func__, tok, count);
@@ -322,9 +321,7 @@ extern int conmgr_set_params(const char *params)
 			const unsigned long count =
 				slurm_atoul(tok + strlen(CONMGR_PARAM_MAX_CONN));
 
-			slurm_mutex_lock(&mgr.mutex);
 			mgr.conf_max_connections = count;
-			slurm_mutex_unlock(&mgr.mutex);
 
 			log_flag(CONMGR, "%s: %s activated with %zu threads", __func__, tok, count);
 		} else if (!xstrcasecmp(tok, CONMGR_PARAM_POLL_ONLY)) {
@@ -338,6 +335,7 @@ extern int conmgr_set_params(const char *params)
 		tok = strtok_r(NULL, ",", &saveptr);
 	}
 
+	slurm_mutex_unlock(&mgr.mutex);
 	xfree(tmp_str);
 	return SLURM_SUCCESS;
 }
