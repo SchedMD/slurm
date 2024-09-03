@@ -655,6 +655,7 @@ static void _interrupt(const char *caller)
 	event_signal_t *interrupt_return = NULL;
 	int rc, fd = -1;
 
+	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
 
 	if (!pctl.polling) {
@@ -684,6 +685,8 @@ static void _interrupt(const char *caller)
 		}
 	}
 
+	slurm_mutex_unlock(&pctl.mutex);
+
 	if (fd < 0)
 		return;
 
@@ -692,6 +695,7 @@ static void _interrupt(const char *caller)
 		      fd, slurm_strerror(errno));
 	}
 
+	slurm_mutex_lock(&pctl.mutex);
 	log_flag(CONMGR, "%s->%s: [POLL] interrupt sent requests=%d polling=%c",
 		 caller, __func__, pctl.interrupt.requested,
 		 (pctl.polling ? 'T' : 'F'));
@@ -701,13 +705,6 @@ static void _interrupt(const char *caller)
 	pctl.interrupt.sending = false;
 
 	EVENT_BROADCAST(interrupt_return);
-}
-
-static void _lock_interrupt(const char *caller)
-{
-	slurm_mutex_lock(&pctl.mutex);
-	_check_pctl_magic();
-	_interrupt(caller);
 	slurm_mutex_unlock(&pctl.mutex);
 }
 
@@ -741,7 +738,7 @@ const poll_funcs_t poll_funcs = {
 	.unlink_fd = _lock_unlink_fd,
 	.poll = _poll,
 	.for_each_event = _for_each_event,
-	.interrupt = _lock_interrupt,
+	.interrupt = _interrupt,
 	.events_can_read = _events_can_read,
 	.events_can_write = _events_can_write,
 	.events_has_error = _events_has_error,
