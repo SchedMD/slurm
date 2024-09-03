@@ -101,6 +101,15 @@ documents those changes that are of interest to users and administrators.
  -- Add SchedulerParameters=bf_allow_magnetic_slot option. It allows jobs in
     magnetic reservations to be planned by backfill scheduler.
  -- slurmrestd - Refuse to run as root, SlurmUser, and nobody(99).
+ -- openapi/slurmctld - Revert regression that caused signaling jobs to cancel
+    entire job arrays instead of job array tasks:
+      'DELETE /slurm/v0.0.40/{job_id}'
+      'DELETE /slurm/v0.0.41/{job_id}'
+      'DELETE /slurm/v0.0.42/{job_id}'
+ -- openapi/slurmctld - Support more formats for {job_id} including job steps:
+      'DELETE /slurm/v0.0.40/{job_id}'
+      'DELETE /slurm/v0.0.41/{job_id}'
+      'DELETE /slurm/v0.0.42/{job_id}'
 
 * Changes in Slurm 24.05.4
 ==========================

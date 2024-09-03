@@ -569,6 +569,30 @@ extern void check_parser_funcname(const parser_t *const parser,
 
 	xassert(parser->obj_type_string && parser->obj_type_string[0]);
 
+	if (parser->model == PARSER_MODEL_ALIAS) {
+		xassert(!parser->size);
+		xassert(!parser->field_name);
+		xassert(parser->ptr_offset == NO_VAL);
+		xassert(!parser->key);
+		xassert(!parser->deprecated);
+		xassert(!parser->flag_bit_array_count);
+		xassert(parser->type_string && parser->type_string[0]);
+		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
+		xassert(!parser->fields);
+		xassert(!parser->field_count);
+		xassert(!parser->parse);
+		xassert(!parser->dump);
+		xassert(!parser->pointer_type);
+		xassert(!parser->array_type);
+		xassert(parser->obj_openapi == OPENAPI_FORMAT_INVALID);
+		xassert(parser->alias_type > DATA_PARSER_TYPE_INVALID);
+		xassert(parser->alias_type < DATA_PARSER_TYPE_MAX);
+		xassert(parser->alias_type != parser->type);
+		return;
+	}
+
+	xassert(parser->alias_type == DATA_PARSER_TYPE_INVALID);
+
 	if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) {
 		xassert(!parser->size);
 		xassert(!parser->field_name);
@@ -729,6 +753,11 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->obj_openapi);
 
 		switch (linked->model) {
+		case PARSER_MODEL_ALIAS:
+			xassert(linked->alias_type > DATA_PARSER_TYPE_INVALID);
+			xassert(linked->alias_type < DATA_PARSER_TYPE_MAX);
+			xassert(linked->alias_type != parser->type);
+			break;
 		case PARSER_MODEL_REMOVED:
 			fatal_abort("should never execute");
 		case PARSER_MODEL_SIMPLE:
@@ -6256,11 +6285,7 @@ static int DUMP_FUNC(JOB_STATE_RESP_JOB_JOB_ID)(const parser_t *const parser,
 static void *NEW_FUNC(KILL_JOBS_MSG)(void)
 {
 	kill_jobs_msg_t *msg = xmalloc_nz(sizeof(*msg));
-	*msg = (kill_jobs_msg_t) {
-		.signal = SIGKILL,
-		.state = JOB_END,
-		.user_id = SLURM_AUTH_NOBODY,
-	};
+	*msg = (kill_jobs_msg_t) KILL_JOB_MSG_INITIALIZER;
 	return msg;
 }
 
@@ -9368,6 +9393,7 @@ add_openapi_response_single(OPENAPI_WCKEY_REMOVED_RESP, STRING_LIST, "deleted_wc
 add_openapi_response_single(OPENAPI_SHARES_RESP, SHARES_RESP_MSG_PTR, "shares", "fairshare info");
 add_openapi_response_single(OPENAPI_SINFO_RESP, SINFO_DATA_LIST, "sinfo", "node and partition info");
 add_openapi_response_single(OPENAPI_KILL_JOBS_RESP, KILL_JOBS_RESP_MSG_PTR, "status", "resultant status of signal request");
+add_openapi_response_single(OPENAPI_KILL_JOB_RESP, KILL_JOBS_RESP_MSG_PTR, "status", "resultant status of signal request");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -9559,6 +9585,18 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_ALLOC_RESP)[] = {
 		.needs = NEED_NONE,                                            \
 		.fields = PARSER_ARRAY(typev),                                 \
 		.field_count = ARRAY_SIZE(PARSER_ARRAY(typev)),                \
+		.ptr_offset = NO_VAL,                                          \
+	}
+/* add parser alias */
+#define addalias(typev, typea)                                                 \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.model = PARSER_MODEL_ALIAS,                                   \
+		.type = DATA_PARSER_##typev,                                   \
+		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
+		.obj_type_string = XSTRINGIFY(typea),                          \
+		.obj_openapi = OPENAPI_FORMAT_INVALID,                         \
+		.alias_type = DATA_PARSER_##typea,                             \
 		.ptr_offset = NO_VAL,                                          \
 	}
 /* add parser array (for struct) and pointer for parser array */
@@ -10084,6 +10122,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_JOB_STATE_RESP, openapi_resp_job_state_t, NULL, NULL),
 	addoar(OPENAPI_KILL_JOBS_RESP),
 	addpap(OPENAPI_JOB_ALLOC_RESP, openapi_job_alloc_response_t, NULL, NULL),
+	addoar(OPENAPI_KILL_JOB_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
@@ -10182,6 +10221,21 @@ extern const parser_t *const find_parser_by_type(type_t type)
 			return &parsers[i];
 
 	return NULL;
+}
+
+extern const parser_t *unalias_parser(const parser_t *parser)
+{
+	if (!parser)
+		return NULL;
+
+	while (parser->pointer_type || parser->alias_type) {
+		if (parser->pointer_type)
+			parser = find_parser_by_type(parser->pointer_type);
+		if (parser->alias_type)
+			parser = find_parser_by_type(parser->alias_type);
+	}
+
+	return parser;
 }
 
 extern void parsers_init(void)

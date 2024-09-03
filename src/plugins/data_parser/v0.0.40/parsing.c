@@ -924,7 +924,8 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	 * Make sure the target object is the same size since there is no
 	 * way to dump value of __typeof__ as a value in C99.
 	 */
-	xassert((dst_bytes == NO_VAL) || (dst_bytes == parser->size));
+	xassert((dst_bytes == NO_VAL) || (dst_bytes == parser->size) ||
+		(parser->model == PARSER_MODEL_ALIAS));
 
 	if ((rc = load_prereqs(PARSING, parser, args)))
 		goto cleanup;
@@ -1035,6 +1036,11 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 			_parse_check_openapi(parser, src, args, parent_path);
 
 		rc = parser->parse(parser, dst, src, args, parent_path);
+		break;
+	case PARSER_MODEL_ALIAS:
+		rc = parse(dst, dst_bytes,
+			   find_parser_by_type(parser->alias_type), src, args,
+			   parent_path);
 		break;
 	case PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD:
 	case PARSER_MODEL_ARRAY_LINKED_FIELD:
@@ -1282,8 +1288,7 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 
 	if (!*ptr && !is_complex_mode(args)) {
 		/* Fully resolve pointer on NULL to use correct model */
-		while (pt->pointer_type)
-			pt = find_parser_by_type(pt->pointer_type);
+		pt = unalias_parser(pt);
 
 		if (parser->allow_null_pointer) {
 			xassert(data_get_type(dst) == DATA_TYPE_NULL);
@@ -1404,9 +1409,7 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 
 		while ((rparser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) ||
 		       rparser->pointer_type) {
-			while (rparser->pointer_type)
-				rparser = find_parser_by_type(
-					rparser->pointer_type);
+			rparser = unalias_parser(rparser);
 
 			while (rparser->model ==
 			       PARSER_MODEL_ARRAY_REMOVED_FIELD)
@@ -1528,7 +1531,8 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 	 * Make sure the source object is the same size since there is no
 	 * way to dump value of __typeof__ as a value in C.
 	 */
-	xassert((src_bytes == NO_VAL) || (src_bytes == parser->size));
+	xassert((src_bytes == NO_VAL) || (src_bytes == parser->size) ||
+		(parser->model == PARSER_MODEL_ALIAS));
 
 	if (args->flags & FLAG_SPEC_ONLY) {
 		set_openapi_schema(dst, parser, args);
@@ -1601,6 +1605,10 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 
 		rc = parser->dump(parser, src, dst, args);
 		_check_dump(parser, dst, args);
+		break;
+	case PARSER_MODEL_ALIAS:
+		rc = dump(src, src_bytes,
+			  find_parser_by_type(parser->alias_type), dst, args);
 		break;
 	case PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD:
 	case PARSER_MODEL_ARRAY_LINKED_FIELD:

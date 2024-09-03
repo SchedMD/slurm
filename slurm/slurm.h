@@ -3721,6 +3721,13 @@ typedef struct {
 	char *nodelist;
 } kill_jobs_msg_t;
 
+#define KILL_JOB_MSG_INITIALIZER \
+{ \
+	.signal = SIGKILL, \
+	.state = JOB_END, \
+	.user_id = SLURM_AUTH_NOBODY, \
+}
+
 typedef struct {
 	uint32_t error_code;
 	char *error_msg;

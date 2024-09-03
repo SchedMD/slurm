@@ -316,7 +316,7 @@ const openapi_path_binding_t openapi_paths[] = {
 				.tags = tags,
 				.summary = "cancel or signal job",
 				.response = {
-					.type = DATA_PARSER_OPENAPI_RESP,
+					.type = DATA_PARSER_OPENAPI_KILL_JOB_RESP,
 					.description = "job signal result",
 				},
 				.parameters = DATA_PARSER_OPENAPI_JOB_INFO_PARAM,
