@@ -53,7 +53,7 @@ scontrol_load_reservations(reserve_info_msg_t **res_buffer_pptr)
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_reservation_info_msg (old_res_info_ptr);
 
-		} else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			res_info_ptr = old_res_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1) {

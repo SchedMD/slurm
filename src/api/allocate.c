@@ -1443,7 +1443,7 @@ static void _wait_for_allocation_response(uint32_t job_id,
 			error("%s: Invalid msg_type (%u)", __func__, msg_type);
 		}
 
-		if (slurm_get_errno() == ESLURM_JOB_PENDING) {
+		if (errno == ESLURM_JOB_PENDING) {
 			debug3("Still waiting for allocation");
 			errno = errnum;
 			return;

@@ -334,7 +334,7 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 		}
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_info_msg( old_job_ptr );
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_job_ptr = old_job_ptr;
 		}
@@ -434,7 +434,7 @@ static int _print_job_steps(bool clear_old, int argc, char **argv)
 						 &new_step_ptr, show_flags);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg( old_step_ptr );
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_step_ptr = old_step_ptr;
 		}

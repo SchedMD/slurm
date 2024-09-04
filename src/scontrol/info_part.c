@@ -60,7 +60,7 @@ scontrol_load_partitions (partition_info_msg_t **part_buffer_pptr)
 			&part_info_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg (old_part_info_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			part_info_ptr = old_part_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)

@@ -630,7 +630,7 @@ relinquish:
 
 		info("Relinquishing job allocation %u", my_job_id);
 		if ((slurm_complete_job(my_job_id, status) != 0) &&
-		    (slurm_get_errno() != ESLURM_ALREADY_DONE))
+		    (errno != ESLURM_ALREADY_DONE))
 			error("Unable to clean up job allocation %u: %m",
 			      my_job_id);
 		slurm_mutex_lock(&allocation_state_lock);

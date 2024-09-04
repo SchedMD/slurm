@@ -922,12 +922,12 @@ _cancel_job_id (void *ci)
 		sleep(5 + i);
 	}
 	if (error_code) {
-		error_code = slurm_get_errno();
+		error_code = errno;
 		if ((opt.verbose > 0) ||
 		    ((error_code != ESLURM_ALREADY_DONE) &&
 		     (error_code != ESLURM_INVALID_JOB_ID))) {
 			_log_kill_job_error(cancel_info->job_id_str,
-					    slurm_strerror(slurm_get_errno()));
+					    slurm_strerror(error_code));
 		}
 		if (((error_code == ESLURM_ALREADY_DONE) ||
 		     (error_code == ESLURM_INVALID_JOB_ID)) &&
@@ -1013,11 +1013,11 @@ _cancel_step_id (void *ci)
 		sleep(5 + i);
 	}
 	if (error_code) {
-		error_code = slurm_get_errno();
+		error_code = errno;
 		if ((opt.verbose > 0) || (error_code != ESLURM_ALREADY_DONE))
 			error("Kill job error on job step id %s: %s",
 		 	      cancel_info->job_id_str,
-			      slurm_strerror(slurm_get_errno()));
+			      slurm_strerror(error_code));
 
 		if ((error_code == ESLURM_ALREADY_DONE) &&
 		    (cancel_info->sig == SIGKILL)) {

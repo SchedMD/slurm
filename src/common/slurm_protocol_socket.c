@@ -296,7 +296,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 
 	/* Reset fd flags to prior state, preserve errno */
 	if (fd_flags != -1) {
-		int slurm_err = slurm_get_errno();
+		int slurm_err = errno;
 		if (fcntl(fd, F_SETFL, fd_flags) < 0)
 			error("%s: fcntl(F_SETFL) error: %m", __func__);
 		slurm_seterrno(slurm_err);
@@ -487,7 +487,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
     done:
 	/* Reset fd flags to prior state, preserve errno */
 	if (fd_flags != -1) {
-		int slurm_err = slurm_get_errno();
+		int slurm_err = errno;
 		if (fcntl(fd, F_SETFL, fd_flags) < 0)
 			error("%s: fcntl(F_SETFL) error: %m", __func__);
 		slurm_seterrno(slurm_err);

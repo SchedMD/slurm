@@ -95,7 +95,7 @@ scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr, uint16_t show_flags)
 					      &node_info_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg (old_node_info_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			node_info_ptr = old_node_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
@@ -330,7 +330,7 @@ scontrol_load_front_end(front_end_info_msg_t ** front_end_buffer_pptr)
 				&front_end_info_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_front_end_info_msg (old_front_end_info_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			front_end_info_ptr = old_front_end_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1) {

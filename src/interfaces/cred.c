@@ -375,7 +375,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred)
 	return cred->arg;
 
 error:
-	errnum = slurm_get_errno();
+	errnum = errno;
 	slurm_rwlock_unlock(&cred->mutex);
 	slurm_seterrno(errnum);
 	return NULL;

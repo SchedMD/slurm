@@ -450,7 +450,7 @@ static void _write_config(char *file_name)
 				&slurm_ctl_conf_ptr);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
-		} else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1) {
@@ -521,7 +521,7 @@ static void _print_config(char *config_param, int argc, char **argv)
 				&slurm_ctl_conf_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1) {

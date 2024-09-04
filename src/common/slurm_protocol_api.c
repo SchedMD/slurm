@@ -640,7 +640,7 @@ slurm_get_srun_port_range(void)
 /* Change general slurm communication errors to slurmctld specific errors */
 static void _remap_slurmctld_errno(void)
 {
-	int err = slurm_get_errno();
+	int err = errno;
 
 	if (err == SLURM_COMMUNICATIONS_CONNECTION_ERROR)
 		slurm_seterrno(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);

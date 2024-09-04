@@ -212,7 +212,7 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 	signal_tasks_msg_t rpc;
 
 	if (slurm_allocation_lookup(job_id, &alloc_info)) {
-		rc = slurm_get_errno();
+		rc = errno;
 		goto fail1;
 	}
 

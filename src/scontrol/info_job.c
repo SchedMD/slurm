@@ -949,7 +949,7 @@ scontrol_load_job(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
 		}
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_info_msg (old_job_info_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			job_info_ptr = old_job_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
@@ -1308,7 +1308,7 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg (
 				old_job_step_info_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			job_step_info_ptr = old_job_step_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)

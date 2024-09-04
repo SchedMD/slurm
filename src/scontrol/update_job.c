@@ -246,7 +246,7 @@ scontrol_hold(char *op, char *job_str)
 		while ((job_msg.job_id_str = _next_job_id())) {
 			rc2 = slurm_update_job2(&job_msg, &resp);
 			if (rc2 != SLURM_SUCCESS) {
-				rc2 = slurm_get_errno();
+				rc2 = errno;
 				rc = MAX(rc, rc2);
 				exit_code = 1;
 				if (quiet_flag != 1) {
@@ -334,7 +334,7 @@ scontrol_hold(char *op, char *job_str)
 		job_msg.job_id_str = job_id_str;
 		rc2 = slurm_update_job2(&job_msg, &resp);
 		if (rc2 != SLURM_SUCCESS) {
-			rc2 = slurm_get_errno();
+			rc2 = errno;
 			rc = MAX(rc, rc2);
 			exit_code = 1;
 			if (quiet_flag != 1) {
@@ -394,7 +394,7 @@ scontrol_suspend(char *op, char *job_str)
 				exit_code = 1;
 				if (quiet_flag != 1) {
 					fprintf(stderr, "%s for job %s\n",
-						slurm_strerror(slurm_get_errno()),
+						slurm_strerror(errno),
 						job_id_str);
 				}
 			} else if (resp) {
@@ -455,7 +455,7 @@ scontrol_requeue(uint32_t flags, char *job_str)
 				exit_code = 1;
 				if (quiet_flag != 1) {
 					fprintf(stderr, "%s for job %s\n",
-						slurm_strerror(slurm_get_errno()),
+						slurm_strerror(errno),
 						job_id_str);
 				}
 			} else if (resp) {
@@ -504,7 +504,7 @@ scontrol_requeue_hold(uint32_t flags, char *job_str)
 				exit_code = 1;
 				if (quiet_flag != 1) {
 					fprintf(stderr, "%s for job %s\n",
-						slurm_strerror(slurm_get_errno()),
+						slurm_strerror(errno),
 						job_id_str);
 				}
 			} else if (resp) {
@@ -556,7 +556,7 @@ scontrol_top_job(char *job_id_str)
 		exit_code = 1;
 		if (quiet_flag != 1) {
 			fprintf(stderr, "%s for job %s\n",
-				slurm_strerror(slurm_get_errno()), job_id_str);
+				slurm_strerror(errno), job_id_str);
 		}
 	}
 }
@@ -1143,12 +1143,12 @@ extern int scontrol_update_job(int argc, char **argv)
 				_update_job_size(job_msg.job_id);
 			}
 			if (rc2 != SLURM_SUCCESS) {
-				rc2 = slurm_get_errno();
+				rc2 = errno;
 				rc = MAX(rc, rc2);
 				exit_code = 1;
 				if (quiet_flag != 1) {
 					fprintf(stderr, "%s for job %s\n",
-						slurm_strerror(slurm_get_errno()),
+						slurm_strerror(errno),
 						job_msg.job_id_str);
 				}
 			} else if (resp) {
@@ -1223,7 +1223,7 @@ extern int scontrol_job_notify(int argc, char **argv)
 	xfree(message);
 
 	if (i)
-		return slurm_get_errno ();
+		return errno;
 	else
 		return 0;
 }
@@ -1239,7 +1239,7 @@ static void _update_job_size(uint32_t job_id)
 
 	if (slurm_allocation_lookup(job_id, &alloc_info) !=
 	    SLURM_SUCCESS) {
-		if (slurm_get_errno() != ESLURM_ALREADY_DONE) {
+		if (errno != ESLURM_ALREADY_DONE) {
 			slurm_perror("slurm_allocation_lookup");
 			return;
 		}

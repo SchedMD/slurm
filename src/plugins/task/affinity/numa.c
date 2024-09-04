@@ -271,7 +271,7 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *step)
 		} else {
 			my_node = strtol(mstr, &end_ptr, 10);
 		}
-		if (slurm_get_errno()) {
+		if (errno) {
 			error("--mem-bind=map_mem:%s failed to parse into valid NUMA nodes for local task %d: %m",
 			      mstr, local_id);
 			return false;

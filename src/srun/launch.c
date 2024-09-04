@@ -1242,7 +1242,7 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 			}
 			break;
 		}
-		rc = slurm_get_errno();
+		rc = errno;
 
 		if (((opt_local->immediate != 0) &&
 		     ((opt_local->immediate == 1) ||

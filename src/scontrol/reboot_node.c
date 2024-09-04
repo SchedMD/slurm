@@ -49,7 +49,7 @@ extern int scontrol_cancel_reboot(char *nodes)
 
 	if (slurm_update_node(&node_msg)) {
 		exit_code = 1;
-		rc = slurm_get_errno();
+		rc = errno;
 		slurm_perror ("slurm_update error");
 	}
 

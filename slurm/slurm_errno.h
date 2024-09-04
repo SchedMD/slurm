@@ -401,9 +401,6 @@ char * slurm_strerror(int errnum);
 /* set an errno value */
 void slurm_seterrno(int errnum);
 
-/* get an errno value */
-int slurm_get_errno(void);
-
 /* print message: error string for current errno value */
 void slurm_perror(const char *msg);
 

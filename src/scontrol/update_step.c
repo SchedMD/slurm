@@ -162,7 +162,7 @@ extern int scontrol_update_step (int argc, char **argv)
 	}
 
 	if (slurm_update_step(&step_msg))
-		return slurm_get_errno ();
+		return errno;
 	else
 		return 0;
 }

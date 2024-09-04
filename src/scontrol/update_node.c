@@ -58,7 +58,7 @@ extern int scontrol_create_node(int argc, char **argv)
 	if (slurm_create_node(&node_msg)) {
 		exit_code = 1;
 		slurm_perror("Error creating node(s)");
-		return slurm_get_errno();
+		return errno;
 	}
 	xfree(node_line);
 
@@ -285,7 +285,7 @@ scontrol_update_node (int argc, char **argv)
 done:	xfree(reason_str);
 	if (rc) {
 		exit_code = 1;
-		return slurm_get_errno ();
+		return errno;
 	} else
 		return 0;
 }
@@ -389,7 +389,7 @@ scontrol_update_front_end (int argc, char **argv)
 done:	xfree(reason_str);
 	if (rc) {
 		exit_code = 1;
-		return slurm_get_errno ();
+		return errno;
 	} else
 		return 0;
 }

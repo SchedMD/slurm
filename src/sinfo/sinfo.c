@@ -306,7 +306,7 @@ static int _load_resv(reserve_info_msg_t **reserv_pptr, bool clear_old)
 						     &new_resv_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_reservation_info_msg(old_resv_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_resv_ptr = old_resv_ptr;
 		}
@@ -351,7 +351,7 @@ static list_t *_query_server(bool clear_old)
 						   &new_part_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(old_part_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_part_ptr = old_part_ptr;
 		}
@@ -382,7 +382,7 @@ static list_t *_query_server(bool clear_old)
 		}
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg(old_node_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_node_ptr = old_node_ptr;
 		}
