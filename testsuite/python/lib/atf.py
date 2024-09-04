@@ -33,7 +33,7 @@ import importlib
 ##############################################################################
 
 default_command_timeout = 60
-default_polling_timeout = 15
+default_polling_timeout = 45
 default_sql_cmd_timeout = 120
 
 PERIODIC_TIMEOUT = 30
