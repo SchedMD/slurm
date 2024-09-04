@@ -3529,7 +3529,13 @@ skip_start:
 		if ((i = node_space[i].next) == 0)
 			break;
 	}
+	for (i = node_space_recs; i <= bf_node_space_size; i++) {
+		if (!node_space[i].avail_bitmap)
+			break;
+		FREE_NULL_BITMAP(node_space[i].avail_bitmap);
+	}
 	xfree(node_space);
+
 	FREE_NULL_LIST(job_queue);
 	FREE_NULL_LIST(nodes_used_list);
 	xfree(nodes_used);
@@ -3756,8 +3762,8 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			node_space[i].begin_time = start_time;
 			node_space[i].end_time = node_space[j].end_time;
 			node_space[j].end_time = start_time;
-			node_space[i].avail_bitmap =
-				bit_copy(node_space[j].avail_bitmap);
+			COPY_BITMAP(node_space[i].avail_bitmap,
+				    node_space[j].avail_bitmap);
 			node_space[i].licenses =
 				bf_licenses_copy(node_space[j].licenses);
 			node_space[i].next = node_space[j].next;
@@ -3783,8 +3789,8 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			node_space[i].begin_time = end_reserve;
 			node_space[i].end_time = node_space[j].end_time;
 			node_space[j].end_time = end_reserve;
-			node_space[i].avail_bitmap =
-				bit_copy(node_space[j].avail_bitmap);
+			COPY_BITMAP(node_space[i].avail_bitmap,
+				    node_space[j].avail_bitmap);
 			node_space[i].licenses =
 				bf_licenses_copy(node_space[j].licenses);
 			node_space[i].next = node_space[j].next;
@@ -3825,6 +3831,17 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 		}
 		node_space[i].end_time = node_space[j].end_time;
 		node_space[i].next = node_space[j].next;
+		if (node_space[j].avail_bitmap) {
+			for (i = *node_space_recs;
+			     i <= bf_node_space_size; i++) {
+				if (!node_space[i].avail_bitmap) {
+					node_space[i].avail_bitmap =
+						node_space[j].avail_bitmap;
+					node_space[j].avail_bitmap = NULL;
+					break;
+				}
+			}
+		}
 		FREE_NULL_BITMAP(node_space[j].avail_bitmap);
 		FREE_NULL_BF_LICENSES(node_space[j].licenses);
 		break;
