@@ -425,17 +425,17 @@ extern int add_connection(conmgr_con_type_t type,
 	/* verify FD is valid and still open */
 	if (has_in && fstat(input_fd, &in_stat)) {
 		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, input_fd);
-		return SLURM_ERROR;
+		return SLURM_COMMUNICATIONS_INVALID_INCOMING_FD;
 	}
 	if (has_out && fstat(output_fd, &out_stat)) {
 		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, output_fd);
-		return SLURM_ERROR;
+		return SLURM_COMMUNICATIONS_INVALID_OUTGOING_FD;
 	}
 
 	if (!has_in && !has_out) {
 		log_flag(CONMGR, "%s: refusing connection without input or output fd",
 			 __func__);
-		return SLURM_ERROR;
+		return SLURM_COMMUNICATIONS_INVALID_FD;
 	}
 
 	is_socket = (has_in && S_ISSOCK(in_stat.st_mode)) ||
