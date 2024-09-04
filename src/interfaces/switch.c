@@ -417,6 +417,8 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *stepinfo,
 extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
+	int i;
+	uint32_t plugin_id;
 	dynamic_plugin_data_t *stepinfo_ptr = NULL;
 
 	xassert(switch_context_cnt >= 0);
@@ -424,7 +426,6 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 	if (!switch_context_cnt) {
 		/* Remove when 23.02 is no longer supported. */
 		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION) {
-			uint32_t plugin_id;
 			safe_unpack32(&plugin_id, buffer);
 			*stepinfo = NULL;
 		}
@@ -434,22 +435,21 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 	stepinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*stepinfo = stepinfo_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		int i;
-		uint32_t plugin_id;
-		safe_unpack32(&plugin_id, buffer);
-		for (i = 0; i < switch_context_cnt; i++) {
-			if (*(ops[i].plugin_id) == plugin_id) {
-				stepinfo_ptr->plugin_id = i;
-				break;
-			}
-		}
-		if (i >= switch_context_cnt) {
-			error("we don't have switch plugin type %u", plugin_id);
-			goto unpack_error;
-		}
-	} else
+	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION)
 		goto unpack_error;
+
+	safe_unpack32(&plugin_id, buffer);
+	for (i = 0; i < switch_context_cnt; i++) {
+		if (*(ops[i].plugin_id) == plugin_id) {
+			stepinfo_ptr->plugin_id = i;
+			break;
+		}
+	}
+
+	if (i >= switch_context_cnt) {
+		error("we don't have switch plugin type %u", plugin_id);
+		goto unpack_error;
+	}
 
 	if ((*(ops[stepinfo_ptr->plugin_id].unpack_stepinfo))
 	     ((switch_stepinfo_t **) &stepinfo_ptr->data, buffer,
