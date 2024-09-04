@@ -2832,8 +2832,13 @@ TRY_LATER:
 					xfree(job_ptr->state_desc);
 					job_ptr->state_reason = WAIT_LICENSES;
 				}
-			} else
+			} else {
+				int next = node_space[j].next;
+				if ((later_start == 0) && next &&
+				    node_space[next].next)
+					later_start = node_space[next].end_time;
 				break;
+			}
 			if ((j = node_space[j].next) == 0)
 				break;
 		}
