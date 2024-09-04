@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
     fields.
  -- data_parser/v0.0.41 - Avoid dumping "Infinity" for NO_VAL tagged "number"
     fields.
+ -- slurmctld - Fix a potential leak while updating a reservation.
 
 * Changes in Slurm 24.05.3
 ==========================

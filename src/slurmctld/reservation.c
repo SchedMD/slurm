@@ -1395,6 +1395,8 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 		xfree(resv_ptr->accounts);
 		if (accounts[0] != '\0')
 			resv_ptr->accounts = xstrdup(accounts);
+		for (i = 0; i < resv_ptr->account_cnt; i++)
+			xfree(resv_ptr->account_list[i]);
 		xfree(resv_ptr->account_list);
 		resv_ptr->account_list = ac_list;
 		resv_ptr->account_cnt  = ac_cnt;
