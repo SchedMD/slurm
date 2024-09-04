@@ -447,6 +447,9 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 			 __func__, fd, slurm_strerror(rc));
 		return;
 	}
+
+	log_flag(CONMGR, "%s: [%s->fd:%d] registered newly accepted connection",
+		 __func__, con->name, fd);
 }
 
 /*
