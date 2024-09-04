@@ -436,7 +436,7 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	/* hand over FD for normal processing */
-	if (!(rc = add_connection(con->type, con, fd, fd, (conmgr_events_t) {
+	if ((rc = add_connection(con->type, con, fd, fd, (conmgr_events_t) {
 				.on_connection = con->events.on_connection,
 				.on_finish = con->events.on_finish,
 				.on_msg = con->events.on_msg,
