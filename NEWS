@@ -127,6 +127,7 @@ documents those changes that are of interest to users and administrators.
     in the same QOS.
  -- Prevent backfill from planning jobs that use overlapping resources for the
     same time slot if the job's time limit is less than bf_resolution.
+ -- Fix memory leak when requesting typed gres and --[cpus|mem]-per-gpu.
 
 * Changes in Slurm 24.05.3
 ==========================
