@@ -136,6 +136,19 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 		prec->tres_data[TRES_ARRAY_VMEM].size_read =
 			cgroup_acct_data->total_vmem;
 
+		/*
+		 * Peak memory usage seen for the task.
+		 * memory.peak (Cgroup v2)
+		 * memory.max_usage_in_bytes (Cgroup v1)
+		 *
+		 * It will be set to INFINITE64 in case we don't get this
+		 * metric.
+		 * E.g. in RHEL8 memory.peak interface does not exist.
+		 *
+		 * We overload the size_write variable to store this metric.
+		 */
+		prec->tres_data[TRES_ARRAY_MEM].size_write =
+			cgroup_acct_data->memory_peak;
 	}
 
 	xfree(cgroup_acct_data);

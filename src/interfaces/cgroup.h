@@ -150,6 +150,7 @@ typedef struct {
 } cgroup_oom_t;
 
 typedef struct {
+	uint64_t memory_peak;
 	uint64_t usec;
 	uint64_t ssec;
 	uint64_t total_rss;
