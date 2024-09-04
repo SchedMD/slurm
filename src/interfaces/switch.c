@@ -431,7 +431,7 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
 	int i;
-	uint32_t length = 0, plugin_id;
+	uint32_t length = 0, switch_stepinfo_end = 0, plugin_id;
 	dynamic_plugin_data_t *stepinfo_ptr = NULL;
 
 	xassert(switch_context_cnt >= 0);
@@ -439,10 +439,15 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION)
 		goto unpack_error;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION)
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpack32(&length, buffer);
+		switch_stepinfo_end = get_buf_offset(buffer) + length;
+		if (!length || !switch_context_cnt)
+			goto skip_buf;
 
-	if (!switch_context_cnt) {
+		if (remaining_buf(buffer) < length)
+			return SLURM_ERROR;
+	} else if (!switch_context_cnt) {
 		/* Remove when 23.02 is no longer supported. */
 		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION) {
 			safe_unpack32(&plugin_id, buffer);
@@ -463,6 +468,14 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 	}
 
 	if (i >= switch_context_cnt) {
+		if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+			/*
+			 * We were sent a plugin that we don't know how to
+			 * handle so skip it if possible.
+			 */
+			debug("we don't have switch plugin type %u", plugin_id);
+			goto skip_buf;
+		}
 		error("we don't have switch plugin type %u", plugin_id);
 		goto unpack_error;
 	}
@@ -482,7 +495,14 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 		*stepinfo = _create_dynamic_plugin_data(switch_context_default);
 	}
 
+	return SLURM_SUCCESS;
 
+skip_buf:
+	if (length) {
+		debug("%s: skipping switch_stepinfo data (%u)",
+		      __func__, length);
+		set_buf_offset(buffer, switch_stepinfo_end);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
