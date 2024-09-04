@@ -21638,6 +21638,51 @@ fi
 
 
 
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_bswap64" >&5
+printf %s "checking for __builtin_bswap64... " >&6; }
+if test ${ax_cv_have___builtin_bswap64+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+            __builtin_bswap64(0)
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ax_cv_have___builtin_bswap64=yes
+else $as_nop
+  ax_cv_have___builtin_bswap64=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ax_cv_have___builtin_bswap64" >&5
+printf "%s\n" "$ax_cv_have___builtin_bswap64" >&6; }
+
+    if test yes = $ax_cv_have___builtin_bswap64
+then :
+
+printf "%s\n" "#define HAVE___BUILTIN_BSWAP64 1" >>confdefs.h
+
+fi
+
+
+
+
+
+
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_clzll" >&5
 printf %s "checking for __builtin_clzll... " >&6; }
 if test ${ax_cv_have___builtin_clzll+y}

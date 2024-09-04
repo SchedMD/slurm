@@ -346,6 +346,9 @@
 /* Define if you have __progname. */
 #undef HAVE__PROGNAME
 
+/* Define to 1 if the system has the `__builtin_bswap64' built-in function */
+#undef HAVE___BUILTIN_BSWAP64
+
 /* Define to 1 if the system has the `__builtin_clzll' built-in function */
 #undef HAVE___BUILTIN_CLZLL
 
