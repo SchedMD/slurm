@@ -1,7 +1,8 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import argparse, re
+import argparse
+import re
 from collections import OrderedDict
 
 
@@ -16,7 +17,7 @@ def get_args(argv=None):
         dest="include",
         default="unit, expect, python",
         type=str,
-        help="include these tests",
+        # help="include these tests",
     )
 
     parser.add_argument(
@@ -107,8 +108,8 @@ def test_parser(value, unit_tests_list):
     # Split the user's option string into a series of tuples that represent
     # each test, and add each tuple to the destination array.
     if len(value) > 0:
-        test_re = re.compile("(?=test)?(\d+|\*)(\.|_)(\d+|\*).*$")
-        splitter = re.compile("[,\s]+")
+        test_re = re.compile(r"(?=test)?(\d+|\*)(\.|_)(\d+|\*).*$")
+        splitter = re.compile(r"[,\s]+")
         val = splitter.split(value)
 
         for v in val:
@@ -119,18 +120,18 @@ def test_parser(value, unit_tests_list):
 
                 # expect tests:
                 if m[1] == ".":
-                    if not "expect" in chosen_suites:
+                    if "expect" not in chosen_suites:
                         result["expect"].append(f"expect/test{''.join(m)}")
 
                 # python tests:
                 if m[1] == "_":
-                    if not "python" in chosen_suites:
+                    if "python" not in chosen_suites:
                         result["python"].append(f"python/tests/test_{''.join(m)}.py")
 
                 value = value.replace(v, "")
 
     # Handle individual unit tests that may exists
-    if len(value) > 0 and not "slurm_unit" in chosen_suites:
+    if len(value) > 0 and "slurm_unit" not in chosen_suites:
         val = splitter.split(value)
 
         for unit_test_name in val:

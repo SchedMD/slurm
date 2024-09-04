@@ -16,6 +16,6 @@ def setup():
 def test_weights():
     """Verify sprio --weights has the correct output"""
 
-    output = atf.run_command_output(f"sprio --weights", fatal=True)
+    output = atf.run_command_output("sprio --weights", fatal=True)
     assert re.search(r"JOBID\s+PARTITION\s+PRIORITY\s+SITE", output) is not None
     assert re.search(r"Weights.*\d+", output) is not None

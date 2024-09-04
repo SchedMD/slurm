@@ -5,7 +5,8 @@ import atf
 import pytest
 import re
 import os
-from pathlib import Path
+
+# from pathlib import Path
 
 ERROR_TYPE = "error"
 OUTPUT_TYPE = "output"
@@ -287,8 +288,8 @@ done""",
 
     # Test %a puts the Job array ID in the file name
     array_size = 2
-    file_out = fpc.create_file_path(f"A.%a")
-    file_err = fpc.create_file_path(f"A.%a", ERROR_TYPE)
+    file_out = fpc.create_file_path("A.%a")
+    file_err = fpc.create_file_path("A.%a", ERROR_TYPE)
     file_in = tmp_path / "file_in.A.a.input"
     atf.make_bash_script(file_in, f"""srun -O --output={file_out} hostname""")
     os.chmod(file_in, 0o0777)

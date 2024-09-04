@@ -3,7 +3,8 @@
 ############################################################################
 import atf
 import pytest
-import os
+
+# import os
 
 total_cores = 0
 available_cores = 0
@@ -28,7 +29,7 @@ def setup():
 def node_name():
     global total_cores, available_cores, allowed_cpu_list
 
-    node = atf.run_job_nodes(f"--cpu-bind=core -N1 -n2 true")[0]
+    node = atf.run_job_nodes("--cpu-bind=core -N1 -n2 true")[0]
     sockets = atf.get_node_parameter(node, "Sockets")
     cores_per_socket = atf.get_node_parameter(node, "CoresPerSocket")
 

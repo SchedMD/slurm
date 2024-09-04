@@ -1,7 +1,10 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import os, shlex, subprocess, sys, time
+import shlex
+import subprocess
+import sys
+import time
 
 # SchedMD
 from utils.log import (

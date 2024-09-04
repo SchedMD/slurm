@@ -3,7 +3,8 @@
 ############################################################################
 import atf
 import pytest
-import re
+
+# import re
 
 dw_wlm_cli_client = f"{atf.properties['slurm-sbin-dir']}/dw_wlm_cli"
 dwstat_client = f"{atf.properties['slurm-sbin-dir']}/dwstat"
@@ -77,19 +78,19 @@ def setup():
 def test_create_and_use_burst_buffer(tmp_path):
     """Create and use burst buffer"""
 
-    bb_use_script = str(tmp_path / f"bb_use.sh")
-    bb_use_output = str(tmp_path / f"bb_use.out")
+    bb_use_script = str(tmp_path / "bb_use.sh")
+    bb_use_output = str(tmp_path / "bb_use.out")
     atf.make_bash_script(
         bb_use_script,
-        f"""#DW persistentdw name=test_buffer
+        """#DW persistentdw name=test_buffer
 scontrol show burst
 """,
     )
-    bb_create_script = str(tmp_path / f"bb_create.sh")
-    bb_create_output = str(tmp_path / f"bb_create.out")
+    bb_create_script = str(tmp_path / "bb_create.sh")
+    bb_create_output = str(tmp_path / "bb_create.out")
     atf.make_bash_script(
         bb_create_script,
-        f"""#BB create_persistent name=test_buffer capacity=48 access=striped type=scratch
+        """#BB create_persistent name=test_buffer capacity=48 access=striped type=scratch
 scontrol show burst
 """,
     )
@@ -129,11 +130,11 @@ scontrol show burst
 def test_remove_burst_buffer(tmp_path):
     """Delete burst buffer"""
 
-    bb_delete_script = str(tmp_path / f"bb_delete.sh")
-    bb_delete_output = str(tmp_path / f"bb_delete.out")
+    bb_delete_script = str(tmp_path / "bb_delete.sh")
+    bb_delete_output = str(tmp_path / "bb_delete.out")
     atf.make_bash_script(
         bb_delete_script,
-        f"""#BB destroy_persistent name=test_buffer
+        """#BB destroy_persistent name=test_buffer
 scontrol show burst
 """,
     )

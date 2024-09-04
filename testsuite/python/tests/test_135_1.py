@@ -31,7 +31,7 @@ exit 0
     atf.set_config_parameter("TaskEpilog", task_epilog)
 
     # Verify task epilog ran by checking for the file creation
-    atf.run_job(f"-t1 true", fatal=True)
+    atf.run_job("-t1 true", fatal=True)
     assert atf.wait_for_file(touched_file), f"File ({touched_file}) was not created"
 
     # Verify that the child processes of the task epilog have been killed off

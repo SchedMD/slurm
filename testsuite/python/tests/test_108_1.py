@@ -3,8 +3,9 @@
 ############################################################################
 import atf
 import pytest
-import re
-import time
+
+# import re
+# import time
 
 
 @pytest.fixture(scope="module", autouse=True)

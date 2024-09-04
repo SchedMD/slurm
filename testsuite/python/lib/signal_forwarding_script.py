@@ -1,4 +1,6 @@
-import signal, os, time
+# import os
+import signal
+import time
 
 
 def receiveSignal(signalNumber, frame):

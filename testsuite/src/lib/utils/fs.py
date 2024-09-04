@@ -1,13 +1,19 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import os, pathlib, re, shutil, sys
+import os
+import pathlib
+import re
+import shutil
+import sys
+
+from cmds import run_cmd
 
 # SchedMD
 from utils.log import (
     log,
     log_header,
-    log_new_line,
+    # log_new_line,
 )
 
 
@@ -19,7 +25,7 @@ def cat(filename):
 
 def cp_files_by_re(src_dir, dest_dir, pattern):
     for filename in os.listdir(src_dir):
-        filepath = os.join(source_dir, filename)
+        filepath = os.path.join(src_dir, filename)
         if os.path.isfile(filepath):
             if re.search(rf"{pattern}", filepath):
                 shutil.copy(filepath, dest_dir)
@@ -27,8 +33,8 @@ def cp_files_by_re(src_dir, dest_dir, pattern):
 
 def cp_expect_logs(src_dir, dest_dir):
     log(f"Copying expect test logs from {src_dir} to {dest_dir}")
-    cp_files_by_re(src_dir, dest_dir, "testrun-results.json")
-    cp_files_by_re(src_dir, dest_dir, "test\D+\.log.*")
+    cp_files_by_re(src_dir, dest_dir, r"testrun-results.json")
+    cp_files_by_re(src_dir, dest_dir, r"test\D+\.log.*")
 
 
 def create_dir(dir):

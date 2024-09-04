@@ -4,8 +4,9 @@
 import atf
 import pytest
 import os
-import re
-import time
+
+# import re
+# import time
 import pwd
 
 max_mem_cpu = 2
@@ -94,7 +95,7 @@ def setup():
 def setup_account():
     test_user = pwd.getpwuid(os.getuid())[0]
     atf.run_command(
-        f"sacctmgr -vi add account good_account",
+        "sacctmgr -vi add account good_account",
         user=atf.properties["slurm-user"],
         fatal=True,
     )
@@ -104,7 +105,7 @@ def setup_account():
         fatal=True,
     )
     atf.run_command(
-        f"sacctmgr -vi add qos good_qos,bad_qos",
+        "sacctmgr -vi add qos good_qos,bad_qos",
         user=atf.properties["slurm-user"],
         fatal=True,
     )

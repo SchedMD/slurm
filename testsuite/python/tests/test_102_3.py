@@ -3,7 +3,8 @@
 ############################################################################
 import atf
 import pytest
-import re
+
+# import re
 import json
 
 
@@ -17,23 +18,23 @@ def setup():
 def test_json():
     """Verify sacctmgr --json has the correct format"""
 
-    output = atf.run_command_output(f"sacctmgr --json show accounts", fatal=True)
+    output = atf.run_command_output("sacctmgr --json show accounts", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"sacctmgr --json show associations", fatal=True)
+    output = atf.run_command_output("sacctmgr --json show associations", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"sacctmgr --json show clusters", fatal=True)
+    output = atf.run_command_output("sacctmgr --json show clusters", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"sacctmgr --json show qos", fatal=True)
+    output = atf.run_command_output("sacctmgr --json show qos", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"sacctmgr --json show wckeys", fatal=True)
+    output = atf.run_command_output("sacctmgr --json show wckeys", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"sacctmgr --json show users", fatal=True)
+    output = atf.run_command_output("sacctmgr --json show users", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"sacctmgr --json show tres", fatal=True)
+    output = atf.run_command_output("sacctmgr --json show tres", fatal=True)
     assert json.loads(output) is not None

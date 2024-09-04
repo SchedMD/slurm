@@ -2,8 +2,9 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 import atf
+
+# import os
 import pytest
-import os
 import re
 
 

@@ -29,7 +29,7 @@ def queued_job(default_partition):
         if default_partition in node_partitions and node_dict["State"] == "IDLE":
             total_cpus += node_dict["CPUTot"]
 
-    running_job_id = atf.submit_job_sbatch(
+    atf.submit_job_sbatch(
         f'--output=/dev/null --error=/dev/null -n {total_cpus} --exclusive --wrap="sleep 600"',
         fatal=True,
     )

@@ -7,7 +7,8 @@ import pathlib
 import re
 import signal
 import time
-import logging
+
+# import logging
 
 
 # Setup
@@ -52,5 +53,5 @@ def test_signal_forwarding():
                 received_all_sigs = True
                 break
     assert (
-        received_all_sigs == True
+        received_all_sigs is True
     ), f"Did not receive all signals. Signal {signal.SIGUSR1.value} count: {user1_count}, Signal {signal.SIGUSR2.value} count: {user2_count}"

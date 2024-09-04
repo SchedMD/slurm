@@ -5,7 +5,8 @@ import atf
 import os
 import pytest
 import shutil
-import time
+
+# import time
 
 epilog_timeout = 10
 
@@ -38,7 +39,7 @@ exit 0
     atf.set_config_parameter("Epilog", epilog)
 
     # Verify that the epilog ran by checking for the file creation
-    job_id = atf.submit_job_srun(f"-t1 true", fatal=True)
+    job_id = atf.submit_job_srun("-t1 true", fatal=True)
     assert atf.wait_for_file(touched_file), f"File ({touched_file}) was not created"
 
     # Verify that the job enters the completing state

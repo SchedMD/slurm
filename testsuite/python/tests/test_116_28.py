@@ -23,7 +23,7 @@ class Test_mem_mincpus_tmp:
         # Submit a job with valid mincpus requirement
         min_cpus = 1
         exit_code = atf.run_command_exit(f"srun --mincpus={min_cpus} true")
-        assert exit_code == 0, f"srun did not run with a valid value for --mincpus"
+        assert exit_code == 0, "srun did not run with a valid value for --mincpus"
 
     def test_mem(self):
         """Verify node configuration specification --mem option"""
@@ -49,4 +49,4 @@ class Test_mem_mincpus_tmp:
         # Submit a job with valid tmp requirement
         tmp_disk = 0
         exit_code = atf.run_command_exit(f"srun --tmp={tmp_disk} true")
-        assert exit_code == 0, f"srun did not run with a valid value for --tmp"
+        assert exit_code == 0, "srun did not run with a valid value for --tmp"

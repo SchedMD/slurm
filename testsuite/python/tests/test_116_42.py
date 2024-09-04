@@ -23,7 +23,7 @@ def test_threads():
     output = atf.run_command_output(
         f"srun -N{node_count} -l --threads=1 printenv SLURMD_NODENAME"
     )
-    assert re.search(r"0: (\S+)", output) is not None, f"Did not get hostname of task 0"
+    assert re.search(r"0: (\S+)", output) is not None, "Did not get hostname of task 0"
 
     task_num = int(atf.get_config_parameter("MaxTasksPerNode"))
     if task_num <= 32:

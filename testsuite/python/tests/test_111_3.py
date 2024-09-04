@@ -3,7 +3,8 @@
 ############################################################################
 import atf
 import pytest
-import re
+
+# import re
 import json
 
 
@@ -16,5 +17,5 @@ def setup():
 def test_json():
     """Verify sinfo --json has the correct format"""
 
-    output = atf.run_command_output(f"sinfo --json", fatal=True)
+    output = atf.run_command_output("sinfo --json", fatal=True)
     assert json.loads(output) is not None

@@ -42,7 +42,7 @@ def test_input_output_taskid():
     assert re.search(
         rf"{step_id} tasks 0-{task_id - 1},{task_id + 1}-{task_num - 1}: exited",
         child_out,
-    ), f"Other tasks failed to exit"
+    ), "Other tasks failed to exit"
 
     # Test --output={task_id} sends only {task_id}'s output to stdout
     stdout = atf.run_command_output(f"srun --output={task_id} -O -N1 -n{task_num} env")

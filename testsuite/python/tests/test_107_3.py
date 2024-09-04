@@ -186,7 +186,7 @@ def submit_job(job_list, opt, opt_val, expected_state):
     test_opt = ""
     other_opts = ""
 
-    if opt != None:
+    if opt is not None:
         test_opt = f"--{opt}={opt_val}"
     if expected_state == "PENDING":
         other_opts = "--hold"
@@ -202,8 +202,8 @@ def submit_job(job_list, opt, opt_val, expected_state):
 
 
 def submit_het_job(job_list, opt, opt_val_1, opt_val_2, expected_state):
-    het_opts_1 = f"-n1 -c1 --mem=10"
-    het_opts_2 = f"-n1 -c1 --mem=10"
+    het_opts_1 = "-n1 -c1 --mem=10"
+    het_opts_2 = "-n1 -c1 --mem=10"
     other_opts = ""
 
     if expected_state == "PENDING":
@@ -409,9 +409,9 @@ def test_filter(
 
     matching_jobs = []
     mismatching_jobs = []
-    matching_hetjobs = []
-    mismatching_hetjobs = []
-    het_jobs = []
+    # matching_hetjobs = []
+    # mismatching_hetjobs = []
+    # het_jobs = []
 
     logging.info(
         f"Test scancel --ctld --{scancel_opt}={scancel_val}, sbatch --{sbatch_opt}, job match:{sbatch_match_val}, job mismatch:{sbatch_mismatch_val}"
@@ -427,7 +427,7 @@ def test_filter(
 
     # Just to show jobs in the logs
     atf.run_command_output(
-        f"echo ''; squeue --Format=JobId,Account,Name,Nodelist,Partition,Qos,Reservation,State,UserName,WCKey"
+        "echo ''; squeue --Format=JobId,Account,Name,Nodelist,Partition,Qos,Reservation,State,UserName,WCKey"
     )
 
     # Cancel jobs with --scancel_opt=scancel:val
@@ -500,7 +500,7 @@ def test_filter_hetjobs(
 
     # Just to show jobs in the logs
     atf.run_command_output(
-        f"echo ''; squeue --Format=JobId,Account,Name,Nodelist,Partition,Qos,Reservation,State,UserName,WCKey"
+        "echo ''; squeue --Format=JobId,Account,Name,Nodelist,Partition,Qos,Reservation,State,UserName,WCKey"
     )
 
     # Cancel jobs with --scancel_opt=scancel:val
@@ -559,7 +559,7 @@ def test_signal_job_ids():
     wait_for_jobs(other_jobs, "CANCELLED", 35)
 
     # Sanity check that there are no running jobs
-    output = atf.run_command_output(f"squeue --noheader")
+    output = atf.run_command_output("squeue --noheader")
     assert len(output) == 0
 
 

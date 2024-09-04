@@ -75,10 +75,10 @@ def test_out_of_srun_ports():
     atf.wait_for_step(job_id1, 0, fatal=True)
     atf.wait_for_step(job_id2, 0, fatal=True)
 
-    result = atf.run_command(f"srun -t1 -N1 sleep 1", xfail=True)
+    result = atf.run_command("srun -t1 -N1 sleep 1", xfail=True)
     assert (
         result["exit_code"] != 0
-    ), f"srun should fail because running job shoulb be using the whole SrunPortRange"
+    ), "srun should fail because running job shoulb be using the whole SrunPortRange"
 
     regex = rf"all ports in range .{srun_port_lower}, {srun_port_upper}. exhausted"
     assert (

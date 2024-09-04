@@ -1,7 +1,8 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import os, sqlite3 as db
+# import os
+import sqlite3 as db
 
 # SchedMD
 from utils.fs import (
@@ -42,7 +43,7 @@ def execute_query(db_name, sql, values=None):
 
 def execute_many(db_name, sql, values=None):
     conn = get_connection(db_name)
-    conn.executemany(sql, values)
+    conn.executemany(sql, values or [])
     conn.commit()
     conn.close()
 
@@ -86,7 +87,7 @@ def create_seed_data_from_file(seed_file):
             if line[0] != "#":
                 # Expected tuple format:
                 # (name, test_suite, duration, status)
-                li = list(line.split(","))
+                li: list[str | int] = list(line.split(","))
                 li[3] = ""  # Set status to ""
                 # Append a base run_id=0 as last field (its not exported in seed data)
                 li.append(0)

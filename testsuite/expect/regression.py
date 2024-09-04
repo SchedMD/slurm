@@ -155,7 +155,7 @@ def main(argv=None):
         testlog_name = f"test{test_id}.log"
         try:
             os.remove(testlog_name + ".failed")
-        except:
+        except Exception:
             pass
         testlog = open(testlog_name, "w+")
 
@@ -202,9 +202,9 @@ def main(argv=None):
             test_output = testlog.read()
 
             sections = [s for s in test_output.split("=" * 78 + "\n")]
-            header = sections[1]
+            # header = sections[1]
             body = sections[2]
-            footer = "".join(sections[3:])
+            # footer = "".join(sections[3:])
 
             fatals = re.findall(
                 r"(?ms)\[[^\]]+\][ \[]+Fatal[ \]:]+(.*?) \(fail[^\)]+\)$", body
@@ -345,7 +345,7 @@ def test_parser(option, opt_str, value, parser):
         setattr(parser.values, option.dest, [])
 
     # Get a pointer to the option's destination array.
-    l = getattr(parser.values, option.dest)
+    dest = getattr(parser.values, option.dest)
 
     # Split the user's option string into a series of tuples that represent
     # each test, and add each tuple to the destination array.
@@ -362,7 +362,7 @@ def test_parser(option, opt_str, value, parser):
         minor = m.group(4)
         if minor != "*":
             minor = int(minor)
-        l.append((major, minor))
+        dest.append((major, minor))
 
 
 if __name__ == "__main__":

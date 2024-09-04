@@ -75,4 +75,4 @@ def test_bad_constraint(f1, f2):
 
     assert (
         "Invalid feature specification" in output
-    ), f"Verify that 'Invalid feature specification' message"
+    ), "Verify that 'Invalid feature specification' message"

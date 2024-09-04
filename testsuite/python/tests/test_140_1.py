@@ -3,7 +3,8 @@
 ############################################################################
 
 import atf
-from os import stat
+
+# from os import stat
 import pytest
 import re
 
@@ -128,7 +129,7 @@ def test_env_vars(name, command):
 
         # Get the SLURM_TRES_PER_TASK value
         env_value = re.search(
-            rf"SLURM_TRES_PER_TASK=(\S*)",
+            r"SLURM_TRES_PER_TASK=(\S*)",
             atf.run_command_output(f"cat {info_file}", fatal=True),
         ).group(1)
 
@@ -193,7 +194,7 @@ def test_step_tres_legal(name):
 
         # Get the SLURM_TRES_PER_TASK value
         env_value = re.search(
-            rf"SLURM_TRES_PER_TASK=(\S*)",
+            r"SLURM_TRES_PER_TASK=(\S*)",
             atf.run_command_output(f"cat {env_file}", fatal=True),
         ).group(1)
 
@@ -262,8 +263,8 @@ def test_accounting(name, command):
         # Retrieve job, which includes TRES accounting statistics
         show = atf.run_command_output(f"scontrol show job {job_id}", fatal=True)
 
-        reqTRES = re.search(rf"ReqTRES=(\S*)", show).group(1)
-        allocTRES = re.search(rf"AllocTRES=(\S*)", show).group(1)
+        reqTRES = re.search(r"ReqTRES=(\S*)", show).group(1)
+        allocTRES = re.search(r"AllocTRES=(\S*)", show).group(1)
 
         # Assert accounting TRES records match with what we requested
         assert (
@@ -311,7 +312,7 @@ def test_tres_leaking(name, command):
 # Make sure no commas between TRES doesn't work
 @pytest.mark.parametrize("name", tres_dict.keys())
 def test_no_commas(name):
-    env_file = atf.module_tmp_path / (name + "_env")
+    # env_file = atf.module_tmp_path / (name + "_env")
     tres_params = [f"{tres_dict[name]['param']}{tres_dict[name]['num']}"]
 
     # If this tres works without a count, test without a count as well
@@ -348,7 +349,7 @@ def test_no_commas(name):
 # Make sure having extra colons and/or nothing between colons doesn't work
 @pytest.mark.parametrize("name", tres_dict.keys())
 def test_extra_colons(name):
-    env_file = atf.module_tmp_path / (name + "_env")
+    # env_file = atf.module_tmp_path / (name + "_env")
 
     # Replace each slash with two
     tres_params = [
@@ -379,7 +380,7 @@ def test_extra_colons(name):
         ), f"Job created with extra colons in --tres-per-task running: sbatch --tres-per-task={tres_param} -n1 --wrap 'hostname'"
         # Test sbatch's step. Note sbatch is given legal --tres-per-task value
         job_id = atf.submit_job_sbatch(
-            f"--tres-per-task={tres_param.replace('//', '/').replace('::',':')} -n1 "
+            f"--tres-per-task={tres_param.replace('//', '/').replace('::', ':')} -n1 "
             f"--wrap 'srun {job_param}'",
             fatal=True,
         )

@@ -121,7 +121,7 @@ def test_cloud_state_cycle():
 
     # Schedule a job to cloud node's partition, transitioning node to ALLOCATED
     # and POWERING_UP state
-    job_id = atf.submit_job_sbatch(f"-p cloud1 --wrap 'srun hostname'", fatal=True)
+    job_id = atf.submit_job_sbatch("-p cloud1 --wrap 'srun hostname'", fatal=True)
     atf.wait_for_node_state(f"{node_prefix}1", "ALLOCATED", timeout=5, fatal=True)
     atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", fatal=True)
     assert "CONFIGURING" == atf.get_job_parameter(
@@ -189,7 +189,7 @@ def test_resume_timeout():
 
     # Schedule a job to cloud node's partition, transitioning node to ALLOCATED
     # and POWERING_UP state
-    job_id = atf.submit_job_sbatch(f"-p cloud1 --wrap 'srun hostname'", fatal=True)
+    job_id = atf.submit_job_sbatch("-p cloud1 --wrap 'srun hostname'", fatal=True)
     atf.wait_for_node_state(f"{node_prefix}1", "ALLOCATED", timeout=5, fatal=True)
     atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", fatal=True)
     assert "CONFIGURING" == atf.get_job_parameter(
@@ -322,7 +322,7 @@ def test_scontrol_power_down_asap():
     )
 
     # Submit job in preparation for POWER_DOWN_ASAP
-    job_id = atf.submit_job_sbatch(f"-p cloud1 --wrap 'srun sleep 5'", fatal=True)
+    job_id = atf.submit_job_sbatch("-p cloud1 --wrap 'srun sleep 5'", fatal=True)
     atf.wait_for_job_state(
         job_id, "RUNNING", timeout=atf.PERIODIC_TIMEOUT + 5, fatal=True
     )
@@ -399,7 +399,7 @@ def test_scontrol_power_down_force_and_resume():
     )
 
     # Submit job in preparation for POWER_DOWN_FORCE to cancel
-    job_id = atf.submit_job_sbatch(f"-p cloud1 --wrap 'srun sleep 300'", fatal=True)
+    job_id = atf.submit_job_sbatch("-p cloud1 --wrap 'srun sleep 300'", fatal=True)
     atf.wait_for_job_state(
         job_id, "RUNNING", timeout=atf.PERIODIC_TIMEOUT + 5, fatal=True
     )
@@ -459,9 +459,7 @@ def test_node_features():
 
     # Schedule a job to cloud node's partition, transitioning node to ALLOCATED
     # and POWERING_UP state
-    job_id = atf.submit_job_sbatch(
-        f"-p cloud1 -C f1 --wrap 'srun hostname'", fatal=True
-    )
+    job_id = atf.submit_job_sbatch("-p cloud1 -C f1 --wrap 'srun hostname'", fatal=True)
     atf.wait_for_node_state(f"{node_prefix}1", "ALLOCATED", timeout=5, fatal=True)
     atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", fatal=True)
     assert "CONFIGURING" == atf.get_job_parameter(
@@ -587,7 +585,7 @@ def test_power_down_on_idle():
     # Schedule a job to cloud node's partition, transitioning node to ALLOCATED
     # and POWERING_UP state
     job_id = atf.submit_job_sbatch(
-        f"-p powerdownonidle --wrap 'srun hostname'", fatal=True
+        "-p powerdownonidle --wrap 'srun hostname'", fatal=True
     )
     atf.wait_for_node_state(f"{node_prefix}1", "ALLOCATED", timeout=5, fatal=True)
     atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", fatal=True)
@@ -658,7 +656,7 @@ def test_scontrol_power_down_force():
 
     # Submit job, get it assigned to the cloud node, and make sure everything
     # goes well before cloud node enters POWERING_UP state
-    job_id = atf.submit_job_sbatch(f"-p cloud1 --wrap 'srun sleep 300'", fatal=True)
+    job_id = atf.submit_job_sbatch("-p cloud1 --wrap 'srun sleep 300'", fatal=True)
     atf.wait_for_node_state(
         f"{node_prefix}1", "ALLOCATED", timeout=5, poll_interval=0.1, fatal=True
     )

@@ -4,7 +4,6 @@
 import atf
 import os
 import pytest
-import shutil
 
 
 # Setup

@@ -62,7 +62,7 @@ def init_gpu_vars():
     node_count = nodes_with_gpus
     gpus_per_node = min_gpus_per_node
     gpu_count = gpus_per_node * node_count
-    sockets_per_node = min_sockets_per_node
+    # sockets_per_node = min_sockets_per_node
     if gpus_per_node % 2 == 0 and min_cpus_per_node > 1:
         task_count = node_count * 2
     else:

@@ -1,16 +1,20 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import inspect
+import _pytest
+
+# import inspect
 import logging
 import os
-import pathlib
-import pwd
+
+# import pwd
 import pytest
-import _pytest
 import re
-import shutil
+
+# import shutil
 import sys
+
+# from pathlib import Path
 
 sys.path.append(sys.path[0] + "/lib")
 import atf
@@ -51,7 +55,7 @@ def pytest_addoption(parser):
     )
 
 
-def color_log_level(level, **color_kwargs):
+def color_log_level(level: int, **color_kwargs):
     # Adapted from depricated py.io TerminalWriter source
     # https://py.readthedocs.io/en/latest/_modules/py/_io/terminalwriter.html
     _esctable = dict(
@@ -189,7 +193,7 @@ def module_teardown():
     failures = []
 
     if atf.properties["auto-config"]:
-        if atf.properties["slurm-started"] == True:
+        if atf.properties["slurm-started"] is True:
             # Cancel all jobs
             if not atf.cancel_all_jobs(quiet=True):
                 failures.append("Not all jobs were successfully cancelled")

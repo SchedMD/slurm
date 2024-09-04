@@ -14,7 +14,7 @@ def setup():
 def test_ping():
     """Verify sacctmgr ping works"""
 
-    output = atf.run_command_output(f"sacctmgr ping", fatal=True)
+    output = atf.run_command_output("sacctmgr ping", fatal=True)
 
     config_dict = atf.get_config(quiet=True)
 

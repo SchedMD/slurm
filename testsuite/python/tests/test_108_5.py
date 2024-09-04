@@ -3,7 +3,8 @@
 ############################################################################
 import atf
 import pytest
-import re
+
+# import re
 import json
 
 
@@ -16,26 +17,26 @@ def setup():
 def test_json():
     """Verify scontrol --json has the correct format"""
 
-    output = atf.run_command_output(f"scontrol show licenses --json", fatal=True)
+    output = atf.run_command_output("scontrol show licenses --json", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"scontrol ping --json", fatal=True)
+    output = atf.run_command_output("scontrol ping --json", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"scontrol show jobs --json", fatal=True)
+    output = atf.run_command_output("scontrol show jobs --json", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"scontrol show job --json", fatal=True)
+    output = atf.run_command_output("scontrol show job --json", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"scontrol show steps --json", fatal=True)
+    output = atf.run_command_output("scontrol show steps --json", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"scontrol show nodes --json", fatal=True)
+    output = atf.run_command_output("scontrol show nodes --json", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"scontrol show partitions --json", fatal=True)
+    output = atf.run_command_output("scontrol show partitions --json", fatal=True)
     assert json.loads(output) is not None
 
-    output = atf.run_command_output(f"scontrol show reservations --json", fatal=True)
+    output = atf.run_command_output("scontrol show reservations --json", fatal=True)
     assert json.loads(output) is not None

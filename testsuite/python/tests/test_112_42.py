@@ -1121,11 +1121,11 @@ def test_nodes(slurm):
     for node in resp.nodes:
         if "IDLE" in node.state:
             node_name = node.name
-            comment = node.comment
+            # comment = node.comment
             extra = node.extra
             feat = node.features
             actfeat = node.active_features
-            state = node.state
+            # state = node.state
             reason = node.reason
             reasonuid = node.reason_set_by_user
             break

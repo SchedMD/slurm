@@ -39,7 +39,7 @@ def test_hostfile():
 
     # Test pass 1
     output = atf.run_job_output(
-        f"-l --distribution=arbitrary printenv SLURMD_NODENAME",
+        "-l --distribution=arbitrary printenv SLURMD_NODENAME",
         env_vars=f"{HOSTFILE_ENV}={host_file}",
         fatal=True,
     )
@@ -60,7 +60,7 @@ def test_hostfile():
 
     # Test pass 2
     output = atf.run_job_output(
-        f"-l --distribution=arbitrary printenv SLURMD_NODENAME",
+        "-l --distribution=arbitrary printenv SLURMD_NODENAME",
         env_vars=f"{HOSTFILE_ENV}={host_file}",
         fatal=True,
     )

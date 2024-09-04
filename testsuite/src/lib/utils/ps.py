@@ -15,7 +15,7 @@ def get_pids_from_exe(exe_path, verbose=True) -> list:
         log(f"Retrieving pids from {exe_path}")
 
     # NOTE do we need a run_cmd_output?
-    pid_list = run_cmd(f"pidof {exe_path}").strip().split()
+    pid_list = run_cmd(f"pidof {exe_path}").stdout.strip().split()
     return pid_list
 
 

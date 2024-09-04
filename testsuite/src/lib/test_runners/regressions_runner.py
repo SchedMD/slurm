@@ -1,7 +1,8 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import os, re
+import os
+import re
 from time import perf_counter
 
 # SchedMD
@@ -9,17 +10,18 @@ from db.test_db import (
     insert_or_update_many,
 )
 from test_runners.runner_ui import (
-    color_state,
+    # color_state,
     print_status_line,
     print_test_line,
 )
-from utils.log import (
-    log_new_line,
-)
+
+# from utils.log import (
+#     # log_new_line,
+# )
 from utils.cmds import (
     perform,
     run_cmd,
-    run_cmd_or_exit,
+    # run_cmd_or_exit,
 )
 from utils.fs import (
     write_str_to_new_file,
@@ -35,7 +37,7 @@ def run_regressions_tests(
 
     total_tests = len(test_data_list)
     result_data_list = []
-    python_status_re = re.compile("=+\\n(PASSED|FAILED|SKIPPED|ERROR)")
+    python_status_re = re.compile(r"=+\\n(PASSED|FAILED|SKIPPED|ERROR)")
     msg = "Updating regressions test records"
     fails = []
 
@@ -164,7 +166,7 @@ def get_regressions_run_stats():
     return stats_dict
 
 
-def get_test_status(test_suite, output, status_re=""):
+def get_test_status(test_suite, output, status_re):
     status = "PASSED"
     if test_suite == "expect":
         if output.returncode != 0:
