@@ -102,6 +102,7 @@
 #include "src/stepmgr/srun_comm.h"
 
 #include "backfill.h"
+#include "oracle.h"
 
 #define BACKFILL_INTERVAL	30
 #define BACKFILL_RESOLUTION	60
@@ -130,7 +131,6 @@
 #define MAX_BF_MAX_JOB_USER            MAX_BF_MAX_JOB_TEST
 #define MAX_BF_MAX_JOB_USER_PART       MAX_BF_MAX_JOB_TEST
 #define MAX_BF_MAX_JOB_PART            MAX_BF_MAX_JOB_TEST
-
 
 typedef struct {
 	node_space_map_t *node_space;
@@ -2074,6 +2074,8 @@ static void _attempt_backfill(void)
 	resv_exc_t resv_exc = { 0 };
 	will_run_data_t will_run_data = { 0 };
 	bool overlap_tested = false;
+	bf_slot_t slots[MAX_ORACLE_DEPTH];
+	int used_slot = 0;
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock = {
 		.qos = READ_LOCK,
@@ -2181,6 +2183,14 @@ static void _attempt_backfill(void)
 
 	/* Ignore nodes that have been set as available during this cycle. */
 	bit_clear_all(bf_ignore_node_bitmap);
+
+	if (bf_topopt_enable) {
+		for (int i = 0; i < MAX_ORACLE_DEPTH; i++) {
+			slots[i].job_bitmap = bit_alloc(node_record_count);
+			slots[i].job_mask = bit_alloc(node_record_count);
+			slots[i].cluster_bitmap = bit_alloc(node_record_count);
+		}
+	}
 
 	while (1) {
 		uint32_t bf_job_priority, prio_reserve;
@@ -2615,6 +2625,7 @@ next_task:
 			time_limit = job_ptr->time_limit = 1;
 
 		later_start = now;
+		used_slot = 0;
 
 		if (assoc_limit_stop) {
 			if (qos_blocked_until > later_start) {
@@ -3043,6 +3054,18 @@ TRY_LATER:
 			overlap_tested = true;
 		} else
 			overlap_tested = false;
+
+		if (!job_no_reserve && bf_topopt_enable) {
+			if (oracle(job_ptr, avail_bitmap, later_start,
+				   &time_limit, &boot_time, slots, &used_slot,
+				   node_space)) {
+				log_flag(BACKFILL, "%pJ used_slot:%u later_start %ld",
+					 job_ptr, used_slot, later_start);
+				goto TRY_LATER;
+			}
+			_set_slot_time(job_ptr, time_limit, boot_time,
+				       &start_time, &end_reserve);
+		}
 
 		/*
 		 * avail_bitmap at this point contains a bitmap of nodes
@@ -3596,6 +3619,13 @@ skip_start:
 	FREE_NULL_LIST(nodes_used_list);
 	xfree(nodes_used);
 
+	if (bf_topopt_enable) {
+		for (int i = 0; i < MAX_ORACLE_DEPTH; i++) {
+			FREE_NULL_BITMAP(slots[i].job_bitmap);
+			FREE_NULL_BITMAP(slots[i].job_mask);
+			FREE_NULL_BITMAP(slots[i].cluster_bitmap);
+		}
+	}
 	gettimeofday(&bf_time2, NULL);
 	_do_diag_stats(&bf_time1, &bf_time2, node_space_recs);
 	if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
