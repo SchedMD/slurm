@@ -47,10 +47,10 @@ extern "C" {
 #include <errno.h>
 
 /* set errno to the specified value - then return -1 */
-#define slurm_seterrno_ret(errnum) do { \
-	slurm_seterrno(errnum);         \
-	return (errnum ? -1 : 0);       \
-	} while (0)
+#define slurm_seterrno_ret(errnum) do {	\
+	errno = errnum;			\
+	return (errnum ? -1 : 0);	\
+} while (0)
 
 /* general return codes */
 #define SLURM_SUCCESS   0
