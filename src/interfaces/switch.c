@@ -386,9 +386,15 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *stepinfo,
 				   buf_t *buffer, uint16_t protocol_version)
 {
 	void *data = NULL;
-	uint32_t plugin_id;
+	uint32_t length_position = 0, start = 0, end = 0, plugin_id;
 
 	xassert(switch_context_cnt >= 0);
+
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		length_position = get_buf_offset(buffer);
+		pack32(0, buffer);
+		start = get_buf_offset(buffer);
+	}
 
 	if (!switch_context_cnt) {
 		/* Remove when 23.02 is no longer supported. */
@@ -412,19 +418,29 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *stepinfo,
 	}
 
 	(*(ops[plugin_id].pack_stepinfo))(data, buffer, protocol_version);
+
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		end = get_buf_offset(buffer);
+		set_buf_offset(buffer, length_position);
+		pack32(end - start, buffer);
+		set_buf_offset(buffer, end);
+	}
 }
 
 extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
 	int i;
-	uint32_t plugin_id;
+	uint32_t length = 0, plugin_id;
 	dynamic_plugin_data_t *stepinfo_ptr = NULL;
 
 	xassert(switch_context_cnt >= 0);
 
 	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION)
 		goto unpack_error;
+
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION)
+		safe_unpack32(&length, buffer);
 
 	if (!switch_context_cnt) {
 		/* Remove when 23.02 is no longer supported. */
