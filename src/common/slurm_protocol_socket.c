@@ -570,7 +570,6 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 			    IPPROTO_TCP);
 		if (fd < 0) {
 			error("Error creating slurm stream socket: %m");
-			slurm_seterrno(errno);
 			return SLURM_ERROR;
 		}
 
