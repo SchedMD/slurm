@@ -2151,6 +2151,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 {
 	char *cpu_stat = NULL, *memory_stat = NULL, *memory_current = NULL;
+	char *memory_peak = NULL;
 	char *ptr;
 	size_t tmp_sz = 0;
 	cgroup_acct_t *stats = NULL;
@@ -2201,6 +2202,21 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	}
 
 	/*
+	 * RHEL8 and other OSes with old kernels do not necessarily have this
+	 * interface.
+	 */
+	if (common_cgroup_get_param(&task_cg_info->task_cg,
+				    "memory.peak",
+				    &memory_peak,
+				    &tmp_sz) != SLURM_SUCCESS) {
+		if (task_id == task_special_id)
+			log_flag(CGROUP, "Cannot read task_special memory.peak interface, does your OS support it?");
+		else
+			log_flag(CGROUP, "Cannot read task %d memory.peak interface, does your OS support it?",
+				 task_id);
+	}
+
+	/*
 	 * Initialize values. A NO_VAL64 will indicate the caller that something
 	 * happened here. Values that aren't set here are returned as 0.
 	 */
@@ -2209,6 +2225,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	stats->ssec = NO_VAL64;
 	stats->total_rss = NO_VAL64;
 	stats->total_pgmajfault = NO_VAL64;
+	stats->memory_peak = INFINITE64; /* As required in common_jag.c */
 
 	if (cpu_stat) {
 		ptr = xstrstr(cpu_stat, "user_usec");
@@ -2243,6 +2260,12 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 				   &stats->total_pgmajfault) != 1))
 			log_flag(CGROUP, "Cannot parse pgmajfault field in memory.stat file");
 		xfree(memory_stat);
+	}
+
+	if (memory_peak) {
+		if (sscanf(memory_peak, "%"PRIu64, &stats->memory_peak) != 1)
+			error("Cannot parse memory.peak file");
+		xfree(memory_peak);
 	}
 
 	return stats;
