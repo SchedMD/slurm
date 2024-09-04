@@ -370,7 +370,7 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 	slurm_addr_t addr = {0};
 	socklen_t addrlen = sizeof(addr);
-	int fd;
+	int fd, rc;
 	const char *unix_path = NULL;
 
 	if (con->input_fd == -1) {
@@ -436,15 +436,15 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	/* hand over FD for normal processing */
-	if (!add_connection(con->type, con, fd, fd, (conmgr_events_t) {
+	if (!(rc = add_connection(con->type, con, fd, fd, (conmgr_events_t) {
 				.on_connection = con->events.on_connection,
 				.on_finish = con->events.on_finish,
 				.on_msg = con->events.on_msg,
 				.on_data = con->events.on_data,
 			    }, (conmgr_con_flags_t) con->flags,
-			   &addr, addrlen, false, unix_path, con->new_arg)) {
-		log_flag(CONMGR, "%s: [fd:%d] unable to a register new connection",
-			 __func__, fd);
+			   &addr, addrlen, false, unix_path, con->new_arg))) {
+		log_flag(CONMGR, "%s: [fd:%d] unable to a register new connection: %s",
+			 __func__, fd, slurm_strerror(rc));
 		return;
 	}
 }
