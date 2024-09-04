@@ -2780,7 +2780,7 @@ TRY_LATER:
 						orig_start_time);
 		}
 
-		tmp_bitmap = bit_copy(avail_bitmap);
+		COPY_BITMAP(tmp_bitmap, avail_bitmap);
 		for (j = 0; ; ) {
 			if ((node_space[j].end_time > start_res) &&
 			     node_space[j].next && (later_start == 0)) {
@@ -2825,7 +2825,6 @@ TRY_LATER:
 			if ((j = node_space[j].next) == 0)
 				break;
 		}
-		FREE_NULL_BITMAP(tmp_bitmap);
 		if (resv_end && (++resv_end < window_end) &&
 		    ((later_start == 0) || (resv_end < later_start))) {
 			later_start = resv_end;
@@ -3522,6 +3521,7 @@ skip_start:
 	FREE_NULL_BITMAP(avail_bitmap);
 	reservation_delete_resv_exc_parts(&resv_exc);
 	FREE_NULL_BITMAP(resv_bitmap);
+	FREE_NULL_BITMAP(tmp_bitmap);
 
 	for (i = 0; ; ) {
 		FREE_NULL_BITMAP(node_space[i].avail_bitmap);
