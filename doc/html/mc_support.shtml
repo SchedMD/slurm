@@ -229,7 +229,7 @@ processors at a finer granularity. Users are able to request a specific number
 of nodes, sockets,&nbsp; cores, and threads:</p>
 
 <PRE>
--B --extra-node-info=<i>S[:C[:T]]</i>            Expands to:
+-B, --extra-node-info=<i>S[:C[:T]]</i>            Expands to:
   --sockets-per-node=<i>S</i>   number of sockets per node to allocate
   --cores-per-socket=<i>C</i>   number of cores per socket to allocate
   --threads-per-core=<i>T</i>   number of threads per core to allocate

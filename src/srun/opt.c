@@ -1645,7 +1645,7 @@ static void _help(void)
 "      --sockets-per-node=S    number of sockets per node to allocate\n"
 "      --cores-per-socket=C    number of cores per socket to allocate\n"
 "      --threads-per-core=T    number of threads per core to allocate\n"
-"  -B  --extra-node-info=S[:C[:T]]  combine request of sockets per node,\n"
+"  -B, --extra-node-info=S[:C[:T]]  combine request of sockets per node,\n"
 "                              cores per socket and threads per core.\n"
 "                              Specify an asterisk (*) as a placeholder,\n"
 "                              a minimum value, or a min-max range.\n"
