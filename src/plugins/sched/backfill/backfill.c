@@ -2044,6 +2044,7 @@ static void _attempt_backfill(void)
 	bool tmp_preempt_in_progress = false;
 	bitstr_t *tmp_bitmap = NULL;
 	bool state_changed_break = false, nodes_planned = false;
+	bitstr_t *next_bitmap = NULL, *current_bitmap = NULL;
 	resv_exc_t resv_exc = { 0 };
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock = {
@@ -2785,9 +2786,8 @@ TRY_LATER:
 			if ((node_space[j].end_time > start_res) &&
 			     node_space[j].next && (later_start == 0)) {
 				int tmp = node_space[j].next;
-				bitstr_t *next_bitmap = bit_copy(tmp_bitmap);
-				bitstr_t *current_bitmap =
-					bit_copy(avail_bitmap);
+				COPY_BITMAP(next_bitmap, tmp_bitmap);
+				COPY_BITMAP(current_bitmap, avail_bitmap);
 				bit_and(next_bitmap,
 					node_space[tmp].avail_bitmap);
 				bit_and(current_bitmap,
@@ -2805,8 +2805,6 @@ TRY_LATER:
 				 */
 				if (!bit_super_set(next_bitmap, current_bitmap))
 					later_start = node_space[j].end_time;
-				FREE_NULL_BITMAP(next_bitmap);
-				FREE_NULL_BITMAP(current_bitmap);
 			}
 			if (node_space[j].end_time <= start_res)
 				;
@@ -3522,6 +3520,8 @@ skip_start:
 	reservation_delete_resv_exc_parts(&resv_exc);
 	FREE_NULL_BITMAP(resv_bitmap);
 	FREE_NULL_BITMAP(tmp_bitmap);
+	FREE_NULL_BITMAP(next_bitmap);
+	FREE_NULL_BITMAP(current_bitmap);
 
 	for (i = 0; ; ) {
 		FREE_NULL_BITMAP(node_space[i].avail_bitmap);
