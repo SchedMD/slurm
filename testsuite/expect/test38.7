@@ -40,7 +40,7 @@ proc run_pmix_het_job {comp_count} {
 
 	# since het jobs are started by the backfill scheduler, they
 	# may need a bit more time to start
-	set timeout [expr $max_job_delay * 2]
+	set timeout [expr $max_job_delay * 3]
 	set het_comps ""
 	set sep ""
 	for {set i 1} {$i <= $comp_count} {incr i} {
