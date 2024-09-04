@@ -187,7 +187,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 		if (timeleft <= 0) {
 			debug("%s at %d of %zu, timeout",
 			      __func__, tot_bytes_sent, size);
-			slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
+			errno = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
 			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
@@ -199,7 +199,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 				debug("%s at %d of %zu, poll error: %s",
 				      __func__, tot_bytes_sent, size,
 				      strerror(errno));
-				slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
+				errno = SLURM_COMMUNICATIONS_SEND_ERROR;
 				tot_bytes_sent = SLURM_ERROR;
 				break;
 			}
@@ -222,7 +222,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 				debug("%s: Socket POLLERR: %s",
 				      __func__, slurm_strerror(e));
 
-			slurm_seterrno(e);
+			errno = e;
 			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
@@ -235,7 +235,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 			else
 				debug2("%s: Socket no longer there: %s",
 				       __func__, slurm_strerror(so_err));
-			slurm_seterrno(so_err);
+			errno = so_err;
 			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
@@ -258,7 +258,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 				usleep(10000);
 				continue;
 			}
- 			slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
+			errno = SLURM_COMMUNICATIONS_SEND_ERROR;
 			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
@@ -299,7 +299,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 		int slurm_err = errno;
 		if (fcntl(fd, F_SETFL, fd_flags) < 0)
 			error("%s: fcntl(F_SETFL) error: %m", __func__);
-		slurm_seterrno(slurm_err);
+		errno = slurm_err;
 	}
 
 	return tot_bytes_sent;
@@ -404,7 +404,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 		if (timeleft <= 0) {
 			debug("%s at %d of %zu, timeout", __func__, recvlen,
 			      size);
-			slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
+			errno = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
 			recvlen = SLURM_ERROR;
 			goto done;
 		}
@@ -415,8 +415,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 			else {
 				debug("%s at %d of %zu, poll error: %m",
 				      __func__, recvlen, size);
- 				slurm_seterrno(
-					SLURM_COMMUNICATIONS_RECEIVE_ERROR);
+				errno = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
  				recvlen = SLURM_ERROR;
   				goto done;
 			}
@@ -432,7 +431,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 				debug("%s: Socket POLLERR: %s",
 				      __func__, slurm_strerror(e));
 
-			slurm_seterrno(e);
+			errno = e;
 			recvlen = SLURM_ERROR;
 			goto done;
 		}
@@ -443,11 +442,11 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 			if ((rc = fd_get_socket_error(fd, &so_err))) {
 				debug2("%s: Socket no longer there: fd_get_socket_error failed: %s",
 				       __func__, slurm_strerror(rc));
-				slurm_seterrno(rc);
+				errno = rc;
 			} else {
 				debug2("%s: Socket no longer there: %s",
 				       __func__, slurm_strerror(so_err));
-				slurm_seterrno(so_err);
+				errno = so_err;
 			}
 			recvlen = SLURM_ERROR;
 			goto done;
@@ -467,8 +466,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 			} else {
 				debug("%s at %d of %zu, recv error: %m",
 				      __func__, recvlen, size);
-				slurm_seterrno(
-					SLURM_COMMUNICATIONS_RECEIVE_ERROR);
+				errno = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
 				recvlen = SLURM_ERROR;
 				goto done;
 			}
@@ -476,7 +474,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 		if (rc == 0) {
 			debug("%s at %d of %zu, recv zero bytes",
 			      __func__, recvlen, size);
-			slurm_seterrno(SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT);
+			errno = SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT;
 			recvlen = SLURM_ERROR;
 			goto done;
 		}
@@ -490,7 +488,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 		int slurm_err = errno;
 		if (fcntl(fd, F_SETFL, fd_flags) < 0)
 			error("%s: fcntl(F_SETFL) error: %m", __func__);
-		slurm_seterrno(slurm_err);
+		errno = slurm_err;
 	}
 
 	return recvlen;
@@ -586,7 +584,7 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 		rc = _slurm_connect(fd, (struct sockaddr const *)addr,
 				    sizeof(*addr));
 		/* always set errno as upstream callers expect it */
-		slurm_seterrno(rc);
+		errno = rc;
 
 		if (!rc) {
 			/* success */
@@ -595,7 +593,7 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 
 		if (((rc != ECONNREFUSED) && (rc != ETIMEDOUT)) ||
 		    (!retry) || (retry_cnt >= PORT_RETRIES)) {
-			slurm_seterrno(rc);
+			errno = rc;
 			goto error;
 		}
 

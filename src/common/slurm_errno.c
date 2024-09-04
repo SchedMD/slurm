@@ -39,7 +39,6 @@
 
 /*  This implementation relies on "overloading" the libc errno by
  *  partitioning its domain into system (<1000) and Slurm (>=1000) values.
- *  Slurm API functions should call slurm_seterrno() to set errno to a value.
  *  API users should call slurm_strerror() to convert all errno values to
  *  their description strings.
  */
@@ -726,18 +725,6 @@ char *slurm_strerror(int errnum)
 		return strerror(errnum);
 	else
 		return "Unknown negative error number";
-}
-
-/*
- * Set errno to the specified value.
- */
-void slurm_seterrno(int errnum)
-{
-#ifdef __set_errno
-	__set_errno(errnum);
-#else
-	errno = errnum;
-#endif
 }
 
 /*

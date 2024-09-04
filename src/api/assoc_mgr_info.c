@@ -78,7 +78,7 @@ slurm_load_assoc_mgr_info(assoc_mgr_info_request_msg_t *req,
 			cc = ((return_code_msg_t *)msg_reply.data)->return_code;
 			slurm_free_return_code_msg(msg_reply.data);
 			if (cc) /* slurm_seterrno_ret() is a macro ... sigh */
-				slurm_seterrno(cc);
+				errno = cc;
 			return -1;
 		default:
 			slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);

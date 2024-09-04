@@ -255,11 +255,11 @@ extern config_response_msg_t *fetch_config_from_controller(uint32_t flags)
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		slurm_free_return_code_msg(resp_msg.data);
-		slurm_seterrno(rc);
+		errno = rc;
 		return NULL;
 		break;
 	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		errno = SLURM_UNEXPECTED_MSG_ERROR;
 		return NULL;
 		break;
 	}

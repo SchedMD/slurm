@@ -168,7 +168,7 @@ static xppid_t **_build_hashtbl(void)
 
 	hashtbl = (xppid_t **)xmalloc(HASH_LEN * sizeof(xppid_t *));
 
-	slurm_seterrno(0);
+	errno = 0;
 	rbuf = xmalloc(4096);
 	while ((de = readdir(dir)) != NULL) {
 		num = de->d_name;

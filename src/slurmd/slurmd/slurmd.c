@@ -792,10 +792,10 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg->data)->return_code;
 		if (rc)
-			slurm_seterrno(rc);
+			errno = rc;
 		break;
 	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		errno = SLURM_UNEXPECTED_MSG_ERROR;
 		break;
 	}
 

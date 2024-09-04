@@ -1148,7 +1148,7 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 			if (!isdigit(*tmp_job_ptr) &&
 			    (*tmp_job_ptr != '_') && (*tmp_job_ptr != '+')) {
 				exit_code = 1;
-				slurm_seterrno(ESLURM_INVALID_JOB_ID);
+				errno = ESLURM_INVALID_JOB_ID;
 				if (quiet_flag != 1)
 					slurm_perror("scontrol_print_job error");
 				return;

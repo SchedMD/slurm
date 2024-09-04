@@ -265,7 +265,7 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *step)
 	if (step->mem_bind_type & MEM_BIND_MAP) {
 		long int my_node = 0;
 		char *end_ptr = NULL;
-		slurm_seterrno(0);
+		errno = 0;
 		if (xstrncmp(mstr, "0x", 2) == 0) {
 			my_node = strtol(&(mstr[2]), &end_ptr, 16);
 		} else {

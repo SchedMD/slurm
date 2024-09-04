@@ -643,13 +643,13 @@ static void _remap_slurmctld_errno(void)
 	int err = errno;
 
 	if (err == SLURM_COMMUNICATIONS_CONNECTION_ERROR)
-		slurm_seterrno(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
+		errno = SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR;
 	else if (err ==  SLURM_COMMUNICATIONS_SEND_ERROR)
-		slurm_seterrno(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
+		errno = SLURMCTLD_COMMUNICATIONS_SEND_ERROR;
 	else if (err == SLURM_COMMUNICATIONS_RECEIVE_ERROR)
-		slurm_seterrno(SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR);
+		errno = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
 	else if (err == SLURM_COMMUNICATIONS_SHUTDOWN_ERROR)
-		slurm_seterrno(SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR);
+		errno = SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR;
 }
 
 /**********************************************************************\
@@ -963,7 +963,7 @@ skip_auth:
 total_return:
 	destroy_forward(&header.forward);
 
-	slurm_seterrno(rc);
+	errno = rc;
 	if (rc != SLURM_SUCCESS) {
 		msg->auth_cred = NULL;
 		/* peer may have not been resolved already */
@@ -1069,7 +1069,7 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 		FREE_NULL_BUFFER(buffer);
 
 endit:
-	slurm_seterrno(rc);
+	errno = rc;
 
 	/*
 	 * We just set errno, we need to return SLURM_ERROR if not SLURM_SUCCESS
@@ -1700,7 +1700,7 @@ skip_auth:
 total_return:
 	destroy_forward(&header.forward);
 
-	slurm_seterrno(rc);
+	errno = rc;
 	if (rc != SLURM_SUCCESS) {
 		msg->msg_type = RESPONSE_FORWARD_FAILED;
 		msg->auth_cred = NULL;

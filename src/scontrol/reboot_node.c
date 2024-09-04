@@ -78,7 +78,7 @@ extern int scontrol_reboot_nodes(char *node_list, bool asap,
 	if (conf->reboot_program == NULL) {
 		error("RebootProgram isn't defined");
 		slurm_conf_unlock();
-		slurm_seterrno(SLURM_ERROR);
+		errno = SLURM_ERROR;
 		return SLURM_ERROR;
 	}
 	slurm_conf_unlock();

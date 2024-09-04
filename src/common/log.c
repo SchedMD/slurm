@@ -1463,7 +1463,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		int orig_errno = errno;
 		xlogfmtcat(&msgbuf, "%s%s%s", log->prefix, pfx, buf);
 		syslog(priority, "%.500s", msgbuf);
-		slurm_seterrno(orig_errno);
+		errno = orig_errno;
 
 		xfree(msgbuf);
 	}

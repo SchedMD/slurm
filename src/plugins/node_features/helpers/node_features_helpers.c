@@ -415,7 +415,7 @@ static int _handle_config_features(plugin_feature_t **features, int count)
 		     tok = strtok_r(NULL, ",", &saveptr)) {
 
 			if (!_is_feature_valid(tok)) {
-				slurm_seterrno(ESLURM_INVALID_FEATURE);
+				errno = ESLURM_INVALID_FEATURE;
 				xfree(tmp_name);
 				return SLURM_ERROR;
 			}

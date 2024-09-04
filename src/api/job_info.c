@@ -280,7 +280,7 @@ _load_cluster_jobs(slurm_msg_t *req_msg, job_info_msg_t **job_info_msg_pptr,
 		break;
 	}
 	if (rc)
-		slurm_seterrno(rc);
+		errno = rc;
 
 	return rc;
 }
@@ -880,7 +880,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 			}
 		}
 		if (jobid == 0) {
-			slurm_seterrno(ESLURM_INVALID_JOB_ID);
+			errno = ESLURM_INVALID_JOB_ID;
 			return SLURM_ERROR;
 		}
 	}
@@ -1069,7 +1069,7 @@ _load_cluster_job_prio(slurm_msg_t *req_msg,
 		break;
 	}
 	if (rc)
-		slurm_seterrno(rc);
+		errno = rc;
 
 	return rc;
 }

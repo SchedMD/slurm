@@ -1262,7 +1262,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		} else {
 			error("%s: User %u is NOT authorized to run a job outside of an allocation",
 			      __func__, auth_uid);
-			slurm_seterrno(ESLURM_ACCESS_DENIED);
+			errno = ESLURM_ACCESS_DENIED;
 			return SLURM_ERROR;
 		}
 	}

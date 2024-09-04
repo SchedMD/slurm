@@ -5205,7 +5205,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (s_p_get_string(&temp_str, "SlurmctldPort", hashtbl)) {
 		char *end_ptr = NULL;
 		long port_long;
-		slurm_seterrno(0);
+		errno = 0;
 		port_long = strtol(temp_str, &end_ptr, 10);
 		if ((port_long == LONG_MIN) || (port_long == LONG_MAX) ||
 		    (port_long <= 0) || errno) {

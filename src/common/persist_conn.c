@@ -892,7 +892,7 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 					error("%s: persistent connection %d experienced an error: %s",
 					      __func__, persist_conn->fd,
 					      strerror(err));
-				slurm_seterrno(err);
+				errno = err;
 			}
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();

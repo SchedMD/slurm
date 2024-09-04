@@ -376,7 +376,7 @@ extern int cred_revoke(uint32_t jobid, time_t time, time_t start_time)
 			debug("job %u requeued, but started no tasks", jobid);
 			j->expiration = (time_t) MAX_TIME;
 		} else {
-			slurm_seterrno(EEXIST);
+			errno = EEXIST;
 			goto error;
 		}
 	}
@@ -417,12 +417,12 @@ extern int cred_begin_expiration(uint32_t jobid)
 	_clear_expired_job_states();
 
 	if (!(j = _find_job_state(jobid))) {
-		slurm_seterrno(ESRCH);
+		errno = ESRCH;
 		goto error;
 	}
 
 	if (j->expiration < (time_t) MAX_TIME) {
-		slurm_seterrno(EEXIST);
+		errno = EEXIST;
 		goto error;
 	}
 
@@ -520,12 +520,12 @@ extern bool cred_cache_valid(slurm_cred_t *cred)
 	cred_handle_reissue(cred, true);
 
 	if (_credential_revoked(cred)) {
-		slurm_seterrno(ESLURMD_CREDENTIAL_REVOKED);
+		errno = ESLURMD_CREDENTIAL_REVOKED;
 		goto error;
 	}
 
 	if (_credential_replayed(cred)) {
-		slurm_seterrno(ESLURMD_CREDENTIAL_REPLAYED);
+		errno = ESLURMD_CREDENTIAL_REPLAYED;
 		goto error;
 	}
 

@@ -1058,12 +1058,12 @@ static int _persist_fed_job_lock_bool(slurmdb_cluster_rec_t *conn,
 	case RESPONSE_SLURM_RC:
 		if ((rc = slurm_get_return_code(resp_msg.msg_type,
 						resp_msg.data))) {
-			slurm_seterrno(rc);
+			errno = rc;
 			rc = SLURM_ERROR;
 		}
 		break;
 	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		errno = SLURM_UNEXPECTED_MSG_ERROR;
 		rc = SLURM_ERROR;
 		break;
 	}

@@ -530,12 +530,12 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 			eol = strchr(buf, '\n');
 			if (eol)
 				eol[0] = '\0';
-			slurm_seterrno(saved_errno);
+			errno = saved_errno;
 			error("execve(): bad interpreter(%s): %m", buf+2);
 			_exit(errno);
 		}
 	}
-	slurm_seterrno(saved_errno);
+	errno = saved_errno;
 	error("execve(): %s: %m", task->argv[0]);
 	_exit(errno);
 }

@@ -133,7 +133,7 @@ extern int proctrack_p_signal  ( uint64_t id, int signal )
 	} else {
 		return killpg(pid, signal);
 	}
-	slurm_seterrno(ESRCH);
+	errno = ESRCH;
 	return SLURM_ERROR;
 }
 
@@ -170,7 +170,7 @@ proctrack_p_wait(uint64_t cont_id)
 	time_t start = time(NULL);
 
 	if (cont_id == 0 || cont_id == 1) {
-		slurm_seterrno(EINVAL);
+		errno = EINVAL;
 		return SLURM_ERROR;
 	}
 

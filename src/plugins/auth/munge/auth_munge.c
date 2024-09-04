@@ -246,7 +246,7 @@ again:
 		error("Munge encode failed: %s", munge_ctx_strerror(ctx));
 		xfree(cred);
 		cred = NULL;
-		slurm_seterrno(ESLURM_AUTH_CRED_INVALID);
+		errno = ESLURM_AUTH_CRED_INVALID;
 	} else if ((bad_cred_test > 0) && cred->m_str) {
 		/*
 		 * Avoid changing the trailing ':' character, or any of the
@@ -297,7 +297,7 @@ int auth_p_verify(auth_credential_t *c, char *opts)
 	char *socket;
 
 	if (!c) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -354,7 +354,7 @@ char *auth_p_get_host(auth_credential_t *cred)
 		 * the calling path did not verify the credential first.
 		 */
 		xassert(!cred);
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -409,7 +409,7 @@ extern int auth_p_get_data(auth_credential_t *cred, char **data, uint32_t *len)
 		 * the calling path did not verify the credential first.
 		 */
 		xassert(!cred);
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -429,7 +429,7 @@ extern int auth_p_get_data(auth_credential_t *cred, char **data, uint32_t *len)
 extern void *auth_p_get_identity(auth_credential_t *cred)
 {
 	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -443,7 +443,7 @@ extern void *auth_p_get_identity(auth_credential_t *cred)
 int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
 {
 	if (!cred || !buf) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -469,7 +469,7 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 	auth_credential_t *cred = NULL;
 
 	if (!buf) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -490,7 +490,7 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 	return cred;
 
 unpack_error:
-	slurm_seterrno(ESLURM_AUTH_UNPACK);
+	errno = ESLURM_AUTH_UNPACK;
 	auth_p_destroy(cred);
 	return NULL;
 }
@@ -555,7 +555,7 @@ again:
 			_print_cred(ctx);
 			if (err == EMUNGE_CRED_REWOUND)
 				error("Check for out of sync clocks");
-			slurm_seterrno(ESLURM_AUTH_CRED_INVALID);
+			errno = ESLURM_AUTH_CRED_INVALID;
 			goto done;
 #ifdef MULTIPLE_SLURMD
 		}

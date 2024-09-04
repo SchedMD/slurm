@@ -324,14 +324,14 @@ extern int acct_gather_check_acct_freq_task(uint64_t job_mem_lim,
 	if (task_freq == 0) {
 		error("Can't turn accounting frequency off.  "
 		      "We need it to monitor memory usage.");
-		slurm_seterrno(ESLURMD_INVALID_ACCT_FREQ);
+		errno = ESLURMD_INVALID_ACCT_FREQ;
 		return 1;
 	} else if (task_freq > acct_freq_task) {
 		error("Can't set frequency to %d, it is higher than %u.  "
 		      "We need it to be at least at this level to "
 		      "monitor memory usage.",
 		      task_freq, acct_freq_task);
-		slurm_seterrno(ESLURMD_INVALID_ACCT_FREQ);
+		errno = ESLURMD_INVALID_ACCT_FREQ;
 		return 1;
 	}
 

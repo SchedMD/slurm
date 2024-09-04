@@ -286,7 +286,7 @@ scontrol_hold(char *op, char *job_str)
 		} else {
 			exit_code = 1;
 			rc = ESLURM_INVALID_JOB_ID;
-			slurm_seterrno(rc);
+			errno = rc;
 			if (quiet_flag != 1) {
 				fprintf(stderr, "%s for job %s\n",
 					slurm_strerror(rc), job_str);
@@ -316,7 +316,7 @@ scontrol_hold(char *op, char *job_str)
 		if (!IS_JOB_PENDING(job_ptr)) {
 			if (job_ptr->array_task_id != NO_VAL)
 				continue;
-			slurm_seterrno(ESLURM_JOB_NOT_PENDING);
+			errno = ESLURM_JOB_NOT_PENDING;
 			rc = MAX(rc, ESLURM_JOB_NOT_PENDING);
 		}
 
@@ -418,7 +418,7 @@ scontrol_suspend(char *op, char *job_str)
 	} else {
 		exit_code = 1;
 		rc = ESLURM_INVALID_JOB_ID;
-		slurm_seterrno(rc);
+		errno = rc;
 		if (quiet_flag != 1) {
 			fprintf(stderr, "%s for job %s\n",
 				slurm_strerror(rc), job_str);
@@ -479,7 +479,7 @@ scontrol_requeue(uint32_t flags, char *job_str)
 	} else {
 		exit_code = 1;
 		rc = ESLURM_INVALID_JOB_ID;
-		slurm_seterrno(rc);
+		errno = rc;
 		if (quiet_flag != 1) {
 			fprintf(stderr, "%s for job %s\n",
 				slurm_strerror(rc), job_str);
@@ -528,7 +528,7 @@ scontrol_requeue_hold(uint32_t flags, char *job_str)
 	} else {
 		exit_code = 1;
 		rc = ESLURM_INVALID_JOB_ID;
-		slurm_seterrno(rc);
+		errno = rc;
 		if (quiet_flag != 1) {
 			fprintf(stderr, "%s for job %s\n",
 				slurm_strerror(rc), job_str);
@@ -1185,7 +1185,7 @@ extern int scontrol_update_job(int argc, char **argv)
 	} else if (job_msg.job_id_str) {
 		exit_code = 1;
 		rc = ESLURM_INVALID_JOB_ID;
-		slurm_seterrno(rc);
+		errno = rc;
 		if (quiet_flag != 1) {
 			fprintf(stderr, "%s for job %s\n",
 				slurm_strerror(rc), job_msg.job_id_str);

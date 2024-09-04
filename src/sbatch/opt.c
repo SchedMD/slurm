@@ -974,7 +974,7 @@ extern char *spank_get_job_env(const char *name)
 
 	if ((name == NULL) || (name[0] == '\0') ||
 	    (strchr(name, (int)'=') != NULL)) {
-		slurm_seterrno(EINVAL);
+		errno = EINVAL;
 		return NULL;
 	}
 
@@ -1000,7 +1000,7 @@ extern int   spank_set_job_env(const char *name, const char *value,
 
 	if ((name == NULL) || (name[0] == '\0') ||
 	    (strchr(name, (int)'=') != NULL)) {
-		slurm_seterrno(EINVAL);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -1034,7 +1034,7 @@ extern int   spank_unset_job_env(const char *name)
 
 	if ((name == NULL) || (name[0] == '\0') ||
 	    (strchr(name, (int)'=') != NULL)) {
-		slurm_seterrno(EINVAL);
+		errno = EINVAL;
 		return -1;
 	}
 

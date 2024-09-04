@@ -357,7 +357,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	iter = list_iterator_create(resp_msg_list);
 	while ((tmp_resp = (load_willrun_resp_struct_t *)list_next(iter))) {
 		if (!tmp_resp->willrun_resp_msg)
-			slurm_seterrno(tmp_resp->rc);
+			errno = tmp_resp->rc;
 		else if ((!earliest_resp) ||
 			 (tmp_resp->willrun_resp_msg->start_time <
 			  earliest_resp->start_time)) {

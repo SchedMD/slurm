@@ -1087,7 +1087,7 @@ extern list_t *acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1131,7 +1131,7 @@ extern list_t *acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1177,7 +1177,7 @@ extern list_t *acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1224,7 +1224,7 @@ extern list_t *acct_storage_p_modify_assocs(
 			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1270,7 +1270,7 @@ extern list_t *acct_storage_p_modify_federations(
 			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1324,7 +1324,7 @@ extern list_t *acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1368,7 +1368,7 @@ extern list_t *acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1412,7 +1412,7 @@ extern list_t *acct_storage_p_modify_res(void *db_conn, uint32_t uid,
 			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1456,7 +1456,7 @@ extern list_t *acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1541,7 +1541,7 @@ extern list_t *acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1588,7 +1588,7 @@ extern list_t *acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1631,7 +1631,7 @@ extern list_t *acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1676,7 +1676,7 @@ extern list_t *acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1722,7 +1722,7 @@ extern list_t *acct_storage_p_remove_assocs(
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1768,7 +1768,7 @@ extern list_t *acct_storage_p_remove_federations(
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1814,7 +1814,7 @@ extern list_t *acct_storage_p_remove_qos(
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1857,7 +1857,7 @@ extern list_t *acct_storage_p_remove_res(
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1900,7 +1900,7 @@ extern list_t *acct_storage_p_remove_wckeys(
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -1981,7 +1981,7 @@ extern list_t *acct_storage_p_get_users(void *db_conn, uid_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2023,7 +2023,7 @@ extern list_t *acct_storage_p_get_accts(void *db_conn, uid_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2066,7 +2066,7 @@ extern list_t *acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2109,7 +2109,7 @@ extern list_t *acct_storage_p_get_federations(void *db_conn, uid_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2149,7 +2149,7 @@ extern list_t *acct_storage_p_get_config(void *db_conn, char *config_name)
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2191,7 +2191,7 @@ extern list_t *acct_storage_p_get_tres(void *db_conn, uid_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2233,7 +2233,7 @@ extern list_t *acct_storage_p_get_assocs(
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2275,7 +2275,7 @@ extern list_t *acct_storage_p_get_events(void *db_conn, uint32_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2316,7 +2316,7 @@ extern list_t *acct_storage_p_get_instances(
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2358,7 +2358,7 @@ extern list_t *acct_storage_p_get_problems(
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2400,7 +2400,7 @@ extern list_t *acct_storage_p_get_qos(void *db_conn, uid_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2449,7 +2449,7 @@ extern list_t *acct_storage_p_get_res(void *db_conn, uid_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2498,7 +2498,7 @@ extern list_t *acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2548,7 +2548,7 @@ extern list_t *acct_storage_p_get_reservations(
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2597,7 +2597,7 @@ extern list_t *acct_storage_p_get_txn(void *db_conn, uid_t uid,
 			info("%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -2663,7 +2663,7 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 			info("%s", msg->comment);
 			(*my_list) = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -3272,7 +3272,7 @@ extern list_t *jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 			info("%s", msg->comment);
 			my_job_list = list_create(NULL);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -3284,7 +3284,7 @@ extern list_t *jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 		my_job_list = got_msg->my_list;
 		got_msg->my_list = NULL;
 		if (!my_job_list) {
-			slurm_seterrno(got_msg->return_code);
+			errno = got_msg->return_code;
 			error("%s", slurm_strerror(got_msg->return_code));
 		}
 		slurmdbd_free_list_msg(got_msg);
@@ -3323,7 +3323,7 @@ extern int jobacct_storage_p_archive(void *db_conn,
 		if (msg->rc == SLURM_SUCCESS)
 			info("%s", msg->comment);
 		else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -3360,7 +3360,7 @@ extern int jobacct_storage_p_archive_load(void *db_conn,
 		if (msg->rc == SLURM_SUCCESS)
 			info("%s", msg->comment);
 		else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
@@ -3445,7 +3445,7 @@ extern int acct_storage_p_get_stats(void *db_conn, slurmdb_stats_rec_t **stats)
 		if (msg->rc == SLURM_SUCCESS) {
 			info("RC:%d %s", msg->rc, msg->comment);
 		} else {
-			slurm_seterrno(msg->rc);
+			errno = msg->rc;
 			info("RC:%d %s", msg->rc, msg->comment);
 		}
 		rc = msg->rc;
