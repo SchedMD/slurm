@@ -154,6 +154,7 @@ def test_noreplace_flags(create_resv, delete_resv):
     assert not atf.repeat_command_until(
         "scontrol show reservationname resv1",
         lambda results: re.search(rf"(?:Nodes=)({node2})", results["stdout"]),
+        timeout=15,
         quiet=False,
     )
 
@@ -161,6 +162,7 @@ def test_noreplace_flags(create_resv, delete_resv):
     assert not atf.repeat_command_until(
         f"scontrol show node {node2}",
         lambda results: re.search(rf"(?:State=).+(\+RESERVED)", results["stdout"]),
+        timeout=15,
         quiet=False,
     )
 
