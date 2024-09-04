@@ -4487,6 +4487,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 	resv_desc_msg_t resv_desc;
 	int i, add_nodes, new_nodes, preserve_nodes, busy_nodes_needed;
 	bool log_it = true;
+	bool replaced = false;
 	resv_select_t resv_select = { 0 };
 
 	/* Identify nodes which can be preserved in this reservation */
@@ -4545,6 +4546,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		if (i == SLURM_SUCCESS) {
 			job_record_t *job_ptr = resv_desc.job_ptr;
 
+			replaced = true;
 			new_nodes = bit_set_count(resv_select.node_bitmap);
 			busy_nodes_needed = resv_ptr->node_cnt - new_nodes
 					    - preserve_nodes;
@@ -4617,8 +4619,10 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		_free_resv_select_members(&resv_select);
 	}
 	FREE_NULL_BITMAP(preserve_bitmap);
-	last_resv_update = time(NULL);
-	schedule_resv_save();
+	if (replaced) {
+		last_resv_update = time(NULL);
+		schedule_resv_save();
+	}
 }
 
 /*

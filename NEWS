@@ -128,6 +128,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent backfill from planning jobs that use overlapping resources for the
     same time slot if the job's time limit is less than bf_resolution.
  -- Fix memory leak when requesting typed gres and --[cpus|mem]-per-gpu.
+ -- Prevent backfill from breaking out due to "system state changed" every 30
+    seconds if reservations use REPLACE or DOWN_REPLACE flags.
 
 * Changes in Slurm 24.05.3
 ==========================
