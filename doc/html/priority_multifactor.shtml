@@ -218,9 +218,10 @@ priority of all the QOSs to become the QOS factor.</P>
 <h2 id="site">Site Factor<a class="slurm_link" href="#site"></a></h2>
 
 <P> The site factor is a factor that can be set either using scontrol,
-through a job_submit or site_factor plugin. An example use case, might be a
-job_submit plugin
-that sets a specific priority based on how many resources are requested.</P>
+through a <a href="job_submit_plugins.html">job_submit</a> or
+<a href="site_factor.html">site_factor</a> plugin. An example use case might be
+a job_submit plugin that sets a specific priority based on how many resources
+are requested.</P>
 
 <h2 id="tres">TRES Factors<a class="slurm_link" href="#tres"></a></h2>
 
