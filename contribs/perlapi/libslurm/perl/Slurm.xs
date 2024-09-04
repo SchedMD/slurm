@@ -82,13 +82,15 @@ slurm_DESTROY(slurm_t self)
 
 int
 slurm_get_errno(slurm_t self)
-	C_ARGS:
-	INIT:
+	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
+		RETVAL = errno;
+	OUTPUT:
+		RETVAL
 
 char *
 slurm_strerror(slurm_t self, int errnum=0)
@@ -99,7 +101,7 @@ slurm_strerror(slurm_t self, int errnum=0)
 			      only Slurm::
 			    */
 		if (errnum == 0)
-			errnum = slurm_get_errno();
+			errnum = errno;
 		RETVAL = slurm_strerror(errnum);
 	OUTPUT:
 		RETVAL
