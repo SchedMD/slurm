@@ -208,6 +208,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Improve reporting errors from slurmctld for job queries:
       'GET /slurm/v0.0.41/{job_id}'
       'GET /slurm/v0.0.41/jobs/'
+ -- Avoid rejecting a step request that needs fewer gres than nodes in the
+    job allocation.
 
 * Changes in Slurm 24.05.5
 ==========================

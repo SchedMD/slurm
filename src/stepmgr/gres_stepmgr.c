@@ -2251,10 +2251,29 @@ static uint64_t _step_get_gres_needed(gres_step_state_t *gres_ss,
 		gres_needed = gres_ss->gres_per_step -
 			gres_ss->total_gres;
 	} else if (gres_ss->gres_per_step) {
-		/* Leave at least one GRES per remaining node */
-		*max_gres = gres_ss->gres_per_step -
-			gres_ss->total_gres - (rem_nodes - 1);
-		gres_needed = 1;
+		uint64_t tmp = gres_ss->total_gres + (rem_nodes - 1);
+
+		/* Note: total_gres is the number of accumulated gres. */
+
+		if (gres_ss->total_gres >= gres_ss->gres_per_step) {
+			/* If we already have the gres required, get no more. */
+			gres_needed = 0;
+			*max_gres = 0;
+		} else if (gres_ss->gres_per_step > tmp) {
+			/* Leave at least one GRES per remaining node. */
+			*max_gres = gres_ss->gres_per_step - tmp;
+			gres_needed = 1;
+		} else {
+			/*
+			 * We don't need enough gres to have one on every
+			 * remaining node. Get all possible gres on each
+			 * remaining node instead of trying to spread them out
+			 * over the nodes.
+			 */
+			gres_needed = 1;
+			*max_gres = gres_ss->gres_per_step -
+					gres_ss->total_gres;
+		}
 	} else {
 		/*
 		 * No explicit step GRES specification.
