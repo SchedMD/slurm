@@ -280,6 +280,8 @@ documents those changes that are of interest to users and administrators.
     to control backfill.
  -- If a step fails to launch under certain conditions, set the step's state
     to NODE_FAIL.
+ -- sched/backfill - Fix certain situations where a job would not get a
+    planned time, which could lead to it being delayed by lower priority jobs.
 
 * Changes in Slurm 24.05.5
 ==========================
