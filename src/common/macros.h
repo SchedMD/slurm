@@ -88,6 +88,11 @@
 # define NTOH_int64(x)	  ((int64_t)  (x))
 # define HTON_uint64(x)	  ((uint64_t) (x))
 # define NTOH_uint64(x)	  ((uint64_t) (x))
+#elif HAVE___BUILTIN_BSWAP64
+# define HTON_int64(x) ((int64_t) __builtin_bswap64(x))
+# define NTOH_int64(x) ((int64_t) __builtin_bswap64(x))
+# define HTON_uint64(x) (__builtin_bswap64(x))
+# define NTOH_uint64(x) (__builtin_bswap64(x))
 #else
 # define HTON_int64(x)    ((int64_t) UINT64_SWAP_LE_BE (x))
 # define NTOH_int64(x)	  ((int64_t) UINT64_SWAP_LE_BE (x))
