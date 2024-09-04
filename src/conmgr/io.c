@@ -132,8 +132,8 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 		close_con(false, con);
 		return;
 	} else if (read_c == 0) {
-		log_flag(NET, "%s: [%s] read %zd bytes and EOF with %u bytes to process already in buffer",
-			 __func__, con->name, read_c, get_buf_offset(con->in));
+		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in buffer",
+			 __func__, con->name, get_buf_offset(con->in));
 
 		slurm_mutex_lock(&mgr.mutex);
 		/* lock to tell mgr that we are done */
