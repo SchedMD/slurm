@@ -63,6 +63,28 @@ typedef struct {
 	ssize_t wrote;
 } handle_writev_args_t;
 
+extern void resize_input_buffer(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	int rc;
+	uint64_t bytes = (uint64_t) arg;
+	conmgr_fd_t *con = conmgr_args.con;
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	xassert(bytes > 0);
+	xassert(bytes < MAX_MSG_SIZE);
+
+	if (!(rc = try_grow_buf_remaining(con->in, bytes)))
+		return;
+
+	log_flag(NET, "%s: [%s] unable to increase buffer %"PRIu64" bytes for RPC message: %s",
+		 __func__, con->name, bytes, slurm_strerror(rc));
+
+	/* conmgr will be unable to read entire RPC -> close connection now */
+	close_con(false, con);
+}
+
 static int _get_fd_readable(conmgr_fd_t *con)
 {
 	int readable = 0;

@@ -398,6 +398,12 @@ extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 
 extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg);
 
+/*
+ * Resize con->in if needed
+ * IN arg - (ssize_t) number of bytes need in con->in
+ */
+extern void resize_input_buffer(conmgr_callback_args_t conmgr_args, void *arg);
+
 extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
