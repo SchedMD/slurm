@@ -146,7 +146,7 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 			     (get_buf_data(con->in) + get_buf_offset(con->in)),
 			     read_c, "%s: [%s] read", __func__, con->name);
 
-		get_buf_offset(con->in) += read_c;
+		set_buf_offset(con->in, (get_buf_offset(con->in) + read_c));
 	}
 }
 
