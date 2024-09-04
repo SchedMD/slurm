@@ -5,9 +5,12 @@
 <!-------------------------------------------------------------------------->
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p>
-As of the 19.05 release, the Fair Tree algorithm is now the default, and the
-classic fair share algorithm is only available if
-<i>PriorityFlags=NO_FAIR_TREE</i> has been explicitly configured.
+Starting with Slurm 19.05, the Fair-share factor in the
+<a href="priority_multifactor.html">priority/multifactor plugin</a> will
+default to the <a href="fair_tree.html">Fair Tree algorithm</a>. The previously
+used <b>Classic algorithm</b>, that is described on this page, can be manually
+configured by setting <code>PriorityFlags=NO_FAIR_TREE</code> in
+<a href="slurm.conf.html#OPT_PriorityFlags">slurm.conf</a>.
 </p>
 
 <h2 id="norm_shares">Normalized Shares
