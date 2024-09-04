@@ -41,6 +41,16 @@
 #ifndef _SLURM_BACKFILL_H
 #define _SLURM_BACKFILL_H
 
+#include "src/slurmctld/licenses.h"
+
+typedef struct {
+	time_t begin_time;
+	time_t end_time;
+	bitstr_t *avail_bitmap;
+	bf_licenses_t *licenses;
+	int next; /* next record, by time, zero termination */
+} node_space_map_t;
+
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args);
 

@@ -131,13 +131,6 @@
 #define MAX_BF_MAX_JOB_USER_PART       MAX_BF_MAX_JOB_TEST
 #define MAX_BF_MAX_JOB_PART            MAX_BF_MAX_JOB_TEST
 
-typedef struct {
-	time_t begin_time;
-	time_t end_time;
-	bitstr_t *avail_bitmap;
-	bf_licenses_t *licenses;
-	int next;	/* next record, by time, zero termination */
-} node_space_map_t;
 
 typedef struct {
 	node_space_map_t *node_space;
