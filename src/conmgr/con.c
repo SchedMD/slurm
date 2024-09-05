@@ -504,6 +504,16 @@ extern int add_connection(conmgr_con_type_t type,
 	if (is_socket && (addrlen > 0) && addr)
 		memcpy(&con->address, addr, addrlen);
 
+	if (has_out) {
+		int bytes = -1;
+
+		if (!fd_get_buffered_output_bytes(con->output_fd, &bytes,
+						  con->name)) {
+			xassert(!bytes);
+			con_set_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER);
+		}
+	}
+
 	_set_connection_name(con, &in_stat, &out_stat);
 
 	_check_con_type(con, type);

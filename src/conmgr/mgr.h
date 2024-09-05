@@ -230,6 +230,12 @@ typedef struct {
 	/* Configured value for max connections */
 	int conf_max_connections;
 
+	/*
+	 * Configured number of seconds to wait for recheck of output_fd for
+	 * write_complete work
+	 */
+	uint32_t conf_delay_write_complete;
+
 	/* Max number of connections at any one time allowed */
 	int max_connections;
 	/*
@@ -322,6 +328,7 @@ typedef struct {
 #define CONMGR_DEFAULT \
 	(conmgr_t) {\
 		.conf_max_connections = -1,\
+		.conf_delay_write_complete = 5, \
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
 		.error = SLURM_SUCCESS,\

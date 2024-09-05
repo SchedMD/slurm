@@ -35,8 +35,11 @@
 
 #define _GNU_SOURCE
 #include <limits.h>
+#include <stdint.h>
 #include <sys/un.h>
 #include <sys/socket.h>
+
+#include "slurm/slurm.h"
 
 #include "src/common/fd.h"
 #include "src/common/macros.h"
@@ -78,8 +81,56 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	log_flag(CONMGR, "%s: [%s] queuing pending %u write complete work",
-		 __func__, con->name, list_count(con->write_complete_work));
+	if (list_is_empty(con->write_complete_work)) {
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] skipping with 0 write complete work pending",
+			 __func__, con->name);
+		return;
+	}
+
+	if ((con->output_fd >= 0) &&
+	    con_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER)) {
+		int rc = EINVAL;
+		int bytes = -1;
+		int output_fd = con->output_fd;
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		if ((output_fd < 0) ||
+		    (rc = fd_get_buffered_output_bytes(output_fd, &bytes,
+						       con->name))) {
+			slurm_mutex_lock(&mgr.mutex);
+
+			log_flag(CONMGR, "%s: [%s] unable to query output_fd[%d] outgoing buffer remaining: %s. Queuing pending %u write complete work",
+				 __func__, con->name, output_fd,
+				 slurm_strerror(rc),
+				 list_count(con->write_complete_work));
+
+			con_unset_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER);
+		} else if (bytes > 0) {
+			log_flag(CONMGR, "%s: [%s] output_fd[%d] has %d bytes in outgoing buffer remaining. Retrying in %us",
+				 __func__, con->name, output_fd, bytes,
+				 mgr.conf_delay_write_complete);
+
+			add_work_con_delayed_fifo(true, con,
+						  _on_write_complete_work, NULL,
+						  mgr.conf_delay_write_complete,
+						  0);
+			return;
+		} else {
+			xassert(!bytes);
+			slurm_mutex_lock(&mgr.mutex);
+
+			log_flag(CONMGR, "%s: [%s] output_fd[%d] has 0 bytes in outgoing buffer remaining. Queuing pending %u write complete work",
+				 __func__, con->name, output_fd,
+				 list_count(con->write_complete_work));
+		}
+	} else {
+		log_flag(CONMGR, "%s: [%s] queuing pending %u write complete work",
+			 __func__, con->name,
+			 list_count(con->write_complete_work));
+	}
 
 	list_transfer(con->work, con->write_complete_work);
 
