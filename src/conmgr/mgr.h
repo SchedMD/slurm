@@ -122,6 +122,8 @@ typedef enum {
 	FLAG_QUIESCE = CON_FLAG_QUIESCE,
 	/* True if fd_get_buffered_output_bytes() work on output_fd */
 	FLAG_CAN_QUERY_OUTPUT_BUFFER = SLURM_BIT(11),
+	/* connection is a pipe() */
+	FLAG_IS_FIFO = SLURM_BIT(12),
 } con_flags_t;
 
 /* Mask over flags that track connection state */
