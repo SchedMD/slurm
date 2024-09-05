@@ -124,6 +124,8 @@ typedef enum {
 	FLAG_CAN_QUERY_OUTPUT_BUFFER = SLURM_BIT(11),
 	/* connection is a pipe() */
 	FLAG_IS_FIFO = SLURM_BIT(12),
+	/* connection is a character special device */
+	FLAG_IS_CHR = SLURM_BIT(13),
 } con_flags_t;
 
 /* Mask over flags that track connection state */

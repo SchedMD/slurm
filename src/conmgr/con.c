@@ -98,6 +98,7 @@ static const struct {
 	T(FLAG_QUIESCE),
 	T(FLAG_CAN_QUERY_OUTPUT_BUFFER),
 	T(FLAG_IS_FIFO),
+	T(FLAG_IS_CHR),
 };
 #undef T
 
@@ -419,7 +420,7 @@ extern int add_connection(conmgr_con_type_t type,
 	struct stat in_stat = { 0 };
 	struct stat out_stat = { 0 };
 	conmgr_fd_t *con = NULL;
-	bool set_keep_alive, is_socket, is_fifo;
+	bool set_keep_alive, is_socket, is_fifo, is_chr;
 	const bool has_in = (input_fd >= 0);
 	const bool has_out = (output_fd >= 0);
 	const bool is_same = (input_fd == output_fd);
@@ -444,6 +445,8 @@ extern int add_connection(conmgr_con_type_t type,
 		    (has_out && S_ISSOCK(out_stat.st_mode));
 	is_fifo = (has_in && S_ISFIFO(in_stat.st_mode)) ||
 		    (has_out && S_ISFIFO(out_stat.st_mode));
+	is_chr = (has_in && S_ISCHR(in_stat.st_mode)) ||
+		    (has_out && S_ISCHR(out_stat.st_mode));
 	set_keep_alive = !unix_socket_path && is_socket && !is_listen;
 
 	/* all connections are non-blocking */
@@ -482,6 +485,7 @@ extern int add_connection(conmgr_con_type_t type,
 	con_assign_flag(con, FLAG_IS_LISTEN, is_listen);
 	con_assign_flag(con, FLAG_READ_EOF, !has_in);
 	con_assign_flag(con, FLAG_IS_FIFO, is_fifo);
+	con_assign_flag(con, FLAG_IS_CHR, is_chr);
 
 	if (!is_listen) {
 		con->in = create_buf(xmalloc(BUFFER_START_SIZE),
