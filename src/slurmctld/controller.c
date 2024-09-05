@@ -1586,9 +1586,14 @@ static void _open_ports(void)
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
 						   CON_TYPE_RPC, events, flags,
-						   index_ptr)))
+						   index_ptr))) {
+			if (rc == SLURM_COMMUNICATIONS_INVALID_FD)
+				fatal("%s: Unable to listen to file descriptors. Existing slurmctld process likely already is listening on the ports.",
+				      __func__);
+
 			fatal("%s: unable to process fd:%d error:%s",
 			      __func__, listeners.fd[i], slurm_strerror(rc));
+		}
 	}
 
 	slurm_mutex_unlock(&listeners.mutex);
