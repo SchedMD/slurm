@@ -138,6 +138,22 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
+static void _close_output_fd(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	int output_fd = (uint64_t) arg;
+
+	xassert(output_fd >= 0);
+	xassert(output_fd < NO_VAL64);
+
+	log_flag(CONMGR, "%s: [%s] closing connection output_fd=%d",
+		 __func__, con->name, output_fd);
+
+	if (close(output_fd) == -1)
+		log_flag(CONMGR, "%s: [%s] unable to close output fd %d: %m",
+			 __func__, con->name, output_fd);
+}
+
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -424,17 +440,18 @@ static int _handle_connection(void *x, void *arg)
 	 * This connection has no more pending work or possible IO:
 	 * Remove the connection and close everything.
 	 */
-	log_flag(CONMGR, "%s: [%s] closing connection input_fd=%d output_fd=%d",
-		 __func__, con->name, con->input_fd, con->output_fd);
 
 	if (con->output_fd != -1) {
 		con_set_polling(con, PCTL_TYPE_NONE, __func__);
 
-		if (close(con->output_fd) == -1)
-			log_flag(CONMGR, "%s: [%s] unable to close output fd %d: %m",
-				 __func__, con->name, con->output_fd);
+		log_flag(CONMGR, "%s: [%s] waiting to close output_fd=%d",
+			 __func__, con->name, con->output_fd);
+
+		add_work_con_fifo(true, con, _close_output_fd,
+				  ((void *) (uint64_t) con->output_fd));
 
 		con->output_fd = -1;
+		return 0;
 	}
 
 	log_flag(CONMGR, "%s: [%s] closed connection", __func__, con->name);
