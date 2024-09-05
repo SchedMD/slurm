@@ -126,6 +126,8 @@ typedef enum {
 	FLAG_IS_FIFO = SLURM_BIT(12),
 	/* connection is a character special device */
 	FLAG_IS_CHR = SLURM_BIT(13),
+	/* @see CON_FLAG_TCP_NODELAY */
+	FLAG_TCP_NODELAY = CON_FLAG_TCP_NODELAY,
 } con_flags_t;
 
 /* Mask over flags that track connection state */

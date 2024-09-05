@@ -289,6 +289,8 @@ typedef enum {
 	 * Note: This flag is unrelated to CONMGR_WORK_DEP_QUIESCED.
 	 */
 	CON_FLAG_QUIESCE = SLURM_BIT(10),
+	/* output_fd is a socket with TCP_NODELAY set */
+	CON_FLAG_TCP_NODELAY = SLURM_BIT(14),
 } conmgr_con_flags_t;
 
 /*

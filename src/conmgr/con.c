@@ -99,6 +99,7 @@ static const struct {
 	T(FLAG_CAN_QUERY_OUTPUT_BUFFER),
 	T(FLAG_IS_FIFO),
 	T(FLAG_IS_CHR),
+	T(FLAG_TCP_NODELAY),
 };
 #undef T
 
@@ -460,6 +461,13 @@ extern int add_connection(conmgr_con_type_t type,
 
 		if (set_keep_alive)
 			net_set_keep_alive(output_fd);
+	}
+
+	if ((flags & FLAG_TCP_NODELAY) && is_socket && has_out) {
+		int rc;
+
+		if ((rc = net_set_nodelay(output_fd, true, NULL)))
+			return rc;
 	}
 
 	con = xmalloc(sizeof(*con));
