@@ -71,6 +71,22 @@ static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
+static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
+				    void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	log_flag(CONMGR, "%s: [%s] queuing pending %u write complete work",
+		 __func__, con->name, list_count(con->write_complete_work));
+
+	list_transfer(con->work, con->write_complete_work);
+
+	EVENT_SIGNAL(&mgr.watch_sleep);
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -226,10 +242,10 @@ static int _handle_connection(void *x, void *arg)
 
 	if (!con_flag(con, FLAG_IS_LISTEN) &&
 	    (count = list_count(con->write_complete_work))) {
-		log_flag(CONMGR, "%s: [%s] queuing pending write complete work: %u total",
-			 __func__, con->name, count);
+		add_work_con_fifo(true, con, _on_write_complete_work, NULL);
 
-		list_transfer(con->work, con->write_complete_work);
+		log_flag(CONMGR, "%s: [%s] waiting for %u write_complete work",
+			 __func__, con->name, count);
 		return 0;
 	}
 
