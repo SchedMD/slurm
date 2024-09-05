@@ -236,7 +236,7 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 	remote = xmalloc(sizeof(*remote));
 
 	*remote = forward_msg->conn_fd;
-	net_set_nodelay(*remote);
+	net_set_nodelay(*remote, true, NULL);
 
 	if (msg->port) {
 		/* connect to host and given tcp port */
@@ -249,7 +249,7 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 			      __func__, msg->target, msg->port);
 			goto error;
 		}
-		net_set_nodelay(*local);
+		net_set_nodelay(*local, true, NULL);
 	} else if (msg->target) {
 		/* connect to local unix socket */
 		struct sockaddr_un addr;
