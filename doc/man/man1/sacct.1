@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "August 2024" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "September 2024" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -572,10 +572,12 @@ data_parser with parameters. Sorting and formatting arguments will be ignored.
 .IP
 
 .SS "Job Accounting Fields"
-Descriptions of each job accounting field can be found below.
+Descriptions of each field option can be found below.
 Note that the Ave*, Max* and Min* accounting fields look at the values for
 all the tasks of each step in a job and return the average, maximum or minimum
-values for the job step.
+values of the task for that job step. For example, for MaxRSS, the returned
+value is the maximum memory consumption seen by one of the tasks of the step,
+and MaxRSSTask shows which task it is.
 .RS
 .TP "10"
 \f3ALL\fP
