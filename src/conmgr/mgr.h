@@ -120,6 +120,8 @@ typedef enum {
 	FLAG_RPC_KEEP_BUFFER = CON_FLAG_RPC_KEEP_BUFFER,
 	/* @see CON_FLAG_QUIESCE */
 	FLAG_QUIESCE = CON_FLAG_QUIESCE,
+	/* True if fd_get_buffered_output_bytes() work on output_fd */
+	FLAG_CAN_QUERY_OUTPUT_BUFFER = SLURM_BIT(11),
 } con_flags_t;
 
 /* Mask over flags that track connection state */

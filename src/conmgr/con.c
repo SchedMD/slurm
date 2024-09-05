@@ -96,6 +96,7 @@ static const struct {
 	T(FLAG_WORK_ACTIVE),
 	T(FLAG_RPC_KEEP_BUFFER),
 	T(FLAG_QUIESCE),
+	T(FLAG_CAN_QUERY_OUTPUT_BUFFER),
 };
 #undef T
 
