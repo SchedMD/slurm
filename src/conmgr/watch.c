@@ -44,6 +44,7 @@
 
 #include "src/common/fd.h"
 #include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/common/read_config.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
@@ -114,6 +115,12 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 				 __func__, con->name, output_fd, bytes,
 				 mgr.conf_delay_write_complete);
 
+			/* Turn off Nagle while we wait for buffer to flush */
+			if (con_flag(con, FLAG_IS_SOCKET) &&
+			    !con_flag(con, FLAG_TCP_NODELAY))
+				(void) net_set_nodelay(output_fd, true,
+						       con->name);
+
 			add_work_con_delayed_fifo(true, con,
 						  _on_write_complete_work, NULL,
 						  mgr.conf_delay_write_complete,
@@ -121,6 +128,13 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 			return;
 		} else {
 			xassert(!bytes);
+
+			/* Turn back on Nagle every time in case it got set */
+			if (con_flag(con, FLAG_IS_SOCKET) &&
+			    !con_flag(con, FLAG_TCP_NODELAY))
+				(void) net_set_nodelay(output_fd, false,
+						       con->name);
+
 			slurm_mutex_lock(&mgr.mutex);
 
 			log_flag(CONMGR, "%s: [%s] output_fd[%d] has 0 bytes in outgoing buffer remaining. Queuing pending %u write complete work",
