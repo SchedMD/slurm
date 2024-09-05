@@ -130,6 +130,17 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak when requesting typed gres and --[cpus|mem]-per-gpu.
  -- Prevent backfill from breaking out due to "system state changed" every 30
     seconds if reservations use REPLACE or REPLACE_DOWN flags.
+ -- slurmrestd - Make sure that scheduler_unset parameter defaults to true even
+    when the following flags are also set: show_duplicates, skip_steps,
+    disable_truncate_usage_time, run_away_jobs, whole_hetjob,
+    disable_whole_hetjob, disable_wait_for_result, usage_time_as_submit_time,
+    show_batch_script, and or show_job_environment. Additionaly, always make
+    sure show_duplicates and disable_truncate_usage_time default to true when
+    the following flags are also set: scheduler_unset, scheduled_on_submit,
+    scheduled_by_main, scheduled_by_backfill, and or job_started. This effects
+    the following endpoints:
+      'GET /slurmdb/v0.0.40/jobs'
+      'GET /slurmdb/v0.0.41/jobs'
 
 * Changes in Slurm 24.05.3
 ==========================

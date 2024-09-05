@@ -84,15 +84,14 @@ extern int op_handler_jobs(ctxt_t *ctxt)
 					  "Rejecting request. Failure parsing query parameters");
 		}
 
-		if (!job_cond->flags && !job_cond->db_flags) {
-			/*
-			 * default to grabbing all information
-			 * based on _init_params()
-			 */
+		/*
+		 * default to grabbing all information based on _init_params()
+		 */
+		if (!job_cond->db_flags)
+			job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
+		if (!job_cond->flags)
 			job_cond->flags =
 				(JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC);
-			job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
-		}
 
 		slurmdb_job_cond_def_start_end(job_cond);
 
