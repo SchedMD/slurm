@@ -723,6 +723,63 @@ extern int fd_get_readable_bytes(int fd, int *readable_ptr,
 #endif /* !FIONREAD */
 }
 
+extern int fd_get_buffered_output_bytes(int fd, int *bytes_ptr,
+					const char *con_name)
+{
+#ifdef TIOCOUTQ
+	/* default pending to max positive 32 bit signed integer */
+	int pending = INT32_MAX;
+
+	xassert(bytes_ptr);
+
+	if (fd < 0) {
+		log_net(fd, con_name,
+			"Refusing request for ioctl(%d, TIOCOUTQ) with invalid file descriptor: %d",
+			fd, fd);
+		return EINVAL;
+	}
+
+	/*
+	 * Request kernel tell us the number of bytes remain in the outgoing
+	 * buffer.
+	 */
+	if (ioctl(fd, TIOCOUTQ, &pending)) {
+		int rc = errno;
+		log_net(fd, con_name,
+			"ioctl(%d, TIOCOUTQ, 0x%"PRIxPTR") failed: %s",
+			fd, (uintptr_t) &pending, slurm_strerror(rc));
+		return rc;
+	}
+
+	/* validate response from kernel is sane (or likely sane) */
+	if (pending < 0) {
+		/* invalid TIOCOUTQ response -> bad driver response */
+		log_net(fd, con_name,
+			"Invalid response: ioctl(%d, TIOCOUTQ, 0x%"PRIxPTR")=%d",
+			 fd, (uintptr_t) &pending, pending);
+		return ENOSYS;
+	}
+	/* verify if pending was even set */
+	if (pending == INT32_MAX) {
+		/* ioctl() did not error but did not change pending?? */
+		log_net(fd, con_name,
+			"Invalid unchanged pending value: ioctl(%d, TIOCOUTQ, 0x%"PRIxPTR")=%d",
+			fd, (uintptr_t) &pending, pending);
+		return ENOSYS;
+	}
+
+	*bytes_ptr = pending;
+
+	log_net(fd, con_name,
+		"Successful query: ioctl(%d, TIOCOUTQ, 0x%"PRIxPTR")=%d",
+		fd, (uintptr_t) bytes_ptr, pending);
+
+	return SLURM_SUCCESS;
+#else /* TIOCOUTQ */
+	return ESLURM_NOT_SUPPORTED;
+#endif /* !TIOCOUTQ */
+}
+
 extern int fd_get_maxmss(int fd, const char *con_name)
 {
 	int mss = NO_VAL;

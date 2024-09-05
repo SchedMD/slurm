@@ -199,6 +199,18 @@ extern int fd_get_readable_bytes(int fd, int *readable_ptr,
 				 const char *con_name);
 
 /*
+ * Use ioctl(TIOCOUTQ) to get number of bytes in buffer waiting for kernel to
+ * send to destination
+ * IN fd - file descriptor to query
+ * IN/OUT bytes_ptr - Pointer to populate if ioctl() is able to query
+ *	successfully. Only changed if RET=SLURM_SUCCESS.
+ * IN con_name - descriptive name for fd connection (for logging)
+ * RET SLURM_SUCCESS or error
+ */
+extern int fd_get_buffered_output_bytes(int fd, int *bytes_ptr,
+					const char *con_name);
+
+/*
  * Get TCP MSS (Max Segment Size) of a given socket
  * IN fd - file descriptor for socket
  * IN con_name - Connection name (for logging) or NULL
