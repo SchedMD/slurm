@@ -40,6 +40,7 @@
 #include <sys/socket.h>
 
 #include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/fd.h"
 #include "src/common/macros.h"
@@ -142,6 +143,7 @@ static void _close_output_fd(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 	int output_fd = (uint64_t) arg;
+	int rc;
 
 	xassert(output_fd >= 0);
 	xassert(output_fd < NO_VAL64);
@@ -149,9 +151,36 @@ static void _close_output_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	log_flag(CONMGR, "%s: [%s] closing connection output_fd=%d",
 		 __func__, con->name, output_fd);
 
-	if (close(output_fd) == -1)
-		log_flag(CONMGR, "%s: [%s] unable to close output fd %d: %m",
-			 __func__, con->name, output_fd);
+	/*
+	 * From man 2 close:
+	 * > A careful programmer who wants to know about I/O errors may precede
+	 * > close() with a call to fsync(2)
+	 *
+	 * Avoid fsync() on pipe()s and chr devices per man page:
+	 * > fd is bound to a special file (e.g., a pipe, FIFO, or socket) which
+	 * > does not support synchronization.
+	 */
+	if (!con_flag(con, FLAG_IS_SOCKET) && !con_flag(con, FLAG_IS_FIFO) &&
+	    !con_flag(con, FLAG_IS_CHR)) {
+		do {
+			if (fsync(output_fd)) {
+				rc = errno;
+				log_flag(CONMGR, "%s: [%s] unable to fsync(fd:%d): %s",
+					 __func__, con->name, output_fd,
+					 slurm_strerror(rc));
+
+				if (rc == EBADF)
+					output_fd = -1;
+			}
+		} while (rc == EINTR);
+	}
+
+	if ((output_fd >= 0) && close(output_fd)) {
+		rc = errno;
+		log_flag(CONMGR, "%s: [%s] unable to close output fd:%d: %s",
+			 __func__, con->name, output_fd,
+			 slurm_strerror(rc));
+	}
 }
 
 /*
