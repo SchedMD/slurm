@@ -8391,6 +8391,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->min_nodes  = job_desc->min_nodes;
 	detail_ptr->max_nodes  = job_desc->max_nodes;
 	if (job_desc->job_size_str && detail_ptr->max_nodes) {
+		if (detail_ptr->max_nodes >= MAX_JOB_SIZE_BITMAP)
+			return ESLURM_INVALID_NODE_COUNT;
 		detail_ptr->job_size_bitmap =
 			bit_alloc(detail_ptr->max_nodes + 1);
 		if (bit_unfmt(detail_ptr->job_size_bitmap,
@@ -13017,7 +13019,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		if ((!IS_JOB_PENDING(job_ptr)) || !detail_ptr)
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (detail_ptr->min_nodes && detail_ptr->max_nodes &&
-			 (detail_ptr->max_nodes != NO_VAL)) {
+			 (detail_ptr->max_nodes != NO_VAL) &&
+			 (detail_ptr->max_nodes < MAX_JOB_SIZE_BITMAP)) {
 			bitstr_t  *new_size_bitmap;
 			new_size_bitmap = bit_alloc(detail_ptr->max_nodes + 1);
 			if (bit_unfmt(new_size_bitmap,

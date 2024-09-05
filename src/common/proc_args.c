@@ -519,10 +519,10 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes,
 		while (tok) {
 			char *endptr;
 			long int num = strtol(tok, &endptr, 10);
-			if ((endptr == tok) || ((*endptr != '\0') &&
-						(*endptr != ',') &&
-						(*endptr != '-') &&
-						(*endptr != ':'))) {
+			if ((endptr == tok) ||
+			    ((*endptr != '\0') && (*endptr != ',') &&
+			     (*endptr != '-') && (*endptr != ':')) ||
+			    (num >= MAX_JOB_SIZE_BITMAP)) {
 				error("\"%s\" is not a valid node count", tok);
 				xfree(tmp_str);
 				return false;
