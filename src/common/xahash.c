@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  xahash.c - functions used for arbitrary hash table
  *****************************************************************************
- *  Copyright (C) 2024 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
