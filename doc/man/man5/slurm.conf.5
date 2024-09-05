@@ -6025,6 +6025,14 @@ Valid when TopologyPlugin=topology/tree.
 .IP
 
 .TP
+\fBTopoMaxSizeUnroll=#\fR
+Maximum number of individual job sizes automatically unrolled
+from min-max nodes job specification.
+Default: -1 (option disabled).
+Valid when TopologyPlugin=topology/block.
+.IP
+
+.TP
 \fBTopoOptional\fR
 Only optimize allocation for network topology if the job includes a switch
 option. Since optimizing resource allocation for topology involves much higher

@@ -93,6 +93,7 @@
 #include "src/interfaces/sched_plugin.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
+#include "src/interfaces/topology.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -8207,6 +8208,55 @@ static uint16_t _default_wait_all_nodes(job_desc_msg_t *job_desc)
 	return default_batch_wait;
 }
 
+static int _unroll_min_max_node(job_record_t *job_ptr)
+{
+	static int max_unroll = -1;
+	static time_t topo_update = 0;
+	job_details_t *detail_ptr = job_ptr->details;
+	int i;
+
+	if (topo_update != slurm_conf.last_update) {
+		char *tmp_ptr;
+		topo_update = slurm_conf.last_update;
+		char *unroll_opt_str = "TopoMaxSizeUnroll=";
+
+		if ((topology_get_plugin_id() == TOPOLOGY_PLUGIN_BLOCK) &&
+		    (tmp_ptr = xstrcasestr(slurm_conf.topology_param,
+					   unroll_opt_str))) {
+			i = atoi(tmp_ptr + strlen(unroll_opt_str));
+			if (i < 0) {
+				error("ignoring TopologyParam: TopoMaxSizeUnroll %d",
+				      i);
+			} else {
+				max_unroll = i;
+			}
+		}
+	}
+
+	if (max_unroll < 0)
+		return SLURM_SUCCESS;
+
+	if (detail_ptr->job_size_bitmap)
+		return SLURM_SUCCESS;
+
+	if (!detail_ptr->max_nodes ||
+	    (detail_ptr->max_nodes == detail_ptr->min_nodes))
+		return SLURM_SUCCESS;
+
+	if ((detail_ptr->max_nodes < MAX_JOB_SIZE_BITMAP) &&
+	    ((detail_ptr->max_nodes - detail_ptr->min_nodes) < max_unroll)) {
+		bitstr_t *size_bitmap;
+		size_bitmap = bit_alloc(detail_ptr->max_nodes + 1);
+		bit_nset(size_bitmap, detail_ptr->min_nodes,
+			 detail_ptr->max_nodes);
+		detail_ptr->job_size_bitmap = size_bitmap;
+	} else {
+		return ESLURM_INVALID_NODE_COUNT;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /* _copy_job_desc_to_job_record - copy the job descriptor from the RPC
  *	structure into the actual slurmctld job record */
 static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
@@ -8398,6 +8448,10 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		if (bit_unfmt(detail_ptr->job_size_bitmap,
 			      job_desc->job_size_str))
 			FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
+	} else {
+		error_code = _unroll_min_max_node(job_ptr);
+		if (error_code)
+			return error_code;
 	}
 	detail_ptr->req_context = xstrdup(job_desc->req_context);
 	detail_ptr->x11        = job_desc->x11;
@@ -13002,6 +13056,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
 			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
 		update_accounting = true;
+		FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
 		info("%s: setting max_nodes from %u to %u for %pJ", __func__,
@@ -13039,7 +13094,10 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			error_code = ESLURM_INVALID_NODE_COUNT;
 		}
 
+	} else {
+		error_code = _unroll_min_max_node(job_ptr);
 	}
+
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 

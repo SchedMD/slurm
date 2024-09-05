@@ -28,6 +28,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
  -- Add SchedulerParameters=bf_allow_magnetic_slot option. It allows jobs in
     magnetic reservations to be planned by backfill scheduler.
+ -- Add TopologyParam=TopoMaxSizeUnroll=# to allow --nodes=<min>-<max> for
+    topology/block.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
