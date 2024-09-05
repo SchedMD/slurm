@@ -91,6 +91,19 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 		return;
 	}
 
+	if ((con->polling_output_fd != PCTL_TYPE_UNSUPPORTED) &&
+	    ((con->output_fd >= 0) && !con_flag(con, FLAG_CAN_WRITE))) {
+		slurm_mutex_unlock(&mgr.mutex);
+
+		/*
+		 * if FLAG_CAN_WRITE is not set, then kernel is telling us that
+		 * the outgoing buffer hasn't been flushed yet
+		 */
+		log_flag(CONMGR, "%s: [%s] waiting for FLAG_CAN_WRITE",
+			 __func__, con->name);
+		return;
+	}
+
 	if ((con->output_fd >= 0) &&
 	    con_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER)) {
 		int rc = EINVAL;
@@ -352,10 +365,49 @@ static int _handle_connection(void *x, void *arg)
 
 	if (!con_flag(con, FLAG_IS_LISTEN) &&
 	    (count = list_count(con->write_complete_work))) {
-		add_work_con_fifo(true, con, _on_write_complete_work, NULL);
+		bool queue_work = false;
 
-		log_flag(CONMGR, "%s: [%s] waiting for %u write_complete work",
-			 __func__, con->name, count);
+		if (con->output_fd < 0) {
+			/* output_fd is already closed so no more write()s */
+			queue_work = true;
+		} else if (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED) {
+			/* output_fd can't be polled for CAN_WRITE */
+			queue_work = true;
+		} else if ((con->polling_output_fd == PCTL_TYPE_NONE) &&
+			   con_flag(con, FLAG_CAN_WRITE)) {
+			/* poll() already marked connection as CAN_WRITE */
+			queue_work = true;
+		}
+
+		if (queue_work) {
+			log_flag(CONMGR, "%s: [%s] waiting for %u write_complete work",
+				 __func__, con->name, count);
+			add_work_con_fifo(true, con, _on_write_complete_work,
+					  NULL);
+		} else {
+			log_flag(CONMGR, "%s: [%s] waiting for FLAG_CAN_WRITE to queue %u write_complete work",
+				 __func__, con->name, count);
+
+			/*
+			 * Always unset FLAG_CAN_WRITE if we are not queuing up
+			 * _on_write_complete_work() as we want to trigger on
+			 * the next edge activation of FLAG_CAN_WRITE to avoid
+			 * wasting time calling ioctl(TIOCOUTQ) when nothing has
+			 * changed
+			 */
+			con_unset_flag(con, FLAG_CAN_WRITE);
+
+			/*
+			 * Existing polling either did not set FLAG_CAN_WRITE or
+			 * the polling type was not monitoring for
+			 * FLAG_CAN_WRITE. output_fd is still valid and we need
+			 * to change the polling to monitor outbound buffer
+			 * (indirectly) to queue up _on_write_complete_work() on
+			 * when FLAG_CAN_WRITE is set.
+			 */
+			con_set_polling(con, PCTL_TYPE_READ_WRITE, __func__);
+		}
+
 		return 0;
 	}
 
