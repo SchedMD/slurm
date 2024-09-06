@@ -3557,15 +3557,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	if (IS_NODE_CLOUD(node_ptr) ||
 	    IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
 	    IS_NODE_DYNAMIC_NORM(node_ptr)) {
-		slurm_addr_t addr;
-		char *comm_name = NULL;
-
 		/* Get IP of slurmd */
-		if (slurm_msg->conn_fd >= 0 &&
-		    !slurm_get_peer_addr(slurm_msg->conn_fd, &addr)) {
-			comm_name = xmalloc(INET6_ADDRSTRLEN);
-			slurm_get_ip_str(&addr, comm_name, INET6_ADDRSTRLEN);
-		}
+		char *comm_name = _get_msg_hostname(slurm_msg);
 
 		set_node_comm_name(node_ptr, comm_name, reg_msg->hostname);
 
