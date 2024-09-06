@@ -190,8 +190,12 @@ struct conmgr_fd_s {
 	const conmgr_events_t *events;
 	/* buffer holding incoming already read data */
 	buf_t *in;
+	/* timestamp when last read() got >0 bytes or when connect() called */
+	timespec_t last_read;
 	/* list of buf_t to write (in order) */
 	list_t *out;
+	/* timestamp when last write() wrote >0 bytes */
+	timespec_t last_write;
 	/* socket maximum segment size (MSS) or NO_VAL if not known */
 	int mss;
 	/* path to unix socket if it is one */
