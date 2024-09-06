@@ -3007,6 +3007,29 @@ proc get_mps_count_by_index { index hostname } {
 	return $count
 }
 
+################################################################
+#
+# NAME
+#	check_mpi - determines if mpicc and the desired --mpi option are available
+#
+# SYNOPSIS
+#	check_mpi desired_mpi
+#
+# DESCRIPTION
+#	Runs srun --mpi=list to determine if the desired mpi is available, as
+#	well as if mpicc set in globals.local is too.
+#
+# RETURN VALUE
+#	Returns true if the desired mpi and mpicc are available, false otherwise.
+#
+################################################################
+
+proc check_mpi {desired_mpi} {
+	global srun eol mpicc
+	set output [run_command_output -fail "$srun --mpi=list"]
+
+	return [regexp "${desired_mpi}${eol}" $output] && [file executable $mpicc]
+}
 
 ################################################################
 #
@@ -7305,4 +7328,3 @@ proc exit { {status 0} } {
 
 # Call _test_init at the beginning of each test
 _test_init
-
