@@ -34,9 +34,10 @@ set file_err           "$test_dir/error"
 set test_prog          "$test_name.prog"
 set skips              0
 set job_id             0
+set mpi_arg            "--mpi=pmix"
 
 proc run_pmix_het_job {comp_count} {
-	global eol max_job_delay number srun
+	global eol max_job_delay number srun mpi_arg
 
 	# since het jobs are started by the backfill scheduler, they
 	# may need a bit more time to start
@@ -47,7 +48,7 @@ proc run_pmix_het_job {comp_count} {
 		set het_comps "${het_comps}${sep}echo J$i"
 		set sep " : "
 	}
-	set output [run_command_output -fail "$srun --mpi=pmix $het_comps"]
+	set output [run_command_output -fail "$srun $mpi_arg $het_comps"]
 	set comp_found [regexp -all "J$number$eol" $output]
 	if {$comp_found != $comp_count} {
 		fail "srun hetjob failed with $comp_count components"
@@ -130,7 +131,7 @@ file delete $file_out $file_err
 make_bash_script $file_in "
   $bin_date
   $bin_echo HET GROUP 0
-  $srun --het-group=0 ./$test_prog
+  $srun $mpi_arg --het-group=0 ./$test_prog
   $bin_date
   $bin_echo TEST_COMPLETE
 "
@@ -223,7 +224,7 @@ file delete $file_out $file_err
 make_bash_script $file_in "
   $bin_date
   $bin_echo HET GROUP 1
-  $srun --het-group=1 ./$test_prog
+  $srun $mpi_arg --het-group=1 ./$test_prog
   $bin_date
   $bin_echo TEST_COMPLETE
 "
@@ -345,7 +346,7 @@ file delete $file_out $file_err
 make_bash_script $file_in "
   $bin_date
   $bin_echo HET GROUP 0,1
-  $srun --het-group=0,1 ./$test_prog
+  $srun $mpi_arg --het-group=0,1 ./$test_prog
   $bin_date
   $bin_echo TEST_COMPLETE
 "
@@ -438,9 +439,9 @@ file delete $file_out $file_err
 make_bash_script $file_in "
   $bin_date
   $bin_echo HET GROUP 1
-  $srun --het-group=1 ./$test_prog
+  $srun $mpi_arg --het-group=1 ./$test_prog
   $bin_echo HET GROUP 0,1
-  $srun --het-group=0,1 ./$test_prog
+  $srun $mpi_arg --het-group=0,1 ./$test_prog
   $bin_date
   $bin_echo TEST_COMPLETE
 "
