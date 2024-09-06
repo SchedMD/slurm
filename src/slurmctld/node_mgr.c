@@ -48,6 +48,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
@@ -137,6 +138,22 @@ static void	_update_config_ptr(bitstr_t *bitmap,
 static int	_update_node_gres(char *node_names, char *gres);
 static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint32_t old, uint32_t new);
+
+static char *_get_msg_hostname(slurm_msg_t *msg)
+{
+	slurm_addr_t *addr = &msg->address;
+	char *name = NULL;
+
+	if ((addr->ss_family == AF_UNSPEC) && (msg->conn_fd >= 0))
+		(void) slurm_get_peer_addr(msg->conn_fd, addr);
+
+	if (addr->ss_family != AF_UNSPEC) {
+		name = xmalloc(INET6_ADDRSTRLEN);
+		slurm_get_ip_str(addr, name, INET6_ADDRSTRLEN);
+	}
+
+	return name;
+}
 
 static void _dump_cluster_settings(buf_t *buffer)
 {
@@ -5167,8 +5184,6 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 {
 	config_record_t *config_ptr;
 	node_record_t *node_ptr;
-	slurm_addr_t addr;
-	char *comm_name = NULL;
 	int state_val = NODE_STATE_UNKNOWN, rc;
 	s_p_hashtbl_t *node_hashtbl = NULL;
 	slurm_conf_node_t *conf_node = NULL;
@@ -5228,18 +5243,13 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	if (conf_node && conf_node->port_str)
 		node_ptr->port = strtol(conf_node->port_str, NULL, 10);
 
-	/* Get IP of slurmd */
-	if (msg->conn_fd >= 0 &&
-	    !slurm_get_peer_addr(msg->conn_fd, &addr)) {
-		comm_name = xmalloc(INET6_ADDRSTRLEN);
-		slurm_get_ip_str(&addr, comm_name,
-				 INET6_ADDRSTRLEN);
-	}
-
+	/*
+	 * Always resolve comm_name in slurmctld as hostname may resolve
+	 * differently here than on the compute node that sent the RPC.
+	 */
 	xfree(node_ptr->comm_name);
-	node_ptr->comm_name =
-		xstrdup(comm_name ? comm_name : reg_msg->hostname);
-	xfree(comm_name);
+	if (!(node_ptr->comm_name = _get_msg_hostname(msg)))
+		node_ptr->comm_name = xstrdup(reg_msg->hostname);
 	xfree(node_ptr->node_hostname);
 	node_ptr->node_hostname = xstrdup(reg_msg->hostname);
 	slurm_conf_add_node(node_ptr);
