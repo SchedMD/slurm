@@ -166,6 +166,14 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
+static void _update_mss(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+
+	if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1))
+		con->mss = fd_get_maxmss(con->output_fd, con->name);
+}
+
 static void _close_output_fd(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
@@ -242,9 +250,10 @@ static int _handle_connection(void *x, void *arg)
 		 */
 		con_set_flag(con, FLAG_IS_CONNECTED);
 
-		/* Query outbound MSS now kernel should know the answer */
-		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1))
-			con->mss = fd_get_maxmss(con->output_fd, con->name);
+		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1)) {
+			/* Query outbound MSS now kernel should know the answer */
+			add_work_con_fifo(true, con, _update_mss, NULL);
+		}
 
 		if (con_flag(con, FLAG_IS_LISTEN)) {
 			if (con->events.on_listen_connect) {
