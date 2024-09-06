@@ -1543,13 +1543,13 @@ addresses in the /etc/hosts file.  It is ok if they point to
 localhost, but not the actual name of the node.</p>
 
 <p><a id="add_nodes"><b>How should I add nodes to Slurm?</b></a><br>
-The slurmctld daemon has a multitude of bitmaps to track state of nodes and cores
-in the system. Adding nodes to a running system would require the slurmctld daemon
-to rebuild all of those bitmaps, which the developers feel would be safer to do by
-restarting the daemon. Communications from the slurmd daemons on the compute
+The slurmctld daemon has many bitmaps to track state of nodes and cores in the
+cluster. Adding nodes to a running cluster would require the slurmctld daemon
+to rebuild all of those bitmaps, which the developers feel would be safer to do
+by restarting the daemon. Communications from the slurmd daemons on the compute
 nodes to the slurmctld daemon include a configuration file checksum, so you
-probably also want to maintain a common slurm.conf file on all nodes. The
-following procedure is recommended:</p>
+should maintain the same slurm.conf file on all nodes. The following procedure
+is recommended:</p>
 <ol>
 <li>Stop the slurmctld daemon (e.g. <code>systemctl stop slurmctld</code>
   on the head node)</li>
@@ -1565,7 +1565,7 @@ allocation, prior to new nodes being added to the slurm.conf can fail if the
 job is allocated one of the new nodes.</p>
 
 <p><a id="rem_nodes"><b>How should I remove nodes from Slurm?</b></a><br>
-To safely remove a node from a system, it's best to drain the node of all jobs.
+To safely remove a node from a cluster, it's best to drain the node of all jobs.
 This ensures that job processes aren't running on the node after removal. On
 restart of the controller, if a node is removed from a running job the
 controller will kill the job on any remaining allocated nodes and attempt to
@@ -2471,6 +2471,6 @@ dset TV::parallel_configs {
 }
 !-->
 
-<p style="text-align:center;">Last modified 27 August 2024</p>
+<p style="text-align:center;">Last modified 07 October 2024</p>
 
 <!--#include virtual="footer.txt"-->
