@@ -1551,10 +1551,13 @@ nodes to the slurmctld daemon include a configuration file checksum, so you
 probably also want to maintain a common slurm.conf file on all nodes. The
 following procedure is recommended:</p>
 <ol>
-<li>Stop the slurmctld daemon (e.g. "systemctl stop slurmctld" on the head node)</li>
-<li>Update the slurm.conf file on all nodes in the cluster</li>
-<li>Restart the slurmd daemons on all nodes (e.g. "systemctl restart slurmd" on all nodes)</li>
-<li>Restart the slurmctld daemon (e.g. "systemctl start slurmctld" on the head node)</li>
+<li>Stop the slurmctld daemon (e.g. <code>systemctl stop slurmctld</code>
+  on the head node)</li>
+<li>Update the <b>slurm.conf</b> file on all nodes in the cluster</li>
+<li>Restart the slurmd daemons on all nodes (e.g.
+  <code>systemctl restart slurmd</code> on all nodes)</li>
+<li>Restart the slurmctld daemon (e.g. <code>systemctl start slurmctld</code>
+  on the head node)</li>
 </ol>
 
 <p><b>NOTE</b>: Jobs submitted with srun, and that are waiting for an
@@ -1568,11 +1571,16 @@ restart of the controller, if a node is removed from a running job the
 controller will kill the job on any remaining allocated nodes and attempt to
 requeue the job if possible. The following procedure is recommended:</p>
 <ol>
-<li>Drain node of all jobs (e.g. "scontrol update nodename='%N' state=drain reason='removing nodes'")</li>
-<li>Stop the slurmctld daemon (e.g. "systemctl stop slurmctld" on the head node)</li>
-<li>Update the slurm.conf file on all nodes in the cluster</li>
-<li>Restart the slurmd daemons on all nodes (e.g. "systemctl restart slurmd" on all nodes)</li>
-<li>Restart the slurmctld daemon (e.g. "systemctl start slurmctld" on the head node)</li>
+<li>Drain node of all jobs (e.g.
+  <code>scontrol update nodename='%N' state=drain reason='removing nodes'</code>
+  )</li>
+<li>Stop the slurmctld daemon (e.g. <code>systemctl stop slurmctld</code>
+  on the head node)</li>
+<li>Update the <b>slurm.conf</b> file on all nodes in the cluster</li>
+<li>Restart the slurmd daemons on all nodes (e.g.
+  <code>systemctl restart slurmd</code> on all nodes)</li>
+<li>Restart the slurmctld daemon (e.g. <code>systemctl start slurmctld</code>
+  on the head node)</li>
 </ol>
 
 <p><a id="reboot"><b>Why is a compute node down with the reason set to
