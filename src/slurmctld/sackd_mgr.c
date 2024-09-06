@@ -33,6 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <sys/socket.h>
+
 #include "src/common/fetch_config.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -103,16 +105,18 @@ static int _find_sackd_node(void *x, void *arg)
 
 static void _update_sackd_node(sackd_node_t *node, slurm_msg_t *msg)
 {
-	slurm_addr_t addr;
-
+	slurm_addr_t *addr = &msg->address;
 	node->last_update = time(NULL);
 	node->protocol_version = msg->protocol_version;
 
-        /* Get IP of slurmd */
+	/* Resolve IP of slurmd if needed */
 	xfree(node->nodeaddr);
-	if (msg->conn_fd >= 0 && !slurm_get_peer_addr(msg->conn_fd, &addr)) {
+	if ((addr->ss_family == AF_UNSPEC) && (msg->conn_fd >= 0))
+		(void) slurm_get_peer_addr(msg->conn_fd, addr);
+
+	if (addr->ss_family != AF_UNSPEC) {
 		node->nodeaddr = xmalloc(INET6_ADDRSTRLEN);
-		slurm_get_ip_str(&addr, node->nodeaddr, INET6_ADDRSTRLEN);
+		slurm_get_ip_str(addr, node->nodeaddr, INET6_ADDRSTRLEN);
 	} else {
 		node->nodeaddr = xstrdup(node->hostname);
 	}
