@@ -103,7 +103,7 @@ typedef struct {
 	 * Only called when type = CON_TYPE_RAW.
 	 *
 	 * IN con connection handler
-	 * IN arg ptr to be handed return of conmgr_on_new_connection_t().
+	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS or error to kill connection
 	 */
 	int (*on_data)(conmgr_fd_t *con, void *arg);
@@ -115,7 +115,7 @@ typedef struct {
 	 *
 	 * IN con connection handler
 	 * IN msg ptr to new msg (call must slurm_free_msg())
-	 * IN arg ptr to be handed return of conmgr_on_new_connection_t().
+	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS or error to kill connection
 	 */
 	int (*on_msg)(conmgr_fd_t *con, slurm_msg_t *msg, void *arg);
