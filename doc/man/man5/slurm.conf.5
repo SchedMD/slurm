@@ -4822,9 +4822,27 @@ Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
 .IP
 
 .TP
+\fBconmgr_connect_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering an outbound connection attempt to be
+timed out. Default is 20 seconds.
+.IP
+
+.TP
+\fBconmgr_read_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering a read from a file descriptor to be
+timed out. Default is 10 seconds.
+.IP
+
+.TP
 \fBconmgr_wait_write_delay\fR=\fI<seconds>\fR
 When waiting for kernel to flush outgoing buffer, poll kernel for changes every
 \fI<seconds>\fR for changes. Default is 5 seconds.
+.IP
+
+.TP
+\fBconmgr_write_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering a write from a file descriptor to be
+timed out. Default is 10 seconds.
 .IP
 
 .TP
@@ -5224,9 +5242,27 @@ Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
 .IP
 
 .TP
+\fBconmgr_connect_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering an outbound connection attempt to be
+timed out. Default is 20 seconds.
+.IP
+
+.TP
+\fBconmgr_read_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering a read from a file descriptor to be
+timed out. Default is 10 seconds.
+.IP
+
+.TP
 \fBconmgr_wait_write_delay\fR=\fI<seconds>\fR
 When waiting for kernel to flush outgoing buffer, poll kernel for changes every
 \fI<seconds>\fR for changes. Default is 5 seconds.
+.IP
+
+.TP
+\fBconmgr_write_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering a write from a file descriptor to be
+timed out. Default is 10 seconds.
 .IP
 
 .TP

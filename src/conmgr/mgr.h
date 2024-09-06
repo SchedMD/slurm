@@ -46,6 +46,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include "slurm/slurm.h"
 
@@ -242,6 +243,13 @@ typedef struct {
 	 */
 	uint32_t conf_delay_write_complete;
 
+	/* Time delay requires to trigger a read timeout */
+	timespec_t conf_read_timeout;
+	/* Time delay requires to trigger a write timeout */
+	timespec_t conf_write_timeout;
+	/* Time delay requires to trigger a connect timeout */
+	timespec_t conf_connect_timeout;
+
 	/* Max number of connections at any one time allowed */
 	int max_connections;
 	/*
@@ -335,6 +343,9 @@ typedef struct {
 	(conmgr_t) {\
 		.conf_max_connections = -1,\
 		.conf_delay_write_complete = 5, \
+		.conf_read_timeout = { 10, 0 }, \
+		.conf_write_timeout = { 10, 0 }, \
+		.conf_connect_timeout = { 20, 0 }, \
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
 		.error = SLURM_SUCCESS,\
