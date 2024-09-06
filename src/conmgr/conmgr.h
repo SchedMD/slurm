@@ -43,6 +43,7 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
 
 #define CONMGR_THREAD_COUNT_DEFAULT 10
 #define CONMGR_THREAD_COUNT_MIN 2
@@ -203,22 +204,14 @@ typedef enum {
 /* RET caller must xfree() */
 extern char *conmgr_work_depend_string(conmgr_work_depend_t type);
 
-typedef struct {
-	/* UNIX timestamp when to work can begin */
-	time_t seconds;
-	/* Additional Nanoseconds after seconds to delay */
-	long nanoseconds;
-} conmgr_work_time_begin_t;
-
 /*
  * Calculate the absolute start time from delayed time
  * IN delay_seconds - Number of seconds to delay from current time
  * IN delay_nanoseconds - Number of additional nanoseconds to delay from
  *	delay_seconds
  */
-extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
-	time_t delay_seconds,
-	long delay_nanoseconds);
+extern timespec_t conmgr_calc_work_time_delay(time_t delay_seconds,
+					      long delay_nanoseconds);
 
 typedef struct {
 	/* ptr to relevant connection (or NULL) */
@@ -254,7 +247,7 @@ typedef struct {
 	conmgr_work_depend_t depend_type;
 
 	/* set if (depend_type & CONMGR_WORK_DEP_TIME_DELAY) */
-	conmgr_work_time_begin_t time_begin;
+	timespec_t time_begin;
 
 	/* set if (depend_type & CONMGR_WORK_DEP_SIGNAL) */
 	int on_signal_number;

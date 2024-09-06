@@ -134,19 +134,19 @@ static struct itimerspec _calc_timer(work_t *shortest,
 				     const timespec_t time)
 {
 	struct itimerspec spec = {{0}};
-	const conmgr_work_time_begin_t begin = shortest->control.time_begin;
+	timespec_t begin = shortest->control.time_begin;
 
-	spec.it_value.tv_sec = begin.seconds;
+	spec.it_value.tv_sec = begin.tv_sec;
 
-	if (begin.seconds <= 0)
-		spec.it_value.tv_nsec = begin.nanoseconds;
+	if (begin.tv_sec <= 0)
+		spec.it_value.tv_nsec = begin.tv_nsec;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		int64_t remain_sec, remain_nsec;
 
-		remain_sec = begin.seconds - time.tv_sec;
+		remain_sec = begin.tv_sec - time.tv_sec;
 		if (remain_sec == 0) {
-			remain_nsec = begin.nanoseconds - time.tv_nsec;
+			remain_nsec = begin.tv_nsec - time.tv_nsec;
 		} else if (remain_sec < 0) {
 			remain_nsec = NO_VAL64;
 		} else {
@@ -191,17 +191,17 @@ static int _inspect_work(void *x, void *key)
 {
 	bool trigger;
 	work_t *work = x;
-	const conmgr_work_time_begin_t begin = work->control.time_begin;
+	const timespec_t begin = work->control.time_begin;
 	foreach_delayed_work_t *args = key;
 	const timespec_t time = args->time;
-	const int64_t remain_sec = begin.seconds - time.tv_sec;
+	const int64_t remain_sec = begin.tv_sec - time.tv_sec;
 	int64_t remain_nsec;
 
 	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
 	xassert(work->magic == MAGIC_WORK);
 
 	if (remain_sec == 0) {
-		remain_nsec = begin.nanoseconds - time.tv_nsec;
+		remain_nsec = begin.tv_nsec - time.tv_nsec;
 		trigger = (remain_nsec <= 0);
 	} else if (remain_sec < 0) {
 		trigger = true;
@@ -221,13 +221,13 @@ static int _inspect_work(void *x, void *key)
 	if (!args->shortest) {
 		args->shortest = work;
 	} else {
-		const conmgr_work_time_begin_t shortest_begin =
+		const timespec_t shortest_begin =
 			args->shortest->control.time_begin;
 
-		if (shortest_begin.seconds == begin.seconds) {
-			if (shortest_begin.nanoseconds > begin.nanoseconds)
+		if (shortest_begin.tv_sec == begin.tv_sec) {
+			if (shortest_begin.tv_nsec > begin.tv_nsec)
 				args->shortest = work;
-		} else if (shortest_begin.seconds > begin.seconds) {
+		} else if (shortest_begin.tv_sec > begin.tv_sec) {
 			args->shortest = work;
 		}
 	}
@@ -235,7 +235,7 @@ static int _inspect_work(void *x, void *key)
 	return trigger ? 1 : 0;
 }
 
-extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
+extern timespec_t conmgr_calc_work_time_delay(
 	time_t delay_seconds,
 	long delay_nanoseconds)
 {
@@ -252,9 +252,9 @@ extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
 	/* catch integer overflows */
 	xassert((delay_seconds + time.tv_sec) >= time.tv_sec);
 
-	return (conmgr_work_time_begin_t) {
-		.seconds = (delay_seconds + time.tv_sec),
-		.nanoseconds = delay_nanoseconds,
+	return (timespec_t) {
+		.tv_sec = (delay_seconds + time.tv_sec),
+		.tv_nsec = delay_nanoseconds,
 	};
 }
 
@@ -346,7 +346,7 @@ static bool _work_clear_time_delay(work_t *work)
 		return false;
 
 #ifndef NDEBUG
-	work->control.time_begin = (conmgr_work_time_begin_t) {0};
+	work->control.time_begin = (timespec_t) {0};
 #endif /* !NDEBUG */
 	work_mask_depend(work, ~CONMGR_WORK_DEP_TIME_DELAY);
 
@@ -368,7 +368,7 @@ extern char *work_delayed_to_str(work_t *work)
 	if (!(work->control.depend_type & CONMGR_WORK_DEP_TIME_DELAY))
 		return NULL;
 
-	diff = work->control.time_begin.seconds - time.tv_sec;
+	diff = work->control.time_begin.tv_sec - time.tv_sec;
 
 	days = diff / (DAY_HOURS * HOUR_SECONDS);
 	diff = diff % (DAY_HOURS * HOUR_SECONDS);
@@ -382,10 +382,9 @@ extern char *work_delayed_to_str(work_t *work)
 	seconds = diff;
 
 	if (!seconds)
-		nanoseconds = work->control.time_begin.nanoseconds;
+		nanoseconds = work->control.time_begin.tv_nsec;
 	else
-		nanoseconds = (work->control.time_begin.nanoseconds -
-			       time.tv_nsec);
+		nanoseconds = (work->control.time_begin.tv_nsec - time.tv_nsec);
 
 	xstrfmtcat(delay, " time_begin=%u-%u:%u:%u.%u",
 		   days, hours, minutes, seconds, nanoseconds);
