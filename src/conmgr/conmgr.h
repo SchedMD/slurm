@@ -131,6 +131,45 @@ typedef struct {
 	 * 	used anymore.
 	 */
 	void (*on_finish)(conmgr_fd_t *con, void *arg);
+
+	/*
+	 * Call back when read timeout occurs
+	 * Called once per timeout triggering or being detected.
+	 *
+	 * If on_read_timeout=NULL is treated same as returning
+	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
+	 *
+	 * IN con - connection handler
+	 * IN arg ptr to be handed return of on_connection() callback.
+	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
+	 */
+	int (*on_read_timeout)(conmgr_fd_t *con, void *arg);
+
+	/*
+	 * Call back when write timeout occurs
+	 * Called once per timeout triggering or being detected.
+	 *
+	 * If on_read_timeout=NULL is treated same as returning
+	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
+	 *
+	 * IN con - connection handler
+	 * IN arg ptr to be handed return of on_connection() callback.
+	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
+	 */
+	int (*on_write_timeout)(conmgr_fd_t *con, void *arg);
+
+	/*
+	 * Call back when connect timeout occurs
+	 * Called once per timeout triggering or being detected.
+	 *
+	 * If on_read_timeout=NULL is treated same as returning
+	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
+	 *
+	 * IN con - connection handler
+	 * IN arg ptr to be handed return of on_connection() callback.
+	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
+	 */
+	int (*on_connect_timeout)(conmgr_fd_t *con, void *arg);
 } conmgr_events_t;
 
 typedef struct {
