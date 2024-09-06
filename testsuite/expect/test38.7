@@ -56,13 +56,10 @@ proc run_pmix_het_job {comp_count} {
 }
 
 #
-# Test for existence of mpi compiler
+# Test MPI setup
 #
-if {[info exists mpicc] == 0} {
-	skip "Mpicc not defined, can't perform MPI testing"
-}
-if {[file executable $mpicc] == 0} {
-	skip "$mpicc does not exist"
+if {![check_mpi "pmix"]} {
+	skip "This test needs a working MPI with PMIX setup"
 }
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
@@ -96,25 +93,7 @@ proc cleanup {} {
 #
 # Delete left-over program and rebuild it
 #
-exec $bin_rm -f $test_prog ${test_prog}.o
-if {$use_pmi} {
-	spawn $mpicc -Xlinker -rpath $slurm_dir/lib -L $slurm_dir/lib -lpmi -o $test_prog ${test_prog}.c
-	expect {
-		eof {
-			wait
-		}
-	}
-} else {
-	spawn $mpicc -o $test_prog ${test_prog}.c
-	expect {
-		eof {
-			wait
-		}
-	}
-}
-if {![file exists $test_prog]} {
-	skip "Unable to build test program"
-}
+run_command -fail "$mpicc -o $test_prog ${test_prog}.c"
 
 ########################################################################
 # TEST OF HET GROUP 0
@@ -139,39 +118,7 @@ make_bash_script $file_in "
 #
 # Spawn an sbatch job that uses stdout/err and confirm their contents
 #
-set timeout $max_job_delay
-set no_start 0
-spawn $sbatch -N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "Batch job submission failed" {
-		set no_start 1
-		exp_continue
-	}
-	-re "Unable to contact" {
-		fail "Slurm appears to be down"
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$no_start != 0} {
-	skip "Partition too small for test"
-}
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
-
-#
-# Wait for job to complete
-#
+set job_id [submit_job -fail "-N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 $file_in"]
 wait_for_job -fail $job_id "DONE"
 
 #
@@ -232,39 +179,7 @@ make_bash_script $file_in "
 #
 # Spawn an sbatch job that uses stdout/err and confirm their contents
 #
-set job_id   0
-set no_start 0
-spawn $sbatch -N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "Batch job submission failed" {
-		set no_start 1
-		exp_continue
-	}
-	-re "Unable to contact" {
-		fail "Slurm appears to be down"
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$no_start != 0} {
-	skip "Partition too small for test"
-}
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
-
-#
-# Wait for job to complete
-#
+set job_id [submit_job -fail "-N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 $file_in"]
 wait_for_job -fail $job_id "DONE"
 
 #
@@ -311,15 +226,9 @@ if {$matches == 0} {
 # TEST OF HET JOB WITH PMIX (to reproduce bug 8990)
 ########################################################################
 
-set output [run_command_output "$srun --mpi=list"]
-if {![regexp "pmix$eol" $output]} {
-	log_warn "SKIP: pmix not configured"
-	incr skips
-} else {
-	log_info "TEST OF SRUN HETJOB WITH PMIX"
-	foreach comp_count {2 3 4} {
-		run_pmix_het_job $comp_count
-	}
+log_info "TEST OF SRUN HETJOB WITH PMIX"
+foreach comp_count {2 3 4} {
+	run_pmix_het_job $comp_count
 }
 
 #
@@ -327,7 +236,7 @@ if {![regexp "pmix$eol" $output]} {
 # more than one task. Individual nodes with more than one task use shared
 # memory for communications and if more than one node is doing that, their
 # shared memory use collides. That means these MPI tests will work if five
-# nodes or more are available, otherwise some tests will fail. See test1.117
+# nodes or more are available, otherwise some tests will fail. See test1.116
 # for a variation of this test that will work with OpenMPI and multi-slurmd
 # mode.
 #
