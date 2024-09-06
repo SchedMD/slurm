@@ -323,6 +323,22 @@ typedef enum {
 	CON_FLAG_QUIESCE = SLURM_BIT(10),
 	/* output_fd is a socket with TCP_NODELAY set */
 	CON_FLAG_TCP_NODELAY = SLURM_BIT(14),
+	/*
+	 * Trigger on_write_timeout() callback when write of at least 1 byte
+	 * takes longer than conf_write_timeout when connection is otherwise
+	 * idle.
+	 */
+	CON_FLAG_WATCH_WRITE_TIMEOUT = SLURM_BIT(15),
+	/*
+	 * Trigger on_read_timeout() callback when read of at least 1 byte takes
+	 * longer than conf_read_timeout when connection is otherwise idle.
+	 */
+	CON_FLAG_WATCH_READ_TIMEOUT = SLURM_BIT(16),
+	/*
+	 * Trigger on_connect_timeout() callback when read of at least 1 byte
+	 * takes longer than timeout when connection is otherwise idle.
+	 */
+	CON_FLAG_WATCH_CONNECT_TIMEOUT = SLURM_BIT(17),
 } conmgr_con_flags_t;
 
 /*
