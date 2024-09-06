@@ -497,6 +497,13 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 		return SLURM_SUCCESS;
 	}
 
+	/*
+	 * Avoid poll()ing the connection until we handle the flags via
+	 * _handle_connection() to avoid the kernel thinking we successfully
+	 * received the new edge triggered events.
+	 */
+	con_set_polling(con, PCTL_TYPE_NONE, __func__);
+
 	if (con_flag(con, FLAG_IS_LISTEN)) {
 		/* Special handling for listening sockets */
 		if (pollctl_events_has_hangup(events)) {
