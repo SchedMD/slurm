@@ -757,6 +757,7 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
 #define CONMGR_PARAM_POLL_ONLY "CONMGR_USE_POLL"
 #define CONMGR_PARAM_THREADS "CONMGR_THREADS="
 #define CONMGR_PARAM_MAX_CONN "CONMGR_MAX_CONNECTIONS="
+#define CONMGR_PARAM_WAIT_WRITE_DELAY "CONMGR_WAIT_WRITE_DELAY="
 
 /*
  * Set configuration parameters to be applied when conmgr_init() is called.

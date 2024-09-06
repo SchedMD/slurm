@@ -4822,6 +4822,12 @@ Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
 .IP
 
 .TP
+\fBconmgr_wait_write_delay\fR=\fI<seconds>\fR
+When waiting for kernel to flush outgoing buffer, poll kernel for changes every
+\fI<seconds>\fR for changes. Default is 5 seconds.
+.IP
+
+.TP
 \fBdisable_triggers\fR
 Disable the ability to register new triggers.
 .IP
@@ -5215,6 +5221,12 @@ listening socket.
 .TP
 \fBconmgr_use_poll\fR
 Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
+.IP
+
+.TP
+\fBconmgr_wait_write_delay\fR=\fI<seconds>\fR
+When waiting for kernel to flush outgoing buffer, poll kernel for changes every
+\fI<seconds>\fR for changes. Default is 5 seconds.
 .IP
 
 .TP

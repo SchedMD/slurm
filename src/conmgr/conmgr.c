@@ -328,6 +328,11 @@ extern int conmgr_set_params(const char *params)
 		} else if (!xstrcasecmp(tok, CONMGR_PARAM_POLL_ONLY)) {
 			log_flag(CONMGR, "%s: %s activated", __func__, tok);
 			pollctl_set_mode(POLL_MODE_POLL);
+		} else if (!xstrcasecmp(tok, CONMGR_PARAM_WAIT_WRITE_DELAY)) {
+			const unsigned long count = slurm_atoul(tok +
+				strlen(CONMGR_PARAM_WAIT_WRITE_DELAY));
+			log_flag(CONMGR, "%s: %s activated", __func__, tok);
+			mgr.conf_delay_write_complete = count;
 		} else {
 			log_flag(CONMGR, "%s: Ignoring parameter %s",
 				 __func__, tok);
