@@ -166,8 +166,8 @@
   is exhausted?</a></li>
 <li><a href="#ubuntu">I see the host of my calling node as 127.0.1.1
   instead of the correct IP address.  Why is that?</a></li>
-<li><a href="#add_nodes">What process should I follow to add nodes to Slurm?</a></li>
-<li><a href="#rem_nodes">What process should I follow to remove nodes from Slurm?</a></li>
+<li><a href="#add_nodes">How should I add nodes to Slurm?</a></li>
+<li><a href="#rem_nodes">How should I remove nodes from Slurm?</a></li>
 <li><a href="#reboot">Why is a compute node down with the reason set to
   "Node unexpectedly rebooted"?</a></li>
 <li><a href="#cgroupv2">How to convert my nodes to Control Group v2?</a></li>
@@ -1542,7 +1542,7 @@ name from the "127.0.1.1" as well as the "127.0.0.1"
 addresses in the /etc/hosts file.  It is ok if they point to
 localhost, but not the actual name of the node.</p>
 
-<p><a id="add_nodes"><b>What process should I follow to add nodes to Slurm?</b></a><br>
+<p><a id="add_nodes"><b>How should I add nodes to Slurm?</b></a><br>
 The slurmctld daemon has a multitude of bitmaps to track state of nodes and cores
 in the system. Adding nodes to a running system would require the slurmctld daemon
 to rebuild all of those bitmaps, which the developers feel would be safer to do by
@@ -1564,7 +1564,7 @@ following procedure is recommended:</p>
 allocation, prior to new nodes being added to the slurm.conf can fail if the
 job is allocated one of the new nodes.</p>
 
-<p><a id="rem_nodes"><b>What process should I follow to remove nodes from Slurm?</b></a><br>
+<p><a id="rem_nodes"><b>How should I remove nodes from Slurm?</b></a><br>
 To safely remove a node from a system, it's best to drain the node of all jobs.
 This ensures that job processes aren't running on the node after removal. On
 restart of the controller, if a node is removed from a running job the
