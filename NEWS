@@ -67,6 +67,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix IPMI energy gathering with multiple sensors.
  -- data_parser/v0.0.39 - Remove xassert requiring errors and warnings to have a
     source string.
+ -- slurmrestd - Prevent potential segfault when there is an error parsing an
+    array field which could lead to a double xfree. This applies to several
+    endpoints in data_parser v0.0.39, v0.0.40 and v0.0.41.
 
 * Changes in Slurm 24.05.3
 ==========================
