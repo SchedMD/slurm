@@ -423,6 +423,9 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 
 	xassert(switch_context_cnt >= 0);
 
+	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION)
+		goto unpack_error;
+
 	if (!switch_context_cnt) {
 		/* Remove when 23.02 is no longer supported. */
 		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION) {
@@ -434,9 +437,6 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 
 	stepinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*stepinfo = stepinfo_ptr;
-
-	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION)
-		goto unpack_error;
 
 	safe_unpack32(&plugin_id, buffer);
 	for (i = 0; i < switch_context_cnt; i++) {
