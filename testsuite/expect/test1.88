@@ -102,15 +102,15 @@ make_bash_script $file_in "
   echo MPI_TASKS=\$TASKS
 
   $bin_echo test1_cyclic
-  $srun -n \$TASKS --distribution=cyclic -t1 ./$test_prog
+  $srun --mpi=pmix -n \$TASKS --distribution=cyclic -t1 ./$test_prog
 
   $bin_date
   $bin_echo test2_block
-  $srun -n \$TASKS --distribution=block -t1 ./$test_prog
+  $srun --mpi=pmix -n \$TASKS --distribution=block -t1 ./$test_prog
 
   $bin_date
   $bin_echo test3_one_node
-  $srun -n \$TASKS -N1 -O -t1 ./$test_prog
+  $srun --mpi=pmix -n \$TASKS -N1 -O -t1 ./$test_prog
 
   $bin_date
   $bin_echo TEST_COMPLETE
