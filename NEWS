@@ -144,6 +144,8 @@ documents those changes that are of interest to users and administrators.
     the following endpoints:
       'GET /slurmdb/v0.0.40/jobs'
       'GET /slurmdb/v0.0.41/jobs'
+ -- Ignore --json and --yaml options for scontrol show config to prevent mixing
+    output types.
 
 * Changes in Slurm 24.05.3
 ==========================
