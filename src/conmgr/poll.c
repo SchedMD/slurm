@@ -358,8 +358,7 @@ static int _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 		if (pctl.fds[i].fd != -1)
 			continue;
 
-		log_flag(CONMGR,
-			 "%s->%s: [POLL:%s] registered fd[%s]:%d for %s events",
+		log_flag(CONMGR, "%s->%s: [POLL:%s] registered fd[%s]:%d for %s events",
 			 caller, __func__, con_name,
 			 _fd_type_to_type_string(type), fd,
 			 _fd_type_to_events_string(type));
@@ -397,8 +396,7 @@ static void _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 		if (pctl.fds[i].fd != fd)
 			continue;
 
-		log_flag(CONMGR,
-			 "%s->%s: [POLL:%s] Modified fd[%s]:%d for %s events",
+		log_flag(CONMGR, "%s->%s: [POLL:%s] Modified fd[%s]:%d for %s events",
 			 caller, __func__, con_name,
 			 _fd_type_to_type_string(type), fd,
 			 _fd_type_to_events_string(type));
@@ -459,11 +457,10 @@ static void _flush_interrupt(int intr_fd, uint32_t events, const char *caller)
 
 	slurm_mutex_lock(&pctl.mutex);
 
-	log_flag(
-		CONMGR,
-		"%s->%s: [POLL:%s] read %zd bytes representing %d pending requests while sending=%c",
-		caller, __func__, INTERRUPT_CON_NAME, event_read,
-		pctl.interrupt.requested, (pctl.interrupt.sending ? 'T' : 'F'));
+	log_flag(CONMGR, "%s->%s: [POLL:%s] read %zd bytes representing %d pending requests while sending=%c",
+		 caller, __func__, INTERRUPT_CON_NAME, event_read,
+		 pctl.interrupt.requested,
+		 (pctl.interrupt.sending ? 'T' : 'F'));
 
 	/* reset counter */
 	pctl.interrupt.requested = 0;
@@ -497,15 +494,12 @@ static int _poll(const char *caller)
 		 */
 		slurm_mutex_unlock(&pctl.mutex);
 
-		log_flag(
-			CONMGR,
-			"%s->%s: [POLL] skipping poll() with %d/%d file descriptors",
-			caller, __func__, fd_count, events_count);
+		log_flag(CONMGR, "%s->%s: [POLL] skipping poll() with %d/%d file descriptors",
+			 caller, __func__, fd_count, events_count);
 		return SLURM_SUCCESS;
 	}
 
-	log_flag(CONMGR,
-		 "%s->%s: [POLL] BEGIN: poll() with %d file descriptors",
+	log_flag(CONMGR, "%s->%s: [POLL] BEGIN: poll() with %d file descriptors",
 		 caller, __func__, pctl.fd_count);
 
 	for (int i = 0, t = 0; i < pctl.events_count; i++) {
@@ -535,24 +529,19 @@ static int _poll(const char *caller)
 
 	xassert(rc || (nfds <= pctl.events_count));
 
-	log_flag(
-		CONMGR,
-		"%s->%s: [POLL] END: poll() with events for %d/%d file descriptors",
-		caller, __func__, nfds, pctl.fd_count);
+	log_flag(CONMGR, "%s->%s: [POLL] END: poll() with events for %d/%d file descriptors",
+		 caller, __func__, nfds, pctl.fd_count);
 
 	if (nfds > 0) {
 		/* wait for pollctl_for_each_event() to do anything */
 	} else if (!nfds) {
-		log_flag(
-			CONMGR,
-			"%s->%s: [POLL] END: poll() reported 0 events for %d file descriptors",
-			caller, __func__, pctl.fd_count);
+		log_flag(CONMGR, "%s->%s: [POLL] END: poll() reported 0 events for %d file descriptors",
+			 caller, __func__, pctl.fd_count);
 	} else if (rc == EINTR) {
 		/* Treat EINTR as no events detected */
 		rc = SLURM_SUCCESS;
 
-		log_flag(CONMGR,
-			 "%s->%s: [POLL] END: poll() interrupted by signal",
+		log_flag(CONMGR, "%s->%s: [POLL] END: poll() interrupted by signal",
 			 caller, __func__);
 	} else {
 		fatal_abort("%s->%s: [POLL] END: poll() failed: %m", caller,
@@ -596,21 +585,15 @@ static int _for_each_event(pollctl_event_func_t func, void *arg,
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
 			events_str = _poll_events_to_string(events[i].revents);
 
-		log_flag(
-			CONMGR,
-			"%s->%s: [POLL] BEGIN: calling %s(fd:%d, (%s), 0x%" PRIxPTR
-			")",
-			caller, __func__, func_name, events[i].fd, events_str,
-			(uintptr_t) arg);
+		log_flag(CONMGR, "%s->%s: [POLL] BEGIN: calling %s(fd:%d, (%s), 0x%" PRIxPTR ")",
+			 caller, __func__, func_name, events[i].fd, events_str,
+			 (uintptr_t) arg);
 
 		rc = func(events[i].fd, events[i].revents, arg);
 
-		log_flag(
-			CONMGR,
-			"%s->%s: [POLL] END: called %s(fd:%d, (%s), 0x%" PRIxPTR
-			")=%s",
-			caller, __func__, func_name, events[i].fd, events_str,
-			(uintptr_t) arg, slurm_strerror(rc));
+		log_flag(CONMGR, "%s->%s: [POLL] END: called %s(fd:%d, (%s), 0x%" PRIxPTR ")=%s",
+			 caller, __func__, func_name, events[i].fd, events_str,
+			 (uintptr_t) arg, slurm_strerror(rc));
 
 		xfree(events_str);
 	}
@@ -659,10 +642,8 @@ static void _interrupt(const char *caller)
 	_check_pctl_magic();
 
 	if (!pctl.polling) {
-		log_flag(
-			CONMGR,
-			"%s->%s: [POLL] skipping sending interrupt when not actively poll()ing",
-			caller, __func__);
+		log_flag(CONMGR, "%s->%s: [POLL] skipping sending interrupt when not actively poll()ing",
+			 caller, __func__);
 	} else {
 		pctl.interrupt.requested++;
 
@@ -673,15 +654,12 @@ static void _interrupt(const char *caller)
 			pctl.interrupt.sending = true;
 			interrupt_return = &pctl.interrupt_return;
 
-			log_flag(CONMGR,
-				 "%s->%s: [POLL] sending interrupt requests=%d",
+			log_flag(CONMGR, "%s->%s: [POLL] sending interrupt requests=%d",
 				 caller, __func__, pctl.interrupt.requested);
 		} else {
-			log_flag(
-				CONMGR,
-				"%s->%s: [POLL] skipping sending another interrupt requests=%d sending=%c",
-				caller, __func__, pctl.interrupt.requested,
-				(pctl.interrupt.sending ? 'T' : 'F'));
+			log_flag(CONMGR, "%s->%s: [POLL] skipping sending another interrupt requests=%d sending=%c",
+				 caller, __func__, pctl.interrupt.requested,
+				 (pctl.interrupt.sending ? 'T' : 'F'));
 		}
 	}
 
