@@ -61,6 +61,8 @@
  * xrecalloc() every time poll() is called.
  */
 #define MAX_POLL_EVENTS(max_connections) ((max_connections * 2) + 1)
+/* Increase poll events by amount when not enough slots available */
+#define POLL_EVENTS_INCREASE(old) ((old) * 2)
 
 /* string used for interrupt name in logging to match style of others fds */
 #define INTERRUPT_CON_NAME "interrupt"
@@ -369,7 +371,18 @@ static int _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 		return SLURM_SUCCESS;
 	}
 
-	fatal_abort("should never happen");
+	/* No empty slots found -> need to increase events_count */
+
+	log_flag(CONMGR, "%s->%s: [POLL] Increasing max events: %d -> %d",
+		 caller, __func__, pctl.events_count,
+		 POLL_EVENTS_INCREASE(pctl.events_count));
+
+	pctl.events_count = POLL_EVENTS_INCREASE(pctl.events_count);
+	xrecalloc(pctl.events, pctl.events_count, sizeof(*pctl.events));
+	xrecalloc(pctl.fds, pctl.events_count, sizeof(*pctl.fds));
+
+	/* Run again as there will be enough slots available */
+	return _link_fd(fd, type, con_name, caller);
 }
 
 static int _lock_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
