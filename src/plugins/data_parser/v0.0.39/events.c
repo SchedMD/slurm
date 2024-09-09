@@ -67,15 +67,6 @@ extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
 	str = vxstrfmt(why, ap);
 	va_end(ap);
 
-	/*
-	 * All parsing must be providing the source path with starts with a /.
-	 * This makes it sooo much easier for a client to figure out what they
-	 * are incorrectly submitting to Slurm.
-	 */
-	xassert((op != PARSING) ||
-		(source && (source[0] == OPENAPI_PATH_REL[0]) &&
-		 (source[1] == OPENAPI_PATH_SEP[0])));
-
 	switch (op) {
 	case PARSING:
 		if (args->on_parse_error)
@@ -137,15 +128,6 @@ extern void on_warn(parse_op_t op, data_parser_type_t type, args_t *args,
 	va_start(ap, why);
 	str = vxstrfmt(why, ap);
 	va_end(ap);
-
-	/*
-	 * All parsing must be providing the source path with starts with a /.
-	 * This makes it sooo much easier for a client to figure out what they
-	 * are incorrectly submitting to Slurm.
-	 */
-	xassert((op != PARSING) ||
-		(source && (source[0] == OPENAPI_PATH_REL[0]) &&
-		 (source[1] == OPENAPI_PATH_SEP[0])));
 
 	switch (op) {
 	case PARSING:
