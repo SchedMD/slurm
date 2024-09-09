@@ -125,6 +125,8 @@ documents those changes that are of interest to users and administrators.
     "required_switches" to reflect the actual behavior.
  -- data_parser/v0.0.42 - Rename ACCOUNT_CONDITION field "assocation" to
     "association" to fix typo.
+ -- cgroup/v2 - fix cgroup cleanup when running inside a container without write
+    permissions to /sys/fs/cgroup.
 
 * Changes in Slurm 24.05.4
 ==========================

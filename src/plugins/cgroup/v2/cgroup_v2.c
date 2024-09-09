@@ -1553,14 +1553,24 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t ctl)
 	 */
 
 	/*
-	 * Move ourselves to the init root. This is the only cgroup level where
-	 * pids can be put and which is not a leaf.
+	 * Move ourselves to the CGROUP SYETEM level. This is the waiting area
+	 * for new Slurmstepd process which do not have job folders yet, or for
+	 * jobs that are ending execution. This directory also contains the
+	 * "stepd infinity" process to keep the scope alive.
+	 *
+	 * This level is a leaf.  We are not violating the no-internal-processes
+	 * constrain.
+	 *
+	 * Moving the process here instead of to the cgroup root
+	 * (typically /sys/fs/cgroup) will prevent problems when running into
+	 * containerized environments, where cgroupfs root might not be
+	 * writeable.
 	 */
 	memset(&init_root, 0, sizeof(init_root));
-	init_root.path = xstrdup(slurm_cgroup_conf.cgroup_mountpoint);
+	init_root.path = xstrdup(int_cg[CG_LEVEL_SYSTEM].path);
 	rc = common_cgroup_move_process(&init_root, getpid());
 	if (rc != SLURM_SUCCESS) {
-		error("Unable to move pid %d to init root cgroup %s", getpid(),
+		error("Unable to move pid %d to system cgroup %s", getpid(),
 		      init_root.path);
 		goto end;
 	}
