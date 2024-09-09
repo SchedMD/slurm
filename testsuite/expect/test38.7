@@ -39,16 +39,15 @@ set mpi_arg            "--mpi=pmix"
 proc run_pmix_het_job {comp_count} {
 	global eol max_job_delay number srun mpi_arg
 
-	# since het jobs are started by the backfill scheduler, they
-	# may need a bit more time to start
-	set timeout [expr $max_job_delay * 4]
 	set het_comps ""
 	set sep ""
 	for {set i 1} {$i <= $comp_count} {incr i} {
 		set het_comps "${het_comps}${sep}echo J$i"
 		set sep " : "
 	}
-	set output [run_command_output -fail "$srun $mpi_arg $het_comps"]
+	# since het jobs are started by the backfill scheduler, they
+	# may need a bit more time to start
+	set output [run_command_output -fail -timeout [expr $max_job_delay * 3] "$srun $mpi_arg $het_comps"]
 	set comp_found [regexp -all "J$number$eol" $output]
 	if {$comp_found != $comp_count} {
 		fail "srun hetjob failed with $comp_count components"
