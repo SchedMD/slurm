@@ -538,6 +538,8 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	dest_resv->core_resrcs = src_resv->core_resrcs;
 	src_resv->core_resrcs = NULL;
 
+	dest_resv->ctld_flags = src_resv->ctld_flags;
+
 	dest_resv->duration = src_resv->duration;
 	dest_resv->end_time = src_resv->end_time;
 
