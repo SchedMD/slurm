@@ -104,7 +104,7 @@ static const struct {
 #undef T
 
 typedef struct {
-	conmgr_events_t events;
+	const conmgr_events_t *events;
 	void *arg;
 	conmgr_con_type_t type;
 	int rc;
@@ -114,7 +114,7 @@ typedef struct {
 #define MAGIC_RECEIVE_FD 0xeba8bae0
 	int magic; /* MAGIC_RECEIVE_FD */
 	conmgr_con_type_t type;
-	conmgr_events_t events;
+	const conmgr_events_t *events;
 	void *arg;
 } receive_fd_args_t;
 
@@ -363,10 +363,10 @@ static void _check_con_type(conmgr_fd_t *con, conmgr_con_type_t type)
 #ifndef NDEBUG
 	if (type == CON_TYPE_RAW) {
 		/* must have on_data() defined */
-		xassert(con->events.on_data);
+		xassert(con->events->on_data);
 	} else if (type == CON_TYPE_RPC) {
 		/* must have on_msg() defined */
-		xassert(con->events.on_msg);
+		xassert(con->events->on_msg);
 	} else {
 		fatal_abort("invalid type");
 	}
@@ -412,7 +412,7 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 extern int add_connection(conmgr_con_type_t type,
 			  conmgr_fd_t *source, int input_fd,
 			  int output_fd,
-			  const conmgr_events_t events,
+			  const conmgr_events_t *events,
 			  conmgr_con_flags_t flags,
 			  const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,
@@ -565,24 +565,24 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	if (con_flag(con, FLAG_IS_LISTEN)) {
 		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
 			 __func__, con->name,
-			 (uintptr_t) con->events.on_listen_connect);
+			 (uintptr_t) con->events->on_listen_connect);
 
-		arg = con->events.on_listen_connect(con, con->new_arg);
+		arg = con->events->on_listen_connect(con, con->new_arg);
 
 		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 			 __func__, con->name,
-			 (uintptr_t) con->events.on_listen_connect,
+			 (uintptr_t) con->events->on_listen_connect,
 			 (uintptr_t) arg);
 	} else {
 		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
 			 __func__, con->name,
-			 (uintptr_t) con->events.on_connection);
+			 (uintptr_t) con->events->on_connection);
 
-		arg = con->events.on_connection(con, con->new_arg);
+		arg = con->events->on_connection(con, con->new_arg);
 
 		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 			 __func__, con->name,
-			 (uintptr_t) con->events.on_connection,
+			 (uintptr_t) con->events->on_connection,
 			 (uintptr_t) arg);
 	}
 
@@ -601,7 +601,7 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 }
 
 extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
-			     int output_fd, const conmgr_events_t events,
+			     int output_fd, const conmgr_events_t *events,
 			     conmgr_con_flags_t flags,
 			     const slurm_addr_t *addr, socklen_t addrlen,
 			     void *arg)
@@ -611,7 +611,7 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
-				    const conmgr_events_t events,
+				    const conmgr_events_t *events,
 				    conmgr_con_flags_t flags, void *arg)
 {
 	return add_connection(type, NULL, fd, -1, events, flags, NULL,
@@ -658,7 +658,7 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 }
 
 extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
-				   const conmgr_events_t events, void *arg)
+				   const conmgr_events_t *events, void *arg)
 {
 	int rc = SLURM_ERROR;
 
@@ -871,7 +871,8 @@ static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
 
 extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 					const char *listen_on,
-					conmgr_events_t events, void *arg)
+					const conmgr_events_t *events,
+					void *arg)
 {
 	static const char UNIX_PREFIX[] = "unix:";
 	const char *unixsock = xstrstr(listen_on, UNIX_PREFIX);
@@ -1004,7 +1005,8 @@ static int _setup_listen_socket(void *x, void *arg)
 
 extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 					list_t *hostports,
-					conmgr_events_t events, void *arg)
+					const conmgr_events_t *events,
+					void *arg)
 {
 	socket_listen_init_t init = {
 		.events = events,
@@ -1018,7 +1020,8 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 
 extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					slurm_addr_t *addr, socklen_t addrlen,
-					conmgr_events_t events, void *arg)
+					const conmgr_events_t *events,
+					void *arg)
 {
 	int fd = -1, rc = SLURM_ERROR;
 	//socklen_t bindlen = 0;

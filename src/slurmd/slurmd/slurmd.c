@@ -2127,7 +2127,7 @@ static void _create_msg_socket(run_args_t *args)
 		fatal("Unable to bind listen port (%u): %m", conf->port);
 	}
 
-	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, events,
+	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, &events,
 					   CON_FLAG_QUIESCE, args)))
 		fatal("%s: unable to process fd:%d error:%s",
 		      __func__, conf->lfd, slurm_strerror(rc));

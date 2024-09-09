@@ -63,10 +63,10 @@ static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 
 	if (con_flag(con, FLAG_IS_LISTEN)) {
-		if (con->events.on_listen_finish)
-			con->events.on_listen_finish(con, arg);
-	} else if (con->events.on_finish) {
-		con->events.on_finish(con, arg);
+		if (con->events->on_listen_finish)
+			con->events->on_listen_finish(con, arg);
+	} else if (con->events->on_finish) {
+		con->events->on_finish(con, arg);
 	}
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -256,7 +256,7 @@ static int _handle_connection(void *x, void *arg)
 		}
 
 		if (con_flag(con, FLAG_IS_LISTEN)) {
-			if (con->events.on_listen_connect) {
+			if (con->events->on_listen_connect) {
 				/* disable polling until on_listen_connect() */
 				con_set_polling(con, PCTL_TYPE_CONNECTED,
 						__func__);
@@ -269,7 +269,7 @@ static int _handle_connection(void *x, void *arg)
 			} else {
 				/* follow normal checks */
 			}
-		} else if (con->events.on_connection) {
+		} else if (con->events->on_connection) {
 			/* disable polling until on_connect() is done */
 			con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
 			add_work_con_fifo(true, con, wrap_on_connection, con);
@@ -638,13 +638,9 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	/* hand over FD for normal processing */
-	if ((rc = add_connection(con->type, con, fd, fd, (conmgr_events_t) {
-				.on_connection = con->events.on_connection,
-				.on_finish = con->events.on_finish,
-				.on_msg = con->events.on_msg,
-				.on_data = con->events.on_data,
-			    }, (conmgr_con_flags_t) con->flags,
-			   &addr, addrlen, false, unix_path, con->new_arg))) {
+	if ((rc = add_connection(con->type, con, fd, fd, con->events,
+				 (conmgr_con_flags_t) con->flags, &addr,
+				 addrlen, false, unix_path, con->new_arg))) {
 		log_flag(CONMGR, "%s: [fd:%d] unable to a register new connection: %s",
 			 __func__, fd, slurm_strerror(rc));
 		return;

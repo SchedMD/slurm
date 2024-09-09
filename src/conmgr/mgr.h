@@ -179,8 +179,8 @@ struct conmgr_fd_s {
 	char *name;
 	/* address for connection */
 	slurm_addr_t address;
-	/* call backs on events */
-	conmgr_events_t events;
+	/* call backs for events */
+	const conmgr_events_t *events;
 	/* buffer holding incoming already read data */
 	buf_t *in;
 	/* list of buf_t to write (in order) */
@@ -470,7 +470,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
 extern int add_connection(conmgr_con_type_t type,
 			  conmgr_fd_t *source, int input_fd,
 			  int output_fd,
-			  const conmgr_events_t events,
+			  const conmgr_events_t *events,
 			  conmgr_con_flags_t flags,
 			  const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,

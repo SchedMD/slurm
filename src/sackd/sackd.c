@@ -264,7 +264,9 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 static void _listen_for_reconf(void)
 {
 	int rc = SLURM_SUCCESS;
-	conmgr_events_t events = { .on_msg = _on_msg };
+	static const conmgr_events_t events = {
+		.on_msg = _on_msg,
+	};
 
 	if (getenv("SACKD_RECONF_LISTEN_FD")) {
 		listen_fd = atoi(getenv("SACKD_RECONF_LISTEN_FD"));
@@ -274,7 +276,7 @@ static void _listen_for_reconf(void)
 		return;
 	}
 
-	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, events,
+	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, &events,
 					   CON_FLAG_NONE, NULL)))
 		fatal("%s: conmgr refused fd=%d: %s",
 		      __func__, listen_fd, slurm_strerror(rc));

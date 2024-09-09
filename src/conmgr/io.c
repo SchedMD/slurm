@@ -316,8 +316,8 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	con->in->size = avail;
 
 	if (con->type == CON_TYPE_RAW) {
-		callback = con->events.on_data;
-		callback_string = XSTRINGIFY(con->events.on_data);
+		callback = con->events->on_data;
+		callback_string = XSTRINGIFY(con->events->on_data);
 	} else if (con->type == CON_TYPE_RPC) {
 		callback = on_rpc_connection_data;
 		callback_string = XSTRINGIFY(on_rpc_connection_data);

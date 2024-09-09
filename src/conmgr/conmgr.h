@@ -326,7 +326,7 @@ extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
-			     int output_fd, const conmgr_events_t events,
+			     int output_fd, const conmgr_events_t *events,
 			     conmgr_con_flags_t flags,
 			     const slurm_addr_t *addr, socklen_t addrlen,
 			     void *arg);
@@ -343,7 +343,7 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
-				    const conmgr_events_t events,
+				    const conmgr_events_t *events,
 				    conmgr_con_flags_t flags, void *arg);
 
 /*
@@ -355,7 +355,7 @@ extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
-				   const conmgr_events_t events, void *arg);
+				   const conmgr_events_t *events, void *arg);
 
 /*
  * Queue send file descriptor over connection
@@ -407,13 +407,14 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
  *	formats:
  *		host:port
  *		unix:/path/to/socket
- * IN events - function callback on events
+ * IN events - ptr to function callback on events
  * IN arg - arbitrary ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 					const char *listen_on,
-					conmgr_events_t events, void *arg);
+					const conmgr_events_t *events,
+					void *arg);
 
 /*
  * Create listening sockets from list of host:port pairs
@@ -422,26 +423,28 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
  *	formats:
  *		host:port
  *		unix:/path/to/socket
- * IN events - function callback on events
+ * IN events - ptr to function callback on events
  * IN arg - arbitrary ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 					list_t *hostports,
-					conmgr_events_t events, void *arg);
+					const conmgr_events_t *events,
+					void *arg);
 
 /*
  * Instruct conmgr to create new socket and connect to addr
  * IN type - connection for new socket
  * IN addr - destination address to connect() socket
  * IN addrlen - sizeof(*addr)
- * IN events - function callback on events
+ * IN events - ptr to function callback on events
  * IN arg - arbitrary ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					slurm_addr_t *addr, socklen_t addrlen,
-					conmgr_events_t events, void *arg);
+					const conmgr_events_t *events,
+					void *arg);
 
 /*
  * Run connection manager main loop for until shutdown

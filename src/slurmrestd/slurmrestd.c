@@ -654,7 +654,7 @@ int main(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
 	socket_listen = list_create(xfree_ptr);
-	conmgr_events_t conmgr_events = {
+	static const conmgr_events_t conmgr_events = {
 		.on_data = parse_http,
 		.on_connection = _setup_http_context,
 		.on_finish = on_http_connection_finish,
@@ -791,7 +791,7 @@ int main(int argc, char **argv)
 
 	if (!run_mode.listen) {
 		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
-					    STDOUT_FILENO, inet_events,
+					    STDOUT_FILENO, &inet_events,
 					    CON_FLAG_NONE, NULL, 0,
 					    operations_router)))
 			fatal("%s: unable to process stdin: %s",
@@ -803,7 +803,7 @@ int main(int argc, char **argv)
 		mode_t mask = umask(0);
 
 		if (conmgr_create_listen_sockets(CON_TYPE_RAW, socket_listen,
-						 conmgr_events,
+						 &conmgr_events,
 						 operations_router))
 			fatal("Unable to create sockets");
 
