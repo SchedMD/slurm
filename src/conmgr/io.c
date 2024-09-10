@@ -283,6 +283,9 @@ static void _handle_writev(conmgr_fd_t *con, const int out_count)
 		(void) list_delete_all(con->out, _foreach_writev_flush_bytes,
 				       &args);
 		xassert(!args.wrote);
+
+		if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
+			con->last_write = timespec_now();
 	}
 
 	if (args.iov != iov_stack)
