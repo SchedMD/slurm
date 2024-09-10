@@ -420,6 +420,10 @@ extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 		     "%s: queuing up write", __func__);
 
 	list_append(con->out, buf);
+
+	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
+		con->last_write = timespec_now();
+
 	slurm_mutex_lock(&mgr.mutex);
 	EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
