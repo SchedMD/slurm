@@ -1806,6 +1806,16 @@ mixed:
 	if (node_update)
 		last_node_update = time(NULL);
 }
+static void _set_slot_time(job_record_t *job_ptr, uint32_t time_limit,
+			   uint32_t boot_time, uint32_t *start, uint32_t *end)
+{
+	*start  = job_ptr->start_time;
+	*end = *start + boot_time + (time_limit * 60) + backfill_resolution - 1;
+
+	*start  = (*start / backfill_resolution) * backfill_resolution;
+	*end = (*end / backfill_resolution) * backfill_resolution;
+}
+
 
 /*
  * Marks nodes' user status and  last job end time
@@ -2055,6 +2065,7 @@ static void _attempt_backfill(void)
 	bitstr_t *next_bitmap = NULL, *current_bitmap = NULL;
 	resv_exc_t resv_exc = { 0 };
 	will_run_data_t will_run_data = { 0 };
+	bool overlap_tested = false;
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock = {
 		.qos = READ_LOCK,
@@ -3001,6 +3012,25 @@ TRY_LATER:
 			job_ptr->start_time = start_res;
 			last_job_update = now;
 		}
+
+		if (job_ptr->start_time > now) {
+			_set_slot_time(job_ptr, time_limit, boot_time,
+				       &start_time, &end_reserve);
+
+			if (_test_resv_overlap(node_space, avail_bitmap,
+					       job_ptr, start_time,
+					       end_reserve)) {
+				later_start = job_ptr->start_time;
+				job_ptr->start_time = 0;
+				log_flag(BACKFILL, "%pJ overlaps with existing reservation start_time=%u end_reserve=%u boot_time=%u later_start %ld",
+					 job_ptr, start_time, end_reserve,
+					 boot_time, later_start);
+				goto TRY_LATER;
+			}
+			overlap_tested = true;
+		} else
+			overlap_tested = false;
+
 		/*
 		 * avail_bitmap at this point contains a bitmap of nodes
 		 * selected for this job to be allocated
@@ -3295,23 +3325,16 @@ skip_start:
 			goto TRY_LATER;
 		}
 
-		start_time  = job_ptr->start_time;
-		end_reserve = job_ptr->start_time + boot_time +
-			      (time_limit * 60);
-		start_time  = (start_time / backfill_resolution) *
-			      backfill_resolution;
-		end_reserve = (end_reserve / backfill_resolution) *
-			      backfill_resolution;
-
-		/*
-		 * Ensure that the job always occupies at least one
-		 * bf_resolution slot within the map.
-		 */
-		if (end_reserve < (start_time + backfill_resolution))
-			end_reserve = start_time + backfill_resolution;
+		if (!overlap_tested) {
+			/* Job start deferred from now*/
+			_set_slot_time(job_ptr, time_limit, boot_time,
+				       &start_time, &end_reserve);
+		}
 
 		if (job_ptr->start_time > (sched_start + backfill_window)) {
 			/* Starts too far in the future to worry about */
+			end_reserve = job_ptr->start_time + boot_time +
+				      (time_limit * 60);
 			if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)
 				_dump_job_sched(job_ptr, end_reserve,
 						avail_bitmap);
@@ -3327,7 +3350,7 @@ skip_start:
 			continue;
 		}
 
-		if ((job_ptr->start_time > now) &&
+		if (!overlap_tested &&
 		    (job_ptr->state_reason != WAIT_BURST_BUFFER_RESOURCE) &&
 		    (job_ptr->state_reason != WAIT_BURST_BUFFER_STAGING) &&
 		    _test_resv_overlap(node_space, avail_bitmap, job_ptr,
@@ -3337,7 +3360,7 @@ skip_start:
 			 * plugin does not know about. Try again later. */
 			later_start = job_ptr->start_time;
 			job_ptr->start_time = 0;
-			log_flag(BACKFILL, "%pJ overlaps with existing reservation start_time=%u end_reserve=%u boot_time=%u later_start %ld",
+			log_flag(BACKFILL, "%pJ affter defer overlaps with existing reservation start_time=%u end_reserve=%u boot_time=%u later_start %ld",
 				 job_ptr, start_time, end_reserve, boot_time,
 				 later_start);
 			goto TRY_LATER;
