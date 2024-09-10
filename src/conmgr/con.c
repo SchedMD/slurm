@@ -61,11 +61,13 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_socket.h"
+#include "src/common/slurm_time.h"
 #include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/polling.h"
 
@@ -535,6 +537,9 @@ extern int add_connection(conmgr_con_type_t type,
 	_set_connection_name(con, &in_stat, &out_stat);
 
 	_check_con_type(con, type);
+
+	if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT))
+		con->last_read = timespec_now();
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *flags = con_flags_string(con->flags);
