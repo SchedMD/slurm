@@ -118,6 +118,16 @@ extern void conmgr_init(int thread_count, int max_connections,
 		return;
 	}
 
+	if (!mgr.conf_delay_write_complete)
+		mgr.conf_delay_write_complete = slurm_conf.msg_timeout;
+	if (!mgr.conf_read_timeout.tv_nsec && !mgr.conf_read_timeout.tv_sec)
+		mgr.conf_read_timeout.tv_sec = slurm_conf.msg_timeout;
+	if (!mgr.conf_write_timeout.tv_nsec && !mgr.conf_write_timeout.tv_sec)
+		mgr.conf_write_timeout.tv_sec = slurm_conf.msg_timeout;
+	if (!mgr.conf_connect_timeout.tv_nsec &&
+	    !mgr.conf_connect_timeout.tv_sec)
+		mgr.conf_connect_timeout.tv_sec = slurm_conf.msg_timeout;
+
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);
 	mgr.listen_conns = list_create(NULL);

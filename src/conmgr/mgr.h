@@ -358,10 +358,6 @@ typedef struct {
 #define CONMGR_DEFAULT \
 	(conmgr_t) {\
 		.conf_max_connections = -1,\
-		.conf_delay_write_complete = 5, \
-		.conf_read_timeout = { 10, 0 }, \
-		.conf_write_timeout = { 10, 0 }, \
-		.conf_connect_timeout = { 20, 0 }, \
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
 		.error = SLURM_SUCCESS,\
