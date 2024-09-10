@@ -41,6 +41,7 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
@@ -169,6 +170,9 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 			     read_c, "%s: [%s] read", __func__, con->name);
 
 		set_buf_offset(con->in, (get_buf_offset(con->in) + read_c));
+
+		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT))
+			con->last_read = timespec_now();
 	}
 }
 
