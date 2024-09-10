@@ -305,6 +305,67 @@ static void _on_connect_timeout(handle_connection_args_t *args,
 	add_work_con_fifo(true, con, _wrap_on_connect_timeout, NULL);
 }
 
+static void _wrap_on_write_timeout(conmgr_callback_args_t conmgr_args,
+				   void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	int rc;
+
+	if (con->events->on_write_timeout)
+		rc = con->events->on_write_timeout(con, con->arg);
+	else
+		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
+
+	if (rc) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char str[CTIME_STR_LEN];
+
+			timespec_ctime(mgr.conf_write_timeout, false, str,
+				       sizeof(str));
+
+			log_flag(CONMGR, "%s: [%s] closing due to write %s timeout failed: %s",
+				 __func__, con->name, str, slurm_strerror(rc));
+		}
+
+		close_con(false, con);
+	} else {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char str[CTIME_STR_LEN];
+
+			timespec_ctime(mgr.conf_write_timeout, false, str,
+				       sizeof(str));
+
+			log_flag(CONMGR, "%s: [%s] write %s timeout resetting",
+				 __func__, con->name, str);
+		}
+
+		slurm_mutex_lock(&mgr.mutex);
+		con->last_write = timespec_now();
+		slurm_mutex_unlock(&mgr.mutex);
+	}
+}
+
+static void _on_write_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
+
+		timespec_ctime(timespec_diff_ns(con->last_write,
+						args->time).diff, false,
+			       time_str, sizeof(time_str));
+		timespec_ctime(mgr.conf_write_timeout, false, total_str,
+			       sizeof(total_str));
+
+		log_flag(CONMGR, "%s: [%s] write timed out at %s/%s",
+			 __func__, con->name, time_str, total_str);
+	}
+
+	add_work_con_fifo(true, con, _wrap_on_write_timeout, NULL);
+}
+
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -465,6 +526,13 @@ static int _handle_connection(void *x, void *arg)
 			 * complete since it will be ignored.
 			 */
 			con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
+
+			if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) &&
+			    _handle_time_limit(args, con->last_write,
+					       mgr.conf_write_timeout)) {
+				_on_write_timeout(args, con);
+				return 0;
+			}
 
 			/* must wait until poll allows write of this socket */
 			log_flag(CONMGR, "%s: [%s] waiting for %u writes",
