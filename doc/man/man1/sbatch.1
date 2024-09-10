@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "August 2024" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "September 2024" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -2492,7 +2492,7 @@ affinity of the gres as specified in gres.conf's \fICores\fR parameter.
 \fB\-\-tres\-per\-task\fR=<\fIlist\fR>
 Specifies a comma\-delimited list of trackable resources required for the job on
 each task to be spawned in the job's resource allocation.
-The format for each entry in the list is "trestype[/tresname]:count".
+The format for each entry in the list is "trestype[/tresname]=count".
 The \fItrestype\fR is the type of trackable resource requested (e.g. cpu, gres,
 license, etc).
 The \fItresname\fR is the name of the trackable resource, as can be seen with
@@ -2516,10 +2516,10 @@ The count can have a suffix of
 .br
 Examples:
 .nf
-\-\-tres\-per\-task=cpu:4
-\-\-tres\-per\-task=cpu:8,license/ansys:1
-\-\-tres\-per\-task=gres/gpu:1
-\-\-tres\-per\-task=gres/gpu:a100:2
+\-\-tres\-per\-task=cpu=4
+\-\-tres\-per\-task=cpu=8,license/ansys=1
+\-\-tres\-per\-task=gres/gpu=1
+\-\-tres\-per\-task=gres/gpu:a100=2
 .fi
 The specified resources will be allocated to the job on each node.
 The available trackable resources are configurable by the system
@@ -3144,7 +3144,7 @@ Only set if the \fB\-\-cpus\-per\-gpu\fR option is specified.
 \fBSLURM_CPUS_PER_TASK\fR
 Number of cpus requested per task.
 Only set if either the \fB\-\-cpus\-per\-task\fR option or the
-\fB\-\-tres\-per\-task=cpu:#\fR option is specified.
+\fB\-\-tres\-per\-task=cpu=#\fR option is specified.
 .IP
 
 .TP
