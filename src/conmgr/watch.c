@@ -68,6 +68,22 @@ typedef struct {
 
 static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg);
 
+static bool _handle_time_limit(const handle_connection_args_t *args,
+			       const struct timespec timestamp,
+			       const struct timespec limit)
+{
+	const struct timespec deadline = timespec_add(timestamp, limit);
+
+	if (timespec_is_after(args->time, deadline))
+		return true;
+
+	if (!mgr.watch_max_sleep.tv_sec ||
+	    timespec_is_after(mgr.watch_max_sleep, deadline))
+		mgr.watch_max_sleep = deadline;
+
+	return false;
+}
+
 static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
@@ -228,6 +244,67 @@ static void _close_output_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 }
 
+static void _wrap_on_connect_timeout(conmgr_callback_args_t conmgr_args,
+				     void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	int rc;
+
+	if (con->events->on_connect_timeout)
+		rc = con->events->on_connect_timeout(con, con->arg);
+	else
+		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
+
+	if (rc) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char str[CTIME_STR_LEN];
+
+			timespec_ctime(mgr.conf_connect_timeout, false, str,
+				       sizeof(str));
+
+			log_flag(CONMGR, "%s: [%s] closing due to connect %s timeout failed: %s",
+				 __func__, con->name, str, slurm_strerror(rc));
+		}
+		close_con(false, con);
+	} else {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char str[CTIME_STR_LEN];
+
+			timespec_ctime(mgr.conf_connect_timeout, false, str,
+				       sizeof(str));
+
+			log_flag(CONMGR, "%s: [%s] connect %s timeout resetting",
+				 __func__, con->name, str);
+		}
+
+		slurm_mutex_lock(&mgr.mutex);
+		con->last_read = timespec_now();
+		slurm_mutex_unlock(&mgr.mutex);
+	}
+}
+
+static void _on_connect_timeout(handle_connection_args_t *args,
+				conmgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
+
+		timespec_ctime(timespec_diff_ns(con->last_read,
+						args->time).diff, false,
+			       time_str, sizeof(time_str));
+		timespec_ctime(mgr.conf_connect_timeout, false, total_str,
+			       sizeof(total_str));
+
+		log_flag(CONMGR, "%s: [%s] connect timed out at %s/%s",
+			 __func__, con->name, time_str, total_str);
+	}
+
+	add_work_con_fifo(true, con, _wrap_on_connect_timeout, NULL);
+}
+
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -276,6 +353,7 @@ static int _handle_connection(void *x, void *arg)
 				/* disable polling until on_listen_connect() */
 				con_set_polling(con, PCTL_TYPE_CONNECTED,
 						__func__);
+
 				add_work_con_fifo(true, con, wrap_on_connection,
 						  con);
 
@@ -321,6 +399,13 @@ static int _handle_connection(void *x, void *arg)
 		 * success‐ fully (SO_ERROR is zero) or unsuccessfully
 		 */
 		con_set_polling(con, PCTL_TYPE_READ_WRITE, __func__);
+
+		if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT) &&
+		    _handle_time_limit(args, con->last_read,
+				       mgr.conf_connect_timeout)) {
+			_on_connect_timeout(args, con);
+			return 0;
+		}
 
 		log_flag(CONMGR, "%s: [%s] waiting for connection to establish",
 			 __func__, con->name);
