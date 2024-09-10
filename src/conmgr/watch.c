@@ -990,7 +990,8 @@ extern void *watch(void *arg)
 				 list_count(mgr.quiesced_work),
 				 BOOL_CHARIFY(mgr.waiting_on_work));
 
-		EVENT_WAIT(&mgr.watch_sleep, &mgr.mutex);
+		EVENT_WAIT_TIMED(&mgr.watch_sleep, mgr.watch_max_sleep,
+				 &mgr.mutex);
 		mgr.waiting_on_work = false;
 	}
 

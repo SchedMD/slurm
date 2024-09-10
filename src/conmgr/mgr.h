@@ -288,6 +288,12 @@ typedef struct {
 	 * Thread id of thread running watch()
 	 */
 	pthread_t watch_thread;
+
+	/*
+	 * Max abs time watch can sleep due to pending timeout
+	 */
+	timespec_t watch_max_sleep;
+
 	/*
 	 * True if there is a thread for poll queued or running
 	 */
