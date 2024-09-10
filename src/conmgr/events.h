@@ -74,6 +74,7 @@ do { \
  * WARNING: The mutex controlling event->cond should be locked before calling
  * this function. This mutex is used in pthread_cond_wait().
  * IN event - event ptr to wait for signal
+ * IN mutex - controlling mutex
  * IN caller - __func__ from caller
  */
 extern void event_wait_now(event_signal_t *event, pthread_mutex_t *mutex,
