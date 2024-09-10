@@ -263,6 +263,9 @@ static int _handle_connection(void *x, void *arg)
 		 */
 		con_set_flag(con, FLAG_IS_CONNECTED);
 
+		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT))
+			con->last_read = args->time;
+
 		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1)) {
 			/* Query outbound MSS now kernel should know the answer */
 			add_work_con_fifo(true, con, _update_mss, NULL);
