@@ -61,7 +61,6 @@ static const struct {
 extern const poll_funcs_t poll_funcs;
 
 static poll_mode_t mode = POLL_MODE_INVALID;
-static int max_connections = 0;
 static const poll_funcs_t *polling_funcs[] = {
 #ifdef HAVE_EPOLL
 	&epoll_funcs,
@@ -92,13 +91,12 @@ extern const char *pollctl_type_to_string(pollctl_fd_type_t type)
 	return _get_funcs()->type_to_string(type);
 }
 
-extern void pollctl_init(const int new_max_connections)
+extern void pollctl_init(const int max_connections)
 {
 	if (mode == POLL_MODE_INVALID)
 		mode = DEFAULT_POLLING_MODE;
 	log_flag(CONMGR, "%s: [%s] Initializing with connection count %d",
-		 __func__, _mode_string(mode), new_max_connections);
-	max_connections = new_max_connections;
+		 __func__, _mode_string(mode), max_connections);
 	_get_funcs()->init(max_connections);
 }
 
@@ -121,7 +119,6 @@ extern void pollctl_set_mode(poll_mode_t new_mode)
 extern void pollctl_fini(void)
 {
 	log_flag(CONMGR, "%s: [%s] cleanup", __func__, _mode_string(mode));
-	max_connections = 0;
 	_get_funcs()->fini();
 }
 
