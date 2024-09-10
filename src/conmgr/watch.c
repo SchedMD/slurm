@@ -43,6 +43,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/fd.h"
+#include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
@@ -366,6 +367,65 @@ static void _on_write_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 	add_work_con_fifo(true, con, _wrap_on_write_timeout, NULL);
 }
 
+static void _wrap_on_read_timeout(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	int rc;
+
+	if (con->events->on_read_timeout)
+		rc = con->events->on_read_timeout(con, con->arg);
+	else
+		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
+
+	if (rc) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char str[CTIME_STR_LEN];
+
+			timespec_ctime(mgr.conf_read_timeout, false, str,
+				       sizeof(str));
+
+			log_flag(CONMGR, "%s: [%s] closing due to read %s timeout failed: %s",
+				 __func__, con->name, str, slurm_strerror(rc));
+		}
+
+		close_con(false, con);
+	} else {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char str[CTIME_STR_LEN];
+
+			timespec_ctime(mgr.conf_read_timeout, false, str,
+				       sizeof(str));
+
+			log_flag(CONMGR, "%s: [%s] read %s timeout resetting",
+				 __func__, con->name, str);
+		}
+
+		slurm_mutex_lock(&mgr.mutex);
+		con->last_read = timespec_now();
+		slurm_mutex_unlock(&mgr.mutex);
+	}
+}
+
+static void _on_read_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
+
+		timespec_ctime(timespec_diff_ns(con->last_read, args->time).diff,
+			       false, time_str, sizeof(time_str));
+		timespec_ctime(mgr.conf_read_timeout, false, total_str,
+			       sizeof(total_str));
+
+		log_flag(CONMGR, "%s: [%s] read timed out at %s/%s",
+			 __func__, con->name, time_str, total_str);
+	}
+
+	add_work_con_fifo(true, con, _wrap_on_read_timeout, NULL);
+}
+
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -633,6 +693,14 @@ static int _handle_connection(void *x, void *arg)
 				 __func__, con->name);
 		} else {
 			con_set_polling(con, PCTL_TYPE_READ_ONLY, __func__);
+
+			if (con_flag(con, CON_FLAG_WATCH_READ_TIMEOUT) &&
+			    list_is_empty(con->write_complete_work) &&
+			    _handle_time_limit(args, con->last_read,
+					       mgr.conf_read_timeout)) {
+				_on_read_timeout(args, con);
+				return 0;
+			}
 
 			if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 				char *flags = con_flags_string(con->flags);
