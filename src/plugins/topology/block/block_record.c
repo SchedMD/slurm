@@ -117,7 +117,7 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 	}
 
 	FREE_NULL_BITMAP(block_levels);
-	block_levels = bit_alloc(16);
+	block_levels = bit_alloc(MAX_BLOCK_LEVELS);
 
 	if (!s_p_get_string(&tmp_str, "BlockSizes", conf_hashtbl)) {
 		bit_nset(block_levels, 0, 4);

@@ -38,6 +38,8 @@
 
 #include "../common/common_topo.h"
 
+#define MAX_BLOCK_LEVELS 16
+
 typedef struct {
 	int level;
 	char *name;			/* switch name */
