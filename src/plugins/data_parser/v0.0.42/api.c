@@ -139,15 +139,19 @@ static void _parse_param(const char *param, args_t *args)
 		if (xstrcasecmp(bit->name, param))
 			continue;
 
-		log_flag(DATA, "parser(0x%"PRIxPTR") activated flag=%s",
-			 (uintptr_t) args, bit->flag_name);
+		if (bit->value == FLAG_PREFER_REFS) {
+			info("%s ignoring default flag %s",
+			     plugin_type, bit->flag_name);
+			return;
+		}
+
+		debug("%s activated flag %s", plugin_type, bit->flag_name);
 
 		args->flags |= bit->value;
 		return;
 	}
 
-	log_flag(DATA, "parser(0x%"PRIxPTR") ignoring param=%s",
-		 (uintptr_t) args, param);
+	warning("%s ignoring unknown flag %s", plugin_type, param);
 }
 
 extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
