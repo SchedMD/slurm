@@ -34,6 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "gres_select_util.h"
 #include "select_cons_tres.h"
 #include "dist_tasks.h"
 
@@ -378,8 +379,20 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 				space_remaining = true;
 		}
 		if (!space_remaining && (tid < maxtasks)) {
-			rc = ESLURM_BAD_TASK_COUNT;
-			break;
+			/*
+			 * If gres_task_limit is not associated with
+			 * gres_per_task, it is a soft limit.
+			 */
+			if (gres_task_limit &&
+			    !gres_select_util_job_tres_per_task(
+				    job_ptr->gres_list_req)) {
+				/* Try again without limit */
+				gres_task_limit = NULL;
+				info("Function:%s LineNumber:%d", __func__, __LINE__);
+			} else {
+				rc = ESLURM_BAD_TASK_COUNT;
+				break;
+			}
 		}
 	}
 	xfree(avail_cpus);
@@ -1277,8 +1290,19 @@ static int _dist_tasks_compute_c_b(job_record_t *job_ptr,
 			}
 		}
 		if (!space_remaining && (tid < maxtasks)) {
-			rc = ESLURM_BAD_TASK_COUNT;
-			break;
+			/*
+			 * If gres_task_limit is not associated with
+			 * gres_per_task, it is a soft limit.
+			 */
+			if (gres_task_limit &&
+			    !gres_select_util_job_tres_per_task(
+				    job_ptr->gres_list_req)) {
+				/* Try again without limit */
+				gres_task_limit = NULL;
+			} else {
+				rc = ESLURM_BAD_TASK_COUNT;
+				break;
+			}
 		}
 	}
 	xfree(avail_cpus);

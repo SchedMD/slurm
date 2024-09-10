@@ -1906,7 +1906,6 @@ alloc_job:
 	job_ptr->job_resrcs = job_res;
 	if (job_ptr->gres_list_req && (error_code == SLURM_SUCCESS)) {
 		bool have_gres_per_task, task_limit_set = false;
-		int task_cnt = 0;
 		/*
 		 * Determine if any job gres_per_task specification here
 		 * to avoid calling gres_get_task_limit unless needed
@@ -1937,19 +1936,13 @@ alloc_job:
 			node_gres_list[j] = node_ptr->gres_list;
 			sock_gres_list[j] =
 				avail_res_array[i]->sock_gres_list;
-			if (task_limit_set) {
+			if (task_limit_set)
 				log_flag(SELECT_TYPE, "%pJ: Node=%s: gres_task_limit[%d]=%u",
 					 job_ptr,
 					 node_ptr->name,
 					 i, gres_task_limit[j]);
-				task_cnt += gres_task_limit[j];
-			}
 			j++;
 		}
-		/* Ensure gres_task_limit doesn't limit total cpu cnt */
-		job_ptr->details->cpus_per_task = MAX(
-			job_ptr->details->cpus_per_task,
-			job_res->ncpus / task_cnt);
 
 		if (!task_limit_set)
 			xfree(gres_task_limit);
