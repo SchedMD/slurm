@@ -56,6 +56,11 @@
 #include "src/conmgr/polling.h"
 #include "src/conmgr/signals.h"
 
+typedef struct {
+#define MAGIC_HANDLE_CONNECTION 0xaaaffb03
+	int magic; /* MAGIC_HANDLE_CONNECTION */
+} handle_connection_args_t;
+
 static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg);
 
 static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
@@ -227,9 +232,11 @@ static void _close_output_fd(conmgr_callback_args_t conmgr_args, void *arg)
 static int _handle_connection(void *x, void *arg)
 {
 	conmgr_fd_t *con = x;
+	handle_connection_args_t *args = arg;
 	int count;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
 
 	/* connection may have a running thread, do nothing */
 	if (con_flag(con, FLAG_WORK_ACTIVE)) {
@@ -657,15 +664,18 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	bool send_signal = false;
+	handle_connection_args_t args = {
+		.magic = MAGIC_HANDLE_CONNECTION,
+	};
 
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.inspecting);
 
 	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
-				_handle_connection, NULL))
+				_handle_connection, &args))
 		send_signal = true;
 	if (list_transfer_match(mgr.connections, mgr.complete_conns,
-				_handle_connection, NULL))
+				_handle_connection, &args))
 		send_signal = true;
 
 	mgr.inspecting = false;
