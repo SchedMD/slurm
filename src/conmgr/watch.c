@@ -57,6 +57,8 @@
 #include "src/conmgr/polling.h"
 #include "src/conmgr/signals.h"
 
+#define CTIME_STR_LEN 72
+
 typedef struct {
 #define MAGIC_HANDLE_CONNECTION 0xaaaffb03
 	int magic; /* MAGIC_HANDLE_CONNECTION */
@@ -675,6 +677,10 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.inspecting);
 
+	/*
+	 * Always clear max watch sleep as it will be set before releasing lock
+	 */
+	mgr.watch_max_sleep = (struct timespec) {0};
 	args.time = timespec_now();
 
 	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
@@ -683,6 +689,16 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	if (list_transfer_match(mgr.connections, mgr.complete_conns,
 				_handle_connection, &args))
 		send_signal = true;
+
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) &&
+	    mgr.watch_max_sleep.tv_sec) {
+		char str[CTIME_STR_LEN];
+
+		timespec_ctime(mgr.watch_max_sleep, true, str, sizeof(str));
+
+		log_flag(CONMGR, "%s: set max watch sleep wait: %s",
+			 __func__, str);
+	}
 
 	mgr.inspecting = false;
 
