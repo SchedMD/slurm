@@ -113,6 +113,7 @@ documents those changes that are of interest to users and administrators.
  -- Alter scheduling of jobs at submission time to consider job submission time
     and job id. This makes it so that that interactive jobs aren't allocated
     resources before batch jobs when they have the same priority at submit time.
+ -- Fix multi-cluster submissions with differing Switch plugins.
 
 * Changes in Slurm 24.05.4
 ==========================
