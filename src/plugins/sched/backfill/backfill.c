@@ -1474,7 +1474,8 @@ static int _bf_reserve_resv_licenses(void *x, void *arg)
 
 		start_time = resv_ptr->start_time / backfill_resolution;
 		start_time *= backfill_resolution;
-		end_time = resv_ptr->end_time / backfill_resolution;
+		end_time = (resv_ptr->end_time + backfill_resolution - 1) /
+			   backfill_resolution;
 		end_time *= backfill_resolution;
 	}
 
@@ -1525,7 +1526,8 @@ static int _bf_reserve_running(void *x, void *arg)
 		end_time = soft_end;
 	}
 
-	end_time = (end_time / backfill_resolution) * backfill_resolution;
+	end_time = ((end_time + backfill_resolution - 1) /
+		    backfill_resolution) * backfill_resolution;
 
 	if (preemptable || !whole) {
 		/* Reservation only needed for licenses. */
