@@ -42,6 +42,7 @@
 
 #include <pthread.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include "src/common/macros.h"
 
@@ -75,10 +76,11 @@ do { \
  * this function. This mutex is used in pthread_cond_wait().
  * IN event - event ptr to wait for signal
  * IN mutex - controlling mutex
+ * IN max_sleep - Max absolute time to wait for signal (or zero for no max)
  * IN caller - __func__ from caller
  */
 extern void event_wait_now(event_signal_t *event, pthread_mutex_t *mutex,
-			   const char *caller);
+			   const struct timespec max_sleep, const char *caller);
 
 /*
  * Wait (aka block) for a signal for a given event
@@ -89,7 +91,21 @@ extern void event_wait_now(event_signal_t *event, pthread_mutex_t *mutex,
  * IN event- ptr to event to wait on
  * IN mutex - the mutex controlling event->cond
  */
-#define EVENT_WAIT(event, mutex) event_wait_now(event, mutex, __func__)
+#define EVENT_WAIT(event, mutex) \
+	event_wait_now(event, mutex, (struct timespec) {0}, __func__)
+
+/*
+ * Wait (aka block) for a signal for a given event
+ * Note: A thread currently blocked under EVENT_WAIT() is referred to as a
+ *	waiter.
+ * WARNING: The mutex controlling event->cond should be locked before calling
+ * this. This mutex is used in pthread_cond_wait().
+ * IN event- ptr to event to wait on
+ * IN mutex - the mutex controlling event->cond
+ * IN max_sleep - Max absolute time to wait for signal (or zero for no max)
+ */
+#define EVENT_WAIT_TIMED(event, max_sleep, mutex) \
+	event_wait_now(event, mutex, max_sleep, __func__)
 
 /*
  * Send signal to a given event
