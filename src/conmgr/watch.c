@@ -46,6 +46,7 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 
@@ -59,6 +60,8 @@
 typedef struct {
 #define MAGIC_HANDLE_CONNECTION 0xaaaffb03
 	int magic; /* MAGIC_HANDLE_CONNECTION */
+	/* output of timespec_now() in _inspect_connections() */
+	timespec_t time;
 } handle_connection_args_t;
 
 static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg);
@@ -237,6 +240,7 @@ static int _handle_connection(void *x, void *arg)
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
+	xassert(timespec_is_after(timespec_now(), args->time));
 
 	/* connection may have a running thread, do nothing */
 	if (con_flag(con, FLAG_WORK_ACTIVE)) {
@@ -670,6 +674,8 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.inspecting);
+
+	args.time = timespec_now();
 
 	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
 				_handle_connection, &args))
