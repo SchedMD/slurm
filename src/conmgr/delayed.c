@@ -219,23 +219,16 @@ extern timespec_t conmgr_calc_work_time_delay(
 	time_t delay_seconds,
 	long delay_nanoseconds)
 {
-	const timespec_t time = timespec_now();
-
 	/*
 	 * Renormalize ns into seconds to only have partial seconds in
 	 * nanoseconds. Nanoseconds won't matter with a larger number of
 	 * seconds.
 	 */
-	delay_seconds += delay_nanoseconds / NSEC_IN_SEC;
-	delay_nanoseconds = delay_nanoseconds % NSEC_IN_SEC;
 
-	/* catch integer overflows */
-	xassert((delay_seconds + time.tv_sec) >= time.tv_sec);
-
-	return (timespec_t) {
-		.tv_sec = (delay_seconds + time.tv_sec),
+	return timespec_normalize(timespec_add((timespec_t) {
+		.tv_sec = delay_seconds,
 		.tv_nsec = delay_nanoseconds,
-	};
+	}, timespec_now()));
 }
 
 extern void init_delayed_work(void)
