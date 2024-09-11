@@ -111,17 +111,17 @@ typedef struct listNode {
 
 struct listIterator {
 	unsigned int magic;		/* sentinel for asserting validity */
-	struct xlist *list;		/* the list being iterated */
-	struct listNode *pos;		/* the next node to be iterated */
-	struct listNode **prev;		/* addr of 'next' ptr to prv It node */
-	struct listIterator *iNext;	/* iterator chain for list_destroy() */
+	list_t *list;			/* the list being iterated */
+	list_node_t *pos;		/* the next node to be iterated */
+	list_node_t **prev;		/* addr of 'next' ptr to prv It node */
+	list_itr_t *iNext;		/* iterator chain for list_destroy() */
 };
 
 struct xlist {
 	unsigned int magic;		/* sentinel for asserting validity */
-	struct listNode *head;		/* head of the list */
-	struct listNode **tail;		/* addr of last node's 'next' ptr */
-	struct listIterator *iNext;	/* iterator chain for list_destroy() */
+	list_node_t *head;		/* head of the list */
+	list_node_t **tail;		/* addr of last node's 'next' ptr */
+	list_itr_t *iNext;		/* iterator chain for list_destroy() */
 	ListDelF fDel;			/* function to delete node data */
 	int count;			/* number of nodes in list */
 	pthread_rwlock_t mutex;		/* mutex to protect access to list */
