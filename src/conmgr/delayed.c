@@ -79,22 +79,6 @@ extern void cancel_delayed_work(void)
 	}
 }
 
-static timespec_t _get_time(void)
-{
-	timespec_t time;
-	int rc;
-
-	if ((rc = clock_gettime(TIMESPEC_CLOCK_TYPE, &time))) {
-		if (rc == -1)
-			rc = errno;
-
-		fatal("%s: clock_gettime() failed: %s",
-		      __func__, slurm_strerror(rc));
-	}
-
-	return time;
-}
-
 static list_t *_inspect(void)
 {
 	int count, total;
@@ -102,7 +86,7 @@ static list_t *_inspect(void)
 	list_t *elapsed = list_create(xfree_ptr);
 	foreach_delayed_work_t dargs = {
 		.magic = MAGIC_FOREACH_DELAYED_WORK,
-		.time = _get_time(),
+		.time = timespec_now(),
 	};
 
 	total = list_count(mgr.delayed_work);
@@ -233,7 +217,7 @@ extern timespec_t conmgr_calc_work_time_delay(
 	time_t delay_seconds,
 	long delay_nanoseconds)
 {
-	const timespec_t time = _get_time();
+	const timespec_t time = timespec_now();
 
 	/*
 	 * Renormalize ns into seconds to only have partial seconds in
@@ -355,7 +339,7 @@ extern void add_work_delayed(work_t *work)
 
 extern char *work_delayed_to_str(work_t *work)
 {
-	const timespec_t time = _get_time();
+	const timespec_t time = timespec_now();
 	uint32_t diff, days, hours, minutes, seconds, nanoseconds;
 	char *delay = NULL;
 
