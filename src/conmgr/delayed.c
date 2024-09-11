@@ -45,12 +45,6 @@
 #include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 
-#ifdef __linux__
-#define CLOCK_TYPE CLOCK_TAI
-#else
-#define CLOCK_TYPE CLOCK_REALTIME
-#endif
-
 typedef struct {
 #define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
 	int magic; /* MAGIC_FOREACH_DELAYED_WORK */
@@ -90,7 +84,7 @@ static timespec_t _get_time(void)
 	timespec_t time;
 	int rc;
 
-	if ((rc = clock_gettime(CLOCK_TYPE, &time))) {
+	if ((rc = clock_gettime(TIMESPEC_CLOCK_TYPE, &time))) {
 		if (rc == -1)
 			rc = errno;
 
@@ -273,7 +267,7 @@ again:
 			.sigev_value.sival_ptr = &timer,
 		};
 
-		rc = timer_create(CLOCK_TYPE, &sevp, &timer);
+		rc = timer_create(TIMESPEC_CLOCK_TYPE, &sevp, &timer);
 	}
 	slurm_mutex_unlock(&mutex);
 
