@@ -33,6 +33,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <stdlib.h>
 #include <time.h>
 
 #include "src/common/macros.h"
@@ -169,48 +170,31 @@ static void _update_timer(work_t *shortest, const timespec_t time)
 /* check begin times to see if the work delay has elapsed */
 static int _inspect_work(void *x, void *key)
 {
-	bool trigger;
 	work_t *work = x;
 	const timespec_t begin = work->control.time_begin;
 	foreach_delayed_work_t *args = key;
-	const timespec_t time = args->time;
-	const int64_t remain_sec = begin.tv_sec - time.tv_sec;
-	int64_t remain_nsec;
+	const timespec_t now = timespec_now();
+	const bool trigger = timespec_is_after(begin, now);
 
 	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
 	xassert(work->magic == MAGIC_WORK);
 
-	if (remain_sec == 0) {
-		remain_nsec = begin.tv_nsec - time.tv_nsec;
-		trigger = (remain_nsec <= 0);
-	} else if (remain_sec < 0) {
-		trigger = true;
-		remain_nsec = NO_VAL64;
-	} else {
-		remain_nsec = NO_VAL64;
-		trigger = false;
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		const timespec_diff_ns_t diff = timespec_diff_ns(begin, now);
+		char str[CTIME_STR_LEN];
+
+		timespec_ctime(diff.diff, false, str, sizeof(str));
+
+		log_flag(CONMGR, "%s: %s delayed work ETA %s for %s@0x%"PRIxPTR,
+			 __func__, (trigger ? "triggering" : "deferring"),
+			 str, work->callback.func_name,
+			 (uintptr_t) work->callback.func);
 	}
 
-	log_flag(CONMGR, "%s: %s delayed work ETA %"PRId64"s %"PRId64"ns for %s@0x%"PRIxPTR,
-		 __func__, (trigger ? "triggering" : "deferring"),
-		 remain_sec,
-		 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
-		 work->callback.func_name,
-		 (uintptr_t) work->callback.func);
-
-	if (!args->shortest) {
+	if (!args->shortest)
 		args->shortest = work;
-	} else {
-		const timespec_t shortest_begin =
-			args->shortest->control.time_begin;
-
-		if (shortest_begin.tv_sec == begin.tv_sec) {
-			if (shortest_begin.tv_nsec > begin.tv_nsec)
-				args->shortest = work;
-		} else if (shortest_begin.tv_sec > begin.tv_sec) {
-			args->shortest = work;
-		}
-	}
+	else if (timespec_is_after(args->shortest->control.time_begin, begin))
+		args->shortest = work;
 
 	return trigger ? 1 : 0;
 }
