@@ -132,7 +132,6 @@ struct xlist {
 
 static void _list_node_create(list_t *l, list_node_t **pp, void *x);
 static void *_list_node_destroy(list_t *l, list_node_t **pp);
-static void *_list_pop_locked(list_t *l);
 static void *_list_find_first_locked(list_t *l, ListFindF f, void *key);
 
 #ifndef NDEBUG
@@ -296,7 +295,7 @@ extern int list_transfer_max(list_t *l, list_t *sub, int max)
 
 	slurm_rwlock_wrlock(&l->mutex);
 	slurm_rwlock_wrlock(&sub->mutex);
-	while ((!max || n <= max) && (v = _list_pop_locked(sub))) {
+	while ((!max || n <= max) && (v = _list_node_destroy(sub, &sub->head))) {
 		_list_node_create(l, l->tail, v);
 		n++;
 	}
@@ -694,7 +693,7 @@ extern void list_sort(list_t *l, ListCmpF f)
 	v = xmalloc(lsize * sizeof(char *));
 
 	n = 0;
-	while ((e = _list_pop_locked(l))) {
+	while ((e = _list_node_destroy(l, &l->head))) {
 		v[n] = e;
 		++n;
 	}
@@ -768,8 +767,7 @@ extern void *list_pop(list_t *l)
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
 	slurm_rwlock_wrlock(&l->mutex);
-
-	v = _list_pop_locked(l);
+	v = _list_node_destroy(l, &l->head);
 	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
@@ -1078,17 +1076,3 @@ static int _list_mutex_is_locked(pthread_rwlock_t *mutex)
 	return(rc == EBUSY ? 1 : 0);
 }
 #endif /* !NDEBUG */
-
-/* _list_pop_locked
- *
- * Pop an item from the list assuming the
- * the list is already locked.
- */
-static void *_list_pop_locked(list_t *l)
-{
-	void *v;
-
-	v = _list_node_destroy(l, &l->head);
-
-	return v;
-}
