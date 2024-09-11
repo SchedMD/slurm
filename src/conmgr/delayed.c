@@ -45,6 +45,8 @@
 #include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 
+#define CTIME_STR_LEN 72
+
 typedef struct {
 #define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
 	int magic; /* MAGIC_FOREACH_DELAYED_WORK */
@@ -339,33 +341,13 @@ extern void add_work_delayed(work_t *work)
 
 extern char *work_delayed_to_str(work_t *work)
 {
-	const timespec_t time = timespec_now();
-	uint32_t diff, days, hours, minutes, seconds, nanoseconds;
-	char *delay = NULL;
+	char *delay = NULL, str[CTIME_STR_LEN];
 
 	if (!(work->control.depend_type & CONMGR_WORK_DEP_TIME_DELAY))
 		return NULL;
 
-	diff = work->control.time_begin.tv_sec - time.tv_sec;
-
-	days = diff / (DAY_HOURS * HOUR_SECONDS);
-	diff = diff % (DAY_HOURS * HOUR_SECONDS);
-
-	hours = diff / HOUR_SECONDS;
-	diff = diff % HOUR_SECONDS;
-
-	minutes = diff / MINUTE_SECONDS;
-	diff = diff % MINUTE_SECONDS;
-
-	seconds = diff;
-
-	if (!seconds)
-		nanoseconds = work->control.time_begin.tv_nsec;
-	else
-		nanoseconds = (work->control.time_begin.tv_nsec - time.tv_nsec);
-
-	xstrfmtcat(delay, " time_begin=%u-%u:%u:%u.%u",
-		   days, hours, minutes, seconds, nanoseconds);
+	timespec_ctime(work->control.time_begin, true, str, sizeof(str));
+	xstrfmtcat(delay, " time_begin=%s", str);
 
 	return delay;
 }
