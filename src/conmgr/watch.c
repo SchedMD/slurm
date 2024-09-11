@@ -340,7 +340,13 @@ static void _wrap_on_write_timeout(conmgr_callback_args_t conmgr_args,
 				 __func__, con->name, str, slurm_strerror(rc));
 		}
 
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+
+		/* Close read and write file descriptors */
+		close_con(true, con);
+		_on_close_output_fd(con);
+
+		slurm_mutex_unlock(&mgr.mutex);
 	} else {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 			char str[CTIME_STR_LEN];
