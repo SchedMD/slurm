@@ -37,6 +37,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -54,7 +55,7 @@ typedef struct {
 #define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
 	int magic; /* MAGIC_FOREACH_DELAYED_WORK */
 	work_t *shortest;
-	struct timespec time;
+	timespec_t time;
 } foreach_delayed_work_t;
 
 /* timer to trigger SIGALRM */
@@ -63,7 +64,7 @@ static timer_t timer = {0};
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int _inspect_work(void *x, void *key);
-static void _update_timer(work_t *shortest, const struct timespec time);
+static void _update_timer(work_t *shortest, const timespec_t time);
 static bool _work_clear_time_delay(work_t *work);
 
 /* mgr.mutex must be locked when calling this function */
@@ -84,9 +85,9 @@ extern void cancel_delayed_work(void)
 	}
 }
 
-static struct timespec _get_time(void)
+static timespec_t _get_time(void)
 {
-	struct timespec time;
+	timespec_t time;
 	int rc;
 
 	if ((rc = clock_gettime(CLOCK_TYPE, &time))) {
@@ -130,7 +131,7 @@ static list_t *_inspect(void)
 }
 
 static struct itimerspec _calc_timer(work_t *shortest,
-				     const struct timespec time)
+				     const timespec_t time)
 {
 	struct itimerspec spec = {{0}};
 	const conmgr_work_time_begin_t begin = shortest->control.time_begin;
@@ -161,7 +162,7 @@ static struct itimerspec _calc_timer(work_t *shortest,
 	return spec;
 }
 
-static void _update_timer(work_t *shortest, const struct timespec time)
+static void _update_timer(work_t *shortest, const timespec_t time)
 {
 	int rc;
 	struct itimerspec spec = {{0}};
@@ -192,7 +193,7 @@ static int _inspect_work(void *x, void *key)
 	work_t *work = x;
 	const conmgr_work_time_begin_t begin = work->control.time_begin;
 	foreach_delayed_work_t *args = key;
-	const struct timespec time = args->time;
+	const timespec_t time = args->time;
 	const int64_t remain_sec = begin.seconds - time.tv_sec;
 	int64_t remain_nsec;
 
@@ -238,7 +239,7 @@ extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
 	time_t delay_seconds,
 	long delay_nanoseconds)
 {
-	const struct timespec time = _get_time();
+	const timespec_t time = _get_time();
 
 	/*
 	 * Renormalize ns into seconds to only have partial seconds in
@@ -360,7 +361,7 @@ extern void add_work_delayed(work_t *work)
 
 extern char *work_delayed_to_str(work_t *work)
 {
-	const struct timespec time = _get_time();
+	const timespec_t time = _get_time();
 	uint32_t diff, days, hours, minutes, seconds, nanoseconds;
 	char *delay = NULL;
 
