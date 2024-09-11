@@ -105,26 +105,26 @@ strong_alias(list_delete_item,	slurm_list_delete_item);
  ****************/
 
 typedef struct listNode {
-	void                 *data;         /* node's data                       */
-	struct listNode      *next;         /* next node in list                 */
+	void *data;			/* node's data */
+	struct listNode *next;		/* next node in list */
 } list_node_t;
 
 struct listIterator {
-	unsigned int          magic;        /* sentinel for asserting validity   */
-	struct xlist         *list;         /* the list being iterated           */
-	struct listNode      *pos;          /* the next node to be iterated      */
-	struct listNode     **prev;         /* addr of 'next' ptr to prv It node */
-	struct listIterator  *iNext;        /* iterator chain for list_destroy() */
+	unsigned int magic;		/* sentinel for asserting validity */
+	struct xlist *list;		/* the list being iterated */
+	struct listNode *pos;		/* the next node to be iterated */
+	struct listNode **prev;		/* addr of 'next' ptr to prv It node */
+	struct listIterator *iNext;	/* iterator chain for list_destroy() */
 };
 
 struct xlist {
-	unsigned int          magic;        /* sentinel for asserting validity   */
-	struct listNode      *head;         /* head of the list                  */
-	struct listNode     **tail;         /* addr of last node's 'next' ptr    */
-	struct listIterator  *iNext;        /* iterator chain for list_destroy() */
-	ListDelF              fDel;         /* function to delete node data      */
-	int                   count;        /* number of nodes in list           */
-	pthread_rwlock_t      mutex;        /* mutex to protect access to list   */
+	unsigned int magic;		/* sentinel for asserting validity */
+	struct listNode *head;		/* head of the list */
+	struct listNode **tail;		/* addr of last node's 'next' ptr */
+	struct listIterator *iNext;	/* iterator chain for list_destroy() */
+	ListDelF fDel;			/* function to delete node data */
+	int count;			/* number of nodes in list */
+	pthread_rwlock_t mutex;		/* mutex to protect access to list */
 };
 
 /****************
