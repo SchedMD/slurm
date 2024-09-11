@@ -114,33 +114,20 @@ static list_t *_inspect(void)
 static struct itimerspec _calc_timer(work_t *shortest,
 				     const timespec_t time)
 {
-	struct itimerspec spec = {{0}};
-	timespec_t begin = shortest->control.time_begin;
-
-	spec.it_value.tv_sec = begin.tv_sec;
-
-	if (begin.tv_sec <= 0)
-		spec.it_value.tv_nsec = begin.tv_nsec;
+	const timespec_t begin = shortest->control.time_begin;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		int64_t remain_sec, remain_nsec;
+		char str[CTIME_STR_LEN];
 
-		remain_sec = begin.tv_sec - time.tv_sec;
-		if (remain_sec == 0) {
-			remain_nsec = begin.tv_nsec - time.tv_nsec;
-		} else if (remain_sec < 0) {
-			remain_nsec = NO_VAL64;
-		} else {
-			remain_nsec = NO_VAL64;
-		}
+		timespec_ctime(begin, true, str, sizeof(str));
 
-		log_flag(CONMGR, "%s: setting conmgr timer for %"PRId64"s %"PRId64"ns for %s()",
-			 __func__, remain_sec,
-			 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
-			 shortest->callback.func_name);
+		log_flag(CONMGR, "%s: setting conmgr timer for %s for %s()",
+			 __func__, str, shortest->callback.func_name);
 	}
 
-	return spec;
+	return (struct itimerspec) {
+		.it_value = begin,
+	};
 }
 
 static void _update_timer(work_t *shortest, const timespec_t time)
