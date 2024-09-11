@@ -245,6 +245,16 @@ static void _close_output_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 }
 
+static void _on_close_output_fd(conmgr_fd_t *con)
+{
+	con_set_polling(con, PCTL_TYPE_NONE, __func__);
+
+	add_work_con_fifo(true, con, _close_output_fd,
+			  ((void *) (uint64_t) con->output_fd));
+
+	con->output_fd = -1;
+}
+
 static void _wrap_on_connect_timeout(conmgr_callback_args_t conmgr_args,
 				     void *arg)
 {
@@ -783,15 +793,9 @@ static int _handle_connection(void *x, void *arg)
 	 */
 
 	if (con->output_fd != -1) {
-		con_set_polling(con, PCTL_TYPE_NONE, __func__);
-
 		log_flag(CONMGR, "%s: [%s] waiting to close output_fd=%d",
 			 __func__, con->name, con->output_fd);
-
-		add_work_con_fifo(true, con, _close_output_fd,
-				  ((void *) (uint64_t) con->output_fd));
-
-		con->output_fd = -1;
+		_on_close_output_fd(con);
 		return 0;
 	}
 
