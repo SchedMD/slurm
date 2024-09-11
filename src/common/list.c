@@ -143,8 +143,6 @@ static int _list_mutex_is_locked(pthread_rwlock_t *mutex);
  *  Functions  *
  ***************/
 
-/* list_create()
- */
 extern list_t *list_create(ListDelF f)
 {
 	list_t *l = xmalloc(sizeof(*l));
@@ -160,8 +158,6 @@ extern list_t *list_create(ListDelF f)
 	return l;
 }
 
-/* list_destroy()
- */
 extern void list_destroy(list_t *l)
 {
 	list_itr_t *i, *iTmp;
@@ -193,8 +189,6 @@ extern void list_destroy(list_t *l)
 	xfree(l);
 }
 
-/* list_is_empty()
- */
 extern int list_is_empty(list_t *l)
 {
 	int n;
@@ -236,8 +230,6 @@ extern list_t *list_shallow_copy(list_t *l)
 	return m;
 }
 
-/* list_append()
- */
 extern void list_append(list_t *l, void *x)
 {
 	xassert(l != NULL);
@@ -248,8 +240,6 @@ extern void list_append(list_t *l, void *x)
 	slurm_rwlock_unlock(&l->mutex);
 }
 
-/* list_append_list()
- */
 extern int list_append_list(list_t *l, list_t *sub)
 {
 	int n = 0;
@@ -428,16 +418,12 @@ static void *_list_find_first_lock(list_t *l, ListFindF f, void *key,
 	return v;
 }
 
-/*
- * list_find_first()
- */
 extern void *list_find_first(list_t *l, ListFindF f, void *key)
 {
 	return _list_find_first_lock(l, f, key, true);
 }
 
 /*
- * list_find_first_ro()
  * Same as list_find_first, but use a rdlock instead of wrlock
  */
 extern void *list_find_first_ro(list_t *l, ListFindF f, void *key)
@@ -445,8 +431,6 @@ extern void *list_find_first_ro(list_t *l, ListFindF f, void *key)
 	return _list_find_first_lock(l, f, key, false);
 }
 
-/* list_remove_first()
- */
 extern void *list_remove_first(list_t *l, ListFindF f, void *key)
 {
 	list_node_t **pp;
@@ -472,8 +456,6 @@ extern void *list_remove_first(list_t *l, ListFindF f, void *key)
 	return v;
 }
 
-/* list_delete_all()
- */
 extern int list_delete_all(list_t *l, ListFindF f, void *key)
 {
 	list_node_t **pp;
@@ -537,8 +519,6 @@ extern int list_delete_first(list_t *l, ListFindF f, void *key)
 	return n;
 }
 
-/* list_delete_ptr()
- */
 extern int list_delete_ptr(list_t *l, void *key)
 {
 	list_node_t **pp;
@@ -567,8 +547,6 @@ extern int list_delete_ptr(list_t *l, void *key)
 	return n;
 }
 
-/* list_for_each()
- */
 extern int list_for_each(list_t *l, ListForF f, void *arg)
 {
 	int max = -1;	/* all values */
@@ -648,8 +626,6 @@ extern int list_flush_max(list_t *l, int max)
 	return n;
 }
 
-/* list_push()
- */
 extern void list_push(list_t *l, void *x)
 {
 	xassert(l != NULL);
@@ -667,10 +643,8 @@ extern void list_push(list_t *l, void *x)
  */
 typedef int (*ConstListCmpF) (__const void *, __const void *);
 
-/* list_sort()
- *
+/*
  * This function uses the libC qsort().
- *
  */
 extern void list_sort(list_t *l, ListCmpF f)
 {
@@ -759,8 +733,6 @@ extern void list_flip(list_t *l)
 	slurm_rwlock_unlock(&l->mutex);
 }
 
-/* list_pop()
- */
 extern void *list_pop(list_t *l)
 {
 	void *v;
@@ -774,8 +746,6 @@ extern void *list_pop(list_t *l)
 	return v;
 }
 
-/* list_peek()
- */
 extern void *list_peek(list_t *l)
 {
 	void *v;
@@ -794,8 +764,6 @@ extern void *list_peek(list_t *l)
 
 /* list_dequeue() is aliased to list_pop() */
 
-/* list_iterator_create()
- */
 extern list_itr_t *list_iterator_create(list_t *l)
 {
 	list_itr_t *i = xmalloc(sizeof(*i));
@@ -817,8 +785,6 @@ extern list_itr_t *list_iterator_create(list_t *l)
 	return i;
 }
 
-/* list_iterator_reset()
- */
 extern void list_iterator_reset(list_itr_t *i)
 {
 	xassert(i != NULL);
@@ -832,8 +798,6 @@ extern void list_iterator_reset(list_itr_t *i)
 	slurm_rwlock_unlock(&i->list->mutex);
 }
 
-/* list_iterator_destroy()
- */
 extern void list_iterator_destroy(list_itr_t *i)
 {
 	list_itr_t **pi;
@@ -868,8 +832,6 @@ static void *_list_next_locked(list_itr_t *i)
 	return (p ? p->data : NULL);
 }
 
-/* list_next()
- */
 extern void *list_next(list_itr_t *i)
 {
 	void *rc;
@@ -886,8 +848,6 @@ extern void *list_next(list_itr_t *i)
 	return rc;
 }
 
-/* list_peek_next()
- */
 extern void *list_peek_next(list_itr_t *i)
 {
 	list_node_t *p;
@@ -904,8 +864,6 @@ extern void *list_peek_next(list_itr_t *i)
 	return (p ? p->data : NULL);
 }
 
-/* list_insert()
- */
 extern void list_insert(list_itr_t *i, void *x)
 {
 	xassert(i != NULL);
@@ -918,8 +876,6 @@ extern void list_insert(list_itr_t *i, void *x)
 	slurm_rwlock_unlock(&i->list->mutex);
 }
 
-/* list_find()
- */
 extern void *list_find(list_itr_t *i, ListFindF f, void *key)
 {
 	void *v;
@@ -939,8 +895,6 @@ extern void *list_find(list_itr_t *i, ListFindF f, void *key)
 	return v;
 }
 
-/* list_remove()
- */
 extern void *list_remove(list_itr_t *i)
 {
 	void *v = NULL;
@@ -957,8 +911,6 @@ extern void *list_remove(list_itr_t *i)
 	return v;
 }
 
-/* list_delete_item()
- */
 extern int list_delete_item(list_itr_t *i)
 {
 	void *v;
