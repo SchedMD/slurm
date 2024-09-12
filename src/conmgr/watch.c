@@ -257,6 +257,17 @@ static void _on_close_output_fd(conmgr_fd_t *con)
 	con->output_fd = -1;
 }
 
+extern void close_con_output(bool locked, conmgr_fd_t *con)
+{
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
+
+	_on_close_output_fd(con);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr.mutex);
+}
+
 static void _wrap_on_connect_timeout(conmgr_callback_args_t conmgr_args,
 				     void *arg)
 {

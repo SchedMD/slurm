@@ -440,6 +440,11 @@ extern void wait_for_watch(void);
 extern void close_con(bool locked, conmgr_fd_t *con);
 
 /*
+ * Stop writting to connection and drop remaining outbound buffer(s)
+ */
+extern void close_con_output(bool locked, conmgr_fd_t *con);
+
+/*
  * Wrap close_con() as work
  */
 extern void work_close_con(conmgr_callback_args_t conmgr_args, void *arg);
