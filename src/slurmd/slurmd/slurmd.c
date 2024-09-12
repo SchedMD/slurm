@@ -716,6 +716,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 		if (input_fd != output_fd)
 			fd_close(&output_fd);
 		fd_close(&input_fd);
+		slurm_free_msg(msg);
 		return;
 	}
 
