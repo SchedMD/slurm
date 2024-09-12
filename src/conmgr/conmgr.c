@@ -314,7 +314,7 @@ extern int conmgr_set_params(const char *params)
 
 			mgr.workers.conf_threads = count;
 
-			log_flag(CONMGR, "%s: %s set %zu threads",
+			log_flag(CONMGR, "%s: %s set %lu threads",
 				 __func__, tok, count);
 		} else if (!xstrncasecmp(tok, CONMGR_PARAM_MAX_CONN,
 				  strlen(CONMGR_PARAM_MAX_CONN))) {
@@ -323,7 +323,8 @@ extern int conmgr_set_params(const char *params)
 
 			mgr.conf_max_connections = count;
 
-			log_flag(CONMGR, "%s: %s activated with %zu threads", __func__, tok, count);
+			log_flag(CONMGR, "%s: %s activated with %lu max connections",
+				 __func__, tok, count);
 		} else if (!xstrcasecmp(tok, CONMGR_PARAM_POLL_ONLY)) {
 			log_flag(CONMGR, "%s: %s activated", __func__, tok);
 			pollctl_set_mode(POLL_MODE_POLL);

@@ -513,7 +513,7 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit,
 		xassert((bit->value & UINT64_MAX) == bit->value);
 		break;
 	default:
-		error("Parser->size (%ld) is invalid. This should never happen.",
+		error("Parser->size (%zd) is invalid. This should never happen.",
 		      parser_size);
 		xassert(false);
 	}

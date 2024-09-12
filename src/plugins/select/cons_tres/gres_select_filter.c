@@ -661,7 +661,7 @@ static int _set_shared_task_bits(int node_inx,
 					      job_id, node_inx);
 					rc = ESLURM_INVALID_GRES;
 				} else if (gres_needed) {
-					error("Not enough shared gres available to satisfy gres per task request for job %u on node %d (%lu/%lu still needed)",
+					error("Not enough shared gres available to satisfy gres per task request for job %u on node %d (%"PRIu64"/%"PRIu64" still needed)",
 					      job_id, node_inx, gres_needed,
 					      gres_js->gres_per_task);
 					rc = ESLURM_INVALID_GRES;
