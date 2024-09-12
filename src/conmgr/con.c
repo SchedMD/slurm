@@ -226,16 +226,6 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 
 	log_flag(CONMGR, "%s: [%s] closing input", __func__, con->name);
 
-	/* unlink listener sockets to avoid leaving ghost socket */
-	if (con_flag(con, FLAG_IS_LISTEN) &&
-	    (con->address.ss_family == AF_LOCAL)) {
-		struct sockaddr_un *un = (struct sockaddr_un *) &con->address;
-
-		if (unlink(un->sun_path))
-			error("%s: [%s] unable to unlink %s: %m",
-			      __func__, con->name, un->sun_path);
-	}
-
 	/*
 	 * Stop polling read/write to input fd to allow handle_connection() to
 	 * select what needs to be monitored
@@ -261,6 +251,15 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
+
+	/* unlink listener sockets to avoid leaving ghost socket */
+	if (is_listen && (con->address.ss_family == AF_LOCAL)) {
+		struct sockaddr_un *un = (struct sockaddr_un *) &con->address;
+
+		if (unlink(un->sun_path))
+			error("%s: [%s] unable to unlink %s: %m",
+			      __func__, con->name, un->sun_path);
+	}
 
 	if (is_listen || !is_same_fd) {
 		fd_close(&input_fd);
