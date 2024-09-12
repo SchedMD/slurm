@@ -206,15 +206,22 @@ extern void work_close_con(conmgr_callback_args_t conmgr_args, void *arg)
  */
 extern void close_con(bool locked, conmgr_fd_t *con)
 {
+	int input_fd = -1;
+	bool is_same_fd, is_socket, is_listen;
+
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
 	if (con->input_fd < 0) {
 		xassert(con_flag(con, FLAG_READ_EOF));
 		xassert(!con_flag(con, FLAG_CAN_READ));
+
+		if (!locked)
+			slurm_mutex_unlock(&mgr.mutex);
+
 		log_flag(CONMGR, "%s: [%s] ignoring duplicate close request",
 			 __func__, con->name);
-		goto cleanup;
+		return;
 	}
 
 	log_flag(CONMGR, "%s: [%s] closing input", __func__, con->name);
@@ -239,30 +246,25 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	if (con->in)
 		set_buf_offset(con->in, 0);
 
-	if (con_flag(con, FLAG_IS_LISTEN)) {
-		if (close(con->input_fd) == -1)
-			log_flag(CONMGR, "%s: [%s] unable to close listen fd %d: %m",
-				 __func__, con->name, con->output_fd);
-		xassert(con->output_fd <= 0);
-	} else if (con->input_fd != con->output_fd) {
-		/* different input FD, we can close it now */
-		if (close(con->input_fd) == -1)
-			log_flag(CONMGR, "%s: [%s] unable to close input fd %d: %m",
-				 __func__, con->name, con->output_fd);
-	} else if (con_flag(con, FLAG_IS_SOCKET) &&
-		   (shutdown(con->input_fd, SHUT_RD) == -1)) {
-		/* shutdown input on sockets */
-		log_flag(CONMGR, "%s: [%s] unable to shutdown read: %m",
-			 __func__, con->name);
-	}
+	is_same_fd = (con->input_fd == con->output_fd);
+	is_socket = con_flag(con, FLAG_IS_SOCKET);
+	is_listen = con_flag(con, FLAG_IS_LISTEN);
 
-	/* forget the now invalid FD */
+	input_fd = con->input_fd;
 	con->input_fd = -1;
 
 	EVENT_SIGNAL(&mgr.watch_sleep);
-cleanup:
+
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
+
+	if (is_listen || !is_same_fd) {
+		fd_close(&input_fd);
+	} else if (is_socket && shutdown(input_fd, SHUT_RD)) {
+		/* shutdown input on sockets */
+		log_flag(CONMGR, "%s: [%s] unable to shutdown incoming socket half: %m",
+			 __func__, con->name);
+	}
 }
 
 static char *_resolve_tty_name(int fd)
