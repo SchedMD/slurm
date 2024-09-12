@@ -272,6 +272,7 @@ static void _handle_writev(conmgr_fd_t *con, const int out_count)
 			/* drop outbound data on the floor */
 			list_flush(con->out);
 			close_con(false, con);
+			close_con_output(false, con);
 		}
 	} else if (args.wrote == 0) {
 		log_flag(NET, "%s: [%s] wrote 0 bytes", __func__, con->name);
