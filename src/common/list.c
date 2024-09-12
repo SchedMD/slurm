@@ -99,22 +99,6 @@ strong_alias(list_delete_item,	slurm_list_delete_item);
  ***************/
 #define LIST_MAGIC 0xDEADBEEF
 #define LIST_ITR_MAGIC 0xDEADBEFF
-/*
- * FIXME: this count may be far too large in some cases, particularly for lists
- * that are generally pretty small and might be created and deleted fairly
- * often. If we want the list pool to be used everywhere, it might be good to
- * add more sophisticated logic. Ideas:
- * - Start small.
- * - Have a counter for the number of items in the pool.
- * - Have a counter for the number of times we've had to expand the pool.
- * - Consider gradually increasing the amount of nodes on each time we expand
- *   the pool, with a reasonable maximum.
- * - Add a new list create function to turn the node pool logic on, and have
- *   the node pool logic off by default. We might also consider adding
- *   parameters like an initial node pool size, expansion count, ect. This will
- *   allow us to test this logic on a per-list basis to see what works.
- */
-#define LIST_POOL_EXPAND_CNT 50
 
 /****************
  *  Data Types  *
@@ -141,8 +125,6 @@ struct xlist {
 	ListDelF fDel;			/* function to delete node data */
 	int count;			/* number of nodes in list */
 	pthread_rwlock_t mutex;		/* mutex to protect access to list */
-
-	list_node_t *node_pool;
 };
 
 /****************
@@ -161,64 +143,6 @@ static int _list_mutex_is_locked(pthread_rwlock_t *mutex);
  *  Functions  *
  ***************/
 
-/*
- * Add a node to the head of the pool.
- */
-static void _add_pool_node(list_node_t **node_pool, list_node_t *p)
-{
-	p->next = *node_pool;
-	*node_pool = p;
-}
-
-static void _expand_node_pool(list_node_t **node_pool)
-{
-	for (int i = 0; i < LIST_POOL_EXPAND_CNT; i++) {
-		list_node_t *p;
-
-		p = xmalloc(sizeof(*p));
-		_add_pool_node(node_pool, p);
-	}
-}
-
-static void _free_node_pool(list_node_t **node_pool)
-{
-	list_node_t *p = *node_pool;
-
-	while (p) {
-		list_node_t *next = p->next;
-
-		xfree(p);
-		p = next;
-	}
-	*node_pool = NULL;
-}
-
-/*
- * Get a node from the head of the pool.
- */
-static list_node_t *_get_list_pool_node(list_node_t **node_pool)
-{
-	list_node_t *p;
-
-	/*
-	 * FIXME:
-	 * This only ever expands the pool, it never reduces the pool. This
-	 * means that we could run into a situation where a pool has been
-	 * expanded by a bunch, and then it will look like the daemon or user
-	 * command leaked memory. Consider adding logic at some point to
-	 * shrink the pool.
-	 */
-	if (!*node_pool)
-		_expand_node_pool(node_pool);
-
-	p = *node_pool;
-	*node_pool = p->next;
-	/* detach node from pool. */
-	p->next = NULL;
-
-	return p;
-}
-
 extern list_t *list_create(ListDelF f)
 {
 	list_t *l = xmalloc(sizeof(*l));
@@ -230,11 +154,6 @@ extern list_t *list_create(ListDelF f)
 	l->fDel = f;
 	l->count = 0;
 	slurm_rwlock_init(&l->mutex);
-
-	/*
-	 * Create a pool of list nodes.
-	 */
-	_expand_node_pool(&l->node_pool);
 
 	return l;
 }
@@ -264,12 +183,6 @@ extern void list_destroy(list_t *l)
 		xfree(p);
 		p = pTmp;
 	}
-
-	/*
-	 * Delete the pool of list nodes.
-	 */
-	_free_node_pool(&l->node_pool);
-
 	l->magic = ~LIST_MAGIC;
 	slurm_rwlock_unlock(&l->mutex);
 	slurm_rwlock_destroy(&l->mutex);
@@ -1031,15 +944,7 @@ static void _list_node_create(list_t *l, list_node_t **pp, void *x)
 	xassert(pp != NULL);
 	xassert(x != NULL);
 
-	/*
-	 * Instead of malloc:
-	 * Remove a node from a pool of nodes and add it to the linked list.
-	 * If the pool is empty, add a bunch more to the pool.
-	 * Remove a node from the pool instead of malloc'ing the node.
-	 * Preserve the remaining logic to add the node to the linked list.
-	 */
-	//p = xmalloc(sizeof(list_node_t));
-	p = _get_list_pool_node(&l->node_pool);
+	p = xmalloc(sizeof(list_node_t));
 
 	p->data = x;
 	if (!(p->next = *pp))
@@ -1093,14 +998,7 @@ static void *_list_node_destroy(list_t *l, list_node_t **pp)
 		xassert((i->pos == *i->prev) ||
 		       ((*i->prev) && (i->pos == (*i->prev)->next)));
 	}
-
-	/*
-	 * Instead of free:
-	 * Remove a node from the linked list and return it to the pool of
-	 * list nodes.
-	 */
-	//xfree(p);
-	_add_pool_node(&l->node_pool, p);
+	xfree(p);
 
 	return v;
 }
