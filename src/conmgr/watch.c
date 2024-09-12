@@ -740,10 +740,10 @@ static int _handle_connection(void *x, void *arg)
 	 * connection.
 	 */
 	if (con->input_fd != -1) {
-		log_flag(CONMGR, "%s: [%s] closing incoming on connection input_fd=%d",
+		log_flag(CONMGR, "%s: [%s] queuing close of incoming on connection input_fd=%d",
 			 __func__, con->name, con->input_fd);
 		xassert(con_flag(con, FLAG_READ_EOF));
-		close_con(true, con);
+		add_work_con_fifo(true, con, work_close_con, NULL);
 		return 0;
 	}
 
