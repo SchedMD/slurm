@@ -195,7 +195,7 @@ if ($state ne "PENDING") {
         }
     }
     if ($state eq "RUNNING") {
-        print "WARNING: Efficiency statistics may be misleading for $state jobs.\n";
+        print "WARNING: Efficiency statistics can only be obtained after the job has ended as seff tool is based on the accounting database data.\n";
     }
 } else {
     print "Efficiency not available for jobs in the PENDING state.\n";
