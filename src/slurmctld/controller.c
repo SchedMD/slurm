@@ -1606,6 +1606,17 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	int rc;
 	slurm_msg_t *msg = arg;
 
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		debug3("%s: [fd:%d] connection work cancelled",
+		       __func__, input_fd);
+
+		if (input_fd != output_fd)
+			fd_close(&output_fd);
+		fd_close(&input_fd);
+		slurm_free_msg(msg);
+		return;
+	}
+
 	if ((input_fd < 0) || (output_fd < 0)) {
 		error("%s: Rejecting partially open connection input_fd=%d output_fd=%d",
 		      __func__, input_fd, output_fd);
