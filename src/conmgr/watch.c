@@ -450,15 +450,12 @@ static void _on_read_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
  *
  * RET 1 to remove or 0 to remain in list
  */
-static int _handle_connection(void *x, void *arg)
+static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 {
-	conmgr_fd_t *con = x;
-	handle_connection_args_t *args = arg;
 	int count;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
-	xassert(timespec_is_after(timespec_now(), args->time));
+	xassert(!args || (args->magic == MAGIC_HANDLE_CONNECTION));
 
 	/* connection may have a running thread, do nothing */
 	if (con_flag(con, FLAG_WORK_ACTIVE)) {
@@ -479,8 +476,12 @@ static int _handle_connection(void *x, void *arg)
 		 */
 		con_set_flag(con, FLAG_IS_CONNECTED);
 
-		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT))
-			con->last_read = args->time;
+		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT)) {
+			if (args)
+				con->last_read = args->time;
+			else
+				con->last_read = timespec_now();
+		}
 
 		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1)) {
 			/* Query outbound MSS now kernel should know the answer */
@@ -539,7 +540,7 @@ static int _handle_connection(void *x, void *arg)
 		 */
 		con_set_polling(con, PCTL_TYPE_READ_WRITE, __func__);
 
-		if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT) &&
+		if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT) && args &&
 		    _handle_time_limit(args, con->last_read,
 				       mgr.conf_connect_timeout)) {
 			_on_connect_timeout(args, con);
@@ -605,7 +606,7 @@ static int _handle_connection(void *x, void *arg)
 			 */
 			con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
 
-			if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) &&
+			if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) && args &&
 			    _handle_time_limit(args, con->last_write,
 					       mgr.conf_write_timeout)) {
 				_on_write_timeout(args, con);
@@ -713,7 +714,7 @@ static int _handle_connection(void *x, void *arg)
 			con_set_polling(con, PCTL_TYPE_READ_ONLY, __func__);
 
 			if (con_flag(con, CON_FLAG_WATCH_READ_TIMEOUT) &&
-			    list_is_empty(con->write_complete_work) &&
+			    args && list_is_empty(con->write_complete_work) &&
 			    _handle_time_limit(args, con->last_read,
 					       mgr.conf_read_timeout)) {
 				_on_read_timeout(args, con);
@@ -811,6 +812,18 @@ static int _handle_connection(void *x, void *arg)
 
 	/* mark this connection for cleanup */
 	return 1;
+}
+
+static int _list_transfer_handle_connection(void *x, void *arg)
+{
+	conmgr_fd_t *con = x;
+	handle_connection_args_t *args = arg;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
+	xassert(timespec_is_after(timespec_now(), args->time));
+
+	return _handle_connection(con, args);
 }
 
 /*
@@ -921,10 +934,10 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	args.time = timespec_now();
 
 	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
-				_handle_connection, &args))
+				_list_transfer_handle_connection, &args))
 		send_signal = true;
 	if (list_transfer_match(mgr.connections, mgr.complete_conns,
-				_handle_connection, &args))
+				_list_transfer_handle_connection, &args))
 		send_signal = true;
 
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) &&
