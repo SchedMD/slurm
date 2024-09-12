@@ -97,6 +97,10 @@ static void _parse_args(int argc, char **argv)
 		{NULL, 0, 0, 0}
 	};
 
+	if ((str = getenv("SLURM_DEBUG_FLAGS")) &&
+	    debug_str2flags(str, &slurm_conf.debug_flags))
+		fatal("DebugFlags invalid: %s", str);
+
 	if ((str = getenv("SACKD_DEBUG"))) {
 		logopt.stderr_level = logopt.syslog_level = log_string2num(str);
 
