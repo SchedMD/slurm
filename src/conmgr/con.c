@@ -259,6 +259,9 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		if (unlink(un->sun_path))
 			error("%s: [%s] unable to unlink %s: %m",
 			      __func__, con->name, un->sun_path);
+		else
+			log_flag(CONMGR, "%s: [%s] unlinked %s",
+			      __func__, con->name, un->sun_path);
 	}
 
 	if (is_listen || !is_same_fd) {
