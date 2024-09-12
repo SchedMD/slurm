@@ -682,14 +682,20 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	/* check if there is new connection waiting   */
 	if (con_flag(con, FLAG_IS_LISTEN) && !con_flag(con, FLAG_READ_EOF) &&
 	    con_flag(con, FLAG_CAN_READ)) {
-		log_flag(CONMGR, "%s: [%s] listener has incoming connection",
-			 __func__, con->name);
-
 		/* disable polling until _listen_accept() completes */
 		con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
 		con_unset_flag(con, FLAG_CAN_READ);
 
-		add_work_con_fifo(true, con, _listen_accept, con);
+		if (list_count(mgr.connections) >= mgr.max_connections) {
+			log_flag(CONMGR, "%s: [%s] Deferring incoming connection due to %d/%d connections",
+				 __func__, con->name,
+				 list_count(mgr.connections),
+				 mgr.max_connections);
+		} else {
+			log_flag(CONMGR, "%s: [%s] listener has incoming connection",
+				 __func__, con->name);
+			add_work_con_fifo(true, con, _listen_accept, con);
+		}
 		return 0;
 	}
 
@@ -718,9 +724,19 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 		/* must wait until poll allows read from this socket */
 		if (con_flag(con, FLAG_IS_LISTEN)) {
-			con_set_polling(con, PCTL_TYPE_LISTEN, __func__);
-			log_flag(CONMGR, "%s: [%s] waiting for new connection",
-				 __func__, con->name);
+			if (list_count(mgr.connections) >= mgr.max_connections) {
+				log_flag(CONMGR, "%s: [%s] Deferring polling for new connections due to %d/%d connections",
+					 __func__, con->name,
+					 list_count(mgr.connections),
+					 mgr.max_connections);
+				con_set_polling(con, PCTL_TYPE_CONNECTED,
+						__func__);
+			} else {
+				con_set_polling(con, PCTL_TYPE_LISTEN,
+						__func__);
+				log_flag(CONMGR, "%s: [%s] waiting for new connection",
+					 __func__, con->name);
+			}
 		} else {
 			con_set_polling(con, PCTL_TYPE_READ_ONLY, __func__);
 
