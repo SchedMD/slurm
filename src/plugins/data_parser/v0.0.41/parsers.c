@@ -5113,17 +5113,17 @@ static int _parse_timestamp(const parser_t *const parser, time_t *time_ptr,
 	xassert(sizeof(t) == sizeof(uint64_t));
 
 	if (!src) {
-		*time_ptr = NO_VAL64;
+		*time_ptr = (time_t) NO_VAL64;
 		return SLURM_SUCCESS;
 	}
 
 	switch (data_get_type(src)) {
 	case DATA_TYPE_NULL:
-		*time_ptr = NO_VAL64;
+		*time_ptr = (time_t) NO_VAL64;
 		return SLURM_SUCCESS;
 	case DATA_TYPE_FLOAT:
 		if (isnan(data_get_float(src)) || isinf(data_get_float(src))) {
-			*time_ptr = NO_VAL64;
+			*time_ptr = (time_t) NO_VAL64;
 			return SLURM_SUCCESS;
 		}
 
@@ -5228,7 +5228,7 @@ static int PARSE_FUNC(JOB_CONDITION_SUBMIT_TIME)(const parser_t *const parser,
 {
 	int rc;
 	slurmdb_job_cond_t *cond = obj;
-	time_t t = NO_VAL64;
+	time_t t = (time_t) NO_VAL64;
 
 	if (data_get_type(src) == DATA_TYPE_NULL)
 		return SLURM_SUCCESS;
@@ -5248,7 +5248,7 @@ static int DUMP_FUNC(JOB_CONDITION_SUBMIT_TIME)(const parser_t *const parser,
 						args_t *args)
 {
 	slurmdb_job_cond_t *cond = obj;
-	time_t t = NO_VAL64;
+	time_t t = (time_t) NO_VAL64;
 
 	if (cond->flags & JOBCOND_FLAG_NO_DEFAULT_USAGE)
 		t = cond->usage_start;
