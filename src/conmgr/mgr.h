@@ -442,6 +442,11 @@ extern void wait_for_watch(void);
 extern void close_con(bool locked, conmgr_fd_t *con);
 
 /*
+ * Wrap close_con() as work
+ */
+extern void work_close_con(conmgr_callback_args_t conmgr_args, void *arg);
+
+/*
  * Close connection due to poll error
  *
  * Note: Removal of fd from poll() will already be handled before calling this

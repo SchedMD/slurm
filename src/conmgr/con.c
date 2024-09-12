@@ -195,6 +195,11 @@ extern void close_all_connections(void)
 	list_for_each(mgr.listen_conns, _close_con_for_each, NULL);
 }
 
+extern void work_close_con(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	close_con(false, conmgr_args.con);
+}
+
 /*
  * Stop reading from connection but write out the remaining buffer and finish
  * any queued work
