@@ -972,6 +972,7 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 {
 	conmgr_fd_t *con = NULL;
+	con_flags_t old_flags;
 
 	xassert(fd >= 0);
 
@@ -981,6 +982,9 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 			 __func__, fd);
 		return SLURM_SUCCESS;
 	}
+
+	/* record prior flags to know if something changed */
+	old_flags = con->flags;
 
 	con_unset_flag(con, FLAG_CAN_READ);
 	con_unset_flag(con, FLAG_CAN_WRITE);
@@ -1041,6 +1045,10 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 			 __func__, con->name, fd, flags);
 		xfree(flags);
 	}
+
+	/* Attempt to changed connection state immediately */
+	if ((con->flags & FLAGS_MASK_STATE) != (old_flags & FLAGS_MASK_STATE))
+		(void) _handle_connection(con, NULL);
 
 	return SLURM_SUCCESS;
 }
