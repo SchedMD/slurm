@@ -119,6 +119,7 @@ documents those changes that are of interest to users and administrators.
     OpenAPI schema. This sets the default OpenAPI schema generation behavior of
     data_parser/v0.0.42 to match v0.0.41+prefer_refs and v0.0.40 (without
     flags).
+ -- Fix LaunchParameters=batch_step_set_cpu_freq.
 
 * Changes in Slurm 24.05.4
 ==========================

@@ -9895,6 +9895,9 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->profile, buffer);
 		packstr(msg->tres_bind, buffer);
 		packstr(msg->tres_freq, buffer);
+		pack32(msg->cpu_freq_min, buffer);
+		pack32(msg->cpu_freq_max, buffer);
+		pack32(msg->cpu_freq_gov, buffer);
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
@@ -10102,6 +10105,9 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&launch_msg_ptr->profile, buffer);
 		safe_unpackstr(&launch_msg_ptr->tres_bind, buffer);
 		safe_unpackstr(&launch_msg_ptr->tres_freq, buffer);
+		safe_unpack32(&launch_msg_ptr->cpu_freq_min, buffer);
+		safe_unpack32(&launch_msg_ptr->cpu_freq_max, buffer);
+		safe_unpack32(&launch_msg_ptr->cpu_freq_gov, buffer);
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
