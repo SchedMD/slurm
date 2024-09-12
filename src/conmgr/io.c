@@ -267,8 +267,8 @@ static void _handle_writev(conmgr_fd_t *con, const int out_count)
 			log_flag(NET, "%s: [%s] retry write: %m",
 				 __func__, con->name);
 		} else {
-			error("%s: [%s] error while write: %m",
-			      __func__, con->name);
+			error("%s: [%s] writev(%d) failed: %m",
+			      __func__, con->name, con->output_fd);
 			/* drop outbound data on the floor */
 			list_flush(con->out);
 			close_con(false, con);
