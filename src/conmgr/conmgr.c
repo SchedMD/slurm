@@ -74,6 +74,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 		max_connections = mgr.conf_max_connections;
 	else if (max_connections < 1)
 		max_connections = MAX_CONNECTIONS_DEFAULT;
+	xassert(max_connections > 0);
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -330,6 +331,10 @@ extern int conmgr_set_params(const char *params)
 				  strlen(CONMGR_PARAM_MAX_CONN))) {
 			const unsigned long count =
 				slurm_atoul(tok + strlen(CONMGR_PARAM_MAX_CONN));
+
+			if (count < 1)
+				fatal("%s: There must be atleast 1 max connection",
+				      __func__);
 
 			mgr.conf_max_connections = count;
 
