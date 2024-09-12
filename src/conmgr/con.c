@@ -227,10 +227,14 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	log_flag(CONMGR, "%s: [%s] closing input", __func__, con->name);
 
 	/* unlink listener sockets to avoid leaving ghost socket */
-	if (con_flag(con, FLAG_IS_LISTEN) && con->unix_socket &&
-	    (unlink(con->unix_socket) == -1))
-		error("%s: unable to unlink %s: %m",
-		      __func__, con->unix_socket);
+	if (con_flag(con, FLAG_IS_LISTEN) &&
+	    (con->address.ss_family == AF_LOCAL)) {
+		struct sockaddr_un *un = (struct sockaddr_un *) &con->address;
+
+		if (unlink(un->sun_path))
+			error("%s: [%s] unable to unlink %s: %m",
+			      __func__, con->name, un->sun_path);
+	}
 
 	/*
 	 * Stop polling read/write to input fd to allow handle_connection() to
@@ -437,6 +441,18 @@ extern int add_connection(conmgr_con_type_t type,
 	const bool has_in = (input_fd >= 0);
 	const bool has_out = (output_fd >= 0);
 	const bool is_same = (input_fd == output_fd);
+	const size_t unix_socket_path_len =
+		(unix_socket_path ?  (strlen(unix_socket_path) + 1): 0);
+	static const size_t unix_socket_path_max =
+		sizeof(((struct sockaddr_un *) NULL)->sun_path);
+
+	if (unix_socket_path_len &&
+	    (unix_socket_path_len > unix_socket_path_max)) {
+		log_flag(CONMGR, "%s: Unix domain socket path too long %zu/%zu: %s",
+			 __func__, unix_socket_path_len, unix_socket_path_max,
+			 unix_socket_path);
+		return ENAMETOOLONG;
+	}
 
 	/* verify FD is valid and still open */
 	if (has_in && fstat(input_fd, &in_stat)) {
@@ -485,7 +501,9 @@ extern int add_connection(conmgr_con_type_t type,
 	con = xmalloc(sizeof(*con));
 	*con = (conmgr_fd_t){
 		.magic = MAGIC_CON_MGR_FD,
-
+		.address = {
+			.ss_family = AF_UNSPEC
+		},
 		.input_fd = input_fd,
 		.output_fd = output_fd,
 		.events = events,
@@ -514,22 +532,25 @@ extern int add_connection(conmgr_con_type_t type,
 	}
 
 	/* listen on unix socket */
-	if (unix_socket_path) {
-		xassert(con_flag(con, FLAG_IS_SOCKET));
-		xassert(addr->ss_family == AF_LOCAL);
-		con->unix_socket = xstrdup(unix_socket_path);
+
+	if (!unix_socket_path && source &&
+	    (source->address.ss_family == AF_LOCAL)) {
+		struct sockaddr_un *un = (struct sockaddr_un *) &source->address;
+		unix_socket_path = un->sun_path;
 	}
 
-#ifndef NDEBUG
-	if (source && source->unix_socket && con->unix_socket)
-		xassert(!xstrcmp(source->unix_socket, con->unix_socket));
-#endif
+	if (unix_socket_path) {
+		struct sockaddr_un *un = (struct sockaddr_un *) &con->address;
 
-	if (source && source->unix_socket && !con->unix_socket)
-		con->unix_socket = xstrdup(source->unix_socket);
+		xassert(unix_socket_path_len <= unix_socket_path_max);
+		xassert(con_flag(con, FLAG_IS_SOCKET));
+		xassert(addr->ss_family == AF_LOCAL);
 
-	if (is_socket && (addrlen > 0) && addr)
+		con->address.ss_family = AF_LOCAL;
+		strlcpy(un->sun_path, unix_socket_path, unix_socket_path_len);
+	} else if (is_socket && (addrlen > 0) && addr) {
 		memcpy(&con->address, addr, addrlen);
+	}
 
 	if (has_out) {
 		int bytes = -1;
@@ -1161,11 +1182,16 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 {
 	conmgr_fd_status_t status = {
 		.is_socket = con_flag(con, FLAG_IS_SOCKET),
-		.unix_socket = con->unix_socket,
+		.unix_socket = NULL,
 		.is_listen = con_flag(con, FLAG_IS_LISTEN),
 		.read_eof = con_flag(con, FLAG_READ_EOF),
 		.is_connected = con_flag(con, FLAG_IS_CONNECTED),
 	};
+
+	if (con->address.ss_family == AF_LOCAL) {
+		struct sockaddr_un *un = (struct sockaddr_un *) &con->address;
+		status.unix_socket = un->sun_path;
+	}
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));

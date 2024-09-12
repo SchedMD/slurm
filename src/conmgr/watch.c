@@ -872,11 +872,12 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 
 		xassert(usock->sun_family == AF_UNIX);
 
+		if (!usock->sun_path[0] && (con->address.ss_family == AF_LOCAL))
+			usock = (struct sockaddr_un *) &con->address;
+
 		/* address may not be populated by kernel */
 		if (usock->sun_path[0])
 			unix_path = usock->sun_path;
-		else
-			unix_path = con->unix_socket;
 	}
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
@@ -1093,7 +1094,6 @@ static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
 	FREE_NULL_LIST(con->work);
 	FREE_NULL_LIST(con->write_complete_work);
 	xfree(con->name);
-	xfree(con->unix_socket);
 	xassert(!con->refs || !bit_set_count(con->refs));
 	if (con->refs)
 		bit_free(con->refs);

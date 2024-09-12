@@ -198,8 +198,6 @@ struct conmgr_fd_s {
 	timespec_t last_write;
 	/* socket maximum segment size (MSS) or NO_VAL if not known */
 	int mss;
-	/* path to unix socket if it is one */
-	char *unix_socket;
 
 	/* queued extraction of input_fd/output_fd request */
 	extract_fd_t *extract;
