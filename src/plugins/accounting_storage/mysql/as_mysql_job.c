@@ -847,8 +847,6 @@ no_rollup_change:
 			as_mysql_suspend(mysql_conn, job_db_inx, job_ptr);
 	}
 
-	xfree(query);
-
 	return rc;
 }
 
