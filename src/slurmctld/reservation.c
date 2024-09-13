@@ -5367,7 +5367,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			     &resv_select[SELECT_NOT_RSVD], true);
 
 		_filter_resv(resv_desc_ptr, resv_ptr,
-			     &resv_select[SELECT_OVR_RSVD], true);
+			     &resv_select[SELECT_OVR_RSVD], false);
 	}
 	list_iterator_destroy(itr);
 
