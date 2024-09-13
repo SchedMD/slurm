@@ -255,7 +255,7 @@ static int _ring_forward_data(pmixp_coll_ring_ctx_t *coll_ctx, uint32_t contrib_
 	hdr.seq = coll_ctx->seq;
 	hdr.hop_seq = hop_seq;
 	hdr.contrib_id = contrib_id;
-	pmixp_ep_t *ep = (pmixp_ep_t*)xmalloc(sizeof(*ep));
+	pmixp_ep_t *ep = xmalloc(sizeof(*ep));
 	pmixp_coll_ring_cbdata_t *cbdata = NULL;
 	uint32_t offset = 0;
 	buf_t *buf = _get_fwd_buf(coll_ctx);

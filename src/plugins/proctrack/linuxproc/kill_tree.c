@@ -76,7 +76,7 @@ static xpid_t *_alloc_pid(pid_t pid, int is_usercmd, char *cmd, xpid_t *next)
 {
 	xpid_t *new;
 
-	new = (xpid_t *)xmalloc(sizeof(*new));
+	new = xmalloc(sizeof(*new));
 	new->pid = pid;
 	new->is_usercmd = is_usercmd;
 	new->cmd = xstrdup(cmd);
