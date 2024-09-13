@@ -89,10 +89,7 @@ static int _part_split_hostlist(void *x, void *y)
 	if (!bit_overlap_any(part_ptr->node_bitmap, arg->nodes_bitmap))
 		return 0;
 
-	if (!arg->fwd_bitmap)
-		arg->fwd_bitmap = bit_copy(part_ptr->node_bitmap);
-	else
-		bit_copybits(arg->fwd_bitmap, part_ptr->node_bitmap);
+	COPY_BITMAP(arg->fwd_bitmap, part_ptr->node_bitmap);
 
 	/* Extract partition's hostlist and node count */
 	bit_and(arg->fwd_bitmap, arg->nodes_bitmap);
