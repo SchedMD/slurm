@@ -163,6 +163,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmd - slurmctld synchronization issues on scontrol reconfigure.
     Those may have result in prolog errors or tasks not being launched while
     jobs where shown running by slurmctld.
+ -- Fix suspending/resuming steps running under a 23.02 slurmstepd process.
 
 * Changes in Slurm 24.05.3
 ==========================
