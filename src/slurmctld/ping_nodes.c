@@ -455,6 +455,7 @@ extern void run_health_check(void)
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_UP(node_ptr) ||
+		    IS_NODE_RECONFIG_REQUESTED(node_ptr) ||
 		    IS_NODE_REBOOT_ISSUED(node_ptr))
 			continue;
 		if (node_states != HEALTH_CHECK_NODE_ANY) {

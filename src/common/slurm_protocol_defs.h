@@ -183,10 +183,14 @@
 	(_X->node_state & NODE_STATE_REBOOT_REQUESTED)
 #define IS_NODE_REBOOT_ISSUED(_X)	\
 	(_X->node_state & NODE_STATE_REBOOT_ISSUED)
+#define IS_NODE_RECONFIG_REQUESTED(_X)		\
+	(_X->node_state & NODE_STATE_RECONFIG_REQUESTED)
 #define IS_NODE_RUNNING_JOB(_X)		\
 	(_X->comp_job_cnt || _X->run_job_cnt || _X->sus_job_cnt)
 #define IS_NODE_RES(_X)		\
 	(_X->node_state & NODE_STATE_RES)
+#define IS_NODE_RECONFIG_REQUESTED(_X)	\
+	(_X->node_state & NODE_STATE_RECONFIG_REQUESTED)
 
 #define THIS_FILE ((strrchr(__FILE__, '/') ?: __FILE__ - 1) + 1)
 #define INFO_LINE(fmt, ...) \
@@ -209,6 +213,8 @@
 
 #define SLURMD_REG_FLAG_CONFIGLESS 0x0001
 #define SLURMD_REG_FLAG_RESP     0x0002
+#define SLURMD_REG_FLAG_RECONFIG SLURM_BIT(2)
+#define SLURMD_REG_FLAG_RECONFIG_TIMEOUT SLURM_BIT(3)
 
 #define RESV_FREE_STR_USER      SLURM_BIT(0)
 #define RESV_FREE_STR_ACCT      SLURM_BIT(1)

@@ -1839,7 +1839,7 @@ done:
 		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
 		    req->het_job_id : req->step_id.job_id,
 		    errnum);
-		send_registration_msg(errnum);
+		send_registration_msg(errnum, 0);
 	}
 
 }
@@ -2420,7 +2420,7 @@ static void _notify_result_rpc_prolog(prolog_launch_msg_t *req, int rc)
 
 		if (rc != SLURM_SUCCESS) {
 			alt_rc = _launch_job_fail(jobid, rc);
-			send_registration_msg(rc);
+			send_registration_msg(rc, 0);
 		}
 
 		if (alt_rc != SLURM_SUCCESS) {
@@ -2763,7 +2763,7 @@ done:
 	if ((rc == ESLURMD_PROLOG_FAILED)
 	    || (rc == SLURM_COMMUNICATIONS_SEND_ERROR)
 	    || (rc == ESLURMD_SETUP_ENVIRONMENT_ERROR)) {
-		send_registration_msg(rc);
+		send_registration_msg(rc, 0);
 	}
 	xfree(user_name);
 }
@@ -3026,7 +3026,7 @@ _rpc_reboot(slurm_msg_t *msg)
 				 * reason displayed.
 				 */
 				conf->boot_time = time(NULL);
-				send_registration_msg(SLURM_SUCCESS);
+				send_registration_msg(SLURM_SUCCESS, 0);
 				slurm_update_node(&update_node_msg);
 
 				xfree(update_node_msg.reason);
@@ -3043,7 +3043,7 @@ _rpc_reboot(slurm_msg_t *msg)
 			refresh_cached_features = true;
 			slurm_mutex_unlock(&cached_features_mutex);
 			slurm_conf_unlock();
-			send_registration_msg(SLURM_SUCCESS);
+			send_registration_msg(SLURM_SUCCESS, 0);
 			return;
 		} else if (need_reboot && reboot_program) {
 			sp = strchr(reboot_program, ' ');
@@ -3400,7 +3400,7 @@ static void _rpc_ping(slurm_msg_t *msg)
 		 * timely fashion. */
 		if (slurm_send_rc_msg(msg, rc) < 0) {
 			error("Error responding to ping: %m");
-			send_registration_msg(SLURM_SUCCESS);
+			send_registration_msg(SLURM_SUCCESS, 0);
 		}
 	} else {
 		slurm_msg_t resp_msg;
@@ -3420,7 +3420,7 @@ static void _rpc_ping(slurm_msg_t *msg)
 
 		if (msg->msg_type == REQUEST_NODE_REGISTRATION_STATUS) {
 			get_reg_resp = true;
-			send_registration_msg(SLURM_SUCCESS);
+			send_registration_msg(SLURM_SUCCESS, 0);
 		}
 	}
 }
@@ -3444,7 +3444,7 @@ static void _rpc_health_check(slurm_msg_t *msg)
 	 * slurmd paging and not being able to respond in a timely fashion. */
 	if (slurm_send_rc_msg(msg, rc) < 0) {
 		error("Error responding to health check: %m");
-		send_registration_msg(SLURM_SUCCESS);
+		send_registration_msg(SLURM_SUCCESS, 0);
 	}
 
 	if (rc == SLURM_SUCCESS)
@@ -3484,7 +3484,7 @@ static void _rpc_acct_gather_update(slurm_msg_t *msg)
 		 * timely fashion. */
 		if (slurm_send_rc_msg(msg, rc) < 0) {
 			error("Error responding to account gather: %m");
-			send_registration_msg(SLURM_SUCCESS);
+			send_registration_msg(SLURM_SUCCESS, 0);
 		}
 	} else {
 		slurm_msg_t resp_msg;
