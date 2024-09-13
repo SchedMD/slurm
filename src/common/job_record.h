@@ -483,8 +483,8 @@ struct job_record {
 	char *wckey;			/* optional wckey */
 
 	/* Request number of switches support */
-	uint32_t req_switch;  /* Minimum number of switches                */
-	uint32_t wait4switch; /* Maximum time to wait for minimum switches */
+	uint32_t req_switch;  /* Maximum number of switches                */
+	uint32_t wait4switch; /* Maximum time to wait for Maximum switches */
 	bool     best_switch; /* true=min number of switches met           */
 	time_t wait4switch_start; /* Time started waiting for switch       */
 };

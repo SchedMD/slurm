@@ -1756,7 +1756,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t pn_min_tmp_disk;/* minimum tmp disk per node,
 				  * default=0 */
 	char *req_context;	/* requested selinux context */
-	uint32_t req_switch;    /* Minimum number of switches */
+	uint32_t req_switch;    /* Maximum number of switches */
 	uint16_t segment_size;	/* segment_size */
 	char *selinux_context;	/* used internally in the slurmctld,
 				   DON'T PACK */
@@ -1885,7 +1885,7 @@ typedef struct job_info {
 	int32_t *req_node_inx;	/* required list index pairs into node_table:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
-	uint32_t req_switch;    /* Minimum number of switches */
+	uint32_t req_switch;    /* Maximum number of switches */
 	uint16_t requeue;       /* enable or disable job requeue option */
 	time_t resize_time;	/* time of latest size change */
 	uint16_t restart_cnt;	/* count of job restarts */
