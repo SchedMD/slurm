@@ -72,8 +72,7 @@
 		kvp = xmalloc(sizeof(pmix_info_t));			\
 	} else {							\
 		key_num = xsize(kvp) / sizeof(pmix_info_t);		\
-		kvp = (pmix_info_t *)xrealloc(kvp, (key_num + 1) *	\
-					      sizeof(pmix_info_t));	\
+		xrecalloc(kvp, (key_num + 1), sizeof(pmix_info_t));	\
 	}								\
 	(void)strlcpy(kvp[key_num].key, key, PMIX_MAX_KEYLEN);		\
 	PMIXP_VALUE_LOAD(&kvp[key_num].value, val, type);		\
