@@ -95,7 +95,7 @@ static uid_t *_parse_users(char *buf)
 		return user_array;
 	tmp = xstrdup(buf);
 	array_size = 1;
-	user_array = xmalloc(sizeof(uid_t) * array_size);
+	user_array = xcalloc(array_size, sizeof(uid_t));
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		if ((uid_from_string(tok, user_array + inx) == -1) ||
@@ -139,9 +139,9 @@ static char *_print_users(uid_t *buf)
 /* Allocate burst buffer hash tables */
 extern void bb_alloc_cache(bb_state_t *state_ptr)
 {
-	state_ptr->bb_ahash = xmalloc(sizeof(bb_alloc_t *) * BB_HASH_SIZE);
-	state_ptr->bb_jhash = xmalloc(sizeof(bb_job_t *)   * BB_HASH_SIZE);
-	state_ptr->bb_uhash = xmalloc(sizeof(bb_user_t *)  * BB_HASH_SIZE);
+	state_ptr->bb_ahash = xcalloc(BB_HASH_SIZE, sizeof(bb_alloc_t *));
+	state_ptr->bb_jhash = xcalloc(BB_HASH_SIZE, sizeof(bb_job_t *));
+	state_ptr->bb_uhash = xcalloc(BB_HASH_SIZE, sizeof(bb_user_t *));
 }
 
 /* Clear all cached burst buffer records, freeing all memory. */

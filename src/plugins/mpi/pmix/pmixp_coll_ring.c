@@ -164,7 +164,7 @@ int pmixp_coll_ring_unpack(buf_t *buf, pmixp_coll_type_t *type,
 	}
 	*nr = nprocs;
 
-	procs = xmalloc(sizeof(pmix_proc_t) * nprocs);
+	procs = xcalloc(nprocs, sizeof(pmix_proc_t));
 	*r = procs;
 
 	/* 3. get namespace/rank of particular process */
@@ -504,7 +504,7 @@ int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t **hl)
 		coll_ctx->contrib_prev = 0;
 		coll_ctx->state = PMIXP_COLL_RING_SYNC;
 		// TODO bit vector
-		coll_ctx->contrib_map = xmalloc(sizeof(bool) * coll->peers_cnt);
+		coll_ctx->contrib_map = xcalloc(coll->peers_cnt, sizeof(bool));
 	}
 
 	return SLURM_SUCCESS;

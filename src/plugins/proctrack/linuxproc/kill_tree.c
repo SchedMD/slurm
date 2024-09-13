@@ -166,7 +166,7 @@ static xppid_t **_build_hashtbl(void)
 		return NULL;
 	debug3("Myname in build_hashtbl: %s", myname);
 
-	hashtbl = (xppid_t **)xmalloc(HASH_LEN * sizeof(xppid_t *));
+	hashtbl = xcalloc(HASH_LEN, sizeof(xppid_t *));
 
 	errno = 0;
 	rbuf = xmalloc(4096);
@@ -398,7 +398,7 @@ extern int proctrack_linuxproc_get_pids(pid_t top, pid_t **pids, int *npids)
 		return SLURM_ERROR;
 	}
 
-	p = (pid_t *)xmalloc(sizeof(pid_t) * len);
+	p = xcalloc(len, sizeof(pid_t));
 	ptr = list;
 	i = 0;
 	while (ptr != NULL) {

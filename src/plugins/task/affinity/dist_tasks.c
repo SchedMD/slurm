@@ -1025,11 +1025,11 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	}
 
 	pu_per_core = hw_threads;
-	core_tasks = xmalloc(sizeof(int) * hw_sockets * hw_cores);
-	core_threads = xmalloc(sizeof(int) * hw_sockets * hw_cores);
-	socket_last_pu = xmalloc(hw_sockets * sizeof(int));
+	core_tasks = xcalloc(hw_sockets * hw_cores, sizeof(int));
+	core_threads = xcalloc(hw_sockets * hw_cores, sizeof(int));
+	socket_last_pu = xcalloc(hw_sockets, sizeof(int));
 
-	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
+	*masks_p = xcalloc(max_tasks, sizeof(bitstr_t *));
 	masks = *masks_p;
 
 	size = bit_size(avail_map);
@@ -1239,14 +1239,14 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 	size = bit_size(avail_map);
 
-	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
+	*masks_p = xcalloc(max_tasks, sizeof(bitstr_t *));
 	masks = *masks_p;
 
 	pu_per_core = hw_threads;
-	core_tasks = xmalloc(sizeof(int) * hw_sockets * hw_cores);
-	core_threads = xmalloc(sizeof(int) * hw_sockets * hw_cores);
+	core_tasks = xcalloc(hw_sockets * hw_cores, sizeof(int));
+	core_threads = xcalloc(hw_sockets * hw_cores, sizeof(int));
 	pu_per_socket = hw_cores * hw_threads;
-	socket_tasks = xmalloc(sizeof(int) * hw_sockets);
+	socket_tasks = xcalloc(hw_sockets, sizeof(int));
 
 	/* block distribution with oversubsciption */
 	c = 0;

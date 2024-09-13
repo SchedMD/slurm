@@ -454,14 +454,14 @@ _handle_mcmd(int fd, int lrank, client_req_t *req)
 		pmi1_spawn = spawn_req_new();
 		client_req_get_int(req, TOTSPAWNS_KEY,
 				   (int *)&pmi1_spawn->subcmd_cnt);
-		pmi1_spawn->subcmds = xmalloc(pmi1_spawn->subcmd_cnt *
+		pmi1_spawn->subcmds = xcalloc(pmi1_spawn->subcmd_cnt,
 					      sizeof(spawn_subcmd_t *));
 		client_req_get_int(req, PREPUTNUM_KEY,
 				   (int *)&pmi1_spawn->preput_cnt);
-		pmi1_spawn->pp_keys =
-			xmalloc(pmi1_spawn->preput_cnt * sizeof(char *));
-		pmi1_spawn->pp_vals =
-			xmalloc(pmi1_spawn->preput_cnt * sizeof(char *));
+		pmi1_spawn->pp_keys = xcalloc(pmi1_spawn->preput_cnt,
+					      sizeof(char *));
+		pmi1_spawn->pp_vals = xcalloc(pmi1_spawn->preput_cnt,
+					      sizeof(char *));
 		for (i = 0; i < pmi1_spawn->preput_cnt; i ++) {
 			snprintf(buf, 64, PREPUTKEY_KEY"%d", i);
 			client_req_get_str(req, buf, &pmi1_spawn->pp_keys[i]);

@@ -133,7 +133,7 @@ int init(void)
 		return rc;
 	}
 
-	stored_data = xmalloc(sizeof(char *) * 24);
+	stored_data = xcalloc(24, sizeof(char *));
 	stored_sz = 24;
 	lua_script_path = get_extra_conf_path("cli_filter.lua");
 
