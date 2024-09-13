@@ -335,7 +335,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	int rc = SLURM_SUCCESS;
 	char *nodes = NULL, *jname = NULL;
 	char *partition = NULL;
-	char *query = NULL;
+	char *query = NULL, *pos = NULL;
 	time_t begin_time, check_time, start_time, submit_time;
 	uint32_t wckeyid = 0;
 	uint32_t job_state;
@@ -526,7 +526,7 @@ no_rollup_change:
 				return SLURM_ERROR;
 		}
 
-		query = xstrdup_printf(
+		xstrfmtcatat(query, &pos,
 			"insert into \"%s_%s\" "
 			"(id_job, mod_time, id_array_job, id_array_task, "
 			"het_job_id, het_job_offset, "
@@ -539,45 +539,46 @@ no_rollup_change:
 			mysql_conn->cluster_name, job_table);
 
 		if (wckeyid)
-			xstrcat(query, ", id_wckey");
+			xstrcatat(query, &pos, ", id_wckey");
 		if (job_ptr->mcs_label)
-			xstrcat(query, ", mcs_label");
+			xstrcatat(query, &pos, ", mcs_label");
 		if (job_ptr->account)
-			xstrcat(query, ", account");
+			xstrcatat(query, &pos, ", account");
 		if (partition)
-			xstrcat(query, ", `partition`");
+			xstrcatat(query, &pos, ", `partition`");
 		if (job_ptr->wckey)
-			xstrcat(query, ", wckey");
+			xstrcatat(query, &pos, ", wckey");
 		if (job_ptr->network)
-			xstrcat(query, ", node_inx");
+			xstrcatat(query, &pos, ", node_inx");
 		if (array_recs && array_recs->task_id_str)
-			xstrcat(query, ", array_task_str, array_max_tasks, "
-				"array_task_pending");
+			xstrcatat(query, &pos, ", array_task_str, "
+				"array_max_tasks, array_task_pending");
 		else
-			xstrcat(query, ", array_task_str, array_task_pending");
+			xstrcatat(query, &pos,
+				", array_task_str, array_task_pending");
 
 		if (job_ptr->tres_alloc_str)
-			xstrcat(query, ", tres_alloc");
+			xstrcatat(query, &pos, ", tres_alloc");
 		if (job_ptr->tres_req_str)
-			xstrcat(query, ", tres_req");
+			xstrcatat(query, &pos, ", tres_req");
 		if (job_ptr->details->work_dir)
-			xstrcat(query, ", work_dir");
+			xstrcatat(query, &pos, ", work_dir");
 		if (job_ptr->details->features)
-			xstrcat(query, ", constraints");
+			xstrcatat(query, &pos, ", constraints");
 		if (job_ptr->details->std_err)
-			xstrcat(query, ", std_err");
+			xstrcatat(query, &pos, ", std_err");
 		if (job_ptr->details->std_in)
-			xstrcat(query, ", std_in");
+			xstrcatat(query, &pos, ", std_in");
 		if (job_ptr->details->std_out)
-			xstrcat(query, ", std_out");
+			xstrcatat(query, &pos, ", std_out");
 		if (job_ptr->details->submit_line)
-			xstrcat(query, ", submit_line");
+			xstrcatat(query, &pos, ", submit_line");
 		if (job_ptr->container)
-			xstrcat(query, ", container");
+			xstrcatat(query, &pos, ", container");
 		if (job_ptr->licenses)
-			xstrcat(query, ", licenses");
+			xstrcatat(query, &pos, ", licenses");
 
-		xstrfmtcat(query,
+		xstrfmtcatat(query, &pos,
 			   ") values (%u, UNIX_TIMESTAMP(), "
 			   "%u, %u, %u, %u, %u, %u, %u, %u, "
 			   "'%s', %u, %u, %ld, %ld, %ld, "
@@ -599,55 +600,57 @@ no_rollup_change:
 			   env_hash_inx, script_hash_inx);
 
 		if (wckeyid)
-			xstrfmtcat(query, ", %u", wckeyid);
+			xstrfmtcatat(query, &pos, ", %u", wckeyid);
 		if (job_ptr->mcs_label)
-			xstrfmtcat(query, ", '%s'", job_ptr->mcs_label);
+			xstrfmtcatat(query, &pos, ", '%s'", job_ptr->mcs_label);
 		if (job_ptr->account)
-			xstrfmtcat(query, ", '%s'", job_ptr->account);
+			xstrfmtcatat(query, &pos, ", '%s'", job_ptr->account);
 		if (partition)
-			xstrfmtcat(query, ", '%s'", partition);
+			xstrfmtcatat(query, &pos, ", '%s'", partition);
 		if (job_ptr->wckey)
-			xstrfmtcat(query, ", '%s'", job_ptr->wckey);
+			xstrfmtcatat(query, &pos, ", '%s'", job_ptr->wckey);
 		if (job_ptr->network)
-			xstrfmtcat(query, ", '%s'", job_ptr->network);
+			xstrfmtcatat(query, &pos, ", '%s'", job_ptr->network);
 		if (array_recs && array_recs->task_id_str)
-			xstrfmtcat(query, ", '%s', %u, %u",
+			xstrfmtcatat(query, &pos, ", '%s', %u, %u",
 				   array_recs->task_id_str,
 				   array_recs->max_run_tasks,
 				   array_recs->task_cnt);
 		else
-			xstrcat(query, ", NULL, 0");
+			xstrcatat(query, &pos, ", NULL, 0");
 
 		if (job_ptr->tres_alloc_str)
-			xstrfmtcat(query, ", '%s'", job_ptr->tres_alloc_str);
+			xstrfmtcatat(query, &pos, ", '%s'",
+				     job_ptr->tres_alloc_str);
 		if (job_ptr->tres_req_str)
-			xstrfmtcat(query, ", '%s'", job_ptr->tres_req_str);
+			xstrfmtcatat(query, &pos, ", '%s'",
+				     job_ptr->tres_req_str);
 		if (job_ptr->details->work_dir)
-			xstrfmtcat(query, ", '%s'",
+			xstrfmtcatat(query, &pos, ", '%s'",
 				   job_ptr->details->work_dir);
 		if (job_ptr->details->features)
-			xstrfmtcat(query, ", '%s'",
+			xstrfmtcatat(query, &pos, ", '%s'",
 				   job_ptr->details->features);
 		if (job_ptr->details->std_err)
-			xstrfmtcat(query, ", '%s'",
+			xstrfmtcatat(query, &pos, ", '%s'",
 				   job_ptr->details->std_err);
 		if (job_ptr->details->std_in)
-			xstrfmtcat(query, ", '%s'",
+			xstrfmtcatat(query, &pos, ", '%s'",
 				   job_ptr->details->std_in);
 		if (job_ptr->details->std_out)
-			xstrfmtcat(query, ", '%s'",
+			xstrfmtcatat(query, &pos, ", '%s'",
 				   job_ptr->details->std_out);
 		if (job_ptr->details->submit_line)
-			xstrfmtcat(query, ", '%s'",
+			xstrfmtcatat(query, &pos, ", '%s'",
 				   job_ptr->details->submit_line);
 		if (job_ptr->container)
-			xstrfmtcat(query, ", '%s'",
+			xstrfmtcatat(query, &pos, ", '%s'",
 				   job_ptr->container);
 		if (job_ptr->licenses)
-			xstrfmtcat(query, ", '%s'",
+			xstrfmtcatat(query, &pos, ", '%s'",
 				   job_ptr->licenses);
 
-		xstrfmtcat(query,
+		xstrfmtcatat(query, &pos,
 			   ") on duplicate key update "
 			   "job_db_inx=LAST_INSERT_ID(job_db_inx), "
 			   "id_assoc=%u, id_user=%u, id_group=%u, "
@@ -676,57 +679,61 @@ no_rollup_change:
 			   env_hash_inx, script_hash_inx);
 
 		if (wckeyid)
-			xstrfmtcat(query, ", id_wckey=%u", wckeyid);
+			xstrfmtcatat(query, &pos, ", id_wckey=%u", wckeyid);
 		if (job_ptr->mcs_label)
-			xstrfmtcat(query, ", mcs_label='%s'",
-				   job_ptr->mcs_label);
+			xstrfmtcatat(query, &pos, ", mcs_label='%s'",
+				     job_ptr->mcs_label);
 		if (job_ptr->account)
-			xstrfmtcat(query, ", account='%s'", job_ptr->account);
+			xstrfmtcatat(query, &pos, ", account='%s'",
+				     job_ptr->account);
 		if (partition)
-			xstrfmtcat(query, ", `partition`='%s'", partition);
+			xstrfmtcatat(query, &pos, ", `partition`='%s'",
+				     partition);
 		if (job_ptr->wckey)
-			xstrfmtcat(query, ", wckey='%s'", job_ptr->wckey);
+			xstrfmtcatat(query, &pos, ", wckey='%s'",
+				     job_ptr->wckey);
 		if (job_ptr->network)
-			xstrfmtcat(query, ", node_inx='%s'", job_ptr->network);
+			xstrfmtcatat(query, &pos, ", node_inx='%s'",
+				     job_ptr->network);
 		if (array_recs && array_recs->task_id_str)
-			xstrfmtcat(query, ", array_task_str='%s', "
+			xstrfmtcatat(query, &pos, ", array_task_str='%s', "
 				   "array_max_tasks=%u, array_task_pending=%u",
 				   array_recs->task_id_str,
 				   array_recs->max_run_tasks,
 				   array_recs->task_cnt);
 		else
-			xstrfmtcat(query, ", array_task_str=NULL, "
+			xstrfmtcatat(query, &pos, ", array_task_str=NULL, "
 				   "array_task_pending=0");
 
 		if (job_ptr->tres_alloc_str)
-			xstrfmtcat(query, ", tres_alloc='%s'",
+			xstrfmtcatat(query, &pos, ", tres_alloc='%s'",
 				   job_ptr->tres_alloc_str);
 		if (job_ptr->tres_req_str)
-			xstrfmtcat(query, ", tres_req='%s'",
+			xstrfmtcatat(query, &pos, ", tres_req='%s'",
 				   job_ptr->tres_req_str);
 		if (job_ptr->details->work_dir)
-			xstrfmtcat(query, ", work_dir='%s'",
+			xstrfmtcatat(query, &pos, ", work_dir='%s'",
 				   job_ptr->details->work_dir);
 		if (job_ptr->details->features)
-			xstrfmtcat(query, ", constraints='%s'",
+			xstrfmtcatat(query, &pos, ", constraints='%s'",
 				   job_ptr->details->features);
 		if (job_ptr->details->std_err)
-			xstrfmtcat(query, ", std_err='%s'",
+			xstrfmtcatat(query, &pos, ", std_err='%s'",
 				   job_ptr->details->std_err);
 		if (job_ptr->details->std_in)
-			xstrfmtcat(query, ", std_in='%s'",
+			xstrfmtcatat(query, &pos, ", std_in='%s'",
 				   job_ptr->details->std_in);
 		if (job_ptr->details->std_out)
-			xstrfmtcat(query, ", std_out='%s'",
+			xstrfmtcatat(query, &pos, ", std_out='%s'",
 				   job_ptr->details->std_out);
 		if (job_ptr->details->submit_line)
-			xstrfmtcat(query, ", submit_line='%s'",
+			xstrfmtcatat(query, &pos, ", submit_line='%s'",
 				   job_ptr->details->submit_line);
 		if (job_ptr->container)
-			xstrfmtcat(query, ", container='%s'",
+			xstrfmtcatat(query, &pos, ", container='%s'",
 				   job_ptr->container);
 		if (job_ptr->licenses)
-			xstrfmtcat(query, ", licenses='%s'",
+			xstrfmtcatat(query, &pos, ", licenses='%s'",
 				   job_ptr->licenses);
 
 		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
@@ -741,66 +748,70 @@ no_rollup_change:
 				rc = SLURM_ERROR;
 		}
 	} else {
-		query = xstrdup_printf("update \"%s_%s\" set nodelist='%s', ",
-				       mysql_conn->cluster_name,
-				       job_table, nodes);
+		xstrfmtcatat(query, &pos,
+			"update \"%s_%s\" set nodelist='%s', ",
+			 mysql_conn->cluster_name, job_table, nodes);
 
 		if (wckeyid)
-			xstrfmtcat(query, "id_wckey=%u, ", wckeyid);
+			xstrfmtcatat(query, &pos, "id_wckey=%u, ", wckeyid);
 		if (job_ptr->mcs_label)
-			xstrfmtcat(query, "mcs_label='%s', ",
+			xstrfmtcatat(query, &pos, "mcs_label='%s', ",
 				   job_ptr->mcs_label);
 		if (job_ptr->account)
-			xstrfmtcat(query, "account='%s', ", job_ptr->account);
+			xstrfmtcatat(query, &pos, "account='%s', ",
+				     job_ptr->account);
 		if (partition)
-			xstrfmtcat(query, "`partition`='%s', ", partition);
+			xstrfmtcatat(query, &pos, "`partition`='%s', ",
+				     partition);
 		if (job_ptr->wckey)
-			xstrfmtcat(query, "wckey='%s', ", job_ptr->wckey);
+			xstrfmtcatat(query, &pos, "wckey='%s', ",
+				     job_ptr->wckey);
 		if (job_ptr->network)
-			xstrfmtcat(query, "node_inx='%s', ", job_ptr->network);
+			xstrfmtcatat(query, &pos, "node_inx='%s', ",
+				     job_ptr->network);
 		if (array_recs && array_recs->task_id_str)
-			xstrfmtcat(query, "array_task_str='%s', "
+			xstrfmtcatat(query, &pos, "array_task_str='%s', "
 				   "array_max_tasks=%u, "
 				   "array_task_pending=%u, ",
 				   array_recs->task_id_str,
 				   array_recs->max_run_tasks,
 				   array_recs->task_cnt);
 		else
-			xstrfmtcat(query, "array_task_str=NULL, "
+			xstrfmtcatat(query, &pos, "array_task_str=NULL, "
 				   "array_task_pending=0, ");
 
 		if (job_ptr->tres_alloc_str)
-			xstrfmtcat(query, "tres_alloc='%s', ",
+			xstrfmtcatat(query, &pos, "tres_alloc='%s', ",
 				   job_ptr->tres_alloc_str);
 		if (job_ptr->tres_req_str)
-			xstrfmtcat(query, "tres_req='%s', ",
+			xstrfmtcatat(query, &pos, "tres_req='%s', ",
 				   job_ptr->tres_req_str);
 		if (job_ptr->details->work_dir)
-			xstrfmtcat(query, "work_dir='%s', ",
+			xstrfmtcatat(query, &pos, "work_dir='%s', ",
 				   job_ptr->details->work_dir);
 		if (job_ptr->details->features)
-			xstrfmtcat(query, "constraints='%s', ",
+			xstrfmtcatat(query, &pos, "constraints='%s', ",
 				   job_ptr->details->features);
 		if (job_ptr->details->std_err)
-			xstrfmtcat(query, "std_err='%s', ",
+			xstrfmtcatat(query, &pos, "std_err='%s', ",
 				   job_ptr->details->std_err);
 		if (job_ptr->details->std_in)
-			xstrfmtcat(query, "std_in='%s', ",
+			xstrfmtcatat(query, &pos, "std_in='%s', ",
 				   job_ptr->details->std_in);
 		if (job_ptr->details->std_out)
-			xstrfmtcat(query, "std_out='%s', ",
+			xstrfmtcatat(query, &pos, "std_out='%s', ",
 				   job_ptr->details->std_out);
 		if (job_ptr->details->submit_line)
-			xstrfmtcat(query, "submit_line='%s', ",
+			xstrfmtcatat(query, &pos, "submit_line='%s', ",
 				   job_ptr->details->submit_line);
 		if (job_ptr->container)
-			xstrfmtcat(query, "container='%s', ",
+			xstrfmtcatat(query, &pos, "container='%s', ",
 				   job_ptr->container);
 		if (job_ptr->licenses)
-			xstrfmtcat(query, "licenses='%s', ",
+			xstrfmtcatat(query, &pos, "licenses='%s', ",
 				   job_ptr->licenses);
 
-		xstrfmtcat(query, "time_start=%ld, job_name='%s', "
+		xstrfmtcatat(query, &pos, "time_start=%ld, job_name='%s', "
 			   "state=greatest(state, %u), "
 			   "nodes_alloc=%u, id_qos=%u, "
 			   "id_assoc=%u, id_resv=%u, "
