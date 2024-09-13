@@ -521,13 +521,9 @@ client_req_get_bool(client_req_t *req, const char *key, bool *pval)
 
 /* ************************************************************ */
 
-extern client_resp_t *
-client_resp_new(void)
+extern client_resp_t *client_resp_new(void)
 {
-	client_resp_t *resp;
-
-	resp = xmalloc(sizeof(client_resp_t));
-	return resp;
+	return xmalloc(sizeof(client_resp_t));
 }
 
 extern int
