@@ -2519,13 +2519,15 @@ timer_check:
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE ||
 	    ((job_ptr->bit_flags & BACKFILL_TEST) &&
 	     slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)) {
+		char time_str[25];
 		/*
 		 * When time_window gets large it could result in
 		 * delaying jobs regardless of priority. Setting
 		 * bf_window_linear could help mitigate this.
 		 */
 		verbose("%pJ considered resources from running jobs ending within %d seconds of %s",
-			job_ptr, time_window, slurm_ctime2(&end_time));
+			job_ptr, time_window, slurm_ctime2_r(&end_time,
+			time_str));
 	}
 
 	list_iterator_destroy(job_iterator);
