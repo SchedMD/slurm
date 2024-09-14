@@ -208,6 +208,11 @@ typedef struct {
 	uint32_t time_limit;
 } qos_part_check_t;
 
+typedef struct {
+	job_record_t *job_ptr;
+	list_itr_t *resv_list_iter;
+} top_prio_args_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -11642,6 +11647,108 @@ static bool _higher_precedence(job_record_t *job_ptr, job_record_t *job_ptr2)
 	return job_ptr->job_id < job_ptr2->job_id;
 }
 
+static int _match_resv_id(void *x, void *key)
+{
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
+	uint32_t *resv_id = (uint32_t *) key;
+
+	xassert(resv_ptr);
+
+	if (resv_ptr->resv_id != *resv_id)
+		return 0;
+	else
+		return 1; /* match */
+}
+
+static int _will_resv_allow_warn_time(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	uint16_t *warn_time = arg;
+
+	xassert(resv_ptr);
+	xassert(warn_time);
+
+	if (resv_ptr->max_start_delay &&
+	    (*warn_time <= resv_ptr->max_start_delay))
+		return true;
+
+	return false;
+}
+
+static bool _can_resv_overlap(top_prio_args_t *job_args, job_record_t *job_ptr2)
+{
+	job_record_t *job_ptr1 = job_args->job_ptr;
+	slurmctld_resv_t* cur_resv1;
+	slurmctld_resv_t* cur_resv2;
+	list_itr_t *resv_iter2;
+
+	/*
+	 * If job_ptr1 does not have a resv but uses --signal=R, check if any of
+	 * job_ptr2's resv will allow overlap.
+	 */
+	if (!job_ptr1->resv_ptr && job_ptr2->resv_ptr &&
+	    (job_ptr1->warn_flags & KILL_JOB_RESV)) {
+		if (!job_ptr2->resv_list)
+			return _will_resv_allow_warn_time(job_ptr2->resv_ptr,
+							  &job_ptr1->warn_time);
+		return list_find_first(job_ptr2->resv_list,
+				       _will_resv_allow_warn_time,
+				       &job_ptr1->warn_time);
+	}
+
+	/* If 0-1 resv is used per job see if they match */
+	if (!job_ptr1->resv_list && !job_ptr2->resv_list)
+		return !xstrcmp(job_ptr1->resv_name, job_ptr2->resv_name);
+
+	/* If one doesn't use resv at this point they can't overlap */
+	if (!job_ptr1->resv_ptr || !job_ptr2->resv_ptr)
+		return false;
+
+	/* If one has a list of resv and the other has one resv */
+	if (job_ptr1->resv_list && !job_ptr2->resv_list)
+		return list_find_first(job_ptr1->resv_list, _match_resv_id,
+				       &job_ptr2->resv_ptr->resv_id);
+	if (job_ptr2->resv_list && !job_ptr1->resv_list)
+		return list_find_first(job_ptr2->resv_list, _match_resv_id,
+				       &job_ptr1->resv_ptr->resv_id);
+
+	/* Both jobs have resv lists - Note resv_list is sorted by id */
+	xassert(job_args->resv_list_iter);
+
+	list_iterator_reset(job_args->resv_list_iter);
+	resv_iter2 = list_iterator_create(job_ptr2->resv_list);
+	while ((cur_resv1 = list_next(job_args->resv_list_iter))) {
+		while ((cur_resv2 = list_next(resv_iter2))) {
+			if (cur_resv1->resv_id == cur_resv2->resv_id) {
+				list_iterator_destroy(resv_iter2);
+				return true;
+			} else if (cur_resv1->resv_id < cur_resv2->resv_id)
+				break;
+		}
+		if (!cur_resv2)
+			break;
+	}
+	list_iterator_destroy(resv_iter2);
+	return false;
+}
+
+static void _init_top_prio_args(job_record_t *job_ptr, top_prio_args_t *args)
+{
+	args->job_ptr = job_ptr;
+	if (job_ptr->resv_list)
+		args->resv_list_iter = list_iterator_create(job_ptr->resv_list);
+}
+
+static void _destroy_top_prio_args(top_prio_args_t *args)
+{
+	if (!args || !args->job_ptr)
+		return;
+
+	/* Intentionaly not freeing the job_ptr */
+	if (args->resv_list_iter)
+		list_iterator_destroy(args->resv_list_iter);
+}
+
 /*
  * _top_priority - determine if any other job has a higher priority than the
  *	specified job
@@ -11660,10 +11767,16 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 	else {
 		list_itr_t *job_iterator;
 		job_record_t *job_ptr2;
+		top_prio_args_t job_args = {0};
 
 		top = true;	/* assume top priority until found otherwise */
 		job_iterator = list_iterator_create(job_list);
 		while ((job_ptr2 = list_next(job_iterator))) {
+			bool overlap_with_resv = false;
+
+			if (!job_args.job_ptr)
+				_init_top_prio_args(job_ptr, &job_args);
+
 			if (job_ptr2 == job_ptr)
 				continue;
 			if ((het_job_offset != NO_VAL) && (job_ptr->job_id ==
@@ -11690,29 +11803,20 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 			    !job_independent(job_ptr2))
 				continue;
 
-			if (!xstrcmp(job_ptr2->resv_name, job_ptr->resv_name) ||
-			    (job_ptr2->resv_ptr &&
-			     (job_ptr->warn_time <=
-			      job_ptr2->resv_ptr->max_start_delay) &&
-			     (job_ptr->warn_flags & KILL_JOB_RESV))) {
-				/* same reservation */
-				if (_higher_precedence(job_ptr, job_ptr2))
-					continue;
-				top = false;
-				break;
-			} else if ((job_ptr2->resv_name &&
-				    (!job_ptr->resv_name)) ||
-				   ((!job_ptr2->resv_name) &&
-				    job_ptr->resv_name))
-				continue;	/* different reservation */
-
+			if (job_ptr->resv_name && !job_ptr2->resv_name)
+				continue; /* job's with resv have priority */
+			if (!_can_resv_overlap(&job_args, job_ptr2))
+				continue; /* job can't overlap nodes */
+			if (!job_ptr->resv_name && job_ptr2->resv_name)
+				overlap_with_resv = true;
 
 			if (bb_g_job_test_stage_in(job_ptr2, true) != 1)
 				continue;	/* Waiting for buffer */
 
 			if (job_ptr2->part_ptr == job_ptr->part_ptr) {
 				/* same partition */
-				if (_higher_precedence(job_ptr, job_ptr2))
+				if (_higher_precedence(job_ptr, job_ptr2) &&
+				    !overlap_with_resv)
 					continue;
 				top = false;
 				break;
@@ -11720,6 +11824,12 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 			if (bit_overlap_any(job_ptr->part_ptr->node_bitmap,
 					    job_ptr2->part_ptr->node_bitmap) == 0)
 				continue;   /* no node overlap in partitions */
+
+			if (overlap_with_resv) {
+				top = false;
+				break;
+			}
+
 			if ((job_ptr2->part_ptr->priority_tier >
 			     job_ptr ->part_ptr->priority_tier) ||
 			    ((job_ptr2->part_ptr->priority_tier ==
@@ -11730,6 +11840,7 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 			}
 		}
 		list_iterator_destroy(job_iterator);
+		_destroy_top_prio_args(&job_args);
 	}
 
 	if ((!top) && detail_ptr) {	/* not top prio */
