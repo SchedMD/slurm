@@ -2156,6 +2156,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	size_t tmp_sz = 0;
 	cgroup_acct_t *stats = NULL;
 	task_cg_info_t *task_cg_info;
+	static bool interfaces_checked = false, memory_peak_interface = false;
 
 	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
 					     &task_id))) {
@@ -2166,6 +2167,20 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 			error("No task found with id %u, this should never happen",
 			      task_id);
 		return NULL;
+	}
+
+	/*
+	 * Check optional interfaces existence and permissions. This check
+	 * will help to avoid querying unexistent cgroup interfaces everytime,
+	 * as might happen in kernel versions that do not provide all of them
+	 */
+	if (!interfaces_checked) {
+		/*
+		 * Check for memory.peak support as RHEL8 and other OSes with
+		 * old kernels might not provide it.
+		 */
+		memory_peak_interface = cgroup_p_has_feature(CG_MEMCG_PEAK);
+		interfaces_checked = true;
 	}
 
 	if (common_cgroup_get_param(&task_cg_info->task_cg,
@@ -2201,19 +2216,17 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 				 task_id);
 	}
 
-	/*
-	 * RHEL8 and other OSes with old kernels do not necessarily have this
-	 * interface.
-	 */
-	if (common_cgroup_get_param(&task_cg_info->task_cg,
-				    "memory.peak",
-				    &memory_peak,
-				    &tmp_sz) != SLURM_SUCCESS) {
-		if (task_id == task_special_id)
-			log_flag(CGROUP, "Cannot read task_special memory.peak interface, does your OS support it?");
-		else
-			log_flag(CGROUP, "Cannot read task %d memory.peak interface, does your OS support it?",
-				 task_id);
+	if (memory_peak_interface) {
+		if (common_cgroup_get_param(&task_cg_info->task_cg,
+					    "memory.peak",
+					    &memory_peak,
+					    &tmp_sz) != SLURM_SUCCESS) {
+			if (task_id == task_special_id)
+				log_flag(CGROUP, "Cannot read task_special memory.peak interface, does your OS support it?");
+			else
+				log_flag(CGROUP, "Cannot read task %d memory.peak interface, does your OS support it?",
+					 task_id);
+		}
 	}
 
 	/*
