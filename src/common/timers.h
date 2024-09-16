@@ -40,6 +40,7 @@
 #define _HAVE_TIMERS_H
 
 #include <sys/time.h>
+#include <src/common/slurm_time.h>
 
 #define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20] = ""; long delta_t;
 #define START_TIMER	gettimeofday(&tv1, NULL)
@@ -76,5 +77,52 @@ extern int slurm_delta_tv(struct timeval *tv);
 extern void slurm_diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 			      char *tv_str, int len_tv_str, const char *from,
 			      long limit, long *delta_t);
+
+/* Struct to hold latency metric state */
+typedef struct {
+	timespec_t total;
+	uint64_t count;
+	timespec_t last_log;
+} latency_metric_t;
+
+typedef struct {
+	double avg; /* Average latency in seconds or 0 if not calculated */
+	timespec_t delay; /* Delay from START_LATENCY_TIMER() */
+} latency_metric_rc_t;
+
+/*
+ * Start recording latency metric
+ * NOTE: Must have DECL_LATENCY_TIMER() in scope
+ * NOTE: call BEGIN_LATENCY_TIMER() instead
+ * IN metric - metric state
+ * IN start - timestamp to populate
+ */
+extern void latency_metric_begin(latency_metric_t *metric, timespec_t *start);
+
+/*
+ * Stop recording latency metric and perform analysis
+ * NOTE: Must have DECL_LATENCY_TIMER() in scope
+ * NOTE: call END_LATENCY_TIMER() instead
+ * IN metric - metric state
+ * IN start - timestamp populated by START_LATENCY_TIMER()
+ * IN interval - Min interval between calculating analysis
+ * RET struct full of latency metric analysis
+ */
+extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
+					      timespec_t *start,
+					      const timespec_t interval);
+
+/* Declare latency timer */
+#define DECL_LATENCY_TIMER \
+	static latency_metric_t latency_metric = {0}; \
+	static __thread timespec_t latency_metric_start = {0};
+
+/* Start latency timer */
+#define START_LATENCY_TIMER() \
+	latency_metric_begin(&latency_metric, &latency_metric_start)
+
+/* End latency timer and generate analysis if past interval */
+#define END_LATENCY_TIMER(interval) \
+	latency_metric_end(&latency_metric, &latency_metric_start, interval)
 
 #endif

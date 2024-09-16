@@ -33,6 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <stdint.h>
+
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
@@ -77,15 +79,16 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 	}
 
 	need = sizeof(msglen) + msglen;
-	if ((rc = try_grow_buf_remaining(con->in, need))) {
-		log_flag(NET, "%s: [%s] unable to increase buffer %u bytes for RPC message: %s",
-			 __func__, con->name, need, slurm_strerror(rc));
-		return rc;
-	}
 
 	if (size_buf(con->in) < need) {
+		uint64_t bytes = need;
+
 		log_flag(NET, "%s: [%s] waiting for message length %u/%u for RPC message",
 			 __func__, con->name, size_buf(con->in), need);
+
+		/* Must defer resizing con->in until outside of I/O handler */
+		add_work_con_fifo(false, con, resize_input_buffer,
+				  (void *) bytes);
 		return SLURM_SUCCESS;
 	}
 
@@ -129,11 +132,11 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 		log_flag(PROTOCOL, "%s: [%s] received RPC %s",
 			 __func__, con->name, rpc_num2string(msg->msg_type));
 		log_flag(CONMGR, "%s: [%s] RPC BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-			 __func__, con->name, (uintptr_t) con->events.on_msg,
+			 __func__, con->name, (uintptr_t) con->events->on_msg,
 			 (uintptr_t) con->arg);
-		rc = con->events.on_msg(con, msg, con->arg);
+		rc = con->events->on_msg(con, msg, con->arg);
 		log_flag(CONMGR, "%s: [%s] RPC END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
-			 __func__, con->name, (uintptr_t) con->events.on_msg,
+			 __func__, con->name, (uintptr_t) con->events->on_msg,
 			 (uintptr_t) con->arg, slurm_strerror(rc));
 	}
 

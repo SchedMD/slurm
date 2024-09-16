@@ -939,7 +939,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	hostset_t *jobid_hostset = NULL;
 	char tmp_str[32];
 	list_t *resp = NULL;
-	slurm_addr_t resp_addr;
 	char resp_host[INET6_ADDRSTRLEN];
 	char *het_job_id_set = NULL;
 
@@ -962,8 +961,8 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		error_code = SLURM_ERROR;
 		goto send_msg;
 	}
-	if (slurm_get_peer_addr(msg->conn_fd, &resp_addr) == 0) {
-		slurm_get_ip_str(&resp_addr, resp_host, sizeof(resp_host));
+	if (msg->address.ss_family != AF_UNSPEC) {
+		slurm_get_ip_str(&msg->address, resp_host, sizeof(resp_host));
 	} else {
 		info("REQUEST_HET_JOB_ALLOCATION from uid=%u, can't get peer addr",
 		     msg->auth_uid);
@@ -1201,7 +1200,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 	bool do_unlock = false;
 	bool reject_job = false;
 	job_record_t *job_ptr = NULL;
-	slurm_addr_t resp_addr;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 
 	START_TIMER;
@@ -1257,11 +1255,11 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 
 	if (error_code) {
 		reject_job = true;
-	} else if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
+	} else if (msg->address.ss_family != AF_UNSPEC) {
 		/* resp_host could already be set from a federated cluster */
 		if (!job_desc_msg->resp_host) {
 			job_desc_msg->resp_host = xmalloc(INET6_ADDRSTRLEN);
-			slurm_get_ip_str(&resp_addr, job_desc_msg->resp_host,
+			slurm_get_ip_str(&msg->address, job_desc_msg->resp_host,
 					 INET6_ADDRSTRLEN);
 		}
 		dump_job_desc(job_desc_msg);
@@ -1299,10 +1297,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 		END_TIMER2(__func__);
 	} else {
 		reject_job = true;
-		if (errno)
-			error_code = errno;
-		else
-			error_code = SLURM_ERROR;
+		error_code = SLURM_UNKNOWN_FORWARD_ADDR;
 	}
 
 send_msg:
@@ -2390,7 +2385,6 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	/* Locks: Read config, write job, write node, read partition, read fed*/
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	slurm_addr_t resp_addr;
 	will_run_response_msg_t *resp = NULL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 
@@ -2428,9 +2422,9 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	if (err_msg)
 		job_submit_user_msg = xstrdup(err_msg);
 
-	if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
+	if (msg->address.ss_family != AF_UNSPEC) {
 		job_desc_msg->resp_host = xmalloc(INET6_ADDRSTRLEN);
-		slurm_get_ip_str(&resp_addr, job_desc_msg->resp_host,
+		slurm_get_ip_str(&msg->address, job_desc_msg->resp_host,
 				 INET6_ADDRSTRLEN);
 		dump_job_desc(job_desc_msg);
 		if (error_code == SLURM_SUCCESS) {
@@ -2450,10 +2444,9 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 			unlock_slurmctld(job_write_lock);
 			END_TIMER2(__func__);
 		}
-	} else if (errno)
-		error_code = errno;
-	else
-		error_code = SLURM_ERROR;
+	} else {
+		error_code = SLURM_UNKNOWN_FORWARD_ADDR;
+	}
 
 send_reply:
 
@@ -2537,8 +2530,7 @@ static int _find_avail_future_node(slurm_msg_t *msg)
 				continue;
 
 			/* Get IP of slurmd */
-			if (msg->conn_fd >= 0 &&
-			    !slurm_get_peer_addr(msg->conn_fd, &addr)) {
+			if (msg->address.ss_family != AF_UNSPEC) {
 				comm_name = xmalloc(INET6_ADDRSTRLEN);
 				slurm_get_ip_str(&addr, comm_name,
 						 INET6_ADDRSTRLEN);
@@ -4664,10 +4656,10 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		      job_ptr->fed_details->cluster_lock);
 		error_code = ESLURM_INVALID_CLUSTER_NAME;
 	} else if (sus_ptr->job_id_str) {
-		error_code = job_suspend2(sus_ptr, msg->auth_uid, msg->conn_fd,
-					  true, msg->protocol_version);
+		error_code = job_suspend2(msg, sus_ptr, msg->auth_uid, true,
+					  msg->protocol_version);
 	} else {
-		error_code = job_suspend(sus_ptr, msg->auth_uid, msg->conn_fd,
+		error_code = job_suspend(msg, sus_ptr, msg->auth_uid,
 					 true, msg->protocol_version);
 	}
 	unlock_slurmctld(job_write_lock);
@@ -4701,7 +4693,7 @@ static void _slurm_rpc_top_job(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
-	error_code = job_set_top(top_ptr, msg->auth_uid, msg->conn_fd,
+	error_code = job_set_top(msg, top_ptr, msg->auth_uid,
 				 msg->protocol_version);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);

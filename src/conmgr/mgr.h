@@ -46,6 +46,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include "slurm/slurm.h"
 
@@ -120,6 +121,20 @@ typedef enum {
 	FLAG_RPC_KEEP_BUFFER = CON_FLAG_RPC_KEEP_BUFFER,
 	/* @see CON_FLAG_QUIESCE */
 	FLAG_QUIESCE = CON_FLAG_QUIESCE,
+	/* True if fd_get_buffered_output_bytes() work on output_fd */
+	FLAG_CAN_QUERY_OUTPUT_BUFFER = SLURM_BIT(11),
+	/* connection is a pipe() */
+	FLAG_IS_FIFO = SLURM_BIT(12),
+	/* connection is a character special device */
+	FLAG_IS_CHR = SLURM_BIT(13),
+	/* @see CON_FLAG_TCP_NODELAY */
+	FLAG_TCP_NODELAY = CON_FLAG_TCP_NODELAY,
+	/* @see CON_FLAG_WATCH_WRITE_TIMEOUT */
+	FLAG_WATCH_WRITE_TIMEOUT = CON_FLAG_WATCH_WRITE_TIMEOUT,
+	/* @see CON_FLAG_WATCH_READ_TIMEOUT */
+	FLAG_WATCH_READ_TIMEOUT = CON_FLAG_WATCH_READ_TIMEOUT,
+	/* @see CON_FLAG_WATCH_CONNECT_TIMEOUT */
+	FLAG_WATCH_CONNECT_TIMEOUT = CON_FLAG_WATCH_CONNECT_TIMEOUT,
 } con_flags_t;
 
 /* Mask over flags that track connection state */
@@ -143,6 +158,16 @@ typedef enum {
  */
 extern char *con_flags_string(const con_flags_t flags);
 
+#define CONMGR_FD_REFS_MAX 16
+
+typedef struct conmgr_fd_ref_s {
+#define MAGIC_CON_MGR_FD_REF 0xA2F4B4EF
+	int magic; /* MAGIC_CON_MGR_FD_REF */
+	/* Bit# in conmgr_fd_t->references assigned to this */
+	bitoff_t bit;
+	conmgr_fd_t *con;
+} conmgr_fd_ref_t;
+
 /*
  * Connection tracking structure
  */
@@ -161,16 +186,18 @@ struct conmgr_fd_s {
 	char *name;
 	/* address for connection */
 	slurm_addr_t address;
-	/* call backs on events */
-	conmgr_events_t events;
+	/* call backs for events */
+	const conmgr_events_t *events;
 	/* buffer holding incoming already read data */
 	buf_t *in;
+	/* timestamp when last read() got >0 bytes or when connect() called */
+	timespec_t last_read;
 	/* list of buf_t to write (in order) */
 	list_t *out;
+	/* timestamp when last write() wrote >0 bytes */
+	timespec_t last_write;
 	/* socket maximum segment size (MSS) or NO_VAL if not known */
 	int mss;
-	/* path to unix socket if it is one */
-	char *unix_socket;
 
 	/* queued extraction of input_fd/output_fd request */
 	extract_fd_t *extract;
@@ -194,6 +221,12 @@ struct conmgr_fd_s {
 
 	/* Flags set for connection */
 	con_flags_t flags;
+
+	/*
+	 * Bitstring representing all references of this connection
+	 * NULL if there are no references
+	 */
+	bitstr_t *refs;
 };
 
 typedef struct {
@@ -211,6 +244,19 @@ typedef struct {
 typedef struct {
 	/* Configured value for max connections */
 	int conf_max_connections;
+
+	/*
+	 * Configured number of seconds to wait for recheck of output_fd for
+	 * write_complete work
+	 */
+	uint32_t conf_delay_write_complete;
+
+	/* Time delay requires to trigger a read timeout */
+	timespec_t conf_read_timeout;
+	/* Time delay requires to trigger a write timeout */
+	timespec_t conf_write_timeout;
+	/* Time delay requires to trigger a connect timeout */
+	timespec_t conf_connect_timeout;
 
 	/* Max number of connections at any one time allowed */
 	int max_connections;
@@ -240,6 +286,12 @@ typedef struct {
 	 * Thread id of thread running watch()
 	 */
 	pthread_t watch_thread;
+
+	/*
+	 * Max abs time watch can sleep due to pending timeout
+	 */
+	timespec_t watch_max_sleep;
+
 	/*
 	 * True if there is a thread for poll queued or running
 	 */
@@ -353,6 +405,20 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
 		}, 0, __func__)
 
+#define add_work_con_delayed_fifo(locked, con, _func, func_arg, delay_seconds, \
+				  delay_nanoseconds) \
+	add_work(locked, con, (conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, (conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_TIME_DELAY, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+			.time_begin = \
+				conmgr_calc_work_time_delay(delay_seconds, \
+							    delay_nanoseconds),\
+		}, 0, __func__)
+
 extern void work_mask_depend(work_t *work, conmgr_work_depend_t depend_mask);
 extern void handle_work(bool locked, work_t *work);
 
@@ -372,6 +438,16 @@ extern void wait_for_watch(void);
  * any queued work
  */
 extern void close_con(bool locked, conmgr_fd_t *con);
+
+/*
+ * Stop writting to connection and drop remaining outbound buffer(s)
+ */
+extern void close_con_output(bool locked, conmgr_fd_t *con);
+
+/*
+ * Wrap close_con() as work
+ */
+extern void work_close_con(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
  * Close connection due to poll error
@@ -398,6 +474,12 @@ extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 
 extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg);
 
+/*
+ * Resize con->in if needed
+ * IN arg - (ssize_t) number of bytes need in con->in
+ */
+extern void resize_input_buffer(conmgr_callback_args_t conmgr_args, void *arg);
+
 extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
@@ -419,7 +501,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
 extern int add_connection(conmgr_con_type_t type,
 			  conmgr_fd_t *source, int input_fd,
 			  int output_fd,
-			  const conmgr_events_t events,
+			  const conmgr_events_t *events,
 			  conmgr_con_flags_t flags,
 			  const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,

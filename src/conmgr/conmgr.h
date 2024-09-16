@@ -43,6 +43,7 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
 
 #define CONMGR_THREAD_COUNT_DEFAULT 10
 #define CONMGR_THREAD_COUNT_MIN 2
@@ -103,7 +104,7 @@ typedef struct {
 	 * Only called when type = CON_TYPE_RAW.
 	 *
 	 * IN con connection handler
-	 * IN arg ptr to be handed return of conmgr_on_new_connection_t().
+	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS or error to kill connection
 	 */
 	int (*on_data)(conmgr_fd_t *con, void *arg);
@@ -115,7 +116,7 @@ typedef struct {
 	 *
 	 * IN con connection handler
 	 * IN msg ptr to new msg (call must slurm_free_msg())
-	 * IN arg ptr to be handed return of conmgr_on_new_connection_t().
+	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS or error to kill connection
 	 */
 	int (*on_msg)(conmgr_fd_t *con, slurm_msg_t *msg, void *arg);
@@ -130,6 +131,45 @@ typedef struct {
 	 * 	used anymore.
 	 */
 	void (*on_finish)(conmgr_fd_t *con, void *arg);
+
+	/*
+	 * Call back when read timeout occurs
+	 * Called once per timeout triggering or being detected.
+	 *
+	 * If on_read_timeout=NULL is treated same as returning
+	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
+	 *
+	 * IN con - connection handler
+	 * IN arg ptr to be handed return of on_connection() callback.
+	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
+	 */
+	int (*on_read_timeout)(conmgr_fd_t *con, void *arg);
+
+	/*
+	 * Call back when write timeout occurs
+	 * Called once per timeout triggering or being detected.
+	 *
+	 * If on_read_timeout=NULL is treated same as returning
+	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
+	 *
+	 * IN con - connection handler
+	 * IN arg ptr to be handed return of on_connection() callback.
+	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
+	 */
+	int (*on_write_timeout)(conmgr_fd_t *con, void *arg);
+
+	/*
+	 * Call back when connect timeout occurs
+	 * Called once per timeout triggering or being detected.
+	 *
+	 * If on_read_timeout=NULL is treated same as returning
+	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
+	 *
+	 * IN con - connection handler
+	 * IN arg ptr to be handed return of on_connection() callback.
+	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
+	 */
+	int (*on_connect_timeout)(conmgr_fd_t *con, void *arg);
 } conmgr_events_t;
 
 typedef struct {
@@ -203,22 +243,14 @@ typedef enum {
 /* RET caller must xfree() */
 extern char *conmgr_work_depend_string(conmgr_work_depend_t type);
 
-typedef struct {
-	/* UNIX timestamp when to work can begin */
-	time_t seconds;
-	/* Additional Nanoseconds after seconds to delay */
-	long nanoseconds;
-} conmgr_work_time_begin_t;
-
 /*
  * Calculate the absolute start time from delayed time
  * IN delay_seconds - Number of seconds to delay from current time
  * IN delay_nanoseconds - Number of additional nanoseconds to delay from
  *	delay_seconds
  */
-extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
-	time_t delay_seconds,
-	long delay_nanoseconds);
+extern timespec_t conmgr_calc_work_time_delay(time_t delay_seconds,
+					      long delay_nanoseconds);
 
 typedef struct {
 	/* ptr to relevant connection (or NULL) */
@@ -254,7 +286,7 @@ typedef struct {
 	conmgr_work_depend_t depend_type;
 
 	/* set if (depend_type & CONMGR_WORK_DEP_TIME_DELAY) */
-	conmgr_work_time_begin_t time_begin;
+	timespec_t time_begin;
 
 	/* set if (depend_type & CONMGR_WORK_DEP_SIGNAL) */
 	int on_signal_number;
@@ -289,6 +321,24 @@ typedef enum {
 	 * Note: This flag is unrelated to CONMGR_WORK_DEP_QUIESCED.
 	 */
 	CON_FLAG_QUIESCE = SLURM_BIT(10),
+	/* output_fd is a socket with TCP_NODELAY set */
+	CON_FLAG_TCP_NODELAY = SLURM_BIT(14),
+	/*
+	 * Trigger on_write_timeout() callback when write of at least 1 byte
+	 * takes longer than conf_write_timeout when connection is otherwise
+	 * idle.
+	 */
+	CON_FLAG_WATCH_WRITE_TIMEOUT = SLURM_BIT(15),
+	/*
+	 * Trigger on_read_timeout() callback when read of at least 1 byte takes
+	 * longer than conf_read_timeout when connection is otherwise idle.
+	 */
+	CON_FLAG_WATCH_READ_TIMEOUT = SLURM_BIT(16),
+	/*
+	 * Trigger on_connect_timeout() callback when read of at least 1 byte
+	 * takes longer than timeout when connection is otherwise idle.
+	 */
+	CON_FLAG_WATCH_CONNECT_TIMEOUT = SLURM_BIT(17),
 } conmgr_con_flags_t;
 
 /*
@@ -324,7 +374,7 @@ extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
-			     int output_fd, const conmgr_events_t events,
+			     int output_fd, const conmgr_events_t *events,
 			     conmgr_con_flags_t flags,
 			     const slurm_addr_t *addr, socklen_t addrlen,
 			     void *arg);
@@ -341,7 +391,7 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
-				    const conmgr_events_t events,
+				    const conmgr_events_t *events,
 				    conmgr_con_flags_t flags, void *arg);
 
 /*
@@ -353,7 +403,7 @@ extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
-				   const conmgr_events_t events, void *arg);
+				   const conmgr_events_t *events, void *arg);
 
 /*
  * Queue send file descriptor over connection
@@ -405,13 +455,14 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
  *	formats:
  *		host:port
  *		unix:/path/to/socket
- * IN events - function callback on events
+ * IN events - ptr to function callback on events
  * IN arg - arbitrary ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 					const char *listen_on,
-					conmgr_events_t events, void *arg);
+					const conmgr_events_t *events,
+					void *arg);
 
 /*
  * Create listening sockets from list of host:port pairs
@@ -420,26 +471,28 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
  *	formats:
  *		host:port
  *		unix:/path/to/socket
- * IN events - function callback on events
+ * IN events - ptr to function callback on events
  * IN arg - arbitrary ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 					list_t *hostports,
-					conmgr_events_t events, void *arg);
+					const conmgr_events_t *events,
+					void *arg);
 
 /*
  * Instruct conmgr to create new socket and connect to addr
  * IN type - connection for new socket
  * IN addr - destination address to connect() socket
  * IN addrlen - sizeof(*addr)
- * IN events - function callback on events
+ * IN events - ptr to function callback on events
  * IN arg - arbitrary ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					slurm_addr_t *addr, socklen_t addrlen,
-					conmgr_events_t events, void *arg);
+					const conmgr_events_t *events,
+					void *arg);
 
 /*
  * Run connection manager main loop for until shutdown
@@ -707,6 +760,19 @@ typedef struct {
 extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con);
 
 /*
+ * Check to see if the con->output_fd is currently open and can (in theory)
+ * accept more write()s.
+ *
+ * WARNING: This check is inherently a race condition and should only be used to
+ * verify a connection is still valid before an expensive operation. The
+ * connection output could close or fail at anytime after this check which will
+ * be relayed via callbacks on the connection.
+ *
+ * RET true if output is still open or false if otherwise
+ */
+extern bool conmgr_fd_is_output_open(conmgr_fd_t *con);
+
+/*
  * Check if conmgr is enabled in this process
  * RET true if conmgr is enabled or running in this process
  */
@@ -744,6 +810,10 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
 #define CONMGR_PARAM_POLL_ONLY "CONMGR_USE_POLL"
 #define CONMGR_PARAM_THREADS "CONMGR_THREADS="
 #define CONMGR_PARAM_MAX_CONN "CONMGR_MAX_CONNECTIONS="
+#define CONMGR_PARAM_WAIT_WRITE_DELAY "CONMGR_WAIT_WRITE_DELAY="
+#define CONMGR_PARAM_READ_TIMEOUT "CONMGR_READ_TIMEOUT="
+#define CONMGR_PARAM_WRITE_TIMEOUT "CONMGR_WRITE_TIMEOUT="
+#define CONMGR_PARAM_CONNECT_TIMEOUT "CONMGR_CONNECT_TIMEOUT="
 
 /*
  * Set configuration parameters to be applied when conmgr_init() is called.
@@ -768,5 +838,34 @@ extern int conmgr_quiesce_fd(conmgr_fd_t *con);
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_unquiesce_fd(conmgr_fd_t *con);
+
+/*
+ * Connection reference.
+ * Opaque struct - do not access directly.
+ * While exists: the conmgr_fd_t ptr will remain valid.
+ */
+typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
+
+/*
+ * Create new reference to conmgr connection
+ * Will ensure that conmgr_fd_t will remain valid until released.
+ * IN con - connection to create reference
+ * RET ptr to new reference (must be released by conmgr_fd_free_ref())
+ */
+extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con);
+/*
+ * Release reference to conmgr connection
+ * WARNING: Connection may not exist after this called
+ * IN ref_ptr - ptr to reference to release (will be set to NULL)
+ */
+extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr);
+/*
+ * Get conmgr_fd_t pointer from reference
+ */
+extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref);
+
+/* Get connection name from reference */
+#define conmgr_ref_get_name(ref) \
+	conmgr_fd_get_name(conmgr_fd_get_ref(ref))
 
 #endif /* _CONMGR_H */

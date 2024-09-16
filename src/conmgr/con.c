@@ -61,11 +61,13 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_socket.h"
+#include "src/common/slurm_time.h"
 #include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/polling.h"
 
@@ -96,11 +98,18 @@ static const struct {
 	T(FLAG_WORK_ACTIVE),
 	T(FLAG_RPC_KEEP_BUFFER),
 	T(FLAG_QUIESCE),
+	T(FLAG_CAN_QUERY_OUTPUT_BUFFER),
+	T(FLAG_IS_FIFO),
+	T(FLAG_IS_CHR),
+	T(FLAG_TCP_NODELAY),
+	T(FLAG_WATCH_WRITE_TIMEOUT),
+	T(FLAG_WATCH_READ_TIMEOUT),
+	T(FLAG_WATCH_CONNECT_TIMEOUT),
 };
 #undef T
 
 typedef struct {
-	conmgr_events_t events;
+	const conmgr_events_t *events;
 	void *arg;
 	conmgr_con_type_t type;
 	int rc;
@@ -110,7 +119,7 @@ typedef struct {
 #define MAGIC_RECEIVE_FD 0xeba8bae0
 	int magic; /* MAGIC_RECEIVE_FD */
 	conmgr_con_type_t type;
-	conmgr_events_t events;
+	const conmgr_events_t *events;
 	void *arg;
 } receive_fd_args_t;
 
@@ -186,30 +195,38 @@ extern void close_all_connections(void)
 	list_for_each(mgr.listen_conns, _close_con_for_each, NULL);
 }
 
+extern void work_close_con(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	close_con(false, conmgr_args.con);
+}
+
 /*
  * Stop reading from connection but write out the remaining buffer and finish
  * any queued work
  */
 extern void close_con(bool locked, conmgr_fd_t *con)
 {
+	int input_fd = -1;
+	bool is_same_fd, is_socket, is_listen;
+
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
 	if (con->input_fd < 0) {
-		xassert(con_flag(con, FLAG_READ_EOF));
-		xassert(!con_flag(con, FLAG_CAN_READ));
+		xassert(con_flag(con, FLAG_READ_EOF) ||
+			con_flag(con, FLAG_IS_LISTEN));
+		xassert(!con_flag(con, FLAG_CAN_READ) ||
+			con_flag(con, FLAG_IS_LISTEN));
+
+		if (!locked)
+			slurm_mutex_unlock(&mgr.mutex);
+
 		log_flag(CONMGR, "%s: [%s] ignoring duplicate close request",
 			 __func__, con->name);
-		goto cleanup;
+		return;
 	}
 
 	log_flag(CONMGR, "%s: [%s] closing input", __func__, con->name);
-
-	/* unlink listener sockets to avoid leaving ghost socket */
-	if (con_flag(con, FLAG_IS_LISTEN) && con->unix_socket &&
-	    (unlink(con->unix_socket) == -1))
-		error("%s: unable to unlink %s: %m",
-		      __func__, con->unix_socket);
 
 	/*
 	 * Stop polling read/write to input fd to allow handle_connection() to
@@ -225,30 +242,37 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	if (con->in)
 		set_buf_offset(con->in, 0);
 
-	if (con_flag(con, FLAG_IS_LISTEN)) {
-		if (close(con->input_fd) == -1)
-			log_flag(CONMGR, "%s: [%s] unable to close listen fd %d: %m",
-				 __func__, con->name, con->output_fd);
-		xassert(con->output_fd <= 0);
-	} else if (con->input_fd != con->output_fd) {
-		/* different input FD, we can close it now */
-		if (close(con->input_fd) == -1)
-			log_flag(CONMGR, "%s: [%s] unable to close input fd %d: %m",
-				 __func__, con->name, con->output_fd);
-	} else if (con_flag(con, FLAG_IS_SOCKET) &&
-		   (shutdown(con->input_fd, SHUT_RD) == -1)) {
-		/* shutdown input on sockets */
-		log_flag(CONMGR, "%s: [%s] unable to shutdown read: %m",
-			 __func__, con->name);
-	}
+	is_same_fd = (con->input_fd == con->output_fd);
+	is_socket = con_flag(con, FLAG_IS_SOCKET);
+	is_listen = con_flag(con, FLAG_IS_LISTEN);
 
-	/* forget the now invalid FD */
+	input_fd = con->input_fd;
 	con->input_fd = -1;
 
 	EVENT_SIGNAL(&mgr.watch_sleep);
-cleanup:
+
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
+
+	/* unlink listener sockets to avoid leaving ghost socket */
+	if (is_listen && (con->address.ss_family == AF_LOCAL)) {
+		struct sockaddr_un *un = (struct sockaddr_un *) &con->address;
+
+		if (unlink(un->sun_path))
+			error("%s: [%s] unable to unlink %s: %m",
+			      __func__, con->name, un->sun_path);
+		else
+			log_flag(CONMGR, "%s: [%s] unlinked %s",
+			      __func__, con->name, un->sun_path);
+	}
+
+	if (is_listen || !is_same_fd) {
+		fd_close(&input_fd);
+	} else if (is_socket && shutdown(input_fd, SHUT_RD)) {
+		/* shutdown input on sockets */
+		log_flag(CONMGR, "%s: [%s] unable to shutdown incoming socket half: %m",
+			 __func__, con->name);
+	}
 }
 
 static char *_resolve_tty_name(int fd)
@@ -359,10 +383,10 @@ static void _check_con_type(conmgr_fd_t *con, conmgr_con_type_t type)
 #ifndef NDEBUG
 	if (type == CON_TYPE_RAW) {
 		/* must have on_data() defined */
-		xassert(con->events.on_data);
+		xassert(con->events->on_data);
 	} else if (type == CON_TYPE_RPC) {
 		/* must have on_msg() defined */
-		xassert(con->events.on_msg);
+		xassert(con->events->on_msg);
 	} else {
 		fatal_abort("invalid type");
 	}
@@ -408,7 +432,7 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 extern int add_connection(conmgr_con_type_t type,
 			  conmgr_fd_t *source, int input_fd,
 			  int output_fd,
-			  const conmgr_events_t events,
+			  const conmgr_events_t *events,
 			  conmgr_con_flags_t flags,
 			  const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,
@@ -417,30 +441,45 @@ extern int add_connection(conmgr_con_type_t type,
 	struct stat in_stat = { 0 };
 	struct stat out_stat = { 0 };
 	conmgr_fd_t *con = NULL;
-	bool set_keep_alive, is_socket;
+	bool set_keep_alive, is_socket, is_fifo, is_chr;
 	const bool has_in = (input_fd >= 0);
 	const bool has_out = (output_fd >= 0);
 	const bool is_same = (input_fd == output_fd);
+	const size_t unix_socket_path_len =
+		(unix_socket_path ?  (strlen(unix_socket_path) + 1): 0);
+	static const size_t unix_socket_path_max =
+		sizeof(((struct sockaddr_un *) NULL)->sun_path);
+
+	if (unix_socket_path_len &&
+	    (unix_socket_path_len > unix_socket_path_max)) {
+		log_flag(CONMGR, "%s: Unix domain socket path too long %zu/%zu: %s",
+			 __func__, unix_socket_path_len, unix_socket_path_max,
+			 unix_socket_path);
+		return ENAMETOOLONG;
+	}
 
 	/* verify FD is valid and still open */
 	if (has_in && fstat(input_fd, &in_stat)) {
 		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, input_fd);
-		return SLURM_ERROR;
+		return SLURM_COMMUNICATIONS_INVALID_INCOMING_FD;
 	}
 	if (has_out && fstat(output_fd, &out_stat)) {
 		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, output_fd);
-		return SLURM_ERROR;
+		return SLURM_COMMUNICATIONS_INVALID_OUTGOING_FD;
 	}
 
 	if (!has_in && !has_out) {
 		log_flag(CONMGR, "%s: refusing connection without input or output fd",
 			 __func__);
-		return SLURM_ERROR;
+		return SLURM_COMMUNICATIONS_INVALID_FD;
 	}
 
 	is_socket = (has_in && S_ISSOCK(in_stat.st_mode)) ||
 		    (has_out && S_ISSOCK(out_stat.st_mode));
-
+	is_fifo = (has_in && S_ISFIFO(in_stat.st_mode)) ||
+		    (has_out && S_ISFIFO(out_stat.st_mode));
+	is_chr = (has_in && S_ISCHR(in_stat.st_mode)) ||
+		    (has_out && S_ISCHR(out_stat.st_mode));
 	set_keep_alive = !unix_socket_path && is_socket && !is_listen;
 
 	/* all connections are non-blocking */
@@ -456,10 +495,19 @@ extern int add_connection(conmgr_con_type_t type,
 			net_set_keep_alive(output_fd);
 	}
 
+	if ((flags & FLAG_TCP_NODELAY) && is_socket && has_out) {
+		int rc;
+
+		if ((rc = net_set_nodelay(output_fd, true, NULL)))
+			return rc;
+	}
+
 	con = xmalloc(sizeof(*con));
 	*con = (conmgr_fd_t){
 		.magic = MAGIC_CON_MGR_FD,
-
+		.address = {
+			.ss_family = AF_UNSPEC
+		},
 		.input_fd = input_fd,
 		.output_fd = output_fd,
 		.events = events,
@@ -478,6 +526,8 @@ extern int add_connection(conmgr_con_type_t type,
 	con_assign_flag(con, FLAG_IS_SOCKET, is_socket);
 	con_assign_flag(con, FLAG_IS_LISTEN, is_listen);
 	con_assign_flag(con, FLAG_READ_EOF, !has_in);
+	con_assign_flag(con, FLAG_IS_FIFO, is_fifo);
+	con_assign_flag(con, FLAG_IS_CHR, is_chr);
 
 	if (!is_listen) {
 		con->in = create_buf(xmalloc(BUFFER_START_SIZE),
@@ -486,26 +536,42 @@ extern int add_connection(conmgr_con_type_t type,
 	}
 
 	/* listen on unix socket */
-	if (unix_socket_path) {
-		xassert(con_flag(con, FLAG_IS_SOCKET));
-		xassert(addr->ss_family == AF_LOCAL);
-		con->unix_socket = xstrdup(unix_socket_path);
+
+	if (!unix_socket_path && source &&
+	    (source->address.ss_family == AF_LOCAL)) {
+		struct sockaddr_un *un = (struct sockaddr_un *) &source->address;
+		unix_socket_path = un->sun_path;
 	}
 
-#ifndef NDEBUG
-	if (source && source->unix_socket && con->unix_socket)
-		xassert(!xstrcmp(source->unix_socket, con->unix_socket));
-#endif
+	if (unix_socket_path) {
+		struct sockaddr_un *un = (struct sockaddr_un *) &con->address;
 
-	if (source && source->unix_socket && !con->unix_socket)
-		con->unix_socket = xstrdup(source->unix_socket);
+		xassert(unix_socket_path_len <= unix_socket_path_max);
+		xassert(con_flag(con, FLAG_IS_SOCKET));
+		xassert(addr->ss_family == AF_LOCAL);
 
-	if (is_socket && (addrlen > 0) && addr)
+		con->address.ss_family = AF_LOCAL;
+		strlcpy(un->sun_path, unix_socket_path, unix_socket_path_len);
+	} else if (is_socket && (addrlen > 0) && addr) {
 		memcpy(&con->address, addr, addrlen);
+	}
+
+	if (has_out) {
+		int bytes = -1;
+
+		if (!fd_get_buffered_output_bytes(con->output_fd, &bytes,
+						  con->name)) {
+			xassert(!bytes);
+			con_set_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER);
+		}
+	}
 
 	_set_connection_name(con, &in_stat, &out_stat);
 
 	_check_con_type(con, type);
+
+	if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT))
+		con->last_read = timespec_now();
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *flags = con_flags_string(con->flags);
@@ -539,24 +605,24 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	if (con_flag(con, FLAG_IS_LISTEN)) {
 		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
 			 __func__, con->name,
-			 (uintptr_t) con->events.on_listen_connect);
+			 (uintptr_t) con->events->on_listen_connect);
 
-		arg = con->events.on_listen_connect(con, con->new_arg);
+		arg = con->events->on_listen_connect(con, con->new_arg);
 
 		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 			 __func__, con->name,
-			 (uintptr_t) con->events.on_listen_connect,
+			 (uintptr_t) con->events->on_listen_connect,
 			 (uintptr_t) arg);
 	} else {
 		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
 			 __func__, con->name,
-			 (uintptr_t) con->events.on_connection);
+			 (uintptr_t) con->events->on_connection);
 
-		arg = con->events.on_connection(con, con->new_arg);
+		arg = con->events->on_connection(con, con->new_arg);
 
 		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 			 __func__, con->name,
-			 (uintptr_t) con->events.on_connection,
+			 (uintptr_t) con->events->on_connection,
 			 (uintptr_t) arg);
 	}
 
@@ -575,7 +641,7 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 }
 
 extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
-			     int output_fd, const conmgr_events_t events,
+			     int output_fd, const conmgr_events_t *events,
 			     conmgr_con_flags_t flags,
 			     const slurm_addr_t *addr, socklen_t addrlen,
 			     void *arg)
@@ -585,7 +651,7 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
-				    const conmgr_events_t events,
+				    const conmgr_events_t *events,
 				    conmgr_con_flags_t flags, void *arg)
 {
 	return add_connection(type, NULL, fd, -1, events, flags, NULL,
@@ -632,7 +698,7 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 }
 
 extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
-				   const conmgr_events_t events, void *arg)
+				   const conmgr_events_t *events, void *arg)
 {
 	int rc = SLURM_ERROR;
 
@@ -845,7 +911,8 @@ static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
 
 extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 					const char *listen_on,
-					conmgr_events_t events, void *arg)
+					const conmgr_events_t *events,
+					void *arg)
 {
 	static const char UNIX_PREFIX[] = "unix:";
 	const char *unixsock = xstrstr(listen_on, UNIX_PREFIX);
@@ -978,7 +1045,8 @@ static int _setup_listen_socket(void *x, void *arg)
 
 extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 					list_t *hostports,
-					conmgr_events_t events, void *arg)
+					const conmgr_events_t *events,
+					void *arg)
 {
 	socket_listen_init_t init = {
 		.events = events,
@@ -992,7 +1060,8 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 
 extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					slurm_addr_t *addr, socklen_t addrlen,
-					conmgr_events_t events, void *arg)
+					const conmgr_events_t *events,
+					void *arg)
 {
 	int fd = -1, rc = SLURM_ERROR;
 	//socklen_t bindlen = 0;
@@ -1117,11 +1186,16 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 {
 	conmgr_fd_status_t status = {
 		.is_socket = con_flag(con, FLAG_IS_SOCKET),
-		.unix_socket = con->unix_socket,
+		.unix_socket = NULL,
 		.is_listen = con_flag(con, FLAG_IS_LISTEN),
 		.read_eof = con_flag(con, FLAG_READ_EOF),
 		.is_connected = con_flag(con, FLAG_IS_CONNECTED),
 	};
+
+	if (con->address.ss_family == AF_LOCAL) {
+		struct sockaddr_un *un = (struct sockaddr_un *) &con->address;
+		status.unix_socket = un->sun_path;
+	}
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
@@ -1518,4 +1592,110 @@ extern int conmgr_quiesce_fd(conmgr_fd_t *con)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return rc;
+}
+
+extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
+{
+	bool open;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+	open = (con->output_fd >= 0);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return open;
+}
+
+static conmgr_fd_ref_t *_fd_new_ref(conmgr_fd_t *con)
+{
+	conmgr_fd_ref_t *ref;
+	bitoff_t bit;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (!con->refs)
+		con->refs = bit_alloc(CONMGR_FD_REFS_MAX);
+
+	if ((bit = bit_ffc(con->refs)) < 0)
+		fatal_abort("overflow");
+
+	bit_set(con->refs, bit);
+
+	ref = xmalloc(sizeof(*ref));
+	*ref = (conmgr_fd_ref_t) {
+		.magic = MAGIC_CON_MGR_FD_REF,
+		.con = con,
+		.bit = bit,
+	};
+
+	return ref;
+}
+
+extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con)
+{
+	conmgr_fd_ref_t *ref = NULL;
+
+	if (!con)
+		fatal_abort("con must not be null");
+
+	slurm_mutex_lock(&mgr.mutex);
+	ref = _fd_new_ref(con);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return ref;
+}
+
+static void _fd_free_ref(conmgr_fd_ref_t **ref_ptr)
+{
+	conmgr_fd_ref_t *ref = *ref_ptr;
+	conmgr_fd_t *con = ref->con;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->refs);
+	xassert(bit_test(con->refs, ref->bit));
+
+	bit_clear(con->refs, ref->bit);
+	/* not free()ing con->refs to avoid many re-allocs */
+	ref->magic = ~MAGIC_CON_MGR_FD_REF;
+	xfree(ref);
+	*ref_ptr = NULL;
+}
+
+extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr)
+{
+
+	if (!ref_ptr)
+		fatal_abort("ref_ptr must not be null");
+
+	/* check if already released */
+	if (!*ref_ptr)
+		return;
+
+	slurm_mutex_lock(&mgr.mutex);
+	_fd_free_ref(ref_ptr);
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
+extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref)
+{
+	conmgr_fd_t *con = NULL;
+
+	if (!ref)
+		return NULL;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con);
+
+	con = ref->con;
+
+#ifndef NDEBUG
+	slurm_mutex_lock(&mgr.mutex);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->refs);
+	xassert(bit_test(con->refs, ref->bit));
+	slurm_mutex_unlock(&mgr.mutex);
+#endif
+
+	return con;
 }

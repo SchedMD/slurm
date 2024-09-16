@@ -59,8 +59,15 @@ extern int net_stream_listen(int *fd, uint16_t *port);
 /* set keepalive time on socket */
 extern void net_set_keep_alive(int sock);
 
-/* set TCP_NODELAY on socket */
-extern void net_set_nodelay(int sock);
+/*
+ * Toggle TCP_NODELAY on socket
+ *
+ * IN sock - target socket file descriptor
+ * IN set - True to set TCP_NODELAY and false to unset TCP_NODELAY
+ * IN con_name - connection name for logging
+ * RET SLURM_SUCCESS or error
+ */
+extern int net_set_nodelay(int sock, bool set, const char *con_name);
 
 extern int net_stream_listen_ports(int *, uint16_t *, uint16_t *, bool);
 

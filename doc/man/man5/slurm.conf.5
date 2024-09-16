@@ -4806,7 +4806,7 @@ DNS, this step can be avoided by configuring this option.
 .TP
 \fBconmgr_max_connections\fR=\fI<connection_count>\fR
 Specify the maximum number of connections to be processed at any given time.
-This does not influence the maxmimum number of pending connections as that is
+This does not influence the maximum number of pending connections as that is
 controlled by the kernel.
 .IP
 
@@ -4819,6 +4819,30 @@ listening socket.
 .TP
 \fBconmgr_use_poll\fR
 Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
+.IP
+
+.TP
+\fBconmgr_connect_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering an outbound connection attempt to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBconmgr_read_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering a read from a file descriptor to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBconmgr_wait_write_delay\fR=\fI<seconds>\fR
+When waiting for kernel to flush outgoing buffer, poll kernel for changes every
+\fI<seconds>\fR for changes. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBconmgr_write_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering a write from a file descriptor to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
 .TP
@@ -5202,7 +5226,7 @@ Equivalent to the now deprecated FastSchedule=2 option.
 .TP
 \fBconmgr_max_connections\fR=\fI<connection_count>\fR
 Specify the maximum number of connections to be processed at any given time.
-This does not influence the maxmimum number of pending connections as that is
+This does not influence the maximum number of pending connections as that is
 controlled by the kernel.
 .IP
 
@@ -5215,6 +5239,30 @@ listening socket.
 .TP
 \fBconmgr_use_poll\fR
 Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
+.IP
+
+.TP
+\fBconmgr_connect_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering an outbound connection attempt to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBconmgr_read_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering a read from a file descriptor to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBconmgr_wait_write_delay\fR=\fI<seconds>\fR
+When waiting for kernel to flush outgoing buffer, poll kernel for changes every
+\fI<seconds>\fR for changes. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBconmgr_write_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering a write from a file descriptor to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
 .TP

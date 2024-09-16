@@ -253,7 +253,7 @@ unpack_error:
 extern void init_sack_conmgr(void)
 {
 	conmgr_callbacks_t callbacks = {NULL, NULL};
-	conmgr_events_t events = {
+	static const conmgr_events_t events = {
 		.on_data = _on_connection_data,
 	};
 	int rc;
@@ -275,7 +275,7 @@ extern void init_sack_conmgr(void)
 
 	mask = umask(0);
 
-	if ((rc = conmgr_create_listen_socket(CON_TYPE_RAW, path, events,
+	if ((rc = conmgr_create_listen_socket(CON_TYPE_RAW, path, &events,
 					      NULL)))
 		fatal("%s: [%s] unable to create socket: %s",
 		      __func__, path, slurm_strerror(rc));

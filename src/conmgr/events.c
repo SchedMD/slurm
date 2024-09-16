@@ -39,6 +39,7 @@
 #include "src/common/read_config.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
+#include <time.h>
 
 #include "src/conmgr/events.h"
 
@@ -55,7 +56,7 @@ static void _wait_pending(event_signal_t *event, const char *caller)
 }
 
 static void _wait(event_signal_t *event, pthread_mutex_t *mutex,
-		  const char *caller)
+		  const struct timespec max_sleep, const char *caller)
 {
 	DEF_TIMERS;
 
@@ -70,7 +71,10 @@ static void _wait(event_signal_t *event, pthread_mutex_t *mutex,
 
 	xassert(event->waiting > 0);
 
-	slurm_cond_wait(&event->cond, mutex);
+	if (max_sleep.tv_nsec || max_sleep.tv_sec)
+		slurm_cond_timedwait(&event->cond, mutex, &max_sleep);
+	else
+		slurm_cond_wait(&event->cond, mutex);
 
 	event->waiting--;
 
@@ -88,12 +92,12 @@ static void _wait(event_signal_t *event, pthread_mutex_t *mutex,
 }
 
 extern void event_wait_now(event_signal_t *event, pthread_mutex_t *mutex,
-			   const char *caller)
+			   const struct timespec max_sleep, const char *caller)
 {
 	if (event->pending)
 		_wait_pending(event, caller);
 	else
-		_wait(event, mutex, caller);
+		_wait(event, mutex, max_sleep, caller);
 }
 
 static void _broadcast(event_signal_t *event, const char *caller)

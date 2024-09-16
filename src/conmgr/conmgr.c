@@ -74,6 +74,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 		max_connections = mgr.conf_max_connections;
 	else if (max_connections < 1)
 		max_connections = MAX_CONNECTIONS_DEFAULT;
+	xassert(max_connections > 0);
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -117,6 +118,16 @@ extern void conmgr_init(int thread_count, int max_connections,
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
+
+	if (!mgr.conf_delay_write_complete)
+		mgr.conf_delay_write_complete = slurm_conf.msg_timeout;
+	if (!mgr.conf_read_timeout.tv_nsec && !mgr.conf_read_timeout.tv_sec)
+		mgr.conf_read_timeout.tv_sec = slurm_conf.msg_timeout;
+	if (!mgr.conf_write_timeout.tv_nsec && !mgr.conf_write_timeout.tv_sec)
+		mgr.conf_write_timeout.tv_sec = slurm_conf.msg_timeout;
+	if (!mgr.conf_connect_timeout.tv_nsec &&
+	    !mgr.conf_connect_timeout.tv_sec)
+		mgr.conf_connect_timeout.tv_sec = slurm_conf.msg_timeout;
 
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);
@@ -321,6 +332,10 @@ extern int conmgr_set_params(const char *params)
 			const unsigned long count =
 				slurm_atoul(tok + strlen(CONMGR_PARAM_MAX_CONN));
 
+			if (count < 1)
+				fatal("%s: There must be atleast 1 max connection",
+				      __func__);
+
 			mgr.conf_max_connections = count;
 
 			log_flag(CONMGR, "%s: %s activated with %lu max connections",
@@ -328,6 +343,26 @@ extern int conmgr_set_params(const char *params)
 		} else if (!xstrcasecmp(tok, CONMGR_PARAM_POLL_ONLY)) {
 			log_flag(CONMGR, "%s: %s activated", __func__, tok);
 			pollctl_set_mode(POLL_MODE_POLL);
+		} else if (!xstrcasecmp(tok, CONMGR_PARAM_WAIT_WRITE_DELAY)) {
+			const unsigned long count = slurm_atoul(tok +
+				strlen(CONMGR_PARAM_WAIT_WRITE_DELAY));
+			log_flag(CONMGR, "%s: %s activated", __func__, tok);
+			mgr.conf_delay_write_complete = count;
+		} else if (!xstrcasecmp(tok, CONMGR_PARAM_READ_TIMEOUT)) {
+			const unsigned long count = slurm_atoul(tok +
+				strlen(CONMGR_PARAM_READ_TIMEOUT));
+			log_flag(CONMGR, "%s: %s activated", __func__, tok);
+			mgr.conf_read_timeout.tv_sec = count;
+		} else if (!xstrcasecmp(tok, CONMGR_PARAM_WRITE_TIMEOUT)) {
+			const unsigned long count = slurm_atoul(tok +
+				strlen(CONMGR_PARAM_WRITE_TIMEOUT));
+			log_flag(CONMGR, "%s: %s activated", __func__, tok);
+			mgr.conf_write_timeout.tv_sec = count;
+		} else if (!xstrcasecmp(tok, CONMGR_PARAM_CONNECT_TIMEOUT)) {
+			const unsigned long count = slurm_atoul(tok +
+				strlen(CONMGR_PARAM_CONNECT_TIMEOUT));
+			log_flag(CONMGR, "%s: %s activated", __func__, tok);
+			mgr.conf_connect_timeout.tv_sec = count;
 		} else {
 			log_flag(CONMGR, "%s: Ignoring parameter %s",
 				 __func__, tok);

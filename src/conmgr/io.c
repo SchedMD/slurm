@@ -41,6 +41,7 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
@@ -62,6 +63,28 @@ typedef struct {
 	struct iovec *iov;
 	ssize_t wrote;
 } handle_writev_args_t;
+
+extern void resize_input_buffer(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	int rc;
+	uint64_t bytes = (uint64_t) arg;
+	conmgr_fd_t *con = conmgr_args.con;
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	xassert(bytes > 0);
+	xassert(bytes < MAX_MSG_SIZE);
+
+	if (!(rc = try_grow_buf_remaining(con->in, bytes)))
+		return;
+
+	log_flag(NET, "%s: [%s] unable to increase buffer %"PRIu64" bytes for RPC message: %s",
+		 __func__, con->name, bytes, slurm_strerror(rc));
+
+	/* conmgr will be unable to read entire RPC -> close connection now */
+	close_con(false, con);
+}
 
 static int _get_fd_readable(conmgr_fd_t *con)
 {
@@ -132,8 +155,8 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 		close_con(false, con);
 		return;
 	} else if (read_c == 0) {
-		log_flag(NET, "%s: [%s] read %zd bytes and EOF with %u bytes to process already in buffer",
-			 __func__, con->name, read_c, get_buf_offset(con->in));
+		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in buffer",
+			 __func__, con->name, get_buf_offset(con->in));
 
 		slurm_mutex_lock(&mgr.mutex);
 		/* lock to tell mgr that we are done */
@@ -146,7 +169,10 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 			     (get_buf_data(con->in) + get_buf_offset(con->in)),
 			     read_c, "%s: [%s] read", __func__, con->name);
 
-		get_buf_offset(con->in) += read_c;
+		set_buf_offset(con->in, (get_buf_offset(con->in) + read_c));
+
+		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT))
+			con->last_read = timespec_now();
 	}
 }
 
@@ -241,11 +267,12 @@ static void _handle_writev(conmgr_fd_t *con, const int out_count)
 			log_flag(NET, "%s: [%s] retry write: %m",
 				 __func__, con->name);
 		} else {
-			error("%s: [%s] error while write: %m",
-			      __func__, con->name);
+			error("%s: [%s] writev(%d) failed: %m",
+			      __func__, con->name, con->output_fd);
 			/* drop outbound data on the floor */
 			list_flush(con->out);
 			close_con(false, con);
+			close_con_output(false, con);
 		}
 	} else if (args.wrote == 0) {
 		log_flag(NET, "%s: [%s] wrote 0 bytes", __func__, con->name);
@@ -257,6 +284,9 @@ static void _handle_writev(conmgr_fd_t *con, const int out_count)
 		(void) list_delete_all(con->out, _foreach_writev_flush_bytes,
 				       &args);
 		xassert(!args.wrote);
+
+		if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
+			con->last_write = timespec_now();
 	}
 
 	if (args.iov != iov_stack)
@@ -294,8 +324,8 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	con->in->size = avail;
 
 	if (con->type == CON_TYPE_RAW) {
-		callback = con->events.on_data;
-		callback_string = XSTRINGIFY(con->events.on_data);
+		callback = con->events->on_data;
+		callback_string = XSTRINGIFY(con->events->on_data);
 	} else if (con->type == CON_TYPE_RPC) {
 		callback = on_rpc_connection_data;
 		callback_string = XSTRINGIFY(on_rpc_connection_data);
@@ -391,6 +421,10 @@ extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 		     "%s: queuing up write", __func__);
 
 	list_append(con->out, buf);
+
+	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
+		con->last_write = timespec_now();
+
 	slurm_mutex_lock(&mgr.mutex);
 	EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);

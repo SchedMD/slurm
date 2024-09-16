@@ -33,10 +33,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <stdlib.h>
 #include <time.h>
 
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -44,17 +46,13 @@
 #include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 
-#ifdef __linux__
-#define CLOCK_TYPE CLOCK_TAI
-#else
-#define CLOCK_TYPE CLOCK_REALTIME
-#endif
+#define CTIME_STR_LEN 72
 
 typedef struct {
 #define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
 	int magic; /* MAGIC_FOREACH_DELAYED_WORK */
 	work_t *shortest;
-	struct timespec time;
+	timespec_t time;
 } foreach_delayed_work_t;
 
 /* timer to trigger SIGALRM */
@@ -63,7 +61,7 @@ static timer_t timer = {0};
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int _inspect_work(void *x, void *key);
-static void _update_timer(work_t *shortest, const struct timespec time);
+static void _update_timer(work_t *shortest, const timespec_t time);
 static bool _work_clear_time_delay(work_t *work);
 
 /* mgr.mutex must be locked when calling this function */
@@ -84,22 +82,6 @@ extern void cancel_delayed_work(void)
 	}
 }
 
-static struct timespec _get_time(void)
-{
-	struct timespec time;
-	int rc;
-
-	if ((rc = clock_gettime(CLOCK_TYPE, &time))) {
-		if (rc == -1)
-			rc = errno;
-
-		fatal("%s: clock_gettime() failed: %s",
-		      __func__, slurm_strerror(rc));
-	}
-
-	return time;
-}
-
 static list_t *_inspect(void)
 {
 	int count, total;
@@ -107,7 +89,7 @@ static list_t *_inspect(void)
 	list_t *elapsed = list_create(xfree_ptr);
 	foreach_delayed_work_t dargs = {
 		.magic = MAGIC_FOREACH_DELAYED_WORK,
-		.time = _get_time(),
+		.time = timespec_now(),
 	};
 
 	total = list_count(mgr.delayed_work);
@@ -130,38 +112,25 @@ static list_t *_inspect(void)
 }
 
 static struct itimerspec _calc_timer(work_t *shortest,
-				     const struct timespec time)
+				     const timespec_t time)
 {
-	struct itimerspec spec = {{0}};
-	const conmgr_work_time_begin_t begin = shortest->control.time_begin;
-
-	spec.it_value.tv_sec = begin.seconds;
-
-	if (begin.seconds <= 0)
-		spec.it_value.tv_nsec = begin.nanoseconds;
+	const timespec_t begin = shortest->control.time_begin;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		int64_t remain_sec, remain_nsec;
+		char str[CTIME_STR_LEN];
 
-		remain_sec = begin.seconds - time.tv_sec;
-		if (remain_sec == 0) {
-			remain_nsec = begin.nanoseconds - time.tv_nsec;
-		} else if (remain_sec < 0) {
-			remain_nsec = NO_VAL64;
-		} else {
-			remain_nsec = NO_VAL64;
-		}
+		timespec_ctime(begin, true, str, sizeof(str));
 
-		log_flag(CONMGR, "%s: setting conmgr timer for %"PRId64"s %"PRId64"ns for %s()",
-			 __func__, remain_sec,
-			 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
-			 shortest->callback.func_name);
+		log_flag(CONMGR, "%s: setting conmgr timer for %s for %s()",
+			 __func__, str, shortest->callback.func_name);
 	}
 
-	return spec;
+	return (struct itimerspec) {
+		.it_value = begin,
+	};
 }
 
-static void _update_timer(work_t *shortest, const struct timespec time)
+static void _update_timer(work_t *shortest, const timespec_t time)
 {
 	int rc;
 	struct itimerspec spec = {{0}};
@@ -188,73 +157,49 @@ static void _update_timer(work_t *shortest, const struct timespec time)
 /* check begin times to see if the work delay has elapsed */
 static int _inspect_work(void *x, void *key)
 {
-	bool trigger;
 	work_t *work = x;
-	const conmgr_work_time_begin_t begin = work->control.time_begin;
+	const timespec_t begin = work->control.time_begin;
 	foreach_delayed_work_t *args = key;
-	const struct timespec time = args->time;
-	const int64_t remain_sec = begin.seconds - time.tv_sec;
-	int64_t remain_nsec;
+	const timespec_t now = timespec_now();
+	const bool trigger = timespec_is_after(begin, now);
 
 	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
 	xassert(work->magic == MAGIC_WORK);
 
-	if (remain_sec == 0) {
-		remain_nsec = begin.nanoseconds - time.tv_nsec;
-		trigger = (remain_nsec <= 0);
-	} else if (remain_sec < 0) {
-		trigger = true;
-		remain_nsec = NO_VAL64;
-	} else {
-		remain_nsec = NO_VAL64;
-		trigger = false;
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		const timespec_diff_ns_t diff = timespec_diff_ns(begin, now);
+		char str[CTIME_STR_LEN];
+
+		timespec_ctime(diff.diff, false, str, sizeof(str));
+
+		log_flag(CONMGR, "%s: %s delayed work ETA %s for %s@0x%"PRIxPTR,
+			 __func__, (trigger ? "triggering" : "deferring"),
+			 str, work->callback.func_name,
+			 (uintptr_t) work->callback.func);
 	}
 
-	log_flag(CONMGR, "%s: %s delayed work ETA %"PRId64"s %"PRId64"ns for %s@0x%"PRIxPTR,
-		 __func__, (trigger ? "triggering" : "deferring"),
-		 remain_sec,
-		 (remain_nsec == NO_VAL64 ? 0 : remain_nsec),
-		 work->callback.func_name,
-		 (uintptr_t) work->callback.func);
-
-	if (!args->shortest) {
+	if (!args->shortest)
 		args->shortest = work;
-	} else {
-		const conmgr_work_time_begin_t shortest_begin =
-			args->shortest->control.time_begin;
-
-		if (shortest_begin.seconds == begin.seconds) {
-			if (shortest_begin.nanoseconds > begin.nanoseconds)
-				args->shortest = work;
-		} else if (shortest_begin.seconds > begin.seconds) {
-			args->shortest = work;
-		}
-	}
+	else if (timespec_is_after(args->shortest->control.time_begin, begin))
+		args->shortest = work;
 
 	return trigger ? 1 : 0;
 }
 
-extern conmgr_work_time_begin_t conmgr_calc_work_time_delay(
+extern timespec_t conmgr_calc_work_time_delay(
 	time_t delay_seconds,
 	long delay_nanoseconds)
 {
-	const struct timespec time = _get_time();
-
 	/*
 	 * Renormalize ns into seconds to only have partial seconds in
 	 * nanoseconds. Nanoseconds won't matter with a larger number of
 	 * seconds.
 	 */
-	delay_seconds += delay_nanoseconds / NSEC_IN_SEC;
-	delay_nanoseconds = delay_nanoseconds % NSEC_IN_SEC;
 
-	/* catch integer overflows */
-	xassert((delay_seconds + time.tv_sec) >= time.tv_sec);
-
-	return (conmgr_work_time_begin_t) {
-		.seconds = (delay_seconds + time.tv_sec),
-		.nanoseconds = delay_nanoseconds,
-	};
+	return timespec_normalize(timespec_add((timespec_t) {
+		.tv_sec = delay_seconds,
+		.tv_nsec = delay_nanoseconds,
+	}, timespec_now()));
 }
 
 extern void init_delayed_work(void)
@@ -272,7 +217,7 @@ again:
 			.sigev_value.sival_ptr = &timer,
 		};
 
-		rc = timer_create(CLOCK_TYPE, &sevp, &timer);
+		rc = timer_create(TIMESPEC_CLOCK_TYPE, &sevp, &timer);
 	}
 	slurm_mutex_unlock(&mutex);
 
@@ -345,7 +290,7 @@ static bool _work_clear_time_delay(work_t *work)
 		return false;
 
 #ifndef NDEBUG
-	work->control.time_begin = (conmgr_work_time_begin_t) {0};
+	work->control.time_begin = (timespec_t) {0};
 #endif /* !NDEBUG */
 	work_mask_depend(work, ~CONMGR_WORK_DEP_TIME_DELAY);
 
@@ -360,34 +305,13 @@ extern void add_work_delayed(work_t *work)
 
 extern char *work_delayed_to_str(work_t *work)
 {
-	const struct timespec time = _get_time();
-	uint32_t diff, days, hours, minutes, seconds, nanoseconds;
-	char *delay = NULL;
+	char *delay = NULL, str[CTIME_STR_LEN];
 
 	if (!(work->control.depend_type & CONMGR_WORK_DEP_TIME_DELAY))
 		return NULL;
 
-	diff = work->control.time_begin.seconds - time.tv_sec;
-
-	days = diff / (DAY_HOURS * HOUR_SECONDS);
-	diff = diff % (DAY_HOURS * HOUR_SECONDS);
-
-	hours = diff / HOUR_SECONDS;
-	diff = diff % HOUR_SECONDS;
-
-	minutes = diff / MINUTE_SECONDS;
-	diff = diff % MINUTE_SECONDS;
-
-	seconds = diff;
-
-	if (!seconds)
-		nanoseconds = work->control.time_begin.nanoseconds;
-	else
-		nanoseconds = (work->control.time_begin.nanoseconds -
-			       time.tv_nsec);
-
-	xstrfmtcat(delay, " time_begin=%u-%u:%u:%u.%u",
-		   days, hours, minutes, seconds, nanoseconds);
+	timespec_ctime(work->control.time_begin, true, str, sizeof(str));
+	xstrfmtcat(delay, " time_begin=%s", str);
 
 	return delay;
 }
