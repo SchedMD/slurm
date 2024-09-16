@@ -439,7 +439,7 @@ extern int add_connection(conmgr_con_type_t type,
 	}
 
 	is_socket = (has_in && S_ISSOCK(in_stat.st_mode)) ||
-		    (has_out && S_ISSOCK(out_stat.st_mode));
+		(has_out && S_ISSOCK(out_stat.st_mode));
 
 	set_keep_alive = !unix_socket_path && is_socket && !is_listen;
 
