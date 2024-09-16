@@ -270,7 +270,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 	bitstr_t *my_bitmap;
 	hostlist_t *host_list;
 
-	my_bitmap = (bitstr_t *) bit_alloc(node_record_count);
+	my_bitmap = bit_alloc(node_record_count);
 	*bitmap = my_bitmap;
 
 	if (node_names == NULL) {

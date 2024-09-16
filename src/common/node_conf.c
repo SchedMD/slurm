@@ -1172,7 +1172,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 	bitstr_t *my_bitmap;
 	hostlist_t *host_list;
 
-	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);
+	my_bitmap = bit_alloc(node_record_count);
 	*bitmap = my_bitmap;
 
 	if (node_names == NULL) {
@@ -1221,7 +1221,7 @@ extern int hostlist2bitmap(hostlist_t *hl, bool best_effort, bitstr_t **bitmap)
 	hostlist_iterator_t *hi;
 
 	FREE_NULL_BITMAP(*bitmap);
-	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);
+	my_bitmap = bit_alloc(node_record_count);
 	*bitmap = my_bitmap;
 
 	hi = hostlist_iterator_create(hl);

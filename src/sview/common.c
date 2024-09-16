@@ -595,7 +595,7 @@ extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
 	if (TOPO_DEBUG)
 		g_print("...............build_nodes_bitmap............%s\n",
 			node_names);
-	my_bitmap = (bitstr_t *) bit_alloc(g_node_info_ptr->record_count);
+	my_bitmap = bit_alloc(g_node_info_ptr->record_count);
 	*bitmap = my_bitmap;
 
 	if (!node_names) {

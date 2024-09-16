@@ -489,8 +489,8 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *step)
 		return;
 	}
 
-	cpu_map     = (bitstr_t *) bit_alloc(cpu_freq_count);
-	cpus_to_set = (bitstr_t *) bit_alloc(cpu_freq_count);
+	cpu_map = bit_alloc(cpu_freq_count);
+	cpus_to_set = bit_alloc(cpu_freq_count);
 
 	do {
 		debug3("  cpu_str = %s", cpu_str);

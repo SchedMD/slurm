@@ -174,7 +174,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	/* Since the front-end nodes are a shared resource, we limit each job
 	 * to one CPU based upon monotonically increasing sequence number */
 	static int last_id = 0;
-	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
+	hw_map  = bit_alloc(conf->block_map_size);
 	bit_set(hw_map, ((last_id++) % conf->block_map_size));
 	task_cnt = 1;
 }
@@ -781,8 +781,8 @@ static bitstr_t *_get_avail_map(slurm_cred_t *cred, uint16_t *hw_sockets,
 	       sockets, cores, *hw_sockets, *hw_cores, *hw_threads);
 
 	num_cores = MIN((sockets * cores), ((*hw_sockets)*(*hw_cores)));
-	req_map = (bitstr_t *) bit_alloc(num_cores);
-	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
+	req_map = bit_alloc(num_cores);
+	hw_map = bit_alloc(conf->block_map_size);
 
 	/* Transfer core_bitmap data to local req_map.
 	 * The MOD function handles the case where fewer processes
@@ -1346,8 +1346,7 @@ static bitstr_t *_lllp_map_abstract_mask(bitstr_t *bitmask)
 {
     	int i, bit;
 	int num_bits = bit_size(bitmask);
-	bitstr_t *newmask = NULL;
-	newmask = (bitstr_t *) bit_alloc(num_bits);
+	bitstr_t *newmask = bit_alloc(num_bits);
 
 	/* remap to physical machine */
 	for (i = 0; i < num_bits; i++) {
