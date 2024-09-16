@@ -2260,20 +2260,18 @@ extern long int cgroup_p_get_acct_units(void)
 
 extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 {
-	struct stat st;
-	int rc;
-	char *memsw_filepath = NULL;
+	char file_path[PATH_MAX];
 
-	/* Check if swap constrain capability is enabled in this system. */
 	switch (f) {
 	case CG_MEMCG_SWAP:
 		if (!bit_test(int_cg_ns.avail_controllers, CG_MEMORY))
-			return false;
-		xstrfmtcat(memsw_filepath, "%s/memory.swap.max",
-			   int_cg[CG_LEVEL_ROOT].path);
-		rc = stat(memsw_filepath, &st);
-		xfree(memsw_filepath);
-		return (rc == 0);
+			break;
+		if (snprintf(file_path, PATH_MAX, "%s/memory.swap.max",
+			     int_cg[CG_LEVEL_ROOT].path) >= PATH_MAX)
+			break;
+		if (!access(file_path, F_OK))
+			return true;
+		break;
 	default:
 		break;
 	}
