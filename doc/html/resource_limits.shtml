@@ -573,11 +573,19 @@ plugin description.</p>
 </p>
 <pre>
 function slurm_job_submit(job_desc, part_list, submit_uid)
-   if (job_desc.gres ~= nil)
+   gres_request = ""
+   t = {job_desc.tres_per_job,
+	job_desc.tres_per_socket,
+	job_desc.tres_per_task,
+	job_desc.tres_per_node}
+   for k in pairs(t) do
+	gres_request = gres_request .. t[k] .. ","
+   end
+   if (gres_request ~= nil)
    then
-      for g in job_desc.gres:gmatch("[^,]+")
+      for g in gres_request:gmatch("[^,]+")
       do
-	 bad = string.match(g,'^gpu[:]*[0-9]*$')
+	 bad = string.match(g,'^gres/gpu[:=]*[0-9]*$')
 	 if (bad ~= nil)
 	 then
 	    slurm.log_info("User specified gpu GRES without type: %s", bad)
@@ -621,6 +629,6 @@ More details can be found on the <a href="job_reason_codes.html">Job Reason
 Codes</a> page. More details about scheduling can be found in the
 <a href="sched_config.html"> Scheduling Configuration Guide</a>.</p>
 
-<p style="text-align: center;">Last modified 04 June 2024</li>
+<p style="text-align: center;">Last modified 27 September 2024</li>
 
 <!--#include virtual="footer.txt"-->
