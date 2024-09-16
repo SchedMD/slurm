@@ -716,11 +716,19 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 		if (input_fd != output_fd)
 			fd_close(&output_fd);
 		fd_close(&input_fd);
+		slurm_free_msg(msg);
 		return;
 	}
 
-	xassert(input_fd == output_fd);
-	xassert(input_fd >= 0);
+	if ((input_fd < 0) || (output_fd < 0)) {
+		error("%s: Rejecting partially open connection input_fd=%d output_fd=%d",
+		      __func__, input_fd, output_fd);
+		if (input_fd != output_fd)
+			fd_close(&output_fd);
+		fd_close(&input_fd);
+		slurm_free_msg(msg);
+		return;
+	}
 
 	if ((rc = slurm_get_peer_addr(input_fd, &addr))) {
 		error("%s: [fd:%d] getting socket peer failed: %s",
