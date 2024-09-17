@@ -60,6 +60,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/fd.h"
 #include "src/common/xstring.h"
+#include "src/common/node_conf.h"
 #include "src/interfaces/proctrack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"

@@ -211,6 +211,8 @@ extern time_t last_node_update;		/* time of last node record update */
 extern uint16_t *cr_node_num_cores;
 extern uint32_t *cr_node_cores_offset;
 
+extern time_t slurmd_start_time;
+
 /*
  * bitmap2node_name_sortable - given a bitmap, build a list of comma
  *	separated node names. names may include regular expressions

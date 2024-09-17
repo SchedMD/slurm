@@ -96,6 +96,7 @@ int last_node_index = -1;		/* index of last node in tabe */
 uint16_t *cr_node_num_cores = NULL;
 uint32_t *cr_node_cores_offset = NULL;
 bool spec_cores_first = false;
+time_t slurmd_start_time = 0;
 
 /* Local function definitions */
 static void _delete_config_record(void);

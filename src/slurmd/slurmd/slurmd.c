@@ -949,7 +949,6 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	char *arch, *os;
 	struct utsname buf;
 	static bool first_msg = true;
-	static time_t slurmd_start_time = 0;
 	buf_t *gres_info;
 
 	if (!sent_successful_registration) {
