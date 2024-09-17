@@ -101,13 +101,13 @@ bool spec_cores_first = false;
 static void _delete_config_record(void);
 static void _delete_node_config_ptr(node_record_t *node_ptr);
 #if _DEBUG
-static void	_dump_hash (void);
+static void _dump_hash(void);
 #endif
 static node_record_t *_find_node_record(char *name, bool test_alias,
 					bool log_missing);
-static void	_list_delete_config (void *config_entry);
-static void _node_record_hash_identity (void* item, const char** key,
-					uint32_t* key_len);
+static void _list_delete_config(void *config_entry);
+static void _node_record_hash_identity(void *item, const char **key,
+				       uint32_t *key_len);
 
 /*
  * _delete_config_record - delete all configuration records
@@ -121,12 +121,11 @@ static void _delete_config_record(void)
 	list_flush(front_end_list);
 }
 
-
 #if _DEBUG
 /*
  * helper function used by _dump_hash to print the hash table elements
  */
-static void xhash_walk_helper_cbk (void* item, void* arg)
+static void xhash_walk_helper_cbk(void *item, void *arg)
 {
 	int *i_ptr = arg;
 	node_record_t *node_ptr = (node_record_t *) item;
@@ -134,13 +133,14 @@ static void xhash_walk_helper_cbk (void* item, void* arg)
 	debug3("node_hash[%d]:%d(%s)", (*i_ptr)++, node_ptr->index,
 	       node_ptr->name);
 }
+
 /*
  * _dump_hash - print the node_hash_table contents, used for debugging
  *	or analysis of hash technique
  * global: node_record_table_ptr - pointer to global node table
  *         node_hash_table - table of hash indexes
  */
-static void _dump_hash (void)
+static void _dump_hash(void)
 {
 	int i = 0;
 	if (node_hash_table == NULL)
@@ -153,7 +153,7 @@ static void _dump_hash (void)
 
 /* _list_delete_config - delete an entry from the config list,
  *	see list.h for documentation */
-static void _list_delete_config (void *config_entry)
+static void _list_delete_config(void *config_entry)
 {
 	config_record_t *config_ptr = (config_record_t *) config_entry;
 
@@ -173,10 +173,10 @@ static void _list_delete_config (void *config_entry)
  * xhash helper function to index node_record per name field
  * in node_hash_table
  */
-static void _node_record_hash_identity (void* item, const char** key,
-					uint32_t* key_len)
+static void _node_record_hash_identity(void *item, const char **key,
+				       uint32_t *key_len)
 {
-	node_record_t *node_ptr = (node_record_t *) item;
+	node_record_t *node_ptr = item;
 	*key = node_ptr->name;
 	*key_len = strlen(node_ptr->name);
 }
@@ -188,7 +188,7 @@ static void _node_record_hash_identity (void* item, const char** key,
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-hostlist_t *bitmap2hostlist(bitstr_t *bitmap)
+extern hostlist_t *bitmap2hostlist(bitstr_t *bitmap)
 {
 	hostlist_t *hl;
 	node_record_t *node_ptr;
@@ -214,7 +214,7 @@ hostlist_t *bitmap2hostlist(bitstr_t *bitmap)
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-char * bitmap2node_name_sortable (bitstr_t *bitmap, bool sort)
+extern char *bitmap2node_name_sortable(bitstr_t *bitmap, bool sort)
 {
 	hostlist_t *hl;
 	char *buf;
@@ -238,7 +238,7 @@ char * bitmap2node_name_sortable (bitstr_t *bitmap, bool sort)
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-char * bitmap2node_name (bitstr_t *bitmap)
+extern char *bitmap2node_name(bitstr_t *bitmap)
 {
 	return bitmap2node_name_sortable(bitmap, 1);
 }
@@ -263,7 +263,7 @@ static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
  * is_slurmd_context: set to true if run from slurmd
  * RET 0 if no error, error code otherwise
  */
-extern void build_all_frontend_info (bool is_slurmd_context)
+extern void build_all_frontend_info(bool is_slurmd_context)
 {
 	slurm_conf_frontend_t **ptr_array;
 #ifdef HAVE_FRONT_END
@@ -970,6 +970,7 @@ extern void insert_node_record_at(node_record_t *node_ptr, int index)
 	slurm_conf_remove_node(node_ptr->name);
 	slurm_conf_add_node(node_ptr);
 }
+
 extern void delete_node_record(node_record_t *node_ptr)
 {
 	xassert(node_ptr);
@@ -1115,7 +1116,7 @@ extern void init_node_conf(void)
 
 
 /* node_fini2 - free memory associated with node records (except bitmaps) */
-extern void node_fini2 (void)
+extern void node_fini2(void)
 {
 	int i;
 	node_record_t *node_ptr;
@@ -1165,8 +1166,8 @@ extern int node_name_get_inx(char *node_name)
  * RET 0 if no error, otherwise EINVAL
  * NOTE: call FREE_NULL_BITMAP() to free bitmap memory when no longer required
  */
-extern int node_name2bitmap (char *node_names, bool best_effort,
-			     bitstr_t **bitmap)
+extern int node_name2bitmap(char *node_names, bool best_effort,
+			    bitstr_t **bitmap)
 {
 	int rc = SLURM_SUCCESS;
 	char *this_node_name;
@@ -1314,7 +1315,7 @@ extern void purge_node_rec(void *in)
  * rehash_node - build a hash table of the node_record entries.
  * NOTE: using xhash implementation
  */
-extern void rehash_node (void)
+extern void rehash_node(void)
 {
 	int i;
 	node_record_t *node_ptr;
