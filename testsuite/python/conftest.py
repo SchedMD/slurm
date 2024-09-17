@@ -154,6 +154,7 @@ def tmp_path_setup(request):
 @pytest.fixture(scope="module", autouse=True)
 def module_setup(request, tmp_path_factory):
     atf.properties["slurm-started"] = False
+    atf.properties["slurmrestd-started"] = False
     atf.properties["configurations-modified"] = set()
     atf.properties["accounting-database-modified"] = False
     atf.properties["orig-environment"] = dict(os.environ)
