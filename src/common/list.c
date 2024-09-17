@@ -119,11 +119,11 @@ struct listIterator {
 
 struct xlist {
 	unsigned int magic;		/* sentinel for asserting validity */
+	int count;			/* number of nodes in list */
 	list_node_t *head;		/* head of the list */
 	list_node_t **tail;		/* addr of last node's 'next' ptr */
 	list_itr_t *iNext;		/* iterator chain for list_destroy() */
 	ListDelF fDel;			/* function to delete node data */
-	int count;			/* number of nodes in list */
 	pthread_rwlock_t mutex;		/* mutex to protect access to list */
 };
 
