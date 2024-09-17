@@ -1373,8 +1373,8 @@ extern void cr_init_global_core_data(node_record_t **node_ptr, int node_cnt)
 
 	cr_fini_global_core_data();
 
-	cr_node_num_cores = xmalloc(node_cnt * sizeof(uint16_t));
-	cr_node_cores_offset = xmalloc((node_cnt+1) * sizeof(uint32_t));
+	cr_node_num_cores = xcalloc(node_cnt, sizeof(uint16_t));
+	cr_node_cores_offset = xcalloc(node_cnt + 1, sizeof(uint32_t));
 
 	for (n = 0; n < node_cnt; n++) {
 		if (!node_ptr[n])
