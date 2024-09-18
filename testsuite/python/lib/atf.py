@@ -778,13 +778,7 @@ def stop_slurm(fatal=True, quiet=False):
     #       This should not be necessary once a better solution is found in
     #       ticket 20764.
     for slurmd_name in slurmd_list:
-        rc = run_command(
-            f"sudo systemctl stop {slurmd_name}_slurmstepd.scope", quiet=quiet
-        )
-        if rc["exit_code"]:
-            failures.append(
-                f"Error stopping {slurmd_name}_slurmstepd.scope: {rc['stdout']}. {rc['stderr']}"
-            )
+        run_command(f"sudo systemctl stop {slurmd_name}_slurmstepd.scope", quiet=quiet)
 
     # Verify that slurmds are not running
     if not repeat_until(
