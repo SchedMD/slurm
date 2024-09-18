@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "August 2024" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "October 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -7769,8 +7769,8 @@ The only values presently supported are "topology/3d_torus" (default for
 Cray XT/XE systems, performs best\-fit logic over three\-dimensional topology),
 "topology/default" (default for other systems,
 -best\-fit logic over one\-dimensional topology),
-"topology/tree" (determine the network topology based
-upon information contained in a topology.conf file,
+"topology/tree", and "topology/block" (both determine the network topology
+based upon information contained in a topology.conf file,
 see "man topology.conf" for more information).
 Future plugins may gather topology information directly from the network.
 The topology information is optional.
