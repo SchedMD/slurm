@@ -136,7 +136,7 @@ int uid_from_string(const char *name, uid_t *uidp)
 	   || (name == p)
 	   || (*p != '\0')
 	   || (l < 0)
-	   || (l > INT_MAX))
+	   || (l > UINT32_MAX))
 		return -1;
 
 	/*

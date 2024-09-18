@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
     Those may have result in prolog errors or tasks not being launched while
     jobs where shown running by slurmctld.
  -- Fix suspending/resuming steps running under a 23.02 slurmstepd process.
+ -- Fix options like sprio --me and squeue --me for users with a uid greater
+    than 2147483647.
 
 * Changes in Slurm 24.05.3
 ==========================
