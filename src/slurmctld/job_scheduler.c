@@ -1698,10 +1698,9 @@ next_task:
 				wait_on_resv = true;
 
 			if (job_ptr->resv_ptr->flags &
-			    RESERVE_FLAG_SCHED_FAILED) {
+			    RESERVE_FLAG_SCHED_FAILED)
 				found_resv = true;
-				break;
-			}
+
 			if (found_resv) {
 				job_ptr->state_reason = WAIT_PRIORITY;
 				xfree(job_ptr->state_desc);
