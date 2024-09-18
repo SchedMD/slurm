@@ -564,6 +564,8 @@ slurm_errtab_t slurm_errtab[] = {
 
 	{ ERRTAB_ENTRY(ESLURM_AUTH_CRED_INVALID),
 	  "Invalid authentication credential"			},
+	{ ERRTAB_ENTRY(ESLURM_AUTH_EXPIRED),
+	  "Authentication credential expired"			},
 	{ ERRTAB_ENTRY(ESLURM_AUTH_BADARG),
 	  "Bad argument to plugin function"			},
 	{ ERRTAB_ENTRY(ESLURM_AUTH_UNPACK),
