@@ -4027,6 +4027,19 @@ This option is disabled by default.
 .IP
 
 .TP
+\fBbf_topopt_enable\fR
+Enable experimental hook to control whether to delay jobs in backfill for a
+better placement. Modify \fIsrc/plugins/sched/backfill/oracle.c\fR for testing.
+
+It is recommended to disable the main scheduler so that all jobs are planned
+through backfill and utilize the oracle function(). This can be done by setting
+\fBSchedulerParameters=sched_interval=-1\fR.
+
+It's also recommended to run with
+\fBSchedulerParameters=bf_running_job_reserve\fR for better planning.
+.IP
+
+.TP
 \fBbf_window=#\fR
 The number of minutes into the future to look when considering jobs to schedule.
 Higher values result in more overhead and less responsiveness.

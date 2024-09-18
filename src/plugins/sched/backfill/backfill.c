@@ -225,6 +225,7 @@ static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
 static bool bf_one_resv_per_job = false;
 static bool bf_allow_magnetic_slot = false;
+static bool bf_topopt_enable = false;
 static uint32_t job_start_cnt = 0;
 static uint32_t job_test_cnt = 0;
 static int max_backfill_job_cnt = DEF_BF_MAX_JOB_TEST;
@@ -1013,6 +1014,12 @@ static void _load_config(void)
 		bf_running_job_reserve = true;
 	} else {
 		bf_licenses = false;
+	}
+
+	if (xstrcasestr(sched_params, "bf_topopt_enable")) {
+		bf_topopt_enable = true;
+	} else {
+		bf_topopt_enable = false;
 	}
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_cnt=")))
