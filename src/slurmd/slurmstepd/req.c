@@ -560,11 +560,12 @@ static int _handle_step_create(int fd, stepd_step_rec_t *step, uid_t uid)
 	req_step_msg = msg.data;
 	slurm_mutex_lock(&stepmgr_mutex);
 	msg.auth_uid = req_step_msg->user_id = job_step_ptr->user_id;
-	slurm_mutex_unlock(&stepmgr_mutex);
 	msg.auth_ids_set = true;
 
 	/* step_create_from_msg responds to the client */
 	step_create_from_msg(&msg, NULL, NULL);
+
+	slurm_mutex_unlock(&stepmgr_mutex);
 
 	slurm_free_msg_members(&msg);
 
