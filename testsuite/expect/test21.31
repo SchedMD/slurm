@@ -62,7 +62,7 @@ set resource1_chck(Server)           $res1_srv
 array set resource1_chng {}
 set resource1_chng(count)            50
 
-# Second and thrid test resources
+# Second and third test resources
 array set resource2 {}
 set resource2(description)           $res2_desc
 set resource2(count)                 $res2_cnt
