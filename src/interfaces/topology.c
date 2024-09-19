@@ -221,6 +221,9 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 	nnodes = nnodex = 0;
 	xassert(g_context);
 
+	if (!tree_width)
+		tree_width = slurm_conf.tree_width;
+
 	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 		/* nnodes has to be set here as the hl is empty after the
 		 * split_hostlise call.  */
@@ -230,9 +233,6 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 		     buf, tree_width);
 		xfree(buf);
 	}
-
-	if (!tree_width)
-		tree_width = slurm_conf.tree_width;
 
 	rc = (*(ops.split_hostlist))(hl, sp_hl, count, tree_width);
 	if (!rc && !(*count))
