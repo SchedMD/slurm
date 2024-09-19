@@ -131,6 +131,7 @@ void pack_header(header_t *header, buf_t *buffer)
 			if (header->flags & SLURM_PACK_ADDRS)
 				packstr(header->forward.alias_addrs.net_cred,
 					buffer);
+			pack16(header->forward.tree_depth, buffer);
 		}
 		pack16(header->ret_cnt, buffer);
 		if (header->ret_cnt > 0) {
@@ -207,6 +208,7 @@ int unpack_header(header_t *header, buf_t *buffer)
 					&header->forward.alias_addrs.net_cred,
 					buffer);
 			}
+			safe_unpack16(&header->forward.tree_depth, buffer);
 		}
 
 		safe_unpack16(&header->ret_cnt, buffer);
