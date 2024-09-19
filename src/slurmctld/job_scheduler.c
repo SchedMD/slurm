@@ -1189,6 +1189,19 @@ static void _set_schedule_exit(schedule_exit_t code)
 	slurmctld_diag_stats.schedule_exit[code]++;
 }
 
+static int _get_nodes_in_reservations(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	bitstr_t *node_bitmap = arg;
+
+	xassert(resv_ptr);
+	xassert(node_bitmap);
+
+	if (resv_ptr->node_bitmap)
+		bit_or(node_bitmap, resv_ptr->node_bitmap);
+	return SLURM_SUCCESS;
+}
+
 static int _schedule(bool full_queue)
 {
 	list_t *job_queue = NULL;
@@ -1221,7 +1234,7 @@ static int _schedule(bool full_queue)
 	slurmctld_resv_t *reject_array_resv = NULL;
 	bool reject_array_use_prefer = false;
 	bool use_prefer;
-	bool fail_by_part, wait_on_resv;
+	bool fail_by_part, wait_on_resv, fail_by_part_non_reserve;
 	uint32_t deadline_time_limit, save_time_limit = 0;
 	uint32_t prio_reserve;
 	DEF_TIMERS;
@@ -1572,6 +1585,7 @@ static int _schedule(bool full_queue)
 
 		if (job_ptr->het_job_id) {
 			fail_by_part = true;
+			fail_by_part_non_reserve = false;
 			goto fail_this_part;
 		}
 
@@ -1802,6 +1816,7 @@ next_task:
 					     job_ptr->state_reason),
 				     job_ptr->priority, job_ptr->partition);
 			fail_by_part = true;
+			fail_by_part_non_reserve = false;
 			goto fail_this_part;
 		}
 
@@ -1852,6 +1867,7 @@ next_task:
 skip_start:
 
 		fail_by_part = false;
+		fail_by_part_non_reserve = false;
 		if ((error_code != SLURM_SUCCESS) && deadline_time_limit)
 			job_ptr->time_limit = save_time_limit;
 		if (error_code == ESLURM_NODES_BUSY) {
@@ -2038,7 +2054,13 @@ skip_start:
 		if (fail_by_part && job_ptr->resv_name) {
 			/* do not schedule more jobs in this reservation, but
 			 * other jobs in this partition can be scheduled. */
-			fail_by_part = false;
+
+			if ((job_ptr->resv_ptr->flags & RESERVE_FLAG_FLEX) ||
+			    (job_ptr->resv_ptr->flags & RESERVE_FLAG_ANY_NODES))
+				fail_by_part_non_reserve = true;
+			else
+				fail_by_part = false;
+
 			job_ptr->resv_ptr->flags |= RESERVE_FLAG_SCHED_FAILED;
 		}
 		if (fail_by_part && bf_min_age_reserve) {
@@ -2075,9 +2097,50 @@ fail_this_part:	if (fail_by_part) {
 			 * nodes in this partition
 			 */
 			job_ptr->part_ptr->flags |= PART_FLAG_SCHED_FAILED;
-			job_ptr->part_ptr->flags |= PART_FLAG_SCHED_CLEARED;
-			bit_and_not(avail_node_bitmap,
-				    job_ptr->part_ptr->node_bitmap);
+
+			if (fail_by_part_non_reserve) {
+				/*
+				 * If a FLEX or ANY_NODES reservation job fails
+				 * by part, remove all nodes that are not in
+				 * reservations from avail_node_bitmap.
+				 *
+				 * Jobs submitted to FLEX or ANY_NODES
+				 * reservations can be scheduled on nodes
+				 * outside of the reservation. If we allowed
+				 * lower priority jobs to be scheduled on nodes
+				 * not in this reservation, they could delay
+				 * the higher priority job submitted to this
+				 * reservation.
+				 *
+				 * We only remove nodes not in reservations,
+				 * so lower priority jobs submitted to other
+				 * reservations can still be scheduled.
+				 *
+				 * We don't mark the partition as being
+				 * cleared. Once the first non-reservation job
+				 * in the partition gets evaluated, which cannot
+				 * be scheduled since non-reserved nodes have
+				 * been removed, the partition's reserved nodes
+				 * will be removed and it will be marked as
+				 * cleared.
+				 */
+				bitstr_t *remove_nodes =
+					bit_alloc(node_record_count);
+
+				list_for_each(resv_list,
+					      _get_nodes_in_reservations,
+					      remove_nodes);
+				bit_not(remove_nodes);
+				bit_and(remove_nodes,
+					job_ptr->part_ptr->node_bitmap);
+				bit_and_not(avail_node_bitmap, remove_nodes);
+				FREE_NULL_BITMAP(remove_nodes);
+			} else {
+				job_ptr->part_ptr->flags |=
+					PART_FLAG_SCHED_CLEARED;
+				bit_and_not(avail_node_bitmap,
+					    job_ptr->part_ptr->node_bitmap);
+			}
 		}
 	}
 
