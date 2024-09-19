@@ -262,7 +262,7 @@ int pmixp_coll_tree_init(pmixp_coll_t *coll, hostlist_t **hl)
 		tree->chldrn_str = NULL;
 	}
 
-	/* fixup children peer ids to te global ones */
+	/* fixup children peer ids to the global ones */
 	for(i=0; i<tree->chldrn_cnt; i++){
 		p = hostlist_nth(*hl, tree->chldrn_ids[i]);
 		tree->chldrn_ids[i] = pmixp_info_job_hostid(p);

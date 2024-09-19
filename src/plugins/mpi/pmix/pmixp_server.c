@@ -1172,7 +1172,7 @@ static size_t _direct_hdr_pack_samearch(pmixp_base_hdr_t *hdr, void *net)
 	return _base_hdr_pack_full_samearch(hdr, net);
 }
 
-/* Get te pointer to the message buffer */
+/* Get the pointer to the message buffer */
 static void *_direct_msg_ptr(void *msg)
 {
 	_direct_proto_message_t *_msg = (_direct_proto_message_t*)msg;
