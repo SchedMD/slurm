@@ -464,6 +464,7 @@ static bool _job_runnable_test2(job_record_t *job_ptr, time_t now,
 static bool _job_runnable_test3(job_record_t *job_ptr, part_record_t *part_ptr)
 {
 	if (job_ptr->resv_ptr && job_ptr->resv_ptr->node_bitmap &&
+	    !(job_ptr->resv_ptr->flags & RESERVE_FLAG_FLEX) &&
 	    part_ptr && part_ptr->node_bitmap &&
 	    (bit_overlap(job_ptr->resv_ptr->node_bitmap, part_ptr->node_bitmap)
 	     < job_ptr->node_cnt_wag))
