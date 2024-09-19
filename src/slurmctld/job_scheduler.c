@@ -1686,8 +1686,6 @@ next_task:
 		slurmctld_diag_stats.schedule_cycle_depth++;
 
 		if (job_ptr->resv_name) {
-			bool found_resv = false;
-
 			/*
 			 * If we have a MaxStartDelay we need to make sure we
 			 * don't schedule any jobs that could potentially run to
@@ -1698,10 +1696,7 @@ next_task:
 				wait_on_resv = true;
 
 			if (job_ptr->resv_ptr->flags &
-			    RESERVE_FLAG_SCHED_FAILED)
-				found_resv = true;
-
-			if (found_resv) {
+			    RESERVE_FLAG_SCHED_FAILED) {
 				job_ptr->state_reason = WAIT_PRIORITY;
 				xfree(job_ptr->state_desc);
 				last_job_update = now;
