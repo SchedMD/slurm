@@ -252,6 +252,7 @@ typedef struct forward {
 				 * message to */
 	uint32_t   timeout;	/* original timeout increments */
 	uint16_t   tree_width;  /* what the treewidth should be */
+	uint16_t   tree_depth;	/* tree depth of this set of nodes */
 } forward_t;
 
 #define FORWARD_INITIALIZER \

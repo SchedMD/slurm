@@ -113,12 +113,13 @@ static void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = arg;
 	forward_struct_t *fwd_struct = fwd_msg->fwd_struct;
+	forward_t *fwd_ptr = &fwd_msg->header.forward;
 	buf_t *buffer = init_buf(BUF_SIZE);	/* probably enough for header */
 	list_t *ret_list = NULL;
 	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
-	hostlist_t *hl = hostlist_create(fwd_msg->header.forward.nodelist);
+	hostlist_t *hl = hostlist_create(fwd_ptr->nodelist);
 	slurm_addr_t addr;
 	char *buf = NULL;
 	int steps = 0;
@@ -166,23 +167,20 @@ static void *_forward_thread(void *arg)
 		}
 		buf = hostlist_ranged_string_xmalloc(hl);
 
-		xfree(fwd_msg->header.forward.nodelist);
-		fwd_msg->header.forward.nodelist = buf;
-		fwd_msg->header.forward.cnt = hostlist_count(hl);
+		xfree(fwd_ptr->nodelist);
+		fwd_ptr->nodelist = buf;
+		fwd_ptr->cnt = hostlist_count(hl);
 
-		if (fwd_msg->header.flags & SLURM_PACK_ADDRS) {
-			fwd_msg->header.forward.alias_addrs =
-				*(fwd_struct->alias_addrs);
-		}
+		if (fwd_msg->header.flags & SLURM_PACK_ADDRS)
+			fwd_ptr->alias_addrs = *(fwd_struct->alias_addrs);
 
 #if 0
 		info("sending %d forwards (%s) to %s",
-		     fwd_msg->header.forward.cnt,
-		     fwd_msg->header.forward.nodelist, name);
+		     fwd_ptr->cnt, fwd_ptr->nodelist, name);
 #endif
-		if (fwd_msg->header.forward.nodelist[0]) {
+		if (fwd_ptr->nodelist[0]) {
 			debug3("forward: send to %s along with %s",
-			       name, fwd_msg->header.forward.nodelist);
+			       name, fwd_ptr->nodelist);
 		} else
 			debug3("forward: send to %s ", name);
 
@@ -254,26 +252,23 @@ static void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 
-		if (fwd_msg->header.forward.cnt > 0) {
-			if (!fwd_msg->header.forward.tree_width)
-				fwd_msg->header.forward.tree_width =
-					slurm_conf.tree_width;
-			steps = (fwd_msg->header.forward.cnt+1) /
-					fwd_msg->header.forward.tree_width;
+		if (fwd_ptr->cnt > 0) {
+			if (!fwd_ptr->tree_width)
+				fwd_ptr->tree_width = slurm_conf.tree_width;
+			steps = (fwd_ptr->cnt + 1) / fwd_ptr->tree_width;
 			fwd_msg->timeout =
 				slurm_conf.msg_timeout * 1000 * steps;
 			steps++;
-			fwd_msg->timeout += (start_timeout*steps);
+			fwd_msg->timeout += (start_timeout * steps);
 			/* info("now  + %d*%d = %d", start_timeout, */
 			/*      steps, fwd_msg->timeout); */
 		}
 
 		ret_list = slurm_receive_resp_msgs(fd, steps, fwd_msg->timeout);
 		/* info("sent %d forwards got %d back", */
-		/*      fwd_msg->header.forward.cnt, list_count(ret_list)); */
+		/*      fwd_ptr->cnt, list_count(ret_list)); */
 
-		if (!ret_list || (fwd_msg->header.forward.cnt != 0
-				  && list_count(ret_list) <= 1)) {
+		if (!ret_list || (fwd_ptr->cnt && list_count(ret_list) <= 1)) {
 			slurm_mutex_lock(&fwd_struct->forward_mutex);
 			mark_as_failed_forward(&fwd_struct->ret_list, name,
 					       errno);
@@ -288,8 +283,7 @@ static void *_forward_thread(void *arg)
 				continue;
 			}
 			goto cleanup;
-		} else if ((fwd_msg->header.forward.cnt + 1) !=
-			   list_count(ret_list)) {
+		} else if ((fwd_ptr->cnt + 1) != list_count(ret_list)) {
 			/* this should never be called since the above
 			   should catch the failed forwards and pipe
 			   them back down, but this is here so we
@@ -300,10 +294,8 @@ static void *_forward_thread(void *arg)
 			int first_node_found = 0;
 			hostlist_iterator_t *host_itr
 				= hostlist_iterator_create(hl);
-			error("We shouldn't be here.  We forwarded to %d "
-			      "but only got %d back",
-			      (fwd_msg->header.forward.cnt + 1),
-			      list_count(ret_list));
+			error("We shouldn't be here.  We forwarded to %d but only got %d back",
+			      (fwd_ptr->cnt + 1), list_count(ret_list));
 			while ((tmp = hostlist_next(host_itr))) {
 				int node_found = 0;
 				itr = list_iterator_create(ret_list);
@@ -359,10 +351,10 @@ cleanup:
 	if ((fd >= 0) && close(fd) < 0)
 		error ("close(%d): %m", fd);
 	hostlist_destroy(hl);
-	fwd_msg->header.forward.alias_addrs.net_cred = NULL;
-	fwd_msg->header.forward.alias_addrs.node_addrs = NULL;
-	fwd_msg->header.forward.alias_addrs.node_list = NULL;
-	destroy_forward(&fwd_msg->header.forward);
+	fwd_ptr->alias_addrs.net_cred = NULL;
+	fwd_ptr->alias_addrs.node_addrs = NULL;
+	fwd_ptr->alias_addrs.node_list = NULL;
+	destroy_forward(fwd_ptr);
 	FREE_NULL_BUFFER(buffer);
 	slurm_cond_signal(&fwd_struct->notify);
 	slurm_mutex_unlock(&fwd_struct->forward_mutex);
