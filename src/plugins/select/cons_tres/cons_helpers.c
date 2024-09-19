@@ -160,7 +160,7 @@ extern bitstr_t **cons_helpers_mark_avail_cores(
 
 		if (thread_spec &&
 		    (node_ptr->cpus == node_ptr->tot_cores))
-			/* Each core has one thead, reserve cores here */
+			/* Each core has one thread, reserve cores here */
 			node_core_spec = thread_spec;
 		else
 			node_core_spec = core_spec;
