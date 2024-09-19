@@ -187,4 +187,7 @@ extern int32_t atomic_int32_ptr_set(atomic_int32_t *target, int32_t value);
 /* Set value of target to zero and return value */
 #define atomic_int32_set_zero(target) atomic_int32_ptr_set(&target, 0)
 
+/* Debug log current features of Atomic support from compiler */
+extern void atomic_log_features(void);
+
 #endif /* _SLURM_ATOMICS_H */

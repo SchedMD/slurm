@@ -144,6 +144,11 @@ extern int32_t atomic_int32_ptr_get(atomic_int32_t *target)
 	return value;
 }
 
+extern void atomic_log_features(void)
+{
+	debug("%s: _Atomic disabled. Failing down to pthread mutex.", __func__);
+}
+
 #else /* !__STDC_NO_ATOMICS__ */
 
 #include <stdatomic.h>
@@ -212,6 +217,42 @@ extern int32_t atomic_int32_ptr_get(atomic_int32_t *target)
 extern int32_t atomic_int32_ptr_set(atomic_int32_t *target, int32_t value)
 {
 	return atomic_exchange(&target->value, value);
+}
+
+static const char *_lock_type_str(const int type)
+{
+	switch (type) {
+	case 0:
+		return "locking";
+	case 1:
+		return "partial-locking";
+	case 2:
+		return "lock-free";
+	}
+
+	fatal_abort("should never happen");
+}
+
+extern void atomic_log_features(void)
+{
+	debug("%s: _Atomic enabled: bool=%s char=%s char16=%s char32=%s wchar=%s short=%s int=%s long=%s llong=%s pointer=%s char8=%s",
+	      __func__, _lock_type_str(ATOMIC_BOOL_LOCK_FREE),
+	      _lock_type_str(ATOMIC_CHAR_LOCK_FREE),
+	      _lock_type_str(ATOMIC_CHAR16_T_LOCK_FREE),
+	      _lock_type_str(ATOMIC_CHAR32_T_LOCK_FREE),
+	      _lock_type_str(ATOMIC_WCHAR_T_LOCK_FREE),
+	      _lock_type_str(ATOMIC_SHORT_LOCK_FREE),
+	      _lock_type_str(ATOMIC_INT_LOCK_FREE),
+	      _lock_type_str(ATOMIC_LONG_LOCK_FREE),
+	      _lock_type_str(ATOMIC_LLONG_LOCK_FREE),
+	      _lock_type_str(ATOMIC_POINTER_LOCK_FREE),
+#ifdef ATOMIC_CHAR8_T_LOCK_FREE
+	      /* Added in C23 */
+	      _lock_type_str(ATOMIC_CHAR8_T_LOCK_FREE),
+#else /* !ATOMIC_CHAR8_T_LOCK_FREE */
+	      "N/A"
+#endif /* !ATOMIC_CHAR8_T_LOCK_FREE */
+	     );
 }
 
 #endif /* !__STDC_NO_ATOMICS__ */
