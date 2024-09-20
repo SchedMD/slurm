@@ -4295,7 +4295,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		(!top_prio) || (!independent) || !avail_front_end(job_ptr) ||
-		(job_desc->het_job_offset != NO_VAL) || defer_this;
+		(job_desc->het_job_offset != NO_VAL) || defer_this ||
+		(job_ptr->details->prefer && ignore_prefer_val);
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
 
@@ -4306,19 +4307,19 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 	 * If we have a prefer feature list check that, if not check the
 	 * normal features.
 	 */
-	set_job_features_use(job_ptr->details);
-
-	error_code = _select_nodes_parts(job_ptr, no_alloc, err_msg);
-
-	if ((error_code == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
-	    (job_ptr->details->features_use == job_ptr->details->prefer) &&
-	    ignore_prefer_val) {
+	if (job_ptr->details->prefer && !ignore_prefer_val) {
+		job_ptr->details->features_use = job_ptr->details->prefer;
+		job_ptr->details->feature_list_use =
+			job_ptr->details->prefer_list;
+	} else {
 		job_ptr->details->features_use = job_ptr->details->features;
 		job_ptr->details->feature_list_use =
 			job_ptr->details->feature_list;
-		error_code = _select_nodes_parts(job_ptr, no_alloc, err_msg);
-		set_job_features_use(job_ptr->details);
 	}
+
+	error_code = _select_nodes_parts(job_ptr, no_alloc, err_msg);
+
+	set_job_features_use(job_ptr->details);
 
 	if (!test_only) {
 		last_job_update = now;
