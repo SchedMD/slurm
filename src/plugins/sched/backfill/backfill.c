@@ -1738,7 +1738,7 @@ static void _handle_planned(bool set)
 		}
 
 		log_flag(BACKFILL, "%s: %s state is %s",
-			 set ? "cleared" : "set",
+			 set ? "set" : "cleared",
 			 node_ptr->name,
 			 node_state_string(node_ptr->node_state));
 	}
