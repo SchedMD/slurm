@@ -345,7 +345,7 @@ static data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
  */
 extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 {
-	int rc;
+	int rc, auth_rc = ESLURM_AUTH_CRED_INVALID;
 	const char *alg;
 	jwt_t *unverified_jwt = NULL, *jwt = NULL;
 	char *username = NULL;
@@ -431,6 +431,7 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 
 	if (jwt_get_grant_int(jwt, "exp") < time(NULL)) {
 		error("%s: token expired", __func__);
+		auth_rc = ESLURM_AUTH_EXPIRED;
 		goto fail;
 	}
 
@@ -479,7 +480,7 @@ fail:
 	if (jwt)
 		jwt_free(jwt);
 	xfree(username);
-	return SLURM_ERROR;
+	return auth_rc;
 }
 
 extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
