@@ -1010,6 +1010,8 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				} else if (new_preempt[0] == '+') {
 					bit_set(qos_rec->preempt_bitstr,
 						atol(new_preempt+1));
+				} else if (new_preempt[0] == '\0') {
+					bit_clear_all(qos_rec->preempt_bitstr);
 				} else {
 					if (!cleared) {
 						cleared = 1;
