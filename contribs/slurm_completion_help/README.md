@@ -36,10 +36,11 @@ The Bash completion script offers <TAB> completion for Slurm commands.
 
 ### Instalation
 
+You must have the bash-completion package installed in order for this to work.
 Source the [slurm_completion.sh][slurm-completion] script. It is
 recommended to automate this by adding a bash sourcing line to your
-`.bashrc` or `.profile`. Alternatively, add it to `/etc/profile.d/`
-to automatically source it for login shells.
+`.bashrc` or `.profile`. Alternatively, you can copy the file to
+`/etc/profile.d/` to automatically source it for login shells.
 
 Additionally, there are a number of environment variables that can be set to
 alter/customize completion behavior. They are documented in
