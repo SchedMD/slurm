@@ -1408,11 +1408,13 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 		return SLURM_SUCCESS;
 	}
 
-	/* Modification of existing account list */
-	if ((resv_ptr->account_cnt == 0) && minus_account)
+	/*
+	 * If: The update sets a new list (it was previously empty).
+	 * All accounts are negated, so this is a new exclusion list.
+	 * NOTE: An empty list is always of type "inclusion".
+	 */
+	if ((resv_ptr->account_cnt == 0) && minus_account && !plus_account)
 		resv_ptr->ctld_flags |= RESV_CTLD_ACCT_NOT;
-	else
-		resv_ptr->ctld_flags &= (~RESV_CTLD_ACCT_NOT);
 
 	if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT) {
 		/* change minus_account to plus_account (add to NOT list) and
@@ -1431,6 +1433,12 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 			plus_account  = false;
 		}
 	}
+
+	/*
+	 * At this point, minus/plus mean removing/adding literally to the list.
+	 * If "RESV_CTLD_ACCT_NOT" was previously set, it means the list is of
+	 * type "exclusion", otherwise it means "inclusion"
+	 */
 	if (minus_account) {
 		if (resv_ptr->account_cnt == 0)
 			goto inval;
@@ -1646,11 +1654,14 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 		return SLURM_SUCCESS;
 	}
 
-	/* Modification of existing user list */
-	if ((resv_ptr->user_cnt == 0) && minus_user)
+	/*
+	 * If: The update sets a new list (it was previously empty).
+	 * All users are negated, so this is a new exclusion list.
+	 * NOTE: An empty list is always of type "inclusion".
+	 */
+	if ((resv_ptr->user_cnt == 0) && minus_user && !plus_user)
 		resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
-	else
-		resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
+
 	if (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT) {
 		/* change minus_user to plus_user (add to NOT list) and
 		 * change plus_user to minus_user (remove from NOT list) */
@@ -1669,7 +1680,14 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 		}
 	}
 
+	/*
+	 * At this point, minus/plus mean removing/adding literally to the list.
+	 * If "RESV_CTLD_USER_NOT" was previously set, it means the list is of
+	 * type "exclusion", otherwise it means "inclusion".
+	 */
 	if (minus_user) {
+		if (resv_ptr->user_cnt == 0)
+			goto inval;
 		for (i=0; i<u_cnt; i++) {
 			if (u_type[i] != 1)	/* not minus */
 				continue;

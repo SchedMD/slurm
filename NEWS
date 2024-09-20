@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
     fields.
  -- slurmctld - Fix a potential leak while updating a reservation.
  -- slurmctld - Fix state save with reservation flags when a update fails.
+ -- Fix reservation update issues with parameters Accounts and Users, when
+    using +/- signs.
 
 * Changes in Slurm 24.05.3
 ==========================
