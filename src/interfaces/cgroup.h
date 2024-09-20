@@ -105,6 +105,7 @@ typedef enum {
 
 /* Current supported cgroup controller features */
 typedef enum {
+	CG_MEMCG_PEAK,
 	CG_MEMCG_SWAP
 } cgroup_ctl_feature_t;
 
@@ -150,6 +151,7 @@ typedef struct {
 } cgroup_oom_t;
 
 typedef struct {
+	uint64_t memory_peak;
 	uint64_t usec;
 	uint64_t ssec;
 	uint64_t total_rss;

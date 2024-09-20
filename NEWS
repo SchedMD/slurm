@@ -127,6 +127,10 @@ documents those changes that are of interest to users and administrators.
     "association" to fix typo.
  -- cgroup/v2 - fix cgroup cleanup when running inside a container without write
     permissions to /sys/fs/cgroup.
+ -- cgroup/v2 - fix accounting of swap events detection.
+ -- Fix gathering MaxRSS for jobs that run shorter than two jobacctgather
+    intevals. Get the metrics from cgroups memory.peak or
+    memory.max_usage_in_bytes where available.
 
 * Changes in Slurm 24.05.4
 ==========================

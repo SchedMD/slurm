@@ -1181,6 +1181,32 @@ extern void jag_common_poll_data(list_t *task_list, uint64_t cont_id,
 		for (i = 0; i < jobacct->tres_count; i++) {
 			if (prec->tres_data[i].size_read == INFINITE64)
 				continue;
+
+			/* Do this before the max for polling/profiling */
+			jobacct->tres_usage_in_tot[i] =
+				prec->tres_data[i].size_read;
+
+			/*
+			 * Check for support of MaxRSS direct reading.
+			 *
+			 * In cgroup/v1 and cgroup/v2 we can get the value
+			 * directly in the memory.peak or
+			 * memory.max_usage_in_bytes interfaces.
+			 *
+			 * If available it will be in size_write.
+			 *
+			 * If it is not available then the MaxRSS will be the
+			 * one gathered and calculated through memory.current,
+			 * memory.usage_in_bytes or linux /proc.
+			 */
+			if ((i == TRES_ARRAY_MEM) &&
+			    (prec->tres_data[i].size_write != INFINITE64)) {
+				prec->tres_data[i].size_read =
+					prec->tres_data[i].size_write;
+				prec->tres_data[i].size_write =
+					INFINITE64;
+			}
+
 			if (jobacct->tres_usage_in_max[i] == INFINITE64)
 				jobacct->tres_usage_in_max[i] =
 					prec->tres_data[i].size_read;
@@ -1199,8 +1225,6 @@ extern void jag_common_poll_data(list_t *task_list, uint64_t cont_id,
 			 */
 			jobacct->tres_usage_in_min[i] =
 				jobacct->tres_usage_in_max[i];
-			jobacct->tres_usage_in_tot[i] =
-				prec->tres_data[i].size_read;
 
 			if (jobacct->tres_usage_out_max[i] == INFINITE64)
 				jobacct->tres_usage_out_max[i] =

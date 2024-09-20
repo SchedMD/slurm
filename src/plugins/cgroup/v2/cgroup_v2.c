@@ -2151,10 +2151,12 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 {
 	char *cpu_stat = NULL, *memory_stat = NULL, *memory_current = NULL;
+	char *memory_peak = NULL;
 	char *ptr;
 	size_t tmp_sz = 0;
 	cgroup_acct_t *stats = NULL;
 	task_cg_info_t *task_cg_info;
+	static bool interfaces_checked = false, memory_peak_interface = false;
 
 	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
 					     &task_id))) {
@@ -2165,6 +2167,20 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 			error("No task found with id %u, this should never happen",
 			      task_id);
 		return NULL;
+	}
+
+	/*
+	 * Check optional interfaces existence and permissions. This check
+	 * will help to avoid querying unexistent cgroup interfaces everytime,
+	 * as might happen in kernel versions that do not provide all of them
+	 */
+	if (!interfaces_checked) {
+		/*
+		 * Check for memory.peak support as RHEL8 and other OSes with
+		 * old kernels might not provide it.
+		 */
+		memory_peak_interface = cgroup_p_has_feature(CG_MEMCG_PEAK);
+		interfaces_checked = true;
 	}
 
 	if (common_cgroup_get_param(&task_cg_info->task_cg,
@@ -2200,6 +2216,19 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 				 task_id);
 	}
 
+	if (memory_peak_interface) {
+		if (common_cgroup_get_param(&task_cg_info->task_cg,
+					    "memory.peak",
+					    &memory_peak,
+					    &tmp_sz) != SLURM_SUCCESS) {
+			if (task_id == task_special_id)
+				log_flag(CGROUP, "Cannot read task_special memory.peak interface, does your OS support it?");
+			else
+				log_flag(CGROUP, "Cannot read task %d memory.peak interface, does your OS support it?",
+					 task_id);
+		}
+	}
+
 	/*
 	 * Initialize values. A NO_VAL64 will indicate the caller that something
 	 * happened here. Values that aren't set here are returned as 0.
@@ -2209,6 +2238,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	stats->ssec = NO_VAL64;
 	stats->total_rss = NO_VAL64;
 	stats->total_pgmajfault = NO_VAL64;
+	stats->memory_peak = INFINITE64; /* As required in common_jag.c */
 
 	if (cpu_stat) {
 		ptr = xstrstr(cpu_stat, "user_usec");
@@ -2245,6 +2275,12 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 		xfree(memory_stat);
 	}
 
+	if (memory_peak) {
+		if (sscanf(memory_peak, "%"PRIu64, &stats->memory_peak) != 1)
+			error("Cannot parse memory.peak file");
+		xfree(memory_peak);
+	}
+
 	return stats;
 }
 
@@ -2260,20 +2296,27 @@ extern long int cgroup_p_get_acct_units(void)
 
 extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 {
-	struct stat st;
-	int rc;
-	char *memsw_filepath = NULL;
+	char file_path[PATH_MAX];
 
-	/* Check if swap constrain capability is enabled in this system. */
 	switch (f) {
+	case CG_MEMCG_PEAK:
+		if (!bit_test(int_cg_ns.avail_controllers, CG_MEMORY))
+			break;
+		if (snprintf(file_path, PATH_MAX, "%s/memory.peak",
+			     int_cg[CG_LEVEL_ROOT].path) >= PATH_MAX)
+			break;
+		if (!access(file_path, F_OK))
+			return true;
+		break;
 	case CG_MEMCG_SWAP:
 		if (!bit_test(int_cg_ns.avail_controllers, CG_MEMORY))
-			return false;
-		xstrfmtcat(memsw_filepath, "%s/memory.swap.max",
-			   int_cg[CG_LEVEL_ROOT].path);
-		rc = stat(memsw_filepath, &st);
-		xfree(memsw_filepath);
-		return (rc == 0);
+			break;
+		if (snprintf(file_path, PATH_MAX, "%s/memory.swap.max",
+			     int_cg[CG_LEVEL_ROOT].path) >= PATH_MAX)
+			break;
+		if (!access(file_path, F_OK))
+			return true;
+		break;
 	default:
 		break;
 	}
