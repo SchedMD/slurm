@@ -253,6 +253,8 @@ documents those changes that are of interest to users and administrators.
  -- scontrol - Add '.pings[].responding' field to the following commands:
       'scontrol ping --json'
       'scontrol ping --yaml'
+ -- Prevent jobs without reservations from delaying jobs in reservations with
+    flags FLEX or ANY_NODES in the main scheduler.
 
 * Changes in Slurm 24.05.5
 ==========================
