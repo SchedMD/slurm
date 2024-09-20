@@ -1723,14 +1723,27 @@ static void _handle_planned(bool set)
 		}
 		if (set) {
 			/*
-			 * If the node is allocated ignore this flag. This only
-			 * really matters for IDLE and MIXED.
+			 * If the node is fully allocated ignore this flag.
+			 * This only really matters for IDLE and MIXED.
 			 */
-			if (!IS_NODE_ALLOCATED(node_ptr)) {
+			if (IS_NODE_ALLOCATED(node_ptr)) {
+				uint16_t alloc_cpus = 0, idle_cpus = 0;
+
+				select_g_select_nodeinfo_get(
+					node_ptr->select_nodeinfo,
+					SELECT_NODEDATA_SUBCNT,
+					NODE_STATE_ALLOCATED, &alloc_cpus);
+				idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
+				if (idle_cpus &&
+				    (idle_cpus < node_ptr->cpus_efctv))
+					goto mixed;
+
+				bit_clear(planned_bitmap, n);
+			} else {
+mixed:
 				node_ptr->node_state |= NODE_STATE_PLANNED;
 				node_update = true;
-			} else
-				bit_clear(planned_bitmap, n);
+			}
 		} else {
 			node_ptr->node_state &= ~NODE_STATE_PLANNED;
 			node_update = true;
