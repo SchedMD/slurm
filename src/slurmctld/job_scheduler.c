@@ -5367,7 +5367,7 @@ static int _valid_feature_list(job_record_t *job_ptr,
 			       bool is_reservation)
 {
 	static time_t sched_update = 0;
-	static bool ignore_prefer_val = false;
+	static bool ignore_prefer_val = false, ignore_constraint_val = false;
 	bool is_prefer_list, skip_validation;
 
 	if (!valid_feature->feature_list) {
@@ -5383,11 +5383,18 @@ static int _valid_feature_list(job_record_t *job_ptr,
 			ignore_prefer_val = true;
 		else
 			ignore_prefer_val = false;
+		if (xstrcasestr(slurm_conf.sched_params,
+				"ignore_constraint_validation"))
+			ignore_constraint_val = true;
+		else
+			ignore_constraint_val = false;
+
 	}
 
 	is_prefer_list = (valid_feature->feature_list ==
 			  job_ptr->details->prefer_list);
-	skip_validation = (is_prefer_list && ignore_prefer_val);
+	skip_validation = (is_prefer_list && ignore_prefer_val) ||
+			  (!is_prefer_list && ignore_constraint_val);
 
 	valid_feature->skip_validation = skip_validation;
 

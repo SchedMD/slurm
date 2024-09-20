@@ -4170,6 +4170,17 @@ and the node's Extra field.
 .IP
 
 .TP
+\ignore_constraint_validation\fR
+If set, and a job requests --constraint any features in the request that would
+create an invalid request with the current system will not generate an error.
+This is helpful for dynamic systems where nodes with features come and go.
+Jobs will remain in the job queue until the requested feature is in the cluster
+and available.
+Please note using this option will not protect you from typos.
+See also ignore_prefer_validation.
+.IP
+
+.TP
 \fBIgnore_NUMA\fR
 Some processors (e.g. AMD Opteron 6000 series) contain multiple NUMA nodes per
 socket. This is a configuration which does not map into the hardware entities
@@ -4192,6 +4203,7 @@ If set, and a job requests --prefer any features in the request that would
 create an invalid request with the current system will not generate an error.
 This is helpful for dynamic systems where nodes with features come and go.
 Please note using this option will not protect you from typos.
+See also ignore_constraint_validation.
 .IP
 
 .TP

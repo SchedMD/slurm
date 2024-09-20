@@ -48,6 +48,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
 	conmgr_read_timeout: Defaults to MessageTimeout.
 	conmgr_wait_write_delay: Defaults to MessageTimeout.
 	conmgr_write_timeout: Defaults to MessageTimeout.
+ -- Add SlurmctldParamters=ignore_constraint_validation to ignore
+    constraint/feature validation at submission.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

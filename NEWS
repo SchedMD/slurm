@@ -227,6 +227,8 @@ documents those changes that are of interest to users and administrators.
  -- cgroup/v2 will detect some special container and namespaced setups and
     will work with it.
  -- Support IPv6 in configless mode.
+ -- Add SlurmctldParamters=ignore_constraint_validation to ignore
+    constraint/feature validation at submission.
 
 * Changes in Slurm 24.05.5
 ==========================

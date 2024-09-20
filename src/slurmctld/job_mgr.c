@@ -4113,7 +4113,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 {
 	static time_t sched_update = 0;
 	static bool defer_batch = false, defer_sched = false;
-	static bool ignore_prefer_val = false;
+	static bool ignore_prefer_val = false, ignore_constraint_val = false;
 	int error_code, i;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	job_record_t *job_ptr;
@@ -4161,6 +4161,11 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 			ignore_prefer_val = true;
 		else
 			ignore_prefer_val = false;
+		if (xstrcasestr(slurm_conf.sched_params,
+				"ignore_constraint_validation"))
+			ignore_constraint_val = true;
+		else
+			ignore_constraint_val = false;
 	}
 
 	if (job_desc->array_bitmap)
@@ -4296,7 +4301,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		(!top_prio) || (!independent) || !avail_front_end(job_ptr) ||
 		(job_desc->het_job_offset != NO_VAL) || defer_this ||
-		(job_ptr->details->prefer && ignore_prefer_val);
+		(job_ptr->details->prefer && ignore_prefer_val) ||
+		(job_ptr->details->features && ignore_constraint_val);
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
 
@@ -4311,10 +4317,21 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		job_ptr->details->features_use = job_ptr->details->prefer;
 		job_ptr->details->feature_list_use =
 			job_ptr->details->prefer_list;
-	} else {
+	} else if (!ignore_constraint_val) {
 		job_ptr->details->features_use = job_ptr->details->features;
 		job_ptr->details->feature_list_use =
 			job_ptr->details->feature_list;
+	} else {
+		/*
+		 * Set features_use to "" because ignore_constraint_val is set.
+		 * We also set no_alloc to true to avoid actually allocating
+		 * with this setup.
+		 * We are using an empty string rather than NULL because
+		 * valid_feature_counts() will use features rather than
+		 * features_use if it is NULL.
+		 */
+		job_ptr->details->features_use = "";
+		job_ptr->details->feature_list_use = NULL;
 	}
 
 	error_code = _select_nodes_parts(job_ptr, no_alloc, err_msg);
