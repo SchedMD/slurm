@@ -36,5 +36,17 @@
 #ifndef _SLURM_CURL_H
 #define _SLURM_CURL_H
 
+#include "src/common/http.h"
+#include <curl/curl.h>
+
+extern int slurm_curl_request(const char *data, const char *url,
+			      const char *username, const char *password,
+			      struct curl_slist *headers, uint32_t timeout,
+			      char **response_str, long *response_code,
+			      http_request_method_t request_method);
+
+extern int slurm_curl_init(void);
+
+extern int slurm_curl_fini(void);
 
 #endif
