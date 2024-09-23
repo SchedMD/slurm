@@ -4270,16 +4270,20 @@ extern void slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
 		xfree(node->arch);
+		xfree(node->bcast_address);
 		xfree(node->cluster_name);
 		xfree(node->comment);
 		xfree(node->cpu_spec_list);
 		acct_gather_energy_destroy(node->energy);
+		xfree(node->extra);
 		xfree(node->features);
 		xfree(node->features_act);
+		xfree(node->gpu_spec);
 		xfree(node->gres);
 		xfree(node->gres_drain);
 		xfree(node->gres_used);
 		xfree(node->instance_id);
+		xfree(node->instance_type);
 		xfree(node->mcs_label);
 		xfree(node->name);
 		xfree(node->node_addr);

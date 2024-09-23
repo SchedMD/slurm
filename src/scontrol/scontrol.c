@@ -309,6 +309,14 @@ int main(int argc, char **argv)
 	FREE_NULL_LIST(clusters);
 	slurm_conf_destroy();
 	serializer_g_fini();
+
+	slurm_free_front_end_info_msg(old_front_end_info_ptr);
+	slurm_free_job_info_msg(old_job_info_ptr);
+	slurm_free_node_info_msg(old_node_info_ptr);
+	slurm_free_partition_info_msg(old_part_info_ptr);
+	slurm_free_reservation_info_msg(old_res_info_ptr);
+	slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
+
 #endif /* MEMORY_LEAK_DEBUG */
 
 	exit(exit_code);
