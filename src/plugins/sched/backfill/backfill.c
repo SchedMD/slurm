@@ -502,7 +502,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 						       preemptee_candidates,
 						       NULL,
 						       resv_exc_ptr,
-						       NULL);
+						       will_run);
 				if (rc == SLURM_SUCCESS) {
 					if ((high_start == 0) ||
 					    (high_start < job_ptr->start_time))
@@ -542,7 +542,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 					       preemptee_candidates,
 					       NULL,
 					       resv_exc_ptr,
-					       NULL);
+					       will_run);
 
 			if (low_bitmap) {
 				bit_or(low_bitmap, *avail_bitmap);
@@ -603,7 +603,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 						       preemptee_candidates,
 						       NULL,
 						       resv_exc_ptr,
-						       NULL);
+						       will_run);
 				if ((rc == SLURM_SUCCESS) &&
 				    ((low_start == 0) ||
 				     (low_start > job_ptr->start_time))) {
@@ -645,7 +645,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 					       preemptee_candidates,
 					       NULL,
 					       resv_exc_ptr,
-					       NULL);
+					       will_run);
 		}
 	} else {
 		/* Try to schedule the job. First on dedicated nodes
@@ -671,7 +671,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 				       preemptee_candidates,
 				       NULL,
 				       resv_exc_ptr,
-				       NULL);
+				       will_run);
 
 		job_ptr->details->share_res = orig_shared;
 
@@ -685,7 +685,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 					       preemptee_candidates,
 					       NULL,
 					       resv_exc_ptr,
-					       NULL);
+					       will_run);
 		} else
 			FREE_NULL_BITMAP(tmp_bitmap);
 	}
