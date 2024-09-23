@@ -7358,6 +7358,1178 @@
 </tr>
 </table>
 
+<h4>New Field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.description = "Query errors";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.description = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.description.description = "Long form error description";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.description.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.error = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.error.description = "Short form error description";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.error.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.error_number = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.error_number.description = "Slurm numeric error identifier";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.error_number.format = "int32";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.error_number.type = "integer";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.source = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.source.description = "Source of error or where error was first detected";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.properties.source.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.items.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.errors.type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.description = "Slurm meta values";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client.properties.group = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client.properties.group.description = "Client group (if known)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client.properties.group.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client.properties.source = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client.properties.source.description = "Client source description";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client.properties.source.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client.properties.user = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client.properties.user.description = "Client user (if known)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client.properties.user.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.client.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.command = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.command.description = "CLI command (if applicable)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.command.items = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.command.items.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.command.type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.accounting_storage = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.accounting_storage.description = "Slurm accounting plugin";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.accounting_storage.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.data_parser = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.data_parser.description = "Slurm data_parser plugin";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.data_parser.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.name = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.name.description = "Slurm plugin name (if applicable)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.name.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.type = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.type.description = "Slurm plugin type (if applicable)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.properties.type.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.plugin.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.cluster = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.cluster.description = "Slurm cluster name";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.cluster.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.release = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.release.description = "Slurm release string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.release.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.major = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.major.description = "Slurm release major version";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.major.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.micro = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.micro.description = "Slurm release micro version";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.micro.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.minor = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.minor.description = "Slurm release minor version";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.minor.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.properties.slurm.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.meta.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.description = "resultant status of signal request";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.description = "List of jobs signal responses";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.properties.code = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.properties.code.description = "Numeric error encountered signaling job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.properties.code.format = "int32";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.properties.code.type = "integer";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.properties.message = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.properties.message.description = "Error message why signaling job failed";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.properties.message.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.properties.string = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.properties.string.description = "String error encountered signaling job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.properties.string.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.error.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.federation = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.federation.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.federation.properties.sibling = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.federation.properties.sibling.description = "Name of federation sibling (may be empty for non-federation)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.federation.properties.sibling.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.federation.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.description = "Job ID that signaling failed";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.properties.infinite = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.properties.infinite.description = "True if number has been set to infinite; \"set\" and \"number\" will be ignored";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.properties.infinite.type = "boolean";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.properties.number = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.properties.number.description = "If \"set\" is True the number will be set with value; otherwise ignore number contents";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.properties.number.format = "int32";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.properties.number.type = "integer";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.properties.set = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.properties.set.description = "True if number has been set; False if number is unset";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.properties.set.type = "boolean";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.job_id.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.step_id = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.step_id.description = "Job or Step ID that signaling failed";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.properties.step_id.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.required[0] = "error/string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.required[1] = "error/code";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.required[2] = "error/message";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.required[3] = "step_id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.required[4] = "job_id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.required[5] = "federation/sibling";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.items.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.status.type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.description = "Query warnings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.items = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.items.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.items.properties.description = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.items.properties.description.description = "Long form warning description";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.items.properties.description.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.items.properties.source = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.items.properties.source.description = "Source of warning or where warning was first detected";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.items.properties.source.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.items.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.items.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.properties.warnings.type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.required[0] = "status";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["200"].content["application/json"].schema.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.description = "Query errors";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.description = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.description.description = "Long form error description";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.description.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.error = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.error.description = "Short form error description";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.error.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.error_number = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.error_number.description = "Slurm numeric error identifier";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.error_number.format = "int32";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.error_number.type = "integer";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.source = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.source.description = "Source of error or where error was first detected";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.properties.source.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.items.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.errors.type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.description = "Slurm meta values";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client.properties.group = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client.properties.group.description = "Client group (if known)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client.properties.group.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client.properties.source = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client.properties.source.description = "Client source description";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client.properties.source.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client.properties.user = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client.properties.user.description = "Client user (if known)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client.properties.user.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.client.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.command = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.command.description = "CLI command (if applicable)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.command.items = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.command.items.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.command.type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.accounting_storage = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.accounting_storage.description = "Slurm accounting plugin";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.accounting_storage.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.data_parser = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.data_parser.description = "Slurm data_parser plugin";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.data_parser.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.name = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.name.description = "Slurm plugin name (if applicable)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.name.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.type = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.type.description = "Slurm plugin type (if applicable)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.properties.type.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.plugin.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.cluster = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.cluster.description = "Slurm cluster name";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.cluster.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.release = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.release.description = "Slurm release string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.release.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.major = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.major.description = "Slurm release major version";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.major.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.micro = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.micro.description = "Slurm release micro version";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.micro.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.minor = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.minor.description = "Slurm release minor version";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.properties.minor.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.properties.version.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.properties.slurm.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.meta.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.description = "resultant status of signal request";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.description = "List of jobs signal responses";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.properties.code = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.properties.code.description = "Numeric error encountered signaling job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.properties.code.format = "int32";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.properties.code.type = "integer";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.properties.message = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.properties.message.description = "Error message why signaling job failed";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.properties.message.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.properties.string = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.properties.string.description = "String error encountered signaling job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.properties.string.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.error.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.federation = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.federation.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.federation.properties.sibling = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.federation.properties.sibling.description = "Name of federation sibling (may be empty for non-federation)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.federation.properties.sibling.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.federation.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.description = "Job ID that signaling failed";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.properties.infinite = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.properties.infinite.description = "True if number has been set to infinite; \"set\" and \"number\" will be ignored";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.properties.infinite.type = "boolean";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.properties.number = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.properties.number.description = "If \"set\" is True the number will be set with value; otherwise ignore number contents";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.properties.number.format = "int32";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.properties.number.type = "integer";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.properties.set = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.properties.set.description = "True if number has been set; False if number is unset";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.properties.set.type = "boolean";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.job_id.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.step_id = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.step_id.description = "Job or Step ID that signaling failed";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.properties.step_id.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.required[0] = "error/string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.required[1] = "error/code";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.required[2] = "error/message";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.required[3] = "step_id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.required[4] = "job_id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.required[5] = "federation/sibling";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.items.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.status.type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.description = "Query warnings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.items = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.items.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.items.properties.description = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.items.properties.description.description = "Long form warning description";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.items.properties.description.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.items.properties.source = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.items.properties.source.description = "Source of warning or where warning was first detected";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.items.properties.source.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.items.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.items.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.properties.warnings.type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.required[0] = "status";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/job/{job_id}"]["delete"].responses["default"].content["application/json"].schema.type = "object";</td>
+</tr>
+</table>
+
 <h3>data_parser/v0.0.41</h3>
 
 <h4>Modified Fields</h4>
