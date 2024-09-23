@@ -155,7 +155,7 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 		}
 		if (bsize <= 0) {
 			s_p_hashtbl_destroy(conf_hashtbl);
-			fatal("Invalid BlockLevels");
+			fatal("Invalid BlockSizes value: %s", str_bsize);
 		}
 	}
 	xfree(tmp_str);
