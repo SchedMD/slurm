@@ -2355,6 +2355,9 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	bool more_jobs = true;
 	DEF_TIMERS;
 
+	if (will_run_ptr && will_run_ptr->start)
+		_set_sched_weight(node_bitmap, true);
+
 	/*
 	 * Job is still pending. Simulate termination of jobs one at a time
 	 * to determine when and where the job can start.
@@ -2558,10 +2561,10 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 	orig_map = bit_copy(node_bitmap);
 
-	_set_sched_weight(node_bitmap, false);
-
 	if (will_run_ptr && will_run_ptr->start > now)
 		goto test_future;
+
+	_set_sched_weight(node_bitmap, false);
 
 	/* Try to run with currently available nodes */
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
