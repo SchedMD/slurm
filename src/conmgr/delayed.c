@@ -161,7 +161,7 @@ static int _inspect_work(void *x, void *key)
 	const timespec_t begin = work->control.time_begin;
 	foreach_delayed_work_t *args = key;
 	const timespec_t now = timespec_now();
-	const bool trigger = timespec_is_after(begin, now);
+	const bool trigger = timespec_is_after(now, begin);
 
 	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
 	xassert(work->magic == MAGIC_WORK);
