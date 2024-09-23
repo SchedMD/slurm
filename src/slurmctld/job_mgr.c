@@ -16826,7 +16826,6 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 	char *end_ptr = NULL;
 	bitstr_t *array_bitmap = NULL;
 	resp_array_struct_t *resp_array = NULL;
-	job_array_resp_msg_t *resp_array_msg = NULL;
 
 	if (max_array_size == NO_VAL) {
 		max_array_size = slurm_conf.max_array_sz;
@@ -16918,10 +16917,13 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 	}
 
 reply:
-	if (resp_array)
+	if (resp_array) {
+		job_array_resp_msg_t *resp_array_msg =
+			_resp_array_xlate(resp_array, job_id);
 		(void) send_msg_response(msg, RESPONSE_JOB_ARRAY_ERRORS,
 					 resp_array_msg);
-	else
+		slurm_free_job_array_resp(resp_array_msg);
+	} else
 		slurm_send_rc_msg(msg, rc);
 
 	_resp_array_free(resp_array);
