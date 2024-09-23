@@ -48,6 +48,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/bitstring.h"
+#include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/timers.h"
@@ -730,12 +731,12 @@ static int _init_new_scope(char *scope_path)
 {
 	int rc;
 
-	rc = mkdir(scope_path, 0755);
+	rc = mkdirpath(scope_path, 0755, true);
 	if (rc && (errno != EEXIST)) {
 		error("Could not create scope directory %s: %m", scope_path);
 		return SLURM_ERROR;
 	}
-
+	_enable_controllers(scope_path, int_cg_ns.avail_controllers);
 	log_flag(CGROUP, "Created %s", scope_path);
 
 	return SLURM_SUCCESS;
@@ -834,7 +835,7 @@ static int _init_new_scope_dbus(char *scope_path)
 	 */
 	memset(&sys_root, 0, sizeof(sys_root));
 	xstrfmtcat(sys_root.path, "%s/%s", scope_path, SYSTEM_CGDIR);
-	if (_init_new_scope(sys_root.path) != SLURM_SUCCESS) {
+	if (mkdirpath(sys_root.path, 0755, true) != SLURM_SUCCESS) {
 		xfree(sys_root.path);
 		kill(pid, SIGKILL);
 		waitpid(pid, &status, WNOHANG);
