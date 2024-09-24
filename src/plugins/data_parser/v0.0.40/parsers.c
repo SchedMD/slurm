@@ -2072,9 +2072,9 @@ static int DUMP_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 	data_t *set, *inf, *num;
 
 	if (is_complex_mode(args)) {
-		if (isinf(*src))
+		if ((((uint32_t) *src) == INFINITE) || isinf(*src))
 			data_set_string(dst, "Infinity");
-		else if (isnan(*src))
+		else if ((((uint32_t) *src) == NO_VAL) || isnan(*src))
 			data_set_null(dst);
 		else
 			data_set_float(dst, *src);
