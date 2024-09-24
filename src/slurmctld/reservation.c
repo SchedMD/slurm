@@ -1279,6 +1279,207 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	return rc;
 }
 
+static void _remove_name_from_str(char *name, char *str)
+{
+	int k = strlen(name);
+	char *tmp = str, *tok;
+
+	while ((tok = xstrstr(tmp, name))) {
+		if (((tok != str) &&
+		     (tok[-1] != ',') && (tok[-1] != '-')) ||
+		    ((tok[k] != '\0') && (tok[k] != ','))) {
+			tmp = tok + 1;
+			continue;
+		}
+		if (tok[-1] == '-') {
+			tok--;
+			k++;
+		}
+		if (tok[-1] == ',') {
+			tok--;
+			k++;
+		} else if (tok[k] == ',')
+			k++;
+		for (int j=0; ; j++) {
+			tok[j] = tok[j + k];
+			if (tok[j] == '\0')
+				break;
+		}
+	}
+}
+
+static bool _check_uid(uid_t x, uid_t arg)
+{
+	return (x == arg);
+}
+
+static bool _check_char(char *x, char *arg)
+{
+	if (x[0] == '-')
+		x++;
+	return !xstrcmp(x, arg);
+}
+
+static int _handle_add_remove_names(
+	slurmctld_resv_t *resv_ptr, uint32_t not_flag,
+	int alter_cnt, char **alter_list, uid_t *uid_list, int *alter_types,
+	bool minus, bool plus)
+{
+	int *object_cnt;
+	char **object_str;
+	int i, j, k;
+	bool found_it;
+
+	switch (not_flag) {
+	case RESV_CTLD_USER_NOT:
+		object_cnt = &resv_ptr->user_cnt;
+		object_str = &resv_ptr->users;
+		break;
+	case RESV_CTLD_ACCT_NOT:
+		object_cnt = &resv_ptr->account_cnt;
+		object_str = &resv_ptr->accounts;
+		break;
+	default:
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * If: The update sets a new list (it was previously empty).
+	 * All accounts are negated, so this is a new exclusion list.
+	 * NOTE: An empty list is always of type "inclusion".
+	 */
+	if (!*object_cnt && minus && !plus)
+		resv_ptr->ctld_flags |= not_flag;
+
+	if (resv_ptr->ctld_flags & not_flag) {
+		/*
+		 * change minus to plus (add to NOT list) and
+		 * change plus to minus (remove from NOT list)
+		 */
+		for (i = 0; i < alter_cnt; i++) {
+			if (alter_types[i] == 1)
+				alter_types[i] = 2;
+			else if (alter_types[i] == 2)
+				alter_types[i] = 1;
+		}
+		if (minus && !plus) {
+			minus = false;
+			plus = true;
+		} else if (!minus && plus) {
+			minus = true;
+			plus = false;
+		}
+	}
+
+	/*
+	 * At this point, minus/plus mean removing/adding literally to the list.
+	 * If "RESV_CTLD_*_NOT" was previously set, it means the list is of
+	 * type "exclusion", otherwise it means "inclusion"
+	 */
+	if (minus) {
+		if (!*object_cnt)
+			return SLURM_ERROR;
+		for (i=0; i < alter_cnt; i++) {
+			if (alter_types[i] != 1) /* not minus */
+				continue;
+			found_it = false;
+			for (j=0; j < *object_cnt; j++) {
+				switch (not_flag) {
+				case RESV_CTLD_USER_NOT:
+					found_it = _check_uid(
+						resv_ptr->user_list[j],
+						uid_list[i]);
+					break;
+				case RESV_CTLD_ACCT_NOT:
+					found_it = _check_char(
+						resv_ptr->account_list[j],
+						alter_list[i]);
+					break;
+				default:
+					break;
+				}
+				if (found_it)
+					break;
+			}
+			if (!found_it)
+				return SLURM_ERROR;
+
+			_remove_name_from_str(alter_list[i], *object_str);
+			if (!*object_str[0])
+				xfree(*object_str);
+
+			(*object_cnt)--;
+			for (k=j; k<*object_cnt; k++) {
+				switch (not_flag) {
+				case RESV_CTLD_USER_NOT:
+					resv_ptr->user_list[k] =
+						resv_ptr->user_list[k+1];
+					break;
+				case RESV_CTLD_ACCT_NOT:
+					resv_ptr->account_list[k] =
+						resv_ptr->account_list[k+1];
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	}
+
+	if (plus) {
+		for (i=0; i<alter_cnt; i++) {
+			if (alter_types[i] != 2) /* not plus */
+				continue;
+			found_it = false;
+			for (j=0; j<*object_cnt; j++) {
+				switch (not_flag) {
+				case RESV_CTLD_USER_NOT:
+					found_it = _check_uid(
+						resv_ptr->user_list[j],
+						uid_list[i]);
+					break;
+				case RESV_CTLD_ACCT_NOT:
+					found_it = _check_char(
+						resv_ptr->account_list[j],
+						alter_list[i]);
+					break;
+				default:
+					break;
+				}
+				if (found_it)
+					break;
+			}
+			if (found_it)
+				continue; /* duplicate entry */
+
+			if (*object_str && *object_str[0])
+				xstrcat(*object_str, ",");
+			if (resv_ptr->ctld_flags & not_flag)
+				xstrcat(*object_str, "-");
+			xstrcat(*object_str, alter_list[i]);
+
+			switch (not_flag) {
+			case RESV_CTLD_USER_NOT:
+				xrecalloc(resv_ptr->user_list,
+					  (*object_cnt + 1), sizeof(uid_t));
+				resv_ptr->user_list[(*object_cnt)++] =
+					uid_list[i];
+				break;
+			case RESV_CTLD_ACCT_NOT:
+				xrecalloc(resv_ptr->account_list,
+					  (*object_cnt + 1), sizeof(char *));
+				resv_ptr->account_list[(*object_cnt)++] =
+					xstrdup(alter_list[i]);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Validate a comma delimited list of account names and build an array of
  *	them
@@ -1354,10 +1555,9 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				 char *accounts)
 {
 	char *last = NULL, *ac_cpy, *tok;
-	int ac_cnt = 0, i, j, k;
+	int ac_cnt = 0, i, rc = SLURM_ERROR;
 	int *ac_type, minus_account = 0, plus_account = 0;
 	char **ac_list;
-	bool found_it;
 
 	if (!accounts)
 		return ESLURM_INVALID_ACCOUNT;
@@ -1409,116 +1609,20 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 		return SLURM_SUCCESS;
 	}
 
-	/*
-	 * If: The update sets a new list (it was previously empty).
-	 * All accounts are negated, so this is a new exclusion list.
-	 * NOTE: An empty list is always of type "inclusion".
-	 */
-	if ((resv_ptr->account_cnt == 0) && minus_account && !plus_account)
-		resv_ptr->ctld_flags |= RESV_CTLD_ACCT_NOT;
+	rc = _handle_add_remove_names(resv_ptr, RESV_CTLD_ACCT_NOT,
+				      ac_cnt, ac_list, NULL, ac_type,
+				      minus_account, plus_account);
 
-	if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT) {
-		/* change minus_account to plus_account (add to NOT list) and
-		 * change plus_account to minus_account (remove from NOT list) */
-		for (i = 0; i < ac_cnt; i++) {
-			if (ac_type[i] == 1)
-				ac_type[i] = 2;
-			else if (ac_type[i] == 2)
-				ac_type[i] = 1;
-		}
-		if (minus_account && !plus_account) {
-			minus_account = false;
-			plus_account  = true;
-		} else if (!minus_account && plus_account) {
-			minus_account = true;
-			plus_account  = false;
-		}
-	}
-
-	/*
-	 * At this point, minus/plus mean removing/adding literally to the list.
-	 * If "RESV_CTLD_ACCT_NOT" was previously set, it means the list is of
-	 * type "exclusion", otherwise it means "inclusion"
-	 */
-	if (minus_account) {
-		if (resv_ptr->account_cnt == 0)
-			goto inval;
-		for (i=0; i<ac_cnt; i++) {
-			if (ac_type[i] != 1)	/* not minus */
-				continue;
-			found_it = false;
-			for (j=0; j<resv_ptr->account_cnt; j++) {
-				char *test_name = resv_ptr->account_list[j];
-				if (test_name[0] == '-')
-					test_name++;
-				if (xstrcmp(test_name, ac_list[i]))
-					continue;
-				found_it = true;
-				xfree(resv_ptr->account_list[j]);
-				resv_ptr->account_cnt--;
-				for (k=j; k<resv_ptr->account_cnt; k++) {
-					resv_ptr->account_list[k] =
-						resv_ptr->account_list[k+1];
-				}
-				break;
-			}
-			if (!found_it)
-				goto inval;
-		}
-		xfree(resv_ptr->accounts);
-		for (i=0; i<resv_ptr->account_cnt; i++) {
-			if (i)
-				xstrcat(resv_ptr->accounts, ",");
-			if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT)
-				xstrcat(resv_ptr->accounts, "-");
-			xstrcat(resv_ptr->accounts, resv_ptr->account_list[i]);
-		}
-	}
-
-	if (plus_account) {
-		for (i=0; i<ac_cnt; i++) {
-			if (ac_type[i] != 2)	/* not plus */
-				continue;
-			found_it = false;
-			for (j=0; j<resv_ptr->account_cnt; j++) {
-				char *test_name = resv_ptr->account_list[j];
-				if (test_name[0] == '-')
-					test_name++;
-				if (xstrcmp(test_name, ac_list[i]))
-					continue;
-				found_it = true;
-				break;
-			}
-			if (found_it)
-				continue;	/* duplicate entry */
-			xrealloc(resv_ptr->account_list,
-				 sizeof(char *) * (resv_ptr->account_cnt + 1));
-			resv_ptr->account_list[resv_ptr->account_cnt++] =
-					xstrdup(ac_list[i]);
-		}
-		xfree(resv_ptr->accounts);
-		for (i=0; i<resv_ptr->account_cnt; i++) {
-			if (i)
-				xstrcat(resv_ptr->accounts, ",");
-			if (resv_ptr->ctld_flags & RESV_CTLD_ACCT_NOT)
-				xstrcat(resv_ptr->accounts, "-");
-			xstrcat(resv_ptr->accounts, resv_ptr->account_list[i]);
-		}
-	}
-
+inval:
 	for (i=0; i<ac_cnt; i++)
 		xfree(ac_list[i]);
 	xfree(ac_list);
 	xfree(ac_type);
 	xfree(ac_cpy);
-	return SLURM_SUCCESS;
 
- inval:	for (i=0; i<ac_cnt; i++)
-		xfree(ac_list[i]);
-	xfree(ac_list);
-	xfree(ac_type);
-	xfree(ac_cpy);
-	return ESLURM_INVALID_ACCOUNT;
+	if (rc != SLURM_SUCCESS)
+		rc = ESLURM_INVALID_ACCOUNT;
+	return rc;
 }
 
 /*
@@ -1596,12 +1700,11 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
  */
 static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 {
-	char *last = NULL, *u_cpy = NULL, *tmp = NULL, *tok;
-	int u_cnt = 0, i, j, k;
+	char *last = NULL, *u_cpy = NULL, *tok;
+	int u_cnt = 0, i;
 	uid_t *u_list, u_tmp;
-	int *u_type, minus_user = 0, plus_user = 0;
+	int *u_type, minus_user = 0, plus_user = 0, rc = ESLURM_USER_ID_MISSING;
 	char **u_name;
-	bool found_it;
 
 	if (!users)
 		return ESLURM_USER_ID_MISSING;
@@ -1655,126 +1758,18 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 		return SLURM_SUCCESS;
 	}
 
-	/*
-	 * If: The update sets a new list (it was previously empty).
-	 * All users are negated, so this is a new exclusion list.
-	 * NOTE: An empty list is always of type "inclusion".
-	 */
-	if ((resv_ptr->user_cnt == 0) && minus_user && !plus_user)
-		resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
-
-	if (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT) {
-		/* change minus_user to plus_user (add to NOT list) and
-		 * change plus_user to minus_user (remove from NOT list) */
-		for (i = 0; i < u_cnt; i++) {
-			if (u_type[i] == 1)
-				u_type[i] = 2;
-			else if (u_type[i] == 2)
-				u_type[i] = 1;
-		}
-		if (minus_user && !plus_user) {
-			minus_user = false;
-			plus_user  = true;
-		} else if (!minus_user && plus_user) {
-			minus_user = true;
-			plus_user  = false;
-		}
-	}
-
-	/*
-	 * At this point, minus/plus mean removing/adding literally to the list.
-	 * If "RESV_CTLD_USER_NOT" was previously set, it means the list is of
-	 * type "exclusion", otherwise it means "inclusion".
-	 */
-	if (minus_user) {
-		if (resv_ptr->user_cnt == 0)
-			goto inval;
-		for (i=0; i<u_cnt; i++) {
-			if (u_type[i] != 1)	/* not minus */
-				continue;
-			found_it = false;
-			for (j=0; j<resv_ptr->user_cnt; j++) {
-				if (resv_ptr->user_list[j] != u_list[i])
-					continue;
-				found_it = true;
-				resv_ptr->user_cnt--;
-				for (k=j; k<resv_ptr->user_cnt; k++) {
-					resv_ptr->user_list[k] =
-						resv_ptr->user_list[k+1];
-				}
-				break;
-			}
-			if (!found_it)
-				continue;
-
-			/* Now we need to remove from users string */
-			k = strlen(u_name[i]);
-			tmp = resv_ptr->users;
-			while ((tok = xstrstr(tmp, u_name[i]))) {
-				if (((tok != resv_ptr->users) &&
-				     (tok[-1] != ',') && (tok[-1] != '-')) ||
-				    ((tok[k] != '\0') && (tok[k] != ','))) {
-					tmp = tok + 1;
-					continue;
-				}
-				if (tok[-1] == '-') {
-					tok--;
-					k++;
-				}
-				if (tok[-1] == ',') {
-					tok--;
-					k++;
-				} else if (tok[k] == ',')
-					k++;
-				for (j=0; ; j++) {
-					tok[j] = tok[j+k];
-					if (tok[j] == '\0')
-						break;
-				}
-			}
-		}
-		if ((resv_ptr->users == NULL) ||
-		    (strlen(resv_ptr->users) == 0)) {
-			resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
-			xfree(resv_ptr->users);
-		}
-	}
-
-	if (plus_user) {
-		for (i=0; i<u_cnt; i++) {
-			if (u_type[i] != 2)	/* not plus */
-				continue;
-			found_it = false;
-			for (j=0; j<resv_ptr->user_cnt; j++) {
-				if (resv_ptr->user_list[j] != u_list[i])
-					continue;
-				found_it = true;
-				break;
-			}
-			if (found_it)
-				continue;	/* duplicate entry */
-			if (resv_ptr->users && resv_ptr->users[0])
-				xstrcat(resv_ptr->users, ",");
-			if (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT)
-				xstrcat(resv_ptr->users, "-");
-			xstrcat(resv_ptr->users, u_name[i]);
-			xrealloc(resv_ptr->user_list,
-				 sizeof(uid_t) * (resv_ptr->user_cnt + 1));
-			resv_ptr->user_list[resv_ptr->user_cnt++] =
-				u_list[i];
-		}
-	}
+	rc = _handle_add_remove_names(resv_ptr, RESV_CTLD_USER_NOT,
+				      u_cnt, u_name, u_list, u_type,
+				      minus_user, plus_user);
+inval:
 	xfree(u_cpy);
 	xfree(u_list);
 	xfree(u_name);
 	xfree(u_type);
-	return SLURM_SUCCESS;
 
- inval:	xfree(u_cpy);
-	xfree(u_list);
-	xfree(u_name);
-	xfree(u_type);
-	return ESLURM_USER_ID_MISSING;
+	if (rc != SLURM_SUCCESS)
+		rc = ESLURM_USER_ID_MISSING;
+	return rc;
 }
 
 /*
