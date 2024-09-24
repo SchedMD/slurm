@@ -44,7 +44,7 @@ wait_for_command_match "$sacct -X -n -j $job_id" "RUNNING"
 
 set out [run_command_output -fail "$seff $job_id"]
 subtest {[regexp "State: RUNNING" $out]} "Job should be reported as RUNNING by seff"
-subtest {[regexp "WARNING: Efficiency statistics may be misleading for RUNNING jobs." $out]} "seff output should contain warning about statistics for RUNNING job"
+subtest {[regexp "WARNING: Efficiency statistics can only be obtained after the job has ended as seff tool is based on the accounting database data." $out]} "seff output should contain warning about statistics for RUNNING job"
 
 wait_for_command_match "$sacct -X -n -j $job_id" "COMPLETED"
 set out [run_command_output -fail "$seff $job_id"]
