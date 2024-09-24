@@ -920,8 +920,7 @@ was not specified) as one task per requested thread.
 
 .TP
 \fB\-\-get\-user\-env\fR[=\fItimeout\fR][\fImode\fR]
-This option will load login environment variables for the user specified
-in the \fB\-\-uid\fR option.
+This option will load login environment variables for the user.
 The environment variables are retrieved by running something along the lines of
 "su \- <username> \-c /usr/bin/env" and parsing the output.
 Be aware that any environment variables already set in salloc's environment
@@ -945,14 +944,6 @@ not limited (check that \fB/proc/sys/user/max_[pid|mnt]_namespaces\fR
 is not 0). Although they are not strictly mandatory for \fB--get-user-env\fR
 to work, they ensure that there are no orphan processes left after the
 environment is retrieved.
-.IP
-
-.TP
-\fB\-\-gid\fR=<\fIgroup\fR>
-Submit the job with the specified \fIgroup\fR's group access permissions.
-\fIgroup\fR may be the group name or the numerical group ID.
-In the default Slurm configuration, this option is only valid when used
-by the user root.
 .IP
 
 .TP
@@ -2276,18 +2267,6 @@ with an explicit \-\-tres\-bind specification.
 \fBNOTE\fR: Invalid TRES for \-\-tres\-per\-task include
 bb,billing,energy,fs,mem,node,pages,vmem.
 .br
-.IP
-
-.TP
-\fB\-\-uid\fR=<\fIuser\fR>
-Attempt to submit and/or run a job as \fIuser\fR instead of the
-invoking user id. The invoking user's credentials will be used
-to check access permissions for the target partition. This option
-is only valid for user root. This option may be used by user root
-may use this option to run jobs as a normal user in a RootOnly
-partition for example. If run as root, \fBsalloc\fR will drop
-its permissions to the uid specified after node allocation is
-successful. \fIuser\fR may be the user name or numerical user ID.
 .IP
 
 .TP
