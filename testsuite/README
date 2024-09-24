@@ -793,6 +793,7 @@ test_102_#   Testing of sacctmgr options.
 test_102_1   /commands/sacctmgr/test_federation.py
 test_102_2   /commands/sacctmgr/test_--usage.py
 test_102_3   /commands/sacctmgr/test_--json.py
+test_102_4   /commands/sacctmgr/test_ping.py
 
 test_103_#   Testing of salloc options.
 =======================================
