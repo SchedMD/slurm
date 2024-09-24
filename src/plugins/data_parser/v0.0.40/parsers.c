@@ -2086,11 +2086,11 @@ static int DUMP_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 	inf = data_key_set(dst, "infinite");
 	num = data_key_set(dst, "number");
 
-	if ((uint32_t) *src == INFINITE) {
+	if ((((uint32_t) *src) == INFINITE) || isinf(*src)) {
 		data_set_bool(set, false);
 		data_set_bool(inf, true);
 		data_set_float(num, 0);
-	} else if ((uint32_t) *src == NO_VAL) {
+	} else if ((((uint32_t) *src) == NO_VAL) || isnan(*src)) {
 		data_set_bool(set, false);
 		data_set_bool(inf, false);
 		data_set_float(num, 0);
