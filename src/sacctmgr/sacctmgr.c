@@ -429,9 +429,14 @@ static int _ping(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	for (int i = 0; pings[i].hostname; i++) {
-		_print_db_ping(&pings[i]);
-		_set_ping_exit_code(&pings[i]);
+	if (mime_type) {
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_PING_RESP, pings, argc,
+				     argv, db_conn, mime_type, data_parser, rc);
+	} else  {
+		for (int i = 0; pings[i].hostname; i++) {
+			_print_db_ping(&pings[i]);
+			_set_ping_exit_code(&pings[i]);
+		}
 	}
 
 	xfree(pings);
