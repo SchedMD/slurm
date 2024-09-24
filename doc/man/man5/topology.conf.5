@@ -1,4 +1,4 @@
-.TH "topology.conf" "5" "Slurm Configuration File" "November 2023" "Slurm Configuration File"
+.TH "topology.conf" "5" "Slurm Configuration File" "September 2024" "Slurm Configuration File"
 
 .SH "NAME"
 topology.conf \-  Slurm configuration file for the topology plugins
@@ -86,12 +86,8 @@ as possible on the first available resources.
 Defined blocks of nodes are paired with other contiguous blocks, to create
 a higher level block of nodes. These larger blocks can then be paired with
 other blocks at the same level for bigger and bigger blocks of contiguous
-nodes with optimized communication between them. Levels are defined as
-level 0 being a single defined block, level 1 being a pair of blocks,
-level 2 being a group of 4 blocks, or as many as can be grouped together
-if there are an uneven number of blocks, level 3 being a group of (up to)
-8 blocks, etc. You can define how many levels you want to enforce jobs
-remain contiguous across with \fBBlockLevels\fR.
+nodes with optimized communication between them. The enforced block sizes
+are defined by \fBBlockSizes\fR.
 
 .LP
 The overall configuration parameters available for topology/block include:
