@@ -153,9 +153,9 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 
 			str_bsize = strtok_r(NULL, ",", &save_ptr);
 		}
-		if (bsize < 0) {
+		if (bsize <= 0) {
 			s_p_hashtbl_destroy(conf_hashtbl);
-			fatal("Invalid BlockLevels");
+			fatal("Invalid BlockSizes value: %s", str_bsize);
 		}
 	}
 	xfree(tmp_str);
@@ -312,7 +312,8 @@ extern void block_record_validate(void)
 			      ptr->block_name);
 		}
 	}
-
+	if (!bblock_node_cnt)
+		fatal("Block not contains any nodes");
 	if (blocks_nodes_bitmap) {
 		i = bit_clear_count(blocks_nodes_bitmap);
 		if (i > 0) {

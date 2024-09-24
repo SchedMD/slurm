@@ -172,6 +172,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix suspending/resuming steps running under a 23.02 slurmstepd process.
  -- Fix options like sprio --me and squeue --me for users with a uid greater
     than 2147483647.
+ -- fatal() if BlockSizes=0. This value is invalid and would otherwise cause the
+    slurmctld to crash.
 
 * Changes in Slurm 24.05.3
 ==========================
