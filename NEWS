@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix stepmgr creating job steps concurrently.
  -- data_parser/v0.0.40 - Avoid dumping "Infinity" for NO_VAL tagged "number"
     fields.
+ -- data_parser/v0.0.41 - Avoid dumping "Infinity" for NO_VAL tagged "number"
+    fields.
 
 * Changes in Slurm 24.05.3
 ==========================
