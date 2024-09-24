@@ -154,6 +154,13 @@ openapi-generator-cli generate -i openapi.json -g html -o rest_api_docs
 <li>Point browser to <code>rest_api_docs/index.html</code></li>
 </ol></p>
 
+<p>Swagger provides a <a href="https://editor-next.swagger.io/">web editor</a>
+to view and interact with the generated OAS. It makes generating clients and
+documentation via
+<a href="https://swagger.io/tools/swagger-codegen/">Swagger Codegen</a>
+relatively simple.
+</p>
+
 <h2 id="client-design">Client Design
 <a class="slurm_link" href="#client-design"></a>
 </h2>
@@ -279,6 +286,6 @@ confusing while looking at diffs. The example above shows the inlining of
 Depending on the generated client, that change may not change the
 resultant client code at all.</p>
 
-<p style="text-align:center;">Last modified 08 August 2024</p>
+<p style="text-align:center;">Last modified 24 September 2024</p>
 
 <!--#include virtual="footer.txt"-->
