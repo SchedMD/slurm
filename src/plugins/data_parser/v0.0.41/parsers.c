@@ -2428,9 +2428,9 @@ static int DUMP_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	if ((uint32_t) *src == INFINITE) {
+	if ((((uint32_t) *src) == INFINITE) || isinf(*src)) {
 		fstruct.infinite = true;
-	} else if ((uint32_t) *src == NO_VAL) {
+	} else if ((((uint32_t) *src) == NO_VAL) || isnan(*src)) {
 		/* nothing to do */
 	} else {
 		fstruct.set = true;
