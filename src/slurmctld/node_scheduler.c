@@ -2538,6 +2538,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 	List gres_list_pre = NULL;
 	bool gres_list_pre_set = false;
+	job_record_t *tmp_job;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -2942,7 +2943,10 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 
 	job_end_time_reset(job_ptr);
 
-	(void) job_array_post_sched(job_ptr);
+	tmp_job = job_array_post_sched(job_ptr);
+	if (tmp_job && (tmp_job != job_ptr) && (orig_resv_port_cnt == NO_VAL16))
+		tmp_job->resv_port_cnt = orig_resv_port_cnt;
+
 	if (bb_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error_code = ESLURM_INVALID_BURST_BUFFER_REQUEST;
@@ -3101,7 +3105,6 @@ cleanup:
 	}
 
 	if (error_code != SLURM_SUCCESS) {
-		FREE_NULL_BITMAP(job_ptr->node_bitmap);
 		if (gres_list_pre_set &&
 		    (job_ptr->gres_list_req != gres_list_pre)) {
 			FREE_NULL_LIST(job_ptr->gres_list_req);
@@ -3114,6 +3117,7 @@ cleanup:
 			resv_port_job_free(job_ptr);
 			xfree(job_ptr->resv_ports);
 		}
+		FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	} else
 		FREE_NULL_LIST(gres_list_pre);
 
