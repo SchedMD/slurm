@@ -139,6 +139,8 @@ documents those changes that are of interest to users and administrators.
     and for commands:
       sshare --json
       sshare --yaml
+ -- data_parser/v0.0.42 - Avoid dumping "Infinity" for NO_VAL tagged "number"
+    fields.
 
 * Changes in Slurm 24.05.4
 ==========================
