@@ -4325,6 +4325,38 @@ static int DUMP_FUNC(CONTROLLER_PING_RESULT)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(SLURMDBD_PING_MODE)
+
+static int DUMP_FUNC(SLURMDBD_PING_MODE)(const parser_t *const parser,
+					 void *obj, data_t *dst, args_t *args)
+{
+	int *mode_ptr = obj;
+	int mode = *mode_ptr;
+
+	if (mode == 0)
+		data_set_string(dst, "primary");
+	else if ((mode == 1) && slurm_conf.accounting_storage_host)
+		data_set_string(dst, "backup");
+
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(SLURMDBD_PING_RESULT)
+
+static int DUMP_FUNC(SLURMDBD_PING_RESULT)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	bool *ping_ptr = obj;
+	int ping = *ping_ptr;
+
+	if (ping)
+		data_set_string(dst, "UP");
+	else
+		data_set_string(dst, "DOWN");
+
+	return SLURM_SUCCESS;
+}
+
 PARSE_DISABLED(STEP_INFO_MSG)
 
 static int DUMP_FUNC(STEP_INFO_MSG)(const parser_t *const parser, void *obj,
@@ -7937,6 +7969,16 @@ static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdbd_ping_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(SLURMDBD_PING)[] = {
+	add_parse(STRING, hostname, "hostname", "Target for ping"),
+	add_parse(SLURMDBD_PING_RESULT, pinged, "pinged", "Ping result"),
+	add_parse(UINT64, latency, "latency", "Number of microseconds it took to successfully ping or timeout"),
+	add_parse(SLURMDBD_PING_MODE, offset, "mode", "The operating mode of the responding slurmdbd"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
 	add_parser(job_step_info_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) \
 	add_parser_skip(job_step_info_t, field)
@@ -9382,6 +9424,7 @@ add_openapi_response_single(OPENAPI_ASSOCS_REMOVED_RESP, STRING_LIST, "removed_a
 add_openapi_response_single(OPENAPI_CLUSTERS_RESP, CLUSTER_REC_LIST, "clusters", "clusters");
 add_openapi_response_single(OPENAPI_CLUSTERS_REMOVED_RESP, STRING_LIST, "deleted_clusters", "deleted_clusters");
 add_openapi_response_single(OPENAPI_INSTANCES_RESP, INSTANCE_LIST, "instances", "instances");
+add_openapi_response_single(OPENAPI_SLURMDBD_PING_RESP, SLURMDBD_PING_ARRAY, "pings", "pings");
 add_openapi_response_single(OPENAPI_SLURMDBD_STATS_RESP, STATS_REC_PTR, "statistics", "statistics");
 add_openapi_response_single(OPENAPI_SLURMDBD_JOBS_RESP, JOB_LIST, "jobs", "jobs");
 add_openapi_response_single(OPENAPI_SLURMDBD_QOS_RESP, QOS_LIST, "qos", "List of QOS");
@@ -9852,6 +9895,8 @@ static const parser_t parsers[] = {
 	addpsp(MEM_PER_NODE, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
 	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(SLURMDBD_PING_MODE, int, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(SLURMDBD_PING_RESULT, bool, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsa(HOSTLIST, STRING, hostlist_t *, NEED_NONE, NULL),
 	addpsa(HOSTLIST_STRING, STRING, char *, NEED_NONE, NULL),
 	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
@@ -9959,6 +10004,7 @@ static const parser_t parsers[] = {
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
+	addnt(SLURMDBD_PING_ARRAY, SLURMDBD_PING),
 	addntp(NODE_ARRAY, NODE_PTR),
 	addntp(PARTITION_INFO_ARRAY, PARTITION_INFO_PTR),
 	addntp(STEP_INFO_ARRAY, STEP_INFO_PTR),
@@ -10015,6 +10061,7 @@ static const parser_t parsers[] = {
 	addpap(JOB_INFO, slurm_job_info_t, NULL, NULL),
 	addpap(JOB_RES, job_resources_t, NULL, NULL),
 	addpap(CONTROLLER_PING, controller_ping_t, NULL, NULL),
+	addpap(SLURMDBD_PING, slurmdbd_ping_t, NULL, NULL),
 	addpap(STEP_INFO, job_step_info_t, NULL, NULL),
 	addpap(PARTITION_INFO, partition_info_t, NULL, NULL),
 	addpap(SINFO_DATA, sinfo_data_t, NULL, NULL),
@@ -10108,6 +10155,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_CLUSTERS_REMOVED_RESP),
 	addoar(OPENAPI_INSTANCES_RESP),
 	addpap(OPENAPI_SLURMDBD_CONFIG_RESP, openapi_resp_slurmdbd_config_t, NULL, NULL),
+	addoar(OPENAPI_SLURMDBD_PING_RESP),
 	addoar(OPENAPI_SLURMDBD_STATS_RESP),
 	addoar(OPENAPI_SLURMDBD_JOBS_RESP),
 	addoar(OPENAPI_SLURMDBD_QOS_RESP),
