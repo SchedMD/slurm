@@ -2288,6 +2288,74 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level)
 	}
 }
 
+extern int slurmdb_ping(char *rem_host)
+{
+	int rc;
+	persist_conn_t *persist_conn = xmalloc(sizeof(*persist_conn));
+
+	persist_conn->cluster_name = xstrdup(slurm_conf.cluster_name);
+	persist_conn->flags = PERSIST_FLAG_DBD | PERSIST_FLAG_SUPPRESS_ERR;
+	persist_conn->r_uid = SLURM_AUTH_UID_ANY;
+	persist_conn->rem_host = xstrdup(rem_host);
+	persist_conn->rem_port = slurm_conf.accounting_storage_port;
+	persist_conn->timeout = slurm_conf.msg_timeout * 1000;
+
+	rc = slurm_persist_conn_open(persist_conn);
+	slurm_persist_conn_destroy(persist_conn);
+
+	return rc;
+}
+
+static void _ping_slurmdbd(slurmdbd_ping_t *ping, int offset)
+{
+	DEF_TIMERS;
+
+	ping->offset = offset;
+
+	START_TIMER;
+	ping->pinged = !slurmdb_ping(ping->hostname);
+	END_TIMER;
+
+	ping->latency = DELTA_TIMER;
+}
+
+extern slurmdbd_ping_t *slurmdb_ping_all(void)
+{
+	slurmdbd_ping_t *pings = NULL;
+	int slurmdbd_cnt = 0;
+	int i = 0;
+
+	if (slurm_conf.accounting_storage_host)
+		slurmdbd_cnt++;
+	else
+		return NULL;
+
+	if (slurm_conf.accounting_storage_backup_host)
+		slurmdbd_cnt++;
+
+	/* Allocate enough space for backup ping if needed */
+	pings = xcalloc(slurmdbd_cnt + 1, sizeof(*pings));
+
+	pings[i].hostname = slurm_conf.accounting_storage_host;
+	_ping_slurmdbd(&pings[i], i);
+
+	/*
+	 * Don't ping backup if primary is good. slurmdbd in background mode
+	 * doesn't handle RPCs currently so it would appear down anyways.
+	 */
+	if (pings[i].pinged)
+		return pings;
+
+	if (!slurm_conf.accounting_storage_backup_host)
+		return pings;
+
+	i++;
+	pings[i].hostname = slurm_conf.accounting_storage_backup_host;
+	_ping_slurmdbd(&pings[i], i);
+
+	return pings;
+}
+
 /* This reorders the list into a alphabetical hierarchy returned in a
  * separate list. The original list is not affected. */
 extern list_t *slurmdb_get_hierarchical_sorted_assoc_list(

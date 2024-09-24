@@ -2000,6 +2000,9 @@ extern void slurmdb_init_federation_cond(slurmdb_federation_cond_t *federation,
 extern void slurmdb_init_res_cond(slurmdb_res_cond_t *cluster,
 				  bool free_it);
 
+extern int slurmdb_ping(char *rem_host);
+extern slurmdbd_ping_t *slurmdb_ping_all(void);
+
 /* The next two functions have pointers to assoc_list so do not
  * destroy assoc_list before using the list returned from this function.
  */

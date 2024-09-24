@@ -4767,6 +4767,16 @@ typedef struct {
 	int offset;
 } controller_ping_t;
 
+typedef struct {
+	char *hostname; /* symlink - do not xfree() */
+	bool pinged; /* true on successful ping */
+	long latency; /* time to ping or timeout on !pinged */
+	int offset; /* offset which defines default mode:
+		     * 0: primary
+		     * 1: backup
+		     */
+} slurmdbd_ping_t;
+
 /*****************************************************************************\
  *	SLURM PING/RECONFIGURE/SHUTDOWN FUNCTIONS
 \*****************************************************************************/
