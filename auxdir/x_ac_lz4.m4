@@ -62,11 +62,8 @@ else
         AC_SUBST(LZ4_LIBS)
         AC_DEFINE([HAVE_LZ4], [1],
                   [Define to 1 if you have 'lz4' library (-llz4)])
-        AC_MSG_RESULT([LZ4 test program built properly.])
         HAVE_LZ4=1
         break
-    else
-        AC_MSG_RESULT([LZ4 test program build failed.])
     fi
   done
 

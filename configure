@@ -23587,13 +23587,8 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 printf "%s\n" "#define HAVE_LZ4 1" >>confdefs.h
 
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: LZ4 test program built properly." >&5
-printf "%s\n" "LZ4 test program built properly." >&6; }
         HAVE_LZ4=1
         break
-    else
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: LZ4 test program build failed." >&5
-printf "%s\n" "LZ4 test program build failed." >&6; }
     fi
   done
 
