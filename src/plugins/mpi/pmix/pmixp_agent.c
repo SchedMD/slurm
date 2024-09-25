@@ -459,6 +459,36 @@ int pmixp_abort_agent_stop(void)
 	return rc;
 }
 
+/* Must be called inside locks */
+static int _agent_cleanup(void)
+{
+	int rc = SLURM_SUCCESS;
+	char c = 1;
+
+	if (_agent_tid) {
+		eio_signal_shutdown(_io_handle);
+		/* wait for the agent thread to stop */
+		slurm_thread_join(_agent_tid);
+	}
+	/* Close FDs and free structure */
+	if(_io_handle) {
+		eio_handle_destroy(_io_handle);
+		_io_handle = NULL;
+	}
+
+	if (_timer_tid) {
+		/* cancel timer */
+		if (write(timer_data.stop_out, &c, 1) == -1)
+			rc = SLURM_ERROR;
+		slurm_thread_join(_timer_tid);
+
+		/* close timer fds */
+		_shutdown_timeout_fds();
+	}
+
+	return rc;
+}
+
 int pmixp_agent_start(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -511,29 +541,8 @@ done:
 
 int pmixp_agent_stop(void)
 {
-	int rc = SLURM_SUCCESS;
-	char c = 1;
+	int rc;
 
-	if (_agent_tid) {
-		eio_signal_shutdown(_io_handle);
-		/* wait for the agent thread to stop */
-		slurm_thread_join(_agent_tid);
-	}
-	/* Close FDs and free structure */
-	if(_io_handle) {
-		eio_handle_destroy(_io_handle);
-		_io_handle = NULL;
-	}
-
-	if (_timer_tid) {
-		/* cancel timer */
-		if (write(timer_data.stop_out, &c, 1) == -1)
-			rc = SLURM_ERROR;
-		slurm_thread_join(_timer_tid);
-
-		/* close timer fds */
-		_shutdown_timeout_fds();
-	}
-
+	rc = _agent_cleanup();
 	return rc;
 }
