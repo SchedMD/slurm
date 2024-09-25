@@ -177,6 +177,7 @@ documents those changes that are of interest to users and administrators.
  -- sacctmgr - Fix issue where clearing out a preemption list using
     preempt='' would cause the given qos to no longer be preempt-able until set
     again.
+ -- Fix stepmgr creating job steps concurrently.
 
 * Changes in Slurm 24.05.3
 ==========================
