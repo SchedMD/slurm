@@ -210,6 +210,8 @@ typedef struct {
 
 typedef struct {
 	job_record_t *job_ptr;
+	uint16_t min_part_prio_tier;
+	bitstr_t *part_nodes;
 	list_itr_t *resv_list_iter;
 	bool use_none_resv_nodes;
 } top_prio_args_t;
@@ -11754,9 +11756,78 @@ static bool _can_resv_overlap(top_prio_args_t *job_args, job_record_t *job_ptr2)
 	return false;
 }
 
+static int _union_part_nodes(void *x, void *args)
+{
+	part_record_t *part_ptr = x;
+	bitstr_t *node_bitmap = args;
+
+	xassert(part_ptr);
+	xassert(node_bitmap);
+
+	bit_or(node_bitmap, part_ptr->node_bitmap);
+	return SLURM_SUCCESS;
+}
+
+static bitstr_t *_get_all_part_nodes(job_record_t *job_ptr)
+{
+	bitstr_t *node_bitmap = NULL;
+
+	if (!job_ptr->part_ptr_list)
+		return bit_copy(job_ptr->part_ptr->node_bitmap);
+
+	node_bitmap = bit_alloc(bit_size(job_ptr->part_ptr->node_bitmap));
+	list_for_each(job_ptr->part_ptr_list, _union_part_nodes, node_bitmap);
+	return node_bitmap;
+}
+
+/* Return 1 if higher, 0 if the same, and -1 if lower */
+static int _cmp_part_prio_tier(top_prio_args_t *job_args,
+			       job_record_t *job_ptr2)
+{
+	uint16_t max_prio_tier2 = job_ptr2->part_ptr->priority_tier;
+	if (job_ptr2->part_ptr_list) {
+		/* part_ptr_list is sorted by priority tier */
+		part_record_t *part_ptr = list_peek(job_ptr2->part_ptr_list);
+		max_prio_tier2 = part_ptr->priority_tier;
+	}
+
+	/*
+	 * Comparing the min partition priority tier of job_ptr1
+	 * (the job in job_args) to the max of job_ptr2 is an optimization. It
+	 * will prevent job_ptr1 from being considered top priority if it is
+	 * possible for it to start in a lower priority tier partition than what
+	 * job_ptr2 could start in, even if job_ptr1 could also potentially
+	 * start in a higher priority tier partition.
+	 */
+	if (job_args->min_part_prio_tier > max_prio_tier2)
+		return 1;
+	if (job_args->min_part_prio_tier == max_prio_tier2)
+		return 0;
+	return -1;
+}
+
+static int _set_min_prio_tier(void *x, void *arg)
+{
+	part_record_t * part_ptr = x;
+	uint16_t *min_prio_tier = arg;
+
+	xassert(part_ptr);
+	xassert(min_prio_tier);
+
+	if (part_ptr->priority_tier < *min_prio_tier)
+		*min_prio_tier = part_ptr->priority_tier;
+
+	return SLURM_SUCCESS;
+}
+
 static void _init_top_prio_args(job_record_t *job_ptr, top_prio_args_t *args)
 {
 	args->job_ptr = job_ptr;
+	args->min_part_prio_tier = job_ptr->part_ptr->priority_tier;
+	if (job_ptr->part_ptr_list)
+		list_for_each(job_ptr->part_ptr_list, _set_min_prio_tier,
+			      &args->min_part_prio_tier);
+	args->part_nodes = NULL; /* This is set later if necessary */
 	if (job_ptr->resv_list)
 		args->resv_list_iter = list_iterator_create(job_ptr->resv_list);
 	args->use_none_resv_nodes = _use_none_resv_nodes(job_ptr);
@@ -11768,6 +11839,7 @@ static void _destroy_top_prio_args(top_prio_args_t *args)
 		return;
 
 	/* Intentionaly not freeing the job_ptr */
+	FREE_NULL_BITMAP(args->part_nodes);
 	if (args->resv_list_iter)
 		list_iterator_destroy(args->resv_list_iter);
 }
@@ -11791,11 +11863,14 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 		list_itr_t *job_iterator;
 		job_record_t *job_ptr2;
 		top_prio_args_t job_args = {0};
+		bool parts_overlap = false;
 
 		top = true;	/* assume top priority until found otherwise */
 		job_iterator = list_iterator_create(job_list);
 		while ((job_ptr2 = list_next(job_iterator))) {
 			bool overlap_with_resv = false;
+			int part_prio_cmp;
+			bitstr_t *node_bitmap2 = NULL;
 
 			if (!job_args.job_ptr)
 				_init_top_prio_args(job_ptr, &job_args);
@@ -11836,31 +11911,36 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 			if (bb_g_job_test_stage_in(job_ptr2, true) != 1)
 				continue;	/* Waiting for buffer */
 
-			if (job_ptr2->part_ptr == job_ptr->part_ptr) {
-				/* same partition */
-				if (_higher_precedence(job_ptr, job_ptr2) &&
-				    !overlap_with_resv)
-					continue;
-				top = false;
-				break;
-			}
-			if (bit_overlap_any(job_ptr->part_ptr->node_bitmap,
-					    job_ptr2->part_ptr->node_bitmap) == 0)
-				continue;   /* no node overlap in partitions */
+			/*
+			 * Priority tiers doesn't matter if job_ptr2 uses a resv
+			 * and job_ptr does not since resv take precedence
+			 */
+			part_prio_cmp = overlap_with_resv ?
+				-1 : _cmp_part_prio_tier(&job_args, job_ptr2);
+			if ((part_prio_cmp == 1) ||
+			    ((part_prio_cmp == 0) &&
+			     _higher_precedence(job_ptr, job_ptr2)))
+				continue;
 
-			if (overlap_with_resv) {
-				top = false;
-				break;
+			/*
+			 * Here job_ptr2 is either in a higher priority tier
+			 * partition or is using a resv while job_ptr is not.
+			 * If partions overlap job_ptr is not top priority.
+			 */
+			if (!job_args.part_nodes) {
+				job_args.part_nodes =
+					_get_all_part_nodes(job_ptr);
 			}
+			node_bitmap2 = _get_all_part_nodes(job_ptr2);
+			parts_overlap = bit_overlap_any(job_args.part_nodes,
+							node_bitmap2);
+			FREE_NULL_BITMAP(node_bitmap2);
 
-			if ((job_ptr2->part_ptr->priority_tier >
-			     job_ptr ->part_ptr->priority_tier) ||
-			    ((job_ptr2->part_ptr->priority_tier ==
-			      job_ptr ->part_ptr->priority_tier) &&
-			     !(_higher_precedence(job_ptr, job_ptr2)))) {
-				top = false;
-				break;
-			}
+			if(!parts_overlap)
+				continue;   /* no nodes overlap in partitions */
+
+			top = false;
+			break;
 		}
 		list_iterator_destroy(job_iterator);
 		_destroy_top_prio_args(&job_args);

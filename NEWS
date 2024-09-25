@@ -179,6 +179,9 @@ documents those changes that are of interest to users and administrators.
  -- Prevent starting jobs without reservations on submit when there are pending
     jobs with reservations that have flags FLEX or ANY_NODES that can be
     scheduled on overlapping nodes.
+ -- Prevent jobs that request both high and low priority tier partitions from
+    starting on submit in lower priority tier partitions if it could delay
+    pending jobs in higher priority tier partitions.
 
 * Changes in Slurm 24.05.4
 ==========================
