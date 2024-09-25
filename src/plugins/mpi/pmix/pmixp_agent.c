@@ -364,6 +364,20 @@ static void *_pmix_abort_thread(void *args)
 	return NULL;
 }
 
+/* Must be called inside locks */
+static void _abort_agent_cleanup(void)
+{
+	if (_abort_tid) {
+		eio_signal_shutdown(_abort_handle);
+		slurm_thread_join(_abort_tid);
+	}
+	/* Close FDs and free structure */
+	if (_abort_handle) {
+		eio_handle_destroy(_abort_handle);
+		_abort_handle = NULL;
+	}
+}
+
 int pmixp_abort_agent_start(char ***env)
 {
 	int abort_server_socket = -1, rc = SLURM_SUCCESS;
@@ -419,7 +433,7 @@ done:
 
 int pmixp_abort_agent_stop(void)
 {
-	int rc = SLURM_SUCCESS;
+	int rc;
 
 	slurm_mutex_lock(&abort_mutex);
 
@@ -429,15 +443,7 @@ int pmixp_abort_agent_stop(void)
 	if (_abort_agent_start_count) {
 		slurm_cond_wait(&abort_mutex_cond, &abort_mutex);
 	} else {
-		if (_abort_tid) {
-			eio_signal_shutdown(_abort_handle);
-			slurm_thread_join(_abort_tid);
-		}
-		/* Close FDs and free structure */
-		if (_abort_handle) {
-			eio_handle_destroy(_abort_handle);
-			_abort_handle = NULL;
-		}
+		_abort_agent_cleanup();
 		/*
 		 * Signal the other threads to let them know rc has now a valid
 		 * value.
