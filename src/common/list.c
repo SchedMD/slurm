@@ -125,7 +125,17 @@ struct xlist {
 	list_itr_t *iNext;		/* iterator chain for list_destroy() */
 	ListDelF fDel;			/* function to delete node data */
 	pthread_rwlock_t mutex;		/* mutex to protect access to list */
+	list_node_t *free_nodes;	/* head of unused nodes */
+	list_node_t *node_allocations;	/* memory for additional nodes */
+	list_node_t nodes[];
 };
+
+/*
+ * Fix as many list_node_t elements into a 4k page alongside the list as
+ * possible. Leave at least 32 bytes off to account for xmalloc() and malloc()
+ * overhead.
+ */
+static const int nodes_in_page = (4064 - sizeof(list_t)) / sizeof(list_node_t);
 
 /****************
  *  Prototypes  *
@@ -145,7 +155,7 @@ static int _list_mutex_is_locked(pthread_rwlock_t *mutex);
 
 extern list_t *list_create(ListDelF f)
 {
-	list_t *l = xmalloc(sizeof(*l));
+	list_t *l = xmalloc(sizeof(*l) + (nodes_in_page * sizeof(list_node_t)));
 
 	l->magic = LIST_MAGIC;
 	l->head = NULL;
@@ -154,6 +164,11 @@ extern list_t *list_create(ListDelF f)
 	l->fDel = f;
 	l->count = 0;
 	slurm_rwlock_init(&l->mutex);
+
+	l->node_allocations = NULL;
+	l->free_nodes = &l->nodes[0];
+	for (int i = 0; i < (nodes_in_page - 1); i++)
+		l->nodes[i].next = &l->nodes[i + 1];
 
 	return l;
 }
@@ -177,9 +192,13 @@ extern void list_destroy(list_t *l)
 	}
 	p = l->head;
 	while (p) {
-		pTmp = p->next;
 		if (p->data && l->fDel)
 			l->fDel(p->data);
+		p = p->next;
+	}
+	p = l->node_allocations;
+	while (p) {
+		pTmp = p->next;
 		xfree(p);
 		p = pTmp;
 	}
@@ -944,7 +963,26 @@ static void _list_node_create(list_t *l, list_node_t **pp, void *x)
 	xassert(pp != NULL);
 	xassert(x != NULL);
 
-	p = xmalloc(sizeof(list_node_t));
+	/*
+	 * Ran out of spare nodes. Allocate another page worth of nodes,
+	 * then link them together in the free_nodes list.
+	 */
+	if (!l->free_nodes) {
+		list_node_t *ln = xcalloc(nodes_in_page,
+					  sizeof(list_node_t));
+		/*
+		 * Index 0 is used to link the node_allocations together,
+		 * and thus is unavailable for use as a list node.
+		 */
+		ln[0].next = l->node_allocations;
+		l->node_allocations = &ln[0];
+		l->free_nodes = &ln[1];
+		for (int i = 1; i < (nodes_in_page - 1); i++)
+			ln[i].next = &ln[i + 1];
+	}
+
+	p = l->free_nodes;
+	l->free_nodes = p->next;
 
 	p->data = x;
 	if (!(p->next = *pp))
@@ -998,7 +1036,10 @@ static void *_list_node_destroy(list_t *l, list_node_t **pp)
 		xassert((i->pos == *i->prev) ||
 		       ((*i->prev) && (i->pos == (*i->prev)->next)));
 	}
-	xfree(p);
+
+	/* push into free_nodes list */
+	p->next = l->free_nodes;
+	l->free_nodes = p;
 
 	return v;
 }
