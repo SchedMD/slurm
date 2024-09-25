@@ -408,14 +408,17 @@ done:
 
 int pmixp_abort_agent_stop(void)
 {
+	int rc;
+
 	slurm_mutex_lock(&abort_mutex);
 	if (_abort_tid) {
 		eio_signal_shutdown(_abort_handle);
 		slurm_thread_join(_abort_tid);
 	}
+	rc = pmixp_abort_code_get();
 	slurm_mutex_unlock(&abort_mutex);
 
-	return pmixp_abort_code_get();
+	return rc;
 }
 
 int pmixp_agent_start(void)
