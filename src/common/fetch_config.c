@@ -90,6 +90,9 @@ static config_response_msg_t *_fetch_parent(pid_t pid)
 	buffer = init_buf(len);
 	safe_read(to_parent[0], buffer->head, len);
 
+	waitpid(pid, &status, 0);
+	debug2("%s: status from child %d", __func__, status);
+
 	if (unpack_config_response_msg(&config, buffer,
 				       SLURM_PROTOCOL_VERSION)) {
 		FREE_NULL_BUFFER(buffer);
@@ -98,8 +101,6 @@ static config_response_msg_t *_fetch_parent(pid_t pid)
 	}
 	FREE_NULL_BUFFER(buffer);
 
-	waitpid(pid, &status, 0);
-	debug2("%s: status from child %d", __func__, status);
 	return config;
 
 rwfail:
