@@ -365,7 +365,7 @@ static void *_pmix_abort_thread(void *args)
 
 int pmixp_abort_agent_start(char ***env)
 {
-	int abort_server_socket = -1;
+	int abort_server_socket = -1, rc = SLURM_SUCCESS;
 	slurm_addr_t abort_server;
 	eio_obj_t *obj;
 	uint16_t *ports;
@@ -377,7 +377,8 @@ int pmixp_abort_agent_start(char ***env)
 		abort_server_socket = slurm_init_msg_engine_port(0);
 	if (abort_server_socket < 0) {
 		PMIXP_ERROR("slurm_init_msg_engine_port() failed: %m");
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto done;
 	}
 
 	memset(&abort_server, 0, sizeof(slurm_addr_t));
@@ -385,7 +386,8 @@ int pmixp_abort_agent_start(char ***env)
 	if (slurm_get_stream_addr(abort_server_socket, &abort_server)) {
 		PMIXP_ERROR("slurm_get_stream_addr() failed: %m");
 		close(abort_server_socket);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto done;
 	}
 	PMIXP_DEBUG("Abort agent port: %d", slurm_get_port(&abort_server));
 	setenvf(env, PMIXP_SLURM_ABORT_AGENT_PORT, "%d",
@@ -399,8 +401,9 @@ int pmixp_abort_agent_start(char ***env)
 	/* wait for the abort EIO thread to initialize */
 	slurm_cond_wait(&abort_mutex_cond, &abort_mutex);
 
+done:
 	slurm_mutex_unlock(&abort_mutex);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 int pmixp_abort_agent_stop(void)
