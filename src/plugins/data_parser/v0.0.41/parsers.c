@@ -2419,18 +2419,18 @@ static int DUMP_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 	FLOAT64_NO_VAL_t fstruct = {0};
 
 	if (is_complex_mode(args)) {
-		if (isinf(*src))
+		if ((((uint32_t) *src) == INFINITE) || isinf(*src))
 			data_set_string(dst, "Infinity");
-		else if (isnan(*src))
+		else if ((((uint32_t) *src) == NO_VAL) || isnan(*src))
 			data_set_null(dst);
 		else
 			data_set_float(dst, *src);
 		return SLURM_SUCCESS;
 	}
 
-	if ((uint32_t) *src == INFINITE) {
+	if ((((uint32_t) *src) == INFINITE) || isinf(*src)) {
 		fstruct.infinite = true;
-	} else if ((uint32_t) *src == NO_VAL) {
+	} else if ((((uint32_t) *src) == NO_VAL) || isnan(*src)) {
 		/* nothing to do */
 	} else {
 		fstruct.set = true;
