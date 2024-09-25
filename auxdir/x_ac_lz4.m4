@@ -10,17 +10,15 @@
 #
 ##*****************************************************************************
 
-AC_DEFUN([X_AC_LZ4],
+AC_DEFUN([X_AC_LZ4], [
 #
 # Handle user hints
 #
-[AC_MSG_CHECKING(if lz4 is wanted)
 lz4_places="/usr/local /usr /opt/local /sw"
 AC_ARG_WITH([lz4],
 [  --with-lz4=PATH         Specify path to liblz4 installation],
 [AS_IF([test "x$with_lz4" != xno && test "x$with_lz4" != xyes],
-       [lz4_places="$with_lz4"; AC_MSG_RESULT([yes])],
-       [AC_MSG_RESULT([no])])])
+       [lz4_places="$with_lz4"])])
 
 #
 # Locate lz4, if installed

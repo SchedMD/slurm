@@ -23469,11 +23469,10 @@ printf "%s\n" "#define H5_USE_18_API 1" >>confdefs.h
   fi
 
 
+
 #
 # Handle user hints
 #
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if lz4 is wanted" >&5
-printf %s "checking if lz4 is wanted... " >&6; }
 lz4_places="/usr/local /usr /opt/local /sw"
 
 # Check whether --with-lz4 was given.
@@ -23481,11 +23480,7 @@ if test ${with_lz4+y}
 then :
   withval=$with_lz4; if test "x$with_lz4" != xno && test "x$with_lz4" != xyes
 then :
-  lz4_places="$with_lz4"; { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
+  lz4_places="$with_lz4"
 fi
 fi
 
