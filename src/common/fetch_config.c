@@ -81,8 +81,11 @@ static config_response_msg_t *_fetch_parent(pid_t pid)
 	 * config file for some reason. The child will have already printed
 	 * some error messages about this, so just return.
 	 */
-	if (len <= 0)
+	if (len <= 0) {
+		waitpid(pid, &status, 0);
+		debug2("%s: status from child %d", __func__, status);
 		return NULL;
+	}
 
 	buffer = init_buf(len);
 	safe_read(to_parent[0], buffer->head, len);
