@@ -149,6 +149,7 @@ static int  _build_account_list(char *accounts, int *account_cnt,
 static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 			    bool *user_not, bool strict);
 static void _clear_job_resv(slurmctld_resv_t *resv_ptr);
+static int _cmp_resv_id(void *x, void *y);
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr);
 static void _del_resv_rec(void *x);
 static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode);
@@ -695,6 +696,18 @@ static int _queue_magnetic_resv(void *x, void *key)
 	job_queue_req->resv_ptr = resv_ptr;
 	job_queue_append_internal(job_queue_req);
 
+	return 0;
+}
+
+static int _cmp_resv_id(void *x, void *y)
+{
+	slurmctld_resv_t *resv_ptr1 = *(slurmctld_resv_t **) x;
+	slurmctld_resv_t *resv_ptr2 = *(slurmctld_resv_t **) y;
+
+	if (resv_ptr1->resv_id < resv_ptr2->resv_id)
+		return -1;
+	if (resv_ptr1->resv_id > resv_ptr2->resv_id)
+		return 1;
 	return 0;
 }
 
@@ -4956,6 +4969,9 @@ static int _get_resv_list(job_record_t *job_ptr, char **err_resv)
 		token = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp_name);
+
+	if (rc == SLURM_SUCCESS)
+		list_sort(job_ptr->resv_list, _cmp_resv_id);
 
 	return rc;
 }
