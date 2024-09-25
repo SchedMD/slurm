@@ -262,6 +262,8 @@ documents those changes that are of interest to users and administrators.
  -- Removed src/slurmrestd/plugins/openapi/slurmdbd/openapi.json from source
     repository. slurmrest should always be used to generate a new OpenAPI
     schema (aka openapi.json or openapi.yaml) after compilation.
+ -- mpi/pmix - Fix potential deadlock and races with het jobs, and fix potential
+    memory and FDs leaks.
 
 * Changes in Slurm 24.05.5
 ==========================
