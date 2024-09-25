@@ -535,6 +535,8 @@ int pmixp_agent_start(void)
 		    (unsigned long) _timer_tid);
 
 done:
+	if (rc != SLURM_SUCCESS)
+		_agent_cleanup();
 	slurm_mutex_unlock(&agent_mutex);
 	return rc;
 }
