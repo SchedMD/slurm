@@ -313,7 +313,6 @@ static void *_agent_thread(void *unused)
 	eio_handle_mainloop(_io_handle);
 
 	PMIXP_DEBUG("agent thread exit");
-	eio_handle_destroy(_io_handle);
 
 	return NULL;
 }
@@ -434,6 +433,11 @@ int pmixp_abort_agent_stop(void)
 			eio_signal_shutdown(_abort_handle);
 			slurm_thread_join(_abort_tid);
 		}
+		/* Close FDs and free structure */
+		if (_abort_handle) {
+			eio_handle_destroy(_abort_handle);
+			_abort_handle = NULL;
+		}
 		/*
 		 * Signal the other threads to let them know rc has now a valid
 		 * value.
@@ -505,6 +509,11 @@ int pmixp_agent_stop(void)
 		eio_signal_shutdown(_io_handle);
 		/* wait for the agent thread to stop */
 		slurm_thread_join(_agent_tid);
+	}
+	/* Close FDs and free structure */
+	if(_io_handle) {
+		eio_handle_destroy(_io_handle);
+		_io_handle = NULL;
 	}
 
 	if (_timer_tid) {
