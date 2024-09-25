@@ -427,6 +427,9 @@ int pmixp_abort_agent_start(char ***env)
 	slurm_cond_wait(&abort_mutex_cond, &abort_mutex);
 
 done:
+	/* If start failed, 1st thread will clean here */
+	if ((_abort_agent_start_count == 1) && (rc != SLURM_SUCCESS))
+		_abort_agent_cleanup();
 	slurm_mutex_unlock(&abort_mutex);
 	return rc;
 }
