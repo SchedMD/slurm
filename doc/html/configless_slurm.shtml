@@ -123,6 +123,12 @@ is as follows:</p>
 </li>
 <li>The SLURM_CONF_SERVER environment variable (if set)</li>
 <li>Any DNS SRV records (from lowest priority value to highest)</li>
+  <ul>
+    <li>The TTL (Time To Live) of the SRV record does not affect the validity
+    of the obtained configuration. The nodes will have to be notified of any
+    changes to the configuration file through an
+    <span class=commandline>scontrol reconfig</span> or a slurmd restart.</li>
+  </ul>
 </ol>
 
 <p>Supported configuration files are:</p>
@@ -141,6 +147,6 @@ is as follows:</p>
 <li>topology.conf</li>
 </ul>
 
-<p style="text-align:center;">Last modified 6 Mar 2024</p>
+<p style="text-align:center;">Last modified 25 September 2024</p>
 
 <!--#include virtual="footer.txt"-->
