@@ -124,6 +124,8 @@ int main(int argc, char *argv[])
 	orig_config = "gpu:8";
 	gres_init_node_config(orig_config, &node_gres_list);
 	cpu_count = strtol(argv[4], NULL, 10);
+	core_count = strtol(argv[5], NULL, 10);
+	sock_count = strtol(argv[6], NULL, 10);
 	node_name = "test_node";
 	rc = gres_g_node_config_load(cpu_count, node_name, node_gres_list,
 				     NULL, NULL);
@@ -144,8 +146,6 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	core_count = cpu_count;
-	sock_count = 1;
 	rc = gres_node_config_validate(node_name, orig_config,
 				       &new_config, &node_gres_list,
 				       cpu_count, core_count, sock_count,
