@@ -211,6 +211,7 @@ typedef struct {
 typedef struct {
 	job_record_t *job_ptr;
 	list_itr_t *resv_list_iter;
+	bool use_none_resv_nodes;
 } top_prio_args_t;
 
 /* Global variables */
@@ -11647,6 +11648,24 @@ static bool _higher_precedence(job_record_t *job_ptr, job_record_t *job_ptr2)
 	return job_ptr->job_id < job_ptr2->job_id;
 }
 
+static int _is_flex_or_any_nodes(void *x, void *none)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	xassert(resv_ptr);
+	if (resv_ptr->flags & (RESERVE_FLAG_FLEX | RESERVE_FLAG_ANY_NODES))
+		return true;
+	return false;
+}
+
+static bool _use_none_resv_nodes(job_record_t *job_ptr)
+{
+	if (!job_ptr->resv_name)
+		return true; /* no reservation is used */
+	if (!job_ptr->resv_list)
+		return _is_flex_or_any_nodes(job_ptr->resv_ptr, NULL);
+	return list_find_first(job_ptr->resv_list, _is_flex_or_any_nodes, NULL);
+}
+
 static int _match_resv_id(void *x, void *key)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
@@ -11681,6 +11700,9 @@ static bool _can_resv_overlap(top_prio_args_t *job_args, job_record_t *job_ptr2)
 	slurmctld_resv_t* cur_resv1;
 	slurmctld_resv_t* cur_resv2;
 	list_itr_t *resv_iter2;
+
+	if (job_args->use_none_resv_nodes && _use_none_resv_nodes(job_ptr2))
+		return true;
 
 	/*
 	 * If job_ptr1 does not have a resv but uses --signal=R, check if any of
@@ -11737,6 +11759,7 @@ static void _init_top_prio_args(job_record_t *job_ptr, top_prio_args_t *args)
 	args->job_ptr = job_ptr;
 	if (job_ptr->resv_list)
 		args->resv_list_iter = list_iterator_create(job_ptr->resv_list);
+	args->use_none_resv_nodes = _use_none_resv_nodes(job_ptr);
 }
 
 static void _destroy_top_prio_args(top_prio_args_t *args)

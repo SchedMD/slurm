@@ -176,6 +176,9 @@ documents those changes that are of interest to users and administrators.
     yielding backfill locks.
  -- Always consider partition priority tiers when deciding to try scheduling
     jobs on submit.
+ -- Prevent starting jobs without reservations on submit when there are pending
+    jobs with reservations that have flags FLEX or ANY_NODES that can be
+    scheduled on overlapping nodes.
 
 * Changes in Slurm 24.05.4
 ==========================
