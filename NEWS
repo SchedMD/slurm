@@ -131,6 +131,16 @@ documents those changes that are of interest to users and administrators.
  -- Fix gathering MaxRSS for jobs that run shorter than two jobacctgather
     intevals. Get the metrics from cgroups memory.peak or
     memory.max_usage_in_bytes where available.
+ -- openapi/slurmctld - Set complex number support for the following fields:
+      .shares[][].fairshare.factor
+      .shares[][].fairshare.level
+    for endpoints:
+      'GET /slurm/v0.0.42/shares'
+    and for commands:
+      sshare --json
+      sshare --yaml
+ -- data_parser/v0.0.42 - Avoid dumping "Infinity" for NO_VAL tagged "number"
+    fields.
 
 * Changes in Slurm 24.05.4
 ==========================
