@@ -44,6 +44,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
 #include "src/common/xstring.h"
@@ -168,10 +169,25 @@ static int _time_str2mins(lua_State *L) {
 	return 1;
 }
 
+static int _get_qos_priority(lua_State *L)
+{
+	const char *qos_name = lua_tostring(L, -1);
+	slurmdb_qos_rec_t qos = { 0 };
+
+	qos.name = xstrdup(qos_name);
+	assoc_mgr_fill_in_qos(acct_db_conn, &qos, accounting_enforce, NULL,
+			      false);
+	xfree(qos.name);
+
+	lua_pushnumber(L, qos.priority);
+	return 1;
+}
+
 static const struct luaL_Reg slurm_functions [] = {
 	{ "log", _log_lua_msg },
 	{ "error", _log_lua_error },
 	{ "time_str2mins", _time_str2mins},
+	{ "get_qos_priority", _get_qos_priority },
 	{ NULL, NULL }
 };
 

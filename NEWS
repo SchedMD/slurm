@@ -153,6 +153,8 @@ documents those changes that are of interest to users and administrators.
  -- sackd - retry fetching slurm configs indefinately in configless mode.
  -- job_submit/lua - Add "assoc_qos" attribute to job_desc to display all
     potential QOS's for a job's association.
+ -- job_submit/lua - Add slurm.get_qos_priority() function to retrieve the
+    given QOS's priority.
 
 * Changes in Slurm 24.05.4
 ==========================
