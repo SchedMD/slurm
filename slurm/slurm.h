@@ -929,7 +929,8 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 	/* the following is used only as a flag for expressing
 	 * the contents of TaskPluginParams */
 	SLURMD_OFF_SPEC            = 0x40000,
-	CPU_BIND_OFF               = 0x80000	/* Disable binding */
+	CPU_BIND_OFF               = 0x80000,	/* Disable binding */
+	OOM_KILL_STEP              = 0x100000
 } cpu_bind_type_t;
 
 #define CPU_BIND_T_TO_MASK 0x001e

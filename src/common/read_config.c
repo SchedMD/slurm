@@ -5478,6 +5478,12 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				}
 			} else if (xstrcasecmp(tok, "SlurmdOffSpec") == 0) {
 				conf->task_plugin_param |= SLURMD_OFF_SPEC;
+			} else if (!xstrcasecmp(tok, "OOMKillStep")) {
+				if (!xstrstr(conf->task_plugin, "task/cgroup")) {
+					error("TaskPluginParam=OOMKillStep must be used with task/cgroup");
+					return SLURM_ERROR;
+				}
+				conf->task_plugin_param |= OOM_KILL_STEP;
 			} else {
 				error("Bad TaskPluginParam: %s", tok);
 				return SLURM_ERROR;
