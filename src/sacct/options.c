@@ -1263,22 +1263,27 @@ static bool _test_local_job(uint32_t job_id)
 
 static void _print_script(slurmdb_job_rec_t *job)
 {
-	char *id = slurmdb_get_job_id_str(job);
+	if (print_fields_have_header) {
+		char *id = slurmdb_get_job_id_str(job);
+		printf("Batch Script for %s\n"
+		       "--------------------------------------------------------------------------------\n",
+		       id);
 
-	printf("Batch Script for %s\n--------------------------------------------------------------------------------\n%s\n",
-	       id, job->script ? job->script : "NONE\n");
-	xfree(id);
-	return;
+		xfree(id);
+	}
+	printf("%s\n", job->script ? job->script : "NONE\n");
 }
 
 static void _print_env(slurmdb_job_rec_t *job)
 {
-	char *id = slurmdb_get_job_id_str(job);
-
-	printf("Environment used for %s (must be batch to display)\n--------------------------------------------------------------------------------\n%s\n",
-	       id, job->env ? job->env : "NONE\n");
-	xfree(id);
-	return;
+	if (print_fields_have_header) {
+		char *id = slurmdb_get_job_id_str(job);
+		printf("Environment used for %s (must be batch to display)\n"
+		       "--------------------------------------------------------------------------------\n",
+		       id);
+		xfree(id);
+	}
+	printf("%s\n", job->env ? job->env : "NONE\n");
 }
 
 /* do_list() -- List the assembled data

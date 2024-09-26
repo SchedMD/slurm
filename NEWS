@@ -143,6 +143,7 @@ documents those changes that are of interest to users and administrators.
     fields.
  -- Add TopologyParam=TopoMaxSizeUnroll=# to allow --nodes=<min>-<max> for
     topology/block.
+ -- sacct - Respect --noheader for --batch-script and --env-vars.
 
 * Changes in Slurm 24.05.4
 ==========================
