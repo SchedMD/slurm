@@ -217,12 +217,13 @@ static char *_get_assoc_qos(uint32_t user_id, char *account, char *partition)
 }
 
 /* Get the comment for an association (or NULL if not present) */
-static char *_get_assoc_comment(uint32_t user_id, char *account)
+static char *_get_assoc_comment(uint32_t user_id, char *account,
+				char *partition)
 {
 	slurmdb_assoc_rec_t assoc;
 	char *comment = NULL;
 
-	if (_fill_assoc(user_id, account, NULL, &assoc) != SLURM_ERROR)
+	if (_fill_assoc(user_id, account, partition, &assoc) != SLURM_ERROR)
 		comment = xstrdup(assoc.comment);
 
 	return comment;
@@ -549,7 +550,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushstring(L, job_desc->array_inx);
 	} else if (!xstrcmp(name, "assoc_comment")) {
 		lua_pushstring(L, _get_assoc_comment(job_desc->user_id,
-						     job_desc->account));
+						     job_desc->account,
+						     job_desc->partition));
 	} else if (!xstrcmp(name, "assoc_qos")) {
 		char *assoc_qos_str = _get_assoc_qos(job_desc->user_id,
 						     job_desc->account,
