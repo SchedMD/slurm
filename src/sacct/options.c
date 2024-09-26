@@ -1271,7 +1271,7 @@ static void _print_script(slurmdb_job_rec_t *job)
 
 		xfree(id);
 	}
-	printf("%s\n", job->script ? job->script : "NONE\n");
+	printf("%s", job->script ? job->script : "NONE\n");
 }
 
 static void _print_env(slurmdb_job_rec_t *job)
@@ -1283,7 +1283,7 @@ static void _print_env(slurmdb_job_rec_t *job)
 		       id);
 		xfree(id);
 	}
-	printf("%s\n", job->env ? job->env : "NONE\n");
+	printf("%s", job->env ? job->env : "NONE\n");
 }
 
 /* do_list() -- List the assembled data
