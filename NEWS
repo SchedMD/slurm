@@ -270,6 +270,9 @@ documents those changes that are of interest to users and administrators.
     string for a key or value.
  -- In an extra constraints expression in a job request, fix validation that
     requests are separated by boolean operators.
+ -- Add TaskPluginParam=OOMKillStep to kill the step as a whole when one task
+    OOMs.
+ -- Fix scontrol show conf not showing all TaskPluginParam elements.
 
 * Changes in Slurm 24.05.5
 ==========================
