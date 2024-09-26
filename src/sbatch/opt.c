@@ -921,9 +921,6 @@ static bool _opt_verify(void)
 		setenv("SLURM_EXPORT_ENV", opt.export_env, 0);
 	}
 
-	if (opt.acctg_freq)
-		setenvf(NULL, "SLURM_ACCTG_FREQ", "%s", opt.acctg_freq);
-
 	if (opt.mem_bind_type && (getenv("SBATCH_MEM_BIND") == NULL)) {
 		char *tmp = slurm_xstr_mem_bind_type(opt.mem_bind_type);
 		if (opt.mem_bind) {
