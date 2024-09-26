@@ -2385,7 +2385,18 @@ fail:
 
 extern int cgroup_p_step_start_oom_mgr(stepd_step_rec_t *step)
 {
-	/* Just return, no need to start anything. */
+	/* Only set the memory.oom.group if needed. */
+	if (step->oom_kill_step) {
+		if (!cgroup_p_has_feature(CG_MEMCG_OOMGROUP))
+			log_flag(CGROUP, "OOMKillStep was requested but memory.oom.group interface is not available.");
+		else {
+			if (common_cgroup_set_param(&int_cg[CG_LEVEL_STEP_USER],
+						    "memory.oom.group", "1")) {
+				error("Cannot set memory.oom.group");
+				return SLURM_ERROR;
+			}
+		}
+	}
 	return SLURM_SUCCESS;
 }
 
