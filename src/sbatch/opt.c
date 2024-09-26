@@ -921,11 +921,6 @@ static bool _opt_verify(void)
 		setenv("SLURM_EXPORT_ENV", opt.export_env, 0);
 	}
 
-	if (opt.profile)
-		setenvfs("SLURM_PROFILE=%s",
-			 acct_gather_profile_to_string(opt.profile));
-
-
 	if (opt.acctg_freq)
 		setenvf(NULL, "SLURM_ACCTG_FREQ", "%s", opt.acctg_freq);
 
