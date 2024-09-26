@@ -1991,6 +1991,16 @@ instead of the node level.
 .IP
 
 .TP
+\fB\-\-oom\-kill\-step\fR[={0|1}]
+Whether to kill the entire step if an OOM event is detected in any task of a
+step. This overwrites the "OOMKillStep" setting in TaskPluginParam from
+slurm.conf. When unset it will use the setting in slurm.conf. When set, a value
+of "0" will disable killing the entire step, while a value of "1" will enable
+it. This applies to the entire allocation except for the external step.
+Default is "1" (enabled) when the option is found with no value.
+.IP
+
+.TP
 \fB\-\-open\-mode\fR={append|truncate}
 Open the output and error files using append or truncate mode as specified.
 The default value is specified by the system configuration parameter
@@ -3390,6 +3400,11 @@ Only set if the \fB\-\-ntasks\-per\-node\fR option is specified.
 \fBSLURM_NTASKS_PER_SOCKET\fR
 Number of tasks requested per socket.
 Only set if the \fB\-\-ntasks\-per\-socket\fR option is specified.
+.IP
+
+.TP
+\fBSLURM_OOMKILLSTEP\fR
+Same as \fB\-\-oom\-kill\-step\fR
 .IP
 
 .TP
