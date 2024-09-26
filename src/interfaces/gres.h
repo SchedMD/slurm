@@ -158,6 +158,7 @@ typedef struct {
 #define GRES_AUTODETECT_GPU_OFF   0x00000004 /* Do NOT use global */
 #define GRES_AUTODETECT_GPU_ONEAPI 0x00000008
 #define GRES_AUTODETECT_GPU_NRT 0x00000010
+#define GRES_AUTODETECT_GPU_NVIDIA 0x00000020
 
 #define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
 					      * flags */

@@ -121,6 +121,8 @@ static char *_get_gpu_type(void)
 #endif
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_NRT) {
 		return "gpu/nrt";
+	} else if (autodetect_flags & GRES_AUTODETECT_GPU_NVIDIA) {
+		return "gpu/nvidia";
 	}
 
 	return "gpu/generic";

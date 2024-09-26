@@ -446,6 +446,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/gpu/common/Makefile
 		 src/plugins/gpu/generic/Makefile
 		 src/plugins/gpu/nrt/Makefile
+		 src/plugins/gpu/nvidia/Makefile
 		 src/plugins/gpu/nvml/Makefile
 		 src/plugins/gpu/oneapi/Makefile
 		 src/plugins/gpu/rsmi/Makefile
