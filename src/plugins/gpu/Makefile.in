@@ -205,7 +205,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = common generic rsmi nvml oneapi nrt
+DIST_SUBDIRS = common generic nrt rsmi nvml oneapi
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -461,8 +461,8 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = common generic $(am__append_1) $(am__append_2) \
-	$(am__append_3) nrt
+SUBDIRS = common generic nrt $(am__append_1) $(am__append_2) \
+	$(am__append_3)
 all: all-recursive
 
 .SUFFIXES:
