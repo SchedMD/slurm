@@ -151,6 +151,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmd - properly detect slurmd restarts in the energy gathering logic
     which caused bad numbers in accounting.
  -- sackd - retry fetching slurm configs indefinately in configless mode.
+ -- job_submit/lua - Add "assoc_qos" attribute to job_desc to display all
+    potential QOS's for a job's association.
 
 * Changes in Slurm 24.05.4
 ==========================

@@ -41,6 +41,8 @@ COMMAND CHANGES (see man pages for details)
 API CHANGES
 ===========
  -- Remove burst_buffer/lua call slurm.job_info_to_string().
+ -- job_submit/lua - Add "assoc_qos" attribute to job_desc to display all
+    potential QOS's for a job's association.
 
 SLURMRESTD CHANGES
 ==================
