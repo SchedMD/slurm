@@ -706,9 +706,6 @@ static bool _opt_verify(void)
 	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
 		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
 
-	if (opt.network)
-		setenvf(NULL, "SLURM_NETWORK", "%s", opt.network);
-
 	/*
 	 * NOTE: this burst_buffer_file processing is intentionally different
 	 * than in salloc/srun, there is not a missing chunk of code here.
