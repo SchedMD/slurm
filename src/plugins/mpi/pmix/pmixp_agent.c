@@ -65,6 +65,8 @@ static pthread_cond_t abort_mutex_cond = PTHREAD_COND_INITIALIZER;
 static eio_handle_t *_io_handle = NULL;
 static eio_handle_t *_abort_handle = NULL;
 
+static int _abort_agent_start_count = 0;
+
 static pthread_t _agent_tid = 0;
 static pthread_t _timer_tid = 0;
 static pthread_t _abort_tid = 0;
@@ -371,6 +373,16 @@ int pmixp_abort_agent_start(char ***env)
 	uint16_t *ports;
 
 	slurm_mutex_lock(&abort_mutex);
+	/*
+	 * Only the 1st thread to reach pmixp_abort_agent_start will try to
+	 * spawn the agent.
+	 * If it fails, we keep increasing the counter to prevent from
+	 * subsequent threads to initialize again.
+	 */
+	_abort_agent_start_count++;
+	if (_abort_agent_start_count != 1)
+		goto done;
+
 	if ((ports = slurm_get_srun_port_range()))
 		abort_server_socket = slurm_init_msg_engine_ports(ports);
 	else
@@ -408,12 +420,25 @@ done:
 
 int pmixp_abort_agent_stop(void)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&abort_mutex);
-	if (_abort_tid) {
-		eio_signal_shutdown(_abort_handle);
-		slurm_thread_join(_abort_tid);
+
+	_abort_agent_start_count--;
+
+	/* Wait for abort code to be ready. */
+	if (_abort_agent_start_count) {
+		slurm_cond_wait(&abort_mutex_cond, &abort_mutex);
+	} else {
+		if (_abort_tid) {
+			eio_signal_shutdown(_abort_handle);
+			slurm_thread_join(_abort_tid);
+		}
+		/*
+		 * Signal the other threads to let them know rc has now a valid
+		 * value.
+		 */
+		slurm_cond_broadcast(&abort_mutex_cond);
 	}
 	rc = pmixp_abort_code_get();
 	slurm_mutex_unlock(&abort_mutex);
