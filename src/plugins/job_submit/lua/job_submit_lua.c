@@ -117,18 +117,6 @@ typedef struct {
 	uint32_t user_id;
 } foreach_part_list_args_t;
 
-/* These are defined here so when we link with something other than
- * the slurmctld we will have these symbols defined.  They will get
- * overwritten when linking with the slurmctld.
- */
-#if defined (__APPLE__)
-extern uint16_t accounting_enforce __attribute__((weak_import));
-extern void *acct_db_conn  __attribute__((weak_import));
-#else
-uint16_t accounting_enforce = 0;
-void *acct_db_conn = NULL;
-#endif
-
 /*****************************************************************************\
  * We've provided a simple example of the type of things you can do with this
  * plugin. If you develop another plugin that may be of interest to others

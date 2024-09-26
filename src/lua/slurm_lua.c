@@ -53,6 +53,19 @@ static void *lua_handle = NULL;
 
 #ifdef HAVE_LUA
 
+/*
+ * These are defined here so when we link with something other than the
+ * slurmctld we will have these symbols defined. They will get overwritten when
+ * linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern uint16_t accounting_enforce __attribute__((weak_import));
+extern void *acct_db_conn  __attribute__((weak_import));
+#else
+uint16_t accounting_enforce = 0;
+void *acct_db_conn = NULL;
+#endif
+
 static int _setup_stringarray(lua_State *L, int limit, char **data)
 {
 	/*
