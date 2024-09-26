@@ -7221,6 +7221,8 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_parser(slurmdb_step_rec_t, mtype, false, field, 0, path, desc)
 #define add_cparse(mtype, path, desc) \
 	add_complex_parser(slurmdb_step_rec_t, mtype, false, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(slurmdb_step_rec_t, mtype, false, field, overloads, path, desc, deprec)
 /* should mirror the structure of slurmdb_step_rec_t */
 static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT32, elapsed, "time/elapsed", "Elapsed time in seconds"),
@@ -7230,7 +7232,7 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT32, nnodes, "nodes/count", "Number of nodes in the job step"),
 	add_parse(STRING, nodes, "nodes/range", "Node(s) allocated to the job step"),
 	add_parse(UINT32, ntasks, "tasks/count", "Total number of tasks"),
-	add_parse(STRING, pid_str, "pid", "Process ID"),
+	add_parse_deprec(STRING, pid_str, 0, "pid", "Deprecated; Process ID", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(UINT32_NO_VAL, req_cpufreq_min, "CPU/requested_frequency/min", "Minimum requested CPU frequency in kHz"),
 	add_parse(UINT32_NO_VAL, req_cpufreq_max, "CPU/requested_frequency/max", "Maximum requested CPU frequency in kHz"),
 	add_parse(CPU_FREQ_FLAGS, req_cpufreq_gov, "CPU/governor", "Requested CPU frequency governor in kHz"),
@@ -7260,6 +7262,7 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(TRES_STR, stats.tres_usage_out_tot, "tres/consumed/total", "Total TRES usage consumed among all tasks"),
 	add_parse(TRES_STR, tres_alloc_str, "tres/allocated", "Trackable resources allocated to the step"),
 };
+#undef add_parse_deprec
 #undef add_cparse
 #undef add_parse
 #undef add_skip

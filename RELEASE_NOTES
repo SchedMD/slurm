@@ -85,3 +85,4 @@ SLURMRESTD CHANGES
  -- Rename v0.0.42 JOB_INFO field "minimum_switches" to "required_switches"
     to reflect the actual behavior.
  -- Rename v0.0.42 ACCOUNT_CONDITION field "assocation" to "association" (typo).
+ -- Tag slurmdb/v0.0.42/jobs pid field deprecated.
