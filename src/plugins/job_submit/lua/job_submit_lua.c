@@ -163,17 +163,7 @@ static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 	slurmdb_qos_rec_t qos;
 	uint32_t qos_id = 0;
 
-	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
-	assoc.uid = user_id;
-	assoc.partition = partition;
-	if (account) {
-		assoc.acct = account;
-	} else {
-		assoc.acct = _get_default_account(user_id);
-	}
-
-	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc, accounting_enforce,
-				    NULL, false) != SLURM_ERROR)
+	if (_fill_assoc(user_id, account, partition, &assoc) != SLURM_ERROR)
 		qos_id = assoc.def_qos_id;
 
 	if (!qos_id)
@@ -232,16 +222,7 @@ static char *_get_assoc_comment(uint32_t user_id, char *account)
 	slurmdb_assoc_rec_t assoc;
 	char *comment = NULL;
 
-	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
-	assoc.uid = user_id;
-	if (account) {
-		assoc.acct = account;
-	} else {
-		assoc.acct = _get_default_account(user_id);
-	}
-
-	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc, accounting_enforce,
-				    NULL, false) != SLURM_ERROR)
+	if (_fill_assoc(user_id, account, NULL, &assoc) != SLURM_ERROR)
 		comment = xstrdup(assoc.comment);
 
 	return comment;
