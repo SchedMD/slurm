@@ -149,6 +149,7 @@ typedef struct {
 	char *prefer;			/* soft features */
 	uint8_t prolog_running;		/* set while prolog_slurmctld is
 					 * running */
+	char *qos_req;			/* quality of service(s) requested */
 	uint32_t reserved_resources;	/* CPU minutes of resources reserved
 					 * for this job while it was pending */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */

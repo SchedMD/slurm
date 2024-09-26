@@ -3581,6 +3581,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	}
 	details_new->mem_bind = xstrdup(job_details->mem_bind);
 	details_new->mem_bind_type = job_details->mem_bind_type;
+	details_new->qos_req = xstrdup(job_details->qos_req);
 	if (job_details->req_node_bitmap) {
 		details_new->req_node_bitmap =
 			bit_copy(job_details->req_node_bitmap);
@@ -8441,6 +8442,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->orig_max_cpus   = job_desc->max_cpus;
 	detail_ptr->min_nodes  = job_desc->min_nodes;
 	detail_ptr->max_nodes  = job_desc->max_nodes;
+	detail_ptr->qos_req = xstrdup(job_desc->qos);
 	if (job_desc->job_size_str && detail_ptr->max_nodes) {
 		if (detail_ptr->max_nodes >= MAX_JOB_SIZE_BITMAP)
 			return ESLURM_INVALID_NODE_COUNT;
