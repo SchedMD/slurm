@@ -941,9 +941,6 @@ static bool _opt_verify(void)
 		}
 	}
 
-	cpu_freq_set_env("SLURM_CPU_FREQ_REQ",
-			 opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
-
 	return verified;
 }
 
