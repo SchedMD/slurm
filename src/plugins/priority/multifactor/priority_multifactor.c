@@ -718,9 +718,11 @@ static uint32_t _get_priority_internal(time_t start_time,
 		}
 
 		i = 0;
-		arg.job_ptr = job_ptr,
-		arg.multi_part_str = multi_part_str,
-		arg.counter = &i,
+
+		arg.job_ptr = job_ptr;
+		arg.multi_part_str = multi_part_str;
+		arg.counter = &i;
+
 		list_for_each(job_ptr->part_ptr_list, _priority_each_partition,
 			      &arg);
 
