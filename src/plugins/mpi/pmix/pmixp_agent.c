@@ -501,8 +501,6 @@ int pmixp_agent_stop(void)
 	int rc = SLURM_SUCCESS;
 	char c = 1;
 
-	slurm_mutex_lock(&agent_mutex);
-
 	if (_agent_tid) {
 		eio_signal_shutdown(_io_handle);
 		/* wait for the agent thread to stop */
@@ -519,6 +517,5 @@ int pmixp_agent_stop(void)
 		_shutdown_timeout_fds();
 	}
 
-	slurm_mutex_unlock(&agent_mutex);
 	return rc;
 }
