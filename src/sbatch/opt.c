@@ -752,8 +752,6 @@ static bool _opt_verify(void)
 		opt.job_name = xstrdup("wrap");
 	else if (!opt.job_name && (opt.argc > 0))
 		opt.job_name = base_name(opt.argv[0]);
-	if (opt.job_name)
-		setenv("SLURM_JOB_NAME", opt.job_name, 1);
 
 	/* check for realistic arguments */
 	if (opt.ntasks < 0) {
