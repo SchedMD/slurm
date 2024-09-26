@@ -276,7 +276,7 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
 	if (job_ptr->part_prio) {
 		xfree(job_ptr->part_prio->priority_array);
-		xfree(job_ptr->part_prio->priority_array_parts);
+		xfree(job_ptr->part_prio->priority_array_names);
 		xfree(job_ptr->part_prio);
 	}
 	slurm_destroy_priority_factors(job_ptr->prio_factors);

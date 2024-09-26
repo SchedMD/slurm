@@ -121,13 +121,13 @@ static void _create_priority_list(list_t *l,
 	list_t *part_names = list_create(xfree_ptr);
 
 	/*
-	 * If the job requests multiple partitions then priority_array_parts
+	 * If the job requests multiple partitions then priority_array_names
 	 * will exist. When a job is running the controller only sends the
 	 * partition that the job is running in in job_ptr->partition so we can
 	 * just use job_ptr->partition and job_ptr->priority.
 	 */
-	if (IS_JOB_PENDING(job_ptr) && job_ptr->priority_array_parts)
-		tmp = job_ptr->priority_array_parts;
+	if (IS_JOB_PENDING(job_ptr) && job_ptr->priority_array_names)
+		tmp = job_ptr->priority_array_names;
 	else
 		tmp = job_ptr->partition;
 	slurm_addto_char_list(part_names, tmp);

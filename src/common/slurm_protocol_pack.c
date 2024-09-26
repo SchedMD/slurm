@@ -3446,7 +3446,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack_time(&job->start_time, buffer);
 		safe_unpack_time(&job->end_time, buffer);
 		safe_unpack32_array(&job->priority_array, &uint32_tmp, buffer);
-		safe_unpackstr(&job->priority_array_parts, buffer);
+		safe_unpackstr(&job->priority_array_names, buffer);
 		safe_unpackstr(&job->cluster, buffer);
 		safe_unpackstr(&job->nodes, buffer);
 		safe_unpackstr(&job->sched_nodes, buffer);
@@ -3590,7 +3590,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack_time(&job->preempt_time, buffer);
 		safe_unpack32(&job->priority, buffer);
 		safe_unpack32_array(&job->priority_array, &uint32_tmp, buffer);
-		safe_unpackstr(&job->priority_array_parts, buffer);
+		safe_unpackstr(&job->priority_array_names, buffer);
 		safe_unpackdouble(&job->billable_tres, buffer);
 		safe_unpackstr(&job->cluster, buffer);
 		safe_unpackstr(&job->nodes, buffer);

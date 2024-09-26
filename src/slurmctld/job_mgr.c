@@ -3463,7 +3463,8 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	 * so check to see if it exists before copying. */
 	if (job_ptr->part_ptr_list &&
 	    job_ptr->part_prio) {
-		job_ptr_pend->part_prio = xmalloc(sizeof(priority_parts_t));
+		job_ptr_pend->part_prio =
+			xmalloc(sizeof(*job_ptr_pend->part_prio));
 
 		if (job_ptr->part_prio->priority_array) {
 			i = list_count(job_ptr->part_ptr_list);
@@ -3474,8 +3475,8 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 			       i * sizeof(uint32_t));
 		}
 
-		job_ptr_pend->part_prio->priority_array_parts =
-			xstrdup(job_ptr->part_prio->priority_array_parts);
+		job_ptr_pend->part_prio->priority_array_names =
+			xstrdup(job_ptr->part_prio->priority_array_names);
 	}
 	job_ptr_pend->resv_name = xstrdup(job_ptr->resv_name);
 	if (job_ptr->resv_list)
@@ -10176,7 +10177,7 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 				     (dump_job_ptr->part_prio->priority_array) ?
 				     list_count(dump_job_ptr->part_ptr_list) :
 				     0, buffer);
-			packstr(dump_job_ptr->part_prio->priority_array_parts,
+			packstr(dump_job_ptr->part_prio->priority_array_names,
 				buffer);
 		} else {
 			packnull(buffer);
@@ -10360,7 +10361,7 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 				     (dump_job_ptr->part_prio->priority_array) ?
 				     list_count(dump_job_ptr->part_ptr_list) :
 				     0, buffer);
-			packstr(dump_job_ptr->part_prio->priority_array_parts,
+			packstr(dump_job_ptr->part_prio->priority_array_names,
 				buffer);
 		} else {
 			packnull(buffer);

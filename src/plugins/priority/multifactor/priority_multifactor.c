@@ -533,15 +533,15 @@ static double _get_tres_prio_weighted(double *tres_factors)
 typedef struct {
 	int *counter;
 	job_record_t *job_ptr;
-	char *multi_part_str;
-} part_prio_args_t;
+	char *multi_prio_str;
+} mult_prio_args_t;
 
 static int _priority_each_partition(void *object, void *arg)
 {
 	part_record_t *part_ptr = (part_record_t *)object;
-	part_prio_args_t *args = arg;
+	mult_prio_args_t *args = arg;
 	job_record_t *job_ptr = args->job_ptr;
-	char *multi_part_str = args->multi_part_str;
+	char *multi_prio_str = args->multi_prio_str;
 	int *counter = args->counter;
 
 	double part_tres = 0.0;
@@ -591,7 +591,7 @@ static int _priority_each_partition(void *object, void *arg)
 			(uint32_t) priority_part;
 	}
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO) {
-		xstrfmtcat(multi_part_str, multi_part_str ?
+		xstrfmtcat(multi_prio_str, multi_prio_str ?
 			   ", %s=%u" : "%s=%u", part_ptr->name,
 			   job_ptr->part_prio->priority_array[*counter]);
 	}
@@ -608,7 +608,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 	priority_factors_t pre_factors;
 	uint64_t tmp_64;
 	double tmp_tres = 0.0;
-	char *multi_part_str = NULL;
+	char *multi_prio_str = NULL;
 
 	if (job_ptr->direct_set_prio && (job_ptr->priority > 0)) {
 		if (job_ptr->prio_factors) {
@@ -688,16 +688,17 @@ static uint32_t _get_priority_internal(time_t start_time,
 	/* Free after transitioning from multi-part job to single part job. */
 	if (!job_ptr->part_ptr_list && job_ptr->part_prio) {
 		xfree(job_ptr->part_prio->priority_array);
-		xfree(job_ptr->part_prio->priority_array_parts);
+		xfree(job_ptr->part_prio->priority_array_names);
 		xfree(job_ptr->part_prio);
 	}
 
 	if (job_ptr->part_ptr_list) {
 		int i = 0;
-		part_prio_args_t arg;
+		mult_prio_args_t arg;
 
 		if (!job_ptr->part_prio)
-			job_ptr->part_prio = xmalloc(sizeof(priority_parts_t));
+			job_ptr->part_prio =
+				xmalloc(sizeof(*job_ptr->part_prio));
 
 		if (job_ptr->part_prio &&
 		    (!job_ptr->part_prio->priority_array ||
@@ -710,8 +711,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 
 			list_sort(job_ptr->part_ptr_list,
 				  priority_sort_part_tier);
-			xfree(job_ptr->part_prio->priority_array_parts);
-			job_ptr->part_prio->priority_array_parts =
+			xfree(job_ptr->part_prio->priority_array_names);
+			job_ptr->part_prio->priority_array_names =
 				part_list_to_xstr(job_ptr->part_ptr_list);
 
 			job_ptr->part_prio->last_update = time(NULL);
@@ -720,15 +721,15 @@ static uint32_t _get_priority_internal(time_t start_time,
 		i = 0;
 
 		arg.job_ptr = job_ptr;
-		arg.multi_part_str = multi_part_str;
+		arg.multi_prio_str = multi_prio_str;
 		arg.counter = &i;
 
 		list_for_each(job_ptr->part_ptr_list, _priority_each_partition,
 			      &arg);
 
 		log_flag(PRIO, "%pJ multi-partition priorities: %s",
-			 job_ptr, multi_part_str);
-		xfree(multi_part_str);
+			 job_ptr, multi_prio_str);
+		xfree(multi_prio_str);
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO) {
