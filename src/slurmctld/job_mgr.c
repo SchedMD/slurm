@@ -3857,6 +3857,12 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 
 	if (job_ptr->part_ptr_list) {
 		list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
+		/*
+		 * This iter can not be a list_for_each() we eventually will
+		 * call select_nodes() which will then call
+		 * rebuild_job_part_list() which will need to access this list
+		 * again.
+		 */
 		iter = list_iterator_create(job_ptr->part_ptr_list);
 		while ((part_ptr = list_next(iter))) {
 			job_ptr->part_ptr = part_ptr;
