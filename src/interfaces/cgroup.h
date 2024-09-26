@@ -106,6 +106,7 @@ typedef enum {
 /* Current supported cgroup controller features */
 typedef enum {
 	CG_FALSE_ROOT,
+	CG_MEMCG_OOMGROUP,
 	CG_MEMCG_PEAK,
 	CG_MEMCG_SWAP
 } cgroup_ctl_feature_t;
