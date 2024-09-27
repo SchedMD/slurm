@@ -50,12 +50,13 @@ For more visibility into the job states and flags, set
 	<a href="preempt.html">preemption</a>; may transition to another state
 	based on the configured PreemptMode and job characteristics</td></tr>
 <tr><td><code>RUNNING</code></td><td>allocated resources and executing</td></tr>
-<tr><td><code>SUSPENDED</code></td><td>allocated resources, execution suspended;
-	commonly caused by <a href="preempt.html">preemption</a> or a direct
-	request from an authorized user</td></tr>
-<tr><td><code>TIMEOUT</code></td><td>terminated on reaching time limit;
-	time limit may have been configured in
-	<a href="slurm.conf.html">slurm.conf</a> or at job submission</td></tr>
+<tr><td><code>SUSPENDED</code></td><td>allocated resources but execution
+	suspended, such as from <a href="preempt.html">preemption</a> or a
+	<a href="scontrol.html#OPT_suspend">direct request</a> from an
+	authorized user</td></tr>
+<tr><td><code>TIMEOUT</code></td><td>terminated on reaching time limit, such as
+	those configured in <a href="slurm.conf.html">slurm.conf</a> or at
+	job submission</td></tr>
 </tbody>
 </table>
 
@@ -78,7 +79,7 @@ For more visibility into the job states and flags, set
 	nodes and is waiting for them to boot</td></tr>
 <tr><td><code>RECONFIG_FAIL</code></td><td>node configuration for job failed</td></tr>
 <tr><td><code>REQUEUED</code></td><td>job is being requeued,
-	whether due to <a href="preempt.html">preemption</a> or a
+	such as from <a href="preempt.html">preemption</a> or a
 	<a href="scontrol.html#OPT_requeue">direct request</a> from an
 	authorized user</td></tr>
 <tr><td><code>REQUEUE_FED</code></td><td>requeued due to conditions of its
