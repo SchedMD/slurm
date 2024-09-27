@@ -5890,9 +5890,13 @@ static void _slurm_rpc_kill_jobs(slurm_msg_t *msg)
 		_log_kill_jobs_rpc(kill_msg);
 
 	START_TIMER;
-	lock_slurmctld(lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		lock_slurmctld(lock);
+	}
 	rc = job_mgr_signal_jobs(kill_msg, msg->auth_uid, &kill_msg_resp);
-	unlock_slurmctld(lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		unlock_slurmctld(lock);
+	}
 	END_TIMER2(__func__);
 
 	if (rc != SLURM_SUCCESS) {
@@ -6864,7 +6868,15 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		},
 	},{
 		.msg_type = REQUEST_KILL_JOBS,
+		.max_per_cycle = 256,
 		.func = _slurm_rpc_kill_jobs,
+		.queue_enabled = true,
+		.locks = {
+			.conf = READ_LOCK,
+			.job = WRITE_LOCK,
+			.node = WRITE_LOCK,
+			.fed = READ_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_ASSOC_MGR_INFO,
 		.func = _slurm_rpc_assoc_mgr_info,

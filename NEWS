@@ -162,6 +162,8 @@ documents those changes that are of interest to users and administrators.
     value for CLI --json and --yaml arguments.
  -- seff - improve step's max memory consumption report by using TresUsageInTot
     and TresUsageInAve instead of overestimating the values.
+ -- Enable RPC queueing for REQUEST_KILL_JOBS, which is used when scancel is
+    executed with --ctld flag.
 
 * Changes in Slurm 24.05.4
 ==========================
