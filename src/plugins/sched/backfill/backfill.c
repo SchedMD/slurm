@@ -108,7 +108,6 @@
 #define BACKFILL_WINDOW		(24 * 60 * 60)
 #define BF_MAX_JOB_ARRAY_RESV	20
 
-#define SLURMCTLD_THREAD_LIMIT	5
 #define YIELD_INTERVAL		2000000	/* time in micro-seconds */
 #define YIELD_SLEEP		500000;	/* time in micro-seconds */
 
@@ -338,8 +337,7 @@ static void _set_job_time_limit(job_record_t *job_ptr, uint32_t new_limit)
 
 /*
  * _many_pending_rpcs - Determine if slurmctld is busy with many active RPCs
- * RET - True if slurmctld currently has more than SLURMCTLD_THREAD_LIMIT
- *	 active RPCs
+ * RET - True if slurmctld currently has more than max_rpc_cnt active RPCs
  */
 static bool _many_pending_rpcs(void)
 {
