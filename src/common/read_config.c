@@ -3949,6 +3949,32 @@ static int _sort_plugins_by_name(void *x, void *y)
 	return xstrcmp(s2, s1);
 }
 
+static int _validate_conf_nodeset_vs_nodenames()
+{
+	slurm_conf_node_t **ptr_nname;
+	slurm_conf_nodeset_t **ptr_nset;
+	int count_nodename = slurm_conf_nodename_array(&ptr_nname);
+	int count_nodeset = slurm_conf_nodeset_array(&ptr_nset);
+	hostlist_t *nnames;
+
+	for (int i = 0; i < count_nodeset; i++){
+		for (int j = 0; j < count_nodename; j++) {
+			nnames = hostlist_create(ptr_nname[j]->nodenames);
+			if (!nnames)
+				continue;
+			if (hostlist_find(nnames, ptr_nset[i]->name) != -1) {
+				error("NodeSet with name %s overlaps with an existing NodeName",
+				      ptr_nset[i]->name);
+				hostlist_destroy(nnames);
+				return SLURM_ERROR;
+			}
+			hostlist_destroy(nnames);
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Sort the TaskPlugin= parameters in reverse alphabetical order.
  * This provides a convenient shortcut to following these rules:
@@ -4016,6 +4042,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		error("ClusterName needs to be specified");
 		return SLURM_ERROR;
 	}
+
+	if (_validate_conf_nodeset_vs_nodenames() != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	if (!s_p_get_uint16(&conf->complete_wait, "CompleteWait", hashtbl))
 		conf->complete_wait = DEFAULT_COMPLETE_WAIT;

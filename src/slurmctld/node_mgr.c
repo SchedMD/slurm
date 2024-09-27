@@ -312,6 +312,29 @@ static buf_t *_open_node_state_file(char **state_file)
 	return create_mmap_buf(*state_file);
 }
 
+static int _validate_nodes_vs_nodeset(char *nodes_str)
+{
+	hostlist_t *nodes = NULL;
+	slurm_conf_nodeset_t **ptr;
+	int count_nodeset = slurm_conf_nodeset_array(&ptr);
+
+	if (!nodes_str)
+		return SLURM_SUCCESS;
+
+	nodes = hostlist_create(nodes_str);
+	for (int i = 0; i < count_nodeset; i++) {
+		if (hostlist_find(nodes, ptr[i]->name) != -1) {
+			error("NodeSet with name %s overlaps with an existing NodeName",
+			      ptr[i]->name);
+			hostlist_destroy(nodes);
+			return ESLURM_INVALID_NODE_NAME;
+		}
+	}
+
+	hostlist_destroy(nodes);
+	return SLURM_SUCCESS;
+}
+
 /*
  * load_all_node_state - Load the node state from file, recover on slurmctld
  *	restart. Execute this after loading the configuration file data.
@@ -408,6 +431,19 @@ extern int load_all_node_state ( bool state_only )
 			purge_node_rec(node_state_rec);
 			goto unpack_error;
 
+		}
+
+		/*
+		 * When a NodeSet is defined with the same name than
+		 * an existing node name found in the state file, and which
+		 * might not be in the configuration, then fatal. This can
+		 * happen for example when adding a dynamic node, then changing
+		 * slurm.conf by adding a NodeSet with the same name than the
+		 * dynamic node, and then restarting.
+		 */
+		if (_validate_nodes_vs_nodeset(node_state_rec->name) !=
+		    SLURM_SUCCESS) {
+			fatal("This error might happen when names overlap with dynamic nodes. Please rename the NodeSet in slurm.conf.");
 		}
 
 		if (node_state & NODE_STATE_DYNAMIC_NORM) {
@@ -5202,6 +5238,10 @@ extern int create_nodes(char *nodeline, char **err_msg)
 		goto fini;
 	}
 
+	if ((rc = _validate_nodes_vs_nodeset(conf_node->nodenames))
+	    != SLURM_SUCCESS)
+		goto fini;
+
 	state_val = state_str2int(conf_node->state, conf_node->nodenames);
 	if ((state_val == NO_VAL) ||
 	    ((state_val != NODE_STATE_FUTURE) &&
@@ -5280,6 +5320,13 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 			      reg_msg->dynamic_conf);
 			return SLURM_ERROR;
 		}
+
+		if (_validate_nodes_vs_nodeset(conf_node->nodenames) !=
+		    SLURM_SUCCESS) {
+			s_p_hashtbl_destroy(node_hashtbl);
+			return SLURM_ERROR;
+		}
+
 		config_ptr = config_record_from_conf_node(conf_node,
 							  slurmctld_tres_cnt);
 		if (conf_node->state)
