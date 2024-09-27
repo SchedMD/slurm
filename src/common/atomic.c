@@ -35,6 +35,7 @@
 
 #include "src/common/atomic.h"
 #include "src/common/log.h"
+#include "src/common/slurm_time.h"
 
 #ifdef __STDC_NO_ATOMICS__
 
@@ -144,6 +145,68 @@ extern int32_t atomic_int32_ptr_get(atomic_int32_t *target)
 	return value;
 }
 
+extern timespec_t atomic_timespec_ptr_get(atomic_timespec_t *target)
+{
+	timespec_t value;
+
+	slurm_mutex_lock(&target->mutex);
+
+	value = target->value;
+
+	slurm_mutex_unlock(&target->mutex);
+
+	return value;
+}
+
+extern timespec_t atomic_timespec_ptr_set(atomic_timespec_t *target,
+					  timespec_t ts)
+{
+	timespec_t value;
+
+	slurm_mutex_lock(&target->mutex);
+
+	value = target->value;
+	target->value = ts;
+
+	slurm_mutex_unlock(&target->mutex);
+
+	return value;
+}
+
+extern bool atomic_timespec_ptr_set_if_after(atomic_timespec_t *target,
+					     timespec_t ts)
+{
+	bool rc = false;
+
+	slurm_mutex_lock(&target->mutex);
+
+	if (timespec_is_after(ts, target->value)) {
+		target->value = ts;
+		rc = true;
+	}
+
+	slurm_mutex_unlock(&target->mutex);
+
+	return rc;
+}
+
+extern bool atomic_timespec_ptr_set_if_before(atomic_timespec_t *target,
+					      timespec_t ts)
+{
+	bool rc = false;
+
+	slurm_mutex_lock(&target->mutex);
+
+	if (timespec_is_after(target->value, ts)) {
+		target->value = ts;
+		rc = true;
+	}
+
+	slurm_mutex_unlock(&target->mutex);
+
+	return rc;
+}
+
 extern void atomic_log_features(void)
 {
 	debug("%s: _Atomic disabled. Failing down to pthread mutex.", __func__);
@@ -217,6 +280,77 @@ extern int32_t atomic_int32_ptr_get(atomic_int32_t *target)
 extern int32_t atomic_int32_ptr_set(atomic_int32_t *target, int32_t value)
 {
 	return atomic_exchange(&target->value, value);
+}
+
+extern timespec_t atomic_timespec_ptr_get(atomic_timespec_t *target)
+{
+	_Atomic uint64_t iteration;
+	timespec_t value;
+
+	do {
+		iteration = atomic_load(&target->iteration);
+		value.tv_sec = atomic_load(&target->tv_sec);
+		value.tv_nsec = atomic_load(&target->tv_nsec);
+	} while (atomic_load(&target->iteration) != iteration);
+
+	return value;
+}
+
+extern timespec_t atomic_timespec_ptr_set(atomic_timespec_t *target,
+					  timespec_t ts)
+{
+	_Atomic uint64_t iteration;
+	timespec_t value;
+
+	do {
+		iteration = (atomic_fetch_add(&target->iteration, 1) + 1);
+		value.tv_sec = atomic_exchange(&target->tv_sec, ts.tv_sec);
+		value.tv_nsec = atomic_exchange(&target->tv_nsec, ts.tv_nsec);
+	} while (atomic_load(&target->iteration) != iteration);
+
+	return value;
+}
+
+extern bool atomic_timespec_ptr_set_if_after(atomic_timespec_t *target,
+					     timespec_t ts)
+{
+	timespec_t value;
+	uint64_t iteration;
+	bool rc;
+
+	do {
+		iteration = (atomic_fetch_add(&target->iteration, 1) + 1);
+		value.tv_sec = atomic_load(&target->tv_sec);
+		value.tv_nsec = atomic_load(&target->tv_nsec);
+
+		if ((rc = timespec_is_after(ts, value))) {
+			atomic_store(&target->tv_sec, ts.tv_sec);
+			atomic_store(&target->tv_nsec, ts.tv_nsec);
+		}
+	} while (atomic_load(&target->iteration) != iteration);
+
+	return rc;
+}
+
+extern bool atomic_timespec_ptr_set_if_before(atomic_timespec_t *target,
+					      timespec_t ts)
+{
+	timespec_t value;
+	uint64_t iteration;
+	bool rc;
+
+	do {
+		iteration = (atomic_fetch_add(&target->iteration, 1) + 1);
+		value.tv_sec = atomic_load(&target->tv_sec);
+		value.tv_nsec = atomic_load(&target->tv_nsec);
+
+		if ((rc = timespec_is_after(value, ts))) {
+			atomic_store(&target->tv_sec, ts.tv_sec);
+			atomic_store(&target->tv_nsec, ts.tv_nsec);
+		}
+	} while (atomic_load(&target->iteration) != iteration);
+
+	return rc;
 }
 
 static const char *_lock_type_str(const int type)

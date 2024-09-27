@@ -36,6 +36,9 @@
 #ifndef _SLURM_ATOMICS_H
 #define _SLURM_ATOMICS_H
 
+#include "src/common/macros.h"
+#include "src/common/slurm_time.h"
+
 /*
  * Need at least C11 for atomics and guarentee __STDC_NO_ATOMICS__ is always
  * defined if not even if not by a non-compliant complier.
@@ -80,6 +83,24 @@ typedef _Atomic pthread_t atomic_pthread_t;
 
 #define ATOMIC_PTHREAD_INITIALIZER(init) ((atomic_pthread_t) init)
 
+/* Always use helper functions to access and ATOMIC_TIMESPEC_INITIALIZER() */
+typedef struct {
+	/*
+	 * Any operations must fetch iteration, run, and then verify iteration
+	 * has not changed by another thread or they must restart entirely
+	 */
+	_Atomic uint64_t iteration;
+	_Atomic STRUCT_FIELD_TYPEOF(timespec_t, tv_sec) tv_sec;
+	_Atomic STRUCT_FIELD_TYPEOF(timespec_t, tv_nsec) tv_nsec;
+} atomic_timespec_t;
+
+#define ATOMIC_TIMESPEC_INITIALIZER(init_secs, init_nsecs) \
+	((atomic_timespec_t) { \
+		.iteration = 0, \
+		.tv_sec = init_secs, \
+		.tv_nsec = init_nsecs, \
+	})
+
 #else /* __STDC_NO_ATOMICS__ */
 
 typedef struct {
@@ -102,6 +123,20 @@ typedef struct {
 	((atomic_bool_t) { \
 		.mutex = PTHREAD_MUTEX_INITIALIZER, \
 		.value = init, \
+	})
+
+typedef struct {
+	pthread_mutex_t mutex;
+	timespec_t value;
+} atomic_timespec_t;
+
+#define ATOMIC_TIMESPEC_INITIALIZER(init_secs, init_nsecs) \
+	((atomic_timespec_t) { \
+		.mutex = PTHREAD_MUTEX_INITIALIZER, \
+		.value = { \
+			.tv_sec = init_secs, \
+			.tv_nsec = init_nsecs, \
+		}, \
 	})
 
 #endif /* __STDC_NO_ATOMICS__ */
@@ -186,6 +221,42 @@ extern int32_t atomic_int32_ptr_set(atomic_int32_t *target, int32_t value);
 
 /* Set value of target to zero and return value */
 #define atomic_int32_set_zero(target) atomic_int32_ptr_set(&target, 0)
+
+/* Use atomic_timespec_get() instead */
+extern timespec_t atomic_timespec_ptr_get(atomic_timespec_t *target);
+/* Get copy of timespec target */
+#define atomic_timespec_get(target) atomic_timespec_ptr_get(&target)
+
+/* Get copy of seconds from timespec target */
+#define atomic_timespec_get_secs(target) \
+	(atomic_timespec_ptr_get(&target).tv_sec)
+/* Get copy of nanoseconds from timespec target */
+#define atomic_timespec_get_nsecs(target) \
+	(atomic_timespec_ptr_get(&target).tv_nsec)
+
+/* Use atomic_timespec_set() instead */
+extern timespec_t atomic_timespec_ptr_set(atomic_timespec_t *target,
+					  timespec_t ts);
+/* Set timespec and return prior value */
+#define atomic_timespec_set(target, value) \
+	atomic_timespec_ptr_set(&target, value)
+/* Set timespec to zero and return prior value */
+#define atomic_timespec_set_zero(target) \
+	atomic_timespec_ptr_set(&target, ((timespec_t) {0}))
+
+/* Use atomic_timespec_set_after() instead */
+extern bool atomic_timespec_ptr_set_if_after(atomic_timespec_t *target,
+					     timespec_t ts);
+/* Set timespec if ts is after target and return true if changed */
+#define atomic_timespec_set_if_after(target, ts) \
+	atomic_timespec_ptr_set_if_after(&target, ts)
+
+/* Use atomic_timespec_set_before() instead */
+extern bool atomic_timespec_ptr_set_if_before(atomic_timespec_t *target,
+					      timespec_t ts);
+/* Set timespec if ts is before target and return true if changed */
+#define atomic_timespec_set_if_before(target, ts) \
+	atomic_timespec_ptr_set_if_before(&target, ts)
 
 /* Debug log current features of Atomic support from compiler */
 extern void atomic_log_features(void);
