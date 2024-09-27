@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
     arrays in some situations.
  -- RoutePart - fix segfault from incorrect memory allocation when node doesn't
     exist in any partition.
+ -- slurmctld - Fix crash when a job is evaluated for a reservation after
+    removal of a dynamic node.
 
 * Changes in Slurm 24.05.4
 ==========================
