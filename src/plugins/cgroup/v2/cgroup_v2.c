@@ -123,22 +123,129 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
  */
 
 /*
- * Read /proc/<pid>/cgroup and return the absolute cgroup path.
+ * Get the cgroup root mountpoint for a given mount path and pid.
  *
- * The format in that file (for cgroup/v2) is 0::/<cg_path>, and it is
- * relative. This function takes care of extracting the cg_path.
+ * This function parses the /proc/pid/mountinfo, and gets the 4th element of
+ * the line which 5th element equals to mount parameter.
+ *
+ * From man proc_pid_mountinfo about 4th and 5th fields of mountinfo:
+ * (4) root: the pathname of the directory in the filesystem which forms the
+ * root of this mount.
+ * (5)  mount point: the pathname of the mount point relative to the process's
+ * root directory.
+ *
+ * This is used primarily to get the real mount for a cgroup filesystem as in
+ * some specific containerized environments the real root of the cgroup
+ * filesystem may not be coincide with what we get in /proc/1/cgroup.
+ *
+ * This only checks the first ocurrence of the mount as it will always be the
+ * proper one, as this file gets written sequentially, meaning that the "real"
+ * /sys/fs/cgroup will appear first. If it happens to be any bind mount to it
+ * it will appear later, those bind mounts do not affect the /proc/<pid>/cgroup
+ * data.
+ *
+ * Example:
+ * - For mount = "/sys/fs/cgroup" and pid 123, we find the following line in
+ * /proc/123/mountinfo, so as the 5th field matches mount, we will return the
+ * 4th field "/":
+ * 475 337 0:28 / /sys/fs/cgroup rw(...) - cgroup2 cgroup2 rw,nsdelegate(...)
+ *
+ * - If we get a line like this, we will return "/../../../../../..".
+ * 379 377 0:28 /../../../../../.. /sys/fs/cgroup rw(...) - cgroup2(...)
+ *
+ * IN mount - Path to match with the 5th field of mountinfo string.
+ * IN pid_str - Pid to look for the mountinfo.
+ * OUT data - NULL if not found, or a xmalloc'ed string with a copy of the
+ *            4th field of the line wich matches mount with the 5th field.
+ */
+static char *_get_root_mount_mountinfo(char *mount, char *pid_str)
+{
+	char *path = NULL, *line = NULL, *word, *data = NULL, *save_ptr = NULL;
+	size_t len = 0;
+	int count = 0;
+	FILE *f;
+	bool found = false;
+
+	path = xstrdup_printf("/proc/%s/mountinfo", pid_str);
+	f = fopen(path, "r");
+	xfree(path);
+	if (f == NULL) {
+		fatal("cannot read /proc/%s/mountinfo contents: %m", pid_str);
+		return NULL;
+	}
+
+	while (!found && getline(&line, &len, f) != -1) {
+		if (xstrstr(line, mount)) {
+			count = 0;
+			word = strtok_r(line, " ", &save_ptr);
+			while (word) {
+				/*
+				 * The 4th value is the root of the mount, and
+				 * the 5th is the mount, so we want to get
+				 * the 4th and ensure that the 5th is exactly
+				 * equal to mount, so that we are not looking
+				 * into a subdirectory.
+				 */
+				if (count == 3) {
+					data = word;
+					word = strtok_r(NULL, " ", &save_ptr);
+					if (!xstrcmp(word, mount)) {
+						data = xstrdup(data);
+						found = true;
+						break;
+					}
+				}
+				count++;
+				word = strtok_r(NULL, " ", &save_ptr);
+			}
+		}
+	}
+	free(line);
+
+	fclose(f);
+	if (!data) {
+		error("Could not parse '%s' root mount for %s", mount, pid_str);
+	}
+	return data;
+}
+
+/*
+ * Read /proc/<pid>/cgroup and return the absolute cgroup path of the given pid.
+ *
+ * We will deal with different cases. For example:
+ *
+ * In regular systems we expect one single line like this:
+ * "0::/init.scope\n"
+ *
+ * In some containerized environments it could look like:
+ * "0::/docker.slice/docker-<some UUID>.scope/init.scope"
+ *
+ * Or in a cgroup namespace:
+ * "0::/"
+ *
+ * This function just strips the initial "0::" and the last part of the path
+ * (e.g "init.scope") portions. Then it adds the cgroup mountpoint prefix.
+ *
+ * In Unified hierarchies this must contain only one line. If there are more
+ * lines this would mean we are in Hybrid or in Legacy cgroup. We do not support
+ * hybrid mode, so if we find more than one line we fatal.
+ *
+ * The Cgroup v2 documented way to know which is the cgroup root for a
+ * process in the cgroup hierarchy is just to read /proc/<pid>/cgroup.
  *
  * The parameter pid_str is a string representing a numeric pid or the
- * keyword 'self'. Note that in a cgroup namespace without a proper proc mount,
- * using 'self' will possibly return a different value than using getpid().
+ * keyword 'self'. (Note: if we are in a cgroup namespace without a proper proc
+ * mount, using 'self' will possibly return a different value than using
+ * getpid()).
  *
  * IN pid_str - pid to read the path for
- * OUT char - cgroup path for the passed pid read from /proc/self/cgroup
+ * OUT ret - xmalloc'ed string containing the cgroup path for the passed pid
+ *           read from /proc/<pid>/cgroup.
  */
 static char *_get_proc_cg_path(char *pid_str)
 {
 	char *buf, *start = NULL, *p, *ret = NULL;
-	char *path = NULL;
+	char *path = NULL, *minfo = NULL;
 	size_t sz;
 
 	path = xstrdup_printf("/proc/%s/cgroup", pid_str);
@@ -173,7 +280,54 @@ static char *_get_proc_cg_path(char *pid_str)
 		fatal("Unexpected format found in /proc/%s/cgroup file: %s",
 		      pid_str, buf);
 
-	xstrfmtcat(ret, "%s%s", slurm_cgroup_conf.cgroup_mountpoint, start);
+	/* Start the return string with the mount point of the cgroup. */
+	ret = xstrdup(slurm_cgroup_conf.cgroup_mountpoint);
+
+	/*
+	 * Only check mountinfo in case that the cgroup file points to a
+	 * location that is not the root of the cgroup mountpoint (/).
+	 */
+	if (xstrcmp(start, "/")) {
+		/*
+		 * Check for correct /proc and cgroup mounts when we are in a
+		 * cgroup namespace by checking mountinfo.
+		 */
+		minfo = _get_root_mount_mountinfo(
+			slurm_cgroup_conf.cgroup_mountpoint,
+			pid_str);
+		/*
+		* If minfo is "/" our root is
+		* slurm_cgroup_conf.cgroup_mountpoint.
+		*
+		* If minfo contains something different than "/":
+		* For containers with remounted cgroups, mountinfo would've
+		* returned a string different than "/", so we first need to
+		* ensure that the minfo is a substring of what we've read in
+		* /proc/pid/cgroup.
+		*
+		* If minfo content is not a substring of our /proc/pid/cgroup
+		* (e.g. minfo is "../../.." and /proc/pid/cgroup is
+		* 0::/something), we're in a wrong situation.
+		*/
+		if (xstrcmp(minfo, "/")) {
+			/*
+			* If the information of /proc/pid/mountinfo is not a
+			* substring of the one in /proc/pid/cgroup, it means
+			* that something is wrong. For example we are in a pid
+			* and a cgroup namespace without /proc properly mounted.
+			*/
+			if (xstrstr(start, minfo))
+				start = start + strlen(minfo);
+			else
+				fatal("mismatch found in /proc/%s/mountinfo: \"%s\" vs /proc/%s/cgroup: \"%s\". Please check that procfs and cgroupfs are correctly mounted in the namespace.",
+				      pid_str, minfo, pid_str, start);
+		}
+
+		/* Append the sanitized path to the cgroup mountpoint. */
+		xstrcat(ret, start);
+
+		xfree(minfo);
+	}
 
 	xfree(buf);
 	return ret;
