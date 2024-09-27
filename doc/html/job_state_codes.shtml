@@ -37,11 +37,11 @@ For more visibility into the job states and flags, set
 <tr><td><code>CANCELLED</code></td><td>cancelled by user or administrator</td></tr>
 <tr><td><code>COMPLETED</code></td><td>completed execution successfully;
 	finished with an <a href="job_exit_code.html">exit code</a> of zero on all nodes</td></tr>
-<tr><td><code>DEADLINE</code></td><td>terminated due to reaching deadline
-	specified at job submission</td></tr>
+<tr><td><code>DEADLINE</code></td><td>terminated due to reaching the latest
+	acceptable start time specified for the job</td></tr>
 <tr><td><code>FAILED</code></td><td>completed execution unsuccessfully;
 	non-zero <a href="job_exit_code.html">exit code</a> or other failure condition</td></tr>
-<tr><td><code>NODE_FAIL</code></td><td>terminated on node failure</td></tr>
+<tr><td><code>NODE_FAIL</code></td><td>terminated due to node failure</td></tr>
 <tr><td><code>OUT_OF_MEMORY</code></td><td>experienced out of memory error</td></tr>
 <tr><td><code>PENDING</code></td><td>queued and waiting for initiation;
 	will typically have a <a href="job_reason_codes.html">reason code</a>
@@ -54,9 +54,9 @@ For more visibility into the job states and flags, set
 	suspended, such as from <a href="preempt.html">preemption</a> or a
 	<a href="scontrol.html#OPT_suspend">direct request</a> from an
 	authorized user</td></tr>
-<tr><td><code>TIMEOUT</code></td><td>terminated on reaching time limit, such as
-	those configured in <a href="slurm.conf.html">slurm.conf</a> or at
-	job submission</td></tr>
+<tr><td><code>TIMEOUT</code></td><td>terminated due to reaching the time limit,
+	such as those configured in <a href="slurm.conf.html">slurm.conf</a> or
+	specified for the individual job</td></tr>
 </tbody>
 </table>
 
@@ -67,7 +67,7 @@ For more visibility into the job states and flags, set
 <table>
 <tbody>
 <tr><td><strong>Name</strong></td><td><strong>Description</strong></td></tr>
-<tr><td><code>COMPLETING</code></td><td>the job has finished or been cancelled
+<tr><td><code>COMPLETING</code></td><td>job has finished or been cancelled
 	and is performing cleanup tasks, including the
 	<a href="prolog_epilog.html">epilog</a> script if present</td></tr>
 <tr><td><code>CONFIGURING</code></td><td>job has been allocated nodes and is
@@ -106,6 +106,6 @@ For more visibility into the job states and flags, set
 </table>
 <br>
 
-<p style="text-align: center;">Last modified 22 August 2024</p>
+<p style="text-align: center;">Last modified 01 October 2024</p>
 
 <!--#include virtual="footer.txt"-->
