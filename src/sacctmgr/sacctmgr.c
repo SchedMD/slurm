@@ -84,6 +84,7 @@ static void	_show_it(int argc, char **argv);
 static void	_modify_it(int argc, char **argv);
 static void	_delete_it(int argc, char **argv);
 static int	_get_command(int *argc, char **argv);
+static int	_ping(int argc, char **argv);
 static void     _print_version(void);
 static int	_process_command(int argc, char **argv);
 static void	_usage(void);
@@ -387,6 +388,60 @@ static int _get_command (int *argc, char **argv)
 	return 0;
 }
 
+static void _set_ping_exit_code(slurmdbd_ping_t *ping)
+{
+	static bool slurmdbd_up = false;
+
+	if (ping->pinged) {
+		exit_code = SLURM_SUCCESS;
+		slurmdbd_up = true;
+	} else if (!slurmdbd_up) {
+		/* don't overwrite exit code if another slurmdbd is up */
+		exit_code = 1;
+	}
+}
+
+static void _print_db_ping(slurmdbd_ping_t *ping)
+{
+	char *state;
+	char *mode;
+
+	if (ping->pinged)
+		state = "UP";
+	else
+		state = "DOWN";
+
+	if (ping->offset == 0)
+		mode = "primary";
+	else
+		mode = "backup";
+
+	printf("slurmdbd(%s) at %s is %s\n", mode, ping->hostname, state);
+}
+
+static int _ping(int argc, char **argv)
+{
+	int rc = SLURM_SUCCESS;
+	slurmdbd_ping_t *pings = NULL;
+
+	if (!(pings = slurmdb_ping_all())) {
+		error("Failed to perform slurmdbd pings");
+		return SLURM_ERROR;
+	}
+
+	if (mime_type) {
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_PING_RESP, pings, argc,
+				     argv, db_conn, mime_type, data_parser, rc);
+	} else  {
+		for (int i = 0; pings[i].hostname; i++) {
+			_print_db_ping(&pings[i]);
+			_set_ping_exit_code(&pings[i]);
+		}
+	}
+
+	xfree(pings);
+	return rc;
+}
 
 static void _print_version(void)
 {
@@ -488,6 +543,15 @@ static int _process_command (int argc, char **argv)
 				 argv[0]);
 		}
 		quiet_flag = -1;
+	} else if (xstrncasecmp(argv[0], "ping", MAX(command_len, 4)) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf(stderr, "too many arguments for %s keyword\n",
+				argv[0]);
+		}
+
+		if (_ping(argc, argv))
+			fprintf(stderr, "unable to run ping\n");
 	} else if (xstrncasecmp(argv[0], "readonly",
 				MAX(command_len, 4)) == 0) {
 		if (argc > 1) {

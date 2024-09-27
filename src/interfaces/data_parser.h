@@ -352,6 +352,13 @@ typedef enum {
 	DATA_PARSER_OPENAPI_PING_ARRAY_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_CONTROLLER_PING_MODE, /* char * - verbose controller mode */
 	DATA_PARSER_CONTROLLER_PING_RESULT, /* bool - "UP" or "DOWN" */
+	DATA_PARSER_SLURMDBD_PING, /* controller_ping_t */
+	DATA_PARSER_SLURMDBD_PING_PTR, /* controller_ping_t* */
+	DATA_PARSER_SLURMDBD_PING_ARRAY, /* controller_ping_t (NULL terminated array) */
+	DATA_PARSER_OPENAPI_SLURMDBD_PING_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_SLURMDBD_PING_RESP_PTR, /* openapi_resp_single_t* */
+	DATA_PARSER_SLURMDBD_PING_MODE, /* char * - verbose slurmdbd mode */
+	DATA_PARSER_SLURMDBD_PING_RESULT, /* bool - "UP" or "DOWN" */
 	DATA_PARSER_NODE, /* node_info_t */
 	DATA_PARSER_NODE_PTR, /* node_info_t* */
 	DATA_PARSER_NODE_ARRAY, /* node_info_t** (NULL terminated) */

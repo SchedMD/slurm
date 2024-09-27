@@ -702,7 +702,7 @@ function __slurm_ctld_status() {
 # Determine if a slurmdbd will respond
 function __slurm_dbd_status() {
 	local output exit_code
-	output=$(true) # TODO: need 'sacctmgr ping'
+	output=$(sacctmgr ping 2>/dev/null)
 	exit_code=$?
 
 	if ((exit_code == 0)); then
@@ -3158,6 +3158,7 @@ function _sacctmgr() {
 		"list" "show"
 		"load"
 		"modify" "update"
+		"ping"
 		"reconfigure"
 		"remove" "delete"
 		"shutdown"

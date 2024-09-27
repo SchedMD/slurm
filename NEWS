@@ -145,6 +145,7 @@ documents those changes that are of interest to users and administrators.
     topology/block.
  -- sacct - Respect --noheader for --batch-script and --env-vars.
  -- sacct - Remove extra newline in output from --batch-script and --env-vars.
+ -- Add "sacctmgr ping" command to query status of slurmdbd.
 
 * Changes in Slurm 24.05.4
 ==========================

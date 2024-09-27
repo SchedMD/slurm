@@ -673,6 +673,23 @@ const openapi_path_binding_t openapi_paths[] = {
 		},
 		.flags = OP_FLAGS,
 	},
+	{
+		.path = "/slurmdb/{data_parser}/ping/",
+		.callback = op_handler_ping,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "ping test",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_SLURMDBD_PING_RESP,
+					.description = "results of ping test",
+				},
+			},
+			{0}
+		},
+		.flags = OP_FLAGS,
+	},
 	{0}
 };
 

@@ -49,6 +49,7 @@ sacctmgr [<OPTION>] [<COMMAND>]
      oneliner                 report output one record per line.
      parsable                 output will be | delimited with an ending '|'
      parsable2                output will be | delimited without an ending '|'
+     ping                     ping slurmdbd
      quiet                    print no messages other than error messages.
      quit                     terminate this command.
      readonly                 makes it so no modification can happen.

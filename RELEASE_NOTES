@@ -36,6 +36,7 @@ COMMAND CHANGES (see man pages for details)
  -- Remove srun --cpu-bind=rank.
  -- Add "%b" as a file name pattern for the array task id modulo 10.
  -- sacct - Respect --noheader for --batch-script and --env-vars.
+ -- Add "sacctmgr ping" command to query status of slurmdbd.
 
 API CHANGES
 ===========

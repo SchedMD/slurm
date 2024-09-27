@@ -50,6 +50,234 @@
 <h4>Modified Fields</h4>
 <table class="tchange">
 <tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.errors = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.errors.$ref = "#/components/schemas/v0.0.42_openapi_errors";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.errors.description = "Query errors";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.meta = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.meta.$ref = "#/components/schemas/v0.0.42_openapi_meta";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.meta.description = "Slurm meta values";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.pings = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.pings.$ref = "#/components/schemas/v0.0.42_slurmdbd_ping_array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.pings.description = "pings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.warnings = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.warnings.$ref = "#/components/schemas/v0.0.42_openapi_warnings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].properties.warnings.description = "Query warnings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].required[0] = "pings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_openapi_slurmdbd_ping_resp"].type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.hostname = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.hostname.description = "Target for ping";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.hostname.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.latency = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.latency.description = "Number of microseconds it took to successfully ping or timeout";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.latency.format = "int64";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.latency.type = "integer";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.mode = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.mode.description = "The operating mode of the responding slurmdbd";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.mode.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.pinged = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.pinged.description = "Ping result";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].properties.pinged.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping"].type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping_array"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping_array"].items = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping_array"].items.$ref = "#/components/schemas/v0.0.42_slurmdbd_ping";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_slurmdbd_ping_array"].type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.operationId = "slurmdb_v0042_get_ping";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["200"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["200"].content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["200"].content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["200"].content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.42_openapi_slurmdbd_ping_resp";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["200"].description = "results of ping test";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["default"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["default"].content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["default"].content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["default"].content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.42_openapi_slurmdbd_ping_resp";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.responses["default"].description = "results of ping test";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.summary = "ping test";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.tags = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.42/ping/"].get.tags[0] = "slurmdb";</td>
+</tr>
+<tr class="trchange">
 	<td class="tdfield">Removed</td>
 	<td class="tdchange">.components.schemas["v0.0.42_openapi_job_info_resp"].properties.jobs.items.properties.minimum_switches = {};</td>
 </tr>
