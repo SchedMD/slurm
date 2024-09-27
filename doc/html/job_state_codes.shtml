@@ -9,7 +9,8 @@ displayed depends on the method used to identify the state.</p>
 
 <p>In the Slurm code, there are <b>base states</b> and <b>state flags</b>.
 Each job has a base state and may have additional state flags set. When using
-the REST API, both the base state and current flag(s) will be returned.</p>
+the <a href="rest_quickstart.html">REST API</a>, both the base state and current
+flag(s) will be returned.</p>
 
 <p>When the <a href="squeue.html">squeue</a> and <a href="sacct.html">sacct</a>
 command report a job state, they represent it as a single state. Both will
