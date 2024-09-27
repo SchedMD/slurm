@@ -13,7 +13,6 @@ potential complications to prepare for.</p>
 <li><a href="#release_cycle">Release Cycle</a>
 <ul>
 <li><a href="#compatibility_window">Compatibility Window</a></li>
-<li><a href="#known_issues">Known Issues</a></li>
 <li><a href="#epel_repository">EPEL Repository</a></li>
 <li><a href="#prerelease">Pre-Release Versions</a></li>
 </ul></li>
@@ -124,21 +123,6 @@ systems to Slurm 22.05 and verify functionality, then proceed to upgrade to
 by SchedMD. Compatibility requirements apply to running jobs and upgrading
 outside of their compatibility window will result in the jobs being killed and
 job accounting being lost.</p>
-
-<h3 id="known_issues">Known Issues
-<a class="slurm_link" href="#known_issues"></a></h3>
-
-<p>Upgrades should target the latest maintenance version available for the
-chosen major version. This will allow you to avoid most known issues with the
-upgrade procedure. Certain other issues may require special attention:</p>
-
-<ul>
-<li>Jobs started under 23.02 or older cannot be suspended or resumed by Slurm
-23.11. This is fixed in 24.05.4.</li>
-<li>If slurmdbd is upgraded to 24.05 but commands are still on 23.02, Slurm
-will not be able to resolve <code>-M</code>/<code>--cluster</code> flags.
-This will be fixed once the commands are also upgraded.</li>
-</ul>
 
 <h3 id="epel_repository">EPEL Repository
 <a class="slurm_link" href="#epel_repository"></a></h3>
@@ -639,6 +623,6 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p style="text-align:center;">Last modified 24 August 2024</p>
+<p style="text-align:center;">Last modified 15 August 2024</p>
 
 <!--#include virtual="footer.txt"-->
