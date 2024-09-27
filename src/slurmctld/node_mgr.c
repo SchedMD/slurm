@@ -5349,6 +5349,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	if ((rc = add_node_record(reg_msg->node_name, config_ptr, &node_ptr))) {
 		error("%s (%s)", slurm_strerror(rc), reg_msg->node_name);
 		list_delete_ptr(config_list, config_ptr);
+		s_p_hashtbl_destroy(node_hashtbl);
 		return SLURM_ERROR;
 	}
 
