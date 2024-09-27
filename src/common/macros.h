@@ -388,6 +388,9 @@
 /* Number of elements in an allocated array */
 #define PTR_ARRAY_SIZE(x) (xsize(x) / sizeof((x)[0]))
 
+/* Get __typeof__(s->f) */
+#define STRUCT_FIELD_TYPEOF(s, f) __typeof__(((s *) (NULL))->f)
+
 #define SWAP(x, y)		\
 do {				\
 	__typeof__(x) b = x;	\
