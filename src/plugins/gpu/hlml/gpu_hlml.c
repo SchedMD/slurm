@@ -169,11 +169,11 @@ static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
  *
  * node_config (IN/OUT) pointer of node_config_load_t passed down
  */
-static List _get_system_hpu_list_hlml(node_config_load_t *node_config)
+static list_t *_get_system_hpu_list_hlml(node_config_load_t *node_config)
 {
 	unsigned int i;
 	unsigned int device_count = 0;
-	List gres_list_system = list_create(destroy_gres_slurmd_conf);
+	list_t *gres_list_system = list_create(destroy_gres_slurmd_conf);
 
 	xassert(node_config->xcpuinfo_mac_to_abs);
 
@@ -259,9 +259,9 @@ static List _get_system_hpu_list_hlml(node_config_load_t *node_config)
 	return gres_list_system;
 }
 
-extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
+extern list_t *gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 {
-	List gres_list_system = _get_system_hpu_list_hlml(node_config);
+	list_t *gres_list_system = _get_system_hpu_list_hlml(node_config);
 
 	if (!gres_list_system)
 		error("System Gaudi accelerators detection failed");
