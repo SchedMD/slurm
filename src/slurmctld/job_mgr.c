@@ -4004,7 +4004,7 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 	bit_or(avail_node_bitmap, rs_node_bitmap);
 
 	if (job_ptr->part_ptr_list) {
-		list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
+		/* part_ptr_list is already sorted */
 		/*
 		 * This iter can not be a list_for_each() we eventually will
 		 * call select_nodes() which will then call
@@ -19211,4 +19211,17 @@ extern uint16_t job_mgr_determine_cpus_per_core(
 	threads_per_core = MIN(threads_per_core, ncpus_per_core);
 
 	return threads_per_core;
+}
+
+static int _sort_part_lists(void *x, void *none)
+{
+	job_record_t *job_ptr = x;
+	if (job_ptr && job_ptr->part_ptr_list)
+		list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
+	return SLURM_SUCCESS;
+}
+
+extern void sort_all_jobs_partition_lists()
+{
+	list_for_each(job_list, _sort_part_lists, NULL);
 }

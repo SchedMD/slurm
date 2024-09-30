@@ -757,8 +757,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 			xfree(job_ptr->part_prio->priority_array);
 			if (job_ptr->part_ptr_list) {
 				i = list_count(job_ptr->part_ptr_list);
-				list_sort(job_ptr->part_ptr_list,
-					  priority_sort_part_tier);
+				/* part_ptr_list is already sorted */
 				xfree(job_ptr->part_prio->priority_array_names);
 				job_ptr->part_prio->priority_array_names =
 					part_list_to_xstr(

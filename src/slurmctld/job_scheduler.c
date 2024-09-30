@@ -4086,19 +4086,6 @@ static void _delayed_job_start_time(job_record_t *job_ptr)
 	job_ptr->start_time += cume_space_time;
 }
 
-static int _part_weight_sort(void *x, void *y)
-{
-	part_record_t *parta = *(part_record_t **) x;
-	part_record_t *partb = *(part_record_t **) y;
-
-	if (parta->priority_tier > partb->priority_tier)
-		return -1;
-	if (parta->priority_tier < partb->priority_tier)
-		return 1;
-
-	return 0;
-}
-
 /*
  * Determine if a pending job will run using only the specified nodes, build
  * response message and return SLURM_SUCCESS on success. Otherwise return an
@@ -4131,7 +4118,6 @@ extern int job_start_data(job_record_t *job_ptr,
 		return ESLURM_DISABLED;
 
 	if (job_ptr->part_ptr_list) {
-		list_sort(job_ptr->part_ptr_list, _part_weight_sort);
 		iter = list_iterator_create(job_ptr->part_ptr_list);
 		part_ptr = list_next(iter);
 	} else
