@@ -117,11 +117,11 @@ typedef struct {
 
 typedef struct {
 	bool backfill;
-	int job_part_pairs;
+	int job_prio_pairs;
 	job_record_t *job_ptr;
 	list_t *job_queue;
 	time_t now;
-	int part_inx;
+	int prio_inx;
 } build_job_queue_for_part_t;
 
 typedef struct {
@@ -546,16 +546,16 @@ static int _build_job_queue_for_part(void *x, void *arg)
 	 * priority_array index matches part_ptr_list
 	 * position: increment inx
 	 */
-	setup_job->part_inx++;
+	setup_job->prio_inx++;
 
 	if (!_job_runnable_test2(job_ptr, setup_job->now, setup_job->backfill))
 		return 0;
 
-	setup_job->job_part_pairs++;
+	setup_job->job_prio_pairs++;
 	if (job_ptr->part_prio && job_ptr->part_prio->priority_array) {
 		_job_queue_append(setup_job->job_queue, job_ptr,
 				  job_ptr->part_prio->
-				  priority_array[setup_job->part_inx]);
+				  priority_array[setup_job->prio_inx]);
 	} else {
 		_job_queue_append(setup_job->job_queue, job_ptr,
 				  job_ptr->priority);
@@ -755,7 +755,7 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 				     "pairs added",
 				     __func__, build_queue_timeout, tested_jobs,
 				     list_count(job_list),
-				     setup_job.job_part_pairs);
+				     setup_job.job_prio_pairs);
 				last_log_time = setup_job.now;
 			}
 			break;
@@ -769,7 +769,7 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 		if (!_job_runnable_test1(job_ptr, clear_start))
 			continue;
 
-		setup_job.part_inx = -1;
+		setup_job.prio_inx = -1;
 		if (job_ptr->part_ptr_list) {
 			(void) list_for_each(job_ptr->part_ptr_list,
 					     _build_job_queue_for_part,
