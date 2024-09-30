@@ -85,6 +85,19 @@ extern int priority_sort_part_tier(void *x, void *y)
 	return 0;
 }
 
+extern int priority_sort_qos_desc(void *x, void *y)
+{
+	slurmdb_qos_rec_t *qosa = *(slurmdb_qos_rec_t **) x;
+	slurmdb_qos_rec_t *qosb = *(slurmdb_qos_rec_t **) y;
+
+	if (qosa->priority > qosb->priority)
+		return -1;
+	if (qosa->priority < qosb->priority)
+		return 1;
+
+	return 0;
+}
+
 /*
  * Initialize context for priority plugin
  */
