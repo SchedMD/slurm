@@ -96,7 +96,7 @@ static int   _file_state(struct bcast_parameters *params);
 static list_t *_fill_in_excluded_paths(struct bcast_parameters *params);
 static int _find_subpath(void *x, void *key);
 static int _foreach_shared_object(void *x, void *y);
-static int   _get_job_info(struct bcast_parameters *params);
+static int _get_cred_for_job(struct bcast_parameters *params);
 static list_t *_get_lib_paths(char *filename);
 
 static int _file_state(struct bcast_parameters *params)
@@ -135,7 +135,7 @@ static int _file_state(struct bcast_parameters *params)
 }
 
 /* get details about this slurm job: jobid and allocated node */
-static int _get_job_info(struct bcast_parameters *params)
+static int _get_cred_for_job(struct bcast_parameters *params)
 {
 	int rc;
 	char job_id_str[64];
@@ -628,7 +628,7 @@ extern int bcast_file(struct bcast_parameters *params)
 
 	if ((rc = _file_state(params)) != SLURM_SUCCESS)
 		return rc;
-	if ((rc = _get_job_info(params)) != SLURM_SUCCESS)
+	if ((rc = _get_cred_for_job(params)) != SLURM_SUCCESS)
 		return rc;
 
 	/*
