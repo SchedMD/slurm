@@ -302,7 +302,8 @@ static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			    bitstr_t *req_bitmap, part_record_t *part_ptr,
 			    list_t *part_ptr_list,
 			    slurmdb_assoc_rec_t *assoc_ptr,
-			    slurmdb_qos_rec_t *qos_ptr);
+			    slurmdb_qos_rec_t *qos_ptr,
+			    list_t *qos_ptr_list);
 static int  _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 			       bool cron, uid_t submit_uid,
 			       part_record_t *part_ptr, list_t *part_list);
@@ -6251,7 +6252,8 @@ static int _qos_part_check(void *object, void *arg)
  */
 static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 			      bitstr_t *req_bitmap, uid_t submit_uid,
-			      slurmdb_qos_rec_t *qos_ptr, char *acct)
+			      slurmdb_qos_rec_t *qos_ptr,
+			      list_t *qos_ptr_list, char *acct)
 {
 	uint32_t total_nodes;
 	qos_part_check_t qos_part_check = {
@@ -6333,7 +6335,12 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 	}
 
 	/* Check against min/max node limits in the partition */
-	(void) _qos_part_check(qos_ptr, &qos_part_check);
+	if (qos_ptr_list)
+		(void) list_for_each(qos_ptr_list,
+				     _qos_part_check,
+				     &qos_part_check);
+	else
+		(void) _qos_part_check(qos_ptr, &qos_part_check);
 	if (qos_part_check.error_code != SLURM_SUCCESS)
 		return qos_part_check.error_code;
 
@@ -6481,7 +6488,8 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			   bitstr_t *req_bitmap, part_record_t *part_ptr,
 			   list_t *part_ptr_list,
 			   slurmdb_assoc_rec_t *assoc_ptr,
-			   slurmdb_qos_rec_t *qos_ptr)
+			   slurmdb_qos_rec_t *qos_ptr,
+			   list_t *qos_ptr_list)
 {
 	int rc = SLURM_SUCCESS;
 	part_record_t *part_ptr_tmp;
@@ -6505,7 +6513,8 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			 */
 			rc = _part_access_check(part_ptr_tmp, job_desc,
 						req_bitmap, submit_uid,
-						qos_ptr, assoc_ptr ?
+						qos_ptr, qos_ptr_list,
+						assoc_ptr ?
 						assoc_ptr->acct : NULL);
 
 			if ((rc != SLURM_SUCCESS) &&
@@ -6554,7 +6563,7 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		max_nodes_orig = part_ptr->max_nodes_orig;
 		max_time = part_ptr->max_time;
 		rc = _part_access_check(part_ptr, job_desc, req_bitmap,
-					submit_uid, qos_ptr,
+					submit_uid, qos_ptr, qos_ptr_list,
 					assoc_ptr ? assoc_ptr->acct : NULL);
 		if ((rc != SLURM_SUCCESS) &&
 		    ((rc == ESLURM_ACCESS_DENIED) ||
@@ -6758,8 +6767,10 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 	else
 		job_desc.time_limit = job_ptr->time_limit;
 
+	/* For qos_ptr_list we are checking that now, so send in NULL */
 	if ((rc = _part_access_check(part_ptr, &job_desc, NULL,
 				     job_ptr->user_id, qos_ptr,
+				     NULL,
 				     job_ptr->account))) {
 		debug2("%pJ can't run in partition %s: %s",
 		       job_ptr, part_ptr->name, slurm_strerror(rc));
@@ -6961,7 +6972,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 {
 	int error_code = SLURM_SUCCESS, qos_error;
 	part_record_t *part_ptr = NULL;
-	list_t *part_ptr_list = NULL;
+	list_t *part_ptr_list = NULL, *qos_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	job_record_t *job_ptr = NULL;
 	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
@@ -7105,7 +7116,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	error_code = _valid_job_part(job_desc, submit_uid, req_bitmap,
 				     part_ptr, part_ptr_list,
-				     assoc_ptr, qos_ptr);
+				     assoc_ptr, qos_ptr, qos_ptr_list);
 	assoc_mgr_unlock(&assoc_mgr_read_lock);
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
@@ -12805,7 +12816,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				     use_part_ptr,
 				     new_part_ptr ?
 				     part_ptr_list : job_ptr->part_ptr_list,
-				     use_assoc_ptr, use_qos_ptr))) {
+				     use_assoc_ptr, use_qos_ptr, NULL))) {
 				assoc_mgr_unlock(&assoc_mgr_read_lock);
 				goto fini;
 			}
