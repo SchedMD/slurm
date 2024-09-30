@@ -146,6 +146,8 @@ documents those changes that are of interest to users and administrators.
  -- sacct - Respect --noheader for --batch-script and --env-vars.
  -- sacct - Remove extra newline in output from --batch-script and --env-vars.
  -- Add "sacctmgr ping" command to query status of slurmdbd.
+ -- Generate an error message when a NodeSet name conflicts with a NodeName, and
+    prevent the controller from starting if such a conflict exists.
 
 * Changes in Slurm 24.05.4
 ==========================
@@ -201,8 +203,6 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - Fix state save with reservation flags when a update fails.
  -- Fix reservation update issues with parameters Accounts and Users, when
     using +/- signs.
- -- Generate an error message when a NodeSet name conflicts with a NodeName.
-    Prevents the controller to start if a conflict exists.
 
 * Changes in Slurm 24.05.3
 ==========================
