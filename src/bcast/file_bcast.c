@@ -151,6 +151,22 @@ static int _get_cred_for_job(struct bcast_parameters *params)
 		      job_id_str, slurm_strerror(errno));
 		return rc;
 	}
+
+	if (params->node_list) {
+		hostset_t *job_nodes = hostset_create(sbcast_cred->node_list);
+
+		if (!hostset_within(job_nodes, params->node_list)) {
+			error("Not all nodes in --nodelist/-w '%s' are in job %s.",
+			      params->node_list, job_id_str);
+			FREE_NULL_HOSTSET(job_nodes);
+			return SLURM_ERROR;
+		}
+		FREE_NULL_HOSTSET(job_nodes);
+
+		xfree(sbcast_cred->node_list);
+		sbcast_cred->node_list = xstrdup(params->node_list);
+	}
+
 	verbose("jobid      = %s", job_id_str);
 	verbose("node_list  = %s", sbcast_cred->node_list);
 

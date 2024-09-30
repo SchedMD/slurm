@@ -87,6 +87,7 @@ extern void parse_command_line(int argc, char **argv)
 		{"treewidth",    required_argument, 0, OPT_LONG_TREE_WIDTH},
 		{"force",     no_argument,       0, 'f'},
 		{"jobid",     required_argument, 0, 'j'},
+		{"nodelist",  optional_argument, 0, 'w'},
 		{"send-libs", optional_argument, 0, OPT_LONG_SEND_LIBS},
 		{"preserve",  no_argument,       0, 'p'},
 		{"size",      required_argument, 0, 's'},
@@ -148,7 +149,7 @@ extern void parse_command_line(int argc, char **argv)
 		params.timeout = (atoi(env_val) * 1000);
 
 	optind = 0;
-	while ((opt_char = getopt_long(argc, argv, "C::fF:j:ps:t:vV",
+	while ((opt_char = getopt_long(argc, argv, "C::fF:j:ps:t:vVw:",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -201,6 +202,9 @@ extern void parse_command_line(int argc, char **argv)
 		case (int) 'V':
 			print_slurm_version();
 			exit(0);
+		case (int) 'w':
+			params.node_list = xstrdup(optarg);
+			break;
 		case (int) OPT_LONG_HELP:
 			_help();
 			exit(0);

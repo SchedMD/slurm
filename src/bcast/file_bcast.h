@@ -52,6 +52,7 @@ struct bcast_parameters {
 	char *dst_fname;
 	char *exe_fname;
 	uint16_t flags;
+	char *node_list;
 	slurm_selected_step_t *selected_step;
 	char *src_fname;
 	uint32_t step_id;
