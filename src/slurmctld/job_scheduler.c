@@ -592,21 +592,6 @@ static int _foreach_job_is_completing(void *x, void *arg)
 	return 0;
 }
 
-static int _foreach_part_prios_same(void *x, void *arg)
-{
-	part_record_t *part_ptr = x;
-	part_prios_same_t *part_prios_same = arg;
-
-	if (!part_prios_same->set) {
-		part_prios_same->prio = part_ptr->priority_tier;
-		part_prios_same->set = true;
-	} else if (part_prios_same->prio != part_ptr->priority_tier) {
-		return -1;
-	}
-
-	return 0;
-}
-
 static int _foreach_wait_front_end(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
@@ -909,18 +894,6 @@ static void _do_diag_stats(long delta_t)
 	slurmctld_diag_stats.schedule_cycle_counter++;
 }
 
-/* Return true of all partitions have the same priority, otherwise false. */
-static bool _all_partition_priorities_same(void)
-{
-	part_prios_same_t part_prios_same = { 0 };
-
-	if (list_for_each(part_list, _foreach_part_prios_same,
-			  &part_prios_same) == -1)
-		return false;
-
-	return true;
-}
-
 /*
  * Queue requests of job scheduler
  */
@@ -1156,7 +1129,6 @@ static void _set_schedule_exit(schedule_exit_t code)
 
 static int _schedule(bool full_queue)
 {
-	list_itr_t *job_iterator = NULL, *part_iterator = NULL;
 	list_t *job_queue = NULL;
 	int job_cnt = 0;
 	int error_code, i, time_limit, pend_time;
@@ -1171,7 +1143,6 @@ static int _schedule(bool full_queue)
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	bool is_job_array_head;
 	static time_t sched_update = 0;
-	static bool fifo_sched = false;
 	static bool assoc_limit_stop = false;
 	static int sched_timeout = 0;
 	static int sched_max_job_start = 0;
@@ -1198,12 +1169,6 @@ static int _schedule(bool full_queue)
 
 	if (sched_update != slurm_conf.last_update) {
 		char *tmp_ptr;
-		if (!xstrcmp(slurm_conf.schedtype, "sched/builtin") &&
-		    !xstrcmp(slurm_conf.priority_type, "priority/basic") &&
-		    _all_partition_priorities_same())
-			fifo_sched = true;
-		else
-			fifo_sched = false;
 
 		if (xstrcasestr(slurm_conf.sched_params, "assoc_limit_stop"))
 			assoc_limit_stop = true;
@@ -1477,23 +1442,9 @@ static int _schedule(bool full_queue)
 	}
 
 	sched_debug("Running job scheduler %s.", full_queue ? "for full queue":"for default depth");
-	/*
-	 * If we are doing FIFO scheduling, use the job records right off the
-	 * job list.
-	 *
-	 * If a job is submitted to multiple partitions then build_job_queue()
-	 * will return a separate record for each job:partition pair.
-	 *
-	 * In both cases, we test each partition associated with the job.
-	 */
-	if (fifo_sched) {
-		slurmctld_diag_stats.schedule_queue_len = list_count(job_list);
-		job_iterator = list_iterator_create(job_list);
-	} else {
-		job_queue = build_job_queue(false, false);
-		slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
-		sort_job_queue(job_queue);
-	}
+	job_queue = build_job_queue(false, false);
+	slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
+	sort_job_queue(job_queue);
 
 	job_ptr = NULL;
 	wait_on_resv = false;
@@ -1504,102 +1455,51 @@ static int _schedule(bool full_queue)
 			fill_array_reasons(job_ptr, reject_array_job);
 		}
 
-		if (fifo_sched) {
-			if (job_ptr && part_iterator &&
-			    IS_JOB_PENDING(job_ptr)) /* test job in next part */
-				goto next_part;
-			job_ptr = list_next(job_iterator);
-			if (!job_ptr) {
-				_set_schedule_exit(SCHEDULE_EXIT_END);
-				break;
-			}
-
-			/* When not fifo we do this in build_job_queue(). */
-			if (IS_JOB_PENDING(job_ptr)) {
-				set_job_failed_assoc_qos_ptr(job_ptr);
-				acct_policy_handle_accrue_time(job_ptr, false);
-			}
-
-			if (!avail_front_end(job_ptr)) {
-				job_ptr->state_reason = WAIT_FRONT_END;
-				xfree(job_ptr->state_desc);
-				last_job_update = now;
-				continue;
-			}
-			if (!_job_runnable_test1(job_ptr, false))
-				continue;
-			if (job_ptr->part_ptr_list) {
-				part_iterator = list_iterator_create(
-					job_ptr->part_ptr_list);
-next_part:
-				part_ptr = list_next(part_iterator);
-
-				if (!_job_runnable_test3(job_ptr, part_ptr))
-					continue;
-
-				if (part_ptr) {
-					job_ptr->part_ptr = part_ptr;
-					if (job_limits_check(&job_ptr, false) !=
-					    WAIT_NO_REASON)
-						continue;
-				} else {
-					list_iterator_destroy(part_iterator);
-					part_iterator = NULL;
-					continue;
-				}
-			} else {
-				if (!_job_runnable_test2(job_ptr, now, false))
-					continue;
-				part_ptr = job_ptr->part_ptr;
-			}
-			use_prefer = false;
-		} else {
-			job_queue_rec = list_pop(job_queue);
-			if (!job_queue_rec) {
-				_set_schedule_exit(SCHEDULE_EXIT_END);
-				break;
-			}
-			array_task_id = job_queue_rec->array_task_id;
-			job_ptr  = job_queue_rec->job_ptr;
-			part_ptr = job_queue_rec->part_ptr;
-
-			if (!avail_front_end(job_ptr)) {
-				job_ptr->state_reason = WAIT_FRONT_END;
-				xfree(job_ptr->state_desc);
-				last_job_update = now;
-				xfree(job_queue_rec);
-				continue;
-			}
-			if ((job_ptr->array_task_id != array_task_id) &&
-			    (array_task_id == NO_VAL)) {
-				/* Job array element started in other partition,
-				 * reset pointer to "master" job array record */
-				job_ptr = find_job_record(job_ptr->array_job_id);
-				job_queue_rec->job_ptr = job_ptr;
-			}
-			if (!job_ptr || !IS_JOB_PENDING(job_ptr)) {
-				xfree(job_queue_rec);
-				continue;	/* started in other partition */
-			}
-
-			use_prefer = job_queue_rec->use_prefer;
-			_set_features(job_ptr, use_prefer);
-
-			if (job_ptr->resv_list)
-				job_queue_rec_resv_list(job_queue_rec);
-			else
-				job_queue_rec_magnetic_resv(job_queue_rec);
-
-			if (!_job_runnable_test3(job_ptr, part_ptr)) {
-				xfree(job_queue_rec);
-				continue;
-			}
-
-			job_ptr->part_ptr = part_ptr;
-			job_ptr->priority = job_queue_rec->priority;
-
-			xfree(job_queue_rec);
+		job_queue_rec = list_pop(job_queue);
+		if (!job_queue_rec) {
+			_set_schedule_exit(SCHEDULE_EXIT_END);
+			break;
 		}
+		array_task_id = job_queue_rec->array_task_id;
+		job_ptr = job_queue_rec->job_ptr;
+		part_ptr = job_queue_rec->part_ptr;
+
+		if (!avail_front_end(job_ptr)) {
+			job_ptr->state_reason = WAIT_FRONT_END;
+			xfree(job_ptr->state_desc);
+			last_job_update = now;
+			xfree(job_queue_rec);
+			continue;
+		}
+		if ((job_ptr->array_task_id != array_task_id) &&
+		    (array_task_id == NO_VAL)) {
+			/* Job array element started in other partition,
+			 * reset pointer to "master" job array record */
+			job_ptr = find_job_record(job_ptr->array_job_id);
+			job_queue_rec->job_ptr = job_ptr;
+		}
+		if (!job_ptr || !IS_JOB_PENDING(job_ptr)) {
+			xfree(job_queue_rec);
+			continue;	/* started in other partition */
+		}
+
+		use_prefer = job_queue_rec->use_prefer;
+		_set_features(job_ptr, use_prefer);
+
+		if (job_ptr->resv_list)
+			job_queue_rec_resv_list(job_queue_rec);
+		else
+			job_queue_rec_magnetic_resv(job_queue_rec);
+
+		if (!_job_runnable_test3(job_ptr, part_ptr)) {
+			xfree(job_queue_rec);
+			continue;
+		}
+
+		job_ptr->part_ptr = part_ptr;
+		job_ptr->priority = job_queue_rec->priority;
+
+		xfree(job_queue_rec);
 
 		job_ptr->last_sched_eval = time(NULL);
 
@@ -2122,14 +2022,8 @@ fail_this_part:	if (fail_by_part) {
 		job_resv_clear_magnetic_flag(job_ptr);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
-	if (fifo_sched) {
-		if (job_iterator)
-			list_iterator_destroy(job_iterator);
-		if (part_iterator)
-			list_iterator_destroy(part_iterator);
-	} else if (job_queue) {
-		FREE_NULL_LIST(job_queue);
-	}
+	FREE_NULL_LIST(job_queue);
+
 	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 	if ((slurmctld_config.server_thread_count >= 150) &&
 	    (defer_rpc_cnt == 0)) {
