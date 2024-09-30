@@ -2302,6 +2302,18 @@ extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 		if (!access(file_path, F_OK))
 			return true;
 		break;
+	case CG_FALSE_ROOT:
+		/*
+		 * The cgroup.type file is only present on non-root cgroups.
+		 * This is done to ensure that we do not have a cgroup non-root
+		 * mounted into /sys/fs/cgroup.
+		 */
+		if (snprintf(file_path, PATH_MAX, "%s/cgroup.type",
+			     slurm_cgroup_conf.cgroup_mountpoint) >= PATH_MAX)
+			break;
+		if (!access(file_path, F_OK))
+			return true;
+		break;
 	default:
 		break;
 	}
