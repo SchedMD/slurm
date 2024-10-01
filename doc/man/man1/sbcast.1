@@ -1,4 +1,4 @@
-.TH sbcast "1" "Slurm Commands" "February 2024" "Slurm Commands"
+.TH sbcast "1" "Slurm Commands" "September 2024" "Slurm Commands"
 
 .SH "NAME"
 sbcast \- transmit a file to the nodes allocated to a Slurm job.
@@ -54,6 +54,20 @@ If the destination file (and the destination library directory when using
 \fB\-j\fR, \fB\-\-jobid\fR=<\fIjobID\fR[.\fIstepID\fR]>
 Specify the job ID to use with optional step ID. If run inside an allocation
 this is unneeded as the job ID will read from the environment.
+.IP
+
+.TP
+\fB\-Z\fR, \fB\-\-no-allocation\fR
+Transmit files to a list of nodes regardless of what jobs they may be running.
+This can only be done by SlurmUser/root.
+
+\fB\-\-nodelist\fR must be used with this option.
+.IP
+
+.TP
+\fB\-w\fR, \fB\-\-nodelist\fR=<\fInode_name_list\fR>
+List of hosts to transmit files to. These nodes must be a subset of the
+targeted job, or the \fB\-\-no-allocation\fR option must be used.
 .IP
 
 .TP
