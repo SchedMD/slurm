@@ -84,8 +84,8 @@ static void _dump(ctxt_t *ctxt, openapi_resp_slurmdbd_config_t *resp)
 			   &acct_cond) &&
 	    !db_query_list(ctxt, &resp->users, slurmdb_users_get, &user_cond) &&
 	    !db_query_list(ctxt, &resp->qos, slurmdb_qos_get, &qos_cond) &&
-	    !db_query_list(ctxt, &resp->wckeys, slurmdb_wckeys_get,
-			   &wckey_cond) &&
+	    !db_query_list_xempty(ctxt, &resp->wckeys, slurmdb_wckeys_get,
+				  &wckey_cond) &&
 	    !db_query_list(ctxt, &resp->associations, slurmdb_associations_get,
 			   &assoc_cond))
 		DATA_DUMP(ctxt->parser, OPENAPI_SLURMDBD_CONFIG_RESP_PTR, resp,

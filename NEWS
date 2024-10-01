@@ -203,6 +203,9 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - Fix state save with reservation flags when a update fails.
  -- Fix reservation update issues with parameters Accounts and Users, when
     using +/- signs.
+ -- slurmrestd - Don't dump warning on empty wckeys in:
+      'GET /slurmdb/v0.0.40/config'
+      'GET /slurmdb/v0.0.41/config'
 
 * Changes in Slurm 24.05.3
 ==========================
