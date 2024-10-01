@@ -44,6 +44,7 @@
 #define BCAST_FLAG_PRESERVE SLURM_BIT(1)
 #define BCAST_FLAG_SEND_LIBS SLURM_BIT(2)
 #define BCAST_FLAG_SHARED_OBJECT SLURM_BIT(3)
+#define BCAST_FLAG_NO_JOB SLURM_BIT(4)
 
 struct bcast_parameters {
 	uint32_t block_size;

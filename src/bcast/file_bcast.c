@@ -97,6 +97,7 @@ static list_t *_fill_in_excluded_paths(struct bcast_parameters *params);
 static int _find_subpath(void *x, void *key);
 static int _foreach_shared_object(void *x, void *y);
 static int _get_cred_for_job(struct bcast_parameters *params);
+static int _get_cred_no_job(struct bcast_parameters *params);
 static list_t *_get_lib_paths(char *filename);
 
 static int _file_state(struct bcast_parameters *params)
@@ -177,6 +178,48 @@ static int _get_cred_for_job(struct bcast_parameters *params)
 	 * we need to preserve and use most of the information later */
 
 	return rc;
+}
+
+static int _get_cred_no_job(struct bcast_parameters *params)
+{
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	sbcast_cred_req_msg_t cred_req_msg = {0};
+	int *resp_rc;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	cred_req_msg.node_list = params->node_list;
+
+	req_msg.msg_type = REQUEST_SBCAST_CRED_NO_JOB;
+	req_msg.data = &cred_req_msg;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0) {
+		error("Unable to send/recv sbcast credentional request to slurmctld");
+		return SLURM_ERROR;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_JOB_SBCAST_CRED:
+		sbcast_cred = (job_sbcast_cred_msg_t *) resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		resp_rc = resp_msg.data;
+		error("Received error in response to sbcast credential request: %s",
+		      slurm_strerror(*resp_rc));
+		return SLURM_ERROR;
+	default:
+		error("Received unexpected message type %d in response to sbcast credential request.",
+		      resp_msg.msg_type);
+		return SLURM_ERROR;
+	}
+
+	if (params->verbose)
+		print_sbcast_cred(sbcast_cred->sbcast_cred);
+
+	return SLURM_SUCCESS;
 }
 
 /* Issue the RPC to transfer the file's data */
@@ -644,7 +687,13 @@ extern int bcast_file(struct bcast_parameters *params)
 
 	if ((rc = _file_state(params)) != SLURM_SUCCESS)
 		return rc;
-	if ((rc = _get_cred_for_job(params)) != SLURM_SUCCESS)
+
+	if (params->flags & BCAST_FLAG_NO_JOB)
+		rc = _get_cred_no_job(params);
+	else
+		rc = _get_cred_for_job(params);
+
+	if (rc != SLURM_SUCCESS)
 		return rc;
 
 	/*
