@@ -794,16 +794,16 @@ static void _rollup_handler_cancel(void)
 			debug("Waiting for rollup thread to finish.");
 	}
 
-	slurm_mutex_lock(&rollup_lock);
 	if (rollup_handler_thread) {
 		if (backup && running_rollup && primary_resumed) {
 			pthread_cancel(rollup_handler_thread);
 			restart_backup = true;
 		} else {
+			slurm_mutex_lock(&rollup_lock);
 			pthread_cancel(rollup_handler_thread);
+			slurm_mutex_unlock(&rollup_lock);
 		}
 	}
-	slurm_mutex_unlock(&rollup_lock);
 }
 
 static int _find_rollup_stats_in_list(void *x, void *key)
