@@ -323,6 +323,37 @@ static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 }
 
 /*
+ * Enables the cgroup controllers system_ctrls from /sys/fs/cgroup to the one
+ * specified in cg_path. If system_ctrls is null it reads it from
+ * /sys/fs/cgroup/cgroup.controllers
+*/
+static int _enable_controllers(char *cg_path, bitstr_t *system_ctrls)
+{
+	int rc = SLURM_SUCCESS;
+	char *p, *dst;
+
+	xassert(system_ctrls);
+	if (!(xstrstr(cg_path, slurm_cgroup_conf.cgroup_mountpoint))) {
+		error("%s is not under the cgroup mountpoint %s.",
+		      cg_path, slurm_cgroup_conf.cgroup_mountpoint);
+		return SLURM_ERROR;
+	}
+
+	p = dst = xstrdup(cg_path);
+	p += strlen(slurm_cgroup_conf.cgroup_mountpoint);
+	do {
+		*p = '\0';
+		if ((rc = _enable_subtree_control(dst, system_ctrls)))
+			goto cleanup;
+		*p = '/';
+	} while ((p = xstrchr(p + 1, '/')));
+
+cleanup:
+	xfree(dst);
+	return rc;
+}
+
+/*
  * Enabling the subtree from the top mountpoint to the slice we will reside
  * is needed to get all the controllers we want to support. Nevertheless note
  * that if systemd is reloaded, reset, or does any operation that implies
@@ -338,47 +369,18 @@ static int _enable_system_controllers()
 {
 	char *slice_path = NULL;
 	bitstr_t *system_ctrls = bit_alloc(CG_CTL_CNT);
-	char *tok, *next, *curr;
-	char *save_ptr = NULL, *orig = NULL;
-	bool started = false;
 
 	if (_get_controllers(slurm_cgroup_conf.cgroup_mountpoint,
 			     system_ctrls) != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(system_ctrls);
 		return SLURM_ERROR;
 	}
-
-	/* Enable controllers for the top of the tree. */
-	_enable_subtree_control(slurm_cgroup_conf.cgroup_mountpoint,
-				system_ctrls);
-
-	/* Enable it for us, slurmd, recursively. We may be anywhere. */
-	next = xmalloc(strlen(int_cg_ns.mnt_point) + 1);
-	curr = xmalloc(strlen(int_cg_ns.mnt_point) + 1);
-	orig = xstrdup(int_cg_ns.mnt_point);
-	tok = strtok_r(orig, "/", &save_ptr);
-	while (tok) {
-		/* Start from the mnt_point skipping any previous dir. */
-		if (!started &&
-		    (!xstrcmp(next, slurm_cgroup_conf.cgroup_mountpoint)))
-			started = true;
-
-		sprintf(next, "%s/%s", curr, tok);
-		strcpy(curr, next);
-
-		/* Skip the last directory which is a leaf where we live. */
-		if (started && !xstrcmp(curr, int_cg_ns.mnt_point))
-			break;
-
-		if (started)
-			_enable_subtree_control(curr, system_ctrls);
-
-		tok = strtok_r(NULL, "/", &save_ptr);
+	if (_enable_controllers(int_cg_ns.mnt_point, system_ctrls) !=
+	    SLURM_SUCCESS) {
+		error("Could not enable controllers for cgroup path %s",
+		      int_cg_ns.mnt_point);
+		return SLURM_ERROR;
 	}
-	xfree(orig);
-	xfree(curr);
-	xfree(next);
-
 
 	/*
 	 * Enable it for system.slice, where the stepd scope will reside when
