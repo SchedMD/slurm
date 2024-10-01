@@ -159,8 +159,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 		pack_time(cred->job_end_time, buffer);
 		packstr(cred->job_extra, buffer);
 		pack16(cred->job_oversubscribe, buffer);
-		_packstr_and_switch(cred->job_partition, cred->switch_step,
-				    buffer, protocol_version);
+		packstr(cred->job_partition, buffer);
 		packstr(cred->job_reservation, buffer);
 		pack16(cred->job_restart_cnt, buffer);
 		pack_time(cred->job_start_time, buffer);
@@ -220,6 +219,8 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 				     buffer);
 		}
 		packstr(cred->job_selinux_context, buffer);
+		switch_g_pack_stepinfo(cred->switch_step, buffer,
+				       protocol_version);
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack_identity(cred->id, buffer, protocol_version);
@@ -391,6 +392,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 	slurm_cred_t *cred = NULL;
 	slurm_cred_arg_t *cred_arg = NULL;
 	char *bit_fmt_str = NULL;
+	dynamic_plugin_data_t *switch_tmp = NULL;
 	uint32_t tot_core_cnt;
 
 	cred = slurm_cred_alloc(true);
@@ -425,9 +427,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		safe_unpack_time(&cred_arg->job_end_time, buffer);
 		safe_unpackstr(&cred_arg->job_extra, buffer);
 		safe_unpack16(&cred_arg->job_oversubscribe, buffer);
-		safe_unpackstr_and_switch(&cred_arg->job_partition,
-					  &cred_arg->switch_step, buffer,
-					  protocol_version);
+		safe_unpackstr(&cred_arg->job_partition, buffer);
 		safe_unpackstr(&cred_arg->job_reservation, buffer);
 		safe_unpack16(&cred_arg->job_restart_cnt, buffer);
 		safe_unpack_time(&cred_arg->job_start_time, buffer);
@@ -498,6 +498,12 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		}
 
 		safe_unpackstr(&cred_arg->job_selinux_context, buffer);
+		if (switch_g_unpack_stepinfo(&switch_tmp, buffer,
+					     protocol_version)) {
+			switch_g_free_stepinfo(switch_tmp);
+			goto unpack_error;
+		}
+		cred_arg->switch_step = switch_tmp;
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred_arg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
