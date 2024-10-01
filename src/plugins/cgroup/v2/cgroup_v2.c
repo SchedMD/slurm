@@ -122,75 +122,30 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
  */
 
 /*
- * The cgroup v2 documented way to know which is the process root in the cgroup
- * hierarchy is just to read /proc/self/cgroup. In Unified hierarchies this
- * must contain only one line. If there are more lines this would mean we are
- * in Hybrid or in Legacy cgroup.
+ * Read /proc/<pid>/cgroup and return the absolute cgroup path.
+ *
+ * The format in that file (for cgroup/v2) is 0::/<cg_path>, and it is
+ * relative. This function takes care of extracting the cg_path.
+ *
+ * The parameter pid_str is a string representing a numeric pid or the
+ * keyword 'self'. Note that in a cgroup namespace without a proper proc mount,
+ * using 'self' will possibly return a different value than using getpid().
+ *
+ * IN pid_str - pid to read the path for
+ * OUT char - cgroup path for the passed pid read from /proc/self/cgroup
  */
-static char *_get_self_cg_path()
+static char *_get_proc_cg_path(char *pid_str)
 {
 	char *buf, *start = NULL, *p, *ret = NULL;
+	char *path = NULL;
 	size_t sz;
 
-	if (common_file_read_content("/proc/self/cgroup", &buf, &sz) !=
-	    SLURM_SUCCESS)
-		fatal("cannot read /proc/self/cgroup contents: %m");
-
-	/*
-	 * In Unified mode there will be just one line containing the path
-	 * of the cgroup and starting by 0, so get it as our root and replace
-	 * the \n:
-	 * "0::/system.slice/slurmd<nodename>.service\n"
-	 *
-	 * The final path will look like this:
-	 * /sys/fs/cgroup/system.slice/slurmd.service/
-	 *
-	 * If we have multiple slurmd, we will likely have one unit file per
-	 * node, and the path takes the name of the service file, e.g:
-	 * /sys/fs/cgroup/system.slice/slurmd-<nodename>.service/
-	 */
-	if ((p = xstrchr(buf, ':'))) {
-		if ((p + 2) < (buf + sz - 1))
-			start = p + 2;
+	path = xstrdup_printf("/proc/%s/cgroup", pid_str);
+	if (common_file_read_content(path, &buf, &sz) != SLURM_SUCCESS) {
+		xfree(path);
+		fatal("cannot read /proc/%s/cgroup contents: %m", pid_str);
 	}
-
-	if (start && (*start != '\0')) {
-		if ((p = xstrchr(start, '\n')))
-			*p = '\0';
-		xstrfmtcat(ret, "%s%s",
-			   slurm_cgroup_conf.cgroup_mountpoint, start);
-	}
-
-	xfree(buf);
-	return ret;
-}
-
-/*
- * Get the cgroup root directory by reading /proc/1/cgroup path.
- *
- * We expect one single line like this:
- * "0::/init.scope\n"
- *
- * But in containerized environments it could look like:
- * "0::/docker.slice/docker-<some UUID>.scope/init.scope"
- *
- * This function just strips the "0::" and "init.scope" portions.
- *
- * In normal systems the final path will look like this:
- * /sys/fs/cgroup[/]
- *
- * In containerized environments it will look like:
- * /sys/fs/cgroup[/docker.slice/docker-<some UUID>.scope]
- *
- */
-static char *_get_init_cg_path()
-{
-	char *buf, *start = NULL, *p, *ret = NULL;
-	size_t sz;
-
-	if (common_file_read_content("/proc/1/cgroup", &buf, &sz) !=
-	    SLURM_SUCCESS)
-		fatal("cannot read /proc/1/cgroup contents: %m");
+	xfree(path);
 
 	/*
 	 * In Unified mode there will be just one line containing the path
@@ -201,24 +156,51 @@ static char *_get_init_cg_path()
 		fatal("Hybrid mode is not supported. Mounted cgroups are: %s",
 		      buf);
 
+	/*
+	 * Skip until past the :: from the file ensuring that we are not past
+	 * the buffer size.
+	 */
 	if ((p = xstrchr(buf, ':')) != NULL) {
 		if ((p + 2) < (buf + sz - 1))
 			start = p + 2;
-	}
-
-	if (start && *start != '\0') {
+		/* Remove everything after the first newline found. */
 		if ((p = xstrchr(start, '\n')))
 			*p = '\0';
-		p = xdirname(start);
-		if (!xstrcmp(p, "/"))
-			xstrfmtcat(ret, "%s",
-				   slurm_cgroup_conf.cgroup_mountpoint);
-		else
-			xstrfmtcat(ret, "%s%s",
-				   slurm_cgroup_conf.cgroup_mountpoint, p);
-		xfree(p);
 	}
+
+	if (!start || (*start == '\0'))
+		fatal("Unexpected format found in /proc/%s/cgroup file: %s",
+		      pid_str, buf);
+
+	xstrfmtcat(ret, "%s%s", slurm_cgroup_conf.cgroup_mountpoint, start);
+
 	xfree(buf);
+	return ret;
+}
+
+/*
+ * Get the absolute OS's cgroup root directory by reading /proc/1/cgroup path.
+ *
+ * In normal systems the final path will look like this:
+ * /sys/fs/cgroup[/]
+ *
+ * In containerized environments it will look like:
+ * /sys/fs/cgroup[/docker.slice/docker-<some UUID>.scope]
+ *
+ */
+static char *_get_init_cg_path()
+{
+	char *cg_path, *ret = NULL;
+
+	cg_path = _get_proc_cg_path("1");
+
+	if (xstrcmp(cg_path, slurm_cgroup_conf.cgroup_mountpoint)) {
+		ret = xdirname(cg_path);
+		xfree(cg_path);
+	} else {
+		ret = cg_path;
+	}
+
 	return ret;
 }
 
@@ -244,7 +226,7 @@ static void _set_int_cg_ns()
 	if (running_in_slurmstepd())
 		int_cg_ns.mnt_point = stepd_scope_path;
 	else
-		int_cg_ns.mnt_point = _get_self_cg_path();
+		int_cg_ns.mnt_point = _get_proc_cg_path("self");
 
 	xfree(init_cg_path);
 }
@@ -722,7 +704,7 @@ static int _init_stepd_system_scope(pid_t pid)
 	}
 
 	/* Now check we're really where we belong to. */
-	self_cg_path = _get_self_cg_path();
+	self_cg_path = _get_proc_cg_path("self");
 	if (xstrcmp(self_cg_path, int_cg[CG_LEVEL_SYSTEM].path)) {
 		error("Could not move slurmstepd pid %d to a Slurm's delegated cgroup. Should be in %s, we are in %s.",
 		      pid, int_cg[CG_LEVEL_SYSTEM].path, self_cg_path);
