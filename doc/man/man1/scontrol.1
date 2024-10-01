@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "August 2024" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "October 2024" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -152,7 +152,7 @@ COMPLETING or DOWN state.
 \fBdelete\fR <\fISPECIFICATION\fR>
 Delete the entry with the specified \fISPECIFICATION\fP.
 The three \fISPECIFICATION\fP choices are \fINodeName=<nodelist>\fP,
-\fIPartitionName=<name>\fP and \fIReservation=<name>\fP. Only dynamic nodes
+\fIPartitionName=<name>\fP and \fIReservationName=<name>\fP. Only dynamic nodes
 that have no running jobs and that are not part of a reservation can be
 deleted. Reservations and partitions should have no associated jobs at the time
 of their deletion (modify the jobs first). If the specified partition is in
@@ -2403,7 +2403,7 @@ See the slurm.conf man page for more information.
 .SH "RESERVATIONS \- SPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS"
 
 .TP
-\fBReservation\fR=<\fIname\fR>
+\fBReservationName\fR=<\fIname\fR>
 Identify the name of the reservation to be created, updated, or deleted.
 This parameter is required for update and is the only parameter for delete.
 For create, if you do not want to give a reservation name, use
