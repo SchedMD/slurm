@@ -927,8 +927,6 @@ def test_db_tres(slurmdb):
     assert len(resp.errors) == 0
 
 
-# TODO: Remove xfail once bug 20420 is fixed
-@pytest.mark.xfail
 def test_db_config(slurmdb):
     resp = slurmdb.slurmdb_v0040_get_config()
     assert len(resp.warnings) == 0
