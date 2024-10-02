@@ -2535,8 +2535,8 @@ static job_record_t *_het_job_ready(job_record_t *job_ptr)
 static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
 {
 	if (job->name)
-		env_array_append(&launch->environment, "SLURM_JOB_NAME",
-				 job->name);
+		env_array_overwrite(&launch->environment, "SLURM_JOB_NAME",
+				    job->name);
 
 	if (job->details->open_mode) {
 		/* Propagate mode to spawned job using environment variable */
