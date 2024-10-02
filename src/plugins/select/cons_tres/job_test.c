@@ -1313,7 +1313,7 @@ try_next_nodes_cnt:
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
 		log_flag(SELECT_TYPE, "test 0 fail: insufficient resources");
-		return SLURM_ERROR;
+		return pick_code ? pick_code : SLURM_ERROR;
 	} else if (test_only) {
 		xfree(tres_mc_ptr);
 		FREE_NULL_BITMAP(orig_node_map);
@@ -1329,7 +1329,7 @@ try_next_nodes_cnt:
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
 		log_flag(SELECT_TYPE, "test 0 fail: waiting for switches");
-		return SLURM_ERROR;
+		return pick_code ? pick_code : SLURM_ERROR;
 	}
 	if (cr_type == CR_MEMORY) {
 		/*
@@ -1760,7 +1760,7 @@ alloc_job:
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
 		log_flag(SELECT_TYPE, "exiting with no allocation");
-		return SLURM_ERROR;
+		return pick_code ? pick_code : SLURM_ERROR;
 	}
 
 	if ((mode != SELECT_MODE_WILL_RUN) && (job_ptr->part_ptr == NULL))
