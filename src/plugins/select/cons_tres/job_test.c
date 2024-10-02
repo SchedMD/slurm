@@ -833,8 +833,9 @@ static bool _is_preemptable(job_record_t *job_ptr, list_t *preemptee_candidates)
  * IN: tres_mc_ptr   - job's multi-core options
  * IN: resv_exc_ptr - gres that can be included (gres_list_inc)
  *                    or excluded (gres_list_exc)
+ * IN: select_rc - rc from this function.
  * RET: array of avail_res_t pointers, free using _free_avail_res_array().
- *	NULL on error
+ *	NULL on error and select_rc set.
  */
 static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 				   uint32_t max_nodes, uint32_t req_nodes,
@@ -845,7 +846,8 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 				   bitstr_t **part_core_map,
 				   bool prefer_alloc_nodes,
 				   gres_mc_data_t *tres_mc_ptr,
-				   resv_exc_t *resv_exc_ptr)
+				   resv_exc_t *resv_exc_ptr,
+				   int *select_rc)
 {
 	int i, rc;
 	job_details_t *details_ptr = job_ptr->details;
@@ -930,6 +932,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 		       topo_eval.node_map, topo_eval.avail_core);
 
 fini:	if (rc != SLURM_SUCCESS) {
+		*select_rc = rc;
 		_free_avail_res_array(topo_eval.avail_res_array);
 		return NULL;
 	}
@@ -1155,7 +1158,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		     resv_exc_t *resv_exc_ptr, bool prefer_alloc_nodes,
 		     bool qos_preemptor, bool preempt_mode)
 {
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS, select_rc = SLURM_SUCCESS;
 	bitstr_t *orig_node_map, **part_core_map = NULL;
 	bitstr_t **free_cores_tmp = NULL,  *node_bitmap_tmp = NULL;
 	bitstr_t **free_cores_tmp2 = NULL, *node_bitmap_tmp2 = NULL;
@@ -1293,7 +1296,7 @@ try_next_nodes_cnt:
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr);
+					resv_exc_ptr, &select_rc);
 	if ((!avail_res_array || !job_ptr->best_switch) && next_job_size) {
 		log_flag(SELECT_TYPE, "test 0 fail: try again");
 		bit_copybits(node_bitmap, orig_node_map);
@@ -1417,7 +1420,7 @@ try_next_nodes_cnt:
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr);
+					resv_exc_ptr, &select_rc);
 	if (avail_res_array && job_ptr->best_switch) {
 		/* job fits! We're done. */
 		log_flag(SELECT_TYPE, "test 1 pass - idle resources found");
@@ -1508,7 +1511,7 @@ try_next_nodes_cnt:
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr);
+					resv_exc_ptr, &select_rc);
 	if (!avail_res_array) {
 		/*
 		 * job needs resources that are currently in use by
@@ -1555,7 +1558,7 @@ try_next_nodes_cnt:
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr);
+					resv_exc_ptr, &select_rc);
 	if (avail_res_array) {
 		/*
 		 * To the extent possible, remove from consideration resources
@@ -1590,7 +1593,7 @@ try_next_nodes_cnt:
 				node_bitmap_tmp, free_cores_tmp, node_usage,
 				cr_type, test_only, will_run, part_core_map,
 				prefer_alloc_nodes, tres_mc_ptr,
-				resv_exc_ptr);
+				resv_exc_ptr, &select_rc);
 			if (!avail_res_array_tmp) {
 				free_core_array(&free_cores_tmp2);
 				FREE_NULL_BITMAP(node_bitmap_tmp2);
@@ -1639,7 +1642,8 @@ try_next_nodes_cnt:
 						test_only, will_run,
 						part_core_map,
 						prefer_alloc_nodes,
-						tres_mc_ptr, resv_exc_ptr);
+						tres_mc_ptr, resv_exc_ptr,
+						&select_rc);
 		if (avail_res_array)
 			log_flag(SELECT_TYPE, "test 4 pass - first row found");
 		goto alloc_job;
@@ -1671,7 +1675,8 @@ try_next_nodes_cnt:
 						test_only, will_run,
 						part_core_map,
 						prefer_alloc_nodes,
-						tres_mc_ptr, resv_exc_ptr);
+						tres_mc_ptr, resv_exc_ptr,
+						&select_rc);
 		if (avail_res_array) {
 			log_flag(SELECT_TYPE, "test 4 pass - row %i",
 			         i);
@@ -1694,7 +1699,8 @@ try_next_nodes_cnt:
 						test_only, will_run,
 						part_core_map,
 						prefer_alloc_nodes,
-						tres_mc_ptr, resv_exc_ptr);
+						tres_mc_ptr, resv_exc_ptr,
+						&select_rc);
 	}
 
 	if (!avail_res_array) {
