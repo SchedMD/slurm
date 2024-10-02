@@ -77,6 +77,16 @@ typedef struct acct_policy_validate_args {
 	bool update_call;
 } acct_policy_validate_args_t;
 
+typedef struct {
+	char *acct;
+	slurmdb_assoc_rec_t *assoc_ptr;
+	int cnt;
+	slurmdb_qos_rec_t *qos_ptr;
+	uid_t uid;
+	slurmdb_used_limits_t *used_limits_acct;
+	slurmdb_used_limits_t *used_limits_user;
+} acct_policy_accrue_t;
+
 static void _apply_limit_factor(uint64_t *limit, double limit_factor)
 {
 	int64_t new_val;
@@ -3115,6 +3125,34 @@ static void _remove_accrue_time_internal(
 	}
 }
 
+static int _for_each_qos_remove_accrue_time(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos_ptr = x;
+	acct_policy_accrue_t *acct_policy_accrue = arg;
+
+	if (qos_ptr) {
+		acct_policy_accrue->used_limits_acct =
+			acct_policy_get_acct_used_limits(
+				&qos_ptr->usage->acct_limit_list,
+				acct_policy_accrue->acct);
+		acct_policy_accrue->used_limits_user =
+			acct_policy_get_user_used_limits(
+				&qos_ptr->usage->user_limit_list,
+				acct_policy_accrue->uid);
+	}
+
+	_remove_accrue_time_internal(acct_policy_accrue->assoc_ptr,
+				     qos_ptr,
+				     acct_policy_accrue->used_limits_acct,
+				     acct_policy_accrue->used_limits_user,
+				     acct_policy_accrue->cnt);
+
+	/* Only do assoc_ptr stuff once */
+	acct_policy_accrue->assoc_ptr = NULL;
+
+	return 0;
+}
+
 static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 				  part_record_t *part_ptr,
 				  slurmdb_assoc_rec_t *assoc_in,
@@ -4998,12 +5036,10 @@ endit:
 extern void acct_policy_remove_accrue_time(job_record_t *job_ptr,
 					   bool assoc_mgr_locked)
 {
-	slurmdb_qos_rec_t *qos_ptr;
-	slurmdb_assoc_rec_t *assoc_ptr;
-	slurmdb_used_limits_t *used_limits_acct = NULL;
-	slurmdb_used_limits_t *used_limits_user = NULL;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK };
-	int job_cnt;
+	acct_policy_accrue_t acct_policy_accrue = {
+		.uid = job_ptr->user_id,
+	};
 
 	/*
 	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
@@ -5026,37 +5062,25 @@ extern void acct_policy_remove_accrue_time(job_record_t *job_ptr,
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
-	assoc_ptr = job_ptr->assoc_ptr;
-	if (!assoc_ptr) {
+	acct_policy_accrue.assoc_ptr = job_ptr->assoc_ptr;
+	if (!acct_policy_accrue.assoc_ptr) {
 		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
 		      __func__, job_ptr);
 		goto end_it;
 	}
-
-	qos_ptr = job_ptr->qos_ptr;
-	if (qos_ptr) {
-		used_limits_acct = acct_policy_get_acct_used_limits(
-			&qos_ptr->usage->acct_limit_list,
-			assoc_ptr->acct);
-		used_limits_user = acct_policy_get_user_used_limits(
-				&qos_ptr->usage->user_limit_list,
-				job_ptr->user_id);
-	}
+	acct_policy_accrue.acct = acct_policy_accrue.assoc_ptr->acct;
 
 	/*
 	 * Normally only single jobs come in here, but if we don't have any
 	 * limits the array itself comes in so we need to add it all.
 	 */
 	if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
-		job_cnt = job_ptr->array_recs->task_cnt;
+		acct_policy_accrue.cnt = job_ptr->array_recs->task_cnt;
 	else
-		job_cnt = 1;
+		acct_policy_accrue.cnt = 1;
 
-	_remove_accrue_time_internal(assoc_ptr,
-				     qos_ptr,
-				     used_limits_acct,
-				     used_limits_user,
-				     job_cnt);
+	(void) _for_each_qos_remove_accrue_time(
+		job_ptr->qos_ptr, &acct_policy_accrue);
 
 	/* reset the job */
 	job_ptr->details->accrue_time = 0;
