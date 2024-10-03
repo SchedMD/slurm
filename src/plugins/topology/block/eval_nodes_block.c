@@ -231,7 +231,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	if (details_ptr->segment_size > bblock_node_cnt) {
 		info("%pJ segment (%u) > bblock_node_cnt (%u) is not supported",
 		     job_ptr, details_ptr->segment_size, bblock_node_cnt);
-		rc = SLURM_ERROR;
+		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		goto fini;
 	}
 
@@ -239,7 +239,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	    (rem_nodes % details_ptr->segment_size)) {
 		info("%s: segment_size (%u) does not fit the job size (%d)",
 		     __func__, details_ptr->segment_size, rem_nodes);
-		rc = SLURM_ERROR;
+		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		goto fini;
 	}
 
@@ -269,7 +269,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		if (segment_cnt > 1) {
 			info("%pJ requires nodes with segment are not supported",
 			     job_ptr);
-			rc = SLURM_ERROR;
+			rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 			goto fini;
 		}
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
@@ -284,7 +284,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 				   blocks_nodes_bitmap)) {
 			info("%pJ requires nodes which are not in blocks",
 			     job_ptr);
-			rc = SLURM_ERROR;
+			rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 			goto fini;
 		}
 
@@ -536,7 +536,7 @@ next_segment:
 			}
 		}
 		if (max_llblock < 0) {
-			rc = SLURM_ERROR;
+			rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 			info("%pJ requires nodes exceed maximum llblock limit due to required nodes",
 			     job_ptr);
 			goto fini;
