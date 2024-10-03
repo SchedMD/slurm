@@ -1290,7 +1290,12 @@ extern int init(void)
 	step_active_cnt = 0;
 	FREE_NULL_LIST(task_list);
 	task_list = list_create(_free_task_cg_info);
+	debug("%s loaded", plugin_name);
+	return SLURM_SUCCESS;
+}
 
+extern int cgroup_p_setup_scope(char *scope_path)
+{
 	/*
 	 * Detect if we are started by systemd. Another way could be to check
 	 * if our PPID=1, but we cannot rely on it because when starting slurmd
@@ -1376,7 +1381,6 @@ extern int init(void)
 	 * we will need move ourselves out to a new job directory and then
 	 * create int_cg[CG_LEVEL_ROOT].path/job_x/step_x.
 	 */
-	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 

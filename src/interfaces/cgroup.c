@@ -76,6 +76,7 @@ typedef struct {
 	long int (*get_acct_units)	(void);
 	bool (*has_feature) (cgroup_ctl_feature_t f);
 	char *(*get_scope_path)(void);
+	int (*setup_scope)(char *scope_path);
 } slurm_ops_t;
 
 /*
@@ -104,6 +105,7 @@ static const char *syms[] = {
 	"cgroup_p_get_acct_units",
 	"cgroup_p_has_feature",
 	"cgroup_p_get_scope_path",
+	"cgroup_p_setup_scope",
 };
 
 /* Local variables */
@@ -760,6 +762,17 @@ extern int cgroup_g_init(void)
 		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
+
+	/*
+	 * We have recorded the scope_path here previously, configure it now in
+	 * the plugin.
+	 */
+	rc = (*(ops.setup_scope))(scope_path);
+	if (rc == SLURM_ERROR) {
+		error("cannot setup the scope for %s", plugin_type);
+		goto done;
+	}
+
 	plugin_inited = PLUGIN_INITED;
 done:
 	slurm_mutex_unlock(&g_context_lock);
