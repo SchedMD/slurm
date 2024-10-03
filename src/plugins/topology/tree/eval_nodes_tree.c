@@ -342,7 +342,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	if (top_switch_inx == -1) {
 		error("%pJ unable to identify top level switch",
 		       job_ptr);
-		rc = SLURM_ERROR;
+		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		goto fini;
 	}
 
@@ -350,7 +350,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	if (req_nodes_bitmap &&
 	    !bit_super_set(req_nodes_bitmap,
 			   switch_node_bitmap[top_switch_inx])) {
-		rc = SLURM_ERROR;
+		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		info("%pJ requires nodes that do not have shared network",
 		     job_ptr);
 		goto fini;
