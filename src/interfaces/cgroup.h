@@ -201,6 +201,9 @@ extern void cgroup_init_limits(cgroup_limits_t *limits);
 extern list_t *cgroup_get_conf_list(void);
 extern int cgroup_write_conf(int fd);
 extern int cgroup_read_conf(int fd);
+extern int cgroup_write_state(int fd);
+extern int cgroup_read_state(int fd);
+
 extern bool cgroup_memcg_job_confinement(void);
 extern char *autodetect_cgroup_version(void);
 

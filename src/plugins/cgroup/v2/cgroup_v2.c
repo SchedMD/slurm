@@ -2071,6 +2071,11 @@ extern int cgroup_p_constrain_apply(cgroup_ctl_type_t ctl, cgroup_level_t level,
 	return SLURM_SUCCESS;
 }
 
+extern char *cgroup_p_get_scope_path(void)
+{
+	return stepd_scope_path;
+}
+
 extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t ctl,
 					       cgroup_level_t level)
 {

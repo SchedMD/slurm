@@ -75,6 +75,7 @@ typedef struct {
 	cgroup_acct_t *(*task_get_acct_data) (uint32_t taskid);
 	long int (*get_acct_units)	(void);
 	bool (*has_feature) (cgroup_ctl_feature_t f);
+	char *(*get_scope_path)(void);
 } slurm_ops_t;
 
 /*
@@ -102,6 +103,7 @@ static const char *syms[] = {
 	"cgroup_p_task_get_acct_data",
 	"cgroup_p_get_acct_units",
 	"cgroup_p_has_feature",
+	"cgroup_p_get_scope_path",
 };
 
 /* Local variables */
@@ -116,6 +118,8 @@ static pthread_rwlock_t cg_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
 static buf_t *cg_conf_buf = NULL;
 static bool cg_conf_inited = false;
 static bool cg_conf_exist = true;
+
+static char scope_path[PATH_MAX] = "";
 
 /* local functions */
 static void _cgroup_conf_fini();
@@ -599,6 +603,52 @@ extern list_t *cgroup_get_conf_list(void)
 	list_sort(cgroup_conf_l, (ListCmpF) sort_key_pairs);
 
 	return cgroup_conf_l;
+}
+
+/*
+ * This function is called from slurmd to send the cgroup state (at present
+ * only the scope path in cgroup/v2) to the recently forked slurmstepd, since
+ * slurmstepd might not be able to infer the correct scope path when we are
+ * running into a container.
+ */
+extern int cgroup_write_state(int fd)
+{
+	int len = 0;
+	char *step_path = NULL;
+
+	if (plugin_inited == PLUGIN_INITED) {
+		step_path = (*(ops.get_scope_path))();
+		if (step_path)
+			len = strlen(step_path) + 1;
+	}
+
+	safe_write(fd, &len, sizeof(int));
+	if (step_path)
+		safe_write(fd, step_path, len);
+
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
+}
+
+/*
+ * This function is called from slurmstepd before the cgroup plugin is
+ * initialized. It records the cgroup plugin state passed from slurmd
+ * (at present only the scope path in cgroup/v2) in this slurmstepd so it
+ * can be later used by the plugin when it is initialized.
+ */
+extern int cgroup_read_state(int fd)
+{
+	int len;
+
+	safe_read(fd, &len, sizeof(int));
+
+	if (len)
+		safe_read(fd, scope_path, len);
+
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
 }
 
 extern int cgroup_write_conf(int fd)
