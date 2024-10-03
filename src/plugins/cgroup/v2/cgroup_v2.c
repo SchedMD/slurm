@@ -1258,6 +1258,96 @@ static void _get_swap_events(uint64_t *job_swkills, uint64_t *step_swkills)
 }
 
 /*
+ * Move the pids from 'from' cgroup to 'to' cgroup and enable the controllers.
+ *
+ * Create a new cgroup in the path resulting of the concenation of
+ * int_cg_ns.mnt_point (normally /sys/fs/cgroup ) and the "to" parameter.
+ *
+ * Then get all the processes in the "from" cgroup.procs and move them to the
+ * new cgroup.
+ *
+ * Finally enable the subtree control on the "from" cgroup to ensure that no new
+ * processes will be put there, convert it to a cgroup "domain controller".
+ *
+ * On failure retry by waiting for the processes to show up in the new cgroup,
+ * then try again to enable subtree control. If that last one fails it returns
+ * an error. Is important to note that this function does not guarantee
+ * that all the process can be successfully moved, as it is inherently racy.
+ * It might happen that in between the common_cgroup_get_pids() and the movement
+ * of those to the new cgroup, new processes are spawned there, thus making the
+ * enable_subtree fail. We don't want to freeze the cgroup either as we might
+ * be freezing ourselves.
+ *
+ * IN from - origin cgroup where to move pids from.
+ * IN to   - destination cgroup path to be created, set, and pids moved.
+ * RET rc  - SLURM_SUCCESS if all pids could be read and moved into a new
+ *           configured cgroup, error otherwise.
+ */
+static int _empty_pids(xcgroup_t *from, char *to)
+{
+	pid_t *pids = NULL;
+	int npids = 0;
+	xcgroup_t dest;
+	bitstr_t *system_ctrls = bit_alloc(CG_CTL_CNT);
+	int rc = SLURM_ERROR;
+
+	if (_get_controllers(slurm_cgroup_conf.cgroup_mountpoint,
+			     system_ctrls) != SLURM_SUCCESS) {
+		error("Unable to get cgroup root controllers.");
+		goto fail;
+	}
+
+	if (common_cgroup_create(&int_cg_ns, &dest, to, (uid_t) 0, (gid_t) 0) !=
+	    SLURM_SUCCESS) {
+		error("Unable to create cgroup structure for %s", to);
+		goto fail;
+	}
+
+	if (common_cgroup_instantiate(&dest) != SLURM_SUCCESS) {
+		error("Unable to create cgroup %s", dest.path);
+		goto fail;
+	}
+
+	if (common_cgroup_get_pids(from, &pids, &npids) != SLURM_SUCCESS) {
+		error("Unable to get pids from origin cgroup %s", from->path);
+		goto fail;
+	}
+
+	for (int i = 0; i < npids; i++) {
+		if (common_cgroup_move_process(&dest, pids[i]) !=
+		    SLURM_SUCCESS) {
+			error("Unable to move process %d from %s to %s cgroup.",
+			      pids[i], from->path, dest.path);
+			goto fail;
+		}
+	}
+
+	if (_enable_subtree_control(from->path, system_ctrls)) {
+		error("Cannot enable subtree control in %s cgroup. Trying to wait for process movement: %m",
+		      from->path);
+		for (int i = 0; i < npids; i++) {
+			if (!common_cgroup_wait_pid_moved(from, pids[i],
+							  from->path)) {
+				error("Move pid %d from %s to %s failed.",
+				      pids[i], from->path, dest.path);
+				goto fail;
+			}
+		}
+		if (_enable_subtree_control(from->path, system_ctrls)) {
+			error("Cannot enable subtree control for cgroup %s: %m",
+			      from->path);
+			goto fail;
+		}
+	}
+	rc = SLURM_SUCCESS;
+fail:
+	common_cgroup_destroy(&dest);
+	FREE_NULL_BITMAP(system_ctrls);
+	xfree(pids);
+	return rc;
+}
+
+/*
  * Initialize the cgroup plugin. Slurmd MUST be started by systemd and the
  * option Delegate set to 'Yes' or equal to a string with the desired
  * controllers we want to support in this system. If we are slurmd we're going
@@ -1333,6 +1423,31 @@ extern int cgroup_p_setup_scope(char *scope_path)
 		return SLURM_ERROR;
 	}
 
+	/*
+	 * Convert our false root into a workable root - best effort.
+	 *
+	 * Slurmd will detect when the root cgroup is not a real one. This can
+	 * happen when we have been started in a cgroup namespaced container and
+	 * our /sys/fs/cgroup is mapped to a non-root cgroup directory in the
+	 * host, meaning it cannot have pids in cgroup.procs if there are
+	 * subdirectories.
+	 *
+	 * As we're going to create a hierarchy, we need to move out the pids
+	 * to a child directory, we've chosen /system for that.
+	 *
+	 * So move the pids away from the "false root" cgroup to /system.
+	 *
+	 * Only do that if IgnoreSystemd is set.
+	 */
+	if (running_in_slurmd() && cgroup_p_has_feature(CG_FALSE_ROOT) &&
+	    slurm_cgroup_conf.ignore_systemd) {
+		if (_empty_pids(&int_cg[CG_LEVEL_ROOT], "/system") !=
+		    SLURM_SUCCESS){
+			error("cannot empty the false root cgroup (%s) of pids.",
+			      int_cg[CG_LEVEL_ROOT].path);
+			return SLURM_ERROR;
+		}
+	}
 	/*
 	 * Check available controllers in cgroup.controller, record them in our
 	 * bitmap and enable them if EnableControllers option is set.
