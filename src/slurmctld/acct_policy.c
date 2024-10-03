@@ -4861,22 +4861,60 @@ static void _handle_add_accrue(job_record_t *job_ptr,
 				  create_cnt);
 }
 
+static void _handle_accrue_time(acct_policy_accrue_t *acct_policy_accrue)
+{
+	job_record_t *job_ptr = acct_policy_accrue->job_ptr;
+	uint32_t max_jobs_accrue = INFINITE;
+	int create_cnt = 0;
+
+	/* We have started running, let's clear us out of the mix. */
+	if (job_ptr->details->accrue_time) {
+		if (!(job_ptr->bit_flags & JOB_ACCRUE_OVER) &&
+		    !IS_JOB_PENDING(job_ptr)) {
+			/*
+			 * Normally only single jobs come in here, but if we
+			 * don't have any limits and an array is cancelled the
+			 * array itself comes in so we need to remove all of it.
+			 */
+
+			if (job_ptr->array_recs &&
+			    job_ptr->array_recs->task_cnt)
+				acct_policy_accrue->cnt =
+					job_ptr->array_recs->task_cnt;
+			else
+				acct_policy_accrue->cnt = 1;
+
+			/* We only want to handle this once */
+			job_ptr->bit_flags |= JOB_ACCRUE_OVER;
+
+			(void) _for_each_qos_remove_accrue_time(
+				job_ptr->qos_ptr, acct_policy_accrue);
+		}
+
+		/* We already have our time and we aren't an array, endit */
+		if (!IS_JOB_PENDING(job_ptr) ||
+		    !job_ptr->array_recs || !job_ptr->array_recs->task_cnt)
+			return;
+	} else if (!IS_JOB_PENDING(job_ptr))
+		return;
+
+	_get_accrue_limits(acct_policy_accrue,
+			   &max_jobs_accrue, &create_cnt);
+	_handle_add_accrue(job_ptr,
+			   acct_policy_accrue->used_limits_acct,
+			   acct_policy_accrue->used_limits_user,
+			   max_jobs_accrue, create_cnt,
+			   acct_policy_accrue->now);
+}
+
 extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 					  bool assoc_mgr_locked)
 {
-	slurmdb_assoc_rec_t *assoc_ptr;
 	job_details_t *details_ptr;
-	uint32_t max_jobs_accrue = INFINITE;
-	int create_cnt = 0, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
-	acct_policy_accrue_t acct_policy_accrue = {
-		.assoc_ptr = job_ptr->assoc_ptr,
-		.job_ptr = job_ptr,
-		.now = now,
-		.uid = job_ptr->user_id,
-	};
 
 	details_ptr = job_ptr->details;
 	if (!details_ptr) {
@@ -4916,61 +4954,21 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
-	assoc_ptr = job_ptr->assoc_ptr;
-	if (!assoc_ptr) {
+	if (!job_ptr->assoc_ptr) {
 		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
 		      __func__, job_ptr);
 		rc = SLURM_ERROR;
-		goto endit;
+	} else {
+		acct_policy_accrue_t acct_policy_accrue = {
+			.acct = job_ptr->assoc_ptr->acct,
+			.assoc_ptr = job_ptr->assoc_ptr,
+			.job_ptr = job_ptr,
+			.now = now,
+			.uid = job_ptr->user_id,
+		};
+
+		_handle_accrue_time(&acct_policy_accrue);
 	}
-
-	acct_policy_accrue.acct = job_ptr->assoc_ptr->acct;
-
-	_fill_in_qos_used_limits(job_ptr->qos_ptr, &acct_policy_accrue);
-
-	/* We have started running, let's clear us out of the mix. */
-	if (details_ptr->accrue_time) {
-		if (!(job_ptr->bit_flags & JOB_ACCRUE_OVER) &&
-		    !IS_JOB_PENDING(job_ptr)) {
-			int job_cnt;
-			/*
-			 * Normally only single jobs come in here, but if we
-			 * don't have any limits and an array is cancelled the
-			 * array itself comes in so we need to remove all of it.
-			 */
-
-			if (job_ptr->array_recs &&
-			    job_ptr->array_recs->task_cnt)
-				job_cnt = job_ptr->array_recs->task_cnt;
-			else
-				job_cnt = 1;
-
-			/* We only want to handle this once */
-			job_ptr->bit_flags |= JOB_ACCRUE_OVER;
-
-			_remove_accrue_time_internal(job_ptr->assoc_ptr,
-						     job_ptr->qos_ptr,
-						     acct_policy_accrue.
-						     used_limits_acct,
-						     acct_policy_accrue.
-						     used_limits_user,
-						     job_cnt);
-		}
-
-		/* We already have our time and we aren't an array, endit */
-		if (!IS_JOB_PENDING(job_ptr) ||
-		    !job_ptr->array_recs || !job_ptr->array_recs->task_cnt)
-			goto endit;
-	} else if (!IS_JOB_PENDING(job_ptr))
-		goto endit;
-
-	_get_accrue_limits(&acct_policy_accrue, &max_jobs_accrue, &create_cnt);
-	_handle_add_accrue(job_ptr,
-			   acct_policy_accrue.used_limits_acct,
-			   acct_policy_accrue.used_limits_user,
-			   max_jobs_accrue, create_cnt,
-			   acct_policy_accrue.now);
-endit:
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
