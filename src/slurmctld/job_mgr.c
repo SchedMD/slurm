@@ -3751,7 +3751,6 @@ static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
 	}
 	if ((*rc != ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 	    (*rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-	    (*rc != ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE) &&
 	    (*rc != ESLURM_RESERVATION_BUSY) &&
 	    (*rc != ESLURM_NODES_BUSY)) {
 		*best_rc = *rc;	/* Job can run now */

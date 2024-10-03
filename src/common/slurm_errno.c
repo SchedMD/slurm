@@ -480,8 +480,6 @@ slurm_errtab_t slurm_errtab[] = {
 	  "RestrictedCoresPerGPU: No GPUs configured on node" },
 	{ ERRTAB_ENTRY(ESLURM_MAX_POWERED_NODES),
 	  "Max powered up nodes reached" },
-	{ ERRTAB_ENTRY(ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE),
-	  "Requested topology configuration is not available" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),

@@ -2095,8 +2095,7 @@ try_sched:
 
 	/* The job is not able to start right now, return a
 	 * value indicating when the job can start */
-	if (!runable_ever && resv_overlap &&
-	    (pick_code != ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE)) {
+	if (!runable_ever && resv_overlap) {
 		error_code = ESLURM_RESERVATION_BUSY;
 		return error_code;
 	}
@@ -2120,12 +2119,7 @@ try_sched:
 			info("%s: job %pJ %s",
 			     __func__, job_ptr, tmp);
 		}
-
-		if (pick_code == ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE)
-			error_code = pick_code;
-		else
-			error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-
+		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	} else if (!runable_avail && !nodes_busy) {
 		error_code = ESLURM_NODE_NOT_AVAIL;
 	} else if (job_ptr->details->req_node_bitmap &&

@@ -845,8 +845,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 				   bitstr_t **part_core_map,
 				   bool prefer_alloc_nodes,
 				   gres_mc_data_t *tres_mc_ptr,
-				   resv_exc_t *resv_exc_ptr,
-				   int *pick_code)
+				   resv_exc_t *resv_exc_ptr)
 {
 	int i, rc;
 	job_details_t *details_ptr = job_ptr->details;
@@ -931,7 +930,6 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 		       topo_eval.node_map, topo_eval.avail_core);
 
 fini:	if (rc != SLURM_SUCCESS) {
-		*pick_code = rc;
 		_free_avail_res_array(topo_eval.avail_res_array);
 		return NULL;
 	}
@@ -1182,7 +1180,6 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	uint32_t orig_min_nodes = min_nodes;
 	uint32_t next_job_size = 0;
 	uint32_t ntasks_per_node;
-	int pick_code = SLURM_SUCCESS;
 
 	free_job_resources(&job_ptr->job_resrcs);
 	part_data_rebuild_rows(cr_part_ptr);
@@ -1296,7 +1293,7 @@ try_next_nodes_cnt:
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr, &pick_code);
+					resv_exc_ptr);
 	if ((!avail_res_array || !job_ptr->best_switch) && next_job_size) {
 		log_flag(SELECT_TYPE, "test 0 fail: try again");
 		bit_copybits(node_bitmap, orig_node_map);
@@ -1313,7 +1310,7 @@ try_next_nodes_cnt:
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
 		log_flag(SELECT_TYPE, "test 0 fail: insufficient resources");
-		return pick_code ? pick_code : SLURM_ERROR;
+		return SLURM_ERROR;
 	} else if (test_only) {
 		xfree(tres_mc_ptr);
 		FREE_NULL_BITMAP(orig_node_map);
@@ -1329,7 +1326,7 @@ try_next_nodes_cnt:
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
 		log_flag(SELECT_TYPE, "test 0 fail: waiting for switches");
-		return pick_code ? pick_code : SLURM_ERROR;
+		return SLURM_ERROR;
 	}
 	if (cr_type == CR_MEMORY) {
 		/*
@@ -1420,7 +1417,7 @@ try_next_nodes_cnt:
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr, &pick_code);
+					resv_exc_ptr);
 	if (avail_res_array && job_ptr->best_switch) {
 		/* job fits! We're done. */
 		log_flag(SELECT_TYPE, "test 1 pass - idle resources found");
@@ -1511,7 +1508,7 @@ try_next_nodes_cnt:
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr, &pick_code);
+					resv_exc_ptr);
 	if (!avail_res_array) {
 		/*
 		 * job needs resources that are currently in use by
@@ -1558,7 +1555,7 @@ try_next_nodes_cnt:
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr, &pick_code);
+					resv_exc_ptr);
 	if (avail_res_array) {
 		/*
 		 * To the extent possible, remove from consideration resources
@@ -1593,7 +1590,7 @@ try_next_nodes_cnt:
 				node_bitmap_tmp, free_cores_tmp, node_usage,
 				cr_type, test_only, will_run, part_core_map,
 				prefer_alloc_nodes, tres_mc_ptr,
-				resv_exc_ptr, &pick_code);
+				resv_exc_ptr);
 			if (!avail_res_array_tmp) {
 				free_core_array(&free_cores_tmp2);
 				FREE_NULL_BITMAP(node_bitmap_tmp2);
@@ -1642,8 +1639,7 @@ try_next_nodes_cnt:
 						test_only, will_run,
 						part_core_map,
 						prefer_alloc_nodes,
-						tres_mc_ptr, resv_exc_ptr,
-						&pick_code);
+						tres_mc_ptr, resv_exc_ptr);
 		if (avail_res_array)
 			log_flag(SELECT_TYPE, "test 4 pass - first row found");
 		goto alloc_job;
@@ -1675,8 +1671,7 @@ try_next_nodes_cnt:
 						test_only, will_run,
 						part_core_map,
 						prefer_alloc_nodes,
-						tres_mc_ptr, resv_exc_ptr,
-						&pick_code);
+						tres_mc_ptr, resv_exc_ptr);
 		if (avail_res_array) {
 			log_flag(SELECT_TYPE, "test 4 pass - row %i",
 			         i);
@@ -1699,8 +1694,7 @@ try_next_nodes_cnt:
 						test_only, will_run,
 						part_core_map,
 						prefer_alloc_nodes,
-						tres_mc_ptr, resv_exc_ptr,
-						&pick_code);
+						tres_mc_ptr, resv_exc_ptr);
 	}
 
 	if (!avail_res_array) {
@@ -1760,7 +1754,7 @@ alloc_job:
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
 		log_flag(SELECT_TYPE, "exiting with no allocation");
-		return pick_code ? pick_code : SLURM_ERROR;
+		return SLURM_ERROR;
 	}
 
 	if ((mode != SELECT_MODE_WILL_RUN) && (job_ptr->part_ptr == NULL))
