@@ -224,7 +224,7 @@ static char *_get_assoc_comment(uint32_t user_id, char *account,
 	char *comment = NULL;
 
 	if (_fill_assoc(user_id, account, partition, &assoc) != SLURM_ERROR)
-		comment = xstrdup(assoc.comment);
+		comment = assoc.comment;
 
 	return comment;
 }
