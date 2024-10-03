@@ -414,10 +414,7 @@ static void _set_int_cg_ns()
 		   init_cg_path,
 		   SYSTEM_CGSLICE, SYSTEM_CGSCOPE);
 #endif
-	if (running_in_slurmstepd())
-		int_cg_ns.mnt_point = stepd_scope_path;
-	else
-		int_cg_ns.mnt_point = _get_proc_cg_path("self");
+	int_cg_ns.mnt_point = _get_proc_cg_path("self");
 
 	xfree(init_cg_path);
 }
@@ -1311,12 +1308,18 @@ extern int cgroup_p_setup_scope(char *scope_path)
 		fatal("%s is not a valid cgroup2 mountpoint",
 		      slurm_cgroup_conf.cgroup_mountpoint);
 	}
+
 	/*
-	 * Check our current root dir. Systemd MUST have Delegated it to us,
-	 * so we want slurmd to be started by systemd. In the case of stepd
-	 * we must guess our future path here, and make the directory later.
+	 * Set our current root dir in our "internal cgroup namespace".
+	 * We will create our tree and all directories from this root.
+	 * In slurmstepd, we got it from slurmd at startup so no need to guess.
 	 */
-	_set_int_cg_ns();
+	if (running_in_slurmstepd()) {
+		stepd_scope_path = xstrdup(scope_path);
+		int_cg_ns.mnt_point = stepd_scope_path;
+	} else
+		_set_int_cg_ns();
+
 	if (!int_cg_ns.mnt_point) {
 		error("Cannot setup the cgroup namespace.");
 		return SLURM_ERROR;
