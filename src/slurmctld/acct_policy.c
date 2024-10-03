@@ -81,6 +81,7 @@ typedef struct {
 	char *acct;
 	slurmdb_assoc_rec_t *assoc_ptr;
 	int cnt;
+	bool limits_filled;
 	slurmdb_qos_rec_t *qos_ptr;
 	uid_t uid;
 	slurmdb_used_limits_t *used_limits_acct;
@@ -3125,21 +3126,38 @@ static void _remove_accrue_time_internal(
 	}
 }
 
+static void _fill_in_qos_used_limits(slurmdb_qos_rec_t *qos_ptr,
+				     acct_policy_accrue_t *acct_policy_accrue)
+{
+
+	if (acct_policy_accrue->limits_filled)
+		return;
+
+	acct_policy_accrue->limits_filled = true;
+	if (!qos_ptr) {
+		acct_policy_accrue->used_limits_acct = NULL;
+		acct_policy_accrue->used_limits_user = NULL;
+		return;
+	}
+
+	xassert(acct_policy_accrue->acct);
+
+	acct_policy_accrue->used_limits_acct =
+		acct_policy_get_acct_used_limits(
+			&qos_ptr->usage->acct_limit_list,
+			acct_policy_accrue->acct);
+	acct_policy_accrue->used_limits_user =
+		acct_policy_get_user_used_limits(
+			&qos_ptr->usage->user_limit_list,
+			acct_policy_accrue->uid);
+}
+
 static int _for_each_qos_remove_accrue_time(void *x, void *arg)
 {
 	slurmdb_qos_rec_t *qos_ptr = x;
 	acct_policy_accrue_t *acct_policy_accrue = arg;
 
-	if (qos_ptr) {
-		acct_policy_accrue->used_limits_acct =
-			acct_policy_get_acct_used_limits(
-				&qos_ptr->usage->acct_limit_list,
-				acct_policy_accrue->acct);
-		acct_policy_accrue->used_limits_user =
-			acct_policy_get_user_used_limits(
-				&qos_ptr->usage->user_limit_list,
-				acct_policy_accrue->uid);
-	}
+	_fill_in_qos_used_limits(qos_ptr, acct_policy_accrue);
 
 	_remove_accrue_time_internal(acct_policy_accrue->assoc_ptr,
 				     qos_ptr,
