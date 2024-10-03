@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Don't dump warning on empty wckeys in:
       'GET /slurmdb/v0.0.40/config'
       'GET /slurmdb/v0.0.41/config'
+ -- Fix slurmd possibly leaving zombie processes on start up in configless when
+    the initial attempt to fetch the config fails.
 
 * Changes in Slurm 24.05.3
 ==========================
