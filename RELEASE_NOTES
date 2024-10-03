@@ -46,6 +46,7 @@ COMMAND CHANGES (see man pages for details)
     job allocation
  -- slurmdbd - Add -u option. This is used to determine if restarting the DBD
     will result in database conversion.
+ -- Remove salloc --get-user-env.
 
 API CHANGES
 ===========

@@ -919,34 +919,6 @@ was not specified) as one task per requested thread.
 .IP
 
 .TP
-\fB\-\-get\-user\-env\fR[=\fItimeout\fR][\fImode\fR]
-This option will load login environment variables for the user.
-The environment variables are retrieved by running something along the lines of
-"su \- <username> \-c /usr/bin/env" and parsing the output.
-Be aware that any environment variables already set in salloc's environment
-will take precedence over any environment variables in the user's
-login environment.
-The optional \fItimeout\fR value is in seconds. Default value is 3 seconds.
-The optional \fImode\fR value controls the "su" options.
-With a \fImode\fR value of "S", "su" is executed without the "\-" option.
-With a \fImode\fR value of "L", "su" is executed with the "\-" option,
-replicating the login environment.
-If \fImode\fR is not specified, the mode established at Slurm build time
-is used.
-Examples of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
-"\-\-get\-user\-env=10L", and "\-\-get\-user\-env=S".
-
-\fBNOTE\fR: This option only works if the caller has an effective uid
-of "root". The explicit or implicit use of \fB--get-user-env\fR relies on
-the capability of being able to create PID and mount namespaces. It is very
-advisable to ensure that PID and mount namespace creation is available and
-not limited (check that \fB/proc/sys/user/max_[pid|mnt]_namespaces\fR
-is not 0). Although they are not strictly mandatory for \fB--get-user-env\fR
-to work, they ensure that there are no orphan processes left after the
-environment is retrieved.
-.IP
-
-.TP
 \fB\-\-gpu\-bind\fR=[verbose,]<\fItype\fR>
 Equivalent to \-\-tres\-bind=gres/gpu:[verbose,]<\fItype\fR>
 See \fB\-\-tres\-bind\fR for all options and documentation.

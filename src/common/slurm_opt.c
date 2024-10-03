@@ -1480,7 +1480,6 @@ static slurm_cli_opt_t slurm_opt_get_user_env = {
 	.name = "get-user-env",
 	.has_arg = optional_argument,
 	.val = LONG_OPT_GET_USER_ENV,
-	.set_func_salloc = arg_set_get_user_env,
 	.set_func_sbatch = arg_set_get_user_env,
 	.get_func = arg_get_get_user_env,
 	.reset_func = arg_reset_get_user_env,

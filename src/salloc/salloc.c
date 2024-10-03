@@ -115,7 +115,6 @@ static int  _proc_alloc(resource_allocation_response_msg_t *alloc);
 static void _ring_terminal_bell(void);
 static int  _set_cluster_name(void *x, void *arg);
 static void _set_exit_code(void);
-static void _set_rlimits(char **env);
 static void _set_spank_env(void);
 static void _set_submit_dir_env(void);
 static void _signal_while_allocating(int signo);
@@ -162,7 +161,6 @@ static int _copy_other_port(void *x, void *arg)
 
 int main(int argc, char **argv)
 {
-	static bool env_cache_set = false;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	job_desc_msg_t *desc = NULL, *first_job = NULL;
 	list_t *job_req_list = NULL, *job_resp_list = NULL;
@@ -244,31 +242,6 @@ int main(int argc, char **argv)
 			exit(error_exit);
 		} else if (work_dir)
 			opt.chdir = work_dir;
-
-		if ((opt.get_user_env_time >= 0) && !env_cache_set) {
-			bool no_env_cache = false;
-			char *user;
-
-			env_cache_set = true;
-			if (!(user = uid_to_string_or_null(opt.uid))) {
-				error("Invalid user id %u: %m",
-				      (uint32_t) opt.uid);
-				exit(error_exit);
-			}
-
-			if (xstrcasestr(slurm_conf.sched_params,
-					"no_env_cache"))
-				no_env_cache = true;
-
-			env = env_array_user_default(user,
-						     opt.get_user_env_time,
-						     opt.get_user_env_mode,
-						     no_env_cache);
-			xfree(user);
-			if (env == NULL)
-				exit(error_exit);    /* error already logged */
-			_set_rlimits(env);
-		}
 
 		if (desc && !job_req_list) {
 			job_req_list = list_create(NULL);
@@ -1029,47 +1002,6 @@ static void _user_msg_handler(srun_user_msg_t *msg)
 static void _node_fail_handler(srun_node_fail_msg_t *msg)
 {
 	error("Node failure on %s", msg->nodelist);
-}
-
-static void _set_rlimits(char **env)
-{
-	slurm_rlimits_info_t *rli;
-	char env_name[32] = "SLURM_RLIMIT_";
-	char *env_value, *p;
-	struct rlimit r;
-	rlim_t env_num;
-	int header_len = sizeof("SLURM_RLIMIT_");
-
-	for (rli = get_slurm_rlimits_info(); rli->name; rli++) {
-		if (rli->propagate_flag != PROPAGATE_RLIMITS)
-			continue;
-		if ((header_len + strlen(rli->name)) >= sizeof(env_name)) {
-			error("%s: env_name(%s) too long", __func__, env_name);
-			continue;
-		}
-		strcpy(&env_name[header_len - 1], rli->name);
-		env_value = getenvp(env, env_name);
-		if (env_value == NULL)
-			continue;
-		unsetenvp(env, env_name);
-		if (getrlimit(rli->resource, &r) < 0) {
-			error("getrlimit(%s): %m", env_name+6);
-			continue;
-		}
-		env_num = strtol(env_value, &p, 10);
-		if (p && (p[0] != '\0')) {
-			error("Invalid environment %s value %s",
-			      env_name, env_value);
-			continue;
-		}
-		if (r.rlim_cur == env_num)
-			continue;
-		r.rlim_cur = (rlim_t) env_num;
-		if (setrlimit(rli->resource, &r) < 0) {
-			error("setrlimit(%s): %m", env_name+6);
-			continue;
-		}
-	}
 }
 
 /* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
