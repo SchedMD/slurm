@@ -216,8 +216,10 @@ static void _establish_config_source(void)
 			      __func__, dir);
 	}
 
-	if (!(configs = fetch_config(conf_server, CONFIG_REQUEST_SACKD)))
-		fatal("%s: failed to load configs", __func__);
+	while (!(configs = fetch_config(conf_server, CONFIG_REQUEST_SACKD))) {
+		error("Failed to load configs from slurmctld. Retrying in 10 seconds.");
+		sleep(10);
+	}
 
 	registered = true;
 
