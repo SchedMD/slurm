@@ -1176,7 +1176,7 @@ static int _migrate_to_stepd_scope()
 		return SLURM_ERROR;
 	}
 
-	return _setup_controllers();
+	return SLURM_SUCCESS;
 }
 
 static void _get_memory_events(uint64_t *job_kills, uint64_t *step_kills)
