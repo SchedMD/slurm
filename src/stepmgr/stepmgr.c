@@ -2211,8 +2211,8 @@ static int _pick_step_cores(step_record_t *step_ptr,
 			 __func__, step_ptr, core_cnt, job_node_inx,
 			 cpus_per_core, job_resrcs_ptr->cpus[job_node_inx]);
 
-		if (core_cnt * cpus_per_core >
-		    job_resrcs_ptr->cpus[job_node_inx] &&
+		if (core_cnt > ROUNDUP(job_resrcs_ptr->cpus[job_node_inx],
+				       cpus_per_core) &&
 		    !(step_ptr->flags & SSF_OVERCOMMIT)) {
 			/* Node can never fullfill step request */
 			return ESLURM_TOO_MANY_REQUESTED_CPUS;
