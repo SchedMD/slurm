@@ -847,23 +847,13 @@ static int _send_return_code(const time_t start_time, const int to_stepd,
 
 static int _handle_return_code(int to_slurmd, int to_stepd, int *rc_ptr)
 {
-	int i;
 	time_t start_time = time(NULL);
 
-	i = read(to_slurmd, &rc_ptr, sizeof(int));
-	if (i < 0) {
-		error("%s: Can not read return code from slurmstepd "
-		      "got %d: %m", __func__, i);
-		return SLURM_ERROR;
-	} else if (i != sizeof(int)) {
-		error("%s: slurmstepd failed to send return code "
-		      "got %d: %m", __func__, i);
-		return SLURM_ERROR;
-	} else {
-		return _send_return_code(start_time, to_stepd, *rc_ptr);
-	}
-
-	return SLURM_SUCCESS;
+	safe_read(to_slurmd, rc_ptr, sizeof(*rc_ptr));
+	return _send_return_code(start_time, to_stepd, *rc_ptr);
+rwfail:
+	error("%s: Can not read return code from slurmstepd: %m", __func__);
+	return SLURM_ERROR;
 }
 
 #endif /* SLURMSTEPD_MEMCHECK != 1 */
