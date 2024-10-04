@@ -822,9 +822,31 @@ fail:
 
 #if (SLURMSTEPD_MEMCHECK != 1)
 
+static int _send_return_code(const time_t start_time, const int to_stepd,
+			     const int forward_rc)
+{
+	int delta_time = time(NULL) - start_time;
+	int cc = SLURM_SUCCESS;
+
+	if (delta_time > 5) {
+		warning("slurmstepd startup took %d sec, possible file system problem or full memory",
+			delta_time);
+	}
+
+	if (forward_rc != SLURM_SUCCESS)
+		error("slurmstepd return code %d: %s",
+		      forward_rc, slurm_strerror(forward_rc));
+
+	cc = write(to_stepd, &cc, sizeof(int));
+	if (cc != sizeof(int)) {
+		error("%s: failed to send ack to stepd %d: %m", __func__, cc);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _handle_return_code(int to_slurmd, int to_stepd, int *rc_ptr)
 {
-	int rc = SLURM_SUCCESS;
 	int i;
 	time_t start_time = time(NULL);
 
@@ -838,22 +860,7 @@ static int _handle_return_code(int to_slurmd, int to_stepd, int *rc_ptr)
 		      "got %d: %m", __func__, i);
 		return SLURM_ERROR;
 	} else {
-		int delta_time = time(NULL) - start_time;
-		int cc;
-		if (delta_time > 5) {
-			warning("slurmstepd startup took %d sec, possible file system problem or full memory",
-				delta_time);
-		}
-		if (rc != SLURM_SUCCESS)
-			error("slurmstepd return code %d: %s",
-			      rc, slurm_strerror(rc));
-
-		cc = SLURM_SUCCESS;
-		cc = write(to_stepd, &cc, sizeof(int));
-		if (cc != sizeof(int)) {
-			error("%s: failed to send ack to stepd %d: %m",
-			      __func__, cc);
-		}
+		return _send_return_code(start_time, to_stepd, *rc_ptr);
 	}
 
 	return SLURM_SUCCESS;
