@@ -1284,7 +1284,9 @@ static int _slurm_conf_gres_str(void *x, void *arg)
 	if (gres_slurmd_conf && gres_slurmd_conf->name) {
 		bool has_type = gres_slurmd_conf->type_name &&
 				gres_slurmd_conf->type_name[0];
-		xstrfmtcat(*gres_str, "%s:%s%s%ld", gres_slurmd_conf->name,
+		xstrfmtcat(*gres_str, "%s%s:%s%s%ld",
+			   gres_str && gres_str[0] ? "," : "",
+			   gres_slurmd_conf->name,
 			   has_type ? gres_slurmd_conf->type_name : "",
 			   has_type ? ":" : "",
 			   gres_slurmd_conf->count);
