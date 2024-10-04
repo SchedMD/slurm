@@ -2706,7 +2706,19 @@ static void _pack_job_step_create_response_msg(
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		pack32(msg->def_cpu_bind_type, buffer);
+		packstr(msg->resv_ports, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->job_step_id, buffer);
+		pack_slurm_step_layout(msg->step_layout, buffer,
+				       protocol_version);
+		packstr(msg->stepmgr, buffer);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
+		switch_g_pack_stepinfo(msg->switch_step, buffer,
+				       protocol_version);
+		pack16(msg->use_protocol_ver, buffer);
+	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
 		packstr(msg->resv_ports, buffer);
 		pack32(msg->job_id, buffer);
@@ -2743,7 +2755,28 @@ static int _unpack_job_step_create_response_msg(
 	tmp_ptr = xmalloc(sizeof(job_step_create_response_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpack32(&tmp_ptr->def_cpu_bind_type, buffer);
+		safe_unpackstr(&tmp_ptr->resv_ports, buffer);
+		safe_unpack32(&tmp_ptr->job_id, buffer);
+		safe_unpack32(&tmp_ptr->job_step_id, buffer);
+		if (unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer,
+					     protocol_version))
+			goto unpack_error;
+		safe_unpackstr(&tmp_ptr->stepmgr, buffer);
+
+		if (!(tmp_ptr->cred = slurm_cred_unpack(buffer,
+							protocol_version)))
+			goto unpack_error;
+
+		if (switch_g_unpack_stepinfo(&tmp_ptr->switch_step, buffer,
+					     protocol_version)) {
+			error("switch_g_unpack_stepinfo: %m");
+			switch_g_free_stepinfo(tmp_ptr->switch_step);
+			goto unpack_error;
+		}
+		safe_unpack16(&tmp_ptr->use_protocol_ver, buffer);
+	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->def_cpu_bind_type, buffer);
 		safe_unpackstr(&tmp_ptr->resv_ports, buffer);
 		safe_unpack32(&tmp_ptr->job_id, buffer);
