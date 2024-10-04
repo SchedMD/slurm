@@ -26,10 +26,7 @@
 ############################################################################
 source ./globals
 
-set job_id      0
-set number      "\[0-9\]+"
 set name        "banana"
-set my_cmd      ./mycmd
 set file_in     "$test_dir/input"
 set file_out    "$test_dir/output"
 
@@ -41,76 +38,22 @@ make_bash_script $file_in "$bin_env | grep SLURM_JOB_NAME"
 #
 # Tests -J by using srun
 #
-set found 0
-spawn $srun -J $name -t1 $file_in
-expect {
-        "SLURM_JOB_NAME=$name" {
-            set found 1
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$found != 1} {
-	fail "Could not find SLURM_JOB_NAME=banana"
-}
+set output [run_command_output -fail "$srun -J $name -t1 $file_in"]
+subtest {[regexp "SLURM_JOB_NAME=$name" $output]} "Verify SLURM_JOB_NAME for srun"
 
 #
 # Tests -J using sbatch
 #
-set found 0
-spawn $sbatch -J $name -t1 -o $file_out --wrap=env
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-wait_for_file -fail $file_out
-spawn $bin_grep SLURM_JOB_NAME=banana $file_out
-expect {
-	-re "SLURM_JOB_NAME=($re_word_str)" {
-            log_debug "Job name matched $expect_out(1,string)"
-            set found 1
-            exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set job_id [submit_job -fail "-J $name -t1 -o $file_out $file_in"]
 
-if {$found != 1} {
-	fail "Could not find SLURM_JOB_NAME=banana"
-}
-exec rm -f slurm-$job_id.out
+wait_for_job $job_id "DONE"
+wait_for_file -fail $file_out
+
+set output [run_command_output -fail "$bin_grep SLURM_JOB_NAME=banana $file_out"]
+subtest {[regexp "SLURM_JOB_NAME=$name" $output]} "Verify SLURM_JOB_NAME for sbatch"
 
 #
 # Tests -J using salloc
 #
-set found 0
-spawn $salloc -J $name -t1 $file_in
-expect {
-        "SLURM_JOB_NAME=$name" {
-		set found 1
-	}
-	timeout {
-		fail "salloc not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$found != 1} {
-	fail "Could not find SLURM_JOB_NAME=banana"
-}
+set output [run_command_output -fail "$salloc -J $name -t1 $file_in"]
+subtest {[regexp "SLURM_JOB_NAME=$name" $output]} "Verify SLURM_JOB_NAME for salloc"
