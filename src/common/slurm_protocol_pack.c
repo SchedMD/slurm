@@ -2715,8 +2715,6 @@ static void _pack_job_step_create_response_msg(
 				       protocol_version);
 		packstr(msg->stepmgr, buffer);
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
-		switch_g_pack_stepinfo(msg->switch_step, buffer,
-				       protocol_version);
 		pack16(msg->use_protocol_ver, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
@@ -2769,12 +2767,6 @@ static int _unpack_job_step_create_response_msg(
 							protocol_version)))
 			goto unpack_error;
 
-		if (switch_g_unpack_stepinfo(&tmp_ptr->switch_step, buffer,
-					     protocol_version)) {
-			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_stepinfo(tmp_ptr->switch_step);
-			goto unpack_error;
-		}
 		safe_unpack16(&tmp_ptr->use_protocol_ver, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->def_cpu_bind_type, buffer);
