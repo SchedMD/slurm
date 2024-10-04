@@ -837,12 +837,11 @@ static int _send_return_code(const time_t start_time, const int to_stepd,
 		error("slurmstepd return code %d: %s",
 		      forward_rc, slurm_strerror(forward_rc));
 
-	cc = write(to_stepd, &cc, sizeof(int));
-	if (cc != sizeof(int)) {
-		error("%s: failed to send ack to stepd %d: %m", __func__, cc);
-	}
-
+	safe_write(to_stepd, &cc, sizeof(cc));
 	return SLURM_SUCCESS;
+rwfail:
+	error("%s: failed to send ack to stepd: %m", __func__);
+	return SLURM_ERROR;
 }
 
 static int _handle_return_code(int to_slurmd, int to_stepd, int *rc_ptr)
