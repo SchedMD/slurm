@@ -1281,12 +1281,14 @@ static int _slurm_conf_gres_str(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
 	char **gres_str = arg;
-	if (gres_slurmd_conf && gres_slurmd_conf->name)
-		xstrfmtcat(*gres_str, "%s:%s%s%ld",
-			   gres_slurmd_conf->name,
-			   gres_slurmd_conf->type_name ? gres_slurmd_conf->type_name : "",
-			   gres_slurmd_conf->type_name ? ":" : "",
+	if (gres_slurmd_conf && gres_slurmd_conf->name) {
+		bool has_type = gres_slurmd_conf->type_name &&
+				gres_slurmd_conf->type_name[0];
+		xstrfmtcat(*gres_str, "%s:%s%s%ld", gres_slurmd_conf->name,
+			   has_type ? gres_slurmd_conf->type_name : "",
+			   has_type ? ":" : "",
 			   gres_slurmd_conf->count);
+	}
 	return SLURM_SUCCESS;
 }
 
