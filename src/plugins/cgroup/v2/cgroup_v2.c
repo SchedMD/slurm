@@ -36,6 +36,7 @@
 #define _GNU_SOURCE
 
 #include <fcntl.h>
+#include <mntent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -207,6 +208,41 @@ static char *_get_root_mount_mountinfo(char *mount, char *pid_str)
 		error("Could not parse '%s' root mount for %s", mount, pid_str);
 	}
 	return data;
+}
+
+/*
+ * Check whether path is a valid cgroup2 mountpoint. This also checks that the
+ * cgroup mount passed is usable in the current cgroup2 namespace.
+ *
+ * IN path - Path to cgroup2 mountpoint.
+ */
+static bool _is_cgroup2_mount(char *path)
+{
+	FILE *fp = setmntent("/proc/mounts", "r");
+	struct mntent *mnt;
+	char *minfo = NULL;
+	bool rc = false;
+
+	if (!fp) {
+		error("Failed to open /proc/mounts");
+		return rc;
+	}
+
+	while ((mnt = getmntent(fp))) {
+		if (!xstrcmp(mnt->mnt_dir, path) &&
+		    !xstrcmp(mnt->mnt_type, "cgroup2")) {
+			rc = true;
+			break;
+		}
+	}
+
+	minfo = _get_root_mount_mountinfo(path, "self");
+	if (xstrcmp(minfo, "/"))
+		error("The cgroup mountpoint does not align with the current namespace. Please, ensure all namespaces are correctly mounted. Refer to the slurm cgroup_v2 documentation.");
+
+	xfree(minfo);
+	endmntent(fp);
+	return rc;
 }
 
 /*
@@ -1266,6 +1302,10 @@ extern int init(void)
 	 */
 	invoc_id = getenv("INVOCATION_ID");
 
+	if (!_is_cgroup2_mount(slurm_cgroup_conf.cgroup_mountpoint)) {
+		fatal("%s is not a valid cgroup2 mountpoint",
+		      slurm_cgroup_conf.cgroup_mountpoint);
+	}
 	/*
 	 * Check our current root dir. Systemd MUST have Delegated it to us,
 	 * so we want slurmd to be started by systemd. In the case of stepd
