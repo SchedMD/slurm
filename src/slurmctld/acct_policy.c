@@ -4772,13 +4772,11 @@ static void _get_accrue_limits(acct_policy_accrue_t *acct_policy_accrue,
 
 }
 
-static void _handle_add_accrue(job_record_t *job_ptr,
-			       slurmdb_used_limits_t *used_limits_acct,
-			       slurmdb_used_limits_t *used_limits_user,
+static void _handle_add_accrue(acct_policy_accrue_t *acct_policy_accrue,
 			       uint32_t max_jobs_accrue,
-			       int create_cnt,
-			       time_t now)
+			       int create_cnt)
 {
+	job_record_t *job_ptr = acct_policy_accrue->job_ptr;
 	job_details_t *details_ptr = job_ptr->details;
 	job_record_t *old_job_ptr;
 
@@ -4809,7 +4807,9 @@ static void _handle_add_accrue(job_record_t *job_ptr,
 
 			_add_accrue_time_internal(job_ptr->assoc_ptr,
 						  job_ptr->qos_ptr,
+						  acct_policy_accrue->
 						  used_limits_acct,
+						  acct_policy_accrue->
 						  used_limits_user,
 						  create_cnt);
 		}
@@ -4844,9 +4844,9 @@ static void _handle_add_accrue(job_record_t *job_ptr,
 			fatal_abort("%s: no details after split", __func__);
 			return;
 		}
-		details_ptr->accrue_time = now;
+		details_ptr->accrue_time = acct_policy_accrue->now;
 		log_flag(ACCRUE, "%pJ is now accruing time %ld",
-			 old_job_ptr, now);
+			 old_job_ptr, acct_policy_accrue->now);
 	}
 
 	/*
@@ -4856,8 +4856,8 @@ static void _handle_add_accrue(job_record_t *job_ptr,
 	 */
 	_add_accrue_time_internal(job_ptr->assoc_ptr,
 				  job_ptr->qos_ptr,
-				  used_limits_acct,
-				  used_limits_user,
+				  acct_policy_accrue->used_limits_acct,
+				  acct_policy_accrue->used_limits_user,
 				  create_cnt);
 }
 
@@ -4900,11 +4900,8 @@ static void _handle_accrue_time(acct_policy_accrue_t *acct_policy_accrue)
 
 	_get_accrue_limits(acct_policy_accrue,
 			   &max_jobs_accrue, &create_cnt);
-	_handle_add_accrue(job_ptr,
-			   acct_policy_accrue->used_limits_acct,
-			   acct_policy_accrue->used_limits_user,
-			   max_jobs_accrue, create_cnt,
-			   acct_policy_accrue->now);
+	_handle_add_accrue(acct_policy_accrue,
+			   max_jobs_accrue, create_cnt);
 }
 
 extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
@@ -5038,11 +5035,7 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 	acct_policy_accrue.acct = job_ptr->assoc_ptr->acct;
 
 	_get_accrue_limits(&acct_policy_accrue, &max_jobs_accrue, &create_cnt);
-	_handle_add_accrue(job_ptr,
-			   acct_policy_accrue.used_limits_acct,
-			   acct_policy_accrue.used_limits_user,
-			   max_jobs_accrue, create_cnt,
-			   acct_policy_accrue.now);
+	_handle_add_accrue(&acct_policy_accrue, max_jobs_accrue, create_cnt);
 endit:
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
