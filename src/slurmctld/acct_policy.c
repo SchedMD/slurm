@@ -81,7 +81,9 @@ typedef struct {
 	char *acct;
 	slurmdb_assoc_rec_t *assoc_ptr;
 	int cnt;
+	job_record_t *job_ptr;
 	bool limits_filled;
+	time_t now;
 	slurmdb_qos_rec_t *qos_ptr;
 	uid_t uid;
 	slurmdb_used_limits_t *used_limits_acct;
@@ -4707,12 +4709,11 @@ job_failed:
 	return false;
 }
 
-static void _get_accrue_limits(job_record_t *job_ptr,
-			       slurmdb_used_limits_t *used_limits_acct,
-			       slurmdb_used_limits_t *used_limits_user,
+static void _get_accrue_limits(acct_policy_accrue_t *acct_policy_accrue,
 			       uint32_t *max_jobs_accrue_ptr,
 			       int *create_cnt_ptr)
 {
+	job_record_t *job_ptr = acct_policy_accrue->job_ptr;
 	slurmdb_assoc_rec_t *assoc_ptr;
 	bool parent = false;
 
@@ -4720,21 +4721,25 @@ static void _get_accrue_limits(job_record_t *job_ptr,
 	xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
 
 	if (job_ptr->qos_ptr) {
+		_fill_in_qos_used_limits(job_ptr->qos_ptr, acct_policy_accrue);
+
 		/* Find the most restrictive qos limit */
 		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
 				       job_ptr->qos_ptr->grp_jobs_accrue,
 				       job_ptr->qos_ptr->usage->accrue_cnt);
-		if (used_limits_acct)
+		if (acct_policy_accrue->used_limits_acct)
 			_get_accrue_create_cnt(
 				max_jobs_accrue_ptr, create_cnt_ptr,
 				job_ptr->qos_ptr->max_jobs_accrue_pa,
-				used_limits_acct->accrue_cnt);
+				acct_policy_accrue->used_limits_acct->
+				accrue_cnt);
 
-		if (used_limits_user)
+		if (acct_policy_accrue->used_limits_user)
 			_get_accrue_create_cnt(
 				max_jobs_accrue_ptr, create_cnt_ptr,
 				job_ptr->qos_ptr->max_jobs_accrue_pu,
-				used_limits_user->accrue_cnt);
+				acct_policy_accrue->used_limits_user->
+				accrue_cnt);
 	}
 
 	assoc_ptr = job_ptr->assoc_ptr;
@@ -4859,17 +4864,19 @@ static void _handle_add_accrue(job_record_t *job_ptr,
 extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 					  bool assoc_mgr_locked)
 {
-	slurmdb_qos_rec_t *qos_ptr;
 	slurmdb_assoc_rec_t *assoc_ptr;
 	job_details_t *details_ptr;
-	slurmdb_used_limits_t *used_limits_acct = NULL;
-	slurmdb_used_limits_t *used_limits_user = NULL;
-
 	uint32_t max_jobs_accrue = INFINITE;
 	int create_cnt = 0, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
+	acct_policy_accrue_t acct_policy_accrue = {
+		.assoc_ptr = job_ptr->assoc_ptr,
+		.job_ptr = job_ptr,
+		.now = now,
+		.uid = job_ptr->user_id,
+	};
 
 	details_ptr = job_ptr->details;
 	if (!details_ptr) {
@@ -4917,15 +4924,9 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 		goto endit;
 	}
 
-	qos_ptr = job_ptr->qos_ptr;
-	if (qos_ptr) {
-		used_limits_acct = acct_policy_get_acct_used_limits(
-			&qos_ptr->usage->acct_limit_list,
-			assoc_ptr->acct);
-		used_limits_user = acct_policy_get_user_used_limits(
-				&qos_ptr->usage->user_limit_list,
-				job_ptr->user_id);
-	}
+	acct_policy_accrue.acct = job_ptr->assoc_ptr->acct;
+
+	_fill_in_qos_used_limits(job_ptr->qos_ptr, &acct_policy_accrue);
 
 	/* We have started running, let's clear us out of the mix. */
 	if (details_ptr->accrue_time) {
@@ -4948,8 +4949,10 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 			job_ptr->bit_flags |= JOB_ACCRUE_OVER;
 
 			_remove_accrue_time_internal(job_ptr->assoc_ptr,
-						     qos_ptr,
+						     job_ptr->qos_ptr,
+						     acct_policy_accrue.
 						     used_limits_acct,
+						     acct_policy_accrue.
 						     used_limits_user,
 						     job_cnt);
 		}
@@ -4961,12 +4964,12 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 	} else if (!IS_JOB_PENDING(job_ptr))
 		goto endit;
 
-	_get_accrue_limits(job_ptr, used_limits_acct, used_limits_user,
-			   &max_jobs_accrue, &create_cnt);
-
-	_handle_add_accrue(job_ptr, used_limits_acct, used_limits_user,
-			   max_jobs_accrue, create_cnt, now);
-
+	_get_accrue_limits(&acct_policy_accrue, &max_jobs_accrue, &create_cnt);
+	_handle_add_accrue(job_ptr,
+			   acct_policy_accrue.used_limits_acct,
+			   acct_policy_accrue.used_limits_user,
+			   max_jobs_accrue, create_cnt,
+			   acct_policy_accrue.now);
 endit:
 
 	if (!assoc_mgr_locked)
@@ -4978,16 +4981,19 @@ endit:
 extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 					bool assoc_mgr_locked)
 {
-	slurmdb_qos_rec_t *qos_ptr;
 	slurmdb_assoc_rec_t *assoc_ptr;
-	slurmdb_used_limits_t *used_limits_acct = NULL;
-	slurmdb_used_limits_t *used_limits_user = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 	int create_cnt = 0;
 	uint32_t max_jobs_accrue = INFINITE;
 	job_details_t *details_ptr = job_ptr->details;
 	time_t now = time(NULL);
+	acct_policy_accrue_t acct_policy_accrue = {
+		.assoc_ptr = job_ptr->assoc_ptr,
+		.job_ptr = job_ptr,
+		.now = now,
+		.uid = job_ptr->user_id,
+	};
 
 	/*
 	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
@@ -5031,21 +5037,14 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 		goto endit;
 	}
 
-	qos_ptr = job_ptr->qos_ptr;
-	if (qos_ptr) {
-		used_limits_acct = acct_policy_get_acct_used_limits(
-			&qos_ptr->usage->acct_limit_list,
-			assoc_ptr->acct);
-		used_limits_user = acct_policy_get_user_used_limits(
-				&qos_ptr->usage->user_limit_list,
-				job_ptr->user_id);
-	}
+	acct_policy_accrue.acct = job_ptr->assoc_ptr->acct;
 
-	_get_accrue_limits(job_ptr, used_limits_acct, used_limits_user,
-			   &max_jobs_accrue, &create_cnt);
-	_handle_add_accrue(job_ptr, used_limits_acct, used_limits_user,
-			   max_jobs_accrue, create_cnt, now);
-
+	_get_accrue_limits(&acct_policy_accrue, &max_jobs_accrue, &create_cnt);
+	_handle_add_accrue(job_ptr,
+			   acct_policy_accrue.used_limits_acct,
+			   acct_policy_accrue.used_limits_user,
+			   max_jobs_accrue, create_cnt,
+			   acct_policy_accrue.now);
 endit:
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
