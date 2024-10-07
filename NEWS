@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
       'GET /slurmdb/v0.0.41/config'
  -- Fix slurmd possibly leaving zombie processes on start up in configless when
     the initial attempt to fetch the config fails.
+ -- Fix crash when trying to drain a non-existing node (possibly deleted
+    before).
 
 * Changes in Slurm 24.05.3
 ==========================
