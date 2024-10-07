@@ -3031,30 +3031,34 @@ static void _get_accrue_create_cnt(uint32_t *max_jobs_accrue, int *create_cnt,
 		*create_cnt = 0;
 }
 
-static void _add_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
-				      slurmdb_qos_rec_t *qos_ptr,
-				      slurmdb_used_limits_t *used_limits_acct,
-				      slurmdb_used_limits_t *used_limits_user,
-				      int cnt)
+static void _add_accrue_time_internal(void *x, void *arg)
 {
+	slurmdb_qos_rec_t *qos_ptr = x;
+	acct_policy_accrue_t *acct_policy_accrue = arg;
+	slurmdb_assoc_rec_t *assoc_ptr = acct_policy_accrue->assoc_ptr;
+
 	log_flag(ACCRUE, "%s: Adding %d to assoc_ptr %p (%p %p %p)",
-		 __func__, cnt, assoc_ptr, qos_ptr, used_limits_acct,
-		 used_limits_user);
+		 __func__, acct_policy_accrue->cnt, assoc_ptr, qos_ptr,
+		 acct_policy_accrue->used_limits_acct,
+		 acct_policy_accrue->used_limits_user);
 
 	if (qos_ptr)
-		qos_ptr->usage->accrue_cnt += cnt;
-	if (used_limits_acct)
-		used_limits_acct->accrue_cnt += cnt;
-	if (used_limits_user)
-		used_limits_user->accrue_cnt += cnt;
+		qos_ptr->usage->accrue_cnt += acct_policy_accrue->cnt;
+	if (acct_policy_accrue->used_limits_acct)
+		acct_policy_accrue->used_limits_acct->accrue_cnt +=
+			acct_policy_accrue->cnt;
+	if (acct_policy_accrue->used_limits_user)
+		acct_policy_accrue->used_limits_user->accrue_cnt +=
+			acct_policy_accrue->cnt;
 
 	while (assoc_ptr) {
 		log_flag(ACCRUE, "assoc_id %u(%s/%s/%s/%p) added %d count %d",
 			 assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
-			 assoc_ptr->partition, assoc_ptr->usage, cnt,
+			 assoc_ptr->partition, assoc_ptr->usage,
+			 acct_policy_accrue->cnt,
 			 assoc_ptr->usage->accrue_cnt);
 
-		assoc_ptr->usage->accrue_cnt += cnt;
+		assoc_ptr->usage->accrue_cnt += acct_policy_accrue->cnt;
 		/* now go up the hierarchy */
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
@@ -4772,18 +4776,20 @@ static void _get_accrue_limits(acct_policy_accrue_t *acct_policy_accrue,
 
 }
 
-static void _handle_add_accrue(acct_policy_accrue_t *acct_policy_accrue,
-			       uint32_t max_jobs_accrue,
-			       int create_cnt)
+static void _handle_add_accrue(acct_policy_accrue_t *acct_policy_accrue)
 {
 	job_record_t *job_ptr = acct_policy_accrue->job_ptr;
 	job_details_t *details_ptr = job_ptr->details;
 	job_record_t *old_job_ptr;
+	uint32_t max_jobs_accrue = INFINITE;
+
+	_get_accrue_limits(acct_policy_accrue, &max_jobs_accrue,
+			   &acct_policy_accrue->cnt);
 
 	/* No limit (or there is space to accrue) */
 	if ((max_jobs_accrue == INFINITE) ||
-	    (create_cnt && (!job_ptr->array_recs ||
-			    !job_ptr->array_recs->task_cnt))) {
+	    (acct_policy_accrue->cnt &&
+	     (!job_ptr->array_recs || !job_ptr->array_recs->task_cnt))) {
 		if (!details_ptr->accrue_time &&
 		    job_ptr->details->begin_time) {
 			/*
@@ -4801,33 +4807,30 @@ static void _handle_add_accrue(acct_policy_accrue_t *acct_policy_accrue,
 			 */
 			if (job_ptr->array_recs &&
 			    job_ptr->array_recs->task_cnt)
-				create_cnt = job_ptr->array_recs->task_cnt;
+				acct_policy_accrue->cnt =
+					job_ptr->array_recs->task_cnt;
 			else
-				create_cnt = 1;
+				acct_policy_accrue->cnt = 1;
 
-			_add_accrue_time_internal(job_ptr->assoc_ptr,
-						  job_ptr->qos_ptr,
-						  acct_policy_accrue->
-						  used_limits_acct,
-						  acct_policy_accrue->
-						  used_limits_user,
-						  create_cnt);
+			_add_accrue_time_internal(job_ptr->qos_ptr,
+						  acct_policy_accrue);
 		}
 
 		return;
 	}
 
 	/* Looks like we are at the limit */
-	if (!create_cnt) {
+	if (!acct_policy_accrue->cnt) {
 		log_flag(ACCRUE, "%s: %pJ can't accrue, we are over a limit",
 			 __func__, job_ptr);
 		return;
 	}
 
-	create_cnt = MIN(create_cnt, job_ptr->array_recs->task_cnt);
+	acct_policy_accrue->cnt = MIN(acct_policy_accrue->cnt,
+				      job_ptr->array_recs->task_cnt);
 
 	/* How many can we spin off? */
-	for (int i = 0; i < create_cnt; i++) {
+	for (int i = 0; i < acct_policy_accrue->cnt; i++) {
 		/*
 		 * After we split off the old_job_ptr is what we want to alter
 		 * as the job_ptr returned from job_array_post_sched will be the
@@ -4854,18 +4857,12 @@ static void _handle_add_accrue(acct_policy_accrue_t *acct_policy_accrue,
 	 * an array will always have the same pointers.  If this ever changes in
 	 * the future some how we will need to address it.
 	 */
-	_add_accrue_time_internal(job_ptr->assoc_ptr,
-				  job_ptr->qos_ptr,
-				  acct_policy_accrue->used_limits_acct,
-				  acct_policy_accrue->used_limits_user,
-				  create_cnt);
+	_add_accrue_time_internal(job_ptr->qos_ptr, acct_policy_accrue);
 }
 
 static void _handle_accrue_time(acct_policy_accrue_t *acct_policy_accrue)
 {
 	job_record_t *job_ptr = acct_policy_accrue->job_ptr;
-	uint32_t max_jobs_accrue = INFINITE;
-	int create_cnt = 0;
 
 	/* We have started running, let's clear us out of the mix. */
 	if (job_ptr->details->accrue_time) {
@@ -4898,10 +4895,7 @@ static void _handle_accrue_time(acct_policy_accrue_t *acct_policy_accrue)
 	} else if (!IS_JOB_PENDING(job_ptr))
 		return;
 
-	_get_accrue_limits(acct_policy_accrue,
-			   &max_jobs_accrue, &create_cnt);
-	_handle_add_accrue(acct_policy_accrue,
-			   max_jobs_accrue, create_cnt);
+	_handle_add_accrue(acct_policy_accrue);
 }
 
 extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
@@ -4979,8 +4973,6 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 	slurmdb_assoc_rec_t *assoc_ptr;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
-	int create_cnt = 0;
-	uint32_t max_jobs_accrue = INFINITE;
 	job_details_t *details_ptr = job_ptr->details;
 	time_t now = time(NULL);
 	acct_policy_accrue_t acct_policy_accrue = {
@@ -5034,8 +5026,7 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 
 	acct_policy_accrue.acct = job_ptr->assoc_ptr->acct;
 
-	_get_accrue_limits(&acct_policy_accrue, &max_jobs_accrue, &create_cnt);
-	_handle_add_accrue(&acct_policy_accrue, max_jobs_accrue, create_cnt);
+	_handle_add_accrue(&acct_policy_accrue);
 endit:
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
