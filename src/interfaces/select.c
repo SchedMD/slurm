@@ -507,7 +507,7 @@ extern int select_g_node_init(void)
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
  * IN resv_exc_ptr - Various TRES which the job can NOT use.
- * RET zero on success, EINVAL otherwise
+ * RET SLURM_SUCCESS on success, rc otherwise
  */
 extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes,

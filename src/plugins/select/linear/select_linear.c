@@ -2258,7 +2258,7 @@ extern int select_p_node_init(void)
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  * IN resv_exc_ptr - Various TRES which the job can NOT use.
- * RET zero on success, EINVAL otherwise
+ * RET SLURM_SUCCESS on success, rc otherwise
  * globals (passed via select_p_node_init):
  *	node_record_count - count of nodes configured
  *	node_record_table_ptr - pointer to global node table
