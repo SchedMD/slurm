@@ -130,6 +130,8 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *jobinfo,
  * IN  protocol_version - version of Slurm we are talking to.
  * RET         - slurm error code
  * NOTE: returned value must be freed using switch_g_free_stepinfo
+ *	 Actual stepinfo will only be unpacked in the stepd as this is the only
+ *	 location that requires it.
  */
 extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
 				    buf_t *buffer, uint16_t protocol_version);
