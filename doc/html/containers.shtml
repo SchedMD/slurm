@@ -30,7 +30,23 @@ what applications see and can interact with at any given time. For HPC
 Workloads, these are usually restricted to the
 <a href="http://man7.org/linux/man-pages/man7/mount_namespaces.7.html">mount namespace</a>.
 Slurm natively supports the requesting of unprivileged OCI Containers for jobs
-and steps.
+and steps.</p>
+
+<p>Setting up containers requires several steps:
+<ol>
+<li>Set up the <a href="#prereq">kernel</a> and a
+    <a href="#software">container runtime</a>.</li>
+<li>Deploy a suitable <a href="oci.conf.html">oci.conf</a> file accessible to
+    the compute nodes (<a href="#example">examples below</a>).</li>
+<li>Restart or reconfigure slurmd on the compute nodes.</li>
+<li>Generate <a href="#bundle">OCI bundles</a> for containers that are needed
+    and place them on the compute nodes.</li>
+<li>Verify that you can <a href="#testing">run containers directly</a> through
+    the chosen OCI runtime.</li>
+<li>Verify that you can <a href="#request">request a container</a> through
+    Slurm.</li>
+</ol>
+</p>
 
 <h2 id="limitations">Known limitations
 <a class="slurm_link" href="#limitations"></a>
@@ -859,6 +875,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 04 September 2024</p>
+<p style="text-align:center;">Last modified 08 October 2024</p>
 
 <!--#include virtual="footer.txt"-->
