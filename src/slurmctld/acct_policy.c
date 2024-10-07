@@ -3064,20 +3064,20 @@ static void _add_accrue_time_internal(void *x, void *arg)
 	}
 }
 
-static void _remove_accrue_time_internal(
-				 slurmdb_assoc_rec_t *assoc_ptr,
-				 slurmdb_qos_rec_t *qos_ptr,
-				 slurmdb_used_limits_t *used_limits_acct,
-				 slurmdb_used_limits_t *used_limits_user,
-				 int cnt)
+static void _remove_accrue_time_internal(void *x, void *arg)
 {
+	slurmdb_qos_rec_t *qos_ptr = x;
+	acct_policy_accrue_t *acct_policy_accrue = arg;
+	slurmdb_assoc_rec_t *assoc_ptr = acct_policy_accrue->assoc_ptr;
+
 	log_flag(ACCRUE, "%s: Removing %d from assoc_ptr %p (%p %p %p)",
-		 __func__, cnt, assoc_ptr, qos_ptr, used_limits_acct,
-		 used_limits_user);
+		 __func__, acct_policy_accrue->cnt, assoc_ptr, qos_ptr,
+		 acct_policy_accrue->used_limits_acct,
+		 acct_policy_accrue->used_limits_user);
 
 	if (qos_ptr) {
-		if (qos_ptr->usage->accrue_cnt >= cnt)
-			qos_ptr->usage->accrue_cnt -= cnt;
+		if (qos_ptr->usage->accrue_cnt >= acct_policy_accrue->cnt)
+			qos_ptr->usage->accrue_cnt -= acct_policy_accrue->cnt;
 		else {
 			error("%s: QOS %s accrue_cnt underflow",
 			      __func__, qos_ptr->name);
@@ -3085,40 +3085,46 @@ static void _remove_accrue_time_internal(
 		}
 	}
 
-	if (used_limits_acct) {
-		if (used_limits_acct->accrue_cnt >= cnt)
-			used_limits_acct->accrue_cnt -= cnt;
+	if (acct_policy_accrue->used_limits_acct) {
+		if (acct_policy_accrue->used_limits_acct->accrue_cnt >=
+		    acct_policy_accrue->cnt)
+			acct_policy_accrue->used_limits_acct->accrue_cnt -=
+				acct_policy_accrue->cnt;
 		else {
 			if (qos_ptr) {
 				error("%s: QOS %s acct %s accrue_cnt underflow",
 				      __func__, qos_ptr->name,
-				      used_limits_acct->acct);
+				      acct_policy_accrue->used_limits_acct->
+				      acct);
 			}
-			used_limits_acct->accrue_cnt = 0;
+			acct_policy_accrue->used_limits_acct->accrue_cnt = 0;
 		}
 	}
 
-	if (used_limits_user) {
-		if (used_limits_user->accrue_cnt >= cnt)
-			used_limits_user->accrue_cnt -= cnt;
+	if (acct_policy_accrue->used_limits_user) {
+		if (acct_policy_accrue->used_limits_user->accrue_cnt >=
+		    acct_policy_accrue->cnt)
+			acct_policy_accrue->used_limits_user->accrue_cnt -=
+				acct_policy_accrue->cnt;
 		else {
 			if (qos_ptr) {
 				error("%s: QOS %s user %u accrue_cnt underflow",
 				      __func__, qos_ptr->name,
-				      used_limits_user->uid);
+				      acct_policy_accrue->used_limits_user->
+				      uid);
 			}
-			used_limits_user->accrue_cnt = 0;
+			acct_policy_accrue->used_limits_user->accrue_cnt = 0;
 		}
 	}
 
 	while (assoc_ptr) {
-		if (assoc_ptr->usage->accrue_cnt >= cnt) {
+		if (assoc_ptr->usage->accrue_cnt >= acct_policy_accrue->cnt) {
 			log_flag(ACCRUE, "assoc_id %u(%s/%s/%s/%p) removed %d count %d",
 				 assoc_ptr->id, assoc_ptr->acct,
 				 assoc_ptr->user, assoc_ptr->partition,
-				 assoc_ptr->usage, cnt,
+				 assoc_ptr->usage, acct_policy_accrue->cnt,
 				 assoc_ptr->usage->accrue_cnt);
-			assoc_ptr->usage->accrue_cnt -= cnt;
+			assoc_ptr->usage->accrue_cnt -= acct_policy_accrue->cnt;
 		} else {
 			error("%s: assoc_id %u(%s/%s/%s) accrue_cnt underflow",
 			      __func__, assoc_ptr->id,
@@ -3165,11 +3171,7 @@ static int _for_each_qos_remove_accrue_time(void *x, void *arg)
 
 	_fill_in_qos_used_limits(qos_ptr, acct_policy_accrue);
 
-	_remove_accrue_time_internal(acct_policy_accrue->assoc_ptr,
-				     qos_ptr,
-				     acct_policy_accrue->used_limits_acct,
-				     acct_policy_accrue->used_limits_user,
-				     acct_policy_accrue->cnt);
+	_remove_accrue_time_internal(qos_ptr, acct_policy_accrue);
 
 	/* Only do assoc_ptr stuff once */
 	acct_policy_accrue->assoc_ptr = NULL;
