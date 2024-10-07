@@ -1583,6 +1583,10 @@ requeue the job if possible. The following procedure is recommended:</p>
   on the head node)</li>
 </ol>
 
+<p><b>NOTE</b>: Removing nodes from the cluster may cause some errors in the
+logs. Verify that any errors in the logs are for nodes that you intended to
+remove.</p>
+
 <p><a id="reboot"><b>Why is a compute node down with the reason set to
 "Node unexpectedly rebooted"?</b></a><br>
 This is indicative of the slurmctld daemon running on the cluster's head node
