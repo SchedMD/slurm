@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
     the initial attempt to fetch the config fails.
  -- Fix crash when trying to drain a non-existing node (possibly deleted
     before).
+ -- slurmctld - fix segfault when calculating limit decay for jobs with an
+    invalid association.
 
 * Changes in Slurm 24.05.3
 ==========================
