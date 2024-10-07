@@ -448,6 +448,8 @@ int pmixp_abort_agent_stop(void)
 
 int pmixp_agent_start(void)
 {
+	int rc = SLURM_SUCCESS;
+
 	slurm_mutex_lock(&agent_mutex);
 
 	_setup_timeout_fds();
@@ -461,8 +463,8 @@ int pmixp_agent_start(void)
 	/* Establish the early direct connection */
 	if (pmixp_info_srv_direct_conn_early()) {
 		if (pmixp_server_direct_conn_early()) {
-			slurm_mutex_unlock(&agent_mutex);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto done;
 		}
 	}
 	/* Check if a ping-pong run was requested by user
@@ -489,8 +491,9 @@ int pmixp_agent_start(void)
 	PMIXP_DEBUG("timer thread started: tid = %lu",
 		    (unsigned long) _timer_tid);
 
+done:
 	slurm_mutex_unlock(&agent_mutex);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 int pmixp_agent_stop(void)
