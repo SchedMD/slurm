@@ -6354,7 +6354,7 @@ unpack_error:
 
 extern void destroy_config_key_pair(void *object)
 {
-	config_key_pair_t *key_pair_ptr = (config_key_pair_t *)object;
+	config_key_pair_t *key_pair_ptr = object;
 
 	if (key_pair_ptr) {
 		xfree(key_pair_ptr->name);
@@ -6366,7 +6366,7 @@ extern void destroy_config_key_pair(void *object)
 extern void pack_config_key_pair(void *in, uint16_t protocol_version,
 				 buf_t *buffer)
 {
-	config_key_pair_t *object = (config_key_pair_t *)in;
+	config_key_pair_t *object = in;
 	packstr(object->name,  buffer);
 	packstr(object->value, buffer);
 }
@@ -6374,7 +6374,7 @@ extern void pack_config_key_pair(void *in, uint16_t protocol_version,
 extern int unpack_config_key_pair(void **object, uint16_t protocol_version,
 				  buf_t *buffer)
 {
-	config_key_pair_t *object_ptr = xmalloc(sizeof(config_key_pair_t));
+	config_key_pair_t *object_ptr = xmalloc(sizeof(*object_ptr));
 
 	*object = object_ptr;
 	safe_unpackstr(&object_ptr->name, buffer);

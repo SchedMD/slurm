@@ -362,8 +362,8 @@ static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
 
 static int _list_find_key(void *x, void *key)
 {
-	config_key_pair_t *key_pair = (config_key_pair_t *) x;
-	char *str = (char *) key;
+	config_key_pair_t *key_pair = x;
+	char *str = key;
 
 	if (!xstrcmp(key_pair->name, str))
 		return 1;
@@ -374,8 +374,8 @@ static int _list_find_key(void *x, void *key)
 static int _foreach_env_var_expand(void *x, void *arg)
 {
 	char *key = NULL;
-	config_key_pair_t *key_pair = (config_key_pair_t *) x;
-	cron_entry_t *entry = (cron_entry_t *) arg;
+	config_key_pair_t *key_pair = x;
+	cron_entry_t *entry = arg;
 
 	xstrfmtcat(key, "$%s", key_pair->name);
 	xstrsubstitute(entry->command, key, key_pair->value);
