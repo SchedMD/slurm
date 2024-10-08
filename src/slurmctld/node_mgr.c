@@ -2841,7 +2841,7 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 			error_code = ESLURM_INVALID_NODE_NAME;
 			error("drain_nodes: node %s does not exist",
 			      this_node_name);
-			xfree(this_node_name);
+			free(this_node_name);
 			break;
 		}
 		free (this_node_name);
