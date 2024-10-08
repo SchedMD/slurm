@@ -67,9 +67,6 @@ extern bool slingshot_init_collectives(void)
 				       "Slingshot Fabric Manager"))
 		goto err;
 
-	if (!slingshot_rest_connect(&fm_conn))
-		goto err;
-
 	collectives_enabled = true;
 	return true;
 

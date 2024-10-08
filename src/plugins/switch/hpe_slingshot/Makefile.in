@@ -183,9 +183,6 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_DEPENDENCIES =  \
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_1) \
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_1)
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@am_switch_hpe_slingshot_la_OBJECTS =  \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	apinfo.lo \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	collectives.lo \
@@ -525,9 +522,11 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
 	      $(HPE_SLINGSHOT_CFLAGS) $(LIBCURL_CPPFLAGS) $(JSON_CPPFLAGS)
 
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@depend_libs = $(top_builddir)/src/curl/libslurm_curl.la
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@pkglib_LTLIBRARIES = switch_hpe_slingshot.la
 
 # HPE Slingshot switch plugin.
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_DEPENDENCIES = $(depend_libs)
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_SOURCES = \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	apinfo.c \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	collectives.c \
@@ -539,7 +538,7 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	switch_hpe_slingshot.h
 
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_LDFLAGS = $(PLUGIN_FLAGS)
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_LIBADD = $(LIBCURL) $(JSON_LDFLAGS)
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_LIBADD = $(depend_libs) $(LIBCURL) $(JSON_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -846,6 +845,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@force:
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@$(switch_hpe_slingshot_la_LIBADD) : force
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

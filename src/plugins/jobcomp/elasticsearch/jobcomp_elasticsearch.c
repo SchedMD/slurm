@@ -197,7 +197,7 @@ static int _index_job(const char *jobcomp)
 
 	rc = slurm_curl_request(jobcomp, log_url, NULL, NULL, slist, 0,
 				&response_str, &response_code,
-				HTTP_REQUEST_POST);
+				HTTP_REQUEST_POST, false);
 	/*
 	 * HTTP 200 (OK)	- request succeed.
 	 * HTTP 201 (Created)	- request succeed and resource created.

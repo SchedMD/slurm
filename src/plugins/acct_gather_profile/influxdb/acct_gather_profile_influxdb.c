@@ -201,7 +201,7 @@ static int _send_data(const char *data)
 	rc = slurm_curl_request(datastr, url, influxdb_conf.username,
 				influxdb_conf.password, false,
 				influxdb_conf.timeout, &response_str,
-				&response_code, HTTP_REQUEST_POST);
+				&response_code, HTTP_REQUEST_POST, true);
 	xfree(url);
 
 	/* In general, status codes of the form 2xx indicate success,

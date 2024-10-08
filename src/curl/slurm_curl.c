@@ -139,7 +139,8 @@ extern int slurm_curl_request(const char *data, const char *url,
 			      const char *username, const char *password,
 			      struct curl_slist *headers, uint32_t timeout,
 			      char **response_str, long *response_code,
-			      http_request_method_t request_method)
+			      http_request_method_t request_method,
+			      bool verify_cert)
 {
 	CURL *c = NULL;
 	CURLcode res;
@@ -169,6 +170,12 @@ extern int slurm_curl_request(const char *data, const char *url,
 	CURL_SETOPT(c, CURLOPT_WRITEDATA, (void *) &chunk);
 	CURL_SETOPT(c, CURLOPT_TIMEOUT, timeout);
 	CURL_SETOPT(c, CURLOPT_URL, url);
+
+	if (!verify_cert) {
+		/* These are needed to work with self-signed certificates */
+		CURL_SETOPT(c, CURLOPT_SSL_VERIFYPEER, 0);
+		CURL_SETOPT(c, CURLOPT_SSL_VERIFYHOST, 0);
+	}
 
 #if CURL_TRACE
 	CURL_SETOPT(c, CURLOPT_DEBUGFUNCTION, _libcurl_trace);

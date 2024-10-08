@@ -43,7 +43,8 @@ extern int slurm_curl_request(const char *data, const char *url,
 			      const char *username, const char *password,
 			      struct curl_slist *headers, uint32_t timeout,
 			      char **response_str, long *response_code,
-			      http_request_method_t request_method);
+			      http_request_method_t request_method,
+			      bool verify_cert);
 
 extern int slurm_curl_init(void);
 

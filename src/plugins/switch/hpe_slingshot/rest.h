@@ -68,11 +68,11 @@ typedef struct {
 	const char *auth_dir;
 	union {
 		struct {
-			const char *user_name;
-			const char *password;
+			char *user_name;
+			char *password;
 		} basic;
 		struct {
-			const char *auth_cache;
+			char *auth_cache;
 		} oauth;
 	} u;
 } slingshot_rest_authdata_t;
@@ -115,8 +115,6 @@ bool slingshot_rest_connection(slingshot_rest_conn_t *conn,
 			       int conn_timeout,
 			       const char *conn_name);
 void slingshot_rest_destroy_connection(slingshot_rest_conn_t *conn);
-void slingshot_rest_disconnect(slingshot_rest_conn_t *conn);
-bool slingshot_rest_connect(slingshot_rest_conn_t *conn);
 json_object *slingshot_rest_post(slingshot_rest_conn_t *conn,
 				 const char *urlsuffix, json_object *reqjson,
 				 long *status);
