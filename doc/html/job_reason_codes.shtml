@@ -404,7 +404,7 @@ partition's current time limit.</li>
 <li><b>Priority</b> &mdash; One of more higher priority jobs exist for the
 partition associated with the job or for the advanced reservation.</li>
 
-<li><b>Prolog</b> &mdash; The job's PrologSlurmctld program is still running.
+<li><b>Prolog</b> &mdash; The job's Prolog program is still running.
 </li>
 
 <li><b>QOSGrpBB</b> &mdash; The job's QOS has reached its aggregate
@@ -716,6 +716,6 @@ the network, etc.</li>
 
 </ul>
 
-<p style="text-align: center;">Last modified 04 June 2024</li>
+<p style="text-align: center;">Last modified 08 October 2024</li>
 
 <!--#include virtual="footer.txt"-->
