@@ -23,6 +23,64 @@ recommended that you understand the concept of
 <a href="https://ebpf.io/what-is-ebpf">eBPF technology</a>, since in cgroup v2
 the device cgroup controller is eBPF-based.</p>
 
+<h2 id="conversion">Conversion from cgroup v1
+<a class="slurm_link" href="#conversion"></a></h2>
+
+<p>Existing Slurm installations may be running with Slurm's cgroup/v1 plugin.
+Sites that wish to use the new features of cgroup/v2 can convert their nodes
+to run with cgroup v2 if it is supported by the OS. Slurm supports compute
+nodes running a mix of cgroup/v1 and cgroup/v2 plugins.</p>
+
+<ol>
+<li>Reconfigure systemd (only required for versions &lt; 252):
+<ul>
+<li>Swap kernel commandline options for systemd to cgroup v2 support:
+<pre>systemd.unified_cgroup_hierarchy=1 systemd.legacy_systemd_cgroup_controller=0 cgroup_no_v1=all</pre>
+Example commands for Debian based systems:
+<pre>sed -e 's@^GRUB_CMDLINE_LINUX=@#GRUB_CMDLINE_LINUX=@' -i /etc/default/grub
+echo 'GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=1 systemd.legacy_systemd_cgroup_controller=0 cgroup_no_v1=all"' >> /etc/default/grub
+update-grub</pre>
+Example command for Redhat based systems:
+<pre>grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=1 systemd.legacy_systemd_cgroup_controller=0 cgroup_no_v1=all"</pre>
+</li>
+<br>
+<li>Reboot to apply new kernel command line options.</li>
+<br>
+<li>Verify kernel has correct command line options:
+<pre>grep -o -e systemd.unified_cgroup_hierarchy=. -e systemd.legacy_systemd_cgroup_controller=. /proc/cmdline
+systemd.unified_cgroup_hierarchy=1
+systemd.legacy_systemd_cgroup_controller=0</pre>
+If the output does not match exactly, then repeat prior steps
+and verify kernel is given correct command line options.
+</li>
+<br>
+<li>Verify that there is not any <a href="https://docs.kernel.org/admin-guide/cgroup-v1/index.html">cgroup v1</a>
+controller mounted and <a
+href="https://github.com/systemd/systemd/blob/main/docs/CGROUP_DELEGATION.md#three-different-tree-setups-">
+that your system is not running in hybrid mode</a><br>Example of hybrid mode:
+<pre>$ grep -v ^0: /proc/self/cgroup
+8:net_cls,net_prio:/
+6:name=systemd:/</pre>
+If there are any entries, then a reboot is required. If there are entries after
+a reboot then there is a process actively mounting Cgroup v1 mounts that will
+need to be stopped.</li>
+</ul>
+</li>
+<br>
+<li>Modify Slurm configuration to allow cgroup/v2 plugin:<br>
+<b>/etc/slurm/cgroup.conf</b>:
+<ul>
+<li>Remove line starting with:<pre>CgroupAutomount=</pre></li>
+<li>Remove line starting with:<pre>CgroupMountpoint=</pre></li>
+<li>Remove line if present:<pre>CgroupPlugin=cgroup/v1</pre></li>
+<li>Add line:<pre>CgroupPlugin=autodetect</pre></li>
+<br>
+</ul>
+</li>
+<li>Restart Slurm daemons per normal startup procedure</li>
+</ol>
+</p>
+
 <h2 id="v2_rules">Following cgroup v2 rules
 <a class="slurm_link" href="#v2_rules"></a>
 </h2>
