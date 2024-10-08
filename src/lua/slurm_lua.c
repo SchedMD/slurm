@@ -175,8 +175,12 @@ static int _get_qos_priority(lua_State *L)
 	slurmdb_qos_rec_t qos = { 0 };
 
 	qos.name = xstrdup(qos_name);
-	assoc_mgr_fill_in_qos(acct_db_conn, &qos, accounting_enforce, NULL,
-			      false);
+	if (assoc_mgr_fill_in_qos(acct_db_conn, &qos, accounting_enforce, NULL,
+				  false)) {
+		error("Invalid QOS name: %s", qos.name);
+		xfree(qos.name);
+		return 0;
+	}
 	xfree(qos.name);
 
 	lua_pushnumber(L, qos.priority);
