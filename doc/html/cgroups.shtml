@@ -2,6 +2,32 @@
 
 <h1>Control Group in Slurm</h1>
 
+<h2 id="contents">Contents
+<a class="slurm_link" href="#contents"></a>
+</h2>
+
+<ul>
+<li><a href="#overview">Control Group Overview</a></li>
+<li><a href="#cgroup_design">Slurm cgroup plugins design</a></li>
+<li><a href="#use">Use of cgroup in Slurm</a></li>
+<li><a href="#configuration">Slurm Cgroup Configuration Overview</a></li>
+<li><a href="#Plugins">Currently Available Cgroup Plugins</a>
+    <ul>
+        <li><a href="#proctrack">proctrack/cgroup plugin</a></li>
+        <li><a href="#task">task/cgroup plugin</a></li>
+        <li><a href="#jobacct_gather">jobacct_gather/cgroup plugin</a></li>
+    </ul>
+</li>
+<li><a href="#Specialization">Use of cgroup for Resource Specialization</a></li>
+<li><a href="#cgroupplugins">Slurm cgroup plugins</a>
+    <ul>
+        <li><a href="#differences">Main differences between cgroup/v1 and cgroup/v2</a></li>
+        <li><a href="#interfaces">Main differences between controller interfaces</a></li>
+        <li><a href="#generalities">Other generalities</a></li>
+    </ul>
+</li>
+</ul>
+
 <h2 id="overview">Control Group Overview
 <a class="slurm_link" href="#overview"></a>
 </h2>
@@ -395,6 +421,6 @@ controllers are under separate directories when using
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 16 June 2022</p>
+<p style="text-align:center;">Last modified 11 October 2024</p>
 
 <!--#include virtual="footer.txt"-->

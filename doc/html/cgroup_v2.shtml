@@ -2,6 +2,61 @@
 
 <h1>Control Group v2 plugin</h1>
 
+<h2 id="contents">Contents
+<a class="slurm_link" href="#contents"></a>
+</h2>
+
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#conversion">Conversion from cgroup v1</a>
+    <ul>
+        <li><a href="#reconfigure_systemd">Reconfigure SystemD</a></li>
+        <li><a href="#general_conversion">General conversion</a></li>
+    </ul>
+</li>
+<li><a href="#v2_rules">Following cgroup v2 rules</a>
+    <ul>
+        <li><a href="#top_down">Top-down Constraint</a></li>
+        <li><a href="#no_internal_process">No Internal Process Constraint</a></li>
+    </ul>
+</li>
+<li><a href="#systemd_rules">Following systemd rules</a>
+    <ul>
+        <li><a href="#real_sysd_prob">The real problem: systemd + restarting slurmd</a></li>
+        <li><a href="#consequences_nosysd">Consequences of not following systemd rules</a></li>
+        <li><a href="#distro_no_sysd">What happens with Linux distros without systemd?</a></li>
+    </ul>
+</li>
+<li><a href="#v2_overview">cgroup/v2 overview</a>
+    <ul>
+        <li><a href="#slurmd_startup">slurmd startup</a></li>
+        <li><a href="#slurmd_restart">slurmd restart</a></li>
+        <li><a href="#stepd_start">slurmstepd start</a></li>
+        <li><a href="#term_clean">Termination and cleanup</a></li>
+        <li><a href="#manual_startup">Special case - manual startup</a></li>
+        <li><a href="#troubleshooting_startup">Troubleshooting startup</a></li>
+    </ul>
+</li>
+<li><a href="#hierarchy_overview">Hierarchy overview</a></li>
+<li><a href="#task_level">Working at the task level</a></li>
+<li><a href="#ebpf_controller">The eBPF based devices controller</a></li>
+<li><a href="#diff_ver">Running different nodes with different cgroup versions</a></li>
+<li><a href="#configuration">Configuration</a>
+    <ul>
+        <li><a href="#cgroup_plugin">Cgroup Plugin</a></li>
+        <li><a href="#dev_options">Developer options</a></li>
+        <li><a href="#ignored_params">Ignored parameters</a></li>
+    </ul>
+</li>
+<li><a href="#requirements">Requirements</a></li>
+<li><a href="#pam_slurm_adopt">PAM Slurm Adopt plugin on cgroup v2</a></li>
+<li><a href="#limitations">Limitations</a></li>
+</ul>
+
+<h2 id="overview">Overview
+<a class="slurm_link" href="#overview"></a>
+</h2>
+
 <p>Slurm provides support for systems with Control Group v2.<br>
 Documentation for this cgroup version can be found in kernel.org
 <a href="https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html">
@@ -720,6 +775,6 @@ The cpu controller can be enabled in system.conf by setting
 <code>DefaultCpuAccounting=yes</code>. For the cpuset controller, you need to
 set <code>EnableControllers=yes</code> in cgroup.conf.
 </p>
-<p style="text-align:center;">Last modified 10 July 2024</p>
+<p style="text-align:center;">Last modified 11 October 2024</p>
 
 <!--#include virtual="footer.txt"-->
