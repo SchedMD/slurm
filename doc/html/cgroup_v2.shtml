@@ -438,9 +438,9 @@ scripts are run with systemd. We encourage you to use our provided
 slurmd.service file or at least to unset the <b>INVOCATION_ID</b> explicitly
 in your startup scripts.</p>
 
-<h4 id="troubleshooting_startup">Troubleshooting startup
+<h3 id="troubleshooting_startup">Troubleshooting startup
 <a class="slurm_link" href="#troubleshooting_startup"></a>
-</h4>
+</h3>
 <p> As the integration with systemd has some degree of complexity, and due to
 different configurations or changes in OS setups, we encourage you to set the
 debug flags in slurm.conf in order to diagnose what is going on if slurm doesn't
@@ -474,9 +474,9 @@ cgroup:</p>
 0::/system.slice/slurmd.service
 </pre>
 
-<h3 id="hierarchy_overview">Hierarchy overview
+<h2 id="hierarchy_overview">Hierarchy overview
 <a class="slurm_link" href="#hierarchy_overview"></a>
-</h3>
+</h2>
 Hierarchy will take this form:
 <div class="figure">
 <img src="cg_hierarchy.jpg"></img>
