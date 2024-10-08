@@ -3001,9 +3001,6 @@ static void _get_accrue_create_cnt(uint32_t *max_jobs_accrue, int *create_cnt,
 	 * If in_accrue is INFINITE we don't have a limit
 	 * If we already set max_jobs_accrue and it is the most restrictive,
 	 * then call it good.
-	 *
-	 * If use_lowest is set we only should be looking if max_jobs_accrue is
-	 * set since a QOS limit should override an association limit.
 	 */
 	if ((in_accrue == INFINITE) ||
 	    ((*max_jobs_accrue != INFINITE) && (*max_jobs_accrue <= in_accrue)))
