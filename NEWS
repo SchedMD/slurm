@@ -155,6 +155,9 @@ documents those changes that are of interest to users and administrators.
     potential QOS's for a job's association.
  -- job_submit/lua - Add slurm.get_qos_priority() function to retrieve the
     given QOS's priority.
+ -- sbcast - Add --nodelist option to specify where files are transmitted to
+ -- sbcast - Add --no-allocation option to transmit files to nodes outside of a
+    job allocation
 
 * Changes in Slurm 24.05.4
 ==========================

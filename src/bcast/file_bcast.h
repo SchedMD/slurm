@@ -40,10 +40,11 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
 
-#define BCAST_FLAG_FORCE	 0x0001
-#define BCAST_FLAG_PRESERVE	 0x0002
-#define BCAST_FLAG_SEND_LIBS	 0x0004
-#define BCAST_FLAG_SHARED_OBJECT 0x0008
+#define BCAST_FLAG_FORCE SLURM_BIT(0)
+#define BCAST_FLAG_PRESERVE SLURM_BIT(1)
+#define BCAST_FLAG_SEND_LIBS SLURM_BIT(2)
+#define BCAST_FLAG_SHARED_OBJECT SLURM_BIT(3)
+#define BCAST_FLAG_NO_JOB SLURM_BIT(4)
 
 struct bcast_parameters {
 	uint32_t block_size;
@@ -52,6 +53,7 @@ struct bcast_parameters {
 	char *dst_fname;
 	char *exe_fname;
 	uint16_t flags;
+	char *node_list;
 	slurm_selected_step_t *selected_step;
 	char *src_fname;
 	uint32_t step_id;

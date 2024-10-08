@@ -3234,6 +3234,10 @@ typedef struct job_sbcast_cred_msg {
 	void *sbcast_cred;		/* opaque data structure */
 } job_sbcast_cred_msg_t;
 
+typedef struct sbcast_cred_req_msg {
+	char *node_list;
+} sbcast_cred_req_msg_t;
+
 typedef struct {
 	uint32_t lifespan;
 	char *username;

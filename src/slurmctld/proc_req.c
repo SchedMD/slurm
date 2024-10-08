@@ -3058,6 +3058,79 @@ error:
 #endif
 }
 
+static void _slurm_rpc_sbcast_cred_no_job(slurm_msg_t *msg)
+{
+#ifdef HAVE_FRONT_END
+	slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+	return;
+#endif
+	job_sbcast_cred_msg_t *cred_resp_msg = NULL;
+	sbcast_cred_req_msg_t *cred_req_msg = msg->data;
+	sbcast_cred_arg_t sbcast_arg = { 0 };
+	sbcast_cred_t *sbcast_cred;
+	hostlist_t *req_node_list;
+	char *node_name;
+	bool node_exists = false;
+	int rc;
+
+	DEF_TIMERS;
+	START_TIMER;
+
+	if (!validate_slurm_user(msg->auth_uid)) {
+		error("%s: sbcast --no-allocation/-Z credential requested from uid '%u' which is not root/SlurmUser",
+		      __func__, msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;
+		goto fail;
+	}
+
+	req_node_list = hostlist_create(cred_req_msg->node_list);
+	while ((node_name = hostlist_shift(req_node_list))) {
+		node_exists = find_node_record(node_name);
+
+		if (!node_exists) {
+			debug("%s: sbcast --nodelist contains at least one invalid node '%s'",
+			      __func__, node_name);
+			free(node_name);
+			break;
+		}
+		free(node_name);
+	}
+	FREE_NULL_HOSTLIST(req_node_list);
+
+	if (!node_exists) {
+		(void) slurm_send_rc_msg(msg, ESLURM_INVALID_NODE_NAME);
+		return;
+	}
+
+	sbcast_arg.nodes = cred_req_msg->node_list;
+	sbcast_arg.expiration = time(NULL) + HOUR_SECONDS;
+
+	if (!(sbcast_cred = create_sbcast_cred(&sbcast_arg, msg->auth_uid,
+					       msg->auth_gid,
+					       msg->protocol_version))) {
+		error("%s: Could not create sbcast cred for --no-allocate/-Z request",
+		      __func__);
+		rc = SLURM_ERROR;
+		goto fail;
+	}
+	END_TIMER2(__func__);
+
+	cred_resp_msg = xmalloc(sizeof(*cred_resp_msg));
+	cred_resp_msg->job_id = NO_VAL;
+	cred_resp_msg->node_list = xstrdup(cred_req_msg->node_list);
+	cred_resp_msg->sbcast_cred = sbcast_cred;
+
+	(void) send_msg_response(msg, RESPONSE_JOB_SBCAST_CRED, cred_resp_msg);
+
+	slurm_free_sbcast_cred_msg(cred_resp_msg);
+
+	return;
+
+fail:
+	END_TIMER2(__func__);
+	(void) slurm_send_rc_msg(msg, rc);
+}
+
 /* _slurm_rpc_ping - process ping RPC */
 static void _slurm_rpc_ping(slurm_msg_t *msg)
 {
@@ -6622,6 +6695,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_JOB_SBCAST_CRED,
 		.func = _slurm_rpc_job_sbcast_cred,
+	},{
+		.msg_type = REQUEST_SBCAST_CRED_NO_JOB,
+		.func = _slurm_rpc_sbcast_cred_no_job,
 	},{
 		.msg_type = REQUEST_PING,
 		.func = _slurm_rpc_ping,

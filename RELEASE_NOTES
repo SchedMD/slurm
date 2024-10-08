@@ -37,6 +37,9 @@ COMMAND CHANGES (see man pages for details)
  -- Add "%b" as a file name pattern for the array task id modulo 10.
  -- sacct - Respect --noheader for --batch-script and --env-vars.
  -- Add "sacctmgr ping" command to query status of slurmdbd.
+ -- sbcast - Add --nodelist option to specify where files are transmitted to
+ -- sbcast - Add --no-allocation option to transmit files to nodes outside of a
+    job allocation
 
 API CHANGES
 ===========

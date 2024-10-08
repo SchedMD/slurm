@@ -1629,6 +1629,7 @@ extern void slurm_free_crontab_update_request_msg(
 extern void slurm_free_crontab_update_response_msg(
 	crontab_update_response_msg_t *msg);
 extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg);
+extern void slurm_free_sbcast_cred_req_msg(sbcast_cred_req_msg_t *msg);
 
 extern const char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);

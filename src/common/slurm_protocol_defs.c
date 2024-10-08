@@ -1917,6 +1917,15 @@ extern void slurm_free_node_registration_status_msg(
 	}
 }
 
+extern void slurm_free_sbcast_cred_req_msg(sbcast_cred_req_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->node_list);
+	xfree(msg);
+}
+
 extern void slurm_free_node_reg_resp_msg(
 	slurm_node_reg_resp_msg_t *msg)
 {
@@ -4932,6 +4941,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
 		slurm_destroy_selected_step(data);
+		break;
+	case REQUEST_SBCAST_CRED_NO_JOB:
+		slurm_free_sbcast_cred_req_msg(data);
 		break;
 	case REQUEST_SHUTDOWN:
 		slurm_free_shutdown_msg(data);
