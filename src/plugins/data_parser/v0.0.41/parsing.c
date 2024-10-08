@@ -401,6 +401,8 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 		(uintptr_t) parser, rc, slurm_strerror(rc)
 	);
 
+	if (rc)
+		*list = NULL;
 	FREE_NULL_LIST(list_args.list);
 	xfree(path);
 	return rc;
