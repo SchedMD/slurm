@@ -1598,11 +1598,11 @@ Otherwise use scontrol or sview to manually return the node to service.</p>
 
 <p><a id="cgroupv2"><b>How do I convert my nodes to Control Group (cgroup)
 v2?</b></a><br>
-Most existing Slurm installations will be running Cgroup v1 and Slurm's
-cgroup/v1 plugin. Sites that wish to use the new features of cgroup/v2 can
-convert all of their nodes to running Cgroup v2. Slurm supports different nodes
-running Slurm's cgroup/v1 or cgroup/v2 plugins.
-</p>
+Existing Slurm installations may be running with Slurm's cgroup/v1 plugin.
+Sites that wish to use the new features of cgroup/v2 can convert their nodes
+to run with Cgroup v2 if it is supported by the OS. Slurm supports compute
+nodes running a mix of cgroup/v1 and cgroup/v2 plugins.</p>
+
 <p>Conversion procedure:
 <ol>
 <li>Reconfigure systemd (only required for versions &lt; 252):
@@ -2471,6 +2471,6 @@ dset TV::parallel_configs {
 }
 !-->
 
-<p style="text-align:center;">Last modified 07 October 2024</p>
+<p style="text-align:center;">Last modified 11 October 2024</p>
 
 <!--#include virtual="footer.txt"-->
