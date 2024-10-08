@@ -642,8 +642,8 @@ static int _read_ipmi_non_dcmi_values(bool check_sensor_units_watts)
 
 		if (ipmi_monitoring_sensor_iterator_next(ipmi_ctx) < 0) {
 			error("Cannot parse next sensor in ipmi ctx");
-		} else if (!ipmi_monitoring_sensor_iterator_next(ipmi_ctx))
 			break;
+		}
 	}
 
 	return SLURM_SUCCESS;
