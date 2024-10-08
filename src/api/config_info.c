@@ -516,7 +516,6 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	config_key_pair_t *key_pair;
 	char tmp_str[256];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	int i;
 	bool format_stderr = false;
 
 	if (!conf)
@@ -1525,7 +1524,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	list_append(ret_list, key_pair);
 
 
-	for (i = 0; i < conf->control_cnt; i++) {
+	for (int i = 0; i < conf->control_cnt; i++) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		xstrfmtcat(key_pair->name, "SlurmctldHost[%d]", i);
 		if (xstrcmp(conf->control_machine[i],
