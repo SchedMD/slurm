@@ -910,20 +910,39 @@ static void _pty_restore(void)
 
 static void _setup_env_working_cluster(void)
 {
-	char *working_env, *addr_ptr, *port_ptr, *rpc_ptr;
+	char *working_env, *addr_ptr, *port_ptr, *rpc_ptr, *tmp = NULL;
 
 	if ((working_env = xstrdup(getenv("SLURM_WORKING_CLUSTER"))) == NULL)
 		return;
 
-	/* Format is cluster_name:address:port:rpc */
-	if (!(addr_ptr = strchr(working_env,  ':')) ||
-	    !(port_ptr = strchr(addr_ptr + 1, ':')) ||
-	    !(rpc_ptr  = strchr(port_ptr + 1, ':'))) {
-		error("malformed cluster addr and port in SLURM_WORKING_CLUSTER env var: '%s'",
-		      working_env);
-		exit(1);
+	/*
+	 * Format is cluster_name:[address]:port:rpc in 24.11+ or
+	 * cluster_name:address:port:rpc for older versions.  Disallow older
+	 * format two versions after 24.11.
+	 */
+	if (!(addr_ptr = strchr(working_env,  ':')))
+		goto error;
+	/* check for [] around the address */
+	if (addr_ptr[1] == '[') {
+		if (!(tmp = strchr(addr_ptr, ']')))
+			goto error;
+		port_ptr = strchr(tmp + 1, ':');
+	} else {
+		port_ptr = strchr(addr_ptr + 1, ':');
 	}
+	if (!port_ptr)
+		goto error;
+	if (!(rpc_ptr  = strchr(port_ptr + 1, ':')))
+		goto error;
 
+	if (tmp) {
+		/*
+		 * Delay increments add_ptr till now for new format to preserve
+		 * working_env in error message if failed ealier.
+		 */
+		*addr_ptr++ = '\0';
+		*tmp = '\0';
+	}
 	*addr_ptr++ = '\0';
 	*port_ptr++ = '\0';
 	*rpc_ptr++  = '\0';
@@ -942,4 +961,10 @@ static void _setup_env_working_cluster(void)
 	}
 	xfree(working_env);
 	unsetenv("SLURM_WORKING_CLUSTER");
+	return;
+
+error:
+	error("malformed cluster addr and port in SLURM_WORKING_CLUSTER env var: '%s'",
+	      working_env);
+	exit(1);
 }
