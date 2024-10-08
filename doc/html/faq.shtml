@@ -170,7 +170,8 @@
 <li><a href="#rem_nodes">How should I remove nodes from Slurm?</a></li>
 <li><a href="#reboot">Why is a compute node down with the reason set to
   "Node unexpectedly rebooted"?</a></li>
-<li><a href="#cgroupv2">How to convert my nodes to Control Group v2?</a></li>
+<li><a href="#cgroupv2">How do I convert my nodes to Control Group (cgroup)
+  v2?</a></li>
 <li><a href="#amazon_ec2">Can Slurm be used to run jobs on Amazon's EC2?</a></li>
 </ul>
 <h3>User Management</h3>
@@ -1595,9 +1596,8 @@ If you want to prevent this condition from setting the node into a DOWN state
 then configure ReturnToService to 2. See the slurm.conf man page for details.
 Otherwise use scontrol or sview to manually return the node to service.</p>
 
-<a id="cgroupv2"><b>How to convert my nodes to Control Group v2?</b></a>
-<br>
-<p>
+<p><a id="cgroupv2"><b>How do I convert my nodes to Control Group (cgroup)
+v2?</b></a><br>
 Most existing Slurm installations will be running Cgroup v1 and Slurm's
 cgroup/v1 plugin. Sites that wish to use the new features of cgroup/v2 can
 convert all of their nodes to running Cgroup v2. Slurm supports different nodes
