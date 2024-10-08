@@ -3538,11 +3538,29 @@ static void *_assoc_cache_mgr(void *no_data)
 			if (list_count(job_ptr->qos_list)) {
 				list_sort(job_ptr->qos_list,
 					  priority_sort_qos_desc);
-				job_ptr->qos_ptr = list_peek(job_ptr->qos_list);
-				job_ptr->qos_id = job_ptr->qos_ptr->id;
+				/* If we are pending we want the highest prio */
+				if (IS_JOB_PENDING(job_ptr)) {
+					job_ptr->qos_ptr =
+						list_peek(job_ptr->qos_list);
+					job_ptr->qos_id = job_ptr->qos_ptr->id;
+				} else {
+					job_ptr->qos_ptr = list_find_first(
+						job_ptr->qos_list,
+						slurmdb_find_qos_in_list,
+						&job_ptr->qos_id);
+					if (!job_ptr->qos_ptr) {
+						verbose("Invalid qos (%u) for %pJ from qos_req '%s'",
+							job_ptr->qos_id,
+							job_ptr,
+							job_ptr->details->
+							qos_req);
+						goto use_qos_id;
+					}
+				}
 			} else
 				FREE_NULL_LIST(job_ptr->qos_list);
 		} else if (job_ptr->qos_id) {
+use_qos_id:
 			slurmdb_qos_rec_t qos_rec = {
 				.id = job_ptr->qos_id,
 			};

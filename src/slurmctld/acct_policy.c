@@ -625,6 +625,18 @@ static bool _valid_job_assoc(job_record_t *job_ptr)
 	return true;
 }
 
+/* Set the job_ptr->qos_ptr to the highest priority QOS */
+static void _set_highest_prio_qos_ptr(job_record_t *job_ptr)
+{
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+
+	if (!job_ptr->qos_list || !list_count(job_ptr->qos_list))
+		return;
+
+	job_ptr->qos_ptr = list_peek(job_ptr->qos_list);
+	job_ptr->qos_id = job_ptr->qos_ptr->id;
+}
+
 static void _qos_adjust_limit_usage(int type, job_record_t *job_ptr,
 				    slurmdb_qos_rec_t *qos_ptr,
 				    uint64_t *used_tres_run_secs,
@@ -682,6 +694,15 @@ static void _qos_adjust_limit_usage(int type, job_record_t *job_ptr,
 
 		break;
 	case ACCT_POLICY_JOB_BEGIN:
+		/*
+		 * Now that the job has started set the id correctly. This is
+		 * needed when we have multiple QOS, the qos_ptr will be set
+		 * correctly, but the qos_id is only set to the highest priority
+		 * until now.
+		 */
+		if (job_ptr->qos_ptr == qos_ptr)
+			job_ptr->qos_id = qos_ptr->id;
+
 		qos_ptr->usage->grp_used_jobs++;
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			/* tres_alloc_cnt for ENERGY is currently after the
@@ -839,6 +860,7 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 				bool assoc_locked)
 {
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
+	slurmdb_qos_rec_t *orig_qos_ptr = NULL;
 	assoc_mgr_lock_t locks =
 		{ .assoc = WRITE_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 	uint64_t used_tres_run_secs[slurmctld_tres_cnt];
@@ -898,6 +920,12 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 	 */
 	if (type != ACCT_POLICY_ADD_SUBMIT)
 		acct_policy_handle_accrue_time(job_ptr, true);
+
+	if ((type == ACCT_POLICY_ADD_SUBMIT) ||
+	    (type == ACCT_POLICY_REM_SUBMIT)) {
+		orig_qos_ptr = job_ptr->qos_ptr;
+		_set_highest_prio_qos_ptr(job_ptr);
+	}
 
 	/*
 	 * If we have submitted to multiple partitions we need to handle all of
@@ -1103,6 +1131,17 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 		/* now handle all the group limits of the parents */
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
+
+	/*
+	 * When we are removing submit we need to set the pointer back if it was
+	 * changed.
+	 */
+	if ((type == ACCT_POLICY_REM_SUBMIT) &&
+	    (orig_qos_ptr != job_ptr->qos_ptr)) {
+		job_ptr->qos_ptr = orig_qos_ptr;
+		job_ptr->qos_id = orig_qos_ptr->id;
+	}
+
 	if (!assoc_locked)
 		assoc_mgr_unlock(&locks);
 }
@@ -4952,6 +4991,7 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 		      __func__, job_ptr);
 		rc = SLURM_ERROR;
 	} else {
+		slurmdb_qos_rec_t *orig_qos_ptr = job_ptr->qos_ptr;
 		acct_policy_accrue_t acct_policy_accrue = {
 			.acct = job_ptr->assoc_ptr->acct,
 			.assoc_ptr = job_ptr->assoc_ptr,
@@ -4960,7 +5000,17 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 			.uid = job_ptr->user_id,
 		};
 
+		_set_highest_prio_qos_ptr(job_ptr);
 		_handle_accrue_time(&acct_policy_accrue);
+		/*
+		 * Now that we are done with accrue set things back to the way
+		 * it was qos wise. Accrue limits are always based on the
+		 * highest priority QOS.
+		 */
+		if (job_ptr->qos_ptr != orig_qos_ptr) {
+			job_ptr->qos_ptr = orig_qos_ptr;
+			job_ptr->qos_id = orig_qos_ptr->id;
+		}
 	}
 
 	if (!assoc_mgr_locked)
@@ -5028,6 +5078,7 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 
 	acct_policy_accrue.acct = job_ptr->assoc_ptr->acct;
 
+	_set_highest_prio_qos_ptr(job_ptr);
 	_handle_add_accrue(&acct_policy_accrue);
 endit:
 	if (!assoc_mgr_locked)
@@ -5080,6 +5131,7 @@ extern void acct_policy_remove_accrue_time(job_record_t *job_ptr,
 	else
 		acct_policy_accrue.cnt = 1;
 
+	_set_highest_prio_qos_ptr(job_ptr);
 	(void) _for_each_qos_remove_accrue_time(
 		job_ptr->qos_ptr, &acct_policy_accrue);
 
