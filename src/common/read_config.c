@@ -6374,7 +6374,7 @@ extern void pack_config_key_pair(void *in, uint16_t protocol_version,
 extern int unpack_config_key_pair(void **object, uint16_t protocol_version,
 				  buf_t *buffer)
 {
-	config_key_pair_t *object_ptr = xmalloc(sizeof(config_key_pair_t));
+	config_key_pair_t *object_ptr = xmalloc(sizeof(*object_ptr));
 
 	*object = object_ptr;
 	safe_unpackstr(&object_ptr->name, buffer);
