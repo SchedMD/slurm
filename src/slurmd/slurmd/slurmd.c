@@ -2526,7 +2526,17 @@ _slurmd_init(void)
 	if (cgroup_conf_init() != SLURM_SUCCESS)
 		log_flag(CGROUP, "cgroup conf was already initialized.");
 
-	xcpuinfo_refresh_hwloc(original);
+	/*
+	 * If we are in the process of daemonizing ourselves, do not refresh
+	 * the hwloc as the grandparent process have already done it. This
+	 * is important as we're already constrained by cgroups in a specific
+	 * cpuset, and hwloc does not return the correct e-cores vs p-cores
+	 * kinds.
+	 */
+	if (getenv(ENV_DAEMON_FIELD))
+		xcpuinfo_refresh_hwloc(false);
+	else
+		xcpuinfo_refresh_hwloc(original);
 
 	/*
 	 * auth/slurm calls conmgr_init and we need to apply conmgr params
