@@ -64,6 +64,7 @@ documents those changes that are of interest to users and administrators.
     before).
  -- slurmctld - fix segfault when calculating limit decay for jobs with an
     invalid association.
+ -- Fix IPMI energy gathering with multiple sensors.
 
 * Changes in Slurm 24.05.3
 ==========================
