@@ -820,6 +820,42 @@ fail:
 	return errno;
 }
 
+#if (SLURMSTEPD_MEMCHECK != 1)
+
+static int _send_return_code(const time_t start_time, const int to_stepd,
+			     const int forward_rc)
+{
+	int delta_time = time(NULL) - start_time;
+	int cc = SLURM_SUCCESS;
+
+	if (delta_time > 5) {
+		warning("slurmstepd startup took %d sec, possible file system problem or full memory",
+			delta_time);
+	}
+
+	if (forward_rc != SLURM_SUCCESS)
+		error("slurmstepd return code %d: %s",
+		      forward_rc, slurm_strerror(forward_rc));
+
+	safe_write(to_stepd, &cc, sizeof(cc));
+	return SLURM_SUCCESS;
+rwfail:
+	error("%s: failed to send ack to stepd: %m", __func__);
+	return SLURM_ERROR;
+}
+
+static int _handle_return_code(int to_slurmd, int to_stepd, int *rc_ptr)
+{
+	time_t start_time = time(NULL);
+
+	safe_read(to_slurmd, rc_ptr, sizeof(*rc_ptr));
+	return _send_return_code(start_time, to_stepd, *rc_ptr);
+rwfail:
+	error("%s: Can not read return code from slurmstepd: %m", __func__);
+	return SLURM_ERROR;
+}
+
+#endif /* SLURMSTEPD_MEMCHECK != 1 */
 
 /*
  * Fork and exec the slurmstepd, then send the slurmstepd its
@@ -859,11 +895,7 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		_remove_starting_step(type, req);
 		return SLURM_ERROR;
 	} else if (pid > 0) {
-		int rc = SLURM_SUCCESS;
-#if (SLURMSTEPD_MEMCHECK != 1)
-		int i;
-		time_t start_time = time(NULL);
-#endif
+		int rc = SLURM_SUCCESS, rc2;
 		/*
 		 * Parent sends initialization data to the slurmstepd
 		 * over the to_stepd pipe, and waits for the return code
@@ -886,33 +918,8 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		 * so just skip it.
 		 */
 #if (SLURMSTEPD_MEMCHECK != 1)
-		i = read(to_slurmd[0], &rc, sizeof(int));
-		if (i < 0) {
-			error("%s: Can not read return code from slurmstepd "
-			      "got %d: %m", __func__, i);
-			rc = SLURM_ERROR;
-		} else if (i != sizeof(int)) {
-			error("%s: slurmstepd failed to send return code "
-			      "got %d: %m", __func__, i);
-			rc = SLURM_ERROR;
-		} else {
-			int delta_time = time(NULL) - start_time;
-			int cc;
-			if (delta_time > 5) {
-				warning("slurmstepd startup took %d sec, possible file system problem or full memory",
-					delta_time);
-			}
-			if (rc != SLURM_SUCCESS)
-				error("slurmstepd return code %d: %s",
-				      rc, slurm_strerror(rc));
-
-			cc = SLURM_SUCCESS;
-			cc = write(to_stepd[1], &cc, sizeof(int));
-			if (cc != sizeof(int)) {
-				error("%s: failed to send ack to stepd %d: %m",
-				      __func__, cc);
-			}
-		}
+		if ((rc2 = _handle_return_code(to_slurmd[0], to_stepd[1], &rc)))
+			return rc2;
 #endif
 	done:
 		if (_remove_starting_step(type, req))
