@@ -28,192 +28,36 @@
 ############################################################################
 source ./globals
 
-set authorized     1
-set part_name      "QA_TEST"
+set part_name $test_name
 
-#
-# This test can only be run on a development build. If this is not a development
-# build, then exit with a warning, but don't fail the test.
-# We know it's a development build if the slurm_testsuite_dev_build variable is
-# set in globals.local to a nonzero value.
-#
-if { ![info exists slurm_testsuite_dev_build] || !$slurm_testsuite_dev_build } {
-	skip "Cannot run this test on a non-development build. If you are on a development build, set slurm_testsuite_dev_build in globals.local in order to run this test"
-}
-
-#
-# Set the environment variable to drop privileges for the current test.
-#
-set ::env(SLURM_TESTSUITE_DROP_PRIV) 1
-
-#
-# We only reach this point if a hidden partition must be
-# created to test this feature, which only super users can do
-#
 if {![is_super_user]} {
-	skip "Can not test more unless SlurmUser"
+	skip "This test needs SlurmUser to create partitions"
 }
 
 proc cleanup {} {
 	global scontrol part_name
 
-	run_command "$scontrol delete PartitionName=$part_name"
+	run_command -none "$scontrol delete PartitionName=$part_name"
 }
-cleanup
-
-#
-# Confirm that no hidden partition is seen by default
-#
-spawn  $scontrol show part
-expect {
-	-re "Hidden=YES" {
-		fail "scontrol hidden partition seen"
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Check if any hidden partitions exist
-#
-set found 0
-spawn  $scontrol -a show part
-expect {
-	-re "Hidden=YES" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found == 1} {
-	fail "Hidden partitions were found"
-}
-
-#
-# Confirm the partition name does not already exist
-#
-set found -1
-spawn $scontrol -a show part $part_name
-expect {
-	-re "not found" {
-		log_debug "This error was expected, no worries"
-		set found 0
-		exp_continue
-	}
-	-re "PartitionName" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found == -1} {
-	fail "scontrol output format error"
-}
-if {$found == 1} {
-	fail "Partition ($part_name) already exists"
-}
-
-#
-# Unset the drop privileges environment variable so a partition can be created.
-#
-unset ::env(SLURM_TESTSUITE_DROP_PRIV)
 
 #
 # Create a new partition
 #
-spawn $scontrol create PartitionName=$part_name Hidden=YES
-expect {
-	-re "error" {
-		fail "Something bad happened on partition create"
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+set output [run_command_output -fail "$scontrol create PartitionName=$part_name Hidden=YES"]
+subtest {![regexp "error" $output]} "Verify that hidden partition can be created"
 
 #
 # Confirm the partition now exists
 #
-set found -1
-set hidden 0
-spawn $scontrol -a show part $part_name
-expect {
-	-re "not found" {
-		set found 0
-		exp_continue
-	}
-	-re "PartitionName" {
-		set found 1
-		exp_continue
-	}
-	-re "Hidden=YES" {
-		set hidden 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found != 1} {
-	fail "Partition not created"
-}
-subtest {$hidden != 0} "Partition should be hidden"
+set output [run_command_output -fail "$scontrol -a show part $part_name"]
+subtest {![regexp "not found" $output]} "Verify that hidden partition is not 'not found'"
+subtest {[regexp "PartitionName" $output]} "Verify that hidden partition is found"
+subtest {[regexp "Hidden=YES" $output]} "Verify that hidden partition is really hidden"
 
 #
 # Now delete the partition
 #
-spawn $scontrol delete PartitionName=$part_name
-expect {
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Confirm the partition is now gone
-#
-set found -1
-spawn $scontrol -a show part $part_name
-expect {
-	-re "not found" {
-		log_debug "This error was expected, no worries"
-		set found 0
-		exp_continue
-	}
-	-re "PartitionName" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found != 0} {
-	fail "Partition not deleted"
-}
+run_command_output -fail "$scontrol delete PartitionName=$part_name"
+set output [run_command_output -xfail "$scontrol -a show part $part_name"]
+subtest {[regexp "not found" $output]} "Verify 'not found' message is present"
+subtest {![regexp "PartitionName" $output]} "Verify that hidden partition is NOT found"
