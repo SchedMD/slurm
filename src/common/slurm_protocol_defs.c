@@ -89,19 +89,6 @@ strong_alias(accounting_enforce_string, slurm_accounting_enforce_string);
 strong_alias(reservation_flags_string, slurm_reservation_flags_string);
 strong_alias(print_multi_line_string, slurm_print_multi_line_string);
 
-#ifndef NDEBUG
-/*
- * Used alongside the testsuite to signal that the RPC should be processed
- * as an untrusted user, rather than the "real" account. (Which in a lot of
- * testing is likely SlurmUser, and thus allowed to bypass many security
- * checks.
- *
- * Implemented with a thread-local variable to apply only to the current
- * RPC handling thread. Set by SLURM_DROP_PRIV bit in the slurm_msg_t flags.
- */
-__thread bool drop_priv = false;
-#endif
-
 /*
  * Macro for implementing generic integer sort comparison
  *
@@ -6304,10 +6291,6 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
  */
 extern bool validate_slurm_user(uid_t uid)
 {
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
 		return true;
 	else
@@ -6322,10 +6305,6 @@ extern bool validate_slurm_user(uid_t uid)
  */
 extern bool validate_slurmd_user(uid_t uid)
 {
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
 	if ((uid == 0) || (uid == slurm_conf.slurmd_user_id))
 		return true;
 	else

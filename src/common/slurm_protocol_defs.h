@@ -227,10 +227,6 @@
 #define RESV_FREE_STR_NODES     SLURM_BIT(8)
 #define RESV_FREE_STR_TRES      SLURM_BIT(9)
 
-#ifndef NDEBUG
-extern __thread bool drop_priv;
-#endif
-
 #ifndef __job_record_t_defined
 #  define __job_record_t_defined
 typedef struct job_record job_record_t;
@@ -349,13 +345,6 @@ typedef struct slurm_msg {
 	list_t *ret_list;
 } slurm_msg_t;
 
-#ifndef NDEBUG
-/* drop_priv_flag set by slurm_conf_init() in read_config.c */
-#define SLURM_MSG_FLAGS_INITIALIZER drop_priv_flag
-#else /* NDEBUG */
-#define SLURM_MSG_FLAGS_INITIALIZER SLURM_PROTOCOL_NO_FLAGS
-#endif /* NDEBUG */
-
 #define SLURM_MSG_INITIALIZER \
 	{ \
 		.auth_uid = SLURM_AUTH_NOBODY, \
@@ -363,7 +352,7 @@ typedef struct slurm_msg {
 		.conn_fd = -1, \
 		.msg_type = NO_VAL16, \
 		.protocol_version = NO_VAL16, \
-		.flags = SLURM_MSG_FLAGS_INITIALIZER, \
+		.flags = SLURM_PROTOCOL_NO_FLAGS, \
 		.forward = FORWARD_INITIALIZER, \
 	}
 

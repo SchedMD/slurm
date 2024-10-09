@@ -559,10 +559,6 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
  */
 extern bool validate_super_user(uid_t uid)
 {
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
 	    SLURMDB_ADMIN_SUPER_USER)
@@ -579,10 +575,6 @@ extern bool validate_super_user(uid_t uid)
  */
 extern bool validate_operator(uid_t uid)
 {
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
 	    SLURMDB_ADMIN_OPERATOR)
@@ -593,10 +585,6 @@ extern bool validate_operator(uid_t uid)
 
 extern bool validate_operator_user_rec(slurmdb_user_rec_t *user)
 {
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
 	if ((user->uid == 0) ||
 	    (user->uid == slurm_conf.slurm_user_id) ||
 	    (user->admin_level >= SLURMDB_ADMIN_OPERATOR))
@@ -6924,11 +6912,6 @@ void slurmctld_req(slurm_msg_t *msg)
 
 	if (msg->conn_fd >= 0)
 		fd_set_nonblocking(msg->conn_fd);
-
-#ifndef NDEBUG
-	if ((msg->flags & SLURM_DROP_PRIV))
-		drop_priv = true;
-#endif
 
 	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",

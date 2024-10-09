@@ -57,10 +57,8 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined(__APPLE__)
-extern __thread bool drop_priv __attribute__((weak_import));
 extern slurmdbd_conf_t *slurmdbd_conf __attribute__((weak_import));
 #else
-__thread bool drop_priv;
 slurmdbd_conf_t *slurmdbd_conf;
 #endif
 
@@ -152,10 +150,6 @@ static bool _is_user_min_admin_level(void *db_conn, uid_t uid,
 {
 	bool is_admin = 1;
 
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
 	/*
 	 * We have to check the authentication here in the
 	 * plugin since we don't know what accounts are being

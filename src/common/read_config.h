@@ -54,10 +54,6 @@ extern slurm_conf_t slurm_conf;
 extern char *default_slurm_config_file;
 extern char *default_plugin_path;
 
-#ifndef NDEBUG
-extern uint16_t drop_priv_flag;
-#endif
-
 /*
  * We can't include node_conf.h to get node_record_t because node_conf.h
  * includes read_config.h and creates a circular dependency. We create the

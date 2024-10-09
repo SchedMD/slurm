@@ -81,10 +81,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn)
 {
 	uint32_t uid = dbd_conn->conn->auth_uid;
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
+
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
 		return true;
 
@@ -98,10 +95,7 @@ static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn)
 static bool _validate_super_user(slurmdbd_conn_t *dbd_conn)
 {
 	uint32_t uid = dbd_conn->conn->auth_uid;
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
+
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_SUPER_USER)
 		return true;
@@ -116,10 +110,7 @@ static bool _validate_super_user(slurmdbd_conn_t *dbd_conn)
 static bool _validate_operator(slurmdbd_conn_t *dbd_conn)
 {
 	uint32_t uid = dbd_conn->conn->auth_uid;
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
+
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_OPERATOR)
 		return true;
@@ -250,11 +241,6 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 	slurm_msg_t *smsg = msg->data;
 	persist_init_req_msg_t *req_msg = smsg->data;
 	char *comment = NULL;
-
-#ifndef NDEBUG
-	if ((smsg->flags & SLURM_DROP_PRIV))
-		drop_priv = true;
-#endif
 
 	req_msg->uid = auth_g_get_uid(slurmdbd_conn->conn->auth_cred);
 
