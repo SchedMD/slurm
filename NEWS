@@ -158,6 +158,8 @@ documents those changes that are of interest to users and administrators.
  -- sbcast - Add --nodelist option to specify where files are transmitted to
  -- sbcast - Add --no-allocation option to transmit files to nodes outside of a
     job allocation
+ -- Add DataParserParameters slurm.conf parameter to allow setting default
+    value for CLI --json and --yaml arguments.
 
 * Changes in Slurm 24.05.4
 ==========================

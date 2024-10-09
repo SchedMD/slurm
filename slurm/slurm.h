@@ -2946,6 +2946,7 @@ typedef struct {
 	uint32_t cpu_freq_def;	/* default cpu frequency / governor */
 	uint32_t cpu_freq_govs;	/* cpu freq governors allowed */
 	char *cred_type;	/* credential signature plugin */
+	char *data_parser_parameters; /* data parser parameters */
 	uint64_t debug_flags;	/* see DEBUG_FLAG_* above for values */
 	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	char *dependency_params; /* DependencyParameters */

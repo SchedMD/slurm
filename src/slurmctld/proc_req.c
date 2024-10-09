@@ -320,6 +320,8 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->cpu_freq_def        = conf->cpu_freq_def;
 	conf_ptr->cpu_freq_govs       = conf->cpu_freq_govs;
 	conf_ptr->cred_type           = xstrdup(conf->cred_type);
+	conf_ptr->data_parser_parameters =
+		xstrdup(conf->data_parser_parameters);
 
 	conf_ptr->def_mem_per_cpu     = conf->def_mem_per_cpu;
 	conf_ptr->debug_flags         = conf->debug_flags;

@@ -30,6 +30,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     magnetic reservations to be planned by backfill scheduler.
  -- Add TopologyParam=TopoMaxSizeUnroll=# to allow --nodes=<min>-<max> for
     topology/block.
+ -- Add DataParserParameters slurm.conf parameter to allow setting default
+    value for CLI --json and --yaml arguments.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
