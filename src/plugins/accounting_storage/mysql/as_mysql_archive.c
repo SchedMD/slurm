@@ -1093,7 +1093,66 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 	 * 15.08: job_req_inx and the it's corresponding enum were synced up
 	 * and it unpacks in the expected order.
 	 */
-	if (rpc_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->account, buffer);
+		safe_unpackstr(&object->admin_comment, buffer);
+		safe_unpackstr(&object->alloc_nodes, buffer);
+		safe_unpackstr(&object->associd, buffer);
+		safe_unpackstr(&object->array_jobid, buffer);
+		safe_unpackstr(&object->array_max_tasks, buffer);
+		safe_unpackstr(&object->array_taskid, buffer);
+		safe_unpackstr(&object->array_task_pending, buffer);
+		safe_unpackstr(&object->array_task_str, buffer);
+		safe_unpackstr(&object->script_hash_inx, buffer);
+		safe_unpackstr(&object->blockid, buffer);
+		safe_unpackstr(&object->constraints, buffer);
+		safe_unpackstr(&object->container, buffer);
+		safe_unpackstr(&object->deleted, buffer);
+		safe_unpackstr(&object->derived_ec, buffer);
+		safe_unpackstr(&object->derived_es, buffer);
+		safe_unpackstr(&object->env_hash_inx, buffer);
+		safe_unpackstr(&object->exit_code, buffer);
+		safe_unpackstr(&object->extra, buffer);
+		safe_unpackstr(&object->flags, buffer);
+		safe_unpackstr(&object->timelimit, buffer);
+		safe_unpackstr(&object->eligible, buffer);
+		safe_unpackstr(&object->end, buffer);
+		safe_unpackstr(&object->gid, buffer);
+		safe_unpackstr(&object->gres_used, buffer);
+		safe_unpackstr(&object->job_db_inx, buffer);
+		safe_unpackstr(&object->jobid, buffer);
+		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->licenses, buffer);
+		safe_unpackstr(&object->mcs_label, buffer);
+		safe_unpackstr(&object->mod_time, buffer);
+		safe_unpackstr(&object->name, buffer);
+		safe_unpackstr(&object->nodelist, buffer);
+		safe_unpackstr(&object->node_inx, buffer);
+		safe_unpackstr(&object->het_job_id, buffer);
+		safe_unpackstr(&object->het_job_offset, buffer);
+		safe_unpackstr(&object->partition, buffer);
+		safe_unpackstr(&object->priority, buffer);
+		safe_unpackstr(&object->qos, buffer);
+		safe_unpackstr(&object->req_cpus, buffer);
+		safe_unpackstr(&object->req_mem, buffer);
+		safe_unpackstr(&object->resvid, buffer);
+		safe_unpackstr(&object->start, buffer);
+		safe_unpackstr(&object->state, buffer);
+		safe_unpackstr(&object->state_reason_prev, buffer);
+		safe_unpackstr(&object->std_err, buffer);
+		safe_unpackstr(&object->std_in, buffer);
+		safe_unpackstr(&object->std_out, buffer);
+		safe_unpackstr(&object->submit, buffer);
+		safe_unpackstr(&object->suspended, buffer);
+		safe_unpackstr(&object->submit_line, buffer);
+		safe_unpackstr(&object->system_comment, buffer);
+		safe_unpackstr(&object->tres_alloc_str, buffer);
+		safe_unpackstr(&object->tres_req_str, buffer);
+		safe_unpackstr(&object->uid, buffer);
+		safe_unpackstr(&object->wckey, buffer);
+		safe_unpackstr(&object->wckey_id, buffer);
+		safe_unpackstr(&object->work_dir, buffer);
+	} else if (rpc_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->account, buffer);
 		safe_unpackstr(&object->admin_comment, buffer);
 		safe_unpackstr(&object->alloc_nodes, buffer);
