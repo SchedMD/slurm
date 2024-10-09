@@ -1080,24 +1080,6 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 
 	memset(object, 0, sizeof(local_job_t));
 
-	/* For protocols <= 14_11, job_req_inx and it's corresponding enum,
-	 * were out of sync. This caused the following variables to have the
-	 * corresponding values:
-	 * job->partition = priority
-	 * job->priority  = qos
-	 * job->qos       = req_cpus
-	 * job->req_cpus  = req_mem
-	 * job->req_mem   = resvid
-	 * job->resvid    = partition
-	 *
-	 * The values were packed in the above order. To unpack the values
-	 * into the correct variables, the unpacking order is changed to
-	 * accomodate the shift in values. job->partition is unpacked before
-	 * job->start instead of after job->node_inx.
-	 *
-	 * 15.08: job_req_inx and the it's corresponding enum were synced up
-	 * and it unpacks in the expected order.
-	 */
 	if (rpc_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->account, buffer);
 		safe_unpackstr(&object->admin_comment, buffer);
@@ -1657,7 +1639,27 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->uid, buffer);
 		safe_unpackstr(&object->wckey, buffer);
 		safe_unpackstr(&object->wckey_id, buffer);
-	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	}
+	/*
+	 * For protocols <= 14_11, job_req_inx and it's corresponding enum,
+	 * were out of sync. This caused the following variables to have the
+	 * corresponding values:
+	 * job->partition = priority
+	 * job->priority  = qos
+	 * job->qos       = req_cpus
+	 * job->req_cpus  = req_mem
+	 * job->req_mem   = resvid
+	 * job->resvid    = partition
+	 *
+	 * The values were packed in the above order. To unpack the values
+	 * into the correct variables, the unpacking order is changed to
+	 * accomodate the shift in values. job->partition is unpacked before
+	 * job->start instead of after job->node_inx.
+	 *
+	 * 15.08: job_req_inx and the it's corresponding enum were synced up
+	 * and it unpacks in the expected order.
+	 */
+	else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->account, buffer);
 		safe_unpackstr(&object->alloc_nodes, buffer);
 		safe_unpackstr(&object->associd, buffer);
