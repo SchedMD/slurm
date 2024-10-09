@@ -114,6 +114,7 @@ print_field_t fields[] = {
 	{10, "Priority", print_fields_uint, PRINT_PRIO},
 	{10, "QOS", print_fields_str, PRINT_QOS},
 	{6,  "QOSRAW", print_fields_uint, PRINT_QOSRAW},
+	{10, "QOSREQ", print_fields_str, PRINT_QOSREQ},
 	{22, "Reason", print_fields_str, PRINT_REASON},
 	{10, "ReqCPUFreq", print_fields_str, PRINT_REQ_CPUFREQ_MAX}, /* vestigial */
 	{13, "ReqCPUFreqGov", print_fields_str, PRINT_REQ_CPUFREQ_GOV},

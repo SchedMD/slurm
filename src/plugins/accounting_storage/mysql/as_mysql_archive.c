@@ -146,6 +146,7 @@ typedef struct {
 	char *partition;
 	char *priority;
 	char *qos;
+	char *qos_req;
 	char *req_cpus;
 	char *req_mem;
 	char *resvid;
@@ -223,6 +224,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->partition);
 		xfree(object->priority);
 		xfree(object->qos);
+		xfree(object->qos_req);
 		xfree(object->req_cpus);
 		xfree(object->req_mem);
 		xfree(object->resvid);
@@ -580,6 +582,7 @@ static char *job_req_inx[] = {
 	"`partition`",
 	"priority",
 	"id_qos",
+	"qos_req",
 	"cpus_req",
 	"mem_req",
 	"id_resv",
@@ -641,6 +644,7 @@ enum {
 	JOB_REQ_PARTITION,
 	JOB_REQ_PRIORITY,
 	JOB_REQ_QOS,
+	JOB_REQ_QOS_REQ,
 	JOB_REQ_REQ_CPUS,
 	JOB_REQ_REQ_MEM,
 	JOB_REQ_RESVID,
@@ -1045,6 +1049,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->partition, buffer);
 	packstr(object->priority, buffer);
 	packstr(object->qos, buffer);
+	packstr(object->qos_req, buffer);
 	packstr(object->req_cpus, buffer);
 	packstr(object->req_mem, buffer);
 	packstr(object->resvid, buffer);
@@ -1133,6 +1138,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->partition, buffer);
 		safe_unpackstr(&object->priority, buffer);
 		safe_unpackstr(&object->qos, buffer);
+		safe_unpackstr(&object->qos_req, buffer);
 		safe_unpackstr(&object->req_cpus, buffer);
 		safe_unpackstr(&object->req_mem, buffer);
 		safe_unpackstr(&object->resvid, buffer);
@@ -2956,6 +2962,9 @@ static int _process_old_sql_line(const char *data_in,
 		} else if (!xstrncmp("qos", data_in+i, 3)) {
 			xstrcat(fields, "id_qos");
 			i+=3;
+		} else if (!xstrncmp("qos_req", data_in+i, 7)) {
+			xstrcat(fields, "qos_req");
+			i+=3;
 		} else if (!xstrncmp("uid", data_in+i, 3)) {
 			xstrcat(fields, "id_user");
 			i+=3;
@@ -3601,6 +3610,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.partition = row[JOB_REQ_PARTITION];
 		job.priority = row[JOB_REQ_PRIORITY];
 		job.qos = row[JOB_REQ_QOS];
+		job.qos_req = row[JOB_REQ_QOS_REQ];
 		job.req_cpus = row[JOB_REQ_REQ_CPUS];
 		job.req_mem = row[JOB_REQ_REQ_MEM];
 		job.resvid = row[JOB_REQ_RESVID];
@@ -3696,6 +3706,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_NODE_INX,
 		JOB_REQ_SUBMIT_LINE,
 		JOB_REQ_SYSTEM_COMMENT,
+		JOB_REQ_QOS_REQ,
 		JOB_REQ_COUNT };
 
 	local_job_t object;
@@ -3790,6 +3801,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			xstrcatat(format, &format_pos, ", %s");
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
+		if (object.qos_req == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
 
 		xstrcatat(format, &format_pos, ")");
 
@@ -3866,7 +3881,9 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     (object.submit_line == NULL) ?
 				"NULL" : object.submit_line,
 			     (object.system_comment == NULL) ?
-				"NULL" : object.system_comment);
+				"NULL" : object.system_comment,
+			     (object.qos_req == NULL) ?
+				"NULL" : object.qos_req);
 
 		_free_local_job_members(&object);
 		format_pos = NULL;

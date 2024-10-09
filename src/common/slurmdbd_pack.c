@@ -463,6 +463,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		packstr(msg->partition, buffer);
 		pack32(msg->priority, buffer);
 		pack32(msg->qos_id, buffer);
+		packstr(msg->qos_req, buffer);
 		pack32(msg->req_cpus, buffer);
 		pack64(msg->req_mem, buffer);
 		pack32(msg->resv_id, buffer);
@@ -610,6 +611,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpackstr(&msg_ptr->partition, buffer);
 		safe_unpack32(&msg_ptr->priority, buffer);
 		safe_unpack32(&msg_ptr->qos_id, buffer);
+		safe_unpackstr(&msg_ptr->qos_req, buffer);
 		safe_unpack32(&msg_ptr->req_cpus, buffer);
 		safe_unpack64(&msg_ptr->req_mem, buffer);
 		safe_unpack32(&msg_ptr->resv_id, buffer);

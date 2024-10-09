@@ -901,6 +901,7 @@ typedef struct {
 	char	*partition;
 	uint32_t priority;
 	uint32_t qosid;
+	char *qos_req;
 	uint32_t req_cpus;
 	uint64_t req_mem;
 	uint32_t requid;

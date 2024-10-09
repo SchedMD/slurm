@@ -75,6 +75,7 @@ char *job_req_inx[] = {
 	"t1.het_job_id",
 	"t1.het_job_offset",
 	"t1.id_qos",
+	"t1.qos_req",
 	"t1.id_resv",
 	"t3.resv_name",
 	"t1.id_user",
@@ -139,6 +140,7 @@ enum {
 	JOB_REQ_HET_JOB_ID,
 	JOB_REQ_HET_JOB_OFFSET,
 	JOB_REQ_QOS,
+	JOB_REQ_QOS_REQ,
 	JOB_REQ_RESVID,
 	JOB_REQ_RESV_NAME,
 	JOB_REQ_UID,
@@ -882,6 +884,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		else
 			job->requid = slurm_atoul(row[JOB_REQ_KILL_REQUID]);
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
+		job->qos_req = xstrdup(row[JOB_REQ_QOS_REQ]);
+
 		job->show_full = 1;
 
 		if (row[JOB_REQ_TRESA])

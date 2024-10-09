@@ -4471,6 +4471,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		packstr(job->partition, buffer);
 		pack32(job->priority, buffer);
 		pack32(job->qosid, buffer);
+		packstr(job->qos_req, buffer);
 		pack32(job->req_cpus, buffer);
 		pack64(job->req_mem, buffer);
 		pack32(job->requid, buffer);
@@ -4833,6 +4834,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr(&job_ptr->partition, buffer);
 		safe_unpack32(&job_ptr->priority, buffer);
 		safe_unpack32(&job_ptr->qosid, buffer);
+		safe_unpackstr(&job_ptr->qos_req, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
 		safe_unpack64(&job_ptr->req_mem, buffer);
 		safe_unpack32(&job_ptr->requid, buffer);
