@@ -42,11 +42,6 @@ if { ![info exists slurm_testsuite_dev_build] || !$slurm_testsuite_dev_build } {
 }
 
 #
-# Set the environment variable to drop privileges for the current test.
-#
-set ::env(SLURM_TESTSUITE_DROP_PRIV) 1
-
-#
 # We only reach this point if a hidden partition must be
 # created to test this feature, which only super users can do
 #
@@ -126,11 +121,6 @@ if {$found == -1} {
 if {$found == 1} {
 	fail "Partition ($part_name) already exists"
 }
-
-#
-# Unset the drop privileges environment variable so a partition can be created.
-#
-unset ::env(SLURM_TESTSUITE_DROP_PRIV)
 
 #
 # Create a new partition
