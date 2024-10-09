@@ -3608,8 +3608,8 @@ static int _foreach_rebuild_topo(void *x, void *args)
 			if (set_cnt &&
 			    (set_cnt != rebuild_topo->cores_per_sock)) {
 				char *node_list = bit_fmt_full(tmp_bitmap);
-				error("%s: %s: GRES core specification %s doesn't match socket boundaries. (Socket %d is cores %d-%d)",
-				      __func__, gres_ctx->gres_type,
+				char *tmp = xstrdup_printf("%s GRES core specification %s doesn't match socket boundaries. (Socket %d is cores %d-%d)",
+				      gres_ctx->gres_type,
 				      node_list, i,
 				      i * rebuild_topo->cores_per_sock,
 				      (i + 1) * rebuild_topo->cores_per_sock);
@@ -3617,6 +3617,12 @@ static int _foreach_rebuild_topo(void *x, void *args)
 				FREE_NULL_BITMAP(
 					gres_ns->topo_core_bitmap[topo_cnt]);
 				rebuild_topo->rc = ESLURM_INVALID_GRES;
+				error("%s: %s", __func__, tmp);
+				if (rebuild_topo->reason_down &&
+				    !*rebuild_topo->reason_down)
+					xstrfmtcat(*rebuild_topo->reason_down,
+						   "%s", tmp);
+				xfree(tmp);
 				return -1;
 			}
 		}
