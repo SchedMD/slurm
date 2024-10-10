@@ -422,9 +422,6 @@ value of \-1 for each TRES id.
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
 of available resources by running \fBsacctmgr show tres\fR.
-
-\fBNOTE\fR: This limit only applies fully when using the Select Consumable
-Resource plugin.
 .IP
 
 .TP
@@ -542,9 +539,22 @@ value of \-1 for each TRES id.
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
 of available resources by running \fBsacctmgr show tres\fR.
+.IP
 
-\fBNOTE\fR: This limit only applies fully when using the
-\fBcons_tres\fR select type plugin.
+.IP \fBMaxTRESPN\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+.PD 0
+.IP \fBMaxTRESPerNode\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+.PD
+Maximum number of TRES each node in a job allocation is able to use in this
+association.
+This is overridden if set directly on a user.
+Default is the cluster's limit.
+To clear a previously set value use the modify command with a new
+value of \-1 for each TRES id.
+
+\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
+etc...), or any defined generic resource. You can see the list
+of available resources by running \fBsacctmgr show tres\fR.
 .IP
 
 .IP \fBMaxWall\fR=<\fImax_wall\fR>
