@@ -256,12 +256,17 @@ static int _on_data(conmgr_fd_t *con, void *arg)
 
 static void _on_finish(conmgr_fd_t *con, void *arg)
 {
+	int fd;
+
 	xassert(arg == &signal_fd);
 
 	slurm_rwlock_wrlock(&lock);
 
-	xassert(signal_fd != -1);
-	fd_close(&signal_fd);
+	fd = signal_fd;
+	signal_fd = -1;
+
+	xassert(fd != -1);
+	fd_close(&fd);
 
 	xassert(con == signal_con);
 	xassert(signal_con);
