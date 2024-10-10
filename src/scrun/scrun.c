@@ -675,9 +675,6 @@ extern int main(int argc, char **argv)
 	argv_offset = _parse_commandline(argc, argv) - 1;
 
 	slurm_init(slurm_conf_filename);
-	if ((rc = gres_init()))
-		fatal("%s: Unable to GRES plugins: %s", __func__,
-		      slurm_strerror(rc));
 	if ((rc = get_oci_conf(&oci_conf)))
 		fatal("%s: unable to load oci.conf: %s",
 		      __func__, slurm_strerror(rc));
