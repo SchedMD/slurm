@@ -723,12 +723,10 @@ extern int main(int argc, char **argv)
 	FREE_NULL_OCI_CONF(oci_conf);
 	xfree(slurm_conf_filename);
 	xfree(command_argv);
-	auth_g_fini();
 	fini_setproctitle();
-	gres_fini();
 	select_g_fini();
+	slurm_fini();
 	log_fini();
-	slurm_conf_destroy();
 #endif /* MEMORY_LEAK_DEBUG */
 
 	return rc;

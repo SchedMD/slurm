@@ -349,8 +349,7 @@ int main(int argc, char **argv)
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();
 	slurm_reset_all_options(&opt, false);
-	auth_g_fini();
-	slurm_conf_destroy();
+	slurm_fini();
 	log_fini();
 #endif /* MEMORY_LEAK_DEBUG */
 	xfree(script_body);

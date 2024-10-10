@@ -213,8 +213,7 @@ int main(int argc, char **argv)
 	sacct_fini();
 
 #if MEMORY_LEAK_DEBUG
-	auth_g_fini();
-	slurm_conf_destroy();
+	slurm_fini();
 	log_fini();
 #endif
 
