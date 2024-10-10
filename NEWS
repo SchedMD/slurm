@@ -166,6 +166,7 @@ documents those changes that are of interest to users and administrators.
     executed with --ctld flag.
  -- slurmdbd - Add -u option. This is used to determine if restarting the DBD
     will result in database conversion.
+ -- Fix srun inside an salloc in a federated cluster when using IPv6.
 
 * Changes in Slurm 24.05.4
 ==========================
