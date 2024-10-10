@@ -301,12 +301,24 @@ extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
 	int i;
 	topoinfo_block_t *topoinfo = topoinfo_ptr;
 
-	pack32(topoinfo->record_count, buffer);
-	for (i = 0; i < topoinfo->record_count; i++) {
-		pack16(topoinfo->topo_array[i].block_index, buffer);
-		packstr(topoinfo->topo_array[i].name, buffer);
-		packstr(topoinfo->topo_array[i].nodes, buffer);
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		pack32(topoinfo->record_count, buffer);
+		for (i = 0; i < topoinfo->record_count; i++) {
+			pack16(topoinfo->topo_array[i].block_index, buffer);
+			packstr(topoinfo->topo_array[i].name, buffer);
+			packstr(topoinfo->topo_array[i].nodes, buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(topoinfo->record_count, buffer);
+		for (i = 0; i < topoinfo->record_count; i++) {
+			pack16(topoinfo->topo_array[i].block_index, buffer);
+			packstr(topoinfo->topo_array[i].name, buffer);
+			packstr(topoinfo->topo_array[i].nodes, buffer);
+		}
+	} else {
+		return SLURM_ERROR;
 	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -371,13 +383,33 @@ extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
 		xmalloc(sizeof(topoinfo_block_t));
 
 	*topoinfo_pptr = topoinfo_ptr;
-	safe_unpack32(&topoinfo_ptr->record_count, buffer);
-	safe_xcalloc(topoinfo_ptr->topo_array, topoinfo_ptr->record_count,
-		     sizeof(topoinfo_bblock_t));
-	for (i = 0; i < topoinfo_ptr->record_count; i++) {
-		safe_unpack16(&topoinfo_ptr->topo_array[i].block_index, buffer);
-		safe_unpackstr(&topoinfo_ptr->topo_array[i].name, buffer);
-		safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes, buffer);
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpack32(&topoinfo_ptr->record_count, buffer);
+		safe_xcalloc(topoinfo_ptr->topo_array,
+			     topoinfo_ptr->record_count,
+			     sizeof(topoinfo_bblock_t));
+		for (i = 0; i < topoinfo_ptr->record_count; i++) {
+			safe_unpack16(&topoinfo_ptr->topo_array[i].block_index,
+				      buffer);
+			safe_unpackstr(&topoinfo_ptr->topo_array[i].name,
+				       buffer);
+			safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes,
+				       buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&topoinfo_ptr->record_count, buffer);
+		safe_xcalloc(topoinfo_ptr->topo_array, topoinfo_ptr->record_count,
+			     sizeof(topoinfo_bblock_t));
+		for (i = 0; i < topoinfo_ptr->record_count; i++) {
+			safe_unpack16(&topoinfo_ptr->topo_array[i].block_index,
+				      buffer);
+			safe_unpackstr(&topoinfo_ptr->topo_array[i].name,
+				       buffer);
+			safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes,
+				       buffer);
+		}
+	} else {
+		goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;
