@@ -87,7 +87,7 @@ if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-if { [get_config_param -dbd "AllowNoDefAcct"] eq "Yes" } {
+if { [get_config_param -dbd "AllowNoDefAcct"] eq "yes" } {
 	set def_acct ""
 } else {
 	set def_acct $ta1

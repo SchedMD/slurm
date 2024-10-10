@@ -94,7 +94,7 @@ make_bash_script $file_in "
 set timeout $max_job_delay
 set no_start 0
 
-if {[get_config_param "MULTIPLE_SLURMD"] eq "Yes"} {
+if {[get_config_param "MULTIPLE_SLURMD"] eq "yes"} {
 	spawn $sbatch -N1 -n6 -O --output=$file_out --error=$file_err -t1 $file_in
 } else {
 	spawn $sbatch -N1-6 -n6 --output=$file_out --error=$file_err -t1 $file_in

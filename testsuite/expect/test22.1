@@ -194,7 +194,7 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 }
 
 set wc_key_track true
-if { [get_config_param -dbd "TrackWCKey"] eq "No" } {
+if { [get_config_param -dbd "TrackWCKey"] eq "no" } {
         log_warn "This test can't be totally run without TrackWCKey set in slurmdbd.conf"
         set wc_key_track false
 }

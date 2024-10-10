@@ -45,9 +45,9 @@ def setup():
     global local_cluster_name, partition_name
 
     atf.require_accounting(modify=True)
-    atf.require_config_parameter("AllowNoDefAcct", "Yes", source="slurmdbd")
-    atf.require_config_parameter("TrackWCKey", "Yes", source="slurmdbd")
-    atf.require_config_parameter("TrackWCKey", "Yes")
+    atf.require_config_parameter("AllowNoDefAcct", "yes", source="slurmdbd")
+    atf.require_config_parameter("TrackWCKey", "yes", source="slurmdbd")
+    atf.require_config_parameter("TrackWCKey", "yes")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt", source="slurmdbd")
     atf.require_slurmrestd("slurmctld,slurmdbd", "v0.0.40")

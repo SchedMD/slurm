@@ -142,7 +142,7 @@ federation1 = "federation1"
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_accounting(modify=True)
-    atf.require_config_parameter("TrackWCKey", "Yes", source="slurmdbd")
+    atf.require_config_parameter("TrackWCKey", "yes", source="slurmdbd")
     atf.require_slurm_running()
 
 
