@@ -108,8 +108,9 @@ static void _print_topo_record(topoinfo_bblock_t * topo_ptr, char **out)
 	char *env, *line = NULL, *pos = NULL;
 
 	/****** Line 1 ******/
-	xstrfmtcatat(line, &pos, "BlockName=%s BlockIndex=%u", topo_ptr->name,
-		     topo_ptr->block_index);
+	xstrfmtcatat(line, &pos, "%s=%s BlockIndex=%u",
+		     topo_ptr->aggregated ? "AggregatedBlock" : "BlockName",
+		     topo_ptr->name, topo_ptr->block_index);
 
 	if (topo_ptr->nodes)
 		xstrfmtcatat(line, &pos, " Nodes=%s", topo_ptr->nodes);
