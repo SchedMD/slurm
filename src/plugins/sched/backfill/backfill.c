@@ -183,6 +183,31 @@ typedef struct {
 	uid_t uid;
 } bf_user_usage_t;
 
+typedef struct {
+	bool allocated; /* A job is running on this node */
+	time_t last_job_end; /* Last end time of running job on node*/
+	bool mixed_user; /* multiple users running on node */
+	bool needs_sorting; /* After adding to the mix sort related
+			     * nodes_used_list */
+	uint32_t node_index;
+	bool owned; /* Node has exclusive=user job */
+	uint32_t uid; /* user id of a job running on the node */
+} node_used_t;
+
+typedef struct {
+	bool delay_start;
+	bool is_exclusive_user;
+	uint32_t job_user;
+	time_t *later_start;
+	uint32_t min_nodes;
+	bitstr_t *node_bitmap;
+	int node_cnt;
+	time_t prev_time;
+	bitstr_t *req_nodes;
+	bool set_later_start;
+	time_t start_time;
+} filter_exclusive_args_t;
+
 /*********************** local variables *********************/
 static bool stop_backfill = false;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -254,11 +279,12 @@ static void _het_job_start_clear(void);
 static time_t _het_job_start_find(job_record_t *job_ptr);
 static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			       uint32_t comp_time_limit);
-static void _het_job_start_test_single(node_space_map_t *node_space,
+static bool _het_job_start_test_single(node_space_map_t *node_space,
 				       het_job_map_t *map, bool single);
 static int  _het_job_start_test_list(void *map, void *node_space);
 static void _het_job_start_test(node_space_map_t *node_space,
-				uint32_t het_job_id);
+				uint32_t het_job_id, node_used_t *nodes_used,
+				list_t *nodes_used_list);
 static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 				  node_space_map_t *node_space);
 static void _set_bf_exit(bf_exit_t code);
@@ -1760,6 +1786,152 @@ mixed:
 		last_node_update = time(NULL);
 }
 
+/*
+ * Marks nodes' user status and  last job end time
+ * Return positive if a node's last_job_end was updated else return 0
+ */
+static int _mark_nodes_usage(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	node_used_t *nodes_used = arg;
+	bool last_job_end_updated = false;
+	bool owned;
+
+	int i;
+
+	xassert(job_ptr);
+	xassert(nodes_used);
+
+	if (IS_JOB_PENDING(job_ptr) || IS_JOB_COMPLETED(job_ptr) ||
+	    !job_ptr->node_bitmap)
+		return last_job_end_updated;
+
+	owned = ((job_ptr->details->whole_node & WHOLE_NODE_USER) ||
+		 (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER));
+
+	for (i = 0; (i = bit_ffs_from_bit(job_ptr->node_bitmap, i)) >= 0; i++) {
+		if (!nodes_used[i].allocated) {
+			nodes_used[i].allocated = true;
+			nodes_used[i].uid = job_ptr->user_id;
+			nodes_used[i].node_index = i;
+			nodes_used[i].owned = owned;
+		} else if (!nodes_used[i].owned && !nodes_used[i].mixed_user) {
+			nodes_used[i].mixed_user =
+				nodes_used[i].uid != job_ptr->user_id;
+			nodes_used[i].owned = owned;
+		}
+
+		if (nodes_used[i].last_job_end < job_ptr->end_time) {
+			nodes_used[i].last_job_end = job_ptr->end_time;
+			last_job_end_updated = true;
+		}
+	}
+
+
+	return last_job_end_updated;
+}
+
+static int _cmp_last_job_end(void *x, void *y)
+{
+	node_used_t *node1 = *(node_used_t **) x;
+	node_used_t *node2 = *(node_used_t **) y;
+	if (node1->last_job_end < node2->last_job_end)
+		return 1;
+	else if (node1->last_job_end > node2->last_job_end)
+		return -1;
+	return 0;
+}
+
+/* For each node find if they have multiple users and the latest job end time */
+static void _init_node_used_array_and_list(node_used_t **nodes_used,
+					   list_t **nodes_used_list)
+{
+	xassert(nodes_used && !*nodes_used);
+	xassert(nodes_used_list && !*nodes_used_list);
+
+	*nodes_used = xcalloc(node_record_count, sizeof(**nodes_used));
+	*nodes_used_list = list_create(NULL); /* NULL to avoid double free */
+
+	list_for_each(job_list, _mark_nodes_usage, *nodes_used);
+
+	for (int i = 0; i < node_record_count; i++)
+		list_append(*nodes_used_list, &(*nodes_used)[i]);
+	/* Sort list in descending order of last_job_end */
+	list_sort(*nodes_used_list, _cmp_last_job_end);
+}
+
+/*
+ * Check if a node can be used, if not remove it. If the node can't be remove
+ * delay the start time.
+ * Return true if the start was delayed (or can't be delayed)
+ */
+static int _rm_node_or_delay_start(void *x, void *arg)
+{
+	node_used_t *node = x;
+	filter_exclusive_args_t *args = arg;
+	bool job_user_on_node = node->uid == args->job_user;
+
+	if (!node->allocated)
+		return true; /* following nodes are idle */
+	if (node->last_job_end <= args->start_time)
+		return true; /* following nodes will be idle by start_time */
+	if (!bit_test(args->node_bitmap, node->node_index))
+		return false; /* not available to start with */
+	if (args->is_exclusive_user && !node->mixed_user && job_user_on_node)
+		return false; /* user alone on node */
+	if (!args->is_exclusive_user && (!node->owned || job_user_on_node))
+		return false;	/* node not owned or the user owns the node */
+
+	/* can't use this node */
+	*(args->later_start) = node->last_job_end;
+
+	if ((args->node_cnt > args->min_nodes) &&
+	    (!args->req_nodes ||
+	     !bit_test(args->req_nodes, node->node_index))) {
+		/* able to remove the node*/
+		bit_clear(args->node_bitmap, node->node_index);
+		args->node_cnt--;
+		return false;
+	}
+
+	/* can't remove the node, delay job start */
+	args->delay_start = true;
+	return true;
+}
+
+/* Return true if start_time was delayed */
+static bool _filter_exclusive_user_nodes(job_record_t *job_ptr,
+					 uint32_t min_nodes,
+					 list_t *nodes_used_list,
+					 time_t start_time,
+					 time_t *later_filter_start,
+					 bitstr_t *node_bitmap)
+{
+	*later_filter_start = 0;
+	filter_exclusive_args_t args = {
+		.min_nodes = min_nodes,
+		.job_user = job_ptr->user_id,
+		.node_bitmap = node_bitmap,
+		.req_nodes = job_ptr->details->req_node_bitmap,
+		.node_cnt = bit_set_count(node_bitmap),
+		.later_start = later_filter_start,
+		.start_time = start_time,
+	};
+
+	/*
+	 * Filter out any nodes used by other users, is_exclusive_user = true,
+	 * or filter out nodes owned by other users, is_exclusive_user = false
+	 */
+	if ((job_ptr->details->whole_node & WHOLE_NODE_USER) ||
+	    (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER))
+		args.is_exclusive_user = true;
+
+	/* Note that nodes_used_list is sorted in descending order of job end */
+	list_find_first(nodes_used_list, _rm_node_or_delay_start, &args);
+
+	return args.delay_start;
+}
+
 static void _attempt_backfill(void)
 {
 	DEF_TIMERS;
@@ -1777,7 +1949,10 @@ static void _attempt_backfill(void)
 	bitstr_t *resv_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end, window_end;
 	time_t het_job_time, orig_sched_start, orig_start_time = (time_t) 0;
+	time_t later_filter_start;
 	node_space_map_t *node_space;
+	node_used_t *nodes_used = NULL;
+	list_t *nodes_used_list = NULL;
 	struct timeval bf_time1, bf_time2;
 	int error_code;
 	int job_test_count = 0, test_time_count = 0, pend_time;
@@ -1887,6 +2062,8 @@ static void _attempt_backfill(void)
 		list_for_each(job_list, _bf_reserve_running,
 			      &node_space_handler);
 	}
+
+	_init_node_used_array_and_list(&nodes_used, &nodes_used_list);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 		_dump_node_space_table(node_space);
@@ -2511,7 +2688,28 @@ next_task:
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
 		bit_and_not(avail_bitmap, bf_ignore_node_bitmap);
-		filter_by_node_owner(job_ptr, avail_bitmap);
+
+		if (job_ptr->details->exc_node_bitmap) {
+			bit_and_not(avail_bitmap,
+				    job_ptr->details->exc_node_bitmap);
+		}
+
+		if (_filter_exclusive_user_nodes(job_ptr, min_nodes,
+						 nodes_used_list, start_res,
+						 &later_filter_start,
+						 avail_bitmap)) {
+			/* start_res delayed must check resv times again */
+			if (!job_no_reserve) {
+				job_ptr->start_time = 0;
+				later_start = later_filter_start;
+				goto TRY_LATER;
+			}
+			/* Job can not start until too far in the future */
+			_set_job_time_limit(job_ptr, orig_time_limit);
+			job_ptr->start_time = orig_start_time;
+			continue;
+		}
+
 		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
 		tmp_bitmap = bit_copy(avail_bitmap);
 		for (j = 0; ; ) {
@@ -2564,19 +2762,12 @@ next_task:
 			later_start = resv_end;
 		}
 
-		if (job_ptr->details->exc_node_bitmap) {
-			bit_and_not(avail_bitmap,
-				job_ptr->details->exc_node_bitmap);
-		}
-
 		/* Test if licenses are unavailable OR
-		 *	insufficient nodes remain OR
 		 *	required nodes missing OR
 		 *	nodes lack features OR
 		 *	no change since previously tested nodes (only changes
 		 *	in other partition nodes) */
 		if (licenses_unavail ||
-		    (bit_set_count(avail_bitmap) < min_nodes) ||
 		    ((job_ptr->details->req_node_bitmap) &&
 		     (!bit_super_set(job_ptr->details->req_node_bitmap,
 				     avail_bitmap))) ||
@@ -2592,6 +2783,21 @@ next_task:
 			 * Use orig_start_time if job can't
 			 * start in different partition it will be 0
 			 */
+			job_ptr->start_time = orig_start_time;
+			continue;
+		}
+
+		if (!later_start && later_filter_start)
+			later_start = later_filter_start; /* filter out fewer */
+
+		/* Test if insufficient nodes remain */
+		if (bit_set_count(avail_bitmap) < min_nodes) {
+			if (later_start && !job_no_reserve) {
+				job_ptr->start_time = 0;
+				goto TRY_LATER;
+			}
+			/* Job can not start until too far in the future */
+			_set_job_time_limit(job_ptr, orig_time_limit);
 			job_ptr->start_time = orig_start_time;
 			continue;
 		}
@@ -2961,6 +3167,11 @@ skip_start:
 					_set_bf_exit(BF_EXIT_MAX_JOB_TEST);
 					break;
 				}
+
+				if (_mark_nodes_usage(job_ptr, nodes_used))
+					list_sort(nodes_used_list,
+						  _cmp_last_job_end);
+
 				if (is_job_array_head &&
 				    (job_ptr->array_task_id != NO_VAL)) {
 					/* Try starting next task of job array */
@@ -2989,7 +3200,9 @@ skip_start:
 			    (!max_backfill_jobs_start ||
 			     (job_start_cnt < max_backfill_jobs_start)))
 				_het_job_start_test(node_space,
-						    job_ptr->het_job_id);
+						    job_ptr->het_job_id,
+						    nodes_used,
+						    nodes_used_list);
 		}
 
 		if ((job_ptr->start_time > now) && (job_no_reserve != 0)) {
@@ -3253,7 +3466,7 @@ skip_start:
 	if (!bf_hetjob_immediate && !state_changed_break &&
 	    (!max_backfill_jobs_start ||
 	     (job_start_cnt < max_backfill_jobs_start)))
-		_het_job_start_test(node_space, 0);
+		_het_job_start_test(node_space, 0, NULL, NULL);
 
 	FREE_NULL_BITMAP(avail_bitmap);
 	reservation_delete_resv_exc_parts(&resv_exc);
@@ -3267,6 +3480,8 @@ skip_start:
 	}
 	xfree(node_space);
 	FREE_NULL_LIST(job_queue);
+	FREE_NULL_LIST(nodes_used_list);
+	xfree(nodes_used);
 
 	gettimeofday(&bf_time2, NULL);
 	_do_diag_stats(&bf_time1, &bf_time2, node_space_recs);
@@ -4097,29 +4312,30 @@ static void _het_job_kill_now(het_job_map_t *map)
  * node_space IN - map of available resources through time
  * map IN - info about this heterogeneous job
  * single IN - true if testing single heterogeneous jobs
+ * Return true if heterogeneous job can start now
  */
-static void _het_job_start_test_single(node_space_map_t *node_space,
+static bool _het_job_start_test_single(node_space_map_t *node_space,
 				       het_job_map_t *map, bool single)
 {
 	time_t now = time(NULL);
 	int rc;
 
 	if (!map)
-		return;
+		return false;
 
 	if (!_het_job_full(map)) {
 		log_flag(HETJOB, "Hetjob %u has indefinite start time",
 			 map->het_job_id);
 		if (!single)
 			map->prev_start = now + YEAR_SECONDS;
-		return;
+		return false;
 	}
 
 	map->prev_start = _het_job_start_compute(map, 0);
 	if (map->prev_start > now) {
 		log_flag(HETJOB, "Hetjob %u should be able to start in %u seconds",
 			 map->het_job_id, (uint32_t) (map->prev_start - now));
-		return;
+		return false;
 	}
 
 	if (!_het_job_limit_check(map, now)) {
@@ -4127,7 +4343,7 @@ static void _het_job_start_test_single(node_space_map_t *node_space,
 			 map->het_job_id);
 
 		map->prev_start = now + YEAR_SECONDS;
-		return;
+		return false;
 	}
 
 	log_flag(HETJOB, "Attempting to start hetjob %u", map->het_job_id);
@@ -4143,8 +4359,10 @@ static void _het_job_start_test_single(node_space_map_t *node_space,
 			log_flag(BACKFILL, "bf_max_job_start limit of %d reached",
 				 max_backfill_jobs_start);
 		}
+		return true;
 	}
 
+	return false;
 }
 
 static int _het_job_start_test_list(void *map, void *node_space)
@@ -4156,14 +4374,29 @@ static int _het_job_start_test_list(void *map, void *node_space)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_add_job_to_nodes_used(void *x, void *arg)
+{
+	het_job_rec_t *het_rec = x;
+	node_used_t *nodes_used = arg;
+
+	if (_mark_nodes_usage(het_rec->job_ptr, nodes_used))
+		nodes_used->needs_sorting = true;
+
+	return 0;
+}
 
 /*
  * If all components of a heterogeneous job can start now, then do so
  * node_space IN - map of available resources through time
  * het_job_id IN - the ID of the heterogeneous job to evaluate,
- *		    if zero then evaluate all heterogeneous jobs
+ *		    if zero then evaluate all heterogeneous jobs and
+ * 		    nodes_used/node_used_list are not updated
+ * nodes_used IN/OUT - array of node usage used for exclusive filtering
+ * nodes_used_list IN/OUT - list of node usage used for exclusive filtering
  */
-static void _het_job_start_test(node_space_map_t *node_space, uint32_t het_job_id)
+static void _het_job_start_test(node_space_map_t *node_space,
+				uint32_t het_job_id, node_used_t *nodes_used,
+				list_t *nodes_used_list)
 {
 	het_job_map_t *map = NULL;
 
@@ -4175,7 +4408,16 @@ static void _het_job_start_test(node_space_map_t *node_space, uint32_t het_job_i
 		/* Test single map. */
 		map = list_find_first(het_job_list, _het_job_find_map,
 				      &het_job_id);
-		_het_job_start_test_single(node_space, map, true);
+		if (_het_job_start_test_single(node_space, map, true)) {
+			nodes_used->needs_sorting = false;
+			(void) list_for_each(map->het_job_rec_list,
+					     _foreach_add_job_to_nodes_used,
+					     nodes_used);
+			if (nodes_used->needs_sorting) {
+				nodes_used->needs_sorting = false;
+				list_sort(nodes_used_list, _cmp_last_job_end);
+			}
+		}
 	}
 }
 
