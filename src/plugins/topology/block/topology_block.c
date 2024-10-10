@@ -92,6 +92,7 @@ const uint32_t plugin_id = TOPOLOGY_PLUGIN_BLOCK;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 typedef struct topoinfo_bblock {
+	bool aggregated;
 	uint16_t block_index;
 	char *name;
 	char *nodes;
@@ -304,6 +305,7 @@ extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		pack32(topoinfo->record_count, buffer);
 		for (i = 0; i < topoinfo->record_count; i++) {
+			packbool(topoinfo->topo_array[i].aggregated, buffer);
 			pack16(topoinfo->topo_array[i].block_index, buffer);
 			packstr(topoinfo->topo_array[i].name, buffer);
 			packstr(topoinfo->topo_array[i].nodes, buffer);
@@ -389,6 +391,8 @@ extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
 			     topoinfo_ptr->record_count,
 			     sizeof(topoinfo_bblock_t));
 		for (i = 0; i < topoinfo_ptr->record_count; i++) {
+			safe_unpackbool(&topoinfo_ptr->topo_array[i].aggregated,
+					buffer);
 			safe_unpack16(&topoinfo_ptr->topo_array[i].block_index,
 				      buffer);
 			safe_unpackstr(&topoinfo_ptr->topo_array[i].name,
@@ -401,6 +405,7 @@ extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
 		safe_xcalloc(topoinfo_ptr->topo_array, topoinfo_ptr->record_count,
 			     sizeof(topoinfo_bblock_t));
 		for (i = 0; i < topoinfo_ptr->record_count; i++) {
+			topoinfo_ptr->topo_array[i].aggregated = false;
 			safe_unpack16(&topoinfo_ptr->topo_array[i].block_index,
 				      buffer);
 			safe_unpackstr(&topoinfo_ptr->topo_array[i].name,
