@@ -42,13 +42,84 @@
 #include <stdlib.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
 
 #include "switch_hpe_slingshot.h"
 #include "rest.h"
 
+#define CLEANUP_THREAD_PERIOD 30
+
 static slingshot_rest_conn_t fm_conn;  /* Connection to fabric manager */
 
 static bool collectives_enabled = false;
+
+pthread_t cleanup_thread_id = 0;
+pthread_cond_t cleanup_thread_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t cleanup_thread_lock = PTHREAD_MUTEX_INITIALIZER;
+bool cleanup_thread_shutdown = false;
+
+static void *_cleanup_thread(void *data)
+{
+	struct timespec ts = {0, 0};
+	json_object *respjson = NULL, *jobsjson = NULL, *jobjson = NULL;
+	long status = 0;
+	char *url = "/fabric/collectives/jobs/";
+	size_t path_len = strlen(url);
+	uint32_t job_id, arraylen;
+	job_record_t *job_ptr;
+	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
+
+	while (!cleanup_thread_shutdown) {
+		slurm_mutex_lock(&cleanup_thread_lock);
+		if (!cleanup_thread_shutdown) {
+			ts.tv_sec = time(NULL) + CLEANUP_THREAD_PERIOD;
+			slurm_cond_timedwait(&cleanup_thread_cond,
+					     &cleanup_thread_lock, &ts);
+		}
+		slurm_mutex_unlock(&cleanup_thread_lock);
+
+		json_object_put(respjson);
+		if (!(respjson = slingshot_rest_get(&fm_conn, url, &status))) {
+			error("GET %s to fabric manager for job failed: %ld",
+			      url, status);
+			continue; /* Try again next time around */
+		} else {
+			log_flag(SWITCH, "GET %s resp='%s'", url,
+				 json_object_to_json_string(respjson));
+		}
+		json_object_object_get_ex(respjson, "documentLinks", &jobsjson);
+		arraylen = json_object_array_length(jobsjson);
+
+		for (int i = 0; i < arraylen; i++) {
+			bool release = false;
+			jobjson = json_object_array_get_idx(jobsjson, i);
+			job_id = atoi(json_object_get_string(jobjson) +
+				      path_len);
+
+			lock_slurmctld(job_read_lock);
+			job_ptr = find_job_record(job_id);
+			if (!job_ptr) {
+				error("job %u isn't in slurmctld, removing from fabric manager",
+				      job_id);
+				release = true;
+			} else if (!IS_JOB_RUNNING(job_ptr) &&
+				   !IS_JOB_SUSPENDED(job_ptr)) {
+				error("job %u isn't currently allocated resources, removing from fabric manager",
+				      job_id);
+				release = true;
+			}
+			unlock_slurmctld(job_read_lock);
+
+			if (release)
+				slingshot_release_collectives_job(job_id);
+		}
+	}
+
+	debug("shutting down collectives cleanup thread");
+
+	return NULL;
+}
 
 /*
  * Read any authentication files and connect to the fabric manager,
@@ -67,6 +138,12 @@ extern bool slingshot_init_collectives(void)
 				       "Slingshot Fabric Manager"))
 		goto err;
 
+	if (running_in_slurmctld()) {
+		slurm_mutex_lock(&cleanup_thread_lock);
+		slurm_thread_create(&cleanup_thread_id, _cleanup_thread, NULL);
+		slurm_mutex_unlock(&cleanup_thread_lock);
+	}
+
 	collectives_enabled = true;
 	return true;
 
@@ -82,6 +159,15 @@ err:
  */
 extern void slingshot_fini_collectives(void)
 {
+	if (running_in_slurmctld() && cleanup_thread_id) {
+		cleanup_thread_shutdown = true;
+		slurm_mutex_lock(&cleanup_thread_lock);
+		slurm_cond_signal(&cleanup_thread_cond);
+		slurm_mutex_unlock(&cleanup_thread_lock);
+
+		slurm_thread_join(cleanup_thread_id);
+	}
+
 	slingshot_rest_destroy_connection(&fm_conn);
 }
 
@@ -364,12 +450,7 @@ extern void slingshot_release_collectives_job(uint32_t job_id)
 	if (!slingshot_config.fm_url || !collectives_enabled)
 		return;
 
-	/*
-	 * Just return if no job_id in slingshot_state.job_hwcoll[];
-	 * clear out entry if found
-	 */
-	if (!_clear_hwcoll(job_id))
-		return;
+	_clear_hwcoll(job_id);
 
 	/* Do a DELETE on the job object in the fabric manager */
 	url = xstrdup_printf("/fabric/collectives/jobs/%u", job_id);
