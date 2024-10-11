@@ -160,6 +160,8 @@ documents those changes that are of interest to users and administrators.
     job allocation
  -- Add DataParserParameters slurm.conf parameter to allow setting default
     value for CLI --json and --yaml arguments.
+ -- seff - improve step's max memory consumption report by using TresUsageInTot
+    and TresUsageInAve instead of overestimating the values.
 
 * Changes in Slurm 24.05.4
 ==========================
