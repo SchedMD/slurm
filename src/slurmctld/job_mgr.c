@@ -2341,6 +2341,7 @@ extern job_record_t *find_het_job_record(uint32_t job_id,
 extern job_record_t *find_job_record(uint32_t job_id)
 {
 	job_record_t *job_ptr;
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 
 	job_ptr = job_hash[JOB_HASH_INX(job_id)];
 	while (job_ptr) {
