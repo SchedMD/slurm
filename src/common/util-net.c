@@ -60,7 +60,7 @@
 #include "src/common/xstring.h"
 
 static pthread_mutex_t hostentLock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t getnameinfo_cache_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t getnameinfo_cache_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 typedef struct {
 	struct sockaddr *addr;
@@ -353,9 +353,9 @@ static void _getnameinfo_cache_destroy(void *obj)
 
 extern void getnameinfo_cache_purge(void)
 {
-	slurm_mutex_lock(&getnameinfo_cache_lock);
+	slurm_rwlock_wrlock(&getnameinfo_cache_lock);
 	FREE_NULL_LIST(nameinfo_cache);
-	slurm_mutex_unlock(&getnameinfo_cache_lock);
+	slurm_rwlock_unlock(&getnameinfo_cache_lock);
 }
 
 static char *_getnameinfo(struct sockaddr *addr, socklen_t addrlen)
@@ -393,31 +393,33 @@ extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
 	if (!slurm_conf.getnameinfo_cache_timeout)
 		return _getnameinfo(addr, addrlen);
 
-	slurm_mutex_lock(&getnameinfo_cache_lock);
+	slurm_rwlock_rdlock(&getnameinfo_cache_lock);
 	now = time(NULL);
-	if (!nameinfo_cache)
-		nameinfo_cache = list_create(_getnameinfo_cache_destroy);
-
-	if ((cache_ent = list_find_first(nameinfo_cache, _name_cache_find,
-					 addr))) {
-		if (cache_ent->expiration > now) {
+	if (nameinfo_cache) {
+		cache_ent = list_find_first_ro(nameinfo_cache, _name_cache_find,
+					       addr);
+		if (cache_ent && (cache_ent->expiration > now)) {
 			name = xstrdup(cache_ent->host);
-			slurm_mutex_unlock(&getnameinfo_cache_lock);
+			slurm_rwlock_unlock(&getnameinfo_cache_lock);
 			log_flag(NET, "%s: %pA = %s (cached)",
 				 __func__, addr, name);
 			return name;
 		}
 	}
+	slurm_rwlock_unlock(&getnameinfo_cache_lock);
 
-	name = _getnameinfo(addr, addrlen);
 	/*
 	 * Errors will leave expired cache records in place.
 	 * That is okay, we'll find them and attempt to update them again.
 	 */
-	if (!name) {
-		slurm_mutex_unlock(&getnameinfo_cache_lock);
+	if (!(name = _getnameinfo(addr, addrlen)))
 		return NULL;
-	}
+
+	slurm_rwlock_wrlock(&getnameinfo_cache_lock);
+	if (!nameinfo_cache)
+		nameinfo_cache = list_create(_getnameinfo_cache_destroy);
+
+	cache_ent = list_find_first(nameinfo_cache, _name_cache_find, addr);
 
 	if (!cache_ent) {
 		cache_ent = xmalloc(sizeof(*cache_ent));
@@ -442,7 +444,7 @@ extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
 		log_flag(NET, "%s: Updating cache - %pA = %s",
 			 __func__, addr, name);
 	}
-	slurm_mutex_unlock(&getnameinfo_cache_lock);
+	slurm_rwlock_unlock(&getnameinfo_cache_lock);
 
 	return name;
 }
