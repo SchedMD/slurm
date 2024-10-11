@@ -164,6 +164,8 @@ documents those changes that are of interest to users and administrators.
     and TresUsageInAve instead of overestimating the values.
  -- Enable RPC queueing for REQUEST_KILL_JOBS, which is used when scancel is
     executed with --ctld flag.
+ -- slurmdbd - Add -u option. This is used to determine if restarting the DBD
+    will result in database conversion.
 
 * Changes in Slurm 24.05.4
 ==========================

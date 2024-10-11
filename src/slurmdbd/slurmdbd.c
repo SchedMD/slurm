@@ -216,6 +216,15 @@ int main(int argc, char **argv)
 	if (read_slurmdbd_conf())
 		exit(1);
 	_parse_commandline(argc, argv);
+
+	if (slurmdbd_conf->flags & DBD_CONF_FLAG_GET_DBVER) {
+		become_slurm_user();
+		if (acct_storage_g_init() != SLURM_SUCCESS) {
+			fatal("Unable to initialize %s accounting storage plugin",
+			      slurm_conf.accounting_storage_type);
+		}
+	}
+
 	_update_logging(true);
 	_update_nice();
 
@@ -557,7 +566,7 @@ static void _parse_commandline(int argc, char **argv)
 	char *tmp_char;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "Dhn:R::svV")) != -1)
+	while ((c = getopt(argc, argv, "Dhn:R::suvV")) != -1)
 		switch (c) {
 		case 'D':
 			daemonize = 0;
@@ -585,6 +594,9 @@ static void _parse_commandline(int argc, char **argv)
 			break;
 		case 's':
 			setwd = 1;
+			break;
+		case 'u':
+			slurmdbd_conf->flags |= DBD_CONF_FLAG_GET_DBVER;
 			break;
 		case 'v':
 			debug_level++;
@@ -620,6 +632,8 @@ static void _usage(char *prog_name)
 		"Change working directory to LogFile dirname or /var/tmp/.\n");
 	fprintf(stderr, "  -v         \t"
 		"Verbose mode. Multiple -v's increase verbosity.\n");
+	fprintf(stderr, "  -u         \t"
+		"Only display the Slurm Database version and if conversion is needed. If no conversion is needed 0 is returned, if conversion is needed 1 is returned.\n");
 	fprintf(stderr, "  -V         \t"
 		"Print version information and exit.\n");
 }

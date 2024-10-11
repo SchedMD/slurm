@@ -2921,6 +2921,9 @@ extern int init(void)
 		sleep(5);
 	}
 
+	if (slurmdbd_conf->flags & DBD_CONF_FLAG_GET_DBVER)
+		exit(as_mysql_print_dbver(mysql_conn));
+
 	_check_mysql_concat_is_sane(mysql_conn);
 	_check_database_variables(mysql_conn);
 

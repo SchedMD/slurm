@@ -42,6 +42,8 @@ COMMAND CHANGES (see man pages for details)
  -- sbcast - Add --nodelist option to specify where files are transmitted to
  -- sbcast - Add --no-allocation option to transmit files to nodes outside of a
     job allocation
+ -- slurmdbd - Add -u option. This is used to determine if restarting the DBD
+    will result in database conversion.
 
 API CHANGES
 ===========
