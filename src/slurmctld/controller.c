@@ -1046,6 +1046,7 @@ int main(int argc, char **argv)
 	cgroup_conf_destroy();
 	usleep(500000);
 	serializer_g_fini();
+	bit_cache_fini();
 }
 #endif
 
