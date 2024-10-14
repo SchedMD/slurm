@@ -94,8 +94,10 @@ static char *_get_gpu_type(void)
 
 	if (autodetect_flags & GRES_AUTODETECT_GPU_NVML) {
 #ifdef HAVE_NVML
+		(void) dlerror();
 		if (!dlopen("libnvidia-ml.so", RTLD_NOW | RTLD_GLOBAL))
-			info("We were configured with nvml functionality, but that lib wasn't found on the system.");
+			info("We were configured with nvml functionality, but that lib wasn't found on the system. %s",
+			     dlerror());
 		else
 			return "gpu/nvml";
 #else
@@ -103,8 +105,10 @@ static char *_get_gpu_type(void)
 #endif
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI) {
 #ifdef HAVE_RSMI
+		(void) dlerror();
 		if (!dlopen("librocm_smi64.so", RTLD_NOW | RTLD_GLOBAL))
-			info("Configured with rsmi, but that lib wasn't found.");
+			info("Configured with rsmi, but that lib wasn't found. %s",
+			     dlerror());
 		else
 			return "gpu/rsmi";
 #else
@@ -112,8 +116,10 @@ static char *_get_gpu_type(void)
 #endif
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_ONEAPI) {
 #ifdef HAVE_ONEAPI
+		(void) dlerror();
 		if (!dlopen("libze_loader.so", RTLD_NOW | RTLD_GLOBAL))
-			info("Configured with oneAPI, but that lib wasn't found.");
+			info("Configured with oneAPI, but that lib wasn't found. %s",
+			     dlerror());
 		else
 			return "gpu/oneapi";
 #else
