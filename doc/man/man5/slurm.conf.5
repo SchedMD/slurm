@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "October 2024" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "November 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -6925,6 +6925,7 @@ This capability is also available on a per\-job basis by using the
 \fBGraceTime\fR
 Specifies, in units of seconds, the preemption grace time
 to be extended to a job which has been selected for preemption.
+This parameter only takes effect when \fBPreemptType=partition_prio\fR.
 The default value is zero, no preemption grace time is allowed on
 this partition.
 Once a job has been selected for preemption, its end time is set to the current
