@@ -183,6 +183,11 @@ static void _log_blocks(void)
 		debug("Block name:%s nodes:%s",
 		      block_ptr->name, block_ptr->nodes);
 	}
+
+	for (i = 0; i < ablock_record_cnt; i++, block_ptr++) {
+		debug("Aggregated Block name:%s nodes:%s",
+		      block_ptr->name, block_ptr->nodes);
+	}
 }
 
 /*
