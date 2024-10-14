@@ -1410,6 +1410,7 @@ void _sync_jobs_to_conf(void)
 			}
 			job_ptr->state_reason = FAIL_DOWN_NODE;
 			xfree(job_ptr->state_desc);
+			job_ptr->exit_code = 1;
 			job_completion_logger(job_ptr, false);
 			if (job_ptr->job_state == JOB_NODE_FAIL) {
 				/* build_cg_bitmap() may clear JOB_COMPLETING */
@@ -1429,6 +1430,8 @@ void _sync_jobs_to_conf(void)
 				/* Reset node_cnt to exclude vanished nodes */
 				job_ptr->node_cnt = bit_set_count(
 					job_ptr->node_bitmap_cg);
+				/* Reset exit code from last run */
+				job_ptr->exit_code = 0;
 			}
 		}
 	}
@@ -2447,6 +2450,7 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 		} else if (IS_NODE_DOWN(node_ptr) && IS_JOB_RUNNING(job_ptr)) {
 			info("Killing %pJ on DOWN node %s",
 			     job_ptr, node_ptr->name);
+			job_ptr->exit_code = 1;
 			_abort_job(job_ptr, JOB_NODE_FAIL, FAIL_DOWN_NODE,
 				   NULL);
 			cnt++;

@@ -897,6 +897,7 @@ extern void sync_front_end_state(void)
 				      job_ptr->batch_host, job_ptr);
 				job_state_set(job_ptr, (JOB_NODE_FAIL |
 							JOB_COMPLETING));
+				job_ptr->exit_code = 1;
 			} else if (job_ptr->front_end_ptr == NULL) {
 				info("front end node %s has vanished",
 				     job_ptr->batch_host);

@@ -2644,6 +2644,7 @@ extern int kill_job_by_part_name(char *part_name)
 					difftime(now, job_ptr->suspend_time);
 			} else
 				job_ptr->end_time = now;
+			job_ptr->exit_code = 1;
 			job_completion_logger(job_ptr, false);
 			if (!pending)
 				deallocate_nodes(job_ptr, false, suspended,
@@ -2765,6 +2766,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 				 */
 				job_state_set(job_ptr, JOB_NODE_FAIL);
 				build_cg_bitmap(job_ptr);
+				job_ptr->exit_code = 1;
 				job_completion_logger(job_ptr, true);
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
@@ -2775,6 +2777,8 @@ extern int kill_job_by_front_end_name(char *node_name)
 
 				/* clear signal sent flag on requeue */
 				job_ptr->warn_flags &= ~WARN_SENT;
+
+				job_ptr->exit_code = 0;
 
 				/* Since the job completion logger
 				 * removes the submit we need to add it
@@ -2801,6 +2805,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 							 job_ptr->suspend_time);
 				} else
 					job_ptr->end_time = now;
+				job_ptr->exit_code = 1;
 				job_completion_logger(job_ptr, false);
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
@@ -3013,6 +3018,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				job_state_set(job_ptr, JOB_NODE_FAIL);
 				job_ptr->failed_node = xstrdup(node_name);
 				build_cg_bitmap(job_ptr);
+				job_ptr->exit_code = 1;
 				job_completion_logger(job_ptr, true);
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
@@ -3023,6 +3029,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 
 				/* clear signal sent flag on requeue */
 				job_ptr->warn_flags &= ~WARN_SENT;
+
+				job_ptr->exit_code = 0;
 
 				/*
 				 * Since the job completion logger
@@ -3052,6 +3060,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 							 job_ptr->suspend_time);
 				} else
 					job_ptr->end_time = now;
+				job_ptr->exit_code = 1;
 				job_completion_logger(job_ptr, false);
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
@@ -6081,6 +6090,7 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 			job_ptr->bit_flags &= (~GRACE_PREEMPT);
 		} else {
 			job_state_set(job_ptr, JOB_NODE_FAIL);
+			job_ptr->exit_code = job_return_code;
 		}
 
 		job_completion_logger(job_ptr, true);
@@ -6107,6 +6117,7 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 
 
 		job_state_set(job_ptr, (JOB_PENDING | job_comp_flag));
+		job_ptr->exit_code = 0;
 		/*
 		 * Since the job completion logger removes the job submit
 		 * information, we need to add it again.
@@ -6141,6 +6152,7 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 
 		if (node_fail) {
 			job_state_set(job_ptr, (JOB_NODE_FAIL | job_comp_flag));
+			job_ptr->exit_code = job_return_code;
 			job_ptr->requid = uid;
 		} else if (job_ptr->bit_flags & GRACE_PREEMPT) {
 			job_state_set(job_ptr, (JOB_PREEMPTED | job_comp_flag));
@@ -15600,9 +15612,8 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 			     job_ptr, job_ptr->batch_host, requeue_msg);
 			xfree(job_ptr->failed_node);
 			job_ptr->failed_node = xstrdup(job_ptr->batch_host);
-			job_ptr->exit_code = 1;
 			job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
-			             requeue, true, NO_VAL);
+			             requeue, true, 1);
 		} else {
 			_notify_srun_missing_step(job_ptr, node_inx,
 						  now, node_boot_time);
