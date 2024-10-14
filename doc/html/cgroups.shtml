@@ -2,6 +2,32 @@
 
 <h1>Control Group in Slurm</h1>
 
+<h2 id="contents">Contents
+<a class="slurm_link" href="#contents"></a>
+</h2>
+
+<ul>
+<li><a href="#overview">Control Group Overview</a></li>
+<li><a href="#cgroup_design">Slurm cgroup plugins design</a></li>
+<li><a href="#use">Use of cgroup in Slurm</a></li>
+<li><a href="#configuration">Slurm Cgroup Configuration Overview</a></li>
+<li><a href="#Plugins">Currently Available Cgroup Plugins</a>
+    <ul>
+        <li><a href="#proctrack">proctrack/cgroup plugin</a></li>
+        <li><a href="#task">task/cgroup plugin</a></li>
+        <li><a href="#jobacct_gather">jobacct_gather/cgroup plugin</a></li>
+    </ul>
+</li>
+<li><a href="#Specialization">Use of cgroup for Resource Specialization</a></li>
+<li><a href="#cgroupplugins">Slurm cgroup plugins</a>
+    <ul>
+        <li><a href="#differences">Main differences between cgroup/v1 and cgroup/v2</a></li>
+        <li><a href="#interfaces">Main differences between controller interfaces</a></li>
+        <li><a href="#generalities">Other generalities</a></li>
+    </ul>
+</li>
+</ul>
+
 <h2 id="overview">Control Group Overview
 <a class="slurm_link" href="#overview"></a>
 </h2>
@@ -39,9 +65,9 @@ Kernel's Cgroup v2 documentation </a>
 </li>
 </ul>
 
-<h1 id="cgroup_design">Slurm cgroup plugins design
+<h2 id="cgroup_design">Slurm cgroup plugins design
 <a class="slurm_link" href="#cgroup_design"></a>
-</h1>
+</h2>
 
 For extended information on Slurm's internal Cgroup plugin read:
 <ul>
@@ -211,9 +237,9 @@ different ways of organizing their hierarchies and respond to different design
 constraints. The design is the responsibility of the kernel maintainers.
 </p>
 
-<h2 id="differences">Main differences between cgroup/v1 and cgroup/v2
+<h3 id="differences">Main differences between cgroup/v1 and cgroup/v2
 <a class="slurm_link" href="#differences"></a>
-</h2>
+</h3>
 
 <p>The three main differences between v1 and v2 are:</p>
 
@@ -317,7 +343,9 @@ in <i>cgroup/v1</i> provides metrics in USER_HZ.
 
 </ul>
 
-<h4>Main differences between controller interfaces</h4>
+<h3 id="interfaces">Main differences between controller interfaces
+<a class="slurm_link" href="#interfaces"></a>
+</h3>
 <table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="3" cellspacing="0" width="100%">
 <tr bgcolor="#e0e0e0">
 <td><u><b>cgroup/v1</b></u></td>
@@ -362,9 +390,9 @@ in <i>cgroup/v1</i> provides metrics in USER_HZ.
 </table>
 
 
-<h2 id="generalities">Other generalities
+<h3 id="generalities">Other generalities
 <a class="slurm_link" href="#generalities"></a>
-</h2>
+</h3>
 
 <ul>
 <li>When using cgroup/v1, some configurations can exclude the swap cgroup
@@ -393,6 +421,6 @@ controllers are under separate directories when using
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 16 June 2022</p>
+<p style="text-align:center;">Last modified 11 October 2024</p>
 
 <!--#include virtual="footer.txt"-->

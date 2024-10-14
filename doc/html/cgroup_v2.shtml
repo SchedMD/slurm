@@ -2,6 +2,61 @@
 
 <h1>Control Group v2 plugin</h1>
 
+<h2 id="contents">Contents
+<a class="slurm_link" href="#contents"></a>
+</h2>
+
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#conversion">Conversion from cgroup v1</a>
+    <ul>
+        <li><a href="#reconfigure_systemd">Reconfigure SystemD</a></li>
+        <li><a href="#general_conversion">General conversion</a></li>
+    </ul>
+</li>
+<li><a href="#v2_rules">Following cgroup v2 rules</a>
+    <ul>
+        <li><a href="#top_down">Top-down Constraint</a></li>
+        <li><a href="#no_internal_process">No Internal Process Constraint</a></li>
+    </ul>
+</li>
+<li><a href="#systemd_rules">Following systemd rules</a>
+    <ul>
+        <li><a href="#real_sysd_prob">The real problem: systemd + restarting slurmd</a></li>
+        <li><a href="#consequences_nosysd">Consequences of not following systemd rules</a></li>
+        <li><a href="#distro_no_sysd">What happens with Linux distros without systemd?</a></li>
+    </ul>
+</li>
+<li><a href="#v2_overview">cgroup/v2 overview</a>
+    <ul>
+        <li><a href="#slurmd_startup">slurmd startup</a></li>
+        <li><a href="#slurmd_restart">slurmd restart</a></li>
+        <li><a href="#stepd_start">slurmstepd start</a></li>
+        <li><a href="#term_clean">Termination and cleanup</a></li>
+        <li><a href="#manual_startup">Special case - manual startup</a></li>
+        <li><a href="#troubleshooting_startup">Troubleshooting startup</a></li>
+    </ul>
+</li>
+<li><a href="#hierarchy_overview">Hierarchy overview</a></li>
+<li><a href="#task_level">Working at the task level</a></li>
+<li><a href="#ebpf_controller">The eBPF based devices controller</a></li>
+<li><a href="#diff_ver">Running different nodes with different cgroup versions</a></li>
+<li><a href="#configuration">Configuration</a>
+    <ul>
+        <li><a href="#cgroup_plugin">Cgroup Plugin</a></li>
+        <li><a href="#dev_options">Developer options</a></li>
+        <li><a href="#ignored_params">Ignored parameters</a></li>
+    </ul>
+</li>
+<li><a href="#requirements">Requirements</a></li>
+<li><a href="#pam_slurm_adopt">PAM Slurm Adopt plugin on cgroup v2</a></li>
+<li><a href="#limitations">Limitations</a></li>
+</ul>
+
+<h2 id="overview">Overview
+<a class="slurm_link" href="#overview"></a>
+</h2>
+
 <p>Slurm provides support for systems with Control Group v2.<br>
 Documentation for this cgroup version can be found in kernel.org
 <a href="https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html">
@@ -22,6 +77,96 @@ interact with systemd and a lot of concepts will overlap. Finally, it is
 recommended that you understand the concept of
 <a href="https://ebpf.io/what-is-ebpf">eBPF technology</a>, since in cgroup v2
 the device cgroup controller is eBPF-based.</p>
+
+<h2 id="conversion">Conversion from cgroup v1
+<a class="slurm_link" href="#conversion"></a></h2>
+
+<p>Existing Slurm installations may be running with Slurm's cgroup/v1 plugin.
+Sites that wish to use the new features of cgroup/v2 can convert their nodes
+to run with cgroup v2 if it is supported by the OS. Slurm supports compute
+nodes running a mix of cgroup/v1 and cgroup/v2 plugins.</p>
+
+<h3 id="reconfigure_systemd">Reconfigure Systemd
+<a class="slurm_link" href="#reconfigure_systemd"></a></h3>
+
+<p>In certain circumstances, it may be necessary to make some changes to the
+systemd configuration to support cgroup v2. You will need to complete the
+procedure in this section if either of these conditions apply:
+<ol>
+<li>Systemd version is less than 252</li>
+<li>The file <code>/proc/1/cgroup</code> contains multiple lines or the first
+   line starts with a non-zero value. For example:
+<ul>
+<li>Systemd needs to be reconfigured:
+<pre>
+12:cpuset:/
+11:hugetlb:/
+10:perf_event:/
+. . .
+</pre>
+</li>
+<li>Ready for cgroup v2 (skip to the <a href="#general_conversion">
+next section</a>):
+<pre>
+0::/init.scope
+</pre>
+</li>
+</ul>
+</li>
+</ol>
+</p>
+
+<p>The following procedure will reconfigure such systems for cgroup v2:
+
+<ol>
+<li>Swap kernel commandline options for systemd to cgroup v2 support:
+<pre>systemd.unified_cgroup_hierarchy=1 systemd.legacy_systemd_cgroup_controller=0 cgroup_no_v1=all</pre>
+Example commands for <b>Debian</b> based systems:
+<pre>sed -e 's@^GRUB_CMDLINE_LINUX=@#GRUB_CMDLINE_LINUX=@' -i /etc/default/grub
+echo 'GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=1 systemd.legacy_systemd_cgroup_controller=0 cgroup_no_v1=all"' >> /etc/default/grub
+update-grub</pre>
+Example command for <b>Red Hat</b> based systems:
+<pre>grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=1 systemd.legacy_systemd_cgroup_controller=0 cgroup_no_v1=all"</pre>
+</li>
+<li>Reboot to apply new kernel command line options.</li>
+<li>Verify kernel has correct command line options:
+<pre>grep -o -e systemd.unified_cgroup_hierarchy=. -e systemd.legacy_systemd_cgroup_controller=. /proc/cmdline
+systemd.unified_cgroup_hierarchy=1
+systemd.legacy_systemd_cgroup_controller=0</pre>
+If the output does not match exactly, then repeat prior steps
+and verify kernel is given correct command line options.
+</li>
+<li>Verify that there is not any <a href="https://docs.kernel.org/admin-guide/cgroup-v1/index.html">cgroup v1</a>
+controller mounted and <a
+href="https://github.com/systemd/systemd/blob/main/docs/CGROUP_DELEGATION.md#three-different-tree-setups-">
+that your system is not running in hybrid mode</a><br>Example of hybrid mode:
+<pre>$ grep -v ^0: /proc/self/cgroup
+8:net_cls,net_prio:/
+6:name=systemd:/</pre>
+If there are any entries, then a reboot is required. If there are entries after
+a reboot then there is a process actively mounting Cgroup v1 mounts that will
+need to be stopped.</li>
+</ol>
+</p>
+
+<h3 id="general_conversion">General conversion
+<a class="slurm_link" href="#general_conversion"></a></h3>
+
+<p>The following procedure is required when switching from cgroup v1 to v2:
+
+<ol>
+<li>Modify Slurm configuration to allow cgroup/v2 plugin:<br>
+<b>/etc/slurm/cgroup.conf</b>:
+<ul>
+<li>Remove line starting with:<pre>CgroupAutomount=</pre></li>
+<li>Remove line starting with:<pre>CgroupMountpoint=</pre></li>
+<li>Remove line if present:<pre>CgroupPlugin=cgroup/v1</pre></li>
+<li>Add line:<pre>CgroupPlugin=autodetect</pre></li>
+</ul>
+</li>
+<li>Restart Slurm daemons per normal startup procedure</li>
+</ol>
+</p>
 
 <h2 id="v2_rules">Following cgroup v2 rules
 <a class="slurm_link" href="#v2_rules"></a>
@@ -348,9 +493,9 @@ scripts are run with systemd. We encourage you to use our provided
 slurmd.service file or at least to unset the <b>INVOCATION_ID</b> explicitly
 in your startup scripts.</p>
 
-<h4 id="troubleshooting_startup">Troubleshooting startup
+<h3 id="troubleshooting_startup">Troubleshooting startup
 <a class="slurm_link" href="#troubleshooting_startup"></a>
-</h4>
+</h3>
 <p> As the integration with systemd has some degree of complexity, and due to
 different configurations or changes in OS setups, we encourage you to set the
 debug flags in slurm.conf in order to diagnose what is going on if slurm doesn't
@@ -384,9 +529,9 @@ cgroup:</p>
 0::/system.slice/slurmd.service
 </pre>
 
-<h3 id="hierarchy_overview">Hierarchy overview
+<h2 id="hierarchy_overview">Hierarchy overview
 <a class="slurm_link" href="#hierarchy_overview"></a>
-</h3>
+</h2>
 Hierarchy will take this form:
 <div class="figure">
 <img src="cg_hierarchy.jpg"></img>
@@ -630,6 +775,6 @@ The cpu controller can be enabled in system.conf by setting
 <code>DefaultCpuAccounting=yes</code>. For the cpuset controller, you need to
 set <code>EnableControllers=yes</code> in cgroup.conf.
 </p>
-<p style="text-align:center;">Last modified 10 July 2024</p>
+<p style="text-align:center;">Last modified 11 October 2024</p>
 
 <!--#include virtual="footer.txt"-->
