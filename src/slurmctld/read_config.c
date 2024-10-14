@@ -1555,6 +1555,8 @@ extern int read_slurm_conf(int recover)
 		grow_node_record_table_ptr();
 	}
 
+	bit_cache_init(node_record_count);
+
 	(void)acct_storage_g_reconfig(acct_db_conn, 0);
 	build_all_frontend_info(false);
 	_handle_all_downnodes();

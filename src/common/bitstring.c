@@ -225,16 +225,71 @@ static const char* hexmask_lookup[256] = {
 #endif
 
 /*
+ * Implement a simple cache for a specific size of bitstring rather
+ * than churning through xfree() + xmalloc() constantly.
+ * This is intended for use with node_record_count in slurmctld, which
+ * is constantly cycling through bitstrings of that size in the scheduler.
+ */
+static pthread_mutex_t cache_mutex = PTHREAD_MUTEX_INITIALIZER;
+static void *cached_bitstr = NULL;
+static bitoff_t cached_bitstr_len = 0;
+
+static void *_cache_pop(void)
+{
+	void *b = NULL;
+
+	slurm_mutex_lock(&cache_mutex);
+	if (cached_bitstr) {
+		b = cached_bitstr;
+		cached_bitstr = *(void **) b;
+	}
+	slurm_mutex_unlock(&cache_mutex);
+
+	return b;
+}
+
+static void _cache_push(void *b)
+{
+	slurm_mutex_lock(&cache_mutex);
+	*(void **) b = cached_bitstr;
+	cached_bitstr = b;
+	slurm_mutex_unlock(&cache_mutex);
+}
+
+extern void bit_cache_init(bitoff_t nbits)
+{
+	slurm_mutex_lock(&cache_mutex);
+	if (cached_bitstr_len)
+		fatal_abort("%s: cannot change size once set", __func__);
+	cached_bitstr_len = nbits;
+	slurm_mutex_unlock(&cache_mutex);
+}
+
+extern void bit_cache_fini(void)
+{
+	void *b = NULL;
+	while ((b = _cache_pop()))
+		xfree(b);
+}
+
+/*
  * Allocate a bitstring.
  *   nbits (IN)		valid bits in new bitstring, initialized to all clear
  *   RETURN		new bitstring
  */
 bitstr_t *bit_alloc(bitoff_t nbits)
 {
-	bitstr_t *new;
+	bitstr_t *new = NULL;
 
 	_assert_valid_size(nbits);
-	new = xcalloc(_bitstr_words(nbits), sizeof(bitstr_t));
+
+	if (nbits == cached_bitstr_len)
+		new = _cache_pop();
+
+	if (new)
+		memset(new, 0, _bitstr_words(nbits) * sizeof(bitstr_t));
+	else
+		new = xcalloc(_bitstr_words(nbits), sizeof(bitstr_t));
 
 	_bitstr_magic(new) = BITSTR_MAGIC;
 	_bitstr_bits(new) = nbits;
@@ -244,10 +299,15 @@ bitstr_t *bit_alloc(bitoff_t nbits)
 
 static bitstr_t *bit_alloc_nz(bitoff_t nbits)
 {
-	bitstr_t *new;
+	bitstr_t *new = NULL;
 
 	_assert_valid_size(nbits);
-	new = xcalloc_nz(_bitstr_words(nbits), sizeof(bitstr_t));
+
+	if (nbits == cached_bitstr_len)
+		new = _cache_pop();
+
+	if (!new)
+		new = xcalloc_nz(_bitstr_words(nbits), sizeof(bitstr_t));
 
 	_bitstr_magic(new) = BITSTR_MAGIC;
 	_bitstr_bits(new) = nbits;
@@ -282,8 +342,14 @@ void slurm_bit_free(bitstr_t **b)
 {
 	xassert(*b);
 	xassert(_bitstr_magic(*b) == BITSTR_MAGIC);
+
 	_bitstr_magic(*b) = 0;
-	xfree(*b);
+
+	if (_bitstr_bits(*b) == cached_bitstr_len) {
+		_cache_push(*b);
+		b = NULL;
+	} else
+		xfree(*b);
 }
 
 /*
