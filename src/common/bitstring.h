@@ -91,6 +91,13 @@ typedef bitstr_t bitoff_t;
 /* max bit position in word */
 #define BITSTR_MAXPOS		(BITSTR_WORD_SIZE - 1)
 
+/*
+ * Cache bitstrings of a specific length for reuse rather than xfree()'ing.
+ * Intended for use with node_record_count to improve performance in slurmctld.
+ */
+extern void bit_cache_init(bitoff_t nbits);
+extern void bit_cache_fini(void);
+
 /* compat with Vixie macros */
 bitstr_t *bit_alloc(bitoff_t nbits);
 int bit_test(bitstr_t *b, bitoff_t bit);
