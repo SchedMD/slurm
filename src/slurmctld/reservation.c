@@ -4256,7 +4256,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 	return true;
 }
 
-extern void validate_all_reservations(bool run_now)
+extern void validate_all_reservations(bool run_now, bool run_locked)
 {
 	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 	bool run;
@@ -4284,9 +4284,11 @@ extern void validate_all_reservations(bool run_now)
 			.node = WRITE_LOCK,
 			.part = READ_LOCK,
 		};
-		lock_slurmctld(lock);
+		if (run_locked)
+			lock_slurmctld(lock);
 		_validate_all_reservations();
-		unlock_slurmctld(lock);
+		if (run_locked)
+			unlock_slurmctld(lock);
 	}
 }
 
