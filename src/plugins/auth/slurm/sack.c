@@ -287,3 +287,8 @@ extern void init_sack_conmgr(void)
 	 * get here, and all the daemons call conmgr_run() separately.
 	 */
 }
+
+extern int auth_p_get_reconfig_fd(void)
+{
+	return -1;
+}
