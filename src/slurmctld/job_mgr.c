@@ -1325,9 +1325,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 				  uint16_t protocol_version)
 {
 	time_t now = time(NULL);
-	List part_ptr_list = NULL;
 	job_record_t *job_ptr = NULL;
-	part_record_t *part_ptr;
 	int qos_error, rc;
 	slurmdb_assoc_rec_t assoc_rec;
 	slurmdb_qos_rec_t qos_rec;
@@ -1378,14 +1376,15 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		lowest_prio  = MIN(lowest_prio,  job_ptr->priority);
 	}
 
-	part_ptr = find_part_record(job_ptr->partition);
-	if (part_ptr == NULL) {
+	job_ptr->part_ptr = find_part_record(job_ptr->partition);
+	if (job_ptr->part_ptr == NULL) {
 		char *err_part = NULL;
-		part_ptr_list = get_part_list(job_ptr->partition, &err_part);
-		if (part_ptr_list) {
-			part_ptr = list_peek(part_ptr_list);
-			if (list_count(part_ptr_list) == 1)
-				FREE_NULL_LIST(part_ptr_list);
+		job_ptr->part_ptr_list =
+			get_part_list(job_ptr->partition, &err_part);
+		if (job_ptr->part_ptr_list) {
+			job_ptr->part_ptr = list_peek(job_ptr->part_ptr_list);
+			if (list_count(job_ptr->part_ptr_list) == 1)
+				FREE_NULL_LIST(job_ptr->part_ptr_list);
 		} else {
 			verbose("Invalid partition (%s) for JobId=%u",
 				err_part, job_ptr->job_id);
