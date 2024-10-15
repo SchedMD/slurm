@@ -3379,8 +3379,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	     ((resv_desc_ptr->node_cnt != NO_VAL) ||
 	      resv_desc_ptr->node_list)) ||
 	    (resv_desc_ptr->core_cnt != NO_VAL)) {
-		info("Core-based reservation %s can not be updated",
-		     resv_desc_ptr->name);
+		char *err_str = "Updating core/node TRES not supported for core-based reservations";
+		info("%s(%s): %s", __func__, resv_desc_ptr->name, err_str);
+		if (err_msg)
+			*err_msg = xstrdup(err_str);
 		return ESLURM_CORE_RESERVATION_UPDATE;
 	}
 
