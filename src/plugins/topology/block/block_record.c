@@ -394,8 +394,18 @@ extern void block_record_validate(void)
 	ablock_record_cnt = (record_inx - block_record_cnt);
 
 	for (i = block_record_cnt; i < record_inx; i++) {
+		char *tmp_list = block_record_table[i].name;
+		hostlist_t *hl = hostlist_create(tmp_list);
+
+		if (hl == NULL)
+			fatal("Invalide BlockName: %s", tmp_list);
+
+		block_record_table[i].name = hostlist_ranged_string_xmalloc(hl);
 		block_record_table[i].nodes =
 			bitmap2node_name(block_record_table[i].node_bitmap);
+
+		hostlist_destroy(hl);
+		xfree(tmp_list);
 	}
 	_log_blocks();
 }
