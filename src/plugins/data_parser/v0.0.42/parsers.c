@@ -7839,7 +7839,11 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse_overload(UINT32_NO_VAL, priority, 1, "priority", "Request specific job priority"),
 	add_cparse(PRIORITY_BY_PARTITION, "priority_by_partition", "Prospective job priority in each partition that may be used by this job"),
 	add_parse(ACCT_GATHER_PROFILE, profile, "profile", "Profile used by the acct_gather_profile plugin"),
-	add_parse(QOS_NAME, qos, "qos", "Quality of Service assigned to the job, if pending the QOS requested"),
+	/*
+	 * This field could also be QOS_NAME but we want to avoid NEED_QOS for
+	 * dumping since there is nothing that currently parses this field.
+	 */
+	add_parse(STRING, qos, "qos", "Quality of Service assigned to the job, if pending the QOS requested"),
 	add_parse(BOOL, reboot, "reboot", "Node reboot requested before start"),
 	add_parse(STRING, req_nodes, "required_nodes", "Comma separated list of required nodes"),
 	add_skip(req_node_inx),
