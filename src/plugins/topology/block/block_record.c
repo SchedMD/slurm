@@ -51,6 +51,7 @@ uint32_t block_sizes[MAX_BLOCK_LEVELS] = {0};
 uint16_t block_sizes_cnt = 0;
 uint32_t blocks_nodes_cnt = 0;
 int block_record_cnt = 0;
+int ablock_record_cnt = 0;
 
 static s_p_hashtbl_t *conf_hashtbl = NULL;
 
@@ -243,7 +244,7 @@ extern void block_record_table_destroy(void)
 	if (!block_record_table)
 		return;
 
-	for (int i = 0; i < block_record_cnt; i++) {
+	for (int i = 0; i < block_record_cnt + ablock_record_cnt; i++) {
 		xfree(block_record_table[i].name);
 		xfree(block_record_table[i].nodes);
 		FREE_NULL_BITMAP(block_record_table[i].node_bitmap);
@@ -251,6 +252,7 @@ extern void block_record_table_destroy(void)
 	xfree(block_record_table);
 	block_record_cnt = 0;
 	block_sizes_cnt = 0;
+	ablock_record_cnt = 0;
 }
 
 extern void block_record_validate(void)
@@ -261,6 +263,8 @@ extern void block_record_validate(void)
 	hostlist_t *invalid_hl = NULL;
 	char *buf;
 	int level = 0;
+	int record_inx = 0;
+	int *aggregated_inx;
 
 	block_record_table_destroy();
 
@@ -270,8 +274,10 @@ extern void block_record_validate(void)
 		s_p_hashtbl_destroy(conf_hashtbl);
 		return;
 	}
-
-	block_record_table = xcalloc(block_record_cnt,
+	/*
+	 *  Allocate more than enough space for all aggregated blocks
+	 */
+	block_record_table = xcalloc((2 * block_record_cnt + MAX_BLOCK_LEVELS),
 				     sizeof(block_record_t));
 	block_ptr = block_record_table;
 	for (i = 0; i < block_record_cnt; i++, block_ptr++) {
@@ -352,5 +358,39 @@ extern void block_record_validate(void)
 	blocks_nodes_cnt = bit_set_count(blocks_nodes_bitmap);
 
 	s_p_hashtbl_destroy(conf_hashtbl);
+
+	aggregated_inx = xcalloc(block_sizes_cnt, sizeof(int));
+	record_inx = block_record_cnt;
+
+	for (i = 0; i < block_record_cnt; i++) {
+		for (j = 1; j < block_sizes_cnt; j++) {
+			if (!(i % block_sizes[j])) {
+				block_record_table[record_inx].block_index =
+					record_inx;
+				block_record_table[record_inx].name =
+					xstrdup(block_record_table[i].name);
+				block_record_table[record_inx].node_bitmap =
+					bit_copy(block_record_table[i].
+						 node_bitmap);
+				block_record_table[record_inx].level = j;
+				aggregated_inx[j] = record_inx;
+				record_inx++;
+			} else {
+				int tmp = aggregated_inx[j];
+				xstrfmtcat(block_record_table[tmp].name,
+					   ",%s", block_record_table[i].name);
+				bit_or(block_record_table[tmp].node_bitmap,
+				       block_record_table[i].node_bitmap);
+			}
+		}
+	}
+	xfree(aggregated_inx);
+
+	ablock_record_cnt = (record_inx - block_record_cnt);
+
+	for (i = block_record_cnt; i < record_inx; i++) {
+		block_record_table[i].nodes =
+			bitmap2node_name(block_record_table[i].node_bitmap);
+	}
 	_log_blocks();
 }

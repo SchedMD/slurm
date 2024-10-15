@@ -57,6 +57,7 @@ extern uint32_t block_sizes[MAX_BLOCK_LEVELS];
 extern uint16_t block_sizes_cnt;
 extern uint32_t blocks_nodes_cnt;
 extern int block_record_cnt;
+extern int ablock_record_cnt;
 
 /* Free all memory associated with block_record_table structure */
 extern void block_record_table_destroy(void);
