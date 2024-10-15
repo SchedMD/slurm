@@ -1248,6 +1248,7 @@ static int _yield_locks(int64_t usec)
 	     (last_node_update != node_update))) ||
 	    (last_part_update != part_update) ||
 	    (slurm_conf.last_update != config_update) ||
+	    (validate_resv_cnt != 0) ||
 	    (last_resv_update != resv_update) ||
 	    stop_backfill || load_config)
 		return 1;
