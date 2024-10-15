@@ -4524,7 +4524,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 					continue;
 			}
 			xstrfmtcat(name_char,
-				   "%slineage like '%s%%'",
+				   "%slineage='%s'",
 				   name_char ? " || " : "", row[1]);
 		}
 		mysql_free_result(result);

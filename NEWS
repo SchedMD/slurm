@@ -239,6 +239,8 @@ documents those changes that are of interest to users and administrators.
  -- scancel - Fix a regression from 23.11.6 where using both the --ctld and
     --sibling options would cancel the federated job on all clusters instead of
     only the cluster(s) specified by --sibling.
+ -- accounting_storage/mysql - Fix bug when removing an association
+    specified with an empty partition.
 
 * Changes in Slurm 24.05.3
 ==========================

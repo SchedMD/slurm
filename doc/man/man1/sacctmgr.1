@@ -767,12 +767,18 @@ List the associations of the user(s).
 .IP
 
 .TP
-\fBPartition\fR=<\fIpartition_name\fR>[,<\fIpartition_name\fR>,...]
+\fBPartitions\fR=<\fIpartition_name\fR>[,<\fIpartition_name\fR>,...]
 List the associations of the partition(s).
+.P
+\fBNOTE\fR: Use Partitions="" or Partitions='' with no other names listed
+when specifying the case where there is no partition. This can be useful
+when using a command with an entity that has associations with and without
+partitions. If given in a shell where the quotes will be consumed then
+they must be quoted themselves. For example: Partitions=\\"\\".
 .P
 \fBNOTE\fR: You can also use the general specifications list above in the
 \fIGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fP section.
-
+.P
 \fBOther options unique for listing associations:\fP
 .IP
 
@@ -3024,6 +3030,10 @@ Use to rename a user in the accounting database
 .TP
 \fBPartition\fR=<\fIname\fR>
 Partition name.
+.P
+\fBNOTE\fR: See also \fBPartitions\fR listed in the \fISPECIFICATIONS FOR
+ASSOCIATIONS\fP section.
+.P
 .IP
 
 .TP
@@ -3684,6 +3694,7 @@ $ sacctmgr create account name=chemistry parent=science fairshare=30
 $ sacctmgr create account name=physics parent=science fairshare=20
 $ sacctmgr create user name=adam cluster=tux account=physics fairshare=10
 $ sacctmgr delete user name=adam cluster=tux account=physics
+$ sacctmgr delete user name=adam cluster=tux account=science partition=\\"\\"
 $ sacctmgr delete account name=physics cluster=tux
 $ sacctmgr modify user where name=adam cluster=tux account=physics set maxjobs=2 maxwall=30:00
 $ sacctmgr add user brian account=chemistry
