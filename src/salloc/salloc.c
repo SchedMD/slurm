@@ -694,11 +694,29 @@ static int _proc_alloc(resource_allocation_response_msg_t *alloc)
 		slurm_setup_remote_working_cluster(alloc);
 
 		/* set env for srun's to find the right cluster */
-		setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
-			working_cluster_rec->name,
-			working_cluster_rec->control_host,
-			working_cluster_rec->control_port,
-			working_cluster_rec->rpc_version);
+		if (xstrstr(working_cluster_rec->control_host, ":")) {
+			/*
+			 * If the control_host has ':'s then it's an ipv6
+			 * address and need to be wrapped with "[]" because
+			 * SLURM_WORKING_CLUSTER is ':' delimited. In 24.11+,
+			 * _setup_env_working_cluster() handles this new format.
+			 */
+			setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:[%s]:%d:%d",
+				working_cluster_rec->name,
+				working_cluster_rec->control_host,
+				working_cluster_rec->control_port,
+				working_cluster_rec->rpc_version);
+		} else {
+			/*
+			 * Remove two versions after 24.11 and always use
+			 * AF_INET6 format and remove the above comment.
+			 */
+			setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
+				working_cluster_rec->name,
+				working_cluster_rec->control_host,
+				working_cluster_rec->control_port,
+				working_cluster_rec->rpc_version);
+		}
 	}
 
 	if (!_wait_nodes_ready(alloc)) {
