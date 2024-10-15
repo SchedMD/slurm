@@ -260,6 +260,17 @@ extern void block_record_table_destroy(void)
 	ablock_record_cnt = 0;
 }
 
+static int _cmp_block_level(const void *x, const void *y)
+{
+	const block_record_t *b1 = x, *b2 = y;
+
+	if (b1->level > b2->level)
+		return 1;
+	else if (b1->level < b2->level)
+		return -1;
+	return 0;
+}
+
 extern void block_record_validate(void)
 {
 	slurm_conf_block_t *ptr, **ptr_array;
@@ -392,6 +403,9 @@ extern void block_record_validate(void)
 	xfree(aggregated_inx);
 
 	ablock_record_cnt = (record_inx - block_record_cnt);
+
+	qsort(block_record_table + block_record_cnt, ablock_record_cnt,
+	      sizeof(block_record_t), _cmp_block_level);
 
 	for (i = block_record_cnt; i < record_inx; i++) {
 		char *tmp_list = block_record_table[i].name;
