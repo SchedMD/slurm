@@ -262,7 +262,8 @@ extern int topology_p_get(topology_data_t type, void *data)
 		(*topoinfo_pptr)->data = topoinfo_ptr;
 		(*topoinfo_pptr)->plugin_id = plugin_id;
 
-		topoinfo_ptr->record_count = block_record_cnt;
+		topoinfo_ptr->record_count =
+			block_record_cnt + ablock_record_cnt;
 		topoinfo_ptr->topo_array = xcalloc(topoinfo_ptr->record_count,
 						   sizeof(topoinfo_bblock_t));
 
@@ -273,7 +274,10 @@ extern int topology_p_get(topology_data_t type, void *data)
 				xstrdup(block_record_table[i].name);
 			topoinfo_ptr->topo_array[i].nodes =
 				xstrdup(block_record_table[i].nodes);
+			if (block_record_table[i].level)
+				topoinfo_ptr->topo_array[i].aggregated = true;
 		}
+
 		break;
 	}
 	case TOPO_DATA_REC_CNT:
