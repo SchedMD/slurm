@@ -47,6 +47,8 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/slurmctld.h"
 
+extern uint32_t validate_resv_cnt;
+
 /* Create a resource reservation */
 extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg);
 
