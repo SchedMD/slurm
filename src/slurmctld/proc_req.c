@@ -5935,6 +5935,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 				 buf_t **out_buffer)
 {
 	slurm_msg_t msg;
+	slurmctld_rpc_t *this_rpc = NULL;
 	persist_conn_t *persist_conn = arg;
 
 	*out_buffer = NULL;
@@ -5962,8 +5963,14 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 		} else {
 			slurm_send_rc_msg(&msg, EINVAL);
 		}
-	} else
-		slurmctld_req(&msg, NULL);
+	} else if ((this_rpc = find_rpc(persist_msg->msg_type))) {
+		/* directly process the request */
+		slurmctld_req(&msg, this_rpc);
+	} else {
+		error("invalid RPC msg_type=%s",
+		      rpc_num2string(persist_msg->msg_type));
+		slurm_send_rc_msg(&msg, EINVAL);
+	}
 
 	return SLURM_SUCCESS;
 }
