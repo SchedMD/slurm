@@ -5963,7 +5963,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 			slurm_send_rc_msg(&msg, EINVAL);
 		}
 	} else
-		slurmctld_req(&msg);
+		slurmctld_req(&msg, NULL);
 
 	return SLURM_SUCCESS;
 }
@@ -6921,14 +6921,9 @@ extern slurmctld_rpc_t *find_rpc(uint16_t msg_type)
 	return NULL;
 }
 
-/*
- * slurmctld_req  - Process an individual RPC request
- * IN/OUT msg - the request message, data associated with the message is freed
- */
-void slurmctld_req(slurm_msg_t *msg)
+extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 {
 	DEF_TIMERS;
-	slurmctld_rpc_t *this_rpc = NULL;
 
 	if (msg->conn_fd >= 0)
 		fd_set_nonblocking(msg->conn_fd);

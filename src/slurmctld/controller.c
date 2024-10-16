@@ -1653,7 +1653,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_HARD_DROP);
 	} else {
 		/* directly process the request */
-		slurmctld_req(msg);
+		slurmctld_req(msg, NULL);
 	}
 
 	if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))

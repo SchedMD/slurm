@@ -92,8 +92,9 @@ extern slurmctld_rpc_t *find_rpc(uint16_t msg_type);
 /*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
+ * IN this_rpc - pointer to the rpc management structure
  */
-void slurmctld_req(slurm_msg_t *msg);
+extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc);
 
 /*
  * Update slurmctld stats structure with time spent processing an rpc.
