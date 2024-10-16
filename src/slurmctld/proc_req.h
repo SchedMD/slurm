@@ -83,6 +83,13 @@ typedef struct {
 extern slurmctld_rpc_t slurmctld_rpcs[];
 
 /*
+ * Find RPC matching msg_type in slurmctld_rpcs[].
+ * IN msg_type - RPC type - see slurm_msg_type_t
+ * RET ptr or NULL if not found
+ */
+extern slurmctld_rpc_t *find_rpc(uint16_t msg_type);
+
+/*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
  */

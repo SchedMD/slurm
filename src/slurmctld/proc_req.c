@@ -6909,6 +6909,18 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	}
 };
 
+extern slurmctld_rpc_t *find_rpc(uint16_t msg_type)
+{
+	for (slurmctld_rpc_t *q = slurmctld_rpcs; q->msg_type; q++) {
+		if (q->msg_type == msg_type) {
+			xassert(q->func);
+			return q;
+		}
+	}
+
+	return NULL;
+}
+
 /*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
