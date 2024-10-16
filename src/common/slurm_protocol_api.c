@@ -1123,10 +1123,7 @@ list_t *slurm_receive_msgs(int fd, int steps, int timeout)
 		orig_timeout = timeout;
 	}
 	if (steps) {
-		if (message_timeout < 0)
-			message_timeout = slurm_conf.msg_timeout * 1000;
-		orig_timeout = (timeout -
-				(message_timeout*(steps-1)))/steps;
+		orig_timeout = timeout / (2 * steps);
 		steps--;
 	}
 
@@ -1327,10 +1324,7 @@ extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	}
 
 	if (steps) {
-		if (message_timeout < 0)
-			message_timeout = slurm_conf.msg_timeout * 1000;
-		orig_timeout = timeout - (message_timeout * (steps - 1));
-		orig_timeout /= steps;
+		orig_timeout = timeout / (2 * steps);
 		steps--;
 	}
 
@@ -2274,36 +2268,10 @@ _send_and_recv_msg(int fd, slurm_msg_t *req,
 static list_t *_send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
 {
 	list_t *ret_list = NULL;
-	int steps = 0;
 
-	if (!req->forward.timeout) {
-		if (!timeout)
-			timeout = slurm_conf.msg_timeout * 1000;
-		req->forward.timeout = timeout;
-	}
-	if (slurm_send_node_msg(fd, req) >= 0) {
-		if (req->forward.cnt > 0) {
-			/* figure out where we are in the tree and set
-			 * the timeout for to wait for our children
-			 * correctly
-			 * (timeout+message_timeout sec per step)
-			 * to let the child timeout */
-			if (message_timeout < 0)
-				message_timeout =
-					slurm_conf.msg_timeout * 1000;
-			steps = req->forward.cnt + 1;
-			if (!req->forward.tree_width)
-				req->forward.tree_width =
-					slurm_conf.tree_width;
-			if (req->forward.tree_width)
-				steps /= req->forward.tree_width;
-			timeout = (message_timeout * steps);
-			steps++;
-
-			timeout += (req->forward.timeout*steps);
-		}
-		ret_list = slurm_receive_msgs(fd, steps, timeout);
-	}
+	if (slurm_send_node_msg(fd, req) >= 0)
+		ret_list = slurm_receive_msgs(fd, req->forward.tree_depth,
+					      req->forward.timeout);
 
 	(void) close(fd);
 

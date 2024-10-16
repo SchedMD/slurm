@@ -167,6 +167,9 @@ documents those changes that are of interest to users and administrators.
  -- slurmdbd - Add -u option. This is used to determine if restarting the DBD
     will result in database conversion.
  -- Fix srun inside an salloc in a federated cluster when using IPv6.
+ -- Calculate the forwarding timeouts according to tree depth rather than
+    node count / tree width for each level. Fixes race conditions with same
+    timeouts between two consecutive node levels.
 
 * Changes in Slurm 24.05.4
 ==========================

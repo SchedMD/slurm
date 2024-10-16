@@ -38,6 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <math.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -317,7 +318,8 @@ static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
 extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 				     int *count, uint16_t tree_width)
 {
-	int i, j, k, msg_count, switch_count;
+	int i, j, k, msg_count, switch_count, switch_nodes_cnt, depth = 0,
+		upper_switch_level = 0;
 	int s_first, s_last;
 	char *buf;
 	bitstr_t *nodes_bitmap = NULL;		/* nodes in message list */
@@ -358,10 +360,20 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	/* Find lowest level switches containing all the nodes in the list */
 	switch_bitmap = bit_alloc(switch_record_cnt);
 	for (j = 0; j < switch_record_cnt; j++) {
-		if ((switch_record_table[j].level == 0 ) &&
-		    bit_overlap_any(switch_record_table[j].node_bitmap,
-				    nodes_bitmap)) {
-				bit_set(switch_bitmap, j);
+		if ((switch_record_table[j].level == 0) &&
+		    (switch_nodes_cnt =
+			    bit_overlap(switch_record_table[j].node_bitmap,
+					nodes_bitmap))) {
+			/*
+			 * Examine the standard forward tree depth for the leaf
+			 * switches, and consider the final depth as the max
+			 * value for all them
+			 */
+			int switch_nodes_tree_depth =
+				ceil(log2(switch_nodes_cnt * (tree_width - 1) +
+					  1) / log2(tree_width));
+			depth = MAX(depth, switch_nodes_tree_depth);
+			bit_set(switch_bitmap, j);
 		}
 	}
 
@@ -374,7 +386,8 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		for (j = 0; j < switch_record_cnt; j++) {
 			if (switch_count < 2)
 				break;
-			if (switch_record_table[j].level == i) {
+			int level = switch_record_table[j].level;
+			if (level == i) {
 				int first_child = -1, child_cnt = 0, num_desc;
 				num_desc = switch_record_table[j].
 						num_desc_switches;
@@ -392,6 +405,13 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 					}
 				}
 				if (child_cnt > 1) {
+					/*
+					 * Track the uppermost level for all the
+					 * intermediate switches
+					 */
+					upper_switch_level = MAX(
+							     upper_switch_level,
+							     level);
 					bit_clear(switch_bitmap, first_child);
 					bit_set(switch_bitmap, j);
 					switch_count -= (child_cnt - 1);
@@ -399,6 +419,13 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 			}
 		}
 	}
+
+	/*
+	 * The final depth for this hostlist is: the sum of the max depth caused
+	 * by the intermediate switches, plus the max depth of those standard
+	 * forward trees hanging of the leaf switches
+	 */
+	depth += upper_switch_level;
 
 	s_first = bit_ffs(switch_bitmap);
 	if (s_first != -1)
@@ -414,6 +441,10 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 			unlock_slurmctld(node_read_lock);
 		FREE_NULL_BITMAP(nodes_bitmap);
 		FREE_NULL_BITMAP(switch_bitmap);
+		/*
+		 * We are here returning the depth directly, so we don't really
+		 * need our previous calculation.
+		 */
 		return common_topo_split_hostlist_treewidth(hl, sp_hl, count,
 							    tree_width);
 	}
@@ -455,7 +486,7 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	FREE_NULL_BITMAP(nodes_bitmap);
 	FREE_NULL_BITMAP(switch_bitmap);
 
-	return SLURM_SUCCESS;
+	return depth;
 }
 
 extern int topology_p_topology_free(void *topoinfo_ptr)
