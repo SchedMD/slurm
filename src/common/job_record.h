@@ -400,6 +400,9 @@ struct job_record {
 	time_t prolog_launch_time;	/* When the prolog was launched from the
 					 * controller -- PrologFlags=alloc */
 	uint32_t qos_id;		/* quality of service id */
+	list_t *qos_list;		/* Filled in if the job is requesting
+					 * more than one QOS,
+					 * DON'T PACK. */
 	slurmdb_qos_rec_t *qos_ptr;	/* pointer to the quality of
 					 * service record used for
 					 * this job, confirm the

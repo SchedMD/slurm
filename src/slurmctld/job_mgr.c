@@ -467,7 +467,11 @@ extern int job_fail_qos(job_record_t *job_ptr, const char *func_name,
 		job_ptr->assoc_ptr = tmp_assoc;
 
 		job_ptr->qos_ptr = NULL;
-		/* Don't clear qos_id, since that is what the job requests */
+		FREE_NULL_LIST(job_ptr->qos_list);
+		/*
+		 * Don't clear qos_id or details->qos_req, since that is what
+		 * the job requests
+		 */
 	}
 
 	return rc;
@@ -819,6 +823,101 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	return qos_ptr;
 }
 
+static list_t *_get_qos_ptr_list(char *qos_req, char *resv_name,
+				 slurmdb_assoc_rec_t *assoc_ptr,
+				 bool operator, int *error_code,
+				 bool locked, log_level_t log_lvl)
+{
+	list_t *qos_ptr_list = NULL;
+	char *token, *last = NULL, *tmp_qos_req;
+
+	xassert(error_code);
+
+	if (!xstrchr(qos_req, ','))
+		return qos_ptr_list;
+
+	tmp_qos_req = xstrdup(qos_req);
+	token = strtok_r(tmp_qos_req, ",", &last);
+	while (token) {
+		slurmdb_qos_rec_t qos_rec = {
+			.name = token,
+		};
+		slurmdb_qos_rec_t *qos_ptr = _determine_and_validate_qos(
+			resv_name, assoc_ptr, operator, &qos_rec,
+			error_code, locked, log_lvl);
+
+		if (*error_code != SLURM_SUCCESS)
+			break;
+
+		/*
+		 * This should not happen as the error_code check should catch
+		 * issues before we get here.
+		 */
+		if (!qos_ptr) {
+			*error_code = ESLURM_INVALID_QOS;
+			break;
+		}
+
+		if (!qos_ptr_list)
+			qos_ptr_list = list_create(NULL);
+
+		if (!list_find_first_ro(qos_ptr_list,
+					slurm_find_ptr_in_list,
+					qos_ptr)) {
+			list_append(qos_ptr_list, qos_ptr);
+		}
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_qos_req);
+
+	/* If we have a trailing comma error out */
+	if (qos_ptr_list && (list_count(qos_ptr_list) == 1)) {
+		error("%s: Invalid qos (%s), it appears there is a trailing comma",
+		      __func__, qos_req);
+		*error_code = ESLURM_INVALID_QOS;
+	}
+
+	if (*error_code != SLURM_SUCCESS)
+		FREE_NULL_LIST(qos_ptr_list);
+
+	if (qos_ptr_list)
+		list_sort(qos_ptr_list, priority_sort_qos_desc);
+
+	return qos_ptr_list;
+}
+
+static int _get_qos_info(
+	char *qos_req, uint32_t qos_id,
+	list_t **qos_plist, slurmdb_qos_rec_t **qos_pptr,
+	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
+	bool operator, bool locked, log_level_t log_lvl)
+{
+	int rc = SLURM_SUCCESS;
+
+	xassert(qos_plist);
+	xassert(qos_pptr);
+	xassert(!*qos_plist);
+
+	*qos_plist = _get_qos_ptr_list(qos_req, resv_name, assoc_ptr,
+				       operator, &rc,
+				       locked, log_lvl);
+
+	if (!*qos_plist) {
+		slurmdb_qos_rec_t qos_rec = {
+			.name = qos_req,
+			.id = qos_id,
+		};
+
+		*qos_pptr = _determine_and_validate_qos(
+			resv_name, assoc_ptr, operator,
+			&qos_rec, &rc,
+			locked, log_lvl);
+	} else {
+		*qos_pptr = list_peek(*qos_plist);
+	}
+
+	return rc;
+}
 /*
  * dump_all_job_state - save the state of all jobs to file for checkpoint
  *	Changes here should be reflected in load_last_job_id() and
@@ -1084,6 +1183,10 @@ extern void set_job_failed_assoc_qos_ptr(job_record_t *job_ptr)
 		}
 	}
 
+	/*
+	 * This shouldn't matter if there is a qos_list as that will get
+	 * handled after this is called.
+	 */
 	if (!job_ptr->qos_ptr && (job_ptr->state_reason == FAIL_QOS)) {
 		int qos_error = SLURM_SUCCESS;
 		slurmdb_qos_rec_t qos_rec;
@@ -1336,9 +1439,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 {
 	time_t now = time(NULL);
 	job_record_t *job_ptr = NULL;
-	int qos_error, rc;
+	int rc;
 	slurmdb_assoc_rec_t assoc_rec;
-	slurmdb_qos_rec_t qos_rec;
 	bool job_finished = false;
 	assoc_mgr_lock_t locks = {
 		.assoc = WRITE_LOCK,
@@ -1504,18 +1606,21 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		}
 	}
 
-	if (!job_finished && job_ptr->qos_id &&
+	if (!job_finished && (job_ptr->qos_id || job_ptr->details->qos_req) &&
 	    (job_ptr->state_reason != FAIL_ACCOUNT)) {
-		memset(&qos_rec, 0, sizeof(qos_rec));
-		qos_rec.id = job_ptr->qos_id;
-		job_ptr->qos_ptr = _determine_and_validate_qos(
-			job_ptr->resv_name, job_ptr->assoc_ptr,
-			job_ptr->limit_set.qos, &qos_rec,
-			&qos_error, true, LOG_LEVEL_ERROR);
-		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set.qos) {
+		int qos_error = _get_qos_info(job_ptr->details->qos_req, 0,
+					      &job_ptr->qos_list,
+					      &job_ptr->qos_ptr,
+					      job_ptr->resv_name,
+					      job_ptr->assoc_ptr,
+					      job_ptr->limit_set.qos,
+					      true, LOG_LEVEL_ERROR);
+
+		if ((qos_error != SLURM_SUCCESS) &&
+		    !job_ptr->limit_set.qos) {
 			job_fail_qos(job_ptr, __func__, true);
-		} else {
-			job_ptr->qos_id = qos_rec.id;
+		} else if (job_ptr->qos_ptr) {
+			job_ptr->qos_id = job_ptr->qos_ptr->id;
 			if (job_ptr->state_reason == FAIL_QOS) {
 				job_ptr->state_reason = WAIT_NO_REASON;
 				xfree(job_ptr->state_desc);
@@ -3479,6 +3584,8 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 		job_ptr_pend->part_prio->priority_array_names =
 			xstrdup(job_ptr->part_prio->priority_array_names);
 	}
+	if (job_ptr->qos_list)
+		job_ptr_pend->qos_list = list_shallow_copy(job_ptr->qos_list);
 	job_ptr_pend->resv_name = xstrdup(job_ptr->resv_name);
 	if (job_ptr->resv_list)
 		job_ptr_pend->resv_list = list_shallow_copy(job_ptr->resv_list);
@@ -3838,6 +3945,39 @@ static int _select_nodes_resvs(job_node_select_t *job_node_select)
 	return job_node_select->rc_resv;
 }
 
+static int _foreach_select_nodes_qos(void *object, void *args)
+{
+	slurmdb_qos_rec_t *qos_ptr = object;
+	job_node_select_t *job_node_select = args;
+	job_record_t *job_ptr = job_node_select->job_ptr;
+
+	job_ptr->qos_ptr = qos_ptr;
+
+	debug2("Try %pJ on next QOS %s", job_ptr, qos_ptr->name);
+
+	/* break if success */
+	if ((job_node_select->rc_qos =
+	     _select_nodes_resvs(job_node_select)) == SLURM_SUCCESS)
+		return -1;
+
+	return 0;
+}
+
+static int _select_nodes_qos(job_node_select_t *job_node_select)
+{
+	job_record_t *job_ptr = job_node_select->job_ptr;
+
+	if (!job_ptr->qos_list)
+		return _select_nodes_resvs(job_node_select);
+
+	job_node_select->rc_qos = SLURM_ERROR;
+	(void) list_for_each(job_ptr->qos_list,
+			     _foreach_select_nodes_qos,
+			     job_node_select);
+
+	return job_node_select->rc_qos;
+}
+
 /*
  * Wrapper for select_nodes() function that will test all valid partitions
  * for a new job
@@ -3879,7 +4019,7 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 			debug2("Try %pJ on next partition %s",
 			       job_ptr, part_ptr->name);
 
-			if (_select_nodes_resvs(&job_node_select) ==
+			if (_select_nodes_qos(&job_node_select) ==
 			    SLURM_SUCCESS)
 				break;
 		}
@@ -3889,7 +4029,7 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 		 * We don't need to check the return code of this as the rc we
 		 * are sending in is the rc we care about.
 		 */
-		(void)_select_nodes_resvs(&job_node_select);
+		(void)_select_nodes_qos(&job_node_select);
 	}
 
 	rc = job_node_select.rc;
@@ -6970,7 +7110,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		       bool cron, job_record_t **job_pptr, uid_t submit_uid,
 		       char **err_msg, uint16_t protocol_version)
 {
-	int error_code = SLURM_SUCCESS, qos_error;
+	int error_code = SLURM_SUCCESS;
 	part_record_t *part_ptr = NULL;
 	list_t *part_ptr_list = NULL, *qos_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
@@ -6978,8 +7118,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
 	list_t *license_list = NULL, *gres_list = NULL;
 	bool valid;
-	slurmdb_qos_rec_t qos_rec, *qos_ptr;
+	slurmdb_qos_rec_t *qos_ptr;
 	uint32_t user_submit_priority, acct_reason = 0;
+	uint32_t qos_id = 0;
 	acct_policy_limit_set_t acct_policy_limit_set;
 	assoc_mgr_lock_t assoc_mgr_read_lock = {
 		.assoc = READ_LOCK,
@@ -7101,15 +7242,13 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		job_desc->account = xstrdup(assoc_rec.acct);
 
 	/* This must be done after we have the assoc_ptr set */
-	memset(&qos_rec, 0, sizeof(qos_rec));
-	qos_rec.name = job_desc->qos;
-
-	qos_ptr = _determine_and_validate_qos(
-		job_desc->reservation, assoc_ptr, false, &qos_rec, &qos_error,
-		true, LOG_LEVEL_ERROR);
-
-	if (qos_error != SLURM_SUCCESS) {
-		error_code = qos_error;
+	error_code = _get_qos_info(job_desc->qos, 0,
+				   &qos_ptr_list,
+				   &qos_ptr,
+				   job_desc->reservation,
+				   assoc_ptr,
+				   false, true, LOG_LEVEL_ERROR);
+	if (error_code != SLURM_SUCCESS) {
 		assoc_mgr_unlock(&assoc_mgr_read_lock);
 		goto cleanup_fail;
 	}
@@ -7117,6 +7256,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	error_code = _valid_job_part(job_desc, submit_uid, req_bitmap,
 				     part_ptr, part_ptr_list,
 				     assoc_ptr, qos_ptr, qos_ptr_list);
+	if (qos_ptr)
+		qos_id = qos_ptr->id;
 	assoc_mgr_unlock(&assoc_mgr_read_lock);
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
@@ -7275,10 +7416,12 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->start_protocol_ver = protocol_version;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
+	job_ptr->qos_list = qos_ptr_list;
 	job_ptr->bit_flags |= JOB_DEPENDENT;
 	job_ptr->last_sched_eval = time(NULL);
 
 	part_ptr_list = NULL;
+	qos_ptr_list = NULL;
 
 	memcpy(&job_ptr->limit_set, &acct_policy_limit_set,
 	       sizeof(acct_policy_limit_set_t));
@@ -7287,7 +7430,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
 	job_ptr->qos_ptr = (void *) qos_ptr;
-	job_ptr->qos_id = qos_rec.id;
+	job_ptr->qos_id = qos_id;
 
 	if (mcs_g_set_mcs_label(job_ptr, job_desc->mcs_label) != 0 ) {
 		if (job_desc->mcs_label == NULL) {
@@ -7435,6 +7578,7 @@ cleanup_fail:
 	xfree(acct_policy_limit_set.tres);
 	FREE_NULL_LIST(gres_list);
 	FREE_NULL_LIST(part_ptr_list);
+	FREE_NULL_LIST(qos_ptr_list);
 	FREE_NULL_BITMAP(req_bitmap);
 	FREE_NULL_BITMAP(exc_bitmap);
 	return error_code;
@@ -10218,17 +10362,22 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		else
 			packstr(dump_job_ptr->partition, buffer);
 
-		if (!has_qos_lock)
-			assoc_mgr_lock(&locks);
-		if (dump_job_ptr->qos_ptr)
-			packstr(dump_job_ptr->qos_ptr->name, buffer);
+		if (IS_JOB_PENDING(dump_job_ptr))
+			packstr(dump_job_ptr->details->qos_req, buffer);
 		else {
-			if (assoc_mgr_qos_list) {
-				packstr(slurmdb_qos_str(assoc_mgr_qos_list,
+			if (!has_qos_lock)
+				assoc_mgr_lock(&locks);
+			if (dump_job_ptr->qos_ptr)
+				packstr(dump_job_ptr->qos_ptr->name, buffer);
+			else {
+				if (assoc_mgr_qos_list) {
+					packstr(slurmdb_qos_str(
+							assoc_mgr_qos_list,
 							dump_job_ptr->qos_id),
-					buffer);
-			} else
-				packnull(buffer);
+						buffer);
+				} else
+					packnull(buffer);
+			}
 		}
 
 		if (IS_JOB_STARTED(dump_job_ptr) &&
@@ -11862,7 +12011,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	slurmdb_qos_rec_t *new_qos_ptr = NULL, *use_qos_ptr = NULL;
 	slurmctld_resv_t *new_resv_ptr = NULL;
 	list_t *new_resv_list = NULL;
+	list_t *new_qos_list = NULL;
 	uint32_t user_site_factor;
+	uint32_t new_qos_id = 0;
 	uint64_t mem_req;
 
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
@@ -12109,8 +12260,10 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	use_assoc_ptr = new_assoc_ptr ?	new_assoc_ptr : job_ptr->assoc_ptr;
 
 	if (job_desc->qos) {
-		slurmdb_qos_rec_t qos_rec;
 		char *resv_name;
+		assoc_mgr_lock_t qos_read_lock = {
+			.qos = READ_LOCK,
+		};
 
 		if (job_desc->reservation
 		    && job_desc->reservation[0] != '\0')
@@ -12118,18 +12271,17 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		else
 			resv_name = job_ptr->resv_name;
 
-		memset(&qos_rec, 0, sizeof(qos_rec));
+		assoc_mgr_lock(&qos_read_lock);
 
-		/* If the qos is blank that means we want the default */
-		if (job_desc->qos[0])
-			qos_rec.name = job_desc->qos;
-
-		new_qos_ptr = _determine_and_validate_qos(
-			resv_name, use_assoc_ptr,
-			operator, &qos_rec, &error_code, false,
-			LOG_LEVEL_ERROR);
+		error_code = _get_qos_info(job_desc->qos, 0,
+					   &new_qos_list,
+					   &new_qos_ptr,
+					   resv_name,
+					   use_assoc_ptr,
+					   operator, true, LOG_LEVEL_ERROR);
 		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
-			if (job_ptr->qos_ptr == new_qos_ptr) {
+			if (!new_qos_list &&
+			    (job_ptr->qos_ptr == new_qos_ptr)) {
 				sched_debug("%s: new QOS identical to old QOS %pJ",
 					    __func__, job_ptr);
 				new_qos_ptr = NULL;
@@ -12138,6 +12290,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				new_qos_ptr = NULL;
 			}
 		}
+
+		if (new_qos_ptr)
+			new_qos_id = new_qos_ptr->id;
+
+		assoc_mgr_unlock(&qos_read_lock);
 
 		if (error_code != SLURM_SUCCESS)
 			goto fini;
@@ -12844,8 +13001,15 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 	if (new_qos_ptr) {
 		/* Change QOS */
-		job_ptr->qos_id = new_qos_ptr->id;
+		job_ptr->qos_id = new_qos_id;
 		job_ptr->qos_ptr = new_qos_ptr;
+		FREE_NULL_LIST(job_ptr->qos_list);
+		job_ptr->qos_list = new_qos_list;
+		new_qos_list = NULL;
+		xfree(detail_ptr->qos_req);
+		detail_ptr->qos_req = job_desc->qos;
+		job_desc->qos = NULL;
+
 		job_ptr->limit_set.qos = acct_policy_limit_set.qos;
 
 		if (job_ptr->state_reason == FAIL_QOS) {
@@ -12854,7 +13018,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 
 		info("%s: setting QOS to %s for %pJ",
-		     __func__, new_qos_ptr->name, job_ptr);
+		     __func__, detail_ptr->qos_req, job_ptr);
 	}
 
 	if (new_assoc_ptr) {
@@ -17819,7 +17983,12 @@ extern int job_hold_by_qos_id(uint32_t qos_id)
 		    ((slurmdb_qos_rec_t *)job_ptr->qos_blocking_ptr)->id
 		    == qos_id)
 			job_ptr->qos_blocking_ptr = NULL;
-		if (job_ptr->qos_id != qos_id)
+		if (job_ptr->qos_list) {
+			if (!list_find_first(job_ptr->qos_list,
+					     slurmdb_find_qos_in_list,
+					     &qos_id))
+				continue;
+		} else if (job_ptr->qos_id != qos_id)
 			continue;
 
 		cnt += job_fail_qos(job_ptr, __func__, false);

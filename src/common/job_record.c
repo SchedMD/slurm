@@ -281,6 +281,7 @@ extern void job_record_delete(void *job_entry)
 		xfree(job_ptr->part_prio);
 	}
 	slurm_destroy_priority_factors(job_ptr->prio_factors);
+	FREE_NULL_LIST(job_ptr->qos_list);
 	xfree(job_ptr->resp_host);
 	FREE_NULL_LIST(job_ptr->resv_list);
 	xfree(job_ptr->resv_name);

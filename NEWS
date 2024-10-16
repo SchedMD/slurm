@@ -170,6 +170,7 @@ documents those changes that are of interest to users and administrators.
  -- Calculate the forwarding timeouts according to tree depth rather than
     node count / tree width for each level. Fixes race conditions with same
     timeouts between two consecutive node levels.
+ -- Add ability to submit jobs with multiple QOS.
 
 * Changes in Slurm 24.05.4
 ==========================

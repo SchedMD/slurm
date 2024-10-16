@@ -3388,7 +3388,6 @@ static void *_assoc_cache_mgr(void *no_data)
 	list_itr_t *itr = NULL;
 	job_record_t *job_ptr = NULL;
 	part_record_t *part_ptr = NULL;
-	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t assoc_rec;
 	/* Write lock on jobs, nodes and partitions */
 	slurmctld_lock_t job_write_lock =
@@ -3512,9 +3511,42 @@ static void *_assoc_cache_mgr(void *no_data)
 			      (size_t)job_ptr->assoc_ptr, job_ptr->assoc_id,
 			      job_ptr);
 		}
-		if (job_ptr->qos_id) {
-			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
-			qos_rec.id = job_ptr->qos_id;
+		if (job_ptr->qos_list) {
+			list_flush(job_ptr->qos_list);
+			char *token, *last = NULL;
+			char *tmp_qos_req = xstrdup(job_ptr->details->qos_req);
+			slurmdb_qos_rec_t *qos_ptr = NULL;
+
+			token = strtok_r(tmp_qos_req, ",", &last);
+			while (token) {
+				slurmdb_qos_rec_t qos_rec = {
+					.name = token,
+				};
+				if ((assoc_mgr_fill_in_qos(
+					     acct_db_conn, &qos_rec,
+					     accounting_enforce,
+					     &qos_ptr,
+					     true)) != SLURM_SUCCESS) {
+					verbose("Invalid qos (%u) for %pJ",
+						job_ptr->qos_id, job_ptr);
+					/* not a fatal error, qos could have
+					 * been removed */
+				} else
+					list_append(job_ptr->qos_list, qos_ptr);
+				token = strtok_r(NULL, ",", &last);
+			}
+			if (list_count(job_ptr->qos_list)) {
+				list_sort(job_ptr->qos_list,
+					  priority_sort_qos_desc);
+				job_ptr->qos_ptr = list_peek(job_ptr->qos_list);
+				job_ptr->qos_id = job_ptr->qos_ptr->id;
+			} else
+				FREE_NULL_LIST(job_ptr->qos_list);
+		} else if (job_ptr->qos_id) {
+			slurmdb_qos_rec_t qos_rec = {
+				.id = job_ptr->qos_id,
+			};
+
 			if ((assoc_mgr_fill_in_qos(
 				    acct_db_conn, &qos_rec,
 				    accounting_enforce,

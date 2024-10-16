@@ -46,6 +46,7 @@ typedef struct {
 	int rc;
 	int rc_best;
 	int rc_part_limits;
+	int rc_qos;
 	int rc_resv;
 	bool test_only;
 } job_node_select_t;

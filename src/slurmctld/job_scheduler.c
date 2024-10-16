@@ -535,15 +535,15 @@ static int _transfer_job_list(void *x, void *arg)
 	return 0;
 }
 
-static int _build_job_queue_for_part(void *x, void *arg)
+static int _build_job_queue_for_qos(void *x, void *arg)
 {
 	build_job_queue_for_part_t *setup_job = arg;
 	job_record_t *job_ptr = setup_job->job_ptr;
 
-	job_ptr->part_ptr = x;
+	job_ptr->qos_ptr = x;
 
 	/*
-	 * priority_array index matches part_ptr_list
+	 * priority_array index matches part_ptr_list * qos_list
 	 * position: increment inx
 	 */
 	setup_job->prio_inx++;
@@ -559,6 +559,24 @@ static int _build_job_queue_for_part(void *x, void *arg)
 	} else {
 		_job_queue_append(setup_job->job_queue, job_ptr,
 				  job_ptr->priority);
+	}
+
+	return 0;
+}
+
+static int _build_job_queue_for_part(void *x, void *arg)
+{
+	build_job_queue_for_part_t *setup_job = arg;
+	job_record_t *job_ptr = setup_job->job_ptr;
+
+	job_ptr->part_ptr = x;
+
+	if (job_ptr->qos_list) {
+		(void) list_for_each(job_ptr->qos_list,
+				     _build_job_queue_for_qos,
+				     setup_job);
+	} else {
+		(void) _build_job_queue_for_qos(job_ptr->qos_ptr, setup_job);
 	}
 
 	return 0;
@@ -750,9 +768,7 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 		    (slurm_delta_tv(&start_tv) >= build_queue_timeout)) {
 			if (difftime(setup_job.now, last_log_time) > 600) {
 				/* Log at most once every 10 minutes */
-				info("%s has run for %d usec, exiting with %d "
-				     "of %d jobs tested, %d job-partition "
-				     "pairs added",
+				info("%s has run for %d usec, exiting with %d of %d jobs tested, %d job-partition-qos pairs added",
 				     __func__, build_queue_timeout, tested_jobs,
 				     list_count(job_list),
 				     setup_job.job_prio_pairs);
@@ -1063,6 +1079,7 @@ static job_queue_rec_t *_create_job_queue_rec(job_queue_req_t *job_queue_req)
 	job_queue_rec->job_ptr  = job_queue_req->job_ptr;
 	job_queue_rec->part_ptr = job_queue_req->part_ptr;
 	job_queue_rec->priority = job_queue_req->prio;
+	job_queue_rec->qos_ptr = job_queue_req->job_ptr->qos_ptr;
 	job_queue_rec->resv_ptr = job_queue_req->resv_ptr;
 
 	return job_queue_rec;
@@ -1471,7 +1488,7 @@ static int _schedule(bool full_queue)
 		}
 		if (!job_ptr || !IS_JOB_PENDING(job_ptr)) {
 			xfree(job_queue_rec);
-			continue;	/* started in other partition */
+			continue;	/* started in other partition/qos */
 		}
 
 		use_prefer = job_queue_rec->use_prefer;
@@ -1487,6 +1504,7 @@ static int _schedule(bool full_queue)
 			continue;
 		}
 
+		job_ptr->qos_ptr = job_queue_rec->qos_ptr;
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = job_queue_rec->priority;
 
@@ -1642,18 +1660,18 @@ next_task:
 		}
 
 		/* Test for valid QOS and required nodes on each pass */
-		if (job_ptr->qos_id) {
+		if (job_ptr->qos_ptr) {
 			assoc_mgr_lock_t locks =
 				{ .assoc = READ_LOCK, .qos = READ_LOCK };
 
 			assoc_mgr_lock(&locks);
 			if (job_ptr->assoc_ptr
 			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
-			    && ((job_ptr->qos_id >= g_qos_count) ||
+			    && ((job_ptr->qos_ptr->id >= g_qos_count) ||
 				!job_ptr->assoc_ptr->usage ||
 				!job_ptr->assoc_ptr->usage->valid_qos ||
 				!bit_test(job_ptr->assoc_ptr->usage->valid_qos,
-					  job_ptr->qos_id))
+					  job_ptr->qos_ptr->id))
 			    && !job_ptr->limit_set.qos) {
 				assoc_mgr_unlock(&locks);
 				sched_debug("%pJ has invalid QOS", job_ptr);

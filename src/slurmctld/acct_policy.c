@@ -852,7 +852,12 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 		priority_g_job_end(job_ptr);
 	else if (type == ACCT_POLICY_JOB_BEGIN) {
 		uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
-		/* take into account usage factor */
+		/*
+		 * Take into account usage factor.
+		 *
+		 * qos_ptr is set correctly if we have a qos_list here, no need
+		 * to do anything other than that.
+		 */
 		if (job_ptr->qos_ptr &&
 		    (job_ptr->qos_ptr->usage_factor >= 0))
 			time_limit_secs *= job_ptr->qos_ptr->usage_factor;

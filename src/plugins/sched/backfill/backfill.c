@@ -1771,6 +1771,7 @@ static void _attempt_backfill(void)
 	bool already_counted, many_rpcs = false;
 	job_record_t *reject_array_job = NULL;
 	part_record_t *reject_array_part = NULL;
+	slurmdb_qos_rec_t *reject_array_qos = NULL;
 	slurmctld_resv_t *reject_array_resv = NULL;
 	bool reject_array_use_prefer = false;
 	uint32_t start_time, array_start_time = 0;
@@ -1948,6 +1949,7 @@ static void _attempt_backfill(void)
 		job_ptr          = job_queue_rec->job_ptr;
 		part_ptr         = job_queue_rec->part_ptr;
 		bf_job_priority  = job_queue_rec->priority;
+		qos_ptr = job_queue_rec->qos_ptr;
 		use_prefer = job_queue_rec->use_prefer;
 
 		if (job_ptr->array_recs &&
@@ -2034,12 +2036,14 @@ static void _attempt_backfill(void)
 		job_ptr->last_sched_eval = now;
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = bf_job_priority;
+		job_ptr->qos_ptr = qos_ptr;
+
 		mcs_select = slurm_mcs_get_select(job_ptr);
 		het_job_time = _het_job_start_find(job_ptr);
 		if (het_job_time > (now + backfill_window))
 			continue;
 
-		if (job_ptr->qos_id) {
+		if (job_ptr->qos_ptr) {
 			assoc_mgr_lock_t locks = {
 				.assoc = READ_LOCK,
 				.qos = READ_LOCK,
@@ -2048,11 +2052,11 @@ static void _attempt_backfill(void)
 			assoc_mgr_lock(&locks);
 			if (job_ptr->assoc_ptr
 			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
-			    && ((job_ptr->qos_id >= g_qos_count) ||
+			    && ((job_ptr->qos_ptr->id >= g_qos_count) ||
 				!job_ptr->assoc_ptr->usage ||
 				!job_ptr->assoc_ptr->usage->valid_qos ||
 				!bit_test(job_ptr->assoc_ptr->usage->valid_qos,
-					  job_ptr->qos_id))
+					  job_ptr->qos_ptr->id))
 			    && !job_ptr->limit_set.qos) {
 				debug("%pJ has invalid QOS",
 				      job_ptr);
@@ -2193,6 +2197,7 @@ next_task:
 			    (reject_array_job->array_job_id ==
 				job_ptr->array_job_id) &&
 			    (reject_array_part == part_ptr) &&
+			    (reject_array_qos == qos_ptr) &&
 			    (reject_array_resv == resv_ptr) &&
 			    (reject_array_use_prefer == use_prefer))
 				continue;  /* already rejected array element */
@@ -2200,6 +2205,7 @@ next_task:
 			/* assume reject whole array for now, clear if OK */
 			reject_array_job = job_ptr;
 			reject_array_part = part_ptr;
+			reject_array_qos = qos_ptr;
 			reject_array_resv = resv_ptr;
 			reject_array_use_prefer = use_prefer;
 
@@ -2211,6 +2217,7 @@ next_task:
 		 * the same way as we did it before.
 		 */
 		job_ptr->part_ptr = part_ptr;
+		job_ptr->qos_ptr = qos_ptr;
 		job_ptr->resv_ptr = resv_ptr;
 		if (resv_ptr)
 			job_ptr->resv_id = resv_ptr->resv_id;
@@ -2410,6 +2417,7 @@ next_task:
 
 			job_ptr->time_limit = save_time_limit;
 			job_ptr->part_ptr = part_ptr;
+			job_ptr->qos_ptr = qos_ptr;
 		}
 
 		/*
@@ -2760,6 +2768,7 @@ next_task:
 					bb_g_job_get_est_start(job_ptr);
 				reject_array_job = NULL;
 				reject_array_part = NULL;
+				reject_array_qos = NULL;
 				reject_array_resv = NULL;
 				continue;
 			}
@@ -2909,6 +2918,7 @@ skip_start:
 				/* Clear assumed rejected array status */
 				reject_array_job = NULL;
 				reject_array_part = NULL;
+				reject_array_qos = NULL;
 				reject_array_resv = NULL;
 
 				/* Update the database if job time limit
@@ -3115,6 +3125,7 @@ skip_start:
 		/* Clear assumed rejected array status */
 		reject_array_job = NULL;
 		reject_array_part = NULL;
+		reject_array_qos = NULL;
 		reject_array_resv = NULL;
 
 		if (IS_JOB_WHOLE_TOPO(job_ptr)) {
