@@ -5694,6 +5694,37 @@ will ensure that.
 .IP
 
 .TP
+\fBhwcoll_addrs_per_job\fR
+The number of Slingshot hardware collectives multicast addresses to allocate
+per job. (That are larger than hwcoll_min_nodes nodes)
+.IP
+
+.TP
+\fBhwcoll_num_nodes\fR
+The minimum number of nodes for a job to be allocated Slingshot hardware
+collectives. Because the hardware collective engine is not expected to offer a
+meaningful performance boost for jobs spanning a small number of nodes.
+.IP
+
+.TP
+\fBfm_url\fR
+If set, slurm will use the configured URL to interace with the fabric
+manager to enable Slingshot hardware collectives.
+.IP
+
+.TP
+\fBfm_auth\fR
+HPE fabric manager REST API authentication type
+(BASIC or OAUTH, default OAUTH).
+.IP
+
+.TP
+\fBfm_authdir\fR
+Directory containing authentication info files (default /etc/fmsim
+for BASIC authentication, /etc/wlm-client-auth for OAUTH authentication).
+.IP
+
+.TP
 \fBdef_<rsrc>\fR=<\fIval\fR>
 Per-CPU reserved allocation for this resource.
 .IP
