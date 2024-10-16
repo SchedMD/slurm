@@ -228,6 +228,7 @@ extern bool slingshot_rest_connect(slingshot_rest_conn_t *conn)
 	CURL_SETOPT(conn->handle, CURLOPT_WRITEDATA, conn);
 	CURL_SETOPT(conn->handle, CURLOPT_READFUNCTION, _read_function);
 	CURL_SETOPT(conn->handle, CURLOPT_FOLLOWLOCATION, 0);
+	CURL_SETOPT(conn->handle, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
 
 #if CURL_TRACE
 	CURL_SETOPT(conn->handle, CURLOPT_DEBUGFUNCTION, _libcurl_trace);
@@ -288,13 +289,13 @@ static bool _rest_request(slingshot_rest_conn_t *conn, long *status,
 	}
 
 	/* Decode response into JSON */
-	if ((*status != HTTP_NO_CONTENT) && (*status != HTTP_FORBIDDEN) &&
-	    (*status != HTTP_UNAUTHORIZED)) {
+	if (conn->datalen && resp != NULL) {
 		enum json_tokener_error jerr;
 		*resp = json_tokener_parse_verbose(conn->data, &jerr);
 		if (*resp == NULL) {
-			error("Couldn't decode jackaloped response: %s",
-			      json_tokener_error_desc(jerr));
+			error("Couldn't decode %s response: %s (data '%s')",
+			      conn->name, json_tokener_error_desc(jerr),
+			      conn->data);
 			return false;
 		}
 	}
@@ -374,14 +375,13 @@ again:
 		(*status == HTTP_NOT_FOUND && not_found_ok)) {
 		debug("%s %s %s successful (%ld)",
 		      conn->name, type, url, *status);
-	} else if ((*status == HTTP_FORBIDDEN || *status == HTTP_UNAUTHORIZED)
+	} else if ((*status == HTTP_UNAUTHORIZED)
 		   && (conn->auth.auth_type == SLINGSHOT_AUTH_OAUTH)
 		   && use_cache) {
 		debug("%s %s %s unauthorized status %ld, retrying",
 		      conn->name, type, url, *status);
 		/*
-		 * on HTTP_{FORBIDDEN,UNAUTHORIZED}, free auth header
-		 * and re-cache token
+		 * On HTTP_UNAUTHORIZED, free auth header and re-cache token
 		 */
 		curl_slist_free_all(headers);
 		headers = NULL;
@@ -608,7 +608,6 @@ static bool _get_auth_header(slingshot_rest_conn_t *conn,
 				     SLINGSHOT_AUTH_OAUTH_ENDPOINT_FILE);
 		if (!url)
 			goto err;
-		xstrcat(url, "/fabric/login");
 
 		client_id = _read_authfile(conn->auth.auth_dir,
 					   SLINGSHOT_AUTH_OAUTH_CLIENT_ID_FILE);
@@ -620,7 +619,8 @@ static bool _get_auth_header(slingshot_rest_conn_t *conn,
 		if (!client_secret)
 			goto err;
 		req = xstrdup_printf("grant_type=client_credentials"
-				     "&client_id=%s&client_secret=%s",
+				     "&client_id=%s&client_secret=%s"
+				     "&scope=openid",
 				     client_id, client_secret);
 
 		/* Connect and POST request to OAUTH token endpoint */
