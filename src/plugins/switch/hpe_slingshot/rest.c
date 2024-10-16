@@ -510,9 +510,11 @@ extern void slingshot_rest_destroy_connection(slingshot_rest_conn_t *conn)
 	xfree(conn->base_url);
 	if (conn->auth.auth_type == SLINGSHOT_AUTH_BASIC) {
 		xfree(conn->auth.u.basic.user_name);
-		memset((void *)conn->auth.u.basic.password, 0,
-			strlen(conn->auth.u.basic.password));
-		xfree(conn->auth.u.basic.password);
+		if (conn->auth.u.basic.password) {
+			memset((void *) conn->auth.u.basic.password, 0,
+			       strlen(conn->auth.u.basic.password));
+			xfree(conn->auth.u.basic.password);
+		}
 	}
 	xfree(conn->auth.auth_dir);
 	_clear_auth_header(conn);
