@@ -53,6 +53,15 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define BITSTR_MAGIC 		0x42434445
+#define BITSTR_MAXPOS		(BITSTR_WORD_SIZE - 1)
+#define BITSTR_OVERHEAD 	2
+#define BITSTR_SHIFT 		6
+#define BITSTR_SHIFT_WORD8	3
+#define BITSTR_SHIFT_WORD64	6
+#define BITSTR_MAXVAL		0xffffffffffffffff
+#define BITSTR_WORD_SIZE	(sizeof(bitstr_t) * 8)
+
 /* word of the bitstring bit is in */
 #define	_bit_word(bit) 		(((bit) >> BITSTR_SHIFT) + BITSTR_OVERHEAD)
 

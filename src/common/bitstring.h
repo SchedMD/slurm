@@ -58,9 +58,6 @@
 
 #include <inttypes.h>
 
-#define BITSTR_SHIFT_WORD8	3
-#define BITSTR_SHIFT_WORD64	6
-#define BITSTR_MAXVAL           0xffffffffffffffff
 #define BITSTR_FMT		PRId64
 
 /* Below are also defined in src/slurm/slurm.h.in.  If it changes please update
@@ -70,26 +67,9 @@
 #  define __bitstr_datatypes_defined
 
 typedef int64_t bitstr_t;
-#define BITSTR_SHIFT 		BITSTR_SHIFT_WORD64
-
 typedef bitstr_t bitoff_t;
 
 #endif
-
-/*
- * internal macros / defs
- */
-
-/* 2 words used for magic cookie and size */
-#define BITSTR_OVERHEAD 	2
-
-/* bitstr_t signature in first word */
-#define BITSTR_MAGIC 		0x42434445
-
-/* word size */
-#define BITSTR_WORD_SIZE	(sizeof(bitstr_t) * 8)
-/* max bit position in word */
-#define BITSTR_MAXPOS		(BITSTR_WORD_SIZE - 1)
 
 /*
  * Cache bitstrings of a specific length for reuse rather than xfree()'ing.

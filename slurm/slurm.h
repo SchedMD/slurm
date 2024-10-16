@@ -1536,8 +1536,6 @@ extern void *slurm_list_pop(list_t *l);
 #  define __bitstr_datatypes_defined
 
 typedef int64_t bitstr_t;
-#define BITSTR_SHIFT 		BITSTR_SHIFT_WORD64
-
 typedef bitstr_t bitoff_t;
 
 #endif
