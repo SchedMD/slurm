@@ -245,6 +245,7 @@ documents those changes that are of interest to users and administrators.
     only the cluster(s) specified by --sibling.
  -- accounting_storage/mysql - Fix bug when removing an association
     specified with an empty partition.
+ -- Fix setting multiple partition state restore on a job correctly.
 
 * Changes in Slurm 24.05.3
 ==========================
