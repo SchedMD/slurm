@@ -708,8 +708,8 @@ static int _proc_alloc(resource_allocation_response_msg_t *alloc)
 				working_cluster_rec->rpc_version);
 		} else {
 			/*
-			 * Remove two versions after 24.11 and always use
-			 * AF_INET6 format and remove the above comment.
+			 * Remove three versions after 24.11 and always use
+			 * the "[]" wrapped format and remove the above comment.
 			 */
 			setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
 				working_cluster_rec->name,
