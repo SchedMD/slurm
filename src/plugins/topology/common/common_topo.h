@@ -55,7 +55,8 @@
  *                                    malloced
  * OUT: count      - int *          - the count of created hostlists
  * IN:  tree_width - int            - max width of each branch on the tree.
- * RET: SLURM_SUCCESS - int
+ * RET:              int            - the number of levels opened in the tree,
+ *                                    or SLURM_ERROR
  *
  * Note: created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.

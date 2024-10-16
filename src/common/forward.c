@@ -66,6 +66,7 @@ typedef struct {
 	slurm_msg_t *orig_msg;
 	list_t *ret_list;
 	int timeout;
+	int tree_depth;
 	hostlist_t *tree_hl;
 	pthread_mutex_t *tree_mutex;
 } fwd_tree_t;
@@ -122,8 +123,6 @@ static void *_forward_thread(void *arg)
 	hostlist_t *hl = hostlist_create(fwd_ptr->nodelist);
 	slurm_addr_t addr;
 	char *buf = NULL;
-	int steps = 0;
-	int start_timeout = fwd_msg->timeout;
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(hl))) {
@@ -252,19 +251,8 @@ static void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 
-		if (fwd_ptr->cnt > 0) {
-			if (!fwd_ptr->tree_width)
-				fwd_ptr->tree_width = slurm_conf.tree_width;
-			steps = (fwd_ptr->cnt + 1) / fwd_ptr->tree_width;
-			fwd_msg->timeout =
-				slurm_conf.msg_timeout * 1000 * steps;
-			steps++;
-			fwd_msg->timeout += (start_timeout * steps);
-			/* info("now  + %d*%d = %d", start_timeout, */
-			/*      steps, fwd_msg->timeout); */
-		}
-
-		ret_list = slurm_receive_resp_msgs(fd, steps, fwd_msg->timeout);
+		ret_list = slurm_receive_resp_msgs(fd, fwd_ptr->tree_depth,
+						   fwd_ptr->timeout);
 		/* info("sent %d forwards got %d back", */
 		/*      fwd_ptr->cnt, list_count(ret_list)); */
 
@@ -425,6 +413,7 @@ static void *_fwd_tree_thread(void *arg)
 		 */
 		send_msg.forward.tree_width =
 			fwd_tree->orig_msg->forward.tree_width;
+		send_msg.forward.tree_depth = fwd_tree->tree_depth;
 		send_msg.forward.timeout = fwd_tree->timeout;
 		if ((send_msg.forward.cnt = hostlist_count(fwd_tree->tree_hl))){
 			buf = hostlist_ranged_string_xmalloc(
@@ -619,6 +608,8 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 		forward_init(&fwd_msg->header.forward);
 		fwd_msg->header.forward.nodelist = buf;
 		fwd_msg->header.forward.tree_width = header->forward.tree_width;
+		fwd_msg->header.forward.tree_depth = header->forward.tree_depth;
+		fwd_msg->header.forward.timeout = header->forward.timeout;
 		slurm_thread_create_detached(_forward_thread, fwd_msg);
 	}
 }
@@ -649,7 +640,7 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 {
 	hostlist_t *hl = NULL;
 	hostlist_t **sp_hl;
-	int hl_count = 0;
+	int hl_count = 0, depth;
 
 	if (!forward_struct->ret_list) {
 		error("didn't get a ret_list from forward_struct");
@@ -671,13 +662,22 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 
 	hostlist_uniq(hl);
 
-	if (topology_g_split_hostlist(
-		    hl, &sp_hl, &hl_count, header->forward.tree_width)) {
+	if ((depth = topology_g_split_hostlist(hl, &sp_hl, &hl_count,
+					       header->forward.tree_width)) ==
+	    SLURM_ERROR) {
 		error("unable to split forward hostlist");
 		hostlist_destroy(hl);
 		return SLURM_ERROR;
 	}
 
+	/* Calculate the new timeout based on the original timeout */
+	if (header->forward.tree_depth)
+		header->forward.timeout = (header->forward.timeout * depth) /
+					  header->forward.tree_depth;
+	else
+		header->forward.timeout *= 2 * depth;
+	header->forward.tree_depth = depth;
+	forward_struct->timeout = header->forward.timeout;
 	_forward_msg_internal(NULL, sp_hl, forward_struct, header,
 			      forward_struct->timeout, hl_count);
 
@@ -806,10 +806,15 @@ extern list_t *start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
 	int thr_count = 0;
 	int host_count = 0;
 	hostlist_t **sp_hl;
-	int hl_count = 0;
+	int hl_count = 0, depth;
 
 	xassert(hl);
 	xassert(msg);
+
+	if (timeout <= 0) {
+		/* convert secs to msec */
+		timeout = slurm_conf.msg_timeout * MSEC_IN_SEC;
+	}
 
 	hostlist_uniq(hl);
 	host_count = hostlist_count(hl);
@@ -817,8 +822,9 @@ extern list_t *start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
 	_get_alias_addrs(hl, msg, &host_count);
 	_get_dynamic_addrs(hl, msg);
 
-	if (topology_g_split_hostlist(hl, &sp_hl, &hl_count,
-				      msg->forward.tree_width)) {
+	if ((depth = topology_g_split_hostlist(hl, &sp_hl, &hl_count,
+					       msg->forward.tree_width)) ==
+	    SLURM_ERROR) {
 		error("unable to split forward hostlist");
 		return NULL;
 	}
@@ -830,7 +836,8 @@ extern list_t *start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
 	memset(&fwd_tree, 0, sizeof(fwd_tree));
 	fwd_tree.orig_msg = msg;
 	fwd_tree.ret_list = ret_list;
-	fwd_tree.timeout = timeout;
+	fwd_tree.tree_depth = depth;
+	fwd_tree.timeout = 2 * depth * timeout;
 	fwd_tree.notify = &notify;
 	fwd_tree.p_thr_count = &thr_count;
 	fwd_tree.tree_mutex = &tree_mutex;
