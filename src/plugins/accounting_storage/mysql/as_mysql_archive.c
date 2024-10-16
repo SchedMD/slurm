@@ -146,6 +146,7 @@ typedef struct {
 	char *partition;
 	char *priority;
 	char *qos;
+	char *qos_req;
 	char *req_cpus;
 	char *req_mem;
 	char *resvid;
@@ -223,6 +224,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->partition);
 		xfree(object->priority);
 		xfree(object->qos);
+		xfree(object->qos_req);
 		xfree(object->req_cpus);
 		xfree(object->req_mem);
 		xfree(object->resvid);
@@ -580,6 +582,7 @@ static char *job_req_inx[] = {
 	"`partition`",
 	"priority",
 	"id_qos",
+	"qos_req",
 	"cpus_req",
 	"mem_req",
 	"id_resv",
@@ -641,6 +644,7 @@ enum {
 	JOB_REQ_PARTITION,
 	JOB_REQ_PRIORITY,
 	JOB_REQ_QOS,
+	JOB_REQ_QOS_REQ,
 	JOB_REQ_REQ_CPUS,
 	JOB_REQ_REQ_MEM,
 	JOB_REQ_RESVID,
@@ -1045,6 +1049,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->partition, buffer);
 	packstr(object->priority, buffer);
 	packstr(object->qos, buffer);
+	packstr(object->qos_req, buffer);
 	packstr(object->req_cpus, buffer);
 	packstr(object->req_mem, buffer);
 	packstr(object->resvid, buffer);
@@ -1075,25 +1080,67 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 
 	memset(object, 0, sizeof(local_job_t));
 
-	/* For protocols <= 14_11, job_req_inx and it's corresponding enum,
-	 * were out of sync. This caused the following variables to have the
-	 * corresponding values:
-	 * job->partition = priority
-	 * job->priority  = qos
-	 * job->qos       = req_cpus
-	 * job->req_cpus  = req_mem
-	 * job->req_mem   = resvid
-	 * job->resvid    = partition
-	 *
-	 * The values were packed in the above order. To unpack the values
-	 * into the correct variables, the unpacking order is changed to
-	 * accomodate the shift in values. job->partition is unpacked before
-	 * job->start instead of after job->node_inx.
-	 *
-	 * 15.08: job_req_inx and the it's corresponding enum were synced up
-	 * and it unpacks in the expected order.
-	 */
-	if (rpc_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->account, buffer);
+		safe_unpackstr(&object->admin_comment, buffer);
+		safe_unpackstr(&object->alloc_nodes, buffer);
+		safe_unpackstr(&object->associd, buffer);
+		safe_unpackstr(&object->array_jobid, buffer);
+		safe_unpackstr(&object->array_max_tasks, buffer);
+		safe_unpackstr(&object->array_taskid, buffer);
+		safe_unpackstr(&object->array_task_pending, buffer);
+		safe_unpackstr(&object->array_task_str, buffer);
+		safe_unpackstr(&object->script_hash_inx, buffer);
+		safe_unpackstr(&object->blockid, buffer);
+		safe_unpackstr(&object->constraints, buffer);
+		safe_unpackstr(&object->container, buffer);
+		safe_unpackstr(&object->deleted, buffer);
+		safe_unpackstr(&object->derived_ec, buffer);
+		safe_unpackstr(&object->derived_es, buffer);
+		safe_unpackstr(&object->env_hash_inx, buffer);
+		safe_unpackstr(&object->exit_code, buffer);
+		safe_unpackstr(&object->extra, buffer);
+		safe_unpackstr(&object->flags, buffer);
+		safe_unpackstr(&object->timelimit, buffer);
+		safe_unpackstr(&object->eligible, buffer);
+		safe_unpackstr(&object->end, buffer);
+		safe_unpackstr(&object->gid, buffer);
+		safe_unpackstr(&object->gres_used, buffer);
+		safe_unpackstr(&object->job_db_inx, buffer);
+		safe_unpackstr(&object->jobid, buffer);
+		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->licenses, buffer);
+		safe_unpackstr(&object->mcs_label, buffer);
+		safe_unpackstr(&object->mod_time, buffer);
+		safe_unpackstr(&object->name, buffer);
+		safe_unpackstr(&object->nodelist, buffer);
+		safe_unpackstr(&object->node_inx, buffer);
+		safe_unpackstr(&object->het_job_id, buffer);
+		safe_unpackstr(&object->het_job_offset, buffer);
+		safe_unpackstr(&object->partition, buffer);
+		safe_unpackstr(&object->priority, buffer);
+		safe_unpackstr(&object->qos, buffer);
+		safe_unpackstr(&object->qos_req, buffer);
+		safe_unpackstr(&object->req_cpus, buffer);
+		safe_unpackstr(&object->req_mem, buffer);
+		safe_unpackstr(&object->resvid, buffer);
+		safe_unpackstr(&object->start, buffer);
+		safe_unpackstr(&object->state, buffer);
+		safe_unpackstr(&object->state_reason_prev, buffer);
+		safe_unpackstr(&object->std_err, buffer);
+		safe_unpackstr(&object->std_in, buffer);
+		safe_unpackstr(&object->std_out, buffer);
+		safe_unpackstr(&object->submit, buffer);
+		safe_unpackstr(&object->suspended, buffer);
+		safe_unpackstr(&object->submit_line, buffer);
+		safe_unpackstr(&object->system_comment, buffer);
+		safe_unpackstr(&object->tres_alloc_str, buffer);
+		safe_unpackstr(&object->tres_req_str, buffer);
+		safe_unpackstr(&object->uid, buffer);
+		safe_unpackstr(&object->wckey, buffer);
+		safe_unpackstr(&object->wckey_id, buffer);
+		safe_unpackstr(&object->work_dir, buffer);
+	} else if (rpc_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->account, buffer);
 		safe_unpackstr(&object->admin_comment, buffer);
 		safe_unpackstr(&object->alloc_nodes, buffer);
@@ -1592,7 +1639,27 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->uid, buffer);
 		safe_unpackstr(&object->wckey, buffer);
 		safe_unpackstr(&object->wckey_id, buffer);
-	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	}
+	/*
+	 * For protocols <= 14_11, job_req_inx and it's corresponding enum,
+	 * were out of sync. This caused the following variables to have the
+	 * corresponding values:
+	 * job->partition = priority
+	 * job->priority  = qos
+	 * job->qos       = req_cpus
+	 * job->req_cpus  = req_mem
+	 * job->req_mem   = resvid
+	 * job->resvid    = partition
+	 *
+	 * The values were packed in the above order. To unpack the values
+	 * into the correct variables, the unpacking order is changed to
+	 * accomodate the shift in values. job->partition is unpacked before
+	 * job->start instead of after job->node_inx.
+	 *
+	 * 15.08: job_req_inx and the it's corresponding enum were synced up
+	 * and it unpacks in the expected order.
+	 */
+	else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->account, buffer);
 		safe_unpackstr(&object->alloc_nodes, buffer);
 		safe_unpackstr(&object->associd, buffer);
@@ -2897,6 +2964,9 @@ static int _process_old_sql_line(const char *data_in,
 		} else if (!xstrncmp("qos", data_in+i, 3)) {
 			xstrcat(fields, "id_qos");
 			i+=3;
+		} else if (!xstrncmp("qos_req", data_in+i, 7)) {
+			xstrcat(fields, "qos_req");
+			i+=3;
 		} else if (!xstrncmp("uid", data_in+i, 3)) {
 			xstrcat(fields, "id_user");
 			i+=3;
@@ -3542,6 +3612,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.partition = row[JOB_REQ_PARTITION];
 		job.priority = row[JOB_REQ_PRIORITY];
 		job.qos = row[JOB_REQ_QOS];
+		job.qos_req = row[JOB_REQ_QOS_REQ];
 		job.req_cpus = row[JOB_REQ_REQ_CPUS];
 		job.req_mem = row[JOB_REQ_REQ_MEM];
 		job.resvid = row[JOB_REQ_RESVID];
@@ -3637,6 +3708,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_NODE_INX,
 		JOB_REQ_SUBMIT_LINE,
 		JOB_REQ_SYSTEM_COMMENT,
+		JOB_REQ_QOS_REQ,
 		JOB_REQ_COUNT };
 
 	local_job_t object;
@@ -3731,6 +3803,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			xstrcatat(format, &format_pos, ", %s");
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
+		if (object.qos_req == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
 
 		xstrcatat(format, &format_pos, ")");
 
@@ -3807,7 +3883,9 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     (object.submit_line == NULL) ?
 				"NULL" : object.submit_line,
 			     (object.system_comment == NULL) ?
-				"NULL" : object.system_comment);
+				"NULL" : object.system_comment,
+			     (object.qos_req == NULL) ?
+				"NULL" : object.qos_req);
 
 		_free_local_job_members(&object);
 		format_pos = NULL;

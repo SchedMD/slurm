@@ -173,6 +173,7 @@ static void _delete_job_details_members(job_details_t *detail_ptr)
 	xfree(detail_ptr->mem_bind);
 	FREE_NULL_LIST(detail_ptr->prefer_list);
 	xfree(detail_ptr->prefer);
+	xfree(detail_ptr->qos_req);
 	xfree(detail_ptr->req_context);
 	xfree(detail_ptr->std_out);
 	xfree(detail_ptr->submit_line);
@@ -276,10 +277,11 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
 	if (job_ptr->part_prio) {
 		xfree(job_ptr->part_prio->priority_array);
-		xfree(job_ptr->part_prio->priority_array_parts);
+		xfree(job_ptr->part_prio->priority_array_names);
 		xfree(job_ptr->part_prio);
 	}
 	slurm_destroy_priority_factors(job_ptr->prio_factors);
+	FREE_NULL_LIST(job_ptr->qos_list);
 	xfree(job_ptr->resp_host);
 	FREE_NULL_LIST(job_ptr->resv_list);
 	xfree(job_ptr->resv_name);
@@ -593,6 +595,7 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		packstr(detail_ptr->script_hash, buffer);
 		pack16(detail_ptr->segment_size, buffer);
 		pack16(detail_ptr->resv_port_cnt, buffer);
+		packstr(detail_ptr->qos_req, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 
 		pack32(detail_ptr->orig_min_cpus, buffer);	/* subject to change */
@@ -1273,7 +1276,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	char *submit_line = NULL, *prefer = NULL;
-	char *env_hash = NULL, *script_hash = NULL;
+	char *env_hash = NULL, *script_hash = NULL, *qos_req;
 	uint32_t min_nodes, max_nodes;
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
 	uint32_t pn_min_cpus, pn_min_tmp_disk;
@@ -1369,6 +1372,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr(&script_hash, buffer);
 		safe_unpack16(&segment_size, buffer);
 		safe_unpack16(&resv_port_cnt, buffer);
+		safe_unpackstr(&qos_req, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
@@ -1554,6 +1558,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	xfree(job_ptr->details->submit_line);
 	xfree(job_ptr->details->req_nodes);
 	xfree(job_ptr->details->work_dir);
+	xfree(job_ptr->details->qos_req);
 
 	/* now put the details into the job record */
 	job_ptr->details->acctg_freq = acctg_freq;
@@ -1588,6 +1593,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->job_size_bitmap = job_size_bitmap;
 
 	job_ptr->details->script_hash = script_hash;
+	job_ptr->details->qos_req = qos_req;
 
 	switch (features_use) {
 	case 0:
@@ -1666,6 +1672,7 @@ unpack_error:
 	FREE_NULL_BITMAP(job_size_bitmap);
 	xfree(mem_bind);
 	xfree(out);
+	xfree(qos_req);
 	xfree(req_nodes);
 	xfree(script_hash);
 	xfree(work_dir);

@@ -2504,7 +2504,7 @@ static int _get_resv_mpi_ports(job_record_t *job_ptr,
 
 /*
  * select_nodes - select and allocate nodes to a specific job
- * IN job_ptr - pointer to the job record
+ * IN job_node_select - pointer with at least a pointer to the job record
  * IN test_only - if set do not allocate nodes, just confirm they
  *	could be allocated now
  * IN select_node_bitmap - bitmap of nodes to be used for the
@@ -2513,7 +2513,6 @@ static int _get_resv_mpi_ports(job_record_t *job_ptr,
  * IN submission - if set ignore reservations
  * IN scheduler_type - which scheduler is calling this
  *      (i.e. SLURMDB_JOB_FLAG_BACKFILL, SLURMDB_JOB_FLAG_SCHED, etc)
- * OUT err_msg - if not NULL set to error message for job, caller must xfree
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition
@@ -2526,9 +2525,9 @@ static int _get_resv_mpi_ports(job_record_t *job_ptr,
  *	   the request, (e.g. best-fit or other criterion)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
-extern int select_nodes(job_record_t *job_ptr, bool test_only,
-			bitstr_t **select_node_bitmap, char **err_msg,
-			bool submission, uint32_t scheduler_type)
+extern int select_nodes(job_node_select_t *job_node_select,
+			bool test_only,	bool submission,
+			uint32_t scheduler_type)
 {
 	int bb, error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
@@ -2550,6 +2549,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 	list_t *gres_list_pre = NULL;
 	bool gres_list_pre_set = false;
+	job_record_t *job_ptr = job_node_select->job_ptr;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -2652,7 +2652,8 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	/* build sets of usable nodes based upon their configuration */
 	can_reboot = node_features_g_user_update(job_ptr->user_id);
 	error_code = _build_node_list(job_ptr, &node_set_ptr, &node_set_size,
-				      err_msg, test_only, can_reboot);
+				      job_node_select->err_msg,
+				      test_only, can_reboot);
 	if (error_code)
 		return error_code;
 	if (node_set_ptr == NULL)	/* Should never be true */
@@ -3099,10 +3100,8 @@ cleanup:
 		job_ptr->array_task_id = NO_VAL;
 	}
 	FREE_NULL_LIST(preemptee_job_list);
-	if (select_node_bitmap)
-		*select_node_bitmap = select_bitmap;
-	else
-		FREE_NULL_BITMAP(select_bitmap);
+	FREE_NULL_BITMAP(select_bitmap);
+
 	if (node_set_ptr) {
 		for (i = 0; i < node_set_size; i++) {
 			xfree(node_set_ptr[i].features);

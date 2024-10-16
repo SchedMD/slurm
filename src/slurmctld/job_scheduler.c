@@ -117,11 +117,11 @@ typedef struct {
 
 typedef struct {
 	bool backfill;
-	int job_part_pairs;
+	int job_prio_pairs;
 	job_record_t *job_ptr;
 	list_t *job_queue;
 	time_t now;
-	int part_inx;
+	int prio_inx;
 } build_job_queue_for_part_t;
 
 typedef struct {
@@ -143,8 +143,6 @@ typedef struct {
 
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
-static void _job_queue_append(list_t *job_queue, job_record_t *job_ptr,
-			      part_record_t *part_ptr, uint32_t priority);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
 static bool	_job_runnable_test2(job_record_t *job_ptr, time_t now,
 				    bool check_min_time);
@@ -265,11 +263,11 @@ static int _queue_resv_list(void *x, void *key)
 }
 
 static void _job_queue_append(list_t *job_queue, job_record_t *job_ptr,
-			      part_record_t *part_ptr, uint32_t prio)
+			      uint32_t prio)
 {
 	job_queue_req_t job_queue_req = { .job_ptr = job_ptr,
 					  .job_queue = job_queue,
-					  .part_ptr = part_ptr,
+					  .part_ptr = job_ptr->part_ptr,
 					  .prio = prio };
 
 	/* We have multiple reservations, process and end here */
@@ -537,6 +535,35 @@ static int _transfer_job_list(void *x, void *arg)
 	return 0;
 }
 
+static int _build_job_queue_for_qos(void *x, void *arg)
+{
+	build_job_queue_for_part_t *setup_job = arg;
+	job_record_t *job_ptr = setup_job->job_ptr;
+
+	job_ptr->qos_ptr = x;
+
+	/*
+	 * priority_array index matches part_ptr_list * qos_list
+	 * position: increment inx
+	 */
+	setup_job->prio_inx++;
+
+	if (!_job_runnable_test2(job_ptr, setup_job->now, setup_job->backfill))
+		return 0;
+
+	setup_job->job_prio_pairs++;
+	if (job_ptr->part_prio && job_ptr->part_prio->priority_array) {
+		_job_queue_append(setup_job->job_queue, job_ptr,
+				  job_ptr->part_prio->
+				  priority_array[setup_job->prio_inx]);
+	} else {
+		_job_queue_append(setup_job->job_queue, job_ptr,
+				  job_ptr->priority);
+	}
+
+	return 0;
+}
+
 static int _build_job_queue_for_part(void *x, void *arg)
 {
 	build_job_queue_for_part_t *setup_job = arg;
@@ -544,25 +571,12 @@ static int _build_job_queue_for_part(void *x, void *arg)
 
 	job_ptr->part_ptr = x;
 
-	/*
-	 * priority_array index matches part_ptr_list
-	 * position: increment inx
-	 */
-	setup_job->part_inx++;
-
-	if (!_job_runnable_test2(job_ptr, setup_job->now, setup_job->backfill))
-		return 0;
-
-	setup_job->job_part_pairs++;
-	if (job_ptr->part_prio && job_ptr->part_prio->priority_array) {
-		_job_queue_append(setup_job->job_queue, job_ptr,
-				  job_ptr->part_ptr,
-				  job_ptr->part_prio->
-				  priority_array[setup_job->part_inx]);
+	if (job_ptr->qos_list) {
+		(void) list_for_each(job_ptr->qos_list,
+				     _build_job_queue_for_qos,
+				     setup_job);
 	} else {
-		_job_queue_append(setup_job->job_queue, job_ptr,
-				  job_ptr->part_ptr,
-				  job_ptr->priority);
+		(void) _build_job_queue_for_qos(job_ptr->qos_ptr, setup_job);
 	}
 
 	return 0;
@@ -587,21 +601,6 @@ static int _foreach_job_is_completing(void *x, void *arg)
 		else if (job_ptr->part_ptr)
 			bit_or(job_is_comp->eff_cg_bitmap,
 			       job_ptr->part_ptr->node_bitmap);
-	}
-
-	return 0;
-}
-
-static int _foreach_part_prios_same(void *x, void *arg)
-{
-	part_record_t *part_ptr = x;
-	part_prios_same_t *part_prios_same = arg;
-
-	if (!part_prios_same->set) {
-		part_prios_same->prio = part_ptr->priority_tier;
-		part_prios_same->set = true;
-	} else if (part_prios_same->prio != part_ptr->priority_tier) {
-		return -1;
 	}
 
 	return 0;
@@ -714,17 +713,18 @@ extern void job_queue_rec_resv_list(job_queue_rec_t *job_queue_rec)
 extern list_t *build_job_queue(bool clear_start, bool backfill)
 {
 	static time_t last_log_time = 0;
-	list_t *job_queue = NULL;
 	list_itr_t *job_iterator;
 	job_record_t *job_ptr = NULL;
 	struct timeval start_tv = {0, 0};
 	int tested_jobs = 0;
-	int job_part_pairs = 0;
-	time_t now = time(NULL);
 	split_job_t split_job = { 0 };
+	build_job_queue_for_part_t setup_job = {
+		.backfill = backfill,
+		.now = time(NULL),
+	};
 	/* init the timer */
 	(void) slurm_delta_tv(&start_tv);
-	job_queue = list_create(xfree_ptr);
+	setup_job.job_queue = list_create(xfree_ptr);
 
 	(void) list_for_each(job_list, _split_job_on_schedule, &split_job);
 
@@ -746,6 +746,8 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 	 */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
+		setup_job.job_ptr = job_ptr;
+
 		if (IS_JOB_PENDING(job_ptr)) {
 			/* Remove backfill flag */
 			job_ptr->bit_flags &= ~BACKFILL_SCHED;
@@ -758,20 +760,19 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 			     job_ptr->state_reason_prev_db)) {
 				job_ptr->state_reason_prev_db =
 					job_ptr->state_reason;
-				last_job_update = now;
+				last_job_update = setup_job.now;
 			}
 		}
 
 		if (((tested_jobs % 100) == 0) &&
 		    (slurm_delta_tv(&start_tv) >= build_queue_timeout)) {
-			if (difftime(now, last_log_time) > 600) {
+			if (difftime(setup_job.now, last_log_time) > 600) {
 				/* Log at most once every 10 minutes */
-				info("%s has run for %d usec, exiting with %d "
-				     "of %d jobs tested, %d job-partition "
-				     "pairs added",
+				info("%s has run for %d usec, exiting with %d of %d jobs tested, %d job-partition-qos pairs added",
 				     __func__, build_queue_timeout, tested_jobs,
-				     list_count(job_list), job_part_pairs);
-				last_log_time = now;
+				     list_count(job_list),
+				     setup_job.job_prio_pairs);
+				last_log_time = setup_job.now;
 			}
 			break;
 		}
@@ -784,15 +785,8 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 		if (!_job_runnable_test1(job_ptr, clear_start))
 			continue;
 
+		setup_job.prio_inx = -1;
 		if (job_ptr->part_ptr_list) {
-			build_job_queue_for_part_t setup_job = {
-				.backfill = backfill,
-				.job_ptr = job_ptr,
-				.job_queue = job_queue,
-				.part_inx = -1,
-				.now = time(NULL),
-			};
-
 			(void) list_for_each(job_ptr->part_ptr_list,
 					     _build_job_queue_for_part,
 					     &setup_job);
@@ -811,16 +805,13 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 				job_ptr->bit_flags |= JOB_PART_ASSIGNED;
 
 			}
-			if (!_job_runnable_test2(job_ptr, now, backfill))
-				continue;
-			job_part_pairs++;
-			_job_queue_append(job_queue, job_ptr,
-					  job_ptr->part_ptr, job_ptr->priority);
+			(void) _build_job_queue_for_part(job_ptr->part_ptr,
+							 &setup_job);
 		}
 	}
 	list_iterator_destroy(job_iterator);
 
-	return job_queue;
+	return setup_job.job_queue;
 }
 
 /*
@@ -907,18 +898,6 @@ static void _do_diag_stats(long delta_t)
 	slurmctld_diag_stats.schedule_cycle_sum += delta_t;
 	slurmctld_diag_stats.schedule_cycle_last = delta_t;
 	slurmctld_diag_stats.schedule_cycle_counter++;
-}
-
-/* Return true of all partitions have the same priority, otherwise false. */
-static bool _all_partition_priorities_same(void)
-{
-	part_prios_same_t part_prios_same = { 0 };
-
-	if (list_for_each(part_list, _foreach_part_prios_same,
-			  &part_prios_same) == -1)
-		return false;
-
-	return true;
 }
 
 /*
@@ -1100,6 +1079,7 @@ static job_queue_rec_t *_create_job_queue_rec(job_queue_req_t *job_queue_req)
 	job_queue_rec->job_ptr  = job_queue_req->job_ptr;
 	job_queue_rec->part_ptr = job_queue_req->part_ptr;
 	job_queue_rec->priority = job_queue_req->prio;
+	job_queue_rec->qos_ptr = job_queue_req->job_ptr->qos_ptr;
 	job_queue_rec->resv_ptr = job_queue_req->resv_ptr;
 
 	return job_queue_rec;
@@ -1156,7 +1136,6 @@ static void _set_schedule_exit(schedule_exit_t code)
 
 static int _schedule(bool full_queue)
 {
-	list_itr_t *job_iterator = NULL, *part_iterator = NULL;
 	list_t *job_queue = NULL;
 	int job_cnt = 0;
 	int error_code, i, time_limit, pend_time;
@@ -1171,7 +1150,6 @@ static int _schedule(bool full_queue)
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	bool is_job_array_head;
 	static time_t sched_update = 0;
-	static bool fifo_sched = false;
 	static bool assoc_limit_stop = false;
 	static int sched_timeout = 0;
 	static int sched_max_job_start = 0;
@@ -1192,18 +1170,13 @@ static int _schedule(bool full_queue)
 	uint32_t deadline_time_limit, save_time_limit = 0;
 	uint32_t prio_reserve;
 	DEF_TIMERS;
+	job_node_select_t job_node_select = { 0 };
 
 	if (slurmctld_config.shutdown_time)
 		return 0;
 
 	if (sched_update != slurm_conf.last_update) {
 		char *tmp_ptr;
-		if (!xstrcmp(slurm_conf.schedtype, "sched/builtin") &&
-		    !xstrcmp(slurm_conf.priority_type, "priority/basic") &&
-		    _all_partition_priorities_same())
-			fifo_sched = true;
-		else
-			fifo_sched = false;
 
 		if (xstrcasestr(slurm_conf.sched_params, "assoc_limit_stop"))
 			assoc_limit_stop = true;
@@ -1477,23 +1450,9 @@ static int _schedule(bool full_queue)
 	}
 
 	sched_debug("Running job scheduler %s.", full_queue ? "for full queue":"for default depth");
-	/*
-	 * If we are doing FIFO scheduling, use the job records right off the
-	 * job list.
-	 *
-	 * If a job is submitted to multiple partitions then build_job_queue()
-	 * will return a separate record for each job:partition pair.
-	 *
-	 * In both cases, we test each partition associated with the job.
-	 */
-	if (fifo_sched) {
-		slurmctld_diag_stats.schedule_queue_len = list_count(job_list);
-		job_iterator = list_iterator_create(job_list);
-	} else {
-		job_queue = build_job_queue(false, false);
-		slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
-		sort_job_queue(job_queue);
-	}
+	job_queue = build_job_queue(false, false);
+	slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
+	sort_job_queue(job_queue);
 
 	job_ptr = NULL;
 	wait_on_resv = false;
@@ -1504,102 +1463,52 @@ static int _schedule(bool full_queue)
 			fill_array_reasons(job_ptr, reject_array_job);
 		}
 
-		if (fifo_sched) {
-			if (job_ptr && part_iterator &&
-			    IS_JOB_PENDING(job_ptr)) /* test job in next part */
-				goto next_part;
-			job_ptr = list_next(job_iterator);
-			if (!job_ptr) {
-				_set_schedule_exit(SCHEDULE_EXIT_END);
-				break;
-			}
-
-			/* When not fifo we do this in build_job_queue(). */
-			if (IS_JOB_PENDING(job_ptr)) {
-				set_job_failed_assoc_qos_ptr(job_ptr);
-				acct_policy_handle_accrue_time(job_ptr, false);
-			}
-
-			if (!avail_front_end(job_ptr)) {
-				job_ptr->state_reason = WAIT_FRONT_END;
-				xfree(job_ptr->state_desc);
-				last_job_update = now;
-				continue;
-			}
-			if (!_job_runnable_test1(job_ptr, false))
-				continue;
-			if (job_ptr->part_ptr_list) {
-				part_iterator = list_iterator_create(
-					job_ptr->part_ptr_list);
-next_part:
-				part_ptr = list_next(part_iterator);
-
-				if (!_job_runnable_test3(job_ptr, part_ptr))
-					continue;
-
-				if (part_ptr) {
-					job_ptr->part_ptr = part_ptr;
-					if (job_limits_check(&job_ptr, false) !=
-					    WAIT_NO_REASON)
-						continue;
-				} else {
-					list_iterator_destroy(part_iterator);
-					part_iterator = NULL;
-					continue;
-				}
-			} else {
-				if (!_job_runnable_test2(job_ptr, now, false))
-					continue;
-				part_ptr = job_ptr->part_ptr;
-			}
-			use_prefer = false;
-		} else {
-			job_queue_rec = list_pop(job_queue);
-			if (!job_queue_rec) {
-				_set_schedule_exit(SCHEDULE_EXIT_END);
-				break;
-			}
-			array_task_id = job_queue_rec->array_task_id;
-			job_ptr  = job_queue_rec->job_ptr;
-			part_ptr = job_queue_rec->part_ptr;
-
-			if (!avail_front_end(job_ptr)) {
-				job_ptr->state_reason = WAIT_FRONT_END;
-				xfree(job_ptr->state_desc);
-				last_job_update = now;
-				xfree(job_queue_rec);
-				continue;
-			}
-			if ((job_ptr->array_task_id != array_task_id) &&
-			    (array_task_id == NO_VAL)) {
-				/* Job array element started in other partition,
-				 * reset pointer to "master" job array record */
-				job_ptr = find_job_record(job_ptr->array_job_id);
-				job_queue_rec->job_ptr = job_ptr;
-			}
-			if (!job_ptr || !IS_JOB_PENDING(job_ptr)) {
-				xfree(job_queue_rec);
-				continue;	/* started in other partition */
-			}
-
-			use_prefer = job_queue_rec->use_prefer;
-			_set_features(job_ptr, use_prefer);
-
-			if (job_ptr->resv_list)
-				job_queue_rec_resv_list(job_queue_rec);
-			else
-				job_queue_rec_magnetic_resv(job_queue_rec);
-
-			if (!_job_runnable_test3(job_ptr, part_ptr)) {
-				xfree(job_queue_rec);
-				continue;
-			}
-
-			job_ptr->part_ptr = part_ptr;
-			job_ptr->priority = job_queue_rec->priority;
-
-			xfree(job_queue_rec);
+		job_queue_rec = list_pop(job_queue);
+		if (!job_queue_rec) {
+			_set_schedule_exit(SCHEDULE_EXIT_END);
+			break;
 		}
+		array_task_id = job_queue_rec->array_task_id;
+		job_ptr = job_queue_rec->job_ptr;
+		part_ptr = job_queue_rec->part_ptr;
+
+		if (!avail_front_end(job_ptr)) {
+			job_ptr->state_reason = WAIT_FRONT_END;
+			xfree(job_ptr->state_desc);
+			last_job_update = now;
+			xfree(job_queue_rec);
+			continue;
+		}
+		if ((job_ptr->array_task_id != array_task_id) &&
+		    (array_task_id == NO_VAL)) {
+			/* Job array element started in other partition,
+			 * reset pointer to "master" job array record */
+			job_ptr = find_job_record(job_ptr->array_job_id);
+			job_queue_rec->job_ptr = job_ptr;
+		}
+		if (!job_ptr || !IS_JOB_PENDING(job_ptr)) {
+			xfree(job_queue_rec);
+			continue;	/* started in other partition/qos */
+		}
+
+		use_prefer = job_queue_rec->use_prefer;
+		_set_features(job_ptr, use_prefer);
+
+		if (job_ptr->resv_list)
+			job_queue_rec_resv_list(job_queue_rec);
+		else
+			job_queue_rec_magnetic_resv(job_queue_rec);
+
+		if (!_job_runnable_test3(job_ptr, part_ptr)) {
+			xfree(job_queue_rec);
+			continue;
+		}
+
+		job_ptr->qos_ptr = job_queue_rec->qos_ptr;
+		job_ptr->part_ptr = part_ptr;
+		job_ptr->priority = job_queue_rec->priority;
+
+		xfree(job_queue_rec);
 
 		job_ptr->last_sched_eval = time(NULL);
 
@@ -1751,18 +1660,18 @@ next_task:
 		}
 
 		/* Test for valid QOS and required nodes on each pass */
-		if (job_ptr->qos_id) {
+		if (job_ptr->qos_ptr) {
 			assoc_mgr_lock_t locks =
 				{ .assoc = READ_LOCK, .qos = READ_LOCK };
 
 			assoc_mgr_lock(&locks);
 			if (job_ptr->assoc_ptr
 			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
-			    && ((job_ptr->qos_id >= g_qos_count) ||
+			    && ((job_ptr->qos_ptr->id >= g_qos_count) ||
 				!job_ptr->assoc_ptr->usage ||
 				!job_ptr->assoc_ptr->usage->valid_qos ||
 				!bit_test(job_ptr->assoc_ptr->usage->valid_qos,
-					  job_ptr->qos_id))
+					  job_ptr->qos_ptr->id))
 			    && !job_ptr->limit_set.qos) {
 				assoc_mgr_unlock(&locks);
 				sched_debug("%pJ has invalid QOS", job_ptr);
@@ -1868,7 +1777,9 @@ next_task:
 			goto skip_start;
 		}
 
-		error_code = select_nodes(job_ptr, false, NULL, NULL, false,
+		job_node_select.job_ptr = job_ptr;
+		error_code = select_nodes(&job_node_select,
+					  false, false,
 					  SLURMDB_JOB_FLAG_SCHED);
 
 		if (error_code == SLURM_SUCCESS) {
@@ -2122,14 +2033,8 @@ fail_this_part:	if (fail_by_part) {
 		job_resv_clear_magnetic_flag(job_ptr);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
-	if (fifo_sched) {
-		if (job_iterator)
-			list_iterator_destroy(job_iterator);
-		if (part_iterator)
-			list_iterator_destroy(part_iterator);
-	} else if (job_queue) {
-		FREE_NULL_LIST(job_queue);
-	}
+	FREE_NULL_LIST(job_queue);
+
 	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 	if ((slurmctld_config.server_thread_count >= 150) &&
 	    (defer_rpc_cnt == 0)) {

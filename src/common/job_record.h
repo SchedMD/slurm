@@ -149,6 +149,7 @@ typedef struct {
 	char *prefer;			/* soft features */
 	uint8_t prolog_running;		/* set while prolog_slurmctld is
 					 * running */
+	char *qos_req;			/* quality of service(s) requested */
 	uint32_t reserved_resources;	/* CPU minutes of resources reserved
 					 * for this job while it was pending */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
@@ -231,8 +232,8 @@ typedef struct {
 typedef struct {
 	time_t last_update;
 	uint32_t *priority_array;
-	char *priority_array_parts;
-} priority_parts_t;
+	char *priority_array_names;
+} priority_mult_t;
 
 /*
  * NOTE: When adding fields to the job_record, or any underlying structures,
@@ -381,7 +382,7 @@ struct job_record {
 	bool part_nodes_missing;	/* set if job's nodes removed from this
 					 * partition */
 	part_record_t *part_ptr;	/* pointer to the partition record */
-	priority_parts_t *part_prio;	/* partition based priority */
+	priority_mult_t *part_prio;	/* partition based priority */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	time_t preempt_time;		/* job preemption signal time */
 	bool preempt_in_progress;	/* Preemption of other jobs in progress
@@ -399,6 +400,9 @@ struct job_record {
 	time_t prolog_launch_time;	/* When the prolog was launched from the
 					 * controller -- PrologFlags=alloc */
 	uint32_t qos_id;		/* quality of service id */
+	list_t *qos_list;		/* Filled in if the job is requesting
+					 * more than one QOS,
+					 * DON'T PACK. */
 	slurmdb_qos_rec_t *qos_ptr;	/* pointer to the quality of
 					 * service record used for
 					 * this job, confirm the

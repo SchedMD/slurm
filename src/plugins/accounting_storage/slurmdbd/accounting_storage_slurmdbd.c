@@ -169,6 +169,7 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->nodes);
 		xfree(req->partition);
 		xfree(req->node_inx);
+		xfree(req->qos_req);
 		xfree(req->wckey);
 		xfree(req->gres_used);
 		xfree(req->script_hash);
@@ -296,6 +297,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 			req->script_hash =
 				xstrdup(job_ptr->details->script_hash);
 		}
+		req->qos_req = xstrdup(job_ptr->details->qos_req);
 	}
 	req->resv_id       = job_ptr->resv_id;
 	req->priority      = job_ptr->priority;

@@ -550,6 +550,8 @@ no_rollup_change:
 			xstrcatat(query, &pos, ", wckey");
 		if (job_ptr->network)
 			xstrcatat(query, &pos, ", node_inx");
+		if (job_ptr->details->qos_req)
+			xstrcatat(query, &pos, ", qos_req");
 		if (array_recs && array_recs->task_id_str)
 			xstrcatat(query, &pos, ", array_task_str, "
 				"array_max_tasks, array_task_pending");
@@ -611,6 +613,9 @@ no_rollup_change:
 			xstrfmtcatat(query, &pos, ", '%s'", job_ptr->wckey);
 		if (job_ptr->network)
 			xstrfmtcatat(query, &pos, ", '%s'", job_ptr->network);
+		if (job_ptr->details->qos_req)
+			xstrfmtcatat(query, &pos, ", '%s'",
+				     job_ptr->details->qos_req);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcatat(query, &pos, ", '%s', %u, %u",
 				   array_recs->task_id_str,
@@ -695,6 +700,9 @@ no_rollup_change:
 		if (job_ptr->network)
 			xstrfmtcatat(query, &pos, ", node_inx='%s'",
 				     job_ptr->network);
+		if (job_ptr->details->qos_req)
+			xstrfmtcatat(query, &pos, ", qos_req='%s'",
+				     job_ptr->details->qos_req);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcatat(query, &pos, ", array_task_str='%s', "
 				   "array_max_tasks=%u, array_task_pending=%u",
@@ -769,6 +777,9 @@ no_rollup_change:
 		if (job_ptr->network)
 			xstrfmtcatat(query, &pos, "node_inx='%s', ",
 				     job_ptr->network);
+		if (job_ptr->details->qos_req)
+			xstrfmtcatat(query, &pos, "qos_req='%s', ",
+				     job_ptr->details->qos_req);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcatat(query, &pos, "array_task_str='%s', "
 				   "array_max_tasks=%u, "

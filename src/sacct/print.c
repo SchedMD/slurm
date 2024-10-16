@@ -1590,6 +1590,18 @@ extern void print_fields(type_t type, void *object)
 					     &tmp_uint32,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_QOSREQ:
+			switch(type) {
+			case JOB:
+				tmp_char = job->qos_req;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_REASON:
 			switch(type) {
 			case JOB:

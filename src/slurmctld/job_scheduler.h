@@ -51,6 +51,8 @@ typedef struct job_queue_rec {
 	part_record_t *part_ptr;	/* Pointer to partition record. Each
 					 * job may have multiple partitions. */
 	uint32_t priority;		/* Job priority in THIS partition */
+	slurmdb_qos_rec_t *qos_ptr; /* Pointer to the qos record. Each
+				     * job may have requested multiple QOS. */
 	slurmctld_resv_t *resv_ptr;     /* If job didn't ask for a reservation,
 					 * this reservation is one it can run
 					 * in without requesting */

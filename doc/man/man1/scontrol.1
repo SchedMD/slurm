@@ -1216,7 +1216,10 @@ Only the Slurm administrator or root can increase job's priority.
 
 .TP
 \fBQOS\fR=<\fIname\fR>
-Set the job's QOS (Quality Of Service) to the specified value.
+Set the job's QOS (Quality Of Service) to the specified value,
+or comma separated list of QOS.
+If requesting a list it will be ordered based on the priority of the QOS given
+with the first being the highest priority.
 Value may be cleared with blank data value, "QOS=".
 .IP
 

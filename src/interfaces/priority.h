@@ -49,6 +49,11 @@
  */
 extern int priority_sort_part_tier(void *x, void *y);
 
+/*
+ * Sort QOS on Priority.
+ */
+extern int priority_sort_qos_desc(void *x, void *y);
+
 extern int priority_g_init(void);
 extern int priority_g_fini(void);
 extern uint32_t priority_g_set(uint32_t last_prio, job_record_t *job_ptr);

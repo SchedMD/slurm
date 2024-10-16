@@ -1771,6 +1771,7 @@ static void _attempt_backfill(void)
 	bool already_counted, many_rpcs = false;
 	job_record_t *reject_array_job = NULL;
 	part_record_t *reject_array_part = NULL;
+	slurmdb_qos_rec_t *reject_array_qos = NULL;
 	slurmctld_resv_t *reject_array_resv = NULL;
 	bool reject_array_use_prefer = false;
 	uint32_t start_time, array_start_time = 0;
@@ -1894,6 +1895,7 @@ static void _attempt_backfill(void)
 		bool get_boot_time = false;
 		bool licenses_unavail;
 		bool use_prefer = false;
+		slurmctld_resv_t *resv_ptr = NULL;
 
 		/* Run some final guaranteed logic after each job iteration */
 		if (job_ptr) {
@@ -1947,6 +1949,7 @@ static void _attempt_backfill(void)
 		job_ptr          = job_queue_rec->job_ptr;
 		part_ptr         = job_queue_rec->part_ptr;
 		bf_job_priority  = job_queue_rec->priority;
+		qos_ptr = job_queue_rec->qos_ptr;
 		use_prefer = job_queue_rec->use_prefer;
 
 		if (job_ptr->array_recs &&
@@ -2026,18 +2029,21 @@ static void _attempt_backfill(void)
 			job_queue_rec_resv_list(job_queue_rec);
 		else
 			job_queue_rec_magnetic_resv(job_queue_rec);
+		resv_ptr = job_ptr->resv_ptr;
 		xfree(job_queue_rec);
 
 		job_ptr->bit_flags |= BACKFILL_SCHED;
 		job_ptr->last_sched_eval = now;
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = bf_job_priority;
+		job_ptr->qos_ptr = qos_ptr;
+
 		mcs_select = slurm_mcs_get_select(job_ptr);
 		het_job_time = _het_job_start_find(job_ptr);
 		if (het_job_time > (now + backfill_window))
 			continue;
 
-		if (job_ptr->qos_id) {
+		if (job_ptr->qos_ptr) {
 			assoc_mgr_lock_t locks = {
 				.assoc = READ_LOCK,
 				.qos = READ_LOCK,
@@ -2046,11 +2052,11 @@ static void _attempt_backfill(void)
 			assoc_mgr_lock(&locks);
 			if (job_ptr->assoc_ptr
 			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
-			    && ((job_ptr->qos_id >= g_qos_count) ||
+			    && ((job_ptr->qos_ptr->id >= g_qos_count) ||
 				!job_ptr->assoc_ptr->usage ||
 				!job_ptr->assoc_ptr->usage->valid_qos ||
 				!bit_test(job_ptr->assoc_ptr->usage->valid_qos,
-					  job_ptr->qos_id))
+					  job_ptr->qos_ptr->id))
 			    && !job_ptr->limit_set.qos) {
 				debug("%pJ has invalid QOS",
 				      job_ptr);
@@ -2191,20 +2197,31 @@ next_task:
 			    (reject_array_job->array_job_id ==
 				job_ptr->array_job_id) &&
 			    (reject_array_part == part_ptr) &&
-			    (reject_array_resv == job_ptr->resv_ptr) &&
+			    (reject_array_qos == qos_ptr) &&
+			    (reject_array_resv == resv_ptr) &&
 			    (reject_array_use_prefer == use_prefer))
 				continue;  /* already rejected array element */
 
 			/* assume reject whole array for now, clear if OK */
 			reject_array_job = job_ptr;
 			reject_array_part = part_ptr;
-			reject_array_resv = job_ptr->resv_ptr;
+			reject_array_qos = qos_ptr;
+			reject_array_resv = resv_ptr;
 			reject_array_use_prefer = use_prefer;
 
 			if (!job_array_start_test(job_ptr))
 				continue;
 		}
+		/*
+		 * If we are on a different task (see goto next_task) set it up
+		 * the same way as we did it before.
+		 */
 		job_ptr->part_ptr = part_ptr;
+		job_ptr->qos_ptr = qos_ptr;
+		job_ptr->resv_ptr = resv_ptr;
+		if (resv_ptr)
+			job_ptr->resv_id = resv_ptr->resv_id;
+
 		if (job_limits_check(&job_ptr, true) != WAIT_NO_REASON) {
 			/* should never happen */
 			continue;
@@ -2329,7 +2346,6 @@ next_task:
 
 		if (many_rpcs || (slurm_delta_tv(&start_tv) >= yield_interval)) {
 			uint32_t save_time_limit = job_ptr->time_limit;
-			slurmctld_resv_t *save_resv_ptr = job_ptr->resv_ptr;
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
@@ -2380,7 +2396,15 @@ next_task:
 					 job_ptr);
 				continue;	/* No available frontend */
 			}
-			job_ptr->resv_ptr = save_resv_ptr;
+
+			/*
+			 * If the job wasn't scheduled while we didn't have the
+			 * locks restore the pointers we were last on just in
+			 * case the main scheduler changed them.
+			 */
+			job_ptr->resv_ptr = resv_ptr;
+			if (resv_ptr)
+				job_ptr->resv_id = resv_ptr->resv_id;
 			if (!_job_part_valid(job_ptr, part_ptr))
 				continue;	/* Partition change during lock yield */
 			if (!job_independent(job_ptr)) {
@@ -2393,6 +2417,7 @@ next_task:
 
 			job_ptr->time_limit = save_time_limit;
 			job_ptr->part_ptr = part_ptr;
+			job_ptr->qos_ptr = qos_ptr;
 		}
 
 		/*
@@ -2743,6 +2768,7 @@ next_task:
 					bb_g_job_get_est_start(job_ptr);
 				reject_array_job = NULL;
 				reject_array_part = NULL;
+				reject_array_qos = NULL;
 				reject_array_resv = NULL;
 				continue;
 			}
@@ -2892,6 +2918,7 @@ skip_start:
 				/* Clear assumed rejected array status */
 				reject_array_job = NULL;
 				reject_array_part = NULL;
+				reject_array_qos = NULL;
 				reject_array_resv = NULL;
 
 				/* Update the database if job time limit
@@ -3098,6 +3125,7 @@ skip_start:
 		/* Clear assumed rejected array status */
 		reject_array_job = NULL;
 		reject_array_part = NULL;
+		reject_array_qos = NULL;
 		reject_array_resv = NULL;
 
 		if (IS_JOB_WHOLE_TOPO(job_ptr)) {
@@ -3245,7 +3273,9 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 	bitstr_t *orig_exc_nodes = NULL;
 	bool is_job_array_head = false;
 	static uint32_t fail_jobid = 0;
-
+	job_node_select_t job_node_select = {
+		.job_ptr = job_ptr,
+	};
 	if (job_ptr->details->exc_node_bitmap) {
 		orig_exc_nodes = bit_copy(job_ptr->details->exc_node_bitmap);
 		bit_or(job_ptr->details->exc_node_bitmap, resv_bitmap);
@@ -3253,8 +3283,9 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 		job_ptr->details->exc_node_bitmap = bit_copy(resv_bitmap);
 	if (job_ptr->array_recs)
 		is_job_array_head = true;
-	rc = select_nodes(job_ptr, false, NULL, NULL, false,
+	rc = select_nodes(&job_node_select, false, false,
 			  SLURMDB_JOB_FLAG_BACKFILL);
+
 	if (is_job_array_head && job_ptr->details) {
 		job_record_t *base_job_ptr;
 		base_job_ptr = find_job_record(job_ptr->array_job_id);

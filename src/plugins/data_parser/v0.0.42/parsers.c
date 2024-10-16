@@ -4256,7 +4256,7 @@ static int DUMP_FUNC(PRIORITY_BY_PARTITION)(const parser_t *const parser,
 	if (!job->priority_array)
 		return SLURM_SUCCESS;
 
-	tmp_token = strtok_r(job->priority_array_parts, ",", &saveptr);
+	tmp_token = strtok_r(job->priority_array_names, ",", &saveptr);
 	while (tmp_token && !rc) {
 		part_prio.part = tmp_token;
 		part_prio.prio = job->priority_array[count];
