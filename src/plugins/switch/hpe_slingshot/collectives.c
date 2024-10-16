@@ -242,6 +242,7 @@ extern void slingshot_collectives_env(slingshot_stepinfo_t *job, char ***env)
 	slingshot_hwcoll_t *hwcoll = job->hwcoll;
 	char *job_id = NULL, *step_id = NULL;
 	char *addrs_per_job = NULL, *num_nodes = NULL;
+	char *fm_full_url = NULL;
 
 	if (!hwcoll)
 		return;
@@ -250,13 +251,15 @@ extern void slingshot_collectives_env(slingshot_stepinfo_t *job, char ***env)
 	xstrfmtcat(step_id, "%u", hwcoll->step_id);
 	xstrfmtcat(addrs_per_job, "%u", hwcoll->addrs_per_job);
 	xstrfmtcat(num_nodes, "%u", hwcoll->num_nodes);
+	xstrfmtcat(fm_full_url, "%s/fabric/collectives/multicasts",
+		   hwcoll->fm_url);
 
 	log_flag(SWITCH, "%s=%s %s=%s %s=%s",
 		 SLINGSHOT_FI_CXI_COLL_JOB_ID_ENV, job_id,
 		 SLINGSHOT_FI_CXI_COLL_JOB_STEP_ID_ENV, step_id,
 		 SLINGSHOT_FI_CXI_COLL_MCAST_TOKEN_ENV, hwcoll->mcast_token);
 	log_flag(SWITCH, "%s=%s %s=%s %s=%s",
-		 SLINGSHOT_FI_CXI_COLL_FABRIC_MGR_URL_ENV, hwcoll->mcast_token,
+		 SLINGSHOT_FI_CXI_COLL_FABRIC_MGR_URL_ENV, fm_full_url,
 		 SLINGSHOT_FI_CXI_HWCOLL_ADDRS_PER_JOB_ENV, addrs_per_job,
 		 SLINGSHOT_FI_CXI_HWCOLL_MIN_NODES_ENV, num_nodes);
 
@@ -266,7 +269,7 @@ extern void slingshot_collectives_env(slingshot_stepinfo_t *job, char ***env)
 	env_array_overwrite(env, SLINGSHOT_FI_CXI_COLL_MCAST_TOKEN_ENV,
 			    hwcoll->mcast_token);
 	env_array_overwrite(env, SLINGSHOT_FI_CXI_COLL_FABRIC_MGR_URL_ENV,
-			    hwcoll->fm_url);
+			    fm_full_url);
 	env_array_overwrite(env, SLINGSHOT_FI_CXI_HWCOLL_ADDRS_PER_JOB_ENV,
 			    addrs_per_job);
 	env_array_overwrite(env, SLINGSHOT_FI_CXI_HWCOLL_MIN_NODES_ENV,
@@ -275,6 +278,7 @@ extern void slingshot_collectives_env(slingshot_stepinfo_t *job, char ***env)
 	xfree(step_id);
 	xfree(addrs_per_job);
 	xfree(num_nodes);
+	xfree(fm_full_url);
 	return;
 }
 
