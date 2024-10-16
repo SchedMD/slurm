@@ -1611,6 +1611,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 {
 	int rc;
 	slurm_msg_t *msg = arg;
+	slurmctld_rpc_t *this_rpc = NULL;
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		debug3("%s: [fd:%d] connection work cancelled",
@@ -1651,9 +1652,12 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
 	} else if (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP) {
 		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_HARD_DROP);
-	} else {
+	} else if ((this_rpc = find_rpc(msg->msg_type))) {
 		/* directly process the request */
-		slurmctld_req(msg, NULL);
+		slurmctld_req(msg, this_rpc);
+	} else {
+		error("invalid RPC msg_type=%s", rpc_num2string(msg->msg_type));
+		slurm_send_rc_msg(msg, EINVAL);
 	}
 
 	if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
