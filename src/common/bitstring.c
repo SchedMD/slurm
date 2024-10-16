@@ -266,11 +266,20 @@ static void _cache_push(void *b)
 
 extern void bit_cache_init(bitoff_t nbits)
 {
+/*
+ * Disable cache in MEMORY_LEAK_DEBUG as otherwise valgrind may attribute
+ * any bitstring leaks that cycled through the cache to the original
+ * allocation location, which is potentially completely unrelated to where
+ * the leak is. The only downside is that a leak of the cache itself will
+ * not be caught.
+ */
+#ifndef MEMORY_LEAK_DEBUG
 	slurm_mutex_lock(&cache_mutex);
 	if (cached_bitstr_len)
 		fatal_abort("%s: cannot change size once set", __func__);
 	cached_bitstr_len = nbits;
 	slurm_mutex_unlock(&cache_mutex);
+#endif
 }
 
 extern void bit_cache_fini(void)
