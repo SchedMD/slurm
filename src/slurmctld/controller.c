@@ -3566,7 +3566,7 @@ static void *_assoc_cache_mgr(void *no_data)
 			} else
 				FREE_NULL_LIST(job_ptr->qos_list);
 		} else if (job_ptr->qos_id) {
-use_qos_id:
+use_qos_id: ; /* must be a blank ; for older compilers (el7) */
 			slurmdb_qos_rec_t qos_rec = {
 				.id = job_ptr->qos_id,
 			};
