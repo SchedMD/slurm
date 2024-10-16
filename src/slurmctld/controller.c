@@ -3541,6 +3541,8 @@ static void *_assoc_cache_mgr(void *no_data)
 					list_append(job_ptr->qos_list, qos_ptr);
 				token = strtok_r(NULL, ",", &last);
 			}
+			xfree(tmp_qos_req);
+
 			if (list_count(job_ptr->qos_list)) {
 				list_sort(job_ptr->qos_list,
 					  priority_sort_qos_desc);
