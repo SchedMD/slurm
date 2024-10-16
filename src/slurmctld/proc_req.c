@@ -6962,29 +6962,15 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	debug2("Processing RPC: %s from UID=%u",
 	       rpc_num2string(msg->msg_type), msg->auth_uid);
 
-	for (int i = 0; slurmctld_rpcs[i].msg_type; i++) {
-		if (slurmctld_rpcs[i].msg_type != msg->msg_type)
-			continue;
-
-		xassert(slurmctld_rpcs[i].func);
-		this_rpc = &slurmctld_rpcs[i];
-		break;
+	if (this_rpc->skip_stale && !fd_is_writable(msg->conn_fd)) {
+		error("Connection is stale, discarding RPC %s",
+		      rpc_num2string(msg->msg_type));
+		/* do not record RPC stats, we didn't process this */
+		return;
 	}
-
-	if (this_rpc) {
-		if (this_rpc->skip_stale && !fd_is_writable(msg->conn_fd)) {
-			error("Connection is stale, discarding RPC %s",
-			      rpc_num2string(msg->msg_type));
-			/* do not record RPC stats, we didn't process this */
-			return;
-		}
-		(*(this_rpc->func))(msg);
-		END_TIMER;
-		record_rpc_stats(msg, DELTA_TIMER);
-	} else {
-		error("invalid RPC msg_type=%s", rpc_num2string(msg->msg_type));
-		slurm_send_rc_msg(msg, EINVAL);
-	}
+	(*(this_rpc->func))(msg);
+	END_TIMER;
+	record_rpc_stats(msg, DELTA_TIMER);
 }
 
 static void _srun_agent_launch(slurm_addr_t *addr, char *host,
