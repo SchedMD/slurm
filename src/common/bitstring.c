@@ -355,7 +355,7 @@ void slurm_bit_free(bitstr_t **b)
 
 	if (_bitstr_bits(*b) == cached_bitstr_len) {
 		_cache_push(*b);
-		b = NULL;
+		*b = NULL;
 	} else
 		xfree(*b);
 }
