@@ -88,7 +88,6 @@
 #define	bit_set_count		slurm_bit_set_count
 #define	bit_set_count_range	slurm_bit_set_count_range
 #define	bit_clear_count		slurm_bit_clear_count
-#define	bit_clear_count_range	slurm_bit_clear_count_range
 #define	bit_nset_max_count	slurm_bit_nset_max_count
 #define	bit_rotate_copy		slurm_bit_rotate_copy
 #define	bit_rotate		slurm_bit_rotate
