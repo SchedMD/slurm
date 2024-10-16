@@ -5964,6 +5964,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 			slurm_send_rc_msg(&msg, EINVAL);
 		}
 	} else if ((this_rpc = find_rpc(persist_msg->msg_type))) {
+		xassert(!this_rpc->keep_msg);
 		/* directly process the request */
 		slurmctld_req(&msg, this_rpc);
 	} else {
