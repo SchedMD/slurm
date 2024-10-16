@@ -941,7 +941,7 @@ time period. See salloc/sbatch man pages option \-\-delay\-boot.
 .TP
 \fBDependency\fR=<\fIdependency_list\fR>
 Defer job's initiation until specified job dependency specification
-is satisfied.
+is satisfied. Once a dependency is satisfied, it is removed from the job.
 Cancel dependency with an empty dependency_list (e.g. "Dependency=").
 <\fIdependency_list\fR> is of the form
 <\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.

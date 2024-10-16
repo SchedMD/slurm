@@ -192,7 +192,8 @@ Time at which the job ended or is expected to end (based upon its time limit).
 Job dependencies remaining. This job will not begin execution until these
 dependent jobs complete. In the case of a job that can not run due to job
 dependencies never being satisfied, the full original job dependency
-specification will be reported. A value of NULL implies this job has no
+specification will be reported. Once a dependency is satisfied, it is
+removed from the job. A value of NULL implies this job has no
 dependencies.
 (Valid for jobs only)
 .IP
@@ -691,7 +692,8 @@ Delay boot time.
 Job dependencies remaining. This job will not begin execution until these
 dependent jobs complete. In the case of a job that can not run due to job
 dependencies never being satisfied, the full original job dependency
-specification will be reported. A value of NULL implies this job has no
+specification will be reported. Once a dependency is satisfied, it is
+removed from the job. A value of NULL implies this job has no
 dependencies.
 (Valid for jobs only)
 .IP

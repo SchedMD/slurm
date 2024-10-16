@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "September 2024" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "October 2024" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -629,7 +629,7 @@ slurm.conf file, otherwise the default value is zero (no delay).
 .TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
 Defer the start of this job until the specified dependencies have been
-satisfied.
+satisfied. Once a dependency is satisfied, it is removed from the job.
 <\fIdependency_list\fR> is of the form
 <\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR> or
 <\fItype:job_id[:job_id][?type:job_id[:job_id]]\fR>.

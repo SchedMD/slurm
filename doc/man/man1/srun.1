@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "September 2024" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "October 2024" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -835,7 +835,8 @@ This option applies only to job allocations.
 .TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
 Defer the start of this job until the specified dependencies have been
-satisfied. This option does not apply to job steps (executions of
+satisfied. Once a dependency is satisfied, it is removed from the job.
+This option does not apply to job steps (executions of
 srun within an existing salloc or sbatch allocation) only to job allocations.
 <\fIdependency_list\fR> is of the form
 <\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR> or
