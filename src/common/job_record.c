@@ -1276,7 +1276,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	char *submit_line = NULL, *prefer = NULL;
-	char *env_hash = NULL, *script_hash = NULL, *qos_req;
+	char *env_hash = NULL, *script_hash = NULL, *qos_req = NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
 	uint32_t pn_min_cpus, pn_min_tmp_disk;
