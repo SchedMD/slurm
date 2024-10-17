@@ -3884,9 +3884,7 @@ static int _select_nodes_base(job_node_select_t *job_node_select)
 	if (((job_node_select->rc == ESLURM_NODES_BUSY) ||
 	     (job_node_select->rc == ESLURM_RESERVATION_BUSY) ||
 	     (job_node_select->rc == ESLURM_PORTS_BUSY)) &&
-	    (job_node_select->rc_best == -1) &&
-	    ((slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY) ||
-	     (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_NONE))) {
+	    (job_node_select->rc_best == -1)) {
 		if (job_node_select->test_only)
 			return SLURM_SUCCESS;
 

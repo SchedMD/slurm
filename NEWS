@@ -171,6 +171,7 @@ documents those changes that are of interest to users and administrators.
     node count / tree width for each level. Fixes race conditions with same
     timeouts between two consecutive node levels.
  -- Add ability to submit jobs with multiple QOS.
+ -- Fix difference in behavior when swapping partition order in job submission.
 
 * Changes in Slurm 24.05.4
 ==========================
