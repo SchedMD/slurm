@@ -359,3 +359,8 @@ extern void switch_p_extern_stepinfo(switch_info_t **stepinfo,
                          jobinfo->channel, job_ptr);
 	}
 }
+
+extern void switch_p_extern_step_fini(int job_id)
+{
+	/* not supported */
+}

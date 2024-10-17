@@ -1142,9 +1142,6 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 	slingshot_free_job_vni_pool(job_ptr->switch_jobinfo);
 	slingshot_free_jobinfo(job_ptr->switch_jobinfo);
 	job_ptr->switch_jobinfo = NULL;
-
-	/* Release any hardware collectives multicast addresses */
-	slingshot_release_collectives_job(job_id);
 }
 
 extern int switch_p_fs_init(stepd_step_rec_t *step)
@@ -1156,4 +1153,9 @@ extern void switch_p_extern_stepinfo(switch_stepinfo_t **stepinfo,
 				     job_record_t *job_ptr)
 {
 	/* not supported */
+}
+
+extern void switch_p_extern_step_fini(int job_id)
+{
+	slingshot_release_collectives_job(job_id);
 }

@@ -90,6 +90,7 @@ typedef struct slurm_switch_ops {
 	int          (*fs_init)           ( stepd_step_rec_t *step );
 	void         (*extern_stepinfo)   ( switch_stepinfo_t **stepinfo,
 					    job_record_t *job_ptr );
+	void	     (*extern_step_fini)  ( uint32_t job_id);
 } slurm_switch_ops_t;
 
 /*
@@ -116,6 +117,7 @@ static const char *syms[] = {
 	"switch_p_job_complete",
 	"switch_p_fs_init",
 	"switch_p_extern_stepinfo",
+	"switch_p_extern_step_fini",
 };
 
 static slurm_switch_ops_t  *ops            = NULL;
@@ -631,4 +633,14 @@ extern void switch_g_extern_stepinfo(void **stepinfo, job_record_t *job_ptr)
 		dest_ptr->data = tmp;
 		*stepinfo = dest_ptr;
 	}
+}
+
+extern void switch_g_extern_step_fini(uint32_t job_id)
+{
+	xassert(switch_context_cnt >= 0);
+
+	if (!switch_context_cnt)
+		return;
+
+	(*(ops[switch_context_default].extern_step_fini))(job_id);
 }
