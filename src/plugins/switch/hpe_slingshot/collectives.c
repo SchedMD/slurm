@@ -134,6 +134,10 @@ static void *_cleanup_thread(void *data)
  */
 extern bool slingshot_init_collectives(void)
 {
+	/* Enable Hardware Collectives only if fm_url is configured */
+	if (!slingshot_config.fm_url)
+		return true;
+
 	if (!slingshot_rest_connection(&fm_conn,
 				       slingshot_config.fm_url,
 				       slingshot_config.fm_auth,
