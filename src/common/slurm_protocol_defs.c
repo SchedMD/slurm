@@ -6033,7 +6033,13 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 			sep[0] = '\0';
 		}
 
+		/*
+		 * Set the tres_type and set tres_type_len to 0 which indicates
+		 * we created this value and we need to free after this
+		 * iteration.
+		 */
 		*tres_type = xstrdup(*save_ptr);
+		tres_type_len = 0;
 
 		if (comma)
 			comma[0] = ',';
@@ -6126,9 +6132,25 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		goto fini;
 	}
 
+	/*
+	 * We have 0 elements of this type, so completely ignore this entry
+	 * and do not return it. For example in the case of "gres/gpu:tesla:0",
+	 * we would have: tres_type=gres, name = gpu, type = tesla, value = 0
+	 */
 	if (value == 0) {
 		xfree(name);
 		xfree(type);
+		/*
+		 * If !tres_type_len this function has been called with
+		 * *tres_type = NULL, but we found it and gave it a value with
+		 * xstrdup().
+		 *
+		 * As this type contains 0 elements, just reset *tres_type to
+		 * NULL so the next iteration looks for the type again, or if we
+		 * bailout, just return it empty.
+		 */
+		if (!tres_type_len)
+			xfree(*tres_type);
 		goto next;
 	}
 
