@@ -942,6 +942,8 @@ static bool _parse_network_token(const char *token, bool is_job,
 	size_t no_adjust_limits_siz = sizeof(no_adjust_limits_str) - 1;
 	char rdzv_get_str[] = "disable_rdzv_get";
 	size_t rdzv_get_siz = sizeof(rdzv_get_str) - 1;
+	char hwcoll_str[] = "hwcoll";
+	size_t hwcoll_siz = sizeof(hwcoll_siz) - 1;
 	char tcs_str[] = "tcs";
 	size_t tcs_siz = sizeof(tcs_str) - 1;
 
@@ -987,6 +989,8 @@ static bool _parse_network_token(const char *token, bool is_job,
 		job->flags &= ~(SLINGSHOT_FLAGS_ADJUST_LIMITS);
 	} else if (!xstrncmp(token, rdzv_get_str, rdzv_get_siz)) {
 		job->flags |= SLINGSHOT_FLAGS_DISABLE_RDZV_GET;
+	} else if (!xstrncmp(token, hwcoll_str, hwcoll_siz)) {
+		;
 	} else if (!xstrncmp(token, tcs_str, tcs_siz)) {
 		if (is_job)
 			return _config_tcs(token, arg, &job->tcs);
