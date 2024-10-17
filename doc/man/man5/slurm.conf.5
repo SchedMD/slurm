@@ -1268,16 +1268,16 @@ May not exceed 65533.
 
 .TP
 \fBEnforcePartLimits\fR
-If set to "ALL" then jobs which exceed a partition's size and/or
-time limits will be rejected at submission time. If job is submitted to
-multiple partitions, the job must satisfy the limits on all the requested
-partitions. If set to "NO" then the job will be accepted and remain queued
-until the partition limits are altered(Time and Node Limits).
+If set to "ALL" then jobs which exceed the number of nodes in a partition and/or
+any of its configured limits will be rejected at submission time. If job is
+submitted to multiple partitions, the job must satisfy the limits on all the
+requested partitions. If set to "NO" then the job will be accepted and remain
+queued until the partition limits are altered(Maxtime, MaxMemperNode...).
 If set to "ANY" a job must satisfy any of the requested partitions
 to be submitted. The default value is "NO".
 \fBNOTE\fR: If set, then a job's QOS can not be used to exceed partition limits.
-\fBNOTE\fR: The partition limits being considered are its configured
-MaxMemPerCPU, MaxMemPerNode, MinNodes, MaxNodes, MaxTime, AllocNodes,
+\fBNOTE\fR: The partition limits being considered by this option are its
+configured MaxMemPerCPU, MaxMemPerNode, MinNodes, MaxNodes, MaxTime, AllocNodes,
 AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold.
 .IP
 
