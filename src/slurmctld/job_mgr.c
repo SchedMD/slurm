@@ -3771,9 +3771,7 @@ static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
 	if (((*rc == ESLURM_NODES_BUSY) ||
 	     (*rc == ESLURM_RESERVATION_BUSY) ||
 	     (*rc == ESLURM_PORTS_BUSY)) &&
-	    (*best_rc == -1) &&
-	    ((slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY) ||
-	     (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_NONE))) {
+	    (*best_rc == -1)) {
 		if (*test_only)
 			return SLURM_SUCCESS;
 
