@@ -93,9 +93,16 @@ static void *_cleanup_thread(void *data)
 
 		for (int i = 0; i < arraylen; i++) {
 			bool release = false;
+			const char *jobstr;
+			char *endptr = NULL;
 			jobjson = json_object_array_get_idx(jobsjson, i);
-			job_id = atoi(json_object_get_string(jobjson) +
-				      path_len);
+			jobstr = json_object_get_string(jobjson) + path_len;
+			job_id = strtol(jobstr, &endptr, 10);
+			if (endptr && (*endptr != '\0')) {
+				log_flag(SWITCH, "Skipping fabric manager job '%s'",
+					 jobstr);
+				continue;
+			}
 
 			lock_slurmctld(job_read_lock);
 			job_ptr = find_job_record(job_id);
