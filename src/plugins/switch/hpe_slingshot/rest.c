@@ -131,7 +131,7 @@ again:
 		goto err;
 
 	/* Decode response into JSON */
-	if (response_str) {
+	if (response_str && response_str[0]) {
 		enum json_tokener_error jerr;
 		respjson = json_tokener_parse_verbose(response_str, &jerr);
 		if (respjson == NULL) {
@@ -140,6 +140,11 @@ again:
 			      response_str);
 			goto err;
 		}
+	} else if (request_method != HTTP_REQUEST_DELETE) {
+		debug("%s %s %s No response data received %ld, retrying",
+		      conn->name, get_http_method_string(request_method), url,
+		      *status);
+		goto err;
 	}
 
 	if (((*status >= HTTP_OK) && (*status <= HTTP_LAST_OK)) ||
@@ -214,19 +219,18 @@ extern json_object *slingshot_rest_get(slingshot_rest_conn_t *conn,
 extern bool slingshot_rest_delete(slingshot_rest_conn_t *conn,
 				  const char *urlsuffix, long *status)
 {
-	json_object *respjson = NULL;
-	bool rc = true;
-
 	/* Only delete if we successfully POSTed before */
 	if (!conn || !conn->base_url)
 		return false;
 
-	respjson = _rest_call(conn, HTTP_REQUEST_DELETE, urlsuffix, NULL,
-			      status, false);
-	if (!respjson)
-		rc = false;
-	json_object_put(respjson);
-	return rc;
+	/* Don't need the response. Just free it with json_object_put */
+	json_object_put(_rest_call(conn, HTTP_REQUEST_DELETE, urlsuffix, NULL,
+				   status, false));
+
+	if ((*status >= HTTP_OK) && (*status <= HTTP_LAST_OK))
+		return true;
+	else
+		return false;
 }
 
 /*
