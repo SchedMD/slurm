@@ -1966,6 +1966,24 @@ static bool _filter_exclusive_user_mcs_nodes(job_record_t *job_ptr,
 	return args.delay_start;
 }
 
+/* This is for use in _attempt_backfill() only */
+#define SKIP_SCHED_OR_TRY_LATER(job_ptr, job_no_reserve, later_start,	\
+				orig_time_limit, orig_start_time)	\
+{									\
+	_set_job_time_limit(job_ptr, orig_time_limit);			\
+	if (later_start && !job_no_reserve) {				\
+		job_ptr->start_time = 0;				\
+		goto TRY_LATER;						\
+	}								\
+	/*								\
+	 * Job can not start until too far in the future.		\
+	 * Use orig_start_time if job can't				\
+	 * start in different partition it will be 0			\
+	 */								\
+	job_ptr->start_time = orig_start_time;				\
+	continue;	/* not runnable in this partition */		\
+}
+
 static void _attempt_backfill(void)
 {
 	DEF_TIMERS;
@@ -2734,15 +2752,10 @@ next_task:
 						     &later_filter_start,
 						     avail_bitmap)) {
 			/* start_res delayed must check resv times again */
-			if (!job_no_reserve) {
-				job_ptr->start_time = 0;
-				later_start = later_filter_start;
-				goto TRY_LATER;
-			}
-			/* Job can not start until too far in the future */
-			_set_job_time_limit(job_ptr, orig_time_limit);
-			job_ptr->start_time = orig_start_time;
-			continue;
+			later_start = later_filter_start;
+			SKIP_SCHED_OR_TRY_LATER(job_ptr, job_no_reserve,
+						later_start, orig_time_limit,
+						orig_start_time);
 		}
 
 		tmp_bitmap = bit_copy(avail_bitmap);
@@ -2806,19 +2819,9 @@ next_task:
 		     (!bit_super_set(job_ptr->details->req_node_bitmap,
 				     avail_bitmap))) ||
 		    (job_req_node_filter(job_ptr, avail_bitmap, true))) {
-			if (later_start && !job_no_reserve) {
-				job_ptr->start_time = 0;
-				goto TRY_LATER;
-			}
-
-			/* Job can not start until too far in the future */
-			_set_job_time_limit(job_ptr, orig_time_limit);
-			/*
-			 * Use orig_start_time if job can't
-			 * start in different partition it will be 0
-			 */
-			job_ptr->start_time = orig_start_time;
-			continue;
+			SKIP_SCHED_OR_TRY_LATER(job_ptr, job_no_reserve,
+						later_start, orig_time_limit,
+						orig_start_time);
 		}
 
 		if (!later_start && later_filter_start)
@@ -2826,14 +2829,9 @@ next_task:
 
 		/* Test if insufficient nodes remain */
 		if (bit_set_count(avail_bitmap) < min_nodes) {
-			if (later_start && !job_no_reserve) {
-				job_ptr->start_time = 0;
-				goto TRY_LATER;
-			}
-			/* Job can not start until too far in the future */
-			_set_job_time_limit(job_ptr, orig_time_limit);
-			job_ptr->start_time = orig_start_time;
-			continue;
+			SKIP_SCHED_OR_TRY_LATER(job_ptr, job_no_reserve,
+						later_start, orig_time_limit,
+						orig_start_time);
 		}
 
 		/* Identify nodes which are definitely off limits */
@@ -2954,13 +2952,9 @@ next_task:
 
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
-			_set_job_time_limit(job_ptr, orig_time_limit);
-			if (later_start && !job_no_reserve) {
-				job_ptr->start_time = 0;
-				goto TRY_LATER;
-			}
-			job_ptr->start_time = orig_start_time;
-			continue;	/* not runable in this partition */
+			SKIP_SCHED_OR_TRY_LATER(job_ptr, job_no_reserve,
+						later_start, orig_time_limit,
+						orig_start_time);
 		}
 
 		if (start_res > job_ptr->start_time) {
