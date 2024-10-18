@@ -230,14 +230,7 @@ static bool _clear_hwcoll(uint32_t job_id)
 	return false;
 }
 
-/*
- * If Slingshot hardware collectives are configured, and the job has
- * enough nodes, reserve the configured per-job number of multicast addresses
- * by registering the job with the fabric manager
- */
-extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
-					uint32_t node_cnt, uint32_t job_id,
-					uint32_t step_id)
+static json_object *_post_job_to_fabric_manager(uint32_t job_id)
 {
 	long status = 0;
 	json_object *reqjson = NULL;
@@ -245,17 +238,6 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 	json_object *mcasts_json = NULL;
 	json_object *respjson = NULL;
 	char *jobid_str = NULL;
-	const char *token = NULL;
-	bool rc = false;
-
-	/*
-	 * Only reserve multicast addresses if configured and job has
-	 * enough nodes
-	 */
-	if (!slingshot_config.fm_url || !collectives_enabled ||
-	    (slingshot_config.hwcoll_num_nodes == 0) ||
-	    (node_cnt < slingshot_config.hwcoll_num_nodes))
-		return true;
 
 	/* Put job ID and number of multicast addresses to reserve in payload */
 	jobid_str = xstrdup_printf("%u", job_id);
@@ -281,12 +263,60 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 	}
 	log_flag(SWITCH, "respjson='%s'", json_object_to_json_string(respjson));
 
+out:
+	xfree(jobid_str);
+	json_object_put(reqjson);
+
+	return respjson;
+}
+
+/*
+ * If Slingshot hardware collectives are configured, and the job has
+ * enough nodes, reserve the configured per-job number of multicast addresses
+ * by registering the job with the fabric manager
+ */
+extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
+					uint32_t node_cnt, uint32_t job_id,
+					uint32_t step_id)
+{
+	long status = 0;
+	json_object *respjson = NULL;
+	char *jobid_str = NULL, *url;
+	const char *token = NULL;
+	bool rc = false;
+
+	/*
+	 * Only reserve multicast addresses if configured and job has
+	 * enough nodes
+	 */
+	if (!slingshot_config.fm_url || !collectives_enabled ||
+	    (slingshot_config.hwcoll_num_nodes == 0) ||
+	    (node_cnt < slingshot_config.hwcoll_num_nodes))
+		return true;
+
+	/* GET on the job object if it already exists */
+	url = xstrdup_printf("/fabric/collectives/jobs/%u", job_id);
+	if (!(respjson = slingshot_rest_get(&fm_conn, url, &status))) {
+		error("GET %s to fabric manager for job failed: %ld",
+			url, status);
+	} else {
+		log_flag(SWITCH, "GET %s resp='%s'",
+				url, json_object_to_json_string(respjson));
+	}
+	xfree(url);
+
+	if (status == HTTP_NOT_FOUND) {
+		/* If the job object doesn't exist, create it */
+		respjson = _post_job_to_fabric_manager(job_id);
+	}
+
 	/* Get per-job session token out of response */
 	if (!(token = json_object_get_string(
 			json_object_object_get(respjson, "sessionToken")))) {
 		error("Couldn't extract sessionToken from fabric manager response");
 		goto out;
 	}
+
 	/* Put info in job struct to send to slurmd */
 	job->hwcoll = xmalloc(sizeof(slingshot_hwcoll_t));
 	job->hwcoll->job_id = job_id;
@@ -295,21 +325,6 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 	job->hwcoll->fm_url = xstrdup(slingshot_config.fm_url);
 	job->hwcoll->addrs_per_job = slingshot_config.hwcoll_addrs_per_job;
 	job->hwcoll->num_nodes = slingshot_config.hwcoll_num_nodes;
-
-	/* If in debug mode, do a GET on the new job object and print it */
-	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
-		char *url = xstrdup_printf("/fabric/collectives/jobs/%u",
-					   job_id);
-		json_object_put(respjson);
-		if (!(respjson = slingshot_rest_get(&fm_conn, url, &status))) {
-			error("GET %s to fabric manager for job failed: %ld",
-			      url, status);
-		} else {
-			log_flag(SWITCH, "GET %s resp='%s'",
-				 url, json_object_to_json_string(respjson));
-		}
-		xfree(url);
-	}
 
 	/*
 	 * Save jobID in slingshot_state.job_hwcoll[] array to indicate
@@ -321,7 +336,6 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 
 out:
 	xfree(jobid_str);
-	json_object_put(reqjson);
 	json_object_put(respjson);
 	return rc;
 }
