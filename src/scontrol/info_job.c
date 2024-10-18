@@ -63,6 +63,9 @@ static node_info_msg_t *_get_node_info_for_jobs(void)
 	node_info_msg_t *node_info_msg = NULL;
 	uint16_t show_flags = 0;
 
+	if (old_node_info_ptr)
+		return old_node_info_ptr;
+
 	/* Must load all nodes including hidden for cross-index
 	 * from job's node_inx to node table to work */
 	/*if (all_flag)		Always set this flag */
