@@ -76,6 +76,7 @@ documents those changes that are of interest to users and administrators.
  -- accounting_storage/mysql - Fix bug when removing an association
     specified with an empty partition.
  -- Fix setting multiple partition state restore on a job correctly.
+ -- Fix difference in behavior when swapping partition order in job submission.
 
 * Changes in Slurm 24.05.3
 ==========================
