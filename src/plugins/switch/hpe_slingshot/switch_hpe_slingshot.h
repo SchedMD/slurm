@@ -79,6 +79,10 @@
 #define SLINGSHOT_RDZV_GET_EN_DEFAULT_FMT \
 	"/sys/module/cxi_%s/parameters/rdzv_get_en_default"
 
+/* RGID sharing: max_lnis_per_rgid value found here - insert device name */
+#define SLINGSHOT_RGIDS_AVAIL_FMT \
+	"/sys/class/cxi/%s/device/properties/rgids_avail"
+
 extern int free_vnis; /* Number of free VNIs */
 
 /* Set of valid auth types used for REST */
