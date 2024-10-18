@@ -696,6 +696,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	};
 
 	storage_field_t txn_table_fields[] = {
+		{ "deleted", "tinyint default 0 not null" },
 		{ "id", "int not null auto_increment" },
 		{ "timestamp", "bigint unsigned default 0 not null" },
 		{ "action", "smallint not null" },
@@ -1284,6 +1285,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t event_table_fields[] = {
+		{ "deleted", "tinyint default 0 not null" },
 		{ "time_start", "bigint unsigned not null" },
 		{ "time_end", "bigint unsigned default 0 not null" },
 		{ "node_name", "tinytext default '' not null" },
@@ -1376,6 +1378,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t job_env_table_fields[] = {
+		{ "deleted", "tinyint default 0 not null" },
 		{ "hash_inx", "bigint unsigned not null auto_increment" },
 		{ "last_used", "timestamp DEFAULT CURRENT_TIMESTAMP not null" },
 		{ "env_hash", "text not null" },
@@ -1384,6 +1387,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t job_script_table_fields[] = {
+		{ "deleted", "tinyint default 0 not null" },
 		{ "hash_inx", "bigint unsigned not null auto_increment" },
 		{ "last_used", "timestamp DEFAULT CURRENT_TIMESTAMP not null" },
 		{ "script_hash", "text not null" },
@@ -1463,6 +1467,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t suspend_table_fields[] = {
+		{ "deleted", "tinyint default 0 not null" },
 		{ "job_db_inx", "bigint unsigned not null" },
 		{ "id_assoc", "int not null" },
 		{ "time_start", "bigint unsigned default 0 not null" },
