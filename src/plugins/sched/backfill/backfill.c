@@ -1723,14 +1723,27 @@ static void _handle_planned(bool set)
 		}
 		if (set) {
 			/*
-			 * If the node is allocated ignore this flag. This only
-			 * really matters for IDLE and MIXED.
+			 * If the node is fully allocated ignore this flag.
+			 * This only really matters for IDLE and MIXED.
 			 */
-			if (!IS_NODE_ALLOCATED(node_ptr)) {
+			if (IS_NODE_ALLOCATED(node_ptr)) {
+				uint16_t alloc_cpus = 0, idle_cpus = 0;
+
+				select_g_select_nodeinfo_get(
+					node_ptr->select_nodeinfo,
+					SELECT_NODEDATA_SUBCNT,
+					NODE_STATE_ALLOCATED, &alloc_cpus);
+				idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
+				if (idle_cpus &&
+				    (idle_cpus < node_ptr->cpus_efctv))
+					goto mixed;
+
+				bit_clear(planned_bitmap, n);
+			} else {
+mixed:
 				node_ptr->node_state |= NODE_STATE_PLANNED;
 				node_update = true;
-			} else
-				bit_clear(planned_bitmap, n);
+			}
 		} else {
 			node_ptr->node_state &= ~NODE_STATE_PLANNED;
 			node_update = true;
@@ -1738,7 +1751,7 @@ static void _handle_planned(bool set)
 		}
 
 		log_flag(BACKFILL, "%s: %s state is %s",
-			 set ? "cleared" : "set",
+			 set ? "set" : "cleared",
 			 node_ptr->name,
 			 node_state_string(node_ptr->node_state));
 	}
@@ -1787,7 +1800,7 @@ static void _attempt_backfill(void)
 	time_t tmp_preempt_start_time = 0;
 	bool tmp_preempt_in_progress = false;
 	bitstr_t *tmp_bitmap = NULL;
-	bool state_changed_break = false;
+	bool state_changed_break = false, nodes_planned = false;
 	resv_exc_t resv_exc = { 0 };
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock = {
@@ -1813,7 +1826,7 @@ static void _attempt_backfill(void)
 	sched_start = orig_sched_start = now = time(NULL);
 	gettimeofday(&start_tv, NULL);
 
-	_handle_planned(false);
+	_handle_planned(nodes_planned);
 
 	job_queue = build_job_queue(true, true);
 	job_test_count = list_count(job_queue);
@@ -1978,6 +1991,9 @@ static void _attempt_backfill(void)
 				     slurmctld_diag_stats.bf_last_depth,
 				     job_test_count, TIME_STR);
 			}
+			/* Sync planned nodes before yielding locks */
+			nodes_planned = true;
+			_handle_planned(nodes_planned);
 			if (_yield_locks(yield_sleep)) {
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
@@ -1991,6 +2007,7 @@ static void _attempt_backfill(void)
 			gettimeofday(&start_tv, NULL);
 			job_test_count = 0;
 			test_time_count = 0;
+			nodes_planned = false;
 			START_TIMER;
 		}
 
@@ -2354,6 +2371,9 @@ next_task:
 				     slurmctld_diag_stats.bf_last_depth,
 				     job_test_count, test_time_count, TIME_STR);
 			}
+			/* Sync planned nodes before yielding locks */
+			nodes_planned = true;
+			_handle_planned(nodes_planned);
 			if (_yield_locks(yield_sleep)) {
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
@@ -2368,6 +2388,7 @@ next_task:
 			gettimeofday(&start_tv, NULL);
 			job_test_count = 1;
 			test_time_count = 0;
+			nodes_planned = false;
 			START_TIMER;
 
 			if (is_job_array_head &&
@@ -3213,7 +3234,8 @@ skip_start:
 		}
 	}
 
-	_handle_planned(true);
+	if (!nodes_planned)
+		_handle_planned(true);
 
 	xfree(job_queue_rec);
 

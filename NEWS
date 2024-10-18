@@ -172,6 +172,8 @@ documents those changes that are of interest to users and administrators.
     timeouts between two consecutive node levels.
  -- Add ability to submit jobs with multiple QOS.
  -- Fix difference in behavior when swapping partition order in job submission.
+ -- Improve PLANNED state detection for mixed nodes and updating state before
+    yielding backfill locks.
 
 * Changes in Slurm 24.05.4
 ==========================
