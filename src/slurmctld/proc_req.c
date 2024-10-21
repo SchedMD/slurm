@@ -3190,11 +3190,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		xfree(remaining_nodes);
 	}
 
-	server_thread_decr();
 	reconfigure_slurm(msg);
-	server_thread_incr();
-	fd_close(&msg->conn_fd);
-	slurm_free_msg(msg);
 }
 
 /* _slurm_rpc_takeover - process takeover RPC */

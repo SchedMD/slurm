@@ -301,11 +301,32 @@ static void _usage(void);
 static bool         _verify_clustername(void);
 static void *       _wait_primary_prog(void *arg);
 
+static void _send_reconfig_replies(void)
+{
+	slurm_msg_t *msg = NULL;
+
+	while ((msg = list_pop(reconfig_reqs))) {
+		/* Must avoid sending reply via msg->conmgr_fd */
+		xassert((msg->conn_fd >= 0) || msg->conn);
+
+		(void) slurm_send_rc_msg(msg, reconfig_rc);
+		fd_close(&msg->conn_fd);
+		slurm_free_msg(msg);
+	}
+}
+
 static void _attempt_reconfig(void)
 {
 	info("Attempting to reconfigure");
 
 	conmgr_quiesce(__func__);
+
+	/*
+	 * Send RC to requestors in foreground mode now as slurmctld is about
+	 * to call exec() which will close connections.
+	 */
+	if (!daemonize && !under_systemd)
+		_send_reconfig_replies();
 
 	reconfig_rc = _try_to_reconfig();
 
@@ -315,6 +336,8 @@ static void _attempt_reconfig(void)
 		slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
 	}
 	slurm_mutex_unlock(&reconfig_mutex);
+
+	_send_reconfig_replies();
 
 	if (!reconfig_rc) {
 		info("Relinquishing control to new child");
@@ -1350,21 +1373,13 @@ extern void reconfigure_slurm(slurm_msg_t *msg)
 {
 	xassert(msg);
 
-	pthread_kill(pthread_self(), SIGHUP);
+	list_append(reconfig_reqs, msg);
 
-	if (!daemonize && !under_systemd) {
-		/*
-		 * Reconfigure will exec() within this process in this case.
-		 * Return now assuming success - we won't have a chance later.
-		 */
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		return;
-	}
+	pthread_kill(pthread_self(), SIGHUP);
 
 	slurm_mutex_lock(&reconfig_mutex);
 	reconfig_threads++;
 	slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
-	slurm_send_rc_msg(msg, reconfig_rc);
 	reconfig_threads--;
 	slurm_cond_broadcast(&reconfig_cond);
 	slurm_mutex_unlock(&reconfig_mutex);
