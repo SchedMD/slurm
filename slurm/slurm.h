@@ -1027,8 +1027,6 @@ enum node_states {
 #define NODE_STATE_POWER_DRAIN SLURM_BIT(25) /* signal power down asap */
 #define NODE_STATE_DYNAMIC_NORM SLURM_BIT(26) /* dynamic norm node */
 #define NODE_STATE_BLOCKED SLURM_BIT(27) /* node blocked by exclusive topo */
-#define NODE_STATE_RECONFIG_REQUESTED SLURM_BIT(28) /* node reconfig
-						     * requested */
 
 /* Used as show_flags for slurm_get_ and slurm_load_ function calls.
  * Values can be ORed */

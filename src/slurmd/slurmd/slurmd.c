@@ -54,7 +54,6 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <pthread.h>
-#include <poll.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -167,10 +166,6 @@ static int             active_threads = 0;
 static pthread_mutex_t active_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
 
-typedef struct registration_engine_arg {
-	bool original;
-} registration_engine_arg_t;
-
 /*
  * Global data for resource specialization
  */
@@ -229,7 +224,7 @@ static void *_try_to_reconfig(void *ptr);
 static void      _update_nice(void);
 static void      _usage(void);
 static int       _validate_and_convert_cpu_list(void);
-static int _wait_for_all_threads(int secs);
+static void      _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
 
 /**************************************************************************\
@@ -354,8 +349,6 @@ main (int argc, char **argv)
 	char *oom_value;
 	char time_stamp[256];
 	int pidfd;
-	registration_engine_arg_t registration_arg;
-	registration_arg.original = false;
 
 	if (getenv("SLURMD_RECONF"))
 		original = false;
@@ -435,10 +428,8 @@ main (int argc, char **argv)
 		set_oom_adj(i);
 	}
 
-	if (original) {
+	if (original)
 		_wait_on_old_slurmd(true);
-		registration_arg.original = true;
-	}
 
 	if (conf->mlock_pages) {
 		/*
@@ -500,7 +491,7 @@ main (int argc, char **argv)
 		run_script_health_check();
 
 	record_launched_jobs();
-	slurm_thread_create_detached(_registration_engine, &registration_arg);
+	slurm_thread_create_detached(_registration_engine, NULL);
 
 	conmgr_run(true);
 
@@ -514,7 +505,7 @@ main (int argc, char **argv)
 		      conf->pidfile);
 
 	/* Wait for prolog/epilog scripts to finish or timeout */
-	(void)_wait_for_all_threads(slurm_conf.prolog_epilog_timeout);
+	_wait_for_all_threads(slurm_conf.prolog_epilog_timeout);
 	/*
 	 * run_command_shutdown() will kill any scripts started with
 	 * run_command() including the prolog and epilog.
@@ -550,18 +541,16 @@ main (int argc, char **argv)
  * message.
  */
 static void *
-_registration_engine(void *x)
+_registration_engine(void *arg)
 {
 	static const uint32_t MAX_DELAY = 128;
 	uint32_t delay = 1;
-	registration_engine_arg_t *arg = (registration_engine_arg_t *)x;
 	_increment_thd_count();
 
 	while (!_shutdown && !sent_reg_time) {
 		int rc;
 
-		if (!(rc = send_registration_msg(SLURM_SUCCESS,
-			(arg->original ? 0 : SLURMD_REG_FLAG_RECONFIG ))))
+		if (!(rc = send_registration_msg(SLURM_SUCCESS)))
 			break;
 
 		debug("Unable to register with slurm controller (retry in %us): %s",
@@ -608,7 +597,8 @@ static void _increment_thd_count(void)
 }
 
 /* secs IN - wait up to this number of seconds for all threads to complete */
-static int _wait_for_all_threads(int secs)
+static void
+_wait_for_all_threads(int secs)
 {
 	struct timespec ts;
 	int rc;
@@ -623,24 +613,20 @@ static int _wait_for_all_threads(int secs)
 		if (secs == NO_VAL16) { /* Wait forever */
 			slurm_cond_wait(&active_cond, &active_mutex);
 		} else {
-			verbose("Waiting for all threads to complete for %d seconds.",
-				secs);
 			rc = pthread_cond_timedwait(&active_cond,
 						    &active_mutex, &ts);
 			if (rc == ETIMEDOUT) {
 				error("Timeout waiting for completion of %d threads",
 				      active_threads);
-				return SLURM_ERROR;
+				slurm_cond_signal(&active_cond);
+				slurm_mutex_unlock(&active_mutex);
+				return;
 			}
 		}
 	}
-	/*
-	 * We deliberatelly keep active_mutex locked. If we are in
-	 * _wait_for_all_threads the slurmd is going to exit or execv
-	 * another slurmd immediatelly (reconfigure).
-	 */
+	slurm_cond_signal(&active_cond);
+	slurm_mutex_unlock(&active_mutex);
 	verbose("all threads complete");
-	return SLURM_SUCCESS;
 }
 
 static void _service_connection(conmgr_callback_args_t conmgr_args,
@@ -835,7 +821,7 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 	}
 }
 
-extern int send_registration_msg(uint32_t status, uint16_t flags)
+extern int send_registration_msg(uint32_t status)
 {
 	int ret_val = SLURM_SUCCESS;
 	slurm_msg_t req, resp_msg;
@@ -849,10 +835,6 @@ extern int send_registration_msg(uint32_t status, uint16_t flags)
 		msg->flags |= SLURMD_REG_FLAG_RESP;
 	if (conf->conf_cache)
 		msg->flags |= SLURMD_REG_FLAG_CONFIGLESS;
-	if (flags & SLURMD_REG_FLAG_RECONFIG)
-		msg->flags |= SLURMD_REG_FLAG_RECONFIG;
-	if (flags & SLURMD_REG_FLAG_RECONFIG_TIMEOUT)
-		msg->flags |= SLURMD_REG_FLAG_RECONFIG_TIMEOUT;
 
 	_fill_registration_msg(msg);
 	msg->status = status;
@@ -1418,29 +1400,15 @@ static void *_try_to_reconfig(void *ptr)
 	char **child_env;
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
-	char *tmp_ptr = NULL;
-	int reconfigure_timeout = slurm_conf.prolog_epilog_timeout;
+	const int rpc_wait = MAX(5, (slurm_conf.msg_timeout / 2));
 	DEF_TIMERS;
 
 	conmgr_quiesce(__func__);
 
 	START_TIMER;
 
-	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmd_params,
-				   "reconfigure_timeout=")))
-		reconfigure_timeout = atoi(tmp_ptr + 20);
-	if (reconfigure_timeout == -1)
-		reconfigure_timeout = NO_VAL16;
-
-	if (_wait_for_all_threads(reconfigure_timeout)) {
-		error("Failed to reconfigure within %d s - draining node",
-		      reconfigure_timeout);
-		send_registration_msg(SLURM_SUCCESS,
-				      SLURMD_REG_FLAG_RECONFIG_TIMEOUT);
-		slurm_mutex_unlock(&active_mutex);
-		conmgr_unquiesce(__func__);
-		return NULL;
-	}
+	/* Wait for RPCs to finish */
+	_wait_for_all_threads(rpc_wait);
 
 	if (_shutdown) {
 		conmgr_unquiesce(__func__);
@@ -2321,7 +2289,7 @@ static void _dynamic_init(void)
 		 * in order to load in correct configs (e.g. gres, etc.). First
 		 * get the mapped node_name from the slurmctld.
 		 */
-		send_registration_msg(SLURM_SUCCESS, false);
+		send_registration_msg(SLURM_SUCCESS);
 
 		/* send registration again after loading everything in */
 		sent_reg_time = 0;

@@ -2584,9 +2584,6 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	bool newly_up = false;
 	bool already_registered = false;
-	node_record_t *node_ptr = NULL;
-	typedef enum reconfig_always { UNKNOWN, TRUE, FALSE } reconfig_always_t;
-	static reconfig_always_t reconfig_always_required = UNKNOWN;
 	slurm_node_registration_status_msg_t *node_reg_stat_msg = msg->data;
 	slurmctld_lock_t job_write_lock = {
 		.conf = READ_LOCK,
@@ -2675,45 +2672,11 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 #ifdef HAVE_FRONT_END		/* Operates only on front-end */
 		error_code = validate_nodes_via_front_end(node_reg_stat_msg,
 							  msg->protocol_version,
-							  &newly_up, &node_ptr);
+							  &newly_up);
 #else
 		validate_jobs_on_node(msg);
-		error_code = validate_node_specs(msg, &newly_up, &node_ptr);
+		error_code = validate_node_specs(msg, &newly_up);
 #endif
-
-		if (reconfig_always_required == UNKNOWN) {
-			if (xstrstr(slurm_conf.slurmd_params,
-			    "reconfigure_flag_always_required")) {
-				reconfig_always_required = TRUE;
-				info("SlurmdParameters=reconfigure_flag_always_required set");
-			} else {
-				reconfig_always_required = FALSE;
-			}
-		}
-
-		if (!error_code && node_ptr &&
-		    IS_NODE_RECONFIG_REQUESTED(node_ptr) &&
-		    ((msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) ||
-		     ((msg->protocol_version == SLURM_24_05_PROTOCOL_VERSION) &&
-		      reconfig_always_required == FALSE) ||
-		     (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RECONFIG))) {
-			bit_clear(reconfig_node_bitmap, node_ptr->index);
-			node_ptr->node_state &=
-				(~NODE_STATE_RECONFIG_REQUESTED);
-		}
-
-		if (node_reg_stat_msg->flags &
-		    SLURMD_REG_FLAG_RECONFIG_TIMEOUT) {
-			verbose("Node reconfigure request timed out. Draining node %s",
-			     node_ptr->name);
-			bit_clear(reconfig_node_bitmap, node_ptr->index);
-			node_ptr->node_state &=
-				(~NODE_STATE_RECONFIG_REQUESTED);
-			drain_nodes(node_ptr->name, "Reconfigure timed out",
-				    getuid());
-		}
-
-
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_write_lock);
 		END_TIMER2(__func__);
@@ -3182,13 +3145,6 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		return;
 	} else
 		info("Processing Reconfiguration Request");
-
-	if (bit_ffs(reconfig_node_bitmap) >= 0) {
-		char *remaining_nodes = bitmap2node_name(reconfig_node_bitmap);
-		warning("Previous reconfigure request didn't complete on nodes: %s",
-			remaining_nodes);
-		xfree(remaining_nodes);
-	}
 
 	reconfigure_slurm(msg);
 }

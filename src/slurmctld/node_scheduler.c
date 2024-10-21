@@ -1839,8 +1839,6 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				bit_and_not(node_set_ptr[i].my_bitmap,
 					    cg_node_bitmap);
 			}
-			bit_and_not(node_set_ptr[i].my_bitmap,
-				     reconfig_node_bitmap);
 
 			bit_and_not(node_set_ptr[i].my_bitmap,
 				    rs_node_bitmap);
@@ -2140,9 +2138,7 @@ try_sched:
 				error_code = ESLURM_NODES_BUSY;
 			}
 			if (bit_overlap_any(job_ptr->details->req_node_bitmap,
-					    cg_node_bitmap) ||
-			    bit_overlap_any(job_ptr->details->req_node_bitmap,
-					    reconfig_node_bitmap)) {
+					    cg_node_bitmap)) {
 				error_code = ESLURM_NODES_BUSY;
 			}
 		} else if (!bit_super_set(job_ptr->details->req_node_bitmap,
@@ -2151,10 +2147,8 @@ try_sched:
 			/* Note: IDLE nodes are not COMPLETING */
 		}
 	} else if (job_ptr->details->req_node_bitmap &&
-		   (bit_overlap_any(job_ptr->details->req_node_bitmap,
-				   cg_node_bitmap) ||
-		    bit_overlap_any(job_ptr->details->req_node_bitmap,
-				    reconfig_node_bitmap))) {
+		   bit_overlap_any(job_ptr->details->req_node_bitmap,
+				   cg_node_bitmap)) {
 		error_code = ESLURM_NODES_BUSY;
 	}
 

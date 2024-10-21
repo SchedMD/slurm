@@ -5307,21 +5307,6 @@ Requires hwloc v2.
 .IP
 
 .TP
-\fBreconfigure_flag_always_required\fR
-Require dedicated flag setting in node registration requests confirming that
-node performed reconfigure. This can only be enabled if all slurmd daemons where
-updated to at least Slurm 24.05.4.
-.IP
-
-.TP
-\fBreconfigure_timeout=#\fR
-Number of seconds slurmd should wait to be able to perform reconfiguration
-request. After that time reconfigure request will be timed-out and the node
-drained. Special value of -1 makes it wait infinitely.
-The default is SlurmdTimeout / 3.
-.IP
-
-.TP
 \fBshutdown_on_reboot\fR
 If set, the Slurmd will shut itself down when a reboot request is received.
 .IP

@@ -112,7 +112,6 @@ bitstr_t *cloud_node_bitmap = NULL;	/* bitmap of cloud nodes */
 bitstr_t *future_node_bitmap = NULL;	/* bitmap of FUTURE nodes */
 bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
 bitstr_t *power_down_node_bitmap = NULL; /* bitmap of powered down nodes */
-bitstr_t *reconfig_node_bitmap = NULL; /* bitmap of reconfiguring nodes */
 bitstr_t *rs_node_bitmap    = NULL; 	/* bitmap of resuming nodes */
 bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
 bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
@@ -3081,11 +3080,9 @@ static int _set_gpu_spec(node_record_t *node_ptr, char **reason_down)
  *	if not set state to down, in any case update last_response
  * IN slurm_msg - get node registration message it
  * OUT newly_up - set if node newly brought into service
- * OUT node_pptr - node_ptr of registered node
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  */
-extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up,
-			       node_record_t **node_pptr)
+extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 {
 	int error_code;
 	config_record_t *config_ptr;
@@ -3111,7 +3108,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up,
 	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
-	*node_pptr = node_ptr;
 
 	debug3("%s: validating nodes %s in state: %s",
 	       __func__, reg_msg->node_name,
@@ -3736,13 +3732,11 @@ static front_end_record_t * _front_end_reg(
  * IN reg_msg - node registration message
  * IN protocol_version - Version of Slurm on this node
  * OUT newly_up - set if node newly brought into service
- * OUT node_pptr - node_ptr of registered node
  * RET 0 if no error, Slurm error code otherwise
  */
 extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg,
-		uint16_t protocol_version, bool *newly_up,
-		node_record_t **node_pptr)
+		uint16_t protocol_version, bool *newly_up)
 {
 	int error_code = 0, i, j, rc;
 	bool update_node_state = false;
@@ -4035,8 +4029,6 @@ extern int validate_nodes_via_front_end(
 
 	if (update_node_state)
 		last_node_update = time (NULL);
-
-	*node_pptr = node_ptr;
 	return error_code;
 }
 
@@ -4417,11 +4409,9 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 				node_record_table_ptr[node_ptr->index]->
 				protocol_version;
 		hostlist_push_host(kill_agent_args->hostlist, node_ptr->name);
-		node_ptr->node_state |= NODE_STATE_RECONFIG_REQUESTED;
 		kill_agent_args->node_count++;
 	}
 #endif
-	hostlist2bitmap(kill_agent_args->hostlist, false, &reconfig_node_bitmap);
 
 	if (kill_agent_args->node_count == 0) {
 		hostlist_destroy(kill_agent_args->hostlist);
@@ -4477,9 +4467,6 @@ extern void push_reconfig_to_slurmd(void)
 		    (IS_NODE_POWERED_DOWN(node_ptr) ||
 		     IS_NODE_POWERING_DOWN(node_ptr)))
 			continue;
-
-		node_ptr->node_state |= NODE_STATE_RECONFIG_REQUESTED;
-		bit_set(reconfig_node_bitmap, node_ptr->index);
 
 		for (ver = 0; ver < RELEVANT_VER; ver++) {
 			curr_args = ver_args[ver];
@@ -4827,8 +4814,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 	bit_set(up_node_bitmap, node_ptr->index);
 
 	if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr) ||
-	    IS_NODE_NO_RESPOND(node_ptr) ||
-	    IS_NODE_RECONFIG_REQUESTED(node_ptr))
+	    IS_NODE_NO_RESPOND(node_ptr))
 		bit_clear(avail_node_bitmap, node_ptr->index);
 	else
 		make_node_avail(node_ptr);
@@ -4856,8 +4842,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 	} else {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
-		     !IS_NODE_FAIL(node_ptr) && !IS_NODE_DRAIN(node_ptr) &&
-		     !IS_NODE_RECONFIG_REQUESTED(node_ptr))
+		     !IS_NODE_FAIL(node_ptr) && !IS_NODE_DRAIN(node_ptr))
 			make_node_avail(node_ptr);
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
 		    !IS_NODE_COMPLETING(node_ptr))
@@ -4943,7 +4928,6 @@ extern void node_fini (void)
 	FREE_NULL_BITMAP(power_up_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
-	FREE_NULL_BITMAP(reconfig_node_bitmap);
 	FREE_NULL_BITMAP(rs_node_bitmap);
 	node_fini2();
 }
@@ -5432,7 +5416,6 @@ static void _remove_node_from_all_bitmaps(node_record_t *node_ptr)
 	bit_clear(power_down_node_bitmap, node_ptr->index);
 	bit_clear(power_up_node_bitmap, node_ptr->index);
 	bit_clear(rs_node_bitmap, node_ptr->index);
-	bit_clear(reconfig_node_bitmap, node_ptr->index);
 	bit_clear(share_node_bitmap, node_ptr->index);
 	bit_clear(up_node_bitmap, node_ptr->index);
 }

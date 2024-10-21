@@ -165,9 +165,8 @@ extern bool tres_packed;
 
 /* Send node registration message with status to controller
  * IN status - same values slurm error codes (for node shutdown)
- * IN flags - registration message flags to set
  */
-int send_registration_msg(uint32_t status, uint16_t flags);
+int send_registration_msg(uint32_t status);
 
 /* Run the health check program if configured */
 int run_script_health_check(void);
