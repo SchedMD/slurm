@@ -725,7 +725,7 @@ static int _init_stepd_system_scope(pid_t pid)
 	self_cg_path = _get_self_cg_path();
 	if (xstrcmp(self_cg_path, int_cg[CG_LEVEL_SYSTEM].path)) {
 		error("Could not move slurmstepd pid %d to a Slurm's delegated cgroup. Should be in %s, we are in %s.",
-		      pid, self_cg_path, int_cg[CG_LEVEL_SYSTEM].path);
+		      pid, int_cg[CG_LEVEL_SYSTEM].path, self_cg_path);
 		xfree(self_cg_path);
 		return SLURM_ERROR;
 	}
