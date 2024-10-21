@@ -177,7 +177,6 @@ static int	ncpus;			/* number of CPUs on this node */
  */
 static bool original = true;
 static bool under_systemd = false;
-static bool reconfiguring = false;
 static sig_atomic_t _shutdown = 0;
 static sig_atomic_t _reconfig = 0;
 static sig_atomic_t _update_log = 0;
@@ -486,12 +485,11 @@ static void _msg_engine(void)
 	msg_pthread = pthread_self();
 	slurmd_req(NULL);	/* initialize timer */
 	while (!_shutdown) {
-		if (_reconfig && !reconfiguring) {
+		if (_reconfig) {
 			DEF_TIMERS;
 			START_TIMER;
 			verbose("got reconfigure request");
 			/* Wait for RPCs to finish */
-			reconfiguring = true;
 			slurm_thread_create_detached(_try_to_reconfig, NULL);
 			END_TIMER3("_reconfigure request - slurmd doesn't accept new connections during this time.",
 				   5000000);
@@ -2429,10 +2427,6 @@ static void
 _hup_handler(int signum)
 {
 	if (signum == SIGHUP) {
-		if (reconfiguring) {
-			error("Received reconfigure request while already processing reconfigure request");
-			return;
-		}
 		_reconfig = 1;
 	}
 }
