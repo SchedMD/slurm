@@ -299,6 +299,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 		}
 		req->qos_req = xstrdup(job_ptr->details->qos_req);
 	}
+	req->restart_cnt = job_ptr->restart_cnt;
 	req->resv_id       = job_ptr->resv_id;
 	req->priority      = job_ptr->priority;
 	req->timelimit     = job_ptr->time_limit;

@@ -149,6 +149,7 @@ typedef struct {
 	char *qos_req;
 	char *req_cpus;
 	char *req_mem;
+	char *restart_cnt;
 	char *resvid;
 	char *script_hash_inx;
 	char *start;
@@ -227,6 +228,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->qos_req);
 		xfree(object->req_cpus);
 		xfree(object->req_mem);
+		xfree(object->restart_cnt);
 		xfree(object->resvid);
 		xfree(object->script_hash_inx);
 		xfree(object->start);
@@ -585,6 +587,7 @@ static char *job_req_inx[] = {
 	"qos_req",
 	"cpus_req",
 	"mem_req",
+	"restart_cnt",
 	"id_resv",
 	"time_start",
 	"state",
@@ -647,6 +650,7 @@ enum {
 	JOB_REQ_QOS_REQ,
 	JOB_REQ_REQ_CPUS,
 	JOB_REQ_REQ_MEM,
+	JOB_REQ_RESTART_CNT,
 	JOB_REQ_RESVID,
 	JOB_REQ_START,
 	JOB_REQ_STATE,
@@ -1052,6 +1056,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->qos_req, buffer);
 	packstr(object->req_cpus, buffer);
 	packstr(object->req_mem, buffer);
+	packstr(object->restart_cnt, buffer);
 	packstr(object->resvid, buffer);
 	packstr(object->start, buffer);
 	packstr(object->state, buffer);
@@ -1123,6 +1128,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->qos_req, buffer);
 		safe_unpackstr(&object->req_cpus, buffer);
 		safe_unpackstr(&object->req_mem, buffer);
+		safe_unpackstr(&object->restart_cnt, buffer);
 		safe_unpackstr(&object->resvid, buffer);
 		safe_unpackstr(&object->start, buffer);
 		safe_unpackstr(&object->state, buffer);
@@ -3615,6 +3621,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.qos_req = row[JOB_REQ_QOS_REQ];
 		job.req_cpus = row[JOB_REQ_REQ_CPUS];
 		job.req_mem = row[JOB_REQ_REQ_MEM];
+		job.restart_cnt = row[JOB_REQ_RESTART_CNT];
 		job.resvid = row[JOB_REQ_RESVID];
 		job.start = row[JOB_REQ_START];
 		job.state = row[JOB_REQ_STATE];
@@ -3673,6 +3680,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_QOS,
 		JOB_REQ_REQ_CPUS,
 		JOB_REQ_REQ_MEM,
+		JOB_REQ_RESTART_CNT,
 		JOB_REQ_RESVID,
 		JOB_REQ_SCRIPT_HASH_INX,
 		JOB_REQ_START,
@@ -3838,6 +3846,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     object.qos,
 			     object.req_cpus,
 			     object.req_mem,
+			     object.restart_cnt,
 			     object.resvid,
 			     object.script_hash_inx,
 			     object.start,

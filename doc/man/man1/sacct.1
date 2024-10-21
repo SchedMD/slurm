@@ -291,15 +291,16 @@ PlannedCPU          PlannedCPURAW       Priority            QOS
 QOSRAW              QOSREQ              Reason              ReqCPUFreq
 ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin       ReqCPUS
 ReqMem              ReqNodes            ReqTRES             Reservation
-ReservationId       Start               State               StdErr
-StdIn               StdOut              Submit              SubmitLine
-Suspended           SystemComment       SystemCPU           Timelimit
-TimelimitRaw        TotalCPU            TRESUsageInAve      TRESUsageInMax
-TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin      TRESUsageInMinNode
-TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve     TRESUsageOutMax
-TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin     TRESUsageOutMinNode
-TRESUsageOutMinTask TRESUsageOutTot     UID                 User
-UserCPU             WCKey               WCKeyID             WorkDir
+ReservationId       Restarts            Start               State
+StdErr              StdIn               StdOut              Submit
+SubmitLine          Suspended           SystemComment       SystemCPU
+Timelimit           TimelimitRaw        TotalCPU            TRESUsageInAve
+TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin
+TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve
+TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin
+TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot     UID
+User                UserCPU             WCKey               WCKeyID
+WorkDir
 .ft 1
 .fi
 .RE
@@ -1075,6 +1076,11 @@ Reservation Name.
 .TP
 \f3ReservationId\fP
 Reservation Id.
+.IP
+
+.TP
+\f3Restarts\fP
+How many times this job has been requeued/restarted.
 .IP
 
 .TP

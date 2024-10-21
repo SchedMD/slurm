@@ -6954,6 +6954,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse_overload(MEM_PER_CPUS, req_mem, 1, "required/memory_per_cpu", "Minimum memory in megabytes per allocated CPU"),
 	add_parse_overload(MEM_PER_NODE, req_mem, 1, "required/memory_per_node", "Minimum memory in megabytes per allocated node"),
 	add_parse(USER_ID, requid, "kill_request_user", "User ID that requested termination of the job"),
+	add_parse(UINT16, restart_cnt, "restart_cnt", "How many times this job has been requeued/restarted"),
 	add_parse(UINT32, resvid, "reservation/id", "Unique identifier of requested reservation"),
 	add_parse(STRING, resv_name, "reservation/name", "Name of reservation to use"),
 	add_cparse(JOB_PLANNED_TIME, "time/planned", "Time required to start job after becoming eligible to run in seconds"),
