@@ -4314,7 +4314,6 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 				node_record_table_ptr[node_ptr->index]->
 				protocol_version;
 		hostlist_push_host(kill_agent_args->hostlist, node_ptr->name);
-		node_ptr->node_state |= NODE_STATE_RECONFIG_REQUESTED;
 		kill_agent_args->node_count++;
 	}
 #endif
@@ -4380,19 +4379,16 @@ extern void push_reconfig_to_slurmd(void)
 
 		if (node_ptr->protocol_version >= SLURM_PROTOCOL_VERSION) {
 			hostlist_push_host(curr_args->hostlist, node_ptr->name);
-			node_ptr->node_state |= NODE_STATE_RECONFIG_REQUESTED;
 			curr_args->node_count++;
 			bit_set(reconfig_node_bitmap, node_ptr->index);
 		} else if (node_ptr->protocol_version ==
 			   SLURM_ONE_BACK_PROTOCOL_VERSION) {
 			hostlist_push_host(prev_args->hostlist, node_ptr->name);
-			node_ptr->node_state |= NODE_STATE_RECONFIG_REQUESTED;
 			prev_args->node_count++;
 			bit_set(reconfig_node_bitmap, node_ptr->index);
 		} else if (node_ptr->protocol_version ==
 			   SLURM_MIN_PROTOCOL_VERSION) {
 			hostlist_push_host(old_args->hostlist, node_ptr->name);
-			node_ptr->node_state |= NODE_STATE_RECONFIG_REQUESTED;
 			old_args->node_count++;
 			bit_set(reconfig_node_bitmap, node_ptr->index);
 		}

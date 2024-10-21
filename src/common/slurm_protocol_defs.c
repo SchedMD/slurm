@@ -152,7 +152,6 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_PLANNED, "PLANNED" },
 	{ NODE_STATE_POWERING_UP, "POWERING_UP" },
 	{ NODE_STATE_POWERING_DOWN, "POWERING_DOWN" },
-	{ NODE_STATE_RECONFIG_REQUESTED, "RECONFIG_REQUESTED" },
 };
 
 static const struct {
