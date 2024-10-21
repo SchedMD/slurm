@@ -48,7 +48,7 @@ extern slurmdb_stats_rec_t rpc_stats;
 
 extern void shutdown_threads(void);
 
-extern void reconfig(void);
+extern void *reconfig(void *arg);
 
 extern void handle_rollup_stats(list_t *rollup_stats_list,
 				long delta_time, int type);
