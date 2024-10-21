@@ -1258,6 +1258,41 @@ static void _get_swap_events(uint64_t *job_swkills, uint64_t *step_swkills)
 }
 
 /*
+ * This function checks that all the processes contained in the cgroup cg
+ * belong to our namespace.
+ *
+ * That is checked by ensuring none of the pids contained in the cgroup.procs
+ * interface are 0, which would indicate that we cannot see the pid of that
+ * process, meaning this process belongs to another namespace.
+ *
+ * Trying to move a 0 in Cgroups moves yourself.
+ *
+ * IN cg - the cgroup we want to check for cgroup.procs not containing 0's
+ * RET - SLURM_ERROR if cgroup.procs could not be read or there are 0's.
+ *       SLURM_SUCCESS otherwise.
+ */
+static int _check_cg_pids_correct_ns(xcgroup_t *cg)
+{
+	pid_t *pids = NULL;
+	int npids = 0, rc = SLURM_SUCCESS;
+
+	if (common_cgroup_get_pids(cg, &pids, &npids) != SLURM_SUCCESS) {
+		error("unable to get processes from %s cgroup", cg->path);
+		return SLURM_ERROR;
+	}
+
+	for (int i = 0; i < npids; i++) {
+		if (pids[i] == 0) {
+			error("We detected a pid 0 which means you are in a cgroup namespace and a mounted cgroup but with pids from the host that we're not allowed to manage.");
+			rc = SLURM_ERROR;
+			break;
+		}
+	}
+	xfree(pids);
+	return rc;
+}
+
+/*
  * Move the pids from 'from' cgroup to 'to' cgroup and enable the controllers.
  *
  * Create a new cgroup in the path resulting of the concenation of
@@ -1419,6 +1454,19 @@ extern int cgroup_p_setup_scope(char *scope_path)
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_ROOT], "",
 				 (uid_t) 0, (gid_t) 0) != SLURM_SUCCESS) {
 		error("unable to create root cgroup (%s)",
+		      int_cg[CG_LEVEL_ROOT].path);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Check whether there are pids in the root cgroup that do not belong to
+	 * this namespace, and exit if so, as we cannot handle processes from
+	 * another namespace.
+	 */
+	if (running_in_slurmd() &&
+	    (_check_cg_pids_correct_ns(&int_cg[CG_LEVEL_ROOT]) !=
+	     SLURM_SUCCESS)) {
+		error("cgroup %s contains pids from outside of our pid namespace, so we cannot manage this cgroup.",
 		      int_cg[CG_LEVEL_ROOT].path);
 		return SLURM_ERROR;
 	}
