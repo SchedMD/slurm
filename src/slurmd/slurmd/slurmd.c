@@ -1330,10 +1330,11 @@ static void _try_to_reconfig(void)
 	char **child_env;
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
+	int rpc_wait = MAX(5, slurm_conf.msg_timeout / 2);
 
 	_reconfig = 0;
 
-	_wait_for_all_threads(slurm_conf.prolog_epilog_timeout);
+	_wait_for_all_threads(rpc_wait);
 
 	if (_shutdown)
 		return;
