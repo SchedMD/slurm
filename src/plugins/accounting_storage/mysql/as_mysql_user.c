@@ -650,12 +650,12 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				     user_name, tmp_extra);
 		else
 			xstrfmtcatat(txn_query, &txn_query_pos,
-				   "insert into %s "
-				   "(timestamp, action, name, actor, info) "
-				   "values (%ld, %u, '%s', '%s', '%s')",
-				   txn_table,
-				   (long)now, DBD_ADD_USERS, object->name,
-				   user_name, tmp_extra);
+				     "insert into %s "
+				     "(timestamp, action, name, actor, info) "
+				     "values (%ld, %u, '%s', '%s', '%s')",
+				     txn_table,
+				     (long)now, DBD_ADD_USERS, object->name,
+				     user_name, tmp_extra);
 		xfree(tmp_extra);
 		xfree(extra);
 		if (object->assoc_list)
@@ -682,15 +682,15 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(txn_query);
 
 	if (list_count(assoc_list)) {
-		if ((rc = as_mysql_add_assocs(mysql_conn, uid, assoc_list))
-		     != SLURM_SUCCESS)
+		if ((rc = as_mysql_add_assocs(mysql_conn, uid, assoc_list)) !=
+		    SLURM_SUCCESS)
 			error("Problem adding user associations");
 	}
 	FREE_NULL_LIST(assoc_list);
 
 	if (rc == SLURM_SUCCESS && list_count(wckey_list)) {
-		if ((rc = as_mysql_add_wckeys(mysql_conn, uid, wckey_list))
-		    != SLURM_SUCCESS)
+		if ((rc = as_mysql_add_wckeys(mysql_conn, uid, wckey_list)) !=
+		    SLURM_SUCCESS)
 			error("Problem adding user wckeys");
 	}
 	FREE_NULL_LIST(wckey_list);
@@ -2070,9 +2070,9 @@ extern void as_mysql_user_handle_user_coord_flag(slurmdb_user_rec_t *user_rec,
 		debug2("Removing user %s from being a coordinator of account %s",
 		       user_rec->name, acct);
 	} else if ((flags & ASSOC_FLAG_USER_COORD) &&
-		 !list_find_first(user_rec->coord_accts,
-				  assoc_mgr_find_coord_in_user,
-				  acct)) {
+		   !list_find_first(user_rec->coord_accts,
+				    assoc_mgr_find_coord_in_user,
+				    acct)) {
 		slurmdb_coord_rec_t *coord = xmalloc(sizeof(*coord));
 
 		coord->name = xstrdup(acct);

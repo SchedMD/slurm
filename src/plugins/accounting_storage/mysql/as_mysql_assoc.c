@@ -1214,7 +1214,7 @@ static char *_setup_assoc_table_query(char *cluster_name, char *fields,
 				      char *filters, char *end)
 {
 	return xstrdup_printf("select distinct %s from \"%s_%s\" as t1 where%s%s",
-			       fields, cluster_name, assoc_table, filters, end);
+			      fields, cluster_name, assoc_table, filters, end);
 }
 
 /* When doing a select on this all the select should have a prefix of t1. */
@@ -1433,7 +1433,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		if (!_assoc_id_has_qos(mysql_conn, cluster_name, id,
 				       wanted_qos))
-				continue;
+			continue;
 
 		lft = slurm_atoul(row[MASSOC_LFT]);
 		rgt = slurm_atoul(row[MASSOC_RGT]);
@@ -1499,9 +1499,9 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				rc = ESLURM_ACCESS_DENIED;
 				goto end_it;
 			} else if (!assoc_mgr_check_coord_qos(cluster_name,
-							     account,
-							     user->name,
-							     assoc->qos_list)) {
+							      account,
+							      user->name,
+							      assoc->qos_list)) {
 				/*
 				 * The assoc READ_LOCK is locked in the caller.
 				 * This is only locking the qos READ_LOCK.
@@ -1542,7 +1542,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		} else {
 			if (assoc->parent_acct) {
 				if (!xstrcasecmp(row[MASSOC_ACCT],
-						assoc->parent_acct)) {
+						 assoc->parent_acct)) {
 					error("You can't make an account be a "
 					      "child of it's self");
 					continue;
@@ -2116,7 +2116,7 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 			itr = list_iterator_create(user->coord_accts);
 			while ((coord = list_next(itr))) {
 				if (!xstrcasecmp(coord->name,
-						row[RASSOC_ACCT]))
+						 row[RASSOC_ACCT]))
 					break;
 			}
 			list_iterator_destroy(itr);
@@ -3537,7 +3537,7 @@ static int _add_assoc_cond_acct(void *x, void *arg)
 	if (rc == SLURM_SUCCESS) {
 		char *tmp_str = xstrdup_printf(
 			"Already existing account %s on cluster %s",
-		       acct_assoc.acct, acct_assoc.cluster);
+			acct_assoc.acct, acct_assoc.cluster);
 		debug2("%s", tmp_str);
 		xstrfmtcatat(add_assoc_cond->ret_str,
 			     &add_assoc_cond->ret_str_pos,
@@ -3845,8 +3845,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (add_assoc_cond.is_coord &&
 		    !assoc_mgr_check_coord_qos(object->cluster, object->acct,
-					      add_assoc_cond.user_name,
-					      object->qos_list)) {
+					       add_assoc_cond.user_name,
+					       object->qos_list)) {
 			assoc_mgr_lock_t locks = {
 				NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				NO_LOCK, NO_LOCK, NO_LOCK };

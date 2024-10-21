@@ -130,10 +130,10 @@ static int _foreach_flag_coord_acct(void *x, void *arg)
 	};
 
 	if (assoc_mgr_fill_in_assoc(flag_coord_acct->mysql_conn,
-				     &assoc_req,
-				     ACCOUNTING_ENFORCE_ASSOCS,
-				     &assoc_ptr,
-				     true) != SLURM_SUCCESS)
+				    &assoc_req,
+				    ACCOUNTING_ENFORCE_ASSOCS,
+				    &assoc_ptr,
+				    true) != SLURM_SUCCESS)
 		return -1;
 	/* Only change if needed */
 	if (((assoc_ptr->flags & ASSOC_FLAG_USER_COORD) &&
@@ -276,10 +276,10 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 	if (acct_cond->flags != SLURMDB_ACCT_FLAG_NONE) {
 		if (acct_cond->flags & SLURMDB_ACCT_FLAG_USER_COORD_NO) {
 			xstrfmtcatat(*extra, at, " && !(flags & %u)",
-				   SLURMDB_ACCT_FLAG_USER_COORD);
+				     SLURMDB_ACCT_FLAG_USER_COORD);
 		} else if (acct_cond->flags & SLURMDB_ACCT_FLAG_USER_COORD) {
 			xstrfmtcatat(*extra, at, " && (flags & %u)",
-				   SLURMDB_ACCT_FLAG_USER_COORD);
+				     SLURMDB_ACCT_FLAG_USER_COORD);
 		}
 	}
 

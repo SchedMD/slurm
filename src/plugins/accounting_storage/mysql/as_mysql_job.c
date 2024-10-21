@@ -527,16 +527,16 @@ no_rollup_change:
 		}
 
 		xstrfmtcatat(query, &pos,
-			"insert into \"%s_%s\" "
-			"(id_job, mod_time, id_array_job, id_array_task, "
-			"het_job_id, het_job_offset, "
-			"id_assoc, id_qos, id_user, "
-			"id_group, nodelist, id_resv, timelimit, "
-			"time_eligible, time_submit, time_start, "
-			"job_name, state, priority, cpus_req, "
-			"nodes_alloc, mem_req, flags, state_reason_prev, "
-			"env_hash_inx, script_hash_inx",
-			mysql_conn->cluster_name, job_table);
+			     "insert into \"%s_%s\" "
+			     "(id_job, mod_time, id_array_job, id_array_task, "
+			     "het_job_id, het_job_offset, "
+			     "id_assoc, id_qos, id_user, "
+			     "id_group, nodelist, id_resv, timelimit, "
+			     "time_eligible, time_submit, time_start, "
+			     "job_name, state, priority, cpus_req, "
+			     "nodes_alloc, mem_req, flags, state_reason_prev, "
+			     "env_hash_inx, script_hash_inx",
+			     mysql_conn->cluster_name, job_table);
 
 		if (wckeyid)
 			xstrcatat(query, &pos, ", id_wckey");
@@ -554,10 +554,10 @@ no_rollup_change:
 			xstrcatat(query, &pos, ", qos_req");
 		if (array_recs && array_recs->task_id_str)
 			xstrcatat(query, &pos, ", array_task_str, "
-				"array_max_tasks, array_task_pending");
+				  "array_max_tasks, array_task_pending");
 		else
 			xstrcatat(query, &pos,
-				", array_task_str, array_task_pending");
+				  ", array_task_str, array_task_pending");
 
 		if (job_ptr->tres_alloc_str)
 			xstrcatat(query, &pos, ", tres_alloc");
@@ -581,25 +581,25 @@ no_rollup_change:
 			xstrcatat(query, &pos, ", licenses");
 
 		xstrfmtcatat(query, &pos,
-			   ") values (%u, UNIX_TIMESTAMP(), "
-			   "%u, %u, %u, %u, %u, %u, %u, %u, "
-			   "'%s', %u, %u, %ld, %ld, %ld, "
-			   "'%s', %u, %u, %u, %u, %"PRIu64", %u, %u, "
-			   "%"PRIu64", %"PRIu64,
-			   job_ptr->job_id,
-			   job_ptr->array_job_id, array_task_id,
-			   job_ptr->het_job_id, het_job_offset,
-			   job_ptr->assoc_id, job_ptr->qos_id,
-			   job_ptr->user_id, job_ptr->group_id, nodes,
-			   job_ptr->resv_id, job_ptr->time_limit,
-			   begin_time, submit_time, start_time,
-			   jname, job_state,
-			   job_ptr->priority, job_ptr->details->min_cpus,
-			   job_ptr->total_nodes,
-			   job_ptr->details->pn_min_memory,
-			   job_ptr->db_flags,
-			   job_ptr->state_reason_prev_db,
-			   env_hash_inx, script_hash_inx);
+			     ") values (%u, UNIX_TIMESTAMP(), "
+			     "%u, %u, %u, %u, %u, %u, %u, %u, "
+			     "'%s', %u, %u, %ld, %ld, %ld, "
+			     "'%s', %u, %u, %u, %u, %"PRIu64", %u, %u, "
+			     "%"PRIu64", %"PRIu64,
+			     job_ptr->job_id,
+			     job_ptr->array_job_id, array_task_id,
+			     job_ptr->het_job_id, het_job_offset,
+			     job_ptr->assoc_id, job_ptr->qos_id,
+			     job_ptr->user_id, job_ptr->group_id, nodes,
+			     job_ptr->resv_id, job_ptr->time_limit,
+			     begin_time, submit_time, start_time,
+			     jname, job_state,
+			     job_ptr->priority, job_ptr->details->min_cpus,
+			     job_ptr->total_nodes,
+			     job_ptr->details->pn_min_memory,
+			     job_ptr->db_flags,
+			     job_ptr->state_reason_prev_db,
+			     env_hash_inx, script_hash_inx);
 
 		if (wckeyid)
 			xstrfmtcatat(query, &pos, ", %u", wckeyid);
@@ -618,9 +618,9 @@ no_rollup_change:
 				     job_ptr->details->qos_req);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcatat(query, &pos, ", '%s', %u, %u",
-				   array_recs->task_id_str,
-				   array_recs->max_run_tasks,
-				   array_recs->task_cnt);
+				     array_recs->task_id_str,
+				     array_recs->max_run_tasks,
+				     array_recs->task_cnt);
 		else
 			xstrcatat(query, &pos, ", NULL, 0");
 
@@ -632,56 +632,56 @@ no_rollup_change:
 				     job_ptr->tres_req_str);
 		if (job_ptr->details->work_dir)
 			xstrfmtcatat(query, &pos, ", '%s'",
-				   job_ptr->details->work_dir);
+				     job_ptr->details->work_dir);
 		if (job_ptr->details->features)
 			xstrfmtcatat(query, &pos, ", '%s'",
-				   job_ptr->details->features);
+				     job_ptr->details->features);
 		if (job_ptr->details->std_err)
 			xstrfmtcatat(query, &pos, ", '%s'",
-				   job_ptr->details->std_err);
+				     job_ptr->details->std_err);
 		if (job_ptr->details->std_in)
 			xstrfmtcatat(query, &pos, ", '%s'",
-				   job_ptr->details->std_in);
+				     job_ptr->details->std_in);
 		if (job_ptr->details->std_out)
 			xstrfmtcatat(query, &pos, ", '%s'",
-				   job_ptr->details->std_out);
+				     job_ptr->details->std_out);
 		if (job_ptr->details->submit_line)
 			xstrfmtcatat(query, &pos, ", '%s'",
-				   job_ptr->details->submit_line);
+				     job_ptr->details->submit_line);
 		if (job_ptr->container)
 			xstrfmtcatat(query, &pos, ", '%s'",
-				   job_ptr->container);
+				     job_ptr->container);
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, ", '%s'",
-				   job_ptr->licenses);
+				     job_ptr->licenses);
 
 		xstrfmtcatat(query, &pos,
-			   ") on duplicate key update "
-			   "job_db_inx=LAST_INSERT_ID(job_db_inx), "
-			   "id_assoc=%u, id_user=%u, id_group=%u, "
-			   "nodelist='%s', id_resv=%u, timelimit=%u, "
-			   "time_submit=%ld, time_eligible=%ld, "
-			   "time_start=%ld, mod_time=UNIX_TIMESTAMP(), "
-			   "job_name='%s', id_qos=%u, "
-			   "state=greatest(state, %u), priority=%u, "
-			   "cpus_req=%u, nodes_alloc=%u, "
-			   "mem_req=%"PRIu64", id_array_job=%u, id_array_task=%u, "
-			   "het_job_id=%u, het_job_offset=%u, flags=%u, "
-			   "state_reason_prev=%u, env_hash_inx=%"PRIu64
-			   ", script_hash_inx=%"PRIu64,
-			   job_ptr->assoc_id, job_ptr->user_id,
-			   job_ptr->group_id, nodes,
-			   job_ptr->resv_id, job_ptr->time_limit,
-			   submit_time, begin_time, start_time,
-			   jname, job_ptr->qos_id, job_state,
-			   job_ptr->priority, job_ptr->details->min_cpus,
-			   job_ptr->total_nodes,
-			   job_ptr->details->pn_min_memory,
-			   job_ptr->array_job_id, array_task_id,
-			   job_ptr->het_job_id, het_job_offset,
-			   job_ptr->db_flags,
-			   job_ptr->state_reason_prev_db,
-			   env_hash_inx, script_hash_inx);
+			     ") on duplicate key update "
+			     "job_db_inx=LAST_INSERT_ID(job_db_inx), "
+			     "id_assoc=%u, id_user=%u, id_group=%u, "
+			     "nodelist='%s', id_resv=%u, timelimit=%u, "
+			     "time_submit=%ld, time_eligible=%ld, "
+			     "time_start=%ld, mod_time=UNIX_TIMESTAMP(), "
+			     "job_name='%s', id_qos=%u, "
+			     "state=greatest(state, %u), priority=%u, "
+			     "cpus_req=%u, nodes_alloc=%u, "
+			     "mem_req=%"PRIu64", id_array_job=%u, id_array_task=%u, "
+			     "het_job_id=%u, het_job_offset=%u, flags=%u, "
+			     "state_reason_prev=%u, env_hash_inx=%"PRIu64
+			     ", script_hash_inx=%"PRIu64,
+			     job_ptr->assoc_id, job_ptr->user_id,
+			     job_ptr->group_id, nodes,
+			     job_ptr->resv_id, job_ptr->time_limit,
+			     submit_time, begin_time, start_time,
+			     jname, job_ptr->qos_id, job_state,
+			     job_ptr->priority, job_ptr->details->min_cpus,
+			     job_ptr->total_nodes,
+			     job_ptr->details->pn_min_memory,
+			     job_ptr->array_job_id, array_task_id,
+			     job_ptr->het_job_id, het_job_offset,
+			     job_ptr->db_flags,
+			     job_ptr->state_reason_prev_db,
+			     env_hash_inx, script_hash_inx);
 
 		if (wckeyid)
 			xstrfmtcatat(query, &pos, ", id_wckey=%u", wckeyid);
@@ -705,44 +705,44 @@ no_rollup_change:
 				     job_ptr->details->qos_req);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcatat(query, &pos, ", array_task_str='%s', "
-				   "array_max_tasks=%u, array_task_pending=%u",
-				   array_recs->task_id_str,
-				   array_recs->max_run_tasks,
-				   array_recs->task_cnt);
+				     "array_max_tasks=%u, array_task_pending=%u",
+				     array_recs->task_id_str,
+				     array_recs->max_run_tasks,
+				     array_recs->task_cnt);
 		else
 			xstrfmtcatat(query, &pos, ", array_task_str=NULL, "
-				   "array_task_pending=0");
+				     "array_task_pending=0");
 
 		if (job_ptr->tres_alloc_str)
 			xstrfmtcatat(query, &pos, ", tres_alloc='%s'",
-				   job_ptr->tres_alloc_str);
+				     job_ptr->tres_alloc_str);
 		if (job_ptr->tres_req_str)
 			xstrfmtcatat(query, &pos, ", tres_req='%s'",
-				   job_ptr->tres_req_str);
+				     job_ptr->tres_req_str);
 		if (job_ptr->details->work_dir)
 			xstrfmtcatat(query, &pos, ", work_dir='%s'",
-				   job_ptr->details->work_dir);
+				     job_ptr->details->work_dir);
 		if (job_ptr->details->features)
 			xstrfmtcatat(query, &pos, ", constraints='%s'",
-				   job_ptr->details->features);
+				     job_ptr->details->features);
 		if (job_ptr->details->std_err)
 			xstrfmtcatat(query, &pos, ", std_err='%s'",
-				   job_ptr->details->std_err);
+				     job_ptr->details->std_err);
 		if (job_ptr->details->std_in)
 			xstrfmtcatat(query, &pos, ", std_in='%s'",
-				   job_ptr->details->std_in);
+				     job_ptr->details->std_in);
 		if (job_ptr->details->std_out)
 			xstrfmtcatat(query, &pos, ", std_out='%s'",
-				   job_ptr->details->std_out);
+				     job_ptr->details->std_out);
 		if (job_ptr->details->submit_line)
 			xstrfmtcatat(query, &pos, ", submit_line='%s'",
-				   job_ptr->details->submit_line);
+				     job_ptr->details->submit_line);
 		if (job_ptr->container)
 			xstrfmtcatat(query, &pos, ", container='%s'",
-				   job_ptr->container);
+				     job_ptr->container);
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, ", licenses='%s'",
-				   job_ptr->licenses);
+				     job_ptr->licenses);
 
 		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 
@@ -757,14 +757,14 @@ no_rollup_change:
 		}
 	} else {
 		xstrfmtcatat(query, &pos,
-			"update \"%s_%s\" set nodelist='%s', ",
-			 mysql_conn->cluster_name, job_table, nodes);
+			     "update \"%s_%s\" set nodelist='%s', ",
+			     mysql_conn->cluster_name, job_table, nodes);
 
 		if (wckeyid)
 			xstrfmtcatat(query, &pos, "id_wckey=%u, ", wckeyid);
 		if (job_ptr->mcs_label)
 			xstrfmtcatat(query, &pos, "mcs_label='%s', ",
-				   job_ptr->mcs_label);
+				     job_ptr->mcs_label);
 		if (job_ptr->account)
 			xstrfmtcatat(query, &pos, "account='%s', ",
 				     job_ptr->account);
@@ -782,65 +782,65 @@ no_rollup_change:
 				     job_ptr->details->qos_req);
 		if (array_recs && array_recs->task_id_str)
 			xstrfmtcatat(query, &pos, "array_task_str='%s', "
-				   "array_max_tasks=%u, "
-				   "array_task_pending=%u, ",
-				   array_recs->task_id_str,
-				   array_recs->max_run_tasks,
-				   array_recs->task_cnt);
+				     "array_max_tasks=%u, "
+				     "array_task_pending=%u, ",
+				     array_recs->task_id_str,
+				     array_recs->max_run_tasks,
+				     array_recs->task_cnt);
 		else
 			xstrfmtcatat(query, &pos, "array_task_str=NULL, "
-				   "array_task_pending=0, ");
+				     "array_task_pending=0, ");
 
 		if (job_ptr->tres_alloc_str)
 			xstrfmtcatat(query, &pos, "tres_alloc='%s', ",
-				   job_ptr->tres_alloc_str);
+				     job_ptr->tres_alloc_str);
 		if (job_ptr->tres_req_str)
 			xstrfmtcatat(query, &pos, "tres_req='%s', ",
-				   job_ptr->tres_req_str);
+				     job_ptr->tres_req_str);
 		if (job_ptr->details->work_dir)
 			xstrfmtcatat(query, &pos, "work_dir='%s', ",
-				   job_ptr->details->work_dir);
+				     job_ptr->details->work_dir);
 		if (job_ptr->details->features)
 			xstrfmtcatat(query, &pos, "constraints='%s', ",
-				   job_ptr->details->features);
+				     job_ptr->details->features);
 		if (job_ptr->details->std_err)
 			xstrfmtcatat(query, &pos, "std_err='%s', ",
-				   job_ptr->details->std_err);
+				     job_ptr->details->std_err);
 		if (job_ptr->details->std_in)
 			xstrfmtcatat(query, &pos, "std_in='%s', ",
-				   job_ptr->details->std_in);
+				     job_ptr->details->std_in);
 		if (job_ptr->details->std_out)
 			xstrfmtcatat(query, &pos, "std_out='%s', ",
-				   job_ptr->details->std_out);
+				     job_ptr->details->std_out);
 		if (job_ptr->details->submit_line)
 			xstrfmtcatat(query, &pos, "submit_line='%s', ",
-				   job_ptr->details->submit_line);
+				     job_ptr->details->submit_line);
 		if (job_ptr->container)
 			xstrfmtcatat(query, &pos, "container='%s', ",
-				   job_ptr->container);
+				     job_ptr->container);
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, "licenses='%s', ",
-				   job_ptr->licenses);
+				     job_ptr->licenses);
 
 		xstrfmtcatat(query, &pos, "time_start=%ld, job_name='%s', "
-			   "state=greatest(state, %u), "
-			   "nodes_alloc=%u, id_qos=%u, "
-			   "id_assoc=%u, id_resv=%u, "
-			   "timelimit=%u, mem_req=%"PRIu64", "
-			   "id_array_job=%u, id_array_task=%u, "
-			   "het_job_id=%u, het_job_offset=%u, "
-			   "flags=%u, state_reason_prev=%u, "
-			   "time_eligible=%ld, mod_time=UNIX_TIMESTAMP() "
-			   "where job_db_inx=%"PRIu64,
-			   start_time, jname, job_state,
-			   job_ptr->total_nodes, job_ptr->qos_id,
-			   job_ptr->assoc_id,
-			   job_ptr->resv_id, job_ptr->time_limit,
-			   job_ptr->details->pn_min_memory,
-			   job_ptr->array_job_id, array_task_id,
-			   job_ptr->het_job_id, het_job_offset,
-			   job_ptr->db_flags, job_ptr->state_reason_prev_db,
-			   begin_time, job_ptr->db_index);
+			     "state=greatest(state, %u), "
+			     "nodes_alloc=%u, id_qos=%u, "
+			     "id_assoc=%u, id_resv=%u, "
+			     "timelimit=%u, mem_req=%"PRIu64", "
+			     "id_array_job=%u, id_array_task=%u, "
+			     "het_job_id=%u, het_job_offset=%u, "
+			     "flags=%u, state_reason_prev=%u, "
+			     "time_eligible=%ld, mod_time=UNIX_TIMESTAMP() "
+			     "where job_db_inx=%"PRIu64,
+			     start_time, jname, job_state,
+			     job_ptr->total_nodes, job_ptr->qos_id,
+			     job_ptr->assoc_id,
+			     job_ptr->resv_id, job_ptr->time_limit,
+			     job_ptr->details->pn_min_memory,
+			     job_ptr->array_job_id, array_task_id,
+			     job_ptr->het_job_id, het_job_offset,
+			     job_ptr->db_flags, job_ptr->state_reason_prev_db,
+			     begin_time, job_ptr->db_index);
 
 		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);

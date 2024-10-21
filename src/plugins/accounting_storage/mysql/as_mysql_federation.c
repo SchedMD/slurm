@@ -146,9 +146,9 @@ static int _remove_all_clusters_from_fed(mysql_conn_t *mysql_conn,
 		list_iterator_destroy(itr);
 	}
 
-	xstrfmtcat(query, "UPDATE %s "
-		   	  "SET federation='', fed_id=0, fed_state=%u "
-			  "WHERE federation='%s' and deleted=0",
+	xstrfmtcat(query,
+		   "UPDATE %s SET federation='', fed_id=0, fed_state=%u "
+		   "WHERE federation='%s' and deleted=0",
 		   cluster_table, CLUSTER_FED_STATE_NA, fed);
 	if (exception_names)
 		xstrfmtcat(query, " AND name NOT IN (%s)", exception_names);
@@ -178,11 +178,11 @@ static int _remove_clusters_from_fed(mysql_conn_t *mysql_conn, list_t *clusters)
 
 	itr = list_iterator_create(clusters);
 	while ((name = list_next(itr)))
-	       xstrfmtcat(names, "%s'%s'", names ? "," : "", name );
+		xstrfmtcat(names, "%s'%s'", names ? "," : "", name );
 
-	xstrfmtcat(query, "UPDATE %s "
-		   	  "SET federation='', fed_id=0, fed_state=%u "
-			  "WHERE name IN (%s) and deleted=0",
+	xstrfmtcat(query,
+		   "UPDATE %s SET federation='', fed_id=0, fed_state=%u "
+		   "WHERE name IN (%s) and deleted=0",
 		   cluster_table, CLUSTER_FED_STATE_NA, names);
 
 	DB_DEBUG(FEDR, mysql_conn->conn, "query\n%s", query);
@@ -227,12 +227,12 @@ static int _add_clusters_to_fed(mysql_conn_t *mysql_conn, list_t *clusters,
 	 * in the fed_state case statement must happen before fed_state is set
 	 * or the federation will always equal the federation in the case
 	 * statement.  */
-	xstrfmtcat(query, "UPDATE %s "
-		   	  "SET "
-			  "fed_state = CASE WHEN federation='%s' THEN fed_state ELSE %u END, "
-			  "fed_id = CASE %s END, "
-		   	  "federation='%s' "
-			  "WHERE name IN (%s) and deleted=0",
+	xstrfmtcat(query,
+		   "UPDATE %s SET "
+		   "fed_state = CASE WHEN federation='%s' THEN fed_state ELSE %u END, "
+		   "fed_id = CASE %s END, "
+		   "federation='%s' "
+		   "WHERE name IN (%s) and deleted=0",
 		   cluster_table, fed, CLUSTER_FED_STATE_ACTIVE, indexes, fed,
 		   names);
 
@@ -315,7 +315,7 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	slurmdb_federation_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *extra = NULL, *query = NULL,
-	     *tmp_extra = NULL;
+		*tmp_extra = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int affect_rows = 0;
@@ -500,16 +500,16 @@ empty:
 }
 
 extern list_t *as_mysql_modify_federations(
-				mysql_conn_t *mysql_conn, uint32_t uid,
-				slurmdb_federation_cond_t *fed_cond,
-				slurmdb_federation_rec_t *fed)
+	mysql_conn_t *mysql_conn, uint32_t uid,
+	slurmdb_federation_cond_t *fed_cond,
+	slurmdb_federation_rec_t *fed)
 {
 	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	int req_inx = 0;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL,
-	     *name_char = NULL, *fed_items = NULL;
+		*name_char = NULL, *fed_items = NULL;
 	char *tmp_char1 = NULL, *tmp_char2 = NULL;
 	time_t now = time(NULL);
 	MYSQL_RES *result = NULL;

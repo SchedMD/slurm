@@ -1056,7 +1056,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 		seconds -= resv_seconds;
 		if (seconds > 0) {
 			if (((state & NODE_STATE_BASE) == NODE_STATE_FUTURE) ||
-			     (state & NODE_STATE_POWERED_DOWN))
+			    (state & NODE_STATE_POWERED_DOWN))
 				_add_tres_time_2_list(c_usage->loc_tres,
 						      row[EVENT_REQ_TRES],
 						      TIME_PDOWN,
@@ -1258,11 +1258,11 @@ static void _add_planned_time(local_cluster_usage_t *c_usage, time_t job_start,
 		return;
 
 	/*
-	* If we have pending jobs in an array
-	* they haven't been inserted into the
-	* database yet as proper job records,
-	* so handle them here.
-	*/
+	 * If we have pending jobs in an array
+	 * they haven't been inserted into the
+	 * database yet as proper job records,
+	 * so handle them here.
+	 */
 	if (array_pending)
 		loc_seconds *= array_pending;
 

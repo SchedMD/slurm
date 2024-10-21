@@ -339,8 +339,8 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 					   job_ids);
 			else
 				xstrfmtcat(*extra,
-				   "t1.id_job in (%s) || t1.het_job_id in (%s)",
-				   job_ids, job_ids);
+					   "t1.id_job in (%s) || t1.het_job_id in (%s)",
+					   job_ids, job_ids);
 			sep = " || ";
 		}
 		if (het_job_offset) {
@@ -627,7 +627,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			/*
 			 * Doing advanced duplication removal when requesting
 			 * specific jobIDs and hetjobs/arrayjobs involved
-			*/
+			 */
 			if (jobid_filtered) {
 				if ((last_id != hetjob) &&
 				    (last_id != arrayjob)) {
@@ -1030,7 +1030,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					step->end = job_cond->usage_end;
 
 				if (step->start && step->end &&
-				   (step->start > step->end))
+				    (step->start > step->end))
 					step->start = step->end = 0;
 			}
 

@@ -97,9 +97,9 @@ extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
 	xassert(ret_id);
 
 	/* See if cluster is already part of federation */
-	xstrfmtcat(query, "SELECT name, fed_id "
-			  "FROM %s "
-			  "WHERE deleted=0 AND name='%s' AND federation='%s';",
+	xstrfmtcat(query,
+		   "SELECT name, fed_id FROM %s "
+		   "WHERE deleted=0 AND name='%s' AND federation='%s';",
 		   cluster_table, cluster, federation);
 	DB_DEBUG(FEDR, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
@@ -119,11 +119,11 @@ extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	/* Get all other clusters in the federation and find an open id. */
-	xstrfmtcat(query, "SELECT name, federation, fed_id "
-		   	  "FROM %s "
-		   	  "WHERE name!='%s' AND federation='%s' "
-			  "AND fed_id > %d AND deleted=0 ORDER BY fed_id;",
-			  cluster_table, cluster, federation, last_id);
+	xstrfmtcat(query,
+		   "SELECT name, federation, fed_id FROM %s "
+		   "WHERE name!='%s' AND federation='%s' "
+		   "AND fed_id > %d AND deleted=0 ORDER BY fed_id;",
+		   cluster_table, cluster, federation, last_id);
 	DB_DEBUG(FEDR, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -313,7 +313,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (object->fed.feature_list) {
 			features =
 				slurm_char_list_to_xstr(
-						object->fed.feature_list);
+					object->fed.feature_list);
 			has_feds = 1;
 		}
 
@@ -431,8 +431,9 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		/* Build up extra with cluster specfic values for txn table */
-		xstrfmtcat(extra, ", federation='%s', fed_id=%d, fed_state=%u, "
-				  "features='%s'",
+		xstrfmtcat(extra,
+			   ", federation='%s', fed_id=%d, fed_state=%u, "
+			   "features='%s'",
 			   (object->fed.name) ? object->fed.name : "",
 			   fed_id, fed_state, (features) ? features : "");
 		xfree(features);
@@ -664,9 +665,9 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			if (cluster->fed.name[0] != '\0') {
 				rc = as_mysql_get_fed_cluster_id(
-							mysql_conn, object,
-							cluster->fed.name, -1,
-							&id);
+					mysql_conn, object,
+					cluster->fed.name, -1,
+					&id);
 				if (rc) {
 					error("failed to get cluster id for "
 					      "federation");
@@ -718,7 +719,7 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 				features =
 					slurm_char_list_to_xstr(
-							existing_features);
+						existing_features);
 				xstrfmtcat(tmp_vals, ", features='%s'",
 					   features ? features : "");
 
@@ -1146,7 +1147,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 
 	if (slurm_conf.private_data & PRIVATE_DATA_EVENTS) {
 		if (!is_user_min_admin_level(
-			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+			    mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
 			error("UID %u tried to access events, only administrators can look at events",
 			      uid);
 			errno = ESLURM_ACCESS_DENIED;

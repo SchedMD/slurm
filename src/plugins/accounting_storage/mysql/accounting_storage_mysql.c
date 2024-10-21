@@ -1991,7 +1991,8 @@ static int _setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		if (!locked)
 			assoc_mgr_lock(&locks);
 		if (!list_find_first(assoc_mgr_qos_list,
-		    slurmdb_find_qos_in_list, &(assoc->def_qos_id))) {
+				     slurmdb_find_qos_in_list,
+				     &(assoc->def_qos_id))) {
 			if (!locked)
 				assoc_mgr_unlock(&locks);
 			return ESLURM_INVALID_QOS;
@@ -3082,7 +3083,7 @@ extern int _add_feds_to_update_list(mysql_conn_t *mysql_conn,
 	if (feds &&
 	    ((rc = addto_update_list(update_list, SLURMDB_UPDATE_FEDS, feds))
 	     != SLURM_SUCCESS)) {
-			FREE_NULL_LIST(feds);
+		FREE_NULL_LIST(feds);
 	}
 	return rc;
 }
@@ -3306,9 +3307,9 @@ extern list_t *acct_storage_p_modify_assocs(
 }
 
 extern list_t *acct_storage_p_modify_federations(
-				mysql_conn_t *mysql_conn, uint32_t uid,
-				slurmdb_federation_cond_t *fed_cond,
-				slurmdb_federation_rec_t *fed)
+	mysql_conn_t *mysql_conn, uint32_t uid,
+	slurmdb_federation_cond_t *fed_cond,
+	slurmdb_federation_rec_t *fed)
 {
 	return as_mysql_modify_federations(mysql_conn, uid, fed_cond, fed);
 }
@@ -3488,7 +3489,7 @@ extern list_t *acct_storage_p_get_problems(mysql_conn_t *mysql_conn,
 	ret_list = list_create(slurmdb_destroy_assoc_rec);
 
 	if ((rc = as_mysql_acct_no_assocs(mysql_conn, assoc_cond, ret_list)) !=
-	     SLURM_SUCCESS)
+	    SLURM_SUCCESS)
 		goto end_it;
 
 	if ((rc = as_mysql_acct_no_users(mysql_conn, assoc_cond, ret_list)) !=

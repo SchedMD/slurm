@@ -1203,8 +1203,8 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		if ((res->flags & SLURMDB_RES_FLAG_ABSOLUTE) &&
 		    (res->flags & SLURMDB_RES_FLAG_REMOVE)) {
 		} else if ((res->flags & SLURMDB_RES_FLAG_ABSOLUTE) ||
-		    (slurm_atoul(row[RES_REQ_FLAGS]) &
-		     SLURMDB_RES_FLAG_ABSOLUTE)) {
+			   (slurm_atoul(row[RES_REQ_FLAGS]) &
+			    SLURMDB_RES_FLAG_ABSOLUTE)) {
 			total_pos = slurm_atoul(row[RES_REQ_COUNT]);
 			percent_str = "";
 		}
