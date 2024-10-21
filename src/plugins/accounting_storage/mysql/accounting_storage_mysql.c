@@ -2764,8 +2764,8 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
  * We cannot safely work around this mistake without restructing our stored
  * procedures, and thus fatal() here to avoid a segfault.
  *
- * Test that concat() is working as expected, rather than trying to blacklist
- * specific versions.
+ * Test that concat() is working as expected, rather than trying to enumerate
+ * specific versions with the problem.
  */
 static void _check_mysql_concat_is_sane(mysql_conn_t *mysql_conn)
 {
