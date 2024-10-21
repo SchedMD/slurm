@@ -132,7 +132,7 @@ configuration file and executing <code>scontrol reconfigure</code>.</p>
     <p>If the <i>slurmd</i> daemon fails to respond within the configured
     <b>ResumeTimeout</b> value with an updated BootTime, the node will be
     placed in a DOWN state and the job requesting the node will be requeued.
-    If the node isn't actually rebooted (i.e. when multiple-slurmd is
+    If the node isn't actually rebooted (e.g. when multiple-slurmd is
     configured) you can start slurmd with the "-b" option to report the node
     boot time as now.</p>
 
