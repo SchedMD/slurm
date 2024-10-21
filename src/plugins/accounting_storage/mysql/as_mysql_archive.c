@@ -3144,7 +3144,7 @@ static int _process_old_sql_line(const char *data_in,
 		ending_start = 0;
 		while (data_in[ending_end] && data_in[ending_end-1] != ';') {
 			if (!xstrncmp(data_in+ending_end,
-				     "on duplicate key", 16)) {
+				      "on duplicate key", 16)) {
 				ending_start = ending_end;
 			}
 			if (ending_start) {
@@ -3855,37 +3855,37 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     object.tres_alloc_str,
 			     object.tres_req_str,
 			     (object.account == NULL) ?
-				"NULL" : object.account,
+			     "NULL" : object.account,
 			     (object.admin_comment == NULL) ?
-				"NULL" : object.admin_comment,
+			     "NULL" : object.admin_comment,
 			     (object.array_task_str == NULL) ?
-				"NULL" : object.array_task_str,
+			     "NULL" : object.array_task_str,
 			     (object.blockid == NULL) ?
-				"NULL" : object.blockid,
+			     "NULL" : object.blockid,
 			     (object.constraints == NULL) ?
-				"NULL" : object.constraints,
+			     "NULL" : object.constraints,
 			     (object.container == NULL) ?
-				"NULL" : object.container,
+			     "NULL" : object.container,
 			     (object.derived_es == NULL) ?
-				"NULL" : object.derived_es,
+			     "NULL" : object.derived_es,
 			     (object.extra == NULL) ?
-				"NULL" : object.extra,
+			     "NULL" : object.extra,
 			     (object.kill_requid == NULL) ?
-				"NULL" : object.kill_requid,
+			     "NULL" : object.kill_requid,
 			     (object.licenses == NULL) ?
-				"NULL" : object.licenses,
+			     "NULL" : object.licenses,
 			     (object.mcs_label == NULL) ?
-				"NULL" : object.mcs_label,
+			     "NULL" : object.mcs_label,
 			     (object.nodelist == NULL) ?
-				"NULL" : object.nodelist,
+			     "NULL" : object.nodelist,
 			     (object.node_inx == NULL) ?
-				"NULL" : object.node_inx,
+			     "NULL" : object.node_inx,
 			     (object.submit_line == NULL) ?
-				"NULL" : object.submit_line,
+			     "NULL" : object.submit_line,
 			     (object.system_comment == NULL) ?
-				"NULL" : object.system_comment,
+			     "NULL" : object.system_comment,
 			     (object.qos_req == NULL) ?
-				"NULL" : object.qos_req);
+			     "NULL" : object.qos_req);
 
 		_free_local_job_members(&object);
 		format_pos = NULL;
@@ -3990,7 +3990,7 @@ static char *_load_job_env(uint16_t rpc_version, buf_t *buffer,
 		xstrfmtcatat(insert, &insert_pos, format, object.hash_inx,
 			     object.last_used, object.env_hash,
 			     (object.env_vars == NULL) ? "NULL" :
-							 object.env_vars);
+			     object.env_vars);
 
 		_free_local_job_env_members(&object);
 		format_pos = NULL;
@@ -4098,8 +4098,8 @@ static char *_load_job_script(uint16_t rpc_version, buf_t *buffer,
 		xstrfmtcatat(insert, &insert_pos, format, object.hash_inx,
 			     object.last_used, object.script_hash,
 			     (object.batch_script == NULL) ?
-				     "NULL" :
-				     object.batch_script);
+			     "NULL" :
+			     object.batch_script);
 
 		_free_local_job_script_members(&object);
 		format_pos = NULL;
@@ -4481,13 +4481,13 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			     object.tres_usage_out_min_taskid,
 			     object.tres_usage_out_tot,
 			     (object.kill_requid == NULL) ?
-				"NULL" : object.kill_requid,
+			     "NULL" : object.kill_requid,
 			     (object.node_inx == NULL) ?
-				"NULL" : object.node_inx,
+			     "NULL" : object.node_inx,
 			     (object.container == NULL) ?
-				"NULL" : object.container,
+			     "NULL" : object.container,
 			     (object.submit_line == NULL) ?
-				"NULL" : object.submit_line);
+			     "NULL" : object.submit_line);
 
 		_free_local_step_members(&object);
 		format_pos = NULL;
@@ -4542,7 +4542,7 @@ static char *_load_suspend(uint16_t rpc_version, buf_t *buffer,
 	int i = 0;
 
 	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
-		    cluster_name, suspend_table, suspend_req_inx[0]);
+		     cluster_name, suspend_table, suspend_req_inx[0]);
 	xstrcatat(format, &format_pos, "('%s'");
 	for(i=1; i<SUSPEND_REQ_COUNT; i++) {
 		xstrfmtcatat(insert, &insert_pos, ", %s", suspend_req_inx[i]);
@@ -4636,7 +4636,7 @@ static char *_load_txn(uint16_t rpc_version, buf_t *buffer,
 	int i = 0;
 
 	xstrfmtcatat(insert, &insert_pos, "insert into \"%s\" (%s",
-		    txn_table, txn_req_inx[0]);
+		     txn_table, txn_req_inx[0]);
 	for (i = 1; safe_attributes[i] < TXN_REQ_COUNT; i++)
 		xstrfmtcatat(insert, &insert_pos,
 			     ", %s", txn_req_inx[safe_attributes[i]]);
@@ -4678,7 +4678,7 @@ static char *_load_txn(uint16_t rpc_version, buf_t *buffer,
 			     object.actor,
 			     object.cluster,
 			     (object.info == NULL) ?
-				"NULL" : object.info);
+			     "NULL" : object.info);
 
 		_free_local_txn_members(&object);
 		format_pos = NULL;
@@ -4798,7 +4798,7 @@ static char *_load_usage(uint16_t rpc_version, buf_t *buffer,
 	}
 
 	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
-		   cluster_name, my_usage_table, usage_req_inx[0]);
+		     cluster_name, my_usage_table, usage_req_inx[0]);
 	xstrcatat(format, &format_pos, "('%s'");
 	for(i=1; i<USAGE_COUNT; i++) {
 		xstrfmtcatat(insert, &insert_pos, ", %s", usage_req_inx[i]);
@@ -5172,8 +5172,8 @@ static int _purge_hash_table(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	while ((rc = mysql_db_delete_affected_rows(mysql_conn, query)) > 0) {
 		/* Commit here every time since this could create a huge
-			* transaction.
-			*/
+		 * transaction.
+		 */
 		if ((rc = mysql_db_commit(mysql_conn)))
 			error("Couldn't commit cluster (%s) purge",
 			      cluster_name);
@@ -5417,7 +5417,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		 * 0 if no records are affected.
 		 */
 		if ((rc = mysql_db_delete_affected_rows(
-				mysql_conn, query)) > 0) {
+			     mysql_conn, query)) > 0) {
 			/* Commit here every time since this could create a huge
 			 * transaction.
 			 */
@@ -5511,19 +5511,19 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 				     PURGE_USAGE,
 				     usage_info + DBD_GOT_ASSOC_USAGE,
 				     mysql_conn, cluster_name, arch_cond)))
-			return rc;
+				return rc;
 
 			if ((rc = _archive_purge_table(
 				     PURGE_USAGE,
 				     usage_info + DBD_GOT_WCKEY_USAGE,
 				     mysql_conn, cluster_name, arch_cond)))
-			return rc;
+				return rc;
 
 			if ((rc = _archive_purge_table(
 				     PURGE_CLUSTER_USAGE,
 				     usage_info + DBD_GOT_CLUSTER_USAGE,
 				     mysql_conn, cluster_name, arch_cond)))
-			return rc;
+				return rc;
 		}
 	}
 
