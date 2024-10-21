@@ -2657,8 +2657,6 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 	bool newly_up = false;
 	bool already_registered = false;
 	node_record_t *node_ptr = NULL;
-	typedef enum reconfig_always { UNKNOWN, TRUE, FALSE } reconfig_always_t;
-	static reconfig_always_t reconfig_always_required = UNKNOWN;
 	slurm_node_registration_status_msg_t *node_reg_stat_msg = msg->data;
 	slurmctld_lock_t job_write_lock = {
 		.conf = READ_LOCK,
@@ -2753,21 +2751,9 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 		error_code = validate_node_specs(msg, &newly_up, &node_ptr);
 #endif
 
-		if (reconfig_always_required == UNKNOWN) {
-			if (xstrstr(slurm_conf.slurmd_params,
-			    "reconfigure_flag_always_required")) {
-				reconfig_always_required = TRUE;
-				info("SlurmdParameters=reconfigure_flag_always_required set");
-			} else {
-				reconfig_always_required = FALSE;
-			}
-		}
-
 		if (!error_code && node_ptr &&
 		    IS_NODE_RECONFIG_REQUESTED(node_ptr) &&
-		    ((msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) ||
-		     ((msg->protocol_version == SLURM_24_05_PROTOCOL_VERSION) &&
-		      reconfig_always_required == FALSE) ||
+		    ((msg->protocol_version <= SLURM_24_05_PROTOCOL_VERSION) ||
 		     (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RECONFIG))) {
 			bit_clear(reconfig_node_bitmap, node_ptr->index);
 			node_ptr->node_state &=
