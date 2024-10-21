@@ -305,6 +305,8 @@ static void _attempt_reconfig(void)
 {
 	info("Attempting to reconfigure");
 
+	conmgr_quiesce(__func__);
+
 	reconfig_rc = _try_to_reconfig();
 
 	slurm_mutex_lock(&reconfig_mutex);
@@ -318,6 +320,8 @@ static void _attempt_reconfig(void)
 		info("Relinquishing control to new child");
 		_exit(0);
 	}
+
+	conmgr_unquiesce(__func__);
 
 	recover = 2;
 }
