@@ -3166,11 +3166,6 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 	} else
 		info("Processing Reconfiguration Request");
 
-	if (bit_ffs(reconfig_node_bitmap) >= 0)
-		slurm_send_rc_err_msg(msg, SLURM_ERROR,
-				      "Previous reconfigure request didn't complete on all nodes");
-
-
 	server_thread_decr();
 	reconfigure_slurm(msg);
 	server_thread_incr();
