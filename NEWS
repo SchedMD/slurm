@@ -189,6 +189,8 @@ documents those changes that are of interest to users and administrators.
  -- salloc - Removed --get-user-env option.
  -- Removed the instant on feature from switch/hpe_slingshot.
  -- Hardware collectives in switch/hpe_slingshot now requires enable_stepmgr.
+ -- Allow backfill to plan jobs on nodes currently being used by exclusive user
+    or mcs jobs.
 
 * Changes in Slurm 24.05.5
 ==========================
