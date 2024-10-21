@@ -563,8 +563,6 @@ _wait_for_all_threads(int secs)
 		if (secs == NO_VAL16) { /* Wait forever */
 			slurm_cond_wait(&active_cond, &active_mutex);
 		} else {
-			verbose("Waiting for all threads to complete for %d seconds.",
-				secs);
 			rc = pthread_cond_timedwait(&active_cond,
 						    &active_mutex, &ts);
 			if (rc == ETIMEDOUT) {
