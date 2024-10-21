@@ -35,9 +35,6 @@ documents those changes that are of interest to users and administrators.
     output types.
  -- Fix not considering nodes in reservations with Maintenance or Overlap flags
     when creating new reservations with nodecnt or when they replace down nodes.
- -- Fix slurmd - slurmctld synchronization issues on scontrol reconfigure.
-    Those may have result in prolog errors or tasks not being launched while
-    jobs where shown running by slurmctld.
  -- Fix suspending/resuming steps running under a 23.02 slurmstepd process.
  -- Fix options like sprio --me and squeue --me for users with a uid greater
     than 2147483647.
