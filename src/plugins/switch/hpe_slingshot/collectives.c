@@ -64,11 +64,14 @@ static void *_cleanup_thread(void *data)
 	struct timespec ts = {0, 0};
 	json_object *respjson = NULL, *jobsjson = NULL, *jobjson = NULL;
 	long status = 0;
-	char *url = "/fabric/collectives/jobs/";
-	size_t path_len = strlen(url);
 	uint32_t job_id, arraylen;
+	size_t path_len, cluster_name_len;
 	job_record_t *job_ptr;
 	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
+	char *url = "/fabric/collectives/jobs/";
+
+	path_len = strlen(url);
+	cluster_name_len = strlen(slurm_conf.cluster_name);
 
 	while (!cleanup_thread_shutdown) {
 		slurm_mutex_lock(&cleanup_thread_lock);
@@ -97,7 +100,17 @@ static void *_cleanup_thread(void *data)
 			char *endptr = NULL;
 			jobjson = json_object_array_get_idx(jobsjson, i);
 			jobstr = json_object_get_string(jobjson) + path_len;
-			job_id = strtol(jobstr, &endptr, 10);
+
+			if (xstrncmp(jobstr, slurm_conf.cluster_name,
+				     cluster_name_len)) {
+				log_flag(SWITCH, "Skipping fabric manager job '%s' because the cluster name doesn't match %s",
+					jobstr, slurm_conf.cluster_name);
+				continue;
+			}
+
+			/* Add 1 to skip the '-' after the cluster name */
+			job_id = strtol(jobstr + cluster_name_len + 1, &endptr,
+					10);
 			if (endptr && (*endptr != '\0')) {
 				log_flag(SWITCH, "Skipping fabric manager job '%s'",
 					 jobstr);
@@ -240,7 +253,7 @@ static json_object *_post_job_to_fabric_manager(uint32_t job_id)
 	char *jobid_str = NULL;
 
 	/* Put job ID and number of multicast addresses to reserve in payload */
-	jobid_str = xstrdup_printf("%u", job_id);
+	jobid_str = xstrdup_printf("%s-%u", slurm_conf.cluster_name, job_id);
 	if (!(reqjson = json_object_new_object()) ||
 	    !(jobid_json = json_object_new_string(jobid_str)) ||
 	    json_object_object_add(reqjson, "jobID", jobid_json) ||
@@ -295,7 +308,8 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 		return true;
 
 	/* GET on the job object if it already exists */
-	url = xstrdup_printf("/fabric/collectives/jobs/%u", job_id);
+	url = xstrdup_printf("/fabric/collectives/jobs/%s-%u",
+			     slurm_conf.cluster_name, job_id);
 	if (!(respjson = slingshot_rest_get(&fm_conn, url, &status))) {
 		error("GET %s to fabric manager for job failed: %ld",
 			url, status);
@@ -355,7 +369,7 @@ extern void slingshot_collectives_env(slingshot_stepinfo_t *job, char ***env)
 	if (!hwcoll)
 		return;
 
-	xstrfmtcat(job_id, "%u", hwcoll->job_id);
+	xstrfmtcat(job_id, "%s-%u", slurm_conf.cluster_name, hwcoll->job_id);
 	xstrfmtcat(step_id, "%u", hwcoll->step_id);
 	xstrfmtcat(addrs_per_job, "%u", hwcoll->addrs_per_job);
 	xstrfmtcat(num_nodes, "%u", hwcoll->num_nodes);
@@ -429,7 +443,8 @@ extern void slingshot_release_collectives_job_step(slingshot_stepinfo_t *job)
 	 * NOTE: timing-wise, the job complete could happen before this.
 	 * Don't fail on error 404 (Not Found)
 	 */
-	url = xstrdup_printf("/fabric/collectives/jobs/%u", hwcoll->job_id);
+	url = xstrdup_printf("/fabric/collectives/jobs/%s-%u",
+			     slurm_conf.cluster_name, hwcoll->job_id);
 	if (!(respjson = slingshot_rest_patch(&fm_conn, url, reqjson,
 					      &status))) {
 		if (status != HTTP_NOT_FOUND) {
@@ -478,7 +493,8 @@ extern void slingshot_release_collectives_job(uint32_t job_id)
 	_clear_hwcoll(job_id);
 
 	/* Do a DELETE on the job object in the fabric manager */
-	url = xstrdup_printf("/fabric/collectives/jobs/%u", job_id);
+	url = xstrdup_printf("/fabric/collectives/jobs/%s-%u",
+			     slurm_conf.cluster_name, job_id);
 	if (!slingshot_rest_delete(&fm_conn, url, &status)) {
 		error("DELETE %s from fabric manager for collectives failed: %ld",
 		      url, status);
