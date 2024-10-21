@@ -159,10 +159,6 @@ typedef struct connection {
 	slurm_addr_t *cli_addr;
 } conn_t;
 
-typedef struct registration_engine_arg {
-	bool original;
-} registration_engine_arg_t;
-
 /*
  * Global data for resource specialization
  */
@@ -273,12 +269,9 @@ main (int argc, char **argv)
 	uint32_t curr_uid = 0;
 	char time_stamp[256];
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
-	registration_engine_arg_t registration_arg;
 
-	if (getenv("SLURMD_RECONF")) {
+	if (getenv("SLURMD_RECONF"))
 		original = false;
-		registration_arg.original = false;
-	}
 
 	/* NOTE: logfile is NULL at this point */
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
@@ -407,7 +400,7 @@ main (int argc, char **argv)
 		run_script_health_check();
 
 	record_launched_jobs();
-	slurm_thread_create_detached(_registration_engine, &registration_arg);
+	slurm_thread_create_detached(_registration_engine, NULL);
 
 	/* main processing loop. when this returns start shutting down */
 	_msg_engine();
@@ -456,18 +449,16 @@ main (int argc, char **argv)
  * message.
  */
 static void *
-_registration_engine(void *x)
+_registration_engine(void *arg)
 {
 	static const uint32_t MAX_DELAY = 128;
 	uint32_t delay = 1;
-	registration_engine_arg_t *arg = (registration_engine_arg_t *)x;
 	_increment_thd_count();
 
 	while (!_shutdown && !sent_reg_time) {
 		int rc;
 
-		if (!(rc = send_registration_msg(SLURM_SUCCESS,
-			(arg->original ? 0 : SLURMD_REG_FLAG_RECONFIG ))))
+		if (!(rc = send_registration_msg(SLURM_SUCCESS)))
 			break;
 
 		debug("Unable to register with slurm controller (retry in %us): %s",
@@ -764,7 +755,7 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 	}
 }
 
-extern int send_registration_msg(uint32_t status, uint16_t flags)
+extern int send_registration_msg(uint32_t status)
 {
 	int ret_val = SLURM_SUCCESS;
 	slurm_msg_t req, resp_msg;
@@ -778,8 +769,6 @@ extern int send_registration_msg(uint32_t status, uint16_t flags)
 		msg->flags |= SLURMD_REG_FLAG_RESP;
 	if (conf->conf_cache)
 		msg->flags |= SLURMD_REG_FLAG_CONFIGLESS;
-	if (flags & SLURMD_REG_FLAG_RECONFIG)
-		msg->flags |= SLURMD_REG_FLAG_RECONFIG;
 
 	_fill_registration_msg(msg);
 	msg->status = status;
@@ -2134,7 +2123,7 @@ static void _dynamic_init(void)
 		 * in order to load in correct configs (e.g. gres, etc.). First
 		 * get the mapped node_name from the slurmctld.
 		 */
-		send_registration_msg(SLURM_SUCCESS, false);
+		send_registration_msg(SLURM_SUCCESS);
 
 		/* send registration again after loading everything in */
 		sent_reg_time = 0;
