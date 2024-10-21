@@ -120,6 +120,7 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 			memcpy(get_buf_data(msg->buffer), get_buf_data(rpc),
 			       size_buf(rpc));
 			msg->flags |= SLURM_MSG_KEEP_BUFFER;
+			set_buf_offset(msg->buffer, size_buf(rpc));
 		}
 	}
 
