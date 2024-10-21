@@ -211,8 +211,9 @@ static int _set_qos_cnt(mysql_conn_t *mysql_conn)
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *query = xstrdup_printf("select MAX(id) from %s", qos_table);
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = {
+		.qos = WRITE_LOCK,
+	};
 
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);

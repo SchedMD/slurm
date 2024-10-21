@@ -1738,8 +1738,9 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	list_t *use_cluster_list = NULL;
 	char *cluster_name;
 	bool locked = false;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = {
+		.tres = READ_LOCK,
+	};
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;

@@ -727,8 +727,9 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	int added = 0;
 	char *added_preempt = NULL;
 	uint32_t qos_cnt;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = {
+		.qos = READ_LOCK,
+	};
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -853,8 +854,9 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	bitstr_t *preempt_bitstr = NULL;
 	char *added_preempt = NULL;
 	uint32_t qos_cnt;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = {
+		.qos = READ_LOCK,
+	};
 
 	if (!qos_cond || !qos) {
 		error("we need something to change");
@@ -1224,8 +1226,9 @@ extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	uint32_t qos_cnt;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = {
+		.qos = READ_LOCK,
+	};
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *qos_req_inx[] = {

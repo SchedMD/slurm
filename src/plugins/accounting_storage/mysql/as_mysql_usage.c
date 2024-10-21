@@ -421,8 +421,9 @@ static int _get_object_usage(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *query = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = {
+		.tres = READ_LOCK,
+	};
 
 	char *usage_req_inx[] = {
 		"t3.id_assoc",
@@ -530,8 +531,9 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	char *tmp = NULL;
 	char *my_usage_table = cluster_day_table;
 	char *query = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = {
+		.tres = READ_LOCK,
+	};
 	char *cluster_req_inx[] = {
 		"id_tres",
 		"alloc_secs",
