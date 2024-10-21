@@ -276,9 +276,10 @@ main (int argc, char **argv)
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	registration_engine_arg_t registration_arg;
 
-	if (getenv("SLURMD_RECONF"))
+	if (getenv("SLURMD_RECONF")) {
 		original = false;
-	registration_arg.original = original;
+		registration_arg.original = false;
+	}
 
 	/* NOTE: logfile is NULL at this point */
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
