@@ -328,8 +328,6 @@ extern bitstr_t *power_up_node_bitmap;	/* Powered up and requested nodes */
 extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 extern bitstr_t *rs_node_bitmap;	/* next_state=resume nodes */
-extern bitstr_t *reconfig_node_bitmap; /* bitmap of nodes slurmcltd send
-					* reconfigure request */
 
 /*****************************************************************************\
  *  PARTITION parameters and data structures
@@ -2020,12 +2018,10 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg);
  *	if not set state to down, in any case update last_response
  * IN slurm_msg - get node registration message it
  * OUT newly_up - set if node newly brought into service
- * OUT node_ptr - node_ptr of registered node
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * NOTE: READ lock_slurmctld config before entry
  */
-extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up,
-			       node_record_t **node_ptr);
+extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up);
 
 /*
  * validate_nodes_via_front_end - validate all nodes on a cluster as having
@@ -2034,14 +2030,12 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up,
  * IN reg_msg - node registration message
  * IN protocol_version - Version of Slurm on this node
  * OUT newly_up - set if node newly brought into service
- * OUT node_ptr - node_ptr of registered node
  * RET 0 if no error, Slurm error code otherwise
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg,
-		uint16_t protocol_version, bool *newly_up,
-		node_record_t **node_ptr);
+		uint16_t protocol_version, bool *newly_up);
 
 /*
  * validate_super_user - validate that the uid is authorized at the
