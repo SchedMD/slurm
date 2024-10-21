@@ -57,4 +57,7 @@ extern void signal_mgr_stop(void);
  */
 extern void add_work_signal(work_t *work);
 
+/* Return true if con is signal handling connection */
+extern bool is_signal_connection(conmgr_fd_t *con);
+
 #endif /* _CONMGR_SIGNALS_H */
