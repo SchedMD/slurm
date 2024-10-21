@@ -746,6 +746,7 @@ int main(int argc, char **argv)
 		slurmctld_config.resume_backup = false;
 		control_time = 0;
 		reconfig = false;
+		reconfig_rc = SLURM_SUCCESS;
 
 		agent_init();
 
