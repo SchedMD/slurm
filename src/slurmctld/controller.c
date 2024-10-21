@@ -236,9 +236,6 @@ static int pidfd = -1;
 static int recover = 1;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *	slurm_conf_filename;
-static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t reconfig_cond = PTHREAD_COND_INITIALIZER;
-static int reconfig_threads = 0;
 static int reconfig_rc = SLURM_SUCCESS;
 static bool reconfig = false;
 static list_t *reconfig_reqs = NULL;
@@ -329,13 +326,6 @@ static void _attempt_reconfig(void)
 		_send_reconfig_replies();
 
 	reconfig_rc = _try_to_reconfig();
-
-	slurm_mutex_lock(&reconfig_mutex);
-	while (reconfig_threads) {
-		slurm_cond_broadcast(&reconfig_cond);
-		slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
-	}
-	slurm_mutex_unlock(&reconfig_mutex);
 
 	_send_reconfig_replies();
 
@@ -1376,13 +1366,6 @@ extern void reconfigure_slurm(slurm_msg_t *msg)
 	list_append(reconfig_reqs, msg);
 
 	pthread_kill(pthread_self(), SIGHUP);
-
-	slurm_mutex_lock(&reconfig_mutex);
-	reconfig_threads++;
-	slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
-	reconfig_threads--;
-	slurm_cond_broadcast(&reconfig_cond);
-	slurm_mutex_unlock(&reconfig_mutex);
 }
 
 static void _post_reconfig(void)
