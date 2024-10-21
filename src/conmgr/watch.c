@@ -1203,6 +1203,50 @@ static bool _handle_events(void)
 	return true;
 }
 
+static int _foreach_is_waiter(void *x, void *arg)
+{
+	int *waiters_ptr = arg;
+	conmgr_fd_t *con = x;
+	bool skip = false;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(*waiters_ptr >= 0);
+
+	if (is_signal_connection(con)) {
+		skip = true;
+	} else if (con_flag(con, FLAG_WORK_ACTIVE)) {
+		/* never skip when connection has active work */
+	} else if (con_flag(con, FLAG_IS_LISTEN)) {
+		/*
+		 * listeners don't matter if they are not running
+		 * _listen_accept() as work
+		 */
+		skip = true;
+	} else if (con_flag(con, FLAG_QUIESCE)) {
+		/*
+		 * Individually quiesced will not do anything and need to be
+		 * skipped or the global quiesce will never happen
+		 */
+		skip = true;
+	}
+
+	if (!skip)
+		(*waiters_ptr)++;
+
+	return SLURM_SUCCESS;
+}
+
+/* Get count of connections that quiesce is waiting to complete */
+static int _get_quiesced_waiter_count(void)
+{
+	int waiters = 0;
+
+	(void) list_for_each_ro(mgr.connections, _foreach_is_waiter, &waiters);
+	(void) list_for_each_ro(mgr.listen_conns, _foreach_is_waiter, &waiters);
+
+	return waiters;
+}
+
 static bool _watch_loop(void)
 {
 	if (mgr.shutdown_requested) {
@@ -1212,8 +1256,17 @@ static bool _watch_loop(void)
 	}
 
 	if (!mgr.quiesced && !list_is_empty(mgr.quiesced_work)) {
-		mgr.quiesced = true;
-		log_flag(CONMGR, "%s: BEGIN: quiesced state", __func__);
+		int waiters;
+
+		if (!(waiters = _get_quiesced_waiter_count())) {
+			log_flag(CONMGR, "%s: BEGIN: quiesced state", __func__);
+			mgr.quiesced = true;
+		} else {
+			log_flag(CONMGR, "%s: quiesced state deferred to process connections:%d/%d",
+				 __func__, waiters,
+				 (list_count(mgr.connections) +
+				  list_count(mgr.listen_conns)));
+		}
 	}
 
 	if (mgr.quiesced) {
@@ -1230,10 +1283,9 @@ static bool _watch_loop(void)
 		run_quiesced_work();
 		mgr.quiesced = false;
 		log_flag(CONMGR, "%s: END: quiesced state", __func__);
+		xassert(list_is_empty(mgr.quiesced_work));
 		return true;
 	}
-
-	xassert(list_is_empty(mgr.quiesced_work));
 
 	if (_handle_events())
 		return true;
