@@ -2760,17 +2760,6 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 				(~NODE_STATE_RECONFIG_REQUESTED);
 		}
 
-		if (node_reg_stat_msg->flags &
-		    SLURMD_REG_FLAG_RECONFIG_TIMEOUT) {
-			verbose("Node reconfigure request timed out. Draining node %s",
-			     node_ptr->name);
-			bit_clear(reconfig_node_bitmap, node_ptr->index);
-			node_ptr->node_state &=
-				(~NODE_STATE_RECONFIG_REQUESTED);
-			drain_nodes(node_ptr->name, "Reconfigure timed out",
-				    getuid());
-		}
-
 
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_write_lock);
