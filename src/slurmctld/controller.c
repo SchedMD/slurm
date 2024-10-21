@@ -66,6 +66,7 @@
 #include "src/common/fd.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -240,6 +241,7 @@ static pthread_cond_t reconfig_cond = PTHREAD_COND_INITIALIZER;
 static int reconfig_threads = 0;
 static int reconfig_rc = SLURM_SUCCESS;
 static bool reconfig = false;
+static list_t *reconfig_reqs = NULL;
 static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
 static bool under_systemd = false;
@@ -596,6 +598,8 @@ int main(int argc, char **argv)
 		_init_pidfile();
 		become_slurm_user();
 	}
+
+	reconfig_reqs = list_create(NULL);
 
 	rate_limit_init();
 	rpc_queue_init();
@@ -1003,6 +1007,8 @@ int main(int argc, char **argv)
 	 *  Anything left over represents a leak.
 	 */
 
+	xassert(list_is_empty(reconfig_reqs));
+	FREE_NULL_LIST(reconfig_reqs);
 	agent_purge();
 
 	/* Purge our local data structures */
