@@ -293,6 +293,7 @@ typedef struct dbd_job_start_msg {
 	char *qos_req;          /* qos(s) requested for the job */
 	uint32_t req_cpus;	/* count of req processors */
 	uint64_t req_mem;       /* requested minimum memory */
+	uint16_t restart_cnt;   /* How many times the job has been restarted */
 	uint32_t resv_id;	/* reservation id */
 	char *script_hash;      /* hash value of script */
 	time_t   start_time;	/* job start time */

@@ -76,6 +76,7 @@ char *job_req_inx[] = {
 	"t1.het_job_offset",
 	"t1.id_qos",
 	"t1.qos_req",
+	"t1.restart_cnt",
 	"t1.id_resv",
 	"t3.resv_name",
 	"t1.id_user",
@@ -141,6 +142,7 @@ enum {
 	JOB_REQ_HET_JOB_OFFSET,
 	JOB_REQ_QOS,
 	JOB_REQ_QOS_REQ,
+	JOB_REQ_RESTART_CNT,
 	JOB_REQ_RESVID,
 	JOB_REQ_RESV_NAME,
 	JOB_REQ_UID,
@@ -665,6 +667,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->array_task_id = slurm_atoul(row[JOB_REQ_ARRAYTASKID]);
 		job->het_job_id = slurm_atoul(row[JOB_REQ_HET_JOB_ID]);
 		job->het_job_offset = slurm_atoul(row[JOB_REQ_HET_JOB_OFFSET]);
+		job->restart_cnt = slurm_atoul(row[JOB_REQ_RESTART_CNT]);
 		job->resvid = slurm_atoul(row[JOB_REQ_RESVID]);
 
 		/* This shouldn't happen with new jobs, but older jobs

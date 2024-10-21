@@ -1353,6 +1353,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "partition", "tinytext not null" },
 		{ "priority", "int unsigned not null" },
 		{ "qos_req", "text" },
+		{ "restart_cnt", "smallint unsigned default 0" },
 		{ "script_hash_inx", "bigint unsigned default 0 not null" },
 		{ "state", "int unsigned not null" },
 		{ "timelimit", "int unsigned default 0 not null" },

@@ -378,6 +378,7 @@ extern void print_fields(type_t type, void *object)
 						    confirm the values
 						    coming in are
 						    NO_VAL64 */
+		uint16_t tmp_uint16 = NO_VAL16;
 		uint32_t tmp_uint32 = NO_VAL, tmp2_uint32 = NO_VAL;
 		uint64_t tmp_uint64 = NO_VAL64, tmp2_uint64 = NO_VAL64;
 
@@ -1753,6 +1754,18 @@ extern void print_fields(type_t type, void *object)
 			}
 			field->print_routine(field,
 					     &tmp_uint32,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_RESTART_CNT:
+			switch(type) {
+			case JOB:
+				tmp_uint16 = job->restart_cnt;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field,
+					     &tmp_uint16,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_PLANNED:

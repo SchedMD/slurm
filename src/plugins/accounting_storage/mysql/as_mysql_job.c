@@ -535,7 +535,7 @@ no_rollup_change:
 			     "time_eligible, time_submit, time_start, "
 			     "job_name, state, priority, cpus_req, "
 			     "nodes_alloc, mem_req, flags, state_reason_prev, "
-			     "env_hash_inx, script_hash_inx",
+			     "env_hash_inx, script_hash_inx, restart_cnt",
 			     mysql_conn->cluster_name, job_table);
 
 		if (wckeyid)
@@ -585,7 +585,7 @@ no_rollup_change:
 			     "%u, %u, %u, %u, %u, %u, %u, %u, "
 			     "'%s', %u, %u, %ld, %ld, %ld, "
 			     "'%s', %u, %u, %u, %u, %"PRIu64", %u, %u, "
-			     "%"PRIu64", %"PRIu64,
+			     "%"PRIu64", %"PRIu64", %u",
 			     job_ptr->job_id,
 			     job_ptr->array_job_id, array_task_id,
 			     job_ptr->het_job_id, het_job_offset,
@@ -599,7 +599,8 @@ no_rollup_change:
 			     job_ptr->details->pn_min_memory,
 			     job_ptr->db_flags,
 			     job_ptr->state_reason_prev_db,
-			     env_hash_inx, script_hash_inx);
+			     env_hash_inx, script_hash_inx,
+			     job_ptr->restart_cnt);
 
 		if (wckeyid)
 			xstrfmtcatat(query, &pos, ", %u", wckeyid);
@@ -668,7 +669,8 @@ no_rollup_change:
 			     "mem_req=%"PRIu64", id_array_job=%u, id_array_task=%u, "
 			     "het_job_id=%u, het_job_offset=%u, flags=%u, "
 			     "state_reason_prev=%u, env_hash_inx=%"PRIu64
-			     ", script_hash_inx=%"PRIu64,
+			     ", script_hash_inx=%"PRIu64", "
+			     "restart_cnt=greatest(restart_cnt, %u)",
 			     job_ptr->assoc_id, job_ptr->user_id,
 			     job_ptr->group_id, nodes,
 			     job_ptr->resv_id, job_ptr->time_limit,
@@ -681,7 +683,8 @@ no_rollup_change:
 			     job_ptr->het_job_id, het_job_offset,
 			     job_ptr->db_flags,
 			     job_ptr->state_reason_prev_db,
-			     env_hash_inx, script_hash_inx);
+			     env_hash_inx, script_hash_inx,
+			     job_ptr->restart_cnt);
 
 		if (wckeyid)
 			xstrfmtcatat(query, &pos, ", id_wckey=%u", wckeyid);
@@ -830,7 +833,8 @@ no_rollup_change:
 			     "id_array_job=%u, id_array_task=%u, "
 			     "het_job_id=%u, het_job_offset=%u, "
 			     "flags=%u, state_reason_prev=%u, "
-			     "time_eligible=%ld, mod_time=UNIX_TIMESTAMP() "
+			     "time_eligible=%ld, mod_time=UNIX_TIMESTAMP(), "
+			     "restart_cnt=greatest(restart_cnt, %u) "
 			     "where job_db_inx=%"PRIu64,
 			     start_time, jname, job_state,
 			     job_ptr->total_nodes, job_ptr->qos_id,
@@ -840,7 +844,8 @@ no_rollup_change:
 			     job_ptr->array_job_id, array_task_id,
 			     job_ptr->het_job_id, het_job_offset,
 			     job_ptr->db_flags, job_ptr->state_reason_prev_db,
-			     begin_time, job_ptr->db_index);
+			     begin_time, job_ptr->restart_cnt,
+			     job_ptr->db_index);
 
 		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
