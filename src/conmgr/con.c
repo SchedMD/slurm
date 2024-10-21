@@ -1472,6 +1472,11 @@ static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 
 	extract->magic = ~MAGIC_EXTRACT_FD;
 	xfree(extract);
+
+	/* wake up watch() to cleanup connection */
+	slurm_mutex_lock(&mgr.mutex);
+	EVENT_SIGNAL(&mgr.watch_sleep);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 /* caller must hold mgr.mutex lock */
