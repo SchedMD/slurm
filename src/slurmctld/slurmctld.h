@@ -805,7 +805,7 @@ extern uint32_t get_next_job_id(bool test_only);
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
  * OUT err_part - The first invalid partition name.
- * RET list of pointers to the partitions or NULL if not found
+ * RET sorted list of pointers to the partitions or NULL if not found
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
@@ -1980,6 +1980,13 @@ extern int set_partition_billing_weights(char *billing_weights_str,
  *	last_part_update - update time of partition records
  */
 extern int update_part (update_part_msg_t * part_desc, bool create_flag);
+
+/*
+ * Sort all jobs' part_ptr_list to be in descending order according to
+ * partition priority tier. This Should be called anytime a partition's priority
+ * tier is modified.
+ */
+extern void sort_all_jobs_partition_lists();
 
 /*
  * validate_alloc_node - validate that the allocating node

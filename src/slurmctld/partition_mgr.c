@@ -63,6 +63,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/burst_buffer.h"
+#include "src/interfaces/priority.h"
 #include "src/interfaces/select.h"
 
 #include "src/slurmctld/gang.h"
@@ -748,7 +749,7 @@ extern list_t *part_list_copy(list_t *part_list_src)
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
  * OUT err_part - The first invalid partition name.
- * RET list of pointers to the partitions or NULL if not found
+ * RET sorted list of pointers to the partitions or NULL if not found
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
@@ -783,6 +784,9 @@ extern list_t *get_part_list(char *name, char **err_part)
 		}
 		token = strtok_r(NULL, ",", &last);
 	}
+
+	if (job_part_list)
+		list_sort(job_part_list, priority_sort_part_tier);
 	xfree(tmp_name);
 	return job_part_list;
 }
@@ -1430,9 +1434,15 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->priority_tier != NO_VAL16) {
+		bool changed =
+			part_ptr->priority_tier != part_desc->priority_tier;
 		info("%s: setting PriorityTier to %u for partition %s",
 		     __func__, part_desc->priority_tier, part_desc->name);
 		part_ptr->priority_tier = part_desc->priority_tier;
+
+		/* Need to resort all job partition lists */
+		if (changed)
+			sort_all_jobs_partition_lists();
 	}
 
 	if (part_desc->priority_job_factor != NO_VAL16) {
