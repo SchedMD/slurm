@@ -198,8 +198,6 @@ static int	ncpus;			/* number of CPUs on this node */
 static bool original = true;
 static bool under_systemd = false;
 static sig_atomic_t _shutdown = 0;
-static bool reconfiguring = false;
-static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t sent_reg_time = (time_t) 0;
 
 /*
@@ -250,7 +248,6 @@ static void      _usage(void);
 static int       _validate_and_convert_cpu_list(void);
 static int _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
-static void _attempt_reconfig(void);
 static void _run(conmgr_callback_args_t conmgr_args, void *arg);
 static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg);
 
@@ -315,7 +312,11 @@ static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 
 	info("Caught SIGHUP. Triggering reconfigure.");
 
-	_attempt_reconfig();
+	conmgr_quiesce(__func__);
+
+	_try_to_reconfig();
+
+	conmgr_unquiesce(__func__);
 }
 
 static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
@@ -1466,31 +1467,6 @@ rwfail:
 	return;
 }
 
-static void _try_to_reconfig_deferred(conmgr_callback_args_t conmgr_args,
-				      void *arg)
-{
-	if (conmgr_args.status != CONMGR_WORK_STATUS_CANCELLED)
-		_try_to_reconfig();
-
-	slurm_mutex_lock(&reconfig_mutex);
-	xassert(reconfiguring);
-	reconfiguring = false;
-	slurm_mutex_unlock(&reconfig_mutex);
-}
-
-static void _attempt_reconfig(void)
-{
-	info("Attempting to reconfigure");
-
-	slurm_mutex_lock(&reconfig_mutex);
-	if (!reconfiguring) {
-		reconfiguring = true;
-		conmgr_add_work_quiesced_fifo(_try_to_reconfig_deferred,
-					      NULL);
-	}
-	slurm_mutex_unlock(&reconfig_mutex);
-}
-
 static void _try_to_reconfig(void)
 {
 	extern char **environ;
@@ -1515,7 +1491,6 @@ static void _try_to_reconfig(void)
 		      reconfigure_timeout);
 		send_registration_msg(SLURM_SUCCESS,
 				      SLURMD_REG_FLAG_RECONFIG_TIMEOUT);
-		reconfiguring = false;
 		slurm_mutex_unlock(&active_mutex);
 		return;
 	}

@@ -174,8 +174,10 @@ static void *_worker(void *arg)
 	while (true) {
 		work_t *work = NULL;
 
-		if (!mgr.quiesced)
-			work = list_pop(mgr.work);
+		while (mgr.quiesce.active)
+			EVENT_WAIT(&mgr.quiesce.on_start_quiesced, &mgr.mutex);
+
+		work = list_pop(mgr.work);
 
 		/* wait for work if nothing to do */
 		if (!work) {
