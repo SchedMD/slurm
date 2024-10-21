@@ -3177,6 +3177,8 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		fd_close(&msg->conn_fd);
+		slurm_free_msg(msg);
 		return;
 	} else
 		info("Processing Reconfiguration Request");
@@ -3188,10 +3190,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		xfree(remaining_nodes);
 	}
 
-
-	server_thread_decr();
 	reconfigure_slurm(msg);
-	server_thread_incr();
 }
 
 /* _slurm_rpc_takeover - process takeover RPC */
@@ -6702,6 +6701,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_RECONFIGURE,
 		.func = _slurm_rpc_reconfigure_controller,
+		.keep_msg = true,
 	},{
 		.msg_type = REQUEST_CONTROL,
 		.func = _slurm_rpc_shutdown_controller,

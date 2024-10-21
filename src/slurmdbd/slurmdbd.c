@@ -46,6 +46,7 @@
 #include <grp.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -75,13 +76,6 @@
 #include "src/slurmdbd/rpc_mgr.h"
 #include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/backup.h"
-
-typedef struct {
-#define RUN_ARGS_MAGIC 0xfeb0afb9
-	int magic; /* RUN_ARGS_MAGIC */
-	int argc;
-	char **argv;
-} run_args_t;
 
 /* Global variables */
 time_t shutdown_time = 0;		/* when shutdown request arrived */
@@ -125,7 +119,6 @@ static void  _set_work_dir(void);
 static void  _update_logging(bool startup);
 static void  _update_nice(void);
 static void  _usage(char *prog_name);
-static void _run(conmgr_callback_args_t conmgr_args, void *arg);
 
 static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 {
@@ -158,7 +151,7 @@ static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Reconfigure signal (SIGHUP) received");
-	reconfig();
+	slurm_thread_create_detached(reconfig, NULL);
 }
 
 static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
@@ -205,11 +198,10 @@ static void _register_signal_handlers(void)
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
-	run_args_t args = {
-		.magic = RUN_ARGS_MAGIC,
-		.argc = argc,
-		.argv = argv,
-	};
+	char node_name_short[128];
+	char node_name_long[128];
+	void *db_conn = NULL;
+	assoc_init_args_t assoc_init_arg;
 
 	_init_config();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
@@ -243,25 +235,7 @@ int main(int argc, char **argv)
 
 	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
 
-	conmgr_add_work_fifo(_run, &args);
 	_register_signal_handlers();
-
-	conmgr_run(true);
-
-	conmgr_fini();
-	log_fini();
-	exit(0);
-}
-
-static void _run(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	char node_name_short[128];
-	char node_name_long[128];
-	void *db_conn = NULL;
-	assoc_init_args_t assoc_init_arg;
-	run_args_t *args = arg;
-
-	xassert(args->magic == RUN_ARGS_MAGIC);
 
 	/*
 	 * Do plugin init's after _init_pidfile so systemd is happy as
@@ -331,6 +305,8 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 		fatal("getnodename: %m");
 	if (gethostname_short(node_name_short, sizeof(node_name_short)))
 		fatal("getnodename_short: %m");
+
+	conmgr_run(false);
 
 	while (1) {
 		if (slurmdbd_conf->dbd_backup &&
@@ -415,7 +391,7 @@ end_it:
 		info("Primary has come back but backup is "
 		     "running the rollup. To avoid contention, "
 		     "the backup dbd will now restart.");
-		_restart_self(args->argc, args->argv);
+		_restart_self(argc, argv);
 	}
 
 	assoc_mgr_fini(0);
@@ -427,14 +403,24 @@ end_it:
 	slurm_mutex_lock(&rpc_mutex);
 	slurmdb_free_stats_rec_members(&rpc_stats);
 	slurm_mutex_unlock(&rpc_mutex);
+
+	conmgr_fini();
+	log_fini();
+	return SLURM_SUCCESS;
 }
 
-extern void reconfig(void)
+extern void *reconfig(void *arg)
 {
+	conmgr_quiesce(__func__);
+
 	read_slurmdbd_conf();
 	assoc_mgr_set_missing_uids();
 	acct_storage_g_reconfig(NULL, 0);
 	_update_logging(false);
+
+	conmgr_unquiesce(__func__);
+
+	return NULL;
 }
 
 extern void handle_rollup_stats(list_t *rollup_stats_list,

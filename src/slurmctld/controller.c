@@ -66,6 +66,7 @@
 #include "src/common/fd.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -235,11 +236,9 @@ static int pidfd = -1;
 static int recover = 1;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *	slurm_conf_filename;
-static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t reconfig_cond = PTHREAD_COND_INITIALIZER;
-static int reconfig_threads = 0;
 static int reconfig_rc = SLURM_SUCCESS;
 static bool reconfig = false;
+static list_t *reconfig_reqs = NULL;
 static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
 static bool under_systemd = false;
@@ -299,23 +298,43 @@ static void _usage(void);
 static bool         _verify_clustername(void);
 static void *       _wait_primary_prog(void *arg);
 
+static void _send_reconfig_replies(void)
+{
+	slurm_msg_t *msg = NULL;
+
+	while ((msg = list_pop(reconfig_reqs))) {
+		/* Must avoid sending reply via msg->conmgr_fd */
+		xassert((msg->conn_fd >= 0) || msg->conn);
+
+		(void) slurm_send_rc_msg(msg, reconfig_rc);
+		fd_close(&msg->conn_fd);
+		slurm_free_msg(msg);
+	}
+}
+
 static void _attempt_reconfig(void)
 {
 	info("Attempting to reconfigure");
 
+	conmgr_quiesce(__func__);
+
+	/*
+	 * Send RC to requestors in foreground mode now as slurmctld is about
+	 * to call exec() which will close connections.
+	 */
+	if (!daemonize && !under_systemd)
+		_send_reconfig_replies();
+
 	reconfig_rc = _try_to_reconfig();
 
-	slurm_mutex_lock(&reconfig_mutex);
-	while (reconfig_threads) {
-		slurm_cond_broadcast(&reconfig_cond);
-		slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
-	}
-	slurm_mutex_unlock(&reconfig_mutex);
+	_send_reconfig_replies();
 
 	if (!reconfig_rc) {
 		info("Relinquishing control to new child");
 		_exit(0);
 	}
+
+	conmgr_unquiesce(__func__);
 
 	recover = 2;
 }
@@ -597,6 +616,8 @@ int main(int argc, char **argv)
 		become_slurm_user();
 	}
 
+	reconfig_reqs = list_create(NULL);
+
 	rate_limit_init();
 	rpc_queue_init();
 
@@ -742,6 +763,7 @@ int main(int argc, char **argv)
 		slurmctld_config.resume_backup = false;
 		control_time = 0;
 		reconfig = false;
+		reconfig_rc = SLURM_SUCCESS;
 
 		agent_init();
 
@@ -1003,6 +1025,8 @@ int main(int argc, char **argv)
 	 *  Anything left over represents a leak.
 	 */
 
+	xassert(list_is_empty(reconfig_reqs));
+	FREE_NULL_LIST(reconfig_reqs);
 	agent_purge();
 
 	/* Purge our local data structures */
@@ -1339,24 +1363,9 @@ extern void reconfigure_slurm(slurm_msg_t *msg)
 {
 	xassert(msg);
 
+	list_append(reconfig_reqs, msg);
+
 	pthread_kill(pthread_self(), SIGHUP);
-
-	if (!daemonize && !under_systemd) {
-		/*
-		 * Reconfigure will exec() within this process in this case.
-		 * Return now assuming success - we won't have a chance later.
-		 */
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		return;
-	}
-
-	slurm_mutex_lock(&reconfig_mutex);
-	reconfig_threads++;
-	slurm_cond_wait(&reconfig_cond, &reconfig_mutex);
-	slurm_send_rc_msg(msg, reconfig_rc);
-	reconfig_threads--;
-	slurm_cond_broadcast(&reconfig_cond);
-	slurm_mutex_unlock(&reconfig_mutex);
 }
 
 static void _post_reconfig(void)

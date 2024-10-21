@@ -135,7 +135,6 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.complete_conns = list_create(NULL);
 	mgr.callbacks = callbacks;
 	mgr.work = list_create(NULL);
-	mgr.quiesced_work = list_create(NULL);
 	init_delayed_work();
 
 	pollctl_init(mgr.max_connections);
@@ -187,9 +186,8 @@ extern void conmgr_fini(void)
 
 	workers_fini();
 
-	xassert(!mgr.quiesced);
-	xassert(list_is_empty(mgr.quiesced_work));
-	FREE_NULL_LIST(mgr.quiesced_work);
+	xassert(!mgr.quiesce.requested);
+	xassert(!mgr.quiesce.active);
 
 	/* work should have been cleared by workers_fini() */
 	xassert(list_is_empty(mgr.work));
@@ -374,4 +372,40 @@ extern int conmgr_set_params(const char *params)
 	slurm_mutex_unlock(&mgr.mutex);
 	xfree(tmp_str);
 	return SLURM_SUCCESS;
+}
+
+extern void conmgr_quiesce(const char *caller)
+{
+	slurm_mutex_lock(&mgr.mutex);
+
+	log_flag(CONMGR, "%s->%s: quiesce requested", caller, __func__);
+
+	/* wait until other request has completed */
+	while (mgr.quiesce.requested)
+		EVENT_WAIT(&mgr.quiesce.on_stop_quiesced, &mgr.mutex);
+
+	xassert(!mgr.quiesce.active);
+	mgr.quiesce.requested = true;
+
+	while (!mgr.quiesce.active) {
+		EVENT_SIGNAL(&mgr.watch_sleep);
+		EVENT_WAIT(&mgr.quiesce.on_start_quiesced, &mgr.mutex);
+	}
+
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
+extern void conmgr_unquiesce(const char *caller)
+{
+	slurm_mutex_init(&mgr.mutex);
+
+	xassert(mgr.quiesce.requested);
+	xassert(mgr.quiesce.active);
+
+	mgr.quiesce.requested = false;
+	mgr.quiesce.active = false;
+
+	EVENT_BROADCAST(&mgr.quiesce.on_stop_quiesced);
+
+	slurm_mutex_unlock(&mgr.mutex);
 }

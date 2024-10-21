@@ -300,13 +300,6 @@ typedef struct {
 	 * Is trying to shutdown?
 	 */
 	bool shutdown_requested;
-	/* list of work_t* to run while quiesced */
-	list_t *quiesced_work;
-	/*
-	 * Is mgr currently quiesced?
-	 * Defers all new work to while true
-	 */
-	bool quiesced;
 	/* will inspect connections (not listeners */
 	bool inspecting;
 	/* True if watch() is only waiting on work to complete */
@@ -347,6 +340,18 @@ typedef struct {
 		int threads;
 	} workers;
 
+	/* Global quiesce state */
+	struct {
+		/* Has a thread requested conmgr to quiesce? */
+		bool requested;
+		/* Has conmgr quiesced */
+		bool active;
+		/* Event to broadcast when conmgr enters quiesced state */
+		event_signal_t on_start_quiesced;
+		/* Event to broadcast when conmgr exits quiesced state */
+		event_signal_t on_stop_quiesced;
+	} quiesce;
+
 	event_signal_t watch_sleep;
 	event_signal_t watch_return;
 	event_signal_t worker_sleep;
@@ -359,9 +364,14 @@ typedef struct {
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
 		.error = SLURM_SUCCESS,\
-		.quiesced = false,\
 		.shutdown_requested = true,\
 		.workers.conf_threads = -1,\
+		.quiesce = { \
+			.on_start_quiesced = \
+				EVENT_INITIALIZER("START_QUIESCED"), \
+			.on_stop_quiesced = \
+				EVENT_INITIALIZER("STOP_QUIESCED"), \
+		}, \
 		.watch_sleep = EVENT_INITIALIZER("WATCH_SLEEP"), \
 		.watch_return = EVENT_INITIALIZER("WATCH_RETURN"), \
 		.worker_sleep = EVENT_INITIALIZER("WORKER_SLEEP"), \
@@ -518,13 +528,6 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg);
  * RET ptr or NULL if not found
  */
 extern conmgr_fd_t *con_find_by_fd(int fd);
-
-/*
- * Run all work in mgr.quiesced_work
- * NOTE: Caller must hold mgr.mutex lock
- * WARNING: Releases and retakes mgr.mutex lock
- */
-extern void run_quiesced_work(void);
 
 /*
  * Wrap work requested to notify mgr when that work is complete

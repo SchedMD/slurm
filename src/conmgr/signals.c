@@ -350,3 +350,14 @@ extern void signal_mgr_stop(void)
 
 	slurm_rwlock_unlock(&lock);
 }
+
+extern bool is_signal_connection(conmgr_fd_t *con)
+{
+	bool match;
+
+	slurm_rwlock_rdlock(&lock);
+	match = (signal_con == con);
+	slurm_rwlock_unlock(&lock);
+
+	return match;
+}

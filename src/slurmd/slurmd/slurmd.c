@@ -167,14 +167,6 @@ static int             active_threads = 0;
 static pthread_mutex_t active_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
 
-typedef struct {
-#define RUN_ARGS_MAGIC 0xaeb00fab
-	int magic; /* RUN_ARGS_MAGIC */
-	int argc;
-	char **argv;
-	int pidfd;
-} run_args_t;
-
 typedef struct registration_engine_arg {
 	bool original;
 } registration_engine_arg_t;
@@ -198,8 +190,6 @@ static int	ncpus;			/* number of CPUs on this node */
 static bool original = true;
 static bool under_systemd = false;
 static sig_atomic_t _shutdown = 0;
-static bool reconfiguring = false;
-static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t sent_reg_time = (time_t) 0;
 
 /*
@@ -211,18 +201,9 @@ static bool plugins_registered = false;
 bool refresh_cached_features = true;
 pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static struct {
-	pthread_mutex_t mutex;
-	conmgr_fd_t *con;
-	bool quiesced;
-} listener = {
-	.mutex = PTHREAD_MUTEX_INITIALIZER,
-	.quiesced = true,
-};
-
 static int       _convert_spec_cores(void);
 static int       _core_spec_init(void);
-static void _create_msg_socket(run_args_t *args);
+static void _create_msg_socket(void);
 static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
@@ -244,15 +225,12 @@ static int       _set_topo_info(void);
 static int       _set_work_dir(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
-static void _try_to_reconfig(void);
+static void *_try_to_reconfig(void *ptr);
 static void      _update_nice(void);
 static void      _usage(void);
 static int       _validate_and_convert_cpu_list(void);
 static int _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
-static void _attempt_reconfig(void);
-static void _run(conmgr_callback_args_t conmgr_args, void *arg);
-static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg);
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
@@ -315,7 +293,7 @@ static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 
 	info("Caught SIGHUP. Triggering reconfigure.");
 
-	_attempt_reconfig();
+	slurm_thread_create_detached(_try_to_reconfig, NULL);
 }
 
 static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
@@ -373,12 +351,11 @@ main (int argc, char **argv)
 {
 	uint32_t curr_uid = 0;
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
-	run_args_t args = {
-		.magic = RUN_ARGS_MAGIC,
-		.argc = argc,
-		.argv = argv,
-		.pidfd = -1,
-	};
+	char *oom_value;
+	char time_stamp[256];
+	int pidfd;
+	registration_engine_arg_t registration_arg;
+	registration_arg.original = false;
 
 	if (getenv("SLURMD_RECONF"))
 		original = false;
@@ -452,30 +429,6 @@ main (int argc, char **argv)
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
 	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
 
-	conmgr_add_work_fifo(_run, &args);
-
-	while (!_shutdown)
-		conmgr_run(true);
-
-	conmgr_fini();
-	log_fini();
-
-	return SLURM_SUCCESS;
-}
-
-static void _run(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	run_args_t *args = arg;
-	int argc = args->argc;
-	char **argv = args->argv;
-	char *oom_value;
-	char time_stamp[256];
-	int rc;
-	registration_engine_arg_t registration_arg;
-	registration_arg.original = false;
-
-	xassert(args->magic == RUN_ARGS_MAGIC);
-
 	if ((oom_value = getenv("SLURMD_OOM_ADJ"))) {
 		int i = atoi(oom_value);
 		debug("Setting slurmd oom_adj to %d", i);
@@ -524,7 +477,7 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 
 	plugins_registered = true;
 
-	_create_msg_socket(args);
+	_create_msg_socket();
 
 	conf->pid = getpid();
 
@@ -541,7 +494,7 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 		xsystemd_change_mainpid(getpid());
 
 	if (!under_systemd)
-		args->pidfd = create_pidfile(conf->pidfile, 0);
+		pidfd = create_pidfile(conf->pidfile, 0);
 
 	if (original)
 		run_script_health_check();
@@ -549,20 +502,7 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 	record_launched_jobs();
 	slurm_thread_create_detached(_registration_engine, &registration_arg);
 
-	slurm_mutex_lock(&listener.mutex);
-	xassert(listener.quiesced);
-	listener.quiesced = false;
-	if (listener.con && (rc = conmgr_unquiesce_fd(listener.con)))
-		fatal_abort("%s: conmgr_unquiesce_fd() failed: %s",
-			    __func__, slurm_strerror(rc));
-	slurm_mutex_unlock(&listener.mutex);
-}
-
-static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	run_args_t *args = arg;
-
-	xassert(args->magic == RUN_ARGS_MAGIC);
+	conmgr_run(true);
 
 	/*
 	 * Unlink now while the slurm_conf.pidfile is still accessible,
@@ -594,9 +534,14 @@ static void _run_fini(conmgr_callback_args_t conmgr_args, void *arg)
 	 * Explicitly close the pidfile after all other shutdown has completed
 	 * which will release the flock.
 	 */
-	fd_close(&args->pidfd);
+	fd_close(&pidfd);
 
 	info("Slurmd shutdown completing");
+
+	conmgr_fini();
+	log_fini();
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1466,32 +1411,7 @@ rwfail:
 	return;
 }
 
-static void _try_to_reconfig_deferred(conmgr_callback_args_t conmgr_args,
-				      void *arg)
-{
-	if (conmgr_args.status != CONMGR_WORK_STATUS_CANCELLED)
-		_try_to_reconfig();
-
-	slurm_mutex_lock(&reconfig_mutex);
-	xassert(reconfiguring);
-	reconfiguring = false;
-	slurm_mutex_unlock(&reconfig_mutex);
-}
-
-static void _attempt_reconfig(void)
-{
-	info("Attempting to reconfigure");
-
-	slurm_mutex_lock(&reconfig_mutex);
-	if (!reconfiguring) {
-		reconfiguring = true;
-		conmgr_add_work_quiesced_fifo(_try_to_reconfig_deferred,
-					      NULL);
-	}
-	slurm_mutex_unlock(&reconfig_mutex);
-}
-
-static void _try_to_reconfig(void)
+static void *_try_to_reconfig(void *ptr)
 {
 	extern char **environ;
 	struct rlimit rlim;
@@ -1501,6 +1421,8 @@ static void _try_to_reconfig(void)
 	char *tmp_ptr = NULL;
 	int reconfigure_timeout = slurm_conf.prolog_epilog_timeout;
 	DEF_TIMERS;
+
+	conmgr_quiesce(__func__);
 
 	START_TIMER;
 
@@ -1515,13 +1437,15 @@ static void _try_to_reconfig(void)
 		      reconfigure_timeout);
 		send_registration_msg(SLURM_SUCCESS,
 				      SLURMD_REG_FLAG_RECONFIG_TIMEOUT);
-		reconfiguring = false;
 		slurm_mutex_unlock(&active_mutex);
-		return;
+		conmgr_unquiesce(__func__);
+		return NULL;
 	}
 
-	if (_shutdown)
-		return;
+	if (_shutdown) {
+		conmgr_unquiesce(__func__);
+		return NULL;
+	}
 
 	save_cred_state();
 
@@ -1582,10 +1506,10 @@ rwfail:
 		env_array_free(child_env);
 		waitpid(pid, &rc, 0);
 		info("Resuming operation, reconfigure failed.");
-		conmgr_run(false);
 
 		END_TIMER3(__func__, TIMEOUT_RECONFIG);
-		return;
+		conmgr_unquiesce(__func__);
+		return NULL;
 	}
 
 start_child:
@@ -2033,46 +1957,22 @@ _process_cmdline(int ac, char **av)
 
 static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 {
-	run_args_t *args = arg;
-	int rc;
-
-	xassert(args->magic == RUN_ARGS_MAGIC);
-
-	slurm_mutex_lock(&listener.mutex);
-	xassert(!listener.con);
-	listener.con = con;
-
-	if (!listener.quiesced && (rc = conmgr_unquiesce_fd(con)))
-		fatal_abort("%s: conmgr_unquiesce_fd() failed: %s",
-			    __func__, slurm_strerror(rc));
-
-	slurm_mutex_unlock(&listener.mutex);
-
 	debug3("%s: [%s] Successfully opened slurm listen port %u",
 	       __func__, conmgr_fd_get_name(con), conf->port);
 
 	slurmd_req(NULL);	/* initialize timer */
 
-	return args;
+	return con;
 }
 
 static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 {
-	run_args_t *args = arg;
-
-	xassert(args->magic == RUN_ARGS_MAGIC);
+	xassert(con == arg);
 
 	debug3("%s: [%s] closed RPC listener. Queuing up cleanup.",
 	       __func__, conmgr_fd_get_name(con));
 
 	conf->lfd = -1;
-
-	conmgr_add_work_fifo(_run_fini, args);
-
-	slurm_mutex_lock(&listener.mutex);
-	xassert(listener.con == con);
-	listener.con = NULL;
-	slurm_mutex_unlock(&listener.mutex);
 }
 
 static void *_on_connection(conmgr_fd_t *con, void *arg)
@@ -2106,7 +2006,7 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	fatal_abort("should never happen");
 }
 
-static void _create_msg_socket(run_args_t *args)
+static void _create_msg_socket(void)
 {
 	static const conmgr_events_t events = {
 		.on_listen_connect = _on_listen_connect,
@@ -2117,8 +2017,6 @@ static void _create_msg_socket(run_args_t *args)
 	};
 	int rc;
 
-	xassert(args->magic == RUN_ARGS_MAGIC);
-
 	if (getenv("SLURMD_RECONF_LISTEN_FD")) {
 		conf->lfd = atoi(getenv("SLURMD_RECONF_LISTEN_FD"));
 		debug2("%s: inherited socket on fd:%d", __func__, conf->lfd);
@@ -2127,7 +2025,7 @@ static void _create_msg_socket(run_args_t *args)
 	}
 
 	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, &events,
-					   CON_FLAG_QUIESCE, args)))
+					   CON_FLAG_NONE, NULL)))
 		fatal("%s: unable to process fd:%d error:%s",
 		      __func__, conf->lfd, slurm_strerror(rc));
 }

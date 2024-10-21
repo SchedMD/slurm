@@ -221,23 +221,6 @@ typedef enum {
 	CONMGR_WORK_DEP_TIME_DELAY = SLURM_BIT(3),
 	/* call every time signal is received */
 	CONMGR_WORK_DEP_SIGNAL = SLURM_BIT(4),
-	/*
-	 * Run work while conmgr is quiesced.
-	 *
-	 * Once eligible to run (if any other controls are specified):
-	 *	Pauses any new work from starting until run.
-	 *	Pauses all event management until run.
-	 *
-	 * Will only be run when all worker threads have finished all previously
-	 * running work when pause of new work started.
-	 *
-	 * Upon work's return, conmgr will resume normal operations (or run next
-	 * work with CONMGR_WORK_DEP_QUIESCED flag set).
-	 *
-	 * Only 1 work of this type will run at a time.
-	 * Incompatible with connection work.
-	 */
-	CONMGR_WORK_DEP_QUIESCED = SLURM_BIT(5),
 } conmgr_work_depend_t;
 
 /* RET caller must xfree() */
@@ -318,7 +301,6 @@ typedef enum {
 	 * will remained queued until unset. New work can still be added. If the
 	 * connection is requested to be closed, then the flag will be removed
 	 * automatically.
-	 * Note: This flag is unrelated to CONMGR_WORK_DEP_QUIESCED.
 	 */
 	CON_FLAG_QUIESCE = SLURM_BIT(10),
 	/* output_fd is a socket with TCP_NODELAY set */
@@ -644,21 +626,6 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
 		}, __func__)
 
 /*
- * Add work to run while quiesced
- * IN _func - function pointer to run work
- * IN func_arg - arg to hand to function pointer
- */
-#define conmgr_add_work_quiesced_fifo(_func, func_arg) \
-	conmgr_add_work(NULL, (conmgr_callback_t) { \
-			.func = _func, \
-			.arg = func_arg, \
-			.func_name = #_func, \
-		}, (conmgr_work_control_t) { \
-			.depend_type = CONMGR_WORK_DEP_QUIESCED, \
-			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
-		}, __func__)
-
-/*
  * Control if conmgr will exit on any error
  */
 extern void conmgr_set_exit_on_error(bool exit_on_error);
@@ -838,6 +805,18 @@ extern int conmgr_quiesce_fd(conmgr_fd_t *con);
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_unquiesce_fd(conmgr_fd_t *con);
+
+/*
+ * Block until conmgr is quiesced
+ * IN caller - __func__ from caller for logging
+ */
+extern void conmgr_quiesce(const char *caller);
+
+/*
+ * Unquiesce conmgr
+ * IN caller - __func__ from caller for logging
+ */
+extern void conmgr_unquiesce(const char *caller);
 
 /*
  * Connection reference.

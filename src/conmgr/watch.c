@@ -1072,7 +1072,7 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 /* caller must hold mgr.mutex lock */
 static bool _is_poll_interrupt(void)
 {
-	return (mgr.quiesced || mgr.shutdown_requested ||
+	return (mgr.shutdown_requested ||
 		(mgr.waiting_on_work && (mgr.workers.active == 1)));
 }
 
@@ -1203,6 +1203,50 @@ static bool _handle_events(void)
 	return true;
 }
 
+static int _foreach_is_waiter(void *x, void *arg)
+{
+	int *waiters_ptr = arg;
+	conmgr_fd_t *con = x;
+	bool skip = false;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(*waiters_ptr >= 0);
+
+	if (is_signal_connection(con)) {
+		skip = true;
+	} else if (con_flag(con, FLAG_WORK_ACTIVE)) {
+		/* never skip when connection has active work */
+	} else if (con_flag(con, FLAG_IS_LISTEN)) {
+		/*
+		 * listeners don't matter if they are not running
+		 * _listen_accept() as work
+		 */
+		skip = true;
+	} else if (con_flag(con, FLAG_QUIESCE)) {
+		/*
+		 * Individually quiesced will not do anything and need to be
+		 * skipped or the global quiesce will never happen
+		 */
+		skip = true;
+	}
+
+	if (!skip)
+		(*waiters_ptr)++;
+
+	return SLURM_SUCCESS;
+}
+
+/* Get count of connections that quiesce is waiting to complete */
+static int _get_quiesced_waiter_count(void)
+{
+	int waiters = 0;
+
+	(void) list_for_each_ro(mgr.connections, _foreach_is_waiter, &waiters);
+	(void) list_for_each_ro(mgr.listen_conns, _foreach_is_waiter, &waiters);
+
+	return waiters;
+}
+
 static bool _watch_loop(void)
 {
 	if (mgr.shutdown_requested) {
@@ -1211,29 +1255,33 @@ static bool _watch_loop(void)
 		close_all_connections();
 	}
 
-	if (!mgr.quiesced && !list_is_empty(mgr.quiesced_work)) {
-		mgr.quiesced = true;
-		log_flag(CONMGR, "%s: BEGIN: quiesced state", __func__);
-	}
+	if (mgr.quiesce.requested) {
+		int waiters;
 
-	if (mgr.quiesced) {
-		xassert(!list_is_empty(mgr.quiesced_work));
-
-		if (mgr.workers.active) {
-			log_flag(CONMGR, "%s: quiesced state waiting on workers:%d quiesced_work:%u",
+		if ((waiters = _get_quiesced_waiter_count())) {
+			log_flag(CONMGR, "%s: quiesced state deferred to process connections:%d/%d",
+				 __func__, waiters,
+				 (list_count(mgr.connections) +
+				  list_count(mgr.listen_conns)));
+		} else if (mgr.workers.active) {
+			log_flag(CONMGR, "%s: quiesced state waiting on workers:%d/%d",
 				 __func__, mgr.workers.active,
-				 list_count(mgr.quiesced_work));
+				 mgr.workers.total);
 			mgr.waiting_on_work = true;
 			return true;
+		}  else {
+			log_flag(CONMGR, "%s: BEGIN: quiesced state", __func__);
+			mgr.quiesce.active = true;
+
+			EVENT_BROADCAST(&mgr.quiesce.on_start_quiesced);
+
+			while (mgr.quiesce.active)
+				EVENT_WAIT(&mgr.quiesce.on_stop_quiesced,
+					   &mgr.mutex);
+
+			log_flag(CONMGR, "%s: END: quiesced state", __func__);
 		}
-
-		run_quiesced_work();
-		mgr.quiesced = false;
-		log_flag(CONMGR, "%s: END: quiesced state", __func__);
-		return true;
 	}
-
-	xassert(list_is_empty(mgr.quiesced_work));
 
 	if (_handle_events())
 		return true;
@@ -1282,7 +1330,7 @@ extern void *watch(void *arg)
 			pollctl_interrupt(__func__);
 		}
 
-		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesced:%c[%u] waiting_on_work:%c",
+		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesce_requested:%c waiting_on_work:%c",
 				 __func__, mgr.workers.active,
 				 mgr.workers.total, list_count(mgr.work),
 				 list_count(mgr.delayed_work),
@@ -1292,8 +1340,7 @@ extern void *watch(void *arg)
 				 BOOL_CHARIFY(mgr.poll_active),
 				 BOOL_CHARIFY(mgr.inspecting),
 				 BOOL_CHARIFY(mgr.shutdown_requested),
-				 BOOL_CHARIFY(mgr.quiesced),
-				 list_count(mgr.quiesced_work),
+				 BOOL_CHARIFY(mgr.quiesce.requested),
 				 BOOL_CHARIFY(mgr.waiting_on_work));
 
 		EVENT_WAIT_TIMED(&mgr.watch_sleep, mgr.watch_max_sleep,

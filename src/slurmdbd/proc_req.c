@@ -2475,7 +2475,7 @@ static int _reconfig(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	info("Reconfigure request received");
-	reconfig();
+	reconfig(NULL);
 
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 						rc, comment, DBD_RECONFIG);
