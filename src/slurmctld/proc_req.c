@@ -3191,9 +3191,13 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 
 	if (bit_ffs(reconfig_node_bitmap) >= 0) {
 		char *remaining_nodes = bitmap2node_name(reconfig_node_bitmap);
-		warning("Previous reconfigure request didn't complete on nodes: %s",
-			remaining_nodes);
+		char *err_msg = NULL;
+		xstrfmtcat(err_msg, "Previous reconfigure request didn't complete on nodes: %s",
+			   remaining_nodes);
+		slurm_send_rc_err_msg(msg, SLURM_ERROR,
+				      err_msg);
 		xfree(remaining_nodes);
+		xfree(err_msg);
 	}
 
 
