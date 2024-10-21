@@ -104,7 +104,6 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg);
 static void _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc);
 #endif
 static void _process_cmdline(int argc, char **argv);
-static void _run(conmgr_callback_args_t conmgr_args, void *arg);
 
 static pthread_mutex_t cleanup_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool cleanup = false;
@@ -119,16 +118,6 @@ list_t *job_node_array = NULL;
 time_t last_job_update = 0;
 bool time_limit_thread_shutdown = false;
 pthread_t time_limit_thread_id = 0;
-
-typedef struct {
-	slurm_addr_t *cli;
-#define RUN_ARGS_MAGIC 0x0ee01aab
-	int magic; /* RUN_ARGS_MAGIC */
-	slurm_msg_t *msg;
-	int rc;
-	int argc;
-	char **argv;
-} run_args_t;
 
 static int _foreach_ret_data_info(void *x, void *arg)
 {
@@ -335,12 +324,11 @@ static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
 extern int main(int argc, char **argv)
 {
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
-	run_args_t args = {
-		.magic = RUN_ARGS_MAGIC,
-		.rc = SLURM_SUCCESS,
-		.argc = argc,
-		.argv = argv,
-	};
+	slurm_addr_t *cli;
+	slurm_msg_t *msg;
+	stepd_step_rec_t *step;
+	int rc = SLURM_SUCCESS;
+	bool only_mem = true;
 
 	_process_cmdline(argc, argv);
 
@@ -352,7 +340,7 @@ extern int main(int argc, char **argv)
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
 	/* Receive job parameters from the slurmd */
-	_init_from_slurmd(STDIN_FILENO, argv, &args.cli, &args.msg);
+	_init_from_slurmd(STDIN_FILENO, argv, &cli, &msg);
 
 	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
 
@@ -366,27 +354,7 @@ extern int main(int argc, char **argv)
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
 	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
 
-	conmgr_add_work_fifo(_run, &args);
-
-	conmgr_run(true);
-
-	conmgr_fini();
-
-	return args.rc;
-}
-
-static void _run(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	run_args_t *args = arg;
-	int argc = args->argc;
-	char **argv = args->argv;
-	slurm_addr_t *cli = args->cli;
-	slurm_msg_t *msg = args->msg;
-	stepd_step_rec_t *step;
-	int rc = 0;
-	bool only_mem = true;
-
-	xassert(args->magic == RUN_ARGS_MAGIC);
+	conmgr_run(false);
 
 	if ((run_command_init(argc, argv, conf->stepd_loc) != SLURM_SUCCESS) &&
 	    conf->stepd_loc && conf->stepd_loc[0])
@@ -439,7 +407,10 @@ static void _run(conmgr_callback_args_t conmgr_args, void *arg)
 
 	only_mem = false;
 ending:
-	args->rc = stepd_cleanup(msg, step, cli, rc, only_mem);
+	rc = stepd_cleanup(msg, step, cli, rc, only_mem);
+
+	conmgr_fini();
+	return rc;
 }
 
 extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
