@@ -66,9 +66,7 @@ static pthread_rwlock_t getnameinfo_cache_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 typedef struct {
 	slurm_addr_t addr;
-	socklen_t addrlen;
 	char *host;
-	uint32_t host_len;
 	time_t expiration;
 } getnameinfo_cache_t;
 
