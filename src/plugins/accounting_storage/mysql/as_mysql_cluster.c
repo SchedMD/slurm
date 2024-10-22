@@ -849,17 +849,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		xfree(name_char);
 		xstrfmtcat(name_char, "name='%s'", object);
-		/* We should not need to delete any cluster usage just set it
-		 * to deleted */
-		xstrfmtcat(query,
-			   "update \"%s_%s\" set time_end=%ld where time_end=0;"
-			   "update \"%s_%s\" set mod_time=%ld, deleted=1;"
-			   "update \"%s_%s\" set mod_time=%ld, deleted=1;"
-			   "update \"%s_%s\" set mod_time=%ld, deleted=1;",
-			   object, event_table, now,
-			   object, cluster_day_table, now,
-			   object, cluster_hour_table, now,
-			   object, cluster_month_table, now);
+
 		rc = remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
 				   user_name, cluster_table, name_char,
 				   assoc_char, object, ret_list, &jobs_running,
@@ -875,19 +865,9 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS) {
 		FREE_NULL_LIST(ret_list);
-		xfree(query);
 		return NULL;
 	}
 	if (!jobs_running) {
-		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		if (rc != SLURM_SUCCESS) {
-			reset_mysql_conn(mysql_conn);
-			FREE_NULL_LIST(ret_list);
-			return NULL;
-		}
-
 		/* We need to remove these clusters from the wckey table */
 		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 		wckey_cond.cluster_list = ret_list;
