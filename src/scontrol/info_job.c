@@ -1781,6 +1781,79 @@ cleanup:
 	FREE_NULL_LIST(listpids_list);
 }
 
+static int _add_to_liststeps_list(void *x, void *arg)
+{
+	liststeps_info_t *liststeps_info;
+	step_loc_t *step_loc = x;
+	list_t *liststeps_list = arg;
+	char step_id_str[32];
+	slurm_step_id_t step_id = step_loc->step_id;
+
+	log_build_step_id_str(&step_id, step_id_str, sizeof(step_id_str),
+			      STEP_ID_FLAG_NO_JOB | STEP_ID_FLAG_NO_PREFIX);
+
+	liststeps_info = xmalloc(sizeof(*liststeps_info));
+
+	liststeps_info->step_id = xstrdup(step_id_str);
+	liststeps_info->job_id = step_id.job_id;
+
+	list_append(liststeps_list, liststeps_info);
+
+	return 0;
+}
+
+static int _print_liststeps_info(void *x, void *arg)
+{
+	liststeps_info_t *liststeps_info = x;
+
+	printf("%-8d %-8s\n", liststeps_info->job_id, liststeps_info->step_id);
+
+	return 0;
+}
+
+static void _free_liststeps_info(void *x)
+{
+	liststeps_info_t *liststeps_info = x;
+
+	if (liststeps_info) {
+		xfree(liststeps_info->step_id);
+	}
+
+	xfree(liststeps_info);
+}
+
+/*
+ * scontrol_list_steps - Print steps on node.
+ *
+ * IN node_name - query this node for any steps
+ */
+extern void scontrol_list_steps(int argc, char **argv)
+{
+	list_t *liststeps_list = NULL;
+	char *node_name = NULL;
+	list_t *steps;
+
+	if (argc)
+		node_name = argv[1];
+
+	steps = stepd_available(NULL, node_name);
+
+	if (!steps || !list_count(steps)) {
+		fprintf(stderr, "No steps found on this node\n");
+		goto cleanup;
+	}
+
+	liststeps_list = list_create(_free_liststeps_info);
+	list_for_each(steps, _add_to_liststeps_list, liststeps_list);
+
+	printf("%-8s %-8s\n", "JOBID", "STEPID");
+	list_for_each(liststeps_list, _print_liststeps_info, NULL);
+
+cleanup:
+	FREE_NULL_LIST(liststeps_list);
+	FREE_NULL_LIST(steps);
+}
+
 extern void scontrol_getent(const char *node_name)
 {
 	list_t *steps = NULL;

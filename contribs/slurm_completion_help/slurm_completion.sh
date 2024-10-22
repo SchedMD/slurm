@@ -4545,6 +4545,7 @@ function _scontrol() {
 		"notify"
 		"pidinfo"
 		"listpids"
+		"liststeps"
 		"ping"
 		"power"
 		"reboot"

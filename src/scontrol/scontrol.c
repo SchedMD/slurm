@@ -1659,6 +1659,15 @@ static int _process_command (int argc, char **argv)
 		} else {
 			scontrol_list_pids(argc, argv);
 		}
+	} else if (!xstrncasecmp(tag, "liststeps", MAX(tag_len, 1))) {
+		if (argc > 2) {
+			exit_code = 1;
+			fprintf(stderr,
+				"too many arguments for keyword:%s\n",
+				tag);
+		} else {
+			scontrol_list_steps(argc, argv);
+		}
 	} else if (!xstrncasecmp(tag, "getent", MAX(tag_len, 6))) {
 		scontrol_getent(argc == 1 ? NULL : argv[1]);
 	} else if (!xstrncasecmp(tag, "notify", MAX(tag_len, 1))) {

@@ -50,6 +50,7 @@ COMMAND CHANGES (see man pages for details)
     will result in database conversion.
  -- Remove salloc --get-user-env.
  -- scontrol - Add --json/--yaml support to listpids
+ -- scontrol - Add liststeps
 
 API CHANGES
 ===========

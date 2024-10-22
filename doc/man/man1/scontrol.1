@@ -226,6 +226,14 @@ one host are, in general, only used by Slurm developers.
 .IP
 
 .TP
+\fBliststeps\fR [<\fINodeName\fR>]
+Print steps running on the host that runs this. This contacts any slurmstepd's
+running locally, and does not contact slurmctld
+
+Use <\fINodeName\fR> if using --enable-multiple-slurmd.
+.IP
+
+.TP
 \fBping\fR
 Ping the primary and secondary slurmctld daemon and report if
 they are responding.

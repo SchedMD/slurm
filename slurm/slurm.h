@@ -1979,6 +1979,11 @@ typedef struct listpids_info {
 	char *step_id;
 } listpids_info_t;
 
+typedef struct liststeps_info {
+	uint32_t job_id;
+	char *step_id;
+} liststeps_info_t;
+
 typedef struct {
 	uint32_t job_id;
 	uint32_t array_job_id;

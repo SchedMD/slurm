@@ -111,6 +111,7 @@ extern int	scontrol_hold(char *op, char *job_id_str);
 extern int	scontrol_job_notify(int argc, char **argv);
 extern int	scontrol_job_ready(char *job_id_str);
 extern void scontrol_list_pids(int argc, char **argv);
+extern void scontrol_list_steps(int argc, char **argv);
 extern void	scontrol_getent(const char *node_name);
 extern int	scontrol_load_front_end(front_end_info_msg_t **
 					front_end_buffer_pptr);
