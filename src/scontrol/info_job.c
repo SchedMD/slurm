@@ -1513,9 +1513,8 @@ _in_task_array(pid_t pid, slurmstepd_task_info_t *task_array,
 	return false;
 }
 
-
-static void
-_list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
+static void _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id,
+				list_t *listpids_list)
 {
 	int fd;
 	slurmstepd_task_info_t *task_info = NULL;
@@ -1545,24 +1544,38 @@ _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
 	log_build_step_id_str(step_id, tmp_char, sizeof(tmp_char),
 			      STEP_ID_FLAG_NO_JOB | STEP_ID_FLAG_NO_PREFIX);
 
+	/* Get all task pids */
 	stepd_task_info(fd, protocol_version, &task_info, &tcount);
 	for (i = 0; i < (int)tcount; i++) {
 		if (task_info[i].exited)
 			continue;
-		printf("%-8d %-8u %-8s %-7d %-8d\n",
-		       task_info[i].pid,
-		       step_id->job_id,
-		       tmp_char,
-		       task_info[i].id,
-		       task_info[i].gtid);
+		listpids_info_t *listpids_info = xmalloc(
+			sizeof(*listpids_info));
+
+		listpids_info->global_task_id = task_info[i].gtid;
+		listpids_info->job_id = step_id->job_id;
+		listpids_info->local_task_id = task_info[i].id;
+		listpids_info->pid = task_info[i].pid;
+		listpids_info->step_id = xstrdup(tmp_char);
+
+		list_append(listpids_list, listpids_info);
 	}
 
+	/* Get pids in proctrack container (slurmstepd, srun, etc.) */
 	stepd_list_pids(fd, protocol_version, &pids, &count);
 	for (i = 0; i < count; i++) {
-		if (!_in_task_array((pid_t)pids[i], task_info, tcount)) {
-			printf("%-8d %-8u %-8s %-7s %-8s\n",
-			       pids[i], step_id->job_id, tmp_char, "-", "-");
-		}
+		if (_in_task_array((pid_t) pids[i], task_info, tcount))
+			continue;
+		listpids_info_t *listpids_info = xmalloc(
+			sizeof(*listpids_info));
+
+		listpids_info->global_task_id = NO_VAL;
+		listpids_info->job_id = step_id->job_id;
+		listpids_info->local_task_id = NO_VAL;
+		listpids_info->pid = pids[i];
+		listpids_info->step_id = xstrdup(tmp_char);
+
+		list_append(listpids_list, listpids_info);
 	}
 
 	xfree(pids);
@@ -1570,8 +1583,9 @@ _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
 	close(fd);
 }
 
-static void
-_list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
+static void _list_pids_all_steps(const char *node_name,
+				 slurm_step_id_t *step_id,
+				 list_t* listpids_list)
 {
 	list_t *steps;
 	list_itr_t *itr;
@@ -1580,7 +1594,7 @@ _list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
 	char tmp_char[64];
 
 	if (step_id->step_het_comp != NO_VAL) {
-		_list_pids_one_step(node_name, step_id);
+		_list_pids_one_step(node_name, step_id, listpids_list);
 		return;
 	}
 
@@ -1605,7 +1619,8 @@ _list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
 		    (step_id->step_id != stepd->step_id.step_id))
 			continue;
 
-		_list_pids_one_step(stepd->nodename, &stepd->step_id);
+		_list_pids_one_step(stepd->nodename, &stepd->step_id,
+				    listpids_list);
 		count++;
 	}
 	list_iterator_destroy(itr);
@@ -1625,8 +1640,7 @@ _list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
 	}
 }
 
-static void
-_list_pids_all_jobs(const char *node_name)
+static void _list_pids_all_jobs(const char *node_name, list_t *listpids_list)
 {
 	list_t *steps;
 	list_itr_t *itr;
@@ -1642,10 +1656,46 @@ _list_pids_all_jobs(const char *node_name)
 
 	itr = list_iterator_create(steps);
 	while((stepd = list_next(itr))) {
-		_list_pids_one_step(stepd->nodename, &stepd->step_id);
+		_list_pids_one_step(stepd->nodename, &stepd->step_id,
+				    listpids_list);
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(steps);
+}
+
+static int _print_listpids_info(void *x, void *arg)
+{
+	listpids_info_t *listpids_info = x;
+
+	printf("%-8d %-8d %-8s ",
+	       listpids_info->pid, listpids_info->job_id,
+	       listpids_info->step_id);
+
+	if (listpids_info->local_task_id != NO_VAL) {
+		printf("%-7d ", listpids_info->local_task_id);
+	} else {
+		printf("%-7s ", "-");
+	}
+
+	if (listpids_info->global_task_id != NO_VAL) {
+		printf("%-8d ", listpids_info->global_task_id);
+	} else {
+		printf("%-8s ", "-");
+	}
+
+	printf("\n");
+	return 0;
+}
+
+static void _free_listpids_info(void *x)
+{
+	listpids_info_t *listpids_info = x;
+
+	if (listpids_info) {
+		xfree(listpids_info->step_id);
+	}
+
+	xfree(listpids_info);
 }
 
 /*
@@ -1662,6 +1712,7 @@ _list_pids_all_jobs(const char *node_name)
 extern void
 scontrol_list_pids(const char *jobid_str, const char *node_name)
 {
+	list_t *listpids_list = NULL;
 	slurm_step_id_t step_id = {
 		.job_id = 0,
 		.step_id = NO_VAL,
@@ -1676,13 +1727,18 @@ scontrol_list_pids(const char *jobid_str, const char *node_name)
 		return;
 	}
 
+	listpids_list = list_create(_free_listpids_info);
+
 	/* Step ID is optional */
 	printf("%-8s %-8s %-8s %-7s %-8s\n",
 	       "PID", "JOBID", "STEPID", "LOCALID", "GLOBALID");
 	if (jobid_str == NULL || jobid_str[0] == '*') {
-		_list_pids_all_jobs(node_name);
+		_list_pids_all_jobs(node_name, listpids_list);
 	} else if (_parse_stepid(jobid_str, &step_id))
-		_list_pids_all_steps(node_name, &step_id);
+		_list_pids_all_steps(node_name, &step_id, listpids_list);
+	list_for_each(listpids_list, _print_listpids_info, NULL);
+
+	FREE_NULL_LIST(listpids_list);
 }
 
 extern void scontrol_getent(const char *node_name)
