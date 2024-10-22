@@ -2349,6 +2349,29 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 
 		has_jobs = _check_jobs_before_remove(
 			mysql_conn, cluster_name, assoc_char, NULL, NULL);
+
+		if (!has_jobs && (table == cluster_table)) {
+			char *reg_check = xstrdup_printf(
+				"select control_host from %s where name='%s'",
+				table, cluster_name);
+
+			/* Don't delete cluster row if it has registered */
+			DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s",
+				 reg_check);
+			result = mysql_db_query_ret(mysql_conn, reg_check, 0);
+			xfree(reg_check);
+			if (!result) {
+				if (mysql_conn->flags & DB_CONN_FLAG_ROLLBACK)
+					mysql_db_rollback(mysql_conn);
+				list_flush(mysql_conn->update_list);
+				return SLURM_ERROR;
+			}
+			if ((row = mysql_fetch_row(result))) {
+				if (row[0] && row[0][0])
+					has_jobs = true;
+			}
+			mysql_free_result(result);
+		}
 	} else {
 		/* first check to see if we are running jobs now */
 		if (_check_jobs_before_remove_assoc(
