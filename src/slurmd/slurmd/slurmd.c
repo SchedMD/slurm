@@ -1401,6 +1401,7 @@ static void *_try_to_reconfig(void *ptr)
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
 	const int rpc_wait = MAX(5, (slurm_conf.msg_timeout / 2));
+	int close_skip[3] = { -1, -1, -1 }, skip_index = 0;
 	DEF_TIMERS;
 
 	conmgr_quiesce(__func__);
@@ -1432,6 +1433,7 @@ static void *_try_to_reconfig(void *ptr)
 	if (conf->lfd != -1) {
 		setenvf(&child_env, "SLURMD_RECONF_LISTEN_FD", "%d", conf->lfd);
 		fd_set_noclose_on_exec(conf->lfd);
+		close_skip[skip_index++] = conf->lfd;
 		debug3("%s: retaining listener socket fd:%d", __func__, conf->lfd);
 	}
 
@@ -1442,6 +1444,7 @@ static void *_try_to_reconfig(void *ptr)
 		fatal("%s: pipe() failed: %m", __func__);
 
 	setenvf(&child_env, "SLURMD_RECONF_PARENT_FD", "%d", to_parent[1]);
+	close_skip[skip_index++] = to_parent[1];
 
 	if ((pid = fork()) < 0) {
 		fatal("%s: fork() failed, cannot reconfigure.", __func__);
@@ -1481,10 +1484,7 @@ rwfail:
 	}
 
 start_child:
-	for (int fd = 3; fd < rlim.rlim_cur; fd++) {
-		if ((fd != to_parent[1]) && (fd != conf->lfd))
-			(void) close(fd);
-	}
+	closeall_except(3, close_skip);
 
 	/*
 	 * This second fork() ensures that the new grandchild's parent is init,
