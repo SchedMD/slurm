@@ -4544,6 +4544,7 @@ function _scontrol() {
 		"hold"
 		"notify"
 		"pidinfo"
+		"listjobs"
 		"listpids"
 		"liststeps"
 		"ping"

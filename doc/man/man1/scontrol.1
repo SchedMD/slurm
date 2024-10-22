@@ -210,6 +210,14 @@ spawned by Slurm and their descendants.
 .IP
 
 .TP
+\fBlistjobs\fR [<\fINodeName\fR>]
+Print jobs running on the host that runs this. This contacts any slurmstepd's
+running locally, and does not contact slurmctld
+
+Use <\fINodeName\fR> if using --enable-multiple-slurmd.
+.IP
+
+.TP
 \fBlistpids\fR [<\fIjob_id\fR>[.<\fIstep_id\fR>]] [<\fINodeName\fR>]
 Print a listing of the process IDs in a job step (if JOBID.STEPID is provided),
 or all of the job steps in a job (if \fIjob_id\fP is provided), or all of the job

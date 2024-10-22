@@ -57,6 +57,11 @@
 #define CONTAINER_ID_TAG "containerid="
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
+typedef struct add_to_listjobs_list_args {
+	list_t *jobs_seen;
+	list_t *listjobs_list;
+} add_to_listjobs_list_args_t;
+
 static node_info_msg_t *_get_node_info_for_jobs(void)
 {
 	int error_code;
@@ -1436,6 +1441,82 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	}
 
 	xfree(steps);
+}
+
+static int _add_to_listjobs_list(void *x, void *arg)
+{
+	step_loc_t *step_loc = x;
+	slurm_step_id_t step_id = step_loc->step_id;
+	listjobs_info_t *listjobs_info;
+	uint32_t *job_id;
+
+	add_to_listjobs_list_args_t *args = arg;
+	list_t *listjobs_list = args->listjobs_list;
+	list_t *jobs_seen = args->jobs_seen;
+
+	/* Don't add duplicate job ids to the list */
+	if (list_find_first(jobs_seen, slurm_find_uint32_in_list,
+			    &step_id.job_id))
+		return 0;
+
+	job_id = xmalloc(sizeof(*job_id));
+	*job_id = step_id.job_id;
+	list_append(jobs_seen, job_id);
+
+	listjobs_info = xmalloc(sizeof(*listjobs_info));
+	listjobs_info->job_id = step_id.job_id;
+	list_append(listjobs_list, listjobs_info);
+
+	return 0;
+}
+
+static int _print_listjobs_info(void *x, void *arg)
+{
+	uint32_t *job_id = x;
+
+	printf("%-8d\n", *job_id);
+
+	return 0;
+}
+
+/*
+ * scontrol_list_jobs - Print jobs on node.
+ *
+ * IN node_name - query this node for any jobs
+ */
+extern void scontrol_list_jobs(int argc, char **argv)
+{
+	char *node_name = NULL;
+	list_t *steps = NULL;
+	list_t *listjobs_list = NULL;
+	list_t *jobs_seen = NULL;
+	add_to_listjobs_list_args_t for_each_args = { 0 };
+
+	if (argc)
+		node_name = argv[1];
+
+	steps = stepd_available(NULL, node_name);
+
+	if (!steps || !list_count(steps)) {
+		fprintf(stderr, "No steps found on this node\n");
+		goto cleanup;
+	}
+
+	listjobs_list = list_create(xfree_ptr);
+	jobs_seen = list_create(xfree_ptr);
+
+	for_each_args.listjobs_list = listjobs_list;
+	for_each_args.jobs_seen = jobs_seen;
+
+	list_for_each(steps, _add_to_listjobs_list, &for_each_args);
+
+	printf("JOBID\n");
+	list_for_each(listjobs_list, _print_listjobs_info, NULL);
+
+cleanup:
+	FREE_NULL_LIST(listjobs_list);
+	FREE_NULL_LIST(jobs_seen);
+	FREE_NULL_LIST(steps);
 }
 
 /* Return 1 on success, 0 on failure to find a jobid in the string */

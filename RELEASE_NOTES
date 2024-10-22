@@ -51,6 +51,7 @@ COMMAND CHANGES (see man pages for details)
  -- Remove salloc --get-user-env.
  -- scontrol - Add --json/--yaml support to listpids
  -- scontrol - Add liststeps
+ -- scontrol - Add listjobs
 
 API CHANGES
 ===========

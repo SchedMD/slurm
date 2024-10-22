@@ -195,6 +195,7 @@ documents those changes that are of interest to users and administrators.
     logs to have the incorrect hostname.
  -- scontrol - Add --json/--yaml support to listpids
  -- scontrol - Add liststeps
+ -- scontrol - Add listjobs
 
 * Changes in Slurm 24.05.5
 ==========================

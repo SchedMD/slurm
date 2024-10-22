@@ -1971,6 +1971,10 @@ typedef struct job_info_msg {
 	slurm_job_info_t *job_array;	/* the job records */
 } job_info_msg_t;
 
+typedef struct listjobs_info {
+	uint32_t job_id;
+} listjobs_info_t;
+
 typedef struct listpids_info {
 	uint32_t global_task_id;
 	uint32_t job_id;

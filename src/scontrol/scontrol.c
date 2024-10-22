@@ -1659,6 +1659,15 @@ static int _process_command (int argc, char **argv)
 		} else {
 			scontrol_list_pids(argc, argv);
 		}
+	} else if (!xstrncasecmp(tag, "listjobs", MAX(tag_len, 1))) {
+		if (argc > 2) {
+			exit_code = 1;
+			fprintf(stderr,
+				"too many arguments for keyword:%s\n",
+				tag);
+		} else {
+			scontrol_list_jobs(argc, argv);
+		}
 	} else if (!xstrncasecmp(tag, "liststeps", MAX(tag_len, 1))) {
 		if (argc > 2) {
 			exit_code = 1;
