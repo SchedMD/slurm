@@ -406,7 +406,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			 * to set things up. Since it isn't there yet it
 			 * won't work.
 			 */
-
+			if (object->root_assoc->def_qos_id == INFINITE)
+				object->root_assoc->def_qos_id = 0;
 			xfree(object->root_assoc->cluster);
 			object->root_assoc->cluster = xstrdup(object->name);
 			xfree(object->root_assoc->acct);
