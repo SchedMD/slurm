@@ -1583,9 +1583,25 @@ static void _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id,
 	close(fd);
 }
 
+static void _dump_listpids(list_t *listpids_list, int argc, char **argv)
+{
+	int rc;
+
+	openapi_resp_listpids_info_t resp = {
+		.listpids_list = listpids_list,
+	};
+
+	DATA_DUMP_CLI(OPENAPI_LISTPIDS_INFO_RESP, resp, argc, argv, NULL,
+		      mime_type, data_parser, rc);
+
+	if (rc != SLURM_SUCCESS)
+		exit_code = 1;
+}
+
 static void _list_pids_all_steps(const char *node_name,
 				 slurm_step_id_t *step_id,
-				 list_t* listpids_list)
+				 list_t* listpids_list,
+				 int argc, char **argv)
 {
 	list_t *steps;
 	list_itr_t *itr;
@@ -1600,11 +1616,15 @@ static void _list_pids_all_steps(const char *node_name,
 
 	steps = stepd_available(NULL, node_name);
 	if (!steps || list_count(steps) == 0) {
-		fprintf(stderr, "%s does not exist on node %s.\n",
-			log_build_step_id_str(step_id, tmp_char,
-					      sizeof(tmp_char),
-					      STEP_ID_FLAG_NONE),
-			node_name);
+		if (mime_type) {
+			_dump_listpids(NULL, argc, argv);
+		} else {
+			fprintf(stderr, "%s does not exist on node %s.\n",
+				log_build_step_id_str(step_id, tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NONE),
+				node_name);
+		}
 		FREE_NULL_LIST(steps);
 		exit_code = 1;
 		return;
@@ -1640,7 +1660,8 @@ static void _list_pids_all_steps(const char *node_name,
 	}
 }
 
-static void _list_pids_all_jobs(const char *node_name, list_t *listpids_list)
+static void _list_pids_all_jobs(const char *node_name, list_t *listpids_list,
+				int argc, char **argv)
 {
 	list_t *steps;
 	list_itr_t *itr;
@@ -1648,7 +1669,10 @@ static void _list_pids_all_jobs(const char *node_name, list_t *listpids_list)
 
 	steps = stepd_available(NULL, node_name);
 	if (!steps || list_count(steps) == 0) {
-		fprintf(stderr, "No job steps exist on this node.\n");
+		if (mime_type)
+			_dump_listpids(NULL, argc, argv);
+		else
+			fprintf(stderr, "No job steps exist on this node.\n");
 		FREE_NULL_LIST(steps);
 		exit_code = 1;
 		return;
@@ -1737,11 +1761,17 @@ extern void scontrol_list_pids(int argc, char **argv)
 
 	/* Step ID is optional */
 	if (jobid_str == NULL || jobid_str[0] == '*') {
-		_list_pids_all_jobs(node_name, listpids_list);
+		_list_pids_all_jobs(node_name, listpids_list, argc, argv);
 	} else if (_parse_stepid(jobid_str, &step_id))
-		_list_pids_all_steps(node_name, &step_id, listpids_list);
+		_list_pids_all_steps(node_name, &step_id, listpids_list, argc,
+				     argv);
 	if (exit_code)
 		goto cleanup;
+
+	if (mime_type) {
+		_dump_listpids(listpids_list, argc, argv);
+		goto cleanup;
+	}
 
 	printf("%-8s %-8s %-8s %-7s %-8s\n",
 	       "PID", "JOBID", "STEPID", "LOCALID", "GLOBALID");

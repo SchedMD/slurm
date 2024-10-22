@@ -193,6 +193,7 @@ documents those changes that are of interest to users and administrators.
     or mcs jobs.
  -- Avoid miscaching IPv6 address to hostname lookups that could have caused
     logs to have the incorrect hostname.
+ -- scontrol - Add --json/--yaml support to listpids
 
 * Changes in Slurm 24.05.5
 ==========================
