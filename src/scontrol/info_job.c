@@ -1709,15 +1709,21 @@ static void _free_listpids_info(void *x)
  *	because if NULL is used when there are multiple slurmd on the
  *	node, one of them will be selected more-or-less at random.
  */
-extern void
-scontrol_list_pids(const char *jobid_str, const char *node_name)
+extern void scontrol_list_pids(int argc, char **argv)
 {
+	char *jobid_str = NULL;
+	char *node_name = NULL;
 	list_t *listpids_list = NULL;
 	slurm_step_id_t step_id = {
 		.job_id = 0,
 		.step_id = NO_VAL,
 		.step_het_comp = NO_VAL,
 	};
+
+	if (argc >= 2)
+		jobid_str = argv[1];
+	if (argc >= 3)
+		node_name = argv[2];
 
 	/* Job ID is optional */
 	if (jobid_str != NULL
