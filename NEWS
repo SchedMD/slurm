@@ -182,6 +182,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent jobs that request both high and low priority tier partitions from
     starting on submit in lower priority tier partitions if it could delay
     pending jobs in higher priority tier partitions.
+ -- scontrol - Wait for slurmctld to start reconfigure in foreground mode
+    before returning.
 
 * Changes in Slurm 24.05.4
 ==========================
