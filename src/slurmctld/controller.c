@@ -1212,15 +1212,10 @@ static void  _init_config(void)
 static int _try_to_reconfig(void)
 {
 	extern char **environ;
-	struct rlimit rlim;
 	char **child_env;
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
-
-	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
-		error("getrlimit(RLIMIT_NOFILE): %m");
-		rlim.rlim_cur = 4096;
-	}
+	int *skip_close = NULL, skip_index = 0;
 
 	child_env = env_array_copy((const char **) environ);
 	setenvf(&child_env, "SLURMCTLD_RECONF", "1");
@@ -1229,13 +1224,19 @@ static int _try_to_reconfig(void)
 		fd_set_noclose_on_exec(pidfd);
 	}
 	slurm_mutex_lock(&listeners.mutex);
+	/* need space for {to_parent[1], pidfd, -1} plus listening sockets */
+	skip_close = xcalloc((listeners.count + 3), sizeof(*skip_close));
 	if (listeners.count) {
 		char *ports = NULL, *pos = NULL;
+
 		setenvf(&child_env, "SLURMCTLD_RECONF_LISTEN_COUNT", "%d",
 			listeners.count);
 		for (int i = 0; i < listeners.count; i++) {
 			xstrfmtcatat(ports, &pos, "%d,", listeners.fd[i]);
-			fd_set_noclose_on_exec(listeners.fd[i]);
+			if (listeners.fd[i] >= 0) {
+				fd_set_noclose_on_exec(listeners.fd[i]);
+				skip_close[skip_index++] = listeners.fd[i];
+			}
 		}
 		setenvf(&child_env, "SLURMCTLD_RECONF_LISTEN_FDS", "%s", ports);
 		xfree(ports);
@@ -1294,31 +1295,17 @@ rwfail:
 		env_array_free(child_env);
 		waitpid(pid, &rc, 0);
 		info("Resuming operation, reconfigure failed.");
+		xfree(skip_close);
 		return SLURM_ERROR;
 	}
 
 start_child:
-	for (int fd = 3; fd < rlim.rlim_cur; fd++) {
-		bool match = false;
-		if (fd == to_parent[1])
-			continue;
-		if (fd == pidfd)
-			continue;
-		slurm_mutex_lock(&listeners.mutex);
-		for (int i = 0; i < listeners.count; i++) {
-			if (fd == listeners.fd[i]) {
-				match = true;
-				break;
-			}
-		}
-		slurm_mutex_unlock(&listeners.mutex);
-		if (!match) {
-			struct stat st;
-
-			if (!fstat(fd, &st))
-				fd_set_close_on_exec(fd);
-		}
-	}
+	if (to_parent[1] >= 0)
+		skip_close[skip_index++] = to_parent[1];
+	if (pidfd >= 0)
+		skip_close[skip_index++] = pidfd;
+	skip_close[skip_index] = -1;
+	closeall_except(3, skip_close);
 
 	/*
 	 * This second fork() ensures that the new grandchild's parent is init,
