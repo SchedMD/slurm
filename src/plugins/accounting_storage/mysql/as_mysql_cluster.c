@@ -323,7 +323,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "fed_state, features) "
 			   "values (%ld, %ld, '%s', %u, '%s', %d, %u, '%s') "
 			   "on duplicate key update deleted=0, mod_time=%ld, "
-			   "control_host='', control_port=0, "
 			   "classification=%u, flags=0, federation='%s', "
 			   "fed_id=%d, fed_state=%u, features='%s'",
 			   cluster_table,
