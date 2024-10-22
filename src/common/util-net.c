@@ -360,13 +360,13 @@ extern void getnameinfo_cache_purge(void)
 	slurm_rwlock_unlock(&getnameinfo_cache_lock);
 }
 
-static char *_getnameinfo(struct sockaddr *addr, socklen_t addrlen)
+static char *_getnameinfo(const slurm_addr_t *addr)
 {
 	char hbuf[NI_MAXHOST] = "\0";
 	int err;
 
-	err = getnameinfo(addr, addrlen, hbuf, sizeof(hbuf), NULL, 0,
-			  NI_NAMEREQD);
+	err = getnameinfo((const struct sockaddr *) addr, sizeof(*addr),
+			  hbuf, sizeof(hbuf), NULL, 0, NI_NAMEREQD);
 	if (err == EAI_SYSTEM) {
 		log_flag(NET, "%s: getnameinfo(%pA) failed: %s: %m",
 			 __func__, addr, gai_strerror(err));
@@ -388,7 +388,7 @@ extern char *xgetnameinfo(const slurm_addr_t *addr)
 	bool new = false;
 
 	if (!slurm_conf.getnameinfo_cache_timeout)
-		return _getnameinfo((struct sockaddr *) addr, sizeof(*addr));
+		return _getnameinfo(addr);
 
 	slurm_rwlock_rdlock(&getnameinfo_cache_lock);
 	now = time(NULL);
@@ -409,7 +409,7 @@ extern char *xgetnameinfo(const slurm_addr_t *addr)
 	 * Errors will leave expired cache records in place.
 	 * That is okay, we'll find them and attempt to update them again.
 	 */
-	if (!(name = _getnameinfo((struct sockaddr *) addr, sizeof(*addr))))
+	if (!(name = _getnameinfo(addr)))
 		return NULL;
 
 	slurm_rwlock_wrlock(&getnameinfo_cache_lock);
