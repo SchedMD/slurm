@@ -89,6 +89,7 @@ do { \
  * for details.
  */
 strong_alias(closeall, slurm_closeall);
+strong_alias(closeall_except, slurm_closeall_except);
 strong_alias(fd_close, slurm_fd_close);
 strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
 strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
@@ -100,7 +101,19 @@ strong_alias(rmdir_recursive, slurm_rmdir_recursive);
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
 
-static void _slow_closeall(int fd)
+static bool _is_fd_skipped(int fd, int *skipped)
+{
+	if (!skipped)
+		return false;
+
+	for (int i = 0; skipped[i] >= 0; i++)
+		if (fd == skipped[i])
+			return true;
+
+	return false;
+}
+
+static void _slow_closeall(int fd, int *skipped)
 {
 	struct rlimit rlim;
 
@@ -109,11 +122,12 @@ static void _slow_closeall(int fd)
 		rlim.rlim_cur = 4096;
 	}
 
-	while (fd < rlim.rlim_cur)
-		close(fd++);
+	for (; fd < rlim.rlim_cur; fd++)
+		if (!_is_fd_skipped(fd, skipped))
+			close(fd);
 }
 
-extern void closeall(int fd)
+extern void closeall_except(int fd, int *skipped)
 {
 	char *name = "/proc/self/fd";
 	DIR *d;
@@ -128,7 +142,7 @@ extern void closeall(int fd)
 	if (!(d = opendir(name))) {
 		debug("Could not read open files from %s: %m, closing all potential file descriptors",
 		      name);
-		_slow_closeall(fd);
+		_slow_closeall(fd, skipped);
 		return;
 	}
 
@@ -136,11 +150,18 @@ extern void closeall(int fd)
 		/* Ignore "." and ".." entries */
 		if (dir->d_type != DT_DIR) {
 			int open_fd = atoi(dir->d_name);
-			if (open_fd >= fd)
+
+			if ((open_fd >= fd) &&
+			    !_is_fd_skipped(open_fd, skipped))
 				close(open_fd);
 		}
 	}
 	closedir(d);
+}
+
+extern void closeall(int fd)
+{
+	return closeall_except(fd, NULL);
 }
 
 extern void fd_close(int *fd)
