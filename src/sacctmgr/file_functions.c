@@ -1865,6 +1865,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				if (!commit_check("You requested to flush "
 						  "the cluster before "
 						  "adding it again.\n"
+						  "It is advised to not have your slurmctld running while doing this operation.\n"
+						  "If you have jobs running on this cluster this operation will abort.\n"
 						  "Are you sure you want "
 						  "to continue?")) {
 					printf("Aborted\n");
