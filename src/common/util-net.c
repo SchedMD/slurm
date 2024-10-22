@@ -65,7 +65,7 @@ static pthread_mutex_t hostentLock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_rwlock_t getnameinfo_cache_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 typedef struct {
-	struct sockaddr *addr;
+	slurm_addr_t addr;
 	socklen_t addrlen;
 	char *host;
 	uint32_t host_len;
@@ -319,22 +319,22 @@ extern struct addrinfo *xgetaddrinfo(const char *hostname, const char *serv)
 static int _name_cache_find(void *x, void *y)
 {
 	getnameinfo_cache_t *cache_ent = x;
-	struct sockaddr *addr_x = cache_ent->addr;
-	struct sockaddr *addr_y = y;
+	const slurm_addr_t *addr_x = &cache_ent->addr;
+	const slurm_addr_t *addr_y = y;
 
 	xassert(addr_x);
 	xassert(addr_y);
-	xassert(addr_x->sa_family != AF_UNIX);
-	xassert(addr_y->sa_family != AF_UNIX);
+	xassert(addr_x->ss_family != AF_UNIX);
+	xassert(addr_y->ss_family != AF_UNIX);
 
-	if (addr_x->sa_family != addr_y->sa_family)
+	if (addr_x->ss_family != addr_y->ss_family)
 		return false;
-	if (addr_x->sa_family == AF_INET) {
+	if (addr_x->ss_family == AF_INET) {
 		struct sockaddr_in *x4 = (void *)addr_x;
 		struct sockaddr_in *y4 = (void *)addr_y;
 		if (x4->sin_addr.s_addr != y4->sin_addr.s_addr)
 			return false;
-	} else if (addr_x->sa_family == AF_INET6) {
+	} else if (addr_x->ss_family == AF_INET6) {
 		struct sockaddr_in6 *x6 = (void *)addr_x;
 		struct sockaddr_in6 *y6 = (void *)addr_y;
 		if (!memcmp(x6->sin6_addr.s6_addr, y6->sin6_addr.s6_addr,
@@ -349,7 +349,6 @@ static void _getnameinfo_cache_destroy(void *obj)
 	getnameinfo_cache_t *entry = obj;
 
 	xfree(entry->host);
-	xfree(entry->addr);
 	xfree(entry);
 }
 
@@ -421,8 +420,7 @@ extern char *xgetnameinfo(const slurm_addr_t *addr)
 
 	if (!cache_ent) {
 		cache_ent = xmalloc(sizeof(*cache_ent));
-		cache_ent->addr = xmalloc(sizeof(*addr));
-		memcpy(cache_ent->addr, addr, sizeof(*cache_ent->addr));
+		cache_ent->addr = *addr;
 		new = true;
 	}
 
