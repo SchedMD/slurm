@@ -377,8 +377,7 @@ char *auth_p_get_host(auth_credential_t *cred)
 	 * which will never resolve successfully. So don't even bother trying.
 	 */
 	if (sin->sin_addr.s_addr != 0) {
-		hostname = xgetnameinfo((struct sockaddr *) &addr,
-					sizeof(addr));
+		hostname = xgetnameinfo(&addr);
 		/*
 		 * The NI_NOFQDN flag was used here previously, but did not work
 		 * as desired if the primary domain did not match on both sides.

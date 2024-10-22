@@ -50,6 +50,8 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 
+#include "slurm/slurm.h"
+
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
 #include "src/common/strlcpy.h"
@@ -378,12 +380,7 @@ static char *_getnameinfo(struct sockaddr *addr, socklen_t addrlen)
 	return xstrdup(hbuf);
 }
 
-/*
- * Get the short hostname using "nameinfo" for an address.
- * NOTE: caller is responsible for freeing the resulting hostname.
- * Returns NULL on error.
- */
-extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
+extern char *xgetnameinfo(const slurm_addr_t *addr)
 {
 	getnameinfo_cache_t *cache_ent = NULL;
 	char *name = NULL;
@@ -391,13 +388,13 @@ extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
 	bool new = false;
 
 	if (!slurm_conf.getnameinfo_cache_timeout)
-		return _getnameinfo(addr, addrlen);
+		return _getnameinfo((struct sockaddr *) addr, sizeof(*addr));
 
 	slurm_rwlock_rdlock(&getnameinfo_cache_lock);
 	now = time(NULL);
 	if (nameinfo_cache) {
 		cache_ent = list_find_first_ro(nameinfo_cache, _name_cache_find,
-					       addr);
+					       (void *) addr);
 		if (cache_ent && (cache_ent->expiration > now)) {
 			name = xstrdup(cache_ent->host);
 			slurm_rwlock_unlock(&getnameinfo_cache_lock);
@@ -412,19 +409,20 @@ extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
 	 * Errors will leave expired cache records in place.
 	 * That is okay, we'll find them and attempt to update them again.
 	 */
-	if (!(name = _getnameinfo(addr, addrlen)))
+	if (!(name = _getnameinfo((struct sockaddr *) addr, sizeof(*addr))))
 		return NULL;
 
 	slurm_rwlock_wrlock(&getnameinfo_cache_lock);
 	if (!nameinfo_cache)
 		nameinfo_cache = list_create(_getnameinfo_cache_destroy);
 
-	cache_ent = list_find_first(nameinfo_cache, _name_cache_find, addr);
+	cache_ent = list_find_first(nameinfo_cache, _name_cache_find,
+				    (void *) addr);
 
 	if (!cache_ent) {
 		cache_ent = xmalloc(sizeof(*cache_ent));
 		cache_ent->addr = xmalloc(sizeof(*addr));
-		memcpy(cache_ent->addr, addr, sizeof(*addr));
+		memcpy(cache_ent->addr, addr, sizeof(*cache_ent->addr));
 		new = true;
 	}
 

@@ -359,7 +359,7 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 	else if (addr->ss_family == AF_INET6)
 		port = ((struct sockaddr_in6 *) addr)->sin6_port;
 
-	host = xgetnameinfo((struct sockaddr *) addr, addrlen);
+	host = xgetnameinfo(addr);
 
 	/* construct RFC3986 host port pair */
 	if (host && port)
