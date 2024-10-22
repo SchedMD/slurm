@@ -75,6 +75,9 @@ typedef struct {
 	uint16_t tree_width;
 } _foreach_part_split_hostlist_t;
 
+static int _split_hostlist_treewidth(hostlist_t *hl, hostlist_t ***sp_hl,
+				     int *count, uint16_t tree_width);
+
 static int _part_split_hostlist(void *x, void *y)
 {
 	part_record_t *part_ptr = x;
@@ -98,8 +101,8 @@ static int _part_split_hostlist(void *x, void *y)
 	hl = bitmap2hostlist(arg->fwd_bitmap);
 
 	/* Generate FW tree hostlist array from partition's hostlist */
-	hl_depth = common_topo_split_hostlist_treewidth(hl, &p_hl, &hl_count,
-							arg->tree_width);
+	hl_depth = _split_hostlist_treewidth(hl, &p_hl, &hl_count,
+					     arg->tree_width);
 	hostlist_destroy(hl);
 
 	/* Make size for FW tree hostlist array in the main hostlist array */
@@ -276,16 +279,11 @@ static int _set_span(int total, uint16_t tree_width, int **span)
 	return depth;
 }
 
-extern int common_topo_split_hostlist_treewidth(hostlist_t *hl,
-						hostlist_t ***sp_hl,
-						int *count, uint16_t tree_width)
+static int _split_hostlist_treewidth(hostlist_t *hl, hostlist_t ***sp_hl,
+				     int *count, uint16_t tree_width)
 {
 	int host_count = hostlist_count(hl), depth, *span = NULL;
 	char *name;
-
-	if (running_in_slurmctld() && common_topo_route_part())
-		return _route_part_split_hostlist(hl, sp_hl,
-						  count, tree_width);
 
 	/* If default span */
 	if (!tree_width)
@@ -336,6 +334,16 @@ extern int common_topo_split_hostlist_treewidth(hostlist_t *hl,
 
 	xfree(span);
 	return depth;
+}
+
+extern int common_topo_split_hostlist_treewidth(hostlist_t *hl,
+						hostlist_t ***sp_hl,
+						int *count, uint16_t tree_width)
+{
+	if (running_in_slurmctld() && common_topo_route_part())
+		return _route_part_split_hostlist(hl, sp_hl, count, tree_width);
+
+	return _split_hostlist_treewidth(hl, sp_hl, count, tree_width);
 }
 
 extern int common_topo_get_node_addr(char *node_name, char **addr,
