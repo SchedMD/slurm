@@ -103,6 +103,10 @@ strong_alias(print_multi_line_string, slurm_print_multi_line_string);
 /* It's just ASC with va and vb swapped */
 #define SORT_INT_DESC(T, va, vb) SORT_INT_ASC(T, (vb), (va))
 
+#define FIND_INT(T, va, vb) \
+	({T _a = *(T *) (va), _b = *(T *) (vb); \
+	 ((_a == _b) ? 1 : 0);})
+
 typedef struct {
 	uint32_t flag;
 	const char *str;
@@ -326,6 +330,36 @@ extern int slurm_find_ptr_in_list(void *x, void *key)
 	if (x == key)
 		return 1;
 	return 0;
+}
+
+extern int slurm_find_uint16_in_list(void *x, void *key)
+{
+	return FIND_INT(uint16_t, x, key);
+}
+
+extern int slurm_find_uint32_in_list(void *x, void *key)
+{
+	return FIND_INT(uint32_t, x, key);
+}
+
+extern int slurm_find_uint64_in_list(void *x, void *key)
+{
+	return FIND_INT(uint64_t, x, key);
+}
+
+extern int slurm_find_uint_in_list(void *x, void *key)
+{
+	return FIND_INT(unsigned int, x, key);
+}
+
+extern int slurm_find_int_in_list(void *x, void *key)
+{
+	return FIND_INT(int, x, key);
+}
+
+extern int slurm_find_int64_in_list(void *x, void *key)
+{
+	return FIND_INT(int64_t, x, key);
 }
 
 static int _char_list_append_str(void *x, void *arg)
