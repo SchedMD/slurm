@@ -115,6 +115,7 @@
 
 /* fd.[ch] functions */
 #define closeall		slurm_closeall
+#define closeall_except		slurm_closeall_except
 #define fd_set_blocking		slurm_fd_set_blocking
 #define fd_set_nonblocking	slurm_fd_set_nonblocking
 #define fd_get_socket_error	slurm_fd_get_socket_error

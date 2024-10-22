@@ -184,6 +184,8 @@ documents those changes that are of interest to users and administrators.
     pending jobs in higher priority tier partitions.
  -- scontrol - Wait for slurmctld to start reconfigure in foreground mode
     before returning.
+ -- Improve reconfigure handling on Linux to only close open file descriptors
+    to avoid long delays on systems with large RLIMIT_NOFILE settings.
 
 * Changes in Slurm 24.05.4
 ==========================

@@ -49,6 +49,14 @@
 /* close all FDs >= a specified value */
 extern void closeall(int fd);
 
+/*
+ * close all FDs >= a specified value except FDs in skipped array
+ * IN fd - start closing file descriptors at fd
+ * IN skipped - array of file descriptors to skip (or NULL)
+ *              array must be terminated by -1 if provided
+ */
+extern void closeall_except(int fd, int *skipped);
+
 /* Close a specific file descriptor and replace it with -1 */
 extern void fd_close(int *fd);
 

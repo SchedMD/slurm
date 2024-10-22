@@ -313,6 +313,7 @@ static void *_try_to_reconfig(void *ptr)
 	char **child_env;
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
+	int close_skip[3] = { -1, -1, -1 }, skip_index = 0;
 
 	conmgr_quiesce(__func__);
 
@@ -326,6 +327,7 @@ static void *_try_to_reconfig(void *ptr)
 	if (listen_fd != -1) {
 		setenvf(&child_env, "SACKD_RECONF_LISTEN_FD", "%d", listen_fd);
 		fd_set_noclose_on_exec(listen_fd);
+		close_skip[skip_index++] = listen_fd;
 	}
 
 	if (!daemonize && !under_systemd)
@@ -335,6 +337,7 @@ static void *_try_to_reconfig(void *ptr)
 		fatal("%s: pipe() failed: %m", __func__);
 
 	setenvf(&child_env, "SACKD_RECONF_PARENT_FD", "%d", to_parent[1]);
+	close_skip[skip_index++] = to_parent[1];
 
 	if ((pid = fork()) < 0) {
 		fatal("%s: fork() failed: %m", __func__);
@@ -371,10 +374,7 @@ rwfail:
 	}
 
 start_child:
-	for (int fd = 3; fd < rlim.rlim_cur; fd++) {
-		if ((fd != to_parent[1]) && (fd != listen_fd))
-			(void) close(fd);
-	}
+	closeall_except(3, close_skip);
 
 	/*
 	 * This second fork() ensures that the new grandchild's parent is init,
