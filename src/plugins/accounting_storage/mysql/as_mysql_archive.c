@@ -939,12 +939,6 @@ typedef enum {
 	PURGE_CLUSTER_USAGE
 } purge_type_t;
 
-static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
-			       char *cluster_name, char *col_name,
-			       time_t *period_start, time_t period_end,
-			       char *arch_dir, uint32_t archive_period,
-			       char *sql_table, uint32_t usage_info);
-
 static uint32_t high_buffer_size = (1024 * 1024);
 
 static void _pack_local_event(local_event_t *object, buf_t *buffer)
