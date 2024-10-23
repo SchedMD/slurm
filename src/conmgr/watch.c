@@ -139,11 +139,13 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 
 		slurm_mutex_unlock(&mgr.mutex);
 
-		if ((output_fd < 0) ||
-		    (rc = fd_get_buffered_output_bytes(output_fd, &bytes,
-						       con->name))) {
-			slurm_mutex_lock(&mgr.mutex);
+		if (output_fd >= 0)
+			rc = fd_get_buffered_output_bytes(output_fd, &bytes,
+							  con->name);
 
+		slurm_mutex_lock(&mgr.mutex);
+
+		if (rc) {
 			log_flag(CONMGR, "%s: [%s] unable to query output_fd[%d] outgoing buffer remaining: %s. Queuing pending %u write complete work",
 				 __func__, con->name, output_fd,
 				 slurm_strerror(rc),
@@ -157,25 +159,30 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 
 			/* Turn off Nagle while we wait for buffer to flush */
 			if (con_flag(con, FLAG_IS_SOCKET) &&
-			    !con_flag(con, FLAG_TCP_NODELAY))
+			    !con_flag(con, FLAG_TCP_NODELAY)) {
+				slurm_mutex_unlock(&mgr.mutex);
 				(void) net_set_nodelay(output_fd, true,
 						       con->name);
+				slurm_mutex_lock(&mgr.mutex);
+			}
 
 			add_work_con_delayed_fifo(true, con,
 						  _on_write_complete_work, NULL,
 						  mgr.conf_delay_write_complete,
 						  0);
+			slurm_mutex_unlock(&mgr.mutex);
 			return;
 		} else {
 			xassert(!bytes);
 
 			/* Turn back on Nagle every time in case it got set */
 			if (con_flag(con, FLAG_IS_SOCKET) &&
-			    !con_flag(con, FLAG_TCP_NODELAY))
+			    !con_flag(con, FLAG_TCP_NODELAY)) {
+				slurm_mutex_unlock(&mgr.mutex);
 				(void) net_set_nodelay(output_fd, false,
 						       con->name);
-
-			slurm_mutex_lock(&mgr.mutex);
+				slurm_mutex_lock(&mgr.mutex);
+			}
 
 			log_flag(CONMGR, "%s: [%s] output_fd[%d] has 0 bytes in outgoing buffer remaining. Queuing pending %u write complete work",
 				 __func__, con->name, output_fd,
