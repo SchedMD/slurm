@@ -141,6 +141,12 @@ typedef struct {
 	bitstr_t *eff_cg_bitmap;
 } part_reduce_frag_t;
 
+typedef struct {
+	job_record_t *het_job;
+	job_record_t *het_job_leader;
+	job_record_t *job_ptr;
+} het_job_ready_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
@@ -2384,57 +2390,68 @@ job_failed:
 	return NULL;
 }
 
+static int _foreach_het_job_ready(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+	het_job_ready_t *ready_struct = arg;
+	bool prolog = false;
+
+	if (ready_struct->het_job_leader->het_job_id != het_job->het_job_id) {
+		error("%s: Bad het_job_list for %pJ",
+		      __func__, ready_struct->het_job_leader);
+		return 0;
+	}
+
+	ready_struct->het_job = het_job;
+
+	if (ready_struct->job_ptr->details)
+		prolog = het_job->details->prolog_running;
+	if (prolog || IS_JOB_CONFIGURING(het_job) ||
+	    !test_job_nodes_ready(het_job)) {
+		ready_struct->het_job_leader = NULL;
+		return -1;
+	}
+	if (!ready_struct->job_ptr->batch_flag ||
+	    (!IS_JOB_RUNNING(ready_struct->job_ptr) &&
+	     !IS_JOB_SUSPENDED(ready_struct->job_ptr))) {
+		ready_struct->het_job_leader = NULL;
+		return -1;
+	}
+
+	ready_struct->het_job = NULL;
+	return 0;
+}
+
 /* Validate the job is ready for launch
  * RET pointer to batch job to launch or NULL if not ready yet */
 static job_record_t *_het_job_ready(job_record_t *job_ptr)
 {
-	job_record_t *het_job_leader, *het_job;
-	list_itr_t *iter;
+	het_job_ready_t ready_struct = { 0 };
 
 	if (job_ptr->het_job_id == 0)	/* Not a hetjob */
 		return job_ptr;
-
-	het_job_leader = find_job_record(job_ptr->het_job_id);
-	if (!het_job_leader) {
+	ready_struct.het_job_leader = find_job_record(job_ptr->het_job_id);
+	if (!ready_struct.het_job_leader) {
 		error("Hetjob leader %pJ not found", job_ptr);
 		return NULL;
 	}
-	if (!het_job_leader->het_job_list) {
+	if (!ready_struct.het_job_leader->het_job_list) {
 		error("Hetjob leader %pJ lacks het_job_list", job_ptr);
 		return NULL;
 	}
 
-	iter = list_iterator_create(het_job_leader->het_job_list);
-	while ((het_job = list_next(iter))) {
-		uint8_t prolog = 0;
-		if (het_job_leader->het_job_id != het_job->het_job_id) {
-			error("%s: Bad het_job_list for %pJ",
-			      __func__, het_job_leader);
-			continue;
-		}
-		if (job_ptr->details)
-			prolog = het_job->details->prolog_running;
-		if (prolog || IS_JOB_CONFIGURING(het_job) ||
-		    !test_job_nodes_ready(het_job)) {
-			het_job_leader = NULL;
-			break;
-		}
-		if ((job_ptr->batch_flag == 0) ||
-		    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
-			het_job_leader = NULL;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
+	ready_struct.job_ptr = job_ptr;
+	(void) list_for_each(ready_struct.het_job_leader->het_job_list,
+			     _foreach_het_job_ready, &ready_struct);
 
-	if (het_job_leader)
+	if (ready_struct.het_job_leader)
 		log_flag(HETJOB, "Batch hetjob %pJ being launched",
-			 het_job_leader);
-	else if (het_job)
+			 ready_struct.het_job_leader);
+	else if (ready_struct.het_job)
 		log_flag(HETJOB, "Batch hetjob %pJ waiting for job to be ready",
-			 het_job);
+			 ready_struct.het_job);
 
-	return het_job_leader;
+	return ready_struct.het_job_leader;
 }
 
 static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
