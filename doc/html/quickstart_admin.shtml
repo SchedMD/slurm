@@ -17,7 +17,7 @@
 <li><a href="#manual_build">Building Manually</a></li>
 </ul>
 </li>
-<li><a href="#daemons">Daemons</a></li>
+<li><a href="#nodes">Node Types</a></li>
 <li><a href="#infrastructure">Infrastructure</a></li>
 <li><a href="#Config">Configuration</a></li>
 <li><a href="#security">Security</a></li>
@@ -327,9 +327,25 @@ Install architecture-independent files in PREFIX; default value is /usr/local.</
 <p style="margin-left:.2in"><code>--sysconfdir=<i>DIR</i></code><br>
 Specify location of Slurm configuration file. The default value is PREFIX/etc</p>
 
-<h2 id="daemons">Daemons<a class="slurm_link" href="#daemons"></a></h2>
+<h2 id="nodes">Node Types<a class="slurm_link" href="#nodes"></a></h2>
+<p>A cluster consists of many different types of nodes that contribute to
+the overall functionality of the cluster. At least one compute node and
+controller node are required for an operational cluster. Other types of
+nodes can be added to enable optional functionality. It is recommended to have
+single-purpose nodes in a production cluster. Below is a brief overview
+of the different types of nodes Slurm utilizes.</p>
 
-<p><b>slurmctld</b> is sometimes called the &quot;controller&quot;.
+<h3 id="compute">Compute Node<a class="slurm_link" href="#compute"></a></h3>
+<p>Compute nodes (frequently just referred to as &quot;nodes&quot;) perform
+the computational work in the cluster.
+The <a href="slurmd.html">slurmd</a> daemon executes on every compute node.
+It monitors all tasks running on the node, accepts work, launches tasks and
+kills running tasks upon request. Because slurmd
+initiates and manages user jobs, it must execute as the root user.</p>
+
+<h3 id="ctld">Controller Node<a class="slurm_link" href="#ctld"></a></h3>
+<p>The machine running <a href="slurmctld.html">slurmctld</a> is sometimes
+referred to as the &quot;head node&quot; or the &quot;controller&quot;.
 It orchestrates Slurm activities, including queuing of jobs,
 monitoring node states, and allocating resources to jobs. There is an
 optional backup controller that automatically assumes control in the
@@ -352,26 +368,26 @@ readable or writable by the user <b>SlurmUser</b> (the Slurm configuration
 files must be readable; the log file directory and state save directory
 must be writable).</p>
 
-<p>The <b>slurmd</b> daemon executes on every compute node. It resembles a
-remote shell daemon to export control to Slurm. Because slurmd initiates and
-manages user jobs, it must execute as the user root.</p>
+<h3 id="dbd">DBD Node<a class="slurm_link" href="#dbd"></a></h3>
+<p>If you want to save job accounting records to a database, the
+<a href="slurmdbd.html">slurmdbd</a> (Slurm DataBase Daemon) should be used.
+It is good practice to run the slurmdbd daemon on a different machine than the
+controller. On larger systems, we also recommend that the database used by
+<b>slurmdbd</b> be on a separate machine. When getting started with Slurm, we
+recommend that you defer adding accounting support until after basic Slurm
+functionality is established on your system. Refer to the
+<a href="accounting.html">Accounting</a> page for more information.</p>
 
-<p>If you want to archive job accounting records to a database, the
-<b>slurmdbd</b> (Slurm DataBase Daemon) should be used. We recommend that
-you defer adding accounting support until after basic Slurm functionality is
-established on your system. An <a href="accounting.html">Accounting</a> web
-page contains more information.</p>
-
-<p><b>slurmctld</b> and/or <b>slurmd</b> should be initiated at node startup
-time per the Slurm configuration.</p>
-
-<p>The <b>slurmrestd</b> daemon was introduced in version 20.02 and allows
-clients to communicate with Slurm via the REST API. This is installed by
-default, assuming the <a href="rest.html#prereq">prerequisites</a> are met.
-It has two <a href="slurmrestd.html#SECTION_DESCRIPTION">run modes</a>,
-allowing you to have it run as a traditional Unix service and always listen
-for TCP connections, or you can have it run as an Inet service and only have
-it active when in use.</p>
+<h3 id="restd">Restd Node<a class="slurm_link" href="#restd"></a></h3>
+<p>The <a href="slurmrestd.html">slurmrestd</a> daemon was introduced in version
+20.02 and provides a <a href="rest_quickstart.html">REST API</a> that can be
+used to interact with the Slurm cluster. This is installed by default for
+<a href="#manual_build">manual builds</a>, assuming
+the <a href="rest.html#prereq">prerequisites</a> are met, but must be enabled
+for <a href="#rpmbuild">RPM builds</a>. It has two
+<a href="slurmrestd.html#SECTION_DESCRIPTION">run modes</a>, allowing you to
+have it run as a traditional Unix service and always listen for TCP connections,
+or you can have it run as an Inet service and only have it active when in use.</p>
 
 <h3 id="HA">High Availability<a class="slurm_link" href="#HA"></a></h3>
 
