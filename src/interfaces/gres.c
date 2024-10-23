@@ -1340,6 +1340,7 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 
 	int autodetect_options[] = {
 		GRES_AUTODETECT_GPU_NVML,
+		GRES_AUTODETECT_GPU_NVIDIA,
 		GRES_AUTODETECT_GPU_RSMI,
 		GRES_AUTODETECT_GPU_ONEAPI,
 		GRES_AUTODETECT_GPU_NRT,
@@ -1364,6 +1365,9 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 
 		if (!gres_str)
 			continue;
+
+		if (autodetect_flags == GRES_AUTODETECT_GPU_NVML)
+			i++; /* Skip NVIDIA if NVML finds gpus */
 
 		xstrfmtcat(*autodetect_str, "Found %s with Autodetect=%s (Substring of gpu name may be used instead)",
 			   gres_str,
