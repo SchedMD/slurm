@@ -1479,6 +1479,21 @@ static int _print_listjobs_info(void *x, void *arg)
 	return 0;
 }
 
+static void _dump_listjobs(list_t *listjobs_list, int argc, char **argv)
+{
+	int rc;
+
+	openapi_resp_listjobs_info_t resp = {
+		.listjobs_list = listjobs_list,
+	};
+
+	DATA_DUMP_CLI(OPENAPI_LISTJOBS_INFO_RESP, resp, argc, argv, NULL,
+		      mime_type, data_parser, rc);
+
+	if (rc != SLURM_SUCCESS)
+		exit_code = 1;
+}
+
 /*
  * scontrol_list_jobs - Print jobs on node.
  *
@@ -1498,7 +1513,11 @@ extern void scontrol_list_jobs(int argc, char **argv)
 	steps = stepd_available(NULL, node_name);
 
 	if (!steps || !list_count(steps)) {
-		fprintf(stderr, "No steps found on this node\n");
+		if (mime_type)
+			_dump_listjobs(NULL, argc, argv);
+		else
+			fprintf(stderr, "No slurmstepd's found on this node\n");
+
 		goto cleanup;
 	}
 
@@ -1509,6 +1528,11 @@ extern void scontrol_list_jobs(int argc, char **argv)
 	for_each_args.jobs_seen = jobs_seen;
 
 	list_for_each(steps, _add_to_listjobs_list, &for_each_args);
+
+	if (mime_type) {
+		_dump_listjobs(listjobs_list, argc, argv);
+		goto cleanup;
+	}
 
 	printf("JOBID\n");
 	list_for_each(listjobs_list, _print_listjobs_info, NULL);
