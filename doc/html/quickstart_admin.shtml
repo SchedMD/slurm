@@ -18,6 +18,7 @@
 </ul>
 </li>
 <li><a href="#nodes">Node Types</a></li>
+<li><a href="#HA">High Availability</a></li>
 <li><a href="#infrastructure">Infrastructure</a></li>
 <li><a href="#Config">Configuration</a></li>
 <li><a href="#security">Security</a></li>
@@ -389,7 +390,7 @@ for <a href="#rpmbuild">RPM builds</a>. It has two
 have it run as a traditional Unix service and always listen for TCP connections,
 or you can have it run as an Inet service and only have it active when in use.</p>
 
-<h3 id="HA">High Availability<a class="slurm_link" href="#HA"></a></h3>
+<h2 id="HA">High Availability<a class="slurm_link" href="#HA"></a></h2>
 
 <p>Multiple SlurmctldHost entries can be configured, with any entry beyond the
 first being treated as a backup host. Any backup hosts configured should be on
