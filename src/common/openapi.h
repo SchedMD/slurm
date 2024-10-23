@@ -341,6 +341,13 @@ typedef struct {
 } openapi_resp_listpids_info_t;
 
 typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	list_t *liststeps_list;
+} openapi_resp_liststeps_info_t;
+
+typedef struct {
 	char *node_name;
 } openapi_node_param_t;
 
