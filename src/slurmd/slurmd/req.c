@@ -261,6 +261,12 @@ static list_t *bcast_libdir_list = NULL;
 
 static pthread_mutex_t waiter_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+typedef enum {
+	RELAY_AUTH_JOB = 0,
+	RELAY_AUTH_SLURM_USER,
+	RELAY_AUTH_PRIVATE_DATA
+} relay_auth_type_t;
+
 static int _stepmgr_connect(slurm_step_id_t *step_id,
 			    uint16_t *protocol_version)
 {
@@ -277,7 +283,9 @@ static int _stepmgr_connect(slurm_step_id_t *step_id,
 	return fd;
 }
 
-static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg)
+static void _relay_stepd_msg(slurm_step_id_t *step_id,
+			     slurm_msg_t *msg,
+			     relay_auth_type_t auth_type)
 {
 	int fd, rc;
 	uid_t job_uid;
@@ -294,13 +302,35 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg)
 		goto done;
 	}
 
-	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_uid != msg->auth_uid) &&
-	    !_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, %s from uid %u",
-		      rpc_num2string(msg->msg_type), msg->auth_uid);
-		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
-		goto done;
+	switch (auth_type) {
+	case RELAY_AUTH_PRIVATE_DATA:
+		if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
+		    (job_uid != msg->auth_uid) &&
+		    !_slurm_authorized_user(msg->auth_uid)) {
+			error("Security violation, %s from uid %u",
+			      rpc_num2string(msg->msg_type), msg->auth_uid);
+			rc = ESLURM_USER_ID_MISSING;
+			goto done;
+		}
+		break;
+	case RELAY_AUTH_SLURM_USER:
+		if ((job_uid != msg->auth_uid) &&
+		    !_slurm_authorized_user(msg->auth_uid)) {
+			error("Security violation, %s from uid %u",
+			      rpc_num2string(msg->msg_type), msg->auth_uid);
+			rc = ESLURM_USER_ID_MISSING;
+			goto done;
+		}
+		break;
+	case RELAY_AUTH_JOB:
+	default:
+		if (job_uid != msg->auth_uid) {
+			error("Security violation, %s from uid %u",
+			      rpc_num2string(msg->msg_type), msg->auth_uid);
+			rc = ESLURM_USER_ID_MISSING;
+			goto done;
+		}
+		break;
 	}
 
 	if (((fd = _stepmgr_connect(step_id, &protocol_version)) !=
@@ -329,21 +359,21 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 	job_step_create_request_msg_t *req_step_msg = msg->data;
 	step_id.job_id = req_step_msg->step_id.job_id;
 
-	_relay_stepd_msg(&step_id, msg);
+	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_JOB);
 }
 
 static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 {
 	job_step_info_request_msg_t *request = msg->data;
 
-	_relay_stepd_msg(&request->step_id, msg);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_PRIVATE_DATA);
 }
 
 static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 {
 	job_step_kill_msg_t *request = msg->data;
 
-	_relay_stepd_msg(&request->step_id, msg);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER);
 }
 
 static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
@@ -353,21 +383,21 @@ static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 
 	step_id.job_id = request->job_id;
 
-	_relay_stepd_msg(&step_id, msg);
+	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_SLURM_USER);
 }
 
 static void _slurm_rpc_srun_node_fail(slurm_msg_t *msg)
 {
 	srun_node_fail_msg_t *request = msg->data;
 
-	_relay_stepd_msg(&request->step_id, msg);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER);
 }
 
 static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
 {
 	srun_timeout_msg_t *request = msg->data;
 
-	_relay_stepd_msg(&request->step_id, msg);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER);
 }
 
 static void _slurm_rpc_update_step(slurm_msg_t *msg)
@@ -378,19 +408,19 @@ static void _slurm_rpc_update_step(slurm_msg_t *msg)
 	step_id.job_id = request->job_id;
 	step_id.step_id = request->step_id;
 
-	_relay_stepd_msg(&step_id, msg);
+	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_SLURM_USER);
 }
 
 static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 {
-	_relay_stepd_msg(msg->data, msg);
+	_relay_stepd_msg(msg->data, msg, RELAY_AUTH_PRIVATE_DATA);
 }
 
 static void _slurm_rpc_sbcast_cred(slurm_msg_t *msg)
 {
 	step_alloc_info_msg_t *request = msg->data;
 
-	_relay_stepd_msg(&request->step_id, msg);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER);
 }
 
 static void _slurm_het_job_alloc_info(slurm_msg_t *msg)
@@ -400,7 +430,7 @@ static void _slurm_het_job_alloc_info(slurm_msg_t *msg)
 
 	step_id.job_id = request->job_id;
 
-	_relay_stepd_msg(&step_id, msg);
+	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_PRIVATE_DATA);
 }
 
 void
