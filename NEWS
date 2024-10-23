@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 24.05.5
 ==========================
+ -- Fix issue signaling cron jobs resulting in unintended requeues.
 
 * Changes in Slurm 24.05.4
 ==========================
