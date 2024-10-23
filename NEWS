@@ -188,6 +188,9 @@ documents those changes that are of interest to users and administrators.
     to avoid long delays on systems with large RLIMIT_NOFILE settings.
  -- salloc - Removed --get-user-env option.
 
+* Changes in Slurm 24.05.5
+==========================
+
 * Changes in Slurm 24.05.4
 ==========================
  -- Fix generic int sort functions.
@@ -261,6 +264,8 @@ documents those changes that are of interest to users and administrators.
     specified with an empty partition.
  -- Fix setting multiple partition state restore on a job correctly.
  -- Fix difference in behavior when swapping partition order in job submission.
+ -- Fix security issue in stepmgr that could permit an attacker to execute
+    processes under other users' jobs. CVE-2024-48936.
 
 * Changes in Slurm 24.05.3
 ==========================
