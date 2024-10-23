@@ -8015,7 +8015,8 @@ static const parser_t PARSER_ARRAY(LISTSTEPS_INFO)[] = {
 	add_parser(controller_ping_t, mtype, true, field, overloads, path, desc)
 static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 	add_parse(STRING, hostname, "hostname", "Target for ping"),
-	add_deprec(CONTROLLER_PING_RESULT, pinged, 0, "pinged", "Ping result", SLURM_24_11_PROTOCOL_VERSION),
+	add_deprec(CONTROLLER_PING_RESULT, pinged, 1, "pinged", "Ping result", SLURM_24_11_PROTOCOL_VERSION),
+	add_overload_req(BOOL, pinged, 1, "responding", "If ping RPC responded with pong from controller"),
 	add_parse(UINT64, latency, "latency", "Number of microseconds it took to successfully ping or timeout"),
 	add_deprec(CONTROLLER_PING_MODE, offset, 1, "mode", "The operating mode of the responding slurmctld", SLURM_24_11_PROTOCOL_VERSION),
 	add_overload_req(CONTROLLER_PING_PRIMARY, offset, 1, "primary", "Is responding slurmctld the primary controller"),

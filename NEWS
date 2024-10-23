@@ -248,6 +248,11 @@ documents those changes that are of interest to users and administrators.
  -- scontrol - Add '.pings[].primary' field to the following commands:
       'scontrol ping --json'
       'scontrol ping --yaml'
+ -- slurmrestd - Add '.pings[].responding' field to the following endpoints:
+      'GET /slurm/v0.0.42/ping'
+ -- scontrol - Add '.pings[].responding' field to the following commands:
+      'scontrol ping --json'
+      'scontrol ping --yaml'
 
 * Changes in Slurm 24.05.5
 ==========================
