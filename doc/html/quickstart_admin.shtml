@@ -379,6 +379,28 @@ recommend that you defer adding accounting support until after basic Slurm
 functionality is established on your system. Refer to the
 <a href="accounting.html">Accounting</a> page for more information.</p>
 
+<h3 id="login">Login Node<a class="slurm_link" href="#login"></a></h3>
+<p>A login node, or submit host, is a shared system used to access a cluster.
+Users can use a login node to stage data, prepare their jobs for submission,
+submit those jobs once they are ready, check the status of their work, and
+perform other cluster related tasks. Workstations can be configured to be able
+to submit jobs, but having separate login nodes can be useful due to operating
+system compatibility or security implications. If users have root access on
+their local machine they would be able to access the security keys directly
+and could run jobs as root on the cluster.</p>
+
+<p>Login nodes should have access to any Slurm client commands that users are
+expected to use. They should also have the cluster's 'slurm.conf' file and other
+components necessary for the <a href="authentication.html">authentication</a>
+method used in the cluster. They should not be configured to have jobs
+scheduled on them and users should not perform computationally demanding work
+on them while they're logged in. They do not typically need to have any Slurm
+daemons running. If using <i>auth/slurm</i>, <a href="sackd.html">sackd</a>
+should be running to provide authentication. If running in
+<a href="configless_slurm.html">configless mode</a>, and not using
+<i>auth/slurm</i>, a <a href="slurmd.html">slurmd</a> can be configured to
+manage your configuration files.</p>
+
 <h3 id="restd">Restd Node<a class="slurm_link" href="#restd"></a></h3>
 <p>The <a href="slurmrestd.html">slurmrestd</a> daemon was introduced in version
 20.02 and provides a <a href="rest_quickstart.html">REST API</a> that can be
@@ -812,6 +834,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 16 August 2024</p>
+<p style="text-align:center;">Last modified 31 October 2024</p>
 
 <!--#include virtual="footer.txt"-->
