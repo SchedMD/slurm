@@ -1972,6 +1972,8 @@ static bool _filter_exclusive_user_mcs_nodes(job_record_t *job_ptr,
 {									\
 	_set_job_time_limit(job_ptr, orig_time_limit);			\
 	if (later_start && !job_no_reserve) {				\
+		log_flag(BACKFILL, "Try later %pJ later_start %ld",	\
+			 job_ptr, later_start);				\
 		job_ptr->start_time = 0;				\
 		goto TRY_LATER;						\
 	}								\
@@ -1980,6 +1982,8 @@ static bool _filter_exclusive_user_mcs_nodes(job_record_t *job_ptr,
 	 * Use orig_start_time if job can't				\
 	 * start in different partition it will be 0			\
 	 */								\
+	log_flag(BACKFILL, "Can't schedule %pJ in partition %s",	\
+		 job_ptr, job_ptr->part_ptr->name);			\
 	job_ptr->start_time = orig_start_time;				\
 	continue;	/* not runnable in this partition */		\
 }
