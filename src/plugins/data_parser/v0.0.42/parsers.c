@@ -7998,13 +7998,16 @@ static const parser_t PARSER_ARRAY(LISTSTEPS_INFO)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(controller_ping_t, mtype, false, field, 0, path, desc)
+#define add_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(controller_ping_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 	add_parse(STRING, hostname, "hostname", "Target for ping"),
 	add_parse(CONTROLLER_PING_RESULT, pinged, "pinged", "Ping result"),
 	add_parse(UINT64, latency, "latency", "Number of microseconds it took to successfully ping or timeout"),
-	add_parse(CONTROLLER_PING_MODE, offset, "mode", "The operating mode of the responding slurmctld"),
+	add_deprec(CONTROLLER_PING_MODE, offset, 0, "mode", "The operating mode of the responding slurmctld", SLURM_24_11_PROTOCOL_VERSION),
 };
 #undef add_parse
+#undef add_deprec
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdbd_ping_t, mtype, false, field, 0, path, desc)
