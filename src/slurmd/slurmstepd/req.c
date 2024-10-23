@@ -966,7 +966,7 @@ int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 		_handle_srun_timeout(fd, step, uid);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
-		debug("Handling REQUEST_CANCEL_JOB_STEP");
+		debug("Handling REQUEST_UPDATE_JOB_STEP");
 		rc = _handle_update_step(fd, step, uid);
 		break;
 	case REQUEST_STEP_LAYOUT:
