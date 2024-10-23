@@ -5240,7 +5240,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 	uint16_t type, period;
 	time_t   last_submit = time(NULL);
 	time_t   curr_end    = 0, tmp_end = 0, record_start = 0;
-	char    *query = NULL, *sql_table = NULL,
+	char    *purge_query = NULL, *sql_table = NULL,
 		*col_name = NULL;
 	uint32_t tmp_archive_period;
 
@@ -5355,6 +5355,33 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		return SLURM_ERROR;
 	}
 
+	/*
+	 * The purge query should only have to look at the deleted column since
+	 * those rows were the only ones archived.
+	 */
+	switch (purge_type) {
+	case PURGE_TXN:
+		purge_query = xstrdup_printf(
+			"delete from \"%s\" where "
+			"deleted=1 && cluster='%s' LIMIT %d",
+			sql_table, cluster_name,
+			MAX_PURGE_LIMIT);
+
+		break;
+	case PURGE_JOB:
+		purge_query = xstrdup_printf(
+			"delete from \"%s_%s\" where deleted=1 LIMIT %d;"
+			"delete from \"%s_%s\" where deleted=1 LIMIT %d;",
+			cluster_name, job_script_table, MAX_PURGE_LIMIT,
+			cluster_name, job_env_table, MAX_PURGE_LIMIT);
+		/* fall through */
+	default:
+		xstrfmtcat(purge_query,
+			   "delete from \"%s_%s\" where deleted=1 LIMIT %d;",
+			   cluster_name, sql_table, MAX_PURGE_LIMIT);
+		break;
+	}
+
 	/* continue archive/purge until no records in the period are found */
 	while (1) {
 		rc = _get_oldest_record(mysql_conn, cluster_name, sql_table,
@@ -5448,48 +5475,13 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		}
 
 		/*
-		 * The purge query should have the same where clause as the
-		 * archive query. The order by is very important so we get
-		 * records in the same order as we do when archiving, since we
-		 * only want to delete records that have been archived (if
-		 * archiving is enabled).
-		 */
-		switch (purge_type) {
-		case PURGE_TXN:
-			query = xstrdup_printf(
-				"delete from \"%s\" where "
-				"deleted=1 && cluster='%s' LIMIT %d",
-				sql_table, cluster_name,
-				MAX_PURGE_LIMIT);
-
-			break;
-		case PURGE_JOB:
-			query = xstrdup_printf(
-				"delete from \"%s_%s\" where "
-				"deleted=1 LIMIT %d;"
-				"delete from \"%s_%s\" where "
-				"deleted=1 LIMIT %d;",
-				cluster_name, job_script_table, MAX_PURGE_LIMIT,
-				cluster_name, job_env_table, MAX_PURGE_LIMIT);
-			/* fall through */
-		default:
-			xstrfmtcat(query,
-				   "delete from \"%s_%s\" where "
-				   "deleted=1 LIMIT %d;",
-				   cluster_name, sql_table, MAX_PURGE_LIMIT);
-			break;
-		}
-
-		DB_DEBUG(DB_ARCHIVE, mysql_conn->conn, "query\n%s", query);
-
-		/*
 		 * Don't loop this query, just do it once, since we are only
 		 * archiving and purging MAX_PURGE_LIMIT rows at a time.
 		 * mysql_db_delete_affected_rows will return < 0 on failure or
 		 * 0 if no records are affected.
 		 */
 		if ((rc = mysql_db_delete_affected_rows(
-			     mysql_conn, query)) > 0) {
+			     mysql_conn, purge_query)) > 0) {
 			/* Commit here every time since this could create a huge
 			 * transaction.
 			 */
@@ -5498,10 +5490,10 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 				      cluster_name);
 		}
 
-		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old data from %s table",
 			      sql_table);
+			xfree(purge_query);
 			return SLURM_ERROR;
 		} else if (mysql_db_commit(mysql_conn)) {
 			error("Couldn't commit cluster (%s) purge",
@@ -5509,6 +5501,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 			break;
 		}
 	}
+	xfree(purge_query);
 
 	return SLURM_SUCCESS;
 }
