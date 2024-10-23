@@ -45,8 +45,10 @@ for assistance.</p>
 Specific plugins have been developed for:</p>
 <ul>
 <li>gres/gpu &mdash; AutoDetect=nvml enables autodetection of NVIDIA GPUs
-through their proprietary NVML library. AutoDetect=rsmi enables
-autodetection of AMD GPUs through their proprietary RSMI library
+through their proprietary NVML library. AutoDetect=nvidia also enables
+autodetection of NVIDIA GPUs but through generic linux interfaces rather than
+their proprietary library but doesn't detect MIGs or NVlinks. AutoDetect=rsmi
+enables autodetection of AMD GPUs through their proprietary RSMI library
 (tested on x86_64 and arm64). AutoDetect=oneapi enables
 autodetection of Intel GPUs through their proprietary oneAPI library.
 AutoDetect=nrt enables autodetection of AWS Trainium/Inferentia devices.</li>
@@ -56,6 +58,6 @@ share GPUs between multiple compute processes</li>
 GPUs between multiple compute processes</li>
 </ul>
 
-<p style="text-align:center;">Last modified 13 March 2024</p>
+<p style="text-align:center;">Last modified 30 October 2024</p>
 
 <!--#include virtual="footer.txt"-->

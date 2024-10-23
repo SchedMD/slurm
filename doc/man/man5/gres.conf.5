@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "May 2024" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "October 2024" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -58,6 +58,12 @@ Currently, the options are:
 .TP
 \fBnrt\fR
 Automatically detect AWS Trainium/Inferentia devices.
+.IP
+
+.TP
+\fBnvidia\fR
+Automatically detect NVIDIA GPUs. No library required, but doesn't detect MIGs
+or NVlinks. Added in Slurm 24.11.
 .IP
 
 .TP
@@ -286,8 +292,8 @@ If no environment\-related flags are specified, then \fInvidia_gpu_env\fR,
 \fIamd_gpu_env\fR, \fIintel_gpu_env\fR, and \fIopencl_env\fR will be
 implicitly set by default.
 If \fBAutoDetect\fR is used and environment\-related flags are not specified,
-then \fIAutoDetect=nvml\fR will set \fInvidia_gpu_env\fR,
-\fIAutoDetect=rsmi\fR will set \fIamd_gpu_env\fR,
+then \fIAutoDetect=nvml\fR or \fIAutoDetect=nvidia\fR will set
+\fInvidia_gpu_env\fR, \fIAutoDetect=rsmi\fR will set \fIamd_gpu_env\fR,
 and \fIAutoDetect=oneapi\fR will set \fIintel_gpu_env\fR.
 Conversely, specified environment\-related flags will always override
 \fBAutoDetect\fR.
