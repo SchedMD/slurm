@@ -44,17 +44,24 @@ for assistance.</p>
 <p>Slurm has optional support for managing a variety of accelerator cards.
 Specific plugins have been developed for:</p>
 <ul>
-<li>gres/gpu &mdash; AutoDetect=nvml enables autodetection of NVIDIA GPUs
-through their proprietary NVML library. AutoDetect=nvidia also enables
-autodetection of NVIDIA GPUs but through generic linux interfaces rather than
-their proprietary library but doesn't detect MIGs or NVlinks. AutoDetect=rsmi
-enables autodetection of AMD GPUs through their proprietary RSMI library
-(tested on x86_64 and arm64). AutoDetect=oneapi enables
-autodetection of Intel GPUs through their proprietary oneAPI library.
-AutoDetect=nrt enables autodetection of AWS Trainium/Inferentia devices.</li>
-<li>gres/mps &mdash; NVIDIA CUDA Multi-Process Service provides ways to
+<li><b>gres/gpu</b> &mdash; several autodetection plugins are available for
+different vendors:
+<ul>
+<li><b>AutoDetect=nvml</b> enables autodetection of NVIDIA GPUs through their
+proprietary NVML library.</li>
+<li><b>AutoDetect=nvidia</b> also enables autodetection of NVIDIA GPUs, but
+through generic Linux interfaces rather than their proprietary library. This
+plugin doesn't detect MIGs or NVlinks.</li>
+<li><b>AutoDetect=rsmi</b> enables autodetection of AMD GPUs through their
+proprietary RSMI library (tested on x86_64 and arm64).</li>
+<li><b>AutoDetect=oneapi</b> enables autodetection of Intel GPUs through their
+proprietary oneAPI library.</li>
+<li><b>AutoDetect=nrt</b> enables autodetection of AWS Trainium/Inferentia
+devices.</li>
+</ul></li>
+<li><b>gres/mps</b> &mdash; NVIDIA CUDA Multi-Process Service provides ways to
 share GPUs between multiple compute processes</li>
-<li>gres/shard &mdash; Generic mechanism that provides a way to share
+<li><b>gres/shard</b> &mdash; Generic mechanism that provides a way to share
 GPUs between multiple compute processes</li>
 </ul>
 
