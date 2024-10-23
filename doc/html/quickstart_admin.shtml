@@ -333,8 +333,16 @@ Specify location of Slurm configuration file. The default value is PREFIX/etc</p
 the overall functionality of the cluster. At least one compute node and
 controller node are required for an operational cluster. Other types of
 nodes can be added to enable optional functionality. It is recommended to have
-single-purpose nodes in a production cluster. Below is a brief overview
-of the different types of nodes Slurm utilizes.</p>
+single-purpose nodes in a production cluster.</p>
+
+<p>Most Slurm daemons should execute as a non-root service account.
+We recommend you create a Unix user named <i>slurm</i> for use by slurmctld
+and make sure it exists across the cluster. This user should be configured
+as the <b>SlurmUser</b> in the slurm.conf configuration file, and granted
+sufficient permissions to files used by the daemon. Refer to the
+<a href="slurm.conf.html#lbAP">slurm.conf</a> man page for more details.</p>
+
+<p>Below is a brief overview of the different types of nodes Slurm utilizes:</p>
 
 <h3 id="compute">Compute Node<a class="slurm_link" href="#compute"></a></h3>
 <p>Compute nodes (frequently just referred to as &quot;nodes&quot;) perform
@@ -359,15 +367,6 @@ section below).  This state can be recovered by the controller at
 startup time.  State changes are saved so that jobs and other state
 information can be preserved when the controller moves (to or from a
 backup controller) or is restarted.</p>
-
-<p>We recommend that you create a Unix user <i>slurm</i> for use by
-<b>slurmctld</b>. This user name will also be specified using the
-<b>SlurmUser</b> in the slurm.conf configuration file.
-This user must exist on all nodes of the cluster.
-Note that files and directories used by <b>slurmctld</b> will need to be
-readable or writable by the user <b>SlurmUser</b> (the Slurm configuration
-files must be readable; the log file directory and state save directory
-must be writable).</p>
 
 <h3 id="dbd">DBD Node<a class="slurm_link" href="#dbd"></a></h3>
 <p>If you want to save job accounting records to a database, the
