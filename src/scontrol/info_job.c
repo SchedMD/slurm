@@ -1730,14 +1730,18 @@ scontrol_list_pids(const char *jobid_str, const char *node_name)
 	listpids_list = list_create(_free_listpids_info);
 
 	/* Step ID is optional */
-	printf("%-8s %-8s %-8s %-7s %-8s\n",
-	       "PID", "JOBID", "STEPID", "LOCALID", "GLOBALID");
 	if (jobid_str == NULL || jobid_str[0] == '*') {
 		_list_pids_all_jobs(node_name, listpids_list);
 	} else if (_parse_stepid(jobid_str, &step_id))
 		_list_pids_all_steps(node_name, &step_id, listpids_list);
+	if (exit_code)
+		goto cleanup;
+
+	printf("%-8s %-8s %-8s %-7s %-8s\n",
+	       "PID", "JOBID", "STEPID", "LOCALID", "GLOBALID");
 	list_for_each(listpids_list, _print_listpids_info, NULL);
 
+cleanup:
 	FREE_NULL_LIST(listpids_list);
 }
 
