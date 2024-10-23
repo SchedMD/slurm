@@ -154,8 +154,6 @@ extern void timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 		 (negative ? "-(" : ""), days, hours, minutes, seconds,
 		 milliseconds, microseconds, nanoseconds,
 		 (negative ? ")" : ""));
-
-	buffer[buffer_len] = '\0';
 }
 
 extern timespec_t timespec_normalize(timespec_t ts)
