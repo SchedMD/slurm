@@ -4308,6 +4308,17 @@ static int DUMP_FUNC(CONTROLLER_PING_MODE)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(CONTROLLER_PING_PRIMARY)
+
+static int DUMP_FUNC(CONTROLLER_PING_PRIMARY)(const parser_t *const parser,
+					      void *obj, data_t *dst, args_t *args)
+{
+	const int *mode_ptr = obj;
+	bool primary = (*mode_ptr == 0);
+
+	return DUMP(BOOL, primary, dst, args);
+}
+
 PARSE_DISABLED(CONTROLLER_PING_RESULT)
 
 static int DUMP_FUNC(CONTROLLER_PING_RESULT)(const parser_t *const parser,
@@ -8000,14 +8011,18 @@ static const parser_t PARSER_ARRAY(LISTSTEPS_INFO)[] = {
 	add_parser(controller_ping_t, mtype, false, field, 0, path, desc)
 #define add_deprec(mtype, field, overloads, path, desc, deprec) \
 	add_parser_deprec(controller_ping_t, mtype, false, field, overloads, path, desc, deprec)
+#define add_overload_req(mtype, field, overloads, path, desc) \
+	add_parser(controller_ping_t, mtype, true, field, overloads, path, desc)
 static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 	add_parse(STRING, hostname, "hostname", "Target for ping"),
 	add_deprec(CONTROLLER_PING_RESULT, pinged, 0, "pinged", "Ping result", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(UINT64, latency, "latency", "Number of microseconds it took to successfully ping or timeout"),
-	add_deprec(CONTROLLER_PING_MODE, offset, 0, "mode", "The operating mode of the responding slurmctld", SLURM_24_11_PROTOCOL_VERSION),
+	add_deprec(CONTROLLER_PING_MODE, offset, 1, "mode", "The operating mode of the responding slurmctld", SLURM_24_11_PROTOCOL_VERSION),
+	add_overload_req(CONTROLLER_PING_PRIMARY, offset, 1, "primary", "Is responding slurmctld the primary controller"),
 };
 #undef add_parse
 #undef add_deprec
+#undef add_overload_req
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdbd_ping_t, mtype, false, field, 0, path, desc)
@@ -9995,6 +10010,7 @@ static const parser_t parsers[] = {
 	addps(RPC_ID, uint16_t, NEED_NONE, STRING, NULL, NULL, "Slurm RPC message type"),
 	addpsa(JOB_STATE_RESP_MSG, JOB_STATE_RESP_JOB, job_state_response_msg_t, NEED_NONE, "List of jobs"),
 	addpsa(KILL_JOBS_RESP_MSG, KILL_JOBS_RESP_JOB, kill_jobs_resp_msg_t, NEED_NONE, "List of jobs signal responses"),
+	addpsp(CONTROLLER_PING_PRIMARY, BOOL, int, NEED_NONE, "Is responding slurmctld the primary controller"),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),

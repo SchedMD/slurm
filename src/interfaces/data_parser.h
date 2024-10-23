@@ -351,6 +351,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_PING_ARRAY_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_PING_ARRAY_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_CONTROLLER_PING_MODE, /* char * - verbose controller mode */
+	DATA_PARSER_CONTROLLER_PING_PRIMARY, /* int - true if controller is primary */
 	DATA_PARSER_CONTROLLER_PING_RESULT, /* bool - "UP" or "DOWN" */
 	DATA_PARSER_SLURMDBD_PING, /* controller_ping_t */
 	DATA_PARSER_SLURMDBD_PING_PTR, /* controller_ping_t* */
