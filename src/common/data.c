@@ -1209,11 +1209,10 @@ static data_for_each_cmd_t _foreach_join_str(const data_t *data, void *arg)
 	char *b = NULL;
 	merge_path_strings_t *args = arg;
 
-	data_get_string_converted(data, &b);
-
-	xstrfmtcatat(args->path, &args->at, "%s%s%s",
-		     (!args->path ? args->token : ""),
-		     (args->at ? args->token : ""), b);
+	if (!data_get_string_converted(data, &b))
+		xstrfmtcatat(args->path, &args->at, "%s%s%s",
+			     (!args->path ? args->token : ""),
+			     (args->at ? args->token : ""), b);
 
 	xfree(b);
 
