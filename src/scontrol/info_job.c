@@ -1822,6 +1822,21 @@ static void _free_liststeps_info(void *x)
 	xfree(liststeps_info);
 }
 
+static void _dump_liststeps(list_t *liststeps_list, int argc, char **argv)
+{
+	int rc;
+
+	openapi_resp_liststeps_info_t resp = {
+		.liststeps_list = liststeps_list,
+	};
+
+	DATA_DUMP_CLI(OPENAPI_LISTSTEPS_INFO_RESP, resp, argc, argv, NULL,
+		      mime_type, data_parser, rc);
+
+	if (rc != SLURM_SUCCESS)
+		exit_code = 1;
+}
+
 /*
  * scontrol_list_steps - Print steps on node.
  *
@@ -1839,12 +1854,21 @@ extern void scontrol_list_steps(int argc, char **argv)
 	steps = stepd_available(NULL, node_name);
 
 	if (!steps || !list_count(steps)) {
-		fprintf(stderr, "No steps found on this node\n");
+		if (mime_type)
+			_dump_liststeps(NULL, argc, argv);
+		else
+			fprintf(stderr, "No slurmstepd's found on this node\n");
+
 		goto cleanup;
 	}
 
 	liststeps_list = list_create(_free_liststeps_info);
 	list_for_each(steps, _add_to_liststeps_list, liststeps_list);
+
+	if (mime_type) {
+		_dump_liststeps(liststeps_list, argc, argv);
+		goto cleanup;
+	}
 
 	printf("%-8s %-8s\n", "JOBID", "STEPID");
 	list_for_each(liststeps_list, _print_liststeps_info, NULL);
