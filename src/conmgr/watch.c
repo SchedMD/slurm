@@ -212,7 +212,7 @@ static void _close_output_fd(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 	int output_fd = (uint64_t) arg;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	xassert(output_fd >= 0);
 	xassert(output_fd < NO_VAL64);
