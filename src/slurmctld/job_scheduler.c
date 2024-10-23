@@ -2404,7 +2404,7 @@ static int _foreach_het_job_ready(void *x, void *arg)
 
 	ready_struct->het_job = het_job;
 
-	if (ready_struct->job_ptr->details)
+	if (het_job->details)
 		prolog = het_job->details->prolog_running;
 	if (prolog || IS_JOB_CONFIGURING(het_job) ||
 	    !test_job_nodes_ready(het_job)) {
