@@ -149,7 +149,7 @@ void run_backup(void)
 
 	slurm_thread_create_detached(_trigger_slurmctld_event, NULL);
 
-	unquiesce_rpcs();
+	unquiesce_rpcs(true);
 
 	/* wait for the heartbeat file to exist before starting */
 	while (!get_last_heartbeat(NULL) &&

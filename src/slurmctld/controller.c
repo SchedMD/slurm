@@ -250,6 +250,7 @@ static struct {
 	int count;
 	int *fd;
 	conmgr_fd_t **cons;
+	bool standby_mode;
 } listeners = {
 	.mutex = PTHREAD_MUTEX_INITIALIZER,
 	.quiesced = true,
@@ -924,7 +925,7 @@ int main(int argc, char **argv)
 			_post_reconfig();
 		}
 
-		unquiesce_rpcs();
+		unquiesce_rpcs(false);
 
 		/*
 		 * process slurm background activities, could run as pthread
@@ -1471,7 +1472,13 @@ static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 
 static void *_on_connection(conmgr_fd_t *con, void *arg)
 {
-	if (slurmctld_primary)
+	bool standby_mode;
+
+	slurm_mutex_lock(&listeners.mutex);
+	standby_mode = listeners.standby_mode;
+	slurm_mutex_unlock(&listeners.mutex);
+
+	if (!standby_mode)
 		return _on_primary_connection(con, arg);
 	else
 		return on_backup_connection(con, arg);
@@ -1479,7 +1486,13 @@ static void *_on_connection(conmgr_fd_t *con, void *arg)
 
 static void _on_finish(conmgr_fd_t *con, void *arg)
 {
-	if (slurmctld_primary)
+	bool standby_mode;
+
+	slurm_mutex_lock(&listeners.mutex);
+	standby_mode = listeners.standby_mode;
+	slurm_mutex_unlock(&listeners.mutex);
+
+	if (!standby_mode)
 		return _on_primary_finish(con, arg);
 	else
 		return on_backup_finish(con, arg);
@@ -1487,7 +1500,13 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 
 static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 {
-	if (slurmctld_primary)
+	bool standby_mode;
+
+	slurm_mutex_lock(&listeners.mutex);
+	standby_mode = listeners.standby_mode;
+	slurm_mutex_unlock(&listeners.mutex);
+
+	if (!standby_mode)
 		return _on_primary_msg(con, msg, arg);
 	else
 		return on_backup_msg(con, msg, arg);
@@ -1514,11 +1533,12 @@ extern void quiesce_rpcs(void)
 	slurm_mutex_unlock(&listeners.mutex);
 }
 
-extern void unquiesce_rpcs(void)
+extern void unquiesce_rpcs(bool standby_mode)
 {
 	slurm_mutex_lock(&listeners.mutex);
 
 	listeners.quiesced = false;
+	listeners.standby_mode = standby_mode;
 
 	for (int i = 0; i < listeners.count; i++) {
 		int rc;
