@@ -243,15 +243,17 @@ static bool _nvml_get_handle(int index, nvmlDevice_t *device)
  *
  * Return true if successful, false if not.
  */
-static bool _nvml_get_mem_freqs(nvmlDevice_t *device,
-				unsigned int *mem_freqs_size,
-				unsigned int *mem_freqs)
+static bool _nvml_get_mem_freqs(nvmlDevice_t *device, uint32_t *mem_freqs_size,
+				uint32_t *mem_freqs)
 {
 	nvmlReturn_t nvml_rc;
 	DEF_TIMERS;
 	START_TIMER;
-	nvml_rc = nvmlDeviceGetSupportedMemoryClocks(*device, mem_freqs_size,
-						     mem_freqs);
+	unsigned int *nvml_mem_freqs = mem_freqs;
+	unsigned int *nvml_mem_freqs_size = mem_freqs_size;
+	nvml_rc = nvmlDeviceGetSupportedMemoryClocks(*device,
+						     nvml_mem_freqs_size,
+						     nvml_mem_freqs);
 	END_TIMER;
 	debug3("nvmlDeviceGetSupportedMemoryClocks() took %ld microseconds",
 	       DELTA_TIMER);
@@ -262,8 +264,8 @@ static bool _nvml_get_mem_freqs(nvmlDevice_t *device,
 		return false;
 	}
 
-	qsort(mem_freqs, *mem_freqs_size, sizeof(unsigned int),
-	      slurm_sort_uint_list_desc);
+	qsort(mem_freqs, *mem_freqs_size, sizeof(uint32_t),
+	      slurm_sort_uint32_list_desc);
 
 	if ((*mem_freqs_size > 1) &&
 	    (mem_freqs[0] <= mem_freqs[(*mem_freqs_size)-1])) {
@@ -286,17 +288,18 @@ static bool _nvml_get_mem_freqs(nvmlDevice_t *device,
  *
  * Return true if successful, false if not.
  */
-static bool _nvml_get_gfx_freqs(nvmlDevice_t *device,
-				unsigned int mem_freq,
-				unsigned int *gfx_freqs_size,
-				unsigned int *gfx_freqs)
+static bool _nvml_get_gfx_freqs(nvmlDevice_t *device, uint32_t mem_freq,
+				uint32_t *gfx_freqs_size, uint32_t *gfx_freqs)
 {
 	nvmlReturn_t nvml_rc;
 	DEF_TIMERS;
 	START_TIMER;
+
+	unsigned int *nvml_gfx_freqs = gfx_freqs;
+	unsigned int *nvml_gfx_freqs_size = gfx_freqs_size;
 	nvml_rc = nvmlDeviceGetSupportedGraphicsClocks(*device, mem_freq,
-						       gfx_freqs_size,
-						       gfx_freqs);
+						       nvml_gfx_freqs_size,
+						       nvml_gfx_freqs);
 	END_TIMER;
 	debug3("nvmlDeviceGetSupportedGraphicsClocks() took %ld microseconds",
 	       DELTA_TIMER);
@@ -307,8 +310,8 @@ static bool _nvml_get_gfx_freqs(nvmlDevice_t *device,
 		return false;
 	}
 
-	qsort(gfx_freqs, *gfx_freqs_size, sizeof(unsigned int),
-	      slurm_sort_uint_list_desc);
+	qsort(gfx_freqs, *gfx_freqs_size, sizeof(uint32_t),
+	      slurm_sort_uint32_list_desc);
 
 	if ((*gfx_freqs_size > 1) &&
 	    (gfx_freqs[0] <= gfx_freqs[(*gfx_freqs_size)-1])) {
@@ -332,11 +335,11 @@ static bool _nvml_get_gfx_freqs(nvmlDevice_t *device,
  *
  * NOTE: The contents of gfx_freqs will be modified during use.
  */
-static void _nvml_print_gfx_freqs(nvmlDevice_t *device, unsigned int mem_freq,
-				  unsigned int gfx_freqs_size,
-				  unsigned int *gfx_freqs, log_level_t l)
+static void _nvml_print_gfx_freqs(nvmlDevice_t *device, uint32_t mem_freq,
+				  uint32_t gfx_freqs_size, uint32_t *gfx_freqs,
+				  log_level_t l)
 {
-	unsigned int size = gfx_freqs_size;
+	uint32_t size = gfx_freqs_size;
 
 	if (!_nvml_get_gfx_freqs(device, mem_freq, &size, gfx_freqs))
 		return;
@@ -353,10 +356,10 @@ static void _nvml_print_gfx_freqs(nvmlDevice_t *device, unsigned int mem_freq,
  */
 static void _nvml_print_freqs(nvmlDevice_t *device, log_level_t l)
 {
-	unsigned int mem_size = FREQS_SIZE;
-	unsigned int mem_freqs[FREQS_SIZE] = {0};
-	unsigned int gfx_freqs[FREQS_SIZE] = {0};
-	unsigned int i;
+	uint32_t mem_size = FREQS_SIZE;
+	uint32_t mem_freqs[FREQS_SIZE] = {0};
+	uint32_t gfx_freqs[FREQS_SIZE] = {0};
+	uint32_t i;
 	bool concise = false;
 
 	if (!_nvml_get_mem_freqs(device, &mem_size, mem_freqs))
@@ -409,14 +412,13 @@ static void _nvml_print_freqs(nvmlDevice_t *device, log_level_t l)
  * gfx_freq 		(IN/OUT) The requested graphics frequency, in MHz. This
  * 			will be overwritten with the output value, if different.
  */
-static void _nvml_get_nearest_freqs(nvmlDevice_t *device,
-				    unsigned int *mem_freq,
-				    unsigned int *gfx_freq)
+static void _nvml_get_nearest_freqs(nvmlDevice_t *device, uint32_t *mem_freq,
+				    uint32_t *gfx_freq)
 {
-	unsigned int mem_freqs[FREQS_SIZE] = {0};
-	unsigned int mem_freqs_size = FREQS_SIZE;
-	unsigned int gfx_freqs[FREQS_SIZE] = {0};
-	unsigned int gfx_freqs_size = FREQS_SIZE;
+	uint32_t mem_freqs[FREQS_SIZE] = {0};
+	uint32_t mem_freqs_size = FREQS_SIZE;
+	uint32_t gfx_freqs[FREQS_SIZE] = {0};
+	uint32_t gfx_freqs_size = FREQS_SIZE;
 
 	// Get the memory frequencies
 	if (!_nvml_get_mem_freqs(device, &mem_freqs_size, mem_freqs))
@@ -441,8 +443,8 @@ static void _nvml_get_nearest_freqs(nvmlDevice_t *device,
  *
  * Returns true if successful, false if not
  */
-static bool _nvml_set_freqs(nvmlDevice_t *device, unsigned int mem_freq,
-			    unsigned int gfx_freq)
+static bool _nvml_set_freqs(nvmlDevice_t *device, uint32_t mem_freq,
+			    uint32_t gfx_freq)
 {
 	nvmlReturn_t nvml_rc;
 	DEF_TIMERS;
@@ -497,10 +499,10 @@ static bool _nvml_reset_freqs(nvmlDevice_t *device)
  *
  * Returns the clock frequency in MHz if successful, or 0 if not
  */
-static unsigned int _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
+static uint32_t _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
 {
 	nvmlReturn_t nvml_rc;
-	unsigned int freq = 0;
+	uint32_t freq = 0;
 	char *type_str = "unknown";
 	DEF_TIMERS;
 
@@ -517,7 +519,8 @@ static unsigned int _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
 	}
 
 	START_TIMER;
-	nvml_rc = nvmlDeviceGetApplicationsClock(*device, type, &freq);
+	unsigned int *nvml_freq = &freq;
+	nvml_rc = nvmlDeviceGetApplicationsClock(*device, type, nvml_freq);
 	END_TIMER;
 	debug3("nvmlDeviceGetApplicationsClock(%s) took %ld microseconds",
 	       type_str, DELTA_TIMER);
@@ -529,12 +532,12 @@ static unsigned int _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
 	return freq;
 }
 
-static unsigned int _nvml_get_gfx_freq(nvmlDevice_t *device)
+static uint32_t _nvml_get_gfx_freq(nvmlDevice_t *device)
 {
 	return _nvml_get_freq(device, NVML_CLOCK_GRAPHICS);
 }
 
-static unsigned int _nvml_get_mem_freq(nvmlDevice_t *device)
+static uint32_t _nvml_get_mem_freq(nvmlDevice_t *device)
 {
 	return _nvml_get_freq(device, NVML_CLOCK_MEM);
 }
