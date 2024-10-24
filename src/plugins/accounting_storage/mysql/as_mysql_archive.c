@@ -5384,7 +5384,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		if (!rc) /* no purgeable records found - base case */
 			break;
 		else if (rc == SLURM_ERROR)
-			return rc;
+			goto end_it;
 
 		tmp_archive_period = purge_attr;
 
@@ -5405,7 +5405,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 				 col_name, sql_table);
 
 		if (rc != SLURM_SUCCESS)
-			return rc;
+			goto end_it;
 
 		if (purge_type == PURGE_JOB) {
 			/* Purge associated data from hash tables */
@@ -5413,13 +5413,13 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 					 tmp_end, cluster_name,
 					 col_name, job_env_table);
 			if (rc != SLURM_SUCCESS)
-				return rc;
+				goto end_it;
 
 			rc = _purge_mark(PURGE_JOB_SCRIPT, mysql_conn,
 					 tmp_end, cluster_name,
 					 col_name, job_script_table);
 			if (rc != SLURM_SUCCESS)
-				return rc;
+				goto end_it;
 		}
 
 		/* Do archive */
@@ -5436,7 +5436,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 						    tmp_archive_period,
 						    job_env_table, usage_info);
 				if (rc == SLURM_ERROR)
-					return rc;
+					goto end_it;
 				cnt += rc;
 
 				rc = _archive_table(PURGE_JOB_SCRIPT,
@@ -5447,7 +5447,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 						    job_script_table,
 						    usage_info);
 				if (rc == SLURM_ERROR)
-					return rc;
+					goto end_it;
 				cnt += rc;
 			}
 
@@ -5457,14 +5457,15 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 					    tmp_archive_period, sql_table,
 					    usage_info);
 			if (rc == SLURM_ERROR)
-				return rc;
+				goto end_it;
 
 			cnt += rc;
 
 			if (!cnt) { /* no records archived */
 				error("%s: No records archived for %s before %ld but we found some records",
 				      __func__, sql_table, tmp_end);
-				return SLURM_ERROR;
+				rc = SLURM_ERROR;
+				goto end_it;
 			}
 		}
 
@@ -5487,17 +5488,17 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old data from %s table",
 			      sql_table);
-			xfree(purge_query);
-			return SLURM_ERROR;
+			goto end_it;
 		} else if (mysql_db_commit(mysql_conn)) {
 			error("Couldn't commit cluster (%s) purge",
 			      cluster_name);
 			break;
 		}
 	}
+end_it:
 	xfree(purge_query);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _execute_archive(mysql_conn_t *mysql_conn,
