@@ -762,7 +762,7 @@ static bool _oneapi_set_cpu_affinity_mask(int cpu,
 	}
 
 	model = cpu % ULONG_BITS;
-	cpu_set[count] = cpu_set[count] | (((unsigned long)0x01) << model);
+	cpu_set[count] = cpu_set[count] | (0x01UL << model);
 	return true;
 }
 
