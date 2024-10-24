@@ -1292,7 +1292,7 @@ try_next_nodes_cnt:
 			next_job_size = 0;
 	}
 
-	if ((cr_type != CR_MEMORY) && (gang_mode == 0) &&
+	if ((gang_mode == 0) &&
 	    (job_node_req == NODE_CR_ONE_ROW ||
 	     job_node_req == NODE_CR_RESERVED) &&
 	    !test_only) {
@@ -1339,13 +1339,6 @@ try_next_nodes_cnt:
 		_free_avail_res_array(avail_res_array);
 		log_flag(SELECT_TYPE, "test 0 fail: waiting for switches");
 		return select_rc ? select_rc : SLURM_ERROR;
-	}
-	if (cr_type == CR_MEMORY) {
-		/*
-		 * CR_MEMORY does not care about existing CPU allocations,
-		 * so we can jump right to job allocation from here
-		 */
-		goto alloc_job;
 	}
 
 	log_flag(SELECT_TYPE, "test 0 pass - job fits on given resources");
