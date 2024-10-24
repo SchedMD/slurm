@@ -1783,7 +1783,7 @@ extern char *gpu_p_test_cpu_conv(char *cpu_range)
 		// nothing
 	} else if (xstrcmp(cpu_range, "~max") == 0) {
 		for (i = 0; i < CPU_SET_SIZE; ++i) {
-			cpu_set[i] = (unsigned long)-1;
+			cpu_set[i] = -1UL;
 		}
 	} else if (xstrcmp(cpu_range, "~one") == 0) {
 		cpu_set[0] = 1;
@@ -1798,7 +1798,7 @@ extern char *gpu_p_test_cpu_conv(char *cpu_range)
 		 */
 		int count = MIN(strlen(&cpu_range[1]), CPU_SET_SIZE);
 		for (i = 0; i < count; ++i) {
-			cpu_set[i] = (unsigned long)-1;
+			cpu_set[i] = -1UL;
 		}
 		for (i = count; i < CPU_SET_SIZE; ++i) {
 			cpu_set[i] = 0;
