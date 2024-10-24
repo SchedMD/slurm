@@ -811,16 +811,6 @@ extern int slurm_sort_uint64_list_desc(const void *v1, const void *v2)
 	return SORT_INT_DESC(uint64_t, v1, v2);
 }
 
-extern int slurm_sort_uint_list_asc(const void *v1, const void *v2)
-{
-	return SORT_INT_ASC(unsigned int, v1, v2);
-}
-
-extern int slurm_sort_uint_list_desc(const void *v1, const void *v2)
-{
-	return SORT_INT_DESC(unsigned int, v1, v2);
-}
-
 extern int slurm_sort_int_list_asc(const void *v1, const void *v2)
 {
 	return SORT_INT_ASC(int, v1, v2);

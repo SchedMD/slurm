@@ -1366,8 +1366,6 @@ extern int slurm_sort_uint32_list_asc(const void *, const void *);
 extern int slurm_sort_uint32_list_desc(const void *, const void *);
 extern int slurm_sort_uint64_list_asc(const void *, const void *);
 extern int slurm_sort_uint64_list_desc(const void *, const void *);
-extern int slurm_sort_uint_list_asc(const void *, const void *);
-extern int slurm_sort_uint_list_desc(const void *, const void *);
 extern int slurm_sort_int_list_asc(const void *, const void *);
 extern int slurm_sort_int_list_desc(const void *, const void *);
 extern int slurm_sort_int64_list_asc(const void *, const void *);
