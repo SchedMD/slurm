@@ -186,6 +186,7 @@ typedef struct {
 typedef struct {
 	bool allocated; /* A job is running on this node */
 	time_t last_job_end; /* Last end time of running job on node*/
+	char *mcs_label;
 	bool mixed_user; /* multiple users running on node */
 	bool needs_sorting; /* After adding to the mix sort related
 			     * nodes_used_list */
@@ -199,6 +200,7 @@ typedef struct {
 	bool is_exclusive_user;
 	uint32_t job_user;
 	time_t *later_start;
+	char *mcs_label;
 	uint32_t min_nodes;
 	bitstr_t *node_bitmap;
 	int node_cnt;
@@ -1821,6 +1823,16 @@ static int _mark_nodes_usage(void *x, void *arg)
 			nodes_used[i].owned = owned;
 		}
 
+		if (!nodes_used[i].mcs_label && job_ptr->mcs_label &&
+		    slurm_mcs_get_select(job_ptr) == 1) {
+			/*
+			 * We do not need to copy mcs_label, jobs are not purged
+			 * during backfill, so this memory should always be
+			 * valid.
+			 */
+			nodes_used[i].mcs_label = job_ptr->mcs_label;
+		}
+
 		if (nodes_used[i].last_job_end < job_ptr->end_time) {
 			nodes_used[i].last_job_end = job_ptr->end_time;
 			last_job_end_updated = true;
@@ -1860,6 +1872,25 @@ static void _init_node_used_array_and_list(node_used_t **nodes_used,
 	list_sort(*nodes_used_list, _cmp_last_job_end);
 }
 
+static bool _user_conflicts(bool is_exclusive_user, bool job_user_on_node,
+			    node_used_t *node)
+{
+	if (is_exclusive_user && !node->mixed_user && job_user_on_node)
+		return false; /* user alone on node */
+	if (!is_exclusive_user && (!node->owned || job_user_on_node))
+		return false;	/* node not owned or the user owns the node */
+	return true; /* can't use node due to user conflict */
+}
+
+static bool _mcs_label_conflicts(char *job_mcs_label, char *node_mcs_label)
+{
+	if (job_mcs_label && !xstrcmp(node_mcs_label, job_mcs_label))
+		return false; /* node already has required mcs_label */
+	if (!job_mcs_label && !node_mcs_label)
+		return false; /* node can't have mcs_label and it doesn't */
+	return true; /* can't use node due to mcs_label conflict */
+}
+
 /*
  * Check if a node can be used, if not remove it. If the node can't be remove
  * delay the start time.
@@ -1877,10 +1908,9 @@ static int _rm_node_or_delay_start(void *x, void *arg)
 		return true; /* following nodes will be idle by start_time */
 	if (!bit_test(args->node_bitmap, node->node_index))
 		return false; /* not available to start with */
-	if (args->is_exclusive_user && !node->mixed_user && job_user_on_node)
-		return false; /* user alone on node */
-	if (!args->is_exclusive_user && (!node->owned || job_user_on_node))
-		return false;	/* node not owned or the user owns the node */
+	if (!_user_conflicts(args->is_exclusive_user, job_user_on_node, node) &&
+	    !_mcs_label_conflicts(args->mcs_label, node->mcs_label))
+		return false; /* job user and mcs don't conflict with node's */
 
 	/* can't use this node */
 	*(args->later_start) = node->last_job_end;
@@ -1900,12 +1930,13 @@ static int _rm_node_or_delay_start(void *x, void *arg)
 }
 
 /* Return true if start_time was delayed */
-static bool _filter_exclusive_user_nodes(job_record_t *job_ptr,
-					 uint32_t min_nodes,
-					 list_t *nodes_used_list,
-					 time_t start_time,
-					 time_t *later_filter_start,
-					 bitstr_t *node_bitmap)
+static bool _filter_exclusive_user_mcs_nodes(job_record_t *job_ptr,
+					     int mcs_select,
+					     uint32_t min_nodes,
+					     list_t *nodes_used_list,
+					     time_t start_time,
+					     time_t *later_filter_start,
+					     bitstr_t *node_bitmap)
 {
 	*later_filter_start = 0;
 	filter_exclusive_args_t args = {
@@ -1925,6 +1956,9 @@ static bool _filter_exclusive_user_nodes(job_record_t *job_ptr,
 	if ((job_ptr->details->whole_node & WHOLE_NODE_USER) ||
 	    (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER))
 		args.is_exclusive_user = true;
+
+	/* Need to filter out any nodes allocated with other mcs */
+	args.mcs_label = (mcs_select == 1) ? job_ptr->mcs_label : NULL;
 
 	/* Note that nodes_used_list is sorted in descending order of job end */
 	list_find_first(nodes_used_list, _rm_node_or_delay_start, &args);
@@ -2694,10 +2728,11 @@ next_task:
 				    job_ptr->details->exc_node_bitmap);
 		}
 
-		if (_filter_exclusive_user_nodes(job_ptr, min_nodes,
-						 nodes_used_list, start_res,
-						 &later_filter_start,
-						 avail_bitmap)) {
+		if (_filter_exclusive_user_mcs_nodes(job_ptr, min_nodes,
+						     mcs_select,
+						     nodes_used_list, start_res,
+						     &later_filter_start,
+						     avail_bitmap)) {
 			/* start_res delayed must check resv times again */
 			if (!job_no_reserve) {
 				job_ptr->start_time = 0;
@@ -2710,7 +2745,6 @@ next_task:
 			continue;
 		}
 
-		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
 		tmp_bitmap = bit_copy(avail_bitmap);
 		for (j = 0; ; ) {
 			if ((node_space[j].end_time > start_res) &&
