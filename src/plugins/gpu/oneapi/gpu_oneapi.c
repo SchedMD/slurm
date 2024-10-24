@@ -56,14 +56,14 @@
 #define CARD_NAME_LEN 256
 
 #define MAX_CPUS 0x8000
-#define ULONG_BYTES (sizeof(unsigned long))
+#define ULONG_BYTES (sizeof(uint64_t))
 #define ULONG_BITS (ULONG_BYTES * 8)
 
 /*
- * The # of unsigned longs needed to accommodate a bitmask array capable
+ * The # of uint64_ts needed to accommodate a bitmask array capable
  * of representing MAX_CPUS cpus (will vary if 32-bit or 64-bit)
  * E.g. for a 130 CPU 64-bit machine: (130 + 63) / 64 = 3.02
- * -> Integer division floor -> 3 ulongs to represent 130 CPUs
+ * -> Integer division floor -> 3 uint64_ts to represent 130 CPUs
  */
 #define CPU_SET_SIZE ((MAX_CPUS + (ULONG_BITS - 1)) / ULONG_BITS)
 
@@ -75,8 +75,8 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /* Duplicated from NVML plugin */
 static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
-				unsigned long *cpu_set,
-				unsigned int cpu_set_size)
+				uint64_t *cpu_set,
+				uint32_t cpu_set_size)
 {
 	int j, k, b;
 	int bit_cur;
@@ -737,7 +737,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
  *
  * cpu		(IN) The index of the CPU
  * cpu_set:	[IN/out] An array reference in which to return a bitmask of
- *		CPUs. 64 CPUs per unsigned long on 64-bit machines, 32 on
+ *		CPUs. 64 CPUs per uint64_t on 64-bit machines, 32 on
  * 		32-bit machines. For example, on 32-bit machines,
  * 		if processors 0, 1, 32, and 33 are ideal for the device
  * 		and cpuSetSize == 2, result[0] = 0x3, result[1] = 0x3.
@@ -746,11 +746,11 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
  * Returns true if successful, false if not
  */
 static bool _oneapi_set_cpu_affinity_mask(int cpu,
-					  unsigned long *cpu_set,
-					  unsigned int size)
+					  uint64_t *cpu_set,
+					  uint32_t size)
 {
-	unsigned int count;
-	unsigned int model;
+	uint32_t count;
+	uint32_t model;
 
 	if (cpu < 0)
 		return false;
@@ -772,7 +772,7 @@ static bool _oneapi_set_cpu_affinity_mask(int cpu,
  * file		(IN) The full path of cpu list file
  * 		For example, /sys/class/drm/card1/device/local_cpulist
  * cpu_set:	[IN/out] An array reference in which to return a bitmask of
- *		CPUs. 64 CPUs per unsigned long on 64-bit machines, 32 on
+ *		CPUs. 64 CPUs per uint64_t on 64-bit machines, 32 on
  * 		32-bit machines. For example, on 32-bit machines,
  * 		if processors 0, 1, 32, and 33 are ideal for the device
  * 		and cpuSetSize == 2, result[0] = 0x3, result[1] = 0x3.
@@ -781,8 +781,8 @@ static bool _oneapi_set_cpu_affinity_mask(int cpu,
  * Returns true if successful, false if not
  */
 static bool _oneapi_read_cpu_affinity_list(const char *file,
-					   unsigned long *cpu_set,
-					   unsigned int size)
+					   uint64_t *cpu_set,
+					   uint32_t size)
 {
 	char line[CPU_LINE_SIZE] = {'\0'};
 	char *save_ptr = line, *tok = NULL;
@@ -941,7 +941,7 @@ static bool _oneapi_get_device_name(uint32_t domain, uint32_t bus,
  *
  * device_name	(IN) The device name under folder "/sys/class/drm"
  * cpu_set:	[IN/out] An array reference in which to return a bitmask of
- *		CPUs. 64 CPUs per unsigned long on 64-bit machines, 32 on
+ *		CPUs. 64 CPUs per uint64_t on 64-bit machines, 32 on
  * 		32-bit machines. For example, on 32-bit machines,
  * 		if processors 0, 1, 32, and 33 are ideal for the device
  * 		and cpuSetSize == 2, result[0] = 0x3, result[1] = 0x3.
@@ -950,8 +950,8 @@ static bool _oneapi_get_device_name(uint32_t domain, uint32_t bus,
  * Returns true if successful, false if not
  */
 static bool _oneapi_get_device_affinity(const char *device_name,
-					unsigned long *cpu_set,
-					unsigned int size)
+					uint64_t *cpu_set,
+					uint32_t size)
 {
 	const char *search_path = "/sys/class/drm";
 	const char *cpu_list_sub_path = "device/local_cpulist";
@@ -1006,7 +1006,7 @@ static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 	zes_pci_properties_t pci;
 	ze_result_t oneapi_rc;
 	uint32_t gpu_num = MAX_GPU_NUM;
-	unsigned long cpu_set[CPU_SET_SIZE] = {0};
+	uint64_t cpu_set[CPU_SET_SIZE] = {0};
 	char *cpu_aff_mac_range = NULL;
 	int i;
 
@@ -1050,7 +1050,7 @@ static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 		snprintf(device_file, PATH_MAX, "/dev/dri/%s", card_name);
 
 		/* Get device affinity */
-		memset(cpu_set, 0, sizeof(unsigned long) * CPU_SET_SIZE);
+		memset(cpu_set, 0, sizeof(uint64_t) * CPU_SET_SIZE);
 		if (!_oneapi_get_device_affinity(card_name, cpu_set,
 						 CPU_SET_SIZE)) {
 			error("Failed to get device affinity for GPU: %u", i);
