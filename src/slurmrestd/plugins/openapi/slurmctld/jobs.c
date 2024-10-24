@@ -138,6 +138,8 @@ extern int op_handler_jobs(openapi_ctxt_t *ctxt)
 			  "No job changes since update_time[%ld]=%s",
 			  query.update_time, ts);
 	} else if (rc) {
+		if ((rc == SLURM_ERROR) && errno)
+			rc = errno;
 		resp_error(ctxt, rc, "slurm_load_jobs()",
 			   "Unable to query jobs");
 	} else if (job_info_ptr) {
