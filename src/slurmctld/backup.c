@@ -422,7 +422,7 @@ extern int on_backup_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 
 	conmgr_queue_close_fd(msg->conmgr_fd);
 	slurm_free_msg(msg);
-	return error_code;
+	return SLURM_SUCCESS;
 }
 
 static void *_ping_ctld_thread(void *arg)
