@@ -365,6 +365,9 @@ extern int on_backup_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
 		      __func__);
+
+		conmgr_queue_close_fd(msg->conmgr_fd);
+		slurm_free_msg(msg);
 		return SLURM_ERROR;
 	}
 
@@ -416,6 +419,9 @@ extern int on_backup_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	}
 	if (send_rc)
 		slurm_send_rc_msg(msg, error_code);
+
+	conmgr_queue_close_fd(msg->conmgr_fd);
+	slurm_free_msg(msg);
 	return error_code;
 }
 
