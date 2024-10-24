@@ -8,8 +8,6 @@ noinst_PROGRAMS = libcommon.o
 noinst_LTLIBRARIES = libcommon.la
 
 libcommon_la_SOURCES =				\
-	atomic.c				\
-	atomic.h				\
 	assoc_mgr.c				\
 	assoc_mgr.h				\
 	bitstring.c				\
