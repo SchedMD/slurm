@@ -151,6 +151,12 @@ extern bool slingshot_init_collectives(void)
 	if (!slingshot_config.fm_url)
 		return true;
 
+	if (running_in_slurmctld() &&
+	    !xstrcasestr(slurm_conf.slurmctld_params, "enable_stepmgr")) {
+		error("Hardware collectives enabled by setting SwitchParameters=fm_url but SlurmctldParameters=enable_stepmgr is not set.");
+		return false;
+	}
+
 	if (!slingshot_rest_connection(&fm_conn,
 				       slingshot_config.fm_url,
 				       slingshot_config.fm_auth,

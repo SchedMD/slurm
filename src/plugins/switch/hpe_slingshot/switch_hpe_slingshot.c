@@ -624,7 +624,8 @@ extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 	/*
 	 * Reserve hardware collectives multicast addresses if configured
 	 */
-	if (!slingshot_setup_collectives(job, node_cnt, job_id,
+	if ((job_ptr->bit_flags & STEPMGR_ENABLED) &&
+	    !slingshot_setup_collectives(job, node_cnt, job_id,
 					 step_ptr->step_id.step_id))
 		return SLURM_ERROR;
 

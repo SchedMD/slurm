@@ -35,6 +35,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     topology/block.
  -- Add DataParserParameters slurm.conf parameter to allow setting default
     value for CLI --json and --yaml arguments.
+ -- Hardware collectives in switch/hpe_slingshot now requires enable_stepmgr.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
