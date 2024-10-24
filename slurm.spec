@@ -31,7 +31,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --without pam		%_without_pam 1		don't require pam-devel RPM to be installed
 # --without x11		%_without_x11 1		disable internal X11 support
 # --with ucx		%_with_ucx path		require ucx support
-# --with pmix		%_with_pmix path	require pmix support
+# --with pmix		%_with_pmix path	build with pmix support
 # --with nvml		%_with_nvml path	require nvml support
 # --with jwt		%_with_jwt 1		require jwt support
 # --with freeipmi	%_with_freeipmi 1	require freeipmi support
@@ -42,6 +42,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with cray_shasta
 %bcond_with slurmrestd
 %bcond_with multiple_slurmd
+%bcond_with pmix
 %bcond_with ucx
 
 # These options are only here to force there to be these on the build.
@@ -50,7 +51,6 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with hdf5
 %bcond_with lua
 %bcond_with numa
-%bcond_with pmix
 %bcond_with nvml
 %bcond_with jwt
 %bcond_with yaml
