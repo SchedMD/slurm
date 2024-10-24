@@ -7194,8 +7194,14 @@ proc _test_init {} {
 	if {![regexp "is UP" [run_command_output -nolog -none "$scontrol ping"]]} {
 		skip "The expect testsuite requires Slurm to be running, but '$scontrol ping' failed."
 	}
-	if {[llength [get_nodes_by_state]] < 1} {
+	set idle_nodes [get_nodes_by_state]
+	if {[llength $idle_nodes] < 1} {
 		skip "The expect testsuite requires there to be at least one idle node in the default partition."
+	}
+	# Ensure that idle nodes are not drained/down
+	# Checking one by one to be able to print a warning if some was drain/down
+	foreach idle_node $idle_nodes {
+		run_command -nolog -xfail "$scontrol update nodename=$idle_node state=resume"
 	}
 }
 
