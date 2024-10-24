@@ -77,10 +77,10 @@ const char plugin_name[] = "GPU NRT plugin";
 const char plugin_type[] = "gpu/nrt";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static int _count_devices(unsigned int *dev_count)
+static int _count_devices(uint32_t *dev_count)
 {
 	struct dirent *de;
-	unsigned int dev_num;
+	uint32_t dev_num;
 
 	DIR *dr = opendir(NEURON_SYSFS_PREFIX);
 
@@ -123,16 +123,16 @@ static char *_get_device_name(unsigned int dev_inx)
 	return device_name;
 }
 
-static bool _is_link(int *link_nums, unsigned int dev_cnt, int dev_inx)
+static bool _is_link(int *link_nums, uint32_t dev_cnt, int dev_inx)
 {
-	for (unsigned int i = 0; i < dev_cnt; i++) {
+	for (uint32_t i = 0; i < dev_cnt; i++) {
 		if (link_nums[i] == dev_inx)
 			return true;
 	}
 	return false;
 }
 
-static char *_get_connected_devices(int dev_inx, unsigned int dev_cnt)
+static char *_get_connected_devices(int dev_inx, uint32_t dev_cnt)
 {
 	FILE *fp = NULL;
 	char *sysfs_file = NULL;
@@ -167,7 +167,7 @@ static char *_get_connected_devices(int dev_inx, unsigned int dev_cnt)
 		tok = strtok_r(NULL, ", ", &save_ptr);
 	}
 
-	for (unsigned int i = 0; i < dev_cnt; i++) {
+	for (uint32_t i = 0; i < dev_cnt; i++) {
 		if (_is_link(link_nums, num_links, i))
 			xstrfmtcat(links, "%s%d", i ? "," : "", 1);
 		else if (i == dev_inx)
@@ -186,7 +186,7 @@ static list_t *_get_system_gpu_list_neuron(node_config_load_t *node_conf)
 {
 	struct dirent *de;
 	unsigned int dev_inx;
-	unsigned int dev_cnt = 0;
+	uint32_t dev_cnt = 0;
 	list_t *gres_list_system = NULL;
 	DIR *dr = opendir(NEURON_SYSFS_PREFIX);
 
@@ -251,7 +251,7 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern void gpu_p_get_device_count(unsigned int *device_count)
+extern void gpu_p_get_device_count(uint32_t *device_count)
 {
 	if (_count_devices(device_count) != SLURM_SUCCESS)
 		error("Failed to get device count from neuron sysfs interface");
@@ -366,7 +366,7 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
  *	 // specific pids. As is this code just adds all memory being used across
  *	 // all cores on all devices
  *
- *	unsigned int device_count = 0;
+ *	uint32_t device_count = 0;
  *	int core_cnt = 0;
  *	bool track_gpumem;
  *

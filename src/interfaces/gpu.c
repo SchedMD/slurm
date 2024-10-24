@@ -47,7 +47,7 @@ typedef struct slurm_ops {
 	void	(*step_hardware_fini)	(void);
 	char   *(*test_cpu_conv)	(char *cpu_range);
 	int     (*energy_read)          (uint32_t dv_ind, gpu_status_t *gpu);
-	void    (*get_device_count)     (unsigned int *device_count);
+	void    (*get_device_count)     (uint32_t *device_count);
 	int (*usage_read) (pid_t pid, acct_gather_data_t *data);
 
 } slurm_ops_t;
@@ -238,7 +238,7 @@ extern int gpu_g_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 	return (*(ops.energy_read))(dv_ind, gpu);
 }
 
-extern void gpu_g_get_device_count(unsigned int *device_count)
+extern void gpu_g_get_device_count(uint32_t *device_count)
 {
 	xassert(g_context);
 	(*(ops.get_device_count))(device_count);

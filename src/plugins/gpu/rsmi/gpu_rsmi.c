@@ -681,7 +681,7 @@ static void _rsmi_get_version(char *version, unsigned int len)
  *
  * device_count	(OUT) Number of available GPU devices
  */
-extern void gpu_p_get_device_count(unsigned int *device_count)
+extern void gpu_p_get_device_count(uint32_t *device_count)
 {
 	const char *status_string;
 	rsmi_status_t rsmi_rc = rsmi_num_monitor_devices(device_count);
@@ -851,8 +851,7 @@ static bitstr_t *_rsmi_get_device_cpu_mask(uint32_t dv_ind)
  */
 static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 {
-	unsigned int i;
-	unsigned int device_count = 0;
+	uint32_t i, device_count = 0;
 	list_t *gres_list_system = list_create(destroy_gres_slurmd_conf);
 	char driver[RSMI_STRING_BUFFER_SIZE];
 	char version[RSMI_STRING_BUFFER_SIZE];

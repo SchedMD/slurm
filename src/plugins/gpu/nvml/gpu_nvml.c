@@ -743,9 +743,10 @@ static void _nvml_get_version(char *version, unsigned int len)
 /*
  * Get the total # of GPUs in the system
  */
-extern void gpu_p_get_device_count(unsigned int *device_count)
+extern void gpu_p_get_device_count(uint32_t *device_count)
 {
-	nvmlReturn_t nvml_rc = nvmlDeviceGetCount(device_count);
+	unsigned int *nvml_device_count = device_count;
+	nvmlReturn_t nvml_rc = nvmlDeviceGetCount(nvml_device_count);
 	if (nvml_rc != NVML_SUCCESS) {
 		error("Failed to get device count: %s",
 		      nvmlErrorString(nvml_rc));
@@ -888,7 +889,7 @@ static int _get_index_from_str_arr(char *str, char **str_arr, unsigned int size)
  * device_count - the size of device_lut
  */
 static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
-				   char **device_lut, unsigned int device_count)
+				   char **device_lut, uint32_t device_count)
 {
 	unsigned int i;
 	nvmlReturn_t nvml_rc;
@@ -1312,8 +1313,8 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_minor,
 static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 {
 	bitstr_t *enabled_cpus_bits = NULL;
-	unsigned int i;
-	unsigned int device_count = 0;
+	uint32_t i;
+	uint32_t device_count = 0;
 	list_t *gres_list_system = list_create(destroy_gres_slurmd_conf);
 	char driver[NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE];
 	char version[NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE];
@@ -1835,7 +1836,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 
 extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 {
-	unsigned int device_count = 0;
+	uint32_t device_count = 0;
 	bool track_gpumem, track_gpuutil;
 
 	track_gpumem = (gpumem_pos != -1);
