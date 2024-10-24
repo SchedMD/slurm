@@ -273,8 +273,7 @@ static void _oneapi_get_device_handles(ze_device_handle_t *gpu_handles,
  * Returns true if successful, false if not
  */
 static bool _oneapi_get_available_clocks(zes_freq_handle_t freq_handle,
-					 unsigned int *freqs,
-					 uint32_t *freq_count)
+					 uint32_t *freqs, uint32_t *freq_count)
 {
 	double *clocks = NULL;
 	ze_result_t oneapi_rc;
@@ -292,7 +291,7 @@ static bool _oneapi_get_available_clocks(zes_freq_handle_t freq_handle,
 	}
 
 	for (int i = 0; i < *freq_count; i++)
-		freqs[i] = (unsigned int) clocks[i];
+		freqs[i] = (uint32_t) clocks[i];
 
 	xfree(clocks);
 	return true;
@@ -307,19 +306,19 @@ static bool _oneapi_get_available_clocks(zes_freq_handle_t freq_handle,
  * Returns true if successful, false if not
  */
 static bool _oneapi_get_nearest_freq(zes_freq_handle_t freq_handle,
-				     unsigned int *freq)
+				     uint32_t *freq)
 {
-	unsigned int freqs[MAX_NUM_FREQUENCIES] = {0};
-	unsigned int freqs_sort[MAX_NUM_FREQUENCIES] = {0};
-	unsigned int freqs_size = MAX_NUM_FREQUENCIES;
+	uint32_t freqs[MAX_NUM_FREQUENCIES] = {0};
+	uint32_t freqs_sort[MAX_NUM_FREQUENCIES] = {0};
+	uint32_t freqs_size = MAX_NUM_FREQUENCIES;
 
 	/* Get available clocks */
 	if (!_oneapi_get_available_clocks(freq_handle, freqs, &freqs_size))
 		return false;
 
-	memcpy(freqs_sort, freqs, freqs_size * sizeof(unsigned int));
-	qsort(freqs_sort, freqs_size, sizeof(unsigned int),
-	      slurm_sort_uint_list_desc);
+	memcpy(freqs_sort, freqs, freqs_size * sizeof(uint32_t));
+	qsort(freqs_sort, freqs_size, sizeof(uint32_t),
+	      slurm_sort_uint32_list_desc);
 
 	/* Set the nearest valid frequency for the requested frequency */
 	gpu_common_get_nearest_freq(freq, freqs_size, freqs_sort);
@@ -343,8 +342,8 @@ static void _oneapi_print_freq_info(zes_freq_properties_t *freq_prop,
 
 	log_var(l, "%s frequency min: %u, max: %u, onSubdevice: %s, subdeviceId: %d, canControl: %s",
 		freq_prop->type == ZES_FREQ_DOMAIN_GPU ? "Graphics" : "Memory",
-		(unsigned int) freq_prop->min,
-		(unsigned int) freq_prop->max,
+		(uint32_t) freq_prop->min,
+		(uint32_t) freq_prop->max,
 		freq_prop->onSubdevice ? "true" : "false",
 		freq_prop->subdeviceId,
 		freq_prop->canControl ? "true" : "false");
@@ -380,15 +379,15 @@ static void _oneapi_print_freqs(ze_device_handle_t device, log_level_t l)
 
 	/* Loop all of frequency handles and print frequency */
 	for (int i = 0; i < freq_handle_size; i++) {
-		unsigned int freqs[MAX_NUM_FREQUENCIES] = {0};
-		unsigned int freqs_size = MAX_NUM_FREQUENCIES;
+		uint32_t freqs[MAX_NUM_FREQUENCIES] = {0};
+		uint32_t freqs_size = MAX_NUM_FREQUENCIES;
 
 		/* Get available clocks */
 		if (!_oneapi_get_available_clocks(freq_handles[i], freqs,
 						  &freqs_size))
 			continue;
-		qsort(freqs, freqs_size, sizeof(unsigned int),
-		      slurm_sort_uint_list_desc);
+		qsort(freqs, freqs_size, sizeof(uint32_t),
+		      slurm_sort_uint32_list_desc);
 
 		/* Get frequency property */
 		oneapi_rc = zesFrequencyGetProperties(freq_handles[i],
@@ -438,8 +437,8 @@ static void _oneapi_print_freq_range(zes_freq_handle_t freq_handler,
 
 	debug2("%s frequency: %u~%u",
 		freq_type == ZES_FREQ_DOMAIN_GPU ? "Graphics" :
-		"Memory", (unsigned int)freq_range.min,
-		(unsigned int)freq_range.max);
+		"Memory", (uint32_t)freq_range.min,
+		(uint32_t)freq_range.max);
 }
 
 /*
