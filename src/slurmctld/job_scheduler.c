@@ -153,6 +153,12 @@ typedef struct {
 	batch_job_launch_msg_t *launch_msg_ptr;
 } het_job_env_t;
 
+typedef struct {
+	job_record_t *job_ptr;
+	char *sep;
+	bool set_or_flag;
+} depend_str_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
@@ -2920,11 +2926,59 @@ static char *_depend_state2str(depend_spec_t *dep_ptr)
 	}
 }
 
+static int _foreach_depend_list2str(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+	depend_str_t *depend_str = arg;
+	job_record_t *job_ptr = depend_str->job_ptr;
+
+	/*
+	 * Show non-fulfilled (including failed) dependencies, but don't
+	 * show fulfilled dependencies.
+	 */
+	if (dep_ptr->depend_state == DEPEND_FULFILLED)
+		return 0;
+	if (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
+		xstrfmtcat(job_ptr->details->dependency,
+			   "%ssingleton(%s)",
+			   depend_str->sep, _depend_state2str(dep_ptr));
+	} else {
+		char *dep_str = _depend_type2str(dep_ptr);
+
+		if (dep_ptr->array_task_id == INFINITE)
+			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_*",
+				   depend_str->sep, dep_str, dep_ptr->job_id);
+		else if (dep_ptr->array_task_id == NO_VAL)
+			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u",
+				   depend_str->sep, dep_str, dep_ptr->job_id);
+		else
+			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_%u",
+				   depend_str->sep, dep_str, dep_ptr->job_id,
+				   dep_ptr->array_task_id);
+
+		if (dep_ptr->depend_time)
+			xstrfmtcat(job_ptr->details->dependency,
+				   "+%u", dep_ptr->depend_time / 60);
+		xstrfmtcat(job_ptr->details->dependency, "(%s)",
+			   _depend_state2str(dep_ptr));
+	}
+	if (depend_str->set_or_flag)
+		dep_ptr->depend_flags |= SLURM_FLAGS_OR;
+	if (dep_ptr->depend_flags & SLURM_FLAGS_OR)
+		depend_str->sep = "?";
+	else
+		depend_str->sep = ",";
+
+	return 0;
+}
+
 static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 {
-	list_itr_t *depend_iter;
-	depend_spec_t *dep_ptr;
-	char *dep_str, *sep = "";
+	depend_str_t depend_str = {
+		.job_ptr = job_ptr,
+		.sep = "",
+		.set_or_flag = set_or_flag,
+	};
 
 	if (job_ptr->details == NULL)
 		return;
@@ -2935,46 +2989,9 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 	    || list_count(job_ptr->details->depend_list) == 0)
 		return;
 
-	depend_iter = list_iterator_create(job_ptr->details->depend_list);
-	while ((dep_ptr = list_next(depend_iter))) {
-		/*
-		 * Show non-fulfilled (including failed) dependencies, but don't
-		 * show fulfilled dependencies.
-		 */
-		if (dep_ptr->depend_state == DEPEND_FULFILLED)
-			continue;
-		if      (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
-			xstrfmtcat(job_ptr->details->dependency,
-				   "%ssingleton(%s)",
-				   sep, _depend_state2str(dep_ptr));
-		} else {
-			dep_str = _depend_type2str(dep_ptr);
-
-			if (dep_ptr->array_task_id == INFINITE)
-				xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_*",
-					   sep, dep_str, dep_ptr->job_id);
-			else if (dep_ptr->array_task_id == NO_VAL)
-				xstrfmtcat(job_ptr->details->dependency, "%s%s:%u",
-					   sep, dep_str, dep_ptr->job_id);
-			else
-				xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_%u",
-					   sep, dep_str, dep_ptr->job_id,
-					   dep_ptr->array_task_id);
-
-			if (dep_ptr->depend_time)
-				xstrfmtcat(job_ptr->details->dependency,
-					   "+%u", dep_ptr->depend_time / 60);
-			xstrfmtcat(job_ptr->details->dependency, "(%s)",
-				   _depend_state2str(dep_ptr));
-		}
-		if (set_or_flag)
-			dep_ptr->depend_flags |= SLURM_FLAGS_OR;
-		if (dep_ptr->depend_flags & SLURM_FLAGS_OR)
-			sep = "?";
-		else
-			sep = ",";
-	}
-	list_iterator_destroy(depend_iter);
+	(void) list_for_each(job_ptr->details->depend_list,
+			     _foreach_depend_list2str,
+			     &depend_str);
 }
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
