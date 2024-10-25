@@ -155,12 +155,13 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libslurm_curl_la_DEPENDENCIES =
-am_libslurm_curl_la_OBJECTS = slurm_curl.lo
+@WITH_CURL_TRUE@am_libslurm_curl_la_OBJECTS = slurm_curl.lo
 libslurm_curl_la_OBJECTS = $(am_libslurm_curl_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+@WITH_CURL_TRUE@am_libslurm_curl_la_rpath =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -476,9 +477,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir)
-noinst_LTLIBRARIES = libslurm_curl.la
-libslurm_curl_la_SOURCES = slurm_curl.c slurm_curl.h
-libslurm_curl_la_LIBADD = $(LIB_CURL)
+@WITH_CURL_TRUE@noinst_LTLIBRARIES = libslurm_curl.la
+@WITH_CURL_TRUE@libslurm_curl_la_SOURCES = slurm_curl.c slurm_curl.h
+@WITH_CURL_TRUE@libslurm_curl_la_LIBADD = $(LIB_CURL)
 all: all-am
 
 .SUFFIXES:
@@ -525,7 +526,7 @@ clean-noinstLTLIBRARIES:
 	}
 
 libslurm_curl.la: $(libslurm_curl_la_OBJECTS) $(libslurm_curl_la_DEPENDENCIES) $(EXTRA_libslurm_curl_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libslurm_curl_la_OBJECTS) $(libslurm_curl_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK) $(am_libslurm_curl_la_rpath) $(libslurm_curl_la_OBJECTS) $(libslurm_curl_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -743,9 +744,9 @@ uninstall-am:
 .PRECIOUS: Makefile
 
 
-force:
-$(libslurm_curl_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@WITH_CURL_TRUE@force:
+@WITH_CURL_TRUE@$(libslurm_curl_la_LIBADD) : force
+@WITH_CURL_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
