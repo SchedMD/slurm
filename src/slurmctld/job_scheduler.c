@@ -159,6 +159,16 @@ typedef struct {
 	bool set_or_flag;
 } depend_str_t;
 
+typedef struct {
+	bool and_failed;
+	bool changed;
+	bool has_local_depend;
+	bool has_unfulfilled;
+	job_record_t *job_ptr;
+	bool or_flag;
+	bool or_satisfied;
+} test_job_dep_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
@@ -3130,6 +3140,107 @@ static void _test_dependency_state(depend_spec_t *dep_ptr, bool *or_satisfied,
 	}
 }
 
+static int _foreach_test_job_dependency(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+	test_job_dep_t *test_job_dep = arg;
+	job_record_t *job_ptr = test_job_dep->job_ptr;
+	job_record_t *djob_ptr;
+	bool clear_dep = false, failure = false;
+	bool remote = (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
+		true : false;
+	/*
+	 * If the job id is for a cluster that's not in the federation
+	 * (it's likely the cluster left the federation), then set
+	 * this dependency's state to failed.
+	 */
+	if (remote) {
+		if (fed_mgr_is_origin_job(job_ptr) &&
+		    (dep_ptr->depend_state == DEPEND_NOT_FULFILLED) &&
+		    (dep_ptr->depend_type != SLURM_DEPEND_SINGLETON) &&
+		    (!fed_mgr_is_job_id_in_fed(dep_ptr->job_id))) {
+			log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u failed due to job_id not in federation.",
+				 __func__, job_ptr,
+				 _depend_type2str(dep_ptr),
+				 dep_ptr->job_id);
+			test_job_dep->changed = true;
+			dep_ptr->depend_state = DEPEND_FAILED;
+		}
+	}
+	if ((dep_ptr->depend_state != DEPEND_NOT_FULFILLED) || remote) {
+		_test_dependency_state(dep_ptr, &test_job_dep->or_satisfied,
+				       &test_job_dep->and_failed,
+				       &test_job_dep->or_flag,
+				       &test_job_dep->has_unfulfilled);
+		return 0;
+	}
+
+	/* Test local, unfulfilled dependency: */
+	test_job_dep->has_local_depend = true;
+	dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
+					      dep_ptr->array_task_id);
+	djob_ptr = dep_ptr->job_ptr;
+	if ((dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) &&
+	    job_ptr->name) {
+		if (list_find_first(job_list, _find_singleton_job,
+				    job_ptr) ||
+		    !fed_mgr_is_singleton_satisfied(job_ptr,
+						    dep_ptr, true)) {
+			/* Still depends */
+		} else
+			clear_dep = true;
+	} else if (!djob_ptr || (djob_ptr->magic != JOB_MAGIC) ||
+		   ((djob_ptr->job_id != dep_ptr->job_id) &&
+		    (djob_ptr->array_job_id != dep_ptr->job_id))) {
+		/* job is gone, dependency lifted */
+		clear_dep = true;
+	} else {
+		bool is_complete, is_completed, is_pending;
+
+		/* Special case, apply test to job array as a whole */
+		if (dep_ptr->array_task_id == INFINITE) {
+			is_complete = test_job_array_complete(
+				dep_ptr->job_id);
+			is_completed = test_job_array_completed(
+				dep_ptr->job_id);
+			is_pending = test_job_array_pending(
+				dep_ptr->job_id);
+		} else {
+			/* Normal job */
+			is_complete = IS_JOB_COMPLETE(djob_ptr);
+			is_completed = IS_JOB_COMPLETED(djob_ptr);
+			is_pending = IS_JOB_PENDING(djob_ptr);
+		}
+
+		if (!_test_job_dependency_common(
+			    is_complete, is_completed, is_pending,
+			    &clear_dep, &failure,
+			    job_ptr, dep_ptr))
+			failure = true;
+	}
+
+	if (failure) {
+		dep_ptr->depend_state = DEPEND_FAILED;
+		test_job_dep->changed = true;
+		log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u failed.",
+			 __func__, job_ptr, _depend_type2str(dep_ptr),
+			 dep_ptr->job_id);
+	} else if (clear_dep) {
+		dep_ptr->depend_state = DEPEND_FULFILLED;
+		test_job_dep->changed = true;
+		log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u fulfilled.",
+			 __func__, job_ptr, _depend_type2str(dep_ptr),
+			 dep_ptr->job_id);
+	}
+
+	_test_dependency_state(dep_ptr, &test_job_dep->or_satisfied,
+			       &test_job_dep->and_failed,
+			       &test_job_dep->or_flag,
+			       &test_job_dep->has_unfulfilled);
+
+	return 0;
+}
+
 /*
  * Determine if a job's dependencies are met
  * Inputs: job_ptr
@@ -3144,125 +3255,35 @@ static void _test_dependency_state(depend_spec_t *dep_ptr, bool *or_satisfied,
  */
 extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 {
-	list_itr_t *depend_iter;
-	depend_spec_t *dep_ptr;
-	bool has_local_depend = false;
+	test_job_dep_t test_job_dep = {
+		.job_ptr = job_ptr,
+	};
 	int results = NO_DEPEND;
-	job_record_t  *djob_ptr;
-	bool is_complete, is_completed, is_pending;
-	bool or_satisfied = false, and_failed = false, or_flag = false,
-	     has_unfulfilled = false, changed = false;
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL) ||
 	    (list_count(job_ptr->details->depend_list) == 0)) {
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
 		if (was_changed)
-			*was_changed = changed;
+			*was_changed = false;
 		return NO_DEPEND;
 	}
 
-	depend_iter = list_iterator_create(job_ptr->details->depend_list);
-	while ((dep_ptr = list_next(depend_iter))) {
-		bool clear_dep = false, failure = false;
-		bool remote;
+	(void) list_for_each(job_ptr->details->depend_list,
+			     _foreach_test_job_dependency,
+			     &test_job_dep);
 
-		remote = (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
-			true : false;
-		/*
-		 * If the job id is for a cluster that's not in the federation
-		 * (it's likely the cluster left the federation), then set
-		 * this dependency's state to failed.
-		 */
-		if (remote) {
-			if (fed_mgr_is_origin_job(job_ptr) &&
-			    (dep_ptr->depend_state == DEPEND_NOT_FULFILLED) &&
-			    (dep_ptr->depend_type != SLURM_DEPEND_SINGLETON) &&
-			    (!fed_mgr_is_job_id_in_fed(dep_ptr->job_id))) {
-				log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u failed due to job_id not in federation.",
-					 __func__, job_ptr,
-					 _depend_type2str(dep_ptr),
-					 dep_ptr->job_id);
-				changed = true;
-				dep_ptr->depend_state = DEPEND_FAILED;
-			}
-		}
-		if ((dep_ptr->depend_state != DEPEND_NOT_FULFILLED) || remote) {
-			_test_dependency_state(dep_ptr, &or_satisfied,
-					       &and_failed, &or_flag,
-					       &has_unfulfilled);
-			continue;
-		}
-
-		/* Test local, unfulfilled dependency: */
-		has_local_depend = true;
-		dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
-						      dep_ptr->array_task_id);
-		djob_ptr = dep_ptr->job_ptr;
-		if ((dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) &&
-		    job_ptr->name) {
-			if (list_find_first(job_list, _find_singleton_job,
-					    job_ptr) ||
-			    !fed_mgr_is_singleton_satisfied(job_ptr,
-							    dep_ptr, true)) {
-				/* Still depends */
-			} else
-				clear_dep = true;
-		} else if ((djob_ptr == NULL) ||
-			   (djob_ptr->magic != JOB_MAGIC) ||
-			   ((djob_ptr->job_id != dep_ptr->job_id) &&
-			    (djob_ptr->array_job_id != dep_ptr->job_id))) {
-			/* job is gone, dependency lifted */
-			clear_dep = true;
-		} else {
-			/* Special case, apply test to job array as a whole */
-			if (dep_ptr->array_task_id == INFINITE) {
-				is_complete = test_job_array_complete(
-					dep_ptr->job_id);
-				is_completed = test_job_array_completed(
-					dep_ptr->job_id);
-				is_pending = test_job_array_pending(
-					dep_ptr->job_id);
-			} else {
-				/* Normal job */
-				is_complete = IS_JOB_COMPLETE(djob_ptr);
-				is_completed = IS_JOB_COMPLETED(djob_ptr);
-				is_pending = IS_JOB_PENDING(djob_ptr);
-			}
-
-			if (!_test_job_dependency_common(
-				    is_complete, is_completed, is_pending,
-				    &clear_dep, &failure,
-				    job_ptr, dep_ptr))
-				failure = true;
-		}
-
-		if (failure) {
-			dep_ptr->depend_state = DEPEND_FAILED;
-			changed = true;
-			log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u failed.",
-				 __func__, job_ptr, _depend_type2str(dep_ptr),
-				 dep_ptr->job_id);
-		} else if (clear_dep) {
-			dep_ptr->depend_state = DEPEND_FULFILLED;
-			changed = true;
-			log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u fulfilled.",
-				 __func__, job_ptr, _depend_type2str(dep_ptr),
-				 dep_ptr->job_id);
-		}
-
-		_test_dependency_state(dep_ptr, &or_satisfied, &and_failed,
-				       &or_flag, &has_unfulfilled);
-	}
-	list_iterator_destroy(depend_iter);
-
-	if (or_satisfied && (job_ptr->state_reason == WAIT_DEP_INVALID)) {
+	if (test_job_dep.or_satisfied &&
+	    (job_ptr->state_reason == WAIT_DEP_INVALID)) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
 		last_job_update = time(NULL);
 	}
 
-	if (or_satisfied || (!or_flag && !and_failed && !has_unfulfilled)) {
+	if (test_job_dep.or_satisfied ||
+	    (!test_job_dep.or_flag &&
+	     !test_job_dep.and_failed &&
+	     !test_job_dep.has_unfulfilled)) {
 		/* Dependency fulfilled */
 		fed_mgr_remove_remote_dependencies(job_ptr);
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
@@ -3279,24 +3300,25 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		log_flag(DEPENDENCY, "%s: %pJ dependency fulfilled",
 			 __func__, job_ptr);
 	} else {
-		if (changed) {
+		if (test_job_dep.changed) {
 			_depend_list2str(job_ptr, false);
 			if (slurm_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
 				print_job_dependency(job_ptr, __func__);
 		}
 		job_ptr->bit_flags |= JOB_DEPENDENT;
 		acct_policy_remove_accrue_time(job_ptr, false);
-		if (and_failed || (or_flag && !has_unfulfilled))
+		if (test_job_dep.and_failed ||
+		    (test_job_dep.or_flag && !test_job_dep.has_unfulfilled))
 			/* Dependency failed */
 			results = FAIL_DEPEND;
 		else
 			/* Still dependent */
-			results = has_local_depend ? LOCAL_DEPEND :
+			results = test_job_dep.has_local_depend ? LOCAL_DEPEND :
 				REMOTE_DEPEND;
 	}
 
 	if (was_changed)
-		*was_changed = changed;
+		*was_changed = test_job_dep.changed;
 	return results;
 }
 
