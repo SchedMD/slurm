@@ -3116,27 +3116,24 @@ static int _test_job_dependency_common(
 	return rc;
 }
 
-static void _test_dependency_state(depend_spec_t *dep_ptr, bool *or_satisfied,
-				   bool *and_failed, bool *or_flag,
-				   bool *has_unfulfilled)
+static void _test_dependency_state(depend_spec_t *dep_ptr,
+				   test_job_dep_t *test_job_dep)
 {
-	xassert(or_satisfied);
-	xassert(and_failed);
-	xassert(or_flag);
-	xassert(has_unfulfilled);
+	xassert(test_job_dep);
 
-	*or_flag = (dep_ptr->depend_flags & SLURM_FLAGS_OR) ? true : false;
+	test_job_dep->or_flag =
+		(dep_ptr->depend_flags & SLURM_FLAGS_OR) ? true : false;
 
-	if (*or_flag) {
+	if (test_job_dep->or_flag) {
 		if (dep_ptr->depend_state == DEPEND_FULFILLED)
-			*or_satisfied = true;
+			test_job_dep->or_satisfied = true;
 		else if (dep_ptr->depend_state == DEPEND_NOT_FULFILLED)
-			*has_unfulfilled = true;
+			test_job_dep->has_unfulfilled = true;
 	} else { /* AND'd dependencies */
 		if (dep_ptr->depend_state == DEPEND_FAILED)
-			*and_failed = true;
+			test_job_dep->and_failed = true;
 		else if (dep_ptr->depend_state == DEPEND_NOT_FULFILLED)
-			*has_unfulfilled = true;
+			test_job_dep->has_unfulfilled = true;
 	}
 }
 
@@ -3168,10 +3165,7 @@ static int _foreach_test_job_dependency(void *x, void *arg)
 		}
 	}
 	if ((dep_ptr->depend_state != DEPEND_NOT_FULFILLED) || remote) {
-		_test_dependency_state(dep_ptr, &test_job_dep->or_satisfied,
-				       &test_job_dep->and_failed,
-				       &test_job_dep->or_flag,
-				       &test_job_dep->has_unfulfilled);
+		_test_dependency_state(dep_ptr, test_job_dep);
 		return 0;
 	}
 
@@ -3233,10 +3227,7 @@ static int _foreach_test_job_dependency(void *x, void *arg)
 			 dep_ptr->job_id);
 	}
 
-	_test_dependency_state(dep_ptr, &test_job_dep->or_satisfied,
-			       &test_job_dep->and_failed,
-			       &test_job_dep->or_flag,
-			       &test_job_dep->has_unfulfilled);
+	_test_dependency_state(dep_ptr, test_job_dep);
 
 	return 0;
 }
@@ -3843,10 +3834,7 @@ static int _foreach_handle_job_dependency_updates(void *x, void *arg)
 	depend_spec_t *dep_ptr = x;
 	test_job_dep_t *test_job_dep = arg;
 
-	_test_dependency_state(dep_ptr, &test_job_dep->or_satisfied,
-			       &test_job_dep->and_failed,
-			       &test_job_dep->or_flag,
-			       &test_job_dep->has_unfulfilled);
+	_test_dependency_state(dep_ptr, test_job_dep);
 
 	return 0;
 }
