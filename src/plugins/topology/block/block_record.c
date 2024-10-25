@@ -47,6 +47,8 @@ bitstr_t *blocks_nodes_bitmap = NULL;	/* nodes on any bblock */
 block_record_t *block_record_table = NULL;
 uint16_t bblock_node_cnt = 0;
 bitstr_t *block_levels = NULL;
+uint32_t block_sizes[MAX_BLOCK_LEVELS] = {0};
+uint16_t block_sizes_cnt = 0;
 int block_record_cnt = 0;
 
 static s_p_hashtbl_t *conf_hashtbl = NULL;
@@ -247,6 +249,7 @@ extern void block_record_table_destroy(void)
 	}
 	xfree(block_record_table);
 	block_record_cnt = 0;
+	block_sizes_cnt = 0;
 }
 
 extern void block_record_validate(void)
@@ -256,6 +259,7 @@ extern void block_record_validate(void)
 	block_record_t *block_ptr, *prior_ptr;
 	hostlist_t *invalid_hl = NULL;
 	char *buf;
+	int level = 0;
 
 	block_record_table_destroy();
 
@@ -334,6 +338,14 @@ extern void block_record_validate(void)
 		warning("Invalid hostnames in block configuration: %s", buf);
 		xfree(buf);
 		hostlist_destroy(invalid_hl);
+	}
+
+	while ((level = bit_ffs_from_bit(block_levels, level)) >= 0) {
+		if ((block_sizes[block_sizes_cnt++] = (1 << level)) >=
+		    block_record_cnt)
+			break;
+
+		level++;
 	}
 
 	s_p_hashtbl_destroy(conf_hashtbl);
