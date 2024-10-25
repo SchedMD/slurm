@@ -26,6 +26,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --without debug	%_without_debug 1	don't compile with debugging symbols
 # --with hdf5		%_with_hdf5 path	require hdf5 support
 # --with hwloc		%_with_hwloc 1		require hwloc support
+# --with libcurl	%_with_libcurl 1	require libcurl support
 # --with lua		%_with_lua path		build Slurm lua bindings
 # --with numa		%_with_numa 1		require NUMA support
 # --without pam		%_without_pam 1		don't require pam-devel RPM to be installed
@@ -49,6 +50,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # If they are not set they will still be compiled if the packages exist.
 %bcond_with hwloc
 %bcond_with hdf5
+%bcond_with libcurl
 %bcond_with lua
 %bcond_with numa
 %bcond_with nvml
@@ -160,6 +162,15 @@ BuildRequires: pmix
 %if %{with ucx} && "%{_with_ucx}" == "--with-ucx"
 BuildRequires: ucx-devel
 %global ucx_version %(rpm -q ucx-devel --qf "%{RPMTAG_VERSION}")
+%endif
+
+%if %{with libcurl}
+%if %{defined suse_version}
+Requires: libcurl
+%else
+Requires: libcurl4
+%endif
+BuildRequires: libcurl-devel
 %endif
 
 %if %{with jwt}
@@ -392,6 +403,7 @@ Provides a REST interface to Slurm.
 	%{?_with_shared_libslurm} \
 	%{!?_with_slurmrestd:--disable-slurmrestd} \
 	%{?_without_x11:--disable-x11} \
+	%{?_with_libcurl} \
 	%{?_with_ucx} \
 	%{?_with_jwt} \
 	%{?_with_yaml} \
