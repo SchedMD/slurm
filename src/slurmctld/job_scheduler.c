@@ -4063,15 +4063,53 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 	return rc;
 }
 
+static int _foreach_scan_depend(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+	test_job_dep_t *test_job_dep = arg;
+	job_record_t *job_ptr = test_job_dep->job_ptr;
+
+	if (dep_ptr->job_id == 0)	/* Singleton */
+		return 0;
+	/*
+	 * We can't test for circular dependencies if the job_ptr
+	 * wasn't found - the job may not be on this cluster, or the
+	 * job was already purged when the dependency submitted,
+	 * or the job just didn't exist.
+	 */
+	if (!dep_ptr->job_ptr)
+		return 0;
+	if ((test_job_dep->changed = _depends_on_same_job(
+		     job_ptr, dep_ptr->job_ptr,
+		     dep_ptr->job_id,
+		     dep_ptr->array_task_id)))
+		return -1;
+	else if (dep_ptr->job_ptr->magic != JOB_MAGIC)
+		return 0;	/* purged job, ptr not yet cleared */
+	else if (!IS_JOB_FINISHED(dep_ptr->job_ptr) &&
+		 dep_ptr->job_ptr->details &&
+		 dep_ptr->job_ptr->details->depend_list) {
+		test_job_dep->changed = _scan_depend(
+			dep_ptr->job_ptr->details->depend_list,
+			job_ptr);
+		if (test_job_dep->changed) {
+			info("circular dependency: %pJ is dependent upon %pJ",
+			     dep_ptr->job_ptr, job_ptr);
+			return -1;
+		}
+	}
+	return 0;
+}
+
 /* Return true if the job job_ptr is found in dependency_list.
  * Pass NULL dependency list to clear the counter.
  * Execute recursively for each dependent job */
 static bool _scan_depend(list_t *dependency_list, job_record_t *job_ptr)
 {
 	static int job_counter = 0;
-	bool rc = false;
-	list_itr_t *iter;
-	depend_spec_t *dep_ptr;
+	test_job_dep_t test_job_dep = {
+		.job_ptr = job_ptr,
+	};
 
 	if (dependency_list == NULL) {
 		job_counter = 0;
@@ -4081,37 +4119,12 @@ static bool _scan_depend(list_t *dependency_list, job_record_t *job_ptr)
 	}
 
 	xassert(job_ptr);
-	iter = list_iterator_create(dependency_list);
-	while (!rc && (dep_ptr = list_next(iter))) {
-		if (dep_ptr->job_id == 0)	/* Singleton */
-			continue;
-		/*
-		 * We can't test for circular dependencies if the job_ptr
-		 * wasn't found - the job may not be on this cluster, or the
-		 * job was already purged when the dependency submitted,
-		 * or the job just didn't exist.
-		 */
-		if (!dep_ptr->job_ptr)
-			continue;
-		if ((rc = _depends_on_same_job(job_ptr, dep_ptr->job_ptr,
-					       dep_ptr->job_id,
-					       dep_ptr->array_task_id)))
-			break;
-		else if (dep_ptr->job_ptr->magic != JOB_MAGIC)
-			continue;	/* purged job, ptr not yet cleared */
-		else if (!IS_JOB_FINISHED(dep_ptr->job_ptr) &&
-			 dep_ptr->job_ptr->details &&
-			 dep_ptr->job_ptr->details->depend_list) {
-			rc = _scan_depend(dep_ptr->job_ptr->details->
-					  depend_list, job_ptr);
-			if (rc) {
-				info("circular dependency: %pJ is dependent upon %pJ",
-				     dep_ptr->job_ptr, job_ptr);
-			}
-		}
-	}
-	list_iterator_destroy(iter);
-	return rc;
+
+	(void) list_for_each(dependency_list,
+			     _foreach_scan_depend,
+			     &test_job_dep);
+
+	return test_job_dep.changed;
 }
 
 /* If there are higher priority queued jobs in this job's partition, then
