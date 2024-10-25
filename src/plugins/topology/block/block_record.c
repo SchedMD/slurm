@@ -381,6 +381,13 @@ extern void block_record_validate(void)
 	for (i = 0; i < block_record_cnt; i++) {
 		for (j = 1; j < block_sizes_cnt; j++) {
 			if (!(i % block_sizes[j])) {
+				int remaining_blocks = (block_record_cnt - i);
+
+				if ((block_sizes[j] > remaining_blocks) &&
+				    (block_sizes[j - 1] >= remaining_blocks)) {
+					aggregated_inx[j] = -1;
+					continue;
+				}
 				block_record_table[record_inx].block_index =
 					record_inx;
 				block_record_table[record_inx].name =
@@ -393,6 +400,8 @@ extern void block_record_validate(void)
 				record_inx++;
 			} else {
 				int tmp = aggregated_inx[j];
+				if (tmp < 0)
+					continue;
 				xstrfmtcat(block_record_table[tmp].name,
 					   ",%s", block_record_table[i].name);
 				bit_or(block_record_table[tmp].node_bitmap,
