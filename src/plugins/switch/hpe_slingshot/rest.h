@@ -68,11 +68,11 @@ typedef struct {
 	const char *auth_dir;
 	union {
 		struct {
-			const char *user_name;
-			const char *password;
+			char *user_name;
+			char *password;
 		} basic;
 		struct {
-			const char *auth_cache;
+			char *auth_cache;
 		} oauth;
 	} u;
 } slingshot_rest_authdata_t;
@@ -89,21 +89,15 @@ typedef struct {
 	unsigned short connect_timeout; /* Connection timeout */
 } slingshot_rest_conn_t;
 
-#define SLINGSHOT_AUTH_BASIC_STR  "BASIC" /* {jlope,fm}_auth token */
-#define SLINGSHOT_AUTH_OAUTH_STR  "OAUTH" /* {jlope,fm}_auth token */
+#define SLINGSHOT_AUTH_BASIC_STR  "BASIC" /* fm_auth token */
+#define SLINGSHOT_AUTH_OAUTH_STR  "OAUTH" /* fm_auth token */
 #define SLINGSHOT_AUTH_OAUTH_CLIENT_ID_FILE     "client-id"
 #define SLINGSHOT_AUTH_OAUTH_CLIENT_SECRET_FILE "client-secret"
 #define SLINGSHOT_AUTH_OAUTH_ENDPOINT_FILE      "endpoint"
-#define SLINGSHOT_JLOPE_AUTH_BASIC_USER "cxi" /* user name for BASIC auth */
-#define SLINGSHOT_JLOPE_AUTH_BASIC_DIR       "/etc/jackaloped"
-#define SLINGSHOT_JLOPE_AUTH_BASIC_PWD_FILE  "passwd"
-#define SLINGSHOT_JLOPE_AUTH_OAUTH_DIR       "/etc/wlm-client-auth"
 #define SLINGSHOT_FM_AUTH_BASIC_USER "cxi"   /* user name for BASIC auth */
 #define SLINGSHOT_FM_AUTH_BASIC_DIR          "/etc/fmsim"
 #define SLINGSHOT_FM_AUTH_BASIC_PWD_FILE     "passwd"
 #define SLINGSHOT_FM_AUTH_OAUTH_DIR          "/etc/wlm-client-auth"
-#define SLINGSHOT_JLOPE_TIMEOUT         10   /* jackaloped REST call timeout */
-#define SLINGSHOT_JLOPE_CONNECT_TIMEOUT 10   /* jackaloped REST connect " */
 #define SLINGSHOT_FM_TIMEOUT            10   /* fabric manager REST call tout */
 #define SLINGSHOT_FM_CONNECT_TIMEOUT    10   /* fabric manager REST connect " */
 #define SLINGSHOT_TOKEN_TIMEOUT         10   /* OAUTH token REST call timeout */
@@ -121,8 +115,6 @@ bool slingshot_rest_connection(slingshot_rest_conn_t *conn,
 			       int conn_timeout,
 			       const char *conn_name);
 void slingshot_rest_destroy_connection(slingshot_rest_conn_t *conn);
-void slingshot_rest_disconnect(slingshot_rest_conn_t *conn);
-bool slingshot_rest_connect(slingshot_rest_conn_t *conn);
 json_object *slingshot_rest_post(slingshot_rest_conn_t *conn,
 				 const char *urlsuffix, json_object *reqjson,
 				 long *status);

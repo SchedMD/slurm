@@ -183,7 +183,6 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-acct_gather_profile_influxdb_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_acct_gather_profile_influxdb_la_OBJECTS =  \
 	acct_gather_profile_influxdb.lo
 acct_gather_profile_influxdb_la_OBJECTS =  \
@@ -512,10 +511,12 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(LIBCURL_CPPFLAGS)
+depend_libs = $(top_builddir)/src/curl/libslurm_curl.la
 pkglib_LTLIBRARIES = acct_gather_profile_influxdb.la
+acct_gather_profile_influxdb_la_DEPENDENCIES = $(depend_libs)
 acct_gather_profile_influxdb_la_SOURCES = acct_gather_profile_influxdb.c
 acct_gather_profile_influxdb_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-acct_gather_profile_influxdb_la_LIBADD = $(LIBCURL)
+acct_gather_profile_influxdb_la_LIBADD = $(depend_libs) $(LIBCURL)
 all: all-am
 
 .SUFFIXES:
@@ -807,6 +808,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+force:
+$(acct_gather_profile_influxdb_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

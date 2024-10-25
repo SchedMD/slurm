@@ -391,6 +391,7 @@ AC_CONFIG_FILES([Makefile
 		 src/bcast/Makefile
 		 src/common/Makefile
 		 src/conmgr/Makefile
+		 src/curl/Makefile
 		 src/database/Makefile
 		 src/interfaces/Makefile
 		 src/lua/Makefile

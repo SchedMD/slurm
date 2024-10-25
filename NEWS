@@ -187,6 +187,8 @@ documents those changes that are of interest to users and administrators.
  -- Improve reconfigure handling on Linux to only close open file descriptors
     to avoid long delays on systems with large RLIMIT_NOFILE settings.
  -- salloc - Removed --get-user-env option.
+ -- Removed the instant on feature from switch/hpe_slingshot.
+ -- Hardware collectives in switch/hpe_slingshot now requires enable_stepmgr.
 
 * Changes in Slurm 24.05.5
 ==========================

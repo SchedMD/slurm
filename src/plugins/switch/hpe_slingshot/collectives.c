@@ -42,13 +42,104 @@
 #include <stdlib.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
 
 #include "switch_hpe_slingshot.h"
 #include "rest.h"
 
+#define CLEANUP_THREAD_PERIOD 30
+
 static slingshot_rest_conn_t fm_conn;  /* Connection to fabric manager */
 
 static bool collectives_enabled = false;
+
+pthread_t cleanup_thread_id = 0;
+pthread_cond_t cleanup_thread_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t cleanup_thread_lock = PTHREAD_MUTEX_INITIALIZER;
+bool cleanup_thread_shutdown = false;
+
+static void *_cleanup_thread(void *data)
+{
+	struct timespec ts = {0, 0};
+	json_object *respjson = NULL, *jobsjson = NULL, *jobjson = NULL;
+	long status = 0;
+	uint32_t job_id, arraylen;
+	size_t path_len, cluster_name_len;
+	job_record_t *job_ptr;
+	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
+	char *url = "/fabric/collectives/jobs/";
+
+	path_len = strlen(url);
+	cluster_name_len = strlen(slurm_conf.cluster_name);
+
+	while (!cleanup_thread_shutdown) {
+		slurm_mutex_lock(&cleanup_thread_lock);
+		if (!cleanup_thread_shutdown) {
+			ts.tv_sec = time(NULL) + CLEANUP_THREAD_PERIOD;
+			slurm_cond_timedwait(&cleanup_thread_cond,
+					     &cleanup_thread_lock, &ts);
+		}
+		slurm_mutex_unlock(&cleanup_thread_lock);
+
+		json_object_put(respjson);
+		if (!(respjson = slingshot_rest_get(&fm_conn, url, &status))) {
+			error("GET %s to fabric manager for job failed: %ld",
+			      url, status);
+			continue; /* Try again next time around */
+		} else {
+			log_flag(SWITCH, "GET %s resp='%s'", url,
+				 json_object_to_json_string(respjson));
+		}
+		json_object_object_get_ex(respjson, "documentLinks", &jobsjson);
+		arraylen = json_object_array_length(jobsjson);
+
+		for (int i = 0; i < arraylen; i++) {
+			bool release = false;
+			const char *jobstr;
+			char *endptr = NULL;
+			jobjson = json_object_array_get_idx(jobsjson, i);
+			jobstr = json_object_get_string(jobjson) + path_len;
+
+			if (xstrncmp(jobstr, slurm_conf.cluster_name,
+				     cluster_name_len)) {
+				log_flag(SWITCH, "Skipping fabric manager job '%s' because the cluster name doesn't match %s",
+					jobstr, slurm_conf.cluster_name);
+				continue;
+			}
+
+			/* Add 1 to skip the '-' after the cluster name */
+			job_id = strtol(jobstr + cluster_name_len + 1, &endptr,
+					10);
+			if (endptr && (*endptr != '\0')) {
+				log_flag(SWITCH, "Skipping fabric manager job '%s'",
+					 jobstr);
+				continue;
+			}
+
+			lock_slurmctld(job_read_lock);
+			job_ptr = find_job_record(job_id);
+			if (!job_ptr) {
+				error("job %u isn't in slurmctld, removing from fabric manager",
+				      job_id);
+				release = true;
+			} else if (!IS_JOB_RUNNING(job_ptr) &&
+				   !IS_JOB_SUSPENDED(job_ptr)) {
+				error("job %u isn't currently allocated resources, removing from fabric manager",
+				      job_id);
+				release = true;
+			}
+			unlock_slurmctld(job_read_lock);
+
+			if (release)
+				slingshot_release_collectives_job(job_id);
+		}
+	}
+
+	debug("shutting down collectives cleanup thread");
+
+	return NULL;
+}
 
 /*
  * Read any authentication files and connect to the fabric manager,
@@ -56,6 +147,16 @@ static bool collectives_enabled = false;
  */
 extern bool slingshot_init_collectives(void)
 {
+	/* Enable Hardware Collectives only if fm_url is configured */
+	if (!slingshot_config.fm_url)
+		return true;
+
+	if (running_in_slurmctld() &&
+	    !xstrcasestr(slurm_conf.slurmctld_params, "enable_stepmgr")) {
+		error("Hardware collectives enabled by setting SwitchParameters=fm_url but SlurmctldParameters=enable_stepmgr is not set.");
+		return false;
+	}
+
 	if (!slingshot_rest_connection(&fm_conn,
 				       slingshot_config.fm_url,
 				       slingshot_config.fm_auth,
@@ -67,8 +168,11 @@ extern bool slingshot_init_collectives(void)
 				       "Slingshot Fabric Manager"))
 		goto err;
 
-	if (!slingshot_rest_connect(&fm_conn))
-		goto err;
+	if (running_in_slurmctld()) {
+		slurm_mutex_lock(&cleanup_thread_lock);
+		slurm_thread_create(&cleanup_thread_id, _cleanup_thread, NULL);
+		slurm_mutex_unlock(&cleanup_thread_lock);
+	}
 
 	collectives_enabled = true;
 	return true;
@@ -85,6 +189,15 @@ err:
  */
 extern void slingshot_fini_collectives(void)
 {
+	if (running_in_slurmctld() && cleanup_thread_id) {
+		cleanup_thread_shutdown = true;
+		slurm_mutex_lock(&cleanup_thread_lock);
+		slurm_cond_signal(&cleanup_thread_cond);
+		slurm_mutex_unlock(&cleanup_thread_lock);
+
+		slurm_thread_join(cleanup_thread_id);
+	}
+
 	slingshot_rest_destroy_connection(&fm_conn);
 }
 
@@ -136,14 +249,7 @@ static bool _clear_hwcoll(uint32_t job_id)
 	return false;
 }
 
-/*
- * If Slingshot hardware collectives are configured, and the job has
- * enough nodes, reserve the configured per-job number of multicast addresses
- * by registering the job with the fabric manager
- */
-extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
-					uint32_t node_cnt, uint32_t job_id,
-					uint32_t step_id)
+static json_object *_post_job_to_fabric_manager(uint32_t job_id)
 {
 	long status = 0;
 	json_object *reqjson = NULL;
@@ -151,20 +257,9 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 	json_object *mcasts_json = NULL;
 	json_object *respjson = NULL;
 	char *jobid_str = NULL;
-	const char *token = NULL;
-	bool rc = false;
-
-	/*
-	 * Only reserve multicast addresses if configured and job has
-	 * enough nodes
-	 */
-	if (!slingshot_config.fm_url || !collectives_enabled ||
-	    (slingshot_config.hwcoll_num_nodes == 0) ||
-	    (node_cnt < slingshot_config.hwcoll_num_nodes))
-		return true;
 
 	/* Put job ID and number of multicast addresses to reserve in payload */
-	jobid_str = xstrdup_printf("%u", job_id);
+	jobid_str = xstrdup_printf("%s-%u", slurm_conf.cluster_name, job_id);
 	if (!(reqjson = json_object_new_object()) ||
 	    !(jobid_json = json_object_new_string(jobid_str)) ||
 	    json_object_object_add(reqjson, "jobID", jobid_json) ||
@@ -187,12 +282,61 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 	}
 	log_flag(SWITCH, "respjson='%s'", json_object_to_json_string(respjson));
 
+out:
+	xfree(jobid_str);
+	json_object_put(reqjson);
+
+	return respjson;
+}
+
+/*
+ * If Slingshot hardware collectives are configured, and the job has
+ * enough nodes, reserve the configured per-job number of multicast addresses
+ * by registering the job with the fabric manager
+ */
+extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
+					uint32_t node_cnt, uint32_t job_id,
+					uint32_t step_id)
+{
+	long status = 0;
+	json_object *respjson = NULL;
+	char *jobid_str = NULL, *url;
+	const char *token = NULL;
+	bool rc = false;
+
+	/*
+	 * Only reserve multicast addresses if configured and job has
+	 * enough nodes
+	 */
+	if (!slingshot_config.fm_url || !collectives_enabled ||
+	    (slingshot_config.hwcoll_num_nodes == 0) ||
+	    (node_cnt < slingshot_config.hwcoll_num_nodes))
+		return true;
+
+	/* GET on the job object if it already exists */
+	url = xstrdup_printf("/fabric/collectives/jobs/%s-%u",
+			     slurm_conf.cluster_name, job_id);
+	if (!(respjson = slingshot_rest_get(&fm_conn, url, &status))) {
+		error("GET %s to fabric manager for job failed: %ld",
+			url, status);
+	} else {
+		log_flag(SWITCH, "GET %s resp='%s'",
+				url, json_object_to_json_string(respjson));
+	}
+	xfree(url);
+
+	if (status == HTTP_NOT_FOUND) {
+		/* If the job object doesn't exist, create it */
+		respjson = _post_job_to_fabric_manager(job_id);
+	}
+
 	/* Get per-job session token out of response */
 	if (!(token = json_object_get_string(
 			json_object_object_get(respjson, "sessionToken")))) {
 		error("Couldn't extract sessionToken from fabric manager response");
 		goto out;
 	}
+
 	/* Put info in job struct to send to slurmd */
 	job->hwcoll = xmalloc(sizeof(slingshot_hwcoll_t));
 	job->hwcoll->job_id = job_id;
@@ -201,21 +345,6 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 	job->hwcoll->fm_url = xstrdup(slingshot_config.fm_url);
 	job->hwcoll->addrs_per_job = slingshot_config.hwcoll_addrs_per_job;
 	job->hwcoll->num_nodes = slingshot_config.hwcoll_num_nodes;
-
-	/* If in debug mode, do a GET on the new job object and print it */
-	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
-		char *url = xstrdup_printf("/fabric/collectives/jobs/%u",
-					   job_id);
-		json_object_put(respjson);
-		if (!(respjson = slingshot_rest_get(&fm_conn, url, &status))) {
-			error("GET %s to fabric manager for job failed: %ld",
-			      url, status);
-		} else {
-			log_flag(SWITCH, "GET %s resp='%s'",
-				 url, json_object_to_json_string(respjson));
-		}
-		xfree(url);
-	}
 
 	/*
 	 * Save jobID in slingshot_state.job_hwcoll[] array to indicate
@@ -227,7 +356,6 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 
 out:
 	xfree(jobid_str);
-	json_object_put(reqjson);
 	json_object_put(respjson);
 	return rc;
 }
@@ -242,21 +370,24 @@ extern void slingshot_collectives_env(slingshot_stepinfo_t *job, char ***env)
 	slingshot_hwcoll_t *hwcoll = job->hwcoll;
 	char *job_id = NULL, *step_id = NULL;
 	char *addrs_per_job = NULL, *num_nodes = NULL;
+	char *fm_full_url = NULL;
 
 	if (!hwcoll)
 		return;
 
-	xstrfmtcat(job_id, "%u", hwcoll->job_id);
+	xstrfmtcat(job_id, "%s-%u", slurm_conf.cluster_name, hwcoll->job_id);
 	xstrfmtcat(step_id, "%u", hwcoll->step_id);
 	xstrfmtcat(addrs_per_job, "%u", hwcoll->addrs_per_job);
 	xstrfmtcat(num_nodes, "%u", hwcoll->num_nodes);
+	xstrfmtcat(fm_full_url, "%s/fabric/collectives/multicasts",
+		   hwcoll->fm_url);
 
 	log_flag(SWITCH, "%s=%s %s=%s %s=%s",
 		 SLINGSHOT_FI_CXI_COLL_JOB_ID_ENV, job_id,
 		 SLINGSHOT_FI_CXI_COLL_JOB_STEP_ID_ENV, step_id,
 		 SLINGSHOT_FI_CXI_COLL_MCAST_TOKEN_ENV, hwcoll->mcast_token);
 	log_flag(SWITCH, "%s=%s %s=%s %s=%s",
-		 SLINGSHOT_FI_CXI_COLL_FABRIC_MGR_URL_ENV, hwcoll->mcast_token,
+		 SLINGSHOT_FI_CXI_COLL_FABRIC_MGR_URL_ENV, fm_full_url,
 		 SLINGSHOT_FI_CXI_HWCOLL_ADDRS_PER_JOB_ENV, addrs_per_job,
 		 SLINGSHOT_FI_CXI_HWCOLL_MIN_NODES_ENV, num_nodes);
 
@@ -266,7 +397,7 @@ extern void slingshot_collectives_env(slingshot_stepinfo_t *job, char ***env)
 	env_array_overwrite(env, SLINGSHOT_FI_CXI_COLL_MCAST_TOKEN_ENV,
 			    hwcoll->mcast_token);
 	env_array_overwrite(env, SLINGSHOT_FI_CXI_COLL_FABRIC_MGR_URL_ENV,
-			    hwcoll->fm_url);
+			    fm_full_url);
 	env_array_overwrite(env, SLINGSHOT_FI_CXI_HWCOLL_ADDRS_PER_JOB_ENV,
 			    addrs_per_job);
 	env_array_overwrite(env, SLINGSHOT_FI_CXI_HWCOLL_MIN_NODES_ENV,
@@ -275,6 +406,7 @@ extern void slingshot_collectives_env(slingshot_stepinfo_t *job, char ***env)
 	xfree(step_id);
 	xfree(addrs_per_job);
 	xfree(num_nodes);
+	xfree(fm_full_url);
 	return;
 }
 
@@ -317,7 +449,8 @@ extern void slingshot_release_collectives_job_step(slingshot_stepinfo_t *job)
 	 * NOTE: timing-wise, the job complete could happen before this.
 	 * Don't fail on error 404 (Not Found)
 	 */
-	url = xstrdup_printf("/fabric/collectives/jobs/%u", hwcoll->job_id);
+	url = xstrdup_printf("/fabric/collectives/jobs/%s-%u",
+			     slurm_conf.cluster_name, hwcoll->job_id);
 	if (!(respjson = slingshot_rest_patch(&fm_conn, url, reqjson,
 					      &status))) {
 		if (status != HTTP_NOT_FOUND) {
@@ -363,15 +496,11 @@ extern void slingshot_release_collectives_job(uint32_t job_id)
 	if (!slingshot_config.fm_url || !collectives_enabled)
 		return;
 
-	/*
-	 * Just return if no job_id in slingshot_state.job_hwcoll[];
-	 * clear out entry if found
-	 */
-	if (!_clear_hwcoll(job_id))
-		return;
+	_clear_hwcoll(job_id);
 
 	/* Do a DELETE on the job object in the fabric manager */
-	url = xstrdup_printf("/fabric/collectives/jobs/%u", job_id);
+	url = xstrdup_printf("/fabric/collectives/jobs/%s-%u",
+			     slurm_conf.cluster_name, job_id);
 	if (!slingshot_rest_delete(&fm_conn, url, &status)) {
 		error("DELETE %s from fabric manager for collectives failed: %ld",
 		      url, status);
