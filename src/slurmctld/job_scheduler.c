@@ -169,6 +169,12 @@ typedef struct {
 	bool or_satisfied;
 } test_job_dep_t;
 
+typedef struct {
+	uint64_t cume_space_time;
+	job_record_t *job_ptr;
+	uint32_t part_cpus_per_node;
+} delay_start_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
@@ -4127,57 +4133,66 @@ static bool _scan_depend(list_t *dependency_list, job_record_t *job_ptr)
 	return test_job_dep.changed;
 }
 
+static int _foreach_delayed_job_start_time(void *x, void *arg)
+{
+	job_record_t *job_q_ptr = x;
+	delay_start_t *delay_start = arg;
+	job_record_t *job_ptr = delay_start->job_ptr;
+	uint32_t job_size_cpus, job_size_nodes, job_time;
+
+	if (!IS_JOB_PENDING(job_q_ptr) || !job_q_ptr->details ||
+	    (job_q_ptr->part_ptr != job_ptr->part_ptr) ||
+	    (job_q_ptr->priority < job_ptr->priority) ||
+	    (job_q_ptr->job_id == job_ptr->job_id) ||
+	    (IS_JOB_REVOKED(job_q_ptr)))
+		return 0;
+
+	if (job_q_ptr->details->min_nodes == NO_VAL)
+		job_size_nodes = 1;
+	else
+		job_size_nodes = job_q_ptr->details->min_nodes;
+	if (job_q_ptr->details->min_cpus == NO_VAL)
+		job_size_cpus = 1;
+	else
+		job_size_cpus = job_q_ptr->details->min_cpus;
+	job_size_cpus = MAX(job_size_cpus,
+			    (job_size_nodes * delay_start->part_cpus_per_node));
+	if (job_q_ptr->time_limit == NO_VAL)
+		job_time = job_q_ptr->part_ptr->max_time;
+	else
+		job_time = job_q_ptr->time_limit;
+	delay_start->cume_space_time += job_size_cpus * job_time;
+
+	return 0;
+}
+
 /* If there are higher priority queued jobs in this job's partition, then
  * delay the job's expected initiation time as needed to run those jobs.
  * NOTE: This is only a rough estimate of the job's start time as it ignores
  * job dependencies, feature requirements, specific node requirements, etc. */
 static void _delayed_job_start_time(job_record_t *job_ptr)
 {
-	uint32_t part_node_cnt, part_cpu_cnt, part_cpus_per_node;
-	uint32_t job_size_cpus, job_size_nodes, job_time;
-	uint64_t cume_space_time = 0;
-	job_record_t *job_q_ptr;
-	list_itr_t *job_iterator;
+	uint32_t part_node_cnt, part_cpu_cnt;
+	delay_start_t delay_start = {
+		.job_ptr = job_ptr,
+		.part_cpus_per_node = 1,
+	};
 
 	if (job_ptr->part_ptr == NULL)
 		return;
 	part_node_cnt = job_ptr->part_ptr->total_nodes;
 	part_cpu_cnt  = job_ptr->part_ptr->total_cpus;
 	if (part_cpu_cnt > part_node_cnt)
-		part_cpus_per_node = part_cpu_cnt / part_node_cnt;
-	else
-		part_cpus_per_node = 1;
+		delay_start.part_cpus_per_node = part_cpu_cnt / part_node_cnt;
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_q_ptr = list_next(job_iterator))) {
-		if (!IS_JOB_PENDING(job_q_ptr) || !job_q_ptr->details ||
-		    (job_q_ptr->part_ptr != job_ptr->part_ptr) ||
-		    (job_q_ptr->priority < job_ptr->priority) ||
-		    (job_q_ptr->job_id == job_ptr->job_id) ||
-		    (IS_JOB_REVOKED(job_q_ptr)))
-			continue;
-		if (job_q_ptr->details->min_nodes == NO_VAL)
-			job_size_nodes = 1;
-		else
-			job_size_nodes = job_q_ptr->details->min_nodes;
-		if (job_q_ptr->details->min_cpus == NO_VAL)
-			job_size_cpus = 1;
-		else
-			job_size_cpus = job_q_ptr->details->min_cpus;
-		job_size_cpus = MAX(job_size_cpus,
-				    (job_size_nodes * part_cpus_per_node));
-		if (job_q_ptr->time_limit == NO_VAL)
-			job_time = job_q_ptr->part_ptr->max_time;
-		else
-			job_time = job_q_ptr->time_limit;
-		cume_space_time += job_size_cpus * job_time;
-	}
-	list_iterator_destroy(job_iterator);
-	cume_space_time /= part_cpu_cnt;/* Factor out size */
-	cume_space_time *= 60;		/* Minutes to seconds */
+	(void) list_for_each(job_list,
+			     _foreach_delayed_job_start_time,
+			     &delay_start);
+	delay_start.cume_space_time /= part_cpu_cnt;/* Factor out size */
+	delay_start.cume_space_time *= 60;		/* Minutes to seconds */
 	debug2("Increasing estimated start of %pJ by %"PRIu64" secs",
-	       job_ptr, cume_space_time);
-	job_ptr->start_time += cume_space_time;
+	       job_ptr, delay_start.cume_space_time);
+	job_ptr->start_time += delay_start.cume_space_time;
 }
 
 /*
