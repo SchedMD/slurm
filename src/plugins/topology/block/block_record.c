@@ -49,6 +49,7 @@ uint16_t bblock_node_cnt = 0;
 bitstr_t *block_levels = NULL;
 uint32_t block_sizes[MAX_BLOCK_LEVELS] = {0};
 uint16_t block_sizes_cnt = 0;
+uint32_t blocks_nodes_cnt = 0;
 int block_record_cnt = 0;
 
 static s_p_hashtbl_t *conf_hashtbl = NULL;
@@ -347,6 +348,8 @@ extern void block_record_validate(void)
 
 		level++;
 	}
+
+	blocks_nodes_cnt = bit_set_count(blocks_nodes_bitmap);
 
 	s_p_hashtbl_destroy(conf_hashtbl);
 	_log_blocks();
