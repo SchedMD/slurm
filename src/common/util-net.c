@@ -337,7 +337,7 @@ static int _name_cache_find(void *x, void *y)
 	} else if (addr_x->ss_family == AF_INET6) {
 		struct sockaddr_in6 *x6 = (void *)addr_x;
 		struct sockaddr_in6 *y6 = (void *)addr_y;
-		if (!memcmp(x6->sin6_addr.s6_addr, y6->sin6_addr.s6_addr,
+		if (memcmp(x6->sin6_addr.s6_addr, y6->sin6_addr.s6_addr,
 		    sizeof(x6->sin6_addr.s6_addr)))
 			return false;
 	}
