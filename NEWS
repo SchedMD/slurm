@@ -191,6 +191,8 @@ documents those changes that are of interest to users and administrators.
  -- Hardware collectives in switch/hpe_slingshot now requires enable_stepmgr.
  -- Allow backfill to plan jobs on nodes currently being used by exclusive user
     or mcs jobs.
+ -- Avoid miscaching IPv6 address to hostname lookups that could have caused
+    logs to have the incorrect hostname.
 
 * Changes in Slurm 24.05.5
 ==========================

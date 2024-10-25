@@ -445,7 +445,7 @@ extern char *auth_g_get_host(void *slurm_msg)
 	}
 
 	/* use remote host IP, then look it up */
-	if ((host = xgetnameinfo((struct sockaddr *) &addr, sizeof(addr)))) {
+	if ((host = xgetnameinfo(&addr))) {
 		debug3("%s: looked up from connection's IP address: %s",
 		       __func__, host);
 	} else {
