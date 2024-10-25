@@ -175,6 +175,13 @@ typedef struct {
 	uint32_t part_cpus_per_node;
 } delay_start_t;
 
+typedef struct {
+	job_record_t *job_ptr;
+	time_t now;
+	int rc;
+	will_run_response_msg_t **resp;
+} job_start_data_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
@@ -4195,56 +4202,32 @@ static void _delayed_job_start_time(job_record_t *job_ptr)
 	job_ptr->start_time += delay_start.cume_space_time;
 }
 
-/*
- * Determine if a pending job will run using only the specified nodes, build
- * response message and return SLURM_SUCCESS on success. Otherwise return an
- * error code. Caller must free response message.
- */
-extern int job_start_data(job_record_t *job_ptr,
-			  will_run_response_msg_t **resp)
+static int _foreach_job_start_data_part(void *x, void *arg)
 {
-	part_record_t *part_ptr;
+	part_record_t *part_ptr = x;
+	job_start_data_t *job_start_data = arg;
+	job_record_t *job_ptr = job_start_data->job_ptr;
+
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
-	int i, rc = SLURM_SUCCESS;
-	time_t now = time(NULL), start_res, orig_start_time = (time_t) 0;
+	int rc2 = SLURM_SUCCESS;
+	time_t start_res, orig_start_time = (time_t) 0;
 	list_t *preemptee_candidates = NULL, *preemptee_job_list = NULL;
 	bool resv_overlap = false;
-	list_itr_t *iter = NULL;
 	resv_exc_t resv_exc = { 0 };
 
-	if (job_ptr == NULL)
-		return ESLURM_INVALID_JOB_ID;
-
-	/*
-	 * NOTE: Do not use IS_JOB_PENDING since that doesn't take
-	 * into account the COMPLETING FLAG which we need to since we don't want
-	 * to schedule a requeued job until it is actually done completing
-	 * the first time.
-	 */
-	if ((job_ptr->details == NULL) || (job_ptr->job_state != JOB_PENDING))
-		return ESLURM_DISABLED;
-
-	if (job_ptr->part_ptr_list) {
-		iter = list_iterator_create(job_ptr->part_ptr_list);
-		part_ptr = list_next(iter);
-	} else
-		part_ptr = job_ptr->part_ptr;
-next_part:
-	rc = SLURM_SUCCESS;
-	if (part_ptr == NULL) {
-		if (iter)
-			list_iterator_destroy(iter);
-		return ESLURM_INVALID_PARTITION_NAME;
+	job_start_data->rc = SLURM_SUCCESS;
+	if (!part_ptr) {
+		job_start_data->rc = ESLURM_INVALID_PARTITION_NAME;
+		return -1;
 	}
 
 	if (job_ptr->details->req_nodes && job_ptr->details->req_nodes[0]) {
 		if (node_name2bitmap(job_ptr->details->req_nodes, false,
 				     &avail_bitmap) != 0) {
-			if (iter)
-				list_iterator_destroy(iter);
-			return ESLURM_INVALID_NODE_NAME;
+			job_start_data->rc = ESLURM_INVALID_NODE_NAME;
+			return -1;
 		}
 	} else {
 		/* assume all nodes available to job for testing */
@@ -4255,45 +4238,43 @@ next_part:
 	if (part_ptr->node_bitmap)
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 	else
-		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		job_start_data->rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (job_req_node_filter(job_ptr, avail_bitmap, true))
-		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		job_start_data->rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (job_ptr->details->exc_node_bitmap) {
 		bit_and_not(avail_bitmap, job_ptr->details->exc_node_bitmap);
 	}
 	if (job_ptr->details->req_node_bitmap) {
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
 				   avail_bitmap)) {
-			rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+			job_start_data->rc =
+				ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 		}
 	}
 
 	/* Enforce reservation: access control, time and nodes */
 	if (job_ptr->details->begin_time &&
-	    (job_ptr->details->begin_time > now))
+	    (job_ptr->details->begin_time > job_start_data->now))
 		start_res = job_ptr->details->begin_time;
 	else
-		start_res = now;
+		start_res = job_start_data->now;
 
-	i = job_test_resv(job_ptr, &start_res, true, &resv_bitmap,
-			  &resv_exc, &resv_overlap, false);
-	if (i != SLURM_SUCCESS) {
+	rc2 = job_test_resv(job_ptr, &start_res, true, &resv_bitmap,
+			    &resv_exc, &resv_overlap, false);
+	if (rc2 != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(avail_bitmap);
 		reservation_delete_resv_exc_parts(&resv_exc);
-		if (job_ptr->part_ptr_list && (part_ptr = list_next(iter)))
-			goto next_part;
-
-		if (iter)
-			list_iterator_destroy(iter);
-		return i;
+		job_start_data->rc = rc2;
+		return -1;
 	}
+
 	bit_and(avail_bitmap, resv_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 
 	/* Only consider nodes that are not DOWN or DRAINED */
 	bit_and(avail_bitmap, avail_node_bitmap);
 
-	if (rc == SLURM_SUCCESS) {
+	if (job_start_data->rc == SLURM_SUCCESS) {
 		int test_fini = -1;
 		uint8_t save_share_res, save_whole_node;
 		/* On BlueGene systems don't adjust the min/max node limits
@@ -4322,13 +4303,14 @@ next_part:
 		build_active_feature_bitmap(job_ptr, avail_bitmap,
 					    &active_bitmap);
 		if (active_bitmap) {
-			rc = select_g_job_test(job_ptr, active_bitmap,
-					       min_nodes, max_nodes, req_nodes,
-					       SELECT_MODE_WILL_RUN,
-					       preemptee_candidates,
-					       &preemptee_job_list,
-					       &resv_exc);
-			if (rc == SLURM_SUCCESS) {
+			job_start_data->rc = select_g_job_test(
+				job_ptr, active_bitmap,
+				min_nodes, max_nodes, req_nodes,
+				SELECT_MODE_WILL_RUN,
+				preemptee_candidates,
+				&preemptee_job_list,
+				&resv_exc);
+			if (job_start_data->rc == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = active_bitmap;
 				active_bitmap = NULL;
@@ -4344,12 +4326,13 @@ next_part:
 			}
 		}
 		if (test_fini != 1) {
-			rc = select_g_job_test(job_ptr, avail_bitmap,
-					       min_nodes, max_nodes, req_nodes,
-					       SELECT_MODE_WILL_RUN,
-					       preemptee_candidates,
-					       &preemptee_job_list,
-					       &resv_exc);
+			job_start_data->rc = select_g_job_test(
+				job_ptr, avail_bitmap,
+				min_nodes, max_nodes, req_nodes,
+				SELECT_MODE_WILL_RUN,
+				preemptee_candidates,
+				&preemptee_job_list,
+				&resv_exc);
 			if (test_fini == 0) {
 				job_ptr->details->share_res = save_share_res;
 				job_ptr->details->whole_node = save_whole_node;
@@ -4357,7 +4340,7 @@ next_part:
 		}
 	}
 
-	if (rc == SLURM_SUCCESS) {
+	if (job_start_data->rc == SLURM_SUCCESS) {
 		will_run_response_msg_t *resp_data;
 		resp_data = xmalloc(sizeof(will_run_response_msg_t));
 		resp_data->job_id     = job_ptr->job_id;
@@ -4388,9 +4371,9 @@ next_part:
 
 		resp_data->sys_usage_per = _get_system_usage();
 
-		*resp = resp_data;
+		*job_start_data->resp = resp_data;
 	} else {
-		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		job_start_data->rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
 	FREE_NULL_LIST(preemptee_candidates);
@@ -4398,13 +4381,47 @@ next_part:
 	FREE_NULL_BITMAP(avail_bitmap);
 	reservation_delete_resv_exc_parts(&resv_exc);
 
-	if (rc && job_ptr->part_ptr_list && (part_ptr = list_next(iter)))
-		goto next_part;
+	if (job_start_data->rc)
+		return 0;
 
-	if (iter)
-		list_iterator_destroy(iter);
+	return -1;
+}
 
-	return rc;
+/*
+ * Determine if a pending job will run using only the specified nodes, build
+ * response message and return SLURM_SUCCESS on success. Otherwise return an
+ * error code. Caller must free response message.
+ */
+extern int job_start_data(job_record_t *job_ptr,
+			  will_run_response_msg_t **resp)
+{
+	job_start_data_t job_start_data = {
+		.job_ptr = job_ptr,
+		.now = time(NULL),
+		.resp = resp,
+	};
+
+	if (job_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+
+	/*
+	 * NOTE: Do not use IS_JOB_PENDING since that doesn't take
+	 * into account the COMPLETING FLAG which we need to since we don't want
+	 * to schedule a requeued job until it is actually done completing
+	 * the first time.
+	 */
+	if ((job_ptr->details == NULL) || (job_ptr->job_state != JOB_PENDING))
+		return ESLURM_DISABLED;
+
+	if (job_ptr->part_ptr_list)
+		(void) list_for_each(job_ptr->part_ptr_list,
+				     _foreach_job_start_data_part,
+				     &job_start_data);
+	else
+		(void) _foreach_job_start_data_part(job_ptr->part_ptr,
+						    &job_start_data);
+
+	return job_start_data.rc;
 }
 
 /*
