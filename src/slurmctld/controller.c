@@ -1289,6 +1289,7 @@ static int _try_to_reconfig(void)
 			waitpid(pid, &rc, 0);
 			xsystemd_change_mainpid(grandchild_pid);
 		}
+		xfree(skip_close);
 		return SLURM_SUCCESS;
 
 rwfail:
