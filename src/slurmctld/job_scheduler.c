@@ -2604,13 +2604,20 @@ static int _foreach_set_het_job_env(void *x, void *arg)
 		/* Both should always be set for active jobs */
 		struct job_resources *resrcs_ptr = het_job->job_resrcs;
 		slurm_step_layout_t *step_layout = NULL;
-		slurm_step_layout_req_t step_layout_req;
 		uint16_t cpus_per_task_array[1];
 		uint32_t cpus_task_reps[1], task_dist;
 		uint16_t cpus_per_task = 1;
+		slurm_step_layout_req_t step_layout_req = {
+			.cpu_count_reps = resrcs_ptr->cpu_array_reps,
+			.cpus_per_node = resrcs_ptr->cpu_array_value,
+			.cpus_per_task = cpus_per_task_array,
+			.cpus_task_reps = cpus_task_reps,
+			.num_hosts = het_job->node_cnt,
+			.plane_size = NO_VAL16,
+		};
 
-		memset(&step_layout_req, 0,
-		       sizeof(slurm_step_layout_req_t));
+		cpus_task_reps[0] = het_job->node_cnt;
+
 		for (int i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
 			num_cpus += resrcs_ptr->cpu_array_value[i] *
 				resrcs_ptr->cpu_array_reps[i];
@@ -2620,6 +2627,7 @@ static int _foreach_set_het_job_env(void *x, void *arg)
 		    (het_job->details->cpus_per_task != NO_VAL16))
 			cpus_per_task = het_job->details->cpus_per_task;
 
+		cpus_per_task_array[0] = cpus_per_task;
 		if (het_job->details->num_tasks) {
 			step_layout_req.num_tasks =
 				het_job->details->num_tasks;
@@ -2627,7 +2635,6 @@ static int _foreach_set_het_job_env(void *x, void *arg)
 			step_layout_req.num_tasks = num_cpus /
 				cpus_per_task;
 		}
-		step_layout_req.num_hosts = het_job->node_cnt;
 
 		if ((step_layout_req.node_list =
 		     getenvp(launch_msg_ptr->environment,
@@ -2637,16 +2644,7 @@ static int _foreach_set_het_job_env(void *x, void *arg)
 			step_layout_req.node_list = het_job->nodes;
 			task_dist = SLURM_DIST_BLOCK;
 		}
-		step_layout_req.cpus_per_node =
-			het_job->job_resrcs->cpu_array_value;
-		step_layout_req.cpu_count_reps =
-			het_job->job_resrcs->cpu_array_reps;
-		cpus_per_task_array[0] = cpus_per_task;
-		step_layout_req.cpus_per_task = cpus_per_task_array;
-		cpus_task_reps[0] = het_job->node_cnt;
-		step_layout_req.cpus_task_reps = cpus_task_reps;
 		step_layout_req.task_dist = task_dist;
-		step_layout_req.plane_size = NO_VAL16;
 		step_layout = slurm_step_layout_create(&step_layout_req);
 		if (step_layout) {
 			tmp_str = uint16_array_to_str(
