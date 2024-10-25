@@ -27650,8 +27650,10 @@ else $as_nop
 fi
 
 
-  if test "$_libcurl_with" != "no" ; then
-
+  if test "x$with_libcurl" = xno; then
+       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for libcurl is disabled" >&5
+printf "%s\n" "$as_me: support for libcurl is disabled" >&6;}
+  else
      for ac_prog in gawk mawk nawk awk
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
@@ -28009,21 +28011,20 @@ _ACEOF
      unset _libcurl_protocols
      unset _libcurl_version
      unset _libcurl_ldflags
-  fi
 
-  if test x$_libcurl_with = xno || test x$libcurl_cv_lib_curl_usable != xyes ; then
-     # This is the IF-NO path
-     :
-     if  test "x$_libcurl_with" == "xno" ; then
-       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for libcurl is disabled" >&5
-printf "%s\n" "$as_me: support for libcurl is disabled" >&6;}
-     else
-       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate/link against libcurl-devel installation" >&5
+     if test x$libcurl_cv_lib_curl_usable != xyes ; then
+        # This is the IF-NO path
+        :
+        if test -z "$with_libcurl"; then
+           { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate/link against libcurl-devel installation" >&5
 printf "%s\n" "$as_me: WARNING: unable to locate/link against libcurl-devel installation" >&2;}
+        else
+           as_fn_error $? "unable to locate/link against libcurl-devel installation" "$LINENO" 5
+        fi
+     else
+        # This is the IF-YES path
+        :
      fi
-  else
-     # This is the IF-YES path
-     :
   fi
 
    if test x$_libcurl_with = xyes && test x$libcurl_cv_lib_curl_usable = xyes; then
