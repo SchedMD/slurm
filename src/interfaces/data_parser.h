@@ -418,6 +418,21 @@ typedef enum {
 	DATA_PARSER_JOB_RES_SOCKET_PTR, /* JOB_RES_SOCKET_t* */
 	DATA_PARSER_JOB_RES_SOCKET_ARRAY, /* JOB_RES_SOCKET_t[] */
 	DATA_PARSER_JOB_MAIL_FLAGS, /* uint16_t & MAIL_JOB_* */
+	DATA_PARSER_LISTJOBS_INFO, /* listjobs_info_t */
+	DATA_PARSER_LISTJOBS_INFO_PTR, /* listjobs_info_t* */
+	DATA_PARSER_LISTJOBS_INFO_LIST, /* list_t of listjobs_info_t* */
+	DATA_PARSER_OPENAPI_LISTJOBS_INFO_RESP, /* openapi_resp_listjobs_info_t */
+	DATA_PARSER_OPENAPI_LISTJOBS_INFO_RESP_PTR, /* openapi_resp_listjobs_info_t* */
+	DATA_PARSER_LISTPIDS_INFO, /* listpids_info_t */
+	DATA_PARSER_LISTPIDS_INFO_PTR, /* listpids_info_t* */
+	DATA_PARSER_LISTPIDS_INFO_LIST, /* list_t of listpids_info_t* */
+	DATA_PARSER_OPENAPI_LISTPIDS_INFO_RESP, /* openapi_resp_listpids_info_t */
+	DATA_PARSER_OPENAPI_LISTPIDS_INFO_RESP_PTR, /* openapi_resp_listpids_info_t* */
+	DATA_PARSER_LISTSTEPS_INFO, /* liststeps_info_t */
+	DATA_PARSER_LISTSTEPS_INFO_PTR, /* liststeps_info_t* */
+	DATA_PARSER_LISTSTEPS_INFO_LIST, /* list_t of liststeps_info_t* */
+	DATA_PARSER_OPENAPI_LISTSTEPS_INFO_RESP, /* openapi_resp_liststeps_info_t */
+	DATA_PARSER_OPENAPI_LISTSTEPS_INFO_RESP_PTR, /* openapi_resp_liststeps_info_t* */
 	DATA_PARSER_NICE, /* uint32_t - nice value - NICE_OFFSET */
 	DATA_PARSER_MEM_PER_CPUS, /* uint64_t & MEM_PER_CPU */
 	DATA_PARSER_MEM_PER_NODE, /* uint64_t & ~MEM_PER_CPU */

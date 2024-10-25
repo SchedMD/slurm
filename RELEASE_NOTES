@@ -49,6 +49,9 @@ COMMAND CHANGES (see man pages for details)
  -- slurmdbd - Add -u option. This is used to determine if restarting the DBD
     will result in database conversion.
  -- Remove salloc --get-user-env.
+ -- scontrol - Add --json/--yaml support to listpids
+ -- scontrol - Add liststeps
+ -- scontrol - Add listjobs
 
 API CHANGES
 ===========

@@ -57,6 +57,11 @@
 #define CONTAINER_ID_TAG "containerid="
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
+typedef struct add_to_listjobs_list_args {
+	list_t *jobs_seen;
+	list_t *listjobs_list;
+} add_to_listjobs_list_args_t;
+
 static node_info_msg_t *_get_node_info_for_jobs(void)
 {
 	int error_code;
@@ -1438,6 +1443,106 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	xfree(steps);
 }
 
+static int _add_to_listjobs_list(void *x, void *arg)
+{
+	step_loc_t *step_loc = x;
+	slurm_step_id_t step_id = step_loc->step_id;
+	listjobs_info_t *listjobs_info;
+	uint32_t *job_id;
+
+	add_to_listjobs_list_args_t *args = arg;
+	list_t *listjobs_list = args->listjobs_list;
+	list_t *jobs_seen = args->jobs_seen;
+
+	/* Don't add duplicate job ids to the list */
+	if (list_find_first(jobs_seen, slurm_find_uint32_in_list,
+			    &step_id.job_id))
+		return 0;
+
+	job_id = xmalloc(sizeof(*job_id));
+	*job_id = step_id.job_id;
+	list_append(jobs_seen, job_id);
+
+	listjobs_info = xmalloc(sizeof(*listjobs_info));
+	listjobs_info->job_id = step_id.job_id;
+	list_append(listjobs_list, listjobs_info);
+
+	return 0;
+}
+
+static int _print_listjobs_info(void *x, void *arg)
+{
+	uint32_t *job_id = x;
+
+	printf("%-8d\n", *job_id);
+
+	return 0;
+}
+
+static void _dump_listjobs(list_t *listjobs_list, int argc, char **argv)
+{
+	int rc;
+
+	openapi_resp_listjobs_info_t resp = {
+		.listjobs_list = listjobs_list,
+	};
+
+	DATA_DUMP_CLI(OPENAPI_LISTJOBS_INFO_RESP, resp, argc, argv, NULL,
+		      mime_type, data_parser, rc);
+
+	if (rc != SLURM_SUCCESS)
+		exit_code = 1;
+}
+
+/*
+ * scontrol_list_jobs - Print jobs on node.
+ *
+ * IN node_name - query this node for any jobs
+ */
+extern void scontrol_list_jobs(int argc, char **argv)
+{
+	char *node_name = NULL;
+	list_t *steps = NULL;
+	list_t *listjobs_list = NULL;
+	list_t *jobs_seen = NULL;
+	add_to_listjobs_list_args_t for_each_args = { 0 };
+
+	if (argc)
+		node_name = argv[1];
+
+	steps = stepd_available(NULL, node_name);
+
+	if (!steps || !list_count(steps)) {
+		if (mime_type)
+			_dump_listjobs(NULL, argc, argv);
+		else
+			fprintf(stderr, "No slurmstepd's found on this node\n");
+
+		goto cleanup;
+	}
+
+	listjobs_list = list_create(xfree_ptr);
+	jobs_seen = list_create(xfree_ptr);
+
+	for_each_args.listjobs_list = listjobs_list;
+	for_each_args.jobs_seen = jobs_seen;
+
+	list_for_each(steps, _add_to_listjobs_list, &for_each_args);
+
+	if (mime_type) {
+		_dump_listjobs(listjobs_list, argc, argv);
+		goto cleanup;
+	}
+
+	printf("JOBID\n");
+	list_for_each(listjobs_list, _print_listjobs_info, NULL);
+
+cleanup:
+	FREE_NULL_LIST(listjobs_list);
+	FREE_NULL_LIST(jobs_seen);
+	FREE_NULL_LIST(steps);
+}
+
 /* Return 1 on success, 0 on failure to find a jobid in the string */
 static int _parse_jobid(const char *jobid_str, uint32_t *out_jobid)
 {
@@ -1513,9 +1618,8 @@ _in_task_array(pid_t pid, slurmstepd_task_info_t *task_array,
 	return false;
 }
 
-
-static void
-_list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
+static void _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id,
+				list_t *listpids_list)
 {
 	int fd;
 	slurmstepd_task_info_t *task_info = NULL;
@@ -1545,24 +1649,38 @@ _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
 	log_build_step_id_str(step_id, tmp_char, sizeof(tmp_char),
 			      STEP_ID_FLAG_NO_JOB | STEP_ID_FLAG_NO_PREFIX);
 
+	/* Get all task pids */
 	stepd_task_info(fd, protocol_version, &task_info, &tcount);
 	for (i = 0; i < (int)tcount; i++) {
 		if (task_info[i].exited)
 			continue;
-		printf("%-8d %-8u %-8s %-7d %-8d\n",
-		       task_info[i].pid,
-		       step_id->job_id,
-		       tmp_char,
-		       task_info[i].id,
-		       task_info[i].gtid);
+		listpids_info_t *listpids_info = xmalloc(
+			sizeof(*listpids_info));
+
+		listpids_info->global_task_id = task_info[i].gtid;
+		listpids_info->job_id = step_id->job_id;
+		listpids_info->local_task_id = task_info[i].id;
+		listpids_info->pid = task_info[i].pid;
+		listpids_info->step_id = xstrdup(tmp_char);
+
+		list_append(listpids_list, listpids_info);
 	}
 
+	/* Get pids in proctrack container (slurmstepd, srun, etc.) */
 	stepd_list_pids(fd, protocol_version, &pids, &count);
 	for (i = 0; i < count; i++) {
-		if (!_in_task_array((pid_t)pids[i], task_info, tcount)) {
-			printf("%-8d %-8u %-8s %-7s %-8s\n",
-			       pids[i], step_id->job_id, tmp_char, "-", "-");
-		}
+		if (_in_task_array((pid_t) pids[i], task_info, tcount))
+			continue;
+		listpids_info_t *listpids_info = xmalloc(
+			sizeof(*listpids_info));
+
+		listpids_info->global_task_id = NO_VAL;
+		listpids_info->job_id = step_id->job_id;
+		listpids_info->local_task_id = NO_VAL;
+		listpids_info->pid = pids[i];
+		listpids_info->step_id = xstrdup(tmp_char);
+
+		list_append(listpids_list, listpids_info);
 	}
 
 	xfree(pids);
@@ -1570,8 +1688,25 @@ _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id)
 	close(fd);
 }
 
-static void
-_list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
+static void _dump_listpids(list_t *listpids_list, int argc, char **argv)
+{
+	int rc;
+
+	openapi_resp_listpids_info_t resp = {
+		.listpids_list = listpids_list,
+	};
+
+	DATA_DUMP_CLI(OPENAPI_LISTPIDS_INFO_RESP, resp, argc, argv, NULL,
+		      mime_type, data_parser, rc);
+
+	if (rc != SLURM_SUCCESS)
+		exit_code = 1;
+}
+
+static void _list_pids_all_steps(const char *node_name,
+				 slurm_step_id_t *step_id,
+				 list_t* listpids_list,
+				 int argc, char **argv)
 {
 	list_t *steps;
 	list_itr_t *itr;
@@ -1580,17 +1715,21 @@ _list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
 	char tmp_char[64];
 
 	if (step_id->step_het_comp != NO_VAL) {
-		_list_pids_one_step(node_name, step_id);
+		_list_pids_one_step(node_name, step_id, listpids_list);
 		return;
 	}
 
 	steps = stepd_available(NULL, node_name);
 	if (!steps || list_count(steps) == 0) {
-		fprintf(stderr, "%s does not exist on node %s.\n",
-			log_build_step_id_str(step_id, tmp_char,
-					      sizeof(tmp_char),
-					      STEP_ID_FLAG_NONE),
-			node_name);
+		if (mime_type) {
+			_dump_listpids(NULL, argc, argv);
+		} else {
+			fprintf(stderr, "%s does not exist on node %s.\n",
+				log_build_step_id_str(step_id, tmp_char,
+						      sizeof(tmp_char),
+						      STEP_ID_FLAG_NONE),
+				node_name);
+		}
 		FREE_NULL_LIST(steps);
 		exit_code = 1;
 		return;
@@ -1605,7 +1744,8 @@ _list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
 		    (step_id->step_id != stepd->step_id.step_id))
 			continue;
 
-		_list_pids_one_step(stepd->nodename, &stepd->step_id);
+		_list_pids_one_step(stepd->nodename, &stepd->step_id,
+				    listpids_list);
 		count++;
 	}
 	list_iterator_destroy(itr);
@@ -1625,8 +1765,8 @@ _list_pids_all_steps(const char *node_name, slurm_step_id_t *step_id)
 	}
 }
 
-static void
-_list_pids_all_jobs(const char *node_name)
+static void _list_pids_all_jobs(const char *node_name, list_t *listpids_list,
+				int argc, char **argv)
 {
 	list_t *steps;
 	list_itr_t *itr;
@@ -1634,7 +1774,10 @@ _list_pids_all_jobs(const char *node_name)
 
 	steps = stepd_available(NULL, node_name);
 	if (!steps || list_count(steps) == 0) {
-		fprintf(stderr, "No job steps exist on this node.\n");
+		if (mime_type)
+			_dump_listpids(NULL, argc, argv);
+		else
+			fprintf(stderr, "No job steps exist on this node.\n");
 		FREE_NULL_LIST(steps);
 		exit_code = 1;
 		return;
@@ -1642,10 +1785,46 @@ _list_pids_all_jobs(const char *node_name)
 
 	itr = list_iterator_create(steps);
 	while((stepd = list_next(itr))) {
-		_list_pids_one_step(stepd->nodename, &stepd->step_id);
+		_list_pids_one_step(stepd->nodename, &stepd->step_id,
+				    listpids_list);
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(steps);
+}
+
+static int _print_listpids_info(void *x, void *arg)
+{
+	listpids_info_t *listpids_info = x;
+
+	printf("%-8d %-8d %-8s ",
+	       listpids_info->pid, listpids_info->job_id,
+	       listpids_info->step_id);
+
+	if (listpids_info->local_task_id != NO_VAL) {
+		printf("%-7d ", listpids_info->local_task_id);
+	} else {
+		printf("%-7s ", "-");
+	}
+
+	if (listpids_info->global_task_id != NO_VAL) {
+		printf("%-8d ", listpids_info->global_task_id);
+	} else {
+		printf("%-8s ", "-");
+	}
+
+	printf("\n");
+	return 0;
+}
+
+static void _free_listpids_info(void *x)
+{
+	listpids_info_t *listpids_info = x;
+
+	if (listpids_info) {
+		xfree(listpids_info->step_id);
+	}
+
+	xfree(listpids_info);
 }
 
 /*
@@ -1659,14 +1838,21 @@ _list_pids_all_jobs(const char *node_name)
  *	because if NULL is used when there are multiple slurmd on the
  *	node, one of them will be selected more-or-less at random.
  */
-extern void
-scontrol_list_pids(const char *jobid_str, const char *node_name)
+extern void scontrol_list_pids(int argc, char **argv)
 {
+	char *jobid_str = NULL;
+	char *node_name = NULL;
+	list_t *listpids_list = NULL;
 	slurm_step_id_t step_id = {
 		.job_id = 0,
 		.step_id = NO_VAL,
 		.step_het_comp = NO_VAL,
 	};
+
+	if (argc >= 2)
+		jobid_str = argv[1];
+	if (argc >= 3)
+		node_name = argv[2];
 
 	/* Job ID is optional */
 	if (jobid_str != NULL
@@ -1676,13 +1862,125 @@ scontrol_list_pids(const char *jobid_str, const char *node_name)
 		return;
 	}
 
+	listpids_list = list_create(_free_listpids_info);
+
 	/* Step ID is optional */
+	if (jobid_str == NULL || jobid_str[0] == '*') {
+		_list_pids_all_jobs(node_name, listpids_list, argc, argv);
+	} else if (_parse_stepid(jobid_str, &step_id))
+		_list_pids_all_steps(node_name, &step_id, listpids_list, argc,
+				     argv);
+	if (exit_code)
+		goto cleanup;
+
+	if (mime_type) {
+		_dump_listpids(listpids_list, argc, argv);
+		goto cleanup;
+	}
+
 	printf("%-8s %-8s %-8s %-7s %-8s\n",
 	       "PID", "JOBID", "STEPID", "LOCALID", "GLOBALID");
-	if (jobid_str == NULL || jobid_str[0] == '*') {
-		_list_pids_all_jobs(node_name);
-	} else if (_parse_stepid(jobid_str, &step_id))
-		_list_pids_all_steps(node_name, &step_id);
+	list_for_each(listpids_list, _print_listpids_info, NULL);
+
+cleanup:
+	FREE_NULL_LIST(listpids_list);
+}
+
+static int _add_to_liststeps_list(void *x, void *arg)
+{
+	liststeps_info_t *liststeps_info;
+	step_loc_t *step_loc = x;
+	list_t *liststeps_list = arg;
+	char step_id_str[32];
+	slurm_step_id_t step_id = step_loc->step_id;
+
+	log_build_step_id_str(&step_id, step_id_str, sizeof(step_id_str),
+			      STEP_ID_FLAG_NO_JOB | STEP_ID_FLAG_NO_PREFIX);
+
+	liststeps_info = xmalloc(sizeof(*liststeps_info));
+
+	liststeps_info->step_id = xstrdup(step_id_str);
+	liststeps_info->job_id = step_id.job_id;
+
+	list_append(liststeps_list, liststeps_info);
+
+	return 0;
+}
+
+static int _print_liststeps_info(void *x, void *arg)
+{
+	liststeps_info_t *liststeps_info = x;
+
+	printf("%-8d %-8s\n", liststeps_info->job_id, liststeps_info->step_id);
+
+	return 0;
+}
+
+static void _free_liststeps_info(void *x)
+{
+	liststeps_info_t *liststeps_info = x;
+
+	if (liststeps_info) {
+		xfree(liststeps_info->step_id);
+	}
+
+	xfree(liststeps_info);
+}
+
+static void _dump_liststeps(list_t *liststeps_list, int argc, char **argv)
+{
+	int rc;
+
+	openapi_resp_liststeps_info_t resp = {
+		.liststeps_list = liststeps_list,
+	};
+
+	DATA_DUMP_CLI(OPENAPI_LISTSTEPS_INFO_RESP, resp, argc, argv, NULL,
+		      mime_type, data_parser, rc);
+
+	if (rc != SLURM_SUCCESS)
+		exit_code = 1;
+}
+
+/*
+ * scontrol_list_steps - Print steps on node.
+ *
+ * IN node_name - query this node for any steps
+ */
+extern void scontrol_list_steps(int argc, char **argv)
+{
+	list_t *liststeps_list = NULL;
+	char *node_name = NULL;
+	list_t *steps;
+
+	if (argc)
+		node_name = argv[1];
+
+	steps = stepd_available(NULL, node_name);
+
+	if (!steps || !list_count(steps)) {
+		if (mime_type)
+			_dump_liststeps(NULL, argc, argv);
+		else
+			fprintf(stderr, "No slurmstepd's found on this node\n");
+
+		goto cleanup;
+	}
+
+	liststeps_list = list_create(_free_liststeps_info);
+	list_for_each(steps, _add_to_liststeps_list, liststeps_list);
+
+	if (mime_type) {
+		_dump_liststeps(liststeps_list, argc, argv);
+		goto cleanup;
+	}
+
+	printf("%-8s %-8s\n", "JOBID", "STEPID");
+	list_for_each(liststeps_list, _print_liststeps_info, NULL);
+
+cleanup:
+	FREE_NULL_LIST(liststeps_list);
+	FREE_NULL_LIST(steps);
 }
 
 extern void scontrol_getent(const char *node_name)

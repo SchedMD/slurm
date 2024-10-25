@@ -7961,6 +7961,32 @@ static const parser_t PARSER_ARRAY(JOB_RES)[] = {
 #undef add_skip
 
 #define add_parse(mtype, field, path, desc) \
+	add_parser(listjobs_info_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(LISTJOBS_INFO)[] = {
+	add_parse(UINT32, job_id, "job_id", "Job ID"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(listpids_info_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(LISTPIDS_INFO)[] = {
+	add_parse(UINT32_NO_VAL, global_task_id, "global_task_id", "Global task ID"),
+	add_parse(UINT32_NO_VAL, local_task_id, "local_task_id", "Local task ID"),
+	add_parse(UINT32, job_id, "job_id", "Job ID"),
+	add_parse(UINT32, pid, "pid", "Process ID"),
+	add_parse(STRING, step_id, "step_id", "Step ID"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(liststeps_info_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(LISTSTEPS_INFO)[] = {
+	add_parse(UINT32, job_id, "job_id", "Job ID"),
+	add_parse(STRING, step_id, "step_id", "Step ID"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
 	add_parser(controller_ping_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 	add_parse(STRING, hostname, "hostname", "Target for ping"),
@@ -9482,6 +9508,36 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_INFO_RESP)[] = {
 };
 #undef add_parse_req
 
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(openapi_resp_listjobs_info_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_LISTJOBS_INFO_RESP)[] = {
+	add_parse_req(LISTJOBS_INFO_LIST, listjobs_list, "jobs", "List of jobs"),
+	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
+};
+#undef add_parse_req
+
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(openapi_resp_listpids_info_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_LISTPIDS_INFO_RESP)[] = {
+	add_parse_req(LISTPIDS_INFO_LIST, listpids_list, "pids", "List of pids"),
+	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
+};
+#undef add_parse_req
+
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(openapi_resp_liststeps_info_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_LISTSTEPS_INFO_RESP)[] = {
+	add_parse_req(LISTSTEPS_INFO_LIST, liststeps_list, "steps", "List of steps"),
+	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
+};
+#undef add_parse_req
+
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_resp_slurmdbd_config_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
@@ -10020,6 +10076,9 @@ static const parser_t parsers[] = {
 	addpp(NODES_PTR, node_info_msg_t *, NODES, false, NULL, NULL),
 	addpp(LICENSES_PTR, license_info_msg_t *, LICENSES, false, NULL, NULL),
 	addpp(JOB_INFO_MSG_PTR, job_info_msg_t *, JOB_INFO_MSG, false, NULL, NULL),
+	addpp(LISTJOBS_INFO_PTR, listjobs_info_t *, LISTJOBS_INFO, false, NULL, NULL),
+	addpp(LISTPIDS_INFO_PTR, listpids_info_t *, LISTPIDS_INFO, false, NULL, NULL),
+	addpp(LISTSTEPS_INFO_PTR, liststeps_info_t *, LISTSTEPS_INFO, false, NULL, NULL),
 	addpp(PARTITION_INFO_MSG_PTR, partition_info_msg_t *, PARTITION_INFO_MSG, false, NULL, NULL),
 	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG, false, NULL, NULL),
 	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP, false, NULL, NULL),
@@ -10062,6 +10121,9 @@ static const parser_t parsers[] = {
 	addpap(LICENSE, slurm_license_info_t, NULL, NULL),
 	addpap(JOB_INFO, slurm_job_info_t, NULL, NULL),
 	addpap(JOB_RES, job_resources_t, NULL, NULL),
+	addpap(LISTJOBS_INFO, listjobs_info_t, NULL, NULL),
+	addpap(LISTPIDS_INFO, listpids_info_t, NULL, NULL),
+	addpap(LISTSTEPS_INFO, liststeps_info_t, NULL, NULL),
 	addpap(CONTROLLER_PING, controller_ping_t, NULL, NULL),
 	addpap(SLURMDBD_PING, slurmdbd_ping_t, NULL, NULL),
 	addpap(STEP_INFO, job_step_info_t, NULL, NULL),
@@ -10145,6 +10207,9 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_JOB_INFO_RESP, openapi_resp_job_info_msg_t, NULL, NULL),
 	addpap(OPENAPI_JOB_POST_RESPONSE, openapi_job_post_response_t, NULL, NULL),
 	addpap(OPENAPI_JOB_SUBMIT_RESPONSE, openapi_job_submit_response_t, NULL, NULL),
+	addpap(OPENAPI_LISTJOBS_INFO_RESP, openapi_resp_listjobs_info_t, NULL, NULL),
+	addpap(OPENAPI_LISTPIDS_INFO_RESP, openapi_resp_listpids_info_t, NULL, NULL),
+	addpap(OPENAPI_LISTSTEPS_INFO_RESP, openapi_resp_liststeps_info_t, NULL, NULL),
 	addpap(OPENAPI_NODES_RESP, openapi_resp_node_info_msg_t, NULL, NULL),
 	addpap(OPENAPI_PARTITION_RESP, openapi_resp_partitions_info_msg_t, NULL, NULL),
 	addpap(OPENAPI_RESERVATION_RESP, openapi_resp_reserve_info_msg_t, NULL, NULL),
@@ -10234,6 +10299,9 @@ static const parser_t parsers[] = {
 	addpl(CLUSTER_ACCT_REC_LIST, CLUSTER_ACCT_REC_PTR, NEED_NONE),
 	addpl(INSTANCE_LIST, INSTANCE_PTR, NEED_NONE),
 	addpl(JOB_LIST, JOB_PTR, NEED_NONE),
+	addpl(LISTJOBS_INFO_LIST, LISTJOBS_INFO_PTR, NEED_NONE),
+	addpl(LISTPIDS_INFO_LIST, LISTPIDS_INFO_PTR, NEED_NONE),
+	addpl(LISTSTEPS_INFO_LIST, LISTSTEPS_INFO_PTR, NEED_NONE),
 	addpl(STEP_LIST, STEP_PTR, NEED_NONE),
 	addpl(STATS_RPC_LIST, STATS_RPC_PTR, NEED_NONE),
 	addpl(STATS_USER_LIST, STATS_USER_PTR, NEED_NONE),

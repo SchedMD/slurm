@@ -1338,6 +1338,12 @@ extern void slurm_copy_node_alias_addrs_members(slurm_node_alias_addrs_t *dest,
 extern int slurm_find_char_exact_in_list(void *x, void *key);
 extern int slurm_find_char_in_list(void *x, void *key);
 extern int slurm_find_ptr_in_list(void *x, void *key);
+extern int slurm_find_uint16_in_list(void *x, void *key);
+extern int slurm_find_uint32_in_list(void *x, void *key);
+extern int slurm_find_uint64_in_list(void *x, void *key);
+extern int slurm_find_uint_in_list(void *x, void *key);
+extern int slurm_find_int_in_list(void *x, void *key);
+extern int slurm_find_int64_in_list(void *x, void *key);
 extern void slurm_remove_char_list_from_char_list(list_t *haystack,
 						  list_t *needles);
 

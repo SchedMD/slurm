@@ -51,12 +51,14 @@ scontrol [<OPTION>] [<COMMAND>]
      holdu <job_list>         place user hold on specified job (see hold)
      hide                     do not display information about hidden
 			      partitions
+     listjobs		      List jobs on node where scontrol is run.
      listpids <job_id<.step>> List pids associated with the given jobid, or
 			      all jobs if no id is given (This will only
 			      display the processes on the node which the
 			      scontrol is ran on, and only for those
 			      processes spawned by Slurm and their
 			      descendants)
+     liststeps		      List steps on node where scontrol is run.
      notify <job_id> msg      send message to specified job
      oneliner                 report output one record per line.
      pidinfo <pid>            return slurm job information for given pid.

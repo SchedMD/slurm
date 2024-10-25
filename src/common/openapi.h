@@ -334,6 +334,27 @@ typedef struct {
 } openapi_job_info_query_t;
 
 typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	list_t *listjobs_list;
+} openapi_resp_listjobs_info_t;
+
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	list_t *listpids_list;
+} openapi_resp_listpids_info_t;
+
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	list_t *liststeps_list;
+} openapi_resp_liststeps_info_t;
+
+typedef struct {
 	char *node_name;
 } openapi_node_param_t;
 
