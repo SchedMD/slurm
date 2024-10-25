@@ -3838,15 +3838,26 @@ extern bool update_job_dependency_list(job_record_t *job_ptr,
 	return was_changed;
 }
 
+static int _foreach_handle_job_dependency_updates(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+	test_job_dep_t *test_job_dep = arg;
+
+	_test_dependency_state(dep_ptr, &test_job_dep->or_satisfied,
+			       &test_job_dep->and_failed,
+			       &test_job_dep->or_flag,
+			       &test_job_dep->has_unfulfilled);
+
+	return 0;
+}
+
 extern int handle_job_dependency_updates(void *object, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) object;
-	depend_spec_t *dep_ptr = NULL;
-	list_itr_t *itr;
-	bool or_satisfied = false, and_failed = false, or_flag = false,
-	     has_unfulfilled = false;
 	time_t now = time(NULL);
-
+	test_job_dep_t test_job_dep = {
+		.job_ptr = job_ptr,
+	};
 	xassert(job_ptr->details);
 	xassert(job_ptr->details->depend_list);
 
@@ -3863,14 +3874,14 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 	 *   - One+ not fulfilled == still dependent
 	 *   - All succeeded == dependency fulfilled
 	 */
-	itr = list_iterator_create(job_ptr->details->depend_list);
-	while ((dep_ptr = list_next(itr))) {
-		_test_dependency_state(dep_ptr, &or_satisfied, &and_failed,
-				       &or_flag, &has_unfulfilled);
-	}
-	list_iterator_destroy(itr);
+	(void) list_for_each(job_ptr->details->depend_list,
+			     _foreach_handle_job_dependency_updates,
+			     &test_job_dep);
 
-	if (or_satisfied || (!or_flag && !and_failed && !has_unfulfilled)) {
+	if (test_job_dep.or_satisfied ||
+	    (!test_job_dep.or_flag &&
+	     !test_job_dep.and_failed &&
+	     !test_job_dep.has_unfulfilled)) {
 		/* Dependency fulfilled */
 		fed_mgr_remove_remote_dependencies(job_ptr);
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
@@ -3887,7 +3898,8 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 		_depend_list2str(job_ptr, false);
 		job_ptr->bit_flags |= JOB_DEPENDENT;
 		acct_policy_remove_accrue_time(job_ptr, false);
-		if (and_failed || (or_flag && !has_unfulfilled)) {
+		if (test_job_dep.and_failed ||
+		    (test_job_dep.or_flag && !test_job_dep.has_unfulfilled)) {
 			/* Dependency failed */
 			handle_invalid_dependency(job_ptr);
 		} else {
