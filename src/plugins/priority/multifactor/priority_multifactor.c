@@ -60,12 +60,13 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/parse_time.h"
-#include "src/interfaces/site_factor.h"
-#include "src/interfaces/mcs.h"
-#include "src/interfaces/priority.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/gres.h"
+#include "src/interfaces/mcs.h"
+#include "src/interfaces/priority.h"
+#include "src/interfaces/site_factor.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/licenses.h"
