@@ -2524,7 +2524,6 @@ static int _foreach_set_het_job_env(void *x, void *arg)
 	job_record_t *het_job_leader = het_job_env->het_job_leader;
 	int het_job_offset = het_job_env->het_job_offset;
 	batch_job_launch_msg_t *launch_msg_ptr = het_job_env->launch_msg_ptr;
-	uint16_t cpus_per_task = 1;
 	uint32_t num_cpus = 0;
 	uint64_t tmp_mem = 0;
 	char *tmp_str = NULL;
@@ -2533,11 +2532,6 @@ static int _foreach_set_het_job_env(void *x, void *arg)
 		error("%s: Bad het_job_list for %pJ",
 		      __func__, het_job_leader);
 		return 0;
-	}
-	if (het_job->details &&
-	    (het_job->details->cpus_per_task > 0) &&
-	    (het_job->details->cpus_per_task != NO_VAL16)) {
-		cpus_per_task = het_job->details->cpus_per_task;
 	}
 	if (het_job->account) {
 		(void) env_array_overwrite_het_fmt(
@@ -2613,12 +2607,18 @@ static int _foreach_set_het_job_env(void *x, void *arg)
 		slurm_step_layout_req_t step_layout_req;
 		uint16_t cpus_per_task_array[1];
 		uint32_t cpus_task_reps[1], task_dist;
+		uint16_t cpus_per_task = 1;
+
 		memset(&step_layout_req, 0,
 		       sizeof(slurm_step_layout_req_t));
 		for (int i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
 			num_cpus += resrcs_ptr->cpu_array_value[i] *
 				resrcs_ptr->cpu_array_reps[i];
 		}
+
+		if ((het_job->details->cpus_per_task > 0) &&
+		    (het_job->details->cpus_per_task != NO_VAL16))
+			cpus_per_task = het_job->details->cpus_per_task;
 
 		if (het_job->details->num_tasks) {
 			step_layout_req.num_tasks =
