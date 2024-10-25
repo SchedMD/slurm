@@ -60,9 +60,9 @@
 
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
-#define SLURMCTLD_SACK_SOCKET "unix:/run/slurmctld/sack.socket"
-#define SLURMDBD_SACK_SOCKET "unix:/run/slurmdbd/sack.socket"
-#define SLURM_SACK_SOCKET "unix:/run/slurm/sack.socket"
+#define SLURMCTLD_SACK_SOCKET "/run/slurmctld/sack.socket"
+#define SLURMDBD_SACK_SOCKET "/run/slurmdbd/sack.socket"
+#define SLURM_SACK_SOCKET "/run/slurm/sack.socket"
 
 /*
  * Loosely inspired by MUNGE.
@@ -256,6 +256,8 @@ extern void init_sack_conmgr(void)
 	static const conmgr_events_t events = {
 		.on_data = _on_connection_data,
 	};
+	int fd;
+	slurm_addr_t addr = {0};
 	int rc;
 	mode_t mask;
 	const char *path = NULL;
@@ -271,16 +273,33 @@ extern void init_sack_conmgr(void)
 		path = SLURM_SACK_SOCKET;
 	}
 
+	if ((addr = sockaddr_from_unix_path(path)).ss_family != AF_UNIX)
+		fatal("%s: Unexpected invalid socket address", __func__);
+
 	conmgr_init(0, 0, callbacks);
 
+	if ((fd = socket(AF_UNIX, (SOCK_STREAM | SOCK_CLOEXEC), 0)) < 0)
+		fatal("%s: socket() failed: %m", __func__);
+
+	/* set value of socket path */
 	mask = umask(0);
 
-	if ((rc = conmgr_create_listen_socket(CON_TYPE_RAW, path, &events,
-					      NULL)))
-		fatal("%s: [%s] unable to create socket: %s",
-		      __func__, path, slurm_strerror(rc));
-
+	/* bind() will EINVAL if socklen=sizeof(addr) */
+	if ((rc = bind(fd, (const struct sockaddr *) &addr,
+		       sizeof(struct sockaddr_un))))
+		fatal("%s: [%pA] Unable to bind UNIX socket: %m",
+		      __func__, &addr);
 	umask(mask);
+
+	fd_set_oob(fd, 0);
+
+	if ((rc = listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG)))
+		fatal("%s: [%pA] unable to listen(): %m", __func__, &addr);
+
+	if ((rc = conmgr_process_fd_listen(fd, CON_TYPE_RAW, &events,
+					   CON_FLAG_NONE, NULL)))
+		fatal("%s: [fd:%d] conmgr rejected socket: %s",
+		      __func__, fd, slurm_strerror(rc));
 
 	/*
 	 * We do not need to call conmgr_run() here since only the daemons
