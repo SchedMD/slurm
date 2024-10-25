@@ -224,6 +224,8 @@ documents those changes that are of interest to users and administrators.
       'squeue --yaml'
  -- data_parser v0.0.42 - fix timestamp parsing regression introduced in in
     v0.0.40 (eaf3b6631f), parsing of non iso 8601 style timestamps
+ -- cgroup/v2 will detect some special container and namespaced setups and
+    will work with it.
 
 * Changes in Slurm 24.05.5
 ==========================
