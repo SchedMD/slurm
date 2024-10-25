@@ -2838,6 +2838,18 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	return SLURM_ERROR;
 }
 
+static int _foreach_depend_list_copy(void *x, void *arg)
+{
+	depend_spec_t *dep_src = x;
+	list_t **depend_list_dest = arg;
+	depend_spec_t *dep_dest = xmalloc(sizeof(depend_spec_t));
+
+	memcpy(dep_dest, dep_src, sizeof(depend_spec_t));
+	list_append(*depend_list_dest, dep_dest);
+
+	return 0;
+}
+
 /*
  * Copy a job's dependency list
  * IN depend_list_src - a job's depend_lst
@@ -2845,21 +2857,14 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
  */
 extern list_t *depended_list_copy(list_t *depend_list_src)
 {
-	depend_spec_t *dep_src, *dep_dest;
-	list_itr_t *iter;
 	list_t *depend_list_dest = NULL;
 
 	if (!depend_list_src)
 		return depend_list_dest;
 
 	depend_list_dest = list_create(xfree_ptr);
-	iter = list_iterator_create(depend_list_src);
-	while ((dep_src = list_next(iter))) {
-		dep_dest = xmalloc(sizeof(depend_spec_t));
-		memcpy(dep_dest, dep_src, sizeof(depend_spec_t));
-		list_append(depend_list_dest, dep_dest);
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(depend_list_src, _foreach_depend_list_copy,
+			     &depend_list_dest);
 	return depend_list_dest;
 }
 
