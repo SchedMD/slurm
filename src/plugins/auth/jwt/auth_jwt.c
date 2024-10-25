@@ -678,3 +678,8 @@ fail:
 	jwt_free(jwt);
 	return NULL;
 }
+
+extern int auth_p_get_reconfig_fd(void)
+{
+	return -1;
+}

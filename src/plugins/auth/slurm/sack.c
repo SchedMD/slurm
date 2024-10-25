@@ -44,6 +44,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
@@ -60,9 +61,12 @@
 
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
-#define SLURMCTLD_SACK_SOCKET "unix:/run/slurmctld/sack.socket"
-#define SLURMDBD_SACK_SOCKET "unix:/run/slurmdbd/sack.socket"
-#define SLURM_SACK_SOCKET "unix:/run/slurm/sack.socket"
+#define SLURMCTLD_SACK_SOCKET "/run/slurmctld/sack.socket"
+#define SLURMDBD_SACK_SOCKET "/run/slurmdbd/sack.socket"
+#define SLURM_SACK_SOCKET "/run/slurm/sack.socket"
+#define SACK_RECONFIG_ENV "SACK_RECONFIG_FD"
+
+static int sack_fd = -1;
 
 /*
  * Loosely inspired by MUNGE.
@@ -257,33 +261,73 @@ extern void init_sack_conmgr(void)
 		.on_data = _on_connection_data,
 	};
 	int rc;
-	mode_t mask;
 	const char *path = NULL;
-
-	if (running_in_slurmctld()) {
-		_prepare_run_dir("slurmctld");
-		path = SLURMCTLD_SACK_SOCKET;
-	} else if (running_in_slurmdbd()) {
-		_prepare_run_dir("slurmdbd");
-		path = SLURMDBD_SACK_SOCKET;
-	} else {
-		_prepare_run_dir("slurm");
-		path = SLURM_SACK_SOCKET;
-	}
+	const char *env_fd = NULL;
 
 	conmgr_init(0, 0, callbacks);
 
-	mask = umask(0);
+	if (sack_fd >= 0) {
+		/* already have the FD -> do nothing */
+	} else if ((env_fd = getenv(SACK_RECONFIG_ENV))) {
+		if ((sack_fd = atoi(env_fd)) < 0)
+			fatal("%s: Invalid %s=%s environment variable",
+			      __func__, SACK_RECONFIG_ENV, env_fd);
+	} else {
+		slurm_addr_t addr = {0};
+		mode_t mask;
 
-	if ((rc = conmgr_create_listen_socket(CON_TYPE_RAW, path, &events,
-					      NULL)))
-		fatal("%s: [%s] unable to create socket: %s",
-		      __func__, path, slurm_strerror(rc));
+		if (running_in_slurmctld()) {
+			_prepare_run_dir("slurmctld");
+			path = SLURMCTLD_SACK_SOCKET;
+		} else if (running_in_slurmdbd()) {
+			_prepare_run_dir("slurmdbd");
+			path = SLURMDBD_SACK_SOCKET;
+		} else {
+			_prepare_run_dir("slurm");
+			path = SLURM_SACK_SOCKET;
+		}
 
-	umask(mask);
+		if ((addr = sockaddr_from_unix_path(path)).ss_family != AF_UNIX)
+			fatal("%s: Unexpected invalid socket address",
+			      __func__);
+
+		if ((sack_fd = socket(AF_UNIX, (SOCK_STREAM | SOCK_CLOEXEC), 0))
+		     < 0)
+			fatal("%s: socket() failed: %m", __func__);
+
+		/* set value of socket path */
+		mask = umask(0);
+
+		/* bind() will EINVAL if socklen=sizeof(addr) */
+		if ((rc = bind(sack_fd, (const struct sockaddr *) &addr,
+			       sizeof(struct sockaddr_un))))
+			fatal("%s: [%pA] Unable to bind UNIX socket: %m",
+			      __func__, &addr);
+		umask(mask);
+
+		fd_set_oob(sack_fd, 0);
+
+		if ((rc = listen(sack_fd, SLURM_DEFAULT_LISTEN_BACKLOG)))
+			fatal("%s: [%pA] unable to listen(): %m",
+			      __func__, &addr);
+	}
+
+	if ((rc = conmgr_process_fd_listen(sack_fd, CON_TYPE_RAW, &events,
+					   CON_FLAG_NONE, NULL)))
+		fatal("%s: [fd:%d] conmgr rejected socket: %s",
+		      __func__, sack_fd, slurm_strerror(rc));
 
 	/*
 	 * We do not need to call conmgr_run() here since only the daemons
 	 * get here, and all the daemons call conmgr_run() separately.
 	 */
+
+	/* Prepare for reconfigure */
+	setenvfs("%s=%d", SACK_RECONFIG_ENV, sack_fd);
+	fd_set_noclose_on_exec(sack_fd);
+}
+
+extern int auth_p_get_reconfig_fd(void)
+{
+	return sack_fd;
 }

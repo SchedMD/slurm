@@ -312,8 +312,11 @@ static void *_try_to_reconfig(void *ptr)
 	struct rlimit rlim;
 	char **child_env;
 	pid_t pid;
-	int to_parent[2] = {-1, -1};
-	int close_skip[3] = { -1, -1, -1 }, skip_index = 0;
+	int to_parent[2] = {-1, -1}, auth_fd = -1;
+	int close_skip[] = { -1, -1, -1, -1 }, skip_index = 0;
+
+	if ((auth_fd = auth_g_get_reconfig_fd(AUTH_PLUGIN_SLURM)) >= 0)
+		close_skip[skip_index++] = auth_fd;
 
 	conmgr_quiesce(__func__);
 

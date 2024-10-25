@@ -1401,8 +1401,11 @@ static void *_try_to_reconfig(void *ptr)
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
 	const int rpc_wait = MAX(5, (slurm_conf.msg_timeout / 2));
-	int close_skip[3] = { -1, -1, -1 }, skip_index = 0;
+	int close_skip[] = { -1, -1, -1, -1 }, skip_index = 0, auth_fd = -1;
 	DEF_TIMERS;
+
+	if ((auth_fd = auth_g_get_reconfig_fd(AUTH_PLUGIN_SLURM)) >= 0)
+		close_skip[skip_index++] = auth_fd;
 
 	conmgr_quiesce(__func__);
 

@@ -644,3 +644,8 @@ char *auth_p_token_generate(const char *username, int lifespan)
 {
 	return NULL;
 }
+
+extern int auth_p_get_reconfig_fd(void)
+{
+	return -1;
+}

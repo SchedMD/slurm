@@ -1216,7 +1216,7 @@ static int _try_to_reconfig(void)
 	char **child_env;
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
-	int *skip_close = NULL, skip_index = 0;
+	int *skip_close = NULL, skip_index = 0, auth_fd = -1;
 
 	child_env = env_array_copy((const char **) environ);
 	setenvf(&child_env, "SLURMCTLD_RECONF", "1");
@@ -1225,8 +1225,15 @@ static int _try_to_reconfig(void)
 		fd_set_noclose_on_exec(pidfd);
 	}
 	slurm_mutex_lock(&listeners.mutex);
-	/* need space for {to_parent[1], pidfd, -1} plus listening sockets */
-	skip_close = xcalloc((listeners.count + 3), sizeof(*skip_close));
+	/*
+	 * Need space in array for:
+	 *  - to_parent[1]
+	 *  - pidfd
+	 *  - auth fd
+	 *  - terminator (-1)
+	 *  - listeners.count number of listening sockets
+	 */
+	skip_close = xcalloc((listeners.count + 4), sizeof(*skip_close));
 	if (listeners.count) {
 		char *ports = NULL, *pos = NULL;
 
@@ -1243,6 +1250,8 @@ static int _try_to_reconfig(void)
 		xfree(ports);
 	}
 	slurm_mutex_unlock(&listeners.mutex);
+	if ((auth_fd = auth_g_get_reconfig_fd(AUTH_PLUGIN_SLURM)) >= 0)
+		skip_close[skip_index++] = auth_fd;
 	for (int i = 0; i < 3; i++)
 		fd_set_noclose_on_exec(i);
 	if (!daemonize && !under_systemd) {
