@@ -2944,6 +2944,8 @@ typedef struct {
 	char *bcast_exclude;	/* Bcast exclude library paths */
 	char *bcast_parameters; /* bcast options */
 	time_t boot_time;	/* time slurmctld last booted */
+	char *certmgr_params;	/* certmgr parameters */
+	char *certmgr_type;	/* certmgr type */
 	void *cgroup_conf;	/* cgroup support config file */
 	char *cli_filter_plugins; /* List of cli_filter plugins to use */
 	char *cluster_name;     /* general name of the entire cluster */
