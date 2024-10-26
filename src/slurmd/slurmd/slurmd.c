@@ -537,6 +537,13 @@ main (int argc, char **argv)
 	return SLURM_SUCCESS;
 }
 
+static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	if (_get_tls_certificate()) {
+		error("%s: Unable to get TLS certificate", __func__);
+	}
+}
+
 static int _get_tls_certificate(void)
 {
 	slurm_msg_t req, resp;
@@ -550,6 +557,11 @@ static int _get_tls_certificate(void)
 		log_flag(TLS, "certmgr not enabled, skipping process to get signed TLS certificate from slurmctld (assume node already has signed TLS certificate)");
 		return SLURM_SUCCESS;
 	}
+
+	/* Periodically renew TLS certificate indefinitely */
+	conmgr_add_work_delayed_fifo(
+		_get_tls_cert_work, NULL,
+		certmgr_get_renewal_period_mins() * MINUTE_SECONDS, 0);
 
 	if (!(cert_req.token = certmgr_g_get_node_token(conf->node_name))) {
 		error("%s: Failed to get unique node token", __func__);

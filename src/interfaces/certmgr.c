@@ -67,6 +67,33 @@ extern bool certmgr_enabled(void)
 	return (plugin_inited == PLUGIN_INITED);
 }
 
+extern int certmgr_get_renewal_period_mins(void)
+{
+	static time_t renewal_period = NO_VAL;
+	char *renewal_str = NULL;
+
+	if (renewal_period != NO_VAL)
+		return renewal_period;
+
+	if ((renewal_str = conf_get_opt_str(slurm_conf.certmgr_params,
+					    "certificate_renewal_period="))) {
+		int i = atoi(renewal_str);
+		if (i < 0) {
+			error("Invalid certificate_renewal_period: %s. Needs to be positive integer",
+			      renewal_str);
+			return SLURM_ERROR;
+		}
+
+		renewal_period = i;
+		return renewal_period;
+	} else {
+		/* default setting */
+		renewal_period = DAY_MINUTES;
+	}
+
+	return renewal_period;
+}
+
 extern int certmgr_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -97,6 +124,13 @@ extern int certmgr_g_init(void)
 		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
+
+	if (certmgr_get_renewal_period_mins() == SLURM_ERROR) {
+		rc = SLURM_ERROR;
+		plugin_inited = PLUGIN_NOT_INITED;
+		goto done;
+	}
+
 	plugin_inited = PLUGIN_INITED;
 
 done:

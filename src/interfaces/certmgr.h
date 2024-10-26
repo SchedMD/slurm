@@ -45,6 +45,7 @@ extern int certmgr_g_init(void);
 extern int certmgr_g_fini(void);
 
 extern bool certmgr_enabled(void);
+extern int certmgr_get_renewal_period_mins(void);
 extern char *certmgr_g_get_node_token(char *node_name);
 extern char *certmgr_g_generate_csr(char *node_name);
 extern char *certmgr_g_sign_csr(char *csr, char *token, node_record_t *node);
