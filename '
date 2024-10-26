@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  certmgr.h - certmgr API definitions
+ *  certmgr_script.c
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -33,20 +33,42 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_CERTMGR_H
-#define _INTERFACES_CERTMGR_H
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+#include "src/common/slurm_xlator.h"
 
-#include <inttypes.h>
-#include <stdbool.h>
+#include "src/common/log.h"
+#include "src/common/node_conf.h"
+#include "src/common/xmalloc.h"
 
-#include "src/common/read_config.h"
+#include "src/interfaces/certmgr.h"
 
-extern int certmgr_g_init(void);
-extern int certmgr_g_fini(void);
+const char plugin_name[] = "Certificate manager script plugin";
+const char plugin_type[] = "certmgr/script";
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-extern bool certmgr_enabled(void);
-extern char *certmgr_g_get_node_token(char *node_name);
-extern char *certmgr_g_generate_csr(char *node_name);
-extern char *certmgr_g_sign_csr(char *csr, char *token, node_record_t *node);
+extern int init(void)
+{
+	debug("%s loaded", plugin_type);
+	return SLURM_SUCCESS;
+}
 
-#endif
+extern int fini(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern char *certmgr_p_get_node_token(char *node_name)
+{
+	return NULL;
+}
+
+extern char *certmgr_p_generate_csr(char *node_name)
+{
+	return NULL;
+}
+
+extern char *certmgr_p_sign_csr(char *csr, char *token, node_record_t *node)
+{
+	return NULL;
+}
