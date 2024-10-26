@@ -633,6 +633,12 @@ extern int load_all_node_state ( bool state_only )
 				node_state_rec->extra = NULL;
 			}
 
+			if (!node_ptr->cert_token) {
+				node_ptr->cert_token =
+					node_state_rec->cert_token;
+				node_state_rec->cert_token = NULL;
+			}
+
 			if (!node_ptr->comment) {
 				node_ptr->comment = node_state_rec->comment;
 				node_state_rec->comment = NULL;
@@ -697,6 +703,9 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->extra);
 			node_ptr->extra = node_state_rec->extra;
 			node_state_rec->extra = NULL;
+			xfree(node_ptr->cert_token);
+			node_ptr->cert_token = node_state_rec->cert_token;
+			node_state_rec->cert_token = NULL;
 			xfree(node_ptr->comment);
 			node_ptr->comment = node_state_rec->comment;
 			node_state_rec->comment = NULL;

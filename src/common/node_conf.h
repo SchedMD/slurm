@@ -94,6 +94,7 @@ struct node_record {
 	time_t boot_req_time;		/* Time of node boot request */
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
+	char *cert_token;		/* unique token for certmgr validation */
 	char *comm_name;		/* communications path name to node */
 	char *comment;			/* arbitrary comment */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */

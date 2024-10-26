@@ -1280,6 +1280,7 @@ extern void purge_node_rec(void *in)
 	node_record_t *node_ptr = in;
 
 	xfree(node_ptr->arch);
+	xfree(node_ptr->cert_token);
 	xfree(node_ptr->comment);
 	xfree(node_ptr->comm_name);
 	xfree(node_ptr->cpu_spec_list);
@@ -1568,6 +1569,11 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 	node_record_t *object = in;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (pack_secrets)
+			packstr(object->cert_token, buffer);
+		else
+			packnull(buffer);
+
 		packstr(object->comm_name, buffer);
 		packstr(object->name, buffer);
 		packstr(object->node_hostname, buffer);
@@ -1672,6 +1678,7 @@ extern int node_record_unpack(void **out,
 	*out = object;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->cert_token, buffer);
 		safe_unpackstr(&object->comm_name, buffer);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->node_hostname, buffer);
