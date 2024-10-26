@@ -203,6 +203,7 @@ static void _create_msg_socket(void);
 static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
+static int _get_tls_certificate(void);
 static void      _increment_thd_count(void);
 static void      _init_conf(void);
 static int       _memory_spec_init(void);
@@ -536,6 +537,67 @@ main (int argc, char **argv)
 	return SLURM_SUCCESS;
 }
 
+static int _get_tls_certificate(void)
+{
+	slurm_msg_t req, resp;
+	tls_cert_request_msg_t cert_req = { 0 };
+	tls_cert_response_msg_t *cert_resp;
+
+	slurm_msg_t_init(&req);
+	slurm_msg_t_init(&resp);
+
+	if (!certmgr_enabled()) {
+		log_flag(TLS, "certmgr not enabled, skipping process to get signed TLS certificate from slurmctld (assume node already has signed TLS certificate)");
+		return SLURM_SUCCESS;
+	}
+
+	if (!(cert_req.token = certmgr_g_get_node_token(conf->node_name))) {
+		error("%s: Failed to get unique node token", __func__);
+		return SLURM_ERROR;
+	}
+
+	if (!(cert_req.csr = certmgr_g_generate_csr(conf->node_name))) {
+		error("%s: Failed to generate certificate signing request",
+		      __func__);
+		return SLURM_ERROR;
+	}
+
+	cert_req.node_name = xstrdup(conf->node_name);
+
+	req.msg_type = REQUEST_TLS_CERT;
+	req.data = &cert_req;
+
+	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec)
+	    < 0) {
+		error("Unable to get TLS certificate from slurmctld: %m");
+		return SLURM_ERROR;
+	}
+
+	switch (resp.msg_type) {
+	case RESPONSE_TLS_CERT:
+		break;
+	case RESPONSE_SLURM_RC:
+	{
+		uint32_t resp_rc =
+			((return_code_msg_t *) resp.data)->return_code;
+		error("%s: slurmctld response to TLS certificate request: %s",
+		      __func__, slurm_strerror(resp_rc));
+		return SLURM_ERROR;
+	}
+	default:
+		error("%s: slurmctld responded with unexpected msg type: %s",
+		      __func__, rpc_num2string(resp.msg_type));
+		return SLURM_ERROR;
+	}
+
+	cert_resp = resp.data;
+
+	log_flag(TLS, "Successfully got signed certificate from slurmctld: \n%s",
+		 cert_resp->signed_cert);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Spawn a thread to make sure we send at least one registration message to
  * slurmctld. If slurmctld restarts, it will request another registration
@@ -550,6 +612,9 @@ _registration_engine(void *arg)
 
 	while (!_shutdown && !sent_reg_time) {
 		int rc;
+
+		if (_get_tls_certificate())
+			error("Unable to get TLS certificate");
 
 		if (!(rc = send_registration_msg(SLURM_SUCCESS)))
 			break;
