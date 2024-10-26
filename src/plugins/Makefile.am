@@ -6,6 +6,7 @@ SUBDIRS = \
 	acct_gather_filesystem  \
 	auth			\
 	burst_buffer		\
+	certmgr			\
 	cli_filter		\
 	cred			\
 	data_parser		\
