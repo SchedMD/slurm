@@ -4123,6 +4123,7 @@ function __scontrol_update_nodename() {
 	local parameters=(
 		"activefeatures="
 		"availablefeatures="
+		"certtoken="
 		"comment="
 		"cpubind="
 		"extra="

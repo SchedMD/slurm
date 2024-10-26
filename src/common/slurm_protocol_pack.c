@@ -819,6 +819,7 @@ _pack_update_node_msg(update_node_msg_t * msg, buf_t *buffer,
 	xassert(msg);
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		packstr(msg->cert_token, buffer);
 		packstr(msg->comment, buffer);
 		pack32(msg->cpu_bind, buffer);
 		packstr(msg->extra, buffer);
@@ -881,6 +882,7 @@ _unpack_update_node_msg(update_node_msg_t ** msg, buf_t *buffer,
 	slurm_init_update_node_msg(tmp_ptr);
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&tmp_ptr->cert_token, buffer);
 		safe_unpackstr(&tmp_ptr->comment, buffer);
 		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
 		safe_unpackstr(&tmp_ptr->extra, buffer);

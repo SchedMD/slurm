@@ -1717,6 +1717,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					  node_ptr->node_hostname);
 		}
 
+		if (update_node_msg->cert_token) {
+			xfree(node_ptr->cert_token);
+			if (update_node_msg->cert_token[0])
+				node_ptr->cert_token = xstrdup(
+					update_node_msg->cert_token);
+		}
+
 		if (update_node_msg->cpu_bind) {
 			char tmp_str[128];
 			slurm_sprint_cpu_bind_type(tmp_str,

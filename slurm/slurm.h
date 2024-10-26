@@ -3216,6 +3216,7 @@ typedef struct submit_response_msg {
 typedef struct slurm_update_node_msg {
 	char *comment;		/* arbitrary comment */
 	uint32_t cpu_bind;	/* default CPU binding type */
+	char *cert_token;	/* node's unique token for certmgr validation */
 	char *extra;		/* arbitrary string */
 	char *features;		/* new available feature for node */
 	char *features_act;	/* new active feature for node */

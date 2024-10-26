@@ -109,6 +109,9 @@ scontrol_update_node (int argc, char **argv)
 					 MAX(tag_len,3))) {
 			node_msg.features_act = val;
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "CertToken", MAX(tag_len, 1))) {
+			node_msg.cert_token = val;
+			update_cnt++;
 		} else if (xstrncasecmp(tag, "CpuBind", MAX(tag_len, 7)) == 0) {
 			if (xlate_cpu_bind_str(val, &node_msg.cpu_bind) !=
 			    SLURM_SUCCESS) {
