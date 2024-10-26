@@ -13610,6 +13610,62 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_tls_cert_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	tls_cert_request_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		packstr(msg->csr, buffer);
+		packstr(msg->node_name, buffer);
+		packstr(msg->token, buffer);
+	}
+}
+
+static int _unpack_tls_cert_request_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	tls_cert_request_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->csr, buffer);
+		safe_unpackstr(&msg->node_name, buffer);
+		safe_unpackstr(&msg->token, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_tls_cert_request_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_tls_cert_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	tls_cert_response_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		packstr(msg->signed_cert, buffer);
+	}
+}
+
+static int _unpack_tls_cert_response_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	tls_cert_response_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->signed_cert, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_tls_cert_response_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
 static void _pack_container_id_request_msg(const slurm_msg_t *smsg,
 					   buf_t *buffer)
 {
@@ -14586,6 +14642,12 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 	case RESPONSE_UPDATE_CRONTAB:
 		_pack_crontab_update_response_msg(msg, buffer);
 		break;
+	case REQUEST_TLS_CERT:
+		_pack_tls_cert_request_msg(msg, buffer);
+		break;
+	case RESPONSE_TLS_CERT:
+		_pack_tls_cert_response_msg(msg, buffer);
+		break;
 	case RESPONSE_CONTAINER_STATE:
 		_pack_container_state_msg(msg, buffer);
 		break;
@@ -15307,6 +15369,12 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case RESPONSE_UPDATE_CRONTAB:
 		rc = _unpack_crontab_update_response_msg(msg, buffer);
+		break;
+	case REQUEST_TLS_CERT:
+		rc = _unpack_tls_cert_request_msg(msg, buffer);
+		break;
+	case RESPONSE_TLS_CERT:
+		rc = _unpack_tls_cert_response_msg(msg, buffer);
 		break;
 	case RESPONSE_CONTAINER_STATE:
 		rc = _unpack_container_state_msg(msg, buffer);

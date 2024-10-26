@@ -4796,6 +4796,26 @@ extern void slurm_free_crontab_update_response_msg(
 	xfree(msg);
 }
 
+extern void slurm_free_tls_cert_request_msg(tls_cert_request_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->csr);
+	xfree(msg->node_name);
+	xfree(msg->token);
+	xfree(msg);
+}
+
+extern void slurm_free_tls_cert_response_msg(tls_cert_response_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->signed_cert);
+	xfree(msg);
+}
+
 extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg)
 {
 	if (!msg)
@@ -5310,6 +5330,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_UPDATE_CRONTAB:
 		slurm_free_crontab_update_response_msg(data);
+		break;
+	case REQUEST_TLS_CERT:
+		slurm_free_tls_cert_request_msg(data);
+		break;
+	case RESPONSE_TLS_CERT:
+		slurm_free_tls_cert_response_msg(data);
 		break;
 	case REQUEST_STEP_BY_CONTAINER_ID:
 		slurm_free_container_id_request_msg(data);
