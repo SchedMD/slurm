@@ -250,6 +250,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"BcastParameters", S_P_STRING},
 	{"BurstBufferParameters", S_P_STRING},
 	{"BurstBufferType", S_P_STRING},
+	{"CertmgrType", S_P_STRING},
+	{"CertmgrParameters", S_P_STRING},
 	{"CliFilterPlugins", S_P_STRING},
 	{"ClusterName", S_P_STRING},
 	{"CommunicationParameters", S_P_STRING},
@@ -2913,6 +2915,8 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->bb_type);
 	xfree(ctl_conf_ptr->bcast_exclude);
 	xfree (ctl_conf_ptr->bcast_parameters);
+	xfree(ctl_conf_ptr->certmgr_params);
+	xfree(ctl_conf_ptr->certmgr_type);
 	FREE_NULL_LIST(ctl_conf_ptr->cgroup_conf);
 	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->cluster_name);
@@ -3061,6 +3065,8 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->bb_type);
 	xfree(ctl_conf_ptr->bcast_exclude);
 	xfree(ctl_conf_ptr->bcast_parameters);
+	xfree(ctl_conf_ptr->certmgr_params);
+	xfree(ctl_conf_ptr->certmgr_type);
 	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree (ctl_conf_ptr->comm_params);
@@ -4100,6 +4106,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	}
 
 	(void) s_p_get_string(&conf->bb_type, "BurstBufferType", hashtbl);
+
+	(void) s_p_get_string(&conf->certmgr_params, "CertmgrParameters",
+			      hashtbl);
+	(void) s_p_get_string(&conf->certmgr_type, "CertmgrType", hashtbl);
 
 	(void) s_p_get_string(&conf->comm_params, "CommunicationParameters",
 			      hashtbl);

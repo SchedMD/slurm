@@ -94,6 +94,7 @@ struct node_record {
 	time_t boot_req_time;		/* Time of node boot request */
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
+	char *cert_token;		/* unique token for certmgr validation */
 	char *comm_name;		/* communications path name to node */
 	char *comment;			/* arbitrary comment */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */
@@ -522,9 +523,14 @@ extern char *node_conf_nodestr_tokenize(char *s, char **save_ptr);
  */
 extern void node_conf_create_cluster_core_bitmap(bitstr_t **core_bitmap);
 
+/* used for stepmgr and omits sensitive fields */
 extern void node_record_pack(void *in,
 			     uint16_t protocol_version,
 			     buf_t *buffer);
+/* used for state files and may contain sensitive fields */
+extern void node_record_pack_state(void *in,
+				   uint16_t protocol_version,
+				   buf_t *buffer);
 extern int node_record_unpack(void **out,
 			      uint16_t protocol_version,
 			      buf_t *buffer);

@@ -196,6 +196,7 @@
 #define HOUR_MINUTES 60
 #define HOUR_SECONDS (HOUR_MINUTES * MINUTE_SECONDS)
 #define DAY_HOURS 24
+#define DAY_MINUTES (DAY_HOURS * HOUR_MINUTES)
 #define YEAR_DAYS 365
 #define YEAR_MINUTES (YEAR_DAYS * DAY_HOURS * HOUR_MINUTES)
 #define YEAR_SECONDS (YEAR_DAYS * DAY_HOURS * HOUR_SECONDS)
@@ -1084,6 +1085,16 @@ typedef struct {
 	uint32_t gid;
 } crontab_update_request_msg_t;
 
+typedef struct {
+	char *csr;
+	char *node_name;
+	char *token;
+} tls_cert_request_msg_t;
+
+typedef struct {
+	char *signed_cert;
+} tls_cert_response_msg_t;
+
 typedef enum {
 	DYN_NODE_NONE = 0,
 	DYN_NODE_FUTURE,
@@ -1619,6 +1630,8 @@ extern void slurm_free_crontab_update_request_msg(
 	crontab_update_request_msg_t *msg);
 extern void slurm_free_crontab_update_response_msg(
 	crontab_update_response_msg_t *msg);
+extern void slurm_free_tls_cert_request_msg(tls_cert_request_msg_t *msg);
+extern void slurm_free_tls_cert_response_msg(tls_cert_response_msg_t *msg);
 extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg);
 extern void slurm_free_sbcast_cred_req_msg(sbcast_cred_req_msg_t *msg);
 

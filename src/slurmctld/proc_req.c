@@ -73,6 +73,7 @@
 #include "src/interfaces/acct_gather.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/burst_buffer.h"
+#include "src/interfaces/certmgr.h"
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
@@ -6038,6 +6039,34 @@ end_it:
 	//slurm_persist_conn_destroy(persist_conn);
 }
 
+static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
+{
+	tls_cert_request_msg_t *req = msg->data;
+	tls_cert_response_msg_t resp = { 0 };
+	node_record_t *node = NULL;
+
+	if (!validate_slurm_user(msg->auth_uid)) {
+		error("Security violation, REQUEST_TLS_CERT from uid=%u",
+		      msg->auth_uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
+	if (!(node = find_node_record(req->node_name))) {
+		error("%s: Could not find node record.", __func__);
+		slurm_send_rc_msg(msg, SLURM_ERROR);
+	}
+
+	if (!(resp.signed_cert = certmgr_g_sign_csr(req->csr, req->token,
+						    node))) {
+		error("%s: Unable to sign certificate signing request.",
+		      __func__);
+		slurm_send_rc_msg(msg, SLURM_ERROR);
+	}
+
+	(void) send_msg_response(msg, RESPONSE_TLS_CERT, &resp);
+}
+
 static void _slurm_rpc_sib_job_lock(slurm_msg_t *msg)
 {
 	int rc;
@@ -6861,6 +6890,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_UPDATE_CRONTAB,
 		.func = _slurm_rpc_update_crontab,
+	},{
+		.msg_type = REQUEST_TLS_CERT,
+		.func = _slurm_rpc_tls_cert,
 	},{
 		.msg_type = REQUEST_NODE_ALIAS_ADDRS,
 		.func = _slurm_rpc_node_alias_addrs,

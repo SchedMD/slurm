@@ -91,6 +91,7 @@
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/burst_buffer.h"
+#include "src/interfaces/certmgr.h"
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
@@ -605,6 +606,8 @@ int main(int argc, char **argv)
 		fatal("failed to initialize hash plugin");
 	if (tls_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize tls plugin");
+	if (certmgr_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize certmgr plugin");
 
 	if (original && !under_systemd) {
 		/*
@@ -1056,6 +1059,7 @@ int main(int argc, char **argv)
 	auth_g_fini();
 	hash_g_fini();
 	tls_g_fini();
+	certmgr_g_fini();
 	switch_g_fini();
 	site_factor_g_fini();
 

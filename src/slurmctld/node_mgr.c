@@ -213,7 +213,8 @@ int dump_all_node_state ( void )
 	for (inx = 0; (node_ptr = next_node(&inx)); inx++) {
 		xassert (node_ptr->magic == NODE_MAGIC);
 		xassert (node_ptr->config_ptr->magic == CONFIG_MAGIC);
-		node_record_pack(node_ptr, SLURM_PROTOCOL_VERSION, buffer);
+		node_record_pack_state(node_ptr, SLURM_PROTOCOL_VERSION,
+				       buffer);
 	}
 
 	old_file = xstrdup(slurm_conf.state_save_location);
@@ -632,6 +633,12 @@ extern int load_all_node_state ( bool state_only )
 				node_state_rec->extra = NULL;
 			}
 
+			if (!node_ptr->cert_token) {
+				node_ptr->cert_token =
+					node_state_rec->cert_token;
+				node_state_rec->cert_token = NULL;
+			}
+
 			if (!node_ptr->comment) {
 				node_ptr->comment = node_state_rec->comment;
 				node_state_rec->comment = NULL;
@@ -696,6 +703,9 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->extra);
 			node_ptr->extra = node_state_rec->extra;
 			node_state_rec->extra = NULL;
+			xfree(node_ptr->cert_token);
+			node_ptr->cert_token = node_state_rec->cert_token;
+			node_state_rec->cert_token = NULL;
 			xfree(node_ptr->comment);
 			node_ptr->comment = node_state_rec->comment;
 			node_state_rec->comment = NULL;
@@ -1705,6 +1715,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			/* This updates the lookup table addresses */
 			slurm_reset_alias(node_ptr->name, node_ptr->comm_name,
 					  node_ptr->node_hostname);
+		}
+
+		if (update_node_msg->cert_token) {
+			xfree(node_ptr->cert_token);
+			if (update_node_msg->cert_token[0])
+				node_ptr->cert_token = xstrdup(
+					update_node_msg->cert_token);
 		}
 
 		if (update_node_msg->cpu_bind) {

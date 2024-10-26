@@ -1280,6 +1280,7 @@ extern void purge_node_rec(void *in)
 	node_record_t *node_ptr = in;
 
 	xfree(node_ptr->arch);
+	xfree(node_ptr->cert_token);
 	xfree(node_ptr->comment);
 	xfree(node_ptr->comm_name);
 	xfree(node_ptr->cpu_spec_list);
@@ -1562,13 +1563,17 @@ extern void node_conf_create_cluster_core_bitmap(bitstr_t **core_bitmap)
  * Used for dumping node state and passing node_record_t between ctld and
  * stepmgr.
  */
-extern void node_record_pack(void *in,
-			     uint16_t protocol_version,
-			     buf_t *buffer)
+static void _node_record_pack(void *in, uint16_t protocol_version,
+			      buf_t *buffer, bool pack_secrets)
 {
 	node_record_t *object = in;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (pack_secrets)
+			packstr(object->cert_token, buffer);
+		else
+			packnull(buffer);
+
 		packstr(object->comm_name, buffer);
 		packstr(object->name, buffer);
 		packstr(object->node_hostname, buffer);
@@ -1652,6 +1657,18 @@ extern void node_record_pack(void *in,
 	}
 }
 
+extern void node_record_pack(void *in, uint16_t protocol_version,
+			     buf_t *buffer)
+{
+	_node_record_pack(in, protocol_version, buffer, false);
+}
+
+extern void node_record_pack_state(void *in, uint16_t protocol_version,
+				   buf_t *buffer)
+{
+	_node_record_pack(in, protocol_version, buffer, true);
+}
+
 extern int node_record_unpack(void **out,
 			      uint16_t protocol_version,
 			      buf_t *buffer)
@@ -1661,6 +1678,7 @@ extern int node_record_unpack(void **out,
 	*out = object;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->cert_token, buffer);
 		safe_unpackstr(&object->comm_name, buffer);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->node_hostname, buffer);

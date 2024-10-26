@@ -2944,6 +2944,8 @@ typedef struct {
 	char *bcast_exclude;	/* Bcast exclude library paths */
 	char *bcast_parameters; /* bcast options */
 	time_t boot_time;	/* time slurmctld last booted */
+	char *certmgr_params;	/* certmgr parameters */
+	char *certmgr_type;	/* certmgr type */
 	void *cgroup_conf;	/* cgroup support config file */
 	char *cli_filter_plugins; /* List of cli_filter plugins to use */
 	char *cluster_name;     /* general name of the entire cluster */
@@ -3214,6 +3216,7 @@ typedef struct submit_response_msg {
 typedef struct slurm_update_node_msg {
 	char *comment;		/* arbitrary comment */
 	uint32_t cpu_bind;	/* default CPU binding type */
+	char *cert_token;	/* node's unique token for certmgr validation */
 	char *extra;		/* arbitrary string */
 	char *features;		/* new available feature for node */
 	char *features_act;	/* new active feature for node */
