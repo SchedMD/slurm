@@ -103,6 +103,7 @@
 
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/certmgr.h"
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gpu.h"
@@ -2422,6 +2423,8 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (hash_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
+	if (certmgr_g_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	_dynamic_init();
 
@@ -2572,6 +2575,7 @@ _slurmd_fini(void)
 	proctrack_g_fini();
 	auth_g_fini();
 	hash_g_fini();
+	certmgr_g_fini();
 	node_fini2();
 	gres_fini();
 	prep_g_fini();
