@@ -26,6 +26,10 @@ HIGHLIGHTS
  -- Add ability to submit jobs with multiple QOS. These are sorted by priority
     highest being the first.
  -- Removed the instant on feature from switch/hpe_slingshot.
+ -- slurmctld - Changed incoming RPC handling to dedicated thread pool with
+    asynchronous handling of I/O that can be configured via conmgr_* entries
+    under SlurmctldParameters in slurm.conf.
+
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -36,6 +40,14 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add DataParserParameters slurm.conf parameter to allow setting default
     value for CLI --json and --yaml arguments.
  -- Hardware collectives in switch/hpe_slingshot now requires enable_stepmgr.
+ -- Added connection related parameters to slurm.conf under SlurmctldParameters:
+	conmgr_max_connections: Defaults to 150 connections.
+	conmgr_threads: Defaults to 8 threads for slurmctld.
+	conmgr_use_poll: Defaults is to use epoll in Linux.
+	conmgr_connect_timeout: Defaults to MessageTimeout.
+	conmgr_read_timeout: Defaults to MessageTimeout.
+	conmgr_wait_write_delay: Defaults to MessageTimeout.
+	conmgr_write_timeout: Defaults to MessageTimeout.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
