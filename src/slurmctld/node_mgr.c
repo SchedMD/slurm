@@ -213,7 +213,8 @@ int dump_all_node_state ( void )
 	for (inx = 0; (node_ptr = next_node(&inx)); inx++) {
 		xassert (node_ptr->magic == NODE_MAGIC);
 		xassert (node_ptr->config_ptr->magic == CONFIG_MAGIC);
-		node_record_pack(node_ptr, SLURM_PROTOCOL_VERSION, buffer);
+		node_record_pack_state(node_ptr, SLURM_PROTOCOL_VERSION,
+				       buffer);
 	}
 
 	old_file = xstrdup(slurm_conf.state_save_location);
