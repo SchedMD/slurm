@@ -15426,7 +15426,11 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 extern void pack_step_id(slurm_step_id_t *msg, buf_t *buffer,
 			 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->step_het_comp, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->step_id, buffer);
 		pack32(msg->step_het_comp, buffer);
@@ -15439,6 +15443,10 @@ extern int unpack_step_id_members(slurm_step_id_t *msg, buf_t *buffer,
 	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack32(&msg->step_het_comp, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->step_id, buffer);
 		safe_unpack32(&msg->step_het_comp, buffer);
