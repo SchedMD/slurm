@@ -485,6 +485,16 @@ extern void packstr_with_version(void *object, uint16_t protocol_version,
 	packstr(object, buffer);
 }
 
+extern int unpackstr_with_version(void **object, uint16_t protocol_version,
+				  buf_t *buffer)
+{
+	safe_unpackstr((char **) object, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
 static void _pack_shares_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	shares_request_msg_t *msg = smsg->data;
@@ -494,16 +504,6 @@ static void _pack_shares_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 			       smsg->protocol_version);
 	(void) slurm_pack_list(msg->user_list, packstr_with_version, buffer,
 			       smsg->protocol_version);
-}
-
-extern int unpackstr_with_version(void **object, uint16_t protocol_version,
-				  buf_t *buffer)
-{
-	safe_unpackstr((char **) object, buffer);
-	return SLURM_SUCCESS;
-
-unpack_error:
-	return SLURM_ERROR;
 }
 
 static int _unpack_shares_request_msg(slurm_msg_t *smsg, buf_t *buffer)
