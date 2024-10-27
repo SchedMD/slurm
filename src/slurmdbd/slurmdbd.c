@@ -59,8 +59,6 @@
 #include "src/common/log.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/accounting_storage.h"
-#include "src/interfaces/auth.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"
@@ -69,6 +67,8 @@
 
 #include "src/conmgr/conmgr.h"
 
+#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/auth.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/tls.h"
 
