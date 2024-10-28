@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix issue signaling cron jobs resulting in unintended requeues.
  -- Fix slurmctld memory leak in implementation of HealthCheckNodeState=CYCLE.
+ -- job_container/tmpfs - Fix SLURM_CONF env variable not being properly set.
 
 * Changes in Slurm 24.05.4
 ==========================
