@@ -202,6 +202,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - Changed incoming RPC handling to dedicated thread pool.
  -- job_container/tmpfs - Add EntireStepInNS option that will place the
     slurmstepd process within the constructed namespace directly.
+ -- scontrol show topo - Show aggregated block sizes when using topology/block.
 
 * Changes in Slurm 24.05.5
 ==========================
