@@ -77,10 +77,13 @@ NodeName=node1 CPUs=16 RealMemory=30000 Gres=gpu:2"
 .IP
 
 .TP
-\fB\-\-conf\-server <host>[:<port>]\fR
+\fB\-\-conf\-server <host|ip address>[:<port>]\fR
 Comma\-separated list of controllers, the first being the primary slurmctld. A
 port can (optionally) be specified for each controller. These hosts are where
 the slurmd will fetch the configuration from when running in "configless" mode.
+\fBNOTE\fR: If specifying an IPv6 address, wrap the <ip address> in [] to
+distinguish the address from the port.  This is required even if no port is
+specified.
 .IP
 
 .TP
