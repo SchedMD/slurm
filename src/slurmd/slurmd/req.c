@@ -211,7 +211,6 @@ static uid_t _get_job_uid(uint32_t jobid);
 
 static int  _add_starting_step(uint16_t type, void *req);
 static int  _remove_starting_step(uint16_t type, void *req);
-static int  _compare_starting_steps(void *s0, void *s1);
 static int  _wait_for_starting_step(slurm_step_id_t *step_id);
 static bool _step_is_starting(slurm_step_id_t *step_id);
 
@@ -354,7 +353,7 @@ done:
 
 static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 {
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	job_step_create_request_msg_t *req_step_msg = msg->data;
 	step_id.job_id = req_step_msg->step_id.job_id;
@@ -379,7 +378,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 {
 	srun_job_complete_msg_t *request = msg->data;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	step_id.job_id = request->job_id;
 
@@ -403,7 +402,7 @@ static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
 static void _slurm_rpc_update_step(slurm_msg_t *msg)
 {
 	step_update_request_msg_t *request = msg->data;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	step_id.job_id = request->job_id;
 	step_id.step_id = request->step_id;
@@ -426,7 +425,7 @@ static void _slurm_rpc_sbcast_cred(slurm_msg_t *msg)
 static void _slurm_het_job_alloc_info(slurm_msg_t *msg)
 {
 	job_alloc_info_msg_t *request = msg->data;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	step_id.job_id = request->job_id;
 
@@ -3253,7 +3252,7 @@ _enforce_job_mem_limit(void)
 	step_loc_t *stepd;
 	int fd, i, job_inx, job_cnt;
 	uint64_t step_rss, step_vsize;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 	job_step_stat_t *resp = NULL;
 	struct job_mem_info {
 		uint32_t job_id;
@@ -5684,7 +5683,7 @@ _add_starting_step(uint16_t type, void *req)
 static int
 _remove_starting_step(uint16_t type, void *req)
 {
-	slurm_step_id_t starting_step;
+	slurm_step_id_t starting_step = { 0 };
 	int rc = SLURM_SUCCESS;
 
 	switch(type) {
@@ -5706,7 +5705,7 @@ _remove_starting_step(uint16_t type, void *req)
 	}
 
 	if (!list_delete_all(conf->starting_steps,
-			     _compare_starting_steps,
+			     (ListCmpF) verify_step_id,
 			     &starting_step)) {
 		error("%s: %ps not found", __func__, &starting_step);
 		rc = SLURM_ERROR;
@@ -5715,24 +5714,6 @@ _remove_starting_step(uint16_t type, void *req)
 fail:
 	return rc;
 }
-
-
-
-static int _compare_starting_steps(void *listentry, void *key)
-{
-	slurm_step_id_t *step0 = (slurm_step_id_t *)listentry;
-	slurm_step_id_t *step1 = (slurm_step_id_t *)key;
-
-	/* If step1->step_id is NO_VAL then return for any step */
-	if ((step1->step_id == NO_VAL) &&
-	    (step0->job_id == step1->job_id)) {
-		return 1;
-	} else if (memcmp(step0, step1, sizeof(*step0)))
-		return 0;
-	else
-		return 1;
-}
-
 
 /* Wait for a step to get far enough in the launch process to have
    a socket open, ready to handle RPC calls.  Pass step_id = NO_VAL
@@ -5747,7 +5728,7 @@ static int _wait_for_starting_step(slurm_step_id_t *step_id)
 	int num_passes = 0;
 
 	while (list_find_first(conf->starting_steps,
-			       _compare_starting_steps,
+			       (ListCmpF) verify_step_id,
 			       step_id)) {
 		if (num_passes == 0) {
 			if (step_id->step_id != NO_VAL)
@@ -5785,7 +5766,7 @@ static int _wait_for_starting_step(slurm_step_id_t *step_id)
 static bool _step_is_starting(slurm_step_id_t *step_id)
 {
 	return list_find_first(conf->starting_steps,
-			       _compare_starting_steps,
+			       (ListCmpF) verify_step_id,
 			       step_id);
 }
 

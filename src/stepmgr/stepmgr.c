@@ -4590,7 +4590,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	job_record_t *job_ptr;
 	step_record_t *step_ptr = NULL;
 	update_step_args_t args = { .mod_cnt = 0 };
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	job_ptr = stepmgr_ops->find_job_record(req->job_id);
 	if (job_ptr == NULL) {
