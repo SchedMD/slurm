@@ -203,6 +203,11 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - Add EntireStepInNS option that will place the
     slurmstepd process within the constructed namespace directly.
  -- scontrol show topo - Show aggregated block sizes when using topology/block.
+ -- slurmrestd - Add more descriptive HTTP status for authentication failure
+    and connectivity errors with controller.
+-- slurmrestd - Improve reporting errors from slurmctld for job queries:
+      'GET /slurm/v0.0.41/{job_id}'
+      'GET /slurm/v0.0.41/jobs/'
 
 * Changes in Slurm 24.05.5
 ==========================
