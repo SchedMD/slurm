@@ -36,7 +36,7 @@ def test_gpu_socket_sharing():
     )
     assert (
         re.search(r"GresUsed=gpu.*:2", output) is not None
-    ), "Expect 2 gpus used for job"
+    ), "Verify that job allocated 2 gpus"
 
 
 def test_gpu_socket_sharing_no_alloc():
@@ -49,10 +49,11 @@ def test_gpu_socket_sharing_no_alloc():
         timeout=1,
         fatal=False,
     )
-    assert output["exit_code"] != 0, "Expect command to timeout"
+    assert output["exit_code"] != 0, "Verify that srun command failed"
     assert (
         re.search(
-            r"srun: job [0-9]+ queued and waiting for resources", str(output["stderr"])
+            r"srun: error: .+ Requested node configuration is not available",
+            str(output["stderr"]),
         )
         is not None
-    ), "Expect command to wait on resources"
+    ), "Verify that job is rejected."
