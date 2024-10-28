@@ -64,7 +64,8 @@ static char *client_config_files[] = {
 };
 
 
-static void _init_minimal_conf_server_config(List controllers);
+static void _init_minimal_conf_server_config(List controllers, bool use_v6,
+					     bool reinit);
 
 static int to_parent[2] = {-1, -1};
 
@@ -115,6 +116,7 @@ rwfail:
 static void _fetch_child(List controllers, uint32_t flags)
 {
 	config_response_msg_t *config;
+	ctl_entry_t *ctl = NULL;
 	buf_t *buffer = init_buf(1024 * 1024);
 	int len = 0;
 
@@ -129,8 +131,21 @@ static void _fetch_child(List controllers, uint32_t flags)
 	 */
 	slurm_conf_unlock();
 
-	_init_minimal_conf_server_config(controllers);
+	ctl = list_peek(controllers);
+
+	if (ctl->has_ipv6 && !ctl->has_ipv4)
+		_init_minimal_conf_server_config(controllers, true, false);
+	else
+		_init_minimal_conf_server_config(controllers, false, false);
+
 	config = fetch_config_from_controller(flags);
+
+	if (!config && ctl->has_ipv6 && ctl->has_ipv4) {
+		warning("%s: failed to fetch remote configs via IPv4, retrying with IPv6: %m",
+			__func__);
+		_init_minimal_conf_server_config(controllers, true, true);
+		config = fetch_config_from_controller(flags);
+	}
 
 	if (!config) {
 		error("%s: failed to fetch remote configs: %m", __func__);
@@ -344,7 +359,8 @@ static int _print_controllers(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _init_minimal_conf_server_config(List controllers)
+static void _init_minimal_conf_server_config(List controllers, bool use_v6,
+					     bool reinit)
 {
 	char *conf = NULL, *filename = NULL;
 	int fd;
@@ -356,11 +372,17 @@ static void _init_minimal_conf_server_config(List controllers)
 	if (slurm_conf.authinfo)
 		xstrfmtcat(conf, "AuthInfo=%s\n", slurm_conf.authinfo);
 
+	if (use_v6)
+		xstrcat(conf, "CommunicationParameters=EnableIPv6");
+
 	if ((fd = dump_to_memfd("slurm.conf", conf, &filename)) < 0)
 		fatal("%s: could not write temporary config", __func__);
 	xfree(conf);
 
-	slurm_init(filename);
+	if (reinit)
+		slurm_conf_reinit(filename);
+	else
+		slurm_init(filename);
 
 	close(fd);
 	xfree(filename);
