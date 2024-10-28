@@ -257,6 +257,7 @@ static void _cred_context_unpack(buf_t *buffer)
 		goto unpack_error;
 	_clear_expired_credential_states();
 	slurm_mutex_unlock(&cred_cache_mutex);
+	return;
 
 unpack_error:
 	warning("%s: failed to restore job state from file", __func__);
