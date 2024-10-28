@@ -62,6 +62,9 @@ extern "C" {
 #include <time.h>		/* for time_t definitions */
 #include <unistd.h>
 
+/* Slurm Lexicographically-sortable Unique ID */
+typedef uint64_t sluid_t;
+
 /* Define slurm_addr_t below to avoid including extraneous slurm headers */
 typedef struct sockaddr_storage slurm_addr_t;
 
