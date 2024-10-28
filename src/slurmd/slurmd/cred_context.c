@@ -499,11 +499,10 @@ static int _list_find_cred_state(void *x, void *key)
 	cred_state_t *s = x;
 	slurm_cred_t *cred = key;
 
-	if (!memcmp(&s->step_id, &cred->arg->step_id, sizeof(s->step_id)) &&
-	    (s->ctime == cred->ctime))
-		return 1;
+	if (s->ctime != cred->ctime)
+		return 0;
 
-	return 0;
+	return verify_step_id(&s->step_id, &cred->arg->step_id);
 }
 
 static bool _credential_replayed(slurm_cred_t *cred)
