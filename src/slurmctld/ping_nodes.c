@@ -435,6 +435,8 @@ extern void run_health_check(void)
 			;	/* mid-cycle */
 		else if (difftime(now, cycle_start_time) <
 		         slurm_conf.health_check_interval) {
+			hostlist_destroy(check_agent_args->hostlist);
+			xfree(check_agent_args);
 			return;	/* Wait to start next cycle */
 		}
 		cycle_start_time = now;
