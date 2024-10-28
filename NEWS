@@ -220,6 +220,8 @@ documents those changes that are of interest to users and administrators.
       'scontrol show job ${JOB_ID} --yaml'
       'squeue --json'
       'squeue --yaml'
+ -- data_parser v0.0.42 - fix timestamp parsing regression introduced in in
+    v0.0.40 (eaf3b6631f), parsing of non iso 8601 style timestamps
 
 * Changes in Slurm 24.05.5
 ==========================

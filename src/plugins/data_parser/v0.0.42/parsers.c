@@ -5187,6 +5187,9 @@ static int _parse_timestamp(const parser_t *const parser, time_t *time_ptr,
 		return SLURM_SUCCESS;
 	}
 
+	/* try detecting data's actual type if it was passed as a string */
+	(void) data_convert_type(src, DATA_TYPE_NONE);
+
 	switch (data_get_type(src)) {
 	case DATA_TYPE_NULL:
 		*time_ptr = (time_t) NO_VAL64;
