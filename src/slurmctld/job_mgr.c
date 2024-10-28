@@ -5190,7 +5190,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		if (xstrcasestr(slurm_conf.scron_params, "explicit_scancel") &&
 		    !(flags & KILL_CRON))
 			return ESLURM_CANNOT_CANCEL_CRON_JOB;
-		job_ptr->bit_flags |= ~CRON_JOB;
+		job_ptr->bit_flags &= ~CRON_JOB;
 		error("cancelling cron job, lines %u %u",
 		      entry->line_start, entry->line_end);
 		crontab_add_disabled_lines(job_ptr->user_id, entry->line_start,
