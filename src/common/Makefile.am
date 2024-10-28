@@ -116,6 +116,8 @@ libcommon_la_SOURCES =				\
 	sack_api.h				\
 	setproctitle.c				\
 	setproctitle.h				\
+	sluid.c					\
+	sluid.h					\
 	slurm_errno.c				\
 	slurm_opt.c				\
 	slurm_opt.h				\

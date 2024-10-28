@@ -171,7 +171,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	part_record.lo persist_conn.lo plugin.lo plugrack.lo \
 	port_mgr.lo print_fields.lo proc_args.lo read_config.lo \
 	reverse_tree.lo run_command.lo run_in_daemon.lo sack_api.lo \
-	setproctitle.lo slurm_errno.lo slurm_opt.lo \
+	setproctitle.lo sluid.lo slurm_errno.lo slurm_opt.lo \
 	slurm_protocol_api.lo slurm_protocol_defs.lo \
 	slurm_protocol_pack.lo slurm_protocol_util.lo \
 	slurm_protocol_socket.lo slurm_resolv.lo \
@@ -236,8 +236,8 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/reverse_tree.Plo \
 	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
 	./$(DEPDIR)/sack_api.Plo ./$(DEPDIR)/setproctitle.Plo \
-	./$(DEPDIR)/slurm_errno.Plo ./$(DEPDIR)/slurm_opt.Plo \
-	./$(DEPDIR)/slurm_protocol_api.Plo \
+	./$(DEPDIR)/sluid.Plo ./$(DEPDIR)/slurm_errno.Plo \
+	./$(DEPDIR)/slurm_opt.Plo ./$(DEPDIR)/slurm_protocol_api.Plo \
 	./$(DEPDIR)/slurm_protocol_defs.Plo \
 	./$(DEPDIR)/slurm_protocol_pack.Plo \
 	./$(DEPDIR)/slurm_protocol_socket.Plo \
@@ -669,6 +669,8 @@ libcommon_la_SOURCES = \
 	sack_api.h				\
 	setproctitle.c				\
 	setproctitle.h				\
+	sluid.c					\
+	sluid.h					\
 	slurm_errno.c				\
 	slurm_opt.c				\
 	slurm_opt.h				\
@@ -868,6 +870,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_in_daemon.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sack_api.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setproctitle.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sluid.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_errno.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_opt.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_api.Plo@am__quote@ # am--include-marker
@@ -1083,6 +1086,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
 	-rm -f ./$(DEPDIR)/sack_api.Plo
 	-rm -f ./$(DEPDIR)/setproctitle.Plo
+	-rm -f ./$(DEPDIR)/sluid.Plo
 	-rm -f ./$(DEPDIR)/slurm_errno.Plo
 	-rm -f ./$(DEPDIR)/slurm_opt.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_api.Plo
@@ -1218,6 +1222,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
 	-rm -f ./$(DEPDIR)/sack_api.Plo
 	-rm -f ./$(DEPDIR)/setproctitle.Plo
+	-rm -f ./$(DEPDIR)/sluid.Plo
 	-rm -f ./$(DEPDIR)/slurm_errno.Plo
 	-rm -f ./$(DEPDIR)/slurm_opt.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_api.Plo
