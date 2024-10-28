@@ -116,6 +116,8 @@ static void _print_topo_record(topoinfo_bblock_t * topo_ptr, char **out)
 	if (topo_ptr->nodes)
 		xstrfmtcatat(line, &pos, " Nodes=%s", topo_ptr->nodes);
 
+	xstrfmtcatat(line, &pos, " BlockSize=%u", topo_ptr->size);
+
 	if ((env = getenv("SLURM_TOPO_LEN")))
 		xstrfmtcat(*out, "%.*s\n", atoi(env), line);
 	else
