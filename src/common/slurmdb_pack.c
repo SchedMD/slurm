@@ -559,33 +559,10 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		if (!object) {
-			pack32(NO_VAL, buffer);		/* count */
-			pack16(0, buffer);
-			packnull(buffer);
-			pack32(0, buffer);
-			pack16(1, buffer);
-
-			pack32(NO_VAL, buffer);		/* count */
-			packnull(buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack8(0, buffer);
-			pack8(0, buffer);
-
-			pack32(NO_VAL, buffer);		/* flags */
-
-			packnull(buffer);
-			packnull(buffer);
-
-			slurmdb_pack_assoc_rec(NULL, protocol_version, buffer);
-
-			pack16(0, buffer);
-			pack8(0, buffer);
-			pack8(0, buffer);
-			packnull(buffer);
+			packbool(0, buffer);
 			return;
 		}
-
+		packbool(1, buffer);
 		slurm_pack_list(object->accounting_list,
 				slurmdb_pack_cluster_accounting_rec,
 				buffer, protocol_version);
@@ -829,11 +806,16 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 	slurmdb_cluster_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_cluster_rec_t));
 	persist_conn_t *conn;
+	bool need_unpack = false;
 
 	*object = object_ptr;
 
 	slurmdb_init_cluster_rec(object_ptr, 0);
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpackbool(&need_unpack, buffer);
+		if (!need_unpack)
+			goto end_unpack;
+
 		if (slurm_unpack_list(&object_ptr->accounting_list,
 				      slurmdb_unpack_cluster_accounting_rec,
 				      slurmdb_destroy_cluster_accounting_rec,
@@ -1051,6 +1033,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		goto unpack_error;
 	}
 
+end_unpack:
 	/* Take the lower of the remote cluster is using and what I am or I
 	 * won't be able to talk to the remote cluster. domo arigato. */
 	object_ptr->rpc_version = MIN(SLURM_PROTOCOL_VERSION,
