@@ -55,6 +55,7 @@ static buf_t *slurm_jc_conf_buf = NULL;
 static bool slurm_jc_conf_inited = false;
 static bool auto_basepath_set = false;
 static bool shared_set = false;
+static bool entire_step_in_ns_set = false;
 
 static s_p_hashtbl_t *_create_ns_hashtbl(void)
 {
@@ -62,6 +63,7 @@ static s_p_hashtbl_t *_create_ns_hashtbl(void)
 		{"AutoBasePath", S_P_BOOLEAN},
 		{"BasePath", S_P_STRING},
 		{"Dirs", S_P_STRING},
+		{"EntireStepInNS", S_P_BOOLEAN},
 		{"InitScript", S_P_STRING},
 		{"Shared", S_P_BOOLEAN},
 		{NULL}
@@ -79,6 +81,7 @@ static void _pack_slurm_jc_conf_buf(void)
 	packbool(slurm_jc_conf.auto_basepath, slurm_jc_conf_buf);
 	packstr(slurm_jc_conf.basepath, slurm_jc_conf_buf);
 	packstr(slurm_jc_conf.dirs, slurm_jc_conf_buf);
+	packbool(slurm_jc_conf.entire_step_in_ns, slurm_jc_conf_buf);
 	packstr(slurm_jc_conf.initscript, slurm_jc_conf_buf);
 	packbool(slurm_jc_conf.shared, slurm_jc_conf_buf);
 }
@@ -114,6 +117,10 @@ static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
 
 	if (!s_p_get_string(&slurm_jc_conf.dirs, "Dirs", tbl))
 		debug3("empty Dirs detected");
+
+	if (s_p_get_boolean(&slurm_jc_conf.entire_step_in_ns, "EntireStepInNS",
+			    tbl))
+		entire_step_in_ns_set = true;
 
 	if (!s_p_get_string(&slurm_jc_conf.initscript, "InitScript", tbl))
 		debug3("empty init script detected");
@@ -163,6 +170,7 @@ static int _read_slurm_jc_conf(void)
 		{"AutoBasePath", S_P_BOOLEAN},
 		{"BasePath", S_P_ARRAY, _parse_jc_conf_internal, NULL},
 		{"Dirs", S_P_STRING},
+		{"EntireStepInNS", S_P_BOOLEAN},
 		{"NodeName", S_P_ARRAY, _parse_jc_conf, NULL},
 		{"Shared", S_P_BOOLEAN},
 		{NULL}
@@ -202,6 +210,10 @@ static int _read_slurm_jc_conf(void)
 		debug("Plugin is disabled on this node per %s.",
 		      tmpfs_conf_file);
 	}
+
+	if (!entire_step_in_ns_set)
+		s_p_get_boolean(&slurm_jc_conf.entire_step_in_ns,
+				"EntireStepInNS", tbl);
 
 	if (!shared_set)
 		s_p_get_boolean(&slurm_jc_conf.shared, "Shared", tbl);
@@ -253,6 +265,7 @@ extern slurm_jc_conf_t *set_slurm_jc_conf(buf_t *buf)
 	safe_unpackbool(&slurm_jc_conf.auto_basepath, buf);
 	safe_unpackstr(&slurm_jc_conf.basepath, buf);
 	safe_unpackstr(&slurm_jc_conf.dirs, buf);
+	safe_unpackbool(&slurm_jc_conf.entire_step_in_ns, buf);
 	safe_unpackstr(&slurm_jc_conf.initscript, buf);
 	safe_unpackbool(&slurm_jc_conf.shared, buf);
 	slurm_jc_conf_inited = true;

@@ -50,6 +50,7 @@ typedef struct slurm_jc_conf {
 	bool auto_basepath;
 	char *basepath;
 	char *dirs;
+	bool entire_step_in_ns;
 	char *initscript;
 	bool shared;
 } slurm_jc_conf_t;

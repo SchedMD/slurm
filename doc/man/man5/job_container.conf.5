@@ -1,4 +1,4 @@
-.TH "job_container.conf" "5" "Slurm Configuration File" "November 2022" "Slurm Configuration File"
+.TH "job_container.conf" "5" "Slurm Configuration File" "October 2024" "Slurm Configuration File"
 
 .SH "NAME"
 job_container.conf \- Slurm configuration file for job_container/tmpfs plugin
@@ -77,6 +77,14 @@ This parameter is optional and if not specified it defaults to "/tmp,/dev/shm".
 
 \fBNOTE\fR: /dev/shm has special handling, and instead of a bind mount is always
 a fresh tmpfs filesystem.
+.IP
+
+.TP
+\fBEntireStepInNS\fR
+Specifying fBEntireStepInNS=true will pivot all slurmstepd processes (excluding
+the external step, which is tasked with creating the namespace) into the
+constructed namespace. This will cause issues if certain paths such as
+SlurmdSpoolDir as inaccessible. This parameter is optional.
 .IP
 
 .TP

@@ -1025,6 +1025,15 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 			error("%s: setsid: %m", __func__);
 			failed = 1;
 		}
+
+		if (step_id != SLURM_EXTERN_CONT) {
+			if (container_g_join(job_id, uid)) {
+				error("%s container_g_join(%u): %m",
+				      __func__, job_id);
+				_exit(SLURM_ERROR);
+			}
+		}
+
 		if ((pid = fork()) < 0) {
 			error("%s: Unable to fork grandchild: %m", __func__);
 			failed = 2;

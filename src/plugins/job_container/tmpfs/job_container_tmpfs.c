@@ -697,6 +697,16 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 		return SLURM_SUCCESS;
 
 	/*
+	 * Handle EntireStepInNS setting. If set, the join needs to happen
+	 * during the fork+exec chain that creates the slurmstepd process, and
+	 * all successive calls within slurmstepd need to be skipped. If not
+	 * set, do the opposite.
+	 */
+	if ((!jc_conf->entire_step_in_ns && running_in_slurmd()) ||
+	    (jc_conf->entire_step_in_ns && running_in_slurmstepd()))
+		return SLURM_SUCCESS;
+
+	/*
 	 * Jobid 0 means we are not a real job, but a script running instead we
 	 * do not need to handle this request.
 	 */
