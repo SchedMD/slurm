@@ -204,9 +204,21 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 		server = strtok_r(tmp, ",", &save_ptr);
 		while (server) {
 			ctl_entry_t *ctl = xmalloc(sizeof(*ctl));
+			char *tmp_ptr = NULL;
+
+			if (server[0] == '[')
+				server++;
+
 			strlcpy(ctl->hostname, server, sizeof(ctl->hostname));
 
-			if ((port = xstrchr(ctl->hostname, ':'))) {
+			if ((tmp_ptr = strchr(ctl->hostname, ']'))) {
+				*tmp_ptr = '\0';
+				tmp_ptr++;
+			} else {
+				tmp_ptr = ctl->hostname;
+			}
+
+			if ((port = xstrchr(tmp_ptr, ':'))) {
 				*port = '\0';
 				port++;
 				ctl->port = atoi(port);
