@@ -321,6 +321,38 @@ extern struct addrinfo *xgetaddrinfo(const char *hostname, const char *serv)
 	return _xgetaddrinfo(hostname, serv, &hints);
 }
 
+extern int host_has_addr_family(const char *hostname, const char *srv,
+				bool *ipv4, bool *ipv6)
+{
+	struct addrinfo hints;
+	struct addrinfo *ai_ptr, *ai_start;
+
+	memset(&hints, 0, sizeof(hints));
+
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV | AI_PASSIVE;
+	if (hostname)
+		hints.ai_flags |= AI_CANONNAME;
+	hints.ai_socktype = SOCK_STREAM;
+
+	ai_start = _xgetaddrinfo(hostname, srv, &hints);
+
+	if (!ai_start)
+		return SLURM_ERROR;
+
+	*ipv4 = *ipv6 = false;
+	for (ai_ptr = ai_start; ai_ptr; ai_ptr = ai_ptr->ai_next) {
+		if (ai_ptr->ai_family == AF_INET6)
+			*ipv6 = true;
+		else if (ai_ptr->ai_family == AF_INET)
+			*ipv4 = true;
+	}
+
+	freeaddrinfo(ai_start);
+
+	return SLURM_SUCCESS;
+}
+
 static int _name_cache_find(void *x, void *y)
 {
 	getnameinfo_cache_t *cache_ent = x;
