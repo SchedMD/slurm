@@ -96,6 +96,7 @@ typedef struct topoinfo_bblock {
 	uint16_t block_index;
 	char *name;
 	char *nodes;
+	uint32_t size;
 } topoinfo_bblock_t;
 
 typedef struct topoinfo_block {
@@ -276,6 +277,8 @@ extern int topology_p_get(topology_data_t type, void *data)
 				xstrdup(block_record_table[i].nodes);
 			if (block_record_table[i].level)
 				topoinfo_ptr->topo_array[i].aggregated = true;
+			topoinfo_ptr->topo_array[i].size = bblock_node_cnt *
+				block_sizes[block_record_table[i].level];
 		}
 
 		break;
@@ -314,6 +317,7 @@ extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
 			pack16(topoinfo->topo_array[i].block_index, buffer);
 			packstr(topoinfo->topo_array[i].name, buffer);
 			packstr(topoinfo->topo_array[i].nodes, buffer);
+			pack32(topoinfo->topo_array[i].size, buffer);
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(topoinfo->record_count, buffer);
@@ -404,6 +408,8 @@ extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
 				       buffer);
 			safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes,
 				       buffer);
+			safe_unpack32(&topoinfo_ptr->topo_array[i].size,
+				      buffer);
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&topoinfo_ptr->record_count, buffer);
@@ -417,6 +423,7 @@ extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
 				       buffer);
 			safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes,
 				       buffer);
+			topoinfo_ptr->topo_array[i].size = 0;
 		}
 	} else {
 		goto unpack_error;
