@@ -540,8 +540,8 @@ and is not root, it must be added to accounting with AdminLevel=Admin and
 <li><b>StorageHost</b>:
 Define the name of the host the database is running where we are going
 to store the data.
-Ideally this should be the host on which SlurmDBD executes, but could
-be a different machine.</li>
+This can be the host on which slurmdbd executes, but for larger systems, we
+recommend keeping the database on a separate machine.</li>
 
 <li><b>StorageLoc</b>:
 Specifies the name of the database where accounting
@@ -966,7 +966,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 17 July 2024</p>
+<p style="text-align:center;">Last modified 31 October 2024</p>
 
 <!--#include virtual="footer.txt"-->
 
