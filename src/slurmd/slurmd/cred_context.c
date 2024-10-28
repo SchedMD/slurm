@@ -185,7 +185,6 @@ static void _cred_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
 {
 	cred_state_t *s = x;
 
-	/* WARNING: this is not safe if pack_step_id() ever changes format */
 	pack_step_id(&s->step_id, buffer, protocol_version);
 	pack_time(s->ctime, buffer);
 	pack_time(s->expiration, buffer);
@@ -196,8 +195,7 @@ static int _cred_state_unpack(void **out, uint16_t protocol_version,
 {
 	cred_state_t *s = xmalloc(sizeof(*s));
 
-	if (unpack_step_id_members(&s->step_id, buffer,
-				   SLURM_PROTOCOL_VERSION) != SLURM_SUCCESS)
+	if (unpack_step_id_members(&s->step_id, buffer, protocol_version))
 		goto unpack_error;
 	safe_unpack_time(&s->ctime, buffer);
 	safe_unpack_time(&s->expiration, buffer);
@@ -213,8 +211,9 @@ unpack_error:
 
 static void _cred_context_pack(buf_t *buffer)
 {
-	/* FIXME: find a way to version this file at some point */
 	uint16_t version = SLURM_PROTOCOL_VERSION;
+
+	pack16(version, buffer);
 
 	slurm_mutex_lock(&cred_cache_mutex);
 	slurm_pack_list(cred_job_list, _job_state_pack, buffer, version);
@@ -225,25 +224,42 @@ static void _cred_context_pack(buf_t *buffer)
 static void _cred_context_unpack(buf_t *buffer)
 {
 	/* FIXME: find a way to version this file at some point */
-	uint16_t version = SLURM_PROTOCOL_VERSION;
+	uint16_t version = 0;
+
+	/*
+	 * Pre-24.11 files had no version header.
+	 * The first two bytes of those files will usually be 0x0000 - the top
+	 * half of the four byte length of the cred_job_list, which should
+	 * usually be under 65k records. Even if there are enough records set
+	 * to spill into these bytes, the check against the min protocol
+	 * version means we're safe unless the state file had 654 million
+	 * records.
+	 */
+
+	safe_unpack16(&version, buffer);
+
+	if (version < SLURM_24_11_PROTOCOL_VERSION) {
+		/* rewind by 2 bytes */
+		buffer->processed -= 2;
+		version = SLURM_24_05_PROTOCOL_VERSION;
+	}
 
 	slurm_mutex_lock(&cred_cache_mutex);
-
 	FREE_NULL_LIST(cred_job_list);
 	if (slurm_unpack_list(&cred_job_list, _job_state_unpack,
-			      xfree_ptr, buffer, version)) {
-		warning("%s: failed to restore job state from file", __func__);
-	}
+			      xfree_ptr, buffer, version))
+		goto unpack_error;
 	_clear_expired_job_states();
 
 	FREE_NULL_LIST(cred_state_list);
 	if (slurm_unpack_list(&cred_state_list, _cred_state_unpack,
-			      xfree_ptr, buffer, version)) {
-		warning("%s: failed to restore job state from file", __func__);
-	}
+			      xfree_ptr, buffer, version))
+		goto unpack_error;
 	_clear_expired_credential_states();
-
 	slurm_mutex_unlock(&cred_cache_mutex);
+
+unpack_error:
+	warning("%s: failed to restore job state from file", __func__);
 }
 
 extern void save_cred_state(void)
