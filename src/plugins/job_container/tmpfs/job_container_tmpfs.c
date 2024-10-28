@@ -446,6 +446,8 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		if (rc) {
 			error("%s: init script: %s failed",
 			      __func__, jc_conf->initscript);
+			log_flag(JOB_CONT, "initscript fail status: %d, stdout: %s",
+				 *(run_command_args.status), result);
 			xfree(result);
 			goto exit2;
 		} else {
