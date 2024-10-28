@@ -50,17 +50,19 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/log.h"
 #include "src/common/list.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/parse_config.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/accounting_storage.h"
+#include "src/common/slurmdb_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurmdb_defs.h"
+
+#include "src/interfaces/accounting_storage.h"
+
 #include "src/slurmdbd/read_config.h"
 
 /* Global variables */

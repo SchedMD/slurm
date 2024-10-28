@@ -72,10 +72,10 @@
 #include "src/interfaces/hash.h"
 #include "src/interfaces/tls.h"
 
+#include "src/slurmdbd/backup.h"
+#include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
-#include "src/slurmdbd/proc_req.h"
-#include "src/slurmdbd/backup.h"
 
 /* Global variables */
 time_t shutdown_time = 0;		/* when shutdown request arrived */

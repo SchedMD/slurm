@@ -44,26 +44,29 @@
   #include <sys/prctl.h>
 #endif
 
-#include "src/interfaces/auth.h"
-#include "src/interfaces/gres.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/slurmdbd_pack.h"
-#include "src/interfaces/accounting_storage.h"
-#include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurmdbd_defs.h"
+#include "src/common/slurmdbd_pack.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
-#include "src/slurmdbd/read_config.h"
-#include "src/slurmdbd/rpc_mgr.h"
-#include "src/slurmdbd/proc_req.h"
-#include "src/slurmdbd/slurmdbd.h"
-#include "src/slurmctld/slurmctld.h"
 
 #include "src/conmgr/conmgr.h"
+
+#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/gres.h"
+#include "src/interfaces/jobacct_gather.h"
+
+#include "src/slurmctld/slurmctld.h"
+
+#include "src/slurmdbd/proc_req.h"
+#include "src/slurmdbd/read_config.h"
+#include "src/slurmdbd/rpc_mgr.h"
+#include "src/slurmdbd/slurmdbd.h"
 
 /* Local functions */
 static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn);
