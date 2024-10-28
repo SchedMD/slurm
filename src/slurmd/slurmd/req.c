@@ -898,9 +898,10 @@ rwfail:
  * becomes the slurmstepd process, so the slurmstepd's parent process
  * will be init, not slurmd.
  */
-static int
-_forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
-		      hostlist_t *step_hset, uint16_t protocol_version)
+static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
+				uint32_t job_id, uint32_t step_id,
+				hostlist_t *step_hset,
+				uint16_t protocol_version)
 {
 	pid_t pid;
 	int to_stepd[2] = {-1, -1};
@@ -970,7 +971,6 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 				       (char *)conf->stepd_loc, NULL};
 #elif (SLURMSTEPD_MEMCHECK == 2)
 		/* valgrind test of slurmstepd, option #2 */
-		uint32_t job_id = 0, step_id = 0;
 		char log_file[256];
 		char *const argv[13] = {"valgrind", "--tool=memcheck",
 					"--error-limit=no",
@@ -982,19 +982,11 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 					"--track-origins=yes",
 					log_file, (char *)conf->stepd_loc,
 					NULL};
-		if (type == LAUNCH_BATCH_JOB) {
-			job_id = ((batch_job_launch_msg_t *)req)->job_id;
-			step_id = SLURM_BATCH_SCRIPT;
-		} else if (type == LAUNCH_TASKS) {
-			job_id = ((launch_tasks_request_msg_t *)req)->step_id.job_id;
-			step_id = ((launch_tasks_request_msg_t *)req)->step_id.step_id;
-		}
 		snprintf(log_file, sizeof(log_file),
 			 "--log-file=/tmp/slurmstepd_valgrind_%u.%u",
 			 job_id, step_id);
 #elif (SLURMSTEPD_MEMCHECK == 3)
 		/* valgrind/drd test of slurmstepd, option #3 */
-		uint32_t job_id = 0, step_id = 0;
 		char log_file[256];
 		char *const argv[10] = {"valgrind", "--tool=drd",
 					"--error-limit=no",
@@ -1003,19 +995,11 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 					"--child-silent-after-fork=yes",
 					log_file, (char *)conf->stepd_loc,
 					NULL};
-		if (type == LAUNCH_BATCH_JOB) {
-			job_id = ((batch_job_launch_msg_t *)req)->job_id;
-			step_id = SLURM_BATCH_SCRIPT;
-		} else if (type == LAUNCH_TASKS) {
-			job_id = ((launch_tasks_request_msg_t *)req)->step_id.job_id;
-			step_id = ((launch_tasks_request_msg_t *)req)->step_id.step_id;
-		}
 		snprintf(log_file, sizeof(log_file),
 			 "--log-file=/tmp/slurmstepd_valgrind_%u.%u",
 			 job_id, step_id);
 #elif (SLURMSTEPD_MEMCHECK == 4)
 		/* valgrind/helgrind test of slurmstepd, option #4 */
-		uint32_t job_id = 0, step_id = 0;
 		char log_file[256];
 		char *const argv[10] = {"valgrind", "--tool=helgrind",
 					"--error-limit=no",
@@ -1024,13 +1008,6 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 					"--child-silent-after-fork=yes",
 					log_file, (char *)conf->stepd_loc,
 					NULL};
-		if (type == LAUNCH_BATCH_JOB) {
-			job_id = ((batch_job_launch_msg_t *)req)->job_id;
-			step_id = SLURM_BATCH_SCRIPT;
-		} else if (type == LAUNCH_TASKS) {
-			job_id = ((launch_tasks_request_msg_t *)req)->step_id.job_id;
-			step_id = ((launch_tasks_request_msg_t *)req)->step_id.step_id;
-		}
 		snprintf(log_file, sizeof(log_file),
 			 "--log-file=/tmp/slurmstepd_valgrind_%u.%u",
 			 job_id, step_id);
@@ -1853,6 +1830,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli,
+				      req->step_id.job_id, req->step_id.step_id,
 				      step_hset, msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
 
@@ -2408,8 +2386,10 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
 		forkexec_rc = _forkexec_slurmstepd(LAUNCH_TASKS,
-						   (void *) launch_req,
-						   cli, step_hset,
+						   (void *) launch_req, cli,
+						   req->job_id,
+						   SLURM_EXTERN_CONT,
+						   step_hset,
 						   msg->protocol_version);
 		debug3("%s: return from _forkexec_slurmstepd %d",
 		       __func__, forkexec_rc);
@@ -2739,6 +2719,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli,
+				  req->job_id, SLURM_BATCH_SCRIPT,
 				  NULL, SLURM_PROTOCOL_VERSION);
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
 
