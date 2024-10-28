@@ -38,9 +38,11 @@
 
 #include "../common/common_topo.h"
 
+#define MAX_BLOCK_LEVELS 16
+
 typedef struct {
 	int level;
-	char *name;			/* switch name */
+	char *name;			/* block name */
 	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
 					 * this block */
 	char *nodes;			/* name if direct descendant nodes */
@@ -51,7 +53,11 @@ extern bitstr_t *blocks_nodes_bitmap;	/* nodes on any bblock */
 extern block_record_t *block_record_table;  /* ptr to block records */
 extern uint16_t bblock_node_cnt;
 extern bitstr_t *block_levels;
+extern uint32_t block_sizes[MAX_BLOCK_LEVELS];
+extern uint16_t block_sizes_cnt;
+extern uint32_t blocks_nodes_cnt;
 extern int block_record_cnt;
+extern int ablock_record_cnt;
 
 /* Free all memory associated with block_record_table structure */
 extern void block_record_table_destroy(void);

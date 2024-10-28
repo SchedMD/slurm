@@ -64,6 +64,7 @@ COMMAND CHANGES (see man pages for details)
  -- scontrol - Add --json/--yaml support to listpids
  -- scontrol - Add liststeps
  -- scontrol - Add listjobs
+ -- scontrol show topo - Show aggregated block sizes when using topology/block.
 
 API CHANGES
 ===========
