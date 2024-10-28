@@ -899,7 +899,7 @@ rwfail:
  * will be init, not slurmd.
  */
 static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
-				uint32_t job_id, uint32_t step_id,
+				uid_t uid, uint32_t job_id, uint32_t step_id,
 				hostlist_t *step_hset,
 				uint16_t protocol_version)
 {
@@ -1829,7 +1829,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
-	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli,
+	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, msg->auth_uid,
 				      req->step_id.job_id, req->step_id.step_id,
 				      step_hset, msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
@@ -2387,6 +2387,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
 		forkexec_rc = _forkexec_slurmstepd(LAUNCH_TASKS,
 						   (void *) launch_req, cli,
+						   req->uid,
 						   req->job_id,
 						   SLURM_EXTERN_CONT,
 						   step_hset,
@@ -2718,7 +2719,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	info("Launching batch job %u for UID %u", req->job_id, batch_uid);
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
-	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli,
+	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, batch_uid,
 				  req->job_id, SLURM_BATCH_SCRIPT,
 				  NULL, SLURM_PROTOCOL_VERSION);
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
