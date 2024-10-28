@@ -22,6 +22,7 @@ MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
 TESTS += xhash-test \
 	 data-test \
 	 serializer-test \
+	 sluid-test \
 	 xstring-test \
 	 parse_time-test \
 	 job-resources-test \
@@ -37,6 +38,8 @@ data_test_CFLAGS  = $(MYCFLAGS)
 data_test_LDADD   = $(LDADD) @CHECK_LIBS@
 serializer_test_CFLAGS  = $(MYCFLAGS)
 serializer_test_LDADD   = $(LDADD) @CHECK_LIBS@
+sluid_test_CFLAGS = $(MYCFLAGS)
+sluid_test_LDADD = $(LDADD) @CHECK_LIBS@
 xstring_test_CFLAGS   = $(MYCFLAGS)
 xstring_test_LDADD    = $(LDADD) @CHECK_LIBS@
 parse_time_test_CFLAGS= $(MYCFLAGS)
