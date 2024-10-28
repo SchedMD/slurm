@@ -42,7 +42,7 @@
 
 typedef struct {
 	int level;
-	char *name;			/* switch name */
+	char *name;			/* block name */
 	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
 					 * this block */
 	char *nodes;			/* name if direct descendant nodes */
