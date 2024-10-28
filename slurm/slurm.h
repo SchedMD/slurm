@@ -2059,6 +2059,7 @@ typedef struct slurm_step_layout {
 } slurm_step_layout_t;
 
 typedef struct slurm_step_id_msg {
+	sluid_t sluid;
 	uint32_t job_id;
 	uint32_t step_het_comp;
 	uint32_t step_id;
