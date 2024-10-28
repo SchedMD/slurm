@@ -354,7 +354,7 @@ done:
 
 static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 {
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	job_step_create_request_msg_t *req_step_msg = msg->data;
 	step_id.job_id = req_step_msg->step_id.job_id;
@@ -379,7 +379,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 {
 	srun_job_complete_msg_t *request = msg->data;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	step_id.job_id = request->job_id;
 
@@ -403,7 +403,7 @@ static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
 static void _slurm_rpc_update_step(slurm_msg_t *msg)
 {
 	step_update_request_msg_t *request = msg->data;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	step_id.job_id = request->job_id;
 	step_id.step_id = request->step_id;
@@ -426,7 +426,7 @@ static void _slurm_rpc_sbcast_cred(slurm_msg_t *msg)
 static void _slurm_het_job_alloc_info(slurm_msg_t *msg)
 {
 	job_alloc_info_msg_t *request = msg->data;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	step_id.job_id = request->job_id;
 
@@ -3253,7 +3253,7 @@ _enforce_job_mem_limit(void)
 	step_loc_t *stepd;
 	int fd, i, job_inx, job_cnt;
 	uint64_t step_rss, step_vsize;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 	job_step_stat_t *resp = NULL;
 	struct job_mem_info {
 		uint32_t job_id;
@@ -5684,7 +5684,7 @@ _add_starting_step(uint16_t type, void *req)
 static int
 _remove_starting_step(uint16_t type, void *req)
 {
-	slurm_step_id_t starting_step;
+	slurm_step_id_t starting_step = { 0 };
 	int rc = SLURM_SUCCESS;
 
 	switch(type) {
