@@ -1,3 +1,1 @@
-# Makefile for job_container plugins
-
-SUBDIRS = account group user
+SUBDIRS = account group label user
