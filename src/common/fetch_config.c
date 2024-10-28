@@ -47,6 +47,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_resolv.h"
 #include "src/common/strlcpy.h"
+#include "src/common/util-net.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
@@ -150,6 +151,16 @@ rwfail:
 	_exit(1);
 }
 
+static int _get_controller_addr_type(void *x, void *arg)
+{
+	ctl_entry_t *ctl = (ctl_entry_t *) x;
+
+	host_has_addr_family(ctl->hostname, NULL, &ctl->has_ipv4,
+			     &ctl->has_ipv6);
+
+	return SLURM_SUCCESS;
+}
+
 extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 {
 	char *env_conf_server = getenv("SLURM_CONF_SERVER");
@@ -197,6 +208,8 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 			return NULL;
                 }
 	}
+
+	list_for_each(controllers, _get_controller_addr_type, NULL);
 
 	/* If the slurm.key file exists, assume we're using auth/slurm */
 	sack_jwks = get_extra_conf_path("slurm.jwks");
