@@ -2617,7 +2617,7 @@ extern int gres_stepmgr_step_alloc(
 	int rc = SLURM_SUCCESS;
 	list_itr_t *step_gres_iter;
 	gres_state_t *gres_state_step;
-	slurm_step_id_t tmp_step_id;
+	slurm_step_id_t tmp_step_id = { 0 };
 
 	if (step_gres_list == NULL)
 		return SLURM_SUCCESS;
