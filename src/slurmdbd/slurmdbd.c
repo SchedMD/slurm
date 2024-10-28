@@ -59,6 +59,7 @@
 #include "src/common/log.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"
@@ -255,6 +256,8 @@ int main(int argc, char **argv)
 		fatal("Unable to initialize %s accounting storage plugin",
 		      slurm_conf.accounting_storage_type);
 	}
+
+	sluid_init(0x001, 0);
 
 	if (daemonize || setwd)
 		_set_work_dir();
