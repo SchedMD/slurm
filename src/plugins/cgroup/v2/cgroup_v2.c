@@ -64,7 +64,6 @@
 #define SYSTEM_CGSLICE "system.slice"
 #define SYSTEM_CGSCOPE "slurmstepd"
 #define SYSTEM_CGDIR "system"
-#define CGROUP_MAX_RETRIES 100
 
 const char plugin_name[] = "Cgroup v2 plugin";
 const char plugin_type[] = "cgroup/v2";
