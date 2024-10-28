@@ -557,7 +557,69 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)in;
 	persist_conn_t *persist_conn;
 
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(NO_VAL, buffer);		/* count */
+			pack16(0, buffer);
+			packnull(buffer);
+			pack32(0, buffer);
+			pack16(1, buffer);
+
+			pack32(NO_VAL, buffer);		/* count */
+			packnull(buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack8(0, buffer);
+			pack8(0, buffer);
+
+			pack32(NO_VAL, buffer);		/* flags */
+
+			packnull(buffer);
+			packnull(buffer);
+
+			slurmdb_pack_assoc_rec(NULL, protocol_version, buffer);
+
+			pack16(0, buffer);
+			pack8(0, buffer);
+			pack8(0, buffer);
+			packnull(buffer);
+			return;
+		}
+
+		slurm_pack_list(object->accounting_list,
+				slurmdb_pack_cluster_accounting_rec,
+				buffer, protocol_version);
+
+		pack16(object->classification, buffer);
+		packstr(object->control_host, buffer);
+		pack32(object->control_port, buffer);
+		pack16(object->dimensions, buffer);
+
+		slurm_pack_list(object->fed.feature_list,
+				packstr_func,
+				buffer, protocol_version);
+
+		packstr(object->fed.name, buffer);
+		pack32(object->fed.id, buffer);
+		pack32(object->fed.state, buffer);
+		pack8((uint8_t)object->fed.sync_recvd, buffer);
+		pack8((uint8_t)object->fed.sync_sent, buffer);
+
+		pack32(object->flags, buffer);
+
+		packstr(object->name, buffer);
+		packstr(object->nodes, buffer);
+
+		slurmdb_pack_assoc_rec(object->root_assoc,
+				       protocol_version, buffer);
+
+		pack16(object->rpc_version, buffer);
+		persist_conn = object->fed.recv;
+		pack8((persist_conn && persist_conn->fd != -1) ? 1 : 0, buffer);
+		persist_conn = object->fed.send;
+		pack8((persist_conn && persist_conn->fd != -1) ? 1 : 0, buffer);
+		packstr(object->tres_str, buffer);
+	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);		/* count */
 			pack16(0, buffer);
@@ -771,7 +833,59 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 	*object = object_ptr;
 
 	slurmdb_init_cluster_rec(object_ptr, 0);
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (slurm_unpack_list(&object_ptr->accounting_list,
+				      slurmdb_unpack_cluster_accounting_rec,
+				      slurmdb_destroy_cluster_accounting_rec,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpack16(&object_ptr->classification, buffer);
+		safe_unpackstr(&object_ptr->control_host, buffer);
+		safe_unpack32(&object_ptr->control_port, buffer);
+		safe_unpack16(&object_ptr->dimensions, buffer);
+
+		if (slurm_unpack_list(&object_ptr->fed.feature_list,
+				      safe_unpackstr_func,
+				      xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpackstr(&object_ptr->fed.name, buffer);
+		safe_unpack32(&object_ptr->fed.id, buffer);
+		safe_unpack32(&object_ptr->fed.state, buffer);
+		safe_unpack8(&uint8_tmp, buffer);
+		object_ptr->fed.sync_recvd = uint8_tmp;
+		safe_unpack8(&uint8_tmp, buffer);
+		object_ptr->fed.sync_sent = uint8_tmp;
+
+		safe_unpack32(&object_ptr->flags, buffer);
+
+		safe_unpackstr(&object_ptr->name, buffer);
+		safe_unpackstr(&object_ptr->nodes, buffer);
+
+		if (slurmdb_unpack_assoc_rec(
+			    (void **)&object_ptr->root_assoc,
+			    protocol_version, buffer)
+		    == SLURM_ERROR)
+			goto unpack_error;
+
+		safe_unpack16(&object_ptr->rpc_version, buffer);
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			conn = xmalloc(sizeof(*conn));
+			conn->fd = -1;
+			object_ptr->fed.recv = conn;
+		}
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			conn = xmalloc(sizeof(*conn));
+			conn->fd = -1;
+			object_ptr->fed.send = conn;
+		}
+		safe_unpackstr(&object_ptr->tres_str, buffer);
+	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		if (slurm_unpack_list(&object_ptr->accounting_list,
 				      slurmdb_unpack_cluster_accounting_rec,
 				      slurmdb_destroy_cluster_accounting_rec,
