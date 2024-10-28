@@ -223,8 +223,9 @@ static void _cred_context_pack(buf_t *buffer)
 
 static void _cred_context_unpack(buf_t *buffer)
 {
-	/* FIXME: find a way to version this file at some point */
 	uint16_t version = 0;
+
+	slurm_mutex_lock(&cred_cache_mutex);
 
 	/*
 	 * Pre-24.11 files had no version header.
@@ -244,7 +245,6 @@ static void _cred_context_unpack(buf_t *buffer)
 		version = SLURM_24_05_PROTOCOL_VERSION;
 	}
 
-	slurm_mutex_lock(&cred_cache_mutex);
 	FREE_NULL_LIST(cred_job_list);
 	if (slurm_unpack_list(&cred_job_list, _job_state_unpack,
 			      xfree_ptr, buffer, version))
@@ -261,6 +261,7 @@ static void _cred_context_unpack(buf_t *buffer)
 
 unpack_error:
 	warning("%s: failed to restore job state from file", __func__);
+	slurm_mutex_unlock(&cred_cache_mutex);
 }
 
 extern void save_cred_state(void)
