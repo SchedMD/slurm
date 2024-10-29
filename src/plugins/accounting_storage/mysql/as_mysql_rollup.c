@@ -2049,11 +2049,11 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 /* 		info("end %s", slurm_ctime2(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" (creation_time, mod_time, id, "
-			"id_tres, time_start, alloc_secs) "
-			"select %ld, %ld, id, id_tres, "
+			"id_alt, id_tres, time_start, alloc_secs) "
+			"select %ld, %ld, id, id_alt, id_tres, "
 			"%ld, @ASUM:=SUM(alloc_secs) from \"%s_%s\" where "
 			"(time_start < %ld && time_start >= %ld) "
-			"group by id, id_tres on duplicate key update "
+			"group by id, id_alt, id_tres on duplicate key update "
 			"mod_time=%ld, alloc_secs=@ASUM;",
 			cluster_name,
 			run_month ? assoc_month_table : assoc_day_table,
@@ -2064,11 +2064,11 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" (creation_time, mod_time, id, "
-			"id_tres, time_start, alloc_secs) "
-			"select %ld, %ld, id, id_tres, "
+			"id_alt, id_tres, time_start, alloc_secs) "
+			"select %ld, %ld, id, id_alt, id_tres, "
 			"%ld, @ASUM:=SUM(alloc_secs) from \"%s_%s\" where "
 			"(time_start < %ld && time_start >= %ld) "
-			"group by id, id_tres on duplicate key update "
+			"group by id, id_alt, id_tres on duplicate key update "
 			"mod_time=%ld, alloc_secs=@ASUM;",
 			cluster_name,
 			run_month ? qos_month_table : qos_day_table,
@@ -2110,12 +2110,14 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 		if (track_wckey) {
 			xstrfmtcat(query,
 				   "insert into \"%s_%s\" (creation_time, "
-				   "mod_time, id, id_tres, time_start, "
+				   "mod_time, id, id_alt, id_tres, time_start, "
 				   "alloc_secs) "
 				   "select %ld, %ld, "
-				   "id, id_tres, %ld, @ASUM:=SUM(alloc_secs) "
+				   "id, id_alt, id_tres, %ld, "
+				   "@ASUM:=SUM(alloc_secs) "
 				   "from \"%s_%s\" where (time_start < %ld && "
-				   "time_start >= %ld) group by id, id_tres "
+				   "time_start >= %ld) "
+				   "group by id, id_alt, id_tres "
 				   "on duplicate key update "
 				   "mod_time=%ld, alloc_secs=@ASUM;",
 				   cluster_name,
