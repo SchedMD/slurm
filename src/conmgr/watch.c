@@ -34,6 +34,12 @@
 \*****************************************************************************/
 
 #define _GNU_SOURCE
+#include "config.h"
+
+#if HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 #include <limits.h>
 #include <stdint.h>
 #include <sys/un.h>
@@ -1320,6 +1326,17 @@ static bool _watch_loop(void)
 
 extern void *watch(void *arg)
 {
+#if HAVE_SYS_PRCTL_H
+	{
+		static char title[] = "watch";
+
+		if (prctl(PR_SET_NAME, title, NULL, NULL, NULL)) {
+			error("%s: cannot set process name to %s %m",
+			      __func__, title);
+		}
+	}
+#endif
+
 	slurm_mutex_lock(&mgr.mutex);
 
 	xassert(mgr.watch_thread == pthread_self());
