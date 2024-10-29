@@ -437,7 +437,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 						step->cwd);
 		env_array_overwrite_fmt(&run_command_args.env,
 					"SLURM_CONF", "%s",
-					slurm_conf.slurm_conf);
+					conf->conffile);
 		env_array_overwrite_fmt(&run_command_args.env,
 					"SLURMD_NODENAME", "%s",
 					conf->node_name);
@@ -446,6 +446,8 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		if (rc) {
 			error("%s: init script: %s failed",
 			      __func__, jc_conf->initscript);
+			log_flag(JOB_CONT, "initscript fail status: %d, stdout: %s",
+				 *(run_command_args.status), result);
 			xfree(result);
 			goto exit2;
 		} else {
