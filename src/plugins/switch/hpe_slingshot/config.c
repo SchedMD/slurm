@@ -601,7 +601,6 @@ extern bool slingshot_setup_config(const char *switch_params)
 	uint16_t vni_min = slingshot_state.vni_min;
 	uint16_t vni_max = slingshot_state.vni_max;
 
-	log_flag(SWITCH, "switch_params=%s", switch_params);
 	/*
 	 * Handle SwitchParameters values (separated by commas):
 	 *
@@ -649,6 +648,7 @@ extern bool slingshot_setup_config(const char *switch_params)
 			goto err;
 		goto out;
 	}
+	log_flag(SWITCH, "switch_params=%s", switch_params);
 
 	params = xstrdup(switch_params);
 	for (token = strtok_r(params, ",", &save_ptr); token;
