@@ -33,6 +33,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
+#if HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 #include <pthread.h>
 
 #include "src/common/macros.h"
@@ -43,6 +49,13 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
+
+/*
+ * From man prctl:
+ *	If the length of the  string, including the terminating null byte,
+ *	exceeds 16 bytes, the string is silently truncated.
+ */
+#define PRCTL_BUF_BYTES 17
 
 static void *_worker(void *arg);
 
@@ -163,6 +176,25 @@ static void *_worker(void *arg)
 {
 	worker_t *worker = arg;
 	_check_magic_worker(worker);
+
+#if HAVE_SYS_PRCTL_H
+	{
+		char title[PRCTL_BUF_BYTES];
+		int id;
+
+		slurm_mutex_lock(&mgr.mutex);
+		id = worker->id;
+		slurm_mutex_unlock(&mgr.mutex);
+
+		snprintf(title, sizeof(title), "worker[%d]", id);
+
+		if (prctl(PR_SET_NAME, title, NULL, NULL, NULL)) {
+			error("%s: cannot set process name to %s %m",
+			      __func__, title);
+		}
+	}
+#endif
+
 
 	slurm_mutex_lock(&mgr.mutex);
 	mgr.workers.total++;
