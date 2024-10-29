@@ -149,7 +149,7 @@ void run_backup(void)
 
 	slurm_thread_create_detached(_trigger_slurmctld_event, NULL);
 
-	unquiesce_rpcs(true);
+	conmgr_unquiesce(__func__);
 
 	/* wait for the heartbeat file to exist before starting */
 	while (!get_last_heartbeat(NULL) &&
@@ -273,7 +273,7 @@ void run_backup(void)
 	trigger_primary_ctld_fail();
 	trigger_backup_ctld_as_ctrl();
 
-	quiesce_rpcs();
+	conmgr_quiesce(__func__);
 	pthread_kill(pthread_self(), SIGTERM);
 
 	/*
