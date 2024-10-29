@@ -875,6 +875,10 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] skipping accept on closed connection",
 			 __func__, con->name);
 		return;
+	} else if (con_flag(con, FLAG_QUIESCE)) {
+		log_flag(CONMGR, "%s: [%s] skipping accept on quiesced connection",
+			 __func__, con->name);
+		return;
 	} else
 		log_flag(CONMGR, "%s: [%s] attempting to accept new connection",
 			 __func__, con->name);
