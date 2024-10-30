@@ -676,7 +676,6 @@ static int _foreach_license_job_test(void *x, void *arg)
 	} else if ((license_entry->total + match->used + match->last_deficit) >
 		   match->total) {
 		test_args->rc = EAGAIN;
-		return -1;
 	} else {
 		/* Assume node reboot required since we have not
 		 * selected the compute nodes yet */
@@ -686,7 +685,6 @@ static int _foreach_license_job_test(void *x, void *arg)
 		if ((license_entry->total + match->used + match->last_deficit +
 		     resv_licenses) > match->total) {
 			test_args->rc = EAGAIN;
-			return -1;
 		}
 	}
 	return 0;
