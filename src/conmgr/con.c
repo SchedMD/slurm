@@ -1620,27 +1620,22 @@ extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
 	return open;
 }
 
+/* caller must hold mgr.mutex */
 static conmgr_fd_ref_t *_fd_new_ref(conmgr_fd_t *con)
 {
 	conmgr_fd_ref_t *ref;
-	bitoff_t bit;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	if (!con->refs)
-		con->refs = bit_alloc(CONMGR_FD_REFS_MAX);
-
-	if ((bit = bit_ffc(con->refs)) < 0)
-		fatal_abort("overflow");
-
-	bit_set(con->refs, bit);
 
 	ref = xmalloc(sizeof(*ref));
 	*ref = (conmgr_fd_ref_t) {
 		.magic = MAGIC_CON_MGR_FD_REF,
 		.con = con,
-		.bit = bit,
 	};
+
+	con->refs++;
+	xassert(con->refs < INT_MAX);
+	xassert(con->refs > 0);
 
 	return ref;
 }
@@ -1665,11 +1660,12 @@ static void _fd_free_ref(conmgr_fd_ref_t **ref_ptr)
 	conmgr_fd_t *con = ref->con;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->refs);
-	xassert(bit_test(con->refs, ref->bit));
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
 
-	bit_clear(con->refs, ref->bit);
-	/* not free()ing con->refs to avoid many re-allocs */
+	con->refs--;
+	xassert(con->refs < INT_MAX);
+	xassert(con->refs >= 0);
+
 	ref->magic = ~MAGIC_CON_MGR_FD_REF;
 	xfree(ref);
 	*ref_ptr = NULL;
@@ -1705,8 +1701,8 @@ extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref)
 #ifndef NDEBUG
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->refs);
-	xassert(bit_test(con->refs, ref->bit));
+	xassert(con->refs < INT_MAX);
+	xassert(con->refs > 0);
 	slurm_mutex_unlock(&mgr.mutex);
 #endif
 

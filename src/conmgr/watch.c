@@ -822,14 +822,13 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
-	if (con->refs && (bit_ffs(con->refs) >= 0)) {
+	xassert(con->refs < INT_MAX);
+	xassert(con->refs >= 0);
+	if (con->refs > 0) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *refs = bit_fmt_full(con->refs);
 			char *flags = con_flags_string(con->flags);
-			log_flag(CONMGR, "%s: [%s] waiting on outstanding references[%d]:%s flags=%s",
-				 __func__, con->name, bit_set_count(con->refs),
-				 refs, flags);
-			xfree(refs);
+			log_flag(CONMGR, "%s: [%s] waiting on outstanding references:%d flags=%s",
+				 __func__, con->name, con->refs, flags);
 			xfree(flags);
 		}
 
@@ -1158,9 +1157,7 @@ static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
 	FREE_NULL_LIST(con->work);
 	FREE_NULL_LIST(con->write_complete_work);
 	xfree(con->name);
-	xassert(!con->refs || !bit_set_count(con->refs));
-	if (con->refs)
-		bit_free(con->refs);
+	xassert(!con->refs);
 
 	con->magic = ~MAGIC_CON_MGR_FD;
 	xfree(con);

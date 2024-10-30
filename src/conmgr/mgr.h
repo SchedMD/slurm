@@ -160,13 +160,9 @@ typedef enum {
  */
 extern char *con_flags_string(const con_flags_t flags);
 
-#define CONMGR_FD_REFS_MAX 16
-
 typedef struct conmgr_fd_ref_s {
 #define MAGIC_CON_MGR_FD_REF 0xA2F4B4EF
 	int magic; /* MAGIC_CON_MGR_FD_REF */
-	/* Bit# in conmgr_fd_t->references assigned to this */
-	bitoff_t bit;
 	conmgr_fd_t *con;
 } conmgr_fd_ref_t;
 
@@ -224,11 +220,8 @@ struct conmgr_fd_s {
 	/* Flags set for connection */
 	con_flags_t flags;
 
-	/*
-	 * Bitstring representing all references of this connection
-	 * NULL if there are no references
-	 */
-	bitstr_t *refs;
+	/* Number of active references of this connection */
+	int refs;
 };
 
 typedef struct {
