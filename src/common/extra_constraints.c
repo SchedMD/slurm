@@ -239,19 +239,24 @@ static op_t _str2op(char *str, const char *valid_chars, char **end_out)
 	return op;
 }
 
-static char *_find_op_in_string(char *str)
+/*
+ * Return true if the key or value is valid, false otherwise.
+ * A valid key/value is not an empty string and does not have any operator
+ * characters.
+ */
+static bool _valid_key_value(char *str)
 {
 	char *p;
 
-	if (!str)
-		return NULL;
+	if (!str || (*str == '\0'))
+		return false;
 
 	while (*str) {
 		if ((p = xstrchr(op_chars, *str)))
-			return p;
+			return false;
 		str++;
 	}
-	return NULL;
+	return true;
 }
 
 /*
@@ -329,7 +334,7 @@ static elem_t *_parse_leaf(char *str)
 	*op_ptr = '\0';
 
 	/* Check for invalid characters in key and value: operators */
-	if (_find_op_in_string(key) || (_find_op_in_string(val))) {
+	if (!_valid_key_value(key) || !_valid_key_value(val)) {
 #if _DEBUG
 		error("Invalid key-op-value: %s", str);
 #endif
