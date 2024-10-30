@@ -3773,73 +3773,80 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 	_add_dependency_to_list(new_depend_list, dep_ptr);
 }
 
+static int _foreach_update_job_depenency_list(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x, *job_depend;
+	test_job_dep_t *test_job_dep = arg;
+	job_record_t *job_ptr = test_job_dep->job_ptr;
+
+	/*
+	 * If the dependency is marked as remote, then it wasn't updated
+	 * by the sibling cluster. Skip it.
+	 */
+	if (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE)
+		return 0;
+
+	/*
+	 * Find the dependency in job_ptr that matches this one.
+	 * Then update job_ptr's dependency state (not fulfilled,
+	 * fulfilled, or failed) to match this one.
+	 */
+	job_depend = list_find_first(job_ptr->details->depend_list,
+				     _find_dependency,
+				     dep_ptr);
+	if (!job_depend) {
+		/*
+		 * This can happen if the job's dependency is updated
+		 * and the update doesn't get to the sibling before
+		 * the sibling sends back an update to the origin (us).
+		 */
+		log_flag(DEPENDENCY, "%s: Cannot find dependency %s:%u for %pJ, it may have been cleared before we got here.",
+			 __func__, _depend_type2str(dep_ptr),
+			 dep_ptr->job_id, job_ptr);
+		return 0;
+	}
+
+	/*
+	 * If the dependency is already fulfilled, don't update it.
+	 * Otherwise update the dependency state.
+	 */
+	if ((job_depend->depend_state == DEPEND_FULFILLED) ||
+	    (job_depend->depend_state == dep_ptr->depend_state))
+		return 0;
+	if (job_depend->depend_type == SLURM_DEPEND_SINGLETON) {
+		/*
+		 * We need to update the singleton dependency with
+		 * the cluster bit, but test_job_dependency() will test
+		 * if it is fulfilled, so don't change the depend_state
+		 * here.
+		 */
+		job_depend->singleton_bits |= dep_ptr->singleton_bits;
+		if (!fed_mgr_is_singleton_satisfied(job_ptr, job_depend,
+						    false))
+			return 0;
+	}
+	job_depend->depend_state = dep_ptr->depend_state;
+	test_job_dep->changed = true;
+
+	return 0;
+}
+
 extern bool update_job_dependency_list(job_record_t *job_ptr,
 				       list_t *new_depend_list)
 {
-	depend_spec_t *dep_ptr, *job_depend;
-	list_itr_t *itr;
-	list_t *job_depend_list = NULL;
-	bool was_changed = false;
+	test_job_dep_t test_job_dep = {
+		.job_ptr = job_ptr,
+	};
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
 	xassert(job_ptr->details->depend_list);
 
-	job_depend_list = job_ptr->details->depend_list;
+	(void) list_for_each(new_depend_list,
+			     _foreach_update_job_depenency_list,
+			     &test_job_dep);
 
-	itr = list_iterator_create(new_depend_list);
-	while ((dep_ptr = list_next(itr))) {
-		/*
-		 * If the dependency is marked as remote, then it wasn't updated
-		 * by the sibling cluster. Skip it.
-		 */
-		if (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) {
-			continue;
-		}
-		/*
-		 * Find the dependency in job_ptr that matches this one.
-		 * Then update job_ptr's dependency state (not fulfilled,
-		 * fulfilled, or failed) to match this one.
-		 */
-		job_depend = list_find_first(job_depend_list, _find_dependency,
-					     dep_ptr);
-		if (!job_depend) {
-			/*
-			 * This can happen if the job's dependency is updated
-			 * and the update doesn't get to the sibling before
-			 * the sibling sends back an update to the origin (us).
-			 */
-			log_flag(DEPENDENCY, "%s: Cannot find dependency %s:%u for %pJ, it may have been cleared before we got here.",
-				 __func__, _depend_type2str(dep_ptr),
-				 dep_ptr->job_id, job_ptr);
-			continue;
-		}
-
-		/*
-		 * If the dependency is already fulfilled, don't update it.
-		 * Otherwise update the dependency state.
-		 */
-		if ((job_depend->depend_state == DEPEND_FULFILLED) ||
-		    (job_depend->depend_state == dep_ptr->depend_state))
-			continue;
-		if (job_depend->depend_type == SLURM_DEPEND_SINGLETON) {
-			/*
-			 * We need to update the singleton dependency with
-			 * the cluster bit, but test_job_dependency() will test
-			 * if it is fulfilled, so don't change the depend_state
-			 * here.
-			 */
-			job_depend->singleton_bits |=
-				dep_ptr->singleton_bits;
-			if (!fed_mgr_is_singleton_satisfied(job_ptr, job_depend,
-							    false))
-			    continue;
-		}
-		job_depend->depend_state = dep_ptr->depend_state;
-		was_changed = true;
-	}
-	list_iterator_destroy(itr);
-	return was_changed;
+	return test_job_dep.changed;
 }
 
 static int _foreach_handle_job_dependency_updates(void *x, void *arg)
