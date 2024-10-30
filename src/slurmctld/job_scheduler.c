@@ -206,8 +206,8 @@ static void *	_sched_agent(void *args);
 static void _set_schedule_exit(schedule_exit_t code);
 static int	_schedule(bool full_queue);
 static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
-static int _valid_feature_list(job_record_t *job_ptr, list_t *feature_list,
-			       bool can_reboot, char *debug_str, char *features,
+static int _valid_feature_list(job_record_t *job_ptr,
+			       valid_feature_t *valid_feature,
 			       bool is_reservation);
 static int	_valid_node_feature(char *feature, bool can_reboot);
 static int	build_queue_timeout = BUILD_TIMEOUT;
@@ -5118,13 +5118,14 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 			      bool is_reservation)
 {
 	job_details_t *detail_ptr = job_ptr->details;
-	char *features;
 	list_t **feature_list;
 	int rc;
 	int feature_err;
-	bool can_reboot;
 	bool convert_to_matching_or = false;
-	char *debug_str = NULL;
+	valid_feature_t valid_feature = {
+		.job_ptr = job_ptr,
+		.rc = SLURM_SUCCESS,
+	};
 
 	/* no hard constraints */
 	if (!detail_ptr || (!detail_ptr->features && !detail_ptr->prefer)) {
@@ -5134,30 +5135,33 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 	}
 
 	if (prefer) {
-		features = detail_ptr->prefer;
+		valid_feature.features = detail_ptr->prefer;
 		feature_list = &detail_ptr->prefer_list;
 		feature_err = ESLURM_INVALID_PREFER;
 	} else {
-		features = detail_ptr->features;
+		valid_feature.features = detail_ptr->features;
 		feature_list = &detail_ptr->feature_list;
 		feature_err = ESLURM_INVALID_FEATURE;
 	}
 
-	if (!features) /* The other constraint is non NULL. */
+	if (!valid_feature.features) /* The other constraint is non NULL. */
 		return SLURM_SUCCESS;
 
 	if (*feature_list)		/* already processed */
 		return SLURM_SUCCESS;
 
 	if (is_reservation)
-		debug_str = xstrdup("Reservation");
+		valid_feature.debug_str = xstrdup("Reservation");
 	else if (!job_ptr->job_id)
-		debug_str = xstrdup("Job specs");
+		valid_feature.debug_str = xstrdup("Job specs");
 	else
-		debug_str = xstrdup_printf("JobId=%u", job_ptr->job_id);
+		valid_feature.debug_str =
+			xstrdup_printf("JobId=%u", job_ptr->job_id);
 
-	can_reboot = node_features_g_user_update(job_ptr->user_id);
-	rc = _feature_string2list(features, debug_str,
+	valid_feature.can_reboot =
+		node_features_g_user_update(job_ptr->user_id);
+	rc = _feature_string2list(valid_feature.features,
+				  valid_feature.debug_str,
 				  feature_list, &convert_to_matching_or);
 	if (rc != SLURM_SUCCESS) {
 		rc = feature_err;
@@ -5184,13 +5188,14 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 		 * Restructure only the feature list; leave the original
 		 * constraint expression intact.
 		 */
-		feature_sets = job_features_list2feature_sets(features,
-							      *feature_list,
-							      false);
+		feature_sets = job_features_list2feature_sets(
+			valid_feature.features,
+			*feature_list,
+			false);
 		list_for_each(feature_sets, job_features_set2str, &str);
 		FREE_NULL_LIST(feature_sets);
 		FREE_NULL_LIST(*feature_list);
-		rc = _feature_string2list(str, debug_str,
+		rc = _feature_string2list(str, valid_feature.debug_str,
 					  feature_list,
 					  &convert_to_matching_or);
 		if (rc != SLURM_SUCCESS) {
@@ -5205,29 +5210,30 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 			goto fini;
 		}
 		log_flag(NODE_FEATURES, "%s: Converted %sfeature list:'%s' to matching OR:'%s'",
-			 __func__, prefer ? "prefer " : "", features, str);
+			 __func__, prefer ? "prefer " : "",
+			 valid_feature.features, str);
 		xfree(str);
 	}
 
 	if (job_ptr->batch_features) {
 		detail_ptr->feature_list_use = *feature_list;
-		detail_ptr->features_use = features;
-		rc = _valid_batch_features(job_ptr, can_reboot);
+		detail_ptr->features_use = valid_feature.features;
+		rc = _valid_batch_features(job_ptr, valid_feature.can_reboot);
 		detail_ptr->feature_list_use = NULL;
 		detail_ptr->features_use = NULL;
 		if (rc != SLURM_SUCCESS)
 			goto fini;
 	}
 
-	rc = _valid_feature_list(job_ptr, *feature_list, can_reboot, debug_str,
-				 features, is_reservation);
+	valid_feature.feature_list = *feature_list;
+	rc = _valid_feature_list(job_ptr, &valid_feature, is_reservation);
 	if (rc != SLURM_SUCCESS) {
 		rc = feature_err;
 		goto fini;
 	}
 
 fini:
-	xfree(debug_str);
+	xfree(valid_feature.debug_str);
 	return rc;
 }
 
@@ -5360,24 +5366,17 @@ static int _foreach_valid_feature_list(void *x, void *arg)
 	return 0;
 }
 
-static int _valid_feature_list(job_record_t *job_ptr, list_t *feature_list,
-			       bool can_reboot, char *debug_str, char *features,
+static int _valid_feature_list(job_record_t *job_ptr,
+			       valid_feature_t *valid_feature,
 			       bool is_reservation)
 {
 	static time_t sched_update = 0;
 	static bool ignore_prefer_val = false;
-	valid_feature_t valid_feature = {
-		.can_reboot = can_reboot,
-		.debug_str = debug_str,
-		.features = features,
-		.feature_list = feature_list,
-		.job_ptr = job_ptr,
-		.rc = SLURM_SUCCESS,
-	};
 
-	if (feature_list == NULL) {
-		debug2("%s feature list is empty", debug_str);
-		return valid_feature.rc;
+	if (!valid_feature->feature_list) {
+		debug2("%s feature list is empty",
+		       valid_feature->debug_str);
+		return valid_feature->rc;
 	}
 
 	if (sched_update != slurm_conf.last_update) {
@@ -5388,29 +5387,32 @@ static int _valid_feature_list(job_record_t *job_ptr, list_t *feature_list,
 		else
 			ignore_prefer_val = false;
 	}
-	valid_feature.ignore_prefer_val = ignore_prefer_val;
+	valid_feature->ignore_prefer_val = ignore_prefer_val;
 
-	(void) list_for_each(feature_list,
+	(void) list_for_each(valid_feature->feature_list,
 			     _foreach_valid_feature_list,
-			     &valid_feature);
+			     valid_feature);
 
-	if (valid_feature.rc == SLURM_SUCCESS) {
-		debug("%s feature list: %s", debug_str, features);
+	if (valid_feature->rc == SLURM_SUCCESS) {
+		debug("%s feature list: %s",
+		      valid_feature->debug_str, valid_feature->features);
 	} else {
 		if (is_reservation) {
 			info("Reservation has invalid feature list: %s",
-			     features);
+			     valid_feature->features);
 		} else {
-			if (can_reboot)
+			if (valid_feature->can_reboot)
 				info("%s has invalid feature list: %s",
-				     debug_str, features);
+				     valid_feature->debug_str,
+				     valid_feature->features);
 			else
 				info("%s has invalid feature list (%s) or the features are not active and this user cannot reboot to update node features",
-				     debug_str, features);
+				     valid_feature->debug_str,
+				     valid_feature->features);
 		}
 	}
 
-	return valid_feature.rc;
+	return valid_feature->rc;
 }
 
 /* Validate that job's feature is available on some node(s) */
