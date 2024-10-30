@@ -240,12 +240,12 @@ be modified.<br>
 <p>The available job attributes change occasionally with different versions of
 Slurm. To find the job attributes that are available for the version of Slurm
 you're using, go to the <a href="https://github.com/SchedMD/slurm"> SchedMD
-github page</a>, and navigate to
-<b>src/plugins/job_submit/lua/job_submit_lua.c</b>.
-<b>_job_rec_field()</b> contains the list of attributes available for the
-job_record (e.g. current record in Slurm). <b>_get_job_req_field()</b> contains
-the list of attributes available for the job_descriptor (e.g. submission or
-modification request).
+github page</a>. Navigate to <b>src/lua/slurm_lua.c</b> and look for function
+<b>slurm_lua_job_record_field()</b>, which contains the list
+of attributes available for the job_record (e.g. current record in Slurm).
+Navigate to <b>src/plugins/job_submit/lua/job_submit_lua.c</b> and look for
+function <b>_get_job_req_field()</b>, which contains the list of attributes
+available for the job_descriptor (e.g. submission or modification request).
 </p>
 
 <h2 id="building">Building<a class="slurm_link" href="#building"></a></h2>
@@ -329,6 +329,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 04 October 2023</p>
+<p style="text-align:center;">Last modified 30 October 2024</p>
 
 <!--#include virtual="footer.txt"-->
