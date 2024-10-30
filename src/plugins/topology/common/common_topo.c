@@ -330,6 +330,7 @@ static int _split_hostlist_treewidth(hostlist_t *hl, hostlist_t ***sp_hl,
 			char *buf =
 			hostlist_ranged_string_xmalloc((*sp_hl)[*count]);
 			debug("ROUTE: ... sublist[%d] %s", *count, buf);
+			xfree(buf);
 		}
 	}
 
