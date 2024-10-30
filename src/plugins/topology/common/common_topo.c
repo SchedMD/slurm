@@ -112,6 +112,7 @@ static int _part_split_hostlist(void *x, void *y)
 	/* Append the FW tree hostlist array to the main hostlist array */
 	for (int i = 0; i < hl_count; i++)
 		(*arg->sp_hl)[*arg->count + i] = p_hl[i];
+	xfree(p_hl);
 	*arg->count += hl_count;
 	arg->depth = MAX(arg->depth, hl_depth);
 	arg->msg_count -= fwd_count;
