@@ -931,7 +931,11 @@ static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		// Print out possible memory frequencies for this device
 		_rsmi_print_freqs(i, LOG_LEVEL_DEBUG2);
 
-		gres_slurmd_conf.type_name = device_brand;
+		/* If no brand found use device_name as type name */
+		if (device_brand[0])
+			gres_slurmd_conf.type_name = device_brand;
+		else
+			gres_slurmd_conf.type_name = device_name;
 
 		add_gres_to_list(gres_list_system, &gres_slurmd_conf);
 

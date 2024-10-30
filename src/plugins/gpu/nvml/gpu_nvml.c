@@ -1377,7 +1377,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 		char *device_file = NULL;
 		char *nvlinks = NULL;
 		char device_name[NVML_DEVICE_NAME_BUFFER_SIZE] = {0};
-		bool mig_mode = false;
+		bool mig_mode = false, added_mig = false;
 		gres_slurmd_conf_t gres_slurmd_conf = {
 			.config_flags = GRES_CONF_ENV_NVML,
 			.count = 1,
@@ -1486,7 +1486,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 			}
 			debug2("    MIG count: %u", mig_count);
 			if (mig_count == 0)
-				fatal("MIG mode is enabled, but no MIG devices were found. Please either create MIG instances, disable MIG mode, remove AutoDetect=nvml, or remove GPUs from the configuration completely.");
+				error("MIG mode is enabled, but no MIG devices were found. Please either create MIG instances, disable MIG mode, remove AutoDetect=nvml, or remove GPUs from the configuration completely.");
 
 			for (unsigned int j = 0; j < mig_count; j++) {
 				nvml_mig_t nvml_mig = { 0 };
@@ -1513,6 +1513,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 				gres_slurmd_conf.unique_id = nvml_mig.unique_id;
 				gres_slurmd_conf.config_flags |=
 					GRES_CONF_GLOBAL_INDEX;
+				added_mig = true;
 
 				add_gres_to_list(gres_list_system,
 						 &gres_slurmd_conf);
@@ -1520,7 +1521,9 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 			}
 			xfree(tmp_device_name);
 #endif
-		} else {
+		}
+
+		if (!added_mig) {
 			gres_slurmd_conf.file = device_file;
 			gres_slurmd_conf.links = nvlinks;
 			gres_slurmd_conf.type_name = device_name;

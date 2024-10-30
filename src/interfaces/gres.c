@@ -1277,16 +1277,56 @@ static void _handle_global_autodetect(char *str)
 	}
 }
 
+static int _get_match(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf1 = x;
+	gres_slurmd_conf_t *gres_slurmd_conf2 = arg;
+
+	/* We only need to check type name because they should all be gpus */
+	if (!gres_slurmd_conf1->type_name && !gres_slurmd_conf2->type_name)
+		return 1;
+
+	if (!gres_slurmd_conf1->type_name || !gres_slurmd_conf2->type_name)
+		return 0;
+
+	if (!xstrcmp(gres_slurmd_conf1->type_name,
+		     gres_slurmd_conf2->type_name))
+		return 1;
+
+	return 0;
+}
+
+static int _merge_by_type(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x, *merged_gres_slurmd_conf;
+	list_t *gres_list_merged = arg;
+
+	merged_gres_slurmd_conf = list_find_first(gres_list_merged, _get_match,
+						  gres_slurmd_conf);
+
+	/* We are merging types and don't care about files or links */
+	if (merged_gres_slurmd_conf)
+		merged_gres_slurmd_conf->count++;
+	else
+		list_append(gres_list_merged, gres_slurmd_conf);
+
+	return SLURM_SUCCESS;
+}
+
 static int _slurm_conf_gres_str(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
 	char **gres_str = arg;
-	if (gres_slurmd_conf && gres_slurmd_conf->name)
-		xstrfmtcat(*gres_str, "%s:%s%s%ld",
+	if (gres_slurmd_conf && gres_slurmd_conf->name) {
+		bool has_type = gres_slurmd_conf->type_name &&
+				gres_slurmd_conf->type_name[0];
+		xstrfmtcat(*gres_str, "%s%s:%s%s%ld",
+			   gres_str && gres_str[0] ? "," : "",
 			   gres_slurmd_conf->name,
-			   gres_slurmd_conf->type_name ? gres_slurmd_conf->type_name : "",
-			   gres_slurmd_conf->type_name ? ":" : "",
+			   has_type ? gres_slurmd_conf->type_name : "",
+			   has_type ? ":" : "",
 			   gres_slurmd_conf->count);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -1294,11 +1334,13 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 				       char **first_gres_str,
 				       char **autodetect_str)
 {
-	list_t *gres_list_system = NULL;
+	list_t *gres_list_system = NULL, *gres_list_merged = NULL;
+
 	char *gres_str = NULL;
 
 	int autodetect_options[] = {
 		GRES_AUTODETECT_GPU_NVML,
+		GRES_AUTODETECT_GPU_NVIDIA,
 		GRES_AUTODETECT_GPU_RSMI,
 		GRES_AUTODETECT_GPU_ONEAPI,
 		GRES_AUTODETECT_GPU_NRT,
@@ -1310,14 +1352,22 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 		if (gpu_plugin_init() != SLURM_SUCCESS)
 			continue;
 		gres_list_system = gpu_g_get_system_gpu_list(&node_conf);
-		if (gres_list_system)
-			list_for_each(gres_list_system, _slurm_conf_gres_str,
+		if (gres_list_system) {
+			gres_list_merged = list_create(NULL);
+			list_for_each(gres_list_system, _merge_by_type,
+				      gres_list_merged);
+			list_for_each(gres_list_merged, _slurm_conf_gres_str,
 				      &gres_str);
+		}
+		FREE_NULL_LIST(gres_list_merged);
 		FREE_NULL_LIST(gres_list_system);
 		gpu_plugin_fini();
 
 		if (!gres_str)
 			continue;
+
+		if (autodetect_flags == GRES_AUTODETECT_GPU_NVML)
+			i++; /* Skip NVIDIA if NVML finds gpus */
 
 		xstrfmtcat(*autodetect_str, "Found %s with Autodetect=%s (Substring of gpu name may be used instead)",
 			   gres_str,
