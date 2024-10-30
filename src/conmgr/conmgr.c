@@ -397,7 +397,7 @@ extern void conmgr_quiesce(const char *caller)
 
 extern void conmgr_unquiesce(const char *caller)
 {
-	slurm_mutex_init(&mgr.mutex);
+	slurm_mutex_lock(&mgr.mutex);
 
 	xassert(mgr.quiesce.requested);
 	xassert(mgr.quiesce.active);

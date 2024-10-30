@@ -207,7 +207,7 @@ static void *_worker(void *arg)
 		work_t *work = NULL;
 
 		while (mgr.quiesce.active)
-			EVENT_WAIT(&mgr.quiesce.on_start_quiesced, &mgr.mutex);
+			EVENT_WAIT(&mgr.quiesce.on_stop_quiesced, &mgr.mutex);
 
 		work = list_pop(mgr.work);
 

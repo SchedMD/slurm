@@ -247,14 +247,12 @@ static bool under_systemd = false;
 /* Array of listening sockets */
 static struct {
 	pthread_mutex_t mutex;
-	bool quiesced;
 	int count;
 	int *fd;
 	conmgr_fd_t **cons;
 	bool standby_mode;
 } listeners = {
 	.mutex = PTHREAD_MUTEX_INITIALIZER,
-	.quiesced = true,
 };
 
 typedef struct primary_thread_arg {
@@ -318,8 +316,6 @@ static void _attempt_reconfig(void)
 {
 	info("Attempting to reconfigure");
 
-	conmgr_quiesce(__func__);
-
 	/*
 	 * Send RC to requestors in foreground mode now as slurmctld is about
 	 * to call exec() which will close connections.
@@ -335,8 +331,6 @@ static void _attempt_reconfig(void)
 		info("Relinquishing control to new child");
 		_exit(0);
 	}
-
-	conmgr_unquiesce(__func__);
 
 	recover = 2;
 }
@@ -599,6 +593,7 @@ int main(int argc, char **argv)
 	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 
 	conmgr_run(false);
+	conmgr_quiesce(__func__);
 
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
@@ -928,14 +923,14 @@ int main(int argc, char **argv)
 			_post_reconfig();
 		}
 
-		unquiesce_rpcs(false);
+		conmgr_unquiesce(__func__);
 
 		/*
 		 * process slurm background activities, could run as pthread
 		 */
 		_slurmctld_background(NULL);
 
-		quiesce_rpcs();
+		conmgr_quiesce(__func__);
 
 		controller_fini_scheduling(); /* Stop all scheduling */
 		agent_fini();
@@ -1080,7 +1075,7 @@ int main(int argc, char **argv)
 #endif
 
 	conmgr_request_shutdown();
-
+	conmgr_unquiesce(__func__);
 	conmgr_fini();
 
 	rate_limit_shutdown();
@@ -1393,7 +1388,6 @@ static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 {
 	const int *i_ptr = arg;
 	const int i = *i_ptr;
-	int rc;
 
 	debug3("%s: [%s] Successfully opened RPC listener",
 	       __func__, conmgr_fd_get_name(con));
@@ -1402,12 +1396,6 @@ static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 
 	xassert(!listeners.cons[i]);
 	listeners.cons[i] = con;
-
-	/* Detect if connection happens after unquiesce_rpcs() already called */
-	if (!listeners.quiesced && (rc = conmgr_unquiesce_fd(con)))
-		fatal_abort("%s: [%s] unable to unquiesce error:%s",
-			    __func__, conmgr_fd_get_name(con),
-			    slurm_strerror(rc));
 
 	slurm_mutex_unlock(&listeners.mutex);
 
@@ -1526,49 +1514,6 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		return on_backup_msg(con, msg, arg);
 }
 
-extern void quiesce_rpcs(void)
-{
-	slurm_mutex_lock(&listeners.mutex);
-
-	listeners.quiesced = true;
-
-	for (int i = 0; i < listeners.count; i++) {
-		int rc;
-
-		if (!listeners.cons[i])
-			continue;
-
-		if ((rc = conmgr_quiesce_fd(listeners.cons[i])))
-			fatal_abort("%s: [%s] unable to quiesce error:%s",
-			      __func__, conmgr_fd_get_name(listeners.cons[i]),
-			      slurm_strerror(rc));
-	}
-
-	slurm_mutex_unlock(&listeners.mutex);
-}
-
-extern void unquiesce_rpcs(bool standby_mode)
-{
-	slurm_mutex_lock(&listeners.mutex);
-
-	listeners.quiesced = false;
-	listeners.standby_mode = standby_mode;
-
-	for (int i = 0; i < listeners.count; i++) {
-		int rc;
-
-		if (!listeners.cons[i])
-			continue;
-
-		if ((rc = conmgr_unquiesce_fd(listeners.cons[i])))
-			fatal_abort("%s: [%s] unable to unquiesce error:%s",
-			      __func__, conmgr_fd_get_name(listeners.cons[i]),
-			      slurm_strerror(rc));
-	}
-
-	slurm_mutex_unlock(&listeners.mutex);
-}
-
 /*
  * _open_ports - Open all ports for the slurmctld to listen on.
  */
@@ -1609,7 +1554,7 @@ static void _open_ports(void)
 
 	for (uint64_t i = 0; i < listeners.count; i++) {
 		static const conmgr_con_flags_t flags =
-			(CON_FLAG_RPC_KEEP_BUFFER | CON_FLAG_QUIESCE);
+			CON_FLAG_RPC_KEEP_BUFFER;
 		int rc, *index_ptr;
 
 		index_ptr = xmalloc(sizeof(*index_ptr));

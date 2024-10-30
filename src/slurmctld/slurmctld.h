@@ -2369,15 +2369,4 @@ extern void controller_reconfig_scheduling(void);
  */
 extern char *part_list_to_xstr(list_t *list);
 
-/* Quiesce all RPC listeners */
-extern void quiesce_rpcs(void);
-
-/*
- * Unquiesce all RPC listeners.
- * IN standby_mode
- *	True: direct RPCs to standby/backup handlers
- *	False: direct RPCs to primary handlers
- */
-extern void unquiesce_rpcs(bool standby_mode);
-
 #endif /* !_HAVE_SLURMCTLD_H */
