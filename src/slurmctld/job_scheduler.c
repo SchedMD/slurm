@@ -182,6 +182,20 @@ typedef struct {
 	will_run_response_msg_t **resp;
 } job_start_data_t;
 
+typedef struct {
+	int bracket;
+	bool can_reboot;
+	char *debug_str;
+	char *features;
+	list_t *feature_list;
+	bool has_xand;
+	bool has_mor;
+	bool ignore_prefer_val;
+	job_record_t *job_ptr;
+	int paren;
+	int rc;
+} valid_feature_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
@@ -5278,21 +5292,92 @@ static int _valid_batch_features(job_record_t *job_ptr, bool can_reboot)
 	return rc;
 }
 
+static int _foreach_valid_feature_list(void *x, void *arg)
+{
+	job_feature_t *feat_ptr = x;
+	valid_feature_t *valid_feature = arg;
+	job_record_t *job_ptr = valid_feature->job_ptr;
+
+	if ((feat_ptr->op_code == FEATURE_OP_MOR) ||
+	    (feat_ptr->op_code == FEATURE_OP_XAND)) {
+		valid_feature->bracket = feat_ptr->paren + 1;
+	}
+	if (feat_ptr->paren > valid_feature->paren) {
+		valid_feature->paren = feat_ptr->paren;
+	}
+	if (feat_ptr->paren < valid_feature->paren) {
+		valid_feature->paren = feat_ptr->paren;
+	}
+	if ((valid_feature->rc == SLURM_SUCCESS) &&
+	    (!valid_feature->ignore_prefer_val ||
+	     (valid_feature->feature_list != job_ptr->details->prefer_list))) {
+		valid_feature->rc =
+			_valid_node_feature(feat_ptr->name,
+					    valid_feature->can_reboot);
+		if (valid_feature->rc != SLURM_SUCCESS)
+			verbose("%s feature %s is not usable on any node: %s",
+				valid_feature->debug_str, feat_ptr->name,
+				valid_feature->features);
+	}
+	if ((feat_ptr->op_code == FEATURE_OP_XAND) && !feat_ptr->count) {
+		verbose("%s feature %s invalid, count must be used with XAND: %s",
+			valid_feature->debug_str, feat_ptr->name,
+			valid_feature->features);
+		valid_feature->rc = ESLURM_INVALID_FEATURE;
+	}
+	if ((feat_ptr->op_code == FEATURE_OP_MOR) && feat_ptr->count) {
+		verbose("%s feature %s invalid, count must not be used with MOR: %s",
+			valid_feature->debug_str, feat_ptr->name,
+			valid_feature->features);
+		valid_feature->rc = ESLURM_INVALID_FEATURE;
+	}
+
+	/* In brackets, outside of paren */
+	if ((valid_feature->bracket > valid_feature->paren) &&
+	    ((feat_ptr->op_code != FEATURE_OP_MOR) &&
+	     (feat_ptr->op_code != FEATURE_OP_XAND))) {
+		if (valid_feature->has_xand && !feat_ptr->count) {
+			valid_feature->rc = ESLURM_INVALID_FEATURE;
+			verbose("%s feature %s invalid, count must be used with XAND: %s",
+				valid_feature->debug_str, feat_ptr->name,
+				valid_feature->features);
+		}
+		if (valid_feature->has_mor && feat_ptr->count) {
+			valid_feature->rc = ESLURM_INVALID_FEATURE;
+			verbose("%s feature %s invalid, count must not be used with MOR: %s",
+				valid_feature->debug_str, feat_ptr->name,
+				valid_feature->features);
+		}
+		valid_feature->bracket = 0;
+		valid_feature->has_xand = false;
+		valid_feature->has_mor = false;
+	}
+	if (feat_ptr->op_code == FEATURE_OP_XAND)
+		valid_feature->has_xand = true;
+	if (feat_ptr->op_code == FEATURE_OP_MOR)
+		valid_feature->has_mor = true;
+
+	return 0;
+}
+
 static int _valid_feature_list(job_record_t *job_ptr, list_t *feature_list,
 			       bool can_reboot, char *debug_str, char *features,
 			       bool is_reservation)
 {
 	static time_t sched_update = 0;
 	static bool ignore_prefer_val = false;
-	list_itr_t *feat_iter;
-	job_feature_t *feat_ptr;
-	int bracket = 0, paren = 0;
-	int rc = SLURM_SUCCESS;
-	bool has_xand = false, has_mor = false;
+	valid_feature_t valid_feature = {
+		.can_reboot = can_reboot,
+		.debug_str = debug_str,
+		.features = features,
+		.feature_list = feature_list,
+		.job_ptr = job_ptr,
+		.rc = SLURM_SUCCESS,
+	};
 
 	if (feature_list == NULL) {
 		debug2("%s feature list is empty", debug_str);
-		return rc;
+		return valid_feature.rc;
 	}
 
 	if (sched_update != slurm_conf.last_update) {
@@ -5303,62 +5388,13 @@ static int _valid_feature_list(job_record_t *job_ptr, list_t *feature_list,
 		else
 			ignore_prefer_val = false;
 	}
+	valid_feature.ignore_prefer_val = ignore_prefer_val;
 
-	feat_iter = list_iterator_create(feature_list);
-	while ((feat_ptr = list_next(feat_iter))) {
-		if ((feat_ptr->op_code == FEATURE_OP_MOR) ||
-		    (feat_ptr->op_code == FEATURE_OP_XAND)) {
-			bracket = feat_ptr->paren + 1;
-		}
-		if (feat_ptr->paren > paren) {
-			paren = feat_ptr->paren;
-		}
-		if (feat_ptr->paren < paren) {
-			paren = feat_ptr->paren;
-		}
-		if (rc == SLURM_SUCCESS &&
-		    (!ignore_prefer_val ||
-		     (feature_list != job_ptr->details->prefer_list))) {
-			rc = _valid_node_feature(feat_ptr->name, can_reboot);
-			if (rc != SLURM_SUCCESS)
-				verbose("%s feature %s is not usable on any node: %s",
-					debug_str, feat_ptr->name, features);
-		}
-		if (feat_ptr->op_code == FEATURE_OP_XAND && !feat_ptr->count) {
-			verbose("%s feature %s invalid, count must be used with XAND: %s",
-				debug_str, feat_ptr->name, features);
-			rc = ESLURM_INVALID_FEATURE;
-		}
-		if (feat_ptr->op_code == FEATURE_OP_MOR && feat_ptr->count) {
-			verbose("%s feature %s invalid, count must not be used with MOR: %s",
-				debug_str, feat_ptr->name, features);
-			rc = ESLURM_INVALID_FEATURE;
-		}
-		if ((bracket > paren) && /* In brackets, outside of paren */
-		    ((feat_ptr->op_code != FEATURE_OP_MOR) &&
-		     (feat_ptr->op_code != FEATURE_OP_XAND))) {
-			if (has_xand && !feat_ptr->count) {
-				rc = ESLURM_INVALID_FEATURE;
-				verbose("%s feature %s invalid, count must be used with XAND: %s",
-					debug_str, feat_ptr->name, features);
-			}
-			if (has_mor && feat_ptr->count) {
-				rc = ESLURM_INVALID_FEATURE;
-				verbose("%s feature %s invalid, count must not be used with MOR: %s",
-					debug_str, feat_ptr->name, features);
-			}
-			bracket = 0;
-			has_xand = false;
-			has_mor = false;
-		}
-		if (feat_ptr->op_code == FEATURE_OP_XAND)
-			has_xand = true;
-		if (feat_ptr->op_code == FEATURE_OP_MOR)
-			has_mor = true;
-	}
-	list_iterator_destroy(feat_iter);
+	(void) list_for_each(feature_list,
+			     _foreach_valid_feature_list,
+			     &valid_feature);
 
-	if (rc == SLURM_SUCCESS) {
+	if (valid_feature.rc == SLURM_SUCCESS) {
 		debug("%s feature list: %s", debug_str, features);
 	} else {
 		if (is_reservation) {
@@ -5374,7 +5410,7 @@ static int _valid_feature_list(job_record_t *job_ptr, list_t *feature_list,
 		}
 	}
 
-	return rc;
+	return valid_feature.rc;
 }
 
 /* Validate that job's feature is available on some node(s) */
