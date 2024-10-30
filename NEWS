@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
     Slurm. Log warnings instead.
  -- Fix race condition in stepmgr step completion handling.
  -- Fix slurmctld segfault with stepmgr and MpiParams when running a job array.
+ -- Fix requeued jobs keeping their priority until the decay thread happens.
 
 * Changes in Slurm 24.05.4
 ==========================
