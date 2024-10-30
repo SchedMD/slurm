@@ -4834,6 +4834,25 @@ extern void prolog_running_decr(job_record_t *job_ptr)
 	}
 }
 
+static int _foreach_feature_list_copy(void *x, void *arg)
+{
+	job_feature_t *feat_src = x, *feat_dest;
+	list_t **feature_list_dest = arg;
+
+	feat_dest = xmalloc(sizeof(job_feature_t));
+	memcpy(feat_dest, feat_src, sizeof(job_feature_t));
+	if (feat_src->node_bitmap_active)
+		feat_dest->node_bitmap_active =
+			bit_copy(feat_src->node_bitmap_active);
+	if (feat_src->node_bitmap_avail)
+		feat_dest->node_bitmap_avail =
+			bit_copy(feat_src->node_bitmap_avail);
+	feat_dest->name = xstrdup(feat_src->name);
+	list_append(*feature_list_dest, feat_dest);
+
+	return 0;
+}
+
 /*
  * Copy a job's feature list
  * IN feature_list_src - a job's depend_lst
@@ -4841,28 +4860,16 @@ extern void prolog_running_decr(job_record_t *job_ptr)
  */
 extern list_t *feature_list_copy(list_t *feature_list_src)
 {
-	job_feature_t *feat_src, *feat_dest;
-	list_itr_t *iter;
 	list_t *feature_list_dest = NULL;
 
 	if (!feature_list_src)
 		return feature_list_dest;
 
 	feature_list_dest = list_create(feature_list_delete);
-	iter = list_iterator_create(feature_list_src);
-	while ((feat_src = list_next(iter))) {
-		feat_dest = xmalloc(sizeof(job_feature_t));
-		memcpy(feat_dest, feat_src, sizeof(job_feature_t));
-		if (feat_src->node_bitmap_active)
-			feat_dest->node_bitmap_active =
-				bit_copy(feat_src->node_bitmap_active);
-		if (feat_src->node_bitmap_avail)
-			feat_dest->node_bitmap_avail =
-				bit_copy(feat_src->node_bitmap_avail);
-		feat_dest->name = xstrdup(feat_src->name);
-		list_append(feature_list_dest, feat_dest);
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(feature_list_src,
+			     _foreach_feature_list_copy,
+			     &feature_list_dest);
+
 	return feature_list_dest;
 }
 
