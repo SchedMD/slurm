@@ -2278,6 +2278,17 @@ static list_t *_send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
 	return ret_list;
 }
 
+static int _foreach_ret_list_hostname_set(void *x, void *arg)
+{
+	ret_data_info_t *ret_data_info = x;
+	char *name = arg;
+
+	if (!ret_data_info->node_name)
+		ret_data_info->node_name = xstrdup(name);
+
+	return 0;
+}
+
 /*
  * slurm_send_recv_controller_msg
  * opens a connection to the controller, sends the controller a message,
@@ -2635,8 +2646,6 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	static uint16_t conn_timeout = NO_VAL16, tcp_timeout = 2;
 	list_t *ret_list = NULL;
 	int fd = -1;
-	ret_data_info_t *ret_data_info = NULL;
-	list_itr_t *itr;
 	int i;
 
 	slurm_mutex_lock(&conn_lock);
@@ -2680,12 +2689,8 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 		errno = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
 		return ret_list;
 	} else {
-		itr = list_iterator_create(ret_list);
-		while ((ret_data_info = list_next(itr)))
-			if (!ret_data_info->node_name) {
-				ret_data_info->node_name = xstrdup(name);
-			}
-		list_iterator_destroy(itr);
+		(void) list_for_each(
+			ret_list, _foreach_ret_list_hostname_set, name);
 	}
 	return ret_list;
 }

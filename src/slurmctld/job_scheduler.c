@@ -141,6 +141,61 @@ typedef struct {
 	bitstr_t *eff_cg_bitmap;
 } part_reduce_frag_t;
 
+typedef struct {
+	job_record_t *het_job;
+	job_record_t *het_job_leader;
+	job_record_t *job_ptr;
+} het_job_ready_t;
+
+typedef struct {
+	job_record_t *het_job_leader;
+	int het_job_offset;
+	batch_job_launch_msg_t *launch_msg_ptr;
+} het_job_env_t;
+
+typedef struct {
+	job_record_t *job_ptr;
+	char *sep;
+	bool set_or_flag;
+} depend_str_t;
+
+typedef struct {
+	bool and_failed;
+	bool changed;
+	bool has_local_depend;
+	bool has_unfulfilled;
+	job_record_t *job_ptr;
+	bool or_flag;
+	bool or_satisfied;
+} test_job_dep_t;
+
+typedef struct {
+	uint64_t cume_space_time;
+	job_record_t *job_ptr;
+	uint32_t part_cpus_per_node;
+} delay_start_t;
+
+typedef struct {
+	job_record_t *job_ptr;
+	time_t now;
+	int rc;
+	will_run_response_msg_t **resp;
+} job_start_data_t;
+
+typedef struct {
+	int bracket;
+	bool can_reboot;
+	char *debug_str;
+	char *features;
+	list_t *feature_list;
+	bool has_xand;
+	bool has_mor;
+	bool ignore_prefer_val;
+	job_record_t *job_ptr;
+	int paren;
+	int rc;
+} valid_feature_t;
+
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
@@ -151,8 +206,8 @@ static void *	_sched_agent(void *args);
 static void _set_schedule_exit(schedule_exit_t code);
 static int	_schedule(bool full_queue);
 static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
-static int _valid_feature_list(job_record_t *job_ptr, list_t *feature_list,
-			       bool can_reboot, char *debug_str, char *features,
+static int _valid_feature_list(job_record_t *job_ptr,
+			       valid_feature_t *valid_feature,
 			       bool is_reservation);
 static int	_valid_node_feature(char *feature, bool can_reboot);
 static int	build_queue_timeout = BUILD_TIMEOUT;
@@ -2384,57 +2439,68 @@ job_failed:
 	return NULL;
 }
 
+static int _foreach_het_job_ready(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+	het_job_ready_t *ready_struct = arg;
+	bool prolog = false;
+
+	if (ready_struct->het_job_leader->het_job_id != het_job->het_job_id) {
+		error("%s: Bad het_job_list for %pJ",
+		      __func__, ready_struct->het_job_leader);
+		return 0;
+	}
+
+	ready_struct->het_job = het_job;
+
+	if (het_job->details)
+		prolog = het_job->details->prolog_running;
+	if (prolog || IS_JOB_CONFIGURING(het_job) ||
+	    !test_job_nodes_ready(het_job)) {
+		ready_struct->het_job_leader = NULL;
+		return -1;
+	}
+	if (!ready_struct->job_ptr->batch_flag ||
+	    (!IS_JOB_RUNNING(ready_struct->job_ptr) &&
+	     !IS_JOB_SUSPENDED(ready_struct->job_ptr))) {
+		ready_struct->het_job_leader = NULL;
+		return -1;
+	}
+
+	ready_struct->het_job = NULL;
+	return 0;
+}
+
 /* Validate the job is ready for launch
  * RET pointer to batch job to launch or NULL if not ready yet */
 static job_record_t *_het_job_ready(job_record_t *job_ptr)
 {
-	job_record_t *het_job_leader, *het_job;
-	list_itr_t *iter;
+	het_job_ready_t ready_struct = { 0 };
 
 	if (job_ptr->het_job_id == 0)	/* Not a hetjob */
 		return job_ptr;
-
-	het_job_leader = find_job_record(job_ptr->het_job_id);
-	if (!het_job_leader) {
+	ready_struct.het_job_leader = find_job_record(job_ptr->het_job_id);
+	if (!ready_struct.het_job_leader) {
 		error("Hetjob leader %pJ not found", job_ptr);
 		return NULL;
 	}
-	if (!het_job_leader->het_job_list) {
+	if (!ready_struct.het_job_leader->het_job_list) {
 		error("Hetjob leader %pJ lacks het_job_list", job_ptr);
 		return NULL;
 	}
 
-	iter = list_iterator_create(het_job_leader->het_job_list);
-	while ((het_job = list_next(iter))) {
-		uint8_t prolog = 0;
-		if (het_job_leader->het_job_id != het_job->het_job_id) {
-			error("%s: Bad het_job_list for %pJ",
-			      __func__, het_job_leader);
-			continue;
-		}
-		if (job_ptr->details)
-			prolog = het_job->details->prolog_running;
-		if (prolog || IS_JOB_CONFIGURING(het_job) ||
-		    !test_job_nodes_ready(het_job)) {
-			het_job_leader = NULL;
-			break;
-		}
-		if ((job_ptr->batch_flag == 0) ||
-		    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
-			het_job_leader = NULL;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
+	ready_struct.job_ptr = job_ptr;
+	(void) list_for_each(ready_struct.het_job_leader->het_job_list,
+			     _foreach_het_job_ready, &ready_struct);
 
-	if (het_job_leader)
+	if (ready_struct.het_job_leader)
 		log_flag(HETJOB, "Batch hetjob %pJ being launched",
-			 het_job_leader);
-	else if (het_job)
+			 ready_struct.het_job_leader);
+	else if (ready_struct.het_job)
 		log_flag(HETJOB, "Batch hetjob %pJ waiting for job to be ready",
-			 het_job);
+			 ready_struct.het_job);
 
-	return het_job_leader;
+	return ready_struct.het_job_leader;
 }
 
 static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
@@ -2494,6 +2560,159 @@ static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
 		launch->envc = PTR_ARRAY_SIZE(launch->environment) - 1;
 }
 
+static int _foreach_set_het_job_env(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+	het_job_env_t *het_job_env = arg;
+	job_record_t *het_job_leader = het_job_env->het_job_leader;
+	int het_job_offset = het_job_env->het_job_offset;
+	batch_job_launch_msg_t *launch_msg_ptr = het_job_env->launch_msg_ptr;
+	uint32_t num_cpus = 0;
+	uint64_t tmp_mem = 0;
+	char *tmp_str = NULL;
+
+	if (het_job_leader->het_job_id != het_job->het_job_id) {
+		error("%s: Bad het_job_list for %pJ",
+		      __func__, het_job_leader);
+		return 0;
+	}
+	if (het_job->account) {
+		(void) env_array_overwrite_het_fmt(
+			&launch_msg_ptr->environment,
+			"SLURM_JOB_ACCOUNT",
+			het_job_offset, "%s", het_job->account);
+	}
+
+	if (het_job->job_resrcs) {
+		tmp_str = uint32_compressed_to_str(
+			het_job->job_resrcs->cpu_array_cnt,
+			het_job->job_resrcs->cpu_array_value,
+			het_job->job_resrcs->cpu_array_reps);
+		(void) env_array_overwrite_het_fmt(
+			&launch_msg_ptr->environment,
+			"SLURM_JOB_CPUS_PER_NODE",
+			het_job_offset, "%s", tmp_str);
+		xfree(tmp_str);
+	}
+	(void) env_array_overwrite_het_fmt(
+		&launch_msg_ptr->environment,
+		"SLURM_JOB_ID",
+		het_job_offset, "%u", het_job->job_id);
+	(void) env_array_overwrite_het_fmt(
+		&launch_msg_ptr->environment,
+		"SLURM_JOB_NAME",
+		het_job_offset, "%s", het_job->name);
+	(void) env_array_overwrite_het_fmt(
+		&launch_msg_ptr->environment,
+		"SLURM_JOB_NODELIST",
+		het_job_offset, "%s", het_job->nodes);
+	(void) env_array_overwrite_het_fmt(
+		&launch_msg_ptr->environment,
+		"SLURM_JOB_NUM_NODES",
+		het_job_offset, "%u", het_job->node_cnt);
+	if (het_job->partition) {
+		(void) env_array_overwrite_het_fmt(
+			&launch_msg_ptr->environment,
+			"SLURM_JOB_PARTITION",
+			het_job_offset, "%s", het_job->partition);
+	}
+	if (het_job->qos_ptr) {
+		(void) env_array_overwrite_het_fmt(
+			&launch_msg_ptr->environment,
+			"SLURM_JOB_QOS",
+			het_job_offset, "%s", het_job->qos_ptr->name);
+	}
+	if (het_job->resv_ptr) {
+		(void) env_array_overwrite_het_fmt(
+			&launch_msg_ptr->environment,
+			"SLURM_JOB_RESERVATION",
+			het_job_offset, "%s", het_job->resv_ptr->name);
+	}
+	if (het_job->details)
+		tmp_mem = het_job->details->pn_min_memory;
+	if (tmp_mem & MEM_PER_CPU) {
+		tmp_mem &= (~MEM_PER_CPU);
+		(void) env_array_overwrite_het_fmt(
+			&launch_msg_ptr->environment,
+			"SLURM_MEM_PER_CPU",
+			het_job_offset, "%"PRIu64"", tmp_mem);
+	} else if (tmp_mem) {
+		(void) env_array_overwrite_het_fmt(
+			&launch_msg_ptr->environment,
+			"SLURM_MEM_PER_NODE",
+			het_job_offset, "%"PRIu64"", tmp_mem);
+	}
+
+	if (het_job->details && het_job->job_resrcs) {
+		/* Both should always be set for active jobs */
+		struct job_resources *resrcs_ptr = het_job->job_resrcs;
+		slurm_step_layout_t *step_layout = NULL;
+		uint16_t cpus_per_task_array[1];
+		uint32_t cpus_task_reps[1], task_dist;
+		uint16_t cpus_per_task = 1;
+		slurm_step_layout_req_t step_layout_req = {
+			.cpu_count_reps = resrcs_ptr->cpu_array_reps,
+			.cpus_per_node = resrcs_ptr->cpu_array_value,
+			.cpus_per_task = cpus_per_task_array,
+			.cpus_task_reps = cpus_task_reps,
+			.num_hosts = het_job->node_cnt,
+			.plane_size = NO_VAL16,
+		};
+
+		cpus_task_reps[0] = het_job->node_cnt;
+
+		for (int i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
+			num_cpus += resrcs_ptr->cpu_array_value[i] *
+				resrcs_ptr->cpu_array_reps[i];
+		}
+
+		if ((het_job->details->cpus_per_task > 0) &&
+		    (het_job->details->cpus_per_task != NO_VAL16))
+			cpus_per_task = het_job->details->cpus_per_task;
+
+		cpus_per_task_array[0] = cpus_per_task;
+		if (het_job->details->num_tasks) {
+			step_layout_req.num_tasks =
+				het_job->details->num_tasks;
+		} else {
+			step_layout_req.num_tasks = num_cpus /
+				cpus_per_task;
+		}
+
+		if ((step_layout_req.node_list =
+		     getenvp(launch_msg_ptr->environment,
+			     "SLURM_ARBITRARY_NODELIST"))) {
+			task_dist = SLURM_DIST_ARBITRARY;
+		} else {
+			step_layout_req.node_list = het_job->nodes;
+			task_dist = SLURM_DIST_BLOCK;
+		}
+		step_layout_req.task_dist = task_dist;
+		step_layout = slurm_step_layout_create(&step_layout_req);
+		if (step_layout) {
+			tmp_str = uint16_array_to_str(
+				step_layout->node_cnt,
+				step_layout->tasks);
+			slurm_step_layout_destroy(step_layout);
+			(void) env_array_overwrite_het_fmt(
+				&launch_msg_ptr->environment,
+				"SLURM_TASKS_PER_NODE",
+				het_job_offset,"%s", tmp_str);
+			xfree(tmp_str);
+		}
+	} else if (IS_JOB_RUNNING(het_job)) {
+		if (!het_job->details)
+			error("%s: %pJ has null details member",
+			      __func__, het_job);
+		if (!het_job->job_resrcs)
+			error("%s: %pJ has null job_resrcs member",
+			      __func__, het_job);
+	}
+	het_job_env->het_job_offset++;
+
+	return 0;
+}
+
 /*
  * Set some hetjob environment variables. This will include information
  * about multiple job components (i.e. different slurmctld job records).
@@ -2501,9 +2720,12 @@ static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
 static void _set_het_job_env(job_record_t *het_job_leader,
 			     batch_job_launch_msg_t *launch_msg_ptr)
 {
-	job_record_t *het_job;
-	int i, het_job_offset = 0;
-	list_itr_t *iter;
+	int i;
+	het_job_env_t het_job_env = {
+		.het_job_leader = het_job_leader,
+		.het_job_offset = 0,
+		.launch_msg_ptr = launch_msg_ptr,
+	};
 
 	if (het_job_leader->het_job_id == 0)
 		return;
@@ -2517,159 +2739,17 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 		return;
 	}
 
-	iter = list_iterator_create(het_job_leader->het_job_list);
-	while ((het_job = list_next(iter))) {
-		uint16_t cpus_per_task = 1;
-		uint32_t num_cpus = 0;
-		uint64_t tmp_mem = 0;
-		char *tmp_str = NULL;
+	(void) list_for_each(het_job_leader->het_job_list,
+			     _foreach_set_het_job_env,
+			     &het_job_env);
 
-		if (het_job_leader->het_job_id != het_job->het_job_id) {
-			error("%s: Bad het_job_list for %pJ",
-			      __func__, het_job_leader);
-			continue;
-		}
-		if (het_job->details &&
-		    (het_job->details->cpus_per_task > 0) &&
-		    (het_job->details->cpus_per_task != NO_VAL16)) {
-			cpus_per_task = het_job->details->cpus_per_task;
-		}
-		if (het_job->account) {
-			(void) env_array_overwrite_het_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_JOB_ACCOUNT",
-				het_job_offset, "%s", het_job->account);
-		}
-
-		if (het_job->job_resrcs) {
-			tmp_str = uint32_compressed_to_str(
-				het_job->job_resrcs->cpu_array_cnt,
-				het_job->job_resrcs->cpu_array_value,
-				het_job->job_resrcs->cpu_array_reps);
-			(void) env_array_overwrite_het_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_JOB_CPUS_PER_NODE",
-				het_job_offset, "%s", tmp_str);
-			xfree(tmp_str);
-		}
-		(void) env_array_overwrite_het_fmt(
-			&launch_msg_ptr->environment,
-			"SLURM_JOB_ID",
-			het_job_offset, "%u", het_job->job_id);
-		(void) env_array_overwrite_het_fmt(
-			&launch_msg_ptr->environment,
-			"SLURM_JOB_NAME",
-			het_job_offset, "%s", het_job->name);
-		(void) env_array_overwrite_het_fmt(
-			&launch_msg_ptr->environment,
-			"SLURM_JOB_NODELIST",
-			het_job_offset, "%s", het_job->nodes);
-		(void) env_array_overwrite_het_fmt(
-			&launch_msg_ptr->environment,
-			"SLURM_JOB_NUM_NODES",
-			het_job_offset, "%u", het_job->node_cnt);
-		if (het_job->partition) {
-			(void) env_array_overwrite_het_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_JOB_PARTITION",
-				het_job_offset, "%s", het_job->partition);
-		}
-		if (het_job->qos_ptr) {
-			(void) env_array_overwrite_het_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_JOB_QOS",
-				het_job_offset, "%s", het_job->qos_ptr->name);
-		}
-		if (het_job->resv_ptr) {
-			(void) env_array_overwrite_het_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_JOB_RESERVATION",
-				het_job_offset, "%s", het_job->resv_ptr->name);
-		}
-		if (het_job->details)
-			tmp_mem = het_job->details->pn_min_memory;
-		if (tmp_mem & MEM_PER_CPU) {
-			tmp_mem &= (~MEM_PER_CPU);
-			(void) env_array_overwrite_het_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_MEM_PER_CPU",
-				het_job_offset, "%"PRIu64"", tmp_mem);
-		} else if (tmp_mem) {
-			(void) env_array_overwrite_het_fmt(
-				&launch_msg_ptr->environment,
-				"SLURM_MEM_PER_NODE",
-				het_job_offset, "%"PRIu64"", tmp_mem);
-		}
-
-		if (het_job->details && het_job->job_resrcs) {
-			/* Both should always be set for active jobs */
-			struct job_resources *resrcs_ptr = het_job->job_resrcs;
-			slurm_step_layout_t *step_layout = NULL;
-			slurm_step_layout_req_t step_layout_req;
-			uint16_t cpus_per_task_array[1];
-			uint32_t cpus_task_reps[1], task_dist;
-			memset(&step_layout_req, 0,
-			       sizeof(slurm_step_layout_req_t));
-			for (i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
-				num_cpus += resrcs_ptr->cpu_array_value[i] *
-					resrcs_ptr->cpu_array_reps[i];
-			}
-
-			if (het_job->details->num_tasks) {
-				step_layout_req.num_tasks =
-					het_job->details->num_tasks;
-			} else {
-				step_layout_req.num_tasks = num_cpus /
-					cpus_per_task;
-			}
-			step_layout_req.num_hosts = het_job->node_cnt;
-
-			if ((step_layout_req.node_list =
-			     getenvp(launch_msg_ptr->environment,
-				     "SLURM_ARBITRARY_NODELIST"))) {
-				task_dist = SLURM_DIST_ARBITRARY;
-			} else {
-				step_layout_req.node_list = het_job->nodes;
-				task_dist = SLURM_DIST_BLOCK;
-			}
-			step_layout_req.cpus_per_node =
-				het_job->job_resrcs->cpu_array_value;
-			step_layout_req.cpu_count_reps =
-				het_job->job_resrcs->cpu_array_reps;
-			cpus_per_task_array[0] = cpus_per_task;
-			step_layout_req.cpus_per_task = cpus_per_task_array;
-			cpus_task_reps[0] = het_job->node_cnt;
-			step_layout_req.cpus_task_reps = cpus_task_reps;
-			step_layout_req.task_dist = task_dist;
-			step_layout_req.plane_size = NO_VAL16;
-			step_layout = slurm_step_layout_create(&step_layout_req);
-			if (step_layout) {
-				tmp_str = uint16_array_to_str(
-					step_layout->node_cnt,
-					step_layout->tasks);
-				slurm_step_layout_destroy(step_layout);
-				(void) env_array_overwrite_het_fmt(
-					&launch_msg_ptr->environment,
-					"SLURM_TASKS_PER_NODE",
-					het_job_offset,"%s", tmp_str);
-				xfree(tmp_str);
-			}
-		} else if (IS_JOB_RUNNING(het_job)) {
-			if (!het_job->details)
-				error("%s: %pJ has null details member",
-				      __func__, het_job);
-			if (!het_job->job_resrcs)
-				error("%s: %pJ has null job_resrcs member",
-				      __func__, het_job);
-		}
-		het_job_offset++;
-	}
-	list_iterator_destroy(iter);
 	/* Continue support for old hetjob terminology. */
 	(void) env_array_overwrite_fmt(&launch_msg_ptr->environment,
-				       "SLURM_PACK_SIZE", "%d", het_job_offset);
+				       "SLURM_PACK_SIZE", "%d",
+				       het_job_env.het_job_offset);
 	(void) env_array_overwrite_fmt(&launch_msg_ptr->environment,
-				       "SLURM_HET_SIZE", "%d", het_job_offset);
+				       "SLURM_HET_SIZE", "%d",
+				       het_job_env.het_job_offset);
 
 	for (i = 0; launch_msg_ptr->environment[i]; i++)
 		;
@@ -2801,6 +2881,18 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	return SLURM_ERROR;
 }
 
+static int _foreach_depend_list_copy(void *x, void *arg)
+{
+	depend_spec_t *dep_src = x;
+	list_t **depend_list_dest = arg;
+	depend_spec_t *dep_dest = xmalloc(sizeof(depend_spec_t));
+
+	memcpy(dep_dest, dep_src, sizeof(depend_spec_t));
+	list_append(*depend_list_dest, dep_dest);
+
+	return 0;
+}
+
 /*
  * Copy a job's dependency list
  * IN depend_list_src - a job's depend_lst
@@ -2808,21 +2900,14 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
  */
 extern list_t *depended_list_copy(list_t *depend_list_src)
 {
-	depend_spec_t *dep_src, *dep_dest;
-	list_itr_t *iter;
 	list_t *depend_list_dest = NULL;
 
 	if (!depend_list_src)
 		return depend_list_dest;
 
 	depend_list_dest = list_create(xfree_ptr);
-	iter = list_iterator_create(depend_list_src);
-	while ((dep_src = list_next(iter))) {
-		dep_dest = xmalloc(sizeof(depend_spec_t));
-		memcpy(dep_dest, dep_src, sizeof(depend_spec_t));
-		list_append(depend_list_dest, dep_dest);
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(depend_list_src, _foreach_depend_list_copy,
+			     &depend_list_dest);
 	return depend_list_dest;
 }
 
@@ -2878,11 +2963,59 @@ static char *_depend_state2str(depend_spec_t *dep_ptr)
 	}
 }
 
+static int _foreach_depend_list2str(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+	depend_str_t *depend_str = arg;
+	job_record_t *job_ptr = depend_str->job_ptr;
+
+	/*
+	 * Show non-fulfilled (including failed) dependencies, but don't
+	 * show fulfilled dependencies.
+	 */
+	if (dep_ptr->depend_state == DEPEND_FULFILLED)
+		return 0;
+	if (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
+		xstrfmtcat(job_ptr->details->dependency,
+			   "%ssingleton(%s)",
+			   depend_str->sep, _depend_state2str(dep_ptr));
+	} else {
+		char *dep_str = _depend_type2str(dep_ptr);
+
+		if (dep_ptr->array_task_id == INFINITE)
+			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_*",
+				   depend_str->sep, dep_str, dep_ptr->job_id);
+		else if (dep_ptr->array_task_id == NO_VAL)
+			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u",
+				   depend_str->sep, dep_str, dep_ptr->job_id);
+		else
+			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_%u",
+				   depend_str->sep, dep_str, dep_ptr->job_id,
+				   dep_ptr->array_task_id);
+
+		if (dep_ptr->depend_time)
+			xstrfmtcat(job_ptr->details->dependency,
+				   "+%u", dep_ptr->depend_time / 60);
+		xstrfmtcat(job_ptr->details->dependency, "(%s)",
+			   _depend_state2str(dep_ptr));
+	}
+	if (depend_str->set_or_flag)
+		dep_ptr->depend_flags |= SLURM_FLAGS_OR;
+	if (dep_ptr->depend_flags & SLURM_FLAGS_OR)
+		depend_str->sep = "?";
+	else
+		depend_str->sep = ",";
+
+	return 0;
+}
+
 static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 {
-	list_itr_t *depend_iter;
-	depend_spec_t *dep_ptr;
-	char *dep_str, *sep = "";
+	depend_str_t depend_str = {
+		.job_ptr = job_ptr,
+		.sep = "",
+		.set_or_flag = set_or_flag,
+	};
 
 	if (job_ptr->details == NULL)
 		return;
@@ -2893,46 +3026,9 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 	    || list_count(job_ptr->details->depend_list) == 0)
 		return;
 
-	depend_iter = list_iterator_create(job_ptr->details->depend_list);
-	while ((dep_ptr = list_next(depend_iter))) {
-		/*
-		 * Show non-fulfilled (including failed) dependencies, but don't
-		 * show fulfilled dependencies.
-		 */
-		if (dep_ptr->depend_state == DEPEND_FULFILLED)
-			continue;
-		if      (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
-			xstrfmtcat(job_ptr->details->dependency,
-				   "%ssingleton(%s)",
-				   sep, _depend_state2str(dep_ptr));
-		} else {
-			dep_str = _depend_type2str(dep_ptr);
-
-			if (dep_ptr->array_task_id == INFINITE)
-				xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_*",
-					   sep, dep_str, dep_ptr->job_id);
-			else if (dep_ptr->array_task_id == NO_VAL)
-				xstrfmtcat(job_ptr->details->dependency, "%s%s:%u",
-					   sep, dep_str, dep_ptr->job_id);
-			else
-				xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_%u",
-					   sep, dep_str, dep_ptr->job_id,
-					   dep_ptr->array_task_id);
-
-			if (dep_ptr->depend_time)
-				xstrfmtcat(job_ptr->details->dependency,
-					   "+%u", dep_ptr->depend_time / 60);
-			xstrfmtcat(job_ptr->details->dependency, "(%s)",
-				   _depend_state2str(dep_ptr));
-		}
-		if (set_or_flag)
-			dep_ptr->depend_flags |= SLURM_FLAGS_OR;
-		if (dep_ptr->depend_flags & SLURM_FLAGS_OR)
-			sep = "?";
-		else
-			sep = ",";
-	}
-	list_iterator_destroy(depend_iter);
+	(void) list_for_each(job_ptr->details->depend_list,
+			     _foreach_depend_list2str,
+			     &depend_str);
 }
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
@@ -3047,28 +3143,120 @@ static int _test_job_dependency_common(
 	return rc;
 }
 
-static void _test_dependency_state(depend_spec_t *dep_ptr, bool *or_satisfied,
-				   bool *and_failed, bool *or_flag,
-				   bool *has_unfulfilled)
+static void _test_dependency_state(depend_spec_t *dep_ptr,
+				   test_job_dep_t *test_job_dep)
 {
-	xassert(or_satisfied);
-	xassert(and_failed);
-	xassert(or_flag);
-	xassert(has_unfulfilled);
+	xassert(test_job_dep);
 
-	*or_flag = (dep_ptr->depend_flags & SLURM_FLAGS_OR) ? true : false;
+	test_job_dep->or_flag =
+		(dep_ptr->depend_flags & SLURM_FLAGS_OR) ? true : false;
 
-	if (*or_flag) {
+	if (test_job_dep->or_flag) {
 		if (dep_ptr->depend_state == DEPEND_FULFILLED)
-			*or_satisfied = true;
+			test_job_dep->or_satisfied = true;
 		else if (dep_ptr->depend_state == DEPEND_NOT_FULFILLED)
-			*has_unfulfilled = true;
+			test_job_dep->has_unfulfilled = true;
 	} else { /* AND'd dependencies */
 		if (dep_ptr->depend_state == DEPEND_FAILED)
-			*and_failed = true;
+			test_job_dep->and_failed = true;
 		else if (dep_ptr->depend_state == DEPEND_NOT_FULFILLED)
-			*has_unfulfilled = true;
+			test_job_dep->has_unfulfilled = true;
 	}
+}
+
+static int _foreach_test_job_dependency(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+	test_job_dep_t *test_job_dep = arg;
+	job_record_t *job_ptr = test_job_dep->job_ptr;
+	job_record_t *djob_ptr;
+	bool clear_dep = false, failure = false;
+	bool remote = (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
+		true : false;
+	/*
+	 * If the job id is for a cluster that's not in the federation
+	 * (it's likely the cluster left the federation), then set
+	 * this dependency's state to failed.
+	 */
+	if (remote) {
+		if (fed_mgr_is_origin_job(job_ptr) &&
+		    (dep_ptr->depend_state == DEPEND_NOT_FULFILLED) &&
+		    (dep_ptr->depend_type != SLURM_DEPEND_SINGLETON) &&
+		    (!fed_mgr_is_job_id_in_fed(dep_ptr->job_id))) {
+			log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u failed due to job_id not in federation.",
+				 __func__, job_ptr,
+				 _depend_type2str(dep_ptr),
+				 dep_ptr->job_id);
+			test_job_dep->changed = true;
+			dep_ptr->depend_state = DEPEND_FAILED;
+		}
+	}
+	if ((dep_ptr->depend_state != DEPEND_NOT_FULFILLED) || remote) {
+		_test_dependency_state(dep_ptr, test_job_dep);
+		return 0;
+	}
+
+	/* Test local, unfulfilled dependency: */
+	test_job_dep->has_local_depend = true;
+	dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
+					      dep_ptr->array_task_id);
+	djob_ptr = dep_ptr->job_ptr;
+	if ((dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) &&
+	    job_ptr->name) {
+		if (list_find_first(job_list, _find_singleton_job,
+				    job_ptr) ||
+		    !fed_mgr_is_singleton_satisfied(job_ptr,
+						    dep_ptr, true)) {
+			/* Still depends */
+		} else
+			clear_dep = true;
+	} else if (!djob_ptr || (djob_ptr->magic != JOB_MAGIC) ||
+		   ((djob_ptr->job_id != dep_ptr->job_id) &&
+		    (djob_ptr->array_job_id != dep_ptr->job_id))) {
+		/* job is gone, dependency lifted */
+		clear_dep = true;
+	} else {
+		bool is_complete, is_completed, is_pending;
+
+		/* Special case, apply test to job array as a whole */
+		if (dep_ptr->array_task_id == INFINITE) {
+			is_complete = test_job_array_complete(
+				dep_ptr->job_id);
+			is_completed = test_job_array_completed(
+				dep_ptr->job_id);
+			is_pending = test_job_array_pending(
+				dep_ptr->job_id);
+		} else {
+			/* Normal job */
+			is_complete = IS_JOB_COMPLETE(djob_ptr);
+			is_completed = IS_JOB_COMPLETED(djob_ptr);
+			is_pending = IS_JOB_PENDING(djob_ptr);
+		}
+
+		if (!_test_job_dependency_common(
+			    is_complete, is_completed, is_pending,
+			    &clear_dep, &failure,
+			    job_ptr, dep_ptr))
+			failure = true;
+	}
+
+	if (failure) {
+		dep_ptr->depend_state = DEPEND_FAILED;
+		test_job_dep->changed = true;
+		log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u failed.",
+			 __func__, job_ptr, _depend_type2str(dep_ptr),
+			 dep_ptr->job_id);
+	} else if (clear_dep) {
+		dep_ptr->depend_state = DEPEND_FULFILLED;
+		test_job_dep->changed = true;
+		log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u fulfilled.",
+			 __func__, job_ptr, _depend_type2str(dep_ptr),
+			 dep_ptr->job_id);
+	}
+
+	_test_dependency_state(dep_ptr, test_job_dep);
+
+	return 0;
 }
 
 /*
@@ -3085,125 +3273,35 @@ static void _test_dependency_state(depend_spec_t *dep_ptr, bool *or_satisfied,
  */
 extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 {
-	list_itr_t *depend_iter;
-	depend_spec_t *dep_ptr;
-	bool has_local_depend = false;
+	test_job_dep_t test_job_dep = {
+		.job_ptr = job_ptr,
+	};
 	int results = NO_DEPEND;
-	job_record_t  *djob_ptr;
-	bool is_complete, is_completed, is_pending;
-	bool or_satisfied = false, and_failed = false, or_flag = false,
-	     has_unfulfilled = false, changed = false;
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL) ||
 	    (list_count(job_ptr->details->depend_list) == 0)) {
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
 		if (was_changed)
-			*was_changed = changed;
+			*was_changed = false;
 		return NO_DEPEND;
 	}
 
-	depend_iter = list_iterator_create(job_ptr->details->depend_list);
-	while ((dep_ptr = list_next(depend_iter))) {
-		bool clear_dep = false, failure = false;
-		bool remote;
+	(void) list_for_each(job_ptr->details->depend_list,
+			     _foreach_test_job_dependency,
+			     &test_job_dep);
 
-		remote = (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) ?
-			true : false;
-		/*
-		 * If the job id is for a cluster that's not in the federation
-		 * (it's likely the cluster left the federation), then set
-		 * this dependency's state to failed.
-		 */
-		if (remote) {
-			if (fed_mgr_is_origin_job(job_ptr) &&
-			    (dep_ptr->depend_state == DEPEND_NOT_FULFILLED) &&
-			    (dep_ptr->depend_type != SLURM_DEPEND_SINGLETON) &&
-			    (!fed_mgr_is_job_id_in_fed(dep_ptr->job_id))) {
-				log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u failed due to job_id not in federation.",
-					 __func__, job_ptr,
-					 _depend_type2str(dep_ptr),
-					 dep_ptr->job_id);
-				changed = true;
-				dep_ptr->depend_state = DEPEND_FAILED;
-			}
-		}
-		if ((dep_ptr->depend_state != DEPEND_NOT_FULFILLED) || remote) {
-			_test_dependency_state(dep_ptr, &or_satisfied,
-					       &and_failed, &or_flag,
-					       &has_unfulfilled);
-			continue;
-		}
-
-		/* Test local, unfulfilled dependency: */
-		has_local_depend = true;
-		dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
-						      dep_ptr->array_task_id);
-		djob_ptr = dep_ptr->job_ptr;
-		if ((dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) &&
-		    job_ptr->name) {
-			if (list_find_first(job_list, _find_singleton_job,
-					    job_ptr) ||
-			    !fed_mgr_is_singleton_satisfied(job_ptr,
-							    dep_ptr, true)) {
-				/* Still depends */
-			} else
-				clear_dep = true;
-		} else if ((djob_ptr == NULL) ||
-			   (djob_ptr->magic != JOB_MAGIC) ||
-			   ((djob_ptr->job_id != dep_ptr->job_id) &&
-			    (djob_ptr->array_job_id != dep_ptr->job_id))) {
-			/* job is gone, dependency lifted */
-			clear_dep = true;
-		} else {
-			/* Special case, apply test to job array as a whole */
-			if (dep_ptr->array_task_id == INFINITE) {
-				is_complete = test_job_array_complete(
-					dep_ptr->job_id);
-				is_completed = test_job_array_completed(
-					dep_ptr->job_id);
-				is_pending = test_job_array_pending(
-					dep_ptr->job_id);
-			} else {
-				/* Normal job */
-				is_complete = IS_JOB_COMPLETE(djob_ptr);
-				is_completed = IS_JOB_COMPLETED(djob_ptr);
-				is_pending = IS_JOB_PENDING(djob_ptr);
-			}
-
-			if (!_test_job_dependency_common(
-				    is_complete, is_completed, is_pending,
-				    &clear_dep, &failure,
-				    job_ptr, dep_ptr))
-				failure = true;
-		}
-
-		if (failure) {
-			dep_ptr->depend_state = DEPEND_FAILED;
-			changed = true;
-			log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u failed.",
-				 __func__, job_ptr, _depend_type2str(dep_ptr),
-				 dep_ptr->job_id);
-		} else if (clear_dep) {
-			dep_ptr->depend_state = DEPEND_FULFILLED;
-			changed = true;
-			log_flag(DEPENDENCY, "%s: %pJ dependency %s:%u fulfilled.",
-				 __func__, job_ptr, _depend_type2str(dep_ptr),
-				 dep_ptr->job_id);
-		}
-
-		_test_dependency_state(dep_ptr, &or_satisfied, &and_failed,
-				       &or_flag, &has_unfulfilled);
-	}
-	list_iterator_destroy(depend_iter);
-
-	if (or_satisfied && (job_ptr->state_reason == WAIT_DEP_INVALID)) {
+	if (test_job_dep.or_satisfied &&
+	    (job_ptr->state_reason == WAIT_DEP_INVALID)) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
 		last_job_update = time(NULL);
 	}
 
-	if (or_satisfied || (!or_flag && !and_failed && !has_unfulfilled)) {
+	if (test_job_dep.or_satisfied ||
+	    (!test_job_dep.or_flag &&
+	     !test_job_dep.and_failed &&
+	     !test_job_dep.has_unfulfilled)) {
 		/* Dependency fulfilled */
 		fed_mgr_remove_remote_dependencies(job_ptr);
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
@@ -3220,24 +3318,25 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		log_flag(DEPENDENCY, "%s: %pJ dependency fulfilled",
 			 __func__, job_ptr);
 	} else {
-		if (changed) {
+		if (test_job_dep.changed) {
 			_depend_list2str(job_ptr, false);
 			if (slurm_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
 				print_job_dependency(job_ptr, __func__);
 		}
 		job_ptr->bit_flags |= JOB_DEPENDENT;
 		acct_policy_remove_accrue_time(job_ptr, false);
-		if (and_failed || (or_flag && !has_unfulfilled))
+		if (test_job_dep.and_failed ||
+		    (test_job_dep.or_flag && !test_job_dep.has_unfulfilled))
 			/* Dependency failed */
 			results = FAIL_DEPEND;
 		else
 			/* Still dependent */
-			results = has_local_depend ? LOCAL_DEPEND :
+			results = test_job_dep.has_local_depend ? LOCAL_DEPEND :
 				REMOTE_DEPEND;
 	}
 
 	if (was_changed)
-		*was_changed = changed;
+		*was_changed = test_job_dep.changed;
 	return results;
 }
 
@@ -3688,84 +3787,99 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 	_add_dependency_to_list(new_depend_list, dep_ptr);
 }
 
+static int _foreach_update_job_depenency_list(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x, *job_depend;
+	test_job_dep_t *test_job_dep = arg;
+	job_record_t *job_ptr = test_job_dep->job_ptr;
+
+	/*
+	 * If the dependency is marked as remote, then it wasn't updated
+	 * by the sibling cluster. Skip it.
+	 */
+	if (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE)
+		return 0;
+
+	/*
+	 * Find the dependency in job_ptr that matches this one.
+	 * Then update job_ptr's dependency state (not fulfilled,
+	 * fulfilled, or failed) to match this one.
+	 */
+	job_depend = list_find_first(job_ptr->details->depend_list,
+				     _find_dependency,
+				     dep_ptr);
+	if (!job_depend) {
+		/*
+		 * This can happen if the job's dependency is updated
+		 * and the update doesn't get to the sibling before
+		 * the sibling sends back an update to the origin (us).
+		 */
+		log_flag(DEPENDENCY, "%s: Cannot find dependency %s:%u for %pJ, it may have been cleared before we got here.",
+			 __func__, _depend_type2str(dep_ptr),
+			 dep_ptr->job_id, job_ptr);
+		return 0;
+	}
+
+	/*
+	 * If the dependency is already fulfilled, don't update it.
+	 * Otherwise update the dependency state.
+	 */
+	if ((job_depend->depend_state == DEPEND_FULFILLED) ||
+	    (job_depend->depend_state == dep_ptr->depend_state))
+		return 0;
+	if (job_depend->depend_type == SLURM_DEPEND_SINGLETON) {
+		/*
+		 * We need to update the singleton dependency with
+		 * the cluster bit, but test_job_dependency() will test
+		 * if it is fulfilled, so don't change the depend_state
+		 * here.
+		 */
+		job_depend->singleton_bits |= dep_ptr->singleton_bits;
+		if (!fed_mgr_is_singleton_satisfied(job_ptr, job_depend,
+						    false))
+			return 0;
+	}
+	job_depend->depend_state = dep_ptr->depend_state;
+	test_job_dep->changed = true;
+
+	return 0;
+}
+
 extern bool update_job_dependency_list(job_record_t *job_ptr,
 				       list_t *new_depend_list)
 {
-	depend_spec_t *dep_ptr, *job_depend;
-	list_itr_t *itr;
-	list_t *job_depend_list = NULL;
-	bool was_changed = false;
+	test_job_dep_t test_job_dep = {
+		.job_ptr = job_ptr,
+	};
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
 	xassert(job_ptr->details->depend_list);
 
-	job_depend_list = job_ptr->details->depend_list;
+	(void) list_for_each(new_depend_list,
+			     _foreach_update_job_depenency_list,
+			     &test_job_dep);
 
-	itr = list_iterator_create(new_depend_list);
-	while ((dep_ptr = list_next(itr))) {
-		/*
-		 * If the dependency is marked as remote, then it wasn't updated
-		 * by the sibling cluster. Skip it.
-		 */
-		if (dep_ptr->depend_flags & SLURM_FLAGS_REMOTE) {
-			continue;
-		}
-		/*
-		 * Find the dependency in job_ptr that matches this one.
-		 * Then update job_ptr's dependency state (not fulfilled,
-		 * fulfilled, or failed) to match this one.
-		 */
-		job_depend = list_find_first(job_depend_list, _find_dependency,
-					     dep_ptr);
-		if (!job_depend) {
-			/*
-			 * This can happen if the job's dependency is updated
-			 * and the update doesn't get to the sibling before
-			 * the sibling sends back an update to the origin (us).
-			 */
-			log_flag(DEPENDENCY, "%s: Cannot find dependency %s:%u for %pJ, it may have been cleared before we got here.",
-				 __func__, _depend_type2str(dep_ptr),
-				 dep_ptr->job_id, job_ptr);
-			continue;
-		}
+	return test_job_dep.changed;
+}
 
-		/*
-		 * If the dependency is already fulfilled, don't update it.
-		 * Otherwise update the dependency state.
-		 */
-		if ((job_depend->depend_state == DEPEND_FULFILLED) ||
-		    (job_depend->depend_state == dep_ptr->depend_state))
-			continue;
-		if (job_depend->depend_type == SLURM_DEPEND_SINGLETON) {
-			/*
-			 * We need to update the singleton dependency with
-			 * the cluster bit, but test_job_dependency() will test
-			 * if it is fulfilled, so don't change the depend_state
-			 * here.
-			 */
-			job_depend->singleton_bits |=
-				dep_ptr->singleton_bits;
-			if (!fed_mgr_is_singleton_satisfied(job_ptr, job_depend,
-							    false))
-			    continue;
-		}
-		job_depend->depend_state = dep_ptr->depend_state;
-		was_changed = true;
-	}
-	list_iterator_destroy(itr);
-	return was_changed;
+static int _foreach_handle_job_dependency_updates(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+	test_job_dep_t *test_job_dep = arg;
+
+	_test_dependency_state(dep_ptr, test_job_dep);
+
+	return 0;
 }
 
 extern int handle_job_dependency_updates(void *object, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) object;
-	depend_spec_t *dep_ptr = NULL;
-	list_itr_t *itr;
-	bool or_satisfied = false, and_failed = false, or_flag = false,
-	     has_unfulfilled = false;
 	time_t now = time(NULL);
-
+	test_job_dep_t test_job_dep = {
+		.job_ptr = job_ptr,
+	};
 	xassert(job_ptr->details);
 	xassert(job_ptr->details->depend_list);
 
@@ -3782,14 +3896,14 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 	 *   - One+ not fulfilled == still dependent
 	 *   - All succeeded == dependency fulfilled
 	 */
-	itr = list_iterator_create(job_ptr->details->depend_list);
-	while ((dep_ptr = list_next(itr))) {
-		_test_dependency_state(dep_ptr, &or_satisfied, &and_failed,
-				       &or_flag, &has_unfulfilled);
-	}
-	list_iterator_destroy(itr);
+	(void) list_for_each(job_ptr->details->depend_list,
+			     _foreach_handle_job_dependency_updates,
+			     &test_job_dep);
 
-	if (or_satisfied || (!or_flag && !and_failed && !has_unfulfilled)) {
+	if (test_job_dep.or_satisfied ||
+	    (!test_job_dep.or_flag &&
+	     !test_job_dep.and_failed &&
+	     !test_job_dep.has_unfulfilled)) {
 		/* Dependency fulfilled */
 		fed_mgr_remove_remote_dependencies(job_ptr);
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
@@ -3806,7 +3920,8 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 		_depend_list2str(job_ptr, false);
 		job_ptr->bit_flags |= JOB_DEPENDENT;
 		acct_policy_remove_accrue_time(job_ptr, false);
-		if (and_failed || (or_flag && !has_unfulfilled)) {
+		if (test_job_dep.and_failed ||
+		    (test_job_dep.or_flag && !test_job_dep.has_unfulfilled)) {
 			/* Dependency failed */
 			handle_invalid_dependency(job_ptr);
 		} else {
@@ -3982,15 +4097,53 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 	return rc;
 }
 
+static int _foreach_scan_depend(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+	test_job_dep_t *test_job_dep = arg;
+	job_record_t *job_ptr = test_job_dep->job_ptr;
+
+	if (dep_ptr->job_id == 0)	/* Singleton */
+		return 0;
+	/*
+	 * We can't test for circular dependencies if the job_ptr
+	 * wasn't found - the job may not be on this cluster, or the
+	 * job was already purged when the dependency submitted,
+	 * or the job just didn't exist.
+	 */
+	if (!dep_ptr->job_ptr)
+		return 0;
+	if ((test_job_dep->changed = _depends_on_same_job(
+		     job_ptr, dep_ptr->job_ptr,
+		     dep_ptr->job_id,
+		     dep_ptr->array_task_id)))
+		return -1;
+	else if (dep_ptr->job_ptr->magic != JOB_MAGIC)
+		return 0;	/* purged job, ptr not yet cleared */
+	else if (!IS_JOB_FINISHED(dep_ptr->job_ptr) &&
+		 dep_ptr->job_ptr->details &&
+		 dep_ptr->job_ptr->details->depend_list) {
+		test_job_dep->changed = _scan_depend(
+			dep_ptr->job_ptr->details->depend_list,
+			job_ptr);
+		if (test_job_dep->changed) {
+			info("circular dependency: %pJ is dependent upon %pJ",
+			     dep_ptr->job_ptr, job_ptr);
+			return -1;
+		}
+	}
+	return 0;
+}
+
 /* Return true if the job job_ptr is found in dependency_list.
  * Pass NULL dependency list to clear the counter.
  * Execute recursively for each dependent job */
 static bool _scan_depend(list_t *dependency_list, job_record_t *job_ptr)
 {
 	static int job_counter = 0;
-	bool rc = false;
-	list_itr_t *iter;
-	depend_spec_t *dep_ptr;
+	test_job_dep_t test_job_dep = {
+		.job_ptr = job_ptr,
+	};
 
 	if (dependency_list == NULL) {
 		job_counter = 0;
@@ -4000,37 +4153,45 @@ static bool _scan_depend(list_t *dependency_list, job_record_t *job_ptr)
 	}
 
 	xassert(job_ptr);
-	iter = list_iterator_create(dependency_list);
-	while (!rc && (dep_ptr = list_next(iter))) {
-		if (dep_ptr->job_id == 0)	/* Singleton */
-			continue;
-		/*
-		 * We can't test for circular dependencies if the job_ptr
-		 * wasn't found - the job may not be on this cluster, or the
-		 * job was already purged when the dependency submitted,
-		 * or the job just didn't exist.
-		 */
-		if (!dep_ptr->job_ptr)
-			continue;
-		if ((rc = _depends_on_same_job(job_ptr, dep_ptr->job_ptr,
-					       dep_ptr->job_id,
-					       dep_ptr->array_task_id)))
-			break;
-		else if (dep_ptr->job_ptr->magic != JOB_MAGIC)
-			continue;	/* purged job, ptr not yet cleared */
-		else if (!IS_JOB_FINISHED(dep_ptr->job_ptr) &&
-			 dep_ptr->job_ptr->details &&
-			 dep_ptr->job_ptr->details->depend_list) {
-			rc = _scan_depend(dep_ptr->job_ptr->details->
-					  depend_list, job_ptr);
-			if (rc) {
-				info("circular dependency: %pJ is dependent upon %pJ",
-				     dep_ptr->job_ptr, job_ptr);
-			}
-		}
-	}
-	list_iterator_destroy(iter);
-	return rc;
+
+	(void) list_for_each(dependency_list,
+			     _foreach_scan_depend,
+			     &test_job_dep);
+
+	return test_job_dep.changed;
+}
+
+static int _foreach_delayed_job_start_time(void *x, void *arg)
+{
+	job_record_t *job_q_ptr = x;
+	delay_start_t *delay_start = arg;
+	job_record_t *job_ptr = delay_start->job_ptr;
+	uint32_t job_size_cpus, job_size_nodes, job_time;
+
+	if (!IS_JOB_PENDING(job_q_ptr) || !job_q_ptr->details ||
+	    (job_q_ptr->part_ptr != job_ptr->part_ptr) ||
+	    (job_q_ptr->priority < job_ptr->priority) ||
+	    (job_q_ptr->job_id == job_ptr->job_id) ||
+	    (IS_JOB_REVOKED(job_q_ptr)))
+		return 0;
+
+	if (job_q_ptr->details->min_nodes == NO_VAL)
+		job_size_nodes = 1;
+	else
+		job_size_nodes = job_q_ptr->details->min_nodes;
+	if (job_q_ptr->details->min_cpus == NO_VAL)
+		job_size_cpus = 1;
+	else
+		job_size_cpus = job_q_ptr->details->min_cpus;
+	job_size_cpus = MAX(job_size_cpus,
+			    (job_size_nodes * delay_start->part_cpus_per_node));
+	if (job_q_ptr->time_limit == NO_VAL)
+		job_time = job_q_ptr->part_ptr->max_time;
+	else
+		job_time = job_q_ptr->time_limit;
+	delay_start->cume_space_time += job_size_cpus * job_time;
+
+	return 0;
 }
 
 /* If there are higher priority queued jobs in this job's partition, then
@@ -4039,103 +4200,67 @@ static bool _scan_depend(list_t *dependency_list, job_record_t *job_ptr)
  * job dependencies, feature requirements, specific node requirements, etc. */
 static void _delayed_job_start_time(job_record_t *job_ptr)
 {
-	uint32_t part_node_cnt, part_cpu_cnt, part_cpus_per_node;
-	uint32_t job_size_cpus, job_size_nodes, job_time;
-	uint64_t cume_space_time = 0;
-	job_record_t *job_q_ptr;
-	list_itr_t *job_iterator;
+	uint32_t part_node_cnt, part_cpu_cnt;
+	delay_start_t delay_start = {
+		.job_ptr = job_ptr,
+		.part_cpus_per_node = 1,
+	};
 
 	if (job_ptr->part_ptr == NULL)
 		return;
 	part_node_cnt = job_ptr->part_ptr->total_nodes;
 	part_cpu_cnt  = job_ptr->part_ptr->total_cpus;
 	if (part_cpu_cnt > part_node_cnt)
-		part_cpus_per_node = part_cpu_cnt / part_node_cnt;
-	else
-		part_cpus_per_node = 1;
+		delay_start.part_cpus_per_node = part_cpu_cnt / part_node_cnt;
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_q_ptr = list_next(job_iterator))) {
-		if (!IS_JOB_PENDING(job_q_ptr) || !job_q_ptr->details ||
-		    (job_q_ptr->part_ptr != job_ptr->part_ptr) ||
-		    (job_q_ptr->priority < job_ptr->priority) ||
-		    (job_q_ptr->job_id == job_ptr->job_id) ||
-		    (IS_JOB_REVOKED(job_q_ptr)))
-			continue;
-		if (job_q_ptr->details->min_nodes == NO_VAL)
-			job_size_nodes = 1;
-		else
-			job_size_nodes = job_q_ptr->details->min_nodes;
-		if (job_q_ptr->details->min_cpus == NO_VAL)
-			job_size_cpus = 1;
-		else
-			job_size_cpus = job_q_ptr->details->min_cpus;
-		job_size_cpus = MAX(job_size_cpus,
-				    (job_size_nodes * part_cpus_per_node));
-		if (job_q_ptr->time_limit == NO_VAL)
-			job_time = job_q_ptr->part_ptr->max_time;
-		else
-			job_time = job_q_ptr->time_limit;
-		cume_space_time += job_size_cpus * job_time;
-	}
-	list_iterator_destroy(job_iterator);
-	cume_space_time /= part_cpu_cnt;/* Factor out size */
-	cume_space_time *= 60;		/* Minutes to seconds */
+	(void) list_for_each(job_list,
+			     _foreach_delayed_job_start_time,
+			     &delay_start);
+	delay_start.cume_space_time /= part_cpu_cnt;/* Factor out size */
+	delay_start.cume_space_time *= 60;		/* Minutes to seconds */
 	debug2("Increasing estimated start of %pJ by %"PRIu64" secs",
-	       job_ptr, cume_space_time);
-	job_ptr->start_time += cume_space_time;
+	       job_ptr, delay_start.cume_space_time);
+	job_ptr->start_time += delay_start.cume_space_time;
 }
 
-/*
- * Determine if a pending job will run using only the specified nodes, build
- * response message and return SLURM_SUCCESS on success. Otherwise return an
- * error code. Caller must free response message.
- */
-extern int job_start_data(job_record_t *job_ptr,
-			  will_run_response_msg_t **resp)
+static int _foreach_add_to_preemptee_job_id(void *x, void *arg)
 {
-	part_record_t *part_ptr;
+	job_record_t *job_ptr = x;
+	will_run_response_msg_t *resp_data = arg;
+	uint32_t *preemptee_jid = xmalloc(sizeof(uint32_t));
+
+	(*preemptee_jid) = job_ptr->job_id;
+	list_append(resp_data->preemptee_job_id, preemptee_jid);
+
+	return 0;
+}
+
+static int _foreach_job_start_data_part(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	job_start_data_t *job_start_data = arg;
+	job_record_t *job_ptr = job_start_data->job_ptr;
+
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
-	int i, rc = SLURM_SUCCESS;
-	time_t now = time(NULL), start_res, orig_start_time = (time_t) 0;
+	int rc2 = SLURM_SUCCESS;
+	time_t start_res, orig_start_time = (time_t) 0;
 	list_t *preemptee_candidates = NULL, *preemptee_job_list = NULL;
 	bool resv_overlap = false;
-	list_itr_t *iter = NULL;
 	resv_exc_t resv_exc = { 0 };
 
-	if (job_ptr == NULL)
-		return ESLURM_INVALID_JOB_ID;
-
-	/*
-	 * NOTE: Do not use IS_JOB_PENDING since that doesn't take
-	 * into account the COMPLETING FLAG which we need to since we don't want
-	 * to schedule a requeued job until it is actually done completing
-	 * the first time.
-	 */
-	if ((job_ptr->details == NULL) || (job_ptr->job_state != JOB_PENDING))
-		return ESLURM_DISABLED;
-
-	if (job_ptr->part_ptr_list) {
-		iter = list_iterator_create(job_ptr->part_ptr_list);
-		part_ptr = list_next(iter);
-	} else
-		part_ptr = job_ptr->part_ptr;
-next_part:
-	rc = SLURM_SUCCESS;
-	if (part_ptr == NULL) {
-		if (iter)
-			list_iterator_destroy(iter);
-		return ESLURM_INVALID_PARTITION_NAME;
+	job_start_data->rc = SLURM_SUCCESS;
+	if (!part_ptr) {
+		job_start_data->rc = ESLURM_INVALID_PARTITION_NAME;
+		return -1;
 	}
 
 	if (job_ptr->details->req_nodes && job_ptr->details->req_nodes[0]) {
 		if (node_name2bitmap(job_ptr->details->req_nodes, false,
 				     &avail_bitmap) != 0) {
-			if (iter)
-				list_iterator_destroy(iter);
-			return ESLURM_INVALID_NODE_NAME;
+			job_start_data->rc = ESLURM_INVALID_NODE_NAME;
+			return -1;
 		}
 	} else {
 		/* assume all nodes available to job for testing */
@@ -4146,45 +4271,43 @@ next_part:
 	if (part_ptr->node_bitmap)
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 	else
-		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		job_start_data->rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (job_req_node_filter(job_ptr, avail_bitmap, true))
-		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		job_start_data->rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (job_ptr->details->exc_node_bitmap) {
 		bit_and_not(avail_bitmap, job_ptr->details->exc_node_bitmap);
 	}
 	if (job_ptr->details->req_node_bitmap) {
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
 				   avail_bitmap)) {
-			rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+			job_start_data->rc =
+				ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 		}
 	}
 
 	/* Enforce reservation: access control, time and nodes */
 	if (job_ptr->details->begin_time &&
-	    (job_ptr->details->begin_time > now))
+	    (job_ptr->details->begin_time > job_start_data->now))
 		start_res = job_ptr->details->begin_time;
 	else
-		start_res = now;
+		start_res = job_start_data->now;
 
-	i = job_test_resv(job_ptr, &start_res, true, &resv_bitmap,
-			  &resv_exc, &resv_overlap, false);
-	if (i != SLURM_SUCCESS) {
+	rc2 = job_test_resv(job_ptr, &start_res, true, &resv_bitmap,
+			    &resv_exc, &resv_overlap, false);
+	if (rc2 != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(avail_bitmap);
 		reservation_delete_resv_exc_parts(&resv_exc);
-		if (job_ptr->part_ptr_list && (part_ptr = list_next(iter)))
-			goto next_part;
-
-		if (iter)
-			list_iterator_destroy(iter);
-		return i;
+		job_start_data->rc = rc2;
+		return -1;
 	}
+
 	bit_and(avail_bitmap, resv_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 
 	/* Only consider nodes that are not DOWN or DRAINED */
 	bit_and(avail_bitmap, avail_node_bitmap);
 
-	if (rc == SLURM_SUCCESS) {
+	if (job_start_data->rc == SLURM_SUCCESS) {
 		int test_fini = -1;
 		uint8_t save_share_res, save_whole_node;
 		/* On BlueGene systems don't adjust the min/max node limits
@@ -4213,13 +4336,14 @@ next_part:
 		build_active_feature_bitmap(job_ptr, avail_bitmap,
 					    &active_bitmap);
 		if (active_bitmap) {
-			rc = select_g_job_test(job_ptr, active_bitmap,
-					       min_nodes, max_nodes, req_nodes,
-					       SELECT_MODE_WILL_RUN,
-					       preemptee_candidates,
-					       &preemptee_job_list,
-					       &resv_exc);
-			if (rc == SLURM_SUCCESS) {
+			job_start_data->rc = select_g_job_test(
+				job_ptr, active_bitmap,
+				min_nodes, max_nodes, req_nodes,
+				SELECT_MODE_WILL_RUN,
+				preemptee_candidates,
+				&preemptee_job_list,
+				&resv_exc);
+			if (job_start_data->rc == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = active_bitmap;
 				active_bitmap = NULL;
@@ -4235,12 +4359,13 @@ next_part:
 			}
 		}
 		if (test_fini != 1) {
-			rc = select_g_job_test(job_ptr, avail_bitmap,
-					       min_nodes, max_nodes, req_nodes,
-					       SELECT_MODE_WILL_RUN,
-					       preemptee_candidates,
-					       &preemptee_job_list,
-					       &resv_exc);
+			job_start_data->rc = select_g_job_test(
+				job_ptr, avail_bitmap,
+				min_nodes, max_nodes, req_nodes,
+				SELECT_MODE_WILL_RUN,
+				preemptee_candidates,
+				&preemptee_job_list,
+				&resv_exc);
 			if (test_fini == 0) {
 				job_ptr->details->share_res = save_share_res;
 				job_ptr->details->whole_node = save_whole_node;
@@ -4248,7 +4373,7 @@ next_part:
 		}
 	}
 
-	if (rc == SLURM_SUCCESS) {
+	if (job_start_data->rc == SLURM_SUCCESS) {
 		will_run_response_msg_t *resp_data;
 		resp_data = xmalloc(sizeof(will_run_response_msg_t));
 		resp_data->job_id     = job_ptr->job_id;
@@ -4261,27 +4386,16 @@ next_part:
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
 		resp_data->part_name  = xstrdup(part_ptr->name);
 
-		if (preemptee_job_list) {
-			list_itr_t *preemptee_iterator;
-			uint32_t *preemptee_jid;
-			job_record_t *tmp_job_ptr;
-			resp_data->preemptee_job_id = list_create(xfree_ptr);
-			preemptee_iterator = list_iterator_create(
-				preemptee_job_list);
-			while ((tmp_job_ptr = list_next(preemptee_iterator))) {
-				preemptee_jid = xmalloc(sizeof(uint32_t));
-				(*preemptee_jid) = tmp_job_ptr->job_id;
-				list_append(resp_data->preemptee_job_id,
-					    preemptee_jid);
-			}
-			list_iterator_destroy(preemptee_iterator);
-		}
+		if (preemptee_job_list)
+			(void) list_for_each(preemptee_job_list,
+					     _foreach_add_to_preemptee_job_id,
+					     resp_data);
 
 		resp_data->sys_usage_per = _get_system_usage();
 
-		*resp = resp_data;
+		*job_start_data->resp = resp_data;
 	} else {
-		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		job_start_data->rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
 	FREE_NULL_LIST(preemptee_candidates);
@@ -4289,13 +4403,47 @@ next_part:
 	FREE_NULL_BITMAP(avail_bitmap);
 	reservation_delete_resv_exc_parts(&resv_exc);
 
-	if (rc && job_ptr->part_ptr_list && (part_ptr = list_next(iter)))
-		goto next_part;
+	if (job_start_data->rc)
+		return 0;
 
-	if (iter)
-		list_iterator_destroy(iter);
+	return -1;
+}
 
-	return rc;
+/*
+ * Determine if a pending job will run using only the specified nodes, build
+ * response message and return SLURM_SUCCESS on success. Otherwise return an
+ * error code. Caller must free response message.
+ */
+extern int job_start_data(job_record_t *job_ptr,
+			  will_run_response_msg_t **resp)
+{
+	job_start_data_t job_start_data = {
+		.job_ptr = job_ptr,
+		.now = time(NULL),
+		.resp = resp,
+	};
+
+	if (job_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+
+	/*
+	 * NOTE: Do not use IS_JOB_PENDING since that doesn't take
+	 * into account the COMPLETING FLAG which we need to since we don't want
+	 * to schedule a requeued job until it is actually done completing
+	 * the first time.
+	 */
+	if ((job_ptr->details == NULL) || (job_ptr->job_state != JOB_PENDING))
+		return ESLURM_DISABLED;
+
+	if (job_ptr->part_ptr_list)
+		(void) list_for_each(job_ptr->part_ptr_list,
+				     _foreach_job_start_data_part,
+				     &job_start_data);
+	else
+		(void) _foreach_job_start_data_part(job_ptr->part_ptr,
+						    &job_start_data);
+
+	return job_start_data.rc;
 }
 
 /*
@@ -4700,6 +4848,25 @@ extern void prolog_running_decr(job_record_t *job_ptr)
 	}
 }
 
+static int _foreach_feature_list_copy(void *x, void *arg)
+{
+	job_feature_t *feat_src = x, *feat_dest;
+	list_t **feature_list_dest = arg;
+
+	feat_dest = xmalloc(sizeof(job_feature_t));
+	memcpy(feat_dest, feat_src, sizeof(job_feature_t));
+	if (feat_src->node_bitmap_active)
+		feat_dest->node_bitmap_active =
+			bit_copy(feat_src->node_bitmap_active);
+	if (feat_src->node_bitmap_avail)
+		feat_dest->node_bitmap_avail =
+			bit_copy(feat_src->node_bitmap_avail);
+	feat_dest->name = xstrdup(feat_src->name);
+	list_append(*feature_list_dest, feat_dest);
+
+	return 0;
+}
+
 /*
  * Copy a job's feature list
  * IN feature_list_src - a job's depend_lst
@@ -4707,28 +4874,16 @@ extern void prolog_running_decr(job_record_t *job_ptr)
  */
 extern list_t *feature_list_copy(list_t *feature_list_src)
 {
-	job_feature_t *feat_src, *feat_dest;
-	list_itr_t *iter;
 	list_t *feature_list_dest = NULL;
 
 	if (!feature_list_src)
 		return feature_list_dest;
 
 	feature_list_dest = list_create(feature_list_delete);
-	iter = list_iterator_create(feature_list_src);
-	while ((feat_src = list_next(iter))) {
-		feat_dest = xmalloc(sizeof(job_feature_t));
-		memcpy(feat_dest, feat_src, sizeof(job_feature_t));
-		if (feat_src->node_bitmap_active)
-			feat_dest->node_bitmap_active =
-				bit_copy(feat_src->node_bitmap_active);
-		if (feat_src->node_bitmap_avail)
-			feat_dest->node_bitmap_avail =
-				bit_copy(feat_src->node_bitmap_avail);
-		feat_dest->name = xstrdup(feat_src->name);
-		list_append(feature_list_dest, feat_dest);
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(feature_list_src,
+			     _foreach_feature_list_copy,
+			     &feature_list_dest);
+
 	return feature_list_dest;
 }
 
@@ -4963,13 +5118,14 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 			      bool is_reservation)
 {
 	job_details_t *detail_ptr = job_ptr->details;
-	char *features;
 	list_t **feature_list;
 	int rc;
 	int feature_err;
-	bool can_reboot;
 	bool convert_to_matching_or = false;
-	char *debug_str = NULL;
+	valid_feature_t valid_feature = {
+		.job_ptr = job_ptr,
+		.rc = SLURM_SUCCESS,
+	};
 
 	/* no hard constraints */
 	if (!detail_ptr || (!detail_ptr->features && !detail_ptr->prefer)) {
@@ -4979,30 +5135,33 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 	}
 
 	if (prefer) {
-		features = detail_ptr->prefer;
+		valid_feature.features = detail_ptr->prefer;
 		feature_list = &detail_ptr->prefer_list;
 		feature_err = ESLURM_INVALID_PREFER;
 	} else {
-		features = detail_ptr->features;
+		valid_feature.features = detail_ptr->features;
 		feature_list = &detail_ptr->feature_list;
 		feature_err = ESLURM_INVALID_FEATURE;
 	}
 
-	if (!features) /* The other constraint is non NULL. */
+	if (!valid_feature.features) /* The other constraint is non NULL. */
 		return SLURM_SUCCESS;
 
 	if (*feature_list)		/* already processed */
 		return SLURM_SUCCESS;
 
 	if (is_reservation)
-		debug_str = xstrdup("Reservation");
+		valid_feature.debug_str = xstrdup("Reservation");
 	else if (!job_ptr->job_id)
-		debug_str = xstrdup("Job specs");
+		valid_feature.debug_str = xstrdup("Job specs");
 	else
-		debug_str = xstrdup_printf("JobId=%u", job_ptr->job_id);
+		valid_feature.debug_str =
+			xstrdup_printf("JobId=%u", job_ptr->job_id);
 
-	can_reboot = node_features_g_user_update(job_ptr->user_id);
-	rc = _feature_string2list(features, debug_str,
+	valid_feature.can_reboot =
+		node_features_g_user_update(job_ptr->user_id);
+	rc = _feature_string2list(valid_feature.features,
+				  valid_feature.debug_str,
 				  feature_list, &convert_to_matching_or);
 	if (rc != SLURM_SUCCESS) {
 		rc = feature_err;
@@ -5029,13 +5188,14 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 		 * Restructure only the feature list; leave the original
 		 * constraint expression intact.
 		 */
-		feature_sets = job_features_list2feature_sets(features,
-							      *feature_list,
-							      false);
+		feature_sets = job_features_list2feature_sets(
+			valid_feature.features,
+			*feature_list,
+			false);
 		list_for_each(feature_sets, job_features_set2str, &str);
 		FREE_NULL_LIST(feature_sets);
 		FREE_NULL_LIST(*feature_list);
-		rc = _feature_string2list(str, debug_str,
+		rc = _feature_string2list(str, valid_feature.debug_str,
 					  feature_list,
 					  &convert_to_matching_or);
 		if (rc != SLURM_SUCCESS) {
@@ -5050,29 +5210,30 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 			goto fini;
 		}
 		log_flag(NODE_FEATURES, "%s: Converted %sfeature list:'%s' to matching OR:'%s'",
-			 __func__, prefer ? "prefer " : "", features, str);
+			 __func__, prefer ? "prefer " : "",
+			 valid_feature.features, str);
 		xfree(str);
 	}
 
 	if (job_ptr->batch_features) {
 		detail_ptr->feature_list_use = *feature_list;
-		detail_ptr->features_use = features;
-		rc = _valid_batch_features(job_ptr, can_reboot);
+		detail_ptr->features_use = valid_feature.features;
+		rc = _valid_batch_features(job_ptr, valid_feature.can_reboot);
 		detail_ptr->feature_list_use = NULL;
 		detail_ptr->features_use = NULL;
 		if (rc != SLURM_SUCCESS)
 			goto fini;
 	}
 
-	rc = _valid_feature_list(job_ptr, *feature_list, can_reboot, debug_str,
-				 features, is_reservation);
+	valid_feature.feature_list = *feature_list;
+	rc = _valid_feature_list(job_ptr, &valid_feature, is_reservation);
 	if (rc != SLURM_SUCCESS) {
 		rc = feature_err;
 		goto fini;
 	}
 
 fini:
-	xfree(debug_str);
+	xfree(valid_feature.debug_str);
 	return rc;
 }
 
@@ -5137,21 +5298,85 @@ static int _valid_batch_features(job_record_t *job_ptr, bool can_reboot)
 	return rc;
 }
 
-static int _valid_feature_list(job_record_t *job_ptr, list_t *feature_list,
-			       bool can_reboot, char *debug_str, char *features,
+static int _foreach_valid_feature_list(void *x, void *arg)
+{
+	job_feature_t *feat_ptr = x;
+	valid_feature_t *valid_feature = arg;
+	job_record_t *job_ptr = valid_feature->job_ptr;
+
+	if ((feat_ptr->op_code == FEATURE_OP_MOR) ||
+	    (feat_ptr->op_code == FEATURE_OP_XAND)) {
+		valid_feature->bracket = feat_ptr->paren + 1;
+	}
+	if (feat_ptr->paren > valid_feature->paren) {
+		valid_feature->paren = feat_ptr->paren;
+	}
+	if (feat_ptr->paren < valid_feature->paren) {
+		valid_feature->paren = feat_ptr->paren;
+	}
+	if ((valid_feature->rc == SLURM_SUCCESS) &&
+	    (!valid_feature->ignore_prefer_val ||
+	     (valid_feature->feature_list != job_ptr->details->prefer_list))) {
+		valid_feature->rc =
+			_valid_node_feature(feat_ptr->name,
+					    valid_feature->can_reboot);
+		if (valid_feature->rc != SLURM_SUCCESS)
+			verbose("%s feature %s is not usable on any node: %s",
+				valid_feature->debug_str, feat_ptr->name,
+				valid_feature->features);
+	}
+	if ((feat_ptr->op_code == FEATURE_OP_XAND) && !feat_ptr->count) {
+		verbose("%s feature %s invalid, count must be used with XAND: %s",
+			valid_feature->debug_str, feat_ptr->name,
+			valid_feature->features);
+		valid_feature->rc = ESLURM_INVALID_FEATURE;
+	}
+	if ((feat_ptr->op_code == FEATURE_OP_MOR) && feat_ptr->count) {
+		verbose("%s feature %s invalid, count must not be used with MOR: %s",
+			valid_feature->debug_str, feat_ptr->name,
+			valid_feature->features);
+		valid_feature->rc = ESLURM_INVALID_FEATURE;
+	}
+
+	/* In brackets, outside of paren */
+	if ((valid_feature->bracket > valid_feature->paren) &&
+	    ((feat_ptr->op_code != FEATURE_OP_MOR) &&
+	     (feat_ptr->op_code != FEATURE_OP_XAND))) {
+		if (valid_feature->has_xand && !feat_ptr->count) {
+			valid_feature->rc = ESLURM_INVALID_FEATURE;
+			verbose("%s feature %s invalid, count must be used with XAND: %s",
+				valid_feature->debug_str, feat_ptr->name,
+				valid_feature->features);
+		}
+		if (valid_feature->has_mor && feat_ptr->count) {
+			valid_feature->rc = ESLURM_INVALID_FEATURE;
+			verbose("%s feature %s invalid, count must not be used with MOR: %s",
+				valid_feature->debug_str, feat_ptr->name,
+				valid_feature->features);
+		}
+		valid_feature->bracket = 0;
+		valid_feature->has_xand = false;
+		valid_feature->has_mor = false;
+	}
+	if (feat_ptr->op_code == FEATURE_OP_XAND)
+		valid_feature->has_xand = true;
+	if (feat_ptr->op_code == FEATURE_OP_MOR)
+		valid_feature->has_mor = true;
+
+	return 0;
+}
+
+static int _valid_feature_list(job_record_t *job_ptr,
+			       valid_feature_t *valid_feature,
 			       bool is_reservation)
 {
 	static time_t sched_update = 0;
 	static bool ignore_prefer_val = false;
-	list_itr_t *feat_iter;
-	job_feature_t *feat_ptr;
-	int bracket = 0, paren = 0;
-	int rc = SLURM_SUCCESS;
-	bool has_xand = false, has_mor = false;
 
-	if (feature_list == NULL) {
-		debug2("%s feature list is empty", debug_str);
-		return rc;
+	if (!valid_feature->feature_list) {
+		debug2("%s feature list is empty",
+		       valid_feature->debug_str);
+		return valid_feature->rc;
 	}
 
 	if (sched_update != slurm_conf.last_update) {
@@ -5162,98 +5387,54 @@ static int _valid_feature_list(job_record_t *job_ptr, list_t *feature_list,
 		else
 			ignore_prefer_val = false;
 	}
+	valid_feature->ignore_prefer_val = ignore_prefer_val;
 
-	feat_iter = list_iterator_create(feature_list);
-	while ((feat_ptr = list_next(feat_iter))) {
-		if ((feat_ptr->op_code == FEATURE_OP_MOR) ||
-		    (feat_ptr->op_code == FEATURE_OP_XAND)) {
-			bracket = feat_ptr->paren + 1;
-		}
-		if (feat_ptr->paren > paren) {
-			paren = feat_ptr->paren;
-		}
-		if (feat_ptr->paren < paren) {
-			paren = feat_ptr->paren;
-		}
-		if (rc == SLURM_SUCCESS &&
-		    (!ignore_prefer_val ||
-		     (feature_list != job_ptr->details->prefer_list))) {
-			rc = _valid_node_feature(feat_ptr->name, can_reboot);
-			if (rc != SLURM_SUCCESS)
-				verbose("%s feature %s is not usable on any node: %s",
-					debug_str, feat_ptr->name, features);
-		}
-		if (feat_ptr->op_code == FEATURE_OP_XAND && !feat_ptr->count) {
-			verbose("%s feature %s invalid, count must be used with XAND: %s",
-				debug_str, feat_ptr->name, features);
-			rc = ESLURM_INVALID_FEATURE;
-		}
-		if (feat_ptr->op_code == FEATURE_OP_MOR && feat_ptr->count) {
-			verbose("%s feature %s invalid, count must not be used with MOR: %s",
-				debug_str, feat_ptr->name, features);
-			rc = ESLURM_INVALID_FEATURE;
-		}
-		if ((bracket > paren) && /* In brackets, outside of paren */
-		    ((feat_ptr->op_code != FEATURE_OP_MOR) &&
-		     (feat_ptr->op_code != FEATURE_OP_XAND))) {
-			if (has_xand && !feat_ptr->count) {
-				rc = ESLURM_INVALID_FEATURE;
-				verbose("%s feature %s invalid, count must be used with XAND: %s",
-					debug_str, feat_ptr->name, features);
-			}
-			if (has_mor && feat_ptr->count) {
-				rc = ESLURM_INVALID_FEATURE;
-				verbose("%s feature %s invalid, count must not be used with MOR: %s",
-					debug_str, feat_ptr->name, features);
-			}
-			bracket = 0;
-			has_xand = false;
-			has_mor = false;
-		}
-		if (feat_ptr->op_code == FEATURE_OP_XAND)
-			has_xand = true;
-		if (feat_ptr->op_code == FEATURE_OP_MOR)
-			has_mor = true;
-	}
-	list_iterator_destroy(feat_iter);
+	(void) list_for_each(valid_feature->feature_list,
+			     _foreach_valid_feature_list,
+			     valid_feature);
 
-	if (rc == SLURM_SUCCESS) {
-		debug("%s feature list: %s", debug_str, features);
+	if (valid_feature->rc == SLURM_SUCCESS) {
+		debug("%s feature list: %s",
+		      valid_feature->debug_str, valid_feature->features);
 	} else {
 		if (is_reservation) {
 			info("Reservation has invalid feature list: %s",
-			     features);
+			     valid_feature->features);
 		} else {
-			if (can_reboot)
+			if (valid_feature->can_reboot)
 				info("%s has invalid feature list: %s",
-				     debug_str, features);
+				     valid_feature->debug_str,
+				     valid_feature->features);
 			else
 				info("%s has invalid feature list (%s) or the features are not active and this user cannot reboot to update node features",
-				     debug_str, features);
+				     valid_feature->debug_str,
+				     valid_feature->features);
 		}
 	}
 
-	return rc;
+	return valid_feature->rc;
+}
+
+static int _find_feature_in_list(void *x, void *arg)
+{
+	node_feature_t *feature_ptr = x;
+	char *feature = arg;
+
+	if (!xstrcmp(feature_ptr->name, feature))
+		return 1;
+
+	return 0;
 }
 
 /* Validate that job's feature is available on some node(s) */
 static int _valid_node_feature(char *feature, bool can_reboot)
 {
 	int rc = ESLURM_INVALID_FEATURE;
-	node_feature_t *feature_ptr;
-	list_itr_t *feature_iter;
+	list_t *use_list =
+		can_reboot ? avail_feature_list : active_feature_list;
 
-	if (can_reboot)
-		feature_iter = list_iterator_create(avail_feature_list);
-	else
-		feature_iter = list_iterator_create(active_feature_list);
-	while ((feature_ptr = list_next(feature_iter))) {
-		if (xstrcmp(feature_ptr->name, feature))
-			continue;
+	if (list_find_first(use_list, _find_feature_in_list, feature))
 		rc = SLURM_SUCCESS;
-		break;
-	}
-	list_iterator_destroy(feature_iter);
 
 	return rc;
 }
