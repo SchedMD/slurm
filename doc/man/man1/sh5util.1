@@ -93,6 +93,22 @@ Name of data item in series (See note below).
 Format is <\fIjob\fR[.\fIstep\fR]>. Merge this job/step
 (or a comma\-separated list of job steps). This option is required.
 Not specifying a step will result in all steps found to be processed.
+
+Array task IDs and het component IDs are not supported. Use regular job IDs
+instead:
+.IP
+.nf
+$ sacct -X -j 5077 --format=JobId,JobIdRaw
+JobID        JobIDRaw
+------------ ------------
+5077_1       5078
+5077_2       5079
+5077_3       5077
+
+$ sh5util -S -j 5079 # for merging 5077_2 only
+sh5util: Merging node-step files into ./job_5079.h5
+.fi
+
 .IP
 
 .TP
