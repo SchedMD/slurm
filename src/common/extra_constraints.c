@@ -502,9 +502,9 @@ static void _recurse(char **str_ptr, int *level, elem_t *parent, int *rc)
 				 */
 				break;
 			}
-			if (!parent->num_children) {
+			if (got_op || !got_leaf) {
 #if _DEBUG
-				error("No children at this level");
+				error("Invalid expression inside parentheses, did not end in leaf");
 #endif
 				*rc = SLURM_ERROR;
 			}
