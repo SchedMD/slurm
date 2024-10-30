@@ -4209,6 +4209,18 @@ static void _delayed_job_start_time(job_record_t *job_ptr)
 	job_ptr->start_time += delay_start.cume_space_time;
 }
 
+static int _foreach_add_to_preemptee_job_id(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	will_run_response_msg_t *resp_data = arg;
+	uint32_t *preemptee_jid = xmalloc(sizeof(uint32_t));
+
+	(*preemptee_jid) = job_ptr->job_id;
+	list_append(resp_data->preemptee_job_id, preemptee_jid);
+
+	return 0;
+}
+
 static int _foreach_job_start_data_part(void *x, void *arg)
 {
 	part_record_t *part_ptr = x;
@@ -4360,21 +4372,10 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
 		resp_data->part_name  = xstrdup(part_ptr->name);
 
-		if (preemptee_job_list) {
-			list_itr_t *preemptee_iterator;
-			uint32_t *preemptee_jid;
-			job_record_t *tmp_job_ptr;
-			resp_data->preemptee_job_id = list_create(xfree_ptr);
-			preemptee_iterator = list_iterator_create(
-				preemptee_job_list);
-			while ((tmp_job_ptr = list_next(preemptee_iterator))) {
-				preemptee_jid = xmalloc(sizeof(uint32_t));
-				(*preemptee_jid) = tmp_job_ptr->job_id;
-				list_append(resp_data->preemptee_job_id,
-					    preemptee_jid);
-			}
-			list_iterator_destroy(preemptee_iterator);
-		}
+		if (preemptee_job_list)
+			(void) list_for_each(preemptee_job_list,
+					     _foreach_add_to_preemptee_job_id,
+					     resp_data);
 
 		resp_data->sys_usage_per = _get_system_usage();
 
