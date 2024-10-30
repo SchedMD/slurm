@@ -5415,24 +5415,26 @@ static int _valid_feature_list(job_record_t *job_ptr,
 	return valid_feature->rc;
 }
 
+static int _find_feature_in_list(void *x, void *arg)
+{
+	node_feature_t *feature_ptr = x;
+	char *feature = arg;
+
+	if (!xstrcmp(feature_ptr->name, feature))
+		return 1;
+
+	return 0;
+}
+
 /* Validate that job's feature is available on some node(s) */
 static int _valid_node_feature(char *feature, bool can_reboot)
 {
 	int rc = ESLURM_INVALID_FEATURE;
-	node_feature_t *feature_ptr;
-	list_itr_t *feature_iter;
+	list_t *use_list =
+		can_reboot ? avail_feature_list : active_feature_list;
 
-	if (can_reboot)
-		feature_iter = list_iterator_create(avail_feature_list);
-	else
-		feature_iter = list_iterator_create(active_feature_list);
-	while ((feature_ptr = list_next(feature_iter))) {
-		if (xstrcmp(feature_ptr->name, feature))
-			continue;
+	if (list_find_first(use_list, _find_feature_in_list, feature))
 		rc = SLURM_SUCCESS;
-		break;
-	}
-	list_iterator_destroy(feature_iter);
 
 	return rc;
 }
