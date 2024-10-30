@@ -2809,7 +2809,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 				    (mode != PREEMPT_MODE_CANCEL))
 					continue;
 				if (!job_overlap_and_running(
-					    node_bitmap, job_ptr->license_list,
+					    node_bitmap,
+					    job_ptr->licenses_to_preempt,
 					    tmp_job_ptr))
 					continue;
 				if (tmp_job_ptr->details->usable_nodes)
@@ -3513,6 +3514,8 @@ extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		      mode);
 		return EINVAL;
 	}
+
+	FREE_NULL_LIST(job_ptr->licenses_to_preempt);
 
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) ||
 	    (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
