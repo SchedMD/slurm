@@ -410,6 +410,10 @@ extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 		 conmgr_con_type_string(type), get_buf_offset(con->in),
 		 list_count(con->out));
 
+	/* Always set TCP_NODELAY for Slurm RPC connections */
+	if (con->type == CON_TYPE_RPC)
+		con_set_flag(con, FLAG_TCP_NODELAY);
+
 	con->type = type;
 
 	if (con_flag(con, FLAG_IS_SOCKET) && con_flag(con, FLAG_TCP_NODELAY) &&
