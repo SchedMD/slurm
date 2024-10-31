@@ -208,6 +208,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Improve reporting errors from slurmctld for job queries:
       'GET /slurm/v0.0.41/{job_id}'
       'GET /slurm/v0.0.41/jobs/'
+ -- Avoid rejecting a step request that needs fewer gres than nodes in the
+    job allocation.
  -- slurmrestd - Tag the never populated '.jobs[].pid' field as deprecated for
     the following endpoints:
       'GET /slurm/v0.0.42/{job_id}'
