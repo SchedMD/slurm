@@ -731,6 +731,20 @@ compile Slurm. If some other requirement exists, like not including the dbus
 or systemd package requirement, the configure files would have to be modified.
 </p>
 
+<p>For running <i>cgroup/v2</i> a valid cgroup namespace and process namespace
+are required, this typically only applies to containerized environments like
+docker or Kubernetes.</p>
+<p>The default behaviour of Kubernetes is checked to work
+with slurm's <i>cgroup/v2</i>. Regarding docker either use the host cgroup
+namespace or create a private one.</p>
+<p>To create a private cgroup namespace for a docker container use
+--cgroupns=private. Take into account though that by doing so you will also need
+--privileged, otherwise the container will not have write permissions on the
+cgroup. To use the host cgroup namespace ensure that the container is created
+inside a child cgroup, you can specify that with the option --cgroupns=host
+together with --cgroup-parent to specify the parent cgroup of the container
+cgroup.</p>
+
 <h2 id="pam_slurm_adopt">PAM Slurm Adopt plugin on cgroup v2
 <a class="slurm_link" href="#pam_slurm_adopt"></a>
 </h2>
