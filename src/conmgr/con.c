@@ -412,6 +412,17 @@ extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 
 	con->type = type;
 
+	if (con_flag(con, FLAG_IS_SOCKET) && con_flag(con, FLAG_TCP_NODELAY) &&
+	    (con->output_fd >= 0)) {
+		int rc;
+
+		if ((rc = net_set_nodelay(con->output_fd, true, NULL))) {
+			log_flag(CONMGR, "%s: [%s] unable to set TCP_NODELAY: %s",
+				 __func__, con->name, slurm_strerror(rc));
+			return rc;
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -493,13 +504,6 @@ extern int add_connection(conmgr_con_type_t type,
 
 		if (set_keep_alive)
 			net_set_keep_alive(output_fd);
-	}
-
-	if ((flags & FLAG_TCP_NODELAY) && is_socket && has_out) {
-		int rc;
-
-		if ((rc = net_set_nodelay(output_fd, true, NULL)))
-			return rc;
 	}
 
 	con = xmalloc(sizeof(*con));
