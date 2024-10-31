@@ -43,6 +43,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <libgen.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -441,36 +442,28 @@ char * xbasename(char *path)
 }
 
 /*
- * Specialized dirname implementation which returns the result of removing the
- * basename to the given path, or a "." (dot) if the given path doesn't contain
- * a slash.
+ * Slurm's safe implementation of dirname.
  *
- * NOTE: This implementation differs from the libgen/libc ones, and it does not
- *	 conform to the XPG 4.2 or any other standard. For instance, given
- *	 "/tmp/" as an argument, a conformant implementation would return "/",
- *	 but this will return "/tmp".
+ * This function returns a malloc'ed string which lets the caller to safely
+ * manipulate it, unlike in dirname() which in some cases returns pointers
+ * to the passed string, and in other cases a new malloc'ed string. dirname()
+ * can also modify the original string so it is preferred to pas a copy of the
+ * input string.
  *
- * NOTE: This doesn't handle multiple and contiguous slashes.
+ * Besides that, the result is exactly like in dirname().
  *
- * IN:	char pointer to a path
- * RET:	the path without the xbasename or a dot if no slashes
+ * IN path - path to get the dirname from.
+ * RETURN res - string containing the path without the basename.
  */
 char *xdirname(const char *path)
 {
+	char *res = NULL;
 	char *fname = xstrdup(path);
-	char *slash;
 
-	if (!fname)
-		return xstrdup(".");
+	res = xstrdup(dirname(fname));
+	xfree(fname);
 
-	if (!(slash = strrchr(fname, '/'))) {
-		xfree(fname);
-		return xstrdup(".");
-	}
-
-	*slash = '\0';
-
-	return fname;
+	return res;
 }
 
 /*

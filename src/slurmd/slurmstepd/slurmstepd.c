@@ -953,6 +953,9 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 
 	_set_job_log_prefix(&step_id);
 
+	if (cgroup_read_state(sock) != SLURM_SUCCESS)
+		fatal("Failed to read cgroup state from slurmd");
+
 	/*
 	 * Init all plugins after receiving the slurm.conf from the slurmd.
 	 */

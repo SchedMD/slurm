@@ -449,6 +449,16 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+extern int cgroup_p_setup_scope(char *scope_path)
+{
+	return SLURM_SUCCESS;
+}
+
+extern char *cgroup_p_get_scope_path(void)
+{
+	return NULL;
+}
+
 extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 {
 	int rc = SLURM_SUCCESS;

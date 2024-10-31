@@ -799,6 +799,12 @@ _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 	safe_write(fd, get_buf_data(buffer), len);
 	FREE_NULL_BUFFER(buffer);
 
+	/* send cgroup state over to slurmstepd */
+	if (cgroup_write_state(fd)) {
+		error("%s: cgroup_write_state(%d) failed: %m", __func__, fd);
+		goto fail;
+	}
+
 	/*
 	 * Send all secondary conf files to the stepd.
 	 */
