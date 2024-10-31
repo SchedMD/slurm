@@ -515,7 +515,7 @@ extern int add_connection(conmgr_con_type_t type,
 		.work = list_create(NULL),
 		.write_complete_work = list_create(NULL),
 		.new_arg = arg,
-		.type = type,
+		.type = CON_TYPE_INVALID,
 		.polling_input_fd = PCTL_TYPE_NONE,
 		.polling_output_fd = PCTL_TYPE_NONE,
 		/* Set flags not related to connection state tracking */
@@ -568,7 +568,7 @@ extern int add_connection(conmgr_con_type_t type,
 
 	_set_connection_name(con, &in_stat, &out_stat);
 
-	_check_con_type(con, type);
+	fd_change_mode(con, type);
 
 	if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT))
 		con->last_read = timespec_now();
