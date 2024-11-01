@@ -2414,6 +2414,12 @@ static void _attempt_backfill(void)
 
 next_task:
 		/*
+		 * Restore time_limit for array tasks, just in case it has been
+		 * overridden. This is no-op for the rest of cases.
+		 */
+		job_ptr->time_limit = orig_time_limit;
+
+		/*
 		 * Save the current preemption state. Reset preemption state
 		 * in the job_ptr so a job array can preempt multiple jobs.
 		 */
