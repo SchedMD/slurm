@@ -434,15 +434,9 @@ extern list_t *purge_jobs_list;		/* list of job_record_t to free */
  * useful when updating other types of consumable resources as well
 */
 enum select_plugindata_info {
-	SELECT_CR_PLUGIN,    /* data-> uint32 See SELECT_TYPE_* below */
-	SELECT_BITMAP,       /* Unused since version 2.0 */
-	SELECT_ALLOC_CPUS,   /* data-> uint16 alloc cpus (CR support) */
-	SELECT_ALLOC_LPS,    /* data-> uint32 alloc lps  (CR support) */
-	SELECT_AVAIL_MEMORY, /* data-> uint64 avail mem  (CR support) */
-	SELECT_STATIC_PART,  /* data-> uint16, 1 if static partitioning
-			      * BlueGene support */
-	SELECT_CONFIG_INFO,  /* data-> list_t * get .conf info from select
-			      * plugin */
+	SELECT_CR_PLUGIN = 0,    /* data-> uint32 See SELECT_TYPE_* below */
+	SELECT_CONFIG_INFO = 6,  /* data-> list_t * get .conf info from select
+				  * plugin */
 };
 #define SELECT_TYPE_CONS_RES	1
 #define SELECT_TYPE_CONS_TRES	2
