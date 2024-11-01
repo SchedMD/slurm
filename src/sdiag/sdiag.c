@@ -126,7 +126,7 @@ static int _print_stats(void)
 {
 	int i;
 
-	if (!buf || !types || !users) {
+	if (!buf) {
 		printf("No data available. Probably slurmctld is not working\n");
 		return -1;
 	}
@@ -249,6 +249,8 @@ static int _print_stats(void)
 			       types[i].cycle_last, types[i].cycle_max,
 			       types[i].dropped);
 	}
+	if (!buf->rpc_type_size)
+		printf("\tNo RPCs recorded yet.\n");
 
 	printf("\nRemote Procedure Call statistics by user\n");
 	for (i = 0; i < buf->rpc_user_size; i++) {
