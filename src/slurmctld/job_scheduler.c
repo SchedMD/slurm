@@ -190,10 +190,9 @@ typedef struct {
 	list_t *feature_list;
 	bool has_xand;
 	bool has_mor;
-	bool ignore_prefer_val;
-	job_record_t *job_ptr;
 	int paren;
 	int rc;
+	bool skip_validation;
 } valid_feature_t;
 
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
@@ -5123,7 +5122,6 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 	int feature_err;
 	bool convert_to_matching_or = false;
 	valid_feature_t valid_feature = {
-		.job_ptr = job_ptr,
 		.rc = SLURM_SUCCESS,
 	};
 
@@ -5302,7 +5300,6 @@ static int _foreach_valid_feature_list(void *x, void *arg)
 {
 	job_feature_t *feat_ptr = x;
 	valid_feature_t *valid_feature = arg;
-	job_record_t *job_ptr = valid_feature->job_ptr;
 
 	if ((feat_ptr->op_code == FEATURE_OP_MOR) ||
 	    (feat_ptr->op_code == FEATURE_OP_XAND)) {
@@ -5315,8 +5312,7 @@ static int _foreach_valid_feature_list(void *x, void *arg)
 		valid_feature->paren = feat_ptr->paren;
 	}
 	if ((valid_feature->rc == SLURM_SUCCESS) &&
-	    (!valid_feature->ignore_prefer_val ||
-	     (valid_feature->feature_list != job_ptr->details->prefer_list))) {
+	    !valid_feature->skip_validation) {
 		valid_feature->rc =
 			_valid_node_feature(feat_ptr->name,
 					    valid_feature->can_reboot);
@@ -5371,7 +5367,8 @@ static int _valid_feature_list(job_record_t *job_ptr,
 			       bool is_reservation)
 {
 	static time_t sched_update = 0;
-	static bool ignore_prefer_val = false;
+	static bool ignore_prefer_val = false, ignore_constraint_val = false;
+	bool is_prefer_list, skip_validation;
 
 	if (!valid_feature->feature_list) {
 		debug2("%s feature list is empty",
@@ -5386,8 +5383,20 @@ static int _valid_feature_list(job_record_t *job_ptr,
 			ignore_prefer_val = true;
 		else
 			ignore_prefer_val = false;
+		if (xstrcasestr(slurm_conf.sched_params,
+				"ignore_constraint_validation"))
+			ignore_constraint_val = true;
+		else
+			ignore_constraint_val = false;
+
 	}
-	valid_feature->ignore_prefer_val = ignore_prefer_val;
+
+	is_prefer_list = (valid_feature->feature_list ==
+			  job_ptr->details->prefer_list);
+	skip_validation = (is_prefer_list && ignore_prefer_val) ||
+			  (!is_prefer_list && ignore_constraint_val);
+
+	valid_feature->skip_validation = skip_validation;
 
 	(void) list_for_each(valid_feature->feature_list,
 			     _foreach_valid_feature_list,
