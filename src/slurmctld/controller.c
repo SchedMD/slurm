@@ -2568,14 +2568,9 @@ extern void ctld_assoc_mgr_init(void)
 		trigger_primary_dbd_fail();
 
 		error("Association database appears down, reading from state files.");
-		/*
-		 * We ignore the error here since this might not exist.  If
-		 * there is a real error we will get it from
-		 * load_assoc_mgr_state.
-		 */
-		(void)load_assoc_mgr_last_tres();
 
-		if (load_assoc_mgr_state() != SLURM_SUCCESS) {
+		if ((load_assoc_mgr_last_tres() != SLURM_SUCCESS) ||
+		    (load_assoc_mgr_state() != SLURM_SUCCESS)) {
 			error("Unable to get any information from "
 			      "the state file");
 			fatal("slurmdbd and/or database must be up at "
