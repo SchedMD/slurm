@@ -158,5 +158,12 @@ do {				\
 	_X = NULL;		\
 } while (0)
 
+#define COPY_BITMAP(_X, _Y)		\
+do {					\
+	if (_X)				\
+		bit_copybits(_X, _Y);	\
+	else				\
+		_X = bit_copy(_Y);	\
+} while (0)
 
 #endif /* !_BITSTRING_H_ */
