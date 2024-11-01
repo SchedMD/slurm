@@ -47,6 +47,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_resolv.h"
 #include "src/common/strlcpy.h"
+#include "src/common/util-net.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
@@ -63,7 +64,8 @@ static char *client_config_files[] = {
 };
 
 
-static void _init_minimal_conf_server_config(list_t *controllers);
+static void _init_minimal_conf_server_config(list_t *controllers, bool use_v6,
+					     bool reinit);
 
 static int to_parent[2] = {-1, -1};
 
@@ -114,6 +116,7 @@ rwfail:
 static void _fetch_child(list_t *controllers, uint32_t flags)
 {
 	config_response_msg_t *config;
+	ctl_entry_t *ctl = NULL;
 	buf_t *buffer = init_buf(1024 * 1024);
 	int len = 0;
 
@@ -128,8 +131,21 @@ static void _fetch_child(list_t *controllers, uint32_t flags)
 	 */
 	slurm_conf_unlock();
 
-	_init_minimal_conf_server_config(controllers);
+	ctl = list_peek(controllers);
+
+	if (ctl->has_ipv6 && !ctl->has_ipv4)
+		_init_minimal_conf_server_config(controllers, true, false);
+	else
+		_init_minimal_conf_server_config(controllers, false, false);
+
 	config = fetch_config_from_controller(flags);
+
+	if (!config && ctl->has_ipv6 && ctl->has_ipv4) {
+		warning("%s: failed to fetch remote configs via IPv4, retrying with IPv6: %m",
+			__func__);
+		_init_minimal_conf_server_config(controllers, true, true);
+		config = fetch_config_from_controller(flags);
+	}
 
 	if (!config) {
 		error("%s: failed to fetch remote configs: %m", __func__);
@@ -148,6 +164,16 @@ static void _fetch_child(list_t *controllers, uint32_t flags)
 rwfail:
 	error("%s: failed to write to parent: %m", __func__);
 	_exit(1);
+}
+
+static int _get_controller_addr_type(void *x, void *arg)
+{
+	ctl_entry_t *ctl = (ctl_entry_t *) x;
+
+	host_has_addr_family(ctl->hostname, NULL, &ctl->has_ipv4,
+			     &ctl->has_ipv6);
+
+	return SLURM_SUCCESS;
 }
 
 extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
@@ -178,9 +204,21 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 		server = strtok_r(tmp, ",", &save_ptr);
 		while (server) {
 			ctl_entry_t *ctl = xmalloc(sizeof(*ctl));
+			char *tmp_ptr = NULL;
+
+			if (server[0] == '[')
+				server++;
+
 			strlcpy(ctl->hostname, server, sizeof(ctl->hostname));
 
-			if ((port = xstrchr(ctl->hostname, ':'))) {
+			if ((tmp_ptr = strchr(ctl->hostname, ']'))) {
+				*tmp_ptr = '\0';
+				tmp_ptr++;
+			} else {
+				tmp_ptr = ctl->hostname;
+			}
+
+			if ((port = xstrchr(tmp_ptr, ':'))) {
 				*port = '\0';
 				port++;
 				ctl->port = atoi(port);
@@ -197,6 +235,8 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 			return NULL;
                 }
 	}
+
+	list_for_each(controllers, _get_controller_addr_type, NULL);
 
 	/* If the slurm.key file exists, assume we're using auth/slurm */
 	sack_jwks = get_extra_conf_path("slurm.jwks");
@@ -331,7 +371,8 @@ static int _print_controllers(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _init_minimal_conf_server_config(list_t *controllers)
+static void _init_minimal_conf_server_config(list_t *controllers, bool use_v6,
+					     bool reinit)
 {
 	char *conf = NULL, *filename = NULL;
 	int fd;
@@ -343,11 +384,17 @@ static void _init_minimal_conf_server_config(list_t *controllers)
 	if (slurm_conf.authinfo)
 		xstrfmtcat(conf, "AuthInfo=%s\n", slurm_conf.authinfo);
 
+	if (use_v6)
+		xstrcat(conf, "CommunicationParameters=EnableIPv6");
+
 	if ((fd = dump_to_memfd("slurm.conf", conf, &filename)) < 0)
 		fatal("%s: could not write temporary config", __func__);
 	xfree(conf);
 
-	slurm_init(filename);
+	if (reinit)
+		slurm_conf_reinit(filename);
+	else
+		slurm_init(filename);
 
 	close(fd);
 	xfree(filename);

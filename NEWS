@@ -226,6 +226,7 @@ documents those changes that are of interest to users and administrators.
     v0.0.40 (eaf3b6631f), parsing of non iso 8601 style timestamps
  -- cgroup/v2 will detect some special container and namespaced setups and
     will work with it.
+ -- Support IPv6 in configless mode.
 
 * Changes in Slurm 24.05.5
 ==========================
