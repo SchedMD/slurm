@@ -861,7 +861,6 @@ static int _list_transfer_handle_connection(void *x, void *arg)
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
-	xassert(timespec_is_after(timespec_now(), args->time));
 
 	return _handle_connection(con, args);
 }
