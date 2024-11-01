@@ -28,6 +28,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --with hwloc		%_with_hwloc 1		require hwloc support
 # --with libcurl	%_with_libcurl 1	require libcurl support
 # --with lua		%_with_lua path		build Slurm lua bindings
+# --without munge	%_without_munge 1	disable support for munge
 # --with numa		%_with_numa 1		require NUMA support
 # --without pam		%_without_pam 1		don't require pam-devel RPM to be installed
 # --without x11		%_without_x11 1		disable internal X11 support
@@ -62,6 +63,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_without debug
 
 # Options enabled by default
+%bcond_without munge
 %bcond_without pam
 %bcond_without x11
 
@@ -87,12 +89,15 @@ BuildRequires:  pkgconfig
 %endif
 %endif
 
+%if %{with munge}
 Requires: munge
+BuildRequires: munge-devel munge-libs
+%endif
+
 Requires: bash-completion
 
 %{?systemd_requires}
 BuildRequires: systemd
-BuildRequires: munge-devel munge-libs
 BuildRequires: python3
 BuildRequires: readline-devel
 Obsoletes: slurm-lua <= %{version}
@@ -409,6 +414,7 @@ Provides a REST interface to Slurm.
 	%{?_with_yaml} \
 	%{?_with_nvml} \
 	%{?_with_freeipmi} \
+	%{!?with_munge:--without-munge} \
 	%{?_with_cflags}
 
 make %{?_smp_mflags}
