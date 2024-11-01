@@ -794,28 +794,6 @@ int main(int argc, char **argv)
 				fatal("failed to initialize switch plugin");
 		}
 
-		/* This needs to be done before priority_g_init() is called */
-		if (!acct_db_conn) {
-			acct_db_conn = acct_storage_g_get_connection(
-				0, NULL, false, slurm_conf.cluster_name);
-			clusteracct_storage_g_register_ctld(
-				acct_db_conn, slurm_conf.slurmctld_port);
-			/*
-			 * We only send in a variable the first time
-			 * we call this since we are setting up static
-			 * variables inside the function sending a
-			 * NULL will just use those set before.
-			 */
-			if (assoc_mgr_init(acct_db_conn, NULL, errno) &&
-			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
-			    (running_cache == RUNNING_CACHE_STATE_NOTRUNNING)) {
-				trigger_primary_dbd_fail();
-				error("assoc_mgr_init failure");
-				fatal("slurmdbd and/or database must be up at "
-				      "slurmctld start time");
-			}
-		}
-
 		/*
 		 * priority_g_init() needs to be called after assoc_mgr_init()
 		 * and before read_slurm_conf() because jobs could be killed
@@ -2587,6 +2565,8 @@ extern void ctld_assoc_mgr_init(void)
 					    slurm_conf.slurmctld_port);
 
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg, errno)) {
+		trigger_primary_dbd_fail();
+
 		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			error("Association database appears down, "
 			      "reading from state file.");
