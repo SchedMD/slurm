@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - Fix SLURM_CONF env variable not being properly set.
  -- sched/backfill - Fix job's time_limit being overwritten by time_min for job
     arrays in some situations.
+ -- RoutePart - fix segfault from incorrect memory allocation when node doesn't
+    exist in any partition.
 
 * Changes in Slurm 24.05.4
 ==========================

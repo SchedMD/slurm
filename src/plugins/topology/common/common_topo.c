@@ -135,7 +135,7 @@ static int _route_part_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 
 	xassert(part_split.msg_count == bit_set_count(nodes_bitmap));
 	if (part_split.msg_count) {
-		size_t new_size = *count;
+		size_t new_size = *count * sizeof(hostlist_t *);
 		node_record_t *node_ptr;
 
 		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
