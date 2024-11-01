@@ -2209,6 +2209,40 @@ static slurm_cli_opt_t slurm_opt_mcs_label = {
 	.reset_func = arg_reset_mcs_label,
 };
 
+static int arg_set_oom_kill_step(slurm_opt_t *opt, const char *arg)
+{
+	uint16_t res;
+	if (!arg) {
+		opt->oom_kill_step = 1;
+		return SLURM_SUCCESS;
+	}
+	if (!parse_uint16((char *)arg, &res) && (res <= 1)) {
+		opt->oom_kill_step = res;
+		return SLURM_SUCCESS;
+	}
+
+	error("Invalid --oom-kill-step specification");
+	return SLURM_ERROR;
+}
+
+static char *arg_get_oom_kill_step(slurm_opt_t *opt)
+{
+	if (opt->oom_kill_step == NO_VAL16)
+		return xstrdup("unset");
+
+	return xstrdup_printf("%u", opt->oom_kill_step);
+}
+
+COMMON_OPTION_RESET(oom_kill_step, NO_VAL16);
+static slurm_cli_opt_t slurm_opt_oom_kill_step = {
+	.name = "oom-kill-step",
+	.has_arg = optional_argument,
+	.val = LONG_OPT_OOMKILLSTEP,
+	.set_func = arg_set_oom_kill_step,
+	.get_func = arg_get_oom_kill_step,
+	.reset_func = arg_reset_oom_kill_step,
+};
+
 static int arg_set_mem(slurm_opt_t *opt, const char *arg)
 {
 	if ((opt->pn_min_memory = str_to_mbytes(arg)) == NO_VAL64) {
@@ -4146,6 +4180,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_ntasks_per_node,
 	&slurm_opt_ntasks_per_socket,
 	&slurm_opt_ntasks_per_tres,
+	&slurm_opt_oom_kill_step,
 	&slurm_opt_open_mode,
 	&slurm_opt_output,
 	&slurm_opt_overcommit,
@@ -5617,6 +5652,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	job_desc->submit_line = opt_local->submit_line;
 	job_desc->task_dist = opt_local->distribution;
+	job_desc->oom_kill_step = opt_local->oom_kill_step;
 
 	if (opt_local->time_limit != NO_VAL)
 		job_desc->time_limit = opt_local->time_limit;

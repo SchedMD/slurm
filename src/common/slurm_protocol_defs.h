@@ -753,6 +753,7 @@ typedef struct launch_tasks_request_msg {
 	part_record_t *part_ptr;
 
 	char *stepmgr; /* Hostname of stepmgr */
+	bool oom_kill_step;
 } launch_tasks_request_msg_t;
 
 typedef struct partition_info partition_desc_msg_t;
@@ -944,6 +945,7 @@ typedef struct batch_job_launch_msg {
 	char *tres_bind;	/* task binding to TRES (e.g. GPUs),
 				 * included for possible future use */
 	char *tres_freq;	/* frequency/power for TRES (e.g. GPUs) */
+	bool oom_kill_step;
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {

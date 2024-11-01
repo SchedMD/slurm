@@ -2483,6 +2483,11 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	if (job_ptr->qos_ptr)
 		launch_msg_ptr->qos = xstrdup(job_ptr->qos_ptr->name);
 
+	if (job_ptr->details->oom_kill_step != NO_VAL16)
+		launch_msg_ptr->oom_kill_step = job_ptr->details->oom_kill_step;
+	else
+		launch_msg_ptr->oom_kill_step =
+			slurm_conf.task_plugin_param & OOM_KILL_STEP;
 	/*
 	 * Use resv_ptr->name instead of job_ptr->resv_name as the job
 	 * could contain multiple reservation names.

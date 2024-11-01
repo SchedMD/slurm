@@ -149,6 +149,7 @@ enum {
 	LONG_OPT_NTASKSPERNODE,
 	LONG_OPT_NTASKSPERSOCKET,
 	LONG_OPT_NTASKSPERTRES,
+	LONG_OPT_OOMKILLSTEP,
 	LONG_OPT_OPEN_MODE,
 	LONG_OPT_OVERLAP,
 	LONG_OPT_HET_GROUP,
@@ -379,6 +380,7 @@ typedef struct {
 	uint64_t mem_per_cpu;		/* --mem-per-cpu		*/
 	uint64_t mem_per_gpu;		/* --mem-per-gpu		*/
 	uint64_t pn_min_memory;		/* --mem			*/
+	uint16_t oom_kill_step;		/* --oom-kill-step=0,1		*/
 	uint64_t pn_min_tmp_disk;	/* --tmp			*/
 	char *prefer;			/* --prefer			*/
 	char *constraint;		/* --constraint			*/

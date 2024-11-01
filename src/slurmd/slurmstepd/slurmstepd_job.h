@@ -256,6 +256,7 @@ typedef struct {
 
 	char *selinux_context;
 	char *stepmgr;
+	bool oom_kill_step;
 } stepd_step_rec_t;
 
 
