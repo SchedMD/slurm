@@ -468,6 +468,41 @@ static void _reopen_stdio(void)
 #endif /* __linux__ */
 }
 
+static void _init_db_conn(void)
+{
+	if (acct_db_conn)
+		acct_storage_g_close_connection(&acct_db_conn);
+
+	acct_db_conn = acct_storage_g_get_connection(
+		0, NULL, false, slurm_conf.cluster_name);
+	clusteracct_storage_g_register_ctld(acct_db_conn,
+					    slurm_conf.slurmctld_port);
+}
+
+/*
+ * Retry connecting to the dbd and initializing assoc_mgr until success, or
+ * fatal on shutdown.
+ */
+static void _retry_init_db_conn(assoc_init_args_t *args)
+{
+	while (true) {
+		struct timespec ts = timespec_now();
+		ts.tv_sec += 2;
+
+		slurm_mutex_lock(&shutdown_mutex);
+		slurm_cond_timedwait(&shutdown_cond, &shutdown_mutex, &ts);
+		slurm_mutex_unlock(&shutdown_mutex);
+
+		if (slurmctld_config.shutdown_time)
+			fatal("slurmdbd must be up at slurmctld start time");
+
+		error("Retrying initial connection to slurmdbd");
+		_init_db_conn();
+		if (!assoc_mgr_init(acct_db_conn, args, errno))
+			break;
+	}
+}
+
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
@@ -2556,13 +2591,7 @@ extern void ctld_assoc_mgr_init(void)
 	/* Don't save state but blow away old lists if they exist. */
 	assoc_mgr_fini(0);
 
-	if (acct_db_conn)
-		acct_storage_g_close_connection(&acct_db_conn);
-
-	acct_db_conn = acct_storage_g_get_connection(
-		0, NULL, false, slurm_conf.cluster_name);
-	clusteracct_storage_g_register_ctld(acct_db_conn,
-					    slurm_conf.slurmctld_port);
+	_init_db_conn();
 
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg, errno)) {
 		trigger_primary_dbd_fail();
@@ -2571,10 +2600,8 @@ extern void ctld_assoc_mgr_init(void)
 
 		if ((load_assoc_mgr_last_tres() != SLURM_SUCCESS) ||
 		    (load_assoc_mgr_state() != SLURM_SUCCESS)) {
-			error("Unable to get any information from "
-			      "the state file");
-			fatal("slurmdbd and/or database must be up at "
-			      "slurmctld start time");
+			error("Unable to get any information from the state file");
+			_retry_init_db_conn(&assoc_init_arg);
 		}
 	}
 
