@@ -7979,19 +7979,21 @@ static void _pack_node_reg_resp(
 	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (msg->tres_list)
-			pack_list = msg->tres_list;
-		else
-			pack_list = assoc_mgr_tres_list;
+		bool locked = false;
 
-		if (pack_list == assoc_mgr_tres_list)
+		if (msg->tres_list) {
+			pack_list = msg->tres_list;
+		} else {
 			assoc_mgr_lock(&locks);
+			pack_list = assoc_mgr_tres_list;
+			locked = true;
+		}
 
 		(void)slurm_pack_list(pack_list,
 				      slurmdb_pack_tres_rec, buffer,
 				      protocol_version);
 
-		if (pack_list == assoc_mgr_tres_list)
+		if (locked)
 			assoc_mgr_unlock(&locks);
 
 		packstr(msg->node_name, buffer);
