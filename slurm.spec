@@ -141,7 +141,11 @@ BuildRequires: mariadb-devel >= 5.0.0
 %endif
 
 BuildRequires: perl(ExtUtils::MakeMaker)
+%if %{defined suse_version}
+BuildRequires: perl
+%else
 BuildRequires: perl-devel
+%endif
 
 %if %{with lua}
 BuildRequires: pkgconfig(lua) >= 5.1.0
