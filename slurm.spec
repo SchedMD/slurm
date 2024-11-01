@@ -428,7 +428,7 @@ export QA_RPATHS=0x5
 # Strip out some dependencies
 
 cat > find-requires.sh <<'EOF'
-exec %{__find_requires} "$@" | egrep -v '^libpmix.so|libevent|libnvidia-ml'
+exec %{__find_requires} "$@" | grep -E -v '^libpmix.so|libevent|libnvidia-ml'
 EOF
 chmod +x find-requires.sh
 %global _use_internal_dependency_generator 0
