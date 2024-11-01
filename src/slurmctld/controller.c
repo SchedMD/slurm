@@ -2567,12 +2567,7 @@ extern void ctld_assoc_mgr_init(void)
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg, errno)) {
 		trigger_primary_dbd_fail();
 
-		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-			error("Association database appears down, "
-			      "reading from state file.");
-		else
-			debug("Association database appears down, "
-			      "reading from state file.");
+		error("Association database appears down, reading from state files.");
 		/*
 		 * We ignore the error here since this might not exist.  If
 		 * there is a real error we will get it from
@@ -2580,8 +2575,7 @@ extern void ctld_assoc_mgr_init(void)
 		 */
 		(void)load_assoc_mgr_last_tres();
 
-		if ((load_assoc_mgr_state() != SLURM_SUCCESS)
-		    && (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
+		if (load_assoc_mgr_state() != SLURM_SUCCESS) {
 			error("Unable to get any information from "
 			      "the state file");
 			fatal("slurmdbd and/or database must be up at "
