@@ -1291,6 +1291,15 @@ try_next_nodes_cnt:
 		else
 			next_job_size = 0;
 	}
+
+	if ((gang_mode == 0) &&
+	    (job_node_req == NODE_CR_ONE_ROW ||
+	     job_node_req == NODE_CR_RESERVED) &&
+	    !test_only) {
+		log_flag(SELECT_TYPE, "test 0 skipped: goto test 1");
+		goto skip_test0;
+	}
+
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 					req_nodes, node_bitmap, free_cores,
 					node_usage, cr_type, test_only,
@@ -1330,13 +1339,6 @@ try_next_nodes_cnt:
 		_free_avail_res_array(avail_res_array);
 		log_flag(SELECT_TYPE, "test 0 fail: waiting for switches");
 		return select_rc ? select_rc : SLURM_ERROR;
-	}
-	if (cr_type == CR_MEMORY) {
-		/*
-		 * CR_MEMORY does not care about existing CPU allocations,
-		 * so we can jump right to job allocation from here
-		 */
-		goto alloc_job;
 	}
 
 	log_flag(SELECT_TYPE, "test 0 pass - job fits on given resources");
@@ -1381,6 +1383,7 @@ try_next_nodes_cnt:
 	free_core_array(&free_cores);
 	free_cores = copy_core_array(avail_cores);
 
+skip_test0:
 	if (resv_exc_ptr->exc_cores) {
 #if _DEBUG
 		core_array_log("exclude reserved cores",
