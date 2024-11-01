@@ -954,8 +954,11 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		 * so just skip it.
 		 */
 #if (SLURMSTEPD_MEMCHECK != 1)
-		if ((rc2 = _handle_return_code(to_slurmd[0], to_stepd[1], &rc)))
-			return rc2;
+		if ((rc2 = _handle_return_code(to_slurmd[0],
+					       to_stepd[1], &rc))) {
+			rc = rc2;
+			goto done;
+		}
 #endif
 	done:
 		if (_remove_starting_step(type, req))
