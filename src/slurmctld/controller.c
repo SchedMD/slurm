@@ -2580,7 +2580,7 @@ extern void ctld_assoc_mgr_init(void)
 		 */
 		(void)load_assoc_mgr_last_tres();
 
-		if ((load_assoc_mgr_state(0) != SLURM_SUCCESS)
+		if ((load_assoc_mgr_state() != SLURM_SUCCESS)
 		    && (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 			error("Unable to get any information from "
 			      "the state file");

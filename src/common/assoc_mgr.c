@@ -6326,7 +6326,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int load_assoc_mgr_state(bool only_tres)
+extern int load_assoc_mgr_state(void)
 {
 	int error_code = SLURM_SUCCESS;
 	uint16_t type = 0;
@@ -6478,12 +6478,9 @@ extern int load_assoc_mgr_state(bool only_tres)
 			goto unpack_error;
 			break;
 		}
-		/* The tres, if here, will always be first */
-		if (only_tres)
-			break;
 	}
 
-	if (!only_tres && init_setup.running_cache)
+	if (init_setup.running_cache)
 		*init_setup.running_cache = RUNNING_CACHE_STATE_RUNNING;
 
 	FREE_NULL_BUFFER(buffer);

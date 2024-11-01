@@ -478,7 +478,7 @@ extern int load_assoc_mgr_last_tres(void);
  * Read in the information of the association mgr if the database
  * isn't up when starting.
  */
-extern int load_assoc_mgr_state(bool only_tres);
+extern int load_assoc_mgr_state(void);
 
 /*
  * Refresh the lists if when running_cache is set this will load new
