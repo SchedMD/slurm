@@ -259,6 +259,13 @@ typedef struct {
 	slurm_gres_context_t *gres_ctx;
 } check_conf_t;
 
+typedef struct {
+	uint64_t cpu_cnt;
+	list_t *gres_conf_list;
+	slurm_gres_context_t *gres_ctx;
+	list_t *new_list;
+} merge_gres_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -2193,24 +2200,37 @@ static void _merge_gres2(list_t *gres_conf_list, list_t *new_list, uint64_t coun
  * gres_ctx   - (in) Which GRES plugin we are working in.
  * cpu_cnt        - (in) A count of CPUs on the node.
  */
-static void _merge_gres(list_t *gres_conf_list, list_t *new_list,
-			gres_node_state_t *gres_ns,
-			slurm_gres_context_t *gres_ctx, uint32_t cpu_cnt)
+static int _merge_gres(void *x, void *args)
 {
+	gres_state_t *gres_state_node = x;
+	merge_gres_t *merge_gres = args;
+	gres_node_state_t *gres_ns;
+
+	if (gres_state_node->plugin_id != merge_gres->gres_ctx->plugin_id)
+		return 0;
+
+	gres_ns = gres_state_node->gres_data;
 	/* If this GRES has no types, merge in the single untyped GRES */
 	if (gres_ns->type_cnt == 0) {
-		_merge_gres2(gres_conf_list, new_list,
-			     gres_ns->gres_cnt_config, NULL, gres_ctx,
-			     cpu_cnt);
-		return;
+		_merge_gres2(merge_gres->gres_conf_list,
+			     merge_gres->new_list,
+			     gres_ns->gres_cnt_config, NULL,
+			     merge_gres->gres_ctx,
+			     merge_gres->count);
+		return 0;
 	}
 
 	/* If this GRES has types, merge in each typed GRES */
 	for (int i = 0; i < gres_ns->type_cnt; i++) {
-		_merge_gres2(gres_conf_list, new_list,
+		_merge_gres2(merge_gres->gres_conf_list,
+			     merge_gres->new_list,
 			     gres_ns->type_cnt_avail[i],
-			     gres_ns->type_name[i], gres_ctx, cpu_cnt);
+			     gres_ns->type_name[i],
+			     merge_gres->gres_ctx,
+			     merge_gres->count);
 	}
+
+	return 0;
 }
 
 /*
@@ -2228,41 +2248,32 @@ static void _merge_gres(list_t *gres_conf_list, list_t *new_list,
 static void _merge_config(node_config_load_t *node_conf, list_t *gres_conf_list,
 			  list_t *slurm_conf_list)
 {
-	int i;
-	gres_state_t *gres_state_node;
-	list_itr_t *iter;
-	bool found;
+	merge_gres_t merge_gres = {
+		.cpu_cnt = node_conf->cpu_cnt,
+		.gres_conf_list = gres_conf_list,
+		.new_list = list_create(destroy_gres_slurmd_conf),
+	};
 
-	list_t *new_gres_list = list_create(destroy_gres_slurmd_conf);
+	for (int i = 0; i < gres_context_cnt; i++) {
+		merge_gres.gres_ctx = &gres_context[i];
 
-	for (i = 0; i < gres_context_cnt; i++) {
 		/* Copy GRES configuration from slurm.conf */
 		if (slurm_conf_list) {
-			found = false;
-			iter = list_iterator_create(slurm_conf_list);
-			while ((gres_state_node = list_next(iter))) {
-				if (gres_state_node->plugin_id !=
-				    gres_context[i].plugin_id)
-					continue;
-				found = true;
-				_merge_gres(gres_conf_list, new_gres_list,
-					    gres_state_node->gres_data,
-					    &gres_context[i],
-					    node_conf->cpu_cnt);
-			}
-			list_iterator_destroy(iter);
-			if (found)
+			if (list_for_each(slurm_conf_list,
+					  _merge_gres,
+					  &merge_gres) > 0)
 				continue;
 		}
 
 		/* Add GRES record with zero count */
-		_add_gres_config_empty(new_gres_list, &gres_context[i],
-				       node_conf->cpu_cnt);
+		_add_gres_config_empty(merge_gres.new_list,
+				       merge_gres.gres_ctx,
+				       merge_gres.count);
 	}
 	/* Set gres_conf_list to be the new merged list */
 	list_flush(gres_conf_list);
-	list_transfer(gres_conf_list, new_gres_list);
-	FREE_NULL_LIST(new_gres_list);
+	list_transfer(gres_conf_list, merge_gres.new_list);
+	FREE_NULL_LIST(merge_gres.new_list);
 }
 
 static void _pack_gres_context(slurm_gres_context_t *gres_ctx, buf_t *buffer)
