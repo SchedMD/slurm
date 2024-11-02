@@ -253,6 +253,11 @@ typedef struct {
 	char *type_name;
 } conf_cnt_t;
 
+typedef struct {
+	list_t *gres_conf_list;
+	slurm_gres_context_t *gres_ctx;
+} check_conf_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -1885,7 +1890,31 @@ static void _compare_conf_counts(list_t *gres_conf_list_tmp, uint64_t count,
 			     _foreach_compare_conf_counts,
 			     &conf_cnt);
 }
+
+static int _foreach_slurm_conf_mismatch_comp(void *x, void *args)
+{
+	gres_state_t *gres_state_node = x;
+	check_conf_t *check_conf = args;
+	gres_node_state_t *gres_ns;
+
+	if (gres_state_node->plugin_id != check_conf->gres_ctx->plugin_id)
+		return 0;
+
+	/* Determine if typed or untyped, and act accordingly */
+	gres_ns = gres_state_node->gres_data;
+	if (!gres_ns->type_name) {
+		_compare_conf_counts(check_conf->gres_conf_list,
+				     gres_ns->gres_cnt_config, NULL);
+		return 0;
 	}
+
+	for (int i = 0; i < gres_ns->type_cnt; ++i) {
+		_compare_conf_counts(check_conf->gres_conf_list,
+				     gres_ns->type_cnt_avail[i],
+				     gres_ns->type_name[i]);
+	}
+
+	return 0;
 }
 
 /*
@@ -1902,8 +1931,9 @@ static void _check_conf_mismatch(list_t *slurm_conf_list, list_t *gres_conf_list
 {
 	list_itr_t *iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	gres_state_t *gres_state_node;
-	list_t *gres_conf_list_tmp;
+	check_conf_t check_conf = {
+		.gres_ctx = gres_ctx,
+	};
 
 	/* E.g. slurm_conf_list will be NULL in the case of --gpu-bind */
 	if (!slurm_conf_list || !gres_conf_list)
@@ -1914,7 +1944,7 @@ static void _check_conf_mismatch(list_t *slurm_conf_list, list_t *gres_conf_list
 	 * plugin only so we can mangle records. Only add records under the
 	 * current plugin.
 	 */
-	gres_conf_list_tmp = list_create(destroy_gres_slurmd_conf);
+	check_conf.gres_conf_list = list_create(destroy_gres_slurmd_conf);
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
 		gres_slurmd_conf_t *gres_slurmd_conf_tmp;
@@ -1926,7 +1956,7 @@ static void _check_conf_mismatch(list_t *slurm_conf_list, list_t *gres_conf_list
 		gres_slurmd_conf_tmp->type_name =
 			xstrdup(gres_slurmd_conf->type_name);
 		gres_slurmd_conf_tmp->count = gres_slurmd_conf->count;
-		list_append(gres_conf_list_tmp, gres_slurmd_conf_tmp);
+		list_append(check_conf.gres_conf_list, gres_slurmd_conf_tmp);
 	}
 	list_iterator_destroy(iter);
 
@@ -1934,34 +1964,15 @@ static void _check_conf_mismatch(list_t *slurm_conf_list, list_t *gres_conf_list
 	 * Loop through the slurm.conf list and see if there are more gres.conf
 	 * GRES than expected.
 	 */
-	iter = list_iterator_create(slurm_conf_list);
-	while ((gres_state_node = list_next(iter))) {
-		gres_node_state_t *gres_ns;
-
-		if (gres_state_node->plugin_id != gres_ctx->plugin_id)
-			continue;
-
-		/* Determine if typed or untyped, and act accordingly */
-		gres_ns = (gres_node_state_t *)gres_state_node->gres_data;
-		if (!gres_ns->type_name) {
-			_compare_conf_counts(gres_conf_list_tmp,
-					     gres_ns->gres_cnt_config, NULL);
-			continue;
-		}
-
-		for (int i = 0; i < gres_ns->type_cnt; ++i) {
-			_compare_conf_counts(gres_conf_list_tmp,
-					     gres_ns->type_cnt_avail[i],
-					     gres_ns->type_name[i]);
-		}
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(slurm_conf_list,
+			     _foreach_slurm_conf_mismatch_comp,
+			     &check_conf);
 
 	/*
 	 * Loop through gres_conf_list_tmp to print errors for gres.conf
 	 * records that were not completely accounted for in slurm.conf.
 	 */
-	iter = list_iterator_create(gres_conf_list_tmp);
+	iter = list_iterator_create(check_conf.gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter)))
 		if (gres_slurmd_conf->count > 0)
 			warning("A line in gres.conf for GRES %s%s%s has %"PRIu64" more configured than expected in slurm.conf. Ignoring extra GRES.",
@@ -1972,7 +1983,7 @@ static void _check_conf_mismatch(list_t *slurm_conf_list, list_t *gres_conf_list
 				gres_slurmd_conf->count);
 	list_iterator_destroy(iter);
 
-	FREE_NULL_LIST(gres_conf_list_tmp);
+	FREE_NULL_LIST(check_conf.gres_conf_list);
 }
 
 /*
