@@ -2101,19 +2101,18 @@ static void _set_file_subset(gres_slurmd_conf_t *gres_slurmd_conf,
  * gres_context   - (in) Which GRES plugin we are working in.
  * cpu_cnt        - (in) A count of CPUs on the node.
  */
-static void _merge_gres2(list_t *gres_conf_list, list_t *new_list, uint64_t count,
-			 char *type_name, slurm_gres_context_t *gres_ctx,
-			 uint32_t cpu_count)
+static void _merge_gres2(merge_gres_t *merge_gres,
+			 uint64_t count, char *type_name)
 {
 	gres_slurmd_conf_t *match;
 	gres_slurmd_conf_t gres_slurmd_conf = {
-		.cpu_cnt = cpu_count,
-		.name = gres_ctx->gres_name,
+		.cpu_cnt = merge_gres->cpu_cnt,
+		.name = merge_gres->gres_ctx->gres_name,
 		.type_name = type_name,
 	};
 	conf_cnt_t conf_cnt = {
 		.count = count,
-		.gres_ctx = gres_ctx,
+		.gres_ctx = merge_gres->gres_ctx,
 		.type_name = type_name,
 	};
 
@@ -2127,8 +2126,8 @@ static void _merge_gres2(list_t *gres_conf_list, list_t *new_list, uint64_t coun
 	 * and Links. Append them to the list where possible.
 	 */
 	while ((match = list_remove_first(
-			gres_conf_list, _match_type, &conf_cnt))) {
-		list_append(new_list, match);
+			merge_gres->gres_conf_list, _match_type, &conf_cnt))) {
+		list_append(merge_gres->new_list, match);
 
 		debug3("%s: From gres.conf, using %s:%s:%"PRIu64":%s", __func__,
 		       match->name, match->type_name, match->count,
@@ -2177,15 +2176,15 @@ static void _merge_gres2(list_t *gres_conf_list, list_t *new_list, uint64_t coun
 	 */
 
 	/* Set default env flags, and allow AutoDetect to override */
-	if (!xstrcasecmp(gres_ctx->gres_name, "gpu"))
+	if (!xstrcasecmp(merge_gres->gres_ctx->gres_name, "gpu"))
 		gres_slurmd_conf.config_flags |=
 			(GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF);
-	if (gres_ctx->config_flags & GRES_CONF_COUNT_ONLY)
+	if (merge_gres->gres_ctx->config_flags & GRES_CONF_COUNT_ONLY)
 		gres_slurmd_conf.config_flags |= GRES_CONF_COUNT_ONLY;
 
 	gres_slurmd_conf.count = count;
 
-	add_gres_to_list(new_list, &gres_slurmd_conf);
+	add_gres_to_list(merge_gres->new_list, &gres_slurmd_conf);
 }
 
 /*
@@ -2210,22 +2209,16 @@ static int _merge_gres(void *x, void *args)
 	gres_ns = gres_state_node->gres_data;
 	/* If this GRES has no types, merge in the single untyped GRES */
 	if (gres_ns->type_cnt == 0) {
-		_merge_gres2(merge_gres->gres_conf_list,
-			     merge_gres->new_list,
-			     gres_ns->gres_cnt_config, NULL,
-			     merge_gres->gres_ctx,
-			     merge_gres->count);
+		_merge_gres2(merge_gres,
+			     gres_ns->gres_cnt_config, NULL);
 		return 0;
 	}
 
 	/* If this GRES has types, merge in each typed GRES */
 	for (int i = 0; i < gres_ns->type_cnt; i++) {
-		_merge_gres2(merge_gres->gres_conf_list,
-			     merge_gres->new_list,
+		_merge_gres2(merge_gres,
 			     gres_ns->type_cnt_avail[i],
-			     gres_ns->type_name[i],
-			     merge_gres->gres_ctx,
-			     merge_gres->count);
+			     gres_ns->type_name[i]);
 	}
 
 	return 0;
