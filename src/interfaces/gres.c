@@ -1846,6 +1846,17 @@ static void _validate_gres_conf(list_t *gres_conf_list,
 		gres_ctx->config_flags &= (~GRES_CONF_LOADED);
 }
 
+/*
+ * Keep track of which gres.conf lines have a count greater than expected
+ * according to the current slurm.conf GRES. Modify the count of
+ * gres_slurmd_conf to keep track of this. Any gres.conf records
+ * with a count > 0 means that slurm.conf did not account for it completely.
+ *
+ * gres_slurmd_conf - (in/out) pointer to conf we are looking at.
+ *                    This should be a temporary copy that we can modify.
+ * conf_cnt->count - (in) The count of the current slurm.conf GRES record.
+ * conf_cnt->type_name - (in) The type of the current slurm.conf GRES record.
+ */
 static int _foreach_compare_conf_counts(void *x, void *args)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
@@ -1868,34 +1879,12 @@ static int _foreach_compare_conf_counts(void *x, void *args)
 	return 0;
 }
 
-/*
- * Keep track of which gres.conf lines have a count greater than expected
- * according to the current slurm.conf GRES. Modify the count of throw-away
- * records in gres_conf_list_tmp to keep track of this. Any gres.conf records
- * with a count > 0 means that slurm.conf did not account for it completely.
- *
- * gres_conf_list_tmp - (in/out) The temporary gres.conf list.
- * count              - (in) The count of the current slurm.conf GRES record.
- * type_name          - (in) The type of the current slurm.conf GRES record.
- */
-static void _compare_conf_counts(list_t *gres_conf_list_tmp, uint64_t count,
-				 char *type_name)
-{
-	conf_cnt_t conf_cnt = {
-		.count = count,
-		.type_name = type_name,
-	};
-
-	(void) list_for_each(gres_conf_list_tmp,
-			     _foreach_compare_conf_counts,
-			     &conf_cnt);
-}
-
 static int _foreach_slurm_conf_mismatch_comp(void *x, void *args)
 {
 	gres_state_t *gres_state_node = x;
 	check_conf_t *check_conf = args;
 	gres_node_state_t *gres_ns;
+	conf_cnt_t conf_cnt = { 0 };
 
 	if (gres_state_node->plugin_id != check_conf->gres_ctx->plugin_id)
 		return 0;
@@ -1903,15 +1892,20 @@ static int _foreach_slurm_conf_mismatch_comp(void *x, void *args)
 	/* Determine if typed or untyped, and act accordingly */
 	gres_ns = gres_state_node->gres_data;
 	if (!gres_ns->type_name) {
-		_compare_conf_counts(check_conf->gres_conf_list,
-				     gres_ns->gres_cnt_config, NULL);
+		conf_cnt.count = gres_ns->gres_cnt_config;
+		conf_cnt.type_name = NULL;
+		(void) list_for_each(check_conf->gres_conf_list,
+				     _foreach_compare_conf_counts,
+				     &conf_cnt);
 		return 0;
 	}
 
 	for (int i = 0; i < gres_ns->type_cnt; ++i) {
-		_compare_conf_counts(check_conf->gres_conf_list,
-				     gres_ns->type_cnt_avail[i],
-				     gres_ns->type_name[i]);
+		conf_cnt.count = gres_ns->type_cnt_avail[i];
+		conf_cnt.type_name = gres_ns->type_name[i];
+		(void) list_for_each(check_conf->gres_conf_list,
+				     _foreach_compare_conf_counts,
+				     &conf_cnt);
 	}
 
 	return 0;
