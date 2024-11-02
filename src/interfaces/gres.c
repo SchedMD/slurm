@@ -2038,20 +2038,18 @@ static int _match_type(void *x, void *key)
 /*
  * Add a GRES conf record with count == 0 to gres_list.
  *
- * gres_list    - (in/out) The gres list to add to.
- * gres_context - (in) The GRES plugin to add a GRES record for.
- * cpu_cnt      - (in) The cpu count configured for the node.
+ * new_list - (in/out) The gres list to add to.
+ * gres_ctx - (in) The GRES plugin to add a GRES record for.
+ * count - (in) The cpu count configured for the node.
  */
-static void _add_gres_config_empty(list_t *gres_list,
-				   slurm_gres_context_t *gres_ctx,
-				   uint32_t cpu_cnt)
+static void _add_gres_config_empty(merge_gres_t *merge_gres)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf =
 		xmalloc(sizeof(*gres_slurmd_conf));
-	gres_slurmd_conf->cpu_cnt = cpu_cnt;
-	gres_slurmd_conf->name = xstrdup(gres_ctx->gres_name);
-	gres_slurmd_conf->plugin_id = gres_ctx->plugin_id;
-	list_append(gres_list, gres_slurmd_conf);
+	gres_slurmd_conf->cpu_cnt = merge_gres->cpu_cnt;
+	gres_slurmd_conf->name = xstrdup(merge_gres->gres_ctx->gres_name);
+	gres_slurmd_conf->plugin_id = merge_gres->gres_ctx->plugin_id;
+	list_append(merge_gres->new_list, gres_slurmd_conf);
 }
 
 /*
@@ -2266,9 +2264,7 @@ static void _merge_config(node_config_load_t *node_conf, list_t *gres_conf_list,
 		}
 
 		/* Add GRES record with zero count */
-		_add_gres_config_empty(merge_gres.new_list,
-				       merge_gres.gres_ctx,
-				       merge_gres.count);
+		_add_gres_config_empty(&merge_gres);
 	}
 	/* Set gres_conf_list to be the new merged list */
 	list_flush(gres_conf_list);
