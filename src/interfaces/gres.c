@@ -266,6 +266,12 @@ typedef struct {
 	list_t *new_list;
 } merge_gres_t;
 
+typedef struct {
+	void *generic_gres_data;
+	bool is_job;
+	uint32_t plugin_id;
+} merge_generic_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -6172,6 +6178,39 @@ static bool _set_over_list(gres_state_t *gres_state,
 	return overlap_merge;
 }
 
+static int _foreach_merge_generic_data(void *x, void *args)
+{
+	gres_state_t *gres_state = x;
+	merge_generic_t *merge_generic = args;
+
+	if (merge_generic->plugin_id != gres_state->plugin_id)
+		return 0;
+
+	if (merge_generic->generic_gres_data == gres_state->gres_data)
+		return 1;
+
+	if (merge_generic->is_job) {
+		gres_job_state_t *gres_js_in = merge_generic->generic_gres_data;
+		gres_job_state_t *gres_js = gres_state->gres_data;
+
+		if (!gres_js->cpus_per_gres)
+			gres_js->cpus_per_gres = gres_js_in->cpus_per_gres;
+		if (!gres_js->mem_per_gres)
+			gres_js->mem_per_gres = gres_js_in->mem_per_gres;
+	} else {
+		gres_step_state_t *gres_ss_in =
+			merge_generic->generic_gres_data;
+		gres_step_state_t *gres_ss = gres_state->gres_data;
+
+		if (!gres_ss->cpus_per_gres)
+			gres_ss->cpus_per_gres = gres_ss_in->cpus_per_gres;
+		if (!gres_ss->mem_per_gres)
+			gres_ss->mem_per_gres = gres_ss_in->mem_per_gres;
+	}
+
+	return 0;
+}
+
 /*
  * Put generic data (*_per_gres) on other gres of the same kind.
  */
@@ -6179,13 +6218,9 @@ static int _merge_generic_data(
 	list_t *gres_list, overlap_check_t *over_list, int over_count, bool is_job)
 {
 	int rc = SLURM_SUCCESS;
-	uint16_t cpus_per_gres;
-	uint64_t mem_per_gres;
-	gres_state_t *gres_state;
-	gres_job_state_t *gres_js;
-	gres_step_state_t *gres_ss;
-	void *generic_gres_data;
-	list_itr_t *iter = list_iterator_create(gres_list);
+	merge_generic_t merge_generic = {
+		.is_job = is_job,
+	};
 
 	for (int i = 0; i < over_count; i++) {
 		if (!over_list[i].with_type || !over_list[i].without_type_state)
@@ -6196,52 +6231,14 @@ static int _merge_generic_data(
 		}
 
 		/* Propagate generic parameters */
-		if (is_job) {
-			generic_gres_data = gres_js =
-				over_list[i].without_type_state;
-			cpus_per_gres =	gres_js->cpus_per_gres;
-			mem_per_gres = gres_js->mem_per_gres;
-		} else {
-			generic_gres_data = gres_ss =
-				over_list[i].without_type_state;
-			cpus_per_gres =	gres_ss->cpus_per_gres;
-			mem_per_gres = gres_ss->mem_per_gres;
-		}
+		merge_generic.generic_gres_data =
+			over_list[i].without_type_state;
+		merge_generic.plugin_id = over_list[i].plugin_id;
 
-		while ((gres_state = list_next(iter))) {
-			if (over_list[i].plugin_id != gres_state->plugin_id)
-				continue;
-			if (generic_gres_data == gres_state->gres_data) {
-				list_delete_item(iter);
-				continue;
-			}
-
-			if (is_job) {
-				gres_js = gres_state->gres_data;
-				if (!gres_js->cpus_per_gres) {
-					gres_js->cpus_per_gres =
-						cpus_per_gres;
-				}
-				if (!gres_js->mem_per_gres) {
-					gres_js->mem_per_gres =
-						mem_per_gres;
-				}
-			} else {
-				gres_ss = gres_state->gres_data;
-				if (!gres_ss->cpus_per_gres) {
-					gres_ss->cpus_per_gres =
-						cpus_per_gres;
-				}
-				if (!gres_ss->mem_per_gres) {
-					gres_ss->mem_per_gres =
-						mem_per_gres;
-				}
-			}
-		}
-		list_iterator_reset(iter);
+		(void) list_delete_all(gres_list,
+				       _foreach_merge_generic_data,
+				       &merge_generic);
 	}
-
-	list_iterator_destroy(iter);
 
 	return rc;
 }
