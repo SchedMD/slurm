@@ -250,6 +250,7 @@ typedef struct {
 
 typedef struct {
 	uint64_t count;
+	slurm_gres_context_t *gres_ctx;
 	char *type_name;
 } conf_cnt_t;
 
@@ -1996,7 +1997,6 @@ static void _check_conf_mismatch(list_t *slurm_conf_list, list_t *gres_conf_list
  * Match the type of a GRES from slurm.conf to a GRES in the gres.conf list. If
  * a match is found, pop it off the gres.conf list and return it.
  *
- * gres_conf_list - (in) The gres.conf list to search through.
  * gres_context   - (in) Which GRES plugin we are currently working in.
  * type_name      - (in) The type of the slurm.conf GRES record. If null, then
  *			 it's an untyped GRES.
@@ -2004,37 +2004,28 @@ static void _check_conf_mismatch(list_t *slurm_conf_list, list_t *gres_conf_list
  * Returns the first gres.conf record from gres_conf_list with the same type
  * name as the slurm.conf record.
  */
-static gres_slurmd_conf_t *_match_type(list_t *gres_conf_list,
-				       slurm_gres_context_t *gres_ctx,
-				       char *type_name)
+static int _match_type(void *x, void *key)
 {
-	list_itr_t *gres_conf_itr;
-	gres_slurmd_conf_t *gres_slurmd_conf = NULL;
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	conf_cnt_t *conf_cnt = key;
 
-	gres_conf_itr = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = list_next(gres_conf_itr))) {
-		if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
-			continue;
+	if (gres_slurmd_conf->plugin_id != conf_cnt->gres_ctx->plugin_id)
+		return 0;
 
-		/*
-		 * If type_name is NULL we will take the first matching
-		 * gres_slurmd_conf that we find.  This means we also will
-		 * remove the type from the gres_slurmd_conf to match 18.08
-		 * stylings.
-		 */
-		if (!type_name) {
-			xfree(gres_slurmd_conf->type_name);
-			gres_slurmd_conf->config_flags &= ~GRES_CONF_HAS_TYPE;
-		} else if (xstrcasecmp(gres_slurmd_conf->type_name, type_name))
-			continue;
+	/*
+	 * If type_name is NULL we will take the first matching
+	 * gres_slurmd_conf that we find.  This means we also will
+	 * remove the type from the gres_slurmd_conf to match 18.08
+	 * stylings.
+	 */
+	if (!conf_cnt->type_name) {
+		xfree(gres_slurmd_conf->type_name);
+		gres_slurmd_conf->config_flags &= ~GRES_CONF_HAS_TYPE;
+	} else if (xstrcasecmp(gres_slurmd_conf->type_name,
+			       conf_cnt->type_name))
+		return 0;
 
-		/* We found a match, so remove from gres_conf_list and break */
-		list_remove(gres_conf_itr);
-		break;
-	}
-	list_iterator_destroy(gres_conf_itr);
-
-	return gres_slurmd_conf;
+	return 1;
 }
 
 /*
@@ -2115,6 +2106,11 @@ static void _merge_gres2(list_t *gres_conf_list, list_t *new_list, uint64_t coun
 		.name = gres_ctx->gres_name,
 		.type_name = type_name,
 	};
+	conf_cnt_t conf_cnt = {
+		.count = count,
+		.gres_ctx = gres_ctx,
+		.type_name = type_name,
+	};
 
 	/* If slurm.conf count is initially 0, don't waste time on it */
 	if (count == 0)
@@ -2125,7 +2121,8 @@ static void _merge_gres2(list_t *gres_conf_list, list_t *new_list, uint64_t coun
 	 * single slurm.conf GRES line, due to different values of Cores
 	 * and Links. Append them to the list where possible.
 	 */
-	while ((match = _match_type(gres_conf_list, gres_ctx, type_name))) {
+	while ((match = list_remove_first(
+			gres_conf_list, _match_type, &conf_cnt))) {
 		list_append(new_list, match);
 
 		debug3("%s: From gres.conf, using %s:%s:%"PRIu64":%s", __func__,
