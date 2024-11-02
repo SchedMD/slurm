@@ -1929,6 +1929,20 @@ static int _foreach_slurm_conf_mismatch_comp(void *x, void *args)
 	return 0;
 }
 
+int _print_slurm_conf_mismatch(void *x, void *args)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+
+	if (gres_slurmd_conf->count > 0)
+		warning("A line in gres.conf for GRES %s%s%s has %"PRIu64" more configured than expected in slurm.conf. Ignoring extra GRES.",
+			gres_slurmd_conf->name,
+			(gres_slurmd_conf->type_name) ? ":" : "",
+			(gres_slurmd_conf->type_name) ?
+			gres_slurmd_conf->type_name : "",
+			gres_slurmd_conf->count);
+	return 0;
+}
+
 /*
  * Loop through each entry in gres.conf and see if there is a corresponding
  * entry in slurm.conf. If so, see if the counts line up. If there are more
@@ -1941,8 +1955,6 @@ static int _foreach_slurm_conf_mismatch_comp(void *x, void *args)
 static void _check_conf_mismatch(list_t *slurm_conf_list, list_t *gres_conf_list,
 				 slurm_gres_context_t *gres_ctx)
 {
-	list_itr_t *iter;
-	gres_slurmd_conf_t *gres_slurmd_conf;
 	check_conf_t check_conf = {
 		.gres_ctx = gres_ctx,
 	};
@@ -1973,16 +1985,9 @@ static void _check_conf_mismatch(list_t *slurm_conf_list, list_t *gres_conf_list
 	 * Loop through gres_conf_list_tmp to print errors for gres.conf
 	 * records that were not completely accounted for in slurm.conf.
 	 */
-	iter = list_iterator_create(check_conf.gres_conf_list);
-	while ((gres_slurmd_conf = list_next(iter)))
-		if (gres_slurmd_conf->count > 0)
-			warning("A line in gres.conf for GRES %s%s%s has %"PRIu64" more configured than expected in slurm.conf. Ignoring extra GRES.",
-				gres_slurmd_conf->name,
-				(gres_slurmd_conf->type_name) ? ":" : "",
-				(gres_slurmd_conf->type_name) ?
-				gres_slurmd_conf->type_name : "",
-				gres_slurmd_conf->count);
-	list_iterator_destroy(iter);
+	(void) list_for_each(check_conf.gres_conf_list,
+			     _print_slurm_conf_mismatch,
+			     NULL);
 
 	FREE_NULL_LIST(check_conf.gres_conf_list);
 }
