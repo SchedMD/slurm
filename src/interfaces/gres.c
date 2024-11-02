@@ -248,6 +248,11 @@ typedef struct {
 	gres_node_state_t *gres_ns;
 } add_gres_info_t;
 
+typedef struct {
+	uint64_t count;
+	char *type_name;
+} conf_cnt_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -1836,6 +1841,28 @@ static void _validate_gres_conf(list_t *gres_conf_list,
 		gres_ctx->config_flags &= (~GRES_CONF_LOADED);
 }
 
+static int _foreach_compare_conf_counts(void *x, void *args)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	conf_cnt_t *conf_cnt = args;
+
+	/* Note: plugin type filter already applied */
+	/* Check that type is the same */
+	if (gres_slurmd_conf->type_name &&
+	    xstrcasecmp(gres_slurmd_conf->type_name, conf_cnt->type_name))
+		return 0;
+	/* Keep track of counts */
+	if (gres_slurmd_conf->count > conf_cnt->count) {
+		gres_slurmd_conf->count -= conf_cnt->count;
+		/* This slurm.conf GRES specification is now used up */
+		return -1;
+	} else {
+		conf_cnt->count -= gres_slurmd_conf->count;
+		gres_slurmd_conf->count = 0;
+	}
+	return 0;
+}
+
 /*
  * Keep track of which gres.conf lines have a count greater than expected
  * according to the current slurm.conf GRES. Modify the count of throw-away
@@ -1849,26 +1876,16 @@ static void _validate_gres_conf(list_t *gres_conf_list,
 static void _compare_conf_counts(list_t *gres_conf_list_tmp, uint64_t count,
 				 char *type_name)
 {
-	gres_slurmd_conf_t *gres_slurmd_conf;
-	list_itr_t *iter = list_iterator_create(gres_conf_list_tmp);
-	while ((gres_slurmd_conf = list_next(iter))) {
-		/* Note: plugin type filter already applied */
-		/* Check that type is the same */
-		if (gres_slurmd_conf->type_name &&
-		    xstrcasecmp(gres_slurmd_conf->type_name, type_name))
-			continue;
-		/* Keep track of counts */
-		if (gres_slurmd_conf->count > count) {
-			gres_slurmd_conf->count -= count;
-			/* This slurm.conf GRES specification is now used up */
-			list_iterator_destroy(iter);
-			return;
-		} else {
-			count -= gres_slurmd_conf->count;
-			gres_slurmd_conf->count = 0;
-		}
+	conf_cnt_t conf_cnt = {
+		.count = count,
+		.type_name = type_name,
+	};
+
+	(void) list_for_each(gres_conf_list_tmp,
+			     _foreach_compare_conf_counts,
+			     &conf_cnt);
+}
 	}
-	list_iterator_destroy(iter);
 }
 
 /*
