@@ -2052,9 +2052,19 @@ skip_start:
 				    job_ptr->details->req_node_bitmap);
 		}
 		if (fail_by_part && job_ptr->resv_name) {
-			/* do not schedule more jobs in this reservation, but
-			 * other jobs in this partition can be scheduled. */
-
+			/*
+			 * If the reservation is not FLEX or ANY_NODES, other
+			 * jobs in this partition can be scheduled.
+			 *
+			 * Jobs submitted to FLEX or ANY_NODES reservations can
+			 * use nodes outside of the reservation. If the
+			 * reservation is FLEX or ANY_NODES, other jobs in
+			 * this partition submitted to other reservations can
+			 * be scheduled.
+			 *
+			 * In both cases, do not schedule more jobs in this
+			 * reservation.
+			 */
 			if ((job_ptr->resv_ptr->flags & RESERVE_FLAG_FLEX) ||
 			    (job_ptr->resv_ptr->flags & RESERVE_FLAG_ANY_NODES))
 				fail_by_part_non_reserve = true;
