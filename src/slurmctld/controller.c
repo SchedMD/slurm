@@ -943,8 +943,6 @@ int main(int argc, char **argv)
 		 */
 		_slurmctld_background(NULL);
 
-		conmgr_quiesce(__func__);
-
 		controller_fini_scheduling(); /* Stop all scheduling */
 		agent_fini();
 
@@ -2290,6 +2288,7 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (slurmctld_config.shutdown_time) {
+			conmgr_quiesce(__func__);
 			_flush_rpcs();
 
 			if (!report_locks_set()) {
