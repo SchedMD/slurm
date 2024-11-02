@@ -1879,6 +1879,24 @@ static int _foreach_compare_conf_counts(void *x, void *args)
 	return 0;
 }
 
+static int _lite_copy_gres_slurmd_conf(void *x, void *args)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	check_conf_t *check_conf = args;
+	gres_slurmd_conf_t *gres_slurmd_conf_tmp;
+
+	if (gres_slurmd_conf->plugin_id != check_conf->gres_ctx->plugin_id)
+		return 0;
+
+	gres_slurmd_conf_tmp = xmalloc(sizeof(*gres_slurmd_conf_tmp));
+	gres_slurmd_conf_tmp->name = xstrdup(gres_slurmd_conf->name);
+	gres_slurmd_conf_tmp->type_name = xstrdup(gres_slurmd_conf->type_name);
+	gres_slurmd_conf_tmp->count = gres_slurmd_conf->count;
+	list_append(check_conf->gres_conf_list, gres_slurmd_conf_tmp);
+
+	return 0;
+}
+
 static int _foreach_slurm_conf_mismatch_comp(void *x, void *args)
 {
 	gres_state_t *gres_state_node = x;
@@ -1939,20 +1957,9 @@ static void _check_conf_mismatch(list_t *slurm_conf_list, list_t *gres_conf_list
 	 * current plugin.
 	 */
 	check_conf.gres_conf_list = list_create(destroy_gres_slurmd_conf);
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = list_next(iter))) {
-		gres_slurmd_conf_t *gres_slurmd_conf_tmp;
-		if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
-			continue;
-
-		gres_slurmd_conf_tmp = xmalloc(sizeof(*gres_slurmd_conf_tmp));
-		gres_slurmd_conf_tmp->name = xstrdup(gres_slurmd_conf->name);
-		gres_slurmd_conf_tmp->type_name =
-			xstrdup(gres_slurmd_conf->type_name);
-		gres_slurmd_conf_tmp->count = gres_slurmd_conf->count;
-		list_append(check_conf.gres_conf_list, gres_slurmd_conf_tmp);
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(gres_conf_list,
+			     _lite_copy_gres_slurmd_conf,
+			     &check_conf);
 
 	/*
 	 * Loop through the slurm.conf list and see if there are more gres.conf
