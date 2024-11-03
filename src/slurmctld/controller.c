@@ -2555,7 +2555,7 @@ extern void save_all_state(void)
 
 	select_g_state_save(slurm_conf.state_save_location);
 	dump_assoc_mgr_state();
-	fed_mgr_state_save(slurm_conf.state_save_location);
+	fed_mgr_state_save();
 }
 
 /* make sure the assoc_mgr is up and running with the most current state */
