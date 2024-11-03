@@ -59,6 +59,7 @@
 #include "src/common/port_mgr.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/state_save.h"
 #include "src/common/strnatcmp.h"
 #include "src/common/xstring.h"
 
@@ -2627,9 +2628,8 @@ static void _acct_restore_active_jobs(void)
 
 extern int dump_config_state_lite(void)
 {
-	static int high_buffer_size = (1024 * 1024);
-	int error_code = 0, log_fd;
-	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	static uint32_t high_buffer_size = (1024 * 1024);
+	int error_code = 0;
 	buf_t *buffer = init_buf(high_buffer_size);
 
 	DEF_TIMERS;
@@ -2641,49 +2641,8 @@ extern int dump_config_state_lite(void)
 	packstr(slurm_conf.accounting_storage_type, buffer);
 
 	/* write the buffer to file */
-	reg_file = xstrdup_printf("%s/last_config_lite",
-	                          slurm_conf.state_save_location);
-	old_file = xstrdup_printf("%s.old", reg_file);
-	new_file = xstrdup_printf("%s.new", reg_file);
-
-	log_fd = creat(new_file, 0600);
-	if (log_fd < 0) {
-		error("Can't save state, create file %s error %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-		fsync(log_fd);
-		close(log_fd);
-	}
-	if (error_code)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(reg_file, old_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
+	error_code = save_buf_to_state("last_config_lite", buffer,
+				       &high_buffer_size);
 
 	FREE_NULL_BUFFER(buffer);
 

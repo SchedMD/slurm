@@ -41,6 +41,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/fd.h"
+#include "src/common/state_save.h"
 #include "src/common/strlcpy.h"
 
 #include "src/slurmctld/slurmctld.h"
@@ -142,12 +143,9 @@ extern int fini(void)
  */
 extern int switch_p_save(void)
 {
-	int state_fd;
 	uint32_t actual_job_vnis, actual_job_hwcoll;
+	int error_code = 0;
 	buf_t *state_buf;
-	char *new_state_file, *state_file, *buf;
-	size_t buflen;
-	ssize_t nwrote;
 
 	if (!running_in_slurmctld())
 		return SLURM_SUCCESS;
@@ -192,58 +190,10 @@ extern int switch_p_save(void)
 		}
 	}
 
-	/* Get file names for the current and new state files */
-	new_state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(new_state_file, "/" SLINGSHOT_STATE_FILE_NEW);
-	state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(state_file, "/" SLINGSHOT_STATE_FILE);
-	debug("%s: packing %u/%u job VNIs",
-	       state_file, actual_job_vnis, slingshot_state.num_job_vnis);
+	error_code = save_buf_to_state(SLINGSHOT_STATE_FILE, state_buf, NULL);
 
-	/* Write buffer to new state file */
-	state_fd = creat(new_state_file, 0600);
-	if (state_fd == -1) {
-		error("Couldn't create %s for writing: %m", new_state_file);
-		goto error;
-	}
-
-	buflen = get_buf_offset(state_buf);
-	buf = get_buf_data(state_buf);
-	nwrote = write(state_fd, buf, buflen);
-	if (nwrote == -1) {
-		error("Couldn't write to %s: %m", new_state_file);
-		goto error;
-	} else if (nwrote < buflen) {
-		error("Wrote %zu of %zu bytes to %s", nwrote, buflen,
-			new_state_file);
-		goto error;
-	}
-
-	if (fsync_and_close(state_fd, "switch"))
-		goto error;
-	state_fd = -1;
-
-	/* Overwrite the current state file with rename */
-	if (rename(new_state_file, state_file) == -1) {
-		error("Couldn't rename %s to %s: %m", new_state_file,
-			state_file);
-		goto error;
-	}
-
-	debug("State file %s saved", state_file);
 	FREE_NULL_BUFFER(state_buf);
-	xfree(new_state_file);
-	xfree(state_file);
-	return SLURM_SUCCESS;
-
-error:
-	if (state_fd)
-		close(state_fd);
-	FREE_NULL_BUFFER(state_buf);
-	unlink(new_state_file);
-	xfree(new_state_file);
-	xfree(state_file);
-	return SLURM_ERROR;
+	return error_code;
 }
 
 /*

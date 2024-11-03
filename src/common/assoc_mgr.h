@@ -98,7 +98,6 @@ typedef struct {
 	void (*remove_assoc_notify) (slurmdb_assoc_rec_t *rec);
 	void (*remove_license_notify) (slurmdb_res_rec_t *rec);
 	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
-	char **state_save_location;
 	void (*sync_license_notify) (list_t *clus_res_list);
 	void (*update_assoc_notify) (slurmdb_assoc_rec_t *rec);
 	void (*update_cluster_tres) (void);

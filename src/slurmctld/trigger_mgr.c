@@ -58,6 +58,7 @@
 #include "src/common/list.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/state_save.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -811,15 +812,11 @@ unpack_error:
 extern int trigger_state_save(void)
 {
 	/* Save high-water mark to avoid buffer growth with copies */
-	static int high_buffer_size = (1024 * 1024);
-	int error_code = 0, log_fd;
-	char *old_file, *new_file, *reg_file;
+	static uint32_t high_buffer_size = (1024 * 1024);
+	int error_code = 0;
 	buf_t *buffer = init_buf(high_buffer_size);
 	list_itr_t *trig_iter;
 	trig_mgr_info_t *trig_in;
-	/* Locks: Read config */
-	slurmctld_lock_t config_read_lock =
-		{ READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	/* write header: version, time */
 	packstr(TRIGGER_STATE_VERSION, buffer);
@@ -837,60 +834,9 @@ extern int trigger_state_save(void)
 	list_iterator_destroy(trig_iter);
 	slurm_mutex_unlock(&trigger_mutex);
 
-	/* write the buffer to file */
-	lock_slurmctld(config_read_lock);
-	old_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(old_file, "/trigger_state.old");
-	reg_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(reg_file, "/trigger_state");
-	new_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(new_file, "/trigger_state.new");
-	unlock_slurmctld(config_read_lock);
+	error_code = save_buf_to_state("trigger_state", buffer,
+				       &high_buffer_size);
 
-	lock_state_files();
-	log_fd = creat(new_file, 0600);
-	if (log_fd < 0) {
-		error("Can't save state, create file %s error %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-
-		rc = fsync_and_close(log_fd, "trigger");
-		if (rc && !error_code)
-			error_code = rc;
-	}
-	if (error_code) {
-		(void) unlink(new_file);
-	} else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(reg_file, old_file)) {
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		}
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file)) {
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		}
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
-	unlock_state_files();
 	FREE_NULL_BUFFER(buffer);
 	return error_code;
 }

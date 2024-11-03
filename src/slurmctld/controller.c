@@ -2555,7 +2555,7 @@ extern void save_all_state(void)
 
 	select_g_state_save(slurm_conf.state_save_location);
 	dump_assoc_mgr_state();
-	fed_mgr_state_save(slurm_conf.state_save_location);
+	fed_mgr_state_save();
 }
 
 /* make sure the assoc_mgr is up and running with the most current state */
@@ -2586,7 +2586,6 @@ extern void ctld_assoc_mgr_init(void)
 				     ASSOC_MGR_CACHE_RES   |
 				     ASSOC_MGR_CACHE_TRES  |
 				     ASSOC_MGR_CACHE_WCKEY;
-	assoc_init_arg.state_save_location = &slurm_conf.state_save_location;
 	/* Don't save state but blow away old lists if they exist. */
 	assoc_mgr_fini(0);
 

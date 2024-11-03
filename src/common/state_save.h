@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  jobcomp_common.h - common functions for jobcomp plugins
+ *  state_save.h - common state save and load handling
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -33,12 +33,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_JOBCOMP_COMMON_H
-#define _HAVE_JOBCOMP_COMMON_H
+#ifndef _COMMON_STATE_SAVE_H
+#define _COMMON_STATE_SAVE_H
 
-#include "src/slurmctld/slurmctld.h"
+#include "src/common/pack.h"
 
-extern buf_t *jobcomp_common_load_state_file(char *state_file);
-extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr);
+/* mutex used for saving state of slurmctld */
+extern void lock_state_files(void);
+extern void unlock_state_files(void);
+
+extern int save_buf_to_state(const char *target_file, buf_t *buf,
+			     uint32_t *high_buffer_size);
 
 #endif

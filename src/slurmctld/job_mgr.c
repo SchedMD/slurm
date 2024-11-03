@@ -70,6 +70,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/port_mgr.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/state_save.h"
 #include "src/common/timers.h"
 #include "src/common/track_script.h"
 #include "src/common/tres_bind.h"
@@ -935,9 +936,9 @@ static int _get_qos_info(
 int dump_all_job_state(void)
 {
 	/* Save high-water mark to avoid buffer growth with copies */
-	static int high_buffer_size = (1024 * 1024);
-	int error_code = SLURM_SUCCESS, log_fd;
-	char *old_file, *new_file, *reg_file;
+	static uint32_t high_buffer_size = (1024 * 1024);
+	int error_code = SLURM_SUCCESS;
+	char *reg_file;
 	struct stat stat_buf;
 	/* Locks: Read config and job */
 	slurmctld_lock_t job_read_lock =
@@ -987,8 +988,6 @@ int dump_all_job_state(void)
 	/* write individual job records */
 	lock_slurmctld(job_read_lock);
 
-	verify_job_state_cache_synced();
-
 	pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
 
 	jobs_start = get_buf_offset(buffer);
@@ -1015,14 +1014,10 @@ int dump_all_job_state(void)
 			      ave_job_size);
 	}
 
-	/* write the buffer to file */
-	old_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(old_file, "/job_state.old");
-	reg_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(reg_file, "/job_state");
-	new_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(new_file, "/job_state.new");
 	unlock_slurmctld(job_read_lock);
+
+	reg_file = xstrdup_printf("%s/job_state",
+	                          slurm_conf.state_save_location);
 
 	if (stat(reg_file, &stat_buf) == 0) {
 		static time_t last_mtime = (time_t) 0;
@@ -1039,53 +1034,11 @@ int dump_all_job_state(void)
 		last_mtime = time(NULL);
 	}
 
-	lock_state_files();
-	log_fd = open(new_file, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, 0600);
-	if (log_fd < 0) {
-		error("Can't save state, create file %s error %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, amount, rc;
-		char *data;
-		uint32_t nwrite = get_buf_offset(buffer);
-
-		data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-
-		rc = fsync_and_close(log_fd, "job");
-		if (rc && !error_code)
-			error_code = rc;
-	}
-	if (error_code)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(reg_file, old_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		(void) unlink(new_file);
+	error_code = save_buf_to_state("job_state", buffer, &high_buffer_size);
+	if (!error_code)
 		last_file_write_time = now;
-	}
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
-	unlock_state_files();
 
+	xfree(reg_file);
 	FREE_NULL_BUFFER(buffer);
 	END_TIMER2(__func__);
 	return error_code;

@@ -85,54 +85,6 @@ extern buf_t *jobcomp_common_load_state_file(char *state_file)
 	return buf;
 }
 
-extern void jobcomp_common_write_state_file(buf_t *buffer, char *state_file)
-{
-	int fd;
-	bool do_close = true;
-	char *reg_file = NULL, *new_file = NULL, *old_file = NULL;
-	char *tmp_str = NULL;
-
-	xstrfmtcat(reg_file, "%s/%s", slurm_conf.state_save_location,
-		   state_file);
-	xstrfmtcat(old_file, "%s.old", reg_file);
-	xstrfmtcat(new_file, "%s.new", reg_file);
-
-	if ((fd = creat(new_file, 0600)) < 0) {
-		xstrfmtcat(tmp_str, "creating");
-		goto rwfail;
-	}
-
-	xstrfmtcat(tmp_str, "writing");
-	safe_write(fd, get_buf_data(buffer), get_buf_offset(buffer));
-	xfree(tmp_str);
-
-	do_close = false;
-	if (fsync_and_close(fd, state_file))
-		goto rwfail;
-
-	(void) unlink(old_file);
-	if (link(reg_file, old_file))
-		debug2("unable to create link for %s -> %s: %m",
-		       reg_file, old_file);
-
-	(void) unlink(reg_file);
-	if (link(new_file, reg_file))
-		debug2("unable to create link for %s -> %s: %m",
-		       new_file, reg_file);
-
-rwfail:
-	if (tmp_str)
-		error("Can't save state, error %s file %s: %m",
-		      tmp_str, new_file);
-	if (do_close && fsync_and_close(fd, state_file))
-		;
-	(void) unlink(new_file);
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
-	xfree(tmp_str);
-}
-
 extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr) {
 	char start_str[32], end_str[32], time_str[32];
 	char *usr_str = NULL, *grp_str = NULL, *state_string = NULL;

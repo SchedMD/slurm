@@ -66,6 +66,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/run_command.h"
 #include "src/common/slurm_time.h"
+#include "src/common/state_save.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -4157,8 +4158,7 @@ extern int dump_all_resv_state(void)
 {
 	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
-	int error_code = 0, log_fd;
-	char *old_file, *new_file, *reg_file;
+	int error_code = 0;
 	/* Locks: Read node */
 	slurmctld_lock_t resv_read_lock = {
 		.conf = READ_LOCK,
@@ -4182,61 +4182,13 @@ extern int dump_all_resv_state(void)
 	while ((resv_ptr = list_next(iter)))
 		_pack_resv(resv_ptr, buffer, true, SLURM_PROTOCOL_VERSION);
 	list_iterator_destroy(iter);
-
-	old_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(old_file, "/resv_state.old");
-	reg_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(reg_file, "/resv_state");
-	new_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(new_file, "/resv_state.new");
 	unlock_slurmctld(resv_read_lock);
 
-	/* write the buffer to file */
-	lock_state_files();
-	log_fd = creat(new_file, 0600);
-	if (log_fd < 0) {
-		error("Can't save state, error creating file %s, %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
-		char *data = (char *)get_buf_data(buffer);
-
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-		rc = fsync_and_close(log_fd, "reservation");
-		if (rc && !error_code)
-			error_code = rc;
-	}
-	if (error_code)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(reg_file, old_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
-	unlock_state_files();
+	error_code = save_buf_to_state("resv_state", buffer, NULL);
 
 	FREE_NULL_BUFFER(buffer);
 	END_TIMER2(__func__);
-	return 0;
+	return error_code;
 }
 
 /* Validate one reservation record, return true if good */

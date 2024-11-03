@@ -51,6 +51,7 @@
 #include "src/common/fd.h"
 #include "src/common/run_command.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/state_save.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/serializer.h"
@@ -951,12 +952,11 @@ static int _run_lua_script(run_lua_args_t *args)
 static void _save_bb_state(void)
 {
 	static time_t last_save_time = 0;
-	static int high_buffer_size = 16 * 1024;
+	static uint32_t high_buffer_size = 16 * 1024;
 	time_t save_time = time(NULL);
 	bb_alloc_t *bb_alloc;
 	uint32_t rec_count = 0;
 	buf_t *buffer;
-	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
 	int i, count_offset, offset;
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 
@@ -996,20 +996,9 @@ static void _save_bb_state(void)
 		set_buf_offset(buffer, offset);
 	}
 
-	xstrfmtcat(old_file, "%s/%s", slurm_conf.state_save_location,
-	           "burst_buffer_lua_state.old");
-	xstrfmtcat(reg_file, "%s/%s", slurm_conf.state_save_location,
-	           "burst_buffer_lua_state");
-	xstrfmtcat(new_file, "%s/%s", slurm_conf.state_save_location,
-	           "burst_buffer_lua_state.new");
+	if (!save_buf_to_state("burst_buffer_lua_state", buffer, NULL))
+		last_save_time = save_time;
 
-	bb_write_state_file(old_file, reg_file, new_file, "burst_buffer_lua",
-			    buffer, high_buffer_size, save_time,
-			    &last_save_time);
-
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
 	FREE_NULL_BUFFER(buffer);
 }
 
