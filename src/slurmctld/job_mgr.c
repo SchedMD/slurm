@@ -988,8 +988,6 @@ int dump_all_job_state(void)
 	/* write individual job records */
 	lock_slurmctld(job_read_lock);
 
-	verify_job_state_cache_synced();
-
 	pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
 
 	jobs_start = get_buf_offset(buffer);

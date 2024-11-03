@@ -1636,17 +1636,6 @@ extern void rehash_jobs(void);
  */
 extern void setup_job_state_hash(int new_hash_table_size);
 
-#ifndef NDEBUG
-/*
- * Walk entire job state cache and verify every job matchs job_ptr states
- * WARNING: slow and expensive to run
- * WARNING: caller must hold atleast job read lock
- */
-extern void verify_job_state_cache_synced(void);
-#else
-#define verify_job_state_cache_synced() {}
-#endif
-
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);
 

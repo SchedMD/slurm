@@ -259,11 +259,6 @@ static void _log_job_state_change(const job_record_t *job_ptr,
 	xfree(after_str);
 }
 
-extern void verify_job_state_cache_synced(void)
-{
-	/* no-op */
-}
-
 #else /* NDEBUG */
 
 /*
