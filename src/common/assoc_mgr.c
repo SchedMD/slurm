@@ -5742,9 +5742,6 @@ extern int dump_assoc_mgr_state(void)
 				   .wckey = READ_LOCK};
 	DEF_TIMERS;
 
-	xassert(init_setup.state_save_location &&
-		*init_setup.state_save_location);
-
 	START_TIMER;
 
 	/* now make a file for last_tres */
@@ -5889,11 +5886,8 @@ extern int load_assoc_usage(void)
 	if (!assoc_mgr_assoc_list)
 		return SLURM_SUCCESS;
 
-	xassert(init_setup.state_save_location &&
-		*init_setup.state_save_location);
-
 	/* read the file */
-	state_file = xstrdup(*init_setup.state_save_location);
+	state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(state_file, "/assoc_usage");	/* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
@@ -6004,11 +5998,8 @@ extern int load_qos_usage(void)
 	if (!assoc_mgr_qos_list)
 		return SLURM_SUCCESS;
 
-	xassert(init_setup.state_save_location &&
-		*init_setup.state_save_location);
-
 	/* read the file */
-	state_file = xstrdup(*init_setup.state_save_location);
+	state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(state_file, "/qos_usage");	/* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
@@ -6095,12 +6086,9 @@ extern int load_assoc_mgr_last_tres(void)
 	dbd_list_msg_t *msg = NULL;
 	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK, .qos = WRITE_LOCK };
 
-	xassert(init_setup.state_save_location &&
-		*init_setup.state_save_location);
-
 	/* read the file Always ignore .old file */
 	state_file = xstrdup_printf("%s/last_tres",
-				    *init_setup.state_save_location);
+				    slurm_conf.state_save_location);
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
 
@@ -6171,11 +6159,8 @@ extern int load_assoc_mgr_state(void)
 				   .tres = WRITE_LOCK, .user = WRITE_LOCK,
 				   .wckey = WRITE_LOCK };
 
-	xassert(init_setup.state_save_location &&
-		*init_setup.state_save_location);
-
 	/* read the file */
-	state_file = xstrdup(*init_setup.state_save_location);
+	state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(state_file, "/assoc_mgr_state"); /* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
