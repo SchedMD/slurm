@@ -359,7 +359,7 @@ part_record_t *create_ctld_part_record(const char *name)
 int dump_all_part_state(void)
 {
 	/* Save high-water mark to avoid buffer growth with copies */
-	static int high_buffer_size = BUF_SIZE;
+	static uint32_t high_buffer_size = BUF_SIZE;
 	int error_code = 0, log_fd;
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read partition */

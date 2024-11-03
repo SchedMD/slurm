@@ -935,7 +935,7 @@ static int _get_qos_info(
 int dump_all_job_state(void)
 {
 	/* Save high-water mark to avoid buffer growth with copies */
-	static int high_buffer_size = (1024 * 1024);
+	static uint32_t high_buffer_size = (1024 * 1024);
 	int error_code = SLURM_SUCCESS, log_fd;
 	char *old_file, *new_file, *reg_file;
 	struct stat stat_buf;

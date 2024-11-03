@@ -5731,7 +5731,7 @@ extern void assoc_mgr_update_qos_usage(slurmdb_qos_rec_t *qos,
 
 extern int dump_assoc_mgr_state(void)
 {
-	static int high_buffer_size = (1024 * 1024);
+	static uint32_t high_buffer_size = (1024 * 1024);
 	int error_code = 0, log_fd;
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL,
 		*tmp_char = NULL;

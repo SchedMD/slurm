@@ -222,7 +222,7 @@ static int _save_state(void)
 {
 	int rc = SLURM_SUCCESS;
 	list_itr_t *iter;
-	static int high_buffer_size = (1024 * 1024);
+	static uint32_t high_buffer_size = (1024 * 1024);
 	buf_t *buffer = init_buf(high_buffer_size);
 	uint32_t job_cnt;
 	struct job_node *jnode;

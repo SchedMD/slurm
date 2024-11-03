@@ -190,7 +190,7 @@ unpack_error:
 int dump_all_node_state ( void )
 {
 	/* Save high-water mark to avoid buffer growth with copies */
-	static int high_buffer_size = (1024 * 1024);
+	static uint32_t high_buffer_size = (1024 * 1024);
 	int error_code = 0, inx, log_fd;
 	char *old_file, *new_file, *reg_file;
 	node_record_t *node_ptr;

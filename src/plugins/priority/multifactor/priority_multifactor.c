@@ -333,7 +333,7 @@ unpack_error:
 static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 {
 	/* Save high-water mark to avoid buffer growth with copies */
-	static int high_buffer_size = BUF_SIZE;
+	static uint32_t high_buffer_size = BUF_SIZE;
 	int error_code = SLURM_SUCCESS;
 	int state_fd;
 	char *old_file, *new_file, *state_file;

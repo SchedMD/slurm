@@ -951,7 +951,7 @@ static int _run_lua_script(run_lua_args_t *args)
 static void _save_bb_state(void)
 {
 	static time_t last_save_time = 0;
-	static int high_buffer_size = 16 * 1024;
+	static uint32_t high_buffer_size = 16 * 1024;
 	time_t save_time = time(NULL);
 	bb_alloc_t *bb_alloc;
 	uint32_t rec_count = 0;
