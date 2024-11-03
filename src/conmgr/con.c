@@ -410,7 +410,22 @@ extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 		 conmgr_con_type_string(type), get_buf_offset(con->in),
 		 list_count(con->out));
 
+	/* Always set TCP_NODELAY for Slurm RPC connections */
+	if (con->type == CON_TYPE_RPC)
+		con_set_flag(con, FLAG_TCP_NODELAY);
+
 	con->type = type;
+
+	if (con_flag(con, FLAG_IS_SOCKET) && con_flag(con, FLAG_TCP_NODELAY) &&
+	    (con->output_fd >= 0)) {
+		int rc;
+
+		if ((rc = net_set_nodelay(con->output_fd, true, NULL))) {
+			log_flag(CONMGR, "%s: [%s] unable to set TCP_NODELAY: %s",
+				 __func__, con->name, slurm_strerror(rc));
+			return rc;
+		}
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -495,13 +510,6 @@ extern int add_connection(conmgr_con_type_t type,
 			net_set_keep_alive(output_fd);
 	}
 
-	if ((flags & FLAG_TCP_NODELAY) && is_socket && has_out) {
-		int rc;
-
-		if ((rc = net_set_nodelay(output_fd, true, NULL)))
-			return rc;
-	}
-
 	con = xmalloc(sizeof(*con));
 	*con = (conmgr_fd_t){
 		.magic = MAGIC_CON_MGR_FD,
@@ -515,7 +523,7 @@ extern int add_connection(conmgr_con_type_t type,
 		.work = list_create(NULL),
 		.write_complete_work = list_create(NULL),
 		.new_arg = arg,
-		.type = type,
+		.type = CON_TYPE_INVALID,
 		.polling_input_fd = PCTL_TYPE_NONE,
 		.polling_output_fd = PCTL_TYPE_NONE,
 		/* Set flags not related to connection state tracking */
@@ -568,7 +576,7 @@ extern int add_connection(conmgr_con_type_t type,
 
 	_set_connection_name(con, &in_stat, &out_stat);
 
-	_check_con_type(con, type);
+	fd_change_mode(con, type);
 
 	if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT))
 		con->last_read = timespec_now();
