@@ -36,8 +36,13 @@
 #ifndef _COMMON_STATE_SAVE_H
 #define _COMMON_STATE_SAVE_H
 
+#include "src/common/pack.h"
+
 /* mutex used for saving state of slurmctld */
 extern void lock_state_files(void);
 extern void unlock_state_files(void);
+
+extern int save_buf_to_state(const char *target_file, buf_t *buf,
+			     uint32_t *high_buffer_size);
 
 #endif
