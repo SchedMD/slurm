@@ -72,6 +72,7 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/read_config.h"
+#include "src/slurmctld/state_save.h"
 
 #include "fair_tree.h"
 
@@ -336,8 +337,6 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 	/* Save high-water mark to avoid buffer growth with copies */
 	static uint32_t high_buffer_size = BUF_SIZE;
 	int error_code = SLURM_SUCCESS;
-	int state_fd;
-	char *old_file, *new_file, *state_file;
 	buf_t *buffer;
 
 	if (!xstrcmp(slurm_conf.state_save_location, "/dev/null")) {
@@ -350,56 +349,9 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 	pack_time(last_ran, buffer);
 	pack_time(last_reset, buffer);
 
-	/* read the file */
-	old_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(old_file, "/priority_last_decay_ran.old");
-	state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(state_file, "/priority_last_decay_ran");
-	new_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(new_file, "/priority_last_decay_ran.new");
+	error_code = save_buf_to_state("priority_last_decay_ran", buffer,
+				       &high_buffer_size);
 
-	lock_state_files();
-	state_fd = creat(new_file, 0600);
-	if (state_fd < 0) {
-		error("Can't save decay state, create file %s error %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(state_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-		fsync(state_fd);
-		close(state_fd);
-	}
-
-	if (error_code != SLURM_SUCCESS)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(state_file, old_file))
-			debug3("unable to create link for %s -> %s: %m",
-			       state_file, old_file);
-		(void) unlink(state_file);
-		if (link(new_file, state_file))
-			debug3("unable to create link for %s -> %s: %m",
-			       new_file, state_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(state_file);
-	xfree(new_file);
-
-	unlock_state_files();
 	debug4("done writing time %ld", (long)last_ran);
 	FREE_NULL_BUFFER(buffer);
 
