@@ -679,56 +679,10 @@ extern int dump_all_front_end_state(void)
 		_dump_front_end_state(front_end_ptr, buffer);
 	}
 
-	old_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat (old_file, "/front_end_state.old");
-	reg_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat (reg_file, "/front_end_state");
-	new_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat (new_file, "/front_end_state.new");
 	unlock_slurmctld (node_read_lock);
 
-	/* write the buffer to file */
-	lock_state_files();
-	log_fd = creat (new_file, 0600);
-	if (log_fd < 0) {
-		error ("Can't save state, error creating file %s %m", new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-
-		rc = fsync_and_close(log_fd, "front_end");
-		if (rc && !error_code)
-			error_code = rc;
-	}
-	if (error_code)
-		(void) unlink (new_file);
-	else {	/* file shuffle */
-		(void) unlink (old_file);
-		if (link(reg_file, old_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		(void) unlink (reg_file);
-		if (link(new_file, reg_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		(void) unlink (new_file);
-	}
-	xfree (old_file);
-	xfree (reg_file);
-	xfree (new_file);
-	unlock_state_files ();
+	error_code = save_buf_to_state("front_end_state", buffer,
+					&high_buffer_size);
 
 	FREE_NULL_BUFFER(buffer);
 	END_TIMER2(__func__);
