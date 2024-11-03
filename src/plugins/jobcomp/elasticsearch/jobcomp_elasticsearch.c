@@ -57,6 +57,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdb_defs.h"
+#include "src/common/state_save.h"
 #include "src/common/xstring.h"
 #include "src/curl/slurm_curl.h"
 #include "src/interfaces/serializer.h"
@@ -236,7 +237,7 @@ static int _save_state(void)
 	list_iterator_destroy(iter);
 
 	slurm_mutex_lock(&save_lock);
-	jobcomp_common_write_state_file(buffer, save_state_file);
+	rc = save_buf_to_state(save_state_file, buffer, NULL);
 	slurm_mutex_unlock(&save_lock);
 
 	FREE_NULL_BUFFER(buffer);
