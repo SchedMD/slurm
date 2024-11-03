@@ -59,6 +59,7 @@
 #include "src/common/part_record.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/state_save.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 

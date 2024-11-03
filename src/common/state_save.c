@@ -32,3 +32,23 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include <pthread.h>
+
+#include "src/common/macros.h"
+#include "src/common/state_save.h"
+
+strong_alias(lock_state_files, slurm_lock_state_files);
+strong_alias(unlock_state_files, slurm_unlock_state_files);
+
+static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+extern void lock_state_files(void)
+{
+	slurm_mutex_lock(&state_mutex);
+}
+
+extern void unlock_state_files(void)
+{
+	slurm_mutex_unlock(&state_mutex);
+}

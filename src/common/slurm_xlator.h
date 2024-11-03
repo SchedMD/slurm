@@ -357,6 +357,10 @@
  * None exported today.
  * The header file used only for #define values. */
 
+/* state_save.[ch] functions */
+#define lock_state_files	slurm_lock_state_files
+#define unlock_state_files	slurm_unlock_state_files
+
 /* strlcpy.[ch] functions */
 #ifndef HAVE_STRLCPY
 #define	strlcpy			slurm_strlcpy

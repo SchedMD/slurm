@@ -45,8 +45,6 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 static pthread_rwlock_t slurmctld_locks[5] = {
 	PTHREAD_RWLOCK_INITIALIZER,
 	PTHREAD_RWLOCK_INITIALIZER,
@@ -202,16 +200,4 @@ int report_locks_set(void)
 		      conf, job, node, part, fed);
 	}
 	return lock_count;
-}
-
-
-/* un/lock semaphore used for saving state of slurmctld */
-extern void lock_state_files(void)
-{
-	slurm_mutex_lock(&state_mutex);
-}
-
-extern void unlock_state_files(void)
-{
-	slurm_mutex_unlock(&state_mutex);
 }

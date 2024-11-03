@@ -51,6 +51,7 @@
 #include "src/common/node_conf.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/state_save.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/front_end.h"

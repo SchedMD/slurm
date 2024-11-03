@@ -130,8 +130,4 @@ extern void unlock_slurmctld (slurmctld_lock_t lock_levels);
 
 extern int report_locks_set(void);
 
-/* un/lock semaphore used for saving state of slurmctld */
-extern void lock_state_files ( void );
-extern void unlock_state_files ( void );
-
 #endif

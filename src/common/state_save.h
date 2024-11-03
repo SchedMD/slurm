@@ -36,4 +36,8 @@
 #ifndef _COMMON_STATE_SAVE_H
 #define _COMMON_STATE_SAVE_H
 
+/* mutex used for saving state of slurmctld */
+extern void lock_state_files(void);
+extern void unlock_state_files(void);
+
 #endif

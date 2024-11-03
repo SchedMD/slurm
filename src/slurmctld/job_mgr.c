@@ -70,6 +70,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/port_mgr.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/state_save.h"
 #include "src/common/timers.h"
 #include "src/common/track_script.h"
 #include "src/common/tres_bind.h"

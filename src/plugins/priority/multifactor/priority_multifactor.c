@@ -61,6 +61,7 @@
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_time.h"
+#include "src/common/state_save.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/gres.h"
