@@ -1018,8 +1018,8 @@ int dump_all_job_state(void)
 
 	unlock_slurmctld(job_read_lock);
 
-	reg_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(reg_file, "/job_state");
+	reg_file = xstrdup_printf("%s/job_state",
+	                          slurm_conf.state_save_location);
 
 	if (stat(reg_file, &stat_buf) == 0) {
 		static time_t last_mtime = (time_t) 0;
