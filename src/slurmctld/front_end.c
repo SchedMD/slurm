@@ -655,8 +655,7 @@ extern int dump_all_front_end_state(void)
 #ifdef HAVE_FRONT_END
 	/* Save high-water mark to avoid buffer growth with copies */
 	static uint32_t high_buffer_size = (1024 * 1024);
-	int error_code = 0, i, log_fd;
-	char *old_file, *new_file, *reg_file;
+	int error_code = 0, i;
 	front_end_record_t *front_end_ptr;
 	/* Locks: Read config and node */
 	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK,
