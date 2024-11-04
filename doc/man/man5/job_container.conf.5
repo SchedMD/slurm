@@ -1,4 +1,4 @@
-.TH "job_container.conf" "5" "Slurm Configuration File" "October 2024" "Slurm Configuration File"
+.TH "job_container.conf" "5" "Slurm Configuration File" "November 2024" "Slurm Configuration File"
 
 .SH "NAME"
 job_container.conf \- Slurm configuration file for job_container/tmpfs plugin
@@ -68,6 +68,34 @@ shared filesystem, you can use "%h" or "%n" to create node-unique directories.
 \fBNOTE\fR: The \fBBasePath\fR parameter cannot be set to any of
 the paths specified by \fBDirs\fR. Using these directories will cause conflicts
 when trying to mount and unmount the private directories for the job.
+.IP
+
+.TP
+\fBCloneNSScript\fR
+Specify fully qualified pathname of an optional initialization script. This
+script is run fter the namespace construction of a job. This script will be
+provided the SLURM_NS environment variable to allow the script to join the
+newly created namespate and do further setup work. This parameter is optional.
+.IP
+
+.TP
+\fBCloneNSScript_Wait\fR
+The number of seconds to wait for the CloneNSScript to complete before
+considering the script failed. The default value is 10 seconds.
+.IP
+
+.TP
+\fBCloneNSEpilog\fR
+Specify fully qualified pathname of an optional epilog script. This script runs
+just before the namespace is torn down. This script will be provided the
+SLURM_NS environment variable to allow the script to join the soon to be
+removed namespate and do any cleanup work. This parameter is optional.
+.IP
+
+.TP
+\fBCloneNSEpilog_Wait\fR
+The number of seconds to wait for the CloneNSEpilog to complete before
+considering the script failed. The default value is 10 seconds.
 .IP
 
 .TP
