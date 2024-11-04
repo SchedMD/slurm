@@ -277,6 +277,7 @@ typedef struct {
 	gres_job_state_validate_t *gres_js_val;
 	bool have_gres_shared;
 	bool have_gres_sharing;
+	bool is_job;
 	bool overlap_merge;
 	int over_count;
 	overlap_check_t *over_list;
@@ -6255,6 +6256,20 @@ static int _merge_generic_data(
 	return rc;
 }
 
+static int _foreach_set_over_list(void *x, void *args)
+{
+	gres_state_t *gres_state = x;
+	job_validate_t *job_validate = args;
+
+	if (_set_over_list(gres_state,
+			   job_validate->over_list,
+			   &job_validate->over_count,
+			   job_validate->is_job))
+		job_validate->overlap_merge = true;
+
+	return 0;
+}
+
 static int _foreach_job_state_validate(void *x, void *args)
 {
 	gres_state_t *gres_state_job = x;
@@ -9031,26 +9046,22 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 		FREE_NULL_LIST(new_step_list);
 	} else {
 		if (rc == SLURM_SUCCESS) {
-			bool overlap_merge = false;
-			int over_count = 0;
-			gres_state_t *gres_state;
-			overlap_check_t *over_list =
-				xcalloc(list_count(new_step_list),
-					sizeof(overlap_check_t));
-			list_itr_t *iter = list_iterator_create(new_step_list);
-			while ((gres_state = list_next(iter))) {
-				if (_set_over_list(gres_state, over_list,
-						   &over_count, 0))
-					overlap_merge = true;
+			job_validate_t job_validate = {
+				.over_list = xcalloc(list_count(new_step_list),
+						     sizeof(overlap_check_t)),
+			};
 
-			}
-			list_iterator_destroy(iter);
-			if (overlap_merge)
+			(void) list_for_each(new_step_list,
+					     _foreach_set_over_list,
+					     &job_validate);
+
+			if (job_validate.overlap_merge)
 				rc = _merge_generic_data(new_step_list,
-							 over_list,
+							 job_validate.over_list,
+							 job_validate.
 							 over_count,
 							 0);
-			xfree(over_list);
+			xfree(job_validate.over_list);
 		}
 		if (rc == SLURM_SUCCESS)
 			*step_gres_list = new_step_list;
