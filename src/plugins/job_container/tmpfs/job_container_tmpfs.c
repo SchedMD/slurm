@@ -361,7 +361,8 @@ static int _clean_job_basepath(uint32_t job_id)
 
 static char **_setup_script_env(uint32_t job_id,
 				stepd_step_rec_t *step,
-				char *src_bind)
+				char *src_bind,
+				char *ns_holder)
 {
 	char **env = env_array_create();
 
@@ -388,6 +389,9 @@ static char **_setup_script_env(uint32_t job_id,
 			env_array_overwrite_fmt(&env, "SLURM_JOB_WORK_DIR",
 						"%s", step->cwd);
 	}
+
+	if (ns_holder)
+		env_array_overwrite_fmt(&env, "SLURM_NS", "%s", ns_holder);
 
 	return env;
 }
@@ -445,7 +449,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			.status = &rc,
 		};
 		run_command_args.env = _setup_script_env(job_id, step,
-							 src_bind);
+							 src_bind, NULL);
 
 		log_flag(JOB_CONT, "Running InitScript");
 		result = run_command(&run_command_args);
