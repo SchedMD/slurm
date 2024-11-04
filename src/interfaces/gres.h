@@ -1020,15 +1020,6 @@ extern void gres_step_state_log(list_t *gres_list, uint32_t job_id,
  */
 extern char *gres_sock_str(list_t *sock_gres_list, int sock_inx);
 
-/*
- * Determine total count GRES of a given type are allocated to a job across
- * all nodes
- * IN job_gres_list - job's gres_list built by gres_job_state_validate()
- * IN gres_name - name of a GRES type
- * RET count of this GRES allocated to this job
- */
-extern uint64_t gres_get_value_by_type(list_t *job_gres_list, char *gres_name);
-
 enum gres_job_data_type {
 	GRES_JOB_DATA_COUNT,	/* data-> uint64_t  */
 	GRES_JOB_DATA_BITMAP,	/* data-> bitstr_t* */

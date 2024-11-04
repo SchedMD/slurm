@@ -103,7 +103,6 @@ strong_alias(gres_find_job_by_key_exact_type,
 strong_alias(gres_find_sock_by_job_state, slurm_gres_find_sock_by_job_state);
 strong_alias(gres_get_node_used, slurm_gres_get_node_used);
 strong_alias(gres_get_system_cnt, slurm_gres_get_system_cnt);
-strong_alias(gres_get_value_by_type, slurm_gres_get_value_by_type);
 strong_alias(gres_get_job_info, slurm_gres_get_job_info);
 strong_alias(gres_get_step_info, slurm_gres_get_step_info);
 strong_alias(gres_sock_delete, slurm_gres_sock_delete);
@@ -10516,36 +10515,6 @@ extern bool gres_id_sharing(uint32_t plugin_id)
 	if (plugin_id == gpu_plugin_id)
 		return true;
 	return false;
-}
-
-/*
- * Determine total count GRES of a given type are allocated to a job across
- * all nodes
- * IN job_gres_list - job's gres_list built by gres_job_state_validate()
- * IN gres_name - name of a GRES type
- * RET count of this GRES allocated to this job
- */
-extern uint64_t gres_get_value_by_type(list_t *job_gres_list, char *gres_name)
-{
-	uint32_t plugin_id;
-	uint64_t gres_cnt = 0;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-
-	if (job_gres_list == NULL)
-		return NO_VAL64;
-
-	gres_cnt = NO_VAL64;
-	plugin_id = gres_build_id(gres_name);
-
-	gres_state_job = list_find_first(
-		job_gres_list, gres_find_id, &plugin_id);
-	if (gres_state_job) {
-		gres_js = gres_state_job->gres_data;
-		gres_cnt = gres_js->gres_per_node;
-	}
-
-	return gres_cnt;
 }
 
 /*
