@@ -441,19 +441,18 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		env_array_overwrite_fmt(&run_command_args.env,
 					"SLURMD_NODENAME", "%s",
 					conf->node_name);
+
+		log_flag(JOB_CONT, "Running InitScript");
 		result = run_command(&run_command_args);
+		log_flag(JOB_CONT, "InitScript rc: %d, stdout: %s", rc, result);
 		env_array_free(run_command_args.env);
-		if (rc) {
-			error("%s: init script: %s failed",
-			      __func__, jc_conf->initscript);
-			log_flag(JOB_CONT, "initscript fail status: %d, stdout: %s",
-				 *(run_command_args.status), result);
-			xfree(result);
-			goto exit2;
-		} else {
-			log_flag(JOB_CONT, "initscript stdout: %s", result);
-		}
 		xfree(result);
+
+		if (rc) {
+			error("%s: InitScript: %s failed with rc: %d",
+			      __func__, jc_conf->initscript, rc);
+			goto exit2;
+		}
 	}
 
 	rc = mkdir(src_bind, 0700);
