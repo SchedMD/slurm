@@ -2848,9 +2848,6 @@ extern int gres_node_config_pack(buf_t *buffer)
 	list_itr_t *iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 
-	xassert(gres_context_cnt >= 0);
-
-	slurm_mutex_lock(&gres_context_lock);
 	pack16(version, buffer);
 	if (gres_conf_list)
 		rec_cnt = list_count(gres_conf_list);
@@ -2872,7 +2869,6 @@ extern int gres_node_config_pack(buf_t *buffer)
 		}
 		list_iterator_destroy(iter);
 	}
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
 }
@@ -4859,9 +4855,6 @@ extern int gres_node_state_pack(list_t *gres_list, buf_t *buffer,
 	top_offset = get_buf_offset(buffer);
 	pack16(rec_cnt, buffer);	/* placeholder if data */
 
-	xassert(gres_context_cnt >= 0);
-
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
 		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
@@ -4897,7 +4890,6 @@ extern int gres_node_state_pack(list_t *gres_list, buf_t *buffer,
 		rec_cnt++;
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	tail_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, top_offset);
@@ -5542,8 +5534,6 @@ extern char *gres_get_node_used(list_t *gres_list)
 	if (!gres_list)
 		return gres_used;
 
-	xassert(gres_context_cnt >= 0);
-
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
 		tmp = _node_gres_used(gres_state_node->gres_data,
@@ -5709,14 +5699,10 @@ extern void gres_job_list_delete(void *list_element)
 {
 	gres_state_t *gres_state_job;
 
-	xassert(gres_context_cnt >= 0);
-
 	gres_state_job = (gres_state_t *) list_element;
-	slurm_mutex_lock(&gres_context_lock);
 	gres_job_state_delete(gres_state_job->gres_data);
 	gres_state_job->gres_data = NULL;
 	_gres_state_delete_members(gres_state_job);
-	slurm_mutex_unlock(&gres_context_lock);
 }
 
 /*
@@ -6768,8 +6754,6 @@ extern int gres_job_revalidate2(uint32_t job_id, list_t *job_gres_list,
 	    !list_find_first(job_gres_list, _find_job_has_gres_bits, NULL))
 		return SLURM_SUCCESS;
 
-	xassert(gres_context_cnt >= 0);
-
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		/* If no node_ptr->gres_list we are invalid */
 		if (!node_ptr->gres_list)
@@ -7028,9 +7012,6 @@ extern list_t *gres_job_state_extract(list_t *gres_list, int job_node_index)
 	if (gres_list == NULL)
 		return new_gres_list;
 
-	xassert(gres_context_cnt >= 0);
-
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
 		if (job_node_index == -1)
@@ -7052,7 +7033,6 @@ extern list_t *gres_job_state_extract(list_t *gres_list, int job_node_index)
 		list_append(new_gres_list, new_gres_state);
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return new_gres_list;
 }
@@ -7087,9 +7067,6 @@ extern int gres_job_state_pack(list_t *gres_list, buf_t *buffer,
 	if (gres_list == NULL)
 		return rc;
 
-	xassert(gres_context_cnt >= 0);
-
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
 		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
@@ -7238,7 +7215,6 @@ extern int gres_job_state_pack(list_t *gres_list, buf_t *buffer,
 		}
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	tail_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, top_offset);
@@ -7490,9 +7466,6 @@ extern int gres_prep_pack(list_t *gres_list, buf_t *buffer,
 	if (gres_list == NULL)
 		return rc;
 
-	xassert(gres_context_cnt >= 0);
-
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_prep = list_next(gres_iter))) {
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -7524,7 +7497,6 @@ extern int gres_prep_pack(list_t *gres_list, buf_t *buffer,
 		}
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	tail_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, top_offset);
@@ -8047,7 +8019,6 @@ extern uint32_t gres_job_test(list_t *job_gres_list, list_t *node_gres_list,
 		return 0;
 
 	core_cnt = NO_VAL;
-	xassert(gres_context_cnt >= 0);
 
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
@@ -8469,15 +8440,11 @@ extern void gres_job_state_log(list_t *gres_list, uint32_t job_id)
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
 		return;
 
-	xassert(gres_context_cnt >= 0);
-
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
 		_job_state_log(gres_state_job, job_id);
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 }
 
 static int _find_device(void *x, void *key)
@@ -9104,9 +9071,6 @@ list_t *gres_step_state_extract(list_t *gres_list, int job_node_index)
 	if (gres_list == NULL)
 		return new_gres_list;
 
-	xassert(gres_context_cnt >= 0);
-
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_step = (gres_state_t *) list_next(gres_iter))) {
 		if (job_node_index == -1)
@@ -9125,7 +9089,6 @@ list_t *gres_step_state_extract(list_t *gres_list, int job_node_index)
 		list_append(new_gres_list, new_gres_state_step);
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return new_gres_list;
 }
@@ -9153,9 +9116,6 @@ extern int gres_step_state_pack(list_t *gres_list, buf_t *buffer,
 	if (gres_list == NULL)
 		return rc;
 
-	xassert(gres_context_cnt >= 0);
-
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_step = (gres_state_t *) list_next(gres_iter))) {
 		gres_ss = (gres_step_state_t *) gres_state_step->gres_data;
@@ -9286,7 +9246,6 @@ extern int gres_step_state_pack(list_t *gres_list, buf_t *buffer,
 		}
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	tail_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, top_offset);
@@ -10476,8 +10435,6 @@ extern void gres_step_state_log(list_t *gres_list, uint32_t job_id,
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
 		return;
 
-	xassert(gres_context_cnt >= 0);
-
 	tmp_step_id.job_id = job_id;
 	tmp_step_id.step_het_comp = NO_VAL;
 	tmp_step_id.step_id = step_id;
@@ -10531,12 +10488,8 @@ extern int gres_node_count(list_t *gres_list, int arr_len,
 	uint64_t      val;
 	int           rc = SLURM_SUCCESS, ix = 0;
 
-	xassert(gres_context_cnt >= 0);
-
 	if (arr_len <= 0)
 		return EINVAL;
-
-	slurm_mutex_lock(&gres_context_lock);
 
 	node_gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_node = (gres_state_t*) list_next(node_gres_iter))) {
@@ -10565,8 +10518,6 @@ extern int gres_node_count(list_t *gres_list, int arr_len,
 			break;
 	}
 	list_iterator_destroy(node_gres_iter);
-
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
 }
