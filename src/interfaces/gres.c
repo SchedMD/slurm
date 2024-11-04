@@ -6665,35 +6665,17 @@ extern int gres_job_revalidate(list_t *gres_list)
  * This indicates the allocated GRES has a File configuration parameter and is
  * tracking individual file assignments.
  */
-static bool _job_has_gres_bits(list_t *job_gres_list)
+static int _find_job_has_gres_bits(void *x, void *args)
 {
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	bool rc = false;
-	int i;
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;;
 
-	if (!job_gres_list)
-		return false;
-
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		gres_js = gres_state_job->gres_data;
-		if (!gres_js)
-			continue;
-		for (i = 0; i < gres_js->node_cnt; i++) {
-			if (gres_js->gres_bit_alloc &&
-			    gres_js->gres_bit_alloc[i]) {
-				rc = true;
-				break;
-			}
-		}
-		if (rc)
-			break;
+	for (int i = 0; i < gres_js->node_cnt; i++) {
+		if (gres_js->gres_bit_alloc && gres_js->gres_bit_alloc[i])
+			return 1;
 	}
-	list_iterator_destroy(job_gres_iter);
 
-	return rc;
+	return 0;
 }
 
 /*
@@ -6853,7 +6835,7 @@ extern int gres_job_revalidate2(uint32_t job_id, list_t *job_gres_list,
 	int node_inx = -1;
 
 	if (!job_gres_list || !node_bitmap ||
-	    !_job_has_gres_bits(job_gres_list))
+	    !list_find_first(job_gres_list, _find_job_has_gres_bits, NULL))
 		return SLURM_SUCCESS;
 
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
