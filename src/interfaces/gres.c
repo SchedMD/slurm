@@ -6685,34 +6685,6 @@ static int _find_job_has_gres_bits(void *x, void *args)
 	return 0;
 }
 
-/*
- * Return count of configured GRES.
- * NOTE: For gres/'shared' return count of gres/gpu
- */
-static int _get_node_gres_cnt(list_t *node_gres_list, gres_state_t *gres_state_job)
-{
-	gres_node_state_t *gres_ns;
-	gres_state_t *gres_state_node;
-	int gres_cnt = 0;
-	uint32_t plugin_id;
-
-	if (!node_gres_list)
-		return 0;
-
-	if (gres_id_shared(gres_state_job->config_flags))
-		plugin_id = gpu_plugin_id;
-	else
-		plugin_id = gres_state_job->plugin_id;
-
-	if ((gres_state_node = list_find_first(node_gres_list, gres_find_id,
-					       &plugin_id))) {
-		gres_ns = gres_state_node->gres_data;
-		gres_cnt = (int) gres_ns->gres_cnt_config;
-	}
-
-	return gres_cnt;
-}
-
 static int _find_invalid_job_gres_type_on_node(void *x, void *args)
 {
 	gres_state_t *gres_state_job = x;
@@ -6760,6 +6732,50 @@ static int _find_invalid_job_gres_type_on_node(void *x, void *args)
 	return 0;
 }
 
+static int _find_invalid_job_gres_cnt_on_node(void *x, void *args)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	validate_job_gres_cnt_t *validate_job_gres_cnt = args;
+	gres_state_t *gres_state_node;
+	uint32_t plugin_id;
+	int job_gres_cnt, node_gres_cnt = 0;
+
+	if (!gres_js ||
+	    !gres_js->gres_bit_alloc ||
+	    (gres_js->node_cnt <= validate_job_gres_cnt->node_inx) ||
+	    !gres_js->gres_bit_alloc[validate_job_gres_cnt->node_inx])
+		return 0;
+
+	job_gres_cnt = bit_size(gres_js->gres_bit_alloc[
+					validate_job_gres_cnt->node_inx]);
+
+	if (gres_id_shared(gres_state_job->config_flags))
+		plugin_id = gpu_plugin_id;
+	else
+		plugin_id = gres_state_job->plugin_id;
+
+	if ((gres_state_node = list_find_first(validate_job_gres_cnt->
+					       node_gres_list,
+					       gres_find_id,
+					       &plugin_id))) {
+		gres_node_state_t *gres_ns = gres_state_node->gres_data;
+		node_gres_cnt = (int) gres_ns->gres_cnt_config;
+	}
+
+	if (job_gres_cnt != node_gres_cnt) {
+		error("%s: Killing job %u: gres/%s count mismatch on node "
+		      "%s (%d != %d)",
+		      __func__, validate_job_gres_cnt->job_id,
+		      gres_state_job->gres_name,
+		      validate_job_gres_cnt-> node_name,
+		      job_gres_cnt, node_gres_cnt);
+		return 1;
+	}
+
+	return 0;
+}
+
 /*
  * Return TRUE if the identified node in the job allocation can satisfy the
  * job's GRES specification without change in its bitmaps. In other words,
@@ -6774,40 +6790,24 @@ static bool _validate_node_gres_cnt(uint32_t job_id, list_t *job_gres_list,
 				    int node_inx, list_t *node_gres_list,
 				    char *node_name)
 {
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	bool rc = true;
-	int job_gres_cnt, node_gres_cnt;
+	validate_job_gres_cnt_t validate_job_gres_cnt = {
+		.job_id = job_id,
+		.node_gres_list = node_gres_list,
+		.node_inx = node_inx,
+		.node_name = node_name,
+	};
 
 	if (!job_gres_list)
 		return true;
 
 	xassert(gres_context_cnt >= 0);
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		gres_js = gres_state_job->gres_data;
-		if (!gres_js || !gres_js->gres_bit_alloc)
-			continue;
-		if ((node_inx >= gres_js->node_cnt) ||
-		    !gres_js->gres_bit_alloc[node_inx])
-			continue;
-		job_gres_cnt = bit_size(gres_js->gres_bit_alloc[node_inx]);
-		node_gres_cnt = _get_node_gres_cnt(node_gres_list,
-						   gres_state_job);
-		if (job_gres_cnt != node_gres_cnt) {
-			error("%s: Killing job %u: gres/%s count mismatch on node "
-			      "%s (%d != %d)",
-			      __func__, job_id, gres_state_job->gres_name,
-			      node_name, job_gres_cnt, node_gres_cnt);
-			rc = false;
-			break;
-		}
-	}
-	list_iterator_destroy(job_gres_iter);
+	if (list_find_first(job_gres_list,
+			    _find_invalid_job_gres_cnt_on_node,
+			    &validate_job_gres_cnt))
+		return false;
 
-	return rc;
+	return true;
 }
 
 static bool _validate_node_gres_type(uint32_t job_id, list_t *job_gres_list,
