@@ -145,10 +145,6 @@ typedef struct slurm_gres_ops {
 						  gres_internal_flags_t flags);
 	void		(*send_stepd)		( buf_t *buffer );
 	void		(*recv_stepd)		( buf_t *buffer );
-	int		(*step_info)		( gres_step_state_t *gres_ss,
-						  uint32_t node_inx,
-						  enum gres_step_data_type data_type,
-						  void *data);
 	list_t *(*get_devices)(void);
 	void            (*step_hardware_init)	( bitstr_t *, char * );
 	void            (*step_hardware_fini)	( void );
@@ -561,7 +557,6 @@ static int _load_plugin(slurm_gres_context_t *gres_ctx)
 		"gres_p_task_set_env",
 		"gres_p_send_stepd",
 		"gres_p_recv_stepd",
-		"gres_p_get_step_info",
 		"gres_p_get_devices",
 		"gres_p_step_hardware_init",
 		"gres_p_step_hardware_fini",
@@ -10723,7 +10718,7 @@ rwfail:
 }
 
 /* Get generic GRES data types here. Call the plugin for others */
-static int _get_step_info(int gres_inx, gres_step_state_t *gres_ss,
+static int _get_step_info(gres_step_state_t *gres_ss,
 			  uint32_t node_inx, enum gres_step_data_type data_type,
 			  void *data)
 {
@@ -10735,21 +10730,27 @@ static int _get_step_info(int gres_inx, gres_step_state_t *gres_ss,
 		return EINVAL;
 	if (node_inx >= gres_ss->node_cnt)
 		return ESLURM_INVALID_NODE_COUNT;
-	if (data_type == GRES_STEP_DATA_COUNT) {
+
+	switch (data_type) {
+	case GRES_STEP_DATA_COUNT:
 		*u64_data = gres_ss->gres_cnt_node_alloc[node_inx];
-	} else if (data_type == GRES_STEP_DATA_BITMAP) {
+		break;
+	case GRES_STEP_DATA_BITMAP:
 		if (gres_ss->gres_bit_alloc)
 			*bit_data = gres_ss->gres_bit_alloc[node_inx];
 		else
 			*bit_data = NULL;
-	} else {
-		/* Support here for plugin-specific data types */
-		rc = (*(gres_context[gres_inx].ops.step_info))
-			(gres_ss, node_inx, data_type, data);
+		break;
+	default:
+		error("%s: unknown enum given %d", __func__, data_type);
+		rc = EINVAL;
+		break;
 	}
 
 	return rc;
 }
+
+
 
 /*
  * get data from a step's GRES data structure
@@ -10767,7 +10768,7 @@ extern int gres_get_step_info(list_t *step_gres_list, char *gres_name,
 			      uint32_t node_inx,
 			      enum gres_step_data_type data_type, void *data)
 {
-	int i, rc = ESLURM_INVALID_GRES;
+	int rc = ESLURM_INVALID_GRES;
 	uint32_t plugin_id;
 	list_itr_t *step_gres_iter;
 	gres_state_t *gres_state_step;
@@ -10781,21 +10782,17 @@ extern int gres_get_step_info(list_t *step_gres_list, char *gres_name,
 	xassert(gres_context_cnt >= 0);
 	plugin_id = gres_build_id(gres_name);
 
-	slurm_mutex_lock(&gres_context_lock);
 	step_gres_iter = list_iterator_create(step_gres_list);
 	while ((gres_state_step = (gres_state_t *) list_next(step_gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_state_step->plugin_id != plugin_id)
-				continue;
-			gres_ss = (gres_step_state_t *)
-				gres_state_step->gres_data;
-			rc = _get_step_info(i, gres_ss, node_inx,
-					    data_type, data);
+		if (gres_state_step->plugin_id != plugin_id)
+			continue;
+		gres_ss = (gres_step_state_t *)gres_state_step->gres_data;
+		rc = _get_step_info(gres_ss, node_inx,
+				    data_type, data);
+		if (rc != SLURM_SUCCESS)
 			break;
-		}
 	}
 	list_iterator_destroy(step_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
 }
