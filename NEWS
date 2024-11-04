@@ -229,6 +229,30 @@ documents those changes that are of interest to users and administrators.
  -- Support IPv6 in configless mode.
  -- Add SlurmctldParamters=ignore_constraint_validation to ignore
     constraint/feature validation at submission.
+ -- slurmrestd - Set '.pings[].mode' field as deprecated in the following
+    endpoints:
+      'GET /slurm/v0.0.42/ping'
+ -- scontrol - Set '.pings[].mode' field as deprecated in the following
+    commands:
+      'scontrol ping --json'
+      'scontrol ping --yaml'
+ -- slurmrestd - Set '.pings[].pinged' field as deprecated in the following
+    endpoints:
+      'GET /slurm/v0.0.42/ping'
+ -- scontrol - Set '.pings[].pinged' field as deprecated in the following
+    commands:
+      'scontrol ping --json'
+      'scontrol ping --yaml'
+ -- slurmrestd - Add '.pings[].primary' field to the following endpoints:
+      'GET /slurm/v0.0.42/ping'
+ -- scontrol - Add '.pings[].primary' field to the following commands:
+      'scontrol ping --json'
+      'scontrol ping --yaml'
+ -- slurmrestd - Add '.pings[].responding' field to the following endpoints:
+      'GET /slurm/v0.0.42/ping'
+ -- scontrol - Add '.pings[].responding' field to the following commands:
+      'scontrol ping --json'
+      'scontrol ping --yaml'
 
 * Changes in Slurm 24.05.5
 ==========================
