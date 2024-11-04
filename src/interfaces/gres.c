@@ -6627,6 +6627,19 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 	return job_validate.rc;
 }
 
+static int _find_gres_per_jst(void *x, void *args)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+
+	if (gres_js->gres_per_job ||
+	    gres_js->gres_per_socket ||
+	    gres_js->gres_per_task)
+		return 1;
+
+	return 0;
+}
+
 /*
  * Determine if a job's specified GRES can be supported. This is designed to
  * prevent the running of a job using the GRES options only supported by the
@@ -6638,27 +6651,13 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
  */
 extern int gres_job_revalidate(list_t *gres_list)
 {
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	list_itr_t *iter;
-	int rc = SLURM_SUCCESS;
-
 	if (!gres_list || (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES))
 		return SLURM_SUCCESS;
 
-	iter = list_iterator_create(gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (gres_js->gres_per_job ||
-		    gres_js->gres_per_socket ||
-		    gres_js->gres_per_task) {
-			rc = ESLURM_UNSUPPORTED_GRES;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
+	if (list_find_first(gres_list, _find_gres_per_jst, NULL))
+		return ESLURM_UNSUPPORTED_GRES;
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /*
