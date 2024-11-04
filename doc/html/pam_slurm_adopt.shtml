@@ -482,7 +482,8 @@ PAM_IGNORE immediately.
 <p><i>slurmd</i> should be accessible on any IP address from which a user might
 launch ssh. The RPC to determine the source job must be able to reach the
 <i>slurmd</i> port on that particular IP address. If there is no <i>slurmd</i>
-on the source node, such as on a login node, it is better to have the RPC be
+on the source node, such as on a <a href="quickstart_admin.html#login">login
+node</a>, it is better to have the RPC be
 rejected rather than silently dropped. This will allow better responsiveness to
 the RPC initiator.</p>
 
@@ -556,6 +557,6 @@ break process adoption with pam_slurm_adopt.</p>
 <p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
 won't necessarily be in the same context as the job it is associated with.</p>
 
-<p style="text-align:center;">Last modified 23 July 2024</p>
+<p style="text-align:center;">Last modified 31 October 2024</p>
 
 <!--#include virtual="footer.txt"-->

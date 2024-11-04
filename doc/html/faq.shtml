@@ -980,7 +980,8 @@ This can be disabled by specifically excluding the propagation of
 specific limits in the <i>slurm.conf</i> file. For example
 <i>PropagateResourceLimitsExcept=MEMLOCK</i> might be used to
 prevent the propagation of a user's locked memory limit from a
-login node to a dedicated node used for his parallel job.
+<a href="quickstart_admin.html#login">login node</a> to a dedicated
+node used for his parallel job.
 If the user's resource limit is not propagated, the limit in
 effect for the <i>slurmd</i> daemon will be used for the spawned job.
 A simple way to control this is to ensure that user <i>root</i> has a
@@ -2417,6 +2418,6 @@ dset TV::parallel_configs {
 }
 !-->
 
-<p style="text-align:center;">Last modified 11 October 2024</p>
+<p style="text-align:center;">Last modified 31 October 2024</p>
 
 <!--#include virtual="footer.txt"-->

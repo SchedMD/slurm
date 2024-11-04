@@ -14,7 +14,8 @@ config files will be pulled to the node. This slurmctld can be identified by
 either an explicit option, or &mdash; preferably &mdash; through DNS SRV
 records defined within the cluster itself.</p>
 
-<p>If you have a login node you will be running client commands
+<p>If you have a <a href="quickstart_admin.html#login">login node</a> you
+will be running client commands
 from, those client commands will have to use the DNS record to get the
 configuration information from the controller when they run.
 If you expect to have a lot of traffic from a login node, this
@@ -147,6 +148,6 @@ is as follows:</p>
 <li>topology.conf</li>
 </ul>
 
-<p style="text-align:center;">Last modified 25 September 2024</p>
+<p style="text-align:center;">Last modified 31 October 2024</p>
 
 <!--#include virtual="footer.txt"-->
