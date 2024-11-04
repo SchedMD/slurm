@@ -6151,44 +6151,45 @@ static bool _generic_state(void *gres_data, bool is_job)
 /*
  * Setup over_list to mark if we have gres of the same type.
  */
-static bool _set_over_list(gres_state_t *gres_state,
-			   overlap_check_t *over_list,
-			   int *over_count, bool is_job)
+static void _set_over_list(gres_state_t *gres_state,
+			   job_validate_t *job_validate)
 {
-	char *type_name = is_job ?
+	char *type_name = job_validate->is_job ?
 		((gres_job_state_t *) gres_state->gres_data)->type_name:
 		((gres_step_state_t *) gres_state->gres_data)->type_name;
 	int i;
-	bool overlap_merge = false;
 
-	xassert(over_list);
-	xassert(over_count);
+	xassert(job_validate->over_list);
 
-	for (i = 0; i < *over_count; i++) {
-		if (over_list[i].plugin_id == gres_state->plugin_id)
+	for (i = 0; i < job_validate->over_count; i++) {
+		if (job_validate->over_list[i].plugin_id ==
+		    gres_state->plugin_id)
 			break;
 	}
 
-	if (i >= *over_count) {
-		over_list[(*over_count)++].plugin_id = gres_state->plugin_id;
+	if (i >= job_validate->over_count) {
+		job_validate->over_list[job_validate->over_count++].plugin_id =
+			gres_state->plugin_id;
 		if (type_name) {
-			over_list[i].with_type = true;
+			job_validate->over_list[i].with_type = true;
 		} else {
-			over_list[i].without_type = true;
-			over_list[i].without_type_state = gres_state->gres_data;
+			job_validate->over_list[i].without_type = true;
+			job_validate->over_list[i].without_type_state =
+				gres_state->gres_data;
 		}
 	} else if (type_name) {
-		over_list[i].with_type = true;
-		if (over_list[i].without_type)
-			overlap_merge = true;
+		job_validate->over_list[i].with_type = true;
+		if (job_validate->over_list[i].without_type)
+			job_validate->overlap_merge = true;
 	} else {
-		over_list[i].without_type = true;
-		over_list[i].without_type_state = gres_state->gres_data;
-		if (over_list[i].with_type)
-			overlap_merge = true;
+		job_validate->over_list[i].without_type = true;
+		job_validate->over_list[i].without_type_state =
+			gres_state->gres_data;
+		if (job_validate->over_list[i].with_type)
+			job_validate->overlap_merge = true;
 	}
 
-	return overlap_merge;
+	return;
 }
 
 static int _foreach_merge_generic_data(void *x, void *args)
@@ -6258,14 +6259,7 @@ static int _merge_generic_data(
 
 static int _foreach_set_over_list(void *x, void *args)
 {
-	gres_state_t *gres_state = x;
-	job_validate_t *job_validate = args;
-
-	if (_set_over_list(gres_state,
-			   job_validate->over_list,
-			   &job_validate->over_count,
-			   job_validate->is_job))
-		job_validate->overlap_merge = true;
+	_set_over_list(x, args);
 
 	return 0;
 }
