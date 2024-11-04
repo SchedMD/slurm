@@ -272,6 +272,18 @@ typedef struct {
 	uint32_t plugin_id;
 } merge_generic_t;
 
+typedef struct {
+	uint32_t cpus_per_gres;
+	gres_job_state_validate_t *gres_js_val;
+	bool have_gres_shared;
+	bool have_gres_sharing;
+	bool overlap_merge;
+	int over_count;
+	overlap_check_t *over_list;
+	int rc;
+	uint32_t tmp_min_cpus;
+} job_validate_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -6243,17 +6255,46 @@ static int _merge_generic_data(
 	return rc;
 }
 
+static int _foreach_job_state_validate(void *x, void *args)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	job_validate_t *job_validate = args;
+
+	if (_test_gres_cnt(gres_state_job, job_validate->gres_js_val) != 0) {
+		job_validate->rc = ESLURM_INVALID_GRES;
+		return -1;
+	}
+	if (!job_validate->have_gres_sharing &&
+	    gres_id_sharing(gres_state_job->plugin_id))
+		job_validate->have_gres_sharing = true;
+	if (gres_id_shared(gres_state_job->config_flags)) {
+		job_validate->have_gres_shared = true;
+	}
+	if (job_validate->have_gres_sharing && job_validate->have_gres_shared) {
+		job_validate->rc = ESLURM_INVALID_GRES;
+		return -1;
+	}
+
+	if (job_validate->cpus_per_gres &&
+	    (gres_state_job->plugin_id == gres_get_gpu_plugin_id()))
+		job_validate->tmp_min_cpus +=
+			job_validate->cpus_per_gres * gres_js->total_gres;
+
+	if (_set_over_list(gres_state_job,
+			   job_validate->over_list,
+			   &job_validate->over_count, 1))
+		job_validate->overlap_merge = true;
+	return 0;
+}
+
 extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 {
-	overlap_check_t *over_list;
-	int over_count = 0, rc = SLURM_SUCCESS, size;
-	bool have_gres_sharing = false, have_gres_shared = false;
+	int rc = SLURM_SUCCESS, size;
 	bool requested_gpu = false;
-	bool overlap_merge = false;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	uint64_t cnt = 0;
-	list_itr_t *iter;
 	char *cpus_per_tres;
 	char *mem_per_tres;
 	char *tres_freq;
@@ -6261,8 +6302,10 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 	char *tres_per_node;
 	char *tres_per_socket;
 	char *tres_per_task;
-	uint32_t tmp_min_cpus = 0;
-	uint32_t cpus_per_gres = 0; /* At the moment its only for gpus */
+	job_validate_t job_validate = {
+		.gres_js_val = gres_js_val,
+		.rc = SLURM_SUCCESS,
+	};
 
 	xassert(gres_js_val);
 	xassert(gres_js_val->gres_list);
@@ -6342,7 +6385,8 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 			 * cpus_per_gres and it should be the same for all types
 			 * (e.g., gpu:k80 vs gpu:tesla) of that same gres (gpu)
 			 */
-			cpus_per_gres = MAX(cpus_per_gres, cnt);
+			job_validate.cpus_per_gres =
+				MAX(job_validate.cpus_per_gres, cnt);
 		}
 	}
 	if (tres_per_job) {
@@ -6540,49 +6584,31 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 	 * Check for record overlap (e.g. "gpu:2,gpu:tesla:1")
 	 * Ensure tres_per_job >= tres_per_node >= tres_per_socket
 	 */
-	over_list = xcalloc(size, sizeof(overlap_check_t));
-	iter = list_iterator_create(*gres_js_val->gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(iter))) {
-		gres_js = gres_state_job->gres_data;
-		if (_test_gres_cnt(gres_state_job, gres_js_val) != 0) {
-			rc = ESLURM_INVALID_GRES;
-			break;
-		}
-		if (!have_gres_sharing &&
-		    gres_id_sharing(gres_state_job->plugin_id))
-			have_gres_sharing = true;
-		if (gres_id_shared(gres_state_job->config_flags)) {
-			have_gres_shared = true;
-		}
-		if (have_gres_sharing && have_gres_shared) {
-			rc = ESLURM_INVALID_GRES;
-			break;
-		}
+	job_validate.over_list = xcalloc(size, sizeof(overlap_check_t));
 
-		if (cpus_per_gres &&
-		    (gres_state_job->plugin_id == gres_get_gpu_plugin_id()))
-			tmp_min_cpus += cpus_per_gres * gres_js->total_gres;
+	(void) list_for_each(*gres_js_val->gres_list,
+			     _foreach_job_state_validate,
+			     &job_validate);
 
-		if (_set_over_list(gres_state_job, over_list, &over_count, 1))
-			overlap_merge = true;
-	}
-	list_iterator_destroy(iter);
+	if (job_validate.tmp_min_cpus > *gres_js_val->min_cpus)
+		*gres_js_val->min_cpus = job_validate.tmp_min_cpus;
 
-	if  (tmp_min_cpus > *gres_js_val->min_cpus)
-		*gres_js_val->min_cpus = tmp_min_cpus;
-
-	if (have_gres_shared && (rc == SLURM_SUCCESS) && tres_freq &&
+	if (job_validate.have_gres_shared &&
+	    (job_validate.rc == SLURM_SUCCESS) &&
+	    tres_freq &&
 	    strstr(tres_freq, "gpu")) {
-		rc = ESLURM_INVALID_GRES;
+		job_validate.rc = ESLURM_INVALID_GRES;
 	}
 
-	if (overlap_merge) /* Merge generic data if possible */
-		rc = _merge_generic_data(*gres_js_val->gres_list,
-					 over_list, over_count, 1);
+	if (job_validate.overlap_merge) /* Merge generic data if possible */
+		job_validate.rc = _merge_generic_data(*gres_js_val->gres_list,
+						      job_validate.over_list,
+						      job_validate.over_count,
+						      1);
 
-	xfree(over_list);
+	xfree(job_validate.over_list);
 
-	return rc;
+	return job_validate.rc;
 }
 
 /*
