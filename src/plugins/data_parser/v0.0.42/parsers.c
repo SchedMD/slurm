@@ -8025,15 +8025,15 @@ static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 #undef add_deprec
 #undef add_overload_req
 
-#define add_parse(mtype, field, path, desc) \
-	add_parser(slurmdbd_ping_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(slurmdbd_ping_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(SLURMDBD_PING)[] = {
-	add_parse(STRING, hostname, "hostname", "Target for ping"),
-	add_parse(SLURMDBD_PING_RESULT, pinged, "pinged", "Ping result"),
-	add_parse(UINT64, latency, "latency", "Number of microseconds it took to successfully ping or timeout"),
-	add_parse(SLURMDBD_PING_MODE, offset, "mode", "The operating mode of the responding slurmdbd"),
+	add_parse_req(STRING, hostname, "hostname", "Target for ping"),
+	add_parse_req(SLURMDBD_PING_RESULT, pinged, "pinged", "Ping result"),
+	add_parse_req(UINT64, latency, "latency", "Number of microseconds it took to successfully ping or timeout"),
+	add_parse_req(SLURMDBD_PING_MODE, offset, "mode", "The operating mode of the responding slurmdbd"),
 };
-#undef add_parse
+#undef add_parse_req
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_step_info_t, mtype, false, field, 0, path, desc)
