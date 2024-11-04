@@ -8496,6 +8496,7 @@ extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 	 * Create a unique device list of all possible GRES device files.
 	 * Initialize each device to deny.
 	 */
+	slurm_mutex_lock(&gres_context_lock);
 	for (j = 0; j < gres_context_cnt; j++) {
 		if (!gres_context[j].ops.get_devices){
 			gres_devices = gres_context[j].np_gres_devices;
@@ -8520,13 +8521,14 @@ extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 		list_iterator_destroy(dev_itr);
 	}
 
-	if (!gres_list)
+	if (!gres_list) {
+		slurm_mutex_unlock(&gres_context_lock);
 		return device_list;
+	}
 
 	if (accel_bind_type)
 		_parse_accel_bind_type(accel_bind_type, tres_bind_str);
 
-	slurm_mutex_lock(&gres_context_lock);
 	for (j = 0; j < gres_context_cnt; j++) {
 		/* We need to get a gres_bit_alloc with all the gres types
 		 * merged (accumulated) together */
