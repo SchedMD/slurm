@@ -10733,13 +10733,21 @@ static int _get_step_info(gres_step_state_t *gres_ss,
 
 	switch (data_type) {
 	case GRES_STEP_DATA_COUNT:
-		*u64_data = gres_ss->gres_cnt_node_alloc[node_inx];
+		*u64_data += gres_ss->gres_cnt_node_alloc[node_inx];
 		break;
 	case GRES_STEP_DATA_BITMAP:
-		if (gres_ss->gres_bit_alloc)
-			*bit_data = gres_ss->gres_bit_alloc[node_inx];
-		else
-			*bit_data = NULL;
+		if (gres_ss->gres_bit_alloc) {
+			if (!*bit_data) {
+				*bit_data = bit_copy(
+					gres_ss->gres_bit_alloc[node_inx]);
+			} else {
+				xassert(bit_size(*bit_data) ==
+					bit_size(gres_ss->gres_bit_alloc[
+							 node_inx]));
+				bit_or(*bit_data,
+				       gres_ss->gres_bit_alloc[node_inx]);
+			}
+		}
 		break;
 	default:
 		error("%s: unknown enum given %d", __func__, data_type);
