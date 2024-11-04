@@ -1809,7 +1809,8 @@ static int _mark_nodes_usage(void *x, void *arg)
 		return last_job_end_updated;
 
 	owned = ((job_ptr->details->whole_node & WHOLE_NODE_USER) ||
-		 (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER));
+		 (job_ptr->part_ptr &&
+		  (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)));
 
 	for (i = 0; (i = bit_ffs_from_bit(job_ptr->node_bitmap, i)) >= 0; i++) {
 		if (!nodes_used[i].allocated) {
