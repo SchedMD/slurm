@@ -6296,10 +6296,8 @@ static int _foreach_job_state_validate(void *x, void *args)
 		job_validate->tmp_min_cpus +=
 			job_validate->cpus_per_gres * gres_js->total_gres;
 
-	if (_set_over_list(gres_state_job,
-			   job_validate->over_list,
-			   &job_validate->over_count, 1))
-		job_validate->overlap_merge = true;
+	(void) _foreach_set_over_list(gres_state_job, job_validate);
+
 	return 0;
 }
 
@@ -6319,6 +6317,7 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 	char *tres_per_task;
 	job_validate_t job_validate = {
 		.gres_js_val = gres_js_val,
+		.is_job = true,
 		.rc = SLURM_SUCCESS,
 	};
 
