@@ -103,7 +103,6 @@ strong_alias(gres_find_job_by_key_exact_type,
 strong_alias(gres_find_sock_by_job_state, slurm_gres_find_sock_by_job_state);
 strong_alias(gres_get_node_used, slurm_gres_get_node_used);
 strong_alias(gres_get_system_cnt, slurm_gres_get_system_cnt);
-strong_alias(gres_get_job_info, slurm_gres_get_job_info);
 strong_alias(gres_get_step_info, slurm_gres_get_step_info);
 strong_alias(gres_sock_delete, slurm_gres_sock_delete);
 strong_alias(gres_job_list_delete, slurm_gres_job_list_delete);
@@ -146,10 +145,6 @@ typedef struct slurm_gres_ops {
 						  gres_internal_flags_t flags);
 	void		(*send_stepd)		( buf_t *buffer );
 	void		(*recv_stepd)		( buf_t *buffer );
-	int		(*job_info)		( gres_job_state_t *gres_js,
-						  uint32_t node_inx,
-						  enum gres_job_data_type data_type,
-						  void *data);
 	int		(*step_info)		( gres_step_state_t *gres_ss,
 						  uint32_t node_inx,
 						  enum gres_step_data_type data_type,
@@ -566,7 +561,6 @@ static int _load_plugin(slurm_gres_context_t *gres_ctx)
 		"gres_p_task_set_env",
 		"gres_p_send_stepd",
 		"gres_p_recv_stepd",
-		"gres_p_get_job_info",
 		"gres_p_get_step_info",
 		"gres_p_get_devices",
 		"gres_p_step_hardware_init",
@@ -10771,83 +10765,6 @@ rwfail:
 	(void) gres_init();
 
 	rc = _load_specific_gres_plugins();
-
-	return rc;
-}
-
-/* Get generic GRES data types here. Call the plugin for others */
-static int _get_job_info(int gres_inx, gres_job_state_t *gres_js,
-			 uint32_t node_inx, enum gres_job_data_type data_type,
-			 void *data)
-{
-	uint64_t *u64_data = (uint64_t *) data;
-	bitstr_t **bit_data = (bitstr_t **) data;
-	int rc = SLURM_SUCCESS;
-
-	if (!gres_js || !data)
-		return EINVAL;
-	if (node_inx >= gres_js->node_cnt)
-		return ESLURM_INVALID_NODE_COUNT;
-	if (data_type == GRES_JOB_DATA_COUNT) {
-		*u64_data = gres_js->gres_cnt_node_alloc[node_inx];
-	} else if (data_type == GRES_JOB_DATA_BITMAP) {
-		if (gres_js->gres_bit_alloc)
-			*bit_data = gres_js->gres_bit_alloc[node_inx];
-		else
-			*bit_data = NULL;
-	} else {
-		/* Support here for plugin-specific data types */
-		rc = (*(gres_context[gres_inx].ops.job_info))
-			(gres_js, node_inx, data_type, data);
-	}
-
-	return rc;
-}
-
-/*
- * get data from a job's GRES data structure
- * IN job_gres_list  - job's GRES data structure
- * IN gres_name - name of a GRES type
- * IN node_inx - zero-origin index of the node within the job's allocation
- *	for which data is desired
- * IN data_type - type of data to get from the job's data
- * OUT data - pointer to the data from job's GRES data structure
- *            DO NOT FREE: This is a pointer into the job's data structure
- * RET - SLURM_SUCCESS or error code
- */
-extern int gres_get_job_info(list_t *job_gres_list, char *gres_name,
-			     uint32_t node_inx,
-			     enum gres_job_data_type data_type, void *data)
-{
-	int i, rc = ESLURM_INVALID_GRES;
-	uint32_t plugin_id;
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-
-	if (data == NULL)
-		return EINVAL;
-	if (job_gres_list == NULL)	/* No GRES allocated */
-		return ESLURM_INVALID_GRES;
-
-	xassert(gres_context_cnt >= 0);
-	plugin_id = gres_build_id(gres_name);
-
-	slurm_mutex_lock(&gres_context_lock);
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_state_job->plugin_id != plugin_id)
-				continue;
-			gres_js = (gres_job_state_t *)
-				gres_state_job->gres_data;
-			rc = _get_job_info(i, gres_js, node_inx,
-					   data_type, data);
-			break;
-		}
-	}
-	list_iterator_destroy(job_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
 }

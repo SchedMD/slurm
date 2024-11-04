@@ -272,23 +272,6 @@ extern void gres_p_recv_stepd(buf_t *buffer)
 }
 
 /*
- * get data from a job's GRES data structure
- * IN job_gres_data  - job's GRES data structure
- * IN node_inx - zero-origin index of the node within the job's allocation
- *	for which data is desired
- * IN data_type - type of data to get from the job's data
- * OUT data - pointer to the data from job's GRES data structure
- *            DO NOT FREE: This is a pointer into the job's data structure
- * RET - SLURM_SUCCESS or error code
- */
-extern int gres_p_get_job_info(gres_job_state_t *gres_js,
-			       uint32_t node_inx,
-			       enum gres_job_data_type data_type, void *data)
-{
-	return EINVAL;
-}
-
-/*
  * get data from a step's GRES data structure
  * IN gres_ss  - step's GRES data structure
  * IN node_inx - zero-origin index of the node within the job's allocation
