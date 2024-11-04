@@ -4336,38 +4336,6 @@ static int DUMP_FUNC(CONTROLLER_PING_RESULT)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(SLURMDBD_PING_MODE)
-
-static int DUMP_FUNC(SLURMDBD_PING_MODE)(const parser_t *const parser,
-					 void *obj, data_t *dst, args_t *args)
-{
-	int *mode_ptr = obj;
-	int mode = *mode_ptr;
-
-	if (mode == 0)
-		data_set_string(dst, "primary");
-	else if ((mode == 1) && slurm_conf.accounting_storage_host)
-		data_set_string(dst, "backup");
-
-	return SLURM_SUCCESS;
-}
-
-PARSE_DISABLED(SLURMDBD_PING_RESULT)
-
-static int DUMP_FUNC(SLURMDBD_PING_RESULT)(const parser_t *const parser,
-					   void *obj, data_t *dst, args_t *args)
-{
-	bool *ping_ptr = obj;
-	int ping = *ping_ptr;
-
-	if (ping)
-		data_set_string(dst, "UP");
-	else
-		data_set_string(dst, "DOWN");
-
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(STEP_INFO_MSG)
 
 static int DUMP_FUNC(STEP_INFO_MSG)(const parser_t *const parser, void *obj,
@@ -8029,9 +7997,9 @@ static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 	add_parser(slurmdbd_ping_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(SLURMDBD_PING)[] = {
 	add_parse_req(STRING, hostname, "hostname", "Target for ping"),
-	add_parse_req(SLURMDBD_PING_RESULT, pinged, "pinged", "Ping result"),
+	add_parse_req(BOOL, pinged, "responding", "If ping RPC responded with pong from slurmdbd"),
 	add_parse_req(UINT64, latency, "latency", "Number of microseconds it took to successfully ping or timeout"),
-	add_parse_req(SLURMDBD_PING_MODE, offset, "mode", "The operating mode of the responding slurmdbd"),
+	add_parse_req(CONTROLLER_PING_PRIMARY, offset, "primary", "Is responding slurmdbd the primary controller"),
 };
 #undef add_parse_req
 
@@ -9982,8 +9950,6 @@ static const parser_t parsers[] = {
 	addpsp(MEM_PER_NODE, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
 	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE, STRING, NULL, NULL, NULL),
-	addps(SLURMDBD_PING_MODE, int, NEED_NONE, STRING, NULL, NULL, NULL),
-	addps(SLURMDBD_PING_RESULT, bool, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsa(HOSTLIST, STRING, hostlist_t *, NEED_NONE, NULL),
 	addpsa(HOSTLIST_STRING, STRING, char *, NEED_NONE, NULL),
 	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
