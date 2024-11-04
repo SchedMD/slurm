@@ -72,6 +72,20 @@ static s_p_hashtbl_t *_create_ns_hashtbl(void)
 	return s_p_hashtbl_create(ns_options);
 }
 
+static void _dump_jc_conf(void)
+{
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_JOB_CONT))
+		return;
+
+	log_flag(JOB_CONT, "AutoBasePath=%d", slurm_jc_conf.auto_basepath);
+	log_flag(JOB_CONT, "BasePath=%s", slurm_jc_conf.basepath);
+	log_flag(JOB_CONT, "Dirs=%s", slurm_jc_conf.dirs);
+	log_flag(JOB_CONT, "EntireStepInNS=%d",
+		 slurm_jc_conf.entire_step_in_ns);
+	log_flag(JOB_CONT, "Shared=%d", slurm_jc_conf.shared);
+	log_flag(JOB_CONT, "InitScript=%s", slurm_jc_conf.initscript);
+}
+
 static void _pack_slurm_jc_conf_buf(void)
 {
 	if (slurm_jc_conf_buf)
@@ -253,6 +267,8 @@ extern slurm_jc_conf_t *init_slurm_jc_conf(void)
 		_pack_slurm_jc_conf_buf();
 
 		slurm_jc_conf_inited = true;
+
+		_dump_jc_conf();
 	}
 
 	return &slurm_jc_conf;
