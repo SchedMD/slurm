@@ -285,6 +285,13 @@ typedef struct {
 	uint32_t tmp_min_cpus;
 } job_validate_t;
 
+typedef struct {
+	uint32_t job_id;
+	list_t *node_gres_list;
+	int node_inx;
+	char *node_name;
+} validate_job_gres_cnt_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -6706,6 +6713,53 @@ static int _get_node_gres_cnt(list_t *node_gres_list, gres_state_t *gres_state_j
 	return gres_cnt;
 }
 
+static int _find_invalid_job_gres_type_on_node(void *x, void *args)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	validate_job_gres_cnt_t *validate_job_gres_cnt = args;
+	gres_state_t *gres_state_node;
+	uint32_t plugin_id;
+
+	if (!gres_js ||
+	    !gres_js->type_id ||
+	    !gres_js->gres_bit_alloc ||
+	    (gres_js->node_cnt <= validate_job_gres_cnt->node_inx) ||
+	    !gres_js->gres_bit_alloc[validate_job_gres_cnt->node_inx])
+		return 0;
+
+	if (gres_id_shared(gres_state_job->config_flags))
+		plugin_id = gpu_plugin_id;
+	else
+		plugin_id = gres_state_job->plugin_id;
+
+	if ((gres_state_node = list_find_first(validate_job_gres_cnt->
+					       node_gres_list,
+					       gres_find_id,
+					       &plugin_id))) {
+		bool found_type = false;
+		gres_node_state_t *gres_ns = gres_state_node->gres_data;
+
+		for (int i = 0; i < gres_ns->type_cnt; i++) {
+			if (gres_ns->type_id[i] == gres_js->type_id) {
+				found_type = true;
+				break;
+			}
+		}
+		if (!found_type) {
+			error("%s: Killing job %u: gres/%s type %s not found on node %s",
+			      __func__,
+			      validate_job_gres_cnt->job_id,
+			      gres_state_job->gres_name,
+			      gres_js->type_name,
+			      validate_job_gres_cnt->node_name);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 /*
  * Return TRUE if the identified node in the job allocation can satisfy the
  * job's GRES specification without change in its bitmaps. In other words,
@@ -6760,13 +6814,12 @@ static bool _validate_node_gres_type(uint32_t job_id, list_t *job_gres_list,
 				     int node_inx, list_t *node_gres_list,
 				     char *node_name)
 {
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	gres_node_state_t *gres_ns;
-	gres_state_t *gres_state_node;
-	uint32_t plugin_id;
-	bool rc = true;
+	validate_job_gres_cnt_t validate_job_gres_cnt = {
+		.job_id = job_id,
+		.node_gres_list = node_gres_list,
+		.node_inx = node_inx,
+		.node_name = node_name,
+	};
 
 	if (!job_gres_list)
 		return true;
@@ -6776,44 +6829,12 @@ static bool _validate_node_gres_type(uint32_t job_id, list_t *job_gres_list,
 
 	xassert(gres_context_cnt >= 0);
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		gres_js = gres_state_job->gres_data;
-		if (!gres_js ||
-		    !gres_js->type_id ||
-		    !gres_js->gres_bit_alloc ||
-		    (gres_js->node_cnt <= node_inx) ||
-		    !gres_js->gres_bit_alloc[node_inx])
-			continue;
+	if (list_find_first(job_gres_list,
+			    _find_invalid_job_gres_type_on_node,
+			    &validate_job_gres_cnt))
+		return false;
 
-		if (gres_id_shared(gres_state_job->config_flags))
-			plugin_id = gpu_plugin_id;
-		else
-			plugin_id = gres_state_job->plugin_id;
-
-		if ((gres_state_node = list_find_first(node_gres_list,
-						       gres_find_id,
-						       &plugin_id))) {
-			bool found_type = false;
-			gres_ns = gres_state_node->gres_data;
-			for (int i = 0; i < gres_ns->type_cnt; i++) {
-				if (gres_ns->type_id[i] == gres_js->type_id) {
-					found_type = true;
-					break;
-				}
-			}
-			if (!found_type) {
-				error("%s: Killing job %u: gres/%s type %s not found on node %s",
-				      __func__, job_id, gres_state_job->gres_name,
-				      gres_js->type_name, node_name);
-				      rc = false;
-				break;
-			}
-		}
-	}
-	list_iterator_destroy(job_gres_iter);
-
-	return rc;
+	return true;
 }
 
 /*
