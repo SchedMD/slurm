@@ -6229,25 +6229,28 @@ static int _foreach_merge_generic_data(void *x, void *args)
  * Put generic data (*_per_gres) on other gres of the same kind.
  */
 static int _merge_generic_data(
-	list_t *gres_list, overlap_check_t *over_list, int over_count, bool is_job)
+	list_t *gres_list, job_validate_t *job_validate)
 {
 	int rc = SLURM_SUCCESS;
 	merge_generic_t merge_generic = {
-		.is_job = is_job,
+		.is_job = job_validate->is_job,
 	};
 
-	for (int i = 0; i < over_count; i++) {
-		if (!over_list[i].with_type || !over_list[i].without_type_state)
+	for (int i = 0; i < job_validate->over_count; i++) {
+		overlap_check_t *overlap_check = &job_validate->over_list[i];
+		if (!overlap_check->with_type ||
+		    !overlap_check->without_type_state)
 			continue;
-		if (!_generic_state(over_list[i].without_type_state, is_job)) {
+		if (!_generic_state(overlap_check->without_type_state,
+				    job_validate->is_job)) {
 			rc = ESLURM_INVALID_GRES_TYPE;
 			break;
 		}
 
 		/* Propagate generic parameters */
 		merge_generic.generic_gres_data =
-			over_list[i].without_type_state;
-		merge_generic.plugin_id = over_list[i].plugin_id;
+			overlap_check->without_type_state;
+		merge_generic.plugin_id = overlap_check->plugin_id;
 
 		(void) list_delete_all(gres_list,
 				       _foreach_merge_generic_data,
@@ -6610,9 +6613,7 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 
 	if (job_validate.overlap_merge) /* Merge generic data if possible */
 		job_validate.rc = _merge_generic_data(*gres_js_val->gres_list,
-						      job_validate.over_list,
-						      job_validate.over_count,
-						      1);
+						      &job_validate);
 
 	xfree(job_validate.over_list);
 
@@ -9050,10 +9051,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 
 			if (job_validate.overlap_merge)
 				rc = _merge_generic_data(new_step_list,
-							 job_validate.over_list,
-							 job_validate.
-							 over_count,
-							 0);
+							 &job_validate);
 			xfree(job_validate.over_list);
 		}
 		if (rc == SLURM_SUCCESS)
