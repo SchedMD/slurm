@@ -359,6 +359,36 @@ static int _clean_job_basepath(uint32_t job_id)
 	return SLURM_SUCCESS;
 }
 
+static char **_setup_script_env(uint32_t job_id,
+				stepd_step_rec_t *step,
+				char *src_bind)
+{
+	char **env = env_array_create();
+
+	env_array_overwrite_fmt(&env, "SLURM_JOB_ID", "%u", job_id);
+	env_array_overwrite_fmt(&env, "SLURM_CONF", "%s", conf->conffile);
+	env_array_overwrite_fmt(&env, "SLURMD_NODENAME", "%s", conf->node_name);
+	if (src_bind)
+		env_array_overwrite_fmt(&env, "SLURM_JOB_MOUNTPOINT_SRC", "%s",
+					src_bind);
+	if (step) {
+		if (step->het_job_id && (step->het_job_id != NO_VAL))
+			env_array_overwrite_fmt(&env, "SLURM_HET_JOB_ID", "%u",
+						step->het_job_id);
+		env_array_overwrite_fmt(&env, "SLURM_JOB_GID", "%u",
+					step->gid);
+		env_array_overwrite_fmt(&env, "SLURM_JOB_UID", "%u",
+					step->uid);
+		env_array_overwrite_fmt(&env, "SLURM_JOB_USER", "%s",
+					step->user_name);
+		if (step->cwd)
+			env_array_overwrite_fmt(&env, "SLURM_JOB_WORK_DIR",
+						"%s", step->cwd);
+	}
+
+	return env;
+}
+
 static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 {
 	char *job_mount = NULL, *ns_holder = NULL, *src_bind = NULL;
@@ -411,36 +441,8 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			.script_type = "initscript",
 			.status = &rc,
 		};
-		run_command_args.env = env_array_create();
-		if (step->het_job_id && (step->het_job_id != NO_VAL))
-			env_array_overwrite_fmt(&run_command_args.env,
-						"SLURM_HET_JOB_ID", "%u",
-						step->het_job_id);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_JOB_GID", "%u",
-					step->gid);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_JOB_ID", "%u", job_id);
-
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_JOB_MOUNTPOINT_SRC", "%s",
-					src_bind);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_JOB_UID", "%u",
-					step->uid);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_JOB_USER", "%s",
-					step->user_name);
-		if (step->cwd)
-			env_array_overwrite_fmt(&run_command_args.env,
-						"SLURM_JOB_WORK_DIR", "%s",
-						step->cwd);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_CONF", "%s",
-					conf->conffile);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURMD_NODENAME", "%s",
-					conf->node_name);
+		run_command_args.env = _setup_script_env(job_id, step,
+							 src_bind);
 
 		log_flag(JOB_CONT, "Running InitScript");
 		result = run_command(&run_command_args);
