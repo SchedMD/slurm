@@ -381,6 +381,9 @@ static char **_setup_script_env(uint32_t job_id,
 					step->uid);
 		env_array_overwrite_fmt(&env, "SLURM_JOB_USER", "%s",
 					step->user_name);
+		if (step->alias_list)
+			env_array_overwrite_fmt(&env, "SLURM_NODE_ALIASES",
+						"%s", step->alias_list);
 		if (step->cwd)
 			env_array_overwrite_fmt(&env, "SLURM_JOB_WORK_DIR",
 						"%s", step->cwd);
