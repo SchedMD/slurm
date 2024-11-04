@@ -408,7 +408,8 @@ extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 
 	log_flag(CONMGR, "%s: [%s] changing type: %s->%s pending_reads=%u pending_writes=%u",
 		 __func__, con->name, conmgr_con_type_string(con->type),
-		 conmgr_con_type_string(type), get_buf_offset(con->in),
+		 conmgr_con_type_string(type),
+		 con->in ? get_buf_offset(con->in) : 0,
 		 list_count(con->out));
 
 	/* Always set TCP_NODELAY for Slurm RPC connections */
