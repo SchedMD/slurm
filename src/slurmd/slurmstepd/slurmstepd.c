@@ -452,13 +452,13 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	if (step->container)
 		cleanup_container(step);
 
-	run_command_shutdown();
-
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 		if (container_g_stepd_delete(step->step_id.job_id))
 			error("container_g_stepd_delete(%u): %m",
 			      step->step_id.job_id);
 	}
+
+	run_command_shutdown();
 
 	/*
 	 * join() must be done before _step_cleanup() where job_step_ptr is

@@ -359,6 +359,43 @@ static int _clean_job_basepath(uint32_t job_id)
 	return SLURM_SUCCESS;
 }
 
+static char **_setup_script_env(uint32_t job_id,
+				stepd_step_rec_t *step,
+				char *src_bind,
+				char *ns_holder)
+{
+	char **env = env_array_create();
+
+	env_array_overwrite_fmt(&env, "SLURM_JOB_ID", "%u", job_id);
+	env_array_overwrite_fmt(&env, "SLURM_CONF", "%s", conf->conffile);
+	env_array_overwrite_fmt(&env, "SLURMD_NODENAME", "%s", conf->node_name);
+	if (src_bind)
+		env_array_overwrite_fmt(&env, "SLURM_JOB_MOUNTPOINT_SRC", "%s",
+					src_bind);
+	if (step) {
+		if (step->het_job_id && (step->het_job_id != NO_VAL))
+			env_array_overwrite_fmt(&env, "SLURM_HET_JOB_ID", "%u",
+						step->het_job_id);
+		env_array_overwrite_fmt(&env, "SLURM_JOB_GID", "%u",
+					step->gid);
+		env_array_overwrite_fmt(&env, "SLURM_JOB_UID", "%u",
+					step->uid);
+		env_array_overwrite_fmt(&env, "SLURM_JOB_USER", "%s",
+					step->user_name);
+		if (step->alias_list)
+			env_array_overwrite_fmt(&env, "SLURM_NODE_ALIASES",
+						"%s", step->alias_list);
+		if (step->cwd)
+			env_array_overwrite_fmt(&env, "SLURM_JOB_WORK_DIR",
+						"%s", step->cwd);
+	}
+
+	if (ns_holder)
+		env_array_overwrite_fmt(&env, "SLURM_NS", "%s", ns_holder);
+
+	return env;
+}
+
 static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 {
 	char *job_mount = NULL, *ns_holder = NULL, *src_bind = NULL;
@@ -406,54 +443,25 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 	/* run any initialization script- if any*/
 	if (jc_conf->initscript) {
 		run_command_args_t run_command_args = {
-			.max_wait = 10000,
+			.max_wait = 10 * MSEC_IN_SEC,
 			.script_path = jc_conf->initscript,
 			.script_type = "initscript",
 			.status = &rc,
 		};
-		run_command_args.env = env_array_create();
-		if (step->het_job_id && (step->het_job_id != NO_VAL))
-			env_array_overwrite_fmt(&run_command_args.env,
-						"SLURM_HET_JOB_ID", "%u",
-						step->het_job_id);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_JOB_GID", "%u",
-					step->gid);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_JOB_ID", "%u", job_id);
+		run_command_args.env = _setup_script_env(job_id, step,
+							 src_bind, NULL);
 
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_JOB_MOUNTPOINT_SRC", "%s",
-					src_bind);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_JOB_UID", "%u",
-					step->uid);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_JOB_USER", "%s",
-					step->user_name);
-		if (step->cwd)
-			env_array_overwrite_fmt(&run_command_args.env,
-						"SLURM_JOB_WORK_DIR", "%s",
-						step->cwd);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURM_CONF", "%s",
-					conf->conffile);
-		env_array_overwrite_fmt(&run_command_args.env,
-					"SLURMD_NODENAME", "%s",
-					conf->node_name);
+		log_flag(JOB_CONT, "Running InitScript");
 		result = run_command(&run_command_args);
+		log_flag(JOB_CONT, "InitScript rc: %d, stdout: %s", rc, result);
 		env_array_free(run_command_args.env);
-		if (rc) {
-			error("%s: init script: %s failed",
-			      __func__, jc_conf->initscript);
-			log_flag(JOB_CONT, "initscript fail status: %d, stdout: %s",
-				 *(run_command_args.status), result);
-			xfree(result);
-			goto exit2;
-		} else {
-			log_flag(JOB_CONT, "initscript stdout: %s", result);
-		}
 		xfree(result);
+
+		if (rc) {
+			error("%s: InitScript: %s failed with rc: %d",
+			      __func__, jc_conf->initscript, rc);
+			goto exit2;
+		}
 	}
 
 	rc = mkdir(src_bind, 0700);
@@ -637,6 +645,31 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		rc = 0;
 	}
 
+	/* run any post clone initialization script */
+	if (jc_conf->clonensscript) {
+		run_command_args_t run_command_args = {
+			.max_wait = jc_conf->clonensscript_wait * MSEC_IN_SEC,
+			.script_path = jc_conf->clonensscript,
+			.script_type = "clonensscript",
+			.status = &rc,
+		};
+		run_command_args.env = _setup_script_env(job_id, step,
+							 src_bind, ns_holder);
+
+		log_flag(JOB_CONT, "Running CloneNSScript");
+		result = run_command(&run_command_args);
+		log_flag(JOB_CONT, "CloneNSScript rc: %d, stdout: %s",
+			 rc, result);
+		xfree(result);
+		env_array_free(run_command_args.env);
+
+		if (rc) {
+			error("%s: CloneNSScript %s failed with rc=%d",
+			      __func__, jc_conf->clonensscript, rc);
+			goto exit2;
+		}
+	}
+
 exit1:
 	sem_destroy(sem1);
 	munmap(sem1, sizeof(*sem1));
@@ -749,8 +782,33 @@ static int _delete_ns(uint32_t job_id)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
 	int rc = 0, failures = 0;
+	char *result = NULL;
 
 	_create_paths(job_id, &job_mount, &ns_holder, NULL);
+
+	/* run any post clone epilog script */
+	/* initialize environ variable to include jobid and namespace file */
+	if (jc_conf->clonensepilog) {
+		run_command_args_t run_command_args = {
+			.max_wait = jc_conf->clonensepilog_wait * MSEC_IN_SEC,
+			.script_path = jc_conf->clonensepilog,
+			.script_type = "clonensepilog",
+			.status = &rc,
+		};
+		run_command_args.env = _setup_script_env(job_id, NULL,
+							 NULL, ns_holder);
+		log_flag(JOB_CONT, "Running CloneNSEpilog");
+		result = run_command(&run_command_args);
+		env_array_free(run_command_args.env);
+		log_flag(JOB_CONT, "CloneNSEpilog rc: %d, stdout: %s",
+			 rc, result);
+		xfree(result);
+
+		if (rc) {
+			error("%s: CloneNSEpilog script %s failed with rc=%d",
+			      __func__, jc_conf->clonensepilog, rc);
+		}
+	}
 
 	errno = 0;
 
