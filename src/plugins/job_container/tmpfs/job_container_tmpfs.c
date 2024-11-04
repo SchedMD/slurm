@@ -443,7 +443,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 	/* run any initialization script- if any*/
 	if (jc_conf->initscript) {
 		run_command_args_t run_command_args = {
-			.max_wait = 10000,
+			.max_wait = 10 * MSEC_IN_SEC,
 			.script_path = jc_conf->initscript,
 			.script_type = "initscript",
 			.status = &rc,
