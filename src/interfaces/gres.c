@@ -280,7 +280,7 @@ typedef struct {
 	bool is_job;
 	bool overlap_merge;
 	int over_count;
-	overlap_check_t *over_list;
+	overlap_check_t *over_array;
 	int rc;
 	uint32_t tmp_min_cpus;
 } job_validate_t;
@@ -6149,9 +6149,9 @@ static bool _generic_state(void *gres_data, bool is_job)
 }
 
 /*
- * Setup over_list to mark if we have gres of the same type.
+ * Setup over_array to mark if we have gres of the same type.
  */
-static void _set_over_list(gres_state_t *gres_state,
+static void _set_over_array(gres_state_t *gres_state,
 			   job_validate_t *job_validate)
 {
 	char *type_name = job_validate->is_job ?
@@ -6160,10 +6160,10 @@ static void _set_over_list(gres_state_t *gres_state,
 	int i;
 	overlap_check_t *overlap_check = NULL;
 
-	xassert(job_validate->over_list);
+	xassert(job_validate->over_array);
 
 	for (i = 0; i < job_validate->over_count; i++) {
-		if (job_validate->over_list[i].plugin_id ==
+		if (job_validate->over_array[i].plugin_id ==
 		    gres_state->plugin_id)
 			break;
 	}
@@ -6172,7 +6172,7 @@ static void _set_over_list(gres_state_t *gres_state,
 	 * Set overlap_check after the loop since when over_count is 0 the loop
 	 * won't happen.
 	 */
-	overlap_check = &job_validate->over_list[i];
+	overlap_check = &job_validate->over_array[i];
 	xassert(overlap_check);
 
 	if (i >= job_validate->over_count) {
@@ -6244,7 +6244,7 @@ static int _merge_generic_data(
 	};
 
 	for (int i = 0; i < job_validate->over_count; i++) {
-		overlap_check_t *overlap_check = &job_validate->over_list[i];
+		overlap_check_t *overlap_check = &job_validate->over_array[i];
 		if (!overlap_check->with_type ||
 		    !overlap_check->without_type_state)
 			continue;
@@ -6267,9 +6267,9 @@ static int _merge_generic_data(
 	return rc;
 }
 
-static int _foreach_set_over_list(void *x, void *args)
+static int _foreach_set_over_array(void *x, void *args)
 {
-	_set_over_list(x, args);
+	_set_over_array(x, args);
 
 	return 0;
 }
@@ -6300,7 +6300,7 @@ static int _foreach_job_state_validate(void *x, void *args)
 		job_validate->tmp_min_cpus +=
 			job_validate->cpus_per_gres * gres_js->total_gres;
 
-	(void) _foreach_set_over_list(gres_state_job, job_validate);
+	(void) _foreach_set_over_array(gres_state_job, job_validate);
 
 	return 0;
 }
@@ -6602,7 +6602,7 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 	 * Check for record overlap (e.g. "gpu:2,gpu:tesla:1")
 	 * Ensure tres_per_job >= tres_per_node >= tres_per_socket
 	 */
-	job_validate.over_list = xcalloc(size, sizeof(overlap_check_t));
+	job_validate.over_array = xcalloc(size, sizeof(overlap_check_t));
 
 	(void) list_for_each(*gres_js_val->gres_list,
 			     _foreach_job_state_validate,
@@ -6622,7 +6622,7 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 		job_validate.rc = _merge_generic_data(*gres_js_val->gres_list,
 						      &job_validate);
 
-	xfree(job_validate.over_list);
+	xfree(job_validate.over_array);
 
 	return job_validate.rc;
 }
@@ -9048,18 +9048,18 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	} else {
 		if (rc == SLURM_SUCCESS) {
 			job_validate_t job_validate = {
-				.over_list = xcalloc(list_count(new_step_list),
-						     sizeof(overlap_check_t)),
+				.over_array = xcalloc(list_count(new_step_list),
+						      sizeof(overlap_check_t)),
 			};
 
 			(void) list_for_each(new_step_list,
-					     _foreach_set_over_list,
+					     _foreach_set_over_array,
 					     &job_validate);
 
 			if (job_validate.overlap_merge)
 				rc = _merge_generic_data(new_step_list,
 							 &job_validate);
-			xfree(job_validate.over_list);
+			xfree(job_validate.over_array);
 		}
 		if (rc == SLURM_SUCCESS)
 			*step_gres_list = new_step_list;
