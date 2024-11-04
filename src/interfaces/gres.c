@@ -6771,6 +6771,9 @@ static bool _validate_node_gres_type(uint32_t job_id, list_t *job_gres_list,
 	if (!job_gres_list)
 		return true;
 
+	if (!node_gres_list)
+		return false;
+
 	xassert(gres_context_cnt >= 0);
 
 	job_gres_iter = list_iterator_create(job_gres_list);
@@ -6782,9 +6785,6 @@ static bool _validate_node_gres_type(uint32_t job_id, list_t *job_gres_list,
 		    (gres_js->node_cnt <= node_inx) ||
 		    !gres_js->gres_bit_alloc[node_inx])
 			continue;
-
-		if (!node_gres_list)
-			return false;
 
 		if (gres_id_shared(gres_state_job->config_flags))
 			plugin_id = gpu_plugin_id;
