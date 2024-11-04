@@ -76,6 +76,7 @@ static const struct {
 	conmgr_con_type_t type;
 	const char *string;
 } con_types[] = {
+	T(CON_TYPE_NONE),
 	T(CON_TYPE_RAW),
 	T(CON_TYPE_RPC),
 };
@@ -523,7 +524,7 @@ extern int add_connection(conmgr_con_type_t type,
 		.work = list_create(NULL),
 		.write_complete_work = list_create(NULL),
 		.new_arg = arg,
-		.type = CON_TYPE_INVALID,
+		.type = CON_TYPE_NONE,
 		.polling_input_fd = PCTL_TYPE_NONE,
 		.polling_output_fd = PCTL_TYPE_NONE,
 		/* Set flags not related to connection state tracking */
@@ -713,7 +714,7 @@ extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
 	slurm_mutex_lock(&mgr.mutex);
 
 	xassert(src->magic == MAGIC_CON_MGR_FD);
-	xassert(type > CON_TYPE_INVALID);
+	xassert(type > CON_TYPE_NONE);
 	xassert(type < CON_TYPE_MAX);
 
 	/* Reject obviously invalid states immediately */
