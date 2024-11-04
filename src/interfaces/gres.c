@@ -6081,7 +6081,7 @@ static gres_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 		gres_js = gres_state_job->gres_data;
 	} else {
 		gres_js = xmalloc(sizeof(gres_job_state_t));
-		gres_js->type_id = gres_build_id(type);
+		gres_js->type_id = job_search_key.type_id;
 		gres_js->type_name = type;
 		type = NULL;	/* String moved above */
 
@@ -8677,7 +8677,7 @@ static gres_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 		gres_ss = gres_state_step->gres_data;
 	} else {
 		gres_ss = xmalloc(sizeof(gres_step_state_t));
-		gres_ss->type_id = gres_build_id(type);
+		gres_ss->type_id = step_search_key.type_id;
 		gres_ss->type_name = type;
 		type = NULL;	/* String moved above */
 		gres_state_step = gres_create_state(
