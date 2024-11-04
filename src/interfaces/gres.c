@@ -6685,54 +6685,8 @@ static int _find_job_has_gres_bits(void *x, void *args)
 	return 0;
 }
 
-static int _find_invalid_job_gres_type_on_node(void *x, void *args)
-{
-	gres_state_t *gres_state_job = x;
-	gres_job_state_t *gres_js = gres_state_job->gres_data;
-	validate_job_gres_cnt_t *validate_job_gres_cnt = args;
-	gres_state_t *gres_state_node;
-	uint32_t plugin_id;
 
-	if (!gres_js ||
-	    !gres_js->type_id ||
-	    !gres_js->gres_bit_alloc ||
-	    (gres_js->node_cnt <= validate_job_gres_cnt->node_inx) ||
-	    !gres_js->gres_bit_alloc[validate_job_gres_cnt->node_inx])
-		return 0;
-
-	if (gres_id_shared(gres_state_job->config_flags))
-		plugin_id = gpu_plugin_id;
-	else
-		plugin_id = gres_state_job->plugin_id;
-
-	if ((gres_state_node = list_find_first(validate_job_gres_cnt->
-					       node_gres_list,
-					       gres_find_id,
-					       &plugin_id))) {
-		bool found_type = false;
-		gres_node_state_t *gres_ns = gres_state_node->gres_data;
-
-		for (int i = 0; i < gres_ns->type_cnt; i++) {
-			if (gres_ns->type_id[i] == gres_js->type_id) {
-				found_type = true;
-				break;
-			}
-		}
-		if (!found_type) {
-			error("%s: Killing job %u: gres/%s type %s not found on node %s",
-			      __func__,
-			      validate_job_gres_cnt->job_id,
-			      gres_state_job->gres_name,
-			      gres_js->type_name,
-			      validate_job_gres_cnt->node_name);
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
-static int _find_invalid_job_gres_cnt_on_node(void *x, void *args)
+static int _find_invalid_job_gres_on_node(void *x, void *args)
 {
 	gres_state_t *gres_state_job = x;
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
@@ -6747,8 +6701,8 @@ static int _find_invalid_job_gres_cnt_on_node(void *x, void *args)
 	    !gres_js->gres_bit_alloc[validate_job_gres_cnt->node_inx])
 		return 0;
 
-	job_gres_cnt = bit_size(gres_js->gres_bit_alloc[
-					validate_job_gres_cnt->node_inx]);
+	job_gres_cnt = bit_size(
+		gres_js->gres_bit_alloc[validate_job_gres_cnt->node_inx]);
 
 	if (gres_id_shared(gres_state_job->config_flags))
 		plugin_id = gpu_plugin_id;
@@ -6761,6 +6715,26 @@ static int _find_invalid_job_gres_cnt_on_node(void *x, void *args)
 					       &plugin_id))) {
 		gres_node_state_t *gres_ns = gres_state_node->gres_data;
 		node_gres_cnt = (int) gres_ns->gres_cnt_config;
+		if (gres_js->type_id) {
+			bool found_type = false;
+			gres_node_state_t *gres_ns = gres_state_node->gres_data;
+
+			for (int i = 0; i < gres_ns->type_cnt; i++) {
+				if (gres_ns->type_id[i] == gres_js->type_id) {
+					found_type = true;
+					break;
+				}
+			}
+			if (!found_type) {
+				error("%s: Killing job %u: gres/%s type %s not found on node %s",
+				      __func__,
+				      validate_job_gres_cnt->job_id,
+				      gres_state_job->gres_name,
+				      gres_js->type_name,
+				      validate_job_gres_cnt->node_name);
+				return 1;
+			}
+		}
 	}
 
 	if (job_gres_cnt != node_gres_cnt) {
@@ -6774,67 +6748,6 @@ static int _find_invalid_job_gres_cnt_on_node(void *x, void *args)
 	}
 
 	return 0;
-}
-
-/*
- * Return TRUE if the identified node in the job allocation can satisfy the
- * job's GRES specification without change in its bitmaps. In other words,
- * return FALSE if the job allocation identifies specific GRES devices and the
- * count of those devices on this node has changed.
- *
- * IN job_gres_list - List of GRES records for this job to track usage
- * IN node_inx - zero-origin index into this job's node allocation
- * IN node_gres_list - List of GRES records for this node
- */
-static bool _validate_node_gres_cnt(uint32_t job_id, list_t *job_gres_list,
-				    int node_inx, list_t *node_gres_list,
-				    char *node_name)
-{
-	validate_job_gres_cnt_t validate_job_gres_cnt = {
-		.job_id = job_id,
-		.node_gres_list = node_gres_list,
-		.node_inx = node_inx,
-		.node_name = node_name,
-	};
-
-	if (!job_gres_list)
-		return true;
-
-	xassert(gres_context_cnt >= 0);
-
-	if (list_find_first(job_gres_list,
-			    _find_invalid_job_gres_cnt_on_node,
-			    &validate_job_gres_cnt))
-		return false;
-
-	return true;
-}
-
-static bool _validate_node_gres_type(uint32_t job_id, list_t *job_gres_list,
-				     int node_inx, list_t *node_gres_list,
-				     char *node_name)
-{
-	validate_job_gres_cnt_t validate_job_gres_cnt = {
-		.job_id = job_id,
-		.node_gres_list = node_gres_list,
-		.node_inx = node_inx,
-		.node_name = node_name,
-	};
-
-	if (!job_gres_list)
-		return true;
-
-	if (!node_gres_list)
-		return false;
-
-	xassert(gres_context_cnt >= 0);
-
-	if (list_find_first(job_gres_list,
-			    _find_invalid_job_gres_type_on_node,
-			    &validate_job_gres_cnt))
-		return false;
-
-	return true;
 }
 
 /*
@@ -6853,26 +6766,30 @@ extern int gres_job_revalidate2(uint32_t job_id, list_t *job_gres_list,
 {
 	node_record_t *node_ptr;
 	int rc = SLURM_SUCCESS;
-	int node_inx = -1;
+	validate_job_gres_cnt_t validate_job_gres_cnt = {
+		.job_id = job_id,
+		.node_inx = -1,
+	};
 
 	if (!job_gres_list || !node_bitmap ||
 	    !list_find_first(job_gres_list, _find_job_has_gres_bits, NULL))
 		return SLURM_SUCCESS;
 
+	xassert(gres_context_cnt >= 0);
+
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
-		node_inx++;
-		if (!_validate_node_gres_cnt(job_id, job_gres_list, node_inx,
-					     node_ptr->gres_list,
-					     node_ptr->name)) {
-			rc = ESLURM_INVALID_GRES;
-			break;
-		}
-		if (!_validate_node_gres_type(job_id, job_gres_list, node_inx,
-					      node_ptr->gres_list,
-					      node_ptr->name)) {
-			rc = ESLURM_INVALID_GRES;
-			break;
-		}
+		/* If no node_ptr->gres_list we are invalid */
+		if (!node_ptr->gres_list)
+			return ESLURM_INVALID_GRES;
+
+		validate_job_gres_cnt.node_inx++;
+		validate_job_gres_cnt.node_gres_list = node_ptr->gres_list;
+		validate_job_gres_cnt.node_name = node_ptr->name;
+
+		if (list_find_first(job_gres_list,
+				    _find_invalid_job_gres_on_node,
+				    &validate_job_gres_cnt))
+			return ESLURM_INVALID_GRES;
 	}
 
 	return rc;
