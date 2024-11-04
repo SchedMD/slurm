@@ -10527,10 +10527,8 @@ extern bool gres_id_sharing(uint32_t plugin_id)
  */
 extern uint64_t gres_get_value_by_type(list_t *job_gres_list, char *gres_name)
 {
-	int i;
 	uint32_t plugin_id;
 	uint64_t gres_cnt = 0;
-	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 
@@ -10538,23 +10536,14 @@ extern uint64_t gres_get_value_by_type(list_t *job_gres_list, char *gres_name)
 		return NO_VAL64;
 
 	gres_cnt = NO_VAL64;
-	xassert(gres_context_cnt >= 0);
 	plugin_id = gres_build_id(gres_name);
 
-	slurm_mutex_lock(&gres_context_lock);
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_state_job->plugin_id != plugin_id)
-				continue;
-			gres_js = (gres_job_state_t *)
-				gres_state_job->gres_data;
-			gres_cnt = gres_js->gres_per_node;
-			break;
-		}
+	gres_state_job = list_find_first(
+		job_gres_list, gres_find_id, &plugin_id);
+	if (gres_state_job) {
+		gres_js = gres_state_job->gres_data;
+		gres_cnt = gres_js->gres_per_node;
 	}
-	list_iterator_destroy(job_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return gres_cnt;
 }
