@@ -6158,6 +6158,7 @@ static void _set_over_list(gres_state_t *gres_state,
 		((gres_job_state_t *) gres_state->gres_data)->type_name:
 		((gres_step_state_t *) gres_state->gres_data)->type_name;
 	int i;
+	overlap_check_t *overlap_check = NULL;
 
 	xassert(job_validate->over_list);
 
@@ -6167,25 +6168,31 @@ static void _set_over_list(gres_state_t *gres_state,
 			break;
 	}
 
+	/*
+	 * Set overlap_check after the loop since when over_count is 0 the loop
+	 * won't happen.
+	 */
+	overlap_check = &job_validate->over_list[i];
+	xassert(overlap_check);
+
 	if (i >= job_validate->over_count) {
-		job_validate->over_list[job_validate->over_count++].plugin_id =
-			gres_state->plugin_id;
+		job_validate->over_count++;
+		overlap_check->plugin_id = gres_state->plugin_id;
 		if (type_name) {
-			job_validate->over_list[i].with_type = true;
+			overlap_check->with_type = true;
 		} else {
-			job_validate->over_list[i].without_type = true;
-			job_validate->over_list[i].without_type_state =
+			overlap_check->without_type = true;
+			overlap_check->without_type_state =
 				gres_state->gres_data;
 		}
 	} else if (type_name) {
-		job_validate->over_list[i].with_type = true;
-		if (job_validate->over_list[i].without_type)
+		overlap_check->with_type = true;
+		if (overlap_check->without_type)
 			job_validate->overlap_merge = true;
 	} else {
-		job_validate->over_list[i].without_type = true;
-		job_validate->over_list[i].without_type_state =
-			gres_state->gres_data;
-		if (job_validate->over_list[i].with_type)
+		overlap_check->without_type = true;
+		overlap_check->without_type_state = gres_state->gres_data;
+		if (overlap_check->with_type)
 			job_validate->overlap_merge = true;
 	}
 
