@@ -49,6 +49,10 @@
 typedef struct slurm_jc_conf {
 	bool auto_basepath;
 	char *basepath;
+	char *clonensscript;
+	char *clonensepilog;
+	uint32_t clonensscript_wait;
+	uint32_t clonensepilog_wait;
 	char *dirs;
 	bool entire_step_in_ns;
 	char *initscript;

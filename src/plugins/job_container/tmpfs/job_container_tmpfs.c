@@ -645,6 +645,31 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		rc = 0;
 	}
 
+	/* run any post clone initialization script */
+	if (jc_conf->clonensscript) {
+		run_command_args_t run_command_args = {
+			.max_wait = jc_conf->clonensscript_wait * MSEC_IN_SEC,
+			.script_path = jc_conf->clonensscript,
+			.script_type = "clonensscript",
+			.status = &rc,
+		};
+		run_command_args.env = _setup_script_env(job_id, step,
+							 src_bind, ns_holder);
+
+		log_flag(JOB_CONT, "Running CloneNSScript");
+		result = run_command(&run_command_args);
+		log_flag(JOB_CONT, "CloneNSScript rc: %d, stdout: %s",
+			 rc, result);
+		xfree(result);
+		env_array_free(run_command_args.env);
+
+		if (rc) {
+			error("%s: CloneNSScript %s failed with rc=%d",
+			      __func__, jc_conf->clonensscript, rc);
+			goto exit2;
+		}
+	}
+
 exit1:
 	sem_destroy(sem1);
 	munmap(sem1, sizeof(*sem1));
@@ -757,8 +782,33 @@ static int _delete_ns(uint32_t job_id)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
 	int rc = 0, failures = 0;
+	char *result = NULL;
 
 	_create_paths(job_id, &job_mount, &ns_holder, NULL);
+
+	/* run any post clone epilog script */
+	/* initialize environ variable to include jobid and namespace file */
+	if (jc_conf->clonensepilog) {
+		run_command_args_t run_command_args = {
+			.max_wait = jc_conf->clonensepilog_wait * MSEC_IN_SEC,
+			.script_path = jc_conf->clonensepilog,
+			.script_type = "clonensepilog",
+			.status = &rc,
+		};
+		run_command_args.env = _setup_script_env(job_id, NULL,
+							 NULL, ns_holder);
+		log_flag(JOB_CONT, "Running CloneNSEpilog");
+		result = run_command(&run_command_args);
+		env_array_free(run_command_args.env);
+		log_flag(JOB_CONT, "CloneNSEpilog rc: %d, stdout: %s",
+			 rc, result);
+		xfree(result);
+
+		if (rc) {
+			error("%s: CloneNSEpilog script %s failed with rc=%d",
+			      __func__, jc_conf->clonensepilog, rc);
+		}
+	}
 
 	errno = 0;
 
