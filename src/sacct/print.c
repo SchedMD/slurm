@@ -740,6 +740,7 @@ extern void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_DB_INX:
+		case PRINT_SLUID:
 			switch(type) {
 			case JOB:
 				tmp_uint64 = job->db_index;
