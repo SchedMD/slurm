@@ -2492,6 +2492,7 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 {
 	dbd_register_ctld_msg_t *register_ctld_msg = msg->data;
 	int rc = SLURM_SUCCESS;
+	uint32_t id_rc = 0;
 	char *comment = NULL;
 	slurmdb_cluster_cond_t cluster_q;
 	slurmdb_cluster_rec_t cluster;
@@ -2586,6 +2587,9 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	} else if (!list_msg.my_list || !list_count(list_msg.my_list)) {
 		comment = "This cluster hasn't been added to accounting yet";
 		rc = SLURM_ERROR;
+	} else if (cluster.id) {
+		id_rc = cluster.id;
+		id_rc |= RC_AS_CLUSTER_ID;
 	}
 
 	FREE_NULL_LIST(list_msg.my_list);
@@ -2599,8 +2603,8 @@ end_it:
 		_add_registered_cluster(slurmdbd_conn);
 	}
 
-	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
-						rc, comment, DBD_REGISTER_CTLD);
+	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn, id_rc,
+						comment, DBD_REGISTER_CTLD);
 	return rc;
 }
 

@@ -684,7 +684,7 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	xstrfmtcat(query, "select name, control_port, federation, features from %s%s;",
+	xstrfmtcat(query, "select name, control_port, federation, features, id from %s%s;",
 		   cluster_table, extra);
 
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
@@ -704,6 +704,8 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		char *tmp_vals = xstrdup(vals);
 
 		object = xstrdup(row[0]);
+		if (clust_reg)
+			cluster->id = slurm_atoul(row[4]);
 
 		if (cluster->fed.name) {
 			int id = 0;

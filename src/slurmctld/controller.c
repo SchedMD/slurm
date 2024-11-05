@@ -470,13 +470,30 @@ static void _reopen_stdio(void)
 
 static void _init_db_conn(void)
 {
+	int rc;
+
 	if (acct_db_conn)
 		acct_storage_g_close_connection(&acct_db_conn);
 
 	acct_db_conn = acct_storage_g_get_connection(
 		0, NULL, false, slurm_conf.cluster_name);
-	clusteracct_storage_g_register_ctld(acct_db_conn,
-					    slurm_conf.slurmctld_port);
+	rc = clusteracct_storage_g_register_ctld(acct_db_conn,
+						 slurm_conf.slurmctld_port);
+
+	if (rc & RC_AS_CLUSTER_ID) {
+		uint16_t id = rc & ~RC_AS_CLUSTER_ID;
+		if (slurm_conf.cluster_id && (id != slurm_conf.cluster_id)) {
+			fatal("CLUSTER ID MISMATCH.\n"
+			      "slurmctld has been started with \"ClusterID=%u\"  from the state files in StateSaveLocation, but the DBD thinks it should be \"%u\".\n"
+			      "Running multiple clusters from a shared StateSaveLocation WILL CAUSE CORRUPTION.\n"
+			      "Remove %s/clustername to override this safety check if this is intentional.",
+			      slurm_conf.cluster_id, id,
+			      slurm_conf.state_save_location);
+		} else if (!slurm_conf.cluster_id) {
+			slurm_conf.cluster_id = id;
+			_create_clustername_file();
+		}
+	}
 }
 
 /*
@@ -498,6 +515,10 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 
 		error("Retrying initial connection to slurmdbd");
 		_init_db_conn();
+		if (!slurm_conf.cluster_id) {
+			error("Still don't know my ClusterID");
+			continue;
+		}
 		if (!assoc_mgr_init(acct_db_conn, args, errno))
 			break;
 	}
@@ -720,8 +741,9 @@ int main(int argc, char **argv)
 		      slurm_conf.accounting_storage_type);
 	}
 
-	info("%s version %s started on cluster %s",
-	     slurm_prog_name, SLURM_VERSION_STRING, slurm_conf.cluster_name);
+	info("%s version %s started on cluster %s(%u)",
+	     slurm_prog_name, SLURM_VERSION_STRING, slurm_conf.cluster_name,
+	     slurm_conf.cluster_id);
 	if ((error_code = gethostname_short(slurmctld_config.node_name_short,
 					    HOST_NAME_MAX)))
 		fatal("getnodename_short error %s", slurm_strerror(error_code));
@@ -2615,7 +2637,8 @@ extern void ctld_assoc_mgr_init(void)
 
 		error("Association database appears down, reading from state files.");
 
-		if ((load_assoc_mgr_last_tres() != SLURM_SUCCESS) ||
+		if (!slurm_conf.cluster_id ||
+		    (load_assoc_mgr_last_tres() != SLURM_SUCCESS) ||
 		    (load_assoc_mgr_state() != SLURM_SUCCESS)) {
 			error("Unable to get any information from the state file");
 			_retry_init_db_conn(&assoc_init_arg);
@@ -3256,12 +3279,21 @@ static bool _verify_clustername(void)
 	xstrfmtcat(filename, "%s/clustername", slurm_conf.state_save_location);
 
 	if ((fp = fopen(filename, "r"))) {
+		char *pipe;
+
 		/* read value and compare */
 		if (!fgets(name, sizeof(name), fp)) {
 			error("%s: reading cluster name from clustername file",
 			      __func__);
 		}
 		fclose(fp);
+
+		pipe = xstrchr(name, '|');
+		if (pipe) {
+			pipe[0] = '\0';
+			slurm_conf.cluster_id = slurm_atoul(pipe+1);
+		}
+
 		if (xstrcmp(name, slurm_conf.cluster_name)) {
 			fatal("CLUSTER NAME MISMATCH.\n"
 			      "slurmctld has been started with \"ClusterName=%s\", but read \"%s\" from the state files in StateSaveLocation.\n"
@@ -3282,6 +3314,9 @@ static void _create_clustername_file(void)
 {
 	FILE *fp;
 	char *filename = NULL;
+	char *tmp_str = xstrdup_printf("%s|%u",
+				       slurm_conf.cluster_name,
+				       slurm_conf.cluster_id);
 
 	filename = xstrdup_printf("%s/clustername",
 	                          slurm_conf.state_save_location);
@@ -3292,12 +3327,13 @@ static void _create_clustername_file(void)
 		exit(1);
 	}
 
-	if (fputs(slurm_conf.cluster_name, fp) < 0) {
+	if (fputs(tmp_str, fp) < 0) {
 		fatal("%s: failed to write to file %s", __func__, filename);
 		exit(1);
 	}
 	fclose(fp);
 
+	xfree(tmp_str);
 	xfree(filename);
 }
 
