@@ -1693,14 +1693,18 @@ static char *_bit_fmt_hexmask(bitstr_t *bitmap, bool trim_output)
 			i += BITSTR_WORD_SIZE;
 		} else {
 			current = 0;
-			if (                 bit_test(bitmap,i++))
+			if (bit_test(bitmap, i))
 				current |= 0x1;
-			if ((i < bitsize) && bit_test(bitmap,i++))
+			i++;
+			if ((i < bitsize) && bit_test(bitmap, i))
 				current |= 0x2;
-			if ((i < bitsize) && bit_test(bitmap,i++))
+			i++;
+			if ((i < bitsize) && bit_test(bitmap, i))
 				current |= 0x4;
-			if ((i < bitsize) && bit_test(bitmap,i++))
+			i++;
+			if ((i < bitsize) && bit_test(bitmap, i))
 				current |= 0x8;
+			i++;
 
 			if (current <= 9) {
 				current += '0';
