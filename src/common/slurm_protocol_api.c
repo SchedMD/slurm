@@ -106,7 +106,6 @@ static int message_timeout = -1;
 /* STATIC FUNCTIONS */
 static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
-static uid_t _unpack_msg_uid(buf_t *buffer, uint16_t protocol_version);
 
 /* define slurmdbd_conf here so we can treat its existence as a flag */
 slurmdbd_conf_t *slurmdbd_conf = NULL;
@@ -848,10 +847,8 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		peer = fd_resolve_peer(fd);
 	}
 
-	if (unpack_header(&header, buffer) == SLURM_ERROR) {
-		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
+	if ((rc = unpack_header(&header, buffer)))
 		goto total_return;
-	}
 
 	log_flag(NET_RAW, "%s: [%s] header version=0x%hx flags=0x%hx msg_type=%s(0x%hx) body_length=%ub ret_cnt=%hx forward.cnt=%hu forward.init=0x%hx forward.nodelist=%s forward.timeout=%u forward.tree_width=%hu orig_addr=%pA",
 		 __func__, peer, header.version, header.flags,
@@ -861,19 +858,6 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		 header.forward.timeout, header.forward.tree_width,
 		 &header.orig_addr);
 
-	if (check_header_version(&header) < 0) {
-		uid_t uid = _unpack_msg_uid(buffer, header.version);
-
-		/* peer may have not been resolved already */
-		if (!peer)
-			peer = fd_resolve_peer(fd);
-
-		error("%s: [%s] Invalid Protocol Version %u from uid=%u: %m",
-		      __func__, peer, header.version, uid);
-
-		rc = SLURM_PROTOCOL_VERSION_ERROR;
-		goto total_return;
-	}
 	if (header.ret_cnt > 0) {
 		/* peer may have not been resolved already */
 		if (!peer)
@@ -1155,26 +1139,11 @@ list_t *slurm_receive_msgs(int fd, int steps, int timeout)
 	log_flag_hex(NET_RAW, buf, buflen, "%s: [%s] read", __func__, peer);
 	buffer = create_buf(buf, buflen);
 
-	if (unpack_header(&header, buffer) == SLURM_ERROR) {
+	if ((rc = unpack_header(&header, buffer))) {
 		FREE_NULL_BUFFER(buffer);
-		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
 		goto total_return;
 	}
 
-	if (check_header_version(&header) < 0) {
-		uid_t uid = _unpack_msg_uid(buffer, header.version);
-
-		/* peer may have not been resolved already */
-		if (!peer)
-			peer = fd_resolve_peer(fd);
-
-		error("%s: [%s] Invalid Protocol Version %u from uid=%u: %m",
-		      __func__, peer, header.version, uid);
-
-		FREE_NULL_BUFFER(buffer);
-		rc = SLURM_PROTOCOL_VERSION_ERROR;
-		goto total_return;
-	}
 	if (header.ret_cnt > 0) {
 		if (header.ret_list)
 			ret_list = header.ret_list;
@@ -1355,22 +1324,8 @@ extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	log_flag_hex(NET_RAW, buf, buflen, "%s: [%s] read", __func__, peer);
 	buffer = create_buf(buf, buflen);
 
-	if (unpack_header(&header, buffer) == SLURM_ERROR) {
+	if ((rc = unpack_header(&header, buffer))) {
 		FREE_NULL_BUFFER(buffer);
-		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
-		goto total_return;
-	}
-
-	if (check_header_version(&header) < 0) {
-		/* peer may have not been resolved already */
-		if (!peer)
-			peer = fd_resolve_peer(fd);
-
-		error("%s: [%s] Invalid Protocol Version %u: %m",
-		      __func__, peer, header.version);
-
-		FREE_NULL_BUFFER(buffer);
-		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
 
@@ -1463,26 +1418,6 @@ total_return:
 }
 
 /*
- * Try to determine the UID associated with a message with different
- * message header version, return INFINITE ((uid_t) -1) if we can't tell.
- */
-static uid_t _unpack_msg_uid(buf_t *buffer, uint16_t protocol_version)
-{
-	uid_t uid = INFINITE;
-	void *auth_cred = NULL;
-
-	if (!(auth_cred = auth_g_unpack(buffer, protocol_version)))
-		return uid;
-	if (auth_g_verify(auth_cred, slurm_conf.authinfo))
-		return uid;
-
-	uid = auth_g_get_uid(auth_cred);
-	auth_g_destroy(auth_cred);
-
-	return uid;
-}
-
-/*
  * NOTE: memory is allocated for the returned msg and the returned list
  *       both must be freed at some point using the slurm_free_functions
  *       and list_destroy function.
@@ -1547,26 +1482,11 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	log_flag_hex(NET_RAW, buf, buflen, "%s: [%s] read", __func__, peer);
 	buffer = create_buf(buf, buflen);
 
-	if (unpack_header(&header, buffer) == SLURM_ERROR) {
+	if ((rc = unpack_header(&header, buffer))) {
 		FREE_NULL_BUFFER(buffer);
-		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
 		goto total_return;
 	}
 
-	if (check_header_version(&header) < 0) {
-		uid_t uid = _unpack_msg_uid(buffer, header.version);
-
-		/* peer may have not been resolved already */
-		if (!peer)
-			peer = fd_resolve_peer(fd);
-
-		error("%s: [%s] Invalid Protocol Version %u from uid=%u: %m",
-		      __func__, peer, header.version, uid);
-
-		FREE_NULL_BUFFER(buffer);
-		rc = SLURM_PROTOCOL_VERSION_ERROR;
-		goto total_return;
-	}
 	if (header.ret_cnt > 0) {
 		/* peer may have not been resolved already */
 		if (!peer)
