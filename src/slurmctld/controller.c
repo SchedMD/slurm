@@ -75,6 +75,7 @@
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/run_command.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -2644,6 +2645,12 @@ extern void ctld_assoc_mgr_init(void)
 			_retry_init_db_conn(&assoc_init_arg);
 		}
 	}
+
+	if (!slurm_conf.cluster_id) {
+		slurm_conf.cluster_id = generate_cluster_id();
+		_create_clustername_file();
+	}
+	sluid_init(slurm_conf.cluster_id, 0);
 
 	/* Now load the usage from a flat file since it isn't kept in
 	   the database
