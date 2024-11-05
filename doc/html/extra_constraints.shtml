@@ -85,9 +85,9 @@ The most basic request is structured like this:
 </pre>
 
 <p>
-Key and value are arbitrary, but cannot contain any characters that are part
-of operators and cannot contain parentheses. Thus, the following characters
-are not allowed in a key or value:
+Key and value are arbitrary, non-empty strings that cannot contain any
+characters that are part of operators and cannot contain parentheses. Thus,
+the following characters are not allowed in a key or value:
 </p>
 
 <pre>
@@ -356,6 +356,6 @@ $ squeue
 </pre>
 </p>
 
-<p style="text-align: center;">Last modified 02 July 2024</p>
+<p style="text-align: center;">Last modified 08 November 2024</p>
 
 <!--#include virtual="footer.txt"-->
