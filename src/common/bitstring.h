@@ -80,7 +80,8 @@ extern void bit_cache_fini(void);
 
 /* compat with Vixie macros */
 bitstr_t *bit_alloc(bitoff_t nbits);
-int bit_test(bitstr_t *b, bitoff_t bit);
+#define bit_test slurm_bit_test
+int slurm_bit_test(bitstr_t *b, bitoff_t bit);
 void bit_set(bitstr_t *b, bitoff_t bit);
 void bit_clear(bitstr_t *b, bitoff_t bit);
 void bit_nclear(bitstr_t *b, bitoff_t start, bitoff_t stop);

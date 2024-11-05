@@ -95,6 +95,10 @@
 #define	_bitstr_words(nbits)	\
 	((((nbits) + BITSTR_MAXPOS) >> BITSTR_SHIFT) + BITSTR_OVERHEAD)
 
+#undef bit_test
+#define bit_test(name, bit) \
+	((((name)[_bit_word(bit)]) & _bit_mask(bit)) ? 1 : 0)
+
 /* check signature */
 #define _assert_bitstr_valid(name) do { \
 	xassert((name) != NULL); \
@@ -119,7 +123,6 @@
  * for details.
  */
 strong_alias(bit_alloc,		slurm_bit_alloc);
-strong_alias(bit_test,		slurm_bit_test);
 strong_alias(bit_set,		slurm_bit_set);
 strong_alias(bit_clear,		slurm_bit_clear);
 strong_alias(bit_nclear,	slurm_bit_nclear);
@@ -388,11 +391,11 @@ bit_size(bitstr_t *b)
  *   RETURN		1 if bit set, 0 if clear
  */
 int
-bit_test(bitstr_t *b, bitoff_t bit)
+slurm_bit_test(bitstr_t *b, bitoff_t bit)
 {
 	_assert_bitstr_valid(b);
 	_assert_bit_valid(b, bit);
-	return ((b[_bit_word(bit)] & _bit_mask(bit)) ? 1 : 0);
+	return bit_test(b, bit);
 }
 
 /*
