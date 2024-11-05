@@ -44,6 +44,7 @@
 #include "as_mysql_wckey.h"
 
 #include "src/interfaces/select.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_time.h"
 
 /* if this changes you will need to edit the corresponding enum */
@@ -224,6 +225,49 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 	return set;
 }
 
+extern uint16_t as_mysql_cluster_get_unique_id(
+	mysql_conn_t *mysql_conn, char *cluster_name)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	uint16_t id = 0;
+	char *query = NULL;
+	int num_rows;
+
+	/* First check to see if we are already here with an id. */
+	query = xstrdup_printf("select id from %s where name='%s';",
+			       cluster_table, cluster_name);
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+
+	if (!result)
+		fatal("No cluster table?");
+
+	if ((row = mysql_fetch_row(result)) && row[0])
+		id = slurm_atoul(row[0]);
+
+	mysql_free_result(result);
+
+	while (!id) {
+		id = generate_cluster_id();
+
+		/* Test to make sure we aren't a duplicate */
+		query = xstrdup_printf("select id from %s where id=%u;",
+				       cluster_table, id);
+		result = mysql_db_query_ret(mysql_conn, query, 0);
+		xfree(query);
+		num_rows = mysql_num_rows(result);
+		mysql_free_result(result);
+
+		/* Unique */
+		if (!num_rows)
+			break;
+		id = 0;
+	}
+
+	return id;
+}
+
 extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				 list_t *cluster_list)
 {
@@ -290,6 +334,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		int fed_id = 0;
 		uint16_t fed_state = CLUSTER_FED_STATE_NA;
 		char *features = NULL;
+		uint16_t id;
 
 		if (object->fed.name) {
 			has_feds = 1;
@@ -317,21 +362,23 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			has_feds = 1;
 		}
 
+		id = as_mysql_cluster_get_unique_id(mysql_conn, object->name);
+
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, mod_time, "
-			   "name, classification, federation, fed_id, "
+			   "name, id, classification, federation, fed_id, "
 			   "fed_state, features) "
-			   "values (%ld, %ld, '%s', %u, '%s', %d, %u, '%s') "
+			   "values (%ld, %ld, '%s', %d, %u, '%s', %d, %u, '%s') "
 			   "on duplicate key update deleted=0, mod_time=%ld, "
 			   "classification=%u, flags=0, federation='%s', "
-			   "fed_id=%d, fed_state=%u, features='%s'",
+			   "fed_id=%d, fed_state=%u, features='%s', id=%u",
 			   cluster_table,
-			   now, now, object->name, object->classification,
+			   now, now, object->name, id, object->classification,
 			   (object->fed.name) ? object->fed.name : "",
 			   fed_id, fed_state, (features) ? features : "",
 			   now, object->classification,
 			   (object->fed.name) ? object->fed.name : "",
-			   fed_id, fed_state, (features) ? features : "");
+			   fed_id, fed_state, (features) ? features : "", id);
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
@@ -926,6 +973,7 @@ extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	/* if this changes you will need to edit the corresponding enum */
 	char *cluster_req_inx[] = {
 		"name",
+		"id",
 		"classification",
 		"control_host",
 		"control_port",
@@ -939,6 +987,7 @@ extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	};
 	enum {
 		CLUSTER_REQ_NAME,
+		CLUSTER_REQ_ID,
 		CLUSTER_REQ_CLASS,
 		CLUSTER_REQ_CH,
 		CLUSTER_REQ_CP,
@@ -1007,6 +1056,7 @@ empty:
 		list_append(cluster_list, cluster);
 
 		cluster->name = xstrdup(row[CLUSTER_REQ_NAME]);
+		cluster->id = slurm_atoul(row[CLUSTER_REQ_ID]);
 
 		list_append(assoc_cond.cluster_list, cluster->name);
 
