@@ -44,14 +44,6 @@
 #include "src/common/slurm_protocol_defs.h"
 
 /*
- * check_header_version checks to see that the specified header was sent
- * from a node running the same version of the protocol as the current node
- * IN header - the message header received
- * RET - Slurm error code
- */
-extern int check_header_version(header_t * header);
-
-/*
  * init_header - simple function to create a header, always insuring that
  * an accurate version string is inserted
  * OUT header - the message header to be send
