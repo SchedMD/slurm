@@ -191,7 +191,7 @@ int unpack_header(header_t *header, buf_t *buffer)
 {
 	memset(header, 0, sizeof(header_t));
 	forward_init(&header->forward);
-	header->ret_list = NULL;
+
 	safe_unpack16(&header->version, buffer);
 
 	if (header->version >= SLURM_24_11_PROTOCOL_VERSION) {
