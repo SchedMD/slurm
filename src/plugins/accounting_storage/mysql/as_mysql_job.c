@@ -288,6 +288,7 @@ static uint64_t _get_hash_inx(mysql_conn_t *mysql_conn,
 	char *hash_col = NULL, *type_table = NULL;
 	MYSQL_RES *result = NULL;
 	uint64_t hash_inx = 0;
+	int num_affected = 0;
 
 	switch (flag) {
 	case JOB_SEND_ENV:
@@ -317,10 +318,17 @@ static uint64_t _get_hash_inx(mysql_conn_t *mysql_conn,
 		hash_col, hash);
 
 	hash_inx = mysql_db_insert_ret_id(mysql_conn, query);
+	num_affected = mysql_affected_rows(mysql_conn->db_conn);
 	if (!hash_inx)
 		hash_inx = NO_VAL64;
-	else
+	else if (num_affected == 1) { /* 1 means insert, we need it sent */
 		job_ptr->bit_flags |= flag;
+		DB_DEBUG(DB_JOB, mysql_conn->conn, "%s is a new entry for %u",
+			 hash_col, job_ptr->job_id);
+	} else if (num_affected == 2) /* 2 means dup (already there) */
+		DB_DEBUG(DB_JOB, mysql_conn->conn, "%s is a duplicate for %u",
+			 hash_col, job_ptr->job_id);
+
 	xfree(query);
 
 	mysql_free_result(result);
