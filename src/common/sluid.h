@@ -82,6 +82,11 @@
 extern void sluid_init(uint16_t cluster, time_t minimum);
 
 /*
+ * Generate a random cluster id.
+ */
+extern uint16_t generate_cluster_id(void);
+
+/*
  * Generate new SLUID.
  * Will fatal() if sluid_init() has never been called.
  * Will also fatal() if clock_gettime() fails.

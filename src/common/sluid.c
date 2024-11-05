@@ -33,6 +33,7 @@
 
 #include <inttypes.h>
 #include <pthread.h>
+#include <stdlib.h>
 #include <time.h>
 
 #include "src/common/macros.h"
@@ -95,6 +96,12 @@ extern sluid_t generate_sluid(void)
 	sluid |= cluster_bits;
 
 	return sluid;
+}
+
+extern uint16_t generate_cluster_id(void)
+{
+	/* Cluster IDs must be between 2 and 4095. */
+	return (random() % (4096 - 2)) + 2;
 }
 
 extern char *sluid2str(const sluid_t sluid)
