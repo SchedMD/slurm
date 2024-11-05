@@ -200,7 +200,7 @@ int unpack_header(header_t *header, buf_t *buffer)
 	    (header->version != SLURM_MIN_PROTOCOL_VERSION)) {
 		error("%s: protocol_version %hu not supported",
 		      __func__, header->version);
-		return SLURM_ERROR;
+		return SLURM_PROTOCOL_VERSION_ERROR;
 	}
 
 	forward_init(&header->forward);
@@ -287,7 +287,7 @@ unpack_error:
 	error("unpacking header");
 	destroy_forward(&header->forward);
 	FREE_NULL_LIST(header->ret_list);
-	return SLURM_ERROR;
+	return SLURM_COMMUNICATIONS_RECEIVE_ERROR;
 }
 
 

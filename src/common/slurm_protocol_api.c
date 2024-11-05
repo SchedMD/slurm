@@ -848,10 +848,8 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		peer = fd_resolve_peer(fd);
 	}
 
-	if (unpack_header(&header, buffer) == SLURM_ERROR) {
-		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
+	if ((rc = unpack_header(&header, buffer)))
 		goto total_return;
-	}
 
 	log_flag(NET_RAW, "%s: [%s] header version=0x%hx flags=0x%hx msg_type=%s(0x%hx) body_length=%ub ret_cnt=%hx forward.cnt=%hu forward.init=0x%hx forward.nodelist=%s forward.timeout=%u forward.tree_width=%hu orig_addr=%pA",
 		 __func__, peer, header.version, header.flags,
@@ -1155,9 +1153,8 @@ list_t *slurm_receive_msgs(int fd, int steps, int timeout)
 	log_flag_hex(NET_RAW, buf, buflen, "%s: [%s] read", __func__, peer);
 	buffer = create_buf(buf, buflen);
 
-	if (unpack_header(&header, buffer) == SLURM_ERROR) {
+	if ((rc = unpack_header(&header, buffer))) {
 		FREE_NULL_BUFFER(buffer);
-		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
 		goto total_return;
 	}
 
@@ -1355,9 +1352,8 @@ extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	log_flag_hex(NET_RAW, buf, buflen, "%s: [%s] read", __func__, peer);
 	buffer = create_buf(buf, buflen);
 
-	if (unpack_header(&header, buffer) == SLURM_ERROR) {
+	if ((rc = unpack_header(&header, buffer))) {
 		FREE_NULL_BUFFER(buffer);
-		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
 		goto total_return;
 	}
 
@@ -1547,9 +1543,8 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	log_flag_hex(NET_RAW, buf, buflen, "%s: [%s] read", __func__, peer);
 	buffer = create_buf(buf, buflen);
 
-	if (unpack_header(&header, buffer) == SLURM_ERROR) {
+	if ((rc = unpack_header(&header, buffer))) {
 		FREE_NULL_BUFFER(buffer);
-		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
 		goto total_return;
 	}
 
