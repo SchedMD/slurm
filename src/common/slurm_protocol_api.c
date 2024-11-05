@@ -874,7 +874,6 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
-	//info("ret_cnt = %d",header.ret_cnt);
 	if (header.ret_cnt > 0) {
 		/* peer may have not been resolved already */
 		if (!peer)
@@ -1176,7 +1175,6 @@ list_t *slurm_receive_msgs(int fd, int steps, int timeout)
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
-	//info("ret_cnt = %d",header.ret_cnt);
 	if (header.ret_cnt > 0) {
 		if (header.ret_list)
 			ret_list = header.ret_list;
