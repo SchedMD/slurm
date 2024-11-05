@@ -190,9 +190,20 @@ void pack_header(header_t *header, buf_t *buffer)
 int unpack_header(header_t *header, buf_t *buffer)
 {
 	memset(header, 0, sizeof(header_t));
-	forward_init(&header->forward);
 
 	safe_unpack16(&header->version, buffer);
+
+	/* Slurm supports the current RPC version, plus three prior. */
+	if ((header->version != SLURM_PROTOCOL_VERSION) &&
+	    (header->version != SLURM_ONE_BACK_PROTOCOL_VERSION) &&
+	    (header->version != SLURM_TWO_BACK_PROTOCOL_VERSION) &&
+	    (header->version != SLURM_MIN_PROTOCOL_VERSION)) {
+		error("%s: protocol_version %hu not supported",
+		      __func__, header->version);
+		return SLURM_ERROR;
+	}
+
+	forward_init(&header->forward);
 
 	if (header->version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpack16(&header->flags, buffer);
@@ -268,10 +279,6 @@ int unpack_header(header_t *header, buf_t *buffer)
 			header->ret_list = NULL;
 		}
 		slurm_unpack_addr_no_alloc(&header->orig_addr, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, header->version);
-		goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;
