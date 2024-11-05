@@ -768,18 +768,6 @@ no_rollup_change:
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, ", licenses='%s'",
 				     job_ptr->licenses);
-
-		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
-
-		if (!(job_ptr->db_index = mysql_db_insert_ret_id(
-			      mysql_conn, query))) {
-			rc = errno;
-			if ((rc == CR_SERVER_GONE_ERROR) ||
-			    (rc == CR_SERVER_LOST))
-				rc = ESLURM_DB_CONNECTION;
-			else
-				rc = SLURM_ERROR;
-		}
 	} else {
 		xstrfmtcatat(query, &pos,
 			     "update \"%s_%s\" set nodelist='%s', ",
@@ -868,11 +856,10 @@ no_rollup_change:
 			     job_ptr->db_flags, job_ptr->state_reason_prev_db,
 			     begin_time, job_ptr->restart_cnt,
 			     job_ptr->db_index);
-
-		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
 	}
 
+	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
 	if (rc != SLURM_SUCCESS)
