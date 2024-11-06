@@ -12196,14 +12196,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_ptr->bit_flags & CRON_JOB)
 		return ESLURM_CANNOT_MODIFY_CRON_JOB;
 
-	/*
-	 * This means we are in the middle of requesting the db_inx from the
-	 * database. So we can't update right now.  You should try again outside
-	 * the job_write lock in a second or so.
-	 */
-	if (job_ptr->db_index == NO_VAL64)
-		return ESLURM_JOB_SETTING_DB_INX;
-
 	operator = validate_operator(uid);
 
 	/* Check authorization for modifying this job */
@@ -14935,7 +14927,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 
 		rc = _update_job(job_ptr, job_desc, uid, &err_msg);
 	}
-	if (send_msg && rc != ESLURM_JOB_SETTING_DB_INX)
+	if (send_msg)
 		slurm_send_rc_err_msg(msg, rc, err_msg);
 	xfree(job_desc->job_id_str);
 
@@ -15032,10 +15024,6 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				job_desc->array_bitmap = bit_copy(
 					job_ptr->array_recs->task_id_bitmap);
 			rc2 = _update_job(job_ptr, job_desc, uid, &err_msg);
-			if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
-				rc = rc2;
-				goto reply;
-			}
 			_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 			xfree(err_msg);
 		}
@@ -15052,10 +15040,6 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			    (job_ptr != job_ptr_done)) {
 				rc2 = _update_job(job_ptr, job_desc, uid,
 						  &err_msg);
-				if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
-					rc = rc2;
-					goto reply;
-				}
 				_resp_array_add(&resp_array, job_ptr, rc2,
 						err_msg);
 				xfree(err_msg);
@@ -15122,11 +15106,6 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			} else
 				rc2 = _update_job(job_ptr, job_desc, uid,
 						  &err_msg);
-
-			if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
-				rc = rc2;
-				goto reply;
-			}
 			_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 			xfree(err_msg);
 			bit_and_not(array_bitmap, job_desc->array_bitmap);
@@ -15178,17 +15157,12 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			rc2 = ESLURM_NOT_SUPPORTED;
 		} else
 			rc2 = _update_job(job_ptr, job_desc, uid, &err_msg);
-		if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
-			rc = rc2;
-			xfree(err_msg);
-			goto reply;
-		}
 		_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
 		xfree(err_msg);
 	}
 
 reply:
-	if ((rc != ESLURM_JOB_SETTING_DB_INX) && (msg->conn_fd >= 0)) {
+	if (msg->conn_fd >= 0) {
 		if (resp_array) {
 			job_array_resp_msg_t *resp_array_msg =
 				_resp_array_xlate(resp_array, job_id);

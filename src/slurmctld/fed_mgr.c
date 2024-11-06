@@ -2012,7 +2012,6 @@ static void _handle_fed_job_update(fed_job_update_info_t *job_update_info)
 	slurm_msg_t msg;
 	slurm_msg_t_init(&msg);
 	job_desc_msg_t *job_desc = job_update_info->submit_desc;
-	int db_inx_max_cnt = 5, i=0;
 	slurmdb_cluster_rec_t *sibling;
 
 	slurmctld_lock_t job_write_lock = {
@@ -2026,23 +2025,9 @@ static void _handle_fed_job_update(fed_job_update_info_t *job_update_info)
 	job_desc->job_id = job_update_info->job_id;
 	msg.data = job_desc;
 
-	rc = ESLURM_JOB_SETTING_DB_INX;
-	while (rc == ESLURM_JOB_SETTING_DB_INX) {
-		lock_slurmctld(job_write_lock);
-		rc = update_job(&msg, job_update_info->uid, false);
-		unlock_slurmctld(job_write_lock);
-
-		if (i >= db_inx_max_cnt) {
-			info("%s: can't update fed job, waited %d seconds for JobId=%u to get a db_index, but it hasn't happened yet. Giving up and letting the user know.",
-			     __func__, db_inx_max_cnt,
-			     job_update_info->job_id);
-			break;
-		}
-		i++;
-		debug("%s: We cannot update JobId=%u at the moment, we are setting the db index, waiting",
-		      __func__, job_update_info->job_id);
-		sleep(1);
-	}
+	lock_slurmctld(job_write_lock);
+	rc = update_job(&msg, job_update_info->uid, false);
+	unlock_slurmctld(job_write_lock);
 
 	lock_slurmctld(fed_read_lock);
 	if (!(sibling =

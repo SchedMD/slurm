@@ -335,8 +335,6 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Partition in DOWN state"				},
 	{ ERRTAB_ENTRY(ESLURM_DUPLICATE_GRES),
 	  "Duplicate generic resource (gres) specification"	},
-	{ ERRTAB_ENTRY(ESLURM_JOB_SETTING_DB_INX),
-	  "Job update not available right now, the DB index is being set, try again in a bit" },
 	{ ERRTAB_ENTRY(ESLURM_RSV_ALREADY_STARTED),
 	  "Reservation already started"				},
 	{ ERRTAB_ENTRY(ESLURM_SUBMISSIONS_DISABLED),
