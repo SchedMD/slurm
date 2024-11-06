@@ -35,6 +35,7 @@
 
 #include "src/common/port_mgr.h"
 #include "src/common/assoc_mgr.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_pack.h"
 
 #include "src/interfaces/jobacct_gather.h"
@@ -3261,4 +3262,10 @@ extern void update_job_limit_set_tres(uint16_t **limits_pptr, int tres_cnt)
 		}
 		memcpy(limits_ptr, tmp_tres, new_size);
 	}
+}
+
+extern void job_record_set_sluid(job_record_t *job_ptr)
+{
+	job_ptr->db_index = generate_sluid();
+	job_ptr->db_flags &= ~SLURMDB_JOB_FLAG_START_R;
 }

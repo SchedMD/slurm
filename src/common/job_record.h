@@ -750,4 +750,9 @@ extern step_record_t *find_step_record(job_record_t *job_ptr,
  */
 extern void update_job_limit_set_tres(uint16_t **tres_limits, int tres_cnt);
 
+/*
+ * Set a new sluid on the job_ptr
+ */
+extern void job_record_set_sluid(job_record_t *job_ptr);
+
 #endif /* _SLURM_JOB_RECORD_H */
