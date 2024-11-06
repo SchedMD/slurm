@@ -2439,8 +2439,9 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 		       job_start_msg->job_id, job_start_msg->name,
 		       job.db_index);
 	} else {
-		debug2("DBD_JOB_START: ELIGIBLE CALL ID:%u NAME:%s",
-		       job_start_msg->job_id, job_start_msg->name);
+		debug2("DBD_JOB_START: ELIGIBLE CALL ID:%u NAME:%s INX:%"PRIu64,
+		       job_start_msg->job_id, job_start_msg->name,
+		       job.db_index);
 	}
 	id_rc_msg->return_code = jobacct_storage_g_job_start(
 		slurmdbd_conn->db_conn, &job);
