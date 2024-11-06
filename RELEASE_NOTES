@@ -50,6 +50,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
 	conmgr_write_timeout: Defaults to MessageTimeout.
  -- Add SlurmctldParamters=ignore_constraint_validation to ignore
     constraint/feature validation at submission.
+ -- Add SchedulerParameters=bf_topopt_enable option to enable experimental hook
+    to control backfill.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
