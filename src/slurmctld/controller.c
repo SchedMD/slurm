@@ -1511,9 +1511,17 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 		return on_backup_finish(con, arg);
 }
 
-static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
+static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 {
 	bool standby_mode;
+
+	if (unpack_rc || !msg->auth_ids_set) {
+		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
+		      __func__, conmgr_fd_get_name(con),
+		      slurm_strerror(unpack_rc));
+		slurm_free_msg(msg);
+		return unpack_rc;
+	}
 
 	slurm_mutex_lock(&listeners.mutex);
 	standby_mode = listeners.standby_mode;

@@ -39,6 +39,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/daemonize.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
@@ -230,9 +232,15 @@ static void _establish_config_source(void)
 	xstrfmtcat(conf_file, "%s/slurm.conf", dir);
 }
 
-static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
+static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 {
-	if (!msg->auth_ids_set) {
+	if (unpack_rc) {
+		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
+		      __func__, conmgr_fd_get_name(con),
+		      slurm_strerror(unpack_rc));
+		slurm_free_msg(msg);
+		return unpack_rc;
+	} else if (!msg->auth_ids_set) {
 		error("%s: [%s] rejecting %s RPC with missing user auth",
 		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type));
