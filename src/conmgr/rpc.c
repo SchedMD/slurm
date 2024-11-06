@@ -146,17 +146,18 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 		return rc;
 	}
 
-	if (!rc) {
-		log_flag(PROTOCOL, "%s: [%s] received RPC %s",
-			 __func__, con->name, rpc_num2string(msg->msg_type));
-		log_flag(CONMGR, "%s: [%s] RPC BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-			 __func__, con->name, (uintptr_t) con->events->on_msg,
-			 (uintptr_t) con->arg);
-		rc = con->events->on_msg(con, msg, con->arg);
-		log_flag(CONMGR, "%s: [%s] RPC END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
-			 __func__, con->name, (uintptr_t) con->events->on_msg,
-			 (uintptr_t) con->arg, slurm_strerror(rc));
-	}
+	if (rc)
+		return rc;
+
+	log_flag(PROTOCOL, "%s: [%s] received RPC %s",
+		 __func__, con->name, rpc_num2string(msg->msg_type));
+	log_flag(CONMGR, "%s: [%s] RPC BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+		 __func__, con->name, (uintptr_t) con->events->on_msg,
+		 (uintptr_t) con->arg);
+	rc = con->events->on_msg(con, msg, con->arg);
+	log_flag(CONMGR, "%s: [%s] RPC END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
+		 __func__, con->name, (uintptr_t) con->events->on_msg,
+		 (uintptr_t) con->arg, slurm_strerror(rc));
 
 	return rc;
 }
