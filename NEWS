@@ -257,6 +257,8 @@ documents those changes that are of interest to users and administrators.
     flags FLEX or ANY_NODES in the main scheduler.
  -- Fix allowing to ask for multiple different types of TRES when one of
     them has a value of 0.
+ -- slurmctld - Add a grace period to ensure the agent retry queue is properly
+    flushed during shutdown.
 
 * Changes in Slurm 24.05.5
 ==========================
