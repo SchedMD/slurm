@@ -1605,10 +1605,7 @@ static int _unpack_node_info_msg(node_info_msg_t **msg, buf_t *buffer,
 		/* load individual job info */
 		for (i = 0; i < tmp_ptr->record_count; i++) {
 			if (hidden_nodes && bit_test(hidden_nodes, i)) {
-				tmp_ptr->node_array[i].select_nodeinfo =
-					select_g_select_nodeinfo_alloc();
-				tmp_ptr->node_array[i].energy =
-					acct_gather_energy_alloc(1);
+				/* Nothing to unpack */
 			} else if (_unpack_node_info_members(
 					   &tmp_ptr->node_array[i], buffer,
 					   protocol_version)) {
