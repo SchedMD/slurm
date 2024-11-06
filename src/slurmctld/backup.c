@@ -278,7 +278,7 @@ void run_backup(void)
 
 	/*
 	 * Expressly shutdown the agent. The agent can in whole or in part
-	 * shutdown once slutmctld_config.shutdown_time is set. Remove any
+	 * shutdown once slurmctld_config.shutdown_time is set. Remove any
 	 * doubt about its state here.
 	 */
 	agent_fini();
