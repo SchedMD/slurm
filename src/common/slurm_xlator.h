@@ -72,7 +72,6 @@
 
 /* bitstring.[ch] functions*/
 #define	bit_alloc		slurm_bit_alloc
-#define	bit_test		slurm_bit_test
 #define	bit_set			slurm_bit_set
 #define	bit_clear		slurm_bit_clear
 #define	bit_nclear		slurm_bit_nclear
