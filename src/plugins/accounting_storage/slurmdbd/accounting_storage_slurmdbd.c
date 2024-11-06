@@ -2991,62 +2991,120 @@ extern int clusteracct_storage_p_fini_ctld(void *db_conn,
  */
 extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 {
-	persist_msg_t msg = {0}, msg_rc;
-	dbd_job_start_msg_t req;
-	dbd_id_rc_msg_t *resp;
+	dbd_job_start_msg_t req = { 0 };
+	persist_msg_t msg = {
+		.msg_type = DBD_JOB_START,
+		.conn = db_conn,
+		.data = &req,
+	};
 	int rc = SLURM_SUCCESS;
 
-	if ((rc = _setup_job_start_msg(&req, job_ptr)) != SLURM_SUCCESS)
-		return rc;
-
-	msg.msg_type      = DBD_JOB_START;
-	msg.conn          = db_conn;
-	msg.data          = &req;
-
-	/* If we already have the db_index don't wait around for it
-	 * again just send the message when not resizing.  This also applies
-	 * when the slurmdbd is down and we are about to remove the job from
-	 * the system.  We don't want to wait for the db_index in that situation
-	 * either.
-	 */
-	if ((req.db_index && !IS_JOB_RESIZING(job_ptr))
-	    || (!req.db_index && IS_JOB_FINISHED(job_ptr))) {
-		/*
-		 * This is to ensure we don't do this multiple times for the
-		 * same job.  This can happen when an account is being
-		 * deleted and hense the associations dealing with it.
-		 */
-		if (!req.db_index)
-			job_ptr->db_index = NO_VAL64;
-
-		if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0) {
-			_partial_free_dbd_job_start(&req);
-			return SLURM_ERROR;
-		}
-		_partial_free_dbd_job_start(&req);
-		return SLURM_SUCCESS;
+	if (!job_ptr->details || !job_ptr->details->submit_time) {
+		error("jobacct_storage_p_job_start: "
+		      "Not inputing this job %u, it has no submit time.",
+		      job_ptr->job_id);
+		return SLURM_ERROR;
 	}
-	/* If we don't have the db_index we need to wait for it to be
-	 * used in the other submissions for this job.
+
+	req.account = job_ptr->account;
+
+	req.assoc_id = job_ptr->assoc_id;
+	req.alloc_nodes = job_ptr->total_nodes;
+
+	if (job_ptr->resize_time) {
+		req.eligible_time = job_ptr->resize_time;
+		req.submit_time   = job_ptr->details->submit_time;
+	} else if (job_ptr->details) {
+		req.eligible_time = job_ptr->details->begin_time;
+		req.submit_time   = job_ptr->details->submit_time;
+	}
+
+	/* If the reason is WAIT_ARRAY_TASK_LIMIT we don't want to
+	 * give the pending jobs an eligible time since it will add
+	 * time to accounting where as these jobs aren't able to run
+	 * until later so mark it as such.
 	 */
-	rc = dbd_conn_send_recv(SLURM_PROTOCOL_VERSION, &msg, &msg_rc);
-	if (rc != SLURM_SUCCESS) {
-		if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0) {
-			_partial_free_dbd_job_start(&req);
-			return SLURM_ERROR;
-		}
-	} else if (msg_rc.msg_type != DBD_ID_RC) {
-		error("response type not DBD_ID_RC: %u",
-		      msg_rc.msg_type);
+	if (job_ptr->state_reason == WAIT_ARRAY_TASK_LIMIT)
+		req.eligible_time = INFINITE;
+
+	req.start_time = job_ptr->start_time;
+	req.gid = job_ptr->group_id;
+	req.job_id = job_ptr->job_id;
+	req.array_job_id = job_ptr->array_job_id;
+	req.array_task_id = job_ptr->array_task_id;
+	if (job_ptr->het_job_id) {
+		req.het_job_id = job_ptr->het_job_id;
+		req.het_job_offset = job_ptr->het_job_offset;
 	} else {
-		resp = (dbd_id_rc_msg_t *) msg_rc.data;
-		job_ptr->db_index = resp->db_index;
-		_sending_script_env(resp, job_ptr);
-		rc = resp->return_code;
-		//info("here got %d for return code", resp->rc);
-		slurmdbd_free_id_rc_msg(resp);
+		//req.het_job_id = 0;
+		req.het_job_offset = NO_VAL;
 	}
-	_partial_free_dbd_job_start(&req);
+
+	build_array_str(job_ptr);
+	if (job_ptr->array_recs && job_ptr->array_recs->task_id_str) {
+		req.array_task_str = job_ptr->array_recs->task_id_str;
+		req.array_max_tasks = job_ptr->array_recs->max_run_tasks;
+		req.array_task_pending = job_ptr->array_recs->task_cnt;
+	}
+
+	req.db_flags = job_ptr->db_flags;
+
+	req.db_index = job_ptr->db_index;
+	if (!IS_JOB_PENDING(job_ptr))
+		req.constraints = job_ptr->details->features_use;
+	else
+		req.constraints = job_ptr->details->features;
+
+	req.container = job_ptr->container;
+	req.licenses = job_ptr->licenses;
+	req.job_state = job_ptr->job_state;
+	req.state_reason_prev = job_ptr->state_reason_prev_db;
+	req.name = job_ptr->name;
+	req.nodes = job_ptr->nodes;
+	req.work_dir = job_ptr->details->work_dir;
+
+	/* create req.node_inx outside of locks when packing */
+
+	if (!IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr)
+		req.partition = job_ptr->part_ptr->name;
+	else
+		req.partition = job_ptr->partition;
+
+	if (job_ptr->details) {
+		req.req_cpus = job_ptr->details->min_cpus;
+		req.req_mem = job_ptr->details->pn_min_memory;
+		if (!(slurm_conf.conf_flags & CONF_FLAG_NO_STDIO)) {
+			req.std_err = job_ptr->details->std_err;
+			req.std_in = job_ptr->details->std_in;
+			_fill_stdout_str(&req, job_ptr);
+		}
+		req.submit_line = job_ptr->details->submit_line;
+		/* Only send this once per instance of the job! */
+		if (!IS_JOB_IN_DB(job_ptr)) {
+			req.env_hash = job_ptr->details->env_hash;
+			req.script_hash = job_ptr->details->script_hash;
+		}
+		req.qos_req = job_ptr->details->qos_req;
+	}
+	req.restart_cnt = job_ptr->restart_cnt;
+	req.resv_id = job_ptr->resv_id;
+	req.priority = job_ptr->priority;
+	req.timelimit = job_ptr->time_limit;
+	req.tres_alloc_str = job_ptr->tres_alloc_str;
+	req.tres_req_str = job_ptr->tres_req_str;
+	req.mcs_label = job_ptr->mcs_label;
+	req.wckey = job_ptr->wckey;
+	req.uid = job_ptr->user_id;
+	req.qos_id = job_ptr->qos_id;
+	req.gres_used = job_ptr->gres_used;
+
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
+		return SLURM_ERROR;
+
+	/* Message sent to the database, we don't need to do that again. */
+	job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
+
+	xfree(req.std_out);
 
 	return rc;
 }
