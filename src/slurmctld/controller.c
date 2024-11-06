@@ -539,7 +539,6 @@ int main(int argc, char **argv)
 		.prolog_slurmctld = prep_prolog_slurmctld_callback,
 		.epilog_slurmctld = prep_epilog_slurmctld_callback,
 	};
-	bool create_clustername_file;
 	bool backup_has_control = false;
 	bool slurmscriptd_mode = false;
 	char *conf_file;
@@ -625,7 +624,7 @@ int main(int argc, char **argv)
 	 * This needs to be done before we kill the old one just in case we
 	 * fail.
 	 */
-	create_clustername_file = _verify_clustername();
+	_verify_clustername();
 
 	_update_nice();
 	if (original)
@@ -684,9 +683,6 @@ int main(int argc, char **argv)
 	 * Create StateSaveLocation directory if necessary.
 	 */
 	set_slurmctld_state_loc();
-
-	if (create_clustername_file)
-		_create_clustername_file();
 
 	if (daemonize || setwd)
 		_set_work_dir();
