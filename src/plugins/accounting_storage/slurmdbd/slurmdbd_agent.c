@@ -536,13 +536,6 @@ static void _max_dbd_msg_action(uint32_t *msg_cnt)
 		*msg_cnt -= purged;
 		info("purge %d step records", purged);
 	}
-	if (*msg_cnt >= (slurm_conf.max_dbd_msgs - 1)) {
-		uint16_t purge_type = DBD_JOB_START;
-		purged = list_delete_all(agent_list, _purge_agent_list_req,
-					 &purge_type);
-		*msg_cnt -= purged;
-		info("purge %d job start records", purged);
-	}
 }
 
 static int _print_agent_list_msg_type(void *x, void *arg)
