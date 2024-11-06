@@ -76,10 +76,10 @@ struct timer_data_t {
 static struct timer_data_t timer_data;
 
 static bool _conn_readable(eio_obj_t *obj);
-static int _server_conn_read(eio_obj_t *obj, list_t *objs);
-static int _abort_conn_close(eio_obj_t *obj, list_t *objs);
-static int _timer_conn_read(eio_obj_t *obj, list_t *objs);
-static int _abort_conn_read(eio_obj_t *obj, list_t *objs);
+static int _server_conn_read(eio_obj_t *obj, List objs);
+static int _abort_conn_close(eio_obj_t *obj, List objs);
+static int _timer_conn_read(eio_obj_t *obj, List objs);
+static int _abort_conn_read(eio_obj_t *obj, List objs);
 
 static struct io_operations abort_ops = {
 	.readable = &_conn_readable,
@@ -110,7 +110,7 @@ static bool _conn_readable(eio_obj_t *obj)
 	return true;
 }
 
-static int _server_conn_read(eio_obj_t *obj, list_t *objs)
+static int _server_conn_read(eio_obj_t *obj, List objs)
 {
 	int fd;
 	struct sockaddr addr;
@@ -163,13 +163,13 @@ static int _server_conn_read(eio_obj_t *obj, list_t *objs)
 	return 0;
 }
 
-static int _abort_conn_close(eio_obj_t *obj, list_t *objs)
+static int _abort_conn_close(eio_obj_t *obj, List objs)
 {
 	close(obj->fd);
 	return SLURM_SUCCESS;
 }
 
-static int _abort_conn_read(eio_obj_t *obj, list_t *objs)
+static int _abort_conn_read(eio_obj_t *obj, List objs)
 {
 	slurm_addr_t abort_client;
 	int client_fd;
@@ -200,7 +200,7 @@ static int _abort_conn_read(eio_obj_t *obj, list_t *objs)
 	return SLURM_SUCCESS;
 }
 
-static int _timer_conn_read(eio_obj_t *obj, list_t *objs)
+static int _timer_conn_read(eio_obj_t *obj, List objs)
 {
 	char *tmpbuf[32];
 	int shutdown;

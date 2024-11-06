@@ -53,6 +53,9 @@
 /* State file name */
 #define SLINGSHOT_STATE_FILE "slingshot_state"
 
+/* New state file name (for atomic replacing) */
+#define SLINGSHOT_STATE_FILE_NEW "slingshot_state.new"
+
 /* Environment variable for libcxi library name (for dlopen()) */
 #define SLINGSHOT_CXI_LIB_VERSION_ENV "SLURM_SLINGSHOT_CXI_VERSION"
 
@@ -307,6 +310,11 @@ extern void slingshot_free_job_step_vni(slingshot_stepinfo_t *job);
 extern void slingshot_free_job_vni(uint32_t job_id);
 extern void slingshot_free_job_vni_pool(slingshot_jobinfo_t *job);
 extern void slingshot_free_jobinfo(slingshot_jobinfo_t *jobinfo);
+/* instant_on.c */
+extern bool slingshot_init_instant_on(void);
+extern void slingshot_fini_instant_on(void);
+extern bool slingshot_fetch_instant_on(slingshot_stepinfo_t *job,
+				       char *node_list, uint32_t node_cnt);
 /* setup_nic.c */
 extern bool slingshot_open_cxi_lib(slingshot_stepinfo_t *job);
 extern bool slingshot_create_services(slingshot_stepinfo_t *job, uint32_t uid,

@@ -145,12 +145,7 @@ extern int fini(void)
 	fini_run = true;
 
 	if (internal) {
-		/*
-		 * Do not attempt to remove /run/slurm/sack.socket.
-		 * If multiple daemons are co-located on this node, we may no
-		 * longer be the one that owns that socket, and removing it
-		 * would prevent the current owner from responding.
-		 */
+		fini_sack_conmgr();
 		fini_internal();
 	}
 
@@ -253,6 +248,7 @@ extern int auth_p_pack(auth_cred_t *cred, buf_t *buf,
 extern auth_cred_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	auth_cred_t *cred = NULL;
+	uint32_t uint32_tmp;
 
 	if (!buf) {
 		errno = ESLURM_AUTH_BADARG;
@@ -260,7 +256,7 @@ extern auth_cred_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 	}
 
 	cred = new_cred();
-	safe_unpackstr(&cred->token, buf);
+	safe_unpackstr_xmalloc(&cred->token, &uint32_tmp, buf);
 
 	return cred;
 

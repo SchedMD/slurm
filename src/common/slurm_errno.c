@@ -39,9 +39,12 @@
 
 /*  This implementation relies on "overloading" the libc errno by
  *  partitioning its domain into system (<1000) and Slurm (>=1000) values.
+ *  Slurm API functions should call slurm_seterrno() to set errno to a value.
  *  API users should call slurm_strerror() to convert all errno values to
  *  their description strings.
  */
+
+#include "config.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -93,12 +96,6 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Can't find an address, check slurm.conf"		},
 	{ ERRTAB_ENTRY(SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR),
 	  "Unexpected missing socket error"			},
-	{ ERRTAB_ENTRY(SLURM_COMMUNICATIONS_INVALID_INCOMING_FD),
-	  "Unable to process incoming file descriptor" },
-	{ ERRTAB_ENTRY(SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR),
-	  "Unable to process outgoing file descriptor" },
-	{ ERRTAB_ENTRY(SLURM_COMMUNICATIONS_INVALID_FD),
-	  "Unable to process incoming and outgoing file descriptors" },
 
 	/* communication failures to/from slurmctld */
 	{ ERRTAB_ENTRY(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR),
@@ -480,8 +477,6 @@ slurm_errtab_t slurm_errtab[] = {
 	  "RestrictedCoresPerGPU: No GPUs configured on node" },
 	{ ERRTAB_ENTRY(ESLURM_MAX_POWERED_NODES),
 	  "Max powered up nodes reached" },
-	{ ERRTAB_ENTRY(ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE),
-	  "Requested topology configuration is not available" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),
@@ -566,8 +561,6 @@ slurm_errtab_t slurm_errtab[] = {
 
 	{ ERRTAB_ENTRY(ESLURM_AUTH_CRED_INVALID),
 	  "Invalid authentication credential"			},
-	{ ERRTAB_ENTRY(ESLURM_AUTH_EXPIRED),
-	  "Authentication credential expired"			},
 	{ ERRTAB_ENTRY(ESLURM_AUTH_BADARG),
 	  "Bad argument to plugin function"			},
 	{ ERRTAB_ENTRY(ESLURM_AUTH_UNPACK),
@@ -733,6 +726,26 @@ char *slurm_strerror(int errnum)
 		return strerror(errnum);
 	else
 		return "Unknown negative error number";
+}
+
+/*
+ * Get errno
+ */
+int slurm_get_errno(void)
+{
+	return errno;
+}
+
+/*
+ * Set errno to the specified value.
+ */
+void slurm_seterrno(int errnum)
+{
+#ifdef __set_errno
+	__set_errno(errnum);
+#else
+	errno = errnum;
+#endif
 }
 
 /*

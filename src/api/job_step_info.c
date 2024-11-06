@@ -57,7 +57,7 @@ typedef struct load_step_req_struct {
 	slurmdb_cluster_rec_t *cluster;
 	bool local_cluster;
 	slurm_msg_t *req_msg;
-	list_t *resp_msg_list;
+	List resp_msg_list;
 } load_step_req_struct_t;
 
 typedef struct load_step_resp_struct {
@@ -433,7 +433,7 @@ _load_fed_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	load_step_req_struct_t *load_args;
-	list_t *resp_msg_list;
+	List resp_msg_list;
 
 	*resp = NULL;
 
@@ -700,7 +700,7 @@ extern int slurm_job_step_stat(slurm_step_id_t *step_id,
 	slurm_msg_t req_msg;
 	list_itr_t *itr;
 	slurm_step_id_t req;
-	list_t *ret_list = NULL;
+	List ret_list = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS;
 	slurm_step_layout_t *step_layout = NULL;
@@ -812,7 +812,7 @@ extern int slurm_job_step_get_pids(slurm_step_id_t *step_id,
 	slurm_msg_t req_msg;
 	slurm_step_id_t req;
 	list_itr_t *itr;
-	list_t *ret_list = NULL;
+	List ret_list = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	job_step_pids_response_msg_t *resp_out;

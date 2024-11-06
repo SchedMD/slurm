@@ -40,6 +40,6 @@
 #include "src/common/slurm_time.h"
 
 extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
-				     list_t *runaway_jobs);
+				     List runaway_jobs);
 
 #endif

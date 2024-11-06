@@ -175,9 +175,9 @@ extern int jobcomp_g_write(job_record_t *job_ptr)
 	return retval;
 }
 
-extern list_t *jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond)
+extern List jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond)
 {
-	list_t *job_list = NULL;
+	List job_list = NULL;
 
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 

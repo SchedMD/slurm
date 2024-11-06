@@ -89,6 +89,19 @@ strong_alias(accounting_enforce_string, slurm_accounting_enforce_string);
 strong_alias(reservation_flags_string, slurm_reservation_flags_string);
 strong_alias(print_multi_line_string, slurm_print_multi_line_string);
 
+#ifndef NDEBUG
+/*
+ * Used alongside the testsuite to signal that the RPC should be processed
+ * as an untrusted user, rather than the "real" account. (Which in a lot of
+ * testing is likely SlurmUser, and thus allowed to bypass many security
+ * checks.
+ *
+ * Implemented with a thread-local variable to apply only to the current
+ * RPC handling thread. Set by SLURM_DROP_PRIV bit in the slurm_msg_t flags.
+ */
+__thread bool drop_priv = false;
+#endif
+
 /*
  * Macro for implementing generic integer sort comparison
  *
@@ -102,10 +115,6 @@ strong_alias(print_multi_line_string, slurm_print_multi_line_string);
 
 /* It's just ASC with va and vb swapped */
 #define SORT_INT_DESC(T, va, vb) SORT_INT_ASC(T, (vb), (va))
-
-#define FIND_INT(T, va, vb) \
-	({T _a = *(T *) (va), _b = *(T *) (vb); \
-	 ((_a == _b) ? 1 : 0);})
 
 typedef struct {
 	uint32_t flag;
@@ -220,7 +229,19 @@ static bool _is_valid_number(char *tok, uint64_t *value)
  */
 extern void slurm_msg_t_init(slurm_msg_t *msg)
 {
-	*msg = (slurm_msg_t) SLURM_MSG_INITIALIZER;
+	memset(msg, 0, sizeof(slurm_msg_t));
+
+	msg->auth_uid = SLURM_AUTH_NOBODY;
+	msg->auth_gid = SLURM_AUTH_NOBODY;
+	msg->conn_fd = -1;
+	msg->msg_type = NO_VAL16;
+	msg->protocol_version = NO_VAL16;
+
+#ifndef NDEBUG
+	msg->flags = drop_priv_flag;
+#endif
+
+	forward_init(&msg->forward);
 }
 
 /*
@@ -275,9 +296,9 @@ extern char *slurm_add_slash_to_quotes(char *str)
 	return copy;
 }
 
-extern list_t *slurm_copy_char_list(list_t *char_list)
+extern List slurm_copy_char_list(List char_list)
 {
-	list_t *ret_list = NULL;
+	List ret_list = NULL;
 	char *tmp_char = NULL;
 	list_itr_t *itr = NULL;
 
@@ -332,36 +353,6 @@ extern int slurm_find_ptr_in_list(void *x, void *key)
 	return 0;
 }
 
-extern int slurm_find_uint16_in_list(void *x, void *key)
-{
-	return FIND_INT(uint16_t, x, key);
-}
-
-extern int slurm_find_uint32_in_list(void *x, void *key)
-{
-	return FIND_INT(uint32_t, x, key);
-}
-
-extern int slurm_find_uint64_in_list(void *x, void *key)
-{
-	return FIND_INT(uint64_t, x, key);
-}
-
-extern int slurm_find_uint_in_list(void *x, void *key)
-{
-	return FIND_INT(unsigned int, x, key);
-}
-
-extern int slurm_find_int_in_list(void *x, void *key)
-{
-	return FIND_INT(int, x, key);
-}
-
-extern int slurm_find_int64_in_list(void *x, void *key)
-{
-	return FIND_INT(int64_t, x, key);
-}
-
 static int _char_list_append_str(void *x, void *arg)
 {
 	char  *char_item = (char *)x;
@@ -375,7 +366,7 @@ static int _char_list_append_str(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-extern char *slurm_char_list_to_xstr(list_t *char_list)
+extern char *slurm_char_list_to_xstr(List char_list)
 {
 	char *out = NULL;
 
@@ -406,11 +397,11 @@ extern void slurm_remove_char_list_from_char_list(list_t *haystack,
 
 static int _char_list_copy(void *item, void *dst)
 {
-	list_append((list_t *) dst, xstrdup((char *)item));
+	list_append((List)dst, xstrdup((char *)item));
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_char_list_copy(list_t *dst, list_t *src)
+extern int slurm_char_list_copy(List dst, List src)
 {
 	xassert(dst);
 	xassert(src);
@@ -420,9 +411,9 @@ extern int slurm_char_list_copy(list_t *dst, list_t *src)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_parse_char_list(
-	list_t *char_list, char *names, void *args,
-	int (*func_ptr)(list_t *char_list, char *name, void *args))
+extern int slurm_parse_char_list(List char_list, char *names, void *args,
+				 int (*func_ptr)(List char_list, char *name,
+						 void *args))
 {
 	int i = 0, start = 0, count = 0, result = 0;
 	char quote_c = '\0';
@@ -477,7 +468,7 @@ extern int slurm_parse_char_list(
 	return count;
 }
 
-extern int slurm_addto_char_list(list_t *char_list, char *names)
+extern int slurm_addto_char_list(List char_list, char *names)
 {
 	return slurm_addto_char_list_with_case(char_list, names, true);
 }
@@ -497,7 +488,7 @@ static void _add_to_list(char *name,
 }
 
 /* returns number of objects added to list */
-extern int slurm_addto_char_list_with_case(list_t *char_list, char *names,
+extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					   bool lower_case_normalization)
 {
 	int i = 0, start = 0, cnt = 0;
@@ -616,7 +607,7 @@ extern int slurm_addto_char_list_with_case(list_t *char_list, char *names,
 }
 
 /* Parses string and converts names to either uid or gid list */
-static int _slurm_addto_id_char_list_internal(list_t *char_list, char *name,
+static int _slurm_addto_id_char_list_internal(List char_list, char *name,
 					      void *x)
 {
 	bool gid = *(bool *)x;
@@ -636,7 +627,7 @@ static int _slurm_addto_id_char_list_internal(list_t *char_list, char *name,
 }
 
 /* Parses string and converts names to either uid or gid list */
-extern int slurm_addto_id_char_list(list_t *char_list, char *names, bool gid)
+extern int slurm_addto_id_char_list(List char_list, char *names, bool gid)
 {
 	if (!char_list) {
 		error("No list was given to fill in");
@@ -653,7 +644,7 @@ typedef struct {
 	int mode;
 } char_list_internal_args_t;
 
-static int _slurm_addto_mode_char_list_internal(list_t *char_list, char *name,
+static int _slurm_addto_mode_char_list_internal(List char_list, char *name,
 						void *args_in)
 {
 	char *tmp_name = NULL;
@@ -695,7 +686,7 @@ static int _slurm_addto_mode_char_list_internal(list_t *char_list, char *name,
 /* Parses strings such as stra,+strb,-strc and appends the default mode to each
  * string in the list if no specific mode is listed.
  * RET: returns the number of items added to the list. -1 on error. */
-extern int slurm_addto_mode_char_list(list_t *char_list, char *names, int mode)
+extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 {
 	char_list_internal_args_t args = {0};
 
@@ -710,7 +701,7 @@ extern int slurm_addto_mode_char_list(list_t *char_list, char *names, int mode)
 			      	     _slurm_addto_mode_char_list_internal);
 }
 
-static int _addto_step_list_internal(list_t *step_list, char *name, void *x)
+static int _addto_step_list_internal(List step_list, char *name, void *x)
 {
 	slurm_selected_step_t *selected_step = NULL;
 
@@ -732,7 +723,7 @@ static int _addto_step_list_internal(list_t *step_list, char *name, void *x)
 }
 
 /* returns number of objects added to list */
-extern int slurm_addto_step_list(list_t *step_list, char *names)
+extern int slurm_addto_step_list(List step_list, char *names)
 {
 	if (!step_list) {
 		error("No list was given to fill in");
@@ -809,6 +800,16 @@ extern int slurm_sort_uint64_list_asc(const void *v1, const void *v2)
 extern int slurm_sort_uint64_list_desc(const void *v1, const void *v2)
 {
 	return SORT_INT_DESC(uint64_t, v1, v2);
+}
+
+extern int slurm_sort_uint_list_asc(const void *v1, const void *v2)
+{
+	return SORT_INT_ASC(unsigned int, v1, v2);
+}
+
+extern int slurm_sort_uint_list_desc(const void *v1, const void *v2)
+{
+	return SORT_INT_DESC(unsigned int, v1, v2);
 }
 
 extern int slurm_sort_int_list_asc(const void *v1, const void *v2)
@@ -1137,15 +1138,6 @@ extern int fmt_job_id_string(slurm_selected_step_t *id, char **dst)
 	if ((id->array_task_id != NO_VAL) && (id->het_job_offset != NO_VAL)) {
 		rc = ESLURM_INVALID_HET_JOB_AND_ARRAY;
 		goto cleanup;
-	}
-
-	if (id->array_bitmap && (bit_ffs(id->array_bitmap) != -1)) {
-		char *bitmap_str = bit_fmt_full(id->array_bitmap);
-
-		xstrfmtcatat(str, &pos, "_[%s]", bitmap_str);
-		xfree(bitmap_str);
-		*dst = str;
-		return SLURM_SUCCESS;
 	}
 
 	if (id->array_task_id != NO_VAL)
@@ -1856,7 +1848,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->sched_nodes);
 		xfree(job->partition);
 		xfree(job->priority_array);
-		xfree(job->priority_array_names);
+		xfree(job->priority_array_parts);
 		xfree(job->prefer);
 		xfree(job->qos);
 		xfree(job->req_node_inx);
@@ -1927,15 +1919,6 @@ extern void slurm_free_node_registration_status_msg(
 	}
 }
 
-extern void slurm_free_sbcast_cred_req_msg(sbcast_cred_req_msg_t *msg)
-{
-	if (!msg)
-		return;
-
-	xfree(msg->node_list);
-	xfree(msg);
-}
-
 extern void slurm_free_node_reg_resp_msg(
 	slurm_node_reg_resp_msg_t *msg)
 {
@@ -1959,7 +1942,6 @@ extern void slurm_free_update_front_end_msg(update_front_end_msg_t * msg)
 extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 {
 	if (msg) {
-		xfree(msg->cert_token);
 		xfree(msg->comment);
 		xfree(msg->extra);
 		xfree(msg->features);
@@ -4290,20 +4272,16 @@ extern void slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
 		xfree(node->arch);
-		xfree(node->bcast_address);
 		xfree(node->cluster_name);
 		xfree(node->comment);
 		xfree(node->cpu_spec_list);
 		acct_gather_energy_destroy(node->energy);
-		xfree(node->extra);
 		xfree(node->features);
 		xfree(node->features_act);
-		xfree(node->gpu_spec);
 		xfree(node->gres);
 		xfree(node->gres_drain);
 		xfree(node->gres_used);
 		xfree(node->instance_id);
-		xfree(node->instance_type);
 		xfree(node->mcs_label);
 		xfree(node->name);
 		xfree(node->node_addr);
@@ -4787,26 +4765,6 @@ extern void slurm_free_crontab_update_response_msg(
 	xfree(msg);
 }
 
-extern void slurm_free_tls_cert_request_msg(tls_cert_request_msg_t *msg)
-{
-	if (!msg)
-		return;
-
-	xfree(msg->csr);
-	xfree(msg->node_name);
-	xfree(msg->token);
-	xfree(msg);
-}
-
-extern void slurm_free_tls_cert_response_msg(tls_cert_response_msg_t *msg)
-{
-	if (!msg)
-		return;
-
-	xfree(msg->signed_cert);
-	xfree(msg);
-}
-
 extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg)
 {
 	if (!msg)
@@ -4972,9 +4930,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
 		slurm_destroy_selected_step(data);
-		break;
-	case REQUEST_SBCAST_CRED_NO_JOB:
-		slurm_free_sbcast_cred_req_msg(data);
 		break;
 	case REQUEST_SHUTDOWN:
 		slurm_free_shutdown_msg(data);
@@ -5322,12 +5277,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_UPDATE_CRONTAB:
 		slurm_free_crontab_update_response_msg(data);
 		break;
-	case REQUEST_TLS_CERT:
-		slurm_free_tls_cert_request_msg(data);
-		break;
-	case RESPONSE_TLS_CERT:
-		slurm_free_tls_cert_response_msg(data);
-		break;
 	case REQUEST_STEP_BY_CONTAINER_ID:
 		slurm_free_container_id_request_msg(data);
 		break;
@@ -5390,8 +5339,8 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 		rc = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
 		break;
 	default:
-		error("don't know the rc for type %u returning %u", type, rc);
 		xassert(false);
+		error("don't know the rc for type %u returning %u", type, rc);
 		break;
 	}
 	return rc;
@@ -6298,7 +6247,7 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
 					agent_arg_ptr->msg_args);
 		} else if (agent_arg_ptr->msg_type ==
 				RESPONSE_HET_JOB_ALLOCATION) {
-			list_t *alloc_list = agent_arg_ptr->msg_args;
+			List alloc_list = agent_arg_ptr->msg_args;
 			FREE_NULL_LIST(alloc_list);
 		} else if ((agent_arg_ptr->msg_type == REQUEST_ABORT_JOB)    ||
 			 (agent_arg_ptr->msg_type == REQUEST_TERMINATE_JOB)  ||
@@ -6341,6 +6290,10 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
  */
 extern bool validate_slurm_user(uid_t uid)
 {
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
 		return true;
 	else
@@ -6355,6 +6308,10 @@ extern bool validate_slurm_user(uid_t uid)
  */
 extern bool validate_slurmd_user(uid_t uid)
 {
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if ((uid == 0) || (uid == slurm_conf.slurmd_user_id))
 		return true;
 	else

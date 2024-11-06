@@ -101,7 +101,7 @@ static bool idle_on_node_suspend = false;
 static uint16_t power_save_interval = 10;
 static uint16_t power_save_min_interval = 0;
 
-list_t *resume_job_list = NULL;
+List resume_job_list = NULL;
 
 typedef struct {
 	bool inited;
@@ -116,7 +116,7 @@ typedef struct exc_node_partital {
 	int exc_node_cnt;
 	bitstr_t *exc_node_cnt_bitmap;
 } exc_node_partital_t;
-list_t *partial_node_list = NULL;
+List partial_node_list;
 
 bitstr_t *exc_node_bitmap = NULL;
 

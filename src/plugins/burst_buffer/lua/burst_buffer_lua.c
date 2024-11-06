@@ -51,7 +51,6 @@
 #include "src/common/fd.h"
 #include "src/common/run_command.h"
 #include "src/common/slurm_protocol_pack.h"
-#include "src/common/state_save.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/serializer.h"
@@ -250,14 +249,43 @@ static void _decr_lua_thread_cnt(void)
 	slurm_mutex_unlock(&lua_thread_mutex);
 }
 
+static int _job_info_to_string(lua_State *L)
+{
+	job_info_t *job_info;
+	char *msg;
+
+	/* Pushes the metatable of the table onto the stack */
+	if (!lua_getmetatable(L, -1)) {
+		error("job_info_to_string requires one argument - job_info table");
+		lua_pushinteger(L, SLURM_ERROR);
+		lua_pushstring(L, "job_info_to_string requires one argument - job_info table");
+		return 2;
+	}
+
+	/*
+	 * Pushes metatable["_job_info_ptr"] onto the stack, which is just a
+	 * pointer to job_info.
+	 */
+	lua_getfield(L, -1, "_job_info_ptr");
+	/* Now we can get the pointer to job_info from the top of the stack */
+	job_info = lua_touserdata(L, -1);
+
+	msg = slurm_sprint_job_info(job_info, 0);
+	lua_pushinteger(L, SLURM_SUCCESS);
+	lua_pushstring(L, msg);
+
+	return 2;
+}
+
+static const struct luaL_Reg slurm_functions [] = {
+	{ "job_info_to_string", _job_info_to_string },
+	{ NULL, NULL }
+};
+
 static void _loadscript_extra(lua_State *st)
 {
-        /* local setup */
-	/*
-	 * We may add functions later (like job_submit/lua and cli_filter/lua),
-	 * but for now we don't have any.
-	 */
-	//slurm_lua_table_register(st, NULL, slurm_functions);
+	/* local setup */
+	slurm_lua_table_register(st, NULL, slurm_functions);
 
 	/* Push this string to the top of the stack" */
 	lua_pushstring(st, SLURM_BB_BUSY);
@@ -517,6 +545,8 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 		lua_pushstring(L, job_info->selinux_context);
 	} else if (!xstrcmp(name, "shared")) {
 		lua_pushinteger(L, job_info->shared);
+	} else if (!xstrcmp(name, "show_flags")) {
+		lua_pushinteger(L, job_info->show_flags);
 	} else if (!xstrcmp(name, "site_factor")) {
 		lua_pushinteger(L, job_info->site_factor);
 	} else if (!xstrcmp(name, "sockets_per_board")) {
@@ -860,7 +890,7 @@ static int _run_lua_script(run_lua_args_t *args)
 {
 	int rc;
 	buf_t *info_buf = NULL;
-	list_t *job_ids = NULL;
+	List job_ids = NULL;
 	job_record_t *job_ptr;
 	slurmctld_lock_t job_read_lock = {
 		.conf = READ_LOCK, .job = READ_LOCK,
@@ -952,11 +982,12 @@ static int _run_lua_script(run_lua_args_t *args)
 static void _save_bb_state(void)
 {
 	static time_t last_save_time = 0;
-	static uint32_t high_buffer_size = 16 * 1024;
+	static int high_buffer_size = 16 * 1024;
 	time_t save_time = time(NULL);
 	bb_alloc_t *bb_alloc;
 	uint32_t rec_count = 0;
 	buf_t *buffer;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
 	int i, count_offset, offset;
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 
@@ -996,9 +1027,20 @@ static void _save_bb_state(void)
 		set_buf_offset(buffer, offset);
 	}
 
-	if (!save_buf_to_state("burst_buffer_lua_state", buffer, NULL))
-		last_save_time = save_time;
+	xstrfmtcat(old_file, "%s/%s", slurm_conf.state_save_location,
+	           "burst_buffer_lua_state.old");
+	xstrfmtcat(reg_file, "%s/%s", slurm_conf.state_save_location,
+	           "burst_buffer_lua_state");
+	xstrfmtcat(new_file, "%s/%s", slurm_conf.state_save_location,
+	           "burst_buffer_lua_state.new");
 
+	bb_write_state_file(old_file, reg_file, new_file, "burst_buffer_lua",
+			    buffer, high_buffer_size, save_time,
+			    &last_save_time);
+
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
 	FREE_NULL_BUFFER(buffer);
 }
 
@@ -1007,7 +1049,7 @@ static void _recover_bb_state(void)
 	char *state_file = NULL, *data = NULL;
 	int data_allocated, data_read = 0;
 	uint16_t protocol_version = NO_VAL16;
-	uint32_t data_size = 0, rec_count = 0;
+	uint32_t data_size = 0, rec_count = 0, name_len = 0;
 	uint32_t id = 0, user_id = 0, group_id = 0;
 	uint64_t size = 0;
 	int i, state_fd;
@@ -1059,13 +1101,13 @@ static void _recover_bb_state(void)
 	safe_unpack32(&rec_count, buffer);
 	for (i = 0; i < rec_count; i++) {
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-			safe_unpackstr(&account, buffer);
+			safe_unpackstr_xmalloc(&account,   &name_len, buffer);
 			safe_unpack_time(&create_time, buffer);
 			safe_unpack32(&id, buffer);
-			safe_unpackstr(&name, buffer);
-			safe_unpackstr(&partition, buffer);
-			safe_unpackstr(&pool, buffer);
-			safe_unpackstr(&qos, buffer);
+			safe_unpackstr_xmalloc(&name,      &name_len, buffer);
+			safe_unpackstr_xmalloc(&partition, &name_len, buffer);
+			safe_unpackstr_xmalloc(&pool,      &name_len, buffer);
+			safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
 			safe_unpack32(&user_id, buffer);
 			safe_unpack32(&group_id, buffer);
 			safe_unpack64(&size, buffer);
@@ -2298,7 +2340,7 @@ static void _free_orphan_alloc_rec(void *x)
  * that the burst buffer is in.
  */
 static void _recover_job_bb(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
-			    time_t defer_time, list_t *orphan_rec_list)
+			    time_t defer_time, List orphan_rec_list)
 {
 	bb_job_t *bb_job;
 	uint16_t job_bb_state = bb_state_num(job_ptr->burst_buffer_state);
@@ -2406,7 +2448,7 @@ static void _recover_job_bb(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
  */
 static void _purge_vestigial_bufs(void)
 {
-	list_t *orphan_rec_list = list_create(_free_orphan_alloc_rec);
+	List orphan_rec_list = list_create(_free_orphan_alloc_rec);
 	bb_alloc_t *bb_alloc = NULL;
 	time_t defer_time = time(NULL) + 60;
 	int i;
@@ -2927,7 +2969,7 @@ extern time_t bb_p_job_get_est_start(job_record_t *job_ptr)
 static int _identify_bb_candidate(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
-	list_t *job_candidates = arg;
+	List job_candidates = (List) arg;
 	bb_job_t *bb_job;
 	bb_job_queue_rec_t *job_rec;
 
@@ -3444,9 +3486,9 @@ static int _try_alloc_job_bb(void *x, void *arg)
 /*
  * Attempt to allocate resources and begin file staging for pending jobs.
  */
-extern int bb_p_job_try_stage_in(list_t *job_queue)
+extern int bb_p_job_try_stage_in(List job_queue)
 {
-	list_t *job_candidates;
+	List job_candidates;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	log_flag(BURST_BUF, "Mutex locked");

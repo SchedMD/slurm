@@ -9,16 +9,18 @@ distributions using arm64 (aarch64), ppc64, and x86_64 architectures. Some
 features are limited to recent releases and newer Linux kernel versions.
 Currently supported distributions include:
 <ul>
+<li>Debian 10 (Buster)</li>
 <li>Debian 11 (Bullseye)</li>
 <li>Debian 12 (Bookworm)</li>
+<li>RedHat Enterprise Linux 7 (RHEL7), CentOS 7, Scientific Linux 7</li>
 <li>RedHat Enterprise Linux 8 (RHEL8) and RHEL8 derivatives</li>
 <li>RedHat Enterprise Linux 9 (RHEL9) and RHEL9 derivatives</li>
 <li>SUSE Linux Enterprise Server (SLES) 12</li>
 <li>SUSE Linux Enterprise Server (SLES) 15</li>
+<li>Ubuntu 18.04</li>
 <li>Ubuntu 20.04</li>
 <li>Ubuntu 22.04</li>
 <li>Ubuntu 23.04</li>
-<li>Ubuntu 24.04</li>
 </ul>
 </li>
 <li><b>NetBSD</b> &mdash; Limited support, not actively tested.</li>
@@ -44,27 +46,18 @@ for assistance.</p>
 <p>Slurm has optional support for managing a variety of accelerator cards.
 Specific plugins have been developed for:</p>
 <ul>
-<li><b>gres/gpu</b> &mdash; several autodetection plugins are available for
-different vendors:
-<ul>
-<li><b>AutoDetect=nvml</b> enables autodetection of NVIDIA GPUs through their
-proprietary NVML library.</li>
-<li><b>AutoDetect=nvidia</b> also enables autodetection of NVIDIA GPUs, but
-through generic Linux interfaces rather than their proprietary library. This
-plugin doesn't detect MIGs or NVlinks.</li>
-<li><b>AutoDetect=rsmi</b> enables autodetection of AMD GPUs through their
-proprietary RSMI library (tested on x86_64 and arm64).</li>
-<li><b>AutoDetect=oneapi</b> enables autodetection of Intel GPUs through their
-proprietary oneAPI library.</li>
-<li><b>AutoDetect=nrt</b> enables autodetection of AWS Trainium/Inferentia
-devices.</li>
-</ul></li>
-<li><b>gres/mps</b> &mdash; NVIDIA CUDA Multi-Process Service provides ways to
+<li>gres/gpu &mdash; AutoDetect=nvml enables autodetection of NVIDIA GPUs
+through their proprietary NVML library. AutoDetect=rsmi enables
+autodetection of AMD GPUs through their proprietary RSMI library
+(tested on x86_64 and arm64). AutoDetect=oneapi enables
+autodetection of Intel GPUs through their proprietary oneAPI library.
+AutoDetect=nrt enables autodetection of AWS Trainium/Inferentia devices.</li>
+<li>gres/mps &mdash; NVIDIA CUDA Multi-Process Service provides ways to
 share GPUs between multiple compute processes</li>
-<li><b>gres/shard</b> &mdash; Generic mechanism that provides a way to share
+<li>gres/shard &mdash; Generic mechanism that provides a way to share
 GPUs between multiple compute processes</li>
 </ul>
 
-<p style="text-align:center;">Last modified 30 October 2024</p>
+<p style="text-align:center;">Last modified 13 March 2024</p>
 
 <!--#include virtual="footer.txt"-->

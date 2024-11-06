@@ -214,14 +214,12 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 				     int *count,
 				     uint16_t tree_width)
 {
-	int depth, j, nnodes, nnodex;
+	int rc;
+	int j, nnodes, nnodex;
 	char *buf;
 
 	nnodes = nnodex = 0;
 	xassert(g_context);
-
-	if (!tree_width)
-		tree_width = slurm_conf.tree_width;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 		/* nnodes has to be set here as the hl is empty after the
@@ -233,9 +231,12 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 		xfree(buf);
 	}
 
-	depth = (*(ops.split_hostlist))(hl, sp_hl, count, tree_width);
-	if (!depth && !(*count))
-		goto end;
+	if (!tree_width)
+		tree_width = slurm_conf.tree_width;
+
+	rc = (*(ops.split_hostlist))(hl, sp_hl, count, tree_width);
+	if (!rc && !(*count))
+		rc = SLURM_ERROR;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 		/* Sanity check to make sure all nodes in msg list are in
@@ -251,8 +252,7 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 		}
 	}
 
-end:
-	return depth;
+	return rc;
 }
 
 extern int topology_g_get(topology_data_t type, void *data)

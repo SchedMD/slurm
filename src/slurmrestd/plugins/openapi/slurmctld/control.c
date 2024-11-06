@@ -51,11 +51,8 @@ extern int op_handler_reconfigure(openapi_ctxt_t *ctxt)
 		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
 			   "Unsupported HTTP method requested: %s",
 			   get_http_method_string(ctxt->method));
-	else if ((rc = slurm_reconfigure())) {
-		if (errno)
-			rc = errno;
+	else if ((rc = slurm_reconfigure()))
 		resp_error(ctxt, rc, __func__, "slurm_reconfigure() failed");
-	}
 
 	return rc;
 }

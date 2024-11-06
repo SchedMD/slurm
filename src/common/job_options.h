@@ -50,22 +50,21 @@ struct job_option_info {
 /*
  *  Create generic job options container.
  */
-extern list_t *job_options_create(void);
+List job_options_create(void);
 
 /*
  *  Append option of type `type' and its argument to job options
  */
-extern int job_options_append(list_t *opts, int type, const char *opt,
-			      const char *optarg);
+int job_options_append(List opts, int type, const char *opt, const char *optarg);
 
 /*
  *  Pack all accumulated options into buf
  */
-extern int job_options_pack(list_t *opts, buf_t *buf);
+int job_options_pack(List opts, buf_t *buf);
 
 /*
  *  Unpack options from buf into options container opts.
  */
-extern int job_options_unpack(list_t *opts, buf_t *buf);
+int job_options_unpack(List opts, buf_t *buf);
 
 #endif /* !_JOB_OPTIONS_H */

@@ -54,6 +54,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/conmgr.h"
 #include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -61,12 +62,11 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
@@ -109,7 +109,7 @@ static int debug_increase = 0;
 /* detected run mode */
 static run_mode_t run_mode = { 0 };
 /* Listen string */
-static list_t *socket_listen = NULL;
+static List socket_listen = NULL;
 static char *slurm_conf_filename = NULL;
 /* Number of requested threads */
 static int thread_count = 20;
@@ -139,7 +139,7 @@ extern parsed_host_port_t *parse_host_port(const char *str);
 extern void free_parse_host_port(parsed_host_port_t *parsed);
 
 /* SIGPIPE handler - mostly a no-op */
-static void _sigpipe_handler(conmgr_callback_args_t conmgr_args, void *arg)
+static void _sigpipe_handler(int signum)
 {
 	debug5("%s: received SIGPIPE", __func__);
 }
@@ -544,6 +544,10 @@ static void _lock_down(void)
 		fatal("Unable to setgid: %m");
 	if (uid != 0 && setuid(uid))
 		fatal("Unable to setuid: %m");
+	if (check_user && !become_user && (getuid() == 0))
+		fatal("slurmrestd should not be run as the root user.");
+	if (check_user && !become_user && (getgid() == 0))
+		fatal("slurmrestd should not be run with the root goup.");
 
 	if (become_user && getuid())
 		fatal("slurmrestd must run as root in become_user mode");
@@ -562,50 +566,13 @@ static void _lock_down(void)
  */
 static void _check_user(void)
 {
-	int gid_count = 0;
-
 	if (!check_user)
 		return;
-
-	if (getuid() == SLURM_AUTH_NOBODY)
-		fatal("slurmrestd should not be run as nobody(%d)",
-		      SLURM_AUTH_NOBODY);
-	if (getgid() == SLURM_AUTH_NOBODY)
-		fatal("slurmrestd should not be run with nobody(%d) group.",
-		      SLURM_AUTH_NOBODY);
 
 	if (slurm_conf.slurm_user_id == getuid())
 		fatal("slurmrestd should not be run as SlurmUser");
 	if (gid_from_uid(slurm_conf.slurm_user_id) == getgid())
 		fatal("slurmrestd should not be run with SlurmUser's group.");
-
-	if (!getuid())
-		fatal("slurmrestd should not be run as the root user.");
-	if (!getgid())
-		fatal("slurmrestd should not be run with the root group.");
-
-	if ((gid_count = getgroups(0, NULL)) > 0) {
-		gid_t *list = xcalloc(gid_count, sizeof(*list));
-
-		if (getgroups(gid_count, list) != gid_count)
-			fatal_abort("Inconsistent getgroups() group counts. This should never happen");
-
-		for (int i = 0; i < gid_count; i++) {
-			if (list[i] == slurm_conf.slurm_user_id)
-				fatal("slurmrestd should not be run with SlurmUser's group.");
-
-			if (!list[i])
-				fatal("slurmrestd should not be run with the root group.");
-
-			if (list[i] == SLURM_AUTH_NOBODY)
-				fatal("slurmrestd should not be run with nobody(%d) group.",
-				      SLURM_AUTH_NOBODY);
-		}
-
-		xfree(list);
-	} else if (gid_count < 0) {
-		fatal_abort("getgroups()=%d failed[%d]: %m", errno, gid_count);
-	}
 }
 
 /* simple wrapper to hand over operations router in http context */
@@ -634,40 +601,34 @@ static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg)
 {
-	fprintf(stdout, "%s\n", full_type);
+	fprintf(stderr, "%s\n", full_type);
 }
 
-static void _on_signal_interrupt(conmgr_callback_args_t conmgr_args, void *arg)
+static void _on_signal_interrupt(conmgr_fd_t *con, conmgr_work_type_t type,
+				 conmgr_work_status_t status, const char *tag,
+				 void *arg)
 {
 	info("%s: caught SIGINT. Shutting down.", __func__);
-	conmgr_request_shutdown();
-}
-
-
-static void _inet_on_finish(conmgr_fd_t *con, void *ctxt)
-{
-	on_http_connection_finish(con, ctxt);
 	conmgr_request_shutdown();
 }
 
 int main(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
+	struct sigaction sigpipe_handler = { .sa_handler = _sigpipe_handler };
 	socket_listen = list_create(xfree_ptr);
-	static const conmgr_events_t conmgr_events = {
+	conmgr_events_t conmgr_events = {
 		.on_data = parse_http,
 		.on_connection = _setup_http_context,
 		.on_finish = on_http_connection_finish,
-	};
-	static const conmgr_events_t inet_events = {
-		.on_data = parse_http,
-		.on_connection = _setup_http_context,
-		.on_finish = _inet_on_finish,
 	};
 	static const conmgr_callbacks_t callbacks = {
 		.parse = parse_host_port,
 		.free_parse = free_parse_host_port,
 	};
+
+	if (sigaction(SIGPIPE, &sigpipe_handler, NULL) == -1)
+		fatal("%s: unable to control SIGPIPE: %m", __func__);
 
 	_parse_env();
 	_parse_commandline(argc, argv);
@@ -688,15 +649,19 @@ int main(int argc, char **argv)
 	slurm_init(slurm_conf_filename);
 	_check_user();
 
+	if (thread_count < 2)
+		fatal("Request at least 2 threads for processing");
+	if (thread_count > 1024)
+		fatal("Excessive thread count");
+
 	if (serializer_g_init(NULL, NULL))
 		fatal("Unable to initialize serializers");
 
-	/* This checks if slurmrestd is running in inetd mode */
-	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),
-		    max_connections, callbacks);
+	init_conmgr((run_mode.listen ? thread_count : 1), max_connections,
+		    callbacks);
 
-	conmgr_add_work_signal(SIGINT, _on_signal_interrupt, NULL);
-	conmgr_add_work_signal(SIGPIPE, _sigpipe_handler, NULL);
+	conmgr_add_signal_work(SIGINT, _on_signal_interrupt, NULL,
+			       "_on_signal_interrupt()");
 
 	auth_rack = plugrack_create("rest_auth");
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);
@@ -791,9 +756,8 @@ int main(int argc, char **argv)
 
 	if (!run_mode.listen) {
 		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
-					    STDOUT_FILENO, &inet_events,
-					    CON_FLAG_NONE, NULL, 0,
-					    operations_router)))
+					    STDOUT_FILENO, conmgr_events, NULL,
+					    0, operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 
@@ -802,9 +766,8 @@ int main(int argc, char **argv)
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
-		if (conmgr_create_listen_sockets(CON_TYPE_RAW, socket_listen,
-						 &conmgr_events,
-						 operations_router))
+		if (conmgr_create_sockets(CON_TYPE_RAW, socket_listen,
+					  conmgr_events, operations_router))
 			fatal("Unable to create sockets");
 
 		umask(mask);
@@ -827,7 +790,7 @@ int main(int argc, char **argv)
 	destroy_rest_auth();
 	destroy_operations();
 	destroy_openapi();
-	conmgr_fini();
+	free_conmgr();
 	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
 	serializer_g_fini();
 	for (size_t i = 0; i < auth_plugin_count; i++) {

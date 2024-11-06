@@ -52,7 +52,6 @@
 #include <poll.h>
 #include <pthread.h>
 #include <pwd.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,6 +91,7 @@
 #include "src/common/util-net.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/acct_gather_profile.h"
@@ -105,8 +105,6 @@
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
-
-#include "src/conmgr/conmgr.h"
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/common/privileges.h"
@@ -155,6 +153,9 @@ typedef struct {
 } spank_task_args_t;
 #endif
 
+static pthread_t x11_signal_handler_thread = 0;
+static int sig_array[] = {SIGTERM, 0};
+
 /*
  * Prototypes
  */
@@ -180,6 +181,8 @@ static void _random_sleep(stepd_step_rec_t *step);
 static int  _run_script_as_user(const char *name, const char *path,
 				stepd_step_rec_t *step,
 				int max_wait, char **env);
+static void _unblock_signals(void);
+static void *_x11_signal_handler(void *arg);
 
 /*
  * Batch step management prototypes:
@@ -1142,65 +1145,56 @@ static void _shutdown_x11_forward(stepd_step_rec_t *step)
 		error("%s: Unable to reclaim privileges", __func__);
 }
 
-static void _x11_signal_handler(conmgr_callback_args_t conmgr_args, void *arg)
+static void *_x11_signal_handler(void *arg)
 {
-	static bool run_once = false;
-	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-	bool bail = false;
 	stepd_step_rec_t *step = (stepd_step_rec_t *) arg;
+	int sig, status;
+	sigset_t set;
 	pid_t cpid, pid;
 
-	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		debug4("%s: cancelled", __func__);
-		return;
-	}
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	/*
-	 * Protect against race of SIGTERM and step shutdown causing this
-	 * function to run more than once.
-	 */
-	slurm_mutex_lock(&mutex);
-	if (run_once)
-		bail = true;
-	run_once = true;
-	slurm_mutex_unlock(&mutex);
+	while (1) {
+		xsignal_sigset_create(sig_array, &set);
+		if (sigwait(&set, &sig) == EINTR)
+			continue;
 
-	if (bail) {
-		debug4("%s: Already run. bailing.", __func__);
-		return;
-	}
-
-	debug("Terminate signal (SIGTERM) received");
-
-	if (!_need_join_container()) {
-		_shutdown_x11_forward(step);
-		return;
-	}
-	if ((cpid = fork()) == 0) {
-		if (container_g_join(step->step_id.job_id,
-				     step->uid) !=
-		    SLURM_SUCCESS) {
-			error("%s: cannot join container",
-			      __func__);
-			_exit(1);
+		switch (sig) {
+		case SIGTERM:	/* kill -15 */
+			debug("Terminate signal (SIGTERM) received");
+			if (!_need_join_container()) {
+				_shutdown_x11_forward(step);
+				return NULL;
+			}
+			if ((cpid = fork()) == 0) {
+				if (container_g_join(step->step_id.job_id,
+						     step->uid) !=
+				    SLURM_SUCCESS) {
+					error("%s: cannot join container",
+					      __func__);
+					_exit(1);
+				}
+				_shutdown_x11_forward(step);
+				_exit(0);
+			} else if (cpid < 0) {
+				error("%s: fork: %m", __func__);
+			} else {
+				pid = waitpid(cpid, &status, 0);
+				if (pid < 0)
+					error("%s: waitpid failed: %m",
+					      __func__);
+				else if (!WIFEXITED(status))
+					error("%s: child terminated abnormally",
+					      __func__);
+				else if (WEXITSTATUS(status))
+					error("%s: child returned non-zero",
+					      __func__);
+			}
+			return NULL;
+		default:
+			error("Invalid signal (%d) received", sig);
 		}
-		_shutdown_x11_forward(step);
-		_exit(0);
-	} else if (cpid < 0) {
-		error("%s: fork: %m", __func__);
-	} else {
-		int status;
-
-		pid = waitpid(cpid, &status, 0);
-		if (pid < 0)
-			error("%s: waitpid failed: %m",
-			      __func__);
-		else if (!WIFEXITED(status))
-			error("%s: child terminated abnormally",
-			      __func__);
-		else if (WEXITSTATUS(status))
-			error("%s: child returned non-zero",
-			      __func__);
 	}
 }
 
@@ -1325,7 +1319,9 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 			return SLURM_ERROR;
 		}
 
-		conmgr_add_work_signal(SIGTERM, _x11_signal_handler, step);
+		xsignal_block(sig_array);
+		slurm_thread_create(&x11_signal_handler_thread,
+				    _x11_signal_handler, step);
 
 		debug("x11 forwarding local display is %d", step->x11_display);
 		debug("x11 forwarding local xauthority is %s",
@@ -1378,6 +1374,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 		setsid();
 		set_oom_adj(0);	/* the tasks may be killed by OOM */
 		acct_gather_profile_g_child_forked();
+		_unblock_signals();
 		/*
 		 * Need to exec() something for proctrack/linuxproc to
 		 * work, it will not keep a process named "slurmstepd"
@@ -1509,7 +1506,10 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	task_g_post_step(step);
 
 fail1:
-	conmgr_add_work_fifo(_x11_signal_handler, step);
+	if (x11_signal_handler_thread) {
+		(void) pthread_kill(x11_signal_handler_thread, SIGTERM);
+		slurm_thread_join(x11_signal_handler_thread);
+	}
 
 	debug2("%s: Before call to spank_fini()", __func__);
 	if (spank_fini(step) < 0)
@@ -1530,8 +1530,6 @@ fail1:
 		step_complete.step_rc = rc;
 
 	stepd_send_step_complete_msgs(step);
-
-	switch_g_extern_step_fini(jobid);
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB) {
 		/* Force all other steps to end before epilog starts */
@@ -2026,7 +2024,7 @@ static int exec_wait_kill_child (struct exec_wait_info *e)
  *  Send all children in exec_wait_list SIGKILL.
  *  Returns 0 for success or  < 0 on failure.
  */
-static int exec_wait_kill_children(list_t *exec_wait_list)
+static int exec_wait_kill_children (List exec_wait_list)
 {
 	int rc = 0;
 	int count;
@@ -2064,6 +2062,20 @@ static void prepare_stdio (stepd_step_rec_t *step, stepd_step_task_info_t *task)
 	return;
 }
 
+static void _unblock_signals (void)
+{
+	sigset_t set;
+	int i;
+
+	for (i = 0; slurmstepd_blocked_signals[i]; i++) {
+		/* eliminate pending signals, then set to default */
+		xsignal(slurmstepd_blocked_signals[i], SIG_IGN);
+		xsignal(slurmstepd_blocked_signals[i], SIG_DFL);
+	}
+	sigemptyset(&set);
+	xsignal_set_mask (&set);
+}
+
 /*
  * fork and exec N tasks
  */
@@ -2074,7 +2086,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	int i;
 	struct priv_state sprivs;
 	jobacct_id_t jobacct_id;
-	list_t *exec_wait_list = NULL;
+	List exec_wait_list = NULL;
 	uint32_t node_offset = 0, task_offset = 0;
 	char saved_cwd[PATH_MAX];
 
@@ -2269,6 +2281,8 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
  			}
 
 			/* log_fini(); */ /* note: moved into exec_task() */
+
+			_unblock_signals();
 
 			/*
 			 *  Need to setup stdio before setpgid() is called

@@ -239,11 +239,11 @@ extern void reservation_update_groups(int force);
  * get_resv_list - find record for named reservation(s)
  * IN name - reservation name(s) in a comma separated char
  * OUT err_part - The first invalid reservation name.
- * RET list of pointers to the reservations or NULL if not found
+ * RET List of pointers to the reservations or NULL if not found
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
-extern list_t *get_resv_list(char *name, char **err_resv);
+extern List get_resv_list(char *name, char **err_resv);
 
 extern void set_reserved_license_count(licenses_t *license);
 

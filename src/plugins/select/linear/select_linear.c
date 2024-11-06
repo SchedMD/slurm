@@ -92,16 +92,16 @@
 #if defined (__APPLE__)
 extern slurm_conf_t slurm_conf __attribute__((weak_import));
 extern node_record_t **node_record_table_ptr __attribute__((weak_import));
-extern list_t *part_list __attribute__((weak_import));
-extern list_t *job_list __attribute__((weak_import));
+extern List part_list __attribute__((weak_import));
+extern List job_list __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
 extern time_t last_node_update __attribute__((weak_import));
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 #else
 slurm_conf_t slurm_conf;
 node_record_t **node_record_table_ptr;
-list_t *part_list;
-list_t *job_list;
+List part_list;
+List job_list;
 int node_record_count;
 time_t last_node_update;
 slurmctld_config_t slurmctld_config;
@@ -151,8 +151,8 @@ static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
 static int _run_now(job_record_t *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    int max_share, uint32_t req_nodes,
-		    list_t *preemptee_candidates,
-		    list_t **preemptee_job_list);
+		    List preemptee_candidates,
+		    List *preemptee_job_list);
 static int _sort_usable_nodes_dec(void *, void *);
 static bool _test_run_job(struct cr_record *cr_ptr, uint32_t job_id);
 static bool _test_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
@@ -162,8 +162,8 @@ static int _test_only(job_record_t *job_ptr, bitstr_t *bitmap,
 static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  int max_share, uint32_t req_nodes,
-			  list_t *preemptee_candidates,
-			  list_t **preemptee_job_list);
+			  List preemptee_candidates,
+			  List *preemptee_job_list);
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
@@ -517,7 +517,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 	uint64_t alloc_mem = 0, job_mem = 0, avail_mem = 0;
 	uint32_t cpu_cnt, gres_cpus, gres_cores;
 	int core_start_bit, core_end_bit, cpus_per_core;
-	list_t *gres_list;
+	List gres_list;
 	bool use_total_gres = true;
 
 	xassert(cr_ptr);
@@ -547,10 +547,11 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 		core_start_bit = cr_get_coremap_offset(i);
 		core_end_bit   = cr_get_coremap_offset(i+1) - 1;
 		cpus_per_core  = cpu_cnt / (core_end_bit - core_start_bit + 1);
-		gres_cores = gres_job_test(job_ptr->gres_list_req, gres_list,
-					   use_total_gres, core_start_bit,
-					   core_end_bit, job_ptr->job_id,
-					   node_ptr->name);
+		gres_cores = gres_job_test(job_ptr->gres_list_req,
+						  gres_list, use_total_gres,
+						  NULL, core_start_bit,
+						  core_end_bit, job_ptr->job_id,
+						  node_ptr->name, false);
 		gres_cpus = gres_cores;
 		if (gres_cpus != NO_VAL) {
 			gres_cpus *= cpus_per_core;
@@ -1017,7 +1018,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 		}
 
 		if (remove_all) {
-			list_t *node_gres_list;
+			List node_gres_list;
 
 			if (cr_ptr->nodes[i].gres_list)
 				node_gres_list = cr_ptr->nodes[i].gres_list;
@@ -1356,7 +1357,7 @@ static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
 	uint64_t job_memory = 0, job_memory_cpu = 0, job_memory_node = 0;
 	int first_bit;
 	uint16_t cpu_cnt;
-	list_t *node_gres_list;
+	List node_gres_list;
 	bool old_job = false;
 
 	if (cr_ptr == NULL) {
@@ -1452,7 +1453,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	uint64_t job_memory_cpu = 0, job_memory_node = 0;
 	uint16_t cpu_cnt;
 	node_record_t *node_ptr;
-	list_t *gres_list;
+	List gres_list;
 	bool new_alloc = true;
 
 	if (cr_ptr == NULL) {
@@ -1579,7 +1580,7 @@ static void _dump_node_cr(struct cr_record *cr_ptr)
 	int i;
 	struct part_cr_record *part_cr_ptr;
 	node_record_t *node_ptr;
-	list_t *gres_list;
+	List gres_list;
 
 	if ((cr_ptr == NULL) || (cr_ptr->nodes == NULL))
 		return;
@@ -1624,7 +1625,7 @@ static struct cr_record *_dup_cr(struct cr_record *cr_ptr)
 	struct cr_record *new_cr_ptr;
 	struct part_cr_record *part_cr_ptr, *new_part_cr_ptr;
 	node_record_t *node_ptr;
-	list_t *gres_list;
+	List gres_list;
 
 	if (cr_ptr == NULL)
 		return NULL;
@@ -1824,7 +1825,7 @@ static int _find_job (void *x, void *key)
 	return 0;
 }
 
-static bool _is_preemptable(job_record_t *job_ptr, list_t *preemptee_candidates)
+static bool _is_preemptable(job_record_t *job_ptr, List preemptee_candidates)
 {
 	if (!preemptee_candidates)
 		return false;
@@ -1881,8 +1882,8 @@ static int _sort_usable_nodes_dec(void *j1, void *j2)
 static int _run_now(job_record_t *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    int max_share, uint32_t req_nodes,
-		    list_t *preemptee_candidates,
-		    list_t **preemptee_job_list)
+		    List preemptee_candidates,
+		    List *preemptee_job_list)
 {
 
 	bitstr_t *orig_map;
@@ -2023,12 +2024,12 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  int max_share, uint32_t req_nodes,
-			  list_t *preemptee_candidates,
-			  list_t **preemptee_job_list)
+			  List preemptee_candidates,
+			  List *preemptee_job_list)
 {
 	struct cr_record *exp_cr;
 	job_record_t *tmp_job_ptr;
-	list_t *cr_job_list;
+	List cr_job_list;
 	list_itr_t *job_iterator, *preemptee_iterator;
 	bitstr_t *orig_map;
 	int i, max_run_jobs, rc = SLURM_ERROR;
@@ -2140,7 +2141,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 	if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
 	    preemptee_candidates) {
 		/* Build list of preemptee jobs whose resources are
-		 * actually used. list returned even if not killed
+		 * actually used. List returned even if not killed
 		 * in selected plugin, but by Moab or something else. */
 		if (*preemptee_job_list == NULL) {
 			*preemptee_job_list = list_create(NULL);
@@ -2217,7 +2218,7 @@ extern int select_p_state_restore(char *dir_name)
  * Note the initialization of job records, issued upon restart of
  * slurmctld and used to synchronize any job state.
  */
-extern int select_p_job_init(list_t *job_list_arg)
+extern int select_p_job_init(List job_list_arg)
 {
 	return SLURM_SUCCESS;
 }
@@ -2253,12 +2254,12 @@ extern int select_p_node_init(void)
  * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
  *           SELECT_MODE_TEST_ONLY: test if job can ever run
  *           SELECT_MODE_WILL_RUN: determine when and where job can run
- * IN preemptee_candidates - list of pointers to jobs which can be preempted.
+ * IN preemptee_candidates - List of pointers to jobs which can be preempted.
  * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  * IN resv_exc_ptr - Various TRES which the job can NOT use.
- * RET SLURM_SUCCESS on success, rc otherwise
+ * RET zero on success, EINVAL otherwise
  * globals (passed via select_p_node_init):
  *	node_record_count - count of nodes configured
  *	node_record_table_ptr - pointer to global node table
@@ -2272,8 +2273,8 @@ extern int select_p_node_init(void)
 extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
-			     list_t *preemptee_candidates,
-			     list_t **preemptee_job_list,
+			     List preemptee_candidates,
+			     List *preemptee_job_list,
 			     resv_exc_t *resv_exc_ptr)
 {
 	int max_share = 0, rc = EINVAL, license_rc;
@@ -2539,6 +2540,7 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 					   buf_t *buffer,
 					   uint16_t protocol_version)
 {
+	uint32_t uint32_tmp;
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
 
 	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
@@ -2547,7 +2549,8 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
 		safe_unpack64(&nodeinfo_ptr->alloc_memory, buffer);
-		safe_unpackstr(&nodeinfo_ptr->tres_alloc_fmt_str, buffer);
+		safe_unpackstr_xmalloc(&nodeinfo_ptr->tres_alloc_fmt_str,
+				       &uint32_tmp, buffer);
 		safe_unpackdouble(&nodeinfo_ptr->tres_alloc_weighted, buffer);
 	}
 

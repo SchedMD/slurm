@@ -61,8 +61,8 @@ bool federation_flag;	/* --federation option */
 bool local_flag;	/* --local option */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 char *tres_str = NULL;	/* --tres= value */
-list_t *g_tres_list = NULL;/* TRES list from database -- unlatered */
-list_t *tres_list = NULL;  /* TRES list based of tres_str (--tres=str) */
+List g_tres_list = NULL;/* TRES list from database -- unlatered */
+List tres_list = NULL;  /* TRES list based of tres_str (--tres=str) */
 int all_clusters_flag = 0;
 char *cluster_flag = NULL;
 slurmdb_report_time_format_t time_format = SLURMDB_REPORT_TIME_MINS;
@@ -72,9 +72,7 @@ slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
 char *tres_usage_str = "CPU";
 /* by default, normalize all usernames to lower case */
 bool user_case_norm = true;
-list_t *g_qos_list = NULL;
-
-static bool node_tres = false;
+bool node_tres = false;
 
 static char *	_build_cluster_string(void);
 static void	_build_tres_list(void);
@@ -271,7 +269,6 @@ main (int argc, char **argv)
 	xfree(cluster_flag);
 
 	slurmdb_connection_close(&db_conn);
-	FREE_NULL_LIST(g_qos_list);
 	acct_storage_g_fini();
 	exit(exit_code);
 }
@@ -294,8 +291,8 @@ static char *_build_cluster_string(void)
 	char *cluster_str = NULL;
 	slurmdb_federation_rec_t *fed = NULL;
 	slurmdb_federation_cond_t fed_cond;
-	list_t *fed_list = NULL;
-	list_t *cluster_list = list_create(NULL);
+	List fed_list = NULL;
+	List cluster_list = list_create(NULL);
 
 	list_append(cluster_list, slurm_conf.cluster_name);
 	slurmdb_init_federation_cond(&fed_cond, 0);
@@ -512,11 +509,8 @@ static void _cluster_rep (int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 
-	if (xstrncasecmp(argv[0], "AccountUtilizationByUser", 21) == 0) {
+	if (xstrncasecmp(argv[0], "AccountUtilizationByUser", 1) == 0) {
 		error_code = cluster_account_by_user((argc - 1), &argv[1]);
-	} else if (!xstrncasecmp(argv[0], "AccountUtilizationByQOS", 21) ||
-		   !xstrncasecmp(argv[0], "AQ", 2)) {
-		error_code = cluster_account_by_qos((argc - 1), &argv[1]);
 	} else if ((xstrncasecmp(argv[0], "UserUtilizationByAccount", 18) == 0)
 		   || (xstrncasecmp(argv[0], "UA", 2) == 0)) {
 		error_code = cluster_user_by_account((argc - 1), &argv[1]);
@@ -534,7 +528,6 @@ static void _cluster_rep (int argc, char **argv)
 		fprintf(stderr, "Not valid report %s\n", argv[0]);
 		fprintf(stderr, "Valid cluster reports are, ");
 		fprintf(stderr, "\"AccountUtilizationByUser\", "
-			"\"AccountUtilizationByQOS\", "
 			"\"UserUtilizationByAccount\", "
 			"\"UserUtilizationByWckey\", \"Utilization\", "
 			"and \"WCKeyUtilizationByUser\"\n");
@@ -981,11 +974,9 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
   a %%NUMBER option.  i.e. format=name%%30 will print 30 chars of field name.\n\
                                                                            \n\
        Cluster                                                             \n\
-       - AccountUtilizationByQOS                                           \n\
-             - Accounts, Cluster, Count, QOS, Used                         \n\
        - AccountUtilizationByUser                                          \n\
        - UserUtilizationByAccount                                          \n\
-             - Accounts, Cluster, Count, Login, Proper, QOS, Used          \n\
+             - Accounts, Cluster, Count, Login, Proper, Used               \n\
        - UserUtilizationByWckey                                            \n\
        - WCKeyUtilizationByUser                                            \n\
              - Cluster, Count, Login, Proper, Used, Wckey                  \n\

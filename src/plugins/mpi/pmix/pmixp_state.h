@@ -54,7 +54,7 @@ typedef struct {
 #define PMIXP_STATE_MAGIC 0xFEEDCAFE
 	int magic;
 #endif
-	list_t *coll;
+	List coll;
 	eio_handle_t *srv_handle;
 	pthread_mutex_t lock;
 } pmixp_state_t;

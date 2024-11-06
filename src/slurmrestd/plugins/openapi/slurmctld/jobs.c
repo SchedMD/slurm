@@ -138,8 +138,6 @@ extern int op_handler_jobs(openapi_ctxt_t *ctxt)
 			  "No job changes since update_time[%ld]=%s",
 			  query.update_time, ts);
 	} else if (rc) {
-		if ((rc == SLURM_ERROR) && errno)
-			rc = errno;
 		resp_error(ctxt, rc, "slurm_load_jobs()",
 			   "Unable to query jobs");
 	} else if (job_info_ptr) {
@@ -204,66 +202,33 @@ static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	slurm_free_job_info_msg(job_info_ptr);
 }
 
-static int _parse_job_delete(ctxt_t *ctxt, slurm_selected_step_t *job_id,
-			     kill_jobs_msg_t *req)
-{
-	openapi_job_info_delete_query_t query = {0};
-	int rc;
-
-	if ((rc = DATA_PARSE(ctxt->parser, OPENAPI_JOB_INFO_DELETE_QUERY, query,
-			     ctxt->query, ctxt->parent_path)))
-		return rc;
-
-	if (!(req->flags = query.flags))
-		req->flags = KILL_FULL_JOB;
-
-	if (!(req->signal = query.signal))
-		req->signal = SIGKILL;
-
-	req->jobs_array = xcalloc(2, sizeof(*req->jobs_array));
-	req->jobs_cnt = 1;
-
-	return fmt_job_id_string(job_id, &req->jobs_array[0]);
-}
-
-static int _signal_job(ctxt_t *ctxt, kill_jobs_msg_t *req,
-		       kill_jobs_resp_msg_t **resp_ptr)
-{
-	int rc;
-
-	if (!(rc = slurm_kill_jobs(req, resp_ptr))) {
-		if ((req->flags & KILL_JOBS_VERBOSE) && !(*resp_ptr)->jobs_cnt)
-			resp_warn(ctxt, __func__, "Zero jobs sent signal %s",
-				  strsignal(req->signal));
-		return rc;
-	}
-
-	/* Already signaled jobs are considered a success */
-	if (rc == ESLURM_ALREADY_DONE) {
-		resp_warn(ctxt, __func__, "Job was already sent signal %s",
-			  strsignal(req->signal));
-		return SLURM_SUCCESS;
-	}
-
-	resp_error(ctxt, rc, "slurm_kill_jobs()", "Signal request failed");
-	return rc;
-}
-
 static void _handle_job_delete(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 {
-	int rc;
-	kill_jobs_resp_msg_t *resp = NULL;
-	kill_jobs_msg_t *req = xmalloc(sizeof(*req));
+	openapi_job_info_delete_query_t query = {0};
 
-	*req = (kill_jobs_msg_t) KILL_JOB_MSG_INITIALIZER;
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_INFO_DELETE_QUERY, query,
+		       ctxt->query, ctxt->parent_path))
+		return;
 
-	if (!(rc = _parse_job_delete(ctxt, job_id, req)))
-		rc = _signal_job(ctxt, req, &resp);
+	if (!query.signal)
+		query.signal = SIGKILL;
 
-	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_KILL_JOB_RESP, resp, ctxt);
+	if (!query.flags)
+		query.flags = KILL_FULL_JOB;
 
-	slurm_free_kill_jobs_msg(req);
-	slurm_free_kill_jobs_response_msg(resp);
+	if (slurm_kill_job(job_id->step_id.job_id, query.signal, query.flags)) {
+		/* Already signaled jobs are considered a success here */
+		if (errno == ESLURM_ALREADY_DONE) {
+			resp_warn(ctxt, __func__,
+				  "Job was already sent signal %s",
+				  strsignal(query.signal));
+			return;
+		}
+
+		resp_error(ctxt, errno, "slurm_kill_job2()",
+			   "unable to send signal %s to JobId=%u",
+			   strsignal(query.signal), job_id->step_id.job_id);
+	}
 }
 
 static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)

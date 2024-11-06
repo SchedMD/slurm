@@ -145,10 +145,8 @@ plugins and what is required to build them.</p>
 <li> <b>NUMA Affinity</b> NUMA support in the task/affinity plugin will be
 		available if the <i>numa</i> development library is installed.
 		</li>
-<li> <b>NVIDIA GPU Support</b> Autodetection of NVIDIA GPUs with MIGs and
-		NVlinks will be available if the <i>libnvidia-ml</i> development
-		library is installed. Library is not needed on Slurm 24.11 or
-		newer unless MIGs or NVlinks are used.
+<li> <b>NVIDIA GPU Support</b> Autodetection of NVIDIA GPUs will be available
+		if the <i>libnvidia-ml</i> development library is installed.
 		</li>
 <li> <b>PAM Support</b> PAM support will be added if the <i>PAM</i> development
 		library is installed.</li>

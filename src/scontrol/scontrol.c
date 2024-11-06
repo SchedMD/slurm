@@ -63,7 +63,7 @@
 
 /* Global externs from scontrol.h */
 char *command_name;
-list_t *clusters = NULL;
+List clusters = NULL;
 char *cluster_names = NULL;
 int all_flag = 0;	/* display even hidden partitions */
 int detail_flag = 0;	/* display additional details */
@@ -309,14 +309,6 @@ int main(int argc, char **argv)
 	FREE_NULL_LIST(clusters);
 	slurm_conf_destroy();
 	serializer_g_fini();
-
-	slurm_free_front_end_info_msg(old_front_end_info_ptr);
-	slurm_free_job_info_msg(old_job_info_ptr);
-	slurm_free_node_info_msg(old_node_info_ptr);
-	slurm_free_partition_info_msg(old_part_info_ptr);
-	slurm_free_reservation_info_msg(old_res_info_ptr);
-	slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
-
 #endif /* MEMORY_LEAK_DEBUG */
 
 	exit(exit_code);
@@ -458,7 +450,7 @@ static void _write_config(char *file_name)
 				&slurm_ctl_conf_ptr);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
-		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
+		} else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1) {
@@ -536,7 +528,7 @@ static void _print_config(char *config_param, int argc, char **argv)
 				&slurm_ctl_conf_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
-		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1) {
@@ -591,8 +583,14 @@ static void _print_ping(int argc, char **argv)
 	controller_ping_t *pings = ping_all_controllers();
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, pings, argc, argv,
-				     NULL, mime_type, data_parser, exit_code);
+		if (is_data_parser_deprecated(data_parser))
+			DATA_DUMP_CLI_DEPRECATED(CONTROLLER_PING_ARRAY, pings,
+						 "pings", argc, argv, NULL,
+						 mime_type, exit_code);
+		else
+			DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, pings,
+					     argc, argv, NULL, mime_type,
+					     data_parser, exit_code);
 		xfree(pings);
 		return;
 	}
@@ -1657,25 +1655,8 @@ static int _process_command (int argc, char **argv)
 				 "too many arguments for keyword:%s\n",
 				 tag);
 		} else {
-			scontrol_list_pids(argc, argv);
-		}
-	} else if (!xstrncasecmp(tag, "listjobs", MAX(tag_len, 1))) {
-		if (argc > 2) {
-			exit_code = 1;
-			fprintf(stderr,
-				"too many arguments for keyword:%s\n",
-				tag);
-		} else {
-			scontrol_list_jobs(argc, argv);
-		}
-	} else if (!xstrncasecmp(tag, "liststeps", MAX(tag_len, 1))) {
-		if (argc > 2) {
-			exit_code = 1;
-			fprintf(stderr,
-				"too many arguments for keyword:%s\n",
-				tag);
-		} else {
-			scontrol_list_steps(argc, argv);
+			scontrol_list_pids (argc == 1 ? NULL : argv[1],
+					    argc <= 2 ? NULL : argv[2]);
 		}
 	} else if (!xstrncasecmp(tag, "getent", MAX(tag_len, 6))) {
 		scontrol_getent(argc == 1 ? NULL : argv[1]);
@@ -2055,8 +2036,7 @@ static void _update_it(int argc, char **argv)
 
 	if (error_code) {
 		exit_code = 1;
-		if (errno)
-			slurm_perror ("slurm_update error");
+		slurm_perror ("slurm_update error");
 	}
 	/* The slurm error message is already
 	 * printed for each array task in

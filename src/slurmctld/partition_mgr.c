@@ -59,12 +59,10 @@
 #include "src/common/part_record.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_resource_info.h"
-#include "src/common/state_save.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/burst_buffer.h"
-#include "src/interfaces/priority.h"
 #include "src/interfaces/select.h"
 
 #include "src/slurmctld/gang.h"
@@ -92,7 +90,7 @@ typedef struct {
 } _foreach_pack_part_info_t;
 
 /* Global variables */
-list_t *part_list = NULL;		/* partition list */
+List part_list = NULL;			/* partition list */
 char *default_part_name = NULL;		/* name of default partition */
 part_record_t *default_part_loc = NULL;	/* default partition location */
 time_t last_part_update = (time_t) 0;	/* time of last update to partition records */
@@ -360,7 +358,9 @@ part_record_t *create_ctld_part_record(const char *name)
 int dump_all_part_state(void)
 {
 	/* Save high-water mark to avoid buffer growth with copies */
-	static uint32_t high_buffer_size = BUF_SIZE;
+	static int high_buffer_size = BUF_SIZE;
+	int error_code = 0, log_fd;
+	char *old_file, *new_file, *reg_file;
 	/* Locks: Read partition */
 	slurmctld_lock_t part_read_lock =
 	    { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
@@ -376,9 +376,60 @@ int dump_all_part_state(void)
 	/* write partition records to buffer */
 	lock_slurmctld(part_read_lock);
 	list_for_each_ro(part_list, _dump_part_state, buffer);
+
+	old_file = xstrdup(slurm_conf.state_save_location);
+	xstrcat(old_file, "/part_state.old");
+	reg_file = xstrdup(slurm_conf.state_save_location);
+	xstrcat(reg_file, "/part_state");
+	new_file = xstrdup(slurm_conf.state_save_location);
+	xstrcat(new_file, "/part_state.new");
 	unlock_slurmctld(part_read_lock);
 
-	save_buf_to_state("part_state", buffer, &high_buffer_size);
+	/* write the buffer to file */
+	lock_state_files();
+	log_fd = creat(new_file, 0600);
+	if (log_fd < 0) {
+		error("Can't save state, error creating file %s, %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
+		char *data = (char *)get_buf_data(buffer);
+		high_buffer_size = MAX(nwrite, high_buffer_size);
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+
+		rc = fsync_and_close(log_fd, "partition");
+		if (rc && !error_code)
+			error_code = rc;
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		if (link(reg_file, old_file)) {
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		}
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file)) {
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		}
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+	unlock_state_files();
 
 	FREE_NULL_BUFFER(buffer);
 	END_TIMER2(__func__);
@@ -674,11 +725,11 @@ part_record_t *find_part_record(char *name)
  * IN part_list_src - a job's part_list
  * RET copy of part_list_src, must be freed by caller
  */
-extern list_t *part_list_copy(list_t *part_list_src)
+extern List part_list_copy(List part_list_src)
 {
 	part_record_t *part_ptr;
 	list_itr_t *iter;
-	list_t *part_list_dest = NULL;
+	List part_list_dest = NULL;
 
 	if (!part_list_src)
 		return part_list_dest;
@@ -697,14 +748,14 @@ extern list_t *part_list_copy(list_t *part_list_src)
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
  * OUT err_part - The first invalid partition name.
- * RET sorted list of pointers to the partitions or NULL if not found
+ * RET List of pointers to the partitions or NULL if not found
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
-extern list_t *get_part_list(char *name, char **err_part)
+extern List get_part_list(char *name, char **err_part)
 {
 	part_record_t *part_ptr;
-	list_t *job_part_list = NULL;
+	List job_part_list = NULL;
 	char *token, *last = NULL, *tmp_name;
 
 	if (name == NULL)
@@ -732,9 +783,6 @@ extern list_t *get_part_list(char *name, char **err_part)
 		}
 		token = strtok_r(NULL, ",", &last);
 	}
-
-	if (job_part_list)
-		list_sort(job_part_list, priority_sort_part_tier);
 	xfree(tmp_name);
 	return job_part_list;
 }
@@ -1356,19 +1404,10 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		part_ptr->over_time_limit = part_desc->over_time_limit;
 	}
 
-	if (part_desc->preempt_mode != NO_VAL16 &&
-	    (!(part_desc->preempt_mode & PREEMPT_MODE_GANG))) {
+	if (part_desc->preempt_mode != NO_VAL16) {
 		uint16_t new_mode;
-
 		new_mode = part_desc->preempt_mode & (~PREEMPT_MODE_GANG);
 		if (new_mode <= PREEMPT_MODE_CANCEL) {
-			/*
-			 * This is a valid mode, but if GANG was enabled at
-			 * cluster level, always leave it set.
-			 */
-			if (part_ptr->preempt_mode & PREEMPT_MODE_GANG)
-				new_mode = new_mode | PREEMPT_MODE_GANG;
-
 			info("%s: setting preempt_mode to %s for partition %s",
 			     __func__, preempt_mode_string(new_mode),
 			     part_desc->name);
@@ -1376,21 +1415,12 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		} else {
 			info("%s: invalid preempt_mode %u", __func__, new_mode);
 		}
-	} else if (part_desc->preempt_mode & PREEMPT_MODE_GANG) {
-		info("%s: PreemptMode=GANG is a cluster-wide option and cannot be set at partition level",
-		      __func__);
 	}
 
 	if (part_desc->priority_tier != NO_VAL16) {
-		bool changed =
-			part_ptr->priority_tier != part_desc->priority_tier;
 		info("%s: setting PriorityTier to %u for partition %s",
 		     __func__, part_desc->priority_tier, part_desc->name);
 		part_ptr->priority_tier = part_desc->priority_tier;
-
-		/* Need to resort all job partition lists */
-		if (changed)
-			sort_all_jobs_partition_lists();
 	}
 
 	if (part_desc->priority_job_factor != NO_VAL16) {
@@ -1678,7 +1708,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->job_defaults_str) {
-		list_t *new_job_def_list = NULL;
+		List new_job_def_list = NULL;
 		if (part_desc->job_defaults_str[0] == '\0') {
 			FREE_NULL_LIST(part_ptr->job_defaults_list);
 		} else if (job_defaults_list(part_desc->job_defaults_str,

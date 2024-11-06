@@ -86,7 +86,7 @@ typedef struct _plugrack_entry {
  * entries is the list of plugrack_entry_t.
  */
 struct _plugrack {
-	list_t *entries;
+	List entries;
 	const char *major_type;
 };
 

@@ -65,7 +65,7 @@ run_command -fail "$mpicc -o $test_prog ${test_prog}.c"
 # for a variation of this test that will work with OpenMPI and multi-slurmd
 # mode.
 #
-if {[get_config_param "MULTIPLE_SLURMD"] eq "yes"} {
+if {[get_config_param "MULTIPLE_SLURMD"] eq "Yes"} {
 	log_warn "This test is limited with multiple slurmd systems"
 	set tasks_over_nodes 1
 } else {

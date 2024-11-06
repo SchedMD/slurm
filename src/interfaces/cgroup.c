@@ -75,8 +75,6 @@ typedef struct {
 	cgroup_acct_t *(*task_get_acct_data) (uint32_t taskid);
 	long int (*get_acct_units)	(void);
 	bool (*has_feature) (cgroup_ctl_feature_t f);
-	char *(*get_scope_path)(void);
-	int (*setup_scope)(char *scope_path);
 } slurm_ops_t;
 
 /*
@@ -104,8 +102,6 @@ static const char *syms[] = {
 	"cgroup_p_task_get_acct_data",
 	"cgroup_p_get_acct_units",
 	"cgroup_p_has_feature",
-	"cgroup_p_get_scope_path",
-	"cgroup_p_setup_scope",
 };
 
 /* Local variables */
@@ -120,8 +116,6 @@ static pthread_rwlock_t cg_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
 static buf_t *cg_conf_buf = NULL;
 static bool cg_conf_inited = false;
 static bool cg_conf_exist = true;
-
-static char scope_path[PATH_MAX] = "";
 
 /* local functions */
 static void _cgroup_conf_fini();
@@ -230,6 +224,7 @@ static void _pack_cgroup_conf(buf_t *buffer)
 
 static int _unpack_cgroup_conf(buf_t *buffer)
 {
+	uint32_t uint32_tmp = 0;
 	bool tmpbool = false;
 	/*
 	 * No protocol version needed, at the time of writing we are only
@@ -243,9 +238,11 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 
 	_clear_slurm_cgroup_conf();
 
-	safe_unpackstr(&slurm_cgroup_conf.cgroup_mountpoint, buffer);
+	safe_unpackstr_xmalloc(&slurm_cgroup_conf.cgroup_mountpoint,
+			       &uint32_tmp, buffer);
 
-	safe_unpackstr(&slurm_cgroup_conf.cgroup_prepend, buffer);
+	safe_unpackstr_xmalloc(&slurm_cgroup_conf.cgroup_prepend,
+			       &uint32_tmp, buffer);
 
 	safe_unpackbool(&slurm_cgroup_conf.constrain_cores, buffer);
 
@@ -261,7 +258,8 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 	safe_unpack64(&slurm_cgroup_conf.memory_swappiness, buffer);
 
 	safe_unpackbool(&slurm_cgroup_conf.constrain_devices, buffer);
-	safe_unpackstr(&slurm_cgroup_conf.cgroup_plugin, buffer);
+	safe_unpackstr_xmalloc(&slurm_cgroup_conf.cgroup_plugin,
+			       &uint32_tmp, buffer);
 
 	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd, buffer);
 	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
@@ -551,7 +549,7 @@ extern void cgroup_init_limits(cgroup_limits_t *limits)
  *      cgroup.conf  file and return a key pair <name,value> ordered list.
  * RET List with cgroup.conf <name,value> pairs if no error, NULL otherwise.
  */
-extern list_t *cgroup_get_conf_list(void)
+extern List cgroup_get_conf_list(void)
 {
 	list_t *cgroup_conf_l;
 	cgroup_conf_t *cg_conf = &slurm_cgroup_conf;
@@ -605,52 +603,6 @@ extern list_t *cgroup_get_conf_list(void)
 	list_sort(cgroup_conf_l, (ListCmpF) sort_key_pairs);
 
 	return cgroup_conf_l;
-}
-
-/*
- * This function is called from slurmd to send the cgroup state (at present
- * only the scope path in cgroup/v2) to the recently forked slurmstepd, since
- * slurmstepd might not be able to infer the correct scope path when we are
- * running into a container.
- */
-extern int cgroup_write_state(int fd)
-{
-	int len = 0;
-	char *step_path = NULL;
-
-	if (plugin_inited == PLUGIN_INITED) {
-		step_path = (*(ops.get_scope_path))();
-		if (step_path)
-			len = strlen(step_path) + 1;
-	}
-
-	safe_write(fd, &len, sizeof(int));
-	if (step_path)
-		safe_write(fd, step_path, len);
-
-	return SLURM_SUCCESS;
-rwfail:
-	return SLURM_ERROR;
-}
-
-/*
- * This function is called from slurmstepd before the cgroup plugin is
- * initialized. It records the cgroup plugin state passed from slurmd
- * (at present only the scope path in cgroup/v2) in this slurmstepd so it
- * can be later used by the plugin when it is initialized.
- */
-extern int cgroup_read_state(int fd)
-{
-	int len;
-
-	safe_read(fd, &len, sizeof(int));
-
-	if (len)
-		safe_read(fd, scope_path, len);
-
-	return SLURM_SUCCESS;
-rwfail:
-	return SLURM_ERROR;
 }
 
 extern int cgroup_write_conf(int fd)
@@ -762,17 +714,6 @@ extern int cgroup_g_init(void)
 		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
-
-	/*
-	 * We have recorded the scope_path here previously, configure it now in
-	 * the plugin.
-	 */
-	rc = (*(ops.setup_scope))(scope_path);
-	if (rc == SLURM_ERROR) {
-		error("cannot setup the scope for %s", plugin_type);
-		goto done;
-	}
-
 	plugin_inited = PLUGIN_INITED;
 done:
 	slurm_mutex_unlock(&g_context_lock);

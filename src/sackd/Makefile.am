@@ -1,4 +1,5 @@
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 
 SRCS = sackd.c
 

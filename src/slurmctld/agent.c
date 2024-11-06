@@ -89,6 +89,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/uid.h"
+#include "src/common/xsignal.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -143,7 +144,7 @@ typedef struct {
 					 * will not do nodelist if set */
 	hostlist_t *nodelist;		/* list of nodes to send to */
 	char *nodename;			/* node to send to */
-	list_t *ret_list;
+	List ret_list;
 } thd_t;
 
 typedef struct {
@@ -206,6 +207,7 @@ static void _queue_update_node(char *node_name);
 static void _queue_update_srun(slurm_step_id_t *step_id);
 static int  _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 			   int *count, int *spot);
+static void _sig_handler(int dummy);
 static void *_thread_per_group_rpc(void *args);
 static int   _valid_agent_arg(agent_arg_t *agent_arg_ptr);
 static void *_wdog(void *args);
@@ -219,10 +221,10 @@ static char **_build_mail_env(job_record_t *job_ptr, uint32_t mail_type);
 static pthread_mutex_t defer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mail_mutex  = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t retry_mutex = PTHREAD_MUTEX_INITIALIZER;
-static list_t *defer_list = NULL;	/* agent_arg_t list for requests
+static List defer_list = NULL;		/* agent_arg_t list for requests
 					 * requiring job write lock */
-static list_t *mail_list = NULL;	/* pending e-mail requests */
-static list_t *retry_list = NULL;	/* agent_arg_t list for retry */
+static List mail_list = NULL;		/* pending e-mail requests */
+static List retry_list = NULL;		/* agent_arg_t list for retry */
 
 static list_t *update_node_list = NULL;	/* node list for update */
 static pthread_mutex_t update_nodes_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -717,7 +719,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 			*agent_ptr->msg_args_pptr;
 		step_id.job_id = msg->job_id;
 	} else if (agent_ptr->msg_type == RESPONSE_HET_JOB_ALLOCATION) {
-		list_t *het_alloc_list = *agent_ptr->msg_args_pptr;
+		List het_alloc_list = *agent_ptr->msg_args_pptr;
 		resource_allocation_response_msg_t *msg;
 		if (!het_alloc_list || (list_count(het_alloc_list) == 0))
 			return;
@@ -914,33 +916,6 @@ static int _wif_status(void)
 }
 
 /*
- * slurm_send_msg_maybe
- * opens a connection, sends a message across while ignoring any errors,
- * then closes the connection
- *
- * Open a connection to the "address" specified in the slurm msg `req'
- * Then, immediately close the connection w/out waiting for a reply.
- * Ignore any errors. This should only be used when you do not care if
- * the message is ever received.
- *
- * IN request_msg	- slurm_msg request
- */
-static void _send_msg_maybe(slurm_msg_t *req)
-{
-	int fd = -1;
-
-	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
-		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
-			 __func__, &req->address);
-		return;
-	}
-
-	(void) slurm_send_node_msg(fd, req);
-
-	(void) close(fd);
-}
-
-/*
  * _thread_per_group_rpc - thread to issue an RPC for a group of nodes
  *                         sending message out to one and forwarding it to
  *                         others if necessary.
@@ -963,9 +938,10 @@ static void *_thread_per_group_rpc(void *args)
 	state_t thread_state = DSH_NO_RESP;
 	slurm_msg_type_t msg_type = task_ptr->msg_type;
 	bool is_kill_msg, srun_agent, sack_agent;
-	list_t *ret_list = NULL;
+	List ret_list = NULL;
 	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
+	int sig_array[2] = {SIGUSR1, 0};
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
@@ -978,6 +954,8 @@ static void *_thread_per_group_rpc(void *args)
 	uint32_t job_id;
 
 	xassert(args != NULL);
+	xsignal(SIGUSR1, _sig_handler);
+	xsignal_unblock(sig_array);
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT)	||
 			(msg_type == REQUEST_KILL_PREEMPTED)	||
 			(msg_type == REQUEST_TERMINATE_JOB) );
@@ -1071,7 +1049,7 @@ static void *_thread_per_group_rpc(void *args)
 			 * flings the message out and disregards any
 			 * communication problems that may arise.
 			 */
-			_send_msg_maybe(&msg);
+			slurm_send_msg_maybe(&msg);
 			thread_state = DSH_DONE;
 		} else if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) {
 			thread_state = DSH_DONE;
@@ -1163,7 +1141,7 @@ static void *_thread_per_group_rpc(void *args)
 			/* Communication issue to srun that launched the job
 			 * Cancel rather than leave a stray-but-empty job
 			 * behind on the allocated nodes. */
-			list_t *het_alloc_list = task_ptr->msg_args_ptr;
+			List het_alloc_list = task_ptr->msg_args_ptr;
 			resource_allocation_response_msg_t *msg_ptr;
 			if (!het_alloc_list ||
 			    (list_count(het_alloc_list) == 0))
@@ -1309,6 +1287,14 @@ cleanup:
 	slurm_cond_signal(thread_cond_ptr);
 	slurm_mutex_unlock(thread_mutex_ptr);
 	return NULL;
+}
+
+/*
+ * Signal handler.  We are really interested in interrupting hung communictions
+ * and causing them to return EINTR. Multiple interrupts might be required.
+ */
+static void _sig_handler(int dummy)
+{
 }
 
 static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
@@ -1484,12 +1470,8 @@ static void *_agent_init(void *arg)
 					     &ts);
 		}
 		if (slurmctld_config.shutdown_time) {
-			if (!retry_list_size() ||
-			    (slurmctld_config.shutdown_time +
-			     AGENT_SHUTDOWN_WAIT < time(NULL))) {
-				slurm_mutex_unlock(&pending_mutex);
-				break;
-			}
+			slurm_mutex_unlock(&pending_mutex);
+			break;
 		}
 		mail_too = pending_mail;
 		min_wait = pending_wait_time;
@@ -1764,7 +1746,7 @@ static void _agent_defer(void)
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&defer_mutex);
 	if (defer_list) {
-		list_t *tmp_list = NULL;
+		List tmp_list = NULL;
 		/* first try to find a new (never tried) record */
 		while ((queued_req_ptr = list_pop(defer_list))) {
 			agent_arg_ptr = queued_req_ptr->agent_arg_ptr;

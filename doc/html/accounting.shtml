@@ -26,7 +26,6 @@
 <li><a href="#limit-enforcement">Limit Enforcement</a></li>
 <li><a href="#modifying-entities">Modifying Entities</a></li>
 <li><a href="#removing-entities">Removing Entities</a></li>
-<li><a href="#accounting-interpretation">Accounting Interpretation</a></li>
 </ul>
 
 <h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
@@ -967,65 +966,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<h2 id="accounting-interpretation">Accounting Interpretation
-<a class="slurm_link" href="#accounting-interpretation"></a>
-</h2>
-<p>Slurm accounting is mainly focused on parallel computing. For this reason it
-gathers statistics at a "task level". A task is a set of user processes which
-run in a step, which is part of a job. A user can submit a step with many
-parallel tasks, e.g. by calling <code>srun -n</code>.
-</p>
-<p>
-The <a href="slurm.conf.html#OPT_JobAcctGatherType">JobAcctGather</a> plugin
-gathers metrics for some <a href="tres.html">Trackable Resources (TRES)</a>,
-like cpu, memory, energy, etc., at a given interval in the <a
-href="slurm.conf.html#OPT_JobAcctGatherFrequency">JobAcctGatherFrequency</a>
-defined in slurm.conf, or by using the <code>--acct-freq</code> option in the
-command line. A poll of data is also triggered at the start or the end of a
-step.
-</p>
-<p>Depending on the nature of the metric, the values will be recorded as
-standalone values or aggregated/calculated into a data structure.
-<p>
-For example, the <b>TresUsageInTot</b> field can be queried with
-<a href="sstat.thml">sstat</a> during job runtime, and for every TRES, it
-stores the sum of the gathered metrics of all tasks. For example, if we have 5
-tasks, all of them consuming 1GB of memory, then the <b>TresUsageInTot</b>
-would read "memory=5G". With the same example, and for the
-<b>TresUsageInMax</b> instead, it will store the maximum memory peak seen by
-any task of this step, so it would read "memory=1G".
-If we then query <b>TresUsageInMaxNode</b> and <b>TresUsageInMaxTask</b>, we
-will be able to see which task id had the largest memory peak and in which node
-this event occurred. These values can be queried in the dedicated fields
-<b>MaxRSS</b>, <b>MaxRSSNode</b> and <b>MaxRSSTask</b>.
-</p>
-<p>
-Other considerations to be taken into account are that in some cases, like for
-energy, the consumption is calculated by node. We don't have a value specific to
-the task so if there are other jobs in the system, or many tasks, the
-consumption at the time of running will be affected by all the processes in the
-node.
-</p>
-<p>
-After the job is done, the data will be stored in the database, and can be
-queried with other tools, like <a href="sacct.html">sacct</a>. In that case the
-<b>TresUsage*</b> fields could have different meanings. For example in the case
-of memory, <b>TresUsageInTot</b> will now store the sum of all peaks of memory
-of all tasks of the step seen at any time. This value is not useful per-se, but
-it is used to calculate <b>TresUsageInAve</b> to get the average memory peaks,
-that can then be compared with <b>TresUsageInMax</b> (or <b>MaxRSS</b>) to see
-if there was at least one outlier task in the step which consumed too much
-memory, indication of some issue.
-</p>
-<p>
-Note that for single task processes, <b>TresUsageInTot</b> could be used as the
-maximum memory that the step consumed at any time, which will be equal to
-<b>MaxRSS</b> and effectively represent the step memory peak.
-Profiling works similarly, and we provide
-<a href="slurm.conf.html#OPT_AcctGatherProfileType">plugins</a> like HDF5
-and InfluxDB that can help to visualize accounting data in other ways.
-</p>
-
 <p style="text-align:center;">Last modified 31 October 2024</p>
 
 <!--#include virtual="footer.txt"-->
+

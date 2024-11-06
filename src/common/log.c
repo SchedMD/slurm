@@ -65,7 +65,6 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/un.h>
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
@@ -145,7 +144,7 @@ char *slurm_prog_name = NULL;
 static pthread_mutex_t  log_lock = PTHREAD_MUTEX_INITIALIZER;
 static log_t            *log = NULL;
 static log_t            *sched_log = NULL;
-static bool syslog_open = false;
+
 static volatile log_level_t highest_log_level = LOG_LEVEL_END;
 static volatile log_level_t highest_sched_log_level = LOG_LEVEL_QUIET;
 
@@ -346,16 +345,8 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->fbuf = cbuf_create(128, 8192);
 	}
 
-	if (syslog_open) {
-		closelog();
-		syslog_open = false;
-	}
-
-	if (log->opt.syslog_level > LOG_LEVEL_QUIET) {
+	if (log->opt.syslog_level > LOG_LEVEL_QUIET)
 		log->facility = fac;
-		openlog(log->argv0, LOG_PID, log->facility);
-		syslog_open = true;
-	}
 
 	if (logfile && (log->opt.logfile_level > LOG_LEVEL_QUIET)) {
 		int mode = O_CREAT | O_WRONLY | O_APPEND | O_CLOEXEC;
@@ -536,10 +527,6 @@ void log_fini(void)
 		cbuf_destroy(log->fbuf);
 	if (log->logfp)
 		fclose(log->logfp);
-	if (syslog_open) {
-		closelog();
-		syslog_open = false;
-	}
 	xfree(log);
 	xfree(slurm_prog_name);
 	slurm_mutex_unlock(&log_lock);
@@ -719,6 +706,10 @@ static void _set_idbuf(char *idbuf, size_t size)
  */
 static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
 {
+	struct sockaddr_in *in = (struct sockaddr_in *) addr_ptr;
+	char addrbuf[INET6_ADDRSTRLEN];
+	uint16_t port = 0;
+
 	/*
 	 * NOTE: You will notice we put a %.0s in front of the string.
 	 * This is to handle the fact that we can't remove the addr_ptr
@@ -729,31 +720,16 @@ static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
 		return "%.0sNULL";
 
 	if (addr_ptr->ss_family == AF_INET6) {
-		char addrbuf[INET6_ADDRSTRLEN];
-		uint16_t port = 0;
 		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr_ptr;
 		inet_ntop(AF_INET6, &in6->sin6_addr, addrbuf, INET6_ADDRSTRLEN);
 		port = ntohs(in6->sin6_port);
 		snprintf(buf, buf_size, "[%%.0s%s]:%d", addrbuf, port);
-	} else if (addr_ptr->ss_family == AF_INET) {
-		char addrbuf[INET_ADDRSTRLEN];
-		struct sockaddr_in *in = (struct sockaddr_in *) addr_ptr;
-		uint16_t port = 0;
-		inet_ntop(AF_INET, &in->sin_addr, addrbuf, INET_ADDRSTRLEN);
-		port = ntohs(in->sin_port);
-		snprintf(buf, buf_size, "%%.0s%s:%d", addrbuf, port);
-	} else if (addr_ptr->ss_family == AF_UNIX) {
-		struct sockaddr_un *un = (struct sockaddr_un *) addr_ptr;
-		snprintf(buf, buf_size, "%%.0sunix:%s", un->sun_path);
-	} else if (addr_ptr->ss_family == AF_UNSPEC) {
-		/*
-		 * AF_UNSPEC is place holder for unspecified which may be
-		 * nothing or used as a wild card depending on the API call.
-		 */
-		snprintf(buf, buf_size, "%%.0sAF_UNSPEC");
-	} else {
-		snprintf(buf, buf_size, "%%.0sINVALID");
+		return buf;
 	}
+
+	inet_ntop(AF_INET, &in->sin_addr, addrbuf, INET_ADDRSTRLEN);
+	port = ntohs(in->sin_port);
+	snprintf(buf, buf_size, "%%.0s%s:%d", addrbuf, port);
 
 	return buf;
 }
@@ -848,7 +824,7 @@ static char *_print_data_json(const data_t *d, char *buffer, int size)
 
 extern char *vxstrfmt(const char *fmt, va_list ap)
 {
-	char *intermediate_fmt = NULL, *intermediate_pos = NULL;
+	char	*intermediate_fmt = NULL;
 	char	*out_string = NULL;
 	char	*p;
 	bool found_other_formats = false;
@@ -863,7 +839,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 			 * no more format sequences, append the rest of
 			 * fmt and exit the loop:
 			 */
-			xstrcatat(intermediate_fmt, &intermediate_pos, fmt);
+			xstrcat(intermediate_fmt, fmt);
 			break;
 		}
 
@@ -918,8 +894,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 			 * append anything from fmt up to p to the intermediate
 			 * format string:
 			 */
-			xstrncatat(intermediate_fmt, &intermediate_pos,
-				   fmt, p - fmt);
+			xstrncat(intermediate_fmt, fmt, p - fmt);
 			fmt = p + 1;
 
 			/*
@@ -940,9 +915,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					for (int i = 0; i < cnt; i++ )
 						ptr = va_arg(ap_copy, void *);
 					addr_ptr = ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
+					xstrcat(intermediate_fmt,
 						_addr2fmt(
 							addr_ptr,
 							substitute_on_stack,
@@ -958,9 +931,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					va_copy(ap_copy, ap);
 					for (int i = 0; i < cnt; i++ )
 						d = va_arg(ap_copy, void *);
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
+					xstrcat(intermediate_fmt,
 						_print_data_json(
 							d,
 							substitute_on_stack,
@@ -976,9 +947,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					va_copy(ap_copy, ap);
 					for (int i = 0; i < cnt; i++ )
 						d = va_arg(ap_copy, void *);
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
+					xstrcat(intermediate_fmt,
 						_print_data_t(
 							d,
 							substitute_on_stack,
@@ -997,9 +966,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					for (i = 0; i < cnt; i++ )
 						ptr = va_arg(ap_copy, void *);
 					job_ptr = ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
+					xstrcat(intermediate_fmt,
 						_jobid2fmt(
 							job_ptr,
 							substitute_on_stack,
@@ -1022,9 +989,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					for (i = 0; i < cnt; i++ )
 						ptr = va_arg(ap_copy, void *);
 					step_id = ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
+					xstrcat(intermediate_fmt,
 						log_build_step_id_str(
 							step_id,
 							substitute_on_stack,
@@ -1052,16 +1017,12 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					if (step_ptr &&
 					    (step_ptr->magic == STEP_MAGIC))
 						job_ptr = step_ptr->job_ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
+					xstrcat(intermediate_fmt,
 						_jobid2fmt(
 							job_ptr,
 							substitute_on_stack,
 							sizeof(substitute_on_stack)));
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
+					xstrcat(intermediate_fmt,
 						_stepid2fmt(
 							step_ptr,
 							substitute_on_stack,
@@ -1146,16 +1107,13 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 
 				while (*s && (p = (char *)strchr(s, '%'))) {
 					/* append up through the '%' */
-					xstrncatat(intermediate_fmt,
-						   &intermediate_pos, s, p - s);
-					xstrcatat(intermediate_fmt,
-						  &intermediate_pos, "%%");
+					xstrncat(intermediate_fmt, s, p - s);
+					xstrcat(intermediate_fmt, "%%");
 					s = p + 1;
 				}
 				if (*s) {
 					/* append whatever's left of the substitution: */
-					xstrcatat(intermediate_fmt,
-						  &intermediate_pos, s);
+					xstrcat(intermediate_fmt, s);
 				}
 
 				/* deallocate substitute if necessary: */
@@ -1168,7 +1126,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 			 * no more format sequences for us, append the rest of
 			 * fmt and exit the loop:
 			 */
-			xstrcatat(intermediate_fmt, &intermediate_pos, fmt);
+			xstrcat(intermediate_fmt, fmt);
 			break;
 		}
 	}
@@ -1302,13 +1260,6 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 	char *eol = "\n";
 	int priority = LOG_INFO;
 
-	/*
-	 * Construct the message outside the lock as this can be slow.
-	 * The format_print() macro should ensure that we're always going
-	 * to print the resulting message through one or more channels.
-	 */
-	buf = vxstrfmt(fmt, args);
-
 	slurm_mutex_lock(&log_lock);
 
 	if (!LOG_INITIALIZED) {
@@ -1321,6 +1272,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 
 	if (SCHED_LOG_INITIALIZED && sched &&
 	    (highest_sched_log_level > LOG_LEVEL_QUIET)) {
+		buf = vxstrfmt(fmt, args);
 		xlogfmtcat(&msgbuf, "[%M] %s%s", sched_log->prefix, pfx);
 		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,
 			    "sched: %s%s\n", msgbuf, buf);
@@ -1385,6 +1337,12 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 			break;
 		}
 
+	}
+
+	if (!buf) {
+		/* format the basic message,
+		 * if not already done for scheduling log */
+		buf = vxstrfmt(fmt, args);
 	}
 
 	if (level <= log->opt.stderr_level) {
@@ -1460,10 +1418,12 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 	if (level <=  log->opt.syslog_level) {
 
 		/* Avoid changing errno if syslog fails */
-		int orig_errno = errno;
+		int orig_errno = slurm_get_errno();
 		xlogfmtcat(&msgbuf, "%s%s%s", log->prefix, pfx, buf);
+		openlog(log->argv0, LOG_PID, log->facility);
 		syslog(priority, "%.500s", msgbuf);
-		errno = orig_errno;
+		closelog();
+		slurm_seterrno(orig_errno);
 
 		xfree(msgbuf);
 	}

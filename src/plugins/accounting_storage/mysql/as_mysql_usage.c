@@ -414,27 +414,24 @@ end_it:
 static int _get_object_usage(mysql_conn_t *mysql_conn,
 			     slurmdbd_msg_type_t type, char *my_usage_table,
 			     char *cluster_name, char *id_str,
-			     time_t start, time_t end, list_t **usage_list)
+			     time_t start, time_t end, List *usage_list)
 {
 	char *tmp = NULL;
 	int i = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *query = NULL;
-	assoc_mgr_lock_t locks = {
-		.tres = READ_LOCK,
-	};
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	char *usage_req_inx[] = {
 		"t3.id_assoc",
-		"t1.id_alt",
 		"t1.id_tres",
 		"t1.time_start",
 		"t1.alloc_secs",
 	};
 	enum {
 		USAGE_ID,
-		USAGE_ID_ALT,
 		USAGE_TRES,
 		USAGE_START,
 		USAGE_ALLOC,
@@ -450,7 +447,6 @@ static int _get_object_usage(mysql_conn_t *mysql_conn,
 	}
 
 	switch (type) {
-	case DBD_GET_QOS_USAGE:
 	case DBD_GET_ASSOC_USAGE:
 		query = xstrdup_printf(
 		        "select %s from \"%s_%s\" as t1, "
@@ -505,7 +501,6 @@ static int _get_object_usage(mysql_conn_t *mysql_conn,
 		}
 
 		accounting_rec->id = slurm_atoul(row[USAGE_ID]);
-		accounting_rec->id_alt = slurm_atoul(row[USAGE_ID_ALT]);
 		accounting_rec->period_start = slurm_atoul(row[USAGE_START]);
 		accounting_rec->alloc_secs = slurm_atoull(row[USAGE_ALLOC]);
 
@@ -531,9 +526,8 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	char *tmp = NULL;
 	char *my_usage_table = cluster_day_table;
 	char *query = NULL;
-	assoc_mgr_lock_t locks = {
-		.tres = READ_LOCK,
-	};
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 	char *cluster_req_inx[] = {
 		"id_tres",
 		"alloc_secs",
@@ -630,18 +624,15 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
    user or not.  The assoc_mgr locks should be unlocked before coming here.
 */
 extern int get_usage_for_list(mysql_conn_t *mysql_conn,
-			      slurmdbd_msg_type_t type, void *object_in,
+			      slurmdbd_msg_type_t type, List object_list,
 			      char *cluster_name, time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	char *my_usage_table = NULL;
-	list_t *usage_list = NULL;
-	char *id_str = NULL, *name_char = NULL, *pos = NULL;
+	List usage_list = NULL;
+	char *id_str = NULL, *name_char = NULL;
 	list_itr_t *itr = NULL, *u_itr = NULL;
 	void *object = NULL;
-	list_t *object_list = object_in;
-	usage_qos_query_t *qos_usage = object_in;
-	bool first = false;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_wckey_rec_t *wckey = NULL;
 	slurmdb_accounting_rec_t *accounting_rec = NULL;
@@ -667,39 +658,6 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		}
 		list_iterator_destroy(itr);
 		my_usage_table = assoc_day_table;
-		break;
-	case DBD_GET_QOS_USAGE:
-		if (qos_usage->qos_list) {
-			first = true;
-			itr = list_iterator_create(qos_usage->qos_list);
-			while ((name_char = list_next(itr))) {
-				if (!first)
-					xstrfmtcatat(id_str, &pos, ",%s",
-						     name_char);
-				else {
-					xstrfmtcatat(id_str, &pos,
-						     "id_alt in (%s",
-						     name_char);
-					first = false;
-				}
-			}
-			list_iterator_destroy(itr);
-		}
-		my_usage_table = qos_day_table;
-		first = true;
-		itr = list_iterator_create(qos_usage->assoc_list);
-		while ((assoc = list_next(itr))) {
-			if (!first)
-				xstrfmtcat(id_str, ",%u", assoc->id);
-			else {
-				xstrfmtcat(id_str, "%st3.id_assoc in (%u",
-					   id_str ? ") && " : "",
-					   assoc->id);
-				first = false;
-			}
-		}
-		list_iterator_destroy(itr);
-		object_list = qos_usage->assoc_list;
 		break;
 	case DBD_GET_WCKEY_USAGE:
 		name_char = "id";
@@ -748,10 +706,9 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	while ((object = list_next(itr))) {
 		int found = 0;
 		int id = 0;
-		list_t *acct_list = NULL;
+		List acct_list = NULL;
 
 		switch (type) {
-		case DBD_GET_QOS_USAGE:
 		case DBD_GET_ASSOC_USAGE:
 			assoc = (slurmdb_assoc_rec_t *)object;
 			if (!assoc->accounting_list)
@@ -817,49 +774,24 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	slurmdb_assoc_rec_t *slurmdb_assoc = in;
 	slurmdb_wckey_rec_t *slurmdb_wckey = in;
 	char *username = NULL;
-	list_t **my_list = NULL;
+	List *my_list = NULL;
 	char *cluster_name = NULL;
-	char *id_str = NULL, *id_str_pos = NULL;
+	char *id_str = NULL;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	switch (type) {
-	case DBD_GET_QOS_USAGE:
 	case DBD_GET_ASSOC_USAGE:
 		if (!slurmdb_assoc->id) {
 			error("We need an id to set data for getting usage");
 			return SLURM_ERROR;
 		}
-		xstrfmtcatat(id_str, &id_str_pos, "t3.id_assoc=%u",
-			     slurmdb_assoc->id);
-		my_usage_table = assoc_day_table;
-		if (slurmdb_assoc->qos_list &&
-		    list_count(slurmdb_assoc->qos_list)) {
-			list_itr_t *itr = list_iterator_create(
-				slurmdb_assoc->qos_list);
-			char *qos_id;
-			bool first = true;
-			while ((qos_id = list_next(itr))) {
-				if (!first) {
-					xstrfmtcatat(id_str, &id_str_pos,
-						     ",%s", qos_id);
-				} else {
-					xstrfmtcatat(id_str, &id_str_pos,
-						     " && id_alt in (%s",
-						     qos_id);
-					first = false;
-				}
-			}
-			list_iterator_destroy(itr);
-			if (!first)
-				xstrcatat(id_str, &id_str_pos, ")");
-			my_usage_table = qos_day_table;
-			type = DBD_GET_QOS_USAGE;
-		}
+		id_str = xstrdup_printf("t3.id_assoc=%u", slurmdb_assoc->id);
 		cluster_name = slurmdb_assoc->cluster;
 		username = slurmdb_assoc->user;
 		my_list = &slurmdb_assoc->accounting_list;
+		my_usage_table = assoc_day_table;
 		break;
 	case DBD_GET_WCKEY_USAGE:
 		if (!slurmdb_wckey->id) {
@@ -960,7 +892,7 @@ is_user:
 
 extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 			       time_t sent_end, uint16_t archive_data,
-			       list_t **rollup_stats_list_in)
+			       List *rollup_stats_list_in)
 {
 	int rc = SLURM_SUCCESS;
 	int rolledup = 0;

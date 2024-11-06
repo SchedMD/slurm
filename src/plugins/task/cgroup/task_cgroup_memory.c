@@ -42,6 +42,8 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/cgroup.h"
 
+#include "task_cgroup.h"
+
 static bool constrain_ram_space;
 static bool constrain_swap_space;
 

@@ -5,7 +5,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 if BUILD_OFED
 
@@ -14,7 +14,8 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 pkglib_LTLIBRARIES = acct_gather_interconnect_ofed.la
 
 # Interconnect accounting ofed plugin.
-acct_gather_interconnect_ofed_la_SOURCES = acct_gather_interconnect_ofed.c
+acct_gather_interconnect_ofed_la_SOURCES = acct_gather_interconnect_ofed.c \
+                                     acct_gather_interconnect_ofed.h
 
 acct_gather_interconnect_ofed_la_CFLAGS = $(OFED_CPPFLAGS)
 
@@ -23,6 +24,6 @@ acct_gather_interconnect_ofed_la_LIBADD = $(OFED_LIBS)
 
 else
 
-EXTRA_acct_gather_interconnect_ofed_la_SOURCES = acct_gather_interconnect_ofed.c
-
+EXTRA_acct_gather_interconnect_ofed_la_SOURCES = \
+	acct_gather_interconnect_ofed.c acct_gather_interconnect_ofed.h
 endif

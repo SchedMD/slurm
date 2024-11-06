@@ -56,14 +56,14 @@
 #define CARD_NAME_LEN 256
 
 #define MAX_CPUS 0x8000
-#define ULONG_BYTES (sizeof(uint64_t))
+#define ULONG_BYTES (sizeof(unsigned long))
 #define ULONG_BITS (ULONG_BYTES * 8)
 
 /*
- * The # of uint64_ts needed to accommodate a bitmask array capable
+ * The # of unsigned longs needed to accommodate a bitmask array capable
  * of representing MAX_CPUS cpus (will vary if 32-bit or 64-bit)
  * E.g. for a 130 CPU 64-bit machine: (130 + 63) / 64 = 3.02
- * -> Integer division floor -> 3 uint64_ts to represent 130 CPUs
+ * -> Integer division floor -> 3 ulongs to represent 130 CPUs
  */
 #define CPU_SET_SIZE ((MAX_CPUS + (ULONG_BITS - 1)) / ULONG_BITS)
 
@@ -75,8 +75,8 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /* Duplicated from NVML plugin */
 static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
-				uint64_t *cpu_set,
-				uint32_t cpu_set_size)
+				unsigned long *cpu_set,
+				unsigned int cpu_set_size)
 {
 	int j, k, b;
 	int bit_cur;
@@ -273,7 +273,8 @@ static void _oneapi_get_device_handles(ze_device_handle_t *gpu_handles,
  * Returns true if successful, false if not
  */
 static bool _oneapi_get_available_clocks(zes_freq_handle_t freq_handle,
-					 uint32_t *freqs, uint32_t *freq_count)
+					 unsigned int *freqs,
+					 uint32_t *freq_count)
 {
 	double *clocks = NULL;
 	ze_result_t oneapi_rc;
@@ -291,7 +292,7 @@ static bool _oneapi_get_available_clocks(zes_freq_handle_t freq_handle,
 	}
 
 	for (int i = 0; i < *freq_count; i++)
-		freqs[i] = (uint32_t) clocks[i];
+		freqs[i] = (unsigned int) clocks[i];
 
 	xfree(clocks);
 	return true;
@@ -306,19 +307,19 @@ static bool _oneapi_get_available_clocks(zes_freq_handle_t freq_handle,
  * Returns true if successful, false if not
  */
 static bool _oneapi_get_nearest_freq(zes_freq_handle_t freq_handle,
-				     uint32_t *freq)
+				     unsigned int *freq)
 {
-	uint32_t freqs[MAX_NUM_FREQUENCIES] = {0};
-	uint32_t freqs_sort[MAX_NUM_FREQUENCIES] = {0};
-	uint32_t freqs_size = MAX_NUM_FREQUENCIES;
+	unsigned int freqs[MAX_NUM_FREQUENCIES] = {0};
+	unsigned int freqs_sort[MAX_NUM_FREQUENCIES] = {0};
+	unsigned int freqs_size = MAX_NUM_FREQUENCIES;
 
 	/* Get available clocks */
 	if (!_oneapi_get_available_clocks(freq_handle, freqs, &freqs_size))
 		return false;
 
-	memcpy(freqs_sort, freqs, freqs_size * sizeof(uint32_t));
-	qsort(freqs_sort, freqs_size, sizeof(uint32_t),
-	      slurm_sort_uint32_list_desc);
+	memcpy(freqs_sort, freqs, freqs_size * sizeof(unsigned int));
+	qsort(freqs_sort, freqs_size, sizeof(unsigned int),
+	      slurm_sort_uint_list_desc);
 
 	/* Set the nearest valid frequency for the requested frequency */
 	gpu_common_get_nearest_freq(freq, freqs_size, freqs_sort);
@@ -342,8 +343,8 @@ static void _oneapi_print_freq_info(zes_freq_properties_t *freq_prop,
 
 	log_var(l, "%s frequency min: %u, max: %u, onSubdevice: %s, subdeviceId: %d, canControl: %s",
 		freq_prop->type == ZES_FREQ_DOMAIN_GPU ? "Graphics" : "Memory",
-		(uint32_t) freq_prop->min,
-		(uint32_t) freq_prop->max,
+		(unsigned int) freq_prop->min,
+		(unsigned int) freq_prop->max,
 		freq_prop->onSubdevice ? "true" : "false",
 		freq_prop->subdeviceId,
 		freq_prop->canControl ? "true" : "false");
@@ -379,15 +380,15 @@ static void _oneapi_print_freqs(ze_device_handle_t device, log_level_t l)
 
 	/* Loop all of frequency handles and print frequency */
 	for (int i = 0; i < freq_handle_size; i++) {
-		uint32_t freqs[MAX_NUM_FREQUENCIES] = {0};
-		uint32_t freqs_size = MAX_NUM_FREQUENCIES;
+		unsigned int freqs[MAX_NUM_FREQUENCIES] = {0};
+		unsigned int freqs_size = MAX_NUM_FREQUENCIES;
 
 		/* Get available clocks */
 		if (!_oneapi_get_available_clocks(freq_handles[i], freqs,
 						  &freqs_size))
 			continue;
-		qsort(freqs, freqs_size, sizeof(uint32_t),
-		      slurm_sort_uint32_list_desc);
+		qsort(freqs, freqs_size, sizeof(unsigned int),
+		      slurm_sort_uint_list_desc);
 
 		/* Get frequency property */
 		oneapi_rc = zesFrequencyGetProperties(freq_handles[i],
@@ -437,8 +438,8 @@ static void _oneapi_print_freq_range(zes_freq_handle_t freq_handler,
 
 	debug2("%s frequency: %u~%u",
 		freq_type == ZES_FREQ_DOMAIN_GPU ? "Graphics" :
-		"Memory", (uint32_t)freq_range.min,
-		(uint32_t)freq_range.max);
+		"Memory", (unsigned int)freq_range.min,
+		(unsigned int)freq_range.max);
 }
 
 /*
@@ -737,7 +738,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
  *
  * cpu		(IN) The index of the CPU
  * cpu_set:	[IN/out] An array reference in which to return a bitmask of
- *		CPUs. 64 CPUs per uint64_t on 64-bit machines, 32 on
+ *		CPUs. 64 CPUs per unsigned long on 64-bit machines, 32 on
  * 		32-bit machines. For example, on 32-bit machines,
  * 		if processors 0, 1, 32, and 33 are ideal for the device
  * 		and cpuSetSize == 2, result[0] = 0x3, result[1] = 0x3.
@@ -746,11 +747,11 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
  * Returns true if successful, false if not
  */
 static bool _oneapi_set_cpu_affinity_mask(int cpu,
-					  uint64_t *cpu_set,
-					  uint32_t size)
+					  unsigned long *cpu_set,
+					  unsigned int size)
 {
-	uint32_t count;
-	uint32_t model;
+	unsigned int count;
+	unsigned int model;
 
 	if (cpu < 0)
 		return false;
@@ -762,7 +763,7 @@ static bool _oneapi_set_cpu_affinity_mask(int cpu,
 	}
 
 	model = cpu % ULONG_BITS;
-	cpu_set[count] = cpu_set[count] | (0x01UL << model);
+	cpu_set[count] = cpu_set[count] | (((unsigned long)0x01) << model);
 	return true;
 }
 
@@ -772,7 +773,7 @@ static bool _oneapi_set_cpu_affinity_mask(int cpu,
  * file		(IN) The full path of cpu list file
  * 		For example, /sys/class/drm/card1/device/local_cpulist
  * cpu_set:	[IN/out] An array reference in which to return a bitmask of
- *		CPUs. 64 CPUs per uint64_t on 64-bit machines, 32 on
+ *		CPUs. 64 CPUs per unsigned long on 64-bit machines, 32 on
  * 		32-bit machines. For example, on 32-bit machines,
  * 		if processors 0, 1, 32, and 33 are ideal for the device
  * 		and cpuSetSize == 2, result[0] = 0x3, result[1] = 0x3.
@@ -781,8 +782,8 @@ static bool _oneapi_set_cpu_affinity_mask(int cpu,
  * Returns true if successful, false if not
  */
 static bool _oneapi_read_cpu_affinity_list(const char *file,
-					   uint64_t *cpu_set,
-					   uint32_t size)
+					   unsigned long *cpu_set,
+					   unsigned int size)
 {
 	char line[CPU_LINE_SIZE] = {'\0'};
 	char *save_ptr = line, *tok = NULL;
@@ -941,7 +942,7 @@ static bool _oneapi_get_device_name(uint32_t domain, uint32_t bus,
  *
  * device_name	(IN) The device name under folder "/sys/class/drm"
  * cpu_set:	[IN/out] An array reference in which to return a bitmask of
- *		CPUs. 64 CPUs per uint64_t on 64-bit machines, 32 on
+ *		CPUs. 64 CPUs per unsigned long on 64-bit machines, 32 on
  * 		32-bit machines. For example, on 32-bit machines,
  * 		if processors 0, 1, 32, and 33 are ideal for the device
  * 		and cpuSetSize == 2, result[0] = 0x3, result[1] = 0x3.
@@ -950,8 +951,8 @@ static bool _oneapi_get_device_name(uint32_t domain, uint32_t bus,
  * Returns true if successful, false if not
  */
 static bool _oneapi_get_device_affinity(const char *device_name,
-					uint64_t *cpu_set,
-					uint32_t size)
+					unsigned long *cpu_set,
+					unsigned int size)
 {
 	const char *search_path = "/sys/class/drm";
 	const char *cpu_list_sub_path = "device/local_cpulist";
@@ -971,10 +972,8 @@ extern int init(void)
 	setenv("ZE_FLAT_DEVICE_HIERARCHY", "COMPOSITE", 1);
 	setenv("ZE_ENABLE_PCI_ID_DEVICE_ORDER", "1", 1);
 
-	if (zeInit(0) != ZE_RESULT_SUCCESS) {
-		error("zeInit failed");
-		return SLURM_ERROR;
-	}
+	if (zeInit(0) != ZE_RESULT_SUCCESS)
+		fatal("zeInit failed");
 
 	return SLURM_SUCCESS;
 }
@@ -996,7 +995,7 @@ extern int fini(void)
  *
  * node_config (IN/OUT) pointer of node_config_load_t passed down
  */
-static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
+static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 {
 	char device_file[PATH_MAX];
 	char card_name[CARD_NAME_LEN];
@@ -1006,11 +1005,11 @@ static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 	zes_pci_properties_t pci;
 	ze_result_t oneapi_rc;
 	uint32_t gpu_num = MAX_GPU_NUM;
-	uint64_t cpu_set[CPU_SET_SIZE] = {0};
+	unsigned long cpu_set[CPU_SET_SIZE] = {0};
 	char *cpu_aff_mac_range = NULL;
 	int i;
 
-	list_t *gres_list_system = list_create(destroy_gres_slurmd_conf);
+	List gres_list_system = list_create(destroy_gres_slurmd_conf);
 
 	/* Get all of device handles */
 	_oneapi_get_device_handles(all_devices, &gpu_num, true);
@@ -1050,7 +1049,7 @@ static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 		snprintf(device_file, PATH_MAX, "/dev/dri/%s", card_name);
 
 		/* Get device affinity */
-		memset(cpu_set, 0, sizeof(uint64_t) * CPU_SET_SIZE);
+		memset(cpu_set, 0, sizeof(unsigned long) * CPU_SET_SIZE);
 		if (!_oneapi_get_device_affinity(card_name, cpu_set,
 						 CPU_SET_SIZE)) {
 			error("Failed to get device affinity for GPU: %u", i);
@@ -1121,11 +1120,11 @@ static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 	return gres_list_system;
 }
 
-extern list_t *gpu_p_get_system_gpu_list(node_config_load_t *node_config)
+extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 {
 	xassert(node_config);
 
-	list_t *gres_list_system = _get_system_gpu_list_oneapi(node_config);
+	List gres_list_system = _get_system_gpu_list_oneapi(node_config);
 	if (!gres_list_system)
 		error("System GPU detection failed");
 
@@ -1188,7 +1187,7 @@ extern char *gpu_p_test_cpu_conv(char *cpu_range)
 	return NULL;
 }
 
-extern void gpu_p_get_device_count(uint32_t *device_count)
+extern void gpu_p_get_device_count(unsigned int *device_count)
 {
 	ze_device_handle_t all_devices[MAX_GPU_NUM];
 	uint32_t gpu_num = MAX_GPU_NUM;

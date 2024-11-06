@@ -162,8 +162,9 @@ extern int fini(void)
  *
  * Return true if successful, false if not.
  */
-static bool _rsmi_get_mem_freqs(uint32_t dv_ind, uint32_t *mem_freqs_size,
-				uint32_t *mem_freqs)
+static bool _rsmi_get_mem_freqs(uint32_t dv_ind,
+				unsigned int *mem_freqs_size,
+				unsigned int *mem_freqs)
 {
 	const char *status_string;
 	rsmi_status_t rsmi_rc;
@@ -201,8 +202,9 @@ static bool _rsmi_get_mem_freqs(uint32_t dv_ind, uint32_t *mem_freqs_size,
  *
  * Return true if successful, false if not.
  */
-static bool _rsmi_get_gfx_freqs(uint32_t dv_ind, uint32_t *gfx_freqs_size,
-				uint32_t *gfx_freqs)
+static bool _rsmi_get_gfx_freqs(uint32_t dv_ind,
+				unsigned int *gfx_freqs_size,
+				unsigned int *gfx_freqs)
 {
 	const char *status_string;
 	rsmi_status_t rsmi_rc;
@@ -239,15 +241,15 @@ static bool _rsmi_get_gfx_freqs(uint32_t dv_ind, uint32_t *gfx_freqs_size,
  */
 static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 {
-	uint32_t mem_freqs[RSMI_MAX_NUM_FREQUENCIES] = {0};
-	uint32_t gfx_freqs[RSMI_MAX_NUM_FREQUENCIES] = {0};
-	uint32_t size = RSMI_MAX_NUM_FREQUENCIES;
+	unsigned int mem_freqs[RSMI_MAX_NUM_FREQUENCIES] = {0};
+	unsigned int gfx_freqs[RSMI_MAX_NUM_FREQUENCIES] = {0};
+	unsigned int size = RSMI_MAX_NUM_FREQUENCIES;
 
 	if (!_rsmi_get_mem_freqs(dv_ind, &size, mem_freqs))
 		return;
 
-	qsort(mem_freqs, size, sizeof(uint32_t),
-	      slurm_sort_uint32_list_desc);
+	qsort(mem_freqs, size, sizeof(unsigned int),
+	      slurm_sort_uint_list_desc);
 	if ((size > 1) && (mem_freqs[0] <= mem_freqs[(size)-1])) {
 		error("%s: memory frequencies are not stored in descending order!",
 		      __func__);
@@ -260,8 +262,8 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 	if (!_rsmi_get_gfx_freqs(dv_ind, &size, gfx_freqs))
 		return;
 
-	qsort(gfx_freqs, size, sizeof(uint32_t),
-	      slurm_sort_uint32_list_desc);
+	qsort(gfx_freqs, size, sizeof(unsigned int),
+	      slurm_sort_uint_list_desc);
 	if ((size > 1) && (gfx_freqs[0] <= gfx_freqs[(size)-1])) {
 		error("%s: Graphics frequencies are not stored in descending order!",
 		      __func__);
@@ -282,25 +284,26 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
  * gfx_freq    (IN/OUT) requested/nearest valid graphics frequency
  * gfx_bitmask (OUT) bit mask for the nearest valid graphics frequency
  */
-static void _rsmi_get_nearest_freqs(uint32_t dv_ind, uint32_t *mem_freq,
-				    uint64_t *mem_bitmask, uint32_t *gfx_freq,
+static void _rsmi_get_nearest_freqs(uint32_t dv_ind,
+				    unsigned int *mem_freq,
+				    uint64_t *mem_bitmask,
+				    unsigned int *gfx_freq,
 				    uint64_t *gfx_bitmask)
 {
-	uint32_t mem_freqs[RSMI_MAX_NUM_FREQUENCIES] = {0};
-	uint32_t mem_freqs_sort[RSMI_MAX_NUM_FREQUENCIES] = {0};
-	uint32_t mem_freqs_size = RSMI_MAX_NUM_FREQUENCIES;
-
-	uint32_t gfx_freqs[RSMI_MAX_NUM_FREQUENCIES] = {0};
-	uint32_t gfx_freqs_sort[RSMI_MAX_NUM_FREQUENCIES] = {0};
-	uint32_t gfx_freqs_size = RSMI_MAX_NUM_FREQUENCIES;
+	unsigned int mem_freqs[RSMI_MAX_NUM_FREQUENCIES] = {0};
+	unsigned int mem_freqs_sort[RSMI_MAX_NUM_FREQUENCIES] = {0};
+	unsigned int mem_freqs_size = RSMI_MAX_NUM_FREQUENCIES;
+	unsigned int gfx_freqs[RSMI_MAX_NUM_FREQUENCIES] = {0};
+	unsigned int gfx_freqs_sort[RSMI_MAX_NUM_FREQUENCIES] = {0};
+	unsigned int gfx_freqs_size = RSMI_MAX_NUM_FREQUENCIES;
 
 	// Get the memory frequencies
 	if (!_rsmi_get_mem_freqs(dv_ind, &mem_freqs_size, mem_freqs))
 		return;
 
-	memcpy(mem_freqs_sort, mem_freqs, mem_freqs_size*sizeof(uint32_t));
-	qsort(mem_freqs_sort, mem_freqs_size, sizeof(uint32_t),
-	      slurm_sort_uint32_list_desc);
+	memcpy(mem_freqs_sort, mem_freqs, mem_freqs_size*sizeof(unsigned int));
+	qsort(mem_freqs_sort, mem_freqs_size, sizeof(unsigned int),
+	      slurm_sort_uint_list_desc);
 	if ((mem_freqs_size > 1) &&
 	    (mem_freqs_sort[0] <= mem_freqs_sort[(mem_freqs_size)-1])) {
 		error("%s: memory frequencies are not stored in descending order!",
@@ -322,9 +325,9 @@ static void _rsmi_get_nearest_freqs(uint32_t dv_ind, uint32_t *mem_freq,
 	if (!_rsmi_get_gfx_freqs(dv_ind, &gfx_freqs_size, gfx_freqs))
 		return;
 
-	memcpy(gfx_freqs_sort, gfx_freqs, gfx_freqs_size*sizeof(uint32_t));
-	qsort(gfx_freqs_sort, gfx_freqs_size, sizeof(uint32_t),
-	      slurm_sort_uint32_list_desc);
+	memcpy(gfx_freqs_sort, gfx_freqs, gfx_freqs_size*sizeof(unsigned int));
+	qsort(gfx_freqs_sort, gfx_freqs_size, sizeof(unsigned int),
+	      slurm_sort_uint_list_desc);
 	if ((gfx_freqs_size > 1) &&
 	    (gfx_freqs_sort[0] <= gfx_freqs_sort[(gfx_freqs_size)-1])) {
 		error("%s: graphics frequencies are not stored in descending order!",
@@ -427,7 +430,7 @@ static bool _rsmi_reset_freqs(uint32_t dv_ind)
  *
  * Returns the clock frequency in MHz if successful, or 0 if not
  */
-static uint32_t _rsmi_get_freq(uint32_t dv_ind, rsmi_clk_type_t type)
+static unsigned int _rsmi_get_freq(uint32_t dv_ind, rsmi_clk_type_t type)
 {
 	const char *status_string;
 	rsmi_status_t rsmi_rc;
@@ -462,12 +465,12 @@ static uint32_t _rsmi_get_freq(uint32_t dv_ind, rsmi_clk_type_t type)
 	return (rsmi_freqs.frequency[rsmi_freqs.current]/1000000);
 }
 
-static uint32_t _rsmi_get_gfx_freq(uint32_t dv_ind)
+static unsigned int _rsmi_get_gfx_freq(uint32_t dv_ind)
 {
 	return _rsmi_get_freq(dv_ind, RSMI_CLK_TYPE_SYS);
 }
 
-static uint32_t _rsmi_get_mem_freq(uint32_t dv_ind)
+static unsigned int _rsmi_get_mem_freq(uint32_t dv_ind)
 {
 	return _rsmi_get_freq(dv_ind, RSMI_CLK_TYPE_MEM);
 }
@@ -678,7 +681,7 @@ static void _rsmi_get_version(char *version, unsigned int len)
  *
  * device_count	(OUT) Number of available GPU devices
  */
-extern void gpu_p_get_device_count(uint32_t *device_count)
+extern void gpu_p_get_device_count(unsigned int *device_count)
 {
 	const char *status_string;
 	rsmi_status_t rsmi_rc = rsmi_num_monitor_devices(device_count);
@@ -846,10 +849,11 @@ static bitstr_t *_rsmi_get_device_cpu_mask(uint32_t dv_ind)
  *
  * node_config (IN/OUT) pointer of node_config_load_t passed down
  */
-static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
+static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 {
-	uint32_t i, device_count = 0;
-	list_t *gres_list_system = list_create(destroy_gres_slurmd_conf);
+	unsigned int i;
+	unsigned int device_count = 0;
+	List gres_list_system = list_create(destroy_gres_slurmd_conf);
 	char driver[RSMI_STRING_BUFFER_SIZE];
 	char version[RSMI_STRING_BUFFER_SIZE];
 
@@ -931,11 +935,7 @@ static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		// Print out possible memory frequencies for this device
 		_rsmi_print_freqs(i, LOG_LEVEL_DEBUG2);
 
-		/* If no brand found use device_name as type name */
-		if (device_brand[0])
-			gres_slurmd_conf.type_name = device_brand;
-		else
-			gres_slurmd_conf.type_name = device_name;
+		gres_slurmd_conf.type_name = device_brand;
 
 		add_gres_to_list(gres_list_system, &gres_slurmd_conf);
 
@@ -950,9 +950,9 @@ static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 	return gres_list_system;
 }
 
-extern list_t *gpu_p_get_system_gpu_list(node_config_load_t *node_config)
+extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 {
-	list_t *gres_list_system = _get_system_gpu_list_rsmi(node_config);
+	List gres_list_system = _get_system_gpu_list_rsmi(node_config);
 
 	if (!gres_list_system)
 		error("System GPU detection failed");

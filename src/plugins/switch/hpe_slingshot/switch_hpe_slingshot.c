@@ -41,7 +41,6 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/fd.h"
-#include "src/common/state_save.h"
 #include "src/common/strlcpy.h"
 
 #include "src/slurmctld/slurmctld.h"
@@ -131,6 +130,7 @@ extern int fini(void)
 	if (running_in_slurmctld() || active_outside_ctld) {
 		FREE_NULL_BITMAP(slingshot_state.vni_table);
 		xfree(slingshot_state.job_vnis);
+		slingshot_fini_instant_on();
 		slingshot_fini_collectives();
 		slingshot_free_config();
 	} else
@@ -143,9 +143,12 @@ extern int fini(void)
  */
 extern int switch_p_save(void)
 {
+	int state_fd;
 	uint32_t actual_job_vnis, actual_job_hwcoll;
-	int error_code = 0;
 	buf_t *state_buf;
+	char *new_state_file, *state_file, *buf;
+	size_t buflen;
+	ssize_t nwrote;
 
 	if (!running_in_slurmctld())
 		return SLURM_SUCCESS;
@@ -190,10 +193,58 @@ extern int switch_p_save(void)
 		}
 	}
 
-	error_code = save_buf_to_state(SLINGSHOT_STATE_FILE, state_buf, NULL);
+	/* Get file names for the current and new state files */
+	new_state_file = xstrdup(slurm_conf.state_save_location);
+	xstrcat(new_state_file, "/" SLINGSHOT_STATE_FILE_NEW);
+	state_file = xstrdup(slurm_conf.state_save_location);
+	xstrcat(state_file, "/" SLINGSHOT_STATE_FILE);
+	debug("%s: packing %u/%u job VNIs",
+	       state_file, actual_job_vnis, slingshot_state.num_job_vnis);
 
+	/* Write buffer to new state file */
+	state_fd = creat(new_state_file, 0600);
+	if (state_fd == -1) {
+		error("Couldn't create %s for writing: %m", new_state_file);
+		goto error;
+	}
+
+	buflen = get_buf_offset(state_buf);
+	buf = get_buf_data(state_buf);
+	nwrote = write(state_fd, buf, buflen);
+	if (nwrote == -1) {
+		error("Couldn't write to %s: %m", new_state_file);
+		goto error;
+	} else if (nwrote < buflen) {
+		error("Wrote %zu of %zu bytes to %s", nwrote, buflen,
+			new_state_file);
+		goto error;
+	}
+
+	if (fsync_and_close(state_fd, "switch"))
+		goto error;
+	state_fd = -1;
+
+	/* Overwrite the current state file with rename */
+	if (rename(new_state_file, state_file) == -1) {
+		error("Couldn't rename %s to %s: %m", new_state_file,
+			state_file);
+		goto error;
+	}
+
+	debug("State file %s saved", state_file);
 	FREE_NULL_BUFFER(state_buf);
-	return error_code;
+	xfree(new_state_file);
+	xfree(state_file);
+	return SLURM_SUCCESS;
+
+error:
+	if (state_fd)
+		close(state_fd);
+	FREE_NULL_BUFFER(state_buf);
+	unlink(new_state_file);
+	xfree(new_state_file);
+	xfree(state_file);
+	return SLURM_ERROR;
 }
 
 /*
@@ -521,6 +572,7 @@ extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 	job_record_t *job_ptr;
 	uint32_t job_id;
 	uint32_t node_cnt;
+	char *node_list;
 
 	if (!step_ptr) {
 		fatal("%s: step_ptr NULL not supported", __func__);
@@ -551,6 +603,7 @@ extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 		if (_copy_het_job_stepinfo(job, step_ptr))
 			return SLURM_SUCCESS;
 
+		node_list = NULL;
 		node_cnt = _get_het_job_node_cnt(step_ptr);
 		job_id = job_ptr->het_job_id;
 	} else if (step_ptr->step_id.step_het_comp != NO_VAL) {
@@ -558,10 +611,12 @@ extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 		if (_copy_het_step_stepinfo(job, step_ptr))
 			return SLURM_SUCCESS;
 
+		node_list = NULL;
 		node_cnt = job_ptr->node_cnt;
 		job_id = job_ptr->job_id;
 	} else {
 		/* This is a non-het step in a non-het job */
+		node_list = step_layout->node_list;
 		node_cnt = step_layout->node_cnt;
 		job_id = job_ptr->job_id;
 	}
@@ -574,11 +629,16 @@ extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 	/*
 	 * Reserve hardware collectives multicast addresses if configured
 	 */
-	if ((job_ptr->bit_flags & STEPMGR_ENABLED) &&
-	    !slingshot_setup_collectives(job, node_cnt, job_id,
+	if (!slingshot_setup_collectives(job, node_cnt, job_id,
 					 step_ptr->step_id.step_id))
 		return SLURM_ERROR;
 
+	/*
+	 * Fetch any Instant On data if configured;
+	 * don't fail launch on Instant On failure
+	 */
+	if (node_list)
+		slingshot_fetch_instant_on(job, node_list, node_cnt);
 	return SLURM_SUCCESS;
 }
 
@@ -666,6 +726,7 @@ static bool _unpack_comm_profile(slingshot_comm_profile_t *profile,
 				 buf_t *buffer)
 {
 	char *device_name;
+	uint32_t name_len;
 
 	safe_unpack32(&profile->svc_id, buffer);
 	safe_unpack16(&profile->vnis[0], buffer);
@@ -674,7 +735,7 @@ static bool _unpack_comm_profile(slingshot_comm_profile_t *profile,
 	safe_unpack16(&profile->vnis[3], buffer);
 	safe_unpack32(&profile->tcs, buffer);
 
-	safe_unpackstr(&device_name, buffer);
+	safe_unpackstr_xmalloc(&device_name, &name_len, buffer);
 	if (!device_name)
 		goto unpack_error;
 	strlcpy(profile->device_name, device_name,
@@ -690,11 +751,12 @@ unpack_error:
 static bool _unpack_hsn_nic(slingshot_hsn_nic_t *nic, buf_t *buffer)
 {
 	char *address, *device_name;
+	uint32_t name_len;
 
 	safe_unpack32(&nic->nodeidx, buffer);
 	safe_unpack32(&nic->address_type, buffer);
 
-	safe_unpackstr(&address, buffer);
+	safe_unpackstr_xmalloc(&address, &name_len, buffer);
 	if (!address)
 		goto unpack_error;
 	strlcpy(nic->address, address, sizeof(nic->address));
@@ -702,7 +764,7 @@ static bool _unpack_hsn_nic(slingshot_hsn_nic_t *nic, buf_t *buffer)
 
 	safe_unpack16(&nic->numa_node, buffer);
 
-	safe_unpackstr(&device_name, buffer);
+	safe_unpackstr_xmalloc(&device_name, &name_len, buffer);
 	if (!device_name)
 		goto unpack_error;
 	strlcpy(nic->device_name, device_name, sizeof(nic->device_name));
@@ -718,6 +780,7 @@ static bool _unpack_hwcoll(slingshot_hwcoll_t **hwcollp, buf_t *buffer)
 {
 	slingshot_hwcoll_t *hwcoll = NULL;
 	bool got_hwcoll = false;
+	uint32_t name_len;
 
 	*hwcollp = NULL;
 	/* Unpack a boolean to see if hwcoll is packed in the buffer */
@@ -728,11 +791,11 @@ static bool _unpack_hwcoll(slingshot_hwcoll_t **hwcollp, buf_t *buffer)
 		safe_unpack32(&hwcoll->job_id, buffer);
 		safe_unpack32(&hwcoll->step_id, buffer);
 
-		safe_unpackstr(&hwcoll->mcast_token, buffer);
+		safe_unpackstr_xmalloc(&hwcoll->mcast_token, &name_len, buffer);
 		if (!hwcoll->mcast_token)
 			goto unpack_error;
 
-		safe_unpackstr(&hwcoll->fm_url, buffer);
+		safe_unpackstr_xmalloc(&hwcoll->fm_url, &name_len, buffer);
 		if (!hwcoll->fm_url)
 			goto unpack_error;
 
@@ -1093,6 +1156,9 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 	slingshot_free_job_vni_pool(job_ptr->switch_jobinfo);
 	slingshot_free_jobinfo(job_ptr->switch_jobinfo);
 	job_ptr->switch_jobinfo = NULL;
+
+	/* Release any hardware collectives multicast addresses */
+	slingshot_release_collectives_job(job_id);
 }
 
 extern int switch_p_fs_init(stepd_step_rec_t *step)
@@ -1104,9 +1170,4 @@ extern void switch_p_extern_stepinfo(switch_stepinfo_t **stepinfo,
 				     job_record_t *job_ptr)
 {
 	/* not supported */
-}
-
-extern void switch_p_extern_step_fini(int job_id)
-{
-	slingshot_release_collectives_job(job_id);
 }

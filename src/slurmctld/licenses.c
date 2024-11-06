@@ -716,7 +716,7 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
  * IN license_list_src - job license list to be copied
  * RET a copy of the license list
  */
-extern list_t *license_copy(list_t *license_list_src)
+extern list_t *license_copy(List license_list_src)
 {
 	licenses_t *license_entry_src, *license_entry_dest;
 	list_itr_t *iter;
@@ -845,7 +845,7 @@ extern int license_job_return(job_record_t *job_ptr)
  * license_list_overlap - test if there is any overlap in licenses
  *	names found in the two lists
  */
-extern bool license_list_overlap(list_t *list_1, list_t *list_2)
+extern bool license_list_overlap(list_t *list_1, List list_2)
 {
 	list_itr_t *iter;
 	licenses_t *license_entry;

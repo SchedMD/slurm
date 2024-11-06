@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "September 2024" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "August 2024" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -288,19 +288,18 @@ MaxVMSizeNode       MaxVMSizeTask       McsLabel            MinCPU
 MinCPUNode          MinCPUTask          NCPUS               NNodes
 NodeList            NTasks              Partition           Planned
 PlannedCPU          PlannedCPURAW       Priority            QOS
-QOSRAW              QOSREQ              Reason              ReqCPUFreq
-ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin       ReqCPUS
-ReqMem              ReqNodes            ReqTRES             Reservation
-ReservationId       Restarts            Start               State
-StdErr              StdIn               StdOut              Submit
-SubmitLine          Suspended           SystemComment       SystemCPU
-Timelimit           TimelimitRaw        TotalCPU            TRESUsageInAve
-TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin
-TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve
-TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin
-TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot     UID
-User                UserCPU             WCKey               WCKeyID
-WorkDir
+QOSRAW              Reason              ReqCPUFreq          ReqCPUFreqGov
+ReqCPUFreqMax       ReqCPUFreqMin       ReqCPUS             ReqMem
+ReqNodes            ReqTRES             Reservation         ReservationId
+Start               State               StdErr              StdIn
+StdOut              Submit              SubmitLine          Suspended
+SystemComment       SystemCPU           Timelimit           TimelimitRaw
+TotalCPU            TRESUsageInAve      TRESUsageInMax      TRESUsageInMaxNode
+TRESUsageInMaxTask  TRESUsageInMin      TRESUsageInMinNode  TRESUsageInMinTask
+TRESUsageInTot      TRESUsageOutAve     TRESUsageOutMax     TRESUsageOutMaxNode
+TRESUsageOutMaxTask TRESUsageOutMin     TRESUsageOutMinNode TRESUsageOutMinTask
+TRESUsageOutTot     UID                 User                UserCPU
+WCKey               WCKeyID             WorkDir
 .ft 1
 .fi
 .RE
@@ -573,12 +572,10 @@ data_parser with parameters. Sorting and formatting arguments will be ignored.
 .IP
 
 .SS "Job Accounting Fields"
-Descriptions of each field option can be found below.
+Descriptions of each job accounting field can be found below.
 Note that the Ave*, Max* and Min* accounting fields look at the values for
 all the tasks of each step in a job and return the average, maximum or minimum
-values of the task for that job step. For example, for MaxRSS, the returned
-value is the maximum memory consumption seen by one of the tasks of the step,
-and MaxRSSTask shows which task it is.
+values for the job step.
 .RS
 .TP "10"
 \f3ALL\fP
@@ -1076,11 +1073,6 @@ Reservation Name.
 .TP
 \f3ReservationId\fP
 Reservation Id.
-.IP
-
-.TP
-\f3Restarts\fP
-How many times this job has been requeued/restarted.
 .IP
 
 .TP

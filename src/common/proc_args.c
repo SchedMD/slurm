@@ -519,10 +519,10 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes,
 		while (tok) {
 			char *endptr;
 			long int num = strtol(tok, &endptr, 10);
-			if ((endptr == tok) ||
-			    ((*endptr != '\0') && (*endptr != ',') &&
-			     (*endptr != '-') && (*endptr != ':')) ||
-			    (num >= MAX_JOB_SIZE_BITMAP)) {
+			if ((endptr == tok) || ((*endptr != '\0') &&
+						(*endptr != ',') &&
+						(*endptr != '-') &&
+						(*endptr != ':'))) {
 				error("\"%s\" is not a valid node count", tok);
 				xfree(tmp_str);
 				return false;
@@ -965,9 +965,10 @@ char *print_mail_type(const uint16_t type)
 	return buf;
 }
 
-static list_t *_create_path_list(void)
+static List
+_create_path_list(void)
 {
-	list_t *l = list_create(xfree_ptr);
+	List l = list_create(xfree_ptr);
 	char *path;
 	char *c, *lc;
 
@@ -1046,7 +1047,7 @@ static bool _accessible(const char *path, int access_mode)
 char *search_path(char *cwd, char *cmd, bool check_cwd_last, int access_mode,
 		  bool test_exec)
 {
-	list_t *l = NULL;
+	List         l        = NULL;
 	list_itr_t *i = NULL;
 	char *path, *fullpath = NULL;
 

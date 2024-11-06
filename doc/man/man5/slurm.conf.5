@@ -892,15 +892,6 @@ Use Slurm's internal credential format.
 .IP
 
 .TP
-\fBDataParserParameters\fR=<\fIdata_parser\fR>
-Apply default value for data_parser plugin parameters. See \fI\-\-json\fR or
-\fI\-\-yaml\fR arguments in \fBsacct\fR(1), \fBscontrol\fR(1), \fBsinfo\fR(1),
-\fBsqueue\fR(1), \fBsacctmgr\fR(1), \fBsdiag\fR(1), and \fBsshare\fR(1).
-.br
-Default: Latest data_parser plugin version with no flags selected.
-.IP
-
-.TP
 \fBDebugFlags\fR
 Defines specific subsystems which should provide more detailed event logging.
 Multiple subsystems can be specified with comma separators.
@@ -952,11 +943,6 @@ Burst Buffer plugin
 .TP
 \fBCgroup\fR
 Cgroup details
-.IP
-
-.TP
-\fBConMgr\fR
-Connection manager details
 .IP
 
 .TP
@@ -1132,6 +1118,11 @@ including state, job ids and allocated nodes counter.
 .TP
 \fBTriggers\fR
 Slurmctld triggers
+.IP
+
+.TP
+\fBWorkQueue\fR
+Work Queue details
 .RE
 .IP
 
@@ -1627,22 +1618,11 @@ may be specified. Supported datatypes are as follows:
 .IP
 .RS
 .TP
-Affects accounting and profiling:
-.IP
-.RS
-
-.TP
 \fBtask=\fI<interval>\fR
 where \fI<interval>\fR is the task sampling interval in seconds
 for the jobacct_gather plugins and for task
 profiling by the acct_gather_profile plugin.
 .IP
-.RE
-
-.TP
-Affects profiling only:
-.IP
-.RS
 
 .TP
 \fBenergy=\fI<interval>\fR
@@ -1681,10 +1661,6 @@ applications having less than 10,000 tasks.
 .br
 Users can independently override each interval on a per job basis using the
 \fB\-\-acctg\-freq\fR option when submitting the job.
-.br
-This value should be lower or equal to \fBEnergyIPMIFreq\fR when using
-\fIacct_gather_energy/ipmi\fR or xcc plugins as otherwise it will unnecessarily
-get repeated values on successive polls.
 .RE
 .IP
 
@@ -3713,25 +3689,6 @@ The default value is 10.
 .IP
 
 .TP
-\fBbf_allow_magnetic_slot\fR
-By default the backfill scheduler will not add a slot in the bf plan when a job
-attempts to use a magnetic reservation. This option reverses this to make the
-backfill scheduler add slots in the bf plan when jobs are eligible to run in a
-magnetic reservation. With this option enabled, jobs inside magnetic
-reservations will respect priorities and also be counted against the backfill
-limits such as \fBbf_max_job_test\fR.
-\fBNOTE\fR:
-Backfill first evaluates jobs inside reservations, which means all
-magnetic jobs will be tested first. When enabling this option, make sure to
-revise (increasing if necessary) the backfill limits configured to validate
-backfill cycle gets to test the expected jobs in the queue.
-\fBNOTE\fR:
-If \fBbf_one_resv_per_job\fR is used along with this option the magnetic
-reservation slot will now be the only slot in the bf plan. Otherwise the
-slot will be the first one outside the magnetic reservation.
-.IP
-
-.TP
 \fBbf_busy_nodes\fR
 When selecting resources for pending jobs to reserve for future execution
 (i.e. the job can not be started immediately), then preferentially select
@@ -4170,17 +4127,6 @@ and the node's Extra field.
 .IP
 
 .TP
-\ignore_constraint_validation\fR
-If set, and a job requests --constraint any features in the request that would
-create an invalid request with the current system will not generate an error.
-This is helpful for dynamic systems where nodes with features come and go.
-Jobs will remain in the job queue until the requested feature is in the cluster
-and available.
-Please note using this option will not protect you from typos.
-See also ignore_prefer_validation.
-.IP
-
-.TP
 \fBIgnore_NUMA\fR
 Some processors (e.g. AMD Opteron 6000 series) contain multiple NUMA nodes per
 socket. This is a configuration which does not map into the hardware entities
@@ -4203,7 +4149,6 @@ If set, and a job requests --prefer any features in the request that would
 create an invalid request with the current system will not generate an error.
 This is helpful for dynamic systems where nodes with features come and go.
 Please note using this option will not protect you from typos.
-See also ignore_constraint_validation.
 .IP
 
 .TP
@@ -4840,48 +4785,6 @@ DNS, this step can be avoided by configuring this option.
 .IP
 
 .TP
-\fBconmgr_max_connections\fR=\fI<connection_count>\fR
-Specify the maximum number of connections to be processed at any given time.
-This does not influence the maximum number of pending connections as that is
-controlled by the kernel.
-.IP
-
-.TP
-\fBconmgr_threads\fR=\fI<thread_count>\fR
-The number of process threads to use for the receiving connections on the
-listening socket.
-.IP
-
-.TP
-\fBconmgr_use_poll\fR
-Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
-.IP
-
-.TP
-\fBconmgr_connect_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering an outbound connection attempt to be
-timed out. Defaults to the value of \fBMessageTimeout\fR.
-.IP
-
-.TP
-\fBconmgr_read_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering a read from a file descriptor to be
-timed out. Defaults to the value of \fBMessageTimeout\fR.
-.IP
-
-.TP
-\fBconmgr_wait_write_delay\fR=\fI<seconds>\fR
-When waiting for kernel to flush outgoing buffer, poll kernel for changes every
-\fI<seconds>\fR for changes. Defaults to the value of \fBMessageTimeout\fR.
-.IP
-
-.TP
-\fBconmgr_write_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering a write from a file descriptor to be
-timed out. Defaults to the value of \fBMessageTimeout\fR.
-.IP
-
-.TP
 \fBdisable_triggers\fR
 Disable the ability to register new triggers.
 .IP
@@ -5257,48 +5160,6 @@ slurm.conf configuration file and any node with less than the
 configured resources will \fBnot\fR be set to INVAL/INVALID_REG.
 This option is generally only useful for testing purposes.
 Equivalent to the now deprecated FastSchedule=2 option.
-.IP
-
-.TP
-\fBconmgr_max_connections\fR=\fI<connection_count>\fR
-Specify the maximum number of connections to be processed at any given time.
-This does not influence the maximum number of pending connections as that is
-controlled by the kernel.
-.IP
-
-.TP
-\fBconmgr_threads\fR=\fI<thread_count>\fR
-The number of process threads to use for the receiving connections on the
-listening socket.
-.IP
-
-.TP
-\fBconmgr_use_poll\fR
-Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
-.IP
-
-.TP
-\fBconmgr_connect_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering an outbound connection attempt to be
-timed out. Defaults to the value of \fBMessageTimeout\fR.
-.IP
-
-.TP
-\fBconmgr_read_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering a read from a file descriptor to be
-timed out. Defaults to the value of \fBMessageTimeout\fR.
-.IP
-
-.TP
-\fBconmgr_wait_write_delay\fR=\fI<seconds>\fR
-When waiting for kernel to flush outgoing buffer, poll kernel for changes every
-\fI<seconds>\fR for changes. Defaults to the value of \fBMessageTimeout\fR.
-.IP
-
-.TP
-\fBconmgr_write_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering a write from a file descriptor to be
-timed out. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
 .TP
@@ -5706,34 +5567,21 @@ will ensure that.
 .IP
 
 .TP
-\fBhwcoll_addrs_per_job\fR
-The number of Slingshot hardware collectives multicast addresses to allocate
-per job. (That are larger than hwcoll_min_nodes nodes)
+\fBjlope_url\fR=<\fIurl\fR>
+If set, slurmctld will use the configured URL to request Instant On
+NIC information for each node in a job step from the HPE jackalope
+daemon REST API.
 .IP
 
 .TP
-\fBhwcoll_num_nodes\fR
-The minimum number of nodes for a job to be allocated Slingshot hardware
-collectives. Because the hardware collective engine is not expected to offer a
-meaningful performance boost for jobs spanning a small number of nodes.
-.IP
-
-.TP
-\fBfm_url\fR
-If set, slurm will use the configured URL to interace with the fabric
-manager to enable Slingshot hardware collectives.
-Note \fBenable_stepmgr\fR needs to be set for hardware collectives to run.
-.IP
-
-.TP
-\fBfm_auth\fR
-HPE fabric manager REST API authentication type
+\fBjlope_auth\fR=<\fIBASIC\fR|\fIOAUTH\fR>
+HPE jackalope daemon REST API authentication type
 (BASIC or OAUTH, default OAUTH).
 .IP
 
 .TP
-\fBfm_authdir\fR
-Directory containing authentication info files (default /etc/fmsim
+\fBjlope_authdir\fR=<\fIdirectory\fR>
+Directory containing authentication info files (default /etc/jackaloped
 for BASIC authentication, /etc/wlm-client-auth for OAUTH authentication).
 .IP
 
@@ -6056,14 +5904,6 @@ network topology.
 Use the switch hierarchy defined in a \fItopology.conf\fR file for routing
 instead of just scheduling.
 Valid when TopologyPlugin=topology/tree.
-.IP
-
-.TP
-\fBTopoMaxSizeUnroll=#\fR
-Maximum number of individual job sizes automatically unrolled
-from min-max nodes job specification.
-Default: -1 (option disabled).
-Valid when TopologyPlugin=topology/block.
 .IP
 
 .TP

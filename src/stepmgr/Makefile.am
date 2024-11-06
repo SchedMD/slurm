@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 noinst_PROGRAMS = libstepmgr.o
 noinst_LTLIBRARIES = libstepmgr.la

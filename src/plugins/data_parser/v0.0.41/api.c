@@ -269,17 +269,16 @@ extern openapi_type_t data_parser_p_resolve_openapi_type(
 	if (!parser)
 		return OPENAPI_TYPE_INVALID;
 
-	if (parser->model == PARSER_MODEL_ALIAS)
-		return openapi_type_format_to_type(unalias_parser(
-			find_parser_by_type(parser->type))->obj_openapi);
-
 	if (!field)
 		return openapi_type_format_to_type(parser->obj_openapi);
 
 	for (int i = 0; i < parser->field_count; i++) {
 		if (!xstrcasecmp(parser->fields[i].field_name, field)) {
-			const parser_t *p = unalias_parser(
-				find_parser_by_type(parser->fields[i].type));
+			const parser_t *p =
+				find_parser_by_type(parser->fields[i].type);
+
+			while (p->pointer_type)
+				p = find_parser_by_type(p->pointer_type);
 
 			return openapi_type_format_to_type(p->obj_openapi);
 		}
@@ -298,7 +297,8 @@ extern const char *data_parser_p_resolve_type_string(args_t *args,
 	if (!parser)
 		return NULL;
 
-	parser = unalias_parser(parser);
+	while (parser->pointer_type)
+		parser = find_parser_by_type(parser->pointer_type);
 
 	return parser->type_string;
 }

@@ -47,7 +47,7 @@
  * IN:  res_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurmdb_res_add(void *db_conn, list_t *res_list)
+extern int slurmdb_res_add(void *db_conn, List res_list)
 {
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
@@ -61,7 +61,8 @@ extern int slurmdb_res_add(void *db_conn, list_t *res_list)
  * RET: List of slurmdb_res_rec_t *
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern list_t *slurmdb_res_get(void *db_conn, slurmdb_res_cond_t *res_cond)
+extern List slurmdb_res_get(void *db_conn,
+			    slurmdb_res_cond_t *res_cond)
 {
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
@@ -76,9 +77,9 @@ extern list_t *slurmdb_res_get(void *db_conn, slurmdb_res_cond_t *res_cond)
  * RET: List containing (char *'s) else NULL on error
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern list_t *slurmdb_res_modify(void *db_conn,
-				  slurmdb_res_cond_t *res_cond,
-				  slurmdb_res_rec_t *res)
+extern List slurmdb_res_modify(void *db_conn,
+			       slurmdb_res_cond_t *res_cond,
+			       slurmdb_res_rec_t *res)
 {
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
@@ -92,8 +93,8 @@ extern list_t *slurmdb_res_modify(void *db_conn,
  * RET: List containing (char *'s) else NULL on error
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern list_t *slurmdb_res_remove(void *db_conn,
-				  slurmdb_res_cond_t *res_cond)
+extern List slurmdb_res_remove(void *db_conn,
+			       slurmdb_res_cond_t *res_cond)
 {
 	if (db_api_uid == -1)
 		db_api_uid = getuid();

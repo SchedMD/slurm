@@ -52,17 +52,12 @@
  */
 #define PW_BUF_SIZE 65536
 
-/*
- * Handle EINTR and ERANGE when possible for getpwuid_r().
- * This accepts a pointer to the buffer currently being used as well as one that
- * can be xmalloxed if we encounter ERANGE.  The caller is expected to free
- * buf_malloc() at the appropriate time.
- *
- * If this fails, *result will be NULL.
+/* Retry getpwuid_r while return code is EINTR so we always get the
+ * info.  Return return code of getpwuid_r.
  */
-extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
-			     char **buf_malloc, size_t *bufsize,
-			     struct passwd **result);
+extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
+			     size_t bufsiz, struct passwd **result);
+
 /*
  * Return validated uid_t for string in ``name'' which contains
  *  either the UID number or user name
@@ -70,25 +65,25 @@ extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
  * Returns uid int uidp after verifying presence in /etc/passwd, or
  *  -1 on failure.
  */
-extern int uid_from_string(const char *name, uid_t *uidp);
+int uid_from_string(const char *name, uid_t *uidp);
 
 /*
  * Return the primary group id for a given user id, or
  * (gid_t) -1 on failure.
  */
-extern gid_t gid_from_uid (uid_t uid);
+gid_t gid_from_uid (uid_t uid);
 
 /*
  * Same as uid_from_name(), but for group name/id.
  */
-extern int gid_from_string(const char *name, gid_t *gidp);
+int gid_from_string(const char *name, gid_t *gidp);
 
 /*
  * Translate uid to user name.
  * Will return NULL on error.
  * NOTE: xfree the return value.
  */
-extern char *uid_to_string_or_null(uid_t uid);
+char *uid_to_string_or_null(uid_t uid);
 
 /*
  * Translate uid to user name,
@@ -130,6 +125,6 @@ extern char *gid_to_string(gid_t gid);
  * Will return NULL on error.
  * NOTE: xfree the return value.
  */
-extern char *gid_to_string_or_null(gid_t gid);
+char *gid_to_string_or_null(gid_t gid);
 
 #endif /*__SLURM_UID_UTILITY_H__*/

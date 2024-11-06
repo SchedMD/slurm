@@ -69,9 +69,9 @@
 #define OPT_LONG_HELPSTATE 0x111
 
 /* FUNCTIONS */
-static list_t *_build_state_list(char *str);
-static list_t *_build_all_states_list(void);
-static list_t *_build_part_list(char *parts);
+static List  _build_state_list( char* str );
+static List  _build_all_states_list( void );
+static List  _build_part_list( char *parts );
 static char *_get_prefix(char *token);
 static void  _help( void );
 static void _help_format(void);
@@ -465,9 +465,10 @@ _next_tok (char *sep, char **str)
  * IN str - comma separated list of job states
  * RET List of enum job_states values
  */
-static list_t *_build_state_list(char *state_str)
+static List
+_build_state_list (char *state_str)
 {
-	list_t *state_ids;
+	List state_ids;
 	char *orig, *str, *state;
 
 	if (state_str == NULL)
@@ -500,9 +501,10 @@ static list_t *_build_state_list(char *state_str)
  * _build_all_states_list - build a list containing all possible node states
  * RET List of enum job_states values
  */
-static list_t *_build_all_states_list(void)
+static List
+_build_all_states_list( void )
 {
-	list_t *my_list;
+	List my_list;
 	int i;
 	uint16_t *state_id;
 
@@ -529,9 +531,10 @@ static list_t *_build_all_states_list(void)
  * IN parts - comma separated list of partitions
  * RET List of partition names
  */
-static list_t *_build_part_list(char *parts)
+static List
+_build_part_list(char *parts)
 {
-	list_t *part_list;
+	List part_list;
 	char *orig, *str, *part;
 
 	orig = str = xstrdup(parts);

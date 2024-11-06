@@ -239,7 +239,7 @@ Valid report types are:
 .RS
 .TP
 \fBcluster\fR
-AccountUtilizationByUser, AccountUtilizationByQOS, UserUtilizationByAccount,
+AccountUtilizationByUser, UserUtilizationByAccount,
 UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser
 .IP
 
@@ -282,24 +282,6 @@ time will be counted in the association for the accounts, not the user
 associations in the accounts. In this case, the usage of a parent account can
 be larger than the sum of its children.
 .IP
-
-.TP
-.B cluster AccountUtilizationByQOS
-This report will display account utilization as it appears on the
-hierarchical tree. Starting with the root account by default, or with the
-specified account, this report will list the underlying usage in each
-account, with a sum on each level. Use the 'tree' option to expand
-the tree for better visibility. Users are not displayed here, only parent
-accounts.
-
-\fBNOTE\fR: Idle reservation time will be split evenly among accounts that have
-access to it. Since no QOS is directly connected with the idle time, the
-time is counted against the default QOS of the account, or 'normal' when
-there is no default.
-
-\fBNOTE\fR: If you reroll data in the database and have changed the default
-QOS on an association to something other than what was there at the time
-of the original rollup, you can get different data.
 
 .TP
 .B cluster UserUtilizationByAccount
@@ -458,13 +440,13 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 .TP
 .B Accounts=<OPT>
 When used with the UserUtilizationByAccount, or
-AccountUtilizationBy[User|QOS], List of accounts to include in report.
+AccountUtilizationByUser, List of accounts to include in report.
 Default is all.
 .IP
 
 .TP
 .B Tree
-When used with the AccountUtilizationBy[User|QOS] report will span the
+When used with the AccountUtilizationByUser report will span the
 accounts as they are in the hierarchy.
 .IP
 
@@ -603,12 +585,7 @@ List of users jobs to include in report. Default is all.
 .RS
 .TP
 \fBAccountUtilizationByUser\fR
-Accounts, Cluster, Login, QOS, Proper, TresCount, Used
-.IP
-
-.TP
-\fBAccountUtilizationByQOS\fR
-Accounts, Cluster, QOS, TresCount, Used
+Accounts, Cluster, Login, Proper, TresCount, Used
 .IP
 
 .TP

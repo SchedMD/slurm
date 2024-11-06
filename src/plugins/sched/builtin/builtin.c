@@ -139,7 +139,7 @@ static void _load_config(void)
 static void _compute_start_times(void)
 {
 	int j, rc = SLURM_SUCCESS, job_cnt = 0;
-	list_t *job_queue = NULL;
+	List job_queue;
 	job_queue_rec_t *job_queue_rec;
 	job_record_t *job_ptr;
 	part_record_t *part_ptr;

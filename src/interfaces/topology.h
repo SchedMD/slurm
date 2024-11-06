@@ -143,7 +143,7 @@ extern int topology_g_get_node_addr(char *node_name, char **addr,
  * OUT: sp_hl - hostlist_t *** - The array of hostlists that will be malloced
  * OUT: count - int * - The count of created hostlists
  * IN: tree_width - int - Max width of each branch on the tree.
- * RET: int - the number of levels opened in the tree, or SLURM_ERROR
+ * RET: SLURM_SUCCESS - int
  *
  * Note: Created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.

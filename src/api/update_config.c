@@ -127,12 +127,12 @@ tryagain:
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		if (rc)
-			errno = rc;
+			slurm_seterrno(rc);
 		slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
 		resp_msg.data = NULL;
 		break;
 	default:
-		errno = SLURM_UNEXPECTED_MSG_ERROR;
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
 	}
 
 	if (working_cluster_rec != save_working_cluster_rec) {
@@ -229,7 +229,7 @@ slurm_create_reservation (resv_desc_msg_t * resv_msg)
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					    working_cluster_rec);
 	if (rc)
-		errno = rc;
+		slurm_seterrno(rc);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_CREATE_RESERVATION:
 		resp = (reservation_name_msg_t *) resp_msg.data;
@@ -239,10 +239,10 @@ slurm_create_reservation (resv_desc_msg_t * resv_msg)
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		if (rc)
-			errno = rc;
+			slurm_seterrno(rc);
 		break;
 	default:
-		errno = SLURM_UNEXPECTED_MSG_ERROR;
+		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
 	}
 	slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
 	return resv_name;
@@ -356,7 +356,7 @@ slurm_top_job(char *job_id_str)
 					      working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
-	errno = rc;
+	slurm_seterrno(rc);
 	return rc;
 }
 

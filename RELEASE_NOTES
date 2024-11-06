@@ -1,4 +1,4 @@
-RELEASE NOTES FOR SLURM VERSION 24.11
+RELEASE NOTES FOR SLURM VERSION 24.05
 
 IMPORTANT NOTES:
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
@@ -11,80 +11,134 @@ You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.
 
-Slurm can be upgraded from version 23.02, 23.11 or 24.05 to version
-24.11 without loss of jobs or other state information. Upgrading directly from
-an earlier version of Slurm will result in loss of state information.
+Slurm can be upgraded from version 23.02 or 23.11 to version 24.05 without loss
+of jobs or other state information. Upgrading directly from an earlier version
+of Slurm will result in loss of state information.
 
 All SPANK plugins must be recompiled when upgrading from any Slurm version
-prior to 24.11.
+prior to 24.05.
 
 HIGHLIGHTS
 ==========
- -- Add report AccountUtilizationByQOS to sreport.
- -- AccountUtilizationByUser is able to be filtered by QOS.
- -- Add autodetected gpus to the output of slurmd -C
- -- Add ability to submit jobs with multiple QOS. These are sorted by priority
-    highest being the first.
- -- Removed the instant on feature from switch/hpe_slingshot.
- -- slurmctld - Changed incoming RPC handling to dedicated thread pool with
-    asynchronous handling of I/O that can be configured via conmgr_* entries
-    under SlurmctldParameters in slurm.conf.
-
+ -- Remove support for Cray XC ("cray_aries") systems.
+ -- Federation - allow client command operation when slurmdbd is unavailable.
+ -- burst_buffer/lua - Added two new hooks: slurm_bb_test_data_in and
+    slurm_bb_test_data_out. The syntax and use of the new hooks are documented
+    in etc/burst_buffer.lua.example. These are required to exist. slurmctld now
+    checks on startup if the burst_buffer.lua script loads and contains all
+    required hooks; slurmctld will exit with a fatal error if this is not
+    successful. Added PollInterval to burst_buffer.conf. Removed the arbitrary
+    limit of 512 copies of the script running simultaneously.
+ -- Add QOS limit MaxTRESRunMinsPerAccount.
+ -- Add QOS limit MaxTRESRunMinsPerUser.
+ -- Add ELIGIBLE environment variable to jobcomp/script plugin.
+ -- Always use the QOS name for SLURM_JOB_QOS environment variables.
+    Previously the batch environment would use the description field,
+    which was usually equivalent to the name.
+ -- cgroup/v2 - Require dbus-1 version >= 1.11.16.
+ -- Allow NodeSet names to be used in SuspendExcNodes.
+ -- SuspendExcNodes=<nodes>:N now counts allocated nodes in N. The first N
+    powered up nodes in <nodes> are protected from being suspended.
+ -- Store job output, input and error paths in SlurmDBD.
+ -- Add USER_DELETE reservation flag to allow users with access to a reservation
+    to delete it.
+ -- Add SlurmctldParameters=enable_stepmgr to enable step management through
+    the slurmstepd instead of the controller.
+ -- Added PrologFlags=RunInJob to make prolog and epilog run inside the job
+    extern step to include it in the job's cgroup.
+ -- Add ability to reserve MPI ports at the job level for stepmgr jobs and
+    subdivide them at the step level.
+ -- slurmrestd - Add --generate-openapi-spec argument.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
- -- Add SchedulerParameters=bf_allow_magnetic_slot option. It allows jobs in
-    magnetic reservations to be planned by backfill scheduler.
- -- Add TopologyParam=TopoMaxSizeUnroll=# to allow --nodes=<min>-<max> for
-    topology/block.
- -- Add DataParserParameters slurm.conf parameter to allow setting default
-    value for CLI --json and --yaml arguments.
- -- Hardware collectives in switch/hpe_slingshot now requires enable_stepmgr.
- -- Added connection related parameters to slurm.conf under SlurmctldParameters:
-	conmgr_max_connections: Defaults to 150 connections.
-	conmgr_threads: Defaults to 8 threads for slurmctld.
-	conmgr_use_poll: Defaults is to use epoll in Linux.
-	conmgr_connect_timeout: Defaults to MessageTimeout.
-	conmgr_read_timeout: Defaults to MessageTimeout.
-	conmgr_wait_write_delay: Defaults to MessageTimeout.
-	conmgr_write_timeout: Defaults to MessageTimeout.
- -- Add SlurmctldParamters=ignore_constraint_validation to ignore
-    constraint/feature validation at submission.
+ -- CoreSpecPlugin has been removed.
+ -- Removed TopologyPlugin tree and dragonfly support from select/linear.
+    If those topology plugins are desired please switch to select/cons_tres.
+ -- Changed the default value for UnkillableStepTimeout to 60 seconds or five
+    times the value of MessageTimeout, whichever is greater.
+ -- An error log has been added if JobAcctGatherParams 'UsePss' or 'NoShare' are
+    configured with a plugin other than jobacct_gather/linux. In such case these
+    parameters are ignored.
+ -- helpers.conf - Added Flags=rebootless parameter allowing feature changes
+    without rebooting compute nodes.
+ -- topology/block - Replaced the BlockLevels with BlockSizes in topology.conf.
+ -- Add contain_spank option to SlurmdParameters. When set, spank_user_init(),
+    spank_task_post_fork(), and spank_task_exit() will execute within the
+    job_container/tmpfs plugin namespace.
+ -- Add SlurmctldParameters=max_powered_nodes=N, which prevents powering up
+    nodes after the max is reached.
+ -- Add ExclusiveTopo to a partition definition in slurm.conf.
+ -- Add AccountingStorageParameters=max_step_records to limit how many steps
+    are recorded in the database for each job -- excluding batch, extern, and
+    interactive steps.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- Remove srun --cpu-bind=rank.
- -- Add "%b" as a file name pattern for the array task id modulo 10.
- -- sacct - Respect --noheader for --batch-script and --env-vars.
- -- Add "sacctmgr ping" command to query status of slurmdbd.
- -- sbcast - Add --nodelist option to specify where files are transmitted to
- -- sbcast - Add --no-allocation option to transmit files to nodes outside of a
-    job allocation
- -- slurmdbd - Add -u option. This is used to determine if restarting the DBD
-    will result in database conversion.
- -- Remove salloc --get-user-env.
- -- scontrol - Add --json/--yaml support to listpids
- -- scontrol - Add liststeps
- -- scontrol - Add listjobs
- -- scontrol show topo - Show aggregated block sizes when using topology/block.
+ -- Add support for "elevenses" as an additional time specification.
+ -- Add support for sbcast --preserve when job_container/tmpfs configured
+    (previously documented as unsupported).
+ -- scontrol - Add new subcommand 'power' for node power control.
+ -- squeue - Adjust StdErr, StdOut, and StdIn output formats. These will now
+    consistently print "(null)" if a value is unavailable. StdErr will no
+    longer display StdOut if it is not distinctly set. StdOut will now
+    correctly display the default filename pattern for job arrays, and no
+    longer show it for non-batch jobs. However, the expansion patterns will
+    no longer be substituted by default.
+ -- Add --segment to job allocation to be used in topology/block.
+ -- Add --exclusive=topo for use with topology/block.
+ -- squeue - Add --expand-patterns option to expand StdErr, StdOut, StdIn
+    filename patterns as best as possible.
+ -- sacct - Add --expand-patterns option to expand StdErr, StdOut, StdIn
+    filename patterns as best as possible.
+ -- sreport - Requesting format=Planned will now return the expected Planned
+    time as documented, instead of PlannedDown. To request Planned Down,
+    one must use now format=PLNDDown or format=PlannedDown explicitly. The
+    abbreviations "Pl" or "Pla" will now make reference to Planned instead of
+    PlannedDown.
 
 API CHANGES
 ===========
- -- Remove burst_buffer/lua call slurm.job_info_to_string().
- -- job_submit/lua - Add "assoc_qos" attribute to job_desc to display all
-    potential QOS's for a job's association.
- -- job_submit/lua - Add slurm.get_qos_priority() function to retrieve the
-    given QOS's priority.
+ -- Removed ListIterator type from <slurm/slurm.h>.
+ -- Removed slurm_xlate_job_id() from <slurm/slurm.h>
 
 SLURMRESTD CHANGES
 ==================
- -- Removed fields deprecated in the Slurm-23.11 release from v0.0.42 endpoints.
- -- Removed v0.0.39 plugins.
- -- Set data_parser/v0.0.42+prefer_refs flag to default.
- -- Add data_parser/v0.0.42+minimize_refs flag to inline single referenced
-    schemas in the OpenAPI schema to get default behavior of
-    data_parser/v0.0.41.
- -- Rename v0.0.42 JOB_INFO field "minimum_switches" to "required_switches"
-    to reflect the actual behavior.
- -- Rename v0.0.42 ACCOUNT_CONDITION field "assocation" to "association" (typo).
- -- Tag slurmdb/v0.0.42/jobs pid field deprecated.
+ -- openapi/dbv0.0.38 and openapi/v0.0.38 plugins have been removed.
+ -- openapi/dbv0.0.39 and openapi/v0.0.39 plugins have been tagged as
+    deprecated to warn of their removal in the next release.
+ -- Changed slurmrestd.service to only listen on TCP socket by default.
+    Environments with existing drop-in units for the service may need
+    further adjustments to work after upgrading.
+ -- slurmrestd - Tagged `script` field as deprecated in
+    'POST /slurm/v0.0.41/job/submit' in anticipation of removal in future
+    OpenAPI plugin versions. Job submissions should set the `job.script` (or
+    `jobs[0].script` for HetJobs) fields instead.
+ -- slurmrestd - Attempt to automatically convert enumerated string arrays with
+    incoming non-string values into strings. Add warning when incoming value for
+    enumerated string arrays can not be converted to string and silently ignore
+    instead of rejecting entire request. This change affects any endpoint that
+    uses an enunmerated string as given in the OpenAPI specification. An
+    example of this conversion would be to 'POST /slurm/v0.0.41/job/submit' with
+    '.job.exclusive = true'. While the JSON (boolean) true value matches a
+    possible enumeration, it is not the expected "true" string. This change
+    automatically converts the (boolean) true to (string) "true" avoiding a
+    parsing failure.
+ -- slurmrestd - Add 'POST /slurm/v0.0.41/job/allocate' endpoint. This endpoint
+    will create a new job allocation without any steps. The allocation will need
+    to be ended via signaling the job or it will run to the timelimit.
+ -- slurmrestd - Allow startup when slurmdbd is not configured and avoid loading
+    slurmdbd specific plugins.
+
+MPI/PMI2 CHANGES
+================
+ -- Jobs submitted with the SLURM_HOSTFILE environment variable set implies
+    using an arbitrary distribution. Nevertheless, the logic used in PMI2 when
+    generating their associated PMI_process_mapping values has been changed and
+    will now be the same used for the plane distribution, as if "-m plane" were
+    used. This has been changed because the original arbitrary distribution
+    implementation did not account for multiple instances of the same host being
+    present in SLURM_HOSTFILE, providing an incorrect process mapping in such
+    case. This change also enables distributing tasks in blocks when using
+    arbitrary distribution, which was not the case before. This only affects
+    mpi/pmi2 plugin.

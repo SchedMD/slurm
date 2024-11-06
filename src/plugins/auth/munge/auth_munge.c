@@ -246,7 +246,7 @@ again:
 		error("Munge encode failed: %s", munge_ctx_strerror(ctx));
 		xfree(cred);
 		cred = NULL;
-		errno = ESLURM_AUTH_CRED_INVALID;
+		slurm_seterrno(ESLURM_AUTH_CRED_INVALID);
 	} else if ((bad_cred_test > 0) && cred->m_str) {
 		/*
 		 * Avoid changing the trailing ':' character, or any of the
@@ -297,7 +297,7 @@ int auth_p_verify(auth_credential_t *c, char *opts)
 	char *socket;
 
 	if (!c) {
-		errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_ERROR;
 	}
 
@@ -354,7 +354,7 @@ char *auth_p_get_host(auth_credential_t *cred)
 		 * the calling path did not verify the credential first.
 		 */
 		xassert(!cred);
-		errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return NULL;
 	}
 
@@ -377,7 +377,8 @@ char *auth_p_get_host(auth_credential_t *cred)
 	 * which will never resolve successfully. So don't even bother trying.
 	 */
 	if (sin->sin_addr.s_addr != 0) {
-		hostname = xgetnameinfo(&addr);
+		hostname = xgetnameinfo((struct sockaddr *) &addr,
+					sizeof(addr));
 		/*
 		 * The NI_NOFQDN flag was used here previously, but did not work
 		 * as desired if the primary domain did not match on both sides.
@@ -408,7 +409,7 @@ extern int auth_p_get_data(auth_credential_t *cred, char **data, uint32_t *len)
 		 * the calling path did not verify the credential first.
 		 */
 		xassert(!cred);
-		errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_ERROR;
 	}
 
@@ -428,7 +429,7 @@ extern int auth_p_get_data(auth_credential_t *cred, char **data, uint32_t *len)
 extern void *auth_p_get_identity(auth_credential_t *cred)
 {
 	if (!cred) {
-		errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return NULL;
 	}
 
@@ -442,7 +443,7 @@ extern void *auth_p_get_identity(auth_credential_t *cred)
 int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
 {
 	if (!cred || !buf) {
-		errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_ERROR;
 	}
 
@@ -466,9 +467,10 @@ int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
 auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	auth_credential_t *cred = NULL;
+	uint32_t size;
 
 	if (!buf) {
-		errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return NULL;
 	}
 
@@ -479,7 +481,7 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 		cred->verified = false;
 		cred->m_xstr = true;
 
-		safe_unpackstr(&cred->m_str, buf);
+		safe_unpackstr_xmalloc(&cred->m_str, &size, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);
@@ -489,7 +491,7 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 	return cred;
 
 unpack_error:
-	errno = ESLURM_AUTH_UNPACK;
+	slurm_seterrno(ESLURM_AUTH_UNPACK);
 	auth_p_destroy(cred);
 	return NULL;
 }
@@ -554,7 +556,7 @@ again:
 			_print_cred(ctx);
 			if (err == EMUNGE_CRED_REWOUND)
 				error("Check for out of sync clocks");
-			errno = ESLURM_AUTH_CRED_INVALID;
+			slurm_seterrno(ESLURM_AUTH_CRED_INVALID);
 			goto done;
 #ifdef MULTIPLE_SLURMD
 		}
@@ -643,9 +645,4 @@ void auth_p_thread_clear(void)
 char *auth_p_token_generate(const char *username, int lifespan)
 {
 	return NULL;
-}
-
-extern int auth_p_get_reconfig_fd(void)
-{
-	return -1;
 }

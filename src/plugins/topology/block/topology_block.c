@@ -92,11 +92,9 @@ const uint32_t plugin_id = TOPOLOGY_PLUGIN_BLOCK;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 typedef struct topoinfo_bblock {
-	bool aggregated;
 	uint16_t block_index;
 	char *name;
 	char *nodes;
-	uint32_t size;
 } topoinfo_bblock_t;
 
 typedef struct topoinfo_block {
@@ -109,14 +107,11 @@ static void _print_topo_record(topoinfo_bblock_t * topo_ptr, char **out)
 	char *env, *line = NULL, *pos = NULL;
 
 	/****** Line 1 ******/
-	xstrfmtcatat(line, &pos, "%s=%s BlockIndex=%u",
-		     topo_ptr->aggregated ? "AggregatedBlock" : "BlockName",
-		     topo_ptr->name, topo_ptr->block_index);
+	xstrfmtcatat(line, &pos, "BlockName=%s BlockIndex=%u", topo_ptr->name,
+		     topo_ptr->block_index);
 
 	if (topo_ptr->nodes)
 		xstrfmtcatat(line, &pos, " Nodes=%s", topo_ptr->nodes);
-
-	xstrfmtcatat(line, &pos, " BlockSize=%u", topo_ptr->size);
 
 	if ((env = getenv("SLURM_TOPO_LEN")))
 		xstrfmtcat(*out, "%.*s\n", atoi(env), line);
@@ -265,8 +260,7 @@ extern int topology_p_get(topology_data_t type, void *data)
 		(*topoinfo_pptr)->data = topoinfo_ptr;
 		(*topoinfo_pptr)->plugin_id = plugin_id;
 
-		topoinfo_ptr->record_count =
-			block_record_cnt + ablock_record_cnt;
+		topoinfo_ptr->record_count = block_record_cnt;
 		topoinfo_ptr->topo_array = xcalloc(topoinfo_ptr->record_count,
 						   sizeof(topoinfo_bblock_t));
 
@@ -277,12 +271,7 @@ extern int topology_p_get(topology_data_t type, void *data)
 				xstrdup(block_record_table[i].name);
 			topoinfo_ptr->topo_array[i].nodes =
 				xstrdup(block_record_table[i].nodes);
-			if (block_record_table[i].level)
-				topoinfo_ptr->topo_array[i].aggregated = true;
-			topoinfo_ptr->topo_array[i].size = bblock_node_cnt *
-				block_sizes[block_record_table[i].level];
 		}
-
 		break;
 	}
 	case TOPO_DATA_REC_CNT:
@@ -312,26 +301,12 @@ extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
 	int i;
 	topoinfo_block_t *topoinfo = topoinfo_ptr;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		pack32(topoinfo->record_count, buffer);
-		for (i = 0; i < topoinfo->record_count; i++) {
-			packbool(topoinfo->topo_array[i].aggregated, buffer);
-			pack16(topoinfo->topo_array[i].block_index, buffer);
-			packstr(topoinfo->topo_array[i].name, buffer);
-			packstr(topoinfo->topo_array[i].nodes, buffer);
-			pack32(topoinfo->topo_array[i].size, buffer);
-		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(topoinfo->record_count, buffer);
-		for (i = 0; i < topoinfo->record_count; i++) {
-			pack16(topoinfo->topo_array[i].block_index, buffer);
-			packstr(topoinfo->topo_array[i].name, buffer);
-			packstr(topoinfo->topo_array[i].nodes, buffer);
-		}
-	} else {
-		return SLURM_ERROR;
+	pack32(topoinfo->record_count, buffer);
+	for (i = 0; i < topoinfo->record_count; i++) {
+		pack16(topoinfo->topo_array[i].block_index, buffer);
+		packstr(topoinfo->topo_array[i].name, buffer);
+		packstr(topoinfo->topo_array[i].nodes, buffer);
 	}
-
 	return SLURM_SUCCESS;
 }
 
@@ -396,39 +371,13 @@ extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
 		xmalloc(sizeof(topoinfo_block_t));
 
 	*topoinfo_pptr = topoinfo_ptr;
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		safe_unpack32(&topoinfo_ptr->record_count, buffer);
-		safe_xcalloc(topoinfo_ptr->topo_array,
-			     topoinfo_ptr->record_count,
-			     sizeof(topoinfo_bblock_t));
-		for (i = 0; i < topoinfo_ptr->record_count; i++) {
-			safe_unpackbool(&topoinfo_ptr->topo_array[i].aggregated,
-					buffer);
-			safe_unpack16(&topoinfo_ptr->topo_array[i].block_index,
-				      buffer);
-			safe_unpackstr(&topoinfo_ptr->topo_array[i].name,
-				       buffer);
-			safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes,
-				       buffer);
-			safe_unpack32(&topoinfo_ptr->topo_array[i].size,
-				      buffer);
-		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&topoinfo_ptr->record_count, buffer);
-		safe_xcalloc(topoinfo_ptr->topo_array, topoinfo_ptr->record_count,
-			     sizeof(topoinfo_bblock_t));
-		for (i = 0; i < topoinfo_ptr->record_count; i++) {
-			topoinfo_ptr->topo_array[i].aggregated = false;
-			safe_unpack16(&topoinfo_ptr->topo_array[i].block_index,
-				      buffer);
-			safe_unpackstr(&topoinfo_ptr->topo_array[i].name,
-				       buffer);
-			safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes,
-				       buffer);
-			topoinfo_ptr->topo_array[i].size = 0;
-		}
-	} else {
-		goto unpack_error;
+	safe_unpack32(&topoinfo_ptr->record_count, buffer);
+	safe_xcalloc(topoinfo_ptr->topo_array, topoinfo_ptr->record_count,
+		     sizeof(topoinfo_bblock_t));
+	for (i = 0; i < topoinfo_ptr->record_count; i++) {
+		safe_unpack16(&topoinfo_ptr->topo_array[i].block_index, buffer);
+		safe_unpackstr(&topoinfo_ptr->topo_array[i].name, buffer);
+		safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes, buffer);
 	}
 
 	return SLURM_SUCCESS;

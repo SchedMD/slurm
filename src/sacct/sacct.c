@@ -114,7 +114,6 @@ print_field_t fields[] = {
 	{10, "Priority", print_fields_uint, PRINT_PRIO},
 	{10, "QOS", print_fields_str, PRINT_QOS},
 	{6,  "QOSRAW", print_fields_uint, PRINT_QOSRAW},
-	{10, "QOSREQ", print_fields_str, PRINT_QOSREQ},
 	{22, "Reason", print_fields_str, PRINT_REASON},
 	{10, "ReqCPUFreq", print_fields_str, PRINT_REQ_CPUFREQ_MAX}, /* vestigial */
 	{13, "ReqCPUFreqGov", print_fields_str, PRINT_REQ_CPUFREQ_GOV},
@@ -126,7 +125,6 @@ print_field_t fields[] = {
 	{10, "ReqTRES", print_fields_str, PRINT_TRESR},
 	{20, "Reservation",  print_fields_str, PRINT_RESERVATION},
 	{8,  "ReservationId",  print_fields_uint, PRINT_RESERVATION_ID},
-	{8,  "Restarts", print_fields_uint16, PRINT_RESTART_CNT},
 	{19, "Start", print_fields_date, PRINT_START},
 	{10, "State", print_fields_str, PRINT_STATE},
 	{20, "StdErr", print_fields_str, PRINT_STDERR},
@@ -165,7 +163,7 @@ print_field_t fields[] = {
 	{0,  NULL, NULL, 0}
 };
 
-list_t *jobs = NULL;
+List jobs = NULL;
 
 int main(int argc, char **argv)
 {
@@ -215,7 +213,8 @@ int main(int argc, char **argv)
 	sacct_fini();
 
 #if MEMORY_LEAK_DEBUG
-	slurm_fini();
+	auth_g_fini();
+	slurm_conf_destroy();
 	log_fini();
 #endif
 

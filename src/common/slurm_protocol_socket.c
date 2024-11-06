@@ -187,7 +187,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 		if (timeleft <= 0) {
 			debug("%s at %d of %zu, timeout",
 			      __func__, tot_bytes_sent, size);
-			errno = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
+			slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
 			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
@@ -199,7 +199,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 				debug("%s at %d of %zu, poll error: %s",
 				      __func__, tot_bytes_sent, size,
 				      strerror(errno));
-				errno = SLURM_COMMUNICATIONS_SEND_ERROR;
+				slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
 				tot_bytes_sent = SLURM_ERROR;
 				break;
 			}
@@ -222,7 +222,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 				debug("%s: Socket POLLERR: %s",
 				      __func__, slurm_strerror(e));
 
-			errno = e;
+			slurm_seterrno(e);
 			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
@@ -235,7 +235,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 			else
 				debug2("%s: Socket no longer there: %s",
 				       __func__, slurm_strerror(so_err));
-			errno = so_err;
+			slurm_seterrno(so_err);
 			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
@@ -249,16 +249,13 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 		if (bytes_sent < 0) {
  			if (errno == EINTR)
 				continue;
-
-			log_flag(NET, "%s: [fd:%d] writev() sent %zd/%zu bytes failed: %m",
-				 __func__, fd, bytes_sent, size);
-
-			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-				/* poll() lied to us */
+			debug("%s at %d of %zu, send error: %s",
+			      __func__, tot_bytes_sent, size, strerror(errno));
+ 			if (errno == EAGAIN) {	/* poll() lied to us */
 				usleep(10000);
 				continue;
 			}
-			errno = SLURM_COMMUNICATIONS_SEND_ERROR;
+ 			slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
 			tot_bytes_sent = SLURM_ERROR;
 			break;
 		}
@@ -267,18 +264,15 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 			 * If driver false reports POLLIN but then does not
 			 * provide any output: try poll() again.
 			 */
-			log_flag(NET, "%s: [fd:%d] writev() sent zero bytes out of %d/%zu",
-				 __func__, fd, tot_bytes_sent, size);
+			log_flag(NET, "send() sent zero bytes out of %d/%zu",
+				 tot_bytes_sent, size);
 			continue;
 		}
 
 		tot_bytes_sent += bytes_sent;
 
-		if (tot_bytes_sent >= size) {
-			log_flag(NET, "%s: [fd:%d] writev() completed sending %d/%zu bytes",
-				 __func__, fd, tot_bytes_sent, size);
+		if (tot_bytes_sent >= size)
 			break;
-		}
 
 		/* partial write, need to adjust iovec before next call */
 		for (int i = 0; i < iovcnt; i++) {
@@ -296,10 +290,10 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 
 	/* Reset fd flags to prior state, preserve errno */
 	if (fd_flags != -1) {
-		int slurm_err = errno;
+		int slurm_err = slurm_get_errno();
 		if (fcntl(fd, F_SETFL, fd_flags) < 0)
 			error("%s: fcntl(F_SETFL) error: %m", __func__);
-		errno = slurm_err;
+		slurm_seterrno(slurm_err);
 	}
 
 	return tot_bytes_sent;
@@ -404,7 +398,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 		if (timeleft <= 0) {
 			debug("%s at %d of %zu, timeout", __func__, recvlen,
 			      size);
-			errno = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
+			slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
 			recvlen = SLURM_ERROR;
 			goto done;
 		}
@@ -415,7 +409,8 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 			else {
 				debug("%s at %d of %zu, poll error: %m",
 				      __func__, recvlen, size);
-				errno = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
+ 				slurm_seterrno(
+					SLURM_COMMUNICATIONS_RECEIVE_ERROR);
  				recvlen = SLURM_ERROR;
   				goto done;
 			}
@@ -431,7 +426,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 				debug("%s: Socket POLLERR: %s",
 				      __func__, slurm_strerror(e));
 
-			errno = e;
+			slurm_seterrno(e);
 			recvlen = SLURM_ERROR;
 			goto done;
 		}
@@ -442,11 +437,11 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 			if ((rc = fd_get_socket_error(fd, &so_err))) {
 				debug2("%s: Socket no longer there: fd_get_socket_error failed: %s",
 				       __func__, slurm_strerror(rc));
-				errno = rc;
+				slurm_seterrno(rc);
 			} else {
 				debug2("%s: Socket no longer there: %s",
 				       __func__, slurm_strerror(so_err));
-				errno = so_err;
+				slurm_seterrno(so_err);
 			}
 			recvlen = SLURM_ERROR;
 			goto done;
@@ -466,7 +461,8 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 			} else {
 				debug("%s at %d of %zu, recv error: %m",
 				      __func__, recvlen, size);
-				errno = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
+				slurm_seterrno(
+					SLURM_COMMUNICATIONS_RECEIVE_ERROR);
 				recvlen = SLURM_ERROR;
 				goto done;
 			}
@@ -474,7 +470,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 		if (rc == 0) {
 			debug("%s at %d of %zu, recv zero bytes",
 			      __func__, recvlen, size);
-			errno = SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT;
+			slurm_seterrno(SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT);
 			recvlen = SLURM_ERROR;
 			goto done;
 		}
@@ -485,10 +481,10 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
     done:
 	/* Reset fd flags to prior state, preserve errno */
 	if (fd_flags != -1) {
-		int slurm_err = errno;
+		int slurm_err = slurm_get_errno();
 		if (fcntl(fd, F_SETFL, fd_flags) < 0)
 			error("%s: fcntl(F_SETFL) error: %m", __func__);
-		errno = slurm_err;
+		slurm_seterrno(slurm_err);
 	}
 
 	return recvlen;
@@ -546,7 +542,7 @@ extern int slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 {
 	socklen_t len = sizeof(*addr);
 	int sock = accept4(fd, (struct sockaddr *) addr, &len, SOCK_CLOEXEC);
-	net_set_nodelay(sock, true, NULL);
+	net_set_nodelay(sock);
 	return sock;
 }
 
@@ -568,10 +564,11 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 			    IPPROTO_TCP);
 		if (fd < 0) {
 			error("Error creating slurm stream socket: %m");
+			slurm_seterrno(errno);
 			return SLURM_ERROR;
 		}
 
-		net_set_nodelay(fd, true, NULL);
+		net_set_nodelay(fd);
 
 		if (retry_cnt) {
 			if (retry_cnt == 1) {
@@ -584,7 +581,7 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 		rc = _slurm_connect(fd, (struct sockaddr const *)addr,
 				    sizeof(*addr));
 		/* always set errno as upstream callers expect it */
-		errno = rc;
+		slurm_seterrno(rc);
 
 		if (!rc) {
 			/* success */
@@ -593,7 +590,7 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 
 		if (((rc != ECONNREFUSED) && (rc != ETIMEDOUT)) ||
 		    (!retry) || (retry_cnt >= PORT_RETRIES)) {
-			errno = rc;
+			slurm_seterrno(rc);
 			goto error;
 		}
 

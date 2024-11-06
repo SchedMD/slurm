@@ -1769,46 +1769,6 @@
         "summary": "Get slurmdb diagnostics"
       }
     },
-    "/slurmdb/{data_parser}/ping/": {
-      "get": {
-        "tags": [
-          "slurmdb"
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_PING_RESP"
-                }
-              },
-              "application/x-yaml": {
-                "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_PING_RESP"
-                }
-              }
-            },
-            "description": "Dictionary of ping results"
-          },
-          "default": {
-            "description": "Unable to ping slurmdbd",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_RESP"
-                }
-              },
-              "application/x-yaml": {
-                "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_RESP"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Get slurmdb diagnostics"
-      }
-    },
     "/openapi": {
       "get": {
         "tags": [

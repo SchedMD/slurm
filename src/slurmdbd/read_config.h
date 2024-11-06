@@ -59,7 +59,6 @@
 #define DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT SLURM_BIT(0)
 #define DBD_CONF_FLAG_ALL_RES_ABS SLURM_BIT(1)
 #define DBD_CONF_FLAG_DISABLE_COORD_DBD SLURM_BIT(2)
-#define DBD_CONF_FLAG_GET_DBVER SLURM_BIT(3)
 
 /* SlurmDBD configuration parameters */
 typedef struct {
@@ -127,6 +126,6 @@ extern int read_slurmdbd_conf(void);
 
 /* Dump the configuration in name,value pairs for output to
  *	"sacctmgr show config", caller must call list_destroy() */
-extern list_t *dump_config(void);
+extern List dump_config(void);
 
 #endif /* !_DBD_READ_CONFIG_H */

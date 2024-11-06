@@ -44,29 +44,24 @@
   #include <sys/prctl.h>
 #endif
 
+#include "src/interfaces/auth.h"
+#include "src/interfaces/gres.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"
+#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/jobacct_gather.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
-
-#include "src/conmgr/conmgr.h"
-
-#include "src/interfaces/accounting_storage.h"
-#include "src/interfaces/auth.h"
-#include "src/interfaces/gres.h"
-#include "src/interfaces/jobacct_gather.h"
-
-#include "src/slurmctld/slurmctld.h"
-
-#include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
+#include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/slurmdbd.h"
+#include "src/slurmctld/slurmctld.h"
 
 /* Local functions */
 static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn);
@@ -84,7 +79,10 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn)
 {
 	uint32_t uid = dbd_conn->conn->auth_uid;
-
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
 		return true;
 
@@ -98,7 +96,10 @@ static bool _validate_slurm_user(slurmdbd_conn_t *dbd_conn)
 static bool _validate_super_user(slurmdbd_conn_t *dbd_conn)
 {
 	uint32_t uid = dbd_conn->conn->auth_uid;
-
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_SUPER_USER)
 		return true;
@@ -113,7 +114,10 @@ static bool _validate_super_user(slurmdbd_conn_t *dbd_conn)
 static bool _validate_operator(slurmdbd_conn_t *dbd_conn)
 {
 	uint32_t uid = dbd_conn->conn->auth_uid;
-
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
 	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
 	    assoc_mgr_get_admin_level(dbd_conn, uid) >= SLURMDB_ADMIN_OPERATOR)
 		return true;
@@ -244,6 +248,11 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 	slurm_msg_t *smsg = msg->data;
 	persist_init_req_msg_t *req_msg = smsg->data;
 	char *comment = NULL;
+
+#ifndef NDEBUG
+	if ((smsg->flags & SLURM_DROP_PRIV))
+		drop_priv = true;
+#endif
 
 	req_msg->uid = auth_g_get_uid(slurmdbd_conn->conn->auth_cred);
 
@@ -1305,9 +1314,6 @@ static int _get_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	case DBD_GET_ASSOC_USAGE:
 		ret_type = DBD_GOT_ASSOC_USAGE;
 		break;
-	case DBD_GET_QOS_USAGE:
-		ret_type = DBD_GOT_QOS_USAGE;
-		break;
 	case DBD_GET_WCKEY_USAGE:
 		ret_type = DBD_GOT_WCKEY_USAGE;
 		break;
@@ -1360,10 +1366,9 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	user_cond = get_msg->cond;
 	if ((!user_cond->with_assocs && !user_cond->with_wckeys)
-	    && ((slurmdbd_conn->conn->version < 8) ||
-		(user_cond->assoc_cond->flags &
-		 ASSOC_COND_FLAG_ONLY_DEFS))) {
-		list_t *cluster_list = user_cond->assoc_cond->cluster_list;
+	    && ((slurmdbd_conn->conn->version < 8)
+		|| (user_cond->assoc_cond->only_defs))) {
+		List cluster_list = user_cond->assoc_cond->cluster_list;
 		/* load up with just this cluster to query against
 		 * since befor 2.2 we had only 1 default account so
 		 * send the default for this cluster. */
@@ -2399,8 +2404,6 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	details.min_cpus = job_start_msg->req_cpus;
 	details.pn_min_memory = job_start_msg->req_mem;
 	job.qos_id = job_start_msg->qos_id;
-	details.qos_req = job_start_msg->qos_req;
-	job.restart_cnt = job_start_msg->restart_cnt;
 	job.resv_id = job_start_msg->resv_id;
 	job.priority = job_start_msg->priority;
 	details.script_hash = job_start_msg->script_hash;
@@ -2479,7 +2482,7 @@ static int _reconfig(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	info("Reconfigure request received");
-	reconfig(NULL);
+	reconfig();
 
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 						rc, comment, DBD_RECONFIG);
@@ -2496,7 +2499,7 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	slurmdb_cluster_cond_t cluster_q;
 	slurmdb_cluster_rec_t cluster;
 	dbd_list_msg_t list_msg = { NULL };
-	list_t *cluster_list;
+	List cluster_list;
 
 	if (!_validate_slurm_user(slurmdbd_conn)) {
 		comment = "DBD_REGISTER_CTLD message from invalid uid";
@@ -2547,7 +2550,7 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		comment = slurm_strerror(errno);
 		rc = errno;
 	} else if (!list_count(cluster_list)) {
-		list_t *add_list = list_create(NULL);
+		List add_list = list_create(NULL);
 		list_append(add_list, &cluster);
 
 		cluster.name = slurmdbd_conn->conn->cluster_name;
@@ -3068,7 +3071,7 @@ static int _roll_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_roll_usage_msg_t *get_msg = msg->data;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
-	list_t *rollup_stats_list = NULL;
+	List rollup_stats_list = NULL;
 	DEF_TIMERS;
 
 	info("DBD_ROLL_USAGE: called in CONN %d", slurmdbd_conn->conn->fd);
@@ -3424,7 +3427,7 @@ static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	info("Shutdown request received from UID %u",
 	     slurmdbd_conn->conn->auth_uid);
-	shutdown_threads();
+	pthread_kill(signal_handler_thread, SIGTERM);
 
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 						rc, comment, DBD_SHUTDOWN);

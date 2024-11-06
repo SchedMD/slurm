@@ -58,7 +58,7 @@ typedef struct {
 	ssize_t index;
 	args_t *args;
 	const parser_t *const parser;
-	list_t *list;
+	List list;
 	data_t *dlist;
 	data_t *parent_path;
 } foreach_list_t;
@@ -228,12 +228,6 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 				_set_flag_bit_equal(parser, dst, bit, matched,
 						    path, src);
 			args->set |= bit->mask;
-		} else if (bit->type == FLAG_BIT_TYPE_REMOVED) {
-			if (matched)
-				on_warn(PARSING, parser->type, args->args, path,
-					__func__,
-					"Ignoring deprecated flag: %s",
-					bit->name);
 		} else
 			fatal_abort("%s: invalid bit_flag_t", __func__);
 
@@ -353,7 +347,7 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 {
 	int rc = SLURM_SUCCESS;
 	char *path = NULL;
-	list_t **list = dst;
+	List *list = dst;
 	foreach_list_t list_args = {
 		.magic = MAGIC_FOREACH_LIST,
 		.dlist = NULL,
@@ -612,10 +606,6 @@ static void _parser_linked_flag(args_t *args, const parser_t *const array,
 			_set_flag_bit_equal(parser, dst, bit, matched, path,
 					    src);
 		*set |= bit->mask;
-	} else if (bit->type == FLAG_BIT_TYPE_REMOVED) {
-		if (matched && !is_fast_mode(args))
-			on_warn(PARSING, parser->type, args, path, __func__,
-				"Ignoring deprecated flag: %s", bit->name);
 	} else {
 		fatal_abort("%s: invalid bit_flag_t", __func__);
 	}
@@ -941,8 +931,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	 * Make sure the target object is the same size since there is no
 	 * way to dump value of __typeof__ as a value in C99.
 	 */
-	xassert((dst_bytes == NO_VAL) || (dst_bytes == parser->size) ||
-		(parser->model == PARSER_MODEL_ALIAS));
+	xassert((dst_bytes == NO_VAL) || (dst_bytes == parser->size));
 
 	if ((rc = load_prereqs(PARSING, parser, args)))
 		goto cleanup;
@@ -1001,7 +990,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->list_type < DATA_PARSER_TYPE_MAX);
 		verify_parser_not_sliced(parser);
-		xassert((dst_bytes == NO_VAL) || (dst_bytes == sizeof(list_t *)));
+		xassert((dst_bytes == NO_VAL) || (dst_bytes == sizeof(List)));
 		xassert(!parser->parse);
 		rc = _parse_list(parser, dst, src, args, parent_path);
 		break;
@@ -1059,11 +1048,6 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 			_parse_check_openapi(parser, src, args, parent_path);
 
 		rc = parser->parse(parser, dst, src, args, parent_path);
-		break;
-	case PARSER_MODEL_ALIAS:
-		rc = parse(dst, dst_bytes,
-			   find_parser_by_type(parser->alias_type), src, args,
-			   parent_path);
 		break;
 	case PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD:
 	case PARSER_MODEL_ARRAY_LINKED_FIELD:
@@ -1168,8 +1152,6 @@ static void _dump_flag_bit_array_flag(args_t *args, void *src, data_t *dst,
 		found = _match_flag_bit(parser, src, bit, *used_equal_bits);
 	else if (bit->type == FLAG_BIT_TYPE_EQUAL)
 		found = _match_flag_equal(parser, src, bit, used_equal_bits);
-	else if (bit->type == FLAG_BIT_TYPE_REMOVED)
-		found = false;
 	else
 		fatal_abort("%s: invalid bit_flag_t", __func__);
 
@@ -1211,8 +1193,6 @@ static void _dump_flag_bit_array_flag(args_t *args, void *src, data_t *dst,
 			type = "bit";
 		else if (bit->type == FLAG_BIT_TYPE_EQUAL)
 			type = "bit-equals";
-		else if (bit->type == FLAG_BIT_TYPE_REMOVED)
-			type = "removed";
 		else
 			type = "INVALID";
 
@@ -1274,7 +1254,7 @@ static int _foreach_dump_list(void *obj, void *arg)
 static int _dump_list(const parser_t *const parser, void *src, data_t *dst,
 		      args_t *args)
 {
-	list_t **list_ptr = src;
+	List *list_ptr = src;
 	foreach_list_t fargs = {
 		.magic = MAGIC_FOREACH_LIST,
 		.args = args,
@@ -1319,7 +1299,8 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 		}
 
 		/* Fully resolve pointer on NULL to use correct model */
-		pt = unalias_parser(pt);
+		while (pt->pointer_type)
+			pt = find_parser_by_type(pt->pointer_type);
 
 		if (parser->allow_null_pointer) {
 			xassert(data_get_type(dst) == DATA_TYPE_NULL);
@@ -1408,7 +1389,8 @@ static void _dump_removed(const parser_t *parser, data_t *dst, args_t *args)
 
 	while ((parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD) ||
 	       parser->pointer_type) {
-		parser = unalias_parser(parser);
+		while (parser->pointer_type)
+			parser = find_parser_by_type(parser->pointer_type);
 
 		while (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)
 			parser = find_parser_by_type(parser->type);
@@ -1583,8 +1565,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 	 * Make sure the source object is the same size since there is no
 	 * way to dump value of __typeof__ as a value in C.
 	 */
-	xassert((src_bytes == NO_VAL) || (src_bytes == parser->size) ||
-		(parser->model == PARSER_MODEL_ALIAS));
+	xassert((src_bytes == NO_VAL) || (src_bytes == parser->size));
 
 	if (args->flags & FLAG_SPEC_ONLY) {
 		set_openapi_schema(dst, parser, args);
@@ -1626,7 +1607,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		verify_parser_not_sliced(parser);
 		xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
 			(data_get_type(dst) == DATA_TYPE_LIST));
-		xassert((src_bytes == NO_VAL) || (src_bytes == sizeof(list_t *)));
+		xassert((src_bytes == NO_VAL) || (src_bytes == sizeof(List)));
 		xassert(!parser->dump);
 		rc = _dump_list(parser, src, dst, args);
 		break;
@@ -1661,10 +1642,6 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 
 		rc = parser->dump(parser, src, dst, args);
 		_check_dump(parser, dst, args);
-		break;
-	case PARSER_MODEL_ALIAS:
-		rc = dump(src, src_bytes,
-			  find_parser_by_type(parser->alias_type), dst, args);
 		break;
 	case PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD:
 	case PARSER_MODEL_ARRAY_LINKED_FIELD:

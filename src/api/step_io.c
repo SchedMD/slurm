@@ -86,7 +86,7 @@ static bool     _outgoing_buf_free(client_io_t *cio);
  * Listening socket declarations
  **********************************************************************/
 static bool _listening_socket_readable(eio_obj_t *obj);
-static int _listening_socket_read(eio_obj_t *obj, list_t *objs);
+static int _listening_socket_read(eio_obj_t *obj, List objs);
 
 struct io_operations listening_socket_ops = {
 	.readable = &_listening_socket_readable,
@@ -97,9 +97,9 @@ struct io_operations listening_socket_ops = {
  * IO server socket declarations
  **********************************************************************/
 static bool _server_readable(eio_obj_t *obj);
-static int _server_read(eio_obj_t *obj, list_t *objs);
+static int _server_read(eio_obj_t *obj, List objs);
 static bool _server_writable(eio_obj_t *obj);
-static int _server_write(eio_obj_t *obj, list_t *objs);
+static int _server_write(eio_obj_t *obj, List objs);
 
 struct io_operations server_ops = {
 	.readable = &_server_readable,
@@ -122,7 +122,7 @@ struct server_io_info {
 	int remote_stderr_objs; /* active eio_obj_t's on the remote node */
 
 	/* outgoing variables */
-	list_t *msg_queue;
+	List msg_queue;
 	struct io_buf *out_msg;
 	int32_t out_remaining;
 	bool out_eof;
@@ -132,7 +132,7 @@ struct server_io_info {
  * File write declarations
  **********************************************************************/
 static bool _file_writable(eio_obj_t *obj);
-static int _file_write(eio_obj_t *obj, list_t *objs);
+static int _file_write(eio_obj_t *obj, List objs);
 
 struct io_operations file_write_ops = {
 	.writable = &_file_writable,
@@ -143,7 +143,7 @@ struct file_write_info {
 	client_io_t *cio;
 
 	/* outgoing variables */
-	list_t *msg_queue;
+	List msg_queue;
 	struct io_buf *out_msg;
 	int32_t out_remaining;
 	/* If taskid is (uint32_t)-1, output from all tasks is accepted,
@@ -157,7 +157,7 @@ struct file_write_info {
  * File read declarations
  **********************************************************************/
 static bool _file_readable(eio_obj_t *obj);
-static int _file_read(eio_obj_t *obj, list_t *objs);
+static int _file_read(eio_obj_t *obj, List objs);
 
 struct io_operations file_read_ops = {
 	.readable = &_file_readable,
@@ -194,7 +194,8 @@ _listening_socket_readable(eio_obj_t *obj)
 	return true;
 }
 
-static int _listening_socket_read(eio_obj_t *obj, list_t *objs)
+static int
+_listening_socket_read(eio_obj_t *obj, List objs)
 {
 	client_io_t *cio = (client_io_t *)obj->arg;
 
@@ -281,7 +282,8 @@ _server_readable(eio_obj_t *obj)
 	return false;
 }
 
-static int _server_read(eio_obj_t *obj, list_t *objs)
+static int
+_server_read(eio_obj_t *obj, List objs)
 {
 	struct server_io_info *s = (struct server_io_info *) obj->arg;
 	void *buf;
@@ -459,7 +461,8 @@ _server_writable(eio_obj_t *obj)
 	return false;
 }
 
-static int _server_write(eio_obj_t *obj, list_t *objs)
+static int
+_server_write(eio_obj_t *obj, List objs)
 {
 	struct server_io_info *s = (struct server_io_info *) obj->arg;
 	void *buf;
@@ -564,7 +567,7 @@ static bool _file_writable(eio_obj_t *obj)
 	return false;
 }
 
-static int _file_write(eio_obj_t *obj, list_t *objs)
+static int _file_write(eio_obj_t *obj, List objs)
 {
 	struct file_write_info *info = (struct file_write_info *) obj->arg;
 	void *ptr;
@@ -685,7 +688,7 @@ static bool _file_readable(eio_obj_t *obj)
 	return false;
 }
 
-static int _file_read(eio_obj_t *obj, list_t *objs)
+static int _file_read(eio_obj_t *obj, List objs)
 {
 	struct file_read_info *info = (struct file_read_info *) obj->arg;
 	struct io_buf *msg;
@@ -705,10 +708,10 @@ static int _file_read(eio_obj_t *obj, list_t *objs)
 	}
 	slurm_mutex_unlock(&info->cio->ioservers_lock);
 
-	ptr = msg->data + IO_HDR_PACKET_BYTES;
+	ptr = msg->data + io_hdr_packed_size();
 
 again:
-	if ((len = read(obj->fd, ptr, SLURM_IO_MAX_MSG_LEN)) < 0) {
+	if ((len = read(obj->fd, ptr, MAX_MSG_LEN)) < 0) {
 		if (errno == EINTR)
 			goto again;
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
@@ -735,9 +738,9 @@ again:
 	 */
 	header = info->header;
 	header.length = len;
-	packbuf = create_buf(msg->data, IO_HDR_PACKET_BYTES);
+	packbuf = create_buf(msg->data, io_hdr_packed_size());
 	io_hdr_pack(&header, packbuf);
-	msg->length = IO_HDR_PACKET_BYTES + header.length;
+	msg->length = io_hdr_packed_size() + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
 	/* free the packbuf structure, but not the memory to which it points */
 	packbuf->head = NULL;
@@ -968,7 +971,7 @@ _alloc_io_buf(void)
 	buf->length = 0;
 	/* The following "+ 1" is just temporary so I can stick a \0 at
 	   the end and do a printf of the data pointer */
-	buf->data = xmalloc(SLURM_IO_MAX_MSG_LEN + IO_HDR_PACKET_BYTES + 1);
+	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size() + 1);
 
 	return buf;
 }
@@ -1304,11 +1307,11 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 	if (_incoming_buf_free(cio)) {
 		msg = list_dequeue(cio->free_incoming);
 
-		msg->length = IO_HDR_PACKET_BYTES;
+		msg->length = io_hdr_packed_size();
 		msg->ref_count = 1;
 		msg->header = header;
 
-		packbuf = create_buf(msg->data, IO_HDR_PACKET_BYTES);
+		packbuf = create_buf(msg->data, io_hdr_packed_size());
 		io_hdr_pack(&header, packbuf);
 		/* free the packbuf, but not the memory to which it points */
 		packbuf->head = NULL;

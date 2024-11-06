@@ -74,8 +74,7 @@ typedef struct {
 	uint32_t send_offs;
 	uint32_t send_msg_size;
 	void *send_msg_ptr;
-	list_t *send_queue;
-	list_t *complete_queue;
+	List send_queue, complete_queue;
 } pmixp_io_engine_t;
 
 static inline int pmixp_io_fd(pmixp_io_engine_t *eng)

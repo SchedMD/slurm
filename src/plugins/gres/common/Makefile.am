@@ -1,6 +1,7 @@
 # Makefile.am for gres_common
 
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
 

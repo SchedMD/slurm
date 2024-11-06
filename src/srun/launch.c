@@ -71,7 +71,7 @@
 
 #define MAX_STEP_RETRIES 4
 
-static list_t *local_job_list = NULL;
+static List local_job_list = NULL;
 static uint32_t *local_global_rc = NULL;
 static pthread_mutex_t launch_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t het_job_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -79,7 +79,7 @@ static pthread_cond_t  start_cond  = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static slurm_opt_t *opt_save = NULL;
 
-static list_t *task_state_list = NULL;
+static List task_state_list = NULL;
 static time_t launch_start_time;
 static bool retry_step_begin = false;
 static int  retry_step_cnt = 0;
@@ -630,6 +630,16 @@ static void _wait_all_het_job_comps_started(slurm_opt_t *opt_local)
 	slurm_mutex_unlock(&start_mutex);
 }
 
+/*
+ * Initialize context for plugin
+ */
+extern int launch_init(void)
+{
+	int retval = SLURM_SUCCESS;
+
+	return retval;
+}
+
 extern int location_fini(void)
 {
 	FREE_NULL_LIST(task_state_list);
@@ -673,7 +683,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	char *add_tres = NULL, *pos;
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	job_step_create_request_msg_t *step_req = xmalloc(sizeof(*step_req));
-	list_t *tmp_gres_list = NULL;
+	List tmp_gres_list = NULL;
 	int rc;
 
 	xassert(srun_opt);
@@ -1242,7 +1252,7 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 			}
 			break;
 		}
-		rc = errno;
+		rc = slurm_get_errno();
 
 		if (((opt_local->immediate != 0) &&
 		     ((opt_local->immediate == 1) ||

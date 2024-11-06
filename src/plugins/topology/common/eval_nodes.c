@@ -78,9 +78,9 @@ static int _node_weight_sort(void *x, void *y)
  * Given a bitmap of available nodes, return a list of node_weight_type
  * records in order of increasing "weight" (priority)
  */
-static list_t *_build_node_weight_list(bitstr_t *node_bitmap)
+static List _build_node_weight_list(bitstr_t *node_bitmap)
 {
-	list_t *node_list;
+	List node_list;
 	node_record_t *node_ptr;
 	node_weight_type *nwt;
 
@@ -416,7 +416,7 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 	uint32_t req_nodes = topo_eval->req_nodes;
 	bool all_done = false;
 	node_record_t *node_ptr;
-	list_t *node_weight_list = NULL;
+	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	list_itr_t *iter;
 	uint64_t maxtasks;
@@ -578,7 +578,7 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 	int i, j, error_code = SLURM_ERROR;
 	int *consec_cpus;	/* how many CPUs we can add from this
 				 * consecutive set of nodes */
-	list_t **consec_gres;	/* how many GRES we can add from this
+	List *consec_gres;	/* how many GRES we can add from this
 				 * consecutive set of nodes */
 	int *consec_nodes;	/* how many nodes we can add from this
 				 * consecutive set of nodes */
@@ -629,7 +629,7 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 	if ((topo_eval->gres_per_job =
 	     gres_sched_init(job_ptr->gres_list_req))) {
 		rem_nodes = MIN(min_nodes, req_nodes);
-		consec_gres = xcalloc(consec_size, sizeof(list_t *));
+		consec_gres = xcalloc(consec_size, sizeof(List));
 	} else
 		rem_nodes = MAX(min_nodes, req_nodes);
 	rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr, rem_nodes);
@@ -722,7 +722,7 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 			xrecalloc(consec_weight, consec_size, sizeof(uint64_t));
 			if (topo_eval->gres_per_job) {
 				xrecalloc(consec_gres,
-					  consec_size, sizeof(list_t *));
+					  consec_size, sizeof(List));
 			}
 		}
 		if (req_map)
@@ -1138,7 +1138,7 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 	bitstr_t *orig_node_map = bit_copy(topo_eval->node_map);
 	bool all_done = false;
 	node_record_t *node_ptr;
-	list_t *node_weight_list = NULL;
+	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	list_itr_t *iter;
 	avail_res_t **avail_res_array = topo_eval->avail_res_array;
@@ -1352,7 +1352,7 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 	uint32_t req_nodes = topo_eval->req_nodes;
 	bool all_done = false;
 	node_record_t *node_ptr;
-	list_t *node_weight_list = NULL;
+	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	list_itr_t *iter;
 	uint64_t maxtasks;
@@ -1518,7 +1518,7 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 	uint32_t req_nodes = topo_eval->req_nodes;
 	bool all_done = false;
 	node_record_t *node_ptr;
-	list_t *node_weight_list = NULL;
+	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	list_itr_t *iter;
 	uint64_t maxtasks;

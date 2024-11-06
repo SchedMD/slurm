@@ -85,7 +85,7 @@ extern int print_fields_have_header;
 extern char *fields_delimiter;
 
 extern void destroy_print_field(void *object);
-extern void print_fields_header(list_t *print_fields_list);
+extern void print_fields_header(List print_fields_list);
 extern void print_fields_date(print_field_t *field, void *input, int last);
 extern void print_fields_str(print_field_t *field, void *input, int last);
 extern void print_fields_double(print_field_t *field, void *input, int last);

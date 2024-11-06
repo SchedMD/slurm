@@ -50,7 +50,7 @@ def setup():
         {
             "primary": {"Nodes": "ALL"},
             "cloud1": {"Nodes": "ns1"},
-            "powerdownonidle": {"Nodes": "ns1", "PowerDownOnIdle": "yes"},
+            "powerdownonidle": {"Nodes": "ns1", "PowerDownOnIdle": "Yes"},
         },
     )
 
@@ -572,7 +572,7 @@ def test_node_features():
     atf.wait_for_node_state(f"{node_prefix}1", "IDLE", timeout=5, fatal=True)
 
 
-# Test partition flag 'PowerDownOnIdle=yes'
+# Test partition flag 'PowerDownOnIdle=Yes'
 def test_power_down_on_idle():
     assert "CLOUD" in atf.get_node_parameter(f"{node_prefix}1", "State").split(
         "+"
@@ -626,7 +626,7 @@ def test_power_down_on_idle():
     node_state = set(atf.get_node_parameter(f"{node_prefix}1", "State").split("+"))
     assert (
         set(["POWER_DOWN", "POWERING_DOWN"]) & node_state
-    ), "Cloud node wasn't immediately POWER_DOWN once idle, in contrary to 'PowerDownOnIdle=yes' flag for parition"
+    ), "Cloud node wasn't immediately POWER_DOWN once idle, in contrary to 'PowerDownOnIdle=Yes' flag for parition"
     atf.wait_for_node_state(f"{node_prefix}1", "POWERING_DOWN", fatal=True)
     atf.wait_for_node_state(
         f"{node_prefix}1", "POWERED_DOWN", timeout=suspend_timeout + 5, fatal=True

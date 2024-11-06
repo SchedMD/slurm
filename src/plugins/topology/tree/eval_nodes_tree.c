@@ -139,7 +139,7 @@ static void _topo_choose_best_switch(uint32_t *dist, int *switch_node_cnt,
  */
 static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 {
-	list_t **switch_gres = NULL;		/* available GRES on switch */
+	List      *switch_gres = NULL;		/* available GRES on switch */
 	bitstr_t **switch_node_bitmap = NULL;	/* nodes on this switch */
 	int       *switch_node_cnt = NULL;	/* total nodes on switch */
 	int       *switch_required = NULL;	/* set if has required node */
@@ -149,9 +149,9 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	bitstr_t  *best_nodes_bitmap  = NULL;	/* required+low prio nodes */
 	int i, j, rc = SLURM_SUCCESS;
 	int best_cpu_cnt = 0, best_node_cnt = 0, req_node_cnt = 0;
-	list_t *best_gres = NULL;
+	List best_gres = NULL;
 	switch_record_t *switch_ptr;
-	list_t *node_weight_list = NULL;
+	List node_weight_list = NULL;
 	topo_weight_info_t *nw = NULL;
 	list_itr_t *iter;
 	node_record_t *node_ptr;
@@ -300,7 +300,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	 * Identify the highest level switch to be used.
 	 * Note that nodes can be on multiple non-overlapping switches.
 	 */
-	switch_gres = xcalloc(switch_record_cnt, sizeof(list_t *));
+	switch_gres        = xcalloc(switch_record_cnt, sizeof(List));
 	switch_node_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
 	switch_node_cnt    = xcalloc(switch_record_cnt, sizeof(int));
 	switch_required    = xcalloc(switch_record_cnt, sizeof(int));
@@ -342,7 +342,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	if (top_switch_inx == -1) {
 		error("%pJ unable to identify top level switch",
 		       job_ptr);
-		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		rc = SLURM_ERROR;
 		goto fini;
 	}
 
@@ -350,7 +350,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	if (req_nodes_bitmap &&
 	    !bit_super_set(req_nodes_bitmap,
 			   switch_node_bitmap[top_switch_inx])) {
-		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		rc = SLURM_ERROR;
 		info("%pJ requires nodes that do not have shared network",
 		     job_ptr);
 		goto fini;
@@ -779,9 +779,9 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 	bitstr_t *start_node_map = NULL;
 	int i, j, rc = SLURM_SUCCESS;
 	int best_cpu_cnt, best_node_cnt, req_node_cnt = 0;
-	list_t *best_gres = NULL;
+	List best_gres = NULL;
 	switch_record_t *switch_ptr;
-	list_t *node_weight_list = NULL;
+	List node_weight_list = NULL;
 	topo_weight_info_t *nw = NULL;
 	list_itr_t *iter;
 	node_record_t *node_ptr;
@@ -972,7 +972,7 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 	if (top_switch_inx == -1) {
 		log_flag(SELECT_TYPE, "%pJ unable to identify top level switch",
 			 job_ptr);
-		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		rc = SLURM_ERROR;
 		goto fini;
 	}
 
@@ -980,7 +980,7 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 	if (req_nodes_bitmap &&
 	    !bit_super_set(req_nodes_bitmap,
 			   switch_node_bitmap[top_switch_inx])) {
-		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		rc = SLURM_ERROR;
 		info("%pJ requires nodes that do not have shared network",
 		     job_ptr);
 		goto fini;
@@ -1008,7 +1008,7 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 			goto fini;
 		}
 		if (topo_eval->max_nodes <= 0) {
-			rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+			rc = SLURM_ERROR;
 			log_flag(SELECT_TYPE, "%pJ requires nodes exceed maximum node limit",
 				 job_ptr);
 			goto fini;

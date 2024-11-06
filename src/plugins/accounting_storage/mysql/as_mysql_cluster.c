@@ -97,9 +97,9 @@ extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
 	xassert(ret_id);
 
 	/* See if cluster is already part of federation */
-	xstrfmtcat(query,
-		   "SELECT name, fed_id FROM %s "
-		   "WHERE deleted=0 AND name='%s' AND federation='%s';",
+	xstrfmtcat(query, "SELECT name, fed_id "
+			  "FROM %s "
+			  "WHERE deleted=0 AND name='%s' AND federation='%s';",
 		   cluster_table, cluster, federation);
 	DB_DEBUG(FEDR, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
@@ -119,11 +119,11 @@ extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	/* Get all other clusters in the federation and find an open id. */
-	xstrfmtcat(query,
-		   "SELECT name, federation, fed_id FROM %s "
-		   "WHERE name!='%s' AND federation='%s' "
-		   "AND fed_id > %d AND deleted=0 ORDER BY fed_id;",
-		   cluster_table, cluster, federation, last_id);
+	xstrfmtcat(query, "SELECT name, federation, fed_id "
+		   	  "FROM %s "
+		   	  "WHERE name!='%s' AND federation='%s' "
+			  "AND fed_id > %d AND deleted=0 ORDER BY fed_id;",
+			  cluster_table, cluster, federation, last_id);
 	DB_DEBUG(FEDR, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -225,7 +225,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 }
 
 extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				 list_t *cluster_list)
+				 List cluster_list)
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -237,7 +237,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	int affect_rows = 0;
 	int added = 0;
 	bool has_feds = false;
-	list_t *assoc_list = NULL;
+	List assoc_list = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	bool external_cluster = false;
 
@@ -313,7 +313,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (object->fed.feature_list) {
 			features =
 				slurm_char_list_to_xstr(
-					object->fed.feature_list);
+						object->fed.feature_list);
 			has_feds = 1;
 		}
 
@@ -323,6 +323,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "fed_state, features) "
 			   "values (%ld, %ld, '%s', %u, '%s', %d, %u, '%s') "
 			   "on duplicate key update deleted=0, mod_time=%ld, "
+			   "control_host='', control_port=0, "
 			   "classification=%u, flags=0, federation='%s', "
 			   "fed_id=%d, fed_state=%u, features='%s'",
 			   cluster_table,
@@ -405,8 +406,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			 * to set things up. Since it isn't there yet it
 			 * won't work.
 			 */
-			if (object->root_assoc->def_qos_id == INFINITE)
-				object->root_assoc->def_qos_id = 0;
+
 			xfree(object->root_assoc->cluster);
 			object->root_assoc->cluster = xstrdup(object->name);
 			xfree(object->root_assoc->acct);
@@ -431,9 +431,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		/* Build up extra with cluster specfic values for txn table */
-		xstrfmtcat(extra,
-			   ", federation='%s', fed_id=%d, fed_state=%u, "
-			   "features='%s'",
+		xstrfmtcat(extra, ", federation='%s', fed_id=%d, fed_state=%u, "
+				  "features='%s'",
 			   (object->fed.name) ? object->fed.name : "",
 			   fed_id, fed_state, (features) ? features : "");
 		xfree(features);
@@ -524,7 +523,7 @@ end_it:
 static int _reconcile_existing_features(void *object, void *arg)
 {
 	char *new_feature = (char *)object;
-	list_t *existing_features = arg;
+	List existing_features = (List)arg;
 
 	if (new_feature[0] == '-')
 		list_delete_all(existing_features, slurm_find_char_in_list,
@@ -537,11 +536,11 @@ static int _reconcile_existing_features(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
-extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-					slurmdb_cluster_cond_t *cluster_cond,
-					slurmdb_cluster_rec_t *cluster)
+extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+				     slurmdb_cluster_cond_t *cluster_cond,
+				     slurmdb_cluster_rec_t *cluster)
 {
-	list_t *ret_list = NULL;
+	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
@@ -665,9 +664,9 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			if (cluster->fed.name[0] != '\0') {
 				rc = as_mysql_get_fed_cluster_id(
-					mysql_conn, object,
-					cluster->fed.name, -1,
-					&id);
+							mysql_conn, object,
+							cluster->fed.name, -1,
+							&id);
 				if (rc) {
 					error("failed to get cluster id for "
 					      "federation");
@@ -705,7 +704,7 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				xstrfmtcat(tmp_vals, ", features=''");
 			} else {
 				char *features = NULL, *feature = NULL;
-				list_t *existing_features = list_create(xfree_ptr);
+				List existing_features = list_create(xfree_ptr);
 
 				if ((feature =
 				     list_peek(cluster->fed.feature_list)) &&
@@ -719,7 +718,7 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 				features =
 					slurm_char_list_to_xstr(
-						existing_features);
+							existing_features);
 				xstrfmtcat(tmp_vals, ", features='%s'",
 					   features ? features : "");
 
@@ -769,12 +768,12 @@ end_it:
 	return ret_list;
 }
 
-extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-					slurmdb_cluster_cond_t *cluster_cond)
+extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+				     slurmdb_cluster_cond_t *cluster_cond)
 {
 	list_itr_t *itr = NULL;
-	list_t *ret_list = NULL;
-	list_t *tmp_list = NULL;
+	List ret_list = NULL;
+	List tmp_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL, *cluster_name = NULL,
@@ -849,7 +848,17 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		xfree(name_char);
 		xstrfmtcat(name_char, "name='%s'", object);
-
+		/* We should not need to delete any cluster usage just set it
+		 * to deleted */
+		xstrfmtcat(query,
+			   "update \"%s_%s\" set time_end=%ld where time_end=0;"
+			   "update \"%s_%s\" set mod_time=%ld, deleted=1;"
+			   "update \"%s_%s\" set mod_time=%ld, deleted=1;"
+			   "update \"%s_%s\" set mod_time=%ld, deleted=1;",
+			   object, event_table, now,
+			   object, cluster_day_table, now,
+			   object, cluster_hour_table, now,
+			   object, cluster_month_table, now);
 		rc = remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
 				   user_name, cluster_table, name_char,
 				   assoc_char, object, ret_list, &jobs_running,
@@ -865,9 +874,19 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS) {
 		FREE_NULL_LIST(ret_list);
+		xfree(query);
 		return NULL;
 	}
 	if (!jobs_running) {
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		if (rc != SLURM_SUCCESS) {
+			reset_mysql_conn(mysql_conn);
+			FREE_NULL_LIST(ret_list);
+			return NULL;
+		}
+
 		/* We need to remove these clusters from the wckey table */
 		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 		wckey_cond.cluster_list = ret_list;
@@ -906,13 +925,13 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
-				     slurmdb_cluster_cond_t *cluster_cond)
+extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
+				  slurmdb_cluster_cond_t *cluster_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
-	list_t *cluster_list = NULL;
+	List cluster_list = NULL;
 	list_itr_t *itr = NULL;
 	int i=0;
 	MYSQL_RES *result = NULL;
@@ -921,7 +940,7 @@ extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	list_itr_t *assoc_itr = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
-	list_t *assoc_list = NULL;
+	List assoc_list = NULL;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *cluster_req_inx[] = {
@@ -993,8 +1012,7 @@ empty:
 		/* I don't think we want the with_usage flag here.
 		 * We do need the with_deleted though. */
 		//assoc_cond.with_usage = cluster_cond->with_usage;
-		if (cluster_cond->with_deleted)
-			assoc_cond.flags |= ASSOC_COND_FLAG_WITH_DELETED;
+		assoc_cond.with_deleted = cluster_cond->with_deleted;
 	}
 	assoc_cond.cluster_list = list_create(NULL);
 
@@ -1101,13 +1119,13 @@ empty:
 	return cluster_list;
 }
 
-extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
-					   slurmdb_event_cond_t *event_cond)
+extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
+					slurmdb_event_cond_t *event_cond)
 {
 	char *query = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
-	list_t *ret_list = NULL;
+	List ret_list = NULL;
 	list_itr_t *itr = NULL;
 	char *object = NULL;
 	int set = 0;
@@ -1115,7 +1133,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	time_t now = time(NULL);
-	list_t *use_cluster_list = NULL;
+	List use_cluster_list = NULL;
 	slurmdb_user_rec_t user;
 	bool locked = false;
 
@@ -1127,7 +1145,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 
 	if (slurm_conf.private_data & PRIVATE_DATA_EVENTS) {
 		if (!is_user_min_admin_level(
-			    mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
 			error("UID %u tried to access events, only administrators can look at events",
 			      uid);
 			errno = ESLURM_ACCESS_DENIED;
@@ -1474,7 +1492,7 @@ static slurmdb_instance_rec_t *_create_instance_rec(MYSQL_ROW row,
 	return instance;
 }
 
-static void _add_char_list_to_where_clause(list_t *char_list,
+static void _add_char_list_to_where_clause(List char_list,
 					   const char *col_name,
 					   char **where_clause)
 {
@@ -1502,8 +1520,9 @@ static void _add_char_list_to_where_clause(list_t *char_list,
 	}
 }
 
-extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
-				      slurmdb_instance_cond_t *instance_cond)
+extern List as_mysql_get_instances(mysql_conn_t *mysql_conn,
+				   uint32_t uid,
+				   slurmdb_instance_cond_t *instance_cond)
 {
 	bool locked = false;
 	char *cluster = NULL;
@@ -1513,8 +1532,8 @@ extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *tmp = NULL;
 	int i = 0;
 	int set = 0;
-	list_t *ret_list = NULL;
-	list_t *use_cluster_list = NULL;
+	List ret_list = NULL;
+	List use_cluster_list = NULL;
 	list_itr_t *itr = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row, prev_row = NULL;

@@ -62,7 +62,7 @@ extern void destroy_print_field(void *object)
 	}
 }
 
-extern void print_fields_header(list_t *print_fields_list)
+extern void print_fields_header(List print_fields_list)
 {
 	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
@@ -421,10 +421,10 @@ extern void print_fields_char_list(print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
 	char *print_this = NULL;
-	list_t *value = NULL;
+	List value = NULL;
 
 	if (input)
-		value = *(list_t **) input;
+		value = *(List *) input;
 
 	if (!value || !list_count(value)) {
 		if (print_fields_parsable_print)
@@ -459,7 +459,6 @@ static bool _is_wildcard(char *ptr)
 	switch (*ptr) {
 	case 'A': /* Array job ID */
 	case 'a': /* Array task ID */
-	case 'b': /* Array task ID modulo 10 */
 	case 'J': /* Jobid.stepid */
 	case 'j': /* Job ID */
 	case 'N': /* Short hostname */
@@ -488,10 +487,6 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 	case 'a': /* Array task ID */
 		xstrfmtcatat(*expanded, pos, "%0*u", padding,
 			     job->array_task_id);
-		break;
-	case 'b': /* Array task ID modulo 10 */
-		xstrfmtcatat(*expanded, pos, "%0*u", padding,
-			     job->array_task_id % 10);
 		break;
 	case 'N': /* Short hostname */
 		xstrfmtcatat(*expanded, pos, "%s", job->first_step_node);

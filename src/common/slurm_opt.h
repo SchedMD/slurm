@@ -291,6 +291,7 @@ typedef struct {
 typedef struct {
 	bool set;			/* Has the option been set */
 	bool set_by_env;		/* Has the option been set by env var */
+	bool set_by_data;		/* Has the option been set by data_t */
 } slurm_opt_state_t;
 
 typedef struct {
@@ -483,6 +484,16 @@ extern void slurm_process_option_or_exit(slurm_opt_t *opt, int optval,
 					 bool early_pass);
 
 /*
+ * Process incoming single component of Job data entry
+ * IN opt - options to populate from job chunk
+ * IN job - data containing job request
+ * IN/OUT errors - data dictionary to populate with detailed errors
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurm_process_option_data(slurm_opt_t *opt, int optval,
+				     const data_t *arg, data_t *errors);
+
+/*
  * Print all options that have been set through slurm_process_option()
  * in a form suitable for use with the -v flag to salloc/sbatch/srun.
  */
@@ -509,6 +520,11 @@ extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval);
  * Was the option set by an env var?
  */
 extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval);
+
+/*
+ * Was the option set by an data_t value?
+ */
+extern bool slurm_option_set_by_data(slurm_opt_t *opt, int optval);
 
 /*
  * Get option value by common option name.

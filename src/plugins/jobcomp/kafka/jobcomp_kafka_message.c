@@ -39,7 +39,6 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_pack.h"
-#include "src/common/state_save.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -599,7 +598,7 @@ static void _save_jobcomp_kafka_state(void)
 
 	START_TIMER;
 	_pack_jobcomp_kafka_state(buffer);
-	(void) save_buf_to_state(KAFKA_STATE_FILE, buffer, NULL);
+	jobcomp_common_write_state_file(buffer, KAFKA_STATE_FILE);
 	END_TIMER2("save_jobcomp_kafka_state");
 
 	FREE_NULL_BUFFER(buffer);

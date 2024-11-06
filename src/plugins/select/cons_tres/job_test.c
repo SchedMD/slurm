@@ -43,7 +43,6 @@
 #include "gres_sock_list.h"
 
 #include "src/slurmctld/licenses.h"
-#include "src/common/slurm_time.h"
 
 typedef struct {
 	int action;
@@ -55,8 +54,8 @@ typedef struct {
 } wrapper_rm_job_args_t;
 
 typedef struct {
-	list_t *preemptee_candidates;
-	list_t *cr_job_list;
+	List preemptee_candidates;
+	List cr_job_list;
 	node_use_record_t *future_usage;
 	part_res_record_t *future_part;
 	list_t *future_license_list;
@@ -267,7 +266,7 @@ static struct multi_core_data *_create_default_mc(void)
 	return mc_ptr;
 }
 
-/* list sort function: sort by the job's expected end time */
+/* List sort function: sort by the job's expected end time */
 static int _cr_job_list_sort(void *x, void *y)
 {
 	job_record_t *job1_ptr = *(job_record_t **) x;
@@ -495,10 +494,10 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 	uint64_t avail_mem = NO_VAL64, req_mem;
 	int cpu_alloc_size, i, rc;
 	node_record_t *node_ptr = node_record_table_ptr[node_i];
-	list_t *node_gres_list;
+	List node_gres_list;
 	bitstr_t *part_core_map_ptr = NULL, *req_sock_map = NULL;
 	avail_res_t *avail_res = NULL;
-	list_t *sock_gres_list = NULL;
+	List sock_gres_list = NULL;
 	bool enforce_binding = false;
 	uint16_t min_cpus_per_node, ntasks_per_node = 1;
 
@@ -775,7 +774,7 @@ static time_t _guess_job_end(job_record_t *job_ptr, time_t now)
  */
 static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 			 bool sharing_only, part_record_t *my_part_ptr,
-			 bool qos_preemptor, list_t *jobs)
+			 bool qos_preemptor, List jobs)
 {
 	uint32_t r;
 	uint16_t num_rows;
@@ -806,7 +805,7 @@ static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 	return 0;
 }
 
-static bool _is_preemptable(job_record_t *job_ptr, list_t *preemptee_candidates)
+static bool _is_preemptable(job_record_t *job_ptr, List preemptee_candidates)
 {
 	if (!preemptee_candidates)
 		return false;
@@ -833,9 +832,8 @@ static bool _is_preemptable(job_record_t *job_ptr, list_t *preemptee_candidates)
  * IN: tres_mc_ptr   - job's multi-core options
  * IN: resv_exc_ptr - gres that can be included (gres_list_inc)
  *                    or excluded (gres_list_exc)
- * IN: select_rc - rc from this function.
  * RET: array of avail_res_t pointers, free using _free_avail_res_array().
- *	NULL on error and select_rc set.
+ *	NULL on error
  */
 static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 				   uint32_t max_nodes, uint32_t req_nodes,
@@ -846,8 +844,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 				   bitstr_t **part_core_map,
 				   bool prefer_alloc_nodes,
 				   gres_mc_data_t *tres_mc_ptr,
-				   resv_exc_t *resv_exc_ptr,
-				   int *select_rc)
+				   resv_exc_t *resv_exc_ptr)
 {
 	int i, rc;
 	job_details_t *details_ptr = job_ptr->details;
@@ -932,7 +929,6 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 		       topo_eval.node_map, topo_eval.avail_core);
 
 fini:	if (rc != SLURM_SUCCESS) {
-		*select_rc = rc;
 		_free_avail_res_array(topo_eval.avail_res_array);
 		return NULL;
 	}
@@ -986,7 +982,8 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 	node_record_t *node_ptr;
 	uint32_t gres_cpus, gres_cores;
 	uint64_t free_mem, min_mem, avail_mem;
-	list_t *gres_list;
+	List gres_list;
+	bool disable_binding = false;
 
 	if (!(job_ptr->bit_flags & JOB_MEM_SET) &&
 	    (min_mem = gres_select_util_job_mem_max(job_ptr->gres_list_req))) {
@@ -1057,8 +1054,9 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 
 		gres_cores = gres_job_test(job_ptr->gres_list_req,
 					   gres_list, true,
-					   0, 0, job_ptr->job_id,
-					   node_ptr->name);
+					   NULL, 0, 0, job_ptr->job_id,
+					   node_ptr->name,
+					   disable_binding);
 		gres_cpus = gres_cores;
 		if (gres_cpus != NO_VAL)
 			gres_cpus *= node_ptr->tpc;
@@ -1158,7 +1156,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		     resv_exc_t *resv_exc_ptr, bool prefer_alloc_nodes,
 		     bool qos_preemptor, bool preempt_mode)
 {
-	int error_code = SLURM_SUCCESS, select_rc = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS;
 	bitstr_t *orig_node_map, **part_core_map = NULL;
 	bitstr_t **free_cores_tmp = NULL,  *node_bitmap_tmp = NULL;
 	bitstr_t **free_cores_tmp2 = NULL, *node_bitmap_tmp2 = NULL;
@@ -1176,7 +1174,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	int i;
 	avail_res_t **avail_res_array, **avail_res_array_tmp;
 	gres_mc_data_t *tres_mc_ptr = NULL;
-	list_t **node_gres_list = NULL, **sock_gres_list = NULL;
+	List *node_gres_list = NULL, *sock_gres_list = NULL;
 	uint32_t *gres_task_limit = NULL;
 	char *nodename = NULL;
 	node_record_t *node_ptr;
@@ -1291,21 +1289,12 @@ try_next_nodes_cnt:
 		else
 			next_job_size = 0;
 	}
-
-	if ((gang_mode == 0) &&
-	    (job_node_req == NODE_CR_ONE_ROW ||
-	     job_node_req == NODE_CR_RESERVED) &&
-	    !test_only) {
-		log_flag(SELECT_TYPE, "test 0 skipped: goto test 1");
-		goto skip_test0;
-	}
-
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 					req_nodes, node_bitmap, free_cores,
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr, &select_rc);
+					resv_exc_ptr);
 	if ((!avail_res_array || !job_ptr->best_switch) && next_job_size) {
 		log_flag(SELECT_TYPE, "test 0 fail: try again");
 		bit_copybits(node_bitmap, orig_node_map);
@@ -1322,7 +1311,7 @@ try_next_nodes_cnt:
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
 		log_flag(SELECT_TYPE, "test 0 fail: insufficient resources");
-		return select_rc ? select_rc : SLURM_ERROR;
+		return SLURM_ERROR;
 	} else if (test_only) {
 		xfree(tres_mc_ptr);
 		FREE_NULL_BITMAP(orig_node_map);
@@ -1338,7 +1327,14 @@ try_next_nodes_cnt:
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
 		log_flag(SELECT_TYPE, "test 0 fail: waiting for switches");
-		return select_rc ? select_rc : SLURM_ERROR;
+		return SLURM_ERROR;
+	}
+	if (cr_type == CR_MEMORY) {
+		/*
+		 * CR_MEMORY does not care about existing CPU allocations,
+		 * so we can jump right to job allocation from here
+		 */
+		goto alloc_job;
 	}
 
 	log_flag(SELECT_TYPE, "test 0 pass - job fits on given resources");
@@ -1383,7 +1379,6 @@ try_next_nodes_cnt:
 	free_core_array(&free_cores);
 	free_cores = copy_core_array(avail_cores);
 
-skip_test0:
 	if (resv_exc_ptr->exc_cores) {
 #if _DEBUG
 		core_array_log("exclude reserved cores",
@@ -1423,7 +1418,7 @@ skip_test0:
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr, &select_rc);
+					resv_exc_ptr);
 	if (avail_res_array && job_ptr->best_switch) {
 		/* job fits! We're done. */
 		log_flag(SELECT_TYPE, "test 1 pass - idle resources found");
@@ -1514,7 +1509,7 @@ skip_test0:
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr, &select_rc);
+					resv_exc_ptr);
 	if (!avail_res_array) {
 		/*
 		 * job needs resources that are currently in use by
@@ -1561,7 +1556,7 @@ skip_test0:
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr,
-					resv_exc_ptr, &select_rc);
+					resv_exc_ptr);
 	if (avail_res_array) {
 		/*
 		 * To the extent possible, remove from consideration resources
@@ -1596,7 +1591,7 @@ skip_test0:
 				node_bitmap_tmp, free_cores_tmp, node_usage,
 				cr_type, test_only, will_run, part_core_map,
 				prefer_alloc_nodes, tres_mc_ptr,
-				resv_exc_ptr, &select_rc);
+				resv_exc_ptr);
 			if (!avail_res_array_tmp) {
 				free_core_array(&free_cores_tmp2);
 				FREE_NULL_BITMAP(node_bitmap_tmp2);
@@ -1645,8 +1640,7 @@ skip_test0:
 						test_only, will_run,
 						part_core_map,
 						prefer_alloc_nodes,
-						tres_mc_ptr, resv_exc_ptr,
-						&select_rc);
+						tres_mc_ptr, resv_exc_ptr);
 		if (avail_res_array)
 			log_flag(SELECT_TYPE, "test 4 pass - first row found");
 		goto alloc_job;
@@ -1678,8 +1672,7 @@ skip_test0:
 						test_only, will_run,
 						part_core_map,
 						prefer_alloc_nodes,
-						tres_mc_ptr, resv_exc_ptr,
-						&select_rc);
+						tres_mc_ptr, resv_exc_ptr);
 		if (avail_res_array) {
 			log_flag(SELECT_TYPE, "test 4 pass - row %i",
 			         i);
@@ -1702,8 +1695,7 @@ skip_test0:
 						test_only, will_run,
 						part_core_map,
 						prefer_alloc_nodes,
-						tres_mc_ptr, resv_exc_ptr,
-						&select_rc);
+						tres_mc_ptr, resv_exc_ptr);
 	}
 
 	if (!avail_res_array) {
@@ -1763,7 +1755,7 @@ alloc_job:
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
 		log_flag(SELECT_TYPE, "exiting with no allocation");
-		return select_rc ? select_rc : SLURM_ERROR;
+		return SLURM_ERROR;
 	}
 
 	if ((mode != SELECT_MODE_WILL_RUN) && (job_ptr->part_ptr == NULL))
@@ -1909,6 +1901,7 @@ alloc_job:
 	job_ptr->job_resrcs = job_res;
 	if (job_ptr->gres_list_req && (error_code == SLURM_SUCCESS)) {
 		bool have_gres_per_task, task_limit_set = false;
+
 		/*
 		 * Determine if any job gres_per_task specification here
 		 * to avoid calling gres_get_task_limit unless needed
@@ -1919,8 +1912,8 @@ alloc_job:
 			gres_task_limit = xcalloc(job_res->nhosts,
 						  sizeof(uint32_t));
 		}
-		node_gres_list = xcalloc(job_res->nhosts, sizeof(list_t *));
-		sock_gres_list = xcalloc(job_res->nhosts, sizeof(list_t *));
+		node_gres_list = xcalloc(job_res->nhosts, sizeof(List));
+		sock_gres_list = xcalloc(job_res->nhosts, sizeof(List));
 		for (i = 0, j = 0;
 		     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
 		     i++) {
@@ -1946,7 +1939,6 @@ alloc_job:
 					 i, gres_task_limit[j]);
 			j++;
 		}
-
 		if (!task_limit_set)
 			xfree(gres_task_limit);
 	}
@@ -2313,15 +2305,15 @@ static bitstr_t *_select_topo_bitmap(job_record_t *job_ptr,
 static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes, uint16_t job_node_req,
-			  list_t *preemptee_candidates,
-			  list_t **preemptee_job_list,
+			  List preemptee_candidates,
+			  List *preemptee_job_list,
 			  resv_exc_t *resv_exc_ptr)
 {
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
 	list_t *future_license_list;
 	job_record_t *tmp_job_ptr;
-	list_t *cr_job_list;
+	List cr_job_list;
 	list_itr_t *job_iterator, *preemptee_iterator;
 	bitstr_t *orig_map;
 	int rc = SLURM_ERROR;
@@ -2482,7 +2474,13 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			}
 			if (!last_job_ptr)	/* Should never happen */
 				break;
-
+			do {
+				if (bf_window_scale)
+					time_window += bf_window_scale;
+				else
+					time_window *= 2;
+			} while (next_job_ptr && next_job_ptr->end_time >
+				 (end_time + time_window));
 			rc = _job_test(job_ptr, node_bitmap, min_nodes,
 				       max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN, tmp_cr_type,
@@ -2501,32 +2499,11 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				}
 				break;
 			}
-
-			do {
-				if (bf_window_scale)
-					time_window += bf_window_scale;
-				else
-					time_window *= 2;
-			} while (next_job_ptr && next_job_ptr->end_time >
-				 (end_time + time_window));
 timer_check:
 			END_TIMER;
 			if (DELTA_TIMER >= 2000000)
 				break;	/* Quit after 2 seconds wall time */
 		}
-
-		if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE ||
-		    ((job_ptr->bit_flags & BACKFILL_TEST) &&
-		     slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)) {
-			/*
-			 * When time_window gets large it could result in
-			 * delaying jobs regardless of priority. Setting
-			 * bf_window_linear could help mitigate this.
-			 */
-			verbose("%pJ considered resources from running jobs ending within %d seconds of %s",
-				job_ptr, time_window, slurm_ctime2(&end_time));
-		}
-
 		list_iterator_destroy(job_iterator);
 		FREE_NULL_BITMAP(efctv_bitmap);
 	}
@@ -2536,7 +2513,7 @@ timer_check:
 		bitstr_t *efctv_bitmap_ptr, *efctv_bitmap = NULL;
 		/*
 		 * Build list of preemptee jobs whose resources are
-		 * actually used. list returned even if not killed
+		 * actually used. List returned even if not killed
 		 * in selected plugin, but by Moab or something else.
 		 */
 		if (*preemptee_job_list == NULL) {
@@ -2569,7 +2546,7 @@ timer_check:
 static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    uint32_t req_nodes, uint16_t job_node_req,
-		    list_t *preemptee_candidates, list_t **preemptee_job_list,
+		    List preemptee_candidates, List *preemptee_job_list,
 		    resv_exc_t *resv_exc_ptr)
 {
 	int rc;
@@ -3339,7 +3316,7 @@ static avail_res_t *_allocate(job_record_t *job_ptr,
  * IN mode - SELECT_MODE_RUN_NOW   (0): try to schedule job now
  *           SELECT_MODE_TEST_ONLY (1): test if job can ever run
  *           SELECT_MODE_WILL_RUN  (2): determine when and where job can run
- * IN preemptee_candidates - list of pointers to jobs which can be preempted.
+ * IN preemptee_candidates - List of pointers to jobs which can be preempted.
  * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
@@ -3358,8 +3335,8 @@ static avail_res_t *_allocate(job_record_t *job_ptr,
 extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    uint32_t req_nodes, uint16_t mode,
-		    list_t *preemptee_candidates,
-		    list_t **preemptee_job_list,
+		    List preemptee_candidates,
+		    List *preemptee_job_list,
 		    resv_exc_t *resv_exc_ptr)
 {
 	int rc = EINVAL;

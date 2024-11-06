@@ -48,8 +48,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 
-#include "src/conmgr/conmgr.h"
-
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
@@ -65,9 +63,6 @@ SigFunc *
 xsignal(int signo, SigFunc *f)
 {
 	struct sigaction sa, old_sa;
-
-	if (conmgr_enabled())
-		return SLURM_SUCCESS;
 
 	sa.sa_handler = f;
 	sigemptyset(&sa.sa_mask);
@@ -91,10 +86,6 @@ xsignal(int signo, SigFunc *f)
 extern SigFunc *xsignal_default(int sig)
 {
 	struct sigaction act;
-
-	if (conmgr_enabled())
-		return SLURM_SUCCESS;
-
 	if (sigaction(sig, NULL, &act)) {
 		error("sigaction(%d): %m", sig);
 		return NULL;
@@ -115,9 +106,6 @@ _sigmask(int how, sigset_t *set, sigset_t *oset)
 {
 	int err;
 
-	if (conmgr_enabled())
-		return SLURM_SUCCESS;
-
 	if ((err = pthread_sigmask(how, set, oset)))
 		return error ("pthread_sigmask: %s", slurm_strerror(err));
 
@@ -132,9 +120,6 @@ _sigmask(int how, sigset_t *set, sigset_t *oset)
 int
 xsignal_sigset_create(int sigarray[], sigset_t *setp)
 {
-	if (conmgr_enabled())
-		return SLURM_SUCCESS;
-
 	int i = 0, sig;
 
 	if (sigemptyset(setp) < 0)
@@ -151,9 +136,6 @@ xsignal_sigset_create(int sigarray[], sigset_t *setp)
 int
 xsignal_save_mask(sigset_t *set)
 {
-	if (conmgr_enabled())
-		return SLURM_SUCCESS;
-
 	sigemptyset(set);
 	return _sigmask(SIG_SETMASK, NULL, set);
 }
@@ -161,9 +143,6 @@ xsignal_save_mask(sigset_t *set)
 int
 xsignal_set_mask(sigset_t *set)
 {
-	if (conmgr_enabled())
-		return SLURM_SUCCESS;
-
 	return _sigmask(SIG_SETMASK, set, NULL);
 }
 
@@ -171,9 +150,6 @@ int
 xsignal_block(int sigarray[])
 {
 	sigset_t set;
-
-	if (conmgr_enabled())
-		return SLURM_SUCCESS;
 
 	xassert(sigarray != NULL);
 
@@ -187,9 +163,6 @@ int
 xsignal_unblock(int sigarray[])
 {
 	sigset_t set;
-
-	if (conmgr_enabled())
-		return SLURM_SUCCESS;
 
 	xassert(sigarray != NULL);
 

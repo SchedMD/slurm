@@ -162,8 +162,6 @@ typedef enum {
 				 * add_assoc_cond */
 	DBD_GET_INSTANCES,	/* Get instance information */
 	DBD_GOT_INSTANCES,	/* Response to DBD_GET_INSTANCES */
-	DBD_GET_QOS_USAGE,  	/* Get qos usage information */
-	DBD_GOT_QOS_USAGE,  	/* Response to DBD_GET_QOS_USAGE */
 	SLURM_DBD_MESSAGES_END = 2000, /* So that we don't overlap with any
 					* slurm_msg_type_t numbers. */
 	SLURM_PERSIST_INIT = 6500, /* So we don't use the
@@ -177,7 +175,7 @@ typedef enum {
 \*****************************************************************************/
 
 typedef struct {
-	list_t *acct_list; /* list of account names (char *'s) */
+	List acct_list; /* list of account names (char *'s) */
 	slurmdb_user_cond_t *cond;
 } dbd_acct_coord_msg_t;
 
@@ -217,8 +215,8 @@ typedef struct dbd_get_jobs_msg {
 				 * of accounting record */
 	uint32_t gid;		/* group id */
 	time_t last_update;	/* time of latest info */
-	list_t *selected_steps;	/* list_t *of slurm_selected_step_t *'s */
-	list_t *selected_parts;	/* list_t *of char *'s */
+	List selected_steps;	/* List of slurm_selected_step_t *'s */
+	List selected_parts;	/* List of char *'s */
 	char *user;		/* user name */
 } dbd_get_jobs_msg_t;
 
@@ -290,10 +288,8 @@ typedef struct dbd_job_start_msg {
 	char *   partition;	/* partition job is running on */
 	uint32_t priority;	/* job priority */
 	uint32_t qos_id;        /* qos job is running with */
-	char *qos_req;          /* qos(s) requested for the job */
 	uint32_t req_cpus;	/* count of req processors */
 	uint64_t req_mem;       /* requested minimum memory */
-	uint16_t restart_cnt;   /* How many times the job has been restarted */
 	uint32_t resv_id;	/* reservation id */
 	char *script_hash;      /* hash value of script */
 	time_t   start_time;	/* job start time */
@@ -344,7 +340,7 @@ typedef struct dbd_job_suspend_msg {
 } dbd_job_suspend_msg_t;
 
 typedef struct {
-	list_t *my_list;	/* this list could be of any type as long as it
+	List my_list;		/* this list could be of any type as long as it
 				 * is handled correctly on both ends */
 	uint32_t return_code;   /* If there was an error and a list of
 				 * them this is the type of error it

@@ -114,7 +114,7 @@ static int _handle_list_pids(int fd, stepd_step_rec_t *step);
 static int _handle_reconfig(int fd, stepd_step_rec_t *step, uid_t uid);
 static int _handle_get_ns_fd(int fd, stepd_step_rec_t *step);
 static bool _msg_socket_readable(eio_obj_t *obj);
-static int _msg_socket_accept(eio_obj_t *obj, list_t *objs);
+static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
 struct io_operations msg_socket_ops = {
 	.readable = &_msg_socket_readable,
@@ -374,7 +374,8 @@ _msg_socket_readable(eio_obj_t *obj)
 	return true;
 }
 
-static int _msg_socket_accept(eio_obj_t *obj, list_t *objs)
+static int
+_msg_socket_accept(eio_obj_t *obj, List objs)
 {
 	stepd_step_rec_t *step = obj->arg;
 	int fd;
@@ -501,7 +502,7 @@ static int _handle_stepmgr_relay_msg(int fd,
 	uint32_t data_size;
 
 	safe_read(fd, &protocol_version, sizeof(uint16_t));
-	client_fd = receive_fd_over_socket(fd);
+	client_fd = receive_fd_over_pipe(fd);
 	safe_read(fd, &data_size, sizeof(uint32_t));
 	data = xmalloc(data_size);
 	safe_read(fd, data, data_size);
@@ -580,6 +581,7 @@ static int _handle_job_step_get_info(int fd, stepd_step_rec_t *step, uid_t uid)
 	buf_t *buffer;
 	slurm_msg_t msg;
 	job_step_info_request_msg_t *request;
+	slurm_msg_t response_msg;
 	pack_step_args_t args =  {0};
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
@@ -601,7 +603,9 @@ static int _handle_job_step_get_info(int fd, stepd_step_rec_t *step, uid_t uid)
 	pack_job_step_info_response_msg(&args);
 	slurm_mutex_unlock(&stepmgr_mutex);
 
-	(void) send_msg_response(&msg, RESPONSE_JOB_STEP_INFO, buffer);
+	response_init(&response_msg, &msg, RESPONSE_JOB_STEP_INFO,
+		      buffer);
+	slurm_send_node_msg(msg.conn_fd, &response_msg);
 	FREE_NULL_BUFFER(buffer);
 
 	slurm_send_rc_msg(&msg, SLURM_SUCCESS);
@@ -743,8 +747,10 @@ static int _handle_step_layout(int fd, stepd_step_rec_t *step, uid_t uid)
 	rc = stepmgr_get_step_layouts(job_step_ptr, request, &step_layout);
 	slurm_mutex_unlock(&stepmgr_mutex);
 	if (!rc) {
-		(void) send_msg_response(&msg, RESPONSE_STEP_LAYOUT,
-					 step_layout);
+		slurm_msg_t response_msg;
+		response_init(&response_msg, &msg, RESPONSE_STEP_LAYOUT,
+			      step_layout);
+		slurm_send_node_msg(msg.conn_fd, &response_msg);
 		slurm_step_layout_destroy(step_layout);
 	}
 
@@ -761,6 +767,7 @@ static int _handle_job_sbcast_cred(int fd, stepd_step_rec_t *step, uid_t uid)
 	slurm_msg_t msg;
 	step_alloc_info_msg_t *request;
 	job_sbcast_cred_msg_t *job_info_resp_msg = NULL;
+	slurm_msg_t response_msg;
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
 					    REQUEST_JOB_SBCAST_CRED, true)))
@@ -776,8 +783,10 @@ static int _handle_job_sbcast_cred(int fd, stepd_step_rec_t *step, uid_t uid)
 	if (rc)
 		goto resp;
 
-	(void) send_msg_response(&msg, RESPONSE_JOB_SBCAST_CRED,
-				 job_info_resp_msg);
+	response_init(&response_msg, &msg, RESPONSE_JOB_SBCAST_CRED,
+		      job_info_resp_msg);
+
+	slurm_send_node_msg(msg.conn_fd, &response_msg);
 
 	slurm_free_sbcast_cred_msg(job_info_resp_msg);
 
@@ -801,7 +810,8 @@ static int _handle_het_job_alloc_info(int fd, stepd_step_rec_t *step, uid_t uid)
 	slurm_msg_t msg;
 	job_alloc_info_msg_t *request;
 	resource_allocation_response_msg_t *job_info_resp_msg = NULL;
-	list_t *resp_list = NULL;
+	slurm_msg_t response_msg;
+	List resp_list;
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
 					    REQUEST_HET_JOB_ALLOC_INFO, true)))
@@ -825,8 +835,9 @@ static int _handle_het_job_alloc_info(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	slurm_mutex_unlock(&stepmgr_mutex);
 
-	(void) send_msg_response(&msg, RESPONSE_HET_JOB_ALLOCATION, resp_list);
-
+	response_init(&response_msg, &msg, RESPONSE_HET_JOB_ALLOCATION,
+		      resp_list);
+	slurm_send_node_msg(msg.conn_fd, &response_msg);
 	FREE_NULL_LIST(resp_list);
 
 resp:
@@ -966,7 +977,7 @@ int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
 		_handle_srun_timeout(fd, step, uid);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
-		debug("Handling REQUEST_UPDATE_JOB_STEP");
+		debug("Handling REQUEST_CANCEL_JOB_STEP");
 		rc = _handle_update_step(fd, step, uid);
 		break;
 	case REQUEST_STEP_LAYOUT:
@@ -1485,12 +1496,12 @@ static int _handle_get_ns_fd(int fd, stepd_step_rec_t *step)
 
 	/*
 	 * We need to send the ns_fd as an int first to let the receiver know if
-	 * we have a valid fd or not as receive_fd_over_socket() will always
-	 * try to set up the fd no matter if it is valid or not.
+	 * we have a valid fd or not as recv_fd_over_pipe() will always try to
+	 * set up the fd no matter if it is valid or not.
 	 */
 	safe_write(fd, &ns_fd, sizeof(ns_fd));
 	if (ns_fd > 0)
-		send_fd_over_socket(fd, ns_fd);
+		send_fd_over_pipe(fd, ns_fd);
 
 	debug("sent fd: %d", ns_fd);
 	debug("leaving %s", __func__);

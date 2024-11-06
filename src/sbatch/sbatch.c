@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 	int script_size = 0, het_job_argc, het_job_argc_off = 0, het_job_inx;
 	int i, rc = SLURM_SUCCESS, retries = 0, het_job_limit = 0;
 	bool het_job_fini = false;
-	list_t *job_env_list = NULL, *job_req_list = NULL;
+	List job_env_list = NULL, job_req_list = NULL;
 	sbatch_env_t *local_env = NULL;
 	bool quiet = false;
 
@@ -349,7 +349,8 @@ int main(int argc, char **argv)
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();
 	slurm_reset_all_options(&opt, false);
-	slurm_fini();
+	auth_g_fini();
+	slurm_conf_destroy();
 	log_fini();
 #endif /* MEMORY_LEAK_DEBUG */
 	xfree(script_body);

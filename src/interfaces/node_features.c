@@ -562,11 +562,11 @@ extern uint32_t node_features_g_boot_time(void)
 }
 
 /* Get node features plugin configuration */
-extern list_t *node_features_g_get_config(void)
+extern List node_features_g_get_config(void)
 {
 	DEF_TIMERS;
 	int i, rc = SLURM_SUCCESS;
-	list_t *conf_list = NULL;
+	List conf_list = NULL;
 	config_plugin_params_t *p;
 
 	START_TIMER;

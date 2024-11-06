@@ -49,8 +49,6 @@
 #define REF_PATH OPENAPI_PATH_REL OPENAPI_SCHEMAS_PATH
 #define TYPE_PREFIX "DATA_PARSER_"
 #define KEY_PREFIX XSTRINGIFY(DATA_VERSION) "_"
-#define IS_FLAG_BIT_DEPRECATED(bit) (bit->deprecated)
-#define IS_PARSER_DEPRECATED(parser) (parser->deprecated)
 
 typedef struct {
 	int magic; /* MAGIC_SPEC_ARGS */
@@ -207,7 +205,7 @@ static bool _should_be_ref(const parser_t *parser, spec_args_t *sargs)
 		return true;
 
 	if (parser->array_type || parser->pointer_type || parser->list_type ||
-	    parser->fields || parser->alias_type)
+	    parser->fields)
 		return true;
 
 	return false;
@@ -286,7 +284,6 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(sargs->args->magic == MAGIC_ARGS);
 	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
 	xassert(!parser->pointer_type);
-	xassert(!parser->alias_type);
 	xassert(parser->model != PARSER_MODEL_ARRAY_LINKED_FIELD);
 	xassert(parser->model !=
 		PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD);
@@ -380,11 +377,6 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 
 		if (parser->pointer_type) {
 			parser = find_parser_by_type(parser->pointer_type);
-			continue;
-		}
-
-		if (parser->alias_type) {
-			parser = find_parser_by_type(parser->alias_type);
 			continue;
 		}
 
@@ -574,7 +566,8 @@ static void _increment_ref(const parser_t *parent, const parser_t *parser,
 {
 	uint32_t parser_index;
 
-	parser = unalias_parser(parser);
+	while (parser->pointer_type)
+		parser = find_parser_by_type(parser->pointer_type);
 
 	if ((parser_index = _resolve_parser_index(parser, sargs)) != NO_VAL) {
 		sargs->references[parser_index]++;
@@ -693,8 +686,8 @@ static void _add_param_eflags(data_t *params, const parser_t *parser,
 		if (!bit->hidden)
 			_add_param(data_set_dict(data_list_append(params)),
 				   bit->name, OPENAPI_FORMAT_BOOL, true,
-				   bit->description,
-				   IS_FLAG_BIT_DEPRECATED(bit), false, args);
+				   bit->description, bit->deprecated, false,
+				   args);
 	}
 }
 
@@ -717,7 +710,8 @@ static void _add_param_linked(data_t *params, const parser_t *fp,
 	}
 
 	/* resolve out pointer type to first non-pointer */
-	p = unalias_parser(p);
+	while (p->pointer_type)
+		p = find_parser_by_type(p->pointer_type);
 
 	if (p->model == PARSER_MODEL_ARRAY) {
 		/* no way to parse an dictionary/object currently */
@@ -727,8 +721,7 @@ static void _add_param_linked(data_t *params, const parser_t *fp,
 	schema = _add_param(data_set_dict(data_list_append(params)), fp->key,
 			    OPENAPI_FORMAT_STRING,
 			    (p->obj_openapi == OPENAPI_FORMAT_BOOL),
-			    fp->obj_desc, IS_PARSER_DEPRECATED(fp),
-			    fp->required, args);
+			    fp->obj_desc, fp->deprecated, fp->required, args);
 
 	if (fp->model == PARSER_MODEL_ARRAY_LINKED_FIELD)
 		fp = find_parser_by_type(fp->type);
@@ -749,7 +742,8 @@ static data_for_each_cmd_t _foreach_path_method_ref(data_t *ref, void *arg)
 	}
 
 	/* auto-dereference pointers to avoid unneeded resolution failures */
-	parser = unalias_parser(parser);
+	if (parser->model == PARSER_MODEL_PTR)
+		parser = find_parser_by_type(parser->pointer_type);
 
 	if (parser->model != PARSER_MODEL_ARRAY) {
 		error("$ref parameters must be an array parser");
@@ -1035,14 +1029,16 @@ extern int data_parser_p_populate_parameters(args_t *args,
 	sargs.path_params = data_set_dict(data_new());
 
 	if (parameter_type &&
-	    !(param_parser =
-		      unalias_parser(find_parser_by_type(parameter_type))))
+	    !(param_parser = find_parser_by_type(parameter_type)))
 		return ESLURM_DATA_INVALID_PARSER;
-	if (query_type &&
-	    !(query_parser = unalias_parser(find_parser_by_type(query_type))))
+	if (query_type && !(query_parser = find_parser_by_type(query_type)))
 		return ESLURM_DATA_INVALID_PARSER;
 
 	if (param_parser) {
+		while (param_parser->pointer_type)
+			param_parser =
+				find_parser_by_type(param_parser->pointer_type);
+
 		if (param_parser->model != PARSER_MODEL_ARRAY)
 			fatal_abort("parameters must be an array parser");
 
@@ -1060,6 +1056,10 @@ extern int data_parser_p_populate_parameters(args_t *args,
 					  &sargs);
 	}
 	if (query_parser) {
+		while (query_parser->pointer_type)
+			query_parser =
+				find_parser_by_type(query_parser->pointer_type);
+
 		if (query_parser->model != PARSER_MODEL_ARRAY)
 			fatal_abort("parameters must be an array parser");
 

@@ -55,18 +55,16 @@ typedef struct {
 } list_to_str_args_t;
 
 extern int db_query_list_funcname(parse_op_t op, data_parser_type_t type,
-				  args_t *args, list_t **list,
+				  args_t *args, List *list,
 				  db_list_query_func_t func, void *cond,
 				  const char *func_name,
 				  const char *func_caller_name)
 {
 	int rc;
-	list_t *l;
+	List l;
 
 	xassert(!*list);
-
-	if (!args->db_conn)
-		return ESLURM_DB_CONNECTION;
+	xassert(args->db_conn);
 
 	errno = 0;
 	l = func(args->db_conn, cond);
@@ -206,14 +204,14 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 				      &qos_id);
 	} else if (data_convert_type(src, DATA_TYPE_STRING) ==
 		   DATA_TYPE_STRING) {
-		const char *qos_name = data_get_string(src);
+		char *qos_name = data_get_string(src);
 
 		if (!qos_name || !qos_name[0])
 			return SLURM_SUCCESS;
 
 		qos = list_find_first(args->qos_list,
 				      slurmdb_find_qos_in_list_by_name,
-				      (void *) qos_name);
+				      qos_name);
 	} else {
 		rc = ESLURM_REST_FAIL_PARSING;
 		if (ignore_failure)
@@ -353,7 +351,7 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 
 	if ((parser->needs & NEED_QOS) && !args->qos_list) {
 		slurmdb_qos_cond_t cond = {
-			.flags = QOS_COND_FLAG_WITH_DELETED,
+			.with_deleted = 1,
 		};
 
 		if ((rc = _db_query_list(QUERYING, parser->type, args,
@@ -370,7 +368,7 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 
 	if ((parser->needs & NEED_ASSOC) && !args->assoc_list) {
 		slurmdb_assoc_cond_t cond = {
-			.flags = ASSOC_COND_FLAG_WITH_DELETED,
+			.with_deleted = 1,
 		};
 
 		if ((rc = _db_query_list(QUERYING, parser->type, args,

@@ -58,6 +58,7 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/list.h"
 #include "src/common/eio.h"
 #include "src/common/env.h"
+#include "src/common/io_hdr.h"
 #include "src/common/stepd_api.h"
 
 #define STEP_CONTAINER_MAGIC 0xa0b9b2ba
@@ -187,18 +188,18 @@ typedef struct {
 	char          *task_epilog; /* per-task epilog                      */
 	stepd_step_task_info_t  **task;  /* array of task information pointers*/
 	eio_handle_t  *eio;
-	list_t *sruns;		/* list of srun_info_t pointers */
-	list_t *clients;	/* list of struct client_io_info pointers */
-	list_t *stdout_eio_objs;/* list of objs that gather stdout from tasks */
-	list_t *stderr_eio_objs;/* list of objs that gather stderr from tasks */
-	list_t *free_incoming;	/* list of free struct io_buf * for incoming
-				 * traffic. "incoming" means traffic from srun
-				 * to the tasks.
-				 */
-	list_t *free_outgoing;	/* list of free struct io_buf * for outgoing
-				 * traffic "outgoing" means traffic from the
-				 * tasks to srun.
-				 */
+	List 	       sruns; /* List of srun_info_t pointers               */
+	List           clients; /* List of struct client_io_info pointers   */
+	List stdout_eio_objs; /* List of objs that gather stdout from tasks */
+	List stderr_eio_objs; /* List of objs that gather stderr from tasks */
+	List free_incoming;   /* List of free struct io_buf * for incoming
+			       * traffic. "incoming" means traffic from srun
+			       * to the tasks.
+			       */
+	List free_outgoing;   /* List of free struct io_buf * for outgoing
+			       * traffic "outgoing" means traffic from the
+			       * tasks to srun.
+			       */
 	int incoming_count;   /* Count of total incoming message buffers
 			       * including free_incoming buffers and
 			       * buffers in use.
@@ -208,9 +209,9 @@ typedef struct {
 			       * buffers in use.
 			       */
 
-	list_t *outgoing_cache;	/* cache of outgoing stdio messages
-				 * used when a new client attaches
-				 */
+	List outgoing_cache;  /* cache of outgoing stdio messages
+			       * used when a new client attaches
+			       */
 
 	bool io_running;		/* I/O thread running */
 	pthread_cond_t io_cond;		/* I/O thread state conditional */
@@ -227,12 +228,12 @@ typedef struct {
 	char          *batchdir;
 	jobacctinfo_t *jobacct;
 	uint8_t        open_mode;	/* stdout/err append or truncate */
-	list_t *options;
+	List options;
 	uint16_t       restart_cnt;	/* batch job restart count	*/
 	char	      *job_alloc_cores;	/* needed by the SPANK cpuset plugin */
 	char	      *step_alloc_cores;/* needed by the SPANK cpuset plugin */
-	list_t *job_gres_list;		/* Needed by GRES plugin */
-	list_t *step_gres_list;		/* Needed by GRES plugin */
+	List           job_gres_list;	/* Needed by GRES plugin */
+	List           step_gres_list;	/* Needed by GRES plugin */
 	char          *tres_bind;	/* TRES binding */
 	char          *tres_freq;	/* TRES frequency */
 	time_t job_end_time;            /* job end time */

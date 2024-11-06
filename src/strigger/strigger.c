@@ -215,7 +215,7 @@ static int _set_trigger(void)
 
 	while (slurm_set_trigger(&ti)) {
 		slurm_perror("slurm_set_trigger");
-		if (errno != EAGAIN)
+		if (slurm_get_errno() != EAGAIN)
 			return 1;
 		sleep(5);
 	}

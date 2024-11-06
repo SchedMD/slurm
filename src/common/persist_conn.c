@@ -892,7 +892,7 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 					error("%s: persistent connection %d experienced an error: %s",
 					      __func__, persist_conn->fd,
 					      strerror(err));
-				errno = err;
+				slurm_seterrno(err);
 			}
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
@@ -1120,9 +1120,6 @@ extern int slurm_persist_msg_unpack(persist_conn_t *persist_conn,
 		resp_msg->data = msg.data;
 	}
 
-	if (rc != SLURM_SUCCESS)
-		return rc;
-
 	/* Here we transfer the auth_cred to the persist_conn just in case in the
 	 * future we need to use it in some way to verify things for messages
 	 * that don't have on that will follow on the connection.
@@ -1164,6 +1161,8 @@ extern void slurm_persist_pack_init_req_msg(persist_init_req_msg_t *msg,
 extern int slurm_persist_unpack_init_req_msg(persist_init_req_msg_t **msg,
 					     buf_t *buffer)
 {
+	uint32_t tmp32;
+
 	persist_init_req_msg_t *msg_ptr =
 		xmalloc(sizeof(persist_init_req_msg_t));
 
@@ -1172,7 +1171,7 @@ extern int slurm_persist_unpack_init_req_msg(persist_init_req_msg_t **msg,
 	safe_unpack16(&msg_ptr->version, buffer);
 
 	if (msg_ptr->version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&msg_ptr->cluster_name, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &tmp32, buffer);
 		safe_unpack16(&msg_ptr->persist_type, buffer);
 		safe_unpack16(&msg_ptr->port, buffer);
 	} else {
@@ -1216,12 +1215,14 @@ extern int slurm_persist_unpack_rc_msg(persist_rc_msg_t **msg,
 				       buf_t *buffer,
 				       uint16_t protocol_version)
 {
+	uint32_t uint32_tmp;
+
 	persist_rc_msg_t *msg_ptr = xmalloc(sizeof(persist_rc_msg_t));
 
 	*msg = msg_ptr;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&msg_ptr->comment, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
 		safe_unpack16(&msg_ptr->flags, buffer);
 		safe_unpack32(&msg_ptr->rc, buffer);
 		safe_unpack16(&msg_ptr->ret_info, buffer);

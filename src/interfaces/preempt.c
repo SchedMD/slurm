@@ -68,7 +68,7 @@ typedef struct slurm_preempt_ops {
 
 typedef struct {
 	job_record_t *preemptor;
-	list_t *preemptee_job_list;
+	List preemptee_job_list;
 } preempt_candidates_t;
 
 /*
@@ -277,7 +277,7 @@ extern int preempt_g_fini(void)
 	return rc;
 }
 
-extern list_t *slurm_find_preemptable_jobs(job_record_t *job_ptr)
+extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 {
 	preempt_candidates_t candidates	= { .preemptor = job_ptr };
 

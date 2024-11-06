@@ -91,7 +91,7 @@
 const char plugin_name[] = "Gres GPU plugin";
 const char	plugin_type[]		= "gres/gpu";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
-static list_t *gres_devices = NULL;
+static List	gres_devices		= NULL;
 static uint32_t	node_flags		= 0;
 
 extern void gres_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
@@ -203,8 +203,8 @@ static int _find_nonnull_type_in_gres_list(void *x, void *key)
  * NOTE: Both lists will be sorted in descending order by type_name
  * length. gres_list_conf_single is assumed to only have records of count == 1.
  */
-static void _normalize_sys_gres_types(list_t *gres_list_system,
-				      list_t *gres_list_conf_single)
+static void _normalize_sys_gres_types(List gres_list_system,
+				      List gres_list_conf_single)
 {
 	gres_slurmd_conf_t *sys_gres, *conf_gres;
 	list_itr_t *itr;
@@ -397,12 +397,11 @@ static int _sort_gpu_by_links_order(void *x, void *y)
  * 	*type
  * 	*file
  */
-static void _merge_system_gres_conf(list_t *gres_list_conf,
-				    list_t *gres_list_system)
+static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 {
 	list_itr_t *itr, *itr2;
 	gres_slurmd_conf_t *gres_slurmd_conf, *gres_slurmd_conf_sys;
-	list_t *gres_list_conf_single, *gres_list_gpu = NULL, *gres_list_non_gpu;
+	List gres_list_conf_single, gres_list_gpu = NULL, gres_list_non_gpu;
 
 	if (gres_list_conf == NULL) {
 		error("gres_list_conf is NULL. This shouldn't happen");
@@ -639,7 +638,7 @@ static void _merge_system_gres_conf(list_t *gres_list_conf,
  * This is to test converting the cpu mask from NVML to Slurm.
  * Only 0xF and 0x0 are supported.
  */
-static void _add_fake_gpus_from_file(list_t *gres_list_system,
+static void _add_fake_gpus_from_file(List gres_list_system,
 				     char *fake_gpus_file)
 {
 	char buffer[256];
@@ -749,9 +748,9 @@ static void _add_fake_gpus_from_file(list_t *gres_list_system,
  * If fake_gpus.conf does not exist, or an error occurs, returns NULL
  * Caller is responsible for freeing the list if not NULL.
  */
-static list_t *_get_system_gpu_list_fake(void)
+static List _get_system_gpu_list_fake(void)
 {
-	list_t *gres_list_system = NULL;
+	List gres_list_system = NULL;
 	struct stat config_stat;
 	char *fake_gpus_file = NULL;
 
@@ -790,11 +789,11 @@ extern int fini(void)
  * slurm.conf.
  * In the general case, no code would need to be changed.
  */
-extern int gres_p_node_config_load(list_t *gres_conf_list,
+extern int gres_p_node_config_load(List gres_conf_list,
 				   node_config_load_t *node_config)
 {
 	int rc = SLURM_SUCCESS;
-	list_t *gres_list_system = NULL;
+	List gres_list_system = NULL;
 	log_level_t log_lvl;
 
 	/* Assume this state is caused by an scontrol reconfigure */
@@ -980,7 +979,7 @@ extern int gres_p_get_step_info(gres_step_state_t *gres_ss,
  * Return a list of devices of this type. The list elements are of type
  * "gres_device_t" and the list should be freed using FREE_NULL_LIST().
  */
-extern list_t *gres_p_get_devices(void)
+extern List gres_p_get_devices(void)
 {
 	return gres_devices;
 }

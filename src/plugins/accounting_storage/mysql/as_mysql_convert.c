@@ -149,28 +149,6 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 	return rc;
 }
 
-extern int as_mysql_print_dbver(mysql_conn_t *mysql_conn)
-{
-	int rc = 0;
-
-	as_mysql_convert_possible(mysql_conn);
-
-	if (db_curr_ver > CONVERT_VERSION) {
-		printf("Slurm Database is somehow higher than expected '%u' but I only know as high as '%u'. Conversion needed.\n",
-		       db_curr_ver, CONVERT_VERSION);
-		rc = 1;
-	} else if (db_curr_ver != CONVERT_VERSION) {
-		printf("Slurm Database current version is '%u' needs to be at '%u'. Conversion needed.\n",
-		       db_curr_ver, CONVERT_VERSION);
-		rc = 1;
-	} else {
-		printf("Slurm Database already at the highest version '%u'. No conversion needed.\n",
-		       db_curr_ver);
-	}
-
-	return rc;
-}
-
 extern void as_mysql_convert_possible(mysql_conn_t *mysql_conn)
 {
 	(void) _set_db_curr_ver(mysql_conn);

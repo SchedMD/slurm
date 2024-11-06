@@ -1,4 +1,7 @@
+#
+
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 
 AM_CPPFLAGS = -I$(top_srcdir)
 

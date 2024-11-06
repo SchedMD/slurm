@@ -1,6 +1,7 @@
 # Makefile for common/interfaces
 
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 
 AM_CPPFLAGS = -I$(top_srcdir)
 
@@ -31,8 +32,6 @@ libcommon_interfaces_la_SOURCES =    \
 	acct_gather_profile.h			\
 	auth.c					\
 	auth.h					\
-	certmgr.c				\
-	certmgr.h				\
 	cgroup.c				\
 	cgroup.h				\
 	cli_filter.c				\

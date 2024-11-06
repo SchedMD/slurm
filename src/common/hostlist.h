@@ -67,12 +67,6 @@
 		_X	= NULL; 		\
 	} while (0)
 
-#define FREE_NULL_HOSTSET(_X)			\
-	do {					\
-		if (_X) hostset_destroy (_X);	\
-		_X	= NULL; 		\
-	} while (0)
-
 /* The hostlist opaque data type
  *
  * A hostlist is a list of hostnames optimized for a prefixXXXX style

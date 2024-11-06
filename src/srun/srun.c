@@ -125,13 +125,13 @@ typedef struct _launch_app_data
  * forward declaration of static funcs
  */
 static void  _file_bcast(slurm_opt_t *opt_local, srun_job_t *job);
-static void _launch_app(srun_job_t *job, list_t *srun_job_list, bool got_alloc);
+static void  _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc);
 static void *_launch_one_app(void *data);
 static void  _pty_restore(void);
 static void  _set_exit_code(void);
 static void  _setup_env_working_cluster(void);
-static void _setup_job_env(srun_job_t *job, list_t *srun_job_list,
-			   bool got_alloc);
+static void  _setup_job_env(srun_job_t *job, List srun_job_list,
+			    bool got_alloc);
 static void  _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 				bool got_alloc);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
@@ -170,7 +170,7 @@ int srun(int ac, char **av)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	bool got_alloc = false;
-	list_t *srun_job_list = NULL;
+	List srun_job_list = NULL;
 
 	slurm_init(NULL);
 	log_init(xbasename(av[0]), logopt, 0, NULL);
@@ -178,6 +178,8 @@ int srun(int ac, char **av)
 
 	if (cli_filter_init() != SLURM_SUCCESS)
 		fatal("failed to initialize cli_filter plugin");
+	if (cred_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize cred plugin");
 	if (switch_g_init(false) != SLURM_SUCCESS )
 		fatal("failed to initialize switch plugins");
 
@@ -241,7 +243,8 @@ int srun(int ac, char **av)
 	mpi_fini();
 	switch_g_fini();
 	slurm_reset_all_options(&opt, false);
-	slurm_fini();
+	auth_g_fini();
+	slurm_conf_destroy();
 	log_fini();
 #endif /* MEMORY_LEAK_DEBUG */
 
@@ -390,7 +393,7 @@ fini:	hostlist_destroy(in_hl);
 	xfree(out_tids);
 }
 
-static void _launch_app(srun_job_t *job, list_t *srun_job_list, bool got_alloc)
+static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 {
 	list_itr_t *opt_iter, *job_iter;
 	slurm_opt_t *opt_local = NULL;
@@ -734,7 +737,7 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	xfree(env);
 }
 
-static void _setup_job_env(srun_job_t *job, list_t *srun_job_list, bool got_alloc)
+static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 {
 	list_itr_t *opt_iter, *job_iter;
 	slurm_opt_t *opt_local;
@@ -910,39 +913,20 @@ static void _pty_restore(void)
 
 static void _setup_env_working_cluster(void)
 {
-	char *working_env, *addr_ptr, *port_ptr, *rpc_ptr, *tmp = NULL;
+	char *working_env, *addr_ptr, *port_ptr, *rpc_ptr;
 
 	if ((working_env = xstrdup(getenv("SLURM_WORKING_CLUSTER"))) == NULL)
 		return;
 
-	/*
-	 * Format is cluster_name:[address]:port:rpc in 24.11+ or
-	 * cluster_name:address:port:rpc for older versions.  Disallow older
-	 * format two versions after 24.11.
-	 */
-	if (!(addr_ptr = strchr(working_env,  ':')))
-		goto error;
-	/* check for [] around the address */
-	if (addr_ptr[1] == '[') {
-		if (!(tmp = strchr(addr_ptr, ']')))
-			goto error;
-		port_ptr = strchr(tmp + 1, ':');
-	} else {
-		port_ptr = strchr(addr_ptr + 1, ':');
+	/* Format is cluster_name:address:port:rpc */
+	if (!(addr_ptr = strchr(working_env,  ':')) ||
+	    !(port_ptr = strchr(addr_ptr + 1, ':')) ||
+	    !(rpc_ptr  = strchr(port_ptr + 1, ':'))) {
+		error("malformed cluster addr and port in SLURM_WORKING_CLUSTER env var: '%s'",
+		      working_env);
+		exit(1);
 	}
-	if (!port_ptr)
-		goto error;
-	if (!(rpc_ptr  = strchr(port_ptr + 1, ':')))
-		goto error;
 
-	if (tmp) {
-		/*
-		 * Delay increments add_ptr till now for new format to preserve
-		 * working_env in error message if failed ealier.
-		 */
-		*addr_ptr++ = '\0';
-		*tmp = '\0';
-	}
 	*addr_ptr++ = '\0';
 	*port_ptr++ = '\0';
 	*rpc_ptr++  = '\0';
@@ -961,10 +945,4 @@ static void _setup_env_working_cluster(void)
 	}
 	xfree(working_env);
 	unsetenv("SLURM_WORKING_CLUSTER");
-	return;
-
-error:
-	error("malformed cluster addr and port in SLURM_WORKING_CLUSTER env var: '%s'",
-	      working_env);
-	exit(1);
 }

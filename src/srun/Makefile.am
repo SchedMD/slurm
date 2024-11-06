@@ -1,6 +1,9 @@
-AUTOMAKE_OPTIONS = foreign
+#
 
-AM_CPPFLAGS = -I$(top_srcdir)
+AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
+
+AM_CPPFLAGS = -I$(top_srcdir) $(CRAY_JOB_CPPFLAGS)
 
 bin_PROGRAMS = srun
 

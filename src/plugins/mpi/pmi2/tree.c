@@ -102,12 +102,12 @@ static char *tree_cmd_names[] = {
 
 static int _handle_kvs_fence(int fd, buf_t *buf)
 {
-	uint32_t from_nodeid, num_children, seq;
+	uint32_t from_nodeid, num_children, temp32, seq;
 	char *from_node = NULL;
 	int rc = SLURM_SUCCESS;
 
 	safe_unpack32(&from_nodeid, buf);
-	safe_unpackstr(&from_node, buf);
+	safe_unpackstr_xmalloc(&from_node, &temp32, buf);
 	safe_unpack32(&num_children, buf);
 	safe_unpack32(&seq, buf);
 
@@ -201,8 +201,8 @@ static int _handle_kvs_fence_resp(int fd, buf_t *buf)
 	debug3("mpi/pmi2: buf length: %u", temp32);
 	/* put kvs into local hash */
 	while (remaining_buf(buf) > 0) {
-		safe_unpackstr(&key, buf);
-		safe_unpackstr(&val, buf);
+		safe_unpackstr_xmalloc(&key, &temp32, buf);
+		safe_unpackstr_xmalloc(&val, &temp32, buf);
 		kvs_put(key, val);
 		//temp32 = remaining_buf(buf);
 		xfree(key);
@@ -407,13 +407,14 @@ static int _handle_spawn_resp(int fd, buf_t *buf)
 static int _handle_name_publish(int fd, buf_t *buf)
 {
 	int rc;
+	uint32_t tmp32;
 	char *name = NULL, *port = NULL;
 	buf_t *resp_buf = NULL;
 
 	debug3("mpi/pmi2: in _handle_name_publish");
 
-	safe_unpackstr(&name, buf);
-	safe_unpackstr(&port, buf);
+	safe_unpackstr_xmalloc(&name, &tmp32, buf);
+	safe_unpackstr_xmalloc(&port, &tmp32, buf);
 
 	if (tree_info.srun_addr)
 		rc = name_publish_up(name, port);
@@ -439,12 +440,13 @@ unpack_error:
 static int _handle_name_unpublish(int fd, buf_t *buf)
 {
 	int rc;
+	uint32_t tmp32;
 	char *name = NULL;
 	buf_t *resp_buf = NULL;
 
 	debug3("mpi/pmi2: in _handle_name_unpublish");
 
-	safe_unpackstr(&name, buf);
+	safe_unpackstr_xmalloc(&name, &tmp32, buf);
 
 	if (tree_info.srun_addr)
 		rc = name_unpublish_up(name);
@@ -469,12 +471,13 @@ unpack_error:
 static int _handle_name_lookup(int fd, buf_t *buf)
 {
 	int rc = SLURM_SUCCESS, rc2;
+	uint32_t tmp32;
 	char *name = NULL, *port = NULL;
 	buf_t *resp_buf = NULL;
 
 	debug3("mpi/pmi2: in _handle_name_lookup");
 
-	safe_unpackstr(&name, buf);
+	safe_unpackstr_xmalloc(&name, &tmp32, buf);
 
 	if (tree_info.srun_addr)
 		port = name_lookup_up(name);
@@ -501,7 +504,7 @@ unpack_error:
 /* handles ring_in message from one of our stepd children */
 static int _handle_ring(int fd, buf_t *buf)
 {
-	uint32_t rank, count;
+	uint32_t rank, count, temp32;
 	char *left  = NULL;
 	char *right = NULL;
 	int ring_id;
@@ -518,8 +521,8 @@ static int _handle_ring(int fd, buf_t *buf)
          *   string   right - ring in right value */
 	safe_unpack32(&rank,  buf);
 	safe_unpack32(&count, buf);
-	safe_unpackstr(&left, buf);
-	safe_unpackstr(&right, buf);
+	safe_unpackstr_xmalloc(&left,  &temp32, buf);
+	safe_unpackstr_xmalloc(&right, &temp32, buf);
 
 	/* lookup ring_id for this child */
 	ring_id = pmix_ring_id_by_rank(rank);
@@ -550,7 +553,7 @@ unpack_error:
 /* handles ring_out messages coming in from parent in stepd tree */
 static int _handle_ring_resp(int fd, buf_t *buf)
 {
-	uint32_t count;
+	uint32_t count, temp32;
 	char *left  = NULL;
 	char *right = NULL;
 	int rc = SLURM_SUCCESS;
@@ -563,8 +566,8 @@ static int _handle_ring_resp(int fd, buf_t *buf)
          *   string   left  - ring out left value
          *   string   right - ring out right value */
 	safe_unpack32(&count, buf);
-	safe_unpackstr(&left, buf);
-	safe_unpackstr(&right, buf);
+	safe_unpackstr_xmalloc(&left,  &temp32, buf);
+	safe_unpackstr_xmalloc(&right, &temp32, buf);
 
 	/* execute ring out operation */
 	rc = pmix_ring_out(count, left, right);

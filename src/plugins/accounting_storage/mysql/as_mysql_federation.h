@@ -40,18 +40,17 @@
 extern int as_mysql_add_feds_to_update_list(mysql_conn_t *mysql_conn);
 
 extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
-				    list_t *federation_list);
+				    List federation_list);
 
-extern list_t *as_mysql_get_federations(
-	mysql_conn_t *mysql_conn, uid_t uid,
-	slurmdb_federation_cond_t *federation_cond);
+extern List as_mysql_get_federations(
+				mysql_conn_t *mysql_conn, uid_t uid,
+				slurmdb_federation_cond_t *federation_cond);
 
-extern list_t *as_mysql_modify_federations(
-	mysql_conn_t *mysql_conn, uint32_t uid,
-	slurmdb_federation_cond_t *fed_cond,
-	slurmdb_federation_rec_t *fed);
+extern List as_mysql_modify_federations(
+				mysql_conn_t *mysql_conn, uint32_t uid,
+				slurmdb_federation_cond_t *fed_cond,
+				slurmdb_federation_rec_t *fed);
 
-extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
-					   uint32_t uid,
-					   slurmdb_federation_cond_t *fed_cond);
+extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
+					slurmdb_federation_cond_t *fed_cond);
 #endif

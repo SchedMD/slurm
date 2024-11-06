@@ -103,9 +103,7 @@ static const char *tags[] = {
 	NULL
 };
 
-#define OP_FLAGS                                          \
-	(OP_BIND_DATA_PARSER | OP_BIND_OPENAPI_RESP_FMT | \
-	 OP_BIND_REQUIRE_SLURMDBD)
+#define OP_FLAGS (OP_BIND_DATA_PARSER | OP_BIND_OPENAPI_RESP_FMT)
 
 const openapi_path_binding_t openapi_paths[] = {
 	{
@@ -673,38 +671,19 @@ const openapi_path_binding_t openapi_paths[] = {
 		},
 		.flags = OP_FLAGS,
 	},
-	{
-		.path = "/slurmdb/{data_parser}/ping/",
-		.callback = op_handler_ping,
-		.methods = (openapi_path_binding_method_t[]) {
-			{
-				.method = HTTP_REQUEST_GET,
-				.tags = tags,
-				.summary = "ping test",
-				.response = {
-					.type = DATA_PARSER_OPENAPI_SLURMDBD_PING_RESP,
-					.description = "results of ping test",
-				},
-			},
-			{0}
-		},
-		.flags = OP_FLAGS,
-	},
 	{0}
 };
 
-extern int db_query_list_funcname(ctxt_t *ctxt, list_t **list,
+extern int db_query_list_funcname(ctxt_t *ctxt, List *list,
 				  db_list_query_func_t func, void *cond,
 				  const char *func_name, const char *caller,
 				  bool ignore_empty_result)
 {
-	list_t *l;
+	List l;
 	int rc = SLURM_SUCCESS;
 
 	xassert(!*list);
-
-	if (!ctxt->db_conn)
-		return ESLURM_DB_CONNECTION;
+	xassert(ctxt->db_conn);
 
 	errno = 0;
 	l = func(ctxt->db_conn, cond);
@@ -745,7 +724,7 @@ extern int db_query_list_funcname(ctxt_t *ctxt, list_t **list,
 	return rc;
 }
 
-extern int db_query_rc_funcname(ctxt_t *ctxt, list_t *list,
+extern int db_query_rc_funcname(ctxt_t *ctxt, List list,
 				db_rc_query_func_t func, const char *func_name,
 				const char *caller)
 {
@@ -762,7 +741,7 @@ extern int db_modify_rc_funcname(ctxt_t *ctxt, void *cond, void *obj,
 				 db_rc_modify_func_t func,
 				 const char *func_name, const char *caller)
 {
-	list_t *changed;
+	List changed;
 	int rc = SLURM_SUCCESS;
 
 	errno = 0;
@@ -844,6 +823,11 @@ extern data_t *get_query_key_list_funcname(const char *path, ctxt_t *ctxt,
 cleanup:
 	xfree(path_str);
 	return dst;
+}
+
+const data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
+{
+	return NULL;
 }
 
 extern void slurm_openapi_p_init(void)

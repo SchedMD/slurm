@@ -47,6 +47,7 @@
 #include "src/interfaces/cgroup.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
+#include "task_cgroup.h"
 #include "task_cgroup_cpuset.h"
 #include "task_cgroup_memory.h"
 #include "task_cgroup_devices.h"
@@ -143,6 +144,16 @@ extern int task_p_slurmd_batch_request(batch_job_launch_msg_t *req)
 
 extern int task_p_slurmd_launch_request(launch_tasks_request_msg_t *req,
 					uint32_t node_id, char **err_msg)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int task_p_slurmd_suspend_job(uint32_t job_id)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int task_p_slurmd_resume_job(uint32_t job_id)
 {
 	return SLURM_SUCCESS;
 }

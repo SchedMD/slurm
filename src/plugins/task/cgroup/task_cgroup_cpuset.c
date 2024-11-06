@@ -59,6 +59,8 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
+#include "task_cgroup.h"
+
 extern int task_cgroup_cpuset_init(void)
 {
 	cgroup_g_initialize(CG_CPUS);

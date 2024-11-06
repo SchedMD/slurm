@@ -91,7 +91,7 @@ const char plugin_name[] = "Gres MPS plugin";
 const char	plugin_type[]		= "gres/mps";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
-static list_t *gres_devices = NULL;
+static List	gres_devices		= NULL;
 
 extern int init(void)
 {
@@ -113,7 +113,7 @@ extern int fini(void)
  * This only validates that the configuration was specified in gres.conf.
  * In the general case, no code would need to be changed.
  */
-extern int gres_p_node_config_load(list_t *gres_conf_list,
+extern int gres_p_node_config_load(List gres_conf_list,
 				   node_config_load_t *config)
 {
 	return gres_c_s_init_share_devices(
@@ -310,7 +310,7 @@ extern int gres_p_get_step_info(gres_step_state_t *gres_ss,
  * Return a list of devices of this type. The list elements are of type
  * "gres_device_t" and the list should be freed using FREE_NULL_LIST().
  */
-extern list_t *gres_p_get_devices(void)
+extern List gres_p_get_devices(void)
 {
 	return gres_devices;
 }

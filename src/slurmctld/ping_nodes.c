@@ -382,42 +382,17 @@ void ping_nodes (void)
 /* Spawn health check function for every node that is not DOWN */
 extern void run_health_check(void)
 {
-	char *host_str = NULL;
-	agent_arg_t *check_agent_args = NULL;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 	int i;
 #else
 	node_record_t *node_ptr;
-	int node_test_cnt = 0;
-	int node_limit = 0;
-	int node_states = slurm_conf.health_check_node_state &
-		(~HEALTH_CHECK_CYCLE);
-	int run_cyclic = slurm_conf.health_check_node_state &
-		HEALTH_CHECK_CYCLE;
+	int node_test_cnt = 0, node_limit, node_states, run_cyclic;
 	static int base_node_loc = 0;
 	static time_t cycle_start_time = (time_t) 0;
-
-	if (run_cyclic) {
-		time_t now = time(NULL);
-		if (cycle_start_time == (time_t) 0)
-			cycle_start_time = now;
-		else if (base_node_loc > 0)
-			;	/* mid-cycle */
-		else if (difftime(now, cycle_start_time) <
-		         slurm_conf.health_check_interval)
-			return;	/* Wait to start next cycle */
-		cycle_start_time = now;
-		/*
-		 * Determine how many nodes we want to test on each call of
-		 * run_health_check() to spread out the work.
-		 */
-		node_limit = (active_node_record_count * 2) /
-		             slurm_conf.health_check_interval;
-		node_limit = MAX(node_limit, 10);
-	}
-
 #endif
+	char *host_str = NULL;
+	agent_arg_t *check_agent_args = NULL;
 
 	check_agent_args = xmalloc (sizeof (agent_arg_t));
 	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
@@ -447,6 +422,30 @@ extern void run_health_check(void)
 		check_agent_args->node_count++;
 	}
 #else
+	node_limit = 0;
+	run_cyclic = slurm_conf.health_check_node_state &
+	             HEALTH_CHECK_CYCLE;
+	node_states = slurm_conf.health_check_node_state &
+	              (~HEALTH_CHECK_CYCLE);
+	if (run_cyclic) {
+		time_t now = time(NULL);
+		if (cycle_start_time == (time_t) 0)
+			cycle_start_time = now;
+		else if (base_node_loc > 0)
+			;	/* mid-cycle */
+		else if (difftime(now, cycle_start_time) <
+		         slurm_conf.health_check_interval) {
+			hostlist_destroy(check_agent_args->hostlist);
+			xfree(check_agent_args);
+			return;	/* Wait to start next cycle */
+		}
+		cycle_start_time = now;
+		/* Determine how many nodes we want to test on each call of
+		 * run_health_check() to spread out the work. */
+		node_limit = (active_node_record_count * 2) /
+		             slurm_conf.health_check_interval;
+		node_limit = MAX(node_limit, 10);
+	}
 
 	for (; (node_ptr = next_node(&base_node_loc)); base_node_loc++) {
 		if (run_cyclic &&

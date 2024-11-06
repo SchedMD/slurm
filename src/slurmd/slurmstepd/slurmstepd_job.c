@@ -527,9 +527,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	step->het_job_ntasks = NO_VAL;	/* Used to set env vars */
 	step->het_job_offset = NO_VAL;	/* Used to set labels and env vars */
 	step->job_core_spec = msg->job_core_spec;
-	step->cpu_freq_min = msg->cpu_freq_min;
-	step->cpu_freq_max = msg->cpu_freq_max;
-	step->cpu_freq_gov = msg->cpu_freq_gov;
 
 	step->batch   = true;
 	step->node_name  = xstrdup(conf->node_name);
