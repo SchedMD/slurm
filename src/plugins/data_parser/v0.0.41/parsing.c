@@ -1304,10 +1304,11 @@ static int _dump_pointer(const parser_t *const field_parser,
 		while (pt->pointer_type)
 			pt = find_parser_by_type(pt->pointer_type);
 
-		if (parser->allow_null_pointer) {
+		if (parser->allow_null_pointer ||
+		    (field_parser && !field_parser->required)) {
 			xassert(data_get_type(dst) == DATA_TYPE_NULL);
 		} else if ((pt->model == PARSER_MODEL_ARRAY) ||
-		    (pt->obj_openapi == OPENAPI_FORMAT_OBJECT)) {
+			   (pt->obj_openapi == OPENAPI_FORMAT_OBJECT)) {
 			/*
 			 * OpenAPI clients can't handle a null instead of an
 			 * object. Work around by placing an empty dictionary
