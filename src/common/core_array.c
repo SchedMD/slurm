@@ -287,6 +287,10 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(core_bitmap, i))
 			continue;
+		/*
+		 * next_node will jump over any hole in the node list created by
+		 * dynamic node removal
+		 */
 		for (j = node_inx; next_node(&j); j++) {
 			if (i < cr_get_coremap_offset(j+1)) {
 				node_inx = j;
@@ -300,6 +304,17 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 			      tmp);
 			break;
 		}
+		/*
+		 * If node_inx is pointing to a hole this means that
+		 * node_inx == last_node_index + 1, and the rest of
+		 * the list up to node_record_count (MaxNodeCount) is empty.
+		 *
+		 * next_node() would have returned NULL when
+		 * node_inx > last_node_index and we will end up here.
+		 */
+		if (!node_record_table_ptr[node_inx])
+			break;
+
 		/* Copy all core bitmaps for this node here */
 		core_array[node_inx] =
 			bit_alloc(node_record_table_ptr[node_inx]->tot_cores);
