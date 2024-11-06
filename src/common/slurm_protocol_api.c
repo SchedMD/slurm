@@ -882,6 +882,11 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		xfree(header.forward.nodelist);
 	}
 
+	/* Copy over header info before attempting auth */
+	msg->protocol_version = header.version;
+	msg->msg_type = header.msg_type;
+	msg->flags = header.flags;
+
 	if (header.flags & SLURM_NO_AUTH_CRED)
 		goto skip_auth;
 
@@ -925,10 +930,6 @@ skip_auth:
 	/*
 	 * Unpack message body
 	 */
-	msg->protocol_version = header.version;
-	msg->msg_type = header.msg_type;
-	msg->flags = header.flags;
-
 	msg->body_offset =  get_buf_offset(buffer);
 
 	if ((header.body_length != remaining_buf(buffer)) ||
