@@ -59,11 +59,12 @@
 #undef DATA_DUMP
 #undef DATA_PARSE
 
-extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
-		data_t *dst, args_t *args);
-#define DUMP(type, src, dst, args)                                            \
-	dump(&src, sizeof(src), find_parser_by_type(DATA_PARSER_##type), dst, \
-	     args)
+extern int dump(void *src, ssize_t src_bytes,
+		const parser_t *const field_parser,
+		const parser_t *const parser, data_t *dst, args_t *args);
+#define DUMP(type, src, dst, args)                                             \
+	dump(&src, sizeof(src), NULL, find_parser_by_type(DATA_PARSER_##type), \
+	     dst, args)
 
 extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		 data_t *src, args_t *args, data_t *parent_path);

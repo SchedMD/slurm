@@ -1244,8 +1244,9 @@ static int _foreach_dump_list(void *obj, void *arg)
 	xassert(args->parser->ptr_offset == NO_VAL);
 
 	/* we don't know the size of the items in the list */
-	if (dump(&obj, NO_VAL, find_parser_by_type(args->parser->list_type),
-		 item, args->args))
+	if (dump(&obj, NO_VAL, NULL,
+		 find_parser_by_type(args->parser->list_type), item,
+		 args->args))
 		return -1;
 
 	return 0;
@@ -1327,7 +1328,7 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 		return SLURM_SUCCESS;
 	}
 
-	return dump(*ptr, NO_VAL, pt, dst, args);
+	return dump(*ptr, NO_VAL, NULL, pt, dst, args);
 }
 
 static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
@@ -1345,7 +1346,7 @@ static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
 			return SLURM_SUCCESS;
 
 		for (int i = 0; !rc && array[i]; i++) {
-			rc = dump(array[i], NO_VAL,
+			rc = dump(array[i], NO_VAL, NULL,
 				  find_parser_by_type(parser->array_type),
 				  data_list_append(dst), args);
 		}
@@ -1369,7 +1370,7 @@ static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
 			if (done)
 				break;
 
-			rc = dump(ptr, NO_VAL,
+			rc = dump(ptr, NO_VAL, NULL,
 				  find_parser_by_type(parser->array_type),
 				  data_list_append(dst), args);
 		}
@@ -1518,7 +1519,8 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 		 array->ptr_offset, (uintptr_t) dst, array->key,
 		 (uintptr_t) dst);
 
-	rc = dump(src, NO_VAL, find_parser_by_type(parser->type), dst, args);
+	rc = dump(src, NO_VAL, parser, find_parser_by_type(parser->type), dst,
+		  args);
 
 	log_flag(DATA, "END: dumping %s parser %s->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ")->%s(+%zd) for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
 		 parser->obj_type_string, array->type_string,
@@ -1545,8 +1547,9 @@ static void _check_dump(const parser_t *const parser, data_t *dst, args_t *args)
 	}
 }
 
-extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
-		data_t *dst, args_t *args)
+extern int dump(void *src, ssize_t src_bytes,
+		const parser_t *const field_parser,
+		const parser_t *const parser, data_t *dst, args_t *args)
 {
 	int rc;
 
