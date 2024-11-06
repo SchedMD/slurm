@@ -167,6 +167,17 @@ static inline int _internal_hwloc_topology_export_xml(
 #endif
 }
 
+static void _check_full_access(hwloc_topology_t *topology)
+{
+	hwloc_const_bitmap_t complete, allowed;
+
+	complete = hwloc_topology_get_complete_cpuset(*topology);
+	allowed = hwloc_topology_get_allowed_cpuset(*topology);
+
+	if (!hwloc_bitmap_isequal(complete, allowed))
+		warning("restricted to a subset of cpus");
+}
+
 static void _remove_ecores(hwloc_topology_t *topology)
 {
 #if HWLOC_API_VERSION > 0x00020401
@@ -305,6 +316,8 @@ handle_write:
 		ret = SLURM_ERROR;
 		goto end_it;
 	}
+
+	_check_full_access(topology);
 
 	_remove_ecores(topology);
 
