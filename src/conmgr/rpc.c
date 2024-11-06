@@ -47,7 +47,7 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
 
-extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
+static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 {
 	int rc = SLURM_ERROR;
 	uint32_t need;
@@ -122,12 +122,29 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 			msg->flags |= SLURM_MSG_KEEP_BUFFER;
 			set_buf_offset(msg->buffer, size_buf(rpc));
 		}
+
+		*msg_ptr = msg;
 	}
 
 	/* notify conmgr we processed some data */
 	set_buf_offset(con->in, need);
 
 	FREE_NULL_BUFFER(rpc);
+
+	return rc;
+}
+
+extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
+{
+	int rc;
+	slurm_msg_t *msg = NULL;
+
+	rc = _try_parse_rpc(con, &msg);
+
+	if (!rc && !msg) {
+		/* RPC not parsed yet */
+		return rc;
+	}
 
 	if (!rc) {
 		log_flag(PROTOCOL, "%s: [%s] received RPC %s",
