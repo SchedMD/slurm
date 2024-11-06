@@ -21,6 +21,12 @@ group.add_argument(
     dest="auto_config",
     help="the slurm configuration will not be altered. This is the default",
 )
+group.add_argument(
+    "--pdb",
+    action="store_true",
+    dest="pdb",
+    help="Use pdb to debug failures",
+)
 parser.add_argument(
     "--no-color", action="store_true", help="the logs won't include color"
 )
@@ -60,5 +66,9 @@ args = [
     "no:cacheprovider",
     "--disable-warnings",
 ]
+
+if "pdb" in args:
+    args.append("--pdb")
+
 args.extend(sys.argv[1:])
 os.execvp(command, args)
