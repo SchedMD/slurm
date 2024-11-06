@@ -931,10 +931,7 @@ def require_openapi_generator(version="7.3.0"):
         pyapi_path = f"{module_tmp_path}/pyapi/"
         spec_path = f"{module_tmp_path}/openapi.json"
 
-        r = requests.get(
-            f"{properties['slurmrestd_url']}/openapi/v3",
-            headers=properties["slurmrestd-headers"],
-        )
+        r = request_slurmrestd("openapi/v3")
         if r.status_code != 200:
             pytest.fail(f"Error requesting openapi specs from slurmrestd: {r}")
 
