@@ -1305,7 +1305,8 @@ static int _dump_list(const parser_t *const parser, void *src, data_t *dst,
 	return SLURM_SUCCESS;
 }
 
-static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
+static int _dump_pointer(const parser_t *const field_parser,
+			 const parser_t *const parser, void *src, data_t *dst,
 			 args_t *args)
 {
 	const parser_t *pt = find_parser_by_type(parser->pointer_type);
@@ -1637,7 +1638,7 @@ extern int dump(void *src, ssize_t src_bytes,
 		verify_parser_not_sliced(parser);
 		xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-		rc = _dump_pointer(parser, src, dst, args);
+		rc = _dump_pointer(field_parser, parser, src, dst, args);
 		break;
 	case PARSER_MODEL_NT_PTR_ARRAY:
 	case PARSER_MODEL_NT_ARRAY:
