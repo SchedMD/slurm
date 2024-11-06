@@ -3328,7 +3328,9 @@ static void _create_clustername_file(void)
 	filename = xstrdup_printf("%s/clustername",
 	                          slurm_conf.state_save_location);
 
-	debug("creating clustername file: %s", filename);
+	info("creating clustername file: ClusterName=%s ClusterID=%u",
+	     slurm_conf.cluster_name, slurm_conf.cluster_id);
+
 	if (!(fp = fopen(filename, "w"))) {
 		fatal("%s: failed to create file %s", __func__, filename);
 		exit(1);
