@@ -3190,8 +3190,8 @@ skip_start:
 				/* Update the database if job time limit
 				 * changed and move to next job */
 				if (save_time_limit != job_ptr->time_limit)
-					jobacct_storage_job_start_direct(
-							acct_db_conn, job_ptr);
+					jobacct_storage_g_job_start(
+						acct_db_conn, job_ptr);
 				job_start_cnt++;
 				if (max_backfill_jobs_start &&
 				    (job_start_cnt >= max_backfill_jobs_start)){
@@ -4296,7 +4296,7 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 				_reset_job_time_limit(job_ptr, now, node_space);
 		}
 		if (reset_time)
-			jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	}
 	list_iterator_destroy(iter);
 	FREE_NULL_BITMAP(used_bitmap);

@@ -384,7 +384,7 @@ static int _job_fail_account(job_record_t *job_ptr, const char *func_name,
 		 * there could be some delay in the start of the job when
 		 * running with the slurmdbd.
 		 */
-		if (!job_ptr->db_index)
+		if (!IS_JOB_IN_DB(job_ptr))
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 		/*
@@ -460,7 +460,7 @@ extern int job_fail_qos(job_record_t *job_ptr, const char *func_name,
 		 * there could be some delay in the start of the job when
 		 * running with the slurmdbd.
 		 */
-		if (!job_ptr->db_index)
+		if (!IS_JOB_IN_DB(job_ptr))
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 		/*
@@ -1545,8 +1545,9 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		}
 
 		/* make sure we have started this job in accounting */
-		if (!job_ptr->db_index) {
+		if (!IS_JOB_IN_DB(job_ptr)) {
 			debug("starting %pJ in accounting", job_ptr);
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 			if (slurmctld_init_db
 			    && IS_JOB_SUSPENDED(job_ptr)) {
 				jobacct_storage_g_job_suspend(acct_db_conn,
@@ -1770,28 +1771,10 @@ extern void build_array_str(job_record_t *job_ptr)
 	    (bit_ffs(job_ptr->array_recs->task_id_bitmap) == -1))
 		return;
 
-
 	array_recs->task_id_str = bit_fmt_hexmask(array_recs->task_id_bitmap);
 
-	/* While it is efficient to set the db_index to 0 here
-	 * to get the database to update the record for
-	 * pending tasks it also creates a window in which if
-	 * the association id is changed (different account or
-	 * partition) instead of returning the previous
-	 * db_index (expected) it would create a new one
-	 * leaving the other orphaned.  Setting the job_state
-	 * sets things up so the db_index isn't lost but the
-	 * start message is still sent to get the desired behavior. */
-
-	/* Here we set the JOB_UPDATE_DB flag so we resend the start of the
-	 * job updating the array task string and count of pending
-	 * jobs.  This is faster than sending the start again since
-	 * this could happen many times (like lots of array elements
-	 * starting at once) instead of just ever so often.
-	 */
-
-	if (job_ptr->db_index)
-		job_state_set_flag(job_ptr, JOB_UPDATE_DB);
+	/* Update the job in the database. */
+	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 }
 
 /* Return true if ALL tasks of specific array job ID are complete */
@@ -2435,7 +2418,7 @@ extern job_record_t *find_job_record(uint32_t job_id)
 static void _set_requeued_job_pending_completing(job_record_t *job_ptr)
 {
 	/* do this after the epilog complete, setting it here is too early */
-	//job_ptr->db_index = 0;
+	//job_record_set_sluid(job_ptr);
 	//job_ptr->details->submit_time = now;
 
 	if (job_ptr->node_cnt || job_ptr->epilog_running)
@@ -3396,7 +3379,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 {
 	job_record_t *job_ptr_pend = NULL;
 	job_details_t *job_details, *details_new, *save_details;
-	uint32_t save_job_id;
+	uint32_t save_job_id, save_db_flags = job_ptr->db_flags;
 	uint64_t save_db_index = job_ptr->db_index;
 	priority_factors_t *save_prio_factors;
 	list_t *save_step_list = NULL;
@@ -3425,7 +3408,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 
 	job_ptr_pend->job_id   = save_job_id;
 	job_ptr_pend->details  = save_details;
-	job_ptr_pend->db_flags = 0;
+	job_ptr_pend->db_flags = save_db_flags;
 	job_ptr_pend->step_list = save_step_list;
 	job_ptr_pend->db_index = save_db_index;
 
@@ -4310,6 +4293,14 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		job_ptr->array_recs->task_cnt : 1;
 
 	acct_policy_add_job_submit(job_ptr, false);
+
+	/*
+	 * This only needs to happen if the job didn't schedule immediately.
+	 * select_nodes() can start it if there are nodes available, but if
+	 * that didn't happened send the start record now.
+	 */
+	if (!IS_JOB_IN_DB(job_ptr))
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 	    (slurm_conf.enforce_part_limits != PARTITION_ENFORCE_NONE))
@@ -6095,7 +6086,7 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 		 * Do this after the epilog complete.
 		 * Setting it here is too early.
 		 */
-		//job_ptr->db_index = 0;
+		//job_record_set_sluid(job_ptr);
 		//job_ptr->details->submit_time = now + 1;
 		if (job_ptr->node_bitmap) {
 			i = bit_ffs(job_ptr->node_bitmap);
@@ -9864,14 +9855,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if (bb_g_job_test_stage_out(job_ptr) != 1)
 		return 0;      /* Stage out in progress */
 
-	/* If we don't have a db_index by now and we are running with
-	 * the slurmdbd, lets put it on the list to be handled later
-	 * when slurmdbd comes back up since we won't get another chance.
-	 * job_start won't pend for job_db_inx when the job is finished.
-	 */
 end_it:
-	if (slurm_with_slurmdbd() && !job_ptr->db_index)
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	return 1;		/* Purge the job */
 }
@@ -11537,9 +11521,9 @@ static int _set_job_id(job_record_t *job_ptr)
 	if ((new_id = get_next_job_id(false)) != SLURM_ERROR) {
 		job_ptr->job_id = new_id;
 		/* When we get a new job id might as well make sure
-		 * the db_index is 0 since there is no way it will be
+		 * the db_index is set since there is no way it will be
 		 * correct otherwise :). */
-		job_ptr->db_index = 0;
+		job_record_set_sluid(job_ptr);
 		return SLURM_SUCCESS;
 	}
 
@@ -14886,7 +14870,7 @@ fini:
 	if (update_accounting) {
 		info("%s: updating accounting",  __func__);
 		/* Update job record in accounting to reflect changes */
-		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	}
 
 	/*
@@ -15322,14 +15306,6 @@ static void _send_job_kill(job_record_t *job_ptr)
 /* Record accounting information for a job immediately before changing size */
 extern void job_pre_resize_acctg(job_record_t *job_ptr)
 {
-	/* if we don't have a db_index go a start this one up since if
-	   running with the slurmDBD the job may not have started yet.
-	*/
-
-	if ((!job_ptr->db_index || job_ptr->db_index == NO_VAL64)
-	    && !job_ptr->resize_time)
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-
 	job_state_set_flag(job_ptr, JOB_RESIZING);
 	job_ptr->resize_time = time(NULL);
 	/* NOTE: job_completion_logger() calls
@@ -15375,13 +15351,9 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	job_claim_resv(job_ptr);
 
 	/*
-	 * Set db_index to NO_VAL64 not 0 so the dbd plugin won't also
-	 * trying setting this.  See _set_db_inx_thread().
-	 * This should also be protected by resize_time being set already in
-	 * job_pre_resize_acctg(), but why not?
+	 * Get new sluid now that we are basically a new job.
 	 */
-	job_ptr->db_index = NO_VAL64;
-
+	job_record_set_sluid(job_ptr);
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	job_state_unset_flag(job_ptr, JOB_RESIZING);
@@ -16295,23 +16267,6 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	if (IS_JOB_COMPLETING(job_ptr) ||
 	    !IS_JOB_PENDING(job_ptr) || !job_ptr->batch_flag)
 		return;
-	/*
-	 * If this job doesn't have db_index yet then we need to send accounting
-	 * information now before setting up the requeued job; otherwise, we'll
-	 * lose information about the original job.
-	 */
-	if (!job_ptr->db_index || (job_ptr->db_index == NO_VAL64)) {
-		/*
-		 * At this point we know the job isn't in a completing state,
-		 * but there is a block in jobacct_storage_g_job_start() that
-		 * will zero out the start time if this state exists.
-		 * So we can just add COMPLETING to the state and then remove it
-		 * afterwards so we don't have that happen.
-		 */
-		job_state_set_flag(job_ptr, JOB_COMPLETING);
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-		job_state_unset_flag(job_ptr, JOB_COMPLETING);
-	}
 
 	info("Requeuing %pJ", job_ptr);
 
@@ -16426,7 +16381,8 @@ void batch_requeue_fini(job_record_t *job_ptr)
 
 	/* Reset this after the batch step has finished or the batch step
 	 * information will be attributed to the next run of the job. */
-	job_ptr->db_index = 0;
+	job_record_set_sluid(job_ptr);
+	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	/* Submit new sibling jobs for fed jobs */
 	if (fed_mgr_is_origin_job(job_ptr)) {
@@ -16717,7 +16673,8 @@ extern bool job_independent(job_record_t *job_ptr)
 		 * Send begin time to the database if it is already there, or it
 		 * won't get there until the job starts.
 		 */
-		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
+		if (IS_JOB_IN_DB(job_ptr))
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	} else if (job_ptr->state_reason == WAIT_TIME) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
@@ -17522,8 +17479,7 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 	if (is_running) {
 		job_state_set_flag(job_ptr, JOB_COMPLETING);
 		deallocate_nodes(job_ptr, false, is_suspended, preempt);
-		if (!IS_JOB_COMPLETING(job_ptr) && !job_ptr->fed_details &&
-		    job_ptr->db_index)
+		if (!IS_JOB_COMPLETING(job_ptr) && !job_ptr->fed_details)
 			is_completed = true;
 		else
 			job_state_unset_flag(job_ptr, JOB_COMPLETING);
@@ -18287,7 +18243,7 @@ extern int send_jobs_to_accounting(void)
 		}
 
 		/* we only want active, un accounted for jobs */
-		if (job_ptr->db_index || IS_JOB_FINISHED(job_ptr))
+		if (IS_JOB_IN_DB(job_ptr) || IS_JOB_FINISHED(job_ptr))
 			continue;
 
 		debug("first reg: starting %pJ in accounting", job_ptr);
@@ -18770,17 +18726,9 @@ extern job_record_t *job_array_post_sched(job_record_t *job_ptr, bool list_add)
 		if (job_ptr->array_recs->task_cnt == 0)
 			FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
 
-		/* While it is efficient to set the db_index to 0 here
-		 * to get the database to update the record for
-		 * pending tasks it also creates a window in which if
-		 * the association id is changed (different account or
-		 * partition) instead of returning the previous
-		 * db_index (expected) it would create a new one
-		 * leaving the other orphaned.  Setting the job_state
-		 * sets things up so the db_index isn't lost but the
-		 * start message is still sent to get the desired behavior. */
-		if (job_ptr->db_index)
-			job_state_set_flag(job_ptr, JOB_UPDATE_DB);
+
+		/* Update the job in the database. */
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 		/* If job is requeued, it will already be in the hash table */
 		if (!find_job_array_rec(job_ptr->array_job_id,
