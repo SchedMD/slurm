@@ -3002,7 +3002,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		goto cleanup;
 	}
 
-	job_ptr->db_flags &= SLURMDB_JOB_CLEAR_SCHED;
+	job_ptr->db_flags &= ~SLURMDB_JOB_CLEAR_SCHED;
 	job_ptr->db_flags |= scheduler_type;
 
 	/* This could be set in the select plugin so we want to keep the flag */
