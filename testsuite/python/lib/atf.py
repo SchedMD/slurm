@@ -931,6 +931,9 @@ def require_openapi_generator(version="7.3.0"):
     pyapi_path = f"{opath}/pyapi/"
     spec_path = f"{opath}/openapi.json"
 
+    # Always create path if needed
+    os.makedirs(opath, exist_ok=True)
+
     if not os.path.exists(spec_path):
         r = request_slurmrestd("openapi/v3")
         if r.status_code != 200:
