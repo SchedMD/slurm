@@ -1321,7 +1321,8 @@ static int _dump_pointer(const parser_t *const field_parser,
 		/* Fully resolve pointer on NULL to use correct model */
 		pt = unalias_parser(pt);
 
-		if (parser->allow_null_pointer) {
+		if (parser->allow_null_pointer ||
+		    (field_parser && !field_parser->required)) {
 			xassert(data_get_type(dst) == DATA_TYPE_NULL);
 		} else if ((pt->model == PARSER_MODEL_ARRAY) ||
 		    (pt->obj_openapi == OPENAPI_FORMAT_OBJECT)) {
