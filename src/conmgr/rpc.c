@@ -35,6 +35,8 @@
 
 #include <stdint.h>
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
@@ -47,7 +49,7 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
 
-extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
+static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 {
 	int rc = SLURM_ERROR;
 	uint32_t need;
@@ -104,11 +106,16 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 		     "%s: [%s] unpacking RPC", __func__, con->name);
 
 	if ((rc = slurm_unpack_received_msg(msg, con->input_fd, rpc))) {
-		rc = errno;
-		error("%s: [%s] slurm_unpack_received_msg() failed: %s",
-		      __func__, con->name, slurm_strerror(rc));
-		slurm_free_msg(msg);
-		msg = NULL;
+		log_flag(NET, "%s: [%s] slurm_unpack_received_msg() failed: %s",
+			 __func__, con->name, slurm_strerror(rc));
+
+		/*
+		 * Always close input_fd on failure as it is not possible to
+		 * safely parse another incoming rpc on this connection.
+		 * Callback func will decide to close outbound connection as
+		 * error state by the returned rc.
+		 */
+		close_con(false, con);
 	} else {
 		log_flag(NET, "%s: [%s] unpacked %u bytes containing %s RPC",
 			 __func__, con->name, need,
@@ -122,24 +129,45 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 			msg->flags |= SLURM_MSG_KEEP_BUFFER;
 			set_buf_offset(msg->buffer, size_buf(rpc));
 		}
+
+		/* notify conmgr we processed some data successfully */
+		set_buf_offset(con->in, need);
 	}
 
-	/* notify conmgr we processed some data */
-	set_buf_offset(con->in, need);
+	*msg_ptr = msg;
 
 	FREE_NULL_BUFFER(rpc);
 
-	if (!rc) {
-		log_flag(PROTOCOL, "%s: [%s] received RPC %s",
-			 __func__, con->name, rpc_num2string(msg->msg_type));
-		log_flag(CONMGR, "%s: [%s] RPC BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-			 __func__, con->name, (uintptr_t) con->events->on_msg,
-			 (uintptr_t) con->arg);
-		rc = con->events->on_msg(con, msg, con->arg);
-		log_flag(CONMGR, "%s: [%s] RPC END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
-			 __func__, con->name, (uintptr_t) con->events->on_msg,
-			 (uintptr_t) con->arg, slurm_strerror(rc));
+	return rc;
+}
+
+extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
+{
+	int rc;
+	slurm_msg_t *msg = NULL;
+
+	rc = _try_parse_rpc(con, &msg);
+
+	if (!msg) {
+		/* RPC not parsed yet */
+		return rc;
 	}
+
+	log_flag(PROTOCOL, "%s: [%s] received %s RPC %s: %s",
+		 __func__, con->name,
+		 (rc ? "malformed" : (msg->auth_ids_set ?  "authenticated" :
+				      "unauthenticated")),
+		 rpc_num2string(msg->msg_type), slurm_strerror(rc));
+
+	log_flag(CONMGR, "%s: [%s] RPC BEGIN msg_type=%s func=0x%"PRIxPTR" unpack_rc[%d]=%s arg=0x%"PRIxPTR,
+		 __func__, con->name, rpc_num2string(msg->msg_type),
+		 (uintptr_t) con->events->on_msg, rc, slurm_strerror(rc),
+		 (uintptr_t) con->arg);
+	rc = con->events->on_msg(con, msg, rc, con->arg);
+	log_flag(CONMGR, "%s: [%s] RPC END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
+		 __func__, con->name,
+		 (uintptr_t) con->events->on_msg,
+		 (uintptr_t) con->arg, slurm_strerror(rc));
 
 	return rc;
 }

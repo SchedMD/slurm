@@ -1459,7 +1459,7 @@ static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	int rc = SLURM_SUCCESS;
 
 	if (!msg->auth_ids_set)
-		return ESLURM_AUTH_CRED_INVALID;
+		fatal_abort("this should never happen");
 
 	log_flag(AUDIT_RPCS, "[%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
 		 conmgr_fd_get_name(con), rpc_num2string(msg->msg_type),
@@ -1511,9 +1511,28 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 		return on_backup_finish(con, arg);
 }
 
-static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
+static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 {
 	bool standby_mode;
+
+	if ((unpack_rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR) ||
+	    !msg->auth_ids_set) {
+		/*
+		 * Avoid closing connection immediately on authentication
+		 * failure to give the sender a hint to fix their authentication
+		 * issue with authentication disabled.
+		 */
+		msg->flags |= SLURM_NO_AUTH_CRED;
+		slurm_send_rc_msg(msg, SLURM_PROTOCOL_AUTHENTICATION_ERROR);
+		slurm_free_msg(msg);
+		return SLURM_SUCCESS;
+	} else if (unpack_rc) {
+		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
+		      __func__, conmgr_fd_get_name(con),
+		      slurm_strerror(unpack_rc));
+		slurm_free_msg(msg);
+		return unpack_rc;
+	}
 
 	slurm_mutex_lock(&listeners.mutex);
 	standby_mode = listeners.standby_mode;

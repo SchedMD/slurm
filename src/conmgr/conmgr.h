@@ -116,10 +116,14 @@ typedef struct {
 	 *
 	 * IN con connection handler
 	 * IN msg ptr to new msg (call must slurm_free_msg())
+	 * IN unpack_rc return code from unpacking RPC
+	 * WARNING: always check unpack_rc and msg->auth_ids_set before
+	 *	considering msg to be valid!
 	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS or error to kill connection
 	 */
-	int (*on_msg)(conmgr_fd_t *con, slurm_msg_t *msg, void *arg);
+	int (*on_msg)(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc,
+		      void *arg);
 
 	/*
 	 * Call back when connection ended.

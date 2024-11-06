@@ -2050,7 +2050,7 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 	       __func__, conmgr_fd_get_name(con));
 }
 
-static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
+static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 {
 	fatal_abort("should never happen");
 }

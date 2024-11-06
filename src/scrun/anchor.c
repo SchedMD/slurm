@@ -1189,12 +1189,21 @@ static int _send_state(conmgr_fd_t *con, slurm_msg_t *req_msg)
 	return rc;
 }
 
-static int _on_connection_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
+static int _on_connection_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc,
+			      void *arg)
 {
 	int rc;
 	uid_t user_id;
 
 	xassert(arg == &state);
+
+	if (unpack_rc || !msg->auth_ids_set) {
+		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
+		      __func__, conmgr_fd_get_name(con),
+		      slurm_strerror(unpack_rc));
+		slurm_free_msg(msg);
+		return unpack_rc;
+	}
 
 	read_lock_state();
 	user_id = state.user_id;
