@@ -2178,6 +2178,8 @@ def set_node_parameter(node_name, new_parameter_name, new_parameter_value):
         words = re.split(r" +", line.strip())
         if len(words) < 1:
             continue
+        if words[0][0] == "#":
+            continue
         parameter_name, parameter_value = words[0].split("=", 1)
         if parameter_name.lower() != "nodename":
             continue
@@ -4039,6 +4041,8 @@ def set_partition_parameter(partition_name, new_parameter_name, new_parameter_va
 
         words = re.split(r" +", line.strip())
         if len(words) < 1:
+            continue
+        if words[0][0] == "#":
             continue
         parameter_name, parameter_value = words[0].split("=", 1)
         if parameter_name.lower() != "partitionname":
