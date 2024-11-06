@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     exist in any partition.
  -- slurmctld - Fix crash when a job is evaluated for a reservation after
     removal of a dynamic node.
+ -- gpu/nvml - Attempt loading libnvidia-ml.so.1 as a fallback for failure in
+    loading libnvidia-ml.so.
 
 * Changes in Slurm 24.05.4
 ==========================

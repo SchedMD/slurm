@@ -94,8 +94,9 @@ static char *_get_gpu_type(void)
 
 	if (autodetect_flags & GRES_AUTODETECT_GPU_NVML) {
 #ifdef HAVE_NVML
-		if (!dlopen("libnvidia-ml.so", RTLD_NOW | RTLD_GLOBAL))
-			info("We were configured with nvml functionality, but that lib wasn't found on the system.");
+		if (!dlopen("libnvidia-ml.so", RTLD_NOW | RTLD_GLOBAL) &&
+		    !dlopen("libnvidia-ml.so.1", RTLD_NOW | RTLD_GLOBAL))
+			info("We were configured with nvml functionality, but that lib wasn't found on the system. Attempted loading libnvidia-ml.so and libnvidia-ml.so.1 without success.");
 		else
 			return "gpu/nvml";
 #else
