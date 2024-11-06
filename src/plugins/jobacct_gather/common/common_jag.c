@@ -72,7 +72,7 @@ char **assoc_mgr_tres_name_array;
 
 static int cpunfo_frequency = 0;
 static long conv_units = 0;
-List prec_list = NULL;
+list_t *prec_list = NULL;
 
 static int my_pagesize = 0;
 static int energy_profile = ENERGY_DATA_NODE_ENERGY_UP;
@@ -647,8 +647,8 @@ static int _mark_as_completed(void *x, void *empty)
 	return SLURM_SUCCESS;
 }
 
-static List _get_precs(List task_list, uint64_t cont_id,
-		       jag_callbacks_t *callbacks)
+static list_t *_get_precs(list_t *task_list, uint64_t cont_id,
+			  jag_callbacks_t *callbacks)
 {
 	int npids = 0;
 	struct jobacctinfo *jobacct = NULL;
@@ -998,12 +998,12 @@ static void _aggregate_prec(jag_prec_t *prec, jag_prec_t *ancestor)
  *
  * THREADSAFE! Only one thread ever gets here.
  */
-static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid,
-				jag_prec_t *permanent_anc)
+static void _get_offspring_data(list_t *prec_list, jag_prec_t *ancestor,
+				pid_t pid, jag_prec_t *permanent_anc)
 {
 	jag_prec_t *prec = NULL;
 	jag_prec_t *prec_tmp = NULL;
-	List tmp_list = NULL;
+	list_t *tmp_list = NULL;
 
 	/* reset all precs to be not visited */
 	(void)list_for_each(prec_list, (ListForF)_reset_visited, NULL);
@@ -1042,7 +1042,7 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid,
 	return;
 }
 
-extern void jag_common_poll_data(List task_list, uint64_t cont_id,
+extern void jag_common_poll_data(list_t *task_list, uint64_t cont_id,
 				 jag_callbacks_t *callbacks, bool profile)
 {
 	/* Update the data */
@@ -1181,6 +1181,32 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 		for (i = 0; i < jobacct->tres_count; i++) {
 			if (prec->tres_data[i].size_read == INFINITE64)
 				continue;
+
+			/* Do this before the max for polling/profiling */
+			jobacct->tres_usage_in_tot[i] =
+				prec->tres_data[i].size_read;
+
+			/*
+			 * Check for support of MaxRSS direct reading.
+			 *
+			 * In cgroup/v1 and cgroup/v2 we can get the value
+			 * directly in the memory.peak or
+			 * memory.max_usage_in_bytes interfaces.
+			 *
+			 * If available it will be in size_write.
+			 *
+			 * If it is not available then the MaxRSS will be the
+			 * one gathered and calculated through memory.current,
+			 * memory.usage_in_bytes or linux /proc.
+			 */
+			if ((i == TRES_ARRAY_MEM) &&
+			    (prec->tres_data[i].size_write != INFINITE64)) {
+				prec->tres_data[i].size_read =
+					prec->tres_data[i].size_write;
+				prec->tres_data[i].size_write =
+					INFINITE64;
+			}
+
 			if (jobacct->tres_usage_in_max[i] == INFINITE64)
 				jobacct->tres_usage_in_max[i] =
 					prec->tres_data[i].size_read;
@@ -1199,8 +1225,6 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 			 */
 			jobacct->tres_usage_in_min[i] =
 				jobacct->tres_usage_in_max[i];
-			jobacct->tres_usage_in_tot[i] =
-				prec->tres_data[i].size_read;
 
 			if (jobacct->tres_usage_out_max[i] == INFINITE64)
 				jobacct->tres_usage_out_max[i] =

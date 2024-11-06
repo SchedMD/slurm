@@ -59,6 +59,7 @@
 #include "src/common/port_mgr.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/state_save.h"
 #include "src/common/strnatcmp.h"
 #include "src/common/xstring.h"
 
@@ -97,15 +98,15 @@
 #define FEATURE_MAGIC	0x34dfd8b5
 
 /* Global variables */
-List active_feature_list;	/* list of currently active features_records */
-List avail_feature_list;	/* list of available features_records */
+list_t *active_feature_list;	/* list of currently active features_records */
+list_t *avail_feature_list;	/* list of available features_records */
 bool node_features_updated = true;
 bool slurmctld_init_db = true;
 
 static void _acct_restore_active_jobs(void);
-static void _add_config_feature(List feature_list, char *feature,
+static void _add_config_feature(list_t *feature_list, char *feature,
 				bitstr_t *node_bitmap);
-static void _add_config_feature_inx(List feature_list, char *feature,
+static void _add_config_feature_inx(list_t *feature_list, char *feature,
 				    int node_inx);
 static void _build_bitmaps(void);
 static void _gres_reconfig(void);
@@ -686,7 +687,7 @@ static void _handle_all_downnodes(void)
 }
 
 /*
- * Convert a comma delimited string of account names into a List containing
+ * Convert a comma delimited string of account names into a list containing
  * pointers to those associations.
  */
 extern list_t *accounts_list_build(char *accounts, bool locked)
@@ -1269,7 +1270,7 @@ void _sync_jobs_to_conf(void)
 	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	part_record_t *part_ptr;
-	List part_ptr_list = NULL;
+	list_t *part_ptr_list = NULL;
 	bool job_fail = false;
 	time_t now = time(NULL);
 	bool gang_flag = false;
@@ -1553,6 +1554,8 @@ extern int read_slurm_conf(int recover)
 		grow_node_record_table_ptr();
 	}
 
+	bit_cache_init(node_record_count);
+
 	(void)acct_storage_g_reconfig(acct_db_conn, 0);
 	build_all_frontend_info(false);
 	_handle_all_downnodes();
@@ -1835,7 +1838,7 @@ end_it:
  *	avail_feature_list
  * feature IN - name of the feature to add
  * node_bitmap IN - bitmap of nodes with named feature */
-static void _add_config_feature(List feature_list, char *feature,
+static void _add_config_feature(list_t *feature_list, char *feature,
 				bitstr_t *node_bitmap)
 {
 	node_feature_t *feature_ptr;
@@ -1867,7 +1870,7 @@ static void _add_config_feature(List feature_list, char *feature,
  *	avail_feature_list
  * feature IN - name of the feature to add
  * node_inx IN - index of the node with named feature */
-static void _add_config_feature_inx(List feature_list, char *feature,
+static void _add_config_feature_inx(list_t *feature_list, char *feature,
 				    int node_inx)
 {
 	node_feature_t *feature_ptr;
@@ -2020,11 +2023,11 @@ extern void build_feature_list_ne(void)
 
 /*
  * Update active_feature_list or avail_feature_list
- * feature_list IN - List to update: active_feature_list or avail_feature_list
+ * feature_list IN - list to update: active_feature_list or avail_feature_list
  * new_features IN - New active_features
  * node_bitmap IN - Nodes with the new active_features value
  */
-extern void update_feature_list(List feature_list, char *new_features,
+extern void update_feature_list(list_t *feature_list, char *new_features,
 				bitstr_t *node_bitmap)
 {
 	node_feature_t *feature_ptr;
@@ -2074,9 +2077,11 @@ static void _gres_reconfig(void)
 		 * time, which can take a while for a node in the cloud
 		 * to boot.
 		 */
-		gres_g_node_config_load(
-			node_ptr->config_ptr->cpus, node_ptr->name,
-			node_ptr->gres_list, NULL, NULL);
+		if (gres_g_node_config_load(node_ptr->config_ptr->cpus,
+					    node_ptr->name, node_ptr->gres_list,
+					    NULL, NULL) != SLURM_SUCCESS)
+			continue; /* No need to validate if load failed */
+
 		gres_node_config_validate(
 			node_ptr->name, node_ptr->config_ptr->gres,
 			&node_ptr->gres, &node_ptr->gres_list,
@@ -2518,7 +2523,7 @@ static void _restore_job_accounting(void)
 	job_record_t *job_ptr;
 	list_itr_t *job_iterator;
 	bool valid = true;
-	List license_list;
+	list_t *license_list = NULL;
 
 	assoc_mgr_clear_used_info();
 
@@ -2623,9 +2628,8 @@ static void _acct_restore_active_jobs(void)
 
 extern int dump_config_state_lite(void)
 {
-	static int high_buffer_size = (1024 * 1024);
-	int error_code = 0, log_fd;
-	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	static uint32_t high_buffer_size = (1024 * 1024);
+	int error_code = 0;
 	buf_t *buffer = init_buf(high_buffer_size);
 
 	DEF_TIMERS;
@@ -2637,49 +2641,8 @@ extern int dump_config_state_lite(void)
 	packstr(slurm_conf.accounting_storage_type, buffer);
 
 	/* write the buffer to file */
-	reg_file = xstrdup_printf("%s/last_config_lite",
-	                          slurm_conf.state_save_location);
-	old_file = xstrdup_printf("%s.old", reg_file);
-	new_file = xstrdup_printf("%s.new", reg_file);
-
-	log_fd = creat(new_file, 0600);
-	if (log_fd < 0) {
-		error("Can't save state, create file %s error %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-		fsync(log_fd);
-		close(log_fd);
-	}
-	if (error_code)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(reg_file, old_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
+	error_code = save_buf_to_state("last_config_lite", buffer,
+				       &high_buffer_size);
 
 	FREE_NULL_BUFFER(buffer);
 

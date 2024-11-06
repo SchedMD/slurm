@@ -49,7 +49,6 @@
 
 #ifndef   __list_datatypes_defined
 #  define __list_datatypes_defined
-typedef struct xlist *List;
 typedef struct xlist list_t;
 
 /*
@@ -146,7 +145,7 @@ extern void list_append(list_t *l, void *x);
  *  Note: list [l] must have a destroy function of NULL.
  *  Returns a count of the number of items added to list [l].
  */
-extern int list_append_list(list_t *l, List sub);
+extern int list_append_list(list_t *l, list_t *sub);
 
 /*
  *  Pops off list [sub] and appends data at the end of list [l].
@@ -154,7 +153,7 @@ extern int list_append_list(list_t *l, List sub);
  *  Note: list [sub] will be returned empty, but not destroyed.
  *  Returns a count of the number of items added to list [l].
  */
-extern int list_transfer(list_t *l, List sub);
+extern int list_transfer(list_t *l, list_t *sub);
 
 /*
  *  Pop off elements in list [sub] to [l], unless already in [l].

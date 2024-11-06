@@ -640,7 +640,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_profile_p_conf_values(List *data)
+extern void acct_gather_profile_p_conf_values(list_t **data)
 {
 	add_key_pair(*data, "ProfileHDF5Dir", "%s", hdf5_conf.dir);
 	add_key_pair(*data, "ProfileHDF5Default", "%s",

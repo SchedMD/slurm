@@ -41,6 +41,6 @@
 #include "priority_multifactor.h"
 
 /* Fair Tree code called from the decay thread loop */
-extern void fair_tree_decay(List jobs, time_t start);
+extern void fair_tree_decay(list_t *jobs, time_t start);
 
 #endif

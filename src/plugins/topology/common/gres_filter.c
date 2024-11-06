@@ -262,7 +262,7 @@ static void _reduce_restricted_cores(bitstr_t *avail_core,
 
 extern void gres_filter_sock_core(job_record_t *job_ptr,
 				  gres_mc_data_t *mc_ptr,
-				  List sock_gres_list,
+				  list_t *sock_gres_list,
 				  uint16_t sockets,
 				  uint16_t cores_per_socket,
 				  uint16_t cpus_per_core,
@@ -326,7 +326,6 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		uint16_t res_core_tot = 0;
 		uint16_t cpus_per_gres = 0;
 		int min_core_cnt, req_cores, rem_sockets, req_sock_cnt = 0;
-		int threads_per_core;
 		bool is_res_gpu = false;
 
 		/*
@@ -342,12 +341,6 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 			sock_gres->total_cnt =
 				sock_gres->total_cnt_before_filter;
 
-		if (mc_ptr->threads_per_core)
-			threads_per_core =
-				MIN(cpus_per_core,
-				    mc_ptr->threads_per_core);
-		else
-			threads_per_core = cpus_per_core;
 
 		if (!sock_gres->gres_state_job)
 			continue;
@@ -745,17 +738,17 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		efctv_cpt = mc_ptr->cpus_per_task;
 
 		if ((mc_ptr->ntasks_per_core == 1) &&
-		    (efctv_cpt % threads_per_core)) {
-			efctv_cpt /= threads_per_core;
+		    (efctv_cpt % cpus_per_core)) {
+			efctv_cpt /= cpus_per_core;
 			efctv_cpt++;
-			efctv_cpt *= threads_per_core;
+			efctv_cpt *= cpus_per_core;
 		}
 
 		req_cores *= efctv_cpt;
 
 		while (*max_tasks_this_node >= *min_tasks_this_node) {
 			/* round up by full threads per core */
-			req_cores = ROUNDUP(req_cores, threads_per_core);
+			req_cores = ROUNDUP(req_cores, cpus_per_core);
 			if (req_cores <= avail_cores_tot) {
 				if (removed_tasks)
 					log_flag(SELECT_TYPE, "Node %s: settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
@@ -881,11 +874,11 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		 * enforce_binding=false.
 		 */
 		if (enforce_binding &&
-		    ((req_cores * threads_per_core) > *avail_cpus)) {
-			log_flag(SELECT_TYPE, "Job cannot run on node %s: avail_cpus=%u < %u (required cores %u * threads_per_core %u",
+		    ((req_cores * cpus_per_core) > *avail_cpus)) {
+			log_flag(SELECT_TYPE, "Job cannot run on node %s: avail_cpus=%u < %u (required cores %u * cpus_per_core %u",
 				 node_name,
-				 *avail_cpus, req_cores * threads_per_core,
-				 req_cores, threads_per_core);
+				 *avail_cpus, req_cores * cpus_per_core,
+				 req_cores, cpus_per_core);
 			*max_tasks_this_node = 0;
 			break;
 		}

@@ -80,7 +80,7 @@ extern void squeue_filter_jobs_for_json(job_info_msg_t *job_info);
 /*****************************************************************************
  * Job Line Format Options
  *****************************************************************************/
-int job_format_add_function(List list, int width, bool right_justify,
+int job_format_add_function(list_t *list, int width, bool right_justify,
 			    char *suffix,
 			    int (*function) (job_info_t *, int, bool, char*));
 #define job_format_add_prefix(list,wid,right,prefix) \
@@ -332,7 +332,7 @@ int _print_job_het_job_id_set(job_info_t * job, int width,
 /*****************************************************************************
  * Step Print Format Functions
  *****************************************************************************/
-int step_format_add_function(List list, int width, bool right_justify,
+int step_format_add_function(list_t *list, int width, bool right_justify,
 			     char * suffix,
 		int (*function) (job_step_info_t *, int, bool, char *));
 

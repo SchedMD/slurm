@@ -116,7 +116,7 @@ static char *_retrieve_data(int key)
 extern int init(void)
 {
 	int rc;
-	stored_data = xmalloc(sizeof(char *) * 24);
+	stored_data = xcalloc(24, sizeof(char *));
 	stored_sz = 24;
 
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {

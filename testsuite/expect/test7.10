@@ -48,7 +48,7 @@ if {![check_run_as_user $testsuite_user]} {
 	skip "This test needs testsuite_user configured in globals.local"
 }
 
-if { [get_config_param -dbd "AllowNoDefAcct"] eq "Yes" } {
+if { [get_config_param -dbd "AllowNoDefAcct"] eq "yes" } {
 	set def_acct " defaultaccount=$test_name"
 } else {
 	set def_acct ""

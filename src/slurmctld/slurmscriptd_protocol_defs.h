@@ -87,6 +87,24 @@ typedef struct {
 } run_script_msg_t;
 
 typedef struct {
+	char *authalttypes;
+	char *authinfo;
+	char *authalt_params;
+	char *authtype;
+	char *cluster_name;
+	char *extra_buf;
+	uint32_t extra_buf_size;
+	char *function;
+	uint32_t job_id;
+	uint16_t slurmctld_debug;
+	char *slurmctld_logfile;
+	uint16_t log_fmt;
+	char *plugindir;
+	char *slurm_user_name;
+	uint32_t slurm_user_id;
+} bb_script_info_msg_t;
+
+typedef struct {
 	uint32_t job_id;
 } flush_job_msg_t;
 
@@ -100,6 +118,7 @@ typedef struct {
 } log_msg_t;
 
 /* Free message functions */
+extern void slurmscriptd_free_bb_script_info_msg(bb_script_info_msg_t *msg);
 extern void slurmscriptd_free_run_script_msg(run_script_msg_t *msg);
 extern void slurmscriptd_free_script_complete(script_complete_t *msg);
 

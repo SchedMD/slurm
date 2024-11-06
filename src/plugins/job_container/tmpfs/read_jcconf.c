@@ -55,6 +55,9 @@ static buf_t *slurm_jc_conf_buf = NULL;
 static bool slurm_jc_conf_inited = false;
 static bool auto_basepath_set = false;
 static bool shared_set = false;
+static bool entire_step_in_ns_set = false;
+static bool clonensscript_wait_set = false;
+static bool clonensepilog_wait_set = false;
 
 static s_p_hashtbl_t *_create_ns_hashtbl(void)
 {
@@ -62,12 +65,37 @@ static s_p_hashtbl_t *_create_ns_hashtbl(void)
 		{"AutoBasePath", S_P_BOOLEAN},
 		{"BasePath", S_P_STRING},
 		{"Dirs", S_P_STRING},
+		{"EntireStepInNS", S_P_BOOLEAN},
 		{"InitScript", S_P_STRING},
 		{"Shared", S_P_BOOLEAN},
+		{"CloneNSScript", S_P_STRING},
+		{"CloneNSEpilog", S_P_STRING},
+		{"CloneNSScript_Wait", S_P_UINT32},
+		{"CloneNSEpilog_Wait", S_P_UINT32},
 		{NULL}
 	};
 
 	return s_p_hashtbl_create(ns_options);
+}
+
+static void _dump_jc_conf(void)
+{
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_JOB_CONT))
+		return;
+
+	log_flag(JOB_CONT, "AutoBasePath=%d", slurm_jc_conf.auto_basepath);
+	log_flag(JOB_CONT, "BasePath=%s", slurm_jc_conf.basepath);
+	log_flag(JOB_CONT, "Dirs=%s", slurm_jc_conf.dirs);
+	log_flag(JOB_CONT, "EntireStepInNS=%d",
+		 slurm_jc_conf.entire_step_in_ns);
+	log_flag(JOB_CONT, "Shared=%d", slurm_jc_conf.shared);
+	log_flag(JOB_CONT, "InitScript=%s", slurm_jc_conf.initscript);
+	log_flag(JOB_CONT, "CloneNSScript=%s", slurm_jc_conf.clonensscript);
+	log_flag(JOB_CONT, "CloneNSEpilog=%s", slurm_jc_conf.clonensepilog);
+	log_flag(JOB_CONT, "CloneNSScript_Wait=%u",
+		 slurm_jc_conf.clonensscript_wait);
+	log_flag(JOB_CONT, "CloneNSEpilog_Wait=%u",
+		 slurm_jc_conf.clonensepilog_wait);
 }
 
 static void _pack_slurm_jc_conf_buf(void)
@@ -79,8 +107,14 @@ static void _pack_slurm_jc_conf_buf(void)
 	packbool(slurm_jc_conf.auto_basepath, slurm_jc_conf_buf);
 	packstr(slurm_jc_conf.basepath, slurm_jc_conf_buf);
 	packstr(slurm_jc_conf.dirs, slurm_jc_conf_buf);
+	packbool(slurm_jc_conf.entire_step_in_ns, slurm_jc_conf_buf);
 	packstr(slurm_jc_conf.initscript, slurm_jc_conf_buf);
 	packbool(slurm_jc_conf.shared, slurm_jc_conf_buf);
+	packstr(slurm_jc_conf.clonensscript, slurm_jc_conf_buf);
+	packstr(slurm_jc_conf.clonensepilog, slurm_jc_conf_buf);
+	pack32(slurm_jc_conf.clonensscript_wait, slurm_jc_conf_buf);
+	pack32(slurm_jc_conf.clonensepilog_wait, slurm_jc_conf_buf);
+
 }
 
 static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
@@ -115,11 +149,29 @@ static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
 	if (!s_p_get_string(&slurm_jc_conf.dirs, "Dirs", tbl))
 		debug3("empty Dirs detected");
 
+	if (s_p_get_boolean(&slurm_jc_conf.entire_step_in_ns, "EntireStepInNS",
+			    tbl))
+		entire_step_in_ns_set = true;
+
 	if (!s_p_get_string(&slurm_jc_conf.initscript, "InitScript", tbl))
 		debug3("empty init script detected");
 
 	if (s_p_get_boolean(&slurm_jc_conf.shared, "Shared", tbl))
 		shared_set = true;
+
+	if (!s_p_get_string(&slurm_jc_conf.clonensscript, "CloneNSScript", tbl))
+		debug3("empty post clone ns script detected");
+
+	if (!s_p_get_string(&slurm_jc_conf.clonensepilog, "CloneNSEpilog", tbl))
+		debug3("empty post clone ns epilog script detected");
+
+	if (s_p_get_uint32(&slurm_jc_conf.clonensscript_wait,
+			   "CloneNSScript_Wait", tbl))
+		clonensscript_wait_set = true;
+
+	if (s_p_get_uint32(&slurm_jc_conf.clonensepilog_wait,
+			   "CloneNSEpilog_Wait", tbl))
+		clonensepilog_wait_set = true;
 
 end_it:
 	s_p_hashtbl_destroy(tbl);
@@ -163,8 +215,13 @@ static int _read_slurm_jc_conf(void)
 		{"AutoBasePath", S_P_BOOLEAN},
 		{"BasePath", S_P_ARRAY, _parse_jc_conf_internal, NULL},
 		{"Dirs", S_P_STRING},
+		{"EntireStepInNS", S_P_BOOLEAN},
 		{"NodeName", S_P_ARRAY, _parse_jc_conf, NULL},
 		{"Shared", S_P_BOOLEAN},
+		{"CloneNSScript", S_P_STRING},
+		{"CloneNSEpilog", S_P_STRING},
+		{"CloneNSScript_Wait", S_P_UINT32},
+		{"CloneNSEpilog_Wait", S_P_UINT32},
 		{NULL}
 	};
 
@@ -203,8 +260,24 @@ static int _read_slurm_jc_conf(void)
 		      tmpfs_conf_file);
 	}
 
+	if (!entire_step_in_ns_set)
+		s_p_get_boolean(&slurm_jc_conf.entire_step_in_ns,
+				"EntireStepInNS", tbl);
+
 	if (!shared_set)
 		s_p_get_boolean(&slurm_jc_conf.shared, "Shared", tbl);
+
+	if (!clonensscript_wait_set) {
+		if (!s_p_get_uint32(&slurm_jc_conf.clonensscript_wait,
+				    "CloneNSScript_Wait", tbl))
+			slurm_jc_conf.clonensscript_wait = 10;
+	}
+
+	if (!clonensepilog_wait_set) {
+		if (!s_p_get_uint32(&slurm_jc_conf.clonensepilog_wait,
+				    "CloneNSEpilog_Wait", tbl))
+			slurm_jc_conf.clonensepilog_wait = 10;
+	}
 
 end_it:
 
@@ -241,6 +314,8 @@ extern slurm_jc_conf_t *init_slurm_jc_conf(void)
 		_pack_slurm_jc_conf_buf();
 
 		slurm_jc_conf_inited = true;
+
+		_dump_jc_conf();
 	}
 
 	return &slurm_jc_conf;
@@ -253,8 +328,13 @@ extern slurm_jc_conf_t *set_slurm_jc_conf(buf_t *buf)
 	safe_unpackbool(&slurm_jc_conf.auto_basepath, buf);
 	safe_unpackstr(&slurm_jc_conf.basepath, buf);
 	safe_unpackstr(&slurm_jc_conf.dirs, buf);
+	safe_unpackbool(&slurm_jc_conf.entire_step_in_ns, buf);
 	safe_unpackstr(&slurm_jc_conf.initscript, buf);
 	safe_unpackbool(&slurm_jc_conf.shared, buf);
+	safe_unpackstr(&slurm_jc_conf.clonensscript, buf);
+	safe_unpackstr(&slurm_jc_conf.clonensepilog, buf);
+	safe_unpack32(&slurm_jc_conf.clonensscript_wait, buf);
+	safe_unpack32(&slurm_jc_conf.clonensepilog_wait, buf);
 	slurm_jc_conf_inited = true;
 
 	return &slurm_jc_conf;
@@ -280,6 +360,8 @@ extern void free_jc_conf(void)
 		xfree(slurm_jc_conf.basepath);
 		xfree(slurm_jc_conf.initscript);
 		xfree(slurm_jc_conf.dirs);
+		xfree(slurm_jc_conf.clonensscript);
+		xfree(slurm_jc_conf.clonensepilog);
 		FREE_NULL_BUFFER(slurm_jc_conf_buf);
 		slurm_jc_conf_inited = false;
 	}

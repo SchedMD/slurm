@@ -5,7 +5,7 @@ CLEANFILES = *.bino
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(JSON_CPPFLAGS)
 
 pkglib_LTLIBRARIES = rest_auth_jwt.la
 

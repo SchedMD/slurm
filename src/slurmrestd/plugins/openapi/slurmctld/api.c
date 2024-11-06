@@ -316,7 +316,7 @@ const openapi_path_binding_t openapi_paths[] = {
 				.tags = tags,
 				.summary = "cancel or signal job",
 				.response = {
-					.type = DATA_PARSER_OPENAPI_RESP,
+					.type = DATA_PARSER_OPENAPI_KILL_JOB_RESP,
 					.description = "job signal result",
 				},
 				.parameters = DATA_PARSER_OPENAPI_JOB_INFO_PARAM,
@@ -339,6 +339,19 @@ const openapi_path_binding_t openapi_paths[] = {
 					.description = "node(s) information",
 				},
 				.query = DATA_PARSER_OPENAPI_NODES_QUERY,
+			},
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "batch update node(s)",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "batch node update request result",
+				},
+				.body = {
+					.type = DATA_PARSER_UPDATE_NODE_MSG,
+					.description = "Nodelist update description",
+				}
 			},
 			{0}
 		},
@@ -463,11 +476,6 @@ const openapi_path_binding_t openapi_paths[] = {
 	},
 	{0}
 };
-
-extern data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
-{
-	return NULL;
-}
 
 extern void slurm_openapi_p_init(void)
 {

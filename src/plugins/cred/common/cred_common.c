@@ -138,7 +138,90 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 	credential->buffer = buffer = init_buf(4096);
 	credential->buf_version = protocol_version;
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		pack_step_id(&cred->step_id, buffer, protocol_version);
+		pack_identity(cred->id, buffer, protocol_version);
+
+		(void) gres_job_state_pack(cred->job_gres_list, buffer,
+					   cred->step_id.job_id, false,
+					   protocol_version);
+		gres_step_state_pack(cred->step_gres_list, buffer,
+				     &cred->step_id, protocol_version);
+		pack16(cred->job_core_spec, buffer);
+		packstr(cred->job_account, buffer);
+		slurm_pack_addr_array(
+			cred->job_node_addrs,
+			cred->job_node_addrs ? cred->job_nhosts : 0,
+			buffer);
+		packstr(cred->job_alias_list, buffer);
+		packstr(cred->job_comment, buffer);
+		packstr(cred->job_constraints, buffer);
+		pack_time(cred->job_end_time, buffer);
+		packstr(cred->job_extra, buffer);
+		pack16(cred->job_oversubscribe, buffer);
+		packstr(cred->job_partition, buffer);
+		packstr(cred->job_reservation, buffer);
+		pack16(cred->job_restart_cnt, buffer);
+		pack_time(cred->job_start_time, buffer);
+		packstr(cred->job_std_err, buffer);
+		packstr(cred->job_std_in, buffer);
+		packstr(cred->job_std_out, buffer);
+		packstr(cred->step_hostlist, buffer);
+		pack16(cred->job_x11, buffer);
+		pack_time(ctime, buffer);
+
+		if (cred->job_core_bitmap)
+			tot_core_cnt = bit_size(cred->job_core_bitmap);
+		pack32(tot_core_cnt, buffer);
+		pack_bit_str_hex(cred->job_core_bitmap, buffer);
+		pack_bit_str_hex(cred->step_core_bitmap, buffer);
+		pack16(cred->core_array_size, buffer);
+		if (cred->core_array_size) {
+			pack16_array(cred->cores_per_socket,
+				     cred->core_array_size,
+				     buffer);
+			pack16_array(cred->sockets_per_node,
+				     cred->core_array_size,
+				     buffer);
+			pack32_array(cred->sock_core_rep_count,
+				     cred->core_array_size,
+				     buffer);
+		}
+		pack32(cred->cpu_array_count, buffer);
+		if (cred->cpu_array_count) {
+			pack16_array(cred->cpu_array,
+				     cred->cpu_array_count,
+				     buffer);
+			pack32_array(cred->cpu_array_reps,
+				     cred->cpu_array_count,
+				     buffer);
+		}
+		pack32(cred->job_nhosts, buffer);
+		pack32(cred->job_ntasks, buffer);
+		packstr(cred->job_hostlist, buffer);
+		packstr(cred->job_licenses, buffer);
+		pack32(cred->job_mem_alloc_size, buffer);
+		if (cred->job_mem_alloc_size) {
+			pack64_array(cred->job_mem_alloc,
+				     cred->job_mem_alloc_size,
+				     buffer);
+			pack32_array(cred->job_mem_alloc_rep_count,
+				     cred->job_mem_alloc_size,
+				     buffer);
+		}
+		pack32(cred->step_mem_alloc_size, buffer);
+		if (cred->step_mem_alloc_size) {
+			pack64_array(cred->step_mem_alloc,
+				     cred->step_mem_alloc_size,
+				     buffer);
+			pack32_array(cred->step_mem_alloc_rep_count,
+				     cred->step_mem_alloc_size,
+				     buffer);
+		}
+		packstr(cred->job_selinux_context, buffer);
+		switch_g_pack_stepinfo(cred->switch_step, buffer,
+				       protocol_version);
+	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack_identity(cred->id, buffer, protocol_version);
 
@@ -309,11 +392,119 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 	slurm_cred_t *cred = NULL;
 	slurm_cred_arg_t *cred_arg = NULL;
 	char *bit_fmt_str = NULL;
+	dynamic_plugin_data_t *switch_tmp = NULL;
 	uint32_t tot_core_cnt;
 
 	cred = slurm_cred_alloc(true);
 	cred_arg = cred->arg;
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&cred_arg->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+
+		if (unpack_identity(&cred_arg->id, buffer, protocol_version))
+			goto unpack_error;
+
+		if (gres_job_state_unpack(&cred_arg->job_gres_list, buffer,
+					  cred_arg->step_id.job_id,
+					  protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (gres_step_state_unpack(&cred_arg->step_gres_list,
+					   buffer, &cred_arg->step_id,
+					   protocol_version)
+		    != SLURM_SUCCESS) {
+			goto unpack_error;
+		}
+		safe_unpack16(&cred_arg->job_core_spec, buffer);
+		safe_unpackstr(&cred_arg->job_account, buffer);
+		if (slurm_unpack_addr_array(&cred_arg->job_node_addrs,
+					    &uint32_tmp, buffer))
+			goto unpack_error;
+		safe_unpackstr(&cred_arg->job_alias_list, buffer);
+		safe_unpackstr(&cred_arg->job_comment, buffer);
+		safe_unpackstr(&cred_arg->job_constraints, buffer);
+		safe_unpack_time(&cred_arg->job_end_time, buffer);
+		safe_unpackstr(&cred_arg->job_extra, buffer);
+		safe_unpack16(&cred_arg->job_oversubscribe, buffer);
+		safe_unpackstr(&cred_arg->job_partition, buffer);
+		safe_unpackstr(&cred_arg->job_reservation, buffer);
+		safe_unpack16(&cred_arg->job_restart_cnt, buffer);
+		safe_unpack_time(&cred_arg->job_start_time, buffer);
+		safe_unpackstr(&cred_arg->job_std_err, buffer);
+		safe_unpackstr(&cred_arg->job_std_in, buffer);
+		safe_unpackstr(&cred_arg->job_std_out, buffer);
+		safe_unpackstr(&cred_arg->step_hostlist, buffer);
+		safe_unpack16(&cred_arg->job_x11, buffer);
+		safe_unpack_time(&cred->ctime, buffer);
+		safe_unpack32(&tot_core_cnt, buffer);
+		unpack_bit_str_hex(&cred_arg->job_core_bitmap, buffer);
+		unpack_bit_str_hex(&cred_arg->step_core_bitmap, buffer);
+		safe_unpack16(&cred_arg->core_array_size, buffer);
+		if (cred_arg->core_array_size) {
+			safe_unpack16_array(&cred_arg->cores_per_socket, &len,
+					    buffer);
+			if (len != cred_arg->core_array_size)
+				goto unpack_error;
+			safe_unpack16_array(&cred_arg->sockets_per_node, &len,
+					    buffer);
+			if (len != cred_arg->core_array_size)
+				goto unpack_error;
+			safe_unpack32_array(&cred_arg->sock_core_rep_count,
+					    &len, buffer);
+			if (len != cred_arg->core_array_size)
+				goto unpack_error;
+		}
+		safe_unpack32(&cred_arg->cpu_array_count, buffer);
+		if (cred_arg->cpu_array_count) {
+			safe_unpack16_array(&cred_arg->cpu_array, &len, buffer);
+			if (len != cred_arg->cpu_array_count)
+				goto unpack_error;
+			safe_unpack32_array(&cred_arg->cpu_array_reps, &len,
+					    buffer);
+			if (len != cred_arg->cpu_array_count)
+				goto unpack_error;
+		}
+		safe_unpack32(&cred_arg->job_nhosts, buffer);
+		safe_unpack32(&cred_arg->job_ntasks, buffer);
+		safe_unpackstr(&cred_arg->job_hostlist, buffer);
+		safe_unpackstr(&cred_arg->job_licenses, buffer);
+
+		safe_unpack32(&cred_arg->job_mem_alloc_size, buffer);
+		if (cred_arg->job_mem_alloc_size) {
+			safe_unpack64_array(&cred_arg->job_mem_alloc, &len,
+					    buffer);
+			if (len != cred_arg->job_mem_alloc_size)
+				goto unpack_error;
+
+			safe_unpack32_array(&cred_arg->job_mem_alloc_rep_count,
+					    &len, buffer);
+			if (len != cred_arg->job_mem_alloc_size)
+				goto unpack_error;
+
+		}
+
+		safe_unpack32(&cred_arg->step_mem_alloc_size, buffer);
+		if (cred_arg->step_mem_alloc_size) {
+			safe_unpack64_array(&cred_arg->step_mem_alloc, &len,
+					    buffer);
+			if (len != cred_arg->step_mem_alloc_size)
+				goto unpack_error;
+
+			safe_unpack32_array(&cred_arg->step_mem_alloc_rep_count,
+					    &len, buffer);
+			if (len != cred_arg->step_mem_alloc_size)
+				goto unpack_error;
+		}
+
+		safe_unpackstr(&cred_arg->job_selinux_context, buffer);
+		if (switch_g_unpack_stepinfo(&switch_tmp, buffer,
+					     protocol_version)) {
+			switch_g_free_stepinfo(switch_tmp);
+			goto unpack_error;
+		}
+		cred_arg->switch_step = switch_tmp;
+	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred_arg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;

@@ -79,7 +79,7 @@ extern char *slurm_fetch_token(char *username, int lifespan)
 	{
 		int rc = ((return_code_msg_t *) resp.data)->return_code;
 		if (rc)
-			slurm_seterrno(rc);
+			errno = rc;
 		error("%s: error with request: %m", __func__);
                 break;
 	}

@@ -55,7 +55,6 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include <math.h>
-#include <curl/curl.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/fd.h"
@@ -66,6 +65,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/timers.h"
 #include "src/common/xstring.h"
+#include "src/curl/slurm_curl.h"
 #include "src/interfaces/proctrack.h"
 
 #define DEFAULT_INFLUXDB_TIMEOUT 10
@@ -115,12 +115,6 @@ typedef struct {
 	size_t size;
 	char * name;
 } table_t;
-
-/* Type for handling HTTP responses */
-struct http_response {
-	char *message;
-	size_t size;
-};
 
 union data_t{
 	uint64_t u;
@@ -175,34 +169,12 @@ static uint32_t _determine_profile(void)
 	return profile;
 }
 
-/* Callback to handle the HTTP response */
-static size_t _write_callback(void *contents, size_t size, size_t nmemb,
-			      void *userp)
-{
-	size_t realsize = size * nmemb;
-	struct http_response *mem = (struct http_response *) userp;
-
-	debug3("%s %s called", plugin_type, __func__);
-
-	mem->message = xrealloc(mem->message, mem->size + realsize + 1);
-
-	memcpy(&(mem->message[mem->size]), contents, realsize);
-	mem->size += realsize;
-	mem->message[mem->size] = 0;
-
-	return realsize;
-}
-
 /* Try to send data to influxdb */
 static int _send_data(const char *data)
 {
-	CURL *curl_handle = NULL;
-	CURLcode res;
-	struct http_response chunk;
 	int rc = SLURM_SUCCESS;
-	long response_code;
-	static int error_cnt = 0;
-	char *url = NULL;
+	long response_code = 0;
+	char *url = NULL, *response_str;
 	size_t length;
 
 	debug3("%s %s called", plugin_type, __func__);
@@ -224,50 +196,13 @@ static int _send_data(const char *data)
 		return rc;
 	}
 
-	DEF_TIMERS;
-	START_TIMER;
-
-	if ((curl_handle = curl_easy_init()) == NULL) {
-		error("%s %s: curl_easy_init: %m", plugin_type, __func__);
-		rc = SLURM_ERROR;
-		goto cleanup_easy_init;
-	}
-
 	xstrfmtcat(url, "%s/write?db=%s&rp=%s&precision=s", influxdb_conf.host,
 		   influxdb_conf.database, influxdb_conf.rt_policy);
-
-	chunk.message = xmalloc(1);
-	chunk.size = 0;
-
-	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-	if (influxdb_conf.password)
-		curl_easy_setopt(curl_handle, CURLOPT_PASSWORD,
-				 influxdb_conf.password);
-	curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
-	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, datastr);
-	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, strlen(datastr));
-	if (influxdb_conf.username)
-		curl_easy_setopt(curl_handle, CURLOPT_USERNAME,
-				 influxdb_conf.username);
-	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, _write_callback);
-	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
-	curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, influxdb_conf.timeout);
-
-	if ((res = curl_easy_perform(curl_handle)) != CURLE_OK) {
-		if ((error_cnt++ % 100) == 0)
-			error("%s %s: curl_easy_perform failed to send data (discarded). Reason: %s",
-			      plugin_type, __func__, curl_easy_strerror(res));
-		rc = SLURM_ERROR;
-		goto cleanup;
-	}
-
-	if ((res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE,
-				     &response_code)) != CURLE_OK) {
-		error("%s %s: curl_easy_getinfo response code failed: %s",
-		      plugin_type, __func__, curl_easy_strerror(res));
-		rc = SLURM_ERROR;
-		goto cleanup;
-	}
+	rc = slurm_curl_request(datastr, url, influxdb_conf.username,
+				influxdb_conf.password, false,
+				influxdb_conf.timeout, &response_str,
+				&response_code, HTTP_REQUEST_POST, true);
+	xfree(url);
 
 	/* In general, status codes of the form 2xx indicate success,
 	 * 4xx indicate that InfluxDB could not understand the request, and
@@ -275,32 +210,24 @@ static int _send_data(const char *data)
 	 * Errors are returned in JSON.
 	 * https://docs.influxdata.com/influxdb/v0.13/concepts/api/
 	 */
-	if (response_code >= 200 && response_code <= 205) {
+	if (rc != SLURM_SUCCESS) {
+		error("send data failed");
+	} else if ((response_code >= 200) && (response_code <= 205)) {
 		debug2("%s %s: data write success", plugin_type, __func__);
-		if (error_cnt > 0)
-			error_cnt = 0;
 	} else {
 		rc = SLURM_ERROR;
 		debug2("%s %s: data write failed, response code: %ld",
 		       plugin_type, __func__, response_code);
 		if (slurm_conf.debug_flags & DEBUG_FLAG_PROFILE) {
 			/* Strip any trailing newlines. */
-			while (chunk.message[strlen(chunk.message) - 1] == '\n')
-				chunk.message[strlen(chunk.message) - 1] = '\0';
+			while (response_str[strlen(response_str) - 1] == '\n')
+				response_str[strlen(response_str) - 1] = '\0';
 			info("%s %s: JSON response body: %s", plugin_type,
-			     __func__, chunk.message);
+			     __func__, response_str);
 		}
 	}
 
-cleanup:
-	xfree(chunk.message);
-	xfree(url);
-cleanup_easy_init:
-	curl_easy_cleanup(curl_handle);
-
-	END_TIMER;
-	log_flag(PROFILE, "%s %s: took %s to send data",
-		 plugin_type, __func__, TIME_STR);
+	xfree(response_str);
 
 	if (data) {
 		datastr = xstrdup(data);
@@ -324,10 +251,8 @@ extern int init(void)
 	if (!running_in_slurmstepd())
 		return SLURM_SUCCESS;
 
-	if (curl_global_init(CURL_GLOBAL_ALL) != 0) {
-		error("%s %s: curl_global_init: %m", plugin_type, __func__);
+	if (slurm_curl_init())
 		return SLURM_ERROR;
-	}
 
 	datastr = xmalloc(BUF_SIZE);
 	return SLURM_SUCCESS;
@@ -337,7 +262,7 @@ extern int fini(void)
 {
 	debug3("%s %s called", plugin_type, __func__);
 
-	curl_global_cleanup();
+	slurm_curl_fini();
 
 	_free_tables();
 	xfree(datastr);
@@ -599,7 +524,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_profile_p_conf_values(List *data)
+extern void acct_gather_profile_p_conf_values(list_t **data)
 {
 	add_key_pair(*data, "ProfileInfluxDBHost", "%s",
 		     influxdb_conf.host);

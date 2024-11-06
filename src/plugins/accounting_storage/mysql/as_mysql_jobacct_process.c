@@ -75,6 +75,8 @@ char *job_req_inx[] = {
 	"t1.het_job_id",
 	"t1.het_job_offset",
 	"t1.id_qos",
+	"t1.qos_req",
+	"t1.restart_cnt",
 	"t1.id_resv",
 	"t3.resv_name",
 	"t1.id_user",
@@ -139,6 +141,8 @@ enum {
 	JOB_REQ_HET_JOB_ID,
 	JOB_REQ_HET_JOB_OFFSET,
 	JOB_REQ_QOS,
+	JOB_REQ_QOS_REQ,
+	JOB_REQ_RESTART_CNT,
 	JOB_REQ_RESVID,
 	JOB_REQ_RESV_NAME,
 	JOB_REQ_UID,
@@ -337,8 +341,8 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 					   job_ids);
 			else
 				xstrfmtcat(*extra,
-				   "t1.id_job in (%s) || t1.het_job_id in (%s)",
-				   job_ids, job_ids);
+					   "t1.id_job in (%s) || t1.het_job_id in (%s)",
+					   job_ids, job_ids);
 			sep = " || ";
 		}
 		if (het_job_offset) {
@@ -482,7 +486,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			     char *cluster_name,
 			     char *job_fields, char *step_fields,
 			     char *sent_extra,
-			     bool is_admin, int only_pending, List sent_list)
+			     bool is_admin, int only_pending, list_t *sent_list)
 {
 	char *query = NULL;
 	char *extra = xstrdup(sent_extra);
@@ -492,9 +496,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
 	time_t now = time(NULL);
-	List job_list = list_create(slurmdb_destroy_job_rec);
+	list_t *job_list = list_create(slurmdb_destroy_job_rec);
 	list_itr_t *itr = NULL, *itr2 = NULL;
-	List local_cluster_list = NULL;
+	list_t *local_cluster_list = NULL;
 	int set = 0;
 	char *prefix="t2";
 	int rc = SLURM_SUCCESS;
@@ -625,7 +629,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			/*
 			 * Doing advanced duplication removal when requesting
 			 * specific jobIDs and hetjobs/arrayjobs involved
-			*/
+			 */
 			if (jobid_filtered) {
 				if ((last_id != hetjob) &&
 				    (last_id != arrayjob)) {
@@ -663,6 +667,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->array_task_id = slurm_atoul(row[JOB_REQ_ARRAYTASKID]);
 		job->het_job_id = slurm_atoul(row[JOB_REQ_HET_JOB_ID]);
 		job->het_job_offset = slurm_atoul(row[JOB_REQ_HET_JOB_OFFSET]);
+		job->restart_cnt = slurm_atoul(row[JOB_REQ_RESTART_CNT]);
 		job->resvid = slurm_atoul(row[JOB_REQ_RESVID]);
 
 		/* This shouldn't happen with new jobs, but older jobs
@@ -882,6 +887,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		else
 			job->requid = slurm_atoul(row[JOB_REQ_KILL_REQUID]);
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
+		job->qos_req = xstrdup(row[JOB_REQ_QOS_REQ]);
+
 		job->show_full = 1;
 
 		if (row[JOB_REQ_TRESA])
@@ -1026,7 +1033,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					step->end = job_cond->usage_end;
 
 				if (step->start && step->end &&
-				   (step->start > step->end))
+				    (step->start > step->end))
 					step->start = step->end = 0;
 			}
 
@@ -1157,11 +1164,11 @@ end_it:
 	return rc;
 }
 
-extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
-					slurmdb_job_cond_t *job_cond,
-					void **curr_cluster)
+extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
+					   slurmdb_job_cond_t *job_cond,
+					   void **curr_cluster)
 {
-	List local_cluster_list = NULL;
+	list_t *local_cluster_list = NULL;
 	time_t now = time(NULL);
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1263,7 +1270,7 @@ no_hosts:
 	return local_cluster_list;
 }
 
-extern int good_nodes_from_inx(List local_cluster_list,
+extern int good_nodes_from_inx(list_t *local_cluster_list,
 			       void **object, char *node_inx,
 			       int start)
 {
@@ -1719,23 +1726,24 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	return set;
 }
 
-extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
-					      uid_t uid,
-					      slurmdb_job_cond_t *job_cond)
+extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
+					         uid_t uid,
+					         slurmdb_job_cond_t *job_cond)
 {
 	char *extra = NULL;
 	char *tmp = NULL, *tmp2 = NULL;
 	list_itr_t *itr = NULL;
 	int is_admin=1;
 	int i;
-	List job_list = NULL;
+	list_t *job_list = NULL;
 	slurmdb_user_rec_t user;
 	int only_pending = 0;
-	List use_cluster_list = NULL;
+	list_t *use_cluster_list = NULL;
 	char *cluster_name;
 	bool locked = false;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = {
+		.tres = READ_LOCK,
+	};
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;

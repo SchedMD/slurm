@@ -43,7 +43,7 @@ proc cleanup {} {
 	run_command -none "$sacctmgr -vi delete account name=$test_name"
 }
 
-if { [get_config_param -dbd "AllowNoDefAcct"] eq "Yes" } {
+if { [get_config_param -dbd "AllowNoDefAcct"] eq "yes" } {
 	set def_acct " defaultaccount=$test_name"
 } else {
 	set def_acct ""

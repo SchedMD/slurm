@@ -50,17 +50,19 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/log.h"
 #include "src/common/list.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/parse_config.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/accounting_storage.h"
+#include "src/common/slurmdb_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurmdb_defs.h"
+
+#include "src/interfaces/accounting_storage.h"
+
 #include "src/slurmdbd/read_config.h"
 
 /* Global variables */
@@ -736,7 +738,7 @@ extern int read_slurmdbd_conf(void)
 /* Log the current configuration using verbose() */
 extern void log_config(void)
 {
-	List dbd_config_list;
+	list_t *dbd_config_list;
 	config_key_pair_t *key_pair;
 	list_itr_t *itr;
 
@@ -757,11 +759,11 @@ extern void log_config(void)
  * Dump the configuration in name,value pairs for output to
  * "sacctmgr show config", caller must call list_destroy()
  */
-extern List dump_config(void)
+extern list_t *dump_config(void)
 {
 	char time_str[32];
 	char *tmp_ptr = NULL;
-	List my_list = list_create(destroy_config_key_pair);
+	list_t *my_list = list_create(destroy_config_key_pair);
 
 	add_key_pair_bool(my_list, "AllowNoDefAcct",
 		(slurmdbd_conf->flags & DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT));

@@ -48,14 +48,14 @@ typedef struct {
 	slurmdb_admin_level_t admin;
 	slurmdb_assoc_rec_t assoc_rec;
 	uint16_t classification;
-	List coord_list; /* char *list */
+	list_t *coord_list; /* char *list */
 	char *def_acct;
 	char *def_wckey;
 	char *desc;
 
 	char *name;
 	char *org;
-	List wckey_list;
+	list_t *wckey_list;
 } sacctmgr_file_opts_t;
 
 typedef enum {
@@ -328,10 +328,10 @@ static sacctmgr_file_opts_t *_parse_options(char *options, bool make_lower)
 	return file_opts;
 }
 
-static int _print_out_assoc(List assoc_list, bool user, bool add)
+static int _print_out_assoc(list_t *assoc_list, bool user, bool add)
 {
-	List format_list = NULL;
-	List print_fields_list = NULL;
+	list_t *format_list = NULL;
+	list_t *print_fields_list = NULL;
 	list_itr_t *itr, *itr2;
 	print_field_t *field = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
@@ -710,7 +710,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 	}
 
 	if (changed) {
-		List ret_list = NULL;
+		list_t *ret_list = NULL;
 
 		assoc_cond.cluster_list = list_create(NULL);
 		list_push(assoc_cond.cluster_list, assoc->cluster);
@@ -787,7 +787,7 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 	}
 
 	if (changed) {
-		List ret_list = NULL;
+		list_t *ret_list = NULL;
 
 		cluster_cond.cluster_list = list_create(NULL);
 
@@ -875,7 +875,7 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 		xfree(org);
 
 	if (changed) {
-		List ret_list = NULL;
+		list_t *ret_list = NULL;
 
 		assoc_cond.acct_list = list_create(NULL);
 		list_append(assoc_cond.acct_list, acct->name);
@@ -919,7 +919,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	char *def_acct = NULL, *def_wckey = NULL, *my_info = NULL;
 	slurmdb_user_rec_t mod_user;
 	slurmdb_user_cond_t user_cond;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	slurmdb_assoc_cond_t assoc_cond;
 
 	if (!user || !user->name) {
@@ -1046,7 +1046,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		list_itr_t *char_itr = NULL;
 		char *temp_char = NULL;
 		slurmdb_coord_rec_t *coord = NULL;
-		List add_list = list_create(NULL);
+		list_t *add_list = list_create(NULL);
 
 		coord_itr = list_iterator_create(user->coord_accts);
 		char_itr = list_iterator_create(file_opts->coord_list);
@@ -1122,7 +1122,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		list_itr_t *char_itr = NULL;
 		char *temp_char = NULL;
 		slurmdb_wckey_rec_t *wckey = NULL;
-		List add_list = list_create(slurmdb_destroy_wckey_rec);
+		list_t *add_list = list_create(slurmdb_destroy_wckey_rec);
 
 		wckey_itr = list_iterator_create(user->wckey_list);
 		char_itr = list_iterator_create(file_opts->wckey_list);
@@ -1317,8 +1317,8 @@ static slurmdb_assoc_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 }
 
 static int _print_file_slurmdb_hierarchical_rec_children(
-	FILE *fd, List slurmdb_hierarchical_rec_list,
-	List user_list, List acct_list)
+	FILE *fd, list_t *slurmdb_hierarchical_rec_list,
+	list_t *user_list, list_t *acct_list)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec = NULL;
@@ -1579,9 +1579,9 @@ extern int print_file_add_limits_to_line(char **line,
 
 extern int print_file_slurmdb_hierarchical_rec_list(
 	FILE *fd,
-	List slurmdb_hierarchical_rec_list,
-	List user_list,
-	List acct_list)
+	list_t *slurmdb_hierarchical_rec_list,
+	list_t *user_list,
+	list_t *acct_list)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec = NULL;
@@ -1636,25 +1636,25 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	slurmdb_user_rec_t *user = NULL, *user2 = NULL;
 	slurmdb_user_cond_t user_cond;
 
-	List curr_assoc_list = NULL;
-	List curr_acct_list = NULL;
-	List curr_cluster_list = NULL;
-	List curr_user_list = NULL;
+	list_t *curr_assoc_list = NULL;
+	list_t *curr_acct_list = NULL;
+	list_t *curr_cluster_list = NULL;
+	list_t *curr_user_list = NULL;
 
 	/* This will be freed in their local counter parts */
-	List mod_acct_list = NULL;
-	List acct_list = NULL;
-	List slurmdb_assoc_list = NULL;
-	List mod_user_list = NULL;
-	List user_list = NULL;
-	List user_assoc_list = NULL;
-	List mod_assoc_list = NULL;
+	list_t *mod_acct_list = NULL;
+	list_t *acct_list = NULL;
+	list_t *slurmdb_assoc_list = NULL;
+	list_t *mod_user_list = NULL;
+	list_t *user_list = NULL;
+	list_t *user_assoc_list = NULL;
+	list_t *mod_assoc_list = NULL;
 
 	list_itr_t *itr;
 	list_itr_t *itr2;
 
-	List print_fields_list;
-	List format_list = NULL;
+	list_t *print_fields_list;
+	list_t *format_list = NULL;
 	print_field_t *field = NULL;
 
 	int set = 0, command_len = 0;
@@ -1816,14 +1816,14 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			memset(&assoc_cond, 0,
 			       sizeof(slurmdb_assoc_cond_t));
 			assoc_cond.cluster_list = list_create(NULL);
-			assoc_cond.with_raw_qos = 1;
-			assoc_cond.without_parent_limits = 1;
+			assoc_cond.flags = ASSOC_COND_FLAG_RAW_QOS |
+				ASSOC_COND_FLAG_WOPL;
 			list_append(assoc_cond.cluster_list, cluster_name);
 			user_cond.assoc_cond = &assoc_cond;
 			curr_user_list = slurmdb_users_get(db_conn, &user_cond);
 
 			user_cond.assoc_cond = NULL;
-			assoc_cond.only_defs = 0;
+			assoc_cond.flags &= ~ASSOC_COND_FLAG_ONLY_DEFS;
 
 			/* make sure this person running is an admin */
 			user_name = uid_to_string_cached(my_uid);
@@ -1860,11 +1860,13 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 
 			if (start_clean) {
 				slurmdb_cluster_cond_t cluster_cond;
-				List ret_list = NULL;
+				list_t *ret_list = NULL;
 
 				if (!commit_check("You requested to flush "
 						  "the cluster before "
 						  "adding it again.\n"
+						  "It is advised to not have your slurmctld running while doing this operation.\n"
+						  "If you have jobs running on this cluster this operation will abort.\n"
 						  "Are you sure you want "
 						  "to continue?")) {
 					printf("Aborted\n");
@@ -1901,8 +1903,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 
 			if (!(cluster = sacctmgr_find_cluster_from_list(
 				      curr_cluster_list, cluster_name))) {
-				List temp_assoc_list = list_create(NULL);
-				List cluster_list = list_create(
+				list_t *temp_assoc_list = list_create(NULL);
+				list_t *cluster_list = list_create(
 					slurmdb_destroy_cluster_rec);
 
 				cluster = xmalloc(

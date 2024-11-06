@@ -67,6 +67,8 @@
 #define NI_MAXSERV 32
 #endif /* NI_MAXSERV */
 
+#define CON_NAME_PLACE_HOLDER_LEN 25
+
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
@@ -191,15 +193,34 @@ extern void net_set_keep_alive(int sock)
 #endif
 }
 
-extern void net_set_nodelay(int sock)
+extern int net_set_nodelay(int sock, bool set, const char *con_name)
 {
-	int opt_int = 1;
+	int opt_int;
 
 	if (sock < 0)
-		return;
+		return EBADF;
 
-	if (setsockopt(sock, SOL_TCP, TCP_NODELAY, &opt_int, sizeof(int)) < 0)
-		error("Unable to set TCP_NODELAY: %m");
+	if (set)
+		opt_int = 1;
+	else
+		opt_int = 0;
+
+	if (setsockopt(sock, SOL_TCP, TCP_NODELAY, &opt_int, sizeof(int))) {
+		int rc = errno;
+		char lcon_name[CON_NAME_PLACE_HOLDER_LEN] = {0};
+
+		if (!con_name) {
+			snprintf(lcon_name, sizeof(lcon_name), "fd:%d", sock);
+			con_name = lcon_name;
+		}
+
+		error("[%s] Unable to set TCP_NODELAY: %s",
+		      con_name, slurm_strerror(rc));
+
+		return rc;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -323,6 +344,9 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 		const struct sockaddr_un *addr_un =
 			(const struct sockaddr_un *) addr;
 
+		xassert(addr_un->sun_path[sizeof(addr_un->sun_path) - 1] ==
+			'\0');
+
 		/* path may not be set */
 		if (addr_un->sun_path[0])
 			return xstrdup_printf("unix:%s", addr_un->sun_path);
@@ -335,7 +359,7 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 	else if (addr->ss_family == AF_INET6)
 		port = ((struct sockaddr_in6 *) addr)->sin6_port;
 
-	host = xgetnameinfo((struct sockaddr *) addr, addrlen);
+	host = xgetnameinfo(addr);
 
 	/* construct RFC3986 host port pair */
 	if (host && port)
@@ -357,4 +381,22 @@ extern char *addrinfo_to_string(const struct addrinfo *addr)
 {
 	return sockaddr_to_string((const slurm_addr_t *) addr->ai_addr,
 				  addr->ai_addrlen);
+}
+
+extern slurm_addr_t sockaddr_from_unix_path(const char *path)
+{
+	slurm_addr_t addr = {
+		.ss_family = AF_UNSPEC,
+	};
+	struct sockaddr_un *un = (struct sockaddr_un *) &addr;
+
+	if (!path)
+		return addr;
+
+	if (strlcpy(un->sun_path, path, sizeof(un->sun_path)) != strlen(path))
+		return addr;
+
+	/* Did not overflow - set family to indicate success */
+	addr.ss_family = AF_UNIX;
+	return addr;
 }

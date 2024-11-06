@@ -142,7 +142,7 @@ federation1 = "federation1"
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_accounting(modify=True)
-    atf.require_config_parameter("TrackWCKey", "Yes", source="slurmdbd")
+    atf.require_config_parameter("TrackWCKey", "yes", source="slurmdbd")
     atf.require_slurm_running()
 
 
@@ -466,7 +466,7 @@ class TestFederation:
 
         command = f"sreport --federation job size AcctAsParent grouping=2,4 start={self.start_string} end={self.end_string} -tsecper -P -n"
         output = atf.run_command_output(command, fatal=True)
-        pattern = rf"{self.cluster}|{account1}|0|{self.allocated_duration}|0|100.00%"
+        pattern = rf"{self.cluster}|{account1}|0|{self.allocated_duration}|0|{self.allocated_duration}|100.00%"
         assert (
             re.search(pattern, output) is not None
         ), f'Command output for "{command}" did not match expected pattern "{pattern}"'
@@ -478,9 +478,7 @@ class TestFederation:
         output = atf.run_command_output(
             command, user=atf.properties["slurm-user"], fatal=True
         )
-        pattern = (
-            rf"{self.cluster}|{wckey1}|0|{self.wckey_allocated_duration}|0|100.00%"
-        )
+        pattern = rf"{self.cluster}|{wckey1}|0|{self.wckey_allocated_duration}|0|{self.wckey_allocated_duration}|100.00%"
         assert (
             re.search(pattern, output) is not None
         ), f'Command output for "{command}" did not match expected pattern "{pattern}"'

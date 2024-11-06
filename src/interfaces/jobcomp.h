@@ -100,7 +100,7 @@ extern int jobcomp_g_write(job_record_t *job_ptr);
  * returns List of jobcomp_job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond);
+extern list_t *jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond);
 
 /* set the location based on JobCompLoc */
 extern int jobcomp_g_set_location(void);

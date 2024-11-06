@@ -10,17 +10,15 @@
 #
 ##*****************************************************************************
 
-AC_DEFUN([X_AC_LZ4],
+AC_DEFUN([X_AC_LZ4], [
 #
 # Handle user hints
 #
-[AC_MSG_CHECKING(if lz4 is wanted)
 lz4_places="/usr/local /usr /opt/local /sw"
 AC_ARG_WITH([lz4],
 [  --with-lz4=PATH         Specify path to liblz4 installation],
 [AS_IF([test "x$with_lz4" != xno && test "x$with_lz4" != xyes],
-       [lz4_places="$with_lz4"; AC_MSG_RESULT([yes])],
-       [AC_MSG_RESULT([no])])])
+       [lz4_places="$with_lz4"])])
 
 #
 # Locate lz4, if installed
@@ -64,11 +62,8 @@ else
         AC_SUBST(LZ4_LIBS)
         AC_DEFINE([HAVE_LZ4], [1],
                   [Define to 1 if you have 'lz4' library (-llz4)])
-        AC_MSG_RESULT([LZ4 test program built properly.])
         HAVE_LZ4=1
         break
-    else
-        AC_MSG_RESULT([LZ4 test program build failed.])
     fi
   done
 

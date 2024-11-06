@@ -211,7 +211,6 @@ static uid_t _get_job_uid(uint32_t jobid);
 
 static int  _add_starting_step(uint16_t type, void *req);
 static int  _remove_starting_step(uint16_t type, void *req);
-static int  _compare_starting_steps(void *s0, void *s1);
 static int  _wait_for_starting_step(slurm_step_id_t *step_id);
 static bool _step_is_starting(slurm_step_id_t *step_id);
 
@@ -354,7 +353,7 @@ done:
 
 static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 {
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	job_step_create_request_msg_t *req_step_msg = msg->data;
 	step_id.job_id = req_step_msg->step_id.job_id;
@@ -379,7 +378,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 {
 	srun_job_complete_msg_t *request = msg->data;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	step_id.job_id = request->job_id;
 
@@ -403,7 +402,7 @@ static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
 static void _slurm_rpc_update_step(slurm_msg_t *msg)
 {
 	step_update_request_msg_t *request = msg->data;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	step_id.job_id = request->job_id;
 	step_id.step_id = request->step_id;
@@ -426,7 +425,7 @@ static void _slurm_rpc_sbcast_cred(slurm_msg_t *msg)
 static void _slurm_het_job_alloc_info(slurm_msg_t *msg)
 {
 	job_alloc_info_msg_t *request = msg->data;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 
 	step_id.job_id = request->job_id;
 
@@ -800,6 +799,12 @@ _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 	safe_write(fd, get_buf_data(buffer), len);
 	FREE_NULL_BUFFER(buffer);
 
+	/* send cgroup state over to slurmstepd */
+	if (cgroup_write_state(fd)) {
+		error("%s: cgroup_write_state(%d) failed: %m", __func__, fd);
+		goto fail;
+	}
+
 	/*
 	 * Send all secondary conf files to the stepd.
 	 */
@@ -850,6 +855,42 @@ fail:
 	return errno;
 }
 
+#if (SLURMSTEPD_MEMCHECK != 1)
+
+static int _send_return_code(const time_t start_time, const int to_stepd,
+			     const int forward_rc)
+{
+	int delta_time = time(NULL) - start_time;
+	int cc = SLURM_SUCCESS;
+
+	if (delta_time > 5) {
+		warning("slurmstepd startup took %d sec, possible file system problem or full memory",
+			delta_time);
+	}
+
+	if (forward_rc != SLURM_SUCCESS)
+		error("slurmstepd return code %d: %s",
+		      forward_rc, slurm_strerror(forward_rc));
+
+	safe_write(to_stepd, &cc, sizeof(cc));
+	return SLURM_SUCCESS;
+rwfail:
+	error("%s: failed to send ack to stepd: %m", __func__);
+	return SLURM_ERROR;
+}
+
+static int _handle_return_code(int to_slurmd, int to_stepd, int *rc_ptr)
+{
+	time_t start_time = time(NULL);
+
+	safe_read(to_slurmd, rc_ptr, sizeof(*rc_ptr));
+	return _send_return_code(start_time, to_stepd, *rc_ptr);
+rwfail:
+	error("%s: Can not read return code from slurmstepd: %m", __func__);
+	return SLURM_ERROR;
+}
+
+#endif /* SLURMSTEPD_MEMCHECK != 1 */
 
 /*
  * Fork and exec the slurmstepd, then send the slurmstepd its
@@ -862,9 +903,10 @@ fail:
  * becomes the slurmstepd process, so the slurmstepd's parent process
  * will be init, not slurmd.
  */
-static int
-_forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
-		      hostlist_t *step_hset, uint16_t protocol_version)
+static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
+				uid_t uid, uint32_t job_id, uint32_t step_id,
+				hostlist_t *step_hset,
+				uint16_t protocol_version)
 {
 	pid_t pid;
 	int to_stepd[2] = {-1, -1};
@@ -889,11 +931,7 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		_remove_starting_step(type, req);
 		return SLURM_ERROR;
 	} else if (pid > 0) {
-		int rc = SLURM_SUCCESS;
-#if (SLURMSTEPD_MEMCHECK == 0)
-		int i;
-		time_t start_time = time(NULL);
-#endif
+		int rc = SLURM_SUCCESS, rc2;
 		/*
 		 * Parent sends initialization data to the slurmstepd
 		 * over the to_stepd pipe, and waits for the return code
@@ -911,35 +949,15 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 			goto done;
 		}
 
-		/* If running under valgrind/memcheck, this pipe doesn't work
-		 * correctly so just skip it. */
-#if (SLURMSTEPD_MEMCHECK == 0)
-		i = read(to_slurmd[0], &rc, sizeof(int));
-		if (i < 0) {
-			error("%s: Can not read return code from slurmstepd "
-			      "got %d: %m", __func__, i);
-			rc = SLURM_ERROR;
-		} else if (i != sizeof(int)) {
-			error("%s: slurmstepd failed to send return code "
-			      "got %d: %m", __func__, i);
-			rc = SLURM_ERROR;
-		} else {
-			int delta_time = time(NULL) - start_time;
-			int cc;
-			if (delta_time > 5) {
-				warning("slurmstepd startup took %d sec, possible file system problem or full memory",
-					delta_time);
-			}
-			if (rc != SLURM_SUCCESS)
-				error("slurmstepd return code %d: %s",
-				      rc, slurm_strerror(rc));
-
-			cc = SLURM_SUCCESS;
-			cc = write(to_stepd[1], &cc, sizeof(int));
-			if (cc != sizeof(int)) {
-				error("%s: failed to send ack to stepd %d: %m",
-				      __func__, cc);
-			}
+		/*
+		 * If running under memcheck, this pipe doesn't work correctly
+		 * so just skip it.
+		 */
+#if (SLURMSTEPD_MEMCHECK != 1)
+		if ((rc2 = _handle_return_code(to_slurmd[0],
+					       to_stepd[1], &rc))) {
+			rc = rc2;
+			goto done;
 		}
 #endif
 	done:
@@ -961,7 +979,6 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 				       (char *)conf->stepd_loc, NULL};
 #elif (SLURMSTEPD_MEMCHECK == 2)
 		/* valgrind test of slurmstepd, option #2 */
-		uint32_t job_id = 0, step_id = 0;
 		char log_file[256];
 		char *const argv[13] = {"valgrind", "--tool=memcheck",
 					"--error-limit=no",
@@ -973,19 +990,11 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 					"--track-origins=yes",
 					log_file, (char *)conf->stepd_loc,
 					NULL};
-		if (type == LAUNCH_BATCH_JOB) {
-			job_id = ((batch_job_launch_msg_t *)req)->job_id;
-			step_id = SLURM_BATCH_SCRIPT;
-		} else if (type == LAUNCH_TASKS) {
-			job_id = ((launch_tasks_request_msg_t *)req)->step_id.job_id;
-			step_id = ((launch_tasks_request_msg_t *)req)->step_id.step_id;
-		}
 		snprintf(log_file, sizeof(log_file),
 			 "--log-file=/tmp/slurmstepd_valgrind_%u.%u",
 			 job_id, step_id);
 #elif (SLURMSTEPD_MEMCHECK == 3)
 		/* valgrind/drd test of slurmstepd, option #3 */
-		uint32_t job_id = 0, step_id = 0;
 		char log_file[256];
 		char *const argv[10] = {"valgrind", "--tool=drd",
 					"--error-limit=no",
@@ -994,19 +1003,11 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 					"--child-silent-after-fork=yes",
 					log_file, (char *)conf->stepd_loc,
 					NULL};
-		if (type == LAUNCH_BATCH_JOB) {
-			job_id = ((batch_job_launch_msg_t *)req)->job_id;
-			step_id = SLURM_BATCH_SCRIPT;
-		} else if (type == LAUNCH_TASKS) {
-			job_id = ((launch_tasks_request_msg_t *)req)->step_id.job_id;
-			step_id = ((launch_tasks_request_msg_t *)req)->step_id.step_id;
-		}
 		snprintf(log_file, sizeof(log_file),
 			 "--log-file=/tmp/slurmstepd_valgrind_%u.%u",
 			 job_id, step_id);
 #elif (SLURMSTEPD_MEMCHECK == 4)
 		/* valgrind/helgrind test of slurmstepd, option #4 */
-		uint32_t job_id = 0, step_id = 0;
 		char log_file[256];
 		char *const argv[10] = {"valgrind", "--tool=helgrind",
 					"--error-limit=no",
@@ -1015,13 +1016,6 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 					"--child-silent-after-fork=yes",
 					log_file, (char *)conf->stepd_loc,
 					NULL};
-		if (type == LAUNCH_BATCH_JOB) {
-			job_id = ((batch_job_launch_msg_t *)req)->job_id;
-			step_id = SLURM_BATCH_SCRIPT;
-		} else if (type == LAUNCH_TASKS) {
-			job_id = ((launch_tasks_request_msg_t *)req)->step_id.job_id;
-			step_id = ((launch_tasks_request_msg_t *)req)->step_id.step_id;
-		}
 		snprintf(log_file, sizeof(log_file),
 			 "--log-file=/tmp/slurmstepd_valgrind_%u.%u",
 			 job_id, step_id);
@@ -1039,6 +1033,15 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 			error("%s: setsid: %m", __func__);
 			failed = 1;
 		}
+
+		if (step_id != SLURM_EXTERN_CONT) {
+			if (container_g_join(job_id, uid)) {
+				error("%s container_g_join(%u): %m",
+				      __func__, job_id);
+				_exit(SLURM_ERROR);
+			}
+		}
+
 		if ((pid = fork()) < 0) {
 			error("%s: Unable to fork grandchild: %m", __func__);
 			failed = 2;
@@ -1067,7 +1070,7 @@ _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		 */
 		if ((to_stepd[0] != conf->lfd)
 		    && (to_slurmd[1] != conf->lfd))
-			close(conf->lfd);
+			fd_close(&conf->lfd);
 
 		if (close(to_stepd[1]) < 0)
 			error("close write to_stepd in grandchild: %m");
@@ -1290,7 +1293,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		} else {
 			error("%s: User %u is NOT authorized to run a job outside of an allocation",
 			      __func__, auth_uid);
-			slurm_seterrno(ESLURM_ACCESS_DENIED);
+			errno = ESLURM_ACCESS_DENIED;
 			return SLURM_ERROR;
 		}
 	}
@@ -1471,14 +1474,6 @@ static bitstr_t *_build_cpu_bitmap(uint16_t cpu_bind_type, char *cpu_bind,
 
 	if (cpu_bind_type & CPU_BIND_NONE) {
 		/* Return NULL bitmap, sort all NUMA */
-	} else if ((cpu_bind_type & CPU_BIND_RANK) &&
-		   (task_cnt_on_node > 0)) {
-		cpu_bitmap = bit_alloc(MAX_CPU_CNT);
-		if (task_cnt_on_node >= MAX_CPU_CNT)
-			task_cnt_on_node = MAX_CPU_CNT;
-		for (cpu_id = 0; cpu_id < task_cnt_on_node; cpu_id++) {
-			bit_set(cpu_bitmap, cpu_id);
-		}
 	} else if (cpu_bind_type & CPU_BIND_MAP) {
 		cpu_bitmap = bit_alloc(MAX_CPU_CNT);
 		tmp_str = xstrdup(cpu_bind);
@@ -1851,7 +1846,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
-	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli,
+	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, msg->auth_uid,
+				      req->step_id.job_id, req->step_id.step_id,
 				      step_hset, msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
 
@@ -1944,7 +1940,7 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 		close(pipe[0]);
 		(void) waitpid(child, &rc, 0);
 		if (WIFEXITED(rc) && (WEXITSTATUS(rc) == 0) && !make_dir)
-			*fd = receive_fd_over_pipe(pipe[1]);
+			*fd = receive_fd_over_socket(pipe[1]);
 		exit_status = WEXITSTATUS(rc);
 		close(pipe[1]);
 		return exit_status;
@@ -2014,7 +2010,7 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 		      __func__, uid, path_name, errno);
 		_exit(errno);
 	}
-	send_fd_over_pipe(pipe[0], *fd);
+	send_fd_over_socket(pipe[0], *fd);
 	close(*fd);
 	_exit(SLURM_SUCCESS);
 }
@@ -2061,7 +2057,7 @@ static int _connect_as_other(char *sock_name, uid_t uid, gid_t gid, int *fd)
 		close(pipe[0]);
 		(void) waitpid(child, &rc, 0);
 		if (WIFEXITED(rc) && (WEXITSTATUS(rc) == 0))
-			*fd = receive_fd_over_pipe(pipe[1]);
+			*fd = receive_fd_over_socket(pipe[1]);
 		exit_status = WEXITSTATUS(rc);
 		close(pipe[1]);
 		return exit_status;
@@ -2097,7 +2093,7 @@ static int _connect_as_other(char *sock_name, uid_t uid, gid_t gid, int *fd)
 		       __func__, sock_name);
 		_exit(errno);
 	}
-	send_fd_over_pipe(pipe[0], *fd);
+	send_fd_over_socket(pipe[0], *fd);
 	close(*fd);
 	_exit(SLURM_SUCCESS);
 }
@@ -2407,8 +2403,11 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
 		forkexec_rc = _forkexec_slurmstepd(LAUNCH_TASKS,
-						   (void *) launch_req,
-						   cli, step_hset,
+						   (void *) launch_req, cli,
+						   req->uid,
+						   req->job_id,
+						   SLURM_EXTERN_CONT,
+						   step_hset,
 						   msg->protocol_version);
 		debug3("%s: return from _forkexec_slurmstepd %d",
 		       __func__, forkexec_rc);
@@ -2639,7 +2638,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 * Just reply now and send a separate kill job request if the
 	 * prolog or launch fail. */
 	replied = true;
-	if (slurm_send_rc_msg(msg, rc) < 1) {
+	if (slurm_send_rc_msg(msg, rc)) {
 		/* The slurmctld is no longer waiting for a reply.
 		 * This typically indicates that the slurmd was
 		 * blocked from memory and/or CPUs and the slurmctld
@@ -2737,7 +2736,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	info("Launching batch job %u for UID %u", req->job_id, batch_uid);
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
-	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli,
+	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, batch_uid,
+				  req->job_id, SLURM_BATCH_SCRIPT,
 				  NULL, SLURM_PROTOCOL_VERSION);
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
 
@@ -2770,7 +2770,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 
 done:
 	if (!replied) {
-		if (slurm_send_rc_msg(msg, rc) < 1) {
+		if (slurm_send_rc_msg(msg, rc)) {
 			/* The slurmctld is no longer waiting for a reply.
 			 * This typically indicates that the slurmd was
 			 * blocked from memory and/or CPUs and the slurmctld
@@ -3121,7 +3121,7 @@ _rpc_reboot(slurm_msg_t *msg)
 			 * least offline this node until someone intervenes.
 			 */
 			if (cfg->conf_flags & CONF_FLAG_SHR) {
-				slurmd_shutdown(SIGTERM);
+				slurmd_shutdown();
 			}
 			slurm_conf_unlock();
 		} else {
@@ -3261,7 +3261,7 @@ _enforce_job_mem_limit(void)
 	step_loc_t *stepd;
 	int fd, i, job_inx, job_cnt;
 	uint64_t step_rss, step_vsize;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = { 0 };
 	job_step_stat_t *resp = NULL;
 	struct job_mem_info {
 		uint32_t job_id;
@@ -3552,6 +3552,7 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 	static bool first_msg = true;
 	static uint32_t req_cnt = 0;
 	static pthread_mutex_t req_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_mutex_t last_poll_mutex = PTHREAD_MUTEX_INITIALIZER;
 	bool req_added = false;
 
 	if (!_slurm_authorized_user(msg->auth_uid)) {
@@ -3599,9 +3600,6 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 		}
 
 		acct_gather_energy_g_get_data(req->context_id,
-					      ENERGY_DATA_LAST_POLL,
-					      &last_poll);
-		acct_gather_energy_g_get_data(req->context_id,
 					      ENERGY_DATA_SENSOR_CNT,
 					      &sensor_cnt);
 
@@ -3609,12 +3607,18 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 		if (!sensor_cnt) {
 			error("Can't get energy data. No power sensors are available. Try later.");
 		} else {
+			slurm_mutex_lock(&last_poll_mutex);
+			acct_gather_energy_g_get_data(req->context_id,
+						      ENERGY_DATA_LAST_POLL,
+						      &last_poll);
 			/*
 			 * If we polled later than delta seconds then force a
 			 * new poll.
 			 */
 			if ((now - last_poll) > req->delta)
 				data_type = ENERGY_DATA_JOULES_TASK;
+			else
+				slurm_mutex_unlock(&last_poll_mutex);
 
 			acct_msg.sensor_cnt = sensor_cnt;
 			acct_msg.energy =
@@ -3623,6 +3627,8 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 			acct_gather_energy_g_get_data(req->context_id,
 						      data_type,
 						      acct_msg.energy);
+			if (data_type == ENERGY_DATA_JOULES_TASK)
+				slurm_mutex_unlock(&last_poll_mutex);
 		}
 
 		slurm_msg_t_copy(&resp_msg, msg);
@@ -5098,9 +5104,6 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	if (req->op == SUSPEND_JOB)
 		_launch_complete_wait(req->job_id);
 
-	if (req->op == SUSPEND_JOB)
-		(void) task_g_slurmd_suspend_job(req->job_id);
-
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume
 	 * as appropriate. Since the "suspend" action may contains a sleep
@@ -5209,9 +5212,6 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	}
 	list_iterator_destroy(i);
 	FREE_NULL_LIST(steps);
-
-	if (req->op == RESUME_JOB) /* Call task plugin after processes resume */
-		(void) task_g_slurmd_resume_job(req->job_id);
 
 	_unlock_suspend_job(req->job_id);
 
@@ -5692,7 +5692,7 @@ _add_starting_step(uint16_t type, void *req)
 static int
 _remove_starting_step(uint16_t type, void *req)
 {
-	slurm_step_id_t starting_step;
+	slurm_step_id_t starting_step = { 0 };
 	int rc = SLURM_SUCCESS;
 
 	switch(type) {
@@ -5714,7 +5714,7 @@ _remove_starting_step(uint16_t type, void *req)
 	}
 
 	if (!list_delete_all(conf->starting_steps,
-			     _compare_starting_steps,
+			     (ListCmpF) verify_step_id,
 			     &starting_step)) {
 		error("%s: %ps not found", __func__, &starting_step);
 		rc = SLURM_ERROR;
@@ -5723,24 +5723,6 @@ _remove_starting_step(uint16_t type, void *req)
 fail:
 	return rc;
 }
-
-
-
-static int _compare_starting_steps(void *listentry, void *key)
-{
-	slurm_step_id_t *step0 = (slurm_step_id_t *)listentry;
-	slurm_step_id_t *step1 = (slurm_step_id_t *)key;
-
-	/* If step1->step_id is NO_VAL then return for any step */
-	if ((step1->step_id == NO_VAL) &&
-	    (step0->job_id == step1->job_id)) {
-		return 1;
-	} else if (memcmp(step0, step1, sizeof(*step0)))
-		return 0;
-	else
-		return 1;
-}
-
 
 /* Wait for a step to get far enough in the launch process to have
    a socket open, ready to handle RPC calls.  Pass step_id = NO_VAL
@@ -5755,7 +5737,7 @@ static int _wait_for_starting_step(slurm_step_id_t *step_id)
 	int num_passes = 0;
 
 	while (list_find_first(conf->starting_steps,
-			       _compare_starting_steps,
+			       (ListCmpF) verify_step_id,
 			       step_id)) {
 		if (num_passes == 0) {
 			if (step_id->step_id != NO_VAL)
@@ -5793,7 +5775,7 @@ static int _wait_for_starting_step(slurm_step_id_t *step_id)
 static bool _step_is_starting(slurm_step_id_t *step_id)
 {
 	return list_find_first(conf->starting_steps,
-			       _compare_starting_steps,
+			       (ListCmpF) verify_step_id,
 			       step_id);
 }
 

@@ -156,10 +156,18 @@ X_AC_HTTP_PARSER
 dnl Check for yaml parser
 X_AC_YAML
 
+dnl Check for epoll support
+AX_HAVE_EPOLL()
+if test "x$ax_cv_have_epoll" = "xyes"; then
+	AC_DEFINE(HAVE_EPOLL, 1, [Define to 1 if we have epoll(7) support])
+fi
+AM_CONDITIONAL(HAVE_EPOLL, [test "x$ax_cv_have_epoll" = "xyes" ])
+
 dnl Checks for compiler characteristics.
 dnl
 AC_PROG_GCC_TRADITIONAL([])
 
+AX_GCC_BUILTIN(__builtin_bswap64)
 AX_GCC_BUILTIN(__builtin_clzll)
 AX_GCC_BUILTIN(__builtin_ctzll)
 AX_GCC_BUILTIN(__builtin_popcountll)
@@ -367,6 +375,7 @@ AC_CONFIG_FILES([Makefile
 		 contribs/seff/Makefile
 		 contribs/sgather/Makefile
 		 contribs/sjobexit/Makefile
+		 contribs/slurm_completion_help/Makefile
 		 contribs/torque/Makefile
 		 doc/Makefile
 		 doc/html/Makefile
@@ -381,6 +390,8 @@ AC_CONFIG_FILES([Makefile
 		 src/api/Makefile
 		 src/bcast/Makefile
 		 src/common/Makefile
+		 src/conmgr/Makefile
+		 src/curl/Makefile
 		 src/database/Makefile
 		 src/interfaces/Makefile
 		 src/lua/Makefile
@@ -415,6 +426,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/burst_buffer/common/Makefile
 		 src/plugins/burst_buffer/datawarp/Makefile
 		 src/plugins/burst_buffer/lua/Makefile
+		 src/plugins/certmgr/Makefile
+		 src/plugins/certmgr/script/Makefile
 		 src/plugins/cgroup/Makefile
 		 src/plugins/cgroup/common/Makefile
 		 src/plugins/cgroup/v1/Makefile
@@ -429,13 +442,14 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/cred/munge/Makefile
 		 src/plugins/cred/none/Makefile
 		 src/plugins/data_parser/Makefile
-		 src/plugins/data_parser/v0.0.39/Makefile
 		 src/plugins/data_parser/v0.0.40/Makefile
 		 src/plugins/data_parser/v0.0.41/Makefile
+		 src/plugins/data_parser/v0.0.42/Makefile
 		 src/plugins/gpu/Makefile
 		 src/plugins/gpu/common/Makefile
 		 src/plugins/gpu/generic/Makefile
 		 src/plugins/gpu/nrt/Makefile
+		 src/plugins/gpu/nvidia/Makefile
 		 src/plugins/gpu/nvml/Makefile
 		 src/plugins/gpu/oneapi/Makefile
 		 src/plugins/gpu/rsmi/Makefile
@@ -475,6 +489,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mcs/Makefile
 		 src/plugins/mcs/account/Makefile
 		 src/plugins/mcs/group/Makefile
+		 src/plugins/mcs/label/Makefile
 		 src/plugins/mcs/user/Makefile
 		 src/plugins/mpi/Makefile
 		 src/plugins/mpi/cray_shasta/Makefile
@@ -547,10 +562,8 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmrestd/plugins/auth/jwt/Makefile
 		 src/slurmrestd/plugins/auth/local/Makefile
 		 src/slurmrestd/plugins/openapi/Makefile
-		 src/slurmrestd/plugins/openapi/dbv0.0.39/Makefile
 		 src/slurmrestd/plugins/openapi/slurmctld/Makefile
 		 src/slurmrestd/plugins/openapi/slurmdbd/Makefile
-		 src/slurmrestd/plugins/openapi/v0.0.39/Makefile
 		 src/sprio/Makefile
 		 src/squeue/Makefile
 		 src/sreport/Makefile

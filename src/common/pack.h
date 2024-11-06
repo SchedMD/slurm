@@ -178,6 +178,10 @@ extern int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp,
 				     buf_t *buffer);
 extern int unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp,
 				     buf_t *buffer);
+extern void packstr_func(void *str, uint16_t protocol_version, buf_t *buffer);
+extern int safe_unpackstr_func(void **object,
+			       uint16_t protocol_version,
+			       buf_t *buffer);
 
 extern void packstr_array(char **valp, uint32_t size_val, buf_t *buffer);
 extern int unpackstr_array(char ***valp, uint32_t* size_val, buf_t *buffer);
@@ -330,12 +334,12 @@ extern int unpackmem_array(char *valp, uint32_t size_valp, buf_t *buffer);
 
 #define unpack_bit_str_hex(bitmap,buf) do {				\
 	char *tmp_str = NULL;						\
-	uint32_t _size, _tmp_uint32;					\
+	uint32_t _size;							\
 	xassert(*bitmap == NULL);					\
 	xassert(buf->magic == BUF_MAGIC);				\
 	safe_unpack32(&_size, buf);					\
 	if (_size != NO_VAL) {						\
-		safe_unpackstr_xmalloc(&tmp_str, &_tmp_uint32, buf);	\
+		safe_unpackstr(&tmp_str, buf);	\
 		if (_size) {						\
 			*bitmap = bit_alloc(_size);			\
 			if (bit_unfmt_hexmask(*bitmap, tmp_str)) {	\

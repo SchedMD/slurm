@@ -57,7 +57,7 @@ typedef struct {
 	identity_t *id;
 	char **job_submit_user_msg;
 	char **failed_lines;
-	List new_jobs;
+	list_t *new_jobs;
 	uint16_t protocol_version;
 	int return_code;
 } foreach_cron_job_args_t;

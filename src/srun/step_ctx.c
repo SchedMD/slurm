@@ -303,7 +303,7 @@ extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 extern int step_ctx_destroy(slurm_step_ctx_t *ctx)
 {
 	if ((ctx == NULL) || (ctx->magic != STEP_CTX_MAGIC)) {
-		slurm_seterrno(EINVAL);
+		errno = EINVAL;
 		return SLURM_ERROR;
 	}
 	slurm_free_job_step_create_request_msg(ctx->step_req);

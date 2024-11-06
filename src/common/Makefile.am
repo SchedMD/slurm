@@ -16,8 +16,6 @@ libcommon_la_SOURCES =				\
 	callerid.h				\
 	cbuf.c					\
 	cbuf.h					\
-	conmgr.c				\
-	conmgr.h				\
 	core_array.c				\
 	core_array.h				\
 	cpu_frequency.c				\
@@ -118,6 +116,8 @@ libcommon_la_SOURCES =				\
 	sack_api.h				\
 	setproctitle.c				\
 	setproctitle.h				\
+	sluid.c					\
+	sluid.h					\
 	slurm_errno.c				\
 	slurm_opt.c				\
 	slurm_opt.h				\
@@ -153,6 +153,8 @@ libcommon_la_SOURCES =				\
 	slurmdbd_pack.h				\
 	spank.c					\
 	spank.h					\
+	state_save.c				\
+	state_save.h				\
 	stepd_api.c				\
 	stepd_api.h				\
 	strlcpy.c				\
@@ -174,8 +176,6 @@ libcommon_la_SOURCES =				\
 	util-net.h				\
 	working_cluster.c			\
 	working_cluster.h			\
-	workq.c					\
-	workq.h					\
 	write_labelled_message.c		\
 	write_labelled_message.h		\
 	x11_util.c				\

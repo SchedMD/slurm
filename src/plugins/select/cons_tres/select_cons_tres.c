@@ -62,8 +62,8 @@
 #if defined (__APPLE__)
 extern slurm_conf_t slurm_conf __attribute__((weak_import));
 extern node_record_t **node_record_table_ptr __attribute__((weak_import));
-extern List part_list __attribute__((weak_import));
-extern List job_list __attribute__((weak_import));
+extern list_t *part_list __attribute__((weak_import));
+extern list_t *job_list __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
 extern time_t last_node_update __attribute__((weak_import));
 extern bitstr_t *avail_node_bitmap __attribute__((weak_import));
@@ -74,8 +74,8 @@ extern list_t *cluster_license_list __attribute__((weak_import));
 #else
 slurm_conf_t slurm_conf;
 node_record_t **node_record_table_ptr;
-List part_list;
-List job_list;
+list_t *part_list;
+list_t *job_list;
 int node_record_count;
 time_t last_node_update;
 bitstr_t *avail_node_bitmap;
@@ -132,7 +132,6 @@ const char plugin_name[] = "Trackable RESources (TRES) Selection plugin";
 const char plugin_type[] = "select/cons_tres";
 const uint32_t plugin_id      = SELECT_PLUGIN_CONS_TRES;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
-const uint32_t pstate_version = 7;	/* version control on saved state */
 const uint16_t nodeinfo_magic = 0x8a5d;
 
 /* Global variables */
@@ -248,7 +247,7 @@ extern int select_p_state_restore(char *dir_name)
  * src/slurmctld/read_config.c. See select_p_node_init for the
  * whole story.
  */
-extern int select_p_job_init(List job_list)
+extern int select_p_job_init(list_t *job_list)
 {
 	/* nothing to initialize for jobs */
 	return SLURM_SUCCESS;
@@ -372,18 +371,18 @@ extern int select_p_node_init(void)
  * IN mode - SELECT_MODE_RUN_NOW   (0): try to schedule job now
  *           SELECT_MODE_TEST_ONLY (1): test if job can ever run
  *           SELECT_MODE_WILL_RUN  (2): determine when and where job can run
- * IN preemptee_candidates - List of pointers to jobs which can be preempted.
+ * IN preemptee_candidates - list of pointers to jobs which can be preempted.
  * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode==SELECT_MODE_TEST_ONLY or input pointer is NULL.
  * IN resv_exc_ptr - Various TRES which the job can NOT use.
- * RET zero on success, EINVAL otherwise
+ * RET SLURM_SUCCESS on success, rc otherwise
  */
 extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
-			     List preemptee_candidates,
-			     List *preemptee_job_list,
+			     list_t *preemptee_candidates,
+			     list_t **preemptee_job_list,
 			     resv_exc_t *resv_exc_ptr)
 {
 	int rc;
@@ -664,7 +663,7 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 	struct job_resources *job = job_ptr->job_resrcs;
 	part_res_record_t *p_ptr;
 	int i, n;
-	List gres_list;
+	list_t *gres_list;
 	bool old_job = false;
 
 	xassert(job_ptr);
@@ -916,7 +915,6 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 					   buf_t *buffer,
 					   uint16_t protocol_version)
 {
-	uint32_t uint32_tmp;
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
 
 	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
@@ -925,8 +923,7 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
 		safe_unpack64(&nodeinfo_ptr->alloc_memory, buffer);
-		safe_unpackstr_xmalloc(&nodeinfo_ptr->tres_alloc_fmt_str,
-				       &uint32_tmp, buffer);
+		safe_unpackstr(&nodeinfo_ptr->tres_alloc_fmt_str, buffer);
 		safe_unpackdouble(&nodeinfo_ptr->tres_alloc_weighted, buffer);
 	}
 
@@ -948,7 +945,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	int i, n;
 	uint32_t alloc_cpus, alloc_cores, total_node_cores, efctv_node_cores;
 	bitstr_t **alloc_core_bitmap = NULL;
-	List gres_list;
+	list_t *gres_list;
 
 	/*
 	 * only set this once when the last_node_update is newer than
@@ -1198,7 +1195,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t *tmp_32 = (uint32_t *) data;
-	List *tmp_list = (List *) data;
+	list_t **tmp_list = data;
 
 	switch (info) {
 	case SELECT_CR_PLUGIN:

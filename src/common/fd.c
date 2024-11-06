@@ -40,6 +40,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <netinet/tcp.h>
 #include <poll.h>
 #include <stdint.h>
 #include <sys/ioctl.h>
@@ -61,6 +62,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+/* Set minimum MSS matching TCP MSDS from RFC#879 */
+#define MSS_MIN_BYTES 556
+
 /*
  * Helper macro to log_flag(NET, ...) against a given connection
  * IN fd - file descriptor relavent for logging
@@ -72,9 +76,10 @@ do { \
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) { \
 		char *log_name = NULL; \
 		if (!con_name) \
-			con_name = log_name = fd_resolve_path(fd); \
+			log_name = fd_resolve_path(fd); \
 		log_flag(NET, "%s: [%s] " fmt, \
-			 __func__, con_name, ##__VA_ARGS__); \
+			 __func__, con_name ? con_name : log_name, \
+			 ##__VA_ARGS__); \
 		xfree(log_name); \
 	} \
 } while (false)
@@ -84,18 +89,31 @@ do { \
  * for details.
  */
 strong_alias(closeall, slurm_closeall);
+strong_alias(closeall_except, slurm_closeall_except);
 strong_alias(fd_close, slurm_fd_close);
 strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
 strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
 strong_alias(fd_get_socket_error, slurm_fd_get_socket_error);
-strong_alias(send_fd_over_pipe, slurm_send_fd_over_pipe);
-strong_alias(receive_fd_over_pipe, slurm_receive_fd_over_pipe);
+strong_alias(send_fd_over_socket, slurm_send_fd_over_socket);
+strong_alias(receive_fd_over_socket, slurm_receive_fd_over_socket);
 strong_alias(rmdir_recursive, slurm_rmdir_recursive);
 
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
 
-static void _slow_closeall(int fd)
+static bool _is_fd_skipped(int fd, int *skipped)
+{
+	if (!skipped)
+		return false;
+
+	for (int i = 0; skipped[i] >= 0; i++)
+		if (fd == skipped[i])
+			return true;
+
+	return false;
+}
+
+static void _slow_closeall(int fd, int *skipped)
 {
 	struct rlimit rlim;
 
@@ -104,11 +122,12 @@ static void _slow_closeall(int fd)
 		rlim.rlim_cur = 4096;
 	}
 
-	while (fd < rlim.rlim_cur)
-		close(fd++);
+	for (; fd < rlim.rlim_cur; fd++)
+		if (!_is_fd_skipped(fd, skipped))
+			close(fd);
 }
 
-extern void closeall(int fd)
+extern void closeall_except(int fd, int *skipped)
 {
 	char *name = "/proc/self/fd";
 	DIR *d;
@@ -123,7 +142,7 @@ extern void closeall(int fd)
 	if (!(d = opendir(name))) {
 		debug("Could not read open files from %s: %m, closing all potential file descriptors",
 		      name);
-		_slow_closeall(fd);
+		_slow_closeall(fd, skipped);
 		return;
 	}
 
@@ -131,11 +150,18 @@ extern void closeall(int fd)
 		/* Ignore "." and ".." entries */
 		if (dir->d_type != DT_DIR) {
 			int open_fd = atoi(dir->d_name);
-			if (open_fd >= fd)
+
+			if ((open_fd >= fd) &&
+			    !_is_fd_skipped(open_fd, skipped))
 				close(open_fd);
 		}
 	}
 	closedir(d);
+}
+
+extern void closeall(int fd)
+{
+	return closeall_except(fd, NULL);
 }
 
 extern void fd_close(int *fd)
@@ -395,12 +421,17 @@ extern char *fd_resolve_path(int fd)
 
 #if defined(__linux__)
 	char ret[PATH_MAX + 1];
+	ssize_t bytes;
 
 	path = xstrdup_printf("/proc/self/fd/%u", fd);
 	memset(ret, 0, (PATH_MAX + 1));
+	bytes = readlink(path, ret, PATH_MAX);
 
-	if (readlink(path, ret, PATH_MAX) < 0)
+	if (bytes < 0)
 		debug("%s: readlink(%s) failed: %m", __func__,  path);
+	else if (bytes >= PATH_MAX)
+		debug("%s: rejecting readlink(%s) for possble truncation",
+		      __func__, path);
 	else
 		resolved = xstrdup(ret);
 #endif
@@ -412,7 +443,7 @@ extern char *fd_resolve_path(int fd)
 
 extern char *fd_resolve_peer(int fd)
 {
-	slurm_addr_t addr;
+	slurm_addr_t addr = {0};
 	socklen_t size = sizeof(addr);
 	int err = errno;
 	char *peer;
@@ -464,7 +495,7 @@ extern char *poll_revents_to_str(const short revents)
 }
 
 /* pass an open file descriptor back to the requesting process */
-extern void send_fd_over_pipe(int socket, int fd)
+extern void send_fd_over_socket(int socket, int fd)
 {
 	struct msghdr msg = { 0 };
 	struct cmsghdr *cmsg;
@@ -494,7 +525,7 @@ extern void send_fd_over_pipe(int socket, int fd)
 }
 
 /* receive an open file descriptor over unix socket */
-extern int receive_fd_over_pipe(int socket)
+extern int receive_fd_over_socket(int socket)
 {
 	struct msghdr msg = {0};
 	struct cmsghdr *cmsg;
@@ -656,7 +687,6 @@ extern int rmdir_recursive(const char *path, bool remove_top)
 	return rc;
 }
 
-
 extern int fd_get_readable_bytes(int fd, int *readable_ptr,
 				 const char *con_name)
 {
@@ -712,4 +742,84 @@ extern int fd_get_readable_bytes(int fd, int *readable_ptr,
 #else /* FIONREAD */
 	return ESLURM_NOT_SUPPORTED;
 #endif /* !FIONREAD */
+}
+
+extern int fd_get_buffered_output_bytes(int fd, int *bytes_ptr,
+					const char *con_name)
+{
+#ifdef TIOCOUTQ
+	/* default pending to max positive 32 bit signed integer */
+	int pending = INT32_MAX;
+
+	xassert(bytes_ptr);
+
+	if (fd < 0) {
+		log_net(fd, con_name,
+			"Refusing request for ioctl(%d, TIOCOUTQ) with invalid file descriptor: %d",
+			fd, fd);
+		return EINVAL;
+	}
+
+	/*
+	 * Request kernel tell us the number of bytes remain in the outgoing
+	 * buffer.
+	 */
+	if (ioctl(fd, TIOCOUTQ, &pending)) {
+		int rc = errno;
+		log_net(fd, con_name,
+			"ioctl(%d, TIOCOUTQ, 0x%"PRIxPTR") failed: %s",
+			fd, (uintptr_t) &pending, slurm_strerror(rc));
+		return rc;
+	}
+
+	/* validate response from kernel is sane (or likely sane) */
+	if (pending < 0) {
+		/* invalid TIOCOUTQ response -> bad driver response */
+		log_net(fd, con_name,
+			"Invalid response: ioctl(%d, TIOCOUTQ, 0x%"PRIxPTR")=%d",
+			 fd, (uintptr_t) &pending, pending);
+		return ENOSYS;
+	}
+	/* verify if pending was even set */
+	if (pending == INT32_MAX) {
+		/* ioctl() did not error but did not change pending?? */
+		log_net(fd, con_name,
+			"Invalid unchanged pending value: ioctl(%d, TIOCOUTQ, 0x%"PRIxPTR")=%d",
+			fd, (uintptr_t) &pending, pending);
+		return ENOSYS;
+	}
+
+	*bytes_ptr = pending;
+
+	log_net(fd, con_name,
+		"Successful query: ioctl(%d, TIOCOUTQ, 0x%"PRIxPTR")=%d",
+		fd, (uintptr_t) bytes_ptr, pending);
+
+	return SLURM_SUCCESS;
+#else /* TIOCOUTQ */
+	return ESLURM_NOT_SUPPORTED;
+#endif /* !TIOCOUTQ */
+}
+
+extern int fd_get_maxmss(int fd, const char *con_name)
+{
+	int mss = NO_VAL;
+	socklen_t tmp_socklen = { 0 };
+
+	if (getsockopt(fd, IPPROTO_TCP, TCP_MAXSEG, &mss, &tmp_socklen))
+		log_net(fd, con_name,
+			"getsockopt(%d, IPPROTO_TCP, TCP_MAXSEG) failed: %m",
+			fd);
+	else
+		log_net(fd, con_name,
+			"getsockopt(%d, IPPROTO_TCP, TCP_MAXSEG)=%d", fd, mss);
+
+	if ((mss < MSS_MIN_BYTES) || (mss > MAX_MSG_SIZE)) {
+		log_net(fd, con_name,
+			"Rejecting invalid response from getsockopt(%d, IPPROTO_TCP, TCP_MAXSEG)=%d",
+			fd, mss);
+		mss = NO_VAL;
+	}
+
+	return mss;
 }

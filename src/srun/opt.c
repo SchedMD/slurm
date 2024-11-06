@@ -94,12 +94,14 @@ slurm_opt_t opt = {
 	.usage_func = _usage,
 	.autocomplete_func = _autocomplete,
 };
-List 	opt_list = NULL;
+list_t *opt_list = NULL;
 int	pass_number = 0;
 time_t	srun_begin_time = 0;
 bool local_het_step = false;
 
 /*---- forward declarations of static variables and functions  ----*/
+
+static bool is_step = false;
 
 static slurm_opt_t *_get_first_opt(int het_job_offset);
 static slurm_opt_t *_get_next_opt(int het_job_offset, slurm_opt_t *opt_last);
@@ -342,6 +344,8 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	bool opt_found = false;
 	static bool check_het_step = false;
 
+	is_step = getenv("SLURM_JOB_ID") ? true : false;
+
 	het_grp_bits = _get_het_group(argc, argv, default_het_job_offset++,
 				      &opt_found);
 	/*
@@ -371,7 +375,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		_opt_default();
 
 		/* do not set adjust defaults in an active allocation */
-		if (!getenv("SLURM_JOB_ID")) {
+		if (!is_step) {
 			bool first = (pass_number == 1);
 			if (cli_filter_g_setup_defaults(&opt, first)) {
 				error("cli_filter plugin terminated with error");
@@ -409,7 +413,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 			 * trying to use the whole allocation.
 			 */
 			if (!getenv("SLURM_HET_SIZE") &&
-			    getenv("SLURM_JOB_ID") &&
+			    is_step &&
 			    (optind >= 0) && (optind < argc)) {
 				for (int i2 = optind; i2 < argc; i2++) {
 					if (!xstrcmp(argv[i2], ":")) {
@@ -814,10 +818,6 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	if (!rest && !sropt.test_only)
 		fatal("No command given to execute.");
 
-	if (launch_init() != SLURM_SUCCESS) {
-		fatal("Unable to load launch plugin, check LaunchType "
-		      "configuration");
-	}
 	command_pos = launch_g_setup_srun_opt(rest, &opt);
 
 	/* make sure we have allocated things correctly */
@@ -916,6 +916,14 @@ static bool _opt_verify(void)
 		if (slurm_option_set_by_env(&opt, 'N'))
 			opt.nodes_set = false;
 	}
+
+	/*
+	 * Specifying --gpus should override SLURM_GPUS_PER_NODE env if present
+	 * in step request.
+	 */
+	if (slurm_option_set_by_env(&opt, LONG_OPT_GPUS_PER_NODE) &&
+	    slurm_option_set_by_cli(&opt, 'G') && is_step)
+		slurm_option_reset(&opt, "gpus-per-node");
 
 	validate_options_salloc_sbatch_srun(&opt);
 
@@ -1248,7 +1256,7 @@ static bool _opt_verify(void)
 			if (opt.max_nodes &&
 			    (opt.ntasks > max_ntasks) &&
 			    !mpack_reset_nodes &&
-			    getenv("SLURM_JOB_ID")) {
+			    is_step) {
 				warning("can't honor --ntasks-per-node set to %u which doesn't match the requested tasks %u with the maximum number of requested nodes %u. Ignoring --ntasks-per-node.",
 					opt.ntasks_per_node, opt.ntasks,
 					opt.max_nodes);
@@ -1361,7 +1369,7 @@ extern char *spank_get_job_env(const char *name)
 
 	if ((name == NULL) || (name[0] == '\0') ||
 	    (strchr(name, (int)'=') != NULL)) {
-		slurm_seterrno(EINVAL);
+		errno = EINVAL;
 		return NULL;
 	}
 
@@ -1387,7 +1395,7 @@ extern int   spank_set_job_env(const char *name, const char *value,
 
 	if ((name == NULL) || (name[0] == '\0') ||
 	    (strchr(name, (int)'=') != NULL)) {
-		slurm_seterrno(EINVAL);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -1421,7 +1429,7 @@ extern int   spank_unset_job_env(const char *name)
 
 	if ((name == NULL) || (name[0] == '\0') ||
 	    (strchr(name, (int)'=') != NULL)) {
-		slurm_seterrno(EINVAL);
+		errno = EINVAL;
 		return -1;
 	}
 

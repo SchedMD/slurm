@@ -61,6 +61,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/state_save.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
@@ -190,9 +191,8 @@ unpack_error:
 int dump_all_node_state ( void )
 {
 	/* Save high-water mark to avoid buffer growth with copies */
-	static int high_buffer_size = (1024 * 1024);
-	int error_code = 0, inx, log_fd;
-	char *old_file, *new_file, *reg_file;
+	static uint32_t high_buffer_size = (1024 * 1024);
+	int error_code = 0, inx;
 	node_record_t *node_ptr;
 	/* Locks: Read config and node */
 	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK,
@@ -213,59 +213,12 @@ int dump_all_node_state ( void )
 	for (inx = 0; (node_ptr = next_node(&inx)); inx++) {
 		xassert (node_ptr->magic == NODE_MAGIC);
 		xassert (node_ptr->config_ptr->magic == CONFIG_MAGIC);
-		node_record_pack(node_ptr, SLURM_PROTOCOL_VERSION, buffer);
+		node_record_pack_state(node_ptr, SLURM_PROTOCOL_VERSION,
+				       buffer);
 	}
-
-	old_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat (old_file, "/node_state.old");
-	reg_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat (reg_file, "/node_state");
-	new_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat (new_file, "/node_state.new");
 	unlock_slurmctld (node_read_lock);
 
-	/* write the buffer to file */
-	lock_state_files();
-	log_fd = creat (new_file, 0600);
-	if (log_fd < 0) {
-		error ("Can't save state, error creating file %s %m", new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-
-		rc = fsync_and_close(log_fd, "node");
-		if (rc && !error_code)
-			error_code = rc;
-	}
-	if (error_code)
-		(void) unlink (new_file);
-	else {	/* file shuffle */
-		(void) unlink (old_file);
-		if (link(reg_file, old_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		(void) unlink (reg_file);
-		if (link(new_file, reg_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		(void) unlink (new_file);
-	}
-	xfree (old_file);
-	xfree (reg_file);
-	xfree (new_file);
-	unlock_state_files ();
+	error_code = save_buf_to_state("node_state", buffer, &high_buffer_size);
 
 	FREE_NULL_BUFFER(buffer);
 	END_TIMER2(__func__);
@@ -309,6 +262,29 @@ static buf_t *_open_node_state_file(char **state_file)
 	error("NOTE: Trying backup state save file. Information may be lost!");
 	xstrcat(*state_file, ".old");
 	return create_mmap_buf(*state_file);
+}
+
+static int _validate_nodes_vs_nodeset(char *nodes_str)
+{
+	hostlist_t *nodes = NULL;
+	slurm_conf_nodeset_t **ptr;
+	int count_nodeset = slurm_conf_nodeset_array(&ptr);
+
+	if (!nodes_str)
+		return SLURM_SUCCESS;
+
+	nodes = hostlist_create(nodes_str);
+	for (int i = 0; i < count_nodeset; i++) {
+		if (hostlist_find(nodes, ptr[i]->name) != -1) {
+			error("NodeSet with name %s overlaps with an existing NodeName",
+			      ptr[i]->name);
+			hostlist_destroy(nodes);
+			return ESLURM_INVALID_NODE_NAME;
+		}
+	}
+
+	hostlist_destroy(nodes);
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -409,6 +385,19 @@ extern int load_all_node_state ( bool state_only )
 
 		}
 
+		/*
+		 * When a NodeSet is defined with the same name than
+		 * an existing node name found in the state file, and which
+		 * might not be in the configuration, then fatal. This can
+		 * happen for example when adding a dynamic node, then changing
+		 * slurm.conf by adding a NodeSet with the same name than the
+		 * dynamic node, and then restarting.
+		 */
+		if (_validate_nodes_vs_nodeset(node_state_rec->name) !=
+		    SLURM_SUCCESS) {
+			fatal("This error might happen when names overlap with dynamic nodes. Please rename the NodeSet in slurm.conf.");
+		}
+
 		if (node_state & NODE_STATE_DYNAMIC_NORM) {
 			/*
 			 * Create node record to restore node into.
@@ -416,26 +405,8 @@ extern int load_all_node_state ( bool state_only )
 			 * cpu_spec_list, core_spec_cnt, port are only restored
 			 * for dynamic nodes, otherwise always trust slurm.conf
 			 */
-			config_record_t *config_ptr;
-			config_ptr = create_config_record();
-			config_ptr->boards = node_state_rec->boards;
-			config_ptr->core_spec_cnt =
-				node_state_rec->core_spec_cnt;
-			config_ptr->cores = node_state_rec->cores;
-			config_ptr->cpu_spec_list =
-				xstrdup(node_state_rec->cpu_spec_list);
-			config_ptr->cpus = node_state_rec->cpus;
-			config_ptr->feature = xstrdup(node_state_rec->features);
-			config_ptr->gres = xstrdup(node_state_rec->gres);
-			config_ptr->node_bitmap = bit_alloc(node_record_count);
-			config_ptr->nodes = xstrdup(node_state_rec->name);
-			config_ptr->real_memory = node_state_rec->real_memory;
-			config_ptr->res_cores_per_gpu =
-				node_state_rec->res_cores_per_gpu;
-			config_ptr->threads = node_state_rec->threads;
-			config_ptr->tmp_disk = node_state_rec->tmp_disk;
-			config_ptr->tot_sockets = node_state_rec->tot_sockets;
-			config_ptr->weight = node_state_rec->weight;
+			config_record_t *config_ptr =
+				config_record_from_node_record(node_state_rec);
 
 			if ((error_code = add_node_record(node_state_rec->name,
 							  config_ptr,
@@ -614,6 +585,12 @@ extern int load_all_node_state ( bool state_only )
 				node_state_rec->extra = NULL;
 			}
 
+			if (!node_ptr->cert_token) {
+				node_ptr->cert_token =
+					node_state_rec->cert_token;
+				node_state_rec->cert_token = NULL;
+			}
+
 			if (!node_ptr->comment) {
 				node_ptr->comment = node_state_rec->comment;
 				node_state_rec->comment = NULL;
@@ -678,6 +655,9 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->extra);
 			node_ptr->extra = node_state_rec->extra;
 			node_state_rec->extra = NULL;
+			xfree(node_ptr->cert_token);
+			node_ptr->cert_token = node_state_rec->cert_token;
+			node_state_rec->cert_token = NULL;
 			xfree(node_ptr->comment);
 			node_ptr->comment = node_state_rec->comment;
 			node_state_rec->comment = NULL;
@@ -939,7 +919,61 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 	buffer = init_buf(BUF_SIZE * 16);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		bitstr_t *hidden_nodes = bit_alloc(node_record_count);
+		uint32_t pack_bitmap_offset;
+		bool repack_hidden = false;
+
+		/* write header: count, time, hidden node bitmap */
+		pack32(nodes_packed, buffer);
+		pack_time(now, buffer);
+		pack_bitmap_offset = get_buf_offset(buffer);
+		pack_bit_str_hex(hidden_nodes, buffer);
+
+		/* write node records */
+		for (inx = 0; inx < node_record_count; inx++) {
+			if (!node_record_table_ptr[inx])
+				goto pack_empty_SLURM_24_11_PROTOCOL_VERSION;
+			node_ptr = node_record_table_ptr[inx];
+			xassert(node_ptr->magic == NODE_MAGIC);
+			xassert(node_ptr->config_ptr->magic == CONFIG_MAGIC);
+
+			/*
+			 * We can't avoid packing node records without breaking
+			 * the node index pointers. So pack a node with a name
+			 * of NULL and let the caller deal with it.
+			 */
+			hidden = false;
+			if (((show_flags & SHOW_ALL) == 0) &&
+			    !privileged &&
+			    (_node_is_hidden(node_ptr, &pack_info)))
+				hidden = true;
+			else if (IS_NODE_FUTURE(node_ptr) &&
+				 (!(show_flags & SHOW_FUTURE)))
+				hidden = true;
+			else if ((node_ptr->name == NULL) ||
+				 (node_ptr->name[0] == '\0'))
+				hidden = true;
+
+			if (hidden) {
+pack_empty_SLURM_24_11_PROTOCOL_VERSION:
+				bit_set(hidden_nodes, inx);
+				repack_hidden = true;
+			} else {
+				_pack_node(node_ptr, buffer, protocol_version,
+					   show_flags);
+			}
+			nodes_packed++;
+		}
+
+		if (repack_hidden) {
+			tmp_offset = get_buf_offset(buffer);
+			set_buf_offset(buffer, pack_bitmap_offset);
+			pack_bit_str_hex(hidden_nodes, buffer);
+			set_buf_offset(buffer, tmp_offset);
+		}
+		FREE_NULL_BITMAP(hidden_nodes);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		pack_time(now, buffer);
@@ -1032,7 +1066,38 @@ extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
 	buffer = init_buf(BUF_SIZE);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		/* write header: count and time */
+		pack32(nodes_packed, buffer);
+		pack_time(now, buffer);
+		/* Mirror _unpack_node_info_msg */
+		pack_bit_str_hex(NULL, buffer);
+
+		/* write node records */
+		if (node_name)
+			node_ptr = find_node_record(node_name);
+		else
+			node_ptr = node_record_table_ptr[0];
+		if (node_ptr) {
+			hidden = false;
+			if (((show_flags & SHOW_ALL) == 0) &&
+			    !privileged &&
+			    (_node_is_hidden(node_ptr, &pack_info)))
+				hidden = true;
+			else if (IS_NODE_FUTURE(node_ptr) &&
+				 (!(show_flags & SHOW_FUTURE)))
+				hidden = true;
+			else if ((node_ptr->name == NULL) ||
+				 (node_ptr->name[0] == '\0'))
+				hidden = true;
+
+			if (!hidden) {
+				_pack_node(node_ptr, buffer, protocol_version,
+					   show_flags);
+				nodes_packed++;
+			}
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		pack_time(now, buffer);
@@ -1602,6 +1667,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			/* This updates the lookup table addresses */
 			slurm_reset_alias(node_ptr->name, node_ptr->comm_name,
 					  node_ptr->node_hostname);
+		}
+
+		if (update_node_msg->cert_token) {
+			xfree(node_ptr->cert_token);
+			if (update_node_msg->cert_token[0])
+				node_ptr->cert_token = xstrdup(
+					update_node_msg->cert_token);
 		}
 
 		if (update_node_msg->cpu_bind) {
@@ -2299,7 +2371,7 @@ config_record_t *_dup_config(config_record_t *config_ptr)
 /*
  * _update_node_weight - Update weight associated with nodes
  *	build new config list records as needed
- * IN node_names - List of nodes to update
+ * IN node_names - list of nodes to update
  * IN weight - New weight value
  * RET: SLURM_SUCCESS or error code
  */
@@ -2494,7 +2566,7 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 			FREE_NULL_BITMAP(tmp_bitmap);
 		}
 		list_iterator_destroy(config_iterator);
-		if (avail_feature_list) {	/* List not set at startup */
+		if (avail_feature_list) {	/* list not set at startup */
 			update_feature_list(avail_feature_list, avail_features,
 					    node_bitmap);
 		}
@@ -2551,7 +2623,7 @@ extern void reset_node_instance(node_record_t *node_ptr)
 /*
  * _update_node_gres - Update generic resources associated with nodes
  *	build new config list records as needed
- * IN node_names - List of nodes to update
+ * IN node_names - list of nodes to update
  * IN gres - New gres value
  * RET: SLURM_SUCCESS or error code
  */
@@ -4333,32 +4405,29 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
  * So explicitly split the pool into three groups.
  * Note: DOES NOT SUPPORT FRONTEND.
  */
+#define RELEVANT_VER 4
 extern void push_reconfig_to_slurmd(void)
 {
 #ifndef HAVE_FRONT_END
-	agent_arg_t *curr_args, *prev_args, *old_args;
+	agent_arg_t *ver_args[RELEVANT_VER] = { 0 }, *curr_args;
 	node_record_t *node_ptr;
+	int ver;
 
-	curr_args = xmalloc(sizeof(*curr_args));
-	curr_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
-	curr_args->retry = 0;
-	curr_args->hostlist = hostlist_create(NULL);
-	curr_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	curr_args->msg_args = new_config_response(true);
+	ver_args[0] = xmalloc(sizeof(agent_arg_t));
+	ver_args[0]->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	ver_args[0]->protocol_version = SLURM_PROTOCOL_VERSION;
 
-	prev_args = xmalloc(sizeof(*prev_args));
-	prev_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
-	prev_args->retry = 0;
-	prev_args->hostlist = hostlist_create(NULL);
-	prev_args->protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
-	prev_args->msg_args = new_config_response(true);
+	ver_args[1] = xmalloc(sizeof(agent_arg_t));
+	ver_args[1]->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	ver_args[1]->protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
 
-	old_args = xmalloc(sizeof(*old_args));
-	old_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
-	old_args->retry = 0;
-	old_args->hostlist = hostlist_create(NULL);
-	old_args->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
-	old_args->msg_args = new_config_response(true);
+	ver_args[2] = xmalloc(sizeof(agent_arg_t));
+	ver_args[2]->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	ver_args[2]->protocol_version = SLURM_TWO_BACK_PROTOCOL_VERSION;
+
+	ver_args[3] = xmalloc(sizeof(agent_arg_t));
+	ver_args[3]->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	ver_args[3]->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 
 	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr))
@@ -4368,51 +4437,35 @@ extern void push_reconfig_to_slurmd(void)
 		     IS_NODE_POWERING_DOWN(node_ptr)))
 			continue;
 
-		if (node_ptr->protocol_version >= SLURM_PROTOCOL_VERSION) {
+		for (ver = 0; ver < RELEVANT_VER; ver++) {
+			curr_args = ver_args[ver];
+			if (node_ptr->protocol_version <
+			    curr_args->protocol_version)
+				continue;
+			if (!curr_args->hostlist) {
+				curr_args->hostlist = hostlist_create(NULL);
+				curr_args->msg_args = new_config_response(true);
+			}
 			hostlist_push_host(curr_args->hostlist, node_ptr->name);
 			curr_args->node_count++;
-		} else if (node_ptr->protocol_version ==
-			   SLURM_ONE_BACK_PROTOCOL_VERSION) {
-			hostlist_push_host(prev_args->hostlist, node_ptr->name);
-			prev_args->node_count++;
-		} else if (node_ptr->protocol_version ==
-			   SLURM_MIN_PROTOCOL_VERSION) {
-			hostlist_push_host(old_args->hostlist, node_ptr->name);
-			old_args->node_count++;
+			break;
 		}
 	}
 
-	if (curr_args->node_count == 0) {
-		hostlist_destroy(curr_args->hostlist);
-		slurm_free_config_response_msg(curr_args->msg_args);
-		xfree(curr_args);
-	} else {
-		debug("Spawning agent msg_type=%s",
-		      rpc_num2string(curr_args->msg_type));
+	for (ver = 0; ver < RELEVANT_VER; ver++) {
+		/* This movement is needed to prevent a stack smash */
+		curr_args = ver_args[ver];
+		ver_args[ver] = NULL;
+		if (!curr_args->node_count) {
+			xfree(curr_args);
+			continue;
+		}
+
+		debug("Spawning agent msg_type=%s version=%u",
+		      rpc_num2string(curr_args->msg_type),
+		      curr_args->protocol_version);
 		set_agent_arg_r_uid(curr_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(curr_args);
-	}
-
-	if (prev_args->node_count == 0) {
-		hostlist_destroy(prev_args->hostlist);
-		slurm_free_config_response_msg(prev_args->msg_args);
-		xfree(prev_args);
-	} else {
-		debug("Spawning agent msg_type=%s",
-		      rpc_num2string(prev_args->msg_type));
-		set_agent_arg_r_uid(prev_args, SLURM_AUTH_UID_ANY);
-		agent_queue_request(prev_args);
-	}
-
-	if (old_args->node_count == 0) {
-		hostlist_destroy(old_args->hostlist);
-		slurm_free_config_response_msg(old_args->msg_args);
-		xfree(old_args);
-	} else {
-		debug("Spawning agent msg_type=%s",
-		      rpc_num2string(old_args->msg_type));
-		set_agent_arg_r_uid(old_args, SLURM_AUTH_UID_ANY);
-		agent_queue_request(old_args);
 	}
 #else
 	error("%s: Cannot use configless with FrontEnd mode! Sending normal reconfigure request.",
@@ -5138,6 +5191,10 @@ extern int create_nodes(char *nodeline, char **err_msg)
 		goto fini;
 	}
 
+	if ((rc = _validate_nodes_vs_nodeset(conf_node->nodenames))
+	    != SLURM_SUCCESS)
+		goto fini;
+
 	state_val = state_str2int(conf_node->state, conf_node->nodenames);
 	if ((state_val == NO_VAL) ||
 	    ((state_val != NODE_STATE_FUTURE) &&
@@ -5216,6 +5273,13 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 			      reg_msg->dynamic_conf);
 			return SLURM_ERROR;
 		}
+
+		if (_validate_nodes_vs_nodeset(conf_node->nodenames) !=
+		    SLURM_SUCCESS) {
+			s_p_hashtbl_destroy(node_hashtbl);
+			return SLURM_ERROR;
+		}
+
 		config_ptr = config_record_from_conf_node(conf_node,
 							  slurmctld_tres_cnt);
 		if (conf_node->state)
@@ -5238,6 +5302,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	if ((rc = add_node_record(reg_msg->node_name, config_ptr, &node_ptr))) {
 		error("%s (%s)", slurm_strerror(rc), reg_msg->node_name);
 		list_delete_ptr(config_list, config_ptr);
+		s_p_hashtbl_destroy(node_hashtbl);
 		return SLURM_ERROR;
 	}
 

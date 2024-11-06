@@ -14,8 +14,6 @@
 
 @SET_MAKE@
 
-#
-
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -97,6 +95,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
+	$(top_srcdir)/auxdir/ax_have_epoll.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/gtk-2.0.m4 \
@@ -261,6 +260,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
 FREEIPMI_LIBS = @FREEIPMI_LIBS@
@@ -480,7 +480,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
 AM_CPPFLAGS = -I$(top_srcdir)
 sbatch_SOURCES = sbatch.c opt.c opt.h xlate.c
 convenience_libs = $(LIB_SLURM)
@@ -697,7 +696,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)

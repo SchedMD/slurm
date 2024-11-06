@@ -92,18 +92,6 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 extern bool launch_common_step_retry_errno(int rc);
 
 /*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int launch_init(void);
-
-/*
- * fini() is called when the plugin is removed. Clear any allocated
- * storage here.
- */
-extern int launch_fini(void);
-
-/*
  * launch_g_setup_srun_opt() is called when the plugin needs the srun
  * operation needs to be set up.
  *

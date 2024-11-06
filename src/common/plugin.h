@@ -188,6 +188,6 @@ extern int plugin_context_destroy(plugin_context_t *c);
  * IN plugin_type - Type of plugin to search for in the plugin_dir.
  * RET list of plugin names, NULL if none found.
  */
-extern List plugin_get_plugins_of_type(char *plugin_type);
+extern list_t *plugin_get_plugins_of_type(char *plugin_type);
 
 #endif /*__GENERIC_PLUGIN_H__*/

@@ -2,6 +2,8 @@ SUBDIRS =		\
 	api		\
 	bcast		\
 	common		\
+	conmgr		\
+	curl		\
 	database	\
 	interfaces	\
 	lua		\

@@ -36,6 +36,6 @@
 #ifndef _AUTH_JWT_H_
 #define _AUTH_JWT_H_
 
-extern char *pem_from_mod_exp(char *mod, char *exp);
+extern char *pem_from_mod_exp(const char *mod, const char *exp);
 
 #endif

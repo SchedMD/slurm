@@ -56,7 +56,6 @@
 #include "src/common/uid.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd.h"
@@ -68,7 +67,7 @@ static uid_t job_uid;
 static bool local_xauthority = false;
 static char hostname[HOST_NAME_MAX] = {0};
 
-static eio_handle_t *eio_handle;
+static eio_handle_t *eio_handle = NULL;
 
 /* Target salloc/srun host/port */
 static slurm_addr_t alloc_node;
@@ -95,7 +94,7 @@ static bool _x11_socket_readable(eio_obj_t *obj)
         return true;
 }
 
-static int _x11_socket_read(eio_obj_t *obj, List objs)
+static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 {
 	eio_obj_t *e1, *e2;
 	slurm_msg_t req, resp;
@@ -149,8 +148,8 @@ static int _x11_socket_read(eio_obj_t *obj, List objs)
 
 	slurm_free_msg_members(&resp);
 
-	net_set_nodelay(*local);
-	net_set_nodelay(*remote);
+	net_set_nodelay(*local, true, NULL);
+	net_set_nodelay(*remote, true, NULL);
 
 	/* setup eio to handle both sides of the connection now */
 	e1 = eio_obj_create(*local, &half_duplex_ops, remote);
@@ -177,7 +176,8 @@ extern int shutdown_x11_forward(stepd_step_rec_t *step)
 	int rc = SLURM_SUCCESS;
 
 	debug("x11 forwarding shutdown in progress");
-	eio_signal_shutdown(eio_handle);
+	if (eio_handle)
+		eio_signal_shutdown(eio_handle);
 
 	if (step->x11_xauthority) {
 		if (local_xauthority) {

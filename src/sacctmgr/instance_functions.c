@@ -43,7 +43,7 @@
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_instance_cond_t *instance_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i, end = 0;
 	int set = 0;
@@ -130,9 +130,9 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 	slurmdb_instance_cond_t *instance_cond = xmalloc(
 		sizeof(slurmdb_instance_cond_t));
 	slurmdb_instance_rec_t *instance = NULL;
-	List format_list; /* list of char * */
-	List instance_list = NULL; /* list of slurmdb_instance_rec_t */
-	List print_fields_list; /* list of print_field_t */
+	list_t *format_list; /* list of char * */
+	list_t *instance_list = NULL; /* list of slurmdb_instance_rec_t */
+	list_t *print_fields_list; /* list of print_field_t */
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
 	print_field_t *field = NULL;
@@ -200,13 +200,9 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 	slurmdb_destroy_instance_cond(instance_cond);
 
 	if (mime_type) {
-		if (is_data_parser_deprecated(data_parser))
-			rc = error("%s does not support dumping for instances",
-				   data_parser);
-		else
-			DATA_DUMP_CLI_SINGLE(OPENAPI_INSTANCES_RESP,
-					     instance_list, argc, argv, db_conn,
-					     mime_type, data_parser, rc);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_INSTANCES_RESP, instance_list,
+				     argc, argv, db_conn, mime_type,
+				     data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(instance_list);
 		return rc;

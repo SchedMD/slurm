@@ -75,7 +75,7 @@ typedef struct gids_cache_needle {
 } gids_cache_needle_t;
 
 static pthread_mutex_t gids_mutex = PTHREAD_MUTEX_INITIALIZER;
-static List gids_cache_list = NULL;
+static list_t *gids_cache_list = NULL;
 
 static void _group_cache_list_delete(void *x)
 {
@@ -112,28 +112,24 @@ static int _find_entry(void *x, void *key)
 static void _init_or_reinit_entry(gids_cache_t **in,
 				  gids_cache_needle_t *needle)
 {
-	char buffer[PW_BUF_SIZE];
+	char buf_stack[PW_BUF_SIZE];
+	char *buf_malloc = NULL;
+	size_t bufsize = PW_BUF_SIZE;
+	char *curr_buf = buf_stack;
 	gids_cache_t *entry;
 	struct passwd pwd, *result;
-	int rc;
 
 	xassert(needle);
 
-	rc = slurm_getpwuid_r(needle->uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	slurm_getpwuid_r(needle->uid, &pwd, &curr_buf, &buf_malloc, &bufsize,
+			 &result);
 	if (!result || !result->pw_name) {
-		if (!result && !rc)
-			error("%s: getpwuid_r(%u): no record found",
-			      __func__, needle->uid);
-		else
-			error("%s: getpwuid_r(%u): %s",
-			      __func__, needle->uid, strerror(rc));
-
 		if (*in) {
 			/* discard this now-invalid cache entry */
 			list_delete_ptr(gids_cache_list, *in);
 			*in = NULL;
 		}
-
+		xfree(buf_malloc);
 		return;
 	}
 
@@ -183,6 +179,7 @@ static void _init_or_reinit_entry(gids_cache_t **in,
 		*in = entry;
 		list_prepend(gids_cache_list, entry);
 	}
+	xfree(buf_malloc);
 }
 
 /*

@@ -36,24 +36,53 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+/*
+ * srun I/O socket connection sequences:
+ *
+ * Connection Initialization:
+ *
+ * srun via io_initial_client_connect():
+ *	slurmstepd sends: (packed via io_init_msg_pack())
+ *	     uint32_t: length of packet
+ *	     packed io_init_msg_t
+ *	srun recieves via io_init_msg_read_from_fd()
+ *	srun validates via io_init_msg_validate()
+ *
+ * sattach via io_client_connect():
+ *
+ *
+ * Same message format sent bidirectionally after initialization:
+ *	packed io_hdr_t via io_hdr_pack()
+ *	io_hdr_t.length bytes of payload
+ *
+ *	srun only sends types:
+ *		SLURM_IO_CONNECTION_TEST
+ *		SLURM_IO_STDIN
+ *		SLURM_IO_ALLSTDIN
+ *
+ *	slurmstepd honors task_read_info.type to determine where messages sent.
+ *
+ * Connection ends with io_hdr_t.length=0 packet with no payload
+ */
+
 #ifndef _HAVE_IO_HDR_H
 #define _HAVE_IO_HDR_H
 
 #include <inttypes.h>
 
-#include "src/common/macros.h"   /* Containes SLURM_CRED_SIGLEN */
 #include "src/common/pack.h"
-#include "src/common/cbuf.h"
-#include "src/common/xmalloc.h"
 
-#define MAX_MSG_LEN 1024
-#define SLURM_IO_KEY_SIZE 8
+#define SLURM_IO_MAX_MSG_LEN 1024
 
-#define SLURM_IO_STDIN 0
-#define SLURM_IO_STDOUT 1
-#define SLURM_IO_STDERR 2
-#define SLURM_IO_ALLSTDIN 3
-#define SLURM_IO_CONNECTION_TEST 4
+typedef enum {
+	SLURM_IO_INVALID = -1,
+	SLURM_IO_STDIN = 0,
+	SLURM_IO_STDOUT = 1,
+	SLURM_IO_STDERR = 2,
+	SLURM_IO_ALLSTDIN = 3,
+	SLURM_IO_CONNECTION_TEST = 4,
+	SLURM_IO_INVALID_MAX
+} io_hdr_type_t;
 
 typedef struct {
 	uint16_t      version;
@@ -65,19 +94,31 @@ typedef struct {
 
 
 typedef struct {
-	uint16_t      type;
+	io_hdr_type_t type;
 	uint16_t      gtaskid;
 	uint16_t      ltaskid;
 	uint32_t      length;
 } io_hdr_t;
 
-extern int g_io_hdr_size;
+/*
+ * IO Header is always written/read with the exact same number of bytes
+ * Changing this count will break older srun clients as this packet is
+ * unversioned.
+ */
+#define IO_HDR_PACKET_BYTES 10
 
 /*
  * Return the packed size of an IO header in bytes;
  */
-#define io_hdr_packed_size() g_io_hdr_size
 void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer);
+/*
+ * Pack io_hdr_t into buffer
+ * IN hdr - struct to pack
+ * IN buffer - destination buffer to populate
+ * RET SLURM_SUCCESS or
+ * 	EAGAIN if buffer does not container entire packet
+ * 	or error
+ */
 int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer);
 int io_hdr_read_fd(int fd, io_hdr_t *hdr);
 

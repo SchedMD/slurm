@@ -44,16 +44,16 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/common/xstring.h"
 
-extern List slurmdb_report_user_top_usage(void *db_conn,
-					  slurmdb_user_cond_t *user_cond,
-					  bool group_accounts)
+extern list_t *slurmdb_report_user_top_usage(void *db_conn,
+					     slurmdb_user_cond_t *user_cond,
+					     bool group_accounts)
 {
-	List cluster_list = NULL;
+	list_t *cluster_list = NULL;
 	list_itr_t *itr = NULL, *itr2 = NULL, *itr3 = NULL;
 	list_itr_t *cluster_itr = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
-	List user_list = NULL;
-	List usage_cluster_list = NULL;
+	list_t *user_list = NULL;
+	list_t *usage_cluster_list = NULL;
 	char *object = NULL;
 	int exit_code = 0;
 	slurmdb_user_rec_t *user = NULL;
@@ -84,8 +84,8 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 
 	user_cond->with_deleted = 1;
 	user_cond->with_assocs = 1;
-	user_cond->assoc_cond->with_usage = 1;
-	user_cond->assoc_cond->without_parent_info = 1;
+	user_cond->assoc_cond->flags = ASSOC_COND_FLAG_WITH_USAGE |
+		ASSOC_COND_FLAG_WOPI;
 
 	/* This needs to be done on some systems to make sure
 	   assoc_cond isn't messed up.  This has happened on some 64

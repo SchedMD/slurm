@@ -122,7 +122,7 @@ typedef struct _expline_values_st {
 	s_p_hashtbl_t**	values;
 } _expline_values_t;
 
-List conf_includes_list = NULL;
+list_t *conf_includes_list = NULL;
 
 /*
  * NOTE - "key" is case insensitive.
@@ -997,7 +997,7 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover)
 						   &new_leftover) == -1) {
 				xfree(key);
 				xfree(value);
-				slurm_seterrno(EINVAL);
+				errno = EINVAL;
 				return 0;
 			}
 			*leftover = ptr = new_leftover;
@@ -1005,7 +1005,7 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover)
 			error("Parsing error at unrecognized key: %s", key);
 			xfree(key);
 			xfree(value);
-			slurm_seterrno(EINVAL);
+			errno = EINVAL;
 			return 0;
 		}
 		xfree(key);
@@ -1035,7 +1035,7 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 				xfree(key);
 				xfree(value);
 				*leftover = (char *)line;
-				slurm_seterrno(EINVAL);
+				errno = EINVAL;
 				return 0;
 			}
 			*leftover = new_leftover;
@@ -1049,7 +1049,7 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 			xfree(key);
 			xfree(value);
 			*leftover = (char *)line;
-			slurm_seterrno(EINVAL);
+			errno = EINVAL;
 			return 0;
 		}
 		xfree(key);
@@ -1322,7 +1322,6 @@ int s_p_parse_buffer(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 	char *leftover = NULL;
 	int rc = SLURM_SUCCESS;
 	int line_number;
-	uint32_t utmp32;
 	char *tmp_str = NULL;
 
 	if (!buffer) {
@@ -1332,7 +1331,7 @@ int s_p_parse_buffer(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 
 	line_number = 0;
 	while (remaining_buf(buffer) > 0) {
-		safe_unpackstr_xmalloc(&tmp_str, &utmp32, buffer);
+		safe_unpackstr(&tmp_str, buffer);
 		if (tmp_str != NULL) {
 			line_number++;
 			if (*tmp_str == '\0') {
@@ -1847,12 +1846,12 @@ int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
 	if ((p = _conf_hashtbl_lookup(hashtbl, key)) == NULL) {
 		error("%s: Parsing error at unrecognized key: %s",
 		      __func__, key);
-		slurm_seterrno(EINVAL);
+		errno = EINVAL;
 		return 0;
 	}
 	if (!value) {
 		error("%s: Value pointer is NULL for key %s", __func__, key);
-		slurm_seterrno(EINVAL);
+		errno = EINVAL;
 		return 0;
 	}
 	p-> operator = opt;
@@ -1864,7 +1863,7 @@ int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
 		leftover = strchr(v, '"');
 		if (leftover == NULL) {
 			error("Parse error in data for key %s: %s", key, value);
-			slurm_seterrno(EINVAL);
+			errno = EINVAL;
 			return 0;
 		}
 	} else { /* unqouted value */
@@ -1879,7 +1878,7 @@ int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
 		leftover++; /* skip trailing spaces */
 	if (_handle_keyvalue_match(p, value, leftover, &leftover) == -1) {
 		xfree(value);
-		slurm_seterrno(EINVAL);
+		errno = EINVAL;
 		return 0;
 	}
 	xfree(value);
@@ -2332,7 +2331,7 @@ extern s_p_hashtbl_t *s_p_unpack_hashtbl_full(buf_t *buffer,
 
 		safe_unpack16(&uint16_tmp, buffer);
 		value->type = uint16_tmp;
-		safe_unpackstr_xmalloc(&value->key, &uint32_tmp, buffer);
+		safe_unpackstr(&value->key, buffer);
 		safe_unpack16(&uint16_tmp, buffer);
 		value->operator = uint16_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
@@ -2361,7 +2360,7 @@ extern s_p_hashtbl_t *s_p_unpack_hashtbl_full(buf_t *buffer,
 			break;
 		case S_P_STRING:
 		case S_P_PLAIN_STRING:
-			safe_unpackstr_xmalloc(&tmp_char, &uint32_tmp, buffer);
+			safe_unpackstr(&tmp_char, buffer);
 			value->data = tmp_char;
 			break;
 		case S_P_UINT32:

@@ -36,7 +36,22 @@
 #ifndef _HAVE_SLURMSCRIPTD_H
 #define _HAVE_SLURMSCRIPTD_H
 
-extern int slurmscriptd_init(int argc, char **argv);
+#include <unistd.h>
+
+#define SLURMSCRIPTD_MODE_ENV "SLURMSCRIPTD_MODE"
+#define SLURMSCRIPT_READ_FD (STDERR_FILENO + 1)
+#define SLURMSCRIPT_WRITE_FD (STDERR_FILENO + 2)
+#define SLURMSCRIPT_CLOSEALL (STDERR_FILENO + 3)
+
+/*
+ * Run the the slurmscriptd main loop.
+ * Does not return - calls exit.
+ */
+__attribute__((noreturn))
+extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
+					  char *binary_path);
+
+extern int slurmscriptd_init(char **argv, char *binary_path);
 
 extern int slurmscriptd_fini(void);
 
@@ -51,6 +66,12 @@ extern void slurmscriptd_flush(void);
  * slurmscriptd_flush_job - kill all running script for a specific job
  */
 extern void slurmscriptd_flush_job(uint32_t job_id);
+
+/*
+ * Run a burst_buffer.lua script specified by command line arguments and
+ * environment variables. This function calls exit() instead of returning.
+ */
+extern void slurmscriptd_handle_bb_lua_mode(int argc, char **argv);
 
 /*
  * slurmscriptd_run_bb_lua

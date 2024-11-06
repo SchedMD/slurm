@@ -61,16 +61,16 @@ typedef struct sinfo_format {
 /*****************************************************************************
  * Print Format Functions
  *****************************************************************************/
-int format_add_function(List list, int width, bool right_justify,
-		char * suffix,
-		int (*function) (sinfo_data_t  *, int, bool, char *));
-int format_prepend_function(List list, int width, bool right_justify,
-		char * suffix,
-		int (*function) (sinfo_data_t  *, int, bool, char *));
+int format_add_function(
+	list_t *list, int width, bool right_justify, char *suffix,
+	int (*function) (sinfo_data_t *, int, bool, char *));
+int format_prepend_function(
+	list_t *list, int width, bool right_justify, char *suffix,
+	int (*function) (sinfo_data_t *, int, bool, char *));
 
 void print_date(void);
 int  print_sinfo_entry(sinfo_data_t *sinfo_data);
-int  print_sinfo_list(List sinfo_list);
+int print_sinfo_list(list_t *sinfo_list);
 void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 
 #define format_add_prefix(list,wid,right,suffix) \

@@ -1,0 +1,176 @@
+sacct [<OPTION>]
+     Valid <OPTION> values are:
+     -a, --allusers:
+                   Display jobs for all users. By default, only the
+                   current user's jobs are displayed.  If ran by user root
+                   this is the default.
+     -A, --accounts:
+                   Use this comma separated list of accounts to select jobs
+                   to display.  By default, all accounts are selected.
+     --array:
+                   Expand job arrays. Display array tasks on separate lines
+                   instead of consolidating them to a single line.
+     -b, --brief:
+                   Equivalent to '--format=jobstep,state,error'.
+     -B, --batch-script:
+                   Print batch script of job.
+                   NOTE: AccountingStoreFlags=job_script is required for this
+                   NOTE: Requesting specific job(s) with '-j' is required
+                         for this.
+     -c, --completion: Use job completion instead of accounting data.
+         --delimiter:
+                   ASCII characters used to separate the fields when
+                   specifying the  -p  or  -P options. The default delimiter
+                   is a '|'. This options is ignored if -p or -P options
+                   are not specified.
+     -D, --duplicates:
+                   If Slurm job ids are reset, some job numbers may
+                   appear more than once referring to different jobs.
+                   Without this option only the most recent jobs will be
+                   displayed.
+     -e, --helpformat:
+                   Print a list of fields that can be specified with the
+                   '--format' option
+     -E, --endtime:
+                   Select jobs eligible before this time.  If states are
+                   given with the -s option return jobs in this state before
+                   this period.
+         --env-vars:
+                   Print the environment to launch the batch script of job.
+                   NOTE: AccountingStoreFlags=job_env is required for this
+                   NOTE: Requesting specific job(s) with '-j' is required
+                         for this.
+         --federation: Report jobs from federation if a member of a one.
+     --expand-pattern: substitute wildcards in field name patterns
+     -f, --file=file:
+                   Read data from the specified file, rather than Slurm's
+                   current accounting log file. (Only appliciable when
+                   running the jobcomp/filetxt plugin.)
+     -g, --gid, --group:
+                   Use this comma separated list of gids or group names
+                   to select jobs to display.  By default, all groups are
+                   selected.
+     -h, --help:   Print this description of use.
+         --helpreason
+                   Print a list of job reasons that can be specified with
+                   the '--reason' option.
+         --helpstate
+                   Print a list of job states that can be specified with
+                   the '--state' option.
+     -i, --nnodes=N:
+                   Return jobs which ran on this many nodes (N = min[-max])
+     -I, --ncpus=N:
+                   Return jobs which ran on this many cpus (N = min[-max])
+     -j, --jobs:
+                   Format is <job(.step)>. Display information about this
+                   job or comma-separated list of jobs. The default is all
+                   jobs. Adding .step will display the specific job step of
+                   that job. (A step id of 'batch' will display the
+                   information about the batch step.)
+     --json[=data_parser]
+                   Produce JSON output
+     -k, --timelimit-min:
+                   Only send data about jobs with this timelimit.
+                   If used with timelimit_max this will be the minimum
+                   timelimit of the range.  Default is no restriction.
+     -K, --timelimit-max:
+                   Ignored by itself, but if timelimit_min is set this will
+                   be the maximum timelimit of the range.  Default is no
+                   restriction.
+         --local   Report information only about jobs on the local cluster.
+                   Overrides --federation.
+     -l, --long:
+                   Equivalent to specifying
+                   '--format=jobid,jobidraw,jobname,partition,maxvmsize,
+                             maxvmsizenode,maxvmsizetask,avevmsize,maxrss,
+                             maxrssnode,maxrsstask,averss,maxpages,
+                             maxpagesnode,maxpagestask,avepages,mincpu,
+                             mincpunode,mincputask,avecpu,ntasks,alloccpus,
+                             elapsed,state,exitcode,avecpufreq,reqcpufreqmin,
+                             reqcpufreqmax,reqcpufreqgov,reqmem,
+                             consumedenergy,maxdiskread,maxdiskreadnode,
+                             maxdiskreadtask,avediskread,maxdiskwrite,
+                             maxdiskwritenode,maxdiskwritetask,avediskwrite,
+                             reqtres,alloctres,
+                             tresusageinave,tresusageinmax,tresusageinmaxn,
+                             tresusageinmaxt,tresusageinmin,tresusageinminn,
+                             tresusageinmint,tresusageintot,tresusageoutmax,
+                             tresusageoutmaxn,tresusageoutmaxt,
+                             tresusageoutave,tresusageouttot
+     -L, --allclusters:
+                   Display jobs ran on all clusters. By default, only jobs
+                   ran on the cluster from where sacct is called are
+                   displayed.
+     -M, --clusters:
+                   Only send data about these clusters. Use "all" for all
+                   clusters.
+     -n, --noheader:
+                   No header will be added to the beginning of output.
+                   The default is to print a header.
+     --noconvert:
+                   Don't convert units from their original type
+                   (e.g. 2048M won't be converted to 2G).
+     -N, --nodelist:
+                   Display jobs that ran on any of these nodes,
+                   can be one or more using a ranged string.
+     --name:
+                   Display jobs that have any of these name(s).
+     -o, --format:
+                   Comma separated list of fields. (use "--helpformat"
+                   for a list of available fields).
+     -p, --parsable: output will be '|' delimited with a '|' at the end
+     -P, --parsable2: output will be '|' delimited without a '|' at the end
+     -q, --qos:
+                   Only send data about jobs using these qos.  Default is all.
+     -r, --partition:
+                   Comma separated list of partitions to select jobs and
+                   job steps from. The default is all partitions.
+     -s, --state:
+                   Select jobs based on their current state or the state
+                   they were in during the time period given: running (r),
+                   completed (cd), failed (f), timeout (to), resizing (rs),
+                   deadline (dl) and node_fail (nf).
+     -S, --starttime:
+                   Select jobs eligible after this time.  Default is
+                   00:00:00 of the current day, unless '-s' is set then
+                   the default is 'now'.
+     -T, --truncate:
+                   Truncate time.  So if a job started before --starttime
+                   the start time would be truncated to --starttime.
+                   The same for end time and --endtime.
+     -u, --uid, --user:
+                   Use this comma separated list of uids or user names
+                   to select jobs to display.  By default, the running
+                   user's uid is used.
+     --units=[KMGTP]:
+                   Display values in specified unit type. Takes precedence
+                   over --noconvert option.
+     --usage:      Display brief usage message.
+     -v, --verbose:
+                   Primarily for debugging purposes, report the state of
+                   various variables during processing.
+     -V, --version: Print version.
+     -W, --wckeys:
+                   Only send data about these wckeys.  Default is all.
+     --whole-hetjob[=yes|no]:
+                   If set to 'yes' (or no argument), then information about
+                   all the heterogeneous components will be retrieved. If
+                   set to 'no' only the specific filtered components will
+                   be retrieved. The default behavior without this option is
+                   that all components are retrieved only if filtering the
+                   leader component with --jobs.
+     -x, --associations:
+                   Only send data about these association id.  Default is all.
+     -X, --allocations:
+                   Only show statistics relevant to the job allocation
+                   itself, not taking steps into consideration.
+     --yaml[=data_parser]
+                   Produce YAML output
+
+     Note, valid start/end time formats are...
+                   HH:MM[:SS] [AM|PM]
+                   MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+                   MM/DD[/YY]-HH:MM[:SS]
+                   YYYY-MM-DD[THH:MM[:SS]]
+                   now[{+|-}count[seconds(default)|minutes|hours|days|weeks]]
+

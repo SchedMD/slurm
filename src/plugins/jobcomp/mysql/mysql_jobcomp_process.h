@@ -82,7 +82,7 @@ enum {
 	JOBCOMP_REQ_COUNT
 };
 
-extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond);
+extern list_t *mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond);
 
 extern int mysql_jobcomp_process_archive(slurmdb_archive_cond_t *arch_cond);
 

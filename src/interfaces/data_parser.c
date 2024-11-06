@@ -51,6 +51,7 @@
 
 #define PARSE_MAJOR_TYPE "data_parser"
 #define PARSE_MAGIC 0x0ea0b1be
+#define LATEST_PLUGIN_NAME "latest"
 
 struct data_parser_s {
 	int magic;
@@ -241,6 +242,11 @@ static plugin_param_t *_parse_plugin_type(const char *plugin_type)
 			p->params = xstrdup(pl);
 		} else {
 			p->plugin_type = xstrdup(type);
+		}
+
+		if (!xstrcasecmp(p->plugin_type, LATEST_PLUGIN_NAME)) {
+			xfree(p->plugin_type);
+			p->plugin_type = xstrdup(SLURM_DATA_PARSER_VERSION);
 		}
 
 		log_flag(DATA, "%s: plugin=%s params=%s",
@@ -457,7 +463,7 @@ cleanup:
 		xfree(pparams);
 	}
 
-	if (plugins)
+	if (plugins && parsers)
 		for (int j = 0; j < plugins->count; j++)
 			FREE_NULL_DATA_PARSER(parsers[j]);
 	xfree(parsers);
@@ -595,12 +601,10 @@ extern int data_parser_g_assign(data_parser_t *parser,
 }
 
 extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
-						 const char *mime_type,
-						 const char *data_parser)
+						 const char *mime_type)
 {
 	openapi_resp_meta_t *meta = xmalloc_nz(sizeof(*meta));
 	int tty;
-	char *parser = NULL;
 	char **argvnt = NULL;
 
 	/* need a new array with a NULL terminator */
@@ -618,12 +622,9 @@ extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 	else
 		tty = -1;
 
-	if (data_parser)
-		parser = xstrdup(data_parser);
-
 	*meta = (openapi_resp_meta_t) {
 		.plugin = {
-			.data_parser = parser,
+			.data_parser = NULL,
 			.accounting_storage =
 				slurm_conf.accounting_storage_type,
 		},
@@ -651,7 +652,7 @@ extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg)
 {
-	info("%s", full_type);
+	dprintf(STDOUT_FILENO, "%s\n", full_type);
 }
 
 static bool _on_error(void *arg, data_parser_type_t type, int error_code,
@@ -684,6 +685,8 @@ static bool _on_error(void *arg, data_parser_type_t type, int error_code,
 
 		if (e)
 			e->description = str;
+		else
+			xfree(str);
 	}
 
 	if (error_code) {
@@ -694,7 +697,11 @@ static bool _on_error(void *arg, data_parser_type_t type, int error_code,
 			ctxt->rc = error_code;
 	}
 
-	if (source && ctxt)
+	/*
+	 * e is always non-NULL is ctxt is non-NULL, but check if e != NULL to
+	 * silence a coverity warning.
+	 */
+	if (source && ctxt && e)
 		e->source = xstrdup(source);
 
 	if (ctxt)
@@ -732,6 +739,8 @@ static void _on_warn(void *arg, data_parser_type_t type, const char *source,
 
 		if (ctxt)
 			w->description = str;
+		else
+			xfree(str);
 	}
 
 	if (source && ctxt)
@@ -754,7 +763,7 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 	char *out = NULL;
 
 	if (!xstrcasecmp(data_parser, "list")) {
-		info("Possible data_parser plugins:");
+		dprintf(STDERR_FILENO, "Possible data_parser plugins:\n");
 		parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL,
 					   NULL, NULL, "list",
 					   _plugrack_foreach_list, false);
@@ -773,9 +782,8 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 		data_parser_g_assign(parser, DATA_PARSER_ATTR_DBCONN_PTR,
 				     acct_db_conn);
 
-	if (!meta->plugin.data_parser)
-		meta->plugin.data_parser =
-			xstrdup(data_parser_get_plugin(parser));
+	xassert(!meta->plugin.data_parser);
+	meta->plugin.data_parser = xstrdup(data_parser_get_plugin(parser));
 
 	dresp = data_new();
 
@@ -796,88 +804,6 @@ cleanup:
 	FREE_NULL_DATA_PARSER(parser);
 
 	return rc;
-}
-
-/*
- * Dump object using data_parser/v0.0.39.
- * Dump meta data and errors/warnings with SLURM_DATA_PARSER_VERSION
- */
-extern int data_parser_dump_cli_stdout_v39(data_parser_type_t type, void *obj,
-					   int obj_bytes, const char *key,
-					   void *acct_db_conn,
-					   const char *mime_type,
-					   data_parser_dump_cli_ctxt_t *ctxt,
-					   openapi_resp_meta_t *meta)
-{
-	data_t *dresp = data_set_dict(data_new());
-	data_t *dout = data_key_set(dresp, key);
-	data_t *dmeta = data_key_set(dresp, "meta");
-	data_t *dwarning = data_key_set(dresp, "warnings");
-	data_t *derror = data_key_set(dresp, "errors");
-	data_parser_t *parser = NULL;
-	data_parser_t *meta_parser = NULL;
-	char *out = NULL;
-	int rc = SLURM_SUCCESS;
-
-	if (!(parser = data_parser_cli_parser(
-			SLURM_DATA_PARSER_VERSION_DEPRECATED, ctxt))) {
-		rc = ESLURM_DATA_INVALID_PARSER;
-		error("%s output not supported by %s",
-		      mime_type, SLURM_DATA_PARSER_VERSION);
-		goto cleanup;
-	}
-
-	if (!(meta_parser = data_parser_cli_parser(SLURM_DATA_PARSER_VERSION,
-						   ctxt))) {
-		rc = ESLURM_DATA_INVALID_PARSER;
-		error("%s output not supported by %s",
-		      mime_type, SLURM_DATA_PARSER_VERSION);
-		goto cleanup;
-	}
-
-	if (acct_db_conn)
-		data_parser_g_assign(parser, DATA_PARSER_ATTR_DBCONN_PTR,
-				     acct_db_conn);
-
-	if (!meta->plugin.data_parser)
-		meta->plugin.data_parser =
-			xstrdup(data_parser_get_plugin(parser));
-
-	if ((!data_parser_g_dump(parser, type, obj, obj_bytes, dout) &&
-	    (data_get_type(dout) != DATA_TYPE_NULL)) &&
-	    (!data_parser_g_dump(meta_parser, DATA_PARSER_OPENAPI_META, meta,
-				 sizeof(*meta), dmeta) &&
-	    (data_get_type(dmeta) != DATA_TYPE_NULL)) &&
-	    (!data_parser_g_dump(meta_parser, DATA_PARSER_OPENAPI_ERRORS,
-				 &ctxt->errors, sizeof(ctxt->errors), derror) &&
-	    (data_get_type(derror) != DATA_TYPE_NULL)) &&
-	    (!data_parser_g_dump(meta_parser, DATA_PARSER_OPENAPI_WARNINGS,
-				 &ctxt->warnings, sizeof(ctxt->warnings),
-				 dwarning) &&
-	    (data_get_type(dwarning) != DATA_TYPE_NULL))) {
-		serialize_g_data_to_string(&out, NULL, dresp, mime_type,
-					   SER_FLAGS_PRETTY);
-	}
-
-	if (out && out[0])
-		printf("%s\n", out);
-	else
-		debug("No output generated");
-
-cleanup:
-	xfree(out);
-	FREE_NULL_DATA(dresp);
-	FREE_NULL_DATA_PARSER(parser);
-	FREE_NULL_DATA_PARSER(meta_parser);
-
-	return rc;
-}
-
-extern bool is_data_parser_deprecated(const char *data_parser)
-{
-	char *full_name = "data_parser/" SLURM_DATA_PARSER_VERSION_DEPRECATED;
-	return !xstrcmp(data_parser, SLURM_DATA_PARSER_VERSION_DEPRECATED) ||
-		!xstrcmp(data_parser, full_name);
 }
 
 extern int data_parser_g_specify(data_parser_t *parser, data_t *dst)
@@ -905,10 +831,13 @@ extern int data_parser_g_specify(data_parser_t *parser, data_t *dst)
 
 extern data_parser_t *data_parser_cli_parser(const char *data_parser, void *arg)
 {
+	char *default_data_parser = (slurm_conf.data_parser_parameters ?
+				     slurm_conf.data_parser_parameters :
+				     SLURM_DATA_PARSER_VERSION);
 	return data_parser_g_new(_on_error, _on_error, _on_error, arg, _on_warn,
 				 _on_warn, _on_warn, arg,
 				 (data_parser ?  data_parser :
-				  SLURM_DATA_PARSER_VERSION), NULL, false);
+				  default_data_parser), NULL, false);
 }
 
 extern openapi_type_t data_parser_g_resolve_openapi_type(

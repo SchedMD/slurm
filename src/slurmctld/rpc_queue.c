@@ -220,7 +220,7 @@ static bool _find_msg_name(const data_t *data, void *needle)
 	if (data_get_type(type) != DATA_TYPE_STRING)
 		return false;
 
-	return !xstrcasecmp(data_get_string_const(type), needle);
+	return !xstrcasecmp(data_get_string(type), needle);
 }
 
 static void _apply_config(data_t *conf, slurmctld_rpc_t *q)

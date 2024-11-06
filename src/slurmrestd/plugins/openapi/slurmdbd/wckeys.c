@@ -44,7 +44,7 @@
 
 static void _dump_wckeys(ctxt_t *ctxt, slurmdb_wckey_cond_t *wckey_cond)
 {
-	List wckey_list = NULL;
+	list_t *wckey_list = NULL;
 
 	if (!db_query_list(ctxt, &wckey_list, slurmdb_wckeys_get, wckey_cond))
 		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_WCKEY_RESP, wckey_list, ctxt);
@@ -54,7 +54,7 @@ static void _dump_wckeys(ctxt_t *ctxt, slurmdb_wckey_cond_t *wckey_cond)
 
 static void _delete_wckey(ctxt_t *ctxt, slurmdb_wckey_cond_t *wckey_cond)
 {
-	List wckey_list = NULL;
+	list_t *wckey_list = NULL;
 
 	if (!db_query_list(ctxt, &wckey_list, slurmdb_wckeys_remove,
 			   wckey_cond))

@@ -96,6 +96,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
+	$(top_srcdir)/auxdir/ax_have_epoll.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/gtk-2.0.m4 \
@@ -288,6 +289,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
 FREEIPMI_LIBS = @FREEIPMI_LIBS@
@@ -508,13 +510,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(HWLOC_CPPFLAGS)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 pkglib_LTLIBRARIES = jobacct_gather_cgroup.la
-
-# Null job completion logging plugin.
-jobacct_gather_cgroup_la_SOURCES = jobacct_gather_cgroup.c \
-                                   jobacct_gather_cgroup.h
-
+jobacct_gather_cgroup_la_SOURCES = jobacct_gather_cgroup.c
 jobacct_gather_cgroup_la_LDFLAGS = $(PLUGIN_FLAGS)
 jobacct_gather_cgroup_la_LIBADD = ../common/libjobacct_gather_common.la
 all: all-am

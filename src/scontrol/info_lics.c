@@ -116,13 +116,8 @@ extern void scontrol_print_licenses(const char *name, int argc, char **argv)
 			.last_update = msg->last_update,
 		};
 
-		if (is_data_parser_deprecated(data_parser))
-			DATA_DUMP_CLI_DEPRECATED(LICENSES, *msg, "licenses",
-						 argc, argv, NULL, mime_type,
-						 rc);
-		else
-			DATA_DUMP_CLI(OPENAPI_LICENSES_RESP, resp, argc, argv,
-				      NULL, mime_type, data_parser, rc);
+		DATA_DUMP_CLI(OPENAPI_LICENSES_RESP, resp, argc, argv, NULL,
+			      mime_type, data_parser, rc);
 
 		if (rc)
 			exit_code = 1;

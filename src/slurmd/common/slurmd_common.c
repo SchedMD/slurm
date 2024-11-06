@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  slurmd_common.c - functions for determining job status
  *****************************************************************************
- *  Copyright (C) 2024 SchedMD LLC.
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

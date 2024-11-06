@@ -62,7 +62,7 @@
  */
 extern void gres_filter_sock_core(job_record_t *job_ptr,
 				  gres_mc_data_t *mc_ptr,
-				  List sock_gres_list,
+				  list_t *sock_gres_list,
 				  uint16_t sockets,
 				  uint16_t cores_per_socket,
 				  uint16_t cpus_per_core,

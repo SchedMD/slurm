@@ -97,7 +97,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
  *		     (if any) we forwarded the message to. List
  *		     containing type (ret_data_info_t).
  */
-extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout);
+extern list_t *start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout);
 
 /*
  * mark_as_failed_forward- mark a node as failed and add it to "ret_list"
@@ -107,7 +107,7 @@ extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout);
  * IN: err            - int      - error message from attempt
  *
  */
-extern void mark_as_failed_forward(List *ret_list, char *node_name, int err);
+extern void mark_as_failed_forward(list_t **ret_list, char *node_name, int err);
 
 extern void forward_wait(slurm_msg_t *msg);
 

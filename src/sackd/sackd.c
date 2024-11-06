@@ -39,7 +39,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "src/common/conmgr.h"
+#include "slurm/slurm_errno.h"
+
 #include "src/common/daemonize.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
@@ -51,6 +52,8 @@
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/auth.h"
 #include "src/interfaces/hash.h"
 
@@ -58,7 +61,6 @@ decl_static_data(usage_txt);
 
 static bool daemonize = true;
 static bool original = true;
-static bool reconfig = false;
 static bool registered = false;
 static bool under_systemd = false;
 static char *conf_file = NULL;
@@ -67,6 +69,8 @@ static char *dir = "/run/slurm/conf";
 
 static char **main_argv = NULL;
 static int listen_fd = -1;
+
+static void *_try_to_reconfig(void *ptr);
 
 static void _usage(void)
 {
@@ -94,6 +98,10 @@ static void _parse_args(int argc, char **argv)
 		{NULL, no_argument, 0, 'v'},
 		{NULL, 0, 0, 0}
 	};
+
+	if ((str = getenv("SLURM_DEBUG_FLAGS")) &&
+	    debug_str2flags(str, &slurm_conf.debug_flags))
+		fatal("DebugFlags invalid: %s", str);
 
 	if ((str = getenv("SACKD_DEBUG"))) {
 		logopt.stderr_level = logopt.syslog_level = log_string2num(str);
@@ -210,8 +218,10 @@ static void _establish_config_source(void)
 			      __func__, dir);
 	}
 
-	if (!(configs = fetch_config(conf_server, CONFIG_REQUEST_SACKD)))
-		fatal("%s: failed to load configs", __func__);
+	while (!(configs = fetch_config(conf_server, CONFIG_REQUEST_SACKD))) {
+		error("Failed to load configs from slurmctld. Retrying in 10 seconds.");
+		sleep(10);
+	}
 
 	registered = true;
 
@@ -222,18 +232,26 @@ static void _establish_config_source(void)
 	xstrfmtcat(conf_file, "%s/slurm.conf", dir);
 }
 
-static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
+static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 {
-	if (!msg->auth_ids_set) {
+	if (unpack_rc) {
+		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
+		      __func__, conmgr_fd_get_name(con),
+		      slurm_strerror(unpack_rc));
+		slurm_free_msg(msg);
+		return unpack_rc;
+	} else if (!msg->auth_ids_set) {
 		error("%s: [%s] rejecting %s RPC with missing user auth",
 		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type));
+		slurm_free_msg(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	} else if (msg->auth_uid != slurm_conf.slurm_user_id) {
 		error("%s: [%s] rejecting %s RPC with user:%u != SlurmUser:%u",
 		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type), msg->auth_uid,
 		      slurm_conf.slurm_user_id);
+		slurm_free_msg(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 
@@ -242,8 +260,7 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		info("reconfigure requested by slurmd");
 		if (write_configs_to_conf_cache(msg->data, dir))
 			error("%s: failed to write configs to cache", __func__);
-		reconfig = true;
-		conmgr_quiesce(false);
+		slurm_thread_create_detached(_try_to_reconfig, NULL);
 		/* no need to respond */
 		break;
 	default:
@@ -259,7 +276,9 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 static void _listen_for_reconf(void)
 {
 	int rc = SLURM_SUCCESS;
-	conmgr_events_t events = { .on_msg = _on_msg };
+	static const conmgr_events_t events = {
+		.on_msg = _on_msg,
+	};
 
 	if (getenv("SACKD_RECONF_LISTEN_FD")) {
 		listen_fd = atoi(getenv("SACKD_RECONF_LISTEN_FD"));
@@ -269,51 +288,47 @@ static void _listen_for_reconf(void)
 		return;
 	}
 
-	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, events,
-					   NULL, 0, NULL)))
+	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, &events,
+					   CON_FLAG_NONE, NULL)))
 		fatal("%s: conmgr refused fd=%d: %s",
 		      __func__, listen_fd, slurm_strerror(rc));
 }
 
-static void _on_sigint(conmgr_fd_t *con, conmgr_work_type_t type,
-		       conmgr_work_status_t status, const char *tag,
-		       void *arg)
+static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGINT. Shutting down.");
-	reconfig = false;
 	conmgr_request_shutdown();
 }
 
-static void _on_sighup(conmgr_fd_t *con, conmgr_work_type_t type,
-		       conmgr_work_status_t status, const char *tag,
-		       void *arg)
+static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGHUP. Reconfiguring.");
-	reconfig = true;
-	conmgr_quiesce(false);
+	slurm_thread_create_detached(_try_to_reconfig, NULL);
 }
 
-static void _on_sigusr2(conmgr_fd_t *con, conmgr_work_type_t type,
-		        conmgr_work_status_t status, const char *tag,
-		        void *arg)
+static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGUSR2. Ignoring.");
 }
 
-static void _on_sigpipe(conmgr_fd_t *con, conmgr_work_type_t type,
-		        conmgr_work_status_t status, const char *tag,
-		        void *arg)
+static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGPIPE. Ignoring.");
 }
 
-static void _try_to_reconfig(void)
+static void *_try_to_reconfig(void *ptr)
 {
 	extern char **environ;
 	struct rlimit rlim;
 	char **child_env;
 	pid_t pid;
-	int to_parent[2] = {-1, -1};
+	int to_parent[2] = {-1, -1}, auth_fd = -1;
+	int close_skip[] = { -1, -1, -1, -1 }, skip_index = 0;
+
+	if ((auth_fd = auth_g_get_reconfig_fd(AUTH_PLUGIN_SLURM)) >= 0)
+		close_skip[skip_index++] = auth_fd;
+
+	conmgr_quiesce(__func__);
 
 	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
 		error("getrlimit(RLIMIT_NOFILE): %m");
@@ -325,21 +340,20 @@ static void _try_to_reconfig(void)
 	if (listen_fd != -1) {
 		setenvf(&child_env, "SACKD_RECONF_LISTEN_FD", "%d", listen_fd);
 		fd_set_noclose_on_exec(listen_fd);
+		close_skip[skip_index++] = listen_fd;
 	}
 
 	if (!daemonize && !under_systemd)
 		goto start_child;
 
-	if (pipe(to_parent) < 0) {
-		error("%s: pipe() failed: %m", __func__);
-		return;
-	}
+	if (pipe(to_parent))
+		fatal("%s: pipe() failed: %m", __func__);
 
 	setenvf(&child_env, "SACKD_RECONF_PARENT_FD", "%d", to_parent[1]);
+	close_skip[skip_index++] = to_parent[1];
 
 	if ((pid = fork()) < 0) {
-		error("%s: fork() failed, cannot reconfigure.", __func__);
-		return;
+		fatal("%s: fork() failed: %m", __func__);
 	} else if (pid > 0) {
 		pid_t grandchild_pid;
 		int rc;
@@ -368,14 +382,12 @@ rwfail:
 		env_array_free(child_env);
 		waitpid(pid, &rc, 0);
 		info("Resuming operation, reconfigure failed.");
-		return;
+		conmgr_unquiesce(__func__);
+		return NULL;
 	}
 
 start_child:
-	for (int fd = 3; fd < rlim.rlim_cur; fd++) {
-		if ((fd != to_parent[1]) && (fd != listen_fd))
-			(void) close(fd);
-	}
+	closeall_except(3, close_skip);
 
 	/*
 	 * This second fork() ensures that the new grandchild's parent is init,
@@ -427,12 +439,12 @@ extern int main(int argc, char **argv)
 		if (xdaemon())
 			error("daemon(): %m");
 
-	init_conmgr(0, 0, callbacks);
+	conmgr_init(0, 0, callbacks);
 
-	conmgr_add_signal_work(SIGINT, _on_sigint, NULL, "on_sigint()");
-	conmgr_add_signal_work(SIGHUP, _on_sighup, NULL, "_on_sighup()");
-	conmgr_add_signal_work(SIGUSR2, _on_sigusr2, NULL, "_on_sigusr2()");
-	conmgr_add_signal_work(SIGPIPE, _on_sigpipe, NULL, "on_sigpipe()");
+	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
+	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
+	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
+	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
 
 	_establish_config_source();
 	slurm_conf_init(conf_file);
@@ -458,14 +470,7 @@ extern int main(int argc, char **argv)
 		xsystemd_change_mainpid(getpid());
 
 	info("running");
-	while (true) {
-		conmgr_run(true);
-		if (!reconfig)
-			break;
-		reconfig = false;
-		/* will exit this process if successful */
-		_try_to_reconfig();
-	}
+	conmgr_run(true);
 
 	xfree(conf_file);
 	xfree(conf_server);

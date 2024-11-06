@@ -101,7 +101,7 @@ static time_t now;
  * Global Print Functions
  *****************************************************************************/
 
-void sort_job_list(List job_list)
+void sort_job_list(list_t *job_list)
 {
 	int i;
 	now = time(NULL);
@@ -203,14 +203,14 @@ void sort_job_list(List job_list)
 	}
 }
 
-void sort_jobs_by_start_time (List jobs)
+void sort_jobs_by_start_time(list_t *jobs)
 {
 	reverse_order = true;
 	list_sort (jobs, _sort_job_by_time_start);
 	return;
 }
 
-void sort_step_list(List step_list)
+void sort_step_list(list_t *step_list)
 {
 	int i;
 	now = time(NULL);

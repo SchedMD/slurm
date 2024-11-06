@@ -38,22 +38,22 @@
 
 #include "as_mysql_txn.h"
 
-extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
-			     slurmdb_txn_cond_t *txn_cond)
+extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
+				slurmdb_txn_cond_t *txn_cond)
 {
 	char *query = NULL;
 	char *assoc_extra = NULL;
 	char *name_extra = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
-	List txn_list = NULL;
+	list_t *txn_list = NULL;
 	list_itr_t *itr = NULL;
 	char *object = NULL;
 	int set = 0;
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	List use_cluster_list = NULL;
+	list_t *use_cluster_list = NULL;
 	bool locked = 0;
 
 	/* if this changes you will need to edit the corresponding enum */

@@ -388,7 +388,7 @@ static int _pmix_p2p_send_core(const char *nodename, const char *address,
 	int rc, timeout;
 	slurm_msg_t msg;
 	forward_data_msg_t req;
-	List ret_list;
+	list_t *ret_list;
 	ret_data_info_t *ret_data_info = NULL;
 
 	pmixp_debug_hang(0);

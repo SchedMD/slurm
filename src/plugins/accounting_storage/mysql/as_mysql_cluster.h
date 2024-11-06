@@ -41,24 +41,23 @@
 #include "accounting_storage_mysql.h"
 
 extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				 List cluster_list);
+				 list_t *cluster_list);
 
-extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				     slurmdb_cluster_cond_t *cluster_cond,
-				     slurmdb_cluster_rec_t *cluster);
+extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+					slurmdb_cluster_cond_t *cluster_cond,
+					slurmdb_cluster_rec_t *cluster);
 
-extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+					slurmdb_cluster_cond_t *cluster_cond);
+
+extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 				     slurmdb_cluster_cond_t *cluster_cond);
 
-extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
-				  slurmdb_cluster_cond_t *cluster_cond);
+extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
+					   slurmdb_event_cond_t *event_cond);
 
-extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
-					slurmdb_event_cond_t *event_cond);
-
-extern List as_mysql_get_instances(mysql_conn_t *mysql_conn,
-				   uint32_t uid,
-				   slurmdb_instance_cond_t *instance_cond);
+extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
+				      slurmdb_instance_cond_t *instance_cond);
 
 extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 			      node_record_t *node_ptr,

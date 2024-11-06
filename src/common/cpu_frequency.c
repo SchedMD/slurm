@@ -477,7 +477,6 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *step)
 		 * binding that doesn't require an argument
 		 */
 		if ((step->cpu_bind_type != CPU_BIND_NONE) &&
-		    (step->cpu_bind_type != CPU_BIND_RANK) &&
 		    (step->cpu_bind_type != CPU_BIND_LDRANK))
 			error("cpu_freq_cpuset_validate: cpu_bind string is null");
 		return;
@@ -490,8 +489,8 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *step)
 		return;
 	}
 
-	cpu_map     = (bitstr_t *) bit_alloc(cpu_freq_count);
-	cpus_to_set = (bitstr_t *) bit_alloc(cpu_freq_count);
+	cpu_map = bit_alloc(cpu_freq_count);
+	cpus_to_set = bit_alloc(cpu_freq_count);
 
 	do {
 		debug3("  cpu_str = %s", cpu_str);

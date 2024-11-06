@@ -78,7 +78,7 @@ typedef struct {
 typedef struct {
 	slurmdb_cluster_rec_t *cluster;
 	job_desc_msg_t        *req;
-	List                   resp_msg_list;
+	list_t *resp_msg_list;
 } load_willrun_req_struct_t;
 
 typedef struct {
@@ -300,7 +300,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 			     will_run_response_msg_t **will_run_resp,
 			     slurmdb_federation_rec_t *fed)
 {
-	List resp_msg_list;
+	list_t *resp_msg_list;
 	int pthread_count = 0, i;
 	pthread_t *load_thread = 0;
 	load_willrun_req_struct_t *load_args;
@@ -308,7 +308,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	will_run_response_msg_t *earliest_resp = NULL;
 	load_willrun_resp_struct_t *tmp_resp;
 	slurmdb_cluster_rec_t *cluster;
-	List req_clusters = NULL;
+	list_t *req_clusters = NULL;
 
 	xassert(req);
 	xassert(will_run_resp);
@@ -357,7 +357,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	iter = list_iterator_create(resp_msg_list);
 	while ((tmp_resp = (load_willrun_resp_struct_t *)list_next(iter))) {
 		if (!tmp_resp->willrun_resp_msg)
-			slurm_seterrno(tmp_resp->rc);
+			errno = tmp_resp->rc;
 		else if ((!earliest_resp) ||
 			 (tmp_resp->willrun_resp_msg->start_time <
 			  earliest_resp->start_time)) {
@@ -381,7 +381,8 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 }
 
 /* Get total node count and lead job ID from RESPONSE_HET_JOB_ALLOCATION */
-static void _het_job_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
+static void _het_job_alloc_test(list_t *resp, uint32_t *node_cnt,
+				uint32_t *job_id)
 {
 	resource_allocation_response_msg_t *alloc;
 	uint32_t inx = 0, het_job_node_cnt = 0, het_job_id = 0;
@@ -422,13 +423,14 @@ static void _het_job_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
  *      with no allocation granted)
  * NOTE: free the response using list_destroy()
  */
-List slurm_allocate_het_job_blocking(List job_req_list, time_t timeout,
-				     void(*pending_callback)(uint32_t job_id))
+list_t *slurm_allocate_het_job_blocking(
+	list_t *job_req_list, time_t timeout,
+	void (*pending_callback) (uint32_t job_id))
 {
 	int rc;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-	List resp = NULL;
+	list_t *resp = NULL;
 	job_desc_msg_t *req;
 	listen_t *listen = NULL;
 	int errnum = SLURM_SUCCESS;
@@ -491,7 +493,7 @@ List slurm_allocate_het_job_blocking(List job_req_list, time_t timeout,
 	case RESPONSE_HET_JOB_ALLOCATION:
 		/* Yay, the controller has acknowledged our request!
 		 * Test if we have an allocation yet? */
-		resp = (List) resp_msg.data;
+		resp = resp_msg.data;
 		_het_job_alloc_test(resp, &node_cnt, &job_id);
 		if (node_cnt > 0) {
 			/* yes, allocation has been granted */
@@ -600,7 +602,7 @@ int slurm_job_will_run(job_desc_msg_t *req)
  *		allocation request
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_het_job_will_run(List job_req_list)
+extern int slurm_het_job_will_run(list_t *job_req_list)
 {
 	job_desc_msg_t *req;
 	will_run_response_msg_t *will_run_resp;
@@ -874,7 +876,7 @@ extern int slurm_allocation_lookup(uint32_t jobid,
  * NOTE: returns information an individual job as well
  * NOTE: free the response using list_destroy()
  */
-extern int slurm_het_job_lookup(uint32_t jobid, List *info)
+extern int slurm_het_job_lookup(uint32_t jobid, list_t **info)
 {
 	job_alloc_info_msg_t req;
 	slurm_msg_t req_msg;
@@ -927,7 +929,7 @@ extern int slurm_het_job_lookup(uint32_t jobid, List *info)
 		*info = NULL;
 		break;
 	case RESPONSE_HET_JOB_ALLOCATION:
-		*info = (List) resp_msg.data;
+		*info = resp_msg.data;
 		return SLURM_SUCCESS;
 		break;
 	default:
@@ -1435,13 +1437,13 @@ static void _wait_for_allocation_response(uint32_t job_id,
 					resp) >= 0)
 				return;
 		} else if (msg_type == RESPONSE_HET_JOB_ALLOCATION) {
-			if (slurm_het_job_lookup(job_id, (List *) resp) >= 0)
+			if (slurm_het_job_lookup(job_id, (list_t **) resp) >= 0)
 				return;
 		} else {
 			error("%s: Invalid msg_type (%u)", __func__, msg_type);
 		}
 
-		if (slurm_get_errno() == ESLURM_JOB_PENDING) {
+		if (errno == ESLURM_JOB_PENDING) {
 			debug3("Still waiting for allocation");
 			errno = errnum;
 			return;

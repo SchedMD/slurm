@@ -38,8 +38,14 @@
 
 #include "src/common/track_script.h"
 
+#define RUN_COMMAND_LAUNCHER_MODE "slurm_script_launcher"
+#define RUN_COMMAND_LAUNCHER_ARGC 3
+
 typedef struct {
+	void (*cb)(int write_fd, void *cb_arg);
+	void *cb_arg;
 	char **env;
+	bool ignore_path_exec_check;
 	uint32_t job_id;
 	int max_wait;
 	bool orphan_on_shutdown;
@@ -49,6 +55,7 @@ typedef struct {
 	int *status;
 	pthread_t tid;
 	bool *timed_out;
+	bool write_to_child;
 } run_command_args_t;
 
 /*
@@ -69,13 +76,30 @@ extern void run_command_add_to_script(char **script_body, char *new_str);
 
 /*
  * Used to initialize this run_command module.
- * Needed in cases of high-availability when the backup controllers are
- * returning to function and must recover from a previously issued shutdown.
+ *
+ * If run_command_shutdown() was previously called, this function must be
+ * called to re-initialize this module and allow commands to run.
+ *
+ * IN argc - number of command line arguments
+ * IN argv - the command line arguments or NULL to use the current running
+ *      binary
+ * IN binary - path to executable binary to use as the script launcher or NULL
+ *	to use the current running binary or resolve using argc/argv
+ * RET SLURM_SUCCESS if launcher resolved or SLURM_ERROR if launcher not
+ *      resolved/set
  */
-extern void run_command_init(void);
+extern int run_command_init(int argc, char **argv, char *binary);
 
-/* used to terminate any outstanding commands */
+/*
+ * Used to terminate any outstanding commands. Any future commands will be
+ * immediately terminated until run_command_init() is called again.
+ */
 extern void run_command_shutdown(void);
+
+/*
+ * Return true if the caller is in RUN_COMMAND_LAUNCHER_MODE
+ */
+extern bool run_command_is_launcher(int argc, char **argv);
 
 /* Return count of child processes */
 extern int run_command_count(void);
@@ -85,6 +109,10 @@ extern int run_command_count(void);
  *
  * The following describes the variables in run_command_args_t:
  *
+ * cb - If set, this callback function is called in the parent immediately after
+ *      the child is launched. write_fd is set to a valid file descriptor if
+ *      write_to_child is true; otherwise, write_fd is -1.
+ * cb_arg - Optional argument to be passed to the callback function.
  * env IN - environment for the command, if NULL execv is used
  * max_wait IN - Maximum time to wait in milliseconds,
  *		 -1 for no limit (asynchronous)
@@ -96,22 +124,17 @@ extern int run_command_count(void);
  * status OUT - Job exit code
  * tid IN - Thread we are calling from; zero if not using track_script.
  * timed_out OUT - If not NULL, then set to true if the command timed out.
+ * write_to_child IN - If true, then open another pipe so the parent can
+ *                     write data to the child.
  *
  * Return stdout+stderr of spawned program, value must be xfreed.
  */
 extern char *run_command(run_command_args_t *run_command_args);
 
 /*
- * Wrapper for execv/execve. This should never return.
+ * Call this if a binary is running in script launcher mode.
  */
-extern void run_command_child_exec(const char *script_path, char **argv,
-				   char **env);
-
-/*
- * Called in the child before exec. Do setup like closing unneeded files and
- * setting uid/gid.
- */
-extern void run_command_child_pre_exec(void);
+extern void run_command_launcher(int argc, char **argv);
 
 /*
  * Read stdout of a child process and wait for the child process to terminate.

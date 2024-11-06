@@ -41,7 +41,7 @@
 
 #include "accounting_storage_mysql.h"
 
-extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
-			  slurmdb_txn_cond_t *txn_cond);
+extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
+				slurmdb_txn_cond_t *txn_cond);
 
 #endif

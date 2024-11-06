@@ -90,6 +90,7 @@ typedef struct slurm_switch_ops {
 	int          (*fs_init)           ( stepd_step_rec_t *step );
 	void         (*extern_stepinfo)   ( switch_stepinfo_t **stepinfo,
 					    job_record_t *job_ptr );
+	void	     (*extern_step_fini)  ( uint32_t job_id);
 } slurm_switch_ops_t;
 
 /*
@@ -116,6 +117,7 @@ static const char *syms[] = {
 	"switch_p_job_complete",
 	"switch_p_fs_init",
 	"switch_p_extern_stepinfo",
+	"switch_p_extern_step_fini",
 };
 
 static slurm_switch_ops_t  *ops            = NULL;
@@ -165,7 +167,7 @@ extern int switch_g_init(bool only_default)
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "switch";
 	int i, j, plugin_cnt;
-	List plugin_names = NULL;
+	list_t *plugin_names = NULL;
 	_plugin_args_t plugin_args = {0};
 
 	slurm_mutex_lock( &context_lock );
@@ -386,9 +388,15 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *stepinfo,
 				   buf_t *buffer, uint16_t protocol_version)
 {
 	void *data = NULL;
-	uint32_t plugin_id;
+	uint32_t length_position = 0, start = 0, end = 0, plugin_id;
 
 	xassert(switch_context_cnt >= 0);
+
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		length_position = get_buf_offset(buffer);
+		pack32(0, buffer);
+		start = get_buf_offset(buffer);
+	}
 
 	if (!switch_context_cnt) {
 		/* Remove when 23.02 is no longer supported. */
@@ -412,19 +420,38 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *stepinfo,
 	}
 
 	(*(ops[plugin_id].pack_stepinfo))(data, buffer, protocol_version);
+
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		end = get_buf_offset(buffer);
+		set_buf_offset(buffer, length_position);
+		pack32(end - start, buffer);
+		set_buf_offset(buffer, end);
+	}
 }
 
 extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
+	int i;
+	uint32_t length = 0, switch_stepinfo_end = 0, plugin_id;
 	dynamic_plugin_data_t *stepinfo_ptr = NULL;
 
 	xassert(switch_context_cnt >= 0);
 
-	if (!switch_context_cnt) {
+	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION)
+		goto unpack_error;
+
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpack32(&length, buffer);
+		switch_stepinfo_end = get_buf_offset(buffer) + length;
+		if (!running_in_slurmstepd() || !length || !switch_context_cnt)
+			goto skip_buf;
+
+		if (remaining_buf(buffer) < length)
+			return SLURM_ERROR;
+	} else if (!switch_context_cnt) {
 		/* Remove when 23.02 is no longer supported. */
 		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION) {
-			uint32_t plugin_id;
 			safe_unpack32(&plugin_id, buffer);
 			*stepinfo = NULL;
 		}
@@ -434,22 +461,26 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 	stepinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*stepinfo = stepinfo_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		int i;
-		uint32_t plugin_id;
-		safe_unpack32(&plugin_id, buffer);
-		for (i = 0; i < switch_context_cnt; i++) {
-			if (*(ops[i].plugin_id) == plugin_id) {
-				stepinfo_ptr->plugin_id = i;
-				break;
-			}
+	safe_unpack32(&plugin_id, buffer);
+	for (i = 0; i < switch_context_cnt; i++) {
+		if (*(ops[i].plugin_id) == plugin_id) {
+			stepinfo_ptr->plugin_id = i;
+			break;
 		}
-		if (i >= switch_context_cnt) {
-			error("we don't have switch plugin type %u", plugin_id);
-			goto unpack_error;
+	}
+
+	if (i >= switch_context_cnt) {
+		if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+			/*
+			 * We were sent a plugin that we don't know how to
+			 * handle so skip it if possible.
+			 */
+			debug("we don't have switch plugin type %u", plugin_id);
+			goto skip_buf;
 		}
-	} else
+		error("we don't have switch plugin type %u", plugin_id);
 		goto unpack_error;
+	}
 
 	if ((*(ops[stepinfo_ptr->plugin_id].unpack_stepinfo))
 	     ((switch_stepinfo_t **) &stepinfo_ptr->data, buffer,
@@ -466,7 +497,14 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 		*stepinfo = _create_dynamic_plugin_data(switch_context_default);
 	}
 
+	return SLURM_SUCCESS;
 
+skip_buf:
+	if (length) {
+		debug("%s: skipping switch_stepinfo data (%u)",
+		      __func__, length);
+		set_buf_offset(buffer, switch_stepinfo_end);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -595,4 +633,14 @@ extern void switch_g_extern_stepinfo(void **stepinfo, job_record_t *job_ptr)
 		dest_ptr->data = tmp;
 		*stepinfo = dest_ptr;
 	}
+}
+
+extern void switch_g_extern_step_fini(uint32_t job_id)
+{
+	xassert(switch_context_cnt >= 0);
+
+	if (!switch_context_cnt)
+		return;
+
+	(*(ops[switch_context_default].extern_step_fini))(job_id);
 }

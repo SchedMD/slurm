@@ -98,6 +98,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
+	$(top_srcdir)/auxdir/ax_have_epoll.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/gtk-2.0.m4 \
@@ -159,8 +160,8 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
-	cbuf.lo conmgr.lo core_array.lo cpu_frequency.lo cron.lo \
-	daemonize.lo data.lo eio.lo env.lo extra_constraints.lo fd.lo \
+	cbuf.lo core_array.lo cpu_frequency.lo cron.lo daemonize.lo \
+	data.lo eio.lo env.lo extra_constraints.lo fd.lo \
 	fetch_config.lo forward.lo global_defaults.lo group_cache.lo \
 	half_duplex.lo hostlist.lo http.lo identity.lo id_util.lo \
 	io_hdr.lo job_features.lo job_options.lo job_record.lo \
@@ -170,16 +171,16 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	part_record.lo persist_conn.lo plugin.lo plugrack.lo \
 	port_mgr.lo print_fields.lo proc_args.lo read_config.lo \
 	reverse_tree.lo run_command.lo run_in_daemon.lo sack_api.lo \
-	setproctitle.lo slurm_errno.lo slurm_opt.lo \
+	setproctitle.lo sluid.lo slurm_errno.lo slurm_opt.lo \
 	slurm_protocol_api.lo slurm_protocol_defs.lo \
 	slurm_protocol_pack.lo slurm_protocol_util.lo \
 	slurm_protocol_socket.lo slurm_resolv.lo \
 	slurm_resource_info.lo slurm_rlimits_info.lo \
 	slurm_step_layout.lo slurm_time.lo slurmdb_defs.lo \
 	slurmdb_pack.lo slurmdbd_defs.lo slurmdbd_pack.lo spank.lo \
-	stepd_api.lo strlcpy.lo strnatcmp.lo timers.lo track_script.lo \
-	tres_bind.lo tres_frequency.lo uid.lo util-net.lo \
-	working_cluster.lo workq.lo write_labelled_message.lo \
+	state_save.lo stepd_api.lo strlcpy.lo strnatcmp.lo timers.lo \
+	track_script.lo tres_bind.lo tres_frequency.lo uid.lo \
+	util-net.lo working_cluster.lo write_labelled_message.lo \
 	x11_util.lo xassert.lo xahash.lo xhash.lo xmalloc.lo xregex.lo \
 	xsystemd.lo xsignal.lo xstring.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
@@ -210,10 +211,10 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/bitstring.Plo ./$(DEPDIR)/callerid.Plo \
-	./$(DEPDIR)/cbuf.Plo ./$(DEPDIR)/conmgr.Plo \
-	./$(DEPDIR)/core_array.Plo ./$(DEPDIR)/cpu_frequency.Plo \
-	./$(DEPDIR)/cron.Plo ./$(DEPDIR)/daemonize.Plo \
-	./$(DEPDIR)/data.Plo ./$(DEPDIR)/eio.Plo ./$(DEPDIR)/env.Plo \
+	./$(DEPDIR)/cbuf.Plo ./$(DEPDIR)/core_array.Plo \
+	./$(DEPDIR)/cpu_frequency.Plo ./$(DEPDIR)/cron.Plo \
+	./$(DEPDIR)/daemonize.Plo ./$(DEPDIR)/data.Plo \
+	./$(DEPDIR)/eio.Plo ./$(DEPDIR)/env.Plo \
 	./$(DEPDIR)/extra_constraints.Plo ./$(DEPDIR)/fd.Plo \
 	./$(DEPDIR)/fetch_config.Plo ./$(DEPDIR)/forward.Plo \
 	./$(DEPDIR)/global_defaults.Plo ./$(DEPDIR)/group_cache.Plo \
@@ -235,8 +236,8 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/reverse_tree.Plo \
 	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
 	./$(DEPDIR)/sack_api.Plo ./$(DEPDIR)/setproctitle.Plo \
-	./$(DEPDIR)/slurm_errno.Plo ./$(DEPDIR)/slurm_opt.Plo \
-	./$(DEPDIR)/slurm_protocol_api.Plo \
+	./$(DEPDIR)/sluid.Plo ./$(DEPDIR)/slurm_errno.Plo \
+	./$(DEPDIR)/slurm_opt.Plo ./$(DEPDIR)/slurm_protocol_api.Plo \
 	./$(DEPDIR)/slurm_protocol_defs.Plo \
 	./$(DEPDIR)/slurm_protocol_pack.Plo \
 	./$(DEPDIR)/slurm_protocol_socket.Plo \
@@ -247,12 +248,12 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/slurm_step_layout.Plo ./$(DEPDIR)/slurm_time.Plo \
 	./$(DEPDIR)/slurmdb_defs.Plo ./$(DEPDIR)/slurmdb_pack.Plo \
 	./$(DEPDIR)/slurmdbd_defs.Plo ./$(DEPDIR)/slurmdbd_pack.Plo \
-	./$(DEPDIR)/spank.Plo ./$(DEPDIR)/stepd_api.Plo \
-	./$(DEPDIR)/strlcpy.Plo ./$(DEPDIR)/strnatcmp.Plo \
-	./$(DEPDIR)/timers.Plo ./$(DEPDIR)/track_script.Plo \
-	./$(DEPDIR)/tres_bind.Plo ./$(DEPDIR)/tres_frequency.Plo \
-	./$(DEPDIR)/uid.Plo ./$(DEPDIR)/util-net.Plo \
-	./$(DEPDIR)/working_cluster.Plo ./$(DEPDIR)/workq.Plo \
+	./$(DEPDIR)/spank.Plo ./$(DEPDIR)/state_save.Plo \
+	./$(DEPDIR)/stepd_api.Plo ./$(DEPDIR)/strlcpy.Plo \
+	./$(DEPDIR)/strnatcmp.Plo ./$(DEPDIR)/timers.Plo \
+	./$(DEPDIR)/track_script.Plo ./$(DEPDIR)/tres_bind.Plo \
+	./$(DEPDIR)/tres_frequency.Plo ./$(DEPDIR)/uid.Plo \
+	./$(DEPDIR)/util-net.Plo ./$(DEPDIR)/working_cluster.Plo \
 	./$(DEPDIR)/write_labelled_message.Plo \
 	./$(DEPDIR)/x11_util.Plo ./$(DEPDIR)/xahash.Plo \
 	./$(DEPDIR)/xassert.Plo ./$(DEPDIR)/xhash.Plo \
@@ -337,6 +338,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
 FREEIPMI_LIBS = @FREEIPMI_LIBS@
@@ -567,8 +569,6 @@ libcommon_la_SOURCES = \
 	callerid.h				\
 	cbuf.c					\
 	cbuf.h					\
-	conmgr.c				\
-	conmgr.h				\
 	core_array.c				\
 	core_array.h				\
 	cpu_frequency.c				\
@@ -669,6 +669,8 @@ libcommon_la_SOURCES = \
 	sack_api.h				\
 	setproctitle.c				\
 	setproctitle.h				\
+	sluid.c					\
+	sluid.h					\
 	slurm_errno.c				\
 	slurm_opt.c				\
 	slurm_opt.h				\
@@ -704,6 +706,8 @@ libcommon_la_SOURCES = \
 	slurmdbd_pack.h				\
 	spank.c					\
 	spank.h					\
+	state_save.c				\
+	state_save.h				\
 	stepd_api.c				\
 	stepd_api.h				\
 	strlcpy.c				\
@@ -725,8 +729,6 @@ libcommon_la_SOURCES = \
 	util-net.h				\
 	working_cluster.c			\
 	working_cluster.h			\
-	workq.c					\
-	workq.h					\
 	write_labelled_message.c		\
 	write_labelled_message.h		\
 	x11_util.c				\
@@ -821,7 +823,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/callerid.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbuf.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conmgr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core_array.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu_frequency.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cron.Plo@am__quote@ # am--include-marker
@@ -871,6 +872,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_in_daemon.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sack_api.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setproctitle.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sluid.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_errno.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_opt.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_api.Plo@am__quote@ # am--include-marker
@@ -888,6 +890,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_defs.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_pack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spank.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_save.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strnatcmp.Plo@am__quote@ # am--include-marker
@@ -898,7 +901,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uid.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util-net.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/working_cluster.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/workq.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/write_labelled_message.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_util.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xahash.Plo@am__quote@ # am--include-marker
@@ -1038,7 +1040,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/bitstring.Plo
 	-rm -f ./$(DEPDIR)/callerid.Plo
 	-rm -f ./$(DEPDIR)/cbuf.Plo
-	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/core_array.Plo
 	-rm -f ./$(DEPDIR)/cpu_frequency.Plo
 	-rm -f ./$(DEPDIR)/cron.Plo
@@ -1088,6 +1089,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
 	-rm -f ./$(DEPDIR)/sack_api.Plo
 	-rm -f ./$(DEPDIR)/setproctitle.Plo
+	-rm -f ./$(DEPDIR)/sluid.Plo
 	-rm -f ./$(DEPDIR)/slurm_errno.Plo
 	-rm -f ./$(DEPDIR)/slurm_opt.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_api.Plo
@@ -1105,6 +1107,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/slurmdbd_defs.Plo
 	-rm -f ./$(DEPDIR)/slurmdbd_pack.Plo
 	-rm -f ./$(DEPDIR)/spank.Plo
+	-rm -f ./$(DEPDIR)/state_save.Plo
 	-rm -f ./$(DEPDIR)/stepd_api.Plo
 	-rm -f ./$(DEPDIR)/strlcpy.Plo
 	-rm -f ./$(DEPDIR)/strnatcmp.Plo
@@ -1115,7 +1118,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/uid.Plo
 	-rm -f ./$(DEPDIR)/util-net.Plo
 	-rm -f ./$(DEPDIR)/working_cluster.Plo
-	-rm -f ./$(DEPDIR)/workq.Plo
 	-rm -f ./$(DEPDIR)/write_labelled_message.Plo
 	-rm -f ./$(DEPDIR)/x11_util.Plo
 	-rm -f ./$(DEPDIR)/xahash.Plo
@@ -1175,7 +1177,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/bitstring.Plo
 	-rm -f ./$(DEPDIR)/callerid.Plo
 	-rm -f ./$(DEPDIR)/cbuf.Plo
-	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/core_array.Plo
 	-rm -f ./$(DEPDIR)/cpu_frequency.Plo
 	-rm -f ./$(DEPDIR)/cron.Plo
@@ -1225,6 +1226,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
 	-rm -f ./$(DEPDIR)/sack_api.Plo
 	-rm -f ./$(DEPDIR)/setproctitle.Plo
+	-rm -f ./$(DEPDIR)/sluid.Plo
 	-rm -f ./$(DEPDIR)/slurm_errno.Plo
 	-rm -f ./$(DEPDIR)/slurm_opt.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_api.Plo
@@ -1242,6 +1244,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/slurmdbd_defs.Plo
 	-rm -f ./$(DEPDIR)/slurmdbd_pack.Plo
 	-rm -f ./$(DEPDIR)/spank.Plo
+	-rm -f ./$(DEPDIR)/state_save.Plo
 	-rm -f ./$(DEPDIR)/stepd_api.Plo
 	-rm -f ./$(DEPDIR)/strlcpy.Plo
 	-rm -f ./$(DEPDIR)/strnatcmp.Plo
@@ -1252,7 +1255,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/uid.Plo
 	-rm -f ./$(DEPDIR)/util-net.Plo
 	-rm -f ./$(DEPDIR)/working_cluster.Plo
-	-rm -f ./$(DEPDIR)/workq.Plo
 	-rm -f ./$(DEPDIR)/write_labelled_message.Plo
 	-rm -f ./$(DEPDIR)/x11_util.Plo
 	-rm -f ./$(DEPDIR)/xahash.Plo

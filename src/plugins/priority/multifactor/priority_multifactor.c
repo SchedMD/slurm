@@ -60,16 +60,19 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/parse_time.h"
-#include "src/interfaces/site_factor.h"
+#include "src/common/slurm_time.h"
+#include "src/common/state_save.h"
+#include "src/common/xstring.h"
+
+#include "src/interfaces/gres.h"
 #include "src/interfaces/mcs.h"
 #include "src/interfaces/priority.h"
-#include "src/common/slurm_time.h"
-#include "src/common/xstring.h"
-#include "src/interfaces/gres.h"
+#include "src/interfaces/site_factor.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/read_config.h"
+#include "src/slurmctld/state_save.h"
 
 #include "fair_tree.h"
 
@@ -83,7 +86,7 @@
 #if defined (__APPLE__)
 extern void *acct_db_conn  __attribute__((weak_import));
 extern uint32_t cluster_cpus __attribute__((weak_import));
-extern List job_list  __attribute__((weak_import));
+extern list_t *job_list  __attribute__((weak_import));
 extern time_t last_job_update __attribute__((weak_import));
 extern time_t last_part_update __attribute__((weak_import));
 extern slurm_conf_t slurm_conf __attribute__((weak_import));
@@ -93,7 +96,7 @@ extern int active_node_record_count __attribute__((weak_import));
 #else
 void *acct_db_conn = NULL;
 uint32_t cluster_cpus = NO_VAL;
-List job_list = NULL;
+list_t *job_list = NULL;
 time_t last_job_update = (time_t) 0;
 time_t last_part_update = (time_t) 0;
 slurm_conf_t slurm_conf;
@@ -150,6 +153,12 @@ static uint32_t flags;       /* Priority Flags */
 static time_t g_last_ran = 0; /* when the last poll ran */
 static time_t g_last_reset = 0; /* when the last reset was done */
 static double decay_factor = 1; /* The decay factor when decaying time. */
+
+typedef struct {
+	job_record_t *job_ptr;
+	part_record_t *part_ptr;
+	list_t *ret_list;
+} create_prio_list_t;
 
 /* variables defined in priority_multifactor.h */
 
@@ -326,10 +335,8 @@ unpack_error:
 static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 {
 	/* Save high-water mark to avoid buffer growth with copies */
-	static int high_buffer_size = BUF_SIZE;
+	static uint32_t high_buffer_size = BUF_SIZE;
 	int error_code = SLURM_SUCCESS;
-	int state_fd;
-	char *old_file, *new_file, *state_file;
 	buf_t *buffer;
 
 	if (!xstrcmp(slurm_conf.state_save_location, "/dev/null")) {
@@ -342,56 +349,9 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 	pack_time(last_ran, buffer);
 	pack_time(last_reset, buffer);
 
-	/* read the file */
-	old_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(old_file, "/priority_last_decay_ran.old");
-	state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(state_file, "/priority_last_decay_ran");
-	new_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(new_file, "/priority_last_decay_ran.new");
+	error_code = save_buf_to_state("priority_last_decay_ran", buffer,
+				       &high_buffer_size);
 
-	lock_state_files();
-	state_fd = creat(new_file, 0600);
-	if (state_fd < 0) {
-		error("Can't save decay state, create file %s error %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(state_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-		fsync(state_fd);
-		close(state_fd);
-	}
-
-	if (error_code != SLURM_SUCCESS)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(state_file, old_file))
-			debug3("unable to create link for %s -> %s: %m",
-			       state_file, old_file);
-		(void) unlink(state_file);
-		if (link(new_file, state_file))
-			debug3("unable to create link for %s -> %s: %m",
-			       new_file, state_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(state_file);
-	xfree(new_file);
-
-	unlock_state_files();
 	debug4("done writing time %ld", (long)last_ran);
 	FREE_NULL_BUFFER(buffer);
 
@@ -408,7 +368,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
  *
  * NOTE: acct_mgr_assoc_lock must be locked before this is called.
  */
-static int _set_children_usage_efctv(List children_list)
+static int _set_children_usage_efctv(list_t *children_list)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
 	list_itr_t *itr = NULL;
@@ -531,46 +491,40 @@ static double _get_tres_prio_weighted(double *tres_factors)
 }
 
 typedef struct {
-	int *counter;
+	int counter;
 	job_record_t *job_ptr;
-	char *multi_part_str;
-} part_prio_args_t;
+	char *multi_prio_str;
+	part_record_t *part_ptr;
+	double part_tres;
+	double priority_part_init;
+} mult_prio_args_t;
 
-static int _priority_each_partition(void *object, void *arg)
+static int _priority_each_qos(void *object, void *arg)
 {
-	part_record_t *part_ptr = (part_record_t *)object;
-	part_prio_args_t *args = arg;
+	slurmdb_qos_rec_t *qos_ptr = object;
+	mult_prio_args_t *args = arg;
 	job_record_t *job_ptr = args->job_ptr;
-	char *multi_part_str = args->multi_part_str;
-	int *counter = args->counter;
-
-	double part_tres = 0.0;
-	double priority_part;
+	double priority_qos = job_ptr->prio_factors->priority_qos;
+	double priority_part = args->priority_part_init;
 	uint64_t tmp_64;
 
-	if (weight_tres) {
-		double part_tres_factors[slurmctld_tres_cnt];
-		memset(part_tres_factors, 0,
-		       sizeof(double) * slurmctld_tres_cnt);
-		_get_tres_factors(job_ptr, part_ptr, part_tres_factors);
-		part_tres = _get_tres_prio_weighted(part_tres_factors);
+	if (qos_ptr && qos_ptr->priority && weight_qos) {
+		priority_qos =
+			((flags & PRIORITY_FLAGS_NO_NORMAL_QOS) ?
+			 qos_ptr->priority : qos_ptr->usage->norm_priority) *
+			(double) weight_qos;
 	}
 
-	priority_part = ((flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
-			 part_ptr->priority_job_factor :
-			 part_ptr->norm_priority) *
-			 (double)weight_part;
-
 	priority_part +=
-		(job_ptr->prio_factors->priority_age
-		  + job_ptr->prio_factors->priority_assoc
-		  + job_ptr->prio_factors->priority_fs
-		  + job_ptr->prio_factors->priority_js
-		  + job_ptr->prio_factors->priority_qos
-		  + part_tres
-		  + (double)(((int64_t)job_ptr->prio_factors->priority_site)
-			     - NICE_OFFSET)
-		  - (double)(((int64_t)job_ptr->prio_factors->nice)
+		(job_ptr->prio_factors->priority_age +
+		 job_ptr->prio_factors->priority_assoc +
+		 job_ptr->prio_factors->priority_fs +
+		 job_ptr->prio_factors->priority_js +
+		 priority_qos +
+		 args->part_tres +
+		 (double)(((int64_t)job_ptr->prio_factors->priority_site)
+			  - NICE_OFFSET) -
+		 (double)(((int64_t)job_ptr->prio_factors->nice)
 			     - NICE_OFFSET));
 
 	/* Priority 0 is reserved for held jobs */
@@ -585,20 +539,66 @@ static int _priority_each_partition(void *object, void *arg)
 		priority_part = (double) tmp_64;
 	}
 	if (((flags & PRIORITY_FLAGS_INCR_ONLY) == 0) ||
-	    (job_ptr->part_prio->priority_array[*counter] <
+	    (job_ptr->part_prio->priority_array[args->counter] <
 	     (uint32_t) priority_part)) {
-		job_ptr->part_prio->priority_array[*counter] =
+		job_ptr->part_prio->priority_array[args->counter] =
 			(uint32_t) priority_part;
 	}
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO) {
-		xstrfmtcat(multi_part_str, multi_part_str ?
-			   ", %s=%u" : "%s=%u", part_ptr->name,
-			   job_ptr->part_prio->priority_array[*counter]);
+		if (args->multi_prio_str)
+			xstrcat(args->multi_prio_str, ", ");
+		if (qos_ptr)
+			xstrfmtcat(args->multi_prio_str,
+				   "%s/%s=%u", args->part_ptr->name,
+				   qos_ptr->name,
+				   job_ptr->part_prio->
+				   priority_array[args->counter]);
+		else
+			xstrfmtcat(args->multi_prio_str,
+				   "%s=%u", args->part_ptr->name,
+				   job_ptr->part_prio->
+				   priority_array[args->counter]);
 	}
-	(*counter)++;
+
+	args->counter++;
 	return SLURM_SUCCESS;
 }
 
+static int _priority_each_partition(void *object, void *arg)
+{
+	mult_prio_args_t *args = arg;
+	part_record_t *part_ptr = (part_record_t *)object;
+	job_record_t *job_ptr = args->job_ptr;
+
+	args->part_ptr = part_ptr;
+
+	if (weight_tres) {
+		double part_tres_factors[slurmctld_tres_cnt];
+		memset(part_tres_factors, 0,
+		       sizeof(double) * slurmctld_tres_cnt);
+		_get_tres_factors(job_ptr, part_ptr, part_tres_factors);
+		args->part_tres = _get_tres_prio_weighted(part_tres_factors);
+	}
+
+	args->priority_part_init =
+		((flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
+		 part_ptr->priority_job_factor :
+		 part_ptr->norm_priority) * (double)weight_part;
+
+	if (job_ptr->qos_list) {
+		assoc_mgr_lock_t locks = {
+			.qos = READ_LOCK,
+		};
+		assoc_mgr_lock(&locks);
+		(void) list_for_each(job_ptr->qos_list,
+				     _priority_each_qos, args);
+		assoc_mgr_unlock(&locks);
+	} else {
+		(void) _priority_each_qos(NULL, args);
+	}
+
+	return SLURM_SUCCESS;
+}
 
 /* Returns the priority after applying the weight factors */
 static uint32_t _get_priority_internal(time_t start_time,
@@ -608,7 +608,6 @@ static uint32_t _get_priority_internal(time_t start_time,
 	priority_factors_t pre_factors;
 	uint64_t tmp_64;
 	double tmp_tres = 0.0;
-	char *multi_part_str = NULL;
 
 	if (job_ptr->direct_set_prio && (job_ptr->priority > 0)) {
 		if (job_ptr->prio_factors) {
@@ -685,48 +684,65 @@ static uint32_t _get_priority_internal(time_t start_time,
 		priority = (double) tmp_64;
 	}
 
-	/* Free after transitioning from multi-part job to single part job. */
-	if (!job_ptr->part_ptr_list && job_ptr->part_prio) {
+	/*
+	 * Free after transitioning from multi-part/qos job to single part job.
+	 */
+	if (!job_ptr->part_ptr_list && !job_ptr->qos_list &&
+	    job_ptr->part_prio) {
 		xfree(job_ptr->part_prio->priority_array);
-		xfree(job_ptr->part_prio->priority_array_parts);
+		xfree(job_ptr->part_prio->priority_array_names);
 		xfree(job_ptr->part_prio);
 	}
 
-	if (job_ptr->part_ptr_list) {
+	if (job_ptr->part_ptr_list || job_ptr->qos_list) {
 		int i = 0;
-		part_prio_args_t arg;
+		mult_prio_args_t arg = {
+			.job_ptr = job_ptr
+		};
 
 		if (!job_ptr->part_prio)
-			job_ptr->part_prio = xmalloc(sizeof(priority_parts_t));
+			job_ptr->part_prio =
+				xmalloc(sizeof(*job_ptr->part_prio));
 
 		if (job_ptr->part_prio &&
 		    (!job_ptr->part_prio->priority_array ||
 		     (job_ptr->part_prio->last_update < last_part_update))) {
 
 			xfree(job_ptr->part_prio->priority_array);
-			i = list_count(job_ptr->part_ptr_list);
+			if (job_ptr->part_ptr_list) {
+				i = list_count(job_ptr->part_ptr_list);
+				/* part_ptr_list is already sorted */
+				xfree(job_ptr->part_prio->priority_array_names);
+				job_ptr->part_prio->priority_array_names =
+					part_list_to_xstr(
+						job_ptr->part_ptr_list);
+			}
+
+			if (job_ptr->qos_list) {
+				int qos_count = list_count(job_ptr->qos_list);
+				if (i)
+					i *= qos_count;
+				else
+					i = qos_count;
+			}
+
 			job_ptr->part_prio->priority_array =
 				xcalloc(i, sizeof(uint32_t));
-
-			list_sort(job_ptr->part_ptr_list,
-				  priority_sort_part_tier);
-			xfree(job_ptr->part_prio->priority_array_parts);
-			job_ptr->part_prio->priority_array_parts =
-				part_list_to_xstr(job_ptr->part_ptr_list);
 
 			job_ptr->part_prio->last_update = time(NULL);
 		}
 
-		i = 0;
-		arg.job_ptr = job_ptr,
-		arg.multi_part_str = multi_part_str,
-		arg.counter = &i,
-		list_for_each(job_ptr->part_ptr_list, _priority_each_partition,
-			      &arg);
+		if (job_ptr->part_ptr_list)
+			(void) list_for_each(job_ptr->part_ptr_list,
+					     _priority_each_partition,
+					     &arg);
+		else
+			(void) _priority_each_partition(
+				job_ptr->part_ptr, &arg);
 
-		log_flag(PRIO, "%pJ multi-partition priorities: %s",
-			 job_ptr, multi_part_str);
-		xfree(multi_part_str);
+		log_flag(PRIO, "%pJ multi-partition/qos priorities: %s",
+			 job_ptr, arg.multi_prio_str);
+		xfree(arg.multi_prio_str);
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO) {
@@ -1460,11 +1476,20 @@ static void *_decay_thread(void *no_data)
 	return NULL;
 }
 
-static priority_factors_object_t *_create_prio_factors_obj(
-	job_record_t *job_ptr, part_record_t *job_part_ptr)
+static int _create_prio_list_qos(void *x, void *arg)
 {
+	slurmdb_qos_rec_t *qos_ptr = x;
+	create_prio_list_t *prio_list = arg;
+	part_record_t *part_ptr = prio_list->part_ptr;
+	job_record_t *job_ptr = prio_list->job_ptr;
+
 	priority_factors_object_t *obj =
 		xmalloc(sizeof(priority_factors_object_t));
+
+	if (!prio_list->ret_list)
+		prio_list->ret_list =
+			list_create(_destroy_priority_factors_obj_light);
+	list_append(prio_list->ret_list, obj);
 
 	/*
 	 * Don't xstrdup dup anything here, the list is freed
@@ -1472,9 +1497,9 @@ static priority_factors_object_t *_create_prio_factors_obj(
 	 */
 	obj->account = job_ptr->account;
 	obj->job_id = job_ptr->job_id;
-	obj->partition = job_part_ptr ?
-		job_part_ptr->name : job_ptr->part_ptr->name;
-	obj->qos = job_ptr->qos_ptr ? job_ptr->qos_ptr->name : NULL;
+	obj->partition = part_ptr ? part_ptr->name : job_ptr->part_ptr->name;
+	obj->qos = qos_ptr ? qos_ptr->name :
+		job_ptr->qos_ptr ? job_ptr->qos_ptr->name : NULL;
 	obj->user_id = job_ptr->user_id;
 
 	if (job_ptr->direct_set_prio) {
@@ -1485,23 +1510,48 @@ static priority_factors_object_t *_create_prio_factors_obj(
 					    job_ptr->prio_factors);
 
 		/* This portion is only needed for multi-partition jobs */
-		if (job_part_ptr) {
+		if (part_ptr) {
 			obj->prio_factors->priority_part =
 				((flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
-				 job_part_ptr->priority_job_factor :
-				 job_part_ptr->norm_priority) *
+				 part_ptr->priority_job_factor :
+				 part_ptr->norm_priority) *
 				(double)weight_part;
 			if (obj->prio_factors->priority_tres) {
 				_get_tres_factors(
-					job_ptr, job_part_ptr,
+					job_ptr, part_ptr,
 					obj->prio_factors->priority_tres);
 				_get_tres_prio_weighted(
 					obj->prio_factors->priority_tres);
 			}
 		}
+
+		if (qos_ptr && qos_ptr->priority && weight_qos) {
+			obj->prio_factors->priority_qos =
+				((flags & PRIORITY_FLAGS_NO_NORMAL_QOS) ?
+				 qos_ptr->priority :
+				 qos_ptr->usage->norm_priority) *
+				(double) weight_qos;
+		}
+
 	}
 
-	return obj;
+	return SLURM_SUCCESS;
+}
+
+static int _create_prio_list_part(void *x, void *arg)
+{
+	create_prio_list_t *prio_list = arg;
+	job_record_t *job_ptr = prio_list->job_ptr;
+	prio_list->part_ptr = x;
+
+	if (job_ptr->qos_list)
+		(void) list_for_each(job_ptr->qos_list,
+				     _create_prio_list_qos,
+				     prio_list);
+	else
+		(void) _create_prio_list_qos(NULL, prio_list);
+
+	return SLURM_SUCCESS;
 }
 
 static void _internal_setup(void)
@@ -1536,7 +1586,7 @@ static void _internal_setup(void)
 /* Reursively call assoc_mgr_normalize_assoc_shares from assoc_mgr.c on
  * children of an assoc
  */
-static void _set_norm_shares(List children_list)
+static void _set_norm_shares(list_t *children_list)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
@@ -1903,13 +1953,12 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 	return priority_fs;
 }
 
-extern List priority_p_get_priority_factors_list(uid_t uid)
+extern list_t *priority_p_get_priority_factors_list(uid_t uid)
 {
-	List ret_list = NULL;
-	list_itr_t *itr, *job_iter;
+	list_itr_t *itr;
 	job_record_t *job_ptr = NULL;
-	part_record_t *job_part_ptr = NULL;
 	time_t start_time = time(NULL);
+	create_prio_list_t prio_list = { 0 };
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
@@ -1918,7 +1967,6 @@ extern List priority_p_get_priority_factors_list(uid_t uid)
 	if (job_list && list_count(job_list)) {
 		time_t use_time;
 
-		ret_list = list_create(_destroy_priority_factors_obj_light);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
 			if (!(flags & PRIORITY_FLAGS_CALCULATE_RUNNING) &&
@@ -1968,29 +2016,23 @@ extern List priority_p_get_priority_factors_list(uid_t uid)
 			if (!job_ptr->part_ptr && !job_ptr->part_ptr_list)
 				continue;
 
+			prio_list.job_ptr = job_ptr;
+
 			/* Job in one partition */
 			if (!job_ptr->part_ptr_list) {
-				list_append(ret_list,
-					    _create_prio_factors_obj(
-						    job_ptr, NULL));
-				continue;
+				_create_prio_list_part(NULL, &prio_list);
+			} else {
+				list_for_each(job_ptr->part_ptr_list,
+					      _create_prio_list_part,
+					      &prio_list);
 			}
-
-			/* Job in multiple partitions */
-			job_iter = list_iterator_create(job_ptr->part_ptr_list);
-			while ((job_part_ptr = list_next(job_iter))) {
-				list_append(ret_list,
-					    _create_prio_factors_obj(
-						    job_ptr, job_part_ptr));
-			}
-			list_iterator_destroy(job_iter);
 		}
 		list_iterator_destroy(itr);
-		if (!list_count(ret_list))
-			FREE_NULL_LIST(ret_list);
+		if (!list_count(prio_list.ret_list))
+			FREE_NULL_LIST(prio_list.ret_list);
 	}
 
-	return ret_list;
+	return prio_list.ret_list;
 }
 
 /* at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,

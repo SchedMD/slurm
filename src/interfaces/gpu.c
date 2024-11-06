@@ -41,13 +41,13 @@
 
 /* Gres symbols provided by the plugin */
 typedef struct slurm_ops {
-	List	(*get_system_gpu_list) 	(node_config_load_t *node_conf);
+	list_t *(*get_system_gpu_list) 	(node_config_load_t *node_conf);
 	void	(*step_hardware_init)	(bitstr_t *usable_gpus,
 					 char *tres_freq);
 	void	(*step_hardware_fini)	(void);
 	char   *(*test_cpu_conv)	(char *cpu_range);
 	int     (*energy_read)          (uint32_t dv_ind, gpu_status_t *gpu);
-	void    (*get_device_count)     (unsigned int *device_count);
+	void    (*get_device_count)     (uint32_t *device_count);
 	int (*usage_read) (pid_t pid, acct_gather_data_t *data);
 
 } slurm_ops_t;
@@ -94,8 +94,10 @@ static char *_get_gpu_type(void)
 
 	if (autodetect_flags & GRES_AUTODETECT_GPU_NVML) {
 #ifdef HAVE_NVML
+		(void) dlerror();
 		if (!dlopen("libnvidia-ml.so", RTLD_NOW | RTLD_GLOBAL))
-			info("We were configured with nvml functionality, but that lib wasn't found on the system.");
+			info("We were configured with nvml functionality, but that lib wasn't found on the system. %s",
+			     dlerror());
 		else
 			return "gpu/nvml";
 #else
@@ -103,8 +105,10 @@ static char *_get_gpu_type(void)
 #endif
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI) {
 #ifdef HAVE_RSMI
+		(void) dlerror();
 		if (!dlopen("librocm_smi64.so", RTLD_NOW | RTLD_GLOBAL))
-			info("Configured with rsmi, but that lib wasn't found.");
+			info("Configured with rsmi, but that lib wasn't found. %s",
+			     dlerror());
 		else
 			return "gpu/rsmi";
 #else
@@ -112,8 +116,10 @@ static char *_get_gpu_type(void)
 #endif
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_ONEAPI) {
 #ifdef HAVE_ONEAPI
+		(void) dlerror();
 		if (!dlopen("libze_loader.so", RTLD_NOW | RTLD_GLOBAL))
-			info("Configured with oneAPI, but that lib wasn't found.");
+			info("Configured with oneAPI, but that lib wasn't found. %s",
+			     dlerror());
 		else
 			return "gpu/oneapi";
 #else
@@ -121,6 +127,8 @@ static char *_get_gpu_type(void)
 #endif
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_NRT) {
 		return "gpu/nrt";
+	} else if (autodetect_flags & GRES_AUTODETECT_GPU_NVIDIA) {
+		return "gpu/nvidia";
 	}
 
 	return "gpu/generic";
@@ -199,7 +207,7 @@ extern void gpu_get_tres_pos(int *gpumem_pos, int *gpuutil_pos)
 		*gpuutil_pos = loc_gpuutil_pos;
 }
 
-extern List gpu_g_get_system_gpu_list(node_config_load_t *node_conf)
+extern list_t *gpu_g_get_system_gpu_list(node_config_load_t *node_conf)
 {
 	xassert(g_context);
 	return (*(ops.get_system_gpu_list))(node_conf);
@@ -230,7 +238,7 @@ extern int gpu_g_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 	return (*(ops.energy_read))(dv_ind, gpu);
 }
 
-extern void gpu_g_get_device_count(unsigned int *device_count)
+extern void gpu_g_get_device_count(uint32_t *device_count)
 {
 	xassert(g_context);
 	(*(ops.get_device_count))(device_count);

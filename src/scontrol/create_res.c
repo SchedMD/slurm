@@ -350,7 +350,7 @@ scontrol_update_res(int argc, char **argv)
 	ret = slurm_update_reservation(&resv_msg);
 	if (ret) {
 		exit_code = 1;
-		ret = slurm_get_errno();
+		ret = errno;
 	} else {
 		printf("Reservation updated.\n");
 	}
@@ -478,7 +478,7 @@ scontrol_create_res(int argc, char **argv)
 		     (errno == ESLURM_NODES_BUSY)) && !resv_msg.node_list)
 			printf("Note, unless nodes are directly requested a reservation must exist in a single partition.\n"
 			       "If no partition is requested the default partition is assumed.\n");
-		ret = slurm_get_errno();
+		ret = errno;
 	} else {
 		printf("Reservation created: %s\n", new_res_name);
 		free(new_res_name);

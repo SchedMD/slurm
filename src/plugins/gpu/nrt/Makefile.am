@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcidr)/src/common $(NRT_CPPFLAGS)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(NRT_CPPFLAGS)
 
 NRT_SOURCES = gpu_nrt.c
 

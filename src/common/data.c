@@ -166,8 +166,6 @@ static void _check_data_list_node_magic(const data_list_node_t *dn)
 	xassert(dn->magic == DATA_LIST_NODE_MAGIC);
 	/* make sure not linking to self */
 	xassert(dn->next != dn);
-	/* key can be NULL for list, but not NULL length string */
-	xassert(!dn->key || dn->key[0]);
 }
 
 static void _check_data_list_magic(const data_list_t *dl)
@@ -883,8 +881,7 @@ extern data_t *data_key_set(data_t *data, const char *key)
 		return NULL;
 
 	xassert(data->type == TYPE_DICT);
-	xassert(key && key[0]);
-	if (!key || !key[0] || data->type != TYPE_DICT)
+	if (!key || (data->type != TYPE_DICT))
 		return NULL;
 
 	if ((d = data_key_get(data, key))) {
@@ -985,7 +982,7 @@ extern int64_t data_get_int(const data_t *data)
 	return data->data.int_u;
 }
 
-extern char *data_get_string(data_t *data)
+extern const char *data_get_string(const data_t *data)
 {
 	_check_magic(data);
 
@@ -995,25 +992,6 @@ extern char *data_get_string(data_t *data)
 	xassert((data->type == TYPE_STRING_PTR) ||
 		(data->type == TYPE_STRING_INLINE) ||
 		(data->type == TYPE_NULL));
-
-	if (data->type == TYPE_STRING_PTR) {
-		return data->data.string_ptr_u;
-	} else if (data->type == TYPE_STRING_INLINE) {
-		return data->data.string_inline_u;
-	} else {
-		return NULL;
-	}
-}
-
-extern const char *data_get_string_const(const data_t *data)
-{
-	_check_magic(data);
-
-	if (!data)
-		return NULL;
-
-	xassert((data->type == TYPE_STRING_PTR) ||
-		(data->type == TYPE_STRING_INLINE));
 
 	if (data->type == TYPE_STRING_PTR) {
 		return data->data.string_ptr_u;
@@ -1043,7 +1021,7 @@ extern int data_get_string_converted(const data_t *d, char **buffer)
 		FREE_NULL_DATA(dclone);
 		cloned = true;
 	} else {
-		_buffer = xstrdup(data_get_string_const(d));
+		_buffer = xstrdup(data_get_string(d));
 		if (!_buffer)
 			_buffer = xstrdup("");
 		cloned = false;
@@ -1231,11 +1209,10 @@ static data_for_each_cmd_t _foreach_join_str(const data_t *data, void *arg)
 	char *b = NULL;
 	merge_path_strings_t *args = arg;
 
-	data_get_string_converted(data, &b);
-
-	xstrfmtcatat(args->path, &args->at, "%s%s%s",
-		     (!args->path ? args->token : ""),
-		     (args->at ? args->token : ""), b);
+	if (!data_get_string_converted(data, &b))
+		xstrfmtcatat(args->path, &args->at, "%s%s%s",
+			     (!args->path ? args->token : ""),
+			     (args->at ? args->token : ""), b);
 
 	xfree(b);
 
@@ -2060,13 +2037,12 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 		return rc;
 	case TYPE_STRING_INLINE:
 	case TYPE_STRING_PTR:
-		rc = !xstrcmp(data_get_string_const(a),
-			      data_get_string_const(b));
+		rc = !xstrcmp(data_get_string(a), data_get_string(b));
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%s %s %s(0x%"PRIXPTR")=%s",
 			 _type_to_string(a->type), (uintptr_t) a,
-			 data_get_string_const(a), (rc ? "=" : "!="),
+			 data_get_string(a), (rc ? "=" : "!="),
 			 _type_to_string(b->type), (uintptr_t) b,
-			 data_get_string_const(b));
+			 data_get_string(b));
 		return rc;
 	case TYPE_BOOL:
 		rc = (data_get_bool(a) == data_get_bool(b));
@@ -2212,7 +2188,7 @@ extern const data_t *data_resolve_dict_path_const(const data_t *data,
 		xstrtrim(token);
 
 		if (!found || (found->type != TYPE_DICT)) {
-			found = false;
+			found = NULL;
 			break;
 		}
 
@@ -2295,7 +2271,7 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 	switch (src->type) {
 	case TYPE_STRING_INLINE:
 	case TYPE_STRING_PTR:
-		return data_set_string(dest, data_get_string_const(src));
+		return data_set_string(dest, data_get_string(src));
 	case TYPE_BOOL:
 		return data_set_bool(dest, data_get_bool(src));
 	case TYPE_INT_64:

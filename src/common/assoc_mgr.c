@@ -45,6 +45,7 @@
 #include <ctype.h>
 
 #include "src/common/slurmdbd_pack.h"
+#include "src/common/state_save.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 
@@ -75,15 +76,15 @@ uint32_t g_qos_count = 0;
 uint32_t g_user_assoc_count = 0;
 uint32_t g_tres_count = 0;
 
-List assoc_mgr_tres_list = NULL;
+list_t *assoc_mgr_tres_list = NULL;
 slurmdb_tres_rec_t **assoc_mgr_tres_array = NULL;
 char **assoc_mgr_tres_name_array = NULL;
-List assoc_mgr_assoc_list = NULL;
-List assoc_mgr_coord_list = NULL;
-List assoc_mgr_res_list = NULL;
-List assoc_mgr_qos_list = NULL;
-List assoc_mgr_user_list = NULL;
-List assoc_mgr_wckey_list = NULL;
+list_t *assoc_mgr_assoc_list = NULL;
+list_t *assoc_mgr_coord_list = NULL;
+list_t *assoc_mgr_res_list = NULL;
+list_t *assoc_mgr_qos_list = NULL;
+list_t *assoc_mgr_user_list = NULL;
+list_t *assoc_mgr_wckey_list = NULL;
 
 static int setup_children = 0;
 static pthread_rwlock_t assoc_mgr_locks[ASSOC_MGR_ENTITY_COUNT];
@@ -462,7 +463,7 @@ static int _clear_used_assoc_info(slurmdb_assoc_rec_t *assoc)
 	return SLURM_SUCCESS;
 }
 
-static void _clear_qos_used_limit_list(List used_limit_list, uint32_t tres_cnt)
+static void _clear_qos_used_limit_list(list_t *used_limit_list, uint32_t tres_cnt)
 {
 	slurmdb_used_limits_t *used_limits = NULL;
 	list_itr_t *itr = NULL;
@@ -622,7 +623,7 @@ static int _grab_parents_qos(slurmdb_assoc_rec_t *assoc)
 }
 
 static int _local_update_assoc_qos_list(slurmdb_assoc_rec_t *assoc,
-					List new_qos_list)
+					list_t *new_qos_list)
 {
 	list_itr_t *new_qos_itr = NULL, *curr_qos_itr = NULL;
 	char *new_qos = NULL, *curr_qos = NULL;
@@ -1052,7 +1053,7 @@ static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 
 static uint32_t _get_children_level_shares(slurmdb_assoc_rec_t *assoc)
 {
-	List children = assoc->usage->children_list;
+	list_t *children = assoc->usage->children_list;
 	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *child;
 	uint32_t sum = 0;
@@ -1076,7 +1077,7 @@ static uint32_t _get_children_level_shares(slurmdb_assoc_rec_t *assoc)
 static void _set_children_level_shares(slurmdb_assoc_rec_t *assoc,
 				       uint32_t level_shares)
 {
-	List children = assoc->usage->children_list;
+	list_t *children = assoc->usage->children_list;
 	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *child;
 
@@ -1148,7 +1149,7 @@ static int _post_assoc_list(void)
 	return SLURM_SUCCESS;
 }
 
-static int _post_user_list(List user_list)
+static int _post_user_list(list_t *user_list)
 {
 	slurmdb_user_rec_t *user = NULL;
 	list_itr_t *itr = list_iterator_create(user_list);
@@ -1183,7 +1184,7 @@ static int _post_user_list(List user_list)
 	return SLURM_SUCCESS;
 }
 
-static int _post_wckey_list(List wckey_list)
+static int _post_wckey_list(list_t *wckey_list)
 {
 	slurmdb_wckey_rec_t *wckey = NULL;
 	list_itr_t *itr = list_iterator_create(wckey_list);
@@ -1208,7 +1209,7 @@ static int _post_wckey_list(List wckey_list)
 }
 
 /* NOTE QOS write lock needs to be set before calling this. */
-static int _post_qos_list(List qos_list)
+static int _post_qos_list(list_t *qos_list)
 {
 	slurmdb_qos_rec_t *qos = NULL;
 	list_itr_t *itr = list_iterator_create(qos_list);
@@ -1249,7 +1250,7 @@ static int _post_qos_list(List qos_list)
 	return SLURM_SUCCESS;
 }
 
-static int _post_res_list(List res_list)
+static int _post_res_list(list_t *res_list)
 {
 	if (res_list && !slurmdbd_conf) {
 		slurmdb_res_rec_t *object = NULL;
@@ -1319,7 +1320,7 @@ static int _get_old_tres_pos(slurmdb_tres_rec_t **new_array,
 
 /* assoc, qos and tres write lock should be locked before calling this
  * return 1 if callback is needed */
-extern int assoc_mgr_post_tres_list(List new_list)
+extern int assoc_mgr_post_tres_list(list_t *new_list)
 {
 	list_itr_t *itr;
 	slurmdb_tres_rec_t *tres_rec, **new_array;
@@ -1588,7 +1589,7 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 {
 	slurmdb_tres_cond_t tres_q = {0};
 	uid_t uid = getuid();
-	List new_list = NULL;
+	list_t *new_list = NULL;
 	int changed;
 	assoc_mgr_lock_t locks =
 		{ .assoc = WRITE_LOCK, .qos = WRITE_LOCK, .tres= WRITE_LOCK };
@@ -1720,7 +1721,7 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
 	uid_t uid = getuid();
-	List new_list = NULL;
+	list_t *new_list = NULL;
 	assoc_mgr_lock_t locks = { .qos = WRITE_LOCK };
 
 	new_list = acct_storage_g_get_qos(db_conn, uid, NULL);
@@ -1836,7 +1837,7 @@ static int _refresh_assoc_mgr_tres_list(void *db_conn, int enforce)
 static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 {
 	slurmdb_assoc_cond_t assoc_q = {0};
-	List current_assocs = NULL;
+	list_t *current_assocs = NULL;
 	uid_t uid = getuid();
 	list_itr_t *curr_itr = NULL;
 	slurmdb_assoc_rec_t *curr_assoc = NULL, *assoc = NULL;
@@ -1914,7 +1915,7 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 {
 	slurmdb_res_cond_t res_q;
-	List current_res = NULL;
+	list_t *current_res = NULL;
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .res = WRITE_LOCK };
 
@@ -1956,7 +1957,7 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
  */
 static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
-	List current_qos = NULL;
+	list_t *current_qos = NULL;
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .qos = WRITE_LOCK };
 
@@ -2002,7 +2003,7 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
  */
 static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 {
-	List current_users = NULL;
+	list_t *current_users = NULL;
 	slurmdb_user_cond_t user_q = { .with_coords = 1 };
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK };
@@ -2033,7 +2034,7 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 {
 	slurmdb_wckey_cond_t wckey_q = {0};
-	List current_wckeys = NULL;
+	list_t *current_wckeys = NULL;
 	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
@@ -2486,7 +2487,7 @@ extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks)
 extern int assoc_mgr_get_user_assocs(void *db_conn,
 				     slurmdb_assoc_rec_t *assoc,
 				     int enforce,
-				     List assoc_list)
+				     list_t *assoc_list)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *found_assoc = NULL;
@@ -3373,7 +3374,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 	list_itr_t *acct_itr = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	assoc_shares_object_t *share = NULL;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	char *tmp_char = NULL;
 	slurmdb_user_rec_t user = { .uid = uid };
 	int is_admin=1;
@@ -3564,7 +3565,7 @@ extern buf_t *assoc_mgr_info_get_pack_msg(
 	list_itr_t *user_itr = NULL, *acct_itr = NULL, *qos_itr = NULL;
 	slurmdb_qos_rec_t *qos_rec = NULL;
 	slurmdb_assoc_rec_t *assoc_rec = NULL;
-	List ret_list = NULL, tmp_list;
+	list_t *ret_list = NULL, *tmp_list;
 	char *tmp_char = NULL;
 	slurmdb_user_rec_t user = { .uid = uid };
 	slurmdb_user_rec_t *user_rec = NULL;
@@ -3913,7 +3914,7 @@ extern int assoc_mgr_update_object(void *x, void *arg)
  * RET: error code
  * NOTE: the items in update_list are not deleted
  */
-extern int assoc_mgr_update(List update_list, bool locked)
+extern int assoc_mgr_update(list_t *update_list, bool locked)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -3934,8 +3935,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 	int run_update_resvs = 0;
 	int resort = 0;
 	int redo_priority = 0;
-	List remove_list = NULL;
-	List update_list = NULL;
+	list_t *remove_list = NULL;
+	list_t *update_list = NULL;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK,
 				   .tres = READ_LOCK, .user = WRITE_LOCK };
 
@@ -4433,7 +4434,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 			_add_potential_coord_children(object);
 
 			if (setup_children) {
-				List children = object->usage->children_list;
+				list_t *children = object->usage->children_list;
 				if (!children || list_is_empty(children))
 					goto is_user;
 
@@ -4763,8 +4764,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 	int rc = SLURM_SUCCESS;
 	bool resize_qos_bitstr = 0;
 	int redo_priority = 0;
-	List remove_list = NULL;
-	List update_list = NULL;
+	list_t *remove_list = NULL;
+	list_t *update_list = NULL;
 	assoc_mgr_lock_t locks = {
 		.assoc = WRITE_LOCK,
 		.qos = WRITE_LOCK,
@@ -5385,7 +5386,7 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 	slurmdb_tres_rec_t *object = NULL;
 
 	list_itr_t *itr = NULL;
-	List tmp_list;
+	list_t *tmp_list;
 	bool changed = false, freeit = false;
 	int rc = SLURM_SUCCESS;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK,
@@ -5515,7 +5516,7 @@ extern void assoc_mgr_clear_used_info(void)
 	assoc_mgr_unlock(&locks);
 }
 
-static void _reset_children_usages(List children_list)
+static void _reset_children_usages(list_t *children_list)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
 	list_itr_t *itr = NULL;
@@ -5731,19 +5732,15 @@ extern void assoc_mgr_update_qos_usage(slurmdb_qos_rec_t *qos,
 
 extern int dump_assoc_mgr_state(void)
 {
-	static int high_buffer_size = (1024 * 1024);
-	int error_code = 0, log_fd;
-	char *old_file = NULL, *new_file = NULL, *reg_file = NULL,
-		*tmp_char = NULL;
+	static uint32_t high_buffer_size = (1024 * 1024);
+	int error_code = 0;
+	char *tmp_char = NULL;
 	buf_t *buffer = NULL;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .file = WRITE_LOCK,
 				   .qos = READ_LOCK, .res = READ_LOCK,
 				   .tres = READ_LOCK, .user = READ_LOCK,
 				   .wckey = READ_LOCK};
 	DEF_TIMERS;
-
-	xassert(init_setup.state_save_location &&
-		*init_setup.state_save_location);
 
 	START_TIMER;
 
@@ -5761,49 +5758,7 @@ extern int dump_assoc_mgr_state(void)
 				       DBD_ADD_TRES, buffer);
 	}
 
-	reg_file = xstrdup_printf("%s/last_tres",
-				  *init_setup.state_save_location);
-	old_file = xstrdup_printf("%s.old", reg_file);
-	new_file = xstrdup_printf("%s.new", reg_file);
-
-	log_fd = creat(new_file, 0600);
-	if (log_fd < 0) {
-		error("Can't save state, create file %s error %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-		fsync(log_fd);
-		close(log_fd);
-	}
-	if (error_code)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(reg_file, old_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
+	error_code = save_buf_to_state("last_tres", buffer, NULL);
 
 	FREE_NULL_BUFFER(buffer);
 
@@ -5856,50 +5811,7 @@ extern int dump_assoc_mgr_state(void)
 	}
 
 	/* write the buffer to file */
-	reg_file = xstrdup_printf("%s/assoc_mgr_state",
-				  *init_setup.state_save_location);
-	old_file = xstrdup_printf("%s.old", reg_file);
-	new_file = xstrdup_printf("%s.new", reg_file);
-
-	log_fd = creat(new_file, 0600);
-	if (log_fd < 0) {
-		error("Can't save state, create file %s error %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-		fsync(log_fd);
-		close(log_fd);
-	}
-	if (error_code)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(reg_file, old_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
-
+	error_code = save_buf_to_state("assoc_mgr_state", buffer, NULL);
 	FREE_NULL_BUFFER(buffer);
 	/* now make a file for assoc_usage */
 
@@ -5927,49 +5839,7 @@ extern int dump_assoc_mgr_state(void)
 		list_iterator_destroy(itr);
 	}
 
-	reg_file = xstrdup_printf("%s/assoc_usage",
-				  *init_setup.state_save_location);
-	old_file = xstrdup_printf("%s.old", reg_file);
-	new_file = xstrdup_printf("%s.new", reg_file);
-
-	log_fd = creat(new_file, 0600);
-	if (log_fd < 0) {
-		error("Can't save state, create file %s error %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-		fsync(log_fd);
-		close(log_fd);
-	}
-	if (error_code)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(reg_file, old_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
+	error_code = save_buf_to_state("assoc_usage", buffer, NULL);
 
 	FREE_NULL_BUFFER(buffer);
 	/* now make a file for qos_usage */
@@ -5995,49 +5865,7 @@ extern int dump_assoc_mgr_state(void)
 		list_iterator_destroy(itr);
 	}
 
-	reg_file = xstrdup_printf("%s/qos_usage",
-				  *init_setup.state_save_location);
-	old_file = xstrdup_printf("%s.old", reg_file);
-	new_file = xstrdup_printf("%s.new", reg_file);
-
-	log_fd = creat(new_file, 0600);
-	if (log_fd < 0) {
-		error("Can't save state, create file %s error %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-		fsync(log_fd);
-		close(log_fd);
-	}
-	if (error_code)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(reg_file, old_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file))
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
+	error_code = save_buf_to_state("qos_usage", buffer, NULL);
 	assoc_mgr_unlock(&locks);
 
 	FREE_NULL_BUFFER(buffer);
@@ -6058,11 +5886,8 @@ extern int load_assoc_usage(void)
 	if (!assoc_mgr_assoc_list)
 		return SLURM_SUCCESS;
 
-	xassert(init_setup.state_save_location &&
-		*init_setup.state_save_location);
-
 	/* read the file */
-	state_file = xstrdup(*init_setup.state_save_location);
+	state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(state_file, "/assoc_usage");	/* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
@@ -6099,12 +5924,11 @@ extern int load_assoc_usage(void)
 		uint32_t grp_used_wall = 0;
 		long double usage_raw = 0;
 		slurmdb_assoc_rec_t *assoc = NULL;
-		uint32_t tmp32;
 		long double usage_tres_raw[g_tres_count];
 
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpacklongdouble(&usage_raw, buffer);
-		safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
+		safe_unpackstr(&tmp_str, buffer);
 		safe_unpack32(&grp_used_wall, buffer);
 
 		/*
@@ -6174,11 +5998,8 @@ extern int load_qos_usage(void)
 	if (!assoc_mgr_qos_list)
 		return SLURM_SUCCESS;
 
-	xassert(init_setup.state_save_location &&
-		*init_setup.state_save_location);
-
 	/* read the file */
-	state_file = xstrdup(*init_setup.state_save_location);
+	state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(state_file, "/qos_usage");	/* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
@@ -6214,13 +6035,12 @@ extern int load_qos_usage(void)
 	while (remaining_buf(buffer) > 0) {
 		uint32_t qos_id = 0;
 		uint32_t grp_used_wall = 0;
-		uint32_t tmp32;
 		long double usage_raw = 0;
 		slurmdb_qos_rec_t *qos = NULL;
 
 		safe_unpack32(&qos_id, buffer);
 		safe_unpacklongdouble(&usage_raw, buffer);
-		safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
+		safe_unpackstr(&tmp_str, buffer);
 		safe_unpack32(&grp_used_wall, buffer);
 
 		while ((qos = list_next(itr)))
@@ -6266,12 +6086,9 @@ extern int load_assoc_mgr_last_tres(void)
 	dbd_list_msg_t *msg = NULL;
 	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK, .qos = WRITE_LOCK };
 
-	xassert(init_setup.state_save_location &&
-		*init_setup.state_save_location);
-
 	/* read the file Always ignore .old file */
 	state_file = xstrdup_printf("%s/last_tres",
-				    *init_setup.state_save_location);
+				    slurm_conf.state_save_location);
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
 
@@ -6328,7 +6145,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int load_assoc_mgr_state(bool only_tres)
+extern int load_assoc_mgr_state(void)
 {
 	int error_code = SLURM_SUCCESS;
 	uint16_t type = 0;
@@ -6342,11 +6159,8 @@ extern int load_assoc_mgr_state(bool only_tres)
 				   .tres = WRITE_LOCK, .user = WRITE_LOCK,
 				   .wckey = WRITE_LOCK };
 
-	xassert(init_setup.state_save_location &&
-		*init_setup.state_save_location);
-
 	/* read the file */
-	state_file = xstrdup(*init_setup.state_save_location);
+	state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(state_file, "/assoc_mgr_state"); /* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
@@ -6480,12 +6294,9 @@ extern int load_assoc_mgr_state(bool only_tres)
 			goto unpack_error;
 			break;
 		}
-		/* The tres, if here, will always be first */
-		if (only_tres)
-			break;
 	}
 
-	if (!only_tres && init_setup.running_cache)
+	if (init_setup.running_cache)
 		*init_setup.running_cache = RUNNING_CACHE_STATE_RUNNING;
 
 	FREE_NULL_BUFFER(buffer);
@@ -6890,7 +6701,7 @@ extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 	}
 
 	if (tres_str) {
-		List tmp_list = NULL;
+		list_t *tmp_list = NULL;
 		/* info("got %s", tres_str); */
 		slurmdb_tres_list_from_string(
 			&tmp_list, tres_str, TRES_STR_FLAG_NONE);

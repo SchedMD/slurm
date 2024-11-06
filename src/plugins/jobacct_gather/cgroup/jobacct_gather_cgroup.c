@@ -50,7 +50,6 @@
 #include "src/interfaces/proctrack.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/plugins/jobacct_gather/cgroup/jobacct_gather_cgroup.h"
 #include "../common/common_jag.h"
 
 /*
@@ -137,6 +136,19 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 		prec->tres_data[TRES_ARRAY_VMEM].size_read =
 			cgroup_acct_data->total_vmem;
 
+		/*
+		 * Peak memory usage seen for the task.
+		 * memory.peak (Cgroup v2)
+		 * memory.max_usage_in_bytes (Cgroup v1)
+		 *
+		 * It will be set to INFINITE64 in case we don't get this
+		 * metric.
+		 * E.g. in RHEL8 memory.peak interface does not exist.
+		 *
+		 * We overload the size_write variable to store this metric.
+		 */
+		prec->tres_data[TRES_ARRAY_MEM].size_write =
+			cgroup_acct_data->memory_peak;
 	}
 
 	xfree(cgroup_acct_data);
@@ -213,7 +225,7 @@ extern int fini (void)
  *    is a Linux-style stat entry. We disregard the data if they look
  *    wrong.
  */
-extern void jobacct_gather_p_poll_data(List task_list, uint64_t cont_id,
+extern void jobacct_gather_p_poll_data(list_t *task_list, uint64_t cont_id,
 				       bool profile)
 {
 	static jag_callbacks_t callbacks;

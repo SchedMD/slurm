@@ -86,7 +86,6 @@ extern auth_cred_t *create_external(uid_t r_uid, void *data, int dlen);
 extern int verify_external(auth_cred_t *cred);
 
 extern void init_sack_conmgr(void);
-extern void fini_sack_conmgr(void);
 
 extern auth_cred_t *new_cred(void);
 extern void destroy_cred(auth_cred_t *cred);

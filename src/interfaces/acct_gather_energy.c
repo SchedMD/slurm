@@ -71,7 +71,7 @@ typedef struct slurm_acct_gather_energy_ops {
 				   int *full_options_cnt);
 	void (*conf_set)          (int context_id_in,
 				   s_p_hashtbl_t *tbl);
-	void (*conf_values)        (List *data);
+	void (*conf_values)        (list_t **data);
 } slurm_acct_gather_energy_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -231,7 +231,26 @@ extern void acct_gather_energy_destroy(acct_gather_energy_t *energy)
 extern void acct_gather_energy_pack(acct_gather_energy_t *energy, buf_t *buffer,
 				    uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (!energy) {
+			pack64(0, buffer);
+			pack32(0, buffer);
+			pack64(0, buffer);
+			pack32(0, buffer);
+			pack64(0, buffer);
+			pack_time(0, buffer);
+			pack_time(0, buffer);
+			return;
+		}
+
+		pack64(energy->base_consumed_energy, buffer);
+		pack32(energy->ave_watts, buffer);
+		pack64(energy->consumed_energy, buffer);
+		pack32(energy->current_watts, buffer);
+		pack64(energy->previous_consumed_energy, buffer);
+		pack_time(energy->poll_time, buffer);
+		pack_time(energy->slurmd_start_time, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!energy) {
 			pack64(0, buffer);
 			pack32(0, buffer);
@@ -264,7 +283,15 @@ extern int acct_gather_energy_unpack(acct_gather_energy_t **energy,
 		energy_ptr = *energy;
 	}
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpack64(&energy_ptr->base_consumed_energy, buffer);
+		safe_unpack32(&energy_ptr->ave_watts, buffer);
+		safe_unpack64(&energy_ptr->consumed_energy, buffer);
+		safe_unpack32(&energy_ptr->current_watts, buffer);
+		safe_unpack64(&energy_ptr->previous_consumed_energy, buffer);
+		safe_unpack_time(&energy_ptr->poll_time, buffer);
+		safe_unpack_time(&energy_ptr->slurmd_start_time, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack64(&energy_ptr->base_consumed_energy, buffer);
 		safe_unpack32(&energy_ptr->ave_watts, buffer);
 		safe_unpack64(&energy_ptr->consumed_energy, buffer);

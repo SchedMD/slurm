@@ -145,7 +145,8 @@ static void _check_key_permissions(const char *path, int bad_perms)
 
 static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 {
-	char *alg, *kid, *n, *e, *key;
+	const char *alg, *kid, *n, *e;
+	char *key = NULL;
 
 	if (!(kid = data_get_string(data_key_get(d, "kid"))))
 		fatal("%s: failed to load kid field", __func__);
@@ -164,7 +165,7 @@ static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 	debug3("key for kid %s mod %s exp %s is\n%s", kid, n, e, key);
 
 	data_set_int(data_key_set(d, "slurm-pem-len"), strlen(key));
-	data_set_string(data_key_set(d, "slurm-pem"), key);
+	data_set_string_own(data_key_set(d, "slurm-pem"), key);
 
 	return DATA_FOR_EACH_CONT;
 }
@@ -305,7 +306,7 @@ typedef struct {
 
 static data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
 {
-	char *alg, *kid, *key;
+	const char *alg, *kid, *key;
 	int len;
 	jwt_t *jwt;
 	int rc;
@@ -344,7 +345,7 @@ static data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
  */
 extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 {
-	int rc;
+	int rc, auth_rc = ESLURM_AUTH_CRED_INVALID;
 	const char *alg;
 	jwt_t *unverified_jwt = NULL, *jwt = NULL;
 	char *username = NULL;
@@ -430,6 +431,7 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 
 	if (jwt_get_grant_int(jwt, "exp") < time(NULL)) {
 		error("%s: token expired", __func__);
+		auth_rc = ESLURM_AUTH_EXPIRED;
 		goto fail;
 	}
 
@@ -478,7 +480,7 @@ fail:
 	if (jwt)
 		jwt_free(jwt);
 	xfree(username);
-	return SLURM_ERROR;
+	return auth_rc;
 }
 
 extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
@@ -514,7 +516,7 @@ extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
 extern char *auth_p_get_host(auth_token_t *cred)
 {
 	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -525,7 +527,7 @@ extern char *auth_p_get_host(auth_token_t *cred)
 extern int auth_p_get_data(auth_token_t *cred, char **data, uint32_t *len)
 {
 	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -537,7 +539,7 @@ extern int auth_p_get_data(auth_token_t *cred, char **data, uint32_t *len)
 extern void *auth_p_get_identity(auth_token_t *cred)
 {
 	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -550,7 +552,7 @@ extern int auth_p_pack(auth_token_t *cred, buf_t *buf,
 	char *pack_this = (thread_token) ? thread_token : token;
 
 	if (!buf) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -569,10 +571,9 @@ extern int auth_p_pack(auth_token_t *cred, buf_t *buf,
 extern auth_token_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	auth_token_t *cred = NULL;
-	uint32_t uint32_tmp;
 
 	if (!buf) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -580,8 +581,8 @@ extern auth_token_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 	cred->verified = false;		/* just to be explicit */
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&cred->token, &uint32_tmp, buf);
-		safe_unpackstr_xmalloc(&cred->username, &uint32_tmp, buf);
+		safe_unpackstr(&cred->token, buf);
+		safe_unpackstr(&cred->username, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);
@@ -591,7 +592,7 @@ extern auth_token_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 	return cred;
 
 unpack_error:
-	slurm_seterrno(ESLURM_AUTH_UNPACK);
+	errno = ESLURM_AUTH_UNPACK;
 	auth_p_destroy(cred);
 	return NULL;
 }
@@ -676,4 +677,9 @@ extern char *auth_p_token_generate(const char *username, int lifespan)
 fail:
 	jwt_free(jwt);
 	return NULL;
+}
+
+extern int auth_p_get_reconfig_fd(void)
+{
+	return -1;
 }

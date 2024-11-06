@@ -239,7 +239,7 @@ extern int mcs_g_set_mcs_label(job_record_t *job_ptr, char *label)
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (int) (*(ops.set))(job_ptr, label);
+	return (*(ops.set))(job_ptr, label);
 }
 
 /*
@@ -256,5 +256,5 @@ extern int mcs_g_check_mcs_label(uint32_t user_id, char *mcs_label,
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (int)(*(ops.check))(user_id, mcs_label, assoc_locked);
+	return (*(ops.check))(user_id, mcs_label, assoc_locked);
 }

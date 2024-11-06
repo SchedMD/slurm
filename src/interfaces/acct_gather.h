@@ -56,7 +56,7 @@ extern int acct_gather_read_conf(int fd);
 extern int acct_gather_conf_destroy(void);
 
 /* don't forget to free this */
-extern List acct_gather_conf_values(void);
+extern list_t *acct_gather_conf_values(void);
 extern int acct_gather_parse_freq(int type, char *freq);
 extern int acct_gather_check_acct_freq_task(uint64_t job_mem_lim,
 					    char *acctg_freq);

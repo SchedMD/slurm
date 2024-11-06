@@ -51,7 +51,7 @@
  * IN/OUT *cpus_per_task - Increased if cpu_per_gpu * gres_per_task is more than
  *                         *cpus_per_task
  */
-extern void gres_select_util_job_set_defs(List job_gres_list,
+extern void gres_select_util_job_set_defs(list_t *job_gres_list,
 					  char *gres_name,
 					  uint64_t cpu_per_gpu,
 					  uint64_t mem_per_gpu,
@@ -69,7 +69,7 @@ extern void gres_select_util_job_set_defs(List job_gres_list,
  */
 extern int gres_select_util_job_min_cpu_node(uint32_t sockets_per_node,
 					     uint32_t tasks_per_node,
-					     List job_gres_list);
+					     list_t *job_gres_list);
 
 /*
  * Determine the minimum number of tasks required to satisfy the job's GRES
@@ -86,13 +86,13 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 					  uint32_t sockets_per_node,
 					  uint16_t ntasks_per_tres,
 					  char *gres_name,
-					  List job_gres_list);
+					  list_t *job_gres_list);
 
 /*
  * Set per-node memory limits based upon GRES assignments
  * RET TRUE if mem-per-tres specification used to set memory limits
  */
-extern bool gres_select_util_job_mem_set(List job_gres_list,
+extern bool gres_select_util_job_mem_set(list_t *job_gres_list,
 					 job_resources_t *job_res);
 
 /*
@@ -107,32 +107,32 @@ extern bool gres_select_util_job_mem_set(List job_gres_list,
 extern int gres_select_util_job_min_cpus(uint32_t node_count,
 					 uint32_t sockets_per_node,
 					 uint32_t task_count,
-					 List job_gres_list);
+					 list_t *job_gres_list);
 
 /*
  * Determine if the job GRES specification includes a mem-per-tres specification
  * RET largest mem-per-tres specification found
  */
-extern uint64_t gres_select_util_job_mem_max(List job_gres_list);
+extern uint64_t gres_select_util_job_mem_max(list_t *job_gres_list);
 
 /*
  * Determine if job GRES specification includes a tres-per-task specification
  * RET TRUE if any GRES requested by the job include a tres-per-task option
  */
-extern bool gres_select_util_job_tres_per_task(List job_gres_list);
+extern bool gres_select_util_job_tres_per_task(list_t *job_gres_list);
 
 /*
  * Return the maximum number of tasks that can be started on a node with
  * sock_gres_list (per-socket GRES details for some node)
  */
-extern uint32_t gres_select_util_get_task_limit(List sock_gres_list);
+extern uint32_t gres_select_util_get_task_limit(list_t *sock_gres_list);
 
 /*
  * Create a (partial) copy of a job's gres state accumlating the gres_per_*
  * requirements to accuratly calculate cpus_per_gres
- * IN gres_list - List of Gres records
+ * IN gres_list - list of Gres records
  * RET The copy of list or NULL on failure
  */
-extern List gres_select_util_create_list_req_accum(List gres_list);
+extern list_t *gres_select_util_create_list_req_accum(list_t *gres_list);
 
 #endif /* _GRES_SELECT_UTIL_H */

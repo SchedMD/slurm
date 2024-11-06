@@ -286,7 +286,6 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 		STORE_FIELD(hv, job_info, resv_name, charp);
 	STORE_PTR_FIELD(hv, job_info, job_resrcs, "Slurm::job_resources_t");
 	STORE_FIELD(hv, job_info, shared, uint16_t);
-	STORE_FIELD(hv, job_info, show_flags, uint16_t);
 	STORE_FIELD(hv, job_info, start_time, time_t);
 	if(job_info->state_desc)
 		STORE_FIELD(hv, job_info, state_desc, charp);
@@ -420,7 +419,6 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, resv_name, charp, FALSE);
 	FETCH_PTR_FIELD(hv, job_info, job_resrcs, "Slurm::job_resources_t", FALSE);
 	FETCH_FIELD(hv, job_info, shared, uint16_t, TRUE);
-	FETCH_FIELD(hv, job_info, show_flags, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, start_time, time_t, TRUE);
 	FETCH_FIELD(hv, job_info, state_desc, charp, FALSE);
 	FETCH_FIELD(hv, job_info, state_reason, uint32_t, TRUE);

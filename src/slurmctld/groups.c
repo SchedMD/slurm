@@ -76,7 +76,7 @@ static void   _log_group_members(char *group_name,
 				 int uid_cnt);
 static void   _put_group_cache(char *group_name, void *group_uids, int uid_cnt);
 
-static List group_cache_list = NULL;
+static list_t *group_cache_list = NULL;
 static pthread_mutex_t group_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 struct group_cache_rec {
 	char *group_name;
@@ -206,7 +206,7 @@ static uid_t *_get_group_members(char *group_name, int *uid_cnt)
 #endif
 	grp_buffer = xmalloc(buflen);
 	while (1) {
-		slurm_seterrno(0);
+		errno = 0;
 		res = getgrnam_r(group_name, &grp, grp_buffer, buflen,
 				 &grp_result);
 
@@ -262,7 +262,7 @@ static uid_t *_get_group_members(char *group_name, int *uid_cnt)
 		/* MH-CEA workaround to handle different group entries with
 		 * the same gid
 		 */
-		slurm_seterrno(0);
+		errno = 0;
 		res = getgrent_r(&grp, grp_buffer, buflen, &grp_result);
 		if (res != 0 || grp_result == NULL) {
 			/* FreeBSD returns 0 and sets the grp_result to NULL

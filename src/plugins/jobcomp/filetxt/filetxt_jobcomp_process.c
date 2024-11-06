@@ -87,7 +87,7 @@ static FILE *_open_log_file(char *logfile)
 	return fd;
 }
 
-static jobcomp_job_rec_t *_parse_line(List job_info_list)
+static jobcomp_job_rec_t *_parse_line(list_t *job_info_list)
 {
 	list_itr_t *itr = NULL;
 	filetxt_jobcomp_info_t *jobcomp_info = NULL;
@@ -179,7 +179,7 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 	return job;
 }
 
-extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
+extern list_t *filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	char line[BUFFER_SIZE];
 	char *fptr = NULL;
@@ -190,9 +190,9 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	slurm_selected_step_t *selected_step = NULL;
 	char *selected_part = NULL;
 	list_itr_t *itr = NULL;
-	List job_info_list = NULL;
+	list_t *job_info_list = NULL;
 	filetxt_jobcomp_info_t *jobcomp_info = NULL;
-	List job_list = list_create(jobcomp_destroy_job);
+	list_t *job_list = list_create(jobcomp_destroy_job);
 
 	fd = _open_log_file(slurm_conf.job_comp_loc);
 

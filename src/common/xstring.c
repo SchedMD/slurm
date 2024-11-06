@@ -43,6 +43,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <libgen.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -67,8 +68,8 @@
  * for details.
  */
 strong_alias(_xstrcat,		slurm_xstrcat);
-strong_alias(_xstrcatat,	slurm_xstrcatat);
 strong_alias(_xstrncat,		slurm_xstrncat);
+strong_alias(_xstrncatat,	slurm_xstrncatat);
 strong_alias(_xstrcatchar,	slurm_xstrcatchar);
 strong_alias(_xstrftimecat,	slurm_xstrftimecat);
 strong_alias(_xiso8601timecat,	slurm_xiso8601timecat);
@@ -145,29 +146,29 @@ void _xstrcat(char **str1, const char *str2)
  * Append str2 onto str at pos, * expanding buf as needed. pos is updated to the
  * end of the appended string.
  *
- * Meant to be used in loops contructing longer strings that are performance
+ * Meant to be used in loops constructing longer strings that are performance
  * sensitive, as xstrcat() needs to re-seek to the end of str making the string
  * construction worse by another O(log(strlen)) factor.
  */
-void _xstrcatat(char **str, char **pos, const char *str2)
+void _xstrncatat(char **str, char **pos, const char *str2, ssize_t append_len)
 {
-	size_t orig_len, append_len;
+	size_t orig_len;
 
 	if (!str2)
 		return;
 
-	append_len = strlen(str2);
+	if (append_len < 0)
+		append_len = strlen(str2);
 
 	/* No string yet to append to, so return a copy of str2. */
 	if (!*str) {
-		*str = xstrdup(str2);
+		*str = xstrndup(str2, append_len);
 		*pos = *str + append_len;
 		return;
 	}
 
 	if (!*pos) {
 		orig_len = strlen(*str);
-		*pos = *str + orig_len;
 	} else {
 		xassert(*pos >= *str);
 		orig_len = *pos - *str;
@@ -360,7 +361,7 @@ void _xstrfmtcat(char **str, const char *fmt, ...)
  * expanding buf as needed. pos is updated to the end of the appended
  * string.
  *
- * Meant to be used in loops contructing longer strings that are performance
+ * Meant to be used in loops constructing longer strings that are performance
  * sensitive, as xstrfmtcat() needs to re-seek to the end of str making the
  * string construction worse by another O(log(strlen)) factor.
  */
@@ -386,7 +387,6 @@ void _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
 
 	if (!*pos) {
 		orig_len = strlen(*str);
-		*pos = *str + orig_len;
 	} else {
 		xassert(*pos >= *str);
 		orig_len = *pos - *str;
@@ -442,36 +442,28 @@ char * xbasename(char *path)
 }
 
 /*
- * Specialized dirname implementation which returns the result of removing the
- * basename to the given path, or a "." (dot) if the given path doesn't contain
- * a slash.
+ * Slurm's safe implementation of dirname.
  *
- * NOTE: This implementation differs from the libgen/libc ones, and it does not
- *	 conform to the XPG 4.2 or any other standard. For instance, given
- *	 "/tmp/" as an argument, a conformant implementation would return "/",
- *	 but this will return "/tmp".
+ * This function returns a malloc'ed string which lets the caller to safely
+ * manipulate it, unlike in dirname() which in some cases returns pointers
+ * to the passed string, and in other cases a new malloc'ed string. dirname()
+ * can also modify the original string so it is preferred to pas a copy of the
+ * input string.
  *
- * NOTE: This doesn't handle multiple and contiguous slashes.
+ * Besides that, the result is exactly like in dirname().
  *
- * IN:	char pointer to a path
- * RET:	the path without the xbasename or a dot if no slashes
+ * IN path - path to get the dirname from.
+ * RETURN res - string containing the path without the basename.
  */
 char *xdirname(const char *path)
 {
+	char *res = NULL;
 	char *fname = xstrdup(path);
-	char *slash;
 
-	if (!fname)
-		return xstrdup(".");
+	res = xstrdup(dirname(fname));
+	xfree(fname);
 
-	if (!(slash = strrchr(fname, '/'))) {
-		xfree(fname);
-		return xstrdup(".");
-	}
-
-	*slash = '\0';
-
-	return fname;
+	return res;
 }
 
 /*

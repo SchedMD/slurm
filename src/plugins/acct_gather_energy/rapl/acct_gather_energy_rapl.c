@@ -290,7 +290,7 @@ _send_drain_request(void)
 	node_msg.node_state = NODE_STATE_DRAIN;
 
 	drain_request_sent = 1;
-	debug("%s: sending NODE_STATE_DRAIN to controller", __func__);
+	debug("sending NODE_STATE_DRAIN to controller");
 
 	if (slurm_update_node(&node_msg) != SLURM_SUCCESS) {
 		error("%s: Unable to drain node %s: %m", __func__, hostname);
@@ -408,8 +408,8 @@ static int _send_profile(void)
 	if (!_running_profile())
 		return SLURM_SUCCESS;
 
-	log_flag(ENERGY, "%s: consumed %u watts",
-		 __func__, local_energy->current_watts);
+	log_flag(ENERGY, "consumed %u watts",
+		 local_energy->current_watts);
 
 	if (dataset_id < 0) {
 		dataset_id = acct_gather_profile_g_create_dataset(
@@ -438,8 +438,8 @@ extern int acct_gather_energy_p_update_node_energy(void)
 	xassert(running_in_slurmd_stepd());
 
 	if (!local_energy) {
-		debug("%s: trying to update node energy, but no local_energy "
-		      "yet.", __func__);
+		debug("trying to update node energy, but no local_energy "
+		      "yet.");
 		acct_gather_energy_p_conf_set(0, NULL);
 	}
 
@@ -501,8 +501,8 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	xassert(running_in_slurmd_stepd());
 
 	if (!local_energy) {
-		debug("%s: trying to get data %d, but no local_energy yet.",
-		      __func__, data_type);
+		debug("trying to get data %d, but no local_energy yet.",
+		      data_type);
 		acct_gather_energy_p_conf_set(0, NULL);
 	}
 
@@ -594,7 +594,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 	return;
 }
 
-extern void acct_gather_energy_p_conf_values(List *data)
+extern void acct_gather_energy_p_conf_values(list_t **data)
 {
 	return;
 }

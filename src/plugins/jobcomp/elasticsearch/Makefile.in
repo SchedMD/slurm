@@ -96,6 +96,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
+	$(top_srcdir)/auxdir/ax_have_epoll.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/gtk-2.0.m4 \
@@ -182,9 +183,6 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@WITH_CURL_TRUE@jobcomp_elasticsearch_la_DEPENDENCIES =  \
-@WITH_CURL_TRUE@	$(am__DEPENDENCIES_1) \
-@WITH_CURL_TRUE@	../common/libjobcomp_common.la
 am__objects_1 = jobcomp_elasticsearch.lo
 @WITH_CURL_TRUE@am_jobcomp_elasticsearch_la_OBJECTS =  \
 @WITH_CURL_TRUE@	$(am__objects_1)
@@ -295,6 +293,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
 FREEIPMI_LIBS = @FREEIPMI_LIBS@
@@ -516,11 +515,13 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(LIBCURL_CPPFLAGS)
+depend_libs = $(top_builddir)/src/curl/libslurm_curl.la
 AS_ELASTICSEARCH_SOURCES = jobcomp_elasticsearch.c
 @WITH_CURL_TRUE@pkglib_LTLIBRARIES = jobcomp_elasticsearch.la
+@WITH_CURL_TRUE@jobcomp_elasticsearch_la_DEPENDENCIES = $(depend_libs)
 @WITH_CURL_TRUE@jobcomp_elasticsearch_la_SOURCES = $(AS_ELASTICSEARCH_SOURCES)
 @WITH_CURL_TRUE@jobcomp_elasticsearch_la_LDFLAGS = $(PLUGIN_FLAGS)
-@WITH_CURL_TRUE@jobcomp_elasticsearch_la_LIBADD = $(LIBCURL) ../common/libjobcomp_common.la
+@WITH_CURL_TRUE@jobcomp_elasticsearch_la_LIBADD = $(depend_libs) $(LIBCURL) ../common/libjobcomp_common.la
 @WITH_CURL_FALSE@EXTRA_jobcomp_elasticsearch_la_SOURCES = $(AS_ELASTICSEARCH_SOURCES)
 all: all-am
 
@@ -813,6 +814,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+@WITH_CURL_TRUE@force:
+@WITH_CURL_TRUE@$(jobcomp_elasticsearch_la_LIBADD) : force
+@WITH_CURL_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -62,6 +62,9 @@ extern "C" {
 #include <time.h>		/* for time_t definitions */
 #include <unistd.h>
 
+/* Slurm Lexicographically-sortable Unique ID */
+typedef uint64_t sluid_t;
+
 /* Define slurm_addr_t below to avoid including extraneous slurm headers */
 typedef struct sockaddr_storage slurm_addr_t;
 
@@ -130,6 +133,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define MAX_FED_JOB_ID (0xfffffffd) /* NO_VAL - 1 */
 #define MAX_HET_JOB_COMPONENTS 128
 #define MAX_FED_CLUSTERS 63
+#define MAX_JOB_SIZE_BITMAP 16384
 
 /*
  * Max normal step id leaving a few for special steps like the batch and extern
@@ -905,7 +909,7 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 	/* the following manual binding flags are mutually exclusive */
 	/* CPU_BIND_NONE needs to be the lowest value among manual bindings */
 	CPU_BIND_NONE	    = 0x0020, /* =no */
-	CPU_BIND_RANK  	    = 0x0040, /* =rank */
+	/* CPU_BIND_RANK = 0x0040 was removed in 24.11 */
 	CPU_BIND_MAP	    = 0x0080, /* =map_cpu:<list of CPU IDs> */
 	CPU_BIND_MASK	    = 0x0100, /* =mask_cpu:<list of CPU masks> */
 	CPU_BIND_LDRANK     = 0x0200, /* =locality domain rank */
@@ -1029,16 +1033,16 @@ enum node_states {
 
 /* Used as show_flags for slurm_get_ and slurm_load_ function calls.
  * Values can be ORed */
-#define SHOW_ALL	0x0001	/* Show info for "hidden" partitions */
-#define SHOW_DETAIL	0x0002	/* Show detailed resource information */
-/*  was SHOW_DETAIL2	0x0004     Removed v19.05 */
-#define SHOW_MIXED	0x0008	/* Automatically set node MIXED state */
-#define SHOW_LOCAL	0x0010	/* Show only local information, even on
+#define SHOW_ALL SLURM_BIT(0) /* Show info for "hidden" partitions */
+#define SHOW_DETAIL SLURM_BIT(1) /* Show detailed resource information */
+/*	SLURM_BIT(2) empty */
+#define SHOW_MIXED SLURM_BIT(3)	/* Automatically set node MIXED state */
+#define SHOW_LOCAL SLURM_BIT(4)	/* Show only local information, even on
 				 * federated cluster */
-#define SHOW_SIBLING	0x0020	/* Show sibling jobs on a federated cluster */
-#define SHOW_FEDERATION	0x0040	/* Show federated state information.
-				 * Shows local info if not in federation */
-#define SHOW_FUTURE	0x0080	/* Show future nodes */
+#define SHOW_SIBLING SLURM_BIT(5) /* Show sibling jobs on a federated cluster */
+#define SHOW_FEDERATION SLURM_BIT(6) /* Show federated state information.
+				      * Shows local info if not in federation */
+#define SHOW_FUTURE SLURM_BIT(7) /* Show future nodes */
 
 /* CR_CPU, CR_SOCKET and CR_CORE are mutually exclusive
  * CR_MEMORY may be added to any of the above values or used by itself
@@ -1396,7 +1400,6 @@ extern void slurm_hostlist_uniq(hostlist_t *hl);
 
 #ifndef   __list_datatypes_defined
 #  define __list_datatypes_defined
-typedef struct xlist * List;
 typedef struct xlist list_t;
 /*
  *  List opaque data type.
@@ -1534,8 +1537,6 @@ extern void *slurm_list_pop(list_t *l);
 #  define __bitstr_datatypes_defined
 
 typedef int64_t bitstr_t;
-#define BITSTR_SHIFT 		BITSTR_SHIFT_WORD64
-
 typedef bitstr_t bitoff_t;
 
 #endif
@@ -1564,6 +1565,7 @@ typedef struct acct_gather_energy {
 	uint32_t current_watts;	  /* current power consump of node, in watts */
 	uint64_t previous_consumed_energy;
 	time_t poll_time;         /* When information was last retrieved */
+	time_t slurmd_start_time; /* Slurmd start time */
 } acct_gather_energy_t;
 
 typedef struct {
@@ -1757,7 +1759,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t pn_min_tmp_disk;/* minimum tmp disk per node,
 				  * default=0 */
 	char *req_context;	/* requested selinux context */
-	uint32_t req_switch;    /* Minimum number of switches */
+	uint32_t req_switch;    /* Maximum number of switches */
 	uint16_t segment_size;	/* segment_size */
 	char *selinux_context;	/* used internally in the slurmctld,
 				   DON'T PACK */
@@ -1878,7 +1880,7 @@ typedef struct job_info {
 	uint32_t priority;	/* relative priority of the job,
 				 * 0=held, 1=required nodes DOWN/DRAINED */
 	uint32_t *priority_array; /* partition based priority */
-	char *priority_array_parts; /* partition order of priority_array */
+	char *priority_array_names; /* partition order of priority_array */
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
 	uint8_t reboot;		/* node reboot requested before start */
@@ -1886,7 +1888,7 @@ typedef struct job_info {
 	int32_t *req_node_inx;	/* required list index pairs into node_table:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
-	uint32_t req_switch;    /* Minimum number of switches */
+	uint32_t req_switch;    /* Maximum number of switches */
 	uint16_t requeue;       /* enable or disable job requeue option */
 	time_t resize_time;	/* time of latest size change */
 	uint16_t restart_cnt;	/* count of job restarts */
@@ -1895,7 +1897,6 @@ typedef struct job_info {
 	char *sched_nodes;	/* list of nodes scheduled to be used for job */
 	char *selinux_context;
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
-	uint16_t show_flags;	/* conveys level of details requested */
 	uint32_t site_factor;	/* factor to consider in priority */
 	uint16_t sockets_per_board;/* sockets per board required by job */
 	uint16_t sockets_per_node; /* sockets per node required by job  */
@@ -1973,6 +1974,23 @@ typedef struct job_info_msg {
 	slurm_job_info_t *job_array;	/* the job records */
 } job_info_msg_t;
 
+typedef struct listjobs_info {
+	uint32_t job_id;
+} listjobs_info_t;
+
+typedef struct listpids_info {
+	uint32_t global_task_id;
+	uint32_t job_id;
+	uint32_t local_task_id;
+	pid_t pid;
+	char *step_id;
+} listpids_info_t;
+
+typedef struct liststeps_info {
+	uint32_t job_id;
+	char *step_id;
+} liststeps_info_t;
+
 typedef struct {
 	uint32_t job_id;
 	uint32_t array_job_id;
@@ -2041,6 +2059,7 @@ typedef struct slurm_step_layout {
 } slurm_step_layout_t;
 
 typedef struct slurm_step_id_msg {
+	sluid_t sluid;
 	uint32_t job_id;
 	uint32_t step_het_comp;
 	uint32_t step_id;
@@ -2428,8 +2447,7 @@ typedef struct job_alloc_info_msg {
 	{ NULL, NO_VAL, NO_VAL, { NO_VAL, NO_VAL, NO_VAL } }
 
 typedef struct {
-	bitstr_t *array_bitmap; /* Set with slurm_array_str2bitmap().
-				 * NOT PACKED */
+	bitstr_t *array_bitmap; /* Set with slurm_array_str2bitmap(). */
 	uint32_t array_task_id;		/* task_id of a job array or NO_VAL */
 	uint32_t het_job_offset;	/* het_job_offset or NO_VAL */
 	slurm_step_id_t step_id;
@@ -2483,6 +2501,12 @@ typedef struct job_defaults {
 
 #define PART_FLAG_EXCLUSIVE_TOPO SLURM_BIT(16)/* Set if Topo allocated exclusively */
 #define PART_FLAG_EXC_TOPO_CLR SLURM_BIT(17) /* Clear EXCLUSIVE_TOPO flag */
+#define PART_FLAG_SCHED_FAILED SLURM_BIT(18) /* Partition failed to schedule
+					      * job */
+#define PART_FLAG_SCHED_CLEARED SLURM_BIT(19) /* Partition's nodes have been
+					       * cleared from available after
+					       * failed to schedule job */
+
 
 typedef struct partition_info {
 	char *allow_alloc_nodes;/* list names of allowed allocating
@@ -2672,6 +2696,8 @@ typedef struct will_run_response_msg {
 #define RESERVE_FLAG_USER_DEL	   SLURM_BIT(39) /* Allow users in the ACL to
 						    delete this reservation */
 #define RESERVE_FLAG_NO_USER_DEL   SLURM_BIT(40) /* Clear USER_DEL flag */
+#define RESERVE_FLAG_SCHED_FAILED SLURM_BIT(41) /* Reservation failed to
+						 * schedule job */
 
 #define RESERVE_REOCCURRING	(RESERVE_FLAG_HOURLY | RESERVE_FLAG_DAILY | \
 				 RESERVE_FLAG_WEEKLY | RESERVE_FLAG_WEEKDAY | \
@@ -2770,7 +2796,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_GRES		SLURM_BIT(6) /* Generic Resource info */
 #define DEBUG_FLAG_MPI		SLURM_BIT(7) /* MPI debug */
 #define DEBUG_FLAG_DATA 	SLURM_BIT(8) /* data_t logging */
-#define DEBUG_FLAG_WORKQ 	SLURM_BIT(9) /* Work Queue */
+#define DEBUG_FLAG_CONMGR 	SLURM_BIT(9) /* conmgr logging */
 #define DEBUG_FLAG_NET		SLURM_BIT(10) /* Network logging */
 #define DEBUG_FLAG_PRIO 	SLURM_BIT(11) /* debug for priority
 						    * plugin */
@@ -2922,6 +2948,8 @@ typedef struct {
 	char *bcast_exclude;	/* Bcast exclude library paths */
 	char *bcast_parameters; /* bcast options */
 	time_t boot_time;	/* time slurmctld last booted */
+	char *certmgr_params;	/* certmgr parameters */
+	char *certmgr_type;	/* certmgr type */
 	void *cgroup_conf;	/* cgroup support config file */
 	char *cli_filter_plugins; /* List of cli_filter plugins to use */
 	char *cluster_name;     /* general name of the entire cluster */
@@ -2937,6 +2965,7 @@ typedef struct {
 	uint32_t cpu_freq_def;	/* default cpu frequency / governor */
 	uint32_t cpu_freq_govs;	/* cpu freq governors allowed */
 	char *cred_type;	/* credential signature plugin */
+	char *data_parser_parameters; /* data parser parameters */
 	uint64_t debug_flags;	/* see DEBUG_FLAG_* above for values */
 	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	char *dependency_params; /* DependencyParameters */
@@ -3191,6 +3220,7 @@ typedef struct submit_response_msg {
 typedef struct slurm_update_node_msg {
 	char *comment;		/* arbitrary comment */
 	uint32_t cpu_bind;	/* default CPU binding type */
+	char *cert_token;	/* node's unique token for certmgr validation */
 	char *extra;		/* arbitrary string */
 	char *features;		/* new available feature for node */
 	char *features_act;	/* new active feature for node */
@@ -3224,6 +3254,10 @@ typedef struct job_sbcast_cred_msg {
 	char         *node_list;	/* assigned list of nodes */
 	void *sbcast_cred;		/* opaque data structure */
 } job_sbcast_cred_msg_t;
+
+typedef struct sbcast_cred_req_msg {
+	char *node_list;
+} sbcast_cred_req_msg_t;
 
 typedef struct {
 	uint32_t lifespan;
@@ -3716,6 +3750,13 @@ typedef struct {
 	char *nodelist;
 } kill_jobs_msg_t;
 
+#define KILL_JOB_MSG_INITIALIZER \
+{ \
+	.signal = SIGKILL, \
+	.state = JOB_END, \
+	.user_id = SLURM_AUTH_NOBODY, \
+}
+
 typedef struct {
 	uint32_t error_code;
 	char *error_msg;
@@ -4018,62 +4059,6 @@ extern int slurm_get_statistics(stats_info_response_msg_t **buf,
 extern int slurm_reset_statistics(stats_info_request_msg_t *req);
 
 /*****************************************************************************\
- *	SLURM JOB RESOURCES READ/PRINT FUNCTIONS
-\*****************************************************************************/
-
-/*
- * slurm_job_cpus_allocated_on_node_id -
- *                        get the number of cpus allocated to a job
- *			  on a node by node id
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_id		- zero-origin node id in allocation
- * RET number of CPUs allocated to job on this node or -1 on error
- */
-extern int slurm_job_cpus_allocated_on_node_id(job_resources_t *job_resrcs_ptr,
-					       int node_id);
-
-/*
- * slurm_job_cpus_allocated_on_node -
- *                        get the number of cpus allocated to a job
- *			  on a node by node name
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_name		- name of node
- * RET number of CPUs allocated to job on this node or -1 on error
- */
-extern int slurm_job_cpus_allocated_on_node(job_resources_t *job_resrcs_ptr,
-					    const char *node_name);
-
-/*
- * slurm_job_cpus_allocated_str_on_node_id -
- *                        get the string representation of cpus allocated
- *                        to a job on a node by node id
- * IN cpus		- str where the resulting cpu list is returned
- * IN cpus_len		- max size of cpus str
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_id		- zero-origin node id in allocation
- * RET 0 on success or -1 on error
- */
-extern int slurm_job_cpus_allocated_str_on_node_id(char *cpus,
-						   size_t cpus_len,
-						   job_resources_t *job_resrcs_ptr,
-						   int node_id);
-
-/*
- * slurm_job_cpus_allocated_str_on_node -
- *                        get the string representation of cpus allocated
- *                        to a job on a node by node name
- * IN cpus		- str where the resulting cpu list is returned
- * IN cpus_len		- max size of cpus str
- * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN node_name		- name of node
- * RET 0 on success or -1 on error
- */
-extern int slurm_job_cpus_allocated_str_on_node(char *cpus,
-						size_t cpus_len,
-						job_resources_t *job_resrcs_ptr,
-						const char *node_name);
-
-/*****************************************************************************\
  *	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
 
@@ -4205,39 +4190,6 @@ extern int slurm_notify_job(uint32_t job_id, char *message);
  * RET 0 or -1 on error
  */
 extern int slurm_pid2jobid(pid_t job_pid, uint32_t *job_id_ptr);
-
-/*
- * slurm_print_job_info - output information about a specific Slurm
- *	job based upon message as loaded using slurm_load_jobs
- * IN out - file to write to
- * IN job_ptr - an individual job information record pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_job_info(FILE *out,
-				 slurm_job_info_t *job_ptr,
-				 int one_liner);
-
-/*
- * slurm_print_job_info_msg - output information about all Slurm
- *	jobs based upon message as loaded using slurm_load_jobs
- * IN out - file to write to
- * IN job_info_msg_ptr - job information message pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_job_info_msg(FILE *out,
-				     job_info_msg_t *job_info_msg_ptr,
-				     int one_liner);
-
-/*
- * slurm_sprint_job_info - output information about a specific Slurm
- *	job based upon message as loaded using slurm_load_jobs
- * IN job_ptr - an individual job information record pointer
- * IN one_liner - print as a single line if true
- * RET out - char * containing formatted output (must be freed after call)
- *           NULL is returned on failure.
- */
-extern char *slurm_sprint_job_info(slurm_job_info_t *job_ptr,
-				   int one_liner);
 
 /*
  * slurm_update_job - issue RPC to a job's configuration per request,
@@ -4840,6 +4792,16 @@ typedef struct {
 	 */
 	int offset;
 } controller_ping_t;
+
+typedef struct {
+	char *hostname; /* symlink - do not xfree() */
+	bool pinged; /* true on successful ping */
+	long latency; /* time to ping or timeout on !pinged */
+	int offset; /* offset which defines default mode:
+		     * 0: primary
+		     * 1: backup
+		     */
+} slurmdbd_ping_t;
 
 /*****************************************************************************\
  *	SLURM PING/RECONFIGURE/SHUTDOWN FUNCTIONS

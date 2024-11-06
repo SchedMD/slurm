@@ -174,7 +174,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	/* Since the front-end nodes are a shared resource, we limit each job
 	 * to one CPU based upon monotonically increasing sequence number */
 	static int last_id = 0;
-	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
+	hw_map  = bit_alloc(conf->block_map_size);
 	bit_set(hw_map, ((last_id++) % conf->block_map_size));
 	task_cnt = 1;
 }
@@ -371,7 +371,7 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 		CPU_BIND_TO_SOCKETS | CPU_BIND_TO_LDOMS;
 	static uint16_t bind_mode =
 		CPU_BIND_NONE | CPU_BIND_MASK |
-		CPU_BIND_RANK | CPU_BIND_MAP |
+		CPU_BIND_MAP |
 		CPU_BIND_LDMASK | CPU_BIND_LDRANK |
 		CPU_BIND_LDMAP;
 	static int only_one_thread_per_core = -1;
@@ -781,8 +781,8 @@ static bitstr_t *_get_avail_map(slurm_cred_t *cred, uint16_t *hw_sockets,
 	       sockets, cores, *hw_sockets, *hw_cores, *hw_threads);
 
 	num_cores = MIN((sockets * cores), ((*hw_sockets)*(*hw_cores)));
-	req_map = (bitstr_t *) bit_alloc(num_cores);
-	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
+	req_map = bit_alloc(num_cores);
+	hw_map = bit_alloc(conf->block_map_size);
 
 	/* Transfer core_bitmap data to local req_map.
 	 * The MOD function handles the case where fewer processes
@@ -1025,11 +1025,11 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	}
 
 	pu_per_core = hw_threads;
-	core_tasks = xmalloc(sizeof(int) * hw_sockets * hw_cores);
-	core_threads = xmalloc(sizeof(int) * hw_sockets * hw_cores);
-	socket_last_pu = xmalloc(hw_sockets * sizeof(int));
+	core_tasks = xcalloc(hw_sockets * hw_cores, sizeof(int));
+	core_threads = xcalloc(hw_sockets * hw_cores, sizeof(int));
+	socket_last_pu = xcalloc(hw_sockets, sizeof(int));
 
-	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
+	*masks_p = xcalloc(max_tasks, sizeof(bitstr_t *));
 	masks = *masks_p;
 
 	size = bit_size(avail_map);
@@ -1239,14 +1239,14 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 	size = bit_size(avail_map);
 
-	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
+	*masks_p = xcalloc(max_tasks, sizeof(bitstr_t *));
 	masks = *masks_p;
 
 	pu_per_core = hw_threads;
-	core_tasks = xmalloc(sizeof(int) * hw_sockets * hw_cores);
-	core_threads = xmalloc(sizeof(int) * hw_sockets * hw_cores);
+	core_tasks = xcalloc(hw_sockets * hw_cores, sizeof(int));
+	core_threads = xcalloc(hw_sockets * hw_cores, sizeof(int));
 	pu_per_socket = hw_cores * hw_threads;
-	socket_tasks = xmalloc(sizeof(int) * hw_sockets);
+	socket_tasks = xcalloc(hw_sockets, sizeof(int));
 
 	/* block distribution with oversubsciption */
 	c = 0;
@@ -1346,8 +1346,7 @@ static bitstr_t *_lllp_map_abstract_mask(bitstr_t *bitmask)
 {
     	int i, bit;
 	int num_bits = bit_size(bitmask);
-	bitstr_t *newmask = NULL;
-	newmask = (bitstr_t *) bit_alloc(num_bits);
+	bitstr_t *newmask = bit_alloc(num_bits);
 
 	/* remap to physical machine */
 	for (i = 0; i < num_bits; i++) {

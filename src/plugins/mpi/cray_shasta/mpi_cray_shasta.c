@@ -56,6 +56,7 @@
 #include "src/common/read_config.h"
 #include "src/interfaces/mpi.h"
 #include "src/common/xstring.h"
+#include "src/common/xmalloc.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #include "apinfo.h"
@@ -310,7 +311,7 @@ extern s_p_hashtbl_t *mpi_p_conf_get(void)
 	return NULL;
 }
 
-extern List mpi_p_conf_get_printable(void)
+extern list_t *mpi_p_conf_get_printable(void)
 {
 	return NULL;
 }

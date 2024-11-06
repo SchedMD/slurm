@@ -117,18 +117,6 @@ typedef struct {
 	uint32_t user_id;
 } foreach_part_list_args_t;
 
-/* These are defined here so when we link with something other than
- * the slurmctld we will have these symbols defined.  They will get
- * overwritten when linking with the slurmctld.
- */
-#if defined (__APPLE__)
-extern uint16_t accounting_enforce __attribute__((weak_import));
-extern void *acct_db_conn  __attribute__((weak_import));
-#else
-uint16_t accounting_enforce = 0;
-void *acct_db_conn = NULL;
-#endif
-
 /*****************************************************************************\
  * We've provided a simple example of the type of things you can do with this
  * plugin. If you develop another plugin that may be of interest to others
@@ -150,6 +138,24 @@ static char *_get_default_account(uint32_t user_id)
 	}
 }
 
+static int _fill_assoc(uint32_t user_id, char *account, char *partition,
+		       slurmdb_assoc_rec_t *assoc)
+{
+	xassert(assoc);
+
+	memset(assoc, 0, sizeof(slurmdb_assoc_rec_t));
+	assoc->uid = user_id;
+	assoc->partition = partition;
+	if (account) {
+		assoc->acct = account;
+	} else {
+		assoc->acct = _get_default_account(user_id);
+	}
+
+	return assoc_mgr_fill_in_assoc(acct_db_conn, assoc, accounting_enforce,
+				       NULL, false);
+}
+
 /* Get the default QOS for an association (or NULL if not present) */
 static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 {
@@ -157,17 +163,7 @@ static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 	slurmdb_qos_rec_t qos;
 	uint32_t qos_id = 0;
 
-	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
-	assoc.uid = user_id;
-	assoc.partition = partition;
-	if (account) {
-		assoc.acct = account;
-	} else {
-		assoc.acct = _get_default_account(user_id);
-	}
-
-	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc, accounting_enforce,
-				    NULL, false) != SLURM_ERROR)
+	if (_fill_assoc(user_id, account, partition, &assoc) != SLURM_ERROR)
 		qos_id = assoc.def_qos_id;
 
 	if (!qos_id)
@@ -183,23 +179,52 @@ static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 	}
 }
 
+static int _qos_id_to_qos_name(void *x, void *arg)
+{
+	char *qos_id = x;
+	list_t *qos_name_list = arg;
+	slurmdb_qos_rec_t qos = { 0 };
+
+	qos.id = atoi(qos_id);
+
+	if (assoc_mgr_fill_in_qos(acct_db_conn, &qos, accounting_enforce, NULL,
+				  false) == SLURM_ERROR) {
+		return 0;
+	}
+
+	slurm_addto_char_list(qos_name_list, qos.name);
+
+	return 0;
+}
+
+/* Get all possible QOS for an association (or NULL if not present) */
+static char *_get_assoc_qos(uint32_t user_id, char *account, char *partition)
+{
+	slurmdb_assoc_rec_t assoc;
+	list_t *qos_name_list;
+	char *qos_name_list_str;
+
+	_fill_assoc(user_id, account, partition, &assoc);
+
+	qos_name_list = list_create(xfree_ptr);
+	list_for_each_ro(assoc.qos_list, _qos_id_to_qos_name, qos_name_list);
+
+	qos_name_list_str = slurm_char_list_to_xstr(qos_name_list);
+
+	list_destroy(qos_name_list);
+
+	return qos_name_list_str;
+}
+
 /* Get the comment for an association (or NULL if not present) */
-static char *_get_assoc_comment(uint32_t user_id, char *account)
+static char *_get_assoc_comment(uint32_t user_id, char *account,
+				char *partition)
 {
 	slurmdb_assoc_rec_t assoc;
 	char *comment = NULL;
 
-	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
-	assoc.uid = user_id;
-	if (account) {
-		assoc.acct = account;
-	} else {
-		assoc.acct = _get_default_account(user_id);
-	}
-
-	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc, accounting_enforce,
-				    NULL, false) != SLURM_ERROR)
-		comment = xstrdup(assoc.comment);
+	if (_fill_assoc(user_id, account, partition, &assoc) != SLURM_ERROR)
+		comment = assoc.comment;
 
 	return comment;
 }
@@ -525,7 +550,14 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushstring(L, job_desc->array_inx);
 	} else if (!xstrcmp(name, "assoc_comment")) {
 		lua_pushstring(L, _get_assoc_comment(job_desc->user_id,
-						     job_desc->account));
+						     job_desc->account,
+						     job_desc->partition));
+	} else if (!xstrcmp(name, "assoc_qos")) {
+		char *assoc_qos_str = _get_assoc_qos(job_desc->user_id,
+						     job_desc->account,
+						     job_desc->partition);
+		lua_pushstring(L, assoc_qos_str);
+		xfree(assoc_qos_str);
 	} else if (!xstrcmp(name, "batch_features")) {
 		lua_pushstring(L, job_desc->batch_features);
 	} else if (!xstrcmp(name, "begin_time")) {

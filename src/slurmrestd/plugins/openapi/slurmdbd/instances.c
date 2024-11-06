@@ -45,7 +45,7 @@
 static void _dump_instance_cond(ctxt_t *ctxt, slurmdb_instance_cond_t *cond,
 				bool only_one)
 {
-	List instance_list = NULL;
+	list_t *instance_list = NULL;
 
 	if (db_query_list(ctxt, &instance_list, slurmdb_instances_get, cond))
 		goto cleanup;

@@ -81,7 +81,7 @@ typedef struct part_record {
 				 * char *deny_qos but used internallly */
 	uint32_t flags;		/* see PART_FLAG_* in slurm.h */
 	uint32_t grace_time;	/* default preempt grace time in seconds */
-	List job_defaults_list;	/* List of job_defaults_t elements */
+	list_t *job_defaults_list; /* List of job_defaults_t elements */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
 	uint32_t max_cpus_per_socket; /*maximum allocated CPUs per socket */
 	uint64_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
@@ -89,6 +89,8 @@ typedef struct part_record {
 	uint32_t max_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
+	uint32_t num_sched_jobs; /* number of jobs scheduled on a scheduling
+				  * iteration, internal use only, NO NOT PACK */
 	uint32_t min_nodes;	/* per job */
 	uint32_t min_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
 	char *name;		/* name of the partition */

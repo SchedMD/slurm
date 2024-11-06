@@ -48,7 +48,7 @@ static int  _ft_decay_apply_new_usage(job_record_t *job, time_t *start);
 static void _apply_priority_fs(void);
 
 /* Fair Tree code called from the decay thread loop */
-extern void fair_tree_decay(List jobs, time_t start)
+extern void fair_tree_decay(list_t *jobs, time_t start)
 {
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
@@ -212,7 +212,7 @@ static void _calc_assoc_fs(slurmdb_assoc_rec_t *assoc)
  * RET - New array. Must be freed.
  */
 static slurmdb_assoc_rec_t** _append_list_to_array(
-	List list, slurmdb_assoc_rec_t** merged,
+	list_t *list, slurmdb_assoc_rec_t** merged,
 	size_t *merged_size)
 {
 	list_itr_t *itr;
@@ -288,7 +288,7 @@ static slurmdb_assoc_rec_t** _merge_accounts(
 	merged[0] = NULL;
 
 	for (i = begin; i <= end; i++) {
-		List children = siblings[i]->usage->children_list;
+		list_t *children = siblings[i]->usage->children_list;
 
 		/* the first account's debug was already printed */
 		if ((slurm_conf.debug_flags & DEBUG_FLAG_PRIO) && i > begin)
@@ -413,7 +413,7 @@ static void _apply_priority_fs(void)
 
 	assoc_mgr_root_assoc->usage->level_fs = (long double) NO_VAL;
 
-	/* _calc_tree_fs requires an array instead of List */
+	/* _calc_tree_fs requires an array instead of list */
 	children = _append_list_to_array(
 		assoc_mgr_root_assoc->usage->children_list,
 		children,

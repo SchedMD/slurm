@@ -76,7 +76,7 @@ int max_line_size;
 static int _get_info(bool clear_old, bool log_cluster_name, int argc,
 		     char **argv);
 static int  _get_window_width( void );
-static int _multi_cluster(List clusters, int argc, char **argv);
+static int _multi_cluster(list_t *clusters, int argc, char **argv);
 static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 		      char **argv);
 static int _print_job_steps(bool clear_old, int argc, char **argv);
@@ -123,7 +123,7 @@ main (int argc, char **argv)
 		exit (0);
 }
 
-static int _multi_cluster(List clusters, int argc, char **argv)
+static int _multi_cluster(list_t *clusters, int argc, char **argv)
 {
 	list_itr_t *itr;
 	bool log_cluster_name = false, first = true;
@@ -236,13 +236,8 @@ static int _query_job_states(int argc, char **argv)
 			.jobs = jsr,
 		};
 
-		if (is_data_parser_deprecated(params.data_parser))
-			rc = error("%s does not support dumping for job states",
-				   params.data_parser);
-		else
-			DATA_DUMP_CLI(OPENAPI_JOB_STATE_RESP, resp, argc, argv,
-				      NULL, params.mimetype, params.data_parser,
-				      rc);
+		DATA_DUMP_CLI(OPENAPI_JOB_STATE_RESP, resp, argc, argv, NULL,
+			      params.mimetype, params.data_parser, rc);
 		goto cleanup;
 	}
 
@@ -339,7 +334,7 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 		}
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_info_msg( old_job_ptr );
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_job_ptr = old_job_ptr;
 		}
@@ -371,14 +366,8 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 			.last_update = new_job_ptr->last_update,
 		};
 
-		if (is_data_parser_deprecated(params.data_parser))
-			DATA_DUMP_CLI_DEPRECATED(JOB_INFO_MSG, *new_job_ptr,
-						 "jobs", argc, argv, NULL,
-						 params.mimetype, rc);
-		else
-			DATA_DUMP_CLI(OPENAPI_JOB_INFO_RESP, resp, argc, argv,
-				      NULL, params.mimetype, params.data_parser,
-				      rc);
+		DATA_DUMP_CLI(OPENAPI_JOB_INFO_RESP, resp, argc, argv, NULL,
+			      params.mimetype, params.data_parser, rc);
 #ifdef MEMORY_LEAK_DEBUG
 		slurm_free_job_info_msg(new_job_ptr);
 #endif
@@ -445,7 +434,7 @@ static int _print_job_steps(bool clear_old, int argc, char **argv)
 						 &new_step_ptr, show_flags);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg( old_step_ptr );
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_step_ptr = old_step_ptr;
 		}
@@ -466,15 +455,8 @@ static int _print_job_steps(bool clear_old, int argc, char **argv)
 			.last_update = new_step_ptr->last_update,
 		};
 
-		if (is_data_parser_deprecated(params.data_parser))
-			DATA_DUMP_CLI_DEPRECATED(STEP_INFO_MSG_PTR,
-						 new_step_ptr, "steps", argc,
-						 argv, NULL, params.mimetype,
-						 rc);
-		else
-			DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc, argv,
-				      NULL, params.mimetype, params.data_parser,
-				      rc);
+		DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc, argv, NULL,
+			      params.mimetype, params.data_parser, rc);
 
 #ifdef MEMORY_LEAK_DEBUG
 		slurm_free_job_step_info_response_msg(new_step_ptr);

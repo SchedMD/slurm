@@ -53,7 +53,7 @@ typedef struct {
 	char *global_list;
 	uint64_t gres_cnt;
 	uint32_t gres_conf_flags;
-	List gres_devices;
+	list_t *gres_devices;
 	bool is_job;
 	bool is_task;
 	char *local_list;
@@ -73,13 +73,13 @@ extern void print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 /*
  * Print each gres_slurmd_conf_t record in the list
  */
-extern void print_gres_list(List gres_list, log_level_t log_lvl);
+extern void print_gres_list(list_t *gres_list, log_level_t log_lvl);
 
 /*
  * Print each gres_slurmd_conf_t record in the list in a parsable manner for
  * test consumption
  */
-extern void print_gres_list_parsable(List gres_list);
+extern void print_gres_list_parsable(list_t *gres_list);
 
 /*
  * Set the appropriate env variables for all gpu like gres.
@@ -95,7 +95,7 @@ extern void gres_common_gpu_set_env(common_gres_env_t *gres_env);
 extern bool gres_common_prep_set_env(char ***prep_env_ptr,
 				     gres_prep_t *gres_prep,
 				     int node_inx, uint32_t gres_conf_flags,
-				     List gres_devices);
+				     list_t *gres_devices);
 
 extern int gres_common_set_env_types_on_node_flags(void *x, void *arg);
 

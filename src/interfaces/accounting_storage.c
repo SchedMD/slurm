@@ -63,112 +63,112 @@ typedef struct slurm_acct_storage_ops {
 	int  (*close_conn)         (void **db_conn);
 	int  (*commit)             (void *db_conn, bool commit);
 	int  (*add_users)          (void *db_conn, uint32_t uid,
-				    List user_list);
+				    list_t *user_list);
 	char *(*add_users_cond)    (void *db_conn, uint32_t uid,
 				    slurmdb_add_assoc_cond_t *add_assoc,
 				    slurmdb_user_rec_t *user);
 	int  (*add_coord)          (void *db_conn, uint32_t uid,
-				    List acct_list,
+				    list_t *acct_list,
 				    slurmdb_user_cond_t *user_cond);
 	int  (*add_accts)          (void *db_conn, uint32_t uid,
-				    List acct_list);
+				    list_t *acct_list);
 	char *(*add_accts_cond)    (void *db_conn, uint32_t uid,
 				    slurmdb_add_assoc_cond_t *add_assoc,
 				    slurmdb_account_rec_t *acct);
 	int  (*add_clusters)       (void *db_conn, uint32_t uid,
-				    List cluster_list);
+				    list_t *cluster_list);
 	int  (*add_federations)    (void *db_conn, uint32_t uid,
-				    List federation_list);
+				    list_t *federation_list);
 	int  (*add_tres)           (void *db_conn, uint32_t uid,
-				    List tres_list_in);
+				    list_t *tres_list_in);
 	int  (*add_assocs)         (void *db_conn, uint32_t uid,
-				    List assoc_list);
+				    list_t *assoc_list);
 	int  (*add_qos)            (void *db_conn, uint32_t uid,
-				    List qos_list);
+				    list_t *qos_list);
 	int  (*add_res)            (void *db_conn, uint32_t uid,
-				    List res_list);
+				    list_t *res_list);
 	int  (*add_wckeys)         (void *db_conn, uint32_t uid,
-				    List wckey_list);
+				    list_t *wckey_list);
 	int  (*add_reservation)    (void *db_conn,
 				    slurmdb_reservation_rec_t *resv);
-	List (*modify_users)       (void *db_conn, uint32_t uid,
+	list_t *(*modify_users)    (void *db_conn, uint32_t uid,
 				    slurmdb_user_cond_t *user_cond,
 				    slurmdb_user_rec_t *user);
-	List (*modify_accts)       (void *db_conn, uint32_t uid,
+	list_t *(*modify_accts)    (void *db_conn, uint32_t uid,
 				    slurmdb_account_cond_t *acct_cond,
 				    slurmdb_account_rec_t *acct);
-	List (*modify_clusters)    (void *db_conn, uint32_t uid,
+	list_t *(*modify_clusters) (void *db_conn, uint32_t uid,
 				    slurmdb_cluster_cond_t *cluster_cond,
 				    slurmdb_cluster_rec_t *cluster);
-	List (*modify_assocs)      (void *db_conn, uint32_t uid,
+	list_t *(*modify_assocs)   (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond,
 				    slurmdb_assoc_rec_t *assoc);
-	List (*modify_federations) (void *db_conn, uint32_t uid,
+	list_t *(*modify_federations) (void *db_conn, uint32_t uid,
 				    slurmdb_federation_cond_t *fed_cond,
 				    slurmdb_federation_rec_t *fed);
-	List (*modify_job)         (void *db_conn, uint32_t uid,
+	list_t *(*modify_job)      (void *db_conn, uint32_t uid,
 				    slurmdb_job_cond_t *job_cond,
 				    slurmdb_job_rec_t *job);
-	List (*modify_qos)         (void *db_conn, uint32_t uid,
+	list_t *(*modify_qos)      (void *db_conn, uint32_t uid,
 				    slurmdb_qos_cond_t *qos_cond,
 				    slurmdb_qos_rec_t *qos);
-	List (*modify_res)         (void *db_conn, uint32_t uid,
+	list_t *(*modify_res)      (void *db_conn, uint32_t uid,
 				    slurmdb_res_cond_t *res_cond,
 				    slurmdb_res_rec_t *res);
-	List (*modify_wckeys)      (void *db_conn, uint32_t uid,
+	list_t *(*modify_wckeys)   (void *db_conn, uint32_t uid,
 				    slurmdb_wckey_cond_t *wckey_cond,
 				    slurmdb_wckey_rec_t *wckey);
 	int  (*modify_reservation) (void *db_conn,
 				    slurmdb_reservation_rec_t *resv);
-	List (*remove_users)       (void *db_conn, uint32_t uid,
+	list_t *(*remove_users)    (void *db_conn, uint32_t uid,
 				    slurmdb_user_cond_t *user_cond);
-	List (*remove_coord)       (void *db_conn, uint32_t uid,
-				    List acct_list,
+	list_t *(*remove_coord)    (void *db_conn, uint32_t uid,
+				    list_t *acct_list,
 				    slurmdb_user_cond_t *user_cond);
-	List (*remove_accts)       (void *db_conn, uint32_t uid,
+	list_t *(*remove_accts)    (void *db_conn, uint32_t uid,
 				    slurmdb_account_cond_t *acct_cond);
-	List (*remove_clusters)    (void *db_conn, uint32_t uid,
+	list_t *(*remove_clusters) (void *db_conn, uint32_t uid,
 				    slurmdb_cluster_cond_t *cluster_cond);
-	List (*remove_assocs)      (void *db_conn, uint32_t uid,
+	list_t *(*remove_assocs)   (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond);
-	List (*remove_federations) (void *db_conn, uint32_t uid,
+	list_t *(*remove_federations) (void *db_conn, uint32_t uid,
 				    slurmdb_federation_cond_t *fed_cond);
-	List (*remove_qos)         (void *db_conn, uint32_t uid,
+	list_t *(*remove_qos)      (void *db_conn, uint32_t uid,
 				    slurmdb_qos_cond_t *qos_cond);
-	List (*remove_res)         (void *db_conn, uint32_t uid,
+	list_t *(*remove_res)      (void *db_conn, uint32_t uid,
 				    slurmdb_res_cond_t *res_cond);
-	List (*remove_wckeys)      (void *db_conn, uint32_t uid,
+	list_t *(*remove_wckeys)   (void *db_conn, uint32_t uid,
 				    slurmdb_wckey_cond_t *wckey_cond);
 	int  (*remove_reservation) (void *db_conn,
 				    slurmdb_reservation_rec_t *resv);
-	List (*get_users)          (void *db_conn, uint32_t uid,
+	list_t *(*get_users)       (void *db_conn, uint32_t uid,
 				    slurmdb_user_cond_t *user_cond);
-	List (*get_accts)          (void *db_conn, uint32_t uid,
+	list_t *(*get_accts)       (void *db_conn, uint32_t uid,
 				    slurmdb_account_cond_t *acct_cond);
-	List (*get_clusters)       (void *db_conn, uint32_t uid,
+	list_t *(*get_clusters)    (void *db_conn, uint32_t uid,
 				    slurmdb_cluster_cond_t *cluster_cond);
-	List (*get_federations)    (void *db_conn, uint32_t uid,
+	list_t *(*get_federations) (void *db_conn, uint32_t uid,
 				    slurmdb_federation_cond_t *fed_cond);
-	List (*get_config)         (void *db_conn, char *config_name);
-	List (*get_tres)           (void *db_conn, uint32_t uid,
+	list_t *(*get_config)      (void *db_conn, char *config_name);
+	list_t *(*get_tres)        (void *db_conn, uint32_t uid,
 				    slurmdb_tres_cond_t *tres_cond);
-	List (*get_assocs)         (void *db_conn, uint32_t uid,
+	list_t *(*get_assocs)      (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond);
-	List (*get_events)         (void *db_conn, uint32_t uid,
+	list_t *(*get_events)      (void *db_conn, uint32_t uid,
 				    slurmdb_event_cond_t *event_cond);
-	List (*get_instances)	   (void *db_conn, uint32_t uid,
+	list_t *(*get_instances)   (void *db_conn, uint32_t uid,
 				    slurmdb_instance_cond_t *instance_cond);
-	List (*get_problems)       (void *db_conn, uint32_t uid,
+	list_t *(*get_problems)    (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond);
-	List (*get_qos)            (void *db_conn, uint32_t uid,
+	list_t *(*get_qos)         (void *db_conn, uint32_t uid,
 				    slurmdb_qos_cond_t *qos_cond);
-	List (*get_res)            (void *db_conn, uint32_t uid,
+	list_t *(*get_res)         (void *db_conn, uint32_t uid,
 				    slurmdb_res_cond_t *res_cond);
-	List (*get_wckeys)         (void *db_conn, uint32_t uid,
+	list_t *(*get_wckeys)      (void *db_conn, uint32_t uid,
 				    slurmdb_wckey_cond_t *wckey_cond);
-	List (*get_resvs)          (void *db_conn, uint32_t uid,
+	list_t *(*get_resvs)       (void *db_conn, uint32_t uid,
 				    slurmdb_reservation_cond_t *resv_cond);
-	List (*get_txn)            (void *db_conn, uint32_t uid,
+	list_t *(*get_txn)         (void *db_conn, uint32_t uid,
 				    slurmdb_txn_cond_t *txn_cond);
 	int  (*get_usage)          (void *db_conn, uint32_t uid,
 				    void *in, int type,
@@ -177,8 +177,8 @@ typedef struct slurm_acct_storage_ops {
 	int (*roll_usage)          (void *db_conn,
 				    time_t sent_start, time_t sent_end,
 				    uint16_t archive_data,
-				    List *rollup_stats_list_in);
-	int  (*fix_runaway_jobs)   (void *db_conn, uint32_t uid, List jobs);
+				    list_t **rollup_stats_list_in);
+	int  (*fix_runaway_jobs)   (void *db_conn, uint32_t uid, list_t *jobs);
 	int  (*node_down)          (void *db_conn, node_record_t *node_ptr,
 				    time_t event_time, char *reason,
 				    uint32_t reason_uid);
@@ -199,20 +199,20 @@ typedef struct slurm_acct_storage_ops {
 	int  (*step_start)         (void *db_conn, step_record_t *step_ptr);
 	int  (*step_complete)      (void *db_conn, step_record_t *step_ptr);
 	int  (*job_suspend)        (void *db_conn, job_record_t *job_ptr);
-	List (*get_jobs_cond)      (void *db_conn, uint32_t uid,
+	list_t *(*get_jobs_cond)   (void *db_conn, uint32_t uid,
 				    slurmdb_job_cond_t *job_cond);
 	int (*archive_dump)        (void *db_conn,
 				    slurmdb_archive_cond_t *arch_cond);
 	int (*archive_load)        (void *db_conn,
 				    slurmdb_archive_rec_t *arch_rec);
 	int (*update_shares_used)  (void *db_conn,
-				    List shares_used);
+				    list_t *shares_used);
 	int (*flush_jobs)          (void *db_conn,
 				    time_t event_time);
 	int (*reconfig)            (void *db_conn, bool dbd);
 	int (*relay_msg)           (void *db_conn, persist_msg_t *msg);
 	int (*reset_lft_rgt)       (void *db_conn, uid_t uid,
-				    List cluster_list);
+				    list_t *cluster_list);
 	int (*get_stats)           (void *db_conn, slurmdb_stats_rec_t **stats);
 	int (*clear_stats)         (void *db_conn);
 	int (*get_data)            (void *db_conn, acct_storage_info_t dinfo,
@@ -419,7 +419,7 @@ extern int acct_storage_g_commit(void *db_conn, bool commit)
 }
 
 extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
-				    List user_list)
+				    list_t *user_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -443,7 +443,7 @@ extern char *acct_storage_g_add_users_cond(
 }
 
 extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
-				    List acct_list,
+				    list_t *acct_list,
 				    slurmdb_user_cond_t *user_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -455,7 +455,7 @@ extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
-				       List acct_list)
+				       list_t *acct_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -479,7 +479,7 @@ extern char *acct_storage_g_add_accounts_cond(
 }
 
 extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
-				       List cluster_list)
+				       list_t *cluster_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -490,7 +490,7 @@ extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_g_add_federations(void *db_conn, uint32_t uid,
-					  List federation_list)
+					  list_t *federation_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -501,7 +501,7 @@ extern int acct_storage_g_add_federations(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_g_add_tres(void *db_conn, uint32_t uid,
-				   List tres_list_in)
+				   list_t *tres_list_in)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -512,7 +512,7 @@ extern int acct_storage_g_add_tres(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_g_add_assocs(void *db_conn, uint32_t uid,
-				     List assoc_list)
+				     list_t *assoc_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -523,7 +523,7 @@ extern int acct_storage_g_add_assocs(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
-				  List qos_list)
+				  list_t *qos_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -534,7 +534,7 @@ extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_g_add_res(void *db_conn, uint32_t uid,
-				  List res_list)
+				  list_t *res_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -544,7 +544,7 @@ extern int acct_storage_g_add_res(void *db_conn, uint32_t uid,
 	return (*(ops.add_res))(db_conn, uid, res_list);
 }
 extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
-				     List wckey_list)
+				     list_t *wckey_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -565,9 +565,9 @@ extern int acct_storage_g_add_reservation(void *db_conn,
 	return (*(ops.add_reservation))(db_conn, resv);
 }
 
-extern List acct_storage_g_modify_users(void *db_conn, uint32_t uid,
-					slurmdb_user_cond_t *user_cond,
-					slurmdb_user_rec_t *user)
+extern list_t *acct_storage_g_modify_users(void *db_conn, uint32_t uid,
+					   slurmdb_user_cond_t *user_cond,
+					   slurmdb_user_rec_t *user)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -577,9 +577,9 @@ extern List acct_storage_g_modify_users(void *db_conn, uint32_t uid,
 	return (*(ops.modify_users))(db_conn, uid, user_cond, user);
 }
 
-extern List acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
-					   slurmdb_account_cond_t *acct_cond,
-					   slurmdb_account_rec_t *acct)
+extern list_t *acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
+					      slurmdb_account_cond_t *acct_cond,
+					      slurmdb_account_rec_t *acct)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -589,9 +589,9 @@ extern List acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
 	return (*(ops.modify_accts))(db_conn, uid, acct_cond, acct);
 }
 
-extern List acct_storage_g_modify_clusters(void *db_conn, uint32_t uid,
-					   slurmdb_cluster_cond_t *cluster_cond,
-					   slurmdb_cluster_rec_t *cluster)
+extern list_t *acct_storage_g_modify_clusters(
+	void *db_conn, uint32_t uid, slurmdb_cluster_cond_t *cluster_cond,
+	slurmdb_cluster_rec_t *cluster)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -601,7 +601,7 @@ extern List acct_storage_g_modify_clusters(void *db_conn, uint32_t uid,
 	return (*(ops.modify_clusters))(db_conn, uid, cluster_cond, cluster);
 }
 
-extern List acct_storage_g_modify_assocs(
+extern list_t *acct_storage_g_modify_assocs(
 	void *db_conn, uint32_t uid,
 	slurmdb_assoc_cond_t *assoc_cond,
 	slurmdb_assoc_rec_t *assoc)
@@ -614,7 +614,7 @@ extern List acct_storage_g_modify_assocs(
 	return (*(ops.modify_assocs))(db_conn, uid, assoc_cond, assoc);
 }
 
-extern List acct_storage_g_modify_federations(
+extern list_t *acct_storage_g_modify_federations(
 				void *db_conn, uint32_t uid,
 				slurmdb_federation_cond_t *fed_cond,
 				slurmdb_federation_rec_t *fed)
@@ -627,9 +627,9 @@ extern List acct_storage_g_modify_federations(
 	return (*(ops.modify_federations))(db_conn, uid, fed_cond, fed);
 }
 
-extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,
-				      slurmdb_job_cond_t *job_cond,
-				      slurmdb_job_rec_t *job)
+extern list_t *acct_storage_g_modify_job(void *db_conn, uint32_t uid,
+					 slurmdb_job_cond_t *job_cond,
+					 slurmdb_job_rec_t *job)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -640,9 +640,9 @@ extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,
 	return (*(ops.modify_job))(db_conn, uid, job_cond, job);
 }
 
-extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
-				      slurmdb_qos_cond_t *qos_cond,
-				      slurmdb_qos_rec_t *qos)
+extern list_t *acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
+					 slurmdb_qos_cond_t *qos_cond,
+					 slurmdb_qos_rec_t *qos)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -652,9 +652,9 @@ extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
 	return (*(ops.modify_qos))(db_conn, uid, qos_cond, qos);
 }
 
-extern List acct_storage_g_modify_res(void *db_conn, uint32_t uid,
-				      slurmdb_res_cond_t *res_cond,
-				      slurmdb_res_rec_t *res)
+extern list_t *acct_storage_g_modify_res(void *db_conn, uint32_t uid,
+					 slurmdb_res_cond_t *res_cond,
+					 slurmdb_res_rec_t *res)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -664,9 +664,9 @@ extern List acct_storage_g_modify_res(void *db_conn, uint32_t uid,
 	return (*(ops.modify_res))(db_conn, uid, res_cond, res);
 }
 
-extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
-					 slurmdb_wckey_cond_t *wckey_cond,
-					 slurmdb_wckey_rec_t *wckey)
+extern list_t *acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
+					    slurmdb_wckey_cond_t *wckey_cond,
+					    slurmdb_wckey_rec_t *wckey)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -687,8 +687,8 @@ extern int acct_storage_g_modify_reservation(void *db_conn,
 	return (*(ops.modify_reservation))(db_conn, resv);
 }
 
-extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid,
-					slurmdb_user_cond_t *user_cond)
+extern list_t *acct_storage_g_remove_users(void *db_conn, uint32_t uid,
+					   slurmdb_user_cond_t *user_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -698,9 +698,9 @@ extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid,
 	return (*(ops.remove_users))(db_conn, uid, user_cond);
 }
 
-extern List acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
-					List acct_list,
-					slurmdb_user_cond_t *user_cond)
+extern list_t *acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
+					   list_t *acct_list,
+					   slurmdb_user_cond_t *user_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -710,8 +710,8 @@ extern List acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
 	return (*(ops.remove_coord))(db_conn, uid, acct_list, user_cond);
 }
 
-extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
-					   slurmdb_account_cond_t *acct_cond)
+extern list_t *acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
+					      slurmdb_account_cond_t *acct_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -721,8 +721,8 @@ extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
 	return (*(ops.remove_accts))(db_conn, uid, acct_cond);
 }
 
-extern List acct_storage_g_remove_clusters(void *db_conn, uint32_t uid,
-					   slurmdb_cluster_cond_t *cluster_cond)
+extern list_t *acct_storage_g_remove_clusters(
+	void *db_conn, uint32_t uid, slurmdb_cluster_cond_t *cluster_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -732,7 +732,7 @@ extern List acct_storage_g_remove_clusters(void *db_conn, uint32_t uid,
 	return (*(ops.remove_clusters))(db_conn, uid, cluster_cond);
 }
 
-extern List acct_storage_g_remove_assocs(
+extern list_t *acct_storage_g_remove_assocs(
 	void *db_conn, uint32_t uid,
 	slurmdb_assoc_cond_t *assoc_cond)
 {
@@ -744,7 +744,7 @@ extern List acct_storage_g_remove_assocs(
 	return (*(ops.remove_assocs))(db_conn, uid, assoc_cond);
 }
 
-extern List acct_storage_g_remove_federations(
+extern list_t *acct_storage_g_remove_federations(
 					void *db_conn, uint32_t uid,
 					slurmdb_federation_cond_t *fed_cond)
 {
@@ -756,8 +756,8 @@ extern List acct_storage_g_remove_federations(
 	return (*(ops.remove_federations))(db_conn, uid, fed_cond);
 }
 
-extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
-				      slurmdb_qos_cond_t *qos_cond)
+extern list_t *acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
+					 slurmdb_qos_cond_t *qos_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -767,8 +767,8 @@ extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
 	return (*(ops.remove_qos))(db_conn, uid, qos_cond);
 }
 
-extern List acct_storage_g_remove_res(void *db_conn, uint32_t uid,
-				      slurmdb_res_cond_t *res_cond)
+extern list_t *acct_storage_g_remove_res(void *db_conn, uint32_t uid,
+					 slurmdb_res_cond_t *res_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -778,8 +778,8 @@ extern List acct_storage_g_remove_res(void *db_conn, uint32_t uid,
 	return (*(ops.remove_res))(db_conn, uid, res_cond);
 }
 
-extern List acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
-					 slurmdb_wckey_cond_t *wckey_cond)
+extern list_t *acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
+					    slurmdb_wckey_cond_t *wckey_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -800,8 +800,8 @@ extern int acct_storage_g_remove_reservation(void *db_conn,
 	return (*(ops.remove_reservation))(db_conn, resv);
 }
 
-extern List acct_storage_g_get_users(void *db_conn, uint32_t uid,
-				     slurmdb_user_cond_t *user_cond)
+extern list_t *acct_storage_g_get_users(
+	void *db_conn, uint32_t uid, slurmdb_user_cond_t *user_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -811,8 +811,8 @@ extern List acct_storage_g_get_users(void *db_conn, uint32_t uid,
 	return (*(ops.get_users))(db_conn, uid, user_cond);
 }
 
-extern List acct_storage_g_get_accounts(void *db_conn, uint32_t uid,
-					slurmdb_account_cond_t *acct_cond)
+extern list_t *acct_storage_g_get_accounts(void *db_conn, uint32_t uid,
+					   slurmdb_account_cond_t *acct_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -822,8 +822,8 @@ extern List acct_storage_g_get_accounts(void *db_conn, uint32_t uid,
 	return (*(ops.get_accts))(db_conn, uid, acct_cond);
 }
 
-extern List acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
-					slurmdb_cluster_cond_t *cluster_cond)
+extern list_t *acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
+					   slurmdb_cluster_cond_t *cluster_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -833,8 +833,8 @@ extern List acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
 	return (*(ops.get_clusters))(db_conn, uid, cluster_cond);
 }
 
-extern List acct_storage_g_get_federations(void *db_conn, uint32_t uid,
-					   slurmdb_federation_cond_t *fed_cond)
+extern list_t *acct_storage_g_get_federations(void *db_conn, uint32_t uid,
+					      slurmdb_federation_cond_t *fed_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -844,7 +844,7 @@ extern List acct_storage_g_get_federations(void *db_conn, uint32_t uid,
 	return (*(ops.get_federations))(db_conn, uid, fed_cond);
 }
 
-extern List acct_storage_g_get_config(void *db_conn, char *config_name)
+extern list_t *acct_storage_g_get_config(void *db_conn, char *config_name)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -854,7 +854,7 @@ extern List acct_storage_g_get_config(void *db_conn, char *config_name)
 	return (*(ops.get_config))(db_conn, config_name);
 }
 
-extern List acct_storage_g_get_tres(
+extern list_t *acct_storage_g_get_tres(
 	void *db_conn, uint32_t uid,
 	slurmdb_tres_cond_t *tres_cond)
 {
@@ -866,7 +866,7 @@ extern List acct_storage_g_get_tres(
 	return (*(ops.get_tres))(db_conn, uid, tres_cond);
 }
 
-extern List acct_storage_g_get_assocs(
+extern list_t *acct_storage_g_get_assocs(
 	void *db_conn, uint32_t uid,
 	slurmdb_assoc_cond_t *assoc_cond)
 {
@@ -878,8 +878,8 @@ extern List acct_storage_g_get_assocs(
 	return (*(ops.get_assocs))(db_conn, uid, assoc_cond);
 }
 
-extern List acct_storage_g_get_events(void *db_conn, uint32_t uid,
-				      slurmdb_event_cond_t *event_cond)
+extern list_t *acct_storage_g_get_events(void *db_conn, uint32_t uid,
+					 slurmdb_event_cond_t *event_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -889,9 +889,8 @@ extern List acct_storage_g_get_events(void *db_conn, uint32_t uid,
 	return (*(ops.get_events))(db_conn, uid, event_cond);
 }
 
-extern List acct_storage_g_get_instances(void *db_conn,
-					 uint32_t uid,
-					 slurmdb_instance_cond_t *instance_cond)
+extern list_t *acct_storage_g_get_instances(
+	void *db_conn, uint32_t uid, slurmdb_instance_cond_t *instance_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -901,8 +900,8 @@ extern List acct_storage_g_get_instances(void *db_conn,
 	return (*(ops.get_instances))(db_conn, uid, instance_cond);
 }
 
-extern List acct_storage_g_get_problems(void *db_conn, uint32_t uid,
-					slurmdb_assoc_cond_t *assoc_cond)
+extern list_t *acct_storage_g_get_problems(void *db_conn, uint32_t uid,
+					   slurmdb_assoc_cond_t *assoc_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -912,8 +911,8 @@ extern List acct_storage_g_get_problems(void *db_conn, uint32_t uid,
 	return (*(ops.get_problems))(db_conn, uid, assoc_cond);
 }
 
-extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
-				   slurmdb_qos_cond_t *qos_cond)
+extern list_t *acct_storage_g_get_qos(void *db_conn, uint32_t uid,
+				      slurmdb_qos_cond_t *qos_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -923,8 +922,8 @@ extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
 	return (*(ops.get_qos))(db_conn, uid, qos_cond);
 }
 
-extern List acct_storage_g_get_res(void *db_conn, uint32_t uid,
-				   slurmdb_res_cond_t *res_cond)
+extern list_t *acct_storage_g_get_res(void *db_conn, uint32_t uid,
+				      slurmdb_res_cond_t *res_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -934,8 +933,8 @@ extern List acct_storage_g_get_res(void *db_conn, uint32_t uid,
 	return (*(ops.get_res))(db_conn, uid, res_cond);
 }
 
-extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
-				      slurmdb_wckey_cond_t *wckey_cond)
+extern list_t *acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
+					 slurmdb_wckey_cond_t *wckey_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -945,7 +944,7 @@ extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
 	return (*(ops.get_wckeys))(db_conn, uid, wckey_cond);
 }
 
-extern List acct_storage_g_get_reservations(
+extern list_t *acct_storage_g_get_reservations(
 	void *db_conn, uint32_t uid, slurmdb_reservation_cond_t *resv_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -956,8 +955,8 @@ extern List acct_storage_g_get_reservations(
 	return (*(ops.get_resvs))(db_conn, uid, resv_cond);
 }
 
-extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
-				   slurmdb_txn_cond_t *txn_cond)
+extern list_t *acct_storage_g_get_txn(void *db_conn, uint32_t uid,
+				      slurmdb_txn_cond_t *txn_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -982,7 +981,7 @@ extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
 extern int acct_storage_g_roll_usage(void *db_conn,
 				     time_t sent_start, time_t sent_end,
 				     uint16_t archive_data,
-				     List *rollup_stats_list_in)
+				     list_t **rollup_stats_list_in)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -994,7 +993,7 @@ extern int acct_storage_g_roll_usage(void *db_conn,
 }
 
 extern int acct_storage_g_fix_runaway_jobs(void *db_conn,
-					   uint32_t uid, List jobs)
+					   uint32_t uid, list_t *jobs)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -1242,10 +1241,10 @@ static int _sort_desc_submit_time(void *x, void *y)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
-					    slurmdb_job_cond_t *job_cond)
+extern list_t *jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
+					       slurmdb_job_cond_t *job_cond)
 {
-	List ret_list;
+	list_t *ret_list;
 
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -1297,7 +1296,7 @@ extern int jobacct_storage_g_archive_load(void *db_conn,
  * IN:  account_list List of shares_used_object_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list)
+extern int acct_storage_g_update_shares_used(void *db_conn, list_t *acct_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -1347,7 +1346,7 @@ extern int acct_storage_g_reconfig(void *db_conn, bool dbd)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_reset_lft_rgt(void *db_conn, uid_t uid,
-					List cluster_list)
+					list_t *cluster_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 

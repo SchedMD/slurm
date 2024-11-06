@@ -96,6 +96,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
+	$(top_srcdir)/auxdir/ax_have_epoll.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/gtk-2.0.m4 \
@@ -182,14 +183,11 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_DEPENDENCIES =  \
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_1) \
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_1)
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@am_switch_hpe_slingshot_la_OBJECTS =  \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	apinfo.lo \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	collectives.lo \
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	config.lo instant_on.lo \
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	rest.lo setup_nic.lo \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	config.lo rest.lo \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	setup_nic.lo \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	switch_hpe_slingshot.lo
 switch_hpe_slingshot_la_OBJECTS =  \
 	$(am_switch_hpe_slingshot_la_OBJECTS)
@@ -220,8 +218,8 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/apinfo.Plo \
 	./$(DEPDIR)/collectives.Plo ./$(DEPDIR)/config.Plo \
-	./$(DEPDIR)/instant_on.Plo ./$(DEPDIR)/rest.Plo \
-	./$(DEPDIR)/setup_nic.Plo ./$(DEPDIR)/switch_hpe_slingshot.Plo
+	./$(DEPDIR)/rest.Plo ./$(DEPDIR)/setup_nic.Plo \
+	./$(DEPDIR)/switch_hpe_slingshot.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -300,6 +298,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
 FREEIPMI_LIBS = @FREEIPMI_LIBS@
@@ -520,17 +519,18 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common \
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
 	      $(HPE_SLINGSHOT_CFLAGS) $(LIBCURL_CPPFLAGS) $(JSON_CPPFLAGS)
 
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@depend_libs = $(top_builddir)/src/curl/libslurm_curl.la
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@pkglib_LTLIBRARIES = switch_hpe_slingshot.la
 
 # HPE Slingshot switch plugin.
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_DEPENDENCIES = $(depend_libs)
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_SOURCES = \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	apinfo.c \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	collectives.c \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	config.c \
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	instant_on.c \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	rest.c \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	rest.h \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	setup_nic.c \
@@ -538,7 +538,7 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common \
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	switch_hpe_slingshot.h
 
 @WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_LDFLAGS = $(PLUGIN_FLAGS)
-@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_LIBADD = $(LIBCURL) $(JSON_LDFLAGS)
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_LIBADD = $(depend_libs) $(LIBCURL) $(JSON_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -620,7 +620,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/apinfo.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/collectives.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/instant_on.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rest.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setup_nic.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_hpe_slingshot.Plo@am__quote@ # am--include-marker
@@ -755,7 +754,6 @@ distclean: distclean-am
 		-rm -f ./$(DEPDIR)/apinfo.Plo
 	-rm -f ./$(DEPDIR)/collectives.Plo
 	-rm -f ./$(DEPDIR)/config.Plo
-	-rm -f ./$(DEPDIR)/instant_on.Plo
 	-rm -f ./$(DEPDIR)/rest.Plo
 	-rm -f ./$(DEPDIR)/setup_nic.Plo
 	-rm -f ./$(DEPDIR)/switch_hpe_slingshot.Plo
@@ -807,7 +805,6 @@ maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/apinfo.Plo
 	-rm -f ./$(DEPDIR)/collectives.Plo
 	-rm -f ./$(DEPDIR)/config.Plo
-	-rm -f ./$(DEPDIR)/instant_on.Plo
 	-rm -f ./$(DEPDIR)/rest.Plo
 	-rm -f ./$(DEPDIR)/setup_nic.Plo
 	-rm -f ./$(DEPDIR)/switch_hpe_slingshot.Plo
@@ -848,6 +845,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@force:
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@$(switch_hpe_slingshot_la_LIBADD) : force
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

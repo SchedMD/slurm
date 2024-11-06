@@ -96,7 +96,7 @@ slurm_load_licenses(time_t t,
 			cc = ((return_code_msg_t *)msg_reply.data)->return_code;
 			slurm_free_return_code_msg(msg_reply.data);
 			if (cc) /* slurm_seterrno_ret() is a macro ... sigh */
-				slurm_seterrno(cc);
+				errno = cc;
 			*lic_info = NULL;
 			return -1;
 		default:

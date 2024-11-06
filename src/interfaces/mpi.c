@@ -60,7 +60,7 @@ typedef struct slurm_mpi_ops {
 	mpi_plugin_client_state_t *(*client_prelaunch)(
 		const mpi_step_info_t *mpi_step, char ***env);
 	s_p_hashtbl_t *(*conf_get)(void);
-	List (*conf_get_printable)(void);
+	list_t *(*conf_get_printable)(void);
 	void (*conf_options)(s_p_options_t **full_options,
 			     int *full_options_cnt);
 	void (*conf_set)(s_p_hashtbl_t *tbl);
@@ -280,7 +280,7 @@ static bool _is_none_plugin(char *mpi_type)
 static int _mpi_init_locked(char **mpi_type)
 {
 	int count = 0, *opts_cnt;
-	List plugin_names;
+	list_t *plugin_names;
 	s_p_hashtbl_t **all_tbls, *tbl;
 	s_p_options_t **opts;
 	char *conf_path;
@@ -584,9 +584,9 @@ extern int mpi_g_daemon_init(void)
 	return _mpi_init(NULL);
 }
 
-extern List mpi_g_conf_get_printable(void)
+extern list_t *mpi_g_conf_get_printable(void)
 {
-	List opts_list, opts;
+	list_t *opts_list, *opts;
 
 	slurm_mutex_lock(&context_lock);
 

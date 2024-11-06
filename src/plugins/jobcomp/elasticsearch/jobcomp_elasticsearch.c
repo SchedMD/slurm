@@ -38,7 +38,6 @@
 
 #include "config.h"
 
-#include <curl/curl.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <grp.h>
@@ -58,7 +57,9 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdb_defs.h"
+#include "src/common/state_save.h"
 #include "src/common/xstring.h"
+#include "src/curl/slurm_curl.h"
 #include "src/interfaces/serializer.h"
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/slurmctld/slurmctld.h"
@@ -133,7 +134,7 @@ static pthread_mutex_t location_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t pend_jobs_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t job_handler_thread;
-static List jobslist = NULL;
+static list_t *jobslist = NULL;
 static bool thread_shutdown = false;
 
 /* Load jobcomp data from save state file */
@@ -141,7 +142,7 @@ static int _load_pending_jobs(void)
 {
 	int i, rc = SLURM_SUCCESS;
 	char *job_data = NULL;
-	uint32_t job_cnt = 0, tmp32 = 0;
+	uint32_t job_cnt = 0;
 	buf_t *buffer = NULL;
 	struct job_node *jnode;
 
@@ -154,7 +155,7 @@ static int _load_pending_jobs(void)
 
 	safe_unpack32(&job_cnt, buffer);
 	for (i = 0; i < job_cnt; i++) {
-		safe_unpackstr_xmalloc(&job_data, &tmp32, buffer);
+		safe_unpackstr(&job_data, buffer);
 		jnode = xmalloc(sizeof(struct job_node));
 		jnode->serialized_job = job_data;
 		list_enqueue(jobslist, jnode);
@@ -172,31 +173,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* Callback to handle the HTTP response */
-static size_t _write_callback(void *contents, size_t size, size_t nmemb,
-			      void *userp)
-{
-	size_t realsize = size * nmemb;
-	struct http_response *mem = (struct http_response *) userp;
-
-	mem->message = xrealloc(mem->message, mem->size + realsize + 1);
-
-	memcpy(&(mem->message[mem->size]), contents, realsize);
-	mem->size += realsize;
-	mem->message[mem->size] = 0;
-
-	return realsize;
-}
-
 /* Try to index job into elasticsearch */
 static int _index_job(const char *jobcomp)
 {
-	CURL *curl_handle = NULL;
-	CURLcode res;
-	struct http_response chunk;
 	struct curl_slist *slist = NULL;
 	int rc = SLURM_SUCCESS;
-	char *token = NULL;
+	long response_code = 0;
+	char *response_str;
 
 	slurm_mutex_lock(&location_mutex);
 	if (log_url == NULL) {
@@ -205,82 +188,32 @@ static int _index_job(const char *jobcomp)
 		return SLURM_ERROR;
 	}
 
-	if ((curl_handle = curl_easy_init()) == NULL) {
-		error("%s: curl_easy_init: %m", plugin_type);
-		rc = SLURM_ERROR;
-		goto cleanup_easy_init;
-	}
-
 	slist = curl_slist_append(slist, "Content-Type: " MIME_TYPE_JSON);
 
 	if (slist == NULL) {
 		error("%s: curl_slist_append: %m", plugin_type);
-		rc = SLURM_ERROR;
-		goto cleanup_easy_init;
+		slurm_mutex_unlock(&location_mutex);
+		return SLURM_ERROR;
 	}
 
-	chunk.message = xmalloc(1);
-	chunk.size = 0;
-
-	if (curl_easy_setopt(curl_handle, CURLOPT_URL, log_url) ||
-	    curl_easy_setopt(curl_handle, CURLOPT_POST, 1) ||
-	    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, jobcomp) ||
-	    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE,
-			     strlen(jobcomp)) ||
-	    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, slist) ||
-	    curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1) ||
-	    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION,
-			     _write_callback) ||
-	    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk)) {
-		error("%s: curl_easy_setopt() failed", plugin_type);
-		rc = SLURM_ERROR;
-		goto cleanup;
-	}
-
-	if ((res = curl_easy_perform(curl_handle)) != CURLE_OK) {
-		log_flag(JOBCOMP, "Could not connect to: %s , reason: %s",
-			 log_url, curl_easy_strerror(res));
-		rc = SLURM_ERROR;
-		goto cleanup;
-	}
-
-	token = strtok(chunk.message, " ");
-	if (token == NULL) {
-		error("%s: Could not receive the HTTP response status code from %s",
-		      plugin_type, log_url);
-		rc = SLURM_ERROR;
-		goto cleanup;
-	}
-	token = strtok(NULL, " ");
-
-	/* HTTP 100 (Continue). */
-	if ((xstrcmp(token, "100") == 0)) {
-		(void)  strtok(NULL, " ");
-		token = strtok(NULL, " ");
-	}
-
+	rc = slurm_curl_request(jobcomp, log_url, NULL, NULL, slist, 0,
+				&response_str, &response_code,
+				HTTP_REQUEST_POST, false);
 	/*
 	 * HTTP 200 (OK)	- request succeed.
 	 * HTTP 201 (Created)	- request succeed and resource created.
 	 */
-	if ((xstrcmp(token, "200") != 0) && (xstrcmp(token, "201") != 0)) {
-		log_flag(JOBCOMP, "HTTP status code %s received from %s",
-			 token, log_url);
-		log_flag(JOBCOMP, "HTTP response:\n%s", chunk.message);
+	if ((response_code != 200) && (response_code != 201)) {
+		log_flag(JOBCOMP, "HTTP status code %ld received from %s",
+			 response_code, log_url);
+		log_flag(JOBCOMP, "HTTP response:\n%s", response_str);
 		rc = SLURM_ERROR;
 	} else {
-		token = strtok((char *)jobcomp, ",");
-		(void)  strtok(token, ":");
-		token = strtok(NULL, ":");
-		log_flag(JOBCOMP, "Job with jobid %s indexed into elasticsearch",
-			 token);
+		log_flag(JOBCOMP, "Job indexed into elasticsearch. Response: %s",
+			 response_str);
 	}
 
-cleanup:
-	curl_slist_free_all(slist);
-	xfree(chunk.message);
-cleanup_easy_init:
-	curl_easy_cleanup(curl_handle);
+	xfree(response_str);
 	slurm_mutex_unlock(&location_mutex);
 	return rc;
 }
@@ -290,7 +223,7 @@ static int _save_state(void)
 {
 	int rc = SLURM_SUCCESS;
 	list_itr_t *iter;
-	static int high_buffer_size = (1024 * 1024);
+	static uint32_t high_buffer_size = (1024 * 1024);
 	buf_t *buffer = init_buf(high_buffer_size);
 	uint32_t job_cnt;
 	struct job_node *jnode;
@@ -304,7 +237,7 @@ static int _save_state(void)
 	list_iterator_destroy(iter);
 
 	slurm_mutex_lock(&save_lock);
-	jobcomp_common_write_state_file(buffer, save_state_file);
+	rc = save_buf_to_state(save_state_file, buffer, NULL);
 	slurm_mutex_unlock(&save_lock);
 
 	FREE_NULL_BUFFER(buffer);
@@ -410,10 +343,8 @@ extern int init(void)
 	(void) _load_pending_jobs();
 	slurm_mutex_unlock(&pend_jobs_lock);
 
-	if (curl_global_init(CURL_GLOBAL_ALL) != 0) {
-		error("%s: curl_global_init: %m", plugin_type);
+	if (slurm_curl_init())
 		return SLURM_ERROR;
-	}
 
 	return SLURM_SUCCESS;
 }
@@ -427,7 +358,7 @@ extern int fini(void)
 	FREE_NULL_LIST(jobslist);
 	xfree(log_url);
 
-	curl_global_cleanup();
+	slurm_curl_fini();
 
 	return SLURM_SUCCESS;
 }
@@ -458,10 +389,10 @@ extern int jobcomp_p_set_location(void)
 
 /*
  * get info from the database
- * in/out job_list List of job_rec_t *
- * note List needs to be freed when called
+ * in/out job_list list of job_rec_t *
+ * note list needs to be freed when called
  */
-extern List jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
+extern list_t *jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	debug("%s function is not implemented", __func__);
 	return NULL;

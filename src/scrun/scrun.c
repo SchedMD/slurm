@@ -82,6 +82,7 @@ const char *OCI_VERSION = "1.0.0";
 extern void update_logging(void)
 {
 	bool json = false;
+	int rc;
 
 	if (!log_file) {
 		/* do nothing */
@@ -95,7 +96,11 @@ extern void update_logging(void)
 		      __func__, log_format);
 	}
 
-	log_alter(log_opt, log_fac, log_file);
+	if (log_file && (log_opt.logfile_level <= LOG_LEVEL_QUIET))
+		log_opt.logfile_level = LOG_LEVEL_FATAL;
+
+	if ((rc = log_alter(log_opt, log_fac, log_file)))
+		fatal("Logging failure: %s", slurm_strerror(rc));
 
 	if (json) {
 		/* docker requires RFC3339 timestamps */
@@ -221,27 +226,68 @@ static void _parse_state(int argc, char **argv)
 	state.id = xstrdup(argv[1]);
 }
 
+/*
+ * scrun  --root /tmp/docker-exec/runtime-runc/moby
+ * --log /run/containerd/io.containerd.runtime.v2.task/moby/$LONG_HEX/log.json
+ * --log-format json --systemd-cgroup kill --all $LONG_HEX 9
+ */
 static void _parse_kill(int argc, char **argv)
 {
+#define OPT_LONG_ALL 0x100
+
+	static const struct option long_options[] = {
+		{ "all", no_argument, NULL, OPT_LONG_ALL },
+		{ NULL, 0, NULL, 0 }
+	};
+	int option_index = 0;
+	int c = 0;
 	int signal;
 
-	if ((argc > 3) || (argc < 2))
-		fatal("Unexpected arguments");
+	if (get_log_level() >= LOG_LEVEL_DEBUG2) {
+		for (int i = 0; i < argc; i++)
+			debug2("kill arg[%d]=%s", i, argv[i]);
+	}
 
-	state.id = xstrdup(argv[1]);
+	while ((c = getopt_long(argc, argv, "", long_options,
+				&option_index)) != -1) {
+		switch (c) {
+		case OPT_LONG_ALL:
+			info("WARNING: ignoring --all argument");
+			break;
+		default:
+			fatal("unknown argument: %s", argv[optopt]);
+		}
+	}
 
-	if (argc != 3) {
+	if (optind < argc) {
+		state.id = xstrdup(argv[optind]);
+		optind++;
+		debug("container-id=%s", state.id);
+	} else {
+		fatal("container-id not provided");
+	}
+
+	if (optind >= argc) {
 		debug("defaulting to SIGTERM");
 		signal = SIGTERM;
 	} else {
-		if (isdigit(argv[2][0])) {
-			signal = atoi(argv[2]);
+		const char *s = argv[optind];
+
+		if (isdigit(s[0])) {
+			signal = atoi(s);
 		} else {
-			signal = sig_name2num(argv[2]);
+			signal = sig_name2num(s);
 		}
 
 		if ((signal < 1) || (signal >= SIGRTMAX))
-			fatal("Invalid requested signal: %s", argv[2]);
+			fatal("Invalid requested signal: %s", s);
+
+		optind++;
+	}
+
+	if (optind < argc) {
+		fatal("unexpected argument %d/%d: %s",
+		      optind, argc, argv[optind]);
 	}
 
 	state.requested_signal = signal;
@@ -527,9 +573,12 @@ static int _parse_commandline(int argc, char **argv)
 	if (optind >= argc)
 		fatal("command not provided");
 
-	for (int i = 0; i < ARRAY_SIZE(commands); i++)
-		if (!xstrcasecmp(argv[optind], commands[i].command))
+	for (int i = 0; i < ARRAY_SIZE(commands); i++) {
+		if (!xstrcasecmp(argv[optind], commands[i].command)) {
 			command_requested = i;
+			break;
+		}
+	}
 
 	if (command_requested == -1)
 		fatal("unknown command: %s", argv[optind]);
@@ -626,9 +675,6 @@ extern int main(int argc, char **argv)
 	argv_offset = _parse_commandline(argc, argv) - 1;
 
 	slurm_init(slurm_conf_filename);
-	if ((rc = gres_init()))
-		fatal("%s: Unable to GRES plugins: %s", __func__,
-		      slurm_strerror(rc));
 	if ((rc = get_oci_conf(&oci_conf)))
 		fatal("%s: unable to load oci.conf: %s",
 		      __func__, slurm_strerror(rc));
@@ -667,17 +713,17 @@ extern int main(int argc, char **argv)
 
 	rc = commands[command_requested].func();
 
+	debug("exiting[%d]=%s", rc, slurm_strerror(rc));
+
 #ifdef MEMORY_LEAK_DEBUG
 	destroy_state();
 	FREE_NULL_OCI_CONF(oci_conf);
 	xfree(slurm_conf_filename);
 	xfree(command_argv);
-	auth_g_fini();
 	fini_setproctitle();
-	gres_fini();
 	select_g_fini();
+	slurm_fini();
 	log_fini();
-	slurm_conf_destroy();
 #endif /* MEMORY_LEAK_DEBUG */
 
 	return rc;

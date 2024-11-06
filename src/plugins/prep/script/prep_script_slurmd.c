@@ -71,10 +71,10 @@ static int _ef(const char *p, int errnum)
 	return error("prep_script_slurmd: glob: %s: %s", p, strerror(errno));
 }
 
-static List _script_list_create(const char *pattern)
+static list_t *_script_list_create(const char *pattern)
 {
 	glob_t gl;
-	List l = NULL;
+	list_t *l = NULL;
 	int rc;
 
 	if (!pattern)
@@ -370,70 +370,56 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 	return env;
 }
 
+static void _send_conf_cb(int write_fd, void *arg)
+{
+	char *spank_mode = arg;
+
+	if (send_slurmd_conf_lite(write_fd, conf) < 0)
+		error("%s: Failed to send slurmd conf to slurmstepd for spank/%s",
+		       __func__, spank_mode);
+}
+
 static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
 {
-	pid_t cpid;
-	int status = 0, timeout;
-	int pfds[2];
-	bool timed_out = false;
-
-	if (pipe(pfds) < 0) {
-		error("%s: pipe: %m", __func__);
-		return SLURM_ERROR;
-	}
-
-	fd_set_close_on_exec(pfds[1]);
-
-	debug("%s: calling %s spank %s", __func__, conf->stepd_loc, mode);
-
-	if ((cpid = fork()) < 0) {
-		error("%s: fork failed executing spank %s: %m", __func__, mode);
-		return SLURM_ERROR;
-	} else if (cpid == 0) {
-		/* Child Process */
-		/* Run slurmstepd spank [prolog|epilog] */
-		char *argv[4] = {
-			(char *) conf->stepd_loc,
-			"spank",
-			(char *) mode,
-			NULL };
-
-		if (dup2(pfds[0], STDIN_FILENO) < 0)
-			fatal("dup2: %m");
-		setpgid(0, 0);
-		execve(argv[0], argv, env);
-
-		error("execve(%s): %m", argv[0]);
-		_exit(127);
-	}
-
-	/* Parent Process */
-
-	close(pfds[0]);
-
-	if (send_slurmd_conf_lite(pfds[1], conf) < 0)
-		error ("Failed to send slurmd conf to slurmstepd\n");
-	close(pfds[1]);
+	int status;
+	char *argv[4];
+	char *resp = NULL;
+	run_command_args_t run_command_args = {
+		.env = env,
+		.job_id = job_id,
+		.script_path = conf->stepd_loc,
+		.script_type = mode,
+		.status = &status,
+		.write_to_child = true,
+	};
 
 	if (slurm_conf.prolog_epilog_timeout == NO_VAL16)
-		timeout = -1;
+		run_command_args.max_wait = -1;
 	else
-		timeout = slurm_conf.prolog_epilog_timeout * 1000;
-	if (run_command_waitpid_timeout(mode, cpid, &status, timeout, 0, 0,
-					&timed_out) < 0) {
-		/*
-		 * waitpid returned an error and set errno;
-		 * run_command_waitpid_timeout() already logged an error
-		 */
-		error("error calling waitpid() for spank/%s", mode);
-		return SLURM_ERROR;
-	} else if (timed_out) {
-		return SLURM_ERROR;
-	}
+		run_command_args.max_wait =
+			slurm_conf.prolog_epilog_timeout * 1000;
 
+	argv[0] = (char *) conf->stepd_loc;
+	argv[1] = "spank";
+	argv[2] = (char *) mode;
+	argv[3] = NULL;
+
+	run_command_args.script_argv = argv;
+	run_command_args.cb = _send_conf_cb;
+	run_command_args.cb_arg = (void *) mode;
+
+	debug("%s: calling %s spank %s", __func__, conf->stepd_loc, mode);
+	resp = run_command(&run_command_args);
+
+	if (run_command_args.timed_out)
+		error("spank/%s timed out", mode);
 	if (status)
-		error("spank/%s returned status 0x%04x", mode, status);
-
+		error("spank/%s returned status 0x%04x response=%s",
+		      mode, status, resp);
+	else
+		debug2("spank/%s returned success, response=%s",
+		      mode, resp);
+	xfree(resp);
 	/*
 	 *  No longer need SPANK option env vars in environment
 	 */

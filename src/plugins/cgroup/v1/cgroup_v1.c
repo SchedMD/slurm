@@ -106,7 +106,7 @@ static pthread_t oom_thread;
 static pthread_mutex_t oom_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Task tracking artifacts */
-List g_task_list[CG_CTL_CNT];
+list_t *g_task_list[CG_CTL_CNT];
 static uint32_t g_max_task_id = 0;
 /*
  * There are potentially multiple tasks on a node, so we want to
@@ -447,6 +447,16 @@ extern int fini(void)
 
 	debug("unloading %s", plugin_name);
 	return SLURM_SUCCESS;
+}
+
+extern int cgroup_p_setup_scope(char *scope_path)
+{
+	return SLURM_SUCCESS;
+}
+
+extern char *cgroup_p_get_scope_path(void)
+{
+	return NULL;
 }
 
 extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
@@ -1416,7 +1426,8 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *step,
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 {
 	char *cpu_time = NULL, *memory_stat = NULL, *ptr;
-	size_t cpu_time_sz = 0, memory_stat_sz = 0;
+	char *memory_peak = NULL;
+	size_t cpu_time_sz = 0, memory_stat_sz = 0, tmp_sz = 0;
 	cgroup_acct_t *stats = NULL;
 	xcgroup_t *task_cpuacct_cg = NULL;
 	xcgroup_t *task_memory_cg = NULL;
@@ -1453,6 +1464,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 	stats->total_rss = NO_VAL64;
 	stats->total_pgmajfault = NO_VAL64;
 	stats->total_vmem = NO_VAL64;
+	stats->memory_peak = INFINITE64; /* As required in common_jag.c */
 
 	if (common_cgroup_get_param(task_cpuacct_cg, "cpuacct.stat", &cpu_time,
 				    &cpu_time_sz) == SLURM_SUCCESS) {
@@ -1484,8 +1496,22 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 			stats->total_vmem += total_swap;
 	}
 
+	/* In cgroup/v1, memory.peak is provided by memory.max_usage_in_bytes */
+	if (common_cgroup_get_param(task_memory_cg,
+				    "memory.max_usage_in_bytes",
+				    &memory_peak,
+				    &tmp_sz) != SLURM_SUCCESS) {
+		log_flag(CGROUP, "Cannot read task %d memory.max_usage_in_bytes interface",
+			 taskid);
+	}
+	if (memory_peak) {
+		if (sscanf(memory_peak, "%"PRIu64, &stats->memory_peak) != 1)
+			error("Cannot parse memory.max_usage_in_bytes interface");
+	}
+
 	xfree(cpu_time);
 	xfree(memory_stat);
+	xfree(memory_peak);
 
 	return stats;
 }

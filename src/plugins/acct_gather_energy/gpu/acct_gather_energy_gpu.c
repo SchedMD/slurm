@@ -392,8 +392,8 @@ static void _add_energy(acct_gather_energy_t *energy_tot,
 	if (!energy_tot->poll_time ||
 	    (energy_tot->poll_time > energy_new->poll_time))
 		energy_tot->poll_time = energy_new->poll_time;
-	log_flag(ENERGY, "%s: gpu: %d, current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
-		 __func__, gpu_num, energy_new->current_watts,
+	log_flag(ENERGY, "gpu: %d, current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
+		 gpu_num, energy_new->current_watts,
 		 energy_new->consumed_energy, energy_new->base_consumed_energy,
 		 energy_new->ave_watts);
 }
@@ -427,9 +427,9 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 	// If both of these are true, then GPUs will be constrained
 	if (constrained_devices && task_cgroup) {
 		cgroups_active = true;
-		log_flag(ENERGY, "%s: cgroups are configured.", __func__);
+		log_flag(ENERGY, "cgroups are configured.");
 	} else {
-		log_flag(ENERGY, "%s: cgroups are NOT configured.", __func__);
+		log_flag(ENERGY, "cgroups are NOT configured.");
 	}
 
 	// sum the energy of all gpus for this job
@@ -442,8 +442,8 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 		}
 		_add_energy(energy, &gpus[i].energy, i);
 	}
-	log_flag(ENERGY, "%s: current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
-		 __func__, energy->current_watts, energy->consumed_energy,
+	log_flag(ENERGY, "current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
+		 energy->current_watts, energy->consumed_energy,
 		 energy->base_consumed_energy, energy->ave_watts);
 }
 
@@ -458,8 +458,8 @@ static void _get_node_energy(acct_gather_energy_t *energy)
 	memset(energy, 0, sizeof(acct_gather_energy_t));
 	for (i = 0; i < gpus_len; i++)
 		_add_energy(energy, &gpus[i].energy, i);
-	log_flag(ENERGY, "%s: current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
-		 __func__, energy->current_watts, energy->consumed_energy,
+	log_flag(ENERGY, "current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
+		 energy->current_watts, energy->consumed_energy,
 		 energy->base_consumed_energy, energy->ave_watts);
 }
 
@@ -547,8 +547,8 @@ static int _get_joules_task(uint16_t delta)
 			+ new->base_consumed_energy;
 		memcpy(old, new, sizeof(acct_gather_energy_t));
 
-		log_flag(ENERGY, "%s: consumed %"PRIu64" Joules (received %"PRIu64"(%u watts) from slurmd)",
-			 __func__, new->consumed_energy,
+		log_flag(ENERGY, "consumed %"PRIu64" Joules (received %"PRIu64"(%u watts) from slurmd)",
+			 new->consumed_energy,
 			 new->base_consumed_energy, new->current_watts);
 	}
 
@@ -768,8 +768,9 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 				gpus = xcalloc(sizeof(gpu_status_t), gpus_len);
 				slurm_thread_create(&thread_gpu_id_launcher,
 						    _thread_launcher, NULL);
+				log_flag(ENERGY, "%s thread launched",
+					 plugin_name);
 			}
-			log_flag(ENERGY, "%s thread launched", plugin_name);
 		} else
 			_get_joules_task(0);
 
@@ -780,7 +781,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 	return;
 }
 
-extern void acct_gather_energy_p_conf_values(List *data)
+extern void acct_gather_energy_p_conf_values(list_t **data)
 {
 	return;
 }

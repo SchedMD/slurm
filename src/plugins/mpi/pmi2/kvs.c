@@ -38,6 +38,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "src/common/xmalloc.h"
+
 #include "kvs.h"
 #include "setup.h"
 #include "tree.h"

@@ -58,8 +58,8 @@ enum {
 	GROUPED_ACCT_AND_WCKEY,
 };
 
-static List print_fields_list = NULL; /* types are of print_field_t */
-static List grouping_print_fields_list = NULL; /* types are of print_field_t */
+static list_t *print_fields_list = NULL; /* types are of print_field_t */
+static list_t *grouping_print_fields_list = NULL; /* types are of print_field_t */
 static int print_job_count = 0;
 static bool flat_view = false;
 static bool acct_as_parent = false;
@@ -148,7 +148,7 @@ static int _sort_acct_grouping_dec(void *v1, void *v2)
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_job_cond_t *job_cond,
-		     List format_list, List grouping_list)
+		     list_t *format_list, list_t *grouping_list)
 {
 	int i;
 	int set = 0;
@@ -331,7 +331,7 @@ static int _set_cond(int *start, int argc, char **argv,
 }
 
 
-static int _setup_print_fields_list(List format_list)
+static int _setup_print_fields_list(list_t *format_list)
 {
 	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
@@ -430,7 +430,7 @@ static int _setup_print_fields_list(List format_list)
 	return SLURM_SUCCESS;
 }
 
-static int _setup_grouping_print_fields_list(List grouping_list)
+static int _setup_grouping_print_fields_list(list_t *grouping_list)
 {
 	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
@@ -546,7 +546,7 @@ static int _match_job_group(void *x, void *key)
 
 /* For duplicate account records, combine TRES records into the original
  * list and purge the duplicate records */
-static void _combine_job_groups(List first_job_list, List new_job_list)
+static void _combine_job_groups(list_t *first_job_list, list_t *new_job_list)
 {
 	slurmdb_report_job_grouping_t *orig_job_group = NULL;
 	slurmdb_report_job_grouping_t *dup_job_group = NULL;
@@ -599,7 +599,7 @@ static int _match_acct_name(void *x, void *key)
 
 /* For duplicate account records, combine TRES records into the original
  * list and purge the duplicate records */
-static void _combine_acct_groups(List first_acct_list, List new_acct_list)
+static void _combine_acct_groups(list_t *first_acct_list, list_t *new_acct_list)
 {
 	slurmdb_report_acct_grouping_t *orig_report_acct = NULL;
 	slurmdb_report_acct_grouping_t *dup_report_acct = NULL;
@@ -628,7 +628,7 @@ static void _combine_acct_groups(List first_acct_list, List new_acct_list)
 	list_transfer(first_acct_list, new_acct_list);
 }
 
-static void _merge_cluster_groups(List slurmdb_report_cluster_grouping_list)
+static void _merge_cluster_groups(list_t *slurmdb_report_cluster_grouping_list)
 {
 	slurmdb_report_cluster_grouping_t *group = NULL, *first_group = NULL;
 	list_itr_t *iter = NULL;
@@ -678,13 +678,13 @@ static int _run_report(int type, int argc, char **argv)
 	slurmdb_report_acct_grouping_t *acct_group = NULL;
 	slurmdb_report_job_grouping_t *job_group = NULL;
 	print_field_t *field = NULL;
-	print_field_t total_field;
+	print_field_t total_field, total_cnt_field = { 0 };
 	slurmdb_report_time_format_t temp_format;
-	List slurmdb_report_cluster_grouping_list = NULL;
-	List assoc_list = NULL;
-	List format_list = list_create(xfree_ptr);
-	List grouping_list = list_create(xfree_ptr);
-	List header_list = NULL;
+	list_t *slurmdb_report_cluster_grouping_list = NULL;
+	list_t *assoc_list = NULL;
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *grouping_list = list_create(xfree_ptr);
+	list_t *header_list = NULL;
 	char *object_str = "", *tmp_char;
 
 	/* init memory before chance of going to end_it before being init'ed. */
@@ -786,6 +786,12 @@ static int _run_report(int type, int argc, char **argv)
 	header_list = list_create(NULL);
 	list_append_list(header_list, print_fields_list);
 	list_append_list(header_list, grouping_print_fields_list);
+
+	total_cnt_field.type = PRINT_JOB_SIZE;
+	total_cnt_field.name = xstrdup("Total Count");
+	total_cnt_field.len = 11;
+	total_cnt_field.print_routine = print_fields_str;
+	list_append(header_list, &total_cnt_field);
 
 	total_field.type = PRINT_JOB_SIZE;
 	total_field.name = xstrdup("% of cluster");
@@ -889,15 +895,21 @@ static int _run_report(int type, int argc, char **argv)
 			list_iterator_reset(itr2);
 			list_iterator_destroy(local_itr);
 
-			temp_format = time_format;
-			time_format = SLURMDB_REPORT_TIME_PERCENT;
 			if (!print_job_count) {
 				count1 = acct_tres_alloc_secs;
 				count2 = cluster_tres_alloc_secs;
+				tmp_char = sreport_get_time_str(count1, 0);
 			} else {
 				count1 = acct_group->count;
 				count2 = cluster_group->count;
+				tmp_char = xstrdup_printf("%"PRIu64, count1);
 			}
+			total_cnt_field.print_routine(&total_cnt_field,
+						      tmp_char, 0);
+			xfree(tmp_char);
+
+			temp_format = time_format;
+			time_format = SLURMDB_REPORT_TIME_PERCENT;
 			tmp_char = sreport_get_time_str(count1, count2);
 			total_field.print_routine(&total_field, tmp_char, 1);
 			xfree(tmp_char);

@@ -39,6 +39,8 @@
 
 #include "accounting_storage_mysql.h"
 
+extern int as_mysql_print_dbver(mysql_conn_t *mysql_conn);
+
 extern void as_mysql_convert_possible(mysql_conn_t *mysql_conn);
 
 /* Functions for converting tables before they are created in new schema */

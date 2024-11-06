@@ -50,6 +50,8 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 
+#include "slurm/slurm.h"
+
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
 #include "src/common/strlcpy.h"
@@ -60,14 +62,12 @@
 #include "src/common/xstring.h"
 
 static pthread_mutex_t hostentLock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t getnameinfo_cache_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t getnameinfo_cache_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 typedef struct {
-	struct sockaddr *addr;
-	socklen_t addrlen;
-	char *host;
-	uint32_t host_len;
+	slurm_addr_t addr;
 	time_t expiration;
+	char *host;
 } getnameinfo_cache_t;
 
 static list_t *nameinfo_cache = NULL;
@@ -253,6 +253,26 @@ extern char *make_full_path(const char *rpath)
 	return cwd2;
 }
 
+static struct addrinfo *_xgetaddrinfo(const char *hostname, const char *serv,
+				      const struct addrinfo *hints)
+{
+	struct addrinfo *result = NULL;
+	int err;
+
+	err = getaddrinfo(hostname, serv, hints, &result);
+	if (err == EAI_SYSTEM) {
+		error_in_daemon("%s: getaddrinfo(%s:%s) failed: %s: %m",
+				__func__, hostname, serv, gai_strerror(err));
+		return NULL;
+	} else if (err != 0) {
+		error_in_daemon("%s: getaddrinfo(%s:%s) failed: %s",
+				__func__, hostname, serv, gai_strerror(err));
+		return NULL;
+	}
+
+	return result;
+}
+
 extern struct addrinfo *xgetaddrinfo_port(const char *hostname, uint16_t port)
 {
 	char serv[6];
@@ -262,9 +282,7 @@ extern struct addrinfo *xgetaddrinfo_port(const char *hostname, uint16_t port)
 
 extern struct addrinfo *xgetaddrinfo(const char *hostname, const char *serv)
 {
-	struct addrinfo *result = NULL;
 	struct addrinfo hints;
-	int err;
 	bool v4_enabled = slurm_conf.conf_flags & CONF_FLAG_IPV4_ENABLED;
 	bool v6_enabled = slurm_conf.conf_flags & CONF_FLAG_IPV6_ENABLED;
 
@@ -300,42 +318,63 @@ extern struct addrinfo *xgetaddrinfo(const char *hostname, const char *serv)
 		hints.ai_flags |= AI_CANONNAME;
 	hints.ai_socktype = SOCK_STREAM;
 
-	err = getaddrinfo(hostname, serv, &hints, &result);
-	if (err == EAI_SYSTEM) {
-		error_in_daemon("%s: getaddrinfo(%s:%s) failed: %s: %m",
-				__func__, hostname, serv, gai_strerror(err));
-		return NULL;
-	} else if (err != 0) {
-		error_in_daemon("%s: getaddrinfo(%s:%s) failed: %s",
-				__func__, hostname, serv, gai_strerror(err));
-		return NULL;
+	return _xgetaddrinfo(hostname, serv, &hints);
+}
+
+extern int host_has_addr_family(const char *hostname, const char *srv,
+				bool *ipv4, bool *ipv6)
+{
+	struct addrinfo hints;
+	struct addrinfo *ai_ptr, *ai_start;
+
+	memset(&hints, 0, sizeof(hints));
+
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV | AI_PASSIVE;
+	if (hostname)
+		hints.ai_flags |= AI_CANONNAME;
+	hints.ai_socktype = SOCK_STREAM;
+
+	ai_start = _xgetaddrinfo(hostname, srv, &hints);
+
+	if (!ai_start)
+		return SLURM_ERROR;
+
+	*ipv4 = *ipv6 = false;
+	for (ai_ptr = ai_start; ai_ptr; ai_ptr = ai_ptr->ai_next) {
+		if (ai_ptr->ai_family == AF_INET6)
+			*ipv6 = true;
+		else if (ai_ptr->ai_family == AF_INET)
+			*ipv4 = true;
 	}
 
-	return result;
+	freeaddrinfo(ai_start);
+
+	return SLURM_SUCCESS;
 }
 
 static int _name_cache_find(void *x, void *y)
 {
 	getnameinfo_cache_t *cache_ent = x;
-	struct sockaddr *addr_x = cache_ent->addr;
-	struct sockaddr *addr_y = y;
+	const slurm_addr_t *addr_x = &cache_ent->addr;
+	const slurm_addr_t *addr_y = y;
 
 	xassert(addr_x);
 	xassert(addr_y);
-	xassert(addr_x->sa_family != AF_UNIX);
-	xassert(addr_y->sa_family != AF_UNIX);
+	xassert(addr_x->ss_family != AF_UNIX);
+	xassert(addr_y->ss_family != AF_UNIX);
 
-	if (addr_x->sa_family != addr_y->sa_family)
+	if (addr_x->ss_family != addr_y->ss_family)
 		return false;
-	if (addr_x->sa_family == AF_INET) {
+	if (addr_x->ss_family == AF_INET) {
 		struct sockaddr_in *x4 = (void *)addr_x;
 		struct sockaddr_in *y4 = (void *)addr_y;
 		if (x4->sin_addr.s_addr != y4->sin_addr.s_addr)
 			return false;
-	} else if (addr_x->sa_family == AF_INET6) {
+	} else if (addr_x->ss_family == AF_INET6) {
 		struct sockaddr_in6 *x6 = (void *)addr_x;
 		struct sockaddr_in6 *y6 = (void *)addr_y;
-		if (!memcmp(x6->sin6_addr.s6_addr, y6->sin6_addr.s6_addr,
+		if (memcmp(x6->sin6_addr.s6_addr, y6->sin6_addr.s6_addr,
 		    sizeof(x6->sin6_addr.s6_addr)))
 			return false;
 	}
@@ -347,24 +386,23 @@ static void _getnameinfo_cache_destroy(void *obj)
 	getnameinfo_cache_t *entry = obj;
 
 	xfree(entry->host);
-	xfree(entry->addr);
 	xfree(entry);
 }
 
 extern void getnameinfo_cache_purge(void)
 {
-	slurm_mutex_lock(&getnameinfo_cache_lock);
+	slurm_rwlock_wrlock(&getnameinfo_cache_lock);
 	FREE_NULL_LIST(nameinfo_cache);
-	slurm_mutex_unlock(&getnameinfo_cache_lock);
+	slurm_rwlock_unlock(&getnameinfo_cache_lock);
 }
 
-static char *_getnameinfo(struct sockaddr *addr, socklen_t addrlen)
+static char *_getnameinfo(const slurm_addr_t *addr)
 {
 	char hbuf[NI_MAXHOST] = "\0";
 	int err;
 
-	err = getnameinfo(addr, addrlen, hbuf, sizeof(hbuf), NULL, 0,
-			  NI_NAMEREQD);
+	err = getnameinfo((const struct sockaddr *) addr, sizeof(*addr),
+			  hbuf, sizeof(hbuf), NULL, 0, NI_NAMEREQD);
 	if (err == EAI_SYSTEM) {
 		log_flag(NET, "%s: getnameinfo(%pA) failed: %s: %m",
 			 __func__, addr, gai_strerror(err));
@@ -378,12 +416,7 @@ static char *_getnameinfo(struct sockaddr *addr, socklen_t addrlen)
 	return xstrdup(hbuf);
 }
 
-/*
- * Get the short hostname using "nameinfo" for an address.
- * NOTE: caller is responsible for freeing the resulting hostname.
- * Returns NULL on error.
- */
-extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
+extern char *xgetnameinfo(const slurm_addr_t *addr)
 {
 	getnameinfo_cache_t *cache_ent = NULL;
 	char *name = NULL;
@@ -391,38 +424,40 @@ extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
 	bool new = false;
 
 	if (!slurm_conf.getnameinfo_cache_timeout)
-		return _getnameinfo(addr, addrlen);
+		return _getnameinfo(addr);
 
-	slurm_mutex_lock(&getnameinfo_cache_lock);
+	slurm_rwlock_rdlock(&getnameinfo_cache_lock);
 	now = time(NULL);
-	if (!nameinfo_cache)
-		nameinfo_cache = list_create(_getnameinfo_cache_destroy);
-
-	if ((cache_ent = list_find_first(nameinfo_cache, _name_cache_find,
-					 addr))) {
-		if (cache_ent->expiration > now) {
+	if (nameinfo_cache) {
+		cache_ent = list_find_first_ro(nameinfo_cache, _name_cache_find,
+					       (void *) addr);
+		if (cache_ent && (cache_ent->expiration > now)) {
 			name = xstrdup(cache_ent->host);
-			slurm_mutex_unlock(&getnameinfo_cache_lock);
+			slurm_rwlock_unlock(&getnameinfo_cache_lock);
 			log_flag(NET, "%s: %pA = %s (cached)",
 				 __func__, addr, name);
 			return name;
 		}
 	}
+	slurm_rwlock_unlock(&getnameinfo_cache_lock);
 
-	name = _getnameinfo(addr, addrlen);
 	/*
 	 * Errors will leave expired cache records in place.
 	 * That is okay, we'll find them and attempt to update them again.
 	 */
-	if (!name) {
-		slurm_mutex_unlock(&getnameinfo_cache_lock);
+	if (!(name = _getnameinfo(addr)))
 		return NULL;
-	}
+
+	slurm_rwlock_wrlock(&getnameinfo_cache_lock);
+	if (!nameinfo_cache)
+		nameinfo_cache = list_create(_getnameinfo_cache_destroy);
+
+	cache_ent = list_find_first(nameinfo_cache, _name_cache_find,
+				    (void *) addr);
 
 	if (!cache_ent) {
 		cache_ent = xmalloc(sizeof(*cache_ent));
-		cache_ent->addr = xmalloc(sizeof(*addr));
-		memcpy(cache_ent->addr, addr, sizeof(*addr));
+		cache_ent->addr = *addr;
 		new = true;
 	}
 
@@ -442,7 +477,7 @@ extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
 		log_flag(NET, "%s: Updating cache - %pA = %s",
 			 __func__, addr, name);
 	}
-	slurm_mutex_unlock(&getnameinfo_cache_lock);
+	slurm_rwlock_unlock(&getnameinfo_cache_lock);
 
 	return name;
 }

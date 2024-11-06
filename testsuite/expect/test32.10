@@ -39,7 +39,7 @@ if {[file executable $sgather] == 0} {
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
-if {[get_config_param "MULTIPLE_SLURMD"] eq "Yes"} {
+if {[get_config_param "MULTIPLE_SLURMD"] eq "yes"} {
 	skip "This test is incompatible with multiple slurmd systems"
 }
 if {[get_config_param "SlurmdUser"] ne "root(0)"} {

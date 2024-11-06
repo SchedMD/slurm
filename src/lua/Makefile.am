@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -I$(top_srcdir)
 
 if HAVE_LUA
 LUA_LIB = libslurm_lua.la

@@ -232,13 +232,13 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout);
  * IN open_fd	- file descriptor to receive msg on
  * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
- * RET List	- List containing the responses of the children (if any) we
- *                forwarded the message to. List containing type
+ * RET list	- list containing the responses of the children (if any) we
+ *                forwarded the message to. list containing type
  *                (ret_data_info_t). NULL is returned on failure. and
  *                errno set.
  */
-List slurm_receive_msgs(int fd, int steps, int timeout);
-extern List slurm_receive_resp_msgs(int fd, int steps, int timeout);
+extern list_t *slurm_receive_msgs(int fd, int steps, int timeout);
+extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout);
 
 /*
  *  Receive a slurm message on the open slurm descriptor "fd". This will also
@@ -388,8 +388,18 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
  * the function
 \**********************************************************************/
 
-extern void response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
-			  uint16_t msg_type, void *data);
+/*
+ * Send message in response to a source message
+ *
+ * Handles creating response slurm_msg_t and sending based on source_msg.
+ *
+ * IN source_msg - Message to send response about
+ * IN msg_type - RPC message type
+ * IN data - pointer to message data which corresponds to msg_type
+ * RET SLURM_SUCCESS or error
+ */
+extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
+			     void *data);
 
 /* slurm_send_rc_msg
  * given the original request message this function sends a
@@ -436,15 +446,16 @@ int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
 
 /*
  *  Send a message to the nodelist specificed using fanout
- *    Then return List containing type (ret_data_info_t).
+ *    Then return list containing type (ret_data_info_t).
  * IN nodelist	    - list of nodes to send to.
  * IN msg           - a slurm_msg struct to be sent by the function
  * IN timeout	    - how long to wait in milliseconds
- * RET List	    - List containing the responses of the children
- *                    (if any) we forwarded the message to. List
+ * RET list	    - list containing the responses of the children
+ *                    (if any) we forwarded the message to. list
  *                    containing type (ret_types_t).
  */
-List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout);
+extern list_t *slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
+				    int timeout);
 
 /*
  * Sends back reroute_msg_t which directs the client to make the request to
@@ -459,15 +470,16 @@ int slurm_send_reroute_msg(slurm_msg_t *msg,
 
 /*
  *  Send a message to msg->address
- *    Then return List containing type (ret_data_info_t).
+ *    Then return list containing type (ret_data_info_t).
  * IN msg           - a slurm_msg struct to be sent by the function
  * IN name          - the name of the node the message is being sent to
  * IN timeout	    - how long to wait in milliseconds
- * RET List	    - List containing the responses of the children
- *                    (if any) we forwarded the message to. List
+ * RET list	    - list containing the responses of the children
+ *                    (if any) we forwarded the message to. list
  *                    containing type (ret_types_t).
  */
-List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout);
+extern list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name,
+					 int timeout);
 
 /*
  *  Same as above, but only to one node
@@ -501,14 +513,6 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 
 /* DO NOT USE THIS. See comment in slurm_protocol_api.c for further info. */
 extern int slurm_send_only_node_msg(slurm_msg_t *request_msg);
-
-/*
- * slurm_send_msg_maybe
- * opens a connection, sends a message across while ignoring any errors,
- * then closes the connection
- * IN request_msg	- slurm_msg request
- */
-extern void slurm_send_msg_maybe(slurm_msg_t *request_msg);
 
 /* Send and recv a slurm request and response on the open slurm descriptor
  * Doesn't close the connection.

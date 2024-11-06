@@ -92,13 +92,13 @@ run_command -fail "$sacctmgr -i create user name=$user_name account=$ta cluster=
 #
 # Enable TrackWCKey
 #
-if {[get_config_param "TrackWCKey"] ne "Yes"} {
+if {[get_config_param "TrackWCKey"] ne "yes"} {
 	log_info "Enabling TrackWCKey..."
 
 	save_conf $config_file
 
 	exec $bin_sed -i /^\[\t\s\]*TrackWCKey\[\t\s\]*=/Id $config_file
-	exec $bin_echo TrackWCKey=Yes >> $config_file
+	exec $bin_echo TrackWCKey=yes >> $config_file
 	reconfigure -fail
 	set reconfigured true
 }

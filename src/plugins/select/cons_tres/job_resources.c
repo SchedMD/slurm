@@ -269,7 +269,7 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 	struct job_resources *job = job_ptr->job_resrcs;
 	node_record_t *node_ptr;
 	part_res_record_t *p_ptr;
-	List node_gres_list;
+	list_t *node_gres_list;
 	int i, n;
 	bitstr_t *core_bitmap;
 	bool new_alloc = true;
@@ -476,7 +476,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			continue;  /* node lost by job resize */
 
 		if (action != JOB_RES_ACTION_RESUME) {
-			List node_gres_list;
+			list_t *node_gres_list;
 
 			if (node_usage[i].gres_list)
 				node_gres_list = node_usage[i].gres_list;

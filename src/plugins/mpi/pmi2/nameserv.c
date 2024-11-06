@@ -35,6 +35,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/xmalloc.h"
 
 #include "pmi.h"
 #include "setup.h"
@@ -180,7 +181,7 @@ name_lookup_up(char *name)
 	FREE_NULL_BUFFER(buf);
 
 	if (rc == SLURM_SUCCESS)
-		safe_unpackstr_xmalloc(&port, (uint32_t *)&size, resp_buf);
+		safe_unpackstr(&port, resp_buf);
 unpack_error:
 	FREE_NULL_BUFFER(resp_buf);
 

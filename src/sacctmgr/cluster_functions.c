@@ -48,7 +48,7 @@ static bool without_limits = 0;
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_cluster_cond_t *cluster_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i = 0;
 	int cond_set = 0;
@@ -141,7 +141,7 @@ static int _set_cond(int *start, int argc, char **argv,
 }
 
 static int _set_rec(int *start, int argc, char **argv,
-		    List name_list,
+		    list_t *name_list,
 		    slurmdb_assoc_rec_t *assoc,
 		    slurmdb_cluster_rec_t *cluster)
 {
@@ -271,8 +271,8 @@ extern int sacctmgr_add_cluster(int argc, char **argv)
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_cluster_rec_t *start_cluster =
 		xmalloc(sizeof(slurmdb_cluster_rec_t));
-	List name_list = list_create(xfree_ptr);
-	List cluster_list = NULL;
+	list_t *name_list = list_create(xfree_ptr);
+	list_t *cluster_list = NULL;
 	slurmdb_assoc_rec_t start_assoc;
 
 	int rec_set = 0;
@@ -301,7 +301,7 @@ extern int sacctmgr_add_cluster(int argc, char **argv)
 		fprintf(stderr, " Need name of cluster to add.\n");
 		return SLURM_ERROR;
 	} else {
-		List temp_list = NULL;
+		list_t *temp_list = NULL;
 		slurmdb_cluster_cond_t cluster_cond;
 
 		slurmdb_init_cluster_cond(&cluster_cond, 0);
@@ -346,7 +346,7 @@ extern int sacctmgr_add_cluster(int argc, char **argv)
 
 	if (start_cluster->fed.name) {
 		int rc;
-		List fed_list = list_create(xfree_ptr);
+		list_t *fed_list = list_create(xfree_ptr);
 		list_append(fed_list, xstrdup(start_cluster->fed.name));
 		rc = verify_federations_exist(fed_list);
 		FREE_NULL_LIST(fed_list);
@@ -439,7 +439,7 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_cluster_cond_t *cluster_cond =
 		xmalloc(sizeof(slurmdb_cluster_cond_t));
-	List cluster_list;
+	list_t *cluster_list;
 	int i=0;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
@@ -450,8 +450,8 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(xfree_ptr);
-	List print_fields_list; /* types are of print_field_t */
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *print_fields_list; /* types are of print_field_t */
 
 	slurmdb_init_cluster_cond(cluster_cond, 0);
 	cluster_cond->cluster_list = list_create(xfree_ptr);
@@ -498,14 +498,8 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 	slurmdb_destroy_cluster_cond(cluster_cond);
 
 	if (mime_type) {
-		if (is_data_parser_deprecated(data_parser))
-			DATA_DUMP_CLI_DEPRECATED(CLUSTER_REC_LIST, cluster_list,
-						 "clusters", argc, argv,
-						 db_conn, mime_type, rc);
-		else
-			DATA_DUMP_CLI_SINGLE(OPENAPI_CLUSTERS_RESP,
-					     cluster_list, argc, argv, db_conn,
-					     mime_type, data_parser, rc);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_CLUSTERS_RESP, cluster_list, argc,
+				     argv, db_conn, mime_type, data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(cluster_list);
 		return rc;
@@ -659,12 +653,12 @@ static int _find_cluster_rec_in_list(void *obj, void *key)
 /* Prepare cluster_list to be federation centric that will be passed to
  * verify_fed_clusters in federation_functions.c.
  */
-static int _verify_fed_clusters(List cluster_list, const char *fed_name,
+static int _verify_fed_clusters(list_t *cluster_list, const char *fed_name,
 				bool *existing_fed)
 {
 	int   rc         = SLURM_SUCCESS;
 	char *tmp_name   = NULL;
-	List  tmp_list   = list_create(slurmdb_destroy_cluster_rec);
+	list_t *tmp_list = list_create(slurmdb_destroy_cluster_rec);
 	list_itr_t *itr = list_iterator_create(cluster_list);
 
 	while ((tmp_name = list_next(itr))) {
@@ -705,7 +699,7 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 	slurmdb_assoc_cond_t *assoc_cond =
 		xmalloc(sizeof(slurmdb_assoc_cond_t));
 	int cond_set = 0, prev_set = 0, rec_set = 0, set = 0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
 	bool existing_fed = false;
 
@@ -757,7 +751,7 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 	if (cluster->fed.name && cluster->fed.name[0]) {
 		int rc;
 		/* Make sure federation exists. */
-		List fed_list = list_create(xfree_ptr);
+		list_t *fed_list = list_create(xfree_ptr);
 		list_append(fed_list, xstrdup(cluster->fed.name));
 		rc = verify_federations_exist(fed_list);
 		FREE_NULL_LIST(fed_list);
@@ -877,7 +871,7 @@ extern int sacctmgr_delete_cluster(int argc, char **argv)
 	slurmdb_cluster_cond_t *cluster_cond =
 		xmalloc(sizeof(slurmdb_cluster_cond_t));
 	int i=0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int cond_set = 0, prev_set;
 
 	slurmdb_init_cluster_cond(cluster_cond, 0);
@@ -970,10 +964,10 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_assoc_cond_t assoc_cond;
-	List assoc_list = NULL;
-	List acct_list = NULL;
-	List user_list = NULL;
-	List slurmdb_hierarchical_rec_list = NULL;
+	list_t *assoc_list = NULL;
+	list_t *acct_list = NULL;
+	list_t *user_list = NULL;
+	list_t *slurmdb_hierarchical_rec_list = NULL;
 	char *cluster_name = NULL;
 	char *file_name = NULL;
 	char *user_name = NULL;
@@ -1025,7 +1019,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 		xfree(file_name);
 		return SLURM_ERROR;
 	} else {
-		List temp_list = NULL;
+		list_t *temp_list = NULL;
 		slurmdb_cluster_cond_t cluster_cond;
 		slurmdb_cluster_rec_t *cluster_rec = NULL;
 
@@ -1070,8 +1064,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	user_cond.with_assocs = 1;
 
 	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
-	assoc_cond.without_parent_limits = 1;
-	assoc_cond.with_raw_qos = 1;
+	assoc_cond.flags = ASSOC_COND_FLAG_RAW_QOS | ASSOC_COND_FLAG_WOPL;
 	assoc_cond.cluster_list = list_create(NULL);
 	list_append(assoc_cond.cluster_list, cluster_name);
 	/* this is needed for getting the correct wckeys */

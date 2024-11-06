@@ -774,12 +774,6 @@ def stop_slurm(fatal=True, quiet=False):
             if node_name_expression != "DEFAULT":
                 slurmd_list.extend(node_range_to_list(node_name_expression))
 
-    # TODO: Ensure that cgroups scopes are cleaned
-    #       This should not be necessary once a better solution is found in
-    #       ticket 20764.
-    for slurmd_name in slurmd_list:
-        run_command(f"sudo systemctl stop {slurmd_name}_slurmstepd.scope", quiet=quiet)
-
     # Verify that slurmds are not running
     if not repeat_until(
         lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),

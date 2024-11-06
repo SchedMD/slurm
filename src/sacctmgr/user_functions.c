@@ -159,7 +159,7 @@ static int _set_add_cond(int *start, int argc, char **argv,
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_user_cond_t *user_cond,
 		     slurmdb_wckey_cond_t *wckey_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i;
 	int cond_set = 0;
@@ -213,14 +213,14 @@ static int _set_cond(int *start, int argc, char **argv,
 			   !xstrncasecmp(argv[i], "WithDeleted",
 					 MAX(command_len, 5))) {
 			user_cond->with_deleted = 1;
-			assoc_cond->with_deleted = 1;
+			assoc_cond->flags |= ASSOC_COND_FLAG_WITH_DELETED;
 		} else if (!end &&
 			   !xstrncasecmp(argv[i], "WithRawQOSLevel",
 					 MAX(command_len, 5))) {
-			assoc_cond->with_raw_qos = 1;
+			assoc_cond->flags |= ASSOC_COND_FLAG_RAW_QOS;
 		} else if (!end && !xstrncasecmp(argv[i], "WOPLimits",
 						 MAX(command_len, 4))) {
-			assoc_cond->without_parent_limits = 1;
+			assoc_cond->flags |= ASSOC_COND_FLAG_WOPL;
 		} else if (!end && !xstrncasecmp(argv[i], "where",
 						 MAX(command_len, 5))) {
 			continue;
@@ -282,7 +282,8 @@ static int _set_cond(int *start, int argc, char **argv,
 				/* We need this to get the defaults. (Usually
 				 * only for the calling cluster) */
 				if (xstrcasestr(argv[i]+end, "default"))
-					assoc_cond->only_defs = 1;
+					assoc_cond->flags |=
+						ASSOC_COND_FLAG_ONLY_DEFS;
 
 				slurm_addto_char_list(format_list, argv[i]+end);
 			}
@@ -413,10 +414,10 @@ static int _set_rec(int *start, int argc, char **argv,
 	return rec_set;
 }
 
-static int _check_and_set_cluster_list(List cluster_list)
+static int _check_and_set_cluster_list(list_t *cluster_list)
 {
 	int rc = SLURM_SUCCESS;
-	List tmp_list = NULL;
+	list_t *tmp_list = NULL;
 	list_itr_t *itr_c;
 	slurmdb_cluster_rec_t *cluster_rec = NULL;
 
@@ -455,12 +456,12 @@ static int _check_and_set_cluster_list(List cluster_list)
 	return rc;
 }
 
-static int _check_default_assocs(char *def_acct,
-				       List user_list, List cluster_list)
+static int _check_default_assocs(char *def_acct, list_t *user_list,
+				 list_t *cluster_list)
 {
 	char *user = NULL, *cluster = NULL;
-	List regret_list = NULL;
-	List local_assoc_list = NULL;
+	list_t *regret_list = NULL;
+	list_t *local_assoc_list = NULL;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr_c = NULL;
 	regret_t *regret = NULL;
@@ -540,12 +541,12 @@ static int _check_default_assocs(char *def_acct,
 	return rc;
 }
 
-static int _check_default_wckeys(char *def_wckey,
-				 List user_list, List cluster_list)
+static int _check_default_wckeys(char *def_wckey, list_t *user_list,
+				 list_t *cluster_list)
 {
 	char *user = NULL, *cluster = NULL;
-	List regret_list = NULL;
-	List local_wckey_list = NULL;
+	list_t *regret_list = NULL;
+	list_t *local_wckey_list = NULL;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr_c = NULL;
 	regret_t *regret = NULL;
@@ -637,8 +638,8 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 	slurmdb_user_rec_t *user_rec = NULL;
 	slurmdb_account_rec_t *acct_rec = NULL;
 	slurmdb_account_cond_t account_cond;
-	List local_acct_list = NULL;
-	List local_user_list = NULL;
+	list_t *local_acct_list = NULL;
+	list_t *local_user_list = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if (!user_cond) {
@@ -928,7 +929,7 @@ extern int sacctmgr_list_user(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
-	List user_list;
+	list_t *user_list;
 	int i=0, cond_set=0, prev_set=0;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
@@ -938,8 +939,8 @@ extern int sacctmgr_list_user(int argc, char **argv)
 	print_field_t *field = NULL;
 	int field_count = 0;
 
-	List format_list = list_create(xfree_ptr);
-	List print_fields_list; /* types are of print_field_t */
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *print_fields_list; /* types are of print_field_t */
 
 	user_cond->with_assocs = with_assoc_flag;
 	user_cond->assoc_cond = xmalloc(sizeof(slurmdb_assoc_cond_t));
@@ -974,11 +975,12 @@ extern int sacctmgr_list_user(int argc, char **argv)
 					      "MaxJ,MaxN,MaxCPUs,MaxS,MaxW,"
 					      "MaxCPUMins,QOS,DefaultQOS");
 		else
-			user_cond->assoc_cond->only_defs = 1;
+			user_cond->assoc_cond->flags |=
+				ASSOC_COND_FLAG_ONLY_DEFS;
 	}
 	/* If we are getting associations we want to disable only defs */
 	if (user_cond->with_assocs) {
-		user_cond->assoc_cond->only_defs = 0;
+		user_cond->assoc_cond->flags &= ~ASSOC_COND_FLAG_ONLY_DEFS;
 		user_cond->with_wckeys = 1;
 	}
 
@@ -1006,14 +1008,8 @@ extern int sacctmgr_list_user(int argc, char **argv)
 	slurmdb_destroy_user_cond(user_cond);
 
 	if (mime_type) {
-		if (is_data_parser_deprecated(data_parser))
-			DATA_DUMP_CLI_DEPRECATED(USER_LIST, user_list, "users",
-						 argc, argv, db_conn, mime_type,
-						 rc);
-		else
-			DATA_DUMP_CLI_SINGLE(OPENAPI_USERS_RESP, user_list,
-					     argc, argv, db_conn, mime_type,
-					     data_parser, rc);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_USERS_RESP, user_list, argc, argv,
+				     db_conn, mime_type, data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(user_list);
 		return rc;
@@ -1233,7 +1229,7 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 		xmalloc(sizeof(slurmdb_assoc_rec_t));
 	int i=0;
 	int cond_set = 0, prev_set = 0, rec_set = 0, set = 0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 
 	slurmdb_init_assoc_rec(assoc, 0);
 
@@ -1446,7 +1442,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 	slurmdb_wckey_cond_t * wckey_cond =
 		xmalloc(sizeof(slurmdb_wckey_cond_t));
 	int i=0;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int cond_set = 0, prev_set = 0;
 
 	for (i=0; i<argc; i++) {
@@ -1530,7 +1526,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
-		List del_user_list = NULL;
+		list_t *del_user_list = NULL;
 		list_itr_t *itr = list_iterator_create(ret_list);
 		/* If there were jobs running with an association to
 		   be deleted, don't.
@@ -1618,7 +1614,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 
 		/* Remove user if no associations left. */
 		if ((cond_set & SA_SET_ASSOC) && del_user_list) {
-			List user_list = NULL;
+			list_t *user_list = NULL;
 			slurmdb_user_cond_t del_user_cond;
 			slurmdb_assoc_cond_t del_user_assoc_cond;
 			slurmdb_user_rec_t *user = NULL;
@@ -1635,7 +1631,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 			   association, just want to know if it
 			   exists.
 			*/
-			del_user_assoc_cond.without_parent_info = 1;
+			del_user_assoc_cond.flags = ASSOC_COND_FLAG_WOPI;
 			del_user_cond.assoc_cond = &del_user_assoc_cond;
 			user_list = slurmdb_users_get(db_conn, &del_user_cond);
 			FREE_NULL_LIST(del_user_list);
@@ -1666,7 +1662,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 			}
 
 			if (del_user_list) {
-				List del_user_ret_list = NULL;
+				list_t *del_user_ret_list = NULL;
 
 				memset(&del_user_cond, 0,
 				       sizeof(slurmdb_user_cond_t));
@@ -1724,7 +1720,7 @@ extern int sacctmgr_delete_coord(int argc, char **argv)
 	char *user_str = NULL;
 	char *acct_str = NULL;
 	list_itr_t *itr = NULL;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);

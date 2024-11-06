@@ -66,7 +66,7 @@ static int _suspend_op(uint16_t op, uint32_t job_id)
 					      working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
-	slurm_seterrno(rc);
+	errno = rc;
 	return rc;
 }
 
@@ -123,10 +123,10 @@ static int _suspend_op2(uint16_t op, char *job_id_str,
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		if (rc)
-			slurm_seterrno(rc);
+			errno = rc;
 		break;
 	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		errno = SLURM_UNEXPECTED_MSG_ERROR;
 	}
 
 	return rc;
@@ -189,7 +189,7 @@ extern int slurm_requeue(uint32_t job_id, uint32_t flags)
 					      working_cluster_rec) < 0)
 		return SLURM_ERROR;
 
-	slurm_seterrno(rc);
+	errno = rc;
 	return rc;
 }
 
@@ -234,10 +234,10 @@ extern int slurm_requeue2(char *job_id_str, uint32_t flags,
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		if (rc)
-			slurm_seterrno(rc);
+			errno = rc;
 		break;
 	default:
-		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
+		errno = SLURM_UNEXPECTED_MSG_ERROR;
 	}
 
 	return rc;

@@ -57,10 +57,8 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined(__APPLE__)
-extern __thread bool drop_priv __attribute__((weak_import));
 extern slurmdbd_conf_t *slurmdbd_conf __attribute__((weak_import));
 #else
-__thread bool drop_priv;
 slurmdbd_conf_t *slurmdbd_conf;
 #endif
 
@@ -71,6 +69,10 @@ extern char *assoc_month_table;
 extern char *cluster_day_table;
 extern char *cluster_hour_table;
 extern char *cluster_month_table;
+
+extern char *qos_day_table;
+extern char *qos_hour_table;
+extern char *qos_month_table;
 
 extern char *wckey_day_table;
 extern char *wckey_hour_table;
@@ -93,7 +95,7 @@ static int _sort_update_object_dec(void *a, void *b)
 	return 0;
 }
 
-static void _dump_slurmdb_assoc_records(List assoc_list)
+static void _dump_slurmdb_assoc_records(list_t *assoc_list)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
 	list_itr_t *itr = NULL;
@@ -111,7 +113,7 @@ static void _dump_slurmdb_clus_res_record(slurmdb_clus_res_rec_t *clus_res)
 	debug("\t\t\tallowed=%u", clus_res->allowed);
 }
 
-static void _dump_slurmdb_clus_res_records(List clus_res_list)
+static void _dump_slurmdb_clus_res_records(list_t *clus_res_list)
 {
 	slurmdb_clus_res_rec_t *clus_res = NULL;
 	list_itr_t *itr = NULL;
@@ -122,7 +124,7 @@ static void _dump_slurmdb_clus_res_records(List clus_res_list)
 	list_iterator_destroy(itr);
 }
 
-static void _dump_slurmdb_res_records(List res_list)
+static void _dump_slurmdb_res_records(list_t *res_list)
 {
 	slurmdb_res_rec_t *res = NULL;
 	list_itr_t *itr = NULL;
@@ -148,10 +150,6 @@ static bool _is_user_min_admin_level(void *db_conn, uid_t uid,
 {
 	bool is_admin = 1;
 
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
 	/*
 	 * We have to check the authentication here in the
 	 * plugin since we don't know what accounts are being
@@ -194,7 +192,7 @@ extern bool _is_user_any_coord_internal(void *db_conn, slurmdb_user_rec_t *user,
  * NOTE: This function will take the object given and free it later so it
  *       needs to be removed from a existing lists prior.
  */
-extern int addto_update_list(List update_list, slurmdb_update_type_t type,
+extern int addto_update_list(list_t *update_list, slurmdb_update_type_t type,
 			     void *object)
 {
 	slurmdb_update_object_t *update_object = NULL;
@@ -345,7 +343,7 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
  * dump_update_list - dump contents of updates
  * IN update_list: updates to perform
  */
-extern void dump_update_list(List update_list)
+extern void dump_update_list(list_t *update_list)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_update_object_t *object = NULL;
@@ -530,6 +528,9 @@ extern int set_usage_information(char **usage_table,
 		case DBD_GET_ASSOC_USAGE:
 			my_usage_table = assoc_hour_table;
 			break;
+		case DBD_GET_QOS_USAGE:
+			my_usage_table = qos_hour_table;
+			break;
 		case DBD_GET_WCKEY_USAGE:
 			my_usage_table = wckey_hour_table;
 			break;
@@ -546,6 +547,9 @@ extern int set_usage_information(char **usage_table,
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
 			my_usage_table = assoc_month_table;
+			break;
+		case DBD_GET_QOS_USAGE:
+			my_usage_table = qos_month_table;
 			break;
 		case DBD_GET_WCKEY_USAGE:
 			my_usage_table = wckey_month_table;
@@ -574,7 +578,7 @@ extern int set_usage_information(char **usage_table,
  * IN/OUT qos_list: list of QOS'es
  * IN delta_qos_list: list of delta QOS'es
  */
-extern void merge_delta_qos_list(List qos_list, List delta_qos_list)
+extern void merge_delta_qos_list(list_t *qos_list, list_t *delta_qos_list)
 {
 	list_itr_t *curr_itr = list_iterator_create(qos_list);
 	list_itr_t *new_itr = list_iterator_create(delta_qos_list);

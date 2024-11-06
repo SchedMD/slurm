@@ -100,7 +100,7 @@ static int _find_task_state(void *object, void *key)
  * Returns NULL if not found
  */
 extern task_state_t *task_state_find(slurm_step_id_t *step_id,
-				    List task_state_list)
+				     list_t *task_state_list)
 {
 	if (!task_state_list)
 		return NULL;
@@ -210,7 +210,7 @@ extern void task_state_update(task_state_t *ts, int task_id,
  * Return TRUE if this is the first task exit for this job step
  * (ALL hetjob components)
  */
-extern bool task_state_first_exit(List task_state_list)
+extern bool task_state_first_exit(list_t *task_state_list)
 {
 	task_state_t *ts = NULL;
 	list_itr_t *iter;
@@ -248,7 +248,7 @@ extern bool task_state_first_exit(List task_state_list)
  * Return TRUE if this is the first abnormal task exit for this job step
  * (ALL hetjob components)
  */
-extern bool task_state_first_abnormal_exit(List task_state_list)
+extern bool task_state_first_abnormal_exit(list_t *task_state_list)
 {
 	task_state_t *ts = NULL;
 	list_itr_t *iter;
@@ -326,7 +326,7 @@ static void _task_state_print(task_state_t *ts, log_f fn)
 /*
  * Print summary of a task_state structure's contents
  */
-extern void task_state_print(List task_state_list, log_f fn)
+extern void task_state_print(list_t *task_state_list, log_f fn)
 {
 	task_state_t *ts = NULL;
 	list_itr_t *iter;

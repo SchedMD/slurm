@@ -58,26 +58,33 @@
  */
 
 #if defined (__APPLE__)
-extern List part_list __attribute__((weak_import));
+extern list_t *part_list __attribute__((weak_import));
 extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
 #else
-List part_list = NULL;
+list_t *part_list = NULL;
 bitstr_t *idle_node_bitmap;
 #endif
 
 typedef struct {
 	int *count;
+	int depth;
 	bitstr_t *fwd_bitmap;
 	int msg_count;
 	bitstr_t *nodes_bitmap;
-	hostlist_t **sp_hl;
+	hostlist_t ***sp_hl;
+	uint16_t tree_width;
 } _foreach_part_split_hostlist_t;
+
+static int _split_hostlist_treewidth(hostlist_t *hl, hostlist_t ***sp_hl,
+				     int *count, uint16_t tree_width);
 
 static int _part_split_hostlist(void *x, void *y)
 {
 	part_record_t *part_ptr = x;
 	_foreach_part_split_hostlist_t *arg = y;
-	int fwd_count;
+	int fwd_count, hl_count, hl_depth;
+	hostlist_t *hl, **p_hl;
+	size_t new_size;
 
 	if (!bit_overlap_any(part_ptr->node_bitmap, arg->nodes_bitmap))
 		return 0;
@@ -87,11 +94,27 @@ static int _part_split_hostlist(void *x, void *y)
 	else
 		bit_copybits(arg->fwd_bitmap, part_ptr->node_bitmap);
 
+	/* Extract partition's hostlist and node count */
 	bit_and(arg->fwd_bitmap, arg->nodes_bitmap);
-	(arg->sp_hl)[*arg->count] = bitmap2hostlist(arg->fwd_bitmap);
 	bit_and_not(arg->nodes_bitmap, arg->fwd_bitmap);
 	fwd_count = bit_set_count(arg->fwd_bitmap);
-	(*arg->count)++;
+	hl = bitmap2hostlist(arg->fwd_bitmap);
+
+	/* Generate FW tree hostlist array from partition's hostlist */
+	hl_depth = _split_hostlist_treewidth(hl, &p_hl, &hl_count,
+					     arg->tree_width);
+	hostlist_destroy(hl);
+
+	/* Make size for FW tree hostlist array in the main hostlist array */
+	new_size = xsize(*arg->sp_hl) + hl_count * sizeof(hostlist_t *);
+	xrealloc(*arg->sp_hl, new_size);
+
+	/* Append the FW tree hostlist array to the main hostlist array */
+	for (int i = 0; i < hl_count; i++)
+		(*arg->sp_hl)[*arg->count + i] = p_hl[i];
+	xfree(p_hl);
+	*arg->count += hl_count;
+	arg->depth = MAX(arg->depth, hl_depth);
 	arg->msg_count -= fwd_count;
 
 	if (arg->msg_count == 0)
@@ -123,10 +146,12 @@ static int _route_part_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 
 	part_split = (_foreach_part_split_hostlist_t) {
 		.count = count,
+		.depth = 0,
 		.fwd_bitmap = NULL,
 		.msg_count = hostlist_count(hl),
 		.nodes_bitmap = nodes_bitmap,
-		.sp_hl = *sp_hl,
+		.sp_hl = sp_hl,
+		.tree_width = tree_width,
 	};
 
 	list_for_each_ro(part_list, _part_split_hostlist, &part_split);
@@ -154,6 +179,7 @@ static int _route_part_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 			hostlist_push_host((*sp_hl)[*count], node_ptr->name);
 			(*count)++;
 		}
+		part_split.depth = MAX(part_split.depth, 1);
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
@@ -173,108 +199,153 @@ static int _route_part_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	FREE_NULL_BITMAP(nodes_bitmap);
 	FREE_NULL_BITMAP(part_split.fwd_bitmap);
 
-	return SLURM_SUCCESS;
+	return part_split.depth;
 }
 
 /* this is used to set how many nodes are going to be on each branch
  * of the tree.
  * IN total       - total number of nodes to send to
  * IN tree_width  - how wide the tree should be on each hop
- * RET int *	  - int array tree_width in length each space
+ * OUT span       - pointer to int array tree_width in length each space
  *		    containing the number of nodes to send to each hop
  *		    on the span.
+ * RET int	  - the number of levels opened in the tree, or SLURM_ERROR
  */
-static int *_set_span(int total,  uint16_t tree_width)
+static int _set_span(int total, uint16_t tree_width, int **span)
 {
-	int *span = NULL;
-	int left = total;
-	int i = 0;
+	int depth = 0;
 
-	if (tree_width == 0)
+	/* This should not happen. This is an error. */
+	if (!span || total < 1)
+		return SLURM_ERROR;
+
+	/* If default span */
+	if (!tree_width)
 		tree_width = slurm_conf.tree_width;
 
-	//info("span count = %d", tree_width);
-	if (total <= tree_width) {
-		return span;
+	/* Safeguard from leaks */
+	if (*span)
+		xfree(*span);
+
+	/*
+	 * Memory optimization:
+	 * Don't allocate if we are in the last step to the leaves, as this is
+	 * considered direct communication and we don't really need it.
+	 */
+	if (total <= tree_width)
+		return 1;
+
+	/* Each cell will contain the #nodes below this specific branch */
+	*span = xcalloc(tree_width, sizeof(int));
+
+	/*
+	 * Try to fill levels until no more nodes are available.
+	 *
+	 * Each time a new level is created, it is exponentially bigger than the
+	 * previous one
+	 */
+	for (int branch_capacity = 1, level_capacity = tree_width; total;
+	     branch_capacity *= tree_width, level_capacity *= tree_width) {
+		/* Remaining nodes can fill a whole new level up, or not */
+		if (level_capacity <= total) {
+			for (int i = 0; i < tree_width; i++)
+				(*span)[i] += branch_capacity;
+			total -= level_capacity;
+		} else {
+			/* Evenly distribute remaining nodes */
+			branch_capacity = total / tree_width;
+			/* But left the division remainder ones */
+			level_capacity = branch_capacity * tree_width;
+			/* Fill current level up, as much as possible */
+			for (int i = 0; i < tree_width; i++)
+				(*span)[i] += branch_capacity;
+			total -= level_capacity;
+
+			/* Evenly distribute the remainder nodes */
+			for (int i = 0; total; i++, total--)
+				(*span)[i]++;
+
+			/* total == 0 always at this point */
+		}
+
+		/* One level more has been added */
+		depth++;
+
+		/* The level needed all the nodes, no more levels are added */
+		if (!total)
+			break;
 	}
 
-	span = xcalloc(tree_width, sizeof(int));
+	/* Inform the caller about the number of levels below itself */
+	return depth;
+}
 
-	while (left > 0) {
-		for (i = 0; i < tree_width; i++) {
-			if ((tree_width-i) >= left) {
-				if (span[i] == 0) {
-					left = 0;
-					break;
-				} else {
-					span[i] += left;
-					left = 0;
-					break;
-				}
-			} else if (left <= tree_width) {
-				if (span[i] == 0)
-					left--;
+static int _split_hostlist_treewidth(hostlist_t *hl, hostlist_t ***sp_hl,
+				     int *count, uint16_t tree_width)
+{
+	int host_count = hostlist_count(hl), depth, *span = NULL;
+	char *name;
 
-				span[i] += left;
-				left = 0;
-				break;
-			}
+	/* If default span */
+	if (!tree_width)
+		tree_width = slurm_conf.tree_width;
 
-			if (span[i] == 0)
-				left--;
+	/* This should not happen. This is an error. */
+	if ((depth = _set_span(host_count, tree_width, &span)) < 0)
+		return SLURM_ERROR;
 
-			span[i] += tree_width;
-			left -= tree_width;
+	/*
+	 * Memory optimization:
+	 * _set_span doesn't return array for direct communication
+	 * (if depth == 1 then span == NULL), so we just fill the hostlist array
+	 * directly.
+	 */
+	if (depth == 1)
+		tree_width = host_count;
+
+	/* Each cell will contain the hostlist below this specific branch */
+	*sp_hl = xcalloc(tree_width, sizeof(hostlist_t *));
+
+	/*
+	 * Fill the hostlists for each branch according to the distribution in
+	 * set_span.
+	 *
+	 * Additionally, try to preserve network locality (based on distance)
+	 * for subtrees, by assuming consecutive nodes are placed one next to
+	 * each other
+	 */
+	for (*count = 0; (*count < tree_width) && (name = hostlist_shift(hl));
+	     (*count)++) {
+		/* Open the new branch, and add the 1st one */
+		(*sp_hl)[*count] = hostlist_create(name);
+		free(name);
+
+		/* Consecutively add the rest of nodes for this branch */
+		for (int i = 1; span && (i < span[*count]); i++) {
+			name = hostlist_shift(hl);
+			hostlist_push_host((*sp_hl)[*count], name);
+			free(name);
+		}
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
+			char *buf =
+			hostlist_ranged_string_xmalloc((*sp_hl)[*count]);
+			debug("ROUTE: ... sublist[%d] %s", *count, buf);
+			xfree(buf);
 		}
 	}
 
-	return span;
+	xfree(span);
+	return depth;
 }
 
 extern int common_topo_split_hostlist_treewidth(hostlist_t *hl,
 						hostlist_t ***sp_hl,
 						int *count, uint16_t tree_width)
 {
-	int host_count;
-	int *span = NULL;
-	char *name = NULL;
-	char *buf;
-	int nhl = 0;
-	int j;
-
 	if (running_in_slurmctld() && common_topo_route_part())
-		return _route_part_split_hostlist(hl, sp_hl,
-						  count, tree_width);
+		return _route_part_split_hostlist(hl, sp_hl, count, tree_width);
 
-	if (!tree_width)
-		tree_width = slurm_conf.tree_width;
-
-	host_count = hostlist_count(hl);
-	span = _set_span(host_count, tree_width);
-	*sp_hl = xcalloc(MIN(tree_width, host_count), sizeof(hostlist_t *));
-
-	while ((name = hostlist_shift(hl))) {
-		(*sp_hl)[nhl] = hostlist_create(name);
-		free(name);
-		for (j = 0; span && (j < span[nhl]); j++) {
-			name = hostlist_shift(hl);
-			if (!name) {
-				break;
-			}
-			hostlist_push_host((*sp_hl)[nhl], name);
-			free(name);
-		}
-		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
-			buf = hostlist_ranged_string_xmalloc((*sp_hl)[nhl]);
-			debug("ROUTE: ... sublist[%d] %s", nhl, buf);
-			xfree(buf);
-		}
-		nhl++;
-	}
-	xfree(span);
-	*count = nhl;
-
-	return SLURM_SUCCESS;
+	return _split_hostlist_treewidth(hl, sp_hl, count, tree_width);
 }
 
 extern int common_topo_get_node_addr(char *node_name, char **addr,

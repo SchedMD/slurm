@@ -534,21 +534,6 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
-			/* Doesn't do anything yet */
-			/* _print_tres_line("MaxTRESRunMinsPA", */
-			/* 		 qos_rec->max_tres_mins_pa_ctld, */
-			/* 		 NULL, 0); */
-
-			/* NEW LINE */
-			/* printf("%s", new_line_char); */
-
-			/* _print_tres_line("MaxTRESRunMinsPU", */
-			/* 		 qos_rec->max_tres_mins_pu_ctld, */
-			/* 		 NULL, 0); */
-
-			/* NEW LINE */
-			/* printf("%s", new_line_char); */
-
 			if (qos_rec->min_prio_thresh != INFINITE)
 				printf("MinPrioThresh=%u ",
 				       qos_rec->min_prio_thresh);

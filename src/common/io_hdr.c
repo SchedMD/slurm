@@ -42,23 +42,16 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 
-/* If this changes, io_hdr_pack|unpack must change. */
-int g_io_hdr_size = sizeof(uint32_t) + 3*sizeof(uint16_t);
-
-/* If this changes, io_init_msg_pack|unpack must change. */
-static int g_io_init_msg_packed_size =
-	sizeof(uint16_t)    /* version */
-	+ sizeof(uint32_t)  /* nodeid */
-	+ (SLURM_IO_KEY_SIZE + sizeof(uint32_t)) /* signature */
-	+ sizeof(uint32_t)  /* stdout_objs */
-	+ sizeof(uint32_t); /* stderr_objs */
-
-#define io_init_msg_packed_size() g_io_init_msg_packed_size
-
 void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer)
 {
-	/* If this function changes, io_hdr_packed_size must change. */
-	pack16(hdr->type, buffer);
+	uint16_t type = hdr->type;
+
+	/* Verify that the header packet size hasn't suddenly changed */
+	xassert(IO_HDR_PACKET_BYTES ==
+		(sizeof(uint32_t) + (3 * sizeof(uint16_t))));
+
+	/* If this function changes, IO_HDR_PACKET_BYTES must change. */
+	pack16(type, buffer);
 	pack16(hdr->gtaskid, buffer);
 	pack16(hdr->ltaskid, buffer);
 	pack32(hdr->length, buffer);
@@ -66,8 +59,22 @@ void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer)
 
 int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer)
 {
-	/* If this function changes, io_hdr_packed_size must change. */
-	safe_unpack16(&hdr->type, buffer);
+	uint16_t type;
+
+	if (size_buf(buffer) < IO_HDR_PACKET_BYTES) {
+		debug3("%s: Unable to pack with only %u/%u bytes present in buffer",
+		       __func__, IO_HDR_PACKET_BYTES, size_buf(buffer));
+		return EAGAIN;
+	}
+
+	/* If this function changes, IO_HDR_PACKET_BYTES must change. */
+	safe_unpack16(&type, buffer);
+	hdr->type = type;
+
+	if ((hdr->type <= SLURM_IO_INVALID) ||
+	    (hdr->type >= SLURM_IO_INVALID_MAX))
+		goto unpack_error;
+
 	safe_unpack16(&hdr->gtaskid, buffer);
 	safe_unpack16(&hdr->ltaskid, buffer);
 	safe_unpack32(&hdr->length, buffer);
@@ -116,10 +123,10 @@ static int _full_read(int fd, void *buf, size_t count)
 int io_hdr_read_fd(int fd, io_hdr_t *hdr)
 {
 	int n = 0;
-	buf_t *buffer = init_buf(io_hdr_packed_size());
+	buf_t *buffer = init_buf(IO_HDR_PACKET_BYTES);
 
 	debug3("Entering %s", __func__);
-	n = _full_read(fd, buffer->head, io_hdr_packed_size());
+	n = _full_read(fd, buffer->head, IO_HDR_PACKET_BYTES);
 	if (n <= 0)
 		goto fail;
 	if (io_hdr_unpack(hdr, buffer) == SLURM_ERROR) {
@@ -186,8 +193,6 @@ static int io_init_msg_pack(io_init_msg_t *hdr, buf_t *buffer)
 
 static int io_init_msg_unpack(io_init_msg_t *hdr, buf_t *buffer)
 {
-	/* If this function changes, io_init_msg_packed_size must change. */
-
 	safe_unpack16(&hdr->version, buffer);
 	if (hdr->version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&hdr->nodeid, buffer);
@@ -209,7 +214,7 @@ int
 io_init_msg_write_to_fd(int fd, io_init_msg_t *msg)
 {
 	int rc = SLURM_ERROR;
-	buf_t *buf = init_buf(io_init_msg_packed_size());
+	buf_t *buf = init_buf(0);
 
 	xassert(msg);
 

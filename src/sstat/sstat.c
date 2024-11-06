@@ -99,10 +99,10 @@ print_field_t fields[] = {
 	{15, "TRESUsageOutTot", print_fields_str, PRINT_TRESUOT},
 	{0, NULL, NULL, 0}};
 
-List jobs = NULL;
+list_t *jobs = NULL;
 slurmdb_job_rec_t job;
 slurmdb_step_rec_t step;
-List print_fields_list = NULL;
+list_t *print_fields_list = NULL;
 list_itr_t *print_fields_itr = NULL;
 int field_count = 0;
 

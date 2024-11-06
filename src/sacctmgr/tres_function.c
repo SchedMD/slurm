@@ -39,7 +39,7 @@
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_tres_cond_t *tres_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i;
 	int set = 0;
@@ -122,11 +122,11 @@ static int _set_cond(int *start, int argc, char **argv,
  */
 int sacctmgr_list_tres(int argc, char **argv)
 {
-	List tres_list;
+	list_t *tres_list;
 	list_itr_t *itr;
 	list_itr_t *itr2;
-	List format_list = list_create(xfree_ptr);
-	List print_fields_list;
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *print_fields_list;
 	slurmdb_tres_cond_t *tres_cond = xmalloc(sizeof(slurmdb_tres_cond_t));
 	slurmdb_tres_rec_t *tres;
 	int field_count, i;
@@ -159,14 +159,8 @@ int sacctmgr_list_tres(int argc, char **argv)
 
 	if (mime_type) {
 		int rc;
-		if (is_data_parser_deprecated(data_parser))
-			DATA_DUMP_CLI_DEPRECATED(TRES_LIST, tres_list, "tres",
-						 argc, argv, db_conn, mime_type,
-						 rc);
-		else
-			DATA_DUMP_CLI_SINGLE(OPENAPI_TRES_RESP, tres_list, argc,
-					     argv, db_conn, mime_type,
-					     data_parser, rc);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_TRES_RESP, tres_list, argc, argv,
+				     db_conn, mime_type, data_parser, rc);
 		FREE_NULL_LIST(format_list);
 		FREE_NULL_LIST(tres_list);
 		return rc;

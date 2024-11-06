@@ -53,12 +53,6 @@
 --You may log to the slurmctld log file with Slurm logging functions such as
 --slurm.log_info(). Replace "info" with the desired debug level.
 --
---A function has been provided to convert job_info to a string. It returns two
---values:
---  (1) return code: SLURM_SUCCESS on success, SLURM_ERROR on error
---  (2) string: the job_info string on success, an error message on error
---    rc, str = slurm.job_info_to_string(job_info)
---
 --
 --This file also provides an example of how to use a module in lua-posix.
 --lua-posix provides posix bindings to lua, which can be very useful, but it is
@@ -196,10 +190,6 @@ function slurm_bb_job_process(job_script, uid, gid, job_info)
 		job_script, uid, gid)
 	io.input(job_script)
 	contents = io.read("*all")
-
-	local rc, str = slurm.job_info_to_string(job_info)
-	slurm.log_info("slurm.job_info_to_string returned:\nrc=%d, str=\n%s",
-		rc, str)
 
 	return slurm.SUCCESS, contents
 end

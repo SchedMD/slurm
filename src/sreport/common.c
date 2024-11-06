@@ -160,7 +160,7 @@ extern char *strip_quotes(char *option, int *increased)
 	return meat;
 }
 
-extern void addto_char_list(List char_list, char *names)
+extern void addto_char_list(list_t *char_list, char *names)
 {
 	int i = 0, start = 0;
 	char *name = NULL, *tmp_char = NULL;
@@ -371,7 +371,7 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 
 extern void sreport_set_tres_recs(slurmdb_tres_rec_t **cluster_tres_rec,
 				  slurmdb_tres_rec_t **tres_rec,
-				  List cluster_tres_list, List tres_list,
+				  list_t *cluster_tres_list, list_t *tres_list,
 				  slurmdb_tres_rec_t *tres_rec_in)
 {
 	if (!(*cluster_tres_rec = list_find_first(cluster_tres_list,
@@ -432,7 +432,7 @@ extern void sreport_set_usage_col_width(print_field_t *field, uint64_t number)
 
 extern void sreport_set_usage_column_width(print_field_t *usage_field,
 					   print_field_t *energy_field,
-					   List slurmdb_report_cluster_list)
+					   list_t *slurmdb_report_cluster_list)
 {
 	uint64_t max_usage = 0, max_energy = 0;
 	list_itr_t *tres_itr, *cluster_itr;
@@ -444,7 +444,7 @@ extern void sreport_set_usage_column_width(print_field_t *usage_field,
 	cluster_itr = list_iterator_create(slurmdb_report_cluster_list);
 	while ((slurmdb_report_cluster = list_next(cluster_itr))) {
 		slurmdb_tres_rec_t *tres, *tres_rec;
-		List use_list = slurmdb_report_cluster->tres_list;
+		list_t *use_list = slurmdb_report_cluster->tres_list;
 
 		/* The first association will always be the largest
 		 * count of any TRES, so just peek at it.  If the
@@ -538,7 +538,7 @@ static int _find_empty_assoc_tres(void *x, void *key)
 
 /* For duplicate user/account records, combine TRES records into the original
  * list and purge the duplicate records */
-extern void combine_assoc_tres(List first_assoc_list, List new_assoc_list)
+extern void combine_assoc_tres(list_t *first_assoc_list, list_t *new_assoc_list)
 {
 	slurmdb_report_assoc_rec_t *orig_report_assoc = NULL;
 	slurmdb_report_assoc_rec_t *dup_report_assoc = NULL;
@@ -588,7 +588,7 @@ static int _zero_alloc_secs(void *x, void *key)
 
 /* Given two TRES lists, combine the content of the second with the first,
  * adding the counts for duplicate TRES IDs */
-extern void combine_tres_list(List orig_tres_list, List dup_tres_list)
+extern void combine_tres_list(list_t *orig_tres_list, list_t *dup_tres_list)
 {
 	slurmdb_tres_rec_t *orig_tres, *dup_tres;
 	list_itr_t *iter = NULL;
@@ -644,7 +644,7 @@ static int _match_user_acct(void *x, void *key)
 
 /* For duplicate user/account records, combine TRES records into the original
  * list and purge the duplicate records */
-extern void combine_user_tres(List first_user_list, List new_user_list)
+extern void combine_user_tres(list_t *first_user_list, list_t *new_user_list)
 {
 	slurmdb_report_user_rec_t *orig_report_user = NULL;
 	slurmdb_report_user_rec_t *dup_report_user = NULL;
@@ -668,4 +668,14 @@ extern void combine_user_tres(List first_user_list, List new_user_list)
 
 	(void) list_delete_all(new_user_list, _find_empty_user_tres, NULL);
 	list_transfer(first_user_list, new_user_list);
+}
+
+extern void common_get_qos_list(void)
+{
+	slurmdb_qos_cond_t qos_cond = {
+		.flags = QOS_COND_FLAG_WITH_DELETED,
+	};
+	if (g_qos_list)
+		return;
+	g_qos_list = slurmdb_qos_get(db_conn, &qos_cond);
 }

@@ -44,6 +44,8 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+#include "slurm/slurm.h"
+
 struct hostent * get_host_by_name(const char *name,
     void *buf, int buflen, int *h_err);
 /*
@@ -85,8 +87,16 @@ extern struct addrinfo *xgetaddrinfo(const char *hostname, const char *serv);
  */
 extern struct addrinfo *xgetaddrinfo_port(const char *hostname,
 					  uint16_t port);
-extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen);
 
+/*
+ * Get the short hostname using "nameinfo" for an address.
+ * NOTE: caller is responsible for xfree()ing the resulting hostname.
+ * Returns hostname or NULL on error.
+ */
+extern char *xgetnameinfo(const slurm_addr_t *addr);
+
+extern int host_has_addr_family(const char *hostname, const char *srv,
+				bool *ipv4, bool *ipv6);
 /* Functions responsible for cleanup of getnameinfo cache */
 extern void getnameinfo_cache_destroy(void *obj);
 extern void getnameinfo_cache_purge(void);

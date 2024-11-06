@@ -38,6 +38,7 @@
 
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 /* Assume that the slurmd and slurmstepd are the same version level when slurmd
@@ -107,7 +108,7 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, buf_t *buffer)
 		safe_unpackstr(&conf->logfile, buffer);
 		safe_unpack32(&conf->debug_level, buffer);
 		safe_unpack32(&conf->syslog_debug, buffer);
-		safe_unpackstr_xmalloc(&conf->stepd_loc, &uint32_tmp, buffer);
+		safe_unpackstr(&conf->stepd_loc, buffer);
 		safe_unpackbool(&conf->daemonize, buffer);
 		safe_unpackstr(&conf->node_topo_addr, buffer);
 		safe_unpackstr(&conf->node_topo_pattern, buffer);

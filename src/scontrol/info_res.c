@@ -53,7 +53,7 @@ scontrol_load_reservations(reserve_info_msg_t **res_buffer_pptr)
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_reservation_info_msg (old_res_info_ptr);
 
-		} else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			res_info_ptr = old_res_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1) {
@@ -131,13 +131,8 @@ extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 		for (int i = 0; i < print_cnt; i++)
 			msg.reservation_array[i] = *resvs[i];
 
-		if (is_data_parser_deprecated(data_parser))
-			DATA_DUMP_CLI_DEPRECATED(RESERVATION_INFO_MSG, msg,
-						 "reservations", argc, argv,
-						 NULL, mime_type, rc);
-		else
-			DATA_DUMP_CLI(OPENAPI_RESERVATION_RESP, resp, argc,
-				      argv, NULL, mime_type, data_parser, rc);
+		DATA_DUMP_CLI(OPENAPI_RESERVATION_RESP, resp, argc, argv, NULL,
+			      mime_type, data_parser, rc);
 
 		if (rc)
 			exit_code = 1;

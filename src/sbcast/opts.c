@@ -87,6 +87,8 @@ extern void parse_command_line(int argc, char **argv)
 		{"treewidth",    required_argument, 0, OPT_LONG_TREE_WIDTH},
 		{"force",     no_argument,       0, 'f'},
 		{"jobid",     required_argument, 0, 'j'},
+		{"no-allocation", optional_argument, 0, 'Z'},
+		{"nodelist",  optional_argument, 0, 'w'},
 		{"send-libs", optional_argument, 0, OPT_LONG_SEND_LIBS},
 		{"preserve",  no_argument,       0, 'p'},
 		{"size",      required_argument, 0, 's'},
@@ -148,7 +150,7 @@ extern void parse_command_line(int argc, char **argv)
 		params.timeout = (atoi(env_val) * 1000);
 
 	optind = 0;
-	while ((opt_char = getopt_long(argc, argv, "C::fF:j:ps:t:vV",
+	while ((opt_char = getopt_long(argc, argv, "C::fF:j:ps:t:vVw:Z",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -201,6 +203,12 @@ extern void parse_command_line(int argc, char **argv)
 		case (int) 'V':
 			print_slurm_version();
 			exit(0);
+		case (int) 'w':
+			params.node_list = xstrdup(optarg);
+			break;
+		case (int) 'Z':
+			params.flags |= BCAST_FLAG_NO_JOB;
+			break;
 		case (int) OPT_LONG_HELP:
 			_help();
 			exit(0);
@@ -221,8 +229,9 @@ extern void parse_command_line(int argc, char **argv)
 		exit(1);
 	}
 
-	if (!params.selected_step ||
-	    (params.selected_step->step_id.job_id == NO_VAL)) {
+	if ((!params.selected_step ||
+	     (params.selected_step->step_id.job_id == NO_VAL)) &&
+	    !(params.flags & BCAST_FLAG_NO_JOB)) {
 		if (!(env_val = getenv("SLURM_JOB_ID"))) {
 			error("Need a job id to run this command.  "
 			      "Run from within a Slurm job or use the "
@@ -254,6 +263,16 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (params.dst_fname[strlen(params.dst_fname) - 1] == '/') {
 		error("Target filename cannot be a directory.");
+		exit(1);
+	}
+
+	if ((params.flags & BCAST_FLAG_NO_JOB) && (params.selected_step)) {
+		error("--no-allocation/-Z and --jobid/-j options are mutually exclusive");
+		exit(1);
+	}
+
+	if ((params.flags & BCAST_FLAG_NO_JOB) && (!params.node_list)) {
+		error("--nodelist/-w is required with --no-allocation/-Z.");
 		exit(1);
 	}
 

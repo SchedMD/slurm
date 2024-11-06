@@ -911,9 +911,9 @@ extern int commit_check(char *warning)
 
 extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 {
-	List update_list = NULL;
-	List local_assoc_list = NULL;
-	List local_cluster_list = NULL;
+	list_t *update_list = NULL;
+	list_t *local_assoc_list = NULL;
+	list_t *local_cluster_list = NULL;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
 	list_itr_t *itr3 = NULL;
@@ -1044,10 +1044,10 @@ end_it:
 extern int sacctmgr_update_qos_usage(slurmdb_qos_cond_t *qos_cond,
 				     long double new_raw_usage)
 {
-	List update_list = NULL;
-	List cluster_list;
-	List local_qos_list = NULL;
-	List local_cluster_list = NULL;
+	list_t *update_list = NULL;
+	list_t *cluster_list;
+	list_t *local_qos_list = NULL;
+	list_t *local_cluster_list = NULL;
 	list_itr_t *itr = NULL, *itr2 = NULL;
 	char *qos_name = NULL, *cluster_name = NULL;
 	slurmdb_qos_rec_t* rec = NULL;
@@ -1141,7 +1141,7 @@ extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc(
 	slurmdb_assoc_rec_t *assoc = NULL;
 	char *temp = "root";
 	slurmdb_assoc_cond_t assoc_cond;
-	List assoc_list = NULL;
+	list_t *assoc_list = NULL;
 
 	if (!cluster)
 		return NULL;
@@ -1181,7 +1181,7 @@ extern slurmdb_user_rec_t *sacctmgr_find_user(char *name)
 	slurmdb_user_rec_t *user = NULL;
 	slurmdb_user_cond_t user_cond;
 	slurmdb_assoc_cond_t assoc_cond;
-	List user_list = NULL;
+	list_t *user_list = NULL;
 
 	if (!name)
 		return NULL;
@@ -1209,7 +1209,7 @@ extern slurmdb_account_rec_t *sacctmgr_find_account(char *name)
 	slurmdb_account_rec_t *account = NULL;
 	slurmdb_account_cond_t account_cond;
 	slurmdb_assoc_cond_t assoc_cond;
-	List account_list = NULL;
+	list_t *account_list = NULL;
 
 	if (!name)
 		return NULL;
@@ -1236,7 +1236,7 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster(char *name)
 {
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
-	List cluster_list = NULL;
+	list_t *cluster_list = NULL;
 
 	if (!name)
 		return NULL;
@@ -1258,7 +1258,7 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster(char *name)
 }
 
 extern slurmdb_assoc_rec_t *sacctmgr_find_assoc_from_list(
-	List assoc_list, char *user, char *account,
+	list_t *assoc_list, char *user, char *account,
 	char *cluster, char *partition)
 {
 	list_itr_t *itr = NULL;
@@ -1295,7 +1295,7 @@ extern slurmdb_assoc_rec_t *sacctmgr_find_assoc_from_list(
 }
 
 extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc_from_list(
-	List assoc_list, char *account, char *cluster)
+	list_t *assoc_list, char *account, char *cluster)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
@@ -1324,7 +1324,7 @@ extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc_from_list(
 }
 
 extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
-	List qos_list, char *name)
+	list_t *qos_list, char *name)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
@@ -1350,7 +1350,7 @@ extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
 }
 
 extern slurmdb_res_rec_t *sacctmgr_find_res_from_list(
-	List res_list, uint32_t id, char *name, char *server)
+	list_t *res_list, uint32_t id, char *name, char *server)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_res_rec_t *res = NULL;
@@ -1372,7 +1372,7 @@ extern slurmdb_res_rec_t *sacctmgr_find_res_from_list(
 }
 
 extern slurmdb_user_rec_t *sacctmgr_find_user_from_list(
-	List user_list, char *name)
+	list_t *user_list, char *name)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_user_rec_t *user = NULL;
@@ -1392,7 +1392,7 @@ extern slurmdb_user_rec_t *sacctmgr_find_user_from_list(
 }
 
 extern slurmdb_account_rec_t *sacctmgr_find_account_from_list(
-	List acct_list, char *name)
+	list_t *acct_list, char *name)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_account_rec_t *account = NULL;
@@ -1412,7 +1412,7 @@ extern slurmdb_account_rec_t *sacctmgr_find_account_from_list(
 }
 
 extern slurmdb_cluster_rec_t *sacctmgr_find_cluster_from_list(
-	List cluster_list, char *name)
+	list_t *cluster_list, char *name)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
@@ -1431,7 +1431,7 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster_from_list(
 }
 
 extern slurmdb_wckey_rec_t *sacctmgr_find_wckey_from_list(
-	List wckey_list, char *user, char *name, char *cluster)
+	list_t *wckey_list, char *user, char *name, char *cluster)
 {
 	list_itr_t *itr = NULL;
 	slurmdb_wckey_rec_t * wckey = NULL;
@@ -1556,7 +1556,8 @@ extern int get_double(char *in_value, double *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
-static int _addto_action_char_list_internal(List char_list, char *name, void *x)
+static int _addto_action_char_list_internal(list_t *char_list, char *name,
+					    void *x)
 {
 	uint32_t id = 0;
 	char *tmp_name = NULL;
@@ -1579,7 +1580,7 @@ static int _addto_action_char_list_internal(List char_list, char *name, void *x)
 	}
 }
 
-extern int addto_action_char_list(List char_list, char *names)
+extern int addto_action_char_list(list_t *char_list, char *names)
 {
 	if (!char_list) {
 		error("No list was given to fill in");
@@ -1596,11 +1597,11 @@ extern void sacctmgr_print_coord_list(
 	int abs_len = abs(field->len);
 	list_itr_t *itr = NULL;
 	char *print_this = NULL;
-	List value = NULL;
+	list_t *value = NULL;
 	slurmdb_coord_rec_t *object = NULL;
 
 	if (input)
-		value = *(List *)input;
+		value = *(list_t **)input;
 
 	if (!value || !list_count(value)) {
 		if (print_fields_parsable_print)
@@ -2159,9 +2160,9 @@ extern int sort_coord_list(void *a, void *b)
 	return 0;
 }
 
-extern List sacctmgr_process_format_list(List format_list)
+extern list_t *sacctmgr_process_format_list(list_t *format_list)
 {
-	List print_fields_list = list_create(destroy_print_field);
+	list_t *print_fields_list = list_create(destroy_print_field);
 	list_itr_t *itr = list_iterator_create(format_list);
 	print_field_t *field = NULL;
 	char *object = NULL;
@@ -2177,9 +2178,9 @@ extern List sacctmgr_process_format_list(List format_list)
 	return print_fields_list;
 }
 
-extern int sacctmgr_validate_cluster_list(List cluster_list)
+extern int sacctmgr_validate_cluster_list(list_t *cluster_list)
 {
-	List temp_list = NULL;
+	list_t *temp_list = NULL;
 	char *cluster = NULL;
 	int rc = SLURM_SUCCESS;
 	list_itr_t *itr = NULL, *itr_c = NULL;

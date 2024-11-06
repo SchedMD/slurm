@@ -40,7 +40,7 @@
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_job_cond_t *job_cond,
-		     List format_list)
+		     list_t *format_list)
 {
 	int i, end = 0;
 	int set = 0;
@@ -79,13 +79,13 @@ static int _set_cond(int *start, int argc, char **argv,
 	return set;
 }
 
-static void _print_runaway_jobs(List format_list, List jobs)
+static void _print_runaway_jobs(list_t *format_list, list_t *jobs)
 {
 	char outbuf[FORMAT_STRING_SIZE];
 	slurmdb_job_rec_t *job = NULL;
 	list_itr_t *itr = NULL;
 	list_itr_t *field_itr = NULL;
-	List print_fields_list; /* types are of print_field_t */
+	list_t *print_fields_list; /* types are of print_field_t */
 	print_field_t *field = NULL;
 	int field_count;
 
@@ -202,12 +202,12 @@ static int _purge_known_jobs(void *x, void *key)
 	return false;
 }
 
-static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
+static list_t *_get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 {
-	List db_jobs_list = NULL;
+	list_t *db_jobs_list = NULL;
 	job_info_msg_t *clus_jobs = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
-	List cluster_list = NULL;
+	list_t *cluster_list = NULL;
 
 	job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
 	job_cond->flags |= JOBCOND_FLAG_RUNAWAY | JOBCOND_FLAG_NO_TRUNC;
@@ -282,12 +282,12 @@ cleanup:
  */
 extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 {
-	List runaway_jobs = NULL;
-	List process_jobs = list_create(slurmdb_destroy_job_rec);
+	list_t *runaway_jobs = NULL;
+	list_t *process_jobs = list_create(slurmdb_destroy_job_rec);
 	int rc = SLURM_SUCCESS;
 	int i=0;
 	char *cluster_str;
-	List format_list = list_create(xfree_ptr);
+	list_t *format_list = list_create(xfree_ptr);
 	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	char *ask_msg = "\nWould you like to fix these runaway jobs?\n"
 			"(This will set the end time for each job to the "

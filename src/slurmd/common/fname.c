@@ -268,6 +268,12 @@ static void _batch_path_check(char **p, char **q, char **name,
 			   step->array_task_id);
 		*q = ++(*p);
 		break;
+	case 'b': /* %b => array task id modulo 10 */
+		xmemcat(*name, *q, *p - 1);
+		xstrfmtcat(*name, "%0*u", wid,
+			   step->array_task_id % 10);
+		*q = ++(*p);
+		break;
 	case 'A':  /* '%A' => array master job id */
 		xmemcat(*name, *q, *p - 1);
 		if (step->array_task_id == NO_VAL)

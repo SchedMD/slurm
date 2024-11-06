@@ -226,9 +226,9 @@ extern int with_assoc_flag;/* show acct/user associations flag */
 extern int readonly_flag; /* make it so you can only run list commands */
 extern void *db_conn;
 extern uint32_t my_uid;
-extern List g_qos_list;
-extern List g_res_list;
-extern List g_tres_list;
+extern list_t *g_qos_list;
+extern list_t *g_res_list;
+extern list_t *g_tres_list;
 extern const char *mime_type; /* user requested JSON or YAML */
 extern const char *data_parser; /* data_parser args */
 
@@ -243,8 +243,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc_rec,
 					char *type, char *value,
 					int command_len, int option);
 extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
-					   print_field_t *field, List tree_list,
-					   bool last);
+				     print_field_t *field, list_t *tree_list,
+				     bool last);
 
 extern int sacctmgr_add_assoc(int argc, char **argv);
 extern int sacctmgr_add_user(int argc, char **argv);
@@ -302,9 +302,9 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type);
 extern int get_uint16(char *in_value, uint16_t *out_value, char *type);
 extern int get_uint64(char *in_value, uint64_t *out_value, char *type);
 extern int get_double(char *in_value, double *out_value, char *type);
-extern int addto_qos_char_list(List char_list, List qos_list, char *names,
+extern int addto_qos_char_list(list_t *char_list, list_t *qos_list, char *names,
 			       int option);
-extern int addto_action_char_list(List char_list, char *names);
+extern int addto_action_char_list(list_t *char_list, char *names);
 extern void sacctmgr_print_coord_list(
 	print_field_t *field, void *input, int last);
 
@@ -317,8 +317,8 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond);
 extern int sacctmgr_update_qos_usage(slurmdb_qos_cond_t *qos_cond,
 				     long double new_raw_usage);
 extern int sort_coord_list(void *, void *);
-extern List sacctmgr_process_format_list(List format_list);
-extern int sacctmgr_validate_cluster_list(List cluster_list);
+extern list_t *sacctmgr_process_format_list(list_t *format_list);
+extern int sacctmgr_validate_cluster_list(list_t *cluster_list);
 
 /* you need to free the objects returned from these functions */
 extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc(
@@ -333,22 +333,22 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster(char *name);
  */
 
 extern slurmdb_assoc_rec_t *sacctmgr_find_assoc_from_list(
-	List assoc_list, char *user, char *account,
+	list_t *assoc_list, char *user, char *account,
 	char *cluster, char *partition);
 extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc_from_list(
-	List assoc_list, char *account, char *cluster);
+	list_t *assoc_list, char *account, char *cluster);
 extern slurmdb_res_rec_t *sacctmgr_find_res_from_list(
-	List res_list, uint32_t id, char *name, char *server);
+	list_t *res_list, uint32_t id, char *name, char *server);
 extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
-	List qos_list, char *name);
+	list_t *qos_list, char *name);
 extern slurmdb_user_rec_t *sacctmgr_find_user_from_list(
-	List user_list, char *name);
+	list_t *user_list, char *name);
 extern slurmdb_account_rec_t *sacctmgr_find_account_from_list(
-	List acct_list, char *name);
+	list_t *acct_list, char *name);
 extern slurmdb_cluster_rec_t *sacctmgr_find_cluster_from_list(
-	List cluster_list, char *name);
+	list_t *cluster_list, char *name);
 extern slurmdb_wckey_rec_t *sacctmgr_find_wckey_from_list(
-	List wckey_list, char *user, char *name, char *cluster);
+	list_t *wckey_list, char *user, char *name, char *cluster);
 
 extern void sacctmgr_initialize_g_tres_list(void);
 
@@ -356,10 +356,9 @@ extern void sacctmgr_initialize_g_tres_list(void);
 extern int print_file_add_limits_to_line(char **line,
 					 slurmdb_assoc_rec_t *assoc);
 
-extern int print_file_slurmdb_hierarchical_rec_list(FILE *fd,
-					  List slurmdb_hierarchical_rec_list,
-					  List user_list,
-					  List acct_list);
+extern int print_file_slurmdb_hierarchical_rec_list(
+	FILE *fd, list_t *slurmdb_hierarchical_rec_list,
+	list_t *user_list, list_t *acct_list);
 
 extern void load_sacctmgr_cfg_file (int argc, char **argv);
 
@@ -370,8 +369,8 @@ extern int sacctmgr_list_txn(int argc, char **argv);
 extern int sacctmgr_list_runaway_jobs(int argc, char **argv);
 
 /* federation_functions.c */
-extern int verify_federations_exist(List name_list);
-extern int verify_fed_clusters(List cluster_list, const char *fed_name,
+extern int verify_federations_exist(list_t *name_list);
+extern int verify_fed_clusters(list_t *cluster_list, const char *fed_name,
 			       bool *existing_fed);
 
 #endif

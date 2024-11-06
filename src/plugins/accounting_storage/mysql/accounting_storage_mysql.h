@@ -95,6 +95,9 @@ extern char *job_table;
 extern char *job_env_table;
 extern char *job_script_table;
 extern char *last_ran_table;
+extern char *qos_day_table;
+extern char *qos_hour_table;
+extern char *qos_month_table;
 extern char *qos_table;
 extern char *resv_table;
 extern char *res_table;
@@ -110,8 +113,8 @@ extern char *wckey_table;
 /* Since tables are cluster centric we have a global cluster list to
  * go off of.
  */
-extern List as_mysql_cluster_list;
-extern List as_mysql_total_cluster_list;
+extern list_t *as_mysql_cluster_list;
+extern list_t *as_mysql_total_cluster_list;
 extern pthread_rwlock_t as_mysql_cluster_list_lock;
 
 extern bool backup_dbd;
@@ -158,7 +161,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			 char *name_char,
 			 char *assoc_char,
 			 char *cluster_name,
-			 List ret_list,
+			 list_t *ret_list,
 			 bool *jobs_running,
 			 bool *default_account);
 
@@ -189,19 +192,18 @@ extern uint32_t get_cluster_version(mysql_conn_t *mysql_conn,
 /*local api functions */
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
 
-extern int acct_storage_p_add_assocs(mysql_conn_t *mysql_conn,
-					   uint32_t uid,
-					   List assoc_list);
+extern int acct_storage_p_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
+				     list_t *assoc_list);
 
 extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
-				     List wckey_list);
+				     list_t *wckey_list);
 
-extern List acct_storage_p_get_assocs(
+extern list_t *acct_storage_p_get_assocs(
 	mysql_conn_t *mysql_conn, uid_t uid,
 	slurmdb_assoc_cond_t *assoc_cond);
 
-extern List acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
-				      slurmdb_wckey_cond_t *wckey_cond);
+extern list_t *acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
+					 slurmdb_wckey_cond_t *wckey_cond);
 
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				    void *in, slurmdbd_msg_type_t type,
@@ -212,12 +214,12 @@ extern int clusteracct_storage_p_get_usage(
 	slurmdb_cluster_rec_t *cluster_rec,  slurmdbd_msg_type_t type,
 	time_t start, time_t end);
 
-extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-					List acct_list,
-					slurmdb_user_cond_t *user_cond);
+extern list_t *acct_storage_p_remove_coord(mysql_conn_t *mysql_conn,
+					   uint32_t uid, list_t *acct_list,
+					   slurmdb_user_cond_t *user_cond);
 
-extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
-					 uint32_t uid,
-					 slurmdb_wckey_cond_t *wckey_cond);
+extern list_t *acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
+					    uint32_t uid,
+					    slurmdb_wckey_cond_t *wckey_cond);
 
 #endif

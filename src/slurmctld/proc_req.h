@@ -58,6 +58,7 @@ typedef struct {
 	bool queue_enabled;
 	bool hard_drop; /* discard traffic if max_queued exceeded */
 	bool shutdown;
+	bool keep_msg; /* skip freeing msg and closing connection */
 
 	int yield_sleep; /* usec sleep between cycles when busy */
 	int interval; /* usec sleep after cycle if no longer busy */
@@ -70,7 +71,7 @@ typedef struct {
 	pthread_cond_t cond;
 	pthread_mutex_t mutex;
 
-	List work;
+	list_t *work;
 
 	/* Queue processing statistics */
 	uint16_t queued;
@@ -82,10 +83,18 @@ typedef struct {
 extern slurmctld_rpc_t slurmctld_rpcs[];
 
 /*
+ * Find RPC matching msg_type in slurmctld_rpcs[].
+ * IN msg_type - RPC type - see slurm_msg_type_t
+ * RET ptr or NULL if not found
+ */
+extern slurmctld_rpc_t *find_rpc(uint16_t msg_type);
+
+/*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
+ * IN this_rpc - pointer to the rpc management structure
  */
-void slurmctld_req(slurm_msg_t *msg);
+extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc);
 
 /*
  * Update slurmctld stats structure with time spent processing an rpc.

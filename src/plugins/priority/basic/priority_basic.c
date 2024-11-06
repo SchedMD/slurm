@@ -186,7 +186,7 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 	return priority_fs;
 }
 
-extern List priority_p_get_priority_factors_list(uid_t uid)
+extern list_t *priority_p_get_priority_factors_list(uid_t uid)
 {
 	return(list_create(NULL));
 }

@@ -59,8 +59,15 @@ extern int net_stream_listen(int *fd, uint16_t *port);
 /* set keepalive time on socket */
 extern void net_set_keep_alive(int sock);
 
-/* set TCP_NODELAY on socket */
-extern void net_set_nodelay(int sock);
+/*
+ * Toggle TCP_NODELAY on socket
+ *
+ * IN sock - target socket file descriptor
+ * IN set - True to set TCP_NODELAY and false to unset TCP_NODELAY
+ * IN con_name - connection name for logging
+ * RET SLURM_SUCCESS or error
+ */
+extern int net_set_nodelay(int sock, bool set, const char *con_name);
 
 extern int net_stream_listen_ports(int *, uint16_t *, uint16_t *, bool);
 
@@ -78,5 +85,14 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen);
  * RET ptr to string (must xfree) or NULL
  */
 extern char *addrinfo_to_string(const struct addrinfo *addr);
+
+/*
+ * Initialize socket address for named unix socket
+ * IN path - path for unix socket
+ * RET socket address which caller must check ss_family:
+ *	slurm_addr_t.ss_family=AF_UNIX if path is valid
+ *	slurm_addr_t.ss_family=AF_UNSPEC if path is not valid
+ */
+extern slurm_addr_t sockaddr_from_unix_path(const char *path);
 
 #endif /* !_NET_H */

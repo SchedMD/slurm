@@ -485,7 +485,7 @@ list_t *allocate_het_job_nodes(void)
 	slurm_allocation_callbacks_t callbacks;
 	list_itr_t *opt_iter, *resp_iter;
 	slurm_opt_t *opt_local, *first_opt = NULL;
-	List job_req_list = NULL, job_resp_list = NULL;
+	list_t *job_req_list = NULL, *job_resp_list = NULL;
 	uint32_t my_job_id = 0;
 	int i, k;
 
@@ -657,16 +657,16 @@ cleanup_allocation(void)
 	return SLURM_SUCCESS;
 }
 
-extern List existing_allocation(void)
+extern list_t *existing_allocation(void)
 {
 	uint32_t old_job_id;
-	List job_resp_list = NULL;
+	list_t *job_resp_list = NULL;
 
 	if (sropt.jobid == NO_VAL)
 		return NULL;
 
 	if (opt.clusters) {
-		List clusters = NULL;
+		list_t *clusters = NULL;
 		if (slurm_get_cluster_info(&(clusters), opt.clusters, 0)) {
 			print_db_notok(opt.clusters, 0);
 			fatal("Could not get cluster information");

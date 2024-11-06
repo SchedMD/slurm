@@ -51,6 +51,8 @@ typedef struct job_queue_rec {
 	part_record_t *part_ptr;	/* Pointer to partition record. Each
 					 * job may have multiple partitions. */
 	uint32_t priority;		/* Job priority in THIS partition */
+	slurmdb_qos_rec_t *qos_ptr; /* Pointer to the qos record. Each
+				     * job may have requested multiple QOS. */
 	slurmctld_resv_t *resv_ptr;     /* If job didn't ask for a reservation,
 					 * this reservation is one it can run
 					 * in without requesting */
@@ -100,7 +102,7 @@ extern void job_queue_rec_resv_list(job_queue_rec_t *job_queue_rec);
  * RET the job queue
  * NOTE: the caller must call list_destroy() on RET value to free memory
  */
-extern List build_job_queue(bool clear_start, bool backfill);
+extern list_t *build_job_queue(bool clear_start, bool backfill);
 
 /* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
 extern batch_job_launch_msg_t *build_launch_job_msg(job_record_t *job_ptr,
@@ -231,7 +233,7 @@ extern void set_job_elig_time(void);
  * sort_job_queue - sort job_queue in decending priority order
  * IN/OUT job_queue - sorted job queue previously made by build_job_queue()
  */
-extern void sort_job_queue(List job_queue);
+extern void sort_job_queue(list_t *job_queue);
 
 /* Note this differs from the ListCmpF typedef since we want jobs sorted
  *	in order of decreasing priority */
@@ -267,7 +269,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend);
  * Return true if a dependency was updated, false if not.
  */
 extern bool update_job_dependency_list(job_record_t *job_ptr,
-				       List new_depend_list);
+				       list_t *new_depend_list);
 
 /*
  * When an array job is rejected for some reason, the remaining array tasks will

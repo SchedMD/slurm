@@ -47,13 +47,16 @@
  * where the topology version also needs to split the message list based
  * on TreeWidth.
  *
- * IN: hl        - hostlist_t *   - list of every node to send message to
- *                                  will be empty on return which is same
- *                                  behavior as similar code replaced in
- *                                  forward.c
- * OUT: sp_hl    - hostlist_t *** - the array of hostlists that will be malloced
- * OUT: count    - int *          - the count of created hostlists
- * RET: SLURM_SUCCESS - int
+ * IN: hl          - hostlist_t *   - list of every node to send message to
+ *                                    will be empty on return which is same
+ *                                    behavior as similar code replaced in
+ *                                    forward.c
+ * OUT: sp_hl      - hostlist_t *** - the array of hostlists that will be
+ *                                    malloced
+ * OUT: count      - int *          - the count of created hostlists
+ * IN:  tree_width - int            - max width of each branch on the tree.
+ * RET:              int            - the number of levels opened in the tree,
+ *                                    or SLURM_ERROR
  *
  * Note: created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.

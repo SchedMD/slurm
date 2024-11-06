@@ -111,6 +111,12 @@ extern char *auth_g_token_generate(int plugin_id, const char *username,
 				   int lifespan);
 
 /*
+ * Get file descriptor that must survive reconfig
+ * RET -1 or file descriptor that must survive reconfig
+ */
+extern int auth_g_get_reconfig_fd(int plugin_id);
+
+/*
  * Set local thread security context
  * IN token - security token - may be general token, or per user token, or NULL
  * IN username - username to run as (only available for SlurmUser/root),

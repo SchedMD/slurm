@@ -45,7 +45,7 @@ static inline pmixp_io_engine_t *_tmp_engines_get_direct();
 static inline void _tmp_engines_return_direct(pmixp_io_engine_t *eng);
 
 static void _msg_handler_destruct(void *obj);
-static List _conn_list, _empty_hndl_list;
+static list_t *_conn_list, *_empty_hndl_list;
 static pmixp_p2p_data_t _slurm_hdr, _direct_hdr;
 
 void pmixp_conn_init(pmixp_p2p_data_t slurm_hdr,
@@ -219,7 +219,7 @@ void pmixp_conn_return(pmixp_conn_t *conn)
  */
 
 static void _temp_engine_destruct(void *obj);
-static List _slurm_engines, _direct_engines;
+static list_t *_slurm_engines, *_direct_engines;
 
 static void _tmp_engines_init()
 {

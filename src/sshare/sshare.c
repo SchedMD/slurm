@@ -281,13 +281,8 @@ static int _single_cluster(int argc, char **argv, shares_request_msg_t *req_msg)
 	}
 
 	if (mimetype) {
-		if (is_data_parser_deprecated(data_parser))
-			rc = error("%s does not support dumping for shares",
-				   data_parser);
-		else
-			DATA_DUMP_CLI_SINGLE(OPENAPI_SHARES_RESP, resp_msg,
-					     argc, argv, NULL, mimetype,
-					     data_parser, rc);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SHARES_RESP, resp_msg, argc, argv,
+				     NULL, mimetype, data_parser, rc);
 	} else {
 		process(resp_msg, options);
 	}

@@ -38,7 +38,7 @@ typedef struct eio_handle_components eio_handle_t;
 /* Possible I/O operations on an I/O object
  * Each takes the io_obj being operated on as an argument
  *
- * handle_*() functions also pass the List of io_obj's from the event loop
+ * handle_*() functions also pass the list of io_obj's from the event loop
  *
  * If either "handle_error" (for POLLERR and POLLNVAL) or "handle_close"
  * (for POLLHUP) are not defined, the eio server will fallback to handle_read
@@ -55,10 +55,10 @@ struct io_operations {
 	bool (*readable    )(eio_obj_t *);
 	bool (*writable    )(eio_obj_t *);
 	void (*handle_msg  )(void *arg, slurm_msg_t *msg);
-	int  (*handle_read )(eio_obj_t *, List);
-	int  (*handle_write)(eio_obj_t *, List);
-	int  (*handle_error)(eio_obj_t *, List);
-	int  (*handle_close)(eio_obj_t *, List);
+	int  (*handle_read )(eio_obj_t *, list_t *);
+	int  (*handle_write)(eio_obj_t *, list_t *);
+	int  (*handle_error)(eio_obj_t *, list_t *);
+	int  (*handle_close)(eio_obj_t *, list_t *);
 	int  timeout;
 };
 
@@ -93,7 +93,7 @@ void eio_new_obj(eio_handle_t *eio, eio_obj_t *obj);
  * Supposed to be called from read/write handlers
  * (have "objs" as one of their arguments).
  */
-bool eio_remove_obj(eio_obj_t *obj, List objs);
+bool eio_remove_obj(eio_obj_t *obj, list_t *objs);
 
 
 /*
@@ -108,7 +108,7 @@ bool eio_remove_obj(eio_obj_t *obj, List objs);
 int eio_handle_mainloop(eio_handle_t *eio);
 
 bool eio_message_socket_readable(eio_obj_t *obj);
-int eio_message_socket_accept(eio_obj_t *obj, List objs);
+int eio_message_socket_accept(eio_obj_t *obj, list_t *objs);
 
 int eio_signal_wakeup(eio_handle_t *eio);
 int eio_signal_shutdown(eio_handle_t *eio);

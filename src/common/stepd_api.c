@@ -378,12 +378,12 @@ extern int stepd_get_namespace_fd(int fd, uint16_t protocol_version)
 	/*
 	 * Receive the file descriptor of the namespace to be joined if valid fd
 	 * is coming. Note that the number of ns_fd will not be the same
-	 * returned from receive_fd_over_pipe().  The number we got from the
+	 * returned from receive_fd_over_socket().  The number we got from the
 	 * safe_read was the fd on the sender which will be different on our
 	 * end.
 	 */
 	if (ns_fd > 0)
-		ns_fd = receive_fd_over_pipe(fd);
+		ns_fd = receive_fd_over_socket(fd);
 
 	return ns_fd;
 
@@ -528,12 +528,11 @@ _sockname_regex(regex_t *re, const char *filename, slurm_step_id_t *step_id)
  * slurmd on one node (unusual outside of development environments), you
  * will get one of the local NodeNames more-or-less at random.
  *
- * Returns a List of pointers to step_loc_t structures.
+ * Returns a list of pointers to step_loc_t structures.
  */
-extern List
-stepd_available(const char *directory, const char *nodename)
+extern list_t *stepd_available(const char *directory, const char *nodename)
 {
-	List l;
+	list_t *l = NULL;
 	DIR *dp;
 	struct dirent *ent;
 	regex_t re;
@@ -1419,7 +1418,7 @@ extern int stepd_relay_msg(int fd, slurm_msg_t *msg, uint16_t protocol_version)
 	buf_size = get_buf_offset(msg->buffer) - msg->body_offset;
 
 	safe_write(fd, &msg->protocol_version, sizeof(uint16_t));
-	send_fd_over_pipe(fd, msg->conn_fd);
+	send_fd_over_socket(fd, msg->conn_fd);
 	safe_write(fd, &buf_size, sizeof(uint32_t));
 	safe_write(fd, &msg->buffer->head[msg->body_offset], buf_size);
 

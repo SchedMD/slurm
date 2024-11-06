@@ -54,16 +54,16 @@ typedef struct build_part_info {
 	node_info_msg_t *node_msg;
 	uint16_t part_num;
 	partition_info_t *part_ptr;
-	List sinfo_list;
+	list_t *sinfo_list;
 } build_part_info_t;
 
 /* Data structures for pthreads used to gather node/partition information from
  * multiple clusters in parallel */
 typedef struct load_info_struct {
 	slurmdb_cluster_rec_t *cluster;
-	List node_info_msg_list;
-	List part_info_msg_list;
-	List resp_msg_list;
+	list_t *node_info_msg_list;
+	list_t *part_info_msg_list;
+	list_t *resp_msg_list;
 } load_info_struct_t;
 
 struct sinfo_parameters params;
@@ -79,33 +79,33 @@ static pthread_mutex_t sinfo_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void _free_sinfo_format(void *object);
 static void _free_params(void);
 void *      _build_part_info(void *args);
-static int  _build_sinfo_data(List sinfo_list,
-			      partition_info_msg_t *partition_msg,
-			      node_info_msg_t *node_msg);
+static int _build_sinfo_data(list_t *sinfo_list,
+			     partition_info_msg_t *partition_msg,
+			     node_info_msg_t *node_msg);
 static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 				   uint16_t part_inx, node_info_t *node_ptr);
 static int  _find_part_list(void *x, void *key);
 static bool _filter_out(node_info_t *node_ptr);
 static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed,
 		     char *cluster_name, int argc, char **argv);
-static int  _insert_node_ptr(List sinfo_list, uint16_t part_num,
-			     partition_info_t *part_ptr,
-			     node_info_t *node_ptr);
+static int _insert_node_ptr(list_t *sinfo_list, uint16_t part_num,
+			    partition_info_t *part_ptr,
+			    node_info_t *node_ptr);
 static int  _load_resv(reserve_info_msg_t ** reserv_pptr, bool clear_old);
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 			     partition_info_t* part_ptr);
-static int _multi_cluster(List clusters, int argc, char **argv);
+static int _multi_cluster(list_t *clusters, int argc, char **argv);
 static void _node_list_delete(void *data);
 static void _part_list_delete(void *data);
-static List _query_fed_servers(slurmdb_federation_rec_t *fed,
-			       List node_info_msg_list,
-			       List part_info_msg_list);
-static List _query_server(bool clear_old);
+static list_t *_query_fed_servers(slurmdb_federation_rec_t *fed,
+				  list_t *node_info_msg_list,
+				  list_t *part_info_msg_list);
+static list_t *_query_server(bool clear_old);
 static int  _reservation_report(reserve_info_msg_t *resv_ptr);
 static bool _serial_part_data(void);
 static void _sinfo_list_delete(void *data);
-static void _sort_hostlist(List sinfo_list);
+static void _sort_hostlist(list_t *sinfo_list);
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 
 int main(int argc, char **argv)
@@ -185,7 +185,7 @@ static void prepend_cluster_name(void)
 	format_prepend_cluster_name(params.format_list, 8, false, NULL);
 }
 
-static int _multi_cluster(List clusters, int argc, char **argv)
+static int _multi_cluster(list_t *clusters, int argc, char **argv)
 {
 	list_itr_t *itr;
 	bool first = true;
@@ -228,9 +228,9 @@ static int _set_cluster_name(void *x, void *arg)
 static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed,
 		     char *cluster_name, int argc, char **argv)
 {
-	List node_info_msg_list = NULL, part_info_msg_list = NULL;
+	list_t *node_info_msg_list = NULL, *part_info_msg_list = NULL;
 	reserve_info_msg_t *reserv_msg = NULL;
-	List sinfo_list = NULL;
+	list_t *sinfo_list = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if (params.reservation_flag) {
@@ -259,14 +259,9 @@ static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed,
 
 	sort_sinfo_list(sinfo_list);
 	if (params.mimetype)
-		if (is_data_parser_deprecated(params.data_parser))
-			DATA_DUMP_CLI_DEPRECATED(SINFO_DATA_LIST, sinfo_list,
-						 "sinfo", argc, argv, NULL,
-						 params.mimetype, rc);
-		else
-			DATA_DUMP_CLI_SINGLE(OPENAPI_SINFO_RESP, sinfo_list,
-					     argc, argv, NULL, params.mimetype,
-					     params.data_parser, rc);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SINFO_RESP, sinfo_list, argc, argv,
+				     NULL, params.mimetype, params.data_parser,
+				     rc);
 	else
 		rc = print_sinfo_list(sinfo_list);
 
@@ -311,7 +306,7 @@ static int _load_resv(reserve_info_msg_t **reserv_pptr, bool clear_old)
 						     &new_resv_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_reservation_info_msg(old_resv_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_resv_ptr = old_resv_ptr;
 		}
@@ -336,13 +331,13 @@ static int _load_resv(reserve_info_msg_t **reserv_pptr, bool clear_old)
  *		  between clusters.
  * RET List of node/partition records
  */
-static List _query_server(bool clear_old)
+static list_t *_query_server(bool clear_old)
 {
 	static partition_info_msg_t *old_part_ptr = NULL, *new_part_ptr;
 	static node_info_msg_t *old_node_ptr = NULL, *new_node_ptr;
 	int error_code;
 	uint16_t show_flags = SHOW_MIXED;
-	List sinfo_list = NULL;
+	list_t *sinfo_list = NULL;
 
 	if (params.all_flag)
 		show_flags |= SHOW_ALL;
@@ -356,7 +351,7 @@ static List _query_server(bool clear_old)
 						   &new_part_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(old_part_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_part_ptr = old_part_ptr;
 		}
@@ -387,7 +382,7 @@ static List _query_server(bool clear_old)
 		}
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg(old_node_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_node_ptr = old_node_ptr;
 		}
@@ -419,7 +414,7 @@ static void *_load_job_prio_thread(void *args)
 	int error_code;
 	partition_info_msg_t *new_part_ptr;
 	node_info_msg_t *new_node_ptr;
-	List sinfo_list = NULL;
+	list_t *sinfo_list = NULL;
 
 	if (params.node_name_single)
 		node_name = params.nodes;
@@ -474,11 +469,11 @@ static void *_load_job_prio_thread(void *args)
  * fed IN - identification of clusters in federation
  * RET List of node/partition records
  */
-static List _query_fed_servers(slurmdb_federation_rec_t *fed,
-			       List node_info_msg_list,
-			       List part_info_msg_list)
+static list_t *_query_fed_servers(slurmdb_federation_rec_t *fed,
+				  list_t *node_info_msg_list,
+				  list_t *part_info_msg_list)
 {
-	List resp_msg_list;
+	list_t *resp_msg_list;
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	list_itr_t *iter;
@@ -519,7 +514,7 @@ static List _query_fed_servers(slurmdb_federation_rec_t *fed,
 void *_build_part_info(void *args)
 {
 	build_part_info_t *build_struct_ptr;
-	List sinfo_list;
+	list_t *sinfo_list;
 	partition_info_t *part_ptr;
 	node_info_msg_t *node_msg;
 	node_info_t *node_ptr = NULL;
@@ -575,7 +570,7 @@ void *_build_part_info(void *args)
  * node_msg IN - node info message
  * RET zero or error code
  */
-static int _build_sinfo_data(List sinfo_list,
+static int _build_sinfo_data(list_t *sinfo_list,
 			     partition_info_msg_t *partition_msg,
 			     node_info_msg_t *node_msg)
 {
@@ -746,7 +741,7 @@ static bool _filter_out(node_info_t *node_ptr)
 	return false;
 }
 
-static void _sort_hostlist(List sinfo_list)
+static void _sort_hostlist(list_t *sinfo_list)
 {
 	list_itr_t *i;
 	sinfo_data_t *sinfo_ptr;
@@ -1028,6 +1023,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		sinfo_ptr->max_cpus_per_node = sinfo_ptr->part_info->
 					       max_cpus_per_node;
 		sinfo_ptr->version    = node_ptr->version;
+		sinfo_ptr->cpu_spec_list = node_ptr->cpu_spec_list;
+		sinfo_ptr->mem_spec_limit = node_ptr->mem_spec_limit;
 	} else if (hostlist_find(sinfo_ptr->nodes, node_ptr->name) != -1) {
 		/* we already have this node in this record,
 		 * just return, don't duplicate */
@@ -1122,7 +1119,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		sinfo_ptr->cpus_idle += total_cpus;
 }
 
-static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
+static int _insert_node_ptr(list_t *sinfo_list, uint16_t part_num,
 			    partition_info_t *part_ptr,
 			    node_info_t *node_ptr)
 {

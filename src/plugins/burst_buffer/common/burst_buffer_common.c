@@ -95,7 +95,7 @@ static uid_t *_parse_users(char *buf)
 		return user_array;
 	tmp = xstrdup(buf);
 	array_size = 1;
-	user_array = xmalloc(sizeof(uid_t) * array_size);
+	user_array = xcalloc(array_size, sizeof(uid_t));
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		if ((uid_from_string(tok, user_array + inx) == -1) ||
@@ -139,9 +139,9 @@ static char *_print_users(uid_t *buf)
 /* Allocate burst buffer hash tables */
 extern void bb_alloc_cache(bb_state_t *state_ptr)
 {
-	state_ptr->bb_ahash = xmalloc(sizeof(bb_alloc_t *) * BB_HASH_SIZE);
-	state_ptr->bb_jhash = xmalloc(sizeof(bb_job_t *)   * BB_HASH_SIZE);
-	state_ptr->bb_uhash = xmalloc(sizeof(bb_user_t *)  * BB_HASH_SIZE);
+	state_ptr->bb_ahash = xcalloc(BB_HASH_SIZE, sizeof(bb_alloc_t *));
+	state_ptr->bb_jhash = xcalloc(BB_HASH_SIZE, sizeof(bb_job_t *));
+	state_ptr->bb_uhash = xcalloc(BB_HASH_SIZE, sizeof(bb_user_t *));
 }
 
 /* Clear all cached burst buffer records, freeing all memory. */
@@ -350,6 +350,10 @@ char *_handle_replacement(job_record_t *job_ptr)
 			case 'a':	/* '%a' => array task id */
 				xstrfmtcat(replaced, "%u",
 					   job_ptr->array_task_id);
+				break;
+			case 'b':	/* '%b' => array task id modulo 10 */
+				xstrfmtcat(replaced, "%u",
+					   job_ptr->array_task_id % 10);
 				break;
 			case 'd':	/* '%d' => workdir */
 				xstrcat(replaced, job_ptr->details->work_dir);
@@ -1775,7 +1779,7 @@ extern int bb_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job,
 	int i, j, k, rc = BB_CAN_START_NOW;
 	bool avail_ok, do_preempt, preempt_ok;
 	time_t now = time(NULL);
-	List preempt_list = NULL;
+	list_t *preempt_list = NULL;
 	list_itr_t *preempt_iter;
 	bb_state_t bb_state = *bb_state_ptr;
 
@@ -2039,7 +2043,7 @@ extern void bb_update_system_comment(job_record_t *job_ptr, char *operation,
 		slurmdb_job_cond_t job_cond;
 		slurmdb_job_rec_t job_rec;
 		slurm_selected_step_t selected_step;
-		List ret_list;
+		list_t *ret_list;
 
 		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
 		memset(&job_rec, 0, sizeof(slurmdb_job_rec_t));
@@ -2197,53 +2201,4 @@ extern int bb_write_nid_file(char *file_name, char *node_list,
 	}
 	return rc;
 #endif
-}
-
-extern void bb_write_state_file(char* old_file, char *reg_file, char *new_file,
-				const char *plugin, buf_t *buffer,
-				int buffer_size, time_t save_time,
-				time_t *last_save_time)
-{
-	int state_fd, error_code = 0;
-
-	state_fd = creat(new_file, 0600);
-	if (state_fd < 0) {
-		error("Can't save state, error creating file %s, %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
-		char *data = (char *)get_buf_data(buffer);
-		buffer_size = MAX(nwrite, buffer_size);
-		while (nwrite > 0) {
-			amount = write(state_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-
-		rc = fsync_and_close(state_fd, plugin);
-		if (rc && !error_code)
-			error_code = rc;
-	}
-	if (error_code)
-		(void) unlink(new_file);
-	else {
-		/* file shuffle */
-		*last_save_time = save_time;
-		(void) unlink(old_file);
-		if (link(reg_file, old_file)) {
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		}
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file)) {
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		}
-		(void) unlink(new_file);
-	}
 }

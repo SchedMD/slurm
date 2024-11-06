@@ -73,7 +73,7 @@ typedef struct slurm_bb_ops {
 	void		(*job_set_tres_cnt) (job_record_t *job_ptr,
 					     uint64_t *tres_cnt, bool locked);
 	time_t		(*job_get_est_start) (job_record_t *job_ptr);
-	int		(*job_try_stage_in) (List job_queue);
+	int		(*job_try_stage_in) (list_t *job_queue);
 	int		(*job_test_stage_in) (job_record_t *job_ptr,
 					      bool test_only);
 	int		(*job_begin) (job_record_t *job_ptr);
@@ -529,7 +529,7 @@ extern int bb_g_job_try_stage_in(void)
 	list_itr_t *job_iterator;
 	job_record_t *job_ptr;
 	time_t now = time(NULL);
-	List job_queue;
+	list_t *job_queue;
 
 	START_TIMER;
 	job_queue = list_create(NULL);

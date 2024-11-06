@@ -50,7 +50,7 @@
 
 static uint16_t track_wckey;
 
-static List dbd_config_list = NULL;
+static list_t *dbd_config_list = NULL;
 
 
 static void _load_dbd_config(void)
@@ -255,14 +255,8 @@ extern int sacctmgr_list_stats(int argc, char **argv)
 
 	if (mime_type) {
 		int rc;
-		if (is_data_parser_deprecated(data_parser))
-			DATA_DUMP_CLI_DEPRECATED(STATS_REC_PTR, stats_rec,
-						 "statistics", argc, argv,
-						 db_conn, mime_type, rc);
-		else
-			DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_STATS_RESP,
-					     stats_rec, argc, argv, db_conn,
-					     mime_type, data_parser, rc);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_STATS_RESP, stats_rec, argc, argv,
+				     db_conn, mime_type, data_parser, rc);
 		slurmdb_destroy_stats_rec(stats_rec);
 		return rc;
 	}

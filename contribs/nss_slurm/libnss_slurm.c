@@ -54,6 +54,7 @@
 #include "src/common/parse_config.h"
 #include "src/common/read_config.h"
 #include "src/common/stepd_api.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 /*

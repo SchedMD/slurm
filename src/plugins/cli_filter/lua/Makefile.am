@@ -1,7 +1,6 @@
 # Makefile for cli_filter/lua plugin
 
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 

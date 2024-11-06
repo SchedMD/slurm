@@ -77,6 +77,7 @@ typedef struct {
 	int		(*thread_config) (const char *token, const char *username);
 	void		(*thread_clear) (void);
 	char *		(*token_generate) (const char *username, int lifespan);
+	int		(*get_reconfig_fd)(void);
 } auth_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -98,6 +99,7 @@ static const char *syms[] = {
 	"auth_p_thread_config",
 	"auth_p_thread_clear",
 	"auth_p_token_generate",
+	"auth_p_get_reconfig_fd",
 };
 
 typedef struct {
@@ -445,7 +447,7 @@ extern char *auth_g_get_host(void *slurm_msg)
 	}
 
 	/* use remote host IP, then look it up */
-	if ((host = xgetnameinfo((struct sockaddr *) &addr, sizeof(addr)))) {
+	if ((host = xgetnameinfo(&addr))) {
 		debug3("%s: looked up from connection's IP address: %s",
 		       __func__, host);
 	} else {
@@ -581,4 +583,22 @@ extern char *auth_g_token_generate(int plugin_id, const char *username,
 	slurm_rwlock_unlock(&context_lock);
 
 	return token;
+}
+
+extern int auth_g_get_reconfig_fd(int plugin_id)
+{
+	int fd = -1;
+
+	xassert(g_context_num > 0);
+
+	slurm_rwlock_rdlock(&context_lock);
+	for (int i = 0; i < g_context_num; i++) {
+		if (plugin_id == *(ops[i].plugin_id)) {
+			fd = (*(ops[i].get_reconfig_fd))();
+			break;
+		}
+	}
+	slurm_rwlock_unlock(&context_lock);
+
+	return fd;
 }

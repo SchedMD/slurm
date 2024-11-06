@@ -50,12 +50,12 @@ enum {
 	PRINT_USER_TRES_NAME,
 };
 
-static List print_fields_list = NULL; /* types are of print_field_t */
+static list_t *print_fields_list = NULL; /* types are of print_field_t */
 static bool group_accts = false;
 static uint32_t top_limit = 10;
 
 static int _set_cond(int *start, int argc, char **argv,
-		     slurmdb_user_cond_t *user_cond, List format_list)
+		     slurmdb_user_cond_t *user_cond, list_t *format_list)
 {
 	int i;
 	int set = 0;
@@ -75,7 +75,7 @@ static int _set_cond(int *start, int argc, char **argv,
 	if (!user_cond->assoc_cond) {
 		user_cond->assoc_cond =
 			xmalloc(sizeof(slurmdb_assoc_cond_t));
-		user_cond->assoc_cond->with_usage = 1;
+		user_cond->assoc_cond->flags = ASSOC_COND_FLAG_WITH_USAGE;
 	}
 	assoc_cond = user_cond->assoc_cond;
 
@@ -165,7 +165,7 @@ static int _set_cond(int *start, int argc, char **argv,
 	return set;
 }
 
-static int _setup_print_fields_list(List format_list)
+static int _setup_print_fields_list(list_t *format_list)
 {
 	list_itr_t *itr = NULL;
 	print_field_t *field = NULL;
@@ -382,8 +382,8 @@ static void _user_top_tres_report(slurmdb_tres_rec_t *tres,
 	printf("\n");
 }
 
-static void _set_usage_column_width(List print_fields_list,
-				    List slurmdb_report_cluster_list)
+static void _set_usage_column_width(list_t *print_fields_list,
+				    list_t *slurmdb_report_cluster_list)
 {
 	print_field_t *field, *usage_field = NULL, *energy_field = NULL;
 	list_itr_t *itr;
@@ -409,7 +409,7 @@ static void _set_usage_column_width(List print_fields_list,
 }
 
 /* Merge line user/account record List into a single list of unique records */
-static void _merge_user_report(List slurmdb_report_cluster_list)
+static void _merge_user_report(list_t *slurmdb_report_cluster_list)
 {
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 	slurmdb_report_cluster_rec_t *first_report_cluster = NULL;
@@ -456,8 +456,8 @@ extern int user_top(int argc, char **argv)
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
 	list_itr_t *itr = NULL, *itr2 = NULL;
 	list_itr_t *cluster_itr = NULL;
-	List format_list = list_create(xfree_ptr);
-	List slurmdb_report_cluster_list = NULL;
+	list_t *format_list = list_create(xfree_ptr);
+	list_t *slurmdb_report_cluster_list = NULL;
 	int i = 0;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;

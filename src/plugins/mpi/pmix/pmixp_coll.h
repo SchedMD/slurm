@@ -215,8 +215,8 @@ typedef struct {
 	/* coll contexts data */
 	pmixp_coll_ring_ctx_t ctx_array[PMIXP_COLL_RING_CTX_NUM];
 	/* buffer pool to ensure parallel sends of ring data */
-	List fwrd_buf_pool;
-	List ring_buf_pool;
+	list_t *fwrd_buf_pool;
+	list_t *ring_buf_pool;
 } pmixp_coll_ring_t;
 
 typedef struct {

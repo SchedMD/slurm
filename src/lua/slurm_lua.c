@@ -44,6 +44,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
 #include "src/common/xstring.h"
@@ -52,6 +53,19 @@
 static void *lua_handle = NULL;
 
 #ifdef HAVE_LUA
+
+/*
+ * These are defined here so when we link with something other than the
+ * slurmctld we will have these symbols defined. They will get overwritten when
+ * linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern uint16_t accounting_enforce __attribute__((weak_import));
+extern void *acct_db_conn  __attribute__((weak_import));
+#else
+uint16_t accounting_enforce = 0;
+void *acct_db_conn = NULL;
+#endif
 
 static int _setup_stringarray(lua_State *L, int limit, char **data)
 {
@@ -155,10 +169,29 @@ static int _time_str2mins(lua_State *L) {
 	return 1;
 }
 
+static int _get_qos_priority(lua_State *L)
+{
+	const char *qos_name = lua_tostring(L, -1);
+	slurmdb_qos_rec_t qos = { 0 };
+
+	qos.name = xstrdup(qos_name);
+	if (assoc_mgr_fill_in_qos(acct_db_conn, &qos, accounting_enforce, NULL,
+				  false)) {
+		error("Invalid QOS name: %s", qos.name);
+		xfree(qos.name);
+		return 0;
+	}
+	xfree(qos.name);
+
+	lua_pushnumber(L, qos.priority);
+	return 1;
+}
+
 static const struct luaL_Reg slurm_functions [] = {
 	{ "log", _log_lua_msg },
 	{ "error", _log_lua_error },
 	{ "time_str2mins", _time_str2mins},
+	{ "get_qos_priority", _get_qos_priority },
 	{ NULL, NULL }
 };
 

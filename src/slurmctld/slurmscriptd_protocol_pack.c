@@ -88,6 +88,58 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_bb_script_info(bb_script_info_msg_t *msg, buf_t *buffer)
+{
+	packstr(msg->authalttypes, buffer);
+	packstr(msg->authinfo, buffer);
+	packstr(msg->authalt_params, buffer);
+	packstr(msg->authtype, buffer);
+	packstr(msg->cluster_name, buffer);
+	/* Use packmem for extra_buf - treat it as data, not as a string */
+	pack32(msg->extra_buf_size, buffer);
+	packmem(msg->extra_buf, msg->extra_buf_size, buffer);
+	packstr(msg->function, buffer);
+	pack32(msg->job_id, buffer);
+	pack16(msg->slurmctld_debug, buffer);
+	packstr(msg->slurmctld_logfile, buffer);
+	pack16(msg->log_fmt, buffer);
+	packstr(msg->plugindir, buffer);
+	packstr(msg->slurm_user_name, buffer);
+	pack32(msg->slurm_user_id, buffer);
+}
+
+static int _unpack_bb_script_info(bb_script_info_msg_t **msg, buf_t *buffer)
+{
+	bb_script_info_msg_t *bb_msg = xmalloc(sizeof(*bb_msg));
+
+	*msg = bb_msg;
+
+	safe_unpackstr(&bb_msg->authalttypes, buffer);
+	safe_unpackstr(&bb_msg->authinfo, buffer);
+	safe_unpackstr(&bb_msg->authalt_params, buffer);
+	safe_unpackstr(&bb_msg->authtype, buffer);
+	safe_unpackstr(&bb_msg->cluster_name, buffer);
+	safe_unpack32(&bb_msg->extra_buf_size, buffer);
+	safe_unpackmem_xmalloc(&bb_msg->extra_buf,
+			       &bb_msg->extra_buf_size, buffer);
+	safe_unpackstr(&bb_msg->function, buffer);
+	safe_unpack32(&bb_msg->job_id, buffer);
+	safe_unpack16(&bb_msg->slurmctld_debug, buffer);
+	safe_unpackstr(&bb_msg->slurmctld_logfile, buffer);
+	safe_unpack16(&bb_msg->log_fmt, buffer);
+	safe_unpackstr(&bb_msg->plugindir, buffer);
+	safe_unpackstr(&bb_msg->slurm_user_name, buffer);
+	safe_unpack32(&bb_msg->slurm_user_id, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: Failed to unpack message", __func__);
+	slurmscriptd_free_bb_script_info_msg(bb_msg);
+
+	return SLURM_ERROR;
+}
+
 static void _pack_script_complete(script_complete_t *resp_msg, buf_t *buffer)
 {
 	pack32(resp_msg->job_id, buffer);
@@ -196,6 +248,9 @@ extern int slurmscriptd_pack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 	packstr(msg->key, buffer); /* Can be NULL */
 
 	switch (msg->msg_type) {
+	case SLURMSCRIPTD_REQUEST_BB_SCRIPT_INFO:
+		_pack_bb_script_info(msg->msg_data, buffer);
+		break;
 	case SLURMSCRIPTD_REQUEST_FLUSH:
 		/* Nothing to pack */
 		break;
@@ -233,6 +288,11 @@ extern int slurmscriptd_unpack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 
 	safe_unpackstr(&msg->key, buffer);
 	switch (msg->msg_type) {
+	case SLURMSCRIPTD_REQUEST_BB_SCRIPT_INFO:
+		rc = _unpack_bb_script_info(
+				(bb_script_info_msg_t **)(&msg->msg_data),
+				buffer);
+		break;
 	case SLURMSCRIPTD_REQUEST_FLUSH:
 		/* Nothing to unpack */
 		break;

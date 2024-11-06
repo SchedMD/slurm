@@ -75,7 +75,7 @@ make_bash_script $file_in "
 # to a single node, and we mark the test as partially skipped.
 #
 set timeout $max_job_delay
-if {[get_config_param "MULTIPLE_SLURMD"] eq "Yes"} {
+if {[get_config_param "MULTIPLE_SLURMD"] eq "yes"} {
 	subskip "This test is partially compatible with multiple slurmd systems"
 	set job_id [submit_job -fail "-N1 --output=$file_out --error=$file_err -t1 $file_in"]
 } else {

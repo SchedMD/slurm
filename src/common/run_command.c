@@ -37,6 +37,8 @@
 
 #define _GNU_SOURCE	/* For POLLRDHUP */
 #include <fcntl.h>
+#include <inttypes.h> /* for uint16_t, uint32_t definitions */
+#include <limits.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -44,25 +46,33 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <inttypes.h>		/* for uint16_t, uint32_t definitions */
 
 #ifndef POLLRDHUP
 #define POLLRDHUP POLLHUP
 #endif
 
 #include "src/common/fd.h"
+#include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
+#include "src/common/run_command.h"
 #include "src/common/timers.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/list.h"
-#include "src/common/run_command.h"
 
+static char *script_launcher = NULL;
+static int script_launcher_fd = -1;
 static int command_shutdown = 0;
 static int child_proc_count = 0;
 static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define MAX_POLL_WAIT 500
+
+/* Function prototypes */
+static void _run_command_child_exec(int fd, const char *path, char **argv,
+				    char **env);
+static void _run_command_child_pre_exec(void);
 
 extern void run_command_add_to_script(char **script_body, char *new_str)
 {
@@ -118,15 +128,72 @@ extern void run_command_add_to_script(char **script_body, char *new_str)
 }
 
 /* used to initialize run_command module */
-extern void run_command_init(void)
+extern int run_command_init(int argc, char **argv, char *binary)
 {
 	command_shutdown = 0;
+
+#if defined(__linux__)
+	if (!binary && !script_launcher)
+		binary = "/proc/self/exe";
+#endif /* !__linux__ */
+
+	/* Use argv[0] as fallback with absolute path */
+	if (!binary && (argc > 0) && (argv[0][0] == '/'))
+		binary = argv[0];
+
+	if (!binary)
+		return SLURM_ERROR;
+
+	fd_close(&script_launcher_fd);
+	xfree(script_launcher);
+
+#if defined(__linux__)
+	if ((script_launcher_fd = open(binary, (O_PATH|O_CLOEXEC))) >= 0) {
+		char buf[PATH_MAX];
+		ssize_t bytes = readlink(binary, buf, sizeof(buf));
+
+		/*
+		 * Because we are using script_launcher_fd to exec,
+		 * script_launcher is just used for logging and thus we do not
+		 * need script_launcher to be the full path. So, it is okay
+		 * if readlink truncates the result; in that case, just use
+		 * the truncated string.
+		 */
+		if (bytes > 0) {
+			if (bytes >= sizeof(buf))
+				bytes = sizeof(buf) - 1;
+
+			buf[bytes] = '\0';
+
+			script_launcher = xstrdup(buf);
+		} else {
+			script_launcher = xstrdup(binary);
+		}
+
+		return SLURM_SUCCESS;
+	}
+#endif /* !__linux__ */
+
+	if (access(binary, R_OK | X_OK)) {
+		error("%s: %s cannot be executed as an intermediate launcher, doing direct launch.",
+		      __func__, binary);
+		return SLURM_ERROR;
+	} else {
+		script_launcher = xstrdup(binary);
+		return SLURM_SUCCESS;
+	}
 }
 
 /* used to terminate any outstanding commands */
 extern void run_command_shutdown(void)
 {
 	command_shutdown = 1;
+}
+
+extern bool run_command_is_launcher(int argc, char **argv)
+{
+	return (argc >= RUN_COMMAND_LAUNCHER_ARGC &&
+		!xstrcmp(argv[1], RUN_COMMAND_LAUNCHER_MODE));
 }
 
 /* Return count of child processes */
@@ -160,11 +227,14 @@ static void _kill_pg(pid_t pid)
 	killpg(pid, SIGKILL);
 }
 
-static void _run_command_child(run_command_args_t *args, int write_fd)
+static void _run_command_child(run_command_args_t *args, int write_fd,
+			       int read_fd, char **launcher_argv)
 {
-	int devnull;
+	int stdin_fd;
 
-	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
+	if (read_fd > 0)
+		stdin_fd = read_fd;
+	else if ((stdin_fd = open("/dev/null", O_RDWR)) < 0) {
 		/*
 		 * We must avoid calling non-async-signal-safe functions at
 		 * this point (like error() or similar), so we won't log
@@ -172,24 +242,92 @@ static void _run_command_child(run_command_args_t *args, int write_fd)
 		 */
 		_exit(127);
 	}
-	dup2(devnull, STDIN_FILENO);
+	dup2(stdin_fd, STDIN_FILENO);
 	dup2(write_fd, STDERR_FILENO);
 	dup2(write_fd, STDOUT_FILENO);
-	run_command_child_pre_exec();
-	run_command_child_exec(args->script_path, args->script_argv, args->env);
+
+	if (launcher_argv)
+		_run_command_child_exec(script_launcher_fd, script_launcher,
+					launcher_argv, args->env);
+
+	_run_command_child_pre_exec();
+	_run_command_child_exec(-1, args->script_path, args->script_argv,
+				args->env);
 }
 
-extern void run_command_child_exec(const char *path, char **argv, char **env)
+static void _log_str_array(char *prefix, char **array)
 {
-	if (!env)
-		execv(path, argv);
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SCRIPT))
+		return;
+
+	if (!array)
+		return;
+
+	log_flag(SCRIPT, "%s: START", prefix);
+	for (int i = 0; array[i]; i++)
+		log_flag(SCRIPT, "%s[%d]=%s", prefix, i, array[i]);
+	log_flag(SCRIPT, "%s: END", prefix);
+}
+
+static char **_setup_launcher_argv(run_command_args_t *args)
+{
+	char **launcher_argv = NULL;
+	int extra = RUN_COMMAND_LAUNCHER_ARGC;
+	int count = 0;
+
+	xassert(script_launcher);
+
+	_log_str_array("script_argv", args->script_argv);
+	while (args->script_argv && args->script_argv[count])
+		count++;
+
+	count = count + extra + 1; /* Add one to NULL terminate the array. */
+	launcher_argv = xcalloc(count, sizeof(launcher_argv[0]));
+
+	/*
+	 * args->script_argv[0] (launcher_argv[3]) is usually set to
+	 * script_path, but that is not guaranteed (e.g. if args->script_argv
+	 * == NULL). We want to guarantee that script_path is set, so we set
+	 * it to launcher_argv[2].
+	 */
+	launcher_argv[0] = script_launcher;
+	launcher_argv[1] = RUN_COMMAND_LAUNCHER_MODE;
+	launcher_argv[2] = (char *) args->script_path;
+	if (args->script_argv) {
+		for (int i = 0; args->script_argv[i]; i++)
+			launcher_argv[i + extra] = args->script_argv[i];
+	}
+	launcher_argv[count - 1] = NULL;
+
+	_log_str_array("launcher_argv", launcher_argv);
+
+	return launcher_argv;
+}
+
+/*
+ * Wrapper for execv/execve. This should never return.
+ */
+static void _run_command_child_exec(int fd, const char *path, char **argv,
+				    char **env)
+{
+	extern char **environ;
+
+	if (!env || !env[0])
+		env = environ;
+
+	if (fd >= 0)
+		fexecve(fd, argv, env);
 	else
 		execve(path, argv, env);
 	error("%s: execv(%s): %m", __func__, path);
 	_exit(127);
 }
 
-extern void run_command_child_pre_exec(void)
+/*
+ * Called in the child before exec. Do setup like closing unneeded files and
+ * setting uid/gid.
+ */
+static void _run_command_child_pre_exec(void)
 {
 	closeall(3);
 	/* coverity[leaked_handle] */
@@ -208,10 +346,23 @@ extern void run_command_child_pre_exec(void)
 	}
 }
 
+extern void run_command_launcher(int argc, char **argv)
+{
+	char *script_path = argv[RUN_COMMAND_LAUNCHER_ARGC - 1];
+	char **script_argv = &argv[RUN_COMMAND_LAUNCHER_ARGC];
+
+	xassert(script_path);
+	_run_command_child_pre_exec();
+	_run_command_child_exec(-1, script_path, script_argv, NULL);
+	_exit(127);
+}
+
 extern char *run_command(run_command_args_t *args)
 {
 	pid_t cpid;
 	char *resp = NULL;
+	char **launcher_argv = NULL;
+	int pfd_to_child[2] = { -1, -1 };
 	int pfd[2] = { -1, -1 };
 	bool free_argv = false;
 
@@ -221,22 +372,29 @@ extern char *run_command(run_command_args_t *args)
 		resp = xstrdup("Run command failed - configuration error");
 		return resp;
 	}
-	if (args->script_path[0] != '/') {
-		error("%s: %s is not fully qualified pathname (%s)",
-		      __func__, args->script_type, args->script_path);
-		*(args->status) = 127;
-		resp = xstrdup("Run command failed - configuration error");
-		return resp;
+	if (!args->ignore_path_exec_check) {
+		if (args->script_path[0] != '/') {
+			error("%s: %s is not a fully qualified pathname (%s)",
+			      __func__, args->script_type, args->script_path);
+			*(args->status) = 127;
+			resp = xstrdup("Run command failed - configuration error");
+			return resp;
+		}
+		if (access(args->script_path, R_OK | X_OK) < 0) {
+			error("%s: %s can not be executed (%s) %m",
+			      __func__, args->script_type, args->script_path);
+			*(args->status) = 127;
+			resp = xstrdup("Run command failed - configuration error");
+			return resp;
+		}
 	}
-	if (access(args->script_path, R_OK | X_OK) < 0) {
-		error("%s: %s can not be executed (%s) %m",
-		      __func__, args->script_type, args->script_path);
-		*(args->status) = 127;
-		resp = xstrdup("Run command failed - configuration error");
-		return resp;
-	}
-	if (pipe(pfd) != 0) {
+	if ((pipe(pfd) != 0) ||
+	    (args->write_to_child && (pipe(pfd_to_child) != 0))) {
 		error("%s: pipe(): %m", __func__);
+		fd_close(&pfd[0]);
+		fd_close(&pfd[1]);
+		fd_close(&pfd_to_child[0]);
+		fd_close(&pfd_to_child[1]);
 		*(args->status) = 127;
 		resp = xstrdup("System error");
 		return resp;
@@ -249,20 +407,43 @@ extern char *run_command(run_command_args_t *args)
 	slurm_mutex_lock(&proc_count_mutex);
 	child_proc_count++;
 	slurm_mutex_unlock(&proc_count_mutex);
+
+	if (script_launcher)
+		launcher_argv = _setup_launcher_argv(args);
+
 	if ((cpid = fork()) == 0) {
-		_run_command_child(args, pfd[1]);
+		/* Child writes to pfd[1] and reads from pfd_to_child[0] */
+		fd_close(&pfd_to_child[1]);
+		fd_close(&pfd[0]);
+		_run_command_child(args, pfd[1], pfd_to_child[0],
+				   launcher_argv);
 		/* We should never get here. */
 	} else if (cpid < 0) {
 		close(pfd[0]);
 		close(pfd[1]);
+		fd_close(&pfd_to_child[0]);
+		fd_close(&pfd_to_child[1]);
 		error("%s: fork(): %m", __func__);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
 	} else {
+		/* Parent writes to pfd_to_child[1] and reads from pfd[0] */
 		close(pfd[1]);
+		fd_close(&pfd_to_child[0]);
 		if (args->tid)
 			track_script_reset_cpid(args->tid, cpid);
+		if (args->cb)
+			args->cb(pfd_to_child[1], args->cb_arg);
+		/*
+		 * Close the write pipe to the child immediately after it is
+		 * used, before calling run_command_poll_child(). This means
+		 * that the pipe will be closed before waiting for the child
+		 * to finish. If an error happened during the write, when the
+		 * child tries to read the required data from the pipe, the
+		 * pipe will be closed and the child can exit.
+		 */
+		fd_close(&pfd_to_child[1]);
 		resp = run_command_poll_child(cpid,
 					      args->max_wait,
 					      args->orphan_on_shutdown,
@@ -281,6 +462,12 @@ extern char *run_command(run_command_args_t *args)
 		xfree(args->script_argv[0]);
 		xfree(args->script_argv);
 	}
+
+	log_flag(SCRIPT, "%s:script=%s, resp:\n%s",
+		 __func__, args->script_path, resp);
+
+	/* Array contents were not malloc'd, do not free */
+	xfree(launcher_argv);
 
 	return resp;
 }

@@ -90,7 +90,7 @@ static int _sort_by_weight(void *void1, void *void2);
 /*****************************************************************************
  * Global Sort Function
  *****************************************************************************/
-void sort_sinfo_list(List sinfo_list)
+void sort_sinfo_list(list_t *sinfo_list)
 {
 	int i;
 

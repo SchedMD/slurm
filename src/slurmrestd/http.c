@@ -70,7 +70,7 @@ typedef struct {
 	/* URL query parameters by client */
 	const char *query;
 	/* list of each header received (to be handed to callback) */
-	List headers;
+	list_t *headers;
 	/* state tracking of last header received */
 	char *last_header;
 	/* client requested to keep_alive header or -1 to disable */
@@ -452,7 +452,7 @@ static int _write_fmt_header(conmgr_fd_t *con, const char *name,
 			     const char *value)
 {
 	const char *buffer = _fmt_header(name, value);
-	int rc = conmgr_queue_write_fd(con, buffer, strlen(buffer));
+	int rc = conmgr_queue_write_data(con, buffer, strlen(buffer));
 	xfree(buffer);
 	return rc;
 }
@@ -485,7 +485,7 @@ static int _write_fmt_num_header(conmgr_fd_t *con, const char *name,
 				 size_t value)
 {
 	const char *buffer = _fmt_header_num(name, value);
-	int rc = conmgr_queue_write_fd(con, buffer, strlen(buffer));
+	int rc = conmgr_queue_write_data(con, buffer, strlen(buffer));
 	xfree(buffer);
 	return rc;
 }
@@ -507,7 +507,7 @@ extern int send_http_response(const send_http_response_args_t *args)
 		   args->http_major, args->http_minor, args->status_code,
 		   get_http_status_code_string(args->status_code));
 
-	rc = conmgr_queue_write_fd(args->con, buffer, strlen(buffer));
+	rc = conmgr_queue_write_data(args->con, buffer, strlen(buffer));
 	xfree(buffer);
 
 	if (rc)
@@ -544,7 +544,8 @@ extern int send_http_response(const send_http_response_args_t *args)
 			     args->con, "Content-Type", args->body_encoding)))
 			return rc;
 
-		if ((rc = conmgr_queue_write_fd(args->con, CRLF, strlen(CRLF))))
+		if ((rc = conmgr_queue_write_data(args->con, CRLF,
+						  strlen(CRLF))))
 			return rc;
 
 		log_flag(NET, "%s: [%s] rc=%s(%u) sending body:\n%s",
@@ -552,8 +553,8 @@ extern int send_http_response(const send_http_response_args_t *args)
 			 get_http_status_code_string(args->status_code),
 			 args->status_code, args->body);
 
-		if ((rc = conmgr_queue_write_fd(args->con, args->body,
-						args->body_length)))
+		if ((rc = conmgr_queue_write_data(args->con, args->body,
+						  args->body_length)))
 			return rc;
 	} else if (((args->status_code >= 100) && (args->status_code < 200)) ||
 		   (args->status_code == 204) ||
@@ -562,7 +563,8 @@ extern int send_http_response(const send_http_response_args_t *args)
 		 * RFC2616 requires empty line after headers for return code
 		 * that "MUST NOT" include a message body
 		 */
-		if ((rc = conmgr_queue_write_fd(args->con, CRLF, strlen(CRLF))))
+		if ((rc = conmgr_queue_write_data(args->con, CRLF,
+						  strlen(CRLF))))
 			return rc;
 	}
 
@@ -909,7 +911,7 @@ static int _http_header_find_key(void *x, void *y)
 		return 0;
 }
 
-extern const char *find_http_header(List headers, const char *name)
+extern const char *find_http_header(list_t *headers, const char *name)
 {
 	http_header_entry_t *header = NULL;
 
@@ -943,7 +945,7 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 	return context;
 }
 
-extern void on_http_connection_finish(void *ctxt)
+extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 {
 	http_context_t *context = (http_context_t *) ctxt;
 

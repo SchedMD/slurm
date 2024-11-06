@@ -36,11 +36,9 @@
 #ifndef SLURMRESTD_OPERATIONS_H
 #define SLURMRESTD_OPERATIONS_H
 
-#include "src/common/data.h"
 #include "src/interfaces/serializer.h"
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
-#include "src/slurmrestd/rest_auth.h"
 
 extern serializer_flags_t yaml_flags;
 extern serializer_flags_t json_flags;
@@ -51,28 +49,6 @@ extern serializer_flags_t json_flags;
  */
 extern int init_operations(data_parser_t **parsers);
 extern void destroy_operations(void);
-
-/*
- * Bind callback handler for a given URL pattern.
- * Will query OpenAPI spec for description of path including variables
- *	Note that variables in the path are only partially support:
- *	supported: /users/{id}
- *	supported: /cars/{carId}/drivers/{driverId}
- *	not supported: /report.{format}
- *		complex variables in a single directory are not supported
- *		as we would need to make a regex to match them out or somehow
- *		otherwise force a match which would be slow
- *		there can only be 1 variable with no extra spaces as we
- *		only check the data type of the dir entry
- *
- *
- * IN path - url path to match
- * IN callback - handler function for callback
- * IN tag - arbitrary tag passed to handler when path matched
- * RET SLURM_SUCCESS or error
- */
-extern int bind_operation_handler(const char *path, openapi_handler_t callback,
-				  int tag);
 
 /*
  * Bind callback handler for a given URL pattern.
@@ -87,32 +63,11 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
 			       const openapi_resp_meta_t *meta);
 
 /*
- * Unbind a given callback handler from all paths
- * IN path path to remove
- * RET SLURM_SUCCESS or error
- */
-extern int unbind_operation_handler(openapi_handler_t callback);
-
-/*
- * Unbind a given callback ctxt handler from all paths
- * IN path path to remove
- * RET SLURM_SUCCESS or error
- */
-extern int unbind_operation_ctxt_handler(openapi_ctxt_handler_t callback);
-
-/*
  * Parses incoming requests and calls handlers.
  * expected to be called as on_http_request_t() by http.c.
  * RET SLURM_SUCCESS or error
  */
 extern int operations_router(on_http_request_args_t *args);
-
-/*
- * Retrieves db_conn from auth context handed by operation_handler_t
- *
- * RET non-null pointer or NULL on failure
- */
-extern void *get_operation_db_conn(rest_auth_context_t *auth);
 
 /*
  * Retrieve db_conn for slurmdbd calls.

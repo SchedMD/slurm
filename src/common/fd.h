@@ -49,6 +49,14 @@
 /* close all FDs >= a specified value */
 extern void closeall(int fd);
 
+/*
+ * close all FDs >= a specified value except FDs in skipped array
+ * IN fd - start closing file descriptors at fd
+ * IN skipped - array of file descriptors to skip (or NULL)
+ *              array must be terminated by -1 if provided
+ */
+extern void closeall_except(int fd, int *skipped);
+
 /* Close a specific file descriptor and replace it with -1 */
 extern void fd_close(int *fd);
 
@@ -157,10 +165,10 @@ extern void fd_set_oob(int fd, int value);
 extern char *poll_revents_to_str(const short revents);
 
 /*
- * Pass an open fd back over a pipe.
+ * Pass an open fd back over a socket.
  */
-extern void send_fd_over_pipe(int socket, int fd);
-extern int receive_fd_over_pipe(int socket);
+extern void send_fd_over_socket(int socket, int fd);
+extern int receive_fd_over_socket(int socket);
 
 /*
  * Make full directory path.
@@ -197,5 +205,25 @@ extern int rmdir_recursive(const char *path, bool remove_top);
  */
 extern int fd_get_readable_bytes(int fd, int *readable_ptr,
 				 const char *con_name);
+
+/*
+ * Use ioctl(TIOCOUTQ) to get number of bytes in buffer waiting for kernel to
+ * send to destination
+ * IN fd - file descriptor to query
+ * IN/OUT bytes_ptr - Pointer to populate if ioctl() is able to query
+ *	successfully. Only changed if RET=SLURM_SUCCESS.
+ * IN con_name - descriptive name for fd connection (for logging)
+ * RET SLURM_SUCCESS or error
+ */
+extern int fd_get_buffered_output_bytes(int fd, int *bytes_ptr,
+					const char *con_name);
+
+/*
+ * Get TCP MSS (Max Segment Size) of a given socket
+ * IN fd - file descriptor for socket
+ * IN con_name - Connection name (for logging) or NULL
+ * RET NO_VAL on failure or >0 for MSS of socket
+ */
+extern int fd_get_maxmss(int fd, const char *con_name);
 
 #endif /* !_FD_H */

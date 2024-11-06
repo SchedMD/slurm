@@ -72,7 +72,7 @@ extern int preempt_g_fini(void);
  * NOTE: Returns NULL if no preemptable jobs are found.
  * NOTE: Caller must list_destroy() any list returned.
  */
-extern List slurm_find_preemptable_jobs(job_record_t *job_ptr);
+extern list_t *slurm_find_preemptable_jobs(job_record_t *job_ptr);
 
 /*
  * Return the PreemptMode which should apply to stop this job

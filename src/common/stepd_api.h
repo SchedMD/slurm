@@ -45,7 +45,6 @@
 #include "slurm/slurm.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/io_hdr.h"
 
 #define GETHOST_NOT_MATCH_PID SLURM_BIT(0)
 #define GETHOST_IPV4 SLURM_BIT(1)
@@ -195,9 +194,9 @@ extern int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
  * slurmd on one node (unusual outside of development environments), you
  * will get one of the local NodeNames more-or-less at random.
  *
- * Returns a List of pointers to step_loc_t structures.
+ * Returns a list of pointers to step_loc_t structures.
  */
-extern List stepd_available(const char *directory, const char *nodename);
+extern list_t *stepd_available(const char *directory, const char *nodename);
 
 /*
  * Return true if the process with process ID "pid" is found in

@@ -82,7 +82,7 @@ typedef struct slurm_acct_gather_profile_ops {
 	int (*create_dataset)   (const char*, int64_t,
 				 acct_gather_profile_dataset_t *);
 	int (*add_sample_data)  (uint32_t, void*, time_t);
-	void (*conf_values)     (List *data);
+	void (*conf_values)     (list_t **data);
 	bool (*is_active)     (uint32_t);
 
 } slurm_acct_gather_profile_ops_t;

@@ -143,6 +143,12 @@ static int _parse_switches(void **dest, slurm_parser_enum_t type,
 	s_p_get_string(&s->switches, "Switches", tbl);
 	s_p_hashtbl_destroy(tbl);
 
+	if (strlen(s->switch_name) > HOST_NAME_MAX) {
+		error("SwitchName (%s) must be shorter than %d chars",
+		      s->switch_name, HOST_NAME_MAX);
+		_destroy_switches(s);
+		return -1;
+	}
 	if (s->nodes && s->switches) {
 		error("switch %s has both child switches and nodes",
 		      s->switch_name);
@@ -264,7 +270,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 	bitstr_t *my_bitmap;
 	hostlist_t *host_list;
 
-	my_bitmap = (bitstr_t *) bit_alloc(node_record_count);
+	my_bitmap = bit_alloc(node_record_count);
 	*bitmap = my_bitmap;
 
 	if (node_names == NULL) {

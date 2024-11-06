@@ -40,6 +40,17 @@
 #ifndef _HAVE_NODE_SCHEDULER_H
 #define _HAVE_NODE_SCHEDULER_H
 
+typedef struct {
+	char **err_msg;
+	job_record_t *job_ptr;
+	int rc;
+	int rc_best;
+	int rc_part_limits;
+	int rc_qos;
+	int rc_resv;
+	bool test_only;
+} job_node_select_t;
+
 /*
  * allocate_nodes - change state of specified nodes to NODE_STATE_ALLOCATED
  *	also claim required licenses
@@ -105,7 +116,7 @@ extern void filter_by_node_owner(job_record_t *job_ptr,
  * either active or available and set the feature_list's node_bitmap_active and
  * node_bitmap_avail fields accordingly.
  */
-extern void find_feature_nodes(List feature_list, bool can_reboot);
+extern void find_feature_nodes(list_t *feature_list, bool can_reboot);
 
 /*
  * re_kill_job - for a given job, deallocate its nodes for a second time,
@@ -118,16 +129,12 @@ extern void re_kill_job(job_record_t *job_ptr);
 
 /*
  * select_nodes - select and allocate nodes to a specific job
- * IN job_ptr - pointer to the job record
+ * IN job_node_select - pointer with at least a pointer to the job record
  * IN test_only - if set do not allocate nodes, just confirm they
  *	could be allocated now
- * IN select_node_bitmap - bitmap of nodes to be used for the
- *	job's resource allocation (not returned if NULL), caller
- *	must free
  * IN submission - if set ignore reservations
  * IN scheduler_type - which scheduler is calling this
  *      (i.e. SLURMDB_JOB_FLAG_BACKFILL, SLURMDB_JOB_FLAG_SCHED, etc)
- * OUT err_msg - if not NULL set to error message for job, caller must xfree
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition
@@ -140,9 +147,9 @@ extern void re_kill_job(job_record_t *job_ptr);
  *	   the request, (e.g. best-fit or other criterion)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
-extern int select_nodes(job_record_t *job_ptr, bool test_only,
-			bitstr_t **select_node_bitmap, char **err_msg,
-			bool submission, uint32_t scheduler_type);
+extern int select_nodes(job_node_select_t *job_node_select,
+			bool test_only,	bool submission,
+			uint32_t scheduler_type);
 
 /*
  * get_node_cnts - determine the number of nodes for the requested job.

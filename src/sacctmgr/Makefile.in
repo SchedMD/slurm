@@ -116,6 +116,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
+	$(top_srcdir)/auxdir/ax_have_epoll.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/gtk-2.0.m4 \
@@ -305,6 +306,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
 FREEIPMI_LIBS = @FREEIPMI_LIBS@
@@ -524,7 +526,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* *.bino
 AM_CPPFLAGS = -I$(top_srcdir)
 sacctmgr_DEPENDENCIES = $(LIB_SLURM_BUILD)
 sacctmgr_LDADD = $(LIB_SLURM) $(READLINE_LIBS) $(LIB_REF)
@@ -553,6 +554,7 @@ sacctmgr_SOURCES = \
 
 sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 REF = usage.txt
+CLEANFILES = *.bino
 BIN_REF = $(REF:.txt=.bino)
 LIB_REF = lib_ref.la
 

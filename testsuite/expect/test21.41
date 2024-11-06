@@ -207,7 +207,7 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
-if { [get_config_param -dbd "TrackWCKey"] eq "No" } {
+if { [get_config_param -dbd "TrackWCKey"] eq "no" } {
 	skip "This test can't be run without TrackWCKey set in slurmdbd.conf"
 }
 

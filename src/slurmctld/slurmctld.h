@@ -134,7 +134,7 @@
 \*****************************************************************************/
 
 typedef struct slurmctld_config {
-	List acct_update_list;
+	list_t *acct_update_list;
 	pthread_cond_t acct_update_cond;
 	pthread_mutex_t acct_update_lock;
 	pthread_cond_t backup_finish_cond;
@@ -153,9 +153,7 @@ typedef struct slurmctld_config {
 	pthread_t thread_id_acct_update;
 	pthread_t thread_id_main;
 	pthread_t thread_id_save;
-	pthread_t thread_id_sig;
 	pthread_t thread_id_purge_files;
-	pthread_t thread_id_rpc;
 } slurmctld_config_t;
 
 typedef enum {
@@ -256,7 +254,6 @@ extern bool cloud_dns;
 extern uint32_t   cluster_cpus;
 extern bool disable_remote_singleton;
 extern int listen_nports;
-extern struct pollfd *listen_fds;
 extern int max_depend_depth;
 extern uint32_t max_powered_nodes;
 extern bool node_features_updated;
@@ -287,9 +284,9 @@ typedef struct node_features {
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this feature */
 } node_feature_t;
 
-extern List active_feature_list;/* list of currently active node features */
-extern List avail_feature_list;	/* list of available node features */
-extern List conf_includes_list; /* list of conf_includes_map_t */
+extern list_t *active_feature_list; /* list of currently active node features */
+extern list_t *avail_feature_list;  /* list of available node features */
+extern list_t *conf_includes_list;  /* list of conf_includes_map_t */
 
 #define PACK_FANOUT_ADDRS(_X) \
 	(IS_NODE_DYNAMIC_FUTURE(_X) || \
@@ -332,7 +329,7 @@ extern bitstr_t *rs_node_bitmap;	/* next_state=resume nodes */
 /*****************************************************************************\
  *  PARTITION parameters and data structures
 \*****************************************************************************/
-extern List part_list;			/* list of part_record entries */
+extern list_t *part_list;		/* list of part_record entries */
 extern time_t last_part_update;		/* time of last part_list update */
 extern part_record_t default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
@@ -373,12 +370,12 @@ typedef struct slurmctld_resv {
 				 * running on it */
 	char *features;		/* required node features		*/
 	uint64_t flags;		/* see RESERVE_FLAG_* in slurm.h	*/
-	List gres_list_alloc;	/* Allocated generic resource allocation
+	list_t *gres_list_alloc;/* Allocated generic resource allocation
 				 * detail */
 	char *groups;		/* names of linux groups permitted to use */
 	uint32_t job_pend_cnt;	/* number of pending jobs		*/
 	uint32_t job_run_cnt;	/* number of running jobs		*/
-	List license_list;	/* structure with license info		*/
+	list_t *license_list;	/* structure with license info		*/
 	char *licenses;		/* required system licenses (including those
 				 * from TRES requests */
 	uint32_t max_start_delay;/* Maximum delay in which jobs outside of the
@@ -417,13 +414,13 @@ typedef struct {
 	bitstr_t **exc_cores;
 } resv_exc_t;
 
-extern List resv_list;		/* list of slurmctld_resv_t entries */
+extern list_t *resv_list;	/* list of slurmctld_resv_t entries */
 extern time_t last_resv_update;	/* time of last resv_list update */
 
 /*****************************************************************************\
  *  Job lists
 \*****************************************************************************/
-extern List job_list;			/* list of job_record entries */
+extern list_t *job_list;		/* list of job_record entries */
 extern list_t *purge_jobs_list;		/* list of job_record_t to free */
 
 /*****************************************************************************\
@@ -437,15 +434,9 @@ extern list_t *purge_jobs_list;		/* list of job_record_t to free */
  * useful when updating other types of consumable resources as well
 */
 enum select_plugindata_info {
-	SELECT_CR_PLUGIN,    /* data-> uint32 See SELECT_TYPE_* below */
-	SELECT_BITMAP,       /* Unused since version 2.0 */
-	SELECT_ALLOC_CPUS,   /* data-> uint16 alloc cpus (CR support) */
-	SELECT_ALLOC_LPS,    /* data-> uint32 alloc lps  (CR support) */
-	SELECT_AVAIL_MEMORY, /* data-> uint64 avail mem  (CR support) */
-	SELECT_STATIC_PART,  /* data-> uint16, 1 if static partitioning
-			      * BlueGene support */
-	SELECT_CONFIG_INFO,  /* data-> List get .conf info from select
-			      * plugin */
+	SELECT_CR_PLUGIN = 0,    /* data-> uint32 See SELECT_TYPE_* below */
+	SELECT_CONFIG_INFO = 6,  /* data-> list_t * get .conf info from select
+				  * plugin */
 };
 #define SELECT_TYPE_CONS_RES	1
 #define SELECT_TYPE_CONS_TRES	2
@@ -510,6 +501,9 @@ extern void set_job_tres_req_str(job_record_t *job_ptr, bool assoc_mgr_locked);
  * This function can be called multiple times. */
 extern void backup_slurmctld_restart(void);
 
+/* Handle SIGHUP while in backup mode */
+extern void backup_on_sighup(void);
+
 /* Complete a batch job requeue logic after all steps complete so that
  * subsequent jobs appear in a separate accounting record. */
 extern void batch_requeue_fini(job_record_t *job_ptr);
@@ -573,7 +567,7 @@ extern void delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr);
  * IN depend_list_src - a job's depend_lst
  * RET copy of depend_list_src, must bee freed by caller
  */
-extern List depended_list_copy(List depend_list_src);
+extern list_t *depended_list_copy(list_t *depend_list_src);
 
 /*
  * drain_nodes - drain one or more nodes,
@@ -659,7 +653,7 @@ extern void node_mgr_reset_node_stats(node_record_t *node_ptr);
  * IN feature_list_src - a job's depend_lst
  * RET copy of depend_list_src, must be freed by caller
  */
-extern List feature_list_copy(List feature_list_src);
+extern list_t *feature_list_copy(list_t *feature_list_src);
 
 typedef enum {
 	FOR_EACH_JOB_BY_ID_EACH_INVALID = 0,
@@ -687,6 +681,8 @@ typedef foreach_job_by_id_control_t (*JobROForEachFunc)(
 					void *arg);
 /*
  * Function prototype for operating on a job id that is not found
+ * This is called just once for an array expression with a bitmap of array
+ * tasks that were not found.
  * Returns control requested for processing
  */
 typedef foreach_job_by_id_control_t
@@ -803,11 +799,11 @@ extern uint32_t get_next_job_id(bool test_only);
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
  * OUT err_part - The first invalid partition name.
- * RET List of pointers to the partitions or NULL if not found
+ * RET sorted list of pointers to the partitions or NULL if not found
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
-extern List get_part_list(char *name, char **err_part);
+extern list_t *get_part_list(char *name, char **err_part);
 
 /*
  * init_depend_policy()
@@ -936,14 +932,15 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 extern void job_array_pre_sched(job_record_t *job_ptr);
 
 /* If this is a job array meta-job, clean up after scheduling attempt */
-extern job_record_t *job_array_post_sched(job_record_t *job_ptr);
+extern job_record_t *job_array_post_sched(job_record_t *job_ptr, bool list_add);
 
 /* Create an exact copy of an existing job record for a job array.
  * IN job_ptr - META job record for a job array, which is to become an
  *		individial task of the job array.
  *		Set the job's array_task_id to the task to be split out.
+ * IN list_add - add to the job_list or not.
  * RET - The new job record, which is the new META job record. */
-extern job_record_t *job_array_split(job_record_t *job_ptr);
+extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add);
 
 /* Record the start of one job array task */
 extern void job_array_start(job_record_t *job_ptr);
@@ -986,7 +983,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue);
 extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 				 uint64_t pn_min_memory, uint32_t cpu_cnt,
 				 uint32_t node_cnt, part_record_t *part_ptr,
-				 List gres_list, bool user_set_mem,
+				 list_t *gres_list, bool user_set_mem,
 				 uint16_t min_sockets_per_node,
 				 uint32_t num_tasks);
 
@@ -1105,20 +1102,16 @@ extern int job_mgr_signal_jobs(kill_jobs_msg_t *kill_msg, uid_t auth_uid,
  *
  * IN sus_ptr - suspend/resume request message
  * IN uid - user id of the user issuing the RPC
- * IN conn_fd - file descriptor on which to send reply,
- *              -1 if none
  * indf_susp IN - set if job is being suspended indefinitely by user or admin
  *                and we should clear it's priority, otherwise suspended
  *		  temporarily for gang scheduling
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
-		       int conn_fd, bool indf_susp,
-		       uint16_t protocol_version);
-extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
-			int conn_fd, bool indf_susp,
-			uint16_t protocol_version);
+extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
+		       bool indf_susp, uint16_t protocol_version);
+extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
+			bool indf_susp, uint16_t protocol_version);
 
 /*
  * job_complete - note the normal termination the specified job
@@ -1182,14 +1175,13 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
  * job_set_top - Move the specified job to the top of the queue (at least
  *	for that user ID, partition, account, and QOS).
  *
+ * IN msg - original request msg
  * IN top_ptr - user request
  * IN uid - user id of the user issuing the RPC
- * IN conn_fd - file descriptor on which to send reply,
- *              -1 if none
  * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
+extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid,
 		       uint16_t protocol_version);
 
 /*
@@ -1534,7 +1526,7 @@ extern void part_fini (void);
  * IN part_list_src - a job's part_list
  * RET copy of part_list_src, must be freed by caller
  */
-extern List part_list_copy(List part_list_src);
+extern list_t *part_list_copy(list_t *part_list_src);
 
 /*
  * Validate a job's account against the partition's AllowAccounts or
@@ -1644,17 +1636,6 @@ extern void rehash_jobs(void);
  */
 extern void setup_job_state_hash(int new_hash_table_size);
 
-#ifndef NDEBUG
-/*
- * Walk entire job state cache and verify every job matchs job_ptr states
- * WARNING: slow and expensive to run
- * WARNING: caller must hold atleast job read lock
- */
-extern void verify_job_state_cache_synced(void);
-#else
-#define verify_job_state_cache_synced() {}
-#endif
-
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);
 
@@ -1680,6 +1661,11 @@ extern void restore_node_features(int recover);
 /* run_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding */
 extern void run_backup(void);
+
+/* conmgr RPC connection callbacks */
+extern void *on_backup_connection(conmgr_fd_t *con, void *arg);
+extern void on_backup_finish(conmgr_fd_t *con, void *arg);
+extern int on_backup_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg);
 
 /*
  * ping_controllers - ping other controllers in HA configuration.
@@ -1979,6 +1965,13 @@ extern int set_partition_billing_weights(char *billing_weights_str,
 extern int update_part (update_part_msg_t * part_desc, bool create_flag);
 
 /*
+ * Sort all jobs' part_ptr_list to be in descending order according to
+ * partition priority tier. This Should be called anytime a partition's priority
+ * tier is modified.
+ */
+extern void sort_all_jobs_partition_lists();
+
+/*
  * validate_alloc_node - validate that the allocating node
  * is allowed to use this partition
  * IN part_ptr - pointer to a partition
@@ -2247,7 +2240,7 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete);
 
 /*
  * update_node_active_features - Update active features associated with nodes
- * IN node_names - List of nodes to update
+ * IN node_names - list of nodes to update
  * IN active_features - New active features value
  * IN mode - FEATURE_MODE_IND : Print each node change indivually
  *           FEATURE_MODE_COMB: Try to combine like changes (SEE NOTE BELOW)
@@ -2262,7 +2255,7 @@ extern int update_node_active_features(char *node_names, char *active_features,
 /*
  * update_node_avail_features - Update available features associated with
  *	nodes, build new config list records as needed
- * IN node_names - List of nodes to update
+ * IN node_names - list of nodes to update
  * IN avail_features - New available features value
  * IN mode - FEATURE_MODE_IND : Print each node change indivually
  *           FEATURE_MODE_COMB: Try to combine like changes (SEE NOTE BELOW)

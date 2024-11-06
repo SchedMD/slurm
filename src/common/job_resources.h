@@ -115,6 +115,7 @@ struct job_resources {
 	uint16_t  cr_type;
 	uint64_t *memory_allocated;
 	uint64_t *memory_used;
+	uint32_t  next_step_node_inx;
 	uint32_t  nhosts;
 	bitstr_t *node_bitmap;
 	uint32_t  node_req;

@@ -44,7 +44,7 @@
 #include "dbd_conn.h"
 #include "as_ext_dbd.h"
 
-static List ext_conns_list;
+static list_t *ext_conns_list;
 static pthread_t ext_thread_tid = 0;
 static time_t ext_shutdown = 0;
 
@@ -101,7 +101,7 @@ static void _create_ext_conns(void)
 {
 	char *ext_hosts;
 	char *tok = NULL, *save_ptr = NULL;
-	List new_list = list_create(_destroy_external_host_conns);
+	list_t *new_list = list_create(_destroy_external_host_conns);
 
 	if ((ext_hosts = xstrdup(slurm_conf.accounting_storage_ext_host)))
 		tok = strtok_r(ext_hosts, ",", &save_ptr);

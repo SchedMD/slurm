@@ -57,8 +57,6 @@ typedef struct slurmd_task_ops {
 	int	(*slurmd_batch_request)	    (batch_job_launch_msg_t *req);
 	int	(*slurmd_launch_request)    (launch_tasks_request_msg_t *req,
 					     uint32_t node_id, char **err_msg);
-	int	(*slurmd_suspend_job)	    (uint32_t job_id);
-	int	(*slurmd_resume_job)	    (uint32_t job_id);
 
 	int	(*pre_setuid)		    (stepd_step_rec_t *step);
 	int	(*pre_launch_priv)	    (stepd_step_rec_t *step,
@@ -77,8 +75,6 @@ typedef struct slurmd_task_ops {
 static const char *syms[] = {
 	"task_p_slurmd_batch_request",
 	"task_p_slurmd_launch_request",
-	"task_p_slurmd_suspend_job",
-	"task_p_slurmd_resume_job",
 	"task_p_pre_setuid",
 	"task_p_pre_launch_priv",
 	"task_p_pre_launch",
@@ -97,7 +93,7 @@ static pthread_mutex_t		g_task_context_lock = PTHREAD_MUTEX_INITIALIZER;
  *
  * RET - slurm error code
  */
-extern int slurmd_task_init(void)
+extern int task_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "task";
@@ -143,7 +139,7 @@ extern int slurmd_task_init(void)
 	xfree(task_plugin_type);
 
 	if (retval != SLURM_SUCCESS)
-		slurmd_task_fini();
+		task_g_fini();
 
 	return retval;
 }
@@ -153,7 +149,7 @@ extern int slurmd_task_init(void)
  *
  * RET - slurm error code
  */
-extern int slurmd_task_fini(void)
+extern int task_g_fini(void)
 {
 	int i, rc = SLURM_SUCCESS, rc2;
 
@@ -228,62 +224,6 @@ extern int task_g_slurmd_launch_request(launch_tasks_request_msg_t *req,
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
 		rc = (*(ops[i].slurmd_launch_request)) (req, node_id, err_msg);
-		if (rc != SLURM_SUCCESS) {
-			debug("%s: %s: %s", __func__,
-			      g_task_context[i]->type, slurm_strerror(rc));
-			break;
-		}
-	}
-	slurm_mutex_unlock( &g_task_context_lock );
-
-	return (rc);
-}
-
-/*
- * Slurmd is suspending a job.
- *
- * RET - slurm error code
- */
-extern int task_g_slurmd_suspend_job(uint32_t job_id)
-{
-	int i, rc = SLURM_SUCCESS;
-
-	xassert(g_task_context_num >= 0);
-
-	if (!g_task_context_num)
-		return SLURM_SUCCESS;
-
-	slurm_mutex_lock( &g_task_context_lock );
-	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].slurmd_suspend_job))(job_id);
-		if (rc != SLURM_SUCCESS) {
-			debug("%s: %s: %s", __func__,
-			      g_task_context[i]->type, slurm_strerror(rc));
-			break;
-		}
-	}
-	slurm_mutex_unlock( &g_task_context_lock );
-
-	return (rc);
-}
-
-/*
- * Slurmd is resuming a previously suspended job.
- *
- * RET - slurm error code
- */
-extern int task_g_slurmd_resume_job(uint32_t job_id)
-{
-	int i, rc = SLURM_SUCCESS;
-
-	xassert(g_task_context_num >= 0);
-
-	if (!g_task_context_num)
-		return SLURM_SUCCESS;
-
-	slurm_mutex_lock( &g_task_context_lock );
-	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].slurmd_resume_job))(job_id);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));
@@ -499,9 +439,7 @@ extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,
 			units = "-ldoms";
 		else
 			units = "";
-		if (step->cpu_bind_type & CPU_BIND_RANK) {
-			bind_type = "RANK";
-		} else if (step->cpu_bind_type & CPU_BIND_MAP) {
+		if (step->cpu_bind_type & CPU_BIND_MAP) {
 			bind_type = "MAP ";
 		} else if (step->cpu_bind_type & CPU_BIND_MASK) {
 			bind_type = "MASK";

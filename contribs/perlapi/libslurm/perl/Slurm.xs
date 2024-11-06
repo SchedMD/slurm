@@ -82,13 +82,15 @@ slurm_DESTROY(slurm_t self)
 
 int
 slurm_get_errno(slurm_t self)
-	C_ARGS:
-	INIT:
+	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
+		RETVAL = errno;
+	OUTPUT:
+		RETVAL
 
 char *
 slurm_strerror(slurm_t self, int errnum=0)
@@ -99,7 +101,7 @@ slurm_strerror(slurm_t self, int errnum=0)
 			      only Slurm::
 			    */
 		if (errnum == 0)
-			errnum = slurm_get_errno();
+			errnum = errno;
 		RETVAL = slurm_strerror(errnum);
 	OUTPUT:
 		RETVAL
@@ -715,45 +717,6 @@ slurm_update_step(slurm_t self, HV *step_msg)
 	OUTPUT:
 		RETVAL
 
-
-######################################################################
-#	SLURM JOB RESOURCES READ/PRINT FUNCTIONS
-######################################################################
-int
-slurm_job_cpus_allocated_on_node_id(slurm_t self, SV *job_res, int node_id)
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if(job_res) {
-			RETVAL = slurm_job_cpus_allocated_on_node_id(
-				(job_resources_t *)SV2ptr(job_res), node_id);
-		} else {
-			RETVAL = 0;
-		}
-	OUTPUT:
-		RETVAL
-
-int
-slurm_job_cpus_allocated_on_node(slurm_t self, SV *job_res, char *node_name)
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if(job_res) {
-			RETVAL = slurm_job_cpus_allocated_on_node(
-				(job_resources_t *)SV2ptr(job_res), node_name);
-		} else {
-			RETVAL = 0;
-		}
-	OUTPUT:
-		RETVAL
-
-
 ######################################################################
 #	SLURM JOB CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
@@ -906,72 +869,6 @@ slurm_pid2jobid(slurm_t self, pid_t job_pid)
 		} else {
 			XSRETURN_UNDEF;
 		}
-	OUTPUT:
-		RETVAL
-
-void
-slurm_print_job_info(slurm_t self, FILE* out, HV *job_info, int one_liner=0)
-	PREINIT:
-		job_info_t ji;
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if (out == NULL) {
-			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
-		}
-		if (hv_to_job_info(job_info, &ji) < 0) {
-			XSRETURN_UNDEF;
-		}
-	C_ARGS:
-		out, &ji, one_liner
-	CLEANUP:
-		xfree(ji.exc_node_inx);
-		xfree(ji.node_inx);
-		xfree(ji.req_node_inx);
-
-void
-slurm_print_job_info_msg(slurm_t self, FILE *out, HV *job_info_msg, int one_liner=0)
-	PREINIT:
-		job_info_msg_t ji_msg;
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if (out == NULL) {
-			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
-		}
-		if (hv_to_job_info_msg(job_info_msg, &ji_msg) < 0) {
-			XSRETURN_UNDEF;
-		}
-	C_ARGS:
-		out, &ji_msg, one_liner
-	CLEANUP:
-		xfree(ji_msg.job_array);
-
-char_xfree *
-slurm_sprint_job_info(slurm_t self, HV *job_info, int one_liner=0)
-	PREINIT:
-		job_info_t ji;
-		char *tmp_str = NULL;
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if(hv_to_job_info(job_info, &ji) < 0) {
-			XSRETURN_UNDEF;
-		}
-		tmp_str = slurm_sprint_job_info(&ji, one_liner);
-		xfree(ji.exc_node_inx);
-		xfree(ji.node_inx);
-		xfree(ji.req_node_inx);
-		RETVAL = tmp_str;
 	OUTPUT:
 		RETVAL
 
@@ -2132,24 +2029,6 @@ slurm_bit_fmt_hexmask(bitstr_t *b)
 #      maybe this is a bug
 int
 slurm_bit_unfmt_hexmask(bitstr_t *b, char *str)
-
-char *
-slurm_bit_fmt_binmask(bitstr_t *b)
-	PREINIT:
-		char *tmp_str;
-		int len;
-	CODE:
-		tmp_str = slurm_bit_fmt_binmask(b);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		xfree(tmp_str);
-	OUTPUT:
-		RETVAL
-
-# ditto
-void
-slurm_bit_unfmt_binmask(bitstr_t *b, char *str)
 
 void
 slurm_bit_fill_gaps(bitstr_t *b)

@@ -58,7 +58,6 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
-#include "src/common/io_hdr.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/proc_args.h"
@@ -145,8 +144,8 @@ static int  _set_rlimit_env(void);
 static void _set_submit_dir_env(void);
 static int  _set_umask_env(void);
 static void _shepherd_notify(int shepherd_fd);
-static int  _shepherd_spawn(srun_job_t *job, List srun_job_list,
-			     bool got_alloc);
+static int _shepherd_spawn(srun_job_t *job, list_t *srun_job_list,
+			   bool got_alloc);
 static void *_srun_signal_mgr(void *no_data);
 static void _srun_cli_filter_post_submit(uint32_t jobid, uint32_t stepid);
 static int  _validate_relative(resource_allocation_response_msg_t *resp,
@@ -531,7 +530,7 @@ extern srun_job_t *job_create_allocation(
 	return (job);
 }
 
-static void _copy_args(List missing_argc_list, slurm_opt_t *opt_master)
+static void _copy_args(list_t *missing_argc_list, slurm_opt_t *opt_master)
 {
 	list_itr_t *iter;
 	slurm_opt_t *opt_local;
@@ -554,12 +553,12 @@ static void _copy_args(List missing_argc_list, slurm_opt_t *opt_master)
  * rebuilt for multiple option structures ("--het-group=1,2" becomes two
  * opt structures). Clear "het_grp_bits".if determined to not be a hetjob.
  */
-static void _het_grp_test(List opt_list)
+static void _het_grp_test(list_t *opt_list)
 {
 	list_itr_t *iter;
 	int het_job_offset;
 	bitstr_t *master_map = NULL;
-	List missing_argv_list = NULL;
+	list_t *missing_argv_list = NULL;
 	bool multi_comp = false, multi_prog = false;
 
 	if (opt_list) {
@@ -621,7 +620,7 @@ static void _het_grp_test(List opt_list)
  * Copy job name from last component to all hetjob components unless
  * explicitly set.
  */
-static void _match_job_name(List opt_list)
+static void _match_job_name(list_t *opt_list)
 {
 	int cnt;
 	list_itr_t *iter;
@@ -662,7 +661,7 @@ static int _sort_by_offset(void *x, void *y)
 	return 0;
 }
 
-static void _post_opts(List opt_list)
+static void _post_opts(list_t *opt_list)
 {
 	_het_grp_test(opt_list);
 	_match_job_name(opt_list);
@@ -848,7 +847,7 @@ end_it:
  * the job allocation request with its requested options.
  */
 static int _create_job_step(srun_job_t *job, bool use_all_cpus,
-			    List srun_job_list, uint32_t het_job_id,
+			    list_t *srun_job_list, uint32_t het_job_id,
 			    char *het_job_nodelist)
 {
 	list_itr_t *opt_iter = NULL, *job_iter;
@@ -1010,7 +1009,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 	}
 }
 
-static void _cancel_steps(List srun_job_list)
+static void _cancel_steps(list_t *srun_job_list)
 {
 	srun_job_t *job;
 	list_itr_t *job_iter;
@@ -1056,11 +1055,11 @@ static void _het_job_struct_del(void *x)
 	xfree(het_job_resp);
 }
 
-static char *_compress_het_job_nodelist(List used_resp_list)
+static char *_compress_het_job_nodelist(list_t *used_resp_list)
 {
 	resource_allocation_response_msg_t *resp;
 	het_job_resp_struct_t *het_job_resp;
-	List het_job_resp_list;
+	list_t *het_job_resp_list;
 	list_itr_t *resp_iter;
 	char *aliases = NULL, *save_ptr = NULL, *tok, *tmp;
 	char *het_job_nodelist = NULL, *node_name;
@@ -1183,7 +1182,7 @@ static char *_compress_het_job_nodelist(List used_resp_list)
  * that allocation. So here we will copy the resp_list to the number of
  * components we care about.
  */
-static void _copy_job_resp(List job_resp_list, int count)
+static void _copy_job_resp(list_t *job_resp_list, int count)
 {
 	resource_allocation_response_msg_t *new, *orig;
 	xassert(job_resp_list);
@@ -1216,8 +1215,8 @@ static void _check_gpus_per_socket(slurm_opt_t *opt_local)
 extern void create_srun_job(void **p_job, bool *got_alloc)
 {
 	resource_allocation_response_msg_t *resp;
-	List job_resp_list = NULL, srun_job_list = NULL;
-	List used_resp_list = NULL;
+	list_t *job_resp_list = NULL, *srun_job_list = NULL;
+	list_t *used_resp_list = NULL;
 	list_itr_t *opt_iter, *resp_iter;
 	srun_job_t *job = NULL;
 	int i, max_list_offset, max_het_job_offset, het_job_offset = -1,
@@ -2199,7 +2198,8 @@ static void _shepherd_notify(int shepherd_fd)
 	close(shepherd_fd);
 }
 
-static int _shepherd_spawn(srun_job_t *job, List srun_job_list, bool got_alloc)
+static int _shepherd_spawn(srun_job_t *job, list_t *srun_job_list,
+			   bool got_alloc)
 {
 	int shepherd_pipe[2], rc;
 	pid_t shepherd_pid;

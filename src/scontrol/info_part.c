@@ -60,7 +60,7 @@ scontrol_load_partitions (partition_info_msg_t **part_buffer_pptr)
 			&part_info_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg (old_part_info_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			part_info_ptr = old_part_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
@@ -135,24 +135,18 @@ extern void scontrol_print_part(char *partition_name, int argc, char **argv)
 			.last_update = part_info_ptr->last_update,
 		};
 
-		if (is_data_parser_deprecated(data_parser)) {
-			DATA_DUMP_CLI_DEPRECATED(PARTITION_INFO_ARRAY, parts,
-						 "partitions", argc, argv, NULL,
-						 mime_type, rc);
-		} else {
-			msg.partition_array =
-				xcalloc(print_cnt,
-					sizeof(*msg.partition_array));
-			for (int i = 0; i < print_cnt; i++)
-				msg.partition_array[i] = *parts[i];
+		msg.partition_array =
+			xcalloc(print_cnt, sizeof(*msg.partition_array));
+		for (int i = 0; i < print_cnt; i++)
+			msg.partition_array[i] = *parts[i];
 
-			DATA_DUMP_CLI(OPENAPI_PARTITION_RESP, resp, argc, argv,
-				      NULL, mime_type, data_parser, rc);
-			xfree(msg.partition_array);
-		}
+		DATA_DUMP_CLI(OPENAPI_PARTITION_RESP, resp, argc, argv, NULL,
+			      mime_type, data_parser, rc);
 
 		if (rc)
 			exit_code = SLURM_ERROR;
+
+		xfree(msg.partition_array);
 	} else {
 		for (int i = 0; i < print_cnt; i++)
 			slurm_print_partition_info(stdout, parts[i], one_liner);

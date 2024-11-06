@@ -42,12 +42,17 @@
 
 #include "accounting_storage_mysql.h"
 
+typedef struct {
+	list_t *assoc_list;
+	list_t *qos_list;
+} usage_qos_query_t;
+
 extern time_t global_last_rollup;
 extern pthread_mutex_t rollup_lock;
 extern pthread_mutex_t usage_rollup_lock;
 
 extern int get_usage_for_list(mysql_conn_t *mysql_conn,
-			      slurmdbd_msg_type_t type, List object_list,
+			      slurmdbd_msg_type_t type, void *object_in,
 			      char *cluster_name, time_t start, time_t end);
 extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			  void *in, slurmdbd_msg_type_t type,
@@ -55,7 +60,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 			       time_t sent_start, time_t sent_end,
 			       uint16_t archive_data,
-			       List *rollup_stats_list_in);
+			       list_t **rollup_stats_list_in);
 
 /*
  * Set last_ran_table to event_time if it happened before the last rollup.

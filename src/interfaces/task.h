@@ -56,14 +56,14 @@ typedef cpuset_t cpu_set_t;
  *
  * RET - slurm error code
  */
-extern int slurmd_task_init( void );
+extern int task_g_init(void);
 
 /*
  * Terminate the task plugin, free memory.
  *
  * RET - slurm error code
  */
-extern int slurmd_task_fini(void);
+extern int task_g_fini(void);
 
 /*
  **************************************************************************
@@ -85,20 +85,6 @@ extern int task_g_slurmd_batch_request(batch_job_launch_msg_t *req);
  */
 extern int task_g_slurmd_launch_request(launch_tasks_request_msg_t *req,
 					uint32_t node_id, char **err_msg);
-
-/*
- * Slurmd is suspending a job.
- *
- * RET - slurm error code
- */
-extern int task_g_slurmd_suspend_job(uint32_t job_id);
-
-/*
- * Slurmd is resuming a previously suspended job.
- *
- * RET - slurm error code
- */
-extern int task_g_slurmd_resume_job(uint32_t job_id);
 
 /*
  * Note that a task launch is about to occur.

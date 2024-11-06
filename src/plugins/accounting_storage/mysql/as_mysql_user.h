@@ -42,33 +42,35 @@
 #include "accounting_storage_mysql.h"
 
 extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
-			   List user_list);
+			      list_t *user_list);
 
 extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_add_assoc_cond_t *add_assoc,
 				     slurmdb_user_rec_t *user);
 
 extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-			   List acct_list, slurmdb_user_cond_t *user_cond);
+			      list_t *acct_list,
+			      slurmdb_user_cond_t *user_cond);
 
-extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
-			       slurmdb_user_cond_t *user_cond,
-			       slurmdb_user_rec_t *user);
+extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
+				     slurmdb_user_cond_t *user_cond,
+				     slurmdb_user_rec_t *user);
 
-extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
-			       slurmdb_user_cond_t *user_cond);
+extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
+				     slurmdb_user_cond_t *user_cond);
 
-extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-			       List acct_list, slurmdb_user_cond_t *user_cond);
+extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
+				     list_t *acct_list,
+				     slurmdb_user_cond_t *user_cond);
 
-extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
-			    slurmdb_user_cond_t *user_cond);
+extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
+				  slurmdb_user_cond_t *user_cond);
 
 /*
  * as_mysql_user_add_coord_update - Manage the user_recs that are getting coord
  *                                  updates.
  * IN/OUT: mysql_conn - Database connection.
- * IN/OUT: user_list - List of slurmdb_user_rec_t needs to be freed afterwards.
+ * IN/OUT: user_list - list of slurmdb_user_rec_t needs to be freed afterwards.
  * IN: user - Name of user.
  */
 extern slurmdb_user_rec_t *as_mysql_user_add_coord_update(

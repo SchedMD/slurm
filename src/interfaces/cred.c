@@ -50,7 +50,6 @@
 #include "src/common/bitstring.h"
 #include "src/common/group_cache.h"
 #include "src/common/identity.h"
-#include "src/common/io_hdr.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -363,12 +362,12 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred)
 	/* NOTE: the verification checks that the credential was
 	 * created by SlurmUser or root */
 	if (!cred->verified) {
-		slurm_seterrno(ESLURMD_INVALID_JOB_CREDENTIAL);
+		errno = ESLURMD_INVALID_JOB_CREDENTIAL;
 		goto error;
 	}
 
 	if (now > (cred->ctime + cred_expire)) {
-		slurm_seterrno(ESLURMD_CREDENTIAL_EXPIRED);
+		errno = ESLURMD_CREDENTIAL_EXPIRED;
 		goto error;
 	}
 
@@ -376,9 +375,9 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred)
 	return cred->arg;
 
 error:
-	errnum = slurm_get_errno();
+	errnum = errno;
 	slurm_rwlock_unlock(&cred->mutex);
-	slurm_seterrno(errnum);
+	errno = errnum;
 	return NULL;
 }
 

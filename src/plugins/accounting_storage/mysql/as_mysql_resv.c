@@ -249,7 +249,7 @@ static void _get_usage_for_resv(mysql_conn_t *mysql_conn, uid_t uid,
 				slurmdb_reservation_rec_t *resv,
 				char *resv_id)
 {
-	List job_list;
+	list_t *job_list;
 	slurmdb_job_cond_t job_cond;
 
 	memset(&job_cond, 0, sizeof(job_cond));
@@ -265,7 +265,7 @@ static void _get_usage_for_resv(mysql_conn_t *mysql_conn, uid_t uid,
 	list_append(job_cond.resvid_list, resv_id);
 
 	job_list = as_mysql_jobacct_process_get_jobs(
-			mysql_conn, uid, &job_cond);
+		mysql_conn, uid, &job_cond);
 
 	if (job_list && list_count(job_list))
 		list_for_each(job_list, _add_usage_to_resv, resv);
@@ -587,20 +587,20 @@ extern int as_mysql_remove_resv(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
-			       slurmdb_reservation_cond_t *resv_cond)
+extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
+				  slurmdb_reservation_cond_t *resv_cond)
 {
 	//DEF_TIMERS;
 	char *query = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
-	List resv_list = NULL;
+	list_t *resv_list = NULL;
 	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	void *curr_cluster = NULL;
-	List local_cluster_list = NULL;
-	List use_cluster_list = NULL;
+	list_t *local_cluster_list = NULL;
+	list_t *use_cluster_list = NULL;
 	list_itr_t *itr = NULL;
 	char *cluster_name = NULL;
 	/* needed if we don't have an resv_cond */

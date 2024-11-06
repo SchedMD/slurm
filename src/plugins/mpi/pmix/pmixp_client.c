@@ -106,7 +106,7 @@ static void _release_cb(pmix_status_t status, void *cbdata)
 /*
  * general proc-level attributes
  */
-static void _general_proc_info(List lresp)
+static void _general_proc_info(list_t *lresp)
 {
 	pmix_info_t *kvp;
 	bool flag = 0;
@@ -130,7 +130,7 @@ static void _general_proc_info(List lresp)
 /*
  * scratch directory locations for use by applications
  */
-static void _set_tmpdirs(List lresp)
+static void _set_tmpdirs(list_t *lresp)
 {
 	pmix_info_t *kvp;
 	char *p = NULL;
@@ -168,7 +168,7 @@ static void _set_euid(list_t *lresp)
 /*
  * information about relative ranks as assigned by the RM
  */
-static void _set_procdatas(List lresp)
+static void _set_procdatas(list_t *lresp)
 {
 	pmixp_namespace_t *nsptr = pmixp_nspaces_local();
 	pmix_info_t *kvp, *tkvp;
@@ -186,7 +186,7 @@ static void _set_procdatas(List lresp)
 
 	/* store information about local processes */
 	for (i = 0; i < pmixp_info_tasks(); i++) {
-		List rankinfo;
+		list_t *rankinfo;
 		list_itr_t *it;
 		int count, j, localid, nodeid;
 		char *nodename;
@@ -266,7 +266,7 @@ static void _set_procdatas(List lresp)
 	}
 }
 
-static void _set_sizeinfo(List lresp)
+static void _set_sizeinfo(list_t *lresp)
 {
 	pmix_info_t *kvp;
 	uint32_t tmp_val;
@@ -296,7 +296,7 @@ static void _set_sizeinfo(List lresp)
 /*
  * provide topology information if hwloc is available
  */
-static void _set_topology(List lresp)
+static void _set_topology(list_t *lresp)
 {
 #ifdef HAVE_HWLOC
 	hwloc_topology_t topology;
@@ -402,7 +402,7 @@ static void _build_node2task_map(pmixp_namespace_t *nsptr, uint32_t *node2tasks)
 	xfree(node_tasks);
 }
 
-static int _set_mapsinfo(List lresp)
+static int _set_mapsinfo(list_t *lresp)
 {
 	pmix_info_t *kvp;
 	char *regexp, *input, *map = NULL, *pos = NULL;
@@ -459,7 +459,7 @@ static int _set_mapsinfo(List lresp)
 	return SLURM_SUCCESS;
 }
 
-static void _set_localinfo(List lresp)
+static void _set_localinfo(list_t *lresp)
 {
 	pmix_info_t *kvp;
 	uint32_t tmp;
@@ -618,7 +618,7 @@ extern uint32_t pmixp_lib_get_version(void)
 
 extern int pmixp_libpmix_job_set(void)
 {
-	List lresp;
+	list_t *lresp;
 	pmix_info_t *info;
 	int ninfo;
 	list_itr_t *it;

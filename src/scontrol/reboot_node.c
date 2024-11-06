@@ -49,7 +49,7 @@ extern int scontrol_cancel_reboot(char *nodes)
 
 	if (slurm_update_node(&node_msg)) {
 		exit_code = 1;
-		rc = slurm_get_errno();
+		rc = errno;
 		slurm_perror ("slurm_update error");
 	}
 
@@ -78,7 +78,7 @@ extern int scontrol_reboot_nodes(char *node_list, bool asap,
 	if (conf->reboot_program == NULL) {
 		error("RebootProgram isn't defined");
 		slurm_conf_unlock();
-		slurm_seterrno(SLURM_ERROR);
+		errno = SLURM_ERROR;
 		return SLURM_ERROR;
 	}
 	slurm_conf_unlock();

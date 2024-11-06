@@ -276,7 +276,7 @@ client_req_parse_spawn_req(client_req_t *req)
 		goto req_err;
 	}
 	spawn_req->subcmd_cnt = atoi(MP_VAL(req, pi));
-	spawn_req->subcmds = xmalloc(spawn_req->subcmd_cnt *
+	spawn_req->subcmds = xcalloc(spawn_req->subcmd_cnt,
 				     sizeof(spawn_subcmd_t *));
 	pi ++;
 	/* preputcount */
@@ -292,8 +292,8 @@ client_req_parse_spawn_req(client_req_t *req)
 		error("mpi/pmi2: wrong number of key-val pairs in spawn cmd");
 		goto req_err;
 	}
-	spawn_req->pp_keys = xmalloc(spawn_req->preput_cnt * sizeof(char *));
-	spawn_req->pp_vals = xmalloc(spawn_req->preput_cnt * sizeof(char *));
+	spawn_req->pp_keys = xcalloc(spawn_req->preput_cnt, sizeof(char *));
+	spawn_req->pp_vals = xcalloc(spawn_req->preput_cnt, sizeof(char *));
 	/* ppkey,ppval */
 	for (i = 0; i < spawn_req->preput_cnt; i ++) {
 		/* ppkey */
@@ -354,7 +354,7 @@ client_req_parse_spawn_req(client_req_t *req)
 		}
 		debug("mpi/pmi2: argc = %d", subcmd->argc);
 		if (subcmd->argc > 0) {
-			subcmd->argv = xmalloc(subcmd->argc * sizeof(char *));
+			subcmd->argv = xcalloc(subcmd->argc, sizeof(char *));
 		}
 		/* argv */
 		for (j = 0; j < subcmd->argc; j ++) {
@@ -392,9 +392,9 @@ client_req_parse_spawn_req(client_req_t *req)
 			goto req_err;
 		}
 		if (subcmd->info_cnt > 0) {
-			subcmd->info_keys = xmalloc(subcmd->info_cnt *
+			subcmd->info_keys = xcalloc(subcmd->info_cnt,
 						    sizeof(char *));
-			subcmd->info_vals = xmalloc(subcmd->info_cnt *
+			subcmd->info_vals = xcalloc(subcmd->info_cnt,
 						    sizeof(char *));
 		}
 		/* infokey,infoval */
@@ -444,14 +444,14 @@ client_req_parse_spawn_subcmd(client_req_t *req)
 	client_req_get_str(req, EXECNAME_KEY, &subcmd->cmd);
 	client_req_get_int(req, NPROCS_KEY, (int *)&subcmd->max_procs);
 	client_req_get_int(req, ARGCNT_KEY, (int *)&subcmd->argc);
-	subcmd->argv = xmalloc(subcmd->argc * sizeof(char *));
+	subcmd->argv = xcalloc(subcmd->argc, sizeof(char *));
 	for (i = 0; i < subcmd->argc; i ++) {
 		snprintf(buf, PMI2_MAX_KEYLEN, "arg%d", i + 1);
 		client_req_get_str(req, buf, &(subcmd->argv[i]));
 	}
 	client_req_get_int(req, INFONUM_KEY, (int *)&subcmd->info_cnt);
-	subcmd->info_keys = xmalloc(subcmd->info_cnt * sizeof(char *));
-	subcmd->info_vals = xmalloc(subcmd->info_cnt * sizeof(char *));
+	subcmd->info_keys = xcalloc(subcmd->info_cnt, sizeof(char *));
+	subcmd->info_vals = xcalloc(subcmd->info_cnt, sizeof(char *));
 	for (i = 0; i < subcmd->info_cnt; i ++) {
 		snprintf(buf, PMI2_MAX_KEYLEN, "info_key_%d", i);
 		client_req_get_str(req, buf, &(subcmd->info_keys[i]));
@@ -521,13 +521,9 @@ client_req_get_bool(client_req_t *req, const char *key, bool *pval)
 
 /* ************************************************************ */
 
-extern client_resp_t *
-client_resp_new(void)
+extern client_resp_t *client_resp_new(void)
 {
-	client_resp_t *resp;
-
-	resp = xmalloc(sizeof(client_resp_t));
-	return resp;
+	return xmalloc(sizeof(client_resp_t));
 }
 
 extern int

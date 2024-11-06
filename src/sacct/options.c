@@ -42,6 +42,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/ref.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/data_parser.h"
@@ -74,21 +75,23 @@ static void _help_msg(void);
 static void _init_params(void);
 static void _usage(void);
 
-List selected_parts = NULL;
-List selected_steps = NULL;
+decl_static_data(help_txt);
+
+list_t *selected_parts = NULL;
+list_t *selected_steps = NULL;
 void *acct_db_conn = NULL;
 
-List print_fields_list = NULL;
+list_t *print_fields_list = NULL;
 list_itr_t *print_fields_itr = NULL;
 int field_count = 0;
-List g_qos_list = NULL;
-List g_tres_list = NULL;
+list_t *g_qos_list = NULL;
+list_t *g_tres_list = NULL;
 
-static List _build_cluster_list(slurmdb_federation_rec_t *fed)
+static list_t *_build_cluster_list(slurmdb_federation_rec_t *fed)
 {
 	slurmdb_cluster_rec_t *cluster;
 	list_itr_t *iter;
-	List cluster_list;
+	list_t *cluster_list;
 
 	cluster_list = list_create(xfree_ptr);
 	iter = list_iterator_create(fed->cluster_list);
@@ -141,7 +144,8 @@ static void _help_job_reason_msg(void)
 }
 
 /* returns number of objects added to list */
-static int _addto_reason_char_list_internal(List char_list, char *name, void *x)
+static int _addto_reason_char_list_internal(list_t *char_list, char *name,
+					    void *x)
 {
 	uint32_t c;
 	char *tmp_name = NULL;
@@ -161,7 +165,7 @@ static int _addto_reason_char_list_internal(List char_list, char *name, void *x)
 }
 
 /* returns number of objects added to list */
-static int _addto_reason_char_list(List char_list, char *names)
+static int _addto_reason_char_list(list_t *char_list, char *names)
 {
 	if (!char_list) {
 		error("No list was given to fill in");
@@ -199,7 +203,8 @@ static bool _supported_state(uint32_t state_num)
 	}
 }
 
-static int _addto_state_char_list_internal(List char_list, char *name, void *x)
+static int _addto_state_char_list_internal(list_t *char_list, char *name,
+					   void *x)
 {
 	uint32_t c;
 	char *tmp_name = NULL;
@@ -222,7 +227,7 @@ static int _addto_state_char_list_internal(List char_list, char *name, void *x)
 
 /* returns number of objects added to list */
 /* also checks if states are supported by sacct and fatals if not */
-static int _addto_state_char_list(List char_list, char *names)
+static int _addto_state_char_list(list_t *char_list, char *names)
 {
 	if (!char_list) {
 		error("No list was given to fill in");
@@ -235,185 +240,10 @@ static int _addto_state_char_list(List char_list, char *names)
 
 static void _help_msg(void)
 {
-    printf("\
-sacct [<OPTION>]                                                            \n \
-    Valid <OPTION> values are:                                              \n\
-     -a, --allusers:                                                        \n\
-	           Display jobs for all users. By default, only the         \n\
-                   current user's jobs are displayed.  If ran by user root  \n\
-                   this is the default.                                     \n\
-     -A, --accounts:                                                        \n\
-	           Use this comma separated list of accounts to select jobs \n\
-                   to display.  By default, all accounts are selected.      \n\
-     --array:                                                               \n\
-                   Expand job arrays. Display array tasks on separate lines \n\
-                   instead of consolidating them to a single line.          \n\
-     -b, --brief:                                                           \n\
-	           Equivalent to '--format=jobstep,state,error'.            \n\
-     -B, --batch-script:                                                    \n\
-	           Print batch script of job.                               \n\
-                   NOTE: AccountingStoreFlags=job_script is required for this\n\
-                   NOTE: Requesting specific job(s) with '-j' is required   \n\
-                         for this.                                          \n\
-     -c, --completion: Use job completion instead of accounting data.       \n\
-         --delimiter:                                                       \n\
-	           ASCII characters used to separate the fields when        \n\
-	           specifying the  -p  or  -P options. The default delimiter\n\
-	           is a '|'. This options is ignored if -p or -P options    \n\
-	           are not specified.                                       \n\
-     -D, --duplicates:                                                      \n\
-	           If Slurm job ids are reset, some job numbers may         \n\
-	           appear more than once referring to different jobs.       \n\
-	           Without this option only the most recent jobs will be    \n\
-                   displayed.                                               \n\
-     -e, --helpformat:                                                      \n\
-	           Print a list of fields that can be specified with the    \n\
-	           '--format' option                                        \n\
-     -E, --endtime:                                                         \n\
-                   Select jobs eligible before this time.  If states are    \n\
-                   given with the -s option return jobs in this state before\n\
-                   this period.                                             \n\
-         --env-vars:                                                        \n\
-	           Print the environment to launch the batch script of job. \n\
-                   NOTE: AccountingStoreFlags=job_env is required for this  \n\
-                   NOTE: Requesting specific job(s) with '-j' is required   \n\
-                         for this.                                          \n\
-         --federation: Report jobs from federation if a member of a one.    \n\
-     --expand-pattern: substitute wildcards in field name patterns          \n\
-     -f, --file=file:                                                       \n\
-	           Read data from the specified file, rather than Slurm's   \n\
-                   current accounting log file. (Only appliciable when      \n\
-                   running the jobcomp/filetxt plugin.)                     \n\
-     -g, --gid, --group:                                                    \n\
-	           Use this comma separated list of gids or group names     \n\
-                   to select jobs to display.  By default, all groups are   \n\
-                   selected.                                                \n\
-     -h, --help:   Print this description of use.                           \n\
-         --helpreason                                                       \n\
-                   Print a list of job reasons that can be specified with   \n\
-                   the '--reason' option.                                   \n\
-         --helpstate                                                        \n\
-                   Print a list of job states that can be specified with    \n\
-                   the '--state' option.                                    \n\
-     -i, --nnodes=N:                                                        \n\
-                   Return jobs which ran on this many nodes (N = min[-max]) \n\
-     -I, --ncpus=N:                                                         \n\
-                   Return jobs which ran on this many cpus (N = min[-max])  \n\
-     -j, --jobs:                                                            \n\
-	           Format is <job(.step)>. Display information about this   \n\
-                   job or comma-separated list of jobs. The default is all  \n\
-                   jobs. Adding .step will display the specific job step of \n\
-                   that job. (A step id of 'batch' will display the         \n\
-                   information about the batch step.)                       \n\
-     --json[=data_parser]                                                   \n\
-                   Produce JSON output                                      \n\
-     -k, --timelimit-min:                                                   \n\
-                   Only send data about jobs with this timelimit.           \n\
-                   If used with timelimit_max this will be the minimum      \n\
-                   timelimit of the range.  Default is no restriction.      \n\
-     -K, --timelimit-max:                                                   \n\
-                   Ignored by itself, but if timelimit_min is set this will \n\
-                   be the maximum timelimit of the range.  Default is no    \n\
-                   restriction.                                             \n\
-         --local   Report information only about jobs on the local cluster. \n\
-	           Overrides --federation.                                  \n\
-     -l, --long:                                                            \n\
-	           Equivalent to specifying                                 \n\
-	           '--format=jobid,jobidraw,jobname,partition,maxvmsize,    \n\
-                             maxvmsizenode,maxvmsizetask,avevmsize,maxrss,  \n\
-                             maxrssnode,maxrsstask,averss,maxpages,         \n\
-                             maxpagesnode,maxpagestask,avepages,mincpu,     \n\
-                             mincpunode,mincputask,avecpu,ntasks,alloccpus, \n\
-                             elapsed,state,exitcode,avecpufreq,reqcpufreqmin,\n\
-                             reqcpufreqmax,reqcpufreqgov,reqmem,            \n\
-                             consumedenergy,maxdiskread,maxdiskreadnode,    \n\
-                             maxdiskreadtask,avediskread,maxdiskwrite,      \n\
-                             maxdiskwritenode,maxdiskwritetask,avediskwrite,\n\
-                             reqtres,alloctres,                             \n\
-                             tresusageinave,tresusageinmax,tresusageinmaxn, \n\
-                             tresusageinmaxt,tresusageinmin,tresusageinminn,\n\
-                             tresusageinmint,tresusageintot,tresusageoutmax,\n\
-                             tresusageoutmaxn,tresusageoutmaxt,             \n\
-                             tresusageoutave,tresusageouttot                \n\
-     -L, --allclusters:                                                     \n\
-	           Display jobs ran on all clusters. By default, only jobs  \n\
-                   ran on the cluster from where sacct is called are        \n\
-                   displayed.                                               \n\
-     -M, --clusters:                                                        \n\
-                   Only send data about these clusters. Use \"all\" for all \n\
-                   clusters.\n\
-     -n, --noheader:                                                        \n\
-	           No header will be added to the beginning of output.      \n\
-                   The default is to print a header.                        \n\
-     --noconvert:                                                           \n\
-		   Don't convert units from their original type             \n\
-		   (e.g. 2048M won't be converted to 2G).                   \n\
-     -N, --nodelist:                                                        \n\
-                   Display jobs that ran on any of these nodes,             \n\
-                   can be one or more using a ranged string.                \n\
-     --name:                                                                \n\
-                   Display jobs that have any of these name(s).             \n\
-     -o, --format:                                                          \n\
-	           Comma separated list of fields. (use \"--helpformat\"    \n\
-                   for a list of available fields).                         \n\
-     -p, --parsable: output will be '|' delimited with a '|' at the end     \n\
-     -P, --parsable2: output will be '|' delimited without a '|' at the end \n\
-     -q, --qos:                                                             \n\
-                   Only send data about jobs using these qos.  Default is all.\n\
-     -r, --partition:                                                       \n\
-	           Comma separated list of partitions to select jobs and    \n\
-                   job steps from. The default is all partitions.           \n\
-     -s, --state:                                                           \n\
-	           Select jobs based on their current state or the state    \n\
-                   they were in during the time period given: running (r),  \n\
-                   completed (cd), failed (f), timeout (to), resizing (rs), \n\
-                   deadline (dl) and node_fail (nf).                        \n\
-     -S, --starttime:                                                       \n\
-                   Select jobs eligible after this time.  Default is        \n\
-                   00:00:00 of the current day, unless '-s' is set then     \n\
-                   the default is 'now'.                                    \n\
-     -T, --truncate:                                                        \n\
-                   Truncate time.  So if a job started before --starttime   \n\
-                   the start time would be truncated to --starttime.        \n\
-                   The same for end time and --endtime.                     \n\
-     -u, --uid, --user:                                                     \n\
-	           Use this comma separated list of uids or user names      \n\
-                   to select jobs to display.  By default, the running      \n\
-                   user's uid is used.                                      \n\
-     --units=[KMGTP]:                                                       \n\
-                   Display values in specified unit type. Takes precedence  \n\
-		   over --noconvert option.                                 \n\
-     --usage:      Display brief usage message.                             \n\
-     -v, --verbose:                                                         \n\
-	           Primarily for debugging purposes, report the state of    \n\
-                   various variables during processing.                     \n\
-     -V, --version: Print version.                                          \n\
-     -W, --wckeys:                                                          \n\
-                   Only send data about these wckeys.  Default is all.      \n\
-     --whole-hetjob[=yes|no]:                                               \n\
-		   If set to 'yes' (or no argument), then information about \n\
-		   all the heterogeneous components will be retrieved. If   \n\
-		   set to 'no' only the specific filtered components will   \n\
-		   be retrieved. The default behavior without this option is\n\
-		   that all components are retrieved only if filtering the  \n\
-		   leader component with --jobs.                            \n\
-     -x, --associations:                                                    \n\
-                   Only send data about these association id.  Default is all.\n\
-     -X, --allocations:                                                     \n\
-	           Only show statistics relevant to the job allocation      \n\
-	           itself, not taking steps into consideration.             \n\
-     --yaml[=data_parser]                                                   \n\
-                   Produce YAML output                                      \n\
-	                                                                    \n\
-     Note, valid start/end time formats are...                              \n\
-	           HH:MM[:SS] [AM|PM]                                       \n\
-	           MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]                     \n\
-	           MM/DD[/YY]-HH:MM[:SS]                                    \n\
-	           YYYY-MM-DD[THH:MM[:SS]]                                  \n\
-	           now[{+|-}count[seconds(default)|minutes|hours|days|weeks]]\n\
-\n");
-
-	return;
+	char *txt;
+	static_ref_to_cstring(txt, help_txt);
+	printf("%s", txt);
+	xfree(txt);
 }
 
 static void _usage(void)
@@ -472,7 +302,7 @@ static int _sort_asc_submit_time(void *x, void *y)
 	return 0;
 }
 
-static void _remove_duplicate_fed_jobs(List jobs)
+static void _remove_duplicate_fed_jobs(list_t *jobs)
 {
 	int i, j;
 	uint32_t hash_inx;
@@ -1127,10 +957,9 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (qos_names) {
 		if (!g_qos_list) {
-			slurmdb_qos_cond_t qos_cond;
-			memset(&qos_cond, 0,
-				sizeof(slurmdb_qos_cond_t));
-			qos_cond.with_deleted = 1;
+			slurmdb_qos_cond_t qos_cond = {
+				.flags = QOS_COND_FLAG_WITH_DELETED,
+			};
 			g_qos_list = slurmdb_qos_get(
 				acct_db_conn, &qos_cond);
 		}
@@ -1152,8 +981,8 @@ extern void parse_command_line(int argc, char **argv)
 		 * all clusters in that federation */
 		slurmdb_federation_rec_t *fed = NULL;
 		slurmdb_federation_cond_t fed_cond;
-		List fed_list = NULL;
-		List cluster_list = list_create(NULL);
+		list_t *fed_list = NULL;
+		list_t *cluster_list = list_create(NULL);
 
 		params.cluster_name = xstrdup(slurm_conf.cluster_name);
 
@@ -1434,22 +1263,27 @@ static bool _test_local_job(uint32_t job_id)
 
 static void _print_script(slurmdb_job_rec_t *job)
 {
-	char *id = slurmdb_get_job_id_str(job);
+	if (print_fields_have_header) {
+		char *id = slurmdb_get_job_id_str(job);
+		printf("Batch Script for %s\n"
+		       "--------------------------------------------------------------------------------\n",
+		       id);
 
-	printf("Batch Script for %s\n--------------------------------------------------------------------------------\n%s\n",
-	       id, job->script ? job->script : "NONE\n");
-	xfree(id);
-	return;
+		xfree(id);
+	}
+	printf("%s", job->script ? job->script : "NONE\n");
 }
 
 static void _print_env(slurmdb_job_rec_t *job)
 {
-	char *id = slurmdb_get_job_id_str(job);
-
-	printf("Environment used for %s (must be batch to display)\n--------------------------------------------------------------------------------\n%s\n",
-	       id, job->env ? job->env : "NONE\n");
-	xfree(id);
-	return;
+	if (print_fields_have_header) {
+		char *id = slurmdb_get_job_id_str(job);
+		printf("Environment used for %s (must be batch to display)\n"
+		       "--------------------------------------------------------------------------------\n",
+		       id);
+		xfree(id);
+	}
+	printf("%s", job->env ? job->env : "NONE\n");
 }
 
 /* do_list() -- List the assembled data
@@ -1469,15 +1303,9 @@ extern void do_list(int argc, char **argv)
 	slurmdb_job_cond_t *job_cond = params.job_cond;
 
 	if (params.mimetype) {
-		if (is_data_parser_deprecated(params.data_parser))
-			DATA_DUMP_CLI_DEPRECATED(JOB_LIST, jobs, "jobs", argc,
-						 argv, acct_db_conn,
-						 params.mimetype, errno);
-		else
-			DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_JOBS_RESP, jobs,
-					     argc, argv, acct_db_conn,
-					     params.mimetype,
-					     params.data_parser, errno);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_JOBS_RESP, jobs, argc,
+				     argv, acct_db_conn, params.mimetype,
+				     params.data_parser, errno);
 		return;
 	}
 

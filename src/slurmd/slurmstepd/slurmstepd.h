@@ -48,7 +48,6 @@
 extern pthread_mutex_t stepmgr_mutex;
 
 extern job_record_t *job_step_ptr;
-extern int slurmstepd_blocked_signals[];
 
 typedef struct {
 	pthread_cond_t cond;

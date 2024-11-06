@@ -48,7 +48,7 @@ typedef struct slurm_priority_ops {
 	void     (*set_assoc_usage)(slurmdb_assoc_rec_t *assoc);
 	double   (*calc_fs_factor) (long double usage_efctv,
 				    long double shares_norm);
-	List	 (*get_priority_factors)(uid_t uid);
+	list_t *(*get_priority_factors)(uid_t uid);
 	void     (*job_end)        (job_record_t *job_ptr);
 	uint32_t (*recover) (uint32_t prio_boost);
 	int (*post_init) (void);
@@ -80,6 +80,19 @@ extern int priority_sort_part_tier(void *x, void *y)
 	if (parta->priority_tier > partb->priority_tier)
 		return -1;
 	if (parta->priority_tier < partb->priority_tier)
+		return 1;
+
+	return 0;
+}
+
+extern int priority_sort_qos_desc(void *x, void *y)
+{
+	slurmdb_qos_rec_t *qosa = *(slurmdb_qos_rec_t **) x;
+	slurmdb_qos_rec_t *qosb = *(slurmdb_qos_rec_t **) y;
+
+	if (qosa->priority > qosb->priority)
+		return -1;
+	if (qosa->priority < qosb->priority)
 		return 1;
 
 	return 0;
@@ -175,7 +188,7 @@ extern double priority_g_calc_fs_factor(long double usage_efctv,
 		(usage_efctv, shares_norm);
 }
 
-extern List priority_g_get_priority_factors_list(uid_t uid)
+extern list_t *priority_g_get_priority_factors_list(uid_t uid)
 {
 	xassert(g_priority_context);
 

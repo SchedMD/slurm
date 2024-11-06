@@ -199,6 +199,10 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GET_QOS;
 	} else if (!xstrcasecmp(msg_type, "Got QOS")) {
 		return DBD_GOT_QOS;
+	} else if (!xstrcasecmp(msg_type, "Get QOS Usage")) {
+		return DBD_GET_QOS_USAGE;
+	} else if (!xstrcasecmp(msg_type, "Got QOS Usage")) {
+		return DBD_GOT_QOS_USAGE;
 	} else if (!xstrcasecmp(msg_type, "Remove QOS")) {
 		return DBD_REMOVE_QOS;
 	} else if (!xstrcasecmp(msg_type, "Add WCKeys")) {
@@ -691,6 +695,18 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Got QOS";
 		break;
+	case DBD_GET_QOS_USAGE:
+		if (get_enum) {
+			return "DBD_GET_QOS_USAGE";
+		} else
+			return "Get QOS Usage";
+		break;
+	case DBD_GOT_QOS_USAGE:
+		if (get_enum) {
+			return "DBD_GOT_QOS_USAGE";
+		} else
+			return "Got QOS Usage";
+		break;
 	case DBD_REMOVE_QOS:
 		if (get_enum) {
 			return "DBD_REMOVE_QOS";
@@ -1144,6 +1160,7 @@ extern void slurmdbd_free_job_start_msg(void *in)
 		xfree(msg->nodes);
 		xfree(msg->node_inx);
 		xfree(msg->partition);
+		xfree(msg->qos_req);
 		xfree(msg->script_hash);
 		xfree(msg->std_err);
 		xfree(msg->std_in);

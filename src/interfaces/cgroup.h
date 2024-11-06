@@ -105,6 +105,8 @@ typedef enum {
 
 /* Current supported cgroup controller features */
 typedef enum {
+	CG_FALSE_ROOT,
+	CG_MEMCG_PEAK,
 	CG_MEMCG_SWAP
 } cgroup_ctl_feature_t;
 
@@ -150,6 +152,7 @@ typedef struct {
 } cgroup_oom_t;
 
 typedef struct {
+	uint64_t memory_peak;
 	uint64_t usec;
 	uint64_t ssec;
 	uint64_t total_rss;
@@ -195,9 +198,12 @@ extern int cgroup_conf_init(void);
 extern void cgroup_conf_destroy(void);
 extern void cgroup_free_limits(cgroup_limits_t *limits);
 extern void cgroup_init_limits(cgroup_limits_t *limits);
-extern List cgroup_get_conf_list(void);
+extern list_t *cgroup_get_conf_list(void);
 extern int cgroup_write_conf(int fd);
 extern int cgroup_read_conf(int fd);
+extern int cgroup_write_state(int fd);
+extern int cgroup_read_state(int fd);
+
 extern bool cgroup_memcg_job_confinement(void);
 extern char *autodetect_cgroup_version(void);
 

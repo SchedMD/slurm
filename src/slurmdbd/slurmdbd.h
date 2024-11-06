@@ -42,16 +42,15 @@
 
 extern time_t shutdown_time;		/* when shutdown request arrived */
 extern pthread_mutex_t registered_lock;
-extern List registered_clusters;
+extern list_t *registered_clusters;
 extern pthread_mutex_t rpc_mutex;
 extern slurmdb_stats_rec_t rpc_stats;
-extern pthread_t signal_handler_thread;	/* thread ID for signal hander */
 
 extern void shutdown_threads(void);
 
-extern void reconfig(void);
+extern void *reconfig(void *arg);
 
-extern void handle_rollup_stats(List rollup_stats_list,
+extern void handle_rollup_stats(list_t *rollup_stats_list,
 				long delta_time, int type);
 
 extern void init_dbd_stats(void);

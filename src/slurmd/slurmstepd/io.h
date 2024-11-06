@@ -43,19 +43,6 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-/*
- * The message cache uses up free message buffers, so STDIO_MAX_MSG_CACHE
- * must be a number smaller than STDIO_MAX_FREE_BUF.
- */
-#define STDIO_MAX_FREE_BUF 1024
-#define STDIO_MAX_MSG_CACHE 128
-
-struct io_buf {
-	int ref_count;
-	uint32_t length;
-	void *data;
-};
-
 /* For each task's ofname and efname, are all the names NULL,
    one null and the others "/dev/null", all non-null and unique,
    or all non-null and identical. */
@@ -71,10 +58,6 @@ typedef enum {
 			      which case the slurmstepd does the write */
 	SLURMD_UNKNOWN
 } slurmd_filename_pattern_t;
-
-
-struct io_buf *alloc_io_buf(void);
-void free_io_buf(struct io_buf *buf);
 
 /*
  * Create a TCP connection back the initial client (e.g. srun).

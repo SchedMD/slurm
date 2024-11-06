@@ -88,6 +88,11 @@
 # define NTOH_int64(x)	  ((int64_t)  (x))
 # define HTON_uint64(x)	  ((uint64_t) (x))
 # define NTOH_uint64(x)	  ((uint64_t) (x))
+#elif HAVE___BUILTIN_BSWAP64
+# define HTON_int64(x) ((int64_t) __builtin_bswap64(x))
+# define NTOH_int64(x) ((int64_t) __builtin_bswap64(x))
+# define HTON_uint64(x) (__builtin_bswap64(x))
+# define NTOH_uint64(x) (__builtin_bswap64(x))
 #else
 # define HTON_int64(x)    ((int64_t) UINT64_SWAP_LE_BE (x))
 # define NTOH_int64(x)	  ((int64_t) UINT64_SWAP_LE_BE (x))
@@ -100,19 +105,18 @@
 		int err = pthread_cond_init(cond, cont_attr);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_cond_init(): %m",	\
-				__FILE__, __LINE__, __func__);		\
-			abort();					\
+			fatal_abort("%s: pthread_cond_init(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
-#define slurm_cond_signal(cond)					\
+#define slurm_cond_signal(cond)						\
 	do {								\
 		int err = pthread_cond_signal(cond);			\
 		if (err) {						\
 			errno = err;					\
 			error("%s:%d %s: pthread_cond_signal(): %m",	\
-				__FILE__, __LINE__, __func__);		\
+			      __FILE__, __LINE__, __func__);		\
 		}							\
 	} while (0)
 
@@ -122,7 +126,7 @@
 		if (err) {						\
 			errno = err;					\
 			error("%s:%d %s: pthread_cond_broadcast(): %m",	\
-				__FILE__, __LINE__, __func__);		\
+			      __FILE__, __LINE__, __func__);		\
 		}							\
 	} while (0)
 
@@ -132,7 +136,7 @@
 		if (err) {						\
 			errno = err;					\
 			error("%s:%d %s: pthread_cond_wait(): %m",	\
-				__FILE__, __LINE__, __func__);		\
+			      __FILE__, __LINE__, __func__);		\
 		}							\
 	} while (0)
 
@@ -154,7 +158,7 @@
 		if (err) {						\
 			errno = err;					\
 			error("%s:%d %s: pthread_cond_destroy(): %m",	\
-				__FILE__, __LINE__, __func__);		\
+			      __FILE__, __LINE__, __func__);		\
 		}							\
 	} while (0)
 
@@ -164,9 +168,8 @@
 		int err = pthread_mutex_init(mutex, NULL);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_mutex_init(): %m",	\
-				__FILE__, __LINE__, __func__);		\
-			abort();					\
+			fatal_abort("%s: pthread_mutex_init(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -175,20 +178,18 @@
 		int err = pthread_mutex_destroy(mutex);			\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_mutex_destroy(): %m",	\
-				__FILE__, __LINE__, __func__);		\
-			abort();					\
+			fatal_abort("%s: pthread_mutex_destroy(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
-#define slurm_mutex_lock(mutex)					\
+#define slurm_mutex_lock(mutex)						\
 	do {								\
 		int err = pthread_mutex_lock(mutex);			\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_mutex_lock(): %m",	\
-				__FILE__, __LINE__, __func__);		\
-			abort();					\
+			fatal_abort("%s: pthread_mutex_lock(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -197,9 +198,8 @@
 		int err = pthread_mutex_unlock(mutex);			\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_mutex_unlock(): %m",	\
-				__FILE__, __LINE__, __func__);		\
-			abort();					\
+			fatal_abort("%s: pthread_mutex_unlock(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -208,8 +208,8 @@
 		int err = pthread_rwlock_init(rwlock, NULL);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_rwlock_init(): %m",	\
-			      __FILE__, __LINE__, __func__);		\
+			fatal_abort("%s: pthread_rwlock_init(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -218,8 +218,8 @@
 		int err = pthread_rwlock_destroy(rwlock);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_rwlock_destroy(): %m",	\
-			      __FILE__, __LINE__, __func__);		\
+			fatal_abort("%s: pthread_rwlock_destroy(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -228,8 +228,8 @@
 		int err = pthread_rwlock_rdlock(rwlock);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_rwlock_rdlock(): %m",	\
-			      __FILE__, __LINE__, __func__);		\
+			fatal_abort("%s: pthread_rwlock_rdlock(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -238,8 +238,8 @@
 		int err = pthread_rwlock_wrlock(rwlock);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_rwlock_wrlock(): %m",	\
-			      __FILE__, __LINE__, __func__);		\
+			fatal_abort("%s: pthread_rwlock_wrlock(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -248,8 +248,8 @@
 		int err = pthread_rwlock_unlock(rwlock);		\
 		if (err) {						\
 			errno = err;					\
-			fatal("%s:%d %s: pthread_rwlock_unlock(): %m",	\
-			      __FILE__, __LINE__, __func__);		\
+			fatal_abort("%s: pthread_rwlock_unlock(): %m",	\
+				    __func__);				\
 		}							\
 	} while (0)
 
@@ -275,7 +275,7 @@
 			errno = err;					\
 			error("pthread_attr_setstacksize: %m");		\
 		}							\
-	 } while (0)
+	} while (0)
 #else
 #  define slurm_attr_init(attr)						\
 	do {								\
@@ -298,7 +298,7 @@
 		if (err) {						\
 			errno = err;					\
 			error("pthread_attr_destroy failed, "		\
-				"possible memory leak!: %m");		\
+			      "possible memory leak!: %m");		\
 		}							\
 	} while (0)
 
@@ -388,6 +388,9 @@
 /* Number of elements in an allocated array */
 #define PTR_ARRAY_SIZE(x) (xsize(x) / sizeof((x)[0]))
 
+/* Get __typeof__(s->f) */
+#define STRUCT_FIELD_TYPEOF(s, f) __typeof__(((s *) (NULL))->f)
+
 #define SWAP(x, y)		\
 do {				\
 	__typeof__(x) b = x;	\
@@ -398,5 +401,10 @@ do {				\
 /* macro to force stringification */
 #define XSTRINGIFY(s) XSTRINGIFY2(s)
 #define XSTRINGIFY2(s) #s
+
+/* Macro to stringify bool for logging */
+#define BOOL_CHARIFY(s) ((s) ? 'T' : 'F')
+/* Macro to stringify bool for logging */
+#define BOOL_STRINGIFY(s) ((s) ? "True" : "False")
 
 #endif /* !_MACROS_H */

@@ -81,13 +81,10 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 #define YAML_MAX_DEPTH 64
 #define LOG_LENGTH 16
 
-/*
- * YAML doesn't have an IANA registered mime type yet
- * so we are gonna match ruby on rails.
- */
 const char *mime_types[] = {
-	"application/x-yaml",
-	"text/yaml",
+	"application/yaml", /* RFC9512 */
+	"application/x-yaml", /* backwards compat - mirroring ruby on rails */
+	"text/yaml", /* backwards compat - mirroring ruby on rails */
 	NULL
 };
 
@@ -611,7 +608,7 @@ static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter)
 		return count >= 0 ? SLURM_SUCCESS : SLURM_ERROR;
 	}
 	case DATA_TYPE_STRING:
-		return _emit_string(data_get_string_const(d), emitter);
+		return _emit_string(data_get_string(d), emitter);
 	default:
 		xassert(false);
 	};

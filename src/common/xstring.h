@@ -43,8 +43,9 @@
 #include "src/common/macros.h"
 
 #define xstrcat(__p, __q)		_xstrcat(&(__p), __q)
-#define xstrcatat(__p, __q, __s) _xstrcatat(&(__p), __q, __s)
+#define xstrcatat(__p, __q, __s) _xstrncatat(&(__p), __q, __s, -1)
 #define xstrncat(__p, __q, __l)		_xstrncat(&(__p), __q, __l)
+#define xstrncatat(__p, __q, __s, __l) _xstrncatat(&(__p), __q, __s, __l)
 #define xstrcatchar(__p, __c)		_xstrcatchar(&(__p), __c)
 #define xstrftimecat(__p, __fmt)	_xstrftimecat(&(__p), __fmt)
 #define xiso8601timecat(__p, __msec)            _xiso8601timecat(&(__p), __msec)
@@ -76,14 +77,16 @@
 void _xstrcat(char **str1, const char *str2);
 
 /*
- * Append str2 onto str at pos, * expanding buf as needed. pos is updated to the
- * end of the appended string.
+ * Append len bytes of str2 onto str at pos, expanding buf as needed.
+ * pos is updated to the end of the appended string.
  *
- * Meant to be used in loops contructing longer strings that are performance
+ * Meant to be used in loops constructing longer strings that are performance
  * sensitive, as xstrcat() needs to re-seek to the end of str making the string
  * construction worse by another O(log(strlen)) factor.
+ *
+ * Set len = -1 to copy all of str2. This is done by the xstrcatat() macro.
  */
-void _xstrcatat(char **str, char **pos, const char *str2);
+void _xstrncatat(char **str1, char **pos, const char *str2, ssize_t len);
 
 /*
 ** cat len of str2 onto str1, expanding str1 as necessary

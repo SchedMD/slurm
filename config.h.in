@@ -55,6 +55,9 @@
 /* Define to 1 if you have the `eaccess' function. */
 #undef HAVE_EACCESS
 
+/* Define to 1 if we have epoll(7) support */
+#undef HAVE_EPOLL
+
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
 
@@ -342,6 +345,9 @@
 
 /* Define if you have __progname. */
 #undef HAVE__PROGNAME
+
+/* Define to 1 if the system has the `__builtin_bswap64' built-in function */
+#undef HAVE___BUILTIN_BSWAP64
 
 /* Define to 1 if the system has the `__builtin_clzll' built-in function */
 #undef HAVE___BUILTIN_CLZLL

@@ -58,7 +58,7 @@ extern int scontrol_create_node(int argc, char **argv)
 	if (slurm_create_node(&node_msg)) {
 		exit_code = 1;
 		slurm_perror("Error creating node(s)");
-		return slurm_get_errno();
+		return errno;
 	}
 	xfree(node_line);
 
@@ -108,6 +108,9 @@ scontrol_update_node (int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "ActiveFeatures",
 					 MAX(tag_len,3))) {
 			node_msg.features_act = val;
+			update_cnt++;
+		} else if (!xstrncasecmp(tag, "CertToken", MAX(tag_len, 1))) {
+			node_msg.cert_token = val;
 			update_cnt++;
 		} else if (xstrncasecmp(tag, "CpuBind", MAX(tag_len, 7)) == 0) {
 			if (xlate_cpu_bind_str(val, &node_msg.cpu_bind) !=
@@ -285,7 +288,7 @@ scontrol_update_node (int argc, char **argv)
 done:	xfree(reason_str);
 	if (rc) {
 		exit_code = 1;
-		return slurm_get_errno ();
+		return errno;
 	} else
 		return 0;
 }
@@ -389,7 +392,7 @@ scontrol_update_front_end (int argc, char **argv)
 done:	xfree(reason_str);
 	if (rc) {
 		exit_code = 1;
-		return slurm_get_errno ();
+		return errno;
 	} else
 		return 0;
 }

@@ -199,7 +199,7 @@ extern void auth_p_get_ids(auth_credential_t *cred, uid_t *uid, gid_t *gid)
 char *auth_p_get_host(auth_credential_t *cred)
 {
 	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -209,7 +209,7 @@ char *auth_p_get_host(auth_credential_t *cred)
 extern int auth_p_get_data(auth_credential_t *cred, char **data, uint32_t *len)
 {
 	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -222,7 +222,7 @@ extern int auth_p_get_data(auth_credential_t *cred, char **data, uint32_t *len)
 extern void *auth_p_get_identity(auth_credential_t *cred)
 {
 	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -236,7 +236,7 @@ extern void *auth_p_get_identity(auth_credential_t *cred)
 int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
 {
 	if (!cred || !buf) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -262,7 +262,7 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 	auth_credential_t *cred = NULL;
 
 	if (!buf) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
+		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -283,7 +283,7 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 
 unpack_error:
 	auth_p_destroy(cred);
-	slurm_seterrno(ESLURM_AUTH_UNPACK);
+	errno = ESLURM_AUTH_UNPACK;
 	return NULL;
 }
 
@@ -301,4 +301,9 @@ void auth_p_thread_clear(void)
 char *auth_p_token_generate(const char *username, int lifespan)
 {
 	return NULL;
+}
+
+extern int auth_p_get_reconfig_fd(void)
+{
+	return -1;
 }

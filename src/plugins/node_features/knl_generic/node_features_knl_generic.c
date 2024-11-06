@@ -2012,7 +2012,7 @@ extern uint32_t node_features_p_boot_time(void)
 /* Get node features plugin configuration */
 extern void node_features_p_get_config(config_plugin_params_t *p)
 {
-	List data;
+	list_t *data;
 
 	xassert(p);
 	xstrcat(p->name, plugin_type);

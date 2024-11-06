@@ -919,27 +919,6 @@ was not specified) as one task per requested thread.
 .IP
 
 .TP
-\fB\-\-get\-user\-env\fR[=\fItimeout\fR][\fImode\fR]
-This option will load login environment variables for the user.
-The environment variables are retrieved by running something along the lines of
-"su \- <username> \-c /usr/bin/env" and parsing the output.
-Be aware that any environment variables already set in salloc's environment
-will take precedence over any environment variables in the user's
-login environment.
-The optional \fItimeout\fR value is in seconds. Default value is 3 seconds.
-The optional \fImode\fR value controls the "su" options.
-With a \fImode\fR value of "S", "su" is executed without the "\-" option.
-With a \fImode\fR value of "L", "su" is executed with the "\-" option,
-replicating the login environment.
-If \fImode\fR is not specified, the mode established at Slurm build time
-is used.
-Examples of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
-"\-\-get\-user\-env=10L", and "\-\-get\-user\-env=S".
-\fBNOTE\fR: This option only works if the caller has an
-effective uid of "root".
-.IP
-
-.TP
 \fB\-\-gpu\-bind\fR=[verbose,]<\fItype\fR>
 Equivalent to \-\-tres\-bind=gres/gpu:[verbose,]<\fItype\fR>
 See \fB\-\-tres\-bind\fR for all options and documentation.
@@ -1952,7 +1931,10 @@ Network (InfiniBand) data is collected.
 
 .TP
 \fB\-q\fR, \fB\-\-qos\fR=<\fIqos\fR>
-Request a quality of service for the job. QOS values can be defined
+Request a quality of service for the job, or comma separated list of QOS.
+If requesting a list it will be ordered based on the priority of the QOS given
+with the first being the highest priority.
+QOS values can be defined
 for each user/cluster/account association in the Slurm database.
 Users will be limited to their association's defined set of qos's when
 the Slurm configuration parameter, AccountingStorageEnforce, includes

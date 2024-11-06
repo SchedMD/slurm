@@ -49,6 +49,11 @@
  */
 extern int priority_sort_part_tier(void *x, void *y);
 
+/*
+ * Sort QOS on Priority.
+ */
+extern int priority_sort_qos_desc(void *x, void *y);
+
 extern int priority_g_init(void);
 extern int priority_g_fini(void);
 extern uint32_t priority_g_set(uint32_t last_prio, job_record_t *job_ptr);
@@ -64,7 +69,7 @@ extern void priority_g_set_assoc_usage(slurmdb_assoc_rec_t *assoc);
 extern double priority_g_calc_fs_factor(long double usage_efctv,
 					long double shares_norm);
 
-extern List priority_g_get_priority_factors_list(uid_t uid);
+extern list_t *priority_g_get_priority_factors_list(uid_t uid);
 
 /* Call at end of job to remove decayable limits at the end of the job
  * at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,

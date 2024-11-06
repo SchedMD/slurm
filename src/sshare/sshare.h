@@ -104,7 +104,7 @@ extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern uint32_t my_uid;
 extern sshare_time_format_t time_format;
 extern char *time_format_string;
-extern List clusters;
+extern list_t *clusters;
 extern print_field_t fields[];
 extern char **tres_names;
 extern uint32_t tres_cnt;

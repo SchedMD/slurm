@@ -71,7 +71,7 @@ make_bash_script $file_in "
 # Spawn an sbatch job that uses stdout and confirm its contents
 #
 set timeout $max_job_delay
-if {[get_config_param "MULTIPLE_SLURMD"] eq "Yes"} {
+if {[get_config_param "MULTIPLE_SLURMD"] eq "yes"} {
 	subskip "This test is partially compatible with multiple slurmd systems"
 	set job_id [submit_job -fail "-N1 --output=$file_out -t4 $file_in"]
 } else {

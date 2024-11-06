@@ -793,6 +793,7 @@ test_102_#   Testing of sacctmgr options.
 test_102_1   /commands/sacctmgr/test_federation.py
 test_102_2   /commands/sacctmgr/test_--usage.py
 test_102_3   /commands/sacctmgr/test_--json.py
+test_102_4   /commands/sacctmgr/test_ping.py
 
 test_103_#   Testing of salloc options.
 =======================================
@@ -848,7 +849,6 @@ test_111_3   /commands/sinfo/test_--json.py
 test_112_#   Testing of slurmrestd options.
 ===========================================
 test_112_1   /commands/slurmrestd/test_options.py
-test_112_39  Test slurmrestd v0.0.39 requests
 test_112_40  Test slurmrestd v0.0.40 requests
 
 test_113_#   Testing of sprio options.

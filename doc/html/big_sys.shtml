@@ -120,7 +120,7 @@ is best (<i>jobacct_gather/none</i>).
 Consider use of job completion records (<i>JobCompType</i>) for accounting
 purposes as this entails far less overhead.
 If job accounting is required, configure the sampling interval
-to a relatively large size (e.g. <i>JobAcctGatherFrequency=300</i>).
+to a relatively large size (e.g. <i>JobAcctGatherFrequency=task=300</i>).
 Some experimentation may be required to deal with collisions
 on data transmission.</p>
 
@@ -203,6 +203,6 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p style="text-align:center;">Last modified 22 April 2024</p>
+<p style="text-align:center;">Last modified 2 October 2024</p>
 
 <!--#include virtual="footer.txt"-->

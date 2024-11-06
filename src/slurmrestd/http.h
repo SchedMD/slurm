@@ -39,9 +39,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "src/common/conmgr.h"
 #include "src/common/http.h"
 #include "src/common/list.h"
+
+#include "src/conmgr/conmgr.h"
 
 struct on_http_request_args_s;
 typedef struct on_http_request_args_s on_http_request_args_t;
@@ -72,7 +73,7 @@ typedef struct {
 
 typedef struct on_http_request_args_s {
 	const http_request_method_t method; /* HTTP request method */
-	const List headers; /* list of http_header_entry_t from client */
+	list_t *headers; /* list of http_header_entry_t from client */
 	const char *path; /* requested URL path (may be NULL) */
 	const char *query; /* requested URL query (may be NULL) */
 	http_context_t *context; /* calling context (do not xfree) */
@@ -96,7 +97,7 @@ extern void free_http_header(http_header_entry_t *);
  * IN name name of header to find
  * RET ptr to header value or NULL if not found
  */
-extern const char *find_http_header(List headers, const char *name);
+extern const char *find_http_header(list_t *headers, const char *name);
 
 /*
  * Call back for new connection to setup HTTP
@@ -120,7 +121,7 @@ typedef struct {
 	uint16_t http_major; /* HTTP major version */
 	uint16_t http_minor; /* HTTP minor version */
 	http_status_code_t status_code; /* HTTP status code to send */
-	List headers; /* list of http_header_entry_t to send (can be empty) */
+	list_t *headers; /* list of http_header_entry_t to send (can be empty) */
 	const char *body; /* body to send or NULL */
 	size_t body_length; /* bytes in body to send or 0 */
 	const char *body_encoding; /* body encoding type or NULL */
@@ -152,8 +153,9 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 
 /*
  * cleanup http context on finished connection
+ * IN con - conmgr connection
  * IN context - context to connection to free
  */
-extern void on_http_connection_finish(void *ctxt);
+extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt);
 
 #endif /* SLURMRESTD_HTTP_H */

@@ -76,7 +76,7 @@ extern int slurm_request_crontab(uid_t uid, char **crontab,
 
 extern crontab_update_response_msg_t *slurm_update_crontab(uid_t uid, gid_t gid,
 							   char *crontab,
-							   List jobs)
+							   list_t *jobs)
 {
 	crontab_update_request_msg_t req;
 	crontab_update_response_msg_t *resp = NULL;

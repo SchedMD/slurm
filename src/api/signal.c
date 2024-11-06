@@ -53,7 +53,7 @@
 static int _local_send_recv_rc_msgs(const char *nodelist,
 				    slurm_msg_type_t type, void *data)
 {
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	int temp_rc = 0, rc = 0;
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
@@ -212,7 +212,7 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 	signal_tasks_msg_t rpc;
 
 	if (slurm_allocation_lookup(job_id, &alloc_info)) {
-		rc = slurm_get_errno();
+		rc = errno;
 		goto fail1;
 	}
 

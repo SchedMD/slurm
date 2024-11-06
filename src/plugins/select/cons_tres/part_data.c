@@ -322,7 +322,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 /* (re)create the global select_part_record array */
 extern void part_data_create_array(void)
 {
-	List part_rec_list = NULL;
+	list_t *part_rec_list = NULL;
 	list_itr_t *part_iterator;
 	part_record_t *p_ptr;
 	part_res_record_t *this_ptr, *last_ptr = NULL;

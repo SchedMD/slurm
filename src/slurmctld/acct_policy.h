@@ -95,7 +95,7 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
  */
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 part_record_t *part_ptr,
-				 List part_ptr_list,
+				 list_t *part_ptr_list,
 				 slurmdb_assoc_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint32_t *state_reason,
@@ -109,7 +109,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
  * submit_job_list IN - list of job_record_t entries (already created)
  * RET true if valid
  */
-extern bool acct_policy_validate_het_job(List submit_job_list);
+extern bool acct_policy_validate_het_job(list_t *submit_job_list);
 
 /*
  * acct_policy_job_runnable_pre_select - Determine of the specified
@@ -203,9 +203,9 @@ extern void acct_policy_set_qos_order(job_record_t *job_ptr,
 				      slurmdb_qos_rec_t **qos_ptr_2);
 
 extern slurmdb_used_limits_t *acct_policy_get_acct_used_limits(
-	List *acct_limit_list, char *acct);
+	list_t **acct_limit_list, char *acct);
 
 extern slurmdb_used_limits_t *acct_policy_get_user_used_limits(
-	 List *user_limit_list, uint32_t user_id);
+	 list_t **user_limit_list, uint32_t user_id);
 
 #endif /* !_HAVE_ACCT_POLICY_H */

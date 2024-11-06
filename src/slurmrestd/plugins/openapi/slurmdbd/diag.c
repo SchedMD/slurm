@@ -66,3 +66,23 @@ cleanup:
 	slurmdb_destroy_stats_rec(stats_rec);
 	return SLURM_SUCCESS;
 }
+
+extern int op_handler_ping(ctxt_t *ctxt)
+{
+	slurmdbd_ping_t *pings = NULL;
+
+	debug4("%s: [%s] ping handler called", __func__, ctxt->id);
+
+	if (ctxt->rc)
+		goto cleanup;
+
+	if (!(pings = slurmdb_ping_all()))
+		resp_error(ctxt, SLURM_ERROR, "slurmdb_ping_all",
+			   "ping query failed");
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_SLURMDBD_PING_RESP, pings, ctxt);
+
+cleanup:
+	xfree(pings);
+	return SLURM_SUCCESS;
+}

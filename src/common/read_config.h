@@ -54,10 +54,6 @@ extern slurm_conf_t slurm_conf;
 extern char *default_slurm_config_file;
 extern char *default_plugin_path;
 
-#ifndef NDEBUG
-extern uint16_t drop_priv_flag;
-#endif
-
 /*
  * We can't include node_conf.h to get node_record_t because node_conf.h
  * includes read_config.h and creates a circular dependency. We create the
@@ -242,7 +238,7 @@ typedef struct slurm_conf_partition {
 	bool exclusive_topo; /* true if exclusive topology*/
 	uint32_t grace_time;	/* default grace time for partition */
 	bool     hidden_flag;	/* 1 if hidden by default */
-	List job_defaults_list;	/* List of job_defaults_t elements */
+	list_t *job_defaults_list; /* List of job_defaults_t elements */
 	bool     lln_flag;	/* 1 if nodes are selected in LLN order */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
 	uint32_t max_cpus_per_socket; /* maximum allocated CPUs per socket */
@@ -295,14 +291,14 @@ typedef struct {
 
 typedef struct {
 	char *name;
-	List key_pairs;
+	list_t *key_pairs;
 } config_plugin_params_t;
 
 /* Destroy a front_end record built by slurm_conf_frontend_array() */
 extern void destroy_frontend(void *ptr);
 
 /* Copy list of job_defaults_t elements */
-extern List job_defaults_copy(List in_list);
+extern list_t *job_defaults_copy(list_t *in_list);
 
 /* Destroy list of job_defaults_t elements */
 extern void job_defaults_free(void *x);
@@ -313,13 +309,13 @@ extern void job_defaults_free(void *x);
  * out_list OUT - equivalent list of key=value pairs
  * Returns SLURM_SUCCESS or an error code
  */
-extern int job_defaults_list(char *in_str, List *out_list);
+extern int job_defaults_list(char *in_str, list_t **out_list);
 
 /*
  * Translate list of job_defaults_t elements into a string.
  * Return value must be released using xfree()
  */
-extern char *job_defaults_str(List in_list);
+extern char *job_defaults_str(list_t *in_list);
 
 /* Pack a job_defaults_t element. Used by slurm_pack_list() */
 extern void job_defaults_pack(void *in, uint16_t protocol_version,

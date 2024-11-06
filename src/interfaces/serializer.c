@@ -81,10 +81,14 @@ typedef struct {
 } plugin_mime_type_t;
 
 /* list of all of the known mime types */
-static List mime_types_list = NULL;
+static list_t *mime_types_list = NULL;
 static const char **mime_array = NULL;
 
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
+#ifndef NDEBUG
+/* Track when the plugins should no longer be changed */
+static bool should_not_change = false;
+#endif /* !NDEBUG */
 
 static int _find_serializer_full_type(void *x, void *key)
 {
@@ -195,7 +199,7 @@ extern const char *resolve_mime_type(const char *mime_type,
 	return pmt->mime_type;
 }
 
-static int _register_mime_types(List mime_types_list, size_t plugin_index,
+static int _register_mime_types(list_t *mime_types_list, size_t plugin_index,
 				const char **mime_type)
 {
 	while (*mime_type) {
@@ -218,6 +222,13 @@ static int _register_mime_types(List mime_types_list, size_t plugin_index,
 
 extern const char **get_mime_type_array(void)
 {
+#ifndef NDEBUG
+	slurm_mutex_lock(&init_mutex);
+	should_not_change = true;
+	xassert(mime_array);
+	slurm_mutex_unlock(&init_mutex);
+#endif /* !NDEBUG */
+
 	return mime_array;
 }
 
@@ -226,6 +237,8 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)
 	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&init_mutex);
+
+	xassert(!should_not_change);
 
 	/*
 	 * There will be multiple calls to serializer_g_init() to load different
@@ -264,6 +277,13 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)
 
 extern void serializer_g_fini(void)
 {
+#ifndef NDEBUG
+	/* There should not be a init() and then fini() and then init() again */
+	slurm_mutex_lock(&init_mutex);
+	should_not_change = true;
+	slurm_mutex_unlock(&init_mutex);
+#endif /* !NDEBUG */
+
 #ifdef MEMORY_LEAK_DEBUG
 	debug3("%s: cleaning up", __func__);
 	slurm_mutex_lock(&init_mutex);

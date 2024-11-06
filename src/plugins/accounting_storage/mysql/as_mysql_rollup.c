@@ -52,6 +52,7 @@ enum {
 
 enum {
 	ASSOC_TABLES,
+	QOS_TABLES,
 	WCKEY_TABLES
 };
 
@@ -69,13 +70,14 @@ typedef struct {
 
 typedef struct {
 	int id;
-	List loc_tres;
+	int id_alt;
+	list_t *loc_tres;
 } local_id_usage_t;
 
 typedef struct {
 	time_t end;
 	int id; /*only needed for reservations */
-	List loc_tres;
+	list_t *loc_tres;
 	time_t start;
 } local_cluster_usage_t;
 
@@ -84,9 +86,9 @@ typedef struct {
 	uint32_t flags;
 	int id;
 	hostlist_t *hl;
-	List local_assocs; /* list of assocs to spread unused time
-			      over of type local_id_usage_t */
-	List loc_tres;
+	list_t *local_assocs; /* list of assocs to spread unused time
+				 over of type local_id_usage_t */
+	list_t *loc_tres;
 	time_t orig_start;
 	time_t start;
 	double unused_wall;
@@ -149,7 +151,18 @@ static int _find_id_usage(void *x, void *key)
 	return 0;
 }
 
-static void _remove_job_tres_time_from_cluster(List c_tres, List j_tres,
+static int _find_id_alt_usage(void *x, void *key)
+{
+	local_id_usage_t *loc = x;
+	local_id_usage_t *id = key;
+
+	if ((loc->id == id->id) &&
+	    (loc->id_alt == id->id_alt))
+		return 1;
+	return 0;
+}
+
+static void _remove_job_tres_time_from_cluster(list_t *c_tres, list_t *j_tres,
 					       int seconds)
 {
 	list_itr_t *c_itr;
@@ -176,8 +189,9 @@ static void _remove_job_tres_time_from_cluster(List c_tres, List j_tres,
 }
 
 
-static local_tres_usage_t *_add_time_tres(List tres_list, int type, uint32_t id,
-					  uint64_t time, bool times_count)
+static local_tres_usage_t *_add_time_tres(list_t *tres_list, int type,
+					  uint32_t id, uint64_t time,
+					  bool times_count)
 {
 	local_tres_usage_t *loc_tres;
 
@@ -225,8 +239,8 @@ static local_tres_usage_t *_add_time_tres(List tres_list, int type, uint32_t id,
 	return loc_tres;
 }
 
-static void _add_time_tres_list(List tres_list_out, List tres_list_in, int type,
-				uint64_t time_in, bool times_count)
+static void _add_time_tres_list(list_t *tres_list_out, list_t *tres_list_in,
+				int type, uint64_t time_in, bool times_count)
 {
 	list_itr_t *itr;
 	local_tres_usage_t *loc_tres;
@@ -247,7 +261,7 @@ static void _add_time_tres_list(List tres_list_out, List tres_list_in, int type,
  * Job usage is a ratio of its tres to the reservation's tres:
  * Unused wall = unused wall - job_seconds * job_tres / resv_tres
  */
-static int _update_unused_wall(local_resv_usage_t *r_usage, List job_tres,
+static int _update_unused_wall(local_resv_usage_t *r_usage, list_t *job_tres,
 			       int job_seconds)
 {
 	list_itr_t *resv_itr;
@@ -292,7 +306,7 @@ static int _update_unused_wall(local_resv_usage_t *r_usage, List job_tres,
 	return SLURM_SUCCESS;
 }
 
-static void _add_job_alloc_time_to_cluster(List c_tres_list, List j_tres)
+static void _add_job_alloc_time_to_cluster(list_t *c_tres_list, list_t *j_tres)
 {
 	list_itr_t *c_itr = list_iterator_create(c_tres_list);
 	local_tres_usage_t *loc_c_tres, *loc_j_tres;
@@ -306,7 +320,7 @@ static void _add_job_alloc_time_to_cluster(List c_tres_list, List j_tres)
 	list_iterator_destroy(c_itr);
 }
 
-static void _setup_cluster_tres(List tres_list, uint32_t id,
+static void _setup_cluster_tres(list_t *tres_list, uint32_t id,
 				uint64_t count, int seconds)
 {
 	local_tres_usage_t *loc_tres =
@@ -322,7 +336,7 @@ static void _setup_cluster_tres(List tres_list, uint32_t id,
 	loc_tres->total_time += seconds * loc_tres->count;
 }
 
-static void _add_tres_2_list(List tres_list, char *tres_str, int seconds)
+static void _add_tres_2_list(list_t *tres_list, char *tres_str, int seconds)
 {
 	char *tmp_str = tres_str;
 	int id;
@@ -364,7 +378,8 @@ static void _add_tres_2_list(List tres_list, char *tres_str, int seconds)
 	return;
 }
 
-static void _add_job_alloc_time_to_assoc(List a_tres_list, List j_tres_list)
+static void _add_job_alloc_time_to_assoc(list_t *a_tres_list,
+					 list_t *j_tres_list)
 {
 	local_tres_usage_t *loc_a_tres, *loc_j_tres;
 
@@ -390,7 +405,7 @@ static void _add_job_alloc_time_to_assoc(List a_tres_list, List j_tres_list)
 }
 
 /* This will destroy the *loc_tres given after it is transfered */
-static void _transfer_loc_tres(List *loc_tres, local_id_usage_t *usage)
+static void _transfer_loc_tres(list_t **loc_tres, local_id_usage_t *usage)
 {
 	if (!usage || !*loc_tres) {
 		FREE_NULL_LIST(*loc_tres);
@@ -406,7 +421,7 @@ static void _transfer_loc_tres(List *loc_tres, local_id_usage_t *usage)
 	}
 }
 
-static void _add_tres_time_2_list(List tres_list, char *tres_str,
+static void _add_tres_time_2_list(list_t *tres_list, char *tres_str,
 				  int type, int seconds, int suspend_seconds,
 				  bool times_count)
 {
@@ -751,6 +766,10 @@ static void _create_id_usage_insert(char *cluster_name, int type,
 		id_name = "id_assoc";
 		table = assoc_hour_table;
 		break;
+	case QOS_TABLES:
+		id_name = "id_qos";
+		table = qos_hour_table;
+		break;
 	case WCKEY_TABLES:
 		id_name = "id_wckey";
 		table = wckey_hour_table;
@@ -771,18 +790,21 @@ static void _create_id_usage_insert(char *cluster_name, int type,
 	while ((loc_tres = list_next(itr))) {
 		if (!first) {
 			xstrfmtcat(*query,
-				   ", (%ld, %ld, %u, %ld, %u, %"PRIu64")",
+				   ", (%ld, %ld, %u, %u, %ld, %u, %"PRIu64")",
 				   now, now,
-				   id_usage->id, curr_start, loc_tres->id,
+				   id_usage->id, id_usage->id_alt,
+				   curr_start, loc_tres->id,
 				   loc_tres->time_alloc);
 		} else {
 			xstrfmtcat(*query,
 				   "insert into \"%s_%s\" "
-				   "(creation_time, mod_time, id, "
+				   "(creation_time, mod_time, id, id_alt, "
 				   "time_start, id_tres, alloc_secs) "
-				   "values (%ld, %ld, %u, %ld, %u, %"PRIu64")",
+				   "values (%ld, %ld, %u, %u, "
+				   "%ld, %u, %"PRIu64")",
 				   cluster_name, table, now, now,
-				   id_usage->id, curr_start, loc_tres->id,
+				   id_usage->id, id_usage->id_alt,
+				   curr_start, loc_tres->id,
 				   loc_tres->time_alloc);
 			first = 0;
 		}
@@ -843,8 +865,8 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 						   char *cluster_name,
 						   time_t curr_start,
 						   time_t curr_end,
-						   List resv_usage_list,
-						   List cluster_down_list,
+						   list_t *resv_usage_list,
+						   list_t *cluster_down_list,
 						   int dims)
 {
 	local_cluster_usage_t *c_usage = NULL;
@@ -981,7 +1003,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 		while ((loc_r_usage = list_next(r_itr))) {
 			time_t temp_end = row_end;
 			time_t temp_start = row_start;
-			List loc_tres = NULL;
+			list_t *loc_tres = NULL;
 
 			if (hostlist_find_dims(loc_r_usage->hl,
 					       row[EVENT_REQ_NAME], dims)
@@ -1034,7 +1056,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 		seconds -= resv_seconds;
 		if (seconds > 0) {
 			if (((state & NODE_STATE_BASE) == NODE_STATE_FUTURE) ||
-			     (state & NODE_STATE_POWERED_DOWN))
+			    (state & NODE_STATE_POWERED_DOWN))
 				_add_tres_time_2_list(c_usage->loc_tres,
 						      row[EVENT_REQ_TRES],
 						      TIME_PDOWN,
@@ -1088,7 +1110,7 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 			     char *cluster_name,
 			     time_t curr_start,
 			     time_t curr_end,
-			     List resv_usage_list,
+			     list_t *resv_usage_list,
 			     int dims)
 {
 	MYSQL_RES *result = NULL;
@@ -1236,16 +1258,41 @@ static void _add_planned_time(local_cluster_usage_t *c_usage, time_t job_start,
 		return;
 
 	/*
-	* If we have pending jobs in an array
-	* they haven't been inserted into the
-	* database yet as proper job records,
-	* so handle them here.
-	*/
+	 * If we have pending jobs in an array
+	 * they haven't been inserted into the
+	 * database yet as proper job records,
+	 * so handle them here.
+	 */
 	if (array_pending)
 		loc_seconds *= array_pending;
 
 	_add_time_tres(c_usage->loc_tres, TIME_RESV, TRES_CPU,
 		       loc_seconds * (uint64_t) row_rcpu, 0);
+}
+
+static local_id_usage_t *_check_q_usage(list_t *qos_usage_list,
+					local_id_usage_t *curr_q_usage,
+					local_id_usage_t *id_usage)
+{
+	xassert(qos_usage_list);
+	xassert(id_usage);
+
+	if (curr_q_usage && _find_id_alt_usage(curr_q_usage, id_usage))
+		return curr_q_usage;
+
+	curr_q_usage = list_find_first(qos_usage_list,
+				       _find_id_alt_usage,
+				       id_usage);
+	if (!curr_q_usage) {
+		curr_q_usage = xmalloc(sizeof(*curr_q_usage));
+		curr_q_usage->id = id_usage->id;
+		curr_q_usage->id_alt = id_usage->id_alt;
+		list_append(qos_usage_list, curr_q_usage);
+		curr_q_usage->loc_tres = list_create(
+			_destroy_local_tres_usage);
+	}
+
+	return curr_q_usage;
 }
 
 extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
@@ -1264,17 +1311,20 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	list_itr_t *a_itr = NULL;
 	list_itr_t *c_itr = NULL;
+	list_itr_t *q_itr = NULL;
 	list_itr_t *w_itr = NULL;
 	list_itr_t *r_itr = NULL;
-	List assoc_usage_list = list_create(_destroy_local_id_usage);
-	List cluster_down_list = list_create(_destroy_local_cluster_usage);
-	List wckey_usage_list = list_create(_destroy_local_id_usage);
-	List resv_usage_list = list_create(_destroy_local_resv_usage);
+	list_t *assoc_usage_list = list_create(_destroy_local_id_usage);
+	list_t *cluster_down_list = list_create(_destroy_local_cluster_usage);
+	list_t *qos_usage_list = list_create(_destroy_local_id_usage);
+	list_t *wckey_usage_list = list_create(_destroy_local_id_usage);
+	list_t *resv_usage_list = list_create(_destroy_local_resv_usage);
 	uint16_t track_wckey = slurm_get_track_wckey();
 	local_cluster_usage_t *loc_c_usage = NULL;
 	local_cluster_usage_t *c_usage = NULL;
 	local_resv_usage_t *r_usage = NULL;
 	local_id_usage_t *a_usage = NULL;
+	local_id_usage_t *q_usage = NULL;
 	local_id_usage_t *w_usage = NULL;
 	/* char start_char[20], end_char[20]; */
 
@@ -1282,6 +1332,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		"job.job_db_inx",
 //		"job.id_job",
 		"job.id_assoc",
+		"job.id_qos",
 		"job.id_wckey",
 		"job.array_task_pending",
 		"job.time_eligible",
@@ -1297,6 +1348,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		JOB_REQ_DB_INX,
 //		JOB_REQ_JOBID,
 		JOB_REQ_ASSOCID,
+		JOB_REQ_QOSID,
 		JOB_REQ_WCKEYID,
 		JOB_REQ_ARRAY_PENDING,
 		JOB_REQ_ELG,
@@ -1362,6 +1414,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	c_itr = list_iterator_create(cluster_down_list);
 	w_itr = list_iterator_create(wckey_usage_list);
 	r_itr = list_iterator_create(resv_usage_list);
+	q_itr = list_iterator_create(qos_usage_list);
 	while (curr_start < end) {
 		int last_id = -1;
 		int last_wckeyid = -1;
@@ -1411,6 +1464,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		while ((row = mysql_fetch_row(result))) {
 			//uint32_t job_id = slurm_atoul(row[JOB_REQ_JOBID]);
 			uint32_t assoc_id = slurm_atoul(row[JOB_REQ_ASSOCID]);
+			uint32_t qos_id = slurm_atoul(row[JOB_REQ_QOSID]);
 			uint32_t wckey_id = slurm_atoul(row[JOB_REQ_WCKEYID]);
 			uint32_t array_pending =
 				slurm_atoul(row[JOB_REQ_ARRAY_PENDING]);
@@ -1419,9 +1473,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			time_t row_start = slurm_atoul(row[JOB_REQ_START]);
 			time_t row_end = slurm_atoul(row[JOB_REQ_END]);
 			uint32_t row_rcpu = slurm_atoul(row[JOB_REQ_RCPU]);
-			List loc_tres = NULL;
+			list_t *loc_tres = NULL;
 			int loc_seconds = 0;
 			int seconds = 0, suspend_seconds = 0;
+			local_id_usage_t id_usage = {
+				.id = assoc_id,
+				.id_alt = qos_id,
+			};
 
 			if (row_start && (row_start < curr_start))
 				row_start = curr_start;
@@ -1484,6 +1542,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				mysql_free_result(result2);
 			}
 
+			/*
+			 * Do the qos calculation check the assoc_id now since
+			 * it will change in the next if
+			 */
+			q_usage = _check_q_usage(qos_usage_list, q_usage,
+						 &id_usage);
+
 			if (last_id != assoc_id) {
 				a_usage = xmalloc(sizeof(local_id_usage_t));
 				a_usage->id = assoc_id;
@@ -1529,6 +1594,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			_add_tres_time_2_list(loc_tres, row[JOB_REQ_TRES],
 					      TIME_ALLOC, seconds,
 					      suspend_seconds, 0);
+
+			if (q_usage)
+				_add_tres_time_2_list(q_usage->loc_tres,
+						      row[JOB_REQ_TRES],
+						      TIME_ALLOC, seconds,
+						      suspend_seconds, 0);
+
 			if (w_usage)
 				_add_tres_time_2_list(w_usage->loc_tres,
 						      row[JOB_REQ_TRES],
@@ -1722,6 +1794,45 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					r_usage->local_assocs);
 				while ((assoc = list_next(tmp_itr))) {
 					uint32_t associd = slurm_atoul(assoc);
+					slurmdb_assoc_rec_t assoc_rec = {
+						.cluster = cluster_name,
+						.id = associd,
+					};
+					slurmdb_assoc_rec_t *assoc_ptr = NULL;
+					slurmdb_qos_rec_t qos_rec = { 0 };
+					local_id_usage_t id_usage = {
+						.id = associd,
+					};
+					/*
+					 * Figure out the closest to correct QOS
+					 */
+					(void) assoc_mgr_fill_in_assoc(
+						mysql_conn,
+						&assoc_rec,
+						ACCOUNTING_ENFORCE_ASSOCS,
+						&assoc_ptr, false);
+					assoc_mgr_get_default_qos_info(
+						assoc_ptr, &qos_rec);
+					if (!qos_rec.id)
+						assoc_mgr_fill_in_qos(
+							mysql_conn, &qos_rec,
+							ACCOUNTING_ENFORCE_QOS,
+							NULL, false);
+					id_usage.id_alt = qos_rec.id;
+
+					if (id_usage.id_alt) {
+						q_usage = _check_q_usage(
+							qos_usage_list, q_usage,
+							&id_usage);
+
+						_add_time_tres(
+							q_usage->loc_tres,
+							TIME_ALLOC,
+							loc_tres->id,
+							resv_unused_secs,
+							0);
+					}
+
 					if ((last_id != associd) &&
 					    !(a_usage = list_find_first(
 						      assoc_usage_list,
@@ -1797,6 +1908,22 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			}
 		}
 
+		list_iterator_reset(q_itr);
+		while ((q_usage = list_next(q_itr)))
+			_create_id_usage_insert(cluster_name, QOS_TABLES,
+						curr_start, now,
+						q_usage, &query);
+		if (query) {
+			DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s",
+			         query);
+			rc = mysql_db_query(mysql_conn, query);
+			xfree(query);
+			if (rc != SLURM_SUCCESS) {
+				error("Couldn't add qos hour rollup");
+				goto end_it;
+			}
+		}
+
 		if (!track_wckey)
 			goto end_loop;
 
@@ -1822,10 +1949,12 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		c_usage     = NULL;
 		r_usage     = NULL;
 		a_usage     = NULL;
+		q_usage     = NULL;
 		w_usage     = NULL;
 
 		list_flush(assoc_usage_list);
 		list_flush(cluster_down_list);
+		list_flush(qos_usage_list);
 		list_flush(wckey_usage_list);
 		list_flush(resv_usage_list);
 		curr_start = curr_end;
@@ -1841,6 +1970,8 @@ end_it:
 		list_iterator_destroy(a_itr);
 	if (c_itr)
 		list_iterator_destroy(c_itr);
+	if (q_itr)
+		list_iterator_destroy(q_itr);
 	if (w_itr)
 		list_iterator_destroy(w_itr);
 	if (r_itr)
@@ -1848,6 +1979,7 @@ end_it:
 
 	FREE_NULL_LIST(assoc_usage_list);
 	FREE_NULL_LIST(cluster_down_list);
+	FREE_NULL_LIST(qos_usage_list);
 	FREE_NULL_LIST(wckey_usage_list);
 	FREE_NULL_LIST(resv_usage_list);
 
@@ -1928,6 +2060,21 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			now, now, curr_start,
 			cluster_name,
 			run_month ? assoc_day_table : assoc_hour_table,
+			curr_end, curr_start, now);
+
+		query = xstrdup_printf(
+			"insert into \"%s_%s\" (creation_time, mod_time, id, "
+			"id_tres, time_start, alloc_secs) "
+			"select %ld, %ld, id, id_tres, "
+			"%ld, @ASUM:=SUM(alloc_secs) from \"%s_%s\" where "
+			"(time_start < %ld && time_start >= %ld) "
+			"group by id, id_tres on duplicate key update "
+			"mod_time=%ld, alloc_secs=@ASUM;",
+			cluster_name,
+			run_month ? qos_month_table : qos_day_table,
+			now, now, curr_start,
+			cluster_name,
+			run_month ? qos_day_table : qos_hour_table,
 			curr_end, curr_start, now);
 
 		/* We group on deleted here so if there are no entries

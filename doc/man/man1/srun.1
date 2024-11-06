@@ -522,13 +522,6 @@ Do not bind tasks to CPUs (default unless auto binding is applied)
 .IP
 
 .TP
-.B rank
-Automatically bind by task rank.
-The lowest numbered task on each node is bound to socket (or core or thread) zero, etc.
-Not supported unless the entire node is allocated to the job.
-.IP
-
-.TP
 .B map_cpu:<list>
 Bind by setting CPU masks on tasks (or ranks) as specified where <list> is
 <cpu_id_for_task_0>,<cpu_id_for_task_1>,...
@@ -2649,7 +2642,10 @@ This option applies to step allocations.
 
 .TP
 \fB\-q\fR, \fB\-\-qos\fR=<\fIqos\fR>
-Request a quality of service for the job. QOS values can be defined
+Request a quality of service for the job, or comma separated list of QOS.
+If requesting a list it will be ordered based on the priority of the QOS given
+with the first being the highest priority.
+QOS values can be defined
 for each user/cluster/account association in the Slurm database.
 Users will be limited to their association's defined set of qos's when
 the Slurm configuration parameter, AccountingStorageEnforce, includes
@@ -3582,7 +3578,8 @@ Same as \fB\-G, \-\-gpus\fR
 
 .TP
 \fBSLURM_GPUS_PER_NODE\fR
-Same as \fB\-\-gpus\-per\-node\fR
+Same as \fB\-\-gpus\-per\-node\fR except within an existing allocation, in which
+case it will be ignored if \fB\-\-gpus\fR is specified.
 .IP
 
 .TP

@@ -40,6 +40,8 @@ typedef struct {
 	uint16_t priority;
 	uint16_t port;
 	char hostname[1024];
+	bool has_ipv4;
+	bool has_ipv6;
 } ctl_entry_t;
 
 /*
@@ -48,6 +50,6 @@ typedef struct {
  * or NULL on error.
  * Must list_destroy() the result to avoid a memory leak.
  */
-extern List resolve_ctls_from_dns_srv(void);
+extern list_t *resolve_ctls_from_dns_srv(void);
 
 #endif

@@ -83,7 +83,7 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
+extern list_t *gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 {
 	return NULL;
 }
@@ -119,7 +119,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 	return SLURM_SUCCESS;
 }
 
-extern void gpu_p_get_device_count(unsigned int *device_count)
+extern void gpu_p_get_device_count(uint32_t *device_count)
 {
 	return;
 }

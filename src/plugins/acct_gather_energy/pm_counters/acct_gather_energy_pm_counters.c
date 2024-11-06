@@ -152,8 +152,8 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	readings++;
 	energy->current_watts = curr_power;
 
-	log_flag(ENERGY, "%s: %"PRIu64" Joules consumed over last %ld secs. Currently at %u watts, ave watts %u",
-		 __func__, diff_energy,
+	log_flag(ENERGY, "%"PRIu64" Joules consumed over last %ld secs. Currently at %u watts, ave watts %u",
+		 diff_energy,
 		 (energy->poll_time ? now - energy->poll_time : 0),
 		 curr_power, energy->ave_watts);
 
@@ -189,8 +189,8 @@ static int _send_profile(void)
 	if (!_running_profile())
 		return SLURM_SUCCESS;
 
-	log_flag(ENERGY, "%s: consumed %d watts",
-		 __func__, local_energy->current_watts);
+	log_flag(ENERGY, "consumed %d watts",
+		 local_energy->current_watts);
 
 	if (dataset_id < 0) {
 		dataset_id = acct_gather_profile_g_create_dataset(
@@ -268,8 +268,8 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	xassert(running_in_slurmd_stepd());
 
 	if (!local_energy) {
-		debug("%s: trying to get data %d, but no local_energy yet.",
-		      __func__, data_type);
+		debug("trying to get data %d, but no local_energy yet.",
+		      data_type);
 		acct_gather_energy_p_conf_set(0, NULL);
 	}
 
@@ -359,7 +359,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 	return;
 }
 
-extern void acct_gather_energy_p_conf_values(List *data)
+extern void acct_gather_energy_p_conf_values(list_t **data)
 {
 	return;
 }

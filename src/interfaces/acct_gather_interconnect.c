@@ -62,7 +62,7 @@ typedef struct slurm_acct_gather_interconnect_ops {
 	void (*conf_options)	(s_p_options_t **full_options,
 				 int *full_options_cnt);
 	void (*conf_set)	(s_p_hashtbl_t *tbl);
-	void (*conf_values)      (List *data);
+	void (*conf_values)     (list_t **data);
 	int (*get_data)		(acct_gather_data_t *data);
 } slurm_acct_gather_interconnect_ops_t;
 /*

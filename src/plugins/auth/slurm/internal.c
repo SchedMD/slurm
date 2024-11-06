@@ -54,7 +54,7 @@
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
 typedef struct {
-	char *kid;
+	const char *kid;
 	time_t exp;
 	unsigned char *key;
 	unsigned int keylen;
@@ -122,14 +122,15 @@ static int _find_kid(void *x, void *y)
 static data_for_each_cmd_t _build_key_list(data_t *d, void *arg)
 {
 	key_details_t *key_ptr;
-	char *kty = NULL, *alg = NULL, *k = NULL, *k_base64 = NULL, *use = NULL;
+	const char *kty = NULL, *alg = NULL, *k = NULL, *k_base64 = NULL;
+	const char *use = NULL;
 	data_t *exp = NULL;
 
 	key_ptr = xmalloc(sizeof(*key_ptr));
 
 	if (!(key_ptr->kid = data_get_string(data_key_get(d, "kid"))))
 		fatal("%s: failed to load kid field", __func__);
-	if (list_find_first_ro(key_list, _find_kid, key_ptr->kid))
+	if (list_find_first_ro(key_list, _find_kid, (void *) key_ptr->kid))
 		fatal("%s: kid fields must be unique", __func__);
 
 	if (!(kty = data_get_string(data_key_get(d, "kty"))))

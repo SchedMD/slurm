@@ -85,8 +85,9 @@ AC_DEFUN([LIBCURL_CHECK_CONFIG],
      AS_HELP_STRING([--with-libcurl=PREFIX],[look for the curl library in PREFIX/lib and headers in PREFIX/include]),
      [_libcurl_with=$withval],[_libcurl_with=ifelse([$1],,[yes],[$1])])
 
-  if test "$_libcurl_with" != "no" ; then
-
+  if [test "x$with_libcurl" = xno]; then
+       AC_MSG_NOTICE([support for libcurl is disabled])
+  else
      AC_PROG_AWK
 
      _libcurl_version_parse="eval $AWK '{split(\$NF,A,\".\"); X=256*256*A[[1]]+256*A[[2]]+A[[3]]; print X;}'"
@@ -258,19 +259,19 @@ if (x) {;}
      unset _libcurl_protocols
      unset _libcurl_version
      unset _libcurl_ldflags
-  fi
 
-  if test x$_libcurl_with = xno || test x$libcurl_cv_lib_curl_usable != xyes ; then
-     # This is the IF-NO path
-     ifelse([$4],,:,[$4])
-     if [ test "x$_libcurl_with" == "xno" ]; then
-       AC_MSG_NOTICE([support for libcurl is disabled])
+     if test x$libcurl_cv_lib_curl_usable != xyes ; then
+        # This is the IF-NO path
+        ifelse([$4],,:,[$4])
+        if test -z "$with_libcurl"; then
+           AC_MSG_WARN([unable to locate/link against libcurl-devel installation])
+        else
+           AC_MSG_ERROR([unable to locate/link against libcurl-devel installation])
+        fi
      else
-       AC_MSG_WARN([unable to locate/link against libcurl-devel installation])
+        # This is the IF-YES path
+        ifelse([$3],,:,[$3])
      fi
-  else
-     # This is the IF-YES path
-     ifelse([$3],,:,[$3])
   fi
 
   AM_CONDITIONAL(WITH_CURL, test x$_libcurl_with = xyes && test x$libcurl_cv_lib_curl_usable = xyes)

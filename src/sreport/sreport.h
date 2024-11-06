@@ -90,14 +90,15 @@ extern int input_words;	/* number of words of input permitted */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern int sort_user_tres_id; /* controls sorting users (eg sort_user_dec) */
 extern char *tres_str;	/* --tres= value */
-extern List g_tres_list;/* tres list from database - unaltered */
-extern List tres_list;	/* TRES list based of tres_str (--tres=str) */
+extern list_t *g_tres_list;/* tres list from database - unaltered */
+extern list_t *tres_list;	/* TRES list based of tres_str (--tres=str) */
 extern void *db_conn;
 extern int all_clusters_flag;
 extern slurmdb_report_sort_t sort_flag;
 extern char *cluster_flag;
 extern char *tres_usage_str;
 extern bool user_case_norm;
+extern list_t *g_qos_list; /* qos list from database - unaltered */
 
 extern char *sreport_get_time_str(uint64_t value, uint64_t total_time);
 extern int parse_option_end(char *option);
@@ -115,7 +116,7 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type);
  */
 extern void sreport_set_tres_recs(slurmdb_tres_rec_t **cluster_tres_rec,
 				  slurmdb_tres_rec_t **tres_rec,
-				  List cluster_tres_list, List tres_list,
+				  list_t *cluster_tres_list, list_t *tres_list,
 				  slurmdb_tres_rec_t *tres_rec_in);
 
 /* Since usage columns can get big, instead of always giving a 20
@@ -125,18 +126,20 @@ extern void sreport_set_usage_col_width(print_field_t *field, uint64_t number);
 
 extern void sreport_set_usage_column_width(print_field_t *usage_field,
 					   print_field_t *energy_field,
-					   List slurmdb_report_cluster_list);
+					   list_t *slurmdb_report_cluster_list);
 
 /* For duplicate user/account records, combine TRES records into the original
  * list and purge the duplicate records */
-extern void combine_assoc_tres(List first_assoc_list, List new_assoc_list);
+extern void combine_assoc_tres(list_t *first_assoc_list, list_t *new_assoc_list);
 
 /* Given two TRES lists, combine the content of the second with the first,
  * adding the counts for duplicate TRES IDs */
-extern void combine_tres_list(List orig_tres_list, List dup_tres_list);
+extern void combine_tres_list(list_t *orig_tres_list, list_t *dup_tres_list);
 
 /* For duplicate user/account records, combine TRES records into the original
  * list and purge the duplicate records */
-extern void combine_user_tres(List first_user_list, List new_user_list);
+extern void combine_user_tres(list_t *first_user_list, list_t *new_user_list);
+
+extern void common_get_qos_list(void);
 
 #endif /* HAVE_SREPORT_H */

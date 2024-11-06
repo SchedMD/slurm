@@ -32,7 +32,7 @@ if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
 if {![param_contains [get_config_param "TaskPlugin"] "*cgroup"] || [get_config_param "ConstrainDevices"] ne "yes"} {
-	skip "This test is only compatible with TaskPlugin=cgroup,... in slurm.conf and ConstrainDevices=Yes in cgroup.conf"
+	skip "This test is only compatible with TaskPlugin=cgroup,... in slurm.conf and ConstrainDevices=yes in cgroup.conf"
 }
 
 set gpu_cnt [get_highest_gres_count 1 "gpu"]

@@ -18,8 +18,6 @@ autom4te.cache
 /config.status
 /configure~
 /contribs/compile_commands.json
-/contribs/cray/opt_modulefiles_slurm
-/contribs/cray/slurmconfgen.py
 /contribs/perlapi/libslurm/perl/Makefile.PL
 /contribs/perlapi/libslurmdb/perl/Makefile.PL
 /cscope.files
@@ -46,8 +44,6 @@ autom4te.cache
 /src/api/version.map
 /src/common/global_defaults.c
 /src/db_api/version.map
-/src/plugins/checkpoint/blcr/cr_checkpoint.sh
-/src/plugins/checkpoint/blcr/cr_restart.sh
 /stamp-h1
 /src/sacct/sacct
 /src/sacctmgr/sacctmgr
@@ -63,7 +59,6 @@ autom4te.cache
 /src/slurmd/slurmd/slurmd
 /src/slurmd/slurmstepd/slurmstepd
 /src/slurmdbd/slurmdbd
-/src/smap/smap
 /src/sprio/sprio
 /src/squeue/squeue
 /src/sreport/sreport

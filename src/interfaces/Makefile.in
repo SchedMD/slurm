@@ -100,6 +100,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
+	$(top_srcdir)/auxdir/ax_have_epoll.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/gtk-2.0.m4 \
@@ -162,10 +163,10 @@ libcommon_interfaces_la_LIBADD =
 am_libcommon_interfaces_la_OBJECTS = accounting_storage.lo \
 	acct_gather.lo acct_gather_energy.lo acct_gather_filesystem.lo \
 	acct_gather_interconnect.lo acct_gather_profile.lo auth.lo \
-	cgroup.lo cli_filter.lo cred.lo data_parser.lo gpu.lo gres.lo \
-	hash.lo jobacct_gather.lo jobcomp.lo mcs.lo mpi.lo \
-	node_features.lo prep.lo priority.lo select.lo serializer.lo \
-	site_factor.lo switch.lo tls.lo topology.lo
+	certmgr.lo cgroup.lo cli_filter.lo cred.lo data_parser.lo \
+	gpu.lo gres.lo hash.lo jobacct_gather.lo jobcomp.lo mcs.lo \
+	mpi.lo node_features.lo prep.lo priority.lo select.lo \
+	serializer.lo site_factor.lo switch.lo tls.lo topology.lo
 libcommon_interfaces_la_OBJECTS =  \
 	$(am_libcommon_interfaces_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -212,10 +213,10 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/acct_gather_filesystem.Plo \
 	./$(DEPDIR)/acct_gather_interconnect.Plo \
 	./$(DEPDIR)/acct_gather_profile.Plo ./$(DEPDIR)/auth.Plo \
-	./$(DEPDIR)/burst_buffer.Plo ./$(DEPDIR)/cgroup.Plo \
-	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/cred.Plo \
-	./$(DEPDIR)/data_parser.Plo ./$(DEPDIR)/gpu.Plo \
-	./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
+	./$(DEPDIR)/burst_buffer.Plo ./$(DEPDIR)/certmgr.Plo \
+	./$(DEPDIR)/cgroup.Plo ./$(DEPDIR)/cli_filter.Plo \
+	./$(DEPDIR)/cred.Plo ./$(DEPDIR)/data_parser.Plo \
+	./$(DEPDIR)/gpu.Plo ./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
 	./$(DEPDIR)/job_container.Plo ./$(DEPDIR)/job_submit.Plo \
 	./$(DEPDIR)/jobacct_gather.Plo ./$(DEPDIR)/jobcomp.Plo \
 	./$(DEPDIR)/mcs.Plo ./$(DEPDIR)/mpi.Plo \
@@ -309,6 +310,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
 FREEIPMI_LIBS = @FREEIPMI_LIBS@
@@ -528,7 +530,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
 AM_CPPFLAGS = -I$(top_srcdir)
 noinst_LTLIBRARIES = \
 	libcommon_interfaces.la \
@@ -550,6 +551,8 @@ libcommon_interfaces_la_SOURCES = \
 	acct_gather_profile.h			\
 	auth.c					\
 	auth.h					\
+	certmgr.c				\
+	certmgr.h				\
 	cgroup.c				\
 	cgroup.h				\
 	cli_filter.c				\
@@ -698,6 +701,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_profile.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/auth.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/certmgr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cgroup.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cli_filter.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cred.Plo@am__quote@ # am--include-marker
@@ -835,7 +839,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -858,6 +861,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/acct_gather_profile.Plo
 	-rm -f ./$(DEPDIR)/auth.Plo
 	-rm -f ./$(DEPDIR)/burst_buffer.Plo
+	-rm -f ./$(DEPDIR)/certmgr.Plo
 	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
 	-rm -f ./$(DEPDIR)/cred.Plo
@@ -937,6 +941,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/acct_gather_profile.Plo
 	-rm -f ./$(DEPDIR)/auth.Plo
 	-rm -f ./$(DEPDIR)/burst_buffer.Plo
+	-rm -f ./$(DEPDIR)/certmgr.Plo
 	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
 	-rm -f ./$(DEPDIR)/cred.Plo

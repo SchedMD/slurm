@@ -183,7 +183,7 @@ void spank_print_options(FILE *fp, int left_pad, int width);
 /*  Set all registered remote options (i.e. those passed to
  *   spank_process_option) in the job options `options'.
  */
-void spank_set_remote_options(List options);
+void spank_set_remote_options(list_t *options);
 
 /*  Clear any spank remote options encoded in environment.
  */

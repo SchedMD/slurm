@@ -69,7 +69,7 @@ pack_process_mapping(uint32_t node_cnt,
 	/*
 	 * next_task[i] - next process for processing
 	 */
-	uint16_t *next_task = xmalloc(node_cnt * sizeof(uint16_t));
+	uint16_t *next_task = xcalloc(node_cnt, sizeof(uint16_t));
 
 	packing = xstrdup("(vector");
 	offset = 0;
@@ -162,7 +162,7 @@ unpack_process_mapping_flat(char *map,
 	 * Start from the flat array. For i'th task is located
 	 * on the task_map[i]'th node
 	 */
-	uint32_t *task_map = xmalloc(sizeof(int) * task_cnt);
+	uint32_t *task_map = xcalloc(task_cnt, sizeof(int));
 	char *prefix = "(vector,", *p = NULL;
 	uint32_t taskid, i;
 
@@ -232,9 +232,9 @@ unpack_process_mapping(char *map,
 		goto err_exit;
 	}
 
-	node_task_cnt = xmalloc(sizeof(uint16_t) * node_cnt);
+	node_task_cnt = xcalloc(node_cnt, sizeof(uint16_t));
 	for (i = 0;  i < node_cnt; i++){
-		tids[i] = xmalloc(sizeof(uint32_t) * tasks[i]);
+		tids[i] = xcalloc(tasks[i], sizeof(uint32_t));
 		node_task_cnt[i] = 0;
 	}
 
@@ -349,8 +349,8 @@ static void check(uint32_t node_cnt, uint32_t task_cnt,
 
 	printf("mapping: %s\n", map);
 
-	new_tasks = xmalloc(sizeof(uint16_t) * node_cnt);
-	new_tids = xmalloc(sizeof(uint32_t *) * node_cnt);
+	new_tasks = xcalloc(node_cnt, sizeof(uint16_t));
+	new_tids = xcalloc(node_cnt, sizeof(uint32_t *));
 	unpack_process_mapping(map,node_cnt,task_cnt,new_tasks,new_tids);
 
 	for (i = 0; i < node_cnt; i++) {
@@ -387,9 +387,9 @@ main(int argc, char **argv)
 	uint32_t **tids = NULL;
 	int tnum = 0, i;
 
-	tids = xmalloc(sizeof(uint32_t*) * NODES);
+	tids = xcalloc(NODES, sizeof(uint32_t *));
 	for (i = 0; i< NODES; i++) {
-		tids[i] = xmalloc(sizeof(uint32_t) * NCPUS);
+		tids[i] = xcalloc(NCPUS, sizeof(uint32_t));
 	}
 
 	for (tnum = 1; tnum < NCPUS*NODES; tnum++) {

@@ -102,6 +102,8 @@ strong_alias(unpackmem_xmalloc,	slurm_unpackmem_xmalloc);
 strong_alias(unpackstr_xmalloc, slurm_unpackstr_xmalloc);
 strong_alias(unpackstr_xmalloc_escaped, slurm_unpackstr_xmalloc_escaped);
 strong_alias(unpackstr_xmalloc_chooser, slurm_unpackstr_xmalloc_chooser);
+strong_alias(packstr_func, slurm_packstr_func);
+strong_alias(safe_unpackstr_func, slurm_safe_unpackstr_func);
 strong_alias(packstr_array,	slurm_packstr_array);
 strong_alias(unpackstr_array,	slurm_unpackstr_array);
 strong_alias(packmem_array,	slurm_packmem_array);
@@ -1037,6 +1039,22 @@ int unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp, buf_t *buf)
 		return unpackstr_xmalloc(valp, size_valp, buf);
 }
 
+extern void packstr_func(void *str, uint16_t protocol_version, buf_t *buffer)
+{
+	packstr(str, buffer);
+}
+
+extern int safe_unpackstr_func(void **object,
+			       uint16_t protocol_version,
+			       buf_t *buffer)
+{
+	safe_unpackstr((char **)object, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
 
 /*
  * Given a pointer to array of char * (char ** or char *[] ) and a size

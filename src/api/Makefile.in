@@ -99,6 +99,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
+	$(top_srcdir)/auxdir/ax_have_epoll.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/gtk-2.0.m4 \
@@ -211,7 +212,8 @@ libslurmfull_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_CFLAGS) $(CFLAGS) $(libslurmfull_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
 am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
-	$(top_builddir)/src/interfaces/libcommon_interfaces.la
+	$(top_builddir)/src/interfaces/libcommon_interfaces.la \
+	$(top_builddir)/src/conmgr/libconmgr.la
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = account_functions.lo archive_functions.lo \
 	assoc_functions.lo cluster_functions.lo \
@@ -239,7 +241,8 @@ libslurmhelper_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 am_libslurm_o_OBJECTS =
 libslurm_o_OBJECTS = $(am_libslurm_o_OBJECTS)
 libslurm_o_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
-	$(top_builddir)/src/interfaces/libcommon_interfaces.o
+	$(top_builddir)/src/interfaces/libcommon_interfaces.o \
+	$(top_builddir)/src/conmgr/libconmgr.o
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -366,6 +369,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
 FREEIPMI_LIBS = @FREEIPMI_LIBS@
@@ -715,6 +719,7 @@ common_dir = $(top_builddir)/src/common
 slurmapi_add = \
 	$(common_dir)/libcommon.la	\
 	$(top_builddir)/src/interfaces/libcommon_interfaces.la \
+	$(top_builddir)/src/conmgr/libconmgr.la \
 	-lpthread
 
 libslurmhelper_la_SOURCES = $(slurmapi_src)
@@ -750,7 +755,8 @@ libslurm_pmi_la_LDFLAGS = \
 libslurm_o_SOURCES = 
 libslurm_o_LDADD = \
 	$(top_builddir)/src/common/libcommon.o \
-	$(top_builddir)/src/interfaces/libcommon_interfaces.o
+	$(top_builddir)/src/interfaces/libcommon_interfaces.o \
+	$(top_builddir)/src/conmgr/libconmgr.o
 
 CLEANFILES = \
 	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)

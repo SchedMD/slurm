@@ -1,5 +1,4 @@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
 
 SRCS = \
 	alloc.c \

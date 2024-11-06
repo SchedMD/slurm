@@ -1,8 +1,7 @@
 /*****************************************************************************\
  *  acct_gather_energy_xcc.c - slurm energy accounting plugin for xcc.
  *****************************************************************************
- *  Copyright (C) 2018
- *  Written by SchedMD - Felip Moll
+ *  Copyright (C) SchedMD LLC.
  *  Based on IPMI plugin by Thomas Cadeau/Yoann Blein @ Bull
  *
  *  This file is part of Slurm, a resource management program.
@@ -1129,7 +1128,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in, s_p_hashtbl_t *tbl)
 	verbose("%s loaded", plugin_name);
 }
 
-extern void acct_gather_energy_p_conf_values(List *data)
+extern void acct_gather_energy_p_conf_values(list_t **data)
 {
 	xassert(*data);
 

@@ -16,6 +16,25 @@
 
 # Makefile for sacct
 
+# This is common code for a Makefile.am and creates $(LIB_REF) to be used
+# afterwards in noinst_LTLIBRARIES and EXTRA_slurmrestd_DEPENDENCIES
+#
+# usage
+#
+# REF = usage.txt
+# include $(top_srcdir)/make_ref.include
+# noinst_LTLIBRARIES [+]= $(LIB_REF)
+# EXTRA_$PROGRAMNAME_DEPENDENCIES [+]= $(LIB_REF)
+# $PROGRAMNAME_LDADD += $(LIB_REF)
+#
+# What the above lines do is include this file in a Makefile.am
+# It will insert usage.txt as a variable that the calling program can access
+# with the calls in src/common/ref.h.
+#
+# If I where doing this for the slurmrestd I would put 'slurmrestd' in for
+# $PROGRAMNAME i.e. EXTRA_slurmrestd_DEPENDENCIES, slurmrestd_LDADD.
+
+
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -98,6 +117,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
+	$(top_srcdir)/auxdir/ax_have_epoll.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/gtk-2.0.m4 \
@@ -156,14 +176,18 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sacct_OBJECTS = options.$(OBJEXT) print.$(OBJEXT) process.$(OBJEXT) \
-	sacct.$(OBJEXT)
-sacct_OBJECTS = $(am_sacct_OBJECTS)
-am__DEPENDENCIES_1 =
+LTLIBRARIES = $(noinst_LTLIBRARIES)
+lib_ref_la_DEPENDENCIES = lib_ref.lo
+am_lib_ref_la_OBJECTS =
+lib_ref_la_OBJECTS = $(am_lib_ref_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am_sacct_OBJECTS = options.$(OBJEXT) print.$(OBJEXT) process.$(OBJEXT) \
+	sacct.$(OBJEXT)
+sacct_OBJECTS = $(am_sacct_OBJECTS)
+am__DEPENDENCIES_1 =
 sacct_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(sacct_LDFLAGS) $(LDFLAGS) -o $@
@@ -203,7 +227,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(sacct_SOURCES)
+SOURCES = $(lib_ref_la_SOURCES) $(sacct_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -263,6 +287,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
 FREEIPMI_LIBS = @FREEIPMI_LIBS@
@@ -482,9 +507,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.*
 AM_CPPFLAGS = -I$(top_srcdir)
-sacct_LDADD = $(LIB_SLURM)
+sacct_LDADD = $(LIB_SLURM) $(LIB_REF)
 sacct_DEPENDENCIES = $(LIB_SLURM_BUILD)
 sacct_LDFLAGS = $(CMD_LDFLAGS)
 noinst_HEADERS = sacct.h
@@ -495,11 +519,21 @@ sacct_SOURCES = \
 	sacct.c		\
 	sacct.h
 
+REF = help.txt
+CLEANFILES = *.bino
+BIN_REF = $(REF:.txt=.bino)
+LIB_REF = lib_ref.la
+
+# a blank lib_ref_la_SOURCES is needed for 'make cscope' to work correctly.
+lib_ref_la_SOURCES = 
+lib_ref_la_LIBADD = lib_ref.lo
+noinst_LTLIBRARIES = $(LIB_REF)
+EXTRA_sacct_DEPENDENCIES = $(LIB_REF)
 all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/make_ref.include $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -519,6 +553,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__maybe_remake_depfiles)'; \
 	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__maybe_remake_depfiles);; \
 	esac;
+$(top_srcdir)/make_ref.include $(am__empty):
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
@@ -577,6 +612,20 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
+
+lib_ref.la: $(lib_ref_la_OBJECTS) $(lib_ref_la_DEPENDENCIES) $(EXTRA_lib_ref_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK)  $(lib_ref_la_OBJECTS) $(lib_ref_la_LIBADD) $(LIBS)
 
 sacct$(EXEEXT): $(sacct_OBJECTS) $(sacct_DEPENDENCIES) $(EXTRA_sacct_DEPENDENCIES) 
 	@rm -f sacct$(EXEEXT)
@@ -679,7 +728,7 @@ distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(HEADERS)
+all-am: Makefile $(PROGRAMS) $(LTLIBRARIES) $(HEADERS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -717,7 +766,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool \
+	clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/options.Po
@@ -794,21 +844,41 @@ uninstall-am: uninstall-binPROGRAMS
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-binPROGRAMS clean-generic clean-libtool cscopelist-am \
-	ctags ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags dvi dvi-am html html-am info \
-	info-am install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS
+	clean-binPROGRAMS clean-generic clean-libtool \
+	clean-noinstLTLIBRARIES cscopelist-am ctags ctags-am distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags dvi dvi-am html html-am info info-am install \
+	install-am install-binPROGRAMS install-data install-data-am \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am uninstall-binPROGRAMS
 
 .PRECIOUS: Makefile
 
+
+%.bino: %.txt
+	$(AM_V_GEN)curr_dir=$(shell pwd); cd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; cd $$curr_dir
+	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
+
+lib_ref.lo: $(BIN_REF)
+	$(AM_V_at)echo "# $@ - a libtool object file" >"$@"
+	$(AM_V_at)echo "# Generated by libtool" >>"$@"
+	$(AM_V_at)echo "# (Not really... but we need libtool to believe it was.)" >>"$@"
+	$(AM_V_at)echo "#" >>"$@"
+	$(AM_V_at)echo "# Please DO NOT delete this file!" >>"$@"
+	$(AM_V_at)echo "# It is necessary for linking the library." >>"$@"
+	$(AM_V_at)echo >>"$@"
+	$(AM_V_at)echo "# Name of the PIC object." >>"$@"
+	$(AM_V_at)echo "pic_object='$(BIN_REF)'" >>"$@"
+	$(AM_V_at)echo >>"$@"
+	$(AM_V_at)echo "# Name of the non-PIC object" >>"$@"
+	$(AM_V_at)echo "non_pic_object=''" >>"$@"
+	$(AM_V_at)echo >>"$@"
 
 force:
 $(sacct_DEPENDENCIES) : force

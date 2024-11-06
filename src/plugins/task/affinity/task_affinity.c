@@ -145,24 +145,6 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 	return rc;
 }
 
-/*
- * task_p_slurmd_suspend_job()
- */
-extern int task_p_slurmd_suspend_job (uint32_t job_id)
-{
-	debug("task_p_slurmd_suspend_job: %u", job_id);
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_p_slurmd_resume_job()
- */
-extern int task_p_slurmd_resume_job (uint32_t job_id)
-{
-	debug("task_p_slurmd_resume_job: %u", job_id);
-	return SLURM_SUCCESS;
-}
-
 static void _calc_cpu_affinity(stepd_step_rec_t *step)
 {
 	if (!step->cpu_bind_type)

@@ -105,17 +105,10 @@ int main(int argc, char **argv)
 			_sort_rpc();
 
 			if (params.mimetype) {
-				if (is_data_parser_deprecated(
-					    params.data_parser))
-					DATA_DUMP_CLI_DEPRECATED(
-						STATS_MSG, *buf, "statistics",
-						argc, argv, NULL,
-						params.mimetype, rc);
-				else
-					DATA_DUMP_CLI_SINGLE(
-						OPENAPI_DIAG_RESP, buf, argc,
-						argv, NULL, params.mimetype,
-						params.data_parser, rc);
+				DATA_DUMP_CLI_SINGLE(OPENAPI_DIAG_RESP, buf,
+						     argc, argv, NULL,
+						     params.mimetype,
+						     params.data_parser, rc);
 			} else {
 				rc = _print_stats();
 			}
@@ -133,7 +126,7 @@ static int _print_stats(void)
 {
 	int i;
 
-	if (!buf || !types || !users) {
+	if (!buf) {
 		printf("No data available. Probably slurmctld is not working\n");
 		return -1;
 	}
@@ -256,6 +249,8 @@ static int _print_stats(void)
 			       types[i].cycle_last, types[i].cycle_max,
 			       types[i].dropped);
 	}
+	if (!buf->rpc_type_size)
+		printf("\tNo RPCs recorded yet.\n");
 
 	printf("\nRemote Procedure Call statistics by user\n");
 	for (i = 0; i < buf->rpc_user_size; i++) {

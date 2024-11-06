@@ -93,7 +93,7 @@ TESTS = log-test$(EXEEXT) $(am__EXEEXT_1)
 @HAVE_CHECK_TRUE@am__append_1 = xhash-test \
 @HAVE_CHECK_TRUE@	 data-test \
 @HAVE_CHECK_TRUE@	 serializer-test \
-@HAVE_CHECK_TRUE@	 slurm_opt-test \
+@HAVE_CHECK_TRUE@	 sluid-test \
 @HAVE_CHECK_TRUE@	 xstring-test \
 @HAVE_CHECK_TRUE@	 parse_time-test \
 @HAVE_CHECK_TRUE@	 job-resources-test \
@@ -106,6 +106,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
+	$(top_srcdir)/auxdir/ax_have_epoll.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/gtk-2.0.m4 \
@@ -163,8 +164,8 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = xhash-test$(EXEEXT) data-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	serializer-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	slurm_opt-test$(EXEEXT) xstring-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	serializer-test$(EXEEXT) sluid-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	xstring-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	parse_time-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	job-resources-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	pack-test$(EXEEXT) reverse_tree-test$(EXEEXT) \
@@ -224,13 +225,12 @@ serializer_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(serializer_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-slurm_opt_test_SOURCES = slurm_opt-test.c
-slurm_opt_test_OBJECTS = slurm_opt_test-slurm_opt-test.$(OBJEXT)
-@HAVE_CHECK_TRUE@slurm_opt_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
-slurm_opt_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(slurm_opt_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o \
-	$@
+sluid_test_SOURCES = sluid-test.c
+sluid_test_OBJECTS = sluid_test-sluid-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@sluid_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
+sluid_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(sluid_test_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 xahash_test_SOURCES = xahash-test.c
 xahash_test_OBJECTS = xahash_test-xahash-test.$(OBJEXT)
 @HAVE_CHECK_TRUE@xahash_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -270,7 +270,7 @@ am__depfiles_remade = ./$(DEPDIR)/data_test-data-test.Po \
 	./$(DEPDIR)/parse_time_test-parse_time-test.Po \
 	./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po \
 	./$(DEPDIR)/serializer_test-serializer-test.Po \
-	./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po \
+	./$(DEPDIR)/sluid_test-sluid-test.Po \
 	./$(DEPDIR)/xahash_test-xahash-test.Po \
 	./$(DEPDIR)/xhash_test-xhash-test.Po \
 	./$(DEPDIR)/xstring_test-xstring-test.Po
@@ -295,7 +295,7 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = data-test.c job-resources-test.c log-test.c pack-test.c \
 	parse_time-test.c reverse_tree-test.c serializer-test.c \
-	slurm_opt-test.c xahash-test.c xhash-test.c xstring-test.c
+	sluid-test.c xahash-test.c xhash-test.c xstring-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -575,6 +575,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
 FREEIPMI_LIBS = @FREEIPMI_LIBS@
@@ -813,8 +814,8 @@ LDADD = $(LIB_SLURM)
 @HAVE_CHECK_TRUE@data_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@serializer_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@serializer_test_LDADD = $(LDADD) @CHECK_LIBS@
-@HAVE_CHECK_TRUE@slurm_opt_test_CFLAGS = $(MYCFLAGS)
-@HAVE_CHECK_TRUE@slurm_opt_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@sluid_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@sluid_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@xstring_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@xstring_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@parse_time_test_CFLAGS = $(MYCFLAGS)
@@ -896,9 +897,9 @@ serializer-test$(EXEEXT): $(serializer_test_OBJECTS) $(serializer_test_DEPENDENC
 	@rm -f serializer-test$(EXEEXT)
 	$(AM_V_CCLD)$(serializer_test_LINK) $(serializer_test_OBJECTS) $(serializer_test_LDADD) $(LIBS)
 
-slurm_opt-test$(EXEEXT): $(slurm_opt_test_OBJECTS) $(slurm_opt_test_DEPENDENCIES) $(EXTRA_slurm_opt_test_DEPENDENCIES) 
-	@rm -f slurm_opt-test$(EXEEXT)
-	$(AM_V_CCLD)$(slurm_opt_test_LINK) $(slurm_opt_test_OBJECTS) $(slurm_opt_test_LDADD) $(LIBS)
+sluid-test$(EXEEXT): $(sluid_test_OBJECTS) $(sluid_test_DEPENDENCIES) $(EXTRA_sluid_test_DEPENDENCIES) 
+	@rm -f sluid-test$(EXEEXT)
+	$(AM_V_CCLD)$(sluid_test_LINK) $(sluid_test_OBJECTS) $(sluid_test_LDADD) $(LIBS)
 
 xahash-test$(EXEEXT): $(xahash_test_OBJECTS) $(xahash_test_DEPENDENCIES) $(EXTRA_xahash_test_DEPENDENCIES) 
 	@rm -f xahash-test$(EXEEXT)
@@ -925,7 +926,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_time_test-parse_time-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/serializer_test-serializer-test.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sluid_test-sluid-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xahash_test-xahash-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash_test-xhash-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xstring_test-xstring-test.Po@am__quote@ # am--include-marker
@@ -1041,19 +1042,19 @@ serializer_test-serializer-test.obj: serializer-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(serializer_test_CFLAGS) $(CFLAGS) -c -o serializer_test-serializer-test.obj `if test -f 'serializer-test.c'; then $(CYGPATH_W) 'serializer-test.c'; else $(CYGPATH_W) '$(srcdir)/serializer-test.c'; fi`
 
-slurm_opt_test-slurm_opt-test.o: slurm_opt-test.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_opt_test_CFLAGS) $(CFLAGS) -MT slurm_opt_test-slurm_opt-test.o -MD -MP -MF $(DEPDIR)/slurm_opt_test-slurm_opt-test.Tpo -c -o slurm_opt_test-slurm_opt-test.o `test -f 'slurm_opt-test.c' || echo '$(srcdir)/'`slurm_opt-test.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurm_opt_test-slurm_opt-test.Tpo $(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurm_opt-test.c' object='slurm_opt_test-slurm_opt-test.o' libtool=no @AMDEPBACKSLASH@
+sluid_test-sluid-test.o: sluid-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sluid_test_CFLAGS) $(CFLAGS) -MT sluid_test-sluid-test.o -MD -MP -MF $(DEPDIR)/sluid_test-sluid-test.Tpo -c -o sluid_test-sluid-test.o `test -f 'sluid-test.c' || echo '$(srcdir)/'`sluid-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sluid_test-sluid-test.Tpo $(DEPDIR)/sluid_test-sluid-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sluid-test.c' object='sluid_test-sluid-test.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_opt_test_CFLAGS) $(CFLAGS) -c -o slurm_opt_test-slurm_opt-test.o `test -f 'slurm_opt-test.c' || echo '$(srcdir)/'`slurm_opt-test.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sluid_test_CFLAGS) $(CFLAGS) -c -o sluid_test-sluid-test.o `test -f 'sluid-test.c' || echo '$(srcdir)/'`sluid-test.c
 
-slurm_opt_test-slurm_opt-test.obj: slurm_opt-test.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_opt_test_CFLAGS) $(CFLAGS) -MT slurm_opt_test-slurm_opt-test.obj -MD -MP -MF $(DEPDIR)/slurm_opt_test-slurm_opt-test.Tpo -c -o slurm_opt_test-slurm_opt-test.obj `if test -f 'slurm_opt-test.c'; then $(CYGPATH_W) 'slurm_opt-test.c'; else $(CYGPATH_W) '$(srcdir)/slurm_opt-test.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurm_opt_test-slurm_opt-test.Tpo $(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurm_opt-test.c' object='slurm_opt_test-slurm_opt-test.obj' libtool=no @AMDEPBACKSLASH@
+sluid_test-sluid-test.obj: sluid-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sluid_test_CFLAGS) $(CFLAGS) -MT sluid_test-sluid-test.obj -MD -MP -MF $(DEPDIR)/sluid_test-sluid-test.Tpo -c -o sluid_test-sluid-test.obj `if test -f 'sluid-test.c'; then $(CYGPATH_W) 'sluid-test.c'; else $(CYGPATH_W) '$(srcdir)/sluid-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sluid_test-sluid-test.Tpo $(DEPDIR)/sluid_test-sluid-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sluid-test.c' object='sluid_test-sluid-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_opt_test_CFLAGS) $(CFLAGS) -c -o slurm_opt_test-slurm_opt-test.obj `if test -f 'slurm_opt-test.c'; then $(CYGPATH_W) 'slurm_opt-test.c'; else $(CYGPATH_W) '$(srcdir)/slurm_opt-test.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sluid_test_CFLAGS) $(CFLAGS) -c -o sluid_test-sluid-test.obj `if test -f 'sluid-test.c'; then $(CYGPATH_W) 'sluid-test.c'; else $(CYGPATH_W) '$(srcdir)/sluid-test.c'; fi`
 
 xahash_test-xahash-test.o: xahash-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xahash_test_CFLAGS) $(CFLAGS) -MT xahash_test-xahash-test.o -MD -MP -MF $(DEPDIR)/xahash_test-xahash-test.Tpo -c -o xahash_test-xahash-test.o `test -f 'xahash-test.c' || echo '$(srcdir)/'`xahash-test.c
@@ -1371,9 +1372,9 @@ serializer-test.log: serializer-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-slurm_opt-test.log: slurm_opt-test$(EXEEXT)
-	@p='slurm_opt-test$(EXEEXT)'; \
-	b='slurm_opt-test'; \
+sluid-test.log: sluid-test$(EXEEXT)
+	@p='sluid-test$(EXEEXT)'; \
+	b='sluid-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1487,7 +1488,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
 	-rm -f ./$(DEPDIR)/serializer_test-serializer-test.Po
-	-rm -f ./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
+	-rm -f ./$(DEPDIR)/sluid_test-sluid-test.Po
 	-rm -f ./$(DEPDIR)/xahash_test-xahash-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
 	-rm -f ./$(DEPDIR)/xstring_test-xstring-test.Po
@@ -1543,7 +1544,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
 	-rm -f ./$(DEPDIR)/serializer_test-serializer-test.Po
-	-rm -f ./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
+	-rm -f ./$(DEPDIR)/sluid_test-sluid-test.Po
 	-rm -f ./$(DEPDIR)/xahash_test-xahash-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
 	-rm -f ./$(DEPDIR)/xstring_test-xstring-test.Po

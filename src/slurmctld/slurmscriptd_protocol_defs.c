@@ -38,6 +38,24 @@
 #include "src/common/xmalloc.h"
 #include "src/slurmctld/slurmscriptd_protocol_defs.h"
 
+extern void slurmscriptd_free_bb_script_info_msg(bb_script_info_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->authalttypes);
+	xfree(msg->authinfo);
+	xfree(msg->authalt_params);
+	xfree(msg->authtype);
+	xfree(msg->cluster_name);
+	xfree(msg->extra_buf);
+	xfree(msg->function);
+	xfree(msg->slurmctld_logfile);
+	xfree(msg->plugindir);
+	xfree(msg->slurm_user_name);
+	xfree(msg);
+}
+
 extern void slurmscriptd_free_run_script_msg(run_script_msg_t *msg)
 {
 	if (!msg)
@@ -69,6 +87,9 @@ extern void slurmscriptd_free_msg(slurmscriptd_msg_t *msg)
 		return;
 
 	switch(msg->msg_type) {
+	case SLURMSCRIPTD_REQUEST_BB_SCRIPT_INFO:
+		slurmscriptd_free_bb_script_info_msg(msg->msg_data);
+		break;
 	case SLURMSCRIPTD_REQUEST_RUN_SCRIPT:
 		slurmscriptd_free_run_script_msg(msg->msg_data);
 		break;

@@ -46,6 +46,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/log.h"
+#include "src/common/xmalloc.h"
 
 #include "pmi.h"
 #include "client.h"

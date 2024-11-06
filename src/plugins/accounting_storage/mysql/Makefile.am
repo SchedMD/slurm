@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
 
 AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		as_mysql_acct.c as_mysql_acct.h \

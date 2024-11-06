@@ -17,7 +17,7 @@
 # $PROGRAMNAME i.e. EXTRA_slurmrestd_DEPENDENCIES, slurmrestd_LDADD.
 
 
-CLEANFILES += *.bino
+CLEANFILES = *.bino
 
 BIN_REF = $(REF:.txt=.bino)
 

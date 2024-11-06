@@ -54,8 +54,9 @@
 #include "src/common/daemonize.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+
+#include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
@@ -74,9 +75,6 @@
 #define _DEBUG		0
 #define SHUTDOWN_WAIT	2	/* Time to wait for primary server shutdown */
 
-static int          _background_process_msg(slurm_msg_t * msg);
-static void *       _background_rpc_mgr(void *no_data);
-static void *       _background_signal_hand(void *no_data);
 static void         _backup_reconfig(void);
 static int          _shutdown_primary_controller(int wait_time);
 static void *       _trigger_slurmctld_event(void *arg);
@@ -105,15 +103,24 @@ static int		shutdown_rc = SLURM_SUCCESS;
 static int		shutdown_thread_cnt = 0;
 static int		shutdown_timeout = 0;
 
-/*
- * Static list of signals to block in this process
- * *Must be zero-terminated*
- */
-static int backup_sigarray[] = {
-	SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
-	SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
-	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0
-};
+extern void backup_on_sighup(void)
+{
+	slurmctld_lock_t config_write_lock = {
+		.conf = WRITE_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = WRITE_LOCK,
+	};
+
+	/*
+	 * XXX - need to shut down the scheduler
+	 * plugin, re-read the configuration, and then
+	 * restart the (possibly new) plugin.
+	 */
+	lock_slurmctld(config_write_lock);
+	_backup_reconfig();
+	unlock_slurmctld(config_write_lock);
+}
 
 /*
  * run_backup - this is the backup controller, it should run in standby
@@ -140,22 +147,9 @@ void run_backup(void)
 	slurm_cond_broadcast(&slurmctld_config.backup_finish_cond);
 	slurm_mutex_unlock(&slurmctld_config.backup_finish_lock);
 
-	if (xsignal_block(backup_sigarray) < 0)
-		error("Unable to block signals");
-
-	/*
-	 * create attached thread to process RPCs
-	 */
-	slurm_thread_create(&slurmctld_config.thread_id_rpc,
-			    _background_rpc_mgr, NULL);
-
-	/*
-	 * create attached thread for signal handling
-	 */
-	slurm_thread_create(&slurmctld_config.thread_id_sig,
-			    _background_signal_hand, NULL);
-
 	slurm_thread_create_detached(_trigger_slurmctld_event, NULL);
+
+	conmgr_unquiesce(__func__);
 
 	/* wait for the heartbeat file to exist before starting */
 	while (!get_last_heartbeat(NULL) &&
@@ -262,7 +256,6 @@ void run_backup(void)
 			        slurm_conf.slurmctld_pidfile);
 
 		info("BackupController terminating");
-		slurm_thread_join(slurmctld_config.thread_id_sig);
 		log_fini();
 		if (dump_core)
 			abort();
@@ -280,9 +273,8 @@ void run_backup(void)
 	trigger_primary_ctld_fail();
 	trigger_backup_ctld_as_ctrl();
 
-	pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
-	slurm_thread_join(slurmctld_config.thread_id_sig);
-	slurm_thread_join(slurmctld_config.thread_id_rpc);
+	conmgr_quiesce(__func__);
+	pthread_kill(pthread_self(), SIGTERM);
 
 	/*
 	 * Expressly shutdown the agent. The agent can in whole or in part
@@ -346,172 +338,36 @@ void run_backup(void)
 	unlock_slurmctld(config_write_lock);
 }
 
-/*
- * _background_signal_hand - Process daemon-wide signals for the
- *	backup controller
- */
-static void *_background_signal_hand(void *no_data)
+extern void *on_backup_connection(conmgr_fd_t *con, void *arg)
 {
-	int sig, rc;
-	sigset_t set;
-	/* Locks: Write configuration, job, node, and partition */
-	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	debug3("%s: [%s] BACKUP: New RPC connection",
+	       __func__, conmgr_fd_get_name(con));
 
-	while (slurmctld_config.shutdown_time == 0) {
-		xsignal_sigset_create(backup_sigarray, &set);
-		rc = sigwait(&set, &sig);
-		if (rc == EINTR)
-			continue;
-		switch (sig) {
-		case SIGINT:	/* kill -2  or <CTRL-C> */
-		case SIGTERM:	/* kill -15 */
-			info("Terminate signal (SIGINT or SIGTERM) received");
-			slurmctld_config.shutdown_time = time(NULL);
-			slurmctld_shutdown();
-			return NULL;	/* Normal termination */
-			break;
-		case SIGHUP:    /* kill -1 */
-			info("Reconfigure signal (SIGHUP) received");
-			/*
-			 * XXX - need to shut down the scheduler
-			 * plugin, re-read the configuration, and then
-			 * restart the (possibly new) plugin.
-			 */
-			lock_slurmctld(config_write_lock);
-			_backup_reconfig();
-			unlock_slurmctld(config_write_lock);
-			break;
-		case SIGABRT:   /* abort */
-			info("SIGABRT received");
-			slurmctld_config.shutdown_time = time(NULL);
-			slurmctld_shutdown();
-			dump_core = true;
-			return NULL;    /* Normal termination */
-			break;
-		case SIGUSR2:
-			info("Logrotate signal (SIGUSR2) received");
-			lock_slurmctld(config_write_lock);
-			update_logging();
-			unlock_slurmctld(config_write_lock);
-			break;
-		default:
-			error("Invalid signal (%d) received", sig);
-		}
-	}
-	return NULL;
+	return con;
 }
 
-static void _sig_handler(int signal)
+extern void on_backup_finish(conmgr_fd_t *con, void *arg)
 {
+	xassert(arg == con);
+
+	debug3("%s: [%s] BACKUP: finish RPC connection",
+	       __func__, conmgr_fd_get_name(con));
 }
 
-/*
- * _background_rpc_mgr - Read and process incoming RPCs to the background
- *	controller (that's us)
- */
-static void *_background_rpc_mgr(void *no_data)
-{
-	int newsockfd;
-	int fd_next = 0, i;
-	slurm_addr_t cli_addr;
-	slurm_msg_t msg;
-
-	int sigarray[] = {SIGUSR1, 0};
-
-	debug3("_background_rpc_mgr pid = %lu", (unsigned long) getpid());
-
-	/*
-	 * Prepare to catch SIGUSR1 to interrupt accept().  This signal is
-	 * generated by the slurmctld signal handler thread upon receipt of
-	 * SIGABRT, SIGINT, or SIGTERM. That thread does all processing of
-	 * all signals.
-	 */
-	xsignal(SIGUSR1, _sig_handler);
-	xsignal_unblock(sigarray);
-
-	/*
-	 * Process incoming RPCs indefinitely
-	 */
-	while (slurmctld_config.shutdown_time == 0) {
-		if (poll(listen_fds, listen_nports, -1) == -1) {
-			if (errno != EINTR)
-				error("slurm_accept_msg_conn poll: %m");
-			continue;
-		}
-
-		/* find one to process */
-		for (i = 0; i < listen_nports; i++) {
-			if (listen_fds[(fd_next + i) % listen_nports].revents) {
-				i = (fd_next + i) % listen_nports;
-				break;
-			}
-		}
-		fd_next = (i + 1) % listen_nports;
-
-		if ((newsockfd = slurm_accept_msg_conn(listen_fds[i].fd,
-						       &cli_addr))
-		    == SLURM_ERROR) {
-			if (errno != EINTR)
-				error("slurm_accept_msg_conn: %m");
-			continue;
-		}
-
-		log_flag(PROTOCOL, "%s: accept() connection from %pA",
-			 __func__, &cli_addr);
-
-		slurm_msg_t_init(&msg);
-		if (slurm_receive_msg(newsockfd, &msg, 0) != 0)
-			error("slurm_receive_msg: %m");
-		else {
-			if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
-				slurm_addr_t cli_addr;
-				(void) slurm_get_peer_addr(newsockfd, &cli_addr);
-				log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
-					 rpc_num2string(msg.msg_type),
-					 msg.auth_uid, &cli_addr,
-					 msg.protocol_version);
-			}
-
-			_background_process_msg(&msg);
-		}
-
-		slurm_free_msg_members(&msg);
-
-		close(newsockfd);	/* close new socket */
-	}
-
-	debug3("_background_rpc_mgr shutting down");
-	return NULL;
-}
-
-/*
- * _background_process_msg - process an RPC to the backup_controller
- */
-static int _background_process_msg(slurm_msg_t *msg)
+/* process an RPC to the backup_controller */
+extern int on_backup_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 {
 	int error_code = SLURM_SUCCESS;
 	bool send_rc = true;
 
-	if (!msg->auth_ids_set) {
-		error("%s: received message without previously validated auth",
-		      __func__);
-		return SLURM_ERROR;
-	}
+	xassert(arg == con);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
-		const char *p = rpc_num2string(msg->msg_type);
-		if (msg->conn) {
-			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
-			     __func__, p, msg->conn->cluster_name,
-			     msg->conn->rem_host, msg->auth_uid);
-		} else {
-			slurm_addr_t cli_addr;
-			(void) slurm_get_peer_addr(msg->conn_fd, &cli_addr);
-			info("%s: received opcode %s from %pA uid %u",
-			     __func__, p, &cli_addr, msg->auth_uid);
-		}
-	}
+	if (!msg->auth_ids_set)
+		fatal_abort("this should never happen");
+
+	log_flag(PROTOCOL, "%s: [%s] Received opcode %s from uid %u",
+	     __func__, conmgr_fd_get_name(con), rpc_num2string(msg->msg_type),
+	     msg->auth_uid);
 
 	if (msg->msg_type != REQUEST_PING) {
 		bool super_user = false;
@@ -521,7 +377,7 @@ static int _background_process_msg(slurm_msg_t *msg)
 
 		if (super_user && (msg->msg_type == REQUEST_SHUTDOWN)) {
 			info("Performing background RPC: REQUEST_SHUTDOWN");
-			pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
+			pthread_kill(pthread_self(), SIGTERM);
 		} else if (super_user &&
 			   (msg->msg_type == REQUEST_TAKEOVER)) {
 			info("Performing background RPC: REQUEST_TAKEOVER");
@@ -557,7 +413,10 @@ static int _background_process_msg(slurm_msg_t *msg)
 	}
 	if (send_rc)
 		slurm_send_rc_msg(msg, error_code);
-	return error_code;
+
+	conmgr_queue_close_fd(msg->conmgr_fd);
+	slurm_free_msg(msg);
+	return SLURM_SUCCESS;
 }
 
 static void *_ping_ctld_thread(void *arg)

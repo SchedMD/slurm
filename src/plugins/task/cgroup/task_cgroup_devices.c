@@ -54,8 +54,6 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#include "task_cgroup.h"
-
 typedef struct handle_dev_args {
 	cgroup_level_t cgroup_type;
 	uint32_t taskid;
@@ -151,9 +149,9 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
 	pid_t pid;
-	List job_gres_list = step->job_gres_list;
-	List step_gres_list = step->step_gres_list;
-	List device_list = NULL;
+	list_t *job_gres_list = step->job_gres_list;
+	list_t *step_gres_list = step->step_gres_list;
+	list_t *device_list = NULL;
 	handle_dev_args_t handle_args;
 
 	if (is_first_task) {
@@ -228,7 +226,7 @@ extern int task_cgroup_devices_constrain(stepd_step_rec_t *step,
 					 uint32_t node_tid,
 					 uint32_t global_tid)
 {
-	List device_list = NULL;
+	list_t *device_list = NULL;
 	handle_dev_args_t handle_args;
 
 	/*

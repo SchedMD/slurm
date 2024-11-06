@@ -44,8 +44,8 @@
 #include "src/common/list.h"
 #include "src/common/track_script.h"
 
-static List track_script_thd_list = NULL;
-static List flush_script_thd_list = NULL;
+static list_t *track_script_thd_list = NULL;
+static list_t *flush_script_thd_list = NULL;
 static pthread_mutex_t flush_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t flush_cond = PTHREAD_COND_INITIALIZER;
 

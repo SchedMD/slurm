@@ -96,6 +96,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
+	$(top_srcdir)/auxdir/ax_have_epoll.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/gtk-2.0.m4 \
@@ -182,7 +183,6 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-acct_gather_profile_influxdb_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_acct_gather_profile_influxdb_la_OBJECTS =  \
 	acct_gather_profile_influxdb.lo
 acct_gather_profile_influxdb_la_OBJECTS =  \
@@ -289,6 +289,7 @@ EGREP = @EGREP@
 ETAGS = @ETAGS@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FILECMD = @FILECMD@
 FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
 FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
 FREEIPMI_LIBS = @FREEIPMI_LIBS@
@@ -509,11 +510,13 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(LIBCURL_CPPFLAGS)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(LIBCURL_CPPFLAGS)
+depend_libs = $(top_builddir)/src/curl/libslurm_curl.la
 pkglib_LTLIBRARIES = acct_gather_profile_influxdb.la
+acct_gather_profile_influxdb_la_DEPENDENCIES = $(depend_libs)
 acct_gather_profile_influxdb_la_SOURCES = acct_gather_profile_influxdb.c
 acct_gather_profile_influxdb_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-acct_gather_profile_influxdb_la_LIBADD = $(LIBCURL)
+acct_gather_profile_influxdb_la_LIBADD = $(depend_libs) $(LIBCURL)
 all: all-am
 
 .SUFFIXES:
@@ -805,6 +808,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+force:
+$(acct_gather_profile_influxdb_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

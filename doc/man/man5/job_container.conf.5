@@ -1,4 +1,4 @@
-.TH "job_container.conf" "5" "Slurm Configuration File" "November 2022" "Slurm Configuration File"
+.TH "job_container.conf" "5" "Slurm Configuration File" "November 2024" "Slurm Configuration File"
 
 .SH "NAME"
 job_container.conf \- Slurm configuration file for job_container/tmpfs plugin
@@ -71,12 +71,48 @@ when trying to mount and unmount the private directories for the job.
 .IP
 
 .TP
+\fBCloneNSScript\fR
+Specify fully qualified pathname of an optional initialization script. This
+script is run fter the namespace construction of a job. This script will be
+provided the SLURM_NS environment variable to allow the script to join the
+newly created namespate and do further setup work. This parameter is optional.
+.IP
+
+.TP
+\fBCloneNSScript_Wait\fR
+The number of seconds to wait for the CloneNSScript to complete before
+considering the script failed. The default value is 10 seconds.
+.IP
+
+.TP
+\fBCloneNSEpilog\fR
+Specify fully qualified pathname of an optional epilog script. This script runs
+just before the namespace is torn down. This script will be provided the
+SLURM_NS environment variable to allow the script to join the soon to be
+removed namespate and do any cleanup work. This parameter is optional.
+.IP
+
+.TP
+\fBCloneNSEpilog_Wait\fR
+The number of seconds to wait for the CloneNSEpilog to complete before
+considering the script failed. The default value is 10 seconds.
+.IP
+
+.TP
 \fBDirs\fR
 A list of mount points separated with commas to create private mounts for.
 This parameter is optional and if not specified it defaults to "/tmp,/dev/shm".
 
 \fBNOTE\fR: /dev/shm has special handling, and instead of a bind mount is always
 a fresh tmpfs filesystem.
+.IP
+
+.TP
+\fBEntireStepInNS\fR
+Specifying fBEntireStepInNS=true will pivot all slurmstepd processes (excluding
+the external step, which is tasked with creating the namespace) into the
+constructed namespace. This will cause issues if certain paths such as
+SlurmdSpoolDir as inaccessible. This parameter is optional.
 .IP
 
 .TP

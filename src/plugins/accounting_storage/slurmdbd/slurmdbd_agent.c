@@ -65,7 +65,7 @@ persist_conn_t *slurmdbd_conn = NULL;
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
-static List      agent_list     = (List) NULL;
+static list_t *agent_list = NULL;
 static pthread_t agent_tid      = 0;
 
 static bool      halt_agent          = 0;
@@ -322,7 +322,6 @@ static void _load_dbd_state(void)
 			      dbd_fname);
 	} else {
 		char *ver_str = NULL;
-		uint32_t ver_str_len;
 
 		buffer = _load_dbd_rec(fd);
 		if (buffer == NULL)
@@ -330,7 +329,7 @@ static void _load_dbd_state(void)
 		/* This is set to the end of the buffer for send so we
 		   need to set it back to 0 */
 		set_buf_offset(buffer, 0);
-		safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+		safe_unpackstr(&ver_str, buffer);
 		debug3("Version string in dbd_state header is %s", ver_str);
 	unpack_error:
 		FREE_NULL_BUFFER(buffer);

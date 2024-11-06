@@ -41,12 +41,12 @@
 #include "src/common/xstring.h"
 
 /*
- * Given a List of sock_gres_t entries, return a string identifying the
+ * Given a list of sock_gres_t entries, return a string identifying the
  * count of each GRES available on this set of nodes
  * IN sock_gres_list - count of GRES available in this group of nodes
  * RET xfree the returned string
  */
-extern char *gres_sched_str(List sock_gres_list)
+extern char *gres_sched_str(list_t *sock_gres_list)
 {
 	list_itr_t *iter;
 	sock_gres_t *sock_data;
@@ -88,7 +88,7 @@ extern char *gres_sched_str(List sock_gres_list)
  * Clear GRES allocation info for all job GRES at start of scheduling cycle
  * Return TRUE if any gres_per_job constraints to satisfy
  */
-extern bool gres_sched_init(List job_gres_list)
+extern bool gres_sched_init(list_t *job_gres_list)
 {
 	list_itr_t *iter;
 	gres_state_t *gres_state_job;
@@ -114,7 +114,7 @@ extern bool gres_sched_init(List job_gres_list)
 /*
  * Return TRUE if all gres_per_job specifications are satisfied
  */
-extern bool gres_sched_test(List job_gres_list, uint32_t job_id)
+extern bool gres_sched_test(list_t *job_gres_list, uint32_t job_id)
 {
 	list_itr_t *iter;
 	gres_state_t *gres_state_job;
@@ -222,7 +222,7 @@ static void _gres_per_job_reduce_res_cores(bitstr_t *avail_core,
  * IN/OUT avail_cores_per_sock - Number of cores per socket available
  * IN/OUT sock_gres_list - Per socket GRES availability on this node
  *			   (sock_gres_t). Updates total_cnt
- * IN job_gres_list - List of job's GRES requirements (gres_state_job_t)
+ * IN job_gres_list - list of job's GRES requirements (gres_state_job_t)
  * IN res_cores_per_gpu - Number of restricted cores per gpu
  * IN sockets - Number of sockets on the node
  * IN cores_per_socket - Number of cores on each socket on the node
@@ -234,8 +234,8 @@ static void _gres_per_job_reduce_res_cores(bitstr_t *avail_core,
 extern bool gres_sched_add(uint16_t *avail_cpus,
 			   bitstr_t *avail_core,
 			   uint16_t *avail_cores_per_sock,
-			   List sock_gres_list,
-			   List job_gres_list,
+			   list_t *sock_gres_list,
+			   list_t *job_gres_list,
 			   uint16_t res_cores_per_gpu,
 			   int sockets,
 			   uint16_t cores_per_socket,
@@ -333,14 +333,14 @@ extern bool gres_sched_add(uint16_t *avail_cpus,
 }
 
 /*
- * Create/update List GRES that can be made available on the specified node
- * IN/OUT consec_gres - List of sock_gres_t that can be made available on
+ * Create/update list GRES that can be made available on the specified node
+ * IN/OUT consec_gres - list of sock_gres_t that can be made available on
  *			a set of nodes
- * IN job_gres_list - List of job's GRES requirements (gres_job_state_t)
+ * IN job_gres_list - list of job's GRES requirements (gres_job_state_t)
  * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
  */
-extern void gres_sched_consec(List *consec_gres, List job_gres_list,
-			      List sock_gres_list)
+extern void gres_sched_consec(list_t **consec_gres, list_t *job_gres_list,
+			      list_t *sock_gres_list)
 {
 	list_itr_t *iter;
 	gres_state_t *gres_state_job;
@@ -382,7 +382,7 @@ extern void gres_sched_consec(List *consec_gres, List job_gres_list,
  * IN sock_gres_list - available GRES in a set of nodes, data structure built
  *		       by gres_job_sched_consec()
  */
-extern bool gres_sched_sufficient(List job_gres_list, List sock_gres_list)
+extern bool gres_sched_sufficient(list_t *job_gres_list, list_t *sock_gres_list)
 {
 	list_itr_t *iter;
 	gres_state_t *gres_state_job;

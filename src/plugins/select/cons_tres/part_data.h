@@ -40,7 +40,7 @@
 
 /* a partition's per-row core allocation bitmap arrays (1 bitmap per node) */
 typedef struct {
-	struct job_resources **job_list;/* List of jobs in this row */
+	struct job_resources **job_list;/* list of jobs in this row */
 	uint32_t job_list_size;		/* Size of job_list array */
 	uint32_t num_jobs;		/* Number of occupied entries in
 					 * job_list array */

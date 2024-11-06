@@ -76,7 +76,7 @@ strong_alias(eio_signal_shutdown,	slurm_eio_signal_shutdown);
 strong_alias(eio_signal_wakeup,		slurm_eio_signal_wakeup);
 
 /*
- * outside threads can stick new objects on the new_objs List and
+ * outside threads can stick new objects on the new_objs list and
  * the eio thread will move them to the main obj_list the next time
  * it wakes up.
  */
@@ -87,8 +87,8 @@ struct eio_handle_components {
 	pthread_mutex_t shutdown_mutex;
 	time_t shutdown_time;
 	uint16_t shutdown_wait;
-	List obj_list;
-	List new_objs;
+	list_t *obj_list;
+	list_t *new_objs;
 };
 
 typedef struct {
@@ -101,11 +101,11 @@ typedef struct {
 
 static int          _poll_internal(struct pollfd *pfds, unsigned int nfds,
 				   time_t shutdown_time);
-static unsigned int _poll_setup_pollfds(struct pollfd *, eio_obj_t **, List);
-static void         _poll_dispatch(struct pollfd *, unsigned int, eio_obj_t **,
-		                   List objList);
-static void         _poll_handle_event(short revents, eio_obj_t *obj,
-		                       List objList);
+static unsigned int _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[],
+					list_t *l);
+static void _poll_dispatch(struct pollfd *pfds, unsigned int nfds,
+			   eio_obj_t *map[], list_t *objList);
+static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList);
 
 eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 {
@@ -164,7 +164,7 @@ bool eio_message_socket_readable(eio_obj_t *obj)
 	return true;
 }
 
-int eio_message_socket_accept(eio_obj_t *obj, List objs)
+int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 {
 	int fd;
 	slurm_addr_t addr;
@@ -406,7 +406,7 @@ static int _foreach_helper_setup_pollfds(void *x, void *arg)
 }
 
 static unsigned int _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[],
-					List l)
+					list_t *l)
 {
 	unsigned int  nfds = 0;
 	foreach_pollfd_t args = {
@@ -426,7 +426,7 @@ static unsigned int _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[],
 }
 
 static void _poll_dispatch(struct pollfd *pfds, unsigned int nfds,
-			   eio_obj_t *map[], List objList)
+			   eio_obj_t *map[], list_t *objList)
 {
 	int i;
 
@@ -436,7 +436,7 @@ static void _poll_dispatch(struct pollfd *pfds, unsigned int nfds,
 	}
 }
 
-static void _poll_handle_event(short revents, eio_obj_t *obj, List objList)
+static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList)
 {
 	bool read_called = false;
 	bool write_called = false;
@@ -563,7 +563,7 @@ void eio_new_obj(eio_handle_t *eio, eio_obj_t *obj)
 	eio_signal_wakeup(eio);
 }
 
-bool eio_remove_obj(eio_obj_t *obj, List objs)
+extern bool eio_remove_obj(eio_obj_t *obj, list_t *objs)
 {
 	xassert(obj != NULL);
 
