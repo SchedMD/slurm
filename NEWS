@@ -259,6 +259,9 @@ documents those changes that are of interest to users and administrators.
     them has a value of 0.
  -- slurmctld - Add a grace period to ensure the agent retry queue is properly
     flushed during shutdown.
+ -- Removed src/slurmrestd/plugins/openapi/slurmdbd/openapi.json from source
+    repository. slurmrest should always be used to generate a new OpenAPI
+    schema (aka openapi.json or openapi.yaml) after compilation.
 
 * Changes in Slurm 24.05.5
 ==========================
