@@ -1484,8 +1484,12 @@ static void *_agent_init(void *arg)
 					     &ts);
 		}
 		if (slurmctld_config.shutdown_time) {
-			slurm_mutex_unlock(&pending_mutex);
-			break;
+			if (!retry_list_size() ||
+			    (slurmctld_config.shutdown_time +
+			     AGENT_SHUTDOWN_WAIT < time(NULL))) {
+				slurm_mutex_unlock(&pending_mutex);
+				break;
+			}
 		}
 		mail_too = pending_mail;
 		min_wait = pending_wait_time;

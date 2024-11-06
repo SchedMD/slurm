@@ -255,6 +255,8 @@ documents those changes that are of interest to users and administrators.
       'scontrol ping --yaml'
  -- Prevent jobs without reservations from delaying jobs in reservations with
     flags FLEX or ANY_NODES in the main scheduler.
+ -- slurmctld - Add a grace period to ensure the agent retry queue is properly
+    flushed during shutdown.
 
 * Changes in Slurm 24.05.5
 ==========================
