@@ -515,6 +515,9 @@ static void _pack_acct_policy_limit(acct_policy_limit_set_t *limit_set,
  *	a buffer
  * IN detail_ptr - pointer to job details for which information is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
+ *
+ * WARNING: this contains sensitive data. e.g., the x11_magic_cookie.
+ * DO NOT use this in client-facing RPCs.
  */
 static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 			      uint16_t protocol_version)
@@ -597,6 +600,11 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		pack16(detail_ptr->segment_size, buffer);
 		pack16(detail_ptr->resv_port_cnt, buffer);
 		packstr(detail_ptr->qos_req, buffer);
+
+		pack16(detail_ptr->x11, buffer);
+		packstr(detail_ptr->x11_magic_cookie, buffer);
+		packstr(detail_ptr->x11_target, buffer);
+		pack16(detail_ptr->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 
 		pack32(detail_ptr->orig_min_cpus, buffer);	/* subject to change */
@@ -1278,6 +1286,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	char *submit_line = NULL, *prefer = NULL;
 	char *env_hash = NULL, *script_hash = NULL, *qos_req = NULL;
+	char *x11_magic_cookie = NULL, *x11_target = NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
 	uint32_t pn_min_cpus, pn_min_tmp_disk;
@@ -1291,6 +1300,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint16_t cpu_bind_type, mem_bind_type;
 	uint16_t segment_size = 0;
 	uint16_t resv_port_cnt = NO_VAL16;
+	uint16_t x11 = 0, x11_target_port = 0;
 	uint8_t open_mode, overcommit, prolog_running;
 	uint8_t share_res, whole_node, features_use = 0;
 	time_t begin_time, accrue_time = 0, submit_time;
@@ -1374,6 +1384,11 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack16(&segment_size, buffer);
 		safe_unpack16(&resv_port_cnt, buffer);
 		safe_unpackstr(&qos_req, buffer);
+
+		safe_unpack16(&x11, buffer);
+		safe_unpackstr(&x11_magic_cookie, buffer);
+		safe_unpackstr(&x11_target, buffer);
+		safe_unpack16(&x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
@@ -1560,6 +1575,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	xfree(job_ptr->details->req_nodes);
 	xfree(job_ptr->details->work_dir);
 	xfree(job_ptr->details->qos_req);
+	xfree(job_ptr->details->x11_magic_cookie);
+	xfree(job_ptr->details->x11_target);
 
 	/* now put the details into the job record */
 	job_ptr->details->acctg_freq = acctg_freq;
@@ -1595,6 +1612,10 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 
 	job_ptr->details->script_hash = script_hash;
 	job_ptr->details->qos_req = qos_req;
+	job_ptr->details->x11 = x11;
+	job_ptr->details->x11_magic_cookie = x11_magic_cookie;
+	job_ptr->details->x11_target = x11_target;
+	job_ptr->details->x11_target_port = x11_target_port;
 
 	switch (features_use) {
 	case 0:
@@ -1677,6 +1698,8 @@ unpack_error:
 	xfree(req_nodes);
 	xfree(script_hash);
 	xfree(work_dir);
+	xfree(x11_magic_cookie);
+	xfree(x11_target);
 	return SLURM_ERROR;
 }
 
@@ -1991,6 +2014,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/*
+ * WARNING: this contains sensitive data. e.g., the x11_magic_cookie.
+ * DO NOT use this in client-facing RPCs.
+ */
 extern int job_record_pack(job_record_t *dump_job_ptr,
 			   int tres_cnt,
 			   buf_t *buffer,

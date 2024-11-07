@@ -701,6 +701,10 @@ extern int job_record_unpack_common(job_record_t *dump_job_ptr,
 				    buf_t *buffer,
 				    uint16_t protocol_version);
 
+/*
+ * WARNING: this contains sensitive data. e.g., the x11_magic_cookie.
+ * DO NOT use this in client-facing RPCs.
+ */
 extern int job_record_pack(job_record_t *dump_job_ptr,
 			   int tres_cnt,
 			   buf_t *buffer,
