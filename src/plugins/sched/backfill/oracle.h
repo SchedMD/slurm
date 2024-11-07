@@ -40,7 +40,8 @@
 #ifndef _SLURM_ORACLE_H
 #define _SLURM_ORACLE_H
 
-#define MAX_ORACLE_DEPTH 10
+#define MAX_ORACLE_DEPTH 30
+#define ORACLE_DEPTH 10
 
 typedef struct bf_slot {
 	time_t start;
@@ -52,6 +53,8 @@ typedef struct bf_slot {
 	uint32_t job_score;
 	uint32_t cluster_score;
 } bf_slot_t;
+
+extern int bf_topopt_iterations;
 
 bool oracle(job_record_t *job_ptr, bitstr_t *job_bitmap, time_t later_start,
 	    uint32_t *time_limit, uint32_t *boot_time, bf_slot_t *slots,

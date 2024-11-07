@@ -1023,6 +1023,17 @@ static void _load_config(void)
 		bf_topopt_enable = false;
 	}
 
+	if ((tmp_ptr = xstrcasestr(sched_params, "bf_topopt_iterations="))) {
+		bf_topopt_iterations = atoi(tmp_ptr + 21);
+		if ((bf_topopt_iterations <= 1) ||
+		    (bf_topopt_iterations > MAX_ORACLE_DEPTH)) {
+			error("Invalid backfill scheduler bf_topopt_iterations: %d",
+			      bf_topopt_iterations);
+			bf_topopt_iterations = ORACLE_DEPTH;
+		}
+	} else {
+		bf_topopt_iterations = ORACLE_DEPTH;
+	}
 	if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_cnt=")))
 		max_rpc_cnt = atoi(tmp_ptr + 12);
 	else if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_count=")))
@@ -2074,7 +2085,7 @@ static void _attempt_backfill(void)
 	resv_exc_t resv_exc = { 0 };
 	will_run_data_t will_run_data = { 0 };
 	bool overlap_tested = false;
-	bf_slot_t slots[MAX_ORACLE_DEPTH];
+	bf_slot_t *slots;
 	int used_slot = 0;
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock = {
@@ -2185,7 +2196,8 @@ static void _attempt_backfill(void)
 	bit_clear_all(bf_ignore_node_bitmap);
 
 	if (bf_topopt_enable) {
-		for (int i = 0; i < MAX_ORACLE_DEPTH; i++) {
+		slots = xcalloc(bf_topopt_iterations, sizeof(bf_slot_t));
+		for (int i = 0; i < bf_topopt_iterations; i++) {
 			slots[i].job_bitmap = bit_alloc(node_record_count);
 			slots[i].job_mask = bit_alloc(node_record_count);
 			slots[i].cluster_bitmap = bit_alloc(node_record_count);
@@ -3620,11 +3632,12 @@ skip_start:
 	xfree(nodes_used);
 
 	if (bf_topopt_enable) {
-		for (int i = 0; i < MAX_ORACLE_DEPTH; i++) {
+		for (int i = 0; i < bf_topopt_iterations; i++) {
 			FREE_NULL_BITMAP(slots[i].job_bitmap);
 			FREE_NULL_BITMAP(slots[i].job_mask);
 			FREE_NULL_BITMAP(slots[i].cluster_bitmap);
 		}
+		xfree(slots);
 	}
 	gettimeofday(&bf_time2, NULL);
 	_do_diag_stats(&bf_time1, &bf_time2, node_space_recs);

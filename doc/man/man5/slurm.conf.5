@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "October 2024" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "November 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4037,6 +4037,12 @@ through backfill and utilize the oracle function(). This can be done by setting
 
 It's also recommended to run with
 \fBSchedulerParameters=bf_running_job_reserve\fR for better planning.
+.IP
+
+.TP
+\fBbf_topopt_iterations\fR
+The number of successive backfill map slots that a job may be delayed.
+This option applies only when the \fBbf_topopt_enable\fR is set.
 .IP
 
 .TP

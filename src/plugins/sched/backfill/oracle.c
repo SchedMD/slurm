@@ -42,6 +42,8 @@
 #include "backfill.h"
 #include "oracle.h"
 
+int bf_topopt_iterations;
+
 static int _get_bitmap_from_nspace(node_space_map_t *node_space,
 				   uint32_t start_time, bitstr_t *out_bitmap,
 				   uint32_t *fragmentation)
@@ -70,7 +72,7 @@ static void _add_slot(job_record_t *job_ptr, bitstr_t *job_bitmap,
 	uint32_t previous_cluster_score;
 	int rc;
 
-	if (*used_slots >= MAX_ORACLE_DEPTH)
+	if (*used_slots >= bf_topopt_iterations)
 		return;
 
 	new_slot = &(slots[*used_slots]);
@@ -132,7 +134,7 @@ bool oracle(job_record_t *job_ptr, bitstr_t *job_bitmap, time_t later_start,
 	/*
 	 * Alwasys if posible add a new slot to slots array
 	 */
-	if (*used_slots < MAX_ORACLE_DEPTH)
+	if (*used_slots < bf_topopt_iterations)
 		_add_slot(job_ptr, job_bitmap, *time_limit, *boot_time, slots,
 			  used_slots, node_space);
 
@@ -143,7 +145,7 @@ bool oracle(job_record_t *job_ptr, bitstr_t *job_bitmap, time_t later_start,
 	/*
 	 * Check later if later_start set and we have space in slots array
 	 */
-	if (later_start && *used_slots < MAX_ORACLE_DEPTH)
+	if (later_start && *used_slots < bf_topopt_iterations)
 		return true;
 
 	if (*used_slots > 0) {
