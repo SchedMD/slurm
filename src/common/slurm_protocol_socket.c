@@ -593,7 +593,6 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 
 		if (((rc != ECONNREFUSED) && (rc != ETIMEDOUT)) ||
 		    (!retry) || (retry_cnt >= PORT_RETRIES)) {
-			errno = rc;
 			goto error;
 		}
 
