@@ -2383,7 +2383,7 @@ fail:
 	return NULL;
 }
 
-extern int cgroup_p_step_start_oom_mgr(void)
+extern int cgroup_p_step_start_oom_mgr(stepd_step_rec_t *step)
 {
 	/* Just return, no need to start anything. */
 	return SLURM_SUCCESS;

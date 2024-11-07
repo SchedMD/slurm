@@ -362,9 +362,10 @@ extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
  * reliable method since events can be triggered with more than just OOMs, e.g.
  * rmdirs.
  *
+ * IN job - Step record.
  * RET SLURM_SUCCESS if monitoring thread is started, SLURM_ERROR otherwise.
  */
-extern int cgroup_g_step_start_oom_mgr(void);
+extern int cgroup_g_step_start_oom_mgr(stepd_step_rec_t *step);
 
 /*
  * Signal the monitoring thread with a stop message and get the results.

@@ -253,7 +253,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *step)
 	if (_memcg_initialize(step, step->step_mem, true) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (cgroup_g_step_start_oom_mgr() == SLURM_SUCCESS)
+	if (cgroup_g_step_start_oom_mgr(step) == SLURM_SUCCESS)
 		oom_mgr_started = true;
 
 	/* Attach the slurmstepd to the step memory cgroup. */

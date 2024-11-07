@@ -67,7 +67,7 @@ typedef struct {
         int	(*constrain_apply)	(cgroup_ctl_type_t sub,
                                          cgroup_level_t level,
                                          uint32_t task_id);
-	int	(*step_start_oom_mgr)	(void);
+	int	(*step_start_oom_mgr)	(stepd_step_rec_t *step);
 	cgroup_oom_t *(*step_stop_oom_mgr) (stepd_step_rec_t *step);
 	int	(*task_addto)		(cgroup_ctl_type_t sub,
 					 stepd_step_rec_t *step, pid_t pid,
@@ -944,14 +944,14 @@ extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
 	return (*(ops.constrain_apply))(sub, level, task_id);
 }
 
-extern int cgroup_g_step_start_oom_mgr(void)
+extern int cgroup_g_step_start_oom_mgr(stepd_step_rec_t *step)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (*(ops.step_start_oom_mgr))();
+	return (*(ops.step_start_oom_mgr))(step);
 }
 
 extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *step)
