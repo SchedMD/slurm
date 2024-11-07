@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "September 2024" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "November 2024" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -291,16 +291,16 @@ PlannedCPU          PlannedCPURAW       Priority            QOS
 QOSRAW              QOSREQ              Reason              ReqCPUFreq
 ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin       ReqCPUS
 ReqMem              ReqNodes            ReqTRES             Reservation
-ReservationId       Restarts            Start               State
-StdErr              StdIn               StdOut              Submit
-SubmitLine          Suspended           SystemComment       SystemCPU
-Timelimit           TimelimitRaw        TotalCPU            TRESUsageInAve
-TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin
-TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve
-TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin
-TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot     UID
-User                UserCPU             WCKey               WCKeyID
-WorkDir
+ReservationId       Restarts            SLUID               Start
+State               StdErr              StdIn               StdOut
+Submit              SubmitLine          Suspended           SystemComment
+SystemCPU           Timelimit           TimelimitRaw        TotalCPU
+TRESUsageInAve      TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask
+TRESUsageInMin      TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot
+TRESUsageOutAve     TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask
+TRESUsageOutMin     TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot
+UID                 User                UserCPU             WCKey
+WCKeyID             WorkDir
 .ft 1
 .fi
 .RE

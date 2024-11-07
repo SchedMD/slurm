@@ -4572,7 +4572,7 @@ extern int acct_policy_update_pending_job(job_record_t *job_ptr)
 		last_job_update = time(NULL);
 		debug("limits changed for %pJ: updating accounting", job_ptr);
 		/* Update job record in accounting to reflect changes */
-		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	}
 
 	return rc;

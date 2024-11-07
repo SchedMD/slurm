@@ -99,6 +99,7 @@ extern void print_fields_time_from_mins(print_field_t *field,
 					void *input, int last);
 extern void print_fields_time_from_secs(print_field_t *field,
 					void *input, int last);
+extern void print_fields_sluid(print_field_t *field, void *input, int last);
 extern void print_fields_char_list(print_field_t *field, void *input, int last);
 extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job);
 

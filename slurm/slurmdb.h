@@ -750,6 +750,7 @@ struct slurmdb_cluster_rec {
 			* Size of each dimension For now only on
 			* a bluegene cluster.  DOESN'T GET
 			* PACKED, is set up in slurmdb_get_info_cluster */
+	uint16_t id; /* unique id */
 	slurmdb_cluster_fed_t fed; /* Federation information */
 	uint32_t flags;      /* set of CLUSTER_FLAG_* */
 	pthread_mutex_t lock; /* For convenience only. DOESN"T GET PACKED */

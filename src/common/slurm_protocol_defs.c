@@ -2816,8 +2816,6 @@ extern char *job_state_string_complete(uint32_t state)
 	/* Process JOB_STATE_FLAGS */
 	if (state & JOB_LAUNCH_FAILED)
 		xstrcat(state_str, ",LAUNCH_FAILED");
-	if (state & JOB_UPDATE_DB)
-		xstrcat(state_str, ",UPDATE_DB");
 	if (state & JOB_COMPLETING)
 		xstrcat(state_str, ",COMPLETING");
 	if (state & JOB_CONFIGURING)

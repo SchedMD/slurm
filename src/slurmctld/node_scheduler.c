@@ -2280,7 +2280,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	 * happening right away.  If the job has already become eligible and
 	 * registered in the db then the start message.
 	 */
-	jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
+	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	prolog_slurmctld(job_ptr);
 
 	job_ptr->end_time = now;
@@ -3002,7 +3002,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		goto cleanup;
 	}
 
-	job_ptr->db_flags &= SLURMDB_JOB_CLEAR_SCHED;
+	job_ptr->db_flags &= ~SLURMDB_JOB_CLEAR_SCHED;
 	job_ptr->db_flags |= scheduler_type;
 
 	/* This could be set in the select plugin so we want to keep the flag */
@@ -3054,7 +3054,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	 * job if happening right away.  If the job has already
 	 * become eligible and registered in the db then the start message.
 	 */
-	jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
+	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	switch_g_job_start(job_ptr);
 	prolog_slurmctld(job_ptr);

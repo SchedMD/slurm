@@ -75,6 +75,7 @@
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/run_command.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -295,7 +296,7 @@ static void         _update_nice(void);
 static void _update_pidfile(void);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
 static void _usage(void);
-static bool         _verify_clustername(void);
+static void _verify_clustername(void);
 static void *       _wait_primary_prog(void *arg);
 
 static void _send_reconfig_replies(void)
@@ -470,13 +471,30 @@ static void _reopen_stdio(void)
 
 static void _init_db_conn(void)
 {
+	int rc;
+
 	if (acct_db_conn)
 		acct_storage_g_close_connection(&acct_db_conn);
 
 	acct_db_conn = acct_storage_g_get_connection(
 		0, NULL, false, slurm_conf.cluster_name);
-	clusteracct_storage_g_register_ctld(acct_db_conn,
-					    slurm_conf.slurmctld_port);
+	rc = clusteracct_storage_g_register_ctld(acct_db_conn,
+						 slurm_conf.slurmctld_port);
+
+	if (rc & RC_AS_CLUSTER_ID) {
+		uint16_t id = rc & ~RC_AS_CLUSTER_ID;
+		if (slurm_conf.cluster_id && (id != slurm_conf.cluster_id)) {
+			fatal("CLUSTER ID MISMATCH.\n"
+			      "slurmctld has been started with \"ClusterID=%u\"  from the state files in StateSaveLocation, but the DBD thinks it should be \"%u\".\n"
+			      "Running multiple clusters from a shared StateSaveLocation WILL CAUSE CORRUPTION.\n"
+			      "Remove %s/clustername to override this safety check if this is intentional.",
+			      slurm_conf.cluster_id, id,
+			      slurm_conf.state_save_location);
+		} else if (!slurm_conf.cluster_id) {
+			slurm_conf.cluster_id = id;
+			_create_clustername_file();
+		}
+	}
 }
 
 /*
@@ -498,6 +516,10 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 
 		error("Retrying initial connection to slurmdbd");
 		_init_db_conn();
+		if (!slurm_conf.cluster_id) {
+			error("Still don't know my ClusterID");
+			continue;
+		}
 		if (!assoc_mgr_init(acct_db_conn, args, errno))
 			break;
 	}
@@ -517,7 +539,6 @@ int main(int argc, char **argv)
 		.prolog_slurmctld = prep_prolog_slurmctld_callback,
 		.epilog_slurmctld = prep_epilog_slurmctld_callback,
 	};
-	bool create_clustername_file;
 	bool backup_has_control = false;
 	bool slurmscriptd_mode = false;
 	char *conf_file;
@@ -603,7 +624,7 @@ int main(int argc, char **argv)
 	 * This needs to be done before we kill the old one just in case we
 	 * fail.
 	 */
-	create_clustername_file = _verify_clustername();
+	_verify_clustername();
 
 	_update_nice();
 	if (original)
@@ -663,9 +684,6 @@ int main(int argc, char **argv)
 	 */
 	set_slurmctld_state_loc();
 
-	if (create_clustername_file)
-		_create_clustername_file();
-
 	if (daemonize || setwd)
 		_set_work_dir();
 
@@ -720,8 +738,9 @@ int main(int argc, char **argv)
 		      slurm_conf.accounting_storage_type);
 	}
 
-	info("%s version %s started on cluster %s",
-	     slurm_prog_name, SLURM_VERSION_STRING, slurm_conf.cluster_name);
+	info("%s version %s started on cluster %s(%u)",
+	     slurm_prog_name, SLURM_VERSION_STRING, slurm_conf.cluster_name,
+	     slurm_conf.cluster_id);
 	if ((error_code = gethostname_short(slurmctld_config.node_name_short,
 					    HOST_NAME_MAX)))
 		fatal("getnodename_short error %s", slurm_strerror(error_code));
@@ -2615,12 +2634,19 @@ extern void ctld_assoc_mgr_init(void)
 
 		error("Association database appears down, reading from state files.");
 
-		if ((load_assoc_mgr_last_tres() != SLURM_SUCCESS) ||
+		if (!slurm_conf.cluster_id ||
+		    (load_assoc_mgr_last_tres() != SLURM_SUCCESS) ||
 		    (load_assoc_mgr_state() != SLURM_SUCCESS)) {
 			error("Unable to get any information from the state file");
 			_retry_init_db_conn(&assoc_init_arg);
 		}
 	}
+
+	if (!slurm_conf.cluster_id) {
+		slurm_conf.cluster_id = generate_cluster_id();
+		_create_clustername_file();
+	}
+	sluid_init(slurm_conf.cluster_id, 0);
 
 	/* Now load the usage from a flat file since it isn't kept in
 	   the database
@@ -3242,26 +3268,34 @@ static void _update_nice(void)
 		error("Unable to reset nice value to %d: %m", new_nice);
 }
 
-/* Verify that ClusterName from slurm.conf matches the state directory.
- * If mismatched exit to protect state files from corruption.
- * If the clustername file does not exist, return true so we can create it later
- * after dropping privileges. */
-static bool _verify_clustername(void)
+/*
+ * Verify that ClusterName from slurm.conf matches the state directory.
+ * If mismatched, exit immediately to protect state files from corruption.
+ */
+static void _verify_clustername(void)
 {
 	FILE *fp;
 	char *filename = NULL;
 	char name[512] = {0};
-	bool create_file = false;
 
 	xstrfmtcat(filename, "%s/clustername", slurm_conf.state_save_location);
 
 	if ((fp = fopen(filename, "r"))) {
+		char *pipe;
+
 		/* read value and compare */
 		if (!fgets(name, sizeof(name), fp)) {
 			error("%s: reading cluster name from clustername file",
 			      __func__);
 		}
 		fclose(fp);
+
+		pipe = xstrchr(name, '|');
+		if (pipe) {
+			pipe[0] = '\0';
+			slurm_conf.cluster_id = slurm_atoul(pipe+1);
+		}
+
 		if (xstrcmp(name, slurm_conf.cluster_name)) {
 			fatal("CLUSTER NAME MISMATCH.\n"
 			      "slurmctld has been started with \"ClusterName=%s\", but read \"%s\" from the state files in StateSaveLocation.\n"
@@ -3270,34 +3304,37 @@ static bool _verify_clustername(void)
 			      slurm_conf.cluster_name, name, filename);
 			exit(1);
 		}
-	} else
-		create_file = true;
+	}
 
 	xfree(filename);
-
-	return create_file;
 }
 
 static void _create_clustername_file(void)
 {
 	FILE *fp;
 	char *filename = NULL;
+	char *tmp_str = xstrdup_printf("%s|%u",
+				       slurm_conf.cluster_name,
+				       slurm_conf.cluster_id);
 
 	filename = xstrdup_printf("%s/clustername",
 	                          slurm_conf.state_save_location);
 
-	debug("creating clustername file: %s", filename);
+	info("creating clustername file: ClusterName=%s ClusterID=%u",
+	     slurm_conf.cluster_name, slurm_conf.cluster_id);
+
 	if (!(fp = fopen(filename, "w"))) {
 		fatal("%s: failed to create file %s", __func__, filename);
 		exit(1);
 	}
 
-	if (fputs(slurm_conf.cluster_name, fp) < 0) {
+	if (fputs(tmp_str, fp) < 0) {
 		fatal("%s: failed to write to file %s", __func__, filename);
 		exit(1);
 	}
 	fclose(fp);
 
+	xfree(tmp_str);
 	xfree(filename);
 }
 

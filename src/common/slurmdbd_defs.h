@@ -46,6 +46,8 @@
 #include "src/common/list.h"
 #include "src/interfaces/accounting_storage.h"
 
+#define RC_AS_CLUSTER_ID SLURM_BIT(31)
+
 /* Slurm DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
 typedef enum {

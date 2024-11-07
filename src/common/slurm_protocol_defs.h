@@ -118,14 +118,16 @@
 	(_X->job_state & JOB_REQUEUE)
 #define IS_JOB_FED_REQUEUED(_X)		\
 	(_X->job_state & JOB_REQUEUE_FED)
-#define IS_JOB_UPDATE_DB(_X)		\
-	(_X->job_state & JOB_UPDATE_DB)
 #define IS_JOB_REVOKED(_X)		\
 	(_X->job_state & JOB_REVOKED)
 #define IS_JOB_SIGNALING(_X)		\
 	(_X->job_state & JOB_SIGNALING)
 #define IS_JOB_STAGE_OUT(_X)		\
 	(_X->job_state & JOB_STAGE_OUT)
+
+/* DB FLAG state */
+#define IS_JOB_IN_DB(_X) \
+	(_X->db_flags & SLURMDB_JOB_FLAG_START_R)
 
 /* Defined node states */
 #define IS_NODE_UNKNOWN(_X)		\

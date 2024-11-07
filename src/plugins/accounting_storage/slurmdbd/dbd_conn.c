@@ -332,6 +332,10 @@ extern int dbd_conn_send_recv_rc_comment_msg(uint16_t rpc_version,
 		persist_rc_msg_t *msg = resp.data;
 		*resp_code = msg->rc;
 
+		if ((msg->ret_info == DBD_REGISTER_CTLD) &&
+		    (msg->rc & RC_AS_CLUSTER_ID))
+			msg->rc = SLURM_SUCCESS;
+
 		if (msg->rc != SLURM_SUCCESS &&
 		    msg->rc != ACCOUNTING_FIRST_REG &&
 		    msg->rc != ACCOUNTING_TRES_CHANGE_DB &&

@@ -39,6 +39,7 @@
 #include "src/common/print_fields.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
+#include "src/common/sluid.h"
 
 int print_fields_parsable_print = 0;
 int print_fields_have_header = 1;
@@ -415,6 +416,32 @@ extern void print_fields_time_from_secs(print_field_t *field,
 		else
 			printf("%-*s ", abs_len, time_buf);
 	}
+}
+
+extern void print_fields_sluid(print_field_t *field, void *input, int last)
+{
+	int abs_len = abs(field->len);
+	sluid_t sluid = 0;
+	char *sluid_str = NULL;
+
+	if (input)
+		sluid = *(sluid_t *) input;
+
+	sluid_str = sluid2str(sluid);
+
+	if ((print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING)
+	    && last)
+		printf("%s", sluid_str);
+	else if (print_fields_parsable_print && !fields_delimiter)
+		printf("%s|", sluid_str);
+	else if (print_fields_parsable_print && fields_delimiter)
+		printf("%s%s", sluid_str, fields_delimiter);
+	else if (field->len == abs_len)
+		printf("%*s ", abs_len, sluid_str);
+	else
+		printf("%-*s ", abs_len, sluid_str);
+
+	xfree(sluid_str);
 }
 
 extern void print_fields_char_list(print_field_t *field, void *input, int last)

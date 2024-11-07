@@ -644,6 +644,9 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpackstr(&msg_ptr->container, buffer);
 		safe_unpack32(&msg_ptr->db_flags, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
+		if (msg_ptr->db_index && (msg_ptr->db_index != NO_VAL64)) {
+			msg_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
+		}
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
 		safe_unpackstr(&msg_ptr->gres_used, buffer);
@@ -690,6 +693,9 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpackstr(&msg_ptr->container, buffer);
 		safe_unpack32(&msg_ptr->db_flags, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
+		if (msg_ptr->db_index && (msg_ptr->db_index != NO_VAL64)) {
+			msg_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
+		}
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
 		safe_unpackstr(&msg_ptr->gres_used, buffer);

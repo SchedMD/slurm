@@ -316,19 +316,6 @@ static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static uint32_t max_step_records = NO_VAL;
 
 /*
- * If running with slurmdbd don't run if we don't have an index, else
- * go ahead.
- */
-extern int jobacct_storage_job_start_direct(void *db_conn,
-					    job_record_t *job_ptr)
-{
-	if (slurm_with_slurmdbd() && !job_ptr->db_index)
-		return SLURM_SUCCESS;
-
-	return jobacct_storage_g_job_start(db_conn, job_ptr);
-}
-
-/*
  * Initialize context for acct_storage plugin
  */
 extern int acct_storage_g_init(void)

@@ -42,11 +42,13 @@
 #include "as_mysql_wckey.h"
 
 #include "src/common/assoc_mgr.h"
-#include "src/interfaces/gres.h"
 #include "src/common/parse_time.h"
-#include "src/interfaces/select.h"
-#include "src/interfaces/jobacct_gather.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_time.h"
+
+#include "src/interfaces/gres.h"
+#include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/select.h"
 
 #define MAX_FLUSH_JOBS 500
 
@@ -287,6 +289,7 @@ static uint64_t _get_hash_inx(mysql_conn_t *mysql_conn,
 	char *hash_col = NULL, *type_table = NULL;
 	MYSQL_RES *result = NULL;
 	uint64_t hash_inx = 0;
+	int num_affected = 0;
 
 	switch (flag) {
 	case JOB_SEND_ENV:
@@ -316,10 +319,17 @@ static uint64_t _get_hash_inx(mysql_conn_t *mysql_conn,
 		hash_col, hash);
 
 	hash_inx = mysql_db_insert_ret_id(mysql_conn, query);
+	num_affected = mysql_affected_rows(mysql_conn->db_conn);
 	if (!hash_inx)
 		hash_inx = NO_VAL64;
-	else
+	else if (num_affected == 1) { /* 1 means insert, we need it sent */
 		job_ptr->bit_flags |= flag;
+		DB_DEBUG(DB_JOB, mysql_conn->conn, "%s is a new entry for %u",
+			 hash_col, job_ptr->job_id);
+	} else if (num_affected == 2) /* 2 means dup (already there) */
+		DB_DEBUG(DB_JOB, mysql_conn->conn, "%s is a duplicate for %u",
+			 hash_col, job_ptr->job_id);
+
 	xfree(query);
 
 	mysql_free_result(result);
@@ -493,11 +503,23 @@ no_rollup_change:
 	else if (job_ptr->partition)
 		partition = job_ptr->partition;
 
-	/* Mark the database so we know we have received the start record. */
-	job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
+	/*
+	 * Only jobs < 24.11 will not have a db_index here. This would also be
+	 * likely the first time we have seen this.
+	 * This can be removed 3 versions after 24.11.
+	 */
+	if (!job_ptr->db_index)
+		job_record_set_sluid(job_ptr);
 
-	if (!job_ptr->db_index) {
+	if (!IS_JOB_IN_DB(job_ptr)) {
 		uint64_t env_hash_inx = 0, script_hash_inx = 0;
+
+		/*
+		 * Mark the database so we know we have received the start
+		 * record.
+		 */
+		job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
+
 		/*
 		 * Here we check to see if the env has been added to the
 		 * database or not to inform the slurmctld to send it.
@@ -528,7 +550,7 @@ no_rollup_change:
 
 		xstrfmtcatat(query, &pos,
 			     "insert into \"%s_%s\" "
-			     "(id_job, mod_time, id_array_job, id_array_task, "
+			     "(job_db_inx, id_job, mod_time, id_array_job, id_array_task, "
 			     "het_job_id, het_job_offset, "
 			     "id_assoc, id_qos, id_user, "
 			     "id_group, nodelist, id_resv, timelimit, "
@@ -581,12 +603,12 @@ no_rollup_change:
 			xstrcatat(query, &pos, ", licenses");
 
 		xstrfmtcatat(query, &pos,
-			     ") values (%u, UNIX_TIMESTAMP(), "
+			     ") values (%"PRIu64", %u, UNIX_TIMESTAMP(), "
 			     "%u, %u, %u, %u, %u, %u, %u, %u, "
 			     "'%s', %u, %u, %ld, %ld, %ld, "
 			     "'%s', %u, %u, %u, %u, %"PRIu64", %u, %u, "
 			     "%"PRIu64", %"PRIu64", %u",
-			     job_ptr->job_id,
+			     job_ptr->db_index, job_ptr->job_id,
 			     job_ptr->array_job_id, array_task_id,
 			     job_ptr->het_job_id, het_job_offset,
 			     job_ptr->assoc_id, job_ptr->qos_id,
@@ -658,7 +680,7 @@ no_rollup_change:
 
 		xstrfmtcatat(query, &pos,
 			     ") on duplicate key update "
-			     "job_db_inx=LAST_INSERT_ID(job_db_inx), "
+			     "job_db_inx=VALUES(job_db_inx), "
 			     "id_assoc=%u, id_user=%u, id_group=%u, "
 			     "nodelist='%s', id_resv=%u, timelimit=%u, "
 			     "time_submit=%ld, time_eligible=%ld, "
@@ -746,18 +768,6 @@ no_rollup_change:
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, ", licenses='%s'",
 				     job_ptr->licenses);
-
-		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
-
-		if (!(job_ptr->db_index = mysql_db_insert_ret_id(
-			      mysql_conn, query))) {
-			rc = errno;
-			if ((rc == CR_SERVER_GONE_ERROR) ||
-			    (rc == CR_SERVER_LOST))
-				rc = ESLURM_DB_CONNECTION;
-			else
-				rc = SLURM_ERROR;
-		}
 	} else {
 		xstrfmtcatat(query, &pos,
 			     "update \"%s_%s\" set nodelist='%s', ",
@@ -846,11 +856,10 @@ no_rollup_change:
 			     job_ptr->db_flags, job_ptr->state_reason_prev_db,
 			     begin_time, job_ptr->restart_cnt,
 			     job_ptr->db_index);
-
-		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
 	}
 
+	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
 	if (rc != SLURM_SUCCESS)

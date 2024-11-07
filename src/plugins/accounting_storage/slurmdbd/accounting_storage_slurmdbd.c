@@ -119,10 +119,6 @@ const char plugin_name[] = "Accounting storage SLURMDBD plugin";
 const char plugin_type[] = "accounting_storage/slurmdbd";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static pthread_t db_inx_handler_thread;
-static pthread_mutex_t db_inx_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t db_inx_cond = PTHREAD_COND_INITIALIZER;
-static bool running_db_inx = 0;
 static int first = 1;
 static time_t plugin_shutdown = 0;
 
@@ -149,48 +145,8 @@ char *wckey_day_table = NULL;
 char *wckey_hour_table = NULL;
 char *wckey_month_table = NULL;
 
-extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr);
-extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
 extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
 				    slurm_msg_type_t msg_type);
-
-static void _partial_free_dbd_job_start(void *object)
-{
-	dbd_job_start_msg_t *req = (dbd_job_start_msg_t *)object;
-	if (req) {
-		xfree(req->account);
-		xfree(req->array_task_str);
-		xfree(req->constraints);
-		xfree(req->container);
-		xfree(req->env_hash);
-		xfree(req->licenses);
-		xfree(req->mcs_label);
-		xfree(req->name);
-		xfree(req->nodes);
-		xfree(req->partition);
-		xfree(req->node_inx);
-		xfree(req->qos_req);
-		xfree(req->wckey);
-		xfree(req->gres_used);
-		xfree(req->script_hash);
-		xfree(req->std_err);
-		xfree(req->std_in);
-		xfree(req->std_out);
-		xfree(req->submit_line);
-		xfree(req->tres_alloc_str);
-		xfree(req->tres_req_str);
-		xfree(req->work_dir);
-	}
-}
-
-static void _partial_destroy_dbd_job_start(void *object)
-{
-	dbd_job_start_msg_t *req = (dbd_job_start_msg_t *)object;
-	if (req) {
-		_partial_free_dbd_job_start(req);
-		xfree(req);
-	}
-}
 
 static void _fill_stdout_str(dbd_job_start_msg_t *req, job_record_t *job_ptr)
 {
@@ -204,360 +160,6 @@ static void _fill_stdout_str(dbd_job_start_msg_t *req, job_record_t *job_ptr)
 			xstrfmtcat(req->std_out, "%s/slurm-%%j.out",
 				   job_ptr->details->work_dir);
 	}
-}
-
-/* Anything allocated here must be freed in _partial_free_dbd_job_start() */
-static int _setup_job_start_msg(dbd_job_start_msg_t *req,
-				job_record_t *job_ptr)
-{
-	if (!job_ptr->details || !job_ptr->details->submit_time) {
-		error("jobacct_storage_p_job_start: "
-		      "Not inputing this job %u, it has no submit time.",
-		      job_ptr->job_id);
-		return SLURM_ERROR;
-	}
-	memset(req, 0, sizeof(dbd_job_start_msg_t));
-
-	req->account       = xstrdup(job_ptr->account);
-
-	req->assoc_id      = job_ptr->assoc_id;
-	req->alloc_nodes   = job_ptr->total_nodes;
-
-	if (job_ptr->resize_time) {
-		req->eligible_time = job_ptr->resize_time;
-		req->submit_time   = job_ptr->details->submit_time;
-	} else if (job_ptr->details) {
-		req->eligible_time = job_ptr->details->begin_time;
-		req->submit_time   = job_ptr->details->submit_time;
-	}
-
-	/* If the reason is WAIT_ARRAY_TASK_LIMIT we don't want to
-	 * give the pending jobs an eligible time since it will add
-	 * time to accounting where as these jobs aren't able to run
-	 * until later so mark it as such.
-	 */
-	if (job_ptr->state_reason == WAIT_ARRAY_TASK_LIMIT)
-		req->eligible_time = INFINITE;
-
-	req->start_time    = job_ptr->start_time;
-	req->gid           = job_ptr->group_id;
-	req->job_id        = job_ptr->job_id;
-	req->array_job_id  = job_ptr->array_job_id;
-	req->array_task_id = job_ptr->array_task_id;
-	if (job_ptr->het_job_id) {
-		req->het_job_id     = job_ptr->het_job_id;
-		req->het_job_offset = job_ptr->het_job_offset;
-	} else {
-		//req->het_job_id   = 0;
-		req->het_job_offset = NO_VAL;
-	}
-
-	build_array_str(job_ptr);
-	if (job_ptr->array_recs && job_ptr->array_recs->task_id_str) {
-		req->array_task_str = xstrdup(job_ptr->array_recs->task_id_str);
-		req->array_max_tasks = job_ptr->array_recs->max_run_tasks;
-		req->array_task_pending = job_ptr->array_recs->task_cnt;
-	}
-
-	req->db_flags      = job_ptr->db_flags;
-
-	req->db_index      = job_ptr->db_index;
-	if (!IS_JOB_PENDING(job_ptr))
-		req->constraints   = xstrdup(job_ptr->details->features_use);
-	else
-		req->constraints   = xstrdup(job_ptr->details->features);
-
-	req->container     = xstrdup(job_ptr->container);
-	req->licenses = xstrdup(job_ptr->licenses);
-	req->job_state     = job_ptr->job_state;
-	req->state_reason_prev = job_ptr->state_reason_prev_db;
-	req->name          = xstrdup(job_ptr->name);
-	req->nodes         = xstrdup(job_ptr->nodes);
-	req->work_dir      = xstrdup(job_ptr->details->work_dir);
-
-	/* create req->node_inx outside of locks when packing */
-
-	if (!IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr)
-		req->partition = xstrdup(job_ptr->part_ptr->name);
-	else
-		req->partition = xstrdup(job_ptr->partition);
-
-	if (job_ptr->details) {
-		req->req_cpus = job_ptr->details->min_cpus;
-		req->req_mem = job_ptr->details->pn_min_memory;
-		if (!(slurm_conf.conf_flags & CONF_FLAG_NO_STDIO)) {
-			req->std_err = xstrdup(job_ptr->details->std_err);
-			req->std_in = xstrdup(job_ptr->details->std_in);
-			_fill_stdout_str(req, job_ptr);
-		}
-		req->submit_line = xstrdup(job_ptr->details->submit_line);
-		/* Only send this once per instance of the job! */
-		if (!job_ptr->db_index || (job_ptr->db_index == NO_VAL64)) {
-			req->env_hash = xstrdup(job_ptr->details->env_hash);
-			req->script_hash =
-				xstrdup(job_ptr->details->script_hash);
-		}
-		req->qos_req = xstrdup(job_ptr->details->qos_req);
-	}
-	req->restart_cnt = job_ptr->restart_cnt;
-	req->resv_id       = job_ptr->resv_id;
-	req->priority      = job_ptr->priority;
-	req->timelimit     = job_ptr->time_limit;
-	req->tres_alloc_str= xstrdup(job_ptr->tres_alloc_str);
-	req->tres_req_str  = xstrdup(job_ptr->tres_req_str);
-	req->mcs_label	   = xstrdup(job_ptr->mcs_label);
-	req->wckey         = xstrdup(job_ptr->wckey);
-	req->uid           = job_ptr->user_id;
-	req->qos_id        = job_ptr->qos_id;
-	req->gres_used     = xstrdup(job_ptr->gres_used);
-
-	return SLURM_SUCCESS;
-}
-
-static void _sending_script_env(dbd_id_rc_msg_t *id_ptr, job_record_t *job_ptr)
-{
-	xassert(id_ptr);
-	xassert(job_ptr);
-	xassert(job_ptr->details);
-
-	if ((slurm_conf.conf_flags & CONF_FLAG_SJS) &&
-	    (id_ptr->flags & JOB_SEND_SCRIPT) &&
-	    job_ptr->details->script_hash)
-		job_ptr->bit_flags |= JOB_SEND_SCRIPT;
-	if ((slurm_conf.conf_flags & CONF_FLAG_SJE) &&
-	    (id_ptr->flags & JOB_SEND_ENV) &&
-	    job_ptr->details->env_hash)
-		job_ptr->bit_flags |= JOB_SEND_ENV;
-
-	if (jobacct_storage_p_job_heavy(slurmdbd_conn, job_ptr) ==
-	    SLURM_SUCCESS) {
-		job_ptr->bit_flags &= ~JOB_SEND_SCRIPT;
-		job_ptr->bit_flags &= ~JOB_SEND_ENV;
-	}
-}
-
-static int _set_db_inx_for_each(void *x, void *arg)
-{
-	dbd_id_rc_msg_t *id_ptr = x;
-	job_record_t *job_ptr;
-
-	if ((job_ptr = find_job_record(id_ptr->job_id))) {
-		if (job_ptr->db_index) {
-			/*
-			 * Only set if db_index != 0.
-			 * Is set to NO_VAL64 previously
-			 * but may have been set to 0
-			 * after the fact, which means
-			 * the start needs to be sent
-			 * again.
-			 */
-			job_ptr->db_index = id_ptr->db_index;
-			job_state_unset_flag(job_ptr, JOB_UPDATE_DB);
-		}
-		_sending_script_env(id_ptr, job_ptr);
-	}
-
-	return 0;
-}
-
-static int _reset_db_inx_for_each(void *x, void *arg)
-{
-	job_record_t *job_ptr = x;
-
-	if (job_ptr->db_index == NO_VAL64)
-		job_ptr->db_index = 0;
-
-	return 0;
-}
-
-static void *_set_db_inx_thread(void *no_data)
-{
-	job_record_t *job_ptr = NULL;
-	list_itr_t *itr;
-	struct timeval tvnow;
-	struct timespec abs;
-	bool more_jobs;
-
-	/* Read lock on jobs */
-	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	/* Write lock on jobs */
-	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	/* DEF_TIMERS; */
-
-	/*
-	 * We only want to destory the pointer here not the contents so call
-	 * special function _partial_destroy_dbd_job_start.
-	 */
-	list_t *local_job_list = list_create(_partial_destroy_dbd_job_start);
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "dbinx", NULL, NULL, NULL) < 0) {
-		error("cannot set my name to dbinx: %m");
-	}
-#endif
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	while (!plugin_shutdown) {
-		/* START_TIMER; */
-		/* info("starting db_thread"); */
-		slurm_mutex_lock(&db_inx_lock);
-		/* info("in lock db_thread"); */
-		running_db_inx = 1;
-		more_jobs = false;
-
-		/* Here we have off loaded starting
-		 * jobs in the database out of band
-		 * from the job submission.  This
-		 * is can make submitting jobs much
-		 * faster and not lock up the
-		 * controller waiting for the db inx
-		 * back from the database.
-		 * Even though there is potential of modifying the
-		 * job db_index here we use a read lock since the
-		 * data isn't that sensitive and will only be updated
-		 * later in this function. */
-		lock_slurmctld(job_read_lock);	/* USE READ LOCK, SEE ABOVE */
-		itr = list_iterator_create(job_list);
-		while ((job_ptr = list_next(itr))) {
-			dbd_job_start_msg_t *req;
-
-			if (!IS_JOB_UPDATE_DB(job_ptr)) {
-				if (job_ptr->db_index || job_ptr->resize_time)
-					continue;
-
-				/* We set the db_index to NO_VAL64 here
-				 * to avoid a potential race condition
-				 * where at this moment in time the
-				 * job is only eligible to run and
-				 * before this call to the DBD returns,
-				 * the job starts and needs to send
-				 * the start message as well, but
-				 * won't if the db_index is 0
-				 * resulting in lost information about
-				 * the allocation.  Setting
-				 * it to NO_VAL will inform the DBD of
-				 * this situation and it will handle
-				 * it accordingly.
-				 */
-				job_ptr->db_index = NO_VAL64;
-			}
-
-			req = xmalloc(sizeof(dbd_job_start_msg_t));
-			if (_setup_job_start_msg(req, job_ptr)
-			    != SLURM_SUCCESS) {
-				_partial_destroy_dbd_job_start(req);
-				if (job_ptr->db_index == NO_VAL64)
-					job_ptr->db_index = 0;
-				continue;
-			}
-
-			list_append(local_job_list, req);
-			/* Just so we don't have a crazy
-			   amount of messages at once.
-			*/
-			if (list_count(local_job_list) > 1000) {
-				log_flag(DBD_AGENT, "local_job_list size limit reached");
-				more_jobs = true;
-				break;
-			}
-		}
-		list_iterator_destroy(itr);
-		unlock_slurmctld(job_read_lock);
-
-		while (list_count(local_job_list)) {
-			persist_msg_t req = {0}, resp = {0};
-			dbd_list_msg_t send_msg, *got_msg;
-			int rc = SLURM_SUCCESS;
-			bool reset = 0;
-			memset(&send_msg, 0, sizeof(dbd_list_msg_t));
-
-			send_msg.my_list = local_job_list;
-
-			req.msg_type = DBD_SEND_MULT_JOB_START;
-			req.data = &send_msg;
-
-			rc = dbd_conn_send_recv(
-				SLURM_PROTOCOL_VERSION, &req, &resp);
-			if (rc != SLURM_SUCCESS) {
-				error("DBD_SEND_MULT_JOB_START "
-				      "failure: %m");
-				reset = 1;
-			} else if (resp.msg_type == PERSIST_RC) {
-				persist_rc_msg_t *msg = resp.data;
-				if (msg->rc == SLURM_SUCCESS) {
-					log_var(LOG_LEVEL_INFO, "%s",
-						msg->comment);
-				} else
-					error("%s", msg->comment);
-				slurm_persist_free_rc_msg(msg);
-				reset = 1;
-			} else if (resp.msg_type != DBD_GOT_MULT_JOB_START) {
-				error("response type not "
-				      "DBD_GOT_MULT_JOB_START: %u",
-				      resp.msg_type);
-				reset = 1;
-			} else {
-				got_msg = (dbd_list_msg_t *) resp.data;
-
-				lock_slurmctld(job_write_lock);
-				list_for_each(got_msg->my_list,
-					      _set_db_inx_for_each, NULL);
-				unlock_slurmctld(job_write_lock);
-
-				/*
-				 * Assume the returned number of elements is
-				 * equivalent to the number that was sent out,
-				 * and thus those have completed processing
-				 * and need to be dropped.
-				 *
-				 * This is due to slurm_pack_list_until()
-				 * potentially sending only a part of the list
-				 * to avoid creating an overly-large RPC that
-				 * cannot be processed the SlurmDBD.
-				 */
-				list_flush_max(local_job_list,
-					       list_count(got_msg->my_list));
-
-				slurmdbd_free_list_msg(got_msg);
-			}
-
-			if (reset) {
-				list_flush(local_job_list);
-				lock_slurmctld(job_read_lock);
-				/* USE READ LOCK, SEE ABOVE on first
-				 * read lock */
-				list_for_each(job_list,
-					      _reset_db_inx_for_each, NULL);
-				unlock_slurmctld(job_read_lock);
-			}
-		}
-		running_db_inx = 0;
-
-		/* END_TIMER; */
-		/* info("set all db_inx's in %s", TIME_STR); */
-
-		/* Since it doesn't take much time at all to do this
-		   check do it every 5 seconds.  This helps the DBD so
-		   it doesn't have to find db_indexs of jobs that
-		   haven't had the start rpc come through.
-		*/
-
-		if (!more_jobs) {
-			gettimeofday(&tvnow, NULL);
-			abs.tv_sec = tvnow.tv_sec + 5;
-			abs.tv_nsec = tvnow.tv_usec * 1000;
-			slurm_cond_timedwait(&db_inx_cond, &db_inx_lock, &abs);
-		}
-
-		slurm_mutex_unlock(&db_inx_lock);
-	}
-
-	FREE_NULL_LIST(local_job_list);
-
-	return NULL;
 }
 
 static int _send_cluster_tres(void *db_conn,
@@ -648,13 +250,6 @@ extern int init ( void )
 
 		verbose("%s loaded", plugin_name);
 
-		if (running_in_slurmctld() &&
-		    !(slurm_conf.accounting_storage_enforce &
-		      ACCOUNTING_ENFORCE_NO_JOBS)) {
-			slurm_thread_create(&db_inx_handler_thread,
-					    _set_db_inx_thread, NULL);
-		}
-
 		ext_dbd_init();
 
 		first = 0;
@@ -668,20 +263,6 @@ extern int init ( void )
 extern int fini ( void )
 {
 	plugin_shutdown = time(NULL);
-
-	if (running_db_inx)
-		debug("Waiting for db_inx thread to finish.");
-
-	slurm_mutex_lock(&db_inx_lock);
-
-	/* signal the db_inx thread */
-	if (db_inx_handler_thread)
-		slurm_cond_signal(&db_inx_cond);
-
-	slurm_mutex_unlock(&db_inx_lock);
-
-	/* Now join outside the lock */
-	slurm_thread_join(db_inx_handler_thread);
 
 	ext_dbd_fini();
 	xfree(cluster_nodes);
@@ -2991,62 +2572,120 @@ extern int clusteracct_storage_p_fini_ctld(void *db_conn,
  */
 extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 {
-	persist_msg_t msg = {0}, msg_rc;
-	dbd_job_start_msg_t req;
-	dbd_id_rc_msg_t *resp;
+	dbd_job_start_msg_t req = { 0 };
+	persist_msg_t msg = {
+		.msg_type = DBD_JOB_START,
+		.conn = db_conn,
+		.data = &req,
+	};
 	int rc = SLURM_SUCCESS;
 
-	if ((rc = _setup_job_start_msg(&req, job_ptr)) != SLURM_SUCCESS)
-		return rc;
-
-	msg.msg_type      = DBD_JOB_START;
-	msg.conn          = db_conn;
-	msg.data          = &req;
-
-	/* If we already have the db_index don't wait around for it
-	 * again just send the message when not resizing.  This also applies
-	 * when the slurmdbd is down and we are about to remove the job from
-	 * the system.  We don't want to wait for the db_index in that situation
-	 * either.
-	 */
-	if ((req.db_index && !IS_JOB_RESIZING(job_ptr))
-	    || (!req.db_index && IS_JOB_FINISHED(job_ptr))) {
-		/*
-		 * This is to ensure we don't do this multiple times for the
-		 * same job.  This can happen when an account is being
-		 * deleted and hense the associations dealing with it.
-		 */
-		if (!req.db_index)
-			job_ptr->db_index = NO_VAL64;
-
-		if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0) {
-			_partial_free_dbd_job_start(&req);
-			return SLURM_ERROR;
-		}
-		_partial_free_dbd_job_start(&req);
-		return SLURM_SUCCESS;
+	if (!job_ptr->details || !job_ptr->details->submit_time) {
+		error("jobacct_storage_p_job_start: "
+		      "Not inputing this job %u, it has no submit time.",
+		      job_ptr->job_id);
+		return SLURM_ERROR;
 	}
-	/* If we don't have the db_index we need to wait for it to be
-	 * used in the other submissions for this job.
+
+	req.account = job_ptr->account;
+
+	req.assoc_id = job_ptr->assoc_id;
+	req.alloc_nodes = job_ptr->total_nodes;
+
+	if (job_ptr->resize_time) {
+		req.eligible_time = job_ptr->resize_time;
+		req.submit_time   = job_ptr->details->submit_time;
+	} else if (job_ptr->details) {
+		req.eligible_time = job_ptr->details->begin_time;
+		req.submit_time   = job_ptr->details->submit_time;
+	}
+
+	/* If the reason is WAIT_ARRAY_TASK_LIMIT we don't want to
+	 * give the pending jobs an eligible time since it will add
+	 * time to accounting where as these jobs aren't able to run
+	 * until later so mark it as such.
 	 */
-	rc = dbd_conn_send_recv(SLURM_PROTOCOL_VERSION, &msg, &msg_rc);
-	if (rc != SLURM_SUCCESS) {
-		if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0) {
-			_partial_free_dbd_job_start(&req);
-			return SLURM_ERROR;
-		}
-	} else if (msg_rc.msg_type != DBD_ID_RC) {
-		error("response type not DBD_ID_RC: %u",
-		      msg_rc.msg_type);
+	if (job_ptr->state_reason == WAIT_ARRAY_TASK_LIMIT)
+		req.eligible_time = INFINITE;
+
+	req.start_time = job_ptr->start_time;
+	req.gid = job_ptr->group_id;
+	req.job_id = job_ptr->job_id;
+	req.array_job_id = job_ptr->array_job_id;
+	req.array_task_id = job_ptr->array_task_id;
+	if (job_ptr->het_job_id) {
+		req.het_job_id = job_ptr->het_job_id;
+		req.het_job_offset = job_ptr->het_job_offset;
 	} else {
-		resp = (dbd_id_rc_msg_t *) msg_rc.data;
-		job_ptr->db_index = resp->db_index;
-		_sending_script_env(resp, job_ptr);
-		rc = resp->return_code;
-		//info("here got %d for return code", resp->rc);
-		slurmdbd_free_id_rc_msg(resp);
+		//req.het_job_id = 0;
+		req.het_job_offset = NO_VAL;
 	}
-	_partial_free_dbd_job_start(&req);
+
+	build_array_str(job_ptr);
+	if (job_ptr->array_recs && job_ptr->array_recs->task_id_str) {
+		req.array_task_str = job_ptr->array_recs->task_id_str;
+		req.array_max_tasks = job_ptr->array_recs->max_run_tasks;
+		req.array_task_pending = job_ptr->array_recs->task_cnt;
+	}
+
+	req.db_flags = job_ptr->db_flags;
+
+	req.db_index = job_ptr->db_index;
+	if (!IS_JOB_PENDING(job_ptr))
+		req.constraints = job_ptr->details->features_use;
+	else
+		req.constraints = job_ptr->details->features;
+
+	req.container = job_ptr->container;
+	req.licenses = job_ptr->licenses;
+	req.job_state = job_ptr->job_state;
+	req.state_reason_prev = job_ptr->state_reason_prev_db;
+	req.name = job_ptr->name;
+	req.nodes = job_ptr->nodes;
+	req.work_dir = job_ptr->details->work_dir;
+
+	/* create req.node_inx outside of locks when packing */
+
+	if (!IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr)
+		req.partition = job_ptr->part_ptr->name;
+	else
+		req.partition = job_ptr->partition;
+
+	if (job_ptr->details) {
+		req.req_cpus = job_ptr->details->min_cpus;
+		req.req_mem = job_ptr->details->pn_min_memory;
+		if (!(slurm_conf.conf_flags & CONF_FLAG_NO_STDIO)) {
+			req.std_err = job_ptr->details->std_err;
+			req.std_in = job_ptr->details->std_in;
+			_fill_stdout_str(&req, job_ptr);
+		}
+		req.submit_line = job_ptr->details->submit_line;
+		/* Only send this once per instance of the job! */
+		if (!IS_JOB_IN_DB(job_ptr)) {
+			req.env_hash = job_ptr->details->env_hash;
+			req.script_hash = job_ptr->details->script_hash;
+		}
+		req.qos_req = job_ptr->details->qos_req;
+	}
+	req.restart_cnt = job_ptr->restart_cnt;
+	req.resv_id = job_ptr->resv_id;
+	req.priority = job_ptr->priority;
+	req.timelimit = job_ptr->time_limit;
+	req.tres_alloc_str = job_ptr->tres_alloc_str;
+	req.tres_req_str = job_ptr->tres_req_str;
+	req.mcs_label = job_ptr->mcs_label;
+	req.wckey = job_ptr->wckey;
+	req.uid = job_ptr->user_id;
+	req.qos_id = job_ptr->qos_id;
+	req.gres_used = job_ptr->gres_used;
+
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
+		return SLURM_ERROR;
+
+	/* Message sent to the database, we don't need to do that again. */
+	job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
+
+	xfree(req.std_out);
 
 	return rc;
 }

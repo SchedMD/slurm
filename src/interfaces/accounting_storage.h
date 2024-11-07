@@ -656,11 +656,6 @@ extern int clusteracct_storage_g_fini_ctld(void *db_conn,
 					   slurmdb_cluster_rec_t *cluster_rec);
 
 /*
- * load into the storage the start of a job
- */
-extern int jobacct_storage_job_start_direct(void *db_conn,
-					    job_record_t *job_ptr);
-/*
  * load into the storage information about a job,
  * typically when it begins execution, but possibly earlier
  */

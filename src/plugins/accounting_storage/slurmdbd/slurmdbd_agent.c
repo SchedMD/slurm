@@ -77,13 +77,87 @@ static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
 
 static int max_dbd_msg_action = MAX_DBD_DEFAULT_ACTION;
 
-static int _unpack_return_code(uint16_t rpc_version, buf_t *buffer)
+typedef struct {
+	list_t *id_rc_list;
+	int rc;
+} rc_msg_t;
+
+extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
+
+static int _sending_script_env(void *x, void *args)
+{
+	dbd_id_rc_msg_t *id_ptr = x;
+	job_record_t *job_ptr;
+
+	xassert(id_ptr);
+
+	if (!(job_ptr = find_job_record(id_ptr->job_id)))
+		return 0;
+
+	xassert(job_ptr);
+	xassert(job_ptr->details);
+
+	if ((slurm_conf.conf_flags & CONF_FLAG_SJS) &&
+	    (id_ptr->flags & JOB_SEND_SCRIPT) &&
+	    job_ptr->details->script_hash)
+		job_ptr->bit_flags |= JOB_SEND_SCRIPT;
+	if ((slurm_conf.conf_flags & CONF_FLAG_SJE) &&
+	    (id_ptr->flags & JOB_SEND_ENV) &&
+	    job_ptr->details->env_hash)
+		job_ptr->bit_flags |= JOB_SEND_ENV;
+
+	if (jobacct_storage_p_job_heavy(slurmdbd_conn, job_ptr) ==
+	    SLURM_SUCCESS) {
+		job_ptr->bit_flags &= ~JOB_SEND_SCRIPT;
+		job_ptr->bit_flags &= ~JOB_SEND_ENV;
+	}
+
+	return 0;
+}
+
+static bool _add_sending_script_env(dbd_id_rc_msg_t *id_ptr, rc_msg_t *rc_msg)
+{
+	xassert(id_ptr);
+
+	if (!(id_ptr->flags & (JOB_SEND_SCRIPT | JOB_SEND_ENV)))
+		return false;
+	/*
+	 * We are in the agent_lock here, we can't call
+	 * jobacct_storage_p_job_heavy() which will call slurmdbd_agent_send()
+	 * creating deadlock. Add message to a list to handle things later.
+	 */
+	if (!rc_msg->id_rc_list)
+		rc_msg->id_rc_list = list_create(slurmdbd_free_id_rc_msg);
+	list_append(rc_msg->id_rc_list, id_ptr);
+
+	return true;
+}
+
+static void _process_id_rc_list(list_t *id_rc_list)
+{
+	slurmctld_lock_t job_write_lock = {
+		.job = WRITE_LOCK,
+	};
+
+	if (!id_rc_list)
+		return;
+
+	lock_slurmctld(job_write_lock);
+	(void) list_for_each(id_rc_list, _sending_script_env, NULL);
+	unlock_slurmctld(job_write_lock);
+	FREE_NULL_LIST(id_rc_list);
+}
+
+static int _unpack_return_code(uint16_t rpc_version, buf_t *buffer,
+			       rc_msg_t *rc_msg)
 {
 	uint16_t msg_type = -1;
 	persist_rc_msg_t *msg;
 	dbd_id_rc_msg_t *id_msg;
 	persist_msg_t resp;
 	int rc = SLURM_ERROR;
+
+	xassert(rc_msg);
 
 	memset(&resp, 0, sizeof(persist_msg_t));
 	if ((rc = unpack_slurmdbd_msg(&resp, slurmdbd_conn->version, buffer))
@@ -100,8 +174,8 @@ static int _unpack_return_code(uint16_t rpc_version, buf_t *buffer)
 		log_flag(PROTOCOL, "msg_type:DBD_ID_RC return_code:%s JobId=%u db_index=%"PRIu64,
 			 slurm_strerror(rc), id_msg->job_id,
 			 id_msg->db_index);
-
-		slurmdbd_free_id_rc_msg(id_msg);
+		if (!_add_sending_script_env(id_msg, rc_msg))
+			slurmdbd_free_id_rc_msg(id_msg);
 		if (rc != SLURM_SUCCESS)
 			error("DBD_ID_RC is %d", rc);
 		break;
@@ -146,14 +220,14 @@ static int _unpack_return_code(uint16_t rpc_version, buf_t *buffer)
 	return rc;
 }
 
-static int _get_return_code(void)
+static int _get_return_code(rc_msg_t *rc_msg)
 {
 	int rc = SLURM_ERROR;
 	buf_t *buffer = slurm_persist_recv_msg(slurmdbd_conn);
 	if (buffer == NULL)
 		return rc;
 
-	rc = _unpack_return_code(slurmdbd_conn->version, buffer);
+	rc = _unpack_return_code(slurmdbd_conn->version, buffer, rc_msg);
 
 	FREE_NULL_BUFFER(buffer);
 	return rc;
@@ -162,10 +236,11 @@ static int _get_return_code(void)
 static int _get_return_codes(void *x, void *arg)
 {
 	buf_t *out_buf = x;
-	int *rc_ptr = arg;
+	rc_msg_t *rc_msg = arg;
 	buf_t *b;
 
-	if ((*rc_ptr = _unpack_return_code(slurmdbd_conn->version, out_buf)) !=
+	if ((rc_msg->rc = _unpack_return_code(
+		     slurmdbd_conn->version, out_buf, rc_msg)) !=
 	    SLURM_SUCCESS)
 		return -1;
 
@@ -185,6 +260,7 @@ static int _handle_mult_rc_ret(void)
 	persist_rc_msg_t *msg = NULL;
 	dbd_list_msg_t *list_msg = NULL;
 	int rc = SLURM_ERROR;
+	rc_msg_t rc_msg = { 0 };
 
 	buffer = slurm_persist_recv_msg(slurmdbd_conn);
 	if (buffer == NULL)
@@ -204,9 +280,13 @@ static int _handle_mult_rc_ret(void)
 		slurm_mutex_lock(&agent_lock);
 		if (agent_list) {
 			list_for_each(list_msg->my_list, _get_return_codes,
-				      &rc);
+				      &rc_msg);
 		}
 		slurm_mutex_unlock(&agent_lock);
+		rc = rc_msg.rc;
+
+		_process_id_rc_list(rc_msg.id_rc_list);
+
 		slurmdbd_free_list_msg(list_msg);
 		break;
 	case PERSIST_RC:
@@ -536,13 +616,6 @@ static void _max_dbd_msg_action(uint32_t *msg_cnt)
 		*msg_cnt -= purged;
 		info("purge %d step records", purged);
 	}
-	if (*msg_cnt >= (slurm_conf.max_dbd_msgs - 1)) {
-		uint16_t purge_type = DBD_JOB_START;
-		purged = list_delete_all(agent_list, _purge_agent_list_req,
-					 &purge_type);
-		*msg_cnt -= purged;
-		info("purge %d job start records", purged);
-	}
 }
 
 static int _print_agent_list_msg_type(void *x, void *arg)
@@ -719,7 +792,12 @@ static void *_agent(void *x)
 		} else if (list_msg.my_list) {
 			rc = _handle_mult_rc_ret();
 		} else {
-			rc = _get_return_code();
+			rc_msg_t rc_msg = { 0 };
+
+			rc = _get_return_code(&rc_msg);
+
+			_process_id_rc_list(rc_msg.id_rc_list);
+
 			if (rc == EAGAIN) {
 				if (*slurmdbd_conn->shutdown) {
 					slurm_mutex_unlock(&slurmdbd_lock);

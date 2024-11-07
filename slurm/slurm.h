@@ -277,7 +277,7 @@ enum job_states {
 
 /* SLURM_BIT(0-7) are already taken with base job_states above */
 #define JOB_LAUNCH_FAILED SLURM_BIT(8)
-#define JOB_UPDATE_DB     SLURM_BIT(9)  /* Send job start to database again */
+/*  was JOB_UPDATE_DB     SLURM_BIT(9), removed v24.11 */
 #define JOB_REQUEUE       SLURM_BIT(10) /* Requeue job in completing state */
 #define JOB_REQUEUE_HOLD  SLURM_BIT(11) /* Requeue any job in hold */
 #define JOB_SPECIAL_EXIT  SLURM_BIT(12) /* Requeue an exit job in hold */
@@ -2952,6 +2952,7 @@ typedef struct {
 	char *certmgr_type;	/* certmgr type */
 	void *cgroup_conf;	/* cgroup support config file */
 	char *cli_filter_plugins; /* List of cli_filter plugins to use */
+	uint16_t cluster_id; /* unique ID for this cluster from the DBD */
 	char *cluster_name;     /* general name of the entire cluster */
 	char *comm_params;     /* Communication parameters */
 	uint16_t complete_wait;	/* seconds to wait for job completion before

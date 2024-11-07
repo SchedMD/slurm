@@ -2379,6 +2379,10 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	array_recs.max_run_tasks = job_start_msg->array_max_tasks;
 	array_recs.task_cnt = job_start_msg->array_task_pending;
 	job.assoc_id = job_start_msg->assoc_id;
+	/*
+	 * 3 versions after 24.11 this check will go away, the db_index will not
+	 * be NO_VAL64 then.
+	 */
 	if (job_start_msg->db_index != NO_VAL64)
 		job.db_index = job_start_msg->db_index;
 	details.begin_time = job_start_msg->eligible_time;
@@ -2435,8 +2439,9 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 		       job_start_msg->job_id, job_start_msg->name,
 		       job.db_index);
 	} else {
-		debug2("DBD_JOB_START: ELIGIBLE CALL ID:%u NAME:%s",
-		       job_start_msg->job_id, job_start_msg->name);
+		debug2("DBD_JOB_START: ELIGIBLE CALL ID:%u NAME:%s INX:%"PRIu64,
+		       job_start_msg->job_id, job_start_msg->name,
+		       job.db_index);
 	}
 	id_rc_msg->return_code = jobacct_storage_g_job_start(
 		slurmdbd_conn->db_conn, &job);
@@ -2492,6 +2497,7 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 {
 	dbd_register_ctld_msg_t *register_ctld_msg = msg->data;
 	int rc = SLURM_SUCCESS;
+	uint32_t id_rc = 0;
 	char *comment = NULL;
 	slurmdb_cluster_cond_t cluster_q;
 	slurmdb_cluster_rec_t cluster;
@@ -2586,6 +2592,9 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	} else if (!list_msg.my_list || !list_count(list_msg.my_list)) {
 		comment = "This cluster hasn't been added to accounting yet";
 		rc = SLURM_ERROR;
+	} else if (cluster.id) {
+		id_rc = cluster.id;
+		id_rc |= RC_AS_CLUSTER_ID;
 	}
 
 	FREE_NULL_LIST(list_msg.my_list);
@@ -2599,8 +2608,8 @@ end_it:
 		_add_registered_cluster(slurmdbd_conn);
 	}
 
-	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
-						rc, comment, DBD_REGISTER_CTLD);
+	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn, id_rc,
+						comment, DBD_REGISTER_CTLD);
 	return rc;
 }
 

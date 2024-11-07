@@ -34,6 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "as_mysql_cluster.h"
 #include "as_mysql_convert.h"
 #include "as_mysql_tres.h"
 #include "src/interfaces/jobacct_gather.h"
@@ -43,8 +44,9 @@
  * NOTE: 13 was the first version of 23.02.
  * NOTE: 14 was the first version of 23.11.
  * NOTE: 15 was the second version of 23.11.
+ * NOTE: 16 was the first version of 24.11.
  */
-#define CONVERT_VERSION 15
+#define CONVERT_VERSION 16
 
 #define MIN_CONVERT_VERSION 13
 
@@ -407,6 +409,20 @@ static int _foreach_post_create(void *x, void *arg)
 	if ((rc = _convert_assoc_table_post(mysql_conn, cluster_name)) !=
 	     SLURM_SUCCESS)
 		return rc;
+
+	if (db_curr_ver < 16) {
+		uint16_t id = as_mysql_cluster_get_unique_id(
+			mysql_conn, cluster_name);
+		char *query = xstrdup_printf(
+			"update %s set id=%u, mod_time=UNIX_TIMESTAMP() where name='%s'",
+			cluster_table, id, cluster_name);
+
+		info("Setting cluster id '%u' on cluster %s", id, cluster_name);
+
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+	}
 
 	return SLURM_SUCCESS;
 }

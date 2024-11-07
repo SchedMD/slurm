@@ -594,6 +594,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
+		{ "id", "smallint" },
 		{ "control_host", "tinytext not null default ''" },
 		{ "control_port", "int unsigned not null default 0" },
 		{ "last_port", "int unsigned not null default 0" },
