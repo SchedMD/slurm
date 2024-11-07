@@ -1389,6 +1389,7 @@ extern void sacct_fini(void)
 		slurmdb_connection_close(&acct_db_conn);
 		acct_storage_g_fini();
 	}
+
 	xfree(params.opt_field_list);
 	slurmdb_destroy_job_cond(params.job_cond);
 }
