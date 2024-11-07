@@ -296,7 +296,7 @@ static void         _update_nice(void);
 static void _update_pidfile(void);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
 static void _usage(void);
-static bool         _verify_clustername(void);
+static void _verify_clustername(void);
 static void *       _wait_primary_prog(void *arg);
 
 static void _send_reconfig_replies(void)
@@ -3268,16 +3268,15 @@ static void _update_nice(void)
 		error("Unable to reset nice value to %d: %m", new_nice);
 }
 
-/* Verify that ClusterName from slurm.conf matches the state directory.
- * If mismatched exit to protect state files from corruption.
- * If the clustername file does not exist, return true so we can create it later
- * after dropping privileges. */
-static bool _verify_clustername(void)
+/*
+ * Verify that ClusterName from slurm.conf matches the state directory.
+ * If mismatched, exit immediately to protect state files from corruption.
+ */
+static void _verify_clustername(void)
 {
 	FILE *fp;
 	char *filename = NULL;
 	char name[512] = {0};
-	bool create_file = false;
 
 	xstrfmtcat(filename, "%s/clustername", slurm_conf.state_save_location);
 
@@ -3305,12 +3304,9 @@ static bool _verify_clustername(void)
 			      slurm_conf.cluster_name, name, filename);
 			exit(1);
 		}
-	} else
-		create_file = true;
+	}
 
 	xfree(filename);
-
-	return create_file;
 }
 
 static void _create_clustername_file(void)
