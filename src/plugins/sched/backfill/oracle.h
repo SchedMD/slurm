@@ -55,9 +55,14 @@ typedef struct bf_slot {
 } bf_slot_t;
 
 extern int bf_topopt_iterations;
+extern int used_slots;
+
+void init_oracle(void);
+
+void fini_oracle(void);
 
 bool oracle(job_record_t *job_ptr, bitstr_t *job_bitmap, time_t later_start,
-	    uint32_t *time_limit, uint32_t *boot_time, bf_slot_t *slots,
-	    int *used_slots, node_space_map_t *node_space);
+	    uint32_t *time_limit, uint32_t *boot_time,
+	    node_space_map_t *node_space);
 
 #endif /* _SLURM_ORACLE_H */

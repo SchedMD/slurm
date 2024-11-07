@@ -2086,8 +2086,6 @@ static void _attempt_backfill(void)
 	resv_exc_t resv_exc = { 0 };
 	will_run_data_t will_run_data = { 0 };
 	bool overlap_tested = false;
-	bf_slot_t *slots;
-	int used_slot = 0;
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock = {
 		.qos = READ_LOCK,
@@ -2196,14 +2194,8 @@ static void _attempt_backfill(void)
 	/* Ignore nodes that have been set as available during this cycle. */
 	bit_clear_all(bf_ignore_node_bitmap);
 
-	if (bf_topopt_enable) {
-		slots = xcalloc(bf_topopt_iterations, sizeof(bf_slot_t));
-		for (int i = 0; i < bf_topopt_iterations; i++) {
-			slots[i].job_bitmap = bit_alloc(node_record_count);
-			slots[i].job_mask = bit_alloc(node_record_count);
-			slots[i].cluster_bitmap = bit_alloc(node_record_count);
-		}
-	}
+	if (bf_topopt_enable)
+		init_oracle();
 
 	while (1) {
 		uint32_t bf_job_priority, prio_reserve;
@@ -2638,7 +2630,7 @@ next_task:
 			time_limit = job_ptr->time_limit = 1;
 
 		later_start = now;
-		used_slot = 0;
+		used_slots = 0;
 
 		if (assoc_limit_stop) {
 			if (qos_blocked_until > later_start) {
@@ -3070,10 +3062,9 @@ TRY_LATER:
 
 		if (!job_no_reserve && bf_topopt_enable) {
 			if (oracle(job_ptr, avail_bitmap, later_start,
-				   &time_limit, &boot_time, slots, &used_slot,
-				   node_space)) {
-				log_flag(BACKFILL, "%pJ used_slot:%u later_start %ld",
-					 job_ptr, used_slot, later_start);
+				   &time_limit, &boot_time, node_space)) {
+				log_flag(BACKFILL, "%pJ used_slots:%u later_start %ld",
+					 job_ptr, used_slots, later_start);
 				goto TRY_LATER;
 			}
 			_set_slot_time(job_ptr, time_limit, boot_time,
@@ -3632,14 +3623,9 @@ skip_start:
 	FREE_NULL_LIST(nodes_used_list);
 	xfree(nodes_used);
 
-	if (bf_topopt_enable) {
-		for (int i = 0; i < bf_topopt_iterations; i++) {
-			FREE_NULL_BITMAP(slots[i].job_bitmap);
-			FREE_NULL_BITMAP(slots[i].job_mask);
-			FREE_NULL_BITMAP(slots[i].cluster_bitmap);
-		}
-		xfree(slots);
-	}
+	if (bf_topopt_enable)
+		fini_oracle();
+
 	gettimeofday(&bf_time2, NULL);
 	_do_diag_stats(&bf_time1, &bf_time2, node_space_recs);
 	if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {

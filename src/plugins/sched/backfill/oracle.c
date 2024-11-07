@@ -44,6 +44,9 @@
 
 int bf_topopt_iterations;
 
+static bf_slot_t *slots;
+int used_slots;
+
 static int _get_bitmap_from_nspace(node_space_map_t *node_space,
 				   uint32_t start_time, bitstr_t *out_bitmap,
 				   uint32_t *fragmentation)
@@ -65,17 +68,17 @@ static int _get_bitmap_from_nspace(node_space_map_t *node_space,
 }
 
 static void _add_slot(job_record_t *job_ptr, bitstr_t *job_bitmap,
-		      uint32_t time_limit, uint32_t boot_time, bf_slot_t *slots,
-		      int *used_slots, node_space_map_t *node_space)
+		      uint32_t time_limit, uint32_t boot_time,
+		      node_space_map_t *node_space)
 {
 	bf_slot_t *new_slot;
 	uint32_t previous_cluster_score;
 	int rc;
 
-	if (*used_slots >= bf_topopt_iterations)
+	if (used_slots >= bf_topopt_iterations)
 		return;
 
-	new_slot = &(slots[*used_slots]);
+	new_slot = &(slots[used_slots]);
 
 
 	rc = _get_bitmap_from_nspace(node_space, job_ptr->start_time,
@@ -102,14 +105,34 @@ static void _add_slot(job_record_t *job_ptr, bitstr_t *job_bitmap,
 		new_slot->time_limit = time_limit;
 
 		log_flag(BACKFILL, "%pJ add slot:%d start_time:%ld previous_cluster_score:%u cluster_score:%u job_score:%u",
-			 job_ptr, *used_slots, new_slot->start,
+			 job_ptr, used_slots, new_slot->start,
 			 previous_cluster_score, new_slot->cluster_score,
 			 new_slot->job_score);
 
-		(*used_slots)++;
+		(used_slots)++;
 	}
 
 	return;
+}
+
+void init_oracle(void)
+{
+	slots = xcalloc(bf_topopt_iterations, sizeof(bf_slot_t));
+	for (int i = 0; i < bf_topopt_iterations; i++) {
+		slots[i].job_bitmap = bit_alloc(node_record_count);
+		slots[i].job_mask = bit_alloc(node_record_count);
+		slots[i].cluster_bitmap = bit_alloc(node_record_count);
+	}
+}
+
+void fini_oracle(void)
+{
+	for (int i = 0; i < bf_topopt_iterations; i++) {
+		FREE_NULL_BITMAP(slots[i].job_bitmap);
+		FREE_NULL_BITMAP(slots[i].job_mask);
+		FREE_NULL_BITMAP(slots[i].cluster_bitmap);
+	}
+	xfree(slots);
 }
 
 /*
@@ -120,23 +143,21 @@ static void _add_slot(job_record_t *job_ptr, bitstr_t *job_bitmap,
  * IN later_start
  * IN/OUT time_limit - time_limit of job
  * IN/OUT boot_time - boot_time of job
- * IN/OUT slots
- * IN/OUT used_slots - currently used slots
  * IN node_space
  * RET true - When we should check the later start of the job
  * 	false if we want to start/plan.
  */
 
 bool oracle(job_record_t *job_ptr, bitstr_t *job_bitmap, time_t later_start,
-	    uint32_t *time_limit, uint32_t *boot_time, bf_slot_t *slots,
-	    int *used_slots, node_space_map_t *node_space)
+	    uint32_t *time_limit, uint32_t *boot_time,
+	    node_space_map_t *node_space)
 {
 	/*
 	 * Alwasys if posible add a new slot to slots array
 	 */
-	if (*used_slots < bf_topopt_iterations)
-		_add_slot(job_ptr, job_bitmap, *time_limit, *boot_time, slots,
-			  used_slots, node_space);
+	if (used_slots < bf_topopt_iterations)
+		_add_slot(job_ptr, job_bitmap, *time_limit, *boot_time,
+			  node_space);
 
 	/*
 	 * The code below is only an example implementation
@@ -145,16 +166,16 @@ bool oracle(job_record_t *job_ptr, bitstr_t *job_bitmap, time_t later_start,
 	/*
 	 * Check later if later_start set and we have space in slots array
 	 */
-	if (later_start && *used_slots < bf_topopt_iterations)
+	if (later_start && used_slots < bf_topopt_iterations)
 		return true;
 
-	if (*used_slots > 0) {
+	if (used_slots > 0) {
 		int best_slot = 0;
 
 		/*
 		 * Find slot with minimal job_score
 		 */
-		for (int i = 1; i < *used_slots; i++)
+		for (int i = 1; i < used_slots; i++)
 			if (slots[best_slot].job_score > slots[i].job_score)
 				best_slot = i;
 
