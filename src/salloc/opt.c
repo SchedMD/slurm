@@ -459,6 +459,10 @@ static bool _opt_verify(void)
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
 
+	/* Set the env var so that the spawned srun can set it */
+	if (opt.oom_kill_step != NO_VAL16 && !getenv("SLURM_OOM_KILL_STEP"))
+		setenvf(NULL, "SLURM_OOM_KILL_STEP", "%u", opt.oom_kill_step);
+
 	if ((saopt.no_shell == false) && (opt.argc == 0))
 		_salloc_default_command(&opt.argc, &opt.argv);
 

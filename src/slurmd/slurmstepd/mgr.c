@@ -2590,6 +2590,7 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 			step->envtp->uid = step->uid;
 			step->envtp->user_name = xstrdup(step->user_name);
 			step->envtp->nodeid = step->nodeid;
+			step->envtp->oom_kill_step = step->oom_kill_step ? 1 : 0;
 
 			/*
 			 * Modify copy of job's environment. Do not alter in

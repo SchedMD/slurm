@@ -357,6 +357,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	step->envtp->job_licenses = xstrdup(step->job_licenses);
 	step->envtp->job_start_time = step->job_start_time;
 	step->envtp->user_name = xstrdup(step->user_name);
+	step->envtp->oom_kill_step = step->oom_kill_step ? 1 : 0;
 
 	/*
 	 * Modify copy of step's environment. Do not alter in place or
