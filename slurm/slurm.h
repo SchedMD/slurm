@@ -3000,6 +3000,8 @@ typedef struct {
 				 * health check program, see
 				 * HEALTH_CHECK_NODE_* above */
 	char * health_check_program;	/* pathname of health check program */
+	uint32_t host_unreach_retry_count; /* times to retry connecting if
+                                            * rc=EHOSTUNREACH */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
 	char *interactive_step_opts; /* InteractiveStepOptions */
