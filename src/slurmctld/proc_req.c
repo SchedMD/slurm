@@ -5908,6 +5908,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 
 	msg.msg_type = persist_msg->msg_type;
 	msg.data = persist_msg->data;
+	msg.protocol_version = persist_conn->version;
 
 	if (persist_conn->persist_type == PERSIST_TYPE_ACCT_UPDATE) {
 		if (msg.msg_type == ACCOUNTING_UPDATE_MSG) {
@@ -6183,6 +6184,7 @@ static void _proc_multi_msg(slurm_msg_t *msg)
 	iter = list_iterator_create(ctld_req_msg->my_list);
 	while ((single_req_buf = list_next(iter))) {
 		slurm_msg_t_init(&sub_msg);
+		sub_msg.protocol_version = msg->protocol_version;
 		if (unpack16(&sub_msg.msg_type, single_req_buf) ||
 		    unpack_msg(&sub_msg, single_req_buf)) {
 			error("Sub-message unpack error for REQUEST_CTLD_MULT_MSG %u RPC",
@@ -6974,7 +6976,14 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 	agent_args->msg_type   = type;
 	agent_args->msg_args   = msg_args;
 	set_agent_arg_r_uid(agent_args, r_uid);
-	agent_args->protocol_version = protocol_version;
+
+	/*
+	 * A federated job could have been submitted to a higher versioned
+	 * origin cluster (job_ptr->start_protocol_ver), so we need to talk at
+	 * the highest version that that THIS cluster understands.
+	 */
+	agent_args->protocol_version = MIN(SLURM_PROTOCOL_VERSION,
+					   protocol_version);
 
 	agent_queue_request(agent_args);
 }

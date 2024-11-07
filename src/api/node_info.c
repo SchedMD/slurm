@@ -478,6 +478,10 @@ static void _set_node_mixed_op(node_info_t *node_ptr)
 
 	xassert(node_ptr);
 
+	/* Node is blank/hidden (e.g. blank dynamic node) */
+	if (!node_ptr->name)
+		return;
+
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED, &alloc_cpus);

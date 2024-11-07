@@ -59,24 +59,9 @@
  */
 void init_header(header_t *header, slurm_msg_t *msg, uint16_t flags)
 {
-	memset(header, 0, sizeof(header_t));
-	/* Since the slurmdbd could talk to a host of different
-	   versions of slurm this needs to be kept current when the
-	   protocol version changes. */
-	if (msg->protocol_version != NO_VAL16)
-		header->version = msg->protocol_version;
-	else if (working_cluster_rec)
-		msg->protocol_version = header->version =
-			working_cluster_rec->rpc_version;
-	else if ((msg->msg_type == ACCOUNTING_UPDATE_MSG) ||
-	         (msg->msg_type == ACCOUNTING_FIRST_REG)) {
-		uint16_t rpc_version =
-			((accounting_update_msg_t *)msg->data)->rpc_version;
-		msg->protocol_version = header->version = rpc_version;
-	} else
-		msg->protocol_version = header->version =
-			SLURM_PROTOCOL_VERSION;
+	xassert(msg->protocol_version && (msg->protocol_version != NO_VAL16));
 
+	memset(header, 0, sizeof(header_t));
 	header->flags = flags;
 	header->msg_type = msg->msg_type;
 	header->body_length = 0;	/* over-written later */
@@ -87,6 +72,7 @@ void init_header(header_t *header, slurm_msg_t *msg, uint16_t flags)
 		header->ret_cnt = 0;
 	header->ret_list = msg->ret_list;
 	header->orig_addr = msg->orig_addr;
+	header->version = msg->protocol_version;
 }
 
 /*

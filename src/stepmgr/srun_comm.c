@@ -67,7 +67,14 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 	agent_args->msg_type   = type;
 	agent_args->msg_args   = msg_args;
 	set_agent_arg_r_uid(agent_args, r_uid);
-	agent_args->protocol_version = protocol_version;
+
+	/*
+	 * A federated job could have been submitted to a higher versioned
+	 * origin cluster (job_ptr->start_protocol_ver), so we need to talk at
+	 * the highest version that that THIS cluster understands.
+	 */
+	agent_args->protocol_version = MIN(SLURM_PROTOCOL_VERSION,
+					   protocol_version);
 
 	stepmgr_ops->agent_queue_request(agent_args);
 }

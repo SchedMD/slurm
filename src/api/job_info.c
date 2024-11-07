@@ -336,16 +336,18 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 	int pthread_count = 0;
 	pthread_t *load_thread = 0;
 	load_job_req_struct_t *load_args;
-	list_t *resp_msg_list;
+	list_t *resp_msg_list, *thread_msgs_list;
 
 	*job_info_msg_pptr = NULL;
 
 	/* Spawn one pthread per cluster to collect job information */
 	resp_msg_list = list_create(NULL);
+	thread_msgs_list = list_create(xfree_ptr);
 	load_thread = xmalloc(sizeof(pthread_t) *
 			      list_count(fed->cluster_list));
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
+		slurm_msg_t *thread_msg;
 		if ((cluster->control_host == NULL) ||
 		    (cluster->control_host[0] == '\0'))
 			continue;	/* Cluster down */
@@ -355,9 +357,13 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 		    xstrcmp(cluster->name, cluster_name))
 			continue;
 
+		thread_msg = xmalloc(sizeof(*thread_msg));
+		list_append(thread_msgs_list, thread_msg);
+		memcpy(thread_msg, req_msg, sizeof(*req_msg));
+
 		load_args = xmalloc(sizeof(load_job_req_struct_t));
 		load_args->cluster = cluster;
-		load_args->req_msg = req_msg;
+		load_args->req_msg = thread_msg;
 		load_args->resp_msg_list = resp_msg_list;
 		slurm_thread_create(&load_thread[pthread_count],
 				    _load_job_thread, load_args);
@@ -370,6 +376,7 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 	for (i = 0; i < pthread_count; i++)
 		slurm_thread_join(load_thread[i]);
 	xfree(load_thread);
+	FREE_NULL_LIST(thread_msgs_list);
 
 	/* Merge the responses into a single response message */
 	iter = list_iterator_create(resp_msg_list);

@@ -3719,10 +3719,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	xassert(job_desc);
 	xassert(msg);
 
-	sib_msg.data_buffer  = msg->buffer;
-	sib_msg.data_offset  = msg->body_offset;
 	sib_msg.data_type    = msg->msg_type;
-	sib_msg.data_version = msg->protocol_version;
 	sib_msg.fed_siblings = job_desc->fed_siblings_viable;
 	sib_msg.group_id = job_desc->group_id;
 	sib_msg.job_id       = job_desc->job_id;
@@ -3770,6 +3767,44 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 			sib_msg.data_version = msg->protocol_version;
 
 			last_rpc_version = sibling->rpc_version;
+		}
+
+		/*
+		 * We have a buffer which means, we are submitting new sibling
+		 * jobs from a client submission. If the sibling is the same or
+		 * higher protocol version as the client we just send the packed
+		 * buffer from the client, otherwise we need to get an
+		 * unmmodified job_desc_t by unpacking the client's job_desc_msg
+		 * and repack it at the sibling's version.
+		 */
+		if (msg->buffer) {
+			if (sibling->rpc_version >= msg->protocol_version) {
+				sib_msg.data_buffer = msg->buffer;
+				sib_msg.data_offset = msg->body_offset;
+				sib_msg.data_version = msg->protocol_version;
+
+			/* Don't pack buffer again unless the version changed */
+			} else if (last_rpc_version != sibling->rpc_version) {
+				slurm_msg_t tmp_msg;
+				slurm_msg_t_init(&tmp_msg);
+				tmp_msg.msg_type = msg->msg_type;
+				tmp_msg.protocol_version =
+					msg->protocol_version;
+				set_buf_offset(msg->buffer, msg->body_offset);
+
+				unpack_msg(&tmp_msg, msg->buffer);
+
+				FREE_NULL_BUFFER(buffer);
+
+				tmp_msg.protocol_version = sibling->rpc_version;
+				buffer = init_buf(BUF_SIZE);
+				pack_msg(&tmp_msg, buffer);
+				sib_msg.data_buffer = buffer;
+				sib_msg.data_offset = 0;
+				sib_msg.data_version = msg->protocol_version;
+
+				last_rpc_version = sibling->rpc_version;
+			}
 		}
 
 		req_msg.protocol_version = sibling->rpc_version;

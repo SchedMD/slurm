@@ -1605,10 +1605,7 @@ static int _unpack_node_info_msg(node_info_msg_t **msg, buf_t *buffer,
 		/* load individual job info */
 		for (i = 0; i < tmp_ptr->record_count; i++) {
 			if (hidden_nodes && bit_test(hidden_nodes, i)) {
-				tmp_ptr->node_array[i].select_nodeinfo =
-					select_g_select_nodeinfo_alloc();
-				tmp_ptr->node_array[i].energy =
-					acct_gather_energy_alloc(1);
+				/* Nothing to unpack */
 			} else if (_unpack_node_info_members(
 					   &tmp_ptr->node_array[i], buffer,
 					   protocol_version)) {
@@ -14046,13 +14043,27 @@ unpack_error:
  * RET 0 or error code
  */
 int
-pack_msg(slurm_msg_t const *msg, buf_t *buffer)
+pack_msg(slurm_msg_t *msg, buf_t *buffer)
 {
 	if (msg->protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
 		error("%s: Invalid message version=%hu, type:%s",
 		      __func__, msg->protocol_version,
 		      rpc_num2string(msg->msg_type));
 		return SLURM_ERROR;
+	}
+
+	/* Figure out protocol version to use */
+	if (msg->protocol_version != NO_VAL16) {
+		/* use what is set */
+	} else if (working_cluster_rec) {
+		msg->protocol_version = working_cluster_rec->rpc_version;
+	} else if ((msg->msg_type == ACCOUNTING_UPDATE_MSG) ||
+		   (msg->msg_type == ACCOUNTING_FIRST_REG)) {
+		uint16_t rpc_version =
+			((accounting_update_msg_t *)msg->data)->rpc_version;
+		msg->protocol_version = rpc_version;
+	} else {
+		msg->protocol_version = SLURM_PROTOCOL_VERSION;
 	}
 
 	switch (msg->msg_type) {

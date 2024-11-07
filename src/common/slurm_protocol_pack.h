@@ -82,7 +82,7 @@ extern int unpack_header(header_t *header, buf_t *buffer);
  *			automatically updated
  * RET 0 or error code
  */
-extern int pack_msg(slurm_msg_t const *msg, buf_t *buffer);
+extern int pack_msg(slurm_msg_t *msg, buf_t *buffer);
 
 /*
  * unpacks a generic slurm protocol message body
