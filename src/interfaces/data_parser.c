@@ -799,9 +799,15 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 		debug("No output generated");
 
 cleanup:
+	/*
+	 * This is only called from the CLI just before exiting.
+	 * Skip the explicit free here to improve responsiveness.
+	 */
+#ifdef MEMORY_LEAK_DEBUG
 	xfree(out);
 	FREE_NULL_DATA(dresp);
 	FREE_NULL_DATA_PARSER(parser);
+#endif
 
 	return rc;
 }
