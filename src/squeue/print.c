@@ -3043,7 +3043,6 @@ static bool _filter_job(job_info_t *job)
 		iterator = list_iterator_create(params.state_list);
 		while ((state_id = list_next(iterator))) {
 			bool match = false;
-			job->job_state &= ~JOB_UPDATE_DB;
 			if (*state_id &  JOB_STATE_FLAGS) {
 				if (*state_id &  job->job_state)
 					match = true;

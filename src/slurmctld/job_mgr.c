@@ -18714,10 +18714,6 @@ extern job_record_t *job_array_post_sched(job_record_t *job_ptr, bool list_add)
 		new_job_ptr = job_array_split(job_ptr, list_add);
 		job_state_set(new_job_ptr, JOB_PENDING);
 		new_job_ptr->start_time = (time_t) 0;
-		/*
-		 * Do NOT set the JOB_UPDATE_DB flag here, it is handled when
-		 * task_id_str is created elsewhere.
-		 */
 	}
 
 	return new_job_ptr;
