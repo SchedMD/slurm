@@ -817,7 +817,7 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	params->flags |= BCAST_FLAG_PRESERVE;
 	params->src_fname = xstrdup(opt_local->argv[0]);
 	params->timeout = 0;
-	params->verbose = 0;
+	params->verbose = opt_local->verbose;
 
 	if (bcast_file(params) != SLURM_SUCCESS)
 		fatal("Failed to broadcast '%s'. Step launch aborted.",
