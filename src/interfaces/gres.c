@@ -5154,6 +5154,28 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 	return new_gres_ns;
 }
 
+static int _foreach_node_state_dup(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = x, *new_gres;
+	list_t *new_list = arg;
+	void *gres_ns;
+
+	if (!_find_context_by_id(gres_state_node->plugin_id)) {
+		error("Could not find plugin id %u to dup node record",
+		      gres_state_node->plugin_id);
+		return 0;
+	}
+
+	gres_ns = _node_state_dup(gres_state_node->gres_data);
+	if (gres_ns) {
+		new_gres = gres_create_state(
+			gres_state_node, GRES_STATE_SRC_STATE_PTR,
+			GRES_STATE_TYPE_NODE, gres_ns);
+		list_append(new_list, new_gres);
+	}
+	return 0;
+}
+
 /*
  * Duplicate a node gres status (used for will-run logic)
  * IN gres_list - node gres state information
@@ -5162,9 +5184,6 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 extern list_t *gres_node_state_list_dup(list_t *gres_list)
 {
 	list_t *new_list = NULL;
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_node, *new_gres;
-	void *gres_ns;
 
 	if (gres_list == NULL)
 		return new_list;
@@ -5174,24 +5193,10 @@ extern list_t *gres_node_state_list_dup(list_t *gres_list)
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0)) {
 		new_list = list_create(_gres_node_list_delete);
+		(void) list_for_each(gres_list,
+				     _foreach_node_state_dup,
+				     new_list);
 	}
-	gres_iter = list_iterator_create(gres_list);
-	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
-		if (!_find_context_by_id(gres_state_node->plugin_id)) {
-			error("Could not find plugin id %u to dup node record",
-			      gres_state_node->plugin_id);
-			continue;
-		}
-
-		gres_ns = _node_state_dup(gres_state_node->gres_data);
-		if (gres_ns) {
-			new_gres = gres_create_state(
-				gres_state_node, GRES_STATE_SRC_STATE_PTR,
-				GRES_STATE_TYPE_NODE, gres_ns);
-			list_append(new_list, new_gres);
-		}
-	}
-	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return new_list;
