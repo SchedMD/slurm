@@ -687,7 +687,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 			     buf_t *buffer)
 {
 	step_record_t *step_ptr = object;
-	slurm_node_alias_addrs_t *alias_addrs_tmp;
+	slurm_node_alias_addrs_t *alias_addrs_tmp = NULL;
 
 	if (step_ptr->state < JOB_RUNNING)
 		return;
@@ -740,11 +740,14 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 	/*
 	 * Don't dump alias_addrs
 	 */
-	alias_addrs_tmp = step_ptr->step_layout->alias_addrs;
-	step_ptr->step_layout->alias_addrs = NULL;
+	if (step_ptr->step_layout) {
+		alias_addrs_tmp = step_ptr->step_layout->alias_addrs;
+		step_ptr->step_layout->alias_addrs = NULL;
+	}
 	pack_slurm_step_layout(step_ptr->step_layout, buffer,
 			       protocol_version);
-	step_ptr->step_layout->alias_addrs = alias_addrs_tmp;
+	if (step_ptr->step_layout)
+		step_ptr->step_layout->alias_addrs = alias_addrs_tmp;
 
 	if (step_ptr->switch_step) {
 		pack8(1, buffer);
