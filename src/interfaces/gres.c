@@ -282,6 +282,11 @@ typedef struct {
 	char *node_name;
 } validate_job_gres_cnt_t;
 
+typedef struct {
+	int job_node_index;
+	list_t *new_list;
+} job_state_extract_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -6991,6 +6996,35 @@ static void *_job_state_dup2(gres_job_state_t *gres_js, int job_node_index)
 	return new_gres_js;
 }
 
+static int _foreach_job_state_extract(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	job_state_extract_t *job_state_extract = arg;
+	gres_state_t *new_gres_state;
+	void *new_gres_data;
+
+	if (job_state_extract->job_node_index == -1)
+		new_gres_data = gres_job_state_dup(
+			gres_state_job->gres_data);
+	else
+		new_gres_data = _job_state_dup2(
+			gres_state_job->gres_data,
+			job_state_extract->job_node_index);
+
+	if (!new_gres_data)
+		return -1;
+
+	if (!job_state_extract->new_list)
+		job_state_extract->new_list = list_create(gres_job_list_delete);
+
+	new_gres_state = gres_create_state(
+		gres_state_job, GRES_STATE_SRC_STATE_PTR,
+		GRES_STATE_TYPE_JOB, new_gres_data);
+	list_append(job_state_extract->new_list, new_gres_state);
+
+	return 0;
+}
+
 /*
  * Create a (partial) copy of a job's gres state for a particular node index
  * IN gres_list - List of Gres records for this job to track usage
@@ -6999,37 +7033,16 @@ static void *_job_state_dup2(gres_job_state_t *gres_js, int job_node_index)
  */
 extern list_t *gres_job_state_extract(list_t *gres_list, int job_node_index)
 {
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_job, *new_gres_state;
-	list_t *new_gres_list = NULL;
-	void *new_gres_data;
+	job_state_extract_t job_state_extract = {
+		.job_node_index = job_node_index,
+	};
 
-	if (gres_list == NULL)
-		return new_gres_list;
+	if (gres_list)
+		(void) list_for_each(gres_list,
+				     _foreach_job_state_extract,
+				     &job_state_extract);
 
-	gres_iter = list_iterator_create(gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
-		if (job_node_index == -1)
-			new_gres_data = gres_job_state_dup(
-				gres_state_job->gres_data);
-		else {
-			new_gres_data = _job_state_dup2(
-				gres_state_job->gres_data,
-				job_node_index);
-		}
-		if (new_gres_data == NULL)
-			break;
-		if (new_gres_list == NULL) {
-			new_gres_list = list_create(gres_job_list_delete);
-		}
-		new_gres_state = gres_create_state(
-			gres_state_job, GRES_STATE_SRC_STATE_PTR,
-			GRES_STATE_TYPE_JOB, new_gres_data);
-		list_append(new_gres_list, new_gres_state);
-	}
-	list_iterator_destroy(gres_iter);
-
-	return new_gres_list;
+	return job_state_extract.new_list;
 }
 
 /*
