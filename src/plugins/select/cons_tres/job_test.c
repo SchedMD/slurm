@@ -658,6 +658,15 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 			if (job_ptr->details->cpus_per_task > 1) {
 				i = cpus % job_ptr->details->cpus_per_task;
 				cpus -= i;
+				/*
+				 * Do not ask for more cpus than the minimum
+				 * required. Higher values will cause the
+				 * avail_res_cnt to be higher than needed.
+				 * This prevents the topology plugin to
+				 * filter out some valid nodes later on.
+				*/
+				if (cpus > min_cpus_per_node)
+					cpus = min_cpus_per_node;
 			}
 			if (cpus < job_ptr->details->ntasks_per_node)
 				cpus = 0;

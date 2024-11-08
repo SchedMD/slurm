@@ -264,6 +264,8 @@ documents those changes that are of interest to users and administrators.
     schema (aka openapi.json or openapi.yaml) after compilation.
  -- mpi/pmix - Fix potential deadlock and races with het jobs, and fix potential
     memory and FDs leaks.
+ -- Fix jobs with --gpus being rejected in some edge cases for partitions
+    where not all nodes have the same amount of GPUs and CPUs configured.
 
 * Changes in Slurm 24.05.5
 ==========================
