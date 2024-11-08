@@ -287,6 +287,13 @@ typedef struct {
 	list_t *new_list;
 } job_state_extract_t;
 
+typedef struct {
+	buf_t *buffer;
+	bool details;
+	uint32_t magic;
+	uint16_t protocol_version;
+} pack_state_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -4738,6 +4745,54 @@ static void _build_node_gres_str(list_t **gres_list, char **gres_str,
 	}
 }
 
+static int _foreach_node_state_pack(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = x;
+	pack_state_t *pack_state = arg;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	uint16_t gres_bitmap_size;
+
+	if (pack_state->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(pack_state->magic, pack_state->buffer);
+		pack32(gres_state_node->plugin_id, pack_state->buffer);
+		pack32(gres_state_node->config_flags, pack_state->buffer);
+		pack64(gres_ns->gres_cnt_avail, pack_state->buffer);
+		/*
+		 * Just note if gres_bit_alloc exists.
+		 * Rebuild it based upon the state of recovered jobs
+		 */
+		if (gres_ns->gres_bit_alloc)
+			gres_bitmap_size = bit_size(gres_ns->gres_bit_alloc);
+		else
+			gres_bitmap_size = 0;
+		pack16(gres_bitmap_size, pack_state->buffer);
+
+		pack16(gres_ns->topo_cnt, pack_state->buffer);
+		for (int i = 0; i < gres_ns->topo_cnt; i++) {
+			pack_bit_str_hex(gres_ns->topo_core_bitmap[i],
+					 pack_state->buffer);
+			pack_bit_str_hex(gres_ns->topo_gres_bitmap[i],
+					 pack_state->buffer);
+			pack_bit_str_hex(gres_ns->topo_res_core_bitmap[i],
+					 pack_state->buffer);
+		}
+		pack64_array(gres_ns->topo_gres_cnt_alloc, gres_ns->topo_cnt,
+			     pack_state->buffer);
+		pack64_array(gres_ns->topo_gres_cnt_avail, gres_ns->topo_cnt,
+			     pack_state->buffer);
+		pack32_array(gres_ns->topo_type_id, gres_ns->topo_cnt,
+			     pack_state->buffer);
+		packstr_array(gres_ns->topo_type_name, gres_ns->topo_cnt,
+			      pack_state->buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, pack_state->protocol_version);
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
  * Note that a node's configuration has been modified (e.g. "scontol update ..")
  * IN node_name - name of the node for which the gres information applies
@@ -4841,11 +4896,12 @@ extern int gres_node_state_pack(list_t *gres_list, buf_t *buffer,
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t top_offset, tail_offset;
-	uint32_t magic = GRES_MAGIC;
-	uint16_t gres_bitmap_size, rec_cnt = 0;
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_node;
-	gres_node_state_t *gres_ns;
+	uint16_t rec_cnt = 0;
+	pack_state_t pack_state = {
+		.buffer = buffer,
+		.magic = GRES_MAGIC,
+		.protocol_version = SLURM_MIN_PROTOCOL_VERSION,
+	};
 
 	if (gres_list == NULL) {
 		pack16(rec_cnt, buffer);
@@ -4855,46 +4911,15 @@ extern int gres_node_state_pack(list_t *gres_list, buf_t *buffer,
 	top_offset = get_buf_offset(buffer);
 	pack16(rec_cnt, buffer);	/* placeholder if data */
 
-	gres_iter = list_iterator_create(gres_list);
-	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
-		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
-		pack32(magic, buffer);
-		pack32(gres_state_node->plugin_id, buffer);
-		pack32(gres_state_node->config_flags, buffer);
-		pack64(gres_ns->gres_cnt_avail, buffer);
-		/*
-		 * Just note if gres_bit_alloc exists.
-		 * Rebuild it based upon the state of recovered jobs
-		 */
-		if (gres_ns->gres_bit_alloc)
-			gres_bitmap_size = bit_size(gres_ns->gres_bit_alloc);
-		else
-			gres_bitmap_size = 0;
-		pack16(gres_bitmap_size, buffer);
-
-		pack16(gres_ns->topo_cnt, buffer);
-		for (int i = 0; i < gres_ns->topo_cnt; i++) {
-			pack_bit_str_hex(gres_ns->topo_core_bitmap[i], buffer);
-			pack_bit_str_hex(gres_ns->topo_gres_bitmap[i], buffer);
-			pack_bit_str_hex(gres_ns->topo_res_core_bitmap[i],
-					 buffer);
-		}
-		pack64_array(gres_ns->topo_gres_cnt_alloc, gres_ns->topo_cnt,
-			     buffer);
-		pack64_array(gres_ns->topo_gres_cnt_avail, gres_ns->topo_cnt,
-			     buffer);
-		pack32_array(gres_ns->topo_type_id, gres_ns->topo_cnt, buffer);
-		packstr_array(gres_ns->topo_type_name, gres_ns->topo_cnt,
-			      buffer);
-
-		rec_cnt++;
+	rec_cnt = list_for_each(gres_list,
+				_foreach_pack_node_state,
+				&pack_state);
+	if (rec_cnt > 0) {
+		tail_offset = get_buf_offset(buffer);
+		set_buf_offset(buffer, top_offset);
+		pack16(rec_cnt, buffer);
+		set_buf_offset(buffer, tail_offset);
 	}
-	list_iterator_destroy(gres_iter);
-
-	tail_offset = get_buf_offset(buffer);
-	set_buf_offset(buffer, top_offset);
-	pack16(rec_cnt, buffer);
-	set_buf_offset(buffer, tail_offset);
 
 	return rc;
 }
