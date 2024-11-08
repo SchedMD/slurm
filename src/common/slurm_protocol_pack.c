@@ -75,6 +75,19 @@
 
 #include "src/stepmgr/stepmgr.h"
 
+typedef struct {
+	buf_t *buffer;
+	int count;
+	uint32_t header_position;
+	uint32_t last_good_position;
+	uint32_t max_buf_size;
+	void (*pack_function)(void *object,
+			      uint16_t protocol_version,
+			      buf_t *buffer);
+	uint16_t protocol_version;
+	int rc;
+} pack_list_t;
+
 static int _unpack_node_info_members(node_info_t *node, buf_t *buffer,
 				     uint16_t protocol_version);
 
@@ -2263,47 +2276,75 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static int _foreach_pack_list(void *x, void *arg)
+{
+	void *object = x;
+	pack_list_t *pack_list = arg;
+
+	(*(pack_list->pack_function))(object,
+				      pack_list->protocol_version,
+				      pack_list->buffer);
+	if (size_buf(pack_list->buffer) > pack_list->max_buf_size) {
+		error("%s: size limit exceeded", __func__);
+		/*
+		 * rewind by one element to stay smaller than
+		 * pack_list->max_buf_size
+		 */
+		set_buf_offset(pack_list->buffer, pack_list->header_position);
+		pack32(pack_list->count, pack_list->buffer);
+		set_buf_offset(pack_list->buffer,
+			       pack_list->last_good_position);
+		pack_list->rc = ESLURM_RESULT_TOO_LARGE;
+		return -1;
+	}
+
+	pack_list->last_good_position =	get_buf_offset(pack_list->buffer);
+	pack_list->count += 1;
+
+	return 0;
+}
+
+static int _pack_list_internal(list_t *send_list, pack_list_t *pack_list)
+{
+	int count;
+
+	if (!send_list) {
+		// to let user know there wasn't a list (error)
+		pack32(NO_VAL, pack_list->buffer);
+		return pack_list->rc;
+	}
+
+	pack_list->header_position = get_buf_offset(pack_list->buffer);
+
+	count = list_count(send_list);
+	pack32(count, pack_list->buffer);
+
+	if (count) {
+		pack_list->count = 0; /* force zero */
+		pack_list->last_good_position =
+			get_buf_offset(pack_list->buffer);
+		(void) list_for_each_ro(
+			send_list, _foreach_pack_list, pack_list);
+	}
+
+	return pack_list->rc;
+}
+
 extern int slurm_pack_list(list_t *send_list,
 			   void (*pack_function) (void *object,
 						  uint16_t protocol_version,
 						  buf_t *buffer),
 			   buf_t *buffer, uint16_t protocol_version)
 {
-	uint32_t count = 0;
-	uint32_t header_position;
-	int rc = SLURM_SUCCESS;
+	pack_list_t pack_list = {
+		.buffer = buffer,
+		.max_buf_size = REASONABLE_BUF_SIZE,
+		.pack_function = pack_function,
+		.protocol_version = protocol_version,
+		.rc = SLURM_SUCCESS,
+	};
 
-	if (!send_list) {
-		// to let user know there wasn't a list (error)
-		pack32(NO_VAL, buffer);
-		return rc;
-	}
-
-	header_position = get_buf_offset(buffer);
-
-	count = list_count(send_list);
-	pack32(count, buffer);
-
-	if (count) {
-		list_itr_t *itr = list_iterator_create(send_list);
-		void *object = NULL;
-		while ((object = list_next(itr))) {
-			(*(pack_function))(object, protocol_version, buffer);
-			if (size_buf(buffer) > REASONABLE_BUF_SIZE) {
-				error("%s: size limit exceeded", __func__);
-				/*
-				 * rewind buffer, pack NO_VAL as count instead
-				 */
-				set_buf_offset(buffer, header_position);
-				pack32(NO_VAL, buffer);
-				rc = ESLURM_RESULT_TOO_LARGE;
-				break;
-			}
-		}
-		list_iterator_destroy(itr);
-	}
-
-	return rc;
+	return _pack_list_internal(send_list, &pack_list);
 }
 
 extern int slurm_pack_list_until(list_t *send_list,
@@ -2311,46 +2352,15 @@ extern int slurm_pack_list_until(list_t *send_list,
 				 buf_t *buffer, uint32_t max_buf_size,
 				 uint16_t protocol_version)
 {
-	uint32_t count = 0;
-	uint32_t header_position, last_good_position;
-	int rc = SLURM_SUCCESS;
+	pack_list_t pack_list = {
+		.buffer = buffer,
+		.max_buf_size = max_buf_size,
+		.pack_function = pack_function,
+		.protocol_version = protocol_version,
+		.rc = SLURM_SUCCESS,
+	};
 
-	if (!send_list) {
-		/* let user know there wasn't a list (error) */
-		pack32(NO_VAL, buffer);
-		return rc;
-	}
-
-	header_position = get_buf_offset(buffer);
-
-	count = list_count(send_list);
-	pack32(count, buffer);
-
-	if (count) {
-		list_itr_t *itr = list_iterator_create(send_list);
-		void *object = NULL;
-		last_good_position = get_buf_offset(buffer);
-		count = 0;
-		while ((object = list_next(itr))) {
-			(*(pack_function))(object, protocol_version, buffer);
-			if (size_buf(buffer) > max_buf_size) {
-				/*
-				 * rewind by one element to stay smaller than
-				 * max_buf_size
-				 */
-				set_buf_offset(buffer, header_position);
-				pack32(count, buffer);
-				set_buf_offset(buffer, last_good_position);
-				rc = ESLURM_RESULT_TOO_LARGE;
-				break;
-			}
-			last_good_position = get_buf_offset(buffer);
-			count += 1;
-		}
-		list_iterator_destroy(itr);
-	}
-
-	return rc;
+	return _pack_list_internal(send_list, &pack_list);
 }
 
 extern int slurm_unpack_list(list_t **recv_list,
