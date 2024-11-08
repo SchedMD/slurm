@@ -1,11 +1,11 @@
 /*****************************************************************************\
- *  backfill.h - header for simple backfill scheduler plugin.
+ *  oracle.h - Infrastructure for the bf_topopt/"oracle" subsystem
+ *
+ *  The oracle() function controls job start delays based on
+ *  fragmentation costs, optimizing job placement for efficiency.
+ *
  *****************************************************************************
- *  Copyright (C) 2003-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -37,28 +37,32 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef _SLURM_ORACLE_H
+#define _SLURM_ORACLE_H
 
-#ifndef _SLURM_BACKFILL_H
-#define _SLURM_BACKFILL_H
+#define MAX_ORACLE_DEPTH 30
+#define ORACLE_DEPTH 10
 
-#include "src/slurmctld/licenses.h"
+typedef struct bf_slot {
+	time_t start;
+	bitstr_t *job_bitmap;
+	bitstr_t *job_mask;
+	bitstr_t *cluster_bitmap;
+	uint32_t time_limit;
+	uint32_t boot_time;
+	uint32_t job_score;
+	uint32_t cluster_score;
+} bf_slot_t;
 
-typedef struct {
-	time_t begin_time;
-	time_t end_time;
-	bitstr_t *avail_bitmap;
-	bf_licenses_t *licenses;
-	uint32_t fragmentation;
-	int next; /* next record, by time, zero termination */
-} node_space_map_t;
+extern int bf_topopt_iterations;
+extern int used_slots;
 
-/* backfill_agent - detached thread periodically attempts to backfill jobs */
-extern void *backfill_agent(void *args);
+void init_oracle(void);
 
-/* Terminate backfill_agent */
-extern void stop_backfill_agent(void);
+void fini_oracle(void);
 
-/* Note that slurm.conf has changed */
-extern void backfill_reconfig(void);
+bool oracle(job_record_t *job_ptr, bitstr_t *job_bitmap, time_t later_start,
+	    uint32_t *time_limit, uint32_t *boot_time,
+	    node_space_map_t *node_space);
 
-#endif	/* _SLURM_BACKFILL_H */
+#endif /* _SLURM_ORACLE_H */

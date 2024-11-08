@@ -438,3 +438,40 @@ unpack_error:
 	*topoinfo_pptr = NULL;
 	return SLURM_ERROR;
 }
+
+extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask)
+{
+	uint32_t frag = 0;
+	bool bset[MAX_BLOCK_LEVELS] = {0};
+
+	/*
+	 * Calculate fragmentation as the sum of sizes of all unavailable
+	 * base and aggregate blocks.
+	 */
+	for (int i = 0; i < block_record_cnt; i++) {
+		if (bit_overlap(block_record_table[i].node_bitmap, node_mask) >=
+		    bblock_node_cnt) {
+			for (int j = 1; j < block_sizes_cnt; j++) {
+				if (!(i % block_sizes[j]) &&
+				    (block_sizes[j] <= (block_record_cnt - i)))
+					bset[j] = true;
+			}
+		} else {
+			for (int j = 0; j < block_sizes_cnt; j++) {
+				if (bset[j] ||
+				    (!(i % block_sizes[j]) &&
+				     (block_sizes[j] <=
+				      (block_record_cnt - i)))) {
+					frag += block_sizes[j];
+					bset[j] = false;
+				}
+			}
+		}
+	}
+
+	frag *= bblock_node_cnt;
+	frag += blocks_nodes_cnt;
+	frag -= bit_overlap(node_mask, blocks_nodes_bitmap);
+
+	return frag;
+}

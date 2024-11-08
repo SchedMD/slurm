@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "October 2024" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "November 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4024,6 +4024,25 @@ Default: 60, Min: 1, Max: 3600 (1 hour).
 Add an extra step to backfill logic, which creates backfill reservations
 for jobs running on whole nodes.
 This option is disabled by default.
+.IP
+
+.TP
+\fBbf_topopt_enable\fR
+Enable experimental hook to control whether to delay jobs in backfill for a
+better placement. Modify \fIsrc/plugins/sched/backfill/oracle.c\fR for testing.
+
+It is recommended to disable the main scheduler so that all jobs are planned
+through backfill and utilize the oracle function(). This can be done by setting
+\fBSchedulerParameters=sched_interval=-1\fR.
+
+It's also recommended to run with
+\fBSchedulerParameters=bf_running_job_reserve\fR for better planning.
+.IP
+
+.TP
+\fBbf_topopt_iterations\fR
+The number of successive backfill map slots that a job may be delayed.
+This option applies only when the \fBbf_topopt_enable\fR is set.
 .IP
 
 .TP

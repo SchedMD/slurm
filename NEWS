@@ -275,6 +275,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix scontrol show conf not showing all TaskPluginParam elements.
  -- slurmrestd - Add fields '.job.oom_kill_step' '.jobs[].oom_kill_step' to
     'POST /slurm/v0.0.42/job/submit' and 'POST /slurm/v0.0.42/job/allocate'.
+ -- Improve performance for _will_run_test().
+ -- Add SchedulerParameters=bf_topopt_enable option to enable experimental hook
+    to control backfill.
 
 * Changes in Slurm 24.05.5
 ==========================

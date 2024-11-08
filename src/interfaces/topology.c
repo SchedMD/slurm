@@ -75,6 +75,7 @@ typedef struct slurm_topo_ops {
 			       char **out);
 	int (*topoinfo_unpack) (void **topoinfo_pptr, buf_t *buffer,
 				uint16_t protocol_version);
+	uint32_t (*get_fragmentation) (bitstr_t *node_mask);
 } slurm_topo_ops_t;
 
 /*
@@ -93,6 +94,7 @@ static const char *syms[] = {
 	"topology_p_topology_pack",
 	"topology_p_topology_print",
 	"topology_p_topology_unpack",
+	"topology_p_get_fragmentation",
 };
 
 static slurm_topo_ops_t ops;
@@ -341,4 +343,11 @@ extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo)
 		xfree(topoinfo);
 	}
 	return rc;
+}
+
+extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask)
+{
+	xassert(plugin_inited);
+
+	return (*(ops.get_fragmentation))(node_mask);
 }

@@ -62,7 +62,8 @@ typedef struct {
 						 uint16_t mode,
 						 list_t *preeemptee_candidates,
 						 list_t **preemptee_job_list,
-						 resv_exc_t *resv_exc_ptr);
+						 resv_exc_t *resv_exc_ptr,
+						 will_run_data_t *will_run_ptr);
 	int		(*job_begin)		(job_record_t *job_ptr);
 	int		(*job_ready)		(job_record_t *job_ptr);
 	int		(*job_expand)		(job_record_t *from_job_ptr,
@@ -507,6 +508,7 @@ extern int select_g_node_init(void)
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
  * IN resv_exc_ptr - Various TRES which the job can NOT use.
+ * IN will_run_ptr - Pointer to data specific to WILL_RUN mode
  * RET SLURM_SUCCESS on success, rc otherwise
  */
 extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
@@ -514,7 +516,8 @@ extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			     uint32_t req_nodes, uint16_t mode,
 			     list_t *preemptee_candidates,
 			     list_t **preemptee_job_list,
-			     resv_exc_t *resv_exc_ptr)
+			     resv_exc_t *resv_exc_ptr,
+			     will_run_data_t *will_run_ptr)
 {
 	xassert(select_context_cnt >= 0);
 
@@ -523,7 +526,8 @@ extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		 min_nodes, max_nodes,
 		 req_nodes, mode,
 		 preemptee_candidates, preemptee_job_list,
-		 resv_exc_ptr);
+		 resv_exc_ptr,
+		 will_run_ptr);
 }
 
 /*
