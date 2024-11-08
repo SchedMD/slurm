@@ -4880,6 +4880,7 @@ function __slurm_comp_sreport_spec_all() {
 function __sreport_cluster() {
 	local subcmds=(
 		"accountutilizationbyuser"
+		"accountutilizationbyqos"
 		"userutilizationbyaccount"
 		"userutilizationbywckey"
 		"utilization"
@@ -4890,6 +4891,7 @@ function __sreport_cluster() {
 	parameters=(
 		"accounts="
 		"tree"
+		"qos="
 		"users="
 		"wckeys="
 	)
