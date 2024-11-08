@@ -4793,6 +4793,31 @@ static int _foreach_node_state_pack(void *x, void *arg)
 	return 0;
 }
 
+static int _pack_state(list_t *gres_list, pack_state_t *pack_state,
+		       int (*pack_function) (void *x, void *key))
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t top_offset, tail_offset;
+	uint16_t rec_cnt = 0;
+
+	top_offset = get_buf_offset(pack_state->buffer);
+	pack16(rec_cnt, pack_state->buffer);	/* placeholder if data */
+
+	if (!gres_list)
+		return rc;
+
+	rec_cnt = list_for_each(gres_list, pack_function, pack_state);
+
+	if (rec_cnt > 0) {
+		tail_offset = get_buf_offset(pack_state->buffer);
+		set_buf_offset(pack_state->buffer, top_offset);
+		pack16(rec_cnt, pack_state->buffer);
+		set_buf_offset(pack_state->buffer, tail_offset);
+	}
+
+	return rc;
+}
+
 /*
  * Note that a node's configuration has been modified (e.g. "scontol update ..")
  * IN node_name - name of the node for which the gres information applies
@@ -4893,34 +4918,13 @@ extern void gres_node_remove(node_record_t *node_ptr)
 extern int gres_node_state_pack(list_t *gres_list, buf_t *buffer,
 				uint16_t protocol_version)
 {
-	int rc = SLURM_SUCCESS;
-	uint32_t top_offset, tail_offset;
-	uint16_t rec_cnt = 0;
 	pack_state_t pack_state = {
 		.buffer = buffer,
 		.magic = GRES_MAGIC,
 		.protocol_version = protocol_version,
 	};
 
-	if (gres_list == NULL) {
-		pack16(rec_cnt, buffer);
-		return rc;
-	}
-
-	top_offset = get_buf_offset(buffer);
-	pack16(rec_cnt, buffer);	/* placeholder if data */
-
-	rec_cnt = list_for_each(gres_list,
-				_foreach_pack_node_state,
-				&pack_state);
-	if (rec_cnt > 0) {
-		tail_offset = get_buf_offset(buffer);
-		set_buf_offset(buffer, top_offset);
-		pack16(rec_cnt, buffer);
-		set_buf_offset(buffer, tail_offset);
-	}
-
-	return rc;
+	return _pack_state(gres_list, &pack_state, _foreach_node_state_pack);
 }
 
 /*
