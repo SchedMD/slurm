@@ -239,19 +239,24 @@ static op_t _str2op(char *str, const char *valid_chars, char **end_out)
 	return op;
 }
 
-static char *_find_op_in_string(char *str)
+/*
+ * Return true if the key or value is valid, false otherwise.
+ * A valid key/value is not an empty string and does not have any operator
+ * characters.
+ */
+static bool _valid_key_value(char *str)
 {
 	char *p;
 
-	if (!str)
-		return NULL;
+	if (!str || (*str == '\0'))
+		return false;
 
 	while (*str) {
 		if ((p = xstrchr(op_chars, *str)))
-			return p;
+			return false;
 		str++;
 	}
-	return NULL;
+	return true;
 }
 
 /*
@@ -329,7 +334,7 @@ static elem_t *_parse_leaf(char *str)
 	*op_ptr = '\0';
 
 	/* Check for invalid characters in key and value: operators */
-	if (_find_op_in_string(key) || (_find_op_in_string(val))) {
+	if (!_valid_key_value(key) || !_valid_key_value(val)) {
 #if _DEBUG
 		error("Invalid key-op-value: %s", str);
 #endif
@@ -364,20 +369,6 @@ static char *_find_leaf_end(char *str)
 		ptr++;
 	}
 	return ptr;
-}
-
-/*
- * Make sure that all children have an operator between them.
- */
-static bool _valid_parent_child_op(elem_t *parent)
-{
-	if (parent->num_children && (parent->operator == OP_NONE)) {
-#if _DEBUG
-		error("No child operator between children");
-#endif
-		return false;
-	}
-	return true;
 }
 
 /*
@@ -436,19 +427,32 @@ static bool _valid_parent_child_op(elem_t *parent)
 static void _recurse(char **str_ptr, int *level, elem_t *parent, int *rc)
 {
 	elem_t *child;
+	bool got_leaf = false;
+	/* Implied operator before the first leaf on any level of the tree */
+	bool got_op = true;
 
 	xassert(str_ptr);
 	xassert(level);
 	xassert(parent);
 	xassert(rc);
 
-	while (**str_ptr && (*rc == SLURM_SUCCESS)) {
+	while (*rc == SLURM_SUCCESS) {
 		char save_char;
 		char *next;
 
 #if _DEBUG
 		info("level=%d, string=\"%s\"", *level, *str_ptr);
 #endif
+		if (**str_ptr == '\0') {
+			/* End of string. */
+			if (got_op || !got_leaf) {
+#if _DEBUG
+				error("Did not end in a leaf. Invalid string");
+#endif
+				*rc = SLURM_ERROR;
+			}
+			break;
+		}
 
 		/*
 		 * These first two checks go deeper or shallower in the tree.
@@ -459,7 +463,11 @@ static void _recurse(char **str_ptr, int *level, elem_t *parent, int *rc)
 		if (**str_ptr == '(') {
 			elem_t *child;
 
-			if (!_valid_parent_child_op(parent)) {
+			if (!got_op) {
+#if _DEBUG
+				error("No boolean operator before leaf. Invalid string: \"%s\"",
+				      *str_ptr);
+#endif
 				*rc = SLURM_ERROR;
 				break;
 			}
@@ -470,6 +478,14 @@ static void _recurse(char **str_ptr, int *level, elem_t *parent, int *rc)
 			*level = *level + 1;
 			(*str_ptr) = *str_ptr + 1;
 			_recurse(str_ptr, level, child, rc);
+			/*
+			 * Returned after a ')' is found.
+			 * Treat the contents within the parentheses as a leaf
+			 * since we expect an operator to come after the
+			 * closing paren.
+			 */
+			got_leaf = true;
+			got_op = false;
 			continue;
 		} else if (**str_ptr == ')') {
 			(*str_ptr) = *str_ptr + 1;
@@ -486,9 +502,9 @@ static void _recurse(char **str_ptr, int *level, elem_t *parent, int *rc)
 				 */
 				break;
 			}
-			if (!parent->num_children) {
+			if (got_op || !got_leaf) {
 #if _DEBUG
-				error("No children at this level");
+				error("Invalid expression inside parentheses, did not end in leaf");
 #endif
 				*rc = SLURM_ERROR;
 			}
@@ -497,15 +513,20 @@ static void _recurse(char **str_ptr, int *level, elem_t *parent, int *rc)
 		}
 
 		/* Check if we are at a child operator. */
-		if (**str_ptr == '\0') {
-			/*
-			 * End of string. xstrchr will find the '\0' character
-			 * in a string, so we need to avoid that when looking
-			 * for child operator characters.
-			 */
-		} else if (xstrchr(child_op_chars, **str_ptr)) {
+		if (xstrchr(child_op_chars, **str_ptr)) {
 			char *tmp_end = NULL;
-			op_t op = _str2op(*str_ptr, child_op_chars, &tmp_end);
+			op_t op;
+
+			if (!got_leaf) {
+#if _DEBUG
+				error("Got boolean operator without a leaf. Invalid string: \"%s\"",
+				      *str_ptr);
+#endif
+				*rc = SLURM_ERROR;
+				break;
+			}
+
+			op = _str2op(*str_ptr, child_op_chars, &tmp_end);
 
 			if (op == OP_NONE) {
 				/*
@@ -542,10 +563,16 @@ static void _recurse(char **str_ptr, int *level, elem_t *parent, int *rc)
 				parent->operator = op;
 			}
 			*str_ptr = tmp_end;
+			got_op = true;
+			got_leaf = false;
 			continue;
 		}
 
-		if (!_valid_parent_child_op(parent)) {
+		if (!got_op) {
+#if _DEBUG
+			error("No boolean operator before leaf. Invalid string: \"%s\"",
+			      *str_ptr);
+#endif
 			*rc = SLURM_ERROR;
 			break;
 		}
@@ -571,6 +598,8 @@ static void _recurse(char **str_ptr, int *level, elem_t *parent, int *rc)
 
 		*next = save_char;
 		*str_ptr = next;
+		got_op = false;
+		got_leaf = true;
 	}
 
 	/*

@@ -266,6 +266,10 @@ documents those changes that are of interest to users and administrators.
     memory and FDs leaks.
  -- Fix jobs with --gpus being rejected in some edge cases for partitions
     where not all nodes have the same amount of GPUs and CPUs configured.
+ -- In an extra constraints expression in a job request, do not allow an empty
+    string for a key or value.
+ -- In an extra constraints expression in a job request, fix validation that
+    requests are separated by boolean operators.
 
 * Changes in Slurm 24.05.5
 ==========================
