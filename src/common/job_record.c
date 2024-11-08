@@ -1019,10 +1019,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		goto unpack_error;
 	}
 
-	step_ptr = find_step_record(job_ptr, &step_id);
-	if (step_ptr == NULL) {
-		step_ptr = create_step_record(job_ptr, start_protocol_ver);
-	}
+	step_ptr = create_step_record(job_ptr, start_protocol_ver);
 	if (step_ptr == NULL)
 		goto unpack_error;
 
