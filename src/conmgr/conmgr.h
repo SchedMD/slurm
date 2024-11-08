@@ -284,6 +284,7 @@ typedef struct {
  */
 typedef enum {
 	CON_TYPE_INVALID = 0,
+	CON_TYPE_NONE, /* Initialized state */
 	CON_TYPE_RAW, /* handle data unprocessed to/from */
 	CON_TYPE_RPC, /* handle data Slurm RPCs to/from */
 	CON_TYPE_MAX /* place holder - do not use */
