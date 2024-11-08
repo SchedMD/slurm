@@ -1612,7 +1612,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack16(object->tpc, buffer);
 		packstr(object->mcs_label, buffer);
 		(void) gres_node_state_pack(object->gres_list, buffer,
-					    object->name);
+					    protocol_version);
 		pack32(object->weight, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		packstr(object->comm_name, buffer);
@@ -1652,7 +1652,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack16(object->tpc, buffer);
 		packstr(object->mcs_label, buffer);
 		(void) gres_node_state_pack(object->gres_list, buffer,
-					    object->name);
+					    protocol_version);
 		pack32(object->weight, buffer);
 	}
 }
