@@ -689,9 +689,6 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 	step_record_t *step_ptr = object;
 	slurm_node_alias_addrs_t *alias_addrs_tmp = NULL;
 
-	if (step_ptr->state < JOB_RUNNING)
-		return;
-
 	pack32(step_ptr->step_id.step_id, buffer);
 	pack32(step_ptr->step_id.step_het_comp, buffer);
 	pack16(step_ptr->cyclic_alloc, buffer);
@@ -792,9 +789,6 @@ extern int dump_job_step_state(void *x, void *arg)
 {
 	step_record_t *step_ptr = (step_record_t *) x;
 	buf_t *buffer = (buf_t *) arg;
-
-	if (step_ptr->state < JOB_RUNNING)
-		return 0;
 
 	pack16((uint16_t) STEP_FLAG, buffer);
 
