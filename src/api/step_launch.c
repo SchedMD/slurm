@@ -353,6 +353,11 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.ofname = params->remote_output_filename;
 	launch.efname = params->remote_error_filename;
 	launch.ifname = params->remote_input_filename;
+	if (params->oom_kill_step != NO_VAL16)
+		launch.oom_kill_step = (params->oom_kill_step == 1);
+	else
+		launch.oom_kill_step =
+			slurm_conf.task_plugin_param & OOM_KILL_STEP;
 	if (params->buffered_stdio)
 		launch.flags |= LAUNCH_BUFFERED_IO;
 	if (params->labelio)

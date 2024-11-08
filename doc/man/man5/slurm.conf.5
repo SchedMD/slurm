@@ -5921,6 +5921,18 @@ completely unavailable to Slurm daemons and jobs spawned by Slurm).
 .IP
 
 .TP
+\fBOOMKillStep\fR
+Set this parameter to kill the whole step in all the nodes in case an OOM event
+is triggered in any task of the step.
+
+This applies to entire allocations but does not apply to the external step.
+It can be overwritten by the user.
+
+\fBNOTE\fR: This parameter requires the \fBtask/cgroup\fR plugin, Cgroups v2,
+and a kernel newer than 4.19.
+.IP
+
+.TP
 \fBVerbose\fR
 Verbosely report binding before tasks run by default.
 .IP

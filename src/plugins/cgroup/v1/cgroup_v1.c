@@ -1186,7 +1186,7 @@ static void *_oom_event_monitor(void *x)
 	return NULL;
 }
 
-extern int cgroup_p_step_start_oom_mgr(void)
+extern int cgroup_p_step_start_oom_mgr(stepd_step_rec_t *step)
 {
 	char *control_file = NULL, *event_file = NULL, *line = NULL;
 	int rc = SLURM_SUCCESS, event_fd = -1, cfd = -1, efd = -1;

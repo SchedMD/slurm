@@ -2383,9 +2383,20 @@ fail:
 	return NULL;
 }
 
-extern int cgroup_p_step_start_oom_mgr(void)
+extern int cgroup_p_step_start_oom_mgr(stepd_step_rec_t *step)
 {
-	/* Just return, no need to start anything. */
+	/* Only set the memory.oom.group if needed. */
+	if (step->oom_kill_step) {
+		if (!cgroup_p_has_feature(CG_MEMCG_OOMGROUP))
+			log_flag(CGROUP, "OOMKillStep was requested but memory.oom.group interface is not available.");
+		else {
+			if (common_cgroup_set_param(&int_cg[CG_LEVEL_STEP_USER],
+						    "memory.oom.group", "1")) {
+				error("Cannot set memory.oom.group");
+				return SLURM_ERROR;
+			}
+		}
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -2653,6 +2664,15 @@ extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 	char file_path[PATH_MAX];
 
 	switch (f) {
+	case CG_MEMCG_OOMGROUP:
+		if (!bit_test(int_cg_ns.avail_controllers, CG_MEMORY))
+			break;
+		if (snprintf(file_path, PATH_MAX, "%s/memory.oom.group",
+			     int_cg[CG_LEVEL_ROOT].path) >= PATH_MAX)
+			break;
+		if (!access(file_path, F_OK))
+			return true;
+		break;
 	case CG_MEMCG_PEAK:
 		if (!bit_test(int_cg_ns.avail_controllers, CG_MEMORY))
 			break;

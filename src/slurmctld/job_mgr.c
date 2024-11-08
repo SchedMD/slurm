@@ -8686,6 +8686,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	if (job_desc->pn_min_tmp_disk != NO_VAL)
 		detail_ptr->pn_min_tmp_disk = job_desc->pn_min_tmp_disk;
 
+	detail_ptr->oom_kill_step = job_desc->oom_kill_step;
+
 	detail_ptr->segment_size = job_desc->segment_size;
 	detail_ptr->std_err = xstrdup(job_desc->std_err);
 	detail_ptr->std_in = xstrdup(job_desc->std_in);
@@ -11224,6 +11226,8 @@ static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
 			pack64(detail_ptr->pn_min_memory, buffer);
 			pack32(detail_ptr->pn_min_tmp_disk, buffer);
 
+			pack16(detail_ptr->oom_kill_step, buffer);
+
 			packstr(detail_ptr->req_nodes, buffer);
 			pack_bit_str_hex(detail_ptr->req_node_bitmap, buffer);
 			packstr(detail_ptr->exc_nodes, buffer);
@@ -11243,6 +11247,8 @@ static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
 
 			pack64((uint64_t) 0, buffer);
 			pack32((uint32_t) 0, buffer);
+
+			pack16((uint16_t) 0, buffer);
 
 			packnull(buffer);
 			packnull(buffer);
@@ -18344,6 +18350,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->work_dir          = xstrdup(details->work_dir);
 	job_desc->pn_min_cpus       = details->pn_min_cpus;
 	job_desc->pn_min_memory     = details->pn_min_memory;
+	job_desc->oom_kill_step     = details->oom_kill_step;
 	job_desc->pn_min_tmp_disk   = details->pn_min_tmp_disk;
 	job_desc->min_cpus          = details->min_cpus;
 	job_desc->max_cpus          = details->max_cpus;

@@ -669,6 +669,7 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	env->user_name = xstrdup(job->user_name);
 	env->gid = job->gid;
 	env->group_name = xstrdup(job->group_name);
+	env->oom_kill_step = opt_local->oom_kill_step;
 
 	if (srun_opt->pty) {
 		int fd = STDIN_FILENO;

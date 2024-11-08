@@ -253,7 +253,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *step)
 	if (_memcg_initialize(step, step->step_mem, true) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (cgroup_g_step_start_oom_mgr() == SLURM_SUCCESS)
+	if (cgroup_g_step_start_oom_mgr(step) == SLURM_SUCCESS)
 		oom_mgr_started = true;
 
 	/* Attach the slurmstepd to the step memory cgroup. */
@@ -303,6 +303,15 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *step)
 		      results->oom_kill_cnt,
 		      (results->oom_kill_cnt == 1) ? "" : "s" ,
 		      &step->step_id);
+		/*
+		 * If OOMKillStep is set send a message to terminate this
+		 * step, this is done to ensure that if this is a multinode
+		 * step, the step gets terminated in all other nodes.
+		 */
+		if (step->oom_kill_step) {
+			slurm_terminate_job_step(step->step_id.job_id,
+						 step->step_id.step_id);
+		}
 		rc = ENOMEM;
 	}
 

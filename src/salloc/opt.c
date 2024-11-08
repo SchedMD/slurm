@@ -459,6 +459,10 @@ static bool _opt_verify(void)
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
 
+	/* Set the env var so that the spawned srun can set it */
+	if (opt.oom_kill_step != NO_VAL16 && !getenv("SLURM_OOM_KILL_STEP"))
+		setenvf(NULL, "SLURM_OOM_KILL_STEP", "%u", opt.oom_kill_step);
+
 	if ((saopt.no_shell == false) && (opt.argc == 0))
 		_salloc_default_command(&opt.argc, &opt.argv);
 
@@ -791,6 +795,7 @@ static void _usage(void)
 "              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "              [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "              [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
+"              [--oom-kill-step[=0|1]]\n"
 "              [command [args...]]\n");
 }
 
@@ -841,6 +846,7 @@ static void _help(void)
 "      --no-bell               do NOT ring the terminal bell\n"
 "      --ntasks-per-node=n     number of tasks to invoke on each node\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
+"      --oom-kill-step[=0|1]   set the OOMKillStep behaviour\n"
 "  -O, --overcommit            overcommit resources\n"
 "      --power=flags           power management options\n"
 "      --priority=value        set the priority of the job to value\n"

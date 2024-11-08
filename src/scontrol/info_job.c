@@ -814,6 +814,12 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	}
 
 	/****** Line (optional) ******/
+	if (job_ptr->oom_kill_step != NO_VAL16) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "OOMKillStep=%u", job_ptr->oom_kill_step);
+	}
+
+	/****** Line (optional) ******/
 	if (job_ptr->cpus_per_tres) {
 		xstrcat(out, line_end);
 		xstrfmtcat(out, "CpusPerTres=%s", job_ptr->cpus_per_tres);

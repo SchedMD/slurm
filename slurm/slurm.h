@@ -929,7 +929,8 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 	/* the following is used only as a flag for expressing
 	 * the contents of TaskPluginParams */
 	SLURMD_OFF_SPEC            = 0x40000,
-	CPU_BIND_OFF               = 0x80000	/* Disable binding */
+	CPU_BIND_OFF               = 0x80000,	/* Disable binding */
+	OOM_KILL_STEP              = 0x100000
 } cpu_bind_type_t;
 
 #define CPU_BIND_T_TO_MASK 0x001e
@@ -1669,6 +1670,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * NICE_OFFSET == no change */
 	uint32_t num_tasks;	/* number of tasks to be started,
 				 * for batch only */
+	uint16_t oom_kill_step;	/* 1 if kill whole step on task OOM,
+				 * 0 do nothing on task OOM
+				 * NO_VAL16 use taskpluginparam option */
 	uint8_t open_mode;	/* out/err open mode truncate or append,
 				 * see OPEN_MODE_* */
 	char *origin_cluster;	/* cluster name that initiated the job. */
@@ -1868,6 +1872,7 @@ typedef struct job_info {
 	uint32_t num_cpus;	/* minimum number of cpus required by job */
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_tasks;	/* requested task count */
+	uint16_t oom_kill_step;	/* kill whole step in case of task oom */
 	char *partition;	/* name of assigned partition */
 	char *prefer;		/* comma separated list of soft features */
 	uint64_t pn_min_memory; /* minimum real memory per node, default=0 */
@@ -2221,6 +2226,7 @@ typedef struct {
 	uint32_t spank_job_env_size;	/* element count in spank_env */
 	char *tres_bind;
 	char *tres_freq;
+	uint16_t oom_kill_step;
 } slurm_step_launch_params_t;
 
 typedef struct {

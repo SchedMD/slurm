@@ -3550,6 +3550,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpack64(&job->pn_min_memory, buffer);
 		safe_unpack32(&job->pn_min_tmp_disk, buffer);
+		safe_unpack16(&job->oom_kill_step, buffer);
 		safe_unpackstr(&job->req_nodes, buffer);
 
 		unpack_bit_str_hex_as_inx(&job->req_node_inx, buffer);
@@ -6803,6 +6804,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		packstr(job_desc_ptr->burst_buffer, buffer);
 		pack16(job_desc_ptr->pn_min_cpus, buffer);
 		pack64(job_desc_ptr->pn_min_memory, buffer);
+		pack16(job_desc_ptr->oom_kill_step, buffer);
 		pack32(job_desc_ptr->pn_min_tmp_disk, buffer);
 		packstr(job_desc_ptr->prefer, buffer);
 
@@ -7237,6 +7239,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpackstr(&job_desc_ptr->burst_buffer, buffer);
 		safe_unpack16(&job_desc_ptr->pn_min_cpus, buffer);
 		safe_unpack64(&job_desc_ptr->pn_min_memory, buffer);
+		safe_unpack16(&job_desc_ptr->oom_kill_step, buffer);
 		safe_unpack32(&job_desc_ptr->pn_min_tmp_disk, buffer);
 
 		safe_unpackstr(&job_desc_ptr->prefer, buffer);
@@ -8503,6 +8506,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack16(msg->x11_target_port, buffer);
 
 		packstr(msg->stepmgr, buffer);
+		packbool(msg->oom_kill_step, buffer);
 
 		if (msg->job_ptr) {
 			packbool(true, buffer);
@@ -8992,6 +8996,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 
 		safe_unpackstr(&msg->stepmgr, buffer);
 
+		safe_unpackbool(&msg->oom_kill_step, buffer);
 		safe_unpackbool(&tmp_bool, buffer);
 		if (tmp_bool) {
 			if (job_record_unpack(&msg->job_ptr, 0, buffer,
@@ -10859,6 +10864,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->cpu_freq_min, buffer);
 		pack32(msg->cpu_freq_max, buffer);
 		pack32(msg->cpu_freq_gov, buffer);
+		packbool(msg->oom_kill_step, buffer);
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
@@ -11069,6 +11075,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&launch_msg_ptr->cpu_freq_min, buffer);
 		safe_unpack32(&launch_msg_ptr->cpu_freq_max, buffer);
 		safe_unpack32(&launch_msg_ptr->cpu_freq_gov, buffer);
+		safe_unpackbool(&launch_msg_ptr->oom_kill_step, buffer);
 	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);

@@ -1455,6 +1455,7 @@ extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.mpi_plugin_name = srun_opt->mpi_type;
 	launch_params.env = _build_user_env(job, opt_local);
 	launch_params.tree_width = srun_opt->tree_width;
+	launch_params.oom_kill_step = opt_local->oom_kill_step;
 
 	memcpy(&launch_params.local_fds, cio_fds, sizeof(slurm_step_io_fds_t));
 

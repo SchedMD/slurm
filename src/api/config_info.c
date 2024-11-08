@@ -561,6 +561,38 @@ static char *_logfmtstr(uint16_t log_fmt)
 	return logfmtstr;
 }
 
+static void _sprint_task_plugin_params(char *str,
+				       cpu_bind_type_t task_plugin_params)
+{
+	char tmp_str[256];
+	if (!str)
+		return;
+
+	str[0] = '\0';
+
+	/* Non CPUBIND parameters */
+	if (task_plugin_params & OOM_KILL_STEP)
+		strcat(str, "OOMKillStep,");
+	if (task_plugin_params & SLURMD_OFF_SPEC)
+		strcat(str, "SlurmdOffSpec,");
+
+	slurm_sprint_cpu_bind_type(tmp_str, task_plugin_params);
+	/*
+	 * If we got something from the cpubind parameters append it to the
+	 * existing string.
+	 */
+	if (xstrcmp(tmp_str, "(null type)"))
+		strcat(str, tmp_str);
+
+	if (*str) {
+		/* Ensure we remove a comma */
+		if (str[strlen(str) - 1] == ',')
+			str[strlen(str) - 1] = '\0';
+	} else {
+		strcat(str, "(null type)");
+	}
+}
+
 extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 {
 	list_t *ret_list = NULL;
@@ -1160,7 +1192,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "TaskPlugin", "%s", conf->task_plugin);
 
-	slurm_sprint_cpu_bind_type(tmp_str, conf->task_plugin_param);
+	_sprint_task_plugin_params(tmp_str, conf->task_plugin_param);
 	add_key_pair(ret_list, "TaskPluginParam", "%s", tmp_str);
 
 	add_key_pair(ret_list, "TaskProlog", "%s", conf->task_prolog);

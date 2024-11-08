@@ -482,6 +482,11 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		step->x11_target_port = msg->x11_target_port;
 	}
 
+	if (msg->step_id.step_id == SLURM_EXTERN_CONT)
+		step->oom_kill_step = false;
+	else
+		step->oom_kill_step = msg->oom_kill_step;
+
 	get_cred_gres(msg->cred, conf->node_name,
 		      &step->job_gres_list, &step->step_gres_list);
 
@@ -634,6 +639,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 					 _batchfilename(step, msg->std_err));
 	step->task[0]->argc = step->argc;
 	step->task[0]->argv = step->argv;
+	step->oom_kill_step = msg->oom_kill_step;
 
 	return step;
 }

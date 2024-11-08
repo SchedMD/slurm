@@ -593,6 +593,7 @@ env_vars_t env_vars[] = {
   { "SLURM_NTASKS_PER_NODE", LONG_OPT_NTASKSPERNODE },
   { "SLURM_NTASKS_PER_GPU", LONG_OPT_NTASKSPERGPU },
   { "SLURM_NTASKS_PER_TRES", LONG_OPT_NTASKSPERTRES },
+  { "SLURM_OOM_KILL_STEP", LONG_OPT_OOMKILLSTEP },
   { "SLURM_OPEN_MODE", LONG_OPT_OPEN_MODE },
   { "SLURM_OVERCOMMIT", 'O' },
   { "SLURM_OVERLAP", LONG_OPT_OVERLAP },
@@ -1503,6 +1504,7 @@ static void _usage(void)
 "            [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
+"            [--oom-kill-step[=0|1]]\n"
 "            executable [args...]\n");
 
 }
@@ -1571,6 +1573,7 @@ static void _help(void)
 "      --nice[=value]          decrease scheduling priority by value\n"
 "      --ntasks-per-node=n     number of tasks to invoke on each node\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
+"      --oom-kill-step[=0|1]   set the OOMKillStep behaviour\n"
 "  -o, --output=out            location of stdout redirection\n"
 "  -O, --overcommit            overcommit resources\n"
 "      --overlap               Allow other steps to overlap this step\n"

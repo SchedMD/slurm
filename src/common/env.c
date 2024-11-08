@@ -619,6 +619,12 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_ERROR;
 	}
 
+	if (env->oom_kill_step != NO_VAL16 &&
+	    setenvf(&env->env, "SLURM_OOM_KILL_STEP", "%u", env->oom_kill_step)) {
+		error("Unable to set SLURM_OOM_KILL_STEP environment");
+		rc = SLURM_ERROR;
+	}
+
 	if (env->slurmd_debug
 	    && setenvf(&env->env, "SLURMD_DEBUG", "%d", env->slurmd_debug)) {
 		error("Can't set SLURMD_DEBUG environment variable");
