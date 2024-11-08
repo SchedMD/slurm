@@ -8440,6 +8440,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(STRING, network, "network", "Network specs for job step"),
 	add_parse(NICE, nice, "nice", "Requested job priority change"),
 	add_parse(UINT32, num_tasks, "tasks", "Number of tasks"),
+	add_parse(UINT16, oom_kill_step, "oom_kill_step", "Kill whole step in case of OOM in one of the tasks"),
 	add_flags(OPEN_MODE, open_mode, "open_mode", "Open mode used for stdout and stderr files"),
 	add_skip(origin_cluster),
 	add_parse(UINT16, other_port, "reserve_ports", "Port to send various notification msg to"),
