@@ -7843,7 +7843,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	xstrtolower(job_desc->wckey);
 
 	/* Basic validation of some parameters */
-	if (job_desc->req_nodes) {
+	if (job_desc->req_nodes && (job_desc->min_nodes == NO_VAL)) {
 		hostlist_t *hl;
 		uint32_t host_cnt;
 		hl = hostlist_create(job_desc->req_nodes);
@@ -7856,8 +7856,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		hostlist_uniq(hl);
 		host_cnt = hostlist_count(hl);
 		hostlist_destroy(hl);
-		if (job_desc->min_nodes == NO_VAL)
-			job_desc->min_nodes = host_cnt;
+		job_desc->min_nodes = host_cnt;
 	}
 
 	_figure_out_num_tasks(job_desc, NULL);
