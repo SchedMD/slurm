@@ -254,61 +254,6 @@ static int _get_switch_inx(const char *name)
 }
 
 /*
- * _node_name2bitmap - given a node name regular expression, build a bitmap
- *	representation, any invalid hostnames are added to a hostlist
- * IN node_names  - set of node namess
- * OUT bitmap     - set to bitmap, may not have all bits set on error
- * IN/OUT invalid_hostlist - hostlist of invalid host names, initialize to NULL
- * RET 0 if no error, otherwise EINVAL
- * NOTE: call FREE_NULL_BITMAP(bitmap) and hostlist_destroy(invalid_hostlist)
- *       to free memory when variables are no longer required
- */
-static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
-			     hostlist_t **invalid_hostlist)
-{
-	char *this_node_name;
-	bitstr_t *my_bitmap;
-	hostlist_t *host_list;
-
-	my_bitmap = bit_alloc(node_record_count);
-	*bitmap = my_bitmap;
-
-	if (node_names == NULL) {
-		error("_node_name2bitmap: node_names is NULL");
-		return EINVAL;
-	}
-
-	if ((host_list = hostlist_create(node_names)) == NULL) {
-		/* likely a badly formatted hostlist */
-		error("_node_name2bitmap: hostlist_create(%s) error",
-		      node_names);
-		return EINVAL;
-	}
-
-	while ((this_node_name = hostlist_shift(host_list)) ) {
-		node_record_t *node_ptr;
-		node_ptr = find_node_record(this_node_name);
-		if (node_ptr) {
-			bit_set(my_bitmap, node_ptr->index);
-		} else {
-			debug2("_node_name2bitmap: invalid node specified %s",
-			       this_node_name);
-			if (*invalid_hostlist) {
-				hostlist_push_host(*invalid_hostlist,
-						   this_node_name);
-			} else {
-				*invalid_hostlist =
-					hostlist_create(this_node_name);
-			}
-		}
-		free(this_node_name);
-	}
-	hostlist_destroy(host_list);
-
-	return SLURM_SUCCESS;
-}
-
-/*
  * _find_child_switches creates an array of indexes to the
  * immediate descendants of switch sw.
  */
@@ -402,9 +347,9 @@ extern void switch_record_validate(void)
 		if (ptr->nodes) {
 			switch_ptr->level = 0;	/* leaf switch */
 			switch_ptr->nodes = xstrdup(ptr->nodes);
-			if (_node_name2bitmap(ptr->nodes,
-					      &switch_ptr->node_bitmap,
-					      &invalid_hl)) {
+			if (node_name2bitmap(ptr->nodes, true,
+					     &switch_ptr->node_bitmap,
+					     &invalid_hl)) {
 				fatal("Invalid node name (%s) in switch "
 				      "config (%s)",
 				      ptr->nodes, ptr->switch_name);
