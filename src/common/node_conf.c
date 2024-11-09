@@ -1247,6 +1247,38 @@ static int _parse_hostlist_function(bitstr_t *node_bitmap, char *node_str)
 	return rc;
 }
 
+extern int parse_hostlist_functions(hostlist_t **hostlist)
+{
+	hostlist_t *new_hostlist = hostlist_create(NULL);
+	node_record_t *node_ptr;
+	char *host;
+	int rc = SLURM_SUCCESS;
+
+	while ((host = hostlist_shift(*hostlist))) {
+		if ((strchr(host, '{'))) {
+			bitstr_t *node_bitmap = bit_alloc(node_record_count);
+			if (_parse_hostlist_function(node_bitmap, host)) {
+				rc = SLURM_ERROR;
+			} else {
+				for (int i = 0; (node_ptr = next_node_bitmap(
+							 node_bitmap, &i));
+				     i++) {
+					hostlist_push_host(new_hostlist,
+							   node_ptr->name);
+				}
+			}
+			FREE_NULL_BITMAP(node_bitmap);
+		} else {
+			hostlist_push_host(new_hostlist, host);
+		}
+		free(host);
+	}
+	hostlist_destroy(*hostlist);
+	*hostlist = new_hostlist;
+
+	return rc;
+}
+
 static int _single_node_name2bitmap(char *node_name, bool test_alias,
 				    bitstr_t *bitmap,
 				    hostlist_t **invalid_hostlist)
