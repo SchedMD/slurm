@@ -1157,7 +1157,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	if (step_spec->exc_nodes) {
 		bitstr_t *exc_bitmap = NULL;
 		error_code = node_name2bitmap(step_spec->exc_nodes, false,
-					      &exc_bitmap);
+					      &exc_bitmap, NULL);
 		if (error_code) {
 			*return_code = ESLURM_INVALID_NODE_NAME;
 			FREE_NULL_BITMAP(exc_bitmap);
@@ -1169,7 +1169,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			bitstr_t *req_nodes = NULL;
 			error_code = node_name2bitmap(
 				step_spec->node_list, false,
-				&req_nodes);
+				&req_nodes, NULL);
 			if (error_code) {
 				info("%s: invalid requested node list %s",
 				     __func__,
@@ -1468,7 +1468,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		log_flag(STEPS, "%s: selected nodelist is %s",
 			 __func__, step_spec->node_list);
 		error_code = node_name2bitmap(step_spec->node_list, false,
-					      &selected_nodes);
+					      &selected_nodes, NULL);
 		if (error_code) {
 			log_flag(STEPS, "%s: invalid node list %s", __func__,
 				 step_spec->node_list);
@@ -4836,7 +4836,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 
 #ifndef HAVE_FRONT_END
 	if (node_name2bitmap(job_ptr->batch_host, false,
-			     &step_ptr->step_node_bitmap)) {
+			     &step_ptr->step_node_bitmap, NULL)) {
 		error("%s: %pJ has invalid node list (%s)",
 		      __func__, job_ptr, job_ptr->batch_host);
 	}
@@ -4929,7 +4929,7 @@ static step_record_t *_build_interactive_step(
 
 #ifndef HAVE_FRONT_END
 	if (node_name2bitmap(job_ptr->batch_host, false,
-			     &step_ptr->step_node_bitmap)) {
+			     &step_ptr->step_node_bitmap, NULL)) {
 		error("%s: %pJ has invalid node list (%s)",
 		      __func__, job_ptr, job_ptr->batch_host);
 		delete_step_record(job_ptr, step_ptr);

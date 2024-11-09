@@ -7128,7 +7128,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	/* ensure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
 		error_code = node_name2bitmap(job_desc->req_nodes, false,
-					      &req_bitmap);
+					      &req_bitmap, NULL);
 		if (error_code) {
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto cleanup_fail;
@@ -7332,7 +7332,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		bitstr_t *old_exc_bitmap = exc_bitmap;
 
 		error_code = node_name2bitmap(job_desc->exc_nodes, false,
-					      &exc_bitmap);
+					      &exc_bitmap, NULL);
 		if (error_code) {
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto cleanup_fail;
@@ -12504,7 +12504,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (detail_ptr->exc_nodes) {
 		/* This error should never happen */
 		if (node_name2bitmap(detail_ptr->exc_nodes,
-				     false, &exc_bitmap)) {
+				     false, &exc_bitmap, NULL)) {
 			sched_info("%s: Invalid excluded nodes list in job records: %s",
 				   __func__, detail_ptr->exc_nodes);
 			FREE_NULL_BITMAP(exc_bitmap);
@@ -12518,7 +12518,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (detail_ptr->req_nodes) {
 		/* This error should never happen */
 		if (node_name2bitmap(detail_ptr->req_nodes,
-				     false, &new_req_bitmap)) {
+				     false, &new_req_bitmap, NULL)) {
 			sched_info("%s: Invalid required nodes list in job records: %s",
 				   __func__, detail_ptr->req_nodes);
 			FREE_NULL_BITMAP(new_req_bitmap);
@@ -12541,7 +12541,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
 		} else {
 			if (node_name2bitmap(job_desc->exc_nodes, false,
-					     &exc_bitmap)) {
+					     &exc_bitmap, NULL)) {
 				sched_error("%s: Invalid node list for update of %pJ: %s",
 					    __func__, job_ptr,
 					    job_desc->exc_nodes);
@@ -12592,7 +12592,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 		if ((job_desc->req_nodes[0] == '\0') ||
 		    node_name2bitmap(job_desc->req_nodes, false,
-				     &new_req_bitmap) ||
+				     &new_req_bitmap, NULL) ||
 		    !bit_super_set(new_req_bitmap, job_ptr->node_bitmap) ||
 		    (job_ptr->details && job_ptr->details->expanding_jobid)) {
 			sched_info("%s: Invalid node list (%s) for %pJ update",
@@ -12672,7 +12672,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			new_req_bitmap_given = true;
 		else {
 			if (node_name2bitmap(job_desc->req_nodes, false,
-					     &new_req_bitmap)) {
+					     &new_req_bitmap, NULL)) {
 				sched_info("%s: Invalid node list for job_update: %s",
 					   __func__, job_desc->req_nodes);
 				FREE_NULL_BITMAP(new_req_bitmap);
@@ -14314,7 +14314,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			if (job_ptr->batch_host) {
 				bitstr_t *batch_host_bitmap;
 				if (node_name2bitmap(job_ptr->batch_host, false,
-						     &batch_host_bitmap))
+						     &batch_host_bitmap, NULL))
 					error("%s: Invalid batch host %s for %pJ; this should never happen",
 					      __func__, job_ptr->batch_host,
 					      job_ptr);
@@ -19191,7 +19191,7 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 		hostlist_destroy(hl);
 
 		(void) node_name2bitmap(detail_ptr->req_nodes, true,
-					&detail_ptr->req_node_bitmap);
+					&detail_ptr->req_node_bitmap, NULL);
 	}
 
 	if (resv_desc_ptr->tres_str || resv_desc_ptr->core_cnt != NO_VAL) {

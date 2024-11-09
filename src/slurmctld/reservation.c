@@ -1913,7 +1913,7 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 	FREE_NULL_BITMAP(resv_ptr->core_resrcs->node_bitmap);
 	if (resv_ptr->core_resrcs->nodes &&
 	    (node_name2bitmap(resv_ptr->core_resrcs->nodes, false,
-			      &resv_ptr->core_resrcs->node_bitmap))) {
+			      &resv_ptr->core_resrcs->node_bitmap, NULL))) {
 		error("Invalid nodes (%s) for reservation %s",
 		      resv_ptr->core_resrcs->nodes, resv_ptr->name);
 		return SLURM_ERROR;
@@ -2760,8 +2760,8 @@ static bitstr_t *_get_update_node_bitmap(slurmctld_resv_t *resv_ptr,
 				     resv_ptr->name, node_list);
 				FREE_NULL_BITMAP(node_bitmap);
 			} else
-				(void)node_name2bitmap(node_list,
-						       false, &node_bitmap);
+				(void)node_name2bitmap(node_list, false,
+						       &node_bitmap, NULL);
 			break;
 		}
 
@@ -3064,8 +3064,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 				bitmap2node_name(resv_select.node_bitmap);
 		} else {
 			resv_desc_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
-			if (node_name2bitmap(resv_desc_ptr->node_list,
-					    false, &resv_select.node_bitmap)) {
+			if (node_name2bitmap(resv_desc_ptr->node_list, false,
+					     &resv_select.node_bitmap, NULL)) {
 				rc = ESLURM_INVALID_NODE_NAME;
 				goto bad_parse;
 			}
@@ -4326,7 +4326,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		 */
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		if (node_name2bitmap(resv_ptr->node_list, false,
-				     &resv_ptr->node_bitmap)) {
+				     &resv_ptr->node_bitmap, NULL)) {
 			char *new_node_list;
 			resv_ptr->node_cnt = bit_set_count(
 				resv_ptr->node_bitmap);

@@ -413,11 +413,12 @@ extern int node_name_get_inx(char *node_name);
  * IN node_names  - list of nodes
  * IN best_effort - if set don't return an error on invalid node name entries
  * OUT bitmap     - set to bitmap, may not have all bits set on error
+ * IN/OUT invalid_hostlist - hostlist of invalid host names, initialize to NULL
  * RET 0 if no error, otherwise EINVAL
  * NOTE: the caller must bit_free() memory at bitmap when no longer required
  */
 extern int node_name2bitmap (char *node_names, bool best_effort,
-			     bitstr_t **bitmap);
+			     bitstr_t **bitmap, hostlist_t **invalid_hostlist);
 
 /* Purge the contents of a node record */
 extern void purge_node_rec(void *in);

@@ -1202,7 +1202,7 @@ static void _sync_steps_to_conf(job_record_t *job_ptr)
 		if (step_ptr->step_layout &&
 		    step_ptr->step_layout->node_list &&
 		    (node_name2bitmap(step_ptr->step_layout->node_list, false,
-				      &step_ptr->step_node_bitmap))) {
+				      &step_ptr->step_node_bitmap, NULL))) {
 			error("Invalid step_node_list (%s) for %pS",
 			      step_ptr->step_layout->node_list, step_ptr);
 			delete_step_record(job_ptr, step_ptr);
@@ -1224,7 +1224,7 @@ static int _sync_detail_bitmaps(job_record_t *job_ptr)
 
 	if ((job_ptr->details->req_nodes) &&
 	    (node_name2bitmap(job_ptr->details->req_nodes, false,
-			      &job_ptr->details->req_node_bitmap))) {
+			      &job_ptr->details->req_node_bitmap, NULL))) {
 		error("Invalid req_nodes (%s) for %pJ",
 		      job_ptr->details->req_nodes, job_ptr);
 		return SLURM_ERROR;
@@ -1233,7 +1233,7 @@ static int _sync_detail_bitmaps(job_record_t *job_ptr)
 	FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 	if ((job_ptr->details->exc_nodes) &&
 	    (node_name2bitmap(job_ptr->details->exc_nodes, true,
-			      &job_ptr->details->exc_node_bitmap))) {
+			      &job_ptr->details->exc_node_bitmap, NULL))) {
 		error("Invalid exc_nodes (%s) for %pJ",
 		      job_ptr->details->exc_nodes, job_ptr);
 		return SLURM_ERROR;
@@ -1350,7 +1350,7 @@ void _sync_jobs_to_conf(void)
 		FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 		if (job_ptr->nodes_completing &&
 		    node_name2bitmap(job_ptr->nodes_completing,
-				     false,  &job_ptr->node_bitmap_cg)) {
+				     false,  &job_ptr->node_bitmap_cg, NULL)) {
 			error("Invalid nodes (%s) for %pJ",
 			      job_ptr->nodes_completing, job_ptr);
 			job_fail = true;
@@ -1358,7 +1358,8 @@ void _sync_jobs_to_conf(void)
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
 		if (job_ptr->nodes &&
 		    node_name2bitmap(job_ptr->nodes, false,
-				     &job_ptr->node_bitmap) && !job_fail) {
+				     &job_ptr->node_bitmap, NULL) &&
+		    !job_fail) {
 			error("Invalid nodes (%s) for %pJ",
 			      job_ptr->nodes, job_ptr);
 			job_fail = true;
@@ -1366,8 +1367,8 @@ void _sync_jobs_to_conf(void)
 		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 #ifndef HAVE_FRONT_END
 		if (job_ptr->nodes_pr &&
-		    node_name2bitmap(job_ptr->nodes_pr,
-				     false,  &job_ptr->node_bitmap_pr)) {
+		    node_name2bitmap(job_ptr->nodes_pr, false,
+				     &job_ptr->node_bitmap_pr, NULL)) {
 			error("Invalid nodes (%s) for %pJ",
 			      job_ptr->nodes_pr, job_ptr);
 			job_fail = true;

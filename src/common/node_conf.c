@@ -431,7 +431,7 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 		config_iterator = list_iterator_create(config_list);
 		while ((config_ptr = list_next(config_iterator))) {
 			node_name2bitmap(config_ptr->nodes, true,
-					 &config_ptr->node_bitmap);
+					 &config_ptr->node_bitmap, NULL);
 		}
 		list_iterator_destroy(config_iterator);
 	}
@@ -1169,7 +1169,7 @@ extern int node_name_get_inx(char *node_name)
  * NOTE: call FREE_NULL_BITMAP() to free bitmap memory when no longer required
  */
 extern int node_name2bitmap(char *node_names, bool best_effort,
-			    bitstr_t **bitmap)
+			    bitstr_t **bitmap, hostlist_t **invalid_hostlist)
 {
 	int rc = SLURM_SUCCESS;
 	char *this_node_name;
@@ -1197,6 +1197,16 @@ extern int node_name2bitmap(char *node_names, bool best_effort,
 		node_ptr = _find_node_record(this_node_name, best_effort, true);
 		if (node_ptr) {
 			bit_set(my_bitmap, node_ptr->index);
+		} else if (invalid_hostlist) {
+			debug2("%s: invalid node specified: \"%s\"",
+			       __func__, this_node_name);
+			if (*invalid_hostlist) {
+				hostlist_push_host(*invalid_hostlist,
+						   this_node_name);
+			} else {
+				*invalid_hostlist = hostlist_create(
+					this_node_name);
+			}
 		} else {
 			error("%s: invalid node specified: \"%s\"", __func__,
 			      this_node_name);
