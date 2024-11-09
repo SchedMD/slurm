@@ -7844,19 +7844,16 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 
 	/* Basic validation of some parameters */
 	if (job_desc->req_nodes && (job_desc->min_nodes == NO_VAL)) {
-		hostlist_t *hl;
-		uint32_t host_cnt;
-		hl = hostlist_create(job_desc->req_nodes);
-		if (hl == NULL) {
+		bitstr_t *node_bitmap = NULL;
+		if (node_name2bitmap(job_desc->req_nodes, false,
+				     &node_bitmap, NULL)) {
 			/* likely a badly formatted hostlist */
 			error("validate_job_create_req: bad hostlist");
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto fini;
 		}
-		hostlist_uniq(hl);
-		host_cnt = hostlist_count(hl);
-		hostlist_destroy(hl);
-		job_desc->min_nodes = host_cnt;
+		job_desc->min_nodes = bit_set_count(node_bitmap);
+		FREE_NULL_BITMAP(node_bitmap);
 	}
 
 	_figure_out_num_tasks(job_desc, NULL);
