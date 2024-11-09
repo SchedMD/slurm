@@ -261,8 +261,7 @@ extern void block_record_validate(void)
 			if (node_name2bitmap(ptr->nodes, true,
 					     &block_ptr->node_bitmap,
 					     &invalid_hl)) {
-				fatal("Invalid node name (%s) in block "
-				      "config (%s)",
+				fatal("Invalid node name (%s) in block config (%s)",
 				      ptr->nodes, ptr->block_name);
 			}
 			if (blocks_nodes_bitmap) {

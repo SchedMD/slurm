@@ -350,8 +350,7 @@ extern void switch_record_validate(void)
 			if (node_name2bitmap(ptr->nodes, true,
 					     &switch_ptr->node_bitmap,
 					     &invalid_hl)) {
-				fatal("Invalid node name (%s) in switch "
-				      "config (%s)",
+				fatal("Invalid node name (%s) in switch config (%s)",
 				      ptr->nodes, ptr->switch_name);
 			}
 			if (switches_bitmap) {
@@ -388,8 +387,7 @@ extern void switch_record_validate(void)
 			while ((child = hostlist_pop(hl))) {
 				j = _get_switch_inx(child);
 				if ((j < 0) || (j == i)) {
-					fatal("Switch configuration %s has "
-					      "invalid child (%s)",
+					fatal("Switch configuration %s has invalid child (%s)",
 					      switch_ptr->name, child);
 				}
 				if (switch_record_table[j].level == -1) {
