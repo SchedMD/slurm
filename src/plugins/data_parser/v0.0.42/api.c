@@ -95,7 +95,7 @@ extern int data_parser_p_dump(args_t *args, data_parser_type_t type, void *src,
 		return ESLURM_NOT_SUPPORTED;
 	}
 
-	return dump(src, src_bytes, parser, dst, args);
+	return dump(src, src_bytes, NULL, parser, dst, args);
 }
 
 extern int data_parser_p_parse(args_t *args, data_parser_type_t type, void *dst,

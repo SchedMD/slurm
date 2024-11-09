@@ -282,6 +282,12 @@ documents those changes that are of interest to users and administrators.
     to NODE_FAIL.
  -- sched/backfill - Fix certain situations where a job would not get a
     planned time, which could lead to it being delayed by lower priority jobs.
+ -- slurmrestd - Dump JSON "null" instead of "{}" (empty object) for
+    non-required fields in objects to avoid client compatiblity issues for
+    v0.0.42 version tagged endpoints.
+ -- sacct,sacctmgr,scontrol,sdiag,sinfo,squeue,sshare - Dump "null" instead
+    "{}" (empty object) for non-required fields in objects to avoid client
+    compatiblity issues when run with --json or --yaml.
 
 * Changes in Slurm 24.05.5
 ==========================
