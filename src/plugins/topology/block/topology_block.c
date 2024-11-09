@@ -187,6 +187,23 @@ extern int topology_p_whole_topo(bitstr_t *node_mask)
 }
 
 /*
+ * Get bitmap of nodes in block
+ *
+ * IN name of block
+ * RET bitmap of nodes from block_record_table (do not free)
+ */
+extern bitstr_t *topology_p_get_bitmap(char *name)
+{
+	for (int i = 0; i < block_record_cnt; i++) {
+		if (!xstrcmp(block_record_table[i].name, name)) {
+			return block_record_table[i].node_bitmap;
+		}
+	}
+
+	return NULL;
+}
+
+/*
  * When TopologyParam=SwitchAsNodeRank is set, this plugin assigns a unique
  * node_rank for all nodes belonging to the same bblock.
  */

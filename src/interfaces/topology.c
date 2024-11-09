@@ -59,6 +59,7 @@ typedef struct slurm_topo_ops {
 	int (*eval_nodes) (topology_eval_t *topo_eval);
 
 	int (*whole_topo) (bitstr_t *node_mask);
+	bitstr_t *(*get_bitmap)(char *name);
 	bool		(*node_ranking)		( void );
 	int		(*get_node_addr)	( char* node_name,
 						  char** addr,
@@ -86,6 +87,7 @@ static const char *syms[] = {
 	"topology_p_build_config",
 	"topology_p_eval_nodes",
 	"topology_p_whole_topo",
+	"topology_p_get_bitmap",
 	"topology_p_generate_node_ranking",
 	"topology_p_get_node_addr",
 	"topology_p_split_hostlist",
@@ -190,6 +192,20 @@ extern int topology_g_whole_topo(bitstr_t *node_mask)
 	xassert(plugin_inited);
 
 	return (*(ops.whole_topo))(node_mask);
+}
+
+
+/*
+ * topology_g_get_bitmap - Get bitmap of nodes in topo group
+ *
+ * IN name of topo group
+ * RET bitmap of nodes from _record_table (do not free)
+ */
+extern bitstr_t *topology_g_get_bitmap(char *name)
+{
+	xassert(plugin_inited);
+
+	return (*(ops.get_bitmap))(name);
 }
 
 /*
