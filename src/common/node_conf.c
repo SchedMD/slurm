@@ -1159,6 +1159,32 @@ extern int node_name_get_inx(char *node_name)
 	return node_ptr->index;
 }
 
+static int _single_node_name2bitmap(char *node_name, bool test_alias,
+				    bitstr_t *bitmap,
+				    hostlist_t **invalid_hostlist)
+{
+	int rc = SLURM_SUCCESS;
+	node_record_t *node_ptr = NULL;
+
+	if ((node_ptr = _find_node_record(node_name, test_alias, true))) {
+		bit_set(bitmap, node_ptr->index);
+	} else if (invalid_hostlist) {
+		debug2("%s: invalid node specified: \"%s\"",
+		       __func__, node_name);
+		if (*invalid_hostlist) {
+			hostlist_push_host(*invalid_hostlist, node_name);
+		} else {
+			*invalid_hostlist = hostlist_create(node_name);
+		}
+	} else {
+		error("%s: invalid node specified: \"%s\"",
+		      __func__, node_name);
+		rc = EINVAL;
+	}
+
+	return rc;
+}
+
 /*
  * node_name2bitmap - given a node name regular expression, build a bitmap
  *	representation
@@ -1189,26 +1215,8 @@ extern int node_name2bitmap(char *node_names, bool test_alias,
 	}
 
 	while ((this_node_name = hostlist_shift(host_list))) {
-		node_record_t *node_ptr;
-
-		node_ptr = _find_node_record(this_node_name, test_alias, true);
-		if (node_ptr) {
-			bit_set(*bitmap, node_ptr->index);
-		} else if (invalid_hostlist) {
-			debug2("%s: invalid node specified: \"%s\"",
-			       __func__, this_node_name);
-			if (*invalid_hostlist) {
-				hostlist_push_host(*invalid_hostlist,
-						   this_node_name);
-			} else {
-				*invalid_hostlist = hostlist_create(
-					this_node_name);
-			}
-		} else {
-			error("%s: invalid node specified: \"%s\"",
-			      __func__, this_node_name);
-			rc = EINVAL;
-		}
+		rc = _single_node_name2bitmap(this_node_name, test_alias,
+					      *bitmap, invalid_hostlist);
 		free(this_node_name);
 	}
 	hostlist_destroy(host_list);
@@ -1236,15 +1244,7 @@ extern int hostlist2bitmap(hostlist_t *hl, bool test_alias, bitstr_t **bitmap)
 
 	hi = hostlist_iterator_create(hl);
 	while ((name = hostlist_next(hi))) {
-		node_record_t *node_ptr;
-		node_ptr = _find_node_record(name, test_alias, true);
-		if (node_ptr) {
-			bit_set(my_bitmap, node_ptr->index);
-		} else {
-			error ("hostlist2bitmap: invalid node specified %s",
-			       name);
-			rc = EINVAL;
-		}
+		rc = _single_node_name2bitmap(name, test_alias, *bitmap, NULL);
 		free(name);
 	}
 
