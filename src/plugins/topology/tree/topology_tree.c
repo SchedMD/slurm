@@ -147,6 +147,12 @@ extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 
 extern int topology_p_whole_topo(bitstr_t *node_mask)
 {
+	for (int i = 0; i < switch_record_cnt; i++) {
+		if (bit_overlap_any(switch_record_table[i].node_bitmap,
+				    node_mask)) {
+			bit_or(node_mask, switch_record_table[i].node_bitmap);
+		}
+	}
 	return SLURM_SUCCESS;
 }
 
