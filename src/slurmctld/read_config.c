@@ -1230,14 +1230,14 @@ static int _sync_detail_bitmaps(job_record_t *job_ptr)
 		return SLURM_ERROR;
 	}
 
+	/*
+	 * Ignore any errors if the exc_nodes list contains invalid entries.
+	 * We can the pretty sure we won't schedule onto nodes that don't exist.
+	 */
 	FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
-	if ((job_ptr->details->exc_nodes) &&
-	    (node_name2bitmap(job_ptr->details->exc_nodes, true,
-			      &job_ptr->details->exc_node_bitmap, NULL))) {
-		error("Invalid exc_nodes (%s) for %pJ",
-		      job_ptr->details->exc_nodes, job_ptr);
-		return SLURM_ERROR;
-	}
+	if (job_ptr->details->exc_nodes)
+		node_name2bitmap(job_ptr->details->exc_nodes, false,
+				 &job_ptr->details->exc_node_bitmap, NULL);
 
 	/*
 	 * If a nodelist has been provided with more nodes than are required
