@@ -453,7 +453,7 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 			if ((msg->trigger_array[i].res_id != NULL)   &&
 			    (msg->trigger_array[i].res_id[0] != '*') &&
 			    (node_name2bitmap(msg->trigger_array[i].res_id,
-					      false, &bitmap, NULL) != 0)) {
+					      false, &bitmap, NULL))) {
 				FREE_NULL_BITMAP(bitmap);
 				rc = ESLURM_INVALID_NODE_NAME;
 				continue;
@@ -782,7 +782,7 @@ static int _load_trigger_state(buf_t *buffer, uint16_t protocol_version)
 		if ((trig_ptr->res_id != NULL)   &&
 		    (trig_ptr->res_id[0] != '*') &&
 		    (node_name2bitmap(trig_ptr->res_id, false,
-				      &trig_ptr->nodes_bitmap, NULL) != 0))
+				      &trig_ptr->nodes_bitmap, NULL)))
 			goto unpack_error;
 	}
 	if (trig_ptr->nodes_bitmap)
