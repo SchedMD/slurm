@@ -473,6 +473,14 @@ static void _init_db_conn(void)
 {
 	int rc;
 
+	/*
+	 * errno is used to get an error when establishing the persistent
+	 * connection. Set errno to 0 here to avoid a previous value for
+	 * errno causing us to think there was a problem.
+	 * FIXME: Stop using errno for control flow here.
+	 */
+	errno = 0;
+
 	if (acct_db_conn)
 		acct_storage_g_close_connection(&acct_db_conn);
 
