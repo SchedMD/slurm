@@ -5121,25 +5121,6 @@ extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap)
 	return bit_set_count_range(node_bitmap, 0, node_inx);
 }
 
-/*
- * list_find_feature - find an entry in the feature list, see list.h for
- *	documentation
- * IN key - is feature name or NULL for all features
- * RET 1 if found, 0 otherwise
- */
-extern int list_find_feature(void *feature_entry, void *key)
-{
-	node_feature_t *feature_ptr;
-
-	if (key == NULL)
-		return 1;
-
-	feature_ptr = (node_feature_t *) feature_entry;
-	if (xstrcmp(feature_ptr->name, (char *) key) == 0)
-		return 1;
-	return 0;
-}
-
 static void _kill_step_on_msg_fail(step_complete_msg_t *req, slurm_msg_t *msg,
 				   void (*lock_func)(bool lock))
 {

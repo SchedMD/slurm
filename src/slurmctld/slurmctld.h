@@ -284,8 +284,6 @@ typedef struct node_features {
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this feature */
 } node_feature_t;
 
-extern list_t *active_feature_list; /* list of currently active node features */
-extern list_t *avail_feature_list;  /* list of available node features */
 extern list_t *conf_includes_list;  /* list of conf_includes_map_t */
 
 #define PACK_FANOUT_ADDRS(_X) \

@@ -214,6 +214,9 @@ extern uint32_t *cr_node_cores_offset;
 
 extern time_t slurmd_start_time;
 
+extern list_t *active_feature_list;	/* list of currently active features_records */
+extern list_t *avail_feature_list;	/* list of available features_records */
+
 /*
  * bitmap2node_name_sortable - given a bitmap, build a list of comma
  *	separated node names. names may include regular expressions
@@ -538,5 +541,7 @@ extern int node_record_unpack(void **out,
 
 /* Create config_record_t from a packed node_record_t */
 extern config_record_t *config_record_from_node_record(node_record_t *node_ptr);
+
+extern int list_find_feature(void *feature_entry, void *key);
 
 #endif /* !_HAVE_NODE_CONF_H */

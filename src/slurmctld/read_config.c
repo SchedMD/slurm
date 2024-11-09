@@ -98,8 +98,6 @@
 #define FEATURE_MAGIC	0x34dfd8b5
 
 /* Global variables */
-list_t *active_feature_list;	/* list of currently active features_records */
-list_t *avail_feature_list;	/* list of available features_records */
 bool node_features_updated = true;
 bool slurmctld_init_db = true;
 

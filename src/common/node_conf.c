@@ -83,6 +83,8 @@ strong_alias(node_name2bitmap, slurm_node_name2bitmap);
 strong_alias(find_node_record, slurm_find_node_record);
 
 /* Global variables */
+list_t *active_feature_list;	/* list of currently active features_records */
+list_t *avail_feature_list;	/* list of available features_records */
 list_t *config_list = NULL;	/* list of config_record entries */
 list_t *front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
@@ -1877,4 +1879,23 @@ extern config_record_t *config_record_from_node_record(node_record_t *node_ptr)
 	config_ptr->weight = node_ptr->weight;
 
 	return config_ptr;
+}
+
+/*
+ * list_find_feature - find an entry in the feature list, see list.h for
+ *	documentation
+ * IN key - is feature name or NULL for all features
+ * RET 1 if found, 0 otherwise
+ */
+extern int list_find_feature(void *feature_entry, void *key)
+{
+	node_feature_t *feature_ptr;
+
+	if (key == NULL)
+		return 1;
+
+	feature_ptr = (node_feature_t *) feature_entry;
+	if (xstrcmp(feature_ptr->name, (char *) key) == 0)
+		return 1;
+	return 0;
 }
