@@ -1173,29 +1173,27 @@ extern int node_name2bitmap(char *node_names, bool test_alias,
 {
 	int rc = SLURM_SUCCESS;
 	char *this_node_name;
-	bitstr_t *my_bitmap;
 	hostlist_t *host_list;
 
-	my_bitmap = bit_alloc(node_record_count);
-	*bitmap = my_bitmap;
+	*bitmap = bit_alloc(node_record_count);
 
-	if (node_names == NULL) {
-		info("node_name2bitmap: node_names is NULL");
+	if (!node_names) {
+		info("%s: node_names is NULL", __func__);
 		return rc;
 	}
 
-	if ( (host_list = hostlist_create (node_names)) == NULL) {
+	if (!(host_list = hostlist_create(node_names))) {
 		/* likely a badly formatted hostlist */
-		error ("hostlist_create on %s error:", node_names);
+		error("hostlist_create on %s error:", node_names);
 		return EINVAL;
 	}
 
-	while ( (this_node_name = hostlist_shift (host_list)) ) {
+	while ((this_node_name = hostlist_shift(host_list))) {
 		node_record_t *node_ptr;
 
 		node_ptr = _find_node_record(this_node_name, test_alias, true);
 		if (node_ptr) {
-			bit_set(my_bitmap, node_ptr->index);
+			bit_set(*bitmap, node_ptr->index);
 		} else if (invalid_hostlist) {
 			debug2("%s: invalid node specified: \"%s\"",
 			       __func__, this_node_name);
@@ -1207,13 +1205,13 @@ extern int node_name2bitmap(char *node_names, bool test_alias,
 					this_node_name);
 			}
 		} else {
-			error("%s: invalid node specified: \"%s\"", __func__,
-				this_node_name);
+			error("%s: invalid node specified: \"%s\"",
+			      __func__, this_node_name);
 			rc = EINVAL;
 		}
-		free (this_node_name);
+		free(this_node_name);
 	}
-	hostlist_destroy (host_list);
+	hostlist_destroy(host_list);
 
 	return rc;
 }
@@ -1247,12 +1245,11 @@ extern int hostlist2bitmap(hostlist_t *hl, bool test_alias, bitstr_t **bitmap)
 			       name);
 			rc = EINVAL;
 		}
-		free (name);
+		free(name);
 	}
 
 	hostlist_iterator_destroy(hi);
 	return rc;
-
 }
 
 /* Only delete config_ptr if isn't referenced by another node. */
