@@ -1199,16 +1199,73 @@ extern void add_nodes_with_feature_to_bitmap(bitstr_t *bitmap, char *feature)
 	}
 }
 
+static int _parse_hostlist_function(bitstr_t *node_bitmap, char *node_str)
+{
+	int rc = SLURM_SUCCESS;
+	char *start_ptr, *end_ptr;
+
+	start_ptr = xstrchr(node_str, '{') + 1;
+	end_ptr = xstrchr(start_ptr, '}');
+	*end_ptr = '\0';
+
+	if (!xstrncmp("blockwith{", node_str, 10) ||
+	    !xstrncmp("switchwith{", node_str, 11)) {
+		node_record_t *node_ptr;
+		bitstr_t *tmp_bitmap = bit_alloc(node_record_count);
+
+		node_ptr = _find_node_record(start_ptr, false, true);
+		if (node_ptr) {
+			bit_set(tmp_bitmap, node_ptr->index);
+			topology_g_whole_topo(tmp_bitmap);
+			bit_or(node_bitmap, tmp_bitmap);
+		} else {
+			rc = SLURM_ERROR;
+			error("%s: invalid node specified in hostlist function: \"%s\"",
+			      __func__, node_str);
+		}
+
+		FREE_NULL_BITMAP(tmp_bitmap);
+	} else if (!xstrncmp("block{", node_str, 6) ||
+		   !xstrncmp("switch{", node_str, 7)) {
+		bitstr_t *tmp_bitmap = topology_g_get_bitmap(start_ptr);
+
+		if (tmp_bitmap) {
+			bit_or(node_bitmap, tmp_bitmap);
+		} else {
+			rc = SLURM_ERROR;
+			error("%s: invalid block or switch specified in hostlist function: \"%s\"",
+			      __func__, node_str);
+		}
+	} else if (!xstrncmp("feature{", node_str, 8)) {
+		add_nodes_with_feature_to_bitmap(node_bitmap, start_ptr);
+	} else {
+		rc = SLURM_ERROR;
+		error("Invalid hostlist_function specified: %s", node_str);
+	}
+
+	*end_ptr = '}';
+	return rc;
+}
+
 static int _single_node_name2bitmap(char *node_name, bool test_alias,
 				    bitstr_t *bitmap,
 				    hostlist_t **invalid_hostlist)
 {
 	int rc = SLURM_SUCCESS;
-	node_record_t *node_ptr = NULL;
 
-	if ((node_ptr = _find_node_record(node_name, test_alias, true))) {
-		bit_set(bitmap, node_ptr->index);
-	} else if (invalid_hostlist) {
+	/* If there are curly brackets it must be a hostlist_function */
+	if ((xstrchr(node_name, '{'))) {
+		rc = _parse_hostlist_function(bitmap, node_name);
+	} else {
+		node_record_t *node_ptr;
+		node_ptr = _find_node_record(node_name, test_alias, true);
+		if (node_ptr)
+			bit_set(bitmap, node_ptr->index);
+		else
+			rc = SLURM_ERROR;
+	}
+
+	if ((rc != SLURM_SUCCESS) && invalid_hostlist) {
 		debug2("%s: invalid node specified: \"%s\"",
 		       __func__, node_name);
 		if (*invalid_hostlist) {
@@ -1216,7 +1273,8 @@ static int _single_node_name2bitmap(char *node_name, bool test_alias,
 		} else {
 			*invalid_hostlist = hostlist_create(node_name);
 		}
-	} else {
+		rc = SLURM_SUCCESS;
+	} else if (rc != SLURM_SUCCESS) {
 		error("%s: invalid node specified: \"%s\"",
 		      __func__, node_name);
 		rc = EINVAL;
