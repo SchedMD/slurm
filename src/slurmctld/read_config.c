@@ -1351,15 +1351,14 @@ void _sync_jobs_to_conf(void)
 		if (job_ptr->nodes_completing &&
 		    node_name2bitmap(job_ptr->nodes_completing,
 				     false,  &job_ptr->node_bitmap_cg, NULL)) {
-			error("Invalid nodes (%s) for %pJ",
+			error("Invalid nodes_completing (%s) for %pJ",
 			      job_ptr->nodes_completing, job_ptr);
 			job_fail = true;
 		}
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
 		if (job_ptr->nodes &&
 		    node_name2bitmap(job_ptr->nodes, false,
-				     &job_ptr->node_bitmap, NULL) &&
-		    !job_fail) {
+				     &job_ptr->node_bitmap, NULL)) {
 			error("Invalid nodes (%s) for %pJ",
 			      job_ptr->nodes, job_ptr);
 			job_fail = true;
@@ -1369,7 +1368,7 @@ void _sync_jobs_to_conf(void)
 		if (job_ptr->nodes_pr &&
 		    node_name2bitmap(job_ptr->nodes_pr, false,
 				     &job_ptr->node_bitmap_pr, NULL)) {
-			error("Invalid nodes (%s) for %pJ",
+			error("Invalid nodes_pr (%s) for %pJ",
 			      job_ptr->nodes_pr, job_ptr);
 			job_fail = true;
 		}
