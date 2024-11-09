@@ -446,7 +446,7 @@ static bool _opt_verify(void)
 	if (opt.exclude && !_valid_node_list(&opt.exclude))
 		exit(error_exit);
 
-	if (opt.nodelist && !opt.nodes_set) {
+	if (opt.nodelist && !opt.nodes_set && !strchr(opt.nodelist, '{')) {
 		hl = hostlist_create(opt.nodelist);
 		if (!hl)
 			fatal("Invalid node list specified");
@@ -561,7 +561,8 @@ static bool _opt_verify(void)
 	/* set up the proc and node counts based on the arbitrary list
 	   of nodes */
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
-	    && (!opt.nodes_set || !opt.ntasks_set)) {
+	    && (!opt.nodes_set || !opt.ntasks_set)
+	    && !strrchr(opt.nodelist, '{')) {
 		FREE_NULL_HOSTLIST(hl);
 		hl = hostlist_create(opt.nodelist);
 		if (!hl)
