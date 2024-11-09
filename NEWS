@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 24.11.0rc2
 =============================
+ -- slurmctld - fix memory leak when sending a DBD_JOB_START message.
 
 * Changes in Slurm 24.11.0rc1
 =============================
