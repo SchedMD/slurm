@@ -410,6 +410,8 @@ extern void node_fini2 (void);
  */
 extern int node_name_get_inx(char *node_name);
 
+extern void add_nodes_with_feature_to_bitmap(bitstr_t *bitmap, char *feature);
+
 /*
  * node_name2bitmap - given a node name regular expression, build a bitmap
  *	representation

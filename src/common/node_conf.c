@@ -1161,6 +1161,44 @@ extern int node_name_get_inx(char *node_name)
 	return node_ptr->index;
 }
 
+extern void add_nodes_with_feature_to_bitmap(bitstr_t *bitmap, char *feature)
+{
+	if (avail_feature_list) {
+		node_feature_t *node_feat_ptr;
+		if (!(node_feat_ptr = list_find_first_ro(avail_feature_list,
+							 list_find_feature,
+							 feature))) {
+			debug2("unable to find nodeset feature '%s'", feature);
+			return;
+		}
+		bit_or(bitmap, node_feat_ptr->node_bitmap);
+	} else {
+		node_record_t *node_ptr;
+		/*
+		 * The global feature bitmaps have not been set up at this
+		 * point, so we'll have to scan through the node_record_table
+		 * directly to locate the appropriate records.
+		 */
+		for (int i = 0; (node_ptr = next_node(&i)); i++) {
+			char *features, *tmp, *tok, *last = NULL;
+
+			if (!node_ptr->features)
+				continue;
+
+			features = tmp = xstrdup(node_ptr->features);
+
+			while ((tok = strtok_r(tmp, ",", &last))) {
+				if (!xstrcmp(tok, feature)) {
+					bit_set(bitmap, node_ptr->index);
+					break;
+				}
+				tmp = NULL;
+			}
+			xfree(features);
+		}
+	}
+}
+
 static int _single_node_name2bitmap(char *node_name, bool test_alias,
 				    bitstr_t *bitmap,
 				    hostlist_t **invalid_hostlist)
