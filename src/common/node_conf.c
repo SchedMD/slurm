@@ -1889,13 +1889,10 @@ extern config_record_t *config_record_from_node_record(node_record_t *node_ptr)
  */
 extern int list_find_feature(void *feature_entry, void *key)
 {
-	node_feature_t *feature_ptr;
+	node_feature_t *feature_ptr = feature_entry;
 
-	if (key == NULL)
+	if (!key)
 		return 1;
 
-	feature_ptr = (node_feature_t *) feature_entry;
-	if (xstrcmp(feature_ptr->name, (char *) key) == 0)
-		return 1;
-	return 0;
+	return !xstrcmp(feature_ptr->name, (char *) key);
 }
