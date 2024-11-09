@@ -1163,12 +1163,12 @@ extern int node_name_get_inx(char *node_name)
  * node_name2bitmap - given a node name regular expression, build a bitmap
  *	representation
  * IN node_names  - list of nodes
- * IN best_effort - if set don't return an error on invalid node name entries
+ * IN: test_alias - if set, also test NodeHostName value
  * OUT bitmap     - set to bitmap, may not have all bits set on error
  * RET 0 if no error, otherwise EINVAL
  * NOTE: call FREE_NULL_BITMAP() to free bitmap memory when no longer required
  */
-extern int node_name2bitmap(char *node_names, bool best_effort,
+extern int node_name2bitmap(char *node_names, bool test_alias,
 			    bitstr_t **bitmap, hostlist_t **invalid_hostlist)
 {
 	int rc = SLURM_SUCCESS;
@@ -1187,14 +1187,13 @@ extern int node_name2bitmap(char *node_names, bool best_effort,
 	if ( (host_list = hostlist_create (node_names)) == NULL) {
 		/* likely a badly formatted hostlist */
 		error ("hostlist_create on %s error:", node_names);
-		if (!best_effort)
-			rc = EINVAL;
-		return rc;
+		return EINVAL;
 	}
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		node_record_t *node_ptr;
-		node_ptr = _find_node_record(this_node_name, best_effort, true);
+
+		node_ptr = _find_node_record(this_node_name, test_alias, true);
 		if (node_ptr) {
 			bit_set(my_bitmap, node_ptr->index);
 		} else if (invalid_hostlist) {
@@ -1209,9 +1208,8 @@ extern int node_name2bitmap(char *node_names, bool best_effort,
 			}
 		} else {
 			error("%s: invalid node specified: \"%s\"", __func__,
-			      this_node_name);
-			if (!best_effort)
-				rc = EINVAL;
+				this_node_name);
+			rc = EINVAL;
 		}
 		free (this_node_name);
 	}
@@ -1223,11 +1221,11 @@ extern int node_name2bitmap(char *node_names, bool best_effort,
 /*
  * hostlist2bitmap - given a hostlist, build a bitmap representation
  * IN hl          - hostlist
- * IN best_effort - if set don't return an error on invalid node name entries
+ * IN: test_alias - if set, also test NodeHostName value
  * OUT bitmap     - set to bitmap, may not have all bits set on error
  * RET 0 if no error, otherwise EINVAL
  */
-extern int hostlist2bitmap(hostlist_t *hl, bool best_effort, bitstr_t **bitmap)
+extern int hostlist2bitmap(hostlist_t *hl, bool test_alias, bitstr_t **bitmap)
 {
 	int rc = SLURM_SUCCESS;
 	bitstr_t *my_bitmap;
@@ -1241,14 +1239,13 @@ extern int hostlist2bitmap(hostlist_t *hl, bool best_effort, bitstr_t **bitmap)
 	hi = hostlist_iterator_create(hl);
 	while ((name = hostlist_next(hi))) {
 		node_record_t *node_ptr;
-		node_ptr = _find_node_record(name, best_effort, true);
+		node_ptr = _find_node_record(name, test_alias, true);
 		if (node_ptr) {
 			bit_set(my_bitmap, node_ptr->index);
 		} else {
 			error ("hostlist2bitmap: invalid node specified %s",
 			       name);
-			if (!best_effort)
-				rc = EINVAL;
+			rc = EINVAL;
 		}
 		free (name);
 	}
