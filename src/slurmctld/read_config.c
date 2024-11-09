@@ -98,8 +98,6 @@
 #define FEATURE_MAGIC	0x34dfd8b5
 
 /* Global variables */
-list_t *active_feature_list;	/* list of currently active features_records */
-list_t *avail_feature_list;	/* list of available features_records */
 bool node_features_updated = true;
 bool slurmctld_init_db = true;
 
@@ -255,44 +253,15 @@ static void _sort_node_record_table_ptr(void)
 
 static void _add_nodes_with_feature(hostlist_t *hl, char *feature)
 {
-	if (avail_feature_list) {
-		char *feature_nodes;
-		node_feature_t *node_feat_ptr;
-		if (!(node_feat_ptr = list_find_first(avail_feature_list,
-						      list_find_feature,
-						      feature))) {
-			debug2("unable to find nodeset feature '%s'", feature);
-			return;
-		}
-		feature_nodes = bitmap2node_name(node_feat_ptr->node_bitmap);
-		hostlist_push(hl, feature_nodes);
-		xfree(feature_nodes);
-	} else {
-		node_record_t *node_ptr;
-		/*
-		 * The global feature bitmaps have not been set up at this
-		 * point, so we'll have to scan through the node_record_table
-		 * directly to locate the appropriate records.
-		 */
-		for (int i = 0; (node_ptr = next_node(&i)); i++) {
-			char *features, *tmp, *tok, *last = NULL;
+	node_record_t *node_ptr;
+	bitstr_t *tmp_bitmap = bit_alloc(node_record_count);
 
-			if (!node_ptr->features)
-				continue;
-
-			features = tmp = xstrdup(node_ptr->features);
-
-			while ((tok = strtok_r(tmp, ",", &last))) {
-				if (!xstrcmp(tok, feature)) {
-					hostlist_push_host(
-						hl, node_ptr->name);
-					break;
-				}
-				tmp = NULL;
-			}
-			xfree(features);
-		}
+	add_nodes_with_feature_to_bitmap(tmp_bitmap, feature);
+	for (int i = 0; (node_ptr = next_node_bitmap(tmp_bitmap, &i)); i++) {
+		hostlist_push_host(hl, node_ptr->name);
 	}
+
+	FREE_NULL_BITMAP(tmp_bitmap);
 }
 
 static void _add_all_nodes_to_hostlist(hostlist_t *hl)
@@ -354,6 +323,9 @@ extern hostlist_t *nodespec_to_hostlist(const char *nodes, bool uniq,
 			}
 		}
 	}
+
+	if (xstrchr(nodes, '{'))
+		parse_hostlist_functions(&hl);
 
 	if (uniq)
 		hostlist_uniq(hl);
@@ -1202,7 +1174,7 @@ static void _sync_steps_to_conf(job_record_t *job_ptr)
 		if (step_ptr->step_layout &&
 		    step_ptr->step_layout->node_list &&
 		    (node_name2bitmap(step_ptr->step_layout->node_list, false,
-				      &step_ptr->step_node_bitmap))) {
+				      &step_ptr->step_node_bitmap, NULL))) {
 			error("Invalid step_node_list (%s) for %pS",
 			      step_ptr->step_layout->node_list, step_ptr);
 			delete_step_record(job_ptr, step_ptr);
@@ -1224,20 +1196,20 @@ static int _sync_detail_bitmaps(job_record_t *job_ptr)
 
 	if ((job_ptr->details->req_nodes) &&
 	    (node_name2bitmap(job_ptr->details->req_nodes, false,
-			      &job_ptr->details->req_node_bitmap))) {
+			      &job_ptr->details->req_node_bitmap, NULL))) {
 		error("Invalid req_nodes (%s) for %pJ",
 		      job_ptr->details->req_nodes, job_ptr);
 		return SLURM_ERROR;
 	}
 
+	/*
+	 * Ignore any errors if the exc_nodes list contains invalid entries.
+	 * We can the pretty sure we won't schedule onto nodes that don't exist.
+	 */
 	FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
-	if ((job_ptr->details->exc_nodes) &&
-	    (node_name2bitmap(job_ptr->details->exc_nodes, true,
-			      &job_ptr->details->exc_node_bitmap))) {
-		error("Invalid exc_nodes (%s) for %pJ",
-		      job_ptr->details->exc_nodes, job_ptr);
-		return SLURM_ERROR;
-	}
+	if (job_ptr->details->exc_nodes)
+		node_name2bitmap(job_ptr->details->exc_nodes, false,
+				 &job_ptr->details->exc_node_bitmap, NULL);
 
 	/*
 	 * If a nodelist has been provided with more nodes than are required
@@ -1350,15 +1322,15 @@ void _sync_jobs_to_conf(void)
 		FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 		if (job_ptr->nodes_completing &&
 		    node_name2bitmap(job_ptr->nodes_completing,
-				     false,  &job_ptr->node_bitmap_cg)) {
-			error("Invalid nodes (%s) for %pJ",
+				     false,  &job_ptr->node_bitmap_cg, NULL)) {
+			error("Invalid nodes_completing (%s) for %pJ",
 			      job_ptr->nodes_completing, job_ptr);
 			job_fail = true;
 		}
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
 		if (job_ptr->nodes &&
 		    node_name2bitmap(job_ptr->nodes, false,
-				     &job_ptr->node_bitmap) && !job_fail) {
+				     &job_ptr->node_bitmap, NULL)) {
 			error("Invalid nodes (%s) for %pJ",
 			      job_ptr->nodes, job_ptr);
 			job_fail = true;
@@ -1366,9 +1338,9 @@ void _sync_jobs_to_conf(void)
 		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 #ifndef HAVE_FRONT_END
 		if (job_ptr->nodes_pr &&
-		    node_name2bitmap(job_ptr->nodes_pr,
-				     false,  &job_ptr->node_bitmap_pr)) {
-			error("Invalid nodes (%s) for %pJ",
+		    node_name2bitmap(job_ptr->nodes_pr, false,
+				     &job_ptr->node_bitmap_pr, NULL)) {
+			error("Invalid nodes_pr (%s) for %pJ",
 			      job_ptr->nodes_pr, job_ptr);
 			job_fail = true;
 		}

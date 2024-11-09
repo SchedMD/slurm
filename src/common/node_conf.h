@@ -214,6 +214,9 @@ extern uint32_t *cr_node_cores_offset;
 
 extern time_t slurmd_start_time;
 
+extern list_t *active_feature_list;	/* list of currently active features_records */
+extern list_t *avail_feature_list;	/* list of available features_records */
+
 /*
  * bitmap2node_name_sortable - given a bitmap, build a list of comma
  *	separated node names. names may include regular expressions
@@ -407,17 +410,22 @@ extern void node_fini2 (void);
  */
 extern int node_name_get_inx(char *node_name);
 
+extern void add_nodes_with_feature_to_bitmap(bitstr_t *bitmap, char *feature);
+
+extern int parse_hostlist_functions(hostlist_t **hostlist);
+
 /*
  * node_name2bitmap - given a node name regular expression, build a bitmap
  *	representation
  * IN node_names  - list of nodes
  * IN best_effort - if set don't return an error on invalid node name entries
  * OUT bitmap     - set to bitmap, may not have all bits set on error
+ * IN/OUT invalid_hostlist - hostlist of invalid host names, initialize to NULL
  * RET 0 if no error, otherwise EINVAL
  * NOTE: the caller must bit_free() memory at bitmap when no longer required
  */
 extern int node_name2bitmap (char *node_names, bool best_effort,
-			     bitstr_t **bitmap);
+			     bitstr_t **bitmap, hostlist_t **invalid_hostlist);
 
 /* Purge the contents of a node record */
 extern void purge_node_rec(void *in);
@@ -537,5 +545,7 @@ extern int node_record_unpack(void **out,
 
 /* Create config_record_t from a packed node_record_t */
 extern config_record_t *config_record_from_node_record(node_record_t *node_ptr);
+
+extern int list_find_feature(void *feature_entry, void *key);
 
 #endif /* !_HAVE_NODE_CONF_H */

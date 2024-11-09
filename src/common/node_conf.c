@@ -79,9 +79,12 @@ strong_alias(build_all_nodeline_info, slurm_build_all_nodeline_info);
 strong_alias(rehash_node, slurm_rehash_node);
 strong_alias(hostlist2bitmap, slurm_hostlist2bitmap);
 strong_alias(bitmap2node_name, slurm_bitmap2node_name);
+strong_alias(node_name2bitmap, slurm_node_name2bitmap);
 strong_alias(find_node_record, slurm_find_node_record);
 
 /* Global variables */
+list_t *active_feature_list;	/* list of currently active features_records */
+list_t *avail_feature_list;	/* list of available features_records */
 list_t *config_list = NULL;	/* list of config_record entries */
 list_t *front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
@@ -430,7 +433,7 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 		config_iterator = list_iterator_create(config_list);
 		while ((config_ptr = list_next(config_iterator))) {
 			node_name2bitmap(config_ptr->nodes, true,
-					 &config_ptr->node_bitmap);
+					 &config_ptr->node_bitmap, NULL);
 		}
 		list_iterator_destroy(config_iterator);
 	}
@@ -1158,53 +1161,195 @@ extern int node_name_get_inx(char *node_name)
 	return node_ptr->index;
 }
 
+extern void add_nodes_with_feature_to_bitmap(bitstr_t *bitmap, char *feature)
+{
+	if (avail_feature_list) {
+		node_feature_t *node_feat_ptr;
+		if (!(node_feat_ptr = list_find_first_ro(avail_feature_list,
+							 list_find_feature,
+							 feature))) {
+			debug2("unable to find nodeset feature '%s'", feature);
+			return;
+		}
+		bit_or(bitmap, node_feat_ptr->node_bitmap);
+	} else {
+		node_record_t *node_ptr;
+		/*
+		 * The global feature bitmaps have not been set up at this
+		 * point, so we'll have to scan through the node_record_table
+		 * directly to locate the appropriate records.
+		 */
+		for (int i = 0; (node_ptr = next_node(&i)); i++) {
+			char *features, *tmp, *tok, *last = NULL;
+
+			if (!node_ptr->features)
+				continue;
+
+			features = tmp = xstrdup(node_ptr->features);
+
+			while ((tok = strtok_r(tmp, ",", &last))) {
+				if (!xstrcmp(tok, feature)) {
+					bit_set(bitmap, node_ptr->index);
+					break;
+				}
+				tmp = NULL;
+			}
+			xfree(features);
+		}
+	}
+}
+
+static int _parse_hostlist_function(bitstr_t *node_bitmap, char *node_str)
+{
+	int rc = SLURM_SUCCESS;
+	char *start_ptr, *end_ptr;
+
+	start_ptr = xstrchr(node_str, '{') + 1;
+	end_ptr = xstrchr(start_ptr, '}');
+	*end_ptr = '\0';
+
+	if (!xstrncmp("blockwith{", node_str, 10) ||
+	    !xstrncmp("switchwith{", node_str, 11)) {
+		node_record_t *node_ptr;
+		bitstr_t *tmp_bitmap = bit_alloc(node_record_count);
+
+		node_ptr = _find_node_record(start_ptr, false, true);
+		if (node_ptr) {
+			bit_set(tmp_bitmap, node_ptr->index);
+			topology_g_whole_topo(tmp_bitmap);
+			bit_or(node_bitmap, tmp_bitmap);
+		} else {
+			rc = SLURM_ERROR;
+			error("%s: invalid node specified in hostlist function: \"%s\"",
+			      __func__, node_str);
+		}
+
+		FREE_NULL_BITMAP(tmp_bitmap);
+	} else if (!xstrncmp("block{", node_str, 6) ||
+		   !xstrncmp("switch{", node_str, 7)) {
+		bitstr_t *tmp_bitmap = topology_g_get_bitmap(start_ptr);
+
+		if (tmp_bitmap) {
+			bit_or(node_bitmap, tmp_bitmap);
+		} else {
+			rc = SLURM_ERROR;
+			error("%s: invalid block or switch specified in hostlist function: \"%s\"",
+			      __func__, node_str);
+		}
+	} else if (!xstrncmp("feature{", node_str, 8)) {
+		add_nodes_with_feature_to_bitmap(node_bitmap, start_ptr);
+	} else {
+		rc = SLURM_ERROR;
+		error("Invalid hostlist_function specified: %s", node_str);
+	}
+
+	*end_ptr = '}';
+	return rc;
+}
+
+extern int parse_hostlist_functions(hostlist_t **hostlist)
+{
+	hostlist_t *new_hostlist = hostlist_create(NULL);
+	node_record_t *node_ptr;
+	char *host;
+	int rc = SLURM_SUCCESS;
+
+	while ((host = hostlist_shift(*hostlist))) {
+		if ((strchr(host, '{'))) {
+			bitstr_t *node_bitmap = bit_alloc(node_record_count);
+			if (_parse_hostlist_function(node_bitmap, host)) {
+				rc = SLURM_ERROR;
+			} else {
+				for (int i = 0; (node_ptr = next_node_bitmap(
+							 node_bitmap, &i));
+				     i++) {
+					hostlist_push_host(new_hostlist,
+							   node_ptr->name);
+				}
+			}
+			FREE_NULL_BITMAP(node_bitmap);
+		} else {
+			hostlist_push_host(new_hostlist, host);
+		}
+		free(host);
+	}
+	hostlist_destroy(*hostlist);
+	*hostlist = new_hostlist;
+
+	return rc;
+}
+
+static int _single_node_name2bitmap(char *node_name, bool test_alias,
+				    bitstr_t *bitmap,
+				    hostlist_t **invalid_hostlist)
+{
+	int rc = SLURM_SUCCESS;
+
+	/* If there are curly brackets it must be a hostlist_function */
+	if ((xstrchr(node_name, '{'))) {
+		rc = _parse_hostlist_function(bitmap, node_name);
+	} else {
+		node_record_t *node_ptr;
+		node_ptr = _find_node_record(node_name, test_alias, true);
+		if (node_ptr)
+			bit_set(bitmap, node_ptr->index);
+		else
+			rc = SLURM_ERROR;
+	}
+
+	if ((rc != SLURM_SUCCESS) && invalid_hostlist) {
+		debug2("%s: invalid node specified: \"%s\"",
+		       __func__, node_name);
+		if (*invalid_hostlist) {
+			hostlist_push_host(*invalid_hostlist, node_name);
+		} else {
+			*invalid_hostlist = hostlist_create(node_name);
+		}
+		rc = SLURM_SUCCESS;
+	} else if (rc != SLURM_SUCCESS) {
+		error("%s: invalid node specified: \"%s\"",
+		      __func__, node_name);
+		rc = EINVAL;
+	}
+
+	return rc;
+}
+
 /*
  * node_name2bitmap - given a node name regular expression, build a bitmap
  *	representation
  * IN node_names  - list of nodes
- * IN best_effort - if set don't return an error on invalid node name entries
+ * IN: test_alias - if set, also test NodeHostName value
  * OUT bitmap     - set to bitmap, may not have all bits set on error
  * RET 0 if no error, otherwise EINVAL
  * NOTE: call FREE_NULL_BITMAP() to free bitmap memory when no longer required
  */
-extern int node_name2bitmap(char *node_names, bool best_effort,
-			    bitstr_t **bitmap)
+extern int node_name2bitmap(char *node_names, bool test_alias,
+			    bitstr_t **bitmap, hostlist_t **invalid_hostlist)
 {
 	int rc = SLURM_SUCCESS;
 	char *this_node_name;
-	bitstr_t *my_bitmap;
 	hostlist_t *host_list;
 
-	my_bitmap = bit_alloc(node_record_count);
-	*bitmap = my_bitmap;
+	*bitmap = bit_alloc(node_record_count);
 
-	if (node_names == NULL) {
-		info("node_name2bitmap: node_names is NULL");
+	if (!node_names) {
+		info("%s: node_names is NULL", __func__);
 		return rc;
 	}
 
-	if ( (host_list = hostlist_create (node_names)) == NULL) {
+	if (!(host_list = hostlist_create(node_names))) {
 		/* likely a badly formatted hostlist */
-		error ("hostlist_create on %s error:", node_names);
-		if (!best_effort)
-			rc = EINVAL;
-		return rc;
+		error("hostlist_create on %s error:", node_names);
+		return EINVAL;
 	}
 
-	while ( (this_node_name = hostlist_shift (host_list)) ) {
-		node_record_t *node_ptr;
-		node_ptr = _find_node_record(this_node_name, best_effort, true);
-		if (node_ptr) {
-			bit_set(my_bitmap, node_ptr->index);
-		} else {
-			error("%s: invalid node specified: \"%s\"", __func__,
-			      this_node_name);
-			if (!best_effort)
-				rc = EINVAL;
-		}
-		free (this_node_name);
+	while ((this_node_name = hostlist_shift(host_list))) {
+		rc = _single_node_name2bitmap(this_node_name, test_alias,
+					      *bitmap, invalid_hostlist);
+		free(this_node_name);
 	}
-	hostlist_destroy (host_list);
+	hostlist_destroy(host_list);
 
 	return rc;
 }
@@ -1212,11 +1357,11 @@ extern int node_name2bitmap(char *node_names, bool best_effort,
 /*
  * hostlist2bitmap - given a hostlist, build a bitmap representation
  * IN hl          - hostlist
- * IN best_effort - if set don't return an error on invalid node name entries
+ * IN: test_alias - if set, also test NodeHostName value
  * OUT bitmap     - set to bitmap, may not have all bits set on error
  * RET 0 if no error, otherwise EINVAL
  */
-extern int hostlist2bitmap(hostlist_t *hl, bool best_effort, bitstr_t **bitmap)
+extern int hostlist2bitmap(hostlist_t *hl, bool test_alias, bitstr_t **bitmap)
 {
 	int rc = SLURM_SUCCESS;
 	bitstr_t *my_bitmap;
@@ -1229,22 +1374,12 @@ extern int hostlist2bitmap(hostlist_t *hl, bool best_effort, bitstr_t **bitmap)
 
 	hi = hostlist_iterator_create(hl);
 	while ((name = hostlist_next(hi))) {
-		node_record_t *node_ptr;
-		node_ptr = _find_node_record(name, best_effort, true);
-		if (node_ptr) {
-			bit_set(my_bitmap, node_ptr->index);
-		} else {
-			error ("hostlist2bitmap: invalid node specified %s",
-			       name);
-			if (!best_effort)
-				rc = EINVAL;
-		}
-		free (name);
+		rc = _single_node_name2bitmap(name, test_alias, *bitmap, NULL);
+		free(name);
 	}
 
 	hostlist_iterator_destroy(hi);
 	return rc;
-
 }
 
 /* Only delete config_ptr if isn't referenced by another node. */
@@ -1872,4 +2007,20 @@ extern config_record_t *config_record_from_node_record(node_record_t *node_ptr)
 	config_ptr->weight = node_ptr->weight;
 
 	return config_ptr;
+}
+
+/*
+ * list_find_feature - find an entry in the feature list, see list.h for
+ *	documentation
+ * IN key - is feature name or NULL for all features
+ * RET 1 if found, 0 otherwise
+ */
+extern int list_find_feature(void *feature_entry, void *key)
+{
+	node_feature_t *feature_ptr = feature_entry;
+
+	if (!key)
+		return 1;
+
+	return !xstrcmp(feature_ptr->name, (char *) key);
 }

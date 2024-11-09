@@ -193,14 +193,6 @@ extern slurm_node_alias_addrs_t *build_alias_addrs(job_record_t *job_ptr);
  */
 extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap);
 
-/*
- * list_find_feature - find an entry in the feature list, see list.h for
- *	documentation
- * IN key - is feature name or NULL for all features
- * RET 1 if found, 0 otherwise
- */
-extern int list_find_feature(void *feature_entry, void *key);
-
 extern int step_create_from_msg(slurm_msg_t *msg,
 				void (*lock_func)(bool lock),
 				void (*fail_lock_func)(bool lock));

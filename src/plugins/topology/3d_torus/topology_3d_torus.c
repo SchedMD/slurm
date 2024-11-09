@@ -119,6 +119,11 @@ extern int topology_p_whole_topo(bitstr_t *node_mask)
 	return SLURM_SUCCESS;
 }
 
+extern bitstr_t *topology_p_get_bitmap(char *name)
+{
+	return NULL;
+}
+
 /*
  * topo_generate_node_ranking  -  populate node_rank fields
  */

@@ -2382,7 +2382,7 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
 	int rc, config_cnt, tmp_cnt;
 
-	rc = node_name2bitmap(node_names, false, &node_bitmap);
+	rc = node_name2bitmap(node_names, false, &node_bitmap, NULL);
 	if (rc) {
 		info("_update_node_weight: invalid node_name");
 		return rc;
@@ -2480,7 +2480,7 @@ extern int update_node_active_features(char *node_names, char *active_features,
 
 	if (mode < FEATURE_MODE_PEND) {
 		/* Perform update of node active features */
-		rc = node_name2bitmap(node_names, false, &node_bitmap);
+		rc = node_name2bitmap(node_names, false, &node_bitmap, NULL);
 		if (rc) {
 			info("%s: invalid node_name (%s)", __func__,
 			     node_names);
@@ -2512,7 +2512,7 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 	int rc, config_cnt, tmp_cnt;
 
 	if (mode < FEATURE_MODE_PEND) {
-		rc = node_name2bitmap(node_names, false, &node_bitmap);
+		rc = node_name2bitmap(node_names, false, &node_bitmap, NULL);
 		if (rc) {
 			info("%s: invalid node_name (%s)",
 			     __func__, node_names);
@@ -2635,7 +2635,7 @@ static int _update_node_gres(char *node_names, char *gres)
 	node_record_t *node_ptr;
 	int rc, rc2, overlap1, overlap2;
 
-	rc = node_name2bitmap(node_names, false, &node_bitmap);
+	rc = node_name2bitmap(node_names, false, &node_bitmap, NULL);
 	if (rc) {
 		info("%s: invalid node_name: %s", __func__, node_names);
 		return rc;

@@ -147,7 +147,30 @@ extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 
 extern int topology_p_whole_topo(bitstr_t *node_mask)
 {
+	for (int i = 0; i < switch_record_cnt; i++) {
+		if (bit_overlap_any(switch_record_table[i].node_bitmap,
+				    node_mask)) {
+			bit_or(node_mask, switch_record_table[i].node_bitmap);
+		}
+	}
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Get bitmap of nodes in switch
+ *
+ * IN name of block
+ * RET bitmap of nodes from switch_record_table (do not free)
+ */
+extern bitstr_t *topology_p_get_bitmap(char *name)
+{
+	for (int i = 0; i < switch_record_cnt; i++) {
+		if (!xstrcmp(switch_record_table[i].name, name)) {
+			return switch_record_table[i].node_bitmap;
+		}
+	}
+
+	return NULL;
 }
 
 /*

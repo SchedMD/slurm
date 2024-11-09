@@ -4336,7 +4336,7 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 
 	if (job_ptr->details->req_nodes && job_ptr->details->req_nodes[0]) {
 		if (node_name2bitmap(job_ptr->details->req_nodes, false,
-				     &avail_bitmap) != 0) {
+				     &avail_bitmap, NULL)) {
 			job_start_data->rc = ESLURM_INVALID_NODE_NAME;
 			return -1;
 		}

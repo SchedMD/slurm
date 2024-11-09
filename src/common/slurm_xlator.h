@@ -264,6 +264,7 @@
 #define rehash_node		slurm_rehash_node
 #define hostlist2bitmap		slurm_hostlist2bitmap
 #define bitmap2node_name	slurm_bitmap2node_name
+#define node_name2bitmap	slurm_node_name2bitmap
 #define find_node_record	slurm_find_node_record
 
 /* pack.[ch] functions */
