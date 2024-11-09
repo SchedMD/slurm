@@ -687,10 +687,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 			     buf_t *buffer)
 {
 	step_record_t *step_ptr = object;
-	slurm_node_alias_addrs_t *alias_addrs_tmp;
-
-	if (step_ptr->state < JOB_RUNNING)
-		return;
+	slurm_node_alias_addrs_t *alias_addrs_tmp = NULL;
 
 	pack32(step_ptr->step_id.step_id, buffer);
 	pack32(step_ptr->step_id.step_het_comp, buffer);
@@ -740,11 +737,14 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 	/*
 	 * Don't dump alias_addrs
 	 */
-	alias_addrs_tmp = step_ptr->step_layout->alias_addrs;
-	step_ptr->step_layout->alias_addrs = NULL;
+	if (step_ptr->step_layout) {
+		alias_addrs_tmp = step_ptr->step_layout->alias_addrs;
+		step_ptr->step_layout->alias_addrs = NULL;
+	}
 	pack_slurm_step_layout(step_ptr->step_layout, buffer,
 			       protocol_version);
-	step_ptr->step_layout->alias_addrs = alias_addrs_tmp;
+	if (step_ptr->step_layout)
+		step_ptr->step_layout->alias_addrs = alias_addrs_tmp;
 
 	if (step_ptr->switch_step) {
 		pack8(1, buffer);
@@ -789,9 +789,6 @@ extern int dump_job_step_state(void *x, void *arg)
 {
 	step_record_t *step_ptr = (step_record_t *) x;
 	buf_t *buffer = (buf_t *) arg;
-
-	if (step_ptr->state < JOB_RUNNING)
-		return 0;
 
 	pack16((uint16_t) STEP_FLAG, buffer);
 
@@ -1022,10 +1019,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		goto unpack_error;
 	}
 
-	step_ptr = find_step_record(job_ptr, &step_id);
-	if (step_ptr == NULL) {
-		step_ptr = create_step_record(job_ptr, start_protocol_ver);
-	}
+	step_ptr = create_step_record(job_ptr, start_protocol_ver);
 	if (step_ptr == NULL)
 		goto unpack_error;
 
