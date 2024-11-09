@@ -324,6 +324,9 @@ extern hostlist_t *nodespec_to_hostlist(const char *nodes, bool uniq,
 		}
 	}
 
+	if (xstrchr(nodes, '{'))
+		parse_hostlist_functions(&hl);
+
 	if (uniq)
 		hostlist_uniq(hl);
 	return hl;
