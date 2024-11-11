@@ -211,7 +211,7 @@ static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
 static int _get_tls_certificate(void);
-static void      _increment_thd_count(void);
+static int _increment_thd_count(bool block);
 static void      _init_conf(void);
 static int       _memory_spec_init(void);
 static void _notify_parent_of_success(void);
@@ -628,7 +628,7 @@ _registration_engine(void *arg)
 {
 	static const uint32_t MAX_DELAY = 128;
 	uint32_t delay = 1;
-	_increment_thd_count();
+	(void) _increment_thd_count(true);
 
 	while (!_shutdown && !sent_reg_time) {
 		int rc;
@@ -665,7 +665,12 @@ static void _decrement_thd_count(void)
 	slurm_mutex_unlock(&active_mutex);
 }
 
-static void _increment_thd_count(void)
+/*
+ * Increment thread count
+ * IN block - true to block on too many active threads
+ * RET SLURM_SUCCESS or EWOULDBLOCK
+ */
+static int _increment_thd_count(bool block)
 {
 	bool logged = false;
 
@@ -676,10 +681,17 @@ static void _increment_thd_count(void)
 			     MAX_THREADS);
 			logged = true;
 		}
-		slurm_cond_wait(&active_cond, &active_mutex);
+
+		if (block)  {
+			slurm_cond_wait(&active_cond, &active_mutex);
+		} else {
+			slurm_mutex_unlock(&active_mutex);
+			return EWOULDBLOCK;
+		}
 	}
 	active_threads++;
 	slurm_mutex_unlock(&active_mutex);
+	return SLURM_SUCCESS;
 }
 
 /* secs IN - wait up to this number of seconds for all threads to complete */
