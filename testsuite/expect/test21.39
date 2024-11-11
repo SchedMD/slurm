@@ -306,7 +306,7 @@ for {set i 0} {$i < 2} {incr i} {
 		incr cnt
 	}
 	if { $rc } {
-		set credential [expr $i == 0 ? "account" : "qos"]
+		set credential [expr {$i == 0 ? "account" : "qos"}]
 		fail "Too many ($cnt) failures trying to remove $credential from job"
 	}
 }
