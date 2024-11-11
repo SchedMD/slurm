@@ -228,6 +228,7 @@ static void      _usage(void);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
+static void _service_connection(slurm_addr_t *addr, int fd);
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
@@ -707,44 +708,10 @@ _wait_for_all_threads(int secs)
 	verbose("all threads complete");
 }
 
-static void _service_connection(conmgr_callback_args_t conmgr_args,
-				int input_fd, int output_fd, void *arg)
+static void _service_connection(slurm_addr_t *addr, int fd)
 {
 	slurm_msg_t *msg = NULL;
-	slurm_addr_t addr = {
-		.ss_family = AF_UNSPEC,
-	};
 	int rc = SLURM_SUCCESS;
-
-	xassert(!arg);
-
-	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		debug3("%s: [fd:%d] connection work cancelled",
-		       __func__, input_fd);
-
-		if (input_fd != output_fd)
-			fd_close(&output_fd);
-		fd_close(&input_fd);
-		slurm_free_msg(msg);
-		return;
-	}
-
-	if ((input_fd < 0) || (output_fd < 0)) {
-		error("%s: Rejecting partially open connection input_fd=%d output_fd=%d",
-		      __func__, input_fd, output_fd);
-		if (input_fd != output_fd)
-			fd_close(&output_fd);
-		fd_close(&input_fd);
-		slurm_free_msg(msg);
-		return;
-	}
-
-	if ((rc = slurm_get_peer_addr(input_fd, &addr))) {
-		error("%s: [fd:%d] getting socket peer failed: %s",
-		      __func__, input_fd, slurm_strerror(rc));
-		fd_close(&input_fd);
-		return;
-	}
 
 	debug3("%s: [%pA] processing new RPC connection", __func__, &addr);
 
@@ -753,10 +720,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 
 	msg->flags |= SLURM_MSG_KEEP_BUFFER;
 
-	/* force blocking mode for blocking handlers */
-	fd_set_blocking(input_fd);
-
-	if ((rc = slurm_receive_msg_and_forward(input_fd, &addr, msg))) {
+	if ((rc = slurm_receive_msg_and_forward(fd, addr, msg))) {
 		error("service_connection: slurm_receive_msg: %m");
 		/*
 		 * if this fails we need to make sure the nodes we forward
@@ -783,7 +747,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 
 cleanup:
 	if ((msg->conn_fd >= 0) && close(msg->conn_fd) < 0)
-		error ("close(%d): %m", input_fd);
+		error ("close(%d): %m", fd);
 
 	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));
 	slurm_free_msg(msg);
@@ -2024,6 +1988,50 @@ static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 	conf->lfd = -1;
 }
 
+static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
+			   int input_fd, int output_fd, void *arg)
+{
+	slurm_addr_t addr = {
+		.ss_family = AF_UNSPEC,
+	};
+	int rc = SLURM_SUCCESS;
+
+	xassert(!arg);
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		debug3("%s: [fd:%d] connection work cancelled",
+		       __func__, input_fd);
+
+		if (input_fd != output_fd)
+			fd_close(&output_fd);
+		fd_close(&input_fd);
+		return;
+	}
+
+	if ((input_fd < 0) || (output_fd < 0)) {
+		error("%s: Rejecting partially open connection input_fd=%d output_fd=%d",
+		      __func__, input_fd, output_fd);
+		if (input_fd != output_fd)
+			fd_close(&output_fd);
+		fd_close(&input_fd);
+		return;
+	}
+
+	if ((rc = slurm_get_peer_addr(input_fd, &addr))) {
+		error("%s: [fd:%d] getting socket peer failed: %s",
+		      __func__, input_fd, slurm_strerror(rc));
+		fd_close(&input_fd);
+		return;
+	}
+
+	/* force blocking mode for blocking handlers */
+	fd_set_blocking(input_fd);
+
+	debug3("%s: [%pA] processing new RPC connection", __func__, &addr);
+
+	_service_connection(&addr, input_fd);
+}
+
 static void *_on_connection(conmgr_fd_t *con, void *arg)
 {
 	int rc;
@@ -2031,8 +2039,8 @@ static void *_on_connection(conmgr_fd_t *con, void *arg)
 	debug3("%s: [%s] New RPC connection",
 	       __func__, conmgr_fd_get_name(con));
 
-	if ((rc = conmgr_queue_extract_con_fd(con, _service_connection,
-					      XSTRINGIFY(_service_connection),
+	if ((rc = conmgr_queue_extract_con_fd(con, _on_extract_fd,
+					      XSTRINGIFY(_on_extract_fd),
 					      NULL))) {
 		error("%s: [%s] Extracting FDs failed: %s",
 		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
