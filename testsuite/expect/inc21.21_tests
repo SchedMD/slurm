@@ -234,7 +234,7 @@ sleep 10"
 # submit and jobs
 #
 proc inc21_21_submit_test { limit } {
-	global file_in srun sbatch squeue scancel bin_id number bin_sleep is_skip
+	global file_in srun sbatch squeue scancel bin_id number bin_sleep is_skip re_word_str
 	global bin_rm ta maxjob_lim maxsub_lim
 	global acct_mod_desc acct_mod_acct_vals acct_mod_assoc_vals
 	global acct_mod_assoc_test_vals job_list
@@ -308,7 +308,7 @@ proc inc21_21_submit_test { limit } {
 			incr matches
 			exp_continue
 		}
-		-re "($job_id(0)|$job_id(1)).R.None" {
+		-re "($job_id(0)|$job_id(1)).R.$re_word_str" {
 			incr matches
 			exp_continue
 		}
