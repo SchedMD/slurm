@@ -7728,14 +7728,6 @@ static void _figure_out_num_tasks(
 		min_nodes = job_desc->min_nodes = 1;
 	}
 
-	if (((job_desc->task_dist & SLURM_DIST_STATE_BASE) ==
-	     SLURM_DIST_ARBITRARY) &&
-	    (num_tasks == NO_VAL)) {
-		hostlist_t *hl = hostlist_create(job_desc->req_nodes);
-		num_tasks = hostlist_count(hl);
-		hostlist_destroy(hl);
-	}
-
 	/* If we are creating the job we want the tasks to be set every time. */
 	if ((num_tasks == NO_VAL) &&
 	    (min_nodes != NO_VAL) &&
@@ -7797,6 +7789,13 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	rc = job_submit_g_submit(job_desc, submit_uid, err_msg);
 	if (rc != SLURM_SUCCESS)
 		return rc;
+
+	/* Reject jobs requesting arbitrary distribution without a task count */
+	if (((job_desc->task_dist & SLURM_DIST_STATE_BASE) ==
+	     SLURM_DIST_ARBITRARY) && (job_desc->num_tasks == NO_VAL)) {
+		*err_msg = xstrdup("task count required for arbitrary distribution");
+		return ESLURM_BAD_TASK_COUNT;
+	}
 
 	/* Add a temporary job_ptr for node_features_g_job_valid */
 	job_ptr = xmalloc(sizeof(job_record_t));

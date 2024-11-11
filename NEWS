@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 24.11.0rc3
 =============================
+ -- slurmctld - Reject arbitrary distribution jobs that do not specifying a task
+    count.
 
 * Changes in Slurm 24.11.0rc2
 =============================
