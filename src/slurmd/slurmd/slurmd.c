@@ -160,6 +160,13 @@ pthread_mutex_t tres_mutex     = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  tres_cond      = PTHREAD_COND_INITIALIZER;
 bool tres_packed = false;
 
+#define SERVICE_CONNECTION_ARGS_MAGIC 0x2aeaa8af
+typedef struct {
+	int magic; /* SERVICE_CONNECTION_ARGS_MAGIC */
+	slurm_addr_t addr;
+	int fd;
+} service_connection_args_t;
+
 /*
  * count of active threads
  */
@@ -228,7 +235,7 @@ static void      _usage(void);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
-static void _service_connection(slurm_addr_t *addr, int fd);
+static void *_service_connection(void *arg);
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
@@ -708,10 +715,15 @@ _wait_for_all_threads(int secs)
 	verbose("all threads complete");
 }
 
-static void _service_connection(slurm_addr_t *addr, int fd)
+static void *_service_connection(void *arg)
 {
+	service_connection_args_t *args = arg;
 	slurm_msg_t *msg = NULL;
+	slurm_addr_t *addr = &args->addr;
+	int fd = args->fd;
 	int rc = SLURM_SUCCESS;
+
+	xassert(args->magic == SERVICE_CONNECTION_ARGS_MAGIC);
 
 	debug3("%s: [%pA] processing new RPC connection", __func__, &addr);
 
@@ -751,6 +763,10 @@ cleanup:
 
 	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));
 	slurm_free_msg(msg);
+
+	args->magic = ~SERVICE_CONNECTION_ARGS_MAGIC;
+	xfree(args);
+	return NULL;
 }
 
 static int _load_gres()
@@ -1991,9 +2007,7 @@ static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 			   int input_fd, int output_fd, void *arg)
 {
-	slurm_addr_t addr = {
-		.ss_family = AF_UNSPEC,
-	};
+	service_connection_args_t *args = NULL;
 	int rc = SLURM_SUCCESS;
 
 	xassert(!arg);
@@ -2017,19 +2031,27 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 		return;
 	}
 
-	if ((rc = slurm_get_peer_addr(input_fd, &addr))) {
+	args = xmalloc(sizeof(*args));
+	args->magic = SERVICE_CONNECTION_ARGS_MAGIC;
+	args->addr.ss_family = AF_UNSPEC;
+	args->fd = input_fd;
+
+	if ((rc = slurm_get_peer_addr(input_fd, &args->addr))) {
 		error("%s: [fd:%d] getting socket peer failed: %s",
 		      __func__, input_fd, slurm_strerror(rc));
 		fd_close(&input_fd);
+		args->magic = ~SERVICE_CONNECTION_ARGS_MAGIC;
+		xfree(args);
 		return;
 	}
 
 	/* force blocking mode for blocking handlers */
 	fd_set_blocking(input_fd);
 
-	debug3("%s: [%pA] processing new RPC connection", __func__, &addr);
+	debug3("%s: [%pA] detaching new thread for RPC connection",
+	       __func__, &args->addr);
 
-	_service_connection(&addr, input_fd);
+	slurm_thread_create_detached(_service_connection, args);
 }
 
 static void *_on_connection(conmgr_fd_t *con, void *arg)
