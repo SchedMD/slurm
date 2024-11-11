@@ -92,6 +92,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/slurm_time.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
 #include "src/common/uid.h"
@@ -142,6 +143,8 @@ decl_static_data(usage_txt);
 #define ENV_DAEMON_VALUE "1"
 #define SLURMD_CONMGR_DEFAULT_THREADS 10
 #define SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
+#define MAX_THREAD_DELAY_INC ((timespec_t) { .tv_nsec = 1500, })
+#define MAX_THREAD_DELAY_MAX ((timespec_t) { .tv_sec = 1, })
 
 #define _free_and_set(__dst, __src)		\
 	do {					\
@@ -163,6 +166,7 @@ bool tres_packed = false;
 #define SERVICE_CONNECTION_ARGS_MAGIC 0x2aeaa8af
 typedef struct {
 	int magic; /* SERVICE_CONNECTION_ARGS_MAGIC */
+	timespec_t delay;
 	slurm_addr_t addr;
 	int fd;
 } service_connection_args_t;
@@ -774,6 +778,9 @@ cleanup:
 		error ("close(%d): %m", fd);
 
 	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));
+
+	_decrement_thd_count();
+
 	slurm_free_msg(msg);
 
 	args->magic = ~SERVICE_CONNECTION_ARGS_MAGIC;
@@ -2016,6 +2023,40 @@ static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 	conf->lfd = -1;
 }
 
+/* Try to process connection if thread max has not been hit */
+static void _try_service_connection(conmgr_callback_args_t conmgr_args,
+				    void *arg)
+{
+	service_connection_args_t *args = arg;
+	int rc = SLURM_ERROR;
+
+	xassert(args->magic == SERVICE_CONNECTION_ARGS_MAGIC);
+
+	if (!(rc = _increment_thd_count(false))) {
+		debug3("%s: [%pA] detaching new thread for RPC connection",
+		       __func__, &args->addr);
+
+		slurm_thread_create_detached(_service_connection, args);
+	} else {
+		xassert(rc == EWOULDBLOCK);
+
+		debug3("%s: [%pA] deferring servicing connection",
+		       __func__, &args->addr);
+
+		/*
+		 * Backoff attempts to avoid needless lock contention while
+		 * avoiding having a new thread created
+		 */
+		args->delay = timespec_add(args->delay, MAX_THREAD_DELAY_INC);
+		if (timespec_is_after(args->delay, MAX_THREAD_DELAY_MAX))
+			args->delay = MAX_THREAD_DELAY_MAX;
+
+		conmgr_add_work_delayed_fifo(_try_service_connection, args,
+					     args->delay.tv_sec,
+					     args->delay.tv_sec);
+	}
+}
+
 static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 			   int input_fd, int output_fd, void *arg)
 {
@@ -2060,10 +2101,7 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 	/* force blocking mode for blocking handlers */
 	fd_set_blocking(input_fd);
 
-	debug3("%s: [%pA] detaching new thread for RPC connection",
-	       __func__, &args->addr);
-
-	slurm_thread_create_detached(_service_connection, args);
+	_try_service_connection(conmgr_args, args);
 }
 
 static void *_on_connection(conmgr_fd_t *con, void *arg)
