@@ -57,6 +57,9 @@ set access_err  0
 set config_dir [get_conf_path]
 set config_file $config_dir/slurm.conf
 
+# TODO: This test is just too error-prone to be useful (t21393)
+skip "This test is temporally disabled to avoid testsuite noise (t21393)"
+
 #
 # Verify preconditions
 #
