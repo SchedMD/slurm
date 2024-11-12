@@ -116,6 +116,7 @@ static void _set_cpu_affinity(node_config_load_t *node_conf, char *bus_id,
 		if (bit_unfmt(cpus_bitmap, buffer))
 			error("Unable to parse cpu list in %s", path);
 	}
+	fclose(f);
 
 	if (enabled_cpus_bits) {
 		/*
