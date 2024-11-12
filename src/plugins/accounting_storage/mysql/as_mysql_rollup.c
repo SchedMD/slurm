@@ -2062,7 +2062,8 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			run_month ? assoc_day_table : assoc_hour_table,
 			curr_end, curr_start, now);
 
-		query = xstrdup_printf(
+		xstrfmtcat(
+			query,
 			"insert into \"%s_%s\" (creation_time, mod_time, id, "
 			"id_alt, id_tres, time_start, alloc_secs) "
 			"select %ld, %ld, id, id_alt, id_tres, "
