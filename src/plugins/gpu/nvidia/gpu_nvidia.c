@@ -166,6 +166,7 @@ static void _set_name_and_file(node_config_load_t *node_conf, char *bus_id,
 			gpu_common_underscorify_tolower(*device_name);
 		}
 	}
+	fclose(f);
 
 	if (!*device_file)
 		error("Device file and Minor number not found");
