@@ -6528,6 +6528,13 @@ By default a node has no features.
 Also see \fBGres\fR for being able to have more control such as types and
 count. Using features is faster than scheduling against GRES but is limited to
 Boolean operations.
+
+\fBNOTE\fR: The hostlist function \fBfeature{myfeature}\fR expands to all nodes
+with the specified feature. This may be used in place of or alongside regular
+hostlist expressions in commands or configuration files that interact with the
+slurmctld.
+For example: \fBscontrol update node=feature{myfeature} state=resume\fR or
+\fBPartitionName=p1 Nodes=feature{myfeature}\fR.
 .IP
 
 .TP

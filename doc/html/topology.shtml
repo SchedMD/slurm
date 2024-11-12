@@ -188,6 +188,29 @@ The system administrator can limit the maximum time that any job can
 wait for this optimized configuration using the <i>SchedulerParameters</i>
 configuration parameter with the <i>max_switch_wait</i> option.</p>
 
+<p>When <b>topology/tree</b> or <b>topology/block</b> is configured, hostlist
+functions may be used in place of or alongside regular hostlist expressions
+in commands or configuration files that interact with the slurmctld. Valid
+topology functions include:</p>
+
+<ul>
+<li><b>block{blockX}</b> and <b>switch{switchY}</b> - expand to all nodes in
+	the specified block/switch.</li>
+<li><b>blockwith{nodeX}</b> and <b>switchwith{nodeY}</b> - expand to all nodes
+	in the same block/switch as the specified node.</li>
+</ul>
+
+<p>For example:</p>
+
+<pre>
+scontrol update node=block{b1} state=resume
+sbatch --nodelist=blockwith{node0} -N 10 program
+PartitionName=Block10 Nodes=block{block10} ...
+</pre>
+
+See also the hostlist function <b>feature{myfeature}</b>
+<a href="slurm.conf.html#OPT_Features">here</a>.</p>
+
 <h2 id="env_vars">Environment Variables
 <a class="slurm_link" href="#env_vars"></a>
 </h2>
@@ -209,6 +232,6 @@ The value will be set component types listed in SLURM_TOPOLOGY_ADDR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.</p>
 
-<p style="text-align:center;">Last modified 01 April 2024</p>
+<p style="text-align:center;">Last modified 13 November 2024</p>
 
 <!--#include virtual="footer.txt"-->
