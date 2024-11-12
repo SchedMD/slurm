@@ -3176,9 +3176,9 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree(ctl_conf_ptr->scron_params);
 	xfree( ctl_conf_ptr->select_type );
 	ctl_conf_ptr->select_type_param         = NO_VAL16;
-	ctl_conf_ptr->slurm_user_id		= NO_VAL16;
+	ctl_conf_ptr->slurm_user_id = SLURM_AUTH_NOBODY;
 	xfree (ctl_conf_ptr->slurm_user_name);
-	ctl_conf_ptr->slurmd_user_id		= NO_VAL16;
+	ctl_conf_ptr->slurmd_user_id = SLURM_AUTH_NOBODY;
 	xfree (ctl_conf_ptr->slurmd_user_name);
 	ctl_conf_ptr->slurmctld_debug		= NO_VAL16;
 	xfree (ctl_conf_ptr->slurmctld_logfile);
