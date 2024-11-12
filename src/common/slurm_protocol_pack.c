@@ -2170,8 +2170,10 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 		xfree(node_cnt);
 
 		safe_unpack32_array(&core_cnt, &uint32_tmp, buffer);
-		if (uint32_tmp > NO_VAL)
+		if (uint32_tmp > NO_VAL) {
+			xfree(core_cnt);
 			goto unpack_error;
+		}
 		if (uint32_tmp > 0) {
 			tmp_ptr->core_cnt = 0;
 			for (int i = 0; i < uint32_tmp; i++)
