@@ -148,8 +148,16 @@ done:
 extern int acct_gather_filesystem_fini(void)
 {
 	int rc = SLURM_SUCCESS;
+	static bool fini_ran = false;
 
 	slurm_mutex_lock(&g_context_lock);
+	if (fini_ran) {
+		slurm_mutex_unlock(&g_context_lock);
+		return SLURM_SUCCESS;
+	}
+
+	fini_ran = true;
+
 	if (g_context) {
 		if (watch_node_thread_id) {
 			slurm_mutex_unlock(&g_context_lock);
