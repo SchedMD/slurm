@@ -239,12 +239,17 @@ gres/gpumem and gres/gpuutil can be set individually when gres/gpu is not set.
 
 .TP
 \fBAccountingStorageType\fR
-The accounting storage mechanism type. Acceptable values at
-present "accounting_storage/slurmdbd".
-The "accounting_storage/slurmdbd" value indicates that accounting records
-will be written to the Slurm DBD, which manages an underlying MySQL
-database. See "man slurmdbd" for more information. When this is not set it
-indicates that account records are not maintained.
+The accounting storage mechanism type. Unset by default, which indicates
+that accounting records are not maintained.
+
+Current options are:
+.IP
+.RS
+.TP
+\fBaccounting_storage/slurmdbd\fR
+The accounting records will be written to the Slurm DBD, which manages an
+underlying MySQL database. See "man slurmdbd" for more information.
+.RE
 .IP
 
 .TP
