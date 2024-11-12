@@ -2267,14 +2267,14 @@ extern int fini(void)
 		usleep(100000); /* 100 ms */
 	}
 
-	slurm_mutex_lock(&bb_state.bb_mutex);
 	log_flag(BURST_BUF, "");
 
 	if (bb_state.bb_thread) {
-		slurm_mutex_unlock(&bb_state.bb_mutex);
 		slurm_thread_join(bb_state.bb_thread);
-		slurm_mutex_lock(&bb_state.bb_mutex);
+		bb_state.bb_thread = 0;
 	}
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_clear_config(&bb_state.bb_config, true);
 	bb_clear_cache(&bb_state);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
