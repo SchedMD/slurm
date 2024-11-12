@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 24.11.0rc2
+=============================
+
 * Changes in Slurm 24.11.0rc1
 =============================
  -- Improve error type logged from partial or incomplete reading from socket or
