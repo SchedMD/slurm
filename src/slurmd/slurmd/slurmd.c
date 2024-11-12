@@ -139,8 +139,6 @@ decl_static_data(usage_txt);
 #define MAX_THREADS		256
 #define TIMEOUT_SIGUSR2 5000000
 #define TIMEOUT_RECONFIG 5000000
-#define ENV_DAEMON_FIELD "SLURMD_DAEMONIZED"
-#define ENV_DAEMON_VALUE "1"
 #define SLURMD_CONMGR_DEFAULT_THREADS 10
 #define SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
 #define MAX_THREAD_DELAY_INC ((timespec_t) { .tv_nsec = 1500, })
@@ -337,24 +335,6 @@ static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
 	debug("Caught SIGTTIN. Ignoring.");
 }
 
-static void _daemonize(int argc, char **argv)
-{
-	if (getenv(ENV_DAEMON_FIELD)) {
-		debug3("%s: skipping - already daemonized", __func__);
-		unsetenv(ENV_DAEMON_FIELD);
-		return;
-	}
-
-	debug3("%s: daemonizing %s", __func__, conf->binary);
-	setenv(ENV_DAEMON_FIELD, ENV_DAEMON_VALUE, true);
-
-	if (xdaemon())
-		fatal("Couldn't daemonize slurmd: %m");
-
-	execv(conf->binary, argv);
-	fatal("exec() failed: %m");
-}
-
 int
 main (int argc, char **argv)
 {
@@ -393,6 +373,18 @@ main (int argc, char **argv)
 	conf->argv = argv;
 	conf->argc = argc;
 
+	/*
+	 * Process commandline arguments first, since one option may be
+	 * an alternate location for the slurm config file.
+	 */
+	_process_cmdline(conf->argc, conf->argv);
+
+	/*
+	 * Become a daemon if desired.
+	 */
+	if (original && conf->daemonize && xdaemon())
+		fatal_abort("%s: xdaemon() failed: %m", __func__);
+
 	if (_slurmd_init() < 0) {
 		error( "slurmd initialization failed" );
 		fflush( NULL );
@@ -411,12 +403,6 @@ main (int argc, char **argv)
 	}
 
 	debug3("slurmd initialization successful");
-
-	/*
-	 * Become a daemon if desired.
-	 */
-	if (original && conf->daemonize)
-		_daemonize(argc, argv);
 
 	test_core_limit();
 	info("slurmd version %s started", SLURM_VERSION_STRING);
@@ -2518,12 +2504,6 @@ _slurmd_init(void)
 	int rc = SLURM_SUCCESS;
 
 	/*
-	 * Process commandline arguments first, since one option may be
-	 * an alternate location for the slurm config file.
-	 */
-	_process_cmdline(conf->argc, conf->argv);
-
-	/*
 	 * Work out how this node is going to be configured. If running in
 	 * "configless" mode, also populate the conf-cache directory.
 	 */
@@ -2560,10 +2540,7 @@ _slurmd_init(void)
 	 * cpuset, and hwloc does not return the correct e-cores vs p-cores
 	 * kinds.
 	 */
-	if (getenv(ENV_DAEMON_FIELD))
-		xcpuinfo_refresh_hwloc(false);
-	else
-		xcpuinfo_refresh_hwloc(original);
+	xcpuinfo_refresh_hwloc(original);
 
 	/*
 	 * auth/slurm calls conmgr_init and we need to apply conmgr params
