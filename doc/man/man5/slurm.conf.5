@@ -1280,17 +1280,33 @@ May not exceed 65533.
 
 .TP
 \fBEnforcePartLimits\fR
-If set to "ALL" then jobs which exceed the number of nodes in a partition and/or
-any of its configured limits will be rejected at submission time. If job is
-submitted to multiple partitions, the job must satisfy the limits on all the
-requested partitions. If set to "NO" then the job will be accepted and remain
-queued until the partition limits are altered(Maxtime, MaxMemperNode...).
-If set to "ANY" a job must satisfy any of the requested partitions
-to be submitted. The default value is "NO".
-\fBNOTE\fR: If set, then a job's QOS can not be used to exceed partition limits.
-\fBNOTE\fR: The partition limits being considered by this option are its
+Controls whether partition limits are enforced when a job is submitted to the
+cluster. The partition limits being considered by this option are its
 configured MaxMemPerCPU, MaxMemPerNode, MinNodes, MaxNodes, MaxTime, AllocNodes,
-AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold.
+AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold. If set, then a
+job's QOS can not be used to exceed partition limits.
+.IP
+.RS
+.TP
+\fBALL\fR
+Jobs which exceed the number of nodes in a partition and/or any of its
+configured limits will be rejected at submission time. If the job is submitted
+to multiple partitions, the job must satisfy the limits on all the requested
+partitions.
+.IP
+
+.TP
+\fBANY\fR
+Jobs will be accepted if they satisfy the limits on at least one of the
+requested partitions.
+.IP
+
+.TP
+\fBNO\fR
+Partition limits will not be enforced at submit time, but will still be enforced
+during scheduling. A job that exceeds the limits on all requested partitions
+will remain queued until the partition limits are altered. This is the default.
+.RE
 .IP
 
 .TP
