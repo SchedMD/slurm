@@ -393,6 +393,12 @@ main (int argc, char **argv)
 	conf->argv = argv;
 	conf->argc = argc;
 
+	/*
+	 * Process commandline arguments first, since one option may be
+	 * an alternate location for the slurm config file.
+	 */
+	_process_cmdline(conf->argc, conf->argv);
+
 	if (_slurmd_init() < 0) {
 		error( "slurmd initialization failed" );
 		fflush( NULL );
@@ -2516,12 +2522,6 @@ _slurmd_init(void)
 	struct rlimit rlim;
 	struct stat stat_buf;
 	int rc = SLURM_SUCCESS;
-
-	/*
-	 * Process commandline arguments first, since one option may be
-	 * an alternate location for the slurm config file.
-	 */
-	_process_cmdline(conf->argc, conf->argv);
 
 	/*
 	 * Work out how this node is going to be configured. If running in
