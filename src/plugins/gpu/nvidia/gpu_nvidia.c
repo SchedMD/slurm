@@ -112,7 +112,7 @@ static void _set_cpu_affinity(node_config_load_t *node_conf, char *bus_id,
 	f = fopen(path, "r");
 	cpus_bitmap = bit_alloc(MAX_CPUS);
 
-	while (fgets(buffer, sizeof(buffer), f) != NULL) {
+	while (fgets(buffer, sizeof(buffer), f)) {
 		if (bit_unfmt(cpus_bitmap, buffer))
 			error("Unable to parse cpu list in %s", path);
 	}
