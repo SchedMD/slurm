@@ -38,6 +38,7 @@
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
 #include "src/interfaces/certmgr.h"
 
@@ -81,10 +82,12 @@ extern int certmgr_get_renewal_period_mins(void)
 		if (i < 0) {
 			error("Invalid certificate_renewal_period: %s. Needs to be positive integer",
 			      renewal_str);
+			xfree(renewal_str);
 			return SLURM_ERROR;
 		}
 
 		renewal_period = i;
+		xfree(renewal_str);
 		return renewal_period;
 	} else {
 		/* default setting */
