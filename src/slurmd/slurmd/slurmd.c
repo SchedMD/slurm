@@ -92,6 +92,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/slurm_time.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
 #include "src/common/uid.h"
@@ -142,6 +143,8 @@ decl_static_data(usage_txt);
 #define ENV_DAEMON_VALUE "1"
 #define SLURMD_CONMGR_DEFAULT_THREADS 10
 #define SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
+#define MAX_THREAD_DELAY_INC ((timespec_t) { .tv_nsec = 1500, })
+#define MAX_THREAD_DELAY_MAX ((timespec_t) { .tv_sec = 1, })
 
 #define _free_and_set(__dst, __src)		\
 	do {					\
@@ -159,6 +162,14 @@ pthread_mutex_t fini_job_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t tres_mutex     = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  tres_cond      = PTHREAD_COND_INITIALIZER;
 bool tres_packed = false;
+
+#define SERVICE_CONNECTION_ARGS_MAGIC 0x2aeaa8af
+typedef struct {
+	int magic; /* SERVICE_CONNECTION_ARGS_MAGIC */
+	timespec_t delay;
+	slurm_addr_t addr;
+	int fd;
+} service_connection_args_t;
 
 /*
  * count of active threads
@@ -204,7 +215,7 @@ static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
 static int _get_tls_certificate(void);
-static void      _increment_thd_count(void);
+static int _increment_thd_count(bool block);
 static void      _init_conf(void);
 static int       _memory_spec_init(void);
 static void _notify_parent_of_success(void);
@@ -228,6 +239,7 @@ static void      _usage(void);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
+static void *_service_connection(void *arg);
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
@@ -620,7 +632,7 @@ _registration_engine(void *arg)
 {
 	static const uint32_t MAX_DELAY = 128;
 	uint32_t delay = 1;
-	_increment_thd_count();
+	(void) _increment_thd_count(true);
 
 	while (!_shutdown && !sent_reg_time) {
 		int rc;
@@ -657,7 +669,12 @@ static void _decrement_thd_count(void)
 	slurm_mutex_unlock(&active_mutex);
 }
 
-static void _increment_thd_count(void)
+/*
+ * Increment thread count
+ * IN block - true to block on too many active threads
+ * RET SLURM_SUCCESS or EWOULDBLOCK
+ */
+static int _increment_thd_count(bool block)
 {
 	bool logged = false;
 
@@ -668,10 +685,17 @@ static void _increment_thd_count(void)
 			     MAX_THREADS);
 			logged = true;
 		}
-		slurm_cond_wait(&active_cond, &active_mutex);
+
+		if (block)  {
+			slurm_cond_wait(&active_cond, &active_mutex);
+		} else {
+			slurm_mutex_unlock(&active_mutex);
+			return EWOULDBLOCK;
+		}
 	}
 	active_threads++;
 	slurm_mutex_unlock(&active_mutex);
+	return SLURM_SUCCESS;
 }
 
 /* secs IN - wait up to this number of seconds for all threads to complete */
@@ -707,44 +731,15 @@ _wait_for_all_threads(int secs)
 	verbose("all threads complete");
 }
 
-static void _service_connection(conmgr_callback_args_t conmgr_args,
-				int input_fd, int output_fd, void *arg)
+static void *_service_connection(void *arg)
 {
+	service_connection_args_t *args = arg;
 	slurm_msg_t *msg = NULL;
-	slurm_addr_t addr = {
-		.ss_family = AF_UNSPEC,
-	};
+	slurm_addr_t *addr = &args->addr;
+	int fd = args->fd;
 	int rc = SLURM_SUCCESS;
 
-	xassert(!arg);
-
-	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		debug3("%s: [fd:%d] connection work cancelled",
-		       __func__, input_fd);
-
-		if (input_fd != output_fd)
-			fd_close(&output_fd);
-		fd_close(&input_fd);
-		slurm_free_msg(msg);
-		return;
-	}
-
-	if ((input_fd < 0) || (output_fd < 0)) {
-		error("%s: Rejecting partially open connection input_fd=%d output_fd=%d",
-		      __func__, input_fd, output_fd);
-		if (input_fd != output_fd)
-			fd_close(&output_fd);
-		fd_close(&input_fd);
-		slurm_free_msg(msg);
-		return;
-	}
-
-	if ((rc = slurm_get_peer_addr(input_fd, &addr))) {
-		error("%s: [fd:%d] getting socket peer failed: %s",
-		      __func__, input_fd, slurm_strerror(rc));
-		fd_close(&input_fd);
-		return;
-	}
+	xassert(args->magic == SERVICE_CONNECTION_ARGS_MAGIC);
 
 	debug3("%s: [%pA] processing new RPC connection", __func__, &addr);
 
@@ -753,10 +748,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 
 	msg->flags |= SLURM_MSG_KEEP_BUFFER;
 
-	/* force blocking mode for blocking handlers */
-	fd_set_blocking(input_fd);
-
-	if ((rc = slurm_receive_msg_and_forward(input_fd, &addr, msg))) {
+	if ((rc = slurm_receive_msg_and_forward(fd, addr, msg))) {
 		error("service_connection: slurm_receive_msg: %m");
 		/*
 		 * if this fails we need to make sure the nodes we forward
@@ -783,10 +775,17 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 
 cleanup:
 	if ((msg->conn_fd >= 0) && close(msg->conn_fd) < 0)
-		error ("close(%d): %m", input_fd);
+		error ("close(%d): %m", fd);
 
 	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));
+
+	_decrement_thd_count();
+
 	slurm_free_msg(msg);
+
+	args->magic = ~SERVICE_CONNECTION_ARGS_MAGIC;
+	xfree(args);
+	return NULL;
 }
 
 static int _load_gres()
@@ -2024,6 +2023,87 @@ static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 	conf->lfd = -1;
 }
 
+/* Try to process connection if thread max has not been hit */
+static void _try_service_connection(conmgr_callback_args_t conmgr_args,
+				    void *arg)
+{
+	service_connection_args_t *args = arg;
+	int rc = SLURM_ERROR;
+
+	xassert(args->magic == SERVICE_CONNECTION_ARGS_MAGIC);
+
+	if (!(rc = _increment_thd_count(false))) {
+		debug3("%s: [%pA] detaching new thread for RPC connection",
+		       __func__, &args->addr);
+
+		slurm_thread_create_detached(_service_connection, args);
+	} else {
+		xassert(rc == EWOULDBLOCK);
+
+		debug3("%s: [%pA] deferring servicing connection",
+		       __func__, &args->addr);
+
+		/*
+		 * Backoff attempts to avoid needless lock contention while
+		 * avoiding having a new thread created
+		 */
+		args->delay = timespec_add(args->delay, MAX_THREAD_DELAY_INC);
+		if (timespec_is_after(args->delay, MAX_THREAD_DELAY_MAX))
+			args->delay = MAX_THREAD_DELAY_MAX;
+
+		conmgr_add_work_delayed_fifo(_try_service_connection, args,
+					     args->delay.tv_sec,
+					     args->delay.tv_sec);
+	}
+}
+
+static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
+			   int input_fd, int output_fd, void *arg)
+{
+	service_connection_args_t *args = NULL;
+	int rc = SLURM_SUCCESS;
+
+	xassert(!arg);
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		debug3("%s: [fd:%d] connection work cancelled",
+		       __func__, input_fd);
+
+		if (input_fd != output_fd)
+			fd_close(&output_fd);
+		fd_close(&input_fd);
+		return;
+	}
+
+	if ((input_fd < 0) || (output_fd < 0)) {
+		error("%s: Rejecting partially open connection input_fd=%d output_fd=%d",
+		      __func__, input_fd, output_fd);
+		if (input_fd != output_fd)
+			fd_close(&output_fd);
+		fd_close(&input_fd);
+		return;
+	}
+
+	args = xmalloc(sizeof(*args));
+	args->magic = SERVICE_CONNECTION_ARGS_MAGIC;
+	args->addr.ss_family = AF_UNSPEC;
+	args->fd = input_fd;
+
+	if ((rc = slurm_get_peer_addr(input_fd, &args->addr))) {
+		error("%s: [fd:%d] getting socket peer failed: %s",
+		      __func__, input_fd, slurm_strerror(rc));
+		fd_close(&input_fd);
+		args->magic = ~SERVICE_CONNECTION_ARGS_MAGIC;
+		xfree(args);
+		return;
+	}
+
+	/* force blocking mode for blocking handlers */
+	fd_set_blocking(input_fd);
+
+	_try_service_connection(conmgr_args, args);
+}
+
 static void *_on_connection(conmgr_fd_t *con, void *arg)
 {
 	int rc;
@@ -2031,8 +2111,8 @@ static void *_on_connection(conmgr_fd_t *con, void *arg)
 	debug3("%s: [%s] New RPC connection",
 	       __func__, conmgr_fd_get_name(con));
 
-	if ((rc = conmgr_queue_extract_con_fd(con, _service_connection,
-					      XSTRINGIFY(_service_connection),
+	if ((rc = conmgr_queue_extract_con_fd(con, _on_extract_fd,
+					      XSTRINGIFY(_on_extract_fd),
 					      NULL))) {
 		error("%s: [%s] Extracting FDs failed: %s",
 		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
