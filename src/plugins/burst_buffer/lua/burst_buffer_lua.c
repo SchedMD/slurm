@@ -2251,6 +2251,10 @@ extern int fini(void)
 	 * all threads have completed.
 	 */
 	slurm_mutex_lock(&bb_state.term_mutex);
+	if (bb_state.term_flag) {
+		slurm_mutex_unlock(&bb_state.term_mutex);
+		return SLURM_SUCCESS;
+	}
 	bb_state.term_flag = true;
 	slurm_cond_broadcast(&bb_state.term_cond);
 	slurm_mutex_unlock(&bb_state.term_mutex);
