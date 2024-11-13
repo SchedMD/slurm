@@ -156,7 +156,6 @@ def module_setup(request, tmp_path_factory):
     atf.properties["slurm-started"] = False
     atf.properties["slurmrestd-started"] = False
     atf.properties["configurations-modified"] = set()
-    atf.properties["accounting-database-modified"] = False
     atf.properties["orig-environment"] = dict(os.environ)
     atf.properties["orig-pypath"] = list(sys.path)
 
@@ -203,9 +202,8 @@ def module_teardown():
         for config in set(atf.properties["configurations-modified"]):
             atf.restore_config_file(config)
 
-        # Restore the Slurm database if modified
-        if atf.properties["accounting-database-modified"]:
-            atf.restore_accounting_database()
+        # Restore the Slurm database
+        atf.restore_accounting_database()
 
     else:
         atf.cancel_jobs(atf.properties["submitted-jobs"])
