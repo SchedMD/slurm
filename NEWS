@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - fix memory leak when sending a DBD_JOB_START message.
  -- Fix issue with accounting rollup dealing with association tables.
  -- Fix minor memory leaks.
+ -- Fix potential thread safety issues.
 
 * Changes in Slurm 24.11.0rc1
 =============================
