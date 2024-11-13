@@ -38,6 +38,31 @@ pos = 0
 text = ""
 
 
+@pytest.fixture(scope="function")
+def setup_federation1(no_federations):
+    atf.run_command(
+        f"sacctmgr -i add federation {federation1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    yield
+
+    atf.run_command(
+        f"sacctmgr -i delete federation {federation1}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+
+
+@pytest.fixture(scope="function")
+def no_federations():
+    atf.run_command(
+        f"sacctmgr -i delete federation {federation1},{federation2},{federation3}",
+        user=atf.properties["slurm-user"],
+        xfail=True,
+    )
+
+
 # Performs an initial match and prepares to do subsequent matching
 def first_match(pattern, initial_string):
     global pos, text
@@ -855,7 +880,7 @@ def test_delete_cluster_by_federation():
     assert next_match(rf"(?m)^ +{cluster4}")
 
 
-def test_add_max_clusters_federation():
+def test_max_clusters_federation(setup_federation1):
     """Test adding more than 63 clusters to a federation"""
 
     atf.run_command(
@@ -886,9 +911,7 @@ def test_add_max_clusters_federation():
     assert next_match(r"Setting")
     assert next_match(rf"(?m)^ +Federation += +{federation1}")
 
-
-def test_modify_max_clusters_federation():
-    """Modify cluster to exceed max clusters in federation"""
+    # Modify cluster to exceed max clusters in federation
 
     output = atf.run_command_output(
         f"sacctmgr -i add cluster cluster{max_fed_clusters}",
@@ -931,7 +954,7 @@ def test_delete_cluster():
     assert re.search(rf"(?m)^ +{federation1} +{cluster1} *$", output) is None
 
 
-def test_delete_federation():
+def test_delete_federation(setup_federation1):
     """Delete federation - should clean clusters from federation"""
 
     output = atf.run_command_output(
