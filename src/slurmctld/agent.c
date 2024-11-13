@@ -1975,21 +1975,18 @@ extern void agent_purge(void)
 {
 	int i;
 
-	if (retry_list) {
-		slurm_mutex_lock(&retry_mutex);
-		FREE_NULL_LIST(retry_list);
-		slurm_mutex_unlock(&retry_mutex);
-	}
-	if (defer_list) {
-		slurm_mutex_lock(&defer_mutex);
-		FREE_NULL_LIST(defer_list);
-		slurm_mutex_unlock(&defer_mutex);
-	}
-	if (mail_list) {
-		slurm_mutex_lock(&mail_mutex);
-		FREE_NULL_LIST(mail_list);
-		slurm_mutex_unlock(&mail_mutex);
-	}
+	slurm_mutex_lock(&retry_mutex);
+	FREE_NULL_LIST(retry_list);
+	slurm_mutex_unlock(&retry_mutex);
+
+	slurm_mutex_lock(&defer_mutex);
+	FREE_NULL_LIST(defer_list);
+	slurm_mutex_unlock(&defer_mutex);
+
+	slurm_mutex_lock(&mail_mutex);
+	FREE_NULL_LIST(mail_list);
+	slurm_mutex_unlock(&mail_mutex);
+
 	slurm_mutex_lock(&update_nodes_mutex);
 	FREE_NULL_LIST(update_node_list);
 	slurm_mutex_unlock(&update_nodes_mutex);
