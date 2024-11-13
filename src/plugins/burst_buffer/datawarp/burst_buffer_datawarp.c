@@ -2519,6 +2519,7 @@ fini:	xfree(access);
 extern int init(void)
 {
 	slurm_mutex_init(&bb_state.bb_mutex);
+	slurm_mutex_init(&bb_state.term_mutex);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
 	_test_config();

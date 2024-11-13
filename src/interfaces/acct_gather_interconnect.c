@@ -179,6 +179,12 @@ extern int acct_gather_interconnect_fini(void)
 	int i;
 
 	slurm_mutex_lock(&g_context_lock);
+
+	if (!init_run) {
+		slurm_mutex_unlock(&g_context_lock);
+		return SLURM_SUCCESS;
+	}
+
 	init_run = false;
 
 	if (watch_node_thread_id) {

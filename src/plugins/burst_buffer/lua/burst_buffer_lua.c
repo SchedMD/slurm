@@ -2228,6 +2228,7 @@ extern int init(void)
 
 	slurm_mutex_init(&lua_thread_mutex);
 	slurm_mutex_init(&bb_state.bb_mutex);
+	slurm_mutex_init(&bb_state.term_mutex);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
 	_test_config();
@@ -2251,6 +2252,10 @@ extern int fini(void)
 	 * all threads have completed.
 	 */
 	slurm_mutex_lock(&bb_state.term_mutex);
+	if (bb_state.term_flag) {
+		slurm_mutex_unlock(&bb_state.term_mutex);
+		return SLURM_SUCCESS;
+	}
 	bb_state.term_flag = true;
 	slurm_cond_broadcast(&bb_state.term_cond);
 	slurm_mutex_unlock(&bb_state.term_mutex);
@@ -2263,14 +2268,14 @@ extern int fini(void)
 		usleep(100000); /* 100 ms */
 	}
 
-	slurm_mutex_lock(&bb_state.bb_mutex);
 	log_flag(BURST_BUF, "");
 
 	if (bb_state.bb_thread) {
-		slurm_mutex_unlock(&bb_state.bb_mutex);
 		slurm_thread_join(bb_state.bb_thread);
-		slurm_mutex_lock(&bb_state.bb_mutex);
+		bb_state.bb_thread = 0;
 	}
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_clear_config(&bb_state.bb_config, true);
 	bb_clear_cache(&bb_state);
 	slurm_mutex_unlock(&bb_state.bb_mutex);

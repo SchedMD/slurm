@@ -1381,6 +1381,7 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 	list_t *gres_list_system = NULL, *gres_list_merged = NULL;
 
 	char *gres_str = NULL;
+	char *flags = NULL;
 
 	int autodetect_options[] = {
 		GRES_AUTODETECT_GPU_NVML,
@@ -1413,9 +1414,12 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 		if (autodetect_flags == GRES_AUTODETECT_GPU_NVML)
 			i++; /* Skip NVIDIA if NVML finds gpus */
 
+		if (!flags)
+			flags = _get_autodetect_flags_str();
+
 		xstrfmtcat(*autodetect_str, "Found %s with Autodetect=%s (Substring of gpu name may be used instead)",
 			   gres_str,
-			   _get_autodetect_flags_str());
+			   flags);
 		if (!*first_gres_str){
 			*first_gres_str = gres_str;
 			gres_str = NULL;
@@ -1423,6 +1427,7 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 			xfree(gres_str);
 		}
 	}
+	xfree(flags);
 }
 
 /*

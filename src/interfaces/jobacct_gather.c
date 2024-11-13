@@ -569,8 +569,16 @@ done:
 extern int jobacct_gather_fini(void)
 {
 	int rc = SLURM_SUCCESS;
+	static bool fini_ran = false;
 
 	slurm_mutex_lock(&g_context_lock);
+	if (fini_ran) {
+		slurm_mutex_unlock(&g_context_lock);
+		return SLURM_SUCCESS;
+	}
+
+	fini_ran = true;
+
 	if (g_context) {
 		if (watch_tasks_thread_id) {
 			slurm_mutex_unlock(&g_context_lock);

@@ -2166,9 +2166,11 @@ static void _foreach_array_bitmap(const slurm_selected_step_t *filter,
 	 * match). Then, set args->control to the max of each callback return
 	 * value.
 	 */
-	if (not_found_tasks && (bit_ffs(not_found_tasks->array_bitmap) != -1)) {
-		tmp_control = args->null_callback(not_found_tasks,
-						  args->callback_arg);
+	if (not_found_tasks) {
+		if (bit_ffs(not_found_tasks->array_bitmap) != -1)
+			tmp_control = args->null_callback(not_found_tasks,
+							  args->callback_arg);
+		FREE_NULL_BITMAP(not_found_tasks->array_bitmap);
 		xfree(not_found_tasks);
 	}
 

@@ -109,13 +109,14 @@ static void _set_cpu_affinity(node_config_load_t *node_conf, char *bus_id,
 	}
 
 	path = xstrdup_printf(NVIDIA_CPULIST_PREFIX, bus_id);
-	f = fopen(path, "r");
 	cpus_bitmap = bit_alloc(MAX_CPUS);
 
-	while (fgets(buffer, sizeof(buffer), f) != NULL) {
+	f = fopen(path, "r");
+	while (fgets(buffer, sizeof(buffer), f)) {
 		if (bit_unfmt(cpus_bitmap, buffer))
 			error("Unable to parse cpu list in %s", path);
 	}
+	fclose(f);
 
 	if (enabled_cpus_bits) {
 		/*
@@ -165,6 +166,7 @@ static void _set_name_and_file(node_config_load_t *node_conf, char *bus_id,
 			gpu_common_underscorify_tolower(*device_name);
 		}
 	}
+	fclose(f);
 
 	if (!*device_file)
 		error("Device file and Minor number not found");

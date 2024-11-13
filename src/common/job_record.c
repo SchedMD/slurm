@@ -1135,6 +1135,8 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(container);
+	xfree(container_id);
 	xfree(cpu_alloc_reps);
 	xfree(cpu_alloc_values);
 	xfree(host);
@@ -1145,6 +1147,8 @@ unpack_error:
 	FREE_NULL_LIST(gres_list_alloc);
 	FREE_NULL_BITMAP(exit_node_bitmap);
 	FREE_NULL_BITMAP(core_bitmap_job);
+	if (jobacct)
+		jobacctinfo_destroy(jobacct);
 	xfree(core_job);
 	if (switch_tmp)
 		switch_g_free_stepinfo(switch_tmp);
