@@ -555,23 +555,9 @@ extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
 extern int validate_hint_option(slurm_opt_t *opt);
 
 /*
- * Validate --threads-per-core option and set --cpu-bind=threads if
- * not already set by user.
- */
-extern int validate_threads_per_core_option(slurm_opt_t *opt);
-
-/*
  * Validate options that are common to salloc, sbatch, and srun.
  */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt);
-
-/*
- * Validate that two spec cores options (-S/--core-spec and --thread-spec)
- * are not used together.
- *
- * This function follows approach of validate_memory_options.
- */
-extern void validate_spec_cores_options(slurm_opt_t *opt);
 
 /*
  * Return the argv options in a string.
