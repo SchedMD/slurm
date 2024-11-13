@@ -2686,6 +2686,8 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 	job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
 
 	xfree(req.std_out);
+	/* This is set while packing the request to avoid locks */
+	xfree(req.node_inx);
 
 	return rc;
 }
