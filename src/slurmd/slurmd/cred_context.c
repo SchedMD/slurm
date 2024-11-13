@@ -124,7 +124,14 @@ static job_state_t *_find_job_state(uint32_t jobid)
 
 static void _clear_expired_job_states(void)
 {
-	time_t now = time(NULL);
+	time_t now;
+
+	if (!cred_job_list) {
+		warning("No cred_job_list, unable to clear expired job states");
+		return;
+	}
+
+	now = time(NULL);
 	list_delete_all(cred_job_list, _list_find_expired_job_state, &now);
 }
 
@@ -140,7 +147,14 @@ static int _list_find_expired_cred_state(void *x, void *key)
 
 static void _clear_expired_credential_states(void)
 {
-	time_t now = time(NULL);
+	time_t now;
+
+	if (!cred_state_list) {
+		warning("No cred_state_list, unable to clear expired credential states");
+		return;
+	}
+
+	now = time(NULL);
 	list_delete_all(cred_state_list, _list_find_expired_cred_state, &now);
 }
 

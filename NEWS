@@ -20,6 +20,9 @@ documents those changes that are of interest to users and administrators.
     '.jobs[].job_resources'.
  -- Fix sstat/sattach protocol errors for steps on higher version slurmd's
     (regressions since 20.11.0rc1 and 16.05.1rc1 respectively).
+ -- slurmd - Avoid a crash when starting slurmd version 24.05 with
+    SlurmdSpoolDir files that have been upgraded to a newer major version of
+    Slurm. Log warnings instead.
 
 * Changes in Slurm 24.05.4
 ==========================
