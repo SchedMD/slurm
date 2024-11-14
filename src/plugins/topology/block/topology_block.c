@@ -194,7 +194,7 @@ extern int topology_p_whole_topo(bitstr_t *node_mask)
  */
 extern bitstr_t *topology_p_get_bitmap(char *name)
 {
-	for (int i = 0; i < block_record_cnt; i++) {
+	for (int i = 0; i < block_record_cnt + ablock_record_cnt; i++) {
 		if (!xstrcmp(block_record_table[i].name, name)) {
 			return block_record_table[i].node_bitmap;
 		}
