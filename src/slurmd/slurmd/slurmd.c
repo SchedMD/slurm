@@ -2523,7 +2523,8 @@ _slurmd_init(void)
 		slurm_conf.debug_flags = DEBUG_FLAG_GRES;
 	if (gres_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	build_all_nodeline_info(true, 0);
+	if (build_all_nodeline_info(true, 0))
+		return SLURM_ERROR;
 	build_all_frontend_info(true);
 
 	/*

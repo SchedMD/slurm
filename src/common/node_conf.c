@@ -423,9 +423,12 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	count = slurm_conf_nodename_array(&ptr_array);
 
 	for (i = 0; i < count; i++) {
+		int rc;
 		node = ptr_array[i];
 		config_ptr = config_record_from_conf_node(node, tres_cnt);
-		expand_nodeline_info(node, config_ptr, NULL, _check_callback);
+		if (((rc = expand_nodeline_info(node, config_ptr, NULL,
+					       _check_callback))))
+			return rc;
 	}
 
 	if (set_bitmap) {
@@ -874,6 +877,10 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 	    (index >= slurm_conf.max_node_cnt)) {
 		error("Attempting to create node record past MaxNodeCount:%d",
 		      slurm_conf.max_node_cnt);
+		return NULL;
+	} else if (index > MAX_SLURM_NODES) {
+		error("Attempting to create nodes past max node limit (%d)",
+		      MAX_SLURM_NODES);
 		return NULL;
 	}
 
