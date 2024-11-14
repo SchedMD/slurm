@@ -1060,7 +1060,8 @@ static bool _opt_verify(void)
 
 	/* set proc and node counts based on the arbitrary list of nodes */
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
-	   && (!opt.nodes_set || !opt.ntasks_set)) {
+	   && (!opt.nodes_set || !opt.ntasks_set)
+	   && !xstrchr(opt.nodelist, '{')) {
 		hostlist_t *hl = hostlist_create(opt.nodelist);
 
 		if (!hl)
@@ -1152,7 +1153,7 @@ static bool _opt_verify(void)
 	}
 
 	/* massage the numbers */
-	if (opt.nodelist && !opt.nodes_set && !strrchr(opt.nodelist, '{')) {
+	if (opt.nodelist && !opt.nodes_set && !xstrchr(opt.nodelist, '{')) {
 		hl = hostlist_create(opt.nodelist);
 		if (!hl)
 			fatal("Invalid node list specified");
