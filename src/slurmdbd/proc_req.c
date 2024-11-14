@@ -81,6 +81,15 @@ static char *_internal_rc_to_str(uint32_t rc, uint32_t fd, bool new_line)
 {
 	char *comment = NULL;
 
+	if (rc == SLURM_NO_CHANGE_IN_DATA) {
+		if (new_line)
+			comment = "Request didn't affect anything\n";
+		else
+			comment = "Request didn't affect anything";
+		debug2("CONN:%d %s", fd, comment);
+		return comment;
+	}
+
 	/*
 	 * Clients of _add_accounts_cond() and _add_users_cond() expect the
 	 * comment to have '\n' at the end of the strings. Since these are
@@ -92,8 +101,6 @@ static char *_internal_rc_to_str(uint32_t rc, uint32_t fd, bool new_line)
 			comment = "Your user doesn't have privilege to perform this action\n";
 		} else if (rc == SLURM_ERROR) {
 			comment = "Something was wrong with your query\n";
-		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything\n";
 		} else if (rc == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(rc);
 		} else if (rc == ESLURM_QOS_PREEMPTION_LOOP) {
@@ -107,8 +114,6 @@ static char *_internal_rc_to_str(uint32_t rc, uint32_t fd, bool new_line)
 			comment = "Your user doesn't have privilege to perform this action";
 		} else if (rc == SLURM_ERROR) {
 			comment = "Something was wrong with your query";
-		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
 		} else if (rc == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(rc);
 		} else if (rc == ESLURM_QOS_PREEMPTION_LOOP) {
