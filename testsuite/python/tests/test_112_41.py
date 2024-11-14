@@ -928,8 +928,6 @@ def test_db_config(slurmdb):
     assert len(resp.errors) == 0
 
 
-# TODO: Remove xfail once bug 21341 is fixed
-@pytest.mark.xfail
 def test_jobs(slurm, slurmdb):
     from openapi_client.models.v0041_job_submit_req import V0041JobSubmitReq
     from openapi_client.models.v0041_job_desc_msg import V0041JobDescMsg
