@@ -4553,6 +4553,11 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_uint32(&conf->max_node_cnt, "MaxNodeCount", hashtbl))
 		conf->max_node_cnt = NO_VAL;
+	else if (conf->max_node_cnt > MAX_SLURM_NODES) {
+		error("Specified MaxNodeCount in slurm.conf (%d) is higher than the maximum allowed (%d)",
+		      conf->max_node_cnt, MAX_SLURM_NODES);
+		return SLURM_ERROR;
+	}
 
 	if (!s_p_get_uint32(&conf->max_step_cnt, "MaxStepCount", hashtbl))
 		conf->max_step_cnt = DEFAULT_MAX_STEP_COUNT;
