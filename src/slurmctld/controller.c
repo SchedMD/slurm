@@ -140,7 +140,11 @@
 
 decl_static_data(usage_txt);
 
+#ifdef MEMORY_LEAK_DEBUG
 #define SLURMCTLD_CONMGR_DEFAULT_THREADS 8
+#else
+#define SLURMCTLD_CONMGR_DEFAULT_THREADS 64
+#endif
 #define SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to
 				 * check-in before we ping them */

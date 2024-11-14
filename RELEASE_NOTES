@@ -42,7 +42,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Hardware collectives in switch/hpe_slingshot now requires enable_stepmgr.
  -- Added connection related parameters to slurm.conf under SlurmctldParameters:
 	conmgr_max_connections: Defaults to 150 connections.
-	conmgr_threads: Defaults to 8 threads for slurmctld.
+	conmgr_threads: Defaults to 64 threads for slurmctld.
 	conmgr_use_poll: Defaults is to use epoll in Linux.
 	conmgr_connect_timeout: Defaults to MessageTimeout.
 	conmgr_read_timeout: Defaults to MessageTimeout.
