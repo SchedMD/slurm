@@ -1152,7 +1152,7 @@ static bool _opt_verify(void)
 	}
 
 	/* massage the numbers */
-	if (opt.nodelist && !opt.nodes_set && !strrchr(opt.nodelist, '{')) {
+	if (opt.nodelist && !opt.nodes_set && !xstrchr(opt.nodelist, '{')) {
 		hl = hostlist_create(opt.nodelist);
 		if (!hl)
 			fatal("Invalid node list specified");
