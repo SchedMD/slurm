@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential thread safety issues.
  -- Init mutex in burst_buffer plugins.
  -- slurmdbd - don't log errors when no changes occur from db requests.
+ -- slurmcltd,slurmd - Avoid deadlock during reconfigure if too many POSIX
+    signals are received.
 
 * Changes in Slurm 24.11.0rc1
 =============================
