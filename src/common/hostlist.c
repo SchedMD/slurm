@@ -128,9 +128,6 @@ do {						\
 /* number of elements to allocate when extending the hostlist array */
 #define HOSTLIST_CHUNK    16
 
-/* max host range: anything larger will be assumed to be an error */
-#define MAX_RANGE    (64*1024)    /* 64K Hosts */
-
 /* max number of ranges that will be processed between brackets */
 #define MAX_RANGES   (256*1024)    /* 256K ranks */
 
