@@ -10,7 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with accounting rollup dealing with association tables.
  -- Fix minor memory leaks.
  -- Fix potential thread safety issues.
- -- Init mustex in burst_buffer plugins.
+ -- Init mutex in burst_buffer plugins.
  -- slurmdbd - don't log errors when no changes occur from db requests.
 
 * Changes in Slurm 24.11.0rc1
