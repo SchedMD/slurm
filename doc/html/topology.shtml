@@ -180,13 +180,14 @@ https://github.com/aws-samples/ec2-topology-aware-for-slurm</a></li>
 
 <h2 id="user_opts">User Options<a class="slurm_link" href="#user_opts"></a></h2>
 
-<p>For use with the topology/tree plugin, user can also specify the maximum
-number of leaf switches to be used for their job with the maximum time the
-job should wait for this optimized configuration. The syntax for this option
-is "--switches=count[@time]".
+<p>For use with the <b>topology/tree</b> plugin, user can also specify the
+maximum number of leaf switches to be used for their job with the maximum time
+the job should wait for this optimized configuration. The syntax for this option
+is <b>--switches=count[@time]</b>.
 The system administrator can limit the maximum time that any job can
-wait for this optimized configuration using the <i>SchedulerParameters</i>
-configuration parameter with the <i>max_switch_wait</i> option.</p>
+wait for this optimized configuration using the <b>SchedulerParameters</b>
+configuration parameter with the
+<a href="slurm.conf.html#OPT_max_switch_wait=#">max_switch_wait</a> option.</p>
 
 <p>When <b>topology/tree</b> or <b>topology/block</b> is configured, hostlist
 functions may be used in place of or alongside regular hostlist expressions
