@@ -918,23 +918,26 @@ def require_openapi_generator(version="7.3.0"):
         )
 
     # allow pointing to an existing OpenAPI generated client
+    opath = module_tmp_path;
     if "SLURM_TESTSUITE_OPENAPI_CLIENT" in os.environ:
-        pyapi_path = f"{os.environ['SLURM_TESTSUITE_OPENAPI_CLIENT']}/pyapi/"
-        spec_path = f"{os.environ['SLURM_TESTSUITE_OPENAPI_CLIENT']}/openapi.json"
-    else:
-        pyapi_path = f"{module_tmp_path}/pyapi/"
-        spec_path = f"{module_tmp_path}/openapi.json"
+        opath = os.environ['SLURM_TESTSUITE_OPENAPI_CLIENT'];
 
-        r = requests.get(
-            f"{properties['slurmrestd_url']}/openapi/v3",
-            headers=properties["slurmrestd-headers"],
-        )
+    pyapi_path = f"{opath}/pyapi/"
+    spec_path = f"{opath}/openapi.json"
+
+    # Always create path if needed
+    os.makedirs(opath, exist_ok=True)
+
+    if not os.path.exists(spec_path):
+        r = request_slurmrestd("openapi/v3")
         if r.status_code != 200:
             pytest.fail(f"Error requesting openapi specs from slurmrestd: {r}")
 
         with open(spec_path, "w") as f:
             f.write(r.text)
             f.close()
+
+    if not os.path.exists(pyapi_path):
         run_command(
             f"openapi-generator-cli generate -i '{spec_path}' -g python-pydantic-v1 --strict-spec=true -o '{pyapi_path}'",
             fatal=True,
