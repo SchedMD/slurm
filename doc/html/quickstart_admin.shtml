@@ -11,9 +11,8 @@
 <ul>
 <li><a href="#prereqs">Installing Prerequisites</a></li>
 <li><a href="#rpmbuild">Building RPMs</a></li>
-<li><a href="#rpms">Installing RPMs</a></li>
 <li><a href="#debuild">Building Debian Packages</a></li>
-<li><a href="#debinstall">Installing Debian Packages</a></li>
+<li><a href="#pkg_install">Installing Packages</a></li>
 <li><a href="#manual_build">Building Manually</a></li>
 </ul>
 </li>
@@ -210,28 +209,6 @@ Some macro definitions that may be used in building Slurm include:
 %with_munge        "--with-munge=/opt/munge"
 </pre>
 
-<h3 id="rpms">RPMs Installed<a class="slurm_link" href="#rpms"></a></h3>
-
-<p>The RPMs needed on the head node, compute nodes, and slurmdbd node can vary
-by configuration, but here is a suggested starting point:
-<ul>
-<li>Head Node (where the slurmctld daemon runs),<br>
-    Compute and Login Nodes
-	<ul>
-	<li>slurm</li>
-	<li>slurm-perlapi</li>
-	<li>slurm-slurmctld (only on the head node)</li>
-	<li>slurm-slurmd (only on the compute nodes)</li>
-	</ul>
-</li>
-<li>SlurmDBD Node
-	<ul>
-	<li>slurm</li>
-	<li>slurm-slurmdbd</li>
-	</ul>
-</li>
-</ul>
-
 <h3 id="debuild">Building Debian Packages
 <a class="slurm_link" href="#debuild"></a>
 </h3>
@@ -260,40 +237,67 @@ the packages:</p>
 
 <p>The packages will be in the parent directory after debuild completes.</p>
 
-<h3 id="debinstall">Installing Debian Packages
-<a class="slurm_link" href="#debinstall"></a>
+<h3 id="pkg_install">Installing Packages
+<a class="slurm_link" href="#pkg_install"></a>
 </h3>
 
-<p>The packages needed on the head node, compute nodes, and slurmdbd node can
-vary site to site, but this is a good starting point:</p>
-<ul>
-<li>SlurmDBD Node
-	<ul>
-	<li>slurm-smd</li>
-	<li>slurm-smd-slurmdbd</li>
-	</ul>
-</li>
-<li>Head Node (slurmctld node)
-	<ul>
-	<li>slurm-smd</li>
-	<li>slurm-smd-slurmctld</li>
-	<li>slurm-smd-client</li>
-	</ul>
-</li>
-<li>Compute Nodes (slurmd node)
-	<ul>
-	<li>slurm-smd</li>
-	<li>slurm-smd-slurmd</li>
-	<li>slurm-smd-client</li>
-	</ul>
-</li>
-<li>Login Nodes
-	<ul>
-	<li>slurm-smd</li>
-	<li>slurm-smd-client</li>
-	</ul>
-</li>
-</ul>
+<p>The following packages are recommended to achieve basic functionality for the
+different <a href="#nodes">node types</a>. Other packages may be added to enable
+optional functionality:</p>
+
+<table class="tlist">
+<tbody>
+<tr>
+<td id="rpms"><strong>RPM name</strong></td>
+<td id="debinstall"><strong>DEB name</strong></td>
+<td><a href="#login">Login</a></td>
+<td><a href="#ctld">Controller</a></td>
+<td><a href="#compute">Compute</a></td>
+<td><a href="#dbd">DBD</a></td>
+</tr>
+<tr>
+<td><code>slurm</code></td>
+<td><code>slurm-smd</code></td>
+<td><b>X</b></td>
+<td><b>X</b></td>
+<td><b>X</b></td>
+<td><b>X</b></td>
+</tr>
+<tr>
+<td><code>slurm-perlapi</code></td>
+<td><code>slurm-smd-client</code></td>
+<td><b>X</b></td>
+<td><b>X</b></td>
+<td><b>X</b></td>
+<td></td>
+</tr>
+<tr>
+<td><code>slurm-slurmctld</code></td>
+<td><code>slurm-smd-slurmctld</code></td>
+<td></td>
+<td><b>X</b></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>slurm-slurmd</code></td>
+<td><code>slurm-smd-slurmd</code></td>
+<td></td>
+<td></td>
+<td><b>X</b></td>
+<td></td>
+</tr>
+<tr>
+<td><code>slurm-slurmdbd</code></td>
+<td><code>slurm-smd-slurmdbd</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td><b>X</b></td>
+</tr>
+</tbody>
+</table>
+<br>
 
 <h3 id="manual_build">Building Manually
 <a class="slurm_link" href="#manual_build"></a>
@@ -835,6 +839,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 31 October 2024</p>
+<p style="text-align:center;">Last modified 14 November 2024</p>
 
 <!--#include virtual="footer.txt"-->
