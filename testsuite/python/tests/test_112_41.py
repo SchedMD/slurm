@@ -1001,9 +1001,11 @@ def test_jobs(slurm, slurmdb):
     resp = slurm.slurm_v0041_post_job(str(jobid), v0041_job_desc_msg=job)
     assert not len(resp.warnings)
     assert not len(resp.errors)
-    for result in resp.results:
-        assert result.job_id == jobid
-        assert result.error_code == 0
+    # Not all changes populate "results" field
+    if resp.results is not None:
+        for result in resp.results:
+            assert result.job_id == jobid
+            assert result.error_code == 0
 
     resp = slurm.slurm_v0041_get_job(str(jobid))
     assert len(resp.warnings) == 0
