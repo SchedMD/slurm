@@ -554,7 +554,7 @@ extern int slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 {
 	int retry_cnt = 0, ehostunreach_cnt = 0;
-	int fd;
+	int fd, rc = SLURM_SUCCESS;
 	uint32_t sleep_ns = 500 * NSEC_IN_MSEC;
 
 	if ((slurm_addr_is_unspec(addr)) || (slurm_get_port(addr) == 0)) {
@@ -564,8 +564,6 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 	}
 
 	while (true) {
-		int rc;
-
 		fd = socket(addr->ss_family, SOCK_STREAM | SOCK_CLOEXEC,
 			    IPPROTO_TCP);
 		if (fd < 0) {
@@ -585,9 +583,6 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 
 		rc = _slurm_connect(fd, (struct sockaddr const *)addr,
 				    sizeof(*addr));
-		/* always set errno as upstream callers expect it */
-		errno = rc;
-
 		if (!rc) {
 			/* success */
 			break;
@@ -620,11 +615,15 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 		(void) close(fd);
 	}
 
+	errno = rc;
 	return fd;
 
 error:
-	debug2("Error connecting slurm stream socket at %pA: %m", addr);
+	debug2("Error connecting slurm stream socket at %pA: %s", addr,
+	       strerror(rc));
 	(void) close(fd);
+	/* Always set errno as upstream callers expect it. */
+	errno = rc;
 	return SLURM_ERROR;
 }
 
