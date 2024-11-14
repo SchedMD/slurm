@@ -70,7 +70,7 @@ static const char *syms[] = {
 static slurm_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
-
+static void *ext_lib_handle = NULL;
 /*
  *  Common function to dlopen() the appropriate gpu libraries, and
  *   report back type needed.
@@ -95,8 +95,10 @@ static char *_get_gpu_type(void)
 	if (autodetect_flags & GRES_AUTODETECT_GPU_NVML) {
 #ifdef HAVE_NVML
 		(void) dlerror();
-		if (!dlopen("libnvidia-ml.so", RTLD_NOW | RTLD_GLOBAL) &&
-		    !dlopen("libnvidia-ml.so.1", RTLD_NOW | RTLD_GLOBAL))
+		if (!(ext_lib_handle = dlopen("libnvidia-ml.so",
+					      RTLD_NOW | RTLD_GLOBAL)) &&
+		      !(ext_lib_handle = dlopen("libnvidia-ml.so.1",
+						RTLD_NOW | RTLD_GLOBAL)))
 			info("We were configured with nvml functionality, but that lib wasn't found on the system. Attempted loading libnvidia-ml.so and libnvidia-ml.so.1 without success. Last error is: %s",
 			     dlerror());
 		else
@@ -107,7 +109,8 @@ static char *_get_gpu_type(void)
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI) {
 #ifdef HAVE_RSMI
 		(void) dlerror();
-		if (!dlopen("librocm_smi64.so", RTLD_NOW | RTLD_GLOBAL))
+		if (!(ext_lib_handle = dlopen("librocm_smi64.so",
+					      RTLD_NOW | RTLD_GLOBAL)))
 			info("Configured with rsmi, but that lib wasn't found. %s",
 			     dlerror());
 		else
@@ -118,7 +121,8 @@ static char *_get_gpu_type(void)
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_ONEAPI) {
 #ifdef HAVE_ONEAPI
 		(void) dlerror();
-		if (!dlopen("libze_loader.so", RTLD_NOW | RTLD_GLOBAL))
+		if (!(ext_lib_handle = dlopen("libze_loader.so",
+					      RTLD_NOW | RTLD_GLOBAL)))
 			info("Configured with oneAPI, but that lib wasn't found. %s",
 			     dlerror());
 		else
@@ -177,6 +181,10 @@ extern int gpu_plugin_fini(void)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&g_context_lock);
+
+	if (ext_lib_handle)
+		dlclose(ext_lib_handle);
+
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	slurm_mutex_unlock(&g_context_lock);
