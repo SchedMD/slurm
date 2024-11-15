@@ -725,6 +725,8 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 			    slurmdb_cluster_rec_t *comm_cluster_rec)
 {
 	int fd = -1;
+	int retry = 0;
+	time_t start;
 	slurm_protocol_config_t *proto_conf = NULL;
 
 	if (!comm_cluster_rec) {
@@ -733,9 +735,14 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 			return SLURM_ERROR;
 	}
 
-	for (int retry = 0; retry < slurm_conf.msg_timeout; retry++) {
-		if (retry)
+	start = time(NULL);
+	while (true) {
+		if (retry) {
+			if ((time(NULL) - start) >= slurm_conf.msg_timeout)
+				break;
 			sleep(1);
+		}
+		retry++;
 		if (comm_cluster_rec) {
 			if (slurm_addr_is_unspec(
 				&comm_cluster_rec->control_addr)) {
