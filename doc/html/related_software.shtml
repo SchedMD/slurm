@@ -173,7 +173,7 @@ time as performed with this tool:
 	<a href="elasticsearch.html">jobcomp/elasticsearch</a>, and
 	<a href="jobcomp_kafka.html">jobcomp/kafka</a>) parse and/or
 	serialize JSON format data. These plugins and slurmrestd are designed to
-	make use of the <b>JSON-C library (&gt;= v1.12.0)</b> for this purpose.
+	make use of the <b>JSON-C library (&gt;= v0.15)</b> for this purpose.
 	Instructions for the build are as follows:</p>
 	<pre>
 git clone --depth 1 --single-branch -b json-c-0.15-20200726 https://github.com/json-c/json-c.git json-c
