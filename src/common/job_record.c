@@ -1371,7 +1371,8 @@ static int _comp_node_inx(const void *n1, const void *n2)
 	return slurm_sort_int_list_asc(&node1->node_index, &node2->node_index);
 }
 
-extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr)
+extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr,
+					 uint16_t protocol_version)
 {
 	uint16_t *arbitrary_tasks_np = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1380,6 +1381,7 @@ extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr)
 	char *host, *prev_host = NULL;
 	node_inx_cnt_t *node_inx_cnts;
 	hostlist_t *hl = hostlist_create(job_ptr->details->req_nodes);
+	int num_names = hostlist_count(hl);
 	hostlist_sort(hl);
 
 	arbitrary_tasks_np = xcalloc(num_nodes, sizeof(uint16_t));
@@ -1415,6 +1417,33 @@ extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr)
 		      num_nodes, job_ptr, job_ptr->details->req_nodes);
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto cleanup;
+	}
+
+	if (num_names != job_ptr->details->num_tasks) {
+		error("Task count (%u) for %pJ is not equal to the number of nodes in the requested arbitrary node list (%s)",
+		      job_ptr->details->num_tasks, job_ptr,
+		      job_ptr->details->req_nodes);
+
+		/* Reject arbitrary jobs with bad task counts in 25.11+. */
+		if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+			free(prev_host);
+			rc = ESLURM_BAD_TASK_COUNT;
+			goto cleanup;
+		}
+
+		/*
+		 * Allow existing older version jobs from save state to be
+		 * loaded. This prevents all jobs being lost during an
+		 * upgrade. Reallocate the arbitrary_tasks_np array to prevent
+		 * an invalid read if the number of tasks > num_names. This
+		 * can be removed when upgrading from
+		 * SLURM_25_05_PROTOCOL_VERSION is not supported, and the
+		 * protocol_version parameter to this function can be removed.
+		 */
+		if (num_names < job_ptr->details->num_tasks)
+			xrecalloc(arbitrary_tasks_np,
+				  job_ptr->details->num_tasks,
+				  sizeof(arbitrary_tasks_np[0]));
 	}
 
 	node_inx_cnts[cur_node].node_index = node_name_get_inx(prev_host);
@@ -1846,7 +1875,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->work_dir = work_dir;
 
 	if (((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
-	     SLURM_DIST_ARBITRARY) && job_record_calc_arbitrary_tpn(job_ptr))
+	     SLURM_DIST_ARBITRARY) &&
+	    job_record_calc_arbitrary_tpn(job_ptr, job_ptr->start_protocol_ver))
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
