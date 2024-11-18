@@ -2445,7 +2445,8 @@ Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBMaxNodeCount\fR
 Maximum count of nodes which may exist in the controller. By default MaxNodeCount
 will be set to the number of nodes found in the slurm.conf. MaxNodeCount will
-be ignored if less than the number of nodes found in the slurm.conf. Increase
+be ignored if less than the number of nodes found in the
+slurm.conf. The total number of nodes in a system cannot exceed 65536. Increase
 MaxNodeCount to accommodate dynamically created nodes with dynamic node
 registrations and nodes created with scontrol.
 .IP
