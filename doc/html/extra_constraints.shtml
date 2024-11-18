@@ -163,9 +163,9 @@ be considered part of a key or value. This means that the following is invalid:
 </pre>
 
 <p>
-The space at the beginning is parsed as a key of a request. Then the opening
+The space at he beginning is parsed as a key of a request. Then the opening
 parenthesis character is recognized as an invalid character for either a key
-or a comparision operator. This request would result in the job being rejected.
+or a comparison operator. This request would result in the job being rejected.
 However, this is valid:
 </p>
 
