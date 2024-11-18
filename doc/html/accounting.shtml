@@ -302,7 +302,7 @@ it is also important to check the value of <i>max_allowed_packet</i>.  When the
 packet size is too small and a large job script is used, the SQL server may
 reject the sql query as being too large.  This value should be at least 16MB,
 and must be larger than the value of <b>max_script_size</b>.
-Setting <i>innodb_lock_wait_timeout</i> to 900 is reccomended to allow some
+Setting <i>innodb_lock_wait_timeout</i> to 900 is recommended to allow some
 potentially extended queries to complete successfully.</p>
 
 <p>
