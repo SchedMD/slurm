@@ -231,7 +231,7 @@ device <code class="commandline">geforce_rtx_2060</code>.
 
 To check your configuration you may run: <code class="commandline">slurmd -G
 </code> This will test and print the gres setup based on the current
-configuation, including any autodetected gres that are being ignored.
+configuration, including any autodetected gres that are being ignored.
 
 <h2 id="GPU_Management">GPU Management
 <a class="slurm_link" href="#GPU_Management"></a>
