@@ -255,7 +255,7 @@ hostlist_t *bitmap2hostlist(bitstr_t *bitmap);
  *		    slurmd), false is used by slurmctld, clients, and testsuite
  * IN tres_cnt - number of TRES configured on system (used on controller side)
  */
-extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt);
+extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt);
 
 /*
  * build_all_frontend_info - get a array of slurm_conf_frontend_t structures

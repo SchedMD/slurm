@@ -414,7 +414,7 @@ extern config_record_t *config_record_from_conf_node(
  *		    slurmd), false is used by slurmctld, clients, and testsuite
  * IN tres_cnt - number of TRES configured on system (used on controller side)
  */
-extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
+extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 {
 	slurm_conf_node_t *node, **ptr_array;
 	config_record_t *config_ptr = NULL;
@@ -437,6 +437,8 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 		}
 		list_iterator_destroy(config_iterator);
 	}
+
+	return SLURM_SUCCESS;
 }
 
 extern int build_node_spec_bitmap(node_record_t *node_ptr)
