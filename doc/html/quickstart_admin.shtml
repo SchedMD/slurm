@@ -101,70 +101,124 @@ installation.  Which plugins are built can vary based on the libraries that
 are available when running configure.  Refer to the below list of possible
 plugins and what is required to build them.</p>
 
-<ul>
-<li> <b>auth/Slurm</b> The auth/slurm plugin will be built if the jwt
-		development library is installed. This is an alternative to the
-		traditional MUNGE authentication mechanism.</li>
-<li> <b>AMD GPU Support</b> Autodetection of AMD GPUs will be available
-		if the <i>ROCm</i> development library is installed.
-		</li>
-<li> <b>cgroup Task Constraining</b> The <i>task/cgroup</i> plugin will be built
-		if the <i>hwloc</i> development library is present. cgroup/v2
-		support also requires the <i>bpf</i> and <i>dbus</i> development
-		libraries.</li>
-<li> <b>HDF5 Job Profiling</b> The <i>acct_gather_profile/hdf5</i> job profiling
-		plugin will be built if the <i>hdf5</i> development library is
-		present.</li>
-<li> <b>HTML Man Pages</b> HTML versions of the man pages will be generated if
-		the <i>man2html</i> command is present.</li>
-<li> <b>HPE Slingshot</b> The <i>switch/hpe_slingshot</i> plugin will be built
-		if the <i>cray-libcxi</i>, <i>curl</i>, and <i>json-c</i>
-		development libraries are present.</li>
-<li> <b>InfiniBand Accounting</b> The <i>acct_gather_interconnect/ofed</i>
-		InfiniBand accounting plugin will be built if the
-		<i>libibmad</i> and <i>libibumad</i> development libraries are
-		present.</li>
-<li> <b>Intel GPU Support</b> Autodetection of Intel GPUs will be available
-		if the <i>libvpl</i> development library is installed.
-		</li>
-<li> <b>IPMI Energy Consumption</b> The <i>acct_gather_energy/ipmi</i>
-		accounting plugin will be built if the <i>freeipmi</i>
-		development library is present. When building the RPM,
-		<code>rpmbuild ... --with freeipmi</code> can be
-		specified to explicitly check for these dependencies.</li>
-<li> <b>Lua Support</b> The lua API will be available in various plugins if the
-		<i>lua</i> development library is present.</li>
-<li> <b>MUNGE</b> The auth/munge plugin will be built if the MUNGE
-		authentication development library is installed. MUNGE is used
-		as the default authentication mechanism.</li>
-<li> <b>MySQL</b> MySQL support for accounting will be built if the
-		<i>MySQL</i> or <i>MariaDB</i> development library is present.
-		A currently supported version of MySQL or MariaDB should be
-		used.</li>
-<li> <b>NUMA Affinity</b> NUMA support in the task/affinity plugin will be
-		available if the <i>numa</i> development library is installed.
-		</li>
-<li> <b>NVIDIA GPU Support</b> Autodetection of NVIDIA GPUs with MIGs and
-		NVlinks will be available if the <i>libnvidia-ml</i> development
-		library is installed. Library is not needed on Slurm 24.11 or
-		newer unless MIGs or NVlinks are used.
-		</li>
-<li> <b>PAM Support</b> PAM support will be added if the <i>PAM</i> development
-		library is installed.</li>
-<li> <b>PMIx</b> PMIx support will be added if the <i>pmix</i> development
-		library is installed and the <code>--with-pmix</code> flag is
-		provided at build time.</li>
-<li> <b>Readline Support</b> Readline support in scontrol and sacctmgr's
-		interactive modes will be available if the <i>readline</i>
-		development library is present.</li>
-<li> <b>REST API</b> Support for Slurm's REST API will be built if the
-		<i>http-parser</i> and <i>json-c</i> development libraries
-		are installed. Additional functionality will be included
-		if the optional <i>yaml</i> and <i>jwt</i> development
-		libraries are installed.</li>
-<li> <b>sview</b> The sview command will be built only if <i>gtk+-2.0</i>
-		is installed.</li>
-</ul>
+<table class="tlist">
+<tbody>
+<tr>
+<td><strong>Component</strong></td>
+<td><strong>Development library required</strong></td>
+</tr>
+<tr>
+<td><code>acct_gather_energy/ipmi</code>
+<br>Gathers <a href="slurm.conf.html#OPT_AcctGatherEnergyType">energy consumption</a>
+	through IPMI</td>
+<td><i>freeipmi</i></td>
+</tr>
+<tr>
+<td><code>acct_gather_interconnect/ofed</code>
+<br>Gathers <a href="slurm.conf.html#OPT_AcctGatherInterconnectType">traffic data</a>
+	for InfiniBand networks</td>
+<td><i>libibmad</i>
+<br><i>libibumad</i></td>
+</tr>
+<tr>
+<td><code>acct_gather_profile/hdf5</code>
+<br>Gathers <a href="slurm.conf.html#OPT_AcctGatherProfileType">detailed job
+	profiling</a> through HDF5</td>
+<td><i>hdf5</i></td>
+</tr>
+<tr>
+<td><code>accounting_storage/mysql</code>
+<br>Required for <a href="accounting.html">accounting</a>; a currently supported
+	version of MySQL or MariaDB should be used</td>
+<td><i>MySQL</i> or <i>MariaDB</i></td>
+</tr>
+<tr>
+<td><code>auth/slurm</code>
+<br>(alternative to the traditional MUNGE
+	<a href="slurm.conf.html#OPT_AuthType">authentication method</a>)</td>
+<td><i>jwt</i></td>
+</tr>
+<tr>
+<td><code>auth/munge</code>
+<br>(default <a href="slurm.conf.html#OPT_AuthType">authentication method</a>)</td>
+<td><i>MUNGE</i></td>
+</tr>
+<tr>
+<td><code>AutoDetect=nvml</code>
+<br>Provides <a href="gres.conf.html#OPT_AutoDetect">autodetection</a> of NVIDIA
+	GPUs with MIGs and NVlinks (<code>AutoDetect=nvidia</code>, added in 24.11,
+   does not have any prerequisites)</td>
+<td><i>libnvidia-ml</i></td>
+</tr>
+<tr>
+<td><code>AutoDetect=oneapi</code>
+<br>Provides <a href="gres.conf.html#OPT_AutoDetect">autodetection</a> of Intel
+GPUs</td>
+<td><i>libvpl</i></td>
+</tr>
+<tr>
+<td><code>AutoDetect=rsmi</code>
+<br>Provides <a href="gres.conf.html#OPT_AutoDetect">autodetection</a> of AMD
+	GPUs</td>
+<td><i>ROCm</i></td>
+</tr>
+<tr>
+<td><b>HTML man pages</b>
+<br>This dependency is a command that must be present, typically provided by a
+package of the same name.</td>
+<td><i>man2html</i></td>
+</tr>
+<tr>
+<td><b>Lua API</b></td>
+<td><i>lua</i></td>
+</tr>
+<tr>
+<td><b>PAM support</b></td>
+<td><i>PAM</i></td>
+</tr>
+<tr>
+<td><b>PMIx support</b> (requires <code>--with-pmix</code> at build time)</td>
+<td><i>pmix</i></td>
+</tr>
+<tr>
+<td><b>Readline support</b> in <code>scontrol</code> and <code>sacctmgr</code>
+	interactive modes</td>
+<td><i>readline</i></td>
+</tr>
+<tr>
+<td><code>slurmrestd</code>
+<br>Provides support for Slurm's <a href="rest_quickstart.html">REST API</a>
+	(optional prerequisites will enable additional functionality)</td>
+<td><i>http-parser</i>
+<br><i>json-c</i>
+<br><i>yaml</i> (opt.)
+<br><i>jwt</i> (opt.)</td>
+</tr>
+<tr>
+<td><code>sview</code> (<a href="sview.html">man page</a>)</td>
+<td><i>gtk+-2.0</i></td>
+</tr>
+<tr>
+<td><code>switch/hpe_slingshot</code></td>
+<td><i>cray-libcxi</i>
+<br><i>curl</i>
+<br><i>json-c</i></td>
+</tr>
+<tr>
+<td>NUMA support with <code>task/affinity</code></td>
+<td><i>numa</i></td>
+</tr>
+<tr>
+<td><code>task/cgroup</code>
+<br>Two packages packages are only required for cgroup/v2 support</td>
+<td><i>hwloc</i>
+<br><i>bpf</i> (cgroup/v2)
+<br><i>dbus</i> (cgroup/v2)</td>
+</tr>
+</tbody>
+</table>
+<br>
+
 <p>Please see the <a href="related_software.html">Related Software</a> page for
 references to required software to build these plugins.</p>
 
