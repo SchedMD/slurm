@@ -97,9 +97,14 @@ the cluster.</li>
 </h3>
 
 <p>Before building Slurm, consider which plugins you will need for your
-installation.  Which plugins are built can vary based on the libraries that
-are available when running configure.  Refer to the below list of possible
-plugins and what is required to build them.</p>
+installation. Which plugins are built can vary based on the libraries that
+are available when running the configure script. Refer to the below list of
+possible plugins and what is required to build them.</p>
+
+<p>Note that in most cases, the required package is the corresponding
+development library, whose exact names may vary across different distributions.
+The typical naming convention on RHEL-based distros is <b>NAME-devel</b>, while
+the convention on Debian-based distros is <b>libNAME-dev</b>.</p>
 
 <table class="tlist">
 <tbody>
