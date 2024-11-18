@@ -55,41 +55,62 @@ Only used with systems using SlurmDBD, ignored otherwise.
 .TP
 \fBAccountingStorageEnforce\fR
 This controls what level of association\-based enforcement to impose
-on job submissions. Valid options are any combination of
-\fIassociations\fR, \fIlimits\fR, \fInojobs\fR, \fInosteps\fR, \fIqos\fR,
-\fIsafe\fR, and \fIwckeys\fR, or \fIall\fR for all things (except nojobs
-and nosteps, which must be requested as well).
+on job submissions. Valid options are any comma-separated combination of the
+following, many of which will implicitly include other options:
 
-If \fIlimits\fR, \fIqos\fR, or \fIwckeys\fR are set, \fIassociations\fR
-will automatically be set.
+.IP
+.RS
+.TP 2
+\fBall\fR
+Implies all other available options except \fBnojobs\fR and \fBnosteps\fR.
+.IP
 
-If \fIwckeys\fR is set, \fBTrackWCKey\fR will automatically be set.
+.TP
+\fBassociations\fR
+No new job is allowed to run unless a corresponding association exists in the
+system.
+.IP
 
-If \fIsafe\fR is set, \fIlimits\fR and \fIassociations\fR will
-automatically be set.
+.TP
+\fBlimits\fR
+Users can be limited by association to whatever job size or run time limits are
+defined. Implies \fBassociations\fR.
+.IP
 
-If \fInojobs\fR is set, \fInosteps\fR will automatically be set.
+.TP
+\fBnojobs\fR
+Slurm will not account for any jobs or steps on the system.
+Implies \fBnosteps\fR.
+.IP
 
-By setting \fIassociations\fR, no new job is allowed to run unless a
-corresponding association exists in the system. If \fIlimits\fR are
-enforced, users can be limited by association to whatever job size or run
-time limits are defined.
+.TP
+\fBnosteps\fR
+Slurm will not account for any steps that have run.
+.IP
 
-If \fInojobs\fR is set, Slurm will not account for any jobs or steps on the
-system. Likewise, if \fInosteps\fR is set, Slurm will not account for any
-steps that have run.
+.TP
+\fBqos\fR
+Jobs will not be scheduled unless a valid qos is specified.
+Implies \fBassociations\fR.
+.IP
 
-If \fIsafe\fR is enforced, a job will only be launched against an association
-or qos that has a TRES\-minutes limit set, if the job will be able to
-run to completion. Without this option set, jobs will be launched as long as
-their usage hasn't reached the TRES\-minutes limit. This can lead to jobs being
-launched but then killed when the limit is reached.
-With the 'safe' option set, a job won't be killed due to limits,
-even if the limits are changed after the job was started and the
-association or qos violates the updated limits.
+.TP
+\fBsafe\fR
+A job will only be launched against an association or qos that has a
+TRES\-minutes limit set if the job will be able to run to completion. Without
+this option set, jobs will be launched as long as their usage hasn't reached
+the TRES\-minutes limit. This can lead to jobs being launched but then killed
+when the limit is reached. With this option, a job won't be killed due to limits,
+even if the limits are changed after the job was started and the association or
+qos violates the updated limits. Implies \fBlimits\fR and \fBassociations\fR.
+.IP
 
-With \fIqos\fR and/or \fIwckeys\fR enforced jobs will not be scheduled unless
-a valid qos and/or workload characterization key is specified.
+.TP
+\fBwckeys\fR
+Jobs will not be scheduled unless a valid workload characterization key is
+specified. Implies \fBassociations\fR and \fBTrackWCKey\fR (a separate
+configuration option).
+.RE
 .IP
 
 .TP
@@ -1268,17 +1289,33 @@ May not exceed 65533.
 
 .TP
 \fBEnforcePartLimits\fR
-If set to "ALL" then jobs which exceed the number of nodes in a partition and/or
-any of its configured limits will be rejected at submission time. If job is
-submitted to multiple partitions, the job must satisfy the limits on all the
-requested partitions. If set to "NO" then the job will be accepted and remain
-queued until the partition limits are altered(Maxtime, MaxMemperNode...).
-If set to "ANY" a job must satisfy any of the requested partitions
-to be submitted. The default value is "NO".
-\fBNOTE\fR: If set, then a job's QOS can not be used to exceed partition limits.
-\fBNOTE\fR: The partition limits being considered by this option are its
+Controls whether partition limits are enforced when a job is submitted to the
+cluster. The partition limits being considered by this option are its
 configured MaxMemPerCPU, MaxMemPerNode, MinNodes, MaxNodes, MaxTime, AllocNodes,
-AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold.
+AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold. If set, then a
+job's QOS can not be used to exceed partition limits.
+.IP
+.RS
+.TP
+\fBALL\fR
+Jobs which exceed the number of nodes in a partition and/or any of its
+configured limits will be rejected at submission time. If the job is submitted
+to multiple partitions, the job must satisfy the limits on all the requested
+partitions.
+.IP
+
+.TP
+\fBANY\fR
+Jobs will be accepted if they satisfy the limits on at least one of the
+requested partitions.
+.IP
+
+.TP
+\fBNO\fR
+Partition limits will not be enforced at submit time, but will still be enforced
+during scheduling. A job that exceeds the limits on all requested partitions
+will remain queued until the partition limits are altered. This is the default.
+.RE
 .IP
 
 .TP
