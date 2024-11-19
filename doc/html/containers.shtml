@@ -353,6 +353,62 @@ exit $rc
 </pre>
 </p>
 
+<h3 id="multiple-runtimes">Handling multiple runtimes
+<a class="slurm_link" href="#multiple-runtimes"></a>
+</h3>
+
+<p>If you wish to accommodate multiple runtimes in your environment,
+it is possible to do so with a bit of extra setup. This section outlines one
+possible way to do so:</p>
+
+<ol>
+<li>Create a generic oci.conf that calls a wrapper script
+<pre>
+IgnoreFileConfigJson=true
+RunTimeRun="/opt/slurm-oci/run %b %m %u %U %n %j %s %t %@"
+RunTimeKill="kill -s SIGTERM %p"
+RunTimeDelete="kill -s SIGKILL %p"
+</pre>
+</li>
+<li>Create the wrapper script to check for user-specific run configuration
+(e.g., /opt/slurm-oci/run)
+<pre>
+#!/bin/bash
+if [[ -e ~/.slurm-oci-run ]]; then
+	~/.slurm-oci-run "$@"
+else
+	/opt/slurm-oci/slurm-oci-run-default "$@"
+fi
+</pre>
+</li>
+<li>Create a generic run configuration to use as the default
+(e.g., /opt/slurm-oci/slurm-oci-run-default)
+<pre>
+#!/bin/bash --login
+# Parse
+CONTAINER="$1"
+SPOOL_DIR="$2"
+USER_NAME="$3"
+USER_ID="$4"
+NODE_NAME="$5"
+JOB_ID="$6"
+STEP_ID="$7"
+TASK_ID="$8"
+shift 8 # subsequent arguments are the command to run in the container
+# Run
+apptainer run --bind /var/spool --containall "$CONTAINER" "$@"
+</pre>
+</li>
+<li>Add executable permissions to both scripts
+<pre>chmod +x /opt/slurm-oci/run /opt/slurm-oci/slurm-oci-run-default</pre>
+</li>
+</ol>
+
+<p>Once this is done, users may create a script at '~/.slurm-oci-run' if
+they wish to customize the container run process, such as using a different
+container runtime. Users should model this file after the default
+'/opt/slurm-oci/slurm-oci-run-default'</p>
+
 <h2 id="testing">Testing OCI runtime outside of Slurm
 <a class="slurm_link" href="#testing"></a>
 </h2>
@@ -875,6 +931,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 08 October 2024</p>
+<p style="text-align:center;">Last modified 19 November 2024</p>
 
 <!--#include virtual="footer.txt"-->

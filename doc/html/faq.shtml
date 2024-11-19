@@ -1231,9 +1231,9 @@ that node may be rendered unusable, but no other harm will result.</p>
 
 <p><a id="clock"><b>Do I need to maintain synchronized
 clocks on the cluster?</b></a><br>
-In general, yes. Having inconsistent clocks may cause nodes to
-be unusable. Slurm log files should contain references to
-expired credentials. For example:</p>
+In general, yes. Having inconsistent clocks may cause nodes to be unusable and
+generate errors in Slurm log files regarding expired credentials. For example:
+</p>
 <pre>
 error: Munge decode failed: Expired credential
 ENCODED: Wed May 12 12:34:56 2008
@@ -2438,6 +2438,6 @@ dset TV::parallel_configs {
 }
 !-->
 
-<p style="text-align:center;">Last modified 07 November 2024</p>
+<p style="text-align:center;">Last modified 19 November 2024</p>
 
 <!--#include virtual="footer.txt"-->
