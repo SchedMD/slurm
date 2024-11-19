@@ -2364,13 +2364,11 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	 */
 	future_part = part_data_dup_res(select_part_record, orig_map);
 	if (future_part == NULL) {
-		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
 	}
 	future_usage = node_data_dup_use(select_node_usage, orig_map);
 	if (future_usage == NULL) {
 		part_data_destroy_res(future_part);
-		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
 	}
 

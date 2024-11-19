@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- slurm.spec - add ability to supply extra version information
  -- Fix 24.11 HA issues.
  -- Fix requeued jobs keeping their priority until the decay thread happens.
+ -- Fix potential memory corruption in select/cons_tres plugin.
 
 * Changes in Slurm 24.11.0rc2
 =============================
