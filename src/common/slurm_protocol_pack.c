@@ -115,6 +115,29 @@ static void _pack_ret_list(list_t *ret_list, uint16_t size_val, buf_t *buffer,
 static int _unpack_ret_list(list_t **ret_list, uint16_t size_val, buf_t *buffer,
 			    uint16_t protocol_version);
 
+static void _set_min_memory_tres(char *mem_per_tres, uint64_t *min_memory)
+{
+	xassert(min_memory);
+
+	/*
+	 * If there is a mem_per_tres pn_min_memory will not be
+	 * set, let's figure it from the first tres there.
+	 */
+	if (mem_per_tres) {
+		char *save_ptr = NULL, *tres_type = NULL,
+			*name = NULL, *type = NULL;
+
+		(void) slurm_get_next_tres(&tres_type,
+					   mem_per_tres,
+					   &name, &type,
+					   min_memory,
+					   &save_ptr);
+		xfree(tres_type);
+		xfree(name);
+		xfree(type);
+	}
+}
+
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -4138,6 +4161,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpackstr(&job->selinux_context, buffer);
 	}
+
+	_set_min_memory_tres(job->mem_per_tres, &job->pn_min_memory);
 
 	return SLURM_SUCCESS;
 

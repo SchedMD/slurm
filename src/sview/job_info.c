@@ -839,6 +839,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		else if (*p == 't' || *p == 'T')
 			temp_ll *= 1048576;
 
+		p = xstrcasestr((char *)new_text, "tres");
+		if (p)
+			goto return_error;
+
 		p = xstrcasestr((char *)new_text, "cpu");
 		if (p)
 			type = "min memory per cpu";
@@ -1520,7 +1524,9 @@ static void _layout_job_record(GtkTreeView *treeview,
 				 UNIT_MEGA, NO_VAL,
 				 working_sview_config.convert_flags);
 		len = strlen(tmp_char);
-		if (job_ptr->pn_min_memory & MEM_PER_CPU)
+		if (job_ptr->mem_per_tres) {
+			sprintf(tmp_char+len, " Per TRES");
+		} else if (job_ptr->pn_min_memory & MEM_PER_CPU)
 			sprintf(tmp_char+len, " Per CPU");
 		else
 			sprintf(tmp_char+len, " Per Node");
@@ -2092,7 +2098,9 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				 sizeof(tmp_mem_min), UNIT_MEGA, NO_VAL,
 				 working_sview_config.convert_flags);
 		len = strlen(tmp_mem_min);
-		if (job_ptr->pn_min_memory & MEM_PER_CPU)
+		if (job_ptr->mem_per_tres) {
+			sprintf(tmp_mem_min+len, " Per TRES");
+		} else if (job_ptr->pn_min_memory & MEM_PER_CPU)
 			sprintf(tmp_mem_min+len, " Per CPU");
 		else
 			sprintf(tmp_mem_min+len, " Per Node");

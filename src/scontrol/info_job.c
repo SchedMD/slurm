@@ -657,7 +657,14 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		hostlist_destroy(hl_last);
 	}
 	/****** Line 18 ******/
-	if (job_ptr->pn_min_memory & MEM_PER_CPU) {
+
+	/*
+	 * If there is a mem_per_tres job->pn_min_memory will not be
+	 * set, let's figure it from the first tres there.
+	 */
+	if (job_ptr->mem_per_tres) {
+		tmp6_ptr = "TRES";
+	} else if (job_ptr->pn_min_memory & MEM_PER_CPU) {
 		job_ptr->pn_min_memory &= (~MEM_PER_CPU);
 		tmp6_ptr = "CPU";
 	} else
