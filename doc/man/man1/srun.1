@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "October 2024" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "November 2024" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -4658,6 +4658,35 @@ node02
 This behavior can be changed by adding \fBSelectTypeParameters=CR_Pack_Nodes\fR
 to your slurm.conf. The logic to pack nodes will allow job steps to start on
 a single node without having to explicitly request a single node.
+
+.TP
+\fBExample 11:\fR
+This example demonstrates that adding the \fB\-\-exclusive\fR flag to job
+allocation requests can give different results based on whether you also
+request a certain number of tasks.
+
+Requesting exclusive access with no additional requirements will allow the
+process to access all the CPUs on the allocated node.
+.nf
+$ srun \-l \-\-exclusive  bash \-c 'grep Cpus_allowed_list /proc/self/status'
+0: Cpus_allowed_list:   0\-23
+.fi
+
+Adding a request for a certain number of tasks will cause each task to only
+have access to a single CPU.
+.nf
+$ srun \-l \-\-exclusive \-n2 bash \-c 'grep Cpus_allowed_list /proc/self/status'
+0: Cpus_allowed_list:   0
+1: Cpus_allowed_list:   12
+.fi
+
+You can define the number of CPUs per task if you want to give them access to
+more than one CPU.
+.nf
+$ srun \-l \-\-exclusive \-n2 \-\-cpus\-per\-task=12 bash \-c 'grep Cpus_allowed_list /proc/self/status'
+0: Cpus_allowed_list:   0\-5,12\-17
+1: Cpus_allowed_list:   6\-11,18\-23
+.fi
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.

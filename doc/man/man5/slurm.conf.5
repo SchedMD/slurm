@@ -2743,8 +2743,10 @@ plugin.
 .TP
 \fBreorder_count=#\fR
 Specify how many attempts should be made in reordering preemptable jobs to
-minimize the count of jobs preempted.
+minimize the total number of jobs that will be preempted.
 The default value is 1. High values may adversely impact performance.
+Changes to the order of jobs on these attempts can be enabled with
+\fBstrict_order\fR.
 The logic to support this option is only available in the select/cons_tres
 plugin.
 .IP
@@ -2759,10 +2761,11 @@ otherwise a SIGTERM will be sent to the tasks.
 
 .TP
 \fBstrict_order\fR
-If set, then execute extra logic in an attempt to preempt only the lowest
-priority jobs.
-It may be desirable to set this configuration parameter when there are multiple
-priorities of preemptable jobs.
+When reordering preemptable jobs, place the most recently tested job at the
+front of the list since we are certain that it actually added resources needed
+by the new job. This ensures that with enough reorder attempts, the minimum
+possible number of jobs will be preempted.
+See also \fBreorder_count=#\fR.
 The logic to support this option is only available in the select/cons_tres
 plugin.
 .IP
