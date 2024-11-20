@@ -168,6 +168,22 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 		end
 	end
 
+	--[[
+	-- List each QOS the submitting user has access to
+	-- and log the priority of each QOS
+	--]]
+	if job_desc["assoc_qos"] == nil then
+		slurm.log_debug("%s: No association QOS defined", log_prefix)
+	else
+		local assoc_qos = job_desc["assoc_qos"]
+		slurm.log_debug("%s: assoc_qos: %s", log_prefix, assoc_qos)
+		for qos in string.gmatch(assoc_qos, '([^,]+)') do
+			slurm.log_debug("%s: %s priority is %d",
+					log_prefix, qos,
+					slurm.get_qos_priority(qos))
+		end
+	end
+
 	return slurm.SUCCESS
 end
 
