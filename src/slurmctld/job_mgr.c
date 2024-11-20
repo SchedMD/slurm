@@ -6978,6 +6978,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 		job_desc.pn_min_cpus = detail_ptr->orig_pn_min_cpus;
 		job_desc.job_id = job_ptr->job_id;
 		job_desc.bitflags = job_ptr->bit_flags;
+		job_desc.tres_per_task = xstrdup(job_ptr->tres_per_task);
 		if (!_valid_pn_min_mem(&job_desc, part_ptr)) {
 			/* debug2 message already logged inside the function. */
 			fail_reason = WAIT_PN_MEM_LIMIT;
@@ -6988,7 +6989,10 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 			detail_ptr->min_cpus = job_desc.min_cpus;
 			detail_ptr->max_cpus = job_desc.max_cpus;
 			detail_ptr->pn_min_cpus = job_desc.pn_min_cpus;
+			SWAP(job_ptr->tres_per_task, job_desc.tres_per_task);
 		}
+
+		xfree(job_desc.tres_per_task);
 	}
 	assoc_mgr_unlock(&assoc_mgr_read_lock);
 
@@ -8810,6 +8814,13 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 			job_desc_msg->cpus_per_task = mem_ratio;
 		else
 			job_desc_msg->cpus_per_task *= mem_ratio;
+
+		/* Update tres_per_task, but not if it wasn't set before */
+		if (job_desc_msg->bitflags & JOB_CPUS_SET)
+			slurm_option_update_tres_per_task(
+				job_desc_msg->cpus_per_task, "cpu",
+				&job_desc_msg->tres_per_task);
+
 		job_desc_msg->pn_min_memory = ((job_mem_limit + mem_ratio - 1) /
 					       mem_ratio) | MEM_PER_CPU;
 		if ((job_desc_msg->num_tasks != NO_VAL) &&
