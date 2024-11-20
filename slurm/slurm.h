@@ -2603,6 +2603,7 @@ typedef struct resource_allocation_response_msg {
 	char *qos;               /* allocation qos */
 	char *resv_name;         /* allocation reservation */
 	char *tres_per_node; /* comma delimited list of TRES=# values */
+	char *tres_per_task; /* comma delimited list of TRES=# values */
 	uid_t uid; /* resolved user id of job */
 	char *user_name; /* resolved user name of job */
 	void *working_cluster_rec; /* Cluster to direct remaining messages to.

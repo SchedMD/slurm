@@ -4012,6 +4012,7 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		xfree(msg->qos);
 		xfree(msg->resv_name);
 		xfree(msg->tres_per_node);
+		xfree(msg->tres_per_task);
 		slurmdb_destroy_cluster_rec(msg->working_cluster_rec);
 		xfree(msg->user_name);
 	}

@@ -1178,6 +1178,7 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		packstr(msg->qos, buffer);
 		packstr(msg->resv_name, buffer);
 		packstr(msg->tres_per_node, buffer);
+		packstr(msg->tres_per_task, buffer);
 		pack32(msg->uid, buffer);
 		packstr(msg->user_name, buffer);
 
@@ -1286,6 +1287,7 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 		safe_unpackstr(&tmp_ptr->qos, buffer);
 		safe_unpackstr(&tmp_ptr->resv_name, buffer);
 		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
+		safe_unpackstr(&tmp_ptr->tres_per_task, buffer);
 		safe_unpack32(&tmp_ptr->uid, buffer);
 		safe_unpackstr(&tmp_ptr->user_name, buffer);
 
