@@ -738,7 +738,8 @@ extern int slurm_job_step_stat(slurm_step_id_t *step_id,
 	memcpy(&req, step_id, sizeof(req));
 	memcpy(&resp_out->step_id, step_id, sizeof(resp_out->step_id));
 
-	req_msg.protocol_version = use_protocol_ver;
+	req_msg.protocol_version = MIN(SLURM_PROTOCOL_VERSION,
+				       use_protocol_ver);
 	req_msg.msg_type = REQUEST_JOB_STEP_STAT;
 	req_msg.data = &req;
 
