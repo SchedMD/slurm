@@ -11223,8 +11223,6 @@ static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
 			pack64(detail_ptr->pn_min_memory, buffer);
 			pack32(detail_ptr->pn_min_tmp_disk, buffer);
 
-			pack16(detail_ptr->oom_kill_step, buffer);
-
 			packstr(detail_ptr->req_nodes, buffer);
 			pack_bit_str_hex(detail_ptr->req_node_bitmap, buffer);
 			packstr(detail_ptr->exc_nodes, buffer);
@@ -11244,8 +11242,6 @@ static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
 
 			pack64((uint64_t) 0, buffer);
 			pack32((uint32_t) 0, buffer);
-
-			pack16((uint16_t) 0, buffer);
 
 			packnull(buffer);
 			packnull(buffer);
