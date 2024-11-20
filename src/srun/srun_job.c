@@ -767,9 +767,12 @@ extern void init_srun(int argc, char **argv, log_options_t *logopt,
 /*
  * Modify options for a job step (after job allocaiton is complete
  */
-static void _set_step_opts(slurm_opt_t *opt_local)
+static void _set_step_opts(slurm_opt_t *opt_local,
+			   resource_allocation_response_msg_t *resp)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
+	int new_cpt;
+
 	xassert(srun_opt);
 
 	opt_local->time_limit = NO_VAL;/* not applicable for step, only job */
@@ -782,6 +785,15 @@ static void _set_step_opts(slurm_opt_t *opt_local)
 	} else {
 		/* Step gets all CPUs in the job allocation. */
 		srun_opt->exclusive = false;
+	}
+
+	new_cpt = slurm_opt_get_tres_per_task_cpu_cnt(resp->tres_per_task);
+	if (new_cpt)
+		opt_local->cpus_per_task = new_cpt;
+
+	if (resp->tres_per_task) {
+		xfree(opt_local->tres_per_task);
+		SWAP(opt_local->tres_per_task, resp->tres_per_task);
 	}
 }
 
@@ -1439,7 +1451,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 				job = job_create_allocation(resp, opt_local);
 				job->het_job_offset = het_job_offset;
 				list_append(srun_job_list, job);
-				_set_step_opts(opt_local);
+				_set_step_opts(opt_local, resp);
 			}
 			list_iterator_destroy(opt_iter);
 			list_iterator_destroy(resp_iter);
@@ -1462,7 +1474,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 				exit(error_exit);
 			}
 			job = job_create_allocation(resp, &opt);
-			_set_step_opts(&opt);
+			_set_step_opts(&opt, resp);
 		}
 		if (srun_job_list && (list_count(srun_job_list) > 1) &&
 		    opt_list && (list_count(opt_list) > 1) && my_job_id) {
