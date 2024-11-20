@@ -2168,7 +2168,8 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 			tmp_ptr->node_cnt = 0;
 			for (int i = 0; i < uint32_tmp; i++)
 				tmp_ptr->node_cnt += node_cnt[i];
-		}
+		} else if (!uint32_tmp)
+			tmp_ptr->node_cnt = NO_VAL;
 		xfree(node_cnt);
 
 		safe_unpack32_array(&core_cnt, &uint32_tmp, buffer);

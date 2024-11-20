@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - Set job's exit code to 1 when a job fails with state
     JOB_NODE_FAIL. This fixes "sbatch --wait" not being able to exit with error
     code when a job fails for this reason in some cases.
+ -- Fix certain reservation updates requested from 23.02 clients.
 
 * Changes in Slurm 24.11.0rc2
 =============================
