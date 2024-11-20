@@ -5,6 +5,9 @@ documents those changes that are of interest to users and administrators.
 =============================
  -- slurmctld - Reject arbitrary distribution jobs that do not specifying a task
     count.
+ -- Fix backwards compatibility of the RESPONSE_JOB_INFO RPC (used by squeue,
+    scontrol show job, etc.) with Slurm clients version 24.05 and below. This
+    was a regression in 24.11.0rc1.
 
 * Changes in Slurm 24.11.0rc2
 =============================
