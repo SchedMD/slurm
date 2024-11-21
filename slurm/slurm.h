@@ -134,6 +134,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define MAX_HET_JOB_COMPONENTS 128
 #define MAX_FED_CLUSTERS 63
 #define MAX_JOB_SIZE_BITMAP 16384
+#define MAX_SLURM_NODES 65536 /* (64*1024) hosts */
 
 /*
  * Max normal step id leaving a few for special steps like the batch and extern

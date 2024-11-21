@@ -414,7 +414,7 @@ extern config_record_t *config_record_from_conf_node(
  *		    slurmd), false is used by slurmctld, clients, and testsuite
  * IN tres_cnt - number of TRES configured on system (used on controller side)
  */
-extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
+extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 {
 	slurm_conf_node_t *node, **ptr_array;
 	config_record_t *config_ptr = NULL;
@@ -423,9 +423,12 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	count = slurm_conf_nodename_array(&ptr_array);
 
 	for (i = 0; i < count; i++) {
+		int rc;
 		node = ptr_array[i];
 		config_ptr = config_record_from_conf_node(node, tres_cnt);
-		expand_nodeline_info(node, config_ptr, NULL, _check_callback);
+		if (((rc = expand_nodeline_info(node, config_ptr, NULL,
+					       _check_callback))))
+			return rc;
 	}
 
 	if (set_bitmap) {
@@ -437,6 +440,8 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 		}
 		list_iterator_destroy(config_iterator);
 	}
+
+	return SLURM_SUCCESS;
 }
 
 extern int build_node_spec_bitmap(node_record_t *node_ptr)
@@ -872,6 +877,10 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 	    (index >= slurm_conf.max_node_cnt)) {
 		error("Attempting to create node record past MaxNodeCount:%d",
 		      slurm_conf.max_node_cnt);
+		return NULL;
+	} else if (index > MAX_SLURM_NODES) {
+		error("Attempting to create nodes past max node limit (%d)",
+		      MAX_SLURM_NODES);
 		return NULL;
 	}
 

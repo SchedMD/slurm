@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix backwards compatibility of the RESPONSE_JOB_INFO RPC (used by squeue,
     scontrol show job, etc.) with Slurm clients version 24.05 and below. This
     was a regression in 24.11.0rc1.
+ -- Do not let slurmctld/slurmd to start if there are more nodes defined in
+    slurm.conf than the maximum supported amount (64k nodes).
 
 * Changes in Slurm 24.11.0rc2
 =============================

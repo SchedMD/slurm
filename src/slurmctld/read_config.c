@@ -1507,7 +1507,8 @@ extern int read_slurm_conf(int recover)
 		fatal("STEP_MGR not supported without PrologFlags=contain");
 
 	/* Build node and partition information based upon slurm.conf file */
-	build_all_nodeline_info(false, slurmctld_tres_cnt);
+	if ((error_code = build_all_nodeline_info(false, slurmctld_tres_cnt)))
+	    goto end_it;
 	/* Increase node table to handle dynamic nodes. */
 	if ((slurm_conf.max_node_cnt != NO_VAL) &&
 	    node_record_count < slurm_conf.max_node_cnt) {
