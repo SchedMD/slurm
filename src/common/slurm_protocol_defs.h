@@ -942,6 +942,7 @@ typedef struct batch_job_launch_msg {
 	char *tres_bind;	/* task binding to TRES (e.g. GPUs),
 				 * included for possible future use */
 	char *tres_freq;	/* frequency/power for TRES (e.g. GPUs) */
+	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
 	bool oom_kill_step;
 } batch_job_launch_msg_t;
 

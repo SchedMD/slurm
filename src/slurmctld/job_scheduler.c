@@ -2494,6 +2494,8 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	if (job_ptr->resv_ptr)
 		launch_msg_ptr->resv_name = xstrdup(job_ptr->resv_ptr->name);
 
+	launch_msg_ptr->tres_per_task = xstrdup(job_ptr->tres_per_task);
+
 	xassert(!fail_why);
 	return launch_msg_ptr;
 

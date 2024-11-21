@@ -1786,6 +1786,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->std_out);
 		xfree(msg->tres_bind);
 		xfree(msg->tres_freq);
+		xfree(msg->tres_per_task);
 		xfree(msg->work_dir);
 		xfree(msg);
 	}

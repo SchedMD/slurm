@@ -9575,6 +9575,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->profile, buffer);
 		packstr(msg->tres_bind, buffer);
 		packstr(msg->tres_freq, buffer);
+		packstr(msg->tres_per_task, buffer);
 		pack32(msg->cpu_freq_min, buffer);
 		pack32(msg->cpu_freq_max, buffer);
 		pack32(msg->cpu_freq_gov, buffer);
@@ -9786,6 +9787,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&launch_msg_ptr->profile, buffer);
 		safe_unpackstr(&launch_msg_ptr->tres_bind, buffer);
 		safe_unpackstr(&launch_msg_ptr->tres_freq, buffer);
+		safe_unpackstr(&launch_msg_ptr->tres_per_task, buffer);
 		safe_unpack32(&launch_msg_ptr->cpu_freq_min, buffer);
 		safe_unpack32(&launch_msg_ptr->cpu_freq_max, buffer);
 		safe_unpack32(&launch_msg_ptr->cpu_freq_gov, buffer);
