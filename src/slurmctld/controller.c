@@ -840,7 +840,17 @@ int main(int argc, char **argv)
 				fatal("failed to initialize accounting_storage plugin");
 			if (bb_g_init() != SLURM_SUCCESS)
 				fatal("failed to initialize burst buffer plugin");
+
+			slurm_mutex_lock(&listeners.mutex);
+			listeners.standby_mode = true;
+			slurm_mutex_unlock(&listeners.mutex);
+
 			run_backup();
+
+			slurm_mutex_lock(&listeners.mutex);
+			listeners.standby_mode = false;
+			slurm_mutex_unlock(&listeners.mutex);
+
 			(void) _shutdown_backup_controller();
 		} else {
 			if (acct_storage_g_init() != SLURM_SUCCESS)
