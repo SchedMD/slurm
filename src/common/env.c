@@ -984,7 +984,7 @@ extern int env_array_for_job(char ***dest,
 	char *dist = NULL;
 	char *key, *value;
 	slurm_step_layout_t *step_layout = NULL;
-	int i, rc = SLURM_SUCCESS;
+	int i, new_cpt, rc = SLURM_SUCCESS;
 	slurm_step_layout_req_t step_layout_req;
 	uint16_t cpus_per_task_array[1];
 	uint32_t cpus_task_reps[1];
@@ -1187,11 +1187,23 @@ extern int env_array_for_job(char ***dest,
 					    het_job_offset,
 					    "%d", desc->num_tasks);
 	}
-	if (desc->bitflags & JOB_CPUS_SET) {
+
+	new_cpt = slurm_opt_get_tres_per_task_cpu_cnt(alloc->tres_per_task);
+	if (new_cpt) {
+		env_array_overwrite_het_fmt(dest, "SLURM_CPUS_PER_TASK",
+					    het_job_offset, "%d", new_cpt);
+	} else if (desc->bitflags & JOB_CPUS_SET) {
 		env_array_overwrite_het_fmt(dest, "SLURM_CPUS_PER_TASK",
 					    het_job_offset, "%d",
 					     desc->cpus_per_task);
 	}
+
+	if (alloc->tres_per_task) {
+		env_array_overwrite_het_fmt(dest, "SLURM_TRES_PER_TASK",
+					    het_job_offset, "%s",
+					    alloc->tres_per_task);
+	}
+
 	if (desc->ntasks_per_node && (desc->ntasks_per_node != NO_VAL16)) {
 		env_array_overwrite_het_fmt(dest, "SLURM_NTASKS_PER_NODE",
 					    het_job_offset, "%d",
