@@ -412,7 +412,8 @@ static int _attach_to_tasks(slurm_step_id_t stepid,
 	slurm_msg_set_r_uid(&msg, SLURM_AUTH_UID_ANY);
 	msg.msg_type = REQUEST_REATTACH_TASKS;
 	msg.data = &reattach_msg;
-	msg.protocol_version = layout->start_protocol_ver;
+	msg.protocol_version = MIN(SLURM_PROTOCOL_VERSION,
+				   layout->start_protocol_ver);
 
 	if (layout->front_end)
 		hosts = layout->front_end;
