@@ -6312,8 +6312,8 @@ rather than in a temporary file under \fBTmpFS\fR.
 The configuration of nodes (or machines) to be managed by Slurm is
 also specified in \fB/etc/slurm.conf\fR.
 Changes in node configuration (e.g. adding nodes, changing their
-processor count, etc.) require restarting both the slurmctld daemon
-and the slurmd daemons.
+processor count, etc.) require restarting or reconfiguring all slurmctld
+and slurmd daemons.
 All slurmd daemons must know each node in the system to forward
 messages in support of hierarchical communications.
 Only the NodeName must be supplied in the configuration file.
