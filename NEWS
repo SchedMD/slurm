@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     JSON/YAML instead of 'null' causing compiled OpenAPI clients to reject
     the response to 'GET /slurm/v0.0.40/jobs' due to validation failure of
     '.jobs[].job_resources'.
+ -- Fix issue where older versions of Slurm talking to a 24.11 dbd could
+    loose step accounting.
 
 * Changes in Slurm 24.11.0rc2
 =============================

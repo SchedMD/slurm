@@ -508,8 +508,14 @@ no_rollup_change:
 	 * likely the first time we have seen this.
 	 * This can be removed 3 versions after 24.11.
 	 */
-	if (!job_ptr->db_index)
-		job_record_set_sluid(job_ptr);
+	if (!job_ptr->db_index) {
+		if (!(job_ptr->db_index = _get_db_index(mysql_conn,
+							submit_time,
+							job_ptr->job_id)))
+			job_record_set_sluid(job_ptr);
+		else
+			job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
+	}
 
 	if (!IS_JOB_IN_DB(job_ptr)) {
 		uint64_t env_hash_inx = 0, script_hash_inx = 0;
