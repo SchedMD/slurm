@@ -1248,7 +1248,6 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	slurm_step_layout_req_t step_layout_req;
 	uint16_t cpus_per_task_array[1];
 	uint32_t cpus_task_reps[1];
-	char *tres_per_task = NULL;
 
 	if (!batch)
 		return SLURM_ERROR;
@@ -1331,15 +1330,9 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	if (getenvp(*dest, "SLURM_CPUS_PER_TASK"))
 		env_array_overwrite_fmt(dest, "SLURM_CPUS_PER_TASK", "%u",
 					cpus_per_task);
-	if ((tres_per_task = getenvp(*dest, "SLURM_TRES_PER_TASK")) &&
-	    xstrstr(tres_per_task, "cpu=")) {
-		char *new_tres_per_task = xstrdup(tres_per_task);
-		slurm_option_update_tres_per_task(cpus_per_task, "cpu",
-						  &new_tres_per_task);
+	if (batch->tres_per_task)
 		env_array_overwrite_fmt(dest, "SLURM_TRES_PER_TASK", "%s",
-					new_tres_per_task);
-		xfree(new_tres_per_task);
-	}
+					batch->tres_per_task);
 
 	if (step_layout_req.num_tasks) {
 		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u",
