@@ -158,6 +158,7 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode);
 static int  _find_resv_id(void *x, void *key);
 static int _find_resv_ptr(void *x, void *key);
 static int  _find_resv_name(void *x, void *key);
+static void _flush_node_down_cache(bitstr_t *down_bitmap, time_t now);
 static int  _generate_resv_id(void);
 static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
 static int  _get_core_resrcs(slurmctld_resv_t *resv_ptr);
@@ -775,6 +776,14 @@ static int _find_resv_name(void *x, void *key)
 		return 0;
 	else
 		return 1;	/* match */
+}
+
+static void _flush_node_down_cache(bitstr_t *down_bitmap, time_t now)
+{
+	node_record_t *node_ptr;
+	for (int i = 0; (node_ptr = next_node_bitmap(down_bitmap, &i)); i++)
+		clusteracct_storage_g_node_down(acct_db_conn, node_ptr, now,
+						NULL, slurm_conf.slurm_user_id);
 }
 
 static int _foreach_clear_job_resv(void *x, void *key)
