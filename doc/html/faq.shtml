@@ -1186,6 +1186,13 @@ $ rpmbuild -ta slurm-23.11.1.tar.bz2 > /dev/null
 </pre>
 </p>
 
+<p>Alternatively, as of Slurm 24.11.0 when using <b>rpmbuild</b>, a patched
+package may be created directly by placing the patch file in the same directory
+as the source tarball and executing the following command:</p>
+<pre>
+$ rpmbuild -ta --define 'patch security.patch' slurm-24.11.0.tar.bz2
+</pre>
+
 <p><a id="epel"><b>Why am I being offered an automatic update for Slurm?</b></a>
 <br>
 EPEL has added Slurm packages to their repository to make them more widely
