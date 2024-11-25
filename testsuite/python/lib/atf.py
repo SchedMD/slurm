@@ -546,6 +546,45 @@ def start_slurmctld(clean=False, quiet=False):
             pytest.fail(f"Slurmctld is not running")
 
 
+def start_slurmdbd(clean=False, quiet=False):
+    """Starts the Slurm DB daemon (slurmdbd).
+
+    This function may only be used in auto-config mode.
+
+    Args:
+        clean (boolean): If True, clears previous slurmdbd state.
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+    """
+    if not properties["auto-config"]:
+        require_auto_config("wants to start slurmdbd")
+
+    if (
+        run_command_exit(
+            "sacctmgr show cluster", user=properties["slurm-user"], quiet=quiet
+        )
+        != 0
+    ):
+        # Start slurmdbd
+        results = run_command(
+            f"{properties['slurm-sbin-dir']}/slurmdbd",
+            user=properties["slurm-user"],
+            quiet=quiet,
+        )
+        if results["exit_code"] != 0:
+            pytest.fail(
+                f"Unable to start slurmdbd (rc={results['exit_code']}): {results['stderr']}"
+            )
+
+        # Verify that slurmdbd is running
+        if not repeat_command_until(
+            "sacctmgr show cluster", lambda results: results["exit_code"] == 0
+        ):
+            pytest.fail(f"Slurmdbd is not running")
+
+
 def start_slurm(clean=False, quiet=False):
     """Starts all applicable Slurm daemons.
 
@@ -574,28 +613,7 @@ def start_slurm(clean=False, quiet=False):
         get_config_parameter("AccountingStorageType", live=False, quiet=quiet)
         == "accounting_storage/slurmdbd"
     ):
-        if (
-            run_command_exit(
-                "sacctmgr show cluster", user=properties["slurm-user"], quiet=quiet
-            )
-            != 0
-        ):
-            # Start slurmdbd
-            results = run_command(
-                f"{properties['slurm-sbin-dir']}/slurmdbd",
-                user=properties["slurm-user"],
-                quiet=quiet,
-            )
-            if results["exit_code"] != 0:
-                pytest.fail(
-                    f"Unable to start slurmdbd (rc={results['exit_code']}): {results['stderr']}"
-                )
-
-            # Verify that slurmdbd is running
-            if not repeat_command_until(
-                "sacctmgr show cluster", lambda results: results["exit_code"] == 0
-            ):
-                pytest.fail(f"Slurmdbd is not running")
+        start_slurmdbd(clean, quiet)
 
     # Remove unnecessary default node0 from config to avoid being used or reserved
     output = run_command_output(
@@ -694,6 +712,39 @@ def stop_slurmctld(quiet=False):
         pytest.fail("Slurmctld is still running")
 
 
+def stop_slurmdbd(quiet=False):
+    """Stops the Slurm DB daemon (slurmdbd).
+
+    This function may only be used in auto-config mode.
+
+    Args:
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+    """
+
+    if not properties["auto-config"]:
+        require_auto_config("wants to stop slurmdbd")
+
+    # Stop slurmdbd
+    results = run_command(
+        "sacctmgr shutdown", user=properties["slurm-user"], quiet=quiet
+    )
+    if results["exit_code"] != 0:
+        failures.append(
+            f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}"
+        )
+
+    # Verify that slurmdbd is not running (we might have to wait for rollups to complete)
+    if not repeat_until(
+        lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmdbd"),
+        lambda pids: len(pids) == 0,
+        timeout=60,
+    ):
+        failures.append("Slurmdbd is still running")
+
+
 def stop_slurm(fatal=True, quiet=False):
     """Stops all applicable Slurm daemons.
 
@@ -728,22 +779,7 @@ def stop_slurm(fatal=True, quiet=False):
         get_config_parameter("AccountingStorageType", live=False, quiet=quiet)
         == "accounting_storage/slurmdbd"
     ):
-        # Stop slurmdbd
-        results = run_command(
-            "sacctmgr shutdown", user=properties["slurm-user"], quiet=quiet
-        )
-        if results["exit_code"] != 0:
-            failures.append(
-                f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}"
-            )
-
-        # Verify that slurmdbd is not running (we might have to wait for rollups to complete)
-        if not repeat_until(
-            lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmdbd"),
-            lambda pids: len(pids) == 0,
-            timeout=60,
-        ):
-            failures.append("Slurmdbd is still running")
+        stop_slurmdbd(quiet)
 
     # Stop slurmctld and slurmds
     results = run_command(
