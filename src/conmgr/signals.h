@@ -60,4 +60,12 @@ extern void add_work_signal(work_t *work);
 /* Return true if con is signal handling connection */
 extern bool is_signal_connection(conmgr_fd_t *con);
 
+/*
+ * Returns true if connection has any pending incoming data that hasn't been
+ * processed yet
+ * WARNING: caller must hold mgr.mutex
+ * WARNING: makes blocking call for FIONREAD
+ */
+extern bool signal_mgr_has_incoming(void);
+
 #endif /* _CONMGR_SIGNALS_H */

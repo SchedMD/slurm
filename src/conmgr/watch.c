@@ -1271,7 +1271,15 @@ static bool _watch_loop(void)
 	if (mgr.quiesce.requested) {
 		int waiters;
 
-		if ((waiters = _get_quiesced_waiter_count())) {
+		if (signal_mgr_has_incoming()) {
+			/*
+			 * Must wait for any outstanding incoming signals to be
+			 * processed or a pending signal may be deferred until
+			 * after quiesce that may never come
+			 */
+			log_flag(CONMGR, "%s: quiesced state deferred due to pending incoming POSIX signal(s)",
+				 __func__);
+		} else if ((waiters = _get_quiesced_waiter_count())) {
 			log_flag(CONMGR, "%s: quiesced state deferred to process connections:%d/%d",
 				 __func__, waiters,
 				 (list_count(mgr.connections) +
