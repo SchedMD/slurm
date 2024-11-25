@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove duplicate checks for a data structure.
  -- Fix race condition in stepmgr step completion handling.
  -- slurm.spec - add ability to specify patches to apply on the command line
+ -- slurm.spec - add ability to supply extra version information
 
 * Changes in Slurm 24.11.0rc2
 =============================

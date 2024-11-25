@@ -1,7 +1,7 @@
 Name:		slurm
 Version:	24.11.0
 %define rel	0rc3
-Release:	%{rel}%{?dist}
+Release:	%{rel}%{?extraver}%{?dist}
 Summary:	Slurm Workload Manager
 
 Group:		System Environment/Base
