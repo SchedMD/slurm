@@ -1215,6 +1215,13 @@ static int _parse_hostlist_function(bitstr_t *node_bitmap, char *node_str)
 
 	start_ptr = xstrchr(node_str, '{') + 1;
 	end_ptr = xstrchr(start_ptr, '}');
+
+	if (!end_ptr) {
+		error("%s: invalid node specified in hostlist function: \"%s\" (missing closing '}')",
+		      __func__, node_str);
+		return SLURM_ERROR;
+	}
+
 	*end_ptr = '\0';
 
 	if (!xstrncmp("blockwith{", node_str, 10) ||

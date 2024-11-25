@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where older versions of Slurm talking to a 24.11 dbd could
     loose step accounting.
  -- Fix minor memory leaks.
+ -- Fix bad memory reference when xstrchr fails to find char.
 
 * Changes in Slurm 24.11.0rc2
 =============================
