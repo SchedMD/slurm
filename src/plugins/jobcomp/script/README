@@ -16,8 +16,8 @@ JOBSTATE:	The state of the job when it ended
 LIMIT:		The time limit of the job (minutes or "UNLIMITED")
 NODES:		The nodes the job ran on or an empty string if it wasn't assigned
 PARTITION:	The partiton the job ran on
-PROCS:		Number of processors allocated to the job
 PATH:		Sets to the standard path
+PROCS:		Number of processors allocated to the job
 QOS:		The QOS of the job
 RESERVATION:	The reservation name of the job
 START:		The start time of the job (seconds since Epoch)
