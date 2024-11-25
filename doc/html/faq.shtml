@@ -1559,8 +1559,8 @@ versions of Slurm. Communications from the slurmd daemons on the compute
 nodes to the slurmctld daemon include a configuration file checksum, so you
 should maintain the same slurm.conf file on all nodes.</p>
 
-<p>The following procedure is recommended on <b>Slurm 23.02</b> and older
-  (see below for 23.11 and newer):</p>
+<p>The following procedure is recommended on <b>Slurm 24.05</b> and older
+  (see below for 24.11 and newer):</p>
 <ol>
 <li>Stop the slurmctld daemon (e.g. <code>systemctl stop slurmctld</code>
   on the head node)</li>
@@ -1571,7 +1571,7 @@ should maintain the same slurm.conf file on all nodes.</p>
   on the head node)</li>
 </ol>
 
-<p>The following procedure is sufficient on <b>Slurm 23.11</b> and newer:</p>
+<p>The following procedure is sufficient on <b>Slurm 24.11</b> and newer:</p>
 <ol>
 <li>Update the <b>slurm.conf</b> file on all nodes in the cluster</li>
 <li>Run <code>scontrol reconfigure</code></li>
@@ -1588,8 +1588,8 @@ restart of the controller, if a node is removed from a running job the
 controller will kill the job on any remaining allocated nodes and attempt to
 requeue the job if possible.</p>
 
-<p>The following procedure is recommended on <b>Slurm 23.02</b> and older
-  (see below for 23.11 and newer):</p>
+<p>The following procedure is recommended on <b>Slurm 24.05</b> and older
+  (see below for 24.11 and newer):</p>
 <ol>
 <li>Drain node of all jobs (e.g.
   <code>scontrol update nodename='%N' state=drain reason='removing nodes'</code>
@@ -1603,7 +1603,7 @@ requeue the job if possible.</p>
   on the head node)</li>
 </ol>
 
-<p>The following procedure is sufficient on <b>Slurm 23.11</b> and newer:</p>
+<p>The following procedure is sufficient on <b>Slurm 24.11</b> and newer:</p>
 <ol>
 <li>Drain node of all jobs (e.g.
   <code>scontrol update nodename='%N' state=drain reason='removing nodes'</code>
@@ -2445,6 +2445,6 @@ dset TV::parallel_configs {
 }
 !-->
 
-<p style="text-align:center;">Last modified 19 November 2024</p>
+<p style="text-align:center;">Last modified 26 November 2024</p>
 
 <!--#include virtual="footer.txt"-->
