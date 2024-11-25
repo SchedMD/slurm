@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
     '.jobs[].job_resources'.
  -- Fix issue where older versions of Slurm talking to a 24.11 dbd could
     loose step accounting.
+ -- Fix minor memory leaks.
 
 * Changes in Slurm 24.11.0rc2
 =============================
