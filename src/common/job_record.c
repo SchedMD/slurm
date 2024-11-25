@@ -1699,6 +1699,7 @@ unpack_error:
 	xfree(qos_req);
 	xfree(req_nodes);
 	xfree(script_hash);
+	xfree(submit_line);
 	xfree(work_dir);
 	xfree(x11_magic_cookie);
 	xfree(x11_target);
