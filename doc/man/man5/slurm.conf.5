@@ -4156,6 +4156,13 @@ The default value.
 .IP
 
 .TP
+\fBenable_job_state_cache\fR
+Enables an independent cache of job state details within slurmctld. This allows
+processing of `\fBsqueue\fR \-\-only\-job\-state` and replaced RPCs with minimal
+impact on other slurmctld operations.
+.IP
+
+.TP
 \fBenable_user_top\fR
 Enable use of the "scontrol top" command by non\-privileged users.
 .IP
@@ -4844,13 +4851,6 @@ if the filename has no path separators and is located adjacent to slurm.conf.
 \fBNOTE\fR: \fBProlog\fR and \fBEpilog\fR scripts will only be pushed if the
 filenames have no path separators and are located adjacent to slurm.conf.
 Glob patterns (See \fBglob\fR (7)) are not supported.
-.IP
-
-.TP
-\fBenable_job_state_cache\fR
-Enables an independent cache of job state details within slurmctld. This allows
-processing of `\fBsqueue\fR \-\-only\-job\-state` and replaced RPCs with minimal
-impact on other slurmctld operations.
 .IP
 
 .TP
