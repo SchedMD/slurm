@@ -16,6 +16,12 @@ URL:		https://slurm.schedmd.com/
 %endif
 
 Source:		%{slurm_source_dir}.tar.bz2
+%{lua: local patchnum=0
+  for pfile in string.gmatch(rpm.expand("%{?patch}"), "%S+") do
+    print('Patch'..patchnum..':\t'..pfile..'\n')
+    patchnum=patchnum+1
+  end
+}
 
 # build options		.rpmmacros options	change to default action
 # ====================  ====================	========================
@@ -395,6 +401,8 @@ Provides a REST interface to Slurm.
 %prep
 # when the rel number is one, the tarball filename does not include it
 %setup -n %{slurm_source_dir}
+%global _default_patch_fuzz 2
+%autopatch -p1
 
 %build
 %configure \
@@ -744,3 +752,8 @@ fi
 %systemd_preun slurmdbd.service
 %postun slurmdbd
 %systemd_postun_with_restart slurmdbd.service
+%if %{defined patch}
+%changelog
+* %(date "+%a %b %d %Y") %{?packager} - %{version}-%{release}
+- Includes patch: %{patch}
+%endif
