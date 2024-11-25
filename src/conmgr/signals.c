@@ -100,8 +100,16 @@ try_again:
 			return;
 		}
 
-		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+		if (errno == EINTR)
 			goto try_again;
+
+		/*
+		 * Drop signal as the buffer is already full which means
+		 * something bad has already happened and having the exact
+		 * signal numbers isn't going to make much difference.
+		 */
+		if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+			return;
 
 		/* TODO: replace with signal_safe_fatal() */
 		fatal_abort("%s: unable to signal connection manager: %m",
@@ -329,7 +337,7 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 	fd_set_close_on_exec(fd[0]);
 	fd_set_close_on_exec(fd[1]);
 
-	fd_set_blocking(fd[1]);
+	fd_set_nonblocking(fd[1]);
 	signal_fd = fd[1];
 
 	slurm_rwlock_unlock(&lock);
