@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
     loose step accounting.
  -- Fix minor memory leaks.
  -- Fix bad memory reference when xstrchr fails to find char.
+ -- Remove duplicate checks for a data structure.
 
 * Changes in Slurm 24.11.0rc2
 =============================

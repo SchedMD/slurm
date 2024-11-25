@@ -2595,7 +2595,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 	if (job_ptr->resize_time) {
 		req.eligible_time = job_ptr->resize_time;
 		req.submit_time   = job_ptr->details->submit_time;
-	} else if (job_ptr->details) {
+	} else {
 		req.eligible_time = job_ptr->details->begin_time;
 		req.submit_time   = job_ptr->details->submit_time;
 	}
@@ -2651,22 +2651,21 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 	else
 		req.partition = job_ptr->partition;
 
-	if (job_ptr->details) {
-		req.req_cpus = job_ptr->details->min_cpus;
-		req.req_mem = job_ptr->details->pn_min_memory;
-		if (!(slurm_conf.conf_flags & CONF_FLAG_NO_STDIO)) {
-			req.std_err = job_ptr->details->std_err;
-			req.std_in = job_ptr->details->std_in;
-			_fill_stdout_str(&req, job_ptr);
-		}
-		req.submit_line = job_ptr->details->submit_line;
-		/* Only send this once per instance of the job! */
-		if (!IS_JOB_IN_DB(job_ptr)) {
-			req.env_hash = job_ptr->details->env_hash;
-			req.script_hash = job_ptr->details->script_hash;
-		}
-		req.qos_req = job_ptr->details->qos_req;
+	req.req_cpus = job_ptr->details->min_cpus;
+	req.req_mem = job_ptr->details->pn_min_memory;
+	if (!(slurm_conf.conf_flags & CONF_FLAG_NO_STDIO)) {
+		req.std_err = job_ptr->details->std_err;
+		req.std_in = job_ptr->details->std_in;
+		_fill_stdout_str(&req, job_ptr);
 	}
+	req.submit_line = job_ptr->details->submit_line;
+	/* Only send this once per instance of the job! */
+	if (!IS_JOB_IN_DB(job_ptr)) {
+		req.env_hash = job_ptr->details->env_hash;
+		req.script_hash = job_ptr->details->script_hash;
+	}
+	req.qos_req = job_ptr->details->qos_req;
+
 	req.restart_cnt = job_ptr->restart_cnt;
 	req.resv_id = job_ptr->resv_id;
 	req.priority = job_ptr->priority;
