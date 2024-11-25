@@ -1449,8 +1449,10 @@ Local node and system id making the resource allocation.
 
 .TP
 \fBBatchFlag\fR
-Jobs submitted using the sbatch command have BatchFlag set to 1.
-Jobs submitted using other commands have BatchFlag set to 0.
+Jobs submitted using the sbatch command have BatchFlag set to 1. The BatchFlag
+will be incremented past 1 if the job is requeued due to a failure. Jobs
+submitted using other commands have BatchFlag set to 0 and will not be
+incremented.
 .IP
 
 .TP
