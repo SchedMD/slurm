@@ -1,6 +1,9 @@
 Name:		slurm
 Version:	24.11.0
 %define rel	0rc3
+%if %{defined patch} && %{undefined extraver}
+%define extraver .patched
+%endif
 Release:	%{rel}%{?extraver}%{?dist}
 Summary:	Slurm Workload Manager
 
