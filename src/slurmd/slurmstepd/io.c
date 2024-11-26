@@ -990,10 +990,12 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 		/* open file on task's stdin */
 		debug5("  stdin file name = %s", task->ifname);
 		do {
-			task->stdin_fd = open(task->ifname, (O_RDONLY |
-							     O_CLOEXEC));
+			if ((task->stdin_fd = open(task->ifname,
+						   (O_RDONLY | O_CLOEXEC)))
+									!= -1)
+				break;
 			++count;
-		} while (task->stdin_fd == -1 && errno == EINTR && count < 10);
+		} while (errno == EINTR && count < 10);
 		if (task->stdin_fd == -1) {
 			error("Could not open stdin file %s: %m", task->ifname);
 			return SLURM_ERROR;
@@ -1048,14 +1050,16 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 		/* open file on task's stdout */
 		debug5("  stdout file name = %s", task->ofname);
 		do {
-			task->stdout_fd = open(task->ofname,
-					       file_flags | O_CLOEXEC, 0666);
-			if ((task->stdout_fd == -1) && (errno == ENOENT)) {
+			if ((task->stdout_fd = open(task->ofname,
+						    file_flags | O_CLOEXEC,
+						    0666)) != -1)
+				break;
+			if (errno == ENOENT) {
 				mkdirpath(task->ofname, 0755, false);
 				errno = EINTR;
 			}
 			++count;
-		} while (task->stdout_fd == -1 && errno == EINTR && count < 10);
+		} while (errno == EINTR && count < 10);
 		if (task->stdout_fd == -1) {
 			error("Could not open stdout file %s: %m",
 			      task->ofname);
@@ -1147,14 +1151,16 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 		/* open file on task's stdout */
 		debug5("  stderr file name = %s", task->efname);
 		do {
-			task->stderr_fd = open(task->efname,
-					       file_flags | O_CLOEXEC, 0666);
-			if ((task->stderr_fd == -1) && (errno == ENOENT)) {
+			if ((task->stderr_fd = open(task->efname,
+						    file_flags | O_CLOEXEC,
+						    0666)) != -1)
+				break;
+			if (errno == ENOENT) {
 				mkdirpath(task->efname, 0755, false);
 				errno = EINTR;
 			}
 			++count;
-		} while (task->stderr_fd == -1 && errno == EINTR && count < 10);
+		} while (errno == EINTR && count < 10);
 		if (task->stderr_fd == -1) {
 			error("Could not open stderr file %s: %m",
 			      task->efname);
