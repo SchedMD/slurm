@@ -845,6 +845,10 @@ int main(int argc, char **argv)
 			listeners.standby_mode = true;
 			slurm_mutex_unlock(&listeners.mutex);
 
+			/*
+			 * run_backup() will never return unless it is time for
+			 * standby to take control as backup controller
+			 */
 			run_backup();
 
 			slurm_mutex_lock(&listeners.mutex);
