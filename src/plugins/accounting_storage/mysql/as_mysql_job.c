@@ -513,8 +513,6 @@ no_rollup_change:
 							submit_time,
 							job_ptr->job_id)))
 			job_record_set_sluid(job_ptr);
-		else
-			job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
 	}
 
 	if (!IS_JOB_IN_DB(job_ptr)) {
