@@ -33,6 +33,9 @@ documents those changes that are of interest to users and administrators.
     POSIX signal being ignored or an abort().
  -- slurmctld - Remove assertion in development builds that would trigger if
     an outdated client attempted to connect.
+ -- slurmd - Wait for PrologEpilogTimeout on reconfigure for prologs to finish.
+    This avoids a situation where the slurmd never detects that the prolog
+    completed.
 
 * Changes in Slurm 24.11.0rc2
 =============================
