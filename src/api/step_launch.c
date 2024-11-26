@@ -202,6 +202,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	int rc = SLURM_SUCCESS;
 	bool preserve_env = params->preserve_env;
 	uint32_t mpi_plugin_id;
+	char *io_key = NULL;
 
 	debug("Entering %s", __func__);
 	memset(&launch, 0, sizeof(launch));
@@ -211,6 +212,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		errno = EINVAL;
 		return SLURM_ERROR;
 	}
+
+	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
 
 	/* Initialize the callback pointers */
 	if (callbacks != NULL) {
@@ -366,8 +369,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	ctx->launch_state->io =
 		client_io_handler_create(params->local_fds,
 					 ctx->step_req->num_tasks,
-					 launch.nnodes,
-					 ctx->step_resp->cred,
+					 launch.nnodes, io_key,
 					 params->labelio,
 					 params->het_job_offset,
 					 params->het_job_task_offset);
@@ -407,6 +409,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	xfree(launch.io_port);
 
 fail1:
+	xfree(io_key);
 	xfree(launch.complete_nodelist);
 	xfree(launch.cwd);
 	xfree(launch.stepmgr);
@@ -436,6 +439,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	uint16_t resp_port = 0;
 	bool preserve_env = params->preserve_env;
 	uint32_t mpi_plugin_id;
+	char *io_key = NULL;
 
 	debug("Entering %s", __func__);
 
@@ -444,6 +448,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 		errno = EINVAL;
 		return SLURM_ERROR;
 	}
+
+	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
 
 	mpi_plugin_id = mpi_g_client_init((char **)&params->mpi_plugin_name);
 	if (!mpi_plugin_id) {
@@ -550,8 +556,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	ctx->launch_state->io =
 		client_io_handler_create(params->local_fds,
 					 ctx->step_req->num_tasks,
-					 launch.nnodes,
-					 ctx->step_resp->cred,
+					 launch.nnodes, io_key,
 					 params->labelio,
 					 params->het_job_offset,
 					 params->het_job_task_offset);
@@ -592,6 +597,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 
 fail1:
 	/* clean up */
+	xfree(io_key);
 	xfree(launch.resp_port);
 	xfree(launch.io_port);
 

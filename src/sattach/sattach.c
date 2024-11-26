@@ -124,6 +124,7 @@ int sattach(int argc, char **argv)
 	uint32_t jobid, stepid;
 	client_io_t *io;
 	char *hosts;
+	char *io_key = NULL;
 
 	slurm_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
@@ -178,11 +179,13 @@ int sattach(int argc, char **argv)
 		hosts = layout->node_list;
 	fake_cred = _generate_fake_cred(opt.selected_step->step_id,
 					opt.uid, hosts, layout->node_cnt);
+	io_key = slurm_cred_get_signature(fake_cred);
 	mts = _msg_thr_create(layout->node_cnt, layout->task_cnt);
 
 	io = client_io_handler_create(opt.fds, layout->task_cnt,
-				      layout->node_cnt, fake_cred,
+				      layout->node_cnt, io_key,
 				      opt.labelio, NO_VAL, NO_VAL);
+	xfree(io_key);
 	client_io_handler_start(io);
 
 	if (opt.pty) {
