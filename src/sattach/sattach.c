@@ -53,7 +53,6 @@
 #include "src/common/net.h"
 #include "src/common/read_config.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/cred.h"
 #include "src/interfaces/switch.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -137,10 +136,6 @@ int sattach(int argc, char **argv)
 		log_alter(logopt, 0, NULL);
 	}
 
-	if (cred_g_init() != SLURM_SUCCESS) {
-		error("failed to initialize cred plugin");
-		exit(error_exit);
-	}
 	if (switch_g_init(false) != SLURM_SUCCESS)
 		fatal("failed to initialize switch plugin");
 
