@@ -69,9 +69,7 @@ static void _mpir_cleanup(void);
 static void _mpir_dump_proctable(void);
 static void _pty_restore(void);
 static void print_layout_info(slurm_step_layout_t *layout);
-static slurm_cred_t *_generate_fake_cred(slurm_step_id_t stepid,
-					uid_t uid, char *nodelist,
-					uint32_t node_cnt);
+static char *_generate_io_key(void);
 static uint32_t _nodeid_from_layout(slurm_step_layout_t *layout,
 				    uint32_t taskid);
 static void _set_exit_code(void);
@@ -119,11 +117,9 @@ int sattach(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	slurm_step_layout_t *layout;
-	slurm_cred_t *fake_cred;
 	message_thread_state_t *mts;
 	uint32_t jobid, stepid;
 	client_io_t *io;
-	char *hosts;
 	char *io_key = NULL;
 
 	slurm_init(NULL);
@@ -173,13 +169,7 @@ int sattach(int argc, char **argv)
 			_nodeid_from_layout(layout, opt.fds.input.taskid);
 	}
 
-	if (layout->front_end)
-		hosts = layout->front_end;
-	else
-		hosts = layout->node_list;
-	fake_cred = _generate_fake_cred(opt.selected_step->step_id,
-					opt.uid, hosts, layout->node_cnt);
-	io_key = slurm_cred_get_signature(fake_cred);
+	io_key = _generate_io_key();
 	mts = _msg_thr_create(layout->node_cnt, layout->task_cnt);
 
 	io = client_io_handler_create(opt.fds, layout->task_cnt,
@@ -284,44 +274,22 @@ static void print_layout_info(slurm_step_layout_t *layout)
 	hostlist_destroy(nl);
 }
 
-
-/* return a faked job credential */
-static slurm_cred_t *_generate_fake_cred(slurm_step_id_t stepid,
-					uid_t uid, char *nodelist,
-					uint32_t node_cnt)
+/*
+ * The io_key requires a modest amount of entropy to prevent someone guessing
+ * it, then racing to initiate a connection to the sattach command.
+ * By (ab)using the auth token generation mechanisms, the key should be
+ * sufficiently random for our purposes. (An attacker would need to request
+ * an auth key be generated at the same time by the same uid on the same host.)
+ */
+static char *_generate_io_key(void)
 {
-	slurm_cred_t *cred;
-	slurm_cred_arg_t *arg = xmalloc(sizeof(*arg));
+	char *key = auth_g_create(AUTH_DEFAULT_INDEX, slurm_conf.authinfo,
+				  0, NULL, 0);
 
-	arg->step_id.job_id = stepid.job_id;
-	arg->step_id.step_id = stepid.step_id;
-	arg->step_id.step_het_comp = stepid.step_het_comp;
-	arg->uid = uid;
+	if (!key)
+		fatal("failed to generate a suitable io_key");
 
-	arg->job_hostlist = nodelist;
-	arg->job_nhosts = node_cnt;
-
-	arg->step_hostlist = nodelist;
-
-	arg->job_core_bitmap = bit_alloc(node_cnt);
-	bit_set_all(arg->job_core_bitmap);
-	arg->step_core_bitmap = bit_alloc(node_cnt);
-	bit_set_all(arg->step_core_bitmap);
-
-	arg->cores_per_socket = xmalloc(sizeof(uint16_t));
-	arg->cores_per_socket[0] = 1;
-	arg->sockets_per_node = xmalloc(sizeof(uint16_t));
-	arg->sockets_per_node[0] = 1;
-	arg->sock_core_rep_count = xmalloc(sizeof(uint32_t));
-	arg->sock_core_rep_count[0] = node_cnt;
-
-	cred = slurm_cred_faker(arg);
-
-	/* Don't free, this memory will be free'd later */
-	arg->job_hostlist = NULL;
-	arg->step_hostlist = NULL;
-	slurm_cred_free_args(arg);
-	return cred;
+	return key;
 }
 
 void _handle_response_msg(slurm_msg_type_t msg_type, void *msg,
