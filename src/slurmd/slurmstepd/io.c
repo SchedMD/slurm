@@ -1055,7 +1055,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 	    (((step->flags & LAUNCH_LABEL_IO) == 0) ||
 	     xstrcmp(task->ofname, "/dev/null") == 0)) {
 #endif
-		int count = 0;
+		int count = 0, mkdir_rc;
 		/* open file on task's stdout */
 		debug5("  stdout file name = %s", task->ofname);
 		do {
@@ -1071,8 +1071,11 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 			}
 
 			if (errno == ENOENT) {
-				mkdirpath(task->ofname, 0755, false);
-				continue;
+				mkdir_rc = mkdirpath(task->ofname, 0755, false);
+				if (mkdir_rc == SLURM_SUCCESS)
+					continue;
+				else
+					return SLURM_ERROR;
 			}
 
 			/* Non-"retryable" errors. */
@@ -1166,7 +1169,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 	    (((step->flags & LAUNCH_LABEL_IO) == 0) ||
 	     (xstrcmp(task->efname, "/dev/null") == 0))) {
 #endif
-		int count = 0;
+		int count = 0, mkdir_rc;
 		/* open file on task's stdout */
 		debug5("  stderr file name = %s", task->efname);
 		do {
@@ -1182,8 +1185,11 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 			}
 
 			if (errno == ENOENT) {
-				mkdirpath(task->efname, 0755, false);
-				continue;
+				mkdir_rc = mkdirpath(task->efname, 0755, false);
+				if (mkdir_rc == SLURM_SUCCESS)
+					continue;
+				else
+					return SLURM_ERROR;
 			}
 
 			/* Non-"retryable" errors. */
