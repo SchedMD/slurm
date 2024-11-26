@@ -1001,8 +1001,10 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 				continue;
 			}
 
-			++count;
-		} while (errno == EINTR && count < 10);
+			/* Non-"retryable" errors. */
+			break;
+
+		} while (count < 10);
 		if (task->stdin_fd == -1) {
 			error("Could not open stdin file %s: %m", task->ifname);
 			return SLURM_ERROR;
@@ -1070,10 +1072,14 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 
 			if (errno == ENOENT) {
 				mkdirpath(task->ofname, 0755, false);
-				errno = EINTR;
+				++count;
+				continue;
 			}
-			++count;
-		} while (errno == EINTR && count < 10);
+
+			/* Non-"retryable" errors. */
+			break;
+
+		} while (count < 10);
 		if (task->stdout_fd == -1) {
 			error("Could not open stdout file %s: %m",
 			      task->ofname);
@@ -1178,10 +1184,14 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 
 			if (errno == ENOENT) {
 				mkdirpath(task->efname, 0755, false);
-				errno = EINTR;
+				++count;
+				continue;
 			}
-			++count;
-		} while (errno == EINTR && count < 10);
+
+			/* Non-"retryable" errors. */
+			break;
+
+		} while (count < 10);
 		if (task->stderr_fd == -1) {
 			error("Could not open stderr file %s: %m",
 			      task->efname);
