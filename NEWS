@@ -349,6 +349,7 @@ documents those changes that are of interest to users and administrators.
     SlurmdSpoolDir files that have been upgraded to a newer major version of
     Slurm. Log warnings instead.
  -- Fix race condition in stepmgr step completion handling.
+ -- Fix slurmctld segfault with stepmgr and MpiParams when running a job array.
 
 * Changes in Slurm 24.05.4
 ==========================
