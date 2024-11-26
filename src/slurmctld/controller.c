@@ -370,9 +370,15 @@ static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	bool standby_mode;
+
 	info("Reconfigure signal (SIGHUP) received");
 
-	if (!slurmctld_primary) {
+	slurm_mutex_lock(&listeners.mutex);
+	standby_mode = listeners.standby_mode;
+	slurm_mutex_unlock(&listeners.mutex);
+
+	if (standby_mode) {
 		backup_on_sighup();
 		return;
 	}
