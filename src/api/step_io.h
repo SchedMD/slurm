@@ -96,16 +96,8 @@ typedef struct {
 				       I/O problem.  */
 } client_io_t;
 
-/*
- * IN cred - cred need not be a real job credential, it may be a "fake"
- *	credential generated with slurm_cred_faker().  The credential is
- *	sent to the slurmstepd (via the slurmd) which generates a signature
- *	string from the credential.  The slurmstepd sends the signature back
- *	back to the client when it establishes the IO connection as a sort
- *	of validity check.
- */
 client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
-				      int num_nodes, slurm_cred_t *cred,
+				      int num_nodes, char *io_key,
 				      bool label, uint32_t het_job_offset,
 				      uint32_t het_job_task_offset);
 

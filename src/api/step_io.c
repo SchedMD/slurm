@@ -57,6 +57,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/xstring.h"
 
 #include "src/interfaces/cred.h"
 
@@ -1072,7 +1073,7 @@ _estimate_nports(int nclients, int cli_per_port)
 }
 
 client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
-				      int num_nodes, slurm_cred_t *cred,
+				      int num_nodes, char *io_key,
 				      bool label, uint32_t het_job_offset,
 				      uint32_t het_job_task_offset)
 {
@@ -1091,7 +1092,7 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 	else
 		cio->taskid_width = 0;
 
-	cio->io_key = slurm_cred_get_signature(cred);
+	cio->io_key = xstrdup(io_key);
 
 	cio->eio = eio_handle_create(slurm_conf.eio_timeout);
 
