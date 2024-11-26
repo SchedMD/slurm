@@ -1050,7 +1050,8 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 		do {
 			task->stdout_fd = open(task->ofname,
 					       file_flags | O_CLOEXEC, 0666);
-			if (!count && (errno == ENOENT)) {
+			if (!count && (task->stdout_fd == -1) &&
+			    (errno == ENOENT)) {
 				mkdirpath(task->ofname, 0755, false);
 				errno = EINTR;
 			}
@@ -1149,7 +1150,8 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 		do {
 			task->stderr_fd = open(task->efname,
 					       file_flags | O_CLOEXEC, 0666);
-			if (!count && (errno == ENOENT)) {
+			if (!count && (task->stderr_fd == -1) &&
+			    (errno == ENOENT)) {
 				mkdirpath(task->efname, 0755, false);
 				errno = EINTR;
 			}
