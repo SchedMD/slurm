@@ -78,7 +78,11 @@ job or any given plugin).</li>
 
 <h2 id="prereq">Prerequisites<a class="slurm_link" href="#prereq"></a></h2>
 <p>The host kernel must be configured to allow user land containers:</p>
-<pre>$ sudo sysctl -w kernel.unprivileged_userns_clone=1</pre>
+<pre>
+sudo sysctl -w kernel.unprivileged_userns_clone=1
+sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0
+sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+</pre>
 
 <p>Docker also provides a tool to verify the kernel configuration:
 <pre>$ dockerd-rootless-setuptool.sh check --force
