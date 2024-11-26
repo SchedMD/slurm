@@ -200,6 +200,8 @@ int sattach(int argc, char **argv)
 	client_io_handler_destroy(io);
 	_mpir_cleanup();
 	xfree(io_key);
+	log_fini();
+	slurm_fini();
 
 	return global_rc;
 }
