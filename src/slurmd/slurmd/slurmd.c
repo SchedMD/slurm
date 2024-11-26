@@ -765,12 +765,12 @@ cleanup:
 
 	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));
 
-	_decrement_thd_count();
-
 	slurm_free_msg(msg);
 
 	args->magic = ~SERVICE_CONNECTION_ARGS_MAGIC;
 	xfree(args);
+
+	_decrement_thd_count();
 	return NULL;
 }
 
