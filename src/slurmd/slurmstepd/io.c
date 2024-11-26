@@ -994,6 +994,13 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 						   (O_RDONLY | O_CLOEXEC)))
 									!= -1)
 				break;
+
+			/* "Retry-able" errors. */
+			if (errno == EINTR) {
+				count++;
+				continue;
+			}
+
 			++count;
 		} while (errno == EINTR && count < 10);
 		if (task->stdin_fd == -1) {
@@ -1054,6 +1061,13 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 						    file_flags | O_CLOEXEC,
 						    0666)) != -1)
 				break;
+
+			/* "Retry-able" errors. */
+			if (errno == EINTR) {
+				count++;
+				continue;
+			}
+
 			if (errno == ENOENT) {
 				mkdirpath(task->ofname, 0755, false);
 				errno = EINTR;
@@ -1155,6 +1169,13 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 						    file_flags | O_CLOEXEC,
 						    0666)) != -1)
 				break;
+
+			/* "Retry-able" errors. */
+			if (errno == EINTR) {
+				count++;
+				continue;
+			}
+
 			if (errno == ENOENT) {
 				mkdirpath(task->efname, 0755, false);
 				errno = EINTR;
