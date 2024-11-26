@@ -77,7 +77,7 @@ static uint32_t _nodeid_from_layout(slurm_step_layout_t *layout,
 static void _set_exit_code(void);
 static int _attach_to_tasks(slurm_step_id_t stepid,
 			    slurm_step_layout_t *layout,
-			    slurm_cred_t *fake_cred,
+			    char *io_key,
 			    uint16_t num_resp_ports,
 			    uint16_t *resp_ports,
 			    int num_io_ports,
@@ -185,7 +185,6 @@ int sattach(int argc, char **argv)
 	io = client_io_handler_create(opt.fds, layout->task_cnt,
 				      layout->node_cnt, io_key,
 				      opt.labelio, NO_VAL, NO_VAL);
-	xfree(io_key);
 	client_io_handler_start(io);
 
 	if (opt.pty) {
@@ -203,7 +202,7 @@ int sattach(int argc, char **argv)
 		xsignal_block(pty_sigarray);
 	}
 
-	_attach_to_tasks(opt.selected_step->step_id, layout, fake_cred,
+	_attach_to_tasks(opt.selected_step->step_id, layout, io_key,
 			 mts->num_resp_port, mts->resp_port,
 			 io->num_listen, io->listenport,
 			 mts->tasks_started);
@@ -219,6 +218,7 @@ int sattach(int argc, char **argv)
 	client_io_handler_finish(io);
 	client_io_handler_destroy(io);
 	_mpir_cleanup();
+	xfree(io_key);
 
 	return global_rc;
 }
@@ -390,7 +390,7 @@ void _handle_response_msg_list(list_t *other_nodes_resp,
  */
 static int _attach_to_tasks(slurm_step_id_t stepid,
 			    slurm_step_layout_t *layout,
-			    slurm_cred_t *fake_cred,
+			    char *io_key,
 			    uint16_t num_resp_ports,
 			    uint16_t *resp_ports,
 			    int num_io_ports,
@@ -409,7 +409,7 @@ static int _attach_to_tasks(slurm_step_id_t stepid,
 	reattach_msg.num_resp_port = num_resp_ports;
 	reattach_msg.resp_port = resp_ports; /* array of response ports */
 	reattach_msg.num_io_port = num_io_ports;
-	reattach_msg.io_key = slurm_cred_get_signature(fake_cred);
+	reattach_msg.io_key = xstrdup(io_key);
 	reattach_msg.io_port = io_ports;
 
 	slurm_msg_set_r_uid(&msg, SLURM_AUTH_UID_ANY);
