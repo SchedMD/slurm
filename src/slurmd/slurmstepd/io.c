@@ -1072,7 +1072,6 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 
 			if (errno == ENOENT) {
 				mkdirpath(task->ofname, 0755, false);
-				++count;
 				continue;
 			}
 
@@ -1184,7 +1183,6 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 
 			if (errno == ENOENT) {
 				mkdirpath(task->efname, 0755, false);
-				++count;
 				continue;
 			}
 
