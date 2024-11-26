@@ -27,17 +27,17 @@
 #ifndef _HAVE_STEP_IO_H
 #define _HAVE_STEP_IO_H
 
-#include <stdint.h>
 #include <pthread.h>
+#include <stdint.h>
 
 #include "slurm/slurm.h"
 
+#include "src/common/bitstring.h"
 #include "src/common/eio.h"
 #include "src/common/list.h"
-#include "src/common/bitstring.h"
 #include "src/common/slurm_step_layout.h"
-struct step_launch_state;
 
+struct step_launch_state;
 
 typedef struct {
 	/* input parameters - set (indirectly) by user */
