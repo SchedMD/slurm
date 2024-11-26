@@ -48,8 +48,8 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -58,6 +58,9 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+
+#include "src/api/pmi_server.h"
+#include "src/api/step_launch.h"
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/eio.h"
@@ -68,9 +71,6 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/auth.h"
-#include "src/interfaces/cred.h"
-#include "src/interfaces/mpi.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
@@ -80,8 +80,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/api/step_launch.h"
-#include "src/api/pmi_server.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/cred.h"
+#include "src/interfaces/mpi.h"
 
 #include "src/srun/step_ctx.h"
 

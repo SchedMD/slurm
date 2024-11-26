@@ -39,25 +39,26 @@
 #include <string.h>
 #include <time.h>
 
+#include "src/api/step_io.h"
+#include "src/api/step_launch.h"
+
+#include "src/common/eio.h"
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
+#include "src/common/io_hdr.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
-#include "src/interfaces/cred.h"
+#include "src/common/write_labelled_message.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
-#include "src/common/eio.h"
-#include "src/common/io_hdr.h"
-#include "src/common/net.h"
-#include "src/common/write_labelled_message.h"
 
-#include "src/api/step_io.h"
-#include "src/api/step_launch.h"
+#include "src/interfaces/cred.h"
 
 #define STDIO_MAX_FREE_BUF 1024
 
