@@ -345,6 +345,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmd - Avoid a crash when starting slurmd version 24.05 with
     SlurmdSpoolDir files that have been upgraded to a newer major version of
     Slurm. Log warnings instead.
+ -- Fix race condition in stepmgr step completion handling.
 
 * Changes in Slurm 24.05.4
 ==========================
