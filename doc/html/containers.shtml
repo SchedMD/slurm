@@ -514,13 +514,14 @@ scrun being isolated from the network and not being able to communicate with
 the Slurm controller. The container is run by Slurm on the compute nodes which
 makes having Docker setup a network isolation layer ineffective for the
 container.</li>
-<li><pre>docker exec</pre> command is not supported.</li>
-<li><pre>docker swarm</pre> command is not supported.</li>
-<li><pre>docker compose</pre>/<pre>docker-compose</pre> command is not supported.</li>
-<li><pre>docker pause</pre> command is not supported.</li>
-<li><pre>docker unpause</pre> command is not supported.</li>
-<li><pre>docker swarm</pre> command is not supported.</li>
-<li>All <pre>docker</pre> commands are not supported inside of containers.</li>
+<li><code>docker exec</code> command is not supported.</li>
+<li><code>docker swarm</code> command is not supported.</li>
+<li><code>docker compose</code>/<code>docker-compose</code> command is not
+	supported.</li>
+<li><code>docker pause</code> command is not supported.</li>
+<li><code>docker unpause</code> command is not supported.</li>
+<li><code>docker swarm</code> command is not supported.</li>
+<li>All <code>docker</code> commands are not supported inside of containers.</li>
 <li><a href="https://docs.docker.com/reference/api/engine/">Docker API</a> is
 	not supported inside of containers.</li>
 </ol>
@@ -640,15 +641,15 @@ configuration.</li>
 <li>All containers must use
 <a href="https://github.com/containers/podman/blob/main/docs/tutorials/basic_networking.md">
 host networking</a></li>
-<li><pre>podman exec</pre> command is not supported.</li>
-<li><pre>podman-compose</pre> command is not supported, due to only being
+<li><code>podman exec</code> command is not supported.</li>
+<li><code>podman-compose</code> command is not supported, due to only being
 	partially implemented. Some compositions may work but each container
 	may be run on different nodes. The network for all containers must be
 	the <code>network_mode: host</code> device.</li>
-<li><pre>podman kube</pre> command is not supported.</li>
-<li><pre>podman pod</pre> command is not supported.</li>
-<li><pre>podman farm</pre> command is not supported.</li>
-<li>All <pre>podman</pre> commands are not supported inside of containers.</li>
+<li><code>podman kube</code> command is not supported.</li>
+<li><code>podman pod</code> command is not supported.</li>
+<li><code>podman farm</code> command is not supported.</li>
+<li>All <code>podman</code> commands are not supported inside of containers.</li>
 <li>Podman REST API is not supported inside of containers.</li>
 </ol>
 
@@ -942,6 +943,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 19 November 2024</p>
+<p style="text-align:center;">Last modified 27 November 2024</p>
 
 <!--#include virtual="footer.txt"-->
