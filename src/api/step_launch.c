@@ -213,8 +213,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		return SLURM_ERROR;
 	}
 
-	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
-
 	/* Initialize the callback pointers */
 	if (callbacks != NULL) {
 		/* copy the user specified callback pointers */
@@ -366,6 +364,9 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		launch.flags |= LAUNCH_BUFFERED_IO;
 	if (params->labelio)
 		launch.flags |= LAUNCH_LABEL_IO;
+
+	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
+
 	ctx->launch_state->io =
 		client_io_handler_create(params->local_fds,
 					 ctx->step_req->num_tasks,
@@ -448,8 +449,6 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 		errno = EINVAL;
 		return SLURM_ERROR;
 	}
-
-	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
 
 	mpi_plugin_id = mpi_g_client_init((char **)&params->mpi_plugin_name);
 	if (!mpi_plugin_id) {
@@ -553,6 +552,9 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 		launch.flags	|= LAUNCH_BUFFERED_IO;
 	if (params->labelio)
 		launch.flags	|= LAUNCH_LABEL_IO;
+
+	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
+
 	ctx->launch_state->io =
 		client_io_handler_create(params->local_fds,
 					 ctx->step_req->num_tasks,
