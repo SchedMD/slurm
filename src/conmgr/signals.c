@@ -369,3 +369,45 @@ extern bool is_signal_connection(conmgr_fd_t *con)
 
 	return match;
 }
+
+extern bool signal_mgr_has_incoming(void)
+{
+	bool has_data = false;
+
+	slurm_rwlock_rdlock(&lock);
+
+	if (signal_con) {
+		if (signal_con->input_fd >= 0) {
+			int readable = -1;
+
+			/*
+			 * Force (blocking) check of signal_fd since poll() may
+			 * have not run yet but need to make sure to catch any
+			 * pending data if possible.
+			 *
+			 * Ignore failure of FIONREAD here as we only care if
+			 * there is pending data
+			 */
+			(void) fd_get_readable_bytes(signal_con->input_fd,
+						     &readable,
+						     signal_con->name);
+
+			if (readable > 0)
+				has_data = true;
+		}
+
+		if (!has_data)
+			has_data =
+				con_flag(signal_con, FLAG_CAN_READ) ||
+				(signal_con->in &&
+				 get_buf_offset(signal_con->in)) ||
+				(signal_con->work &&
+				 !list_is_empty(signal_con->work)) ||
+				(signal_con->write_complete_work &&
+				 !list_is_empty(signal_con->write_complete_work));
+	}
+
+	slurm_rwlock_unlock(&lock);
+
+	return has_data;
+}

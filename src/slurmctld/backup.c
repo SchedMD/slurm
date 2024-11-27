@@ -273,8 +273,8 @@ void run_backup(void)
 	trigger_primary_ctld_fail();
 	trigger_backup_ctld_as_ctrl();
 
-	conmgr_quiesce(__func__);
 	pthread_kill(pthread_self(), SIGTERM);
+	conmgr_quiesce(__func__);
 
 	/*
 	 * Expressly shutdown the agent. The agent can in whole or in part

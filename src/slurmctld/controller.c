@@ -370,9 +370,15 @@ static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	bool standby_mode;
+
 	info("Reconfigure signal (SIGHUP) received");
 
-	if (!slurmctld_primary) {
+	slurm_mutex_lock(&listeners.mutex);
+	standby_mode = listeners.standby_mode;
+	slurm_mutex_unlock(&listeners.mutex);
+
+	if (standby_mode) {
 		backup_on_sighup();
 		return;
 	}
@@ -840,7 +846,21 @@ int main(int argc, char **argv)
 				fatal("failed to initialize accounting_storage plugin");
 			if (bb_g_init() != SLURM_SUCCESS)
 				fatal("failed to initialize burst buffer plugin");
+
+			slurm_mutex_lock(&listeners.mutex);
+			listeners.standby_mode = true;
+			slurm_mutex_unlock(&listeners.mutex);
+
+			/*
+			 * run_backup() will never return unless it is time for
+			 * standby to take control as backup controller
+			 */
 			run_backup();
+
+			slurm_mutex_lock(&listeners.mutex);
+			listeners.standby_mode = false;
+			slurm_mutex_unlock(&listeners.mutex);
+
 			(void) _shutdown_backup_controller();
 		} else {
 			if (acct_storage_g_init() != SLURM_SUCCESS)
