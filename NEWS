@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix 24.11 HA issues.
  -- Fix requeued jobs keeping their priority until the decay thread happens.
  -- Fix potential memory corruption in select/cons_tres plugin.
+ -- Avoid cache coherency issue on non-x86 platforms that could result in a
+    POSIX signal being ignored or an abort().
 
 * Changes in Slurm 24.11.0rc2
 =============================
