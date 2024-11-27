@@ -16402,6 +16402,10 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		}
 	}
 
+	/* Reset the priority (begin and accrue times were reset) */
+	if (job_ptr->priority != 0)
+		set_job_prio(job_ptr);
+
 	/*
 	 * If a reservation ended and was a repeated (e.g., daily, weekly)
 	 * reservation, its ID will be different; make sure
