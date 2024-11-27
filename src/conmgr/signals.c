@@ -69,7 +69,7 @@ static work_t **signal_work = NULL;
 static int signal_work_count = 0;
 
 /* interrupt handler (_signal_handler()) will send signal to this fd */
-static sig_atomic_t signal_fd = -1;
+static volatile sig_atomic_t signal_fd = -1;
 static conmgr_fd_t *signal_con = NULL;
 
 static void _signal_handler(int signo)
