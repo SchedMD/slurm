@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmd - Wait for PrologEpilogTimeout on reconfigure for prologs to finish.
     This avoids a situation where the slurmd never detects that the prolog
     completed.
+ -- job_container/tmpfs - Setup x11 forwarding within the namespace.
 
 * Changes in Slurm 24.11.0rc2
 =============================

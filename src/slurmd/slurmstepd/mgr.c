@@ -1214,12 +1214,25 @@ static int _set_xauthority(stepd_step_rec_t *step)
 		return SLURM_ERROR;
 	}
 
+	if (!xstrcasestr(slurm_conf.x11_params, "home_xauthority")) {
+		int fd;
+		/* protect against weak file permissions in old glibc */
+		umask(0077);
+		if ((fd = mkstemp(step->x11_xauthority)) == -1) {
+			error("%s: failed to create temporary XAUTHORITY file: %m",
+			      __func__);
+			rc = SLURM_ERROR;
+			goto endit;
+		}
+		close(fd);
+	}
+
 	if (x11_set_xauth(step->x11_xauthority, step->x11_magic_cookie,
 			  step->x11_display)) {
 		error("%s: failed to run xauth", __func__);
 		rc =  SLURM_ERROR;
 	}
-
+endit:
 	if (reclaim_privileges(&sprivs) < 0) {
 		error("%s: Unable to reclaim privileges after xauth", __func__);
 		return SLURM_ERROR;
@@ -1276,6 +1289,57 @@ static int _run_prolog_epilog(stepd_step_rec_t *step, bool is_epilog)
 	return rc;
 }
 
+static void _setup_x11_child(int to_parent[2], uint32_t jobid,
+			     stepd_step_rec_t *step)
+{
+	uint32_t len = 0;
+
+	if (container_g_join(jobid, step->uid) != SLURM_SUCCESS)
+		_exit(1);
+
+	if (_set_xauthority(step) != SLURM_SUCCESS)
+		_exit(1);
+
+	len = strlen(step->x11_xauthority);
+	safe_write(to_parent[1], &len, sizeof(len));
+	safe_write(to_parent[1], step->x11_xauthority, len);
+
+	_exit(0);
+
+rwfail:
+	error("%s: failed to write to parent: %m", __func__);
+	_exit(1);
+}
+
+static int _setup_x11_parent(int to_parent[2], pid_t pid, char **tmp)
+{
+	uint32_t len = 0;
+	int status = 0;
+
+	safe_read(to_parent[0], &len, sizeof(len));
+
+	if (len) {
+		*tmp = xcalloc(len, sizeof(char));
+		safe_read(to_parent[0], *tmp, len);
+	}
+
+	if ((waitpid(pid, &status, 0) != pid) || WEXITSTATUS(status)) {
+		error("%s: Xauthority setup failed", __func__);
+		xfree(*tmp);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+
+rwfail:
+	error("%s: failed to read from child: %m", __func__);
+	xfree(*tmp);
+	waitpid(pid, &status, 0);
+	debug2("%s: status from child %d", __func__, status);
+
+	return SLURM_ERROR;
+}
+
 static int _spawn_job_container(stepd_step_rec_t *step)
 {
 	jobacctinfo_t *jobacct = NULL;
@@ -1327,18 +1391,19 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 
 		conmgr_add_work_signal(SIGTERM, _x11_signal_handler, step);
 
-		debug("x11 forwarding local display is %d", step->x11_display);
-		debug("x11 forwarding local xauthority is %s",
-		      step->x11_xauthority);
-	}
-
-	/*
-	 * When using job_container/tmpfs we need to get into
-	 * the correct namespace or .Xauthority won't be visible
-	 * in /tmp from inside the job.
-	 */
-	if (step->x11) {
+		/*
+		 * When using job_container/tmpfs we need to get into
+		 * the correct namespace or .Xauthority won't be visible
+		 * in /tmp from inside the job.
+		 */
 		if (_need_join_container()) {
+			int to_parent[2] = {-1, -1};
+
+			if (pipe(to_parent) < 0) {
+				error("%s: pipe failed: %m", __func__);
+				rc = SLURM_ERROR;
+				goto x11_fail;
+			}
 			/*
 			 * The fork is necessary because we cannot join a
 			 * namespace if we are multithreaded. Also we need to
@@ -1348,28 +1413,33 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 			 */
 			pid = fork();
 			if (pid == 0) {
-				if (container_g_join(jobid, step->uid) !=
-				    SLURM_SUCCESS)
-					_exit(1);
-				_exit(_set_xauthority(step));
-			} else if (pid < 0) {
+				_setup_x11_child(to_parent, jobid, step);
+			} else if (pid > 0) {
+				char *tmp = NULL;
+				rc = _setup_x11_parent(to_parent, pid, &tmp);
+				if (tmp) {
+					xfree(step->x11_xauthority);
+					step->x11_xauthority = tmp;
+				}
+			} else {
 				error("fork: %m");
 				rc = SLURM_ERROR;
 			}
-			if ((waitpid(pid, &status, 0) != pid) ||
-			    WEXITSTATUS(status)) {
-				error("%s: Xauthority setup failed", __func__);
-				rc = SLURM_ERROR;
-			}
+			close(to_parent[0]);
+			close(to_parent[1]);
 		} else {
 			rc = _set_xauthority(step);
 		}
-
+x11_fail:
 		if (rc != SLURM_SUCCESS) {
 			set_job_state(step, SLURMSTEPD_STEP_ENDING);
 			close_slurmd_conn(rc);
 			goto fail1;
 		}
+
+		debug("x11 forwarding local display is %d", step->x11_display);
+		debug("x11 forwarding local xauthority is %s",
+		      step->x11_xauthority);
 	}
 
 	pid = fork();

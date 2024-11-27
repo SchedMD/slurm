@@ -246,19 +246,9 @@ extern int setup_x11_forward(stepd_step_rec_t *step)
 		xfree(home);
 	} else {
 		/* use a node-local XAUTHORITY file instead of ~/.Xauthority */
-		int fd;
 		local_xauthority = true;
 		step->x11_xauthority = slurm_get_tmp_fs(conf->node_name);
 		xstrcat(step->x11_xauthority, "/.Xauthority-XXXXXX");
-
-		/* protect against weak file permissions in old glibc */
-		umask(0077);
-		if ((fd = mkstemp(step->x11_xauthority)) == -1) {
-			error("%s: failed to create temporary XAUTHORITY file: %m",
-			      __func__);
-			goto shutdown;
-		}
-		close(fd);
 	}
 
 	/*
