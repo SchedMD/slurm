@@ -1327,10 +1327,6 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 
 		conmgr_add_work_signal(SIGTERM, _x11_signal_handler, step);
 
-		debug("x11 forwarding local display is %d", step->x11_display);
-		debug("x11 forwarding local xauthority is %s",
-		      step->x11_xauthority);
-
 		/*
 		 * When using job_container/tmpfs we need to get into
 		 * the correct namespace or .Xauthority won't be visible
@@ -1368,6 +1364,10 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 			close_slurmd_conn(rc);
 			goto fail1;
 		}
+
+		debug("x11 forwarding local display is %d", step->x11_display);
+		debug("x11 forwarding local xauthority is %s",
+		      step->x11_xauthority);
 	}
 
 	pid = fork();
