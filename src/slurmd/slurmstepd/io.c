@@ -999,6 +999,11 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 
 			/* "Retry-able" errors. */
 			if (errno == EINTR) {
+				debug("%s: Could not open stdin file '%s': '%m'. Attempt [%d/%d], retrying.",
+				      __func__,
+				      task->ifname,
+				      (count + 1),
+				      STDIO_FILE_RETRIES);
 				count++;
 				continue;
 			}
@@ -1069,6 +1074,11 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 
 			/* "Retry-able" errors. */
 			if (errno == EINTR) {
+				debug("%s: Could not open stdout file '%s': '%m'. Attempt [%d/%d], retrying.",
+				      __func__,
+				      task->ofname,
+				      (count + 1),
+				      STDIO_FILE_RETRIES);
 				count++;
 				continue;
 			}
@@ -1076,10 +1086,20 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 			if (errno == ENOENT && !tried_mkdir) {
 				mkdir_rc = mkdirpath(task->ofname, 0755, false);
 				tried_mkdir = true;
-				if (mkdir_rc == SLURM_SUCCESS)
+				if (mkdir_rc == SLURM_SUCCESS) {
+					debug("%s: Could not open stdout file '%s': '%s'. Retrying after successful path creation.",
+					      __func__,
+					      task->ofname,
+					      strerror(ENOENT));
 					continue;
-				else
+				} else {
+					error("%s: Could not open stdout file '%s': '%s'. Recursive path creation failed: '%s'.",
+					      __func__,
+					      task->ofname,
+					      strerror(ENOENT),
+					      strerror(mkdir_rc));
 					return SLURM_ERROR;
+				}
 			}
 
 			/* Non-"retryable" errors. */
@@ -1185,6 +1205,11 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 
 			/* "Retry-able" errors. */
 			if (errno == EINTR) {
+				debug("%s: Could not open stderr file '%s': '%m'. Attempt [%d/%d], retrying.",
+				      __func__,
+				      task->efname,
+				      (count + 1),
+				      STDIO_FILE_RETRIES);
 				count++;
 				continue;
 			}
@@ -1192,10 +1217,20 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 			if (errno == ENOENT && !tried_mkdir) {
 				mkdir_rc = mkdirpath(task->efname, 0755, false);
 				tried_mkdir = true;
-				if (mkdir_rc == SLURM_SUCCESS)
+				if (mkdir_rc == SLURM_SUCCESS) {
+					debug("%s: Could not open stderr file '%s': '%s'. Retrying after successful path creation.",
+					      __func__,
+					      task->efname,
+					      strerror(ENOENT));
 					continue;
-				else
+				} else {
+					error("%s: Could not open stderr file '%s': '%s'. Recursive path creation failed: '%s'.",
+					      __func__,
+					      task->efname,
+					      strerror(ENOENT),
+					      strerror(mkdir_rc));
 					return SLURM_ERROR;
+				}
 			}
 
 			/* Non-"retryable" errors. */
