@@ -84,6 +84,8 @@
 #define STDIO_MAX_FREE_BUF 1024
 #define STDIO_MAX_MSG_CACHE 128
 
+#define STDIO_FILE_RETRIES 10
+
 struct io_buf {
 	int ref_count;
 	uint32_t length;
@@ -1004,7 +1006,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 			/* Non-"retryable" errors. */
 			break;
 
-		} while (count < 10);
+		} while (count < STDIO_FILE_RETRIES);
 		if (task->stdin_fd == -1) {
 			error("Could not open stdin file %s: %m", task->ifname);
 			return SLURM_ERROR;
@@ -1083,7 +1085,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 			/* Non-"retryable" errors. */
 			break;
 
-		} while (count < 10);
+		} while (count < STDIO_FILE_RETRIES);
 		if (task->stdout_fd == -1) {
 			error("Could not open stdout file %s: %m",
 			      task->ofname);
@@ -1199,7 +1201,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 			/* Non-"retryable" errors. */
 			break;
 
-		} while (count < 10);
+		} while (count < STDIO_FILE_RETRIES);
 		if (task->stderr_fd == -1) {
 			error("Could not open stderr file %s: %m",
 			      task->efname);
