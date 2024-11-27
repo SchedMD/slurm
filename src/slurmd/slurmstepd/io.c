@@ -1056,6 +1056,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 	     xstrcmp(task->ofname, "/dev/null") == 0)) {
 #endif
 		int count = 0, mkdir_rc;
+		bool tried_mkdir = false;
 		/* open file on task's stdout */
 		debug5("  stdout file name = %s", task->ofname);
 		do {
@@ -1070,8 +1071,9 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 				continue;
 			}
 
-			if (errno == ENOENT) {
+			if (errno == ENOENT && !tried_mkdir) {
 				mkdir_rc = mkdirpath(task->ofname, 0755, false);
+				tried_mkdir = true;
 				if (mkdir_rc == SLURM_SUCCESS)
 					continue;
 				else
@@ -1170,6 +1172,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 	     (xstrcmp(task->efname, "/dev/null") == 0))) {
 #endif
 		int count = 0, mkdir_rc;
+		bool tried_mkdir = false;
 		/* open file on task's stdout */
 		debug5("  stderr file name = %s", task->efname);
 		do {
@@ -1184,8 +1187,9 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 				continue;
 			}
 
-			if (errno == ENOENT) {
+			if (errno == ENOENT && !tried_mkdir) {
 				mkdir_rc = mkdirpath(task->efname, 0755, false);
+				tried_mkdir = true;
 				if (mkdir_rc == SLURM_SUCCESS)
 					continue;
 				else
