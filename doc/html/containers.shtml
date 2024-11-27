@@ -515,10 +515,14 @@ the Slurm controller. The container is run by Slurm on the compute nodes which
 makes having Docker setup a network isolation layer ineffective for the
 container.</li>
 <li><pre>docker exec</pre> command is not supported.</li>
-<li><pre>docker compose</pre> command is not supported.</li>
+<li><pre>docker swarm</pre> command is not supported.</li>
+<li><pre>docker compose</pre>/<pre>docker-compose</pre> command is not supported.</li>
 <li><pre>docker pause</pre> command is not supported.</li>
 <li><pre>docker unpause</pre> command is not supported.</li>
 <li><pre>docker swarm</pre> command is not supported.</li>
+<li>All <pre>docker</pre> commands are not supported inside of containers.</li>
+<li><a href="https://docs.docker.com/reference/api/engine/">Docker API</a> is
+	not supported inside of containers.</li>
 </ol>
 
 <h3>Setup procedure</h3>
