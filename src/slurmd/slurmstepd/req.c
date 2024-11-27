@@ -603,8 +603,6 @@ static int _handle_job_step_get_info(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	(void) send_msg_response(&msg, RESPONSE_JOB_STEP_INFO, buffer);
 	FREE_NULL_BUFFER(buffer);
-
-	slurm_send_rc_msg(&msg, SLURM_SUCCESS);
 	slurm_free_msg_members(&msg);
 
 done:
@@ -746,9 +744,10 @@ static int _handle_step_layout(int fd, stepd_step_rec_t *step, uid_t uid)
 		(void) send_msg_response(&msg, RESPONSE_STEP_LAYOUT,
 					 step_layout);
 		slurm_step_layout_destroy(step_layout);
+	} else {
+		slurm_send_rc_msg(&msg, rc);
 	}
 
-	slurm_send_rc_msg(&msg, rc);
 	slurm_free_msg_members(&msg);
 
 done:
@@ -780,6 +779,8 @@ static int _handle_job_sbcast_cred(int fd, stepd_step_rec_t *step, uid_t uid)
 				 job_info_resp_msg);
 
 	slurm_free_sbcast_cred_msg(job_info_resp_msg);
+	slurm_free_msg_members(&msg);
+	return rc;
 
 resp:
 	slurm_send_rc_msg(&msg, rc);
@@ -828,6 +829,8 @@ static int _handle_het_job_alloc_info(int fd, stepd_step_rec_t *step, uid_t uid)
 	(void) send_msg_response(&msg, RESPONSE_HET_JOB_ALLOCATION, resp_list);
 
 	FREE_NULL_LIST(resp_list);
+	slurm_free_msg_members(&msg);
+	return rc;
 
 resp:
 	slurm_send_rc_msg(&msg, rc);
