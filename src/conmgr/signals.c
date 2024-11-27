@@ -234,7 +234,7 @@ static void *_on_connection(conmgr_fd_t *con, void *arg)
 
 	slurm_rwlock_unlock(&lock);
 
-	return &signal_fd;
+	return con;
 }
 
 static int _on_data(conmgr_fd_t *con, void *arg)
@@ -243,7 +243,7 @@ static int _on_data(conmgr_fd_t *con, void *arg)
 	size_t bytes = 0, read = 0;
 	int signo;
 
-	xassert(arg == &signal_fd);
+	xassert(arg == con);
 
 	conmgr_fd_get_in_buffer(con, &data, &bytes);
 
@@ -266,7 +266,7 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 {
 	int fd;
 
-	xassert(arg == &signal_fd);
+	xassert(arg == con);
 
 	slurm_rwlock_wrlock(&lock);
 
