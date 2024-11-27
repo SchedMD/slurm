@@ -1330,14 +1330,12 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 		debug("x11 forwarding local display is %d", step->x11_display);
 		debug("x11 forwarding local xauthority is %s",
 		      step->x11_xauthority);
-	}
 
-	/*
-	 * When using job_container/tmpfs we need to get into
-	 * the correct namespace or .Xauthority won't be visible
-	 * in /tmp from inside the job.
-	 */
-	if (step->x11) {
+		/*
+		 * When using job_container/tmpfs we need to get into
+		 * the correct namespace or .Xauthority won't be visible
+		 * in /tmp from inside the job.
+		 */
 		if (_need_join_container()) {
 			/*
 			 * The fork is necessary because we cannot join a
