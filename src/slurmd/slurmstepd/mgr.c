@@ -1214,12 +1214,25 @@ static int _set_xauthority(stepd_step_rec_t *step)
 		return SLURM_ERROR;
 	}
 
+	if (!xstrcasestr(slurm_conf.x11_params, "home_xauthority")) {
+		int fd;
+		/* protect against weak file permissions in old glibc */
+		umask(0077);
+		if ((fd = mkstemp(step->x11_xauthority)) == -1) {
+			error("%s: failed to create temporary XAUTHORITY file: %m",
+			      __func__);
+			rc = SLURM_ERROR;
+			goto endit;
+		}
+		close(fd);
+	}
+
 	if (x11_set_xauth(step->x11_xauthority, step->x11_magic_cookie,
 			  step->x11_display)) {
 		error("%s: failed to run xauth", __func__);
 		rc =  SLURM_ERROR;
 	}
-
+endit:
 	if (reclaim_privileges(&sprivs) < 0) {
 		error("%s: Unable to reclaim privileges after xauth", __func__);
 		return SLURM_ERROR;
