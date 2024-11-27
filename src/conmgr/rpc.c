@@ -182,8 +182,16 @@ extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
 	uint32_t msglen = 0;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(msg->protocol_version <= SLURM_PROTOCOL_VERSION);
-	xassert(msg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION);
+
+	if ((msg->protocol_version != NO_VAL16) &&
+	    ((msg->protocol_version > SLURM_PROTOCOL_VERSION) ||
+	     (msg->protocol_version < SLURM_MIN_PROTOCOL_VERSION))) {
+		rc = SLURM_PROTOCOL_VERSION_ERROR;
+		error("%s: [%s] Rejecting unsupported %s RPC protocol version: %hu",
+		      __func__, con->name, rpc_num2string(msg->msg_type),
+		      msg->protocol_version);
+		goto cleanup;
+	}
 
 	if ((rc = slurm_buffers_pack_msg(msg, &buffers, false)))
 		goto cleanup;

@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential memory corruption in select/cons_tres plugin.
  -- Avoid cache coherency issue on non-x86 platforms that could result in a
     POSIX signal being ignored or an abort().
+ -- slurmctld - Remove assertion in development builds that would trigger if
+    an outdated client attempted to connect.
 
 * Changes in Slurm 24.11.0rc2
 =============================
