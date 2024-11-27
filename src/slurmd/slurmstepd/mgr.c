@@ -1289,6 +1289,29 @@ static int _run_prolog_epilog(stepd_step_rec_t *step, bool is_epilog)
 	return rc;
 }
 
+static void _setup_x11_child(uint32_t jobid, stepd_step_rec_t *step)
+{
+	if (container_g_join(jobid, step->uid) != SLURM_SUCCESS)
+		_exit(1);
+
+	if (_set_xauthority(step) != SLURM_SUCCESS)
+		_exit(1);
+
+	_exit(0);
+}
+
+static int _setup_x11_parent(pid_t pid)
+{
+	int status = 0;
+
+	if ((waitpid(pid, &status, 0) != pid) || WEXITSTATUS(status)) {
+		error("%s: Xauthority setup failed", __func__);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _spawn_job_container(stepd_step_rec_t *step)
 {
 	jobacctinfo_t *jobacct = NULL;
@@ -1355,17 +1378,11 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 			 */
 			pid = fork();
 			if (pid == 0) {
-				if (container_g_join(jobid, step->uid) !=
-				    SLURM_SUCCESS)
-					_exit(1);
-				_exit(_set_xauthority(step));
-			} else if (pid < 0) {
+				_setup_x11_child(jobid, step);
+			} else if (pid > 0) {
+				rc = _setup_x11_parent(pid);
+			} else {
 				error("fork: %m");
-				rc = SLURM_ERROR;
-			}
-			if ((waitpid(pid, &status, 0) != pid) ||
-			    WEXITSTATUS(status)) {
-				error("%s: Xauthority setup failed", __func__);
 				rc = SLURM_ERROR;
 			}
 		} else {
