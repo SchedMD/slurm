@@ -641,8 +641,15 @@ configuration.</li>
 <a href="https://github.com/containers/podman/blob/main/docs/tutorials/basic_networking.md">
 host networking</a></li>
 <li><pre>podman exec</pre> command is not supported.</li>
+<li><pre>podman-compose</pre> command is not supported, due to only being
+	partially implemented. Some compositions may work but each container
+	may be run on different nodes. The network for all containers must be
+	the <code>network_mode: host</code> device.</li>
 <li><pre>podman kube</pre> command is not supported.</li>
 <li><pre>podman pod</pre> command is not supported.</li>
+<li><pre>podman farm</pre> command is not supported.</li>
+<li>All <pre>podman</pre> commands are not supported inside of containers.</li>
+<li>Podman REST API is not supported inside of containers.</li>
 </ol>
 
 <h3>Setup procedure</h3>
