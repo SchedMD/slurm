@@ -1463,7 +1463,7 @@ static void *_try_to_reconfig(void *ptr)
 	char **child_env;
 	pid_t pid;
 	int to_parent[2] = {-1, -1};
-	const int rpc_wait = MAX(5, (slurm_conf.msg_timeout / 2));
+	int rpc_wait = MAX(5, slurm_conf.msg_timeout);
 	int close_skip[] = { -1, -1, -1, -1 }, skip_index = 0, auth_fd = -1;
 	DEF_TIMERS;
 
@@ -1473,6 +1473,9 @@ static void *_try_to_reconfig(void *ptr)
 	conmgr_quiesce(__func__);
 
 	START_TIMER;
+
+	if (slurm_conf.prolog_epilog_timeout != NO_VAL16)
+		rpc_wait = MAX(rpc_wait, slurm_conf.prolog_epilog_timeout);
 
 	/* Wait for RPCs to finish */
 	_wait_for_all_threads(rpc_wait);
