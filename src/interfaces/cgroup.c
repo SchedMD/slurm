@@ -77,6 +77,7 @@ typedef struct {
 	bool (*has_feature) (cgroup_ctl_feature_t f);
 	char *(*get_scope_path)(void);
 	int (*setup_scope)(char *scope_path);
+	int (*signal)(int signal);
 } slurm_ops_t;
 
 /*
@@ -106,6 +107,7 @@ static const char *syms[] = {
 	"cgroup_p_has_feature",
 	"cgroup_p_get_scope_path",
 	"cgroup_p_setup_scope",
+	"cgroup_p_signal",
 };
 
 /* Local variables */
@@ -1007,4 +1009,14 @@ extern bool cgroup_g_has_feature(cgroup_ctl_feature_t f)
 		return false;
 
 	return (*(ops.has_feature))(f);
+}
+
+extern int cgroup_g_signal(int signal)
+{
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
+
+	return (*(ops.signal))(signal);
 }

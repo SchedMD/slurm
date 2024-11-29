@@ -2716,3 +2716,23 @@ extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 
 	return false;
 }
+
+extern int cgroup_p_signal(int signal)
+{
+	if (signal != SIGKILL) {
+		error("cgroup/v2 cgroup.kill only supports SIGKILL");
+		return SLURM_ERROR;
+	}
+
+	if (common_cgroup_set_param(&int_cg[CG_LEVEL_STEP_USER],
+				    "cgroup.kill", "1")) {
+		error("Writing 1 to %s/cgroup.kill failed",
+		      int_cg[CG_LEVEL_STEP_USER].path);
+		return SLURM_ERROR;
+	}
+
+	log_flag(CGROUP, "Sent signal %d to %s", signal,
+		 int_cg[CG_LEVEL_STEP_USER].path);
+
+	return SLURM_SUCCESS;
+}
