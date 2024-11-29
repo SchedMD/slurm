@@ -2703,6 +2703,13 @@ extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 		if (!access(file_path, F_OK))
 			return true;
 		break;
+	case CG_KILL_BUTTON:
+		if (snprintf(file_path, PATH_MAX, "%s/cgroup.kill",
+			     int_cg[CG_LEVEL_ROOT].path) >= PATH_MAX)
+			break;
+		if (!access(file_path, F_OK))
+			return true;
+		break;
 	default:
 		break;
 	}

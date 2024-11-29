@@ -108,7 +108,8 @@ typedef enum {
 	CG_FALSE_ROOT,
 	CG_MEMCG_OOMGROUP,
 	CG_MEMCG_PEAK,
-	CG_MEMCG_SWAP
+	CG_MEMCG_SWAP,
+	CG_KILL_BUTTON
 } cgroup_ctl_feature_t;
 
 typedef enum {
