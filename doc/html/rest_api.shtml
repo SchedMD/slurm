@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-24.11.0-0rc2&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
+    <div class="app-desc">Version: Slurm-24.11.0&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -6358,7 +6358,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format list default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">parent_account (optional)</div>
 
@@ -6486,7 +6486,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format list default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">parent_account (optional)</div>
 
@@ -6608,7 +6608,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — Query flags default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format list default: null </div><div class="param">rpc_version (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">rpc_version (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV RPC version list default: null </div><div class="param">usage_end (optional)</div>
 
@@ -7321,7 +7321,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format list default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">parent_account (optional)</div>
 
@@ -7833,7 +7833,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format list default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">parent_account (optional)</div>
 
@@ -8339,7 +8339,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — Query flags default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format list default: null </div><div class="param">rpc_version (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">rpc_version (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV RPC version list default: null </div><div class="param">usage_end (optional)</div>
 
@@ -10191,7 +10191,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV extra list default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format list default: null </div><div class="param">instance_id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">instance_id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV instance_id list default: null </div><div class="param">instance_type (optional)</div>
 
@@ -10319,7 +10319,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV extra list default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format list default: null </div><div class="param">instance_id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">instance_id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV instance_id list default: null </div><div class="param">instance_type (optional)</div>
 
@@ -11723,7 +11723,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — Include job environment default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format list default: null </div><div class="param">groups (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">groups (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV group list default: null </div><div class="param">job_name (optional)</div>
 
@@ -13097,7 +13097,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV QOS id list default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format list default: null </div><div class="param">name (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">name (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV QOS name list default: null </div><div class="param">preempt_mode (optional)</div>
 
@@ -15161,7 +15161,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV cluster name list default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format name list default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">name (optional)</div>
 
@@ -15863,7 +15863,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV QOS id list default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format list default: null </div><div class="param">name (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">name (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV QOS name list default: null </div><div class="param">preempt_mode (optional)</div>
 
@@ -16284,7 +16284,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV cluster name list default: null </div><div class="param">format (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV format name list default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">name (optional)</div>
 
