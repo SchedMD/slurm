@@ -1,8 +1,8 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 24.11.0rc3
-=============================
+* Changes in Slurm 24.11.0
+==========================
  -- slurmctld - Reject arbitrary distribution jobs that do not specifying a task
     count.
  -- Fix backwards compatibility of the RESPONSE_JOB_INFO RPC (used by squeue,
