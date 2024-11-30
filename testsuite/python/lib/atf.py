@@ -561,6 +561,8 @@ def start_slurmdbd(clean=False, quiet=False):
     if not properties["auto-config"]:
         require_auto_config("wants to start slurmdbd")
 
+    logging.debug("Starting slurmdbd...")
+
     if (
         run_command_exit(
             "sacctmgr show cluster", user=properties["slurm-user"], quiet=quiet
@@ -583,6 +585,8 @@ def start_slurmdbd(clean=False, quiet=False):
             "sacctmgr show cluster", lambda results: results["exit_code"] == 0
         ):
             pytest.fail(f"Slurmdbd is not running")
+        else:
+            logging.debug("Slurmdbd started successfully")
 
 
 def start_slurm(clean=False, quiet=False):
@@ -727,6 +731,8 @@ def stop_slurmdbd(quiet=False):
     if not properties["auto-config"]:
         require_auto_config("wants to stop slurmdbd")
 
+    logging.debug("Stopping slurmdbd...")
+
     # Stop slurmdbd
     results = run_command(
         "sacctmgr shutdown", user=properties["slurm-user"], quiet=quiet
@@ -743,6 +749,8 @@ def stop_slurmdbd(quiet=False):
         timeout=60,
     ):
         failures.append("Slurmdbd is still running")
+    else:
+        logging.debug("Slurmdbd stopped successfully")
 
 
 def stop_slurm(fatal=True, quiet=False):
