@@ -619,6 +619,16 @@ int main(int argc, char **argv)
 		slurmscriptd_run_slurmscriptd(argc, argv, binary);
 	}
 
+	if (original && under_systemd &&
+	    (slurm_conf.slurm_user_id != getuid())) {
+		/*
+		 * Sanity check that we are running as the SlurmUser.
+		 * If not fatal to prevent changing the permissions of the state
+		 * save files and or loosing the state save.
+		 */
+		fatal("Running user ID does not match the SlurmUser. Check that SlurmUser in slurm.conf and User in the slurmctld unit file match.");
+	}
+
 	memset(&slurmctld_diag_stats, 0, sizeof(slurmctld_diag_stats));
 	/*
 	 * Calculate speed of gettimeofday() for sdiag.
