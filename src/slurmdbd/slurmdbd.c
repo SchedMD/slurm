@@ -765,7 +765,6 @@ static void _request_registrations(void *db_conn)
 
 static void _rollup_handler_cancel(void)
 {
-	slurm_mutex_lock(&rollup_lock);
 	if (running_rollup) {
 		if (backup && running_rollup && primary_resumed)
 			debug("Hard cancelling rollup thread");
@@ -773,6 +772,7 @@ static void _rollup_handler_cancel(void)
 			debug("Waiting for rollup thread to finish.");
 	}
 
+	slurm_mutex_lock(&rollup_lock);
 	if (rollup_handler_thread) {
 		if (backup && running_rollup && primary_resumed) {
 			pthread_cancel(rollup_handler_thread);
