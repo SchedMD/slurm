@@ -80,10 +80,9 @@ extern int send_resvs_to_accounting(int db_rc);
 
 /*
  * Set or clear NODE_STATE_MAINT for node_state as needed
- * IN reset_all - re-initialize all node information for all reservations
  * RET count of newly started reservations
  */
-extern int set_node_maint_mode(bool reset_all);
+extern int set_node_maint_mode(void);
 
 /* checks if node within node_record_table_ptr is in maint reservation */
 extern bool is_node_in_maint_reservation(int nodenum);

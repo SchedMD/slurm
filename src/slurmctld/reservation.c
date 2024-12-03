@@ -208,6 +208,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			  slurmctld_resv_t *old_resv_ptr);
 static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 			     uint32_t flags, bool reset_all);
+static int _set_node_maint_mode(bool reset_all);
 static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				 char *accounts);
 static int  _update_uid_list(slurmctld_resv_t *resv_ptr, char *users);
@@ -3858,7 +3859,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 					 resv_ptr);
 
 	_del_resv_rec(resv_backup);
-	(void) set_node_maint_mode(true);
+	(void) _set_node_maint_mode(true);
 
 	last_resv_update = now;
 	schedule_resv_save();
@@ -7319,7 +7320,7 @@ extern int send_resvs_to_accounting(int db_rc)
  *	reservations
  * RET count of newly started reservations
  */
-extern int set_node_maint_mode(bool reset_all)
+static int _set_node_maint_mode(bool reset_all)
 {
 	int i, res_start_cnt = 0;
 	node_record_t *node_ptr;
@@ -7392,6 +7393,15 @@ extern int set_node_maint_mode(bool reset_all)
 	list_iterator_destroy(iter);
 
 	return res_start_cnt;
+}
+
+/*
+ * Set or clear NODE_STATE_MAINT for node_state as needed
+ * RET count of newly started reservations
+ */
+extern int set_node_maint_mode(void)
+{
+	return _set_node_maint_mode(false);
 }
 
 /* checks if node within node_record_table_ptr is in maint reservation */
