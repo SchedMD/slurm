@@ -9628,7 +9628,13 @@ static void
 _pack_job_step_kill_msg(job_step_kill_msg_t * msg, buf_t *buffer,
 			uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, protocol_version);
+		packstr(msg->sjob_id, buffer);
+		packstr(msg->sibling, buffer);
+		pack16((uint16_t)msg->signal, buffer);
+		pack16((uint16_t)msg->flags, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		packstr(msg->sjob_id, buffer);
 		packstr(msg->sibling, buffer);
@@ -11889,7 +11895,21 @@ static void _pack_kill_jobs_msg(kill_jobs_msg_t *msg, buf_t *buffer,
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		packstr(msg->account, buffer);
+		pack16(msg->flags, buffer);
+		packstr(msg->job_name, buffer);
+		packstr_array(msg->jobs_array, msg->jobs_cnt, buffer);
+		packstr(msg->partition, buffer);
+		packstr(msg->qos, buffer);
+		packstr(msg->reservation, buffer);
+		pack16(msg->signal, buffer);
+		pack32(msg->state, buffer);
+		pack32(msg->user_id, buffer);
+		packstr(msg->user_name, buffer);
+		packstr(msg->wckey, buffer);
+		packstr(msg->nodelist, buffer);
+	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		pack16(msg->flags, buffer);
 		packstr(msg->job_name, buffer);
