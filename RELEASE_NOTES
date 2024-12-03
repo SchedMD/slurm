@@ -1,4 +1,4 @@
-RELEASE NOTES FOR SLURM VERSION 24.11
+RELEASE NOTES FOR SLURM VERSION 25.05
 
 IMPORTANT NOTES:
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
@@ -11,82 +11,24 @@ You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.
 
-Slurm can be upgraded from version 23.02, 23.11 or 24.05 to version
-24.11 without loss of jobs or other state information. Upgrading directly from
+Slurm can be upgraded from version 23.11, 24.05 or 24.11 to version
+25.05 without loss of jobs or other state information. Upgrading directly from
 an earlier version of Slurm will result in loss of state information.
 
 All SPANK plugins must be recompiled when upgrading from any Slurm version
-prior to 24.11.
+prior to 25.05.
 
 HIGHLIGHTS
 ==========
- -- Add report AccountUtilizationByQOS to sreport.
- -- AccountUtilizationByUser is able to be filtered by QOS.
- -- Add autodetected gpus to the output of slurmd -C
- -- Add ability to submit jobs with multiple QOS. These are sorted by priority
-    highest being the first.
- -- Removed the instant on feature from switch/hpe_slingshot.
- -- slurmctld - Changed incoming RPC handling to dedicated thread pool with
-    asynchronous handling of I/O that can be configured via conmgr_* entries
-    under SlurmctldParameters in slurm.conf.
-
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
- -- Add SchedulerParameters=bf_allow_magnetic_slot option. It allows jobs in
-    magnetic reservations to be planned by backfill scheduler.
- -- Add TopologyParam=TopoMaxSizeUnroll=# to allow --nodes=<min>-<max> for
-    topology/block.
- -- Add DataParserParameters slurm.conf parameter to allow setting default
-    value for CLI --json and --yaml arguments.
- -- Hardware collectives in switch/hpe_slingshot now requires enable_stepmgr.
- -- Added connection related parameters to slurm.conf under SlurmctldParameters:
-	conmgr_max_connections: Defaults to 150 connections.
-	conmgr_threads: Defaults to 64 threads for slurmctld.
-	conmgr_use_poll: Defaults is to use epoll in Linux.
-	conmgr_connect_timeout: Defaults to MessageTimeout.
-	conmgr_read_timeout: Defaults to MessageTimeout.
-	conmgr_wait_write_delay: Defaults to MessageTimeout.
-	conmgr_write_timeout: Defaults to MessageTimeout.
- -- Add SlurmctldParamters=ignore_constraint_validation to ignore
-    constraint/feature validation at submission.
- -- Add SchedulerParameters=bf_topopt_enable option to enable experimental hook
-    to control backfill.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- Remove srun --cpu-bind=rank.
- -- Add "%b" as a file name pattern for the array task id modulo 10.
- -- sacct - Respect --noheader for --batch-script and --env-vars.
- -- Add "sacctmgr ping" command to query status of slurmdbd.
- -- sbcast - Add --nodelist option to specify where files are transmitted to
- -- sbcast - Add --no-allocation option to transmit files to nodes outside of a
-    job allocation
- -- slurmdbd - Add -u option. This is used to determine if restarting the DBD
-    will result in database conversion.
- -- Remove salloc --get-user-env.
- -- scontrol - Add --json/--yaml support to listpids
- -- scontrol - Add liststeps
- -- scontrol - Add listjobs
- -- scontrol show topo - Show aggregated block sizes when using topology/block.
 
 API CHANGES
 ===========
- -- Remove burst_buffer/lua call slurm.job_info_to_string().
- -- job_submit/lua - Add "assoc_qos" attribute to job_desc to display all
-    potential QOS's for a job's association.
- -- job_submit/lua - Add slurm.get_qos_priority() function to retrieve the
-    given QOS's priority.
 
 SLURMRESTD CHANGES
 ==================
- -- Removed fields deprecated in the Slurm-23.11 release from v0.0.42 endpoints.
- -- Removed v0.0.39 plugins.
- -- Set data_parser/v0.0.42+prefer_refs flag to default.
- -- Add data_parser/v0.0.42+minimize_refs flag to inline single referenced
-    schemas in the OpenAPI schema to get default behavior of
-    data_parser/v0.0.41.
- -- Rename v0.0.42 JOB_INFO field "minimum_switches" to "required_switches"
-    to reflect the actual behavior.
- -- Rename v0.0.42 ACCOUNT_CONDITION field "assocation" to "association" (typo).
- -- Tag slurmdb/v0.0.42/jobs pid field deprecated.

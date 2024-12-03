@@ -399,9 +399,6 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *stepinfo,
 	}
 
 	if (!switch_context_cnt) {
-		/* Remove when 23.02 is no longer supported. */
-		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION)
-			pack32(SWITCH_PLUGIN_NONE, buffer);
 		return;
 	}
 
@@ -450,11 +447,6 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 		if (remaining_buf(buffer) < length)
 			return SLURM_ERROR;
 	} else if (!switch_context_cnt) {
-		/* Remove when 23.02 is no longer supported. */
-		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION) {
-			safe_unpack32(&plugin_id, buffer);
-			*stepinfo = NULL;
-		}
 		return SLURM_SUCCESS;
 	}
 

@@ -258,8 +258,7 @@ typedef struct slingshot_stepinfo {
  */
 #define SLINGSHOT_FLAGS_ADJUST_LIMITS 0x1
 /*
- * #define SLINGSHOT_FLAGS_VNI_PIDS      0x2 DEPRECATED in 23.02, can be used in
- *					     25.02
+ * #define 0x2 Available
  */
 #define SLINGSHOT_FLAGS_DISABLE_RDZV_GET 0x4
 #define SLINGSHOT_FLAGS_DEFAULT SLINGSHOT_FLAGS_ADJUST_LIMITS

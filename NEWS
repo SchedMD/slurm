@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 25.05.0rc1
+=============================
+
 * Changes in Slurm 24.11.1
 ==========================
  -- With client commands MIN_MEMORY will show mem_per_tres if specified.

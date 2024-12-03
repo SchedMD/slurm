@@ -611,7 +611,7 @@ extern void pack_stepd_reconf(buf_t *buffer, uint16_t protocol_version)
 	 * able to communicate with an older slurmstepd if the slurmd process
 	 * has been upgraded.
 	 */
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr_array(slurm_conf.control_addr, slurm_conf.control_cnt,
 			      buffer);
 		packstr(slurm_conf.slurmctld_addr, buffer);

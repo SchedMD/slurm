@@ -802,46 +802,11 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"@def_qos_id, @qos, @delta_qos, @prio;"
 		"END;";
 	/*
-	 * 2 versions after 23.11 we can remove [get|set]_lineage, it is only
-	 * used in converting.  Don't forget to drop procedure for 2 versions
-	 * after 24.05.
+	 * 3 versions after 25.05 we can remove get_lineage, it is only
+	 * used in dropping the old procedure.
 	 */
 	char *get_lineage =
-		"drop procedure if exists get_lineage;"
-		"create procedure get_lineage(in acct_in tinytext, in my_table tinytext, out path text) "
-		"begin "
-		"set @acct = '';"
-		"set max_sp_recursion_depth = 100;"
-		"set @s = concat('select @acct := parent_acct from ', my_table, ' where user=\\\'\\\' and acct=\\\'', acct_in, '\\\';');"
-		"prepare query from @s;"
-		"execute query;"
-		"deallocate prepare query;"
-		"if @acct!='' and @acct!='root' then "
-		"call get_lineage(@acct, my_table, path);"
-		"else "
-		"set path = '/';"
-		"end if;"
-		"if acct_in!='root' then "
-		"set path = CONCAT(path, acct_in, '/');"
-		"end if;"
-
-		"end;"
-		"drop procedure if exists set_lineage;"
-		"create procedure set_lineage(in assoc_id_in int unsigned, in acct_in tinytext, in user_in tinytext, in part_in tinytext, in my_table tinytext) "
-		"begin "
-		"set @lineage = '';"
-		"call get_lineage(acct_in, my_table, @lineage);"
-		"if user_in is not null && user_in!='' then "
-		"set @lineage = CONCAT(@lineage, '0-', user_in, '/');"
-		"if part_in is not null && part_in!='' then "
-		"set @lineage = CONCAT(@lineage, part_in, '/');"
-		"end if;"
-		"end if;"
-		"set @s = concat('update ', my_table, ' set mod_time=NOW(), lineage=@lineage where id_assoc=', assoc_id_in, ';');"
-		"prepare query from @s;"
-		"execute query;"
-		"select @lineage;"
-		"end;";
+		"drop procedure if exists get_lineage;";
 
 	char *query = NULL;
 	time_t now = time(NULL);

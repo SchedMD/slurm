@@ -756,7 +756,7 @@ extern void switch_p_pack_stepinfo(switch_stepinfo_t *switch_job, buf_t *buffer,
 
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* nothing to pack, pack special "null" version number */
 		if (!stepinfo ||
 		    (stepinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION)) {
@@ -787,37 +787,6 @@ extern void switch_p_pack_stepinfo(switch_stepinfo_t *switch_job, buf_t *buffer,
 			_pack_hsn_nic(&stepinfo->nics[pidx], buffer);
 		}
 		_pack_hwcoll(stepinfo->hwcoll, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		/* nothing to pack, pack special "null" version number */
-		if (!stepinfo ||
-		    (stepinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION)) {
-			debug("Nothing to pack");
-			pack32(SLINGSHOT_JOBINFO_NULL_VERSION, buffer);
-			return;
-		}
-
-		pack32(protocol_version, buffer);
-		pack16_array(stepinfo->vnis, stepinfo->num_vnis, buffer);
-		pack32(stepinfo->tcs, buffer);
-		_pack_slingshot_limits(&stepinfo->limits.txqs, buffer);
-		_pack_slingshot_limits(&stepinfo->limits.tgqs, buffer);
-		_pack_slingshot_limits(&stepinfo->limits.eqs, buffer);
-		_pack_slingshot_limits(&stepinfo->limits.cts, buffer);
-		_pack_slingshot_limits(&stepinfo->limits.tles, buffer);
-		_pack_slingshot_limits(&stepinfo->limits.ptes, buffer);
-		_pack_slingshot_limits(&stepinfo->limits.les, buffer);
-		_pack_slingshot_limits(&stepinfo->limits.acs, buffer);
-		pack32(stepinfo->depth, buffer);
-		pack32(stepinfo->num_profiles, buffer);
-		for (pidx = 0; pidx < stepinfo->num_profiles; pidx++) {
-			_pack_comm_profile(&stepinfo->profiles[pidx], buffer);
-		}
-		pack_bit_str_hex(NULL, buffer); /* formerly vni_pids, Unused */
-		pack32(stepinfo->flags, buffer);
-		pack32(stepinfo->num_nics, buffer);
-		for (pidx = 0; pidx < stepinfo->num_nics; pidx++) {
-			_pack_hsn_nic(&stepinfo->nics[pidx], buffer);
-		}
 	} else {
 		/* invalid protocol specified */
 		xassert(false);
@@ -840,7 +809,7 @@ extern int switch_p_unpack_stepinfo(switch_stepinfo_t **switch_job,
 	stepinfo = xmalloc(sizeof(*stepinfo));
 	*switch_job = (switch_stepinfo_t *) stepinfo;
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&stepinfo->version, buffer);
 		if (stepinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION) {
 			debug("Nothing to unpack");
@@ -883,53 +852,6 @@ extern int switch_p_unpack_stepinfo(switch_stepinfo_t **switch_job,
 				goto unpack_error;
 		}
 		_unpack_hwcoll(&stepinfo->hwcoll, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		bitstr_t *vni_pids = NULL;
-		safe_unpack32(&stepinfo->version, buffer);
-		if (stepinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION) {
-			debug("Nothing to unpack");
-			return SLURM_SUCCESS;
-		}
-		if (stepinfo->version != protocol_version) {
-			error("SLINGSHOT stepinfo version %"PRIu32" != %d",
-			      stepinfo->version, protocol_version);
-			goto error;
-		}
-
-		safe_unpack16_array(&stepinfo->vnis, &stepinfo->num_vnis, buffer);
-		safe_unpack32(&stepinfo->tcs, buffer);
-		if (!_unpack_slingshot_limits(&stepinfo->limits.txqs, buffer) ||
-		    !_unpack_slingshot_limits(&stepinfo->limits.tgqs, buffer) ||
-		    !_unpack_slingshot_limits(&stepinfo->limits.eqs, buffer) ||
-		    !_unpack_slingshot_limits(&stepinfo->limits.cts, buffer) ||
-		    !_unpack_slingshot_limits(&stepinfo->limits.tles, buffer) ||
-		    !_unpack_slingshot_limits(&stepinfo->limits.ptes, buffer) ||
-		    !_unpack_slingshot_limits(&stepinfo->limits.les, buffer) ||
-		    !_unpack_slingshot_limits(&stepinfo->limits.acs, buffer))
-			goto unpack_error;
-
-		safe_unpack32(&stepinfo->depth, buffer);
-		safe_unpack32(&stepinfo->num_profiles, buffer);
-		stepinfo->profiles = xcalloc(stepinfo->num_profiles,
-					    sizeof(slingshot_comm_profile_t));
-		for (pidx = 0; pidx < stepinfo->num_profiles; pidx++) {
-			if (!_unpack_comm_profile(&stepinfo->profiles[pidx],
-						  buffer))
-				goto unpack_error;
-		}
-		unpack_bit_str_hex(&vni_pids, buffer); /* Unused */
-		FREE_NULL_BITMAP(vni_pids);
-		safe_unpack32(&stepinfo->flags, buffer);
-
-		safe_unpack32(&stepinfo->num_nics, buffer);
-		stepinfo->nics = xcalloc(stepinfo->num_nics,
-					sizeof(slingshot_hsn_nic_t));
-		for (pidx = 0; pidx < stepinfo->num_nics; pidx++) {
-			if (!_unpack_hsn_nic(&stepinfo->nics[pidx], buffer))
-				goto unpack_error;
-		}
-		/* Not present in this version, set to none */
-		stepinfo->hwcoll = NULL;
 	} else {
 		error("invalid protocol version");
 		goto error;

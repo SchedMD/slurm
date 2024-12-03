@@ -41,14 +41,13 @@
 
 /*
  * Any time you have to add to an existing convert update this number.
- * NOTE: 13 was the first version of 23.02.
  * NOTE: 14 was the first version of 23.11.
  * NOTE: 15 was the second version of 23.11.
  * NOTE: 16 was the first version of 24.11.
  */
 #define CONVERT_VERSION 16
 
-#define MIN_CONVERT_VERSION 13
+#define MIN_CONVERT_VERSION 14
 
 #define JOB_CONVERT_LIMIT_CNT 1000
 
@@ -89,12 +88,6 @@ static int _rename_clus_res_columns(mysql_conn_t *mysql_conn)
 static int _convert_clus_res_table_pre(mysql_conn_t *mysql_conn)
 {
 	int rc = SLURM_SUCCESS;
-
-	if (db_curr_ver < 13) {
-		if ((rc = _rename_clus_res_columns(mysql_conn)) !=
-		    SLURM_SUCCESS)
-			return rc;
-	}
 
 	return rc;
 }
@@ -298,92 +291,7 @@ static int _convert_assoc_table_post(mysql_conn_t *mysql_conn,
 {
 	int rc = SLURM_SUCCESS;
 
-	if (db_curr_ver < 14) {
-		MYSQL_ROW row;
-		MYSQL_RES *result = NULL;
-		char *insert_pos = NULL;
-		uint64_t max_query_size = 0;
-		char *table_name = xstrdup_printf("\"%s_%s\"",
-						  cluster_name, assoc_table);;
-		list_t *query_list = list_create(xfree_ptr);
-		/* fill in the id_parent */
-		char *query = xstrdup_printf(
-			"update %s as t1 inner join %s as t2 on t1.acct=t2.acct and t1.user!='' and t1.id_assoc!=t2.id_assoc set t1.id_parent=t2.id_assoc;",
-			table_name, table_name);
-		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
-			goto endit;
-		xfree(query);
-		query = xstrdup_printf(
-			"update %s as t1 inner join %s as t2 on t1.parent_acct=t2.acct and t1.parent_acct!='' and t2.user='' set t1.id_parent=t2.id_assoc;",
-			table_name, table_name);
-		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
-			goto endit;
-		xfree(query);
-
-		/*
-		 * Determine max query size to avoid possibly generating
-		 * something too long for the sql server to process.
-		 *
-		 * This is primarily to support older MySQL servers, but also
-		 * supports very large association tables.
-		 */
-		if (mysql_db_get_var_u64(mysql_conn, "max_allowed_packet",
-					 &max_query_size))
-			max_query_size = 1024 * 1024;
-		/*
-		 * Safety margin of 10% of the possible size.  A single set
-		 * lineage call should not exceeed 1KiB.
-		 */
-		max_query_size = (max_query_size * 0.9);
-
-		/*
-		 * Now set the lineage for the associations.
-		 * It would be nice to be able to call a function here to do the
-		 * set, but MySQL/MariaDB does not allow dynamic SQL. Since the
-		 * update would require the cluster name to set set the table
-		 * correctly we can do this in a function.
-		 *
-		 * I also though about having a different function per cluster
-		 * and just call that instead, but the problem there is you
-		 * can't have a '-' in a function name which makes clusters like
-		 * 'smd-server' not able to create a valid function name
-		 * (get_lineage_smd-server() is not valid).
-		 *
-		 * So this is the best I could figure out at the moment.
-		 */
-		query = xstrdup_printf("select id_assoc, acct, user, `partition` from %s",
-				       table_name);
-		if (!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
-			xfree(query);
-			rc = SLURM_ERROR;
-			goto endit;
-		}
-		xfree(query);
-		while ((row = mysql_fetch_row(result))) {
-			xstrfmtcatat(query, &insert_pos,
-				     "call set_lineage(%s, '%s', '%s', '%s', '%s');",
-				     row[0], row[1], row[2], row[3],
-				     table_name);
-			if ((insert_pos - query) > max_query_size) {
-				list_append(query_list, query);
-				query = NULL;
-				insert_pos = NULL;
-			}
-		}
-		if (query) {
-			list_append(query_list, query);
-			query = NULL;
-		}
-		mysql_free_result(result);
-		if (list_for_each(query_list, _foreach_set_lineage,
-				  mysql_conn) < 0)
-			rc = SLURM_ERROR;
-	endit:
-		FREE_NULL_LIST(query_list);
-		xfree(table_name);
-	} else if (db_curr_ver < 15) {
+	if (db_curr_ver < 15) {
 		/*
 		 * There was a bug in version 14 that didn't add the partition
 		 * to the lineage. This fixes that.

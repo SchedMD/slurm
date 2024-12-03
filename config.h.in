@@ -27,22 +27,22 @@
 /* Define if you are compiling with bpf. */
 #undef HAVE_BPF
 
-/* Define to 1 if you have the `cfmakeraw' function. */
+/* Define to 1 if you have the 'cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 
-/* Define to 1 if you have the declaration of `hstrerror', and to 0 if you
+/* Define to 1 if you have the declaration of 'hstrerror', and to 0 if you
    don't. */
 #undef HAVE_DECL_HSTRERROR
 
-/* Define to 1 if you have the declaration of `strerror_r', and to 0 if you
+/* Define to 1 if you have the declaration of 'strerror_r', and to 0 if you
    don't. */
 #undef HAVE_DECL_STRERROR_R
 
-/* Define to 1 if you have the declaration of `strsignal', and to 0 if you
+/* Define to 1 if you have the declaration of 'strsignal', and to 0 if you
    don't. */
 #undef HAVE_DECL_STRSIGNAL
 
-/* Define to 1 if you have the declaration of `sys_siglist', and to 0 if you
+/* Define to 1 if you have the declaration of 'sys_siglist', and to 0 if you
    don't. */
 #undef HAVE_DECL_SYS_SIGLIST
 
@@ -52,7 +52,7 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
-/* Define to 1 if you have the `eaccess' function. */
+/* Define to 1 if you have the 'eaccess' function. */
 #undef HAVE_EACCESS
 
 /* Define to 1 if we have epoll(7) support */
@@ -61,10 +61,10 @@
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
 
-/* Define to 1 if you have the `faccessat' function. */
+/* Define to 1 if you have the 'faccessat' function. */
 #undef HAVE_FACCESSAT
 
-/* Define to 1 if you have the `fdatasync' function. */
+/* Define to 1 if you have the 'fdatasync' function. */
 #undef HAVE_FDATASYNC
 
 /* Define to 1 if you have the <float.h> header file. */
@@ -76,16 +76,16 @@
 /* Define to 1 if running slurmd on front-end only */
 #undef HAVE_FRONT_END
 
-/* Define to 1 if you have the `getrandom' function. */
+/* Define to 1 if you have the 'getrandom' function. */
 #undef HAVE_GETRANDOM
 
-/* Define to 1 if you have the `get_current_dir_name' function. */
+/* Define to 1 if you have the 'get_current_dir_name' function. */
 #undef HAVE_GET_CURRENT_DIR_NAME
 
 /* Defined if you have HDF5 support */
 #undef HAVE_HDF5
 
-/* Define to 1 if you have the `hstrerror' function. */
+/* Define to 1 if you have the 'hstrerror' function. */
 #undef HAVE_HSTRERROR
 
 /* Define if you are compiling with HTTP parser. */
@@ -94,13 +94,13 @@
 /* Define to 1 if hwloc library found */
 #undef HAVE_HWLOC
 
-/* Define to 1 if you have the `inet_aton' function. */
+/* Define to 1 if you have the 'inet_aton' function. */
 #undef HAVE_INET_ATON
 
-/* Define to 1 if you have the `inet_ntop' function. */
+/* Define to 1 if you have the 'inet_ntop' function. */
 #undef HAVE_INET_NTOP
 
-/* Define to 1 if you have the `inet_pton' function. */
+/* Define to 1 if you have the 'inet_pton' function. */
 #undef HAVE_INET_PTON
 
 /* Define to 1 if you have the <inttypes.h> header file. */
@@ -124,7 +124,7 @@
 /* Define to 1 if you have a functional curl library. */
 #undef HAVE_LIBCURL
 
-/* Define to 1 if you have the `ucp' library (-lucp). */
+/* Define to 1 if you have the 'ucp' library (-lucp). */
 #undef HAVE_LIBUCP
 
 /* Define to 1 if you have the <limits.h> header file. */
@@ -142,13 +142,13 @@
 /* Define to 1 if you have the <mcheck.h> header file. */
 #undef HAVE_MCHECK_H
 
-/* Define to 1 if you have the `memfd_create' function. */
+/* Define to 1 if you have the 'memfd_create' function. */
 #undef HAVE_MEMFD_CREATE
 
 /* Define to 1 if NVML library has MIG support */
 #undef HAVE_MIG_SUPPORT
 
-/* Define to 1 if you have the `mtrace' function. */
+/* Define to 1 if you have the 'mtrace' function. */
 #undef HAVE_MTRACE
 
 /* Define to 1 if using MySQL libaries */
@@ -196,7 +196,7 @@
 /* Have PTHREAD_PRIO_INHERIT. */
 #undef HAVE_PTHREAD_PRIO_INHERIT
 
-/* Define to 1 if you have the `ptrace64' function. */
+/* Define to 1 if you have the 'ptrace64' function. */
 #undef HAVE_PTRACE64
 
 /* Define to 1 if you have the <pty.h> header file. */
@@ -217,19 +217,19 @@
 /* Define to 1 if you have the <security/pam_appl.h> header file. */
 #undef HAVE_SECURITY_PAM_APPL_H
 
-/* Define to 1 if you have the `setproctitle' function. */
+/* Define to 1 if you have the 'setproctitle' function. */
 #undef HAVE_SETPROCTITLE
 
-/* Define to 1 if you have the `setresuid' function. */
+/* Define to 1 if you have the 'setresuid' function. */
 #undef HAVE_SETRESUID
 
 /* Define to 1 if you have the <socket.h> header file. */
 #undef HAVE_SOCKET_H
 
-/* Define to 1 if you have the `statfs' function. */
+/* Define to 1 if you have the 'statfs' function. */
 #undef HAVE_STATFS
 
-/* Define to 1 if you have the `statvfs' function. */
+/* Define to 1 if you have the 'statvfs' function. */
 #undef HAVE_STATVFS
 
 /* Define to 1 if you have the <stdbool.h> header file. */
@@ -244,10 +244,10 @@
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
 
-/* Define to 1 if you have the `strerror' function. */
+/* Define to 1 if you have the 'strerror' function. */
 #undef HAVE_STRERROR
 
-/* Define if you have `strerror_r'. */
+/* Define if you have 'strerror_r'. */
 #undef HAVE_STRERROR_R
 
 /* Define to 1 if you have the <strings.h> header file. */
@@ -256,19 +256,19 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
-/* Define to 1 if you have the `strlcpy' function. */
+/* Define to 1 if you have the 'strlcpy' function. */
 #undef HAVE_STRLCPY
 
-/* Define to 1 if you have the `strndup' function. */
+/* Define to 1 if you have the 'strndup' function. */
 #undef HAVE_STRNDUP
 
-/* Define to 1 if you have the `strsignal' function. */
+/* Define to 1 if you have the 'strsignal' function. */
 #undef HAVE_STRSIGNAL
 
-/* Define to 1 if the system has the type `struct cxi_rsrc_use'. */
+/* Define to 1 if the system has the type 'struct cxi_rsrc_use'. */
 #undef HAVE_STRUCT_CXI_RSRC_USE
 
-/* Define to 1 if you have the `sysctlbyname' function. */
+/* Define to 1 if you have the 'sysctlbyname' function. */
 #undef HAVE_SYSCTLBYNAME
 
 /* Define to 1 if you have the <sysint.h> header file. */
@@ -431,11 +431,11 @@
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
-/* Define to 1 if `major', `minor', and `makedev' are declared in <mkdev.h>.
+/* Define to 1 if 'major', 'minor', and 'makedev' are declared in <mkdev.h>.
    */
 #undef MAJOR_IN_MKDEV
 
-/* Define to 1 if `major', `minor', and `makedev' are declared in
+/* Define to 1 if 'major', 'minor', and 'makedev' are declared in
    <sysmacros.h>. */
 #undef MAJOR_IN_SYSMACROS
 
@@ -491,7 +491,7 @@
 /* Define to the setproctitle() emulation type */
 #undef SETPROCTITLE_STRATEGY
 
-/* The size of `void *', as computed by sizeof. */
+/* The size of 'void *', as computed by sizeof. */
 #undef SIZEOF_VOID_P
 
 /* Define path to sleep command */
@@ -548,7 +548,7 @@
 /* Define the project's version string. */
 #undef SLURM_VERSION_STRING
 
-/* Define to 1 if all of the C90 standard headers exist (not just the ones
+/* Define to 1 if all of the C89 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
