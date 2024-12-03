@@ -99,6 +99,7 @@ static void _filter_nodes(void);
 static list_t *_load_clusters_nodes(void);
 static void _node_info_list_del(void *data);
 static char *_map_node_name(list_t *clusters_node_info, char *name);
+static int _check_only_state(void);
 
 decl_static_data(help_txt);
 decl_static_data(usage_txt);
@@ -405,8 +406,12 @@ extern void parse_command_line(int argc, char **argv)
 	if (params.long_list && params.format)
 		fatal("Options -o(--format) and -l(--long) are mutually exclusive. Please remove one and retry.");
 
-	if (params.only_state && params.step_flag)
-		fatal("Options --only-job-state and -s(--steps) are mutually exclusive. Please remove one and retry.");
+	/*
+	 * NOTE:
+	 * If the job cache is extended, this flag/functions should be renamed.
+	 */
+	if (params.only_state && (_check_only_state() != SLURM_SUCCESS))
+		fatal("Option --only-job-state only works alone, with -j (--jobs) and/or -t (--states) parameters, parameters for cluster/federation selection, and the printing options.");
 
 	if (!override_format_env) {
 		if ((env_val = getenv("SQUEUE_FORMAT")))
@@ -1626,4 +1631,80 @@ static char *_map_node_name(list_t *clusters_node_info, char *name)
 	xfree(nodename);
 	list_iterator_destroy(node_info_itr);
 	return NULL;
+}
+
+static int _check_only_state(void)
+{
+	struct squeue_parameters denied_params_mask, empty_params_mask;
+
+	/* Copy params */
+	memcpy(&denied_params_mask, &params, sizeof(params));
+
+	/*
+	 * Unset the enabled ones.
+	 * NOTE:
+	 * We must add here any parameter we want to allow in the future, if we
+	 * add more information to the cache.
+	 */
+	memset(&denied_params_mask.array_flag, 0,
+	       sizeof(denied_params_mask.array_flag));
+	memset(&denied_params_mask.expand_patterns, 0,
+	       sizeof(denied_params_mask.expand_patterns));
+	memset(&denied_params_mask.format, 0,
+	       sizeof(denied_params_mask.format));
+	memset(&denied_params_mask.format_long, 0,
+	       sizeof(denied_params_mask.format_long));
+	memset(&denied_params_mask.format_list, 0,
+	       sizeof(denied_params_mask.format_list));
+	memset(&denied_params_mask.federation_flag, 0,
+	       sizeof(denied_params_mask.federation_flag));
+	memset(&denied_params_mask.iterate, 0,
+	       sizeof(denied_params_mask.iterate));
+	memset(&denied_params_mask.job_flag, 0,
+	       sizeof(denied_params_mask.job_flag));
+	memset(&denied_params_mask.job_id, 0,
+	       sizeof(denied_params_mask.job_id));
+	memset(&denied_params_mask.job_list, 0,
+	       sizeof(denied_params_mask.job_list));
+	memset(&denied_params_mask.local_flag, 0,
+	       sizeof(denied_params_mask.local_flag));
+	memset(&denied_params_mask.cluster_names, 0,
+	       sizeof(denied_params_mask.cluster_names));
+	memset(&denied_params_mask.convert_flags, 0,
+	       sizeof(denied_params_mask.convert_flags));
+	memset(&denied_params_mask.no_header, 0,
+	       sizeof(denied_params_mask.no_header));
+	memset(&denied_params_mask.only_state, 0,
+	       sizeof(denied_params_mask.only_state));
+	memset(&denied_params_mask.sibling_flag, 0,
+	       sizeof(denied_params_mask.sibling_flag));
+	memset(&denied_params_mask.sort, 0,
+	       sizeof(denied_params_mask.sort));
+	memset(&denied_params_mask.states, 0,
+	       sizeof(denied_params_mask.states));
+	memset(&denied_params_mask.all_states, 0,
+	       sizeof(denied_params_mask.all_states));
+	memset(&denied_params_mask.state_list, 0,
+	       sizeof(denied_params_mask.state_list));
+	memset(&denied_params_mask.verbose, 0,
+	       sizeof(denied_params_mask.verbose));
+	memset(&denied_params_mask.mimetype, 0,
+	       sizeof(denied_params_mask.mimetype));
+	memset(&denied_params_mask.data_parser, 0,
+	       sizeof(denied_params_mask.data_parser));
+	memset(&denied_params_mask.detail_flag, 0,
+	       sizeof(denied_params_mask.detail_flag));
+
+	/* Set the empty mask */
+	memset(&empty_params_mask, 0, sizeof(empty_params_mask));
+
+	/*
+	 * If the original params, after all the allowed params got set to 0,
+	 * are equal to the empty mask, it means the original params has no
+	 * denied option set
+	 */
+	if (!memcmp(&denied_params_mask, &empty_params_mask,
+		    sizeof(empty_params_mask)))
+		return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }

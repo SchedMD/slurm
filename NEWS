@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 25.05.0rc1
 =============================
+ -- Fatal squeue --only-job-state if used with an unsupported combination of
+    parameters.
 
 * Changes in Slurm 24.11.1
 ==========================
