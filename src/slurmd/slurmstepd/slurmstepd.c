@@ -938,10 +938,31 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 
 		if (task_msg->job_ptr &&
 		    !xstrcmp(conf->node_name, task_msg->job_ptr->batch_host)) {
+			slurm_addr_t *node_addrs;
+
 			/* only allow one stepd to be stepmgr. */
 			job_step_ptr = task_msg->job_ptr;
 			job_step_ptr->part_ptr = task_msg->part_ptr;
 			job_node_array = task_msg->job_node_array;
+
+			/*
+			 * job_record doesn't pack its node_addrs array, so get
+			 * it from the cred.
+			 */
+			if (task_msg->cred &&
+			    (node_addrs = slurm_cred_get(
+				     task_msg->cred,
+				     CRED_DATA_JOB_NODE_ADDRS))) {
+				add_remote_nodes_to_conf_tbls(
+					job_step_ptr->nodes, node_addrs);
+
+				job_step_ptr->node_addrs =
+					xcalloc(job_step_ptr->node_cnt,
+						sizeof(slurm_addr_t));
+				memcpy(job_step_ptr->node_addrs, node_addrs,
+				       job_step_ptr->node_cnt *
+				       sizeof(slurm_addr_t));
+			}
 		}
 
 		break;
