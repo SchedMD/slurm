@@ -883,7 +883,6 @@ typedef struct prolog_launch_msg {
 typedef struct batch_job_launch_msg {
 	char *account;          /* account under which the job is running */
 	char *acctg_freq;	/* accounting polling intervals	*/
-	char *alias_list;	/* node name/address/hostname aliases */
 	uint32_t array_job_id;	/* job array master job ID */
 	uint32_t array_task_id;	/* job array ID or NO_VAL */
 	char *container;	/* OCI Container Bundle path */

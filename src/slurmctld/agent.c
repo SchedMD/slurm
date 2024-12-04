@@ -2361,14 +2361,6 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		if (tmp ==
 		    (READY_JOB_STATE | READY_NODE_STATE | READY_PROLOG_STATE)) {
 			nodes_ready = 1;
-			if (launch_msg_ptr->alias_list &&
-			    !xstrcmp(launch_msg_ptr->alias_list, "TBD")) {
-				/* Update launch RPC with correct node
-				 * aliases */
-				xfree(launch_msg_ptr->alias_list);
-				launch_msg_ptr->alias_list = xstrdup(job_ptr->
-								     alias_list);
-			}
 		}
 	} else {
 #ifdef HAVE_FRONT_END

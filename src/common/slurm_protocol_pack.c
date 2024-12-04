@@ -9608,7 +9608,6 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 				     buffer);
 		}
 
-		/* Remove alias_list 2 versions after 23.11 */
 		packnull(buffer);
 
 		packstr(msg->cpu_bind, buffer);
@@ -9649,6 +9648,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 			     uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
+	char *tmp_char = NULL;
 	batch_job_launch_msg_t *launch_msg_ptr;
 
 	xassert(msg);
@@ -9761,7 +9761,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 				goto unpack_error;
 		}
 
-		safe_unpackstr(&launch_msg_ptr->alias_list, buffer);
+		safe_unpackstr(&tmp_char, buffer);
+		xfree(tmp_char);
 		safe_unpackstr(&launch_msg_ptr->cpu_bind, buffer);
 		safe_unpackstr(&launch_msg_ptr->nodes, buffer);
 		safe_unpackstr(&launch_msg_ptr->script, buffer);
