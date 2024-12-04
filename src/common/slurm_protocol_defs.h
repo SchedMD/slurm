@@ -737,7 +737,6 @@ typedef struct launch_tasks_request_msg {
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
 	dynamic_plugin_data_t *select_jobinfo; /* select context, opaque data */
-	char *alias_list;	/* node name/address/hostname aliases */
 
 	/* only filled out if step is SLURM_EXTERN_CONT */
 	uint16_t x11;			/* X11 forwarding setup flags */

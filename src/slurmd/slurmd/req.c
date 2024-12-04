@@ -2298,7 +2298,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	int i;
 
 	launch_req = xmalloc(sizeof(launch_tasks_request_msg_t));
-	launch_req->alias_list		= req->alias_list;
 	launch_req->complete_nodelist	= req->nodes;
 	launch_req->cpus_per_task	= 1;
 	launch_req->cred_version = msg->protocol_version;

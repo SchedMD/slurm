@@ -7157,9 +7157,6 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack16(msg->slurmd_debug, buffer);
 		job_options_pack(msg->options, buffer);
 
-		/* Remove alias_list 2 versions after 23.11 */
-		packnull(buffer);
-
 		packstr(msg->complete_nodelist, buffer);
 
 		pack8(msg->open_mode, buffer);
@@ -7273,7 +7270,6 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack16(msg->slurmd_debug, buffer);
 		job_options_pack(msg->options, buffer);
 
-		/* Remove alias_list 2 versions after 23.11 */
 		packnull(buffer);
 
 		packstr(msg->complete_nodelist, buffer);
@@ -7391,7 +7387,6 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 				       protocol_version);
 		job_options_pack(msg->options, buffer);
 
-		/* Remove alias_list 2 versions after 23.11 */
 		packnull(buffer);
 
 		packstr(msg->complete_nodelist, buffer);
@@ -7508,9 +7503,6 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 				       protocol_version);
 		job_options_pack(msg->options, buffer);
 
-		/* Remove alias_list 2 versions after 23.11 */
-		packnull(buffer);
-
 		packstr(msg->complete_nodelist, buffer);
 
 		pack8(msg->open_mode, buffer);
@@ -7536,6 +7528,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 {
 	uint32_t uint32_tmp = 0;
 	bool tmp_bool;
+	char *tmp_char = NULL;
 	launch_tasks_request_msg_t *msg;
 	int i = 0;
 	dynamic_plugin_data_t *tmp_switch = NULL;
@@ -7663,7 +7656,6 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 			error("Unable to unpack extra job options: %m");
 			goto unpack_error;
 		}
-		safe_unpackstr(&msg->alias_list, buffer);
 		safe_unpackstr(&msg->complete_nodelist, buffer);
 
 		safe_unpack8(&msg->open_mode, buffer);
@@ -7817,7 +7809,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 			error("Unable to unpack extra job options: %m");
 			goto unpack_error;
 		}
-		safe_unpackstr(&msg->alias_list, buffer);
+		safe_unpackstr(&tmp_char, buffer);
+		xfree(tmp_char);
 		safe_unpackstr(&msg->complete_nodelist, buffer);
 
 		safe_unpack8(&msg->open_mode, buffer);
@@ -7978,7 +7971,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 			error("Unable to unpack extra job options: %m");
 			goto unpack_error;
 		}
-		safe_unpackstr(&msg->alias_list, buffer);
+		safe_unpackstr(&tmp_char, buffer);
+		xfree(tmp_char);
 		safe_unpackstr(&msg->complete_nodelist, buffer);
 
 		safe_unpack8(&msg->open_mode, buffer);
@@ -8138,7 +8132,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 			error("Unable to unpack extra job options: %m");
 			goto unpack_error;
 		}
-		safe_unpackstr(&msg->alias_list, buffer);
+		safe_unpackstr(&tmp_char, buffer);
+		xfree(tmp_char);
 		safe_unpackstr(&msg->complete_nodelist, buffer);
 
 		safe_unpack8(&msg->open_mode, buffer);
