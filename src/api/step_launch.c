@@ -291,7 +291,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		launch.cwd = xstrdup(params->cwd);
 	else
 		launch.cwd = _lookup_cwd();
-	launch.alias_list	= params->alias_list;
 	launch.mpi_plugin_id = mpi_plugin_id;
 	launch.nnodes		= ctx->step_resp->step_layout->node_cnt;
 	launch.ntasks		= ctx->step_resp->step_layout->task_cnt;
@@ -501,7 +500,6 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 		launch.cwd = xstrdup(params->cwd);
 	else
 		launch.cwd = _lookup_cwd();
-	launch.alias_list	= params->alias_list;
 	launch.mpi_plugin_id = mpi_plugin_id;
 	launch.nnodes		= ctx->step_resp->step_layout->node_cnt;
 	launch.ntasks		= ctx->step_resp->step_layout->task_cnt;

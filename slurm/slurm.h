@@ -2153,7 +2153,6 @@ typedef struct top_job_msg {
 } top_job_msg_t;
 
 typedef struct {
-	char *alias_list;	/* node name/address/hostname aliases */
 	uint32_t argc;
 	char **argv;
 	uint32_t envc;

@@ -86,7 +86,6 @@
  * about node allocation to be passed to _job_create_structure()
  */
 typedef struct allocation_info {
-	char                   *alias_list;
 	uint16_t               *cpus_per_node;
 	uint32_t               *cpu_count_reps;
 	uint32_t                nnodes;
@@ -106,7 +105,6 @@ typedef struct allocation_info {
 } allocation_info_t;
 
 typedef struct het_job_resp_struct {
-	char **alias_list;
 	uint16_t *cpu_cnt;
 	hostlist_t *host_list;
 	uint32_t node_cnt;
@@ -1040,13 +1038,7 @@ static void _cancel_steps(list_t *srun_job_list)
 static void _het_job_struct_del(void *x)
 {
 	het_job_resp_struct_t *het_job_resp = (het_job_resp_struct_t *) x;
-	int i;
 
-	if (het_job_resp->alias_list) {
-		for (i = 0; i < het_job_resp->node_cnt; i++)
-			xfree(het_job_resp->alias_list[i]);
-		xfree(het_job_resp->alias_list);
-	}
 	xfree(het_job_resp->cpu_cnt);
 	if (het_job_resp->host_list)
 		hostlist_destroy(het_job_resp->host_list);
@@ -1114,15 +1106,9 @@ static char *_compress_het_job_nodelist(list_t *used_resp_list)
 			if (have_aliases) {
 				if (aliases)
 					xstrcat(aliases, ",");
-				if (het_job_resp->alias_list &&
-				    het_job_resp->alias_list[j]) {
-					xstrcat(aliases,
-						het_job_resp->alias_list[j]);
-				} else {
-					xstrfmtcat(aliases, "%s:%s:%s",
-						   node_name, node_name,
-						   node_name);
-				}
+				xstrfmtcat(aliases, "%s:%s:%s",
+					   node_name, node_name,
+					   node_name);
 			}
 			if (cpus[cpu_inx] == het_job_resp->cpu_cnt[j]) {
 				reps[cpu_inx]++;
@@ -1663,7 +1649,6 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 	slurm_cond_init(&job->state_cond, NULL);
 	job->state = SRUN_JOB_INIT;
 
- 	job->alias_list = xstrdup(ainfo->alias_list);
 	job->container = xstrdup(opt_local->container);
  	job->nodelist = xstrdup(ainfo->nodelist);
  	job->partition = xstrdup(ainfo->partition);
