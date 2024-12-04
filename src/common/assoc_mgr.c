@@ -2780,8 +2780,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	assoc->is_def          = ret_assoc->is_def;
 
-	assoc->lft             = ret_assoc->lft;
-
 	if (!assoc->lineage)
 		assoc->lineage = ret_assoc->lineage;
 
@@ -2814,8 +2812,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 		assoc->qos_list = ret_assoc->qos_list;
 
 	assoc->priority = ret_assoc->priority;
-
-	assoc->rgt              = ret_assoc->rgt;
 
 	assoc->shares_raw       = ret_assoc->shares_raw;
 

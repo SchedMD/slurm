@@ -114,23 +114,12 @@ int _setup_assoc_list(void)
 	update.type = SLURMDB_ADD_ASSOC;
 	update.objects = list_create(slurmdb_destroy_assoc_rec);
 
-	/* Just so we don't have to worry about lft's and rgt's we
-	 * will just append these on in order.
-	 * Note: the commented out lfts and rgts as of 10-29-10 are
-	 * correct.  By doing an append they go on
-	 * sorted in hierarchy order.  The sort that happens inside
-	 * the internal slurm code will sort alpha automatically, (You can
-	 * test this by putting AccountF before AccountE.
-	 */
-
 	/* First only add the accounts */
 	/* root association */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 1;
-	/* assoc->lft = 1; */
-	/* assoc->rgt = 28; */
 	assoc->acct = xstrdup("root");
 	assoc->lineage = xstrdup("/");
 	list_append(update.objects, assoc);
@@ -142,8 +131,6 @@ int _setup_assoc_list(void)
 	assoc->id = 2;
 	assoc->parent_id = 1;
 	assoc->shares_raw = 40;
-	/* assoc->lft = 2; */
-	/* assoc->rgt = 13; */
 	assoc->acct = xstrdup("AccountA");
 	assoc->lineage = xstrdup("/AccountA/");
 	list_append(update.objects, assoc);
@@ -153,8 +140,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 21;
-	/* assoc->lft = 3; */
-	/* assoc->rgt = 6; */
 	assoc->parent_id = 2;
 	assoc->shares_raw = 30;
 	assoc->acct = xstrdup("AccountB");
@@ -166,8 +151,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 211;
-	/* assoc->lft = 4; */
-	/* assoc->rgt = 5; */
 	assoc->parent_id = 21;
 	assoc->shares_raw = 1;
 	assoc->usage->usage_raw = 20;
@@ -181,8 +164,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 22;
-	/* assoc->lft = 7; */
-	/* assoc->rgt = 12; */
 	assoc->parent_id = 2;
 	assoc->shares_raw = 10;
 	assoc->acct = xstrdup("AccountC");
@@ -194,8 +175,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 221;
-	/* assoc->lft = 8; */
-	/* assoc->rgt = 9; */
 	assoc->parent_id = 22;
 	assoc->shares_raw = 1;
 	assoc->usage->usage_raw = 25;
@@ -208,8 +187,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 222;
-	/* assoc->lft = 10; */
-	/* assoc->rgt = 11; */
 	assoc->parent_id = 22;
 	assoc->shares_raw = 1;
 	assoc->usage->usage_raw = 0;
@@ -223,8 +200,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 3;
-	/* assoc->lft = 14; */
-	/* assoc->rgt = 23; */
 	assoc->parent_id = 1;
 	assoc->shares_raw = 60;
 	assoc->acct = xstrdup("AccountD");
@@ -236,8 +211,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 31;
-	/* assoc->lft = 19; */
-	/* assoc->rgt = 22; */
 	assoc->parent_id = 3;
 	assoc->shares_raw = 25;
 	assoc->acct = xstrdup("AccountE");
@@ -249,8 +222,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 311;
-	/* assoc->lft = 20; */
-	/* assoc->rgt = 21; */
 	assoc->parent_id = 31;
 	assoc->shares_raw = 1;
 	assoc->usage->usage_raw = 25;
@@ -264,8 +235,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 32;
-	/* assoc->lft = 15; */
-	/* assoc->rgt = 18; */
 	assoc->parent_id = 3;
 	assoc->shares_raw = 35;
 	assoc->acct = xstrdup("AccountF");
@@ -277,8 +246,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 321;
-	/* assoc->lft = 16; */
-	/* assoc->rgt = 17; */
 	assoc->parent_id = 32;
 	assoc->shares_raw = 1;
 	assoc->usage->usage_raw = 0;
@@ -292,8 +259,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 4;
-	/* assoc->lft = 24; */
-	/* assoc->rgt = 27; */
 	assoc->parent_id = 1;
 	assoc->shares_raw = 0;
 	assoc->acct = xstrdup("AccountG");
@@ -305,8 +270,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 41;
-	/* assoc->lft = 25; */
-	/* assoc->rgt = 26; */
 	assoc->parent_id = 4;
 	assoc->shares_raw = 0;
 	assoc->usage->usage_raw = 30;
@@ -322,8 +285,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 5;
-	/* assoc->lft = ; */
-	/* assoc->rgt = ; */
 	assoc->parent_id = 1;
 	assoc->shares_raw = 50;
 	assoc->acct = xstrdup("AccountH");
@@ -335,8 +296,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 51;
-	/* assoc->lft = ; */
-	/* assoc->rgt = ; */
 	assoc->parent_id = 5;
 	assoc->shares_raw = SLURMDB_FS_USE_PARENT;
 	assoc->usage->usage_raw = 35;
@@ -349,8 +308,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 511;
-	/* assoc->lft = ; */
-	/* assoc->rgt = ; */
 	assoc->parent_id = 51;
 	assoc->shares_raw = SLURMDB_FS_USE_PARENT;
 	assoc->usage->usage_raw = 10;
@@ -364,8 +321,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 512;
-	/* assoc->lft = ; */
-	/* assoc->rgt = ; */
 	assoc->parent_id = 51;
 	assoc->shares_raw = 30;
 	assoc->usage->usage_raw = 10;
@@ -379,8 +334,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 513;
-	/* assoc->lft = ; */
-	/* assoc->rgt = ; */
 	assoc->parent_id = 51;
 	assoc->shares_raw = 50;
 	assoc->usage->usage_raw = 25;
@@ -394,8 +347,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 52;
-	/* assoc->lft = ; */
-	/* assoc->rgt = ; */
 	assoc->parent_id = 5;
 	assoc->shares_raw = SLURMDB_FS_USE_PARENT;
 	assoc->usage->usage_raw = 20;
@@ -409,8 +360,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 53;
-	/* assoc->lft = ; */
-	/* assoc->rgt = ; */
 	assoc->parent_id = 5;
 	assoc->shares_raw = 40;
 	assoc->usage->usage_raw = 20;
@@ -424,8 +373,6 @@ int _setup_assoc_list(void)
 	assoc->cluster = xstrdup(slurm_conf.cluster_name);
 	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 54;
-	/* assoc->lft = ; */
-	/* assoc->rgt = ; */
 	assoc->parent_id = 5;
 	assoc->shares_raw = 50;
 	assoc->usage->usage_raw = 25;

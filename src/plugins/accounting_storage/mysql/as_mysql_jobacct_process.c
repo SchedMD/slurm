@@ -113,7 +113,6 @@ char *job_req_inx[] = {
 	"t1.submit_line",
 	"t4.env_vars",
 	"t2.acct",
-	"t2.lft",
 	"t2.lineage",
 	"t2.user"
 };
@@ -179,7 +178,6 @@ enum {
 	JOB_REQ_SUBMIT_LINE,
 	JOB_REQ_ENV,
 	JOB_REQ_ACCOUNT,
-	JOB_REQ_LFT,
 	JOB_REQ_LINEAGE,
 	JOB_REQ_USER_NAME,
 	JOB_REQ_COUNT
@@ -704,9 +702,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 		if (row[JOB_REQ_UID])
 			job->uid = slurm_atoul(row[JOB_REQ_UID]);
-
-		if (row[JOB_REQ_LFT])
-			job->lft = slurm_atoul(row[JOB_REQ_LFT]);
 
 		if (row[JOB_REQ_LINEAGE])
 			job->lineage = xstrdup(row[JOB_REQ_LINEAGE]);

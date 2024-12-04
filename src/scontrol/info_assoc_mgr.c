@@ -276,9 +276,6 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 			else
 				printf("ParentAccount= ");
 
-			/* rgt isn't always valid coming from the
-			 * association manager (so don't print it).
-			 */
 			printf("Lineage=%s DefAssoc=%s%s",
 			       assoc_rec->lineage,
 			       assoc_rec->is_def ? "Yes" : "No",

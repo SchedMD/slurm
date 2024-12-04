@@ -558,9 +558,6 @@ typedef struct slurmdb_assoc_rec {
 	slurmdb_assoc_usage_t *leaf_usage; /* Points to usage for user assocs.
 					    * Holds usage of deleted users in
 					    * parent assocs (DON'T PACK) */
-	uint32_t lft;		   /* lft used for grouping sub
-				    * associations and jobs as a left
-				    * most container used with rgt */
 	char *lineage;		   /* Complete path up the hierarchy to the root
 				    * association */
 	uint32_t max_jobs;	   /* max number of jobs this
@@ -609,10 +606,6 @@ typedef struct slurmdb_assoc_rec {
 				    * associated to association */
 	uint32_t priority;	   /* association priority */
 	list_t *qos_list;          /* list of char * */
-
-	uint32_t rgt;		   /* rgt used for grouping sub
-				    * associations and jobs as a right
-				    * most container used with lft */
 
 	uint32_t shares_raw;	   /* number of shares allocated to
 				    * association */
@@ -893,7 +886,6 @@ typedef struct {
 	uint32_t het_job_offset;
 	uint32_t jobid;
 	char	*jobname;
-	uint32_t lft;
 	char *lineage;		   /* Complete path up the hierarchy to the root
 				    * association */
 	char *licenses;

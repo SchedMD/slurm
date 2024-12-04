@@ -193,7 +193,6 @@ static slurmdb_assoc_rec_t *_diff_assoc(slurmdb_assoc_rec_t *assoc,
 
 
 	/* skip leaf_usage */
-	/* skip lft */
 
 	assoc->max_jobs = dst->max_jobs;
 	assoc->max_jobs_accrue = dst->max_jobs_accrue;
@@ -232,8 +231,6 @@ static slurmdb_assoc_rec_t *_diff_assoc(slurmdb_assoc_rec_t *assoc,
 
 	if (dst->qos_list)
 		SWAP(assoc->qos_list, dst->qos_list);
-
-	/* skip rgt */
 
 	assoc->shares_raw = dst->shares_raw;
 

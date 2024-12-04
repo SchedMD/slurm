@@ -181,14 +181,6 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
 extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
 			    int *dims);
 
-/*
- * Get the version of the checked in Cluster.  This can be removed
- * 2 versions after 23.11 as we only need it to keep track of lft/rgt until we
- * can completely bail from them.
- */
-extern uint32_t get_cluster_version(mysql_conn_t *mysql_conn,
-				    char *cluster_name);
-
 /*local api functions */
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
 

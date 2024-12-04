@@ -1190,8 +1190,6 @@ extern int create_cluster_assoc_table(
 		{ "parent_acct", "tinytext not null default ''" },
 		{ "id_parent", "int unsigned not null" },
 		{ "lineage", "text" },
-		{ "lft", "int not null default 0" },
-		{ "rgt", "int not null default 0" },
 		{ "shares", "int default 1 not null" },
 		{ "max_jobs", "int default NULL" },
 		{ "max_jobs_accrue", "int default NULL" },
@@ -1224,8 +1222,7 @@ extern int create_cluster_assoc_table(
 				  assoc_table_fields,
 				  ", primary key (id_assoc), "
 				  "unique index udex (user(42), acct(42), "
-				  "`partition`(42)), "
-				  "key lft (lft), key account (acct(42)))")
+				  "`partition`(42)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -2278,8 +2275,6 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	bool has_jobs = false;
 	char *tmp_name_char = NULL;
 	bool cluster_centric = true;
-	uint32_t rpc_version;
-	uint32_t smallest_lft = 0xFFFFFFFF;
 
 	/* figure out which tables we need to append the cluster name to */
 	if ((table == cluster_table) || (table == acct_coord_table)
@@ -2425,11 +2420,10 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	/* If we are removing assocs use the assoc_char since the
-	   name_char has lft between statements that can change over
-	   time.  The assoc_char has the actual ids of the assocs
-	   which never change.
-	*/
+	/*
+	 * If we are removing assocs use the assoc_char.
+	 * The assoc_char has the actual ids of the assocs which never change.
+	 */
 	if (type == DBD_REMOVE_ASSOCS && assoc_char)
 		tmp_name_char = slurm_add_slash_to_quotes(assoc_char);
 	else
@@ -2528,92 +2522,13 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if (has_jobs)
 		goto just_update;
 
-	/*
-	 * Remove completely all the associations for this added in the last
-	 * day, since they are most likely nothing we really wanted in
-	 * the first place.
-	 */
-	rpc_version = get_cluster_version(mysql_conn, cluster_name);
-	if (rpc_version < SLURM_23_11_PROTOCOL_VERSION) {
-		query = xstrdup_printf("select id_assoc from \"%s_%s\" as t1 where "
-				       "creation_time>%ld && (%s);",
-				       cluster_name, assoc_table,
-				       day_old, loc_assoc_char);
+	query = xstrdup_printf("delete quick from \"%s_%s\" where creation_time>%ld && (%s);",
+			       cluster_name, assoc_table,
+			       day_old, loc_assoc_char);
 
-		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-		if (!(result = mysql_db_query_ret(
-			      mysql_conn, query, 0))) {
-			xfree(query);
-			reset_mysql_conn(mysql_conn);
-			return SLURM_ERROR;
-		}
-		xfree(query);
-
-		while ((row = mysql_fetch_row(result))) {
-			MYSQL_RES *result2 = NULL;
-			MYSQL_ROW row2;
-			uint32_t lft;
-
-			/* we have to do this one at a time since the lft's and rgt's
-			   change. If you think you need to remove this make
-			   sure your new way can handle changing lft and rgt's
-			   in the association. */
-			xstrfmtcat(query,
-				   "SELECT lft, rgt, (rgt - lft + 1) "
-				   "FROM \"%s_%s\" WHERE id_assoc = %s;",
-				   cluster_name, assoc_table, row[0]);
-			DB_DEBUG(DB_ASSOC, mysql_conn->conn,
-				 "query\n%s", query);
-			if (!(result2 = mysql_db_query_ret(
-				      mysql_conn, query, 0))) {
-				xfree(query);
-				rc = SLURM_ERROR;
-				break;
-			}
-			xfree(query);
-			if (!(row2 = mysql_fetch_row(result2))) {
-				mysql_free_result(result2);
-				continue;
-			}
-
-			xstrfmtcat(query,
-				   "delete quick from \"%s_%s\" where "
-				   "lft between %s AND %s;",
-				   cluster_name, assoc_table, row2[0], row2[1]);
-
-			xstrfmtcat(query,
-				   "UPDATE \"%s_%s\" SET rgt = rgt - %s WHERE rgt > %s;"
-				   "UPDATE \"%s_%s\" SET "
-				   "lft = lft - %s WHERE lft > %s;",
-				   cluster_name, assoc_table, row2[2], row2[1],
-				   cluster_name, assoc_table, row2[2], row2[1]);
-
-			lft = slurm_atoul(row2[0]);
-			if (lft < smallest_lft)
-				smallest_lft = lft;
-
-			mysql_free_result(result2);
-
-			DB_DEBUG(DB_ASSOC, mysql_conn->conn,
-				 "query\n%s", query);
-			rc = mysql_db_query(mysql_conn, query);
-			xfree(query);
-			if (rc != SLURM_SUCCESS) {
-				error("couldn't remove assoc");
-				break;
-			}
-		}
-		mysql_free_result(result);
-
-	} else {
-		query = xstrdup_printf("delete quick from \"%s_%s\" where creation_time>%ld && (%s);",
-				       cluster_name, assoc_table,
-				       day_old, loc_assoc_char);
-
-		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-	}
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
 
 	if (rc == SLURM_ERROR) {
 		reset_mysql_conn(mysql_conn);
@@ -2657,19 +2572,6 @@ just_update:
 	xfree(query);
 	if (rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
-	}
-
-	/* This already happened before, but we need to run it again
-	   since the first time we ran it we didn't know if we were
-	   going to remove the above associations.
-	*/
-	if ((rc == SLURM_SUCCESS) && (smallest_lft != 0xFFFFFFFF)) {
-		rc = as_mysql_get_modified_lfts(mysql_conn,
-						cluster_name,
-						smallest_lft);
-		if (rc != SLURM_SUCCESS) {
-			reset_mysql_conn(mysql_conn);
-		}
 	}
 
 	return rc;
@@ -2976,31 +2878,6 @@ extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
 	mysql_free_result(result);
 
 	return SLURM_SUCCESS;
-}
-
-extern uint32_t get_cluster_version(mysql_conn_t *mysql_conn,
-				    char *cluster_name)
-{
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-	uint32_t rpc_version = 0;
-
-	char *query = xstrdup_printf(
-		"select rpc_version from %s where name='%s' && deleted=0",
-		cluster_table, cluster_name);
-
-	result = mysql_db_query_ret(mysql_conn, query, 0);
-	xfree(query);
-
-	if (!result)
-		return rpc_version;
-
-	if ((row = mysql_fetch_row(result)))
-		rpc_version = slurm_atoul(row[0]);
-
-	mysql_free_result(result);
-
-	return rpc_version;
 }
 
 extern void *acct_storage_p_get_connection(
@@ -3775,15 +3652,6 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 extern int acct_storage_p_reconfig(mysql_conn_t *mysql_conn, bool dbd)
 {
 	return SLURM_SUCCESS;
-}
-
-extern int acct_storage_p_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
-					list_t *cluster_list)
-{
-	if (check_connection(mysql_conn) != SLURM_SUCCESS)
-		return ESLURM_DB_CONNECTION;
-
-	return as_mysql_reset_lft_rgt(mysql_conn, uid, cluster_list);
 }
 
 extern int acct_storage_p_get_stats(void *db_conn, bool dbd)

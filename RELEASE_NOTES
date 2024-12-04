@@ -26,6 +26,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- slurmdbd '-R' is no longer a valid option. lft/rgt logic was removed from
+    Slurm in 23.11.
 
 API CHANGES
 ===========

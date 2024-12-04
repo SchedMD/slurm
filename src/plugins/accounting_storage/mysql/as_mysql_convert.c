@@ -63,28 +63,6 @@ typedef struct {
 
 static uint32_t db_curr_ver = NO_VAL;
 
-static int _rename_clus_res_columns(mysql_conn_t *mysql_conn)
-{
-	char *query = NULL;
-	int rc = SLURM_SUCCESS;
-
-	/*
-	 * Change the name 'percent_allowed' to be 'allowed'
-	 */
-	query = xstrdup_printf(
-		"alter table %s change percent_allowed allowed "
-		"int unsigned default 0;",
-		clus_res_table);
-
-	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-	if ((rc = as_mysql_convert_alter_query(mysql_conn, query)) !=
-	    SLURM_SUCCESS)
-		error("Can't update %s %m", clus_res_table);
-	xfree(query);
-
-	return rc;
-}
-
 static int _convert_clus_res_table_pre(mysql_conn_t *mysql_conn)
 {
 	int rc = SLURM_SUCCESS;
@@ -272,18 +250,6 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 	list_iterator_destroy(itr);
 
 	return rc;
-}
-
-static int _foreach_set_lineage(void *x, void *arg)
-{
-	char *query = x;
-	mysql_conn_t *mysql_conn = arg;
-
-	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-	if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS)
-		return -1; /* Abort list_for_each */
-
-	return 0; /* Continue list_for_each */
 }
 
 static int _convert_assoc_table_post(mysql_conn_t *mysql_conn,
