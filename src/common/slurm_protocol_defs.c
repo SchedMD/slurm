@@ -1262,7 +1262,6 @@ slurm_copy_resource_allocation_response_msg(
 
 	memcpy(new, msg, sizeof(*msg));
 	new->account = xstrdup(msg->account);
-	new->alias_list = xstrdup(msg->alias_list);
 	new->batch_host = xstrdup(msg->batch_host);
 
 	if (msg->cpus_per_node) {
@@ -1283,10 +1282,6 @@ slurm_copy_resource_allocation_response_msg(
 	new->gid = msg->gid;
 	new->group_name = xstrdup(msg->group_name);
 	new->job_submit_user_msg = xstrdup(msg->job_submit_user_msg);
-	if (msg->node_addr) {
-		new->node_addr = xmalloc(sizeof(*new->node_addr));
-		memcpy(new->node_addr, msg->node_addr, sizeof(*new->node_addr));
-	}
 	new->node_list = xstrdup(msg->node_list);
 	new->partition = xstrdup(msg->partition);
 	new->qos = xstrdup(msg->qos);
@@ -4008,7 +4003,6 @@ extern void slurm_free_resource_allocation_response_msg_members (
 {
 	if (msg) {
 		xfree(msg->account);
-		xfree(msg->alias_list);
 		xfree(msg->batch_host);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
@@ -4016,7 +4010,6 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		msg->environment = NULL;
 		xfree(msg->group_name);
 		xfree(msg->job_submit_user_msg);
-		xfree(msg->node_addr);
 		xfree(msg->node_list);
 		xfree(msg->partition);
 		xfree(msg->qos);

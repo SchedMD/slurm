@@ -291,7 +291,6 @@ extern srun_job_t *job_step_create_allocation(
 	ai->step_id.job_id          = job_id;
 	ai->step_id.step_id         = NO_VAL;
 	ai->step_id.step_het_comp = NO_VAL;
-	ai->alias_list     = resp->alias_list;
 	if (srun_opt->alloc_nodelist)
 		ai->nodelist = xstrdup(srun_opt->alloc_nodelist);
 	else
@@ -498,7 +497,6 @@ extern srun_job_t *job_create_allocation(
 	srun_job_t *job;
 	allocation_info_t *i = xmalloc(sizeof(allocation_info_t));
 
-	i->alias_list     = resp->alias_list;
 	i->nodelist       = _normalize_hostlist(resp->node_list);
 	i->nnodes	  = resp->node_cnt;
 	i->partition      = resp->partition;
@@ -1061,7 +1059,7 @@ static char *_compress_het_job_nodelist(list_t *used_resp_list)
 	het_job_resp_struct_t *het_job_resp;
 	list_t *het_job_resp_list;
 	list_itr_t *resp_iter;
-	char *aliases = NULL, *save_ptr = NULL, *tok, *tmp;
+	char *aliases = NULL, *tmp;
 	char *het_job_nodelist = NULL, *node_name;
 	hostset_t *hs;
 	int cnt, i, j, k;
@@ -1082,27 +1080,6 @@ static char *_compress_het_job_nodelist(list_t *used_resp_list)
 		hostset_insert(hs, resp->node_list);
 		het_job_resp = xmalloc(sizeof(het_job_resp_struct_t));
 		het_job_resp->node_cnt = resp->node_cnt;
-		/*
-		 * alias_list contains <NodeName>:<NodeAddr>:<NodeHostName>
-		 * values in comma separated list
-		 */
-		if (resp->alias_list) {
-			have_aliases = true;
-			het_job_resp->alias_list = xmalloc(sizeof(char *) *
-							   resp->node_cnt);
-			tmp = xstrdup(resp->alias_list);
-			i = 0;
-			tok = strtok_r(tmp, ",", &save_ptr);
-			while (tok) {
-				if (i >= resp->node_cnt) {
-					fatal("%s: Invalid alias_list",
-					      __func__);
-				}
-				het_job_resp->alias_list[i++] = xstrdup(tok);
-				tok = strtok_r(NULL, ",", &save_ptr);
-			}
-			xfree(tmp);
-		}
 		het_job_resp->cpu_cnt =
 			xmalloc(sizeof(uint16_t) * resp->node_cnt);
 		het_job_resp->host_list = hostlist_create(resp->node_list);

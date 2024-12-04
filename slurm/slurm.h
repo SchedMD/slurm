@@ -2576,7 +2576,6 @@ typedef struct delete_partition_msg {
 typedef struct resource_allocation_response_msg {
 	char *account;          /* allocation account */
 	uint32_t job_id;	/* assigned job id */
-	char *alias_list;	/* node name/address/hostname aliases */
 	char *batch_host;	/* host executing batch script */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
@@ -2590,7 +2589,6 @@ typedef struct resource_allocation_response_msg {
 	gid_t gid; /* resolved group id of job */
 	char *group_name; /* resolved group name of job */
 	char *job_submit_user_msg;/* job_submit plugin user_msg */
-	slurm_addr_t *node_addr;  /* network addresses */
 	uint32_t node_cnt;	/* count of nodes */
 	char *node_list;	/* assigned list of nodes */
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */

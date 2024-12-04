@@ -1150,9 +1150,6 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 
-		/* Remove alias_list 2 versions after 23.11 */
-		packnull(buffer);
-
 		packstr(msg->batch_host, buffer);
 		packstr_array(msg->environment, msg->env_size, buffer);
 		pack32(msg->error_code, buffer);
@@ -1161,9 +1158,6 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		packstr(msg->job_submit_user_msg, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->node_cnt, buffer);
-
-		/* Remove node_addr 2 versions after 23.11 */
-		pack8(0, buffer);
 
 		packstr(msg->node_list, buffer);
 		pack16(msg->ntasks_per_board, buffer);
@@ -1198,7 +1192,6 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 
-		/* Remove alias_list 2 versions after 23.11 */
 		packnull(buffer);
 
 		packstr(msg->batch_host, buffer);
@@ -1210,7 +1203,6 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		pack32(msg->job_id, buffer);
 		pack32(msg->node_cnt, buffer);
 
-		/* Remove node_addr 2 versions after 23.11 */
 		pack8(0, buffer);
 
 		packstr(msg->node_list, buffer);
@@ -1251,6 +1243,7 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 {
 	uint8_t  uint8_tmp;
 	uint32_t uint32_tmp;
+	char *tmp_char = NULL;
 	resource_allocation_response_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
@@ -1259,7 +1252,6 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->account, buffer);
-		safe_unpackstr(&tmp_ptr->alias_list, buffer);
 		safe_unpackstr(&tmp_ptr->batch_host, buffer);
 		safe_unpackstr_array(&tmp_ptr->environment,
 				     &tmp_ptr->env_size, buffer);
@@ -1269,17 +1261,6 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 		safe_unpackstr(&tmp_ptr->job_submit_user_msg, buffer);
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->node_cnt, buffer);
-
-		/* unpack node_addr after node_cnt -- need it to unpack */
-		safe_unpack8(&uint8_tmp, buffer);
-		if (uint8_tmp) {
-			if (slurm_unpack_addr_array(&tmp_ptr->node_addr,
-						    &uint32_tmp, buffer))
-				goto unpack_error;
-			if (uint32_tmp != tmp_ptr->node_cnt)
-				goto unpack_error;
-		} else
-			tmp_ptr->node_addr = NULL;
 
 		safe_unpackstr(&tmp_ptr->node_list, buffer);
 		safe_unpack16(&tmp_ptr->ntasks_per_board, buffer);
@@ -1316,7 +1297,8 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 		}
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->account, buffer);
-		safe_unpackstr(&tmp_ptr->alias_list, buffer);
+		safe_unpackstr(&tmp_char, buffer);
+		xfree(tmp_char);
 		safe_unpackstr(&tmp_ptr->batch_host, buffer);
 		safe_unpackstr_array(&tmp_ptr->environment,
 				     &tmp_ptr->env_size, buffer);
@@ -1327,16 +1309,7 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->node_cnt, buffer);
 
-		/* unpack node_addr after node_cnt -- need it to unpack */
 		safe_unpack8(&uint8_tmp, buffer);
-		if (uint8_tmp) {
-			if (slurm_unpack_addr_array(&tmp_ptr->node_addr,
-						    &uint32_tmp, buffer))
-				goto unpack_error;
-			if (uint32_tmp != tmp_ptr->node_cnt)
-				goto unpack_error;
-		} else
-			tmp_ptr->node_addr = NULL;
 
 		safe_unpackstr(&tmp_ptr->node_list, buffer);
 		safe_unpack16(&tmp_ptr->ntasks_per_board, buffer);

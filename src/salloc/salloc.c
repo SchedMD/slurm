@@ -1012,8 +1012,6 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	int is_ready = 0, i = 0, rc;
 	bool job_killed = false;
 
-	if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD"))
-		saopt.wait_all_nodes = 1;	/* Wait for boot & addresses */
 	if (saopt.wait_all_nodes == NO_VAL16)
 		saopt.wait_all_nodes = 0;
 
