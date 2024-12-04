@@ -3,8 +3,8 @@
 dnl Prologue
 dnl
 
-AC_INIT([slurm],[m4_esyscmd(perl -ne 'print,exit if s/^\s*VERSION:\s*(\d*.\d*).\S*/\1/i' ./META | sed 's/^v//' | tr '-' '_' | tr -d '\n')],[],[],[https://slurm.schedmd.com])
-AC_PREREQ([2.72])
+AC_INIT([slurm],m4_esyscmd([perl -ne 'print,exit if s/^\s*VERSION:\s*(\d*.\d*).\S*/\1/i' ./META | sed 's/^v//' | tr '-' '_' | tr -d '\n']),[],[],[https://slurm.schedmd.com])
+AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_AUX_DIR([auxdir])
 AC_CONFIG_MACRO_DIR([auxdir])
@@ -162,13 +162,6 @@ if test "x$ax_cv_have_epoll" = "xyes"; then
 	AC_DEFINE(HAVE_EPOLL, 1, [Define to 1 if we have epoll(7) support])
 fi
 AM_CONDITIONAL(HAVE_EPOLL, [test "x$ax_cv_have_epoll" = "xyes" ])
-
-dnl Checks for compiler characteristics.
-dnl
-m4_warn([obsolete],
-[AC_PROG_GCC_TRADITIONAL is obsolete; use AC_PROG_CC
-])dnl
-AC_REQUIRE(AC_PROG_CC)
 
 AX_GCC_BUILTIN(__builtin_bswap64)
 AX_GCC_BUILTIN(__builtin_clzll)
