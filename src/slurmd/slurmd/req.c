@@ -2529,7 +2529,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 		job_env.jobid = req->job_id;
 		job_env.step_id = 0; /* not available */
-		job_env.node_aliases = req->alias_list;
 		job_env.node_list = req->nodes;
 		job_env.het_job_id = req->het_job_id;
 		job_env.spank_job_env = req->spank_job_env;

@@ -8442,9 +8442,6 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 
-		/* Remove alias_list 2 versions after 23.11 */
-		packnull(buffer);
-
 		packstr(msg->nodes, buffer);
 		packstr(msg->work_dir, buffer);
 
@@ -8475,7 +8472,6 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 
-		/* Remove alias_list 2 versions after 23.11 */
 		packnull(buffer);
 
 		packstr(msg->nodes, buffer);
@@ -8508,7 +8504,6 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 
-		/* Remove alias_list 2 versions after 23.11 */
 		packnull(buffer);
 
 		packstr(msg->nodes, buffer);
@@ -8530,6 +8525,7 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	bool tmp_bool;
+	char *tmp_char = NULL;
 	prolog_launch_msg_t *msg = xmalloc(sizeof(*msg));
 	smsg->data = msg;
 
@@ -8542,7 +8538,6 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->uid, buffer);
 		safe_unpack32(&msg->gid, buffer);
 
-		safe_unpackstr(&msg->alias_list, buffer);
 		safe_unpackstr(&msg->nodes, buffer);
 		safe_unpackstr(&msg->work_dir, buffer);
 
@@ -8583,7 +8578,8 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->uid, buffer);
 		safe_unpack32(&msg->gid, buffer);
 
-		safe_unpackstr(&msg->alias_list, buffer);
+		safe_unpackstr(&tmp_char, buffer);
+		xfree(tmp_char);
 		safe_unpackstr(&msg->nodes, buffer);
 		safe_unpackstr(&msg->work_dir, buffer);
 
@@ -8624,7 +8620,8 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->uid, buffer);
 		safe_unpack32(&msg->gid, buffer);
 
-		safe_unpackstr(&msg->alias_list, buffer);
+		safe_unpackstr(&tmp_char, buffer);
+		xfree(tmp_char);
 		safe_unpackstr(&msg->nodes, buffer);
 		safe_unpackstr(&msg->work_dir, buffer);
 

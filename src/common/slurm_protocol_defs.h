@@ -848,7 +848,6 @@ typedef struct reattach_tasks_response_msg {
 } reattach_tasks_response_msg_t;
 
 typedef struct prolog_launch_msg {
-	char *alias_list;		/* node name/address/hostname aliases */
 	slurm_cred_t *cred;
 	uint32_t gid;
 	uint32_t het_job_id;		/* HetJob id or NO_VAL */
