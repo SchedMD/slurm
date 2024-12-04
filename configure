@@ -21893,8 +21893,6 @@ fi
 
 
 
-
-
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_bswap64" >&5
 printf %s "checking for __builtin_bswap64... " >&6; }
 if test ${ax_cv_have___builtin_bswap64+y}
