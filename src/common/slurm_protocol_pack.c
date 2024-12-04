@@ -1147,7 +1147,55 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 	resource_allocation_response_msg_t *msg = smsg->data;
 	xassert(msg);
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		packstr(msg->account, buffer);
+
+		/* Remove alias_list 2 versions after 23.11 */
+		packnull(buffer);
+
+		packstr(msg->batch_host, buffer);
+		packstr_array(msg->environment, msg->env_size, buffer);
+		pack32(msg->error_code, buffer);
+		pack32(msg->gid, buffer);
+		packstr(msg->group_name, buffer);
+		packstr(msg->job_submit_user_msg, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->node_cnt, buffer);
+
+		/* Remove node_addr 2 versions after 23.11 */
+		pack8(0, buffer);
+
+		packstr(msg->node_list, buffer);
+		pack16(msg->ntasks_per_board, buffer);
+		pack16(msg->ntasks_per_core, buffer);
+		pack16(msg->ntasks_per_tres, buffer);
+		pack16(msg->ntasks_per_socket, buffer);
+		pack32(msg->num_cpu_groups, buffer);
+		if (msg->num_cpu_groups) {
+			pack16_array(msg->cpus_per_node,
+				     msg->num_cpu_groups,
+				     buffer);
+			pack32_array(msg->cpu_count_reps,
+				     msg->num_cpu_groups,
+				     buffer);
+		}
+		packstr(msg->partition, buffer);
+		pack64(msg->pn_min_memory, buffer);
+		packstr(msg->qos, buffer);
+		packstr(msg->resv_name, buffer);
+		packstr(msg->tres_per_node, buffer);
+		pack32(msg->uid, buffer);
+		packstr(msg->user_name, buffer);
+
+		if (msg->working_cluster_rec) {
+			pack8(1, buffer);
+			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
+						 smsg->protocol_version,
+						 buffer);
+		} else {
+			pack8(0, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 
 		/* Remove alias_list 2 versions after 23.11 */
@@ -1209,7 +1257,64 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 	tmp_ptr = xmalloc(sizeof(resource_allocation_response_msg_t));
 	smsg->data = tmp_ptr;
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&tmp_ptr->account, buffer);
+		safe_unpackstr(&tmp_ptr->alias_list, buffer);
+		safe_unpackstr(&tmp_ptr->batch_host, buffer);
+		safe_unpackstr_array(&tmp_ptr->environment,
+				     &tmp_ptr->env_size, buffer);
+		safe_unpack32(&tmp_ptr->error_code, buffer);
+		safe_unpack32(&tmp_ptr->gid, buffer);
+		safe_unpackstr(&tmp_ptr->group_name, buffer);
+		safe_unpackstr(&tmp_ptr->job_submit_user_msg, buffer);
+		safe_unpack32(&tmp_ptr->job_id, buffer);
+		safe_unpack32(&tmp_ptr->node_cnt, buffer);
+
+		/* unpack node_addr after node_cnt -- need it to unpack */
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			if (slurm_unpack_addr_array(&tmp_ptr->node_addr,
+						    &uint32_tmp, buffer))
+				goto unpack_error;
+			if (uint32_tmp != tmp_ptr->node_cnt)
+				goto unpack_error;
+		} else
+			tmp_ptr->node_addr = NULL;
+
+		safe_unpackstr(&tmp_ptr->node_list, buffer);
+		safe_unpack16(&tmp_ptr->ntasks_per_board, buffer);
+		safe_unpack16(&tmp_ptr->ntasks_per_core, buffer);
+		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
+		safe_unpack16(&tmp_ptr->ntasks_per_socket, buffer);
+		safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
+		if (tmp_ptr->num_cpu_groups > 0) {
+			safe_unpack16_array(&tmp_ptr->cpus_per_node,
+					    &uint32_tmp, buffer);
+			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+			safe_unpack32_array(&tmp_ptr->cpu_count_reps,
+					    &uint32_tmp, buffer);
+			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+		} else {
+			tmp_ptr->cpus_per_node = NULL;
+			tmp_ptr->cpu_count_reps = NULL;
+		}
+		safe_unpackstr(&tmp_ptr->partition, buffer);
+		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
+		safe_unpackstr(&tmp_ptr->qos, buffer);
+		safe_unpackstr(&tmp_ptr->resv_name, buffer);
+		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
+		safe_unpack32(&tmp_ptr->uid, buffer);
+		safe_unpackstr(&tmp_ptr->user_name, buffer);
+
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			slurmdb_unpack_cluster_rec(
+				(void **)&tmp_ptr->working_cluster_rec,
+				smsg->protocol_version, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->account, buffer);
 		safe_unpackstr(&tmp_ptr->alias_list, buffer);
 		safe_unpackstr(&tmp_ptr->batch_host, buffer);
