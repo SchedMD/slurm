@@ -2846,8 +2846,6 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	int job_node_inx = -1, step_node_inx = -1;
 	uint32_t step_id = step_ptr->step_id.step_id;
 	node_record_t *node_ptr;
-	uint16_t req_tpc = _get_threads_per_core(step_ptr->threads_per_core,
-						 job_ptr);
 
 	xassert(job_resrcs_ptr);
 	if (!job_resrcs_ptr) {
@@ -2881,6 +2879,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	for (int i = 0;
 	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
 	     i++) {
+		int inx;
 		uint16_t vpus = node_ptr->tpc;
 		job_node_inx++;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
@@ -2912,43 +2911,15 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		if (!step_ptr->step_layout->tasks[step_node_inx])
 			continue;
 
-		if (step_ptr->start_protocol_ver >=
-		    SLURM_23_11_PROTOCOL_VERSION) {
-			int inx;
+		xassert(step_ptr->cpu_alloc_array_cnt);
+		xassert(step_ptr->cpu_alloc_reps);
+		xassert(step_ptr->cpu_alloc_values);
 
-			xassert(step_ptr->cpu_alloc_array_cnt);
-			xassert(step_ptr->cpu_alloc_reps);
-			xassert(step_ptr->cpu_alloc_values);
-
-			inx = slurm_get_rep_count_inx(
-				step_ptr->cpu_alloc_reps,
-				step_ptr->cpu_alloc_array_cnt,
-				step_node_inx);
-			cpus_alloc = step_ptr->cpu_alloc_values[inx];
-		} else if (step_ptr->flags & SSF_WHOLE) {
-			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
-		} else {
-			uint16_t cpus_per_task = step_ptr->cpus_per_task;
-
-			cpus_alloc =
-				step_ptr->step_layout->tasks[step_node_inx] *
-				cpus_per_task;
-
-			/*
-			 * If we are doing threads per core we need the whole
-			 * core allocated even though we are only using what was
-			 * requested.
-			 */
-			_modify_cpus_alloc_for_tpc(job_resrcs_ptr->cr_type,
-						   req_tpc, vpus, &cpus_alloc);
-
-			/*
-			 * TODO: We need ntasks-per-* sent to the ctld to make
-			 * more decisions on allocation cores.
-			 */
-		}
-
-		cpus_alloc = ROUNDUP(cpus_alloc, vpus);
+		inx = slurm_get_rep_count_inx(
+			step_ptr->cpu_alloc_reps,
+			step_ptr->cpu_alloc_array_cnt,
+			step_node_inx);
+		cpus_alloc = ROUNDUP(step_ptr->cpu_alloc_values[inx], vpus);
 		cpus_alloc *= vpus;
 
 		if ((job_resrcs_ptr->cr_type & CR_CPU) && (node_ptr->tpc > 1)) {
@@ -5619,7 +5590,6 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 		job_info_resp_msg->num_cpu_groups = j + 1;
 	}
 	job_info_resp_msg->account        = xstrdup(job_ptr->account);
-	job_info_resp_msg->alias_list     = xstrdup(job_ptr->alias_list);
 	job_info_resp_msg->batch_host = xstrdup(job_ptr->batch_host);
 	job_info_resp_msg->job_id         = job_ptr->job_id;
 	job_info_resp_msg->node_cnt       = job_ptr->node_cnt;

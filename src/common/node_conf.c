@@ -1914,7 +1914,7 @@ extern int node_record_unpack(void **out,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&object->weight, buffer);
-	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->comm_name, buffer);
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->node_hostname, buffer);
@@ -1945,41 +1945,6 @@ extern int node_record_unpack(void **out,
 		safe_unpack_time(&object->power_save_req_time, buffer);
 		safe_unpack_time(&object->last_response, buffer);
 		safe_unpack16(&object->port, buffer);
-		safe_unpack16(&object->protocol_version, buffer);
-		safe_unpackstr(&object->mcs_label, buffer);
-		if (gres_node_state_unpack(&object->gres_list, buffer,
-					   object->name, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-		safe_unpack32(&object->weight, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->comm_name, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->node_hostname, buffer);
-		safe_unpackstr(&object->comment, buffer);
-		safe_unpackstr(&object->extra, buffer);
-		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->features, buffer);
-		safe_unpackstr(&object->features_act, buffer);
-		safe_unpackstr(&object->gres, buffer);
-		safe_unpackstr(&object->cpu_spec_list, buffer);
-		safe_unpack32(&object->next_state, buffer);
-		safe_unpack32(&object->node_state, buffer);
-		safe_unpack32(&object->cpu_bind, buffer);
-		safe_unpack16(&object->cpus, buffer);
-		safe_unpack16(&object->boards, buffer);
-		safe_unpack16(&object->tot_sockets, buffer);
-		safe_unpack16(&object->cores, buffer);
-		safe_unpack16(&object->core_spec_cnt, buffer);
-		safe_unpack16(&object->threads, buffer);
-		safe_unpack64(&object->real_memory, buffer);
-		safe_unpack32(&object->tmp_disk, buffer);
-		safe_unpack32(&object->reason_uid, buffer);
-		safe_unpack_time(&object->reason_time, buffer);
-		safe_unpack_time(&object->resume_after, buffer);
-		safe_unpack_time(&object->boot_req_time, buffer);
-		safe_unpack_time(&object->power_save_req_time, buffer);
-		safe_unpack_time(&object->last_response, buffer);
 		safe_unpack16(&object->protocol_version, buffer);
 		safe_unpackstr(&object->mcs_label, buffer);
 		if (gres_node_state_unpack(&object->gres_list, buffer,

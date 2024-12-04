@@ -61,7 +61,6 @@ START_TEST(pack_1702_null_assoc_rec)
 	ck_assert(NO_VAL                         == unpack_ar->grp_wall);
 	ck_assert(pack_ar.id                     == unpack_ar->id);
 	ck_assert(pack_ar.is_def                 == unpack_ar->is_def);
-	ck_assert(pack_ar.lft                    == unpack_ar->lft);
 	ck_assert(NO_VAL                         == unpack_ar->max_jobs);
 	ck_assert(NO_VAL                         == unpack_ar->max_submit_jobs);
 	ck_assert(pack_ar.max_tres_mins_pj       == unpack_ar->max_tres_mins_pj);
@@ -77,7 +76,6 @@ START_TEST(pack_1702_null_assoc_rec)
 	ck_assert(pack_ar.parent_id              == unpack_ar->parent_id);
 	ck_assert(pack_ar.partition              == unpack_ar->partition);
 	ck_assert(pack_ar.qos_list               == unpack_ar->qos_list);
-	ck_assert(pack_ar.rgt                    == unpack_ar->rgt);
 	ck_assert(NO_VAL                         == unpack_ar->shares_raw);
 	ck_assert(pack_ar.uid                    == unpack_ar->uid);
 	ck_assert(pack_ar.usage                  == unpack_ar->usage);
@@ -101,7 +99,6 @@ START_TEST(pack_1702_assoc_rec)
 	pack_ar->accounting_list	 = list_create(slurmdb_destroy_accounting_rec);
 	pack_ar->acct           	 = xstrdup("Socrates");
 	pack_ar->assoc_next     	 = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	pack_ar->assoc_next->rgt         = 11;
 	pack_ar->assoc_next->grp_jobs    = 22;
 	pack_ar->assoc_next_id  	 = xmalloc(sizeof(slurmdb_assoc_rec_t));
 	pack_ar->assoc_next_id->grp_jobs = 33;
@@ -117,7 +114,6 @@ START_TEST(pack_1702_assoc_rec)
 	pack_ar->grp_wall                = 6;
 	pack_ar->id                      = 7;
 	pack_ar->is_def                  = 8;
-	pack_ar->lft                     = 9;
 	pack_ar->max_jobs                = 1;
 	pack_ar->max_submit_jobs         = 2;
 	pack_ar->max_tres_mins_pj        = xstrdup("Parmenides");
@@ -133,7 +129,6 @@ START_TEST(pack_1702_assoc_rec)
 	pack_ar->parent_id               = 8;
 	pack_ar->partition               = xstrdup("Parmenides");
 	pack_ar->qos_list                = list_create(xfree_ptr);
-	pack_ar->rgt                     = 9;
 	pack_ar->shares_raw              = 1;
 	pack_ar->uid                     = 2;
 	pack_ar->usage                   = xmalloc(sizeof(slurmdb_assoc_usage_t));
@@ -161,7 +156,6 @@ START_TEST(pack_1702_assoc_rec)
 	ck_assert(pack_ar->grp_wall                  == unpack_ar->grp_wall);
 	ck_assert(pack_ar->id                        == unpack_ar->id);
 	ck_assert(pack_ar->is_def                    == unpack_ar->is_def);
-	ck_assert(pack_ar->lft                       == unpack_ar->lft);
 	ck_assert(pack_ar->max_jobs                  == unpack_ar->max_jobs);
 	ck_assert(pack_ar->max_submit_jobs           == unpack_ar->max_submit_jobs);
 	ck_assert_str_eq(pack_ar->max_tres_mins_pj,     unpack_ar->max_tres_mins_pj);
@@ -176,7 +170,6 @@ START_TEST(pack_1702_assoc_rec)
 	ck_assert_str_eq(pack_ar->parent_acct,          unpack_ar->parent_acct);
 	ck_assert(pack_ar->parent_id                 == unpack_ar->parent_id);
 	ck_assert_str_eq(pack_ar->partition,            unpack_ar->partition);
-	ck_assert(pack_ar->rgt                       == unpack_ar->rgt);
 	ck_assert(pack_ar->shares_raw          	     == unpack_ar->shares_raw);
 	ck_assert(pack_ar->uid                       == unpack_ar->uid);
 	ck_assert(NULL                               == unpack_ar->usage);

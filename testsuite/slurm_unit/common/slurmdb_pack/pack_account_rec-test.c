@@ -59,7 +59,7 @@ START_TEST(pack_1702_account_rec)
 	slurmdb_coord_rec_t * j = xmalloc(sizeof(slurmdb_coord_rec_t));
 	slurmdb_assoc_rec_t * k = xmalloc(sizeof(slurmdb_assoc_rec_t));
 
-	k->lft    = 88;
+	k->id    = 88;
 	j->name   = xstrdup("Bertrand Russell");
 	j->direct = 5;
 
@@ -86,7 +86,7 @@ START_TEST(pack_1702_account_rec)
 
 	ck_assert_str_eq(bc.name,            ac.name);
 	ck_assert(bc.direct              == ac.direct);
-	ck_assert(bar.lft                == aar.lft);
+	ck_assert(bar.id == aar.id);
 
 	free_buf(buf);
 	slurmdb_destroy_account_rec(pack_ar);

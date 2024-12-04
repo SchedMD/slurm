@@ -259,9 +259,6 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 		resource_allocation_response_msg_t *alloc_info = NULL;
 		if (slurm_allocation_lookup(job_id, &alloc_info))
 			return -1;
-		if (alloc_info->node_addr)
-			add_remote_nodes_to_conf_tbls(alloc_info->node_list,
-						      alloc_info->node_addr);
 
 		rc = _signal_batch_script_step(alloc_info, signal);
 		slurm_free_resource_allocation_response_msg(alloc_info);
@@ -318,9 +315,6 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 		resource_allocation_response_msg_t *alloc_info = NULL;
 		if (slurm_allocation_lookup(job_id, &alloc_info))
 			return -1;
-		if (alloc_info->node_addr)
-			add_remote_nodes_to_conf_tbls(alloc_info->node_list,
-						      alloc_info->node_addr);
 
 		rc = _terminate_batch_script_step(alloc_info);
 		slurm_free_resource_allocation_response_msg(alloc_info);

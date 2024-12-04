@@ -211,10 +211,10 @@ sacctmgr [<OPTION>] [<COMMAND>]
 
        Association        - Account, Cluster, Comment, DefaultQOS, Fairshare,
                             Flags, GrpTRESMins, GrpTRESRunMins, GrpTRES,
-                            GrpJobs, GrpSubmitJob, GrpWall, ID, LFT,
+                            GrpJobs, GrpSubmitJob, GrpWall, ID,
                             MaxTRESMins, MaxTRES, MaxJobs, MaxNodes,
                             MaxSubmitJobs, MaxWall,
-                            QOS, ParentID, ParentName, Partition, RGT, User,
+                            QOS, ParentID, ParentName, Partition, User,
                             WithRawQOS
 
        Cluster            - Classification, Cluster, ClusterNodes,

@@ -1006,20 +1006,9 @@ stepd_suspend(int fd, uint16_t protocol_version,
 	int rc = 0;
 	int errnum = 0;
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (phase == 0) {
 			safe_write(fd, &req, sizeof(int));
-		} else {
-			/* Receive the return code and errno */
-			safe_read(fd, &rc, sizeof(int));
-			safe_read(fd, &errnum, sizeof(int));
-			errno = errnum;
-		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (phase == 0) {
-			uint16_t tmp = NO_VAL16;
-			safe_write(fd, &req, sizeof(int));
-			safe_write(fd, &tmp, sizeof(uint16_t));
 		} else {
 			/* Receive the return code and errno */
 			safe_read(fd, &rc, sizeof(int));
@@ -1049,20 +1038,9 @@ stepd_resume(int fd, uint16_t protocol_version,
 	int rc = 0;
 	int errnum = 0;
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (phase == 0) {
 			safe_write(fd, &req, sizeof(int));
-		} else {
-			/* Receive the return code and errno */
-			safe_read(fd, &rc, sizeof(int));
-			safe_read(fd, &errnum, sizeof(int));
-			errno = errnum;
-		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (phase == 0) {
-			uint16_t tmp = NO_VAL16;
-			safe_write(fd, &req, sizeof(int));
-			safe_write(fd, &tmp, sizeof(uint16_t));
 		} else {
 			/* Receive the return code and errno */
 			safe_read(fd, &rc, sizeof(int));
@@ -1084,7 +1062,7 @@ extern int stepd_reconfig(int fd, uint16_t protocol_version, buf_t *reconf)
 
 	safe_write(fd, &req, sizeof(int));
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		int len = 0;
 		if (reconf) {
 			len = get_buf_offset(reconf);

@@ -221,7 +221,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 		packstr(cred->job_selinux_context, buffer);
 		switch_g_pack_stepinfo(cred->switch_step, buffer,
 				       protocol_version);
-	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack_identity(cred->id, buffer, protocol_version);
 
@@ -236,84 +236,6 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 			cred->job_node_addrs,
 			cred->job_node_addrs ? cred->job_nhosts : 0,
 			buffer);
-		packstr(cred->job_alias_list, buffer);
-		packstr(cred->job_comment, buffer);
-		packstr(cred->job_constraints, buffer);
-		pack_time(cred->job_end_time, buffer);
-		packstr(cred->job_extra, buffer);
-		pack16(cred->job_oversubscribe, buffer);
-		_packstr_and_switch(cred->job_partition, cred->switch_step,
-				    buffer, protocol_version);
-		packstr(cred->job_reservation, buffer);
-		pack16(cred->job_restart_cnt, buffer);
-		pack_time(cred->job_start_time, buffer);
-		packstr(cred->job_std_err, buffer);
-		packstr(cred->job_std_in, buffer);
-		packstr(cred->job_std_out, buffer);
-		packstr(cred->step_hostlist, buffer);
-		pack16(cred->job_x11, buffer);
-		pack_time(ctime, buffer);
-
-		if (cred->job_core_bitmap)
-			tot_core_cnt = bit_size(cred->job_core_bitmap);
-		pack32(tot_core_cnt, buffer);
-		pack_bit_str_hex(cred->job_core_bitmap, buffer);
-		pack_bit_str_hex(cred->step_core_bitmap, buffer);
-		pack16(cred->core_array_size, buffer);
-		if (cred->core_array_size) {
-			pack16_array(cred->cores_per_socket,
-				     cred->core_array_size,
-				     buffer);
-			pack16_array(cred->sockets_per_node,
-				     cred->core_array_size,
-				     buffer);
-			pack32_array(cred->sock_core_rep_count,
-				     cred->core_array_size,
-				     buffer);
-		}
-		pack32(cred->cpu_array_count, buffer);
-		if (cred->cpu_array_count) {
-			pack16_array(cred->cpu_array,
-				     cred->cpu_array_count,
-				     buffer);
-			pack32_array(cred->cpu_array_reps,
-				     cred->cpu_array_count,
-				     buffer);
-		}
-		pack32(cred->job_nhosts, buffer);
-		pack32(cred->job_ntasks, buffer);
-		packstr(cred->job_hostlist, buffer);
-		packstr(cred->job_licenses, buffer);
-		pack32(cred->job_mem_alloc_size, buffer);
-		if (cred->job_mem_alloc_size) {
-			pack64_array(cred->job_mem_alloc,
-				     cred->job_mem_alloc_size,
-				     buffer);
-			pack32_array(cred->job_mem_alloc_rep_count,
-				     cred->job_mem_alloc_size,
-				     buffer);
-		}
-		pack32(cred->step_mem_alloc_size, buffer);
-		if (cred->step_mem_alloc_size) {
-			pack64_array(cred->step_mem_alloc,
-				     cred->step_mem_alloc_size,
-				     buffer);
-			pack32_array(cred->step_mem_alloc_rep_count,
-				     cred->step_mem_alloc_size,
-				     buffer);
-		}
-		packstr(cred->job_selinux_context, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&cred->step_id, buffer, protocol_version);
-		pack_identity(cred->id, buffer, protocol_version);
-
-		(void) gres_job_state_pack(cred->job_gres_list, buffer,
-					   cred->step_id.job_id, false,
-					   protocol_version);
-		gres_step_state_pack(cred->step_gres_list, buffer,
-				     &cred->step_id, protocol_version);
-		pack16(cred->job_core_spec, buffer);
-		packstr(cred->job_account, buffer);
 		packstr(cred->job_alias_list, buffer);
 		packstr(cred->job_comment, buffer);
 		packstr(cred->job_constraints, buffer);
@@ -504,7 +426,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 		cred_arg->switch_step = switch_tmp;
-	} else if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred_arg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
@@ -528,106 +450,6 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		if (slurm_unpack_addr_array(&cred_arg->job_node_addrs,
 					    &uint32_tmp, buffer))
 			goto unpack_error;
-		safe_unpackstr(&cred_arg->job_alias_list, buffer);
-		safe_unpackstr(&cred_arg->job_comment, buffer);
-		safe_unpackstr(&cred_arg->job_constraints, buffer);
-		safe_unpack_time(&cred_arg->job_end_time, buffer);
-		safe_unpackstr(&cred_arg->job_extra, buffer);
-		safe_unpack16(&cred_arg->job_oversubscribe, buffer);
-		safe_unpackstr_and_switch(&cred_arg->job_partition,
-					  &cred_arg->switch_step, buffer,
-					  protocol_version);
-		safe_unpackstr(&cred_arg->job_reservation, buffer);
-		safe_unpack16(&cred_arg->job_restart_cnt, buffer);
-		safe_unpack_time(&cred_arg->job_start_time, buffer);
-		safe_unpackstr(&cred_arg->job_std_err, buffer);
-		safe_unpackstr(&cred_arg->job_std_in, buffer);
-		safe_unpackstr(&cred_arg->job_std_out, buffer);
-		safe_unpackstr(&cred_arg->step_hostlist, buffer);
-		safe_unpack16(&cred_arg->job_x11, buffer);
-		safe_unpack_time(&cred->ctime, buffer);
-		safe_unpack32(&tot_core_cnt, buffer);
-		unpack_bit_str_hex(&cred_arg->job_core_bitmap, buffer);
-		unpack_bit_str_hex(&cred_arg->step_core_bitmap, buffer);
-		safe_unpack16(&cred_arg->core_array_size, buffer);
-		if (cred_arg->core_array_size) {
-			safe_unpack16_array(&cred_arg->cores_per_socket, &len,
-					    buffer);
-			if (len != cred_arg->core_array_size)
-				goto unpack_error;
-			safe_unpack16_array(&cred_arg->sockets_per_node, &len,
-					    buffer);
-			if (len != cred_arg->core_array_size)
-				goto unpack_error;
-			safe_unpack32_array(&cred_arg->sock_core_rep_count,
-					    &len, buffer);
-			if (len != cred_arg->core_array_size)
-				goto unpack_error;
-		}
-		safe_unpack32(&cred_arg->cpu_array_count, buffer);
-		if (cred_arg->cpu_array_count) {
-			safe_unpack16_array(&cred_arg->cpu_array, &len, buffer);
-			if (len != cred_arg->cpu_array_count)
-				goto unpack_error;
-			safe_unpack32_array(&cred_arg->cpu_array_reps, &len,
-					    buffer);
-			if (len != cred_arg->cpu_array_count)
-				goto unpack_error;
-		}
-		safe_unpack32(&cred_arg->job_nhosts, buffer);
-		safe_unpack32(&cred_arg->job_ntasks, buffer);
-		safe_unpackstr(&cred_arg->job_hostlist, buffer);
-		safe_unpackstr(&cred_arg->job_licenses, buffer);
-
-		safe_unpack32(&cred_arg->job_mem_alloc_size, buffer);
-		if (cred_arg->job_mem_alloc_size) {
-			safe_unpack64_array(&cred_arg->job_mem_alloc, &len,
-					    buffer);
-			if (len != cred_arg->job_mem_alloc_size)
-				goto unpack_error;
-
-			safe_unpack32_array(&cred_arg->job_mem_alloc_rep_count,
-					    &len, buffer);
-			if (len != cred_arg->job_mem_alloc_size)
-				goto unpack_error;
-
-		}
-
-		safe_unpack32(&cred_arg->step_mem_alloc_size, buffer);
-		if (cred_arg->step_mem_alloc_size) {
-			safe_unpack64_array(&cred_arg->step_mem_alloc, &len,
-					    buffer);
-			if (len != cred_arg->step_mem_alloc_size)
-				goto unpack_error;
-
-			safe_unpack32_array(&cred_arg->step_mem_alloc_rep_count,
-					    &len, buffer);
-			if (len != cred_arg->step_mem_alloc_size)
-				goto unpack_error;
-		}
-
-		safe_unpackstr(&cred_arg->job_selinux_context, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (unpack_step_id_members(&cred_arg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
-			goto unpack_error;
-
-		if (unpack_identity(&cred_arg->id, buffer, protocol_version))
-			goto unpack_error;
-
-		if (gres_job_state_unpack(&cred_arg->job_gres_list, buffer,
-					  cred_arg->step_id.job_id,
-					  protocol_version)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
-		if (gres_step_state_unpack(&cred_arg->step_gres_list,
-					   buffer, &cred_arg->step_id,
-					   protocol_version)
-		    != SLURM_SUCCESS) {
-			goto unpack_error;
-		}
-		safe_unpack16(&cred_arg->job_core_spec, buffer);
-		safe_unpackstr(&cred_arg->job_account, buffer);
 		safe_unpackstr(&cred_arg->job_alias_list, buffer);
 		safe_unpackstr(&cred_arg->job_comment, buffer);
 		safe_unpackstr(&cred_arg->job_constraints, buffer);
@@ -768,25 +590,13 @@ extern buf_t *sbcast_cred_pack(sbcast_cred_arg_t *sbcast_cred,
 	buf_t *buffer = init_buf(4096);
 	time_t now = time(NULL);
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_identity(sbcast_cred->id, buffer, protocol_version);
 		pack_time(now, buffer);
 		pack_time(sbcast_cred->expiration, buffer);
 		pack32(sbcast_cred->job_id, buffer);
 		pack32(sbcast_cred->het_job_id, buffer);
 		pack32(sbcast_cred->step_id, buffer);
-		packstr(sbcast_cred->nodes, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_time(now, buffer);
-		pack_time(sbcast_cred->expiration, buffer);
-		pack32(sbcast_cred->job_id, buffer);
-		pack32(sbcast_cred->het_job_id, buffer);
-		pack32(sbcast_cred->step_id, buffer);
-		pack32(sbcast_cred->id->uid, buffer);
-		pack32(sbcast_cred->id->gid, buffer);
-		packstr(sbcast_cred->id->pw_name, buffer);
-		pack32_array(sbcast_cred->id->gids, sbcast_cred->id->ngids,
-			     buffer);
 		packstr(sbcast_cred->nodes, buffer);
 	}
 
@@ -799,7 +609,7 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 	sbcast_cred_t *sbcast_cred = xmalloc(sizeof(*sbcast_cred));
 	uint32_t cred_start = get_buf_offset(buffer);
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_identity(&sbcast_cred->arg.id, buffer,
 				    protocol_version))
 			goto unpack_error;
@@ -820,22 +630,6 @@ extern sbcast_cred_t *sbcast_cred_unpack(buf_t *buffer, uint32_t *siglen,
 			if (!sbcast_cred->arg.id)
 				goto unpack_error;
 		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint32_t uint32_tmp = 0;
-		sbcast_cred->arg.id = xmalloc(sizeof(*sbcast_cred->arg.id));
-
-		safe_unpack_time(&sbcast_cred->ctime, buffer);
-		safe_unpack_time(&sbcast_cred->arg.expiration, buffer);
-		safe_unpack32(&sbcast_cred->arg.job_id, buffer);
-		safe_unpack32(&sbcast_cred->arg.het_job_id, buffer);
-		safe_unpack32(&sbcast_cred->arg.step_id, buffer);
-		safe_unpack32(&sbcast_cred->arg.id->uid, buffer);
-		safe_unpack32(&sbcast_cred->arg.id->gid, buffer);
-		safe_unpackstr(&sbcast_cred->arg.id->pw_name, buffer);
-		safe_unpack32_array(&sbcast_cred->arg.id->gids, &uint32_tmp,
-				    buffer);
-		sbcast_cred->arg.id->ngids = uint32_tmp;
-		safe_unpackstr(&sbcast_cred->arg.nodes, buffer);
 	} else
 		goto unpack_error;
 

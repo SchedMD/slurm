@@ -1102,7 +1102,7 @@ enum node_states {
 #define PRIVATE_DATA_ACCOUNTS     SLURM_BIT(5) /* accounting account data is
 						* private */
 #define PRIVATE_DATA_RESERVATIONS SLURM_BIT(6) /* reservation data is private */
-/* SLURM_BIT(7) Available 2 versions after 23.02 */
+/* SLURM_BIT(7) Available */
 #define PRIVATE_DATA_EVENTS       SLURM_BIT(8) /* events are private */
 
 #define PRIORITY_RESET_NONE	0x0000	/* never clear */
@@ -2153,7 +2153,6 @@ typedef struct top_job_msg {
 } top_job_msg_t;
 
 typedef struct {
-	char *alias_list;	/* node name/address/hostname aliases */
 	uint32_t argc;
 	char **argv;
 	uint32_t envc;
@@ -2576,7 +2575,6 @@ typedef struct delete_partition_msg {
 typedef struct resource_allocation_response_msg {
 	char *account;          /* allocation account */
 	uint32_t job_id;	/* assigned job id */
-	char *alias_list;	/* node name/address/hostname aliases */
 	char *batch_host;	/* host executing batch script */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
@@ -2590,7 +2588,6 @@ typedef struct resource_allocation_response_msg {
 	gid_t gid; /* resolved group id of job */
 	char *group_name; /* resolved group name of job */
 	char *job_submit_user_msg;/* job_submit plugin user_msg */
-	slurm_addr_t *node_addr;  /* network addresses */
 	uint32_t node_cnt;	/* count of nodes */
 	char *node_list;	/* assigned list of nodes */
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */

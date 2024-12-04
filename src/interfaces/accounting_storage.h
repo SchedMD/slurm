@@ -581,13 +581,6 @@ extern int acct_storage_g_flush_jobs_on_cluster(
 extern int acct_storage_g_reconfig(void *db_conn, bool dbd);
 
 /*
- * Reset the lft and rights of an association table.
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int acct_storage_g_reset_lft_rgt(void *db_conn, uid_t uid,
-					list_t *cluster_list);
-
-/*
  * Get performance statistics.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */

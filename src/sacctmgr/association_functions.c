@@ -743,9 +743,6 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	case PRINT_QOS_RAW:
 		field->print_routine(field, &assoc->qos_list, last);
 		break;
-	case PRINT_RGT:
-		field->print_routine(field, &assoc->rgt, last);
-		break;
 	case PRINT_USER:
 		field->print_routine(field, assoc->user, last);
 		break;

@@ -76,7 +76,6 @@ START_TEST(pack_1702_assoc_rec)
 	pack_arwu->accounting_list	   = list_create(slurmdb_destroy_accounting_rec);
 	pack_arwu->acct           	   = xstrdup("Socrates");
 	pack_arwu->assoc_next     	   = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	pack_arwu->assoc_next->rgt         = 11;
 	pack_arwu->assoc_next->grp_jobs    = 22;
 	pack_arwu->assoc_next_id  	   = xmalloc(sizeof(slurmdb_assoc_rec_t));
 	pack_arwu->assoc_next_id->grp_jobs = 33;
@@ -92,7 +91,6 @@ START_TEST(pack_1702_assoc_rec)
 	pack_arwu->grp_wall                = 6;
 	pack_arwu->id                      = 7;
 	pack_arwu->is_def                  = 8;
-	pack_arwu->lft                     = 9;
 	pack_arwu->max_jobs                = 1;
 	pack_arwu->max_submit_jobs         = 2;
 	pack_arwu->max_tres_mins_pj        = xstrdup("Parmenides");
@@ -108,7 +106,6 @@ START_TEST(pack_1702_assoc_rec)
 	pack_arwu->parent_id               = 8;
 	pack_arwu->partition               = xstrdup("Parmenides");
 	pack_arwu->qos_list                = list_create(xfree_ptr);
-	pack_arwu->rgt                     = 9;
 	pack_arwu->shares_raw              = 1;
 	pack_arwu->uid                     = 2;
 	pack_arwu->usage                   = xmalloc(sizeof(slurmdb_assoc_usage_t));
@@ -157,7 +154,6 @@ START_TEST(pack_1702_assoc_rec)
 	ck_assert(pack_arwu->grp_wall                  == unpack_arwu->grp_wall);
 	ck_assert(pack_arwu->id                        == unpack_arwu->id);
 	ck_assert(pack_arwu->is_def                    == unpack_arwu->is_def);
-	ck_assert(pack_arwu->lft                       == unpack_arwu->lft);
 	ck_assert(pack_arwu->max_jobs                  == unpack_arwu->max_jobs);
 	ck_assert(pack_arwu->max_submit_jobs           == unpack_arwu->max_submit_jobs);
 	ck_assert_str_eq(pack_arwu->max_tres_mins_pj,     unpack_arwu->max_tres_mins_pj);
@@ -172,7 +168,6 @@ START_TEST(pack_1702_assoc_rec)
 	ck_assert_str_eq(pack_arwu->parent_acct,          unpack_arwu->parent_acct);
 	ck_assert(pack_arwu->parent_id                 == unpack_arwu->parent_id);
 	ck_assert_str_eq(pack_arwu->partition,            unpack_arwu->partition);
-	ck_assert(pack_arwu->rgt                       == unpack_arwu->rgt);
 	ck_assert(pack_arwu->shares_raw                == unpack_arwu->shares_raw);
 	ck_assert(pack_arwu->uid                       == unpack_arwu->uid);
 	ck_assert_str_eq(pack_arwu->user,                 unpack_arwu->user);

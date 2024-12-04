@@ -752,7 +752,6 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	alloc_msg->node_cnt       = job_ptr->node_cnt;
 	alloc_msg->node_list      = xstrdup(job_ptr->nodes);
 	alloc_msg->partition      = xstrdup(job_ptr->partition);
-	alloc_msg->alias_list     = xstrdup(job_ptr->alias_list);
 	alloc_msg->batch_host = xstrdup(job_ptr->batch_host);
 	if (job_ptr->details) {
 		if (job_ptr->bit_flags & JOB_MEM_SET) {
@@ -4936,12 +4935,8 @@ static void _slurm_rpc_get_topo(slurm_msg_t *msg)
 	topo_resp_msg = xmalloc(sizeof(topo_info_response_msg_t));
 	START_TIMER;
 	lock_slurmctld(node_read_lock);
-	if (msg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		(void) topology_g_get(TOPO_DATA_TOPOLOGY_PTR,
-				      &topo_resp_msg->topo_info);
-	} else {
-		topo_resp_msg->record_count = 0;
-	}
+	(void) topology_g_get(TOPO_DATA_TOPOLOGY_PTR,
+			      &topo_resp_msg->topo_info);
 	unlock_slurmctld(node_read_lock);
 	END_TIMER2(__func__);
 

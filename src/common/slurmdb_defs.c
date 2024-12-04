@@ -602,7 +602,6 @@ extern slurmdb_job_rec_t *slurmdb_create_job_rec(void)
 	job->state = JOB_PENDING;
 	job->steps = list_create(slurmdb_destroy_step_rec);
 	job->requid = -1;
-	job->lft = NO_VAL;
 	job->resvid = NO_VAL;
 
       	return job;
@@ -1553,8 +1552,6 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	assoc->grp_submit_jobs = NO_VAL;
 	assoc->grp_wall = NO_VAL;
 
-	assoc->lft = NO_VAL;
-	assoc->rgt = NO_VAL;
 	/* assoc->level_shares = NO_VAL; */
 
 	/* assoc->max_tres_mins_pj = NULL; */

@@ -2298,7 +2298,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	int i;
 
 	launch_req = xmalloc(sizeof(launch_tasks_request_msg_t));
-	launch_req->alias_list		= req->alias_list;
 	launch_req->complete_nodelist	= req->nodes;
 	launch_req->cpus_per_task	= 1;
 	launch_req->cred_version = msg->protocol_version;
@@ -2530,7 +2529,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 		job_env.jobid = req->job_id;
 		job_env.step_id = 0; /* not available */
-		job_env.node_aliases = req->alias_list;
 		job_env.node_list = req->nodes;
 		job_env.het_job_id = req->het_job_id;
 		job_env.spank_job_env = req->spank_job_env;

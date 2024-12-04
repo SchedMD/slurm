@@ -3292,7 +3292,6 @@ extern void launch_prolog(job_record_t *job_ptr)
 	if (!job_ptr->user_name)
 		job_ptr->user_name = user_from_job(job_ptr);
 	prolog_msg_ptr->user_name_deprecated = xstrdup(job_ptr->user_name);
-	prolog_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
 	prolog_msg_ptr->nodes = xstrdup(job_ptr->nodes);
 	prolog_msg_ptr->work_dir = xstrdup(job_ptr->details->work_dir);
 	prolog_msg_ptr->x11 = job_ptr->details->x11;

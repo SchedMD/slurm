@@ -318,7 +318,7 @@ extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
 	topoinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*topoinfo = topoinfo_ptr;
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
 		if (plugin_id != active_topo_id) {

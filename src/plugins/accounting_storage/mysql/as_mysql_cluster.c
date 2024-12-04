@@ -423,8 +423,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			/* Add root account */
 			xstrfmtcat(query,
-				   "insert into \"%s_%s\" (%s, lft, rgt, lineage) "
-				   "values (%s, 1, 2, '/') "
+				   "insert into \"%s_%s\" (%s, lineage) "
+				   "values (%s, '/') "
 				   "on duplicate key update deleted=0, "
 				   "id_assoc=LAST_INSERT_ID(id_assoc), lineage=VALUES(lineage)%s;",
 				   object->name, assoc_table, cols,
@@ -461,8 +461,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(object->root_assoc->user);
 			object->root_assoc->id =
 				mysql_insert_id(mysql_conn->db_conn);
-			object->root_assoc->lft = 1;
-			object->root_assoc->rgt = 2;
 			xfree(object->root_assoc->lineage);
 			object->root_assoc->lineage = xstrdup("/");
 			if (addto_update_list(mysql_conn->update_list,

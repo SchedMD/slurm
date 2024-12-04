@@ -718,27 +718,10 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 	nodeinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*nodeinfo = nodeinfo_ptr;
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
-		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
-			error("%s: select plugin %s not found", __func__,
-			      select_plugin_id_to_string(plugin_id));
-			goto unpack_error;
-		} else {
-			 nodeinfo_ptr->plugin_id = i;
-		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		int i;
-		uint32_t plugin_id;
-		safe_unpack32(&plugin_id, buffer);
-
-		/* cons_res was removed; convert to cons_tres */
-		if (plugin_id == SELECT_PLUGIN_CONS_RES) {
-			plugin_id = SELECT_PLUGIN_CONS_TRES;
-		}
-
 		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
 			error("%s: select plugin %s not found", __func__,
 			      select_plugin_id_to_string(plugin_id));
@@ -955,13 +938,6 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 	} else
 		plugin_id = select_context_default;
 
-	/* Remove when 23.02 is no longer supported. */
-	if (!running_in_slurmctld() &&
-	    (protocol_version <= SLURM_23_02_PROTOCOL_VERSION)) {
-		pack32(plugin_id, buffer);
-		return SLURM_SUCCESS;
-	}
-
 	xassert(select_context_cnt >= 0);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -986,47 +962,15 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 {
 	dynamic_plugin_data_t *jobinfo_ptr = NULL;
 
-	/* Remove when 23.02 is no longer supported. */
-	if (!running_in_slurmctld() &&
-	    (protocol_version <= SLURM_23_02_PROTOCOL_VERSION)) {
-		uint32_t plugin_id;
-		safe_unpack32(&plugin_id, buffer);
-		/*
-		 * srun will unpack this and then repack things later when
-		 * sending to the slurmd. Instead of the context here we have
-		 * the actual plugin id.
-		 * This hack works for all systems that aren't cray_aries.
-		 */
-		select_context_default = plugin_id;
-		*jobinfo = NULL;
-		return SLURM_SUCCESS;
-	}
-
 	xassert(select_context_cnt >= 0);
 
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*jobinfo = jobinfo_ptr;
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
-		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
-			error("%s: select plugin %s not found", __func__,
-			      select_plugin_id_to_string(plugin_id));
-			goto unpack_error;
-		} else
-			jobinfo_ptr->plugin_id = i;
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		int i;
-		uint32_t plugin_id;
-		safe_unpack32(&plugin_id, buffer);
-
-		/* cons_res was removed; convert to cons_tres */
-		if (plugin_id == SELECT_PLUGIN_CONS_RES) {
-			plugin_id = SELECT_PLUGIN_CONS_TRES;
-		}
-
 		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
 			error("%s: select plugin %s not found", __func__,
 			      select_plugin_id_to_string(plugin_id));

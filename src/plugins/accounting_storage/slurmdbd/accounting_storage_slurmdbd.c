@@ -3064,12 +3064,6 @@ extern int acct_storage_p_reconfig(void *db_conn, bool dbd)
 	return rc;
 }
 
-extern int acct_storage_p_reset_lft_rgt(void *db_conn, uid_t uid,
-					list_t *cluster_list)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int acct_storage_p_get_stats(void *db_conn, slurmdb_stats_rec_t **stats)
 {
 	persist_msg_t req = {0}, resp = {0};

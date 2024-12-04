@@ -99,8 +99,6 @@ static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool running_rollup = 0;
 static bool running_commit = 0;
 static bool restart_backup = false;
-static bool reset_lft_rgt = 0;
-static list_t *lft_rgt_list = NULL;
 
 /* Local functions */
 static void  _commit_handler_cancel(void);
@@ -289,19 +287,6 @@ int main(int argc, char **argv)
 		error("Problem getting cache of data");
 		acct_storage_g_close_connection(&db_conn);
 		goto end_it;
-	}
-
-	if (reset_lft_rgt) {
-		int rc;
-		if ((rc = acct_storage_g_reset_lft_rgt(db_conn,
-		                                       slurm_conf.slurm_user_id,
-		                                       lft_rgt_list))
-		    != SLURM_SUCCESS)
-			fatal("Error when trying to reset lft and rgt's");
-
-		if (acct_storage_g_commit(db_conn, 1))
-			fatal("commit failed, meaning reset failed");
-		FREE_NULL_LIST(lft_rgt_list);
 	}
 
 	if (gethostname(node_name_long, sizeof(node_name_long)))
@@ -575,11 +560,7 @@ static void _parse_commandline(int argc, char **argv)
 			}
 			break;
 		case 'R':
-			reset_lft_rgt = 1;
-			if (optarg) {
-				lft_rgt_list = list_create(xfree_ptr);
-				slurm_addto_char_list(lft_rgt_list, optarg);
-			}
+			warning("-R is no longer a valid option. lft/rgt logic was removed from Slurm in 23.11.");
 			break;
 		case 's':
 			setwd = 1;
@@ -611,12 +592,6 @@ static void _usage(char *prog_name)
 		"Print this help message.\n");
 	fprintf(stderr, "  -n value   \t"
 		"Run the daemon at the specified nice value.\n");
-	fprintf(stderr, "  -R [Names] \t"
-		"Reset the lft and rgt values of the associations "
-		"\n\t\tin the given cluster list. "
-		"\n\t\tLft and rgt values are used to distinguish "
-		"\n\t\thierarical groups in the slurm accounting database.  "
-		"\n\t\tThis option should be very rarely used.\n");
 	fprintf(stderr, "  -s         \t"
 		"Change working directory to LogFile dirname or /var/tmp/.\n");
 	fprintf(stderr, "  -v         \t"
