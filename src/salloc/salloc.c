@@ -681,8 +681,8 @@ static int _proc_alloc(resource_allocation_response_msg_t *alloc)
 				working_cluster_rec->rpc_version);
 		} else {
 			/*
-			 * Remove three versions after 24.11 and always use
-			 * the "[]" wrapped format and remove the above comment.
+			 * When 24.11 is no longer supported this else clause
+			 * can be removed.
 			 */
 			setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
 				working_cluster_rec->name,

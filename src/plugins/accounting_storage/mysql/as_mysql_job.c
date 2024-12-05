@@ -506,7 +506,7 @@ no_rollup_change:
 	/*
 	 * Only jobs < 24.11 will not have a db_index here. This would also be
 	 * likely the first time we have seen this.
-	 * This can be removed 3 versions after 24.11.
+	 * When 24.05 is no longer supported this can be removed.
 	 */
 	if (!job_ptr->db_index) {
 		if (!(job_ptr->db_index = _get_db_index(mysql_conn,
