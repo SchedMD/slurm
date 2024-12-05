@@ -918,8 +918,8 @@ static void _setup_env_working_cluster(void)
 
 	/*
 	 * Format is cluster_name:[address]:port:rpc in 24.11+ or
-	 * cluster_name:address:port:rpc for older versions.  Disallow older
-	 * format two versions after 24.11.
+	 * cluster_name:address:port:rpc for older versions.
+	 * When 24.11 is no longer supported this can be removed.
 	 */
 	if (!(addr_ptr = strchr(working_env,  ':')))
 		goto error;

@@ -802,8 +802,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"@def_qos_id, @qos, @delta_qos, @prio;"
 		"END;";
 	/*
-	 * 3 versions after 25.05 we can remove get_lineage, it is only
-	 * used in dropping the old procedure.
+	 * When 25.05 is no longer supported we can remove get_lineage, it is
+	 * only used in dropping the old procedure.
 	 */
 	char *get_lineage =
 		"drop procedure if exists get_lineage;";

@@ -404,7 +404,8 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 			/*
 			 * Ignore alias_addrs from state file.
 			 * We dump alias_addrs only in slurm 23.11.0 and 23.11.1
-			 * This can be removed two versions after 23.11.
+			 * When 23.11 is no longer supported this can be
+			 * removed.
 			 */
 			xfree(tmp_str);
 		} else if (tmp_str) {
