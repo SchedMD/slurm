@@ -1700,13 +1700,6 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 		goto send_msg;
 	}
 
-	/*
-	 * Prior to 23.11, the remote cluster didn't pass the job's submission
-	 * protocol version and just uses the remote cluster's rpc version.
-	 */
-	if (!start_protocol_version)
-		start_protocol_version = sibling->rpc_version;
-
 	/* Create new job allocation */
 	job_desc->het_job_offset = NO_VAL;
 	error_code = job_allocate(job_desc, job_desc->immediate, false, NULL,
