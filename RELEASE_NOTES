@@ -28,6 +28,9 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
  -- slurmdbd '-R' is no longer a valid option. lft/rgt logic was removed from
     Slurm in 23.11.
+ -- sreport - start times will be rounded down to the previous hour and the end
+    times will be rounded up to the next hour. Before, times for start and end
+    were being rounded to the nearest minute or hour which was not intuitive.
 
 API CHANGES
 ===========
