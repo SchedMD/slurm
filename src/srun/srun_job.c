@@ -1051,13 +1051,12 @@ static char *_compress_het_job_nodelist(list_t *used_resp_list)
 	het_job_resp_struct_t *het_job_resp;
 	list_t *het_job_resp_list;
 	list_itr_t *resp_iter;
-	char *aliases = NULL, *tmp;
+	char *tmp;
 	char *het_job_nodelist = NULL, *node_name;
 	hostset_t *hs;
 	int cnt, i, j, k;
 	uint16_t *cpus;
 	uint32_t *reps, cpu_inx;
-	bool have_aliases = false;
 
 	if (!used_resp_list)
 		return het_job_nodelist;
@@ -1103,13 +1102,6 @@ static char *_compress_het_job_nodelist(list_t *used_resp_list)
 			j = hostlist_find(het_job_resp->host_list, node_name);
 			if ((j == -1) || !het_job_resp->cpu_cnt)
 				continue;	/* node not in this hetjob */
-			if (have_aliases) {
-				if (aliases)
-					xstrcat(aliases, ",");
-				xstrfmtcat(aliases, "%s:%s:%s",
-					   node_name, node_name,
-					   node_name);
-			}
 			if (cpus[cpu_inx] == het_job_resp->cpu_cnt[j]) {
 				reps[cpu_inx]++;
 			} else {
