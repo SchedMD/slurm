@@ -84,6 +84,8 @@
 #define STDIO_MAX_FREE_BUF 1024
 #define STDIO_MAX_MSG_CACHE 128
 
+#define STDIO_FILE_RETRIES 10
+
 struct io_buf {
 	int ref_count;
 	uint32_t length;
@@ -990,10 +992,26 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 		/* open file on task's stdin */
 		debug5("  stdin file name = %s", task->ifname);
 		do {
-			task->stdin_fd = open(task->ifname, (O_RDONLY |
-							     O_CLOEXEC));
-			++count;
-		} while (task->stdin_fd == -1 && errno == EINTR && count < 10);
+			if ((task->stdin_fd = open(task->ifname,
+						   (O_RDONLY | O_CLOEXEC)))
+									!= -1)
+				break;
+
+			/* "Retry-able" errors. */
+			if (errno == EINTR) {
+				debug("%s: Could not open stdin file '%s': '%m'. Attempt [%d/%d], retrying.",
+				      __func__,
+				      task->ifname,
+				      (count + 1),
+				      STDIO_FILE_RETRIES);
+				count++;
+				continue;
+			}
+
+			/* Non-"retryable" errors. */
+			break;
+
+		} while (count < STDIO_FILE_RETRIES);
 		if (task->stdin_fd == -1) {
 			error("Could not open stdin file %s: %m", task->ifname);
 			return SLURM_ERROR;
@@ -1044,18 +1062,50 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 	    (((step->flags & LAUNCH_LABEL_IO) == 0) ||
 	     xstrcmp(task->ofname, "/dev/null") == 0)) {
 #endif
-		int count = 0;
+		int count = 0, mkdir_rc;
+		bool tried_mkdir = false;
 		/* open file on task's stdout */
 		debug5("  stdout file name = %s", task->ofname);
 		do {
-			task->stdout_fd = open(task->ofname,
-					       file_flags | O_CLOEXEC, 0666);
-			if (!count && (errno == ENOENT)) {
-				mkdirpath(task->ofname, 0755, false);
-				errno = EINTR;
+			if ((task->stdout_fd = open(task->ofname,
+						    file_flags | O_CLOEXEC,
+						    0666)) != -1)
+				break;
+
+			/* "Retry-able" errors. */
+			if (errno == EINTR) {
+				debug("%s: Could not open stdout file '%s': '%m'. Attempt [%d/%d], retrying.",
+				      __func__,
+				      task->ofname,
+				      (count + 1),
+				      STDIO_FILE_RETRIES);
+				count++;
+				continue;
 			}
-			++count;
-		} while (task->stdout_fd == -1 && errno == EINTR && count < 10);
+
+			if (errno == ENOENT && !tried_mkdir) {
+				mkdir_rc = mkdirpath(task->ofname, 0755, false);
+				tried_mkdir = true;
+				if (mkdir_rc == SLURM_SUCCESS) {
+					debug("%s: Could not open stdout file '%s': '%s'. Retrying after successful path creation.",
+					      __func__,
+					      task->ofname,
+					      strerror(ENOENT));
+					continue;
+				} else {
+					error("%s: Could not open stdout file '%s': '%s'. Recursive path creation failed: '%s'.",
+					      __func__,
+					      task->ofname,
+					      strerror(ENOENT),
+					      strerror(mkdir_rc));
+					return SLURM_ERROR;
+				}
+			}
+
+			/* Non-"retryable" errors. */
+			break;
+
+		} while (count < STDIO_FILE_RETRIES);
 		if (task->stdout_fd == -1) {
 			error("Could not open stdout file %s: %m",
 			      task->ofname);
@@ -1143,18 +1193,50 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 	    (((step->flags & LAUNCH_LABEL_IO) == 0) ||
 	     (xstrcmp(task->efname, "/dev/null") == 0))) {
 #endif
-		int count = 0;
+		int count = 0, mkdir_rc;
+		bool tried_mkdir = false;
 		/* open file on task's stdout */
 		debug5("  stderr file name = %s", task->efname);
 		do {
-			task->stderr_fd = open(task->efname,
-					       file_flags | O_CLOEXEC, 0666);
-			if (!count && (errno == ENOENT)) {
-				mkdirpath(task->efname, 0755, false);
-				errno = EINTR;
+			if ((task->stderr_fd = open(task->efname,
+						    file_flags | O_CLOEXEC,
+						    0666)) != -1)
+				break;
+
+			/* "Retry-able" errors. */
+			if (errno == EINTR) {
+				debug("%s: Could not open stderr file '%s': '%m'. Attempt [%d/%d], retrying.",
+				      __func__,
+				      task->efname,
+				      (count + 1),
+				      STDIO_FILE_RETRIES);
+				count++;
+				continue;
 			}
-			++count;
-		} while (task->stderr_fd == -1 && errno == EINTR && count < 10);
+
+			if (errno == ENOENT && !tried_mkdir) {
+				mkdir_rc = mkdirpath(task->efname, 0755, false);
+				tried_mkdir = true;
+				if (mkdir_rc == SLURM_SUCCESS) {
+					debug("%s: Could not open stderr file '%s': '%s'. Retrying after successful path creation.",
+					      __func__,
+					      task->efname,
+					      strerror(ENOENT));
+					continue;
+				} else {
+					error("%s: Could not open stderr file '%s': '%s'. Recursive path creation failed: '%s'.",
+					      __func__,
+					      task->efname,
+					      strerror(ENOENT),
+					      strerror(mkdir_rc));
+					return SLURM_ERROR;
+				}
+			}
+
+			/* Non-"retryable" errors. */
+			break;
+
+		} while (count < STDIO_FILE_RETRIES);
 		if (task->stderr_fd == -1) {
 			error("Could not open stderr file %s: %m",
 			      task->efname);
