@@ -268,6 +268,7 @@ extern void *builtin_agent(void *args)
 			continue;
 
 		lock_slurmctld(all_locks);
+		validate_all_reservations(true, false);
 		_compute_start_times();
 		last_sched_time = time(NULL);
 		(void) bb_g_job_try_stage_in();

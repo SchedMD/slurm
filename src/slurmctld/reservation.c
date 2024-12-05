@@ -124,6 +124,7 @@ static const char *select_node_bitmap_tags[] = {
 	"SELECT_ONL_RSVD", "SELECT_ALL_RSVD", NULL
 };
 
+uint32_t validate_resv_cnt = 0;
 time_t    last_resv_update = (time_t) 0;
 list_t *resv_list = NULL;
 static list_t *magnetic_resv_list = NULL;
@@ -4255,26 +4256,25 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 	return true;
 }
 
-extern void validate_all_reservations(bool run_now)
+extern void validate_all_reservations(bool run_now, bool run_locked)
 {
 	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-	static uint32_t requests = 0;
 	bool run;
 
 	if (!run_now) {
 		slurm_mutex_lock(&mutex);
-		requests++;
+		validate_resv_cnt++;
 		log_flag(RESERVATION, "%s: requests %u",
-			 __func__, requests);
-		xassert(requests != UINT32_MAX);
+			 __func__, validate_resv_cnt);
+		xassert(validate_resv_cnt != UINT32_MAX);
 		slurm_mutex_unlock(&mutex);
 		return;
 	}
 
 	slurm_mutex_lock(&mutex);
-	run = (requests > 0);
+	run = (validate_resv_cnt > 0);
 	/* reset requests counter */
-	requests = 0;
+	validate_resv_cnt = 0;
 	slurm_mutex_unlock(&mutex);
 
 	if (run) {
@@ -4284,9 +4284,11 @@ extern void validate_all_reservations(bool run_now)
 			.node = WRITE_LOCK,
 			.part = READ_LOCK,
 		};
-		lock_slurmctld(lock);
+		if (run_locked)
+			lock_slurmctld(lock);
 		_validate_all_reservations();
-		unlock_slurmctld(lock);
+		if (run_locked)
+			unlock_slurmctld(lock);
 	}
 }
 

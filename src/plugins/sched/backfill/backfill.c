@@ -1171,6 +1171,7 @@ extern void *backfill_agent(void *args)
 		slurm_mutex_unlock(&check_bf_running_lock);
 
 		lock_slurmctld(all_locks);
+		validate_all_reservations(true, false);
 		if ((backfill_cnt++ % 2) == 0)
 			_het_job_start_clear();
 		_attempt_backfill();
@@ -1248,6 +1249,7 @@ static int _yield_locks(int64_t usec)
 	     (last_node_update != node_update))) ||
 	    (last_part_update != part_update) ||
 	    (slurm_conf.last_update != config_update) ||
+	    (validate_resv_cnt != 0) ||
 	    (last_resv_update != resv_update) ||
 	    stop_backfill || load_config)
 		return 1;

@@ -4126,7 +4126,7 @@ static void _slurm_rpc_create_node(slurm_msg_t *msg)
 
 	/* Below functions provide their own locks */
 	schedule_node_save();
-	validate_all_reservations(false);
+	validate_all_reservations(false, false);
 	queue_job_scheduler();
 	trigger_reconfig();
 }
@@ -4173,7 +4173,7 @@ static void _slurm_rpc_update_node(slurm_msg_t *msg)
 
 	/* Below functions provide their own locks */
 	schedule_node_save();
-	validate_all_reservations(false);
+	validate_all_reservations(false, false);
 	queue_job_scheduler();
 	trigger_reconfig();
 }
@@ -4218,7 +4218,7 @@ static void _slurm_rpc_delete_node(slurm_msg_t *msg)
 
 	/* Below functions provide their own locks */
 	schedule_node_save();
-	validate_all_reservations(false);
+	validate_all_reservations(false, false);
 	queue_job_scheduler();
 	trigger_reconfig();
 }

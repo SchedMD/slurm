@@ -2389,7 +2389,7 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(node_write_lock2);
 		}
 
-		validate_all_reservations(true);
+		validate_all_reservations(true, true);
 
 		if (difftime(now, last_timelimit_time) >= PERIODIC_TIMEOUT) {
 			lock_slurmctld(job_write_lock);

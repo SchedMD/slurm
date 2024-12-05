@@ -2744,7 +2744,7 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 	 * check all reservations since nodes may have been in a reservation with
 	 * floating count of nodes that needs to be updated
 	 */
-	validate_all_reservations(false);
+	validate_all_reservations(false, false);
 
 	return error_code;
 }
@@ -4605,7 +4605,7 @@ static void _make_node_down(node_record_t *node_ptr, time_t event_time)
 	 * check all reservations since node may have been in a reservation with
 	 * floating count of nodes that needs to be updated
 	 */
-	validate_all_reservations(false);
+	validate_all_reservations(false, false);
 }
 
 /*

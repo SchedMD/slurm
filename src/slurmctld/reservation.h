@@ -47,6 +47,8 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/slurmctld.h"
 
+extern uint32_t validate_resv_cnt;
+
 /* Create a resource reservation */
 extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg);
 
@@ -111,10 +113,13 @@ extern int load_all_resv_state(int recover);
  * Request validation of all reservation records, reset bitmaps, etc.
  * Will purge any invalid reservation.
  *
- * IN run_now - true: apply changes now if previously called
- *              false: defer changes until called with run_now=true
+ * IN run_now    - true: apply changes now if previously called
+ *                 false: defer changes until called with run_now=true
+ * IN run_locked - true: if applying changes, do it locking first
+ *                 false: assume we locked earlier, or not needed
+ *                 NOTE: Ignored if run_now==false
  */
-extern void validate_all_reservations(bool run_now);
+extern void validate_all_reservations(bool run_now, bool run_locked);
 
 /*
  * Determine if a job request can use the specified reservations
