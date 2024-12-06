@@ -354,7 +354,7 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ERRTAB_ENTRY(ESLURM_GROUP_ID_MISSING),
 	  "Invalid group id"					},
 	{ ERRTAB_ENTRY(ESLURM_BATCH_CONSTRAINT),
-	  "Job --batch option is invalid or not a subset of --constraints" },
+	  "Job --batch option is invalid or not a subset of --constraint" },
 	{ ERRTAB_ENTRY(ESLURM_INVALID_TRES),
 	  "Invalid Trackable RESource (TRES) specification"	},
 	{ ERRTAB_ENTRY(ESLURM_INVALID_TRES_BILLING_WEIGHTS),
