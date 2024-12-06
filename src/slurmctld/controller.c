@@ -817,6 +817,10 @@ int main(int argc, char **argv)
 		if (slurmctld_config.resume_backup && slurmctld_primary)
 			break;
 
+		/* The backup is now meant to relinquish control */
+		if (slurmctld_config.resume_backup && !slurmctld_primary)
+			backup_has_control = false;
+
 		recover = 2;
 	}
 
