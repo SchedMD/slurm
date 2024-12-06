@@ -464,10 +464,12 @@ proceeding or there may be data loss from data that was not fully saved.
 default. See the recommendation in the
 <a href="accounting.html#slurm-accounting-configuration-before-build">
 	accounting page</a>.</li>
-<li>Upgrade the slurmdbd daemon binaries and libraries.
-<a href="quickstart_admin.html#build_install">Install the new RPM/DEB
-	packages</a> only on the slurmdbd system. Do not upgrade the other Slurm
-	systems at this time.</li>
+<li>Upgrade the slurmdbd daemon binaries, libraries, and its systemd unit file
+	(if used). If using <a href="quickstart_admin.html#build_install">
+	RPM/DEB	packages</a>, the package manager will take care of these,
+	although systemd overrides may prevent the new unit from taking	effect.
+	<br>Only upgrade the slurmdbd system(s) at this time; other Slurm
+	systems should remain on the old version.</li>
 <li>Start the primary slurmdbd daemon.
 	<br><b>NOTE</b>: If you typically use systemd, it is recommended to
 	initially start the daemon directly as the configured SlurmUser:
@@ -525,7 +527,8 @@ simultaneous upgrade of slurmd systems:</p>
 <li>Shutdown the slurmctld daemon(s).</li>
 <li>(opt.) Shutdown the slurmd daemons on the compute nodes.</li>
 <li>Back up the contents of the configured StateSaveLocation.</li>
-<li>Upgrade the slurmctld (and optionally slurmd) daemons.</li>
+<li>Upgrade the slurmctld (and optionally slurmd) daemons and their systemd
+	service files (if used).</li>
 <li>(opt.) Restart the slurmd daemons on the compute nodes.</li>
 <li>Restart the slurmctld daemon(s).</li>
 <li>Validate proper operation, such as communication with nodes and a job's
@@ -558,7 +561,7 @@ following procedure can be followed:</p>
 	DOWN and their jobs killed.</li>
 <li>Shutdown the slurmd daemons on the compute nodes.</li>
 <li>Back up the contents of the configured StateSaveLocation.</li>
-<li>Upgrade the slurmd daemons.</li>
+<li>Upgrade the slurmd daemons and their systemd unit files (if used).</li>
 <li>Restart the slurmd daemons.</li>
 <li>Validate proper operation, such as communication with the controller and a
 	job's ability to successfully start and finish.</li>
@@ -574,8 +577,8 @@ execute <code>scontrol reconfig</code> for it to take effect.</li>
 attention when upgrading, except where specifically noted in the release notes.
 You should also pay attention to any changes introduced in these additional
 components. After core Slurm components have been upgraded, upgrade additional
-components and client commands using the normal method for your system, then
-restart any affected daemons.</p>
+components along with their systemd unit files (if used) and client commands
+using the normal method for your system, then restart any affected daemons.</p>
 
 <h3 id="custom_plugins">Customized Slurm Plugins
 <a class="slurm_link" href="#custom_plugins"></a></h3>
@@ -623,6 +626,6 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p style="text-align:center;">Last modified 15 August 2024</p>
+<p style="text-align:center;">Last modified 06 December 2024</p>
 
 <!--#include virtual="footer.txt"-->
