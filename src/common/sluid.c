@@ -90,10 +90,11 @@ extern sluid_t generate_sluid(void)
 		now_ms = last_ms;
 	}
 	sluid = seq;
-	slurm_mutex_unlock(&sluid_mutex);
 
 	sluid |= now_ms << 10;
 	sluid |= cluster_bits;
+
+	slurm_mutex_unlock(&sluid_mutex);
 
 	return sluid;
 }
