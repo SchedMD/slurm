@@ -69,79 +69,127 @@ def submit_job_with(extra_params, xfail=False, fatal=False):
 
 
 def test_qos_removal_single():
-    """Test that removal of a single QOS:
-    1. Marks pending jobs with InvalidQOS
-    2. Rejects new job submissions using removed QOS
+    """Test removing a QOS in use:
+    - Verify that running jobs with that QOS keep running.
+    - Verify that pending jobs are updated to InvalidQOS
+    - Verify that new jobs cannot use the removed QOS.
     """
-
-    # Stop slurmdbd and submit job
+    # Stop slurmdbd to avoid the job info being saved in the DB
     atf.stop_slurmdbd(quiet=True)
-    job_id = submit_job_with(f"--qos={qos1}", fatal=True)
 
-    # Stop slurmctld, start slurmdbd, remove QOS
+    # Submit a blocking job
+    job_id1 = submit_job_with(f"--qos={qos1} --exclusive", fatal=True)
+    assert atf.wait_for_job_state(
+        job_id1, "RUNNING"
+    ), f"Job {job_id1} never started running"
+
+    # Submit another job in the same node to be blocked (due exclusive)
+    node = atf.get_job_parameter(job_id1, "NodeList")
+    job_id2 = submit_job_with(f"--qos={qos1} -w {node}", fatal=True)
+    assert atf.wait_for_job_state(
+        job_id2, "PENDING"
+    ), f"Job {job_id2} should be pending"
+
+    # Stop slurmctld before starting slurmdbd to keep the jobs info out of
+    # the DB, only in slurmctld for the moment.
     atf.stop_slurmctld(quiet=True)
     atf.start_slurmdbd(quiet=True)
+
+    # Remove the QOS from the DB.
+    # Note that slurmdbd won't have the QOS or the jobs using it, while
+    # slurmctld knows the jobs and still thinks that the QOS exists.
     atf.run_command(
         f"sacctmgr -i remove qos {qos1}",
         user=atf.properties["slurm-user"],
         fatal=True,
     )
 
-    # Start slurmctld and verify job state/reason
+    # Start slurmctld and verify job states/reasons are the expected now that
+    # the QOS doesn't exists anymore.
     atf.start_slurmctld(quiet=True)
 
+    # Running job should continue running
     assert atf.wait_for_job_state(
-        job_id, "PENDING", desired_reason="InvalidQOS"
-    ), f"Job {job_id} not in PENDING state with InvalidQOS reason"
+        job_id1, "RUNNING", desired_reason="None"
+    ), f"Previously running job {job_id1} should stay RUNNING with 'None' reason"
+
+    # Pending job should be marked with InvalidQOS
+    assert atf.wait_for_job_state(
+        job_id2, "PENDING", desired_reason="InvalidQOS"
+    ), f"Pending job {job_id2} should be PENDING with InvalidQOS reason"
 
     # Try to submit a new job with removed QOS - should be rejected
     assert (
         submit_job_with(f"--qos={qos1}", xfail=True) == 0
-    ), f"Job submission with removed QOS {qos1} should have failed but got job id {job_id2}"
-
-    # Submit a job with remaining QOS - should succeed
-    assert (
-        submit_job_with(f"--qos={qos2}") != 0
-    ), f"Job submission with valid QOS {qos2} should have succeeded"
+    ), f"Job submission with removed QOS {qos1} should have failed"
 
 
 def test_qos_removal_multiple():
     """Test QOS removal when user has multiple QOS access:
-    1. Verifies jobs with removed QOS get marked InvalidQOS
-    2. Verifies jobs with remaining QOS stay valid
-    3. Verifies new job submissions with removed QOS are rejected
-    4. Verifies new job submissions with remaining QOS succeed
+    - Verify that running jobs with removed QOS keep running.
+    - Verify that pending jobs with removed QOS are updated to InvalidQOS.
+    - Verify that jobs with remaining QOS stay valid.
+    - Verify that new jobs cannot use the removed QOS.
+    - Verify that new job can use the remaining QOS.
     """
 
-    # Stop slurmdbd and submit jobs with different QOSs
+    # Stop slurmdbd to avoid the job info being saved in the DB
     atf.stop_slurmdbd(quiet=True)
-    job_id1 = submit_job_with(f"--qos={qos1}", fatal=True)
-    job_id2 = submit_job_with(f"--qos={qos2}", fatal=True)
 
-    # Stop slurmctld, start slurmdbd, remove first QOS
+    # Submit a blocking job
+    job_id1 = submit_job_with(f"--qos={qos1} --exclusive", fatal=True)
+    assert atf.wait_for_job_state(
+        job_id1, "RUNNING"
+    ), f"Job {job_id1} never started running"
+
+    # Submit two more jobs in the same node to be blocked (due exclusive)
+    node = atf.get_job_parameter(job_id1, "NodeList")
+    job_id2 = submit_job_with(f"--qos={qos1} -w {node}", fatal=True)
+    job_id3 = submit_job_with(f"--qos={qos2} -w {node}", fatal=True)
+
+    # Verify both jobs are pending
+    assert atf.wait_for_job_state(
+        job_id2, "PENDING"
+    ), f"Job {job_id2} should be pending"
+    assert atf.wait_for_job_state(
+        job_id3, "PENDING"
+    ), f"Job {job_id3} should be pending"
+
+    # Stop slurmctld before starting slurmdbd to keep the jobs info out of
+    # the DB, only in slurmctld for the moment.
     atf.stop_slurmctld(quiet=True)
     atf.start_slurmdbd(quiet=True)
+
+    # Remove the QOS from the DB.
+    # Note that slurmdbd won't have the QOS or the jobs using it, while
+    # slurmctld knows the jobs and still thinks that the QOS exists.
     atf.run_command(
         f"sacctmgr -i remove qos {qos1}",
         user=atf.properties["slurm-user"],
         fatal=True,
     )
 
-    # Start slurmctld and verify jobs state/reason
+    # Start slurmctld and verify job states/reasons are the expected now that
+    # the QOS doesn't exists anymore.
     atf.start_slurmctld(quiet=True)
 
-    # First job should be PENDING with InvalidQOS
+    # Running job should continue running
     assert atf.wait_for_job_state(
-        job_id1, "PENDING", desired_reason="InvalidQOS"
-    ), f"Job {job_id1} not in PENDING state and InvalidQOS reason"
+        job_id1, "RUNNING", desired_reason="None"
+    ), f"Previously running job {job_id1} should stay RUNNING with 'None' reason"
 
-    # Second job should stay PENDING with different reason
+    # Pending job with removed QOS should be marked with InvalidQOS
     assert atf.wait_for_job_state(
-        job_id2, "PENDING", timeout=10
-    ), f"Job {job_id2} should be in PENDING state"
+        job_id2, "PENDING", desired_reason="InvalidQOS"
+    ), f"Pending job {job_id2} should be PENDING with InvalidQOS reason"
+
+    # Pending job with remaining QOS should stay valid
+    assert atf.wait_for_job_state(
+        job_id3, "PENDING"
+    ), f"Job {job_id3} should be PENDING"
     assert (
-        atf.get_job_parameter(job_id2, "Reason") != "InvalidQOS"
-    ), "The second job whose QOS was not deleted should not be pending due to 'InvalidQOS'"
+        atf.get_job_parameter(job_id3, "Reason") != "InvalidQOS"
+    ), f"Job {job_id3} using qos2 should not have InvalidQOS reason"
 
     # Try to submit a new job with removed QOS - should be rejected
     assert (
@@ -154,80 +202,56 @@ def test_qos_removal_multiple():
     ), f"Job submission with valid QOS {qos2} should have succeeded"
 
 
-def test_qos_removal_running_vs_pending():
-    """Test QOS removal impact on running vs pending jobs:
-    1. Submit two jobs with same QOS - one running, one pending
-    2. Remove the QOS
-    3. Verify running job continues running
-    4. Verify pending job gets marked with InvalidQOS
+def test_account_removal_single():
+    """Test removing an account in use:
+    - Verify that running jobs with that account keep running.
+    - Verify that pending jobs are updated to InvalidAccount.
+    - Verify that new jobs cannot use the removed account.
     """
 
-    # Stop slurmdbd and submit jobs - use exclusive to ensure only one can run
+    # Stop slurmdbd to avoid the job info being saved in the DB
     atf.stop_slurmdbd(quiet=True)
-    job_id1 = submit_job_with(f"--qos={qos1} --exclusive", fatal=True)
-    job_id2 = submit_job_with(f"--qos={qos1} --exclusive", fatal=True)
 
-    # Wait for first job to start running
+    # Submit a blocking job
+    job_id1 = submit_job_with(f"--account={acct1} --exclusive", fatal=True)
     assert atf.wait_for_job_state(
         job_id1, "RUNNING"
     ), f"Job {job_id1} never started running"
 
-    # Verify second job is pending (due to exclusive)
+    # Submit another job in the same node to be blocked (due exclusive)
+    node = atf.get_job_parameter(job_id1, "NodeList")
+    job_id2 = submit_job_with(f"--account={acct1} -w {node}", fatal=True)
     assert atf.wait_for_job_state(
         job_id2, "PENDING"
     ), f"Job {job_id2} should be pending"
 
-    # Stop slurmctld, start slurmdbd, remove QOS
+    # Stop slurmctld before starting slurmdbd to keep the jobs info out of
+    # the DB, only in slurmctld for the moment.
     atf.stop_slurmctld(quiet=True)
     atf.start_slurmdbd(quiet=True)
-    atf.run_command(
-        f"sacctmgr -i remove qos {qos1}",
-        user=atf.properties["slurm-user"],
-        fatal=True,
-    )
 
-    # Start slurmctld and verify jobs state/reason
-    atf.start_slurmctld(quiet=True)
-
-    # Running job should continue running
-    assert atf.wait_for_job_state(
-        job_id1, "RUNNING"
-    ), f"Previously running job {job_id1} should stay RUNNING"
-    assert (
-        atf.get_job_parameter(job_id1, "Reason") == "None"
-    ), f"Running job {job_id1} should have 'None' as reason"
-
-    # Pending job should be marked with InvalidQOS
-    assert atf.wait_for_job_state(
-        job_id2, "PENDING", desired_reason="InvalidQOS"
-    ), f"Pending job {job_id2} should be PENDING with InvalidQOS reason"
-
-
-def test_account_removal_single():
-    """Test that removal of a single account:
-    1. Marks pending jobs with InvalidAccount
-    2. Rejects new job submissions using removed account
-    """
-
-    # Stop slurmdbd and submit job
-    atf.stop_slurmdbd(quiet=True)
-    job_id = submit_job_with(f"--account={acct1}", fatal=True)
-
-    # Stop slurmctld, start slurmdbd, remove account
-    atf.stop_slurmctld(quiet=True)
-    atf.start_slurmdbd(quiet=True)
+    # Remove the account from the DB.
+    # Note that slurmdbd won't have the account or the jobs using it, while
+    # slurmctld knows the jobs and still thinks that the account exists.
     atf.run_command(
         f"sacctmgr -i remove account {acct1}",
         user=atf.properties["slurm-user"],
         fatal=True,
     )
 
-    # Start slurmctld and verify job state/reason
+    # Start slurmctld and verify job states/reasons are the expected now that
+    # the account doesn't exists anymore.
     atf.start_slurmctld(quiet=True)
 
+    # Running job should continue running
     assert atf.wait_for_job_state(
-        job_id, "PENDING", desired_reason="InvalidAccount"
-    ), f"Job {job_id} not in PENDING state and InvalidAccount reason"
+        job_id1, "RUNNING", desired_reason="None"
+    ), f"Previously running job {job_id1} should stay RUNNING with 'None' reason"
+
+    # Pending job should be marked with InvalidAccount
+    assert atf.wait_for_job_state(
+        job_id2, "PENDING", desired_reason="InvalidAccount"
+    ), f"Pending job {job_id2} should be PENDING with InvalidAccount reason"
 
     # Try to submit a new job with removed account - should be rejected
     assert (
@@ -236,42 +260,71 @@ def test_account_removal_single():
 
 
 def test_account_removal_multiple():
-    """Test account removal when user has multiple account access:
-    1. Verifies jobs with removed account get marked InvalidAccount
-    2. Verifies jobs with remaining account stay valid
-    3. Verifies new job submissions with removed account are rejected
-    4. Verifies new job submissions with remaining account succeed
+    """Test removing an account when user has multiple account access:
+    - Verify that running jobs with removed account keep running.
+    - Verify that pending jobs with removed account are updated to InvalidAccount.
+    - Verify that jobs with remaining account stay valid.
+    - Verify that new jobs cannot use the removed account.
+    - Verify that new jobs can use the remaining account.
     """
 
-    # Stop slurmdbd and submit jobs with different accounts
+    # Stop slurmdbd to avoid the job info being saved in the DB
     atf.stop_slurmdbd(quiet=True)
-    job_id1 = submit_job_with(f"--account={acct1}", fatal=True)
-    job_id2 = submit_job_with(f"--account={acct2}", fatal=True)
 
-    # Stop slurmctld, start slurmdbd, remove first account
+    # Submit a blocking job
+    job_id1 = submit_job_with(f"--account={acct1} --exclusive", fatal=True)
+    assert atf.wait_for_job_state(
+        job_id1, "RUNNING"
+    ), f"Job {job_id1} never started running"
+
+    # Submit two more jobs in the same node to be blocked (due exclusive)
+    node = atf.get_job_parameter(job_id1, "NodeList")
+    job_id2 = submit_job_with(f"--account={acct1} -w {node}", fatal=True)
+    job_id3 = submit_job_with(f"--account={acct2} -w {node}", fatal=True)
+
+    # Verify both jobs are pending
+    assert atf.wait_for_job_state(
+        job_id2, "PENDING"
+    ), f"Job {job_id2} should be pending"
+    assert atf.wait_for_job_state(
+        job_id3, "PENDING"
+    ), f"Job {job_id3} should be pending"
+
+    # Stop slurmctld before starting slurmdbd to keep the jobs info out of
+    # the DB, only in slurmctld for the moment.
     atf.stop_slurmctld(quiet=True)
     atf.start_slurmdbd(quiet=True)
+
+    # Remove the account from the DB.
+    # Note that slurmdbd won't have the account or the jobs using it, while
+    # slurmctld knows the jobs and still thinks that the account exists.
     atf.run_command(
         f"sacctmgr -i remove account {acct1}",
         user=atf.properties["slurm-user"],
         fatal=True,
     )
 
-    # Start slurmctld and verify jobs state/reason
+    # Start slurmctld and verify job states/reasons are the expected now that
+    # the account doesn't exists anymore.
     atf.start_slurmctld(quiet=True)
 
-    # First job should be PENDING with InvalidAccount
+    # Running job should continue running
     assert atf.wait_for_job_state(
-        job_id1, "PENDING", desired_reason="InvalidAccount"
-    ), f"Job {job_id1} not in PENDING state and InvalidAccount reason"
+        job_id1, "RUNNING", desired_reason="None"
+    ), f"Previously running job {job_id1} should stay RUNNING with 'None' reason"
 
-    # Second job should stay PENDING with different reason
+    # Pending job with removed account should be marked with InvalidAccount
     assert atf.wait_for_job_state(
-        job_id2, "PENDING", timeout=10
-    ), f"Job {job_id2} should be in PENDING state"
+        job_id2, "PENDING", desired_reason="InvalidAccount"
+    ), f"Pending job {job_id2} should be PENDING with InvalidAccount reason"
+
+    # Pending job with remaining account should stay valid
+    assert atf.wait_for_job_state(
+        job_id3, "PENDING"
+    ), f"Job {job_id3} should be PENDING"
     assert (
-        atf.get_job_parameter(job_id2, "Reason") != "InvalidAccount"
-    ), "The second job whose account was not deleted should not be pending due to 'InvalidAccount'"
+        atf.get_job_parameter(job_id3, "Reason") != "InvalidAccount"
+    ), f"Job {job_id3} using acct2 should not have InvalidAccount reason"
 
     # Try to submit a new job with removed account - should be rejected
     assert (
@@ -282,52 +335,3 @@ def test_account_removal_multiple():
     assert (
         submit_job_with(f"--account={acct2}") != 0
     ), f"Job submission with valid account {acct2} should have succeeded"
-
-
-def test_account_removal_running_vs_pending():
-    """Test account removal impact on running vs pending jobs:
-    1. Submit two jobs with same account - one running, one pending
-    2. Remove the account
-    3. Verify running job continues running
-    4. Verify pending job gets marked with InvalidAccount
-    """
-
-    # Stop slurmdbd and submit jobs - use exclusive to ensure only one can run
-    atf.stop_slurmdbd(quiet=True)
-    job_id1 = submit_job_with(f"--account={acct1} --exclusive", fatal=True)
-    job_id2 = submit_job_with(f"--account={acct1} --exclusive", fatal=True)
-
-    # Wait for first job to start running
-    assert atf.wait_for_job_state(
-        job_id1, "RUNNING"
-    ), f"Job {job_id1} never started running"
-
-    # Verify second job is pending (due to exclusive)
-    assert atf.wait_for_job_state(
-        job_id2, "PENDING"
-    ), f"Job {job_id2} should be pending"
-
-    # Stop slurmctld, start slurmdbd, remove account
-    atf.stop_slurmctld(quiet=True)
-    atf.start_slurmdbd(quiet=True)
-    atf.run_command(
-        f"sacctmgr -i remove account {acct1}",
-        user=atf.properties["slurm-user"],
-        fatal=True,
-    )
-
-    # Start slurmctld and verify jobs state/reason
-    atf.start_slurmctld(quiet=True)
-
-    # Running job should continue running
-    assert atf.wait_for_job_state(
-        job_id1, "RUNNING"
-    ), f"Previously running job {job_id1} should stay RUNNING"
-    assert (
-        atf.get_job_parameter(job_id1, "Reason") == "None"
-    ), f"Running job {job_id1} should have 'None' as reason"
-
-    # Pending job should be marked with InvalidAccount
-    assert atf.wait_for_job_state(
-        job_id2, "PENDING", desired_reason="InvalidAccount"
-    ), f"Pending job {job_id2} should be PENDING with InvalidAccount reason"
