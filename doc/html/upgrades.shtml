@@ -465,10 +465,11 @@ default. See the recommendation in the
 <a href="accounting.html#slurm-accounting-configuration-before-build">
 	accounting page</a>.</li>
 <li>Upgrade the slurmdbd daemon binaries, libraries, and its systemd unit file
-	(if used).
-<a href="quickstart_admin.html#build_install">Install the new RPM/DEB
-	packages</a> only on the slurmdbd system. Do not upgrade the other Slurm
-	systems at this time.</li>
+	(if used). If using <a href="quickstart_admin.html#build_install">
+	RPM/DEB	packages</a>, the package manager will take care of these,
+	although systemd overrides may prevent the new unit from taking	effect.
+	<br>Only upgrade the slurmdbd system(s) at this time; other Slurm
+	systems should remain on the old version.</li>
 <li>Start the primary slurmdbd daemon.
 	<br><b>NOTE</b>: If you typically use systemd, it is recommended to
 	initially start the daemon directly as the configured SlurmUser:
