@@ -1,4 +1,4 @@
-.TH slurmctld "8" "Slurm Daemon" "February 2024" "Slurm Daemon"
+.TH slurmctld "8" "Slurm Daemon" "December 2024" "Slurm Daemon"
 
 .SH "NAME"
 slurmctld \- The central management daemon of Slurm.
@@ -86,6 +86,9 @@ to Slurm's StateSaveLocation otherwise. If both of them fail it will fallback to
 \fB\-\-systemd\fR
 Use when starting the daemon with systemd. This will allow slurmctld to notify
 systemd of the new PID when using 'scontrol reconfigure'.
+
+\fBNOTE\fR: The User and Group options in the slurmctld's systemd unit file need
+to both specify the SlurmUser.
 .IP
 
 .TP
