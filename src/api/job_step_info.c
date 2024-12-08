@@ -315,8 +315,22 @@ static int _get_stepmgr_steps(void *x, void *arg)
 	slurm_msg_t req_msg;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
-	slurm_conf_get_addr(sji->stepmgr, &req_msg.address,
-			    req_msg.flags);
+
+	if (slurm_conf_get_addr(sji->stepmgr, &req_msg.address, req_msg.flags))
+	{
+		/*
+		 * The node isn't in the conf, see if the
+		 * controller has an address for it.
+		 */
+		slurm_node_alias_addrs_t *alias_addrs = NULL;
+		if (!slurm_get_node_alias_addrs(sji->stepmgr, &alias_addrs)) {
+			add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
+						      alias_addrs->node_addrs);
+			slurm_free_node_alias_addrs(alias_addrs);
+			slurm_conf_get_addr(sji->stepmgr, &req_msg.address,
+					    req_msg.flags);
+		}
+	}
 
 	job_step_info_request_msg_t req_data = {0};
 	req_data.step_id.job_id = sji->job_id;
