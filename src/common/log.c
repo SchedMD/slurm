@@ -1392,17 +1392,6 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		fflush(stdout);
 		if (spank) {
 			_log_printf(log, log->buf, stderr, "%s%s", buf, eol);
-		} else if (log->fmt == LOG_FMT_THREAD_ID) {
-			/*
-			 * This is for backward compatibility. In versions
-			 * < 23.11 this was the only way to print to stderr.
-			 * Keep this behavior since LogTimeFormat=format_stderr
-			 * results in a little bit different format.
-			 */
-			char tmp[64];
-			_set_idbuf(tmp, sizeof(tmp));
-			_log_printf(log, log->buf, stderr, "%s: %s%s%s",
-			            tmp, pfx, buf, eol);
 		} else if ((log->fmt & LOG_FMT_FORMAT_STDERR)) {
 			xlogfmtcat(&msgbuf, "[%M] %s", pfx);
 			_log_printf(log, log->buf, stderr, "%s%s%s",
