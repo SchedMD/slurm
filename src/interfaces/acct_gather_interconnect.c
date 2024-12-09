@@ -193,6 +193,7 @@ extern int acct_gather_interconnect_fini(void)
 		slurm_cond_signal(&profile_timer->notify);
 		slurm_mutex_unlock(&profile_timer->notify_mutex);
 		slurm_thread_join(watch_node_thread_id);
+		watch_node_thread_id = 0;
 		slurm_mutex_lock(&g_context_lock);
 	}
 

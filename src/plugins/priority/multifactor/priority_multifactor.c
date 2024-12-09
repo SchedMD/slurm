@@ -1465,14 +1465,17 @@ static void *_decay_thread(void *no_data)
 
 		running_decay = 0;
 
-		/* Sleep until the next time. */
-		abs.tv_sec += slurm_conf.priority_calc_period;
-		slurm_cond_timedwait(&decay_cond, &decay_lock, &abs);
+		if (!plugin_shutdown) {
+			/* Sleep until the next time. */
+			abs.tv_sec += slurm_conf.priority_calc_period;
+			slurm_cond_timedwait(&decay_cond, &decay_lock, &abs);
+			start_time = time(NULL);
+			/* repeat ;) */
+		}
 		slurm_mutex_unlock(&decay_lock);
 
-		start_time = time(NULL);
-		/* repeat ;) */
 	}
+
 	return NULL;
 }
 

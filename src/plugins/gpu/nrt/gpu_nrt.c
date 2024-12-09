@@ -114,7 +114,7 @@ static char *_get_device_name(unsigned int dev_inx)
 
 	device_name = xmalloc(DEVICE_NAME_SZ);
 
-	if (!fscanf(fp, "%s", device_name))
+	if (!fgets(device_name, DEVICE_NAME_SZ, fp))
 		debug("Could not read Neuron device name");
 
 	xstrtolower(device_name);

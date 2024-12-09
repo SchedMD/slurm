@@ -70,6 +70,7 @@ struct allocation_msg_thread {
 static void _handle_msg(void *arg, slurm_msg_t *msg);
 static pthread_mutex_t msg_thr_start_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t msg_thr_start_cond = PTHREAD_COND_INITIALIZER;
+static bool msg_thr_start_done = false;
 static struct io_operations message_socket_ops = {
 	.readable = &eio_message_socket_readable,
 	.handle_read = &eio_message_socket_accept,
@@ -85,6 +86,7 @@ static void *_msg_thr_internal(void *arg)
 	xsignal_block(signals);
 	slurm_mutex_lock(&msg_thr_start_lock);
 	slurm_cond_signal(&msg_thr_start_cond);
+	msg_thr_start_done = true;
 	slurm_mutex_unlock(&msg_thr_start_lock);
 	eio_handle_mainloop((eio_handle_t *)arg);
 	debug("Leaving _msg_thr_internal");
@@ -140,9 +142,13 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	eio_new_initial_obj(msg_thr->handle, obj);
 	slurm_mutex_lock(&msg_thr_start_lock);
 	slurm_thread_create(&msg_thr->id, _msg_thr_internal, msg_thr->handle);
-	/* Wait until the message thread has blocked signals
-	   before continuing. */
-	slurm_cond_wait(&msg_thr_start_cond, &msg_thr_start_lock);
+	while (!msg_thr_start_done) {
+		/*
+		 * Wait until the message thread has blocked signals
+		 * before continuing.
+		 */
+		slurm_cond_wait(&msg_thr_start_cond, &msg_thr_start_lock);
+	}
 	slurm_mutex_unlock(&msg_thr_start_lock);
 
 	return (allocation_msg_thread_t *)msg_thr;
