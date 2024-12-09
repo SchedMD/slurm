@@ -3560,12 +3560,28 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			   (slurm_conf.ret2service != 2)) {
 			if (!node_ptr->reason ||
 			    (node_ptr->reason &&
-			     !xstrcmp(node_ptr->reason, "Not responding"))) {
+			     (!xstrcmp(node_ptr->reason, "Not responding") ||
+			      IS_NODE_REBOOT_REQUESTED(node_ptr)))) {
 				xfree(node_ptr->reason);
 				node_ptr->reason_time = now;
 				node_ptr->reason_uid = slurm_conf.slurm_user_id;
 				node_ptr->reason = xstrdup(
 					"Node unexpectedly rebooted");
+			}
+			/* If a reboot was requested, cancel it. */
+			if (IS_NODE_REBOOT_REQUESTED(node_ptr)) {
+				node_ptr->node_state &=
+					(~NODE_STATE_REBOOT_REQUESTED);
+				if ((node_ptr->next_state & NODE_STATE_FLAGS) &
+				    NODE_STATE_UNDRAIN)
+					/*
+					 * Not using _undo_reboot_asap() so that
+					 * the reason is preserved.
+					 */
+					node_ptr->node_state &=
+						(~NODE_STATE_DRAIN);
+				bit_clear(rs_node_bitmap, node_ptr->index);
+				bit_clear(asap_node_bitmap, node_ptr->index);
 			}
 			info("%s: Node %s unexpectedly rebooted boot_time=%u last response=%u",
 			     __func__, reg_msg->node_name,
