@@ -3044,19 +3044,34 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		socket_begin = socket_end;
 		socket_end += cores_per_socket;
 		/*
-		 * if a socket is already in use and entire_sockets_only is
-		 * enabled or used_cpus reached MaxCPUsPerSocket partition limit
-		 * the socket cannot be used by this job
+		 * Socket CPUs restrictions:
+		 * 1. Partially allocated socket, but entire_sockets_only:
+		 *    Enabled when CR_SOCKET. This mode counts unusable CPUs as
+		 *    allocated, so it also counts them against MaxCpusPerNode.
+		 * 2. Partially allocated socket, up/beyond MaxCPUsPerSocket:
+		 *    This mode does not count unusable CPUs as allocated, nor
+		 *    against MaxCpusPerNode.
+		 * 3. Free/partially allocated socket, MaxCPUsPerSocket enabled:
+		 *    We can still use CPUs, but up to MaxCPUsPerSocket.
+		 *    This mode does not count unusable CPUs as allocated, nor
+		 *    against MaxCpusPerNode.
 		 */
-		if ((entire_sockets_only && used_cpus) ||
-		    (used_cpus >= job_ptr->part_ptr->max_cpus_per_socket)) {
+		if (entire_sockets_only && used_cpus) {
+			used_cores[i] += free_cores[i];
+			used_cpus = used_cores[i] * threads_per_core;
+			free_cores[i] = 0;
+		} else if (used_cpus >=
+			   job_ptr->part_ptr->max_cpus_per_socket) {
 			log_flag(SELECT_TYPE, "MaxCpusPerSocket: %u, CPUs already used on socket[%d]: %u - won't use the socket.",
 				 job_ptr->part_ptr->max_cpus_per_socket,
 				 i,
 				 used_cpus);
-			used_cores[i] += free_cores[i];
-			used_cpus = used_cores[i] * threads_per_core;
 			free_cores[i] = 0;
+		} else if (job_ptr->part_ptr->max_cpus_per_socket != INFINITE) {
+			free_cores[i] =
+				MIN(free_cores[i],
+				    (job_ptr->part_ptr->max_cpus_per_socket /
+				     threads_per_core));
 		}
 		free_core_count += free_cores[i];
 		used_cpu_count += used_cpus;
