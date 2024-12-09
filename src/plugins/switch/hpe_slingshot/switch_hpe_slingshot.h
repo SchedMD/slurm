@@ -125,7 +125,7 @@ typedef struct slingshot_state {
 #define SLINGSHOT_TLE_DEF     1       /* Per-thread trigger list entries */
 #define SLINGSHOT_PTE_DEF     6       /* Per-thread portal table entries */
 #define SLINGSHOT_LE_DEF      16      /* Per-thread list entries */
-#define SLINGSHOT_AC_DEF      4       /* Per-thread addressing contexts */
+#define SLINGSHOT_AC_DEF      2       /* Per-thread addressing contexts */
 
 /* NIC resource limit structure */
 typedef struct slingshot_limits {
