@@ -1496,7 +1496,6 @@ static int _schedule(bool full_queue)
 	(void) list_for_each(resv_list, _foreach_setup_resv_sched, NULL);
 
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
-	bit_or(avail_node_bitmap, rs_node_bitmap);
 
 	/* Avoid resource fragmentation if important */
 	if (reduce_completing_frag) {
@@ -1809,7 +1808,11 @@ next_task:
 			 */
 			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
-			job_ptr->state_desc = xstrdup("Nodes required for job are DOWN, DRAINED or reserved for jobs in higher priority partitions");
+			job_ptr->state_desc =
+				xstrdup_printf("Nodes required for job are DOWN, DRAINED%s or reserved for jobs in higher priority partitions",
+					       bit_overlap(rs_node_bitmap,
+							   job_ptr->part_ptr->
+							   node_bitmap) ? ", REBOOTING" : "");
 			last_job_update = now;
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u. Partition=%s.",
 				     job_ptr,
