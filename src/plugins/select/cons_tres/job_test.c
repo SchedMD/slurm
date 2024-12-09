@@ -2915,7 +2915,6 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	int tmp_cpt = 0; /* cpus_per_task */
 	uint16_t free_cores[sockets];
 	uint16_t used_cores[sockets];
-	uint32_t used_cpu_array[sockets];
 	uint16_t cpu_cnt[sockets];
 	uint16_t max_cpu_per_req_sock = INFINITE16;
 	avail_res_t *avail_res = xmalloc(sizeof(avail_res_t));
@@ -2926,7 +2925,6 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 
 	memset(free_cores, 0, sockets * sizeof(uint16_t));
 	memset(used_cores, 0, sockets * sizeof(uint16_t));
-	memset(used_cpu_array, 0, sockets * sizeof(uint32_t));
 	memset(cpu_cnt, 0, sockets * sizeof(uint16_t));
 
 	if ((details_ptr->whole_node & WHOLE_NODE_REQUIRED) &&
@@ -3029,17 +3027,17 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	socket_begin = 0;
 	socket_end = cores_per_socket;
 	for (i = 0; i < sockets; i++) {
+		uint16_t used_cpus;
+
 		free_cores[i] = bit_set_count_range(core_map, socket_begin,
 						    socket_end);
-		free_core_count += free_cores[i];
-		if (!tmp_core) {
-			used_cores[i] += (cores_per_socket - free_cores[i]);
-		} else {
+		if (!tmp_core)
+			used_cores[i] = (cores_per_socket - free_cores[i]);
+		else
 			used_cores[i] = bit_set_count_range(tmp_core,
 							    socket_begin,
 							    socket_end);
-			used_cpu_array[i] = used_cores[i];
-		}
+		used_cpus = used_cores[i] * threads_per_core;
 
 		socket_begin = socket_end;
 		socket_end += cores_per_socket;
@@ -3048,21 +3046,20 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		 * enabled or used_cpus reached MaxCPUsPerSocket partition limit
 		 * the socket cannot be used by this job
 		 */
-		if ((entire_sockets_only && used_cores[i]) ||
-		    ((used_cores[i] * threads_per_core) >=
-		     job_ptr->part_ptr->max_cpus_per_socket)) {
+		if ((entire_sockets_only && used_cpus) ||
+		    (used_cpus >= job_ptr->part_ptr->max_cpus_per_socket)) {
 			log_flag(SELECT_TYPE, "MaxCpusPerSocket: %u, CPUs already used on socket[%d]: %u - won't use the socket.",
 				 job_ptr->part_ptr->max_cpus_per_socket,
 				 i,
-				 used_cpu_array[i]);
-			free_core_count -= free_cores[i];
+				 used_cpus);
 			used_cores[i] += free_cores[i];
+			used_cpus = used_cores[i] * threads_per_core;
 			free_cores[i] = 0;
 		}
-		free_cpu_count += free_cores[i] * threads_per_core;
-		if (used_cpu_array[i])
-			used_cpu_count += used_cores[i] * threads_per_core;
+		free_core_count += free_cores[i];
+		used_cpu_count += used_cpus;
 	}
+	free_cpu_count = free_core_count * threads_per_core;
 	avail_res->max_cpus = free_cpu_count;
 	FREE_NULL_BITMAP(tmp_core);
 
