@@ -999,9 +999,10 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 
 			/* "Retry-able" errors. */
 			if (errno == EINTR) {
-				debug("%s: Could not open stdin file '%s': '%m'. Attempt [%d/%d], retrying.",
+				debug("%s: Could not open stdin file '%s': '%s'. Attempt [%d/%d], retrying.",
 				      __func__,
 				      task->ifname,
+				      strerror(errno),
 				      (count + 1),
 				      STDIO_FILE_RETRIES);
 				count++;
