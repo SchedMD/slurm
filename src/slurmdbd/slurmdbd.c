@@ -97,7 +97,6 @@ static pthread_t rollup_handler_thread = 0; /* thread ID for rollup hander */
 static pthread_t commit_handler_thread = 0; /* thread ID for commit hander */
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool running_rollup = 0;
-static bool running_commit = 0;
 static bool restart_backup = false;
 
 /* Local functions */
@@ -486,13 +485,14 @@ extern void shutdown_threads(void)
 	 * Terminate the commit_handler_thread. Do it before rpc_mgr_wake, it
 	 * will do the final commit on the connection.
 	 */
-	if (running_commit)
-		debug("Waiting for commit thread to finish.");
-
-	slurm_mutex_lock(&registered_lock);
-	if (commit_handler_thread)
+	if (commit_handler_thread) {
+		if (pthread_mutex_trylock(&registered_lock) == EBUSY) {
+			debug("Waiting for commit thread to finish.");
+			slurm_mutex_lock(&registered_lock);
+		}
 		pthread_cancel(commit_handler_thread);
-	slurm_mutex_unlock(&registered_lock);
+		slurm_mutex_unlock(&registered_lock);
+	}
 
 	/* Wake up the RPC manager so it can exit */
 	rpc_mgr_wake();
@@ -889,7 +889,6 @@ static void *_commit_handler(void *db_conn)
 		/* Commit each slurmctld's info */
 		if (slurmdbd_conf->commit_delay) {
 			slurm_mutex_lock(&registered_lock);
-			running_commit = 1;
 			itr = list_iterator_create(registered_clusters);
 			while ((slurmdbd_conn = list_next(itr))) {
 				debug4("running commit for %s",
@@ -898,7 +897,6 @@ static void *_commit_handler(void *db_conn)
 					slurmdbd_conn->db_conn, 1);
 			}
 			list_iterator_destroy(itr);
-			running_commit = 0;
 			slurm_mutex_unlock(&registered_lock);
 		}
 
