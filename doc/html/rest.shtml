@@ -32,7 +32,6 @@
 </ul>
 </li>
 <li><a href="#config">Configuration</a></li>
-<li><a href="#openapi">OpenAPI Specification (OAS)</a></li>
 <li><a href="#plugins">Plugins</a></li>
 <li><a href="#high_availability">High Availability</a></li>
 <li><a href="#security">Security</a>
@@ -244,6 +243,6 @@ for deployment in a production environment.</p>
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 07 January 2025</p>
+<p style="text-align:center;">Last modified 21 April 2025</p>
 
 <!--#include virtual="footer.txt"-->
