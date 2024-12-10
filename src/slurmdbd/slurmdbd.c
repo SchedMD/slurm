@@ -101,7 +101,6 @@ static bool running_commit = 0;
 static bool restart_backup = false;
 
 /* Local functions */
-static void  _commit_handler_cancel(void);
 static void *_commit_handler(void *no_data);
 static void  _daemonize(void);
 static void  _init_config(void);
@@ -110,7 +109,6 @@ static void  _kill_old_slurmdbd(void);
 static void  _parse_commandline(int argc, char **argv);
 static void  _restart_self(int argc, char **argv);
 static void  _request_registrations(void *db_conn);
-static void  _rollup_handler_cancel(void);
 static void *_rollup_handler(void *no_data);
 static int   _find_rollup_stats_in_list(void *x, void *key);
 static int   _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec);
@@ -484,13 +482,41 @@ extern void shutdown_threads(void)
 	shutdown_time = time(NULL);
 	slurm_mutex_unlock(&shutdown_mutex);
 
-	/* End commit before rpc_mgr_wake.  It will do the final
-	   commit on the connection.
-	*/
-	_commit_handler_cancel();
-	rpc_mgr_wake();
-	_rollup_handler_cancel();
+	/*
+	 * Terminate the commit_handler_thread. Do it before rpc_mgr_wake, it
+	 * will do the final commit on the connection.
+	 */
+	if (running_commit)
+		debug("Waiting for commit thread to finish.");
 
+	slurm_mutex_lock(&registered_lock);
+	if (commit_handler_thread)
+		pthread_cancel(commit_handler_thread);
+	slurm_mutex_unlock(&registered_lock);
+
+	/* Wake up the RPC manager so it can exit */
+	rpc_mgr_wake();
+
+	/* Terminate the rollup_handler_thread */
+	if (running_rollup) {
+		if (backup && running_rollup && primary_resumed)
+			debug("Hard cancelling rollup thread");
+		else
+			debug("Waiting for rollup thread to finish.");
+	}
+
+	slurm_mutex_lock(&rollup_lock);
+	if (rollup_handler_thread) {
+		if (backup && running_rollup && primary_resumed) {
+			pthread_cancel(rollup_handler_thread);
+			restart_backup = true;
+		} else {
+			pthread_cancel(rollup_handler_thread);
+		}
+	}
+	slurm_mutex_unlock(&rollup_lock);
+
+	/* Terminate conmgr. */
 	conmgr_request_shutdown();
 }
 
@@ -774,27 +800,6 @@ static void _request_registrations(void *db_conn)
 	FREE_NULL_LIST(cluster_list);
 }
 
-static void _rollup_handler_cancel(void)
-{
-	if (running_rollup) {
-		if (backup && running_rollup && primary_resumed)
-			debug("Hard cancelling rollup thread");
-		else
-			debug("Waiting for rollup thread to finish.");
-	}
-
-	slurm_mutex_lock(&rollup_lock);
-	if (rollup_handler_thread) {
-		if (backup && running_rollup && primary_resumed) {
-			pthread_cancel(rollup_handler_thread);
-			restart_backup = true;
-		} else {
-			pthread_cancel(rollup_handler_thread);
-		}
-	}
-	slurm_mutex_unlock(&rollup_lock);
-}
-
 static int _find_rollup_stats_in_list(void *x, void *key)
 {
 	slurmdb_rollup_stats_t *rollup_stats_a = (slurmdb_rollup_stats_t *)x;
@@ -869,16 +874,6 @@ static void *_rollup_handler(void *db_conn)
 	}
 
 	return NULL;
-}
-
-static void _commit_handler_cancel()
-{
-	if (running_commit)
-		debug("Waiting for commit thread to finish.");
-	slurm_mutex_lock(&registered_lock);
-	if (commit_handler_thread)
-		pthread_cancel(commit_handler_thread);
-	slurm_mutex_unlock(&registered_lock);
 }
 
 /* _commit_handler - Process commit's of registered clusters */
