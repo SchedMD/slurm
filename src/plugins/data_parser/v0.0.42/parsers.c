@@ -8376,7 +8376,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_skip(alloc_sid),
 	add_skip(argc),
 	add_skip(argv),
-	add_cparse(JOB_DESC_MSG_ARGV, "argv", "Arguments to the script"),
+	add_cparse(JOB_DESC_MSG_ARGV, "argv", "Arguments to the script. Note: The slurmstepd always overrides argv[0] with the path to the created script file. If this option is used, argv[0] should be a throwaway value."),
 	add_parse(STRING, array_inx, "array", "Job array index value specification"),
 	add_skip(array_bitmap),
 	add_parse(STRING, batch_features, "batch_features", "Features required for batch script's node"),
