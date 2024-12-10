@@ -472,7 +472,18 @@ extern void handle_rollup_stats(list_t *rollup_stats_list,
 
 extern void shutdown_threads(void)
 {
+	static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+	/* Only one thread ever gets here. */
+	slurm_mutex_lock(&shutdown_mutex);
+	if (shutdown_time) {
+		debug("There is already a shutdown operation in progress.");
+		slurm_mutex_unlock(&shutdown_mutex);
+		return;
+	}
 	shutdown_time = time(NULL);
+	slurm_mutex_unlock(&shutdown_mutex);
+
 	/* End commit before rpc_mgr_wake.  It will do the final
 	   commit on the connection.
 	*/
