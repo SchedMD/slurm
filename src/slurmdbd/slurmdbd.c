@@ -96,7 +96,6 @@ static pthread_t rpc_handler_thread = 0; /* thread ID for RPC hander */
 static pthread_t rollup_handler_thread = 0; /* thread ID for rollup hander */
 static pthread_t commit_handler_thread = 0; /* thread ID for commit hander */
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool running_rollup = 0;
 static bool restart_backup = false;
 
 /* Local functions */
@@ -498,23 +497,27 @@ extern void shutdown_threads(void)
 	rpc_mgr_wake();
 
 	/* Terminate the rollup_handler_thread */
-	if (running_rollup) {
-		if (backup && running_rollup && primary_resumed)
-			debug("Hard cancelling rollup thread");
-		else
-			debug("Waiting for rollup thread to finish.");
-	}
-
-	slurm_mutex_lock(&rollup_lock);
 	if (rollup_handler_thread) {
-		if (backup && running_rollup && primary_resumed) {
-			pthread_cancel(rollup_handler_thread);
-			restart_backup = true;
-		} else {
-			pthread_cancel(rollup_handler_thread);
+		if (pthread_mutex_trylock(&rollup_lock) == EBUSY) {
+			if (backup && primary_resumed) {
+				/*
+				 * Canceling this is ok we are running in a
+				 * transaction so it will just get thrown away.
+				 */
+				debug("Hard cancelling rollup thread");
+				restart_backup = true;
+				/*
+				 * Not locking rollup_lock here on purpose. We
+				 * want to cancel the thread no matter what.
+				 */
+			} else {
+				debug("Waiting for rollup thread to finish.");
+				slurm_mutex_lock(&rollup_lock);
+			}
 		}
+		pthread_cancel(rollup_handler_thread);
+		slurm_mutex_unlock(&rollup_lock);
 	}
-	slurm_mutex_unlock(&rollup_lock);
 
 	/* Terminate conmgr. */
 	conmgr_request_shutdown();
@@ -835,14 +838,11 @@ static void *_rollup_handler(void *db_conn)
 			break;
 		/* run the roll up */
 		slurm_mutex_lock(&rollup_lock);
-		running_rollup = 1;
 		debug2("running rollup at %s", slurm_ctime2(&start_time));
 		START_TIMER;
 		acct_storage_g_roll_usage(db_conn, 0, 0, 1, &rollup_stats_list);
 		END_TIMER;
 		acct_storage_g_commit(db_conn, 1);
-		running_rollup = 0;
-
 		handle_rollup_stats(rollup_stats_list, DELTA_TIMER, 0);
 		FREE_NULL_LIST(rollup_stats_list);
 		slurm_mutex_unlock(&rollup_lock);
