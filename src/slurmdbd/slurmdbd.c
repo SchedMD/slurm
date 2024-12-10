@@ -133,7 +133,7 @@ static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	info("Caught SIGCHLD. Ignoring");
+	debug5("Caught SIGCHLD. Ignoring");
 }
 
 static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
@@ -144,7 +144,7 @@ static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	info("Caught SIGTSTP. Ignoring");
+	debug5("Caught SIGTSTP. Ignoring");
 }
 
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
@@ -155,7 +155,7 @@ static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	debug("Caught SIGUSR1. Ignoring.");
+	debug5("Caught SIGUSR1. Ignoring.");
 }
 
 static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
@@ -166,17 +166,17 @@ static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	info("Caught SIGPIPE. Ignoring.");
+	debug5("Caught SIGPIPE. Ignoring.");
 }
 
 static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	debug("Caught SIGTTIN. Ignoring.");
+	debug5("Caught SIGTTIN. Ignoring.");
 }
 
 static void _on_sigxcpu(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	debug("Caught SIGXCPU. Ignoring.");
+	debug5("Caught SIGXCPU. Ignoring.");
 }
 
 static void _register_signal_handlers(void)
