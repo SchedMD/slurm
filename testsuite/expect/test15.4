@@ -53,7 +53,6 @@ set login_grp_info [get_my_id]
 #
 # Submit a slurm job that will execute 'id'
 #
-set timeout $max_job_delay
 spawn $salloc -N1 -t1 $srun $bin_id
 expect {
 	-re "Granted job allocation ($number)" {
@@ -73,15 +72,12 @@ expect {
 	}
 }
 
-if {$got_job_grps == 0} {
-	fail "Did not get user info from slurm job"
-}
+subtest {$got_job_grps != 0} "Verify we were able to get user info from slurm job"
+
 
 #
 # Confirm the user id and group id in the slurm job matches that
 # of the local 'id' execution.
 #
 
-if {$login_grp_info ne $job_grp_info} {
-	fail "Login and slurm user info mismatch"
-}
+subtest {$login_grp_info eq $job_grp_info} "Verify user info from login and job match" "$login_grp_info != $job_grp_info"
