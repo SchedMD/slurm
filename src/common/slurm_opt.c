@@ -4945,6 +4945,17 @@ extern bool slurm_option_get_tres_per_tres(
 		return true;
 }
 
+/* Get cpu per task count from tres_per_task string */
+extern int slurm_opt_get_tres_per_task_cpu_cnt(char *tres_per_task)
+{
+	char *prefix = "cpu=";
+	int len = 4;
+	char *cpu_str = xstrstr(tres_per_task, prefix);
+	if (!cpu_str)
+		return 0;
+	return strtol(cpu_str + len, NULL, 10);
+}
+
 /*
  * Update part of the tres_per_task string and match it to the count given
  *
