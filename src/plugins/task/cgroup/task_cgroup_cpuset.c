@@ -152,7 +152,13 @@ endit:
 /*
  * Keep track a of a pid.
  */
-extern int task_cgroup_cpuset_add_pid(pid_t pid)
+extern int task_cgroup_cpuset_add_pid(stepd_step_rec_t *job, pid_t pid,
+				      uint32_t taskid)
+{
+	return cgroup_g_task_addto(CG_CPUS, job, pid, taskid);
+}
+
+extern int task_cgroup_cpuset_add_extern_pid(pid_t pid)
 {
 	return cgroup_g_step_addto(CG_CPUS, &pid, 1);
 }
