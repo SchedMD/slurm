@@ -809,6 +809,7 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 				    job_ptr->origin_cluster);
 
 	alloc_msg->tres_per_node = xstrdup(job_ptr->tres_per_node);
+	alloc_msg->tres_per_task = xstrdup(job_ptr->tres_per_task);
 	alloc_msg->uid = job_ptr->user_id;
 	alloc_msg->user_name = user_from_job(job_ptr);
 	alloc_msg->gid = job_ptr->group_id;

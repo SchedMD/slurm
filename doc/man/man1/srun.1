@@ -1868,8 +1868,7 @@ per task; \fB\-\-mem\-per\-cpu\fR will be reduced to a value no larger than
 \fBMaxMemPerCPU\fR; \fB\-\-cpus\-per\-task\fR will be set and the value of
 \fB\-\-cpus\-per\-task\fR multiplied by the new \fB\-\-mem\-per\-cpu\fR
 value will equal the original \fB\-\-mem\-per\-cpu\fR value specified by
-the user. If the user already specified a value for \fB\-\-cpus\-per\-task\fR,
-it will be respected and only the total amount of allocated CPUs will change.
+the user.
 This parameter would generally be used if individual processors
 are allocated to jobs (\fBSelectType=select/cons_tres\fR).
 If resources are allocated by core, socket, or whole nodes, then the number
