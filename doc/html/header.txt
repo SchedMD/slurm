@@ -71,7 +71,7 @@
 					<ul>
 						<li><a href="documentation.shtml">Documentation</a></li>
 						<li><a href="faq.shtml">FAQ</a></li>
-						<li><a href="publications.shtml">Publications</a></li>
+						<li><a href="https://www.schedmd.com/publications/">Publications</a></li>
 					</ul>
 				</li>
 				<li class="site-menu__item">
