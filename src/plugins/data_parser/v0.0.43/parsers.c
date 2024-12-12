@@ -2530,7 +2530,7 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 						   parent_path)))
 			return rc;
 
-		if (value == INFINITE64)
+		if (IS_INFINITE(value))
 			*dst = (double) INFINITE64;
 		else if (value == NO_VAL64)
 			*dst = (double) NO_VAL;
