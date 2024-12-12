@@ -2972,11 +2972,30 @@ static int DUMP_FUNC(UINT64)(const parser_t *const parser, void *obj,
 {
 	uint64_t *src = obj;
 
-	/* Never set values of INF or NO_VAL */
-	if ((*src == NO_VAL64) || (*src == INFINITE64))
-		data_set_null(dst);
-	else
-		(void) data_set_int(dst, *src);
+	if (is_complex_mode(args)) {
+		if (IS_INFINITE(*src))
+			data_set_float(dst, HUGE_VAL);
+		else if (IS_CAST_NO_VAL(*src))
+			data_set_null(dst);
+		else
+			data_set_int(dst, *src);
+	} else {
+		if (IS_INFINITE(*src)) {
+			data_set_int(dst, INFINITE64);
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for Infinity",
+				XSTRINGIFY(INFINITE64));
+		} else if (IS_NO_VAL(*src)) {
+			data_set_int(dst, NO_VAL64);
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for null",
+				XSTRINGIFY(NO_VAL64));
+		} else {
+			data_set_int(dst, *src);
+		}
+	}
 
 	return SLURM_SUCCESS;
 }
