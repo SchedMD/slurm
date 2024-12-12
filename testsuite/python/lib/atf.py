@@ -735,6 +735,7 @@ def stop_slurmdbd(quiet=False):
     Returns:
         None
     """
+    failures = []
 
     if not properties["auto-config"]:
         require_auto_config("wants to stop slurmdbd")
@@ -759,6 +760,9 @@ def stop_slurmdbd(quiet=False):
         failures.append("Slurmdbd is still running")
     else:
         logging.debug("Slurmdbd stopped successfully")
+
+    if not quiet:
+        logging.warning(failures[0])
 
 
 def stop_slurm(fatal=True, quiet=False):
