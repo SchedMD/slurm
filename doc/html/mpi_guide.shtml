@@ -101,9 +101,6 @@ Note also that Intel MPI doesn't officially support PMIx. It may work since PMIx
 offers some compatibility with PMI-2, but there is no guarantee that it will.
 </p>
 
-<p>Additional PMIx notes can be found in the SchedMD
-<a href="publications.html">Publications and Presentations</a> page.</p>
-
 <h3 id="slurm_pmix">Building Slurm with PMIx support
 <a class="slurm_link" href="#slurm_pmix"></a>
 </h3>
@@ -686,6 +683,6 @@ using the same <b>PMI_CONTROL_PORT</b>.</p>
 <p>This plugin does not support MPMD/heterogeneous jobs and it requires
 <i>libpals >= 0.2.8</i>.</p>
 
-<p style="text-align:center;">Last modified 21 June 2024</p>
+<p style="text-align:center;">Last modified 12 December 2024</p>
 
 <!--#include virtual="footer.txt"-->
