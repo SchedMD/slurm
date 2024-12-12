@@ -2389,7 +2389,7 @@ static int PARSE_FUNC(FLOAT128)(const parser_t *const parser, void *obj,
 	xassert(sizeof(long double) * 8 == 128);
 
 	if (data_get_type(str) == DATA_TYPE_NULL)
-		*dst = (double) NO_VAL;
+		*dst = (long double) NO_VAL;
 	else if (data_convert_type(str, DATA_TYPE_FLOAT) == DATA_TYPE_FLOAT)
 		*dst = data_get_float(str);
 	else
