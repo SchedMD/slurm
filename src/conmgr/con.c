@@ -835,7 +835,7 @@ extern void conmgr_queue_close_fd(conmgr_fd_t *con)
 		/*
 		 * Defer request to close connection until connection is no
 		 * longer actively doing work as closing connection would change
-		 * several variables guarenteed to not change while work is
+		 * several variables guaranteed to not change while work is
 		 * active.
 		 */
 		add_work_con_fifo(true, con, _deferred_close_fd, con);
@@ -1254,7 +1254,7 @@ extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 	/*
 	 * Socket must not continue to be considered valid to avoid a
 	 * infinite calls to poll() which will immediately fail. Close
-	 * the relavent file descriptor and remove from connection.
+	 * the relevant file descriptor and remove from connection.
 	 */
 	close_con(true, con);
 }
@@ -1528,7 +1528,7 @@ extern void extract_con_fd(conmgr_fd_t *con)
 
 	/*
 	 * take the file descriptors, replacing the file descriptors in
-	 * con with invalid values initialied in conmgr_queue_extract_con_fd().
+	 * con with invalid values initialized in conmgr_queue_extract_con_fd().
 	 */
 	SWAP(extract->input_fd, con->input_fd);
 	SWAP(extract->output_fd, con->output_fd);

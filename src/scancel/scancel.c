@@ -410,7 +410,7 @@ static int _verify_job_ids(void)
 	opt.job_pend  = xmalloc(sizeof(bool) * opt.job_cnt);
 	job_ptr = job_buffer_ptr->job_array;
 	for (i = 0; i < job_buffer_ptr->record_count; i++, job_ptr++) {
-		/* NOTE: We re-use the job's "assoc_id" value as a flag to
+		/* NOTE: We reuse the job's "assoc_id" value as a flag to
 		 * record if the job is referenced in the job list supplied
 		 * by the user. */
 		job_ptr->assoc_id = 0;

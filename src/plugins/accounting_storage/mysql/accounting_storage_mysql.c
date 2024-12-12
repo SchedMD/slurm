@@ -81,7 +81,7 @@ list_t *registered_clusters;
 
 list_t *as_mysql_cluster_list = NULL;
 /* This total list is only used for converting things, so no
-   need to keep it upto date even though it lives until the
+   need to keep it up to date even though it lives until the
    end of the life of the slurmdbd.
 */
 list_t *as_mysql_total_cluster_list = NULL;
@@ -912,7 +912,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	}
 
 	/* This total list is only used for converting things, so no
-	   need to keep it upto date even though it lives until the
+	   need to keep it up to date even though it lives until the
 	   end of the life of the slurmdbd.
 	*/
 	if (!(as_mysql_total_cluster_list =
@@ -2253,7 +2253,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
-/* Every option in assoc_char should have a 't1.' infront of it. */
+/* Every option in assoc_char should have a 't1.' in front of it. */
 extern int remove_common(mysql_conn_t *mysql_conn,
 			 uint16_t type,
 			 time_t now,
@@ -2632,7 +2632,7 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
  * MySQL version 5.6.48 and 5.7.30 introduced a regression in the
  * implementation of CONCAT() that will lead to incorrect NULL values.
  *
- * We cannot safely work around this mistake without restructing our stored
+ * We cannot safely work around this mistake without restructuring our stored
  * procedures, and thus fatal() here to avoid a segfault.
  *
  * Test that concat() is working as expected, rather than trying to enumerate

@@ -322,7 +322,7 @@ static void _dmdx_req(buf_t *buf, int nodeid, uint32_t seq_num)
 		goto exit;
 	}
 
-	/* setup temp structure to handle information fro _dmdx_pmix_cb */
+	/* setup temp structure to handle information from _dmdx_pmix_cb */
 	caddy = xmalloc(sizeof(dmdx_caddy_t));
 	caddy->seq_num = seq_num;
 

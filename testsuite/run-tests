@@ -212,7 +212,7 @@ testsuite.conf file in this directory as outlined in the README.
     log_header("**** BEGIN TESTING ****")
     if not args.resume:
         perform(
-            "Reseting run_ids",
+            "Resetting run_ids",
             reset_suite_run_ids,
             db_name,
             ["slurm_unit", "expect", "python"],

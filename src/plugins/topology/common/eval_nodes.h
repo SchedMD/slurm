@@ -71,9 +71,9 @@ extern int eval_nodes(topology_eval_t *topo_eval);
  * allocation unit (node, socket, core, etc.) and making sure that
  * resources will be available for nodes considered later in the
  * scheduling process
- * This also check as the gres gets layed out that if restricted gpu cores are
+ * This also check as the gres gets laid out that if restricted gpu cores are
  * removed their are still enough cpus on the node. It returns true if the Gres
- * requirment could be satified or false if not
+ * requirement could be satisfied or false if not
  */
 extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 				   int64_t rem_max_cpus, int rem_nodes,
@@ -90,7 +90,7 @@ extern void eval_nodes_clip_socket_cores(topology_eval_t *topo_eval);
 
 /*
  * Reduce the gres_max_tasks and total GRES available to a node based on
- * what will be layed out on the node.
+ * what will be laid out on the node.
  * If the GRES available gets reduced and RestrictedCoresPerGPU
  * is used, any unusable restricted cores will be removed.
  * If to many cores are removed such that the node is no longer usable

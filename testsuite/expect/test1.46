@@ -54,7 +54,7 @@ int main()
 }
 }
 close $fd
-# Add delay due to sporatic error "Clock skew detected"
+# Add delay due to sporadic error "Clock skew detected"
 wait_for_file -fail ${file_prog}.c
 run_command -fail "$bin_cc -O -o $file_prog ${file_prog}.c"
 run_command -fail "$bin_chmod 700 $file_prog"

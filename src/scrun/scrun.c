@@ -640,7 +640,7 @@ static void _set_root()
 		return;
 
 	if (!getuid())
-		fatal("scrun is being run as root and is likely inside of a username space. Refusing to guess path for --root. It must be explicilty provided.");
+		fatal("scrun is being run as root and is likely inside of a username space. Refusing to guess path for --root. It must be explicitly provided.");
 
 	path = xstrdup_printf("/run/user/%d/", getuid());
 	rc = _try_tmp_path(path);

@@ -485,7 +485,7 @@ static void _job_post(ctxt_t *ctxt)
 	}
 	if (!req.job && !req.jobs) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Specifing either \"job\" or \"jobs\" fields are required to submit job");
+			   "Specifying either \"job\" or \"jobs\" fields are required to submit job");
 		goto cleanup;
 	}
 
@@ -583,7 +583,7 @@ static int _foreach_alloc_job(void *x, void *arg)
 	/* Force disable status updates */
 	job->other_port = 0;
 
-	/* force atleast 1 node for job */
+	/* force at least 1 node for job */
 	if (!job->min_nodes || (job->min_nodes >= NO_VAL))
 		job->min_nodes = 1;
 
@@ -729,7 +729,7 @@ extern int op_handler_alloc_job(openapi_ctxt_t *ctxt)
 	}
 	if (!req.job && !req.hetjob) {
 		rc = resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-				"Specifing either \"job\" or \"hetjob\" fields are required to allocate job");
+				"Specifying either \"job\" or \"hetjob\" fields are required to allocate job");
 		goto cleanup;
 	}
 

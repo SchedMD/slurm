@@ -1,4 +1,4 @@
-# etc33.1.4 -- not fully connected (each subnet should be splitted separately)
+# etc33.1.4 -- not fully connected (each subnet should be split separately)
 #
 # Full Config
 peta[10000-10399]

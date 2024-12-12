@@ -43,7 +43,7 @@
  *  DEPENDENCY		Original list of jobids dependencies
  *  DERIVED_EC		Derived exit code and after : the signal number (if any)
  *  END			Time of job termination, UTS
- *  ELIGIBLE		Eligble time of job, UTS
+ *  ELIGIBLE		Eligible time of job, UTS
  *  EXITCODE		Job's exit code and after : the signal number (if any)
  *  GID			Group ID of job owner
  *  GROUPNAME		Group name of job owner

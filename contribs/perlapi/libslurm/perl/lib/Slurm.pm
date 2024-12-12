@@ -354,7 +354,7 @@ Allocate resources for a job request.  This call will block until the allocation
 =item * IN $pending_callbacks: If the allocation cannot be granted immediately, the controller will put the job in the PENDING state.  If
 pending callback is given, it will be called with the job id of the pending job as the sole parameter.
 
-=item * RET: allcation response, with structure of C<resource_allocation_response_msg_t>. On failure C<undef> is returned, with errno set.
+=item * RET: allocation response, with structure of C<resource_allocation_response_msg_t>. On failure C<undef> is returned, with errno set.
 
 =back
 
@@ -440,7 +440,7 @@ Retrieve info for an existing resource allocation including a credential needed 
 
 =item * IN $jobid: job allocation identifier.
 
-=item * RET: job allocation information includeing a credential for sbcast, with structure of C<job_sbcast_cred_msg_t>. On failure C<undef> is returned with errno set.
+=item * RET: job allocation information including a credential for sbcast, with structure of C<job_sbcast_cred_msg_t>. On failure C<undef> is returned with errno set.
 
 =back
 
@@ -668,7 +668,7 @@ Update the time limit of a job step.
 
 =over 2
 
-=item * IN $step_msg: step update messasge descriptor, with structure of C<step_update_request_msg_t>.
+=item * IN $step_msg: step update message descriptor, with structure of C<step_update_request_msg_t>.
 
 =item * RET: 0 or -1 on error.
 
@@ -1075,7 +1075,7 @@ Output information about all switch topology configuration information based upo
 
 =item * IN $out: FILE handle to write to.
 
-=item * IN $topo_info_msg: swith topology information message, with structure of C<topo_info_response_msg_t>.
+=item * IN $topo_info_msg: switch topology information message, with structure of C<topo_info_response_msg_t>.
 
 =item * IN $one_liner: print as a single line if not zero.
 

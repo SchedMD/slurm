@@ -179,7 +179,7 @@ static void _gres_per_job_reduce_res_cores(bitstr_t *avail_core,
 		while (tot_res_core > max_res_cores) {
 			int s;
 			/*
-			* Must remove resticted cores from the end of the
+			* Must remove restricted cores from the end of the
 			* bitmap first since cores are picked from front to
 			* back. This helps the needed restricted cores get
 			* picked.

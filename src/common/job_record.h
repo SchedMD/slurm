@@ -537,7 +537,7 @@ typedef struct depend_spec {
 
 /* Used as the mode for update_node_active_features() */
 typedef enum {
-	FEATURE_MODE_IND,  /* Print each node change indivually */
+	FEATURE_MODE_IND,  /* Print each node change individually */
 	FEATURE_MODE_COMB, /* Try to combine like changes */
 	FEATURE_MODE_PEND, /* Print any pending change message */
 } feature_mode_t;

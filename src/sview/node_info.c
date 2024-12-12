@@ -1018,7 +1018,7 @@ extern int update_active_features_node(GtkDialog *dialog, const char *nodelist,
 			global_row_count, nodelist);
 	if (!dialog) {
 		snprintf(tmp_char, sizeof(tmp_char),
-			 "Update Acitve Features for Node(s) %s?",
+			 "Update Active Features for Node(s) %s?",
 			 nodelist);
 
 		dialog = GTK_DIALOG(

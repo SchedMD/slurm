@@ -2901,7 +2901,7 @@ static int _set_gpu_spec(node_record_t *node_ptr, char **reason_down)
 	if (!(gres_state_node = list_find_first(node_ptr->gres_list,
 						gres_find_id,
 						&gpu_plugin_id))) {
-		/* No GPUs but we throught there were */
+		/* No GPUs but we thought there were */
 		xstrfmtcat(*reason_down, "%sRestrictedCoresPerGPU=%u but no gpus on node %s",
 			   *reason_down ? ", " : "", res_cnt, node_ptr->name);
 		return ESLURM_RES_CORES_PER_GPU_NO;

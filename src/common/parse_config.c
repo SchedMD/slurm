@@ -1017,7 +1017,7 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover)
 
 /*
  * Returns 1 if the line is parsed cleanly, and 0 otherwise.
- * IN ingore_new - if set do not treat unrecongized input as a fatal error
+ * IN ingore_new - if set do not treat unrecognized input as a fatal error
  */
 static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 			   const char *line, char **leftover, bool ignore_new)
@@ -1376,7 +1376,7 @@ int s_p_parse_buffer(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
  * s_p_hashtbl_merge
  *
  * Merge the contents of two s_p_hashtbl_t data structures. Anything in
- * from_hashtbl that does not also appear in to_hashtbl is transfered to it.
+ * from_hashtbl that does not also appear in to_hashtbl is transferred to it.
  * This is intended primary to support multiple lines of DEFAULT configuration
  * information and preserve the default values while adding new defaults.
  *
@@ -1866,7 +1866,7 @@ int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
 			errno = EINVAL;
 			return 0;
 		}
-	} else { /* unqouted value */
+	} else { /* unquoted value */
 		leftover = v = (char *)value;
 		while (*leftover != '\0' && !isspace(*leftover))
 			leftover++;
@@ -1896,7 +1896,7 @@ int s_p_parse_pair(s_p_hashtbl_t *hashtbl, const char *key, const char *value)
 
 /* common checks for s_p_get_* returns NULL if invalid.
  *
- * Information concerning theses function can be found in the header file.
+ * Information concerning these function can be found in the header file.
  */
 static s_p_values_t* _get_check(slurm_parser_enum_t type,
 				const char* key, const s_p_hashtbl_t* hashtbl)

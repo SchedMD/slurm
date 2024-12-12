@@ -24,7 +24,7 @@ int main(int ac, char **av)
 	log_opts.stderr_level = LOG_LEVEL_DEBUG2;
 
 	/* test log to stderr when log not initialized */
-	error("testing with unitialized log.");
+	error("testing with uninitialized log.");
 
 	/* now initialize log: */
 	log_init("log-test", log_opts, 0, NULL);

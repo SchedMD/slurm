@@ -684,7 +684,7 @@ static char *_get_config_path(stepd_step_rec_t *step)
 
 	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
-	/* OCI runtime spec reqires config.json to be in root of bundle */
+	/* OCI runtime spec requires config.json to be in root of bundle */
 	xstrfmtcat(path, "%s/config.json", c->bundle);
 
 	return path;
@@ -865,7 +865,7 @@ static void _kill_container()
 			 * use exp backoff up to 1s to wait for the container to
 			 * cleanup.
 			 *
-			 * OCI runtime doesnt provide any way but to poll to see
+			 * OCI runtime doesn't provide any way but to poll to see
 			 * if the container has been squashed
 			 */
 			debug("%s: sleeping %dusec to query state again",
@@ -983,7 +983,7 @@ static void _create_start(stepd_step_rec_t *step,
 
 		xfree(status);
 
-		/* increate wait times exp */
+		/* increase wait times exp */
 		if (stime > 1000000)
 			stime = 1000000;
 		else

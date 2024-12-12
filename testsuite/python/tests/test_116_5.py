@@ -16,10 +16,10 @@ def setup():
     atf.require_slurm_running()
 
 
-def write_host_file(matchs):
+def write_host_file(matches):
     host_file = atf.module_tmp_path / "host_file"
     with open(host_file, "w") as hf:
-        for line in matchs:
+        for line in matches:
             hf.write(line[1] + "\n")
 
 

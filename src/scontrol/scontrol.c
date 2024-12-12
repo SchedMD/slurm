@@ -525,8 +525,8 @@ static void _print_config(char *config_param, int argc, char **argv)
 
 	/*
 	 * There isn't a parser for slurm.conf but there is one for ping, which
-	 * gets printed as part of this funciton. So to make sure the ouput is
-	 * not mixing output types disable json/yaml ouput for ping.
+	 * gets printed as part of this function. So to make sure the output is
+	 * not mixing output types disable json/yaml output for ping.
 	 */
 	mime_type = NULL;
 

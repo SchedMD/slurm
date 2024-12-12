@@ -45,9 +45,9 @@ def test_constraint(constraint, xfail, command):
         )
 
     if xfail:
-        assert result["exit_code"] != 0, "Verify tha job was NOT submitted"
+        assert result["exit_code"] != 0, "Verify that job was NOT submitted"
     else:
-        assert result["exit_code"] == 0, "Verify tha job was submitted"
+        assert result["exit_code"] == 0, "Verify that job was submitted"
 
     stdout = result["stdout"]
     stderr = result["stderr"]

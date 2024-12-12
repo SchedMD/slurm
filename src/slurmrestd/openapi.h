@@ -113,10 +113,10 @@ typedef struct {
  * 	NULL (to use path in op_path)
  * IN op_path - Operation binding for path
  * IN meta - Meta information from plugin (or NULL)
- * IN parser - Relavent data_parser (or NULL)
+ * IN parser - Relevant data_parser (or NULL)
  * IN/OUT tag_ptr - Sets tag on success
  * RET SLURM_SUCCESS or
- *	ESLURM_NOT_SUPPORTED: if data_parser doesnt support all types in method
+ *	ESLURM_NOT_SUPPORTED: if data_parser doesn't support all types in method
  *	or any other Slurm error
  *
  * Can safely be called multiple times for same path.

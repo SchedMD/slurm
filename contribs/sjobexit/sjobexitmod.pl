@@ -47,7 +47,7 @@ getoptions();
 my $rval;
 
 #
-# Exexute the utility.
+# Execute the utility.
 #
 $rval = `$execute_line 2>&1`;
 
@@ -138,7 +138,7 @@ sub getoptions
 
 #
 # Simple check to see if number is an integer,
-# retrun 0 if it is not, else return 1.
+# return 0 if it is not, else return 1.
 #
 sub isnumber
 {

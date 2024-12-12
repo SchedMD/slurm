@@ -1849,7 +1849,7 @@ cleanup:
  * IN buffer		- buffer to send
  * IN size		- size of buffer send
  * IN timeout		- how long to wait in milliseconds
- * RET size_t		- bytes sent , or -1 on errror
+ * RET size_t		- bytes sent , or -1 on error
  */
 size_t slurm_write_stream(int open_fd, char *buffer, size_t size)
 {
@@ -1863,7 +1863,7 @@ size_t slurm_write_stream(int open_fd, char *buffer, size_t size)
  * OUT buffer   - buffer to receive into
  * IN size	- size of buffer
  * IN timeout	- how long to wait in milliseconds
- * RET size_t	- bytes read , or -1 on errror
+ * RET size_t	- bytes read , or -1 on error
  */
 size_t slurm_read_stream(int open_fd, char *buffer, size_t size)
 {
@@ -1932,7 +1932,7 @@ extern void slurm_pack_addr_array(slurm_addr_t *addr_array, uint32_t size_val,
  * unpacks an array of slurm_addrs from a buffer
  * OUT addr_array_ptr	- slurm_addr_t[] to unpack to
  * IN/OUT size_val  	- how many to unpack
- * IN/OUT buffer	- buffer to upack the slurm_addr_t from
+ * IN/OUT buffer	- buffer to unpack the slurm_addr_t from
  * returns		- Slurm error code
  */
 extern int slurm_unpack_addr_array(slurm_addr_t **addr_array_ptr,
@@ -2314,7 +2314,7 @@ tryagain:
 
 		if (rr_msg->working_cluster_rec) {
 			/*
-			 * Don't expect mutliple hops but in the case it does
+			 * Don't expect multiple hops but in the case it does
 			 * happen, free the previous rr cluster_rec.
 			 */
 			if (comm_cluster_rec &&
@@ -2457,7 +2457,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	 * the poll() should hit POLLERR which gives the TICOUTQ count as an
 	 * additional diagnostic element.
 	 *
-	 * The steps below may result in a false-positive on occassion, in
+	 * The steps below may result in a false-positive on occasion, in
 	 * which case the code path above may opt to retransmit an already
 	 * received message. If this is a concern, you should not be using
 	 * this function.
@@ -2512,7 +2512,7 @@ again:
 }
 
 /*
- *  Send a message to the nodelist specificed using fanout
+ *  Send a message to the nodelist specified using fanout
  *    Then return List containing type (ret_data_info_t).
  * IN nodelist	  - list of nodes to send to.
  * IN msg	  - a slurm_msg struct to be sent by the function
@@ -2662,7 +2662,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 /*
  * Send message to controller and get return code.
  * Make use of slurm_send_recv_controller_msg(), which handles
- * support for backup controller and retry during transistion.
+ * support for backup controller and retry during transition.
  * IN req - request to send
  * OUT rc - return code
  * IN comm_cluster_rec	- Communication record (host/port/version)/
@@ -2686,7 +2686,7 @@ extern int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc,
 }
 
 /*
- * Free a slurm message's memebers but not the message itself
+ * Free a slurm message's members but not the message itself
  */
 extern void slurm_free_msg_members(slurm_msg_t *msg)
 {

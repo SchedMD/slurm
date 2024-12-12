@@ -64,7 +64,7 @@ extern char *tmpfs_conf_file;
 /*
  * Init the job_container/tmpfs config if required.
  *
- * Return a pointer to the config structure if succesful or NULL on error.
+ * Return a pointer to the config structure if successful or NULL on error.
  */
 extern slurm_jc_conf_t *init_slurm_jc_conf(void);
 

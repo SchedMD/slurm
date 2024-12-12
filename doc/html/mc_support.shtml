@@ -668,7 +668,7 @@ $ srun -n 32 -N 4 --cpu-bind=map_cpu:0,1,2,3,4,5,6,7 a.out
 <p>If users do not check their system's core numbering before specifying
 the map_cpu list and thereby do not realize that the system has cyclic core
 numbering instead of block numbering then they will not get the expected
-layout. For example, if they decide to re-use their command from above:</p>
+layout. For example, if they decide to reuse their command from above:</p>
 
 <pre>
 $ srun -n 32 -N 4 --cpu-bind=map_cpu:0,2,4,6,1,3,5,7 a.out

@@ -73,7 +73,7 @@ def run_unit_tests(db_name, test_data_list, UNIT_DIR, LOG_DIR, resume=False):
         print_status_line(rel_name, stats_dict["completions"], stats_dict["total"])
 
         try:
-            # Set 'SUBDIRS= ' so check doesnt descend into dirs without tests
+            # Set 'SUBDIRS= ' so check doesn't descend into dirs without tests
             chk_output = run_cmd(f"make check TESTS='{rel_name}' SUBDIRS= ", quiet=True)
         except KeyboardInterrupt:
             stats_dict["status"] = "ABORTED"

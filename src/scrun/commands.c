@@ -452,7 +452,7 @@ extern int command_delete(void)
 				      __func__, strsignal(signal), state.id,
 				      state.jobid);
 			} else {
-				info("%s: JobId=%u running contianer %s has been sent signal %s",
+				info("%s: JobId=%u running container %s has been sent signal %s",
 				     __func__, state.jobid, state.id,
 				     strsignal(signal));
 				rc = SLURM_SUCCESS;

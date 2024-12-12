@@ -551,7 +551,7 @@ extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
 				      char **value, size_t *state);
 
 /*
- * Validate that conflicting optons (--hint, --ntasks-per-core,
+ * Validate that conflicting options (--hint, --ntasks-per-core,
  * --nthreads-per-core, --cpu-bind [for srun]) are not used together.
  *
  */

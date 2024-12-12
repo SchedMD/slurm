@@ -922,7 +922,7 @@ RESEND:	slurm_msg_t_init(&req);
 }
 
 /**********************************************************************
- * Functions used by step_ctx code, but not exported throught the API
+ * Functions used by step_ctx code, but not exported through the API
  **********************************************************************/
 /*
  * Create a launch state structure for a specified step context, "ctx".
@@ -1148,7 +1148,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 		eio_new_initial_obj(sls->msg_handle, obj);
 	}
 	/* finally, add the listening port that we told the slurmctld about
-	 * eariler in the step context creation phase */
+	 * earlier in the step context creation phase */
 	if (sls->slurmctld_socket_fd > -1) {
 		obj = eio_obj_create(sls->slurmctld_socket_fd,
 				     &message_socket_ops, (void *)sls);
@@ -1798,7 +1798,7 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 		/* FIXME
 		 * If stepd dies or we see I/O error with stepd.
 		 * Do not abort the whole job but collect all
-		 * taks on the node just like if they exited.
+		 * tasks on the node just like if they exited.
 		 *
 		 * Keep supporting 'srun -N x --pty bash'
 		 */

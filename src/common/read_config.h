@@ -385,7 +385,7 @@ extern void slurm_conf_init_stepd(void);
  *	slurm_conf_init, any subsequent calls will do nothing until
  *	slurm_conf_destroy is called.
  * RET SLURM_SUCCESS if conf file is initialized.  If the slurm conf
- *       was already initialied, return SLURM_ERROR.
+ *       was already initialized, return SLURM_ERROR.
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern int slurm_conf_init(const char *file_name);

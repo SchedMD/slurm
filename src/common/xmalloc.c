@@ -217,7 +217,7 @@ void slurm_xfree(void **item)
 
 /*
  * Free a NULL-terminated xmalloc()'d array of pointers to further xmalloc()'d
- * elements, and NULL the original pointer to prevent accidental re-use.
+ * elements, and NULL the original pointer to prevent accidental reuse.
  */
 void slurm_xfree_array(void ***array)
 {

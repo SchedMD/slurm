@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 ###############################################################################
 #
-# bsub - submit jobs in familar openlava format.
+# bsub - submit jobs in familiar openlava format.
 #
 #
 ###############################################################################

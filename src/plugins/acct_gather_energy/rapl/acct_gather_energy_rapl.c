@@ -41,7 +41,7 @@
 /*   acct_gather_energy_rapl
  * This plugin does not initiate a node-level thread.
  * It will be used to load energy values from cpu/core
- * sensors when harware/drivers are available
+ * sensors when hardware/drivers are available
  */
 
 

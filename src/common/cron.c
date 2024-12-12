@@ -210,7 +210,7 @@ static int _next_month(cron_entry_t *entry, struct tm *tm)
 		months_to_advance++;
 	}
 
-	/* Loop around to begining of the year if needed */
+	/* Loop around to beginning of the year if needed */
 	for (int i = 0; i < tm->tm_mon; i++) {
 		if (bit_test(entry->month, i + 1))
 			goto found;
@@ -254,7 +254,7 @@ static int _next_day_of_week(cron_entry_t *entry, struct tm *tm)
 		days_to_advance++;
 	}
 
-	/* Loop around to begining of the week if needed */
+	/* Loop around to beginning of the week if needed */
 	for (int i = 0; i < tm->tm_wday; i++) {
 		if (bit_test(entry->day_of_week, i))
 			return days_to_advance;

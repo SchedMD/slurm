@@ -338,7 +338,7 @@ extern cgroup_limits_t *cgroup_g_constrain_get(cgroup_ctl_type_t sub,
  * IN sub - To which controller we want the limits be applied to.
  * IN level - Directory level to apply the limits to.
  * IN limits - Struct containing the the limits to be applied.
- * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
+ * RET SLURM_SUCCESS if limits were applied successfully, SLURM_ERROR otherwise.
  */
 extern int cgroup_g_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 				  cgroup_limits_t *limits);
@@ -385,7 +385,7 @@ extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *step);
  * IN task_id - task number to form the path and create the task_x directory.
  * IN pid - pid to add to. Note, the task_id may not coincide with job->task[i]
  *          so we may not know where the pid is stored in the job struct.
- * RET SLURM_SUCCESS if the task was succesfully created and the pid added to
+ * RET SLURM_SUCCESS if the task was successfully created and the pid added to
  *     all accounting controllers.
  */
 extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *step,

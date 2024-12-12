@@ -40,7 +40,7 @@
 
 #include "scontrol.h"
 
-/* Load current partiton table information into *part_buffer_pptr */
+/* Load current partition table information into *part_buffer_pptr */
 extern int
 scontrol_load_partitions (partition_info_msg_t **part_buffer_pptr)
 {

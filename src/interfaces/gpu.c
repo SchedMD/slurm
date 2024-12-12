@@ -86,7 +86,7 @@ static char *_get_gpu_type(void)
 	 *  symbols for the plugin to use.
 	 *
 	 *  We are also doing this outside of the plugins on purpose as we want
-	 *  to be able to deal with heterogenous systems where not all the nodes
+	 *  to be able to deal with heterogeneous systems where not all the nodes
 	 *  will have cards and we want the slurmds to still run there with only
 	 *  1 gres.conf file.
 	 */

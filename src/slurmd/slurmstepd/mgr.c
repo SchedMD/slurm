@@ -791,7 +791,7 @@ _one_step_complete_msg(stepd_step_rec_t *step, int first, int last)
 		 * On error AGAIN, send to the slurmctld instead.
 		 * This is useful if parent_rank gave up waiting for us
 		 * on stepd_wait_for_children_slurmstepd.
-		 * If it's just busy handeling our prev messages we'll need
+		 * If it's just busy handling our prev messages we'll need
 		 * to handle duplicated messages in both the parent and
 		 * slurmctld.
 		 */
@@ -1640,7 +1640,7 @@ job_manager(stepd_step_rec_t *step)
 
 	/*
 	 * Set oom_score_adj of this slurmstepd to -1000 to avoid OOM killing
-	 * us. If we were killed at this pont due to other steps OOMing, no
+	 * us. If we were killed at this point due to other steps OOMing, no
 	 * cleanup would happen, leaving for example cgroup stray directories if
 	 * cgroup plugins were initialized.
 	 */
@@ -3186,7 +3186,7 @@ _become_user(stepd_step_rec_t *step, struct priv_state *ps)
  *
  * name IN: class of program (task prolog, task epilog, etc.),
  * path IN: pathname of program to run
- * job IN: slurd job structue, used to get uid, gid, and groups
+ * job IN: slurd job structure, used to get uid, gid, and groups
  * max_wait IN: maximum time to wait in seconds, -1 for no limit
  * env IN: environment variables to use on exec, sets minimal environment
  *	if NULL

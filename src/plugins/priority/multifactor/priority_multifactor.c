@@ -1586,7 +1586,7 @@ static void _internal_setup(void)
 }
 
 
-/* Reursively call assoc_mgr_normalize_assoc_shares from assoc_mgr.c on
+/* Recursively call assoc_mgr_normalize_assoc_shares from assoc_mgr.c on
  * children of an assoc
  */
 static void _set_norm_shares(list_t *children_list)
@@ -1627,7 +1627,7 @@ static void _init_decay_vars()
 	* To ease the computation, the notion of decay_factor
 	* is introduced and corresponds to the decay factor
 	* required for a slice of 1 second. Thus, for any given
-	* slice ot time of n seconds, decay_factor_slice will be
+	* slice of time of n seconds, decay_factor_slice will be
 	* defined as : df_slice = pow(df,n)
 	*
 	* For a slice corresponding to the defined half life 'decay_hl' and

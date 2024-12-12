@@ -139,7 +139,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 			exp_continue
 		}
 		timeout {
-			fail "sacctmgr is not reponding"
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait

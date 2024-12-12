@@ -47,7 +47,7 @@
 
 #include <slurm/slurm.h>
 
-/* open a stream socket on an ephemereal port and put it into
+/* open a stream socket on an ephemeral port and put it into
  * the listen state. fd and port are filled in with the new
  * socket's file descriptor and port #.
  *

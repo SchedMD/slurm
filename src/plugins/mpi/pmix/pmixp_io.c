@@ -192,7 +192,7 @@ void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 	case PMIXP_IO_OPERATING:
 		close(eng->sd);
 		eng->sd = -1;
-		/* fall throug to init cleanup */
+		/* fall through to init cleanup */
 	case PMIXP_IO_INIT:
 		/* release all messages in progress */
 		_pmixp_io_drop_messages(eng);
@@ -507,7 +507,7 @@ static void _send_progress(pmixp_io_engine_t *eng)
 	}
 
 	while (_send_pending(eng)) {
-		/* try to send everything untill fd became blockable
+		/* try to send everything until fd became blockable
 		 * FIXME: maybe set some restriction on number of
 		 * messages sended at once
 		 */

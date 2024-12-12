@@ -198,7 +198,7 @@ It will also manage these daemons: starting, signaling, restarting, and stopping
 
 <h2 id="Test-Suite">Test Suite<a class="slurm_link" href="#Test-Suite"></a></h2>
 <p>The <b>testsuite</b> files use Check, Expect and Pytest for testing Slurm in
-differents ways.</p>
+different ways.</p>
 
 <p>The Check tests are designed to unit test C code. Only with
 <i>make check</i>, without Slurm installed, they will validate that key C

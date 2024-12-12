@@ -114,8 +114,8 @@ extern int slurm_accept_msg_conn(int open_fd, slurm_addr_t *slurm_address);
 extern int slurm_open_stream(slurm_addr_t *slurm_address, bool retry);
 
 /* slurm_get_stream_addr
- * esentially a encapsilated get_sockname
- * IN open_fd 		- file descriptor to retreive slurm_addr_t for
+ * essentially a encapsilated get_sockname
+ * IN open_fd 		- file descriptor to retrieve slurm_addr_t for
  * OUT address		- address that open_fd to bound to
  */
 extern int slurm_get_stream_addr(int open_fd, slurm_addr_t *address);
@@ -137,7 +137,7 @@ extern void slurm_pack_addr(slurm_addr_t *addr, buf_t *buffer);
 /* slurm_unpack_addr_no_alloc
  * unpacks a buffer into a slurm_addr_t after serialization transport
  * OUT addr_ptr		- slurm_addr_t to unpack to
- * IN/OUT buffer	- buffer to upack the slurm_addr_t from
+ * IN/OUT buffer	- buffer to unpack the slurm_addr_t from
  * returns 		- Slurm error code
  */
 extern int slurm_unpack_addr_no_alloc(slurm_addr_t *addr_ptr, buf_t *buffer);

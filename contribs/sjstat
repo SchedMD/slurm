@@ -413,7 +413,7 @@ The B<sjstat> command is used to display statistics of jobs under control of SLU
 The output is designed to give information on the resource usage and availablilty,
 as well as information about jobs that are currently active on the machine. This output
 is built using the SLURM utilities, sinfo, squeue and scontrol, the man pages for these
-utilites will provide more information and greater depth of understanding.
+utilities will provide more information and greater depth of understanding.
 
 =head1 OPTIONS
 
@@ -482,13 +482,13 @@ The following is a basic request for status.
  	User		owner of the job
  	Nodes		nodes required, or in use by the job
 			(Note: On cpu scheduled machines, this field
-			will be labled "Procs" show the number of processors
+			will be labeled "Procs" show the number of processors
 			the job is using.)
  	Pool 		the Pool  required or in use by the job
  	Status		current status of the job
  	Used 		Wallclick time used by the job
  	Master/Other 	Either the Master (head) node used by the job, or may
-			indicate furhter status of a pending, or completing job.
+			indicate further status of a pending, or completing job.
 
      The common status values are:
 
@@ -496,7 +496,7 @@ The following is a basic request for status.
 	PD	The job is Pending
 	CG	The job is Completing
 
-     These are states reproted by SLURM and more elaborate docuemntation
+     These are states reported by SLURM and more elaborate documentation
      can be found in the squeue/sinfo man pages.
 
 

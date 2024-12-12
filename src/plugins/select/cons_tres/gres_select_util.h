@@ -60,7 +60,7 @@ extern void gres_select_util_job_set_defs(list_t *job_gres_list,
 					  uint16_t *cpus_per_task);
 
 /*
- * Determine the minimum number of CPUs required to satify the job's GRES
+ * Determine the minimum number of CPUs required to satisfy the job's GRES
  *	request on one node
  * sockets_per_node IN - count of sockets per node in job allocation
  * tasks_per_node IN - count of tasks per node in job allocation
@@ -96,7 +96,7 @@ extern bool gres_select_util_job_mem_set(list_t *job_gres_list,
 					 job_resources_t *job_res);
 
 /*
- * Determine the minimum number of CPUs required to satify the job's GRES
+ * Determine the minimum number of CPUs required to satisfy the job's GRES
  *	request (based upon total GRES times cpus_per_gres value)
  * node_count IN - count of nodes in job allocation
  * sockets_per_node IN - count of sockets per node in job allocation
@@ -128,8 +128,8 @@ extern bool gres_select_util_job_tres_per_task(list_t *job_gres_list);
 extern uint32_t gres_select_util_get_task_limit(list_t *sock_gres_list);
 
 /*
- * Create a (partial) copy of a job's gres state accumlating the gres_per_*
- * requirements to accuratly calculate cpus_per_gres
+ * Create a (partial) copy of a job's gres state accumulating the gres_per_*
+ * requirements to accurately calculate cpus_per_gres
  * IN gres_list - list of Gres records
  * RET The copy of list or NULL on failure
  */

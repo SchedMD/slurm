@@ -148,7 +148,7 @@ extern int handle_job_dependency_updates(void *object, void *arg);
 
 /*
  * job_is_completing - Determine if jobs are in the process of completing.
- * IN/OUT  eff_cg_bitmap - optional bitmap of all relevent completing nodes,
+ * IN/OUT  eff_cg_bitmap - optional bitmap of all relevant completing nodes,
  *                         relevenace determined by filtering via CompleteWait
  *                         if NULL, function will terminate at first completing
  *                         job
@@ -230,7 +230,7 @@ extern void schedule(bool full_queue);
 extern void set_job_elig_time(void);
 
 /*
- * sort_job_queue - sort job_queue in decending priority order
+ * sort_job_queue - sort job_queue in descending priority order
  * IN/OUT job_queue - sorted job queue previously made by build_job_queue()
  */
 extern void sort_job_queue(list_t *job_queue);

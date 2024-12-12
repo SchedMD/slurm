@@ -83,7 +83,7 @@ static void	_bb_job_del2(bb_job_t *bb_job);
 static uid_t *	_parse_users(char *buf);
 static char *	_print_users(uid_t *buf);
 
-/* Translate comma delimitted list of users into a UID array,
+/* Translate comma delimited list of users into a UID array,
  * Return value must be xfreed */
 static uid_t *_parse_users(char *buf)
 {

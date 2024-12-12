@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 ################################################################################
 #
-# qrls - releases a hold on slurm jobs in familar pbs format.
+# qrls - releases a hold on slurm jobs in familiar pbs format.
 #
 #
 ###############################################################################

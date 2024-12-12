@@ -72,7 +72,7 @@ extern slurm_step_layout_t *fake_slurm_step_layout_create(
 	uint32_t task_cnt,
 	uint16_t protocol_version);
 
-/* copys structure for step layout */
+/* copies structure for step layout */
 extern slurm_step_layout_t *slurm_step_layout_copy(
 	slurm_step_layout_t *step_layout);
 

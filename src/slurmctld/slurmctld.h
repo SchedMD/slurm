@@ -394,7 +394,7 @@ typedef struct slurmctld_resv {
 	time_t start_time;	/* start time of reservation		*/
 	time_t start_time_first;/* when the reservation first started	*/
 	time_t start_time_prev;	/* If start time was changed this is
-				 * the pervious start time.  Needed
+				 * the previous start time.  Needed
 				 * for accounting */
 	char *tres_fmt_str;     /* formatted string of tres to deal with */
 	char *tres_str;         /* simple string of tres to deal with */
@@ -934,7 +934,7 @@ extern job_record_t *job_array_post_sched(job_record_t *job_ptr, bool list_add);
 
 /* Create an exact copy of an existing job record for a job array.
  * IN job_ptr - META job record for a job array, which is to become an
- *		individial task of the job array.
+ *		individual task of the job array.
  *		Set the job's array_task_id to the task to be split out.
  * IN list_add - add to the job_list or not.
  * RET - The new job record, which is the new META job record. */
@@ -1129,12 +1129,12 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
  * job_independent - determine if this job has a dependent job pending
  *	or if the job's scheduled begin time is in the future
  * IN job_ptr - pointer to job being tested
- * RET - true if job no longer must be defered for another job
+ * RET - true if job no longer must be deferred for another job
  */
 extern bool job_independent(job_record_t *job_ptr);
 
 /*
- * job_req_node_filter - job reqeust node filter.
+ * job_req_node_filter - job request node filter.
  *	clear from a bitmap the nodes which can not be used for a job
  *	test memory size, required features, processor count, etc.
  * NOTE: Does not support exclusive OR of features.
@@ -2180,7 +2180,7 @@ extern bool waiting_for_node_boot(node_record_t *node_ptr);
 extern bool waiting_for_node_power_down(node_record_t *node_ptr);
 
 /*
- * Check if any part of job_ptr is overlaping node_map.
+ * Check if any part of job_ptr is overlapping node_map.
  * IN node_map - bitstr of nodes set.
  * IN job_ptr (hetjob or not) to check.
  *
@@ -2240,7 +2240,7 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete);
  * update_node_active_features - Update active features associated with nodes
  * IN node_names - list of nodes to update
  * IN active_features - New active features value
- * IN mode - FEATURE_MODE_IND : Print each node change indivually
+ * IN mode - FEATURE_MODE_IND : Print each node change individually
  *           FEATURE_MODE_COMB: Try to combine like changes (SEE NOTE BELOW)
  *           FEATURE_MODE_PEND: Print any pending change message
  * RET: SLURM_SUCCESS or error code
@@ -2255,7 +2255,7 @@ extern int update_node_active_features(char *node_names, char *active_features,
  *	nodes, build new config list records as needed
  * IN node_names - list of nodes to update
  * IN avail_features - New available features value
- * IN mode - FEATURE_MODE_IND : Print each node change indivually
+ * IN mode - FEATURE_MODE_IND : Print each node change individually
  *           FEATURE_MODE_COMB: Try to combine like changes (SEE NOTE BELOW)
  *           FEATURE_MODE_PEND: Print any pending change message
  * RET: SLURM_SUCCESS or error code
@@ -2335,7 +2335,7 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 extern int controller_init_scheduling(bool init_gang);
 
 /*
- * Finialize the various schedulers.
+ * Finalize the various schedulers.
  */
 extern void controller_fini_scheduling(void);
 

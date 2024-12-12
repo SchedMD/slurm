@@ -320,7 +320,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/* override buffer offset to allow reading */
 	set_buf_offset(con->in, 0);
-	/* override buffer size to only read upto previous offset */
+	/* override buffer size to only read up to previous offset */
 	con->in->size = avail;
 
 	if (con->type == CON_TYPE_RAW) {

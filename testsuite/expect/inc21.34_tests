@@ -44,7 +44,7 @@ source ./inc21.30.17
 
 ##########################################################
 #
-# Test that partition qos limits are enforeced
+# Test that partition qos limits are enforced
 #
 ##########################################################
 proc part_test { } {
@@ -365,7 +365,7 @@ proc part_test { } {
 
 ##########################################################
 #
-# Test that jobs qos limits are enforeced after
+# Test that jobs qos limits are enforced after
 # PartitionQos flag is set on the job's qos
 #
 ##########################################################

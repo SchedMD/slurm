@@ -514,7 +514,7 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit,
 	}
 
 	if (bit->type == FLAG_BIT_TYPE_BIT) {
-		/* atleast one bit must be set */
+		/* at least one bit must be set */
 		xassert(bit->value);
 		/* mask must include all value bits */
 		xassert((bit->mask & bit->value) == bit->value);
@@ -609,7 +609,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 	xassert(parser->size > 0);
 
 	if (parser->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
-		/* field is only a place holder so most assert()s dont apply */
+		/* field is only a place holder so most assert()s don't apply */
 		xassert(parser->field_name && parser->field_name[0]);
 		xassert(parser->type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->flag_bit_array_count);
@@ -1126,7 +1126,7 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 
 			/*
 			 * There is a race condition here where the global
-			 * QOS list could have changed betwen the query of the
+			 * QOS list could have changed between the query of the
 			 * list and the bitstrs. Just error and have the user
 			 * try again if they want.
 			 */
@@ -8961,7 +8961,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_account_cond_t , mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
-	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "Association filter"),
+	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "association", "Association filter"),
 	add_parse(STRING_LIST, description_list, "description", "CSV description list"),
 	add_parse_bit_eflag_array(slurmdb_account_cond_t, ACCOUNT_FLAGS, flags, "Query flags"),
 };
@@ -9516,7 +9516,7 @@ static const parser_t PARSER_ARRAY(JOB_ALLOC_REQ)[] = {
 	add_parser(rtype, OPENAPI_WARNINGS, false, warnings, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME), "Query warnings")
 
 /*
- * Generic response when there is only possiblity of warnings/errors
+ * Generic response when there is only possibility of warnings/errors
  * and HTTP status code.
  */
 static const parser_t PARSER_ARRAY(OPENAPI_RESP)[] = {                            \
@@ -10168,7 +10168,7 @@ static const parser_t parsers[] = {
 	addpap(ACCOUNT_SHORT, slurmdb_account_rec_t, NULL, slurmdb_destroy_account_rec),
 	addpap(ACCOUNTING, slurmdb_accounting_rec_t, NULL, slurmdb_destroy_accounting_rec),
 	addpap(ACCOUNTS_ADD_COND, slurmdb_add_assoc_cond_t, NEW_FUNC(ACCOUNTS_ADD_COND), slurmdb_destroy_add_assoc_cond),
-	/* Re-use already existing NEW_FUNC */
+	/* Reuse already existing NEW_FUNC */
 	addpap(USERS_ADD_COND, slurmdb_add_assoc_cond_t, NEW_FUNC(ACCOUNTS_ADD_COND), slurmdb_destroy_add_assoc_cond),
 	addpap(COORD, slurmdb_coord_rec_t, NULL, slurmdb_destroy_coord_rec),
 	addpap(WCKEY, slurmdb_wckey_rec_t, NEW_FUNC(WCKEY), slurmdb_destroy_wckey_rec),

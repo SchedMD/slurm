@@ -52,7 +52,7 @@ make_bash_script $file_in1 "
 #
 # Build step file
 # The second sleep is because with some proctrack plugins, the bash shell may
-# be terminated slighly later than the first sleep process
+# be terminated slightly later than the first sleep process
 #
 make_bash_script $file_in2 "
   $bin_echo STEP_BEGIN

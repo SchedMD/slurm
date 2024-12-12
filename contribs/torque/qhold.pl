@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 ###############################################################################
 #
-# qhold - places a hold on slurm jobs in familar pbs format.
+# qhold - places a hold on slurm jobs in familiar pbs format.
 #
 #                 Copyright (c) 2006 Cluster Resources, Inc.
 #

@@ -170,7 +170,7 @@ typedef struct parser_s {
 	 * IN parser - parser needing specification
 	 * IN args - parser args
 	 * IN spec - ptr to entire OpenAPI specification
-	 * IN dst - entry in specificaiton needed to be populated
+	 * IN dst - entry in specification needed to be populated
 	 */
 	void (*openapi_spec)(const parser_t *const parser, args_t *args,
 			     data_t *spec, data_t *dst);

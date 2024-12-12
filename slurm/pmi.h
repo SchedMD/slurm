@@ -796,7 +796,7 @@ Return values:
 Notes:
  This function frees the data returned by 'PMI_Args_to_keyval' and 'PMI_Parse_option'.
  Using this routine instead of 'free' allows the PMI package to track
- allocation of storage or to use interal storage as it sees fit.
+ allocation of storage or to use internal storage as it sees fit.
 @*/
 int PMI_Free_keyvals(PMI_keyval_t keyvalp[], int size);
 

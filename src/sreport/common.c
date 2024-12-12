@@ -448,7 +448,7 @@ extern void sreport_set_usage_column_width(print_field_t *usage_field,
 
 		/* The first association will always be the largest
 		 * count of any TRES, so just peek at it.  If the
-		 * cluster doesn't have assoications for some reason
+		 * cluster doesn't have associations for some reason
 		 * use the cluster main one which has the total time.
 		 */
 
@@ -525,7 +525,7 @@ static int _match_assoc(void *x, void *key)
 	return 0;
 }
 
-/* Return 1 if a slurmdb associatin record has NULL tres_list */
+/* Return 1 if a slurmdb association record has NULL tres_list */
 static int _find_empty_assoc_tres(void *x, void *key)
 {
 	slurmdb_report_assoc_rec_t *dup_report_assoc;

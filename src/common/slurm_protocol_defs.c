@@ -3228,7 +3228,7 @@ extern char *priority_flags_string(uint16_t priority_flags)
 	return flag_str;
 }
 
-/* Translate a burst buffer numeric value to its equivalant state string */
+/* Translate a burst buffer numeric value to its equivalent state string */
 extern char *bb_state_string(uint16_t state)
 {
 	static char buf[16];
@@ -3271,7 +3271,7 @@ extern char *bb_state_string(uint16_t state)
 	return buf;
 }
 
-/* Translate a burst buffer state string to its equivalant numeric value */
+/* Translate a burst buffer state string to its equivalent numeric value */
 extern uint16_t bb_state_num(char *tok)
 {
 	if (!xstrcasecmp(tok, "pending"))

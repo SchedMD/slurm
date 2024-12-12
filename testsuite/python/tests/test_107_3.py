@@ -160,7 +160,7 @@ def setup_wckeys():
 @pytest.fixture
 def setup_partition2_down(setup_partitions):
     """Set partitions[2] down so we ensure that matching jobs will run on
-    partition[0] and mistmatching ones in partition[1]"""
+    partition[0] and mismatching ones in partition[1]"""
     atf.run_command(
         f"scontrol update partitionname={partitions[2]} state=down",
         user=atf.properties["slurm-user"],
@@ -170,7 +170,7 @@ def setup_partition2_down(setup_partitions):
 
 @pytest.fixture
 def setup_reservations_used(setup_reservations):
-    """'Run an exlusive job in reservations[1] to ensure that jobs run in
+    """'Run an exclusive job in reservations[1] to ensure that jobs run in
     reservations[0]"""
     job_id = atf.submit_job_sbatch(
         f"--exclusive --reservation={reservations[1]} --wrap 'srun sleep infinity'",

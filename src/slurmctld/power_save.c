@@ -445,7 +445,7 @@ static void _do_power_work(time_t now)
 	}
 
 	/*
-	 * Buid job to node mapping for json output
+	 * Build job to node mapping for json output
 	 * all_nodes = all nodes that need to be resumed this iteration
 	 * jobs[] - list of job to node mapping of nodes that the job needs to
 	 * be resumed for job. Multiple jobs can request the same nodes. Report
@@ -695,7 +695,7 @@ static void _do_power_work(time_t now)
 			 *
 			 * Call AFTER setting state adding POWERED_DOWN so that
 			 * the node is marked as "planned down" in the usage
-			 * tables becase:
+			 * tables because:
 			 * set_node_down_ptr()->_make_node_down()->
 			 * clusteracct_storage_g_node_down().
 			 */
@@ -938,7 +938,7 @@ static void power_save_rl_setup(void)
 
 	/*
 	 * Power save either runs nominally close to power_save_interval
-	 * or, at worst, at the minumum rate. Either way, we'll want the
+	 * or, at worst, at the minimum rate. Either way, we'll want the
 	 * larger value for worst-case scenario in sizing bucket.
 	 */
 	effective_max_interval = MAX(1,
@@ -948,7 +948,7 @@ static void power_save_rl_setup(void)
 	if (resume_rate) {
 		/*
 		 * If the rate is high and/or the power save interval is large,
-		 * the bucket must be larger to accomodate large token
+		 * the bucket must be larger to accommodate large token
 		 * accumulation between executions of _do_power_work().
 		 * units are: (tokens) = ((tokens/min) * seconds) /
 		 *	                 (seconds / min)
@@ -1271,7 +1271,7 @@ extern void power_save_set_timeouts(bool *partition_suspend_time_set)
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
-	/* Reset timeouts so new values can be caluclated. */
+	/* Reset timeouts so new values can be calculated. */
 	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		node_ptr->suspend_time = NO_VAL;
 		node_ptr->suspend_timeout = NO_VAL16;

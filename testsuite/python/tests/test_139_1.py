@@ -40,9 +40,9 @@ def setup():
         },
     )
 
-    # Needed fo MaxNodeCount
+    # Needed for MaxNodeCount
     atf.require_config_parameter("SelectType", "select/cons_tres")
-    # Needed fo cons_tres
+    # Needed for cons_tres
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
 
     atf.require_slurm_running()

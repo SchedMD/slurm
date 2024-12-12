@@ -227,7 +227,7 @@ extern timespec_diff_ns_t timespec_diff_ns(const timespec_t x,
 	int64_t s = (((int64_t) x.tv_sec) - ((int64_t) y.tv_sec));
 	int64_t ns = (((int64_t) x.tv_nsec) - ((int64_t) y.tv_nsec));
 
-	/* Adjust postive nanoseconds if seconds is negative */
+	/* Adjust positive nanoseconds if seconds is negative */
 	if ((ns > 0) && (s < 0)) {
 		s += 1;
 		ns -= NSEC_IN_SEC;

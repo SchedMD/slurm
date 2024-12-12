@@ -191,7 +191,7 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 		if (!_in_range(task_rank, rank_spec, &task_offset))
 			continue;
 
-		/* skip all whitspace after the range spec */
+		/* skip all whitespace after the range spec */
 		while ((*p != '\0') && isspace (*p))
 			p++;
 

@@ -55,7 +55,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		fail "sbatch is not reponding"
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -76,7 +76,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		fail "sbatch is not reponding"
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -94,7 +94,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		fail "sbatch is not reponding"
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -113,7 +113,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		fail "squeue is not reponding"
+		fail "squeue is not responding"
 	}
 	eof {
 		wait

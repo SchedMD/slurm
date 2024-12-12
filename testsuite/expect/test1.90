@@ -367,7 +367,7 @@ expect {
 subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying a reverse map" "Affinity mask inconsistent ($task_mask,$full_mask)"
 
 #
-# Run all tasks bound to a different CPU's memroy by specifying an alternating map
+# Run all tasks bound to a different CPU's memory by specifying an alternating map
 #
 set task_mask 0
 send "$srun -n $task_cnt --mem-bind=map_mem:$alt_map ./$file_prog\r"

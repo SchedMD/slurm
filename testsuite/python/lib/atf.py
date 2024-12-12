@@ -1845,7 +1845,7 @@ def require_slurmrestd(openapi_plugins, data_parsers):
         # Check version is the expected one
         if not is_slurmrestd_running():
             pytest.skip(
-                f"This test needs slurmrestd runnig in SLURM_TESTSUITE_SLURMRESTD_URL but cannot connect with {os.environ['SLURM_TESTSUITE_SLURMRESTD_URL']}",
+                f"This test needs slurmrestd running in SLURM_TESTSUITE_SLURMRESTD_URL but cannot connect with {os.environ['SLURM_TESTSUITE_SLURMRESTD_URL']}",
                 allow_module_level=True,
             )
     else:
@@ -3874,7 +3874,7 @@ def restore_accounting_database():
     if database_password:
         base_command += f" -p {database_password}"
 
-    # If DB exists, drop it and try to resore the dump file
+    # If DB exists, drop it and try to restore the dump file
     mysql_command = f"{base_command} -e \"USE '{database_name}'\""
     if run_command_exit(mysql_command, quiet=True) == 0:
         run_command(

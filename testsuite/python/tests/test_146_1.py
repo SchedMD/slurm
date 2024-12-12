@@ -12,8 +12,8 @@ import pytest
 def setup():
     atf.require_auto_config("Needs to create/reconfigure nodes and partitions")
 
-    # Test needs 4 nodes to have 3 partitions with 1 overlaping
-    # We want to test with mutiple sockets.
+    # Test needs 4 nodes to have 3 partitions with 1 overlapping
+    # We want to test with multiple sockets.
     # Partition will use up to MaxCPUsPerSocket=3, and we want that to be at least half of the
     # space so two partitions can share the same core.
     atf.require_nodes(4, [("Sockets", 2), ("CoresPerSocket", 6), ("ThreadsPerCore", 1)])
@@ -68,9 +68,9 @@ def partition_nodes(limit_cpus, limit_name):
 @pytest.mark.parametrize("limit_name", ["MaxCPUsPerSocket", "MaxCPUsPerNode"])
 @pytest.mark.parametrize("limit_cpus", [1, 2, 3])
 def test_limits(limit_name, limit_cpus, partition_nodes):
-    """Test that limit_name is honored also for overlaping partitions by
+    """Test that limit_name is honored also for overlapping partitions by
     incrementally submitting the max number of jobs that each partition can allocate
-    based on the limits and assiming the necessary resources are available, and
+    based on the limits and assuming the necessary resources are available, and
     checking that limits are always honored, even when extra jobs are submitted
     at the end."""
 
@@ -91,7 +91,7 @@ def test_limits(limit_name, limit_cpus, partition_nodes):
         atf.wait_for_job_state(job_id, "RUNNING")
 
     # Verify that the number of allocated CPUs per node is correct, assuming 1 CPU per job
-    # First two nodes should have jobs splitted between them due the limits
+    # First two nodes should have jobs split between them due the limits
     assert (
         atf.get_node_parameter(partition_nodes[0], "CPUAlloc") == max_jobs / 2
     ), f"Verify that node {partition_nodes[0]} has {max_jobs/2} CPUs allocated"
@@ -176,11 +176,11 @@ def test_limits(limit_name, limit_cpus, partition_nodes):
 @pytest.mark.parametrize("limit_name", ["MaxCPUsPerSocket", "MaxCPUsPerNode"])
 @pytest.mark.parametrize("limit_cpus", [0])
 def test_zero_cpu(limit_name, partition_nodes):
-    """Test the corener case of setting limit_name=0 means jobs cannot be submitted to that partition."""
+    """Test the corner case of setting limit_name=0 means jobs cannot be submitted to that partition."""
 
     # This is an undocumented corner case and shouldn't be used.
     # Setting the partition down, drain or inactive should be used instead.
-    # At the moment of writting this test the behavior between MaxCPUsPerSocket
+    # At the moment of writing this test the behavior between MaxCPUsPerSocket
     # and MaxCPUsPerNode is slightly different, but we don't really want to
     # enforce this exact current behavior but just to verify that jobs are rejected
     # or never run.

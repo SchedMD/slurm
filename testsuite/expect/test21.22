@@ -558,7 +558,7 @@ expect {
 }
 
 if {$matches != 2} {
-	fail "Adminstrator and coordinator 2 incorrect ($matches != 2)"
+	fail "Administrator and coordinator 2 incorrect ($matches != 2)"
 }
 
 set matches 0
@@ -695,7 +695,7 @@ expect {
 }
 
 if {$matches != 3} {
-	fail "Adminstrator and coordinator 3 incorrect ($matches != 3)"
+	fail "Administrator and coordinator 3 incorrect ($matches != 3)"
 }
 
 set matches 0
@@ -821,5 +821,5 @@ expect {
 }
 
 if {$matches != 3} {
-	fail "Adminstrator and coordinator 3 incorrect ($matches != 3)"
+	fail "Administrator and coordinator 3 incorrect ($matches != 3)"
 }

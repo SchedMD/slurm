@@ -193,7 +193,7 @@ static void _set_bsub_options(int argc, char **argv) {
 			xlate_val = 'D';
 			xlate_arg = xstrdup(optarg);
 			break;
-		/* These options all have a direct correspondance. */
+		/* These options all have a direct correspondence. */
 		case 'e':
 		case 'J':
 		case 'o':
@@ -315,7 +315,7 @@ static void _set_pbs_options(int argc, char **argv)
 			xlate_val = 'b';
 			xlate_arg = xstrdup(optarg);
 			break;
-		/* These options all have a direct correspondance. */
+		/* These options all have a direct correspondence. */
 		case 'A':
 		case 'e':
 		case 'o':

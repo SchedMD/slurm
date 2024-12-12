@@ -1607,7 +1607,7 @@ extern bitstr_t *node_features_p_get_node_bitmap(void)
 	return NULL;
 }
 
-/* Return count of overlaping bits in active_bitmap and knl_node_bitmap */
+/* Return count of overlapping bits in active_bitmap and knl_node_bitmap */
 extern int node_features_p_overlap(bitstr_t *active_bitmap)
 {
 	int cnt = 0;

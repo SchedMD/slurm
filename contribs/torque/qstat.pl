@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 ###############################################################################
 #
-# qstat - queries slurm jobs in familar pbs format.
+# qstat - queries slurm jobs in familiar pbs format.
 #
 #
 ###############################################################################

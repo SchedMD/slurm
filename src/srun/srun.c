@@ -853,7 +853,7 @@ static char *_uint16_array_to_str(int array_len, const uint16_t *array)
 {
 	int i;
 	int previous = 0;
-	char *sep = ",";  /* seperator */
+	char *sep = ",";  /* separator */
 	char *str = xstrdup("");
 
 	if (array == NULL)
@@ -939,7 +939,7 @@ static void _setup_env_working_cluster(void)
 	if (tmp) {
 		/*
 		 * Delay increments add_ptr till now for new format to preserve
-		 * working_env in error message if failed ealier.
+		 * working_env in error message if failed earlier.
 		 */
 		*addr_ptr++ = '\0';
 		*tmp = '\0';

@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 ###############################################################################
 #
-# qsub - submit a batch job in familar pbs/Grid Engine format.
+# qsub - submit a batch job in familiar pbs/Grid Engine format.
 #
 #
 ###############################################################################

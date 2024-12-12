@@ -197,7 +197,7 @@ struct node_record {
 	char *version;			/* Slurm version */
 	uint16_t tpc;	                /* number of threads we are using per
 					 * core */
-	uint32_t weight;		/* orignal weight, used only for state
+	uint32_t weight;		/* original weight, used only for state
 					 * save/restore, DO NOT use for
 					 * scheduling purposes. */
 };
@@ -312,8 +312,8 @@ extern void grow_node_record_table_ptr(void);
  * create_node_record - create a node record and set its values to defaults
  * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
- * OUT node_ptr - node_record_t** with created node on SUCESS, NULL otherwise.
- * RET SUCESS, or error code
+ * OUT node_ptr - node_record_t** with created node on SUCCESS, NULL otherwise.
+ * RET SUCCESS, or error code
  * NOTE: grows node_record_table_ptr if needed and appends a new node_record_t *
  *       to node_record_table_ptr and increases node_record_count.
  */
@@ -328,7 +328,7 @@ extern int create_node_record(config_record_t *config_ptr, char *node_name,
  *            less than node_record_count.
  * IN node_name - name of node to create
  * IN config_ptr - pointer to node's configuration information
- * RET new node_record_t * on sucess, NULL otherwise.
+ * RET new node_record_t * on success, NULL otherwise.
  * NOTE: node_record_count isn't changed.
  */
 extern node_record_t *create_node_record_at(int index, char *node_name,
@@ -340,8 +340,8 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
  *
  * IN alias - name of node.
  * IN config_ptr - config_record_t* to initialize node with.
- * OUT node_ptr - node_record_t** with added node on SUCESS, NULL otherwise.
- * RET SUCESS, or error code
+ * OUT node_ptr - node_record_t** with added node on SUCCESS, NULL otherwise.
+ * RET SUCCESS, or error code
  */
 extern int add_node_record(char *alias, config_record_t *config_ptr,
 			   node_record_t **node_ptr);

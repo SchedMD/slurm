@@ -147,7 +147,7 @@ proc create_sql {cluster sql_in sql_rem} {
 
 ###############################################################################
 #
-# Proc: Runs the desired "sacctmgr update job" command and checkd the expected
+# Proc: Runs the desired "sacctmgr update job" command and checked the expected
 #       output.
 #
 # Returns: 0 if result was the expected, non-zero otherwise.
@@ -201,7 +201,7 @@ proc test_job_update {sacctmgr_args expected_jobs} {
 
 #
 # Check configuration
-# TODO: chack also slurm.conf!!
+# TODO: check also slurm.conf!!
 #
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"

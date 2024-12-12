@@ -493,7 +493,7 @@ static void _task_finish(task_exit_msg_t *msg)
 /*
  * Load the multi_prog config file into argv, pass the  entire file contents
  * in order to avoid having to read the file on every node. We could parse
- * the infomration here too for loading the MPIR records for TotalView
+ * the information here too for loading the MPIR records for TotalView
  */
 static void _load_multi(int *argc, char **argv)
 {

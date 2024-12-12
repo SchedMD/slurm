@@ -741,7 +741,7 @@ static void _sync_job_task_id_bitmap(const job_record_t *job_ptr,
 		}
 
 		if (!js->task_id_bitmap) {
-			LOG("[%pJ] mimicing array without task_id_bitmap with new bitmap[%u]",
+			LOG("[%pJ] mimicking array without task_id_bitmap with new bitmap[%u]",
 			    JOB_STATE_MIMIC_RECORD(js), task_cnt);
 			js->task_id_bitmap = bit_alloc(task_cnt);
 		}
@@ -753,7 +753,7 @@ static void _sync_job_task_id_bitmap(const job_record_t *job_ptr,
 
 		if (_is_debug()) {
 			char *map = bit_fmt_full(js->task_id_bitmap);
-			LOG("[%pJ] mimicing array without bitmap as task_id_bitmap[%lu]: %s",
+			LOG("[%pJ] mimicking array without bitmap as task_id_bitmap[%lu]: %s",
 			    JOB_STATE_MIMIC_RECORD(js),
 			    bit_size(js->task_id_bitmap), map);
 			xfree(map);
@@ -1316,7 +1316,7 @@ static bool _array_task_match(void *entry, const void *key,
 	_check_array_task_magic(ats_key);
 	xassert(sizeof(*ats_key) == key_bytes);
 
-	/* treat NO_VAL and INFINTE as * for arrays */
+	/* treat NO_VAL and INFINITE as * for arrays */
 	if ((ats_key->array_task_id < NO_VAL) &&
 	    (ats->array_task_id != ats_key->array_task_id))
 		return false;

@@ -34,7 +34,7 @@ The syntax file is then read and applied on a Shell script after the usual synta
 
 The Bash completion script offers <TAB> completion for Slurm commands.
 
-### Instalation
+### Installation
 
 You must have the bash-completion package installed in order for this to work.
 Source the [slurm_completion.sh][slurm-completion] script. It is

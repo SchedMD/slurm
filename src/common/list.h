@@ -176,7 +176,7 @@ extern int list_transfer_max(list_t *l, list_t *sub, int max);
 
 /*
  *  Traverses list [l] using [f] to match each item with [key].
- *  Matching items are then transfered to [sub].
+ *  Matching items are then transferred to [sub].
  *  Note: list [l] must have the same destroy function as list [sub].
  *  Returns a count of the number of items moved to list [sub] from list [l].
  */

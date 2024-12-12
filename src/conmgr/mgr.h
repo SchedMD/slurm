@@ -382,7 +382,7 @@ extern conmgr_t mgr;
  * IN control - controls on when work is run
  * IN depend_mask - Apply mask against control.depend_type.
  * 	Mask is intended for work that generates new work (such as signal work)
- * 	to make it relatively clean to remove a now fullfilled dependency.
+ * 	to make it relatively clean to remove a now fulfilled dependency.
  * 	Ignored if depend_mask=0.
  * IN caller - __func__ from caller
  */
@@ -446,7 +446,7 @@ extern void wait_for_watch(void);
 extern void close_con(bool locked, conmgr_fd_t *con);
 
 /*
- * Stop writting to connection and drop remaining outbound buffer(s)
+ * Stop writing to connection and drop remaining outbound buffer(s)
  */
 extern void close_con_output(bool locked, conmgr_fd_t *con);
 
@@ -502,7 +502,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
  * IN is_listen - True if this is a listening socket
  * IN unix_socket_path - Named Unix Socket path in filesystem or NULL
  * IN arg - arbitrary pointer to hand to events
- * RET SLURM_SUCCESS or errror
+ * RET SLURM_SUCCESS or error
  */
 extern int add_connection(conmgr_con_type_t type,
 			  conmgr_fd_t *source, int input_fd,

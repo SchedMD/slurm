@@ -158,7 +158,7 @@ static int _configure_rd_kafka_handle(void)
  * Message delivery report callback.
  *
  * This callback is called exactly once per message, indicating if the message
- * was succesfully delivered:
+ * was successfully delivered:
  * (rkmessage->err == RD_KAFKA_RESP_ERR_NO_ERROR)
  * or permanently failed delivery:
  * (rkmessage->err != RD_KAFKA_RESP_ERR_NO_ERROR).
@@ -307,7 +307,7 @@ static rd_kafka_conf_t *_set_rd_kafka_conf(void)
 	 * accepted by rd_kafka_produce() (et.al) with err set to indicate
 	 * the result of the produce request.
 	 *
-	 * The callback is called when a message is succesfully produced or
+	 * The callback is called when a message is successfully produced or
 	 * if librdkafka encountered a permanent failure.
 	 *
 	 * An application must call rd_kafka_poll() at regular intervals to

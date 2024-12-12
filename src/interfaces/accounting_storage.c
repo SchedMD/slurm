@@ -1369,7 +1369,7 @@ extern int acct_storage_g_get_data(void *db_conn, acct_storage_info_t dinfo,
 }
 
 /*
- * Send all relavant information to the DBD.
+ * Send all relevant information to the DBD.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern void acct_storage_g_send_all(void *db_conn, time_t event_time,

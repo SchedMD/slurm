@@ -44,7 +44,7 @@ proc inc21_34_2 { qostest } {
 		# If we just ran a single job to consume the full group wall time, the priority decay
 		# would make it consume slightly less than the limit. Using a larger time limit would
 		# be blocked by the GrpWall limit. So, we use multiple jobs to consume the GrpWall limit.
-		# The last job will consume an additional second to supercede the priority decay.
+		# The last job will consume an additional second to supersede the priority decay.
 		log_debug "Submitting multiple jobs to consume the usage of the GrpWall limit"
 		for {set i 0} {$i < $consumption_job_count} {incr i} {
 			set sleep_time [expr $grpwall_num * 60 / $consumption_job_count]

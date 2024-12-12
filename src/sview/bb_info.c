@@ -383,7 +383,7 @@ static void _append_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 	_update_bb_record(sview_bb_info_ptr, treestore);
 }
 
-/* Update the Burst Buffer inforamtion record */
+/* Update the Burst Buffer information record */
 static void _update_info_bb(list_t *info_list, GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
@@ -640,7 +640,7 @@ end_it:
 /* Create the model with types with known values */
 extern GtkListStore *create_model_bb(int type)
 {
-/* Since none of the values can be editted this is left blank */
+/* Since none of the values can be edited this is left blank */
 /* NOP */
 	return NULL;
 }
@@ -901,7 +901,7 @@ end_it:
 	return;
 }
 
-/* creates a popup windo depending on what is clicked */
+/* creates a popup window depending on what is clicked */
 extern void set_menus_bb(void *arg, void *arg2, GtkTreePath *path, int type)
 {
 	GtkTreeView *tree_view = (GtkTreeView *)arg;

@@ -1172,7 +1172,7 @@ static size_t _direct_hdr_pack_samearch(pmixp_base_hdr_t *hdr, void *net)
 	return _base_hdr_pack_full_samearch(hdr, net);
 }
 
-/* Get te pointer to the message bufer */
+/* Get te pointer to the message buffer */
 static void *_direct_msg_ptr(void *msg)
 {
 	_direct_proto_message_t *_msg = (_direct_proto_message_t*)msg;
@@ -1387,7 +1387,7 @@ int pmixp_server_direct_conn_early(void)
 		}
 		coll[count++] = pmixp_state_coll_get(types[i], &proc, 1);
 	}
-	/* use Tree algo by defaut */
+	/* use Tree algo by default */
 	if (!count) {
 		coll[count++] = pmixp_state_coll_get(PMIXP_COLL_TYPE_FENCE_TREE, &proc, 1);
 	}
@@ -1939,7 +1939,7 @@ inline static void _pmixp_cperf_cbfunc(pmixp_coll_t *coll,
 	 */
 	slurm_mutex_unlock(&coll->lock);
 
-	/* invoke the callbak */
+	/* invoke the callback */
 	pmixp_lib_release_invoke(r_fn, r_cbdata);
 
 	/* lock it back before proceed */

@@ -185,7 +185,7 @@ proc wait_for_depend { job_id expected_reason expected_dependency } {
 	set my_delay 0
 	# By default we test remote dependencies every 30 seconds.
 	# Once the dependencies are cleared, we have to wait for the job to be
-	# scheduled which could be another 30-60 seconds dependending on the
+	# scheduled which could be another 30-60 seconds depending on the
 	# main scheduler and backfill scheduler timing.
 	set max_delay 120
 	set poll_interval 3

@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 ###############################################################################
 #
-# pbsnodes - queries slurm nodes in familar pbs format.
+# pbsnodes - queries slurm nodes in familiar pbs format.
 #
 #
 ###############################################################################

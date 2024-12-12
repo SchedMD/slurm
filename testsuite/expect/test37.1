@@ -143,7 +143,7 @@ cleanup
 
 ######MAIN######
 #####################################
-# TEST: add federation with non-existant cluster(s)
+# TEST: add federation with non-existent cluster(s)
 #####################################
 set matches 0
 spawn $sacctmgr -i add federation $fed1 cluster=$tc1
@@ -186,7 +186,7 @@ if {$matches != 2} {
 }
 
 #####################################
-# TEST: add cluster to non-existant federation
+# TEST: add cluster to non-existent federation
 #####################################
 set matches 0
 spawn $sacctmgr -i add cluster $tc1 federation=$fed1
@@ -2243,7 +2243,7 @@ if {$matches != 5} {
 	fail "Adding federation with clusters failed (got $matches)"
 }
 
-# add second cluster to make sure selectin only on federation
+# add second cluster to make sure selection only on federation
 set matches 0
 spawn $sacctmgr -i add federation $fed3 clusters=$tc3,$tc4
 expect {

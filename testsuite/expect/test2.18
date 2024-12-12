@@ -162,7 +162,7 @@ expect {
 		fail "Partition was not created"
 	}
 	timeout {
-		fail "scontrol is not reponding"
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait

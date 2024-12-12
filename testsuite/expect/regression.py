@@ -127,7 +127,7 @@ def main(argv=None):
             "ERROR: no test files found in current working directory", file=sys.stderr
         )
         return -1
-    # sory by major, minor
+    # sort by major, minor
     tests.sort(key=lambda t: (t[0], t[1]))
 
     # Set begin value

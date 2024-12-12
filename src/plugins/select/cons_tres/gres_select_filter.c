@@ -432,7 +432,7 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 
 	if (use_single_dev && total_res_gres && (sock_with_res_cnt > 1)) {
 		/*
-		 * Have to allocate gres accross more than one socket.
+		 * Have to allocate gres across more than one socket.
 		 * This is assuming one socket per gres configuration line.
 		 */
 		*satisfy_res_gres = false;
@@ -985,7 +985,7 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 		 * least one gpu on the node anyway.
 		 * For example --gpus=typeA:2,typeB:1 where there is only one
 		 * typeA on each node then two nodes are required. Because this
-		 * is not a heterogenous job a typeB gpu does have to be
+		 * is not a heterogeneous job a typeB gpu does have to be
 		 * allocated on each node even though they only requested one
 		 * for the job.
 		 */
@@ -1309,7 +1309,7 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 		gres_js->gres_per_task;
 	gres_needed -= total_res_gres;
 
-	/* First pick GRES for acitve sockets */
+	/* First pick GRES for active sockets */
 	for (s = 0; s < sock_cnt; s++) {
 		if (!tasks_per_socket[s])
 			continue;
@@ -1693,8 +1693,8 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 		if (*sock_with_res_cnt > 1 &&
 		    !(slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ)){
 			/*
-			 * Have to allocate gres accross more then one socket.
-			 * This is assuming one socket per gres configueration
+			 * Have to allocate gres across more then one socket.
+			 * This is assuming one socket per gres configuration
 			 * line.
 			 */
 			error("Restricted gpu cores on multiple sockets which requires MULTIPLE_SHARING_GRES_PJ to be set");

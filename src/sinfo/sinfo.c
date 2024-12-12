@@ -851,7 +851,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		return false;
 
 	/* If no need to exactly match sizes, just return here
-	 * otherwise check cpus, disk, memory and weigth individually */
+	 * otherwise check cpus, disk, memory and weight individually */
 	if (!params.exact_match)
 		return true;
 

@@ -157,7 +157,7 @@ if {[regexp "Submitted batch job ($number)" $output - job_id]} {
 }
 
 #
-# Request inconsistent number of nodes (-N) with implicite --gpus and --gres=gpu:
+# Request inconsistent number of nodes (-N) with implicit --gpus and --gres=gpu:
 #
 set output [run_command_output -xfail -subtest "$sbatch --gres=gpu:2 --gpus=4 -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
 subtest {[regexp "sbatch: error: Failed to validate job spec. Based on --gpu and --gres=gpu/--gpus-per-node required nodes \\(2\\) doesn't fall between min_nodes \\(1\\) and max_nodes \\(1\\) boundaries." $output]} "Job should be rejected at submit time"
@@ -175,7 +175,7 @@ if {[regexp "Submitted batch job ($number)" $output - job_id]} {
 }
 
 #
-# Request inconsistent -n and implicite number of tasks from --gpus and --gpus-per-task
+# Request inconsistent -n and implicit number of tasks from --gpus and --gpus-per-task
 #
 set output [run_command_output -xfail -subtest "$sbatch --gpus=4 --gpus-per-task=2 -n1 --output=/dev/null -t1 --wrap $bin_hostname"]
 subtest {[regexp "sbatch: error: Failed to validate job spec. Based on --gpus and --gpus-per-task number of requested tasks differ from -n/--ntasks." $output]} "Job should be rejected at submit time"

@@ -213,7 +213,7 @@ extern int addto_update_list(list_t *update_list, slurmdb_update_type_t type,
 		update_list, slurmdb_find_update_object_in_list, &type);
 
 	if (update_object) {
-		/* here we prepend primarly for remove association
+		/* here we prepend primarily for remove association
 		   since parents need to be removed last, and they are
 		   removed first in the calling code */
 		if (type == SLURMDB_UPDATE_FEDS) {
@@ -978,7 +978,7 @@ extern int as_build_step_start_msg(dbd_step_start_msg_t *req,
 	req->db_index    = step_ptr->job_ptr->db_index;
 	req->name        = step_ptr->name;
 	req->nodes       = node_list;
-	/* reate req->node_inx outside of locks when packing */
+	/* create req->node_inx outside of locks when packing */
 	req->node_cnt    = nodes;
 	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
 		req->start_time = step_ptr->start_time;

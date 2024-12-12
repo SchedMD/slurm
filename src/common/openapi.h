@@ -117,7 +117,7 @@ extern openapi_type_t openapi_type_format_to_type(openapi_type_format_t format);
 #define OPENAPI_REF_TAG "$ref"
 
 /*
- * Generate formated path string from relative path
+ * Generate formatted path string from relative path
  * IN/OUT str_ptr - ptr to path string to set/replace
  * IN relative_path - data list with each component of relative path
  * RET ptr to path string (to allow jit generation for logging)

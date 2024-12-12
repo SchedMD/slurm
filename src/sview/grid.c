@@ -1068,7 +1068,7 @@ extern void highlight_grid_range(int start, int end, list_t *button_list)
 						GTK_STATE_ACTIVE);
 				continue;
 			}
-		/* highlight this one, if it is already hightlighted,
+		/* highlight this one, if it is already highlighted,
 		 * put it back to normal */
 		//g_print("highlighting %d\n", grid_button->inx);
 		if ((gtk_widget_get_state(grid_button->button)

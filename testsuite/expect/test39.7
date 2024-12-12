@@ -117,7 +117,7 @@ set cpus_per_socket  [expr $cpus_per_node / $sockets_per_node]
 set nb_nodes         [get_partition_param [default_partition] "TotalNodes"]
 
 log_debug "GPU count is $gpu_cnt"
-log_debug "Node count in default parition is $nb_nodes"
+log_debug "Node count in default partition is $nb_nodes"
 log_debug "Sockets per node is $sockets_per_node"
 log_debug "CPUs per socket is $cpus_per_socket"
 log_debug "CPUs per node is $cpus_per_node"

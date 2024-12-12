@@ -166,7 +166,7 @@ static data_for_each_cmd_t _foreach_join_path_str(data_t *data, void *arg)
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		fatal_abort("%s: path must be a string", __func__);
 
-	/* path entry must not contain any of the seperators */
+	/* path entry must not contain any of the separators */
 	xassert(!xstrstr(data_get_string(data), OPENAPI_PATH_SEP));
 	xassert(!xstrstr(data_get_string(data), OPENAPI_PATH_REL));
 

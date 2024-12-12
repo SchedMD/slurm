@@ -139,7 +139,7 @@ static pmix_ring_msg* pmix_ring_msgs = NULL;
  * pmix_ring_children */
 static int pmix_ring_count = 0;
 
-/* tracks number of chilren we have for pmix_ring operation
+/* tracks number of children we have for pmix_ring operation
  * (sum of application children and stepd children) */
 static int pmix_ring_children = 0;
 

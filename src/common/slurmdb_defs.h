@@ -110,7 +110,7 @@ typedef enum {
 					      * the same type ignoring -1 */
 #define TRES_STR_FLAG_ALLOW_REAL  0x00000800 /* Allow all counts (even zero)
 					      * unless INFINITE64 or NO_VAL64 */
-#define TRES_STR_FLAG_BYTES       0x00000800 /* Convertable Usage in Bytes */
+#define TRES_STR_FLAG_BYTES       0x00000800 /* Convertible Usage in Bytes */
 
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;

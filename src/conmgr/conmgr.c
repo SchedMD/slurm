@@ -331,7 +331,7 @@ extern int conmgr_set_params(const char *params)
 				slurm_atoul(tok + strlen(CONMGR_PARAM_MAX_CONN));
 
 			if (count < 1)
-				fatal("%s: There must be atleast 1 max connection",
+				fatal("%s: There must be at least 1 max connection",
 				      __func__);
 
 			mgr.conf_max_connections = count;

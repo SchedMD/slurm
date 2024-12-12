@@ -68,7 +68,7 @@ Files created within this directory on one node in the cluster should be
 visible to all other nodes in the cluster.
 
 For the valid fields usable with testsuite_log_format, see the header
-comments for the _log_format procedure. See also the default defintion of
+comments for the _log_format procedure. See also the default definition of
 testsuite_log_format in globals for an example of syntax.
 
 Each test can be executed independently. Upon successful completion, the test

@@ -413,10 +413,10 @@ static void _oneapi_print_freqs(ze_device_handle_t device, log_level_t l)
 }
 
 /*
- * Print current freqeuncy range
+ * Print current frequency range
  *
- * freq_handler      (IN) the freqeuncy handler
- * freq_type	     (IN) the freqeuncy type
+ * freq_handler      (IN) the frequency handler
+ * freq_type	     (IN) the frequency type
  *
 */
 static void _oneapi_print_freq_range(zes_freq_handle_t freq_handler,
@@ -445,7 +445,7 @@ static void _oneapi_print_freq_range(zes_freq_handle_t freq_handler,
  * Set frequency for the GPU
  *
  * device      	(IN) The device handle
- * reset       	(IN) If ture, the device will be reset to default frequencies
+ * reset       	(IN) If true, the device will be reset to default frequencies
  * gpu_freq_num (IN) The gpu frequency code. It will be ingorned
 		if reset is true.
  * mem_freq_num (IN) The memory frequency code. It will be ingorned
@@ -491,7 +491,7 @@ static bool _oneapi_set_freqs(ze_device_handle_t device,
 		}
 
 		/*
-		 * If the frequency is not GPU or memory fequency or it cannot
+		 * If the frequency is not GPU or memory frequency or it cannot
 		 * be controlled, ignore it
 		 */
 		if (((freq_prop.type != ZES_FREQ_DOMAIN_GPU) &&

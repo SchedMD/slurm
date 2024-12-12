@@ -109,7 +109,7 @@ def get_sorted_test_list(
     """Retrieve an ordered test list based on duration and status (optional)
 
     Useful to grab all the FAILED test sorted first as a list and then
-    append the others (with failed ommitted) in order to run the fails first
+    append the others (with failed omitted) in order to run the fails first
     """
     suite_vals = list_to_quote_str(suite_list)
     name_vals = list_to_quote_str(name_list)

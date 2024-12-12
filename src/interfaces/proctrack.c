@@ -50,7 +50,7 @@
 #endif
 
 /* This is suppose to be defined in linux/sched.h but we have found it
- * is a very rare occation this is the case, so we define it here.
+ * is a very rare occasion this is the case, so we define it here.
  */
 #ifndef PF_DUMPCORE
 #define PF_DUMPCORE     0x00000200      /* dumped core */
@@ -397,7 +397,7 @@ extern int proctrack_g_signal(uint64_t cont_id, int signal)
 			}
 			xfree(pids);
 			if (hung_pids) {
-				info("Defering sending signal, processes in "
+				info("Deferring sending signal, processes in "
 				     "job are currently core dumping");
 				_spawn_signal_thread(cont_id, signal);
 				return SLURM_SUCCESS;

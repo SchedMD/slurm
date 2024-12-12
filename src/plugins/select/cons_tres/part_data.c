@@ -250,7 +250,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 	if (j < num_jobs) {
 		/*
 		 * we found a dangling job, which means our packing
-		 * algorithm couldn't improve apon the existing layout.
+		 * algorithm couldn't improve upon the existing layout.
 		 * Thus, we'll restore the original layout here
 		 */
 		debug3("dangling job found");

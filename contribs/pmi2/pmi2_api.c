@@ -455,7 +455,7 @@ cmd=spawn;thrid=string;ncmds=count;preputcount=n;ppkey0=name;ppval0=string;...;\
     }
 
     pairs_p = malloc(total_pairs * sizeof(PMI2_Keyvalpair*));
-    /* individiually allocating instead of batch alloc b/c freepairs assumes it */
+    /* individually allocating instead of batch alloc b/c freepairs assumes it */
     for (i = 0; i < total_pairs; ++i) {
         /* FIXME we are somehow still leaking some of this memory */
         pairs_p[i] = malloc(sizeof(PMI2_Keyvalpair));
@@ -1137,7 +1137,7 @@ fn_fail:
  */
 /* ------------------------------------------------------------------------- */
 
-/* frees all of the keyvals pointed to by a keyvalpair* array and the array iteself*/
+/* frees all of the keyvals pointed to by a keyvalpair* array and the array itself*/
 static void freepairs(PMI2_Keyvalpair** pairs, int npairs)
 {
     int i;
@@ -1887,7 +1887,7 @@ static int PMII_Connect_to_pm( char *hostname, int portnum )
    mpiexec, and PMI2_Init returned as if there was only one process.
 
    Note that PMI routines should not call PMII_singinit; they should
-   call PMIi_InitIfSingleton(), which both connects to the process mangager
+   call PMIi_InitIfSingleton(), which both connects to the process manager
    and sets up the initial KVS connection entry.
 */
 

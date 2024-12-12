@@ -4379,7 +4379,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 	preserve_nodes = bit_set_count(preserve_bitmap);
 
 	/*
-	 * Try to get replacement nodes, first from idle pool then re-use
+	 * Try to get replacement nodes, first from idle pool then reuse
 	 * busy nodes in the current reservation as needed
 	 */
 	add_nodes = resv_ptr->node_cnt - preserve_nodes;

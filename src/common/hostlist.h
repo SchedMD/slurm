@@ -452,7 +452,7 @@ int hostset_intersects(hostset_t *set, const char *hosts);
 
 /* hostset_within():
  * Return 1 if all hosts specified by "hosts" are within the hostset "set"
- * Retrun 0 if every host in "hosts" is not in the hostset "set"
+ * Return 0 if every host in "hosts" is not in the hostset "set"
  */
 int hostset_within(hostset_t *set, const char *hosts);
 

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/slurmd/common/slurmstepd_init.c - slurmstepd intialization code
+ * src/slurmd/common/slurmstepd_init.c - slurmstepd initialization code
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

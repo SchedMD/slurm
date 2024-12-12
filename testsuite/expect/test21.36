@@ -32,10 +32,10 @@ set cluster          [get_config_param "ClusterName"]
 set account          "$test_name\_acct"
 set user             "$test_name\_user"
 
-# Account requirments
+# Account requirements
 set acct_req(cluster) $cluster
 
-# User requirments
+# User requirements
 set user_req(account) $account
 set user_req(cluster) $cluster
 
@@ -60,7 +60,7 @@ cleanup
 
 # Make SQL file to remove the inserted job
 set file [open $sql_query_rem "w"]
-# This SQL statement is correct for our purposes (missing && infront of cluster)
+# This SQL statement is correct for our purposes (missing && in front of cluster)
 puts $file "delete from job_table where alloc_nodes=\'test21.36_node\' cluster=\'$cluster\';"
 close $file
 

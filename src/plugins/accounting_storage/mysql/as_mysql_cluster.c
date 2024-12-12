@@ -475,7 +475,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			object->root_assoc = NULL;
 		}
 
-		/* Build up extra with cluster specfic values for txn table */
+		/* Build up extra with cluster specific values for txn table */
 		xstrfmtcat(extra,
 			   ", federation='%s', fed_id=%d, fed_state=%u, "
 			   "features='%s'",
@@ -1798,7 +1798,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		 * database. If this is the case we will zero out the time_end
 		 * we are just filled in. This will cause the last time to be
 		 * erased from the last restart, but if you are restarting
-		 * things this often the pervious one didn't mean anything
+		 * things this often the previous one didn't mean anything
 		 * anyway. This way we only get one for the last time we let it
 		 * run.
 		 */
@@ -1832,7 +1832,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	 * the state of the "node_state" state file. If the the slurmctld is
 	 * "killed" before updating the state file, the slurmctld can send the
 	 * same time_start for the node and cause a "Duplicate entry" error.
-	 * This can particually happen when doing clean starts.
+	 * This can particularly happen when doing clean starts.
 	 */
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" "

@@ -35,7 +35,7 @@ def test_explicit_gres_requested():
 
 
 def test_explicit_gres_not_requested():
-    """Test gres.conf flag explict with --exclusive allocation
+    """Test gres.conf flag explicit with --exclusive allocation
     and not explicitly requesting 'explict' gres"""
 
     without_gres_output = atf.run_command_output(

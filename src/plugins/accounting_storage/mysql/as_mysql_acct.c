@@ -589,7 +589,7 @@ extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		 */
 	}
 
-	/* Transfer over relavant flags from the account to the association. */
+	/* Transfer over relevant flags from the account to the association. */
 	if (acct->flags & SLURMDB_ACCT_FLAG_USER_COORD)
 		add_assoc->assoc.flags |= ASSOC_FLAG_USER_COORD;
 

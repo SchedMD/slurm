@@ -440,7 +440,7 @@ static bool _ucx_progress()
 		req->len = info_tag.length;
 		if (PMIXP_UCX_ACTIVE == req->status) {
 			/* this message is long enough, so it makes
-			 * sense to do the progres one more timer */
+			 * sense to do the progress one more timer */
 			pmixp_rlist_enq(&_rcv_pending, req);
 		} else {
 			pmixp_rlist_enq(&_rcv_complete, req);

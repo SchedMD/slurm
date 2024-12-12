@@ -1083,7 +1083,7 @@ extern int job_resources_bits_copy(job_resources_t *new_job_resrcs_ptr,
 	}
 
 	if (new_core_cnt != from_core_cnt) {
-		error("job_resources_bits_move: core_cnt mis-match (%d != %d)",
+		error("job_resources_bits_move: core_cnt mismatch (%d != %d)",
 		      new_core_cnt, from_core_cnt);
 		rc = SLURM_ERROR;
 	}

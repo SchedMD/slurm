@@ -364,7 +364,7 @@ typedef struct {
 
 typedef struct dbd_node_state_msg {
 	time_t event_time;	/* time of transition */
-	char *extra;		/* arbitrary sting */
+	char *extra;		/* arbitrary string */
 	char *hostlist;		/* name of hosts */
 	char *instance_id;	/* cloud instance id */
 	char *instance_type;	/* cloud instance type */

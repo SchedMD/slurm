@@ -56,7 +56,7 @@ def pytest_addoption(parser):
 
 
 def color_log_level(level: int, **color_kwargs):
-    # Adapted from depricated py.io TerminalWriter source
+    # Adapted from deprecated py.io TerminalWriter source
     # https://py.readthedocs.io/en/latest/_modules/py/_io/terminalwriter.html
     _esctable = dict(
         black=30,
@@ -109,7 +109,7 @@ def color_log_level(level: int, **color_kwargs):
 
 @pytest.fixture(scope="session", autouse=True)
 def session_setup(request):
-    # Set the auto-config and other properties from the opetions
+    # Set the auto-config and other properties from the options
     atf.properties["auto-config"] = request.config.getoption("--auto-config")
     atf.properties["allow-slurmdbd-modify"] = request.config.getoption(
         "--allow-slurmdbd-modify"
@@ -163,7 +163,7 @@ def module_setup(request, tmp_path_factory):
     atf.properties["orig-environment"] = dict(os.environ)
     atf.properties["orig-pypath"] = list(sys.path)
 
-    # Creating a module level tmp_path mimicing what tmp_path does
+    # Creating a module level tmp_path mimicking what tmp_path does
     name = request.node.name
     name = re.sub(r"[\W]", "_", name)
     name = name[:30]

@@ -1185,7 +1185,7 @@ static char *_get_derived_ec_update_str(uint32_t exit_code)
 
 	/*
 	 * Sync with _internal_step_complete() for setting derived_ec on the
-	 * contoller.
+	 * controller.
 	 */
 	if (exit_code == SIG_OOM)
 		derived_str = xstrdup_printf("%u", exit_code);

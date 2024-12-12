@@ -1908,7 +1908,7 @@ static char *_build_shared_gres_details(char *nodes, int node_index,
 	return shared_gres_details_str;
 }
 
-/* Given a job's GRES data structure, return the indecies for selected elements
+/* Given a job's GRES data structure, return the indices for selected elements
  * IN job_gres_list  - job's allocated GRES data structure
  * IN nodes - list of nodes allocated to job
  * OUT gres_detail_cnt - Number of elements (nodes) in gres_detail_str
@@ -2804,7 +2804,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, list_t *job_gres_list,
 	len_j = bit_size(gres_js->gres_bit_alloc[node_offset]);
 	len_s = bit_size(gres_ss->gres_bit_alloc[node_offset]);
 	if (len_j != len_s) {
-		error("gres/%s: %s %ps dealloc, bit_alloc[%d] size mis-match (%d != %d)",
+		error("gres/%s: %s %ps dealloc, bit_alloc[%d] size mismatch (%d != %d)",
 		      gres_state_job->gres_name, __func__,
 		      step_id, node_offset, len_j, len_s);
 		len_j = MIN(len_j, len_s);
@@ -3026,7 +3026,7 @@ static void _gres_2_tres_str_internal(char **tres_str,
 /*
  * Given a job's GRES data structure, return a simple tres string of gres
  * allocated on the node_inx requested
- * IN job_gres_list  - job's alllocated GRES data structure
+ * IN job_gres_list  - job's allocated GRES data structure
  * IN node_inx - position of node in gres_js->gres_cnt_node_alloc
  * IN locked - if the assoc_mgr tres read locked is locked or not
  *

@@ -418,7 +418,7 @@ static bool _get_auth_header(slingshot_rest_conn_t *conn,
 				goto err;
 			}
 		} else {
-			error("%s No http response recieved. Status: %ld",
+			error("%s No http response received. Status: %ld",
 			      conn->name, status);
 			goto err;
 		}

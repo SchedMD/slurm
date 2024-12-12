@@ -153,7 +153,7 @@ Convert range string format to bitmap.
 
 =head3 $array = Slurm::Bitstr::bitfmt2int($str);
 
-Convert $str describing bitmap (output from fmt(), e.g. "0-30,45,50-60") into an array of integer (start/edn) pairs terminated by -1 (e.g. "0, 30, 45, 45, 50, 60, -1").
+Convert $str describing bitmap (output from fmt(), e.g. "0-30,45,50-60") into an array of integer (start/end) pairs terminated by -1 (e.g. "0, 30, 45, 45, 50, 60, -1").
 
 =head3 $str = $bitmap->fmt_hexmask();
 

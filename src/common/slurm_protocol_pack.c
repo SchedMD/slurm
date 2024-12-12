@@ -14050,7 +14050,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		 * The unpack functions should not leave this set on error,
 		 * doing so would likely result in a double xfree() if we
 		 * did not proactively clear it. (Which, instead, may cause
-		 * a memory leak. But that's preferrable.)
+		 * a memory leak. But that's preferable.)
 		 */
 		xassert(!msg->data);
 		msg->data = NULL;

@@ -22,7 +22,7 @@ sacctmgr [<OPTION>] [<COMMAND>]
      add <ENTITY> <SPECS>     add entity
      archive <DUMP/LOAD> <SPECS>
                               Archive past jobs and/or steps, or load them
-                              back into the databse.
+                              back into the database.
      associations             when using show/list will list the
                               associations associated with the entity.
      clear stats              clear server statistics

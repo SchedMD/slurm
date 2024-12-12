@@ -7,7 +7,7 @@
 
 #include <msg.h>
 
-#undef VERSION /* avoid conflicting defintion in config.h */
+#undef VERSION /* avoid conflicting definition in config.h */
 #include "src/common/slurm_xlator.h"
 #include "src/common/job_state_reason.h"
 #include "src/common/list.h"

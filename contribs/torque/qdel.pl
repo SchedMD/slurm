@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 ###############################################################################
 #
-# qdel - deletes slurm jobs in familar pbs format.
+# qdel - deletes slurm jobs in familiar pbs format.
 #
 #
 ###############################################################################

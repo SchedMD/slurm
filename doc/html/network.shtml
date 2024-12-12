@@ -44,7 +44,7 @@ of your choosing.</p>
 is <u>6817</u>. This port can be changed with the
 <a href="slurm.conf.html#OPT_SlurmctldPort">SlurmctldPort</a> slurm.conf
 parameter. Slurmctld listens for incoming requests on that port and responds
-back on the same connection opened by the requestor.</p>
+back on the same connection opened by the requester.</p>
 
 <p>The machine running <b>slurmctld</b> needs to be able to establish
 outbound connections as well. It needs to communicate with <b>slurmdbd</b>
@@ -71,7 +71,7 @@ and slurm.conf (see the <a href="#slurmdbd">slurmdbd</a> section).</p>
 is <u>6819</u>. This port can be changed with the
 <a href="slurmdbd.conf.html#OPT_DbdPort">DbdPort</a> slurmdbd.conf parameter.
 Slurmdbd listens for incoming requests on that port and responds back
-on the same connection opened by the requestor.</p>
+on the same connection opened by the requester.</p>
 
 <p>The machine running <b>slurmdbd</b> needs to be able to reach the
 MySQL or MariaDB server on port <u>3306</u> by default (the port is

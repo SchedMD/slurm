@@ -51,7 +51,7 @@ typedef struct {
 	void (*post_func)();
 	slurmctld_lock_t locks;
 
-	/* Queue structual elements */
+	/* Queue structural elements */
 	const char *msg_name; /* automatically derived from msg_type */
 
 	bool skip_stale; /* skip processing if connection is stale */
