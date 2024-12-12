@@ -5184,6 +5184,7 @@ static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
 		env_variable = "SLURM_GPUS_PER_TASK";
 		_set_tres_per_task_from_sibling_opt_internal(
 			opt, set, cnt, env_variable, optval, str);
+		xfree(str);
 	} else if (optval == 'c') {
 		cnt = opt->cpus_per_task;
 		str = "cpu";
