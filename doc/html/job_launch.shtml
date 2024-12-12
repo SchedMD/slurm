@@ -97,7 +97,7 @@ the <b>slurmd</b> daemon on node zero of the job step allocation. The
 <b>slurmd</b> daemons on other nodes to launch tasks for that job step. The
 degree of fanout in this message forwarding is configurable using the
 <b>TreeWidth</b> parameter. Each <b>slurmd</b> daemon tests that the job has
-not been cancelled since the credential was issued (due to a possible race 
+not been cancelled since the credential was issued (due to a possible race
 condition) and spawns a <b>slurmstepd</b> program to manage the job step.
 Note that the <b>slurmctld</b> daemon is not directly involved in task
 launch in order to minimize the overhead on this critical resource.</p>
@@ -139,7 +139,7 @@ initiated (e.g. time limit reached). The termination ultimately requires
 the <b>slurmctld</b> daemon to notify the <b>slurmd</b> daemons on allocated
 nodes that the job is to be ended. The <b>slurmd</b> daemon does the following:
 <ol>
-<li>Send a SIGCONT and SIGTERM signal to any user tasks</li> 
+<li>Send a SIGCONT and SIGTERM signal to any user tasks</li>
 <li>Wait <b>KillWait</b> seconds if there are any user tasks</li>
 <li>Send a SIGKILL signal to any user tasks</li>
 <li>Wait for all tasks to complete</li>

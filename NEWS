@@ -8887,7 +8887,7 @@ documents those changes that are of interest to users and administrators.
  -- Add an ack reply from slurmd to slurmstepd when job setup is done and the
     job is ready to be executed.
  -- Removed support for authd. authd has not been developed and supported since
-    several years. 
+    several years.
  -- Introduce a new parameter requeue_setup_env_fail in SchedulerParameters.
     A job that fails to setup the environment will be requeued and the node
     drained.

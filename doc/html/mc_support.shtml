@@ -298,7 +298,7 @@ the second distribution (after ":") allows users to specify a distribution
 method for processes within a node and applies to the lowest level of logical
 processors (sockets, core or thread depending on the architecture).
 When a task requires more than one CPU, the <i>cyclic</i> will allocate all
-of those CPUs as a group (i.e. within the same socket if possible) while 
+of those CPUs as a group (i.e. within the same socket if possible) while
 <i>fcyclic</i> would distribute each of those CPU of the in a cyclic fashion
 across sockets.</p>
 

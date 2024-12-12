@@ -222,7 +222,7 @@ extern char *uid_to_string_cached(uid_t uid)
 	uid_cache_entry_t target = {uid, NULL};
 
 	slurm_mutex_lock(&uid_lock);
-	/* 
+	/*
 	 * bsearch and qsort depend on the first field of uid_cache_entry
 	 * being a 16 bit integer uid
 	 */

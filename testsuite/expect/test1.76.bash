@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # It is assumed this script runs on cpu $1
-# 
+#
 # Assumptions for embedded values.
 # o the running slurm is idle
 # o TaskPlugin=task/cgroup

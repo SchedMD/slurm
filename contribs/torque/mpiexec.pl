@@ -195,7 +195,7 @@ mpiexec.slurm supports the following options:
 
 =head1 DESCRIPTION
 
-The B<mpiexec.slurm> 
+The B<mpiexec.slurm>
 
 =head1 OPTIONS
 
@@ -225,7 +225,7 @@ If the process attempts to read from stdin, it will see an end-of-file.
 Send the standard input stream of mpiexec.slurm to all processes. Each
 character typed to mpiexec (or read from a file) is duplicated numproc times,
 and sent to each process. This permits every process to read, for example,
-configuration information from the input stream. 
+configuration information from the input stream.
 
 =item B<-nostdout>
 

@@ -17,7 +17,7 @@ In its simplest configuration, it can be installed and configured in a
 couple of minutes (see <a href="http://www.linux-mag.com/id/7239/1/">
 Caos NSA and Perceus: All-in-one Cluster Software Stack</a>
 by Jeffrey B. Layton).
-More complex configurations can satisfy the job scheduling needs of 
+More complex configurations can satisfy the job scheduling needs of
 world-class computer centers and rely upon a
 <a href="http://www.mysql.com/">MySQL</a> database for archiving
 <a href="accounting.html">accounting</a> records, managing
@@ -59,7 +59,7 @@ These five systems alone contain over 5.7 million cores.
 A few of the systems using Slurm are listed below:
 <ul>
 <li><a href="http://www.top500.org/blog/lists/2013/06/press-release/">
-Tianhe-2</a> designed by 
+Tianhe-2</a> designed by
 <a href="http://english.nudt.edu.cn">The National University of Defense Technology (NUDT)</a>
 in China has 16,000 nodes, each with two Intel Xeon IvyBridge processors and
 three Xeon Phi processors for a total of 3.1 million cores and a peak
@@ -96,12 +96,12 @@ challenges and offering an aggregate peak performance of 2 PetaFlops.</li>
 
 <li><a href="http://www.wcm.bull.com/internet/pr/rend.jsp?DocId=567851&lang=en">
 Tera 100</a> at <a href="http://www.cea.fr">CEA</a>
-with 140,000 Intel Xeon 7500 processing cores, 300TB of 
+with 140,000 Intel Xeon 7500 processing cores, 300TB of
 central memory and a theoretical computing power of 1.25 Petaflops.</li>
 
 <li><a href="http://hpc.msu.ru/?q=node/59">Lomonosov</a>, a
 <a href="http://www.t-platforms.com">T-Platforms</a> system at
-<a href="http://hpc.msu.ru">Moscow State University Research Computing Center</a> 
+<a href="http://hpc.msu.ru">Moscow State University Research Computing Center</a>
 with 52,168 Intel Xeon processing cores and 8,840 NVIDIA GPUs.</li>
 
 <li><a href="http://compeng.uni-frankfurt.de/index.php?id=86">LOEWE-CSC</a>,

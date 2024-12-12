@@ -56,7 +56,7 @@ int main(int ac, char **av)
 		  info("in parent %ld", (long int) getpid());
 		  break;
 	}
-	/* for now, this test passes if we make it through without 
+	/* for now, this test passes if we make it through without
 	 * dumping core
 	 */
 
@@ -64,4 +64,3 @@ int main(int ac, char **av)
 		error("bad_func: %m");
 	return 0;
 }
-	

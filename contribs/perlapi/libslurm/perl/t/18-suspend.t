@@ -28,7 +28,7 @@ $resp = $slurm->submit_batch_job($job_desc);
 ok($resp, "submit batch job") or diag ("submit_batch_job: " . $slurm->strerror());
 $jobid = $resp->{job_id} if $resp;
 
-# 3 
+# 3
 SKIP: {
     skip "not super user", 1 if $>;
     skip "no job", 1 unless $jobid;

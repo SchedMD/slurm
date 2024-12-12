@@ -220,7 +220,7 @@ Return values:
 int PMI_Get_appnum( int *appnum );
 
 /*@
-PMI_Publish_name - publish a name 
+PMI_Publish_name - publish a name
 
 Input parameters:
 . service_name - string representing the service being published
@@ -444,7 +444,7 @@ This function returns the string length required to store a keyval space name.
 
 A routine is used rather than setting a maximum value in 'pmi.h' to allow
 different implementations of PMI to be used with the same executable.  These
-different implementations may allow different maximum lengths; by using a 
+different implementations may allow different maximum lengths; by using a
 routine here, we can interface with a variety of implementations of PMI.
 
 @*/
@@ -544,7 +544,7 @@ Return values:
 
 Notes:
 This function puts the key/value pair in the specified keyval space.  The
-value is not visible to other processes until 'PMI_KVS_Commit()' is called.  
+value is not visible to other processes until 'PMI_KVS_Commit()' is called.
 The function may complete locally.  After 'PMI_KVS_Commit()' is called, the
 value may be retrieved by calling 'PMI_KVS_Get()'.  All keys put to a keyval
 space must be unique to the keyval space.  You may not put more than once
@@ -649,7 +649,7 @@ Return values:
 - PMI_FAIL - failed to get the next keyval pair
 
 Notes:
-This function retrieves the next keyval pair from the specified keyval space.  
+This function retrieves the next keyval pair from the specified keyval space.
 'PMI_KVS_Iter_first()' must have been previously called.  The end of the keyval
 space is specified by returning an empty key string.  The output parameters,
 key and val, must be at least as long as the values returned by
@@ -682,7 +682,7 @@ Input Parameters:
 . cmds - array of command strings
 . argvs - array of argv arrays for each command string
 . maxprocs - array of maximum processes to spawn for each command string
-. info_keyval_sizes - array giving the number of elements in each of the 
+. info_keyval_sizes - array giving the number of elements in each of the
   'info_keyval_vectors'
 . info_keyval_vectors - array of keyval vector arrays
 . preput_keyval_size - Number of elements in 'preput_keyval_vector'
@@ -703,7 +703,7 @@ field refers to the size of the array parameters - 'cmd', 'argvs', 'maxprocs',
 to the size of the 'preput_keyval_vector' array.  The 'preput_keyval_vector'
 contains keyval pairs that will be put in the keyval space of the newly
 created process group before the processes are started.  The 'maxprocs' array
-specifies the desired number of processes to create for each 'cmd' string.  
+specifies the desired number of processes to create for each 'cmd' string.
 The actual number of processes may be less than the numbers specified in
 maxprocs.  The acceptable number of processes spawned may be controlled by
 ``soft'' keyvals in the info arrays.  The ``soft'' option is specified by
@@ -774,7 +774,7 @@ Notes:
 This function removes PMI specific arguments from the command line and
 creates the corresponding 'PMI_keyval_t' structures for them.  It returns
 an array and size to the caller that can then be passed to 'PMI_Spawn_multiple()'.
-The array can be freed by 'PMI_Free_keyvals()'.  The routine 'free()' should 
+The array can be freed by 'PMI_Free_keyvals()'.  The routine 'free()' should
 not be used to free this array as there is no requirement that the array be
 allocated with 'malloc()'.
 
@@ -795,7 +795,7 @@ Return values:
 
 Notes:
  This function frees the data returned by 'PMI_Args_to_keyval' and 'PMI_Parse_option'.
- Using this routine instead of 'free' allows the PMI package to track 
+ Using this routine instead of 'free' allows the PMI package to track
  allocation of storage or to use interal storage as it sees fit.
 @*/
 int PMI_Free_keyvals(PMI_keyval_t keyvalp[], int size);

@@ -57,7 +57,7 @@ job_step_info_to_hv(job_step_info_t *step_info, HV *hv)
 	return 0;
 }
 
-/* 
+/*
  * convert perl HV to job_step_info_t
  */
 int
@@ -141,7 +141,7 @@ job_step_info_response_msg_to_hv(
 	return 0;
 }
 
-/* 
+/*
  * convert perl HV to job_step_info_response_msg_t
  */
 int
@@ -225,7 +225,7 @@ job_step_pids_to_hv(job_step_pids_t *pids, HV *hv)
 {
 	int i;
 	AV *av;
-	
+
 	STORE_FIELD(hv, pids, node_name, charp);
 	/* pid_cnt implied in pid array */
 	av = newAV();

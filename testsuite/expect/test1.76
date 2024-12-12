@@ -97,7 +97,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 			set start_value [string trim $line "\r"]
 			set start_value [string range $start_value 16 end]
 			break
-		} 
+		}
 	}
 	if {$start_value eq ""} {
 		log_error "--cpu-freq=$opt -- can't find starting values"
@@ -113,7 +113,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 			set test_value [string trim $line "\r"]
 			set test_value [string range $test_value 16 end]
 			break
-		} 
+		}
 	}
 	if {$test_value eq ""} {
 		log_error "--cpu-freq=$opt -- can't find test values"
@@ -129,7 +129,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 			set end_value [string trim $line "\r"]
 			set end_value [string range $end_value 16 end]
 			break
-		} 
+		}
 	}
 	if {$end_value eq ""} {
 		log_error "--cpu-freq=$opt -- can't find ending values"

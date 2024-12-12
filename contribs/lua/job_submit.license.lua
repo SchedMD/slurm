@@ -11,7 +11,7 @@
 function _limit_license_cnt(orig_string, license_name, max_count)
 	local i = 0
 	local j = 0
-	local val = 0 
+	local val = 0
 
 	if orig_string == nil then
 		return 0

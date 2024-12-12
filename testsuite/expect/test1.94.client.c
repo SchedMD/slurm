@@ -49,8 +49,8 @@ static void pass_its_neighbor(const int rank, const int size, const int* buf)
 		rank, uts.nodename, *buf);
 }
 
-int main(int argc, char *argv[]) 
-{ 
+int main(int argc, char *argv[])
+{
 	int buf, size, rank, rc = 0;
 	MPI_Comm parent;
 
@@ -70,10 +70,10 @@ int main(int argc, char *argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	//printf("client rank:%d size:%d\n", rank, size);
- 
+
 	buf = rank;	/* we only pass rank */
 	pass_its_neighbor(rank, size, &buf);
- 
-fini:	MPI_Finalize(); 
+
+fini:	MPI_Finalize();
 	exit(rc);
-} 
+}

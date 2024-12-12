@@ -249,7 +249,7 @@ submit_response_msg_to_hv(submit_response_msg_t *resp_msg, HV* hv)
 	return 0;
 }
 
-/* 
+/*
  * convert job_sbcast_cred_msg_t to perl HV
  */
 int

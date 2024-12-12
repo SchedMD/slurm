@@ -11,7 +11,7 @@
 #include "slurm-perl.h"
 
 /*
- * convert trigger_info_t to perl HV 
+ * convert trigger_info_t to perl HV
  */
 int
 trigger_info_to_hv(trigger_info_t *trigger_info, HV *hv)
@@ -29,7 +29,7 @@ trigger_info_to_hv(trigger_info_t *trigger_info, HV *hv)
 }
 
 /*
- * convert perl HV to trigger_info_t 
+ * convert perl HV to trigger_info_t
  */
 int
 hv_to_trigger_info(HV *hv, trigger_info_t *trigger_info)
@@ -47,7 +47,7 @@ hv_to_trigger_info(HV *hv, trigger_info_t *trigger_info)
 }
 
 /*
- * convert trigger_info_msg_t to perl HV 
+ * convert trigger_info_msg_t to perl HV
  */
 int
 trigger_info_msg_to_hv(trigger_info_msg_t *trigger_info_msg, HV *hv)

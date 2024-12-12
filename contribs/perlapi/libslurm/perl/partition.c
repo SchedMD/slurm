@@ -75,7 +75,7 @@ partition_info_to_hv(partition_info_t *part_info, HV *hv)
 	return 0;
 }
 
-/* 
+/*
  * convert perl HV to partition_info_t
  */
 int
@@ -157,7 +157,7 @@ partition_info_msg_to_hv(partition_info_msg_t *part_info_msg, HV *hv)
 	return 0;
 }
 
-/* 
+/*
  * convert perl HV to partition_info_msg_t
  */
 int

@@ -1,4 +1,4 @@
-#! /usr/bin/perl 
+#! /usr/bin/perl
 #
 
 #
@@ -84,7 +84,7 @@ sub getoptions
 	) or usage();
 
 #
-#	Fix the exit code (if set) to reflect the 
+#	Fix the exit code (if set) to reflect the
 #	fact that it represents the leftmost 8 bits
 #	of the integer field.
 #
@@ -205,8 +205,8 @@ B<sjobexitmod> - Modifies a completed job in the slurmdbd
 
 =head1 SYNOPSIS
 
-       sjobexitmod	[-e exit_code] [-r reason_string] [-c cluster_name] JobId 
-       sjobexitmod	-l JobId 
+       sjobexitmod	[-e exit_code] [-r reason_string] [-c cluster_name] JobId
+       sjobexitmod	-l JobId
        sjobexitmod	-h
        sjobexitmod	-man
 

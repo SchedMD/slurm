@@ -61,12 +61,12 @@ task_exit_msg_to_hv(task_exit_msg_t *exit_msg, HV *hv)
 
 /********** callback related functions **********/
 
-/* 
+/*
  * In the C api, callbacks are associated with step_ctx->launch_state.
  * Since the callback functions have no parameter like "ctx" or "sls",
  * there is no simple way to map Perl callback to C callback.
  *
- * So, only one $step_ctx->launch() call is allowed in Perl, until 
+ * So, only one $step_ctx->launch() call is allowed in Perl, until
  * $step_ctx->launch_wait_finish().
  */
 
@@ -88,7 +88,7 @@ static void
 set_thread_perl(void)
 {
 	PerlInterpreter *thr_perl = PERL_GET_CONTEXT;
-	
+
 	if (thr_perl == NULL) {
 		if (main_perl == NULL) { /* should never happen */
 			fprintf(stderr, "error: no main perl context\n");
@@ -97,7 +97,7 @@ set_thread_perl(void)
 		thr_perl = perl_clone(main_perl, CLONEf_COPY_STACKS | CLONEf_KEEP_PTR_TABLE);
 		/* seems no need to call PERL_SET_CONTEXT(thr_perl); */
 
-		/* 
+		/*
 		 * seems perl will destroy the interpreter associated with
 		 * a thread automatically.
 		 */
@@ -127,7 +127,7 @@ set_thread_callbacks(void)
 	CLONE_PARAMS params;
 	thread_callbacks_t *cbs = GET_THREAD_CALLBACKS;
 
-	if (cbs != NULL) 
+	if (cbs != NULL)
 		return;
 
 	cbs = xmalloc(sizeof(thread_callbacks_t));
@@ -139,7 +139,7 @@ set_thread_callbacks(void)
 	params.stashes = NULL;
 	params.flags = CLONEf_COPY_STACKS | CLONEf_KEEP_PTR_TABLE;
 	params.proto_perl = PERL_GET_CONTEXT;
-	
+
 	if (task_start_cb_sv != NULL && task_start_cb_sv != &PL_sv_undef) {
 		cbs->task_start = sv_dup(task_start_cb_sv, &params);
 	}
@@ -152,7 +152,7 @@ set_thread_callbacks(void)
 	}
 }
 
-void 
+void
 set_slcb(HV *callbacks)
 {
 	SV **svp, *cb;

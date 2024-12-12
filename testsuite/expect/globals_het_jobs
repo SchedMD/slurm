@@ -36,7 +36,7 @@ source ./globals
 
 
 # parse the string contained in HET_JOB_ID_SET
-# only use if there are three components to 
+# only use if there are three components to
 # het_job
 
 proc parse_id_set {id_set job_id} {

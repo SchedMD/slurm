@@ -120,7 +120,7 @@ reserve_info_msg_to_hv(reserve_info_msg_t *reserve_info_msg, HV *hv)
 	return 0;
 }
 
-/* 
+/*
  * convert perl HV to reserve_info_msg_t
  */
 int

@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl
 ###############################################################################
 #
 #  sjstat - List attributes of jobs under SLURM control
@@ -97,7 +97,7 @@ use autouse 'Pod::Usage' => qw(pod2usage);
 
 #
 #	Get and display the squeue data.
-#	
+#
 	do_squeue();
 
 	exit;
@@ -159,7 +159,7 @@ sub do_sinfo
 			$p =~ s/\*//;
                        printf("%-9s  %7dMb %5s %6s %7s %6s %6s %10s  %-s\n",
 				$s_part[$i], $s_mem[$i], $s_cpu[$i],
-				$s_total[$i], $s_usable[$i], 
+				$s_total[$i], $s_usable[$i],
 				$s_idle[$i], $MaxNodes{$p},
 				$MaxTime{$p}, $s_feat[$i]);
 		} else {
@@ -192,7 +192,7 @@ sub do_squeue
         	$type = "Nodes";
 		$options =  "\"%8i  %8u %.6D %2t %S %.12l  %.9P %.11M  %1000R\"";
 	} else {
-        	$type = "Procs"; 
+        	$type = "Procs";
 		$options =  "\"%8i  %8u %.6C %2t %S %.12l  %.9P %.11M  %1000R\"";
 	}
 
@@ -285,7 +285,7 @@ sub do_scontrol_part
 		($MaxTime{$part})  = ($tmp =~ m/MaxTime=(\S+)\s+/)  if ($tmp =~ /MaxTime=/);
 		($MaxNodes{$part}) = ($tmp =~ m/MaxNodes=(\S+)\s+/) if ($tmp =~ /MaxNodes=/);
 		$MaxTime{$part}  =~ s/UNLIMITED/UNLIM/ if ($MaxTime{$part});
-		$MaxNodes{$part} =~ s/UNLIMITED/UNLIM/ if ($MaxNodes{$part}); 
+		$MaxNodes{$part} =~ s/UNLIMITED/UNLIM/ if ($MaxNodes{$part});
 	}
 
 	return;
@@ -336,9 +336,9 @@ sub convert_time
 }
 
 
-#                 
+#
 # Get options.
-#                 
+#
 sub get_options
 {
 	GetOptions(
@@ -377,7 +377,7 @@ sub usage
 
    Output is very similar to that of squeue.
 	\n\n");
-	
+
 	exit($eval);
 }
 
@@ -413,13 +413,13 @@ The B<sjstat> command is used to display statistics of jobs under control of SLU
 The output is designed to give information on the resource usage and availablilty,
 as well as information about jobs that are currently active on the machine. This output
 is built using the SLURM utilities, sinfo, squeue and scontrol, the man pages for these
-utilites will provide more information and greater depth of understanding. 
+utilites will provide more information and greater depth of understanding.
 
 =head1 OPTIONS
 
 =over 4
 
-=item B<-h> 
+=item B<-h>
 
 Display a brief help message
 
@@ -427,7 +427,7 @@ Display a brief help message
 
 Display the computing resource information only.
 
-=item B<-man> 
+=item B<-man>
 
 Show the man page.
 
@@ -504,16 +504,16 @@ The following is a basic request for status.
 
      Scheduling pool data:
      -----------------------------------------------------------------------------
-                                Total  Usable   Free   Node   Time  Other       
-     Pool         Memory  Cpus  Nodes   Nodes  Nodes  Limit  Limit  Traits      
+                                Total  Usable   Free   Node   Time  Other
+     Pool         Memory  Cpus  Nodes   Nodes  Nodes  Limit  Limit  Traits
      -----------------------------------------------------------------------------
      pdebug      15000Mb     8     32      32     24     16     30  (null)
      pbatch*     15000Mb     8   1072    1070    174  UNLIM  UNLIM  (null)
 
      Running job data:
      ---------------------------------------------------------------------------------------------------
-                                                      Time        Time            Time                  
-     JobID    User      Nodes Pool      Status        Used       Limit         Started  Master/Other    
+                                                      Time        Time            Time
+     JobID    User      Nodes Pool      Status        Used       Limit         Started  Master/Other
      ---------------------------------------------------------------------------------------------------
      38562    tom           4 pbatch    PD            0:00     1:00:00  01-14T18:11:22  (JobHeld)
 

@@ -69,7 +69,7 @@ function verbose
     else
       prefix="sgather($(hostname)):"
     fi
-    echo "$prefix $2" 
+    echo "$prefix $2"
   fi
 }
 
