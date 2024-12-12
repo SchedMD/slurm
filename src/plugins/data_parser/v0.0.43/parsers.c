@@ -33,6 +33,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <float.h>
 #include <limits.h>
 #include <math.h>
 #include <signal.h>
@@ -2405,11 +2406,51 @@ static int DUMP_FUNC(FLOAT128)(const parser_t *const parser, void *obj,
 {
 	long double *src = obj;
 
-	/* see bug#9674 */
-	if (((uint32_t) *src == INFINITE) || ((uint32_t) *src == NO_VAL))
-		data_set_null(dst);
-	else
-		(void) data_set_float(dst, *src);
+	if (is_complex_mode(args)) {
+		if (IS_INFINITE(*src)) {
+			data_set_float(dst, HUGE_VAL);
+		} else if (IS_CAST_NO_VAL(*src)) {
+			data_set_null(dst);
+		} else if (*src > DBL_MAX) {
+			data_set_float(dst, HUGE_VAL);
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %Lg using +Infinity as place holder",
+				*src);
+		} else if (*src < -DBL_MAX) {
+			data_set_float(dst, -HUGE_VAL);
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %Lg using -Infinity as place holder",
+				*src);
+		} else {
+			data_set_float(dst, *src);
+		}
+	} else {
+		if (IS_INFINITE(*src) || isinf(*src)) {
+			data_set_float(dst, ((double) INFINITE64));
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for Infinity",
+				XSTRINGIFY(INFINITE64));
+		} else if (IS_CAST_NO_VAL(*src) || isnan(*src)) {
+			data_set_float(dst, ((double) NO_VAL));
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for null",
+				XSTRINGIFY(NO_VAL));
+		} else if (*src > DBL_MAX) {
+			data_set_float(dst, HUGE_VAL);
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %Lg using +Infinity as place holder",
+				*src);
+		} else if (*src < -DBL_MAX) {
+			data_set_float(dst, -HUGE_VAL);
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %Lg using -Infinity as place holder",
+				*src);
+		} else {
+			data_set_float(dst, *src);
+		}
+	}
 
 	return SLURM_SUCCESS;
 }
