@@ -42,4 +42,3 @@ SKIP: {
     close($fh);
     ok($print_ok, "print topo record");
 }
-

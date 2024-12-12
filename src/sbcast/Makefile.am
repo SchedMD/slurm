@@ -19,4 +19,3 @@ $(sbcast_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 sbcast_LDFLAGS = $(CMD_LDFLAGS)
-

@@ -65,4 +65,3 @@ foreach $type (0 .. SELECT_NODEDATA_PTR) {
 	  or diag("get select nodeinfo $type: $rc, " . ref($data));
     }
 }
-

@@ -23,4 +23,3 @@ $(cli_filter_lua_la_LIBADD) : force
 else
 EXTRA_cli_filter_lua_la_SOURCES = cli_filter_lua.c
 endif
-

@@ -166,4 +166,3 @@ full documentation
 On success, B<qrls> will exit with a value of zero. On failure, B<qrls> will exit with a value greater than zero.
 
 =cut
-

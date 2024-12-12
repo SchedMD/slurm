@@ -148,4 +148,3 @@ full documentation
 On success, B<qdel> will exit with a value of zero. On failure, B<qdel> will exit with a value greater than zero.
 
 =cut
-

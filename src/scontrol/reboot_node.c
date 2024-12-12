@@ -102,4 +102,3 @@ extern int scontrol_reboot_nodes(char *node_list, bool asap,
 
 	return rc;
 }
-

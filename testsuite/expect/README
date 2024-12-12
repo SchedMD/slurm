@@ -116,4 +116,3 @@ test suite is typically executed many times by the Slurm developers on a
 variety of systems before a Slurm release is made. This has resulted in
 high system reliability. When Slurm bugs are found or features added,
 this test suite is expanded.
-

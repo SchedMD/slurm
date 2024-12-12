@@ -44,4 +44,3 @@ install-exec-local:
 # module so that a debugger can debugger to spawned tasks
 debugger.o : debugger.c
 	$(COMPILE) -c -g -o debugger.o $(srcdir)/debugger.c
-

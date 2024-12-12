@@ -67,5 +67,3 @@ proc parse_id_set {id_set job_id} {
 
 	return $result
 }
-
-

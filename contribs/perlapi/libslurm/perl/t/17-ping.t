@@ -70,4 +70,3 @@ SKIP: {
     $rc = $slurm->reconfigure();
     ok($rc == SLURM_SUCCESS, "reconfigure") || diag("reconfigure: " . $slurm->strerror());
 }
-

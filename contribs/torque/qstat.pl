@@ -762,4 +762,3 @@ If any of the options -a, -i, -r, -u, -n, -G or -M are specified, the normal sin
 On success, B<qstat> will exit with a value of zero. On failure, B<qstat> will exit with a value greater than zero.
 
 =cut
-

@@ -207,4 +207,3 @@ full documentation
 On success, B<bjobs> will exit with a value of zero. On failure, B<bkill> will exit with a value greater than zero.
 
 =cut
-

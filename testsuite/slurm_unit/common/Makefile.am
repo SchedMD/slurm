@@ -51,4 +51,3 @@ pack_test_LDADD = $(LDADD) @CHECK_LIBS@
 reverse_tree_test_CFLAGS = $(MYCFLAGS)
 reverse_tree_test_LDADD = $(LDADD) @CHECK_LIBS@
 endif
-

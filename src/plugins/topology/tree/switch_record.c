@@ -514,4 +514,3 @@ extern void switch_record_validate(void)
 	s_p_hashtbl_destroy(conf_hashtbl);
 	_log_switches();
 }
-

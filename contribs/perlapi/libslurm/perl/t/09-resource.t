@@ -49,4 +49,3 @@ SKIP: {
     $cnt = $slurm->job_cpus_allocated_on_node($resrcs, $node);
     ok($cnt, "job cpus allocated on node") or diag("job_cpus_allocated_on_node: $cnt");
 }
-

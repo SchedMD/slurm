@@ -19,4 +19,3 @@ jobcomp_lua_la_LIBADD  = $(top_builddir)/src/lua/libslurm_lua.la \
 else
 EXTRA_jobcomp_lua_la_SOURCES = jobcomp_lua.c
 endif
-

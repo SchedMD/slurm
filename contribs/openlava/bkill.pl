@@ -151,4 +151,3 @@ full documentation
 On success, B<bkill> will exit with a value of zero. On failure, B<bkill> will exit with a value greater than zero.
 
 =cut
-

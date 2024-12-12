@@ -79,5 +79,3 @@ SKIP: {
     ok(ref($layout) eq "HASH" || $slurm->get_errno() == ESLURM_INVALID_JOB_ID, "job step get pids")
 	or diag("job_step_get_pids: " . $slurm->strerror());
 }
-
-

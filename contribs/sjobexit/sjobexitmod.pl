@@ -271,4 +271,3 @@ Report bugs to <pdesr@llnl.gov>
 =head1 SEE ALSO
 
 sacctmgr,sacct
-

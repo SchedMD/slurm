@@ -98,4 +98,3 @@ extern bool common_topo_route_part(void);
 extern int common_topo_choose_nodes(topology_eval_t *topo_eval);
 
 #endif
-
