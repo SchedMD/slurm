@@ -26,6 +26,13 @@ documents those changes that are of interest to users and administrators.
  -- Fix race condition in stepmgr step completion handling.
  -- Fix slurmctld segfault with stepmgr and MpiParams when running a job array.
  -- Fix requeued jobs keeping their priority until the decay thread happens.
+ -- slurmctld - Fix crash and possible split brain issue if the
+    backup controller handles an scontrol reconfigure while in control
+    before the primary resumes operation.
+ -- Fix stepmgr not getting dynamic node addrs from the controller
+ -- stepmgr - avoid "Unexpected missing socket" errors.
+ -- Fix `scontrol show steps` with dynamic stepmgr
+ -- Support IPv6 in configless mode.
 
 * Changes in Slurm 24.05.4
 ==========================
