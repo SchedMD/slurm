@@ -5087,39 +5087,15 @@ static bool _get_gpu_cnt_and_str(slurm_opt_t *opt, int *gpu_cnt, char **gpu_str)
 	return true;
 }
 
-static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
+static void _set_tres_per_task_from_sibling_opt_internal(slurm_opt_t *opt,
+							 bool set,
+							 int cnt,
+							 char *env_variable,
+							 int optval,
+							 char *str)
 {
-	bool set;
-	int tmp_int, cnt = 0, opt_index, tpt_index;
-	char *opt_in_tpt_ptr = NULL, *str = NULL;
-	char *env_variable;
-
-	/*
-	 * See if the sibling option was set with tres-per-task
-	 * Either one specified on the command line overrides the other in the
-	 * environment.
-	 * They can both be in the environment because specifying just
-	 * --tres-per-task=cpu=# for example, will cause SLURM_CPUS_PER_TASK to
-	 * be set as well. So if they're both in the environment, verify that
-	 * they're the same.
-	 *
-	 * If tres-per-task or a sibling option are set, then make sure that
-	 * both are set to the same thing:
-	 */
-
-	if (optval == LONG_OPT_GPUS_PER_TASK) {
-		set = _get_gpu_cnt_and_str(opt, &cnt, &str);
-		env_variable = "SLURM_GPUS_PER_TASK";
-	} else if (optval == 'c') {
-		cnt = opt->cpus_per_task;
-		str = "cpu";
-		set = opt->cpus_set;
-		env_variable = "SLURM_CPUS_PER_TASK";
-	} else {
-		/* This function only supports [gpus|cpus]_per_task */
-		xassert(0); /* let me know if it isn't */
-		return;
-	}
+	int tmp_int, opt_index, tpt_index;
+	char *opt_in_tpt_ptr = NULL;
 
 	opt_in_tpt_ptr = xstrcasestr(opt->tres_per_task, str);
 	if (!opt_in_tpt_ptr) {
@@ -5181,6 +5157,45 @@ static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
 	    _option_index_set_by_cli(opt, tpt_index))
 		info("Ignoring %s since --tres-per-task=%s= was given as a command line option.",
 		     env_variable, str);
+}
+
+static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
+{
+	bool set;
+	int cnt = 0;
+	char *str = NULL;
+	char *env_variable;
+
+	/*
+	 * See if the sibling option was set with tres-per-task
+	 * Either one specified on the command line overrides the other in the
+	 * environment.
+	 * They can both be in the environment because specifying just
+	 * --tres-per-task=cpu=# for example, will cause SLURM_CPUS_PER_TASK to
+	 * be set as well. So if they're both in the environment, verify that
+	 * they're the same.
+	 *
+	 * If tres-per-task or a sibling option are set, then make sure that
+	 * both are set to the same thing:
+	 */
+
+	if (optval == LONG_OPT_GPUS_PER_TASK) {
+		set = _get_gpu_cnt_and_str(opt, &cnt, &str);
+		env_variable = "SLURM_GPUS_PER_TASK";
+		_set_tres_per_task_from_sibling_opt_internal(
+			opt, set, cnt, env_variable, optval, str);
+	} else if (optval == 'c') {
+		cnt = opt->cpus_per_task;
+		str = "cpu";
+		set = opt->cpus_set;
+		env_variable = "SLURM_CPUS_PER_TASK";
+
+		_set_tres_per_task_from_sibling_opt_internal(
+			opt, set, cnt, env_variable, optval, str);
+	} else {
+		/* This function only supports [gpus|cpus]_per_task */
+		xassert(0); /* let me know if it isn't */
+	}
 }
 
 /*
