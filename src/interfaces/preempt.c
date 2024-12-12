@@ -135,9 +135,12 @@ static uint16_t _job_preempt_mode_internal(job_record_t *job_ptr)
 {
 	uint16_t data = (uint16_t)PREEMPT_MODE_OFF;
 
-	if ((*(ops.get_data))(job_ptr, PREEMPT_DATA_MODE, &data) !=
-	    SLURM_SUCCESS)
-		return data;
+	(void) (*(ops.get_data))(job_ptr, PREEMPT_DATA_MODE, &data);
+
+	/* --signal=R jobs must be requeue or cancel */
+	if ((job_ptr->warn_flags & KILL_JOB_RESV) &&
+	    (data != PREEMPT_MODE_REQUEUE))
+		data = PREEMPT_MODE_CANCEL;
 
 	return data;
 }

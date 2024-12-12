@@ -9559,6 +9559,12 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 		debug("%s: job working directory has to be set", __func__);
 		return ESLURM_MISSING_WORK_DIR;
 	}
+	if ((job_desc_msg->warn_flags & KILL_JOB_RESV) &&
+	    (slurm_conf.preempt_mode == PREEMPT_MODE_OFF)) {
+		debug("%s: job specified \"R:\" option of --signal, which is incompatible with PreemptMode=OFF",
+		     __func__);
+		return ESLURM_PREEMPTION_REQUIRED;
+	}
 	if (job_desc_msg->contiguous == NO_VAL16)
 		job_desc_msg->contiguous = 0;
 

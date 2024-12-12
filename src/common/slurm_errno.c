@@ -480,6 +480,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Max powered up nodes reached" },
 	{ ERRTAB_ENTRY(ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE),
 	  "Requested topology configuration is not available" },
+	{ ERRTAB_ENTRY(ESLURM_PREEMPTION_REQUIRED),
+	  "Preemption is required but is disabled on this system" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),
