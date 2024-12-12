@@ -1,0 +1,8 @@
+[flake8]
+ignore = E203, E226, E231, E266, E501, W503, F403, E402, C901
+max-line-length = 89
+max-complexity = 30
+select = B,C,E,F,W,T4,B9
+per-file-ignores =
+    # openapi_client imported but unused, ignore
+    **/tests/test_112_*.py:F401
