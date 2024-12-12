@@ -87,6 +87,8 @@ extern struct addrinfo *xgetaddrinfo_port(const char *hostname,
 					  uint16_t port);
 extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen);
 
+extern int host_has_addr_family(const char *hostname, const char *srv,
+				bool *ipv4, bool *ipv6);
 /* Functions responsible for cleanup of getnameinfo cache */
 extern void getnameinfo_cache_destroy(void *obj);
 extern void getnameinfo_cache_purge(void);

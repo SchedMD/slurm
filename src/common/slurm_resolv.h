@@ -40,6 +40,8 @@ typedef struct {
 	uint16_t priority;
 	uint16_t port;
 	char hostname[1024];
+	bool has_ipv4;
+	bool has_ipv6;
 } ctl_entry_t;
 
 /*
