@@ -7,9 +7,6 @@ Documentation for older versions of Slurm are distributed with the source, or
 may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </b></p>
 
-<p>Also see <a href="tutorials.html">Tutorials</a> and
-<a href="publications.html">Publications and Presentations</a>.</p>
-
 <h2 id="users">Slurm Users
 <a class="slurm_link" href="#users"></a></h2>
 <ul>

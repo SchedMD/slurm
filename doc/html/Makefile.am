@@ -65,7 +65,6 @@ generated_html = \
 	priority_multifactor3.html \
 	programmer_guide.html \
 	prolog_epilog.html \
-	publications.html \
 	qos.html \
 	quickstart_admin.html \
 	quickstart.html \
