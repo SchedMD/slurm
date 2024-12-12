@@ -56,12 +56,14 @@ REQUIRED_PYTHON_VERSION = "3.8"
 def main():
     req_ver = [int(x) for x in REQUIRED_PYTHON_VERSION.split(".")]
     if sys.version_info[0] < req_ver[0] or sys.version_info[1] < req_ver[1]:
-        sys.exit(f"""
+        sys.exit(
+            f"""
 *** PYTHON VERSION ERROR ***
 
 runtests requires python3 version {REQUIRED_PYTHON_VERSION} or greater, got {sys.version}.
 
-- Exiting -""")
+- Exiting -"""
+        )
     else:
         perform(
             "Executing ./run-tests",
@@ -210,9 +212,8 @@ testsuite.conf file in this directory as outlined in the README.
             reset_suite_run_ids,
             db_name,
             ["slurm_unit", "expect", "python"],
-            verbose=False
+            verbose=False,
         )
-
 
     # Run unit tests
     aborted = False
@@ -276,7 +277,6 @@ testsuite.conf file in this directory as outlined in the README.
             if regressions_status == "ABORTED":
                 aborted = True
 
-
     # Print summary data
     print_run_summary(
         [
@@ -310,8 +310,9 @@ def print_run_summary(run_tup_list):
             status = stats_dict["status"]
 
             # Sort fails so that they are in order
-            fails.sort(key=lambda x : [int(num_group)
-                                       for num_group in re.findall(f"\d+", x)])
+            fails.sort(
+                key=lambda x: [int(num_group) for num_group in re.findall(f"\d+", x)]
+            )
 
             if completions + skips + num_fails > 0:
                 print_frmt(frmt, f"{msg}:", "")

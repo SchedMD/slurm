@@ -4,10 +4,12 @@
 import atf
 import pytest
 
+
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_accounting()
     atf.require_slurm_running()
+
 
 def test_ping():
     """Verify sacctmgr ping works"""
@@ -16,4 +18,6 @@ def test_ping():
 
     config_dict = atf.get_config(quiet=True)
 
-    assert output == f"slurmdbd(primary) at {config_dict['AccountingStorageHost']} is UP\n"
+    assert (
+        output == f"slurmdbd(primary) at {config_dict['AccountingStorageHost']} is UP\n"
+    )

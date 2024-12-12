@@ -745,7 +745,9 @@ def stop_slurmdbd(quiet=False):
         "sacctmgr shutdown", user=properties["slurm-user"], quiet=quiet
     )
     if results["exit_code"] != 0:
-        pytest.fail(f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}")
+        pytest.fail(
+            f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}"
+        )
 
     # Verify that slurmdbd is not running (we might have to wait for rollups to complete)
     if not repeat_until(
@@ -953,9 +955,9 @@ def require_openapi_generator(version="7.3.0"):
     os.environ["OPENAPI_GENERATOR_VERSION"] = version
 
     # Work around: https://github.com/OpenAPITools/openapi-generator/issues/13684
-    os.environ[
-        "JAVA_OPTS"
-    ] = "--add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED"
+    os.environ["JAVA_OPTS"] = (
+        "--add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED"
+    )
 
     ogc_version = (
         run_command_output("openapi-generator-cli version").strip().split("\n")[-1]
@@ -3677,9 +3679,9 @@ def require_nodes(requested_node_count, requirements_list=[]):
                 new_node_dict["NodeName"] = template_node_prefix + str(new_indices[0])
                 new_node_dict["Port"] = base_port - template_node_index + new_indices[0]
             else:
-                new_node_dict[
-                    "NodeName"
-                ] = f"{template_node_prefix}[{list_to_range(new_indices)}]"
+                new_node_dict["NodeName"] = (
+                    f"{template_node_prefix}[{list_to_range(new_indices)}]"
+                )
                 new_node_dict["Port"] = list_to_range(
                     list(
                         map(lambda x: base_port - template_node_index + x, new_indices)

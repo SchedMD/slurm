@@ -413,7 +413,14 @@ def test_add_federation_existing_cluster():
     )
     child = pexpect.spawn(
         "sudo",
-        ["--preserve-env=PATH", "-nu", atf.properties["slurm-user"], "/bin/bash", "-lc", command],
+        [
+            "--preserve-env=PATH",
+            "-nu",
+            atf.properties["slurm-user"],
+            "/bin/bash",
+            "-lc",
+            command,
+        ],
         encoding="utf-8",
     )
     assert (

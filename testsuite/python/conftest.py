@@ -96,10 +96,10 @@ def color_log_level(level, **color_kwargs):
                     + "\x1b[0m"
                 )
 
-                formatter._level_to_fmt_mapping[
-                    level
-                ] = formatter.LEVELNAME_FMT_REGEX.sub(
-                    colorized_formatted_levelname, formatter._fmt
+                formatter._level_to_fmt_mapping[level] = (
+                    formatter.LEVELNAME_FMT_REGEX.sub(
+                        colorized_formatted_levelname, formatter._fmt
+                    )
                 )
 
 
