@@ -5057,28 +5057,34 @@ extern void slurm_option_update_tres_per_task(int cnt, char *tres_str,
 	*tres_per_task_p = tres_per_task;
 }
 
-static bool _get_gpu_cnt_and_str(slurm_opt_t *opt, int *gpu_cnt, char **gpu_str)
+static bool _get_gpu_cnt_and_str(char **gpus_per_task, int *gpu_cnt,
+				 char **gpu_str)
 {
 	char *num_str = NULL, sep_char;
 
-	if (!opt->gpus_per_task)
+	if (!*gpus_per_task || !(*gpus_per_task)[0])
 		return false;
 
 	xstrcat(*gpu_str, "gres/gpu");
 
-	if ((num_str = xstrstr(opt->gpus_per_task, ":")))
+	if ((num_str = xstrstr(*gpus_per_task, ":")))
 		sep_char = ':';
-	else if ((num_str = xstrstr(opt->gpus_per_task, "=")))
+	else if ((num_str = xstrstr(*gpus_per_task, "=")))
 		sep_char = '=';
 
 	if (num_str) { /* Has type string */
 		*num_str = '\0';
 		/* Add type string to gpu_str */
-		xstrfmtcat(*gpu_str, ":%s", opt->gpus_per_task);
+		xstrfmtcat(*gpu_str, ":%s", *gpus_per_task);
 		*num_str = sep_char;
 		num_str += 1;
+		*gpus_per_task = xstrchr(*gpus_per_task, ',');
+		if (*gpus_per_task)
+			(*gpus_per_task)++;
 	} else {
-		num_str = opt->gpus_per_task;
+		num_str = *gpus_per_task;
+		/* since non-typed can't be with typed this isn't a list */
+		*gpus_per_task = NULL;
 	}
 
 	if (gpu_cnt)
@@ -5180,11 +5186,14 @@ static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
 	 */
 
 	if (optval == LONG_OPT_GPUS_PER_TASK) {
-		set = _get_gpu_cnt_and_str(opt, &opt_cnt, &str);
+		char *save_ptr = opt->gpus_per_task;
 		env_variable = "SLURM_GPUS_PER_TASK";
-		_set_tres_per_task_from_sibling_opt_internal(
-			opt, set, opt_cnt, env_variable, optval, str);
-		xfree(str);
+		while (save_ptr && save_ptr[0]) {
+			set = _get_gpu_cnt_and_str(&save_ptr, &opt_cnt, &str);
+			_set_tres_per_task_from_sibling_opt_internal(
+				opt, set, opt_cnt, env_variable, optval, str);
+			xfree(str);
+		}
 	} else if (optval == 'c') {
 		opt_cnt = opt->cpus_per_task;
 		str = "cpu";
