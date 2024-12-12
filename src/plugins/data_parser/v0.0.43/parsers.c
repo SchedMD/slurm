@@ -3029,9 +3029,30 @@ static int DUMP_FUNC(UINT32)(const parser_t *const parser, void *obj,
 {
 	uint32_t *src = obj;
 
-	log_flag(DATA, "%s: uint32_t 0x%" PRIxPTR "=%u", __func__,
-		 (uintptr_t) src, *src);
-	(void) data_set_int(dst, *src);
+	if (is_complex_mode(args)) {
+		if (IS_INFINITE(*src))
+			data_set_float(dst, HUGE_VAL);
+		else if (IS_CAST_NO_VAL(*src))
+			data_set_null(dst);
+		else
+			data_set_int(dst, *src);
+	} else {
+		if (IS_INFINITE(*src)) {
+			data_set_int(dst, INFINITE);
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for Infinity",
+				XSTRINGIFY(INFINITE));
+		} else if (IS_NO_VAL(*src)) {
+			data_set_int(dst, NO_VAL);
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for null",
+				XSTRINGIFY(NO_VAL));
+		} else {
+			data_set_int(dst, *src);
+		}
+	}
 
 	return SLURM_SUCCESS;
 }
