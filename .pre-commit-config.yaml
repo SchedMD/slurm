@@ -1,3 +1,7 @@
 ---
 exclude: configure|.+\.in|.+\.m4|LICENSE.OpenSSL
-repos: []
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-merge-conflict
