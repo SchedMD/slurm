@@ -178,8 +178,8 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 	int rc = SLURM_SUCCESS;
 
 	if (use_cpuset &&
-	    (task_cgroup_cpuset_add_pid(
-		    step->task[node_tid]->pid) != SLURM_SUCCESS))
+	    (task_cgroup_cpuset_add_pid(step, step->task[node_tid]->pid,
+					global_tid) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
 	if (use_memory &&
@@ -242,7 +242,8 @@ extern int task_p_add_pid(pid_t pid)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (use_cpuset && (task_cgroup_cpuset_add_pid(pid) != SLURM_SUCCESS))
+	if (use_cpuset &&
+	    (task_cgroup_cpuset_add_extern_pid(pid) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
 	if (use_memory && (task_cgroup_memory_add_extern_pid(pid) !=
