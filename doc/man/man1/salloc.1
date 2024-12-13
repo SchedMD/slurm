@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "October 2024" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "December 2024" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -2011,7 +2011,9 @@ By default, no signal is sent before the job's end time.
 If a \fIsig_num\fR is specified without any \fIsig_time\fR,
 the default time will be 60 seconds.
 Use the "R:" option to allow this job to overlap with a reservation with
-MaxStartDelay set.
+MaxStartDelay set. If the "R:" option is used, preemption must be enabled on the
+system, and if the job is preempted it will be requeued if allowed otherwise the
+job will be canceled.
 To have the signal sent at preemption time see the \fBsend_user_signal\fR
 \fBPreemptParameter\fR.
 .IP
