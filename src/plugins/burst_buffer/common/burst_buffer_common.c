@@ -729,33 +729,6 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 	}
 }
 
-extern int bb_open_state_file(const char *file_name, char **state_file)
-{
-	int state_fd;
-	struct stat stat_buf;
-
-	*state_file = xstrdup(slurm_conf.state_save_location);
-	xstrfmtcat(*state_file, "/%s", file_name);
-	state_fd = open(*state_file, O_RDONLY);
-	if (state_fd < 0) {
-		error("Could not open burst buffer state file %s: %m",
-		      *state_file);
-	} else if (fstat(state_fd, &stat_buf) < 0) {
-		error("Could not stat burst buffer state file %s: %m",
-		      *state_file);
-		(void) close(state_fd);
-	} else if (stat_buf.st_size < 4) {
-		error("Burst buffer state file %s too small", *state_file);
-		(void) close(state_fd);
-	} else	/* Success */
-		return state_fd;
-
-	error("NOTE: Trying backup burst buffer state save file. Information may be lost!");
-	xstrcat(*state_file, ".old");
-	state_fd = open(*state_file, O_RDONLY);
-	return state_fd;
-}
-
 static void _pack_alloc(struct bb_alloc *bb_alloc, buf_t *buffer,
 			uint16_t protocol_version)
 {
