@@ -44,5 +44,6 @@ extern void unlock_state_files(void);
 
 extern int save_buf_to_state(const char *target_file, buf_t *buf,
 			     uint32_t *high_buffer_size);
+extern buf_t *state_save_open(const char *target_file, char **state_file);
 
 #endif
