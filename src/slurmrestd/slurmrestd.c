@@ -138,6 +138,12 @@ static http_status_code_t *response_status_codes = NULL;
 extern parsed_host_port_t *parse_host_port(const char *str);
 extern void free_parse_host_port(parsed_host_port_t *parsed);
 
+static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
+				   const plugin_handle_t id, void *arg)
+{
+	fprintf(stdout, "%s\n", full_type);
+}
+
 /* SIGPIPE handler - mostly a no-op */
 static void _sigpipe_handler(conmgr_callback_args_t conmgr_args, void *arg)
 {
@@ -629,12 +635,6 @@ static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
 
 	debug5("%s: auth plugin type:%s path:%s",
 	       __func__, full_type, fq_path);
-}
-
-static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
-				   const plugin_handle_t id, void *arg)
-{
-	fprintf(stdout, "%s\n", full_type);
 }
 
 static void _on_signal_interrupt(conmgr_callback_args_t conmgr_args, void *arg)
