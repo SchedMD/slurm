@@ -5882,13 +5882,8 @@ extern int load_assoc_usage(void)
 	if (!assoc_mgr_assoc_list)
 		return SLURM_SUCCESS;
 
-	/* read the file */
-	state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(state_file, "/assoc_usage");	/* Always ignore .old file */
-	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
-
-	if (!(buffer = create_mmap_buf(state_file))) {
+	if (!(buffer = state_save_open("assoc_usage", &state_file))) {
 		debug2("No Assoc usage file (%s) to recover", state_file);
 		xfree(state_file);
 		assoc_mgr_unlock(&locks);
@@ -5995,12 +5990,8 @@ extern int load_qos_usage(void)
 		return SLURM_SUCCESS;
 
 	/* read the file */
-	state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(state_file, "/qos_usage");	/* Always ignore .old file */
-	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
-
-	if (!(buffer = create_mmap_buf(state_file))) {
+	if (!(buffer = state_save_open("qos_usage", &state_file))) {
 		debug2("No Qos usage file (%s) to recover", state_file);
 		xfree(state_file);
 		assoc_mgr_unlock(&locks);
@@ -6082,13 +6073,9 @@ extern int load_assoc_mgr_last_tres(void)
 	dbd_list_msg_t *msg = NULL;
 	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK, .qos = WRITE_LOCK };
 
-	/* read the file Always ignore .old file */
-	state_file = xstrdup_printf("%s/last_tres",
-				    slurm_conf.state_save_location);
-	//info("looking at the %s file", state_file);
+	/* read the file */
 	assoc_mgr_lock(&locks);
-
-	if (!(buffer = create_mmap_buf(state_file))) {
+	if (!(buffer = state_save_open("last_tres", &state_file))) {
 		debug2("No last_tres file (%s) to recover", state_file);
 		xfree(state_file);
 		assoc_mgr_unlock(&locks);
@@ -6156,12 +6143,8 @@ extern int load_assoc_mgr_state(void)
 				   .wckey = WRITE_LOCK };
 
 	/* read the file */
-	state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(state_file, "/assoc_mgr_state"); /* Always ignore .old file */
-	//info("looking at the %s file", state_file);
 	assoc_mgr_lock(&locks);
-
-	if (!(buffer = create_mmap_buf(state_file))) {
+	if (!(buffer = state_save_open("assoc_mgr_state", &state_file))) {
 		debug2("No association state file (%s) to recover", state_file);
 		xfree(state_file);
 		assoc_mgr_unlock(&locks);
