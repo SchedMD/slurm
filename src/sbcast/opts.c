@@ -67,14 +67,41 @@
 
 /* FUNCTIONS */
 static void _fill_in_selected_step_from_env(void);
+static void _fill_in_selected_steps_from_env(char *het_size_str);
 static void     _help( void );
 static uint32_t _map_size( char *buf );
 static void     _print_options( void );
 static void     _usage( void );
 
+static void _fill_in_selected_steps_from_env(char *het_size_str)
+{
+	char *name = NULL, *job_id_str = NULL;
+	uint32_t het_size;
+
+	if (parse_uint32(het_size_str, &het_size) || (het_size < 2))
+		fatal("Invalid environment SLURM_HET_SIZE value: %s",
+		      het_size_str);
+
+	params.selected_steps = list_create(slurm_destroy_selected_step);
+
+	for (int i = 0; i < het_size; i++) {
+		name = xstrdup_printf("SLURM_JOB_ID_HET_GROUP_%d", i);
+		if (!(job_id_str = getenv(name)))
+			fatal("getenv(%s) returned NULL", name);
+		xfree(name);
+		list_append(params.selected_steps,
+			    slurm_parse_step_str(job_id_str));
+	}
+}
+
 static void _fill_in_selected_step_from_env(void)
 {
 	char *env_val = NULL;
+
+	if ((env_val = getenv("SLURM_HET_SIZE"))) {
+		_fill_in_selected_steps_from_env(env_val);
+		return;
+	}
 
 	if (!(env_val = getenv("SLURM_JOB_ID"))) {
 		error("Need a job id to run this command.  "
