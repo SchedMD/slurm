@@ -141,17 +141,21 @@ static bool thread_shutdown = false;
 static int _load_pending_jobs(void)
 {
 	int i, rc = SLURM_SUCCESS;
-	char *job_data = NULL;
+	char *job_data = NULL, *state_file = NULL;
 	uint32_t job_cnt = 0;
 	buf_t *buffer = NULL;
 	struct job_node *jnode;
 
 	slurm_mutex_lock(&save_lock);
-	if (!(buffer = jobcomp_common_load_state_file(save_state_file))) {
+	if (!(buffer = state_save_open(save_state_file, &state_file))) {
+		error("Could not open jobcomp state file %s: %m", state_file);
+		error("NOTE: Finished jobs may be lost!");
 		slurm_mutex_unlock(&save_lock);
+		xfree(state_file);
 		return SLURM_ERROR;
 	}
 	slurm_mutex_unlock(&save_lock);
+	xfree(state_file);
 
 	safe_unpack32(&job_cnt, buffer);
 	for (i = 0; i < job_cnt; i++) {
