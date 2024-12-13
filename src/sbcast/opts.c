@@ -66,10 +66,25 @@
 /* getopt_long options, integers but not characters */
 
 /* FUNCTIONS */
+static void _fill_in_selected_step_from_env(void);
 static void     _help( void );
 static uint32_t _map_size( char *buf );
 static void     _print_options( void );
 static void     _usage( void );
+
+static void _fill_in_selected_step_from_env(void)
+{
+	char *env_val = NULL;
+
+	if (!(env_val = getenv("SLURM_JOB_ID"))) {
+		error("Need a job id to run this command.  "
+		      "Run from within a Slurm job or use the "
+		      "--jobid option.");
+		exit(1);
+	}
+	slurm_destroy_selected_step(params.selected_step);
+	params.selected_step = slurm_parse_step_str(env_val);
+}
 
 /*
  * parse_command_line, fill in params data structure with data
@@ -232,14 +247,7 @@ extern void parse_command_line(int argc, char **argv)
 	if ((!params.selected_step ||
 	     (params.selected_step->step_id.job_id == NO_VAL)) &&
 	    !(params.flags & BCAST_FLAG_NO_JOB)) {
-		if (!(env_val = getenv("SLURM_JOB_ID"))) {
-			error("Need a job id to run this command.  "
-			      "Run from within a Slurm job or use the "
-			      "--jobid option.");
-			exit(1);
-		}
-		slurm_destroy_selected_step(params.selected_step);
-		params.selected_step = slurm_parse_step_str(env_val);
+		_fill_in_selected_step_from_env();
 	}
 
 	params.src_fname = xstrdup(argv[optind]);
