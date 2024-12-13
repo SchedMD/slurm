@@ -278,7 +278,6 @@ static uint32_t _max_switch_wait(uint32_t input_wait);
 static void _move_to_purge_jobs_list(void *job_entry);
 static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time);
-static buf_t *_open_job_state_file(char **state_file);
 static time_t _get_last_job_state_write_time(void);
 static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				      uint16_t protocol_version);
@@ -1087,30 +1086,6 @@ static int _check_for_part_assocs(list_t *part_ptr_list,
 	return SLURM_SUCCESS;
 }
 
-/* Open the job state save file, or backup if necessary.
- * state_file IN - the name of the state save file used
- * RET the file description to read from or error code
- */
-static buf_t *_open_job_state_file(char **state_file)
-{
-	buf_t *buf;
-
-	xassert(state_file);
-	xassert(!*state_file);
-
-	*state_file = xstrdup_printf("%s/job_state",
-	                             slurm_conf.state_save_location);
-
-	if (!(buf = create_mmap_buf(*state_file)))
-		error("Could not open job state file %s: %m", *state_file);
-	else
-		return buf;
-
-	error("NOTE: Trying backup state save file. Jobs may be lost!");
-	xstrcat(*state_file, ".old");
-	return create_mmap_buf(*state_file);
-}
-
 extern void set_job_failed_assoc_qos_ptr(job_record_t *job_ptr)
 {
 	if (!job_ptr->assoc_ptr && (job_ptr->state_reason == FAIL_ACCOUNT)) {
@@ -1213,7 +1188,7 @@ static time_t _get_last_job_state_write_time(void)
 	uint16_t protocol_version = NO_VAL16;
 
 	/* read the file */
-	if (!(buffer = _open_job_state_file(&state_file))) {
+	if (!(buffer = state_save_open("job_state", &state_file))) {
 		info("No job state file (%s) found", state_file);
 		error_code = ENOENT;
 	}
@@ -1250,15 +1225,12 @@ extern int load_all_job_state(void)
 	uint16_t protocol_version = NO_VAL16;
 
 	/* read the file */
-	lock_state_files();
-	if (!(buffer = _open_job_state_file(&state_file))) {
+	if (!(buffer = state_save_open("job_state", &state_file))) {
 		info("No job state file (%s) to recover", state_file);
 		xfree(state_file);
-		unlock_state_files();
 		return ENOENT;
 	}
 	xfree(state_file);
-	unlock_state_files();
 
 	job_id_sequence = MAX(job_id_sequence, slurm_conf.first_job_id);
 
@@ -1330,15 +1302,12 @@ extern int load_last_job_id( void )
 	uint16_t protocol_version = NO_VAL16;
 
 	/* read the file */
-	lock_state_files();
-	if (!(buffer = _open_job_state_file(&state_file))) {
+	if (!(buffer = state_save_open("job_state", &state_file))) {
 		debug("No job state file (%s) to recover", state_file);
 		xfree(state_file);
-		unlock_state_files();
 		return ENOENT;
 	}
 	xfree(state_file);
-	unlock_state_files();
 
 	safe_unpackstr(&ver_str, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
