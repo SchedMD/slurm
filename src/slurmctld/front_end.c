@@ -84,31 +84,6 @@ static void _dump_front_end_state(front_end_record_t *front_end_ptr,
 	pack16   (front_end_ptr->protocol_version, buffer);
 }
 
-
-/*
- * Open the front_end node state save file, or backup if necessary.
- * state_file IN - the name of the state save file used
- * RET the file description to read from or error code
- */
-static buf_t *_open_front_end_state_file(char **state_file)
-{
-	buf_t *buf;
-
-	*state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(*state_file, "/front_end_state");
-
-	if (!(buf = create_mmap_buf(*state_file)))
-		error("Could not open front_end state file %s: %m",
-		      *state_file);
-	else
-		return buf;
-
-	error("NOTE: Trying backup front_end_state save file. Information may "
-	      "be lost!");
-	xstrcat(*state_file, ".old");
-	return create_mmap_buf(*state_file);
-}
-
 /*
  * _pack_front_end - dump all configuration information about a specific
  *	front_end node in machine independent form (for network transmission)
@@ -715,15 +690,12 @@ extern int load_all_front_end_state(bool state_only)
 	uint16_t protocol_version = NO_VAL16;
 
 	/* read the file */
-	lock_state_files();
-	if (!(buffer = _open_front_end_state_file(&state_file))) {
+	if (!(buffer = state_save_open("front_end_state", &state_file))) {
 		info("No node state file (%s) to recover", state_file);
 		xfree(state_file);
-		unlock_state_files();
 		return ENOENT;
 	}
 	xfree(state_file);
-	unlock_state_files();
 
 	safe_unpackstr(&ver_str, buffer);
 	debug3("Version string in front_end_state header is %s", ver_str);
