@@ -1387,6 +1387,9 @@ static int _build_tasks_per_node_sock(struct job_resources *job_res,
 			   job_res->tasks_per_node[job_node_inx]) {
 			task_per_node_limit =
 				job_res->tasks_per_node[job_node_inx];
+			cpus_per_task =
+				MAX(1, job_res->cpus[job_node_inx] /
+				    job_res->tasks_per_node[job_node_inx]);
 		} else {
 			/*
 			 * NOTE: We should never get here.
