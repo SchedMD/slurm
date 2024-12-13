@@ -303,18 +303,13 @@ static void _read_last_decay_ran(time_t *last_ran, time_t *last_reset)
 	(*last_reset) = 0;
 
 	/* read the file */
-	state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(state_file, "/priority_last_decay_ran");
-	lock_state_files();
-
-	if (!(buffer = create_mmap_buf(state_file))) {
+	buffer = state_save_open("priority_last_decay_ran", &state_file);
+	if (!buffer) {
 		info("No last decay (%s) to recover", state_file);
 		xfree(state_file);
-		unlock_state_files();
 		return;
 	}
 	xfree(state_file);
-	unlock_state_files();
 
 	safe_unpack_time(last_ran, buffer);
 	safe_unpack_time(last_reset, buffer);
