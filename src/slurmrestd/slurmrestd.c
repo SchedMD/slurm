@@ -468,6 +468,15 @@ static void _parse_commandline(int argc, char **argv)
 			rest_auth = xstrdup(optarg);
 			break;
 		case 'd':
+			if (!xstrcasecmp(optarg, "list")) {
+				fprintf(stderr, "Possible data_parser plugins:\n");
+				parsers = data_parser_g_new_array(
+					NULL, NULL, NULL, NULL, NULL, NULL,
+					NULL, NULL, optarg,
+					_plugrack_foreach_list, false);
+				exit(SLURM_SUCCESS);
+			}
+
 			xfree(data_parser_plugins);
 			data_parser_plugins = xstrdup(optarg);
 			break;
@@ -745,18 +754,10 @@ int main(int argc, char **argv)
 	if (init_rest_auth(become_user, auth_plugin_handles, auth_plugin_count))
 		fatal("Unable to initialize rest authentication");
 
-	if (data_parser_plugins && !xstrcasecmp(data_parser_plugins, "list")) {
-		fprintf(stderr, "Possible data_parser plugins:\n");
-		parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL,
-						  NULL, NULL, NULL, NULL,
-						  data_parser_plugins,
-						  _plugrack_foreach_list,
-						  false);
-		exit(SLURM_SUCCESS);
-	} else if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL,
-						       NULL, NULL, NULL, NULL,
-						       data_parser_plugins,
-						       NULL, false))) {
+	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,
+						NULL, NULL, NULL,
+						data_parser_plugins, NULL,
+						false))) {
 		fatal("Unable to initialize data_parser plugins");
 	}
 	xfree(data_parser_plugins);
