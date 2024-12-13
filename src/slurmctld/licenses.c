@@ -748,6 +748,9 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
 	slurm_mutex_lock(&license_mutex);
 	list_for_each(job_ptr->license_list, _foreach_license_job_test,
 		      &test_args);
+	if (preempt_for_licenses)
+		_licenses_print("licenses_to_preempt",
+				job_ptr->licenses_to_preempt, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
 
 	return test_args.rc;
