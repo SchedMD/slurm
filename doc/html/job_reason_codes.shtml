@@ -377,7 +377,11 @@ exceeds the per-Account limit on the job's QOS.</li>
 <li><b>NonZeroExitCode</b> &mdash; The job terminated with a non-zero exit
 code.</li>
 
-<li><b>None</b> &mdash; The job hasn't had a reason assigned to it yet.</li>
+<li><b>None</b> &mdash; This state indicates that the job has not been
+considered yet in the current backfill cycle. A job that previously had a
+reason may temporarily revert to 'None' until it is reprocessed. This may
+occur if the scheduler has not yet evaluated the job in the latest backfill
+cycle.</li>
 
 <li><b>OutOfMemory</b> &mdash; The job failed with an Out Of Memory error.
 </li>
@@ -713,6 +717,6 @@ the network, etc.</li>
 
 </ul>
 
-<p style="text-align: center;">Last modified 12 March 2025</li>
+<p style="text-align: center;">Last modified 23 July 2025</li>
 
 <!--#include virtual="footer.txt"-->
