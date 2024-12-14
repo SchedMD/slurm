@@ -2936,7 +2936,7 @@ static int DUMP_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	if (*src == INFINITE64) {
+	if (IS_INFINITE(*src)) {
 		istruct.infinite = true;
 	} else if (*src == NO_VAL64) {
 		/* nothing to do */
