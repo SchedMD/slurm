@@ -194,7 +194,16 @@ def run_command(
                 )
             # Use su to honor ulimits, specially core
             cp = subprocess.run(
-                ["sudo", "su", user, "/bin/bash", "-lc", command],
+                [
+                    "sudo",
+                    "--preserve-env=PATH",
+                    "su",
+                    "--preserve-environment",
+                    user,
+                    "/bin/bash",
+                    "-lc",
+                    command,
+                ],
                 capture_output=True,
                 text=True,
                 **additional_run_kwargs,
@@ -962,9 +971,9 @@ def require_openapi_generator(version="7.3.0"):
         )
 
     # allow pointing to an existing OpenAPI generated client
-    opath = module_tmp_path;
+    opath = module_tmp_path
     if "SLURM_TESTSUITE_OPENAPI_CLIENT" in os.environ:
-        opath = os.environ['SLURM_TESTSUITE_OPENAPI_CLIENT'];
+        opath = os.environ["SLURM_TESTSUITE_OPENAPI_CLIENT"]
 
     pyapi_path = f"{opath}/pyapi/"
     spec_path = f"{opath}/openapi.json"
