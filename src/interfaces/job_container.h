@@ -60,7 +60,7 @@ extern int job_container_fini(void);
  */
 
 /* Add the calling process's pid to the specified job's container. */
-extern int container_g_join(uint32_t job_id, uid_t uid);
+extern int container_g_join(uint32_t job_id, uid_t uid, bool step_create);
 
 /*
  * Allow external processes to join the job container
