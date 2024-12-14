@@ -85,7 +85,15 @@ const char *mime_types[] = {
 	NULL
 };
 
-static json_object *_data_to_json(const data_t *d);
+#define MAGIC_CONVERT_FOREACH 0x0a0b0808
+
+typedef struct {
+	int magic; /* MAGIC_CONVERT_FOREACH */
+	json_object *jobj;
+	serializer_flags_t flags;
+} convert_foreach_arg_t;
+
+static json_object *_data_to_json(const data_t *d, serializer_flags_t flags);
 
 extern int serializer_p_init(void)
 {
@@ -168,8 +176,11 @@ static data_for_each_cmd_t _convert_dict_json(const char *key,
 					      const data_t *data,
 					      void *arg)
 {
-	json_object *jobj = arg;
-	json_object *jobject = _data_to_json(data);
+	convert_foreach_arg_t *args = arg;
+	json_object *jobj = args->jobj;
+	json_object *jobject = _data_to_json(data, args->flags);
+
+	xassert(args->magic == MAGIC_CONVERT_FOREACH);
 
 	json_object_object_add(jobj, key, jobject);
 	return DATA_FOR_EACH_CONT;
@@ -177,14 +188,17 @@ static data_for_each_cmd_t _convert_dict_json(const char *key,
 
 static data_for_each_cmd_t _convert_list_json(const data_t *data, void *arg)
 {
-	json_object *jobj = arg;
-	json_object *jarray = _data_to_json(data);
+	convert_foreach_arg_t *args = arg;
+	json_object *jobj = args->jobj;
+	json_object *jarray = _data_to_json(data, args->flags);
+
+	xassert(args->magic == MAGIC_CONVERT_FOREACH);
 
 	json_object_array_add(jobj, jarray);
 	return DATA_FOR_EACH_CONT;
 }
 
-static json_object *_data_to_json(const data_t *d)
+static json_object *_data_to_json(const data_t *d, serializer_flags_t flags)
 {
 	if (!d)
 		return NULL;
@@ -205,7 +219,12 @@ static json_object *_data_to_json(const data_t *d)
 	case DATA_TYPE_DICT:
 	{
 		json_object *jobj = json_object_new_object();
-		if (data_dict_for_each_const(d, _convert_dict_json, jobj) < 0)
+		convert_foreach_arg_t args = {
+			.magic = MAGIC_CONVERT_FOREACH,
+			.jobj = jobj,
+			.flags = flags,
+		};
+		if (data_dict_for_each_const(d, _convert_dict_json, &args) < 0)
 			error("%s: unexpected error calling _convert_dict_json()",
 			      __func__);
 		return jobj;
@@ -213,7 +232,12 @@ static json_object *_data_to_json(const data_t *d)
 	case DATA_TYPE_LIST:
 	{
 		json_object *jobj = json_object_new_array();
-		if (data_list_for_each_const(d, _convert_list_json, jobj) < 0)
+		convert_foreach_arg_t args = {
+			.magic = MAGIC_CONVERT_FOREACH,
+			.jobj = jobj,
+			.flags = flags,
+		};
+		if (data_list_for_each_const(d, _convert_list_json, &args) < 0)
 			error("%s: unexpected error calling _convert_list_json()",
 			      __func__);
 		return jobj;
@@ -236,7 +260,7 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 				      const data_t *src,
 				      serializer_flags_t flags)
 {
-	struct json_object *jobj = _data_to_json(src);
+	struct json_object *jobj = _data_to_json(src, flags);
 	int jflags = 0;
 
 	/* can't be pretty and compact at the same time! */
