@@ -37,11 +37,12 @@
 #define _INTERFACES_SERIALIZER_H
 
 #include "src/common/data.h"
+#include "src/common/macros.h"
 
 typedef enum {
 	SER_FLAGS_NONE = 0, /* defaults to compact currently */
-	SER_FLAGS_COMPACT = 1 << 1,
-	SER_FLAGS_PRETTY = 1 << 2,
+	SER_FLAGS_COMPACT = SLURM_BIT(0),
+	SER_FLAGS_PRETTY = SLURM_BIT(1),
 } serializer_flags_t;
 
 /*
