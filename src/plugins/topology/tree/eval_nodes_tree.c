@@ -785,8 +785,8 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 	topo_weight_info_t *nw = NULL;
 	list_itr_t *iter;
 	node_record_t *node_ptr;
-	int64_t rem_max_cpus, start_rem_max_cpus;
-	int rem_cpus, start_rem_cpus, rem_nodes; /* remaining resources desired */
+	int64_t rem_max_cpus, start_rem_max_cpus = 0;
+	int rem_cpus, start_rem_cpus = 0, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	job_record_t *job_ptr = topo_eval->job_ptr;
 	job_details_t *details_ptr = job_ptr->details;
