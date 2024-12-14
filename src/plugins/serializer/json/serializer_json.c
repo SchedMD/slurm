@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "config.h"
+#include "math.h"
 
 #if HAVE_JSON_C_INC
 #include <json-c/json.h>
@@ -213,6 +214,15 @@ static json_object *_data_to_json(const data_t *d, serializer_flags_t flags)
 		return json_object_new_boolean(data_get_bool(d));
 		break;
 	case DATA_TYPE_FLOAT:
+		if (!(flags & SER_FLAGS_COMPLEX)) {
+			if (isinf(data_get_float(d)))
+				return json_object_new_double(
+					(double) INFINITE64);
+			else if (isnan(data_get_float(d)))
+				return json_object_new_double(
+					(double) NO_VAL64);
+		}
+
 		return json_object_new_double(data_get_float(d));
 		break;
 	case DATA_TYPE_INT_64:
