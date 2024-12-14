@@ -194,7 +194,16 @@ def run_command(
                 )
             # Use su to honor ulimits, specially core
             cp = subprocess.run(
-                ["sudo", "su", user, "/bin/bash", "-lc", command],
+                [
+                    "sudo",
+                    "--preserve-env=PATH",
+                    "su",
+                    "--preserve-environment",
+                    user,
+                    "/bin/bash",
+                    "-lc",
+                    command,
+                ],
                 capture_output=True,
                 text=True,
                 **additional_run_kwargs,
