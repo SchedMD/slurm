@@ -2938,7 +2938,7 @@ static int DUMP_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 
 	if (IS_INFINITE(*src)) {
 		istruct.infinite = true;
-	} else if (*src == NO_VAL64) {
+	} else if (IS_NO_VAL(*src)) {
 		/* nothing to do */
 	} else {
 		istruct.set = true;
