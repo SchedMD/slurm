@@ -2916,7 +2916,6 @@ typedef struct reservation_name_msg {
 #define LOG_FMT_SHORT           5
 #define LOG_FMT_THREAD_ID       6
 #define LOG_FMT_RFC3339         7
-#define LOG_FMT_FORMAT_STDERR   SLURM_BIT(15)
 
 /*
  * If adding to slurm_conf_t contents that need to be used in the slurmstepd
