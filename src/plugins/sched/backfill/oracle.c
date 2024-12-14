@@ -48,7 +48,7 @@ static bf_slot_t *slots;
 int used_slots;
 
 static int _get_bitmap_from_nspace(node_space_map_t *node_space,
-				   uint32_t start_time, bitstr_t *out_bitmap,
+				   time_t start_time, bitstr_t *out_bitmap,
 				   uint32_t *fragmentation)
 {
 	int j = 0;
