@@ -722,7 +722,7 @@ extern int container_p_join_external(uint32_t job_id)
 	return step_ns_fd;
 }
 
-extern int container_p_join(uint32_t job_id, uid_t uid)
+extern int container_p_join(uint32_t job_id, uid_t uid, bool step_create)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
 	int fd;
