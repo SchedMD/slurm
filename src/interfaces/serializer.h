@@ -43,6 +43,7 @@ typedef enum {
 	SER_FLAGS_NONE = 0, /* defaults to compact currently */
 	SER_FLAGS_COMPACT = SLURM_BIT(0),
 	SER_FLAGS_PRETTY = SLURM_BIT(1),
+	SER_FLAGS_COMPLEX = SLURM_BIT(2), /* Dump Infinity and NaN */
 } serializer_flags_t;
 
 /*
