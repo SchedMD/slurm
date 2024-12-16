@@ -1,4 +1,4 @@
-.TH "job_container.conf" "5" "Slurm Configuration File" "November 2024" "Slurm Configuration File"
+.TH "job_container.conf" "5" "Slurm Configuration File" "December 2024" "Slurm Configuration File"
 
 .SH "NAME"
 job_container.conf \- Slurm configuration file for job_container/tmpfs plugin
@@ -109,10 +109,10 @@ a fresh tmpfs filesystem.
 
 .TP
 \fBEntireStepInNS\fR
-Specifying fBEntireStepInNS=true will pivot all slurmstepd processes (excluding
+Specifying EntireStepInNS=true will pivot all slurmstepd processes (excluding
 the external step, which is tasked with creating the namespace) into the
 constructed namespace. This will cause issues if certain paths such as
-SlurmdSpoolDir as inaccessible. This parameter is optional.
+SlurmdSpoolDir are inaccessible. This parameter is optional.
 .IP
 
 .TP
