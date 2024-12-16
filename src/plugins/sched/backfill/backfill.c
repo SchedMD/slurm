@@ -125,6 +125,7 @@
 #define MAX_BF_MIN_PRIO_RESERVE        INFINITE
 #define MAX_BF_YIELD_INTERVAL          10000000 /* 10 seconds in usec */
 #define MAX_MAX_RPC_CNT                1000
+#define MAX_YIELD_RPC_CNT 200
 #define MAX_YIELD_SLEEP                10000000 /* 10 seconds in usec */
 
 #define MAX_BF_MAX_JOB_ASSOC           MAX_BF_MAX_JOB_TEST
@@ -237,6 +238,7 @@ static int max_backfill_jobs_start = 0;
 static bool backfill_continue = false;
 static bool assoc_limit_stop = false;
 static int max_rpc_cnt = 0;
+static int yield_rpc_cnt = 0;
 static int yield_interval = YIELD_INTERVAL;
 static int yield_sleep   = YIELD_SLEEP;
 static list_t *het_job_list = NULL;
@@ -731,6 +733,7 @@ static uint32_t _my_sleep(int64_t usec)
 static void _load_config(void)
 {
 	char *sched_params = slurm_conf.sched_params, *tmp_ptr;
+	long tmp_val = 0;
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_interval="))) {
 		backfill_interval = atoi(tmp_ptr + 12);
@@ -1047,6 +1050,20 @@ static void _load_config(void)
 		max_rpc_cnt = 0;
 	}
 
+	if ((tmp_ptr = xstrcasestr(sched_params, "bf_yield_rpc_cnt=")))
+		tmp_val = strtol(tmp_ptr + 17, NULL, 10);
+	else if ((tmp_ptr = xstrcasestr(sched_params, "bf_yield_rpc_count=")))
+		tmp_val = strtol(tmp_ptr + 19, NULL, 10);
+	else
+		tmp_val = MAX((max_rpc_cnt / 10), 20);
+	if ((tmp_val < 0) || (tmp_val > MAX_YIELD_RPC_CNT)) {
+		error("Invalid SchedulerParameters bf_yield_rpc_cnt: %ld",
+		      tmp_val);
+		yield_rpc_cnt = MAX((max_rpc_cnt / 10), 20);
+	} else {
+		yield_rpc_cnt = tmp_val;
+	}
+
 	if (xstrcasestr(sched_params, "time_min_as_soft_limit"))
 		soft_time_limit = true;
 }
@@ -1227,9 +1244,7 @@ static int _yield_locks(int64_t usec)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	time_t job_update, node_update, part_update, config_update, resv_update;
 	bool load_config = false;
-	int yield_rpc_cnt;
 
-	yield_rpc_cnt = MAX((max_rpc_cnt / 10), 20);
 	job_update  = last_job_update;
 	node_update = last_node_update;
 	part_update = last_part_update;
