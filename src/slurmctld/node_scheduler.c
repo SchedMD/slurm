@@ -3051,7 +3051,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	job_set_alloc_tres(job_ptr, false);
 	acct_policy_job_begin(job_ptr, false);
 
-	job_claim_resv(job_ptr);
+	resv_replace_update(job_ptr);
 
 	/*
 	 * If ran with slurmdbd this is handled out of band in the
