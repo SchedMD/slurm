@@ -627,58 +627,45 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	uint16_t *gpu_cnt = (uint16_t *)data;
 
 	xassert(running_in_slurmd_stepd());
+	slurm_mutex_lock(&gpu_mutex);
 	switch (data_type) {
 	case ENERGY_DATA_NODE_ENERGY_UP:
 		if (running_in_slurmd()) {
 			/* Signal the thread to update node energy */
 			slurm_cond_signal(&gpu_cond);
-			slurm_mutex_lock(&gpu_mutex);
 			_get_node_energy(energy);
 		} else {
-			slurm_mutex_lock(&gpu_mutex);
 			_get_joules_task(10);
 			_get_node_energy_up(energy);
 		}
-		slurm_mutex_unlock(&gpu_mutex);
 		break;
 	case ENERGY_DATA_NODE_ENERGY:
-		slurm_mutex_lock(&gpu_mutex);
 		_get_node_energy(energy);
-		slurm_mutex_unlock(&gpu_mutex);
 		break;
 	case ENERGY_DATA_LAST_POLL:
-		slurm_mutex_lock(&gpu_mutex);
 		if (gpus)
 			*last_poll = gpus[gpus_len-1].last_update_time;
 		else
 			*last_poll = 0;
-		slurm_mutex_unlock(&gpu_mutex);
 		break;
 	case ENERGY_DATA_SENSOR_CNT:
-		slurm_mutex_lock(&gpu_mutex);
 		*gpu_cnt = gpus_len;
-		slurm_mutex_unlock(&gpu_mutex);
 		break;
 	case ENERGY_DATA_STRUCT:
-		slurm_mutex_lock(&gpu_mutex);
 		for (i = 0; i < gpus_len; i++)
 			memcpy(&energy[i], &gpus[i].energy,
 			       sizeof(acct_gather_energy_t));
-		slurm_mutex_unlock(&gpu_mutex);
 		break;
 	case ENERGY_DATA_JOULES_TASK:
 		if (running_in_slurmd()) {
 			/* Signal the thread to update node energy */
 			slurm_cond_signal(&gpu_cond);
-			slurm_mutex_lock(&gpu_mutex);
 		} else {
-			slurm_mutex_lock(&gpu_mutex);
 			_get_joules_task(10);
 		}
 		for (i = 0; i < gpus_len; ++i)
 			memcpy(&energy[i], &gpus[i].energy,
 			       sizeof(acct_gather_energy_t));
-		slurm_mutex_unlock(&gpu_mutex);
 		break;
 	default:
 		error("%s: unknown enum %d",
@@ -686,6 +673,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 		rc = SLURM_ERROR;
 		break;
 	}
+	slurm_mutex_unlock(&gpu_mutex);
 	return rc;
 }
 
