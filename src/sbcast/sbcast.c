@@ -67,6 +67,20 @@
 /* global variables */
 struct bcast_parameters params = {0};	/* program parameters */
 
+static int _foreach_bcast_file(void *x, void *arg)
+{
+	int *rc = arg;
+	params.selected_step = x;
+
+	if ((*rc = bcast_file(&params) != SLURM_SUCCESS)) {
+		error("Failed to broadcast to JobId=%u nodes",
+		      params.selected_step->step_id.job_id);
+		return -1;
+	}
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	int rc;
@@ -81,6 +95,14 @@ int main(int argc, char **argv)
 		log_alter(opts, SYSLOG_FACILITY_DAEMON, NULL);
 	}
 
-	rc = bcast_file(&params);
+	if (params.selected_steps) {
+		slurm_destroy_selected_step(params.selected_step);
+		list_for_each_ro(params.selected_steps, _foreach_bcast_file,
+				 &rc);
+		FREE_NULL_LIST(params.selected_steps);
+	} else {
+		rc = bcast_file(&params);
+	}
+
 	return rc;
 }
