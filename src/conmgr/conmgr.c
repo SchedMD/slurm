@@ -225,7 +225,7 @@ extern int conmgr_run(bool blocking)
 	if (mgr.watch_thread)
 		running = true;
 	else if (!blocking)
-		slurm_thread_create(&mgr.watch_thread, watch, NULL);
+		slurm_thread_create(&mgr.watch_thread, watch_thread, NULL);
 	else
 		mgr.watch_thread = pthread_self();
 

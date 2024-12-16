@@ -431,6 +431,7 @@ extern void handle_work(bool locked, work_t *work);
  * Poll all connections and handle any events
  */
 extern void *watch(void *arg);
+extern void *watch_thread(void *arg);
 
 /*
  * Wait for _watch() to finish
