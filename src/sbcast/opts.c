@@ -66,12 +66,73 @@
 /* getopt_long options, integers but not characters */
 
 /* FUNCTIONS */
+static void _fill_in_selected_step_from_controller();
 static void _fill_in_selected_step_from_env(void);
 static void _fill_in_selected_steps_from_env(char *het_size_str);
 static void     _help( void );
+static bool _need_hetjob_components(job_info_msg_t **job_info_msg);
 static uint32_t _map_size( char *buf );
 static void     _print_options( void );
 static void     _usage( void );
+
+static bool _need_hetjob_components(job_info_msg_t **job_info_msg)
+{
+	slurm_job_info_t *jobs = NULL;
+	int rc;
+
+	/* If <jobid>+<offset> specified we target single component. */
+	if (params.selected_step->het_job_offset != NO_VAL)
+		return false;
+
+	if ((rc = slurm_load_job(job_info_msg,
+				 params.selected_step->step_id.job_id,
+				 SHOW_ALL)) != SLURM_SUCCESS) {
+		error("Failed to load JobId=%u: '%s'",
+		      params.selected_step->step_id.job_id,
+		      strerror(rc));
+		exit(1);
+	} else if (!job_info_msg || !*job_info_msg ||
+		   (((*job_info_msg)->record_count) <= 0)) {
+		error("Failed to load JobId=%u: No jobs returned.",
+		      params.selected_step->step_id.job_id);
+		exit(1);
+	}
+
+	jobs = (*job_info_msg)->job_array;
+
+	if (jobs->job_id != jobs->het_job_id)
+		return false;
+
+	if ((*job_info_msg)->record_count < 2)
+		fatal("slurm_load_job(%u) returned less than 2 records",
+		      params.selected_step->step_id.job_id);
+
+	/* <jobid> without +<offset> and its HetJob leader */
+	return true;
+}
+
+static void _fill_in_selected_step_from_controller()
+{
+	job_info_msg_t *job_info_msg = NULL;
+	slurm_job_info_t *job = NULL;
+	char *job_id_str = NULL;
+
+	if (!_need_hetjob_components(&job_info_msg))
+		return;
+
+	job = job_info_msg->job_array;
+	params.selected_steps = list_create(slurm_destroy_selected_step);
+
+	for (int i = 0; i < job_info_msg->record_count; i++, job++) {
+		job_id_str = xstrdup_printf("%u+%u", job->het_job_id,
+					    job->het_job_offset);
+		list_append(params.selected_steps,
+			    slurm_parse_step_str(job_id_str));
+		xfree(job_id_str);
+	}
+
+	xassert(list_count(params.selected_steps) >= 2);
+}
 
 static void _fill_in_selected_steps_from_env(char *het_size_str)
 {
@@ -275,6 +336,10 @@ extern void parse_command_line(int argc, char **argv)
 	     (params.selected_step->step_id.job_id == NO_VAL)) &&
 	    !(params.flags & BCAST_FLAG_NO_JOB)) {
 		_fill_in_selected_step_from_env();
+	} else if ((params.selected_step &&
+		    params.selected_step->step_id.job_id != NO_VAL) &&
+		   !(params.flags & BCAST_FLAG_NO_JOB)) {
+		_fill_in_selected_step_from_controller();
 	}
 
 	params.src_fname = xstrdup(argv[optind]);
