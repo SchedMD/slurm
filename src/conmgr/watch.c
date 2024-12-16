@@ -1330,17 +1330,6 @@ static bool _watch_loop(void)
 
 extern void *watch(void *arg)
 {
-#if HAVE_SYS_PRCTL_H
-	{
-		static char title[] = "watch";
-
-		if (prctl(PR_SET_NAME, title, NULL, NULL, NULL)) {
-			error("%s: cannot set process name to %s %m",
-			      __func__, title);
-		}
-	}
-#endif
-
 	slurm_mutex_lock(&mgr.mutex);
 
 	xassert(mgr.watch_thread == pthread_self());
@@ -1391,4 +1380,18 @@ extern void *watch(void *arg)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return NULL;
+}
+
+extern void *watch_thread(void *arg)
+{
+#if HAVE_SYS_PRCTL_H
+	static char title[] = "watch";
+
+	if (prctl(PR_SET_NAME, title, NULL, NULL, NULL)) {
+		error("%s: cannot set process name to %s %m",
+		      __func__, title);
+	}
+#endif
+
+	return watch(NULL);
 }
