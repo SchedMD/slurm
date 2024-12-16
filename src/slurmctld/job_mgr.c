@@ -15396,7 +15396,7 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	job_ptr->tres_fmt_req_str = xstrdup(job_ptr->tres_fmt_alloc_str);
 
 	acct_policy_job_begin(job_ptr, false);
-	job_claim_resv(job_ptr);
+	resv_replace_update(job_ptr);
 
 	/*
 	 * Get new sluid now that we are basically a new job.
