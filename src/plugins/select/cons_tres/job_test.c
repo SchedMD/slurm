@@ -667,7 +667,9 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 				 * This prevents the topology plugin to
 				 * filter out some valid nodes later on.
 				*/
-				if (cpus > min_cpus_per_node)
+				if ((cpus > min_cpus_per_node) &&
+				    (job_ptr->details->max_nodes != 0) &&
+				    (job_ptr->details->min_nodes != 0))
 					cpus = min_cpus_per_node;
 			}
 			if (cpus < job_ptr->details->ntasks_per_node)
