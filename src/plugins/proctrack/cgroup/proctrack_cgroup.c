@@ -180,6 +180,11 @@ extern int proctrack_p_signal (uint64_t id, int signal)
 	int i;
 	int slurm_task;
 
+	/* Currently the cgroup.kill feature only supports SIGKILL */
+	if ((signal == SIGKILL) && cgroup_g_has_feature(CG_KILL_BUTTON)) {
+		return cgroup_g_signal(signal);
+	}
+
 	/* get all the pids associated with the step */
 	if (cgroup_g_step_get_pids(&pids, &npids) != SLURM_SUCCESS) {
 		debug3("unable to get pids list for cont_id=%"PRIu64"", id);

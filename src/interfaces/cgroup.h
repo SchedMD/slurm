@@ -108,7 +108,8 @@ typedef enum {
 	CG_FALSE_ROOT,
 	CG_MEMCG_OOMGROUP,
 	CG_MEMCG_PEAK,
-	CG_MEMCG_SWAP
+	CG_MEMCG_SWAP,
+	CG_KILL_BUTTON
 } cgroup_ctl_feature_t;
 
 typedef enum {
@@ -414,4 +415,13 @@ extern long int cgroup_g_get_acct_units(void);
  * directly from the root.
  */
 extern bool cgroup_g_has_feature(cgroup_ctl_feature_t f);
+
+/*
+ * Send KILL signal to the user processes cgroup of this step atomically.
+ *
+ * IN signal - Signal to send. Actually only SIGKILL is supported.
+ * OUT - SLURM_ERROR if signal could not be sent, SLURM_SUCCESS otherwise.
+ */
+extern int cgroup_g_signal(int signal);
+
 #endif

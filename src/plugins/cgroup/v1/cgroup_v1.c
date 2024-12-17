@@ -1547,3 +1547,9 @@ extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 
 	return false;
 }
+
+extern int cgroup_p_signal(int signal)
+{
+	error("%s not implemented in %s", __func__, plugin_name);
+	return SLURM_ERROR;
+}
