@@ -5591,13 +5591,11 @@ extern void rebuild_job_part_list(job_record_t *job_ptr)
  * for it. This function assumes the caller has the
  * appropriate locks on the job_record.
  */
-void cleanup_completing(job_record_t *job_ptr)
+void cleanup_completing(job_record_t *job_ptr, bool requeue)
 {
 	time_t delay;
-
-	if (job_ptr->epilog_running)
+	if (job_ptr->epilog_running || job_ptr->node_cnt)
 		return;
-
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
 	delay = last_job_update - job_ptr->end_time;
@@ -5624,6 +5622,8 @@ void cleanup_completing(job_record_t *job_ptr)
 	if (IS_JOB_COMPLETED(job_ptr))
 		fed_mgr_job_complete(job_ptr, job_ptr->exit_code,
 				     job_ptr->start_time);
+	if (requeue)
+		batch_requeue_fini(job_ptr);
 }
 
 void main_sched_init(void)
