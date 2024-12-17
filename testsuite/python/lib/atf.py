@@ -192,13 +192,11 @@ def run_command(
                     "This test requires the test user to have unprompted sudo rights",
                     allow_module_level=True,
                 )
-            # Use su to honor ulimits, specially core
             cp = subprocess.run(
                 [
                     "sudo",
                     "--preserve-env=PATH",
-                    "su",
-                    "--preserve-environment",
+                    "-u",
                     user,
                     "/bin/bash",
                     "-lc",
@@ -747,9 +745,7 @@ def stop_slurmdbd(quiet=False):
         "sacctmgr shutdown", user=properties["slurm-user"], quiet=quiet
     )
     if results["exit_code"] != 0:
-        failures.append(
-            f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}"
-        )
+        pytest.fail(f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}")
 
     # Verify that slurmdbd is not running (we might have to wait for rollups to complete)
     if not repeat_until(
