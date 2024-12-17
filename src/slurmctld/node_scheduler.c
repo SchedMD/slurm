@@ -472,6 +472,8 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	 * update gang scheduling table */
 	cleanup_completing(job_ptr, false);
 
+	resv_replace_update(job_ptr);
+
 	if (!hostlist || !hostlist_count(hostlist)) {
 		hostlist_destroy(hostlist);
 		return;
