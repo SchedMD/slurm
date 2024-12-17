@@ -995,6 +995,9 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 	}
 	xfree(avail_cores_per_sock);
 
+	if (!(*max_tasks_this_node) || (*min_cores_this_node == NO_VAL))
+		*min_cores_this_node = 0;
+
 	if (!has_cpus_per_gres &&
 	    ((mc_ptr->cpus_per_task > 1) ||
 	     !(slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE))) {
@@ -1004,10 +1007,10 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		 * to tell if cpus_per_task==1 is explicitly set by the job
 		 * when SelectTypeParameters includes CR_ONE_TASK_PER_CORE.
 		 */
-		*avail_cpus = MIN(*avail_cpus,
-				  *max_tasks_this_node * mc_ptr->cpus_per_task);
-	}
 
-	if (!(*max_tasks_this_node) || (*min_cores_this_node == NO_VAL))
-		*min_cores_this_node = 0;
+		*avail_cpus =
+			MIN(*avail_cpus,
+			    MAX(*max_tasks_this_node * mc_ptr->cpus_per_task,
+				*min_cores_this_node * cpus_per_core));
+	}
 }
