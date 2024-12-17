@@ -791,8 +791,13 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 
 	if (!data_parser_g_dump(parser, type, obj, obj_bytes, dresp) &&
 	    (data_get_type(dresp) != DATA_TYPE_NULL)) {
+		serializer_flags_t sflags = SER_FLAGS_PRETTY;
+
+		if (data_parser_g_is_complex(parser))
+			sflags |= SER_FLAGS_COMPLEX;
+
 		serialize_g_data_to_string(&out, NULL, dresp, mime_type,
-					   SER_FLAGS_PRETTY);
+					   sflags);
 	}
 
 	if (out && out[0])
