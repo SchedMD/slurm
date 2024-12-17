@@ -5140,7 +5140,7 @@ static void _set_tres_per_task_from_sibling_opt_internal(slurm_opt_t *opt,
 
 	if (_option_index_set_by_env(opt, opt_index) &&
 	    _option_index_set_by_env(opt, tpt_index) &&
-	    (tmp_int != opt->cpus_per_task)) {
+	    (tmp_int != opt->cpus_per_task) && (optval == 'c')) {
 		fatal("%s set by two different environment variables %s=%d != SLURM_TRES_PER_TASK=cpu=%d",
 		      common_options[opt_index]->name, env_variable, cnt,
 		      tmp_int);
