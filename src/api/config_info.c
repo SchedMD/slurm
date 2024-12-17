@@ -530,13 +530,7 @@ static char *_accountingstoreflags(uint32_t conf_flags)
 
 static char *_logfmtstr(uint16_t log_fmt)
 {
-	bool format_stderr = false;
 	char *logfmtstr = NULL;
-
-	if (log_fmt & LOG_FMT_FORMAT_STDERR) {
-		format_stderr = true;
-		log_fmt &= (~LOG_FMT_FORMAT_STDERR);
-	}
 
 	if (log_fmt == LOG_FMT_ISO8601_MS)
 		logfmtstr = xstrdup("iso8601_ms");
@@ -554,9 +548,6 @@ static char *_logfmtstr(uint16_t log_fmt)
 		logfmtstr = xstrdup("short");
 	else if (log_fmt == LOG_FMT_THREAD_ID)
 		logfmtstr = xstrdup("thread_id");
-
-	if (format_stderr)
-		xstrcat(logfmtstr, ",format_stderr");
 
 	return logfmtstr;
 }
