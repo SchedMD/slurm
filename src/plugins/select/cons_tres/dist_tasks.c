@@ -388,7 +388,6 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 				    job_ptr->gres_list_req)) {
 				/* Try again without limit */
 				gres_task_limit = NULL;
-				info("Function:%s LineNumber:%d", __func__, __LINE__);
 			} else {
 				rc = ESLURM_BAD_TASK_COUNT;
 				break;
