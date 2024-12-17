@@ -2727,7 +2727,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 					      job_ptr);
 				}
 				job_update_tres_cnt(job_ptr, i);
-				cleanup_completing(job_ptr, false);
+				cleanup_completing(job_ptr, true);
 				node_ptr = node_record_table_ptr[i];
 				if (node_ptr->comp_job_cnt)
 					(node_ptr->comp_job_cnt)--;
@@ -2955,7 +2955,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 			else {
 				error("node_cnt underflow on %pJ", job_ptr);
 			}
-			cleanup_completing(job_ptr, false);
+			cleanup_completing(job_ptr, true);
 
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
