@@ -528,6 +528,9 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		else if (!xstrcmp(plugin, MIME_TYPE_YAML_PLUGIN))
 			sflags = yaml_flags;
 
+		if (data_parser_g_is_complex(parser))
+			sflags |= SER_FLAGS_COMPLEX;
+
 		rc2 = serialize_g_data_to_string(&body, NULL, resp, write_mime,
 						 sflags);
 
