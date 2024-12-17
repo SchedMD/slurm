@@ -51,6 +51,8 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/serializer.h"
 
+#define SERIALIZER_JSON_DEFAULT_FORMAT JSON_C_TO_STRING_PLAIN
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -267,14 +269,12 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 	xassert((flags & (SER_FLAGS_PRETTY | SER_FLAGS_COMPACT)) !=
 		(SER_FLAGS_PRETTY | SER_FLAGS_COMPACT));
 
-	switch (flags) {
-	case SER_FLAGS_PRETTY:
+	if (flags & SER_FLAGS_PRETTY)
 		jflags = JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY;
-		break;
-	case SER_FLAGS_COMPACT: /* fallthrough */
-	default:
+	else if (flags & SER_FLAGS_COMPACT)
 		jflags = JSON_C_TO_STRING_PLAIN;
-	}
+	else
+		jflags = SERIALIZER_JSON_DEFAULT_FORMAT;
 
 	/* string will die with jobj */
 	*dest = xstrdup(json_object_to_json_string_ext(jobj, jflags));
