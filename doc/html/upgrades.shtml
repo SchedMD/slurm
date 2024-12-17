@@ -307,19 +307,19 @@ and openapi plugins. Changes to the formats are tracked in the
 <td><a href="openapi_release_notes.html#23110">23.11</a></td>
 <td>slurmctld, slurmdbd</td>
 <td>v0.0.40</td>
-<td>25.05</td>
+<td>25.11</td>
 </tr>
 <tr>
 <td><a href="openapi_release_notes.html#24050">24.05</a></td>
 <td></td>
 <td>v0.0.41</td>
-<td>25.11</td>
+<td>26.05</td>
 </tr>
 <tr>
 <td><a href="openapi_release_notes.html#24110">24.11</a></td>
 <td></td>
 <td>v0.0.42</td>
-<td>26.05</td>
+<td>26.11</td>
 </tr>
 </tbody>
 </table>
@@ -626,6 +626,6 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p style="text-align:center;">Last modified 06 December 2024</p>
+<p style="text-align:center;">Last modified 15 January 2025</p>
 
 <!--#include virtual="footer.txt"-->
