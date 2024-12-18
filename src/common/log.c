@@ -1437,7 +1437,6 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 
 		xfree(json);
 		fflush(log->logfp);
-		xfree(msgbuf);
 	} else {
 		xassert(log->opt.logfile_fmt == LOG_FILE_FMT_TIMESTAMP);
 		xlogfmtcat(&msgbuf, "[%M] %s%s", log->prefix, pfx);
