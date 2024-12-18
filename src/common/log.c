@@ -1393,8 +1393,10 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		if (spank) {
 			_log_printf(log, log->buf, stderr, "%s%s", buf, eol);
 		} else {
-			xlogfmtcat(&msgbuf, "[%M] %s%s%s", pfx, buf, eol);
-			_log_printf(log, log->buf, stderr, msgbuf);
+			xlogfmtcat(&msgbuf, "[%M]");
+			_log_printf(log, log->buf, stderr,
+				    "%s %s: %s%s%s",
+				    msgbuf, log->argv0, pfx, buf, eol);
 			xfree(msgbuf);
 		}
 		fflush(stderr);
