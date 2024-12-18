@@ -1392,10 +1392,15 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		fflush(stdout);
 		if (spank) {
 			_log_printf(log, log->buf, stderr, "%s%s", buf, eol);
-		} else {
-			xlogfmtcat(&msgbuf, "[%M] %s%s%s", pfx, buf, eol);
-			_log_printf(log, log->buf, stderr, msgbuf);
+		} else if (running_in_daemon()) {
+			xlogfmtcat(&msgbuf, "[%M]");
+			_log_printf(log, log->buf, stderr,
+				    "%s %s: %s%s%s",
+				    msgbuf, log->argv0, pfx, buf, eol);
 			xfree(msgbuf);
+		} else {
+			_log_printf(log, log->buf, stderr, "%s: %s%s%s",
+				    log->argv0, pfx, buf, eol);
 		}
 		fflush(stderr);
 	}
@@ -1432,7 +1437,6 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 
 		xfree(json);
 		fflush(log->logfp);
-		xfree(msgbuf);
 	} else {
 		xassert(log->opt.logfile_fmt == LOG_FILE_FMT_TIMESTAMP);
 		xlogfmtcat(&msgbuf, "[%M] %s%s", log->prefix, pfx);
