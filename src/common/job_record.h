@@ -340,6 +340,10 @@ struct job_record {
 	time_t last_sched_eval;		/* last time job was evaluated for scheduling */
 	char *licenses;			/* licenses required by the job */
 	list_t *license_list;		/* structure with license info */
+	list_t *licenses_to_preempt;    /* list of licenses the job will look
+					   for in its preemptee candidates
+					   Don't pack, don't save it's only used
+					   during resource selection */
 	char *lic_req;		/* required system licenses directly requested*/
 	acct_policy_limit_set_t limit_set; /* flags if indicate an
 					    * associated limit was set from

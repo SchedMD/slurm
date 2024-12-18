@@ -59,6 +59,7 @@
 
 list_t *cluster_license_list = NULL;
 time_t last_license_update = 0;
+bool preempt_for_licenses = false;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void _pack_license(licenses_t *lic, buf_t *buffer,
 			  uint16_t protocol_version);
@@ -67,6 +68,14 @@ typedef struct {
 	char *name;
 	slurmctld_resv_t *resv_ptr;
 } bf_licenses_find_resv_t;
+
+typedef struct {
+	job_record_t *job_ptr;
+	list_t *license_list;
+	int rc;
+	bool reboot;
+	time_t when;
+} license_test_args_t;
 
 /* Print all licenses on a list */
 static void _licenses_print(char *header, list_t *licenses,
@@ -272,6 +281,9 @@ static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
 extern int license_init(char *licenses)
 {
 	bool valid = true;
+
+	if (xstrcasestr(slurm_conf.preempt_params, "reclaim_licenses"))
+		preempt_for_licenses = true;
 
 	last_license_update = time(NULL);
 
@@ -642,6 +654,72 @@ extern void license_job_merge(job_record_t *job_ptr)
 	job_ptr->licenses = license_list_to_string(job_ptr->license_list);
 }
 
+static void _add_license(list_t *license_list, licenses_t *license_entry)
+{
+	if (!list_find_first(license_list, _license_find_rec,
+			     license_entry->name)) {
+		list_append(license_list, license_entry);
+	}
+}
+
+static int _foreach_license_job_test(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	licenses_t *match;
+	license_test_args_t *test_args = arg;
+	job_record_t *job_ptr = test_args->job_ptr;
+	list_t *license_list = test_args->license_list;
+	bool reboot = test_args->reboot;
+	time_t when = test_args->when;
+	int resv_licenses;
+
+	match = list_find_first(license_list, _license_find_rec,
+				license_entry->name);
+	if (!match) {
+		error("could not find license %s for job %u",
+		      license_entry->name, job_ptr->job_id);
+		/*
+		 * Preempting jobs for licenses won't be effective, so don't
+		 * preempt for any.
+		 */
+		if (job_ptr->licenses_to_preempt)
+			FREE_NULL_LIST(job_ptr->licenses_to_preempt);
+		test_args->rc = SLURM_ERROR;
+		return -1;
+	} else if (license_entry->total > match->total) {
+		info("job %u wants more %s licenses than configured",
+		     job_ptr->job_id, match->name);
+		/*
+		 * Preempting jobs for licenses won't be effective so don't
+		 * preempt for any.
+		 */
+		if (job_ptr->licenses_to_preempt)
+			FREE_NULL_LIST(job_ptr->licenses_to_preempt);
+		test_args->rc = SLURM_ERROR;
+		return -1;
+	} else if ((license_entry->total + match->used + match->last_deficit) >
+		   match->total) {
+		if (job_ptr->licenses_to_preempt)
+			_add_license(job_ptr->licenses_to_preempt,
+				     license_entry);
+		test_args->rc = EAGAIN;
+	} else {
+		/* Assume node reboot required since we have not
+		 * selected the compute nodes yet */
+		resv_licenses = job_test_lic_resv(job_ptr,
+						  license_entry->name,
+						  when, reboot);
+		if ((license_entry->total + match->used + match->last_deficit +
+		     resv_licenses) > match->total) {
+			if (job_ptr->licenses_to_preempt)
+				_add_license(job_ptr->licenses_to_preempt,
+					     license_entry);
+			test_args->rc = EAGAIN;
+		}
+	}
+	return 0;
+}
+
 /*
  * license_job_test_with_list - Test if the licenses required for a job are
  *	available in provided list
@@ -653,49 +731,29 @@ extern void license_job_merge(job_record_t *job_ptr)
 extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
 				      bool reboot, list_t *license_list)
 {
-	list_itr_t *iter;
-	licenses_t *license_entry, *match;
-	int rc = SLURM_SUCCESS, resv_licenses;
+	license_test_args_t test_args = {
+		.job_ptr = job_ptr,
+		.license_list = license_list,
+		.rc = SLURM_SUCCESS,
+		.reboot = reboot,
+		.when = when,
+	};
 
 	if (!job_ptr->license_list)	/* no licenses needed */
-		return rc;
+		return SLURM_SUCCESS;
+
+	if (!job_ptr->licenses_to_preempt && preempt_for_licenses)
+		job_ptr->licenses_to_preempt = list_create(NULL);
 
 	slurm_mutex_lock(&license_mutex);
-	iter = list_iterator_create(job_ptr->license_list);
-	while ((license_entry = list_next(iter))) {
-		match = list_find_first(license_list, _license_find_rec,
-					license_entry->name);
-		if (!match) {
-			error("could not find license %s for job %u",
-			      license_entry->name, job_ptr->job_id);
-			rc = SLURM_ERROR;
-			break;
-		} else if (license_entry->total > match->total) {
-			info("job %u wants more %s licenses than configured",
-			     job_ptr->job_id, match->name);
-			rc = SLURM_ERROR;
-			break;
-		} else if ((license_entry->total + match->used +
-			    match->last_deficit) > match->total) {
-			rc = EAGAIN;
-			break;
-		} else {
-			/* Assume node reboot required since we have not
-			 * selected the compute nodes yet */
-			resv_licenses = job_test_lic_resv(job_ptr,
-							  license_entry->name,
-							  when, reboot);
-			if ((license_entry->total + match->used +
-			     match->last_deficit + resv_licenses)
-			    > match->total) {
-				rc = EAGAIN;
-				break;
-			}
-		}
-	}
-	list_iterator_destroy(iter);
+	list_for_each(job_ptr->license_list, _foreach_license_job_test,
+		      &test_args);
+	if (preempt_for_licenses)
+		_licenses_print("licenses_to_preempt",
+				job_ptr->licenses_to_preempt, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
-	return rc;
+
+	return test_args.rc;
 }
 
 /*
