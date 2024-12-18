@@ -5162,7 +5162,7 @@ static void _set_tres_per_task_from_sibling_opt_internal(slurm_opt_t *opt,
 static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
 {
 	bool set;
-	int cnt = 0;
+	int opt_cnt = 0;
 	char *str = NULL;
 	char *env_variable;
 
@@ -5180,19 +5180,19 @@ static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
 	 */
 
 	if (optval == LONG_OPT_GPUS_PER_TASK) {
-		set = _get_gpu_cnt_and_str(opt, &cnt, &str);
+		set = _get_gpu_cnt_and_str(opt, &opt_cnt, &str);
 		env_variable = "SLURM_GPUS_PER_TASK";
 		_set_tres_per_task_from_sibling_opt_internal(
-			opt, set, cnt, env_variable, optval, str);
+			opt, set, opt_cnt, env_variable, optval, str);
 		xfree(str);
 	} else if (optval == 'c') {
-		cnt = opt->cpus_per_task;
+		opt_cnt = opt->cpus_per_task;
 		str = "cpu";
 		set = opt->cpus_set;
 		env_variable = "SLURM_CPUS_PER_TASK";
 
 		_set_tres_per_task_from_sibling_opt_internal(
-			opt, set, cnt, env_variable, optval, str);
+			opt, set, opt_cnt, env_variable, optval, str);
 	} else {
 		/* This function only supports [gpus|cpus]_per_task */
 		xassert(0); /* let me know if it isn't */
