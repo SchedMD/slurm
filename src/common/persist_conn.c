@@ -443,10 +443,10 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 	if (thread_loc < 0)
 		return;
 
-	service_conn = xmalloc(sizeof(persist_service_conn_t));
-
 	slurm_mutex_lock(&thread_count_lock);
-	persist_service_conn[thread_loc] = service_conn;
+	service_conn = persist_service_conn[thread_loc];
+	xassert(service_conn);
+	xassert(!service_conn->arg);
 	slurm_mutex_unlock(&thread_count_lock);
 
 	service_conn->arg = arg;
@@ -480,6 +480,9 @@ extern int slurm_persist_conn_wait_for_thread_loc(void)
 			for (i=0; i<MAX_THREAD_COUNT; i++) {
 				if (persist_service_conn[i])
 					continue;
+
+				persist_service_conn[i] =
+					xmalloc(sizeof(persist_service_conn_t));
 				rc = i;
 				break;
 			}
