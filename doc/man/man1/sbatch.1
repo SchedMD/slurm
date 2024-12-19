@@ -2540,7 +2540,7 @@ The available trackable resources are configurable by the system
 administrator.
 .br
 \fBNOTE\fR: This option with gres/gpu or gres/shard will implicitly set
-\-\-tres\-bind=per_task:(gpu or shard)<tres_per_task>; this can be overridden
+\-\-tres\-bind=gres/[gpu|shard]:per_task:<tres_per_task>; this can be overridden
 with an explicit \-\-tres\-bind specification.
 .br
 \fBNOTE\fR: Invalid TRES for \-\-tres\-per\-task include
