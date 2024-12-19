@@ -8583,10 +8583,12 @@ static const parser_t PARSER_ARRAY(OPENAPI_WARNING)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_instance_cond_t, mtype, false, field, 0, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(slurmdb_instance_cond_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV clusters list"),
 	add_parse(CSV_STRING_LIST, extra_list, "extra", "CSV extra list"),
-	add_parse(CSV_STRING_LIST, format_list, "format", "Ignored; process JSON manually to control output format"),
+	add_parse_deprec(CSV_STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(CSV_STRING_LIST, instance_id_list, "instance_id", "CSV instance_id list"),
 	add_parse(CSV_STRING_LIST, instance_type_list, "instance_type", "CSV instance_type list"),
 	add_parse(STRING, node_list, "node_list", "Ranged node string"),
@@ -8594,6 +8596,7 @@ static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
 	add_parse(TIMESTAMP, time_start, "time_start", "Time start (UNIX timestamp)"),
 };
 #undef add_parse
+#undef add_parse_deprec
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_submit_request_t, mtype, false, field, 0, path, desc)
@@ -8652,6 +8655,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_CONDITION_DB_FLAGS)[] = {
 	add_complex_parser(slurmdb_job_cond_t, mtype, false, path, desc)
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_job_cond_t, mtype, false, field, 0, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(slurmdb_job_cond_t, mtype, false, field, overloads, path, desc, deprec)
 #define add_flags(mtype, field) \
 	add_parse_bit_eflag_array(slurmdb_job_cond_t, mtype, field, NULL)
 static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
@@ -8664,7 +8669,7 @@ static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
 	add_flags(JOB_CONDITION_DB_FLAGS, db_flags),
 	add_parse(INT32, exitcode, "exit_code", "Job exit code (numeric)"),
 	add_flags(JOB_CONDITION_FLAGS, flags),
-	add_parse(CSV_STRING_LIST, format_list, "format", "Ignored; process JSON manually to control output format"),
+	add_parse_deprec(CSV_STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(GROUP_ID_STRING_LIST, groupid_list, "groups", "CSV group list"),
 	add_parse(CSV_STRING_LIST, jobname_list, "job_name", "CSV job name list"),
 	add_parse(UINT32_NO_VAL, nodes_max, "nodes_max", "Maximum number of nodes"),
@@ -8686,6 +8691,7 @@ static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, wckey_list, "wckey", "CSV WCKey list"),
 };
 #undef add_parse
+#undef add_parse_deprec
 #undef add_cparse
 #undef add_flags
 
@@ -8695,15 +8701,18 @@ static const flag_bit_t PARSER_FLAG_ARRAY(QOS_CONDITION_FLAGS)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_qos_cond_t, mtype, false, field, 0, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(slurmdb_qos_cond_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(QOS_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, description_list, "description", "CSV description list"),
 	add_parse_bit_eflag_array(slurmdb_qos_cond_t, QOS_CONDITION_FLAGS, flags, "Query flags"),
 	add_parse(QOS_ID_STRING_CSV_LIST, id_list, "id", "CSV QOS id list"),
-	add_parse(CSV_STRING_LIST, format_list, "format", "Ignored; process JSON manually to control output format"),
+	add_parse_deprec(CSV_STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(QOS_NAME_CSV_LIST, name_list, "name", "CSV QOS name list"),
 	add_parse_bit_flag_array(slurmdb_qos_cond_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt_mode", "PreemptMode used when jobs in this QOS are preempted"),
 };
 #undef add_parse
+#undef add_parse_deprec
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_add_assoc_cond_t, field)
@@ -8763,12 +8772,14 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_CONDITION_FLAGS)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_assoc_cond_t, mtype, false, field, 0, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(slurmdb_assoc_cond_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, acct_list, "account", "CSV accounts list"),
 	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV clusters list"),
 	add_parse(QOS_ID_STRING_CSV_LIST, def_qos_id_list, "default_qos", "CSV QOS list"),
 	add_parse_bit_eflag_array(slurmdb_assoc_cond_t, ASSOC_CONDITION_FLAGS, flags, "Query flags"),
-	add_parse(CSV_STRING_LIST, format_list, "format", "Ignored; process JSON manually to control output format"),
+	add_parse_deprec(CSV_STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(ASSOC_ID_STRING_CSV_LIST, id_list, "id", "CSV ID list"),
 	add_parse(CSV_STRING_LIST, parent_acct_list, "parent_account", "CSV names of parent account"),
 	add_parse(CSV_STRING_LIST, partition_list, "partition", "CSV partition name list"),
@@ -8778,6 +8789,7 @@ static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, user_list, "user", "CSV user list"),
 };
 #undef add_parse
+#undef add_parse_deprec
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_user_cond_t, mtype, false, field, 0, path, desc)
@@ -8827,9 +8839,11 @@ static const parser_t PARSER_ARRAY(OPENAPI_WCKEY_PARAM)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_wckey_cond_t, mtype, false, field, 0, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(slurmdb_wckey_cond_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(WCKEY_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV cluster name list"),
-	add_parse(CSV_STRING_LIST, format_list, "format", "Ignored; process JSON manually to control output format"),
+	add_parse_deprec(CSV_STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(CSV_STRING_LIST, id_list, "id", "CSV ID list"),
 	add_parse(CSV_STRING_LIST, name_list, "name", "CSV name list"),
 	add_parse(BOOL16, only_defs, "only_defaults", "Only query defaults"),
@@ -8840,6 +8854,7 @@ static const parser_t PARSER_ARRAY(WCKEY_CONDITION)[] = {
 	add_parse(BOOL16, with_deleted, "with_deleted", "Include deleted WCKeys"),
 };
 #undef add_parse
+#undef add_parse_deprec
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_account_param_t, mtype, false, field, 0, path, desc)
@@ -8882,12 +8897,14 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CLUSTER_CLASSIFICATION)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_cluster_cond_t, mtype, false, field, 0, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(slurmdb_cluster_cond_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(CLUSTER_CONDITION)[] = {
 	add_parse_bit_flag_array(slurmdb_cluster_cond_t, CLUSTER_CLASSIFICATION, false, classification, "classification", "Type of machine"),
 	add_parse(STRING_LIST, cluster_list, "cluster", "CSV cluster list"),
 	add_parse(STRING_LIST, federation_list, "federation", "CSV federation list"),
 	add_parse_bit_flag_array(slurmdb_cluster_cond_t, CLUSTER_REC_FLAGS, false, flags, "flags", "Query flags"),
-	add_parse(STRING_LIST, format_list, "format", "Ignored; process JSON manually to control output format"),
+	add_parse_deprec(STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(STRING_LIST, rpc_version_list, "rpc_version", "CSV RPC version list"),
 	add_parse(TIMESTAMP, usage_end, "usage_end", "Usage end (UNIX timestamp)"),
 	add_parse(TIMESTAMP, usage_start, "usage_start", "Usage start (UNIX timestamp)"),
@@ -8895,6 +8912,7 @@ static const parser_t PARSER_ARRAY(CLUSTER_CONDITION)[] = {
 	add_parse(BOOL16, with_usage, "with_usage", "Include usage"),
 };
 #undef add_parse
+#undef add_parse_deprec
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_info_param_t, mtype, false, field, 0, path, desc)
