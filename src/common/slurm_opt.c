@@ -5250,11 +5250,17 @@ static void _implicitly_bind_tres_per_task(slurm_opt_t *opt)
 				    &name, &type,
 				    &cnt, &save_ptr) == SLURM_SUCCESS) &&
 	       save_ptr) {
-		 /* Skip any explicitly set binding */
-		if (opt->tres_bind && xstrstr(opt->tres_bind, name))
+		xfree(type);
+
+		/* Skip any explicitly set binding */
+		if (opt->tres_bind && xstrstr(opt->tres_bind, name)) {
+			xfree(name);
 			continue;
+		}
+
 		xstrfmtcat(opt->tres_bind, "%s%s/%s:per_task:%"PRIu64,
 			   opt->tres_bind ? "+" : "", tres_type, name, cnt);
+		xfree(name);
 	}
 }
 
