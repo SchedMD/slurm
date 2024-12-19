@@ -5244,6 +5244,8 @@ static void _implicitly_bind_tres_per_task(slurm_opt_t *opt)
 	/* tres_bind only supports gres currently */
 	char *tres_type = "gres";
 	uint64_t cnt;
+	char *gpu_name = "gpu";
+	uint64_t gpu_sum = 0;
 
 	while ((slurm_get_next_tres(&tres_type,
 				    opt->tres_per_task,
@@ -5257,11 +5259,22 @@ static void _implicitly_bind_tres_per_task(slurm_opt_t *opt)
 			xfree(name);
 			continue;
 		}
+		/* Can't bind by different gpu types, get sum of all types */
+		if (!xstrcmp(gpu_name, name)) {
+			gpu_sum += cnt;
+			xfree(name);
+			continue;
+		}
 
 		xstrfmtcat(opt->tres_bind, "%s%s/%s:per_task:%"PRIu64,
 			   opt->tres_bind ? "+" : "", tres_type, name, cnt);
 		xfree(name);
 	}
+
+	if (gpu_sum)
+		xstrfmtcat(opt->tres_bind, "%s%s/%s:per_task:%"PRIu64,
+			   opt->tres_bind ? "+" : "", tres_type, gpu_name,
+			   gpu_sum);
 }
 
 static void _validate_tres_per_task(slurm_opt_t *opt)
