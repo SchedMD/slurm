@@ -95,6 +95,7 @@ static int	 new_nice = 0;
 static pthread_t rpc_handler_thread = 0; /* thread ID for RPC handler */
 static pthread_t rollup_handler_thread = 0; /* thread ID for rollup handler */
 static pthread_t commit_handler_thread = 0; /* thread ID for commit handler */
+static pthread_cond_t rollup_handler_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool restart_backup = false;
 
@@ -515,7 +516,15 @@ extern void shutdown_threads(void)
 				slurm_mutex_lock(&rollup_lock);
 			}
 		}
-		pthread_cancel(rollup_handler_thread);
+		if (backup && primary_resumed) {
+			/*
+			 * Force cancel the thread. Unsafe but we want it to
+			 * terminate immediately.
+			 */
+			pthread_cancel(rollup_handler_thread);
+		} else {
+			slurm_cond_signal(&rollup_handler_cond);
+		}
 		slurm_mutex_unlock(&rollup_lock);
 	}
 
@@ -824,6 +833,10 @@ static void *_rollup_handler(void *db_conn)
 	list_t *rollup_stats_list = NULL;
 	DEF_TIMERS;
 
+	/*
+	 * Need these as the backup controller can still be forcefully
+	 * cancelled.
+	 */
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
@@ -849,7 +862,6 @@ static void *_rollup_handler(void *db_conn)
 		acct_storage_g_commit(db_conn, 1);
 		handle_rollup_stats(rollup_stats_list, DELTA_TIMER, 0);
 		FREE_NULL_LIST(rollup_stats_list);
-		slurm_mutex_unlock(&rollup_lock);
 
 		/* Set time to be the beginning of the next hour */
 		tm.tm_sec = 0;
@@ -858,8 +870,8 @@ static void *_rollup_handler(void *db_conn)
 		abs.tv_sec = slurm_mktime(&tm);
 
 		/* Sleep until the next hour or until signaled to shutdown. */
-		sleep(abs.tv_sec - start_time.tv_sec);
-
+		slurm_cond_timedwait(&rollup_handler_cond, &rollup_lock, &abs);
+		slurm_mutex_unlock(&rollup_lock);
 		/* Just in case some new uids were added to the system
 		   pick them up here. */
 		assoc_mgr_set_missing_uids();
