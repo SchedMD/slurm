@@ -331,14 +331,11 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 extern int slurm_rest_auth_p_apply(rest_auth_context_t *context)
 {
 	int rc;
-	char *user = uid_to_string_or_null(getuid());
 
 	xassert(((plugin_data_t *) context->plugin_data)->magic == MAGIC);
 	xassert(context->plugin_id == plugin_id);
 
 	rc = auth_g_thread_config(NULL, context->user_name);
-
-	xfree(user);
 
 	return rc;
 }
