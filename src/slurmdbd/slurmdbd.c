@@ -912,8 +912,10 @@ static void *_commit_handler(void *db_conn)
 			slurm_mutex_unlock(&registered_lock);
 		}
 
-		/* This really doesn't need to be synconized so just
-		 * sleep for a bit and do it again.
+		/*
+		 * This really doesn't need to be synchronized so just
+		 * sleep for a bit and do it again. This is a thread
+		 * cancellation point.
 		 */
 		sleep(slurmdbd_conf->commit_delay ?
 		      slurmdbd_conf->commit_delay : 5);
