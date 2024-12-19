@@ -2638,6 +2638,7 @@ static void arg_reset_ntasks(slurm_opt_t *opt)
 {
 	opt->ntasks = 1;
 	opt->ntasks_set = false;
+	opt->ntasks_opt_set = false;
 }
 static slurm_cli_opt_t slurm_opt_ntasks = {
 	.name = "ntasks",
