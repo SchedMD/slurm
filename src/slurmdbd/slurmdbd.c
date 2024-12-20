@@ -817,8 +817,8 @@ static int _find_rollup_stats_in_list(void *x, void *key)
 /* _rollup_handler - Process rollup duties */
 static void *_rollup_handler(void *db_conn)
 {
-	time_t start_time = time(NULL);
-	time_t next_time;
+	struct timespec abs;
+	struct timeval start_time;
 /* 	int sigarray[] = {SIGUSR1, 0}; */
 	struct tm tm;
 	list_t *rollup_stats_list = NULL;
@@ -827,18 +827,22 @@ static void *_rollup_handler(void *db_conn)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	if (!localtime_r(&start_time, &tm)) {
-		fatal("Couldn't get localtime for rollup handler %ld",
-		      (long)start_time);
-		return NULL;
-	}
-
 	while (1) {
 		if (!db_conn)
 			break;
 		/* run the roll up */
+
+		/* get time before lock so we know exactly when we started. */
+		gettimeofday(&start_time, NULL);
+
+		if (!localtime_r(&start_time.tv_sec, &tm)) {
+			fatal("Couldn't get localtime for rollup handler %ld",
+			      (long) start_time.tv_sec);
+			return NULL;
+		}
+
 		slurm_mutex_lock(&rollup_lock);
-		debug2("running rollup at %s", slurm_ctime2(&start_time));
+		debug2("running rollup");
 		START_TIMER;
 		acct_storage_g_roll_usage(db_conn, 0, 0, 1, &rollup_stats_list);
 		END_TIMER;
@@ -847,24 +851,14 @@ static void *_rollup_handler(void *db_conn)
 		FREE_NULL_LIST(rollup_stats_list);
 		slurm_mutex_unlock(&rollup_lock);
 
-		/* get the time now we have rolled usage */
-		start_time = time(NULL);
-
-		if (!localtime_r(&start_time, &tm)) {
-			fatal("Couldn't get localtime for rollup handler %ld",
-			      (long)start_time);
-			return NULL;
-		}
-
-		/* sleep until the next hour */
+		/* Set time to be the beginning of the next hour */
 		tm.tm_sec = 0;
 		tm.tm_min = 0;
 		tm.tm_hour++;
-		next_time = slurm_mktime(&tm);
+		abs.tv_sec = slurm_mktime(&tm);
 
-		sleep((next_time - start_time));
-
-		start_time = next_time;
+		/* Sleep until the next hour or until signaled to shutdown. */
+		sleep(abs.tv_sec - start_time.tv_sec);
 
 		/* Just in case some new uids were added to the system
 		   pick them up here. */
