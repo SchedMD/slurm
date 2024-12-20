@@ -828,7 +828,6 @@ static void *_rollup_handler(void *db_conn)
 {
 	struct timespec abs;
 	struct timeval start_time = { 0 };
-/* 	int sigarray[] = {SIGUSR1, 0}; */
 	struct tm tm;
 	list_t *rollup_stats_list = NULL;
 	DEF_TIMERS;
