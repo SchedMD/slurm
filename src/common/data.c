@@ -395,17 +395,20 @@ static void _check_magic(const data_t *data)
 	if (!data)
 		return;
 
-	xassert(data->type > TYPE_START);
-	xassert(data->type < TYPE_MAX);
 	xassert(data->magic == DATA_MAGIC);
 
-	if (data->type == TYPE_NULL)
-		/* make sure NULL type has a NULL value */
-		xassert(data->data.list_u == NULL);
-	if (data->type == TYPE_LIST)
-		_check_data_list_magic(data->data.list_u);
-	if (data->type == TYPE_DICT)
-		_check_data_list_magic(data->data.dict_u);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
+		xassert(data->type > TYPE_START);
+		xassert(data->type < TYPE_MAX);
+
+		if (data->type == TYPE_NULL)
+			/* make sure NULL type has a NULL value */
+			xassert(data->data.list_u == NULL);
+		if (data->type == TYPE_LIST)
+			_check_data_list_magic(data->data.list_u);
+		if (data->type == TYPE_DICT)
+			_check_data_list_magic(data->data.dict_u);
+	}
 }
 
 static void _release(data_t *data)
