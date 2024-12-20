@@ -468,7 +468,6 @@ static void _get_node_energy(acct_gather_energy_t *energy)
  */
 static int _get_joules_task(uint16_t delta)
 {
-	time_t now = time(NULL);
 	static bool stepd_first = true;
 	uint64_t adjustment = 0;
 	uint16_t i;
@@ -516,7 +515,7 @@ static int _get_joules_task(uint16_t delta)
 		new->previous_consumed_energy = old->consumed_energy;
 
 		adjustment = _get_additional_consumption(
-			new->poll_time, now,
+			new->poll_time, time(NULL),
 			new->current_watts,
 			new->current_watts);
 

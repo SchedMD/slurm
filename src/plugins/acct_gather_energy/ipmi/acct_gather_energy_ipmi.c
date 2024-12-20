@@ -963,7 +963,6 @@ static void *_thread_launcher(void *no_data)
 
 static int _get_joules_task(uint16_t delta)
 {
-	time_t now = time(NULL);
 	static bool first = true;
 	uint64_t adjustment = 0;
 	uint16_t i;
@@ -1011,7 +1010,7 @@ static int _get_joules_task(uint16_t delta)
 
 		if (slurm_ipmi_conf.adjustment)
 			adjustment = _get_additional_consumption(
-				new->poll_time, now,
+				new->poll_time, time(NULL),
 				new->current_watts,
 				new->current_watts);
 
