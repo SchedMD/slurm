@@ -2335,7 +2335,6 @@ extern data_t *data_move(data_t *dest, data_t *src)
 	memmove(&dest->data, &src->data, sizeof(src->data));
 	dest->type = src->type;
 	src->type = TYPE_NULL;
-	xassert((memset(&src->data, 0, sizeof(src->data))));
 
 	return dest;
 }
