@@ -95,6 +95,7 @@ static int	 new_nice = 0;
 static pthread_t rpc_handler_thread = 0; /* thread ID for RPC handler */
 static pthread_t rollup_handler_thread = 0; /* thread ID for rollup handler */
 static pthread_t commit_handler_thread = 0; /* thread ID for commit handler */
+static pthread_cond_t rollup_handler_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool restart_backup = false;
 
@@ -515,7 +516,15 @@ extern void shutdown_threads(void)
 				slurm_mutex_lock(&rollup_lock);
 			}
 		}
-		pthread_cancel(rollup_handler_thread);
+		if (backup && primary_resumed) {
+			/*
+			 * Force cancel the thread. Unsafe but we want it to
+			 * terminate immediately.
+			 */
+			pthread_cancel(rollup_handler_thread);
+		} else {
+			slurm_cond_signal(&rollup_handler_cond);
+		}
 		slurm_mutex_unlock(&rollup_lock);
 	}
 
@@ -817,60 +826,62 @@ static int _find_rollup_stats_in_list(void *x, void *key)
 /* _rollup_handler - Process rollup duties */
 static void *_rollup_handler(void *db_conn)
 {
-	time_t start_time = time(NULL);
-	time_t next_time;
-/* 	int sigarray[] = {SIGUSR1, 0}; */
+	struct timespec abs;
+	struct timeval start_time = { 0 };
 	struct tm tm;
 	list_t *rollup_stats_list = NULL;
 	DEF_TIMERS;
 
+	/*
+	 * Need these as the backup controller can still be forcefully
+	 * cancelled.
+	 */
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	if (!localtime_r(&start_time, &tm)) {
-		fatal("Couldn't get localtime for rollup handler %ld",
-		      (long)start_time);
-		return NULL;
-	}
-
-	while (1) {
+	while (!shutdown_time) {
 		if (!db_conn)
 			break;
+
+		if (start_time.tv_sec) {
+			/*
+			 * Just in case some new uids were added to the system
+			 * pick them up here. Only run this if we ran before.
+			 */
+			assoc_mgr_set_missing_uids();
+		}
+
 		/* run the roll up */
+
+		/* get time before lock so we know exactly when we started. */
+		gettimeofday(&start_time, NULL);
+
+		if (!localtime_r(&start_time.tv_sec, &tm)) {
+			fatal("Couldn't get localtime for rollup handler %ld",
+			      (long) start_time.tv_sec);
+			return NULL;
+		}
+
 		slurm_mutex_lock(&rollup_lock);
-		debug2("running rollup at %s", slurm_ctime2(&start_time));
+		debug2("running rollup");
 		START_TIMER;
 		acct_storage_g_roll_usage(db_conn, 0, 0, 1, &rollup_stats_list);
 		END_TIMER;
 		acct_storage_g_commit(db_conn, 1);
 		handle_rollup_stats(rollup_stats_list, DELTA_TIMER, 0);
 		FREE_NULL_LIST(rollup_stats_list);
-		slurm_mutex_unlock(&rollup_lock);
 
-		/* get the time now we have rolled usage */
-		start_time = time(NULL);
-
-		if (!localtime_r(&start_time, &tm)) {
-			fatal("Couldn't get localtime for rollup handler %ld",
-			      (long)start_time);
-			return NULL;
-		}
-
-		/* sleep until the next hour */
+		/* Set time to be the beginning of the next hour */
 		tm.tm_sec = 0;
 		tm.tm_min = 0;
 		tm.tm_hour++;
-		next_time = slurm_mktime(&tm);
+		abs.tv_sec = slurm_mktime(&tm);
 
-		sleep((next_time - start_time));
+		/* Sleep until the next hour or until signaled to shutdown. */
+		slurm_cond_timedwait(&rollup_handler_cond, &rollup_lock, &abs);
+		slurm_mutex_unlock(&rollup_lock);
 
-		start_time = next_time;
-
-		/* Just in case some new uids were added to the system
-		   pick them up here. */
-		assoc_mgr_set_missing_uids();
 		/* repeat ;) */
-
 	}
 
 	return NULL;
@@ -900,8 +911,10 @@ static void *_commit_handler(void *db_conn)
 			slurm_mutex_unlock(&registered_lock);
 		}
 
-		/* This really doesn't need to be synconized so just
-		 * sleep for a bit and do it again.
+		/*
+		 * This really doesn't need to be synchronized so just
+		 * sleep for a bit and do it again. This is a thread
+		 * cancellation point.
 		 */
 		sleep(slurmdbd_conf->commit_delay ?
 		      slurmdbd_conf->commit_delay : 5);
