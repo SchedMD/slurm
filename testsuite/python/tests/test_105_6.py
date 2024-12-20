@@ -3,7 +3,8 @@
 ############################################################################
 
 import atf
-import os
+
+# import os
 import pytest
 import re
 

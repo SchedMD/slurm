@@ -3960,7 +3960,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		} else if (!object->cluster) {
 			/* This clause is only here for testing
 			   purposes, it shouldn't really happen in
-			   real senarios.
+			   real scenarios.
 			*/
 			debug("THIS SHOULD ONLY HAPPEN IN A TEST ENVIRONMENT");
 			object->cluster = xstrdup("test");
@@ -6976,7 +6976,7 @@ extern void assoc_mgr_get_default_qos_info(
  * Calculate a weighted tres value.
  * IN: tres_cnt - array of tres values of size g_tres_count.
  * IN: weights - weights to apply to tres values of size g_tres_count.
- * IN: flags - priority flags (toogle between MAX or SUM of tres).
+ * IN: flags - priority flags (toggle between MAX or SUM of tres).
  * IN: locked - whether the tres read assoc mgr lock is locked or not.
  * RET: returns the calculated tres weight.
  */
@@ -7432,7 +7432,7 @@ extern bool assoc_mgr_tree_has_user_coord(slurmdb_assoc_rec_t *assoc,
 	if (!assoc->usage)
 		assoc = _find_assoc_rec(assoc);
 
-	/* See if this assoc or ansestor is making users coordinators */
+	/* See if this assoc or ancestor is making users coordinators */
 	while (assoc) {
 		if (assoc->flags & ASSOC_FLAG_USER_COORD) {
 			rc = true;

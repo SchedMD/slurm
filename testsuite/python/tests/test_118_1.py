@@ -8,7 +8,7 @@ import re
 def test_help():
     """Verify strigger --help displays the help page"""
 
-    output = atf.run_command_output(f"strigger --help", fatal=True)
+    output = atf.run_command_output("strigger --help", fatal=True)
 
     assert (
         re.search(r"strigger \[--set \| --get \| --clear\] \[OPTIONS\]", output)

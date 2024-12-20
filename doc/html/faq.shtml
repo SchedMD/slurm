@@ -1123,7 +1123,7 @@ given in <i>slurm.conf</i> and will not check these specifications
 against those actually found on the node. The system would best be configured
 with <i>TaskPlugin=task/none</i>, so that launched tasks can run on any
 available CPU under operating system control.</p>
-  
+
 <h3>Build and Install</h3>
 
 <p><a id="rpm"><b>Why aren't pam_slurm.so, auth_none.so, or other components in a

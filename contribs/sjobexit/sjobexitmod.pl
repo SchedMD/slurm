@@ -1,4 +1,4 @@
-#! /usr/bin/perl 
+#! /usr/bin/perl
 #
 
 #
@@ -47,7 +47,7 @@ getoptions();
 my $rval;
 
 #
-# Exexute the utility.
+# Execute the utility.
 #
 $rval = `$execute_line 2>&1`;
 
@@ -84,7 +84,7 @@ sub getoptions
 	) or usage();
 
 #
-#	Fix the exit code (if set) to reflect the 
+#	Fix the exit code (if set) to reflect the
 #	fact that it represents the leftmost 8 bits
 #	of the integer field.
 #
@@ -138,7 +138,7 @@ sub getoptions
 
 #
 # Simple check to see if number is an integer,
-# retrun 0 if it is not, else return 1.
+# return 0 if it is not, else return 1.
 #
 sub isnumber
 {
@@ -205,8 +205,8 @@ B<sjobexitmod> - Modifies a completed job in the slurmdbd
 
 =head1 SYNOPSIS
 
-       sjobexitmod	[-e exit_code] [-r reason_string] [-c cluster_name] JobId 
-       sjobexitmod	-l JobId 
+       sjobexitmod	[-e exit_code] [-r reason_string] [-c cluster_name] JobId
+       sjobexitmod	-l JobId
        sjobexitmod	-h
        sjobexitmod	-man
 
@@ -271,4 +271,3 @@ Report bugs to <pdesr@llnl.gov>
 =head1 SEE ALSO
 
 sacctmgr,sacct
-

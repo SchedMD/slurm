@@ -1333,7 +1333,7 @@ extern void slurmdbd_free_usage_msg(dbd_usage_msg_t *msg,
 			destroy_rec = slurmdb_destroy_wckey_rec;
 			break;
 		default:
-			fatal("Unknown usuage type");
+			fatal("Unknown usage type");
 			return;
 		}
 

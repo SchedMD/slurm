@@ -24,7 +24,7 @@ int main(int ac, char **av)
 	log_opts.stderr_level = LOG_LEVEL_DEBUG2;
 
 	/* test log to stderr when log not initialized */
-	error("testing with unitialized log.");
+	error("testing with uninitialized log.");
 
 	/* now initialize log: */
 	log_init("log-test", log_opts, 0, NULL);
@@ -56,7 +56,7 @@ int main(int ac, char **av)
 		  info("in parent %ld", (long int) getpid());
 		  break;
 	}
-	/* for now, this test passes if we make it through without 
+	/* for now, this test passes if we make it through without
 	 * dumping core
 	 */
 
@@ -64,4 +64,3 @@ int main(int ac, char **av)
 		error("bad_func: %m");
 	return 0;
 }
-	

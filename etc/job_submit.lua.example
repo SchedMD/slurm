@@ -175,7 +175,7 @@ function  slurm_job_modify(job_desc, job_ptr, part_list, modify_uid)
 	--[[
         --   While working on that it's important to understand that
         --   modification of a job array metarecord may differs from specific
-        --   element modification. When job is not yet splitted to tasks it will
+        --   element modification. When job is not yet split to tasks it will
         --   be treated as one element.
         --]]
 

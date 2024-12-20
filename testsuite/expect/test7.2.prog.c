@@ -390,7 +390,7 @@ int main (int argc, char **argv)
 		 * and do not put a real load on srun or the network */
 	}
 #if _DEBUG
-	printf("Interative PMI calls successful\n");
+	printf("Iterative PMI calls successful\n");
 #endif
 
 	/* create new keyspace and test it */

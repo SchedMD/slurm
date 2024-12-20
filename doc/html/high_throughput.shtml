@@ -24,7 +24,7 @@ configuration used.</p>
 
 <p>Several system configuration parameters may require modification to support a large number
 of open files and TCP connections with large bursts of messages. Changes can
-be made using the <b>/etc/rc.d/rc.local</b> or <b>/etc/sysctl.conf</b> 
+be made using the <b>/etc/rc.d/rc.local</b> or <b>/etc/sysctl.conf</b>
 script to preserve changes after reboot. In either case, you can write values
 directly into these files
 (e.g. <i>"echo 32832 &gt; /proc/sys/fs/file-max"</i>).</p>

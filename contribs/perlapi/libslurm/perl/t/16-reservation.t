@@ -77,7 +77,3 @@ SKIP: {
     # XXX: if accounting_storage/slurmdbd is configured and slurmdbd fails, delete reservation will fail.
     ok($rc == SLURM_SUCCESS, "delete reservation") || diag("delete_reservation" . $slurm->strerror());
 }
-
-
-
-

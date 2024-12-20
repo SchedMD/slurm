@@ -442,7 +442,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 
 	/*
 	 * This call is only done once per step since stepd_cleanup is protected
-	 * agains multiple and concurrent calls.
+	 * against multiple and concurrent calls.
 	 */
 	proctrack_g_destroy(step->cont_id);
 
@@ -1120,7 +1120,7 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 	}
 
 	/*
-	 * Add slurmd node topology informations to job env array
+	 * Add slurmd node topology information to job env array
 	 */
 	env_array_overwrite(&step->env,"SLURM_TOPOLOGY_ADDR",
 			    conf->node_topo_addr);

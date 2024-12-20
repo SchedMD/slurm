@@ -276,7 +276,7 @@ static bool _alter_table_after_upgrade(mysql_conn_t *mysql_conn,
 
 	/*
 	 * If upgrade detected and the table alter query string contains an
-	 * emtpy string default then the query should be executed. The latter
+	 * empty string default then the query should be executed. The latter
 	 * check avoids unnecessary table alterations.
 	 */
 	if (upgraded && xstrcasestr(table_alter_query, "default ''"))
@@ -1347,7 +1347,7 @@ extern void mysql_db_restore_streaming_replication(mysql_conn_t *mysql_conn)
 	char *query;
 
 	/*
-	 * Check if the conection has saved streaming replication settings.  If
+	 * Check if the connection has saved streaming replication settings.  If
 	 * not there is nothing to restore.
 	 */
 	if (!mysql_conn->wsrep_trx_fragment_unit_orig &&

@@ -40,9 +40,9 @@ def setup():
         },
     )
 
-    # Needed fo MaxNodeCount
+    # Needed for MaxNodeCount
     atf.require_config_parameter("SelectType", "select/cons_tres")
-    # Needed fo cons_tres
+    # Needed for cons_tres
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
 
     atf.require_slurm_running()
@@ -188,10 +188,10 @@ def test_full_node_registration(create_node, register_node):
     register_node(f"{node_prefix}1", "f1", fatal=True)
     assert node_powered_up(
         f"{node_prefix}1"
-    ), f"Dynamic node should have finished POWERING_UP"
+    ), "Dynamic node should have finished POWERING_UP"
     assert node_is_idle(
         f"{node_prefix}1"
-    ), f"Dynamic node should be IDLE because it has powered up without any jobs"
+    ), "Dynamic node should be IDLE because it has powered up without any jobs"
 
 
 # Test a newly created dynamic node that never registers powers down
@@ -199,7 +199,7 @@ def test_missing_node_registration(create_node):
     create_node(f"{node_prefix}1", "CLOUD", "f1", fatal=True)
     assert atf.wait_for_node_state(
         f"{node_prefix}1", "POWERED_DOWN", timeout=resume_time + 10
-    ), f"Dynamic node should have powered down when not registered"
+    ), "Dynamic node should have powered down when not registered"
 
 
 # Test dynamic nodes correctly assigned to nodesets/partitions
@@ -255,10 +255,10 @@ def test_powered_up_node_job(create_node, register_node):
     register_node(f"{node_prefix}1", "f1", fatal=True)
     assert node_powered_up(
         f"{node_prefix}1"
-    ), f"Dynamic node should have finished POWERING_UP"
+    ), "Dynamic node should have finished POWERING_UP"
     assert node_is_idle(
         f"{node_prefix}1"
-    ), f"Dynamic node should be IDLE because it has powered up without any jobs"
+    ), "Dynamic node should be IDLE because it has powered up without any jobs"
 
     # Submit job and wait for completion
     job_id = atf.submit_job_sbatch("-p dynamic1 --wrap 'srun hostname'", fatal=True)
@@ -278,10 +278,10 @@ def test_node_suspension(create_node, register_node):
     register_node(f"{node_prefix}1", "f1", fatal=True)
     assert node_powered_up(
         f"{node_prefix}1"
-    ), f"Dynamic node should have finished POWERING_UP"
+    ), "Dynamic node should have finished POWERING_UP"
     assert node_is_idle(
         f"{node_prefix}1"
-    ), f"Dynamic node should be IDLE because it has powered up without any jobs"
+    ), "Dynamic node should be IDLE because it has powered up without any jobs"
 
     # Test node powers down without a job
     assert atf.wait_for_node_state(

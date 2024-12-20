@@ -44,7 +44,7 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
 
-#define PMI_MAX_ID_LEN       16	/* Maximim size of PMI process group ID */
+#define PMI_MAX_ID_LEN       16	/* Maximum size of PMI process group ID */
 #define PMI_MAX_KEY_LEN     256	/* Maximum size of a PMI key */
 #define PMI_MAX_KVSNAME_LEN 256	/* Maximum size of KVS name */
 #define PMI_MAX_VAL_LEN     1024 /* Maximum size of a PMI value */

@@ -233,7 +233,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		if (crp == NULL) {
 			crp = xmalloc(sizeof(struct records));
 			crp->rec = tmp_str;
-			tmp_str = NULL;	/* transfered to record */
+			tmp_str = NULL;	/* transferred to record */
 			crp->hostlist = hostlist_create("");
 			hostlist_push(crp->hostlist,
 				      node_info_ptr->node_array[i].name);

@@ -366,7 +366,7 @@ extern void block_record_validate(void)
 		hostlist_t *hl = hostlist_create(tmp_list);
 
 		if (hl == NULL)
-			fatal("Invalide BlockName: %s", tmp_list);
+			fatal("Invalid BlockName: %s", tmp_list);
 
 		block_record_table[i].name = hostlist_ranged_string_xmalloc(hl);
 		block_record_table[i].nodes =

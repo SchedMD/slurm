@@ -683,7 +683,7 @@ extern void configless_clear(void)
 	slurm_rwlock_unlock(&configless_lock);
 }
 
-/* _kill_job_on_msg_fail - The request to create a job record successed,
+/* _kill_job_on_msg_fail - The request to create a job record succeeded,
  *	but the reply message to srun failed. We kill the job to avoid
  *	leaving it orphaned */
 static void _kill_job_on_msg_fail(uint32_t job_id)
@@ -2007,7 +2007,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 	 *
 	 * When a job is requeued because of node failure, and there is no
 	 * epilog, both EPILOG_COMPLETE and COMPLETE_BATCH_SCRIPT_COMPLETE
-	 * messages are sent at the same time and receieved on different
+	 * messages are sent at the same time and received on different
 	 * threads. EPILOG_COMPLETE will grab a new db_index for the job. So if
 	 * COMPLETE_BATCH_SCRIPT happens after EPILOG_COMPLETE, then adding the
 	 * batch step would happen on the new db instance -- which is incorrect.
@@ -2629,7 +2629,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 			if (node_reg_stat_msg->dynamic_type == DYN_NODE_FUTURE) {
 				int rc;
 				/*
-				 * dynamic future nodes doen't know what node
+				 * dynamic future nodes doesn't know what node
 				 * it's mapped to to be able to load all configs
 				 * in. slurmctld will tell the slurmd what node
 				 * it's mapped to and then the slurmd will then
@@ -3982,7 +3982,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 
 	START_TIMER;
 
-	/* job_desc_msg->user_id is set when the uid has been overriden with
+	/* job_desc_msg->user_id is set when the uid has been overridden with
 	 * -u <uid> or --uid=<uid>. NO_VAL is default. Verify the request has
 	 * come from an admin */
 	if (job_desc_msg->user_id != SLURM_AUTH_NOBODY) {
@@ -4390,7 +4390,7 @@ static void _slurm_rpc_resv_update(slurm_msg_t *msg)
 				xmalloc_nz(sizeof(*resv_desc_ptr2));
 			slurm_init_resv_desc_msg(resv_desc_ptr2);
 			/*
-			 * Santitize the structure since a regular user is doing
+			 * Sanitize the structure since a regular user is doing
 			 * this and is only allowed to skip the reservation and
 			 * not update anything else.
 			 */
@@ -5330,7 +5330,7 @@ static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	}
 
 	/*
-	 * Before we send an rc we are transfering the update_list to a common
+	 * Before we send an rc we are transferring the update_list to a common
 	 * list to avoid the potential of messages from the dbd getting out of
 	 * order. The list lock here should protect us here as we only access
 	 * this list in list_transfer and list_delete_all.
@@ -5650,7 +5650,7 @@ static void _slurm_rpc_dump_licenses(slurm_msg_t *msg)
 
 	START_TIMER;
 	if ((lic_req_msg->last_update - 1) >= last_license_update) {
-		/* Dont send unnecessary data
+		/* Don't send unnecessary data
 		 */
 		debug2("%s: no change SLURM_NO_CHANGE_IN_DATA", __func__);
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);

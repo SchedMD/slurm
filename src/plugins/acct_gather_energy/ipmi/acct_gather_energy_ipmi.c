@@ -924,7 +924,7 @@ static void *_thread_ipmi_run(void *no_data)
 
 static void *_thread_launcher(void *no_data)
 {
-	//what arg would countain? frequency, socket?
+	//what arg would contain? frequency, socket?
 	struct timeval tvnow;
 	struct timespec abs;
 

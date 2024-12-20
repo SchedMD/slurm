@@ -687,7 +687,7 @@ static list_t *_get_cluster_list(int argc, char **argv, uint32_t *total_time,
 		       "----------------------------------------\n");
 	}
 
-	/* Mutliply the time range by fed_cluster_count since the federation
+	/* Multiply the time range by fed_cluster_count since the federation
 	 * represents time for all clusters in the federation and not just one
 	 * cluster. This gives correct reported time for a federated utilization
 	 * report. */

@@ -3,7 +3,8 @@
 ############################################################################
 import atf
 import pytest
-import re
+
+# import re
 import pexpect
 
 node_count = 2
@@ -26,7 +27,7 @@ def setup():
 @pytest.fixture(scope="module")
 def no_kill_job():
     """Submit a job that should not be killed on node failure"""
-    child = pexpect.spawn(f"srun --no-kill -N2 -v sleep 300")
+    child = pexpect.spawn("srun --no-kill -N2 -v sleep 300")
     child.expect(r"jobid (\d+)", timeout=5)
     job_id = int(child.match.group(1))
     atf.wait_for_job_state(job_id, "RUNNING")

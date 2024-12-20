@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  allocate.c - allocate nodes for a job or step with supplied contraints
+ *  allocate.c - allocate nodes for a job or step with supplied constraints
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
@@ -1039,7 +1039,7 @@ _handle_rc_msg(slurm_msg_t *msg)
 
 /*
  * Read a Slurm hostfile specified by "filename".  "filename" must contain
- * a list of Slurm NodeNames, one per line, comma seperated, or * notation.
+ * a list of Slurm NodeNames, one per line, comma separated, or * notation.
  * Reads up to "n" number of hostnames from the file. Returns a string
  * representing a hostlist ranged string of the contents of the file.
  * This is a helper function, it does not contact any Slurm daemons.

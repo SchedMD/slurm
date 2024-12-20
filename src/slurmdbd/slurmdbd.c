@@ -92,9 +92,9 @@ static int    setwd = 0;		/* change working directory -s  */
 static log_options_t log_opts = 	/* Log to stderr & syslog */
 	LOG_OPTS_INITIALIZER;
 static int	 new_nice = 0;
-static pthread_t rpc_handler_thread = 0; /* thread ID for RPC hander */
-static pthread_t rollup_handler_thread = 0; /* thread ID for rollup hander */
-static pthread_t commit_handler_thread = 0; /* thread ID for commit hander */
+static pthread_t rpc_handler_thread = 0; /* thread ID for RPC handler */
+static pthread_t rollup_handler_thread = 0; /* thread ID for rollup handler */
+static pthread_t commit_handler_thread = 0; /* thread ID for commit handler */
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool restart_backup = false;
 

@@ -78,16 +78,16 @@ lappend job_list $job_id
 subtest {$status == 0} "Verify salloc --reservation succeeds for job ($job_id)"
 subtest {[get_job_param $job_id "Reservation"] eq "$resv_name1,$resv_name2,$resv_name3"} "Verify salloc job got reservation" "Reservation = $resv_name1,$resv_name2,$resv_name3"
 
-# Test reservation order is consistant
+# Test reservation order is consistent
 set job_id [submit_job "--reservation=$resv_name2,$resv_name3,$resv_name1 --wrap=\"sleep 1\""]
 lappend job_list $job_id
 subtest {$job_id != 0} "Verify sbatch --reservation succeeds for job ($job_id)"
-subtest {[get_job_param $job_id "Reservation"] eq "$resv_name2,$resv_name3,$resv_name1"} "Verify reservation order is consistant" "Reservation = $resv_name2,$resv_name3,$resv_name1"
+subtest {[get_job_param $job_id "Reservation"] eq "$resv_name2,$resv_name3,$resv_name1"} "Verify reservation order is consistent" "Reservation = $resv_name2,$resv_name3,$resv_name1"
 
-# Test job fails when atleast 1 reservation is wrong
+# Test job fails when at least 1 reservation is wrong
 set job_id [submit_job -xfail "--reservation=$resv_name1,$resv_name2,$resv_name3,wrong_resv_$test_name --wrap=\"sleep 1\""]
 lappend job_list $job_id
-subtest {$job_id == 0} "Verify job fails when atleast 1 reservation is wrong"
+subtest {$job_id == 0} "Verify job fails when at least 1 reservation is wrong"
 
 # Test jobs landed on a reservation's node
 set res1_nodes [get_reservation_param $resv_name1 Nodes]

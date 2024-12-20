@@ -250,7 +250,7 @@ eio_handle_t *pmixp_info_io(void)
  * Derived from src/srun/opt.c
  * _get_task_count()
  *
- * FIXME: original _get_task_count has some additinal ckeck
+ * FIXME: original _get_task_count has some additional check
  * for opt.ntasks_per_node & opt.cpus_set
  * Should we care here?
  static int _get_task_count(char ***env, uint32_t *tasks, uint32_t *cpus)

@@ -83,7 +83,7 @@
  */
 strong_alias(net_stream_listen,		slurm_net_stream_listen);
 
-/* open a stream socket on an ephemereal port and put it into
+/* open a stream socket on an ephemeral port and put it into
  * the listen state. fd and port are filled in with the new
  * socket's file descriptor and port #.
  *
@@ -148,7 +148,7 @@ extern void net_set_keep_alive(int sock)
  * back in 9.0.
  *
  * Removing this call might decrease the robustness of communications,
- * but will probably have no noticable effect.
+ * but will probably have no noticeable effect.
  */
 #if !defined (__APPLE__) && (! defined(__FreeBSD__) || (__FreeBSD_version > 900000))
 	if (slurm_conf.keepalive_interval != NO_VAL) {

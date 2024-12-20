@@ -70,7 +70,7 @@ def test_replace_flags(create_resv, delete_resv):
     assert (
         re.search(
             rf"(?:Nodes=)({node1})",
-            atf.run_command_output(f"scontrol show reservationname resv1"),
+            atf.run_command_output("scontrol show reservationname resv1"),
         )
         is not None
     )
@@ -78,7 +78,7 @@ def test_replace_flags(create_resv, delete_resv):
     logging.info(f"Assert that {node1} has the +RESERVED state")
     assert atf.repeat_command_until(
         f"scontrol show node {node1}",
-        lambda results: re.search(rf"(?:State=).+(\+RESERVED)", results["stdout"]),
+        lambda results: re.search(r"(?:State=).+(\+RESERVED)", results["stdout"]),
         quiet=False,
     )
 
@@ -99,14 +99,14 @@ def test_replace_flags(create_resv, delete_resv):
     logging.info(f"Assert that {node2} now has the +RESERVED state")
     assert atf.repeat_command_until(
         f"scontrol show node {node2}",
-        lambda results: re.search(rf"(?:State=).+(\+RESERVED)", results["stdout"]),
+        lambda results: re.search(r"(?:State=).+(\+RESERVED)", results["stdout"]),
         quiet=False,
     )
 
     logging.info(f"Assert that {node1} has NOT the +RESERVED state anymore")
     assert atf.repeat_command_until(
         f"scontrol show node {node1}",
-        lambda results: not re.search(rf"(?:State=).+(\+RESERVED)", results["stdout"]),
+        lambda results: not re.search(r"(?:State=).+(\+RESERVED)", results["stdout"]),
         quiet=False,
     )
 
@@ -123,7 +123,7 @@ def test_noreplace_flags(create_resv, delete_resv):
     assert (
         re.search(
             rf"(?:Nodes=)({node1})",
-            atf.run_command_output(f"scontrol show reservationname resv1"),
+            atf.run_command_output("scontrol show reservationname resv1"),
         )
         is not None
     )
@@ -131,7 +131,7 @@ def test_noreplace_flags(create_resv, delete_resv):
     logging.info(f"Assert that {node1} has the +RESERVED state")
     assert atf.repeat_command_until(
         f"scontrol show node {node1}",
-        lambda results: re.search(rf"(?:State=).+(\+RESERVED)", results["stdout"]),
+        lambda results: re.search(r"(?:State=).+(\+RESERVED)", results["stdout"]),
         quiet=False,
     )
 
@@ -139,7 +139,7 @@ def test_noreplace_flags(create_resv, delete_resv):
         logging.info(f"Assert that {node1} has the +MAINT state")
         assert atf.repeat_command_until(
             f"scontrol show node {node1}",
-            lambda results: re.search(rf"(?:State=).+(\+MAINT)", results["stdout"]),
+            lambda results: re.search(r"(?:State=).+(\+MAINT)", results["stdout"]),
             quiet=False,
         )
 
@@ -161,7 +161,7 @@ def test_noreplace_flags(create_resv, delete_resv):
     logging.info(f"Assert that {node2} doesn't get the +RESERVED state")
     assert not atf.repeat_command_until(
         f"scontrol show node {node2}",
-        lambda results: re.search(rf"(?:State=).+(\+RESERVED)", results["stdout"]),
+        lambda results: re.search(r"(?:State=).+(\+RESERVED)", results["stdout"]),
         timeout=15,
         quiet=False,
     )
@@ -170,7 +170,7 @@ def test_noreplace_flags(create_resv, delete_resv):
         logging.info(f"Assert that {node1} still has the +MAINT state")
         assert atf.repeat_command_until(
             f"scontrol show node {node1}",
-            lambda results: re.search(rf"(?:State=).+(\+MAINT)", results["stdout"]),
+            lambda results: re.search(r"(?:State=).+(\+MAINT)", results["stdout"]),
             quiet=False,
         )
 
@@ -220,7 +220,7 @@ def test_incomp_flags(flag, delete_resv):
         expected_output in result["stderr"]
     ), f"Could not find {expected_output} in {result['stderr']}"
 
-    logging.info(f"Assert exit code is not 0")
+    logging.info("Assert exit code is not 0")
     assert result["exit_code"] != 0, "The command was supposed to fail, but didn't!"
 
 
@@ -272,5 +272,5 @@ def test_update_incomp_flags(create_flag, update_flag, delete_resv):
         expected_output in result["stderr"]
     ), "Could not find 'error updating the res' in output"
 
-    logging.info(f"Assert exit code is not 0")
+    logging.info("Assert exit code is not 0")
     assert result["exit_code"] != 0, "The command was supposed to fail, but didn't!"

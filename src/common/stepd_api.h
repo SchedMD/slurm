@@ -140,7 +140,7 @@ int stepd_cleanup_sockets(const char *directory, const char *nodename);
 int stepd_terminate(int fd, uint16_t protocol_version);
 
 /*
- * Connect to a slurmstepd proccess by way of its unix domain socket.
+ * Connect to a slurmstepd process by way of its unix domain socket.
  *
  * Both "directory" and "nodename" may be null, in which case stepd_connect
  * will attempt to determine them on its own.  If you are using multiple

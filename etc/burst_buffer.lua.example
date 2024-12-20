@@ -333,7 +333,7 @@ end
 --This function is called after the job is scheduled but before the
 --job starts running when the job is in a "running + configuring" state.
 --
---The file specfied by path_file is an empty file. If environment variables are
+--The file specified by path_file is an empty file. If environment variables are
 --written to path_file, these environment variables are added to the job's
 --environment. A commented out example is given.
 --]]

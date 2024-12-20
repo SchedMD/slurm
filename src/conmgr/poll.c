@@ -58,7 +58,7 @@
 /*
  * Size event count for 1 input and 1 output per connection and interrupt pipe
  * fd. Add 35% buffer of extra events to account for non-listener creating
- * conections. Allocated once to avoid calling xrecalloc() every time poll() is
+ * connections. Allocated once to avoid calling xrecalloc() every time poll() is
  * called.
  */
 #define MAX_POLL_EVENTS(max_connections) (((max_connections * 2) + 1) * 1.35)

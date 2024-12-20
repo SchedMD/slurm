@@ -97,7 +97,7 @@ cpu_freq_verify_govlist(const char *arg, uint32_t *govs);
  * Input:  - arg  - frequency value to check
  * 		    valid governor, low, medium, highm1, high,
  * 		    or numeric frequency
- *	   - freq - pointer to corresponging enum or numberic value
+ *	   - freq - pointer to corresponding enum or numeric value
  * Returns - -1 on error, else 0
  */
 extern int
@@ -175,7 +175,7 @@ cpu_freq_reset(stepd_step_rec_t *step);
  * Typically called to produce string for a log or reporting utility.
  *
  *
- * When label!=NULL, info message is put to log. This is convienient for
+ * When label!=NULL, info message is put to log. This is convenient for
  *      inserting debug calls to verify values in structures or messages.
  * noval_str==NULL allows missing parameters not to be reported.
  * freq_str is a buffer to hold the composite string for all input values.

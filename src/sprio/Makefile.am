@@ -24,4 +24,3 @@ $(sprio_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 sprio_LDFLAGS = $(CMD_LDFLAGS)
-

@@ -128,7 +128,7 @@ extern int xcgroup_get_uint64_param(xcgroup_t *cg, char *param,
  * could not be added to the cgroup.
  *
  * IN: cpuset_prefix - cpuset prefix to set
- * IN/OUT: prefix_set - wheter cpuset prefix is set or not
+ * IN/OUT: prefix_set - whether cpuset prefix is set or not
  * IN: cg - cgroup to initialize
  * OUT: SLURM_ERROR or SLURM_SUCCESS
  *

@@ -84,7 +84,7 @@ expect {
 	}
 }
 if {$found == 0} {
-	fail "MCSPlugin parameter in scontrol show config is not mcs/acount"
+	fail "MCSPlugin parameter in scontrol show config is not mcs/account"
 }
 
 ###### Check that sbatch fails with a bad mcs-label ######

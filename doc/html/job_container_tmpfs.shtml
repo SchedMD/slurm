@@ -6,7 +6,7 @@
 <p>job_container/tmpfs is an optional plugin that provides job-specific, private
 temporary file system space.</p>
 
-<p>When enabled on the cluster, a filesytem namespace will be created for each
+<p>When enabled on the cluster, a filesystem namespace will be created for each
 job with a unique, private instance of /tmp and /dev/shm for the job to use.
 These directories can be changed with the <b>Dirs=</b> option in
 job_container.conf. The contents of these directories will be removed at job

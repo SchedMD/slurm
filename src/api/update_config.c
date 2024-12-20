@@ -107,7 +107,7 @@ tryagain:
 	{
 		reroute_msg_t *rr_msg = (reroute_msg_t *)resp_msg.data;
 
-		/* Don't expect mutliple hops but in the case it does
+		/* Don't expect multiple hops but in the case it does
 		 * happen, free the previous rr cluster_rec. */
 		if (working_cluster_rec &&
 		    working_cluster_rec != save_working_cluster_rec)

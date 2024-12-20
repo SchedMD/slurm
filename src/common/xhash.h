@@ -62,7 +62,7 @@ typedef void (*xhash_freefunc_t)(void* item);
  *
  * @param idfunc is used to calculate a string unique identifier from a user
  *               item.
- * @param freefunc is used to free data insterted to the xhash table, use NULL
+ * @param freefunc is used to free data inserted to the xhash table, use NULL
  *		   to bypass it.
  *
  * @returns the newly allocated hash table. Must be freed with xhash_free.

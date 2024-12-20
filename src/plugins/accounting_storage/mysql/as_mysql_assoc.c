@@ -2444,7 +2444,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 	xstrfmtcat(extra, ", mod_time=%ld, acct='%s'", now, assoc_in->acct);
 
 	if (!assoc) {
-		/* Copy the assoc_in to the accual association we want to add */
+		/* Copy the assoc_in to the actual association we want to add */
 		assoc = xmalloc(sizeof(*assoc));
 
 		memcpy(assoc, assoc_in, sizeof(*assoc));

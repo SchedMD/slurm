@@ -64,7 +64,7 @@ typedef struct part_record {
 	int allow_uids_cnt;	/* count of allowed user IDs */
 	char *allow_qos;	/* comma delimited list of qos,
 				 * NULL indicates all */
-	bitstr_t *allow_qos_bitstr; /* (DON'T PACK) assocaited with
+	bitstr_t *allow_qos_bitstr; /* (DON'T PACK) associated with
 				 * char *allow_qos but used internally */
 	char *alternate; 	/* name of alternate partition */
 	double *billing_weights;    /* array of TRES billing weights */

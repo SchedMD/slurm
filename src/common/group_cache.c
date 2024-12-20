@@ -104,7 +104,7 @@ static int _find_entry(void *x, void *key)
 /*
  * This populates a new entry (or re-populates an old entry) using getpwuid_r()
  * to determine the primary group. getpwuid_r() should be used here instead of
- * the job's group to handle when the job was submited with a secondary group.
+ * the job's group to handle when the job was submitted with a secondary group.
  *
  * On failure of getpwuid_r(), we will fallback to the job's group since it is
  * the only "safe" group we can determine.

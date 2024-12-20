@@ -368,7 +368,7 @@ extern xahash_table_t *xahash_new_table_funcname(
 					on_free_func_string, state_bytes,
 					bytes_per_entry, fixed_table_size);
 
-	/* TODO: dynamic sizing not implmented yet */
+	/* TODO: dynamic sizing not implemented yet */
 	fatal_abort("should never execute");
 }
 

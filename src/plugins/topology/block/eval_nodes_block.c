@@ -102,7 +102,7 @@ static void _choose_best_bblock(bitstr_t *bblock_required,
 			return;
 
 		/*
-		 * New llblock needed or both bblocks in alredy used llbock
+		 * New llblock needed or both bblocks in already used llbock
 		 */
 		best_llblock_node_cnt =  nodes_on_llblock[(*best_bblock_inx >>
 							   llblock_level)];
@@ -143,7 +143,7 @@ static void _choose_best_bblock(bitstr_t *bblock_required,
 			/*
 			 * If neither of bblocks are on llblock which meet
 			 * requirement choose llblock with more nodes to
-			 * minimalize nuber of llblock
+			 * minimalize number of llblock
 			 */
 			if (llblock_node_cnt > best_llblock_node_cnt) {
 				*best_bblock_inx = i;
@@ -508,7 +508,7 @@ next_segment:
 		goto fini;
 	}
 
-	/* Check that all specificly required nodes are in one block  */
+	/* Check that all specifically required nodes are in one block  */
 	if (req_nodes_bitmap &&
 	    !bit_super_set(req_nodes_bitmap, block_node_bitmap[block_inx])) {
 		rc = SLURM_ERROR;

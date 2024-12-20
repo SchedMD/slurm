@@ -1,4 +1,4 @@
-# this file contains a hash reference $class_map, which maps $ntype of C type 
+# this file contains a hash reference $class_map, which maps $ntype of C type
 # to class name of Perl objects. This will be eval()-ed by xsubpp.
 #
 # XXX: DO NOT use $class or other variables used in xsubpp, or there will be

@@ -708,7 +708,7 @@ spawn_job_wait(void)
 	for (i = 1; i < spawn_seq; i ++) {
 		if (!spawned_srun_pids[i])
 			continue;
-		/* terminte it */
+		/* terminate it */
 		kill(spawned_srun_pids[i], SIGTERM);
 	}
 }

@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 ###############################################################################
 #
-# qdel - deletes slurm jobs in familar pbs format.
+# qdel - deletes slurm jobs in familiar pbs format.
 #
 #
 ###############################################################################
@@ -148,4 +148,3 @@ full documentation
 On success, B<qdel> will exit with a value of zero. On failure, B<qdel> will exit with a value greater than zero.
 
 =cut
-

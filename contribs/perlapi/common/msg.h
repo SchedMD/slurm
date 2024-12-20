@@ -285,8 +285,8 @@ inline static int hv_store_ptr(HV* hv, const char *key, void* ptr, const char *c
 {
 	SV* sv = NULL;
 
-	/* 
-	 * if ptr == NULL and we call sv_setref_pv() and store the sv in hv, 
+	/*
+	 * if ptr == NULL and we call sv_setref_pv() and store the sv in hv,
 	 * sv_isobject() will fail later when FETCH_PTR_FIELD.
 	 */
 	if(ptr) {
@@ -321,7 +321,7 @@ static inline void * SV2ptr(SV *sv)
 	return ptr;
 }
 #endif
-		
+
 #define FETCH_FIELD(hv, ptr, field, type, required) \
 	do { \
 		SV** svp; \

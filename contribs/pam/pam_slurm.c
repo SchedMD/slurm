@@ -12,7 +12,7 @@
  *
  *  This file is part of pam_slurm, a PAM module for restricting access to
  *  the compute nodes within a cluster based on information obtained from
- *  Simple Linux Utility for Resource Managment (Slurm).  For details, see
+ *  Simple Linux Utility for Resource Management (Slurm).  For details, see
  *  <http://www.llnl.gov/linux/slurm/>.
  *
  *  pam_slurm is free software; you can redistribute it and/or modify it
@@ -68,7 +68,7 @@ struct _options {
 };
 
 /* Define the functions to be called before and after load since _init
- * and _fini are obsolete, and their use can lead to unpredicatable
+ * and _fini are obsolete, and their use can lead to unpredictable
  * results.
  */
 void __attribute__ ((constructor)) libpam_slurm_init(void);

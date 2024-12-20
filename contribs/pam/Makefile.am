@@ -38,4 +38,3 @@ $(pam_slurm_la_LIBADD) : force
 else
 EXTRA_pam_slurm_la_SOURCES = pam_slurm.c
 endif
-

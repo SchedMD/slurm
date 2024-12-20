@@ -802,7 +802,7 @@ extern void gres_g_prep_set_env(char ***prep_env_ptr,
  * Note: This function can be used for a new request with gres_list==NULL or
  *	 used to update an existing job, in which case gres_list is a copy
  *	 of the job's original value (so we can clear fields as needed)
- * IN/OUT gres_js_val - with ->*tres* set approriately to be processed into.
+ * IN/OUT gres_js_val - with ->*tres* set appropriately to be processed into.
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
 extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val);

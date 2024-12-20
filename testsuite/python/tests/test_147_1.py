@@ -32,7 +32,7 @@ def setup():
     # Setup job_container.conf
     atf.require_config_parameter("AutoBasePath", "true", source="job_container")
     atf.require_config_parameter(
-        "BasePath", f"/tmp/%h_%n_base_path", source="job_container"
+        "BasePath", "/tmp/%h_%n_base_path", source="job_container"
     )
 
     # Mount /tmp/test_147_1_private in the job container as a private mount
@@ -54,7 +54,7 @@ def test_spank_plugin_tmpfs():
 
     atf.make_bash_script(
         "job.sh",
-        f"""
+        """
     # Check to make sure job_container/tmpfs made a private mount
     if [[ -f /tmp/test_147_1_private/file_on_host ]]; then
         echo "job_container/tmpfs failed to create private mount"
@@ -102,14 +102,14 @@ def test_spank_plugin_tmpfs():
         content = output_file.read()
 
         assert (
-            f"Found log for hook slurm_spank_user_init" in content
-        ), f"Job couldn't find file for slurm_spank_user_init hook"
+            "Found log for hook slurm_spank_user_init" in content
+        ), "Job couldn't find file for slurm_spank_user_init hook"
         assert (
-            f"Found log for hook slurm_spank_task_post_fork" in content
-        ), f"Job couldn't find file for slurm_spank_task_post_fork hook"
+            "Found log for hook slurm_spank_task_post_fork" in content
+        ), "Job couldn't find file for slurm_spank_task_post_fork hook"
         assert (
-            f"Found log for hook slurm_spank_task_exit" in content
-        ), f"Job couldn't find file for slurm_spank_task_exit hook"
+            "Found log for hook slurm_spank_task_exit" in content
+        ), "Job couldn't find file for slurm_spank_task_exit hook"
 
         assert (
             "job_container/tmpfs created private mount" in content

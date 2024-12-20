@@ -15,5 +15,5 @@ def test_chdir():
     """Verify srun --chdir sets appropriate working directory"""
 
     tmp_dir = "/tmp"
-    output = atf.run_command_output(f"srun --chdir=" + tmp_dir + " pwd", fatal=True)
+    output = atf.run_command_output("srun --chdir=" + tmp_dir + " pwd", fatal=True)
     assert output.strip("\n") == tmp_dir

@@ -376,7 +376,7 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 
 	/*
 	 * Store unnormalized times, we will normalize in when
-	 * transfering to a struct jobacctinfo in job_common_poll_data()
+	 * transferring to a struct jobacctinfo in job_common_poll_data()
 	 */
 	prec->usec = (double)utime;
 	prec->ssec = (double)stime;

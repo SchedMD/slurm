@@ -12,7 +12,7 @@ depend_libs = ../common/libslurmd_common.o \
 # If slurmstepd_LDADD or slurmstepd_LDFLAGS change
 # make sure you alter the below depend_[ldadd|ldflags] to look identical in the
 # slurmd.  If these libs aren't available
-# on slurmstepd startup the slurmstepd will fail sliently and make debugging
+# on slurmstepd startup the slurmstepd will fail silently and make debugging
 # rather difficult.  Making the slurmd link to them as well shouldn't increase
 # memory footprint and will fail way earlier and give the user a way to known
 # what is happening.

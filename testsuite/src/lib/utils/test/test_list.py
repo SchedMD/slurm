@@ -1,16 +1,18 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import os, re
+import os
+import re
 
 # SchedMD
 from ..cmds import (
     perform,
     run_cmd,
 )
-from ..log import (
-    log,
-)
+
+# from ..log import (
+#     log,
+# )
 
 
 def get_unit_tl_from_build_dir(build_unit_base_dir):
@@ -27,7 +29,7 @@ def setup_unit_tests(build_unit_base_dir):
                 os.chdir(subdir)
                 run_cmd("make -j", shell=True, quiet=True, print_output=False)
 
-                cmd = f"""
+                cmd = """
                     echo 'print: ; @echo "$(TESTS)"' | make -f Makefile -f - print
                     """
                 result = run_cmd(cmd, shell=True, quiet=True)

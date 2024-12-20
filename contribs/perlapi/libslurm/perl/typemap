@@ -65,4 +65,3 @@ T_PTROBJ_SLURM
 			${$ALIAS?\q[GvNAME(CvGV(cv))]:\qq[\"$pname\"]},
 			\"$var\", \"${eval(`cat classmap`);\$slurm_perl_api::class_map->{$ntype}}\");
 	}
-

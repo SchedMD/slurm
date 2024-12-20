@@ -27,7 +27,7 @@ Description:
   The behavior of this module can be modified with the following flags:
 
     debug         - log debugging information to the system log file
-    no_sys_info   - supress system logging of "access granted for user ...",
+    no_sys_info   - suppress system logging of "access granted for user ...",
                     access denied and other errors will still be logged
     no_warn       - suppress warning messages to the application
     rsh_kludge    - prevent truncation of first char from rsh error msg

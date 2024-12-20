@@ -93,7 +93,7 @@ extern void update_assocs_in_resvs(void);
 
 /*
  * Update reserved nodes for all reservations using a specific partition if the
- * resevation has NodeList=ALL and RESERVE_FLAGS_PART_NODES.
+ * reservation has NodeList=ALL and RESERVE_FLAGS_PART_NODES.
 */
 extern void update_part_nodes_in_resv(part_record_t *part_ptr);
 

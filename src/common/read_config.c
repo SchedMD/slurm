@@ -2569,7 +2569,7 @@ static char *_get_aliased_nodename_fallback(char *hostname)
 	if (!he)
 		return NULL;
 
-	/* hunt throught the aliases list hoping for a match */
+	/* hunt through the aliases list hoping for a match */
 	for (int i = 0; he->h_aliases[i]; i++) {
 		if ((nodename = slurm_conf_get_nodename(he->h_aliases[i])))
 			break;
@@ -6053,7 +6053,7 @@ extern char * debug_flags2str(uint64_t debug_flags)
 
 /*
  * debug_str2flags - Convert a DebugFlags string to the equivalent uint64_t
- * Keep in sycn with debug_flags2str() above
+ * Keep in sync with debug_flags2str() above
  * Returns SLURM_ERROR if invalid
  */
 extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)

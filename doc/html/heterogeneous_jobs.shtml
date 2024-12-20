@@ -397,15 +397,15 @@ component requested, no matter if the job filter includes the het_job_id
 
 <pre>
 $ sacct -j 67767
-  JobID JobName Partition Account AllocCPUS     State ExitCode 
-------- ------- --------- ------- --------- --------- -------- 
-67767+0     foo     debug    test         2 COMPLETED      0:0 
-67767+1     foo     debug    test         4 COMPLETED      0:0 
+  JobID JobName Partition Account AllocCPUS     State ExitCode
+------- ------- --------- ------- --------- --------- --------
+67767+0     foo     debug    test         2 COMPLETED      0:0
+67767+1     foo     debug    test         4 COMPLETED      0:0
 
 $  sacct -j 67767+1
-  JobID JobName Partition Account AllocCPUS     State ExitCode 
-------- ------- --------- ------- --------- --------- -------- 
-67767+1     foo     debug    test         4 COMPLETED      0:0 
+  JobID JobName Partition Account AllocCPUS     State ExitCode
+------- ------- --------- ------- --------- --------- --------
+67767+1     foo     debug    test         4 COMPLETED      0:0
 
 $  sacct -j 67767 --whole-hetjob=no
   JobID JobName Partition Account AllocCPUS     State ExitCode

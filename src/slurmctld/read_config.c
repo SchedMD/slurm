@@ -184,7 +184,7 @@ static void _stat_slurm_dirs(void)
 
 	if (problem_dir) {
 		error("################################################");
-		error("###       SEVERE SECURITY VULNERABILTY       ###");
+		error("###       SEVERE SECURITY VULNERABILITY       ###");
 		error("### %s DIRECTORY IS WORLD WRITABLE ###", problem_dir);
 		error("###         CORRECT FILE PERMISSIONS         ###");
 		error("################################################");
@@ -1570,7 +1570,7 @@ extern int read_slurm_conf(int recover)
 	 *
 	 * Sort the nodes read in from the slurm.conf first before restoring
 	 * the dynamic nodes from the state file to prevent dynamic nodes from
-	 * being sorted -- which can cause problems with heterogenous jobs and
+	 * being sorted -- which can cause problems with heterogeneous jobs and
 	 * the order of the sockets changing on startup.
 	 */
 	_sort_node_record_table_ptr();
@@ -2337,7 +2337,7 @@ static int _sync_nodes_to_comp_job(void)
 			 * and the job is in completing state
 			 * and the slurmctld epilog is already
 			 * running which means deallocate_nodes()
-			 * was alredy called, do invoke it again
+			 * was already called, do invoke it again
 			 * and don't start another epilog.
 			 */
 			if (job_ptr->epilog_running == true)

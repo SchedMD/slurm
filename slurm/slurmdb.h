@@ -538,7 +538,7 @@ typedef struct slurmdb_assoc_rec {
 				       * (DON'T PACK) */
 	char *grp_tres_run_mins;   /* max number of cpu minutes the
 				    * underlying group of
-				    * assoiciations can
+				    * associations can
 				    * having running at one time */
 	uint64_t *grp_tres_run_mins_ctld; /* grp_tres_run_mins
 					   * broken out in an array
@@ -550,7 +550,7 @@ typedef struct slurmdb_assoc_rec {
 				    * underlying group of
 				    * associations can run for */
 
-	uint32_t id;		   /* id identifing a combination of
+	uint32_t id;		   /* id identifying a combination of
 				    * user-account(-partition) */
 
 	uint16_t is_def;           /* Is this the users default assoc/acct */
@@ -1132,7 +1132,7 @@ typedef struct {
 	time_t time_end; /* end time of reservation */
 	time_t time_start; /* start time of reservation */
 	time_t time_start_prev; /* If start time was changed this is
-				 * the pervious start time.  Needed
+				 * the previous start time.  Needed
 				 * for accounting */
 	char *tres_str;
 	double unused_wall; /* amount of seconds this reservation wasn't used */
@@ -1323,7 +1323,7 @@ typedef struct {
 	list_t *accounting_list; /* list of slurmdb_accounting_rec_t *'s */
 	char *cluster;		/* cluster associated */
 	uint32_t flags;		/* SLURMDB_WCKEY_FLAG_* */
-	uint32_t id;		/* id identifing a combination of
+	uint32_t id;		/* id identifying a combination of
 				 * user-wckey-cluster */
 	uint16_t is_def;        /* Is this the users default wckey */
 

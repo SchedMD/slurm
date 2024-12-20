@@ -72,7 +72,7 @@
  *
  * To use this parser, first construct an array of s_p_options_t structures.
  * Only the "key" string needs to be non-zero.  Zero or NULL are valid
- * defaults for type, handler, and destroy, which conventiently allows
+ * defaults for type, handler, and destroy, which conveniently allows
  * then to be left out in any static initializations of options arrays. For
  * instance:
  *
@@ -170,7 +170,7 @@
  *      /!\ WARNING: do not specify the same struct as suboption or /!\
  *      /!\ an infinite loop will occur.                            /!\
  * * S_P_EXPLINE - This type is an extended version of the S_P_LINE type that
- *      add the capability to expand the hostlist formated elements when
+ *      add the capability to expand the hostlist formatted elements when
  *      possible in order to reduce the number of lines required to parse some
  *      complex configurations. The values associated to the key of the
  *      S_P_EXPLINE will then be automatically expanded in order to return one
@@ -264,7 +264,7 @@ typedef enum slurm_parser_enum {
 
 /*
  * Standard Slurm conf files use key=value elements.
- * slurm_parser_operator_t extends that concept to cover additionnal
+ * slurm_parser_operator_t extends that concept to cover additional
  * use cases like :
  *        key+=value
  *        key-=value
@@ -347,7 +347,7 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover);
  * s_p_hashtbl_merge
  *
  * Merge the contents of two s_p_hashtbl_t data structures. Anything in
- * from_hashtbl that does not also appear in to_hashtbl is transfered to it.
+ * from_hashtbl that does not also appear in to_hashtbl is transferred to it.
  * This is intended primary to support multiple lines of DEFAULT configuration
  * information and preserve the old default values while adding new defaults.
  *
@@ -380,7 +380,7 @@ int s_p_parse_line_complete(s_p_hashtbl_t *hashtbl,
  * function is meant to be used inside a custom handler of a (left most) key.
  *
  * This function can be used in a custom handler, but in general, use of
- * S_P_*LINE is prefered.
+ * S_P_*LINE is preferred.
  *
  * IN hashtbl - hash table template of a final line after expansion,
  *		types and custom handlers are used after line has been
@@ -409,7 +409,7 @@ int s_p_parse_line_expanded(const s_p_hashtbl_t *hashtbl,
  * value is returned in "str".
  *
  * OUT str - pointer to a copy of the string value
- *           (caller is resonsible for freeing str with xfree())
+ *           (caller is responsible for freeing str with xfree())
  * IN key - hash table key.
  * IN hashtbl - hash table created by s_p_hashtbl_create()
  *

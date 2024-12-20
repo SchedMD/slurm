@@ -1,16 +1,20 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import inspect
+import _pytest
+
+# import inspect
 import logging
 import os
-import pathlib
-import pwd
+
+# import pwd
 import pytest
-import _pytest
 import re
-import shutil
+
+# import shutil
 import sys
+
+# from pathlib import Path
 
 sys.path.append(sys.path[0] + "/lib")
 import atf
@@ -51,8 +55,8 @@ def pytest_addoption(parser):
     )
 
 
-def color_log_level(level, **color_kwargs):
-    # Adapted from depricated py.io TerminalWriter source
+def color_log_level(level: int, **color_kwargs):
+    # Adapted from deprecated py.io TerminalWriter source
     # https://py.readthedocs.io/en/latest/_modules/py/_io/terminalwriter.html
     _esctable = dict(
         black=30,
@@ -96,16 +100,16 @@ def color_log_level(level, **color_kwargs):
                     + "\x1b[0m"
                 )
 
-                formatter._level_to_fmt_mapping[
-                    level
-                ] = formatter.LEVELNAME_FMT_REGEX.sub(
-                    colorized_formatted_levelname, formatter._fmt
+                formatter._level_to_fmt_mapping[level] = (
+                    formatter.LEVELNAME_FMT_REGEX.sub(
+                        colorized_formatted_levelname, formatter._fmt
+                    )
                 )
 
 
 @pytest.fixture(scope="session", autouse=True)
 def session_setup(request):
-    # Set the auto-config and other properties from the opetions
+    # Set the auto-config and other properties from the options
     atf.properties["auto-config"] = request.config.getoption("--auto-config")
     atf.properties["allow-slurmdbd-modify"] = request.config.getoption(
         "--allow-slurmdbd-modify"
@@ -159,7 +163,7 @@ def module_setup(request, tmp_path_factory):
     atf.properties["orig-environment"] = dict(os.environ)
     atf.properties["orig-pypath"] = list(sys.path)
 
-    # Creating a module level tmp_path mimicing what tmp_path does
+    # Creating a module level tmp_path mimicking what tmp_path does
     name = request.node.name
     name = re.sub(r"[\W]", "_", name)
     name = name[:30]
@@ -189,7 +193,7 @@ def module_teardown():
     failures = []
 
     if atf.properties["auto-config"]:
-        if atf.properties["slurm-started"] == True:
+        if atf.properties["slurm-started"] is True:
             # Cancel all jobs
             if not atf.cancel_all_jobs(quiet=True):
                 failures.append("Not all jobs were successfully cancelled")

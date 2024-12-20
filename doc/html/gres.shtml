@@ -93,7 +93,7 @@ specified by the <I>GresTypes</I> and <I>Gres</I> configuration parameters.
 <I>type</I> identifies a specific type of that generic resource (e.g. a
 specific model of GPU).
 <I>count</I> specifies how many resources are required and has a default
-value of 1. For example:<BR> 
+value of 1. For example:<BR>
 <I>sbatch --gres=gpu:kepler:2 ...</I>.</P>
 
 <p>Requests for typed vs non-typed generic resources must be consistent

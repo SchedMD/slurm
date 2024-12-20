@@ -1351,7 +1351,7 @@ hostlist_t *_hostlist_create(const char *hostlist, char *sep, char *r_op,
 		high = low = 0;
 
 		/* find end of alpha part
-		 *   do this by finding last occurence of range_op in str */
+		 *   do this by finding last occurrence of range_op in str */
 		pos = strlen(tok) - 1;
 		if (strstr(tok, r_op) != '\0') {
 			while (pos >= 0 && (char) tok[pos] != range_op)
@@ -2899,7 +2899,7 @@ ssize_t hostlist_ranged_string_dims(hostlist_t *hl, size_t n, char *buf,
 				offset[i] = offset[i+1] * hostlist_base;
 		}
 
-		/* Set this bitmap up once and clear it when everytime
+		/* Set this bitmap up once and clear it when every time
 		   instead of reallocing.  Turns out to be about 5
 		   times faster doing it this way.  It does leak the
 		   last alloc, but that shouldn't be a big deal.

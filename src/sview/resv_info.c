@@ -843,7 +843,7 @@ need_refresh:
 
 	if (!found) {
 		if (!popup_win->not_found) {
-			char *temp = "RESERVATION DOESN'T EXSIST\n";
+			char *temp = "RESERVATION DOESN'T EXIST\n";
 			GtkTreeIter iter;
 			GtkTreeModel *model = NULL;
 

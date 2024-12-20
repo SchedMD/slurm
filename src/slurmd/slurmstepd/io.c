@@ -919,7 +919,7 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 #endif
 
 /**********************************************************************
- * General fuctions
+ * General functions
  **********************************************************************/
 
 /*

@@ -24,8 +24,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int main(int argc, char *argv[]) 
-{ 
+int main(int argc, char *argv[])
+{
 	int world_size, universe_size = 0, *universe_sizep, rank, flag, rc;
 	MPI_Comm everyone;	/* intercommunicator */
 
@@ -56,8 +56,8 @@ int main(int argc, char *argv[])
 	if (universe_size < 2)
 		universe_size = 5;
 
-	rc = MPI_Comm_spawn(argv[1], MPI_ARGV_NULL, universe_size-1,  
-			    MPI_INFO_NULL, 0, MPI_COMM_SELF, &everyone,  
+	rc = MPI_Comm_spawn(argv[1], MPI_ARGV_NULL, universe_size-1,
+			    MPI_INFO_NULL, 0, MPI_COMM_SELF, &everyone,
 			    MPI_ERRCODES_IGNORE);
 	if (rc != MPI_SUCCESS) {
 		printf("FAILURE: MPI_Comm_spawn(): %d\n", rc);
@@ -66,4 +66,4 @@ int main(int argc, char *argv[])
 
 	MPI_Finalize();
 	exit(0);
-} 
+}

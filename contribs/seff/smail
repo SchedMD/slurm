@@ -63,4 +63,3 @@ if [ -n "$status" ]; then
 else
     $MAIL -s "$subject" $recipient
 fi
-

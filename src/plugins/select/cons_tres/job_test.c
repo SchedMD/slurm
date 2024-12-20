@@ -1102,7 +1102,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			if (_is_node_busy(cr_part_ptr, i, true,
 					  job_ptr->part_ptr, qos_preemptor,
 					  node_usage[i].jobs)) {
-				log_flag(SELECT_TYPE, "node %s is running job that shares resouces in other partition",
+				log_flag(SELECT_TYPE, "node %s is running job that shares resources in other partition",
 					 node_ptr->name);
 				goto clear_bit;
 			}
@@ -1980,7 +1980,7 @@ alloc_job:
 		return error_code;
 	}
 
-	/* translate job_res->cpus array into format with repitition count */
+	/* translate job_res->cpus array into format with repetition count */
 	build_cnt = build_job_resources_cpu_array(job_res);
 	if (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) {
 		job_ptr->total_cpus = 0;

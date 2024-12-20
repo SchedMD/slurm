@@ -108,7 +108,7 @@ static void _broadcast(event_signal_t *event, const char *caller)
 		return;
 	}
 
-	/* cant have pending signals when there are waiters */
+	/* can't have pending signals when there are waiters */
 	xassert(!event->pending);
 
 	log_flag(CONMGR, "%s->%s: [EVENT:%s] broadcasting to all %d waiters",
@@ -119,7 +119,7 @@ static void _broadcast(event_signal_t *event, const char *caller)
 
 static void _signal_waiting(event_signal_t *event, const char *caller)
 {
-	/* cant have pending signals when there are waiters */
+	/* can't have pending signals when there are waiters */
 	xassert(!event->pending);
 
 	log_flag(CONMGR, "%s->%s: [EVENT:%s] sending signal to 1/%d waiters",

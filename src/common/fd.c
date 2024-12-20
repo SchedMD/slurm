@@ -67,7 +67,7 @@
 
 /*
  * Helper macro to log_flag(NET, ...) against a given connection
- * IN fd - file descriptor relavent for logging
+ * IN fd - file descriptor relevant for logging
  * IN con_name - human friendly name for fd or NULL (to auto resolve)
  * IN fmt - log message format
  */
@@ -430,7 +430,7 @@ extern char *fd_resolve_path(int fd)
 	if (bytes < 0)
 		debug("%s: readlink(%s) failed: %m", __func__,  path);
 	else if (bytes >= PATH_MAX)
-		debug("%s: rejecting readlink(%s) for possble truncation",
+		debug("%s: rejecting readlink(%s) for possible truncation",
 		      __func__, path);
 	else
 		resolved = xstrdup(ret);

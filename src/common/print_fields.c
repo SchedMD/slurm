@@ -543,7 +543,7 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 
 /*
  * Special expansion function for stdin/stdout/stderr filename patterns.
- * Fields that can potientially map to a range of values will use the first in
+ * Fields that can potentially map to a range of values will use the first in
  * that range (e.g %t is replaced by 0).
  *
  * The parser do not support steps and is only for batch jobs.

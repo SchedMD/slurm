@@ -733,7 +733,7 @@ static void _fed_mgr_ptr_init(slurmdb_federation_rec_t *db_fed,
 	lock_slurmctld(fed_write_lock);
 	if (fed_mgr_fed_rec) {
 		/* we are already part of a federation, preserve existing
-		 * conenctions */
+		 * connections */
 		c_itr = list_iterator_create(db_fed->cluster_list);
 		while ((db_cluster = list_next(c_itr))) {
 			if (!xstrcmp(db_cluster->name,
@@ -839,7 +839,7 @@ static void _persist_callback_fini(void *arg)
 		return;
 	lock_slurmctld(fed_write_lock);
 
-	/* shuting down */
+	/* shutting down */
 	if (!fed_mgr_fed_rec) {
 		unlock_slurmctld(fed_write_lock);
 		return;
@@ -3970,7 +3970,7 @@ static void _add_remove_sibling_jobs(job_record_t *job_ptr)
 		job_ptr->fed_details->siblings_active &= ~rem_sibs;
 	}
 
-	/* Don't submit new sibilings if the job is held */
+	/* Don't submit new siblings if the job is held */
 	if (job_ptr->priority != 0 && add_sibs)
 		_prepare_submit_siblings(
 				job_ptr,
@@ -4290,7 +4290,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	if (!job_ptr || (*alloc_code && job_ptr->job_state == JOB_FAILED)) {
 		/* There may be an rc but the job won't be failed. Will sit in
-		 * qeueue */
+		 * queue */
 		info("failed to submit federated job to local cluster");
 		return SLURM_ERROR;
 	}

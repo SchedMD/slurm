@@ -112,7 +112,7 @@ typedef xahash_foreach_control_t (*xahash_foreach_func_t)(void *entry,
 							  void *arg);
 
 /*
- * Free anything releated to entry's bytes
+ * Free anything related to entry's bytes
  * IN entry - pointer to bytes for entry in hash table
  * IN state - arbitrary bytes to hand to function for state tracking
  */

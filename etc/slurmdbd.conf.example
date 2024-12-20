@@ -36,4 +36,3 @@ StorageType=accounting_storage/mysql
 StoragePass=password
 StorageUser=slurm
 #StorageLoc=slurm_acct_db
-

@@ -488,7 +488,7 @@ static int _internal_getgr(int mode, gid_t gid, const char *name,
 		 * member, we have only two elements to populate - the actual
 		 * member, plus the NULL termination. The calculation for space
 		 * required is (3 * sizeof(char *)) to account for possible
-		 * mis-alignment of the buffer, which we resolve by skipping
+		 * misalignment of the buffer, which we resolve by skipping
 		 * ahead of the last buffer position by sizeof(char *) and
 		 * letting the (char **) cast then round down into the previous
 		 * word somewhere.

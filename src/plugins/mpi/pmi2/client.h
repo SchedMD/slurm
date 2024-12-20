@@ -50,7 +50,7 @@
 typedef struct client_request {
 	int buf_len;
 	char *buf;
-	char sep;		/* cmd/value seperator */
+	char sep;		/* cmd/value separator */
 	char term;		/* request terminator */
 	int parse_idx;		/* ptr used in parsing */
 	char *cmd;		/* cmd points to buf or other static memory*/

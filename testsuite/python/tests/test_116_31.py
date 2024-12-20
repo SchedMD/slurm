@@ -8,7 +8,7 @@ import re
 def test_help():
     """Verify srun --help displays the help page"""
 
-    output = atf.run_command_output(f"srun --help", fatal=True)
+    output = atf.run_command_output("srun --help", fatal=True)
 
     assert re.search(r"Usage: srun .*?OPTIONS.*?executable.*?args", output) is not None
     assert re.search(r"-b, --begin=time", output) is not None

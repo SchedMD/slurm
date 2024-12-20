@@ -467,7 +467,7 @@ job_info_msg_to_hv(job_info_msg_t *job_info_msg, HV *hv)
 	return 0;
 }
 
-/* 
+/*
  * convert perl HV to job_info_msg_t
  */
 int

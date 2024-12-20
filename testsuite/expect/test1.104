@@ -85,7 +85,7 @@ if {$enforcepartlimits eq "NO"} {
 	# Job is not rejected at submit time
 	# verify time limit. Add a temporization to wait for update reason
 	#
-	subtest {$job_id != 0} "Job should be submited"
+	subtest {$job_id != 0} "Job should be submitted"
 	subtest {![wait_job_reason $job_id "PENDING" "PartitionTimeLimit"]} "Reason should be PartitionTimeLimit"
 } else {
 	#

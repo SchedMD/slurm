@@ -297,7 +297,7 @@ function __slurm_compreply_param() {
 	__slurm_comp "$(compgen -W "${compreply[*]}" -- "$cur")"
 }
 
-# Value completion function for (comma) delimeted items
+# Value completion function for (comma) delimited items
 #
 # $1: word list for completions
 # $2: reserved words, complete not in list (optional)
@@ -643,7 +643,7 @@ function __slurm_compinit() {
 	__slurm_log_info "$(__func__): SLURM_COMP_VALUE='${SLURM_COMP_VALUE}'"
 	__slurm_log_info "$(__func__): SLURM_COMP_HOSTLIST='${SLURM_COMP_HOSTLIST}'"
 
-	# Ensure case sensative case matching
+	# Ensure case sensitive case matching
 	shopt -u nocasematch
 
 	__slurm_init_completion || return 1
@@ -1326,7 +1326,7 @@ function __slurm_comp_dependency() {
 	local prefix=""
 	local suffix=","
 	if [[ $cur == *"?"* ]] && [[ $cur != *","* ]]; then
-		# Dependency expresson can use either ',' or '?' as the
+		# Dependency expression can use either ',' or '?' as the
 		# separator, but not both in the same expression.
 		#   , = logical and (all must be satisfied)
 		#   ? = logical or (any may be satisfied)

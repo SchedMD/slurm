@@ -153,7 +153,7 @@ bool oracle(job_record_t *job_ptr, bitstr_t *job_bitmap, time_t later_start,
 	    node_space_map_t *node_space)
 {
 	/*
-	 * Alwasys if posible add a new slot to slots array
+	 * Always if possible add a new slot to slots array
 	 */
 	if (used_slots < bf_topopt_iterations)
 		_add_slot(job_ptr, job_bitmap, *time_limit, *boot_time,
@@ -180,7 +180,7 @@ bool oracle(job_record_t *job_ptr, bitstr_t *job_bitmap, time_t later_start,
 				best_slot = i;
 
 		/*
-		 * Set start_time and job_bitmap acording to the 'best' slot
+		 * Set start_time and job_bitmap according to the 'best' slot
 		 */
 		job_ptr->start_time = slots[best_slot].start;
 		bit_copybits(job_bitmap, slots[best_slot].job_bitmap);

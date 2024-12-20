@@ -32,4 +32,4 @@ wait
         step_str = f"{job_id}.{i}"
         nodes.add(atf.get_steps(step_str)[step_str].get("NodeList"))
 
-    assert len(nodes) == node_count, f"Verify that all steps are in different nodes"
+    assert len(nodes) == node_count, "Verify that all steps are in different nodes"

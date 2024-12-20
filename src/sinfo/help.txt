@@ -4,7 +4,7 @@ Usage: sinfo [OPTIONS]
   -d, --dead                 show only non-responding nodes
   -e, --exact                group nodes only on exact match of configuration
       --federation           Report federated information if a member of one
-  -F, --future               Report information about nodes in \"FUTURE\" state.    
+  -F, --future               Report information about nodes in \"FUTURE\" state.
   -h, --noheader             no headers on output
   --hide                     do not show hidden or non-accessible partitions
   -i, --iterate=seconds      specify an iteration period

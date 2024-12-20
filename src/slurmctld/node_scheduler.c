@@ -1612,7 +1612,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	 * CR_*_MEMORY and the request is for
 	 * nodes of different memory sizes we need to reset the
 	 * pn_min_memory as select_g_job_test can
-	 * alter that making it so the order of contraints
+	 * alter that making it so the order of constraints
 	 * matter since the first pass through this will set the
 	 * pn_min_memory based on that first constraint and if
 	 * it isn't smaller than all the other requests they
@@ -3139,7 +3139,7 @@ cleanup:
 	 *
 	 * NOTE: If we ever add an early return between the call to
 	 * _get_req_features() and the last return below we should ensure to
-	 * ammend the restore logic consequently (probably copy this snippet
+	 * amend the restore logic consequently (probably copy this snippet
 	 * before such early return).
 	 *
 	 * NOTE: We could have moved this snippet right after the call to
@@ -3234,7 +3234,7 @@ end_it:
 /*
  * Launch prolog via RPC to slurmd. This is useful when we need to run
  * prolog at allocation stage. Then we ask slurmd to launch the prolog
- * asynchroniously and wait on REQUEST_COMPLETE_PROLOG message from slurmd.
+ * asynchronously and wait on REQUEST_COMPLETE_PROLOG message from slurmd.
  */
 extern void launch_prolog(job_record_t *job_ptr)
 {
@@ -3252,7 +3252,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 #ifdef HAVE_FRONT_END
 	/* For a batch job the prolog will be
-	 * started synchroniously by slurmd.
+	 * started synchronously by slurmd.
 	 */
 	if (job_ptr->batch_flag)
 		return;
@@ -3595,7 +3595,7 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 }
 
 /*
- * job_req_node_filter - job reqeust node filter.
+ * job_req_node_filter - job request node filter.
  *	clear from a bitmap the nodes which can not be used for a job
  *	test memory size, required features, processor count, etc.
  * NOTE: Does not support exclusive OR of features.

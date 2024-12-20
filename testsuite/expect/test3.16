@@ -43,7 +43,7 @@ proc add_lic { license } {
 			exp_continue
 		}
 		timeout {
-			fail "sacctmgr is not reponding"
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait

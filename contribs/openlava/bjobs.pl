@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 ###############################################################################
 #
-# bjobs - displays and filters information about jobs in familar
+# bjobs - displays and filters information about jobs in familiar
 #         openlava format.
 #
 #
@@ -178,7 +178,7 @@ __END__
 
 =head1 NAME
 
-B<bjobs> - displays and filters information about jobs in familar openlava format.
+B<bjobs> - displays and filters information about jobs in familiar openlava format.
 
 =head1 SYNOPSIS
 
@@ -186,7 +186,7 @@ B<bjobs> I<job_id>...
 
 =head1 DESCRIPTION
 
-The B<bjobs> displays and filters information about jobs in familar openlava format.
+The B<bjobs> displays and filters information about jobs in familiar openlava format.
 
 =head1 OPTIONS
 
@@ -207,4 +207,3 @@ full documentation
 On success, B<bjobs> will exit with a value of zero. On failure, B<bkill> will exit with a value greater than zero.
 
 =cut
-

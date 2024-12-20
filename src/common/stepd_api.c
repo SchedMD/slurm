@@ -229,7 +229,7 @@ _guess_nodename(void)
 }
 
 /*
- * Connect to a slurmstepd proccess by way of its unix domain socket.
+ * Connect to a slurmstepd process by way of its unix domain socket.
  *
  * Both "directory" and "nodename" may be null, in which case stepd_connect
  * will attempt to determine them on its own.  If you are using multiple

@@ -122,7 +122,7 @@ static int _foreach_update_qos(void *x, void *arg)
 			/*
 			 * If the new QOS list is empty but the QOS had a
 			 * preempt list before, then we need to set this special
-			 * entry to notify slurmdbd that this is explicilty
+			 * entry to notify slurmdbd that this is explicitly
 			 * empty and not a no change request.
 			 *
 			 * If we always set this value, then slurmdbd will

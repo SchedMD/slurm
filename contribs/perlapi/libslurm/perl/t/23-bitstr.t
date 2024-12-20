@@ -227,4 +227,3 @@ ok($pos = 17, "bit get bit num") or diag("get_bit_num: $pos");
 $bm->unfmt("3-5,12-23");
 $cnt = $bm->get_pos_num(12);
 ok($cnt == 3, "bit get pos num") or diag("get_pos_num: $cnt");
-

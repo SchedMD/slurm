@@ -60,7 +60,7 @@ cancel_job -fail $job_id
 # Submit job to two partitions, including one invalid name
 #
 set output [run_command_output -xfail -fail "$sbatch -N1 --output=none --error=none -t1 --begin=tomorrow --partition=$part1,DUMMY $file_in"]
-subtest {![regexp "Submitted batch job ($number)" $output - job_id]} "Verify job cannnot be submitted to an invalid partition"
+subtest {![regexp "Submitted batch job ($number)" $output - job_id]} "Verify job cannot be submitted to an invalid partition"
 subtest {[regexp "Invalid partition name specified" $output]} "Verify error message form invalid submission"
 
 #

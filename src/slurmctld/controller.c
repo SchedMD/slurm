@@ -322,7 +322,7 @@ static void _attempt_reconfig(void)
 	info("Attempting to reconfigure");
 
 	/*
-	 * Send RC to requestors in foreground mode now as slurmctld is about
+	 * Send RC to requesters in foreground mode now as slurmctld is about
 	 * to call exec() which will close connections.
 	 */
 	if (!daemonize && !under_systemd)
@@ -624,7 +624,7 @@ int main(int argc, char **argv)
 		/*
 		 * Sanity check that we are running as the SlurmUser.
 		 * If not fatal to prevent changing the permissions of the state
-		 * save files and or loosing the state save.
+		 * save files and or losing the state save.
 		 */
 		fatal("Running user ID does not match the SlurmUser. Check that SlurmUser in slurm.conf and User in the slurmctld unit file match.");
 	}
@@ -2302,7 +2302,7 @@ static void *_slurmctld_background(void *no_data)
 	slurmctld_lock_t job_node_read_lock = {
 		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	/*
-	 * purge_old_job modifes jobs and reads conf info. It can also
+	 * purge_old_job modifies jobs and reads conf info. It can also
 	 * call re_kill_job(), which can modify nodes and reads fed info.
 	 */
 	slurmctld_lock_t purge_job_locks = {
@@ -3547,7 +3547,7 @@ static void *_assoc_cache_mgr(void *no_data)
 	}
 
 	if (!job_list) {
-		/* This could happen in rare occations, it doesn't
+		/* This could happen in rare occasions, it doesn't
 		 * matter since when the job_list is populated things
 		 * will be in sync.
 		 */
@@ -3661,7 +3661,7 @@ use_qos_id: ; /* must be a blank ; for older compilers (el7) */
 
 handle_parts:
 	if (!part_list) {
-		/* This could happen in rare occations, it doesn't
+		/* This could happen in rare occasions, it doesn't
 		 * matter since when the job_list is populated things
 		 * will be in sync.
 		 */

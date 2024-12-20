@@ -55,7 +55,7 @@
 struct step_launch_state {
 	/* This lock protects tasks_started, tasks_exited, node_io_error,
 	   io_deadline, abort, and abort_action_taken.  The main thread
-	   blocks on cond, waking when a tast starts or exits, or the abort
+	   blocks on cond, waking when a task starts or exits, or the abort
 	   flag is set. */
 	pthread_mutex_t lock;
 	pthread_cond_t cond;

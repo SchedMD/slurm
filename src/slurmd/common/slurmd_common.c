@@ -93,7 +93,7 @@ again:
 /*
  * On a parallel job, every slurmd may send the EPILOG_COMPLETE message to the
  * slurmctld at the same time, resulting in lost messages. We add a delay here
- * to spead out the message traffic assuming synchronized clocks across the
+ * to spread out the message traffic assuming synchronized clocks across the
  * cluster. Allow 10 msec processing time in slurmctld for each RPC.
  */
 static void _sync_messages_kill(char *node_list)

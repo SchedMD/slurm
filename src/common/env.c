@@ -885,7 +885,7 @@ extern char *uint16_array_to_str(int array_len, const uint16_t *array)
 {
 	int i;
 	int previous = 0;
-	char *sep = ",";  /* seperator */
+	char *sep = ",";  /* separator */
 	char *str = xstrdup("");
 
 	if (array == NULL)
@@ -929,7 +929,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
 				      const uint32_t *array_reps)
 {
 	int i;
-	char *sep = ","; /* seperator */
+	char *sep = ","; /* separator */
 	char *str = xstrdup("");
 
 	if (!array || !array_reps)
@@ -1519,7 +1519,7 @@ env_array_for_step(char ***dest,
 }
 
 /*
- * Enviroment variables set elsewhere
+ * Environment variables set elsewhere
  * ----------------------------------
  *
  * Set by slurmstepd:

@@ -4,7 +4,8 @@
 ##############################################################################
 import collections
 import errno
-import glob
+
+# import glob
 import logging
 import math
 import os
@@ -550,7 +551,7 @@ def start_slurmctld(clean=False, quiet=False):
         if not repeat_command_until(
             "scontrol ping", lambda results: re.search(r"is UP", results["stdout"])
         ):
-            pytest.fail(f"Slurmctld is not running")
+            pytest.fail("Slurmctld is not running")
 
 
 def start_slurmdbd(clean=False, quiet=False):
@@ -591,7 +592,7 @@ def start_slurmdbd(clean=False, quiet=False):
         if not repeat_command_until(
             "sacctmgr show cluster", lambda results: results["exit_code"] == 0
         ):
-            pytest.fail(f"Slurmdbd is not running")
+            pytest.fail("Slurmdbd is not running")
         else:
             logging.debug("Slurmdbd started successfully")
 
@@ -734,6 +735,7 @@ def stop_slurmdbd(quiet=False):
     Returns:
         None
     """
+    failures = []
 
     if not properties["auto-config"]:
         require_auto_config("wants to stop slurmdbd")
@@ -745,7 +747,9 @@ def stop_slurmdbd(quiet=False):
         "sacctmgr shutdown", user=properties["slurm-user"], quiet=quiet
     )
     if results["exit_code"] != 0:
-        pytest.fail(f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}")
+        pytest.fail(
+            f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}"
+        )
 
     # Verify that slurmdbd is not running (we might have to wait for rollups to complete)
     if not repeat_until(
@@ -756,6 +760,9 @@ def stop_slurmdbd(quiet=False):
         failures.append("Slurmdbd is still running")
     else:
         logging.debug("Slurmdbd stopped successfully")
+
+    if not quiet:
+        logging.warning(failures[0])
 
 
 def stop_slurm(fatal=True, quiet=False):
@@ -837,7 +844,7 @@ def stop_slurm(fatal=True, quiet=False):
         properties["slurmrestd"].send_signal(signal.SIGINT)
         try:
             properties["slurmrestd"].wait(timeout=60)
-        except:
+        except Exception:
             properties["slurmrestd"].kill()
 
     if failures:
@@ -953,9 +960,9 @@ def require_openapi_generator(version="7.3.0"):
     os.environ["OPENAPI_GENERATOR_VERSION"] = version
 
     # Work around: https://github.com/OpenAPITools/openapi-generator/issues/13684
-    os.environ[
-        "JAVA_OPTS"
-    ] = "--add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED"
+    os.environ["JAVA_OPTS"] = (
+        "--add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED"
+    )
 
     ogc_version = (
         run_command_output("openapi-generator-cli version").strip().split("\n")[-1]
@@ -1388,7 +1395,7 @@ def set_config_parameter(
             ].items():
                 line += f" {subparameter_name}{delimiter}{subparameter_value}"
             lines.append(line)
-    elif parameter_value != None:
+    elif parameter_value is not None:
         lines.append(f"{parameter_name}{delimiter}{parameter_value}")
     input = "\n".join(lines)
     run_command(
@@ -1646,7 +1653,7 @@ def require_config_parameter(
 
     condition_satisfied = False
     if condition is None:
-        condition = lambda observed, desired: observed == desired
+        # condition = lambda observed, desired: observed == desired
         if observed_value == parameter_value:
             condition_satisfied = True
     else:
@@ -1838,7 +1845,7 @@ def require_slurmrestd(openapi_plugins, data_parsers):
         # Check version is the expected one
         if not is_slurmrestd_running():
             pytest.skip(
-                f"This test needs slurmrestd runnig in SLURM_TESTSUITE_SLURMRESTD_URL but cannot connect with {os.environ['SLURM_TESTSUITE_SLURMRESTD_URL']}",
+                f"This test needs slurmrestd running in SLURM_TESTSUITE_SLURMRESTD_URL but cannot connect with {os.environ['SLURM_TESTSUITE_SLURMRESTD_URL']}",
                 allow_module_level=True,
             )
     else:
@@ -1904,7 +1911,7 @@ def start_slurmrestd():
 
     # Check slurmrestd is up
     if not is_slurmrestd_running():
-        pytest.fail(f"Slurmrestd not responding")
+        pytest.fail("Slurmrestd not responding")
 
 
 def setup_slurmrestd_headers():
@@ -2780,7 +2787,7 @@ def get_steps(step_id=None, **run_command_kwargs):
     result = run_command(command, **run_command_kwargs)
 
     if result["exit_code"]:
-        logging.debug(f"scontrol command failed, no steps returned")
+        logging.debug("scontrol command failed, no steps returned")
         return step_dict
 
     output = result["stdout"]
@@ -3015,15 +3022,16 @@ def wait_for_node_state(
     """
 
     # Figure out if we're waiting for the desired_node_state to be present or to be gone
-    if reverse:
-        condition = lambda state: desired_node_state not in state.split("+")
-    else:
-        condition = lambda state: desired_node_state in state.split("+")
+    def has_state(state):
+        return desired_node_state in state.split("+")
+
+    def not_state(state):
+        return desired_node_state not in state.split("+")
 
     # Wrapper for the repeat_until command to do all our state checking for us
     repeat_until(
         lambda: get_node_parameter(nodename, "State"),
-        condition,
+        not_state if reverse else has_state,
         timeout=timeout,
         poll_interval=poll_interval,
         fatal=fatal,
@@ -3677,9 +3685,9 @@ def require_nodes(requested_node_count, requirements_list=[]):
                 new_node_dict["NodeName"] = template_node_prefix + str(new_indices[0])
                 new_node_dict["Port"] = base_port - template_node_index + new_indices[0]
             else:
-                new_node_dict[
-                    "NodeName"
-                ] = f"{template_node_prefix}[{list_to_range(new_indices)}]"
+                new_node_dict["NodeName"] = (
+                    f"{template_node_prefix}[{list_to_range(new_indices)}]"
+                )
                 new_node_dict["Port"] = list_to_range(
                     list(
                         map(lambda x: base_port - template_node_index + x, new_indices)
@@ -3866,7 +3874,7 @@ def restore_accounting_database():
     if database_password:
         base_command += f" -p {database_password}"
 
-    # If DB exists, drop it and try to resore the dump file
+    # If DB exists, drop it and try to restore the dump file
     mysql_command = f"{base_command} -e \"USE '{database_name}'\""
     if run_command_exit(mysql_command, quiet=True) == 0:
         run_command(
@@ -4259,7 +4267,7 @@ if not os.path.isfile(testsuite_config_file):
     )
 with open(testsuite_config_file, "r") as f:
     for line in f.readlines():
-        if match := re.search(rf"^\s*(\w+)\s*=\s*(.*)$", line):
+        if match := re.search(r"^\s*(\w+)\s*=\s*(.*)$", line):
             testsuite_config[match.group(1).lower()] = match.group(2)
 if "slurmsourcedir" in testsuite_config:
     properties["slurm-source-dir"] = testsuite_config["slurmsourcedir"]
@@ -4301,7 +4309,7 @@ if not os.path.isfile(slurm_config_file):
 if os.access(slurm_config_file, os.R_OK):
     with open(slurm_config_file, "r") as f:
         for line in f.readlines():
-            if match := re.search(rf"^\s*(?i:SlurmUser)\s*=\s*(.*)$", line):
+            if match := re.search(r"^\s*(?i:SlurmUser)\s*=\s*(.*)$", line):
                 properties["slurm-user"] = match.group(1)
 else:
     # slurm.conf is not readable as test-user. We will try reading it as root
@@ -4311,7 +4319,7 @@ else:
     if results["exit_code"] == 0:
         pytest.fail(f"Unable to read {slurm_config_file}")
     for line in results["stdout"].splitlines():
-        if match := re.search(rf"^\s*(?i:SlurmUser)\s*=\s*(.*)$", line):
+        if match := re.search(r"^\s*(?i:SlurmUser)\s*=\s*(.*)$", line):
             properties["slurm-user"] = match.group(1)
 
 properties["submitted-jobs"] = []

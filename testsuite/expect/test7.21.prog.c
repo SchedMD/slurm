@@ -109,4 +109,3 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 {
 	return run_test(sp, __func__);
 }
-

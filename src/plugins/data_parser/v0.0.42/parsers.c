@@ -519,7 +519,7 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit,
 	}
 
 	if (bit->type == FLAG_BIT_TYPE_BIT) {
-		/* atleast one bit must be set */
+		/* at least one bit must be set */
 		xassert(bit->value);
 		/* mask must include all value bits */
 		xassert((bit->mask & bit->value) == bit->value);
@@ -615,7 +615,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 	xassert(parser->size > 0);
 
 	if (parser->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
-		/* field is only a place holder so most assert()s dont apply */
+		/* field is only a place holder so most assert()s don't apply */
 		xassert(parser->field_name && parser->field_name[0]);
 		xassert(parser->type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->flag_bit_array_count);
@@ -10094,7 +10094,7 @@ static const parser_t parsers[] = {
 	addpap(ACCOUNT_SHORT, slurmdb_account_rec_t, NULL, slurmdb_destroy_account_rec),
 	addpap(ACCOUNTING, slurmdb_accounting_rec_t, NULL, slurmdb_destroy_accounting_rec),
 	addpap(ACCOUNTS_ADD_COND, slurmdb_add_assoc_cond_t, NEW_FUNC(ACCOUNTS_ADD_COND), slurmdb_destroy_add_assoc_cond),
-	/* Re-use already existing NEW_FUNC */
+	/* Reuse already existing NEW_FUNC */
 	addpap(USERS_ADD_COND, slurmdb_add_assoc_cond_t, NEW_FUNC(ACCOUNTS_ADD_COND), slurmdb_destroy_add_assoc_cond),
 	addpap(COORD, slurmdb_coord_rec_t, NULL, slurmdb_destroy_coord_rec),
 	addpap(WCKEY, slurmdb_wckey_rec_t, NEW_FUNC(WCKEY), slurmdb_destroy_wckey_rec),

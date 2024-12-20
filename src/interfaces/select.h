@@ -83,7 +83,7 @@ extern char *select_plugin_id_to_string(int plugin_id);
 extern int select_string_to_plugin_id(const char *plugin);
 
 /*******************************************\
- * GLOBAL SELECT STATE MANAGEMENT FUNCIONS *
+ * GLOBAL SELECT STATE MANAGEMENT FUNCTIONS *
 \*******************************************/
 
 /*
@@ -123,7 +123,7 @@ extern int select_g_state_save(char *dir_name);
 extern int select_g_state_restore(char *dir_name);
 
 /*********************************\
- * STATE INITIALIZATION FUNCIONS *
+ * STATE INITIALIZATION FUNCTIONS *
 \*********************************/
 
 /*
@@ -144,7 +144,7 @@ extern int select_g_job_init(list_t *job_list);
 extern int select_g_reconfigure(void);
 
 /**************************\
- * NODE SPECIFIC FUNCIONS *
+ * NODE SPECIFIC FUNCTIONS *
 \**************************/
 
 /*
@@ -185,12 +185,12 @@ extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo);
  * IN job_ptr - The updated job */
 extern int select_g_select_nodeinfo_set(job_record_t *job_ptr);
 
-/* Update slect plugin information about every node as needed (if changed since
+/* Update select plugin information about every node as needed (if changed since
  * previous query) */
 extern int select_g_select_nodeinfo_set_all(void);
 
 /*
- * Get information from a slect plugin node record
+ * Get information from a select plugin node record
  * IN nodeinfo - The record to get information from
  * IN dinfo - The data type to be retrieved
  * IN state - Node state filter to be applied (ie. only get information about
@@ -203,7 +203,7 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 					void *data);
 
 /******************************************************\
- * JOB SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
+ * JOB SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCTIONS *
 \******************************************************/
 
 #define SELECT_MODE_BASE         0x00ff
@@ -393,7 +393,7 @@ extern int select_g_job_expand(job_record_t *from_job_ptr,
 extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr);
 
 /*******************************************************\
- * STEP SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
+ * STEP SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCTIONS *
 \*******************************************************/
 
 /*

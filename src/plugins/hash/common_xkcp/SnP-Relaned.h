@@ -16,7 +16,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 This file contains macros that help implement a permutation in a SnP-compatible way.
 It converts an implementation that implement state input/output functions
 in a lane-oriented fashion (i.e., using SnP_AddLanes() and SnP_AddBytesInLane,
-and similarly for Overwite, Extract and ExtractAndAdd) to the byte-oriented SnP.
+and similarly for Overwrite, Extract and ExtractAndAdd) to the byte-oriented SnP.
 Please refer to SnP-documentation.h for more details.
 */
 

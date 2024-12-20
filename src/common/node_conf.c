@@ -95,7 +95,7 @@ int node_record_count = 0;		/* number of node slots in
 					 * node_record_table_ptr */
 int active_node_record_count = 0;	/* non-null node count in
 					 * node_record_table_ptr */
-int last_node_index = -1;		/* index of last node in tabe */
+int last_node_index = -1;		/* index of last node in table */
 uint16_t *cr_node_num_cores = NULL;
 uint32_t *cr_node_cores_offset = NULL;
 bool spec_cores_first = false;
@@ -841,8 +841,8 @@ extern void grow_node_record_table_ptr(void)
  * create_node_record - create a node record and set its values to defaults
  * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
- * OUT node_ptr - node_record_t** with created node on SUCESS, NULL otherwise.
- * RET SUCESS, or error code
+ * OUT node_ptr - node_record_t** with created node on SUCCESS, NULL otherwise.
+ * RET SUCCESS, or error code
  * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
  *	the global node table is no longer required
  */

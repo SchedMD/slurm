@@ -58,7 +58,7 @@ typedef enum {
 /* this routine tries to complete message processing on message
  * engine (eng). Return value:
  * - false: no progress was observed on the descriptor
- * - true: one more message was successfuly processed
+ * - true: one more message was successfully processed
   */
 
 typedef struct  pmixp_conn_struct{

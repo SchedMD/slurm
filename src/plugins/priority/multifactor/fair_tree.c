@@ -136,7 +136,7 @@ static void _ft_debug(slurmdb_assoc_rec_t *assoc,
 static int _cmp_level_fs(const void *x,
 			 const void *y)
 {
-	/* We sort based on the following critereon:
+	/* We sort based on the following criterion:
 	 *  1. level_fs value
 	 *  2. Prioritize users over accounts (required for tie breakers when
 	 *     comparing users and accounts)

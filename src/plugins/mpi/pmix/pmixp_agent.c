@@ -211,7 +211,7 @@ static int _timer_conn_read(eio_obj_t *obj, list_t *objs)
 	while (32 == pmixp_read_buf(obj->fd, tmpbuf, 32, &shutdown, false))
 		;
 	if (shutdown) {
-		PMIXP_ERROR("readin from timer fd, shouldn't happen");
+		PMIXP_ERROR("read-in from timer fd, shouldn't happen");
 		obj->shutdown = true;
 	}
 

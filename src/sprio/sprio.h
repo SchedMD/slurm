@@ -109,7 +109,7 @@ extern int  parse_format( char* format );
 
 /*
  * filter_job_list - filter a list of jobs according to options specified by the
- *                   user that are containted in the 'params' global variable.
+ *                   user that are contained in the 'params' global variable.
  *
  * IN/OUT job_list - list of priority_factors_object_t
  */

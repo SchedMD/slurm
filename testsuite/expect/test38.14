@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test hetjob step output file labling and different commands/args
+# Purpose: Test hetjob step output file labeling and different commands/args
 ############################################################################
 # Copyright (C) SchedMD LLC.
 # CODE-OCEC-09-009. All rights reserved.

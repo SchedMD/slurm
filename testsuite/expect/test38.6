@@ -175,7 +175,7 @@ expect {
 		wait
 	}
 }
-set failure_addendum "This may be due to NFS sychronization problems: Multiple processes on differrent nodes writing to the same file. The SlurmdLogFile on each node should include SPANK logs for each step"
+set failure_addendum "This may be due to NFS synchronization problems: Multiple processes on different nodes writing to the same file. The SlurmdLogFile on each node should include SPANK logs for each step"
 if {$matches_sbatch != 2} {
 	fail "Local (sbatch) sbatch spank plugin failure ($matches_sbatch != 2). $failure_addendum"
 }

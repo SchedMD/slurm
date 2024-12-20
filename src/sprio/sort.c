@@ -364,4 +364,3 @@ static int _sort_by_job_prio(void *v1, void *v2)
 	cmp = _compare_double(j1_prio, j2_prio);
 	return COND_NEGATE(sort_descend, cmp);
 }
-

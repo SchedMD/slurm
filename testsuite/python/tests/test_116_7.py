@@ -4,7 +4,6 @@
 import atf
 import re
 import pytest
-import time
 
 steps_submitted = 30
 memory = 6
@@ -23,7 +22,7 @@ def test_batch_multiple_concurrent_steps():
 
     file_in = atf.module_tmp_path / "file_in"
     file_out = atf.module_tmp_path / "file_out"
-    file_err = atf.module_tmp_path / "file_err"
+    # file_err = atf.module_tmp_path / "file_err"
     job_mem_opt = f"--mem-per-cpu={total_mem}M"
     step_mem_opt = f"--mem-per-cpu={memory}M"
 

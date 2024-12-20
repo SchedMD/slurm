@@ -1013,7 +1013,7 @@ static int cbuf_find_replay_line(cbuf_t *cb, int chars, int *nlines, int *nl)
         return(0);                      /* no replay data available */
     }
     if (lines > 0) {
-        chars = -1;                     /* chars parm not used if lines > 0 */
+        chars = -1;                     /* chars param not used if lines > 0 */
     }
     else {
         ++chars;                        /* incr to allow for preceding '\n' */
@@ -1101,7 +1101,7 @@ static int cbuf_find_unread_line(cbuf_t *cb, int chars, int *nlines)
         return(0);                      /* no unread data available */
     }
     if (lines > 0) {
-        chars = -1;                     /* chars parm not used if lines > 0 */
+        chars = -1;                     /* chars param not used if lines > 0 */
     }
     i = cb->i_out;
     while (i != cb->i_in) {

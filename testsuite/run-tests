@@ -2,7 +2,9 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import os, re, sys
+import os
+import re
+import sys
 
 # SchedMD
 sys.path.append(sys.path[0] + "/src/lib")
@@ -25,13 +27,13 @@ from utils.conf import (
 from utils.fs import (
     create_dir,
     file_exists,
-    exit_if_not_exists,
+    # exit_if_not_exists,
 )
 from utils.log import (
     log,
     log_header,
-    log_new_line,
-    print_pretty_dict,
+    # log_new_line,
+    # print_pretty_dict,
 )
 from utils.ps import (
     is_tool,
@@ -56,12 +58,14 @@ REQUIRED_PYTHON_VERSION = "3.8"
 def main():
     req_ver = [int(x) for x in REQUIRED_PYTHON_VERSION.split(".")]
     if sys.version_info[0] < req_ver[0] or sys.version_info[1] < req_ver[1]:
-        sys.exit(f"""
+        sys.exit(
+            f"""
 *** PYTHON VERSION ERROR ***
 
 runtests requires python3 version {REQUIRED_PYTHON_VERSION} or greater, got {sys.version}.
 
-- Exiting -""")
+- Exiting -"""
+        )
     else:
         perform(
             "Executing ./run-tests",
@@ -83,7 +87,7 @@ def run_app():
     test_env.setdefault("SLURM_TESTSUITE_CONF", TS_CONF_DEFAULT)
     if test_env["SLURM_TESTSUITE_CONF"] == TS_CONF_DEFAULT:
         if not file_exists(TS_CONF_DEFAULT):
-            msg = f"""
+            msg = """
 *** CONFIG ERROR ***
 
 SLURM_TESTSUITE_CONF environment variable not set and the default testsuite.conf
@@ -148,9 +152,11 @@ testsuite.conf file in this directory as outlined in the README.
             )
 
     # Collect tests lists from the dirs (to be current with new or deleted tests)
-    all_expect_tests = get_tl_from_dir(f"{TS_DIR}/expect", "(test\d+\.\d+)$", "expect/")
+    all_expect_tests = get_tl_from_dir(
+        f"{TS_DIR}/expect", r"(test\d+\.\d+)$", "expect/"
+    )
     all_python_tests = get_tl_from_dir(
-        f"{TS_DIR}/python/tests", "(test_\d+_\d+\.py)$", "python/tests/"
+        f"{TS_DIR}/python/tests", r"(test_\d+_\d+\.py)$", "python/tests/"
     )
 
     unit_dir_data = create_new_test_data(all_unit_tests, "slurm_unit")
@@ -162,7 +168,7 @@ testsuite.conf file in this directory as outlined in the README.
     log_header("UPDATING RECORDS")
     log(f"DB: {db_name}")
     perform(
-        f"Setting up local test database",
+        "Setting up local test database",
         setup_db_if_new,
         db_name,
         SEED_FILE,
@@ -206,13 +212,12 @@ testsuite.conf file in this directory as outlined in the README.
     log_header("**** BEGIN TESTING ****")
     if not args.resume:
         perform(
-            "Reseting run_ids",
+            "Resetting run_ids",
             reset_suite_run_ids,
             db_name,
             ["slurm_unit", "expect", "python"],
-            verbose=False
+            verbose=False,
         )
-
 
     # Run unit tests
     aborted = False
@@ -247,7 +252,7 @@ testsuite.conf file in this directory as outlined in the README.
     ) + list(set(incl_dict["python"]) - set(excl_dict["python"]))
 
     # If in resume mode start from resume idx using the last ran data
-    reg_start_idx = 0
+    # reg_start_idx = 0
     skip_reg = len(run_regressions_list) < 1
     sorted_reg_data = (
         []
@@ -275,7 +280,6 @@ testsuite.conf file in this directory as outlined in the README.
             regressions_status = regressions_stats["status"]
             if regressions_status == "ABORTED":
                 aborted = True
-
 
     # Print summary data
     print_run_summary(
@@ -307,11 +311,12 @@ def print_run_summary(run_tup_list):
             fails = stats_dict["fails"]
             num_fails = len(fails)
             num_tests = stats_dict["total"]
-            status = stats_dict["status"]
+            # status = stats_dict["status"]
 
             # Sort fails so that they are in order
-            fails.sort(key=lambda x : [int(num_group)
-                                       for num_group in re.findall(f"\d+", x)])
+            fails.sort(
+                key=lambda x: [int(num_group) for num_group in re.findall(r"\d+", x)]
+            )
 
             if completions + skips + num_fails > 0:
                 print_frmt(frmt, f"{msg}:", "")
@@ -367,7 +372,7 @@ def intersect(user_list, all_list):
     # Handle *. or .* and *_ or _* options
     result = []
     for test_name in user_list:
-        test_name = test_name.replace(".", "\.").replace("*", "\d+")
+        test_name = test_name.replace(r".", r"\.").replace(r"*", r"\d+")
         name_re = re.compile(f"{test_name}$")
 
         for valid_name in all_list:

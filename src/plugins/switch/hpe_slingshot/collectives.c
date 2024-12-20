@@ -484,7 +484,7 @@ out:
 
 /*
  * If this job is using Slingshot hardware collectives, release any
- * multicast addresses associated with this job, by DELETEing the job
+ * multicast addresses associated with this job, by deleting the job
  * object from the fabric manager.
  */
 extern void slingshot_release_collectives_job(uint32_t job_id)

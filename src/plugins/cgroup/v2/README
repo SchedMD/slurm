@@ -38,7 +38,7 @@ OTHER CHANGES
   memory and causes OOM to act in this cgroup, it can also kill slurmstepd which
   would impede it to do the proper cleanup of the job. This is worked around as
   in v1 with setting oom_score_adj to -1000 to make slurmstepd unkillable. It
-  can be discused to use a -999 instead to make it killable but more unlikely.
+  can be discussed to use a -999 instead to make it killable but more unlikely.
 
 HOW TO START SLURM
 ------------------
@@ -59,7 +59,7 @@ on Gnome:
 
 then, if slurmd tries to modify the cgroup hierarchy under this tree, he will
 find pids other than himself in cgroup.procs, and all changes will affect these
-other pids and viceversa. So for example, creating a subdirectory and attaching
+other pids and vice-versa. So for example, creating a subdirectory and attaching
 himself to this new directory and then changing the subtree_control for the
 parent will fail. subtree_control cannot be set if there are processes at this
 level. In that case slurmd should decide what to do with these unrelated pids,
@@ -145,7 +145,7 @@ DEVELOPER NOTES
   hierarchies. This allows mixing v2 hierarchy with the legacy v1 multiple
   hierarchies in a fully backward compatible way. In any case we are not going
   to support hybrid (mixed) hierarchies because they have no future, are not
-  supported by many softwares, and simply they are not convenient.
+  supported by many software, and simply they are not convenient.
 
 - cgroup.procs contains the list of pids for this cgroup, but is not 100%
   reliable for a pid count:

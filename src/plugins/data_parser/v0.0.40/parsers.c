@@ -427,7 +427,7 @@ static void _check_flag_bit(int8_t i, const flag_bit_t *bit, bool *found_bit,
 	}
 
 	if (bit->type == FLAG_BIT_TYPE_BIT) {
-		/* atleast one bit must be set */
+		/* at least one bit must be set */
 		xassert(bit->value);
 		/* mask must include all value bits */
 		xassert((bit->mask & bit->value) == bit->value);
@@ -502,7 +502,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 	xassert(parser->size > 0);
 
 	if (parser->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
-		/* field is only a place holder so most assert()s dont apply */
+		/* field is only a place holder so most assert()s don't apply */
 		xassert(parser->field_name && parser->field_name[0]);
 		xassert(parser->type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->flag_bit_array_count);
@@ -8767,7 +8767,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_account_cond_t , mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
-	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "Association filter"),
+	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "association", "Association filter"),
 	add_parse(STRING_LIST, description_list, "description", "CSV description list"),
 	add_cparse(ACCOUNT_CONDITION_WITH_ASSOC_V40, "with_assocs", "Include associations"),
 	add_cparse(ACCOUNT_CONDITION_WITH_WCOORD_V40, "with_coords", "Include coordinators"),
@@ -9220,7 +9220,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 	add_parse(JOB_ARRAY_RESPONSE_MSG_PTR, results, "results", "Job update results"),
 	add_parse_deprec(STRING, job_id, 0, "job_id", "First updated Job ID - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
 	add_parse_deprec(STRING, step_id, 0, "step_id", "First updated Step ID - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
-	add_parse_deprec(STRING, job_submit_user_msg, 0, "job_submit_user_msg", "First updated Job submision user message - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
+	add_parse_deprec(STRING, job_submit_user_msg, 0, "job_submit_user_msg", "First updated Job submission user message - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
 	add_openapi_response_meta(openapi_job_post_response_t),
 	add_openapi_response_errors(openapi_job_post_response_t),
 	add_openapi_response_warnings(openapi_job_post_response_t),
@@ -9236,7 +9236,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
 	add_parse_deprec(JOB_SUBMIT_RESPONSE_MSG, resp, 0, "result", "Job submission", SLURM_23_11_PROTOCOL_VERSION),
 	add_parse(UINT32, resp.job_id, "job_id", "Submitted Job ID"),
 	add_parse(STEP_ID, resp.step_id, "step_id", "Submitted Step ID"),
-	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "job submision user message"),
+	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "job submission user message"),
 	add_openapi_response_meta(openapi_job_submit_response_t),
 	add_openapi_response_errors(openapi_job_submit_response_t),
 	add_openapi_response_warnings(openapi_job_submit_response_t),
@@ -9814,7 +9814,7 @@ static const parser_t parsers[] = {
 	addpap(ACCOUNT_SHORT, slurmdb_account_rec_t, NULL, slurmdb_destroy_account_rec),
 	addpap(ACCOUNTING, slurmdb_accounting_rec_t, NULL, slurmdb_destroy_accounting_rec),
 	addpap(ACCOUNTS_ADD_COND, slurmdb_add_assoc_cond_t, NEW_FUNC(ACCOUNTS_ADD_COND), slurmdb_destroy_add_assoc_cond),
-	/* Re-use already existing NEW_FUNC */
+	/* Reuse already existing NEW_FUNC */
 	addpap(USERS_ADD_COND, slurmdb_add_assoc_cond_t, NEW_FUNC(ACCOUNTS_ADD_COND), slurmdb_destroy_add_assoc_cond),
 	addpap(COORD, slurmdb_coord_rec_t, NULL, slurmdb_destroy_coord_rec),
 	addpap(WCKEY, slurmdb_wckey_rec_t, NEW_FUNC(WCKEY), slurmdb_destroy_wckey_rec),

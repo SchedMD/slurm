@@ -1654,7 +1654,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 	 *
 	 * The values were packed in the above order. To unpack the values
 	 * into the correct variables, the unpacking order is changed to
-	 * accomodate the shift in values. job->partition is unpacked before
+	 * accommodate the shift in values. job->partition is unpacked before
 	 * job->start instead of after job->node_inx.
 	 *
 	 * 15.08: job_req_inx and the it's corresponding enum were synced up

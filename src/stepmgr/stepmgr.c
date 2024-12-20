@@ -133,7 +133,7 @@ extern void stepmgr_init(stepmgr_ops_t *ops)
 {
 	/*
 	 * Just keep pointers so that the pointers can be assigned after being
-	 * intialized init is called.
+	 * initialized init is called.
 	 */
 	stepmgr_ops = ops;
 }
@@ -1460,7 +1460,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	/*
 	 * An allocating srun will send in the same node_list that was already
 	 * used to construct the job allocation. In that case, we can assume
-	 * that the job allocation already satifies those requirements.
+	 * that the job allocation already satisfies those requirements.
 	 */
 	if (step_spec->node_list && xstrcmp(step_spec->node_list,
 					    job_ptr->details->req_nodes)) {
@@ -1979,7 +1979,7 @@ static int _gres_filter_avail_cores(void *x, void *arg)
 			    gres_ss->gres_bit_alloc[args->job_node_inx],
 			    gres_ns->topo_gres_bitmap[i]))
 			continue;
-		/* Does it specifify which cores which can use it */
+		/* Does it specify which cores which can use it */
 		if (!gres_ns->topo_core_bitmap[i]) {
 			bit_nset(args->any_gres_core_bitmap,
 				 args->core_start_bit, args->core_end_bit);
@@ -2214,7 +2214,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		if (core_cnt > ROUNDUP(job_resrcs_ptr->cpus[job_node_inx],
 				       cpus_per_core) &&
 		    !(step_ptr->flags & SSF_OVERCOMMIT)) {
-			/* Node can never fullfill step request */
+			/* Node can never fulfill step request */
 			return ESLURM_TOO_MANY_REQUESTED_CPUS;
 		}
 	}
@@ -2928,7 +2928,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 				ROUNDUP(job_resrcs_ptr->cpus_used[job_node_inx],
 					vpus);
 
-			/* If CR_CPU is used with a thread cound > 1 the cpus
+			/* If CR_CPU is used with a thread count > 1 the cpus
 			 * recorded being allocated to a job don't have to be a
 			 * multiple of threads per core. Make sure to dealloc
 			 * full cores and not partial cores.
@@ -2971,7 +2971,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 					 job_resrcs_ptr->
 					 memory_allocated[job_node_inx]);
 			} else {
-				error("%s: Allocated memory underflow for %pS (freed memeory=%"PRIu64")",
+				error("%s: Allocated memory underflow for %pS (freed memory=%"PRIu64")",
 				      __func__, step_ptr, mem_use);
 				job_resrcs_ptr->memory_used[job_node_inx] = 0;
 			}

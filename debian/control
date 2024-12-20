@@ -111,7 +111,7 @@ Depends:
  munge
 Conflicts:
  slurmctld
-Description: Slurm contoller daemon.
+Description: Slurm controller daemon.
  Used to manage the job queue, schedule jobs, and dispatch RPC messages to the
  slurmd processon the compute nodes to launch jobs.
 

@@ -241,7 +241,7 @@ subtest {[regexp "${acct_d}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify QOS of 
 log_info "Setup WOPL:\n${output}"
 
 #
-# Verify fitering accounts
+# Verify filtering accounts
 #
 set output [run_command_output -fail "$sacctmgr -p show assoc tree format=account,user,qos,parentname where user=''"]
 

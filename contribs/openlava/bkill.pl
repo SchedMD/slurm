@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 ###############################################################################
 #
-# bkill - deletes slurm jobs in familar openlava format.
+# bkill - deletes slurm jobs in familiar openlava format.
 #
 #
 ###############################################################################
@@ -151,4 +151,3 @@ full documentation
 On success, B<bkill> will exit with a value of zero. On failure, B<bkill> will exit with a value greater than zero.
 
 =cut
-

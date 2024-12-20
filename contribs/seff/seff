@@ -15,7 +15,7 @@ use Slurm ':all';
 
 my $VERSION = "2.1";
 
-# This script is roughtly equivalent to:
+# This script is roughly equivalent to:
 # sacct -P -n -a --format JobID,User,Group,State,Cluster,AllocCPUS,REQMEM,TotalCPU,Elapsed,MaxRSS,ExitCode,NNodes,NTasks -j <job_id>
 
 my %opts;

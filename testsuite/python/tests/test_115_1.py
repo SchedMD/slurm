@@ -284,17 +284,17 @@ def archive_load(create_entities):
             rf"{cluster}\|{account1}\|{user_account_id[user1][account1]}\|{wckey1}\|{user_wckey_id[user1][wckey1]}\|{job1_start_string}\|{job1_end_string}\|{job1_duration_string}",
             output,
         ):
-            atf.log_die(f"The job accounting data was not loaded correctly for job1")
+            atf.log_die("The job accounting data was not loaded correctly for job1")
         if not re.search(
             rf"{cluster}\|{account3}\|{user_account_id[user2][account3]}\|{wckey1}\|{user_wckey_id[user2][wckey1]}\|{job2_start_string}\|{job2_end_string}\|{job2_duration_string}",
             output,
         ):
-            atf.log_die(f"The job accounting data was not loaded correctly for job2")
+            atf.log_die("The job accounting data was not loaded correctly for job2")
         if not re.search(
             rf"{cluster}\|{account2}\|{user_account_id[user1][account2]}\|{wckey1}\|{user_wckey_id[user1][wckey1]}\|{job3_start_string}\|{job3_end_string}\|{job3_duration_string}",
             output,
         ):
-            atf.log_die(f"The job accounting data was not loaded correctly for job3")
+            atf.log_die("The job accounting data was not loaded correctly for job3")
 
         # Use sacctmgr to see if the node event loaded
         output = atf.run_command_output(
@@ -307,13 +307,13 @@ def archive_load(create_entities):
             output,
         ):
             atf.log_die(
-                f"The event accounting data was not loaded correctly for the cluster"
+                "The event accounting data was not loaded correctly for the cluster"
             )
         if not re.search(
             rf"{cluster}\|{node0}\|{node0_start_string}\|{node0_end_string}\|{node0_cpus}",
             output,
         ):
-            atf.log_die(f"The event accounting data was not loaded correctly for node0")
+            atf.log_die("The event accounting data was not loaded correctly for node0")
 
         # Use sacctmgr to roll up the time period
         atf.run_command_output(

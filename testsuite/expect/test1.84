@@ -6,7 +6,7 @@
 #
 # NOTE:    This assumes node names are of the form <alpha><number>, where
 #          the value of <number> indicates the nodes relative location.
-#          Change tha node name parsing logic as needed for other formats.
+#          Change the node name parsing logic as needed for other formats.
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

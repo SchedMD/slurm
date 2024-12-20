@@ -45,7 +45,7 @@
  *	slurmstepd sends: (packed via io_init_msg_pack())
  *	     uint32_t: length of packet
  *	     packed io_init_msg_t
- *	srun recieves via io_init_msg_read_from_fd()
+ *	srun receives via io_init_msg_read_from_fd()
  *	srun validates via io_init_msg_validate()
  *
  * sattach via io_client_connect():

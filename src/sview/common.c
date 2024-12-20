@@ -1376,7 +1376,7 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 		if (_DEBUG)
 			g_print("row_clicked:global_row_count2 : %d \n",
 				global_row_count);
-		/*prevent rc processing if under contol/shift*/
+		/*prevent rc processing if under control/shift*/
 		if (!(event->state & GDK_CONTROL_MASK)
 		    && !(event->state & GDK_SHIFT_MASK))
 			right_button_pressed(tree_view, path, event,

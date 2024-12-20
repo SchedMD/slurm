@@ -15,7 +15,7 @@ def setup():
 def test_srun_increasing_job_sizes():
     """Spawn srun immediate jobs with ever larger node counts"""
 
-    if atf.get_config_parameter("FrontendName") != None:
+    if atf.get_config_parameter("FrontendName") is not None:
         max_node_cnt = 2
     else:
         max_node_cnt = 1024
@@ -34,6 +34,6 @@ def test_srun_increasing_job_sizes():
                 if good_error in result["stderr"]:
                     good_error_flag = True
                     break
-            if good_error_flag == False:
-                pytest.fail(f"Unexpect error occoured: {result['stderr']}")
+            if good_error_flag is False:
+                pytest.fail(f"Unexpected error occurred: {result['stderr']}")
         node_count *= 2

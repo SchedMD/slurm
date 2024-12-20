@@ -67,7 +67,7 @@ expect {
 	}
 	-re "Cancel job_id=($number).*\? " {
 		send "n\r"
-		fail "scancel job id mis-match ($expect_out(1,string) != $job_id2)"
+		fail "scancel job id mismatch ($expect_out(1,string) != $job_id2)"
 	}
 	timeout {
 		fail "scancel not responding"
@@ -88,7 +88,7 @@ expect {
 	}
 	-re "Cancel job_id=($number).*\? " {
 		send "n\r"
-		fail "scancel job id mis-match ($expect_out(1,string) != $job_id1)"
+		fail "scancel job id mismatch ($expect_out(1,string) != $job_id1)"
 	}
 	timeout {
 		fail "scancel not responding"

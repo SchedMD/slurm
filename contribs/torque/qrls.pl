@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 ################################################################################
 #
-# qrls - releases a hold on slurm jobs in familar pbs format.
+# qrls - releases a hold on slurm jobs in familiar pbs format.
 #
 #
 ###############################################################################
@@ -166,4 +166,3 @@ full documentation
 On success, B<qrls> will exit with a value of zero. On failure, B<qrls> will exit with a value greater than zero.
 
 =cut
-

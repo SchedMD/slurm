@@ -15,7 +15,7 @@ def setup():
 def delete_old_resv():
     """Delete the reservation if it's still there"""
     atf.run_command(
-        f"scontrol delete reservation resv1",
+        "scontrol delete reservation resv1",
         user=atf.properties["slurm-user"],
         fatal=False,
     )
@@ -36,9 +36,9 @@ def create_resv(delete_old_resv):
 def test_clear_job_expired_deadline(create_resv):
     """Put several jobs in the queue that will go past the resv deadline"""
     job_id = atf.submit_job_sbatch(
-        sbatch_args=rf" -w node0 --deadline=now+4 "
-        f"--begin=now --reservation=resv1 "
-        f'--wrap="sleep 300"'
+        sbatch_args=r" -w node0 --deadline=now+4 "
+        "--begin=now --reservation=resv1 "
+        '--wrap="sleep 300"'
     )
 
     assert job_id != 0, "Couldn't start job batch"
@@ -66,7 +66,7 @@ def test_clear_job_expired_deadline(create_resv):
     ), "The JobState did not change to DEADLINE when the reservation expired."
 
     """Verify that the queue is empty"""
-    output = atf.run_command_output(f"squeue")
+    output = atf.run_command_output("squeue")
     assert (
         str(job_id) not in output
     ), f"Job {job_id} was still in the queue and should have been deleted."

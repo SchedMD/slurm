@@ -3,7 +3,8 @@
 ############################################################################
 import atf
 import pytest
-import re
+
+# import re
 import json
 
 
@@ -16,5 +17,5 @@ def setup():
 def test_json():
     """Verify squeue --json has the correct format"""
 
-    output = atf.run_command_output(f"squeue --json", fatal=True)
+    output = atf.run_command_output("squeue --json", fatal=True)
     assert json.loads(output) is not None

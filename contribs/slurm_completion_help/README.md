@@ -34,7 +34,7 @@ The syntax file is then read and applied on a Shell script after the usual synta
 
 The Bash completion script offers <TAB> completion for Slurm commands.
 
-### Instalation
+### Installation
 
 You must have the bash-completion package installed in order for this to work.
 Source the [slurm_completion.sh][slurm-completion] script. It is
@@ -58,35 +58,35 @@ $ sacct --<tab><tab>
 --accounts=       --endtime=        --local           --state=
 --allclusters     --env-vars        --long            --timelimit-max=
 --allocations     --federation      --name=           --timelimit-min=
---allusers        --fields=         --ncpus=          --truncate 
+--allusers        --fields=         --ncpus=          --truncate
 --associations=   --file=           --nnodes=         --uid=
 --autocomplete=   --flags=          --noconvert       --units=
---batch-script    --format=         --nodelist=       --usage 
---brief           --gid=            --noheader        --use-local-uid 
+--batch-script    --format=         --nodelist=       --usage
+--brief           --gid=            --noheader        --use-local-uid
 --cluster=        --group=          --parsable        --user=
---clusters=       --help            --parsable2       --verbose 
---completion      --help-fields     --partition=      --version 
+--clusters=       --help            --parsable2       --verbose
+--completion      --help-fields     --partition=      --version
 --constraints=    --helpformat      --qos=            --wckeys=
 --delimiter=      --jobs=           --reason=         --whole-hetjob=
---duplicates      --json            --starttime=      --yaml 
+--duplicates      --json            --starttime=      --yaml
 ```
 
 ```sh
 $ squeue --<tab><tab>
 --accounts=      --hide           --nodelist=      --states=
 --all            --iterate=       --nodes=         --steps=
---array          --jobs=          --noheader       --usage 
+--array          --jobs=          --noheader       --usage
 --array-unique   --json           --partitions=    --user=
 --autocomplete=  --licenses=      --priority       --users=
---cluster=       --local          --qos=           --verbose 
---clusters=      --long           --reservation=   --version 
---federation     --me             --sib            --yaml 
---format=        --name=          --sibling        
---Format=        --noconvert      --sort=          
---help           --node=          --start          
+--cluster=       --local          --qos=           --verbose
+--clusters=      --long           --reservation=   --version
+--federation     --me             --sib            --yaml
+--format=        --name=          --sibling
+--Format=        --noconvert      --sort=
+--help           --node=          --start
 
 $ squeue --users=<tab><tab>
-root,    slurm,    user0,    user1,    user2,    user3,  
+root,    slurm,    user0,    user1,    user2,    user3,
 
 $ squeue --Format=<tab><tab>
 Display all 118 possibilities? (y or n)
@@ -118,27 +118,27 @@ cpus-per-task,      originraw,          timeleft,
 
 ```sh
 $ scontrol <tab><tab>
-abort               pidinfo             shutdown 
-cancel_reboot       ping                suspend 
-cluster             reboot              takeover 
-completing          reconfigure         token 
-create              release             top 
-delete              requeue             uhold 
-errnumstr           requeuehold         update 
-fsdampeningfactor   resume              version 
-help                schedloglevel       wait_job 
-hold                setdebug            write 
-listpids            setdebugflags       
-notify              show                
+abort               pidinfo             shutdown
+cancel_reboot       ping                suspend
+cluster             reboot              takeover
+completing          reconfigure         token
+create              release             top
+delete              requeue             uhold
+errnumstr           requeuehold         update
+fsdampeningfactor   resume              version
+help                schedloglevel       wait_job
+hold                setdebug            write
+listpids            setdebugflags
+notify              show
 
 $ scontrol update <tab><tab>
-frontendname=     nodename=         reservationname=  
-jobid=            partitionname=    stepid=           
+frontendname=     nodename=         reservationname=
+jobid=            partitionname=    stepid=
 
 $ scontrol update nodename=node<tab><tab>
 node00,  node03,  node06,  node09,  node12,  node15,  node18,
 node01,  node04,  node07,  node10,  node13,  node16,  node19,
-node02,  node05,  node08,  node11,  node14,  node17,  
+node02,  node05,  node08,  node11,  node14,  node17,
 
 $ scontrol update nodename=node00 <tab><tab>
 activefeatures=     extra=              nodename=
@@ -147,10 +147,10 @@ comment=            nodeaddr=           state=
 cpubind=            nodehostname=       weight=
 
 $ scontrol update nodename=node00 state=<tab><tab>
-cancel_reboot      future             power_down_asap    undrain 
-down               idle               power_down_force   
-drain              noresp             power_up           
-fail               power_down         resume             
+cancel_reboot      future             power_down_asap    undrain
+down               idle               power_down_force
+drain              noresp             power_up
+fail               power_down         resume
 ```
 
 <!-- Links -->

@@ -468,7 +468,7 @@ need_refresh:
 
 	if (!found) {
 		if (!popup_win->not_found) {
-			char *temp = "FRONT END DOESN'T EXSIST\n";
+			char *temp = "FRONT END DOESN'T EXIST\n";
 			GtkTreeIter iter;
 			GtkTreeModel *model = NULL;
 

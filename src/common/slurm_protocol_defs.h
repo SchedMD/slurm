@@ -597,7 +597,7 @@ typedef struct job_step_specs {
 	uint16_t port;		/* port to contact initiating srun */
 	uint16_t relative;	/* first node to use of job's allocation */
 	uint16_t resv_port_cnt;	/* reserve ports for MPI if set */
-	uint32_t step_het_comp_cnt; /* How many het componets in the step. Used
+	uint32_t step_het_comp_cnt; /* How many het components in the step. Used
 				     * for a het step inside a non-het job
 				     * allocation. */
 	char *step_het_grps;	/* what het groups are used by step */
@@ -1165,7 +1165,7 @@ typedef struct {
 	uint16_t data_type;	/* date type to unpack */
 	uint16_t data_version;	/* Version that data is packed with */
 	uint64_t fed_siblings;	/* sibling bitmap of job */
-	uint32_t group_id;      /* gid of submited job */
+	uint32_t group_id;      /* gid of submitted job */
 	uint32_t job_id;	/* job_id of job - set in job_desc on receiving
 				 * side */
 	uint32_t job_state;     /* state of job */
@@ -1406,13 +1406,13 @@ extern bool slurm_parse_array_tok(char *tok, bitstr_t *array_bitmap,
  * OUT i_last_p - (optional) if not NULL, set the value pointed to by i_last_p
  *                to the last bit set in the array bitmap. This is only changed
  *                if the string was successfully parsed.
- * RET array_bitmap if successfull, NULL otherwise.
+ * RET array_bitmap if successful, NULL otherwise.
  */
 extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
 					int32_t *i_last_p);
 
 /*
- * Take a string identifing any part of a job and parses it into an id
+ * Take a string identifying any part of a job and parses it into an id
  *
  * Formats parsed:
  *      0000 - JobId
@@ -1438,9 +1438,9 @@ extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
 extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
 			       uint32_t max_array_size);
 /*
- * Dump id into string identifing a part of a job.
+ * Dump id into string identifying a part of a job.
  * Dumps same formats as unfmt_job_id_string() parsed.
- * IN id - job identifer to dump
+ * IN id - job identifier to dump
  * IN/OUT dst - ptr to string to populate.
  * 	*dst must always be NULL when called.
  * 	Caller must xfree(*dst).
@@ -1769,7 +1769,7 @@ extern void xlate_array_task_str(char **array_task_str,
  * IN array - Array of values.
  * IN array_cnt - Count of elements in 'array'.
  * OUT values - Array of values compressed.
- * OUT values_reps - How many each corrisponding element in 'values' there are.
+ * OUT values_reps - How many each corresponding element in 'values' there are.
  * OUT values_cnt - Count of elements in 'values' and 'values_reps'.
  */
 extern void slurm_array64_to_value_reps(uint64_t *array, uint32_t array_cnt,
@@ -1797,7 +1797,7 @@ extern int slurm_get_rep_count_inx(
 
 /*
  * slurm_format_tres_string - given a TRES type and a tres-per-* string,
- *			      will modifiy the string from the original
+ *			      will modify the string from the original
  *			      colon-separated tres request format to the new
  *			      '/' separating the TRES type from the tres
  *			      request. This will work even if the request name

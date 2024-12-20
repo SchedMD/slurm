@@ -173,4 +173,3 @@ sacct [<OPTION>]
                    MM/DD[/YY]-HH:MM[:SS]
                    YYYY-MM-DD[THH:MM[:SS]]
                    now[{+|-}count[seconds(default)|minutes|hours|days|weeks]]
-

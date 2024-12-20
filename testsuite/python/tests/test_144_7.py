@@ -2,10 +2,11 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 import atf
-import logging
-from pathlib import Path
+
+# import logging
 import pytest
 import re
+from pathlib import Path
 
 job_file = None
 step_file = None
@@ -28,7 +29,7 @@ def setup():
     atf.require_config_parameter(
         "Name", {"gpu": {"File": "/dev/tty[0-7]"}}, source="gres"
     )
-    atf.require_nodes(2, [("Gres", f"gpu:4"), ("CPUs", 8)])
+    atf.require_nodes(2, [("Gres", "gpu:4"), ("CPUs", 8)])
 
     atf.require_slurm_running()
 
@@ -55,7 +56,7 @@ def test_gpus_per_node_parallel_1_delayed():
 
     atf.make_bash_script(
         step_file,
-        f"""
+        """
         echo 'STEP_ID:'$SLURM_STEP_ID 'CUDA_VISIBLE_DEVICES:'$CUDA_VISIBLE_DEVICES
         sleep 3
         if [ $SLURM_STEP_ID -eq 2 ]; then
@@ -120,7 +121,7 @@ def test_gpus_per_node_parallel(step_args):
 
     atf.make_bash_script(
         step_file,
-        f"""
+        """
         echo 'STEP_ID:'$SLURM_STEP_ID 'CUDA_VISIBLE_DEVICES:'$CUDA_VISIBLE_DEVICES
         sleep 3
         if [ $SLURM_STEP_ID -eq 1 ]; then
@@ -185,7 +186,7 @@ def test_gpus_per_node_different_gpus():
 
     atf.make_bash_script(
         step_file,
-        f"""
+        """
         echo 'STEP_ID:'$SLURM_STEP_ID 'CUDA_VISIBLE_DEVICES:'$CUDA_VISIBLE_DEVICES
         sleep 3
         exit 0""",
@@ -245,7 +246,7 @@ def test_gpus_per_node_with_gpus_per_task():
 
     atf.make_bash_script(
         step_file,
-        f"""
+        """
         echo 'STEP_ID:'$SLURM_STEP_ID 'CUDA_VISIBLE_DEVICES:'$CUDA_VISIBLE_DEVICES
         sleep 3
         if [ $SLURM_STEP_ID -eq 2 ]; then
@@ -299,7 +300,7 @@ def test_gpus_per_node_with_gpus():
 
     atf.make_bash_script(
         step_file,
-        f"""
+        """
         echo 'HOST:'$SLURMD_NODENAME 'NODE_ID:'$SLURM_NODEID 'STEP_ID:'$SLURM_STEP_ID 'CUDA_VISIBLE_DEVICES:'$CUDA_VISIBLE_DEVICES
         sleep 3
         if [ $SLURM_STEP_ID -eq 2 -a $SLURM_NODEID -eq 0 ]; then
@@ -383,7 +384,7 @@ def test_gpus_per_node_with_gpus_2_nodes():
 
     atf.make_bash_script(
         step_file,
-        f"""
+        """
         echo 'HOST:'$SLURMD_NODENAME 'NODE_ID:'$SLURM_NODEID 'STEP_ID:'$SLURM_STEP_ID 'CUDA_VISIBLE_DEVICES:'$CUDA_VISIBLE_DEVICES
         sleep 3
         if [ $SLURM_STEP_ID -eq 2 -a $SLURM_NODEID -eq 0 ]; then
@@ -445,7 +446,7 @@ def test_gpus_per_node_with_gpus_per_task_3():
 
     atf.make_bash_script(
         step_file,
-        f"""
+        """
         echo 'STEP_ID:'$SLURM_STEP_ID 'CUDA_VISIBLE_DEVICES:'$CUDA_VISIBLE_DEVICES
         sleep 3
         if [ $SLURM_STEP_ID -eq 1 -a $SLURM_PROCID -eq 0 ]; then
@@ -507,7 +508,7 @@ def test_gpus_per_node_with_gpus_per_task_5():
 
     atf.make_bash_script(
         step_file,
-        f"""
+        """
         echo 'STEP_ID:'$SLURM_STEP_ID 'CUDA_VISIBLE_DEVICES:'$CUDA_VISIBLE_DEVICES
         sleep 3
         if [ $SLURM_STEP_ID -eq 1 -a $SLURM_PROCID -eq 0 ]; then

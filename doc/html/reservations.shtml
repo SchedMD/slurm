@@ -74,7 +74,7 @@ started when that resource is unavailable.
 One could create a reservation for all of those licenses in order to perform
 maintenance on that resource.
 In the example below, we create a reservation for 1000 licenses with the name
-of "lustre". 
+of "lustre".
 If there are a total of 1000 lustre licenses configured in this cluster,
 this reservation will prevent any job specifying the need for a lustre
 license from being scheduled on this cluster during this reservation.</p>
@@ -241,7 +241,7 @@ sbatch: Submitted batch job 65540
 
 <p>Note that use of a reservation does not alter a job's priority, but it
 does act as an enhancement to the job's priority.
-Any job with a reservation is considered for scheduling to resources 
+Any job with a reservation is considered for scheduling to resources
 before any other job in the same Slurm partition (queue) not associated
 with a reservation.</p>
 
@@ -532,4 +532,3 @@ before a reservation given fewer jobs to time-slice with.</p>
 <p style="text-align: center;">Last modified 02 August 2024</p>
 
 <!--#include virtual="footer.txt"-->
-

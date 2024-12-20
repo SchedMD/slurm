@@ -260,7 +260,7 @@ static int _set_task_dist_internal(job_record_t *job_ptr)
 		}
 	}
 
-	/* Distrubute remaining tasks per plane size */
+	/* Distribute remaining tasks per plane size */
 	while (maxtasks > tid) {
 		uint32_t last_tid = tid;
 		for (n = 0; n < job_res->nhosts; n++) {

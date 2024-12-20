@@ -1,7 +1,8 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import os, re
+import os
+import re
 from time import perf_counter
 
 # SchedMD
@@ -9,13 +10,14 @@ from db.test_db import (
     insert_or_update_many,
 )
 from test_runners.runner_ui import (
-    color_state,
+    # color_state,
     print_status_line,
     print_test_line,
 )
-from utils.log import (
-    log_new_line,
-)
+
+# from utils.log import (
+#     log_new_line,
+# )
 from utils.cmds import (
     perform,
     run_cmd,
@@ -71,7 +73,7 @@ def run_unit_tests(db_name, test_data_list, UNIT_DIR, LOG_DIR, resume=False):
         print_status_line(rel_name, stats_dict["completions"], stats_dict["total"])
 
         try:
-            # Set 'SUBDIRS= ' so check doesnt descend into dirs without tests
+            # Set 'SUBDIRS= ' so check doesn't descend into dirs without tests
             chk_output = run_cmd(f"make check TESTS='{rel_name}' SUBDIRS= ", quiet=True)
         except KeyboardInterrupt:
             stats_dict["status"] = "ABORTED"
@@ -123,7 +125,6 @@ def run_unit_tests(db_name, test_data_list, UNIT_DIR, LOG_DIR, resume=False):
     # (Mostly for updating the db with new durations)
     num_results = len(result_data_list)
     if num_results == total_tests:
-        result = result_data_list
         stats_dict["status"] = "COMPLETED"
 
     # Update the db only on a fail (with fail_fast) or complete run

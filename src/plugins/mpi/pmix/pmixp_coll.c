@@ -57,7 +57,7 @@
  *    (a) at FAN-IN step waiting for other contributions.
  *    (b) at FAN-OUT since we get all we need.
  *    (c) 2 step forward (SYNC) with coll->seq = (child_seq+1) if root of the
- *        tree successfuly broadcasted the whole database to us.
+ *        tree successfully broadcasted the whole database to us.
  *    (d) 3 step forward (next FAN-IN) with coll->seq = (child_seq+1)
  *        if somebody initiated next collective.
  *    (e) we won't move further because the child with problem won't send us

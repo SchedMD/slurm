@@ -3,7 +3,8 @@
 ############################################################################
 import atf
 import pytest
-import re
+
+# import re
 
 
 # Setup
@@ -11,8 +12,8 @@ import re
 def setup():
     atf.require_auto_config("Needs to create/reconfigure nodes and partitions")
 
-    # Test needs 4 nodes to have 3 partitions with 1 overlaping
-    # We want to test with mutiple sockets.
+    # Test needs 4 nodes to have 3 partitions with 1 overlapping
+    # We want to test with multiple sockets.
     # Partition will use up to MaxCPUsPerSocket=3, and we want that to be at least half of the
     # space so two partitions can share the same core.
     atf.require_nodes(4, [("Sockets", 2), ("CoresPerSocket", 6), ("ThreadsPerCore", 1)])
@@ -51,15 +52,15 @@ def partition_nodes(limit_cpus, limit_name):
 
     atf.cancel_all_jobs()
     atf.run_command(
-        f"scontrol delete PartitionName=p1",
+        "scontrol delete PartitionName=p1",
         user=atf.properties["slurm-user"],
     )
     atf.run_command(
-        f"scontrol delete PartitionName=p3",
+        "scontrol delete PartitionName=p3",
         user=atf.properties["slurm-user"],
     )
     atf.run_command(
-        f"scontrol delete PartitionName=p2",
+        "scontrol delete PartitionName=p2",
         user=atf.properties["slurm-user"],
     )
 
@@ -67,9 +68,9 @@ def partition_nodes(limit_cpus, limit_name):
 @pytest.mark.parametrize("limit_name", ["MaxCPUsPerSocket", "MaxCPUsPerNode"])
 @pytest.mark.parametrize("limit_cpus", [1, 2, 3])
 def test_limits(limit_name, limit_cpus, partition_nodes):
-    """Test that limit_name is honored also for overlaping partitions by
+    """Test that limit_name is honored also for overlapping partitions by
     incrementally submitting the max number of jobs that each partition can allocate
-    based on the limits and assiming the necessary resources are available, and
+    based on the limits and assuming the necessary resources are available, and
     checking that limits are always honored, even when extra jobs are submitted
     at the end."""
 
@@ -84,13 +85,13 @@ def test_limits(limit_name, limit_cpus, partition_nodes):
     list_jobs = []
     for i in range(max_jobs):
         list_jobs.append(
-            atf.submit_job_sbatch(f"-p p1 --wrap 'sleep infinity'", fatal=True)
+            atf.submit_job_sbatch("-p p1 --wrap 'sleep infinity'", fatal=True)
         )
     for job_id in list_jobs:
         atf.wait_for_job_state(job_id, "RUNNING")
 
     # Verify that the number of allocated CPUs per node is correct, assuming 1 CPU per job
-    # First two nodes should have jobs splitted between them due the limits
+    # First two nodes should have jobs split between them due the limits
     assert (
         atf.get_node_parameter(partition_nodes[0], "CPUAlloc") == max_jobs / 2
     ), f"Verify that node {partition_nodes[0]} has {max_jobs/2} CPUs allocated"
@@ -108,7 +109,7 @@ def test_limits(limit_name, limit_cpus, partition_nodes):
     list_jobs = []
     for i in range(max_jobs):
         list_jobs.append(
-            atf.submit_job_sbatch(f"-p p2 --wrap 'sleep infinity'", fatal=True)
+            atf.submit_job_sbatch("-p p2 --wrap 'sleep infinity'", fatal=True)
         )
     for job_id in list_jobs:
         atf.wait_for_job_state(job_id, "RUNNING")
@@ -132,7 +133,7 @@ def test_limits(limit_name, limit_cpus, partition_nodes):
     list_jobs = []
     for i in range(max_jobs):
         list_jobs.append(
-            atf.submit_job_sbatch(f"-p p3 --wrap 'sleep infinity'", fatal=True)
+            atf.submit_job_sbatch("-p p3 --wrap 'sleep infinity'", fatal=True)
         )
     for job_id in list_jobs:
         atf.wait_for_job_state(job_id, "RUNNING")
@@ -153,41 +154,41 @@ def test_limits(limit_name, limit_cpus, partition_nodes):
     ), f"Verify that node {partition_nodes[3]} has 0 CPUs allocated"
 
     # Submit one more job in each partition and make sure we stay within the limits
-    job_id = atf.submit_job_sbatch(f"-p p1 --wrap 'sleep infinity'", fatal=True)
+    job_id = atf.submit_job_sbatch("-p p1 --wrap 'sleep infinity'", fatal=True)
     assert atf.wait_for_job_state(
         job_id, "PENDING", "Resources"
-    ), f"Verify that job is not run in partition p1 but hold due resources"
+    ), "Verify that job is not run in partition p1 but hold due resources"
     atf.cancel_jobs([job_id])
 
-    job_id = atf.submit_job_sbatch(f"-p p2 --wrap 'sleep infinity'", fatal=True)
+    job_id = atf.submit_job_sbatch("-p p2 --wrap 'sleep infinity'", fatal=True)
     assert atf.wait_for_job_state(
         job_id, "PENDING", "Resources"
-    ), f"Verify that job is not run in partition p2 but hold due resources"
+    ), "Verify that job is not run in partition p2 but hold due resources"
     atf.cancel_jobs([job_id])
 
-    job_id = atf.submit_job_sbatch(f"-p p3 --wrap 'sleep infinity'", fatal=True)
+    job_id = atf.submit_job_sbatch("-p p3 --wrap 'sleep infinity'", fatal=True)
     assert atf.wait_for_job_state(
         job_id, "PENDING", "Resources"
-    ), f"Verify that job is not run in partition p3 but hold due resources"
+    ), "Verify that job is not run in partition p3 but hold due resources"
     atf.cancel_jobs([job_id])
 
 
 @pytest.mark.parametrize("limit_name", ["MaxCPUsPerSocket", "MaxCPUsPerNode"])
 @pytest.mark.parametrize("limit_cpus", [0])
 def test_zero_cpu(limit_name, partition_nodes):
-    """Test the corener case of setting limit_name=0 means jobs cannot be submitted to that partition."""
+    """Test the corner case of setting limit_name=0 means jobs cannot be submitted to that partition."""
 
     # This is an undocumented corner case and shouldn't be used.
     # Setting the partition down, drain or inactive should be used instead.
-    # At the moment of writting this test the behavior between MaxCPUsPerSocket
+    # At the moment of writing this test the behavior between MaxCPUsPerSocket
     # and MaxCPUsPerNode is slightly different, but we don't really want to
     # enforce this exact current behavior but just to verify that jobs are rejected
     # or never run.
 
-    job_id = atf.submit_job_sbatch(f"-p p1 --wrap 'sleep infinity'")
+    job_id = atf.submit_job_sbatch("-p p1 --wrap 'sleep infinity'")
     assert job_id == 0 or not atf.wait_for_job_state(
         job_id, "RUNNING", xfail=True
-    ), f"Verify that job is not run"
+    ), "Verify that job is not run"
     atf.cancel_jobs([job_id])
 
     # This is not necessary and it's more an example than an actual test:
@@ -198,7 +199,7 @@ def test_zero_cpu(limit_name, partition_nodes):
         fatal=True,
         user=atf.properties["slurm-user"],
     )
-    job_id = atf.submit_job_sbatch(f"-p p1 --wrap 'sleep infinity'")
+    job_id = atf.submit_job_sbatch("-p p1 --wrap 'sleep infinity'")
     assert atf.wait_for_job_state(
         job_id, "PENDING", "PartitionDown"
-    ), f"Verify that job is not run neither with partition down"
+    ), "Verify that job is not run neither with partition down"

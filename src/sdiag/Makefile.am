@@ -16,4 +16,3 @@ $(sdiag_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 sdiag_LDFLAGS = $(CMD_LDFLAGS)
-

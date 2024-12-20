@@ -8,7 +8,7 @@ import re
 def test_usage():
     """Verify sacctmgr --usage displays the help page"""
 
-    output = atf.run_command_output(f"sacctmgr --usage", fatal=True)
+    output = atf.run_command_output("sacctmgr --usage", fatal=True)
 
     assert re.search(r"sacctmgr \[<OPTION>\] \[<COMMAND>\]", output) is not None
     assert re.search(r"Valid <OPTION> values are:", output) is not None

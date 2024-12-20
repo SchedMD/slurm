@@ -2321,7 +2321,7 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 	slurm_mutex_unlock(&mail_mutex);
 }
 
-/* Test if a batch launch request should be defered
+/* Test if a batch launch request should be deferred
  * RET -1: abort the request, pending job cancelled
  *      0: execute the request now
  *      1: defer the request
@@ -2426,7 +2426,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	return 1;
 }
 
-/* Test if a job signal request should be defered
+/* Test if a job signal request should be deferred
  * RET -1: abort the request
  *      0: execute the request now
  *      1: defer the request

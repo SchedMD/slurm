@@ -121,7 +121,7 @@ static __thread char *thread_username = NULL;
  *		the current thread.
  *	auth_p_thread_clear() - free any thread_config memory
  *	auth_p_token_generate() - creates a JWT to be passed back to the
- *		requestor for a given username and duration.
+ *		requester for a given username and duration.
  */
 
 static void _check_key_permissions(const char *path, int bad_perms)
@@ -151,7 +151,7 @@ static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 	if (!(kid = data_get_string(data_key_get(d, "kid"))))
 		fatal("%s: failed to load kid field", __func__);
 
-	/* Ignore non-RS256 keys in the JWKS if algorthim is provided */
+	/* Ignore non-RS256 keys in the JWKS if algorithm is provided */
 	if ((alg = data_get_string(data_key_get(d, "alg"))) &&
 	    xstrcasecmp(alg, "RS256"))
 		return DATA_FOR_EACH_CONT;

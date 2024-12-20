@@ -19,7 +19,7 @@ def resolve_array_job(job_id, task_id):
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    # Test needs to run a het job with 3 components and 9 parallel tasks of an arrary
+    # Test needs to run a het job with 3 components and 9 parallel tasks of an array
     # We need 9 nodes to be able to run with select_linear
     atf.require_nodes(9)
     atf.require_slurm_running()
@@ -33,7 +33,7 @@ def cancel_jobs():
 
 def test_single_job():
     output = atf.run_command_output(
-        f"squeue --noheader --only-job-state --format='%i=%T'"
+        "squeue --noheader --only-job-state --format='%i=%T'"
     ).strip()
     assert output == ""
 
@@ -41,7 +41,7 @@ def test_single_job():
     atf.wait_for_step(job_id, 0, fatal=True, timeout=60)
 
     output = atf.run_command_output(
-        f"squeue --noheader --only-job-state --format='%i=%T'"
+        "squeue --noheader --only-job-state --format='%i=%T'"
     ).strip()
     assert output == f"{job_id}=RUNNING"
 
@@ -64,7 +64,7 @@ def test_single_job():
     assert output == ""
 
     output = atf.run_command_output(
-        f"squeue --noheader --only-job-state --format='%i=%T'"
+        "squeue --noheader --only-job-state --format='%i=%T'"
     ).strip()
     assert output == ""
 
@@ -79,7 +79,7 @@ def test_het_job():
     atf.wait_for_step(job_id, 0, fatal=True, timeout=60)
 
     output = (
-        atf.run_command_output(f"squeue --noheader --only-job-state --format='%i=%T'")
+        atf.run_command_output("squeue --noheader --only-job-state --format='%i=%T'")
         .strip()
         .splitlines()
     )
@@ -122,7 +122,7 @@ def test_het_job():
     assert len(output) == 0
 
     output = (
-        atf.run_command_output(f"squeue --noheader --only-job-state --format='%i=%T'")
+        atf.run_command_output("squeue --noheader --only-job-state --format='%i=%T'")
         .strip()
         .splitlines()
     )
@@ -146,7 +146,7 @@ def test_array_job():
     atf.wait_for_job_state(job_id, "PENDING", fatal=True, timeout=60)
 
     output = atf.run_command_output(
-        f"squeue --noheader --only-job-state --format='%i=%T'"
+        "squeue --noheader --only-job-state --format='%i=%T'"
     ).strip()
     assert output == f"{job_id}_[1-10]=PENDING"
 
@@ -157,7 +157,7 @@ def test_array_job():
     atf.wait_for_job_state(j5_id, "RUNNING", fatal=True, timeout=60)
 
     output = (
-        atf.run_command_output(f"squeue --noheader --only-job-state --format='%i=%T'")
+        atf.run_command_output("squeue --noheader --only-job-state --format='%i=%T'")
         .strip()
         .splitlines()
     )
@@ -247,7 +247,7 @@ def test_array_job():
         )
 
     output = (
-        atf.run_command_output(f"squeue --noheader --only-job-state --format='%i=%T'")
+        atf.run_command_output("squeue --noheader --only-job-state --format='%i=%T'")
         .strip()
         .splitlines()
     )
@@ -324,7 +324,7 @@ def test_all_jobs():
     atf.wait_for_job_state(job_id4, "PENDING", fatal=True, timeout=60)
 
     output = (
-        atf.run_command_output(f"squeue --noheader --only-job-state --format='%i=%T'")
+        atf.run_command_output("squeue --noheader --only-job-state --format='%i=%T'")
         .strip()
         .splitlines()
     )
@@ -348,7 +348,7 @@ def test_all_jobs():
         )
 
     output = (
-        atf.run_command_output(f"squeue --noheader --only-job-state --format='%i=%T'")
+        atf.run_command_output("squeue --noheader --only-job-state --format='%i=%T'")
         .strip()
         .splitlines()
     )
@@ -378,7 +378,7 @@ def test_all_jobs():
         )
 
     output = (
-        atf.run_command_output(f"squeue --noheader --only-job-state --format='%i=%T'")
+        atf.run_command_output("squeue --noheader --only-job-state --format='%i=%T'")
         .strip()
         .splitlines()
     )
@@ -408,7 +408,7 @@ def test_all_jobs():
     atf.wait_for_job_state(job_id4, "RUNNING", fatal=True, timeout=60)
 
     output = (
-        atf.run_command_output(f"squeue --noheader --only-job-state --format='%i=%T'")
+        atf.run_command_output("squeue --noheader --only-job-state --format='%i=%T'")
         .strip()
         .splitlines()
     )

@@ -62,7 +62,7 @@ static void _node_weight_free(void *x)
 	xfree(nwt);
 }
 
-/* Sort list of node_weight_type reords in order of increasing node weight */
+/* Sort list of node_weight_type records in order of increasing node weight */
 static int _node_weight_sort(void *x, void *y)
 {
 	node_weight_type *nwt1 = *(node_weight_type **) x;
@@ -181,7 +181,7 @@ static void _reduce_res_cores(topology_eval_t *topo_eval,
 			while (tot_res_core > max_res_cores) {
 				int s;
 				/*
-				* Must remove resticted cores from the end of
+				* Must remove restricted cores from the end of
 				* the bitmap first since cores are picked from
 				* front to back. This helps the needed
 				* restricted cores get picked.
@@ -275,7 +275,7 @@ static uint32_t _reduce_res_core_by_task_cnt(topology_eval_t* topo_eval,
 
 /*
  * Reduce the gres_max_tasks and total GRES available to a node based on
- * what will be layed out on the node.
+ * what will be laid out on the node.
  * If the GRES available gets reduced and RestrictedCoresPerGPU
  * is used, any unusable restricted cores will be removed.
  * If to many cores are removed such that the node is no longer usable
@@ -752,7 +752,7 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 		    (node_ptr->sched_weight != consec_weight[consec_index])) {
 			/* End last consecutive set, setup start of next set */
 			if (consec_nodes[consec_index] == 0) {
-				/* Only required nodes, re-use consec record */
+				/* Only required nodes, reuse consec record */
 				consec_req[consec_index] = -1;
 			} else {
 				/* End last set, setup for start of next set */
@@ -787,7 +787,7 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 			}
 			consec_weight[consec_index] = node_ptr->sched_weight;
 		} else if (consec_nodes[consec_index] == 0) {
-			/* Only required nodes, re-use consec record */
+			/* Only required nodes, reuse consec record */
 			consec_req[consec_index] = -1;
 			consec_weight[consec_index] = NO_VAL64;
 		} else {
@@ -949,8 +949,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * This could result in 0, but if the user
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
-				 * things out. But if the gres's cpu requirment
-				 * can not be satified due to gres layout try
+				 * things out. But if the gres's cpu requirement
+				 * can not be satisfied due to gres layout try
 				 * next node.
 				 */
 				if (!eval_nodes_cpus_to_use(topo_eval, i,
@@ -985,8 +985,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * This could result in 0, but if the user
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
-				 * things out. But if the gres's cpu requirment
-				 * can not be satified due to gres layout try
+				 * things out. But if the gres's cpu requirement
+				 * can not be satisfied due to gres layout try
 				 * next node.
 				 */
 				if (!eval_nodes_cpus_to_use(topo_eval, i,
@@ -1072,8 +1072,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * This could result in 0, but if the user
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
-				 * things out. But if the gres's cpu requirment
-				 * can not be satified due to gres layout try
+				 * things out. But if the gres's cpu requirement
+				 * can not be satisfied due to gres layout try
 				 * next node.
 				 */
 				if (!eval_nodes_cpus_to_use(topo_eval, i,

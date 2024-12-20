@@ -39,4 +39,4 @@ print('{error_text}')"""
     )
     assert (
         re.search(error_text, output) is None
-    ), f"--kill-on-bad-exit failed to kill all tasks on a bad exit"
+    ), "--kill-on-bad-exit failed to kill all tasks on a bad exit"

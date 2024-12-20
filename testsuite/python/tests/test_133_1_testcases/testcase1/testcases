@@ -1,4 +1,4 @@
-# etc33.1.1 -- test a 10000 node symetric config with 3 levels of switches
+# etc33.1.1 -- test a 10000 node symmetric config with 3 levels of switches
 #
 # Full config, initial conditions
 peta[10000-19999]

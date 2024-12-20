@@ -1,4 +1,4 @@
-/* Test of src/bitstring.c 
+/* Test of src/bitstring.c
  */
 #include <stdlib.h>
 #include <src/common/log.h>

@@ -252,7 +252,7 @@ _handle_ring(int fd, int lrank, client_req_t *req)
 	xfree(left);
 	xfree(right);
 
-        /* the repsonse is sent back to client from the pmix_ring_out call */
+        /* the response is sent back to client from the pmix_ring_out call */
 
 	debug3("mpi/pmi2: out _handle_ring");
 	return rc;

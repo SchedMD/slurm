@@ -140,7 +140,7 @@ slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
 	 * Iterate through the partitions in the slurm.conf using "p".  The
 	 * partition has an array of node index pairs to specify the range.
 	 * Using "i", iterate by two's through the node list to get the
-	 * begin-end node range.  Using "j", interate through the node range
+	 * begin-end node range.  Using "j", iterate through the node range
 	 * and add the partition name to the node's partition list.  If the
 	 * node on the partition is a singleton (i.e. Nodes=node1), the
 	 * begin-end range are both the same node index value.

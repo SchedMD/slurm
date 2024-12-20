@@ -135,7 +135,7 @@ pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
 	/* if we failed to find the collective we most probably need
      * to create a new structure. To do so we need to lock the
 	 * whole state and try to search again to exclude situation where
-     * concurent thread has already created it while we were doing the
+     * concurrent thread has already created it while we were doing the
 	 * first search */
 
 	if (pmixp_coll_belong_chk(procs, nprocs)) {
@@ -145,7 +145,7 @@ pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
 	slurm_mutex_lock(&_pmixp_state.lock);
 
 	if (!(ret = _find_collective(type, procs, nprocs))) {
-		/* 1. Create and insert unitialized but locked coll
+		/* 1. Create and insert uninitialized but locked coll
 		 * structure into the list. We can release the state
 		 * structure right after that */
 		ret = xmalloc(sizeof(*ret));

@@ -488,7 +488,7 @@ must be configured for site storage configuration.</li>
 	</a></li>
 <li><a href="scrun.html#SECTION_Example-%3CB%3Escrun.lua%3C/B%3E-scripts">
 	scrun.lua</a> must be present on any node where scrun may be run. The
-	example should be sufficent for most environments but paths should be
+	example should be sufficient for most environments but paths should be
 	modified to match available local storage.</li>
 <li><a href="oci.conf.html">oci.conf</a> must be present on any node where any
 	container job may be run. Example configurations for
@@ -581,7 +581,7 @@ driver</a>:
   "exec-root": "/path/to/shared/filesystem/user_name/exec/",
 }</pre>
 Any node expected to be able to run containers from Docker must have ability to
-atleast read the filesystem used. Full write privileges are suggested and will
+at least read the filesystem used. Full write privileges are suggested and will
 be required if changes to the container filesystem are desired.</li>
 
 <li>Configure dockerd to not setup network namespace, which will break scrun's
@@ -629,7 +629,7 @@ authentication.<pre>AuthType=auth/munge</pre></li>
 configuration.</li>
 <li><a href="scrun.html#SECTION_Example-%3CB%3Escrun.lua%3C/B%3E-scripts">
 	scrun.lua</a> must be present on any node where scrun may be run. The
-	example should be sufficent for most environments but paths should be
+	example should be sufficient for most environments but paths should be
 	modified to match available local storage.</li>
 <li><a href="oci.conf.html">oci.conf</a>
 	must be present on any node where any container job may be run.
@@ -739,7 +739,7 @@ pull_options = {use_hard_links = "true", enable_partial_images = "true"}
 [storage.options.vfs]
 ignore_chown_errors = "true"</pre>
 Any node expected to be able to run containers from Podman must have ability to
-atleast read the filesystem used. Full write privileges are suggested and will
+at least read the filesystem used. Full write privileges are suggested and will
 be required if changes to the container filesystem are desired.</li>
 <li> Verify Podman is using scrun:
 <pre>podman run hello-world
@@ -763,7 +763,7 @@ Error: allocating lock for new container: allocation failed; exceeded num_locks 
 </pre>
 <ol>
 	<li>Try renumbering:<pre>podman system renumber</pre></li>
-	<li>Try reseting all storage:<pre>podman system reset</pre></li>
+	<li>Try resetting all storage:<pre>podman system reset</pre></li>
 </ol>
 </li>
 </ul>

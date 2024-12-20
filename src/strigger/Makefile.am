@@ -17,4 +17,3 @@ $(strigger_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 strigger_LDFLAGS = $(CMD_LDFLAGS)
-

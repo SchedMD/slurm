@@ -595,7 +595,7 @@ extern void assoc_mgr_get_default_qos_info(
  * Calculate a weighted tres value.
  * IN: tres_cnt - array of tres values of size g_tres_count.
  * IN: weights - weights to apply to tres values of size g_tres_count.
- * IN: flags - priority flags (toogle between MAX or SUM of tres).
+ * IN: flags - priority flags (toggle between MAX or SUM of tres).
  * IN: locked - whether the tres read assoc mgr lock is locked or not.
  * RET: returns the calculated tres weight.
  */

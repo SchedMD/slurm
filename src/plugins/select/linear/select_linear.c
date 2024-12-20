@@ -740,7 +740,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		} else if (consec_nodes[consec_index] == 0) {
 			consec_req[consec_index] = -1;
 			/* already picked up any required nodes */
-			/* re-use this record */
+			/* reuse this record */
 		} else {
 			consec_end[consec_index] = i - 1;
 			if (++consec_index >= consec_size) {

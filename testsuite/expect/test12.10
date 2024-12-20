@@ -112,7 +112,7 @@ proc cleanup {} {
 #
 # Main Test
 #
-# The followind diagram shows the timeline of a running job used in this
+# The following diagram shows the timeline of a running job used in this
 # test:
 #
 #  <-------S------>|<------E------>|<------P------>|<------R------>|<------C-------->
@@ -121,7 +121,7 @@ proc cleanup {} {
 #               Job Submitted   Job Eligible    Job Starts      Job Ends
 #
 # As you can see we define 3 time zones:
-#   S) Before job is Submited
+#   S) Before job is Submitted
 #   E) Job is NonEligible
 #   P) Job is Pending (Eligible)
 #   R) Job is Running

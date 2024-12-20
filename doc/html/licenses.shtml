@@ -180,7 +180,7 @@ $ sacctmgr show resource withclusters
       Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags
 ---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- --------------------
    nastran  flex_host  License    100            0       100     flexlm      fluid       50
-   nastran  flex_host  License    100            0       100     flexlm        pdf       50 
+   nastran  flex_host  License    100            0       100     flexlm        pdf       50
     matlab   rlm_host  License     50            0       100        rlm      fluid       30
     matlab   rlm_host  License     50            0       100        rlm        pdf       70
 </pre>
@@ -279,9 +279,9 @@ $ sacctmgr -i add resource name=deluxe cluster=fluid,pdf count=150 allowed=70 \
   Type           = Unknown
 
 $ sacctmgr show resource withclusters
-      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags 
----------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- -------------------- 
-    deluxe  flex_host  License    150            0       140     flexlm      fluid       70             Absolute 
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- --------------------
+    deluxe  flex_host  License    150            0       140     flexlm      fluid       70             Absolute
     deluxe  flex_host  License    150            0       140     flexlm        pdf       70             Absolute
 
 $ sacctmgr -i update resource deluxe set allowed=25 where cluster=fluid
@@ -289,10 +289,10 @@ $ sacctmgr -i update resource deluxe set allowed=25 where cluster=fluid
   Cluster - fluid	- deluxe@flex_host
 
 $ sacctmgr show resource withclusters
-      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags 
----------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- -------------------- 
-    deluxe  flex_host  License    150            0        95     flexlm      fluid       25             Absolute 
-    deluxe  flex_host  License    150            0        95     flexlm        pdf       70             Absolute 
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- --------------------
+    deluxe  flex_host  License    150            0        95     flexlm      fluid       25             Absolute
+    deluxe  flex_host  License    150            0        95     flexlm        pdf       70             Absolute
 </pre>
 
 <p>This can also be established as the default for all newly created licenses

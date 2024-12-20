@@ -139,7 +139,7 @@ typedef struct {
 
 /*
  * HetJob scheduling structures
- * NOTE: An individial hetjob component can be submitted to multiple
+ * NOTE: An individual hetjob component can be submitted to multiple
  *       partitions and have different start times in each
  */
 typedef struct {
@@ -2669,7 +2669,7 @@ TRY_LATER:
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
-				log_flag(BACKFILL, "yielding locks after testin %u(%d) jobs tested, %u time slots, %s",
+				log_flag(BACKFILL, "yielding locks after testing %u(%d) jobs tested, %u time slots, %s",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count, test_time_count,
 					 TIME_STR);
@@ -3402,7 +3402,7 @@ skip_start:
 			 * plugin does not know about. Try again later. */
 			later_start = job_ptr->start_time;
 			job_ptr->start_time = 0;
-			log_flag(BACKFILL, "%pJ affter defer overlaps with existing reservation start_time=%u end_reserve=%u boot_time=%u later_start %ld",
+			log_flag(BACKFILL, "%pJ after defer overlaps with existing reservation start_time=%u end_reserve=%u boot_time=%u later_start %ld",
 				 job_ptr, start_time, end_reserve, boot_time,
 				 later_start);
 			goto TRY_LATER;
@@ -4058,7 +4058,7 @@ static void _het_job_start_clear(void)
 /*
  * For a given het_job_map_t record, determine the earliest that it can start,
  * which is the time at which it's latest starting component begins. The
- * "exclude_job_id" is used to exclude a hetjob component currntly being
+ * "exclude_job_id" is used to exclude a hetjob component currently being
  * tested to start, presumably in a different partition.
  */
 static time_t _het_job_start_compute(het_job_map_t *map,
@@ -4220,7 +4220,7 @@ static bool _het_job_full(het_job_map_t *map)
  * Return true if they can all start.
  *
  * NOTE: That a hetjob passes this test does not mean that it will be able
- * to run. For example, this test assumues resource allocation at the CPU level.
+ * to run. For example, this test assumes resource allocation at the CPU level.
  * If each task is allocated one core, with 2 CPUs, then the CPU limit test
  * would not be accurate.
  */

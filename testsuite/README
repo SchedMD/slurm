@@ -141,7 +141,7 @@ test1.70   Validates that srun standard input and output work with binary files.
 test1.71   Validates that srun exit code matches that of a test program.
 test1.72   Validate JobAcctGatherFrequency configuration parameter is enforced.
 test1.73   Validate OverTimeLimit configuration parameter is enforced.
-test1.74   Validate MaxNode and GrpNode limit enforcment with QoS & association.
+test1.74   Validate MaxNode and GrpNode limit enforcement with QoS & association.
 test1.75   Test that --cpu-freq is enforced when using non-numeric values
 test1.76   Test that --cpu-freq sets min-max:gov
 test1.77   Test that job name specified at the command line overwrites
@@ -498,7 +498,7 @@ test17.34  Test of --core-spec option.
 test17.36  Test that the OverSubscribe option in partitions is enforced.
 test17.37  Validate that afternotok dependency is enforced.
 test17.38  Test for sbatch --signal.
-test17.39  Validate dependecy OR option.
+test17.39  Validate dependency OR option.
 test17.40  Test of --thread-spec option.
 test17.41  Validate that sbatch, srun, salloc return partition error message.
 test17.42  Test of sbatch --wait option.
@@ -738,7 +738,7 @@ test38.10  Test of scontrol update job for heterogeneous jobs.
 test38.11  Validate sbcast for a hetjob allocation.
 test38.12  Test label option with hetjob allocation.
 test38.13  Test that job arrays of hetjobs are rejected
-test38.14  Test hetjob step output file labling and different commands/args
+test38.14  Test hetjob step output file labeling and different commands/args
 test38.15  Test for proper handling of different rank end times
 test38.16  Test environment variables needed by MPI
 test38.17  Test for multiple, out of order srun --het-group options

@@ -288,7 +288,7 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	list_t *dbd_config_list = NULL;
 	void *db_conn = NULL;
 
-	/* first load accounting parms from slurm.conf */
+	/* first load accounting params from slurm.conf */
 	uint16_t track_wckey = slurm_get_track_wckey();
 
 	slurm_make_time_str(&now, tmp_str, sizeof(tmp_str));
@@ -339,9 +339,9 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	add_display_treestore_line(update, treestore, &iter,
 				   "TrackWCKey", tmp_str);
 
-	/* now load accounting parms from slurmdbd.conf */
+	/* now load accounting params from slurmdbd.conf */
 
-	/* second load slurmdbd.conf parms */
+	/* second load slurmdbd.conf params */
 	if (!(db_conn = slurmdb_connection_get(NULL)))
 		return;
 	dbd_config_list = slurmdb_config_get(db_conn);

@@ -220,7 +220,7 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 			on_error(op, parser->type, args, rc,
 				 set_source_path(&path, args, parent_path),
 				 caller,
-				 "QOS resolution failed with unexpected QOS name/id formated as data type:%s",
+				 "QOS resolution failed with unexpected QOS name/id formatted as data type:%s",
 				 data_get_type_string(src));
 		goto done;
 	}

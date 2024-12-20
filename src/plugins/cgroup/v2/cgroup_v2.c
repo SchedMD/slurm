@@ -139,7 +139,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
  * some specific containerized environments the real root of the cgroup
  * filesystem may not be coincide with what we get in /proc/1/cgroup.
  *
- * This only checks the first ocurrence of the mount as it will always be the
+ * This only checks the first occurrence of the mount as it will always be the
  * proper one, as this file gets written sequentially, meaning that the "real"
  * /sys/fs/cgroup will appear first. If it happens to be any bind mount to it
  * it will appear later, those bind mounts do not affect the /proc/<pid>/cgroup
@@ -157,7 +157,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
  * IN mount - Path to match with the 5th field of mountinfo string.
  * IN pid_str - Pid to look for the mountinfo.
  * OUT data - NULL if not found, or a xmalloc'ed string with a copy of the
- *            4th field of the line wich matches mount with the 5th field.
+ *            4th field of the line which matches mount with the 5th field.
  */
 static char *_get_root_mount_mountinfo(char *mount, char *pid_str)
 {
@@ -969,7 +969,7 @@ static int _init_new_scope_dbus(char *scope_path)
 		 * stopped.
 		 *
 		 * This minimizes the interaction with systemd becoming less
-		 * dependant on possible malfunctions it might have.
+		 * dependent on possible malfunctions it might have.
 		 */
 		if (xdaemon())
 			_exit(127);
@@ -1500,7 +1500,7 @@ extern int cgroup_p_setup_scope(char *scope_path)
 	 * Check available controllers in cgroup.controller, record them in our
 	 * bitmap and enable them if EnableControllers option is set.
 	 * We enable them manually just because we support CgroupIgnoreSystemd
-	 * option. Theorically when starting a unit with Delegate=yes, you will
+	 * option. Theoretically when starting a unit with Delegate=yes, you will
 	 * get all controllers available at your level.
 	 */
 	if (_setup_controllers() != SLURM_SUCCESS)
@@ -2356,7 +2356,7 @@ extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t ctl,
 
 		/*
 		 * Replace the last \n by \0. We lose one byte but we don't care
-		 * since tipically this object will be freed soon and we still
+		 * since typically this object will be freed soon and we still
 		 * keep the correct array size.
 		 */
 		if (limits->cores_size > 0)
@@ -2485,7 +2485,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
 			xfree(task_cg_info);
 			return SLURM_ERROR;
 		}
-                /* Inititalize the bpf_program before appending to the list. */
+                /* Initialize the bpf_program before appending to the list. */
 		init_ebpf_prog(&task_cg_info->p);
 
 		/* Add the cgroup to the list now that it is initialized. */
@@ -2536,7 +2536,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 
 	/*
 	 * Check optional interfaces existence and permissions. This check
-	 * will help to avoid querying unexistent cgroup interfaces everytime,
+	 * will help to avoid querying unexistent cgroup interfaces every time,
 	 * as might happen in kernel versions that do not provide all of them
 	 */
 	if (!interfaces_checked) {

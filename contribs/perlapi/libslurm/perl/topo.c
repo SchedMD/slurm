@@ -11,7 +11,7 @@
 #include "slurm-perl.h"
 
 /*
- * convert topo_info_t to perl HV 
+ * convert topo_info_t to perl HV
  */
 int
 topo_info_to_hv(topo_info_t *topo_info, HV *hv)
@@ -28,7 +28,7 @@ topo_info_to_hv(topo_info_t *topo_info, HV *hv)
 }
 
 /*
- * convert perl HV to topo_info_t 
+ * convert perl HV to topo_info_t
  */
 int
 hv_to_topo_info(HV *hv, topo_info_t *topo_info)
@@ -44,7 +44,7 @@ hv_to_topo_info(HV *hv, topo_info_t *topo_info)
 }
 
 /*
- * convert topo_info_response_msg_t to perl HV 
+ * convert topo_info_response_msg_t to perl HV
  */
 int
 topo_info_response_msg_to_hv(topo_info_response_msg_t *topo_info_msg, HV *hv)
@@ -68,7 +68,7 @@ topo_info_response_msg_to_hv(topo_info_response_msg_t *topo_info_msg, HV *hv)
 	return 0;
 }
 
-/* 
+/*
  * convert perl HV to topo_info_response_msg_t
  */
 int

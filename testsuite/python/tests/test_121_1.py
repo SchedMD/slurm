@@ -42,7 +42,7 @@ def file_in_1a():
     file_in1 = atf.module_tmp_path / "input1"
     atf.make_bash_script(
         file_in1,
-        f"""
+        """
     echo HOST:$SLURMD_NODENAME
     echo CUDA_VISIBLE_DEVICES:$CUDA_VISIBLE_DEVICES
     echo CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
@@ -78,7 +78,7 @@ def test_environment_vars(mps_nodes):
 
     atf.make_bash_script(
         file_in1,
-        f"""
+        """
     echo HOST:$SLURMD_NODENAME
     echo CUDA_VISIBLE_DEVICES:$CUDA_VISIBLE_DEVICES
     echo CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
@@ -268,7 +268,7 @@ def test_gresGPU_gresMPS_GPU_sharing(mps_nodes):
 
     atf.make_bash_script(
         file_in2,
-        f"""
+        """
     echo HOST:$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:$CUDA_VISIBLE_DEVICES CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
     scontrol -dd show job $SLURM_JOB_ID
     squeue --name=test_job --noheader --state=r --format=\"jobid=%i state=%T\"

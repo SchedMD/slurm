@@ -119,7 +119,7 @@ typedef struct trig_mgr_info {
 	char *   program;	/* program to execute */
 	uint8_t  state;		/* 0=pending, 1=pulled, 2=completed */
 
-	/* The orig_ fields are used to save  and clone the orignal values */
+	/* The orig_ fields are used to save  and clone the original values */
 	bitstr_t *orig_bitmap;	/* bitmap of requested nodes (if applicable) */
 	char *   orig_res_id;	/* original node name or job_id (string) */
 	time_t   orig_time;	/* offset (pending) or time stamp (complete) */
@@ -1523,7 +1523,7 @@ static void _clear_event_triggers(void)
 	trigger_pri_db_res_op = false;
 }
 
-/* Make a copy of a trigger and pre-pend it on our list */
+/* Make a copy of a trigger and prepend it on our list */
 static void _trigger_clone(trig_mgr_info_t *trig_in)
 {
 	trig_mgr_info_t *trig_add;
@@ -1626,7 +1626,7 @@ extern void trigger_process(void)
 				state_change = true;
 			}
 		} else if (trig_in->state == 2) {
-			/* Elimiate zombie processes right away.
+			/* Eliminate zombie processes right away.
 			 * Purge trigger entry above MAX_PROG_TIME later */
 			rc = waitpid(trig_in->child_pid, &prog_stat, WNOHANG);
 			if ((rc > 0) && prog_stat) {

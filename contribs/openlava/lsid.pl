@@ -137,4 +137,3 @@ full documentation
 On success, B<lsid> will exit with a value of zero. On failure, B<lsid> will exit with a value greater than zero.
 
 =cut
-

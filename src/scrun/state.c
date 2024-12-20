@@ -351,7 +351,7 @@ extern int get_anchor_state(void)
 	}
 
 	/*
-	 * TODO: future fail state could be to try to talk to slurmstepd incase
+	 * TODO: future fail state could be to try to talk to slurmstepd in case
 	 * this request is coming from different node than the anchor
 	 */
 

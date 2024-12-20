@@ -100,7 +100,7 @@ extern int step_create(job_record_t *job_ptr,
 
 /*
  * step_layout_create - creates a step_layout according to the inputs.
- * IN step_ptr - step having tasks layed out
+ * IN step_ptr - step having tasks laid out
  * IN step_node_list - node list of hosts in step
  * IN node_count - count of nodes in step allocation
  * IN num_tasks - number of tasks in step

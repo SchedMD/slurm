@@ -1003,7 +1003,7 @@ static void _cleanup_pidfile()
 
 /*
  * Based on create_pidfile() but does not place newline at end of file
- * to be compatible with docker pidfile parsing. Defers actually writting the
+ * to be compatible with docker pidfile parsing. Defers actually writing the
  * pidfile too.
  */
 static void _open_pidfile()

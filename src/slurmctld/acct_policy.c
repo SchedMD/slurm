@@ -3656,7 +3656,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
  * upon that component's job and partition QOS.
  *
  * NOTE: That a hetjob passes this test does not mean that it will be able
- * to run. For example, this test assumues resource allocation at the CPU level.
+ * to run. For example, this test assumes resource allocation at the CPU level.
  * If each task is allocated one core, with 2 CPUs, then the CPU limit test
  * would not be accurate.
  *

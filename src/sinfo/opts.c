@@ -891,7 +891,7 @@ _get_prefix( char *token )
  * OUT field - the letter code for the data type
  * OUT field_size - byte count
  * OUT right_justify - true of field to be right justified
- * OUT suffix - string containing everthing after the field specification
+ * OUT suffix - string containing everything after the field specification
  */
 static void
 _parse_token( char *token, char *field, int *field_size, bool *right_justify,

@@ -940,14 +940,14 @@ static bool _opt_verify(void)
 
 	/*
 	 * If we are packing the nodes in an allocation set min_nodes to
-	 * 1. The slurmctld will adjust the max_nodes to the approriate
+	 * 1. The slurmctld will adjust the max_nodes to the appropriate
 	 * number if the allocation is homogeneous.
 	 */
 	if ((opt.distribution & SLURM_DIST_PACK_NODES) &&
 	    slurm_option_set_by_env(&opt, 'N')) {
 		opt.min_nodes = 1;
 		if (opt.verbose)
-			info("Reseting -N set by environment variable because of -mpack");
+			info("Resetting -N set by environment variable because of -mpack");
 		mpack_reset_nodes = true;
 	}
 

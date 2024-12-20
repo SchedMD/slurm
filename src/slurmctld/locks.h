@@ -62,7 +62,7 @@
  * the resource is not locked by a writer.
  *
  * So, if the resource is locked by an unspecified number of readers,
- * and a writer trys to lock the resource, then the writer will be blocked
+ * and a writer tries to lock the resource, then the writer will be blocked
  * until all of the previous readers have unlocked the resource.  But,
  * just before the writer checked to see if there were any readers locking
  * the resource, the writer incremented the writers waiting semaphore,

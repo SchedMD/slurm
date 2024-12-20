@@ -2715,7 +2715,7 @@ be able to preempt to gain access to GRES.
 \fBWITHIN\fR
 For \fBPreemptType=preempt/qos\fR, allow jobs within the same qos to preempt
 one another. While this can be set globally here, it is recommend that this
-only be set directly on a relevant subset of the system qos values instead. 
+only be set directly on a relevant subset of the system qos values instead.
 .RE
 .IP
 
@@ -5776,7 +5776,7 @@ meaningful performance boost for jobs spanning a small number of nodes.
 
 .TP
 \fBfm_url\fR
-If set, slurm will use the configured URL to interace with the fabric
+If set, slurm will use the configured URL to interface with the fabric
 manager to enable Slingshot hardware collectives.
 Note \fBenable_stepmgr\fR needs to be set for hardware collectives to run.
 .IP
@@ -6932,7 +6932,7 @@ FrontendName=frontend[00\-03] FrontendAddr=efrontend[00\-03] State=UNKNOWN
 .SH "NODESET CONFIGURATION"
 The nodeset configuration allows you to define a name for a specific set of
 nodes which can be used to simplify the partition configuration section,
-especially for heterogenous or condo\-style systems. Each nodeset may be defined
+especially for heterogeneous or condo\-style systems. Each nodeset may be defined
 by an explicit list of nodes, and/or by filtering the nodes by a particular
 configured feature. If both \fBFeature=\fR and \fBNodes=\fR are used the
 nodeset shall be the union of the two subsets.

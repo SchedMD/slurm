@@ -61,7 +61,7 @@ sub get_new_config() {
 	my $end_cnt = 0;
 
 	open OLD_FILE, "$config_file" or
-		die "$config_file doesn't exsist!";
+		die "$config_file doesn't exist!";
 	open FILE, ">$new_config" or
 		die "Can't open $new_config";
 
@@ -195,7 +195,7 @@ mpiexec.slurm supports the following options:
 
 =head1 DESCRIPTION
 
-The B<mpiexec.slurm> 
+The B<mpiexec.slurm>
 
 =head1 OPTIONS
 
@@ -225,20 +225,20 @@ If the process attempts to read from stdin, it will see an end-of-file.
 Send the standard input stream of mpiexec.slurm to all processes. Each
 character typed to mpiexec (or read from a file) is duplicated numproc times,
 and sent to each process. This permits every process to read, for example,
-configuration information from the input stream. 
+configuration information from the input stream.
 
 =item B<-nostdout>
 
 Do not connect the standard output and error streams of each process back to
 the mpiexec.slurm process. Standard output and error will be respectively
-writte in files of the form job.ojobid and job.ejobid for batch jobs, and
+written in files of the form job.ojobid and job.ejobid for batch jobs, and
 directly to the controlling terminal for interactive jobs.
 
 =item B<-pernode>
 
 Allocate only one process per compute node. For SMP nodes, only one processor
 will be allocated a job. This flag is used to implement multiple level
-parallelism with MPI between nodes, and threads within a node, assmuming the
+parallelism with MPI between nodes, and threads within a node, assuming the
 code is set up to do that.
 
 =item B<-config <config_file>>

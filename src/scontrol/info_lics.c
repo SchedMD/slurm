@@ -5,7 +5,7 @@
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Copyright (C) SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by David Bigagli david@schemd.com
+ *  Written by David Bigagli david@schemed.com
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.

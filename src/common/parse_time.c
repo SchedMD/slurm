@@ -193,7 +193,7 @@ static int _get_delta(const char *time_str, int *pos, long *delta)
 /* convert "HH:MM[:SS] [AM|PM]" string to numeric values
  * time_str (in): string to parse
  * pos (in/out): position of parse start/end
- * hour, minute, second (out): numberic values
+ * hour, minute, second (out): numeric values
  * RET: -1 on error, 0 otherwise
  */
 static int _get_time(const char *time_str, int *pos, int *hour, int *minute,
@@ -284,7 +284,7 @@ static int _get_time(const char *time_str, int *pos, int *hour, int *minute,
  * or "YYYY-MM-DD string to numeric values
 * time_str (in): string to parse
  * pos (in/out): position of parse start/end
- * month, mday, year (out): numberic values
+ * month, mday, year (out): numeric values
  * RET: -1 on error, 0 otherwise
  */
 static int _get_date(const char *time_str, int *pos, int *month, int *mday,

@@ -939,7 +939,7 @@ static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val)
  * _compute_block_map - Compute abstract->machine block mapping (and inverse)
  *   allows computation of CPU ID masks for an abstract block distribution
  *   of logical processors which can then be mapped the IDs used in the
- *   actual machine processor ID ordering (which can be BIOS/OS dependendent)
+ *   actual machine processor ID ordering (which can be BIOS/OS dependent)
  * Input:  numproc - number of processors on the system
  *	   cpu - array of cpuinfo (file static for qsort/_compare_cpus)
  * Output: block_map, block_map_inv - asbtract->physical block distribution map
