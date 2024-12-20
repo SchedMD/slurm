@@ -827,7 +827,7 @@ static int _find_rollup_stats_in_list(void *x, void *key)
 static void *_rollup_handler(void *db_conn)
 {
 	struct timespec abs;
-	struct timeval start_time;
+	struct timeval start_time = { 0 };
 /* 	int sigarray[] = {SIGUSR1, 0}; */
 	struct tm tm;
 	list_t *rollup_stats_list = NULL;
@@ -843,6 +843,15 @@ static void *_rollup_handler(void *db_conn)
 	while (!shutdown_time) {
 		if (!db_conn)
 			break;
+
+		if (start_time.tv_sec) {
+			/*
+			 * Just in case some new uids were added to the system
+			 * pick them up here. Only run this if we ran before.
+			 */
+			assoc_mgr_set_missing_uids();
+		}
+
 		/* run the roll up */
 
 		/* get time before lock so we know exactly when we started. */
@@ -872,11 +881,8 @@ static void *_rollup_handler(void *db_conn)
 		/* Sleep until the next hour or until signaled to shutdown. */
 		slurm_cond_timedwait(&rollup_handler_cond, &rollup_lock, &abs);
 		slurm_mutex_unlock(&rollup_lock);
-		/* Just in case some new uids were added to the system
-		   pick them up here. */
-		assoc_mgr_set_missing_uids();
-		/* repeat ;) */
 
+		/* repeat ;) */
 	}
 
 	return NULL;
