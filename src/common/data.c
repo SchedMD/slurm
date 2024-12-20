@@ -171,27 +171,29 @@ static void _check_data_list_node_magic(const data_list_node_t *dn)
 static void _check_data_list_magic(const data_list_t *dl)
 {
 #ifndef NDEBUG
-	data_list_node_t *end = NULL;
-
 	xassert(dl);
 	xassert(dl->magic == DATA_LIST_MAGIC);
 
-	if (dl->begin) {
-		/* walk forwards verify */
-		int c = 0;
-		data_list_node_t *i = dl->begin;
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
+		data_list_node_t *end = NULL;
 
-		while (i) {
-			c++;
-			_check_data_list_node_magic(i);
-			end = i;
-			i = i->next;
+		if (dl->begin) {
+			/* walk forwards verify */
+			int c = 0;
+			data_list_node_t *i = dl->begin;
+
+			while (i) {
+				c++;
+				_check_data_list_node_magic(i);
+				end = i;
+				i = i->next;
+			}
+
+			xassert(c == dl->count);
 		}
 
-		xassert(c == dl->count);
+		xassert(end == dl->end);
 	}
-
-	xassert(end == dl->end);
 #endif /* !NDEBUG */
 }
 
