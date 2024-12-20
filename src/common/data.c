@@ -591,17 +591,19 @@ extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
 	}
 
 #ifndef NDEBUG
-	char *old_value = value;
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
+		char *old_value = value;
 
-	/* check that the string was xmalloc()ed and actually has contents */
-	xassert(xsize(value) > 0);
-	/*
-	 * catch use after free by the caller by using the existing xfree()
-	 * functionality
-	 */
-	value = xstrdup(value);
-	/* releasing original string instead of NULLing original pointer */
-	xfree(old_value);
+		/* check that the string was xmalloc()ed and actually has contents */
+		xassert(xsize(value) > 0);
+		/*
+		 * catch use after free by the caller by using the existing xfree()
+		 * functionality
+		 */
+		value = xstrdup(value);
+		/* releasing original string instead of NULLing original pointer */
+		xfree(old_value);
+	}
 #endif
 
 	if ((len = strlen(value)) < sizeof(data->data.string_inline_u)) {
