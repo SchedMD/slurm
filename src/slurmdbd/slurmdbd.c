@@ -840,7 +840,7 @@ static void *_rollup_handler(void *db_conn)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	while (1) {
+	while (!shutdown_time) {
 		if (!db_conn)
 			break;
 		/* run the roll up */
