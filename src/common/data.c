@@ -202,15 +202,17 @@ static void _check_data_list_node_parent(const data_list_t *dl,
 					 const data_list_node_t *dn)
 {
 #ifndef NDEBUG
-	data_list_node_t *i = dl->begin;
-	while (i) {
-		if (i == dn)
-			return;
-		i = i->next;
-	}
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
+		data_list_node_t *i = dl->begin;
+		while (i) {
+			if (i == dn)
+				return;
+			i = i->next;
+		}
 
-	/* found an orphan? */
-	fatal_abort("%s: unexpected orphan node", __func__);
+		/* found an orphan? */
+		fatal_abort("%s: unexpected orphan node", __func__);
+	}
 #endif /* !NDEBUG */
 }
 
