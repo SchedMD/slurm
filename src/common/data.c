@@ -484,7 +484,6 @@ extern data_t *data_set_null(data_t *data)
 	_release(data);
 
 	data->type = TYPE_NULL;
-	xassert((memset(&data->data, 0, sizeof(data->data))));
 
 	log_flag(DATA, "%s: set %pD=null", __func__, data);
 
