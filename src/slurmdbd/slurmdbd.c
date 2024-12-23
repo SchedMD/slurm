@@ -826,7 +826,7 @@ static int _find_rollup_stats_in_list(void *x, void *key)
 /* _rollup_handler - Process rollup duties */
 static void *_rollup_handler(void *db_conn)
 {
-	struct timespec abs;
+	struct timespec abs = { 0 };
 	struct timeval start_time = { 0 };
 	struct tm tm;
 	list_t *rollup_stats_list = NULL;
