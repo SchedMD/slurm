@@ -871,14 +871,17 @@ static void *_rollup_handler(void *db_conn)
 		handle_rollup_stats(rollup_stats_list, DELTA_TIMER, 0);
 		FREE_NULL_LIST(rollup_stats_list);
 
-		/* Set time to be the beginning of the next hour */
-		tm.tm_sec = 0;
-		tm.tm_min = 0;
-		tm.tm_hour++;
-		abs.tv_sec = slurm_mktime(&tm);
+		if (!shutdown_time) {
+			/* Set time to be the beginning of the next hour */
+			tm.tm_sec = 0;
+			tm.tm_min = 0;
+			tm.tm_hour++;
+			abs.tv_sec = slurm_mktime(&tm);
 
-		/* Sleep until the next hour or until signaled to shutdown. */
-		slurm_cond_timedwait(&rollup_handler_cond, &rollup_lock, &abs);
+			/* Sleep until then or until signaled to shutdown. */
+			slurm_cond_timedwait(&rollup_handler_cond, &rollup_lock,
+					     &abs);
+		}
 		slurm_mutex_unlock(&rollup_lock);
 
 		/* repeat ;) */
