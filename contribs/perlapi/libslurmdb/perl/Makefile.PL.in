@@ -162,14 +162,6 @@ sub MY::constants {
 			}
 		}
 
- 		# fix problem with /usr(/local) being used as a prefix
-		# instead of the real thing.
-
-		if ($line =~ 'INSTALL') {
-			$line =~ s/= \/usr\/local/= \$(PREFIX)/;
-			$line =~ s/= \/usr/= \$(PREFIX)/;
-		}
-
 		# Add DESTDIR support if necessary
 		if (line_has_macro_def($line, 'INSTALLDIRS')) {
 			if(!get_macro('DESTDIR')) {
