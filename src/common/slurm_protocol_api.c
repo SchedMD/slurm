@@ -725,6 +725,8 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 			    slurmdb_cluster_rec_t *comm_cluster_rec)
 {
 	int fd = -1;
+	int retry = false;
+	time_t start;
 	slurm_protocol_config_t *proto_conf = NULL;
 
 	if (!comm_cluster_rec) {
@@ -733,9 +735,14 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 			return SLURM_ERROR;
 	}
 
-	for (int retry = 0; retry < slurm_conf.msg_timeout; retry++) {
-		if (retry)
+	start = time(NULL);
+	while (true) {
+		if (retry) {
+			if ((time(NULL) - start) >= slurm_conf.msg_timeout)
+				break;
 			sleep(1);
+		}
+		retry = true;
 		if (comm_cluster_rec) {
 			if (slurm_addr_is_unspec(
 				&comm_cluster_rec->control_addr)) {
@@ -2566,36 +2573,38 @@ list_t *slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout
 list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 {
 	static pthread_mutex_t conn_lock = PTHREAD_MUTEX_INITIALIZER;
-	static uint16_t conn_timeout = NO_VAL16, tcp_timeout = 2;
+	static uint16_t conn_timeout = NO_VAL16;
+	time_t start, now;
 	list_t *ret_list = NULL;
 	int fd = -1;
-	int i;
+	bool first = true;
 
 	slurm_mutex_lock(&conn_lock);
 
 	if (conn_timeout == NO_VAL16) {
 		conn_timeout = MIN(slurm_conf.msg_timeout, 10);
-		tcp_timeout = MAX(0, slurm_conf.tcp_timeout - 1);
 	}
 	slurm_mutex_unlock(&conn_lock);
 
+	start = now = time(NULL);
 	/* This connect retry logic permits Slurm hierarchical communications
 	 * to better survive slurmd restarts */
-	for (i = 0; i <= conn_timeout; i++) {
+	while ((now - start) < conn_timeout) {
 		fd = slurm_open_msg_conn(&msg->address);
 		if ((fd >= 0) || (errno != ECONNREFUSED && errno != ETIMEDOUT))
 			break;
 		if (errno == ETIMEDOUT) {
-			if (i == 0)
+			if (first)
 				log_flag(NET, "Timed out connecting to %pA, retrying...",
 					 &msg->address);
-			i += tcp_timeout;
 		} else {
-			if (i == 0)
+			if (first)
 				log_flag(NET, "Connection refused by %pA, retrying...",
 					 &msg->address);
 			sleep(1);
 		}
+		first = false;
+		now = time(NULL);
 	}
 	if (fd < 0) {
 		log_flag(NET, "Failed to connect to %pA, %m", &msg->address);

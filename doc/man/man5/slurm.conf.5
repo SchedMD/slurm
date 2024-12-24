@@ -728,6 +728,15 @@ started before the upgrade have been completed.
 .IP
 
 .TP
+\fBhost_unreach_retry_count=#\fR
+When a node tries to connect() to another node, connect() may return an error
+with EHOSTUNREACH if the host is unreachable. If this parameter is set, this
+is the number of times that Slurm will retry making that connection. Slurm will
+wait for 500 milliseconds in between each try. The default for this parameter
+is zero (Slurm will not retry if EHOSTUNREACH is returned).
+.IP
+
+.TP
 \fBDisableIPv4\fR
 Disable IPv4 only operation for all slurm daemons (except slurmdbd). This
 should also be set in your \fBslurmdbd.conf\fR file.

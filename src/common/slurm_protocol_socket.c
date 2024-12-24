@@ -64,6 +64,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket.h"
+#include "src/common/slurm_time.h"
 #include "src/common/strlcpy.h"
 #include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
@@ -552,8 +553,9 @@ extern int slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 
 extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 {
-	int retry_cnt;
-	int fd;
+	int retry_cnt = 0, ehostunreach_cnt = 0;
+	int fd, rc = SLURM_SUCCESS;
+	uint32_t sleep_ns = 500 * NSEC_IN_MSEC;
 
 	if ((slurm_addr_is_unspec(addr)) || (slurm_get_port(addr) == 0)) {
 		error("Error connecting, bad data: family = %u, port = %u",
@@ -561,9 +563,7 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 		return SLURM_ERROR;
 	}
 
-	for (retry_cnt=0; ; retry_cnt++) {
-		int rc;
-
+	while (true) {
 		fd = socket(addr->ss_family, SOCK_STREAM | SOCK_CLOEXEC,
 			    IPPROTO_TCP);
 		if (fd < 0) {
@@ -583,28 +583,47 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 
 		rc = _slurm_connect(fd, (struct sockaddr const *)addr,
 				    sizeof(*addr));
-		/* always set errno as upstream callers expect it */
-		errno = rc;
-
 		if (!rc) {
 			/* success */
 			break;
 		}
+		if (slurm_conf.host_unreach_retry_count &&
+		    (rc == EHOSTUNREACH)) {
+			if (ehostunreach_cnt >=
+			    slurm_conf.host_unreach_retry_count) {
+				debug2("Error connecting to %pA (%s), host_unreach_retry_count (%d) reached",
+				       addr, strerror(rc),
+				       slurm_conf.host_unreach_retry_count);
+				goto error;
+			}
 
-		if (((rc != ECONNREFUSED) && (rc != ETIMEDOUT)) ||
-		    (!retry) || (retry_cnt >= PORT_RETRIES)) {
-			errno = rc;
+			ehostunreach_cnt++;
+			debug2("Error connecting to %pA (%s), trying again",
+			       addr, strerror(rc));
+			/*
+			 * Assume issue was temporary network outage. Wait for
+			 * a bit and hope it comes back.
+			 */
+			slurm_nanosleep(0, sleep_ns);
+		} else if (((rc != ECONNREFUSED) && (rc != ETIMEDOUT)) ||
+			   (!retry) || (retry_cnt >= PORT_RETRIES)) {
 			goto error;
+		} else {
+			retry_cnt++;
 		}
 
 		(void) close(fd);
 	}
 
+	errno = rc;
 	return fd;
 
 error:
-	debug2("Error connecting slurm stream socket at %pA: %m", addr);
+	debug2("Error connecting slurm stream socket at %pA: %s", addr,
+	       strerror(rc));
 	(void) close(fd);
+	/* Always set errno as upstream callers expect it. */
+	errno = rc;
 	return SLURM_ERROR;
 }
 

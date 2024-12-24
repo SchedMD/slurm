@@ -4139,6 +4139,17 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			DEFAULT_GETNAMEINFO_CACHE_TIMEOUT;
 	}
 
+	conf->host_unreach_retry_count = DEFAULT_HOST_UNREACH_RETRY_COUNT;
+	if ((temp_str = xstrcasestr(conf->comm_params,
+				    "host_unreach_retry_count="))) {
+		long tmp_val = strtol(temp_str + 25, NULL, 10);
+		if ((tmp_val >= 0) && (tmp_val <= INT_MAX))
+			conf->host_unreach_retry_count = tmp_val;
+		else
+			error("CommunicationParameters option host_unreach_retry_count=%ld is invalid, ignored",
+			      tmp_val);
+	}
+
 	if (!s_p_get_string(&conf->cli_filter_plugins, "CliFilterPlugins",
 			    hashtbl)) {
 		/* empty */

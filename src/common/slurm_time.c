@@ -69,6 +69,22 @@ extern char *slurm_ctime2_r(const time_t *timep, char *time_str)
 	return time_str;
 }
 
+extern int slurm_nanosleep(time_t sleep_sec, uint32_t sleep_ns)
+{
+	timespec_t ts = { .tv_sec = sleep_sec, .tv_nsec = sleep_ns };
+	timespec_t rem;
+
+	while (nanosleep(&ts, &rem)) {
+		if (errno != EINTR) {
+			return errno;
+		}
+		ts.tv_sec = rem.tv_sec;
+		ts.tv_nsec = rem.tv_nsec;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern void print_date(void)
 {
 	time_t now = time(NULL);

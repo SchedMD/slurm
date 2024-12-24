@@ -38,6 +38,38 @@ extern time_t slurm_mktime(struct tm *tp);
 extern char *slurm_ctime2(const time_t *timep);
 extern char *slurm_ctime2_r(const time_t *timep, char *time_str);
 
+/*
+ * Slurm wrapper for the nanosleep() function. This function will call
+ * nanosleep() until the elapsed time passes, or until nanosleep() returns
+ * an error with errno != EINTR.
+ *
+ * According to nanosleep(2):
+ *
+ *     Compared to sleep(3) and usleep(3), nanosleep() has the following
+ *     advantages: it provides a higher resolution for specifying the
+ *     sleep interval; POSIX.1 explicitly specifies that it does not
+ *     interact with signals; and it makes the task of resuming a sleep
+ *     that has been interrupted by a signal handler easier.
+ *
+ * Note: This function is subject to drift. According to nanosleep(2):
+ *
+ *     The fact that nanosleep() sleeps for a relative interval can be
+ *     problematic if the call is repeatedly restarted after being
+ *     interrupted by signals, since the time between the interruptions and
+ *     restarts of the call will lead to drift in the time when the sleep
+ *     finally completes.  This problem can be avoided by using
+ *     clock_nanosleep(2) with an absolute time value.
+ *
+ * Don't use this function if sleeping for an exact time is important.
+ *
+ * IN sleep_sec - number of seconds to sleep.
+ * IN sleep_ns - number of nanoseconds to sleep. If this number is outside of
+ *               the range [0, 999999999] then nanosleep() will return EINVAL.
+ * Returns SLURM_SUCCESS on success. Returns errno set by nanosleep() on error.
+ * This function will never return EINTR.
+ */
+extern int slurm_nanosleep(time_t sleep_sec, uint32_t sleep_ns);
+
 /* Print the current date + time as formatted by slurm_ctime2_r */
 extern void print_date(void);
 
