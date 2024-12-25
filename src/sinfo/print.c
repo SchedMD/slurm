@@ -258,8 +258,13 @@ _build_min_max_32_string(char *buffer, int buf_size,
 			 uint32_t min, uint32_t max,
 			 bool range, bool use_suffix)
 {
-	char tmp_min[8];
-	char tmp_max[8];
+	/*
+	 * 11: A uint32_t can have 10 digits, plus a \n. The longest string that
+	 * we are generating here with the sum of both is still below buf_size,
+	 * which is normally FORMAT_STRING_SIZE.
+	 */
+	char tmp_min[11];
+	char tmp_max[11];
 
 	if (use_suffix) {
 		convert_num_unit((float)min, tmp_min, sizeof(tmp_min),
