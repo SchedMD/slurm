@@ -2063,7 +2063,7 @@ extern bool validate_operator_user_rec(slurmdb_user_rec_t *user);
  * when the slurmctld epilog finishes, whichever
  * comes last.
  */
-extern void cleanup_completing(job_record_t *job_ptr);
+extern void cleanup_completing(job_record_t *job_ptr, bool requeue);
 
 /*
  * Determine if slurmctld will respond to "configless" RPCs. If so,

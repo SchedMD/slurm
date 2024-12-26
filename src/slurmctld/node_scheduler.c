@@ -449,9 +449,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			 * Call cleanup_completing before job_epilog_complete or
 			 * we will end up requeuing there before this is called.
 			 */
-			if ((job_ptr->node_cnt == 0) &&
-			    !job_ptr->epilog_running)
-				cleanup_completing(job_ptr);
+			cleanup_completing(job_ptr, false);
 
 			/*
 			 * job_epilog_complete() can free
@@ -470,11 +468,9 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		return;
 	}
 
-	if (!job_ptr->node_cnt) {
-		/* Can not wait for epilog complete to release licenses and
-		 * update gang scheduling table */
-		cleanup_completing(job_ptr);
-	}
+	/* Can not wait for epilog complete to release licenses and
+	 * update gang scheduling table */
+	cleanup_completing(job_ptr, false);
 
 	if (!hostlist || !hostlist_count(hostlist)) {
 		hostlist_destroy(hostlist);
@@ -4721,8 +4717,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 				if ((job_ptr->node_cnt > 0) &&
 				    ((--job_ptr->node_cnt) == 0)) {
 					last_node_update = time(NULL);
-					cleanup_completing(job_ptr);
-					batch_requeue_fini(job_ptr);
+					cleanup_completing(job_ptr, true);
 					last_node_update = time(NULL);
 				}
 			}
@@ -4748,8 +4743,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 					(node_ptr->comp_job_cnt)--;
 				if ((job_ptr->node_cnt > 0) &&
 				    ((--job_ptr->node_cnt) == 0)) {
-					cleanup_completing(job_ptr);
-					batch_requeue_fini(job_ptr);
+					cleanup_completing(job_ptr, true);
 					last_node_update = time(NULL);
 				}
 			} else if (!IS_NODE_NO_RESPOND(node_ptr)) {

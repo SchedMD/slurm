@@ -170,9 +170,8 @@ extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id,
 	 * Clear the JOB_COMPLETING flag only if the node count is 0
 	 * meaning the slurmd epilogs have already completed.
 	 */
-	if ((job_ptr->node_cnt == 0) && IS_JOB_COMPLETING(job_ptr)) {
-		cleanup_completing(job_ptr);
-		batch_requeue_fini(job_ptr);
+	if (IS_JOB_COMPLETING(job_ptr)) {
+		cleanup_completing(job_ptr, true);
 	}
 
 	unlock_slurmctld(job_write_lock);

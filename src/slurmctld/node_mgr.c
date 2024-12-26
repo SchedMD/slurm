@@ -4646,9 +4646,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 			 * function will be invoked.
 			 */
 			job_ptr->node_cnt--;
-			if ((job_ptr->node_cnt == 0) &&
-			    !job_ptr->epilog_running)
-				cleanup_completing(job_ptr);
+			cleanup_completing(job_ptr, false);
 		} else if ((job_ptr->total_cpus == 0) &&
 			   (job_ptr->total_nodes == 0)) {
 			/* Job resized to zero nodes (expanded another job) */
