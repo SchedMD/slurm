@@ -725,6 +725,7 @@ extern void init_srun(int argc, char **argv, log_options_t *logopt,
 			 */
 			het_job_argc -= het_job_argc_off;
 			het_job_argv += het_job_argc_off;
+			colon_cnt++;
 		} else {
 			het_job_fini = true;
 		}

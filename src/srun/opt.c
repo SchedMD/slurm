@@ -85,6 +85,7 @@ static void _usage(void);
 static void _autocomplete(const char *query);
 
 /*---- global variables, defined in opt.h ----*/
+int colon_cnt = 0;
 int	error_exit = 1;
 int	immediate_exit = 1;
 srun_opt_t sropt;

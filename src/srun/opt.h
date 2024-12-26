@@ -58,6 +58,7 @@
 
 extern enum modes mode;
 
+extern int colon_cnt; /* count of ":" het component separators */
 extern int	error_exit;	/* exit code for slurm errors */
 extern int	immediate_exit;	/* exit code for --imediate option & busy */
 extern slurm_opt_t opt;
