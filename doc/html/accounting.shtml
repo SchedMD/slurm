@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a id="top">Accounting and Resource Limits</a></h1>
+<h1>Accounting and Resource Limits</h1>
 
 <h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <ul>
@@ -259,13 +259,9 @@ Slurm Accounting Configuration Before Build
 the creation of user entities called "associations", which consist of the
 cluster, a user, account and optionally a partition.</p>
 
-<p><b>MySQL or MariaDB is the preferred database.</b>
-
-<p><b>NOTE</b>: If you have an existing Slurm accounting database and
-plan to upgrade your database server to MariaDB 10.2.1 or later from an older
-version of MariaDB or any version of MySQL, ensure you are running slurmdbd
-22.05.7 or later. These versions will gracefully handle changes to MariaDB
-default values that can cause problems for slurmdbd.</p>
+<p><b>MySQL or MariaDB is the preferred database.</b> Refer to the
+<a href="upgrades.html#db_server">Upgrade Guide</a> for information on in-place
+upgrades of Slurm and DB server packages.</p>
 
 <p>To enable this database support
 one only needs to have the development package for the database they
@@ -595,11 +591,6 @@ purged at one time.</p>
 <h2 id="mysql-configuration">MySQL Configuration
 <a class="slurm_link" href="#mysql-configuration"></a>
 </h2>
-
-<p><b>NOTE</b>: If you have an existing Slurm accounting database and
-plan to upgrade your database server to MariaDB 10.2.1 (or newer) from a
-pre-10.2.1 version or from any version of MySQL, please contact SchedMD
-for assistance.</p>
 
 <p>While Slurm will create the database tables automatically you will need to
 make sure the StorageUser is given permissions in the MySQL or MariaDB database
@@ -1026,6 +1017,6 @@ Profiling works similarly, and we provide
 and InfluxDB that can help to visualize accounting data in other ways.
 </p>
 
-<p style="text-align:center;">Last modified 31 October 2024</p>
+<p style="text-align:center;">Last modified 01 January 2025</p>
 
 <!--#include virtual="footer.txt"-->

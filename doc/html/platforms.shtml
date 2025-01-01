@@ -34,10 +34,13 @@ against older versions of MySQL, it is not recommended. SchedMD recommends
 you use a currently supported version of MySQL or MariaDB.
 </p>
 
-<p><b>NOTE</b>: If you have an existing Slurm accounting database and
-plan to upgrade your database server to MariaDB 10.2.1 (or newer) from a
-pre-10.2.1 version or from any version of MySQL, please contact SchedMD
-for assistance.</p>
+<p>Further reading:
+<ul>
+<li><a href="quickstart_admin.html">Quick Start Administrator Guide</a></li>
+<li><a href="accounting.html">Accounting and Resource Limits</a></li>
+<li><a href="upgrades.html">Upgrade Guide</a></li>
+</ul>
+</p>
 
 <h2 id="accel">Accelerators<a class="slurm_link" href="#accel"></a></h2>
 
@@ -65,6 +68,6 @@ share GPUs between multiple compute processes</li>
 GPUs between multiple compute processes</li>
 </ul>
 
-<p style="text-align:center;">Last modified 30 October 2024</p>
+<p style="text-align:center;">Last modified 01 January 2025</p>
 
 <!--#include virtual="footer.txt"-->
