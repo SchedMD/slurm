@@ -103,15 +103,9 @@ static uint64_t *start_current_energies = NULL;
 static int dataset_id = -1; // id of the dataset for profile data
 
 static bool flag_energy_accounting_shutdown = false;
-static bool flag_thread_started = false;
 static pthread_mutex_t gpu_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t gpu_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t launch_cond = PTHREAD_COND_INITIALIZER;
-
 static stepd_step_rec_t *step = NULL;
-
-pthread_t thread_gpu_id_launcher = 0;
 pthread_t thread_gpu_id_run = 0;
 
 /*
@@ -269,7 +263,6 @@ static void *_thread_gpu_run(void *no_data)
 	struct timespec abs;
 
 	flag_energy_accounting_shutdown = false;
-	log_flag(ENERGY, "gpu-thread: launched");
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -281,21 +274,12 @@ static void *_thread_gpu_run(void *no_data)
 		error("%s thread init failed, no GPU available", plugin_name);
 		log_flag(ENERGY, "gpu-thread: aborted");
 		slurm_mutex_unlock(&gpu_mutex);
-
-		slurm_mutex_lock(&launch_mutex);
-		slurm_cond_signal(&launch_cond);
-		slurm_mutex_unlock(&launch_mutex);
 		return NULL;
 	}
 
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
 	slurm_mutex_unlock(&gpu_mutex);
-	flag_thread_started = true;
-
-	slurm_mutex_lock(&launch_mutex);
-	slurm_cond_signal(&launch_cond);
-	slurm_mutex_unlock(&launch_mutex);
 
 	/* setup timer */
 	gettimeofday(&tvnow, NULL);
@@ -314,47 +298,6 @@ static void *_thread_gpu_run(void *no_data)
 	slurm_mutex_unlock(&gpu_mutex);
 
 	log_flag(ENERGY, "gpu-thread: ended");
-
-	return NULL;
-}
-
-/*
- * _thread_launcher is the thread that launches gpu thread
- */
-static void *_thread_launcher(void *no_data)
-{
-	struct timeval tvnow;
-	struct timespec abs;
-
-	slurm_thread_create(&thread_gpu_id_run, _thread_gpu_run, NULL);
-
-	/* setup timer */
-	gettimeofday(&tvnow, NULL);
-	abs.tv_sec = tvnow.tv_sec + DEFAULT_GPU_TIMEOUT;
-	abs.tv_nsec = tvnow.tv_usec * 1000;
-
-	slurm_mutex_lock(&launch_mutex);
-	slurm_cond_timedwait(&launch_cond, &launch_mutex, &abs);
-	slurm_mutex_unlock(&launch_mutex);
-
-	if (!flag_thread_started) {
-		error("%s threads failed to start in a timely manner",
-		      plugin_name);
-
-		flag_energy_accounting_shutdown = true;
-
-		/*
-		 * It is a known thing we can hang up on GPU calls cancel if
-		 * we must.
-		 */
-		pthread_cancel(thread_gpu_id_run);
-
-		/*
-		 * Unlock just to make sure since we could have canceled the
-		 * thread while in the lock.
-		 */
-		slurm_mutex_unlock(&gpu_mutex);
-	}
 
 	return NULL;
 }
@@ -569,13 +512,6 @@ extern int fini(void)
 
 	flag_energy_accounting_shutdown = true;
 
-	slurm_mutex_lock(&launch_mutex);
-	/* clean up the launch thread */
-	slurm_cond_signal(&launch_cond);
-	slurm_mutex_unlock(&launch_mutex);
-
-	slurm_thread_join(thread_gpu_id_launcher);
-
 	slurm_mutex_lock(&gpu_mutex);
 	/* clean up the run thread */
 	slurm_cond_signal(&gpu_cond);
@@ -741,8 +677,8 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 					(unsigned int *) &gpus_len);
 			if (gpus_len) {
 				gpus = xcalloc(sizeof(gpu_status_t), gpus_len);
-				slurm_thread_create(&thread_gpu_id_launcher,
-						    _thread_launcher, NULL);
+				slurm_thread_create(&thread_gpu_id_run,
+						    _thread_gpu_run, NULL);
 				log_flag(ENERGY, "%s thread launched",
 					 plugin_name);
 			}
