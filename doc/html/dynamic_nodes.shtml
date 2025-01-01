@@ -124,6 +124,17 @@ reservation can be deleted.
 <p>
 <ol>
 <li>
+Dynamic nodes are incompatible with <b>TopologyParam=RouteTree</b>.
+</li>
+<li>
+When non-default topology options are in use, extra steps should be taken
+to include dynamic nodes in the topology:
+<ol>
+<li>Dynamic nodes must be added to <b>topology.conf</b></li>
+<li>The <b>slurmctld</b> must be restarted or reconfigured</li>
+</ol>
+</li>
+<li>
 Dynamic nodes are not sorted internally and when added to Slurm they will
 potentially be alphabetically out of order internally &mdash; leading to
 suboptimal job allocations if node names represent topology of the nodes.
@@ -132,6 +143,6 @@ suboptimal job allocations if node names represent topology of the nodes.
 </p>
 
 
-<p style="text-align:center;">Last modified 13 January 2024</p>
+<p style="text-align:center;">Last modified 31 December 2024</p>
 
 <!--#include virtual="footer.txt"-->
