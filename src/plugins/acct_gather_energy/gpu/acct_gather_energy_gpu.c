@@ -275,12 +275,15 @@ static void *_thread_gpu_run(void *no_data)
 	}
 	slurm_mutex_unlock(&gpu_mutex);
 
-	/* setup timer */
+	/*
+	 * Setup timer - We will update energy every DEFAULT_GPU_FREQ from this
+	 * moment, always after _thread_update_node_energy lets us continue.
+	 */
 	gettimeofday(&tvnow, NULL);
 	abs.tv_sec = tvnow.tv_sec;
 	abs.tv_nsec = tvnow.tv_usec * 1000;
 
-	//loop until slurm stop
+	/* Loop until this plugin exits with fini(). */
 	slurm_mutex_lock(&gpu_mutex);
 	while (!flag_energy_accounting_shutdown) {
 		_thread_update_node_energy();
