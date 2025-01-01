@@ -264,9 +264,6 @@ static void *_thread_gpu_run(void *no_data)
 
 	flag_energy_accounting_shutdown = false;
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
 	slurm_mutex_lock(&gpu_mutex);
 	if (gpus_len && gpus) {
 		log_flag(ENERGY, "%s thread init", plugin_name);
@@ -276,9 +273,6 @@ static void *_thread_gpu_run(void *no_data)
 		slurm_mutex_unlock(&gpu_mutex);
 		return NULL;
 	}
-
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
-
 	slurm_mutex_unlock(&gpu_mutex);
 
 	/* setup timer */
