@@ -260,21 +260,6 @@ static int _thread_update_node_energy(void)
 }
 
 /*
- * _thread_init initializes values and conf for the gpu thread
- */
-static int _thread_init(void)
-{
-
-	if (gpus_len && gpus) {
-		log_flag(ENERGY, "%s thread init", plugin_name);
-		return SLURM_SUCCESS;
-	} else {
-		error("%s thread init failed, no GPU available", plugin_name);
-		return SLURM_ERROR;
-	}
-}
-
-/*
  * _thread_gpu_run is the thread calling gpu periodically
  * and read the energy values from the AMD GPUs
  */
@@ -290,14 +275,16 @@ static void *_thread_gpu_run(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	slurm_mutex_lock(&gpu_mutex);
-	if (_thread_init() != SLURM_SUCCESS) {
+	if (gpus_len && gpus) {
+		log_flag(ENERGY, "%s thread init", plugin_name);
+	} else {
+		error("%s thread init failed, no GPU available", plugin_name);
 		log_flag(ENERGY, "gpu-thread: aborted");
 		slurm_mutex_unlock(&gpu_mutex);
 
 		slurm_mutex_lock(&launch_mutex);
 		slurm_cond_signal(&launch_cond);
 		slurm_mutex_unlock(&launch_mutex);
-
 		return NULL;
 	}
 
