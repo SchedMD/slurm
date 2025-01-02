@@ -1386,38 +1386,10 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 				   data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
-	slurmdb_assoc_rec_t *assoc = NULL;
-	slurmdb_assoc_rec_t assoc_key = {
-		.cluster = job->cluster, .id = job->associd
+	slurmdb_assoc_rec_t assoc = {
+		.cluster = job->cluster,
+		.id = job->associd,
 	};
-
-	xassert(args->assoc_list);
-
-	if (job->associd && (job->associd != NO_VAL)) {
-		int rc;
-
-		if ((rc = _load_all_assocs(parser, args)))
-			return rc;
-
-		if (args->assoc_list)
-			assoc = list_find_first(args->assoc_list,
-						(ListFindF) compare_assoc,
-						&assoc_key)
-	}
-
-	if (!assoc) {
-		/*
-		 * The association is either invalid or unknown or deleted.
-		 * Since this is coming from Slurm internally, issue a warning
-		 * instead of erroring out to allow graceful dumping of the
-		 * data.
-		 */
-		on_warn(DUMPING, parser->type, args, NULL, __func__,
-			"Unknown association with id#%u. Unable to dump association.",
-			job->associd);
-		data_set_dict(dst);
-		return SLURM_SUCCESS;
-	}
 
 	return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
 }
