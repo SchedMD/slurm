@@ -1164,7 +1164,7 @@ static int _find_assoc(const parser_t *const parser, slurmdb_assoc_rec_t *dst,
 		       data_t *src, slurmdb_assoc_rec_t *key, args_t *args,
 		       data_t *parent_path)
 {
-	slurmdb_assoc_rec_t *match;
+	slurmdb_assoc_rec_t *match = NULL;
 
 	if (!key->cluster)
 		key->cluster = slurm_conf.cluster_name;
@@ -1182,8 +1182,9 @@ static int _find_assoc(const parser_t *const parser, slurmdb_assoc_rec_t *dst,
 			return rc;
 	}
 
-	match = list_find_first(args->assoc_list, (ListFindF) compare_assoc,
-				key);
+	if (args->assoc_list)
+		match = list_find_first(args->assoc_list,
+					(ListFindF) compare_assoc, key);
 
 	if (key->cluster == slurm_conf.cluster_name)
 		key->cluster = NULL;
