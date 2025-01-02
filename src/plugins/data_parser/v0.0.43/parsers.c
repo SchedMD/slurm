@@ -9399,7 +9399,6 @@ static const parser_t PARSER_ARRAY(WCKEY_TAG_STRUCT)[] = {
 
 static const flag_bit_t PARSER_FLAG_ARRAY(NEED_PREREQS_FLAGS)[] = {
 	add_flag_equal(NEED_NONE, INFINITE16, "NONE"),
-	add_flag_bit(NEED_AUTH, "AUTH"),
 	add_flag_bit(NEED_TRES, "TRES"),
 	add_flag_bit(NEED_QOS, "QOS"),
 	add_flag_bit(NEED_ASSOC, "ASSOC"),
