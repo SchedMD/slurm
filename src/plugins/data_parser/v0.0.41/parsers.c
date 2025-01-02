@@ -1340,10 +1340,17 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 
 	xassert(args->assoc_list);
 
-	if (!job->associd || (job->associd == NO_VAL) ||
-	    !(assoc = list_find_first(args->assoc_list,
-				      (ListFindF) compare_assoc,
-				      &assoc_key))) {
+	if (job->associd && (job->associd != NO_VAL)) {
+		int rc;
+
+		if ((rc = _load_all_assocs(parser, args)))
+			return rc;
+
+		assoc = list_find_first(args->assoc_list,
+					(ListFindF) compare_assoc, &assoc_key);
+	}
+
+	if (!assoc) {
 		/*
 		 * The association is either invalid or unknown or deleted.
 		 * Since this is coming from Slurm internally, issue a warning
@@ -1355,9 +1362,9 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 			job->associd);
 		data_set_dict(dst);
 		return SLURM_SUCCESS;
-	} else {
-		return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
 	}
+
+	return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
 }
 
 static void _fill_job_stp(job_std_pattern_t *job_stp, slurmdb_job_rec_t *job)
