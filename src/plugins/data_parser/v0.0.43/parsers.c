@@ -1335,22 +1335,8 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
 {
 	slurmdb_assoc_rec_t *assoc = obj;
-	uint32_t id = 0;
 
-	if (assoc->id && (assoc->id < NO_VAL)) {
-		slurmdb_assoc_rec_t *match;
-
-		if ((match = list_find_first(args->assoc_list,
-					     (ListFindF) compare_assoc, assoc)))
-			id = match->id;
-	}
-
-	if (!id && is_complex_mode(args)) {
-		data_set_null(dst);
-		return SLURM_SUCCESS;
-	}
-
-	return DUMP(UINT32, id, dst, args);
+	return DUMP(UINT32, assoc->id, dst, args);
 }
 
 static int PARSE_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
