@@ -1092,7 +1092,8 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				return rc;
 		}
 
-		if ((match = list_find_first(args->assoc_list,
+		if (args->assoc_list &&
+		    (match = list_find_first(args->assoc_list,
 					     (ListFindF) compare_assoc,
 					     &assoc_short))) {
 			assoc->id = match->id;
