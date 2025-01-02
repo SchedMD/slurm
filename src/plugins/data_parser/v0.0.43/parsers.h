@@ -47,7 +47,6 @@ typedef enum {
 	NEED_NONE = 0, /* parser has no pre-reqs for data */
 	NEED_TRES = SLURM_BIT(1),
 	NEED_QOS = SLURM_BIT(2),
-	NEED_ASSOC = SLURM_BIT(3),
 } need_t;
 
 typedef enum {

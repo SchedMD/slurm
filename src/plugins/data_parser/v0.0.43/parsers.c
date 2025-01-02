@@ -1219,58 +1219,6 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-/* Force loading of Assocations via NEED_ASSOC */
-static int _load_all_assocs(const parser_t *const parser, args_t *args)
-{
-	parser_t p = *parser;
-
-	p.needs |= NEED_ASSOC;
-
-	return load_prereqs(PARSING, &p, args);
-}
-
-static int _find_assoc(const parser_t *const parser, slurmdb_assoc_rec_t *dst,
-		       data_t *src, slurmdb_assoc_rec_t *key, args_t *args,
-		       data_t *parent_path)
-{
-	slurmdb_assoc_rec_t *match = NULL;
-
-	if (!key->cluster)
-		key->cluster = slurm_conf.cluster_name;
-
-	if (!args->assoc_list) {
-		/*
-		 * WARNING: This is a work around to always load the assocations
-		 * when resolving an association via PARSE_FUNC(ASSOC_ID)()
-		 * without having to rewrite the assocation lookup code in
-		 * slurmdb_helpers.[ch].
-		 */
-		int rc;
-
-		if ((rc = _load_all_assocs(parser, args)))
-			return rc;
-	}
-
-	if (args->assoc_list)
-		match = list_find_first(args->assoc_list,
-					(ListFindF) compare_assoc, key);
-
-	if (key->cluster == slurm_conf.cluster_name)
-		key->cluster = NULL;
-
-	if (!match)
-		return parse_error(parser, args, parent_path,
-				 ESLURM_INVALID_ASSOC,
-				 "Unable to find association: %pd", src);
-
-	xassert(!dst->id || (dst->id == NO_VAL) || (dst->id == match->id));
-
-	if (!(dst->id = match->id))
-		return ESLURM_INVALID_ASSOC;
-
-	return SLURM_SUCCESS;
-}
-
 static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
@@ -1302,17 +1250,15 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_DICT:
 	{
 		int rc;
-		slurmdb_assoc_rec_t key;
+		slurmdb_assoc_rec_t key = { 0 };
 
-		if (!data_get_dict_length(src))
-			return SLURM_SUCCESS;
+		if ((rc = PARSE(ASSOC_SHORT, key, src, parent_path, args)))
+			return rc;
 
-		slurmdb_init_assoc_rec(&key, false);
+		rc = resolve_assoc(PARSING, parser, &assoc, &key, args,
+				   parent_path, __func__, false);
 
-		if (!(rc = PARSE(ASSOC_SHORT, key, src, parent_path, args)))
-			rc = _find_assoc(parser, assoc, src, &key, args,
-					 parent_path);
-
+		assoc->id = key.id;
 		slurmdb_free_assoc_rec_members(&key);
 		return rc;
 	}
@@ -1345,25 +1291,19 @@ static int PARSE_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_job_rec_t *job = obj;
-	slurmdb_assoc_rec_t *assoc = xmalloc(sizeof(*assoc));
-	slurmdb_init_assoc_rec(assoc, false);
+	slurmdb_assoc_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t key = { 0 };
 
 	check_parser(parser);
 
-	rc = PARSE(ASSOC_SHORT, assoc, src, parent_path, args);
+	if ((rc = PARSE(ASSOC_SHORT, key, src, parent_path, args)))
+		return rc;
 
-	if (!rc) {
-		slurmdb_assoc_rec_t *match =
-			list_find_first(args->assoc_list,
-					(ListFindF) compare_assoc, assoc);
+	rc = resolve_assoc(PARSING, parser, &assoc, &key, args, parent_path,
+			   __func__, false);
 
-		if (match)
-			job->associd = match->id;
-		else
-			rc = ESLURM_INVALID_ASSOC;
-	}
-
-	slurmdb_destroy_assoc_rec(assoc);
+	job->associd = key.id;
+	slurmdb_free_assoc_rec_members(&key);
 
 	return rc;
 }
@@ -9344,7 +9284,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(NEED_PREREQS_FLAGS)[] = {
 	add_flag_equal(NEED_NONE, INFINITE16, "NONE"),
 	add_flag_bit(NEED_TRES, "TRES"),
 	add_flag_bit(NEED_QOS, "QOS"),
-	add_flag_bit(NEED_ASSOC, "ASSOC"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(CR_TYPE)[] = {
