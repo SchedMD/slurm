@@ -1292,7 +1292,8 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	if (assoc->id && (assoc->id < NO_VAL)) {
 		slurmdb_assoc_rec_t *match;
 
-		if ((match = list_find_first(args->assoc_list,
+		if (args->assoc_list &&
+		    (match = list_find_first(args->assoc_list,
 					     (ListFindF) compare_assoc, assoc)))
 			id = match->id;
 	}
