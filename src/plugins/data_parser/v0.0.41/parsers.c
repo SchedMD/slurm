@@ -1346,8 +1346,10 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 		if ((rc = _load_all_assocs(parser, args)))
 			return rc;
 
-		assoc = list_find_first(args->assoc_list,
-					(ListFindF) compare_assoc, &assoc_key);
+		if (args->assoc_list)
+			assoc = list_find_first(args->assoc_list,
+						(ListFindF) compare_assoc,
+						&assoc_key);
 	}
 
 	if (!assoc) {
