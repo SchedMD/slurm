@@ -574,6 +574,7 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/testsuite.conf.sample
 		 testsuite/expect/Makefile
 		 testsuite/slurm_unit/Makefile
+		 testsuite/slurm_unit/backfill/Makefile
 		 testsuite/slurm_unit/common/Makefile
 		 testsuite/slurm_unit/common/bitstring/Makefile
 		 testsuite/slurm_unit/common/hostlist/Makefile
@@ -581,6 +582,7 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/slurm_unit/common/slurm_protocol_pack/Makefile
 		 testsuite/slurm_unit/common/slurmdb_defs/Makefile
 		 testsuite/slurm_unit/common/slurmdb_pack/Makefile
+		 testsuite/slurm_unit/topology/Makefile
 		 ]
 )
 

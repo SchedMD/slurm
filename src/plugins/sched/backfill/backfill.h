@@ -61,4 +61,7 @@ extern void stop_backfill_agent(void);
 /* Note that slurm.conf has changed */
 extern void backfill_reconfig(void);
 
+/* Used for testsuite to call backfill */
+extern void __attempt_backfill(void);
+
 #endif	/* _SLURM_BACKFILL_H */

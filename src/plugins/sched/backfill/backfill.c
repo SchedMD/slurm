@@ -1106,6 +1106,16 @@ static void _init_planned_bitmap(void)
 	unlock_slurmctld(read_node_lock);
 }
 
+extern void __attempt_backfill(void)
+{
+	_load_config();
+	het_job_list = list_create(_het_job_map_del);
+	_init_planned_bitmap();
+	_attempt_backfill();
+	FREE_NULL_LIST(het_job_list);
+	FREE_NULL_BITMAP(planned_bitmap);
+}
+
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args)
 {
