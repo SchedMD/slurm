@@ -1156,6 +1156,16 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+/* Force loading of associations via NEED_ASSOC */
+static int _load_all_assocs(const parser_t *const parser, args_t *args)
+{
+	parser_t p = *parser;
+
+	p.needs |= NEED_ASSOC;
+
+	return load_prereqs(PARSING, &p, args);
+}
+
 static int _find_assoc(const parser_t *const parser, slurmdb_assoc_rec_t *dst,
 		       data_t *src, slurmdb_assoc_rec_t *key, args_t *args,
 		       data_t *parent_path)
@@ -1164,6 +1174,19 @@ static int _find_assoc(const parser_t *const parser, slurmdb_assoc_rec_t *dst,
 
 	if (!key->cluster)
 		key->cluster = slurm_conf.cluster_name;
+
+	if (!args->assoc_list) {
+		/*
+		 * WARNING: This is a work around to always load the
+		 * associations when resolving an association via
+		 * PARSE_FUNC(ASSOC_ID)() without having to rewrite the
+		 * association lookup code in slurmdb_helpers.[ch].
+		 */
+		int rc;
+
+		if ((rc = _load_all_assocs(parser, args)))
+			return rc;
+	}
 
 	match = list_find_first(args->assoc_list, (ListFindF) compare_assoc,
 				key);
@@ -9980,7 +10003,7 @@ static const parser_t parsers[] = {
 	addpsp(CONTROLLER_PING_PRIMARY, BOOL, int, NEED_NONE, "Is responding slurmctld the primary controller"),
 
 	/* Complex type parsers */
-	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
+	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_NONE, "Association ID"),
 	addpcp(JOB_STDIN, STRING, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpcp(JOB_STDOUT, STRING, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpcp(JOB_STDERR, STRING, slurmdb_job_rec_t, NEED_NONE, NULL),
