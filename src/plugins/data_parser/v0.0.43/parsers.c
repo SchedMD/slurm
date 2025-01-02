@@ -1296,22 +1296,7 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 					   src);
 		/* fall through */
 	case DATA_TYPE_INT_64:
-	{
-		int rc;
-		slurmdb_assoc_rec_t key = {
-			.id = assoc->id,
-			.cluster = assoc->cluster,
-		};
-
-		if ((rc = PARSE(UINT32, key.id, src, parent_path, args)))
-			return rc;
-
-		/* treat 0 same as null */
-		if (!key.id)
-			return SLURM_SUCCESS;
-
-		return _find_assoc(parser, assoc, src, &key, args, parent_path);
-	}
+		return PARSE(UINT32, assoc->id, src, parent_path, args);
 	case DATA_TYPE_NULL:
 		return SLURM_SUCCESS;
 	case DATA_TYPE_DICT:
