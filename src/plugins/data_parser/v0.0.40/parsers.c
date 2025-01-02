@@ -1044,6 +1044,16 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+/* Force loading of associations via NEED_ASSOC */
+static int _load_all_assocs(const parser_t *const parser, args_t *args)
+{
+	parser_t p = *parser;
+
+	p.needs |= NEED_ASSOC;
+
+	return load_prereqs(PARSING, &p, args);
+}
+
 static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
@@ -1068,6 +1078,19 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		if ((rc = PARSE(ASSOC_SHORT, assoc_short, src, parent_path,
 				args)))
 			goto cleanup;
+
+		if (!args->assoc_list) {
+			/*
+			 * WARNING: This is a work around to always load the
+			 * associations when resolving an Association via
+			 * PARSE_FUNC(ASSOC_ID)() without having to rewrite the
+			 * association lookup code in slurmdb_helpers.[ch].
+			 */
+			int rc;
+
+			if ((rc = _load_all_assocs(parser, args)))
+				return rc;
+		}
 
 		if ((match = list_find_first(args->assoc_list,
 					     (ListFindF) compare_assoc,
@@ -9705,7 +9728,7 @@ static const parser_t parsers[] = {
 	addpsp(JOB_DESC_MSG_CRON_ENTRY, CRON_ENTRY_PTR, cron_entry_t *, NEED_NONE, "crontab entry"),
 
 	/* Complex type parsers */
-	addpcp(ASSOC_ID, ASSOC_SHORT, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
+	addpcp(ASSOC_ID, ASSOC_SHORT, slurmdb_assoc_rec_t, NEED_NONE, "Association ID"),
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
 	addpcp(STEP_NODES, HOSTLIST, slurmdb_step_rec_t, NEED_TRES, NULL),
