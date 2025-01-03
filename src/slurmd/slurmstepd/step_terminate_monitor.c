@@ -216,7 +216,8 @@ static int _call_external_program(stepd_step_rec_t *step)
 		   detacts itself from a child before we add the pid
 		   to the container in the parent of the fork.
 		*/
-		if (container_g_join(recorded_jobid, getuid()) != SLURM_SUCCESS)
+		if (container_g_join(recorded_jobid, getuid(), false) !=
+		    SLURM_SUCCESS)
 			error("container_g_join(%u): %m", recorded_jobid);
 		env = env_array_create();
 		env_array_append_fmt(&env, "SLURM_JOBID", "%u", recorded_jobid);

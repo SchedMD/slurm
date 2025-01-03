@@ -722,7 +722,7 @@ extern int container_p_join_external(uint32_t job_id)
 	return step_ns_fd;
 }
 
-extern int container_p_join(uint32_t job_id, uid_t uid)
+extern int container_p_join(uint32_t job_id, uid_t uid, bool step_create)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
 	int fd;
@@ -737,7 +737,8 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	 * all successive calls within slurmstepd need to be skipped. If not
 	 * set, do the opposite.
 	 */
-	if ((!jc_conf->entire_step_in_ns && running_in_slurmd()) ||
+	if ((!jc_conf->entire_step_in_ns && running_in_slurmd() &&
+	     step_create) ||
 	    (jc_conf->entire_step_in_ns && running_in_slurmstepd()))
 		return SLURM_SUCCESS;
 
