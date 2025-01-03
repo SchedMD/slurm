@@ -171,27 +171,29 @@ static void _check_data_list_node_magic(const data_list_node_t *dn)
 static void _check_data_list_magic(const data_list_t *dl)
 {
 #ifndef NDEBUG
-	data_list_node_t *end = NULL;
-
 	xassert(dl);
 	xassert(dl->magic == DATA_LIST_MAGIC);
 
-	if (dl->begin) {
-		/* walk forwards verify */
-		int c = 0;
-		data_list_node_t *i = dl->begin;
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
+		data_list_node_t *end = NULL;
 
-		while (i) {
-			c++;
-			_check_data_list_node_magic(i);
-			end = i;
-			i = i->next;
+		if (dl->begin) {
+			/* walk forwards verify */
+			int c = 0;
+			data_list_node_t *i = dl->begin;
+
+			while (i) {
+				c++;
+				_check_data_list_node_magic(i);
+				end = i;
+				i = i->next;
+			}
+
+			xassert(c == dl->count);
 		}
 
-		xassert(c == dl->count);
+		xassert(end == dl->end);
 	}
-
-	xassert(end == dl->end);
 #endif /* !NDEBUG */
 }
 
@@ -200,15 +202,17 @@ static void _check_data_list_node_parent(const data_list_t *dl,
 					 const data_list_node_t *dn)
 {
 #ifndef NDEBUG
-	data_list_node_t *i = dl->begin;
-	while (i) {
-		if (i == dn)
-			return;
-		i = i->next;
-	}
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
+		data_list_node_t *i = dl->begin;
+		while (i) {
+			if (i == dn)
+				return;
+			i = i->next;
+		}
 
-	/* found an orphan? */
-	fatal_abort("%s: unexpected orphan node", __func__);
+		/* found an orphan? */
+		fatal_abort("%s: unexpected orphan node", __func__);
+	}
 #endif /* !NDEBUG */
 }
 
@@ -393,17 +397,20 @@ static void _check_magic(const data_t *data)
 	if (!data)
 		return;
 
-	xassert(data->type > TYPE_START);
-	xassert(data->type < TYPE_MAX);
 	xassert(data->magic == DATA_MAGIC);
 
-	if (data->type == TYPE_NULL)
-		/* make sure NULL type has a NULL value */
-		xassert(data->data.list_u == NULL);
-	if (data->type == TYPE_LIST)
-		_check_data_list_magic(data->data.list_u);
-	if (data->type == TYPE_DICT)
-		_check_data_list_magic(data->data.dict_u);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
+		xassert(data->type > TYPE_START);
+		xassert(data->type < TYPE_MAX);
+
+		if (data->type == TYPE_NULL)
+			/* make sure NULL type has a NULL value */
+			xassert(data->data.list_u == NULL);
+		if (data->type == TYPE_LIST)
+			_check_data_list_magic(data->data.list_u);
+		if (data->type == TYPE_DICT)
+			_check_data_list_magic(data->data.dict_u);
+	}
 }
 
 static void _release(data_t *data)
@@ -426,8 +433,6 @@ static void _release(data_t *data)
 	}
 
 	data->type = TYPE_NONE;
-	/* always zero data in debug mode */
-	xassert(memset(&data->data, 0, sizeof(data->data)));
 }
 
 extern void data_free(data_t *data)
@@ -481,7 +486,6 @@ extern data_t *data_set_null(data_t *data)
 	_release(data);
 
 	data->type = TYPE_NULL;
-	xassert((memset(&data->data, 0, sizeof(data->data))));
 
 	log_flag(DATA, "%s: set %pD=null", __func__, data);
 
@@ -589,17 +593,19 @@ extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
 	}
 
 #ifndef NDEBUG
-	char *old_value = value;
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
+		char *old_value = value;
 
-	/* check that the string was xmalloc()ed and actually has contents */
-	xassert(xsize(value) > 0);
-	/*
-	 * catch use after free by the caller by using the existing xfree()
-	 * functionality
-	 */
-	value = xstrdup(value);
-	/* releasing original string instead of NULLing original pointer */
-	xfree(old_value);
+		/* check that the string was xmalloc()ed and actually has contents */
+		xassert(xsize(value) > 0);
+		/*
+		 * catch use after free by the caller by using the existing xfree()
+		 * functionality
+		 */
+		value = xstrdup(value);
+		/* releasing original string instead of NULLing original pointer */
+		xfree(old_value);
+	}
 #endif
 
 	if ((len = strlen(value)) < sizeof(data->data.string_inline_u)) {
@@ -2331,7 +2337,6 @@ extern data_t *data_move(data_t *dest, data_t *src)
 	memmove(&dest->data, &src->data, sizeof(src->data));
 	dest->type = src->type;
 	src->type = TYPE_NULL;
-	xassert((memset(&src->data, 0, sizeof(src->data))));
 
 	return dest;
 }
