@@ -44,6 +44,21 @@ typedef struct node_weight_struct {
 	uint64_t weight;	/* priority of node for scheduling work on */
 } node_weight_type;
 
+typedef struct {
+	uint16_t *avail_cpu_per_node;
+	avail_res_t **avail_res_array;
+	uint32_t cpus_per_task;
+	int i_end;
+	int i_start;
+	uint32_t *max_nodes;
+	int *min_rem_nodes;
+	bitstr_t *node_map;
+	int *rem_cpus;
+	int *rem_nodes;
+	int64_t *rem_max_cpus;
+	uint16_t *used_cpu_per_node;
+} foreach_add_nodes_lln_t;
+
 /* Find node_weight_type element from list with same weight as node config */
 static int _node_weight_find(void *x, void *key)
 {
@@ -1495,9 +1510,37 @@ fini:
 	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
-
 }
 
+static int _add_nodes_by_weight_spread(void *x, void *arg)
+{
+	foreach_add_nodes_lln_t *args = arg;
+	node_weight_type *nwt = x;
+
+	for (int i = args->i_start; i <= args->i_end; i++) {
+		if (!args->avail_res_array[i] ||
+		    !args->avail_res_array[i]->avail_cpus)
+			continue;
+		/* Node not available or already selected */
+		if (!bit_test(nwt->node_bitmap, i) ||
+		    bit_test(args->node_map, i))
+			continue;
+		if (!args->avail_cpu_per_node[i])
+			continue;
+
+		bit_set(args->node_map, i);
+		args->used_cpu_per_node[i] = args->cpus_per_task;
+
+		(*args->rem_nodes)--;
+		(*args->min_rem_nodes)--;
+		(*args->max_nodes)--;
+		*args->rem_max_cpus -= args->cpus_per_task;
+		*args->rem_cpus -= args->cpus_per_task;
+		if ((*args->max_nodes <= 0) || (*args->rem_nodes <= 0))
+			return 1;
+	}
+	return 0;
+}
 /*
  * A variation of _eval_nodes() to select resources using as many nodes as
  * possible.
@@ -1516,15 +1559,14 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 	uint32_t min_nodes = topo_eval->min_nodes;
 	uint32_t req_nodes = topo_eval->req_nodes;
 	uint32_t cpus_per_task = job_ptr->details->cpus_per_task;
-	bool all_done = false, more_nodes = true;
+	bool all_done = false;
 	node_record_t *node_ptr;
 	list_t *node_weight_list = NULL;
-	node_weight_type *nwt;
-	list_itr_t *iter;
 	uint64_t maxtasks;
 	uint16_t *avail_cpu_per_node = NULL;
 	uint16_t *used_cpu_per_node = NULL;
 	uint32_t prev_max_nodes = topo_eval->max_nodes;
+	foreach_add_nodes_lln_t args = { 0 };
 
 	topo_eval->avail_cpus = 0;
 
@@ -1590,39 +1632,25 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 		bit_clear_all(topo_eval->node_map);
 	}
 
-	if (topo_eval->max_nodes == 0)
-		more_nodes = false;
+	if (topo_eval->max_nodes > 0) {
+		node_weight_list = _build_node_weight_list(orig_node_map);
 
-	node_weight_list = _build_node_weight_list(orig_node_map);
+		args.avail_res_array = avail_res_array;
+		args.node_map = topo_eval->node_map;
+		args.avail_cpu_per_node = avail_cpu_per_node;
+		args.used_cpu_per_node = used_cpu_per_node;
+		args.rem_nodes = &rem_nodes;
+		args.min_rem_nodes = &min_rem_nodes;
+		args.max_nodes = &(topo_eval->max_nodes);
+		args.rem_max_cpus = &rem_max_cpus;
+		args.rem_cpus = &rem_cpus;
+		args.i_start = i_start;
+		args.i_end = i_end;
+		args.cpus_per_task = cpus_per_task;
 more_nodes:
-	iter = list_iterator_create(node_weight_list);
-	while (more_nodes && (nwt = list_next(iter))) {
-		for (i = i_start; i <= i_end; i++) {
-			if (!avail_res_array[i] ||
-			    !avail_res_array[i]->avail_cpus)
-				continue;
-			/* Node not available or already selected */
-			if (!bit_test(nwt->node_bitmap, i) ||
-			    bit_test(topo_eval->node_map, i))
-				continue;
-			if (!avail_cpu_per_node[i])
-				continue;
-
-			bit_set(topo_eval->node_map, i);
-			used_cpu_per_node[i] = cpus_per_task;
-
-			rem_nodes--;
-			min_rem_nodes--;
-			topo_eval->max_nodes--;
-			rem_max_cpus -= cpus_per_task;
-			rem_cpus -= cpus_per_task;
-			if (topo_eval->max_nodes <= 0 || rem_nodes <= 0) {
-				more_nodes = false;
-				break;
-			}
-		}
+		list_for_each(node_weight_list, _add_nodes_by_weight_spread,
+			      &args);
 	}
-	list_iterator_destroy(iter);
 
 	if (rem_cpus <= 0)
 		all_done = true;
@@ -1654,7 +1682,6 @@ more_nodes:
 		if (!rem_nodes)
 			rem_nodes++;
 		prev_max_nodes = topo_eval->max_nodes;
-		more_nodes = true;
 		all_done = false;
 		goto more_nodes;
 	}
