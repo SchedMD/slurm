@@ -9550,6 +9550,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_LISTSTEPS_INFO_RESP)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_resp_slurmdbd_config_t, mtype, false, field, 0, path, desc)
+#define add_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(openapi_resp_slurmdbd_config_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 	add_parse(CLUSTER_REC_LIST, clusters, "clusters", "Clusters"),
 	add_parse(TRES_LIST, tres, "tres", "TRES"),
@@ -9558,12 +9560,13 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 	add_parse(QOS_LIST, qos, "qos", "QOS"),
 	add_parse(WCKEY_LIST, wckeys, "wckeys", "WCKeys"),
 	add_parse(ASSOC_LIST, associations, "associations", "Associations"),
-	add_parse(INSTANCE_LIST, instances, "instances", "Instances"),
+	add_deprec(INSTANCE_LIST, instances, 0, "instances", NULL, SLURM_25_05_PROTOCOL_VERSION),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
 };
 #undef add_parse
+#undef add_deprec
 
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(openapi_resp_node_info_msg_t, mtype, true, field, 0, path, desc)
