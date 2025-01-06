@@ -1268,7 +1268,12 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 	const parser_t *pt = find_parser_by_type(parser->pointer_type);
 	void **ptr = src;
 
-	if (!*ptr && !is_complex_mode(args)) {
+	if (!*ptr) {
+		if (is_complex_mode(args)) {
+			xassert(data_get_type(dst) == DATA_TYPE_NULL);
+			return SLURM_SUCCESS;
+		}
+
 		/* Fully resolve pointer on NULL to use correct model */
 		while (pt->pointer_type)
 			pt = find_parser_by_type(pt->pointer_type);
