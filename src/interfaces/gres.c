@@ -681,7 +681,6 @@ static void _add_gres_context(char *gres_name)
 
 	gres_ctx = &gres_context[gres_context_cnt];
 	_set_shared_flag(gres_name, &gres_ctx->config_flags);
-	xstrtolower(gres_name);
 	gres_ctx->gres_name = xstrdup(gres_name);
 	gres_ctx->plugin_id = gres_build_id(gres_name);
 	gres_ctx->gres_type = xstrdup_printf("gres/%s", gres_name);
@@ -862,8 +861,8 @@ extern char *gres_name_filter(char *orig_gres, char *nodes)
 		slurm_mutex_unlock(&gres_context_lock);
 		return new_gres;
 	}
+
 	tmp = xstrdup(orig_gres);
-	xstrtolower(tmp);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		name = xstrdup(tok);
