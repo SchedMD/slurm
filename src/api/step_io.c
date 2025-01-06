@@ -39,25 +39,27 @@
 #include <string.h>
 #include <time.h>
 
+#include "src/api/step_io.h"
+#include "src/api/step_launch.h"
+
+#include "src/common/eio.h"
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
+#include "src/common/io_hdr.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
-#include "src/interfaces/cred.h"
+#include "src/common/write_labelled_message.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
-#include "src/common/eio.h"
-#include "src/common/io_hdr.h"
-#include "src/common/net.h"
-#include "src/common/write_labelled_message.h"
+#include "src/common/xstring.h"
 
-#include "src/api/step_io.h"
-#include "src/api/step_launch.h"
+#include "src/interfaces/cred.h"
 
 #define STDIO_MAX_FREE_BUF 1024
 
@@ -1071,7 +1073,7 @@ _estimate_nports(int nclients, int cli_per_port)
 }
 
 client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
-				      int num_nodes, slurm_cred_t *cred,
+				      int num_nodes, char *io_key,
 				      bool label, uint32_t het_job_offset,
 				      uint32_t het_job_task_offset)
 {
@@ -1090,7 +1092,7 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 	else
 		cio->taskid_width = 0;
 
-	cio->io_key = slurm_cred_get_signature(cred);
+	cio->io_key = xstrdup(io_key);
 
 	cio->eio = eio_handle_create(slurm_conf.eio_timeout);
 

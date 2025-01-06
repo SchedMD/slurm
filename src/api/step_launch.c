@@ -48,8 +48,8 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -58,6 +58,9 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+
+#include "src/api/pmi_server.h"
+#include "src/api/step_launch.h"
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/eio.h"
@@ -68,9 +71,6 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/auth.h"
-#include "src/interfaces/cred.h"
-#include "src/interfaces/mpi.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
@@ -80,8 +80,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/api/step_launch.h"
-#include "src/api/pmi_server.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/cred.h"
+#include "src/interfaces/mpi.h"
 
 #include "src/srun/step_ctx.h"
 
@@ -201,6 +202,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	int rc = SLURM_SUCCESS;
 	bool preserve_env = params->preserve_env;
 	uint32_t mpi_plugin_id;
+	char *io_key = NULL;
 
 	debug("Entering %s", __func__);
 	memset(&launch, 0, sizeof(launch));
@@ -210,6 +212,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
+
+	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
 
 	/* Initialize the callback pointers */
 	if (callbacks != NULL) {
@@ -360,8 +364,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	ctx->launch_state->io =
 		client_io_handler_create(params->local_fds,
 					 ctx->step_req->num_tasks,
-					 launch.nnodes,
-					 ctx->step_resp->cred,
+					 launch.nnodes, io_key,
 					 params->labelio,
 					 params->het_job_offset,
 					 params->het_job_task_offset);
@@ -401,6 +404,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	xfree(launch.io_port);
 
 fail1:
+	xfree(io_key);
 	xfree(launch.complete_nodelist);
 	xfree(launch.cwd);
 	xfree(launch.stepmgr);
@@ -430,6 +434,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	uint16_t resp_port = 0;
 	bool preserve_env = params->preserve_env;
 	uint32_t mpi_plugin_id;
+	char *io_key = NULL;
 
 	debug("Entering %s", __func__);
 
@@ -438,6 +443,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
+
+	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
 
 	mpi_plugin_id = mpi_g_client_init((char **)&params->mpi_plugin_name);
 	if (!mpi_plugin_id) {
@@ -544,8 +551,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	ctx->launch_state->io =
 		client_io_handler_create(params->local_fds,
 					 ctx->step_req->num_tasks,
-					 launch.nnodes,
-					 ctx->step_resp->cred,
+					 launch.nnodes, io_key,
 					 params->labelio,
 					 params->het_job_offset,
 					 params->het_job_task_offset);
@@ -586,6 +592,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 
 fail1:
 	/* clean up */
+	xfree(io_key);
 	xfree(launch.resp_port);
 	xfree(launch.io_port);
 
