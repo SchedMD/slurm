@@ -193,6 +193,15 @@ typedef struct {
 	uint32_t plugin_id;
 } foreach_gres_accumulate_device_t;
 
+typedef struct {
+	node_config_load_t *config;
+	list_t **gres_devices;
+	int index;
+	int max_dev_num;
+	list_t *names_list;
+	int rc;
+} foreach_fill_in_gres_devices_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -2575,89 +2584,99 @@ static int _load_specific_gres_plugins(void)
 	return rc;
 }
 
-extern int gres_node_config_load(list_t *gres_conf_list,
-				 node_config_load_t *config,
-				 list_t **gres_devices)
+static int _foreach_fill_in_gres_devices(void *x, void *arg)
 {
-	int rc = SLURM_SUCCESS;
-	list_itr_t *itr;
-	gres_slurmd_conf_t *gres_slurmd_conf;
-	list_t *names_list;
-	int max_dev_num = -1;
-	int index = 0;
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	foreach_fill_in_gres_devices_t *fill_in_gres_devices = arg;
+	node_config_load_t *config = fill_in_gres_devices->config;
+	hostlist_t *hl;
+	char *one_name;
 
-	xassert(gres_conf_list);
-	xassert(gres_devices);
+	if (!(gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE) ||
+	    !gres_slurmd_conf->file ||
+	    xstrcmp(gres_slurmd_conf->name, config->gres_name))
+		return 0;
 
-	names_list = list_create(_free_name_list);
-	itr = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = list_next(itr))) {
-		hostlist_t *hl;
-		char *one_name;
+	if (!(hl = hostlist_create(gres_slurmd_conf->file))) {
+		error("can't parse gres.conf file record (%s)",
+		      gres_slurmd_conf->file);
+		return 0;
+	}
 
-		if (!(gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE) ||
-		    !gres_slurmd_conf->file ||
-		    xstrcmp(gres_slurmd_conf->name, config->gres_name))
-			continue;
+	while ((one_name = hostlist_shift(hl))) {
+		/* We don't care about gres_devices in slurmctld */
+		if (config->in_slurmd) {
+			gres_device_t *gres_device;
+			if (!*fill_in_gres_devices->gres_devices)
+				*fill_in_gres_devices->gres_devices =
+					list_create(destroy_gres_device);
 
-		if (!(hl = hostlist_create(gres_slurmd_conf->file))) {
-			error("can't parse gres.conf file record (%s)",
-			      gres_slurmd_conf->file);
-			continue;
-		}
-
-		while ((one_name = hostlist_shift(hl))) {
-			/* We don't care about gres_devices in slurmctld */
-			if (config->in_slurmd) {
-				gres_device_t *gres_device;
-				if (!*gres_devices) {
-					*gres_devices = list_create(
-						destroy_gres_device);
-				}
-
-				if (!(gres_device = _init_gres_device(
-					      index, one_name,
-					      gres_slurmd_conf->unique_id))) {
-					free(one_name);
-					continue;
-				}
-
-				if (gres_device->dev_num > max_dev_num)
-					max_dev_num = gres_device->dev_num;
-
-				list_append(*gres_devices, gres_device);
-			}
-
-			/*
-			 * Don't check for file duplicates or increment the
-			 * device bitmap index if this is a MultipleFiles GRES
-			 */
-			if (gres_slurmd_conf->config_flags &
-			    GRES_CONF_HAS_MULT) {
+			if (!(gres_device = _init_gres_device(
+				      fill_in_gres_devices->index, one_name,
+				      gres_slurmd_conf->unique_id))) {
 				free(one_name);
 				continue;
 			}
 
-			if ((rc == SLURM_SUCCESS) &&
-			    list_find_first(names_list,
-					    slurm_find_char_exact_in_list,
-					    one_name)) {
-				error("%s duplicate device file name (%s)",
-				      config->gres_name, one_name);
-				rc = SLURM_ERROR;
-			}
+			if (gres_device->dev_num >
+			    fill_in_gres_devices->max_dev_num)
+				fill_in_gres_devices->max_dev_num =
+					gres_device->dev_num;
 
-			list_append(names_list, one_name);
-
-			/* Increment device bitmap index */
-			index++;
+			list_append(*fill_in_gres_devices->gres_devices,
+				    gres_device);
 		}
-		hostlist_destroy(hl);
-		if (gres_slurmd_conf->config_flags & GRES_CONF_HAS_MULT)
-			index++;
+
+		/*
+		 * Don't check for file duplicates or increment the
+		 * device bitmap index if this is a MultipleFiles GRES
+		 */
+		if (gres_slurmd_conf->config_flags & GRES_CONF_HAS_MULT) {
+			free(one_name);
+			continue;
+		}
+
+		if ((fill_in_gres_devices->rc == SLURM_SUCCESS) &&
+		    list_find_first(fill_in_gres_devices->names_list,
+				    slurm_find_char_exact_in_list,
+				    one_name)) {
+			error("%s duplicate device file name (%s)",
+			      config->gres_name, one_name);
+			fill_in_gres_devices->rc = SLURM_ERROR;
+		}
+
+		list_append(fill_in_gres_devices->names_list, one_name);
+
+		/* Increment device bitmap index */
+		fill_in_gres_devices->index++;
 	}
-	list_iterator_destroy(itr);
-	FREE_NULL_LIST(names_list);
+	hostlist_destroy(hl);
+
+	if (gres_slurmd_conf->config_flags & GRES_CONF_HAS_MULT)
+		fill_in_gres_devices->index++;
+
+	return 0;
+}
+
+extern int gres_node_config_load(list_t *gres_conf_list,
+				 node_config_load_t *config,
+				 list_t **gres_devices)
+{
+	list_itr_t *itr;
+	foreach_fill_in_gres_devices_t fill_in_gres_devices = {
+		.config = config,
+		.gres_devices = gres_devices,
+		.index = 0,
+		.max_dev_num = -1,
+		.names_list = list_create(_free_name_list),
+		.rc = SLURM_SUCCESS,
+	};
+	xassert(gres_conf_list);
+	xassert(gres_devices);
+
+	(void) list_for_each(gres_conf_list, _foreach_fill_in_gres_devices,
+			     &fill_in_gres_devices);
+	FREE_NULL_LIST(fill_in_gres_devices.names_list);
 
 	if (*gres_devices) {
 		gres_device_t *gres_device;
@@ -2666,7 +2685,8 @@ extern int gres_node_config_load(list_t *gres_conf_list,
 		while ((gres_device = list_next(itr))) {
 			dev_id_str = gres_device_id2str(&gres_device->dev_desc);
 			if (gres_device->dev_num == -1)
-				gres_device->dev_num = ++max_dev_num;
+				gres_device->dev_num =
+					++fill_in_gres_devices.max_dev_num;
 			log_flag(GRES, "%s device number %d(%s):%s",
 				 config->gres_name, gres_device->dev_num,
 				 gres_device->path,
@@ -2676,7 +2696,7 @@ extern int gres_node_config_load(list_t *gres_conf_list,
 		list_iterator_destroy(itr);
 	}
 
-	return rc;
+	return fill_in_gres_devices.rc;
 }
 
 /*
