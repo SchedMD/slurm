@@ -357,8 +357,6 @@ static int	_node_reconfig_test(char *node_name, char *new_gres,
 				    gres_state_t *gres_state_node,
 				    slurm_gres_context_t *gres_ctx);
 static void *	_node_state_dup(gres_node_state_t *gres_ns);
-static void	_node_state_log(gres_node_state_t *gres_ns, char *node_name,
-				char *gres_name);
 static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
 				   const char *key, const char *value,
 				   const char *line, char **leftover);
@@ -5649,9 +5647,13 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 	return gres_ns->gres_used;
 }
 
-static void _node_state_log(gres_node_state_t *gres_ns,
-			    char *node_name, char *gres_name)
+static int _foreach_node_state_log(void *x, void *arg)
 {
+	gres_state_t *gres_state_node = x;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	char *gres_name = gres_state_node->gres_name;
+	char *node_name = arg;
+
 	int i, j;
 	char *buf = NULL, *sep, tmp_str[128];
 
@@ -5732,6 +5734,8 @@ static void _node_state_log(gres_node_state_t *gres_ns,
 		info("   type_cnt_avail[%d]:%"PRIu64, i,
 		     gres_ns->type_cnt_avail[i]);
 	}
+
+	return 0;
 }
 
 /*
@@ -5741,20 +5745,12 @@ static void _node_state_log(gres_node_state_t *gres_ns,
  */
 extern void gres_node_state_log(list_t *gres_list, char *node_name)
 {
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_node;
-
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
 		return;
 
 	xassert(gres_context_cnt >= 0);
 
-	gres_iter = list_iterator_create(gres_list);
-	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
-		_node_state_log(gres_state_node->gres_data, node_name,
-				gres_state_node->gres_name);
-	}
-	list_iterator_destroy(gres_iter);
+	(void) list_for_each(gres_list, _foreach_node_state_log, node_name);
 }
 
 /* Find node_state_t gres record with any allocated gres (key is unused) */
