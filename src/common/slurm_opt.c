@@ -5057,28 +5057,34 @@ extern void slurm_option_update_tres_per_task(int cnt, char *tres_str,
 	*tres_per_task_p = tres_per_task;
 }
 
-static bool _get_gpu_cnt_and_str(slurm_opt_t *opt, int *gpu_cnt, char **gpu_str)
+static bool _get_gpu_cnt_and_str(char **gpus_per_task, int *gpu_cnt,
+				 char **gpu_str)
 {
 	char *num_str = NULL, sep_char;
 
-	if (!opt->gpus_per_task)
+	if (!*gpus_per_task || !(*gpus_per_task)[0])
 		return false;
 
 	xstrcat(*gpu_str, "gres/gpu");
 
-	if ((num_str = xstrstr(opt->gpus_per_task, ":")))
+	if ((num_str = xstrstr(*gpus_per_task, ":")))
 		sep_char = ':';
-	else if ((num_str = xstrstr(opt->gpus_per_task, "=")))
+	else if ((num_str = xstrstr(*gpus_per_task, "=")))
 		sep_char = '=';
 
 	if (num_str) { /* Has type string */
 		*num_str = '\0';
 		/* Add type string to gpu_str */
-		xstrfmtcat(*gpu_str, ":%s", opt->gpus_per_task);
+		xstrfmtcat(*gpu_str, ":%s", *gpus_per_task);
 		*num_str = sep_char;
 		num_str += 1;
+		*gpus_per_task = xstrchr(*gpus_per_task, ',');
+		if (*gpus_per_task)
+			(*gpus_per_task)++;
 	} else {
-		num_str = opt->gpus_per_task;
+		num_str = *gpus_per_task;
+		/* since non-typed can't be with typed this isn't a list */
+		*gpus_per_task = NULL;
 	}
 
 	if (gpu_cnt)
@@ -5087,39 +5093,15 @@ static bool _get_gpu_cnt_and_str(slurm_opt_t *opt, int *gpu_cnt, char **gpu_str)
 	return true;
 }
 
-static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
+static void _set_tres_per_task_from_sibling_opt_internal(slurm_opt_t *opt,
+							 bool set,
+							 int cnt,
+							 char *env_variable,
+							 int optval,
+							 char *str)
 {
-	bool set;
-	int tmp_int, cnt = 0, opt_index, tpt_index;
-	char *opt_in_tpt_ptr = NULL, *str = NULL;
-	char *env_variable;
-
-	/*
-	 * See if the sibling option was set with tres-per-task
-	 * Either one specified on the command line overrides the other in the
-	 * environment.
-	 * They can both be in the environment because specifying just
-	 * --tres-per-task=cpu=# for example, will cause SLURM_CPUS_PER_TASK to
-	 * be set as well. So if they're both in the environment, verify that
-	 * they're the same.
-	 *
-	 * If tres-per-task or a sibling option are set, then make sure that
-	 * both are set to the same thing:
-	 */
-
-	if (optval == LONG_OPT_GPUS_PER_TASK) {
-		set = _get_gpu_cnt_and_str(opt, &cnt, &str);
-		env_variable = "SLURM_GPUS_PER_TASK";
-	} else if (optval == 'c') {
-		cnt = opt->cpus_per_task;
-		str = "cpu";
-		set = opt->cpus_set;
-		env_variable = "SLURM_CPUS_PER_TASK";
-	} else {
-		/* This function only supports [gpus|cpus]_per_task */
-		xassert(0); /* let me know if it isn't */
-		return;
-	}
+	int tmp_int, opt_index, tpt_index;
+	char *opt_in_tpt_ptr = NULL;
 
 	opt_in_tpt_ptr = xstrcasestr(opt->tres_per_task, str);
 	if (!opt_in_tpt_ptr) {
@@ -5158,29 +5140,98 @@ static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
 
 	if (_option_index_set_by_env(opt, opt_index) &&
 	    _option_index_set_by_env(opt, tpt_index) &&
-	    (tmp_int != opt->cpus_per_task)) {
+	    (tmp_int != opt->cpus_per_task) && (optval == 'c')) {
 		fatal("%s set by two different environment variables %s=%d != SLURM_TRES_PER_TASK=cpu=%d",
 		      common_options[opt_index]->name, env_variable, cnt,
 		      tmp_int);
 	}
 
-	/*
-	 * Now we know that either tres-per-task is set by cli and the option
-	 * is set by env, or only tres-per-task is set either by cli or env.
-	 * Either way, set the option from tres-per-task.
-	 */
-	if (optval == LONG_OPT_GPUS_PER_TASK) {
-		opt->gpus_per_task = opt_in_tpt_ptr;
-	} else if (optval == 'c') {
-		opt->cpus_per_task = tmp_int;
-		opt->cpus_set = true;
-	}
-
+	/* tres_per_task's values will override sibling opt values */
 	if (opt->verbose &&
 	    _option_index_set_by_env(opt, opt_index) &&
 	    _option_index_set_by_cli(opt, tpt_index))
 		info("Ignoring %s since --tres-per-task=%s= was given as a command line option.",
 		     env_variable, str);
+}
+
+static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
+{
+	bool set;
+	int opt_cnt = 0;
+	uint64_t cnt = 0;
+	char *env_variable;
+	char *name = NULL;
+	char *save_ptr = NULL;
+	char *tres_type = NULL;
+	char *type = NULL;
+
+	/*
+	 * See if the sibling option was set with tres-per-task
+	 * Either one specified on the command line overrides the other in the
+	 * environment.
+	 * They can both be in the environment because specifying just
+	 * --tres-per-task=cpu=# for example, will cause SLURM_CPUS_PER_TASK to
+	 * be set as well. So if they're both in the environment, verify that
+	 * they're the same.
+	 *
+	 * If tres-per-task or a sibling option are set, then make sure that
+	 * both are set to the same thing:
+	 */
+
+	if (optval == LONG_OPT_GPUS_PER_TASK) {
+		char *str = NULL;
+		save_ptr = opt->gpus_per_task;
+		env_variable = "SLURM_GPUS_PER_TASK";
+		tres_type = "gres";
+		while (save_ptr && save_ptr[0]) {
+			set = _get_gpu_cnt_and_str(&save_ptr, &opt_cnt, &str);
+			_set_tres_per_task_from_sibling_opt_internal(
+				opt, set, opt_cnt, env_variable, optval, str);
+			xfree(str);
+		}
+
+		/* Set gpus_per_task based off of tres_per_task */
+		save_ptr = NULL;
+		xfree(opt->gpus_per_task);
+		while (opt->tres_per_task &&
+		       (slurm_get_next_tres(&tres_type, opt->tres_per_task,
+					    &name, &type, &cnt,
+					    &save_ptr) == SLURM_SUCCESS) &&
+		       save_ptr) {
+			if (opt->gpus_per_task)
+				xstrcatchar(opt->gpus_per_task, ',');
+			if (type)
+				xstrfmtcat(opt->gpus_per_task, "%s:%"PRIu64,
+					   type, cnt);
+			else
+				xstrfmtcat(opt->gpus_per_task, "%"PRIu64, cnt);
+			xfree(name);
+			xfree(type);
+		}
+	} else if (optval == 'c') {
+		opt_cnt = opt->cpus_per_task;
+		tres_type = "cpu";
+		set = opt->cpus_set;
+		env_variable = "SLURM_CPUS_PER_TASK";
+
+		_set_tres_per_task_from_sibling_opt_internal(
+			opt, set, opt_cnt, env_variable, optval, tres_type);
+
+		/* Set cpus_per_task based off of tres_per_task */
+		if (opt->tres_per_task &&
+		    slurm_get_next_tres(&tres_type, opt->tres_per_task, &name,
+					&type, &cnt, &save_ptr)) {
+			opt->cpus_per_task = cnt;
+			opt->cpus_set = true;
+
+			/* name and type should be NULL - free just in case */
+			xfree(name);
+			xfree(type);
+		}
+	} else {
+		/* This function only supports [gpus|cpus]_per_task */
+		xassert(0); /* let me know if it isn't */
+	}
 }
 
 /*
@@ -5193,18 +5244,37 @@ static void _implicitly_bind_tres_per_task(slurm_opt_t *opt)
 	/* tres_bind only supports gres currently */
 	char *tres_type = "gres";
 	uint64_t cnt;
+	char *gpu_name = "gpu";
+	uint64_t gpu_sum = 0;
 
 	while ((slurm_get_next_tres(&tres_type,
 				    opt->tres_per_task,
 				    &name, &type,
 				    &cnt, &save_ptr) == SLURM_SUCCESS) &&
 	       save_ptr) {
-		 /* Skip any explicitly set binding */
-		if (opt->tres_bind && xstrstr(opt->tres_bind, name))
+		xfree(type);
+
+		/* Skip any explicitly set binding */
+		if (opt->tres_bind && xstrstr(opt->tres_bind, name)) {
+			xfree(name);
 			continue;
+		}
+		/* Can't bind by different gpu types, get sum of all types */
+		if (!xstrcmp(gpu_name, name)) {
+			gpu_sum += cnt;
+			xfree(name);
+			continue;
+		}
+
 		xstrfmtcat(opt->tres_bind, "%s%s/%s:per_task:%"PRIu64,
 			   opt->tres_bind ? "+" : "", tres_type, name, cnt);
+		xfree(name);
 	}
+
+	if (gpu_sum)
+		xstrfmtcat(opt->tres_bind, "%s%s/%s:per_task:%"PRIu64,
+			   opt->tres_bind ? "+" : "", tres_type, gpu_name,
+			   gpu_sum);
 }
 
 static void _validate_tres_per_task(slurm_opt_t *opt)

@@ -1017,8 +1017,9 @@ requested in a comma separated list, for example:
 This option requires an explicit task count, e.g. \-n, \-\-ntasks or "\-\-gpus=X
 \-\-gpus\-per\-task=Y" rather than an ambiguous range of nodes with \-N, \-\-nodes.
 This option will implicitly set \-\-tres\-bind=gres/gpu:per_task:<gpus_per_task>,
-but that can be overridden with an explicit \-\-tres\-bind=gres/gpu
-specification.
+or if multiple gpu types are specified
+\-\-tres\-bind=gres/gpu:per_task:<gpus_per_task_type_sum>. However, that can be
+overridden with an explicit \-\-tres\-bind=gres/gpu specification.
 .br
 .IP
 
@@ -2247,8 +2248,9 @@ The available trackable resources are configurable by the system
 administrator.
 .br
 \fBNOTE\fR: This option with gres/gpu or gres/shard will implicitly set
-\-\-tres\-bind=per_task:(gpu or shard)<tres_per_task>; this can be overridden
-with an explicit \-\-tres\-bind specification.
+\-\-tres\-bind=gres/[gpu|shard]:per_task:<tres_per_task>, or if multiple gpu
+types are specified \-\-tres\-bind=gres/gpu:per_task:<gpus_per_task_type_sum>.
+This can be overridden with an explicit \-\-tres\-bind specification.
 .br
 \fBNOTE\fR: Invalid TRES for \-\-tres\-per\-task include
 bb,billing,energy,fs,mem,node,pages,vmem.
