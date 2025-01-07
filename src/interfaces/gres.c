@@ -2662,15 +2662,19 @@ static int _foreach_fill_in_gres_devices_dev_id(void *x, void *arg)
 {
 	gres_device_t *gres_device = x;
 	foreach_fill_in_gres_devices_t *fill_in_gres_devices = arg;
-	char *dev_id_str = gres_device_id2str(&gres_device->dev_desc);
 
 	if (gres_device->dev_num == -1)
 		gres_device->dev_num = ++fill_in_gres_devices->max_dev_num;
-	log_flag(GRES, "%s device number %d(%s):%s",
-		 fill_in_gres_devices->config->gres_name, gres_device->dev_num,
-		 gres_device->path,
-		 dev_id_str);
-	xfree(dev_id_str);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
+		char *dev_id_str = gres_device_id2str(&gres_device->dev_desc);
+		log_flag(GRES, "%s device number %d(%s):%s",
+			 fill_in_gres_devices->config->gres_name,
+			 gres_device->dev_num,
+			 gres_device->path,
+			 dev_id_str);
+		xfree(dev_id_str);
+	}
 
 	return 0;
 }
