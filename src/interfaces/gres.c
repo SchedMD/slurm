@@ -2892,6 +2892,14 @@ extern int gres_node_config_pack(buf_t *buffer)
 		rec_cnt = list_count(gres_conf_list);
 	pack16(rec_cnt, buffer);
 	if (rec_cnt) {
+		/*
+		 * It might be tempting to convert this to slurm_pack_list,
+		 * The problem with that is how we unpack things in the function
+		 * below this. It uses 'node_name' all throughout which can not
+		 * be passed to slurm_unpack_list. This function is not called
+		 * very often (only when the slurmd registers). The efforts to
+		 * make this work are just not worth it.
+		 */
 		iter = list_iterator_create(gres_conf_list);
 		while ((gres_slurmd_conf =
 			(gres_slurmd_conf_t *) list_next(iter))) {
