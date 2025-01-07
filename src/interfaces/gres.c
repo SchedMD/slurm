@@ -2658,11 +2658,27 @@ static int _foreach_fill_in_gres_devices(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_fill_in_gres_devices_dev_id(void *x, void *arg)
+{
+	gres_device_t *gres_device = x;
+	foreach_fill_in_gres_devices_t *fill_in_gres_devices = arg;
+	char *dev_id_str = gres_device_id2str(&gres_device->dev_desc);
+
+	if (gres_device->dev_num == -1)
+		gres_device->dev_num = ++fill_in_gres_devices->max_dev_num;
+	log_flag(GRES, "%s device number %d(%s):%s",
+		 fill_in_gres_devices->config->gres_name, gres_device->dev_num,
+		 gres_device->path,
+		 dev_id_str);
+	xfree(dev_id_str);
+
+	return 0;
+}
+
 extern int gres_node_config_load(list_t *gres_conf_list,
 				 node_config_load_t *config,
 				 list_t **gres_devices)
 {
-	list_itr_t *itr;
 	foreach_fill_in_gres_devices_t fill_in_gres_devices = {
 		.config = config,
 		.gres_devices = gres_devices,
@@ -2678,23 +2694,10 @@ extern int gres_node_config_load(list_t *gres_conf_list,
 			     &fill_in_gres_devices);
 	FREE_NULL_LIST(fill_in_gres_devices.names_list);
 
-	if (*gres_devices) {
-		gres_device_t *gres_device;
-		char *dev_id_str;
-		itr = list_iterator_create(*gres_devices);
-		while ((gres_device = list_next(itr))) {
-			dev_id_str = gres_device_id2str(&gres_device->dev_desc);
-			if (gres_device->dev_num == -1)
-				gres_device->dev_num =
-					++fill_in_gres_devices.max_dev_num;
-			log_flag(GRES, "%s device number %d(%s):%s",
-				 config->gres_name, gres_device->dev_num,
-				 gres_device->path,
-				 dev_id_str);
-			xfree(dev_id_str);
-		}
-		list_iterator_destroy(itr);
-	}
+	if (*gres_devices)
+		(void) list_for_each(*gres_devices,
+				     _foreach_fill_in_gres_devices_dev_id,
+				     &fill_in_gres_devices);
 
 	return fill_in_gres_devices.rc;
 }
