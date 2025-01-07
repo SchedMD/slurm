@@ -92,6 +92,7 @@ typedef struct {
 				   void **references_ptr, data_t *dst,
 				   data_t *schemas);
 	void (*release_refs)(void *arg, void **references_ptr);
+	bool (*is_complex)(void *arg);
 } parse_funcs_t;
 
 typedef struct {
@@ -115,6 +116,7 @@ static const char *parse_syms[] = {
 	"data_parser_p_populate_schema",
 	"data_parser_p_populate_parameters",
 	"data_parser_p_release_references",
+	"data_parser_p_is_complex",
 };
 
 static plugins_t *plugins = NULL;
@@ -789,8 +791,13 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 
 	if (!data_parser_g_dump(parser, type, obj, obj_bytes, dresp) &&
 	    (data_get_type(dresp) != DATA_TYPE_NULL)) {
+		serializer_flags_t sflags = SER_FLAGS_PRETTY;
+
+		if (data_parser_g_is_complex(parser))
+			sflags |= SER_FLAGS_COMPLEX;
+
 		serialize_g_data_to_string(&out, NULL, dresp, mime_type,
-					   SER_FLAGS_PRETTY);
+					   sflags);
 	}
 
 	if (out && out[0])
@@ -954,4 +961,19 @@ extern void data_parser_g_release_references(data_parser_t *parser,
 	xassert(parser->plugin_offset < plugins->count);
 
 	return funcs->release_refs(parser->arg, references_ptr);
+}
+
+extern bool data_parser_g_is_complex(data_parser_t *parser)
+{
+	const parse_funcs_t *funcs;
+
+	if (!parser)
+		return false;
+
+	funcs = plugins->functions[parser->plugin_offset];
+
+	xassert(parser->magic == PARSE_MAGIC);
+	xassert(parser->plugin_offset < plugins->count);
+
+	return funcs->is_complex(parser->arg);
 }

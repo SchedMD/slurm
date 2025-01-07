@@ -33,6 +33,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <float.h>
 #include <limits.h>
 #include <math.h>
 #include <signal.h>
@@ -71,6 +72,11 @@
 #include "slurmdb_helpers.h"
 
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
+
+#define IS_INFINITE(x) is_overloaded_INFINITE(&(x), sizeof(x))
+#define IS_NO_VAL(x) is_overloaded_NO_VAL(&(x), sizeof(x), false)
+/* Force evaluation against (32bit) NO_VAL cast to value */
+#define IS_CAST_NO_VAL(x) is_overloaded_NO_VAL(&(x), sizeof(x), true)
 
 #define CPU_FREQ_FLAGS_BUF_SIZE 64
 
@@ -873,6 +879,63 @@ extern void check_parser_funcname(const parser_t *const parser,
 	}
 }
 #endif /* !NDEBUG */
+
+static bool is_overloaded_INFINITE(const void *ptr, const size_t bytes)
+{
+	switch (bytes) {
+	case 1:
+		return *(uint8_t *) ptr == INFINITE8;
+	case 2:
+		return *(uint16_t *) ptr == INFINITE16;
+	case 4:
+		return *(uint32_t *) ptr == INFINITE;
+	case 8:
+		return *(uint64_t *) ptr == INFINITE64;
+	case 16:
+		return (*(uint64_t *) ptr == INFINITE64) &&
+		       (*(((uint64_t *) ptr) + 1) == INFINITE64);
+	}
+
+	fatal_abort("bytes is invalid???");
+}
+
+static bool is_overloaded_NO_VAL(const void *ptr, const size_t bytes,
+				 bool cast_32bits)
+{
+	if (cast_32bits) {
+		/*
+		 * Special handling to catch when float is set with a forced
+		 * cast value of NO_VAL
+		 */
+		switch (bytes) {
+		case 4:
+			return *(uint32_t *) ptr == NO_VAL;
+		case 8:
+			return *(double *) ptr == (double) NO_VAL;
+		case 16:
+			return *(long double *) ptr == (long double) NO_VAL;
+		}
+
+		fatal_abort("bytes is invalid or too small for NO_VAL???");
+	}
+
+	switch (bytes) {
+	case 1:
+		return *(uint8_t *) ptr == NO_VAL8;
+	case 2:
+		return *(uint16_t *) ptr == NO_VAL16;
+	case 4:
+		return *(uint32_t *) ptr == NO_VAL;
+	case 8:
+		return *(uint64_t *) ptr == NO_VAL64;
+	case 16:
+		/* NOTE: Assumes big endian signed promotion */
+		return (*(uint64_t *) ptr == INFINITE64) &&
+		       (*(((uint64_t *) ptr) + 1) == NO_VAL);
+	}
+
+	fatal_abort("bytes is invalid???");
+}
 
 static int PARSE_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 			      data_t *src, args_t *args, data_t *parent_path)
@@ -2326,7 +2389,7 @@ static int PARSE_FUNC(FLOAT128)(const parser_t *const parser, void *obj,
 	xassert(sizeof(long double) * 8 == 128);
 
 	if (data_get_type(str) == DATA_TYPE_NULL)
-		*dst = (double) NO_VAL;
+		*dst = (long double) NO_VAL;
 	else if (data_convert_type(str, DATA_TYPE_FLOAT) == DATA_TYPE_FLOAT)
 		*dst = data_get_float(str);
 	else
@@ -2343,11 +2406,51 @@ static int DUMP_FUNC(FLOAT128)(const parser_t *const parser, void *obj,
 {
 	long double *src = obj;
 
-	/* see bug#9674 */
-	if (((uint32_t) *src == INFINITE) || ((uint32_t) *src == NO_VAL))
-		data_set_null(dst);
-	else
-		(void) data_set_float(dst, *src);
+	if (is_complex_mode(args)) {
+		if (IS_INFINITE(*src)) {
+			data_set_float(dst, HUGE_VAL);
+		} else if (IS_CAST_NO_VAL(*src)) {
+			data_set_null(dst);
+		} else if (*src > DBL_MAX) {
+			data_set_float(dst, HUGE_VAL);
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %Lg using +Infinity as place holder",
+				*src);
+		} else if (*src < -DBL_MAX) {
+			data_set_float(dst, -HUGE_VAL);
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %Lg using -Infinity as place holder",
+				*src);
+		} else {
+			data_set_float(dst, *src);
+		}
+	} else {
+		if (IS_INFINITE(*src) || isinf(*src)) {
+			data_set_float(dst, ((double) INFINITE64));
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for Infinity",
+				XSTRINGIFY(INFINITE64));
+		} else if (IS_CAST_NO_VAL(*src) || isnan(*src)) {
+			data_set_float(dst, ((double) NO_VAL));
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for null",
+				XSTRINGIFY(NO_VAL));
+		} else if (*src > DBL_MAX) {
+			data_set_float(dst, HUGE_VAL);
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %Lg using +Infinity as place holder",
+				*src);
+		} else if (*src < -DBL_MAX) {
+			data_set_float(dst, -HUGE_VAL);
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %Lg using -Infinity as place holder",
+				*src);
+		} else {
+			data_set_float(dst, *src);
+		}
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -2378,7 +2481,30 @@ static int DUMP_FUNC(FLOAT64)(const parser_t *const parser, void *obj,
 {
 	double *src = obj;
 
-	(void) data_set_float(dst, *src);
+	if (is_complex_mode(args)) {
+		if (IS_INFINITE(*src))
+			data_set_float(dst, HUGE_VAL);
+		else if (IS_CAST_NO_VAL(*src))
+			data_set_null(dst);
+		else
+			data_set_float(dst, *src);
+	} else {
+		if (IS_INFINITE(*src) || isinf(*src)) {
+			data_set_float(dst, ((double) INFINITE64));
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for Infinity",
+				XSTRINGIFY(INFINITE64));
+		} else if (IS_CAST_NO_VAL(*src) || isnan(*src)) {
+			data_set_float(dst, ((double) NO_VAL));
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for null",
+				XSTRINGIFY(NO_VAL));
+		} else {
+			data_set_float(dst, *src);
+		}
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -2404,9 +2530,9 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 						   parent_path)))
 			return rc;
 
-		if (value == INFINITE64)
-			*dst = (double) INFINITE;
-		else if (value == NO_VAL64)
+		if (IS_INFINITE(value))
+			*dst = (double) INFINITE64;
+		else if (IS_NO_VAL(value))
 			*dst = (double) NO_VAL;
 		else
 			*dst = value;
@@ -2810,9 +2936,9 @@ static int DUMP_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	if (*src == INFINITE64) {
+	if (IS_INFINITE(*src)) {
 		istruct.infinite = true;
-	} else if (*src == NO_VAL64) {
+	} else if (IS_NO_VAL(*src)) {
 		/* nothing to do */
 	} else {
 		istruct.set = true;
@@ -2846,11 +2972,30 @@ static int DUMP_FUNC(UINT64)(const parser_t *const parser, void *obj,
 {
 	uint64_t *src = obj;
 
-	/* Never set values of INF or NO_VAL */
-	if ((*src == NO_VAL64) || (*src == INFINITE64))
-		data_set_null(dst);
-	else
-		(void) data_set_int(dst, *src);
+	if (is_complex_mode(args)) {
+		if (IS_INFINITE(*src))
+			data_set_float(dst, HUGE_VAL);
+		else if (IS_CAST_NO_VAL(*src))
+			data_set_null(dst);
+		else
+			data_set_int(dst, *src);
+	} else {
+		if (IS_INFINITE(*src)) {
+			data_set_int(dst, INFINITE64);
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for Infinity",
+				XSTRINGIFY(INFINITE64));
+		} else if (IS_NO_VAL(*src)) {
+			data_set_int(dst, NO_VAL64);
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for null",
+				XSTRINGIFY(NO_VAL64));
+		} else {
+			data_set_int(dst, *src);
+		}
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -2884,9 +3029,30 @@ static int DUMP_FUNC(UINT32)(const parser_t *const parser, void *obj,
 {
 	uint32_t *src = obj;
 
-	log_flag(DATA, "%s: uint32_t 0x%" PRIxPTR "=%u", __func__,
-		 (uintptr_t) src, *src);
-	(void) data_set_int(dst, *src);
+	if (is_complex_mode(args)) {
+		if (IS_INFINITE(*src))
+			data_set_float(dst, HUGE_VAL);
+		else if (IS_CAST_NO_VAL(*src))
+			data_set_null(dst);
+		else
+			data_set_int(dst, *src);
+	} else {
+		if (IS_INFINITE(*src)) {
+			data_set_int(dst, INFINITE);
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for Infinity",
+				XSTRINGIFY(INFINITE));
+		} else if (IS_NO_VAL(*src)) {
+			data_set_int(dst, NO_VAL);
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for null",
+				XSTRINGIFY(NO_VAL));
+		} else {
+			data_set_int(dst, *src);
+		}
+	}
 
 	return SLURM_SUCCESS;
 }

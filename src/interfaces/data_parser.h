@@ -982,4 +982,11 @@ extern int data_parser_g_populate_parameters(data_parser_t *parser,
 extern void data_parser_g_release_references(data_parser_t *parser,
 					     void **references_ptr);
 
+/*
+ * Check if parser is configured with +complex flag active
+ * IN parser - parser to query
+ * RET True if parser is configure with +complex
+ */
+extern bool data_parser_g_is_complex(data_parser_t *parser);
+
 #endif
