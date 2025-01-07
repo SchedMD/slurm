@@ -27,6 +27,8 @@
 
 #include <check.h>
 
+#ifndef HAVE_FRONT_END
+
 diag_stats_t slurmctld_diag_stats;
 
 void *acct_db_conn = NULL;
@@ -356,10 +358,12 @@ START_TEST(test_backfill_3)
 	 */
 }
 END_TEST
+#endif
 
 int main(int argc, char *argv[])
 {
 	int number_failed = 0;
+#ifndef HAVE_FRONT_END
 	part_record_t *part_ptr = part_record_create();
 
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
@@ -429,5 +433,6 @@ int main(int argc, char *argv[])
 	}
 
 	_free_options();
+#endif
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
