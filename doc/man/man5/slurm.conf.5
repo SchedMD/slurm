@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "December 2024" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "January 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -448,13 +448,15 @@ value for this option is "YES" for Cray systems and "NO" for other system types.
 \fBAuthAltTypes\fR
 Comma\-separated list of alternative authentication plugins that the slurmctld
 will permit for communication. Acceptable values at present include
-\fIauth/jwt\fR.
+\fBauth/jwt\fR.
 
-\fBNOTE\fR: \fIauth/jwt\fR requires a jwt_hs256.key to be populated in the
-\fBStateSaveLocation\fR directory for \fBslurmctld\fR only. The jwt_hs256.key
-should only be visible to the SlurmUser and root. It is not suggested to place
-the jwt_hs256.key on any nodes but the controller running \fBslurmctld\fR.
-\fIauth/jwt\fR can be activated by the presence of the \fISLURM_JWT\fR
+\fBNOTE\fR: If \fBAuthAltParameters\fR is not used to specify a path to the
+required jwt_hs256.key then slurmctld will default to looking for it in the
+\fBStateSaveLocation\fR.
+The jwt_hs256.key should only be visible to the SlurmUser and root. It is not
+suggested to place the jwt_hs256.key on any nodes other than the machine running
+\fBslurmctld\fR and the machine running \fBslurmdbd\fR.
+\fBauth/jwt\fR can be activated by the presence of the \fISLURM_JWT\fR
 environment variable. When activated, it will override the default
 \fBAuthType\fR.
 .IP

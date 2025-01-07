@@ -89,8 +89,9 @@ option which doesn't require a cloud auth solution.</li>
 <ol>
 <li><a href="related_software.html#jwt">
     Configure and build Slurm with JWT support</a></li>
-<li>Add JWT key to controller in StateSaveLocation.
-Here is an example with the JWT key in /var/spool/slurm/statesave/:
+<li>Add the same JWT key to both the controller and slurmdbd (if used). For the
+controller only, it is recommended to put the JWT key in the StateSaveLocation.
+For example, using /var/spool/slurm/statesave/:
 <pre>
 dd if=/dev/random of=/var/spool/slurm/statesave/jwt_hs256.key bs=32 count=1
 chown slurm:slurm /var/spool/slurm/statesave/jwt_hs256.key
@@ -105,7 +106,8 @@ able to access it.
 The key file should be owned by <b>SlurmUser</b> or <b>root</b>, with
 recommended permissions of 0400. The file must not be accessible by 'other'.
 </li>
-<li>Add JWT as an alternative authentication in slurm.conf and slurmdbd.conf:
+<li>In both slurm.conf and slurmdbd.conf, add JWT as an alternative
+authentication type:
 <pre>
 AuthAltTypes=auth/jwt
 AuthAltParameters=jwt_key=/var/spool/slurm/statesave/jwt_hs256.key
@@ -298,6 +300,6 @@ b = a.decode(sys.argv[1], signing_key, algorithms=["HS256"])
 print(b)
 </pre>
 
-<p style="text-align:center;">Last modified 15 August 2024</p>
+<p style="text-align:center;">Last modified 07 January 2025</p>
 
 <!--#include virtual="footer.txt"-->

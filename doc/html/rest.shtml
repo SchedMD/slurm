@@ -159,7 +159,7 @@ invalid SLURM_JWT environment variable at startup to activate JWT authentication
 This will allow users to provide their own JWT tokens while authenticating to
 the proxy and ensuring against any possible accidental authorizations.</p>
 <p>When using JWT, it is important that <u>AuthAltTypes=auth/jwt</u> be
-configured in your slurm.conf for slurmrestd.</p>
+configured in both your slurm.conf and slurmdbd.conf for slurmrestd.</p>
 
 <h2 id="local_auth">Local Authentication
 <a class="slurm_link" href="#local_auth"></a>
@@ -203,6 +203,6 @@ internal tool</a> used for testing and training. It uses
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 16 March 2023</p>
+<p style="text-align:center;">Last modified 07 January 2025</p>
 
 <!--#include virtual="footer.txt"-->

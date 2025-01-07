@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "October 2024" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "January 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -157,8 +157,17 @@ Boolean, yes to archive transaction data, no otherwise. Default is no.
 
 .TP
 \fBAuthAltTypes\fR
-Command separated list of alternative authentication plugins that the slurmdbd
-will permit for communication.
+Comma\-separated list of alternative authentication plugins that the slurmdbd
+will permit for communication. Acceptable values at present include
+\fBauth/jwt\fR.
+
+\fBNOTE\fR: The path to the required jwt_hs256.key must be
+specified with \fBAuthAltParameters\fR. The jwt_hs256.key should only be visible
+to the SlurmUser and root. It is not suggested to place the jwt_hs256.key on any
+nodes other than the machine running \fBslurmctld\fR and the machine running
+\fBslurmdbd\fR.
+\fBauth/jwt\fR can be activated by the presence of the \fISLURM_JWT\fR
+environment variable. When activated, it will override the default
 .IP
 
 .TP
