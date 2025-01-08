@@ -5219,8 +5219,9 @@ static void _set_tres_per_task_from_sibling_opt(slurm_opt_t *opt, int optval)
 
 		/* Set cpus_per_task based off of tres_per_task */
 		if (opt->tres_per_task &&
-		    slurm_get_next_tres(&tres_type, opt->tres_per_task, &name,
-					&type, &cnt, &save_ptr)) {
+		    (slurm_get_next_tres(&tres_type, opt->tres_per_task, &name,
+					 &type, &cnt,
+					 &save_ptr) == SLURM_SUCCESS)) {
 			opt->cpus_per_task = cnt;
 			opt->cpus_set = true;
 
