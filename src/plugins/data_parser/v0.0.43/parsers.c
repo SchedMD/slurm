@@ -1336,7 +1336,7 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 			id = match->id;
 	}
 
-	if (is_complex_mode(args)) {
+	if (!id && is_complex_mode(args)) {
 		data_set_null(dst);
 		return SLURM_SUCCESS;
 	}
