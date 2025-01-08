@@ -1654,7 +1654,22 @@ extern void job_record_pack_details_common(
 	job_details_t *detail_ptr, buf_t *buffer, uint16_t protocol_version)
 {
 	xassert(detail_ptr);
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		pack_time(detail_ptr->accrue_time, buffer);
+		pack_time(detail_ptr->begin_time, buffer);
+		packstr(detail_ptr->cluster_features, buffer);
+		pack32(detail_ptr->cpu_freq_gov, buffer);
+		pack32(detail_ptr->cpu_freq_max, buffer);
+		pack32(detail_ptr->cpu_freq_min, buffer);
+		packstr(detail_ptr->dependency, buffer);
+		pack_bit_str_hex(detail_ptr->job_size_bitmap, buffer);
+		pack32(detail_ptr->nice, buffer);
+		pack16(detail_ptr->ntasks_per_node, buffer);
+		pack16(detail_ptr->ntasks_per_tres, buffer);
+		pack16(detail_ptr->requeue, buffer);
+		pack_time(detail_ptr->submit_time, buffer);
+		packstr(detail_ptr->work_dir, buffer);
+	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		pack_time(detail_ptr->accrue_time, buffer);
 		pack_time(detail_ptr->begin_time, buffer);
 		packstr(detail_ptr->cluster_features, buffer);
