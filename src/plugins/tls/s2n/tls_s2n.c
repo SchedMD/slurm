@@ -376,20 +376,32 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 {
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
-	ssize_t bytes_written;
+	ssize_t bytes_written = 0;
 
 	xassert(conn);
 
 	slurm_mutex_lock(&conn->lock);
-	if ((bytes_written = s2n_send(conn->s2n_conn, buf, n, &blocked)) < 0) {
-		error("%s: s2n_send: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
-		bytes_written = SLURM_ERROR;
+	while ((bytes_written < n) && (blocked == S2N_NOT_BLOCKED)) {
+		ssize_t w = s2n_send(conn->s2n_conn, (buf + bytes_written),
+				     (n - bytes_written), &blocked);
+
+		if (w < 0) {
+			error("%s: fd:%d->%d s2n_send: %s",
+			      __func__, conn->input_fd, conn->output_fd,
+			      s2n_strerror(s2n_errno, NULL));
+			bytes_written = SLURM_ERROR;
+			break;
+		}
+
+		bytes_written += w;
 	}
 	slurm_mutex_unlock(&conn->lock);
 
 	log_flag(TLS, "%s: send %zd. fd:%d->%d",
 		 plugin_type, bytes_written, conn->input_fd, conn->output_fd);
+
+	if (blocked == S2N_NOT_BLOCKED)
+		errno = EWOULDBLOCK;
 
 	return bytes_written;
 }
