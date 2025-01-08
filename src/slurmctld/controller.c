@@ -2389,7 +2389,7 @@ static void *_slurmctld_background(void *no_data)
 			lock_slurmctld(node_write_lock);
 			now = time(NULL);
 			last_resv_time = now;
-			if (set_node_maint_mode(false) > 0)
+			if (set_node_maint_mode() > 0)
 				queue_job_scheduler();
 			unlock_slurmctld(node_write_lock);
 		}
