@@ -411,8 +411,12 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 			/* connection closed */
 			break;
 		} else if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
-			/* busy wait until we get further data */
-			continue;
+			/*
+			 * recv() would block so consider the recv() complete
+			 * for now
+			 */
+			errno = EWOULDBLOCK;
+			break;
 		} else {
 			error("%s: s2n_recv: %s",
 			      __func__, s2n_strerror(s2n_errno, NULL));
