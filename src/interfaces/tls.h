@@ -54,7 +54,8 @@ extern bool tls_enabled(void);
 extern int tls_g_init(void);
 extern int tls_g_fini(void);
 
-extern void *tls_g_create_conn(int fd, tls_conn_mode_t mode);
+extern void *tls_g_create_conn(int input_fd, int output_fd,
+			       tls_conn_mode_t mode);
 extern void tls_g_destroy_conn(void *conn);
 
 extern ssize_t tls_g_send(void *conn, const void *buf, size_t n);

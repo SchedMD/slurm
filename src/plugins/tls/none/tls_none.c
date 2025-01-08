@@ -52,7 +52,8 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
-	int fd;
+	int input_fd;
+	int output_fd;
 } tls_conn_t;
 
 extern int init(void)
@@ -66,36 +67,42 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern tls_conn_t *tls_p_create_conn(int fd, tls_conn_mode_t tls_mode)
+extern tls_conn_t *tls_p_create_conn(int input_fd, int output_fd,
+				     tls_conn_mode_t mode)
 {
 	tls_conn_t *conn = xmalloc(sizeof(*conn));
 
-	conn->fd = fd;
+	conn->input_fd = input_fd;
+	conn->output_fd = output_fd;
 
-	log_flag(TLS, "%s: create connection. fd:%d", plugin_type, fd);
+	log_flag(TLS, "%s: create connection. fd:%d->%d",
+		 plugin_type, input_fd, output_fd);
 
 	return conn;
 }
 
 extern void tls_p_destroy_conn(tls_conn_t *conn)
 {
-	log_flag(TLS, "%s: destroy connection. fd:%d", plugin_type, conn->fd);
+	log_flag(TLS, "%s: destroy connection. fd:%d->%d",
+		 plugin_type, conn->input_fd, conn->output_fd);
 
 	xfree(conn);
 }
 
 extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 {
-	log_flag(TLS, "%s: send %zd. fd:%d", plugin_type, n, conn->fd);
+	log_flag(TLS, "%s: send %zd. fd:%d->%d",
+		 plugin_type, n, conn->input_fd, conn->output_fd);
 
-	return send(conn->fd, buf, n, 0);
+	return send(conn->output_fd, buf, n, 0);
 }
 
 extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n, int flags)
 {
-	ssize_t rc = recv(conn->fd, buf, n, 0);
+	ssize_t rc = recv(conn->input_fd, buf, n, 0);
 
-	log_flag(TLS, "%s: recv %zd. fd:%d", plugin_type, rc, conn->fd);
+	log_flag(TLS, "%s: recv %zd. fd:%d->%d",
+		 plugin_type, rc, conn->input_fd, conn->output_fd);
 
 	return rc;
 }

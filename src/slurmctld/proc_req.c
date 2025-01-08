@@ -5972,7 +5972,8 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn->version = persist_init->version;
 
 	if (!(persist_conn->tls_conn = tls_g_create_conn(persist_conn->fd,
-						         tls_mode))) {
+							 persist_conn->fd,
+							 tls_mode))) {
 		error("tls_g_create_conn() failed on persistent connection request");
 		goto end_it;
 	}

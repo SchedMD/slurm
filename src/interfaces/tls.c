@@ -56,7 +56,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t (*plugin_id);
-	void *(*create_conn)(int fd, tls_conn_mode_t mode);
+	void *(*create_conn)(int input_fd, int output_fd, tls_conn_mode_t mode);
 	void (*destroy_conn)(void *conn);
 	ssize_t (*send)(void *conn, const void *buf, size_t n);
 	ssize_t (*recv)(void *conn, void *buf, size_t n);
@@ -179,13 +179,15 @@ extern int tls_g_fini(void)
 	return rc;
 }
 
-extern void *tls_g_create_conn(int fd, tls_conn_mode_t mode)
+extern void *tls_g_create_conn(int input_fd, int output_fd,
+			       tls_conn_mode_t mode)
 {
 	int plugin_index = 0;
 	tls_wrapper_t *wrapper = NULL;
 	xassert(g_context);
 
-	log_flag(TLS, "%s: fd:%d mode:%d", __func__, fd, mode);
+	log_flag(TLS, "%s: fd:%d->%d mode:%d",
+		 __func__, input_fd, output_fd, mode);
 
 	/*
 	 * All other modes use the default plugin.
@@ -193,7 +195,7 @@ extern void *tls_g_create_conn(int fd, tls_conn_mode_t mode)
 	if (mode == TLS_CONN_NULL)
 		plugin_index = _get_plugin_index(TLS_PLUGIN_NONE);
 
-	wrapper = (*(ops[plugin_index].create_conn))(fd, mode);
+	wrapper = (*(ops[plugin_index].create_conn))(input_fd, output_fd, mode);
 
 	if (wrapper)
 		wrapper->index = plugin_index;

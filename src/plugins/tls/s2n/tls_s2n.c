@@ -68,7 +68,8 @@ static struct s2n_config *config = NULL;
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 	pthread_mutex_t lock;
-	int fd;
+	int input_fd;
+	int output_fd;
 	struct s2n_connection *s2n_conn;
 } tls_conn_t;
 
@@ -230,14 +231,15 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern void *tls_p_create_conn(int fd, tls_conn_mode_t tls_mode)
+extern void *tls_p_create_conn(int input_fd, int output_fd,
+			       tls_conn_mode_t tls_mode)
 {
 	tls_conn_t *conn;
 	s2n_mode s2n_conn_mode;
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
 
-	log_flag(TLS, "%s: create connection. fd:%d. tls mode:%d",
-		 plugin_type, fd, tls_mode);
+	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%d",
+		 plugin_type, input_fd, output_fd, tls_mode);
 
 	switch (tls_mode) {
 	case TLS_CONN_SERVER:
@@ -252,7 +254,8 @@ extern void *tls_p_create_conn(int fd, tls_conn_mode_t tls_mode)
 	}
 
 	conn = xmalloc(sizeof(*conn));
-	conn->fd = fd;
+	conn->input_fd = input_fd;
+	conn->output_fd = output_fd;
 	slurm_mutex_init(&conn->lock);
 
 	if (!(conn->s2n_conn = s2n_connection_new(s2n_conn_mode))) {
@@ -283,8 +286,13 @@ extern void *tls_p_create_conn(int fd, tls_conn_mode_t tls_mode)
 	}
 
 	/* Associate a connection with a file descriptor */
-	if (s2n_connection_set_fd(conn->s2n_conn, fd) < 0) {
-		error("%s: s2n_connection_set_fd: %s",
+	if (s2n_connection_set_read_fd(conn->s2n_conn, input_fd) < 0) {
+		error("%s: s2n_connection_set_read_fd: %s",
+		      __func__, s2n_strerror(s2n_errno, NULL));
+		goto fail;
+	}
+	if (s2n_connection_set_write_fd(conn->s2n_conn, output_fd) < 0) {
+		error("%s: s2n_connection_set_write_fd: %s",
 		      __func__, s2n_strerror(s2n_errno, NULL));
 		goto fail;
 	}
@@ -297,7 +305,8 @@ extern void *tls_p_create_conn(int fd, tls_conn_mode_t tls_mode)
 			goto fail;
 		}
 
-		if (wait_fd_readable(conn->fd, slurm_conf.msg_timeout) == -1) {
+		if (wait_fd_readable(conn->input_fd, slurm_conf.msg_timeout) ==
+		    -1) {
 			error("Problem reading socket, couldn't do s2n negotiation");
 			goto fail;
 		}
@@ -321,8 +330,8 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 
 	xassert(conn);
 
-	log_flag(TLS, "%s: destroying connection. fd:%d",
-		 plugin_type, conn->fd);
+	log_flag(TLS, "%s: destroying connection. fd:%d->%d",
+		 plugin_type, conn->input_fd, conn->output_fd);
 
 	slurm_mutex_lock(&conn->lock);
 
@@ -347,7 +356,8 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 			break;
 		}
 
-		if (wait_fd_readable(conn->fd, slurm_conf.msg_timeout) == -1) {
+		if (wait_fd_readable(conn->input_fd, slurm_conf.msg_timeout) ==
+		    -1) {
 			error("Problem reading socket, couldn't do graceful s2n shutdown");
 			break;
 		}
@@ -378,7 +388,8 @@ extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 	}
 	slurm_mutex_unlock(&conn->lock);
 
-	log_flag(TLS, "%s: send %zd. fd:%d", plugin_type, bytes_written, conn->fd);
+	log_flag(TLS, "%s: send %zd. fd:%d->%d",
+		 plugin_type, bytes_written, conn->input_fd, conn->output_fd);
 
 	return bytes_written;
 }
@@ -411,7 +422,8 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 	}
 	slurm_mutex_unlock(&conn->lock);
 
-	log_flag(TLS, "%s: recv %zd. fd:%d", plugin_type, bytes_read, conn->fd);
+	log_flag(TLS, "%s: recv %zd. fd:%d->%d",
+		 plugin_type, bytes_read, conn->input_fd, conn->output_fd);
 
 	return bytes_read;
 }
