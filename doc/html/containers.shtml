@@ -468,6 +468,14 @@ sbatch --wrap 'srun bash -c "--container $ABS_PATH_TO_BUNDLE cat /etc/*rel*"'
 </pre></li>
 </ul>
 
+<p><b>NOTE</b>: Commands run with the <code>--container</code> flag are resolved
+through PATH <i>before</i> they are sent to the container. If the container has
+a unique file structure, it may be necessary to give the full path to the
+command or specify <code>--export=NONE</code> to have the container define the
+PATH to be used:
+<pre>srun --container $ABS_PATH_TO_BUNDLE --export=NONE bash -c "cat /etc/*rel*"
+</pre></p>
+
 <h2 id="docker-scrun">Integration with Rootless Docker (Docker Engine v20.10+ & Slurm-23.02+)
 <a class="slurm_link" href="#docker-scrun"></a>
 </h2>
@@ -947,6 +955,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 24 June 2025</p>
+<p style="text-align:center;">Last modified 26 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
