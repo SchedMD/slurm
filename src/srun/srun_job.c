@@ -725,6 +725,7 @@ extern void init_srun(int argc, char **argv, log_options_t *logopt,
 			 */
 			het_job_argc -= het_job_argc_off;
 			het_job_argv += het_job_argc_off;
+			colon_cnt++;
 		} else {
 			het_job_fini = true;
 		}
@@ -1425,6 +1426,10 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 			setenvfs("SLURM_JOB_NAME=%s", opt.argv[0]);
 
 		if (opt_list) {
+			if (!colon_cnt) {
+				error("--het-group expected to be used within an HetJob allocation");
+				exit(error_exit);
+			}
 			job_resp_list = allocate_het_job_nodes();
 			if (!job_resp_list)
 				exit(error_exit);
@@ -1463,6 +1468,12 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 					 het_job_offset + 1);
 			}
 		} else {
+			if (sropt.het_grp_bits &&
+			    (bit_fls(sropt.het_grp_bits) != -1)) {
+				error("--het-group expected to be used within an HetJob allocation");
+				exit(error_exit);
+			}
+
 			if (!(resp = allocate_nodes(&opt)))
 				exit(error_exit);
 			*got_alloc = true;
