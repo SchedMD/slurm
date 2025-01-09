@@ -373,7 +373,8 @@ def test_db_clusters(slurmdb):
     assert not resp.clusters
 
 
-@pytest.fixture(scope="function")
+# TODO: Remove xfail once #50200 (t18939) is fixed
+@pytest.mark.xfail
 def test_db_users(slurmdb):
     from openapi_client.models.v0042_openapi_users_resp import V0042OpenapiUsersResp
     from openapi_client.models.v0042_assoc_short import V0042AssocShort
