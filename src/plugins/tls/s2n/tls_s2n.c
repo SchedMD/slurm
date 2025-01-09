@@ -291,6 +291,9 @@ extern int init(void)
 		return errno;
 	}
 
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS)
+		s2n_stack_traces_enabled_set(true);
+
 	return SLURM_SUCCESS;
 }
 
