@@ -185,6 +185,24 @@ static void _clear_spec_cores(job_record_t *job_ptr,
 	}
 }
 
+static int _get_task_count(job_record_t *job_ptr)
+{
+	uint32_t maxtasks;
+
+	if (job_ptr->details->num_tasks) {
+		maxtasks = job_ptr->details->num_tasks;
+	} else if (job_ptr->details->ntasks_per_node) {
+		maxtasks = job_ptr->details->ntasks_per_node *
+			   job_ptr->job_resrcs->nhosts;
+	} else {
+		maxtasks = job_ptr->job_resrcs->ncpus;
+		if (job_ptr->details->cpus_per_task > 1)
+			maxtasks /= job_ptr->details->cpus_per_task;
+	}
+
+	return maxtasks;
+}
+
 /* CPUs already selected for jobs, just distribute the tasks */
 static int _set_task_dist_internal(job_record_t *job_ptr)
 {
@@ -220,18 +238,7 @@ static int _set_task_dist_internal(job_record_t *job_ptr)
 	avail_cpus = xmalloc(i);
 	memcpy(avail_cpus, job_res->cpus, i);
 	job_res->tasks_per_node = xmalloc(i);
-	maxtasks = job_res->ncpus;
-
-	/* ncpus is already set the number of tasks if overcommit is used */
-	if (!job_ptr->details->overcommit &&
-	    (job_ptr->details->cpus_per_task > 1)) {
-		if (job_ptr->details->ntasks_per_node == 0) {
-			maxtasks = maxtasks / job_ptr->details->cpus_per_task;
-		} else {
-			maxtasks = job_ptr->details->ntasks_per_node *
-				   job_res->nhosts;
-		}
-	}
+	maxtasks = _get_task_count(job_ptr);
 
 	/*
 	 * Safe guard if the user didn't specified a lower number of
@@ -337,11 +344,8 @@ static int _compute_plane_dist(job_record_t *job_ptr, uint32_t *gres_task_limit,
 		return SLURM_ERROR;
 	}
 
-	maxtasks = job_res->ncpus;
+	maxtasks = _get_task_count(job_ptr);
 	avail_cpus = job_res->cpus;
-
-	if (job_ptr->details->cpus_per_task > 1)
-		 maxtasks = maxtasks / job_ptr->details->cpus_per_task;
 
 	if (job_ptr->details->mc_ptr)
 		plane_size = job_ptr->details->mc_ptr->plane_size;
@@ -1192,20 +1196,10 @@ static int _dist_tasks_compute_c_b(job_record_t *job_ptr,
 		vpus[n++] = node_ptr->tpc;
 	}
 
-	maxtasks = job_res->ncpus;
+	maxtasks = _get_task_count(job_ptr);
 	avail_cpus = job_res->cpus;
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
 	job_res->tasks_per_node = xmalloc(job_res->nhosts * sizeof(uint16_t));
-
-	/* ncpus is already set the number of tasks if overcommit is used */
-	if (!job_ptr->details->overcommit && (cpus_per_task > 1)) {
-		if (job_ptr->details->ntasks_per_node == 0) {
-			maxtasks = maxtasks / cpus_per_task;
-		} else {
-			maxtasks = job_ptr->details->ntasks_per_node *
-				   job_res->nhosts;
-		}
-	}
 
 	/*
 	 * Safe guard if the user didn't specified a lower number of
