@@ -236,6 +236,12 @@ typedef struct {
 	int sock_inx;
 } foreach_sock_str_t;
 
+typedef struct {
+	list_t *device_list;
+	bitstr_t *gres_bit_alloc;
+	bitstr_t *usable_gres;
+} foreach_alloc_gres_device_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -8655,6 +8661,24 @@ static int _find_device(void *x, void *key)
 	return 0;
 }
 
+static int _foreach_init_device_list(void *x, void *arg)
+{
+	gres_device_t *gres_device = x;
+	list_t **device_list = arg;
+
+	if (!*device_list)
+		*device_list = list_create(NULL);
+	gres_device->alloc = 0;
+	/*
+	 * Keep the list unique by not adding duplicates (in the
+	 * case of MPS and GPU)
+	 */
+	if (!list_find_first(*device_list, _find_device, gres_device))
+		list_append(*device_list, gres_device);
+
+	return 0;
+}
+
 static int _accumulate_gres_device(void *x, void *arg)
 {
 	gres_state_t *gres_ptr = x;
@@ -8678,15 +8702,45 @@ static int _accumulate_gres_device(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_alloc_gres_device(void *x, void *arg)
+{
+	gres_device_t *gres_device = x;
+	foreach_alloc_gres_device_t *foreach_alloc_gres_device = arg;
+	if (!bit_test(foreach_alloc_gres_device->gres_bit_alloc,
+		      gres_device->index))
+		return 0;
+
+	if (!foreach_alloc_gres_device->usable_gres ||
+	    bit_test(foreach_alloc_gres_device->usable_gres,
+		     gres_device->index)) {
+		/*
+		 * Search for the device among the unique
+		 * devices list (since two plugins could have
+		 * device records that point to the same file,
+		 * like with GPU and MPS)
+		 */
+		gres_device_t *gres_device2 = list_find_first(
+			foreach_alloc_gres_device->device_list,
+			_find_device,
+			gres_device);
+		/*
+		 * Set both, in case they point to different records
+		 */
+		gres_device->alloc = 1;
+		if (gres_device2)
+			gres_device2->alloc = 1;
+	}
+
+	return 0;
+}
+
 extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 				  uint16_t accel_bind_type, char *tres_bind_str,
 				  int local_proc_id, stepd_step_rec_t *step)
 {
 	int j;
-	list_itr_t *dev_itr;
 	bitstr_t *gres_bit_alloc = NULL;
 	uint64_t *gres_per_bit = NULL;
-	gres_device_t *gres_device;
 	list_t *gres_devices;
 	list_t *device_list = NULL;
 	bitstr_t *usable_gres = NULL;
@@ -8706,20 +8760,9 @@ extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 		}
 		if (!gres_devices || !list_count(gres_devices))
 			continue;
-		dev_itr = list_iterator_create(gres_devices);
-		while ((gres_device = list_next(dev_itr))) {
-			if (!device_list)
-				device_list = list_create(NULL);
-			gres_device->alloc = 0;
-			/*
-			 * Keep the list unique by not adding duplicates (in the
-			 * case of MPS and GPU)
-			 */
-			if (!list_find_first(device_list, _find_device,
-					     gres_device))
-				list_append(device_list, gres_device);
-		}
-		list_iterator_destroy(dev_itr);
+
+		(void) list_for_each(gres_devices, _foreach_init_device_list,
+				     &device_list);
 	}
 
 	if (!gres_list) {
@@ -8739,6 +8782,10 @@ extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 			.is_job = is_job,
 			.plugin_id = gres_context[j].plugin_id,
 		};
+		foreach_alloc_gres_device_t foreach_alloc_gres_device = {
+			.device_list = device_list,
+		};
+
 		(void) list_for_each(gres_list, _accumulate_gres_device, &arg);
 
 		if (!gres_bit_alloc)
@@ -8758,33 +8805,12 @@ extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 				     gres_per_bit, NULL) == SLURM_ERROR)
 			continue;
 
-		dev_itr = list_iterator_create(gres_devices);
-		while ((gres_device = list_next(dev_itr))) {
-			if (!bit_test(gres_bit_alloc, gres_device->index))
-				continue;
+		foreach_alloc_gres_device.gres_bit_alloc = gres_bit_alloc;
+		foreach_alloc_gres_device.usable_gres = usable_gres;
 
-			if (!usable_gres ||
-			    bit_test(usable_gres, gres_device->index)) {
-				gres_device_t *gres_device2;
-				/*
-				 * search for the device among the unique
-				 * devices list (since two plugins could have
-				 * device records that point to the same file,
-				 * like with GPU and MPS)
-				 */
-				gres_device2 = list_find_first(device_list,
-							       _find_device,
-							       gres_device);
-				/*
-				 * Set both, in case they point to different
-				 * records
-				 */
-				gres_device->alloc = 1;
-				if (gres_device2)
-					gres_device2->alloc = 1;
-			}
-		}
-		list_iterator_destroy(dev_itr);
+		(void) list_for_each(gres_devices, _foreach_alloc_gres_device,
+				     &foreach_alloc_gres_device);
+
 		FREE_NULL_BITMAP(gres_bit_alloc);
 		FREE_NULL_BITMAP(usable_gres);
 	}
