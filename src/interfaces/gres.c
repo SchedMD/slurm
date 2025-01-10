@@ -207,6 +207,11 @@ typedef struct {
 	list_t *prep_gres_list;
 } foreach_prep_build_env_t;
 
+typedef struct {
+	int node_inx;
+	char ***prep_env_ptr;
+} foreach_prep_set_env_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -7791,6 +7796,28 @@ extern list_t *gres_g_prep_build_env(list_t *job_gres_list, char *node_list)
 	return foreach_prep_build_env.prep_gres_list;
 }
 
+static int _foreach_prep_set_env(void *x, void *arg)
+{
+	gres_prep_t *gres_prep = x;
+	foreach_prep_set_env_t *foreach_prep_set_env = arg;
+	slurm_gres_context_t *gres_ctx;
+
+	if (!(gres_ctx = _find_context_by_id(gres_prep->plugin_id))) {
+		error("%s: GRES ID %u not found in context",
+		      __func__, gres_prep->plugin_id);
+		return 0;
+	}
+
+	if (!gres_ctx->ops.prep_set_env) /* No plugin to call */
+		return 0;
+
+	(*(gres_ctx->ops.prep_set_env))
+		(foreach_prep_set_env->prep_env_ptr, gres_prep,
+		 foreach_prep_set_env->node_inx);
+
+	return 0;
+}
+
 /*
  * Set environment variables as appropriate for a job's prolog or epilog based
  * GRES allocated to the job.
@@ -7802,8 +7829,10 @@ extern list_t *gres_g_prep_build_env(list_t *job_gres_list, char *node_list)
 extern void gres_g_prep_set_env(char ***prep_env_ptr,
 				list_t *prep_gres_list, int node_inx)
 {
-	list_itr_t *prep_iter;
-	gres_prep_t *gres_prep;
+	foreach_prep_set_env_t foreach_prep_set_env = {
+		.node_inx = node_inx,
+		.prep_env_ptr = prep_env_ptr,
+	};
 
 	*prep_env_ptr = NULL;
 	if (!prep_gres_list)
@@ -7812,21 +7841,8 @@ extern void gres_g_prep_set_env(char ***prep_env_ptr,
 	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
-	prep_iter = list_iterator_create(prep_gres_list);
-	while ((gres_prep = list_next(prep_iter))) {
-		slurm_gres_context_t *gres_ctx;
-		if (!(gres_ctx = _find_context_by_id(gres_prep->plugin_id))) {
-			error("%s: GRES ID %u not found in context",
-			      __func__, gres_prep->plugin_id);
-			continue;
-		}
-
-		if (!gres_ctx->ops.prep_set_env)
-			continue;	/* No plugin to call */
-		(*(gres_ctx->ops.prep_set_env))
-			(prep_env_ptr, gres_prep, node_inx);
-	}
-	list_iterator_destroy(prep_iter);
+	(void) list_for_each(prep_gres_list, _foreach_prep_set_env,
+			     &foreach_prep_set_env);
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
