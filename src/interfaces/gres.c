@@ -409,9 +409,6 @@ static int	_post_plugin_gres_conf(void *x, void *arg);
 static void *	_step_state_dup(gres_step_state_t *gres_ss);
 static void *	_step_state_dup2(gres_step_state_t *gres_ss,
 				 int job_node_index);
-static void	_step_state_log(gres_step_state_t *gres_ss,
-				slurm_step_id_t *step_id,
-				char *gres_name);
 static int	_unload_plugin(slurm_gres_context_t *gres_ctx);
 static void	_validate_slurm_conf(list_t *slurm_conf_list,
 				     slurm_gres_context_t *gres_ctx);
@@ -10431,10 +10428,12 @@ static void _step_state_log_node(gres_step_state_t *gres_ss, int i)
 	}
 }
 
-static void _step_state_log(gres_step_state_t *gres_ss,
-			    slurm_step_id_t *step_id,
-			    char *gres_name)
+static int _step_state_log(void *x, void *arg)
 {
+	gres_state_t *gres_state_step = x;
+	gres_step_state_t *gres_ss = gres_state_step->gres_data;
+	char *gres_name = gres_state_step->gres_name;
+	slurm_step_id_t *step_id = arg;
 	int i;
 
 	xassert(gres_ss);
@@ -10466,6 +10465,8 @@ static void _step_state_log(gres_step_state_t *gres_ss,
 				_step_state_log_node(gres_ss, i);
 		}
 	}
+
+	return 0;
 }
 
 /*
@@ -10477,23 +10478,16 @@ static void _step_state_log(gres_step_state_t *gres_ss,
 extern void gres_step_state_log(list_t *gres_list, uint32_t job_id,
 				uint32_t step_id)
 {
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_step;
-	slurm_step_id_t tmp_step_id;
+	slurm_step_id_t tmp_step_id = {
+		.job_id = job_id,
+		.step_het_comp = NO_VAL,
+		.step_id = step_id,
+	};
 
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
 		return;
 
-	tmp_step_id.job_id = job_id;
-	tmp_step_id.step_het_comp = NO_VAL;
-	tmp_step_id.step_id = step_id;
-
-	gres_iter = list_iterator_create(gres_list);
-	while ((gres_state_step = (gres_state_t *) list_next(gres_iter))) {
-		_step_state_log(gres_state_step->gres_data, &tmp_step_id,
-				gres_state_step->gres_name);
-	}
-	list_iterator_destroy(gres_iter);
+	(void) list_for_each(gres_list, _step_state_log, &tmp_step_id);
 }
 
 /*
