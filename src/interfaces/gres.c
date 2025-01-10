@@ -230,6 +230,12 @@ typedef struct {
 	int rc;
 } foreach_step_info_t;
 
+typedef struct {
+	char *gres_str;
+	char *sep;
+	int sock_inx;
+} foreach_sock_str_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -8245,6 +8251,51 @@ extern void gres_sock_delete(void *x)
 	}
 }
 
+static int _foreach_sock_str(void *x, void *arg)
+{
+	sock_gres_t *sock_gres = x;
+	foreach_sock_str_t *foreach_sock_str = arg;
+	char *gres_name = sock_gres->gres_state_job->gres_name;
+	gres_job_state_t *gres_js = sock_gres->gres_state_job->gres_data;
+	char *type_name = gres_js->type_name;
+
+	if (foreach_sock_str->sock_inx < 0) {
+		if (sock_gres->cnt_any_sock) {
+			if (type_name) {
+				xstrfmtcat(foreach_sock_str->gres_str,
+					   "%s%s:%s:%"PRIu64,
+					   foreach_sock_str->sep,
+					   gres_name,
+					   type_name,
+					   sock_gres->cnt_any_sock);
+			} else {
+				xstrfmtcat(foreach_sock_str->gres_str,
+					   "%s%s:%"PRIu64,
+					   foreach_sock_str->sep, gres_name,
+					   sock_gres->cnt_any_sock);
+			}
+			foreach_sock_str->sep = " ";
+		}
+		return 0;
+	}
+	if (!sock_gres->cnt_by_sock ||
+	    (sock_gres->cnt_by_sock[foreach_sock_str->sock_inx] == 0))
+		return 0;
+	if (type_name) {
+		xstrfmtcat(foreach_sock_str->gres_str, "%s%s:%s:%"PRIu64,
+			   foreach_sock_str->sep,
+			   gres_name, type_name,
+			   sock_gres->cnt_by_sock[foreach_sock_str->sock_inx]);
+	} else {
+		xstrfmtcat(foreach_sock_str->gres_str, "%s%s:%"PRIu64,
+			   foreach_sock_str->sep,
+			   gres_name,
+			   sock_gres->cnt_by_sock[foreach_sock_str->sock_inx]);
+	}
+	foreach_sock_str->sep = " ";
+	return 0;
+}
+
 /*
  * Build a string containing the GRES details for a given node and socket
  * sock_gres_list IN - List of sock_gres_t entries
@@ -8254,53 +8305,19 @@ extern void gres_sock_delete(void *x)
  */
 extern char *gres_sock_str(list_t *sock_gres_list, int sock_inx)
 {
-	list_itr_t *iter;
-	sock_gres_t *sock_gres;
-	char *gres_str = NULL, *sep = "";
+	foreach_sock_str_t foreach_sock_str = {
+		.gres_str = NULL,
+		.sep = "",
+		.sock_inx = sock_inx,
+	};
 
 	if (!sock_gres_list)
 		return NULL;
 
-	iter = list_iterator_create(sock_gres_list);
-	while ((sock_gres = (sock_gres_t *) list_next(iter))) {
-		char *gres_name = sock_gres->gres_state_job->gres_name;
-		gres_job_state_t *gres_js =
-			sock_gres->gres_state_job->gres_data;
-		char *type_name = gres_js->type_name;
+	(void) list_for_each(sock_gres_list, _foreach_sock_str,
+			     &foreach_sock_str);
 
-		if (sock_inx < 0) {
-			if (sock_gres->cnt_any_sock) {
-				if (type_name) {
-					xstrfmtcat(gres_str, "%s%s:%s:%"PRIu64,
-						   sep,
-						   gres_name,
-						   type_name,
-						   sock_gres->cnt_any_sock);
-				} else {
-					xstrfmtcat(gres_str, "%s%s:%"PRIu64,
-						   sep, gres_name,
-						   sock_gres->cnt_any_sock);
-				}
-				sep = " ";
-			}
-			continue;
-		}
-		if (!sock_gres->cnt_by_sock ||
-		    (sock_gres->cnt_by_sock[sock_inx] == 0))
-			continue;
-		if (type_name) {
-			xstrfmtcat(gres_str, "%s%s:%s:%"PRIu64, sep,
-				   gres_name, type_name,
-				   sock_gres->cnt_by_sock[sock_inx]);
-		} else {
-			xstrfmtcat(gres_str, "%s%s:%"PRIu64, sep,
-				   gres_name,
-				   sock_gres->cnt_by_sock[sock_inx]);
-		}
-		sep = " ";
-	}
-	list_iterator_destroy(iter);
-	return gres_str;
+	return foreach_sock_str.gres_str;
 }
 
 static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
