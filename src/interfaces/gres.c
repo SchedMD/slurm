@@ -212,6 +212,16 @@ typedef struct {
 	char ***prep_env_ptr;
 } foreach_prep_set_env_t;
 
+typedef struct {
+	uint32_t core_cnt;
+	int core_end_bit;
+	int core_start_bit;
+	uint32_t job_id;
+	list_t *node_gres_list;
+	char *node_name;
+	bool use_total_gres;
+} foreach_job_test_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -8135,6 +8145,41 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 	}
 }
 
+static int _foreach_job_test(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_job_test_t *foreach_job_test = arg;
+	uint32_t tmp_cnt;
+	gres_state_t *gres_state_node =
+		list_find_first(foreach_job_test->node_gres_list,
+				gres_find_id,
+				&gres_state_job->plugin_id);
+	if (!gres_state_node) {
+		/* node lack resources required by the job */
+		foreach_job_test->core_cnt = 0;
+		return -1;
+	}
+
+	tmp_cnt = _job_test(gres_state_job, gres_state_node,
+			    foreach_job_test->use_total_gres,
+			    foreach_job_test->core_start_bit,
+			    foreach_job_test->core_end_bit,
+			    foreach_job_test->job_id,
+			    foreach_job_test->node_name);
+	if (tmp_cnt != NO_VAL) {
+		if (foreach_job_test->core_cnt == NO_VAL)
+			foreach_job_test->core_cnt = tmp_cnt;
+		else
+			foreach_job_test->core_cnt =
+				MIN(tmp_cnt, foreach_job_test->core_cnt);
+	}
+
+	if (foreach_job_test->core_cnt == 0)
+		return -1;
+
+	return 0;
+}
+
 /*
  * Determine how many cores on the node can be used by this job
  * IN job_gres_list  - job's gres_list built by gres_job_state_validate()
@@ -8154,43 +8199,25 @@ extern uint32_t gres_job_test(list_t *job_gres_list, list_t *node_gres_list,
 			      int core_start_bit, int core_end_bit,
 			      uint32_t job_id, char *node_name)
 {
-	uint32_t core_cnt, tmp_cnt;
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job, *gres_state_node;
+	foreach_job_test_t foreach_job_test = {
+		.core_cnt = NO_VAL,
+		.core_end_bit = core_end_bit,
+		.core_start_bit = core_start_bit,
+		.job_id = job_id,
+		.node_gres_list = node_gres_list,
+		.node_name = node_name,
+		.use_total_gres = use_total_gres,
+	};
 
 	if (job_gres_list == NULL)
 		return NO_VAL;
 	if (node_gres_list == NULL)
 		return 0;
 
-	core_cnt = NO_VAL;
+	(void) list_for_each(job_gres_list, _foreach_job_test,
+			     &foreach_job_test);
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		gres_state_node = list_find_first(node_gres_list, gres_find_id,
-						  &gres_state_job->plugin_id);
-		if (gres_state_node == NULL) {
-			/* node lack resources required by the job */
-			core_cnt = 0;
-			break;
-		}
-
-		tmp_cnt = _job_test(gres_state_job, gres_state_node,
-				    use_total_gres, core_start_bit,
-				    core_end_bit, job_id, node_name);
-		if (tmp_cnt != NO_VAL) {
-			if (core_cnt == NO_VAL)
-				core_cnt = tmp_cnt;
-			else
-				core_cnt = MIN(tmp_cnt, core_cnt);
-		}
-
-		if (core_cnt == 0)
-			break;
-	}
-	list_iterator_destroy(job_gres_iter);
-
-	return core_cnt;
+	return foreach_job_test.core_cnt;
 }
 
 extern void gres_sock_delete(void *x)
