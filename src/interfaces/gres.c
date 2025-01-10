@@ -7659,6 +7659,21 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern int gres_prep_unpack_list(list_t **out, buf_t *buffer,
+				 uint16_t protocol_version)
+{
+	int rc = SLURM_SUCCESS;
+
+	/* We have to have gres_context_lock locked to call the unpack */
+	slurm_mutex_lock(&gres_context_lock);
+	if ((rc = slurm_unpack_list(out, _gres_prep_unpack, _prep_list_del,
+				    buffer, protocol_version)) != SLURM_SUCCESS)
+		FREE_NULL_LIST(*out);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+}
+
 /*
  * Unpack a job's allocated gres information for use by prolog/epilog
  * OUT gres_list - restored state stored by gres_prep_pack()

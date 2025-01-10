@@ -2222,8 +2222,8 @@ _pack_kill_job_msg(kill_job_msg_t * msg, buf_t *buffer, uint16_t protocol_versio
 		packstr(msg->details, buffer);
 		pack32(msg->derived_ec, buffer);
 		pack32(msg->exit_code, buffer);
-		gres_prep_pack_legacy(msg->job_gres_prep, buffer,
-				      protocol_version);
+		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
+				protocol_version);
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->job_state, buffer);
@@ -2283,8 +2283,8 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->details, buffer);
 		safe_unpack32(&tmp_ptr->derived_ec, buffer);
 		safe_unpack32(&tmp_ptr->exit_code, buffer);
-		if (gres_prep_unpack_legacy(&tmp_ptr->job_gres_prep,
-					    buffer, protocol_version))
+		if (gres_prep_unpack_list(&tmp_ptr->job_gres_prep,
+					  buffer, protocol_version))
 			goto unpack_error;
 		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
 					   protocol_version))
@@ -8488,8 +8488,8 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	xassert(msg);
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		gres_prep_pack_legacy(msg->job_gres_prep, buffer,
-				      smsg->protocol_version);
+		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
+				smsg->protocol_version);
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->uid, buffer);
@@ -8583,8 +8583,8 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		if (gres_prep_unpack_legacy(&msg->job_gres_prep, buffer,
-					    smsg->protocol_version))
+		if (gres_prep_unpack_list(&msg->job_gres_prep, buffer,
+					  smsg->protocol_version))
 			goto unpack_error;
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->het_job_id, buffer);

@@ -774,6 +774,9 @@ extern int gres_prep_pack_legacy(list_t *gres_list, buf_t *buffer,
  * OUT gres_list - restored state stored by gres_prep_pack()
  * IN/OUT buffer - location to read state from
  */
+extern int gres_prep_unpack_list(list_t **gres_list, buf_t *buffer,
+				 uint16_t protocol_version);
+
 extern int gres_prep_unpack_legacy(list_t **gres_list, buf_t *buffer,
 				   uint16_t protocol_version);
 
