@@ -10968,14 +10968,13 @@ extern void add_gres_to_list(list_t *gres_list,
 {
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	bool use_empty_first_record = false;
-	list_itr_t *itr = list_iterator_create(gres_list);
 
 	/*
 	 * If the first record already exists and has a count of 0 then
 	 * overwrite it.
 	 * This is a placeholder record created in _merge_config()
 	 */
-	gres_slurmd_conf = list_next(itr);
+	gres_slurmd_conf = list_peek(gres_list);
 	if (gres_slurmd_conf && (gres_slurmd_conf->count == 0))
 		use_empty_first_record = true;
 	else
@@ -11030,7 +11029,6 @@ extern void add_gres_to_list(list_t *gres_list,
 	gres_slurmd_conf->plugin_id = gres_build_id(gres_slurmd_conf_in->name);
 	if (!use_empty_first_record)
 		list_append(gres_list, gres_slurmd_conf);
-	list_iterator_destroy(itr);
 }
 
 extern char *gres_prepend_tres_type(const char *gres_str)
