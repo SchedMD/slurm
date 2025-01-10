@@ -383,7 +383,6 @@ static void	_get_gres_cnt(gres_node_state_t *gres_ns, char *orig_config,
 static uint64_t _get_job_gres_list_cnt(list_t *gres_list, char *gres_name,
 				       char *gres_type);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int job_node_index);
-static void	_job_state_log(gres_state_t *gres_js, uint32_t job_id);
 static int	_load_plugin(slurm_gres_context_t *gres_ctx);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
 static void	_my_stat(char *file_name);
@@ -8443,8 +8442,10 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-static void _job_state_log(gres_state_t *gres_state_job, uint32_t job_id)
+static int _job_state_log(void *x, void *arg)
 {
+	gres_state_t *gres_state_job = x;
+	uint32_t job_id = *(uint32_t *)arg;
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	char *sparse_msg = "", tmp_str[128];
 	int i;
@@ -8573,6 +8574,8 @@ static void _job_state_log(gres_state_t *gres_state_job, uint32_t job_id)
 			     gres_js->gres_cnt_step_alloc[i]);
 		}
 	}
+
+	return 0;
 }
 
 /*
@@ -8662,17 +8665,10 @@ static uint64_t _get_step_gres_list_cnt(list_t *gres_list, char *gres_name,
  */
 extern void gres_job_state_log(list_t *gres_list, uint32_t job_id)
 {
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_job;
-
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
 		return;
 
-	gres_iter = list_iterator_create(gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
-		_job_state_log(gres_state_job, job_id);
-	}
-	list_iterator_destroy(gres_iter);
+	(void) list_for_each(gres_list, _job_state_log, &job_id);
 }
 
 static int _find_device(void *x, void *key)
