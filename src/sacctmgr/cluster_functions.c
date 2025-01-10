@@ -1104,7 +1104,6 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 			return SLURM_ERROR;
 		}
 	}
-	xfree(user_name);
 
 	/* assoc_cond is set up above */
 	assoc_list = slurmdb_associations_get(db_conn, &assoc_cond);

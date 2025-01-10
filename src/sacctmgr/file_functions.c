@@ -1856,7 +1856,6 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					goto end_it;
 				}
 			}
-			xfree(user_name);
 
 			if (start_clean) {
 				slurmdb_cluster_cond_t cluster_cond;
