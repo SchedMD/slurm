@@ -363,7 +363,7 @@ static int _step_not_cleaning(void *x, void *arg)
 /*
  * _finish_step_comp - Finish deallocating and delete a non-pending step.
  */
-static int _finish_step_comp(void *x, void *args)
+static int _finish_step_comp(void *x, void *arg)
 {
 	int remaining;
 	step_record_t *step_ptr = x;

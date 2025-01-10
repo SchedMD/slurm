@@ -84,7 +84,7 @@ typedef struct {
 
 extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
 
-static int _sending_script_env(void *x, void *args)
+static int _sending_script_env(void *x, void *arg)
 {
 	dbd_id_rc_msg_t *id_ptr = x;
 	job_record_t *job_ptr;

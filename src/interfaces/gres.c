@@ -1896,10 +1896,10 @@ static void _validate_gres_conf(list_t *gres_conf_list,
  * conf_cnt->count - (in) The count of the current slurm.conf GRES record.
  * conf_cnt->type_name - (in) The type of the current slurm.conf GRES record.
  */
-static int _foreach_compare_conf_counts(void *x, void *args)
+static int _foreach_compare_conf_counts(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
-	conf_cnt_t *conf_cnt = args;
+	conf_cnt_t *conf_cnt = arg;
 
 	/* Note: plugin type filter already applied */
 	/* Check that type is the same */
@@ -1918,10 +1918,10 @@ static int _foreach_compare_conf_counts(void *x, void *args)
 	return 0;
 }
 
-static int _lite_copy_gres_slurmd_conf(void *x, void *args)
+static int _lite_copy_gres_slurmd_conf(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
-	check_conf_t *check_conf = args;
+	check_conf_t *check_conf = arg;
 	gres_slurmd_conf_t *gres_slurmd_conf_tmp;
 
 	if (gres_slurmd_conf->plugin_id != check_conf->gres_ctx->plugin_id)
@@ -1936,10 +1936,10 @@ static int _lite_copy_gres_slurmd_conf(void *x, void *args)
 	return 0;
 }
 
-static int _foreach_slurm_conf_mismatch_comp(void *x, void *args)
+static int _foreach_slurm_conf_mismatch_comp(void *x, void *arg)
 {
 	gres_state_t *gres_state_node = x;
-	check_conf_t *check_conf = args;
+	check_conf_t *check_conf = arg;
 	gres_node_state_t *gres_ns;
 	conf_cnt_t conf_cnt = { 0 };
 
@@ -1968,7 +1968,7 @@ static int _foreach_slurm_conf_mismatch_comp(void *x, void *args)
 	return 0;
 }
 
-int _print_slurm_conf_mismatch(void *x, void *args)
+int _print_slurm_conf_mismatch(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
 
@@ -2228,10 +2228,10 @@ static void _merge_gres2(merge_gres_t *merge_gres,
  * gres_ctx   - (in) Which GRES plugin we are working in.
  * cpu_cnt        - (in) A count of CPUs on the node.
  */
-static int _merge_gres(void *x, void *args)
+static int _merge_gres(void *x, void *arg)
 {
 	gres_state_t *gres_state_node = x;
-	merge_gres_t *merge_gres = args;
+	merge_gres_t *merge_gres = arg;
 	gres_node_state_t *gres_ns;
 
 	if (gres_state_node->plugin_id != merge_gres->gres_ctx->plugin_id)
@@ -3674,10 +3674,10 @@ static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
 		bit_realloc(gres_ns->gres_bit_alloc, gres_bits);
 }
 
-static int _foreach_rebuild_topo(void *x, void *args)
+static int _foreach_rebuild_topo(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
-	rebuild_topo_t *rebuild_topo = args;
+	rebuild_topo_t *rebuild_topo = arg;
 	slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
 	gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
 	int topo_cnt = rebuild_topo->topo_cnt;
@@ -3815,10 +3815,10 @@ static int _foreach_rebuild_topo(void *x, void *args)
 	return 0;
 }
 
-static int _foreach_rebuild_topo_no_cpus(void *x, void *args)
+static int _foreach_rebuild_topo_no_cpus(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
-	rebuild_topo_t *rebuild_topo = args;
+	rebuild_topo_t *rebuild_topo = arg;
 	slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
 	gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
 
@@ -3836,10 +3836,10 @@ static int _foreach_rebuild_topo_no_cpus(void *x, void *args)
 	return 0;
 }
 
-static int _foreach_add_gres_info(void *x, void *args)
+static int _foreach_add_gres_info(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
-	add_gres_info_t *add_gres_info = args;
+	add_gres_info_t *add_gres_info = arg;
 	slurm_gres_context_t *gres_ctx = add_gres_info->gres_ctx;
 	gres_node_state_t *gres_ns = add_gres_info->gres_ns;
 	uint32_t type_id;
@@ -6427,10 +6427,10 @@ static void _set_over_array(gres_state_t *gres_state,
 	return;
 }
 
-static int _foreach_merge_generic_data(void *x, void *args)
+static int _foreach_merge_generic_data(void *x, void *arg)
 {
 	gres_state_t *gres_state = x;
-	merge_generic_t *merge_generic = args;
+	merge_generic_t *merge_generic = arg;
 
 	if (merge_generic->plugin_id != gres_state->plugin_id)
 		return 0;
@@ -6495,18 +6495,18 @@ static int _merge_generic_data(
 	return rc;
 }
 
-static int _foreach_set_over_array(void *x, void *args)
+static int _foreach_set_over_array(void *x, void *arg)
 {
-	_set_over_array(x, args);
+	_set_over_array(x, arg);
 
 	return 0;
 }
 
-static int _foreach_job_state_validate(void *x, void *args)
+static int _foreach_job_state_validate(void *x, void *arg)
 {
 	gres_state_t *gres_state_job = x;
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
-	job_validate_t *job_validate = args;
+	job_validate_t *job_validate = arg;
 
 	if (_test_gres_cnt(gres_state_job, job_validate->gres_js_val) != 0) {
 		job_validate->rc = ESLURM_INVALID_GRES;
@@ -6855,7 +6855,7 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 	return job_validate.rc;
 }
 
-static int _find_gres_per_jst(void *x, void *args)
+static int _find_gres_per_jst(void *x, void *arg)
 {
 	gres_state_t *gres_state_job = x;
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
@@ -6893,7 +6893,7 @@ extern int gres_job_revalidate(list_t *gres_list)
  * This indicates the allocated GRES has a File configuration parameter and is
  * tracking individual file assignments.
  */
-static int _find_job_has_gres_bits(void *x, void *args)
+static int _find_job_has_gres_bits(void *x, void *arg)
 {
 	gres_state_t *gres_state_job = x;
 	gres_job_state_t *gres_js = gres_state_job->gres_data;;
@@ -6907,11 +6907,11 @@ static int _find_job_has_gres_bits(void *x, void *args)
 }
 
 
-static int _find_invalid_job_gres_on_node(void *x, void *args)
+static int _find_invalid_job_gres_on_node(void *x, void *arg)
 {
 	gres_state_t *gres_state_job = x;
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
-	validate_job_gres_cnt_t *validate_job_gres_cnt = args;
+	validate_job_gres_cnt_t *validate_job_gres_cnt = arg;
 	gres_state_t *gres_state_node;
 	uint32_t plugin_id;
 	int job_gres_cnt, node_gres_cnt = 0;
@@ -8488,17 +8488,21 @@ static int _find_device(void *x, void *key)
 static int _accumulate_gres_device(void *x, void *arg)
 {
 	gres_state_t *gres_ptr = x;
-	foreach_gres_accumulate_device_t *args = arg;
+	foreach_gres_accumulate_device_t *foreach_gres_accumulate_device = arg;
 
-	if (gres_ptr->plugin_id != args->plugin_id)
+	if (gres_ptr->plugin_id != foreach_gres_accumulate_device->plugin_id)
 		return 0;
 
-	if (args->is_job) {
-		_accumulate_job_gres_alloc(gres_ptr->gres_data, 0,
-					   args->gres_bit_alloc, NULL);
+	if (foreach_gres_accumulate_device->is_job) {
+		_accumulate_job_gres_alloc(
+			gres_ptr->gres_data, 0,
+			foreach_gres_accumulate_device->gres_bit_alloc, NULL);
 	} else {
-		_accumulate_step_gres_alloc(gres_ptr, args->gres_bit_alloc,
-					    NULL, args->gres_per_bit);
+		_accumulate_step_gres_alloc(
+			gres_ptr,
+			foreach_gres_accumulate_device->gres_bit_alloc,
+			NULL,
+			foreach_gres_accumulate_device->gres_per_bit);
 	}
 
 	return 0;
@@ -8559,13 +8563,13 @@ extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 	for (j = 0; j < gres_context_cnt; j++) {
 		/* We need to get a gres_bit_alloc with all the gres types
 		 * merged (accumulated) together */
-		foreach_gres_accumulate_device_t args = {
+		foreach_gres_accumulate_device_t arg = {
 			.gres_bit_alloc = &gres_bit_alloc,
 			.gres_per_bit = &gres_per_bit,
 			.is_job = is_job,
 			.plugin_id = gres_context[j].plugin_id,
 		};
-		(void) list_for_each(gres_list, _accumulate_gres_device, &args);
+		(void) list_for_each(gres_list, _accumulate_gres_device, &arg);
 
 		if (!gres_bit_alloc)
 			continue;

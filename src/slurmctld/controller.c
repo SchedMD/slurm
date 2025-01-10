@@ -2082,7 +2082,7 @@ static int _init_tres(void)
  * NOTE: the job_write_lock as well as the assoc_mgr TRES Read lock should be
  * locked before coming in here.
  */
-static int _update_job_tres(void *x, void *args)
+static int _update_job_tres(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
 
