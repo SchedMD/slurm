@@ -1210,6 +1210,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 
 	FREE_NULL_LIST(acct_list);
 	FREE_NULL_LIST(assoc_list);
+	FREE_NULL_LIST(user_list);
 	xfree(cluster_name);
 	xfree(file_name);
 	FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
