@@ -188,9 +188,12 @@ typedef struct {
 
 typedef struct {
 	bitstr_t **gres_bit_alloc;
+	uint64_t gres_cnt;
 	uint64_t **gres_per_bit;
 	bool is_job;
+	int node_inx;
 	uint32_t plugin_id;
+	bool sharing_gres_allocated;
 } foreach_gres_accumulate_device_t;
 
 typedef struct {
@@ -8350,18 +8353,48 @@ static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
 		*gres_cnt += gres_js->gres_cnt_node_alloc[node_inx];
 }
 
+static int _accumulate_gres_device(void *x, void *arg)
+{
+	gres_state_t *gres_ptr = x;
+	foreach_gres_accumulate_device_t *foreach_gres_accumulate_device = arg;
+
+	if (gres_ptr->plugin_id != foreach_gres_accumulate_device->plugin_id)
+		return 0;
+
+	if (foreach_gres_accumulate_device->is_job) {
+		_accumulate_job_gres_alloc(
+			gres_ptr->gres_data,
+			foreach_gres_accumulate_device->node_inx,
+			foreach_gres_accumulate_device->gres_bit_alloc,
+			&foreach_gres_accumulate_device->gres_cnt);
+	} else {
+		_accumulate_step_gres_alloc(
+			gres_ptr,
+			foreach_gres_accumulate_device->gres_bit_alloc,
+			&foreach_gres_accumulate_device->gres_cnt,
+			foreach_gres_accumulate_device->gres_per_bit);
+	}
+
+	/* Does job have a sharing GRES (GPU)? */
+	if (gres_id_sharing(foreach_gres_accumulate_device->plugin_id))
+		foreach_gres_accumulate_device->sharing_gres_allocated = true;
+
+	return 0;
+}
+
 /*
  * Set environment variables as required for a batch or interactive step
  */
 extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 {
 	int i;
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_job = NULL;
-	uint64_t gres_cnt = 0;
-	bitstr_t *gres_bit_alloc = NULL;
-	bool sharing_gres_allocated = false;
 	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
+	bitstr_t *gres_bit_alloc = NULL;
+	foreach_gres_accumulate_device_t foreach_gres_accumulate_device = {
+		.gres_bit_alloc = &gres_bit_alloc,
+		.is_job = true,
+		.node_inx = node_inx,
+	};
 
 	xassert(gres_context_cnt >= 0);
 
@@ -8371,21 +8404,11 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 		if (!gres_ctx->ops.job_set_env)
 			continue;	/* No plugin to call */
 		if (step->job_gres_list) {
-			gres_iter = list_iterator_create(step->job_gres_list);
-			while ((gres_state_job = list_next(gres_iter))) {
-				if (gres_state_job->plugin_id !=
-				    gres_ctx->plugin_id)
-					continue;
-				_accumulate_job_gres_alloc(
-					gres_state_job->gres_data,
-					node_inx,
-					&gres_bit_alloc,
-					&gres_cnt);
-				/* Does job have a sharing GRES (GPU)? */
-				if (gres_id_sharing(gres_ctx->plugin_id))
-					sharing_gres_allocated = true;
-			}
-			list_iterator_destroy(gres_iter);
+			foreach_gres_accumulate_device.plugin_id =
+				gres_ctx->plugin_id;
+			(void) list_for_each(step->job_gres_list,
+					     _accumulate_gres_device,
+					     &foreach_gres_accumulate_device);
 		}
 
 		/*
@@ -8395,7 +8418,7 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 		 * shared GRES, so we don't need to protect MPS/Shard from GPU.
 		 */
 		if (gres_id_shared(gres_ctx->config_flags) &&
-		    sharing_gres_allocated)
+		    foreach_gres_accumulate_device.sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
 		if ((step->flags & LAUNCH_EXT_LAUNCHER)) {
@@ -8403,16 +8426,18 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 			 * We need the step environment variables, but still
 			 * use all the job's gres.
 			 */
-			(*(gres_ctx->ops.step_set_env))(&step->env,
-							gres_bit_alloc,
-							gres_cnt,
-							flags);
+			(*(gres_ctx->ops.step_set_env))(
+				&step->env,
+				gres_bit_alloc,
+				foreach_gres_accumulate_device.gres_cnt,
+				flags);
 		} else
-			(*(gres_ctx->ops.job_set_env))(&step->env,
-						       gres_bit_alloc,
-						       gres_cnt,
-						       flags);
-		gres_cnt = 0;
+			(*(gres_ctx->ops.job_set_env))(
+				&step->env,
+				gres_bit_alloc,
+				foreach_gres_accumulate_device.gres_cnt,
+				flags);
+		foreach_gres_accumulate_device.gres_cnt = 0;
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
@@ -8675,29 +8700,6 @@ static int _foreach_init_device_list(void *x, void *arg)
 	 */
 	if (!list_find_first(*device_list, _find_device, gres_device))
 		list_append(*device_list, gres_device);
-
-	return 0;
-}
-
-static int _accumulate_gres_device(void *x, void *arg)
-{
-	gres_state_t *gres_ptr = x;
-	foreach_gres_accumulate_device_t *foreach_gres_accumulate_device = arg;
-
-	if (gres_ptr->plugin_id != foreach_gres_accumulate_device->plugin_id)
-		return 0;
-
-	if (foreach_gres_accumulate_device->is_job) {
-		_accumulate_job_gres_alloc(
-			gres_ptr->gres_data, 0,
-			foreach_gres_accumulate_device->gres_bit_alloc, NULL);
-	} else {
-		_accumulate_step_gres_alloc(
-			gres_ptr,
-			foreach_gres_accumulate_device->gres_bit_alloc,
-			NULL,
-			foreach_gres_accumulate_device->gres_per_bit);
-	}
 
 	return 0;
 }
