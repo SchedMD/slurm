@@ -60,7 +60,7 @@ int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
 	return SLURM_SUCCESS;
 }
 
-void job_claim_resv(job_record_t *job_ptr)
+void resv_replace_update(job_record_t *job_ptr)
 {
 	debug("%s %pJ", __func__, job_ptr);
 }

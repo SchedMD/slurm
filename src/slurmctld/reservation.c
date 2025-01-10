@@ -6218,12 +6218,12 @@ extern int job_test_resv_now(job_record_t *job_ptr)
 }
 
 /*
- * Note that a job is starting execution. If that job is associated with a
- * reservation having the "Replace" flag, then remove that job's nodes from
- * the reservation. Additional nodes will be added to the reservation from
+ * Note that a job is starting or finishing execution. If that job is associated
+ * with a reservation having the "Replace" flag, then remove that job's nodes
+ * from the reservation. Additional nodes will be added to the reservation from
  * those currently available.
  */
-extern void job_claim_resv(job_record_t *job_ptr)
+extern void resv_replace_update(job_record_t *job_ptr)
 {
 	slurmctld_resv_t *resv_ptr;
 
