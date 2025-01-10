@@ -222,6 +222,14 @@ typedef struct {
 	bool use_total_gres;
 } foreach_job_test_t;
 
+typedef struct {
+	void *data;
+	enum gres_step_data_type data_type;
+	uint32_t node_inx;
+	uint32_t plugin_id;
+	int rc;
+} foreach_step_info_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -10744,7 +10752,22 @@ static int _get_step_info(gres_step_state_t *gres_ss,
 	return rc;
 }
 
+static int _foreach_get_step_info(void *x, void *arg)
+{
+	gres_state_t *gres_state_step = x;
+	foreach_step_info_t *foreach_step_info = arg;
 
+	if (gres_state_step->plugin_id != foreach_step_info->plugin_id)
+		return 0;
+
+	foreach_step_info->rc = _get_step_info(gres_state_step->gres_data,
+					       foreach_step_info->node_inx,
+					       foreach_step_info->data_type,
+					       foreach_step_info->data);
+	if (foreach_step_info->rc != SLURM_SUCCESS)
+		return -1;
+	return 0;
+}
 
 /*
  * get data from a step's GRES data structure
@@ -10762,33 +10785,24 @@ extern int gres_get_step_info(list_t *step_gres_list, char *gres_name,
 			      uint32_t node_inx,
 			      enum gres_step_data_type data_type, void *data)
 {
-	int rc = ESLURM_INVALID_GRES;
-	uint32_t plugin_id;
-	list_itr_t *step_gres_iter;
-	gres_state_t *gres_state_step;
-	gres_step_state_t *gres_ss;
-
+	foreach_step_info_t foreach_step_info = {
+		.data = data,
+		.data_type = data_type,
+		.node_inx = node_inx,
+		.rc = ESLURM_INVALID_GRES,
+	};
 	if (data == NULL)
 		return EINVAL;
 	if (step_gres_list == NULL)	/* No GRES allocated */
 		return ESLURM_INVALID_GRES;
 
 	xassert(gres_context_cnt >= 0);
-	plugin_id = gres_build_id(gres_name);
+	foreach_step_info.plugin_id = gres_build_id(gres_name);
 
-	step_gres_iter = list_iterator_create(step_gres_list);
-	while ((gres_state_step = (gres_state_t *) list_next(step_gres_iter))) {
-		if (gres_state_step->plugin_id != plugin_id)
-			continue;
-		gres_ss = (gres_step_state_t *)gres_state_step->gres_data;
-		rc = _get_step_info(gres_ss, node_inx,
-				    data_type, data);
-		if (rc != SLURM_SUCCESS)
-			break;
-	}
-	list_iterator_destroy(step_gres_iter);
+	(void) list_for_each(step_gres_list, _foreach_get_step_info,
+			     &foreach_step_info);
 
-	return rc;
+	return foreach_step_info.rc;
 }
 
 extern uint32_t gres_get_autodetect_flags(void)
