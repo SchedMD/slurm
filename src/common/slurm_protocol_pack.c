@@ -2073,7 +2073,8 @@ extern int slurm_unpack_list(list_t **recv_list,
 						  protocol_version, buffer))
 			    == SLURM_ERROR)
 				goto unpack_error;
-			list_append(*recv_list, object);
+			if (object)
+				list_append(*recv_list, object);
 		}
 	}
 	return SLURM_SUCCESS;
