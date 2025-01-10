@@ -10521,80 +10521,63 @@ extern int gres_node_count(list_t *gres_list, int arr_len,
 
 	return rc;
 }
+static void _gres_device_pack(
+	void *in, uint16_t protocol_version, buf_t *buffer)
+{
+	gres_device_t *gres_device = in;
+
+	/* DON'T PACK gres_device->alloc */
+	pack32(gres_device->index, buffer);
+	pack32(gres_device->dev_num, buffer);
+	pack32(gres_device->dev_desc.type, buffer);
+	pack32(gres_device->dev_desc.major, buffer);
+	pack32(gres_device->dev_desc.minor, buffer);
+	packstr(gres_device->path, buffer);
+	packstr(gres_device->unique_id, buffer);
+}
 
 extern void gres_send_stepd(buf_t *buffer, list_t *gres_devices)
 {
-	uint32_t cnt = 0;
-	gres_device_t *gres_device;
-	list_itr_t *itr;
-
-	if (gres_devices)
-		cnt = list_count(gres_devices);
-	pack32(cnt, buffer);
-
-	if (!cnt)
-		return;
-
-	itr = list_iterator_create(gres_devices);
-	while ((gres_device = list_next(itr))) {
-		/* DON'T PACK gres_device->alloc */
-		pack32(gres_device->index, buffer);
-		pack32(gres_device->dev_num, buffer);
-		pack32(gres_device->dev_desc.type, buffer);
-		pack32(gres_device->dev_desc.major, buffer);
-		pack32(gres_device->dev_desc.minor, buffer);
-		packstr(gres_device->path, buffer);
-		packstr(gres_device->unique_id, buffer);
-	}
-	list_iterator_destroy(itr);
-
-	return;
+	slurm_pack_list(gres_devices, _gres_device_pack, buffer,
+			SLURM_PROTOCOL_VERSION);
 }
 
-extern void gres_recv_stepd(buf_t *buffer, list_t **gres_devices)
+static int _gres_device_unpack(void **object, uint16_t protocol_version,
+			       buf_t *buffer)
 {
-	uint32_t i, cnt;
 	uint32_t uint32_tmp = 0;
-	gres_device_t *gres_device = NULL;
+	gres_device_t *gres_device = xmalloc(sizeof(gres_device_t));
 
-	xassert(gres_devices);
+	safe_unpack32(&uint32_tmp, buffer);
+	gres_device->index = uint32_tmp;
+	safe_unpack32(&uint32_tmp, buffer);
+	gres_device->dev_num = uint32_tmp;
+	safe_unpack32(&uint32_tmp, buffer);
+	gres_device->dev_desc.type = uint32_tmp;
+	safe_unpack32(&uint32_tmp, buffer);
+	gres_device->dev_desc.major = uint32_tmp;
+	safe_unpack32(&uint32_tmp, buffer);
+	gres_device->dev_desc.minor = uint32_tmp;
+	safe_unpackstr(&gres_device->path, buffer);
+	safe_unpackstr(&gres_device->unique_id, buffer);
+	/* info("adding %d %s %s", gres_device->dev_num, */
+	/*      gres_device->major, gres_device->path); */
 
-	safe_unpack32(&cnt, buffer);
-	FREE_NULL_LIST(*gres_devices);
+	*object = gres_device;
 
-	if (!cnt)
-		return;
-	*gres_devices = list_create(destroy_gres_device);
-
-	for (i = 0; i < cnt; i++) {
-		gres_device = xmalloc(sizeof(gres_device_t));
-		/*
-		 * Since we are pulling from a list we need to append here
-		 * instead of push.
-		 */
-		safe_unpack32(&uint32_tmp, buffer);
-		gres_device->index = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		gres_device->dev_num = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		gres_device->dev_desc.type = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		gres_device->dev_desc.major = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		gres_device->dev_desc.minor = uint32_tmp;
-		safe_unpackstr(&gres_device->path, buffer);
-		safe_unpackstr(&gres_device->unique_id, buffer);
-		list_append(*gres_devices, gres_device);
-		/* info("adding %d %s %s", gres_device->dev_num, */
-		/*      gres_device->major, gres_device->path); */
-	}
-
-	return;
+	return SLURM_SUCCESS;
 
 unpack_error:
 	error("%s: failed", __func__);
 	destroy_gres_device(gres_device);
-	return;
+	return SLURM_ERROR;
+}
+
+extern void gres_recv_stepd(buf_t *buffer, list_t **gres_devices)
+{
+	(void) slurm_unpack_list(gres_devices, _gres_device_unpack,
+				 destroy_gres_device,
+				 buffer, SLURM_PROTOCOL_VERSION);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
