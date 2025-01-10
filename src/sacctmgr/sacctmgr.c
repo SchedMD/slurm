@@ -272,10 +272,15 @@ int main(int argc, char **argv)
 	if (local_exit_code)
 		exit_code = local_exit_code;
 	slurmdb_connection_close(&db_conn);
-	acct_storage_g_fini();
+
+#ifdef MEMORY_LEAK_DEBUG
+	log_fini();
+	slurm_fini();
+	uid_cache_clear();
 	FREE_NULL_LIST(g_qos_list);
 	FREE_NULL_LIST(g_res_list);
 	FREE_NULL_LIST(g_tres_list);
+#endif
 
 	exit(exit_code);
 }
