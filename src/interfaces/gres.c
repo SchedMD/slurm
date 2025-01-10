@@ -202,6 +202,11 @@ typedef struct {
 	int rc;
 } foreach_fill_in_gres_devices_t;
 
+typedef struct {
+	char *node_list;
+	list_t *prep_gres_list;
+} foreach_prep_build_env_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -7727,6 +7732,38 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+
+static int _foreach_prep_build_env(void *x, void *arg)
+{
+	gres_state_t *gres_ptr = x;
+	foreach_prep_build_env_t *foreach_prep_build_env = arg;
+	slurm_gres_context_t *gres_ctx;
+	gres_prep_t *gres_prep;
+
+	if (!(gres_ctx = _find_context_by_id(gres_ptr->plugin_id))) {
+		error("%s: gres not found in context. This should never happen",
+		      __func__);
+		return 0;
+	}
+
+	if (!gres_ctx->ops.prep_build_env) /* No plugin to call */
+		return 0;
+
+	gres_prep = (*(gres_ctx->ops.prep_build_env))(gres_ptr->gres_data);
+	if (!gres_prep) /* No info to add for this plugin */
+		return 0;
+
+	if (!foreach_prep_build_env->prep_gres_list)
+		foreach_prep_build_env->prep_gres_list =
+			list_create(_prep_list_del);
+
+	gres_prep->plugin_id = gres_ctx->plugin_id;
+	gres_prep->node_list = xstrdup(foreach_prep_build_env->node_list);
+	list_append(foreach_prep_build_env->prep_gres_list, gres_prep);
+
+	return 0;
+}
+
 /*
  * Build List of information needed to set job's Prolog or Epilog environment
  * variables
@@ -7737,10 +7774,9 @@ unpack_error:
  */
 extern list_t *gres_g_prep_build_env(list_t *job_gres_list, char *node_list)
 {
-	list_itr_t *gres_iter;
-	gres_state_t *gres_ptr = NULL;
-	gres_prep_t *gres_prep;
-	list_t *prep_gres_list = NULL;
+	foreach_prep_build_env_t foreach_prep_build_env = {
+		.node_list = node_list,
+	};
 
 	if (!job_gres_list)
 		return NULL;
@@ -7748,31 +7784,11 @@ extern list_t *gres_g_prep_build_env(list_t *job_gres_list, char *node_list)
 	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
-	gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_ptr = list_next(gres_iter))) {
-		slurm_gres_context_t *gres_ctx;
-		if (!(gres_ctx = _find_context_by_id(gres_ptr->plugin_id))) {
-			error("%s: gres not found in context.  This should never happen",
-			      __func__);
-			continue;
-		}
-
-		if (!gres_ctx->ops.prep_build_env)
-			continue;	/* No plugin to call */
-		gres_prep = (*(gres_ctx->ops.prep_build_env))
-			(gres_ptr->gres_data);
-		if (!gres_prep)
-			continue;	/* No info to add for this plugin */
-		if (!prep_gres_list)
-			prep_gres_list = list_create(_prep_list_del);
-		gres_prep->plugin_id = gres_ctx->plugin_id;
-		gres_prep->node_list = xstrdup(node_list);
-		list_append(prep_gres_list, gres_prep);
-	}
-	list_iterator_destroy(gres_iter);
+	(void) list_for_each(job_gres_list, _foreach_prep_build_env,
+			     &foreach_prep_build_env);
 	slurm_mutex_unlock(&gres_context_lock);
 
-	return prep_gres_list;
+	return foreach_prep_build_env.prep_gres_list;
 }
 
 /*
