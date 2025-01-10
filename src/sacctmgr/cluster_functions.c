@@ -972,7 +972,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	char *file_name = NULL;
 	char *user_name = NULL;
 	char *line = NULL;
-	int i, command_len = 0;
+	int i, command_len = 0, rc = SLURM_SUCCESS;
 	FILE *fd = NULL;
 	char *class_str = NULL;
 
@@ -1208,13 +1208,16 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	print_file_slurmdb_hierarchical_rec_list(
 		fd, slurmdb_hierarchical_rec_list, user_list, acct_list);
 
+end_it:
+	if (fd)
+		fclose(fd);
 	FREE_NULL_LIST(acct_list);
 	FREE_NULL_LIST(assoc_list);
 	FREE_NULL_LIST(user_list);
 	xfree(cluster_name);
 	xfree(file_name);
 	FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
-	fclose(fd);
-
-	return SLURM_SUCCESS;
+	if (rc != SLURM_SUCCESS)
+		exit_code = 1;
+	return rc;
 }
