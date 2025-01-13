@@ -49,6 +49,7 @@ typedef struct slurm_conf_switches {
 switch_record_t *switch_record_table = NULL;
 int switch_record_cnt = 0;
 int switch_levels = 0; /* number of switch levels */
+static bool allow_empty_switch = false;
 
 static s_p_hashtbl_t *conf_hashtbl = NULL;
 
@@ -155,12 +156,6 @@ static int _parse_switches(void **dest, slurm_parser_enum_t type,
 		_destroy_switches(s);
 		return -1;
 	}
-	if (!s->nodes && !s->switches) {
-		error("switch %s has neither child switches nor nodes",
-		      s->switch_name);
-		_destroy_switches(s);
-		return -1;
-	}
 
 	*dest = (void *)s;
 
@@ -171,6 +166,7 @@ static int _parse_switches(void **dest, slurm_parser_enum_t type,
 static int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 {
 	static s_p_options_t switch_options[] = {
+		{"AllowEmptySwitch", S_P_BOOLEAN},
 		{"SwitchName", S_P_ARRAY, _parse_switches, _destroy_switches},
 		{NULL}
 	};
@@ -187,6 +183,8 @@ static int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 		fatal("something wrong with opening/reading %s: %m",
 		      topo_conf);
 	}
+
+	s_p_get_boolean(&allow_empty_switch, "AllowEmptySwitch", conf_hashtbl);
 
 	if (s_p_get_array((void ***)&ptr, &count, "SwitchName", conf_hashtbl))
 		*ptr_array = ptr;
@@ -367,6 +365,9 @@ extern void switch_record_validate(void)
 		} else if (ptr->switches) {
 			switch_ptr->level = -1;	/* determine later */
 			switch_ptr->switches = xstrdup(ptr->switches);
+		} else if (allow_empty_switch) {
+			switch_ptr->level = 0; /* empty leaf switch */
+			switch_ptr->node_bitmap = bit_alloc(node_record_count);
 		} else {
 			fatal("Switch configuration (%s) lacks children",
 			      ptr->switch_name);
@@ -441,6 +442,8 @@ extern void switch_record_validate(void)
 			xfree(child);
 		}
 		FREE_NULL_BITMAP(switches_bitmap);
+	} else if (allow_empty_switch) {
+		switches_bitmap = bit_alloc(node_record_count);
 	} else
 		fatal("switches contain no nodes");
 
