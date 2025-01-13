@@ -213,7 +213,6 @@ extern void data_parser_p_free(args_t *args)
 
 	FREE_NULL_LIST(args->tres_list);
 	FREE_NULL_LIST(args->qos_list);
-	FREE_NULL_LIST(args->assoc_list);
 	if (args->close_db_conn)
 		slurmdb_connection_close(&args->db_conn);
 

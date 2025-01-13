@@ -1219,34 +1219,6 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-static int _find_assoc(const parser_t *const parser, slurmdb_assoc_rec_t *dst,
-		       data_t *src, slurmdb_assoc_rec_t *key, args_t *args,
-		       data_t *parent_path)
-{
-	slurmdb_assoc_rec_t *match;
-
-	if (!key->cluster)
-		key->cluster = slurm_conf.cluster_name;
-
-	match = list_find_first(args->assoc_list, (ListFindF) compare_assoc,
-				key);
-
-	if (key->cluster == slurm_conf.cluster_name)
-		key->cluster = NULL;
-
-	if (!match)
-		return parse_error(parser, args, parent_path,
-				 ESLURM_INVALID_ASSOC,
-				 "Unable to find association: %pd", src);
-
-	xassert(!dst->id || (dst->id == NO_VAL) || (dst->id == match->id));
-
-	if (!(dst->id = match->id))
-		return ESLURM_INVALID_ASSOC;
-
-	return SLURM_SUCCESS;
-}
-
 static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
@@ -1272,38 +1244,21 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 					   src);
 		/* fall through */
 	case DATA_TYPE_INT_64:
-	{
-		int rc;
-		slurmdb_assoc_rec_t key = {
-			.id = assoc->id,
-			.cluster = assoc->cluster,
-		};
-
-		if ((rc = PARSE(UINT32, key.id, src, parent_path, args)))
-			return rc;
-
-		/* treat 0 same as null */
-		if (!key.id)
-			return SLURM_SUCCESS;
-
-		return _find_assoc(parser, assoc, src, &key, args, parent_path);
-	}
+		return PARSE(UINT32, assoc->id, src, parent_path, args);
 	case DATA_TYPE_NULL:
 		return SLURM_SUCCESS;
 	case DATA_TYPE_DICT:
 	{
 		int rc;
-		slurmdb_assoc_rec_t key;
+		slurmdb_assoc_rec_t key = { 0 };
 
-		if (!data_get_dict_length(src))
-			return SLURM_SUCCESS;
+		if ((rc = PARSE(ASSOC_SHORT, key, src, parent_path, args)))
+			return rc;
 
-		slurmdb_init_assoc_rec(&key, false);
+		rc = resolve_assoc(PARSING, parser, &assoc, &key, args,
+				   parent_path, __func__, false);
 
-		if (!(rc = PARSE(ASSOC_SHORT, key, src, parent_path, args)))
-			rc = _find_assoc(parser, assoc, src, &key, args,
-					 parent_path);
-
+		assoc->id = key.id;
 		slurmdb_free_assoc_rec_members(&key);
 		return rc;
 	}
@@ -1326,22 +1281,8 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
 {
 	slurmdb_assoc_rec_t *assoc = obj;
-	uint32_t id = 0;
 
-	if (assoc->id && (assoc->id < NO_VAL)) {
-		slurmdb_assoc_rec_t *match;
-
-		if ((match = list_find_first(args->assoc_list,
-					     (ListFindF) compare_assoc, assoc)))
-			id = match->id;
-	}
-
-	if (!id && is_complex_mode(args)) {
-		data_set_null(dst);
-		return SLURM_SUCCESS;
-	}
-
-	return DUMP(UINT32, id, dst, args);
+	return DUMP(UINT32, assoc->id, dst, args);
 }
 
 static int PARSE_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
@@ -1350,25 +1291,19 @@ static int PARSE_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_job_rec_t *job = obj;
-	slurmdb_assoc_rec_t *assoc = xmalloc(sizeof(*assoc));
-	slurmdb_init_assoc_rec(assoc, false);
+	slurmdb_assoc_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t key = { 0 };
 
 	check_parser(parser);
 
-	rc = PARSE(ASSOC_SHORT, assoc, src, parent_path, args);
+	if ((rc = PARSE(ASSOC_SHORT, key, src, parent_path, args)))
+		return rc;
 
-	if (!rc) {
-		slurmdb_assoc_rec_t *match =
-			list_find_first(args->assoc_list,
-					(ListFindF) compare_assoc, assoc);
+	rc = resolve_assoc(PARSING, parser, &assoc, &key, args, parent_path,
+			   __func__, false);
 
-		if (match)
-			job->associd = match->id;
-		else
-			rc = ESLURM_INVALID_ASSOC;
-	}
-
-	slurmdb_destroy_assoc_rec(assoc);
+	job->associd = key.id;
+	slurmdb_free_assoc_rec_members(&key);
 
 	return rc;
 }
@@ -1377,31 +1312,12 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 				   data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
-	slurmdb_assoc_rec_t *assoc = NULL;
-	slurmdb_assoc_rec_t assoc_key = {
-		.cluster = job->cluster, .id = job->associd
+	slurmdb_assoc_rec_t assoc = {
+		.cluster = job->cluster,
+		.id = job->associd,
 	};
 
-	xassert(args->assoc_list);
-
-	if (!job->associd || (job->associd == NO_VAL) ||
-	    !(assoc = list_find_first(args->assoc_list,
-				      (ListFindF) compare_assoc,
-				      &assoc_key))) {
-		/*
-		 * The association is either invalid or unknown or deleted.
-		 * Since this is coming from Slurm internally, issue a warning
-		 * instead of erroring out to allow graceful dumping of the
-		 * data.
-		 */
-		on_warn(DUMPING, parser->type, args, NULL, __func__,
-			"Unknown association with id#%u. Unable to dump association.",
-			job->associd);
-		data_set_dict(dst);
-		return SLURM_SUCCESS;
-	} else {
-		return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
-	}
+	return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
 }
 
 static void _fill_job_stp(job_std_pattern_t *job_stp, slurmdb_job_rec_t *job)
@@ -9366,10 +9282,8 @@ static const parser_t PARSER_ARRAY(WCKEY_TAG_STRUCT)[] = {
 
 static const flag_bit_t PARSER_FLAG_ARRAY(NEED_PREREQS_FLAGS)[] = {
 	add_flag_equal(NEED_NONE, INFINITE16, "NONE"),
-	add_flag_bit(NEED_AUTH, "AUTH"),
 	add_flag_bit(NEED_TRES, "TRES"),
 	add_flag_bit(NEED_QOS, "QOS"),
-	add_flag_bit(NEED_ASSOC, "ASSOC"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(CR_TYPE)[] = {
@@ -10162,11 +10076,11 @@ static const parser_t parsers[] = {
 	addpsp(CONTROLLER_PING_PRIMARY, BOOL, int, NEED_NONE, "Is responding slurmctld the primary controller"),
 
 	/* Complex type parsers */
-	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
+	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_NONE, "Association ID"),
 	addpcp(JOB_STDIN, STRING, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpcp(JOB_STDOUT, STRING, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpcp(JOB_STDERR, STRING, slurmdb_job_rec_t, NEED_NONE, NULL),
-	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
+	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
 	addpcp(STEP_NODES, HOSTLIST, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_REQ_MAX, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
