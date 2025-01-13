@@ -7569,7 +7569,8 @@ be able to preempt to gain access to GRES.
 .TP
 \fBPriorityJobFactor\fR
 Partition factor used by priority/multifactor plugin in calculating job priority.
-The value may not exceed 65533.
+Defaults to 1. A value of 0 prevents this partition from adding to the job's
+priority. The value may not exceed 65533.
 Also see PriorityTier.
 .IP
 
