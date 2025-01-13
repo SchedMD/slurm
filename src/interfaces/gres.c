@@ -10362,12 +10362,12 @@ static int _get_usable_gres(int context_inx, int proc_id,
 extern void gres_g_step_set_env(stepd_step_rec_t *step)
 {
 	int i;
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_step = NULL;
-	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
-	bool sharing_gres_allocated = false;
 	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
+	foreach_gres_accumulate_device_t foreach_gres_accumulate_device = {
+		.gres_bit_alloc = &gres_bit_alloc,
+		.is_job = false,
+	};
 
 	xassert(gres_context_cnt >= 0);
 	slurm_mutex_lock(&gres_context_lock);
@@ -10381,18 +10381,10 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 				&step->env, NULL, 0, GRES_INTERNAL_FLAG_NONE);
 			continue;
 		}
-		gres_iter = list_iterator_create(step->step_gres_list);
-		while ((gres_state_step = list_next(gres_iter))) {
-			if (gres_state_step->plugin_id != gres_ctx->plugin_id)
-				continue;
-			_accumulate_step_gres_alloc(gres_state_step,
-						    &gres_bit_alloc, &gres_cnt,
-						    NULL);
-			/* Does step have a sharing GRES (GPU)? */
-			if (gres_id_sharing(gres_ctx->plugin_id))
-				sharing_gres_allocated = true;
-		}
-		list_iterator_destroy(gres_iter);
+		foreach_gres_accumulate_device.plugin_id = gres_ctx->plugin_id;
+		(void) list_for_each(step->step_gres_list,
+				     _accumulate_gres_device,
+				     &foreach_gres_accumulate_device);
 
 		/*
 		 * Do not let MPS or Shard (shared GRES) clear any envs set for
@@ -10401,12 +10393,15 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 		 * shared GRES, so we don't need to protect MPS/Shard from GPU.
 		 */
 		if (gres_id_shared(gres_ctx->config_flags) &&
-		    sharing_gres_allocated)
+		    foreach_gres_accumulate_device.sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
-		(*(gres_ctx->ops.step_set_env))(&step->env, gres_bit_alloc,
-						gres_cnt, flags);
-		gres_cnt = 0;
+		(*(gres_ctx->ops.step_set_env))(
+			&step->env,
+			gres_bit_alloc,
+			foreach_gres_accumulate_device.gres_cnt,
+			flags);
+		foreach_gres_accumulate_device.gres_cnt = 0;
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
