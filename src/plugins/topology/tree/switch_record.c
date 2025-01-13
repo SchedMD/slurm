@@ -428,9 +428,8 @@ extern void switch_record_validate(void)
 	switch_levels = 0;
 	switch_ptr = switch_record_table;
 	for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
+		xassert(switch_ptr->node_bitmap);
 		switch_levels = MAX(switch_levels, switch_ptr->level);
-		if (switch_ptr->node_bitmap == NULL)
-			error("switch %s has no nodes", switch_ptr->name);
 	}
 	if (switches_bitmap) {
 		bit_not(switches_bitmap);
