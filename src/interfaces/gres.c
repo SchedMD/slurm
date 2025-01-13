@@ -258,6 +258,14 @@ typedef struct {
 	list_t *new_gres_list;
 } foreach_state_list_dup_t;
 
+typedef struct {
+	int bitmap_size;
+	int gres_inx;
+	uint32_t plugin_id;
+	bitstr_t *task_cpus_bitmap;
+	bitstr_t *usable_gres;
+} foreach_closest_usable_gres_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -9617,6 +9625,36 @@ bitstr_t *cpu_set_to_bit_str(cpu_set_t *cpu_set, int cpu_count)
 
 }
 
+static int _foreach_closest_usable_gres(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	foreach_closest_usable_gres_t *foreach_closest_usable_gres = arg;
+
+	if (gres_slurmd_conf->plugin_id !=
+	    foreach_closest_usable_gres->plugin_id)
+		return 0;
+	if ((foreach_closest_usable_gres->gres_inx + gres_slurmd_conf->count) >
+	    foreach_closest_usable_gres->bitmap_size) {
+		error("GRES %s bitmap overflow ((%d + %"PRIu64") > %d)",
+		      gres_slurmd_conf->name,
+		      foreach_closest_usable_gres->gres_inx,
+		      gres_slurmd_conf->count,
+		      foreach_closest_usable_gres->bitmap_size);
+		return 0;
+	}
+	if (!gres_slurmd_conf->cpus_bitmap ||
+	    bit_overlap_any(gres_slurmd_conf->cpus_bitmap,
+			    foreach_closest_usable_gres->task_cpus_bitmap)) {
+		bit_nset(foreach_closest_usable_gres->usable_gres,
+			 foreach_closest_usable_gres->gres_inx,
+			 foreach_closest_usable_gres->gres_inx +
+			 gres_slurmd_conf->count - 1);
+	}
+	foreach_closest_usable_gres->gres_inx += gres_slurmd_conf->count;
+
+	return 0;
+}
+
 /*
  * Given a GRES context index, return a bitmap representing those GRES
  * which are available from the CPUs current allocated to this process.
@@ -9627,46 +9665,31 @@ static bitstr_t *_get_closest_usable_gres(uint32_t plugin_id,
 					  bitstr_t *gres_bit_alloc,
 					  cpu_set_t *task_cpu_set)
 {
-	bitstr_t *usable_gres = NULL, *task_cpus_bitmap = NULL;
-	list_itr_t *iter;
-	gres_slurmd_conf_t *gres_slurmd_conf;
-	int gres_inx = 0;
-	int bitmap_size;
+	foreach_closest_usable_gres_t foreach_closest_usable_gres = {
+		.gres_inx = 0,
+		.plugin_id = plugin_id,
+	};
 
 	if (!gres_conf_list) {
 		error("gres_conf_list is null!");
 		return NULL;
 	}
 
-	task_cpus_bitmap = cpu_set_to_bit_str(
+	foreach_closest_usable_gres.task_cpus_bitmap = cpu_set_to_bit_str(
 		task_cpu_set,
 		((gres_slurmd_conf_t *)list_peek(gres_conf_list))->cpu_cnt);
-	bitmap_size = bit_size(gres_bit_alloc);
-	usable_gres = bit_alloc(bitmap_size);
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
-		if (gres_slurmd_conf->plugin_id != plugin_id)
-			continue;
-		if ((gres_inx + gres_slurmd_conf->count) > bitmap_size) {
-			error("GRES %s bitmap overflow ((%d + %"PRIu64") > %d)",
-			      gres_slurmd_conf->name, gres_inx,
-			      gres_slurmd_conf->count, bitmap_size);
-			continue;
-		}
-		if (!gres_slurmd_conf->cpus_bitmap ||
-		    bit_overlap_any(gres_slurmd_conf->cpus_bitmap,
-				    task_cpus_bitmap)) {
-			bit_nset(usable_gres, gres_inx,
-				 gres_inx + gres_slurmd_conf->count - 1);
-		}
-		gres_inx += gres_slurmd_conf->count;
-	}
-	list_iterator_destroy(iter);
-	FREE_NULL_BITMAP(task_cpus_bitmap);
+	foreach_closest_usable_gres.bitmap_size = bit_size(gres_bit_alloc);
+	foreach_closest_usable_gres.usable_gres =
+		bit_alloc(foreach_closest_usable_gres.bitmap_size);
 
-	bit_and(usable_gres, gres_bit_alloc);
+	(void) list_for_each(gres_conf_list, _foreach_closest_usable_gres,
+			     &foreach_closest_usable_gres);
 
-	return usable_gres;
+	FREE_NULL_BITMAP(foreach_closest_usable_gres.task_cpus_bitmap);
+
+	bit_and(foreach_closest_usable_gres.usable_gres, gres_bit_alloc);
+
+	return foreach_closest_usable_gres.usable_gres;
 }
 
 
