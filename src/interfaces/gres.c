@@ -266,6 +266,16 @@ typedef struct {
 	bitstr_t *usable_gres;
 } foreach_closest_usable_gres_t;
 
+typedef struct {
+	int best_slot;
+	int gres_inx;
+	bitstr_t *gres_slots;
+	int ntasks_per_gres;
+	bool overlap;
+	uint32_t plugin_id;
+	bitstr_t *task_cpus_bitmap;
+} foreach_gres_to_task_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -9692,57 +9702,77 @@ static bitstr_t *_get_closest_usable_gres(uint32_t plugin_id,
 	return foreach_closest_usable_gres.usable_gres;
 }
 
+static int _foreach_gres_to_task(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	foreach_gres_to_task_t *foreach_gres_to_task = arg;
+	int start, end;
+
+	if (gres_slurmd_conf->plugin_id != foreach_gres_to_task->plugin_id)
+		return 0;
+
+	start = foreach_gres_to_task->gres_inx *
+		foreach_gres_to_task->ntasks_per_gres;
+	foreach_gres_to_task->gres_inx += gres_slurmd_conf->count;
+	end = foreach_gres_to_task->gres_inx *
+		foreach_gres_to_task->ntasks_per_gres;
+
+	if (!bit_set_count_range(foreach_gres_to_task->gres_slots, start, end))
+		return 0;
+
+	if (gres_slurmd_conf->cpus_bitmap) {
+		if (bit_super_set(foreach_gres_to_task->task_cpus_bitmap,
+				  gres_slurmd_conf->cpus_bitmap)) {
+			foreach_gres_to_task->best_slot = bit_ffs_from_bit(
+				foreach_gres_to_task->gres_slots, start);
+			return -1;
+		}
+
+		if (foreach_gres_to_task->overlap)
+			return 0;
+
+		if (bit_overlap_any(foreach_gres_to_task->task_cpus_bitmap,
+				    gres_slurmd_conf->cpus_bitmap)) {
+			foreach_gres_to_task->best_slot = bit_ffs_from_bit(
+				foreach_gres_to_task->gres_slots, start);
+			foreach_gres_to_task->overlap = true;
+			return 0;
+		}
+	}
+
+	if (foreach_gres_to_task->best_slot == -1)
+		foreach_gres_to_task->best_slot = bit_ffs_from_bit(
+			foreach_gres_to_task->gres_slots, start);
+
+	return 0;
+}
 
 /* Select the best available gres from gres_slots */
 static int _assign_gres_to_task(cpu_set_t *task_cpu_set, int ntasks_per_gres,
 				bitstr_t *gres_slots, uint32_t plugin_id)
 {
-	gres_slurmd_conf_t *gres_slurmd_conf;
-	int start, end, gres_inx = 0, best_slot = -1;
-	bool overlap = false;
-	bitstr_t *task_cpus_bitmap = cpu_set_to_bit_str(
-		task_cpu_set,
-		((gres_slurmd_conf_t *)list_peek(gres_conf_list))->cpu_cnt);
-	list_itr_t *iter = list_iterator_create(gres_conf_list);
+	foreach_gres_to_task_t foreach_gres_to_task = {
+		.best_slot = -1,
+		.gres_inx = 0,
+		.gres_slots = gres_slots,
+		.ntasks_per_gres = ntasks_per_gres,
+		.overlap = false,
+		.plugin_id = plugin_id,
+		.task_cpus_bitmap = cpu_set_to_bit_str(
+			task_cpu_set,
+			((gres_slurmd_conf_t *)list_peek(gres_conf_list))->
+			cpu_cnt),
+	};
 
-	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
-		if (gres_slurmd_conf->plugin_id != plugin_id)
-			continue;
+	(void) list_for_each(gres_conf_list, _foreach_gres_to_task,
+			     &foreach_gres_to_task);
+	FREE_NULL_BITMAP(foreach_gres_to_task.task_cpus_bitmap);
 
-		start = gres_inx * ntasks_per_gres;
-		gres_inx += gres_slurmd_conf->count;
-		end = gres_inx * ntasks_per_gres;
-
-		if (!bit_set_count_range(gres_slots, start, end))
-			continue;
-
-		if (gres_slurmd_conf->cpus_bitmap) {
-			if (bit_super_set(task_cpus_bitmap,
-					  gres_slurmd_conf->cpus_bitmap)) {
-				best_slot = bit_ffs_from_bit(gres_slots, start);
-				break;
-			}
-
-			if (overlap)
-				continue;
-
-			if (bit_overlap_any(task_cpus_bitmap,
-					    gres_slurmd_conf->cpus_bitmap)) {
-				best_slot = bit_ffs_from_bit(gres_slots, start);
-				overlap = true;
-				continue;
-			}
-		}
-
-		if (best_slot == -1)
-			best_slot = bit_ffs_from_bit(gres_slots, start);
-	}
-	list_iterator_destroy(iter);
-	FREE_NULL_BITMAP(task_cpus_bitmap);
-
-	if (best_slot != -1) {
-		bit_clear(gres_slots, best_slot);
-		return (best_slot / ntasks_per_gres);
+	if (foreach_gres_to_task.best_slot != -1) {
+		bit_clear(foreach_gres_to_task.gres_slots,
+			  foreach_gres_to_task.best_slot);
+		return (foreach_gres_to_task.best_slot /
+			foreach_gres_to_task.ntasks_per_gres);
 	} else {
 		log_flag(GRES, "%s Can't find free slot", __func__);
 		return -1;
