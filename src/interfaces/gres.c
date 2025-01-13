@@ -9552,24 +9552,24 @@ static int _foreach_step_count(void *x, void *arg)
  */
 extern uint64_t gres_step_count(list_t *step_gres_list, char *gres_name)
 {
-	int i;
 	foreach_gres_list_cnt_t foreach_gres_list_cnt = {
 		.gres_cnt = NO_VAL64,
 	};
 
-	if (!step_gres_list)
-		return foreach_gres_list_cnt.gres_cnt;
-
-	slurm_mutex_lock(&gres_context_lock);
-	for (i = 0; i < gres_context_cnt; i++) {
-		if (xstrcmp(gres_context[i].gres_name, gres_name))
-			continue;
-		foreach_gres_list_cnt.plugin_id = gres_context[i].plugin_id;
-		(void) list_for_each(step_gres_list, _foreach_step_count,
-				     &foreach_gres_list_cnt);
-		break;
+	if (step_gres_list) {
+		slurm_mutex_lock(&gres_context_lock);
+		for (int i = 0; i < gres_context_cnt; i++) {
+			if (!xstrcmp(gres_context[i].gres_name, gres_name)) {
+				foreach_gres_list_cnt.plugin_id =
+					gres_context[i].plugin_id;
+				(void) list_for_each(step_gres_list,
+						     _foreach_step_count,
+						     &foreach_gres_list_cnt);
+				break;
+			}
+		}
+		slurm_mutex_unlock(&gres_context_lock);
 	}
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return foreach_gres_list_cnt.gres_cnt;
 }
