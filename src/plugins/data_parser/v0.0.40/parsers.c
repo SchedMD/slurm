@@ -1044,6 +1044,16 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+/* Force loading of associations via NEED_ASSOC */
+static int _load_all_assocs(const parser_t *const parser, args_t *args)
+{
+	parser_t p = *parser;
+
+	p.needs |= NEED_ASSOC;
+
+	return load_prereqs(PARSING, &p, args);
+}
+
 static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
@@ -1069,7 +1079,21 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				args)))
 			goto cleanup;
 
-		if ((match = list_find_first(args->assoc_list,
+		if (!args->assoc_list) {
+			/*
+			 * WARNING: This is a work around to always load the
+			 * associations when resolving an Association via
+			 * PARSE_FUNC(ASSOC_ID)() without having to rewrite the
+			 * association lookup code in slurmdb_helpers.[ch].
+			 */
+			int rc;
+
+			if ((rc = _load_all_assocs(parser, args)))
+				return rc;
+		}
+
+		if (args->assoc_list &&
+		    (match = list_find_first(args->assoc_list,
 					     (ListFindF) compare_assoc,
 					     &assoc_short))) {
 			assoc->id = match->id;
@@ -1091,7 +1115,8 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	if (assoc->id && (assoc->id < NO_VAL)) {
 		slurmdb_assoc_rec_t *match;
 
-		if ((match = list_find_first(args->assoc_list,
+		if (args->assoc_list &&
+		    (match = list_find_first(args->assoc_list,
 					     (ListFindF) compare_assoc, assoc)))
 			return DUMP(ASSOC_SHORT_PTR, match, dst, args);
 	}
@@ -1143,10 +1168,19 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 
 	xassert(args->assoc_list);
 
-	if (!job->associd || (job->associd == NO_VAL) ||
-	    !(assoc = list_find_first(args->assoc_list,
-				      (ListFindF) compare_assoc,
-				      &assoc_key))) {
+	if (job->associd && (job->associd != NO_VAL)) {
+		int rc;
+
+		if ((rc = _load_all_assocs(parser, args)))
+			return rc;
+
+		if (args->assoc_list)
+			assoc = list_find_first(args->assoc_list,
+						(ListFindF) compare_assoc,
+						&assoc_key);
+	}
+
+	if (!assoc) {
 		/*
 		 * The association is either invalid or unknown or deleted.
 		 * Since this is coming from Slurm internally, issue a warning
@@ -1158,9 +1192,9 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 			job->associd);
 		data_set_dict(dst);
 		return SLURM_SUCCESS;
-	} else {
-		return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
 	}
+
+	return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
 }
 
 static int _foreach_resolve_tres_id(void *x, void *arg)
@@ -9705,8 +9739,8 @@ static const parser_t parsers[] = {
 	addpsp(JOB_DESC_MSG_CRON_ENTRY, CRON_ENTRY_PTR, cron_entry_t *, NEED_NONE, "crontab entry"),
 
 	/* Complex type parsers */
-	addpcp(ASSOC_ID, ASSOC_SHORT, slurmdb_assoc_rec_t, NEED_ASSOC, "Association ID"),
-	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
+	addpcp(ASSOC_ID, ASSOC_SHORT, slurmdb_assoc_rec_t, NEED_NONE, "Association ID"),
+	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
 	addpcp(STEP_NODES, HOSTLIST, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_REQ_MAX, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
