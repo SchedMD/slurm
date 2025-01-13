@@ -245,6 +245,14 @@ typedef struct {
 	bitstr_t *usable_gres;
 } foreach_alloc_gres_device_t;
 
+typedef struct {
+	bool filter_type;
+	uint64_t gres_cnt;
+	char *gres_type;
+	bool is_job;
+	uint32_t plugin_id;
+} foreach_gres_list_cnt_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -8575,6 +8583,42 @@ static int _job_state_log(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_gres_list_cnt(void *x, void *arg)
+{
+	gres_state_t *gres_state_ptr = x;
+	foreach_gres_list_cnt_t *foreach_gres_list_cnt = arg;
+	uint64_t total_gres;
+	void *type_name;
+
+	if (gres_state_ptr->plugin_id != foreach_gres_list_cnt->plugin_id)
+		return 0;
+
+	if (foreach_gres_list_cnt->is_job) {
+		gres_job_state_t *gres_js = gres_state_ptr->gres_data;
+		type_name = gres_js->type_name;
+		total_gres = gres_js->total_gres;
+	} else {
+		gres_step_state_t *gres_ss = gres_state_ptr->gres_data;
+		type_name = gres_ss->type_name;
+		total_gres = gres_ss->total_gres;
+	}
+
+	/* If we are filtering on GRES type, ignore other types */
+	if (foreach_gres_list_cnt->filter_type &&
+	    xstrcasecmp(foreach_gres_list_cnt->gres_type, type_name))
+		return 0;
+
+	if ((total_gres == NO_VAL64) || (total_gres == 0))
+		return 0;
+
+	if (foreach_gres_list_cnt->gres_cnt == NO_VAL64)
+		foreach_gres_list_cnt->gres_cnt = total_gres;
+	else
+		foreach_gres_list_cnt->gres_cnt += total_gres;
+
+	return 0;
+}
+
 /*
  * Extract from the job/step gres_list the count of GRES of the specified name
  * and (optionally) type. If no type is specified, then the count will include
@@ -8589,58 +8633,24 @@ static int _job_state_log(void *x, void *arg)
 static uint64_t _get_gres_list_cnt(list_t *gres_list, char *gres_name,
 				   char *gres_type, bool is_job)
 {
-	uint64_t gres_val = NO_VAL64;
-	uint32_t plugin_id;
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_ptr;
-	bool filter_type;
+	foreach_gres_list_cnt_t foreach_gres_list_cnt = {
+		.gres_cnt = NO_VAL64,
+		.gres_type = gres_type,
+		.is_job = is_job,
+	};
 
 	if ((gres_list == NULL) || (list_count(gres_list) == 0))
-		return gres_val;
+		return foreach_gres_list_cnt.gres_cnt;
 
-	plugin_id = gres_build_id(gres_name);
+	foreach_gres_list_cnt.plugin_id = gres_build_id(gres_name);
 
 	if (gres_type && (gres_type[0] != '\0'))
-		filter_type = true;
-	else
-		filter_type = false;
+		foreach_gres_list_cnt.filter_type = true;
 
-	gres_iter = list_iterator_create(gres_list);
-	while ((gres_state_ptr = list_next(gres_iter))) {
-		uint64_t total_gres;
-		void *type_name;
+	(void) list_for_each(gres_list, _foreach_gres_list_cnt,
+			     &foreach_gres_list_cnt);
 
-		if (gres_state_ptr->plugin_id != plugin_id)
-			continue;
-
-		if (is_job) {
-			gres_job_state_t *gres_js =
-				(gres_job_state_t *)gres_state_ptr->gres_data;
-			type_name = gres_js->type_name;
-			total_gres = gres_js->total_gres;
-		} else {
-			gres_step_state_t *gres_ss =
-				(gres_step_state_t *)gres_state_ptr->gres_data;
-			type_name = gres_ss->type_name;
-			total_gres = gres_ss->total_gres;
-		}
-
-		/* If we are filtering on GRES type, ignore other types */
-		if (filter_type &&
-		    xstrcasecmp(gres_type, type_name))
-			continue;
-
-		if ((total_gres == NO_VAL64) || (total_gres == 0))
-			continue;
-
-		if (gres_val == NO_VAL64)
-			gres_val = total_gres;
-		else
-			gres_val += total_gres;
-	}
-	list_iterator_destroy(gres_iter);
-
-	return gres_val;
+	return foreach_gres_list_cnt.gres_cnt;
 }
 
 static uint64_t _get_job_gres_list_cnt(list_t *gres_list, char *gres_name,
