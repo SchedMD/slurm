@@ -286,7 +286,7 @@ extern void block_record_validate(void)
 		}
 	}
 	if (!bblock_node_cnt)
-		fatal("Block not contains any nodes");
+		fatal("Blocks do not contain any nodes and the BlockSizes are not set");
 	if (blocks_nodes_bitmap) {
 		i = bit_clear_count(blocks_nodes_bitmap);
 		if (i > 0) {
@@ -294,7 +294,7 @@ extern void block_record_validate(void)
 			bitstr_t *tmp_bitmap = bit_copy(blocks_nodes_bitmap);
 			bit_not(tmp_bitmap);
 			tmp_nodes = bitmap2node_name(tmp_bitmap);
-			warning("blocks lack access to %d nodes: %s",
+			warning("Blocks lack access to %d nodes: %s",
 				i, tmp_nodes);
 			xfree(tmp_nodes);
 			FREE_NULL_BITMAP(tmp_bitmap);
@@ -303,7 +303,7 @@ extern void block_record_validate(void)
 		blocks_nodes_bitmap = bit_alloc(node_record_count);
 		warning("Blocks do not contain any nodes");
 	} else
-		fatal("blocks contain no nodes");
+		fatal("Blocks do not contain any nodes");
 
 	if (invalid_hl) {
 		buf = hostlist_ranged_string_xmalloc(invalid_hl);
