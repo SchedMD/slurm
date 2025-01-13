@@ -972,7 +972,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	char *file_name = NULL;
 	char *user_name = NULL;
 	char *line = NULL;
-	int i, command_len = 0;
+	int i, command_len = 0, rc = SLURM_SUCCESS;
 	FILE *fd = NULL;
 	char *class_str = NULL;
 
@@ -1014,10 +1014,9 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	}
 
 	if (!cluster_name) {
-		exit_code = 1;
+		rc = SLURM_ERROR;
 		fprintf(stderr, " We need a cluster to dump.\n");
-		xfree(file_name);
-		return SLURM_ERROR;
+		goto end_it;
 	} else {
 		list_t *temp_list = NULL;
 		slurmdb_cluster_cond_t cluster_cond;
@@ -1030,24 +1029,20 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 		temp_list = slurmdb_clusters_get(db_conn, &cluster_cond);
 		FREE_NULL_LIST(cluster_cond.cluster_list);
 		if (!temp_list) {
-			exit_code = 1;
+			rc = SLURM_ERROR;
 			fprintf(stderr,
 				" Problem getting clusters from database.  "
 				"Contact your admin.\n");
-			xfree(cluster_name);
-			xfree(file_name);
-			return SLURM_ERROR;
+			goto end_it;
 		}
 
 		cluster_rec = list_peek(temp_list);
 		if (!cluster_rec) {
-			exit_code = 1;
+			rc = SLURM_ERROR;
 			fprintf(stderr, " Cluster %s doesn't exist.\n",
 				cluster_name);
-			xfree(cluster_name);
-			xfree(file_name);
 			FREE_NULL_LIST(temp_list);
-			return SLURM_ERROR;
+			goto end_it;
 		}
 		class_str = get_classification_str(cluster_rec->classification);
 		FREE_NULL_LIST(temp_list);
@@ -1082,47 +1077,34 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	/* make sure this person running is an admin */
 	user_name = uid_to_string_cached(my_uid);
 	if (!(user = sacctmgr_find_user_from_list(user_list, user_name))) {
-		exit_code = 1;
+		rc = SLURM_ERROR;
 		fprintf(stderr, " Your uid (%u) is not in the "
 			"accounting system, can't dump cluster.\n", my_uid);
 		FREE_NULL_LIST(assoc_cond.cluster_list);
-		xfree(cluster_name);
-		xfree(file_name);
-		FREE_NULL_LIST(user_list);
-		return SLURM_ERROR;
-
+		goto end_it;
 	} else {
 		if ((my_uid != slurm_conf.slurm_user_id) && (my_uid != 0)
 		    && user->admin_level < SLURMDB_ADMIN_SUPER_USER) {
-			exit_code = 1;
+			rc = SLURM_ERROR;
 			fprintf(stderr, " Your user does not have sufficient "
 				"privileges to dump clusters.\n");
 			FREE_NULL_LIST(assoc_cond.cluster_list);
-			xfree(cluster_name);
-			xfree(file_name);
-			FREE_NULL_LIST(user_list);
-			return SLURM_ERROR;
+			goto end_it;
 		}
 	}
-	xfree(user_name);
 
 	/* assoc_cond is set up above */
 	assoc_list = slurmdb_associations_get(db_conn, &assoc_cond);
 	FREE_NULL_LIST(assoc_cond.cluster_list);
 	if (!assoc_list) {
-		exit_code = 1;
+		rc = SLURM_ERROR;
 		fprintf(stderr, " Problem with query.\n");
-		xfree(cluster_name);
-		xfree(file_name);
-		return SLURM_ERROR;
+		goto end_it;
 	} else if (!list_count(assoc_list)) {
-		exit_code = 1;
+		rc = SLURM_ERROR;
 		fprintf(stderr, " Cluster %s returned nothing.\n",
 			cluster_name);
-		FREE_NULL_LIST(assoc_list);
-		xfree(cluster_name);
-		xfree(file_name);
-		return SLURM_ERROR;
+		goto end_it;
 	}
 
 	slurmdb_hierarchical_rec_list = slurmdb_get_acct_hierarchical_rec_list(
@@ -1133,12 +1115,8 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	if ((fd = fopen(file_name,"w")) == NULL) {
 		fprintf(stderr, "Can't open file %s, %s\n", file_name,
 			slurm_strerror(errno));
-		FREE_NULL_LIST(acct_list);
-		FREE_NULL_LIST(assoc_list);
-		xfree(cluster_name);
-		xfree(file_name);
-		FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
 	/* Add header */
@@ -1169,14 +1147,9 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 		    "# User - 'lipari':MaxTRESPerJob=node=2:MaxJobs=3:"
 		    "MaxTRESMinsPerJob=cpu=4:FairShare=1:"
 		    "MaxWallDurationPerJob=1\n") < 0) {
-		exit_code = 1;
+		rc = SLURM_ERROR;
 		fprintf(stderr, "Can't write to file");
-		FREE_NULL_LIST(acct_list);
-		FREE_NULL_LIST(assoc_list);
-		xfree(cluster_name);
-		xfree(file_name);
-		FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
-		return SLURM_ERROR;
+		goto end_it;
 	}
 
 	line = xstrdup_printf("Cluster - '%s'", cluster_name);
@@ -1193,15 +1166,10 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 		print_file_add_limits_to_line(&line, assoc);
 
 	if (fprintf(fd, "%s\n", line) < 0) {
-		exit_code = 1;
+		rc = SLURM_ERROR;
 		fprintf(stderr, " Can't write to file");
-		FREE_NULL_LIST(acct_list);
-		FREE_NULL_LIST(assoc_list);
-		xfree(cluster_name);
-		xfree(file_name);
 		xfree(line);
-		FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
-		return SLURM_ERROR;
+		goto end_it;
 	}
 	info("%s", line);
 	xfree(line);
@@ -1209,12 +1177,16 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	print_file_slurmdb_hierarchical_rec_list(
 		fd, slurmdb_hierarchical_rec_list, user_list, acct_list);
 
+end_it:
+	if (fd)
+		fclose(fd);
 	FREE_NULL_LIST(acct_list);
 	FREE_NULL_LIST(assoc_list);
+	FREE_NULL_LIST(user_list);
 	xfree(cluster_name);
 	xfree(file_name);
 	FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
-	fclose(fd);
-
-	return SLURM_SUCCESS;
+	if (rc != SLURM_SUCCESS)
+		exit_code = 1;
+	return rc;
 }
