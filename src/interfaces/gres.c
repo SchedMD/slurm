@@ -10414,13 +10414,14 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 {
 	int i;
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_step = NULL;
 	bitstr_t *usable_gres = NULL;
-	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
 	uint64_t *gres_per_bit = NULL;
-	bool sharing_gres_allocated = false;
+	foreach_gres_accumulate_device_t foreach_gres_accumulate_device = {
+		.gres_bit_alloc = &gres_bit_alloc,
+		.gres_per_bit = &gres_per_bit,
+		.is_job = false,
+	};
 
 	if (step->accel_bind_type)
 		_parse_accel_bind_type(step->accel_bind_type, step->tres_bind);
@@ -10439,19 +10440,11 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 				GRES_INTERNAL_FLAG_NONE);
 			continue;
 		}
+		foreach_gres_accumulate_device.plugin_id = gres_ctx->plugin_id;
+		(void) list_for_each(step->step_gres_list,
+				     _accumulate_gres_device,
+				     &foreach_gres_accumulate_device);
 
-
-		gres_iter = list_iterator_create(step->step_gres_list);
-		while ((gres_state_step = list_next(gres_iter))) {
-			if (gres_state_step->plugin_id != gres_ctx->plugin_id)
-				continue;
-			_accumulate_step_gres_alloc(gres_state_step,
-						    &gres_bit_alloc, &gres_cnt,
-						    &gres_per_bit);
-			/* Does task have a sharing GRES (GPU)? */
-			if (gres_id_sharing(gres_ctx->plugin_id))
-				sharing_gres_allocated = true;
-		}
 		if (_get_usable_gres(i, local_proc_id, step->tres_bind,
 				     &usable_gres, gres_bit_alloc, false, step,
 				     gres_per_bit, &flags) == SLURM_ERROR) {
@@ -10460,8 +10453,6 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 			continue;
 		}
 
-		list_iterator_destroy(gres_iter);
-
 		/*
 		 * Do not let MPS or Shard (shared GRES) clear any envs set for
 		 * a GPU (sharing GRES) when a GPU is allocated but an
@@ -10469,13 +10460,15 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 		 * shared GRES, so we don't need to protect MPS/Shard from GPU.
 		 */
 		if (gres_id_shared(gres_ctx->config_flags) &&
-		    sharing_gres_allocated)
+		    foreach_gres_accumulate_device.sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
-		(*(gres_ctx->ops.task_set_env))(&step->envtp->env,
-						gres_bit_alloc,
-					        gres_cnt, usable_gres, flags);
-		gres_cnt = 0;
+		(*(gres_ctx->ops.task_set_env))(
+			&step->envtp->env,
+			gres_bit_alloc,
+			foreach_gres_accumulate_device.gres_cnt,
+			usable_gres, flags);
+		foreach_gres_accumulate_device.gres_cnt = 0;
 		xfree(gres_per_bit);
 		FREE_NULL_BITMAP(gres_bit_alloc);
 		FREE_NULL_BITMAP(usable_gres);
