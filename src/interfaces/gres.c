@@ -9695,7 +9695,7 @@ static bitstr_t *_get_closest_usable_gres(uint32_t plugin_id,
 
 /* Select the best available gres from gres_slots */
 static int _assign_gres_to_task(cpu_set_t *task_cpu_set, int ntasks_per_gres,
-				bitstr_t *gres_slots, int plugin_id)
+				bitstr_t *gres_slots, uint32_t plugin_id)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	int start, end, gres_inx = 0, best_slot = -1;
