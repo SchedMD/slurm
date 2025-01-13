@@ -45,6 +45,7 @@
  */
 sstat_parameters_t params;
 print_field_t fields[] = {
+	{10, "AllocTRES", print_fields_str, PRINT_TRESA},
 	{10, "AveCPU", print_fields_str, PRINT_AVECPU},
 	{10, "AveCPUFreq", print_fields_str, PRINT_ACT_CPUFREQ},
 	{12, "AveDiskRead", print_fields_str, PRINT_AVEDISKREAD},
@@ -106,9 +107,9 @@ list_t *print_fields_list = NULL;
 list_itr_t *print_fields_itr = NULL;
 int field_count = 0;
 
-int _do_stat(slurm_step_id_t *step_id, char *nodelist,
-	     uint32_t req_cpufreq_min, uint32_t req_cpufreq_max,
-	     uint32_t req_cpufreq_gov, uint16_t use_protocol_ver)
+int _do_stat(slurm_step_id_t *step_id, char *nodelist, uint32_t req_cpufreq_min,
+	     uint32_t req_cpufreq_max, uint32_t req_cpufreq_gov,
+	     uint16_t use_protocol_ver, char *tres_alloc_str)
 {
 	job_step_stat_response_msg_t *step_stat_response = NULL;
 	int rc = SLURM_SUCCESS;
@@ -150,6 +151,7 @@ int _do_stat(slurm_step_id_t *step_id, char *nodelist,
 	step.req_cpufreq_gov = req_cpufreq_gov;
 	step.stepname = NULL;
 	step.state = JOB_RUNNING;
+	step.tres_alloc_str = tres_alloc_str;
 	hl = hostlist_create(NULL);
 	itr = list_iterator_create(step_stat_response->stats_list);
 	while ((step_stat = list_next(itr))) {
@@ -318,7 +320,8 @@ int main(int argc, char **argv)
 				 step_info->job_steps[i].cpu_freq_min,
 				 step_info->job_steps[i].cpu_freq_max,
 				 step_info->job_steps[i].cpu_freq_gov,
-				 step_info->job_steps[i].start_protocol_ver);
+				 step_info->job_steps[i].start_protocol_ver,
+				 step_info->job_steps[i].tres_fmt_alloc_str);
 		}
 	}
 	list_iterator_destroy(itr);
