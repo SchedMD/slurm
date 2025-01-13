@@ -2535,7 +2535,7 @@ static void _restore_job_accounting(void)
 			if (IS_JOB_RUNNING(job_ptr) ||
 			    IS_JOB_SUSPENDED(job_ptr)) {
 				acct_policy_job_begin(job_ptr, false);
-				job_claim_resv(job_ptr);
+				resv_replace_update(job_ptr);
 			} else if (IS_JOB_PENDING(job_ptr) &&
 				   job_ptr->details &&
 				   job_ptr->details->accrue_time) {
