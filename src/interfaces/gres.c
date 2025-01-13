@@ -276,6 +276,14 @@ typedef struct {
 	bitstr_t *task_cpus_bitmap;
 } foreach_gres_to_task_t;
 
+typedef struct {
+	int array_len;
+	uint32_t *gres_count_ids;
+	uint64_t *gres_count_vals;
+	int index;
+	int val_type;
+} foreach_node_count_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -10578,6 +10586,39 @@ extern bool gres_id_sharing(uint32_t plugin_id)
 	return false;
 }
 
+static int _foreach_node_count(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = x;
+	foreach_node_count_t *foreach_node_count = arg;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	uint64_t val = 0;
+
+	xassert(gres_ns);
+
+	switch (foreach_node_count->val_type) {
+	case GRES_VAL_TYPE_FOUND:
+		val = gres_ns->gres_cnt_found;
+		break;
+	case GRES_VAL_TYPE_CONFIG:
+		val = gres_ns->gres_cnt_config;
+		break;
+	case GRES_VAL_TYPE_AVAIL:
+		val = gres_ns->gres_cnt_avail;
+		break;
+	case GRES_VAL_TYPE_ALLOC:
+		val = gres_ns->gres_cnt_alloc;
+		break;
+	}
+
+	foreach_node_count->gres_count_ids[foreach_node_count->index] =
+		gres_state_node->plugin_id;
+	foreach_node_count->gres_count_vals[foreach_node_count->index] = val;
+
+	if (++foreach_node_count->index >= foreach_node_count->array_len)
+		return -1;
+	return 0;
+}
+
 /*
  * Fill in an array of GRES type ids contained within the given node gres_list
  *		and an array of corresponding counts of those GRES types.
@@ -10593,43 +10634,20 @@ extern int gres_node_count(list_t *gres_list, int arr_len,
 			   uint64_t *gres_count_vals,
 			   int val_type)
 {
-	list_itr_t *node_gres_iter;
-	gres_state_t *gres_state_node;
-	uint64_t      val;
-	int           rc = SLURM_SUCCESS, ix = 0;
+	foreach_node_count_t foreach_node_count = {
+		.array_len = arr_len,
+		.gres_count_ids = gres_count_ids,
+		.gres_count_vals = gres_count_vals,
+		.val_type = val_type,
+	};
 
 	if (arr_len <= 0)
 		return EINVAL;
 
-	node_gres_iter = list_iterator_create(gres_list);
-	while ((gres_state_node = (gres_state_t*) list_next(node_gres_iter))) {
-		gres_node_state_t *gres_ns;
-		val = 0;
-		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
-		xassert(gres_ns);
+	(void) list_for_each(gres_list, _foreach_node_count,
+			     &foreach_node_count);
 
-		switch (val_type) {
-		case (GRES_VAL_TYPE_FOUND):
-			val = gres_ns->gres_cnt_found;
-			break;
-		case (GRES_VAL_TYPE_CONFIG):
-			val = gres_ns->gres_cnt_config;
-			break;
-		case (GRES_VAL_TYPE_AVAIL):
-			val = gres_ns->gres_cnt_avail;
-			break;
-		case (GRES_VAL_TYPE_ALLOC):
-			val = gres_ns->gres_cnt_alloc;
-		}
-
-		gres_count_ids[ix]  = gres_state_node->plugin_id;
-		gres_count_vals[ix] = val;
-		if (++ix >= arr_len)
-			break;
-	}
-	list_iterator_destroy(node_gres_iter);
-
-	return rc;
+	return SLURM_SUCCESS;
 }
 static void _gres_device_pack(
 	void *in, uint16_t protocol_version, buf_t *buffer)
