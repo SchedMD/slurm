@@ -54,6 +54,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
@@ -611,6 +612,41 @@ error:
 	/* Always set errno as upstream callers expect it. */
 	errno = rc;
 	return SLURM_ERROR;
+}
+
+extern int slurm_open_unix_stream(char *addr_name, int sock_flags, int *fd)
+{
+	struct sockaddr_un sa;
+	int rc;
+
+	xassert(addr_name);
+
+	if (strlen(addr_name) >= sizeof(sa.sun_path)) {
+		rc = ESLURMD_INVALID_SOCKET_NAME_LEN;
+		error("%s: [%s]: %s", __func__, addr_name, slurm_strerror(rc));
+		return rc;
+	}
+
+	if ((*fd = socket(AF_UNIX, SOCK_STREAM | sock_flags, 0)) < 0) {
+		rc = errno;
+		error("%s: [%s]: socket() failed: %m", __func__, addr_name);
+		return rc;
+	}
+
+	memset(&sa, 0, sizeof(sa));
+	sa.sun_family = AF_UNIX;
+	strcpy(sa.sun_path, addr_name);
+
+	while ((rc = connect(*fd, (struct sockaddr *) &sa, SUN_LEN(&sa))) &&
+	       (errno == EINTR))
+		; /* empty loop */
+
+	if (rc < 0) {
+		rc = errno;
+		debug2("%s: [%s]: connect() failed: %m", __func__, addr_name);
+		fd_close(fd);
+	}
+	return rc;
 }
 
 /* Put the local address of FD into *ADDR and its length in *LEN.  */
