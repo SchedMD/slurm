@@ -52,6 +52,7 @@ uint16_t block_sizes_cnt = 0;
 uint32_t blocks_nodes_cnt = 0;
 int block_record_cnt = 0;
 int ablock_record_cnt = 0;
+static bool allow_gaps = false;
 
 static s_p_hashtbl_t *conf_hashtbl = NULL;
 
@@ -85,13 +86,6 @@ static int _parse_block(void **dest, slurm_parser_enum_t type,
 	s_p_get_string(&b->nodes, "Nodes", tbl);
 	s_p_hashtbl_destroy(tbl);
 
-	if (!b->nodes) {
-		error("block %s hasn't got nodes",
-		      b->block_name);
-		_destroy_block(b);
-		return -1;
-	}
-
 	*dest = (void *)b;
 
 	return 1;
@@ -101,6 +95,7 @@ static int _parse_block(void **dest, slurm_parser_enum_t type,
 static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 {
 	static s_p_options_t block_options[] = {
+		{"AllowGaps", S_P_BOOLEAN},
 		{"BlockName", S_P_ARRAY, _parse_block, _destroy_block},
 		{"BlockSizes", S_P_STRING},
 		{NULL}
@@ -119,6 +114,8 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 		fatal("something wrong with opening/reading %s: %m",
 		      topo_conf);
 	}
+
+	s_p_get_boolean(&allow_gaps, "AllowGaps", conf_hashtbl);
 
 	FREE_NULL_BITMAP(block_levels);
 	block_levels = bit_alloc(MAX_BLOCK_LEVELS);
@@ -274,18 +271,22 @@ extern void block_record_validate(void)
 			if (bblock_node_cnt == 0) {
 				bblock_node_cnt =
 					bit_set_count(block_ptr->node_bitmap);
-			} else if (bit_set_count(block_ptr->node_bitmap) <
-				   bblock_node_cnt) {
+			} else if (!allow_gaps &&
+				   (bit_set_count(block_ptr->node_bitmap) <
+				    bblock_node_cnt)) {
 				fatal("Block configuration (%s) children count lower than bblock_node_cnt",
 				      ptr->block_name);
 			}
+
+		} else if (allow_gaps) {
+			block_ptr->node_bitmap = bit_alloc(node_record_count);
 		} else {
 			fatal("Block configuration (%s) lacks children",
 			      ptr->block_name);
 		}
 	}
 	if (!bblock_node_cnt)
-		fatal("Block not contains any nodes");
+		fatal("Blocks do not contain any nodes and the BlockSizes are not set");
 	if (blocks_nodes_bitmap) {
 		i = bit_clear_count(blocks_nodes_bitmap);
 		if (i > 0) {
@@ -293,13 +294,16 @@ extern void block_record_validate(void)
 			bitstr_t *tmp_bitmap = bit_copy(blocks_nodes_bitmap);
 			bit_not(tmp_bitmap);
 			tmp_nodes = bitmap2node_name(tmp_bitmap);
-			warning("blocks lack access to %d nodes: %s",
+			warning("Blocks lack access to %d nodes: %s",
 				i, tmp_nodes);
 			xfree(tmp_nodes);
 			FREE_NULL_BITMAP(tmp_bitmap);
 		}
+	} else if (allow_gaps) {
+		blocks_nodes_bitmap = bit_alloc(node_record_count);
+		warning("Blocks do not contain any nodes");
 	} else
-		fatal("blocks contain no nodes");
+		fatal("Blocks do not contain any nodes");
 
 	if (invalid_hl) {
 		buf = hostlist_ranged_string_xmalloc(invalid_hl);
