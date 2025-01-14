@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
-LDADD = $(LIB_SLURM)
+AM_CPPFLAGS = -I$(top_srcdir)
+LDADD = $(LIB_SLURM) -ldl -lpthread
 
 check_PROGRAMS = \
 	$(TESTS)

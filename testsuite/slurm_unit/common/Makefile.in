@@ -802,10 +802,9 @@ SUBDIRS = bitstring \
 	  slurmdb_defs \
 	  slurmdb_pack
 
-AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
-LDADD = $(LIB_SLURM)
-@HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -D_ISO99_SOURCE \
-@HAVE_CHECK_TRUE@	-Wunused-but-set-variable
+AM_CPPFLAGS = -I$(top_srcdir)
+LDADD = -ldl -lpthread $(LIB_SLURM)
+@HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -D_ISO99_SOURCE
 @HAVE_CHECK_TRUE@xhash_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@xhash_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@xahash_test_CFLAGS = $(MYCFLAGS)
