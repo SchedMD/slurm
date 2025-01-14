@@ -854,6 +854,9 @@ extern void trigger_state_restore(void)
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	if (!(buffer = state_save_open("trigger_state", &state_file))) {
+		if ((clustername_existed == 1) && (!ignore_state_errors))
+			fatal("No trigger state file (%s) to recover",
+			      state_file);
 		info("No trigger state file (%s) to recover", state_file);
 		xfree(state_file);
 		return;

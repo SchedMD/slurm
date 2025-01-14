@@ -312,6 +312,8 @@ extern int load_all_node_state ( bool state_only )
 	/* read the file */
 	buffer = state_save_open("node_state", &state_file);
 	if (!buffer) {
+		if ((clustername_existed == 1) && (!ignore_state_errors))
+			fatal("No node state file (%s) to recover", state_file);
 		info("No node state file (%s) to recover", state_file);
 		xfree(state_file);
 		return ENOENT;

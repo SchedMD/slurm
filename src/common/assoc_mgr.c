@@ -5884,6 +5884,9 @@ extern int load_assoc_usage(void)
 
 	assoc_mgr_lock(&locks);
 	if (!(buffer = state_save_open("assoc_usage", &state_file))) {
+		if ((clustername_existed == 1) && (!ignore_state_errors))
+			fatal("No Assoc usage file (%s) to recover",
+			      state_file);
 		debug2("No Assoc usage file (%s) to recover", state_file);
 		xfree(state_file);
 		assoc_mgr_unlock(&locks);

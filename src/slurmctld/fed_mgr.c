@@ -3365,7 +3365,10 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
 
 	if (!(buffer = state_save_open(FED_MGR_STATE_FILE, &state_file))) {
-		error("No fed_mgr state file (%s) to recover", state_file);
+		if ((clustername_existed == 1) && (!ignore_state_errors))
+			fatal("No fed_mgr state file (%s) to recover",
+			      state_file);
+		info("No fed_mgr state file (%s) to recover", state_file);
 		xfree(state_file);
 		return NULL;
 	}

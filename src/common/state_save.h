@@ -38,6 +38,8 @@
 
 #include "src/common/pack.h"
 
+extern int clustername_existed;
+
 /* mutex used for saving state of slurmctld */
 extern void lock_state_files(void);
 extern void unlock_state_files(void);

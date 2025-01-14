@@ -4669,6 +4669,9 @@ extern int load_all_resv_state(int recover)
 
 	/* read the file */
 	if (!(buffer = state_save_open("resv_state", &state_file))) {
+		if ((clustername_existed == 1) && (!ignore_state_errors))
+			fatal("No reservation state file (%s) to recover",
+			      state_file);
 		info("No reservation state file (%s) to recover",
 		     state_file);
 		xfree(state_file);

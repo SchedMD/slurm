@@ -48,6 +48,9 @@ strong_alias(lock_state_files, slurm_lock_state_files);
 strong_alias(unlock_state_files, slurm_unlock_state_files);
 strong_alias(save_buf_to_state, slurm_save_buf_to_state);
 
+/* global variables */
+int clustername_existed = -1;
+
 static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 extern void lock_state_files(void)
