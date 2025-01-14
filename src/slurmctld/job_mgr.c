@@ -11778,10 +11778,10 @@ static bool _can_resv_overlap(top_prio_args_t *job_args, job_record_t *job_ptr2)
 	return false;
 }
 
-static int _union_part_nodes(void *x, void *args)
+static int _union_part_nodes(void *x, void *arg)
 {
 	part_record_t *part_ptr = x;
-	bitstr_t *node_bitmap = args;
+	bitstr_t *node_bitmap = arg;
 
 	xassert(part_ptr);
 	xassert(node_bitmap);
