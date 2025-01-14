@@ -2079,22 +2079,8 @@ static int _connect_as_other(char *sock_name, uid_t uid, gid_t gid, int *fd)
 		_exit(errno);
 	}
 
-	*fd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (*fd < 0) {
-		error("%s:failed creating UNIX domain socket: %m", __func__ );
-		_exit(errno);
-	}
-
-	memset(&sa, 0, sizeof(sa));
-	sa.sun_family = AF_UNIX;
-	strcpy(sa.sun_path, sock_name);
-	while (((rc = connect(*fd, (struct sockaddr *)&sa,
-			      SUN_LEN(&sa))) < 0) && (errno == EINTR));
-
-	if (rc < 0) {
-		debug2("%s: failed connecting to specified socket '%s': %m",
-		       __func__, sock_name);
-		_exit(errno);
+	if ((rc = slurm_open_unix_stream(sock_name, 0, fd))) {
+		_exit(rc);
 	}
 	send_fd_over_socket(pipe[0], *fd);
 	close(*fd);

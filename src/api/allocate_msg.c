@@ -41,7 +41,6 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/un.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -257,17 +256,12 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 		}
 		net_set_nodelay(*local, true, NULL);
 	} else if (msg->target) {
+		int rc;
+
 		/* connect to local unix socket */
-		struct sockaddr_un addr;
-		socklen_t len;
-		memset(&addr, 0, sizeof(addr));
-		addr.sun_family = AF_UNIX;
-		strlcpy(addr.sun_path, msg->target, sizeof(addr.sun_path));
-		len = strlen(addr.sun_path) + 1 + sizeof(addr.sun_family);
-		if (((*local = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) ||
-		    ((connect(*local, (struct sockaddr *) &addr, len)) < 0)) {
-			error("%s: failed to open x11 display on `%s`: %m",
-			      __func__, msg->target);
+		if ((rc = slurm_open_unix_stream(msg->target, 0, local))) {
+			error("%s: failed to open x11 display on `%s`: %s",
+			      __func__, msg->target, slurm_strerror(rc));
 			goto error;
 		}
 	}

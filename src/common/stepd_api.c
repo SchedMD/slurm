@@ -48,11 +48,9 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/un.h>
 #include <unistd.h>
 
 #include "src/common/fd.h"
@@ -146,8 +144,7 @@ _step_connect(const char *directory, const char *nodename,
 	      slurm_step_id_t *step_id)
 {
 	int fd;
-	int len;
-	struct sockaddr_un addr;
+	int rc;
 	char *name = NULL, *pos = NULL;
 	uint32_t stepid = step_id->step_id;
 
@@ -156,33 +153,10 @@ _step_connect(const char *directory, const char *nodename,
 	if (step_id->step_het_comp != NO_VAL)
 		xstrfmtcatat(name, &pos, ".%u", step_id->step_het_comp);
 
-	/*
-	 * If socket name would be truncated, emit error and exit
-	 */
-	if (strlen(name) >= sizeof(addr.sun_path)) {
-		error("%s: Unix socket path '%s' is too long. (%ld > %ld)",
-		      __func__, name, (long int)(strlen(name) + 1),
-		      (long int)sizeof(addr.sun_path));
-		xfree(name);
-		return -1;
-	}
-
-	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-		error("%s: socket() failed for %s: %m",
-		      __func__, name);
-		xfree(name);
-		return -1;
-	}
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sun_family = AF_UNIX;
-	strlcpy(addr.sun_path, name, sizeof(addr.sun_path));
-	len = strlen(addr.sun_path) + 1 + sizeof(addr.sun_family);
-
-	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
+	if ((rc = slurm_open_unix_stream(name, 0, &fd))) {
 		/* Can indicate race condition at step termination */
-		debug("%s: connect() failed for %s: %m",
-		      __func__, name);
+		debug("%s: failed for %s: %s",
+		      __func__, name, slurm_strerror(rc));
 		if (errno == ECONNREFUSED && running_in_slurmd()) {
 			_handle_stray_socket(name);
 
