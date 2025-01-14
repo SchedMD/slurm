@@ -67,6 +67,7 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/interfaces/mcs.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/preempt.h"
@@ -2288,6 +2289,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	 * registered in the db then the start message.
 	 */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	jobcomp_g_record_job_start(job_ptr);
 	prolog_slurmctld(job_ptr);
 
 	job_ptr->end_time = now;
@@ -3067,6 +3069,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	 */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
+	jobcomp_g_record_job_start(job_ptr);
 	switch_g_job_start(job_ptr);
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);
