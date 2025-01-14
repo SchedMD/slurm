@@ -98,7 +98,6 @@ strong_alias(env_unset_environment,	slurm_env_unset_environment);
 typedef struct {
 	char *cmdstr;
 	int *fildes;
-	int mode;
 	bool perform_mount;
 	int rlimit;
 	char **tmp_env;
@@ -2078,17 +2077,11 @@ static int _child_fn(void *arg)
 	while (fd < child_args->rlimit)
 		close(fd++);
 
-	if (child_args->mode == 1)
-		execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
-	else if (child_args->mode == 2)
-		execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
-	else {	/* Default system configuration */
 #ifdef LOAD_ENV_NO_LOGIN
-		execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
+	execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
 #else
-		execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
+	execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
 #endif
-	}
 	if (devnull >= 0)	/* Avoid Coverity resource leak notification */
 		(void) close(devnull);
 
@@ -2193,13 +2186,12 @@ static bool _ns_disabled()
  *    set.  If it is set then NULL will be returned if the normal load fails.
  *
  * timeout value is in seconds or zero for default (2 secs)
- * mode is 1 for short ("su <user>"), 2 for long ("su - <user>")
  * On error, returns NULL.
  *
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout, int mode)
+char **env_array_user_default(const char *username, int timeout)
 {
 	char *line = NULL, *last = NULL, name[PATH_MAX], *value, *buffer;
 	char **env = NULL;
@@ -2246,7 +2238,6 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		return NULL;
 	}
 
-	child_args.mode = mode;
 	child_args.fildes = fildes;
 	child_args.username = username;
 	child_args.cmdstr = cmdstr;

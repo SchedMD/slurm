@@ -337,13 +337,12 @@ int env_array_to_file(const char *filename, const char **env_array,
  *    set.  If it is set then NULL will be returned if the normal load fails.
  *
  * timeout value is in seconds or zero for default (8 secs)
- * mode is 1 for short ("su <user>"), 2 for long ("su - <user>")
  * On error, returns NULL.
  *
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout, int mode);
+char **env_array_user_default(const char *username, int timeout);
 
 /*
  * Return a string representation of an array of uint16_t elements.

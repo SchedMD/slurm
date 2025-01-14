@@ -2128,7 +2128,7 @@ static int _get_user_env(batch_job_launch_msg_t *req, char *user_name)
 	verbose("%s: get env for user %s here", __func__, user_name);
 
 	/* Permit up to 120 second delay before failing env retrieval */
-	new_env = env_array_user_default(user_name, 120, 0);
+	new_env = env_array_user_default(user_name, 120);
 	if (! new_env) {
 		error("%s: Unable to get user's local environment",
 		      __func__);
