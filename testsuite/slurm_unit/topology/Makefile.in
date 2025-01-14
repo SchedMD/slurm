@@ -155,14 +155,15 @@ CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = topology-test$(EXEEXT)
 topology_test_SOURCES = topology-test.c
 topology_test_OBJECTS = topology_test-topology-test.$(OBJEXT)
-topology_test_DEPENDENCIES =
+am__DEPENDENCIES_1 =
+@HAVE_CHECK_TRUE@topology_test_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 topology_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(topology_test_CFLAGS) \
-	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+	$(CFLAGS) $(topology_test_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -682,14 +683,12 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
-@HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -D_ISO99_SOURCE \
-@HAVE_CHECK_TRUE@	-Wunused-but-set-variable \
-@HAVE_CHECK_TRUE@	-Wl,-rpath=$(top_builddir)/src/api/.libs \
-@HAVE_CHECK_TRUE@	-L$(top_builddir)/src/api/.libs -lslurmfull \
-@HAVE_CHECK_TRUE@	-export-dynamic
+AM_CPPFLAGS = -I$(top_srcdir)
+LDADD = -ldl -lpthread -L$(top_builddir)/src/api/.libs -lslurmfull
+@HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -D_ISO99_SOURCE
 @HAVE_CHECK_TRUE@topology_test_CFLAGS = $(MYCFLAGS)
-@HAVE_CHECK_TRUE@topology_test_LDADD = @CHECK_LIBS@
+@HAVE_CHECK_TRUE@topology_test_LDADD = @CHECK_LIBS@ $(LDADD)
+@HAVE_CHECK_TRUE@topology_test_LDFLAGS = -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
 all: all-am
 
 .SUFFIXES:
