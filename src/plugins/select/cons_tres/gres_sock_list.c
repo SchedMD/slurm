@@ -286,9 +286,10 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			}
 		}
 
-		if (!gres_ns->topo_core_bitmap ||
-		    !gres_ns->topo_core_bitmap[i] ||
-		    use_all_sockets) {
+		if (gres_ns->topo_gres_bitmap[i] &&
+		    (!gres_ns->topo_core_bitmap ||
+		     !gres_ns->topo_core_bitmap[i] ||
+		     use_all_sockets)) {
 			/*
 			 * Not constrained by core, but only specific
 			 * GRES may be available (save their bitmap)
