@@ -138,6 +138,12 @@ static http_status_code_t *response_status_codes = NULL;
 extern parsed_host_port_t *parse_host_port(const char *str);
 extern void free_parse_host_port(parsed_host_port_t *parsed);
 
+static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
+				   const plugin_handle_t id, void *arg)
+{
+	fprintf(stdout, "%s\n", full_type);
+}
+
 /* SIGPIPE handler - mostly a no-op */
 static void _sigpipe_handler(conmgr_callback_args_t conmgr_args, void *arg)
 {
@@ -462,6 +468,15 @@ static void _parse_commandline(int argc, char **argv)
 			rest_auth = xstrdup(optarg);
 			break;
 		case 'd':
+			if (!xstrcasecmp(optarg, "list")) {
+				fprintf(stderr, "Possible data_parser plugins:\n");
+				parsers = data_parser_g_new_array(
+					NULL, NULL, NULL, NULL, NULL, NULL,
+					NULL, NULL, optarg,
+					_plugrack_foreach_list, false);
+				exit(SLURM_SUCCESS);
+			}
+
 			xfree(data_parser_plugins);
 			data_parser_plugins = xstrdup(optarg);
 			break;
@@ -631,12 +646,6 @@ static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
 	       __func__, full_type, fq_path);
 }
 
-static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
-				   const plugin_handle_t id, void *arg)
-{
-	fprintf(stdout, "%s\n", full_type);
-}
-
 static void _on_signal_interrupt(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("%s: caught SIGINT. Shutting down.", __func__);
@@ -745,18 +754,10 @@ int main(int argc, char **argv)
 	if (init_rest_auth(become_user, auth_plugin_handles, auth_plugin_count))
 		fatal("Unable to initialize rest authentication");
 
-	if (data_parser_plugins && !xstrcasecmp(data_parser_plugins, "list")) {
-		fprintf(stderr, "Possible data_parser plugins:\n");
-		parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL,
-						  NULL, NULL, NULL, NULL,
-						  data_parser_plugins,
-						  _plugrack_foreach_list,
-						  false);
-		exit(SLURM_SUCCESS);
-	} else if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL,
-						       NULL, NULL, NULL, NULL,
-						       data_parser_plugins,
-						       NULL, false))) {
+	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,
+						NULL, NULL, NULL,
+						data_parser_plugins, NULL,
+						false))) {
 		fatal("Unable to initialize data_parser plugins");
 	}
 	xfree(data_parser_plugins);
