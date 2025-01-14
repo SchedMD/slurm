@@ -162,7 +162,8 @@ am__dirstamp = $(am__leading_dot)dirstamp
 @HAVE_CHECK_TRUE@	$(top_builddir)/src/slurmctld/backfill_test-job_scheduler.$(OBJEXT) \
 @HAVE_CHECK_TRUE@	$(top_builddir)/src/slurmctld/backfill_test-node_scheduler.$(OBJEXT)
 backfill_test_OBJECTS = $(am_backfill_test_OBJECTS)
-backfill_test_DEPENDENCIES =
+am__DEPENDENCIES_1 =
+@HAVE_CHECK_TRUE@backfill_test_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -694,14 +695,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign subdir-objects
-AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread -I$(top_srcdir)/src/plugins/sched/backfill
-@HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -D_ISO99_SOURCE \
-@HAVE_CHECK_TRUE@	-Wunused-but-set-variable \
-@HAVE_CHECK_TRUE@	-Wl,--unresolved-symbols=ignore-all \
-@HAVE_CHECK_TRUE@	-Wl,--allow-multiple-definition \
-@HAVE_CHECK_TRUE@	-Wl,-rpath=$(top_builddir)/src/api/.libs \
-@HAVE_CHECK_TRUE@	-L$(top_builddir)/src/api/.libs -lslurmfull \
-@HAVE_CHECK_TRUE@	-export-dynamic
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/plugins/sched/backfill
+LDADD = -ldl -lpthread -L$(top_builddir)/src/api/.libs -lslurmfull
+@HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -D_ISO99_SOURCE
 @HAVE_CHECK_TRUE@backfill_test_SOURCES = backfill_test.c	\
 @HAVE_CHECK_TRUE@			dummy_functions.c \
 @HAVE_CHECK_TRUE@			$(top_srcdir)/src/plugins/sched/backfill/backfill.c	\
@@ -713,7 +709,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread -I$(top_srcdir)/src/plugins/sched/b
 
 @HAVE_CHECK_TRUE@backfill_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@backfill_test_LDADD = $(LDADD) @CHECK_LIBS@
-@HAVE_CHECK_TRUE@backfill_test_LDFLAGS = -z lazy
+@HAVE_CHECK_TRUE@backfill_test_LDFLAGS = -z lazy  -Wl,--unresolved-symbols=ignore-all -Wl,--allow-multiple-definition  -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
 all: all-am
 
 .SUFFIXES:
