@@ -115,4 +115,7 @@ extern list_t *jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond);
 /* set the location based on JobCompLoc */
 extern int jobcomp_g_set_location(void);
 
+/* write record of a job's start */
+extern int jobcomp_g_record_job_start(job_record_t *job_ptr);
+
 #endif

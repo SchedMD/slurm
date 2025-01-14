@@ -344,3 +344,8 @@ extern list_t *jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	return filetxt_jobcomp_process_get_jobs(job_cond);
 }
+
+extern int jobcomp_p_record_job_start(job_record_t *job_ptr, uint32_t event)
+{
+	return SLURM_SUCCESS;
+}
