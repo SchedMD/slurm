@@ -343,8 +343,7 @@ int env_array_to_file(const char *filename, const char **env_array,
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout, int mode,
-			      bool no_cache);
+char **env_array_user_default(const char *username, int timeout, int mode);
 
 /*
  * Return a string representation of an array of uint16_t elements.

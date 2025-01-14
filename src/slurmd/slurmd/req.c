@@ -2117,14 +2117,6 @@ static int _get_user_env(batch_job_launch_msg_t *req, char *user_name)
 {
 	char **new_env;
 	int i;
-	static time_t config_update = 0;
-	static bool no_env_cache = false;
-
-	if (config_update != slurm_conf.last_update) {
-		no_env_cache = (xstrcasestr(slurm_conf.sched_params,
-					    "no_env_cache"));
-		config_update = slurm_conf.last_update;
-	}
 
 	for (i=0; i<req->envc; i++) {
 		if (xstrcmp(req->environment[i], "SLURM_GET_USER_ENV=1") == 0)
@@ -2135,12 +2127,11 @@ static int _get_user_env(batch_job_launch_msg_t *req, char *user_name)
 
 	verbose("%s: get env for user %s here", __func__, user_name);
 
-	/* Permit up to 120 second delay before using cache file */
-	new_env = env_array_user_default(user_name, 120, 0, no_env_cache);
+	/* Permit up to 120 second delay before failing env retrieval */
+	new_env = env_array_user_default(user_name, 120, 0);
 	if (! new_env) {
-		error("%s: Unable to get user's local environment%s",
-		      __func__, no_env_cache ?
-		      "" : ", running only with passed environment");
+		error("%s: Unable to get user's local environment",
+		      __func__);
 		return -1;
 	}
 

@@ -1890,23 +1890,6 @@ void env_array_merge_slurm_spank(char ***dest_array, const char **src_array)
 	xfree(value);
 }
 
-/*
- * Strip out trailing carriage returns and newlines
- */
-static void _strip_cr_nl(char *line)
-{
-	int len = strlen(line);
-	char *ptr;
-
-	for (ptr = line+len-1; ptr >= line; ptr--) {
-		if (*ptr=='\r' || *ptr=='\n') {
-			*ptr = '\0';
-		} else {
-			return;
-		}
-	}
-}
-
 /* Return the net count of curly brackets in a string
  * '{' adds one and '}' subtracts one (zero means it is balanced).
  * Special case: return -1 if no open brackets are found */
@@ -2055,65 +2038,6 @@ rwfail:
 		(void) close(outfd);
 
 	return rc;
-}
-
-/*
- * Load user environment from a cache file located in
- * <state_save_location>/env_username
- */
-static char **_load_env_cache(const char *username)
-{
-	char fname[PATH_MAX];
-	char *line, name[256], *value;
-	char **env = NULL;
-	FILE *fp;
-	int i;
-
-	i = snprintf(fname, sizeof(fname), "%s/env_cache/%s",
-		     slurm_conf.state_save_location, username);
-	if (i < 0) {
-		error("Environment cache filename overflow");
-		return NULL;
-	}
-	if (!(fp = fopen(fname, "r"))) {
-		error("Could not open user environment cache at %s: %m",
-			fname);
-		return NULL;
-	}
-
-	verbose("Getting cached environment variables at %s", fname);
-	env = env_array_create();
-	line  = xmalloc(ENV_BUFSIZE);
-	value = xmalloc(ENV_BUFSIZE);
-	while (1) {
-		if (!fgets(line, ENV_BUFSIZE, fp))
-			break;
-		_strip_cr_nl(line);
-		if (_env_array_entry_splitter(line, name, sizeof(name),
-					      value, ENV_BUFSIZE) &&
-		    (!_discard_env(name, value))) {
-			if (value[0] == '(') {
-				/* This is a bash function.
-				 * It may span multiple lines */
-				while (_bracket_cnt(value) > 0) {
-					if (!fgets(line, ENV_BUFSIZE, fp))
-						break;
-					_strip_cr_nl(line);
-					if ((strlen(value) + strlen(line)) >
-					    (ENV_BUFSIZE - 2))
-						break;
-					strcat(value, "\n");
-					strcat(value, line);
-				}
-			}
-			env_array_overwrite(&env, name, value);
-		}
-	}
-	xfree(line);
-	xfree(value);
-
-	fclose(fp);
-	return env;
 }
 
 static int _child_fn(void *arg)
@@ -2275,8 +2199,7 @@ static bool _ns_disabled()
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout, int mode,
-			      bool no_cache)
+char **env_array_user_default(const char *username, int timeout, int mode)
 {
 	char *line = NULL, *last = NULL, name[PATH_MAX], *value, *buffer;
 	char **env = NULL;
@@ -2297,9 +2220,6 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		error("SlurmdUser must be root to use --get-user-env");
 		return NULL;
 	}
-
-	if (!slurm_conf.get_env_timeout)	/* just read directly from cache */
-		return _load_env_cache(username);
 
 	if (stat(SUCMD, &buf))
 		fatal("Could not locate command: "SUCMD);
@@ -2456,7 +2376,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	if (!found) {
 		error("Failed to load current user environment variables");
 		xfree(buffer);
-		return no_cache ? _load_env_cache(username) : NULL;
+		return NULL;
 	}
 
 	/* First look for the start token in the output */
@@ -2473,7 +2393,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	if (!found) {
 		error("Failed to get current user environment variables");
 		xfree(buffer);
-		return no_cache ? _load_env_cache(username) : NULL;
+		return NULL;
 	}
 
 	/* Process environment variables until we find the stop token */
@@ -2513,7 +2433,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	if (!found) {
 		error("Failed to get all user environment variables");
 		env_array_free(env);
-		return no_cache ? _load_env_cache(username) : NULL;
+		return NULL;
 	}
 
 	return env;
