@@ -65,6 +65,7 @@ typedef enum {
 } sacctmgr_mod_type_t;
 
 #define SACCTMGR_CLEAN_CLUSTER SLURM_BIT(0)
+#define SACCTMGR_CLEAN_ACCT SLURM_BIT(1)
 
 static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 {
@@ -1679,10 +1680,16 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				end++;
 			}
 		}
-		if (!end && !xstrncasecmp(argv[i], "clean",
-					  MAX(command_len, 3))) {
-			start_clean = 1;
-			start_clean = SACCTMGR_CLEAN_CLUSTER;
+		if (!xstrncasecmp(argv[i], "clean",
+				  MAX(command_len, 3))) {
+			if (end) {
+				char *clean_types = xstrdup(argv[i]+end);
+				if (xstrcasestr(clean_types, "acct") ||
+				    xstrcasestr(clean_types, "account"))
+					start_clean |= SACCTMGR_CLEAN_ACCT;
+				xfree(clean_types);
+			}
+			start_clean |= SACCTMGR_CLEAN_CLUSTER;
 		} else if (!end || !xstrncasecmp(argv[i], "File",
 						 MAX(command_len, 1))) {
 			if (file_name) {
@@ -1728,8 +1735,6 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 		xfree(cluster_name);
 		return;
 	}
-
-	curr_acct_list = slurmdb_accounts_get(db_conn, NULL);
 
 	/* These are new info so they need to be freed here */
 	acct_list = list_create(slurmdb_destroy_account_rec);
@@ -1892,12 +1897,38 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					break;
 				}
 				FREE_NULL_LIST(ret_list);
-				/* This needs to be committed or
-				   problems may arise */
+			}
+
+			if (start_clean & SACCTMGR_CLEAN_ACCT) {
+				slurmdb_account_cond_t acct_cond = { 0 };
+				list_t *ret_list = NULL;
+
+				notice_thread_init();
+				ret_list = slurmdb_accounts_remove(
+					db_conn, &acct_cond);
+				notice_thread_fini();
+
+				if (!ret_list &&
+				    (errno != SLURM_NO_CHANGE_IN_DATA)) {
+					exit_code=1;
+					fprintf(stderr, " There was a problem removing the accounts.\n");
+					rc = SLURM_ERROR;
+					break;
+				}
+				FREE_NULL_LIST(ret_list);
+			}
+
+			if (start_clean) {
+				/*
+				 * This needs to be committed or
+				 * problems may arise
+				 */
 				slurmdb_connection_commit(db_conn, 1);
 			}
+
 			curr_cluster_list = slurmdb_clusters_get(
 				db_conn, NULL);
+			curr_acct_list = slurmdb_accounts_get(db_conn, NULL);
 
 			if (cluster_name)
 				printf("For cluster %s\n", cluster_name);

@@ -3266,6 +3266,12 @@ sacctmgr load file=tux.cfg
 .TP
 \fBclean\fR
 Delete what was already there and start from scratch with this information.
+With no options this will only remove the cluster along with it's associations.
+No accounts, users, or QOS will be removed.
+This also accepts a comma separated list of other options to remove. Those
+include 'account' and 'user'. If you would like to remove both accounts and
+users along with the cluster and associations give the input of
+\fIclean=account,user\fR.
 .IP
 
 .TP
