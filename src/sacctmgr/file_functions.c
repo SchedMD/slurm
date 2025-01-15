@@ -64,6 +64,8 @@ typedef enum {
 	MOD_USER
 } sacctmgr_mod_type_t;
 
+#define SACCTMGR_CLEAN_CLUSTER SLURM_BIT(0)
+
 static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 {
 	if (!file_opts)
@@ -1624,7 +1626,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	char object[25];
 	int start = 0, len = 0, i = 0;
 	int lc=0, num_lines=0;
-	int start_clean=0;
+	uint32_t start_clean=0;
 	int cluster_name_set=0;
 	int rc = SLURM_SUCCESS;
 
@@ -1680,6 +1682,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 		if (!end && !xstrncasecmp(argv[i], "clean",
 					  MAX(command_len, 3))) {
 			start_clean = 1;
+			start_clean = SACCTMGR_CLEAN_CLUSTER;
 		} else if (!end || !xstrncasecmp(argv[i], "File",
 						 MAX(command_len, 1))) {
 			if (file_name) {
@@ -1855,7 +1858,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				}
 			}
 
-			if (start_clean) {
+			if (start_clean & SACCTMGR_CLEAN_CLUSTER) {
 				slurmdb_cluster_cond_t cluster_cond;
 				list_t *ret_list = NULL;
 
