@@ -64,6 +64,10 @@ typedef enum {
 	MOD_USER
 } sacctmgr_mod_type_t;
 
+#define SACCTMGR_CLEAN_CLUSTER SLURM_BIT(0)
+#define SACCTMGR_CLEAN_ACCT SLURM_BIT(1)
+#define SACCTMGR_CLEAN_USER SLURM_BIT(2)
+
 static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 {
 	if (!file_opts)
@@ -1454,6 +1458,24 @@ static int _print_file_slurmdb_hierarchical_rec_children(
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_user_list(void *x, void *arg)
+{
+	slurmdb_user_rec_t *user_rec = x;
+	slurmdb_assoc_cond_t *assoc_cond = arg;
+
+	/* Don't remove myself or root */
+	if (!xstrcmp(user_rec->name, my_user_name) ||
+	    !xstrcmp(user_rec->name, "root"))
+		return 0;
+
+	if (!assoc_cond->user_list)
+		assoc_cond->user_list = list_create(xfree_ptr);
+
+	list_append(assoc_cond->user_list, user_rec->name);
+
+	return 0;
+}
+
 extern int print_file_add_limits_to_line(char **line,
 					 slurmdb_assoc_rec_t *assoc)
 {
@@ -1621,11 +1643,10 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	char *parent = NULL;
 	char *file_name = NULL;
 	char *cluster_name = NULL;
-	char *user_name = NULL;
 	char object[25];
 	int start = 0, len = 0, i = 0;
 	int lc=0, num_lines=0;
-	int start_clean=0;
+	uint32_t start_clean=0;
 	int cluster_name_set=0;
 	int rc = SLURM_SUCCESS;
 
@@ -1634,7 +1655,6 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	slurmdb_account_rec_t *acct = NULL, *acct2 = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_user_rec_t *user = NULL, *user2 = NULL;
-	slurmdb_user_cond_t user_cond;
 
 	list_t *curr_assoc_list = NULL;
 	list_t *curr_acct_list = NULL;
@@ -1678,9 +1698,18 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				end++;
 			}
 		}
-		if (!end && !xstrncasecmp(argv[i], "clean",
-					  MAX(command_len, 3))) {
-			start_clean = 1;
+		if (!xstrncasecmp(argv[i], "clean",
+				  MAX(command_len, 3))) {
+			if (end) {
+				char *clean_types = xstrdup(argv[i]+end);
+				if (xstrcasestr(clean_types, "acct") ||
+				    xstrcasestr(clean_types, "account"))
+					start_clean |= SACCTMGR_CLEAN_ACCT;
+				if (xstrcasestr(clean_types, "user"))
+					start_clean |= SACCTMGR_CLEAN_USER;
+				xfree(clean_types);
+			}
+			start_clean |= SACCTMGR_CLEAN_CLUSTER;
 		} else if (!end || !xstrncasecmp(argv[i], "File",
 						 MAX(command_len, 1))) {
 			if (file_name) {
@@ -1727,7 +1756,18 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 		return;
 	}
 
-	curr_acct_list = slurmdb_accounts_get(db_conn, NULL);
+	if (start_clean & (SACCTMGR_CLEAN_ACCT | SACCTMGR_CLEAN_USER)) {
+		curr_cluster_list = slurmdb_clusters_get(
+			db_conn, NULL);
+		if (curr_cluster_list && (list_count(curr_cluster_list) > 1)) {
+			exit_code = 1;
+			fprintf(stderr, " When doing a clean=account and/or user you must only have one cluster in the system.\n");
+			xfree(cluster_name);
+			FREE_NULL_LIST(curr_cluster_list);
+			return;
+		}
+		FREE_NULL_LIST(curr_cluster_list);
+	}
 
 	/* These are new info so they need to be freed here */
 	acct_list = list_create(slurmdb_destroy_account_rec);
@@ -1782,7 +1822,16 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 
 		if (!xstrcasecmp("Machine", object)
 		    || !xstrcasecmp("Cluster", object)) {
-			slurmdb_assoc_cond_t assoc_cond;
+			slurmdb_assoc_cond_t assoc_cond = {
+				.flags = ASSOC_COND_FLAG_RAW_QOS |
+				ASSOC_COND_FLAG_WOPL,
+			};
+			slurmdb_user_cond_t user_cond = {
+				.assoc_cond = &assoc_cond,
+				.with_coords = 1,
+				.with_assocs = 1,
+				.with_wckeys = 1,
+			};
 
 			if (cluster_name && !cluster_name_set) {
 				exit_code = 1;
@@ -1808,27 +1857,13 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			/* we have to do this here since this is the
 			   first place we have the cluster_name
 			*/
-			memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
-			user_cond.with_coords = 1;
-			user_cond.with_assocs = 1;
-			user_cond.with_wckeys = 1;
-
-			memset(&assoc_cond, 0,
-			       sizeof(slurmdb_assoc_cond_t));
-			assoc_cond.cluster_list = list_create(NULL);
-			assoc_cond.flags = ASSOC_COND_FLAG_RAW_QOS |
-				ASSOC_COND_FLAG_WOPL;
+			assoc_cond.cluster_list = list_create(NULL),
 			list_append(assoc_cond.cluster_list, cluster_name);
-			user_cond.assoc_cond = &assoc_cond;
 			curr_user_list = slurmdb_users_get(db_conn, &user_cond);
 
-			user_cond.assoc_cond = NULL;
-			assoc_cond.flags &= ~ASSOC_COND_FLAG_ONLY_DEFS;
-
 			/* make sure this person running is an admin */
-			user_name = uid_to_string_cached(my_uid);
 			if (!(user = sacctmgr_find_user_from_list(
-				      curr_user_list, user_name))) {
+				      curr_user_list, my_user_name))) {
 				exit_code =1;
 				fprintf(stderr, " Your uid (%u) is not in the "
 					"accounting system, can't load file.\n",
@@ -1857,7 +1892,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				}
 			}
 
-			if (start_clean) {
+			if (start_clean & SACCTMGR_CLEAN_CLUSTER) {
 				slurmdb_cluster_cond_t cluster_cond;
 				list_t *ret_list = NULL;
 
@@ -1890,12 +1925,74 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					rc = SLURM_ERROR;
 					break;
 				}
-				/* This needs to be committed or
-				   problems may arise */
+				FREE_NULL_LIST(ret_list);
+			}
+
+			if (start_clean & SACCTMGR_CLEAN_ACCT) {
+				slurmdb_account_cond_t acct_cond = { 0 };
+				list_t *ret_list = NULL;
+
+				notice_thread_init();
+				ret_list = slurmdb_accounts_remove(
+					db_conn, &acct_cond);
+				notice_thread_fini();
+
+				if (!ret_list &&
+				    (errno != SLURM_NO_CHANGE_IN_DATA)) {
+					exit_code=1;
+					fprintf(stderr, " There was a problem removing the accounts.\n");
+					rc = SLURM_ERROR;
+					break;
+				}
+				FREE_NULL_LIST(ret_list);
+			}
+
+			if (start_clean & SACCTMGR_CLEAN_USER) {
+				slurmdb_user_cond_t user_cond = { 0 };
+				slurmdb_assoc_cond_t assoc_cond = { 0 };
+				list_t *ret_list = NULL;
+
+				/*
+				 * The user_list here needs to be populated with
+				 * users in order for the remove to work.
+				 */
+				list_for_each(curr_user_list,
+					      _foreach_user_list,
+					      &assoc_cond);
+				user_cond.assoc_cond = &assoc_cond;
+
+				notice_thread_init();
+				ret_list = slurmdb_users_remove(
+					db_conn, &user_cond);
+				notice_thread_fini();
+				FREE_NULL_LIST(assoc_cond.user_list);
+
+				if (!ret_list &&
+				    (errno != SLURM_NO_CHANGE_IN_DATA)) {
+					exit_code=1;
+					fprintf(stderr, " There was a problem removing the users.\n");
+					rc = SLURM_ERROR;
+					break;
+				}
+				FREE_NULL_LIST(ret_list);
+				FREE_NULL_LIST(curr_user_list);
+			}
+
+			if (start_clean) {
+				/*
+				 * This needs to be committed or
+				 * problems may arise
+				 */
 				slurmdb_connection_commit(db_conn, 1);
 			}
+
 			curr_cluster_list = slurmdb_clusters_get(
 				db_conn, NULL);
+			curr_acct_list = slurmdb_accounts_get(db_conn, NULL);
+			if (!curr_user_list)
+				curr_user_list = slurmdb_users_get(db_conn,
+								   &user_cond);
+			user_cond.assoc_cond = NULL;
 
 			if (cluster_name)
 				printf("For cluster %s\n", cluster_name);
@@ -1957,7 +2054,14 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			_destroy_sacctmgr_file_opts(file_opts);
 			file_opts = NULL;
 
-			/* assoc_cond if set up above */
+			/*
+			 * Change flags from above.
+			 *
+			 * Now that the cluster is added we can grab the
+			 * associations.
+			 */
+			assoc_cond.flags &= ~ASSOC_COND_FLAG_ONLY_DEFS;
+
 			curr_assoc_list = slurmdb_associations_get(
 				db_conn, &assoc_cond);
 			FREE_NULL_LIST(assoc_cond.cluster_list);

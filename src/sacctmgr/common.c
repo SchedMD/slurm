@@ -50,6 +50,7 @@
 static bool warn_needed = false;
 static pthread_mutex_t warn_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t warn_cond = PTHREAD_COND_INITIALIZER;
+static pthread_t notice_thread_handler = 0;
 
 static void *_print_lock_warn(void *no_data)
 {
@@ -851,7 +852,7 @@ extern void notice_thread_init(void)
 {
 	slurm_mutex_lock(&warn_mutex);
 	warn_needed = true;
-	slurm_thread_create_detached(_print_lock_warn, NULL);
+	slurm_thread_create(&notice_thread_handler, _print_lock_warn, NULL);
 	slurm_mutex_unlock(&warn_mutex);
 }
 
@@ -861,6 +862,9 @@ extern void notice_thread_fini(void)
 	warn_needed = false;
 	slurm_cond_broadcast(&warn_cond);
 	slurm_mutex_unlock(&warn_mutex);
+
+	if (notice_thread_handler)
+		slurm_thread_join(notice_thread_handler);
 }
 
 extern int commit_check(char *warning)

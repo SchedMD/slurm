@@ -225,6 +225,7 @@ extern int with_assoc_flag;/* show acct/user associations flag */
 extern int readonly_flag; /* make it so you can only run list commands */
 extern void *db_conn;
 extern uint32_t my_uid;
+extern char *my_user_name;
 extern list_t *g_qos_list;
 extern list_t *g_res_list;
 extern list_t *g_tres_list;
