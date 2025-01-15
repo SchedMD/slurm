@@ -1251,9 +1251,7 @@ typedef struct {
 typedef struct {
 	uint16_t admin_level; /* really slurmdb_admin_level_t but for
 				 packing purposes needs to be uint16_t */
-	slurmdb_assoc_cond_t *assoc_cond; /* use user_list here for
-						   names and acct_list for
-						   default accounts */
+	slurmdb_assoc_cond_t *assoc_cond; /* use user_list here for names */
 	list_t *def_acct_list; /* list of char * (We can't really use
 				* the assoc_cond->acct_list for this
 				* because then it is impossible for us
