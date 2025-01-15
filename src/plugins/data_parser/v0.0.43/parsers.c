@@ -1317,7 +1317,7 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 		.id = job->associd,
 	};
 
-	return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
+	return DUMP(ASSOC_SHORT, assoc, dst, args);
 }
 
 static void _fill_job_stp(job_std_pattern_t *job_stp, slurmdb_job_rec_t *job)

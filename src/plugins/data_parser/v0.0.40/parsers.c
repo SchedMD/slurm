@@ -1166,8 +1166,6 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 		.cluster = job->cluster, .id = job->associd
 	};
 
-	xassert(args->assoc_list);
-
 	if (job->associd && (job->associd != NO_VAL)) {
 		int rc;
 
