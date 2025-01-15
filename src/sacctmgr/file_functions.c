@@ -1890,6 +1890,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					rc = SLURM_ERROR;
 					break;
 				}
+				FREE_NULL_LIST(ret_list);
 				/* This needs to be committed or
 				   problems may arise */
 				slurmdb_connection_commit(db_conn, 1);
