@@ -740,7 +740,8 @@ extern int container_p_join(slurm_step_id_t *step_id, uid_t uid,
 	 */
 	if ((!jc_conf->entire_step_in_ns && running_in_slurmd() &&
 	     step_create) ||
-	    (jc_conf->entire_step_in_ns && running_in_slurmstepd()))
+	    (jc_conf->entire_step_in_ns && running_in_slurmstepd() &&
+	     step_id->step_id != SLURM_EXTERN_CONT))
 		return SLURM_SUCCESS;
 
 	/*
