@@ -1621,7 +1621,6 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	char *parent = NULL;
 	char *file_name = NULL;
 	char *cluster_name = NULL;
-	char *user_name = NULL;
 	char object[25];
 	int start = 0, len = 0, i = 0;
 	int lc=0, num_lines=0;
@@ -1826,9 +1825,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			assoc_cond.flags &= ~ASSOC_COND_FLAG_ONLY_DEFS;
 
 			/* make sure this person running is an admin */
-			user_name = uid_to_string_cached(my_uid);
 			if (!(user = sacctmgr_find_user_from_list(
-				      curr_user_list, user_name))) {
+				      curr_user_list, my_user_name))) {
 				exit_code =1;
 				fprintf(stderr, " Your uid (%u) is not in the "
 					"accounting system, can't load file.\n",

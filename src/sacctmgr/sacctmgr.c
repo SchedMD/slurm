@@ -66,6 +66,7 @@ int rollback_flag;       /* immediate execute=1, else = 0 */
 int with_assoc_flag = 0;
 void *db_conn = NULL;
 uint32_t my_uid = 0;
+char *my_user_name = NULL;
 list_t *g_qos_list = NULL;
 list_t *g_res_list = NULL;
 list_t *g_tres_list = NULL;
@@ -219,6 +220,7 @@ int main(int argc, char **argv)
 		have_db_conn = true;
 
 	my_uid = getuid();
+	my_user_name = uid_to_string_cached(my_uid);
 
 	if (persist_conn_flags & PERSIST_FLAG_P_USER_CASE)
 		user_case_norm = false;
