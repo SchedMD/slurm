@@ -1035,7 +1035,9 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		}
 
 		if (step_id != SLURM_EXTERN_CONT) {
-			if (container_g_join(job_id, uid, true)) {
+			slurm_step_id_t tmp_step_id = { NO_VAL64, job_id,
+							step_id, NO_VAL };
+			if (container_g_join(&tmp_step_id, uid, true)) {
 				error("%s container_g_join(%u): %m",
 				      __func__, job_id);
 				_exit(SLURM_ERROR);
@@ -1919,6 +1921,7 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 	pid_t child;
 	int pipe[2];
 	int rc = 0;
+	slurm_step_id_t tmp_step_id = { NO_VAL64, jobid, NO_VAL, NO_VAL };
 
 	*fd = -1;
 
@@ -1955,7 +1958,7 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 	 * condition where if this process makes a file or
 	 * detacts itself from a child before we add the pid
 	 * to the container in the parent of the fork. */
-	if (container_g_join(jobid, uid, false)) {
+	if (container_g_join(&tmp_step_id, uid, false)) {
 		error("%s container_g_join(%u): %m", __func__, jobid);
 		_exit(SLURM_ERROR);
 	}

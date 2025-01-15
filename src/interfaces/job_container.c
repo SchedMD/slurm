@@ -48,8 +48,8 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct job_container_ops {
-	int	(*container_p_join) (uint32_t job_id, uid_t uid,
-				     bool step_create);
+	int (*container_p_join)(slurm_step_id_t *step_id, uid_t uid,
+				bool step_create);
 	int	(*container_p_join_external)(uint32_t job_id);
 	int	(*container_p_restore)	(char *dir_name, bool recover);
 	int	(*container_p_stepd_create)	(uint32_t job_id,
@@ -172,7 +172,8 @@ done:
 /*
  * Add the calling process to the specified job's container.
  */
-extern int container_g_join(uint32_t job_id, uid_t uid, bool step_create)
+extern int container_g_join(slurm_step_id_t *step_id, uid_t uid,
+			    bool step_create)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -180,7 +181,7 @@ extern int container_g_join(uint32_t job_id, uid_t uid, bool step_create)
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].container_p_join))(job_id, uid, step_create);
+		rc = (*(ops[i].container_p_join))(step_id, uid, step_create);
 	}
 
 	return rc;
