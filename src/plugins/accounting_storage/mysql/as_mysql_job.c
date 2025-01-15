@@ -1463,7 +1463,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 	/* The stepid could be negative so use %d not %u */
 	query = xstrdup_printf(
 		"insert into \"%s_%s\" (job_db_inx, id_step, step_het_comp, "
-		"time_start, step_name, state, tres_alloc, "
+		"time_start, timelimit, step_name, state, tres_alloc, "
 		"nodes_alloc, task_cnt, nodelist, node_inx, "
 		"task_dist, req_cpufreq, req_cpufreq_min, req_cpufreq_gov",
 		mysql_conn->cluster_name, step_table);
@@ -1474,12 +1474,12 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		xstrcat(query, ", container");
 
 	xstrfmtcat(query,
-		   ") values (%"PRIu64", %d, %u, %d, '%s', %d, '%s', %d, %d, "
-		   "'%s', '%s', %d, %u, %u, %u",
+		   ") values (%"PRIu64", %d, %u, %d, %u, '%s', %d, '%s', %d, "
+		   "%d, '%s', '%s', %d, %u, %u, %u",
 		   step_ptr->job_ptr->db_index,
 		   step_ptr->step_id.step_id,
 		   step_ptr->step_id.step_het_comp,
-		   (int)start_time, step_ptr->name,
+		   (int)start_time, step_ptr->time_limit, step_ptr->name,
 		   JOB_RUNNING, step_ptr->tres_alloc_str,
 		   nodes, tasks, node_list, node_inx, task_dist,
 		   step_ptr->cpu_freq_max, step_ptr->cpu_freq_min,
@@ -1492,11 +1492,11 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 
 	xstrfmtcat(query,
 		   ") on duplicate key update "
-		   "nodes_alloc=%d, task_cnt=%d, time_end=0, state=%d, "
-		   "nodelist='%s', node_inx='%s', task_dist=%d, "
+		   "nodes_alloc=%d, task_cnt=%d, time_end=0, timelimit=%u, "
+		   "state=%d, nodelist='%s', node_inx='%s', task_dist=%d, "
 		   "req_cpufreq=%u, req_cpufreq_min=%u, req_cpufreq_gov=%u,"
 		   "tres_alloc='%s'",
-		   nodes, tasks, JOB_RUNNING,
+		   nodes, tasks, step_ptr->time_limit, JOB_RUNNING,
 		   node_list, node_inx, task_dist, step_ptr->cpu_freq_max,
 		   step_ptr->cpu_freq_min, step_ptr->cpu_freq_gov,
 		   step_ptr->tres_alloc_str);

@@ -1249,6 +1249,7 @@ static void _pack_step_start_msg(dbd_step_start_msg_t *msg,
 		pack_step_id(&msg->step_id, buffer, rpc_version);
 		packstr(msg->submit_line, buffer);
 		pack32(msg->task_dist, buffer);
+		pack32(msg->time_limit, buffer);
 		pack32(msg->total_tasks, buffer);
 		packstr(msg->tres_alloc_str, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -1298,6 +1299,7 @@ static int _unpack_step_start_msg(dbd_step_start_msg_t **msg,
 			goto unpack_error;
 		safe_unpackstr(&msg_ptr->submit_line, buffer);
 		safe_unpack32(&msg_ptr->task_dist, buffer);
+		safe_unpack32(&msg_ptr->time_limit, buffer);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 		safe_unpackstr(&msg_ptr->tres_alloc_str, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {

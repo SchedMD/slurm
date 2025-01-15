@@ -423,6 +423,7 @@ typedef struct dbd_step_start_msg {
 	char *submit_line;      /* The command issued with all it's options in a
 				 * string */
 	uint32_t task_dist;     /* layout method of step */
+	uint32_t time_limit; /* time limit of step */
 	uint32_t total_tasks;	/* count of tasks for step */
 	char *tres_alloc_str;   /* Simple comma separated list of TRES */
 } dbd_step_start_msg_t;

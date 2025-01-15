@@ -1399,6 +1399,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "time_start", "bigint unsigned default 0 not null" },
 		{ "time_end", "bigint unsigned default 0 not null" },
 		{ "time_suspended", "bigint unsigned default 0 not null" },
+		{ "timelimit", "int unsigned default 0 not null" },
 		{ "user_sec", "bigint unsigned default 0 not null" },
 		{ "user_usec", "int unsigned default 0 not null" },
 		{ "sys_sec", "bigint unsigned default 0 not null" },
