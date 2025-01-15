@@ -1756,6 +1756,19 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 		return;
 	}
 
+	if (start_clean & (SACCTMGR_CLEAN_ACCT | SACCTMGR_CLEAN_USER)) {
+		curr_cluster_list = slurmdb_clusters_get(
+			db_conn, NULL);
+		if (curr_cluster_list && (list_count(curr_cluster_list) > 1)) {
+			exit_code = 1;
+			fprintf(stderr, " When doing a clean=account and/or user you must only have one cluster in the system.\n");
+			xfree(cluster_name);
+			FREE_NULL_LIST(curr_cluster_list);
+			return;
+		}
+		FREE_NULL_LIST(curr_cluster_list);
+	}
+
 	/* These are new info so they need to be freed here */
 	acct_list = list_create(slurmdb_destroy_account_rec);
 	slurmdb_assoc_list = list_create(slurmdb_destroy_assoc_rec);
