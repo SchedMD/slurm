@@ -34,6 +34,7 @@ set timeout     $max_job_delay
 set job_id     0
 set user_name   [get_my_user_name]
 
+set at          AllocTRES
 set ac          AveCPU
 set ap          AvePages
 set ar          AveRSS
@@ -137,7 +138,7 @@ proc sstat_job {soption job_id step_id} {
 	}
 
 	if { $soption == "-noheader" || $soption == "n" } {
-		set re_header "JobID|MaxVMSize|MaxVMSizeNode|MaxVMSizeTask|AveVMSize|MaxRSS|MaxRSSNode|MaxRSSTask|AveRSS|MaxPages|MaxPagesNode|MaxPagesTask|AvePages|MinCPU|MinCPUNode|MinCPUTask|AveCPU|NTasks"
+		set re_header "JobID|AllocTRES|MaxVMSize|MaxVMSizeNode|MaxVMSizeTask|AveVMSize|MaxRSS|MaxRSSNode|MaxRSSTask|AveRSS|MaxPages|MaxPagesNode|MaxPagesTask|AvePages|MinCPU|MinCPUNode|MinCPUTask|AveCPU|NTasks"
 		set output [run_command_output -fail "$sstat -$soption -p -j $job_id"]
 		incr matches [regexp -all "(?n)^$job_id" $output]
 		incr matches [regexp -all $re_header $output]
@@ -146,7 +147,7 @@ proc sstat_job {soption job_id step_id} {
 
 	if { $soption == "-parsable" || $soption == "p" || $soption == "-parsable2" || $soption == "P" } {
 		set output [run_command_output -fail "$sstat -$soption -j $job_id.$step_id"]
-		incr matches [regexp -all "JobID\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" $output]
+		incr matches [regexp -all "JobID\\|AllocTRES\\|MaxVMSize\\|MaxVMSizeNode\\|MaxVMSizeTask\\|AveVMSize\\|MaxRSS\\|" $output]
 		incr matches [regexp -all "MaxRSSNode\\|MaxRSSTask\\|AveRSS\\|MaxPages\\|MaxPagesNode\\|MaxPagesTask\\|" $output]
 		incr matches [regexp -all "AvePages\\|MinCPU\\|MinCPUNode\\|MinCPUTask\\|AveCPU\\|NTasks\\|" $output]
 		incr matches [regexp -all "\\|$eol" $output]
@@ -156,7 +157,7 @@ proc sstat_job {soption job_id step_id} {
 
 	if { $soption == "-verbose" || $soption == "v" } {
 		set output [run_command_output -fail "$sstat -$soption -p -j $job_id"]
-		incr matches [regexp -all "JobID.MaxVMSize.MaxVMSizeNode.MaxVMSizeTask.AveVMSize.MaxRSS" $output]
+		incr matches [regexp -all "JobID.AllocTRES.MaxVMSize.MaxVMSizeNode.MaxVMSizeTask.AveVMSize.MaxRSS" $output]
 		incr matches [regexp -all "MaxRSSNode.MaxRSSTask.AveRSS.MaxPages.MaxPagesNode.MaxPagesTask" $output]
 		incr matches [regexp -all "AvePages.MinCPU.MinCPUNode.MinCPUTask.AveCPU.NTasks" $output]
 		incr matches [regexp -all "(?n)^$job_id" $output]
@@ -185,12 +186,12 @@ proc sstat_vargs {soption vargs job_id} {
 
 	if { $soption == "o" || $soption == "-format" } {
 		set output [run_command_output -fail "$sstat -$soption $vargs -p -j $job_id"]
-		incr matches [regexp -all "AveCPU.AvePages.AveRSS.AveVMSize" $output]
+		incr matches [regexp -all "AllocTRES.AveCPU.AvePages.AveRSS.AveVMSize" $output]
 		incr matches [regexp -all "JobID.MaxPages.MaxPagesNode.MaxPagesTask" $output]
 		incr matches [regexp -all "MaxRSS.MaxRSSNode.MaxRSSTask.MaxVMSize" $output]
 		incr matches [regexp -all "MaxVMSizeNode.MaxVMSizeTask.MinCPU.MinCPUNode" $output]
 		incr matches [regexp -all "MinCPUTask.NTasks" $output]
-		incr matches [regexp -all "(?n)^(?:\[^\\|\]*\\|){4}$job_id\\.($number)\\|" $output]
+		incr matches [regexp -all "(?n)^(?:\[^\\|\]*\\|){5}$job_id\\.($number)\\|" $output]
 		return $matches
 	}
 }
@@ -214,10 +215,10 @@ set matches [sstat_job -parsable $job_id 0]
 subtest {$matches == 6} "Verify sstat --parsable option" "$matches != 6"
 
 set matches [sstat_job P $job_id 0]
-subtest {$matches == 4} "Verify sstat -P option" "$matches != 4"
+subtest {$matches == 5} "Verify sstat -P option" "$matches != 5"
 
 set matches [sstat_job -parsable2 $job_id 0]
-subtest {$matches == 4} "Verify sstat --parsable2 option" "$matches != 4"
+subtest {$matches == 5} "Verify sstat --parsable2 option" "$matches != 5"
 
 set matches [sstat_job v $job_id 0]
 subtest {$matches == 4} "Verify sstat -v option" "$matches != 4"
@@ -225,8 +226,8 @@ subtest {$matches == 4} "Verify sstat -v option" "$matches != 4"
 set matches [sstat_job -verbose $job_id 0]
 subtest {$matches == 4} "Verify sstat --verbose option" "$matches != 4"
 
-set matches [sstat_vargs o $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id]
+set matches [sstat_vargs o $at,$ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id]
 subtest {$matches == 6} "Verify sstat -o option" "$matches != 6"
 
-set matches [sstat_vargs -format $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id]
+set matches [sstat_vargs -format $at,$ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id]
 subtest {$matches == 6} "Verify sstat --format option" "$matches != 6"
