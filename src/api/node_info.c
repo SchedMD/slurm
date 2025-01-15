@@ -401,8 +401,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 				node_ptr->energy->current_watts,
 				node_ptr->energy->ave_watts);
 
-	xstrcat(out, line_end);
-
 	/****** Line ******/
 	if (node_ptr->reason && node_ptr->reason[0])
 		xstrcat(reason_str, node_ptr->reason);
