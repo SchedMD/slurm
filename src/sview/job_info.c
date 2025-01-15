@@ -2603,7 +2603,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_TRES_ALLOC),
-				   step_ptr->tres_alloc_str);
+				   step_ptr->tres_fmt_alloc_str);
 
 	xfree(tmp_nodes);
 }
@@ -2701,7 +2701,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_TIME_RUNNING, tmp_time_run,
 			   SORTID_TIME_START,   tmp_time_start,
 			   SORTID_TIMELIMIT,    tmp_time_limit,
-			   SORTID_TRES_ALLOC,   step_ptr->tres_alloc_str,
+			   SORTID_TRES_ALLOC,   step_ptr->tres_fmt_alloc_str,
 			   SORTID_TRES_BIND,	step_ptr->tres_bind,
 			   SORTID_TRES_FREQ,	step_ptr->tres_freq,
 			   SORTID_TRES_PER_JOB,	step_ptr->tres_per_step,
