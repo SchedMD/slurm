@@ -66,6 +66,7 @@ typedef enum {
 
 #define SACCTMGR_CLEAN_CLUSTER SLURM_BIT(0)
 #define SACCTMGR_CLEAN_ACCT SLURM_BIT(1)
+#define SACCTMGR_CLEAN_USER SLURM_BIT(2)
 
 static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 {
@@ -1457,6 +1458,24 @@ static int _print_file_slurmdb_hierarchical_rec_children(
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_user_list(void *x, void *arg)
+{
+	slurmdb_user_rec_t *user_rec = x;
+	slurmdb_assoc_cond_t *assoc_cond = arg;
+
+	/* Don't remove myself or root */
+	if (!xstrcmp(user_rec->name, my_user_name) ||
+	    !xstrcmp(user_rec->name, "root"))
+		return 0;
+
+	if (!assoc_cond->user_list)
+		assoc_cond->user_list = list_create(xfree_ptr);
+
+	list_append(assoc_cond->user_list, user_rec->name);
+
+	return 0;
+}
+
 extern int print_file_add_limits_to_line(char **line,
 					 slurmdb_assoc_rec_t *assoc)
 {
@@ -1686,6 +1705,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				if (xstrcasestr(clean_types, "acct") ||
 				    xstrcasestr(clean_types, "account"))
 					start_clean |= SACCTMGR_CLEAN_ACCT;
+				if (xstrcasestr(clean_types, "user"))
+					start_clean |= SACCTMGR_CLEAN_USER;
 				xfree(clean_types);
 			}
 			start_clean |= SACCTMGR_CLEAN_CLUSTER;
@@ -1913,6 +1934,37 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				FREE_NULL_LIST(ret_list);
 			}
 
+			if (start_clean & SACCTMGR_CLEAN_USER) {
+				slurmdb_user_cond_t user_cond = { 0 };
+				slurmdb_assoc_cond_t assoc_cond = { 0 };
+				list_t *ret_list = NULL;
+
+				/*
+				 * The user_list here needs to be populated with
+				 * users in order for the remove to work.
+				 */
+				list_for_each(curr_user_list,
+					      _foreach_user_list,
+					      &assoc_cond);
+				user_cond.assoc_cond = &assoc_cond;
+
+				notice_thread_init();
+				ret_list = slurmdb_users_remove(
+					db_conn, &user_cond);
+				notice_thread_fini();
+				FREE_NULL_LIST(assoc_cond.user_list);
+
+				if (!ret_list &&
+				    (errno != SLURM_NO_CHANGE_IN_DATA)) {
+					exit_code=1;
+					fprintf(stderr, " There was a problem removing the users.\n");
+					rc = SLURM_ERROR;
+					break;
+				}
+				FREE_NULL_LIST(ret_list);
+				FREE_NULL_LIST(curr_user_list);
+			}
+
 			if (start_clean) {
 				/*
 				 * This needs to be committed or
@@ -1924,6 +1976,10 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			curr_cluster_list = slurmdb_clusters_get(
 				db_conn, NULL);
 			curr_acct_list = slurmdb_accounts_get(db_conn, NULL);
+			if (!curr_user_list)
+				curr_user_list = slurmdb_users_get(db_conn,
+								   &user_cond);
+			user_cond.assoc_cond = NULL;
 
 			if (cluster_name)
 				printf("For cluster %s\n", cluster_name);
