@@ -1636,7 +1636,6 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	slurmdb_account_rec_t *acct = NULL, *acct2 = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_user_rec_t *user = NULL, *user2 = NULL;
-	slurmdb_user_cond_t user_cond;
 
 	list_t *curr_assoc_list = NULL;
 	list_t *curr_acct_list = NULL;
@@ -1789,7 +1788,16 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 
 		if (!xstrcasecmp("Machine", object)
 		    || !xstrcasecmp("Cluster", object)) {
-			slurmdb_assoc_cond_t assoc_cond;
+			slurmdb_assoc_cond_t assoc_cond = {
+				.flags = ASSOC_COND_FLAG_RAW_QOS |
+				ASSOC_COND_FLAG_WOPL,
+			};
+			slurmdb_user_cond_t user_cond = {
+				.assoc_cond = &assoc_cond,
+				.with_coords = 1,
+				.with_assocs = 1,
+				.with_wckeys = 1,
+			};
 
 			if (cluster_name && !cluster_name_set) {
 				exit_code = 1;
@@ -1815,22 +1823,9 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			/* we have to do this here since this is the
 			   first place we have the cluster_name
 			*/
-			memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
-			user_cond.with_coords = 1;
-			user_cond.with_assocs = 1;
-			user_cond.with_wckeys = 1;
-
-			memset(&assoc_cond, 0,
-			       sizeof(slurmdb_assoc_cond_t));
-			assoc_cond.cluster_list = list_create(NULL);
-			assoc_cond.flags = ASSOC_COND_FLAG_RAW_QOS |
-				ASSOC_COND_FLAG_WOPL;
+			assoc_cond.cluster_list = list_create(NULL),
 			list_append(assoc_cond.cluster_list, cluster_name);
-			user_cond.assoc_cond = &assoc_cond;
 			curr_user_list = slurmdb_users_get(db_conn, &user_cond);
-
-			user_cond.assoc_cond = NULL;
-			assoc_cond.flags &= ~ASSOC_COND_FLAG_ONLY_DEFS;
 
 			/* make sure this person running is an admin */
 			if (!(user = sacctmgr_find_user_from_list(
@@ -1990,7 +1985,14 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			_destroy_sacctmgr_file_opts(file_opts);
 			file_opts = NULL;
 
-			/* assoc_cond if set up above */
+			/*
+			 * Change flags from above.
+			 *
+			 * Now that the cluster is added we can grab the
+			 * associations.
+			 */
+			assoc_cond.flags &= ~ASSOC_COND_FLAG_ONLY_DEFS;
+
 			curr_assoc_list = slurmdb_associations_get(
 				db_conn, &assoc_cond);
 			FREE_NULL_LIST(assoc_cond.cluster_list);
