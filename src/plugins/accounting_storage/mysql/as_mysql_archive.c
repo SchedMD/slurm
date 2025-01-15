@@ -2178,7 +2178,52 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 {
 	char *tmp_char;
 
-	if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->act_cpufreq, buffer);
+		safe_unpackstr(&object->deleted, buffer);
+		safe_unpackstr(&object->exit_code, buffer);
+		safe_unpackstr(&object->consumed_energy, buffer);
+		safe_unpackstr(&object->container, buffer);
+		safe_unpackstr(&object->job_db_inx, buffer);
+		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->name, buffer);
+		safe_unpackstr(&object->nodelist, buffer);
+		safe_unpackstr(&object->nodes, buffer);
+		safe_unpackstr(&object->node_inx, buffer);
+		safe_unpackstr(&object->period_end, buffer);
+		safe_unpackstr(&object->period_start, buffer);
+		safe_unpackstr(&object->period_suspended, buffer);
+		safe_unpackstr(&object->req_cpufreq_min, buffer);
+		safe_unpackstr(&object->req_cpufreq_max, buffer);
+		safe_unpackstr(&object->req_cpufreq_gov, buffer);
+		safe_unpackstr(&object->state, buffer);
+		safe_unpackstr(&object->stepid, buffer);
+		safe_unpackstr(&object->step_het_comp, buffer);
+		safe_unpackstr(&object->submit_line, buffer);
+		safe_unpackstr(&object->sys_sec, buffer);
+		safe_unpackstr(&object->sys_usec, buffer);
+		safe_unpackstr(&object->tasks, buffer);
+		safe_unpackstr(&object->task_dist, buffer);
+		safe_unpackstr(&object->tres_alloc_str, buffer);
+		safe_unpackstr(&object->tres_usage_in_ave, buffer);
+		safe_unpackstr(&object->tres_usage_in_max, buffer);
+		safe_unpackstr(&object->tres_usage_in_max_nodeid, buffer);
+		safe_unpackstr(&object->tres_usage_in_max_taskid, buffer);
+		safe_unpackstr(&object->tres_usage_in_min, buffer);
+		safe_unpackstr(&object->tres_usage_in_min_nodeid, buffer);
+		safe_unpackstr(&object->tres_usage_in_min_taskid, buffer);
+		safe_unpackstr(&object->tres_usage_in_tot, buffer);
+		safe_unpackstr(&object->tres_usage_out_ave, buffer);
+		safe_unpackstr(&object->tres_usage_out_max, buffer);
+		safe_unpackstr(&object->tres_usage_out_max_nodeid, buffer);
+		safe_unpackstr(&object->tres_usage_out_max_taskid, buffer);
+		safe_unpackstr(&object->tres_usage_out_min, buffer);
+		safe_unpackstr(&object->tres_usage_out_min_nodeid, buffer);
+		safe_unpackstr(&object->tres_usage_out_min_taskid, buffer);
+		safe_unpackstr(&object->tres_usage_out_tot, buffer);
+		safe_unpackstr(&object->user_sec, buffer);
+		safe_unpackstr(&object->user_usec, buffer);
+	} else if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->act_cpufreq, buffer);
 		safe_unpackstr(&object->deleted, buffer);
 		safe_unpackstr(&object->exit_code, buffer);
