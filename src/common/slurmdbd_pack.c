@@ -1233,7 +1233,25 @@ static void _pack_step_start_msg(dbd_step_start_msg_t *msg,
 	if (!msg->node_inx)
 		msg->node_inx = acct_storage_g_node_inx(NULL, msg->nodes);
 
-	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		pack32(msg->assoc_id, buffer);
+		pack64(msg->db_index, buffer);
+		packstr(msg->container, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->nodes, buffer);
+		packstr(msg->node_inx, buffer);
+		pack32(msg->node_cnt, buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->job_submit_time, buffer);
+		pack32(msg->req_cpufreq_min, buffer);
+		pack32(msg->req_cpufreq_max, buffer);
+		pack32(msg->req_cpufreq_gov, buffer);
+		pack_step_id(&msg->step_id, buffer, rpc_version);
+		packstr(msg->submit_line, buffer);
+		pack32(msg->task_dist, buffer);
+		pack32(msg->total_tasks, buffer);
+		packstr(msg->tres_alloc_str, buffer);
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->assoc_id, buffer);
 		pack64(msg->db_index, buffer);
 		packstr(msg->container, buffer);
@@ -1262,7 +1280,27 @@ static int _unpack_step_start_msg(dbd_step_start_msg_t **msg,
 	dbd_step_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_step_start_msg_t));
 	*msg = msg_ptr;
 
-	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpack32(&msg_ptr->assoc_id, buffer);
+		safe_unpack64(&msg_ptr->db_index, buffer);
+		safe_unpackstr(&msg_ptr->container, buffer);
+		safe_unpackstr(&msg_ptr->name, buffer);
+		safe_unpackstr(&msg_ptr->nodes, buffer);
+		safe_unpackstr(&msg_ptr->node_inx, buffer);
+		safe_unpack32(&msg_ptr->node_cnt, buffer);
+		safe_unpack_time(&msg_ptr->start_time, buffer);
+		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
+		safe_unpack32(&msg_ptr->req_cpufreq_min, buffer);
+		safe_unpack32(&msg_ptr->req_cpufreq_max, buffer);
+		safe_unpack32(&msg_ptr->req_cpufreq_gov, buffer);
+		if (unpack_step_id_members(&msg_ptr->step_id, buffer,
+					   rpc_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpackstr(&msg_ptr->submit_line, buffer);
+		safe_unpack32(&msg_ptr->task_dist, buffer);
+		safe_unpack32(&msg_ptr->total_tasks, buffer);
+		safe_unpackstr(&msg_ptr->tres_alloc_str, buffer);
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpackstr(&msg_ptr->container, buffer);
