@@ -336,13 +336,12 @@ int env_array_to_file(const char *filename, const char **env_array,
  *    in the event that option 1 times out.  This only happens if no_cache isn't
  *    set.  If it is set then NULL will be returned if the normal load fails.
  *
- * timeout value is in seconds or zero for default (8 secs)
  * On error, returns NULL.
  *
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout);
+char **env_array_user_default(const char *username);
 
 /*
  * Return a string representation of an array of uint16_t elements.

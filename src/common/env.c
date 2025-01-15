@@ -2185,13 +2185,13 @@ static bool _ns_disabled()
  *    in the event that option 1 times out.  This only happens if no_cache isn't
  *    set.  If it is set then NULL will be returned if the normal load fails.
  *
- * timeout value is in seconds or zero for default (2 secs)
+ * timeout value is in seconds or zero for default (120 secs)
  * On error, returns NULL.
  *
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout)
+char **env_array_user_default(const char *username)
 {
 	char *line = NULL, *last = NULL, name[PATH_MAX], *value, *buffer;
 	char **env = NULL;
@@ -2201,6 +2201,7 @@ char **env_array_user_default(const char *username, int timeout)
 	char *stepd_path = NULL;
 	int fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem, config_timeout;
+	int timeout = DEFAULT_GET_ENV_TIMEOUT;
 	pid_t child;
 	child_args_t child_args = {0};
 	struct timeval begin, now;
@@ -2293,8 +2294,6 @@ char **env_array_user_default(const char *username, int timeout)
 	ufds.events = POLLIN;
 
 	/* Read all of the output from /bin/su into buffer */
-	if (timeout == 0)
-		timeout = slurm_conf.get_env_timeout;	/* != 0 test above */
 	found = 0;
 	buf_read = 0;
 	buffer = xmalloc(ENV_BUFSIZE);
