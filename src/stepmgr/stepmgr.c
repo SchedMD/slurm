@@ -4550,6 +4550,8 @@ static int _update_step(void *x, void *arg)
 	step_ptr->time_limit = args->time_limit;
 	args->mod_cnt++;
 
+	jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn, step_ptr);
+
 	info("Updating %pS time limit to %u", step_ptr, args->time_limit);
 
 	return 0;
@@ -4593,6 +4595,10 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		if (req->time_limit) {
 			step_ptr->time_limit = req->time_limit;
 			args.mod_cnt++;
+
+			jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn,
+						     step_ptr);
+
 			info("Updating %pS time limit to %u",
 			     step_ptr, req->time_limit);
 		}
