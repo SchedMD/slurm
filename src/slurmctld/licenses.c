@@ -77,31 +77,39 @@ typedef struct {
 	time_t when;
 } license_test_args_t;
 
+typedef struct {
+	char *header;
+	job_record_t *job_ptr;
+} foreach_license_print_t;
+
+static int _foreach_license_print(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	foreach_license_print_t *args = arg;
+
+	if (!args->job_ptr) {
+		info("licenses: %s=%s total=%u used=%u",
+		     args->header, license_entry->name,
+		     license_entry->total, license_entry->used);
+	} else {
+		info("licenses: %s=%s %pJ available=%u used=%u",
+		     args->header, license_entry->name, args->job_ptr,
+		     license_entry->total, license_entry->used);
+	}
+
+	return 0;
+}
+
 /* Print all licenses on a list */
 static void _licenses_print(char *header, list_t *licenses,
 			    job_record_t *job_ptr)
 {
-	list_itr_t *iter;
-	licenses_t *license_entry;
-
+	foreach_license_print_t args = { .header = header, .job_ptr = job_ptr };
 	if (licenses == NULL)
 		return;
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_LICENSE))
 		return;
-
-	iter = list_iterator_create(licenses);
-  	while ((license_entry = list_next(iter))) {
-		if (!job_ptr) {
-			info("licenses: %s=%s total=%u used=%u",
-			     header, license_entry->name,
-			     license_entry->total, license_entry->used);
-		} else {
-			info("licenses: %s=%s %pJ available=%u used=%u",
-			     header, license_entry->name, job_ptr,
-			     license_entry->total, license_entry->used);
-		}
-	}
-	list_iterator_destroy(iter);
+	list_for_each(licenses, _foreach_license_print, &args);
 }
 
 /* Free a license_t record (for use by FREE_NULL_LIST) */
