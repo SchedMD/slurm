@@ -634,6 +634,20 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   assoc->max_wall_pj,
 			   file_opts->assoc_rec.max_wall_pj);
 	}
+
+	if ((file_opts->assoc_rec.min_prio_thresh != NO_VAL) &&
+	    (assoc->min_prio_thresh != file_opts->assoc_rec.min_prio_thresh)) {
+		mod_assoc.min_prio_thresh =
+			file_opts->assoc_rec.min_prio_thresh;
+		changed = 1;
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MinPrioThresh",
+			   type, name,
+			   assoc->min_prio_thresh,
+			   file_opts->assoc_rec.min_prio_thresh);
+	}
+
 	if (assoc->parent_acct && parent
 	    && xstrcmp(assoc->parent_acct, parent)) {
 		mod_assoc.parent_acct = parent;
@@ -1580,6 +1594,10 @@ extern int print_file_add_limits_to_line(char **line,
 	if (assoc->max_wall_pj != INFINITE)
 		xstrfmtcat(*line, ":MaxWallDurationPerJob=%u",
 			   assoc->max_wall_pj);
+
+	if (assoc->min_prio_thresh != INFINITE)
+		xstrfmtcat(*line, ":MinPrioThresh=%u",
+			   assoc->min_prio_thresh);
 
 	if (assoc->priority != INFINITE)
 		xstrfmtcat(*line, ":Priority=%u", assoc->priority);
