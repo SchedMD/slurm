@@ -193,6 +193,7 @@ char *step_req_inx[] = {
 	"t1.time_start",
 	"t1.time_end",
 	"t1.time_suspended",
+	"t1.timelimit",
 	"t1.step_name",
 	"t1.nodelist",
 	"t1.node_inx",
@@ -238,6 +239,7 @@ enum {
 	STEP_REQ_START,
 	STEP_REQ_END,
 	STEP_REQ_SUSPENDED,
+	STEP_REQ_TIMELIMIT,
 	STEP_REQ_NAME,
 	STEP_REQ_NODELIST,
 	STEP_REQ_NODE_INX,
@@ -1054,6 +1056,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 			if ((int)step->elapsed < 0)
 				step->elapsed = 0;
+
+			step->timelimit =
+				slurm_atoul(step_row[STEP_REQ_TIMELIMIT]);
 
 			step->req_cpufreq_min = slurm_atoul(
 				step_row[STEP_REQ_REQ_CPUFREQ_MIN]);

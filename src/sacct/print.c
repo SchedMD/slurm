@@ -2050,6 +2050,17 @@ extern void print_fields(type_t type, void *object)
 					tmp_char = tmp1;
 				}
 				break;
+			case JOBSTEP:
+				if (step->timelimit == INFINITE) {
+					/* Leave blank, timelimit was not set */
+				} else if (step->timelimit == NO_VAL) {
+					tmp_char = "Partition_Limit";
+				} else if (step->timelimit) {
+					mins2time_str(step->timelimit, tmp1,
+						      sizeof(tmp1));
+					tmp_char = tmp1;
+				}
+				break;
 			case JOBCOMP:
 				tmp_char = job_comp->timelimit;
 				break;
@@ -2073,6 +2084,17 @@ extern void print_fields(type_t type, void *object)
 							job->timelimit);
                                 }
                                 break;
+			case JOBSTEP:
+				if (step->timelimit == INFINITE) {
+					/* Leave blank, timelimit was not set */
+				} else if (step->timelimit == NO_VAL) {
+					tmp_char = "Partition_Limit";
+				} else if (step->timelimit) {
+					tmp_int = 1;
+					tmp_char = xstrdup_printf(
+						"%u", step->timelimit);
+				}
+				break;
                         case JOBCOMP:
                                 tmp_char = job_comp->timelimit;
                                 break;

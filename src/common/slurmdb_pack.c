@@ -5161,6 +5161,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		pack64(step->sys_cpu_sec, buffer);
 		pack32(step->sys_cpu_usec, buffer);
 		pack32(step->task_dist, buffer);
+		pack32(step->timelimit, buffer);
 		pack64(step->tot_cpu_sec, buffer);
 		pack32(step->tot_cpu_usec, buffer);
 		packstr(step->tres_alloc_str, buffer);
@@ -5237,6 +5238,7 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpack64(&step_ptr->sys_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
 		safe_unpack32(&step_ptr->task_dist, buffer);
+		safe_unpack32(&step_ptr->timelimit, buffer);
 		safe_unpack64(&step_ptr->tot_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
 		safe_unpackstr(&step_ptr->tres_alloc_str, buffer);
