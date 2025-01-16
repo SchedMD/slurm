@@ -2764,7 +2764,7 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr(&step->network, buffer);
 		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
 
-		safe_unpackstr(&step->tres_alloc_str, buffer);
+		safe_unpackstr(&step->tres_fmt_alloc_str, buffer);
 		safe_unpack16(&step->start_protocol_ver, buffer);
 
 		safe_unpackstr(&step->cpus_per_tres, buffer);
