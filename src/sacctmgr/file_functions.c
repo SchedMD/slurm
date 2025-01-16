@@ -1626,6 +1626,209 @@ extern int print_file_add_limits_to_line(char **line,
 	return SLURM_SUCCESS;
 }
 
+extern int file_print_qos(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos_rec = x;
+	char **line = arg;
+	char *tmp_char;
+
+	xassert(line);
+
+	if (!qos_rec)
+		return 0;
+
+	xstrfmtcat(*line, "QOS - '%s':Description='%s'",
+		   qos_rec->name, qos_rec->description);
+
+	if (qos_rec->flags) {
+		tmp_char = slurmdb_qos_flags_str(qos_rec->flags);
+		xstrfmtcat(*line, ":Flags='%s'", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->grace_time && (qos_rec->grace_time != INFINITE))
+		xstrfmtcat(*line, ":GraceTime=%u", qos_rec->grace_time);
+
+	if (qos_rec->grp_jobs_accrue != INFINITE)
+		xstrfmtcat(*line, ":GrpJobsAccrue=%u",
+			   qos_rec->grp_jobs_accrue);
+
+	if (qos_rec->grp_jobs != INFINITE)
+		xstrfmtcat(*line, ":GrpJobs=%u", qos_rec->grp_jobs);
+
+	if (qos_rec->grp_submit_jobs != INFINITE)
+		xstrfmtcat(*line, ":GrpSubmitJobs=%u",
+			   qos_rec->grp_submit_jobs);
+
+	if (qos_rec->grp_tres) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->grp_tres, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		xstrfmtcat(*line, ":GrpTRES=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->grp_tres_mins) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->grp_tres_mins, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		xstrfmtcat(*line, ":GrpTRESMins=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->grp_tres_run_mins) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->grp_tres_run_mins, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		xstrfmtcat(*line, ":GrpTRESRunMins=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->grp_wall != INFINITE)
+		xstrfmtcat(*line, ":GrpWall=%u", qos_rec->grp_wall);
+
+	if (!fuzzy_equal(qos_rec->limit_factor, INFINITE))
+		xstrfmtcat(*line, ":LimitFactor=%f", qos_rec->limit_factor);
+
+	if (qos_rec->max_jobs_pa != INFINITE)
+		xstrfmtcat(*line, ":MaxJobsPA=%u", qos_rec->max_jobs_pa);
+
+	if (qos_rec->max_jobs_pu != INFINITE)
+		xstrfmtcat(*line, ":MaxJobsPU=%u", qos_rec->max_jobs_pu);
+
+	if (qos_rec->max_jobs_accrue_pa != INFINITE)
+		xstrfmtcat(*line, ":MaxJobsAccruePA=%u",
+			   qos_rec->max_jobs_accrue_pa);
+
+	if (qos_rec->max_jobs_accrue_pu != INFINITE)
+		xstrfmtcat(*line, ":MaxJobsAccruePU=%u",
+			   qos_rec->max_jobs_accrue_pu);
+
+	if (qos_rec->max_submit_jobs_pa != INFINITE)
+		xstrfmtcat(*line, ":MaxSubmitJobsPA=%u",
+			   qos_rec->max_submit_jobs_pa);
+
+	if (qos_rec->max_submit_jobs_pu != INFINITE)
+		xstrfmtcat(*line, ":MaxSubmitJobsPU=%u",
+			   qos_rec->max_submit_jobs_pu);
+
+	if (qos_rec->max_tres_mins_pj) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->max_tres_mins_pj, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		xstrfmtcat(*line, ":MaxTRESMinsPerJob=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->max_tres_pa) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->max_tres_pa, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		xstrfmtcat(*line, ":MaxTRESPerAccount=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->max_tres_pj) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->max_tres_pj, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		xstrfmtcat(*line, ":MaxTRESPerJob=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->max_tres_pn) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->max_tres_pn, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		xstrfmtcat(*line, ":MaxTRESPerNode=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->max_tres_pu) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->max_tres_pu, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		xstrfmtcat(*line, ":MaxTRESPerUser=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->max_tres_run_mins_pa) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->max_tres_run_mins_pa, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		xstrfmtcat(*line, ":MaxTRESRunMinsPerAccount=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->max_tres_run_mins_pu) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->max_tres_run_mins_pu, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		xstrfmtcat(*line, ":MaxTRESRunMinsPerUser=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->max_wall_pj != INFINITE)
+		xstrfmtcat(*line, ":MaxWallDurationPerJob=%u",
+			   qos_rec->max_wall_pj);
+
+	if (qos_rec->min_prio_thresh != INFINITE)
+		xstrfmtcat(*line, ":MinPrioThresh=%u",
+			   qos_rec->min_prio_thresh);
+
+	if (qos_rec->min_tres_pj) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->min_tres_pj, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		xstrfmtcat(*line, ":MinTRESPerJob=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->preempt_bitstr) {
+		if (!g_qos_list)
+			g_qos_list = slurmdb_qos_get(db_conn, NULL);
+		tmp_char = get_qos_complete_str_bitstr(
+			g_qos_list, qos_rec->preempt_bitstr);
+		xstrfmtcat(*line, ":Preempt='%s'", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->preempt_mode) {
+		tmp_char = xstrdup(preempt_mode_string(qos_rec->preempt_mode));
+		xstrtolower(tmp_char);
+		xstrfmtcat(*line, ":PreemptMode='%s'", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos_rec->preempt_exempt_time != INFINITE)
+		xstrfmtcat(*line, ":PreemptExemptTime=%u",
+			   qos_rec->preempt_exempt_time);
+
+	if (qos_rec->priority && (qos_rec->priority != INFINITE))
+		xstrfmtcat(*line, ":Priority=%u", qos_rec->priority);
+
+	if ((qos_rec->usage_factor != 1) &&
+	    !fuzzy_equal(qos_rec->usage_factor, INFINITE))
+		xstrfmtcat(*line, ":UsageFactor=%f", qos_rec->usage_factor);
+
+	if (!fuzzy_equal(qos_rec->usage_thres, INFINITE))
+		xstrfmtcat(*line, ":UsageThreshold=%f", qos_rec->usage_thres);
+
+	xstrcat(*line, "\n");
+
+	return 0;
+}
 
 extern int print_file_slurmdb_hierarchical_rec_list(
 	FILE *fd,

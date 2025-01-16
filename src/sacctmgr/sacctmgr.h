@@ -363,6 +363,8 @@ extern void sacctmgr_initialize_g_tres_list(void);
 extern int print_file_add_limits_to_line(char **line,
 					 slurmdb_assoc_rec_t *assoc);
 
+extern int file_print_qos(void *x, void *arg);
+
 extern int print_file_slurmdb_hierarchical_rec_list(
 	FILE *fd, list_t *slurmdb_hierarchical_rec_list,
 	list_t *user_list, list_t *acct_list);

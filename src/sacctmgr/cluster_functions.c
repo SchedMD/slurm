@@ -966,6 +966,7 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	slurmdb_assoc_cond_t assoc_cond;
 	list_t *assoc_list = NULL;
 	list_t *acct_list = NULL;
+	list_t *qos_list = NULL;
 	list_t *user_list = NULL;
 	list_t *slurmdb_hierarchical_rec_list = NULL;
 	char *cluster_name = NULL;
@@ -1152,7 +1153,14 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 		goto end_it;
 	}
 
-	line = xstrdup_printf("Cluster - '%s'", cluster_name);
+	qos_list = slurmdb_qos_get(db_conn, NULL);
+
+	if (qos_list) {
+		(void) list_for_each(qos_list, file_print_qos, &line);
+		FREE_NULL_LIST(qos_list);
+	}
+
+	xstrfmtcat(line, "Cluster - '%s'", cluster_name);
 
 	if (class_str)
 		xstrfmtcat(line, ":Classification='%s'", class_str);
