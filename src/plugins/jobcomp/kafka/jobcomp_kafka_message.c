@@ -80,7 +80,7 @@ static int _foreach_conf_pair(void *x, void *arg);
 static kafka_msg_t *_init_kafka_msg(uint32_t job_id, char *payload);
 static void _load_jobcomp_kafka_state(void);
 static void _pack_jobcomp_kafka_state(buf_t *buffer);
-static int _pack_kafka_msg(void *object, void *arg);
+static int _pack_jobcomp_kafka_msg(void *object, void *arg);
 static void *_poll_handler(void *no_data);
 static void _purge_rd_kafka_msgs(void);
 static void _terminate_poll_handler(void);
@@ -493,7 +493,7 @@ static void _purge_rd_kafka_msgs(void)
  * IN/OUT buf_t pointer - buffer to store packed data, pointers automatically
  * advanced.
  */
-static int _pack_kafka_msg(void *object, void *arg)
+static int _pack_jobcomp_kafka_msg(void *object, void *arg)
 {
 	kafka_msg_t *kafka_msg = object;
 	buf_t *buffer = arg;
@@ -519,7 +519,7 @@ static void _pack_jobcomp_kafka_state(buf_t *buffer)
 	pack32(list_count(state_msg_list), buffer);
 
 	/* Pack state body. */
-	list_for_each_ro(state_msg_list, _pack_kafka_msg, buffer);
+	list_for_each_ro(state_msg_list, _pack_jobcomp_kafka_msg, buffer);
 }
 
 /*
