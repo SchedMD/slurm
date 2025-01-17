@@ -181,6 +181,7 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		log_flag(JOBCOMP,
 			 "Message for JobId=%u delivered to topic '%s'",
 			 job_id, topic);
+		xfree(payload);
 		break;
 	case RD_KAFKA_RESP_ERR__MSG_TIMED_OUT:
 		/*
@@ -195,13 +196,14 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		if (!requeue) {
 			error("%s: Message delivery for JobId=%u failed: %s. Message discarded.",
 			      plugin_type, job_id, err_str);
+			xfree(payload);
 			break;
 		}
 
 		if (!terminate)
 			jobcomp_kafka_message_produce(job_id, payload);
 		else
-			_add_kafka_msg_to_state(job_id, xstrdup(payload));
+			_add_kafka_msg_to_state(job_id, payload);
 
 		error("%s: Message delivery for JobId=%u failed: %s. %s.",
 		      plugin_type, job_id, err_str,
@@ -214,7 +216,7 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		/* Purged in-queue. Always requeue in this case. */
 		log_flag(JOBCOMP, "Message delivery for JobId=%u failed: %s. Saving message to plugin state file.",
 			 job_id, err_str);
-		_add_kafka_msg_to_state(job_id, xstrdup(payload));
+		_add_kafka_msg_to_state(job_id, payload);
 
 		break;
 	case RD_KAFKA_RESP_ERR__PURGE_INFLIGHT:
@@ -230,13 +232,16 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		      "Saving message to plugin state file" : "Message discarded");
 
 		if (requeue)
-			_add_kafka_msg_to_state(job_id, xstrdup(payload));
+			_add_kafka_msg_to_state(job_id, payload);
+		else
+			xfree(payload);
 
 		break;
 #endif
 	default:
 		error("%s: Message delivery for JobId=%u failed: %s. Message discarded.",
 		      plugin_type, job_id, err_str);
+		xfree(payload);
 		break;
 	}
 
@@ -537,7 +542,6 @@ static int _unpack_jobcomp_kafka_msg(uint16_t protocol_version, buf_t *buffer)
 	safe_unpackstr(&payload, buffer);
 
 	jobcomp_kafka_message_produce(job_id, payload);
-	xfree(payload);
 
 	return SLURM_SUCCESS;
 
@@ -675,7 +679,6 @@ extern void jobcomp_kafka_message_produce(uint32_t job_id, char *payload)
 	 */
 	err = rd_kafka_producev(rk,
 				RD_KAFKA_V_TOPIC(kafka_conf->topic),
-				RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_COPY),
 				RD_KAFKA_V_VALUE(payload, len),
 				RD_KAFKA_V_OPAQUE(opaque),
 				RD_KAFKA_V_END);
@@ -689,6 +692,7 @@ extern void jobcomp_kafka_message_produce(uint32_t job_id, char *payload)
 		      plugin_type, job_id, kafka_conf->topic,
 		      rd_kafka_err2str(err));
 		xfree(opaque);
+		xfree(payload);
 	}
 	slurm_rwlock_unlock(&kafka_conf_rwlock);
 }

@@ -149,7 +149,6 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr)
 	jobcomp_kafka_message_produce(job_ptr->job_id, job_record_serialized);
 
 end:
-	xfree(job_record_serialized);
 	FREE_NULL_DATA(job_record_data);
 	return rc;
 }
