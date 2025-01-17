@@ -2071,19 +2071,19 @@ extern void print_fields(type_t type, void *object)
 					     tmp_char,
 					     (curr_inx == field_count));
 			break;
-                case PRINT_TIMELIMIT_RAW:
-                        switch (type) {
-                        case JOB:
-                                if (job->timelimit == INFINITE)
-                                        tmp_char = "UNLIMITED";
-                                else if (job->timelimit == NO_VAL)
-                                        tmp_char = "Partition_Limit";
-                                else if (job->timelimit) {
+		case PRINT_TIMELIMIT_RAW:
+			switch (type) {
+			case JOB:
+				if (job->timelimit == INFINITE)
+					tmp_char = "UNLIMITED";
+				else if (job->timelimit == NO_VAL)
+					tmp_char = "Partition_Limit";
+				else if (job->timelimit) {
 					tmp_int = 1;
-                                        tmp_char = xstrdup_printf("%u",
+					tmp_char = xstrdup_printf("%u",
 							job->timelimit);
-                                }
-                                break;
+				}
+				break;
 			case JOBSTEP:
 				if (step->timelimit == INFINITE) {
 					/* Leave blank, timelimit was not set */
@@ -2095,18 +2095,18 @@ extern void print_fields(type_t type, void *object)
 						"%u", step->timelimit);
 				}
 				break;
-                        case JOBCOMP:
-                                tmp_char = job_comp->timelimit;
-                                break;
-                        default:
-                                break;
-                        }
-                        field->print_routine(field,
-                                             tmp_char,
-                                             (curr_inx == field_count));
+			case JOBCOMP:
+				tmp_char = job_comp->timelimit;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
 			if (tmp_int == 1)
 				xfree(tmp_char);
-                        break;
+			break;
 		case PRINT_TOTALCPU:
 			switch(type) {
 			case JOB:
