@@ -579,6 +579,34 @@ static int _env_set(const stepd_step_rec_t *step, char ***env)
 	} else
 		_srv_fence_coll_barrier = slurm_pmix_conf.fence_barrier;
 
+	/*
+	 * Setup transport keys in case the MPI layer needs them.
+	 *
+	 * We use the jobid and stepid to form the unique keys in this node.
+	 *
+	 * According to Intel the format is 16 digit hexadecimal characters
+	 * separated by a dash. For example: 13241234acffedeb-abcdefabcdef1233
+	 *
+	 * This key is used by the PSM2 library to uniquely identify each
+	 * different job end point used on the fabric. If two MPI jobs are
+	 * running on the same node sharing the same HFI and using PSM2, each
+	 * one should have a different key.
+	 */
+	if (!getenvp(*env, "OMPI_MCA_orte_precondition_transports")) {
+		char *string_key = xstrdup_printf("%08x%08x-%08x%08x",
+						  step->step_id.job_id,
+						  step->step_id.step_id,
+						  step->step_id.job_id,
+						  step->step_id.step_id);
+		env_array_overwrite(env,
+				    "OMPI_MCA_orte_precondition_transports",
+				    string_key);
+		log_flag(MPI,
+			 "Setting OMPI_MCA_orte_precondition_transports=%s",
+			 string_key);
+		xfree(string_key);
+	}
+
 #ifdef HAVE_UCX
 	p = getenvp(*env, PMIXP_DIRECT_CONN_UCX);
 	if (p) {
