@@ -60,6 +60,7 @@ typedef struct {
 typedef struct xlist bf_licenses_t;
 
 typedef struct {
+	uint16_t lic_id;
 	char *name;
 	uint32_t remaining;
 	slurmctld_resv_t *resv_ptr;

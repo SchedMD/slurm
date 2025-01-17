@@ -66,7 +66,7 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 			  uint16_t protocol_version);
 
 typedef struct {
-	char *name;
+	uint16_t lic_id;
 	slurmctld_resv_t *resv_ptr;
 } bf_licenses_find_resv_t;
 
@@ -1179,15 +1179,15 @@ static void _bf_license_free_rec(void *x)
 static int _bf_licenses_find_rec(void *x, void *key)
 {
 	bf_license_t *license_entry = x;
-	char *name = key;
+	uint16_t *lic_id = key;
 
-	xassert(license_entry->name);
-	xassert(name);
+	xassert(license_entry->lic_id != NO_VAL16);
+	xassert(*lic_id != NO_VAL16);
 
 	if (license_entry->resv_ptr)
 		return 0;
 
-	if (!xstrcmp(license_entry->name, name))
+	if (license_entry->lic_id == *lic_id)
 		return 1;
 
 	return 0;
@@ -1201,7 +1201,7 @@ static int _bf_licenses_find_resv(void *x, void *key)
 	if (license_entry->resv_ptr != target->resv_ptr)
 		return 0;
 
-	if (xstrcmp(license_entry->name, target->name))
+	if (license_entry->lic_id != target->lic_id)
 		return 0;
 
 	return 1;
@@ -1224,6 +1224,7 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 		bf_entry = xmalloc(sizeof(*bf_entry));
 		bf_entry->name = xstrdup(license_entry->name);
 		bf_entry->remaining = license_entry->total;
+		bf_entry->lic_id = license_entry->lic_id;
 
 		if (!bf_running_job_reserve)
 			bf_entry->remaining -= license_entry->used;
@@ -1276,6 +1277,7 @@ extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src)
 		entry_dest->name = xstrdup(entry_src->name);
 		entry_dest->remaining = entry_src->remaining;
 		entry_dest->resv_ptr = entry_src->resv_ptr;
+		entry_dest->lic_id = entry_src->lic_id;
 		list_append(licenses_dest, entry_dest);
 	}
 	list_iterator_destroy(iter);
@@ -1306,7 +1308,7 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 		 */
 		if (job_ptr->resv_ptr) {
 			bf_licenses_find_resv_t target_record = {
-				.name = job_entry->name,
+				.lic_id = job_entry->lic_id,
 				.resv_ptr = job_ptr->resv_ptr,
 			};
 
@@ -1323,7 +1325,7 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 		}
 
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
-					   job_entry->name);
+					   &job_entry->lic_id);
 
 		if (!bf_entry) {
 			error("%s: missing license %s",
@@ -1361,7 +1363,7 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 		int reservable = resv_entry->total;
 
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
-					   resv_entry->name);
+					   &(resv_entry->lic_id));
 
 		if (!bf_entry) {
 			error("%s: missing license %s",
@@ -1407,7 +1409,7 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 		 */
 		if (job_ptr->resv_ptr) {
 			bf_licenses_find_resv_t target_record = {
-				.name = need->name,
+				.lic_id = need->lic_id,
 				.resv_ptr = job_ptr->resv_ptr,
 			};
 
@@ -1422,7 +1424,7 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 		}
 
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
-					   need->name);
+					   &(need->lic_id));
 
 		if (!bf_entry || (bf_entry->remaining < needed)) {
 			avail = false;
@@ -1443,7 +1445,7 @@ extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b)
 	iter = list_iterator_create(a);
 	while ((entry_a = list_next(iter))) {
 		entry_b = list_find_first(b, _bf_licenses_find_rec,
-					  entry_a->name);
+					  &entry_a->lic_id);
 
 		if (!entry_b || (entry_a->remaining != entry_b->remaining) ||
 		    (entry_a->resv_ptr != entry_b->resv_ptr)) {
