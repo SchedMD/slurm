@@ -113,7 +113,7 @@ static void _update_sackd_node(sackd_node_t *node, slurm_msg_t *msg)
 	if (msg->conn_fd >= 0 && !slurm_get_peer_addr(msg->conn_fd, &addr)) {
 		node->nodeaddr = xmalloc(INET6_ADDRSTRLEN);
 		slurm_get_ip_str(&addr, node->nodeaddr, INET6_ADDRSTRLEN);
-        } else {
+	} else {
 		node->nodeaddr = xstrdup(node->hostname);
 	}
 }
