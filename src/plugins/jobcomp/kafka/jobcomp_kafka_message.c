@@ -538,8 +538,17 @@ static int _unpack_jobcomp_kafka_msg(uint16_t protocol_version, buf_t *buffer)
 
 	xassert(buffer);
 
-	safe_unpack32(&job_id, buffer);
-	safe_unpackstr(&payload, buffer);
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpack32(&job_id, buffer);
+		safe_unpackstr(&payload, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&job_id, buffer);
+		safe_unpackstr(&payload, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
 
 	jobcomp_kafka_message_produce(job_id, payload);
 
