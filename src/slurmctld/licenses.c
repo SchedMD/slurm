@@ -89,13 +89,13 @@ static int _foreach_license_print(void *x, void *arg)
 	foreach_license_print_t *args = arg;
 
 	if (!args->job_ptr) {
-		info("licenses: %s=%s total=%u used=%u",
-		     args->header, license_entry->name,
+		info("licenses: %s=%s lic_id=%u total=%u used=%u",
+		     args->header, license_entry->name, license_entry->lic_id,
 		     license_entry->total, license_entry->used);
 	} else {
-		info("licenses: %s=%s %pJ available=%u used=%u",
-		     args->header, license_entry->name, args->job_ptr,
-		     license_entry->total, license_entry->used);
+		info("licenses: %s=%s lic_id=%u %pJ available=%u used=%u",
+		     args->header, license_entry->name, license_entry->lic_id,
+		     args->job_ptr, license_entry->total, license_entry->used);
 	}
 
 	return 0;
