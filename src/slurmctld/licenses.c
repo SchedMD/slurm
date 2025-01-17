@@ -137,6 +137,21 @@ static int _license_find_rec(void *x, void *key)
 	return 1;
 }
 
+/*
+ * Find a license_t record by license id (for use by list_find_first)
+ */
+static int _license_find_rec_by_id(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+	uint16_t *id = key;
+
+	xassert(*id != NO_VAL16);
+
+	if (license_entry->lic_id == *id)
+		return 1;
+	return 0;
+}
+
 /* Find a license_t record by license name (for use by list_find_first) */
 static int _license_find_remote_rec(void *x, void *key)
 {
@@ -703,8 +718,8 @@ extern void license_job_merge(job_record_t *job_ptr)
 
 static void _add_license(list_t *license_list, licenses_t *license_entry)
 {
-	if (!list_find_first(license_list, _license_find_rec,
-			     license_entry->name)) {
+	if (!list_find_first(license_list, _license_find_rec_by_id,
+			     &license_entry->lic_id)) {
 		list_append(license_list, license_entry);
 	}
 }
@@ -720,8 +735,8 @@ static int _foreach_license_job_test(void *x, void *arg)
 	time_t when = test_args->when;
 	int resv_licenses;
 
-	match = list_find_first(license_list, _license_find_rec,
-				license_entry->name);
+	match = list_find_first(license_list, _license_find_rec_by_id,
+				&(license_entry->lic_id));
 	if (!match) {
 		error("could not find license %s for job %u",
 		      license_entry->name, job_ptr->job_id);
