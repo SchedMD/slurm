@@ -796,6 +796,7 @@ extern list_t *gres_sock_list_create(
 	uint32_t local_s_p_n;
 	list_t *gres_list_resv = NULL;
 	gres_job_state_t **gres_js_resv = NULL;
+	node_record_t *node_ptr = node_record_table_ptr[node_inx];
 
 	if (!job_gres_list || (list_count(job_gres_list) == 0)) {
 		if (gpu_spec_bitmap && core_bitmap)
@@ -865,7 +866,18 @@ extern list_t *gres_sock_list_create(
 		if (core_bitmap && (bit_ffs(core_bitmap) == -1)) {
 			sock_gres = NULL;	/* No cores available */
 		} else if (gres_ns->topo_cnt &&
-			   gres_ns->gres_cnt_found != NO_VAL64) {
+			   (gres_ns->gres_cnt_found != NO_VAL64 ||
+			    !(IS_NODE_UNKNOWN(node_ptr) ||
+			      IS_NODE_DOWN(node_ptr) ||
+			      IS_NODE_DRAIN(node_ptr) ||
+			      IS_NODE_NO_RESPOND(node_ptr)))) {
+			/*
+			 * If the node has not yet registered and isn't
+			 * available to allocate jobs, we build the list with
+			 * _build_sock_gres_by_type() (which uses the newest
+			 * slurm.conf gres configuration) so that it won't be
+			 * rejected as never runnable.
+			 */
 			sock_gres = _build_sock_gres_by_topo(
 				gres_state_job, gres_state_node, resv_exc_ptr,
 				use_total_gres,
