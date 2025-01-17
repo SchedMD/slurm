@@ -6753,6 +6753,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 				*node_bitmap = bit_copy(resv_ptr->node_bitmap);
 			}
 		}
+		/* The job can only run on nodes in the partition */
+		bit_and(*node_bitmap, job_ptr->part_ptr->node_bitmap);
 
 		/*
 		 * if there are any overlapping reservations, we need to
