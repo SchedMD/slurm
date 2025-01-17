@@ -58,6 +58,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 list_t *cluster_license_list = NULL;
+uint16_t next_lic_id = 0;
 time_t last_license_update = 0;
 bool preempt_for_licenses = false;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -189,6 +190,7 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 			license_entry->total += num;
 		} else {
 			license_entry = xmalloc(sizeof(licenses_t));
+			license_entry->lic_id = NO_VAL16;
 			license_entry->name = xstrdup(token);
 			license_entry->total = num;
 			list_push(lic_list, license_entry);
@@ -281,8 +283,37 @@ static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
 	license_entry->remote = sync ? 2 : 1;
 	_handle_consumed(license_entry, rec);
 
+	license_entry->lic_id = next_lic_id++;
+	xassert(license_entry->lic_id != NO_VAL16);
+
 	list_push(cluster_license_list, license_entry);
 	last_license_update = time(NULL);
+}
+
+static int _foreach_license_set_id(void *x, void *key)
+{
+	licenses_t *license = x;
+
+	if (license->lic_id == NO_VAL16) {
+		license->lic_id = next_lic_id++;
+	}
+
+	if (license->lic_id == NO_VAL16)
+		return 1;
+
+	return 0;
+}
+
+static void _set_license_ids(void)
+{
+	if (!cluster_license_list) {
+		/* No licenses, nothing to do */
+		return;
+	}
+
+	if (list_for_each(cluster_license_list, _foreach_license_set_id, NULL) <
+	    0)
+		fatal("Can't set lic_id");
 }
 
 /* Initialize licenses on this system based upon slurm.conf */
@@ -302,6 +333,9 @@ extern int license_init(char *licenses)
 	cluster_license_list = _build_license_list(licenses, &valid);
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
+
+	next_lic_id = 0;
+	_set_license_ids();
 
 	_licenses_print("init_license", cluster_license_list, NULL);
 	slurm_mutex_unlock(&license_mutex);
@@ -350,19 +384,22 @@ extern int license_update(char *licenses)
                         info("license %s removed with %u in use",
                              license_entry->name, license_entry->used);
                 } else {
-                        if (license_entry->used > match->total) {
-                                info("license %s count decreased",
+			match->lic_id = license_entry->lic_id;
+			if (license_entry->used > match->total) {
+				info("license %s count decreased",
                                      match->name);
-                        }
-                }
-        }
+			}
+		}
+	}
         list_iterator_destroy(iter);
 
         FREE_NULL_LIST(cluster_license_list);
         cluster_license_list = new_list;
-        _licenses_print("update_license", cluster_license_list, NULL);
-        slurm_mutex_unlock(&license_mutex);
-        return SLURM_SUCCESS;
+	_set_license_ids();
+
+	_licenses_print("update_license", cluster_license_list, NULL);
+	slurm_mutex_unlock(&license_mutex);
+	return SLURM_SUCCESS;
 }
 
 extern void license_add_remote(slurmdb_res_rec_t *rec)
@@ -629,6 +666,8 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 			break;
 		}
 
+		license_entry->lic_id = match->lic_id;
+
 		if (tres_req_cnt) {
 			tres_req.name = license_entry->name;
 			if ((tres_pos = assoc_mgr_find_tres_pos(
@@ -804,6 +843,7 @@ extern list_t *license_copy(list_t *license_list_src)
 		license_entry_dest->used = license_entry_src->used;
 		license_entry_dest->last_deficit =
 			license_entry_src->last_deficit;
+		license_entry_dest->lic_id = license_entry_src->lic_id;
 		list_push(license_list_dest, license_entry_dest);
 	}
 	list_iterator_destroy(iter);

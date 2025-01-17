@@ -51,6 +51,7 @@ typedef struct {
 	uint32_t last_deficit;		/* last calculated deficit */
 	uint32_t last_consumed;		/* consumed count (for remote) */
 	time_t last_update;		/* last updated timestamp (for remote) */
+	uint16_t lic_id;
 } licenses_t;
 
 /*
