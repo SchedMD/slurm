@@ -935,7 +935,7 @@ extern void sacctmgr_print_qos_rec(slurmdb_qos_rec_t *qos,
 				   print_field_t *field,
 				   bool last)
 {
-	char *tmp_char;
+	char *tmp_char = NULL;
 	uint64_t tmp64;
 
 	switch(field->type) {
@@ -943,7 +943,8 @@ extern void sacctmgr_print_qos_rec(slurmdb_qos_rec_t *qos,
 		field->print_routine(field, qos->description, last);
 		break;
 	case PRINT_FLAGS:
-		tmp_char = slurmdb_qos_flags_str(qos->flags);
+		if (!(qos->flags & QOS_FLAG_NOTSET))
+			tmp_char = slurmdb_qos_flags_str(qos->flags);
 		field->print_routine(field, tmp_char, last);
 		xfree(tmp_char);
 		break;
@@ -952,6 +953,8 @@ extern void sacctmgr_print_qos_rec(slurmdb_qos_rec_t *qos,
 		break;
 	case PRINT_GRACE:
 		tmp64 = qos->grace_time;
+		tmp64 = (tmp64 == INFINITE) ? INFINITE64 : tmp64;
+		tmp64 = (tmp64 == NO_VAL) ? NO_VAL64 : tmp64;
 		field->print_routine(field, &tmp64, last);
 		break;
 	case PRINT_GRPCM:
@@ -1101,7 +1104,7 @@ extern void sacctmgr_print_qos_rec(slurmdb_qos_rec_t *qos,
 		xfree(tmp_char);
 		break;
 	case PRINT_PREEM:
-		if (qos->preempt_mode) {
+		if (qos->preempt_mode && (qos->preempt_mode != NO_VAL16)) {
 			tmp_char = xstrdup(preempt_mode_string(
 						   qos->preempt_mode));
 			xstrtolower(tmp_char);
@@ -1114,6 +1117,7 @@ extern void sacctmgr_print_qos_rec(slurmdb_qos_rec_t *qos,
 	case PRINT_PRXMPT:
 		tmp64 = qos->preempt_exempt_time;
 		tmp64 = (tmp64 == INFINITE) ? INFINITE64 : tmp64;
+		tmp64 = (tmp64 == NO_VAL) ? NO_VAL64 : tmp64;
 		field->print_routine(field, &tmp64, last);
 		break;
 	case PRINT_PRIO:
