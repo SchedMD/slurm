@@ -174,7 +174,6 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 	char *topic = (char *) rd_kafka_topic_name(rkmessage->rkt);
 	char *err_str = (char *) rd_kafka_err2str(rkmessage->err);
 	char *payload = rkmessage->payload;
-	char *action_str = NULL;
 
 	switch (rkmessage->err) {
 	case RD_KAFKA_RESP_ERR_NO_ERROR:
@@ -194,20 +193,20 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		slurm_rwlock_unlock(&kafka_conf_rwlock);
 
 		if (!requeue) {
-			xstrfmtcat(action_str, "Message discarded");
-		} else if (!terminate) {
-			jobcomp_kafka_message_produce(job_id, payload);
-			xstrfmtcat(action_str,
-				   "Attempting to produce message again");
-		} else {
-			_add_kafka_msg_to_state(job_id, xstrdup(payload));
-			xstrfmtcat(action_str,
-				   "Saving message to plugin state file.");
+			error("%s: Message delivery for JobId=%u failed: %s. Message discarded.",
+			      plugin_type, job_id, err_str);
+			break;
 		}
 
+		if (!terminate)
+			jobcomp_kafka_message_produce(job_id, payload);
+		else
+			_add_kafka_msg_to_state(job_id, xstrdup(payload));
+
 		error("%s: Message delivery for JobId=%u failed: %s. %s.",
-		      plugin_type, job_id, err_str, action_str);
-		xfree(action_str);
+		      plugin_type, job_id, err_str,
+		      !terminate ? "Attempting to produce message again" :
+		      "Saving message to plugin state file.");
 
 		break;
 #if RD_KAFKA_VERSION >= 0x010000ff
