@@ -289,6 +289,8 @@ int _print_job_resize_time(job_info_t * job, int width,
 			   bool right_justify, char* suffix);
 int _print_job_restart_cnt(job_info_t * job, int width,
 			   bool right_justify, char* suffix);
+int _print_job_segment_size(job_info_t *job, int width, bool right_justify,
+			    char *suffix);
 int _print_job_sockets_per_board(job_info_t * job, int width,
 				 bool right_justify, char* suffix);
 int _print_job_std_err(job_info_t * job, int width,

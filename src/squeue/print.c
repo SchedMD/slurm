@@ -2142,6 +2142,21 @@ int _print_job_restart_cnt(job_info_t * job, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_segment_size(job_info_t *job, int width, bool right_justify,
+			    char *suffix)
+{
+	if (job == NULL)
+		_print_str("SEGMENT_SIZE", width, right_justify, true);
+	else if (job->segment_size)
+		_print_int(job->segment_size, width, right_justify, true);
+	else
+		_print_str("N/A", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_sockets_per_board(job_info_t * job, int width,
 				 bool right_justify, char* suffix)
 {
