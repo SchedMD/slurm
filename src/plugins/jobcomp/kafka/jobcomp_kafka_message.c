@@ -66,7 +66,7 @@ static bool terminate = false;
  */
 static rd_kafka_t *rk = NULL;
 
-static void _add_kafka_msg_to_state(uint32_t job_id, char *payload);
+static void _add_kafka_msg_to_state(kafka_msg_opaque_t *opaque, char *payload);
 static int _configure_rd_kafka_handle(void);
 static int _create_rd_kafka_handle(rd_kafka_conf_t *conf);
 static void _destroy_kafka_msg(void *arg);
@@ -77,15 +77,20 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 static void _dump_rd_kafka_conf(rd_kafka_conf_t *conf);
 static void _flush_rd_kafka_msgs(void);
 static int _foreach_conf_pair(void *x, void *arg);
-static kafka_msg_t *_init_kafka_msg(uint32_t job_id, char *payload);
+static kafka_msg_t *_init_kafka_msg(kafka_msg_opaque_t *opaque, char *payload);
 static void _load_jobcomp_kafka_state(void);
 static void _pack_jobcomp_kafka_state(buf_t *buffer);
+static void _pack_jobcomp_kafka_msg_opaque(kafka_msg_opaque_t *opaque,
+					   buf_t *buffer);
 static int _pack_jobcomp_kafka_msg(void *object, void *arg);
 static void *_poll_handler(void *no_data);
 static void _purge_rd_kafka_msgs(void);
 static void _terminate_poll_handler(void);
 static void _save_jobcomp_kafka_state(void);
 static rd_kafka_conf_t *_set_rd_kafka_conf(void);
+static int _unpack_jobcomp_kafka_msg_opaque(kafka_msg_opaque_t *opaque,
+					    uint16_t protocol_version,
+					    buf_t *buffer);
 static int _unpack_jobcomp_kafka_msg(uint16_t protocol_version, buf_t *buffer);
 static void _unpack_jobcomp_kafka_state(buf_t *buffer);
 
@@ -93,14 +98,14 @@ static void _unpack_jobcomp_kafka_state(buf_t *buffer);
  * Allocate memory for a kafka_msg_t* and initialize it with arguments.
  * Append to state_msg_list.
  *
- * IN: uint32_t job_id
+ * IN: kafka_msg_opaque_t *opaque
  * IN: char *payload
  */
-static void _add_kafka_msg_to_state(uint32_t job_id, char *payload)
+static void _add_kafka_msg_to_state(kafka_msg_opaque_t *opaque, char *payload)
 {
 	kafka_msg_t *kafka_msg = NULL;
 
-	kafka_msg = _init_kafka_msg(job_id, payload);
+	kafka_msg = _init_kafka_msg(opaque, payload);
 	list_append(state_msg_list, kafka_msg);
 }
 
@@ -170,7 +175,8 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		       void *opaque)
 {
 	bool requeue;
-	uint32_t job_id = *(uint32_t *) rkmessage->_private;
+	kafka_msg_opaque_t *msg_opaque =
+		(kafka_msg_opaque_t *) rkmessage->_private;
 	char *topic = (char *) rd_kafka_topic_name(rkmessage->rkt);
 	char *err_str = (char *) rd_kafka_err2str(rkmessage->err);
 	char *payload = rkmessage->payload;
@@ -180,7 +186,8 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		/* Success */
 		log_flag(JOBCOMP,
 			 "Message for JobId=%u delivered to topic '%s'",
-			 job_id, topic);
+			 msg_opaque->job_id, topic);
+		xfree(msg_opaque);
 		xfree(payload);
 		break;
 	case RD_KAFKA_RESP_ERR__MSG_TIMED_OUT:
@@ -195,18 +202,19 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 
 		if (!requeue) {
 			error("%s: Message delivery for JobId=%u failed: %s. Message discarded.",
-			      plugin_type, job_id, err_str);
+			      plugin_type, msg_opaque->job_id, err_str);
+			xfree(msg_opaque);
 			xfree(payload);
 			break;
 		}
 
 		if (!terminate)
-			jobcomp_kafka_message_produce(job_id, payload);
+			jobcomp_kafka_message_produce(msg_opaque, payload);
 		else
-			_add_kafka_msg_to_state(job_id, payload);
+			_add_kafka_msg_to_state(msg_opaque, payload);
 
 		error("%s: Message delivery for JobId=%u failed: %s. %s.",
-		      plugin_type, job_id, err_str,
+		      plugin_type, msg_opaque->job_id, err_str,
 		      !terminate ? "Attempting to produce message again" :
 		      "Saving message to plugin state file.");
 
@@ -215,8 +223,8 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 	case RD_KAFKA_RESP_ERR__PURGE_QUEUE:
 		/* Purged in-queue. Always requeue in this case. */
 		log_flag(JOBCOMP, "Message delivery for JobId=%u failed: %s. Saving message to plugin state file.",
-			 job_id, err_str);
-		_add_kafka_msg_to_state(job_id, payload);
+			 msg_opaque->job_id, err_str);
+		_add_kafka_msg_to_state(msg_opaque, payload);
 
 		break;
 	case RD_KAFKA_RESP_ERR__PURGE_INFLIGHT:
@@ -227,25 +235,27 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		slurm_rwlock_unlock(&kafka_conf_rwlock);
 
 		error("%s: Message delivery for JobId=%u failed: %s. %s.",
-		      plugin_type, job_id, err_str,
+		      plugin_type, msg_opaque->job_id, err_str,
 		      requeue ?
 		      "Saving message to plugin state file" : "Message discarded");
 
-		if (requeue)
-			_add_kafka_msg_to_state(job_id, payload);
-		else
+		if (requeue) {
+			_add_kafka_msg_to_state(msg_opaque, payload);
+		} else {
+			xfree(msg_opaque);
 			xfree(payload);
+		}
 
 		break;
 #endif
 	default:
 		error("%s: Message delivery for JobId=%u failed: %s. Message discarded.",
-		      plugin_type, job_id, err_str);
+		      plugin_type, msg_opaque->job_id, err_str);
+		xfree(msg_opaque);
 		xfree(payload);
 		break;
 	}
 
-	xfree(rkmessage->_private);
 	/* The rkmessage is destroyed automatically by librdkafka */
 }
 
@@ -391,12 +401,12 @@ static void _flush_rd_kafka_msgs(void)
 		      plugin_type, rd_kafka_outq_len(rk), timeout);
 }
 
-static kafka_msg_t *_init_kafka_msg(uint32_t job_id, char *payload)
+static kafka_msg_t *_init_kafka_msg(kafka_msg_opaque_t *opaque, char *payload)
 {
 	kafka_msg_t *kafka_msg = NULL;
 
 	kafka_msg = xmalloc(sizeof(*kafka_msg));
-	kafka_msg->job_id = job_id;
+	kafka_msg->opaque = opaque;
 	kafka_msg->payload = payload;
 
 	return kafka_msg;
@@ -409,6 +419,7 @@ static void _destroy_kafka_msg(void *arg)
 	if (!kafka_msg)
 		return;
 
+	xfree(kafka_msg->opaque);
 	xfree(kafka_msg->payload);
 	xfree(kafka_msg);
 }
@@ -488,6 +499,21 @@ static void _purge_rd_kafka_msgs(void)
 }
 
 /*
+ * Pack kafka_msg_opaque_t to a buffer.
+ *
+ * IN kafka_msg_opaque_t pointer.
+ * IN/OUT buf_t pointer - buffer to store packed data, pointers automatically
+ * advanced.
+ */
+static void _pack_jobcomp_kafka_msg_opaque(kafka_msg_opaque_t *opaque,
+					   buf_t *buffer)
+{
+	xassert(opaque);
+
+	pack32(opaque->job_id, buffer);
+}
+
+/*
  * Pack kafka_msg_t to a buffer.
  *
  * IN kafka_msg_t pointer.
@@ -500,11 +526,11 @@ static int _pack_jobcomp_kafka_msg(void *object, void *arg)
 	buf_t *buffer = arg;
 
 	xassert(kafka_msg);
-	xassert(kafka_msg->job_id);
+	xassert(kafka_msg->opaque);
 	xassert(kafka_msg->payload);
 	xassert(buffer);
 
-	pack32(kafka_msg->job_id, buffer);
+	_pack_jobcomp_kafka_msg_opaque(kafka_msg->opaque, buffer);
 	packstr(kafka_msg->payload, buffer);
 
 	return 0;
@@ -524,6 +550,41 @@ static void _pack_jobcomp_kafka_state(buf_t *buffer)
 }
 
 /*
+ * Unpack kafka_msg_opaque_t from buffer
+ *
+ * IN/OUT: kafka_msg_opaque_t *opaque
+ * IN: uint16_t protocol_version
+ * IN: buf_t pointer to buffer to unpack from
+ *
+ * RET: SLURM_ERROR if unpack_error or SLURM_SUCCESS
+ */
+static int _unpack_jobcomp_kafka_msg_opaque(kafka_msg_opaque_t *opaque,
+					    uint16_t protocol_version,
+					    buf_t *buffer)
+{
+	xassert(buffer);
+	xassert(opaque);
+
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpack32(&opaque->job_id, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	/*
+	 * Do not handle ignore_state_error here. Will be handled in caller,
+	 * otherwise would be redundant.
+	 */
+
+	return SLURM_ERROR;
+}
+
+/*
  * Unpack kafka_msg_t from buffer and produce to librdkafka if no unpack error
  *
  * IN: uint16_t protocol_version
@@ -533,16 +594,22 @@ static void _pack_jobcomp_kafka_state(buf_t *buffer)
  */
 static int _unpack_jobcomp_kafka_msg(uint16_t protocol_version, buf_t *buffer)
 {
-	uint32_t job_id = 0;
 	char *payload = NULL;
+	kafka_msg_opaque_t *opaque = NULL;
 
 	xassert(buffer);
 
 	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		safe_unpack32(&job_id, buffer);
+		opaque = jobcomp_kafka_message_init_opaque(0);
+		if (_unpack_jobcomp_kafka_msg_opaque(opaque, protocol_version,
+						     buffer) != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpackstr(&payload, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t job_id;
+
 		safe_unpack32(&job_id, buffer);
+		opaque = jobcomp_kafka_message_init_opaque(job_id);
 		safe_unpackstr(&payload, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -550,7 +617,7 @@ static int _unpack_jobcomp_kafka_msg(uint16_t protocol_version, buf_t *buffer)
 		goto unpack_error;
 	}
 
-	jobcomp_kafka_message_produce(job_id, payload);
+	jobcomp_kafka_message_produce(opaque, payload);
 
 	return SLURM_SUCCESS;
 
@@ -558,6 +625,7 @@ unpack_error:
 	if (!ignore_state_errors)
 		fatal("Incomplete jobcomp/kafka state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete jobcomp/kafka state file");
+	xfree(opaque);
 	xfree(payload);
 
 	return SLURM_ERROR;
@@ -631,6 +699,15 @@ static void _terminate_poll_handler(void)
 	slurm_thread_join(poll_thread);
 }
 
+extern kafka_msg_opaque_t *jobcomp_kafka_message_init_opaque(uint32_t job_id)
+{
+	kafka_msg_opaque_t *opaque = xmalloc(sizeof(*opaque));
+
+	opaque->job_id = job_id;
+
+	return opaque;
+}
+
 extern int jobcomp_kafka_message_init(void)
 {
 	if (_configure_rd_kafka_handle() != SLURM_SUCCESS)
@@ -656,20 +733,19 @@ extern void jobcomp_kafka_message_fini(void)
 /*
  * Attempt to produce a message in an asynchronous non-blocking way.
  *
- * IN: uint32_t job_id
+ * IN: kafka_msg_opaque_t *opaque
  * IN: char *payload
  */
-extern void jobcomp_kafka_message_produce(uint32_t job_id, char *payload)
+extern void jobcomp_kafka_message_produce(kafka_msg_opaque_t *opaque,
+					  char *payload)
 {
-	uint32_t *opaque = NULL;
 	size_t len;
 	rd_kafka_resp_err_t err;
 
 	xassert(rk);
+	xassert(opaque);
 
 	len = strlen(payload);
-	opaque = xmalloc(sizeof(*opaque));
-	*opaque = job_id;
 
 	slurm_rwlock_rdlock(&kafka_conf_rwlock);
 	/*
@@ -694,11 +770,11 @@ extern void jobcomp_kafka_message_produce(uint32_t job_id, char *payload)
 
 	if (err == RD_KAFKA_RESP_ERR_NO_ERROR) {
 		log_flag(JOBCOMP, "Produced JobId=%u message for topic '%s' to librdkafka queue.",
-			 job_id, kafka_conf->topic);
+			 opaque->job_id, kafka_conf->topic);
 		/* Do not xfree(opaque). Delivery msg callback will do it. */
 	} else {
 		error("%s: Failed to produce JobId=%u message for topic '%s': %s. Message discarded.",
-		      plugin_type, job_id, kafka_conf->topic,
+		      plugin_type, opaque->job_id, kafka_conf->topic,
 		      rd_kafka_err2str(err));
 		xfree(opaque);
 		xfree(payload);

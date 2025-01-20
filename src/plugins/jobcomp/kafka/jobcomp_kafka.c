@@ -128,6 +128,7 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr)
 	int rc = SLURM_SUCCESS;
 	char *job_record_serialized = NULL;
 	data_t *job_record_data = NULL;
+	kafka_msg_opaque_t *opaque = NULL;
 
 	if (!(job_record_data = jobcomp_common_job_record_to_data(job_ptr))) {
 		error("%s: unable to build data_t. %pJ discarded",
@@ -146,7 +147,8 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr)
 		goto end;
 	}
 
-	jobcomp_kafka_message_produce(job_ptr->job_id, job_record_serialized);
+	opaque = jobcomp_kafka_message_init_opaque(job_ptr->job_id);
+	jobcomp_kafka_message_produce(opaque, job_record_serialized);
 
 end:
 	FREE_NULL_DATA(job_record_data);
