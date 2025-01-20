@@ -58,6 +58,12 @@ typedef struct {
 	list_t *wckey_list;
 } sacctmgr_file_opts_t;
 
+typedef struct {
+	char *change_info;
+	slurmdb_qos_rec_t *qos_rec_new;
+	slurmdb_qos_rec_t *qos_rec_old;
+} local_mod_qos_t;
+
 typedef enum {
 	MOD_CLUSTER,
 	MOD_ACCT,
@@ -67,6 +73,7 @@ typedef enum {
 #define SACCTMGR_CLEAN_CLUSTER SLURM_BIT(0)
 #define SACCTMGR_CLEAN_ACCT SLURM_BIT(1)
 #define SACCTMGR_CLEAN_USER SLURM_BIT(2)
+#define SACCTMGR_CLEAN_QOS SLURM_BIT(3)
 
 static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 {
@@ -342,6 +349,74 @@ static sacctmgr_file_opts_t *_parse_options(char *options, bool make_lower)
 	return file_opts;
 }
 
+/*
+ * NOTE: make_lower only applies to the first parsed option. This is needed
+ * for parsing the User column, which may be case-sensitive if the slurmdbd
+ * reports PERSIST_FLAG_P_USER_CASE on the connection. All other options
+ * are currently case-insensitive, and will be normalized to lowercase.
+ */
+static slurmdb_qos_rec_t *_parse_qos_options(char *options, bool make_lower)
+{
+	int i=0, end=0;
+	char *sub = NULL;
+	slurmdb_qos_rec_t *qos_rec = xmalloc(sizeof(*qos_rec));
+	char *option = NULL;
+	int command_len = 0;
+	int option2 = 0;
+
+	slurmdb_init_qos_rec(qos_rec, 0, NO_VAL);
+
+	while (options[i]) {
+		if (!(option = _parse_option(
+			      options, make_lower, &sub,
+			      &command_len, &end, &i, &option2)))
+			goto next_col;
+
+		if (!end) {
+			if (qos_rec->name) {
+				exit_code=1;
+				fprintf(stderr, " Bad format on %s: End your option with an '=' sign\n", sub);
+				break;
+			}
+			qos_rec->name = xstrdup(option);
+
+			/* remaining options should be converted to lowercase */
+			make_lower = true;
+		} else if (end && !strlen(option)) {
+			debug("blank field given for %s discarding", sub);
+		} else if (!sacctmgr_set_qos_rec(qos_rec, sub, option,
+						 command_len, option2)) {
+			exit_code=1;
+			fprintf(stderr, " Unknown option: %s\n", sub);
+			break;
+		}
+
+		xfree(sub);
+		xfree(option);
+
+	next_col:
+		if (options[i] == ':')
+			i++;
+		else
+			break;
+	}
+
+	xfree(sub);
+	xfree(option);
+
+	if (!qos_rec->name) {
+		exit_code = 1;
+		fprintf(stderr, " No name given\n");
+	}
+
+	if (exit_code) {
+		slurmdb_destroy_qos_rec(qos_rec);
+		qos_rec = NULL;
+	}
+
+	return qos_rec;
+}
+
 static int _print_out_assoc(list_t *assoc_list, bool user, bool add)
 {
 	list_t *format_list = NULL;
@@ -389,6 +464,27 @@ static int _print_out_assoc(list_t *assoc_list, bool user, bool add)
 
 	return rc;
 }
+
+static int _print_out_qos_fields(void *x, void *args)
+{
+	print_field_t *field = x;
+	slurmdb_qos_rec_t *qos_rec = args;
+
+	sacctmgr_print_qos_rec(qos_rec, field, 0);
+
+	return 0;
+}
+
+static int _print_out_qos(void *x, void *args)
+{
+	list_t *print_fields_list = args;
+
+	(void) list_for_each(print_fields_list, _print_out_qos_fields, x);
+	printf("\n--------------------------------------------------------------\n\n");
+
+	return 0;
+}
+
 
 static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		      slurmdb_assoc_rec_t *assoc,
@@ -937,6 +1033,426 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 	xfree(desc);
 	xfree(org);
 	return changed;
+}
+
+static void _destory_local_mod_qos(void *x)
+{
+	local_mod_qos_t *local_mod_qos = x;
+
+	if (!local_mod_qos)
+		return;
+
+	slurmdb_destroy_qos_rec(local_mod_qos->qos_rec_new);
+	/* Don't free old */
+	// slurmdb_destroy_qos_rec(local_mod_qos->qos_rec_old);
+}
+
+static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
+			    slurmdb_qos_rec_t *qos_rec)
+{
+	char *type = "QOS";
+	char *name = qos_rec->name;
+	char *my_info = NULL;
+
+	if (qos_rec_in->description &&
+	    xstrcasecmp(qos_rec->description, qos_rec_in->description)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8s -> %s\n",
+			   " Changed Description",
+			   type, name, qos_rec->description,
+			   qos_rec_in->description);
+	}
+
+	if (!(qos_rec_in->flags & QOS_FLAG_NOTSET) &&
+	    (qos_rec->flags != qos_rec_in->flags)) {
+		char *flags = slurmdb_qos_flags_str(qos_rec_in->flags);
+		char *flags_old = slurmdb_qos_flags_str(qos_rec->flags);
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed Flags",
+			   type, name,
+			   flags_old,
+			   flags);
+		xfree(flags);
+		xfree(flags_old);
+	}
+
+	if ((qos_rec_in->grace_time != NO_VAL) &&
+	    (qos_rec->grace_time != qos_rec_in->grace_time)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed GraceTime",
+			   type, name,
+			   qos_rec->grace_time,
+			   qos_rec_in->grace_time);
+	}
+
+	if ((qos_rec_in->grp_jobs_accrue != NO_VAL) &&
+	    (qos_rec->grp_jobs_accrue != qos_rec_in->grp_jobs_accrue)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed GrpJobsAccrue",
+			   type, name,
+			   qos_rec->grp_jobs_accrue,
+			   qos_rec_in->grp_jobs_accrue);
+	}
+
+	if ((qos_rec_in->grp_jobs != NO_VAL) &&
+	    (qos_rec->grp_jobs != qos_rec_in->grp_jobs)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed GrpJobs",
+			   type, name,
+			   qos_rec->grp_jobs,
+			   qos_rec_in->grp_jobs);
+	}
+
+	if ((qos_rec_in->grp_submit_jobs != NO_VAL) &&
+	    (qos_rec->grp_submit_jobs != qos_rec_in->grp_submit_jobs)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed GrpSubmitJobs",
+			   type, name,
+			   qos_rec->grp_submit_jobs,
+			   qos_rec_in->grp_submit_jobs);
+	}
+
+	if (qos_rec_in->grp_tres &&
+	    xstrcmp(qos_rec->grp_tres, qos_rec_in->grp_tres)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed GrpTRES",
+			   type, name,
+			   qos_rec->grp_tres,
+			   qos_rec_in->grp_tres);
+	}
+
+	if (qos_rec_in->grp_tres_mins &&
+	    xstrcmp(qos_rec->grp_tres_mins, qos_rec_in->grp_tres_mins)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8s -> %s\n",
+			   " Changed GrpTRESMins",
+			   type, name,
+			   qos_rec->grp_tres_mins,
+			   qos_rec_in->grp_tres_mins);
+	}
+
+	if (qos_rec_in->grp_tres_run_mins &&
+	    xstrcmp(qos_rec->grp_tres_run_mins,
+		    qos_rec_in->grp_tres_run_mins)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8s -> %s\n",
+			   " Changed GrpTRESRunMins",
+			   type, name,
+			   qos_rec->grp_tres_run_mins,
+			   qos_rec_in->grp_tres_run_mins);
+	}
+
+	if ((qos_rec_in->grp_wall != NO_VAL) &&
+	    (qos_rec->grp_wall != qos_rec_in->grp_wall)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed GrpWallDuration",
+			   type, name,
+			   qos_rec->grp_wall,
+			   qos_rec_in->grp_wall);
+	}
+
+	if (!fuzzy_equal(qos_rec_in->limit_factor, NO_VAL) &&
+	    (qos_rec->limit_factor != qos_rec_in->limit_factor)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8f -> %f\n",
+			   " Changed LimitFactor",
+			   type, name,
+			   qos_rec->limit_factor,
+			   qos_rec_in->limit_factor);
+	}
+
+	if ((qos_rec_in->max_jobs_pa != NO_VAL) &&
+	    (qos_rec->max_jobs_pa != qos_rec_in->max_jobs_pa)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed MaxJobsPerAccount",
+			   type, name,
+			   qos_rec->max_jobs_pa,
+			   qos_rec_in->max_jobs_pa);
+	}
+
+	if ((qos_rec_in->max_jobs_pu != NO_VAL) &&
+	    (qos_rec->max_jobs_pu != qos_rec_in->max_jobs_pu)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed MaxJobsPerUser",
+			   type, name,
+			   qos_rec->max_jobs_pu,
+			   qos_rec_in->max_jobs_pu);
+	}
+
+	if ((qos_rec_in->max_jobs_accrue_pa != NO_VAL) &&
+	    (qos_rec->max_jobs_accrue_pa != qos_rec_in->max_jobs_accrue_pa)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed MaxJobsAccruePerAccount",
+			   type, name,
+			   qos_rec->max_jobs_accrue_pa,
+			   qos_rec_in->max_jobs_accrue_pa);
+	}
+
+	if ((qos_rec_in->max_jobs_accrue_pu != NO_VAL) &&
+	    (qos_rec->max_jobs_accrue_pu != qos_rec_in->max_jobs_accrue_pu)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed MaxJobsAccruePerUser",
+			   type, name,
+			   qos_rec->max_jobs_accrue_pu,
+			   qos_rec_in->max_jobs_accrue_pu);
+	}
+
+	if ((qos_rec_in->max_submit_jobs_pa != NO_VAL) &&
+	    (qos_rec->max_submit_jobs_pa != qos_rec_in->max_submit_jobs_pa)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed MaxSubmitJobsPerAccount",
+			   type, name,
+			   qos_rec->max_submit_jobs_pa,
+			   qos_rec_in->max_submit_jobs_pa);
+	}
+
+	if ((qos_rec_in->max_submit_jobs_pu != NO_VAL) &&
+	    (qos_rec->max_submit_jobs_pu != qos_rec_in->max_submit_jobs_pu)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed MaxSubmitJobsPerUser",
+			   type, name,
+			   qos_rec->max_submit_jobs_pu,
+			   qos_rec_in->max_submit_jobs_pu);
+	}
+
+	if (qos_rec_in->max_tres_mins_pj &&
+	    xstrcmp(qos_rec->max_tres_mins_pj, qos_rec_in->max_tres_mins_pj)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8s -> %s\n",
+			   " Changed MaxTRESMinsPerJob",
+			   type, name,
+			   qos_rec->max_tres_mins_pj,
+			   qos_rec_in->max_tres_mins_pj);
+	}
+
+	if (qos_rec_in->max_tres_pa &&
+	    xstrcmp(qos_rec->max_tres_pa, qos_rec_in->max_tres_pa)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed MaxTRESPerAccount",
+			   type, name,
+			   qos_rec->max_tres_pa,
+			   qos_rec_in->max_tres_pa);
+	}
+
+	if (qos_rec_in->max_tres_pj &&
+	    xstrcmp(qos_rec->max_tres_pj, qos_rec_in->max_tres_pj)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed MaxTRESPerJob",
+			   type, name,
+			   qos_rec->max_tres_pj,
+			   qos_rec_in->max_tres_pj);
+	}
+
+	if (qos_rec_in->max_tres_pn &&
+	    xstrcmp(qos_rec->max_tres_pn, qos_rec_in->max_tres_pn)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed MaxTRESPerNode",
+			   type, name,
+			   qos_rec->max_tres_pn,
+			   qos_rec_in->max_tres_pn);
+	}
+
+	if (qos_rec_in->max_tres_pu &&
+	    xstrcmp(qos_rec->max_tres_pu, qos_rec_in->max_tres_pu)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed MaxTRESPerUser",
+			   type, name,
+			   qos_rec->max_tres_pu,
+			   qos_rec_in->max_tres_pu);
+	}
+
+	if (qos_rec_in->max_tres_run_mins_pa &&
+	    xstrcmp(qos_rec->max_tres_run_mins_pa,
+		    qos_rec_in->max_tres_run_mins_pa)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8s -> %s\n",
+			   " Changed MaxTRESRunMinsPerAccount",
+			   type, name,
+			   qos_rec->max_tres_run_mins_pa,
+			   qos_rec_in->max_tres_run_mins_pa);
+	}
+
+	if (qos_rec_in->max_tres_run_mins_pu &&
+	    xstrcmp(qos_rec->max_tres_run_mins_pu,
+		    qos_rec_in->max_tres_run_mins_pu)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8s -> %s\n",
+			   " Changed MaxTRESRunMinsPerUser",
+			   type, name,
+			   qos_rec->max_tres_run_mins_pu,
+			   qos_rec_in->max_tres_run_mins_pu);
+	}
+
+	if ((qos_rec_in->max_wall_pj != NO_VAL) &&
+	    (qos_rec->max_wall_pj != qos_rec_in->max_wall_pj)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed MaxWallDurationPerJob",
+			   type, name,
+			   qos_rec->max_wall_pj,
+			   qos_rec_in->max_wall_pj);
+	}
+
+	if ((qos_rec_in->min_prio_thresh != NO_VAL) &&
+	    (qos_rec->min_prio_thresh != qos_rec_in->min_prio_thresh)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed MinPrioThresh",
+			   type, name,
+			   qos_rec->min_prio_thresh,
+			   qos_rec_in->min_prio_thresh);
+	}
+
+	if (qos_rec_in->min_tres_pj &&
+	    xstrcmp(qos_rec->min_tres_pj, qos_rec_in->min_tres_pj)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8s -> %s\n",
+			   " Changed MinTRESPerJob",
+			   type, name,
+			   qos_rec->min_tres_pj,
+			   qos_rec_in->min_tres_pj);
+	}
+
+	if (qos_rec_in->preempt_bitstr) {
+		char *preempt, *preempt_old;
+
+		if (!g_qos_list)
+			g_qos_list = slurmdb_qos_get(db_conn, NULL);
+
+		preempt = get_qos_complete_str_bitstr(
+			g_qos_list, qos_rec_in->preempt_bitstr);
+		preempt_old = get_qos_complete_str_bitstr(
+			g_qos_list, qos_rec->preempt_bitstr);
+
+		if (xstrcmp(preempt, preempt_old)) {
+			xstrfmtcat(my_info,
+				   "%-30.30s for %-7.7s %-10.10s "
+				   "%8s -> %s\n",
+				   " Changed Preempt",
+				   type, name,
+				   preempt_old,
+				   preempt);
+		}
+		xfree(preempt);
+		xfree(preempt_old);
+	}
+
+	if ((qos_rec_in->preempt_mode != NO_VAL16) &&
+	    (qos_rec->preempt_mode != qos_rec_in->preempt_mode)) {
+		char *tmp_char =
+			xstrdup(preempt_mode_string(qos_rec_in->preempt_mode));
+		char *tmp_char_old =
+			xstrdup(preempt_mode_string(qos_rec->preempt_mode));
+
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed PreemptMode",
+			   type, name,
+			   tmp_char_old,
+			   tmp_char);
+		xfree(tmp_char);
+		xfree(tmp_char_old);
+	}
+
+	if ((qos_rec_in->preempt_exempt_time != NO_VAL) &&
+	    (qos_rec->preempt_exempt_time != qos_rec_in->preempt_exempt_time)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed PreemptExemptTime",
+			   type, name,
+			   qos_rec->preempt_exempt_time,
+			   qos_rec_in->preempt_exempt_time);
+	}
+
+	if ((qos_rec_in->priority != NO_VAL) &&
+	    (qos_rec->priority != qos_rec_in->priority)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   " Changed Priority",
+			   type, name,
+			   qos_rec->priority,
+			   qos_rec_in->priority);
+	}
+
+	if (!fuzzy_equal(qos_rec_in->usage_factor, NO_VAL) &&
+	    (qos_rec->usage_factor != qos_rec_in->usage_factor)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8f -> %f\n",
+			   " Changed UsageFactor",
+			   type, name,
+			   qos_rec->usage_factor,
+			   qos_rec_in->usage_factor);
+	}
+
+	if (!fuzzy_equal(qos_rec_in->usage_thres, NO_VAL) &&
+	    (qos_rec->usage_thres != qos_rec_in->usage_thres)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8f -> %f\n",
+			   " Changed UsageThreshold",
+			   type, name,
+			   qos_rec->usage_thres,
+			   qos_rec_in->usage_thres);
+	}
+	return my_info;
+}
+
+static int _mod_qos(void *x, void *arg)
+{
+	local_mod_qos_t *local_mod_qos = x;
+	slurmdb_qos_rec_t *qos_rec_in = local_mod_qos->qos_rec_new;
+	slurmdb_qos_rec_t *qos_rec = local_mod_qos->qos_rec_old;
+	list_t *ret_list = NULL;
+	slurmdb_qos_cond_t qos_cond = {
+		.name_list = list_create(NULL),
+	};
+	list_push(qos_cond.name_list, qos_rec->name);
+
+	notice_thread_init();
+	ret_list = slurmdb_qos_modify(db_conn, &qos_cond, qos_rec_in);
+	notice_thread_fini();
+
+	FREE_NULL_LIST(qos_cond.name_list);
+
+/* 	if (ret_list && list_count(ret_list)) { */
+/* 		char *object = NULL; */
+/* 		list_itr_t *itr = list_iterator_create(ret_list); */
+/* 		printf(" Modified account defaults for " */
+/* 		       "associations...\n"); */
+/* 		while ((object = list_next(itr)))  */
+/* 			printf("  %s\n", object); */
+/* 		list_iterator_destroy(itr); */
+/* 	} */
+
+	if (ret_list) {
+		printf("%s", local_mod_qos->change_info);
+		FREE_NULL_LIST(ret_list);
+	}
+
+	return 0;
 }
 
 static int _mod_user(sacctmgr_file_opts_t *file_opts,
@@ -1884,6 +2400,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	sacctmgr_file_opts_t *file_opts = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL, *assoc2 = NULL;
 	slurmdb_account_rec_t *acct = NULL, *acct2 = NULL;
+	slurmdb_qos_rec_t *qos_rec = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_user_rec_t *user = NULL, *user2 = NULL;
 
@@ -1900,6 +2417,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	list_t *user_list = NULL;
 	list_t *user_assoc_list = NULL;
 	list_t *mod_assoc_list = NULL;
+	list_t *qos_list = NULL;
+	list_t *mod_qos_list = NULL;
 
 	list_itr_t *itr;
 	list_itr_t *itr2;
@@ -2003,10 +2522,12 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	/* These are new info so they need to be freed here */
 	acct_list = list_create(slurmdb_destroy_account_rec);
 	slurmdb_assoc_list = list_create(slurmdb_destroy_assoc_rec);
+	qos_list = list_create(slurmdb_destroy_qos_rec);
 	user_list = list_create(slurmdb_destroy_user_rec);
 	user_assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
 	mod_acct_list = list_create(slurmdb_destroy_account_rec);
+	mod_qos_list = list_create(_destory_local_mod_qos);
 	mod_user_list = list_create(slurmdb_destroy_user_rec);
 	mod_assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
@@ -2050,6 +2571,62 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			break;
 		}
 		start++;
+
+		if (!xstrcasecmp("QOS", object)) {
+			slurmdb_qos_rec_t *qos_rec_in =
+				_parse_qos_options(line + start, true);
+
+			if (!qos_rec_in) {
+				exit_code=1;
+				fprintf(stderr, " Problem with line(%d)\n", lc);
+				rc = SLURM_ERROR;
+				break;
+			}
+
+			if (cluster_name) {
+				exit_code = 1;
+				fprintf(stderr, " You need to specify all QOS before the 'Cluster - $NAME' in your file\n");
+				rc = SLURM_ERROR;
+				break;
+			}
+
+			/* info("got a QOS %s", qos_rec_in->name); */
+
+			if (!g_qos_list)
+				g_qos_list = slurmdb_qos_get(db_conn, NULL);
+
+			qos_rec = sacctmgr_find_qos_from_list(
+				g_qos_list, qos_rec_in->name);
+			if (!qos_rec) {
+				qos_rec = sacctmgr_find_qos_from_list(
+					qos_list, qos_rec_in->name);
+				if (qos_rec) {
+					exit_code=1;
+					fprintf(stderr, " Problem with line(%d). QOS '%s' has multiple entries. Remove one to continue.\n",
+						lc, qos_rec_in->name);
+					rc = SLURM_ERROR;
+					break;
+				}
+			}
+
+			if (!qos_rec) {
+				/* We haven't seen this one, add it. */
+				list_append(qos_list, qos_rec_in);
+			} else {
+				char *tmp_char = _check_mod_qos(qos_rec_in,
+								qos_rec);
+				if (tmp_char) {
+					local_mod_qos_t *local_mod_qos =
+						xmalloc(sizeof(*local_mod_qos));
+					local_mod_qos->qos_rec_new = qos_rec_in;
+					local_mod_qos->qos_rec_old = qos_rec;
+					local_mod_qos->change_info = tmp_char;
+					list_append(mod_qos_list,
+						    local_mod_qos);
+				}
+			}
+			continue;
+		}
 
 		if (!xstrcasecmp("Machine", object)
 		    || !xstrcasecmp("Cluster", object)) {
@@ -2217,6 +2794,56 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				slurmdb_connection_commit(db_conn, 1);
 			}
 
+			/* Add QOS now */
+			if (list_count(qos_list) || list_count(mod_qos_list))
+				printf("QOS\n");
+
+			if (list_count(qos_list)) {
+				slurm_addto_char_list(
+					format_list,
+					"Name%20,Prio,GraceT,"
+					"Preempt,PreemptE,PreemptM,"
+					"Flags%40,UsageThres,UsageFactor,"
+					"GrpTRES,GrpTRESMins,GrpTRESRunMins,"
+					"GrpJ,GrpS,GrpW,"
+					"MaxTRES,MaxTRESPerN,MaxTRESMins,MaxW,"
+					"MaxTRESPerUser,"
+					"MaxJobsPerUser,"
+					"MaxSubmitJobsPerUser,"
+					"MaxTRESPerAcct,"
+					"MaxTRESRunMinsPerAcct%22,"
+					"MaxTRESRunMinsPerUser%22,"
+					"MaxJobsPerAcct,"
+					"MaxSubmitJobsPerAcct,MinTRES");
+
+				print_fields_list =
+					sacctmgr_process_format_list(
+						format_list);
+				list_flush(format_list);
+
+				print_fields_header(print_fields_list);
+				(void) list_for_each(qos_list, _print_out_qos,
+						     print_fields_list);
+				rc = slurmdb_qos_add(db_conn, qos_list);
+				FREE_NULL_LIST(print_fields_list);
+			}
+
+			if (list_count(mod_qos_list)) {
+				(void) list_for_each(mod_qos_list, _mod_qos,
+						     NULL);
+			}
+
+			if (list_count(qos_list) || list_count(mod_qos_list)) {
+				if (commit_check("Would you like to commit changes?")) {
+					slurmdb_connection_commit(db_conn, 1);
+				} else {
+					printf(" Changes Discarded\n");
+					slurmdb_connection_commit(db_conn, 0);
+				}
+			}
+
+			if (!g_qos_list)
+				g_qos_list = slurmdb_qos_get(db_conn, NULL);
 			curr_cluster_list = slurmdb_clusters_get(
 				db_conn, NULL);
 			curr_acct_list = slurmdb_accounts_get(db_conn, NULL);
@@ -2570,6 +3197,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	xfree(parent);
 
 	START_TIMER;
+
 	if (rc == SLURM_SUCCESS && list_count(acct_list)) {
 		printf("Accounts\n");
 		slurm_addto_char_list(format_list,
@@ -2717,6 +3345,8 @@ end_it:
 	FREE_NULL_LIST(mod_acct_list);
 	FREE_NULL_LIST(acct_list);
 	FREE_NULL_LIST(slurmdb_assoc_list);
+	FREE_NULL_LIST(mod_qos_list);
+	FREE_NULL_LIST(qos_list);
 	FREE_NULL_LIST(mod_user_list);
 	FREE_NULL_LIST(user_list);
 	FREE_NULL_LIST(user_assoc_list);
