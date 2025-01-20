@@ -235,10 +235,10 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		      requeue ?
 		      "Saving message to plugin state file" : "Message discarded");
 
-		if (requeue)
-			_add_kafka_msg_to_state(msg_opaque, payload);
-		else
+		if (!requeue)
 			goto free_msg;
+
+		_add_kafka_msg_to_state(msg_opaque, payload);
 
 		break;
 #endif
