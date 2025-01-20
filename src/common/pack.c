@@ -216,9 +216,16 @@ void grow_buf(buf_t *buffer, uint32_t size)
 
 extern int try_grow_buf(buf_t *buffer, uint32_t size)
 {
-	uint64_t new_size = ((uint64_t) size) + buffer->size;
+	uint64_t new_size = buffer->size + BUF_SIZE;
 
 	xassert(buffer->magic == BUF_MAGIC);
+
+	/*
+	 * Force increase to always be at least BUF_SIZE to reduce number of
+	 * successive xrealloc()s that get called while packing larger RPCs
+	 */
+	if (size >= BUF_SIZE)
+		new_size += size;
 
 	if (buffer->mmaped || buffer->shadow)
 		return EINVAL;
