@@ -187,9 +187,7 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		log_flag(JOBCOMP,
 			 "Message for JobId=%u delivered to topic '%s'",
 			 msg_opaque->job_id, topic);
-		xfree(msg_opaque);
-		xfree(payload);
-		break;
+		goto free_msg;
 	case RD_KAFKA_RESP_ERR__MSG_TIMED_OUT:
 		/*
 		 * The message could not be successfully transmitted before
@@ -203,9 +201,7 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		if (!requeue) {
 			error("%s: Message delivery for JobId=%u failed: %s. Message discarded.",
 			      plugin_type, msg_opaque->job_id, err_str);
-			xfree(msg_opaque);
-			xfree(payload);
-			break;
+			goto free_msg;
 		}
 
 		if (!terminate)
@@ -239,24 +235,25 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		      requeue ?
 		      "Saving message to plugin state file" : "Message discarded");
 
-		if (requeue) {
+		if (requeue)
 			_add_kafka_msg_to_state(msg_opaque, payload);
-		} else {
-			xfree(msg_opaque);
-			xfree(payload);
-		}
+		else
+			goto free_msg;
 
 		break;
 #endif
 	default:
 		error("%s: Message delivery for JobId=%u failed: %s. Message discarded.",
 		      plugin_type, msg_opaque->job_id, err_str);
-		xfree(msg_opaque);
-		xfree(payload);
-		break;
+		goto free_msg;
 	}
 
 	/* The rkmessage is destroyed automatically by librdkafka */
+	return;
+
+free_msg:
+	xfree(msg_opaque);
+	xfree(payload);
 }
 
 /*
