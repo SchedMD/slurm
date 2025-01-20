@@ -13,7 +13,7 @@ file_script = "script"
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     max_array_size = atf.get_config_parameter("MaxArraySize", live=False)
-    if max_array_size is not None and max_array_size < array_size + 1:
+    if max_array_size is not None and int(max_array_size) < array_size + 1:
         pytest.skip("MaxArraySize is too small for this test")
 
     atf.require_nodes(array_size)
