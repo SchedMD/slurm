@@ -1330,6 +1330,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "gres_used", "text not null default ''" },
 		{ "wckey", "tinytext not null default ''" },
 		{ "work_dir", "text not null default ''" },
+		{ "segment_size", "smallint unsigned default 0 not null" },
 		{ "std_err", "text not null default ''" },
 		{ "std_in", "text not null default ''" },
 		{ "std_out", "text not null default ''" },
