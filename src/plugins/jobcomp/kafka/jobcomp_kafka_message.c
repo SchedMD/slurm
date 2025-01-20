@@ -193,19 +193,16 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 			   KAFKA_CONF_FLAG_REQUEUE_ON_MSG_TIMEOUT);
 		slurm_rwlock_unlock(&kafka_conf_rwlock);
 
-		if (requeue) {
-			if (!terminate) {
-				jobcomp_kafka_message_produce(job_id, payload);
-				xstrfmtcat(action_str,
-					"Attempting to produce message again");
-			} else {
-				_add_kafka_msg_to_state(job_id,
-							xstrdup(payload));
-				xstrfmtcat(action_str,
-					"Saving message to plugin state file.");
-			}
-		} else {
+		if (!requeue) {
 			xstrfmtcat(action_str, "Message discarded");
+		} else if (!terminate) {
+			jobcomp_kafka_message_produce(job_id, payload);
+			xstrfmtcat(action_str,
+				   "Attempting to produce message again");
+		} else {
+			_add_kafka_msg_to_state(job_id, xstrdup(payload));
+			xstrfmtcat(action_str,
+				   "Saving message to plugin state file.");
 		}
 
 		error("%s: Message delivery for JobId=%u failed: %s. %s.",
