@@ -193,6 +193,49 @@ static void _destroy_sacctmgr_file_opts(void *object)
 	}
 }
 
+static char *_parse_option(char *options, bool make_lower,
+			   char **sub, int *command_len, int *end,
+			   int *i, int *option2)
+{
+	char quote_c = '\0';
+	int quote = 0;
+	int start = *i;
+
+	while (options[*i] && options[*i] != ':' && options[*i] != '\n') {
+		if (options[*i] == '"' || options[*i] == '\'') {
+			if (quote) {
+				if (options[*i] == quote_c)
+					quote = 0;
+			} else {
+				quote = 1;
+				quote_c = options[*i];
+			}
+		}
+		(*i)++;
+	}
+	if (quote) {
+		while (options[*i] && options[*i] != quote_c)
+			(*i)++;
+		if (!options[*i])
+			fatal("There is a problem with option %s with quotes.",
+			      options);
+		(*i)++;
+	}
+
+	if (*i - start <= 0)
+		return NULL;
+
+	*sub = xstrndup(options + start, *i - start);
+	*end = parse_option_end(*sub);
+	*command_len = *end - 1;
+	if ((*sub)[*end] == '=') {
+		*option2 = (int)(*sub)[*end-1];
+		(*end)++;
+	}
+
+	return strip_quotes(*sub + *end, NULL, make_lower);
+}
+
 /*
  * NOTE: make_lower only applies to the first parsed option. This is needed
  * for parsing the User column, which may be case-sensitive if the slurmdbd
@@ -201,53 +244,20 @@ static void _destroy_sacctmgr_file_opts(void *object)
  */
 static sacctmgr_file_opts_t *_parse_options(char *options, bool make_lower)
 {
-	int start=0, i=0, end=0, quote = 0;
+	int i=0, end=0;
  	char *sub = NULL;
 	sacctmgr_file_opts_t *file_opts = xmalloc(sizeof(sacctmgr_file_opts_t));
 	char *option = NULL;
-	char quote_c = '\0';
 	int command_len = 0;
 	int option2 = 0;
 
 	_init_sacctmgr_file_opts(file_opts);
 
 	while (options[i]) {
-		quote = 0;
-		start=i;
-
-		while (options[i] && options[i] != ':' && options[i] != '\n') {
-			if (options[i] == '"' || options[i] == '\'') {
-				if (quote) {
-					if (options[i] == quote_c)
-						quote = 0;
-				} else {
-					quote = 1;
-					quote_c = options[i];
-				}
-			}
-			i++;
-		}
-		if (quote) {
-			while (options[i] && options[i] != quote_c)
-				i++;
-			if (!options[i])
-				fatal("There is a problem with option "
-				      "%s with quotes.", option);
-			i++;
-		}
-
-		if (i-start <= 0)
+		if (!(option =
+		      _parse_option(options, make_lower, &sub,
+				    &command_len, &end, &i, &option2)))
 			goto next_col;
-
-		sub = xstrndup(options+start, i-start);
-		end = parse_option_end(sub);
-		command_len = end - 1;
-		if (sub[end] == '=') {
-			option2 = (int)sub[end-1];
-			end++;
-		}
-
-		option = strip_quotes(sub+end, NULL, make_lower);
 
 		if (!end) {
 			if (file_opts->name) {
