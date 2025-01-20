@@ -902,6 +902,7 @@ typedef struct {
 	uint32_t resvid;
 	char *resv_name;
 	char *script;
+	uint16_t segment_size;
 	uint32_t show_full;
 	time_t start;
 	uint32_t state;
