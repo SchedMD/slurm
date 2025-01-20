@@ -127,6 +127,7 @@ print_field_t fields[] = {
 	{20, "Reservation",  print_fields_str, PRINT_RESERVATION},
 	{8,  "ReservationId",  print_fields_uint, PRINT_RESERVATION_ID},
 	{8,  "Restarts", print_fields_uint16, PRINT_RESTART_CNT},
+	{11, "SegmentSize", print_fields_uint16, PRINT_SEGMENT_SIZE},
 	{14, "SLUID", print_fields_sluid, PRINT_SLUID},
 	{19, "Start", print_fields_date, PRINT_START},
 	{10, "State", print_fields_str, PRINT_STATE},

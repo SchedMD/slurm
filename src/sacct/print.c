@@ -1849,6 +1849,18 @@ extern void print_fields(type_t type, void *object)
 					     &tmp_int,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_SEGMENT_SIZE:
+			switch(type) {
+			case JOB:
+				if (job->segment_size)
+					tmp_uint16 = job->segment_size;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field, &tmp_uint16,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_START:
 			switch(type) {
 			case JOB:
