@@ -542,7 +542,6 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 				buffer);
 		packstr(detail_ptr->env_hash, buffer);
 		packstr(detail_ptr->script_hash, buffer);
-		pack16(detail_ptr->segment_size, buffer);
 		pack16(detail_ptr->resv_port_cnt, buffer);
 		packstr(detail_ptr->qos_req, buffer);
 
@@ -1311,7 +1310,6 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 			goto unpack_error;
 		safe_unpackstr(&env_hash, buffer);
 		safe_unpackstr(&script_hash, buffer);
-		safe_unpack16(&segment_size, buffer);
 		safe_unpack16(&resv_port_cnt, buffer);
 		safe_unpackstr(&qos_req, buffer);
 
