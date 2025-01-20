@@ -221,15 +221,9 @@ expect {
 }
 
 sleep 30
-if {![param_contains [get_config_param "SlurmctldParameters"] "enable_configless"]} {
-	make_bash_script $file_in "
-	$srun --test_suite_srun=5 $bin_sum $spank_conf_file
-	"
-} else {
-	make_bash_script $file_in "
-	$srun --test_suite_srun=5 $bin_sum /run/slurm/conf/plugstack.conf
-	"
-}
+make_bash_script $file_in "
+$srun --test_suite_srun=5 $bin_sum $spank_conf_file
+"
 
 set matches 0
 spawn $sbatch --test_suite_sbatch=4 -N1 -t1 -o $file_out $file_in
