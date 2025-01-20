@@ -10,7 +10,7 @@ import re
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_config_parameter("SelectType", "select/linear")
-    atf.require_config_parameter_excludes("SelectTypeParameters", "CR_Core")
+    atf.require_config_parameter("SelectTypeParameters", "CR_Memory")
     atf.require_config_parameter("FrontendName", None)
     atf.require_slurm_running()
 
