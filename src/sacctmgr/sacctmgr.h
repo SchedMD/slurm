@@ -246,6 +246,10 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				     print_field_t *field, list_t *tree_list,
 				     bool last);
 
+extern int sacctmgr_set_qos_rec(slurmdb_qos_rec_t *qos,
+				char *type, char *value,
+				int command_len, int option);
+
 extern int sacctmgr_add_assoc(int argc, char **argv);
 extern int sacctmgr_add_user(int argc, char **argv);
 extern int sacctmgr_add_account(int argc, char **argv);
