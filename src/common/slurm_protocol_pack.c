@@ -3100,6 +3100,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			safe_unpack16(&job->ntasks_per_node, buffer);
 			safe_unpack16(&job->ntasks_per_tres, buffer);
 			safe_unpack16(&job->requeue, buffer);
+			safe_unpack16(&job->segment_size, buffer);
 			safe_unpack_time(&job->submit_time, buffer);
 			safe_unpackstr(&job->work_dir, buffer);
 			/**********************************/
