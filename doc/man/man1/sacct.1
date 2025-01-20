@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "November 2024" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "January 2025" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -291,16 +291,16 @@ PlannedCPU          PlannedCPURAW       Priority            QOS
 QOSRAW              QOSREQ              Reason              ReqCPUFreq
 ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin       ReqCPUS
 ReqMem              ReqNodes            ReqTRES             Reservation
-ReservationId       Restarts            SLUID               Start
-State               StdErr              StdIn               StdOut
-Submit              SubmitLine          Suspended           SystemComment
-SystemCPU           Timelimit           TimelimitRaw        TotalCPU
-TRESUsageInAve      TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask
-TRESUsageInMin      TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot
-TRESUsageOutAve     TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask
-TRESUsageOutMin     TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot
-UID                 User                UserCPU             WCKey
-WCKeyID             WorkDir
+ReservationId       Restarts            SegmentSize         SLUID
+Start               State               StdErr              StdIn
+StdOut              Submit              SubmitLine          Suspended
+SystemComment       SystemCPU           Timelimit           TimelimitRaw
+TotalCPU            TRESUsageInAve      TRESUsageInMax      TRESUsageInMaxNode
+TRESUsageInMaxTask  TRESUsageInMin      TRESUsageInMinNode  TRESUsageInMinTask
+TRESUsageInTot      TRESUsageOutAve     TRESUsageOutMax     TRESUsageOutMaxNode
+TRESUsageOutMaxTask TRESUsageOutMin     TRESUsageOutMinNode TRESUsageOutMinTask
+TRESUsageOutTot     UID                 User                UserCPU
+WCKey               WCKeyID             WorkDir
 .ft 1
 .fi
 .RE
@@ -1081,6 +1081,12 @@ Reservation Id.
 .TP
 \f3Restarts\fP
 How many times this job has been requeued/restarted.
+.IP
+
+.TP
+\f3SegmentSize\fP
+When a block topology is used, this is the size of the segments that will be
+used to create the job allocation.
 .IP
 
 .TP

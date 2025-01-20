@@ -298,6 +298,7 @@ typedef struct dbd_job_start_msg {
 	uint16_t restart_cnt;   /* How many times the job has been restarted */
 	uint32_t resv_id;	/* reservation id */
 	char *script_hash;      /* hash value of script */
+	uint16_t segment_size;	/* requested segment size */
 	time_t   start_time;	/* job start time */
 	uint32_t state_reason_prev; /* Last reason of blocking before job
 				     * started */

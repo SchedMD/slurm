@@ -762,6 +762,12 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		xstrfmtcat(out, "StdOut=%s", tmp_path);
 	}
 
+	/****** Line (optional) ******/
+	if (job_ptr->segment_size) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "SegmentSize=%u", job_ptr->segment_size);
+	}
+
 	/****** Line 34 (optional) ******/
 	if (job_ptr->req_switch) {
 		char time_buf[32];

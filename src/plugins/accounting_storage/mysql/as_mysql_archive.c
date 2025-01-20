@@ -153,6 +153,7 @@ typedef struct {
 	char *restart_cnt;
 	char *resvid;
 	char *script_hash_inx;
+	char *segment_size;
 	char *start;
 	char *state;
 	char *state_reason_prev;
@@ -232,6 +233,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->restart_cnt);
 		xfree(object->resvid);
 		xfree(object->script_hash_inx);
+		xfree(object->segment_size);
 		xfree(object->start);
 		xfree(object->state);
 		xfree(object->state_reason_prev);
@@ -590,6 +592,7 @@ static char *job_req_inx[] = {
 	"mem_req",
 	"restart_cnt",
 	"id_resv",
+	"segment_size",
 	"time_start",
 	"state",
 	"state_reason_prev",
@@ -653,6 +656,7 @@ enum {
 	JOB_REQ_REQ_MEM,
 	JOB_REQ_RESTART_CNT,
 	JOB_REQ_RESVID,
+	JOB_REQ_SEGMENT_SIZE,
 	JOB_REQ_START,
 	JOB_REQ_STATE,
 	JOB_REQ_STATE_REASON,
@@ -1053,6 +1057,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->req_mem, buffer);
 	packstr(object->restart_cnt, buffer);
 	packstr(object->resvid, buffer);
+	packstr(object->segment_size, buffer);
 	packstr(object->start, buffer);
 	packstr(object->state, buffer);
 	packstr(object->state_reason_prev, buffer);
@@ -1125,6 +1130,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->req_mem, buffer);
 		safe_unpackstr(&object->restart_cnt, buffer);
 		safe_unpackstr(&object->resvid, buffer);
+		safe_unpackstr(&object->segment_size, buffer);
 		safe_unpackstr(&object->start, buffer);
 		safe_unpackstr(&object->state, buffer);
 		safe_unpackstr(&object->state_reason_prev, buffer);
@@ -3679,6 +3685,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.req_mem = row[JOB_REQ_REQ_MEM];
 		job.restart_cnt = row[JOB_REQ_RESTART_CNT];
 		job.resvid = row[JOB_REQ_RESVID];
+		job.segment_size = row[JOB_REQ_SEGMENT_SIZE];
 		job.start = row[JOB_REQ_START];
 		job.state = row[JOB_REQ_STATE];
 		job.state_reason_prev = row[JOB_REQ_STATE_REASON];
@@ -3739,6 +3746,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_RESTART_CNT,
 		JOB_REQ_RESVID,
 		JOB_REQ_SCRIPT_HASH_INX,
+		JOB_REQ_SEGMENT_SIZE,
 		JOB_REQ_START,
 		JOB_REQ_STATE,
 		JOB_REQ_STATE_REASON,
@@ -3905,6 +3913,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     object.restart_cnt,
 			     object.resvid,
 			     object.script_hash_inx,
+			     object.segment_size,
 			     object.start,
 			     object.state,
 			     object.state_reason_prev,

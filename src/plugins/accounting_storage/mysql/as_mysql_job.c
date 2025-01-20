@@ -605,6 +605,8 @@ no_rollup_change:
 			xstrcatat(query, &pos, ", container");
 		if (job_ptr->licenses)
 			xstrcatat(query, &pos, ", licenses");
+		if (job_ptr->details->segment_size)
+			xstrcatat(query, &pos, ", segment_size");
 
 		xstrfmtcatat(query, &pos,
 			     ") values (%"PRIu64", %u, UNIX_TIMESTAMP(), "
@@ -681,6 +683,9 @@ no_rollup_change:
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, ", '%s'",
 				     job_ptr->licenses);
+		if (job_ptr->details->segment_size)
+			xstrfmtcatat(query, &pos, ", %u",
+				     job_ptr->details->segment_size);
 
 		xstrfmtcatat(query, &pos,
 			     ") on duplicate key update "
@@ -772,6 +777,9 @@ no_rollup_change:
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, ", licenses='%s'",
 				     job_ptr->licenses);
+		if (job_ptr->details->segment_size)
+			xstrfmtcatat(query, &pos, ", segment_size=%u",
+				     job_ptr->details->segment_size);
 	} else {
 		xstrfmtcatat(query, &pos,
 			     "update \"%s_%s\" set nodelist='%s', ",
@@ -838,6 +846,9 @@ no_rollup_change:
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, "licenses='%s', ",
 				     job_ptr->licenses);
+		if (job_ptr->details->segment_size)
+			xstrfmtcatat(query, &pos, "segment_size=%u, ",
+				     job_ptr->details->segment_size);
 
 		xstrfmtcatat(query, &pos, "time_start=%ld, job_name='%s', "
 			     "state=greatest(state, %u), "

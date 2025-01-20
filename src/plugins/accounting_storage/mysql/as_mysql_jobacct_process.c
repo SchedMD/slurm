@@ -107,6 +107,7 @@ char *job_req_inx[] = {
 	"t1.work_dir",
 	"t1.mcs_label",
 	"t4.batch_script",
+	"t1.segment_size",
 	"t1.std_err",
 	"t1.std_in",
 	"t1.std_out",
@@ -172,6 +173,7 @@ enum {
 	JOB_REQ_WORK_DIR,
 	JOB_REQ_MCS_LABEL,
 	JOB_REQ_SCRIPT,
+	JOB_REQ_SEGMENT_SIZE,
 	JOB_REQ_STDERR,
 	JOB_REQ_STDIN,
 	JOB_REQ_STDOUT,
@@ -733,6 +735,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->script = xstrdup(row[JOB_REQ_SCRIPT]);
 
 		job->env = xstrdup(row[JOB_REQ_ENV]);
+
+		job->segment_size = slurm_atoul(row[JOB_REQ_SEGMENT_SIZE]);
 
 		job->std_err = xstrdup(row[JOB_REQ_STDERR]);
 		job->std_in = xstrdup(row[JOB_REQ_STDIN]);

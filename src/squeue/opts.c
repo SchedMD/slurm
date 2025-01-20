@@ -706,6 +706,7 @@ static fmt_data_job_t fmt_data_job[] = {
 	{"RestartCnt", 0, _print_job_restart_cnt, 0},
 	{"SchedNodes", 'Y', _print_job_schednodes, 0},
 	{"SCT", 'z', _print_job_num_sct, 0},
+	{"SegmentSize", 0, _print_job_segment_size, 0},
 	{"SiblingsActive", 0, _print_job_fed_siblings_active, 0},
 	{"SiblingsActiveRaw", 0, _print_job_fed_siblings_active_raw, 0},
 	{"SiblingsViable", 0, _print_job_fed_siblings_viable, 0},

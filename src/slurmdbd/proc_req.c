@@ -2299,6 +2299,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	details.script_hash = job_start_msg->script_hash;
 	job.start_protocol_ver = slurmdbd_conn->conn->version;
 	job.start_time = job_start_msg->start_time;
+	details.segment_size = job_start_msg->segment_size;
 	details.std_err = job_start_msg->std_err;
 	details.std_in = job_start_msg->std_in;
 	details.std_out = job_start_msg->std_out;
