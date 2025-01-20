@@ -61,6 +61,10 @@ group.
 <li><b>mcs/user</b> MCS labels can only take a value equal to the username of
 the job's --uid.
 </li><br>
+<li><b>mcs/label</b> MCS labels are arbitrary strings. Use of a job_submit
+plugin is recommended to manage job submissions to these labels, as no
+enforcement is provided otherwise.
+</li><br>
 </ul>
 </ul>
 
@@ -110,6 +114,11 @@ information is filtered based on their MCS labels.<br>
 <li>
 If configured with <i>privatedata</i> and <i>PrivateData=nodes</i>, node
 information is filtered based on their MCS labels.<br>
+</li>
+<li>
+Warning: configuring mcs/label with <i>privatedata</i> disables most filtering
+provided by <i>PrivateData=[jobs|nodes]</i> as all users are presumed to have
+access to all labels.<br>
 </li>
 </ul>
 <li><b>mcs_plugin_parameters</b> Only mcs/group is currently supporting this
@@ -205,6 +214,13 @@ MCSPlugin=mcs/user
 MCSParameters=enforced,select,privatedata
 </pre>
 
+or
+
+<p>
+<pre>
+MCSPlugin=mcs/label
+MCSParameters=ondemand,select
+</pre>
 
 <h2 id="view_params">View MCS parameters
 <a class="slurm_link" href="#view_params"></a>
@@ -265,6 +281,6 @@ NodeName=node0001 Arch=x86_64 CoresPerSocket=4
    CurrentWatts=0 AveWatts=0
 </pre>
 
-<p style="text-align:center;">Last modified 21 May 2024</p>
+<p style="text-align:center;">Last modified 20 January 2025</p>
 
 <!--#include virtual="footer.txt"-->
