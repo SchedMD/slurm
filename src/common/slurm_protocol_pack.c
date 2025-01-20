@@ -3085,41 +3085,39 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			safe_unpack32(&job->num_cpus, buffer);
 			safe_unpack32(&job->num_nodes, buffer);
 			safe_unpack32(&job->nice, buffer);
-			goto end_unpack_details;
+		} else {
+			/* job_record_pack_details_common */
+			safe_unpack_time(&job->accrue_time, buffer);
+			safe_unpack_time(&job->eligible_time, buffer);
+			safe_unpackstr(&job->cluster_features, buffer);
+			safe_unpack32(&job->cpu_freq_gov, buffer);
+			safe_unpack32(&job->cpu_freq_max, buffer);
+			safe_unpack32(&job->cpu_freq_min, buffer);
+			safe_unpackstr(&job->dependency, buffer);
+			unpack_bit_str_hex_as_fmt_str(&job->job_size_str,
+						      buffer);
+			safe_unpack32(&job->nice, buffer);
+			safe_unpack16(&job->ntasks_per_node, buffer);
+			safe_unpack16(&job->ntasks_per_tres, buffer);
+			safe_unpack16(&job->requeue, buffer);
+			safe_unpack_time(&job->submit_time, buffer);
+			safe_unpackstr(&job->work_dir, buffer);
+			/**********************************/
+
+			safe_unpackstr(&job->features, buffer);
+			safe_unpackstr(&job->prefer, buffer);
+			safe_unpackstr(&job->command, buffer);
+
+			safe_unpack32(&job->num_cpus, buffer);
+			safe_unpack32(&job->max_cpus, buffer);
+			safe_unpack32(&job->num_nodes, buffer);
+			safe_unpack32(&job->max_nodes, buffer);
+			safe_unpack32(&job->num_tasks, buffer);
+
+			safe_unpack16(&job->shared, buffer);
+
+			safe_unpackstr(&job->cronspec, buffer);
 		}
-
-		/* job_record_pack_details_common */
-		safe_unpack_time(&job->accrue_time, buffer);
-		safe_unpack_time(&job->eligible_time, buffer);
-		safe_unpackstr(&job->cluster_features, buffer);
-		safe_unpack32(&job->cpu_freq_gov, buffer);
-		safe_unpack32(&job->cpu_freq_max, buffer);
-		safe_unpack32(&job->cpu_freq_min, buffer);
-		safe_unpackstr(&job->dependency, buffer);
-		unpack_bit_str_hex_as_fmt_str(&job->job_size_str, buffer);
-		safe_unpack32(&job->nice, buffer);
-		safe_unpack16(&job->ntasks_per_node, buffer);
-		safe_unpack16(&job->ntasks_per_tres, buffer);
-		safe_unpack16(&job->requeue, buffer);
-		safe_unpack_time(&job->submit_time, buffer);
-		safe_unpackstr(&job->work_dir, buffer);
-		/**********************************/
-
-		safe_unpackstr(&job->features, buffer);
-		safe_unpackstr(&job->prefer, buffer);
-		safe_unpackstr(&job->command, buffer);
-
-		safe_unpack32(&job->num_cpus, buffer);
-		safe_unpack32(&job->max_cpus, buffer);
-		safe_unpack32(&job->num_nodes, buffer);
-		safe_unpack32(&job->max_nodes, buffer);
-		safe_unpack32(&job->num_tasks, buffer);
-
-		safe_unpack16(&job->shared, buffer);
-
-		safe_unpackstr(&job->cronspec, buffer);
-
-	end_unpack_details:
 
 		/*** unpack pending job details ***/
 		safe_unpack16(&job->contiguous, buffer);
