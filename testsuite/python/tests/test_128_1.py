@@ -11,6 +11,11 @@ import time
 def setup():
     atf.require_config_parameter("PreemptType", "preempt/partition_prio")
     atf.require_config_parameter("PreemptMode", "CANCEL,GANG")
+
+    # We need to define nodes memory and DefMem to support SelectTypeParameters with Memory
+    atf.require_nodes(1, [("CPUs", 2), ("RealMemory", 512)])
+    atf.require_config_parameter("DefMemPerNode", "128")
+
     atf.require_slurm_running()
 
 
