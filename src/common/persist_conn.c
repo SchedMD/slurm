@@ -631,6 +631,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 		persist_conn_t persist_conn_tmp;
 
 		persist_conn->tls_conn = tls_g_create_conn(persist_conn->fd,
+							   persist_conn->fd,
 							   TLS_CONN_CLIENT);
 		if (!persist_conn->tls_conn) {
 			error("Failed to enable tls on persistent connection");
@@ -777,7 +778,8 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 		 */
 		if (!persist_conn->tls_conn) {
 			persist_conn->tls_conn =
-				tls_g_create_conn(persist_conn->fd, tls_mode);
+				tls_g_create_conn(persist_conn->fd,
+						  persist_conn->fd, tls_mode);
 			if (!persist_conn->tls_conn)
 				error("CONN:%u tls_g_create_conn() failed",
 				      persist_conn->fd);
@@ -806,6 +808,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 			persist_conn, rc, comment, REQUEST_PERSIST_INIT);
 	} else if (init_msg) {
 		persist_conn->tls_conn = tls_g_create_conn(persist_conn->fd,
+							   persist_conn->fd,
 							   tls_mode);
 		if (!persist_conn->tls_conn) {
 			error("CONN:%u tls_g_create_conn() failed", persist_conn->fd);

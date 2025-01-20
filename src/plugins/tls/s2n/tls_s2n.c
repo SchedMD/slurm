@@ -44,6 +44,7 @@
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
 #include "src/common/xassert.h"
@@ -68,9 +69,86 @@ static struct s2n_config *config = NULL;
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 	pthread_mutex_t lock;
-	int fd;
+	int input_fd;
+	int output_fd;
 	struct s2n_connection *s2n_conn;
 } tls_conn_t;
+
+/*
+ * Handle and log a libs2n function failing
+ * IN conn - ptr to connection or NULL
+ * IN func - function that failed
+ */
+#define on_s2n_error(conn, func) \
+	_on_s2n_error(conn, (void *(*)(void)) func, XSTRINGIFY(func), __func__)
+
+static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
+			  const char *funcname, const char *caller)
+{
+	/* Save errno now in case error() clobbers it */
+	const int orig_errno = errno;
+	const int error_type = s2n_error_get_type(s2n_errno);
+
+	if (error_type == S2N_ERR_T_ALERT) {
+		int alert = S2N_ERR_T_OK;
+
+		if (conn)
+			alert = s2n_connection_get_alert(conn->s2n_conn);
+		else
+			fatal_abort("%s: s2n alert without connection",
+				    __func__);
+
+		xassert(alert != S2N_ERR_T_OK);
+
+		error("%s: %s() alerted %s[%d]: %s -> %s",
+		      caller, funcname, s2n_strerror_name(alert), alert,
+		      s2n_strerror(alert, NULL),
+		      s2n_strerror_debug(alert, NULL));
+	} else {
+		xassert(s2n_errno != S2N_ERR_T_OK);
+
+		error("%s: %s() failed %s[%d]: %s -> %s",
+		      caller, funcname, s2n_strerror_name(s2n_errno), s2n_errno,
+		      s2n_strerror(s2n_errno, NULL),
+		      s2n_strerror_debug(s2n_errno, NULL));
+	}
+
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_TLS) &&
+	    s2n_stack_traces_enabled())
+		s2n_print_stacktrace(log_fp());
+
+	/* Map the s2n error to a Slurm error (as closely as possible) */
+	switch (s2n_error_get_type(s2n_errno)) {
+	case S2N_ERR_T_BLOCKED:
+		errno = EWOULDBLOCK;
+		break;
+	case S2N_ERR_T_CLOSED:
+		errno = SLURM_COMMUNICATIONS_SHUTDOWN_ERROR;
+		break;
+	case S2N_ERR_T_IO:
+		/* I/O errors should set errno */
+		if (orig_errno)
+			errno = orig_errno;
+		else
+			errno = EIO;
+		break;
+	case S2N_ERR_T_PROTO:
+		errno = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+		break;
+	case S2N_ERR_T_ALERT:
+		errno = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+		break;
+	default:
+		errno = SLURM_ERROR;
+		break;
+	}
+
+	/* Per library docs:
+	 *	NOTE: To avoid possible confusion, s2n_errno should be cleared
+	 *	after processing an error
+	 */
+	s2n_errno = S2N_ERR_T_OK;
+}
 
 static void _check_key_permissions(const char *path, int bad_perms)
 {
@@ -107,14 +185,12 @@ static struct s2n_psk *_load_psk(void)
 
 	/* Create pre-shared key */
 	if (!(psk_local = s2n_external_psk_new())) {
-		error("%s: s2n_external_psk_new: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+		on_s2n_error(NULL, s2n_external_psk_new);
 		return NULL;
 	}
 
 	if (s2n_psk_set_hmac(psk_local, S2N_PSK_HMAC_SHA256) < 0) {
-		error("%s: s2n_psk_set_hmac: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+		on_s2n_error(NULL, s2n_psk_set_hmac);
 		goto fail;
 	}
 
@@ -126,8 +202,7 @@ static struct s2n_psk *_load_psk(void)
 
 	if (s2n_psk_set_identity(psk_local, (const uint8_t *) psk_identity,
 				 sizeof(psk_identity)) < 0) {
-		error("%s: s2n_psk_set_identity: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+		on_s2n_error(NULL, s2n_psk_set_identity);
 		xfree(psk_identity);
 		goto fail;
 	}
@@ -152,8 +227,7 @@ static struct s2n_psk *_load_psk(void)
 	/* Set PSK secret */
 	if (s2n_psk_set_secret(psk_local, (const uint8_t *) psk_buf->head,
 			       psk_buf->size) < 0) {
-		error("%s: s2n_psk_set_secret: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+		on_s2n_error(NULL, s2n_psk_set_secret);
 		free_buf(psk_buf);
 		goto fail;
 	}
@@ -162,7 +236,8 @@ static struct s2n_psk *_load_psk(void)
 	return psk_local;
 
 fail:
-	s2n_psk_free(&psk_local);
+	if (s2n_psk_free(&psk_local))
+		on_s2n_error(NULL, s2n_psk_free);
 	return NULL;
 }
 
@@ -172,8 +247,7 @@ static struct s2n_config *_create_config(void)
 	char *security_policy = NULL;
 
 	if (!(new_conf = s2n_config_new())) {
-		error("%s: s2n_config_new: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+		on_s2n_error(NULL, s2n_config_new);
 		return NULL;
 	}
 
@@ -189,8 +263,7 @@ static struct s2n_config *_create_config(void)
 		security_policy = xstrdup(DEFAULT_S2N_SECURITY_POLICY);
 
 	if (s2n_config_set_cipher_preferences(new_conf, security_policy) < 0) {
-		error("%s: s2n_config_set_cipher_preferences: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+		on_s2n_error(NULL, s2n_config_set_cipher_preferences);
 		xfree(security_policy);
 		return NULL;
 	}
@@ -204,40 +277,45 @@ extern int init(void)
 	debug("%s loaded", plugin_type);
 
 	if (s2n_init() != S2N_SUCCESS) {
-		error("%s: s2n_init: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
-		return SLURM_ERROR;
+		on_s2n_error(NULL, s2n_init);
+		return errno;
 	}
 
 	if (!(psk = _load_psk())) {
 		error("Could not load pre-shared key for s2n");
-		return SLURM_ERROR;
+		return errno;
 	}
 
 	if (!(config = _create_config())) {
 		error("Could not create configuration for s2n");
-		return SLURM_ERROR;
+		return errno;
 	}
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS)
+		s2n_stack_traces_enabled_set(true);
 
 	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
-	s2n_psk_free(&psk);
-	s2n_config_free(config);
+	if (s2n_psk_free(&psk))
+		on_s2n_error(NULL, s2n_psk_free);
+	if (s2n_config_free(config))
+		on_s2n_error(NULL, s2n_config_free);
 
 	return SLURM_SUCCESS;
 }
 
-extern void *tls_p_create_conn(int fd, tls_conn_mode_t tls_mode)
+extern void *tls_p_create_conn(int input_fd, int output_fd,
+			       tls_conn_mode_t tls_mode)
 {
 	tls_conn_t *conn;
 	s2n_mode s2n_conn_mode;
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
 
-	log_flag(TLS, "%s: create connection. fd:%d. tls mode:%d",
-		 plugin_type, fd, tls_mode);
+	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%d",
+		 plugin_type, input_fd, output_fd, tls_mode);
 
 	switch (tls_mode) {
 	case TLS_CONN_SERVER:
@@ -252,52 +330,52 @@ extern void *tls_p_create_conn(int fd, tls_conn_mode_t tls_mode)
 	}
 
 	conn = xmalloc(sizeof(*conn));
-	conn->fd = fd;
+	conn->input_fd = input_fd;
+	conn->output_fd = output_fd;
 	slurm_mutex_init(&conn->lock);
 
 	if (!(conn->s2n_conn = s2n_connection_new(s2n_conn_mode))) {
-		error("%s: s2n_connection_new: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+		on_s2n_error(conn, s2n_connection_new);
 		slurm_mutex_destroy(&conn->lock);
 		xfree(conn);
 		return NULL;
 	}
 
 	if (s2n_connection_set_config(conn->s2n_conn, config) < 0) {
-		error("%s: s2n_connection_set_config: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+		on_s2n_error(conn, s2n_connection_set_config);
 		goto fail;
 	}
 
 	if (s2n_connection_append_psk(conn->s2n_conn, psk) < 0) {
-		error("%s: s2n_connection_append_psk: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+		on_s2n_error(conn, s2n_connection_append_psk);
 		goto fail;
 	}
 
 	if (s2n_connection_set_psk_mode(conn->s2n_conn,
 					S2N_PSK_MODE_EXTERNAL) < 0) {
-		error("%s: s2n_connection_set_psk_mode: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+		on_s2n_error(conn, s2n_connection_set_psk_mode);
 		goto fail;
 	}
 
 	/* Associate a connection with a file descriptor */
-	if (s2n_connection_set_fd(conn->s2n_conn, fd) < 0) {
-		error("%s: s2n_connection_set_fd: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+	if (s2n_connection_set_read_fd(conn->s2n_conn, input_fd) < 0) {
+		on_s2n_error(conn, s2n_connection_set_read_fd);
+		goto fail;
+	}
+	if (s2n_connection_set_write_fd(conn->s2n_conn, output_fd) < 0) {
+		on_s2n_error(conn, s2n_connection_set_write_fd);
 		goto fail;
 	}
 
 	/* Negotiate the TLS handshake */
 	while (s2n_negotiate(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
 		if (s2n_error_get_type(s2n_errno) != S2N_ERR_T_BLOCKED) {
-			error("%s: s2n_negotiate: %s",
-			      __func__, s2n_strerror(s2n_errno, NULL));
+			on_s2n_error(conn, s2n_negotiate);
 			goto fail;
 		}
 
-		if (wait_fd_readable(conn->fd, slurm_conf.msg_timeout) == -1) {
+		if (wait_fd_readable(conn->input_fd, slurm_conf.msg_timeout) ==
+		    -1) {
 			error("Problem reading socket, couldn't do s2n negotiation");
 			goto fail;
 		}
@@ -307,8 +385,8 @@ extern void *tls_p_create_conn(int fd, tls_conn_mode_t tls_mode)
 
 fail:
 	if (s2n_connection_free(conn->s2n_conn) < 0)
-		error("%s: s2n_connection_free: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
+		on_s2n_error(conn, s2n_connection_free);
+
 	slurm_mutex_destroy(&conn->lock);
 	xfree(conn);
 
@@ -321,8 +399,8 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 
 	xassert(conn);
 
-	log_flag(TLS, "%s: destroying connection. fd:%d",
-		 plugin_type, conn->fd);
+	log_flag(TLS, "%s: destroying connection. fd:%d->%d",
+		 plugin_type, conn->input_fd, conn->output_fd);
 
 	slurm_mutex_lock(&conn->lock);
 
@@ -342,21 +420,19 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 	while (running_in_slurmctld() &&
 	       (s2n_shutdown(conn->s2n_conn, &blocked) != S2N_SUCCESS)) {
 		if (s2n_error_get_type(s2n_errno) != S2N_ERR_T_BLOCKED) {
-			error("%s: s2n_shutdown: %s",
-			      __func__, s2n_strerror(s2n_errno, NULL));
+			on_s2n_error(conn, s2n_shutdown);
 			break;
 		}
 
-		if (wait_fd_readable(conn->fd, slurm_conf.msg_timeout) == -1) {
+		if (wait_fd_readable(conn->input_fd, slurm_conf.msg_timeout) ==
+		    -1) {
 			error("Problem reading socket, couldn't do graceful s2n shutdown");
 			break;
 		}
 	}
 
-	if (s2n_connection_free(conn->s2n_conn) < 0) {
-		error("%s: s2n_connection_free: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
-	}
+	if (s2n_connection_free(conn->s2n_conn) < 0)
+		on_s2n_error(conn, s2n_connection_free);
 
 	slurm_mutex_unlock(&conn->lock);
 	slurm_mutex_destroy(&conn->lock);
@@ -366,19 +442,30 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 {
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
-	ssize_t bytes_written;
+	ssize_t bytes_written = 0;
 
 	xassert(conn);
 
 	slurm_mutex_lock(&conn->lock);
-	if ((bytes_written = s2n_send(conn->s2n_conn, buf, n, &blocked)) < 0) {
-		error("%s: s2n_send: %s",
-		      __func__, s2n_strerror(s2n_errno, NULL));
-		bytes_written = SLURM_ERROR;
+	while ((bytes_written < n) && (blocked == S2N_NOT_BLOCKED)) {
+		ssize_t w = s2n_send(conn->s2n_conn, (buf + bytes_written),
+				     (n - bytes_written), &blocked);
+
+		if (w < 0) {
+			on_s2n_error(conn, s2n_send);
+			bytes_written = SLURM_ERROR;
+			break;
+		}
+
+		bytes_written += w;
 	}
 	slurm_mutex_unlock(&conn->lock);
 
-	log_flag(TLS, "%s: send %zd. fd:%d", plugin_type, bytes_written, conn->fd);
+	log_flag(TLS, "%s: send %zd. fd:%d->%d",
+		 plugin_type, bytes_written, conn->input_fd, conn->output_fd);
+
+	if (blocked == S2N_NOT_BLOCKED)
+		errno = EWOULDBLOCK;
 
 	return bytes_written;
 }
@@ -400,18 +487,22 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 			/* connection closed */
 			break;
 		} else if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
-			/* busy wait until we get further data */
-			continue;
+			/*
+			 * recv() would block so consider the recv() complete
+			 * for now
+			 */
+			errno = EWOULDBLOCK;
+			break;
 		} else {
-			error("%s: s2n_recv: %s",
-			      __func__, s2n_strerror(s2n_errno, NULL));
+			on_s2n_error(conn, s2n_recv);
 			slurm_mutex_unlock(&conn->lock);
 			return SLURM_ERROR;
 		}
 	}
 	slurm_mutex_unlock(&conn->lock);
 
-	log_flag(TLS, "%s: recv %zd. fd:%d", plugin_type, bytes_read, conn->fd);
+	log_flag(TLS, "%s: recv %zd. fd:%d->%d",
+		 plugin_type, bytes_read, conn->input_fd, conn->output_fd);
 
 	return bytes_read;
 }
