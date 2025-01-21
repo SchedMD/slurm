@@ -273,6 +273,11 @@ static void _init_stepd_stepmgr(void)
 			    NULL);
 }
 
+static void _on_sigalrm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug("Caught SIGALRM. Ignoring.");
+}
+
 static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Caught SIGINT. Shutting down.");
@@ -344,6 +349,7 @@ extern int main(int argc, char **argv)
 
 	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
 
+	conmgr_add_work_signal(SIGALRM, _on_sigalrm, NULL);
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
 	conmgr_add_work_signal(SIGQUIT, _on_sigquit, NULL);
