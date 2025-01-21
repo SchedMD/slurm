@@ -7,7 +7,7 @@ import re
 import shutil
 import sys
 
-from cmds import run_cmd
+from utils.cmds import run_cmd
 
 # SchedMD
 from utils.log import (

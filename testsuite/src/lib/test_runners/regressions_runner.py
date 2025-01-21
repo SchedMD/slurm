@@ -37,7 +37,7 @@ def run_regressions_tests(
 
     total_tests = len(test_data_list)
     result_data_list = []
-    python_status_re = re.compile(r"=+\\n(PASSED|FAILED|SKIPPED|ERROR)")
+    python_status_re = re.compile(r"=+\n(PASSED|FAILED|SKIPPED|ERROR)")
     msg = "Updating regressions test records"
     fails = []
 
