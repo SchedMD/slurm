@@ -951,7 +951,7 @@ static int _spank_user_child(void *arg)
 	struct priv_state sprivs;
 	int rc = 0;
 
-	if (container_g_join(step->step_id.job_id, step->uid, false)) {
+	if (container_g_join(&step->step_id, step->uid, false)) {
 		error("container_g_join(%u): %m", step->step_id.job_id);
 		_exit(-1);
 	}
@@ -981,7 +981,7 @@ static int _spank_task_post_fork_child(void *arg)
 	spank_task_args_t *args = arg;
 	stepd_step_rec_t *step = args->step;
 
-	if (container_g_join(step->step_id.job_id, step->uid, false)) {
+	if (container_g_join(&step->step_id, step->uid, false)) {
 		error("container_g_join(%u): %m", step->step_id.job_id);
 		_exit(-1);
 	}
@@ -997,7 +997,7 @@ static int _spank_task_exit_child(void *arg)
 	spank_task_args_t *args = arg;
 	stepd_step_rec_t *step = args->step;
 
-	if (container_g_join(step->step_id.job_id, step->uid, false)) {
+	if (container_g_join(&step->step_id, step->uid, false)) {
 		error("container_g_join(%u): %m", step->step_id.job_id);
 		_exit(-1);
 	}
@@ -1177,7 +1177,7 @@ static void _x11_signal_handler(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 	}
 	if ((cpid = fork()) == 0) {
-		if (container_g_join(step->step_id.job_id, step->uid, false) !=
+		if (container_g_join(&step->step_id, step->uid, false) !=
 		    SLURM_SUCCESS) {
 			error("%s: cannot join container",
 			      __func__);
@@ -1288,16 +1288,20 @@ static int _run_prolog_epilog(stepd_step_rec_t *step, bool is_epilog)
 	return rc;
 }
 
-static void _setup_x11_child(int to_parent[2], uint32_t jobid,
-			     stepd_step_rec_t *step)
+static void _setup_x11_child(int to_parent[2], stepd_step_rec_t *step)
 {
 	uint32_t len = 0;
 
-	if (container_g_join(jobid, step->uid, false) != SLURM_SUCCESS)
+	if (container_g_join(&step->step_id, step->uid, false) !=
+	    SLURM_SUCCESS) {
+		safe_write(to_parent[1], &len, sizeof(len));
 		_exit(1);
+	}
 
-	if (_set_xauthority(step) != SLURM_SUCCESS)
+	if (_set_xauthority(step) != SLURM_SUCCESS) {
+		safe_write(to_parent[1], &len, sizeof(len));
 		_exit(1);
+	}
 
 	len = strlen(step->x11_xauthority);
 	safe_write(to_parent[1], &len, sizeof(len));
@@ -1412,14 +1416,13 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 			 */
 			pid = fork();
 			if (pid == 0) {
-				_setup_x11_child(to_parent, jobid, step);
+				_setup_x11_child(to_parent, step);
 			} else if (pid > 0) {
 				char *tmp = NULL;
 				rc = _setup_x11_parent(to_parent, pid, &tmp);
-				if (tmp) {
-					xfree(step->x11_xauthority);
+				xfree(step->x11_xauthority);
+				if (tmp)
 					step->x11_xauthority = tmp;
-				}
 			} else {
 				error("fork: %m");
 				rc = SLURM_ERROR;
@@ -1915,7 +1918,7 @@ static int _pre_task_child_privileged(
 
 	if (!(step->flags & LAUNCH_NO_ALLOC)) {
 		/* Add job's pid to job container, if a normal job */
-		if (container_g_join(step->step_id.job_id, step->uid, false)) {
+		if (container_g_join(&step->step_id, step->uid, false)) {
 			error("container_g_join failed: %u",
 			      step->step_id.job_id);
 			exit(1);
@@ -3224,7 +3227,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 		/* Ignore system processes */
 		if ((step->step_id.job_id != 0) &&
 		    !(step->flags & LAUNCH_NO_ALLOC) &&
-		    (container_g_join(step->step_id.job_id, step->uid, false)))
+		    (container_g_join(&step->step_id, step->uid, false)))
 			error("container_g_join(%u): %m", step->step_id.job_id);
 
 		argv[0] = (char *)xstrdup(path);
