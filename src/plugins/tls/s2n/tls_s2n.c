@@ -439,6 +439,21 @@ extern void *tls_p_create_conn(int input_fd, int output_fd,
 		}
 	}
 
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
+		const char *cipher = NULL;
+		uint8_t first = 0, second = 0;
+		if (!(cipher = s2n_connection_get_cipher(conn->s2n_conn))) {
+			on_s2n_error(conn, s2n_connection_get_cipher);
+		}
+		if (s2n_connection_get_cipher_iana_value(conn->s2n_conn, &first,
+							 &second) < 0) {
+			on_s2n_error(conn, s2n_connection_get_cipher_iana_value);
+		}
+		log_flag(TLS, "%s: cipher suite:%s, {0x%02X,0x%02X}. fd:%d->%d.",
+			 plugin_type, cipher, first, second, conn->input_fd,
+			 conn->output_fd);
+	}
+
 	log_flag(TLS, "%s: connection successfully created. fd:%d->%d. tls mode:%s",
 		 plugin_type, conn->input_fd, conn->output_fd,
 		 tls_conn_mode_to_str(tls_mode));
