@@ -139,11 +139,6 @@ static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
 	shutdown_threads();
 }
 
-static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	debug5("Caught SIGTSTP. Ignoring");
-}
-
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	info("Reconfigure signal (SIGHUP) received");
@@ -182,7 +177,6 @@ static void _register_signal_handlers(void)
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
 	conmgr_add_work_signal(SIGCHLD, _on_sigchld, NULL);
 	conmgr_add_work_signal(SIGQUIT, _on_sigquit, NULL);
-	conmgr_add_work_signal(SIGTSTP, _on_sigtstp, NULL);
 	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
 	conmgr_add_work_signal(SIGUSR1, _on_sigusr1, NULL);
 	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);

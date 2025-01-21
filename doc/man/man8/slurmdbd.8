@@ -81,13 +81,18 @@ Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
 .IP
 
 .TP
+\fBSIGTSTP\fR
+Stop the process from a terminal.
+.IP
+
+.TP
 \fBSIGUSR2\fR
 Reread the log level from the configs, and then reopen the log file. This
 should be used when setting up \fBlogrotate\fR(8).
 .IP
 
 .TP
-\fBSIGCHLD SIGUSR1 SIGTSTP SIGXCPU SIGPIPE SIGALRM\fR
+\fBSIGCHLD SIGUSR1 SIGXCPU SIGPIPE SIGALRM\fR
 These signals are explicitly ignored.
 .IP
 
