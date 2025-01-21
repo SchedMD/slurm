@@ -1,4 +1,4 @@
-.TH sackd "8" "Slurm Auth and Cred Kiosk Daemon" "April 2024" "Slurm Auth and Cred Kiosk Daemon"
+.TH sackd "8" "Slurm Auth and Cred Kiosk Daemon" "January 2025" "Slurm Auth and Cred Kiosk Daemon"
 
 .SH "NAME"
 sackd \- Slurm Auth and Cred Kiosk Daemon.
@@ -79,12 +79,17 @@ over the setting in the slurm.conf.
 .SH "SIGNALS"
 
 .TP 6
+\fBSIGINT\fR
+\fBsackd\fR will shutdown cleanly.
+.IP
+
+.TP
 \fBSIGHUP\fR
 \fBsackd\fR will reconfigure.
 .IP
 
 .TP
-\fBSIGUSR2\fR
+\fBSIGUSR2 SIGPIPE\fR
 This signal is explicitly ignored.
 .IP
 
