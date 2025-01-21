@@ -1130,6 +1130,11 @@ static void _on_sigabrt(conmgr_callback_args_t conmgr_args, void *arg)
 	log_flag(SCRIPT, "Caught SIGABRT. Ignoring.");
 }
 
+static void _on_sigalrm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(SCRIPT, "Caught SIGALRM. Ignoring.");
+}
+
 static void _init_slurmscriptd_conmgr(void)
 {
 	conmgr_callbacks_t callbacks = { NULL, NULL };
@@ -1154,6 +1159,7 @@ static void _init_slurmscriptd_conmgr(void)
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
 	conmgr_add_work_signal(SIGXCPU, _on_sigxcpu, NULL);
 	conmgr_add_work_signal(SIGABRT, _on_sigabrt, NULL);
+	conmgr_add_work_signal(SIGALRM, _on_sigalrm, NULL);
 
 	conmgr_run(false);
 }

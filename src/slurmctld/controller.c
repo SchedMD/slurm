@@ -429,6 +429,11 @@ static void _on_sigabrt(conmgr_callback_args_t conmgr_args, void *arg)
 	dump_core = true;
 }
 
+static void _on_sigalrm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug5("Caught SIGALRM. Ignoring.");
+}
+
 static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
 				      void *arg)
 {
@@ -443,6 +448,7 @@ static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
 	conmgr_add_work_signal(SIGXCPU, _on_sigxcpu, NULL);
 	conmgr_add_work_signal(SIGABRT, _on_sigabrt, NULL);
+	conmgr_add_work_signal(SIGALRM, _on_sigalrm, NULL);
 }
 
 static void _reopen_stdio(void)
