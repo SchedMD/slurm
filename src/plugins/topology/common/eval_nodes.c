@@ -1890,6 +1890,8 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 	avail_res_array[node_inx]->gres_min_cpus =
 		job_mgr_determine_cpus_per_core(job_ptr->details, node_inx) *
 		min_cores_this_node;
+	avail_res_array[node_inx]->min_cpus =
+		avail_res_array[node_inx]->gres_min_cpus;
 	avail_res_array[node_inx]->gres_max_tasks = max_tasks_this_node;
 }
 

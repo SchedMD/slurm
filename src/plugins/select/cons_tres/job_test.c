@@ -1180,6 +1180,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	bool have_gres_max_tasks = false;
 	uint32_t sockets_per_node = 1;
 	uint32_t c, j, n, c_alloc = 0, c_size, total_cpus;
+	uint32_t *gres_min_cpus;
 	uint64_t save_mem = 0, avail_mem = 0, needed_mem = 0, lowest_mem = 0;
 	int32_t build_cnt;
 	job_resources_t *job_res;
@@ -1876,8 +1877,10 @@ alloc_job:
 		c_size = bit_size(job_res->core_bitmap);
 	else
 		c_size = 0;
+	gres_min_cpus = xcalloc(job_res->nhosts, sizeof(uint32_t));
 	for (i = 0, n = 0; (node_ptr = next_node_bitmap(node_bitmap, &i));
 	     i++) {
+		uint32_t gres_min_node_cpus;
 		int first_core = 0, last_core = node_ptr->tot_cores;
 		bitstr_t *use_free_cores = free_cores[i];
 
@@ -1892,10 +1895,19 @@ alloc_job:
 				_free_avail_res_array(avail_res_array);
 				free_job_resources(&job_res);
 				free_core_array(&free_cores);
+				xfree(gres_min_cpus);
 				return SLURM_ERROR;
 			}
 			bit_set(job_res->core_bitmap, c);
 			c_alloc++;
+		}
+		if ((gres_min_node_cpus = avail_res_array[i]->gres_min_cpus)) {
+			gres_min_cpus[n] = gres_min_node_cpus;
+			log_flag(
+				SELECT_TYPE,
+				"%pJ: Node=%s: job_res->cpus[%d]=%u, gres_min_cpus[%d]=%u",
+				job_ptr, node_record_table_ptr[i]->name, i,
+				job_res->cpus[n], i, gres_min_cpus[n]);
 		}
 		if (avail_res_array[i]->gres_max_tasks)
 			have_gres_max_tasks = true;
@@ -1963,8 +1975,9 @@ alloc_job:
 		if (!task_limit_set)
 			xfree(gres_task_limit);
 	}
-	error_code = dist_tasks(job_ptr, cr_type, preempt_mode,
-				avail_cores, gres_task_limit);
+	error_code = dist_tasks(job_ptr, cr_type, preempt_mode, avail_cores,
+				gres_task_limit, gres_min_cpus);
+	xfree(gres_min_cpus);
 	if (job_ptr->gres_list_req && (error_code == SLURM_SUCCESS)) {
 		error_code = gres_select_filter_select_and_set(
 			sock_gres_list, job_ptr, tres_mc_ptr);
