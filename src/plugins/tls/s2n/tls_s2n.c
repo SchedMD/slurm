@@ -188,8 +188,8 @@ static struct s2n_config *_create_config(void)
 	struct s2n_config *new_conf = NULL;
 	char *security_policy = NULL;
 
-	if (!(new_conf = s2n_config_new())) {
-		on_s2n_error(NULL, s2n_config_new);
+	if (!(new_conf = s2n_config_new_minimal())) {
+		on_s2n_error(NULL, s2n_config_new_minimal);
 		return NULL;
 	}
 
