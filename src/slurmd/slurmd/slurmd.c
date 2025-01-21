@@ -288,11 +288,6 @@ static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
 	slurmd_shutdown();
 }
 
-static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	info("Caught SIGTSTP. Ignoring");
-}
-
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
@@ -415,7 +410,6 @@ main (int argc, char **argv)
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
 	conmgr_add_work_signal(SIGQUIT, _on_sigquit, NULL);
-	conmgr_add_work_signal(SIGTSTP, _on_sigtstp, NULL);
 	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
 	conmgr_add_work_signal(SIGUSR1, _on_sigusr1, NULL);
 	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
