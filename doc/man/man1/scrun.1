@@ -1,4 +1,4 @@
-.TH scrun "1" "Slurm Commands" "August 2024" "Slurm Commands"
+.TH scrun "1" "Slurm Commands" "January 2025" "Slurm Commands"
 
 .SH "NAME"
 \fBscrun\fR \- an OCI runtime proxy for Slurm.
@@ -1341,9 +1341,15 @@ return slurm.SUCCESS
 
 
 .SH "SIGNALS"
-.LP
-When \fBscrun\fR receives SIGINT, it will attempt to gracefully cancel any
-related jobs (if any) and cleanup.
+.TP
+\fBSIGINT\fR
+Attempt to gracefully cancel any related jobs (if any) and cleanup.
+.IP
+
+.TP
+\fBSIGCHLD\fR
+Wait for all children, cleanup anchor and gracefully shutdown.
+.IP
 
 .SH "COPYING"
 Copyright (C) 2023 SchedMD LLC.
