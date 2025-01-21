@@ -320,11 +320,6 @@ static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 	info("Caught SIGPIPE. Ignoring.");
 }
 
-static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	debug("Caught SIGTTIN. Ignoring.");
-}
-
 int
 main (int argc, char **argv)
 {
@@ -408,7 +403,6 @@ main (int argc, char **argv)
 	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
 	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
-	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
 
 	if ((oom_value = getenv("SLURMD_OOM_ADJ"))) {
 		int i = atoi(oom_value);
