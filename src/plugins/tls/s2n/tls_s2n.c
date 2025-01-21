@@ -147,7 +147,7 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 	s2n_errno = S2N_ERR_T_OK;
 }
 
-static void _check_key_permissions(const char *path, int bad_perms)
+static void _check_file_permissions(const char *path, int bad_perms)
 {
 	struct stat statbuf;
 
@@ -169,7 +169,7 @@ static void _check_key_permissions(const char *path, int bad_perms)
 			slurm_conf.slurm_user_id);
 
 	if (statbuf.st_mode & bad_perms)
-		fatal("%s: key file is insecure: '%s' mode=0%o",
+		fatal("%s: file is insecure: '%s' mode=0%o",
 		      plugin_type, path, statbuf.st_mode & 0777);
 }
 
@@ -238,7 +238,7 @@ static int _load_ca_cert(void)
 		xfree(cert_file);
 		return SLURM_ERROR;
 	}
-	_check_key_permissions(cert_file, S_IRWXO);
+	_check_file_permissions(cert_file, S_IRWXO);
 	if (s2n_config_set_verification_ca_location(config, cert_file, NULL) < 0) {
 		on_s2n_error(NULL, s2n_config_set_verification_ca_location);
 		xfree(ca_dir);
@@ -285,7 +285,7 @@ static int _load_self_cert(void)
 		xfree(cert_file);
 		return SLURM_ERROR;
 	}
-	_check_key_permissions(cert_file, S_IRWXO);
+	_check_file_permissions(cert_file, S_IRWXO);
 	if (!(cert_buf = create_mmap_buf(cert_file))) {
 		error("%s: Could not load cert file (%s)",
 		      plugin_type, cert_file);
@@ -301,7 +301,7 @@ static int _load_self_cert(void)
 		xfree(key_file);
 		return SLURM_ERROR;
 	}
-	_check_key_permissions(key_file, S_IRWXO);
+	_check_file_permissions(key_file, S_IRWXO);
 	if (!(key_buf = create_mmap_buf(key_file))) {
 		error("%s: Could not private key file (%s)",
 		      plugin_type, key_file);
