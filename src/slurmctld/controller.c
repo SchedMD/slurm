@@ -1720,7 +1720,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 		slurm_send_rc_msg(msg, EINVAL);
 	}
 
-	if (this_rpc && !this_rpc->keep_msg) {
+	if (!this_rpc || !this_rpc->keep_msg) {
 		if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
 			error("close(%d): %m", msg->conn_fd);
 		slurm_free_msg(msg);
