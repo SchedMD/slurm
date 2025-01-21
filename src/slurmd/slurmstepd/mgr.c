@@ -1420,10 +1420,9 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 			} else if (pid > 0) {
 				char *tmp = NULL;
 				rc = _setup_x11_parent(to_parent, pid, &tmp);
-				if (tmp) {
-					xfree(step->x11_xauthority);
+				xfree(step->x11_xauthority);
+				if (tmp)
 					step->x11_xauthority = tmp;
-				}
 			} else {
 				error("fork: %m");
 				rc = SLURM_ERROR;
