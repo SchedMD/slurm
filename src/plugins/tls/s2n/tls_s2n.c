@@ -438,6 +438,9 @@ extern void *tls_p_create_conn(int input_fd, int output_fd,
 		}
 	}
 
+	log_flag(TLS, "%s: connection successfully created. fd:%d->%d. tls mode:%d",
+		 plugin_type, conn->input_fd, conn->output_fd, tls_mode);
+
 	return conn;
 
 fail:
