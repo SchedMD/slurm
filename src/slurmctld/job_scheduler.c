@@ -1625,8 +1625,8 @@ next_task:
 			if (!job_array_start_test(job_ptr))
 				continue;
 		}
-		if (job_ptr->part_ptr->num_sched_jobs < max_jobs_per_part) {
-			job_ptr->part_ptr->num_sched_jobs++;
+		if (max_jobs_per_part &&
+		    (max_jobs_per_part < ++job_ptr->part_ptr->num_sched_jobs)) {
 			if (job_ptr->state_reason == WAIT_NO_REASON) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = WAIT_PRIORITY;
