@@ -1292,11 +1292,16 @@ static void _setup_x11_child(int to_parent[2], stepd_step_rec_t *step)
 {
 	uint32_t len = 0;
 
-	if (container_g_join(&step->step_id, step->uid, false) != SLURM_SUCCESS)
+	if (container_g_join(&step->step_id, step->uid, false) !=
+	    SLURM_SUCCESS) {
+		safe_write(to_parent[1], &len, sizeof(len));
 		_exit(1);
+	}
 
-	if (_set_xauthority(step) != SLURM_SUCCESS)
+	if (_set_xauthority(step) != SLURM_SUCCESS) {
+		safe_write(to_parent[1], &len, sizeof(len));
 		_exit(1);
+	}
 
 	len = strlen(step->x11_xauthority);
 	safe_write(to_parent[1], &len, sizeof(len));
