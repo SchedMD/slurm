@@ -185,6 +185,24 @@ static void _clear_spec_cores(job_record_t *job_ptr,
 	}
 }
 
+static int _get_task_count(job_record_t *job_ptr)
+{
+	uint32_t maxtasks;
+
+	if (job_ptr->details->num_tasks) {
+		maxtasks = job_ptr->details->num_tasks;
+	} else if (job_ptr->details->ntasks_per_node) {
+		maxtasks = job_ptr->details->ntasks_per_node *
+			   job_ptr->job_resrcs->nhosts;
+	} else {
+		maxtasks = job_ptr->job_resrcs->ncpus;
+		if (job_ptr->details->cpus_per_task > 1)
+			maxtasks /= job_ptr->details->cpus_per_task;
+	}
+
+	return maxtasks;
+}
+
 /* CPUs already selected for jobs, just distribute the tasks */
 static int _set_task_dist_internal(job_record_t *job_ptr)
 {
@@ -220,18 +238,7 @@ static int _set_task_dist_internal(job_record_t *job_ptr)
 	avail_cpus = xmalloc(i);
 	memcpy(avail_cpus, job_res->cpus, i);
 	job_res->tasks_per_node = xmalloc(i);
-	maxtasks = job_res->ncpus;
-
-	/* ncpus is already set the number of tasks if overcommit is used */
-	if (!job_ptr->details->overcommit &&
-	    (job_ptr->details->cpus_per_task > 1)) {
-		if (job_ptr->details->ntasks_per_node == 0) {
-			maxtasks = maxtasks / job_ptr->details->cpus_per_task;
-		} else {
-			maxtasks = job_ptr->details->ntasks_per_node *
-				   job_res->nhosts;
-		}
-	}
+	maxtasks = _get_task_count(job_ptr);
 
 	/*
 	 * Safe guard if the user didn't specified a lower number of
@@ -321,9 +328,10 @@ static int _set_task_dist(job_record_t *job_ptr, const uint16_t cr_type)
 }
 
 /* distribute blocks (planes) of tasks cyclically */
-static int _compute_plane_dist(job_record_t *job_ptr,
-			       uint32_t *gres_task_limit)
+static int _compute_plane_dist(job_record_t *job_ptr, uint32_t *gres_task_limit,
+			       uint32_t *gres_min_cpus)
 {
+	bool do_gres_min_cpus = false;
 	uint32_t n, i, p, tid, maxtasks, l;
 	uint16_t *avail_cpus, plane_size = 1;
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -336,11 +344,8 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 		return SLURM_ERROR;
 	}
 
-	maxtasks = job_res->ncpus;
+	maxtasks = _get_task_count(job_ptr);
 	avail_cpus = job_res->cpus;
-
-	if (job_ptr->details->cpus_per_task > 1)
-		 maxtasks = maxtasks / job_ptr->details->cpus_per_task;
 
 	if (job_ptr->details->mc_ptr)
 		plane_size = job_ptr->details->mc_ptr->plane_size;
@@ -361,7 +366,9 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 					    gres_task_limit, job_res, n))
 					continue;
 				more_tres_tasks = true;
-				if (job_res->cpus[n] < avail_cpus[n]) {
+				if ((job_res->cpus[n] < avail_cpus[n])) {
+					if (gres_min_cpus[n])
+						do_gres_min_cpus = true;
 					tid++;
 					job_res->tasks_per_node[n]++;
 					for (l = 0;
@@ -388,13 +395,14 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 				    job_ptr->gres_list_req)) {
 				/* Try again without limit */
 				gres_task_limit = NULL;
-				info("Function:%s LineNumber:%d", __func__, __LINE__);
 			} else {
 				rc = ESLURM_BAD_TASK_COUNT;
 				break;
 			}
 		}
 	}
+	if (do_gres_min_cpus)
+		dist_tasks_gres_min_cpus(job_ptr, avail_cpus, gres_min_cpus);
 	xfree(avail_cpus);
 	return rc;
 }
@@ -1152,8 +1160,10 @@ static int _at_tpn_limit(const uint32_t n, const job_record_t *job_ptr,
  *			job_ptr->job_resrcs->node_bitmap
  */
 static int _dist_tasks_compute_c_b(job_record_t *job_ptr,
-				   uint32_t *gres_task_limit)
+				   uint32_t *gres_task_limit,
+				   uint32_t *gres_min_cpus)
 {
+	bool do_gres_min_cpus = false;
 	uint32_t n, tid, t, maxtasks, l;
 	uint16_t *avail_cpus;
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -1186,20 +1196,10 @@ static int _dist_tasks_compute_c_b(job_record_t *job_ptr,
 		vpus[n++] = node_ptr->tpc;
 	}
 
-	maxtasks = job_res->ncpus;
+	maxtasks = _get_task_count(job_ptr);
 	avail_cpus = job_res->cpus;
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
 	job_res->tasks_per_node = xmalloc(job_res->nhosts * sizeof(uint16_t));
-
-	/* ncpus is already set the number of tasks if overcommit is used */
-	if (!job_ptr->details->overcommit && (cpus_per_task > 1)) {
-		if (job_ptr->details->ntasks_per_node == 0) {
-			maxtasks = maxtasks / cpus_per_task;
-		} else {
-			maxtasks = job_ptr->details->ntasks_per_node *
-				   job_res->nhosts;
-		}
-	}
 
 	/*
 	 * Safe guard if the user didn't specified a lower number of
@@ -1214,6 +1214,8 @@ static int _dist_tasks_compute_c_b(job_record_t *job_ptr,
 	tid = 0;
 	for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 		if (avail_cpus[n]) {
+			if (gres_min_cpus[n])
+				do_gres_min_cpus = true;
 			/* Ignore gres_task_limit for first task per node */
 			tid++;
 			job_res->tasks_per_node[n]++;
@@ -1305,6 +1307,8 @@ static int _dist_tasks_compute_c_b(job_record_t *job_ptr,
 			}
 		}
 	}
+	if (do_gres_min_cpus)
+		dist_tasks_gres_min_cpus(job_ptr, avail_cpus, gres_min_cpus);
 	xfree(avail_cpus);
 	xfree(vpus);
 
@@ -1348,10 +1352,13 @@ static int _dist_tasks_compute_c_b(job_record_t *job_ptr,
  *		the job, only used to identify specialized cores
  * IN gres_task_limit - array of task limits based upon job GRES specification,
  *		offset based upon bits set in job_ptr->job_resrcs->node_bitmap
+ * IN gres_min_cpus - array of minimum required CPUs based upon job's GRES
+ * 		      specification, offset based upon bits set in
+ * 		      job_ptr->job_resrcs->node_bitmap
  */
 extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 		      bool preempt_mode, bitstr_t **core_array,
-		      uint32_t *gres_task_limit)
+		      uint32_t *gres_task_limit, uint32_t *gres_min_cpus)
 {
 	int error_code;
 	bool one_task_per_node = false;
@@ -1396,13 +1403,14 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 	if (((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
 	     SLURM_DIST_PLANE) && !one_task_per_node) {
 		/* Perform plane distribution on the job_resources_t struct */
-		error_code = _compute_plane_dist(job_ptr, gres_task_limit);
+		error_code = _compute_plane_dist(job_ptr, gres_task_limit,
+						 gres_min_cpus);
 		if (error_code != SLURM_SUCCESS)
 			return error_code;
 	} else {
 		/* Perform cyclic distribution on the job_resources_t struct */
-		error_code = _dist_tasks_compute_c_b(
-			job_ptr, gres_task_limit);
+		error_code = _dist_tasks_compute_c_b(job_ptr, gres_task_limit,
+						     gres_min_cpus);
 		if (error_code != SLURM_SUCCESS)
 			return error_code;
 	}
@@ -1476,4 +1484,41 @@ extern bool dist_tasks_tres_tasks_avail(uint32_t *gres_task_limit,
 	if (gres_task_limit[node_offset] > job_res->tasks_per_node[node_offset])
 		return true;
 	return false;
+}
+
+extern void dist_tasks_gres_min_cpus(job_record_t *job_ptr,
+				     uint16_t *avail_cpus,
+				     uint32_t *gres_min_cpus)
+{
+	job_resources_t *job_res = job_ptr->job_resrcs;
+
+	for (int n = 0; n < job_res->nhosts; n++) {
+		/*
+		 * Make sure that enough cpus are available to meet the minimum
+		 * number of required cores to satisfy a gres request. This
+		 * can increase the number of cpus per task on a given node.
+		 */
+		if (job_res->cpus[n] < gres_min_cpus[n]) {
+			/*
+			 * If avail_cpus is less then gres_min_cpus,
+			 * something went wrong. Get as many cpus
+			 * as we can.
+			 */
+			if (avail_cpus[n] < gres_min_cpus[n]) {
+				log_flag(
+					SELECT_TYPE,
+					"%pJ: gres_min_cpus=%u is greater than avail_cpus=%u for node %u",
+					job_ptr, gres_min_cpus[n],
+					avail_cpus[n], n);
+				job_res->cpus[n] = avail_cpus[n];
+			} else {
+				log_flag(
+					SELECT_TYPE,
+					"%pJ: Changing job_res->cpus from %u to gres_min_cpus %u for node %u",
+					job_ptr, job_res->cpus[n],
+					gres_min_cpus[n], n);
+				job_res->cpus[n] = gres_min_cpus[n];
+			}
+		}
+	}
 }
