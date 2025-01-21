@@ -2974,7 +2974,6 @@ typedef struct {
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint16_t fs_dampening_factor; /* dampening for Fairshare factor */
 	uint16_t getnameinfo_cache_timeout; /* for getnameinfo() cache*/
-	uint16_t get_env_timeout; /* timeout for srun --get-user-env option */
 	char * gres_plugins;	/* list of generic resource plugins */
 	uint16_t group_time;    /* update group time interval */
 	uint16_t group_force;   /* update group/partition info even if no change
