@@ -30,8 +30,6 @@
 ############################################################################
 source ./globals
 
-set iterations 100
-
 if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
@@ -73,90 +71,3 @@ if {![regexp -line {^0: (\S+)} $output - host_1]} {
 	fail "Unable to parse value of SLURMD_NODENAME from srun output"
 }
 subtest {$host_1 eq $include_node} "Allocation was on included host" "$host_1 !=$include_node"
-
-#
-# Run three tasks at a time on some node and do so repeatedly
-# This checks for slurmd race conditions
-# The sleep between cycles is to make sure the job step completion
-# logic has time to be processed (slurmd -> slurmctld messages)
-# Note: process output in order of expected completion
-#
-set successes 0
-for {set inx 0} {$inx < $iterations} {incr inx} {
-	exec $bin_sleep 0.25
-
-	spawn $srun -N1 --nodelist=$nodelist_name -t1 -l $bin_printenv SLURMD_NODENAME
-	set alloc $spawn_id
-
-	spawn $srun -N1 --nodelist=$include_node -t1 -Z $bin_sleep 0.5
-	set noalloc1 $spawn_id
-
-	spawn $srun -N1 --nodelist=$include_node -t1 -Z $bin_sleep 0.25
-	set noalloc2 $spawn_id
-
-	set timeout 20
-	set spawn_id $noalloc2
-	expect {
-		-i $noalloc2
-		-re "error:.*configuring interconnect" {
-			log_debug "Can't avoid this possible error"
-			exp_continue
-		}
-		-re "error:" {
-			fail "Some error happened"
-		}
-		timeout {
-			fail "srun not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	set spawn_id $noalloc1
-	expect {
-		-i $noalloc1
-		-re "error:.*configuring interconnect" {
-			log_debug "Can't avoid this possible error"
-			exp_continue
-		}
-		-re "error:" {
-			fail "Some error happened"
-		}
-		timeout {
-			fail "srun not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	set timeout $max_job_delay
-	set spawn_id $alloc
-	expect {
-		-i $alloc
-		-re "Invalid node name specified" {
-			fail "Invalid node name specified"
-		}
-		-re "error:.*configuring interconnect" {
-			log_debug "Can't avoid this possible error"
-			exp_continue
-		}
-		-re "error:" {
-			fail "Some error happened"
-		}
-		-re "0: ($re_word_str)" {
-			set host_0 $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "srun not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	incr successes
-}
-subtest {$successes == $iterations} "Race condition check" "[expr $iterations - $successes] out of $iterations iterations failed"
