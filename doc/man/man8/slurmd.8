@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "November 2023" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "January 2025" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -216,8 +216,8 @@ variable takes precedence over the setting in the slurm.conf.
 .SH "SIGNALS"
 
 .TP
-\fBSIGTERM SIGINT\fR
-\fBslurmd\fR will shutdown cleanly, waiting for in\-progress rollups to finish.
+\fBSIGTERM SIGINT SIGQUIT\fR
+\fBslurmd\fR will shutdown cleanly.
 .IP
 
 .TP
