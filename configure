@@ -824,6 +824,8 @@ PAM_LIBS
 HAVE_NUMA_FALSE
 HAVE_NUMA_TRUE
 NUMA_LIBS
+CLANG_FALSE
+CLANG_TRUE
 SUCMD
 SLEEP_CMD
 WITH_GNU_LD_FALSE
@@ -19577,6 +19579,47 @@ fi
 printf "%s\n" "#define SUCMD \"$SUCMD\"" >>confdefs.h
 
 
+
+# Check if the compiler is Clang
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the compiler is Clang" >&5
+printf %s "checking whether the compiler is Clang... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+        #ifndef __clang__
+            not clang
+        #endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  is_clang=yes
+else case e in #(
+  e) is_clang=no
+ ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $is_clang" >&5
+printf "%s\n" "$is_clang" >&6; }
+
+# Set a conditional flag if the compiler is Clang
+ if test "x$is_clang" = "xyes"; then
+  CLANG_TRUE=
+  CLANG_FALSE='#'
+else
+  CLANG_TRUE='#'
+  CLANG_FALSE=
+fi
+
+
 old_CFLAGS=$CFLAGS
 CFLAGS="$CFLAGS -Wno-builtin-declaration-mismatch"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing socket" >&5
@@ -29013,6 +29056,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_GNU_LD_TRUE}" && test -z "${WITH_GNU_LD_FALSE}"; then
   as_fn_error $? "conditional \"WITH_GNU_LD\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${CLANG_TRUE}" && test -z "${CLANG_FALSE}"; then
+  as_fn_error $? "conditional \"CLANG\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_NUMA_TRUE}" && test -z "${HAVE_NUMA_FALSE}"; then

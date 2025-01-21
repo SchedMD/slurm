@@ -11,6 +11,9 @@ if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@ -Wall
 MYCFLAGS += -D_ISO99_SOURCE
 
+if CLANG
+MYCFLAGS += -Xclang -pic-level -Xclang 0
+endif
 
 TESTS = backfill-test
 
