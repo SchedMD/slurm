@@ -3654,7 +3654,8 @@ Nodes which fail to respond in this time frame will be marked DOWN and
 the jobs scheduled on the node requeued if possible.
 Nodes which reboot after this time frame will be marked DOWN with a reason of
 "Node unexpectedly rebooted."
-The default value is 60 seconds.
+The default value is 60 seconds, and the maximum value is either 65533 or
+INFINITE.
 .IP
 
 .TP
@@ -7507,7 +7508,8 @@ Nodes which reboot after this time frame will be marked DOWN with a reason of
 "Node unexpectedly rebooted."
 For nodes that are in multiple partitions with this option set,
 the highest time will take effect. If not set on any partition, the node will
-use the \fBResumeTimeout\fR value set for the entire cluster.
+use the \fBResumeTimeout\fR value set for the entire cluster. The maximum value
+is either 65533 or INFINITE.
 .IP
 
 .TP
