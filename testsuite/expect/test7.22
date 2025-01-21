@@ -42,6 +42,10 @@ if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
 }
 
+if {[string first "bf_min_prio_reserve" [get_config_param "SchedulerParameters"]] != -1} {
+	skip "This test cannot work with bf_min_prio_reserve"
+}
+
 if {$nodes_avail < $nodes_min} {
 	skip "Not enough nodes currently available ($nodes_avail avail < $nodes_min needed)."
 }
