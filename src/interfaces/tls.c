@@ -90,6 +90,20 @@ static int _get_plugin_index(int plugin_id)
 	return 0;
 }
 
+extern char *tls_conn_mode_to_str(tls_conn_mode_t mode)
+{
+	switch (mode) {
+	case TLS_CONN_NULL:
+		return "null";
+	case TLS_CONN_SERVER:
+		return "server";
+	case TLS_CONN_CLIENT:
+		return "client";
+	}
+
+	return "INVALID";
+}
+
 extern bool tls_enabled(void)
 {
 	xassert(ops);

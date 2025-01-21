@@ -382,8 +382,9 @@ extern void *tls_p_create_conn(int input_fd, int output_fd,
 	s2n_mode s2n_conn_mode;
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
 
-	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%d",
-		 plugin_type, input_fd, output_fd, tls_mode);
+	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%s",
+		 plugin_type, input_fd, output_fd,
+		 tls_conn_mode_to_str(tls_mode));
 
 	switch (tls_mode) {
 	case TLS_CONN_SERVER:
@@ -438,8 +439,9 @@ extern void *tls_p_create_conn(int input_fd, int output_fd,
 		}
 	}
 
-	log_flag(TLS, "%s: connection successfully created. fd:%d->%d. tls mode:%d",
-		 plugin_type, conn->input_fd, conn->output_fd, tls_mode);
+	log_flag(TLS, "%s: connection successfully created. fd:%d->%d. tls mode:%s",
+		 plugin_type, conn->input_fd, conn->output_fd,
+		 tls_conn_mode_to_str(tls_mode));
 
 	return conn;
 
