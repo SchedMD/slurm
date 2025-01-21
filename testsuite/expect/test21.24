@@ -319,7 +319,11 @@ expect {
 	-re "Unknown option" {
 		fail "There was a problem with the request"
 	}
-	-re "(sacctmgr: Cluster)" {
+	-re "(sacctmgr: QOS)" {
+		incr matches
+		exp_continue
+	}
+	-re "(Cluster - )" {
 		incr matches
 		exp_continue
 	}
@@ -331,8 +335,8 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	fail "File load 1 incorrect ($matches != 1)"
+if {$matches != 2} {
+	fail "File dump 1 incorrect ($matches != 1)"
 }
 
 set matches 0
@@ -341,6 +345,9 @@ while {[gets $tfile line] != -1} {
 
 	if {$line eq "No such file or directory"} {
 		fail "There was a problem with the sacctmgr command"
+	} elseif {$line eq "$qs - '$qs2':$dsc='$qs2'"} {
+		log_debug "Match 0"
+		incr matches
 	} elseif {$line eq "$clu - '$tc3':$fs=$clus_req(fairshare):$gc=$clus_req(grptres):$gj=$clus_req(grpjob):$gs=$clus_req(grpsubmit):$mp=$clus_req(maxtresmin):$mu=$clus_req(maxtres):$mj=$clus_req(maxjobs):$ms=$clus_req(maxsubmit):$md=$clus_req(maxwall):$qs='$clus_req(qos)'"} {
 		log_debug "Match 1"
 		incr matches
@@ -383,6 +390,6 @@ while {[gets $tfile line] != -1} {
 }
 
 
-if {$matches != 14} {
-	fail "Parse of file for 14 entries incorrect ($matches != 14)"
+if {$matches != 15} {
+	fail "Parse of file for 15 entries incorrect ($matches != 15)"
 }
