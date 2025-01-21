@@ -46,6 +46,8 @@ typedef enum {
 	TLS_CONN_CLIENT,
 } tls_conn_mode_t;
 
+extern char *tls_conn_mode_to_str(tls_conn_mode_t mode);
+
 /*
  * Returns true if the default plugin is not tls/none.
  */

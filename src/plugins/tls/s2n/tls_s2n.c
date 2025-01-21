@@ -56,14 +56,11 @@
 /* Set default security policy to FIPS-compliant version */
 #define DEFAULT_S2N_SECURITY_POLICY "20230317"
 
-#define DEFAULT_S2N_PSK_IDENTITY "slurm_s2n_psk"
-
 const char plugin_name[] = "s2n tls plugin";
 const char plugin_type[] = "tls/s2n";
 const uint32_t plugin_id = TLS_PLUGIN_S2N;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static struct s2n_psk *psk = NULL;
 static struct s2n_config *config = NULL;
 
 typedef struct {
@@ -150,7 +147,7 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 	s2n_errno = S2N_ERR_T_OK;
 }
 
-static void _check_key_permissions(const char *path, int bad_perms)
+static void _check_file_permissions(const char *path, int bad_perms)
 {
 	struct stat statbuf;
 
@@ -172,73 +169,18 @@ static void _check_key_permissions(const char *path, int bad_perms)
 			slurm_conf.slurm_user_id);
 
 	if (statbuf.st_mode & bad_perms)
-		fatal("%s: key file is insecure: '%s' mode=0%o",
+		fatal("%s: file is insecure: '%s' mode=0%o",
 		      plugin_type, path, statbuf.st_mode & 0777);
 }
 
-static struct s2n_psk *_load_psk(void)
+/*
+ * Note: function signature and returns are dictated by s2n library.
+ * Return 1 to trust that hostname or 0 to not trust the hostname.
+ */
+static uint8_t _verify_hostname(const char *host_name, size_t host_name_len,
+			        void *data)
 {
-	struct s2n_psk *psk_local = NULL;
-	buf_t *psk_buf = NULL;
-	char *key_file = NULL;
-	char *psk_identity = NULL;
-
-	/* Create pre-shared key */
-	if (!(psk_local = s2n_external_psk_new())) {
-		on_s2n_error(NULL, s2n_external_psk_new);
-		return NULL;
-	}
-
-	if (s2n_psk_set_hmac(psk_local, S2N_PSK_HMAC_SHA256) < 0) {
-		on_s2n_error(NULL, s2n_psk_set_hmac);
-		goto fail;
-	}
-
-	/* Get PSK identity */
-	psk_identity = conf_get_opt_str(slurm_conf.tls_params, "psk_identity=");
-
-	if (!psk_identity)
-		psk_identity = xstrdup(DEFAULT_S2N_PSK_IDENTITY);
-
-	if (s2n_psk_set_identity(psk_local, (const uint8_t *) psk_identity,
-				 sizeof(psk_identity)) < 0) {
-		on_s2n_error(NULL, s2n_psk_set_identity);
-		xfree(psk_identity);
-		goto fail;
-	}
-	xfree(psk_identity);
-
-	/* Get PSK secret */
-	key_file = conf_get_opt_str(slurm_conf.tls_params, "psk_file=");
-	if (!key_file && !(key_file = get_extra_conf_path("tls_psk.key"))) {
-		error("Failed to get tls_psk.key path");
-		xfree(key_file);
-		goto fail;
-	}
-	_check_key_permissions(key_file, S_IRWXO);
-	if (!(psk_buf = create_mmap_buf(key_file))) {
-		error("%s: Could not load key file (%s)", plugin_type,
-		      key_file);
-		xfree(key_file);
-		goto fail;
-	}
-	xfree(key_file);
-
-	/* Set PSK secret */
-	if (s2n_psk_set_secret(psk_local, (const uint8_t *) psk_buf->head,
-			       psk_buf->size) < 0) {
-		on_s2n_error(NULL, s2n_psk_set_secret);
-		free_buf(psk_buf);
-		goto fail;
-	}
-
-	free_buf(psk_buf);
-	return psk_local;
-
-fail:
-	if (s2n_psk_free(&psk_local))
-		on_s2n_error(NULL, s2n_psk_free);
-	return NULL;
+	return 1;
 }
 
 static struct s2n_config *_create_config(void)
@@ -246,8 +188,8 @@ static struct s2n_config *_create_config(void)
 	struct s2n_config *new_conf = NULL;
 	char *security_policy = NULL;
 
-	if (!(new_conf = s2n_config_new())) {
-		on_s2n_error(NULL, s2n_config_new);
+	if (!(new_conf = s2n_config_new_minimal())) {
+		on_s2n_error(NULL, s2n_config_new_minimal);
 		return NULL;
 	}
 
@@ -269,7 +211,125 @@ static struct s2n_config *_create_config(void)
 	}
 	xfree(security_policy);
 
+	/*
+	 * from s2n usage guide:
+	 *
+	 * When using client authentication, the server MUST implement the
+	 * s2n_verify_host_fn, because the default behavior will likely reject
+	 * all client certificates.
+	 */
+	if (s2n_config_set_verify_host_callback(new_conf, _verify_hostname,
+						NULL) < 0) {
+		on_s2n_error(NULL, s2n_config_set_verify_host_callback);
+		return NULL;
+	}
+
 	return new_conf;
+}
+
+static int _load_ca_cert(void)
+{
+	char *ca_dir;
+	char *cert_file;
+
+	cert_file = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=");
+	if (!cert_file && !(cert_file = get_extra_conf_path("ca_cert.pem"))) {
+		error("Failed to get cert.pem path");
+		xfree(cert_file);
+		return SLURM_ERROR;
+	}
+	_check_file_permissions(cert_file, S_IRWXO);
+	if (s2n_config_set_verification_ca_location(config, cert_file, NULL) < 0) {
+		on_s2n_error(NULL, s2n_config_set_verification_ca_location);
+		xfree(ca_dir);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _load_self_cert(void)
+{
+	struct s2n_cert_chain_and_key *cert_and_key;
+	char *cert_file, *key_file;
+	char *cert_conf = NULL, *key_conf = NULL;
+	char *default_cert_path = NULL, *default_key_path = NULL;
+	buf_t *cert_buf, *key_buf;
+
+	if (running_in_slurmdbd()) {
+		cert_conf = "dbd_cert_file=";
+		key_conf = "dbd_cert_key_file=";
+		default_cert_path = "dbd_cert.pem";
+		default_key_path = "dbd_cert_key.pem";
+	} else if (running_in_slurmctld()) {
+		cert_conf = "ctld_cert_file=";
+		key_conf = "ctld_cert_key_file=";
+		default_cert_path = "ctld_cert.pem";
+		default_key_path = "ctld_cert_key.pem";
+	} else {
+		/*
+		 * No one besides slurmctld and slurmdbd should ever be loading
+		 * pre-configured self certificate.
+		 */
+		fatal("%s: called outside of slurmctld or slurmdbd", __func__);
+	}
+	xassert(cert_conf);
+	xassert(key_conf);
+	xassert(default_cert_path);
+
+	/* Get self certificate file */
+	cert_file = conf_get_opt_str(slurm_conf.tls_params, cert_conf);
+	if (!cert_file &&
+	    !(cert_file = get_extra_conf_path(default_cert_path))) {
+		error("Failed to get %s path", default_cert_path);
+		xfree(cert_file);
+		return SLURM_ERROR;
+	}
+	_check_file_permissions(cert_file, S_IRWXO);
+	if (!(cert_buf = create_mmap_buf(cert_file))) {
+		error("%s: Could not load cert file (%s)",
+		      plugin_type, cert_file);
+		xfree(cert_file);
+		return SLURM_ERROR;
+	}
+	xfree(cert_file);
+
+	/* Get private key file */
+	key_file = conf_get_opt_str(slurm_conf.tls_params, key_conf);
+	if (!key_file && !(key_file = get_extra_conf_path(default_key_path))) {
+		error("Failed to get %s path", default_key_path);
+		xfree(key_file);
+		return SLURM_ERROR;
+	}
+	_check_file_permissions(key_file, S_IRWXO);
+	if (!(key_buf = create_mmap_buf(key_file))) {
+		error("%s: Could not private key file (%s)",
+		      plugin_type, key_file);
+		xfree(key_file);
+		return SLURM_ERROR;
+	}
+	xfree(key_file);
+
+	if (!(cert_and_key = s2n_cert_chain_and_key_new())) {
+		on_s2n_error(NULL, s2n_cert_chain_and_key_new);
+		return SLURM_ERROR;
+	}
+
+	if (s2n_cert_chain_and_key_load_pem_bytes(
+		    cert_and_key, (uint8_t *) cert_buf->head,
+		    cert_buf->size, (uint8_t *) key_buf->head,
+		    key_buf->size) < 0) {
+		on_s2n_error(NULL, s2n_cert_chain_and_key_load_pem_bytes);
+		return SLURM_ERROR;
+	}
+
+	if (s2n_config_add_cert_chain_and_key_to_store(config,
+						       cert_and_key) < 0) {
+		on_s2n_error(NULL, s2n_config_add_cert_chain_and_key_to_store);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 extern int init(void)
@@ -281,11 +341,6 @@ extern int init(void)
 		return errno;
 	}
 
-	if (!(psk = _load_psk())) {
-		error("Could not load pre-shared key for s2n");
-		return errno;
-	}
-
 	if (!(config = _create_config())) {
 		error("Could not create configuration for s2n");
 		return errno;
@@ -294,13 +349,26 @@ extern int init(void)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS)
 		s2n_stack_traces_enabled_set(true);
 
+	if (_load_ca_cert()) {
+		error("Could not load trusted certificates for s2n");
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * slurmctld and slurmdbd need to load their own pre-signed certificate
+	 */
+	if (running_in_slurmctld() || running_in_slurmdbd()) {
+		if (_load_self_cert()) {
+			error("Could not load own certificate and private key for s2n");
+			return SLURM_ERROR;
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
-	if (s2n_psk_free(&psk))
-		on_s2n_error(NULL, s2n_psk_free);
 	if (s2n_config_free(config))
 		on_s2n_error(NULL, s2n_config_free);
 
@@ -314,8 +382,9 @@ extern void *tls_p_create_conn(int input_fd, int output_fd,
 	s2n_mode s2n_conn_mode;
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
 
-	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%d",
-		 plugin_type, input_fd, output_fd, tls_mode);
+	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%s",
+		 plugin_type, input_fd, output_fd,
+		 tls_conn_mode_to_str(tls_mode));
 
 	switch (tls_mode) {
 	case TLS_CONN_SERVER:
@@ -346,17 +415,6 @@ extern void *tls_p_create_conn(int input_fd, int output_fd,
 		goto fail;
 	}
 
-	if (s2n_connection_append_psk(conn->s2n_conn, psk) < 0) {
-		on_s2n_error(conn, s2n_connection_append_psk);
-		goto fail;
-	}
-
-	if (s2n_connection_set_psk_mode(conn->s2n_conn,
-					S2N_PSK_MODE_EXTERNAL) < 0) {
-		on_s2n_error(conn, s2n_connection_set_psk_mode);
-		goto fail;
-	}
-
 	/* Associate a connection with a file descriptor */
 	if (s2n_connection_set_read_fd(conn->s2n_conn, input_fd) < 0) {
 		on_s2n_error(conn, s2n_connection_set_read_fd);
@@ -380,6 +438,25 @@ extern void *tls_p_create_conn(int input_fd, int output_fd,
 			goto fail;
 		}
 	}
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
+		const char *cipher = NULL;
+		uint8_t first = 0, second = 0;
+		if (!(cipher = s2n_connection_get_cipher(conn->s2n_conn))) {
+			on_s2n_error(conn, s2n_connection_get_cipher);
+		}
+		if (s2n_connection_get_cipher_iana_value(conn->s2n_conn, &first,
+							 &second) < 0) {
+			on_s2n_error(conn, s2n_connection_get_cipher_iana_value);
+		}
+		log_flag(TLS, "%s: cipher suite:%s, {0x%02X,0x%02X}. fd:%d->%d.",
+			 plugin_type, cipher, first, second, conn->input_fd,
+			 conn->output_fd);
+	}
+
+	log_flag(TLS, "%s: connection successfully created. fd:%d->%d. tls mode:%s",
+		 plugin_type, conn->input_fd, conn->output_fd,
+		 tls_conn_mode_to_str(tls_mode));
 
 	return conn;
 
