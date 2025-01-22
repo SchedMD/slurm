@@ -1249,11 +1249,11 @@ extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
 
 	iter = list_iterator_create(licenses_list);
 	while ((entry = list_next(iter))) {
-		xstrfmtcat(licenses, "%s%s%s%s%s:%u",
+		xstrfmtcat(licenses, "%s%s%s%s%s:%u", sep,
 			   (entry->resv_ptr ? "resv=" : ""),
 			   (entry->resv_ptr ? entry->resv_ptr->name : ""),
-			   (entry->resv_ptr ? ":" : ""),
-			   sep, entry->name, entry->remaining);
+			   (entry->resv_ptr ? ":" : ""), entry->name,
+			   entry->remaining);
 		sep = ",";
 	}
 	list_iterator_destroy(iter);
