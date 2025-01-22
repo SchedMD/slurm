@@ -5904,7 +5904,7 @@ extern char *gres_get_node_used(list_t *gres_list)
  * Give the total system count of a given GRES
  * Returns NO_VAL64 if name not found
  */
-extern uint64_t gres_get_system_cnt(char *name)
+extern uint64_t gres_get_system_cnt(char *name, bool case_insensitive)
 {
 	uint64_t count = NO_VAL64;
 	int i;
@@ -5916,7 +5916,9 @@ extern uint64_t gres_get_system_cnt(char *name)
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
-		if (!xstrcmp(gres_context[i].gres_name, name)) {
+		if (case_insensitive ?
+		    !xstrcasecmp(gres_context[i].gres_name, name) :
+		    !xstrcmp(gres_context[i].gres_name, name)) {
 			count = gres_context[i].total_cnt;
 			break;
 		}
@@ -5945,7 +5947,7 @@ extern uint64_t gres_node_config_cnt(list_t *gres_list, char *name)
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
-		if (!xstrcmp(gres_context[i].gres_name, name)) {
+		if (!xstrcasecmp(gres_context[i].gres_name, name)) {
 			/* Find or create gres_state entry on the list */
 			gres_state_node = list_find_first(
 				gres_list, gres_find_id,
@@ -5956,8 +5958,8 @@ extern uint64_t gres_node_config_cnt(list_t *gres_list, char *name)
 			gres_ns = gres_state_node->gres_data;
 			count = gres_ns->gres_cnt_config;
 			break;
-		} else if (!xstrncmp(name, gres_context[i].gres_name_colon,
-				     gres_context[i].gres_name_colon_len)) {
+		} else if (!xstrncasecmp(name, gres_context[i].gres_name_colon,
+					 gres_context[i].gres_name_colon_len)) {
 			int type;
 			uint32_t type_id;
 			char *type_str = NULL;
@@ -11189,7 +11191,7 @@ extern bool gres_valid_name(char *name)
 {
 	if (!name || (name[0] == '\0'))
 		return false;
-	if (gres_get_system_cnt(name) != NO_VAL64)
+	if (gres_get_system_cnt(name, false) != NO_VAL64)
 		return true;
 
 	return false;

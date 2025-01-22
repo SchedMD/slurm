@@ -735,7 +735,7 @@ extern char *gres_get_node_used(list_t *gres_list);
  * Give the total system count of a given GRES
  * Returns NO_VAL64 if name not found
  */
-extern uint64_t gres_get_system_cnt(char *name);
+extern uint64_t gres_get_system_cnt(char *name, bool case_insensitive);
 
 /*
  * Get the count of a node's GRES
