@@ -152,6 +152,17 @@ static int _license_find_rec_by_id(void *x, void *key)
 	return 0;
 }
 
+static int _license_find_rec_in_list_by_id(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+	list_t *licenses = key;
+	if (list_find_first_ro(licenses, _license_find_rec_by_id,
+			       &(license_entry->lic_id))) {
+		return 1;
+	}
+	return 0;
+}
+
 /* Find a license_t record by license name (for use by list_find_first) */
 static int _license_find_remote_rec(void *x, void *key)
 {
@@ -973,24 +984,10 @@ extern int license_job_return(job_record_t *job_ptr)
  */
 extern bool license_list_overlap(list_t *list_1, list_t *list_2)
 {
-	list_itr_t *iter;
-	licenses_t *license_entry;
-	bool match = false;
-
 	if (!list_1 || !list_2)
 		return false;
-
-	iter = list_iterator_create(list_1);
-	while ((license_entry = list_next(iter))) {
-		if (list_find_first(list_2, _license_find_rec,
-				    license_entry->name)) {
-			match = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return match;
+	return list_find_first_ro(list_1, _license_find_rec_in_list_by_id,
+				  list_2);
 }
 
 /* pack_all_licenses()
