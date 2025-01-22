@@ -151,9 +151,10 @@ again:
 		(*status == HTTP_NOT_FOUND && not_found_ok)) {
 		debug("%s %s %s successful (%ld)", conn->name,
 		      get_http_method_string(request_method), url, *status);
-	} else if ((*status == HTTP_UNAUTHORIZED)
-		   && (conn->auth.auth_type == SLINGSHOT_AUTH_OAUTH)
-		   && use_cache) {
+	} else if (((*status == HTTP_UNAUTHORIZED) ||
+		    (*status == HTTP_FORBIDDEN)) &&
+		   (conn->auth.auth_type == SLINGSHOT_AUTH_OAUTH) &&
+		   use_cache) {
 		debug("%s %s %s unauthorized status %ld, retrying", conn->name,
 		      get_http_method_string(request_method), url, *status);
 		/*
