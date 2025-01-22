@@ -242,18 +242,11 @@ extern int init(void)
 
 extern int fini(void)
 {
-	/*
-	 * We don't really want to destroy the the state, so those values
-	 * persist a reconfig. And if the process dies, this will be lost
-	 * anyway. So not freeing this variable is not really a leak.
-	 *
-	 * if (!running_in_slurmd_stepd())
-	 * 	return SLURM_SUCCESS;
-	 *
-	 * acct_gather_energy_destroy(local_energy);
-	 * local_energy = NULL;
-	 */
+	if (!running_in_slurmd_stepd())
+		return SLURM_SUCCESS;
 
+	acct_gather_energy_destroy(local_energy);
+	local_energy = NULL;
 	return SLURM_SUCCESS;
 }
 
