@@ -654,7 +654,6 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 	}
 
 	slurm_mutex_lock(&license_mutex);
-	_licenses_print("request_license", job_license_list, NULL);
 	iter = list_iterator_create(job_license_list);
 	while ((license_entry = list_next(iter))) {
 		if (cluster_license_list) {
@@ -693,6 +692,8 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 	}
 	list_iterator_destroy(iter);
 	slurm_mutex_unlock(&license_mutex);
+
+	_licenses_print("request_license", job_license_list, NULL);
 
 	if (!(*valid)) {
 		FREE_NULL_LIST(job_license_list);
