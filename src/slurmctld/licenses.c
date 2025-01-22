@@ -1170,7 +1170,6 @@ static void _bf_license_free_rec(void *x)
 	if (!entry)
 		return;
 
-	xfree(entry->name);
 	xfree(entry);
 }
 
@@ -1223,7 +1222,6 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 	iter = list_iterator_create(cluster_license_list);
 	while ((license_entry = list_next(iter))) {
 		bf_entry = xmalloc(sizeof(*bf_entry));
-		bf_entry->name = xstrdup(license_entry->name);
 		bf_entry->remaining = license_entry->total;
 		bf_entry->lic_id = license_entry->lic_id;
 
@@ -1249,10 +1247,10 @@ extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
 
 	iter = list_iterator_create(licenses_list);
 	while ((entry = list_next(iter))) {
-		xstrfmtcat(licenses, "%s%s%s%s%s:%u", sep,
+		xstrfmtcat(licenses, "%s%s%s%slic_id=%u:%u", sep,
 			   (entry->resv_ptr ? "resv=" : ""),
 			   (entry->resv_ptr ? entry->resv_ptr->name : ""),
-			   (entry->resv_ptr ? ":" : ""), entry->name,
+			   (entry->resv_ptr ? ":" : ""), entry->lic_id,
 			   entry->remaining);
 		sep = ",";
 	}
@@ -1275,7 +1273,6 @@ extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src)
 	iter = list_iterator_create(licenses_src);
 	while ((entry_src = list_next(iter))) {
 		entry_dest = xmalloc(sizeof(*entry_dest));
-		entry_dest->name = xstrdup(entry_src->name);
 		entry_dest->remaining = entry_src->remaining;
 		entry_dest->resv_ptr = entry_src->resv_ptr;
 		entry_dest->lic_id = entry_src->lic_id;
@@ -1329,10 +1326,11 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 					   &job_entry->lic_id);
 
 		if (!bf_entry) {
-			error("%s: missing license %s",
-			      __func__, job_entry->name);
+			error("%s: missing license lic_id=%u",
+			      __func__, job_entry->lic_id);
 		} else if (bf_entry->remaining < needed) {
-			error("%s: underflow on %s", __func__, bf_entry->name);
+			error("%s: underflow on lic_id=%u",
+			      __func__, bf_entry->lic_id);
 			bf_entry->remaining = 0;
 		} else {
 			bf_entry->remaining -= needed;
@@ -1367,10 +1365,11 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 					   &(resv_entry->lic_id));
 
 		if (!bf_entry) {
-			error("%s: missing license %s",
-			      __func__, resv_entry->name);
+			error("%s: missing license lic_id=%u",
+			      __func__, resv_entry->lic_id);
 		} else if (bf_entry->remaining < needed) {
-			error("%s: underflow on %s", __func__, bf_entry->name);
+			error("%s: underflow on lic_id=%u",
+			      __func__,bf_entry->lic_id);
 			reservable = bf_entry->remaining;
 			bf_entry->remaining = 0;
 		} else {
@@ -1379,7 +1378,7 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 		}
 
 		new_entry = xmalloc(sizeof(*new_entry));
-		new_entry->name = xstrdup(resv_entry->name);
+		new_entry->lic_id = resv_entry->lic_id;
 		new_entry->remaining = reservable;
 		new_entry->resv_ptr = job_ptr->resv_ptr;
 
