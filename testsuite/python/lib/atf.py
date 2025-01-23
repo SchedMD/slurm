@@ -808,7 +808,13 @@ def stop_slurm(fatal=True, quiet=False):
         lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"),
         lambda pids: len(pids) == 0,
     ):
-        failures.append("Slurmctld is still running")
+        pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
+        failures.append(f"Slurmctld is still running ({pids})")
+        logging.warning("Getting the bt of the still running slurmctld")
+        for pid in pids:
+            run_command(
+                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "thread apply all bt" -ex "quit"'
+            )
 
     # Build list of slurmds
     slurmd_list = []
@@ -829,8 +835,12 @@ def stop_slurm(fatal=True, quiet=False):
         lambda pids: len(pids) == 0,
     ):
         pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd")
-        run_command(f"pgrep -f {properties['slurm-sbin-dir']}/slurmd -a", quiet=quiet)
         failures.append(f"Some slurmds are still running ({pids})")
+        for pid in pids:
+            run_command(
+                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "thread apply all bt" -ex "quit"'
+            )
+        run_command(f"pgrep -f {properties['slurm-sbin-dir']}/slurmd -a", quiet=quiet)
 
     # Stop slurmrestd if was started
     if properties["slurmrestd-started"]:
