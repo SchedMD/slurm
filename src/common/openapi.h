@@ -407,6 +407,11 @@ typedef struct {
 	time_t last_update;
 } openapi_resp_reserve_info_msg_t;
 
+/* Struct required to wrap list in an object */
+typedef struct {
+	list_t *reservations;
+} openapi_reservation_mod_request_t;
+
 /* mirrors license_info_msg_t */
 typedef struct {
 	OPENAPI_RESP_STRUCT_META_FIELD;

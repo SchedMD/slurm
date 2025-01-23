@@ -5894,6 +5894,15 @@ static void *NEW_FUNC(INSTANCE)(void)
 	return instance;
 }
 
+/* If used set flags to NO_VAL64 if still 0 after parsing */
+static void *NEW_FUNC(RESERVATION_DESC_MSG)(void)
+{
+	resv_desc_msg_t *resv_desc_msg = xmalloc(sizeof(*resv_desc_msg));
+	slurm_init_resv_desc_msg(resv_desc_msg);
+	resv_desc_msg->flags = 0; /* Needs to be 0 for parsing */
+	return resv_desc_msg;
+}
+
 static int PARSE_FUNC(JOB_EXCLUSIVE)(const parser_t *const parser, void *obj,
 				     data_t *src, args_t *args,
 				     data_t *parent_path)
@@ -8359,6 +8368,42 @@ static const parser_t PARSER_ARRAY(RESERVATION_INFO)[] = {
 #undef add_removed
 
 #define add_parse(mtype, field, path, desc) \
+	add_parser(resv_desc_msg_t, mtype, false, field, 0, path, desc)
+#define add_skip(field) \
+	add_parser_skip(resv_desc_msg_t, field)
+static const parser_t PARSER_ARRAY(RESERVATION_DESC_MSG)[] = {
+	add_parse(CSV_STRING, accounts, "accounts", "List of permitted accounts"),
+	add_parse(STRING, burst_buffer, "burst_buffer", "BurstBuffer"),
+	add_parse(STRING, comment, "comment", "Arbitrary string"),
+	add_parse(UINT32_NO_VAL, core_cnt, "core_count", "Number of cores to reserve"),
+	add_parse(UINT32_NO_VAL, duration, "duration", "The length of a reservation in minutes"),
+	add_parse(TIMESTAMP_NO_VAL, end_time, "end_time", "EndTime (UNIX timestamp)"),
+	add_parse(STRING, features, "features", "Requested node features. Multiple values may be \"&\" separated if all features are required (AND operation) or separated by \"|\" if any of the specified features are required (OR operation). Parenthesis are also supported for features to be ANDed together with counts of nodes having the specified features."),
+	add_parse(RESERVATION_FLAGS, flags, "flags", "Flags associated with this reservation"),
+	add_parse(CSV_STRING, groups, "groups", "List of groups permitted to use the reservation. This is mutually exclusive with users."),
+	add_skip(job_ptr), /* internal use only */
+	add_parse(CSV_STRING, licenses, "licenses", "List of license names"),
+	add_parse(UINT32_NO_VAL, max_start_delay, "max_start_delay", "MaxStartDelay in seconds"),
+	add_parse(STRING, name, "name", "ReservationName"),
+	add_parse(UINT32_NO_VAL, node_cnt, "node_count", "NodeCnt"),
+	add_parse(HOSTLIST_STRING, node_list, "node_list", "The nodes to be reserved. Multiple node names may be specified using simple node range expressions."),
+	add_parse(STRING, partition, "partition", "Partition used to reserve nodes from. This will attempt to allocate all nodes in the specified partition unless you request fewer resources than are available with core_cnt, node_cnt or tres."),
+	add_parse(UINT32_NO_VAL, purge_comp_time, "purge_completed/time", "If PURGE_COMP flag is set, the number of seconds this reservation will sit idle until it is revoked"),
+	add_parse(TIMESTAMP_NO_VAL, start_time, "start_time", "StartTime (UNIX timestamp)"),
+	add_parse(TRES_STR_BY_TYPE, tres_str, "tres", "List of trackable resources"),
+	add_parse(CSV_STRING, users, "users", "List of permitted users"),
+};
+#undef add_skip
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_reservation_mod_request_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(RESERVATION_MOD_REQ)[] = {
+	add_parse(RESERVATION_DESC_MSG_LIST, reservations, "reservations", "Array of reservation descriptions"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
 	add_parser(submit_response_msg_t, mtype, false, field, 0, path, desc)
 #define add_parse_overload(mtype, field, overloads, path, desc) \
 	add_parser(submit_response_msg_t, mtype, false, field, overloads, path, desc)
@@ -9578,6 +9623,7 @@ add_openapi_response_single(OPENAPI_SHARES_RESP, SHARES_RESP_MSG_PTR, "shares", 
 add_openapi_response_single(OPENAPI_SINFO_RESP, SINFO_DATA_LIST, "sinfo", "node and partition info");
 add_openapi_response_single(OPENAPI_KILL_JOBS_RESP, KILL_JOBS_RESP_MSG_PTR, "status", "resultant status of signal request");
 add_openapi_response_single(OPENAPI_KILL_JOB_RESP, KILL_JOBS_RESP_MSG_PTR, "status", "resultant status of signal request");
+add_openapi_response_single(OPENAPI_RESERVATION_MOD_RESP, RESERVATION_DESC_MSG_LIST, "reservations", "Reservation descriptions");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -10312,6 +10358,8 @@ static const parser_t parsers[] = {
 	addpap(KILL_JOBS_MSG, kill_jobs_msg_t, NEW_FUNC(KILL_JOBS_MSG), NULL),
 	addpap(KILL_JOBS_RESP_JOB, kill_jobs_resp_job_t, NULL, NULL),
 	addpap(JOB_ALLOC_REQ, openapi_job_alloc_request_t, NULL, NULL),
+	addpap(RESERVATION_DESC_MSG, resv_desc_msg_t, NEW_FUNC(RESERVATION_DESC_MSG), (parser_free_func_t) slurm_free_resv_desc_msg),
+	addpap(RESERVATION_MOD_REQ, openapi_reservation_mod_request_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -10354,6 +10402,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_KILL_JOBS_RESP),
 	addpap(OPENAPI_JOB_ALLOC_RESP, openapi_job_alloc_response_t, NULL, NULL),
 	addoar(OPENAPI_KILL_JOB_RESP),
+	addoar(OPENAPI_RESERVATION_MOD_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
@@ -10432,6 +10481,7 @@ static const parser_t parsers[] = {
 	addpl(SHARES_UINT64_TRES_LIST, SHARES_UINT64_TRES_PTR, NEED_NONE),
 	addpl(SHARES_FLOAT128_TRES_LIST, SHARES_FLOAT128_TRES_PTR, NEED_NONE),
 	addpl(SLURM_STEP_ID_STRING_LIST, SLURM_STEP_ID_STRING_PTR, NEED_NONE),
+	addpl(RESERVATION_DESC_MSG_LIST, RESERVATION_DESC_MSG_PTR, NEED_NONE),
 };
 #undef addpl
 #undef addps

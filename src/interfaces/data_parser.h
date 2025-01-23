@@ -474,12 +474,19 @@ typedef enum {
 	DATA_PARSER_RESERVATION_CORE_SPEC_PTR, /* resv_core_spec_t* */
 	DATA_PARSER_RESERVATION_INFO_CORE_SPEC, /* reserve_info_t->core_spec+core_spec_cnt */
 	DATA_PARSER_RESERVATION_INFO_ARRAY, /* reserve_info_t** */
+	DATA_PARSER_RESERVATION_DESC_MSG, /* resv_desc_msg_t */
+	DATA_PARSER_RESERVATION_DESC_MSG_PTR, /* resv_desc_msg_t* */
+	DATA_PARSER_RESERVATION_DESC_MSG_LIST, /* list_t of resv_desc_msg_t * */
 	DATA_PARSER_OPENAPI_RESERVATION_RESP, /* openapi_resp_reserve_info_msg_t */
 	DATA_PARSER_OPENAPI_RESERVATION_RESP_PTR, /* openapi_resp_reserve_info_msg_t* */
 	DATA_PARSER_OPENAPI_RESERVATION_PARAM, /* openapi_reservation_param_t */
 	DATA_PARSER_OPENAPI_RESERVATION_PARAM_PTR, /* openapi_reservation_param_t* */
 	DATA_PARSER_OPENAPI_RESERVATION_QUERY, /* openapi_reservation_query_t */
 	DATA_PARSER_OPENAPI_RESERVATION_QUERY_PTR, /* openapi_reservation_query_t* */
+	DATA_PARSER_RESERVATION_MOD_REQ, /* openapi_reservation_mod_request_t */
+	DATA_PARSER_RESERVATION_MOD_REQ_PTR, /* openapi_reservation_mod_request_t* */
+	DATA_PARSER_OPENAPI_RESERVATION_MOD_RESP, /* openapi_openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_RESERVATION_MOD_RESP_PTR, /* openapi_openapi_resp_single_t* */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG, /* job_array_resp_msg_t */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_PTR, /* job_array_resp_msg_t * */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_ENTRY, /* JOB_ARRAY_RESPONSE_MSG_entry_t */
