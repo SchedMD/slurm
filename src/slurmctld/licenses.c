@@ -991,17 +991,16 @@ static int _foreach_license_job_return(void *x, void *arg)
  * license_job_return_to_list - Return the licenses allocated to a job to the
  *	`provided list
  * IN job_ptr - job identification
- * RET SLURM_SUCCESS or failure code
+ * RET count of license having state changed
  */
 extern int license_job_return_to_list(job_record_t *job_ptr,
 				      list_t *license_list)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = 0;
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
 
-	last_license_update = time(NULL);
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
 	rc = list_for_each(job_ptr->license_list, _foreach_license_job_return,
@@ -1016,10 +1015,11 @@ extern int license_job_return_to_list(job_record_t *job_ptr,
  */
 extern int license_job_return(job_record_t *job_ptr)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&license_mutex);
-	rc = license_job_return_to_list(job_ptr, cluster_license_list);
+	if (license_job_return_to_list(job_ptr, cluster_license_list))
+		last_license_update = time(NULL);
 	_licenses_print("return_license", cluster_license_list, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
 
