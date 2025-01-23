@@ -859,7 +859,6 @@ typedef struct prolog_launch_msg {
 	char **spank_job_env;		/* SPANK job environment variables */
 	uint32_t spank_job_env_size;	/* size of spank_job_env */
 	uint32_t uid;
-	char *user_name_deprecated;	/* remove two versions after 23.11 */
 	char *work_dir;			/* full pathname of working directory */
 	uint16_t x11;			/* X11 forwarding setup flags */
 	char *x11_alloc_host;		/* srun/salloc host to setup proxy */
