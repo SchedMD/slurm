@@ -902,8 +902,9 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = list_next(iter))) {
-		match = list_find_first(cluster_license_list, _license_find_rec,
-			license_entry->name);
+		match = list_find_first(cluster_license_list,
+					_license_find_rec_by_id,
+					&license_entry->lic_id);
 		if (match) {
 			match->used += license_entry->total;
 			license_entry->used += license_entry->total;
