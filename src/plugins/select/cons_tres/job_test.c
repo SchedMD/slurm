@@ -2181,11 +2181,13 @@ static int _test_only(job_record_t *job_ptr, bitstr_t *node_bitmap,
 {
 	int rc;
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
+	list_t *license_list = cluster_license_copy();
 
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
-		       select_part_record, select_node_usage,
-		       cluster_license_list, NULL, false, false, false, NULL);
+		       select_part_record, select_node_usage, license_list,
+		       NULL, false, false, false, NULL);
+	FREE_NULL_LIST(license_list);
 	return rc;
 }
 
@@ -2421,7 +2423,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		return SLURM_ERROR;
 	}
 
-	future_license_list = license_copy(cluster_license_list);
+	future_license_list = cluster_license_copy();
 
 	/* Build list of running and suspended jobs */
 	cr_job_list = list_create(NULL);
@@ -2611,6 +2613,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	time_t now = time(NULL);
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	bitstr_t *orig_map;
+	list_t *license_list = NULL;
 
 	orig_map = bit_copy(node_bitmap);
 
@@ -2619,12 +2622,13 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 	_set_sched_weight(node_bitmap, false);
 
+	license_list = cluster_license_copy();
 	/* Try to run with currently available nodes */
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
-		       select_part_record, select_node_usage,
-		       cluster_license_list, resv_exc_ptr, false, false,
-		       false, NULL);
+		       select_part_record, select_node_usage, license_list,
+		       resv_exc_ptr, false, false, false, NULL);
+	FREE_NULL_LIST(license_list);
 	if (rc == SLURM_SUCCESS) {
 		job_ptr->start_time = now;
 		FREE_NULL_BITMAP(orig_map);
@@ -2701,7 +2705,7 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	list_itr_t *job_iterator, *preemptee_iterator;
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
-	list_t *future_license_list;
+	list_t *license_list;
 	bool remove_some_jobs = false;
 	uint16_t pass_count = 0;
 	uint16_t mode = NO_VAL16;
@@ -2711,11 +2715,11 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	save_node_map = bit_copy(node_bitmap);
 top:	orig_node_map = bit_copy(save_node_map);
 
+	license_list = cluster_license_copy();
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
-		       select_part_record, select_node_usage,
-		       cluster_license_list, resv_exc_ptr, false, false,
-		       false, NULL);
+		       select_part_record, select_node_usage, license_list,
+		       resv_exc_ptr, false, false, false, NULL);
 
 	/* Don't try preempting for licenses if not enabled */
 	if ((rc == ESLURM_LICENSES_UNAVAILABLE) && !preempt_for_licenses)
@@ -2749,7 +2753,6 @@ top:	orig_node_map = bit_copy(save_node_map);
 			FREE_NULL_BITMAP(save_node_map);
 			return SLURM_ERROR;
 		}
-		future_license_list = license_copy(cluster_license_list);
 
 		job_iterator = list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = list_next(job_iterator))) {
@@ -2769,11 +2772,10 @@ top:	orig_node_map = bit_copy(save_node_map);
 			bit_or(node_bitmap, orig_node_map);
 			rc = _job_test(job_ptr, node_bitmap, min_nodes,
 				       max_nodes, req_nodes,
-				       SELECT_MODE_WILL_RUN,
-				       tmp_cr_type, job_node_req,
-				       future_part, future_usage,
-				       future_license_list, resv_exc_ptr,
-				       false, false, preempt_mode, NULL);
+				       SELECT_MODE_WILL_RUN, tmp_cr_type,
+				       job_node_req, future_part, future_usage,
+				       license_list, resv_exc_ptr, false, false,
+				       preempt_mode, NULL);
 
 			if (rc != SLURM_SUCCESS)
 				continue;
@@ -2788,7 +2790,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 				       max_nodes, req_nodes,
 				       SELECT_MODE_RUN_NOW, tmp_cr_type,
 				       job_node_req, select_part_record,
-				       select_node_usage, cluster_license_list,
+				       select_node_usage, license_list,
 				       resv_exc_ptr, false, true, preempt_mode,
 				       preemptees_to_suspend_by_qos);
 			FREE_NULL_LIST(preemptees_to_suspend_by_qos);
@@ -2798,7 +2800,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 			list_iterator_destroy(job_iterator);
 			part_data_destroy_res(future_part);
 			node_data_destroy(future_usage);
-			FREE_NULL_LIST(future_license_list);
+			FREE_NULL_LIST(license_list);
 
 			return rc;
 		}
@@ -2812,6 +2814,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 		if (future_part == NULL) {
 			FREE_NULL_BITMAP(orig_node_map);
 			FREE_NULL_BITMAP(save_node_map);
+			FREE_NULL_LIST(license_list);
 			return SLURM_ERROR;
 		}
 		future_usage = node_data_dup_use(select_node_usage,
@@ -2820,10 +2823,9 @@ top:	orig_node_map = bit_copy(save_node_map);
 			part_data_destroy_res(future_part);
 			FREE_NULL_BITMAP(orig_node_map);
 			FREE_NULL_BITMAP(save_node_map);
+			FREE_NULL_LIST(license_list);
 			return SLURM_ERROR;
 		}
-
-		future_license_list = license_copy(cluster_license_list);
 
 		job_iterator = list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = list_next(job_iterator))) {
@@ -2832,18 +2834,17 @@ top:	orig_node_map = bit_copy(save_node_map);
 			    (mode != PREEMPT_MODE_CANCEL))
 				continue;	/* can't remove job */
 			/* Remove preemptable job now */
-			if(_job_res_rm_job(future_part, future_usage,
-					   future_license_list, tmp_job_ptr, 0,
-					   orig_node_map))
+			if (_job_res_rm_job(future_part, future_usage,
+					    license_list, tmp_job_ptr, 0,
+					    orig_node_map))
 				continue;
 			bit_or(node_bitmap, orig_node_map);
 			rc = _job_test(job_ptr, node_bitmap, min_nodes,
 				       max_nodes, req_nodes,
-				       SELECT_MODE_WILL_RUN,
-				       tmp_cr_type, job_node_req,
-				       future_part, future_usage,
-				       future_license_list, resv_exc_ptr,
-				       false, false, preempt_mode, NULL);
+				       SELECT_MODE_WILL_RUN, tmp_cr_type,
+				       job_node_req, future_part, future_usage,
+				       license_list, resv_exc_ptr, false, false,
+				       preempt_mode, NULL);
 			tmp_job_ptr->details->usable_nodes = 0;
 			if (rc != SLURM_SUCCESS)
 				continue;
@@ -2902,7 +2903,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 			list_iterator_destroy(job_iterator);
 			part_data_destroy_res(future_part);
 			node_data_destroy(future_usage);
-			FREE_NULL_LIST(future_license_list);
+			FREE_NULL_LIST(license_list);
 			goto top;
 		}
 		list_iterator_destroy(job_iterator);
@@ -2942,8 +2943,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 
 		part_data_destroy_res(future_part);
 		node_data_destroy(future_usage);
-		FREE_NULL_LIST(future_license_list);
 	}
+	FREE_NULL_LIST(license_list);
 	FREE_NULL_BITMAP(orig_node_map);
 	FREE_NULL_BITMAP(save_node_map);
 
