@@ -1259,10 +1259,23 @@ extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
 	return licenses;
 }
 
+static int _foreach_bf_license_copy(void *x, void *arg)
+{
+	bf_license_t *entry_src = x;
+	bf_licenses_t *licenses_dest = arg;
+	bf_license_t *entry_dest;
+
+	entry_dest = xmalloc(sizeof(*entry_dest));
+	entry_dest->remaining = entry_src->remaining;
+	entry_dest->resv_ptr = entry_src->resv_ptr;
+	entry_dest->lic_id = entry_src->lic_id;
+	list_append(licenses_dest, entry_dest);
+
+	return 0;
+}
+
 extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src)
 {
-	bf_license_t *entry_src, *entry_dest;
-	list_itr_t *iter;
 	bf_licenses_t *licenses_dest = NULL;
 
 	if (!licenses_src)
@@ -1270,15 +1283,7 @@ extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src)
 
 	licenses_dest = list_create(_bf_license_free_rec);
 
-	iter = list_iterator_create(licenses_src);
-	while ((entry_src = list_next(iter))) {
-		entry_dest = xmalloc(sizeof(*entry_dest));
-		entry_dest->remaining = entry_src->remaining;
-		entry_dest->resv_ptr = entry_src->resv_ptr;
-		entry_dest->lic_id = entry_src->lic_id;
-		list_append(licenses_dest, entry_dest);
-	}
-	list_iterator_destroy(iter);
+	list_for_each(licenses_src, _foreach_bf_license_copy, licenses_dest);
 
 	return licenses_dest;
 }
