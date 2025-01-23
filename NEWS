@@ -4,6 +4,74 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 24.11.1
 ==========================
  -- With client commands MIN_MEMORY will show mem_per_tres if specified.
+ -- Fix errno message about bad constraint
+ -- slurmctld - Fix crash and possible split brain issue if the
+    backup controller handles an scontrol reconfigure while in control
+    before the primary resumes operation.
+ -- Fix stepmgr not getting dynamic node addrs from the controller
+ -- stepmgr - avoid "Unexpected missing socket" errors.
+ -- Fix `scontrol show steps` with dynamic stepmgr
+ -- Deny jobs using the "R:" option of --signal if PreemptMode=OFF
+    globally.
+ -- Force jobs using the "R:" option of --signal to be preemptable
+    by requeue or cancel only. If PreemptMode on the partition or QOS is off
+    or suspend, the job will default to using PreemptMode=cancel.
+ -- If --mem-per-cpu exceeds MaxMemPerCPU, the number of cpus per
+    task will always be increased even if --cpus-per-task was specified. This
+    is needed to ensure each task gets the expected amount of memory.
+ -- Fix compilation issue on OpenSUSE Leap 15
+ -- Fix jobs using more nodes than needed when not using -N
+ -- Fix issue with allocation being allocated less resources
+    than needed when using --gres-flags=enforce-binding.
+ -- select/cons_tres - Fix errors with MaxCpusPerSocket partition
+    limit. Used cpus/cores weren't counted properly, nor limiting free ones
+    to avail, when the socket was partially allocated, or the job request
+    went beyond this limit.
+ -- Fix issue when jobs were preempted for licenses even if there
+    were enough licenses available.
+ -- Fix srun ntasks calculation inside an allocation when nodes are
+    requested using a min-max range.
+ -- Print correct number of digits for TmpDisk in sdiag.
+ -- Fix a regression in 24.11 which caused file transfers to a job
+    with sbcast to not join the job container namespace.
+ -- data_parser/v0.0.40 - Prevent a segfault in the slurmrestd when
+    dumping data with v0.0.40+complex data parser.
+ -- Remove logic to force lowercase GRES names.
+ -- data_parser/v0.0.42 - Prevent the association id from always
+    being dumped as NULL when parsing in complex mode. Instead it will now
+    dump the id. This affects the following endpoints:
+    GET slurmdb/v0.0.42/association
+    GET slurmdb/v0.0.42/associations
+    GET slurmdb/v0.0.42/config
+ -- Fixed a job requeuing issue that merged job entries into the
+    same SLUID when all nodes in a job failed simultaneously.
+ -- When a job completes, try to give idle nodes to reservations with
+    the REPLACE flag before allowing them to be allocated to jobs.
+ -- Avoid expensive lookup of all associations when dumping or
+    parsing for v0.0.42 endpoints.
+ -- Avoid expensive lookup of all associations when dumping or
+    parsing for v0.0.41 endpoints.
+ -- Avoid expensive lookup of all associations when dumping or
+    parsing for v0.0.40 endpoints.
+ -- Fix segfault when testing jobs against nodes with invalid gres.
+ -- Fix performance regression while packing larger RPCs.
+ -- Document the new mcs/label plugin.
+ -- job_container/tmpfs - Fix Xauthoirty file being created
+    outside the container when EntireStepInNS is enabled.
+ -- job_container/tmpfs - Fix spank_task_post_fork not always
+    running in the container when EntireStepInNS is enabled.
+ -- Fix a job potentially getting stuck in CG on permissions
+    errors while setting up X11 forwarding.
+ -- Fix error on X11 shutdown if Xauthority file was not created.
+ -- slurmctld - Fix memory or fd leak if an RPC is recieved that
+    is not registered for processing.
+ -- Inject OMPI_MCA_orte_precondition_transports when using PMIx. This fixes
+    mpi apps using Intel OPA, PSM2 and OMPI 5.x when ran through srun.
+ -- Don't skip the first partition_job_depth jobs per partition.
+ -- Fix gres allocation issue after controller restart.
+ -- Fix issue where jobs requesting cpus-per-gpu hang in queue.
+ -- switch/hpe_slingshot - Treat HTTP status forbidden the same as
+    unauthorized, allowing for a graceful retry attempt.
 
 * Changes in Slurm 24.11.0
 ==========================
