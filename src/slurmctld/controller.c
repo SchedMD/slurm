@@ -2847,7 +2847,8 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 			if (strchr(tres_rec->name, ':'))
 				continue;
 
-			tres_rec->count = gres_get_system_cnt(tres_rec->name);
+			tres_rec->count =
+				gres_get_system_cnt(tres_rec->name, true);
 			if (tres_rec->count == NO_VAL64)
 				tres_rec->count = 0;   /* GRES name not found */
 			continue;
