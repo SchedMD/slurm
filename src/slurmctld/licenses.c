@@ -1486,24 +1486,23 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 	return avail;
 }
 
+static int _bf_licenses_find_difference(void *x, void *key)
+{
+	bf_license_t *entry_a = x;
+	bf_licenses_t *b = key;
+	bf_license_t *entry_b;
+
+	entry_b = list_find_first_ro(b, _bf_licenses_find_rec,
+				     &entry_a->lic_id);
+
+	if (!entry_b || (entry_a->remaining != entry_b->remaining) ||
+	    (entry_a->resv_ptr != entry_b->resv_ptr)) {
+		return 1;
+	}
+	return 0;
+}
+
 extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b)
 {
-	bf_license_t *entry_a, *entry_b;
-	list_itr_t *iter;
-	bool equivalent = true;
-
-	iter = list_iterator_create(a);
-	while ((entry_a = list_next(iter))) {
-		entry_b = list_find_first(b, _bf_licenses_find_rec,
-					  &entry_a->lic_id);
-
-		if (!entry_b || (entry_a->remaining != entry_b->remaining) ||
-		    (entry_a->resv_ptr != entry_b->resv_ptr)) {
-			equivalent = false;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return equivalent;
+	return !(list_find_first_ro(a, _bf_licenses_find_difference, b));
 }
