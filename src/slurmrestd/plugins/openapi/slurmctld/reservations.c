@@ -88,20 +88,13 @@ done:
 	return rc;
 }
 
-extern int op_handler_reservation(openapi_ctxt_t *ctxt)
+static int _get_single_reservation(openapi_ctxt_t *ctxt)
 {
-	openapi_reservation_param_t params = {0};
-	openapi_reservation_query_t query = {0};
+	openapi_reservation_param_t params = { 0 };
+	openapi_reservation_query_t query = { 0 };
 	int rc = SLURM_SUCCESS;
 	reserve_info_msg_t *res_info_ptr = NULL;
 	reserve_info_t *res = NULL;
-
-	if (ctxt->method != HTTP_REQUEST_GET) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(ctxt->method));
-		goto done;
-	}
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_RESERVATION_PARAM, params,
 		       ctxt->parameters, ctxt->parent_path)) {
@@ -158,5 +151,20 @@ extern int op_handler_reservation(openapi_ctxt_t *ctxt)
 done:
 	slurm_free_reservation_info_msg(res_info_ptr);
 	xfree(params.reservation_name);
+	return rc;
+}
+
+extern int op_handler_reservation(openapi_ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (ctxt->method == HTTP_REQUEST_GET) {
+		rc = _get_single_reservation(ctxt);
+	} else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+	}
+
 	return rc;
 }
