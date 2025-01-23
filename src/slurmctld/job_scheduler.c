@@ -2388,8 +2388,6 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr->het_job_id = job_ptr->het_job_id;
 	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
 	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
-	launch_msg_ptr->batch_uid_deprecated = job_ptr->user_id;
-	launch_msg_ptr->batch_gid_deprecated = job_ptr->group_id;
 
 	if (!(launch_msg_ptr->script_buf = get_job_script(job_ptr))) {
 		fail_why = "Unable to load job batch script";

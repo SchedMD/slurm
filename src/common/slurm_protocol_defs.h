@@ -891,8 +891,6 @@ typedef struct batch_job_launch_msg {
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	uint32_t het_job_id;
 	uint32_t job_id;
-	uint32_t batch_uid_deprecated;	/* remove two versions after 23.11 */
-	uint32_t batch_gid_deprecated;	/* remove two versions after 23.11 */
 	uint32_t ngids;
 	uint32_t *gids;
 	uint32_t ntasks;	/* number of tasks in this job         */
