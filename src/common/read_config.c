@@ -269,7 +269,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"FastSchedule", S_P_UINT16},
 	{"FederationParameters", S_P_STRING},
 	{"FirstJobId", S_P_UINT32},
-	{"GetEnvTimeout", S_P_UINT16},
+	{"GetEnvTimeout", S_P_UINT16, _defunct_option},
 	{"GpuFreqDef", S_P_STRING},
 	{"GresTypes", S_P_STRING},
 	{"GroupUpdateForce", S_P_UINT16},
