@@ -328,13 +328,10 @@ int env_array_to_file(const char *filename, const char **env_array,
 
 /*
  * Return an array of strings representing the specified user's default
- * environment variables following a two-prongged approach.
- * 1. Execute (more or less): "/bin/su - <username> -c /usr/bin/env"
+ * environment variables:
+ *    Execute (more or less): "/bin/su - <username> -c /usr/bin/env"
  *    Depending upon the user's login scripts, this may take a very
  *    long time to complete or possibly never return
- * 2. Load the user environment from a cache file. This is used
- *    in the event that option 1 times out.  This only happens if no_cache isn't
- *    set.  If it is set then NULL will be returned if the normal load fails.
  *
  * On error, returns NULL.
  *

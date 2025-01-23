@@ -1911,11 +1911,6 @@ static int _bracket_cnt(char *value)
  * via the --export-file option in sbatch. The NAME=value entries must
  * be NULL separated to support special characters in the environment
  * definitions.
- *
- * (Note: This is being added to a minor release. For the
- * next major release, it might be a consideration to merge
- * this functionality with that of load_env_cache and update
- * env_cache_builder to use the NULL character.)
  */
 char **env_array_from_file(const char *fname)
 {
@@ -2177,13 +2172,10 @@ static bool _ns_disabled()
 
 /*
  * Return an array of strings representing the specified user's default
- * environment variables following a two-prongged approach.
- * 1. Execute (more or less): "/bin/su - <username> -c /usr/bin/env"
+ * environment variables:
+ *    Execute (more or less): "/bin/su - <username> -c /usr/bin/env"
  *    Depending upon the user's login scripts, this may take a very
  *    long time to complete or possibly never return
- * 2. Load the user environment from a cache file. This is used
- *    in the event that option 1 times out.  This only happens if no_cache isn't
- *    set.  If it is set then NULL will be returned if the normal load fails.
  *
  * timeout value is in seconds or zero for default (120 secs)
  * On error, returns NULL.
