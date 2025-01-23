@@ -963,16 +963,39 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 	return rc;
 }
 
+static int _foreach_license_job_return(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	list_t *license_list = arg;
+	licenses_t *match =
+		list_find_first(license_list, _license_find_rec_by_id,
+				&license_entry->lic_id);
+	if (match) {
+		if (match->used >= license_entry->total)
+			match->used -= license_entry->total;
+		else {
+			error("%s: license use count underflow for lic_id=%u",
+			      __func__, match->lic_id);
+			match->used = 0;
+		}
+		license_entry->used = 0;
+	} else {
+		/* This can happen after a reconfiguration */
+		error("%s: job returning unknown license lic_id=%u",
+		      __func__, license_entry->lic_id);
+	}
+	return 0;
+}
+
 /*
  * license_job_return_to_list - Return the licenses allocated to a job to the
  *	`provided list
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
  */
-extern int license_job_return_to_list(job_record_t *job_ptr, list_t *license_list)
+extern int license_job_return_to_list(job_record_t *job_ptr,
+				      list_t *license_list)
 {
-	list_itr_t *iter;
-	licenses_t *license_entry, *match;
 	int rc = SLURM_SUCCESS;
 
 	if (!job_ptr->license_list)	/* no licenses needed */
@@ -980,27 +1003,9 @@ extern int license_job_return_to_list(job_record_t *job_ptr, list_t *license_lis
 
 	last_license_update = time(NULL);
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
-	iter = list_iterator_create(job_ptr->license_list);
-	while ((license_entry = list_next(iter))) {
-		match = list_find_first(license_list, _license_find_rec_by_id,
-					&license_entry->lic_id);
-		if (match) {
-			if (match->used >= license_entry->total)
-				match->used -= license_entry->total;
-			else {
-				error("%s: license use count underflow for %s",
-				      __func__, match->name);
-				match->used = 0;
-				rc = SLURM_ERROR;
-			}
-			license_entry->used = 0;
-		} else {
-			/* This can happen after a reconfiguration */
-			error("%s: job returning unknown license name %s",
-			      __func__, license_entry->name);
-		}
-	}
-	list_iterator_destroy(iter);
+
+	rc = list_for_each(job_ptr->license_list, _foreach_license_job_return,
+			   license_list);
 	return rc;
 }
 
