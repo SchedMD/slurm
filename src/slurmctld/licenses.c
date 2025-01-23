@@ -761,8 +761,8 @@ static int _foreach_license_job_test(void *x, void *arg)
 		test_args->rc = SLURM_ERROR;
 		return -1;
 	} else if (license_entry->total > match->total) {
-		info("job %u wants more %s licenses than configured",
-		     job_ptr->job_id, match->name);
+		info("job %u wants more %s(lic_id=%u) licenses than configured",
+		     job_ptr->job_id, license_entry->name, match->lic_id);
 		/*
 		 * Preempting jobs for licenses won't be effective so don't
 		 * preempt for any.
