@@ -1165,6 +1165,7 @@ typedef struct {
 	uint64_t sys_cpu_sec;
 	uint32_t sys_cpu_usec;
 	uint32_t task_dist;
+	uint32_t timelimit;
 	uint64_t tot_cpu_sec;
 	uint32_t tot_cpu_usec;
 	char *tres_alloc_str;

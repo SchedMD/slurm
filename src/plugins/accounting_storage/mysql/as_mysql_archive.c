@@ -347,6 +347,7 @@ typedef struct {
 	char *sys_usec;
 	char *tasks;
 	char *task_dist;
+	char *timelimit;
 	char *tres_alloc_str;
 	char *tres_usage_in_ave;
 	char *tres_usage_in_max;
@@ -396,6 +397,7 @@ static void _free_local_step_members(local_step_t *object)
 		xfree(object->sys_usec);
 		xfree(object->tasks);
 		xfree(object->task_dist);
+		xfree(object->timelimit);
 		xfree(object->tres_alloc_str);
 		xfree(object->tres_usage_in_ave);
 		xfree(object->tres_usage_in_max);
@@ -749,6 +751,7 @@ static char *step_req_inx[] = {
 	"time_start",
 	"time_end",
 	"time_suspended",
+	"timelimit",
 	"step_name",
 	"nodelist",
 	"node_inx",
@@ -797,6 +800,7 @@ enum {
 	STEP_REQ_START,
 	STEP_REQ_END,
 	STEP_REQ_SUSPENDED,
+	STEP_REQ_TIMELIMIT,
 	STEP_REQ_NAME,
 	STEP_REQ_NODELIST,
 	STEP_REQ_NODE_INX,
@@ -2150,6 +2154,7 @@ static void _pack_local_step(local_step_t *object, buf_t *buffer)
 	packstr(object->sys_usec, buffer);
 	packstr(object->tasks, buffer);
 	packstr(object->task_dist, buffer);
+	packstr(object->timelimit, buffer);
 	packstr(object->tres_alloc_str, buffer);
 	packstr(object->tres_usage_in_ave, buffer);
 	packstr(object->tres_usage_in_max, buffer);
@@ -2178,7 +2183,53 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 {
 	char *tmp_char;
 
-	if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->act_cpufreq, buffer);
+		safe_unpackstr(&object->deleted, buffer);
+		safe_unpackstr(&object->exit_code, buffer);
+		safe_unpackstr(&object->consumed_energy, buffer);
+		safe_unpackstr(&object->container, buffer);
+		safe_unpackstr(&object->job_db_inx, buffer);
+		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->name, buffer);
+		safe_unpackstr(&object->nodelist, buffer);
+		safe_unpackstr(&object->nodes, buffer);
+		safe_unpackstr(&object->node_inx, buffer);
+		safe_unpackstr(&object->period_end, buffer);
+		safe_unpackstr(&object->period_start, buffer);
+		safe_unpackstr(&object->period_suspended, buffer);
+		safe_unpackstr(&object->req_cpufreq_min, buffer);
+		safe_unpackstr(&object->req_cpufreq_max, buffer);
+		safe_unpackstr(&object->req_cpufreq_gov, buffer);
+		safe_unpackstr(&object->state, buffer);
+		safe_unpackstr(&object->stepid, buffer);
+		safe_unpackstr(&object->step_het_comp, buffer);
+		safe_unpackstr(&object->submit_line, buffer);
+		safe_unpackstr(&object->sys_sec, buffer);
+		safe_unpackstr(&object->sys_usec, buffer);
+		safe_unpackstr(&object->tasks, buffer);
+		safe_unpackstr(&object->task_dist, buffer);
+		safe_unpackstr(&object->timelimit, buffer);
+		safe_unpackstr(&object->tres_alloc_str, buffer);
+		safe_unpackstr(&object->tres_usage_in_ave, buffer);
+		safe_unpackstr(&object->tres_usage_in_max, buffer);
+		safe_unpackstr(&object->tres_usage_in_max_nodeid, buffer);
+		safe_unpackstr(&object->tres_usage_in_max_taskid, buffer);
+		safe_unpackstr(&object->tres_usage_in_min, buffer);
+		safe_unpackstr(&object->tres_usage_in_min_nodeid, buffer);
+		safe_unpackstr(&object->tres_usage_in_min_taskid, buffer);
+		safe_unpackstr(&object->tres_usage_in_tot, buffer);
+		safe_unpackstr(&object->tres_usage_out_ave, buffer);
+		safe_unpackstr(&object->tres_usage_out_max, buffer);
+		safe_unpackstr(&object->tres_usage_out_max_nodeid, buffer);
+		safe_unpackstr(&object->tres_usage_out_max_taskid, buffer);
+		safe_unpackstr(&object->tres_usage_out_min, buffer);
+		safe_unpackstr(&object->tres_usage_out_min_nodeid, buffer);
+		safe_unpackstr(&object->tres_usage_out_min_taskid, buffer);
+		safe_unpackstr(&object->tres_usage_out_tot, buffer);
+		safe_unpackstr(&object->user_sec, buffer);
+		safe_unpackstr(&object->user_usec, buffer);
+	} else if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->act_cpufreq, buffer);
 		safe_unpackstr(&object->deleted, buffer);
 		safe_unpackstr(&object->exit_code, buffer);
@@ -4368,6 +4419,7 @@ static buf_t *_pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 		step.sys_usec = row[STEP_REQ_SYS_USEC];
 		step.tasks = row[STEP_REQ_TASKS];
 		step.task_dist = row[STEP_REQ_TASKDIST];
+		step.timelimit = row[STEP_REQ_TIMELIMIT];
 		step.tres_alloc_str = row[STEP_REQ_TRES];
 		step.tres_usage_in_ave = row[STEP_TRES_USAGE_IN_AVE];
 		step.tres_usage_in_max = row[STEP_TRES_USAGE_IN_MAX];
@@ -4418,6 +4470,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 		STEP_REQ_START,
 		STEP_REQ_END,
 		STEP_REQ_SUSPENDED,
+		STEP_REQ_TIMELIMIT,
 		STEP_REQ_NAME,
 		STEP_REQ_NODELIST,
 		STEP_REQ_STATE,
@@ -4521,6 +4574,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			     object.period_start,
 			     object.period_end,
 			     object.period_suspended,
+			     object.timelimit,
 			     object.name,
 			     object.nodelist,
 			     object.state,

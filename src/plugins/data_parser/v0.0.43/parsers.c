@@ -7307,6 +7307,7 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT64, sys_cpu_sec, "time/system/seconds", "System CPU time used by the step in seconds"),
 	add_parse(UINT32, sys_cpu_usec, "time/system/microseconds", "System CPU time used by the step in microseconds"),
 	add_parse(TASK_DISTRIBUTION, task_dist, "task/distribution", "The layout of the step was when it was running"),
+	add_parse(UINT32_NO_VAL, timelimit, "time/limit", "Maximum run time in minutes"),
 	add_parse(UINT64, tot_cpu_sec, "time/total/seconds", "Total CPU time used by the step in seconds"),
 	add_parse(UINT32, tot_cpu_usec, "time/total/microseconds", "Total CPU time used by the step in microseconds"),
 	add_parse(UINT64, user_cpu_sec, "time/user/seconds", "User CPU time used by the step in seconds"),

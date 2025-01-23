@@ -991,6 +991,8 @@ extern int as_build_step_start_msg(dbd_step_start_msg_t *req,
 		req->job_submit_time   =
 			step_ptr->job_ptr->details->submit_time;
 
+	req->time_limit = step_ptr->time_limit;
+
 	memcpy(&req->step_id, &step_ptr->step_id, sizeof(req->step_id));
 
 	if (step_ptr->step_layout)

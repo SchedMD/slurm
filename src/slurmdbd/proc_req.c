@@ -3076,6 +3076,7 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	 */
 	job.start_time = step.start_time = step_start_msg->start_time;
 	details.submit_time = step_start_msg->job_submit_time;
+	step.time_limit = step_start_msg->time_limit;
 
 	memcpy(&step.step_id, &step_start_msg->step_id, sizeof(step.step_id));
 
