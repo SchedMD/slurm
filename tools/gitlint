@@ -1,5 +1,5 @@
 [general]
-extra-path=tools/gitlint_rules.py
+extra-path=tools/
 ignore=body-is-missing
 
 [title-max-length]
