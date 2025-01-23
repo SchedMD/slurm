@@ -823,13 +823,11 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
 	if (!job_ptr->licenses_to_preempt && use_licenses_to_preempt)
 		job_ptr->licenses_to_preempt = list_create(NULL);
 
-	slurm_mutex_lock(&license_mutex);
 	list_for_each(job_ptr->license_list, _foreach_license_job_test,
 		      &test_args);
 	if (use_licenses_to_preempt)
 		_licenses_print("licenses_to_preempt",
 				job_ptr->licenses_to_preempt, job_ptr);
-	slurm_mutex_unlock(&license_mutex);
 
 	return test_args.rc;
 }
@@ -843,8 +841,14 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
  */
 extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 {
-	return license_job_test_with_list(job_ptr, when, reboot,
-					  cluster_license_list, false);
+	int rc;
+
+	slurm_mutex_lock(&license_mutex);
+	rc = license_job_test_with_list(job_ptr, when, reboot,
+					cluster_license_list, false);
+	slurm_mutex_unlock(&license_mutex);
+
+	return rc;
 }
 
 static int _foreach_license_copy(void *x, void *arg)
@@ -976,7 +980,6 @@ extern int license_job_return_to_list(job_record_t *job_ptr, list_t *license_lis
 
 	last_license_update = time(NULL);
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
-	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = list_next(iter))) {
 		match = list_find_first(license_list, _license_find_rec_by_id,
@@ -998,7 +1001,6 @@ extern int license_job_return_to_list(job_record_t *job_ptr, list_t *license_lis
 		}
 	}
 	list_iterator_destroy(iter);
-	slurm_mutex_unlock(&license_mutex);
 	return rc;
 }
 
@@ -1011,8 +1013,10 @@ extern int license_job_return(job_record_t *job_ptr)
 {
 	int rc;
 
+	slurm_mutex_lock(&license_mutex);
 	rc = license_job_return_to_list(job_ptr, cluster_license_list);
 	_licenses_print("return_license", cluster_license_list, job_ptr);
+	slurm_mutex_unlock(&license_mutex);
 
 	return rc;
 }
@@ -1250,8 +1254,11 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 	licenses_t *license_entry;
 	bf_license_t *bf_entry;
 
-	if (!cluster_license_list || !list_count(cluster_license_list))
+	slurm_mutex_lock(&license_mutex);
+	if (!cluster_license_list || !list_count(cluster_license_list)) {
+		slurm_mutex_unlock(&license_mutex);
 		return NULL;
+	}
 
 	bf_list = list_create(_bf_license_free_rec);
 
@@ -1267,6 +1274,8 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 		list_push(bf_list, bf_entry);
 	}
 	list_iterator_destroy(iter);
+
+	slurm_mutex_unlock(&license_mutex);
 
 	return bf_list;
 }
