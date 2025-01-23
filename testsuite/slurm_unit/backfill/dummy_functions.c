@@ -289,6 +289,11 @@ list_t *license_copy(list_t *license_list_src)
 	return NULL;
 }
 
+list_t *cluster_license_copy(void)
+{
+	return NULL;
+}
+
 bool license_list_overlap(list_t *list_1, list_t *list_2)
 {
 	return false;

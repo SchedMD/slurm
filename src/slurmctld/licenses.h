@@ -88,10 +88,10 @@ extern void license_free_rec(void *x);
 
 /*
  * license_copy - create a copy of license list
- * IN license_list_src - job license list to be copied
  * RET a copy of the license list
  */
 extern list_t *license_copy(list_t *license_list_src);
+extern list_t *cluster_license_copy(void);
 
 /*
  * license_job_get - Get the licenses required for a job

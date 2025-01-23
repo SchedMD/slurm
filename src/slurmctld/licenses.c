@@ -863,6 +863,20 @@ static int _foreach_license_copy(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_license_light_copy(void *x, void *arg)
+{
+	licenses_t *license_entry_src = x;
+	licenses_t *license_entry_dest = xmalloc(sizeof(licenses_t));
+	list_t *license_list_dest = arg;
+
+	license_entry_dest->total = license_entry_src->total;
+	license_entry_dest->used = license_entry_src->used;
+	license_entry_dest->last_deficit = license_entry_src->last_deficit;
+	license_entry_dest->lic_id = license_entry_src->lic_id;
+	list_push(license_list_dest, license_entry_dest);
+
+	return 0;
+}
 /*
  * license_copy - create a copy of a license list
  * IN license_list_src - job license list to be copied
@@ -883,6 +897,24 @@ extern list_t *license_copy(list_t *license_list_src)
 	return license_list_dest;
 }
 
+/*
+ * cluster_license_copy - create a copy of the cluster_license_list
+ * RET a copy of the license list
+ */
+extern list_t *cluster_license_copy(void)
+{
+	list_t *license_list_dest = NULL;
+
+	slurm_mutex_lock(&license_mutex);
+	if (cluster_license_list) {
+		license_list_dest = list_create(license_free_rec);
+		list_for_each(cluster_license_list, _foreach_license_light_copy,
+			      license_list_dest);
+	}
+	slurm_mutex_unlock(&license_mutex);
+
+	return license_list_dest;
+}
 /*
  * license_job_get - Get the licenses required for a job
  * IN job_ptr - job identification
