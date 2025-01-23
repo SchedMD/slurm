@@ -947,8 +947,8 @@ extern int license_job_return_to_list(job_record_t *job_ptr, list_t *license_lis
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = list_next(iter))) {
-		match = list_find_first(license_list, _license_find_rec,
-			license_entry->name);
+		match = list_find_first(license_list, _license_find_rec_by_id,
+					&license_entry->lic_id);
 		if (match) {
 			if (match->used >= license_entry->total)
 				match->used -= license_entry->total;
