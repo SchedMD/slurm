@@ -847,6 +847,22 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 					  cluster_license_list, false);
 }
 
+static int _foreach_license_copy(void *x, void *arg)
+{
+	licenses_t *license_entry_src = x;
+	licenses_t *license_entry_dest = xmalloc(sizeof(licenses_t));
+	list_t *license_list_dest = arg;
+
+	license_entry_dest->name = xstrdup(license_entry_src->name);
+	license_entry_dest->total = license_entry_src->total;
+	license_entry_dest->used = license_entry_src->used;
+	license_entry_dest->last_deficit = license_entry_src->last_deficit;
+	license_entry_dest->lic_id = license_entry_src->lic_id;
+	list_push(license_list_dest, license_entry_dest);
+
+	return 0;
+}
+
 /*
  * license_copy - create a copy of a license list
  * IN license_list_src - job license list to be copied
@@ -854,26 +870,16 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
  */
 extern list_t *license_copy(list_t *license_list_src)
 {
-	licenses_t *license_entry_src, *license_entry_dest;
-	list_itr_t *iter;
 	list_t *license_list_dest = NULL;
 
 	if (!license_list_src)
 		return license_list_dest;
 
 	license_list_dest = list_create(license_free_rec);
-	iter = list_iterator_create(license_list_src);
-	while ((license_entry_src = list_next(iter))) {
-		license_entry_dest = xmalloc(sizeof(licenses_t));
-		license_entry_dest->name = xstrdup(license_entry_src->name);
-		license_entry_dest->total = license_entry_src->total;
-		license_entry_dest->used = license_entry_src->used;
-		license_entry_dest->last_deficit =
-			license_entry_src->last_deficit;
-		license_entry_dest->lic_id = license_entry_src->lic_id;
-		list_push(license_list_dest, license_entry_dest);
-	}
-	list_iterator_destroy(iter);
+
+	list_for_each(license_list_src, _foreach_license_copy,
+		      license_list_dest);
+
 	return license_list_dest;
 }
 
