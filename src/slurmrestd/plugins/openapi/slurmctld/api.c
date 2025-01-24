@@ -474,6 +474,27 @@ const openapi_path_binding_t openapi_paths[] = {
 		},
 		.flags = OP_FLAGS,
 	},
+	{
+		.path = "/slurm/{data_parser}/reservations/create/",
+		.callback = op_handler_reservations,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "create reservations",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESERVATION_MOD_RESP,
+					.description = "reservation descriptions",
+				},
+				.body = {
+					.type = DATA_PARSER_RESERVATION_MOD_REQ,
+					.description = "reservation creation descriptions",
+				},
+			},
+			{0}
+		},
+		.flags = OP_FLAGS,
+	},
 	{0}
 };
 

@@ -34,6 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -43,6 +44,119 @@
 #include "src/slurmrestd/operations.h"
 
 #include "api.h"
+
+static int _set_unused_flag(void *x, void *args)
+{
+	resv_desc_msg_t *resv_msg = x;
+	if (!resv_msg->flags)
+		resv_msg->flags = NO_VAL64;
+	return SLURM_SUCCESS;
+}
+
+static int _parse_resv_desc_list(openapi_ctxt_t *ctxt,
+				 openapi_reservation_mod_request_t *resv_req)
+{
+	int rc = SLURM_SUCCESS;
+	char *empty_list_msg =
+		"No reservation descriptions specified in reservations array";
+
+	xassert(resv_req && !resv_req->reservations);
+
+	if (!ctxt->query) {
+		rc = ESLURM_REST_INVALID_QUERY;
+		resp_error(ctxt, rc, __func__,
+			   "unexpected empty query for reservation creation");
+		return rc;
+	}
+
+	if (DATA_PARSE(ctxt->parser, RESERVATION_MOD_REQ, *resv_req,
+		       ctxt->query, ctxt->parent_path)) {
+		rc = ESLURM_REST_INVALID_QUERY;
+		resp_error(ctxt, rc, __func__,
+			   "Rejecting request. Failure parsing parameters");
+		FREE_NULL_LIST(resv_req->reservations);
+		return rc;
+	}
+
+	if (resv_req->reservations && list_count(resv_req->reservations))
+		list_for_each(resv_req->reservations, _set_unused_flag, NULL);
+	else if (resv_req->reservations)
+		resp_warn(ctxt, __func__, "%s", empty_list_msg);
+	else {
+		rc = ESLURM_REST_INVALID_QUERY;
+		resp_error(ctxt, rc, __func__, "%s", empty_list_msg);
+	}
+
+	return rc;
+}
+
+/*
+ * Create or update reservations
+ * IN: validate_func - function for use in list_find_first() to validate
+ *		       list of parsed resv_desc_msg_t *
+ * IN: mod_func - function for use in list_find_first() to send the requests to
+ *		  the controller
+ */
+static int _mod_reservations(openapi_ctxt_t *ctxt, ListFindF validate_func,
+			     ListFindF mod_func)
+{
+	openapi_reservation_mod_request_t resv_req = { 0 };
+	int rc = SLURM_SUCCESS;
+
+	if ((rc = _parse_resv_desc_list(ctxt, &resv_req)))
+		return rc;
+
+	if (!list_find_first(resv_req.reservations, validate_func, ctxt) &&
+	    !list_find_first(resv_req.reservations, mod_func, ctxt)) {
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_MOD_RESP,
+					 resv_req.reservations, ctxt);
+	}
+
+	FREE_NULL_LIST(resv_req.reservations);
+	return rc ? rc : ctxt->rc;
+}
+
+/* return true on error else false, meant for use in list_find_first() */
+static int _validate_each_resv_desc_msg(void *x, void *args)
+{
+	resv_desc_msg_t *resv_msg = x;
+	openapi_ctxt_t *ctxt = args;
+	char *error_msg;
+
+	if (validate_resv_create_desc(resv_msg, &error_msg)) {
+		resp_error(ctxt, ESLURM_RESERVATION_INVALID,
+			   "validate_resv_create_desc", "%s", error_msg);
+		return true;
+	}
+
+	return false;
+}
+
+/* Create reservation from desc - return true on error, list_find_first func */
+static int _create_each_resv(void *x, void *args)
+{
+	resv_desc_msg_t *resv_msg = x;
+	openapi_ctxt_t *ctxt = args;
+	char *new_res_name = NULL;
+
+	if (!(new_res_name = slurm_create_reservation(resv_msg))) {
+		int rc = errno;
+		if (((rc == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) ||
+		     (rc == ESLURM_NODES_BUSY)) && !resv_msg->node_list) {
+			resp_error(ctxt, rc, "slurm_create_reservation",
+				   "Error creating reservation %s. Note, unless nodes are directly requested a reservation must exist in a single partition. If no partition is requested the default partition is assumed.",
+				   resv_msg->name);
+		} else {
+			resp_error(ctxt, rc, "slurm_create_reservation",
+				   "Error creating reservation  %s",
+				   resv_msg->name);
+		}
+		return true;
+	}
+
+	free(new_res_name);
+	return false;
+}
 
 static int _get_reservations(openapi_ctxt_t *ctxt)
 {
@@ -87,6 +201,9 @@ extern int op_handler_reservations(openapi_ctxt_t *ctxt)
 
 	if (ctxt->method == HTTP_REQUEST_GET) {
 		rc = _get_reservations(ctxt);
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
+		rc = _mod_reservations(ctxt, _validate_each_resv_desc_msg,
+				       _create_each_resv);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
