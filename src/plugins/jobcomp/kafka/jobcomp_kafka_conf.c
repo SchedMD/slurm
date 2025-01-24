@@ -138,6 +138,14 @@ static int _parse_uint32(uint32_t *result, char *key, const char *nptr)
 	return SLURM_ERROR;
 }
 
+static void _validate_kafka_conf(void)
+{
+	if (kafka_conf->topic && kafka_conf->topic_job_start &&
+	    !xstrcmp(kafka_conf->topic, kafka_conf->topic_job_start))
+		warning("%s: JobCompParams 'topic' and 'topic_job_start' configured with same value '%s'. Use at your own risk.",
+			plugin_type, kafka_conf->topic);
+}
+
 extern void jobcomp_kafka_conf_init(void)
 {
 	kafka_conf = xmalloc(sizeof(*kafka_conf));
@@ -233,6 +241,8 @@ extern void jobcomp_kafka_conf_parse_params(void)
 		else
 			kafka_conf->topic_job_start = xstrdup(start);
 	}
+
+	_validate_kafka_conf();
 
 	slurm_rwlock_unlock(&kafka_conf_rwlock);
 }
