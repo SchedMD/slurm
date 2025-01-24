@@ -516,15 +516,9 @@ extern int fini(void)
 
 	slurm_thread_join(thread_gpu_id_run);
 
-	/*
-	 * We don't really want to destroy the the state, so those values
-	 * persist a reconfig. And if the process dies, this will be lost
-	 * anyway. So not freeing these variables is not really a leak.
-	 *
-	 * xfree(gpus);
-	 * xfree(start_current_energies);
-	 * saved_usable_gpus = NULL;
-	 */
+	xfree(gpus);
+	xfree(start_current_energies);
+	saved_usable_gpus = NULL;
 
 	return SLURM_SUCCESS;
 }
