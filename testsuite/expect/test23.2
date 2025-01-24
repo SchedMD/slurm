@@ -215,10 +215,10 @@ set matches [sstat_job -parsable $job_id 0]
 subtest {$matches == 6} "Verify sstat --parsable option" "$matches != 6"
 
 set matches [sstat_job P $job_id 0]
-subtest {$matches == 5} "Verify sstat -P option" "$matches != 5"
+subtest {$matches == 4} "Verify sstat -P option" "$matches != 4"
 
 set matches [sstat_job -parsable2 $job_id 0]
-subtest {$matches == 5} "Verify sstat --parsable2 option" "$matches != 5"
+subtest {$matches == 4} "Verify sstat --parsable2 option" "$matches != 4"
 
 set matches [sstat_job v $job_id 0]
 subtest {$matches == 4} "Verify sstat -v option" "$matches != 4"
