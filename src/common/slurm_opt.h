@@ -402,7 +402,6 @@ typedef struct {
 	uint16_t mail_type;		/* --mail-type			*/
 	char *mail_user;		/* --mail-user			*/
 	bool get_user_env;		/* --get-user-env		*/
-	int get_user_env_mode;		/* --get-user-env=[S|L]		*/
 	char *wckey;			/* workload characterization key */
 	char *reservation;		/* --reservation		*/
 	int resv_port_cnt;		/* --resv_ports			*/
