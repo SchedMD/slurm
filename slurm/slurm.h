@@ -2288,7 +2288,6 @@ typedef struct {
 				 * string */
 	uint32_t task_dist;	/* see enum task_dist_state */
 	uint32_t time_limit;	/* step time limit */
-	char *tres_alloc_str;   /* tres used in the job */
 	char *tres_bind;	/* Task to TRES binding directives */
 	char *tres_fmt_alloc_str; /* formatted tres string for step */
 	char *tres_freq;	/* TRES frequency directives */
