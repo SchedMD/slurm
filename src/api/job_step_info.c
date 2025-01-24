@@ -211,7 +211,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 4 ******/
 	xstrcat(out, line_end);
-	xstrfmtcat(out, "TRES=%s", job_step_ptr->tres_alloc_str);
+	xstrfmtcat(out, "TRES=%s", job_step_ptr->tres_fmt_alloc_str);
 
 	/****** Line 5 ******/
 	xstrcat(out, line_end);

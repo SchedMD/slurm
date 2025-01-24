@@ -487,6 +487,11 @@ void print_fields(slurmdb_step_rec_t *step)
 					     &tmp_uint64,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_TRESA:
+			tmp_char = step->tres_alloc_str;
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_TRESUIA:
 			_print_tres_field(step->stats.tres_usage_in_ave,
 					  NULL, 1);

@@ -8168,7 +8168,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 	add_parse(STRING, submit_line, "submit_line", "Full command used to submit the step"),
 	add_parse(TASK_DISTRIBUTION, task_dist, "task/distribution", "Layout"),
 	add_parse(UINT32_NO_VAL, time_limit, "time/limit", "Maximum run time in minutes"),
-	add_parse(STRING, tres_alloc_str, "tres/allocation", "Trackable resources allocated to the step"),
+	add_parse(STRING, tres_fmt_alloc_str, "tres/allocation", "Trackable resources allocated to the step"),
 	add_parse(STRING, tres_bind, "tres/binding", "Task to TRES binding directives"),
 	add_parse(STRING, tres_freq, "tres/frequency", "TRES frequency directive"),
 	add_parse(STRING, tres_per_step, "tres/per/step", "Comma separated list of TRES=# values to be allocated per job step"),
