@@ -2457,6 +2457,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					start_clean |= SACCTMGR_CLEAN_ACCT;
 				if (xstrcasestr(clean_types, "user"))
 					start_clean |= SACCTMGR_CLEAN_USER;
+				if (xstrcasestr(clean_types, "qos"))
+					start_clean |= SACCTMGR_CLEAN_QOS;
 				xfree(clean_types);
 			}
 			start_clean |= SACCTMGR_CLEAN_CLUSTER;
@@ -2506,12 +2508,13 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 		return;
 	}
 
-	if (start_clean & (SACCTMGR_CLEAN_ACCT | SACCTMGR_CLEAN_USER)) {
+	if (start_clean &
+	    (SACCTMGR_CLEAN_ACCT | SACCTMGR_CLEAN_USER | SACCTMGR_CLEAN_QOS)) {
 		curr_cluster_list = slurmdb_clusters_get(
 			db_conn, NULL);
 		if (curr_cluster_list && (list_count(curr_cluster_list) > 1)) {
 			exit_code = 1;
-			fprintf(stderr, " When doing a clean=account and/or user you must only have one cluster in the system.\n");
+			fprintf(stderr, " When doing a clean=account, user, and/or qos you must only have one cluster in the system.\n");
 			xfree(cluster_name);
 			FREE_NULL_LIST(curr_cluster_list);
 			return;
@@ -2609,7 +2612,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				}
 			}
 
-			if (!qos_rec) {
+			if (!qos_rec || (start_clean & SACCTMGR_CLEAN_QOS)) {
 				/* We haven't seen this one, add it. */
 				list_append(qos_list, qos_rec_in);
 			} else {
@@ -2698,6 +2701,25 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					xfree(parent);
 					goto end_it;
 				}
+			}
+
+			if (start_clean & SACCTMGR_CLEAN_QOS) {
+				slurmdb_qos_cond_t qos_cond = { 0 };
+				list_t *ret_list = NULL;
+
+				notice_thread_init();
+				ret_list = slurmdb_qos_remove(
+					db_conn, &qos_cond);
+				notice_thread_fini();
+
+				if (!ret_list &&
+				    (errno != SLURM_NO_CHANGE_IN_DATA)) {
+					exit_code=1;
+					fprintf(stderr, " There was a problem removing the qos.\n");
+					rc = SLURM_ERROR;
+					break;
+				}
+				FREE_NULL_LIST(ret_list);
 			}
 
 			if (start_clean & SACCTMGR_CLEAN_CLUSTER) {
@@ -2832,6 +2854,13 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				(void) list_for_each(mod_qos_list, _mod_qos,
 						     NULL);
 			}
+
+			/*
+			 * Wait until after processing mod_qos_list to free as
+			 * it uses the pointers in g_qos_list.
+			 */
+			if (start_clean & SACCTMGR_CLEAN_QOS)
+				FREE_NULL_LIST(g_qos_list);
 
 			if (list_count(qos_list) || list_count(mod_qos_list)) {
 				if (commit_check("Would you like to commit changes?")) {
