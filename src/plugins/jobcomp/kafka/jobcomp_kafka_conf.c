@@ -61,6 +61,7 @@ static void _destroy_kafka_conf(void)
 	}
 
 	xfree(kafka_conf->topic);
+	xfree(kafka_conf->topic_job_start);
 	xfree(kafka_conf);
 	kafka_conf = NULL;
 	slurm_rwlock_unlock(&kafka_conf_rwlock);
@@ -183,6 +184,7 @@ extern void jobcomp_kafka_conf_parse_params(void)
 	static char *flush_timeout_key = "flush_timeout=";
 	static char *poll_interval_key = "poll_interval=";
 	static char *topic_key = "topic=";
+	static char *topic_job_start_key = "topic_job_start=";
 
 	xassert(kafka_conf);
 
@@ -216,6 +218,20 @@ extern void jobcomp_kafka_conf_parse_params(void)
 			kafka_conf->topic = xstrndup(start, (end - start));
 		else
 			kafka_conf->topic = xstrdup(start);
+	}
+
+	xfree(kafka_conf->topic_job_start);
+	if (!(begin = xstrstr(slurm_conf.job_comp_params,
+			      topic_job_start_key))) {
+		kafka_conf->topic_job_start =
+			xstrdup_printf("%s-job-start", slurm_conf.cluster_name);
+	} else {
+		start = begin + strlen(topic_job_start_key);
+		if ((end = xstrstr(start, ",")))
+			kafka_conf->topic_job_start =
+				xstrndup(start, (end - start));
+		else
+			kafka_conf->topic_job_start = xstrdup(start);
 	}
 
 	slurm_rwlock_unlock(&kafka_conf_rwlock);

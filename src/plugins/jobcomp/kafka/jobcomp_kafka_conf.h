@@ -53,7 +53,8 @@ typedef struct {
 	uint32_t flags;			/* Configuration flags. */
 	int flush_timeout;		/* rd_kafka_flush() timeout in ms. */
 	uint32_t poll_interval;		/* Sec. between rd_kafka_poll(). */
-	char *topic;			/* Target topic name. */
+	char *topic; /* Target topic name for job_finish. */
+	char *topic_job_start; /* Target topic name for job_start. */
 } kafka_conf_t;
 
 extern kafka_conf_t *kafka_conf;
