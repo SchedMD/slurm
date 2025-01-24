@@ -220,7 +220,6 @@ static int  _match_jobid(void *s0, void *s1);
 static void _wait_for_job_running_prolog(uint32_t job_id);
 static int _wait_for_request_launch_prolog(uint32_t job_id,
 					    bool *first_job_run);
-static bool _requeue_setup_env_fail(void);
 
 /*
  *  List of threads waiting for jobs to complete
@@ -2704,11 +2703,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	}
 
 	if (_get_user_env(req, user_name) < 0) {
-		bool requeue = _requeue_setup_env_fail();
-		if (requeue) {
-			rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
-			goto done;
-		}
+		rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
+		goto done;
 	}
 	_set_batch_job_limits(msg);
 
@@ -6057,21 +6053,4 @@ static void _launch_complete_wait(uint32_t job_id)
 	}
 	slurm_mutex_unlock(&job_state_mutex);
 	_launch_complete_log("job wait", job_id);
-}
-
-static bool
-_requeue_setup_env_fail(void)
-{
-	static time_t config_update = 0;
-	static bool requeue = false;
-
-	if (config_update != slurm_conf.last_update) {
-		requeue = ((xstrcasestr(slurm_conf.sched_params,
-					"no_env_cache") ||
-			    xstrcasestr(slurm_conf.sched_params,
-					"requeue_setup_env_fail")));
-		config_update = slurm_conf.last_update;
-	}
-
-	return requeue;
 }
