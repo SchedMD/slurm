@@ -33,3 +33,11 @@ repos:
     exclude: auxdir|expect/globals|jquery\.min\.js
     args: [--config, tools/codespellrc, -w]
     stages: [manual]
+
+- repo: https://github.com/jorisroovers/gitlint
+  rev: v0.19.1
+  hooks:
+  - id: gitlint
+    args: [--config, tools/gitlint, --msg-filename]
+  - id: gitlint-ci
+    args: [--config, tools/gitlint]

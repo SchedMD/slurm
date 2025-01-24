@@ -1,0 +1,15 @@
+[general]
+extra-path=tools/
+ignore=body-is-missing
+
+[title-max-length]
+line-length=72
+
+[title-min-length]
+min-length=1
+
+[body-max-line-length]
+line-length=76
+
+[body-min-length]
+min-length=0
