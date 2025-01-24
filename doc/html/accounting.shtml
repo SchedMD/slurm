@@ -290,12 +290,14 @@ SQL server, and at least 4 GiB. Setting this value too small can cause problems
 when upgrading large Slurm databases or when purging old records.
 </li>
 <li><b>innodb_log_file_size</b>:
-This should be set to 25 percent of the <b>innodb_buffer_pool_size</b> to
-reduce unnecessary small writes to disk. Keep in mind that increasing this can
-cause recovery times when the SQL server shuts down unexpectedly.
+This should be set to 25 percent of <b>innodb_buffer_pool_size</b> divided by
+<b>innodb_log_files_in_group</b> to reduce unnecessary small writes to disk.
+Keep in mind that increasing this can cause recovery times when the SQL server
+shuts down unexpectedly.
 </li>
 <li><b>innodb_redo_log_capacity</b>:
 Use this instead of <b>innodb_log_file_size</b> in MySQL 8.0.30+.
+This should be set to 25 percent of <b>innodb_buffer_pool_size</b>.
 </li>
 <li><b>innodb_lock_wait_timeout</b>:
 Set this to 900 seconds to allow some potentially extended queries to complete
@@ -326,7 +328,7 @@ $cat my.cnf
 ...
 [mysqld]
 <i>innodb_buffer_pool_size=4096M</i>
-<i>innodb_log_file_size=64M</i>
+<i>innodb_log_file_size=1024M</i>
 <i>innodb_lock_wait_timeout=900</i>
 <i>max_allowed_packet=16M</i>
 ...
@@ -1025,6 +1027,6 @@ Profiling works similarly, and we provide
 and InfluxDB that can help to visualize accounting data in other ways.
 </p>
 
-<p style="text-align:center;">Last modified 01 January 2025</p>
+<p style="text-align:center;">Last modified 29 January 2025</p>
 
 <!--#include virtual="footer.txt"-->
