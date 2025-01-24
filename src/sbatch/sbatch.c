@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 			exit(error_exit);
 		}
 
-		if (opt.get_user_env_time < 0) {
+		if (!opt.get_user_env) {
 			/* Moab doesn't propagate the user's resource limits, so
 			 * slurmd determines the values at the same time that it
 			 * gets the user's default environment variables. */
@@ -447,12 +447,12 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->environment = env_array_create();
 		env_array_merge_slurm_spank(&desc->environment,
 					    (const char **) environ);
-		opt.get_user_env_time = 0;
+		opt.get_user_env = true;
 	} else {
 		env_merge_filter(&opt, desc);
-		opt.get_user_env_time = 0;
+		opt.get_user_env = true;
 	}
-	if (opt.get_user_env_time >= 0) {
+	if (opt.get_user_env) {
 		env_array_overwrite(&desc->environment,
 				    "SLURM_GET_USER_ENV", "1");
 	}

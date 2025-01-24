@@ -1436,49 +1436,10 @@ static slurm_cli_opt_t slurm_opt_extra_node_info = {
 	.reset_each_pass = true,
 };
 
-static int arg_set_get_user_env(slurm_opt_t *opt, const char *arg)
-{
-	char *end_ptr;
-
-	if (!arg) {
-		opt->get_user_env_time = 0;
-		return SLURM_SUCCESS;
-	}
-
-	opt->get_user_env_time = strtol(arg, &end_ptr, 10);
-
-	if (!end_ptr || (end_ptr[0] == '\0'))
-		return SLURM_SUCCESS;
-
-	if ((end_ptr[0] == 's') || (end_ptr[0] == 'S'))
-		opt->get_user_env_mode = 1;
-	else if ((end_ptr[0] == 'l') || (end_ptr[0] == 'L'))
-		opt->get_user_env_mode = 2;
-	else {
-		error("Invalid --get-user-env specification");
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
-}
-static char *arg_get_get_user_env(slurm_opt_t *opt)
-{
-	if (opt->get_user_env_mode == 1)
-		return xstrdup_printf("%dS", opt->get_user_env_time);
-	else if (opt->get_user_env_mode == 2)
-		return xstrdup_printf("%dL", opt->get_user_env_time);
-	else if (opt->get_user_env_time != -1)
-		return xstrdup_printf("%d", opt->get_user_env_time);
-	return NULL;
-}
-static void arg_reset_get_user_env(slurm_opt_t *opt)
-{
-	opt->get_user_env_mode = -1;
-	opt->get_user_env_time = -1;
-}
+COMMON_BOOL_OPTION(get_user_env, "get-user-env");
 static slurm_cli_opt_t slurm_opt_get_user_env = {
 	.name = "get-user-env",
-	.has_arg = optional_argument,
+	.has_arg = no_argument,
 	.val = LONG_OPT_GET_USER_ENV,
 	.set_func_sbatch = arg_set_get_user_env,
 	.get_func = arg_get_get_user_env,
