@@ -77,6 +77,14 @@ adopted by the external step, similar to tasks running in regular steps.</p>
 <p>Verify that <b>UsePAM</b> is set to <b>On</b> in /etc/ssh/sshd_config (it
 should be on by default).</p>
 
+<p>Ensure that only supported <b>AuthenticationMethods</b> are enabled in
+sshd_config (on the compute nodes). At this time, only <b>publickey</b> and
+<b>password</b> are supported. In particular <b>keyboard-interactive</b> is
+explicitly unsupported and must be removed from <b>AuthenticationMethods</b>.
+If this step is not observed process adoption will be broken
+and SSH sessions will persist even after the job ends. See
+<a href="#LIMITATIONS"> Limitations</a> for more information.</p>
+
 <h2 id="PAM_CONFIG">PAM Configuration
 <a class="slurm_link" href="#PAM_CONFIG"></a>
 </h2>
@@ -551,8 +559,10 @@ allow sshd_t self:capability sys_admin;
 <a class="slurm_link" href="#LIMITATIONS"></a>
 </h2>
 
-<p>Alternate authentication methods such as multi-factor authentication may
-break process adoption with pam_slurm_adopt.</p>
+<p>Internally, some AuthenticationMethods cause sshd to fork an extra process
+during the login flow, which sshd partially offloads the authentication
+dialogue to. This can confuse PAM modules, and may break process adoption
+with pam_slurm_adopt.</p>
 
 <p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
 won't necessarily be in the same context as the job it is associated with.</p>
