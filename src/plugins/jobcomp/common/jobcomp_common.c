@@ -54,6 +54,26 @@ static bool _valid_date_format(char *date_str)
 	return true;
 }
 
+/*
+ * Return an string associated with a jobcomp_event_t.
+ * Caller should NOT free it.
+ *
+ * IN: event
+ * OUT: associated event string
+ */
+extern char *jobcomp_common_get_event_name(uint32_t event)
+{
+	switch (event) {
+	case JOBCOMP_EVENT_JOB_FINISH:
+		return "job finish";
+	case JOBCOMP_EVENT_JOB_START:
+		return "job start";
+	case JOBCOMP_EVENT_INVALID:
+	default:
+		return "invalid";
+	}
+}
+
 extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr) {
 	char start_str[32], end_str[32], time_str[32];
 	char *usr_str = NULL, *grp_str = NULL, *state_string = NULL;
