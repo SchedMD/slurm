@@ -1658,21 +1658,12 @@ mechanism, while new steps will use the new mechanism.
 
 .TP
 \fBJobAcctGatherFrequency\fR
-The job accounting and profiling sampling intervals.
-The supported format is follows:
+The job accounting and profiling sampling intervals, specified for each data
+type. Multiple comma\-separated \fB<datatype>=<interval>\fR intervals may be
+specified. Supported datatypes are as follows:
 .IP
 .RS
 .TP 12
-\fBJobAcctGatherFrequency\fR=<\fIdatatype\fR>=<\fIinterval\fR>
-where \fI<datatype>\fR=\fI<interval>\fR specifies the task sampling
-interval for the jobacct_gather plugin or a
-sampling interval for a profiling type by the
-acct_gather_profile plugin. Multiple,
-comma\-separated \fI<datatype>\fR=\fI<interval>\fR intervals
-may be specified. Supported datatypes are as follows:
-.IP
-.RS
-.TP
 Affects accounting and profiling:
 .IP
 .RS
@@ -1708,9 +1699,11 @@ plugin.
 where \fI<interval>\fR is the sampling interval in seconds
 for filesystem profiling using the acct_gather_filesystem
 plugin.
-
+.IP
+.br
 .RE
 .RE
+.IP
 The default value for task sampling interval
 is 30 seconds. The default value for all other intervals is 0.
 An interval of 0 disables sampling of the specified type.
@@ -1732,7 +1725,6 @@ Users can independently override each interval on a per job basis using the
 This value should be lower or equal to \fBEnergyIPMIFreq\fR when using
 \fIacct_gather_energy/ipmi\fR or xcc plugins as otherwise it will unnecessarily
 get repeated values on successive polls.
-.RE
 .IP
 
 .TP
