@@ -4308,6 +4308,10 @@ static int _foreach_add_to_preemptee_job_id(void *x, void *arg)
 	uint32_t *preemptee_jid = xmalloc(sizeof(uint32_t));
 
 	(*preemptee_jid) = job_ptr->job_id;
+
+	if (!resp_data->preemptee_job_id)
+		resp_data->preemptee_job_id = list_create(xfree_ptr);
+
 	list_append(resp_data->preemptee_job_id, preemptee_jid);
 
 	return 0;
