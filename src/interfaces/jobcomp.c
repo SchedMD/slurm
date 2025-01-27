@@ -52,7 +52,7 @@
 
 typedef struct slurm_jobcomp_ops {
 	int (*set_loc)(void);
-	int (*record_job_end)(job_record_t *job_ptr);
+	int (*record_job_end)(job_record_t *job_ptr, uint32_t event);
 	list_t *(*get_jobs)(slurmdb_job_cond_t *params);
 } slurm_jobcomp_ops_t;
 
@@ -169,7 +169,7 @@ extern int jobcomp_g_record_job_end(job_record_t *job_ptr)
 	slurm_mutex_lock(&context_lock);
 
 	xassert(g_context);
-	retval = (*(ops.record_job_end))(job_ptr);
+	retval = (*(ops.record_job_end))(job_ptr, JOBCOMP_EVENT_JOB_FINISH);
 
 	slurm_mutex_unlock(&context_lock);
 	return retval;

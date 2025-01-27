@@ -154,7 +154,7 @@ static void _make_time_str (time_t *time, char *string, int size)
 	}
 }
 
-extern int jobcomp_p_record_job_end(job_record_t *job_ptr)
+extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 {
 	int rc = SLURM_SUCCESS, tmp_int, tmp_int2;
 	char *job_rec = NULL;

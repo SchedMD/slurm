@@ -194,7 +194,7 @@ extern int jobcomp_p_set_location(void)
 	return SLURM_SUCCESS;
 }
 
-extern int jobcomp_p_record_job_end(job_record_t *job_ptr)
+extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 {
 	int rc;
 	slurm_mutex_lock(&lua_lock);
