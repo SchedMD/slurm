@@ -44,6 +44,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/plugins/jobcomp/kafka/jobcomp_kafka_conf.h"
 #include "src/plugins/jobcomp/kafka/jobcomp_kafka_message.h"
@@ -507,6 +508,7 @@ static void _pack_jobcomp_kafka_msg_opaque(kafka_msg_opaque_t *opaque,
 {
 	xassert(opaque);
 
+	pack32(opaque->event, buffer);
 	pack32(opaque->job_id, buffer);
 }
 
@@ -563,6 +565,7 @@ static int _unpack_jobcomp_kafka_msg_opaque(kafka_msg_opaque_t *opaque,
 	xassert(opaque);
 
 	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpack32(&opaque->event, buffer);
 		safe_unpack32(&opaque->job_id, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -591,13 +594,14 @@ unpack_error:
  */
 static int _unpack_jobcomp_kafka_msg(uint16_t protocol_version, buf_t *buffer)
 {
+	uint32_t event = JOBCOMP_EVENT_INVALID;
 	char *payload = NULL;
 	kafka_msg_opaque_t *opaque = NULL;
 
 	xassert(buffer);
 
 	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		opaque = jobcomp_kafka_message_init_opaque(0);
+		opaque = jobcomp_kafka_message_init_opaque(event, 0);
 		if (_unpack_jobcomp_kafka_msg_opaque(opaque, protocol_version,
 						     buffer) != SLURM_SUCCESS)
 			goto unpack_error;
@@ -605,8 +609,10 @@ static int _unpack_jobcomp_kafka_msg(uint16_t protocol_version, buf_t *buffer)
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint32_t job_id;
 
+		/* All pre-25.05 msgs are job_finish events */
+		event = JOBCOMP_EVENT_JOB_FINISH;
 		safe_unpack32(&job_id, buffer);
-		opaque = jobcomp_kafka_message_init_opaque(job_id);
+		opaque = jobcomp_kafka_message_init_opaque(event, job_id);
 		safe_unpackstr(&payload, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -696,10 +702,12 @@ static void _terminate_poll_handler(void)
 	slurm_thread_join(poll_thread);
 }
 
-extern kafka_msg_opaque_t *jobcomp_kafka_message_init_opaque(uint32_t job_id)
+extern kafka_msg_opaque_t *jobcomp_kafka_message_init_opaque(uint32_t event,
+							     uint32_t job_id)
 {
 	kafka_msg_opaque_t *opaque = xmalloc(sizeof(*opaque));
 
+	opaque->event = event;
 	opaque->job_id = job_id;
 
 	return opaque;

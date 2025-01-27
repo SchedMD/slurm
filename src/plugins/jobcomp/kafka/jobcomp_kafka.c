@@ -37,6 +37,7 @@
 #include "src/common/data.h"
 #include "src/common/list.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/interfaces/serializer.h"
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/plugins/jobcomp/kafka/jobcomp_kafka_conf.h"
@@ -147,7 +148,7 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 		goto end;
 	}
 
-	opaque = jobcomp_kafka_message_init_opaque(job_ptr->job_id);
+	opaque = jobcomp_kafka_message_init_opaque(event, job_ptr->job_id);
 	jobcomp_kafka_message_produce(opaque, job_record_serialized);
 
 end:
