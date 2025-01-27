@@ -3534,7 +3534,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		if (resv_desc_ptr->comment[0] != '\0') {
 			resv_ptr->comment = resv_desc_ptr->comment;
 			resv_desc_ptr->comment = NULL;
-			info("set it here! %s", resv_ptr->comment);
 		}
 	}
 	if (resv_desc_ptr->licenses && (resv_desc_ptr->licenses[0] == '\0')) {
