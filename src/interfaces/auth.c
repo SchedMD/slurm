@@ -40,6 +40,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
@@ -415,8 +416,8 @@ extern uid_t auth_g_get_uid(void *cred)
 
 extern char *auth_g_get_host(void *slurm_msg)
 {
-	slurm_addr_t addr;
 	slurm_msg_t *msg = slurm_msg;
+	slurm_addr_t *addr = &msg->address;
 	cred_wrapper_t *wrap = NULL;
 	char *host = NULL;
 
@@ -441,18 +442,26 @@ extern char *auth_g_get_host(void *slurm_msg)
 		return host;
 	}
 
-	if (slurm_get_peer_addr(msg->conn_fd, &addr)) {
-		error("%s: unable to determine host", __func__);
-		return NULL;
+	if (addr->ss_family == AF_UNSPEC) {
+		int rc;
+
+		if ((msg->conn_fd >= 0) &&
+		    (rc = slurm_get_peer_addr(msg->conn_fd, addr))) {
+			error("%s: [fd:%d] unable to determine socket remote host: %s",
+			      __func__, msg->conn_fd, slurm_strerror(rc));
+			return NULL;
+		}
+
+		xassert(addr->ss_family != AF_UNSPEC);
 	}
 
 	/* use remote host IP, then look it up */
-	if ((host = xgetnameinfo(&addr))) {
+	if ((host = xgetnameinfo(addr))) {
 		debug3("%s: looked up from connection's IP address: %s",
 		       __func__, host);
 	} else {
 		host = xmalloc(INET6_ADDRSTRLEN);
-		slurm_get_ip_str(&addr, host, INET6_ADDRSTRLEN);
+		slurm_get_ip_str(addr, host, INET6_ADDRSTRLEN);
 		debug3("%s: using connection's IP address: %s", __func__, host);
 	}
 

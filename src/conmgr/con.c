@@ -60,6 +60,7 @@
 #include "src/common/net.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_time.h"
 #include "src/common/util-net.h"
@@ -564,6 +565,20 @@ extern int add_connection(conmgr_con_type_t type,
 		strlcpy(un->sun_path, unix_socket_path, unix_socket_path_len);
 	} else if (is_socket && (addrlen > 0) && addr) {
 		memcpy(&con->address, addr, addrlen);
+	}
+
+	if (is_socket && (con->address.ss_family == AF_UNSPEC)) {
+		int rc = SLURM_SUCCESS;
+		int fd = (has_out ? output_fd : input_fd);
+
+		if (!is_listen &&
+		    (rc = slurm_get_peer_addr(fd, &con->address))) {
+			log_flag(CONMGR, "%s: [fd:%d] Unable to resolve remote host: %s",
+				 __func__, fd, slurm_strerror(rc));
+		} else if (slurm_get_stream_addr(fd, &con->address)) {
+			log_flag(CONMGR, "%s: [fd:%d] Unable to resolve bind()ed IP: %m",
+				 __func__, fd);
+		}
 	}
 
 	if (has_out) {
