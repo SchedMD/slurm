@@ -744,6 +744,7 @@ extern void jobcomp_kafka_message_fini(void)
 extern void jobcomp_kafka_message_produce(kafka_msg_opaque_t *opaque,
 					  char *payload)
 {
+	char *topic = NULL;
 	size_t len;
 	rd_kafka_resp_err_t err;
 
@@ -753,6 +754,15 @@ extern void jobcomp_kafka_message_produce(kafka_msg_opaque_t *opaque,
 	len = strlen(payload);
 
 	slurm_rwlock_rdlock(&kafka_conf_rwlock);
+	if (!(topic = jobcomp_kafka_conf_get_event_topic(opaque->event))) {
+		error("%s: Failed to produce JobId=%u message: event disabled. Message discarded.",
+		      plugin_type, opaque->job_id);
+		xfree(opaque);
+		xfree(payload);
+		slurm_rwlock_unlock(&kafka_conf_rwlock);
+		return;
+	}
+
 	/*
 	 * Arguments to rd_kafka_producev():
 	 *
@@ -768,18 +778,18 @@ extern void jobcomp_kafka_message_produce(kafka_msg_opaque_t *opaque,
 	 * 5. End sentinel
 	 */
 	err = rd_kafka_producev(rk,
-				RD_KAFKA_V_TOPIC(kafka_conf->topic),
+				RD_KAFKA_V_TOPIC(topic),
 				RD_KAFKA_V_VALUE(payload, len),
 				RD_KAFKA_V_OPAQUE(opaque),
 				RD_KAFKA_V_END);
 
 	if (err == RD_KAFKA_RESP_ERR_NO_ERROR) {
 		log_flag(JOBCOMP, "Produced JobId=%u message for topic '%s' to librdkafka queue.",
-			 opaque->job_id, kafka_conf->topic);
+			 opaque->job_id, topic);
 		/* Do not xfree(opaque). Delivery msg callback will do it. */
 	} else {
 		error("%s: Failed to produce JobId=%u message for topic '%s': %s. Message discarded.",
-		      plugin_type, opaque->job_id, kafka_conf->topic,
+		      plugin_type, opaque->job_id, topic,
 		      rd_kafka_err2str(err));
 		xfree(opaque);
 		xfree(payload);
