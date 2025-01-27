@@ -26,7 +26,7 @@
 # with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
-source ./globals
+source ./globals_accounting
 
 set file_in     "$test_dir/input"
 set file_in2    "$test_dir/input2"
@@ -65,6 +65,8 @@ set tu3         "${test_name}-user.3"
 set tu4         "${test_name}-user.4"
 set qs          QOS
 set qs1         normal
+set qs2         test21.22.qos
+set qs3         test21.22.qos2
 set pat         parent
 set al          AdminLevel
 set aln         None
@@ -105,7 +107,6 @@ set gj1         120
 set gs1         130
 set gn1         140
 set gw1         60
-set gt1         01:00:00
 set mc1         150
 set mm1         110000
 set mj1         160
@@ -185,6 +186,78 @@ set mw6         2880
 set mt6         2-00:00:00
 set access_err  0
 set timeout     120
+
+array set qos2_info1 {
+	Description qos_temp
+	Flags DenyOnLimit,EnforceUsageThreshold,NoDecay
+	GraceTime 70
+	GrpJobsAccrue 2
+	GrpJobs 120
+	GrpSubmitJobs 130
+	GrpTres cpu=1
+	GrpTresMins cpu=2
+	GrpTresRunMins cpu=3
+	GrpWall 60
+	LimitFactor 2.000000
+	MaxJobsPerAccount 160
+	MaxJobsPerUser 250
+	MaxJobsAccruePerAccount 160
+	MaxJobsAccruePerUser 250
+	MaxSubmitJobsPerAccount 180
+	MaxSubmitJobsPerUser 4
+	MaxTresMinsPerJob cpu=1
+	MaxTresPerAccount cpu=2
+	MaxTresPerJob cpu=3
+	MaxTresPerNode cpu=4
+	MaxTresPerUser cpu=5
+	MaxTRESRunMinsPerAccount cpu=1
+	MaxTRESRunMinsPerUser cpu=3
+	MaxWallDurationPerJob 30
+	MinPrioThresh 30
+	MinTRESPerJob cpu=10
+	Preempt normal
+	PreemptMode cancel
+	PreemptExemptTime 60
+	Priority 10010
+	UsageFactor 0.500000
+	UsageThreshold 2.500000
+}
+
+array set qos2_info2 {
+	Description qos_temp2
+	Flags DenyOnLimit
+	GraceTime 80
+	GrpJobsAccrue 3
+	GrpJobs 110
+	GrpSubmitJobs 110
+	GrpTres cpu=2
+	GrpTresMins cpu=1
+	GrpTresRunMins cpu=4
+	GrpWall 70
+	LimitFactor 2.400000
+	MaxJobsPerAccount 120
+	MaxJobsPerUser 210
+	MaxJobsAccruePerAccount 120
+	MaxJobsAccruePerUser 230
+	MaxSubmitJobsPerAccount 190
+	MaxSubmitJobsPerUser 2
+	MaxTresMinsPerJob cpu=4
+	MaxTresPerAccount cpu=1
+	MaxTresPerJob cpu=4
+	MaxTresPerNode cpu=5
+	MaxTresPerUser cpu=6
+	MaxTRESRunMinsPerAccount cpu=2
+	MaxTRESRunMinsPerUser cpu=4
+	MaxWallDurationPerJob 70
+	MinPrioThresh 10
+	MinTRESPerJob cpu=60
+	PreemptMode requeue
+	PreemptExemptTime 10
+	Priority 10110
+	UsageFactor 0.250000
+	UsageThreshold 2.300000
+}
+set qos2_info2(Preempt) $qs3
 
 #
 # Check accounting config and bail if not found.
@@ -383,12 +456,69 @@ proc _remove_user { acct user } {
 	}
 }
 
+#
+# Use sacctmgr to remove the test cluster
+#
+proc _remove_qos {name} {
+        global access_err sacctmgr timeout
+
+	set matches 0
+	set nothing 0
+
+	if { ![string length $name] } {
+		fail "We need a name to remove"
+	}
+
+	spawn $sacctmgr -i delete qos $name
+	expect {
+		-re "privilege to perform this action" {
+			set access_err 1
+			exp_continue
+		}
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			fail "There was a problem with the sacctmgr command"
+		}
+		-re "Problem getting" {
+			fail "There was a problem getting information from the database"
+		}
+		-re "Problem adding" {
+			fail "There was an unknown problem"
+		}
+		-re "No associations" {
+			fail "Your command didn't return anything"
+		}
+		-re " Deleting QOS" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr delete not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$access_err != 0} {
+		return 1
+	}
+	if {$matches != 1} {
+		fail "sacctmgr had a problem deleting qos ($matches != 1)"
+	}
+}
+
 proc cleanup {} {
-	global tu1 tu2 tu3 tu4 ta1 ta2 ta3 ta4 tc1 file_in file_in2 file_in3
+	global tu1 tu2 tu3 tu4 ta1 ta2 ta3 ta4 tc1 file_in file_in2 file_in3 qs2 qs3
 
 	_remove_user "" "$tu1,$tu2,$tu3,$tu4"
 	_remove_acct "" "$ta1,$ta2,$ta3,$ta4"
 	_remove_cluster "$tc1"
+	_remove_qos "$qs2,$qs3"
 
 	#
 	# Delete left-over input script files
@@ -405,6 +535,15 @@ if {$access_err != 0} {
 #
 # Build input script file - to create original associations
 #
+set qs2_str "$qs - '$qs2'"
+foreach option [array names qos2_info1] {
+	set value $qos2_info1($option)
+	append qs2_str ":$option=$value"
+}
+
+exec echo "$qs - '$qs1'" >>$file_in
+exec echo "$qs - '$qs3'" >>$file_in
+exec echo "$qs2_str"     >>$file_in
 exec echo "$clu - '$tc1':$class=$class1:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mm=$mm6:$mc=$mc6:$mj=$mj6:$mn=$mn6:$ms=$ms6:$mw=$mw6:$qs=$qs1"     >>$file_in
 exec echo "$par - '$roo'"     >>$file_in
 exec echo "$acc - '$ta1':$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"     >>$file_in
@@ -419,6 +558,13 @@ exec echo "$usr - '$tu2':$coo=$ta3:$dac=$ta3:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1
 #
 # Second input file - to modify and add associations to the original
 #
+set qs2_str "$qs - '$qs2'"
+foreach option [array names qos2_info2] {
+	set value $qos2_info2($option)
+	append qs2_str ":$option=$value"
+}
+
+exec echo "$qs2_str"     >>$file_in2
 exec echo "$clu - '$tc1':$class=$class2"     >>$file_in2
 exec echo "$par - '$roo'"     >>$file_in2
 exec echo "$acc - '$ta1'"     >>$file_in2
@@ -561,6 +707,11 @@ if {$matches != 2} {
 	fail "Administrator and coordinator 2 incorrect ($matches != 2)"
 }
 
+#
+# Use sacctmgr to list the test original association additions
+#
+check_qos_limits $qs2 [array get qos2_info1]
+
 set matches 0
 spawn $sacctmgr -i load $file_in2
 expect {
@@ -597,6 +748,8 @@ if {$matches != 2} {
 #
 # Use sacctmgr to list the test modifications to the original association
 #
+check_qos_limits $qs2 [array get qos2_info2]
+
 set matches 0
 
 spawn $sacctmgr -n -P $lis $as $clu=$tc1 $fmt=$clu,$acc,$usr,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs

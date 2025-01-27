@@ -1536,54 +1536,64 @@ proc reset_qos_usage { cluster qos } {
 #
 ###############################################################
 
-proc check_qos_limits { name qos_req } {
+proc check_qos_limits { qos_name qos_req } {
 	global sacctmgr
+	array set qos_info $qos_req
 
-	set command "format="
-	set values ""
-	set rc $::RETURN_SUCCESS
-	array set qos_limits $qos_req
-
-	if { ![string length $name] } {
+	if { ![string length $qos_name] } {
 		fail "A qos name must be specified"
 	}
 
-	foreach option [array names qos_limits] {
-		if {$qos_limits($option) eq " "} {
-			set $qos_limits($option) "''"
-		}
-
-		set command "$command$option\,"
-		if {$qos_limits($option) eq "-1"} {
-			set values "$values."
+	set qos_str ""
+	set check_cnt 0
+	foreach option [array names qos_info] {
+		set value $qos_info($option)
+		if { $qos_str eq "" || $qos_str eq "(null)" } {
+			set qos_str "format=$option"
 		} else {
-			set values "$values$qos_limits($option)."
+			append qos_str ",$option"
+		}
+
+		incr check_cnt
+	}
+
+	set matches 0
+	set output [run_command_output -fail "$sacctmgr -n -p list qos $qos_name $qos_str"]
+	set in_vals [split $output "|"]
+
+	set i 0
+	foreach option [array names qos_info] {
+		set value $qos_info($option)
+		set in_val [lindex $in_vals $i]
+		incr i
+
+		# If we removed it with -1 expect blank.
+		# These others are formatted timestrings we need to convert them
+		# back to secs/mins to check.
+		if { $value eq -1 && $in_val eq "" } {
+			set in_val -1
+		} elseif { [string first ":" $value] != -1 } {
+			# no conversion needed
+		} elseif { $option eq "GraceTime" } { # secs
+			set in_val [convert_time_str $in_val "secs"]
+		} elseif { ([string first "MaxWall" $option] != -1) ||
+			   ([string first "GrpWall" $option] != -1) ||
+			   ($option eq "PreemptExemptTime") } { # mins
+			set in_val [convert_time_str $in_val "mins"]
+		}
+
+		if { $value eq $in_val } {
+			incr matches
+		} else {
+			log_error "$option should be '$value' but we got '$in_val'"
 		}
 	}
 
-	log_user 0
-	set match 0
-	eval spawn $sacctmgr -n -p show qos $name "$command"
-	expect {
-		-re "($values)" {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	if {$match == 0} {
-		log_error "Limits do not match"
-		set rc $::RETURN_ERROR
+	if {$matches != $check_cnt} {
+		fail "Limits do not match ($matches != $check_cnt)"
 	}
 
-	return $rc
+	global sacctmgr
 }
 
 

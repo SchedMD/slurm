@@ -1426,6 +1426,41 @@ proc get_line_cnt { file_name } {
 ################################################################
 #
 # NAME
+#	convert_time_str - Converts a string like [HH:]MM:SS[.sss] to secs
+#
+# SYNOPSIS
+#	Convert the string to a number.
+#
+# DESCRIPTION
+#	Units can be hours, mins, secs.
+#
+# RETURN VALUE
+#	A non-zero return code indicates a failure.
+#
+################################################################
+
+proc convert_time_str { time_str units } {
+	subtest {[regexp {(?:(\d+):)?(\d+):(\d+)(?:\.(\d+))?} $time_str - hours mins secs msecs]} "Time should be in the format \[HH:\]MM:SS\[.sss\]" "$time_str"
+	if { $hours eq "" } {
+		set hours 0
+	}
+
+	# Use scan to avoid TCL octals
+	set value  [expr ([scan $hours "%d"] * 3600) + ([scan $mins "%d"] * 60) + [scan $secs "%d"]]
+
+	if { $units eq "hours" } {
+		set value [expr $value / 3600]
+	} elseif { $units eq "mins" } {
+		set value [expr $value / 60]
+	}
+
+	return $value
+}
+
+
+################################################################
+#
+# NAME
 #	slow_kill - kills a process slowly
 #
 # SYNOPSIS
