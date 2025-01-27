@@ -61,6 +61,7 @@ extern kafka_conf_t *kafka_conf;
 extern pthread_rwlock_t kafka_conf_rwlock;
 extern list_t *rd_kafka_conf_list;
 
+extern char *jobcomp_kafka_conf_get_event_topic(uint32_t event);
 extern void jobcomp_kafka_conf_init(void);
 extern void jobcomp_kafka_conf_fini(void);
 

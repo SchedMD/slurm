@@ -42,6 +42,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/plugins/jobcomp/kafka/jobcomp_kafka_conf.h"
 
@@ -144,6 +145,37 @@ static void _validate_kafka_conf(void)
 	    !xstrcmp(kafka_conf->topic, kafka_conf->topic_job_start))
 		warning("%s: JobCompParams 'topic' and 'topic_job_start' configured with same value '%s'. Use at your own risk.",
 			plugin_type, kafka_conf->topic);
+}
+
+/*
+ * Check if given event is configured and return its associated topic.
+ *
+ * IN: uint32_t event
+ * RET: Event topic or NULL
+ *
+ * NOTE: Caller must acquire read locks for kafka_conf_rwlock.
+ */
+extern char *jobcomp_kafka_conf_get_event_topic(uint32_t event)
+{
+	char *topic = NULL;
+
+	if (!(event & kafka_conf->events))
+		return topic;
+
+	switch (event) {
+	case JOBCOMP_EVENT_JOB_FINISH:
+		topic = kafka_conf->topic;
+		break;
+
+	case JOBCOMP_EVENT_JOB_START:
+		topic = kafka_conf->topic_job_start;
+		break;
+
+	default:
+		break;
+	}
+
+	return topic;
 }
 
 extern void jobcomp_kafka_conf_init(void)
