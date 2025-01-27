@@ -181,13 +181,14 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 	char *topic = (char *) rd_kafka_topic_name(rkmessage->rkt);
 	char *err_str = (char *) rd_kafka_err2str(rkmessage->err);
 	char *payload = rkmessage->payload;
+	char *event_name = jobcomp_common_get_event_name(msg_opaque->event);
 
 	switch (rkmessage->err) {
 	case RD_KAFKA_RESP_ERR_NO_ERROR:
 		/* Success */
 		log_flag(JOBCOMP,
-			 "Message for JobId=%u delivered to topic '%s'",
-			 msg_opaque->job_id, topic);
+			 "Message event '%s' for JobId=%u delivered to topic '%s'",
+			 event_name, msg_opaque->job_id, topic);
 		goto free_msg;
 	case RD_KAFKA_RESP_ERR__MSG_TIMED_OUT:
 		/*
@@ -200,8 +201,11 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		slurm_rwlock_unlock(&kafka_conf_rwlock);
 
 		if (!requeue) {
-			error("%s: Message delivery for JobId=%u failed: %s. Message discarded.",
-			      plugin_type, msg_opaque->job_id, err_str);
+			error("%s: Message event '%s' delivery for JobId=%u failed: %s. Message discarded.",
+			      plugin_type,
+			      event_name,
+			      msg_opaque->job_id,
+			      err_str);
 			goto free_msg;
 		}
 
@@ -210,8 +214,8 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		else
 			_add_kafka_msg_to_state(msg_opaque, payload);
 
-		error("%s: Message delivery for JobId=%u failed: %s. %s.",
-		      plugin_type, msg_opaque->job_id, err_str,
+		error("%s: Message event '%s' delivery for JobId=%u failed: %s. %s.",
+		      plugin_type, event_name, msg_opaque->job_id, err_str,
 		      !terminate ? "Attempting to produce message again" :
 		      "Saving message to plugin state file.");
 
@@ -219,8 +223,8 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 #if RD_KAFKA_VERSION >= 0x010000ff
 	case RD_KAFKA_RESP_ERR__PURGE_QUEUE:
 		/* Purged in-queue. Always requeue in this case. */
-		log_flag(JOBCOMP, "Message delivery for JobId=%u failed: %s. Saving message to plugin state file.",
-			 msg_opaque->job_id, err_str);
+		log_flag(JOBCOMP, "Message event '%s' delivery for JobId=%u failed: %s. Saving message to plugin state file.",
+			 event_name, msg_opaque->job_id, err_str);
 		_add_kafka_msg_to_state(msg_opaque, payload);
 
 		break;
@@ -231,8 +235,8 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 			   KAFKA_CONF_FLAG_REQUEUE_PURGE_IN_FLIGHT);
 		slurm_rwlock_unlock(&kafka_conf_rwlock);
 
-		error("%s: Message delivery for JobId=%u failed: %s. %s.",
-		      plugin_type, msg_opaque->job_id, err_str,
+		error("%s: Message event '%s' delivery for JobId=%u failed: %s. %s.",
+		      plugin_type, event_name, msg_opaque->job_id, err_str,
 		      requeue ?
 		      "Saving message to plugin state file" : "Message discarded");
 
@@ -244,8 +248,8 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		break;
 #endif
 	default:
-		error("%s: Message delivery for JobId=%u failed: %s. Message discarded.",
-		      plugin_type, msg_opaque->job_id, err_str);
+		error("%s: Message event '%s' delivery for JobId=%u failed: %s. Message discarded.",
+		      plugin_type, event_name, msg_opaque->job_id, err_str);
 		goto free_msg;
 	}
 
@@ -747,16 +751,18 @@ extern void jobcomp_kafka_message_produce(kafka_msg_opaque_t *opaque,
 	char *topic = NULL;
 	size_t len;
 	rd_kafka_resp_err_t err;
+	char *event_name;
 
 	xassert(rk);
 	xassert(opaque);
 
+	event_name = jobcomp_common_get_event_name(opaque->event);
 	len = strlen(payload);
 
 	slurm_rwlock_rdlock(&kafka_conf_rwlock);
 	if (!(topic = jobcomp_kafka_conf_get_event_topic(opaque->event))) {
-		error("%s: Failed to produce JobId=%u message: event disabled. Message discarded.",
-		      plugin_type, opaque->job_id);
+		error("%s: Failed to produce JobId=%u message: event '%s' disabled. Message discarded.",
+		      plugin_type, opaque->job_id, event_name);
 		xfree(opaque);
 		xfree(payload);
 		slurm_rwlock_unlock(&kafka_conf_rwlock);
@@ -784,12 +790,15 @@ extern void jobcomp_kafka_message_produce(kafka_msg_opaque_t *opaque,
 				RD_KAFKA_V_END);
 
 	if (err == RD_KAFKA_RESP_ERR_NO_ERROR) {
-		log_flag(JOBCOMP, "Produced JobId=%u message for topic '%s' to librdkafka queue.",
-			 opaque->job_id, topic);
+		log_flag(JOBCOMP, "Produced JobId=%u event '%s' message for topic '%s' to librdkafka queue.",
+			 opaque->job_id, event_name, topic);
 		/* Do not xfree(opaque). Delivery msg callback will do it. */
 	} else {
-		error("%s: Failed to produce JobId=%u message for topic '%s': %s. Message discarded.",
-		      plugin_type, opaque->job_id, topic,
+		error("%s: Failed to produce JobId=%u event '%s' message for topic '%s': %s. Message discarded.",
+		      plugin_type,
+		      opaque->job_id,
+		      event_name,
+		      topic,
 		      rd_kafka_err2str(err));
 		xfree(opaque);
 		xfree(payload);
