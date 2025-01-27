@@ -79,7 +79,8 @@ static int _produce_internal(job_record_t *job_ptr, uint32_t event)
 	data_t *job_record_data = NULL;
 	kafka_msg_opaque_t *opaque = NULL;
 
-	if (!(job_record_data = jobcomp_common_job_record_to_data(job_ptr))) {
+	if (!(job_record_data =
+			jobcomp_common_job_record_to_data(job_ptr, event))) {
 		error("%s: unable to build data_t. %pJ discarded",
 		      plugin_type, job_ptr);
 		rc = SLURM_ERROR;
