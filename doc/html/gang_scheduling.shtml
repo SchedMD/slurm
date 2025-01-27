@@ -118,10 +118,7 @@ timeslice on the same resources, set <I>OverSubscribe=FORCE:2</I>.
 </UL>
 <P>
 In order to enable gang scheduling after making the configuration changes
-described above, restart Slurm if it is already running. Any change to the
-plugin settings in Slurm requires a full restart of the daemons. If you
-just change the partition <I>OverSubscribe</I> setting, this can be updated with
-<I>scontrol reconfig</I>.
+described above, restart or reconfigure Slurm.
 </P>
 
 <h2 id="time_slice">Timeslicer Design and Operation
