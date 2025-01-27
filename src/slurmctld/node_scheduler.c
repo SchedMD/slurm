@@ -2847,6 +2847,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 			bit_not(unavail_bitmap);
 			bit_and_not(unavail_bitmap, future_node_bitmap);
 			bit_and(unavail_bitmap, part_ptr->node_bitmap);
+			bit_and_not(unavail_bitmap, up_node_bitmap);
 			if (job_ptr->details->req_node_bitmap) {
 				bit_and(unavail_bitmap,
 					job_ptr->details->req_node_bitmap);
