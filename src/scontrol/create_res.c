@@ -38,7 +38,6 @@
 
 #include "src/common/proc_args.h"
 #include "src/scontrol/scontrol.h"
-#include "src/slurmctld/reservation.h"
 
 #define PLUS_MINUS(sign) (((sign == '+')) ? RESERVE_FLAG_DUR_PLUS : \
 			  ((sign == '-') ? RESERVE_FLAG_DUR_MINUS : 0))
