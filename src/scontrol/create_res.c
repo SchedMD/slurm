@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "src/common/proc_args.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/scontrol/scontrol.h"
 
 #define PLUS_MINUS(sign) (((sign == '+')) ? RESERVE_FLAG_DUR_PLUS : \
@@ -376,6 +377,7 @@ scontrol_create_res(int argc, char **argv)
 	char *new_res_name = NULL;
 	uint32_t res_free_flags = 0;
 	int ret = 0;
+	char *error_msg;
 
 	slurm_init_resv_desc_msg (&resv_msg);
 	ret = _parse_res_options(argc, argv, "No reservation created.",
@@ -384,99 +386,9 @@ scontrol_create_res(int argc, char **argv)
 	if (ret)
 		goto SCONTROL_CREATE_RES_CLEANUP;
 
-	if (resv_msg.start_time == (time_t)NO_VAL) {
+	if (validate_resv_create_desc(&resv_msg, &error_msg)) {
 		exit_code = 1;
-		error("A start time must be given.  No reservation created.");
-		goto SCONTROL_CREATE_RES_CLEANUP;
-	}
-	if (resv_msg.end_time == (time_t)NO_VAL &&
-	    resv_msg.duration == NO_VAL) {
-		exit_code = 1;
-		error("An end time or duration must be given.  No reservation created.");
-		goto SCONTROL_CREATE_RES_CLEANUP;
-	}
-	if (resv_msg.end_time != (time_t)NO_VAL &&
-	    resv_msg.duration != NO_VAL &&
-	    resv_msg.start_time + resv_msg.duration*60 != resv_msg.end_time) {
-		exit_code = 1;
-		error("StartTime + Duration does not equal EndTime.  No reservation created.");
-		goto SCONTROL_CREATE_RES_CLEANUP;
-	}
-	if (resv_msg.start_time > resv_msg.end_time &&
-	    resv_msg.end_time != (time_t)NO_VAL) {
-		exit_code = 1;
-		error("Start time cannot be after end time.  No reservation created.");
-		goto SCONTROL_CREATE_RES_CLEANUP;
-	}
-
-	/*
-	 * If "ALL" is specified for the nodes and a partition is specified,
-	 * only allocate all of the nodes the partition.
-	 */
-	if ((resv_msg.partition != NULL) && (resv_msg.node_list != NULL) &&
-	    (xstrcasecmp(resv_msg.node_list, "ALL") == 0)) {
-		if (resv_msg.flags == NO_VAL64)
-			resv_msg.flags = RESERVE_FLAG_PART_NODES;
-		else
-			resv_msg.flags |= RESERVE_FLAG_PART_NODES;
-	}
-
-	/*
-	 * If RESERVE_FLAG_PART_NODES is specified for the reservation,
-	 * make sure a partition name is specified and nodes=ALL.
-	 */
-	if ((resv_msg.flags != NO_VAL64) &&
-            (resv_msg.flags & RESERVE_FLAG_PART_NODES) &&
-	    (!resv_msg.partition ||
-	     (xstrcasecmp(resv_msg.node_list, "ALL")))) {
-		exit_code = 1;
-		error("PART_NODES flag requires specifying a Partition and ALL nodes.  No reservation created.");
-		goto SCONTROL_CREATE_RES_CLEANUP;
-	}
-
-	/*
-	 * Ensure RESERVE_FLAG_FORCE_START is specified with a reoccuring flag.
-	 */
-	if ((resv_msg.flags != NO_VAL64) &&
-	    (resv_msg.flags & RESERVE_FLAG_FORCE_START) &&
-	    (!(resv_msg.flags & RESERVE_REOCCURRING))) {
-		exit_code = 1;
-		error("FORCE_START flag requires a reoccuring reservation. No reservation created.");
-		goto SCONTROL_CREATE_RES_CLEANUP;
-	}
-
-	/*
-	 * If the following parameters are null, but a partition is named, then
-	 * make the reservation for the whole partition.
-	 */
-	if ((!resv_msg.core_cnt || (resv_msg.core_cnt == NO_VAL)) &&
-	    (resv_msg.burst_buffer == NULL ||
-	     resv_msg.burst_buffer[0] == '\0') &&
-	    (!resv_msg.node_cnt || (resv_msg.node_cnt == NO_VAL)) &&
-	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
-	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0') &&
-	    (resv_msg.tres_str  == NULL || resv_msg.tres_str[0]  == '\0')) {
-		if (resv_msg.partition == NULL) {
-			exit_code = 1;
-			error("CoreCnt, Nodes, NodeCnt, TRES or Watts must be specified.  No reservation created.");
-			goto SCONTROL_CREATE_RES_CLEANUP;
-		}
-		if (resv_msg.flags == NO_VAL64)
-			resv_msg.flags = RESERVE_FLAG_PART_NODES;
-		else
-			resv_msg.flags |= RESERVE_FLAG_PART_NODES;
-		resv_msg.node_list = "ALL";
-	}
-
-	if ((resv_msg.users == NULL    || resv_msg.users[0] == '\0') &&
-	    (resv_msg.groups == NULL   || resv_msg.groups[0] == '\0') &&
-	    (resv_msg.accounts == NULL || resv_msg.accounts[0] == '\0')) {
-		exit_code = 1;
-		error("Either Users/Groups and/or Accounts must be specified.  No reservation created.");
-		goto SCONTROL_CREATE_RES_CLEANUP;
-	} else if (resv_msg.users && resv_msg.groups) {
-		exit_code = 1;
-		error("Users and Groups are mutually exclusive.  You can have one or the other, but not both.  No reservation created.");
+		error("%s", error_msg);
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 

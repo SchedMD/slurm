@@ -6424,3 +6424,98 @@ extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object)
 	xfree(object->stepmgr);
 	xfree(object);
 }
+
+/* Resv creation msg client validation. On error err_msg is set */
+extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg)
+{
+	if (resv_msg->start_time == (time_t) NO_VAL) {
+		*err_msg = "A start time must be given.  No reservation created.";
+		return SLURM_ERROR;
+	}
+	if ((resv_msg->end_time == (time_t) NO_VAL) &&
+	    (resv_msg->duration == NO_VAL)) {
+		*err_msg = "An end time or duration must be given.  No reservation created.";
+		return SLURM_ERROR;
+	}
+	if ((resv_msg->end_time != (time_t) NO_VAL) &&
+	    (resv_msg->duration != NO_VAL) &&
+	    ((resv_msg->start_time + (resv_msg->duration * 60)) !=
+	     resv_msg->end_time)) {
+		*err_msg = "StartTime + Duration does not equal EndTime.  No reservation created.";
+		return SLURM_ERROR;
+	}
+	if ((resv_msg->start_time > resv_msg->end_time) &&
+	    (resv_msg->end_time != (time_t) NO_VAL)) {
+		*err_msg = "Start time cannot be after end time.  No reservation created.";
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * If "ALL" is specified for the nodes and a partition is specified,
+	 * only allocate all of the nodes the partition.
+	 */
+	if ((resv_msg->partition != NULL) && (resv_msg->node_list != NULL) &&
+	    (xstrcasecmp(resv_msg->node_list, "ALL") == 0)) {
+		if (resv_msg->flags == NO_VAL64)
+			resv_msg->flags = RESERVE_FLAG_PART_NODES;
+		else
+			resv_msg->flags |= RESERVE_FLAG_PART_NODES;
+	}
+
+	/*
+	 * If RESERVE_FLAG_PART_NODES is specified for the reservation,
+	 * make sure a partition name is specified and nodes=ALL.
+	 */
+	if ((resv_msg->flags != NO_VAL64) &&
+	    (resv_msg->flags & RESERVE_FLAG_PART_NODES) &&
+	    (!resv_msg->partition ||
+	     (xstrcasecmp(resv_msg->node_list, "ALL")))) {
+		*err_msg = "PART_NODES flag requires specifying a Partition and ALL nodes.  No reservation created.";
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Ensure RESERVE_FLAG_FORCE_START is specified with a reoccuring flag.
+	 */
+	if ((resv_msg->flags != NO_VAL64) &&
+	    (resv_msg->flags & RESERVE_FLAG_FORCE_START) &&
+	    (!(resv_msg->flags & RESERVE_REOCCURRING))) {
+		*err_msg = "FORCE_START flag requires a reoccuring reservation. No reservation created.";
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * If the following parameters are null, but a partition is named, then
+	 * make the reservation for the whole partition.
+	 */
+	if ((!resv_msg->core_cnt || (resv_msg->core_cnt == NO_VAL)) &&
+	    ((resv_msg->burst_buffer == NULL) ||
+	     (resv_msg->burst_buffer[0] == '\0')) &&
+	    (!resv_msg->node_cnt || (resv_msg->node_cnt == NO_VAL)) &&
+	    ((resv_msg->node_list == NULL) ||
+	     (resv_msg->node_list[0] == '\0')) &&
+	    ((resv_msg->licenses == NULL) || (resv_msg->licenses[0] == '\0')) &&
+	    ((resv_msg->tres_str == NULL) || (resv_msg->tres_str[0] == '\0'))) {
+		if (resv_msg->partition == NULL) {
+			*err_msg = "CoreCnt, Nodes, NodeCnt, TRES or Watts must be specified.  No reservation created.";
+			return SLURM_ERROR;
+		}
+		if (resv_msg->flags == NO_VAL64)
+			resv_msg->flags = RESERVE_FLAG_PART_NODES;
+		else
+			resv_msg->flags |= RESERVE_FLAG_PART_NODES;
+		resv_msg->node_list = "ALL";
+	}
+
+	if (((resv_msg->users == NULL) || (resv_msg->users[0] == '\0')) &&
+	    ((resv_msg->groups == NULL) || (resv_msg->groups[0] == '\0')) &&
+	    ((resv_msg->accounts == NULL) || (resv_msg->accounts[0] == '\0'))) {
+		*err_msg = "Either Users/Groups and/or Accounts must be specified.  No reservation created.";
+		return SLURM_ERROR;
+	} else if (resv_msg->users && resv_msg->groups) {
+		*err_msg = "Users and Groups are mutually exclusive.  You can have one or the other, but not both.  No reservation created.";
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
