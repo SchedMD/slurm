@@ -277,7 +277,7 @@ static void _log_job_state_change(const job_record_t *job_ptr,
 #define _log_array_job_chain(js, caller, fmt, ...) {}
 #define _check_all_jobs(compare_job_ptrs) {}
 #define _is_debug() (false)
-#define LOG(fmt, ...) do {} while (false)
+#define LOG(fmt, ...) log_flag(TRACE_JOBS, "%s: " fmt, __func__, ##__VA_ARGS__)
 #define _check_job_id(job_id_ptr) {(void) job_id_ptr;}
 #define _check_job_magic(js) {(void) js;}
 #define _check_array_job_magic(ajs) {(void) ajs;}
