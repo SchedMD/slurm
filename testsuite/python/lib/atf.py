@@ -185,9 +185,16 @@ def run_command(
                     "This test requires the test user to have unprompted sudo rights",
                     allow_module_level=True,
                 )
-            # Use su to honor ulimits, specially core
             cp = subprocess.run(
-                ["sudo", "su", user, "/bin/bash", "-lc", command],
+                [
+                    "sudo",
+                    "--preserve-env=PATH",
+                    "-u",
+                    user,
+                    "/bin/bash",
+                    "-lc",
+                    command,
+                ],
                 capture_output=True,
                 text=True,
                 **additional_run_kwargs,
