@@ -49,6 +49,7 @@
 #include "src/common/net.h"
 #include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"
 #include "src/common/xsignal.h"
@@ -72,18 +73,6 @@ static time_t          shutdown_time = 0;
 
 static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 				      bool reopen);
-
-/* Return time in msec since "start time" */
-static int _tot_wait (struct timeval *start_time)
-{
-	struct timeval end_time;
-	int msec_delay;
-
-	gettimeofday(&end_time, NULL);
-	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
-	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
-	return msec_delay;
-}
 
 /* Return true if communication failure should be logged. Only log failures
  * every 10 minutes to avoid filling logs */
@@ -121,7 +110,8 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 		if (persist_conn->timeout) {
 			struct timeval tstart;
 			gettimeofday(&tstart, NULL);
-			time_left = persist_conn->timeout - _tot_wait(&tstart);
+			time_left = persist_conn->timeout -
+				    timeval_tot_wait(&tstart);
 		} else
 			time_left = -1;
 		rc = poll(&ufds, 1, time_left);
@@ -854,7 +844,7 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 	ufds.events = POLLOUT;
 	gettimeofday(&tstart, NULL);
 	while (!*persist_conn->shutdown) {
-		time_left = write_timeout - _tot_wait(&tstart);
+		time_left = write_timeout - timeval_tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
 		if (rc == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))

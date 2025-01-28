@@ -70,6 +70,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/slurm_time.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -214,7 +215,6 @@ static int _knl_numa_inx(char *token);
 static uint16_t _knl_numa_token(char *token);
 static void _log_script_argv(char **script_argv, char *resp_msg);
 static char *_run_script(char *cmd_path, char **script_argv, int *status);
-static int  _tot_wait (struct timeval *start_time);
 static void _update_cpu_bind(void);
 
 static s_p_hashtbl_t *_config_make_tbl(char *filename)
@@ -485,20 +485,6 @@ static knl_system_type_t _knl_system_type_token(char *token)
 }
 
 /*
- * Return time in msec since "start time"
- */
-static int _tot_wait (struct timeval *start_time)
-{
-	struct timeval end_time;
-	int msec_delay;
-
-	gettimeofday(&end_time, NULL);
-	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
-	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
-	return msec_delay;
-}
-
-/*
  * Update cpu_bind array from current numa_cpu_bind configuration parameter
  */
 static void _update_cpu_bind(void)
@@ -637,7 +623,7 @@ static char *_run_script(char *cmd_path, char **script_argv, int *status)
 			fds.fd = pfd[0];
 			fds.events = POLLIN | POLLHUP | POLLRDHUP;
 			fds.revents = 0;
-			new_wait = syscfg_timeout - _tot_wait(&tstart);
+			new_wait = syscfg_timeout - timeval_tot_wait(&tstart);
 			if (new_wait <= 0) {
 				error("%s: %s poll timeout @ %d msec",
 				      __func__, script_argv[1], syscfg_timeout);

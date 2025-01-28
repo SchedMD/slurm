@@ -24,6 +24,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <sys/time.h>
 #include <time.h>
 
 #ifdef __linux__
@@ -120,5 +121,11 @@ typedef struct {
  */
 extern timespec_diff_ns_t timespec_diff_ns(const timespec_t x,
 					   const timespec_t y);
+
+/*
+ * Return time in milliseconds since "start time"
+ * Takes a struct timeval.
+ */
+extern int timeval_tot_wait(struct timeval *start_time);
 
 #endif /* _HAVE_SLURM_TIME_H */

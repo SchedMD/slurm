@@ -86,20 +86,6 @@ static int _slurm_connect(int __fd, struct sockaddr const * __addr,
  ****************************************************************/
 
 /*
- * Return time in msec since "start time"
- */
-static int _tot_wait (struct timeval *start_time)
-{
-	struct timeval end_time;
-	int msec_delay;
-
-	gettimeofday(&end_time, NULL);
-	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
-	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
-	return msec_delay;
-}
-
-/*
  * Pick a random port number to use. Use this if the system
  * selected port can't connect. This may indicate that the
  * port/address of both the client and server match a defunct
@@ -183,7 +169,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 	while (true) {
 		ssize_t bytes_sent = 0;
 		int rc;
-		int timeleft = timeout - _tot_wait(&tstart);
+		int timeleft = timeout - timeval_tot_wait(&tstart);
 
 		if (timeleft <= 0) {
 			debug("%s at %d of %zu, timeout",
@@ -401,7 +387,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 	gettimeofday(&tstart, NULL);
 
 	while (recvlen < size) {
-		timeleft = timeout - _tot_wait(&tstart);
+		timeleft = timeout - timeval_tot_wait(&tstart);
 		if (timeleft <= 0) {
 			debug("%s at %d of %zu, timeout", __func__, recvlen,
 			      size);

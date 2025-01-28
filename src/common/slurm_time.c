@@ -266,3 +266,14 @@ extern timespec_diff_ns_t timespec_diff_ns(const timespec_t x,
 			},
 		};
 }
+
+extern int timeval_tot_wait(struct timeval *start_time)
+{
+	struct timeval end_time;
+	int msec_delay;
+
+	gettimeofday(&end_time, NULL);
+	msec_delay = (end_time.tv_sec - start_time->tv_sec) * 1000;
+	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
+	return msec_delay;
+}

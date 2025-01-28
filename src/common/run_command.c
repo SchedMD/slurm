@@ -56,6 +56,7 @@
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/run_command.h"
+#include "src/common/slurm_time.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -206,18 +207,6 @@ extern int run_command_count(void)
 	slurm_mutex_unlock(&proc_count_mutex);
 
 	return cnt;
-}
-
-
-static int _tot_wait (struct timeval *start_time)
-{
-	struct timeval end_time;
-	int msec_delay;
-
-	gettimeofday(&end_time, NULL);
-	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
-	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
-	return msec_delay;
 }
 
 static void _kill_pg(pid_t pid)
@@ -518,7 +507,7 @@ extern char *run_command_poll_child(int cpid,
 		if (max_wait <= 0) {
 			new_wait = MAX_POLL_WAIT;
 		} else {
-			new_wait = max_wait - _tot_wait(&tstart);
+			new_wait = max_wait - timeval_tot_wait(&tstart);
 			if (new_wait <= 0) {
 				error("%s: %s poll timeout @ %d msec",
 				      __func__, script_type,
@@ -584,7 +573,7 @@ extern char *run_command_poll_child(int cpid,
 		run_command_waitpid_timeout(script_type,
 					    cpid, status,
 					    max_wait,
-					    _tot_wait(&tstart),
+					    timeval_tot_wait(&tstart),
 					    tid, timed_out);
 	}
 
