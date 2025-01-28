@@ -213,6 +213,48 @@ extern int op_handler_reservations(openapi_ctxt_t *ctxt)
 	return rc;
 }
 
+/* return true on error else false */
+static int _check_resv_name(void *x, void *args)
+{
+	resv_desc_msg_t *resv_msg = x;
+	openapi_ctxt_t *ctxt = args;
+
+	if (resv_msg->name == NULL) {
+		resp_error(ctxt, ESLURM_RESERVATION_INVALID, __func__,
+			   "Reservation must be given.  No reservation update.");
+		return true;
+	}
+	return false;
+}
+
+/* Update reservation from desc - return true on error, list_find_first func */
+static int _update_each_resv(void *x, void *args)
+{
+	resv_desc_msg_t *resv_msg = x;
+	openapi_ctxt_t *ctxt = args;
+	int rc;
+
+	if ((rc = slurm_update_reservation(resv_msg))) {
+		if (errno)
+			rc = errno;
+		resp_error(ctxt, rc, "slurm_update_reservation",
+			   "Error updating reservation %s", resv_msg->name);
+		return true;
+	}
+
+	return false;
+}
+
+extern int op_handler_reservations_update(openapi_ctxt_t *ctxt)
+{
+	if (ctxt->method != HTTP_REQUEST_POST)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+
+	return _mod_reservations(ctxt, _check_resv_name, _update_each_resv);
+}
+
 static int _parse_resv_name_param(openapi_ctxt_t *ctxt,
 				  openapi_reservation_param_t *params)
 {
