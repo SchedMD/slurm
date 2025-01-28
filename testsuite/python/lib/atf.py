@@ -30,6 +30,7 @@ import json
 # This module will be (un)imported in require_openapi_generator()
 openapi_client = None
 import importlib
+import threading
 
 ##############################################################################
 # ATF module functions
@@ -125,6 +126,7 @@ def run_command(
     input=None,
     xfail=False,
     env_vars=None,
+    background=False,
 ):
     """Executes a command and returns a dictionary result.
 
@@ -144,6 +146,9 @@ def run_command(
        xfail (boolean): If True, the command is expected to fail.
        env_vars (string): A string to set environmental variables that is
             prepended to the command when run.
+       background (boolean): If True, runs command in background and returns
+            immediately. Process can be accessed via results["process"]. Cannot
+            be used with fatal, xfail, timeout, capture_output, or check.
 
     Returns:
         A dictionary containing the following keys:
@@ -199,23 +204,85 @@ def run_command(
                     "This test requires the test user to have unprompted sudo rights",
                     allow_module_level=True,
                 )
+            # Use su to honor ulimits, specially core
+            cmd = [
+                "sudo",
+                "--preserve-env=PATH",
+                "-u",
+                user,
+                "/bin/bash",
+                "-lc",
+                command,
+            ]
+        else:
+            cmd = command
+
+        # Run in background mode and return before completion if requested
+        if background:
+            # Create kwargs for Popen, excluding unsupported run() params
+            background_run_kwargs = additional_run_kwargs.copy()
+            # Check that parameters that don't make sense haven't been specified
+            if background_run_kwargs["timeout"] != default_command_timeout:
+                pytest.fail("Unsupported: timeout cannot be used with background=True")
+            del background_run_kwargs["timeout"]
+            if fatal:
+                pytest.fail("Unsupported: fatal cannot be used with background=True")
+            if xfail:
+                pytest.fail("Unsupported: xfail cannot be used with background=True")
+            if "input" in background_run_kwargs:
+                stdin = subprocess.PIPE
+                input_str = background_run_kwargs.pop("input")
+            else:
+                stdin = None
+                input_str = None
+
+            # Run command differently depending on if using sudo for security
+            if isinstance(cmd, list):
+                process = subprocess.Popen(
+                    cmd,
+                    stdin=stdin,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True,
+                    **background_run_kwargs,
+                )
+            else:
+                process = subprocess.Popen(
+                    cmd,
+                    shell=True,
+                    executable="/bin/bash",
+                    stdin=stdin,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True,
+                    **background_run_kwargs,
+                )
+
+            # Handle input if provided
+            if input_str is not None:
+                process.stdin.write(input_str)
+                process.stdin.close()
+
+            # Return early with process object
+            results = {
+                "command": command,
+                "start_time": float(int(start_time * 1000)) / 1000,
+                "duration": float(int((time.time() - start_time) * 1000)) / 1000,
+                "exit_code": None,
+                "stdout": "",
+                "stderr": "",
+                "process": process,
+            }
+            return results
+
+        # Synchronous code path
+        if isinstance(cmd, list):
             cp = subprocess.run(
-                [
-                    "sudo",
-                    "--preserve-env=PATH",
-                    "-u",
-                    user,
-                    "/bin/bash",
-                    "-lc",
-                    command,
-                ],
-                capture_output=True,
-                text=True,
-                **additional_run_kwargs,
+                cmd, capture_output=True, text=True, **additional_run_kwargs
             )
         else:
             cp = subprocess.run(
-                command,
+                cmd,
                 shell=True,
                 executable="/bin/bash",
                 capture_output=True,
@@ -2910,12 +2977,20 @@ def submit_job_sbatch(sbatch_args='--wrap "sleep 60"', **run_command_kwargs):
     Returns:
         The job id.
 
+    Note:
+        The background parameter is ignored and always treated as False, since
+        sbatch is already non-blocking and the function needs to capture the
+        job ID from output.
+
     Example:
         >>> submit_job_sbatch('--wrap "echo Hello"')
         1234
         >>> submit_job_sbatch('-J myjob --wrap "echo World"', fatal=True)
         5678
     """
+
+    # Since sbatch is non-blocking anyway, make sure we're not in the background
+    run_command_kwargs["background"] = False
 
     output = run_command_output(f"sbatch {sbatch_args}", **run_command_kwargs)
 
@@ -3038,21 +3113,101 @@ def submit_job_srun(srun_args, **run_command_kwargs):
         srun_args (string): The arguments to srun.
 
     Returns:
-        The job id from srun.
+        The job id (int) or 0 if failed.
 
     Example:
         >>> submit_job_srun('-n 4 --output=output.txt ./my_executable')
         12345
         >>> submit_job_srun('-n 2 --output=output.txt ./my_executable', timeout=60)
         67890
+        >>> submit_job_srun('-n 2 --output=output.txt ./my_executable', background=True)
+        34567
     """
+    verbose_arg = "-v"
 
-    results = run_job(" ".join(["-v", srun_args]), **run_command_kwargs)
+    if run_command_kwargs.get("background", False):
+        # Use timeout for finding job id
+        timeout = run_command_kwargs.pop("timeout", 30)
+        # Extract fatal/xfail to handle at job submission level
+        fatal = run_command_kwargs.pop("fatal", False)
+        xfail = run_command_kwargs.pop("xfail", False)
 
-    if match := re.search(r"jobid (\d+)", results["stderr"]):
-        return int(match.group(1))
+        if get_version("bin/srun") < (25, 11):
+            # Older versions may not print the jobid with -v until job is scheduled
+            verbose_arg = "--begin=now+1"
+            logging.warning(
+                "Using {verbose_arg} to be able to extract jobid when using srun background"
+            )
+
+    results = run_command(f"srun {verbose_arg} {srun_args}", **run_command_kwargs)
+
+    if run_command_kwargs.get("background", False):
+        job_id = None
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            line = _readline_with_timeout(results["process"].stderr, timeout=5)
+            if line is None:
+                # Timeout or EOF
+                if results["process"].poll() is not None:
+                    break
+                continue
+
+            if match := re.search(r"job(id)?[ =](\d+)", line, re.IGNORECASE):
+                job_id = int(match.group(2))
+                break
+
+            if results["process"].poll() is not None:
+                break
     else:
-        return 0
+        if match := re.search(r"jobid (\d+)", results["stderr"]):
+            job_id = int(match.group(1))
+        else:
+            job_id = None
+
+    if job_id is not None:
+        properties["submitted-jobs"].append(job_id)
+
+    # Handle fatal/xfail for background jobs
+    if run_command_kwargs.get("background", False):
+        if fatal:
+            if xfail and job_id is not None:
+                pytest.fail(
+                    f'Command "srun -v {srun_args}" was expected to fail but got job id {job_id}'
+                )
+            elif not xfail and job_id is None:
+                pytest.fail(f'Command "srun -v {srun_args}" failed to get job id')
+
+    return job_id if job_id else 0
+
+
+def _readline_with_timeout(stream, timeout=default_command_timeout):
+    """Read a line from a stream with a timeout.
+
+    Args:
+        stream: The stream to read from (e.g., process.stderr)
+        timeout: Maximum seconds to wait for a line
+
+    Returns:
+        The line read from the stream, or None if timeout/EOF
+    """
+    result = [None]
+
+    def read_line():
+        try:
+            result[0] = stream.readline()
+        except Exception:
+            pass
+
+    thread = threading.Thread(target=read_line)
+    thread.daemon = True
+    thread.start()
+    thread.join(timeout)
+
+    if thread.is_alive():
+        # Timeout occurred
+        return None
+    return result[0]
 
 
 # Return job id (command should not be interactive/shell)
@@ -3065,22 +3220,63 @@ def submit_job_salloc(salloc_args, **run_command_kwargs):
         salloc_args (string): The arguments to salloc.
 
     Returns:
-        The job id.
+        The job id (int) or 0 if failed.
 
     Example:
         >>> submit_job_salloc('-N 1 -t 60 --output=output.txt ./my_executable')
         12345
         >>> submit_job_salloc('-N 2 -t 120 --output=output.txt ./my_executable', timeout=60)
         67890
+        >>> submit_job_salloc('-N 2 -t 120 --output=output.txt ./my_executable', background=True)
+        34567
     """
+    # If background=True, use timeout for finding job id
+    if run_command_kwargs.get("background", False):
+        timeout = run_command_kwargs.pop("timeout", 30)
+        # Extract fatal/xfail to handle at job submission level
+        fatal = run_command_kwargs.pop("fatal", False)
+        xfail = run_command_kwargs.pop("xfail", False)
 
     results = run_command(f"salloc {salloc_args}", **run_command_kwargs)
-    if match := re.search(r"Granted job allocation (\d+)", results["stderr"]):
-        job_id = int(match.group(1))
-        properties["submitted-jobs"].append(job_id)
-        return job_id
+
+    if run_command_kwargs.get("background", False):
+        job_id = None
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            line = _readline_with_timeout(results["process"].stderr, timeout=5)
+            if line is None:
+                # Timeout or EOF
+                if results["process"].poll() is not None:
+                    break
+                continue
+
+            if match := re.search(r"job allocation (\d+)", line):
+                job_id = int(match.group(1))
+                break
+
+            if results["process"].poll() is not None:
+                break
     else:
-        return 0
+        if match := re.search(r"Granted job allocation (\d+)", results["stderr"]):
+            job_id = int(match.group(1))
+        else:
+            job_id = None
+
+    if job_id is not None:
+        properties["submitted-jobs"].append(job_id)
+
+    # Handle fatal/xfail for background jobs
+    if run_command_kwargs.get("background", False):
+        if fatal:
+            if xfail and job_id is not None:
+                pytest.fail(
+                    f'Command "salloc {salloc_args}" was expected to fail but got job id {job_id}'
+                )
+            elif not xfail and job_id is None:
+                pytest.fail(f'Command "salloc {salloc_args}" failed to get job id')
+
+    return job_id if job_id else 0
 
 
 # Return job id
