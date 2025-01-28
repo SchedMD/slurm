@@ -132,6 +132,11 @@ extern char *strip_quotes(char *option, int *increased, bool make_lower)
 		quote = 1;
 		i++;
 	}
+
+	/* skip beginning spaces */
+	while (option[i] && isspace(option[i]))
+		i++;
+
 	start = i;
 
 	while(option[i]) {
@@ -148,6 +153,11 @@ extern char *strip_quotes(char *option, int *increased, bool make_lower)
 
 		i++;
 	}
+
+	/* trim end spaces */
+	while ((i - 1) && option[i - 1] && isspace(option[i - 1]))
+		i--;
+
 	end += i;
 
 	meat = xmalloc((i-start)+1);

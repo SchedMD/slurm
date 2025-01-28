@@ -490,6 +490,7 @@ static void _add_to_list(char *name,
 	 * If we get a duplicate remove the first one and tack this on the end.
 	 * This is needed for get associations with QOS.
 	 */
+	xstrtrim(name);
 	if (lower_case_normalization)
 		xstrtolower(name);
 	list_delete_all(char_list, slurm_find_char_exact_in_list, name);
