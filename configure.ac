@@ -66,6 +66,23 @@ AC_DEFINE_UNQUOTED([SLEEP_CMD], ["$SLEEP_CMD"], [Define path to sleep command])
 AC_PATH_PROG([SUCMD], [su], [/bin/su])
 AC_DEFINE_UNQUOTED([SUCMD], ["$SUCMD"], [Define path to su command])
 
+
+# Check if the compiler is Clang
+AC_MSG_CHECKING([whether the compiler is Clang])
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([], [[
+        #ifndef __clang__
+            not clang
+        #endif
+    ]])],
+    [is_clang=yes],
+    [is_clang=no]
+)
+AC_MSG_RESULT([$is_clang])
+
+# Set a conditional flag if the compiler is Clang
+AM_CONDITIONAL([CLANG], [test "x$is_clang" = "xyes"])
+
 dnl Checks for libraries
 dnl Includes workaround to disable -Werror=builtin-declaration-mismatch which
 dnl will cause errors on newer GCC, and can then lead to incorrect results.

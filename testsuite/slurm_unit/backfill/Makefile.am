@@ -1,6 +1,7 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
-AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread -I$(top_srcdir)/src/plugins/sched/backfill
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/plugins/sched/backfill
+LDADD = -ldl -lpthread -L$(top_builddir)/src/api/.libs -lslurmfull
 
 check_PROGRAMS = \
 	$(TESTS)
@@ -8,9 +9,11 @@ check_PROGRAMS = \
 
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@ -Wall
-MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable -Wl,--unresolved-symbols=ignore-all -Wl,--allow-multiple-definition
+MYCFLAGS += -D_ISO99_SOURCE
 
-MYCFLAGS += -Wl,-rpath=$(top_builddir)/src/api/.libs -L$(top_builddir)/src/api/.libs -lslurmfull -export-dynamic
+if CLANG
+MYCFLAGS += -Xclang -pic-level -Xclang 0
+endif
 
 TESTS = backfill-test
 
@@ -25,6 +28,6 @@ backfill_test_SOURCES = backfill_test.c	\
 
 backfill_test_CFLAGS = $(MYCFLAGS)
 backfill_test_LDADD  = $(LDADD) @CHECK_LIBS@
-backfill_test_LDFLAGS = -z lazy
+backfill_test_LDFLAGS = -z lazy  -Wl,--unresolved-symbols=ignore-all -Wl,--allow-multiple-definition  -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
 
 endif

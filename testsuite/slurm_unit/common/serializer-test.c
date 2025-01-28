@@ -722,7 +722,7 @@ extern int main(void)
 	const char *debug_flags_env = getenv("SLURM_DEBUG_FLAGS");
 	const char slurm_unit_conf_content[] =
 		"ClusterName=slurm_unit\n"
-		"PluginDir=" SLURM_PREFIX "/lib/slurm/\n"
+		"PluginDir=../../../src/plugins/serializer/json/.libs/\n"
 		"SlurmctldHost=slurm_unit\n";
 	const size_t csize = sizeof(slurm_unit_conf_content);
 

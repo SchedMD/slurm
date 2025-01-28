@@ -701,8 +701,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
-LDADD = $(LIB_SLURM)
+AM_CPPFLAGS = -I$(top_srcdir)
+LDADD = $(LIB_SLURM) -ldl -lpthread
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
 @HAVE_CHECK_TRUE@pack_job_alloc_info_msg_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@pack_job_alloc_info_msg_test_LDADD = $(LDADD) @CHECK_LIBS@

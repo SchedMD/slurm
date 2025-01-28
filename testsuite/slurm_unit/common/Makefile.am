@@ -7,8 +7,8 @@ SUBDIRS = bitstring \
 	  slurmdb_defs \
 	  slurmdb_pack
 
-AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
-LDADD = $(LIB_SLURM)
+AM_CPPFLAGS = -I$(top_srcdir)
+LDADD = -ldl -lpthread $(LIB_SLURM)
 
 check_PROGRAMS = \
 	$(TESTS)
@@ -18,7 +18,7 @@ TESTS = \
 
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@ -Wall
-MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
+MYCFLAGS += -D_ISO99_SOURCE
 TESTS += xhash-test \
 	 data-test \
 	 serializer-test \
