@@ -1819,28 +1819,29 @@ static void _remove_assoc(slurmdb_assoc_rec_t *rec)
 		debug("Removed association id:%u user:%s", rec->id, rec->user);
 }
 
+static int _foreach_part_remove_qos(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	slurmdb_qos_rec_t *rec = arg;
+
+	if (part_ptr->qos_ptr == rec) {
+		info("Partition %s's QOS %s was just removed, you probably didn't mean for this to happen unless you are also removing the partition.",
+		     part_ptr->name, rec->name);
+		part_ptr->qos_ptr = NULL;
+	}
+
+	return 0;
+}
+
 static void _remove_qos(slurmdb_qos_rec_t *rec)
 {
 	int cnt = 0;
-	list_itr_t *itr;
-	part_record_t *part_ptr;
 	slurmctld_lock_t part_write_lock =
 		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	lock_slurmctld(part_write_lock);
-	if (part_list) {
-		itr = list_iterator_create(part_list);
-		while ((part_ptr = list_next(itr))) {
-			if (part_ptr->qos_ptr != rec)
-				continue;
-			info("Partition %s's QOS %s was just removed, "
-			     "you probably didn't mean for this to happen "
-			     "unless you are also removing the partition.",
-			     part_ptr->name, rec->name);
-			part_ptr->qos_ptr = NULL;
-		}
-		list_iterator_destroy(itr);
-	}
+	if (part_list)
+		(void) list_for_each(part_list, _foreach_part_remove_qos, rec);
 	unlock_slurmctld(part_write_lock);
 
 	bb_g_reconfig();
