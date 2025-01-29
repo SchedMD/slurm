@@ -2009,17 +2009,21 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->tres_str);
 }
 
-extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
+extern void slurm_free_resv_desc_members(resv_desc_msg_t *msg)
+{
+	xfree(msg->features);
+	xassert(!msg->job_ptr); /* This shouldn't be here */
+	xfree(msg->name);
+	xfree(msg->node_list);
+	xfree(msg->partition);
+
+	slurm_free_resv_desc_msg_part(msg, 0xffffffff);
+}
+
+extern void slurm_free_resv_desc_msg(resv_desc_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->features);
-		xassert(!msg->job_ptr); /* This shouldn't be here */
-		xfree(msg->name);
-		xfree(msg->node_list);
-		xfree(msg->partition);
-
-		slurm_free_resv_desc_msg_part(msg, 0xffffffff);
-
+		slurm_free_resv_desc_members(msg);
 		xfree(msg);
 	}
 }
