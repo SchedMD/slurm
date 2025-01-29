@@ -743,6 +743,17 @@ error:
 	return;
 }
 
+static int _jobacct_gather_find_task_by_pid(void *x, void *key)
+{
+	struct jobacctinfo *jobacct = x;
+	pid_t *pid = key;
+
+	if (jobacct->pid == *pid)
+		return 1;
+
+	return 0;
+}
+
 extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid, bool update_data)
 {
 	if ((plugin_inited == PLUGIN_NOOP) || _jobacct_shutdown_test())
@@ -754,7 +765,6 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid, bool update_data)
 	if (pid) {
 		struct jobacctinfo *jobacct = NULL;
 		struct jobacctinfo *ret_jobacct = NULL;
-		list_itr_t *itr = NULL;
 
 		slurm_mutex_lock(&task_list_lock);
 		if (!task_list) {
@@ -762,14 +772,15 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid, bool update_data)
 			goto error;
 		}
 
-		itr = list_iterator_create(task_list);
-		while ((jobacct = list_next(itr))) {
-			if (jobacct->pid == pid)
-				break;
-		}
-		list_iterator_destroy(itr);
+		jobacct = list_find_first(task_list,
+					  _jobacct_gather_find_task_by_pid,
+					  &pid);
+
 		if (jobacct == NULL)
 			goto error;
+
+		log_flag(JAG, "%s: task %u pid %d found",
+			 __func__, jobacct->id.taskid, pid);
 
 		_copy_tres_usage(&ret_jobacct, jobacct);
 
