@@ -112,7 +112,6 @@ extern int serializer_p_fini(void)
 	return SLURM_SUCCESS;
 }
 
-
 static json_object *_try_parse(const char *src, size_t stringlen,
 			       struct json_tokener *tok)
 {
