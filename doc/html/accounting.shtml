@@ -281,25 +281,33 @@ checking for mysql_config... /usr/bin/mysql_config
 MySQL test program built properly.
 </pre>
 
-<p><b>NOTE</b>: Before running the slurmdbd for the first time, review the
-current setting for MySQL's <i>innodb_buffer_pool_size</i>.
-Consider setting this
-value large enough to handle the size of the database. Having this value
-too small can be problematic when converting large tables over to the new
-database schema or when purging old records. We recommend assigning a
-significant portion of the system memory to this, keeping in mind the other
-resource requirements on the machine running MySQL/MariaDB, somewhere between
-5 and 50 percent of the available memory.
-<i>innodb_log_file_size</i> Should also be increased from default to reduce
-unnecessary small writes to disk.  For MySQL 8.0.30+,
-<i>innodb_redo_log_capacity</i> should be used instead.
-When using <b>AccountingStoreFlags=job_env,job_script</b> or older SQL servers,
-it is also important to check the value of <i>max_allowed_packet</i>.  When the
-packet size is too small and a large job script is used, the SQL server may
-reject the sql query as being too large.  This value should be at least 16MB,
-and must be larger than the value of <b>max_script_size</b>.
-Setting <i>innodb_lock_wait_timeout</i> to 900 is recommended to allow some
-potentially extended queries to complete successfully.</p>
+<p><b>NOTE</b>: Before running the slurmdbd for the first time there are several
+MySQL/MariaDB server settings that should be reviewed.</p>
+<ul>
+<li><b>innodb_buffer_pool_size</b>:
+We recommend assigning between 5 and 50 percent of the available memory on the
+SQL server, and at least 4 GiB. Setting this value too small can cause problems
+when upgrading large Slurm databases or when purging old records.
+</li>
+<li><b>innodb_log_file_size</b>:
+This should be set to 25 percent of the <b>innodb_buffer_pool_size</b> to
+reduce unnecessary small writes to disk. Keep in mind that increasing this can
+cause recovery times when the SQL server shuts down unexpectedly.
+</li>
+<li><b>innodb_redo_log_capacity</b>:
+Use this instead of <b>innodb_log_file_size</b> in MySQL 8.0.30+.
+</li>
+<li><b>innodb_lock_wait_timeout</b>:
+Set this to 900 seconds to allow some potentially extended queries to complete
+successfully.
+</li>
+<li><b>max_allowed_packet</b>:
+We recommend at least 16M for this value, and is important to check when using
+older SQL server versions. If you are using
+<b>AccountingStoreFlags=job_env,job_script</b>, this must be greater than
+<b>max_script_size</b>.
+</li>
+</ul>
 
 <p>
 See the following example:
