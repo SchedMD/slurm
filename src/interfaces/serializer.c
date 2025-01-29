@@ -33,6 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
@@ -247,6 +249,11 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)
 	xassert(sizeof(funcs_t) == sizeof(void *) * ARRAY_SIZE(syms));
 	rc = load_plugins(&plugins, SERIALIZER_MAJOR_TYPE, plugin_list, listf,
 			  syms, ARRAY_SIZE(syms));
+
+	if (rc)
+		fatal("%s: Unable to load serializer plugins%s%s: %s",
+		      __func__, (plugin_list ? " " : ""), plugin_list,
+		      slurm_strerror(rc));
 
 	if (!mime_types_list)
 		mime_types_list = list_create(xfree_ptr);
