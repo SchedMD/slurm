@@ -54,8 +54,10 @@ typedef enum {
  */
 #define MIME_TYPE_YAML "application/x-yaml"
 #define MIME_TYPE_YAML_PLUGIN "serializer/yaml"
+#define ENV_CONFIG_YAML "SLURM_YAML"
 #define MIME_TYPE_JSON "application/json"
 #define MIME_TYPE_JSON_PLUGIN "serializer/json"
+#define ENV_CONFIG_JSON "SLURM_JSON"
 #define MIME_TYPE_URL_ENCODED "application/x-www-form-urlencoded"
 #define MIME_TYPE_URL_ENCODED_PLUGIN "serializer/url-encoded"
 

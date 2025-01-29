@@ -333,6 +333,19 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf,
 
 		_register_mime_types(mime_types_list, i, mime_types);
 
+		if (!config) {
+			if (!xstrcmp(plugins->types[i], MIME_TYPE_JSON_PLUGIN))
+				config = getenv(ENV_CONFIG_JSON);
+			else if (!xstrcmp(plugins->types[i],
+					  MIME_TYPE_YAML_PLUGIN))
+				config = getenv(ENV_CONFIG_YAML);
+
+			if (config && config[0] &&
+			    (rc = _parse_config(config, &flags)))
+				fatal("Unable to parse serializer \"%s\" flags: %s",
+				      config, slurm_strerror(rc));
+		}
+
 		rc = (*func_ptr->init)(flags);
 	}
 
