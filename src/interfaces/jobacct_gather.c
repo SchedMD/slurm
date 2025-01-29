@@ -698,6 +698,51 @@ error:
 	return SLURM_ERROR;
 }
 
+static int _foreach_aggregate_usage(void *x, void *arg)
+{
+	struct jobacctinfo *jobacct = x;
+	struct jobacctinfo *ret_jobacct = arg;
+
+	log_flag(JAG, "%s: found task %u pid %d",
+		 __func__, jobacct->id.taskid, jobacct->pid);
+
+	jobacctinfo_aggregate(ret_jobacct, jobacct);
+
+	return 0;
+}
+
+/*
+ * Aggregate usage of all tasks of this step into ret_jobacct. Each task
+ * will have some pids added (e.g. by REQUEST_ADD_EXTERN_PID) which will
+ * be the ones aggregated and accounted for.
+ */
+extern void jobacct_gather_stat_all_task(jobacctinfo_t *ret_jobacct)
+{
+	if ((plugin_inited == PLUGIN_NOOP) || _jobacct_shutdown_test())
+		return;
+
+	/*
+	 * As this is used mainly in the extern step this is called only once,
+	 * as there is only one task, so refresh data here unconditionally.
+	 */
+	_poll_data(0);
+
+	slurm_mutex_lock(&task_list_lock);
+	if (!task_list) {
+		error("%s: no task list created!", __func__);
+		goto error;
+	}
+
+	log_flag(JAG, "%s: aggregating usage of all tasks of this step",
+		 __func__);
+
+	list_for_each(task_list, _foreach_aggregate_usage, ret_jobacct);
+
+error:
+	slurm_mutex_unlock(&task_list_lock);
+	return;
+}
+
 extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid, bool update_data)
 {
 	if ((plugin_inited == PLUGIN_NOOP) || _jobacct_shutdown_test())
