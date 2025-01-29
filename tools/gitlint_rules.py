@@ -1,14 +1,10 @@
-from itertools import groupby
 import re
 from dataclasses import dataclass
 from enum import Enum
+from itertools import groupby, takewhile, chain
 from typing import Any
 
 from gitlint.rules import CommitRule, RuleViolation
-
-multiline_re = re.compile(r"^\s")
-allspace_re = re.compile(r"^\s+$")
-trailer_re = re.compile(r"^(\w+):")
 
 
 class ExtendedEnum(Enum):
@@ -48,10 +44,13 @@ class TrailerType(ExtendedEnum):
 
 @dataclass
 class Trailer:
-    tag: TrailerType
+    tag: TrailerType | str
     content: str
-    trailer_re = re.compile(r"(.+?):(.+)")
+    trailer_re = re.compile(r"([\w\-]+?): (\w.+)")
     trailer_line_re = re.compile(r"\s+.*")
+
+    def __repr__(self):
+        return self.content
 
     @classmethod
     def from_lines(cls, lines: list[str]) -> tuple[Any, list[str]]:
@@ -63,9 +62,10 @@ class Trailer:
             return None, lines
         tag = TrailerType.from_str(m[1])
         if tag is None:
-            return None, lines
+            tag = m[1]
         group = [top]
-        for i, peek in enumerate(lines[1:], start=1):
+        i = 1
+        for i, peek in enumerate(lines[1:], start=i):
             # if the next line is the start of a trailer, this group is done
             if Trailer.is_trailer(peek):
                 break
@@ -102,6 +102,9 @@ class Trailer:
     def check_valid_trailer(cls, maybe_trailer):
         pass
 
+    def is_known(self):
+        return isinstance(self.tag, TrailerType)
+
 
 def split_trailers_and_body(body: list[str]):
     # print(body)
@@ -127,6 +130,7 @@ class TrailerValidation(CommitRule):
     id = "UC100"
 
     def validate(self, commit):
+        violations = []
         sections = [
             list(paragraph)
             for k, paragraph in groupby(
@@ -134,25 +138,76 @@ class TrailerValidation(CommitRule):
             )
             if not k
         ]
-        # print(*sections, sep="\n")
-        trailer_found = False
-        for i, paragraph in enumerate(sections):
-            if len(paragraph) == 0:
-                print(f"zero length paragraph {i}? '{paragraph}'")
-                continue
-            if not trailer_found:
-                trailer_found = isinstance(paragraph[0], Trailer)
-            if trailer_found:
-                non_trailer = next(
-                    (seg for seg in paragraph if not isinstance(seg, Trailer)), None
+        if len(sections) == 0:
+            # empty body
+            return violations
+        # check trailer section
+        trailer_section = sections[-1]
+
+        if len(trailer_section) == 0:
+            # TODO error here? This means the body is empty
+            # or what if there are multiple newlines at the end?
+            print("empty body?")
+            return violations
+
+        nontrailer = [line for line in trailer_section if not isinstance(line, Trailer)]
+        # check for mis-formatted trailers in last paragraph
+        violations.extend(
+            RuleViolation(self.id, f"Misformatted trailer: '{line}'")
+            for line in nontrailer
+            if any(line.startswith(tag) for tag in TrailerType.case_values().keys())
+        )
+
+        # check for no trailers or merged body and trailers
+        if not isinstance(trailer_section[0], Trailer):
+            if isinstance(trailer_section[-1], Trailer):
+                violations.append(
+                    RuleViolation(
+                        self.id,
+                        "Newline required between trailer section and main commit message body.",
+                    )
                 )
-                if non_trailer is not None:
-                    msg = f"'{non_trailer}' is not a valid trailer"
-                    return [RuleViolation(self.id, msg)]
-            else:
-                trailer = next(
-                    (seg for seg in paragraph if isinstance(seg, Trailer)), None
+                return violations
+            # No trailers at all!
+            return violations
+
+        # check for non-trailer lines in the trailer section
+        violations.extend(
+            RuleViolation(
+                self.id,
+                f"Trailer section should include only trailers: '{line.strip()}' is not a trailer. Multi-line trailer might need indents?",
+            )
+            for line in nontrailer
+        )
+
+        # check for unknown trailers in trailer section
+        trailers = [tr for tr in trailer_section if isinstance(tr, Trailer)]
+        unknown_trailers = [tr for tr in trailers if not tr.is_known()]
+        violations.extend(
+            RuleViolation(
+                self.id,
+                f"Trailer section has unknown trailer: '{tr}'",
+            )
+            for tr in unknown_trailers
+        )
+
+        # check for trailers at end of last body section
+        if len(sections) > 1:
+            last_body_section = sections[-2]
+            trailers_in_body = list(
+                takewhile(
+                    lambda line: isinstance(line, Trailer), reversed(last_body_section)
                 )
-                if trailer is not None:
-                    msg = "Trailers must be separated from the body by an empty line"
-                    return [RuleViolation(self.id, msg)]
+            )
+            violations.extend(
+                RuleViolation(self.id, f"Trailer should be in trailer section: '{tr}'")
+                for tr in trailers_in_body
+            )
+
+        # check for valid trailers outside the trailer section
+        violations.extend(
+            RuleViolation(self.id, f"Valid trailer outside trailer section: '{line}'")
+            for line in chain.from_iterable(sections[:-1])
+            if isinstance(line, Trailer) and line.is_known()
+        )
+        return violations
