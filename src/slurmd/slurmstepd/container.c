@@ -1108,7 +1108,7 @@ extern void container_run(stepd_step_rec_t *step,
 
 		if ((rc = serialize_g_data_to_string(&out, NULL, c->config,
 						     MIME_TYPE_JSON,
-						     SER_FLAGS_PRETTY))) {
+						     SER_FLAGS_NONE))) {
 			fatal("%s: serialization of config failed: %s",
 			      __func__, slurm_strerror(rc));
 		}
