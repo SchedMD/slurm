@@ -96,6 +96,52 @@ static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool should_not_change = false;
 #endif /* !NDEBUG */
 
+static const struct {
+	char *string;
+	serializer_flags_t flag;
+} flags[] = {
+	{ "compact", SER_FLAGS_COMPACT },
+	{ "pretty", SER_FLAGS_PRETTY },
+	{ "complex", SER_FLAGS_COMPLEX },
+};
+
+static serializer_flags_t _parse_flag(const char *flag)
+{
+	for (int i = 0; i < ARRAY_SIZE(flags); i++)
+		if (!xstrcasecmp(flag, flags[i].string))
+			return flags[i].flag;
+
+	return SER_FLAGS_NONE;
+}
+
+static int _parse_config(const char *config, serializer_flags_t *flags)
+{
+	int rc = SLURM_SUCCESS;
+	char *token = NULL, *save_ptr = NULL;
+	char *toklist = xstrdup(config);
+
+	token = strtok_r(toklist, ",", &save_ptr);
+	while (token) {
+		serializer_flags_t flag = SER_FLAGS_NONE;
+
+		if (!token[0])
+			continue;
+
+		if ((flag = _parse_flag(token)) == SER_FLAGS_NONE) {
+			debug("%s: Unknown flag \"%s\" in \"%s\"",
+			      __func__, token, config);
+			rc = EINVAL;
+		}
+
+		*flags |= flag;
+
+		token = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(toklist);
+
+	return rc;
+}
+
 static int _find_serializer_full_type(void *x, void *key)
 {
 	plugin_mime_type_t *pmt = x;
@@ -242,6 +288,11 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf,
 			     const char *config)
 {
 	int rc = SLURM_SUCCESS;
+	serializer_flags_t flags = SER_FLAGS_NONE;
+
+	if (config && config[0] && (rc = _parse_config(config, &flags)))
+		fatal("Unable to parse serializer \"%s\" flags: %s",
+		      config, slurm_strerror(rc));
 
 	slurm_mutex_lock(&init_mutex);
 
@@ -282,7 +333,7 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf,
 
 		_register_mime_types(mime_types_list, i, mime_types);
 
-		rc = (*func_ptr->init)(SER_FLAGS_NONE);
+		rc = (*func_ptr->init)(flags);
 	}
 
 	slurm_mutex_unlock(&init_mutex);
