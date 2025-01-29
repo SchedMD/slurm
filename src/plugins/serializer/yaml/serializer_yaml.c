@@ -80,6 +80,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 #define YAML_MAX_DEPTH 64
 #define LOG_LENGTH 16
+#define SERIALIZER_YAML_DEFAULT_FLAGS SER_FLAGS_NONE
 
 const char *mime_types[] = {
 	"application/yaml", /* RFC9512 */
@@ -183,6 +184,8 @@ static const struct {
 };
 #undef T
 
+static serializer_flags_t global_flags = SERIALIZER_YAML_DEFAULT_FLAGS;
+
 static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter);
 static parse_state_t _yaml_to_data(int depth, yaml_parser_t *parser,
 				   data_t *dst, int *rc);
@@ -190,8 +193,23 @@ static parse_state_t _on_parse_event(int depth, yaml_parser_t *parser,
 				     yaml_event_t *event, data_t *dst, int *rc,
 				     parse_state_t state);
 
+/* Merge global_flags and flags into the coherent set of flags */
+static serializer_flags_t _merge_flags(serializer_flags_t flags)
+{
+	serializer_flags_t ret = global_flags;
+
+	/* Avoid conflicting flags from global */
+	if (flags & (SER_FLAGS_COMPACT|SER_FLAGS_PRETTY))
+		ret &= ~(SER_FLAGS_COMPACT|SER_FLAGS_PRETTY);
+
+	return (ret | flags);
+}
+
 extern int serialize_p_init(serializer_flags_t flags)
 {
+	if (flags != SER_FLAGS_NONE)
+		global_flags = flags;
+
 	log_flag(DATA, "loaded");
 
 	return SLURM_SUCCESS;
@@ -707,7 +725,7 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 	yaml_emitter_t emitter;
 	buf_t *buf = init_buf(0);
 
-	if (_dump_yaml(src, &emitter, buf, flags)) {
+	if (_dump_yaml(src, &emitter, buf, _merge_flags(flags))) {
 		error("%s: dump yaml failed", __func__);
 
 		FREE_NULL_BUFFER(buf);
