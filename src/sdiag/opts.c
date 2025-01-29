@@ -140,14 +140,14 @@ extern void parse_command_line(int argc, char **argv)
 				params.mimetype = MIME_TYPE_JSON;
 				params.data_parser = optarg;
 				if (serializer_g_init(MIME_TYPE_JSON_PLUGIN,
-						      NULL))
+						      NULL, NULL))
 					fatal("JSON plugin load failure");
 				break;
 			case OPT_LONG_YAML:
 				params.mimetype = MIME_TYPE_YAML;
 				params.data_parser = optarg;
 				if (serializer_g_init(MIME_TYPE_YAML_PLUGIN,
-						      NULL))
+						      NULL, NULL))
 					fatal("YAML plugin load failure");
 				break;
 			case OPT_LONG_AUTOCOMP:

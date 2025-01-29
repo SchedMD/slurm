@@ -234,7 +234,8 @@ extern const char **get_mime_type_array(void)
 	return mime_array;
 }
 
-extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)
+extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf,
+			     const char *config)
 {
 	int rc = SLURM_SUCCESS;
 

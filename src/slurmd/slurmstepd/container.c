@@ -750,7 +750,7 @@ extern int setup_container(stepd_step_rec_t *step)
 		return ESLURM_CONTAINER_NOT_CONFIGURED;
 	}
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
+	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL, NULL))) {
 		error("Unable to load JSON plugin: %s",
 		      slurm_strerror(rc));
 		goto error;

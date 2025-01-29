@@ -106,9 +106,11 @@ extern const char **get_mime_type_array(void);
  * 	pass NULL to load all found or "" to load none of them
  *
  * IN listf - function to call if plugins="list" (may be NULL)
+ * IN config - string with configuration to parse or NULL
  * RET SLURM_SUCCESS or error
  */
-extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf);
+extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf,
+			     const char *config);
 
 /*
  * Unload all serializer plugins

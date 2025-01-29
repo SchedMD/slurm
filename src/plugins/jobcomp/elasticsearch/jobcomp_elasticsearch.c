@@ -335,7 +335,7 @@ extern int init(void)
 {
 	int rc;
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
+	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL, NULL))) {
 		error("%s: unable to load JSON serializer: %s",
 		      __func__, slurm_strerror(rc));
 		return rc;
