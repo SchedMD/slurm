@@ -795,7 +795,6 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid, bool update_data)
 extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 {
 	struct jobacctinfo *jobacct = NULL;
-	list_itr_t *itr = NULL;
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
@@ -813,20 +812,18 @@ extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 		goto error;
 	}
 
-	itr = list_iterator_create(task_list);
-	while((jobacct = list_next(itr))) {
-		if (!pid || (jobacct->pid == pid)) {
-			list_remove(itr);
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
+	if (!pid)
+		jobacct = list_pop(task_list);
+	else
+		jobacct = list_remove_first(task_list,
+					    _jobacct_gather_find_task_by_pid,
+					    &pid);
+
 	if (jobacct) {
 		debug2("removing task %u pid %d from jobacct",
 		       jobacct->id.taskid, jobacct->pid);
-	} else {
-		if (pid)
-			debug2("pid(%d) not being watched in jobacct!", pid);
+	} else if (pid) {
+		debug2("pid(%d) not being watched in jobacct!", pid);
 	}
 error:
 	slurm_mutex_unlock(&task_list_lock);
