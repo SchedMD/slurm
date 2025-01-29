@@ -2301,29 +2301,12 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
 	 * differently
 	 */
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
-		pid_t *pids = NULL;
-		int npids = 0;
-
 		/*
 		 * We only have one task in the extern step on each node,
 		 * despite many pids may have been adopted.
 		 */
+		jobacct_gather_stat_all_task(jobacct);
 		num_tasks = 1;
-		proctrack_g_get_pids(step->cont_id, &pids, &npids);
-
-		for (int i = 0; i < npids; i++) {
-			temp_jobacct = jobacct_gather_stat_task(pids[i],
-								update_data);
-			update_data = false;
-			if (temp_jobacct) {
-				jobacctinfo_aggregate(jobacct, temp_jobacct);
-				jobacctinfo_destroy(temp_jobacct);
-			}
-			log_flag(JAG, "%s: step_extern cont_id=%"PRIu64" includes pid=%"PRIu64,
-				 __func__, step->cont_id, (uint64_t) pids[i]);
-		}
-
-		xfree(pids);
 	} else {
 		for (int i = 0; i < step->node_tasks; i++) {
 			temp_jobacct =
