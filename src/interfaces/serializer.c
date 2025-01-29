@@ -57,6 +57,8 @@ strong_alias(serializer_g_fini, slurm_serializer_g_fini);
 #define MIME_ARRAY_MAGIC 0xabb00031
 
 typedef struct {
+	int (*init)(serializer_flags_t flags);
+	void (*fini)(void);
 	int (*data_to_string)(char **dest, size_t *length, const data_t *src,
 			      serializer_flags_t flags);
 	int (*string_to_data)(data_t **dest, const char *src, size_t length);
@@ -69,6 +71,8 @@ typedef struct {
 
 /* Must be synchronized with funcs_t above */
 static const char *syms[] = {
+	"serialize_p_init",
+	"serialize_p_fini",
 	"serialize_p_data_to_string",
 	"serialize_p_string_to_data",
 };
@@ -261,8 +265,9 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf,
 
 	xrecalloc(mime_array, (plugins->count + 1), sizeof(*mime_array));
 
-	for (size_t i = 0; plugins && (i < plugins->count); i++) {
+	for (size_t i = 0; plugins && (i < plugins->count) && !rc; i++) {
 		const char **mime_types;
+		const funcs_t *func_ptr = plugins->functions[i];
 
 		xassert(plugins->handles[i] != PLUGIN_INVALID_HANDLE);
 
@@ -276,6 +281,8 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf,
 		mime_array[i] = mime_types[0];
 
 		_register_mime_types(mime_types_list, i, mime_types);
+
+		rc = (*func_ptr->init)(SER_FLAGS_NONE);
 	}
 
 	slurm_mutex_unlock(&init_mutex);
@@ -295,6 +302,13 @@ extern void serializer_g_fini(void)
 #ifdef MEMORY_LEAK_DEBUG
 	debug3("%s: cleaning up", __func__);
 	slurm_mutex_lock(&init_mutex);
+
+	for (size_t i = 0; plugins && (i < plugins->count); i++) {
+		const funcs_t *func_ptr = plugins->functions[i];
+		xassert(plugins->handles[i] != PLUGIN_INVALID_HANDLE);
+		(*func_ptr->fini)();
+	}
+
 	xfree(mime_array);
 	FREE_NULL_LIST(mime_types_list);
 	FREE_NULL_PLUGINS(plugins);

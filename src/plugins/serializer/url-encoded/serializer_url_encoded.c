@@ -40,6 +40,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/data.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -203,6 +204,18 @@ static unsigned char _decode_seq(const char *ptr)
 		debug("%s: invalid URL escape sequence: %s", __func__, ptr);
 		return '\0';
 	}
+}
+
+extern int serialize_p_init(serializer_flags_t flags)
+{
+	log_flag(DATA, "loaded");
+
+	return SLURM_SUCCESS;
+}
+
+extern void serialize_p_fini(void)
+{
+	log_flag(DATA, "unloaded");
 }
 
 /*

@@ -98,18 +98,16 @@ typedef struct {
 
 static json_object *_data_to_json(const data_t *d, serializer_flags_t flags);
 
-extern int serializer_p_init(void)
+extern int serialize_p_init(serializer_flags_t flags)
 {
 	log_flag(DATA, "loaded");
 
 	return SLURM_SUCCESS;
 }
 
-extern int serializer_p_fini(void)
+extern void serialize_p_fini(void)
 {
 	log_flag(DATA, "unloaded");
-
-	return SLURM_SUCCESS;
 }
 
 static json_object *_try_parse(const char *src, size_t stringlen,

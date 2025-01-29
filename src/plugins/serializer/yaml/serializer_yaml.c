@@ -190,18 +190,16 @@ static parse_state_t _on_parse_event(int depth, yaml_parser_t *parser,
 				     yaml_event_t *event, data_t *dst, int *rc,
 				     parse_state_t state);
 
-extern int serializer_p_init(void)
+extern int serialize_p_init(serializer_flags_t flags)
 {
 	log_flag(DATA, "loaded");
 
 	return SLURM_SUCCESS;
 }
 
-extern int serializer_p_fini(void)
+extern void serialize_p_fini(void)
 {
 	log_flag(DATA, "unloaded");
-
-	return SLURM_SUCCESS;
 }
 
 static const char *_yaml_event_type_string(yaml_event_type_t type)
