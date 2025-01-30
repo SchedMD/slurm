@@ -4146,6 +4146,25 @@ Default: 2,000,000 (2 sec), Min: 1, Max: 10,000,000 (10 sec).
 .IP
 
 .TP
+\fBbf_yield_rpc_cnt\fR
+If the number of active threads in the slurmctld daemon is lower than this
+value, continue scheduling of jobs. The scheduler will check this condition at
+certain points in code and release previously yielded locks if necessary. This
+is used to instruct Slurm when to stop processing requests and start scheduling
+new jobs, which is the opposite of \fBmax_rpc_cnt\fR. In conjunction with
+\fBmax_rpc_cnt\fR, it can improve Slurm's responsiveness to spikes of requests.
+Default: MAX((max_rpc_cnt / 10), 20) (option disabled), Min: 0, Max: 200.
+.IP
+.RS
+\fBNOTE\fR: If a value is set, then a value lower than \fBmax_rpc_cnt\fR is
+recommended. It may require some tuning for each system, but needs to be high
+enough that scheduling isn't always disabled, and low enough that requests can
+get through in a reasonable period of time. Avoid both values being close enough
+to cause continuous switching between request processing and scheduling.
+.RE
+.IP
+
+.TP
 \fBbf_yield_sleep=#\fR
 The backfill scheduler will periodically relinquish locks in order for other
 pending operations to take place.
