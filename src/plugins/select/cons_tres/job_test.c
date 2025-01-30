@@ -2466,6 +2466,10 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	 */
 	list_sort(cr_job_list, _cr_job_list_sort);
 
+	if (job_ptr->bit_flags & BACKFILL_TEST) {
+		FREE_NULL_LIST(future_license_list);
+	}
+
 	START_TIMER;
 	job_iterator = list_iterator_create(cr_job_list);
 	while (more_jobs) {
@@ -2500,8 +2504,9 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 						tmp_job_ptr->
 						node_bitmap);
 			if (overlap == 0 && /* job has no usable nodes */
-			    !license_list_overlap(tmp_job_ptr->license_list,
-						  job_ptr->license_list)) {
+			    (!future_license_list ||
+			     !license_list_overlap(tmp_job_ptr->license_list,
+						   job_ptr->license_list))) {
 				continue;  /* skip it */
 			}
 			if (!end_time) {
