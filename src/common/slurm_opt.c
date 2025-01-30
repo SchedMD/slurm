@@ -2131,7 +2131,8 @@ static slurm_cli_opt_t slurm_opt_licenses = {
 
 static int arg_set_mail_type(slurm_opt_t *opt, const char *arg)
 {
-	opt->mail_type |= parse_mail_type(arg);
+	opt->mail_type = parse_mail_type(arg);
+
 	if (opt->mail_type == INFINITE16) {
 		error("Invalid --mail-type specification");
 		return SLURM_ERROR;
