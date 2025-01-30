@@ -1459,6 +1459,7 @@ static int _tres_list_to_str(const parser_t *const parser, void *obj,
 	char **tres = obj;
 	int rc = SLURM_SUCCESS;
 	list_t *tres_list = NULL;
+	bool empty_list = false;
 
 	xassert(!*tres);
 
@@ -1466,24 +1467,21 @@ static int _tres_list_to_str(const parser_t *const parser, void *obj,
 		/* should not happen */
 		xassert(args->tres_list);
 		rc = ESLURM_NOT_SUPPORTED;
-		goto cleanup;
-	}
-
-	if (data_get_type(src) != DATA_TYPE_LIST) {
+	} else if (data_get_type(src) != DATA_TYPE_LIST)
 		rc = parse_error(parser, args, parent_path,
 				 ESLURM_DATA_EXPECTED_LIST,
 				 "TRES should be LIST but is type %s",
 				 data_get_type_string(src));
-		goto cleanup;
-	}
-
-	if (!data_get_list_length(src)) {
+	else if (!data_get_list_length(src))
 		/* Ignore empty list used as workaround for OpenAPI clients */
-		goto cleanup;
-	}
+		empty_list = true;
+	else
+		rc = PARSE(TRES_LIST, tres_list, src, parent_path, args);
 
-	if ((rc = PARSE(TRES_LIST, tres_list, src, parent_path, args)))
-		goto cleanup;
+	if (rc || empty_list) {
+		FREE_NULL_LIST(tres_list);
+		return rc;
+	}
 
 	list_for_each(tres_list, _foreach_resolve_tres_id, args);
 
@@ -1495,7 +1493,6 @@ static int _tres_list_to_str(const parser_t *const parser, void *obj,
 		xassert(!rc); /* should not have failed */
 	}
 
-cleanup:
 	FREE_NULL_LIST(tres_list);
 	return rc;
 }
