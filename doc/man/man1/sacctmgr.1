@@ -3688,6 +3688,36 @@ Specify debug flags for sacctmgr to use. See DebugFlags in the
 variable takes precedence over the setting in the slurm.conf.
 .IP
 
+.TP
+\fBSLURM_JSON\fR
+Control JSON serialization:
+.IP
+.RS
+.TP
+\fBcompact\fR
+Output JSON as compact as possible.
+.IP
+
+.TP
+\fBpretty\fR
+Output JSON in pretty format to make it more readable.
+.IP
+.RE
+
+.TP
+\fBSLURM_YAML\fR
+Control YAML serialization:
+.IP
+.RS
+.TP
+\fBcompact\fR Output YAML as compact as possible.
+.IP
+
+.TP
+\fBpretty\fR Output YAML in pretty format to make it more readable.
+.RE
+.IP
+
 .SH "EXAMPLES"
 \fBNOTE\fR: There is an order to set up accounting associations.
 You must define clusters before you add accounts and you must add accounts
