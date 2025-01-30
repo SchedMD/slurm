@@ -83,9 +83,10 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	buf_t *script = NULL;
 	enum job_states job_state;
 	int i, tmp_int, tmp_int2;
-	time_t elapsed_time;
+	time_t elapsed_time = 0;
 	uint32_t time_limit;
 	data_t *record = NULL;
+	bool event_job_finish = (event & JOBCOMP_EVENT_JOB_FINISH);
 
 	usr_str = user_from_job(job_ptr);
 	grp_str = group_from_job(job_ptr);
@@ -95,7 +96,10 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	else
 		time_limit = job_ptr->time_limit;
 
-	if (job_ptr->job_state & JOB_RESIZING) {
+	if (!event_job_finish) {
+		parse_time_make_str_utc(&job_ptr->start_time, start_str,
+					sizeof(start_str));
+	} else if (job_ptr->job_state & JOB_RESIZING) {
 		time_t now = time(NULL);
 		state_string = job_state_string(job_ptr->job_state);
 		if (job_ptr->resize_time) {
@@ -127,29 +131,31 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 					sizeof(end_str));
 	}
 
-	if (job_ptr->end_time && job_ptr->start_time &&
-	    job_ptr->start_time < job_ptr->end_time)
-		elapsed_time = job_ptr->end_time - job_ptr->start_time;
-	else
-		elapsed_time = 0;
+	if (event_job_finish) {
+		if (job_ptr->end_time && job_ptr->start_time &&
+		    job_ptr->start_time < job_ptr->end_time)
+			elapsed_time = job_ptr->end_time - job_ptr->start_time;
+		else
+			elapsed_time = 0;
 
-	tmp_int = tmp_int2 = 0;
-	if (job_ptr->derived_ec == NO_VAL)
-		;
-	else if (WIFSIGNALED(job_ptr->derived_ec))
-		tmp_int2 = WTERMSIG(job_ptr->derived_ec);
-	else if (WIFEXITED(job_ptr->derived_ec))
-		tmp_int = WEXITSTATUS(job_ptr->derived_ec);
-	xstrfmtcat(derived_ec_str, "%d:%d", tmp_int, tmp_int2);
+		tmp_int = tmp_int2 = 0;
+		if (job_ptr->derived_ec == NO_VAL)
+			;
+		else if (WIFSIGNALED(job_ptr->derived_ec))
+			tmp_int2 = WTERMSIG(job_ptr->derived_ec);
+		else if (WIFEXITED(job_ptr->derived_ec))
+			tmp_int = WEXITSTATUS(job_ptr->derived_ec);
+		xstrfmtcat(derived_ec_str, "%d:%d", tmp_int, tmp_int2);
 
-	tmp_int = tmp_int2 = 0;
-	if (job_ptr->exit_code == NO_VAL)
-		;
-	else if (WIFSIGNALED(job_ptr->exit_code))
-		tmp_int2 = WTERMSIG(job_ptr->exit_code);
-	else if (WIFEXITED(job_ptr->exit_code))
-		tmp_int = WEXITSTATUS(job_ptr->exit_code);
-	xstrfmtcat(exit_code_str, "%d:%d", tmp_int, tmp_int2);
+		tmp_int = tmp_int2 = 0;
+		if (job_ptr->exit_code == NO_VAL)
+			;
+		else if (WIFSIGNALED(job_ptr->exit_code))
+			tmp_int2 = WTERMSIG(job_ptr->exit_code);
+		else if (WIFEXITED(job_ptr->exit_code))
+			tmp_int = WEXITSTATUS(job_ptr->exit_code);
+		xstrfmtcat(exit_code_str, "%d:%d", tmp_int, tmp_int2);
+	}
 
 	record = data_set_dict(data_new());
 
@@ -161,24 +167,32 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	data_set_int(data_key_set(record, "group_id"), job_ptr->group_id);
 	if (_valid_date_format(start_str))
 		data_set_string(data_key_set(record, "@start"), start_str);
-	if (_valid_date_format(end_str))
+	if (event_job_finish && _valid_date_format(end_str))
 		data_set_string(data_key_set(record, "@end"), end_str);
-	data_set_int(data_key_set(record, "elapsed"), elapsed_time);
+	if (event_job_finish)
+		data_set_int(data_key_set(record, "elapsed"), elapsed_time);
 	data_set_string(data_key_set(record, "partition"), job_ptr->partition);
 	data_set_string(data_key_set(record, "alloc_node"),
 			job_ptr->alloc_node);
 	data_set_string(data_key_set(record, "nodes"), job_ptr->nodes);
 	data_set_int(data_key_set(record, "total_cpus"), job_ptr->total_cpus);
 	data_set_int(data_key_set(record, "total_nodes"), job_ptr->total_nodes);
-	data_set_string_own(data_key_set(record, "derived_ec"), derived_ec_str);
-	derived_ec_str = NULL;
-	data_set_string_own(data_key_set(record, "exit_code"), exit_code_str);
-	exit_code_str = NULL;
+	if (event_job_finish) {
+		data_set_string_own(data_key_set(record, "derived_ec"),
+				    derived_ec_str);
+		derived_ec_str = NULL;
+		data_set_string_own(data_key_set(record, "exit_code"),
+				    exit_code_str);
+		exit_code_str = NULL;
+	}
 	data_set_string(data_key_set(record, "state"), state_string);
-	data_set_string(data_key_set(record, "failed_node"),
-			job_ptr->failed_node);
-	data_set_float(data_key_set(record, "cpu_hours"),
-		       ((elapsed_time * job_ptr->total_cpus) / 3600.0f));
+	if (event_job_finish) {
+		data_set_string(data_key_set(record, "failed_node"),
+				job_ptr->failed_node);
+		data_set_float(data_key_set(record, "cpu_hours"),
+			       ((elapsed_time * job_ptr->total_cpus) /
+				3600.0f));
+	}
 
 	if (job_ptr->array_task_id != NO_VAL) {
 		data_set_int(data_key_set(record, "array_job_id"),
@@ -188,11 +202,13 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	}
 
 	if (job_ptr->het_job_id != NO_VAL) {
-		/* Continue supporting the old terms. */
-		data_set_int(data_key_set(record, "pack_job_id"),
-			     job_ptr->het_job_id);
-		data_set_int(data_key_set(record, "pack_job_offset"),
-			     job_ptr->het_job_offset);
+		if (event_job_finish) {
+			/* Continue supporting the old terms. */
+			data_set_int(data_key_set(record, "pack_job_id"),
+				     job_ptr->het_job_id);
+			data_set_int(data_key_set(record, "pack_job_offset"),
+				     job_ptr->het_job_offset);
+		}
 		data_set_int(data_key_set(record, "het_job_id"),
 			     job_ptr->het_job_id);
 		data_set_int(data_key_set(record, "het_job_offset"),
