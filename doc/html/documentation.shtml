@@ -66,8 +66,8 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li>Slurm REST API
 <ul>
 <li><a href="rest_quickstart.html">Quick Start Guide</a></li>
-<li><a href="rest.html">API Reference</a></li>
-<li><a href="rest_api.html">API Implementation Details</a></li>
+<li><a href="rest.html">API Details</a></li>
+<li><a href="rest_api.html">API Methods and Models</a></li>
 <li><a href="rest_clients.html">Client Guide</a></li>
 </ul>
 </li>
@@ -135,6 +135,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 22 August 2024</p>
+<p style="text-align:center;">Last modified 16 May 2025</p>
 
 <!--#include virtual="footer.txt"-->

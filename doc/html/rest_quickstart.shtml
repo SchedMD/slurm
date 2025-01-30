@@ -9,8 +9,8 @@ This page provides a brief tutorial for setting up these components.</p>
 <p>
 See also:
 <ul>
-<li><a href="rest.html">REST API Reference</a></li>
-<li><a href="rest_api.html">REST API Implementation Details</a></li>
+<li><a href="rest.html">REST API Details</a></li>
+<li><a href="rest_api.html">REST API Methods and Models</a></li>
 <li><a href="slurmrestd.html">slurmrestd man page</a></li>
 </ul>
 </p>
@@ -223,8 +223,8 @@ Add <code>lifespan=SECONDS</code> to the 'scontrol' command to change this.</li>
 with the appropriate values.</li>
 <li>Examine the output to ensure the response was <b>200 OK</b>,
 and examine <b>/tmp/curl.log</b> for a valid JSON response.</li>
-<li>Try other endpoints described in the <a href="rest_api.html">API Reference
-</a>. Change <b>GET</b> to the correct method for the endpoint.</li>
+<li>Try other endpoints described in the <a href="rest_api.html">API Methods
+and Models</a>. Change <b>GET</b> to the correct method for the endpoint.</li>
 </ul>
 </li>
 <li>Alternate command to use the UNIX socket instead
@@ -256,7 +256,7 @@ Refer to the <a href="jwt.html">JWT page</a> for more details.</p>
 
 <p>Information about ways to further customize and configure slurmrestd,
 including authentication methods, run modes, plugins, high availability, and
-proxies, is found on the <a href="rest.html">REST API Reference</a> page.</p>
+proxies, is found on the <a href="rest.html">REST API Details</a> page.</p>
 
 <h2 id="common_issues">Common Issues
 <a class="slurm_link" href="#common_issues"></a></h2>
@@ -304,9 +304,9 @@ token being sent at all. This may appear in the slurmrestd logs as
 <h3 id="invalid_url">Unable to find requested URL (HTTP 404)
 <a class="slurm_link" href="#invalid_url"></a></h3>
 
-<p>Check the <a href="rest_api.html">API Reference</a> page to ensure you're
-using a valid URL and the correct method for it. Pay attention to the path as
-there are different endpoints for <b>slurm</b> and <b>slurmdbd</b>.</p>
+<p>Check the <a href="rest_api.html">API Methods and Models</a> page to ensure
+you're using a valid URL and the correct method for it. Pay attention to the
+path as there are different endpoints for <b>slurm</b> and <b>slurmdbd</b>.</p>
 
 <h3 id="rejected_token">Rejecting thread config token (HTTP 401)
 <a class="slurm_link" href="#rejected_token"></a></h3>
@@ -339,6 +339,6 @@ place of the problematic character (e.g., <b>/</b> = <b>%2F</b>).
 authentication, causing failures. This can be fixed by clearing the variable:
 <pre>unset SLURM_JWT</pre></p>
 
-<p style="text-align:center;">Last modified 21 April 2025</p>
+<p style="text-align:center;">Last modified 16 May 2025</p>
 
 <!--#include virtual="footer.txt"-->
