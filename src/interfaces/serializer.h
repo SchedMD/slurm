@@ -72,6 +72,7 @@ typedef enum {
 #define ENV_CONFIG_JSON "SLURM_JSON"
 #define MIME_TYPE_URL_ENCODED "application/x-www-form-urlencoded"
 #define MIME_TYPE_URL_ENCODED_PLUGIN "serializer/url-encoded"
+#define MIME_TYPE_XJSON_PLUGIN "serializer/xjson"
 
 /*
  * Serialize data in src into string dest
