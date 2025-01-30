@@ -265,6 +265,7 @@ typedef enum {
 	DATA_PARSER_TASK_DISTRIBUTION, /* uint32_t <-> task_dist_states_t */
 	DATA_PARSER_TRES_STR, /* List of slurmdb_tres_rec_t* combined into a TRES string with TRES type/name instead of ID */
 	DATA_PARSER_TRES_ID_STR, /* List of slurmdb_tres_rec_t* combined into a TRES string with TRES id# instead of type/name */
+	DATA_PARSER_TRES_STR_BY_TYPE, /* List of slurmdb_tres_rec_t* combined into a TRES string with  TRES type/name=#,... format */
 	DATA_PARSER_TRES_LIST, /* List of slurmdb_tres_rec_t* */
 	DATA_PARSER_TRES, /* slurmdb_tres_rec_t */
 	DATA_PARSER_TRES_PTR, /* slurmdb_tres_rec_t* */

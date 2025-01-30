@@ -1497,6 +1497,19 @@ static int _tres_list_to_str(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+static int PARSE_FUNC(TRES_STR_BY_TYPE)(const parser_t *const parser, void *obj,
+					data_t *src, args_t *args,
+					data_t *parent_path)
+{
+	return _tres_list_to_str(parser, obj, src, args, parent_path, 0);
+}
+
+static int DUMP_FUNC(TRES_STR_BY_TYPE)(const parser_t *const parser, void *obj,
+				       data_t *dst, args_t *args)
+{
+	return DUMP(TRES_STR, *(char **) obj, dst, args);
+}
+
 static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
@@ -1530,7 +1543,7 @@ static int DUMP_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 	}
 
 	slurmdb_tres_list_from_string(&tres_list, *tres, TRES_STR_FLAG_BYTES,
-				      NULL);
+				      args->tres_list);
 
 	if (!tres_list) {
 		rc = on_error(DUMPING, parser->type, args,
@@ -10044,6 +10057,7 @@ static const parser_t parsers[] = {
 	addps(OVERSUBSCRIBE_JOBS, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(USER_ID, uid_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsp(TRES_STR, TRES_LIST, char *, NEED_TRES, NULL),
+	addpsp(TRES_STR_BY_TYPE, TRES_LIST, char *, NEED_TRES, NULL),
 	addpsa(CSV_STRING, STRING, char *, NEED_NONE, NULL),
 	addpsp(CSV_STRING_LIST, STRING_LIST, list_t *, NEED_NONE, NULL),
 	addpsa(LICENSES, LICENSE, license_info_msg_t, NEED_NONE, NULL),
