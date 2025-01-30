@@ -1452,8 +1452,9 @@ static int _foreach_resolve_tres_id(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
-				data_t *src, args_t *args, data_t *parent_path)
+static int _tres_list_to_str(const parser_t *const parser, void *obj,
+			     data_t *src, args_t *args, data_t *parent_path,
+			     uint32_t flags)
 {
 	char **tres = obj;
 	int rc = SLURM_SUCCESS;
@@ -1486,8 +1487,7 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 
 	list_for_each(tres_list, _foreach_resolve_tres_id, args);
 
-	if ((*tres = slurmdb_make_tres_string(tres_list,
-					      TRES_STR_FLAG_SIMPLE))) {
+	if ((*tres = slurmdb_make_tres_string(tres_list, flags))) {
 		rc = SLURM_SUCCESS;
 	} else {
 		rc = parse_error(parser, args, parent_path, ESLURM_INVALID_TRES,
@@ -1498,6 +1498,13 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 cleanup:
 	FREE_NULL_LIST(tres_list);
 	return rc;
+}
+
+static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
+				data_t *src, args_t *args, data_t *parent_path)
+{
+	return _tres_list_to_str(parser, obj, src, args, parent_path,
+				 TRES_STR_FLAG_SIMPLE);
 }
 
 static int DUMP_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
