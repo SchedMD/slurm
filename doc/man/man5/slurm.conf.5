@@ -1817,19 +1817,20 @@ a file. The default value for this plugin is \fI/var/log/slurm_jobcomp.log\fR.
 
 .TP
 If \fBjobcomp/kafka\fR:
-When this plugin is configured, finished job records information is sent to a
-Kafka server. The plugin makes use of \fBlibrdkafka\fR. This string represents
-an absolute path to a file containing 'key=value' pairs configuring the library
-behavior. For the plugin to work properly, this file needs to exist and least
-the \fIbootstrap.servers\fR \fBlibrdkafka\fR property needs to be configured
-in it. There is no default value for JobCompLoc when this plugin is enabled.
+When this plugin is configured, finished (and optionally start running) job
+records information is sent to a Kafka server. The plugin makes use of
+\fBlibrdkafka\fR. This string represents an absolute path to a file containing
+key=value pairs configuring the library behavior. For the plugin to work
+properly, this file needs to exist and least the \fIbootstrap.servers\fR
+\fBlibrdkafka\fR property needs to be configured in it. There is no default
+value for JobCompLoc when this plugin is enabled.
 
 \fBNOTE\fR: For a full list of \fBlibrdkafka\fR properties, please refer to
 the library documentation. You can also view the jobcomp_kafka page for more
 information: <https://slurm.schedmd.com/jobcomp_kafka.html>
 
-\fBNOTE\fR: The target Kafka topic and other plugin parameters can be configured
-via \fBJobCompParams\fR.
+\fBNOTE\fR: The target Kafka topic(s) and other plugin parameters can be
+configured via \fBJobCompParams\fR.
 .IP
 
 .TP
@@ -1870,6 +1871,18 @@ Optional comma-separated list for \fBjobcomp/kafka\fR:
 .IP
 
 .TP
+\fBenable_job_start\fR
+Instruct the \fBjobcomp/kafka\fR plugin to send a subset of the job record
+fields to the \fBtopic_job_start\fR Kafka topic when a job first starts running.
+
+\fBNOTE\fR: The writing when the job finishes (historical purpose of the plugin)
+is always enabled by default and can't be disabled.
+
+\fBNOTE\fR: The subset of fields for job start events is slightly smaller than
+those sent when the job finishes.
+.IP
+
+.TP
 \fBflush_timeout\fR=<milliseconds>
 Maximum time (in milliseconds) to wait for all outstanding produce requests,
 et.al, to be completed. This is passed as a timeout argument to the
@@ -1902,8 +1915,17 @@ Defaults to not set (don't requeue and thus discard these messages).
 
 .TP
 \fBtopic\fR=<string>
-Target Kafka topic to send messages to.
+Target Kafka topic to send messages to when a job finishes.
 Defaults to \fBClusterName\fR.
+.IP
+
+.TP
+\fBtopic_job_start\fR=<string>
+Target Kafka topic to send messages to when a job starts running.
+Defaults to \fB<ClusterName>-job-start\fR.
+
+\fBNOTE\fR: It is advisable that job start running event records be sent to a
+different Kafka topic than the topic configured for job finish event records.
 .RE
 .IP
 
@@ -1953,9 +1975,9 @@ specified by the \fBJobCompLoc\fR parameter.
 
 .TP
 \fBjobcomp/kafka\fR
-Upon job completion, a record of the job should be sent to a Kafka server,
-specified by the file path referenced in \fBJobCompLoc\fR and/or using other
-\fBJobCompParams\fR.
+Upon job completion (or optionally job start running), a record of the job
+should be sent to a Kafka server, specified by the file path referenced in
+\fBJobCompLoc\fR and/or using other \fBJobCompParams\fR.
 .IP
 
 .TP
