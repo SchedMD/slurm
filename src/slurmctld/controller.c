@@ -1879,31 +1879,28 @@ static void _update_assoc(slurmdb_assoc_rec_t *rec)
 	unlock_slurmctld(job_write_lock);
 }
 
+static int _foreach_part_resize_qos(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+
+	if (part_ptr->allow_qos)
+		qos_list_build(part_ptr->allow_qos,
+			       &part_ptr->allow_qos_bitstr);
+
+	if (part_ptr->deny_qos)
+		qos_list_build(part_ptr->deny_qos,
+			       &part_ptr->deny_qos_bitstr);
+	return 0;
+}
+
 static void _resize_qos(void)
 {
-	list_itr_t *itr;
-	part_record_t *part_ptr;
 	slurmctld_lock_t part_write_lock =
 		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	lock_slurmctld(part_write_lock);
-	if (part_list) {
-		itr = list_iterator_create(part_list);
-		while ((part_ptr = list_next(itr))) {
-			if (part_ptr->allow_qos) {
-				info("got count for %s of %"BITSTR_FMT, part_ptr->name,
-				     bit_size(part_ptr->allow_qos_bitstr));
-				qos_list_build(part_ptr->allow_qos,
-					       &part_ptr->allow_qos_bitstr);
-				info("now count for %s of %"BITSTR_FMT, part_ptr->name,
-				     bit_size(part_ptr->allow_qos_bitstr));
-			}
-			if (part_ptr->deny_qos)
-				qos_list_build(part_ptr->deny_qos,
-					       &part_ptr->deny_qos_bitstr);
-		}
-		list_iterator_destroy(itr);
-	}
+	if (part_list)
+		(void) list_for_each(part_list, _foreach_part_resize_qos, NULL);
 	unlock_slurmctld(part_write_lock);
 }
 
