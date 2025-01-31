@@ -3674,35 +3674,17 @@ static void *_assoc_cache_mgr(void *no_data)
 		slurm_mutex_unlock(&assoc_cache_mutex);
 	}
 
-	if (!job_list) {
-		/* This could happen in rare occasions, it doesn't
-		 * matter since when the job_list is populated things
-		 * will be in sync.
-		 */
-		debug2("No job list yet");
-		unlock_slurmctld(job_write_lock);
-		goto handle_parts;
-	}
-
-	debug2("got real data from the database "
-	       "refreshing the association ptr's for %d jobs",
-	       list_count(job_list));
 	assoc_mgr_lock(&locks);
-	(void) list_for_each(job_list, _foreach_cache_update_job, NULL);
-
-handle_parts:
-	if (!part_list) {
-		/* This could happen in rare occasions, it doesn't
-		 * matter since when the job_list is populated things
-		 * will be in sync.
-		 */
-		debug2("No part list yet");
-		goto end_it;
+	if (job_list) {
+		debug2("got real data from the database refreshing the association ptr's for %d jobs",
+		       list_count(job_list));
+		(void) list_for_each(job_list, _foreach_cache_update_job, NULL);
 	}
 
-	(void) list_for_each(part_list, _foreach_cache_update_part, NULL);
-
-end_it:
+	if (part_list) {
+		(void) list_for_each(part_list, _foreach_cache_update_part,
+				     NULL);
+	}
 
 	set_cluster_tres(true);
 
