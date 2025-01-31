@@ -38,8 +38,11 @@
 #include "src/common/fd.h"
 #include "src/common/id_util.h"
 #include "src/common/parse_time.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/slurmctld/slurmctld.h"
+
+#define JOBCOMP_CONF_DEFAULT_EVENTS JOBCOMP_CONF_JOB_FINISH
 
 static bool _valid_date_format(char *date_str)
 {
@@ -336,4 +339,16 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr) {
 	xfree(grp_str);
 
 	return record;
+}
+
+extern uint32_t jobcomp_common_parse_enabled_events(void)
+{
+	uint32_t enabled_events = 0;
+
+	enabled_events |= JOBCOMP_CONF_DEFAULT_EVENTS;
+
+	if (xstrcasestr(slurm_conf.job_comp_params, "enable_job_start"))
+		enabled_events |= JOBCOMP_CONF_JOB_START;
+
+	return enabled_events;
 }
