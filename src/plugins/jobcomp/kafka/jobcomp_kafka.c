@@ -169,5 +169,5 @@ extern list_t *jobcomp_p_get_jobs(void *job_cond)
 
 extern int jobcomp_p_record_job_start(job_record_t *job_ptr, uint32_t event)
 {
-	return SLURM_SUCCESS;
+	return _produce_internal(job_ptr, event);
 }
