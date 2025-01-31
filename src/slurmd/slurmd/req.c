@@ -2782,9 +2782,8 @@ done:
 	 *  If job prolog failed or we could not reply,
 	 *  initiate message to slurmctld with current state
 	 */
-	if ((rc == ESLURMD_PROLOG_FAILED)
-	    || (rc == SLURM_COMMUNICATIONS_SEND_ERROR)
-	    || (rc == ESLURMD_SETUP_ENVIRONMENT_ERROR)) {
+	if ((rc == ESLURMD_PROLOG_FAILED) ||
+	    (rc == SLURM_COMMUNICATIONS_SEND_ERROR)) {
 		send_registration_msg(rc);
 	}
 	xfree(user_name);
@@ -2879,6 +2878,8 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	req_msg.job_id = job_id;
 	req_msg.job_id_str = NULL;
 	req_msg.flags = JOB_LAUNCH_FAILED;
+	if (slurm_rc == ESLURMD_SETUP_ENVIRONMENT_ERROR)
+		req_msg.flags |= JOB_GETENV_FAILED;
 	resp_msg.msg_type = REQUEST_JOB_REQUEUE;
 	resp_msg.data = &req_msg;
 	rpc_rc = slurm_send_recv_controller_rc_msg(&resp_msg, &rc,
