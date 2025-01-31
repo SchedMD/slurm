@@ -871,7 +871,8 @@ static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		uint64_t uuid = 0;
 		char *cpu_aff_mac_range = NULL;
 		gres_slurmd_conf_t gres_slurmd_conf = {
-			.config_flags = GRES_CONF_ENV_RSMI,
+			.config_flags =
+				GRES_CONF_ENV_RSMI | GRES_CONF_AUTODETECT,
 			.count = 1,
 			.cpu_cnt = node_config->cpu_cnt,
 			.cpus_bitmap = _rsmi_get_device_cpu_mask(i),

@@ -3801,20 +3801,35 @@ static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
  * instead of throwing an error.
  */
 static int _check_core_range_matches_sock(bitstr_t *tmp_bitmap,
-					  rebuild_topo_t *rebuild_topo)
+					  rebuild_topo_t *rebuild_topo,
+					  gres_slurmd_conf_t *gres_slurmd_conf)
 {
 	for (int i = 0; (i < rebuild_topo->sock_cnt); i++) {
 		int first = i * rebuild_topo->cores_per_sock;
 		int last = (i + 1) * rebuild_topo->cores_per_sock;
 		int core_cnt = bit_set_count_range(tmp_bitmap, first, last);
+
 		if (core_cnt && (core_cnt != rebuild_topo->cores_per_sock)) {
 			slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
 			gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
 			char *gres_cores_str = bit_fmt_full(tmp_bitmap);
-			char *tmp = xstrdup_printf(
-				"%s GRES core specification %s doesn't match socket boundaries. (Socket %d is cores %d-%d)",
-				gres_ctx->gres_type, gres_cores_str, i, first,
-				(last - 1));
+			char *tmp;
+
+			if (gres_slurmd_conf->config_flags &
+			    GRES_CONF_AUTODETECT) {
+				tmp = xstrdup_printf(
+					"%s GRES autodetected core affinity %s on node %s doesn't match socket boundaries. (Socket %d is cores %d-%d). "
+					"Consider setting SlurmdParameters=l3cache_as_socket (recommended) or override this by manually specifying core affinity in gres.conf.",
+					gres_ctx->gres_type, gres_cores_str,
+					rebuild_topo->node_name, i, first,
+					(last - 1));
+			} else {
+				tmp = xstrdup_printf(
+					"%s GRES core specification %s for node %s doesn't match socket boundaries. (Socket %d is cores %d-%d)",
+					gres_ctx->gres_type, gres_cores_str,
+					rebuild_topo->node_name, i, first,
+					(last - 1));
+			}
 			xfree(gres_cores_str);
 			FREE_NULL_BITMAP(gres_ns->topo_core_bitmap[
 						 rebuild_topo->topo_cnt]);
@@ -3862,7 +3877,8 @@ static int _foreach_rebuild_topo(void *x, void *arg)
 				gres_ns->topo_core_bitmap[topo_cnt]);
 			gres_ns->topo_core_bitmap[topo_cnt] = tmp_bitmap;
 		}
-		if (_check_core_range_matches_sock(tmp_bitmap, rebuild_topo))
+		if (_check_core_range_matches_sock(tmp_bitmap, rebuild_topo,
+						   gres_slurmd_conf))
 			return -1;
 
 		rebuild_topo->cpus_config = rebuild_topo->core_cnt;
