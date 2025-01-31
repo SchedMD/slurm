@@ -188,6 +188,7 @@ extern void jobcomp_kafka_conf_parse_params(void)
 
 	slurm_rwlock_wrlock(&kafka_conf_rwlock);
 
+	kafka_conf->events = jobcomp_common_parse_enabled_events();
 	_parse_flags();
 
 	if (!(begin = xstrstr(slurm_conf.job_comp_params, flush_timeout_key))) {

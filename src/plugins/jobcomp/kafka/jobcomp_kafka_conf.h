@@ -49,6 +49,7 @@
 #define KAFKA_CONF_FLAG_REQUEUE_PURGE_IN_FLIGHT		SLURM_BIT(3)
 
 typedef struct {
+	uint32_t events; /* Enabled events. */
 	uint32_t flags;			/* Configuration flags. */
 	int flush_timeout;		/* rd_kafka_flush() timeout in ms. */
 	uint32_t poll_interval;		/* Sec. between rd_kafka_poll(). */
