@@ -3785,6 +3785,54 @@ static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
 		bit_realloc(gres_ns->gres_bit_alloc, gres_bits);
 }
 
+/*
+ * Job scheduling handles gres affinity on a socket basis internally.
+ * However, the interface for setting affinity is to specify cores. This can
+ * lead to the faulty expectation that the core affinity will be respected by
+ * the Slurm scheduler.
+ *
+ * Therefore this check was added to avoid users setting the cores limit and
+ * expecting Slurm to respect it (which it doesn't and never has).
+ *
+ * In addition to misleading users, a bug can arise where steps and jobs don't
+ * line up because steps do look at the cores rather than the sockets like the
+ * jobs. (i.e. job allocates a core the the step rejects), if we just wanted to
+ * solve this bug we would just expand the cpu list to fill the socket here
+ * instead of throwing an error.
+ */
+static int _check_core_range_matches_sock(bitstr_t *tmp_bitmap,
+					  rebuild_topo_t *rebuild_topo)
+{
+	for (int i = 0; (i < rebuild_topo->sock_cnt); i++) {
+		int set_cnt = bit_set_count_range(
+			tmp_bitmap,
+			i * rebuild_topo->cores_per_sock,
+			(i + 1) * rebuild_topo->cores_per_sock);
+		if (set_cnt && (set_cnt != rebuild_topo->cores_per_sock)) {
+			char *node_list = bit_fmt_full(tmp_bitmap);
+			slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
+			gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
+			char *tmp = xstrdup_printf(
+				"%s GRES core specification %s doesn't match socket boundaries. (Socket %d is cores %d-%d)",
+				gres_ctx->gres_type, node_list, i,
+				i * rebuild_topo->cores_per_sock,
+				(i + 1) * rebuild_topo->cores_per_sock);
+			xfree(node_list);
+			FREE_NULL_BITMAP(gres_ns->topo_core_bitmap[
+						 rebuild_topo->topo_cnt]);
+			rebuild_topo->rc = ESLURM_INVALID_GRES;
+			error("%s: %s", __func__, tmp);
+			if (rebuild_topo->reason_down &&
+			    !*rebuild_topo->reason_down)
+				xstrfmtcat(*rebuild_topo->reason_down, "%s",
+					   tmp);
+			xfree(tmp);
+			return SLURM_ERROR;
+		}
+	}
+	return SLURM_SUCCESS;
+}
+
 static int _foreach_rebuild_topo(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
@@ -3816,35 +3864,9 @@ static int _foreach_rebuild_topo(void *x, void *arg)
 				gres_ns->topo_core_bitmap[topo_cnt]);
 			gres_ns->topo_core_bitmap[topo_cnt] = tmp_bitmap;
 		}
-		/*
-		 * Check to make sure topo_core_bitmap either
-		 * fills the socket or doesn't at all.
-		 */
-		for (int i = 0; (i < rebuild_topo->sock_cnt); i++) {
-			int set_cnt = bit_set_count_range(
-				tmp_bitmap, i * rebuild_topo->cores_per_sock,
-				(i + 1) * rebuild_topo->cores_per_sock);
-			if (set_cnt &&
-			    (set_cnt != rebuild_topo->cores_per_sock)) {
-				char *node_list = bit_fmt_full(tmp_bitmap);
-				char *tmp = xstrdup_printf("%s GRES core specification %s doesn't match socket boundaries. (Socket %d is cores %d-%d)",
-				      gres_ctx->gres_type,
-				      node_list, i,
-				      i * rebuild_topo->cores_per_sock,
-				      (i + 1) * rebuild_topo->cores_per_sock);
-				xfree(node_list);
-				FREE_NULL_BITMAP(
-					gres_ns->topo_core_bitmap[topo_cnt]);
-				rebuild_topo->rc = ESLURM_INVALID_GRES;
-				error("%s: %s", __func__, tmp);
-				if (rebuild_topo->reason_down &&
-				    !*rebuild_topo->reason_down)
-					xstrfmtcat(*rebuild_topo->reason_down,
-						   "%s", tmp);
-				xfree(tmp);
-				return -1;
-			}
-		}
+		if (_check_core_range_matches_sock(tmp_bitmap, rebuild_topo))
+			return -1;
+
 		rebuild_topo->cpus_config = rebuild_topo->core_cnt;
 	} else if (rebuild_topo->cpus_config && !rebuild_topo->cpu_config_err) {
 		rebuild_topo->cpu_config_err = true;
