@@ -4018,6 +4018,16 @@ static int _init_dep_job_ptr(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_restore_job_dependencies(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if (job_ptr->details && job_ptr->details->depend_list)
+		list_for_each(job_ptr->details->depend_list,
+			      _init_dep_job_ptr, NULL);
+	return 0;
+}
+
 /*
  * Restore dependency job pointers.
  *
@@ -4030,19 +4040,12 @@ static int _init_dep_job_ptr(void *object, void *arg)
  */
 static void _restore_job_dependencies(void)
 {
-	job_record_t *job_ptr;
-	list_itr_t *job_iterator;
 	slurmctld_lock_t job_fed_lock = {.job = WRITE_LOCK, .fed = READ_LOCK};
 
 	lock_slurmctld(job_fed_lock);
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (job_ptr->details && job_ptr->details->depend_list)
-			list_for_each(job_ptr->details->depend_list,
-				      _init_dep_job_ptr, NULL);
-	}
-	list_iterator_destroy(job_iterator);
+	(void) list_for_each(job_list, _foreach_restore_job_dependencies, NULL);
+
 	unlock_slurmctld(job_fed_lock);
 }
 
