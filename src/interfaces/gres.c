@@ -3722,7 +3722,7 @@ static int _check_core_range_matches_sock(bitstr_t *tmp_bitmap,
 			xfree(gres_cores_str);
 			FREE_NULL_BITMAP(gres_ns->topo_core_bitmap[
 						 rebuild_topo->topo_cnt]);
-			rebuild_topo->rc = ESLURM_INVALID_GRES;
+			rebuild_topo->rc = EINVAL;
 			error("%s: %s", __func__, tmp);
 			if (rebuild_topo->reason_down &&
 			    !(*rebuild_topo->reason_down))
