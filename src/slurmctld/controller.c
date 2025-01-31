@@ -3557,12 +3557,43 @@ use_qos_id: ; /* must be a blank ; for older compilers (el7) */
 	return 0;
 }
 
+static int _foreach_cache_update_part(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+
+	if (part_ptr->allow_qos)
+		qos_list_build(part_ptr->allow_qos,
+			       &part_ptr->allow_qos_bitstr);
+
+	if (part_ptr->deny_qos)
+		qos_list_build(part_ptr->deny_qos,
+			       &part_ptr->deny_qos_bitstr);
+
+	if (part_ptr->qos_char) {
+		slurmdb_qos_rec_t qos_rec = {
+			.name = part_ptr->qos_char,
+		};
+
+		part_ptr->qos_ptr = NULL;
+		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					  accounting_enforce,
+					  &part_ptr->qos_ptr,
+					  true) != SLURM_SUCCESS) {
+			fatal("Partition %s has an invalid qos (%s), "
+			      "please check your configuration",
+			      part_ptr->name, qos_rec.name);
+		}
+	}
+
+	part_update_assoc_lists(part_ptr, NULL);
+
+	return 0;
+}
+
 /* _assoc_cache_mgr - hold out until we have real data from the
  * database so we can reset the job ptr's assoc ptr's */
 static void *_assoc_cache_mgr(void *no_data)
 {
-	list_itr_t *itr = NULL;
-	part_record_t *part_ptr = NULL;
 	/* Write lock on jobs, nodes and partitions */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
@@ -3669,36 +3700,7 @@ handle_parts:
 		goto end_it;
 	}
 
-	itr = list_iterator_create(part_list);
-	while ((part_ptr = list_next(itr))) {
-		if (part_ptr->allow_qos)
-			qos_list_build(part_ptr->allow_qos,
-				       &part_ptr->allow_qos_bitstr);
-
-		if (part_ptr->deny_qos)
-			qos_list_build(part_ptr->deny_qos,
-				       &part_ptr->deny_qos_bitstr);
-
-		if (part_ptr->qos_char) {
-			slurmdb_qos_rec_t qos_rec;
-
-			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
-			qos_rec.name = part_ptr->qos_char;
-			part_ptr->qos_ptr = NULL;
-			if (assoc_mgr_fill_in_qos(
-				    acct_db_conn, &qos_rec, accounting_enforce,
-				    (slurmdb_qos_rec_t **)&part_ptr->qos_ptr,
-				    true)
-			    != SLURM_SUCCESS) {
-				fatal("Partition %s has an invalid qos (%s), "
-				      "please check your configuration",
-				      part_ptr->name, qos_rec.name);
-			}
-		}
-
-		part_update_assoc_lists(part_ptr, NULL);
-	}
-	list_iterator_destroy(itr);
+	(void) list_for_each(part_list, _foreach_cache_update_part, NULL);
 
 end_it:
 
