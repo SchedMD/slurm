@@ -168,7 +168,6 @@ static bool _job_overlap(time_t start_time, uint64_t flags,
 			 bitstr_t *node_bitmap, char *resv_name);
 static int _job_resv_check(void *x, void *arg);
 static list_t *_list_dup(list_t *license_list);
-static buf_t *_open_resv_state_file(char **state_file);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		       bool internal, uint16_t protocol_version);
 static void _pick_nodes(resv_desc_msg_t *resv_desc_ptr,
@@ -4640,27 +4639,6 @@ static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
 	return 1;
 }
 
-/* Open the reservation state save file, or backup if necessary.
- * state_file IN - the name of the state save file used
- * RET the file description to read from or error code
- */
-static buf_t *_open_resv_state_file(char **state_file)
-{
-	buf_t *buf;
-
-	*state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(*state_file, "/resv_state");
-	if (!(buf = create_mmap_buf(*state_file)))
-		error("Could not open reservation state file %s: %m",
-		      *state_file);
-	else
-		return buf;
-
-	error("NOTE: Trying backup state save file. Reservations may be lost");
-	xstrcat(*state_file, ".old");
-	return create_mmap_buf(*state_file);
-}
-
 /*
  * Load the reservation state from file, recover on slurmctld restart.
  *	Reset reservation pointers for all jobs.
@@ -4690,16 +4668,16 @@ extern int load_all_resv_state(int recover)
 	_create_resv_lists(true);
 
 	/* read the file */
-	lock_state_files();
-	if (!(buffer = _open_resv_state_file(&state_file))) {
+	if (!(buffer = state_save_open("resv_state", &state_file))) {
+		if ((clustername_existed == 1) && (!ignore_state_errors))
+			fatal("No reservation state file (%s) to recover",
+			      state_file);
 		info("No reservation state file (%s) to recover",
 		     state_file);
 		xfree(state_file);
-		unlock_state_files();
 		return ENOENT;
 	}
 	xfree(state_file);
-	unlock_state_files();
 
 	safe_unpackstr(&ver_str, buffer);
 	debug3("Version string in resv_state header is %s", ver_str);

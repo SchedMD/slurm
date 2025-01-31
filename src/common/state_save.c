@@ -48,6 +48,9 @@ strong_alias(lock_state_files, slurm_lock_state_files);
 strong_alias(unlock_state_files, slurm_unlock_state_files);
 strong_alias(save_buf_to_state, slurm_save_buf_to_state);
 
+/* global variables */
+int clustername_existed = -1;
+
 static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 extern void lock_state_files(void)
@@ -123,4 +126,21 @@ fail:
 	xfree(new_file);
 
 	return rc;
+}
+
+extern buf_t *state_save_open(const char *target_file, char **state_file)
+{
+	buf_t *buf;
+
+	*state_file = xstrdup_printf("%s/%s", slurm_conf.state_save_location,
+				     target_file);
+
+	lock_state_files();
+
+	if (!(buf = create_mmap_buf(*state_file)))
+		debug2("Could not open state file %s: %m", *state_file);
+
+	unlock_state_files();
+
+	return buf;
 }

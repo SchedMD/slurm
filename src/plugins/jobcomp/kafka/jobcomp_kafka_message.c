@@ -584,9 +584,17 @@ unpack_error:
 static void _load_jobcomp_kafka_state(void)
 {
 	buf_t *buffer;
+	char *state_file = NULL;
 
-	if ((buffer = jobcomp_common_load_state_file(KAFKA_STATE_FILE)))
-		_unpack_jobcomp_kafka_state(buffer);
+	if (!(buffer = state_save_open(KAFKA_STATE_FILE, &state_file))) {
+		error("Could not open jobcomp state file %s: %m", state_file);
+		error("NOTE: Finished jobs may be lost!");
+		xfree(state_file);
+		return;
+	}
+
+	_unpack_jobcomp_kafka_state(buffer);
+	xfree(state_file);
 }
 
 static void _save_jobcomp_kafka_state(void)

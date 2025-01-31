@@ -79,6 +79,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/state_save.h"
 #include "src/common/timers.h"
 #include "src/common/track_script.h"
 #include "src/common/uid.h"
@@ -511,6 +512,8 @@ static void _init_db_conn(void)
 		} else if (!slurm_conf.cluster_id) {
 			slurm_conf.cluster_id = id;
 			_create_clustername_file();
+		} else {
+			clustername_existed = 1;
 		}
 	}
 }
@@ -3369,6 +3372,7 @@ static void _create_clustername_file(void)
 
 	info("creating clustername file: ClusterName=%s ClusterID=%u",
 	     slurm_conf.cluster_name, slurm_conf.cluster_id);
+	clustername_existed = 0;
 
 	if (!(fp = fopen(filename, "w"))) {
 		fatal("%s: failed to create file %s", __func__, filename);

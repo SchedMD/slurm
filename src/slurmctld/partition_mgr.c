@@ -101,7 +101,6 @@ uint16_t part_max_priority = DEF_PART_MAX_PRIORITY;
 static int    _dump_part_state(void *x, void *arg);
 static void   _list_delete_part(void *part_entry);
 static int    _match_part_ptr(void *part_ptr, void *key);
-static buf_t *_open_part_state_file(char **state_file);
 static void   _unlink_free_nodes(bitstr_t *old_bitmap, part_record_t *part_ptr);
 
 static int _calc_part_tres(void *x, void *arg)
@@ -411,29 +410,6 @@ static int _dump_part_state(void *x, void *arg)
 	return 0;
 }
 
-/* Open the partition state save file, or backup if necessary.
- * state_file IN - the name of the state save file used
- * RET the file description to read from or error code
- */
-static buf_t *_open_part_state_file(char **state_file)
-{
-	buf_t *buf;
-
-	*state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(*state_file, "/part_state");
-	buf = create_mmap_buf(*state_file);
-	if (!buf) {
-		error("Could not open partition state file %s: %m",
-		      *state_file);
-	} else 	/* Success */
-		return buf;
-
-	error("NOTE: Trying backup partition state save file. Information may be lost!");
-	xstrcat(*state_file, ".old");
-	buf = create_mmap_buf(*state_file);
-	return buf;
-}
-
 /*
  * load_all_part_state - load the partition state from file, recover on
  *	slurmctld restart. execute this after loading the configuration
@@ -460,17 +436,14 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 	}
 
 	/* read the file */
-	lock_state_files();
-	buffer = _open_part_state_file(&state_file);
+	buffer = state_save_open("part_state", &state_file);
 	if (!buffer) {
 		info("No partition state file (%s) to recover",
 		     state_file);
 		xfree(state_file);
-		unlock_state_files();
 		return ENOENT;
 	}
 	xfree(state_file);
-	unlock_state_files();
 
 	safe_unpackstr(&ver_str, buffer);
 	debug3("Version string in part_state header is %s", ver_str);

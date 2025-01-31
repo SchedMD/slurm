@@ -203,7 +203,6 @@ extern int switch_p_save(void)
 extern int switch_p_restore(bool recover)
 {
 	char *state_file;
-	struct stat stat_buf;
 	uint32_t version;
 	buf_t *state_buf;
 	int i;
@@ -212,20 +211,15 @@ extern int switch_p_restore(bool recover)
 		return SLURM_SUCCESS;
 	}
 
-	/* Get state file name */
-	state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(state_file, "/" SLINGSHOT_STATE_FILE);
-
-	/* Return success if file doesn't exist */
-	if ((stat(state_file, &stat_buf) == -1) && (errno == ENOENT)) {
-		debug("State file %s not found", state_file);
-		return SLURM_SUCCESS;
-	}
-
-	/* mmap state file */
-	state_buf = create_mmap_buf(state_file);
-	if (state_buf == NULL) {
-		error("Couldn't recover state file %s", state_file);
+	errno = 0;
+	state_buf = state_save_open(SLINGSHOT_STATE_FILE, &state_file);
+	if (!state_buf) {
+		if (errno == ENOENT) {
+			debug("State file %s not found", state_file);
+			xfree(state_file);
+			return SLURM_SUCCESS;
+		}
+		error("Couldn't recover switch state file %s", state_file);
 		goto error;
 	}
 

@@ -2635,12 +2635,7 @@ extern int load_config_state_lite(void)
 	time_t buf_time;
 	char *last_accounting_storage_type = NULL;
 
-	/* Always ignore .old file */
-	state_file = xstrdup_printf("%s/last_config_lite",
-	                            slurm_conf.state_save_location);
-
-	//info("looking at the %s file", state_file);
-	if (!(buffer = create_mmap_buf(state_file))) {
+	if (!(buffer = state_save_open("last_config_lite", &state_file))) {
 		debug2("No last_config_lite file (%s) to recover", state_file);
 		xfree(state_file);
 		return ENOENT;

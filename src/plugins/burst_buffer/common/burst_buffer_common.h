@@ -336,14 +336,6 @@ char *bb_handle_job_script(job_record_t *job_ptr, bb_job_t *bb_job);
 /* Load and process configuration parameters */
 extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type);
 
-/*
- * Open the state save file, or the backup if necessary.
- * IN file_name - the name of the state save file to open
- * OUT state_file - the name (including path) of the state save file
- * RET the file description to read from or error code
- */
-extern int bb_open_state_file(const char *file_name, char **state_file);
-
 /* Pack individual burst buffer records into a buffer */
 extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, buf_t *buffer,
 			uint16_t protocol_version);

@@ -129,7 +129,6 @@ static void 	_make_node_down(node_record_t *node_ptr,
 				time_t event_time);
 static bool	_node_is_hidden(node_record_t *node_ptr,
 				pack_node_info_t *pack_info);
-static buf_t *_open_node_state_file(char **state_file);
 static void 	_pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 			   uint16_t protocol_version, uint16_t show_flags);
 static void	_sync_bitmaps(node_record_t *node_ptr, int job_count);
@@ -260,27 +259,6 @@ static bool _get_config_list_update(void)
        return rc;
 }
 
-/* Open the node state save file, or backup if necessary.
- * state_file IN - the name of the state save file used
- * RET the file description to read from or error code
- */
-static buf_t *_open_node_state_file(char **state_file)
-{
-	buf_t *buf;
-
-	*state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(*state_file, "/node_state");
-
-	if (!(buf = create_mmap_buf(*state_file)))
-		error("Could not open node state file %s: %m", *state_file);
-	else
-		return buf;
-
-	error("NOTE: Trying backup state save file. Information may be lost!");
-	xstrcat(*state_file, ".old");
-	return create_mmap_buf(*state_file);
-}
-
 static int _validate_nodes_vs_nodeset(char *nodes_str)
 {
 	hostlist_t *nodes = NULL;
@@ -332,16 +310,15 @@ extern int load_all_node_state ( bool state_only )
 		power_save_mode = true;
 
 	/* read the file */
-	lock_state_files ();
-	buffer = _open_node_state_file(&state_file);
+	buffer = state_save_open("node_state", &state_file);
 	if (!buffer) {
+		if ((clustername_existed == 1) && (!ignore_state_errors))
+			fatal("No node state file (%s) to recover", state_file);
 		info("No node state file (%s) to recover", state_file);
 		xfree(state_file);
-		unlock_state_files();
 		return ENOENT;
 	}
 	xfree(state_file);
-	unlock_state_files();
 
 	safe_unpackstr(&ver_str, buffer);
 	debug3("Version string in node_state header is %s", ver_str);

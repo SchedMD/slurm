@@ -841,27 +841,6 @@ extern int trigger_state_save(void)
 	return error_code;
 }
 
-/* Open the trigger state save file, or backup if necessary.
- * state_file IN - the name of the state save file used
- * RET the file description to read from or error code
- */
-static buf_t *_open_trigger_state_file(char **state_file)
-{
-	buf_t *buf;
-
-	*state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(*state_file, "/trigger_state");
-	if (!(buf = create_mmap_buf(*state_file)))
-		error("Could not open trigger state file %s: %m",
-		      *state_file);
-	else
-		return buf;
-
-	error("NOTE: Trying backup state save file. Triggers may be lost!");
-	xstrcat(*state_file, ".old");
-	return create_mmap_buf(*state_file);;
-}
-
 extern void trigger_state_restore(void)
 {
 	uint16_t protocol_version = NO_VAL16;
@@ -874,15 +853,15 @@ extern void trigger_state_restore(void)
 	/* read the file */
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
-	lock_state_files();
-	if (!(buffer = _open_trigger_state_file(&state_file))) {
+	if (!(buffer = state_save_open("trigger_state", &state_file))) {
+		if ((clustername_existed == 1) && (!ignore_state_errors))
+			fatal("No trigger state file (%s) to recover",
+			      state_file);
 		info("No trigger state file (%s) to recover", state_file);
 		xfree(state_file);
-		unlock_state_files();
 		return;
 	}
 	xfree(state_file);
-	unlock_state_files();
 
 	safe_unpackstr(&ver_str, buffer);
 	if (ver_str && !xstrcmp(ver_str, TRIGGER_STATE_VERSION))
