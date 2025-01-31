@@ -2323,6 +2323,23 @@ extern job_record_t *find_job_array_rec(uint32_t array_job_id,
 	}
 }
 
+static int _find_het_job(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+	job_record_t *search_job_ptr = arg;
+
+	if (search_job_ptr->het_job_id != het_job->het_job_id) {
+		error("%s: Bad het_job_list for %u", __func__,
+		      search_job_ptr->job_id);
+		return 0;
+	}
+
+	if (het_job->het_job_offset == search_job_ptr->het_job_offset)
+		return 1;
+
+	return 0;
+}
+
 /*
  * find_het_job_record - return a pointer to the job record with the given ID
  * IN job_id - requested job's ID
@@ -2332,15 +2349,9 @@ extern job_record_t *find_job_array_rec(uint32_t array_job_id,
 extern job_record_t *find_het_job_record(uint32_t job_id,
 					 uint32_t het_job_offset)
 {
-	job_record_t *het_job_leader, *het_job;
-	list_itr_t *iter;
+	job_record_t *het_job_leader = find_job_record(job_id);
+	job_record_t search_job_rec = { 0 };
 
-	het_job_leader = job_hash[JOB_HASH_INX(job_id)];
-	while (het_job_leader) {
-		if (het_job_leader->job_id == job_id)
-			break;
-		het_job_leader = het_job_leader->job_next;
-	}
 	if (!het_job_leader)
 		return NULL;
 	if (het_job_leader->het_job_offset == het_job_offset)
@@ -2348,19 +2359,13 @@ extern job_record_t *find_het_job_record(uint32_t job_id,
 
 	if (!het_job_leader->het_job_list)
 		return NULL;
-	iter = list_iterator_create(het_job_leader->het_job_list);
-	while ((het_job = list_next(iter))) {
-		if (het_job_leader->het_job_id != het_job->het_job_id) {
-			error("%s: Bad het_job_list for %pJ",
-			      __func__, het_job_leader);
-			continue;
-		}
-		if (het_job->het_job_offset == het_job_offset)
-			break;
-	}
-	list_iterator_destroy(iter);
 
-	return het_job;
+	search_job_rec.job_id = het_job_leader->job_id;
+	search_job_rec.het_job_id = het_job_leader->het_job_id;
+	search_job_rec.het_job_offset = het_job_offset;
+
+	return list_find_first(het_job_leader->het_job_list, _find_het_job,
+			       &search_job_rec);
 }
 
 /*
