@@ -67,16 +67,15 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern tls_conn_t *tls_p_create_conn(int input_fd, int output_fd,
-				     tls_conn_mode_t mode)
+extern tls_conn_t *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn = xmalloc(sizeof(*conn));
 
-	conn->input_fd = input_fd;
-	conn->output_fd = output_fd;
+	conn->input_fd = tls_conn_args->input_fd;
+	conn->output_fd = tls_conn_args->output_fd;
 
 	log_flag(TLS, "%s: create connection. fd:%d->%d",
-		 plugin_type, input_fd, output_fd);
+		 plugin_type, conn->input_fd, conn->output_fd);
 
 	return conn;
 }

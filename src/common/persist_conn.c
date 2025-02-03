@@ -619,10 +619,13 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 		buf_t *buffer = NULL;
 		persist_msg_t msg;
 		persist_conn_t persist_conn_tmp;
+		const tls_conn_args_t tls_args = {
+			.input_fd = persist_conn->fd,
+			.output_fd = persist_conn->fd,
+			.mode = TLS_CONN_CLIENT,
+		};
 
-		persist_conn->tls_conn = tls_g_create_conn(persist_conn->fd,
-							   persist_conn->fd,
-							   TLS_CONN_CLIENT);
+		persist_conn->tls_conn = tls_g_create_conn(&tls_args);
 		if (!persist_conn->tls_conn) {
 			error("Failed to enable tls on persistent connection");
 			goto end_it;
@@ -736,7 +739,11 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 	buf_t *recv_buffer = NULL;
 	char *comment = NULL;
 	bool init_msg = false;
-	tls_conn_mode_t tls_mode = TLS_CONN_NULL;
+	tls_conn_args_t tls_args = {
+		.input_fd = persist_conn->fd,
+		.output_fd = persist_conn->fd,
+		.mode = TLS_CONN_NULL,
+	};
 
 	/* puts msg_char into buffer struct */
 	recv_buffer = create_buf(msg_char, msg_size);
@@ -749,7 +756,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 				     * function). */
 
 	if (persist_msg->msg_type == REQUEST_PERSIST_INIT_TLS)
-		tls_mode = TLS_CONN_SERVER;
+		tls_args.mode = TLS_CONN_SERVER;
 
 	if (rc != SLURM_SUCCESS) {
 		comment = xstrdup_printf("Failed to unpack %s message",
@@ -767,9 +774,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 		 * TLS_CONN_NULL when it should be TLS_CONN_SERVER.
 		 */
 		if (!persist_conn->tls_conn) {
-			persist_conn->tls_conn =
-				tls_g_create_conn(persist_conn->fd,
-						  persist_conn->fd, tls_mode);
+			persist_conn->tls_conn = tls_g_create_conn(&tls_args);
 			if (!persist_conn->tls_conn)
 				error("CONN:%u tls_g_create_conn() failed",
 				      persist_conn->fd);
@@ -797,9 +802,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 		*out_buffer = slurm_persist_make_rc_msg(
 			persist_conn, rc, comment, REQUEST_PERSIST_INIT);
 	} else if (init_msg) {
-		persist_conn->tls_conn = tls_g_create_conn(persist_conn->fd,
-							   persist_conn->fd,
-							   tls_mode);
+		persist_conn->tls_conn = tls_g_create_conn(&tls_args);
 		if (!persist_conn->tls_conn) {
 			error("CONN:%u tls_g_create_conn() failed", persist_conn->fd);
 			rc = EINVAL;
