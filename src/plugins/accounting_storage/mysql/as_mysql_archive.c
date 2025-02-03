@@ -2059,7 +2059,20 @@ static int _unpack_local_resv(local_resv_t *object, uint16_t rpc_version,
 {
 	char *tmp_char;
 
-	if (rpc_version >= SLURM_23_02_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->assocs, buffer);
+		safe_unpackstr(&object->comment, buffer);
+		safe_unpackstr(&object->deleted, buffer);
+		safe_unpackstr(&object->flags, buffer);
+		safe_unpackstr(&object->id, buffer);
+		safe_unpackstr(&object->name, buffer);
+		safe_unpackstr(&object->nodes, buffer);
+		safe_unpackstr(&object->node_inx, buffer);
+		safe_unpackstr(&object->time_end, buffer);
+		safe_unpackstr(&object->time_start, buffer);
+		safe_unpackstr(&object->tres_str, buffer);
+		safe_unpackstr(&object->unused_wall, buffer);
+	} else if (rpc_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->assocs, buffer);
 		safe_unpackstr(&object->comment, buffer);
 		safe_unpackstr(&object->deleted, buffer);
