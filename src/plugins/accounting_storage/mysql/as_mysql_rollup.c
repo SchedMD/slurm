@@ -1127,6 +1127,7 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		"tres",
 		"time_start",
 		"time_end",
+		"time_force",
 		"unused_wall"
 	};
 	enum {
@@ -1137,6 +1138,7 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		RESV_REQ_TRES,
 		RESV_REQ_START,
 		RESV_REQ_END,
+		RESV_REQ_FORCE,
 		RESV_REQ_UNUSED,
 		RESV_REQ_COUNT
 	};

@@ -724,6 +724,7 @@ char *resv_req_inx[] = {
 	"resv_name",
 	"time_start",
 	"time_end",
+	"time_force",
 	"unused_wall",
 	"comment",
 };
@@ -739,6 +740,7 @@ enum {
 	RESV_REQ_NAME,
 	RESV_REQ_START,
 	RESV_REQ_END,
+	RESV_REQ_FORCE,
 	RESV_REQ_UNUSED,
 	RESV_REQ_COMMENT,
 	RESV_REQ_COUNT
@@ -4287,6 +4289,7 @@ static buf_t *_pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
 		resv.node_inx = row[RESV_REQ_NODE_INX];
 		resv.time_end = row[RESV_REQ_END];
 		resv.time_start = row[RESV_REQ_START];
+		resv.time_force = row[RESV_REQ_FORCE];
 		resv.tres_str = row[RESV_REQ_TRES];
 		resv.unused_wall = row[RESV_REQ_UNUSED];
 		resv.comment = row[RESV_REQ_COMMENT];
@@ -4316,6 +4319,7 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 		RESV_REQ_NAME,
 		RESV_REQ_START,
 		RESV_REQ_END,
+		RESV_REQ_FORCE,
 		RESV_REQ_UNUSED,
 		RESV_REQ_COUNT
 	};
@@ -4375,6 +4379,7 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 			     object.name,
 			     object.time_start,
 			     object.time_end,
+			     object.time_force,
 			     object.unused_wall,
 			     object.comment ? object.comment : "NULL");
 

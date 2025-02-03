@@ -120,6 +120,12 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 		xstrfmtcat(*extra, ", time_end=%ld", resv->time_end);
 	}
 
+	if (resv->time_force) {
+		xstrcat(*cols, ", time_force");
+		xstrfmtcat(*vals, ", %ld", resv->time_force);
+		xstrfmtcat(*extra, ", time_force=%ld", resv->time_force);
+	}
+
 	if (resv->time_start) {
 		xstrcat(*cols, ", time_start");
 		xstrfmtcat(*vals, ", %ld", resv->time_start);
@@ -617,6 +623,7 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		"resv_name",
 		"time_start",
 		"time_end",
+		"time_force",
 		"tres",
 		"unused_wall",
 		"comment",
@@ -631,6 +638,7 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		RESV_REQ_NAME,
 		RESV_REQ_START,
 		RESV_REQ_END,
+		RESV_REQ_FORCE,
 		RESV_REQ_TRES,
 		RESV_REQ_UNUSED,
 		RESV_REQ_COMMENT,
@@ -742,6 +750,7 @@ empty:
 		resv->nodes = xstrdup(row[RESV_REQ_NODES]);
 		resv->time_start = start;
 		resv->time_end = slurm_atoul(row[RESV_REQ_END]);
+		resv->time_force = slurm_atoul(row[RESV_REQ_FORCE]);
 		resv->flags = slurm_atoull(row[RESV_REQ_FLAGS]);
 		resv->tres_str = xstrdup(row[RESV_REQ_TRES]);
 		resv->unused_wall = atof(row[RESV_REQ_UNUSED]);
