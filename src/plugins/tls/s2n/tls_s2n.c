@@ -375,18 +375,17 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern void *tls_p_create_conn(int input_fd, int output_fd,
-			       tls_conn_mode_t tls_mode)
+extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn;
 	s2n_mode s2n_conn_mode;
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
 
 	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%s",
-		 plugin_type, input_fd, output_fd,
-		 tls_conn_mode_to_str(tls_mode));
+		 plugin_type, tls_conn_args->input_fd, tls_conn_args->output_fd,
+		 tls_conn_mode_to_str(tls_conn_args->mode));
 
-	switch (tls_mode) {
+	switch (tls_conn_args->mode) {
 	case TLS_CONN_SERVER:
 		s2n_conn_mode = S2N_SERVER;
 		break;
@@ -399,8 +398,8 @@ extern void *tls_p_create_conn(int input_fd, int output_fd,
 	}
 
 	conn = xmalloc(sizeof(*conn));
-	conn->input_fd = input_fd;
-	conn->output_fd = output_fd;
+	conn->input_fd = tls_conn_args->input_fd;
+	conn->output_fd = tls_conn_args->output_fd;
 	slurm_mutex_init(&conn->lock);
 
 	if (!(conn->s2n_conn = s2n_connection_new(s2n_conn_mode))) {
@@ -416,11 +415,13 @@ extern void *tls_p_create_conn(int input_fd, int output_fd,
 	}
 
 	/* Associate a connection with a file descriptor */
-	if (s2n_connection_set_read_fd(conn->s2n_conn, input_fd) < 0) {
+	if (s2n_connection_set_read_fd(conn->s2n_conn,
+				       tls_conn_args->input_fd) < 0) {
 		on_s2n_error(conn, s2n_connection_set_read_fd);
 		goto fail;
 	}
-	if (s2n_connection_set_write_fd(conn->s2n_conn, output_fd) < 0) {
+	if (s2n_connection_set_write_fd(conn->s2n_conn,
+					tls_conn_args->output_fd) < 0) {
 		on_s2n_error(conn, s2n_connection_set_write_fd);
 		goto fail;
 	}
@@ -456,7 +457,7 @@ extern void *tls_p_create_conn(int input_fd, int output_fd,
 
 	log_flag(TLS, "%s: connection successfully created. fd:%d->%d. tls mode:%s",
 		 plugin_type, conn->input_fd, conn->output_fd,
-		 tls_conn_mode_to_str(tls_mode));
+		 tls_conn_mode_to_str(tls_conn_args->mode));
 
 	return conn;
 

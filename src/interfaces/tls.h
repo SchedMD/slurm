@@ -46,6 +46,15 @@ typedef enum {
 	TLS_CONN_CLIENT,
 } tls_conn_mode_t;
 
+typedef struct {
+	/* file descriptor for incoming data */
+	int input_fd;
+	/* file descriptor for outgoing data */
+	int output_fd;
+	/* TLS connection mode (@see tls_conn_mode_t) */
+	tls_conn_mode_t mode;
+} tls_conn_args_t;
+
 extern char *tls_conn_mode_to_str(tls_conn_mode_t mode);
 
 /*
@@ -56,8 +65,12 @@ extern bool tls_enabled(void);
 extern int tls_g_init(void);
 extern int tls_g_fini(void);
 
-extern void *tls_g_create_conn(int input_fd, int output_fd,
-			       tls_conn_mode_t mode);
+/*
+ * Create new TLS connection
+ * IN tls_conn_args - ptr to tls_conn_args_t
+ * RET ptr to TLS state
+ */
+extern void *tls_g_create_conn(const tls_conn_args_t *tls_conn_args);
 extern void tls_g_destroy_conn(void *conn);
 
 extern ssize_t tls_g_send(void *conn, const void *buf, size_t n);
