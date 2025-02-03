@@ -1596,6 +1596,10 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 				outflags |= RESERVE_FLAG_NO_USER_DEL;
 			else
 				outflags |= RESERVE_FLAG_USER_DEL;
+		} else if (!xstrncasecmp(curr, "Force_Start", MAX(taglen, 1)) &&
+			   op == RESV_NEW) {
+			curr += taglen;
+			outflags |= RESERVE_FLAG_FORCE_START;
 		} else {
 			error("Error parsing flags %s.  %s", flagstr, msg);
 			return INFINITE64;

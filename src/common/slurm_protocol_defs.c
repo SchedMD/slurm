@@ -3153,7 +3153,11 @@ extern char *reservation_flags_string(reserve_info_t * resv_ptr)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_USER_DELETE");
 	}
-
+	if (flags & RESERVE_FLAG_FORCE_START) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "FORCE_START");
+	}
 
 	return flag_str;
 }
