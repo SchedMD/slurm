@@ -1187,6 +1187,7 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 	while ((row = mysql_fetch_row(result))) {
 		time_t row_start = slurm_atoul(row[RESV_REQ_START]);
 		time_t row_end = slurm_atoul(row[RESV_REQ_END]);
+		time_t row_force = slurm_atoul(row[RESV_REQ_FORCE]);
 		int unused;
 		int resv_seconds;
 		time_t orig_start = row_start;
@@ -1201,6 +1202,9 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 			unused = 0;
 		} else
 			unused = slurm_atoul(row[RESV_REQ_UNUSED]);
+
+		if (row_force > row_start)
+			row_start = row_force;
 
 		if (row_start <= curr_start)
 			row_start = curr_start;
