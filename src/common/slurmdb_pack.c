@@ -2281,6 +2281,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 			pack_time(0, buffer);
 			pack_time(0, buffer);
 			pack_time(0, buffer);
+			pack_time(0, buffer);
 			packnull(buffer);
 			pack32(NO_VAL, buffer);
 			packdouble(0.0, buffer);
@@ -2296,6 +2297,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 		packstr(object->nodes, buffer);
 		packstr(object->node_inx, buffer);
 		pack_time(object->time_end, buffer);
+		pack_time(object->time_force, buffer);
 		pack_time(object->time_start, buffer);
 		pack_time(object->time_start_prev, buffer);
 		packstr(object->tres_str, buffer);
@@ -2365,6 +2367,7 @@ extern int slurmdb_unpack_reservation_rec(void **object,
 		safe_unpackstr(&object_ptr->nodes, buffer);
 		safe_unpackstr(&object_ptr->node_inx, buffer);
 		safe_unpack_time(&object_ptr->time_end, buffer);
+		safe_unpack_time(&object_ptr->time_force, buffer);
 		safe_unpack_time(&object_ptr->time_start, buffer);
 		safe_unpack_time(&object_ptr->time_start_prev, buffer);
 		safe_unpackstr(&object_ptr->tres_str, buffer);

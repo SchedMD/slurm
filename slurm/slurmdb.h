@@ -1131,6 +1131,7 @@ typedef struct {
 	char *nodes; /* list of nodes in reservation */
 	char *node_inx; /* node index of nodes in reservation */
 	time_t time_end; /* end time of reservation */
+	time_t time_force; /* The actual time the reservation started */
 	time_t time_start; /* start time of reservation */
 	time_t time_start_prev; /* If start time was changed this is
 				 * the previous start time.  Needed

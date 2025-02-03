@@ -298,6 +298,7 @@ typedef struct {
 	char *nodes;
 	char *node_inx;
 	char *time_end;
+	char *time_force;
 	char *time_start;
 	char *tres_str;
 	char *unused_wall;
@@ -315,6 +316,7 @@ static void _free_local_resv_members(local_resv_t *object)
 		xfree(object->nodes);
 		xfree(object->node_inx);
 		xfree(object->time_end);
+		xfree(object->time_force);
 		xfree(object->time_start);
 		xfree(object->tres_str);
 		xfree(object->unused_wall);
@@ -2047,6 +2049,7 @@ static void _pack_local_resv(local_resv_t *object, buf_t *buffer)
 	packstr(object->nodes, buffer);
 	packstr(object->node_inx, buffer);
 	packstr(object->time_end, buffer);
+	packstr(object->time_force, buffer);
 	packstr(object->time_start, buffer);
 	packstr(object->tres_str, buffer);
 	packstr(object->unused_wall, buffer);
@@ -2069,6 +2072,7 @@ static int _unpack_local_resv(local_resv_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->nodes, buffer);
 		safe_unpackstr(&object->node_inx, buffer);
 		safe_unpackstr(&object->time_end, buffer);
+		safe_unpackstr(&object->time_force, buffer);
 		safe_unpackstr(&object->time_start, buffer);
 		safe_unpackstr(&object->tres_str, buffer);
 		safe_unpackstr(&object->unused_wall, buffer);
