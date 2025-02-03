@@ -3,7 +3,9 @@
 <h1>Job Completion Kafka plugin guide</h1>
 
 <p>When configured, the <b>jobcomp/kafka</b> plugin attempts to publish a subset
-of the fields for each completed job record to a Kafka server.</p>
+of the fields for each completed job record to a Kafka server. Since Slurm
+25.05 it's also possible to optionally send a subset of job record fields when
+the job first starts running.</p>
 
 <h2 id="prereq">Requirements<a class="slurm_link" href="#prereq"></a></h2>
 <p>The plugin serializes the subset of fields to JSON before each produce
@@ -70,6 +72,7 @@ man page for specific details. Example:
 topic=mycluster</pre>
 <p><b>NOTE</b>: Changes to this option do not require a slurmctld restart.
 Reconfiguration or SIGHUP is sufficient for them to take effect.</p>
+<p><b>NOTE</b>: Please, refer to the man page to configure job start events.</p>
 </li>
 
 <li>
@@ -81,10 +84,11 @@ Reconfiguration or SIGHUP is sufficient for them to take effect.</p>
 
 <h2 id="functionality">Plugin Functionality<a class="slurm_link"
 		href="#functionality"></a></h2>
-<p>For each finished job, the plugin jobcomp_p_log_record() operation is
-executed. A subset of the job record fields are serialized into a JSON string
-via the Slurm serialization plugins. Then the serialized string is attempted
-to be produced using the librdkafka rd_kafka_producev() API call.</p>
+<p>For each finished (or optionally start running) job, the plugin
+jobcomp_p_record_job_[end|start] operation is executed. A subset of the job
+record fields are serialized into a JSON string via the Slurm serialization
+plugins. Then the serialized string is attempted to be produced using the
+librdkafka rd_kafka_producev() API call.</p>
 
 <p>Producing a message to librdkafka can be done even if the Kafka server is
 down. But an error returned from this call makes it so the message is discarded.
@@ -151,6 +155,6 @@ log to syslog instead. The library logging level and debug contexts are also
 configurable via the file referenced by JobCompLoc, as well as the rest of the
 library configuration parameters.</p>
 
-<p style="text-align:center;">Last modified 22 February 2023</p>
+<p style="text-align:center;">Last modified 03 February 2025</p>
 
 <!--#include virtual="footer.txt"-->
