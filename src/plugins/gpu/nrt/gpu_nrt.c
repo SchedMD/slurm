@@ -116,8 +116,7 @@ static char *_get_device_name(unsigned int dev_inx)
 
 	if (!fgets(device_name, DEVICE_NAME_SZ, fp))
 		debug("Could not read Neuron device name");
-
-	xstrtolower(device_name);
+	gpu_common_underscorify_tolower(device_name);
 	xfree(sysfs_file);
 	fclose(fp);
 	return device_name;

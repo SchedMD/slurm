@@ -728,6 +728,7 @@ static void _rsmi_get_device_brand(uint32_t dv_ind, char *device_brand,
 		error("RSMI: Failed to get brand of the GPU: %s",
 		      status_string);
 	}
+	gpu_common_underscorify_tolower(device_brand);
 }
 
 /*
