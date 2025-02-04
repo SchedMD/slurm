@@ -43,9 +43,6 @@
 #ifndef _SLURM_H
 #define _SLURM_H
 
-/* Number of dimensions the system has */
-#define SYSTEM_DIMENSIONS 1
-
 #ifdef __cplusplus
 extern "C" {
 #endif
