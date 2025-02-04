@@ -300,6 +300,15 @@ static void _set_sizeinfo(list_t *lresp)
 	tmp_val = pmixp_info_tasks_uni();
 	PMIXP_KVP_CREATE(kvp, PMIX_MAX_PROCS, &tmp_val, PMIX_UINT32);
 	list_append(lresp, kvp);
+
+	/*
+	 * When using MULTIPLE PROGRAM this is the number of tasks of
+	 * this specific program. In Slurm terminology, number of tasks
+	 * of this heterogeneous component (a.k.a step).
+	 */
+	tmp_val = pmixp_info_tasks_loc();
+	PMIXP_KVP_CREATE(kvp, PMIX_APP_SIZE, &tmp_val, PMIX_UINT32);
+	list_append(lresp, kvp);
 }
 
 /*
