@@ -1923,7 +1923,7 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr);
 extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
 
 #define safe_read(fd, buf, size) do {					\
-		int remaining = size;					\
+		size_t remaining = size;				\
 		char *ptr = (char *) buf;				\
 		int rc;							\
 		while (remaining > 0) {					\
@@ -1934,7 +1934,7 @@ extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
 				errno = EIO;				\
 				goto rwfail;				\
 			} else if (rc == 0) {				\
-				debug("%s:%d: %s: safe_read (%d of %d) EOF", \
+				debug("%s:%d: %s: safe_read (%zu of %d) EOF", \
 				      __FILE__, __LINE__, __func__, \
 				      remaining, (int)size);		\
 				errno = EIO;				\
@@ -1944,7 +1944,7 @@ extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
 				    (errno == EINTR) ||			\
 				    (errno == EWOULDBLOCK))		\
 					continue;			\
-				debug("%s:%d: %s: safe_read (%d of %d) failed: %m", \
+				debug("%s:%d: %s: safe_read (%zu of %d) failed: %m", \
 				      __FILE__, __LINE__, __func__, \
 				      remaining, (int)size);		\
 				goto rwfail;				\
@@ -1952,7 +1952,7 @@ extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
 				ptr += rc;				\
 				remaining -= rc;			\
 				if (remaining > 0)			\
-					debug3("%s:%d: %s: safe_read (%d of %d) partial read", \
+					debug3("%s:%d: %s: safe_read (%zu of %d) partial read", \
 					       __FILE__, __LINE__, __func__, \
 					       remaining, (int)size);	\
 			}						\
@@ -1960,7 +1960,7 @@ extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
 	} while (0)
 
 #define safe_write(fd, buf, size) do {					\
-		int remaining = size;					\
+		size_t remaining = size;				\
 		char *ptr = (char *) buf;				\
 		int rc;							\
 		while(remaining > 0) {					\
@@ -1968,7 +1968,7 @@ extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
  			if (rc < 0) {					\
 				if ((errno == EAGAIN) || (errno == EINTR))\
 					continue;			\
-				debug("%s:%d: %s: safe_write (%d of %d) failed: %m", \
+				debug("%s:%d: %s: safe_write (%zu of %d) failed: %m", \
 				      __FILE__, __LINE__, __func__, \
 				      remaining, (int)size);		\
 				goto rwfail;				\
@@ -1976,7 +1976,7 @@ extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
 				ptr += rc;				\
 				remaining -= rc;			\
 				if (remaining > 0)			\
-					debug3("%s:%d: %s: safe_write (%d of %d) partial write", \
+					debug3("%s:%d: %s: safe_write (%zu of %d) partial write", \
 					       __FILE__, __LINE__, __func__, \
 					       remaining, (int)size);	\
 			}						\
