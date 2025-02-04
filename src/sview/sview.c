@@ -402,34 +402,6 @@ static void _set_page_opts(GtkToggleAction *action)
 	return;
 }
 
-#ifdef WANT_TOPO_ON_MAIN_OPTIONS
-static void _set_topogrid(GtkToggleAction *action)
-{
-	char *tmp;
-	int rc = SLURM_SUCCESS;
-
-	if (action) {
-		working_sview_config.grid_topological
-			= gtk_toggle_action_get_active(action);
-	}
-	apply_hidden_change = false;
-	if (working_sview_config.grid_topological) {
-		if (!g_switch_nodes_maps)
-			rc = get_topo_conf();
-		if (rc != SLURM_SUCCESS)
-			/*denied*/
-			tmp = g_strdup_printf("Valid topology not detected");
-		else
-			tmp = g_strdup_printf("Grid changed to topology order");
-
-	}
-	refresh_main(NULL, NULL);
-	display_edit_note(tmp);
-	g_free(tmp);
-	return;
-}
-#endif
-
 static void _set_ruled(GtkToggleAction *action)
 {
 	char *tmp;
@@ -695,9 +667,6 @@ static char *_get_ui_description()
 		"      <menuitem action='grid'/>"
 		"      <menuitem action='hidden'/>"
 		"      <menuitem action='page_opts'/>"
-#ifdef WANT_TOPO_ON_MAIN_OPTIONS
-		"      <menuitem action='topoorder'/>"
-#endif
 		"      <menuitem action='ruled'/>");
 	if (cluster_dims == 1)
 		xstrcat(ui_description,
@@ -861,12 +830,6 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 "<control>w", "Save Page Options",
 		 G_CALLBACK(_set_page_opts),
 		 working_sview_config.save_page_opts},
-#ifdef WANT_TOPO_ON_MAIN_OPTIONS
-		{"topoorder", GTK_STOCK_SELECT_COLOR, "Set Topology Grid",
-		 "<control>t", "Set Topology Grid",
-		 G_CALLBACK(_set_topogrid),
-		 working_sview_config.grid_topological},
-#endif
 		{"ruled", GTK_STOCK_SELECT_COLOR, "R_uled Tables",
 		 "<control>u", "Have ruled tables or not",
 		 G_CALLBACK(_set_ruled), working_sview_config.ruled_treeview},
