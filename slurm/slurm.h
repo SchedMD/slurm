@@ -45,7 +45,6 @@
 
 /* Number of dimensions the system has */
 #define SYSTEM_DIMENSIONS 1
-#define HIGHEST_DIMENSIONS 5
 
 #ifdef __cplusplus
 extern "C" {
