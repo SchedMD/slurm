@@ -323,7 +323,6 @@ extern gint last_event_y;
 extern GdkCursor* in_process_cursor;
 extern char *sview_colors[];
 extern int sview_colors_cnt;
-extern int cluster_dims;
 extern uint32_t cluster_flags;
 extern list_t *cluster_list;
 extern front_end_info_msg_t *g_front_end_info_ptr;
