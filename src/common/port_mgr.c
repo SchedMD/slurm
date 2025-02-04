@@ -340,13 +340,9 @@ static int _resv_port_alloc(uint16_t resv_port_cnt,
 	char port_str[16];
 	hostlist_t *hl;
 	static int last_port_alloc = 0;
-	static int dims = -1;
 
 	xassert(!*resv_ports);
 	xassert(!*resv_port_array);
-
-	if (dims == -1)
-		dims = slurmdb_setup_cluster_dims();
 
 	if (resv_port_cnt > port_resv_cnt)
 		return ESLURM_PORTS_INVALID;
@@ -380,7 +376,7 @@ static int _resv_port_alloc(uint16_t resv_port_cnt,
 	}
 	hostlist_sort(hl);
 	/* get the ranged string with no brackets on it */
-	*resv_ports = hostlist_ranged_string_xmalloc_dims(hl, dims, 0);
+	*resv_ports = hostlist_ranged_string_xmalloc_dims(hl, 1, 0);
 	hostlist_destroy(hl);
 	*resv_port_array = port_array;
 
