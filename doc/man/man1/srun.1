@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "December 2024" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "February 2025" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -407,9 +407,8 @@ Unique name for OCI container.
 If set, then the allocated nodes must form a contiguous set.
 
 \fBNOTE\fR: If the SelectType is cons_tres this option won't be honored
-with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
-plugins, both of which can modify the node ordering. This option applies to job
-allocations.
+with the \fBtopology/tree\fR plugin, which can modify the node ordering.
+This option applies to job allocations.
 .IP
 
 .TP
