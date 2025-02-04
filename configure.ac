@@ -544,7 +544,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/tls/none/Makefile
 		 src/plugins/tls/s2n/Makefile
 		 src/plugins/topology/Makefile
-		 src/plugins/topology/3d_torus/Makefile
 		 src/plugins/topology/block/Makefile
 		 src/plugins/topology/common/Makefile
 		 src/plugins/topology/default/Makefile

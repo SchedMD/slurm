@@ -5547,11 +5547,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_string(&conf->topology_plugin,
 			    "TopologyPlugin", hashtbl)) {
-#if defined HAVE_3D
-		conf->topology_plugin = xstrdup("topology/3d_torus");
-#else
 		/* empty */
-#endif
 	} else if (xstrcasestr(conf->topology_plugin, "none"))
 		xfree(conf->topology_plugin);
 
