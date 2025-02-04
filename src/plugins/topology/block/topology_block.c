@@ -104,8 +104,6 @@ typedef struct topoinfo_block {
 	topoinfo_bblock_t *topo_array;/* the block topology records */
 } topoinfo_block_t;
 
-block_context_t *ctx = NULL;
-
 static void _print_topo_record(topoinfo_bblock_t * topo_ptr, char **out)
 {
 	char *env, *line = NULL, *pos = NULL;
@@ -135,7 +133,6 @@ static void _print_topo_record(topoinfo_bblock_t * topo_ptr, char **out)
  */
 extern int init(void)
 {
-	ctx = xmalloc(sizeof(*ctx));
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -146,9 +143,6 @@ extern int init(void)
  */
 extern int fini(void)
 {
-	block_record_table_destroy();
-	FREE_NULL_BITMAP(ctx->blocks_nodes_bitmap);
-	xfree(ctx);
 	return SLURM_SUCCESS;
 }
 
@@ -156,15 +150,27 @@ extern int fini(void)
  * topo_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
  */
-extern int topology_p_build_config(void)
+extern int topology_p_build_config(topology_ctx_t *tctx)
 {
 	if (node_record_count)
-		block_record_validate();
+		return block_record_validate(tctx);
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_destroy_config(topology_ctx_t *tctx)
+{
+	block_context_t *ctx = tctx->plugin_ctx;
+
+	block_record_table_destroy(ctx);
+	FREE_NULL_BITMAP(ctx->blocks_nodes_bitmap);
+	xfree(tctx->plugin_ctx);
+
 	return SLURM_SUCCESS;
 }
 
 extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 {
+	block_context_t *ctx = topo_eval->tctx->plugin_ctx;
 	/*
 	 * Don't use eval_nodes_block() when there isn't any block node on
 	 * node_map. This allows the allocation of nodes not connected by block
@@ -179,8 +185,9 @@ extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 	return common_topo_choose_nodes(topo_eval);
 }
 
-extern int topology_p_whole_topo(bitstr_t *node_mask)
+extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 {
+	block_context_t *ctx = tctx;
 	for (int i = 0; i < ctx->block_count; i++) {
 		if (bit_overlap_any(ctx->block_record_table[i].node_bitmap,
 				    node_mask)) {
@@ -197,8 +204,9 @@ extern int topology_p_whole_topo(bitstr_t *node_mask)
  * IN name of block
  * RET bitmap of nodes from block_record_table (do not free)
  */
-extern bitstr_t *topology_p_get_bitmap(char *name)
+extern bitstr_t *topology_p_get_bitmap(char *name, void *tctx)
 {
+	block_context_t *ctx = tctx;
 	for (int i = 0; i < ctx->block_count + ctx->ablock_count; i++) {
 		if (!xstrcmp(ctx->block_record_table[i].name, name)) {
 			return ctx->block_record_table[i].node_bitmap;
@@ -208,7 +216,7 @@ extern bitstr_t *topology_p_get_bitmap(char *name)
 	return NULL;
 }
 
-extern bool topology_p_generate_node_ranking(void)
+extern bool topology_p_generate_node_ranking(topology_ctx_t *tctx)
 {
 	return false;
 }
@@ -222,9 +230,10 @@ extern bool topology_p_generate_node_ranking(void)
  *      pattern : block.node
  */
 extern int topology_p_get_node_addr(char *node_name, char **paddr,
-				    char **ppattern)
+				    char **ppattern, void *tctx)
 {
 	node_record_t *node_ptr = find_node_record(node_name);
+	block_context_t *ctx = tctx;
 
 	/* node not found in configuration */
 	if (!node_ptr)
@@ -245,7 +254,8 @@ extern int topology_p_get_node_addr(char *node_name, char **paddr,
 }
 
 extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
-				     int *count, uint16_t tree_width)
+				     int *count, uint16_t tree_width,
+				     void *tctx)
 {
 	return common_topo_split_hostlist_treewidth(
 		hl, sp_hl, count, tree_width);
@@ -268,9 +278,10 @@ extern int topology_p_topology_free(void *topoinfo_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int topology_p_get(topology_data_t type, void *data)
+extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 {
 	int rc = SLURM_SUCCESS;
+	block_context_t *ctx = tctx;
 
 	switch (type) {
 	case TOPO_DATA_TOPOLOGY_PTR:
@@ -459,10 +470,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask)
+extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask, void *tctx)
 {
 	uint32_t frag = 0;
 	bool bset[MAX_BLOCK_LEVELS] = {0};
+	block_context_t *ctx = tctx;
 
 	/*
 	 * Calculate fragmentation as the sum of sizes of all unavailable

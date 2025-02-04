@@ -53,7 +53,7 @@ typedef enum {
 } topology_data_t;
 
 typedef struct topology_ctx {
-	uint32_t plugin_id;
+	int idx;
 	char *name;
 	char *topo_conf;
 	void *plugin_ctx;
@@ -78,9 +78,8 @@ typedef struct topology_eval {
 	uint32_t req_nodes; /* number of requested nodes */
 	bool trump_others; /* If ->eval_nodes and set do not consider other
 			    * algorithms. Only use ->eval_nodes. */
+	topology_ctx_t *tctx;
 } topology_eval_t;
-
-extern char *topo_conf;
 
 /*****************************************************************************\
  *  Slurm topology functions
@@ -116,6 +115,8 @@ extern int topology_get_plugin_id(void);
  *	after a system startup or reconfiguration.
  */
 extern int topology_g_build_config(void);
+
+extern int topology_g_destroy_config(void);
 
 /*
  * topology_g_eval_nodes - Evaluate topology based on the topology plugin when

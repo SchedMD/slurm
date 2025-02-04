@@ -69,11 +69,9 @@ typedef struct {
 	int switch_levels; /* number of switch levels     */
 } tree_context_t;
 
-extern tree_context_t *ctx;
-
 /* Free all memory associated with switch_table structure */
-extern void switch_record_table_destroy(void);
+extern void switch_record_table_destroy(tree_context_t *ctx);
 
-extern void switch_record_validate(void);
+extern int switch_record_validate(topology_ctx_t *tctx);
 
 #endif

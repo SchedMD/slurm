@@ -48,35 +48,34 @@
 #include "src/common/xstring.h"
 
 strong_alias(topology_g_build_config, slurm_topology_g_build_config);
+strong_alias(topology_g_destroy_config, slurm_topology_g_detroy_config);
 
 static uint32_t active_topo_id;
 
-char *topo_conf = NULL;
-
 typedef struct slurm_topo_ops {
 	uint32_t (*plugin_id);
-	int		(*build_config)		( void );
+	char(*plugin_type);
+	int (*build_config)(topology_ctx_t *tctx);
+	int (*destroy_config)(topology_ctx_t *tctx);
 	int (*eval_nodes) (topology_eval_t *topo_eval);
 
-	int (*whole_topo) (bitstr_t *node_mask);
-	bitstr_t *(*get_bitmap)(char *name);
-	bool		(*node_ranking)		( void );
+	int (*whole_topo)(bitstr_t *node_mask, void *tctx);
+	bitstr_t *(*get_bitmap)(char *name, void *tctx);
+	bool (*node_ranking)(topology_ctx_t *tctx);
 	int		(*get_node_addr)	( char* node_name,
 						  char** addr,
 						  char** pattern );
-	int (*split_hostlist) (hostlist_t *hl,
-			       hostlist_t ***sp_hl,
-			       int *count,
-			       uint16_t tree_width);
+	int (*split_hostlist)(hostlist_t *hl, hostlist_t ***sp_hl, int *count,
+			      uint16_t tree_width, void *tctx);
 	int (*topoinfo_free) (void *topoinfo_ptr);
-	int (*get) (topology_data_t type, void *data);
+	int (*get)(topology_data_t type, void *data, void *tctx);
 	int (*topoinfo_pack) (void *topoinfo_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
 	int (*topoinfo_print) (void *topoinfo_ptr, char *nodes_list,
 			       char **out);
 	int (*topoinfo_unpack) (void **topoinfo_pptr, buf_t *buffer,
 				uint16_t protocol_version);
-	uint32_t (*get_fragmentation) (bitstr_t *node_mask);
+	uint32_t (*get_fragmentation)(bitstr_t *node_mask, void *tctx);
 } slurm_topo_ops_t;
 
 /*
@@ -84,7 +83,9 @@ typedef struct slurm_topo_ops {
  */
 static const char *syms[] = {
 	"plugin_id",
+	"plugin_type",
 	"topology_p_build_config",
+	"topology_p_destroy_config",
 	"topology_p_eval_nodes",
 	"topology_p_whole_topo",
 	"topology_p_get_bitmap",
@@ -99,10 +100,37 @@ static const char *syms[] = {
 	"topology_p_get_fragmentation",
 };
 
-static slurm_topo_ops_t ops;
-static plugin_context_t	*g_context = NULL;
+static slurm_topo_ops_t *ops = NULL;
+static plugin_context_t **g_context = NULL;
+static int g_context_num = 0;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
+static topology_ctx_t *tctx = NULL;
+static int tctx_num = -1;
+
+static int _get_plugin_index_by_type(char *type)
+{
+	char *plugin_type = "topo";
+
+	for (int i = 0; i < g_context_num; i++)
+		if (!xstrcmp(plugin_type, ops[i].plugin_type))
+			return i;
+
+	xrecalloc(ops, g_context_num + 1, sizeof(slurm_topo_ops_t));
+	xrecalloc(g_context, g_context_num + 1, sizeof(plugin_context_t *));
+
+	g_context[g_context_num] =
+		plugin_context_create(plugin_type, type,
+				      (void **) &ops[g_context_num], syms,
+				      sizeof(syms));
+	if (!g_context[g_context_num]) {
+		error("%s: cannot create %s context for %s",
+		      __func__, plugin_type, type);
+		return -1;
+	}
+
+	return g_context_num++;
+}
 
 /*
  * The topology plugin can not be changed via reconfiguration
@@ -113,7 +141,6 @@ static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 extern int topology_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
-	char *plugin_type = "topo";
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -122,23 +149,22 @@ extern int topology_g_init(void)
 
 	xassert(slurm_conf.topology_plugin);
 
-	if (!topo_conf)
-		topo_conf = get_extra_conf_path("topology.conf");
+	tctx = xcalloc(1, sizeof(topology_ctx_t));
+	tctx[0].name = xstrdup("default");
+	tctx[0].topo_conf = get_extra_conf_path("topology.conf");
 
-	g_context = plugin_context_create(plugin_type,
-					  slurm_conf.topology_plugin,
-					  (void **) &ops, syms, sizeof(syms));
-
-	if (!g_context) {
-		error("cannot create %s context for %s",
-		      plugin_type, slurm_conf.topology_plugin);
+	if ((tctx[0].idx =
+	     _get_plugin_index_by_type(slurm_conf.topology_plugin)) < 0) {
 		retval = SLURM_ERROR;
 		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
-	active_topo_id = *(ops.plugin_id);
+
+	active_topo_id = *(ops[0].plugin_id);
 	plugin_inited = PLUGIN_INITED;
+	tctx_num = 1;
 done:
+
 	slurm_mutex_unlock(&g_context_lock);
 	return retval;
 }
@@ -147,14 +173,22 @@ extern int topology_g_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (g_context) {
-		rc = plugin_context_destroy(g_context);
-		g_context = NULL;
+	slurm_mutex_lock(&g_context_lock);
+	for (int i = 0; i < g_context_num; i++) {
+		int rc2 = plugin_context_destroy(g_context[i]);
+		if (rc2) {
+			debug("%s: %s: %s",
+			      __func__, g_context[i]->type,
+			      slurm_strerror(rc2));
+			rc = SLURM_ERROR;
+		}
 	}
 
-	xfree(topo_conf);
+	xfree(ops);
+	xfree(g_context);
+	g_context_num = 0;
 
-	plugin_inited = PLUGIN_NOT_INITED;
+	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
 }
@@ -163,35 +197,71 @@ extern int topology_get_plugin_id(void)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
-	return *(ops.plugin_id);
+	return *(ops[0].plugin_id);
 }
 
 extern int topology_g_build_config(void)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	DEF_TIMERS;
 
+	slurm_mutex_lock(&g_context_lock);
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	START_TIMER;
-	rc = (*(ops.build_config))();
+	for (int i = 0; i < tctx_num; i++) {
+		int rc2 = (*(ops[tctx[i].idx].build_config))(&(tctx[i]));
+		if (rc2) {
+			debug("%s: %s: %s",
+			      __func__, g_context[i]->type,
+			      slurm_strerror(rc2));
+			rc = SLURM_ERROR;
+		}
+	}
 	END_TIMER3(__func__, 20000);
+
+	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
 }
 
+extern int topology_g_destroy_config(void)
+{
+	int rc = SLURM_SUCCESS;
+	DEF_TIMERS;
+
+	slurm_mutex_lock(&g_context_lock);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	START_TIMER;
+	for (int i = 0; i < tctx_num; i++) {
+		int rc2 = (*(ops[tctx[i].idx].destroy_config))(&(tctx[i]));
+		if (rc2) {
+			debug("%s: %s: %s",
+			      __func__, g_context[i]->type,
+			      slurm_strerror(rc2));
+			rc = SLURM_ERROR;
+		}
+	}
+	END_TIMER3(__func__, 20000);
+
+	slurm_mutex_unlock(&g_context_lock);
+
+	return rc;
+}
 extern int topology_g_eval_nodes(topology_eval_t *topo_eval)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
+	topo_eval->tctx = &(tctx[0]);
 
-	return (*(ops.eval_nodes))(topo_eval);
+	return (*(ops[tctx[0].idx].eval_nodes))(topo_eval);
 }
 
 extern int topology_g_whole_topo(bitstr_t *node_mask)
 {
 	xassert(plugin_inited);
 
-	return (*(ops.whole_topo))(node_mask);
+	return (*(ops[tctx[0].idx].whole_topo))(node_mask, tctx[0].plugin_ctx);
 }
 
 
@@ -205,7 +275,7 @@ extern bitstr_t *topology_g_get_bitmap(char *name)
 {
 	xassert(plugin_inited);
 
-	return (*(ops.get_bitmap))(name);
+	return (*(ops[tctx[0].idx].get_bitmap))(name, tctx[0].plugin_ctx);
 }
 
 /*
@@ -216,7 +286,7 @@ extern bool topology_g_generate_node_ranking(void)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
-	return (*(ops.node_ranking))();
+	return (*(ops[tctx[0].idx].node_ranking))(&(tctx[0]));
 }
 
 extern int topology_g_get_node_addr(char *node_name, char **addr,
@@ -224,7 +294,7 @@ extern int topology_g_get_node_addr(char *node_name, char **addr,
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
-	return (*(ops.get_node_addr))(node_name,addr,pattern);
+	return (*(ops[tctx[0].idx].get_node_addr))(node_name, addr, pattern);
 }
 
 extern int topology_g_split_hostlist(hostlist_t *hl,
@@ -262,7 +332,9 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 		goto end;
 	}
 
-	depth = (*(ops.split_hostlist))(hl, sp_hl, count, tree_width);
+	depth = (*(ops[tctx[0].idx].split_hostlist))(hl, sp_hl, count,
+						     tree_width,
+						     tctx[0].plugin_ctx);
 	if (!depth && !(*count))
 		goto end;
 
@@ -288,7 +360,7 @@ extern int topology_g_get(topology_data_t type, void *data)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
-	return (*(ops.get))(type, data);
+	return (*(ops[tctx[0].idx].get))(type, data, tctx[0].plugin_ctx);
 }
 
 extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
@@ -304,7 +376,8 @@ extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 	if (topoinfo->plugin_id != active_topo_id)
 		return SLURM_ERROR;
 
-	return (*(ops.topoinfo_pack))(topoinfo->data, buffer, protocol_version);
+	return (*(ops[tctx[0].idx].topoinfo_pack))(topoinfo->data, buffer,
+						   protocol_version);
 }
 
 extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
@@ -316,7 +389,8 @@ extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
 	if (topoinfo->plugin_id != active_topo_id)
 		return SLURM_ERROR;
 
-	return (*(ops.topoinfo_print))(topoinfo->data, nodes_list, out);
+	return (*(ops[tctx[0].idx].topoinfo_print))(topoinfo->data, nodes_list,
+						    out);
 }
 
 extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
@@ -345,8 +419,9 @@ extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
 		goto unpack_error;
 	}
 
-	if ((*(ops.topoinfo_unpack))(&topoinfo_ptr->data, buffer,
-				     protocol_version) != SLURM_SUCCESS)
+	if ((*(ops[tctx[0].idx].topoinfo_unpack))(&topoinfo_ptr->data, buffer,
+						  protocol_version) !=
+	    SLURM_SUCCESS)
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
@@ -366,7 +441,8 @@ extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo)
 
 	if (topoinfo) {
 		if (topoinfo->data)
-			rc = (*(ops.topoinfo_free))(topoinfo->data);
+			rc = (*(ops[tctx[0].idx]
+					.topoinfo_free))(topoinfo->data);
 		xfree(topoinfo);
 	}
 	return rc;
@@ -376,5 +452,6 @@ extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask)
 {
 	xassert(plugin_inited);
 
-	return (*(ops.get_fragmentation))(node_mask);
+	return (*(ops[tctx[0].idx].get_fragmentation))(node_mask,
+						       tctx[0].plugin_ctx);
 }

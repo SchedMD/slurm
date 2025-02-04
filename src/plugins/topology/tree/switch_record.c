@@ -50,7 +50,7 @@ static bool allow_empty_switch = false;
 
 static s_p_hashtbl_t *conf_hashtbl = NULL;
 
-static void _log_switches(void)
+static void _log_switches(tree_context_t *ctx)
 {
 	int i, j;
 	char *tmp_str = NULL, *sep;
@@ -89,7 +89,7 @@ static void _log_switches(void)
 }
 
 /* Free all memory associated with switch_table structure */
-extern void switch_record_table_destroy(void)
+extern void switch_record_table_destroy(tree_context_t *ctx)
 {
 	if (!ctx->switch_table)
 		return;
@@ -160,7 +160,7 @@ static int _parse_switches(void **dest, slurm_parser_enum_t type,
 }
 
 /* Return count of switch configuration entries read */
-static int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
+static int _read_topo_file(slurm_conf_switches_t **ptr_array[], char *topo_conf)
 {
 	static s_p_options_t switch_options[] = {
 		{"AllowEmptySwitch", S_P_BOOLEAN},
@@ -214,7 +214,7 @@ static void _merge_switches_array(uint16_t *switch_index1, uint16_t *cnt1,
  * _find_desc_switches creates an array of indexes to the
  * all descendants of switch sw.
  */
-static void _find_desc_switches(int sw)
+static void _find_desc_switches(int sw, tree_context_t *ctx)
 {
 	int k;
 	_merge_switches_array(ctx->switch_table[sw].switch_desc_index,
@@ -233,7 +233,7 @@ static void _find_desc_switches(int sw)
 }
 
 /* Return the index of a given switch name or -1 if not found */
-static int _get_switch_inx(const char *name)
+static int _get_switch_inx(const char *name, tree_context_t *ctx)
 {
 	int i;
 	switch_record_t *switch_ptr;
@@ -251,7 +251,7 @@ static int _get_switch_inx(const char *name)
  * _find_child_switches creates an array of indexes to the
  * immediate descendants of switch sw.
  */
-static void _find_child_switches(int sw)
+static void _find_child_switches(int sw, tree_context_t *ctx)
 {
 	int i;
 	int cldx; /* index into array of child switches */
@@ -283,7 +283,7 @@ static void _find_child_switches(int sw)
 	hostlist_destroy(swlist);
 }
 
-static void _check_better_path(int i, int j ,int k)
+static void _check_better_path(int i, int j, int k, tree_context_t *ctx)
 {
 	int tmp;
 
@@ -299,7 +299,7 @@ static void _check_better_path(int i, int j ,int k)
 		ctx->switch_table[j].switches_dist[k] = tmp;
 }
 
-extern void switch_record_validate(void)
+extern int switch_record_validate(topology_ctx_t *tctx)
 {
 	slurm_conf_switches_t *ptr, **ptr_array;
 	int depth, i, j, node_count;
@@ -310,14 +310,14 @@ extern void switch_record_validate(void)
 	bitstr_t *multi_homed_bitmap = NULL;	/* nodes on >1 leaf switch */
 	bitstr_t *switches_bitmap = NULL;	/* nodes on any leaf switch */
 	bitstr_t *tmp_bitmap = NULL;
+	tree_context_t *ctx = xmalloc(sizeof(*ctx));
 
-	switch_record_table_destroy();
-
-	ctx->switch_count = _read_topo_file(&ptr_array);
+	ctx->switch_count = _read_topo_file(&ptr_array, tctx->topo_conf);
 	if (ctx->switch_count == 0) {
 		error("No switches configured");
+		xfree(ctx);
 		s_p_hashtbl_destroy(conf_hashtbl);
-		return;
+		return SLURM_ERROR;
 	}
 
 	ctx->switch_table = xcalloc(ctx->switch_count, sizeof(switch_record_t));
@@ -380,7 +380,7 @@ extern void switch_record_validate(void)
 				      switch_ptr->switches);
 			}
 			while ((child = hostlist_pop(hl))) {
-				j = _get_switch_inx(child);
+				j = _get_switch_inx(child, ctx);
 				if ((j < 0) || (j == i)) {
 					fatal("Switch configuration %s has invalid child (%s)",
 					      switch_ptr->name, child);
@@ -463,7 +463,7 @@ extern void switch_record_validate(void)
 	 * and see if any switch can reach all nodes */
 	for (i = 0; i < ctx->switch_count; i++) {
 		if (ctx->switch_table[i].level != 0) {
-			_find_child_switches(i);
+			_find_child_switches(i, ctx);
 		}
 		if (node_count ==
 		    bit_set_count(ctx->switch_table[i].node_bitmap)) {
@@ -494,7 +494,7 @@ extern void switch_record_validate(void)
 		for (j = 0; j < ctx->switch_count; j++) {
 			int k;
 			for (k = 0; k < ctx->switch_count; k++) {
-				_check_better_path(i, j ,k);
+				_check_better_path(i, j, k, ctx);
 			}
 		}
 	}
@@ -502,12 +502,14 @@ extern void switch_record_validate(void)
 		for (j = 0; j < ctx->switch_count; j++) {
 			if (ctx->switch_table[j].level != i)
 				continue;
-			_find_desc_switches(j);
+			_find_desc_switches(j, ctx);
 		}
 	}
 	if (!have_root && running_in_daemon())
 		warning("TOPOLOGY: no switch can reach all nodes through its descendants. If this is not intentional, fix the topology.conf file.");
 
 	s_p_hashtbl_destroy(conf_hashtbl);
-	_log_switches();
+	_log_switches(ctx);
+	tctx->plugin_ctx = ctx;
+	return SLURM_SUCCESS;
 }

@@ -83,7 +83,8 @@ static int _parse_block(void **dest, slurm_parser_enum_t type,
 }
 
 /* Return count of block configuration entries read */
-static int _read_topo_file(slurm_conf_block_t **ptr_array[])
+static int _read_topo_file(slurm_conf_block_t **ptr_array[], char *topo_conf,
+			   block_context_t *ctx)
 {
 	static s_p_options_t block_options[] = {
 		{"AllowGaps", S_P_BOOLEAN},
@@ -161,7 +162,7 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 	return count;
 }
 
-static void _log_blocks(void)
+static void _log_blocks(block_context_t *ctx)
 {
 	int i;
 	block_record_t *block_ptr;
@@ -178,7 +179,7 @@ static void _log_blocks(void)
 	}
 }
 
-extern void block_record_table_destroy(void)
+extern void block_record_table_destroy(block_context_t *ctx)
 {
 	if (!ctx->block_record_table)
 		return;
@@ -206,7 +207,7 @@ static int _cmp_block_level(const void *x, const void *y)
 	return 0;
 }
 
-extern void block_record_validate(void)
+extern int block_record_validate(topology_ctx_t *tctx)
 {
 	slurm_conf_block_t *ptr, **ptr_array;
 	int i, j;
@@ -216,14 +217,15 @@ extern void block_record_validate(void)
 	int level = 0;
 	int record_inx = 0;
 	int *aggregated_inx;
+	block_context_t *ctx = xmalloc(sizeof(*ctx));
 
-	block_record_table_destroy();
+	ctx->block_count = _read_topo_file(&ptr_array, tctx->topo_conf, ctx);
 
-	ctx->block_count = _read_topo_file(&ptr_array);
 	if (ctx->block_count == 0) {
 		error("No blocks configured");
 		s_p_hashtbl_destroy(conf_hashtbl);
-		return;
+		xfree(ctx);
+		return SLURM_ERROR;
 	}
 	/*
 	 *  Allocate more than enough space for all aggregated blocks
@@ -379,5 +381,7 @@ extern void block_record_validate(void)
 		hostlist_destroy(hl);
 		xfree(tmp_list);
 	}
-	_log_blocks();
+	_log_blocks(ctx);
+	tctx->plugin_ctx = ctx;
+	return SLURM_SUCCESS;
 }

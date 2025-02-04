@@ -535,6 +535,7 @@
 
 /* topology.[ch] functions */
 #define topology_g_build_config slurm_topology_g_build_config
+#define topology_g_destroy_config slurm_topology_g_destroy_config
 
 /* job_state_reason.[ch] functions */
 #define job_state_reason_string	slurm_job_state_reason_string
