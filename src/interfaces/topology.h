@@ -52,6 +52,12 @@ typedef enum {
 	TOPO_DATA_EXCLUSIVE_TOPO,
 } topology_data_t;
 
+typedef struct topology_ctx {
+	uint32_t plugin_id;
+	char *name;
+	char *topo_conf;
+	void *plugin_ctx;
+} topology_ctx_t;
 
 typedef struct topology_eval {
 	bitstr_t **avail_core; /* available core bitmap, UPDATED */
