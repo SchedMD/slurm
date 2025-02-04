@@ -617,11 +617,29 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 	char *v;
 
 	for (; argc-- > 0; ++argv) {
-		if (!xstrncasecmp(*argv, "single_job_skip_rpc=0", 21))
-			opts.single_job_skip_rpc = 0;
-		else if (!xstrncasecmp(*argv, "ignore_root=0", 13))
-			opts.ignore_root = 0;
-		else if (!xstrncasecmp(*argv,"action_no_jobs=",15)) {
+		if (!xstrncasecmp(*argv, "single_job_skip_rpc=", 20)) {
+			v = (char *) (20 + *argv);
+			if (!xstrncasecmp(v, "1", 1))
+				opts.single_job_skip_rpc = true;
+			else if (!xstrncasecmp(v, "0", 1))
+				opts.single_job_skip_rpc = false;
+			else
+				pam_syslog(
+					pamh, LOG_ERR,
+					"unrecognized single_job_skip_rpc=%s, setting to '1'",
+					v);
+		} else if (!xstrncasecmp(*argv, "ignore_root=", 12)) {
+			v = (char *) (12 + *argv);
+			if (!xstrncasecmp(v, "1", 1))
+				opts.ignore_root = true;
+			else if (!xstrncasecmp(v, "0", 1))
+				opts.ignore_root = false;
+			else
+				pam_syslog(
+					pamh, LOG_ERR,
+					"unrecognized ignore_root=%s, setting to '1'",
+					v);
+		} else if (!xstrncasecmp(*argv, "action_no_jobs=", 15)) {
 			v = (char *)(15 + *argv);
 			if (!xstrncasecmp(v, "deny", 4))
 				opts.action_no_jobs = CALLERID_ACTION_DENY;
@@ -680,13 +698,31 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 		} else if (!xstrncasecmp(*argv, "nodename=", 9)) {
 			v = (char *)(9 + *argv);
 			opts.node_name = xstrdup(v);
-		} else if (!xstrncasecmp(*argv, "disable_x11=1", 13)) {
-			opts.disable_x11 = true;
+		} else if (!xstrncasecmp(*argv, "disable_x11=", 12)) {
+			v = (char *) (12 + *argv);
+			if (!xstrncasecmp(v, "1", 1))
+				opts.disable_x11 = true;
+			else if (!xstrncasecmp(v, "0", 1))
+				opts.disable_x11 = false;
+			else
+				pam_syslog(
+					pamh, LOG_ERR,
+					"unrecognized disable_x11=%s, setting to '0'",
+					v);
 		} else if (!xstrncasecmp(*argv, "service=", 8)) {
 			v = (char *)(8 + *argv);
 			opts.pam_service = xstrdup(v);
-		} else if (!xstrncasecmp(*argv, "join_container=false", 19)) {
-			opts.join_container = false;
+		} else if (!xstrncasecmp(*argv, "join_container=", 15)) {
+			v = (char *) (15 + *argv);
+			if (!xstrncasecmp(v, "true", 4))
+				opts.join_container = true;
+			else if (!xstrncasecmp(v, "false", 5))
+				opts.join_container = false;
+			else
+				pam_syslog(
+					pamh, LOG_ERR,
+					"unrecognized join_container=%s, setting to 'true'",
+					v);
 		} else {
 			pam_syslog(pamh, LOG_ERR,
 				   "ignoring unrecognized option '%s'", *argv);
