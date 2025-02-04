@@ -1016,7 +1016,6 @@ with_json
 with_jwt
 with_http_parser
 with_yaml
-with_dimensions
 with_ofed
 with_hdf5
 with_lz4
@@ -1787,8 +1786,6 @@ Optional Packages:
   --with-jwt=PATH         Specify path to jwt installation
   --with-http-parser=PATH Specify path to HTTP Parser installation
   --with-yaml=PATH        Specify path to libyaml installation
-  --with-dimensions=N     set system dimension count for generic computer
-                          system
   --with-ofed=PATH        Specify path to ofed installation
   --with-hdf5=yes/no/PATH location of h5cc or h5pcc for HDF5 configuration
   --with-lz4=PATH         Specify path to liblz4 installation
@@ -23488,39 +23485,6 @@ esac
 LDFLAGS="$LDFLAGS "
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking System dimensions" >&5
-printf %s "checking System dimensions... " >&6; }
-
-# Check whether --with-dimensions was given.
-if test ${with_dimensions+y}
-then :
-  withval=$with_dimensions;  if test `expr match "$withval" '[0-9]*$'` -gt 0; then
-        dimensions="$withval"
-        x_ac_dimensions=yes
-      fi
-
-else case e in #(
-  e) x_ac_dimensions=no
-   ;;
-esac
-fi
-
-  if test "$x_ac_dimensions" = yes; then
-    if test $dimensions -lt 1; then
-      as_fn_error $? "Invalid dimensions value $dimensions" "$LINENO" 5
-    fi
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $dimensions" >&5
-printf "%s\n" "$dimensions" >&6; };
-
-printf "%s\n" "#define SYSTEM_DIMENSIONS $dimensions" >>confdefs.h
-
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: not set" >&5
-printf "%s\n" "not set" >&6; };
-  fi
-
 
 
 
