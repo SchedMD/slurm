@@ -51,9 +51,10 @@ If the destination file (and the destination library directory when using
 .IP
 
 .TP
-\fB\-j\fR, \fB\-\-jobid\fR=<\fIjobID\fR[.\fIstepID\fR]>
-Specify the job ID to use with optional step ID. If run inside an allocation
-this is unneeded as the job ID will read from the environment.
+\fB\-j\fR, \fB\-\-jobid\fR=<\fIjobID\fR[+\fIhetjobOffset\fR].[\fIstepID\fR]>
+Specify the job ID to use with optional hetjob offset and/or step ID. If run
+inside an allocation this is unneeded as the job ID will be read from the
+environment.
 .IP
 
 .TP
