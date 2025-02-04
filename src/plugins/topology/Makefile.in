@@ -458,7 +458,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = 3d_torus block common default tree
+SUBDIRS = block common default tree
 all: all-recursive
 
 .SUFFIXES:

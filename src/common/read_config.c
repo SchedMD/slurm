@@ -506,42 +506,6 @@ static int _defunct_option(void **dest, slurm_parser_enum_t type,
 	return 0;
 }
 
-/* Used to get the general name of the machine, used primarily
- * for bluegene systems.  Not in general use because some systems
- * have multiple prefix's such as foo[1-1000],bar[1-1000].
- */
-/* Caller must be holding slurm_conf_lock() */
-static void _set_node_prefix(const char *nodenames)
-{
-	int i;
-	char *tmp;
-
-	xassert(nodenames != NULL);
-	for (i = 1; nodenames[i] != '\0'; i++) {
-		if ((nodenames[i-1] == '[')
-		   || (nodenames[i-1] <= '9'
-		       && nodenames[i-1] >= '0'))
-			break;
-	}
-
-	if (i == 1) {
-		error("In your Node definition in your slurm.conf you "
-		      "gave a nodelist '%s' without a prefix.  "
-		      "Please try something like bg%s.", nodenames, nodenames);
-	}
-
-	xfree(conf_ptr->node_prefix);
-	if (nodenames[i] == '\0')
-		conf_ptr->node_prefix = xstrdup(nodenames);
-	else {
-		tmp = xmalloc(i + 1);
-		snprintf(tmp, i, "%s", nodenames);
-		conf_ptr->node_prefix = tmp;
-		tmp = NULL;
-	}
-	debug3("Prefix is %s %s %d", conf_ptr->node_prefix, nodenames, i);
-}
-
 static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover)
@@ -719,9 +683,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		dflt = default_nodename_tbl;
 
 		n->nodenames = xstrdup(value);
-		if ((slurmdb_setup_cluster_dims() > 1)
-		    && conf_ptr->node_prefix == NULL)
-			_set_node_prefix(n->nodenames);
 
 		if (!s_p_get_string(&n->hostnames, "NodeHostname", tbl))
 			n->hostnames = xstrdup(n->nodenames);
@@ -2390,9 +2351,6 @@ static void _init_slurmd_nodehash(void)
 	count = slurm_conf_nodename_array(&ptr_array);
 	for (i = 0; i < count; i++) {
 		expand_nodeline_info(ptr_array[i], NULL, NULL, _check_callback);
-		if ((slurmdb_setup_cluster_dims() > 1) &&
-		    !conf_ptr->node_prefix)
-			_set_node_prefix(ptr_array[i]->nodenames);
 	}
 
 	count = slurm_conf_frontend_array(&ptr_front_end);
@@ -2965,7 +2923,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->mpi_params);
 	FREE_NULL_LIST(ctl_conf_ptr->node_features_conf);
 	xfree (ctl_conf_ptr->node_features_plugins);
-	xfree (ctl_conf_ptr->node_prefix);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
 	xfree(ctl_conf_ptr->preempt_params);
@@ -3141,7 +3098,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->msg_timeout		= NO_VAL16;
 	ctl_conf_ptr->next_job_id		= NO_VAL;
 	xfree(ctl_conf_ptr->node_features_plugins);
-	xfree (ctl_conf_ptr->node_prefix);
 	ctl_conf_ptr->over_time_limit           = 0;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
@@ -5547,11 +5503,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_string(&conf->topology_plugin,
 			    "TopologyPlugin", hashtbl)) {
-#if defined HAVE_3D
-		conf->topology_plugin = xstrdup("topology/3d_torus");
-#else
 		/* empty */
-#endif
 	} else if (xstrcasestr(conf->topology_plugin, "none"))
 		xfree(conf->topology_plugin);
 

@@ -43,10 +43,6 @@
 #ifndef _SLURM_H
 #define _SLURM_H
 
-/* Number of dimensions the system has */
-#define SYSTEM_DIMENSIONS 1
-#define HIGHEST_DIMENSIONS 5
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -3057,8 +3053,6 @@ typedef struct {
 	uint32_t next_job_id;	/* next slurm generated job_id to assign */
 	void *node_features_conf; /* Node Features Plugin config file */
 	char *node_features_plugins; /* List of node_features plugins to use */
-	char *node_prefix;      /* prefix of nodes in partition, only set in
-				   bluegene clusters NULL otherwise */
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this
 				   * number of minutes before cancellation */
 	char *plugindir;	/* pathname to plugins */

@@ -559,9 +559,6 @@
 /* Define path to su command */
 #undef SUCMD
 
-/* Define system dimension count */
-#undef SYSTEM_DIMENSIONS
-
 /* Define slurm_ prefix function aliases for plugins */
 #undef USE_ALIAS
 

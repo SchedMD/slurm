@@ -58,15 +58,7 @@
 extern uint16_t slurmdb_setup_cluster_dims(void)
 {
 	return working_cluster_rec ?
-		working_cluster_rec->dimensions : SYSTEM_DIMENSIONS;
-}
-
-extern int *slurmdb_setup_cluster_dim_size(void)
-{
-	if (working_cluster_rec)
-		return working_cluster_rec->dim_size;
-
-	return NULL;
+		working_cluster_rec->dimensions : 1;
 }
 
 extern uint32_t slurmdb_setup_cluster_flags(void)

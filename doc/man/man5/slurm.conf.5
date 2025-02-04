@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "January 2025" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "February 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -6194,11 +6194,6 @@ Acceptable values include:
 .IP
 .RS
 .TP 21
-\fBtopology/3d_torus\fR
-best\-fit logic over three\-dimensional topology
-.IP
-
-.TP
 \fBtopology/block\fR
 used for a block network topology, as described in the \fBtopology.conf\fR(5)
 man page
@@ -8022,10 +8017,8 @@ Otherwise it will allocate a job's resources onto multiple leaf switches
 so as to minimize the use of higher\-level switches.
 The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information.
-The only values presently supported are "topology/3d_torus" (default for
-Cray XT/XE systems, performs best\-fit logic over three\-dimensional topology),
-"topology/default" (default for other systems,
--best\-fit logic over one\-dimensional topology),
+The only values presently supported are
+"topology/default" (best\-fit logic over one\-dimensional topology),
 "topology/tree", and "topology/block" (both determine the network topology
 based upon information contained in a topology.conf file,
 see "man topology.conf" for more information).

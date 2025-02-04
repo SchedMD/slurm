@@ -2550,7 +2550,7 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	memset(&req, 0, sizeof(dbd_register_ctld_msg_t));
 
 	req.port         = port;
-	req.dimensions   = SYSTEM_DIMENSIONS;
+	req.dimensions   = 1;
 	req.flags        = slurmdb_setup_cluster_flags();
 
 	msg.msg_type     = DBD_REGISTER_CTLD;

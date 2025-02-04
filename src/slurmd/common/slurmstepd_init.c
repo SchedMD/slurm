@@ -243,7 +243,6 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* next_job_id */
 	/* node_features_conf */
 	/* node_features_plugins */
-	/* node_prefix */
 	/* over_time_limit */
 	packstr(slurm_conf.plugindir, buffer);
 	packstr(slurm_conf.plugstack, buffer);
@@ -476,7 +475,6 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* next_job_id */
 	/* node_features_conf */
 	/* node_features_plugins */
-	/* node_prefix */
 	/* over_time_limit */
 	safe_unpackstr(&slurm_conf.plugindir, buffer);
 	safe_unpackstr(&slurm_conf.plugstack, buffer);

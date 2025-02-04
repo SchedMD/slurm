@@ -81,7 +81,6 @@ GtkTable *main_grid_table = NULL;
 GMutex *sview_mutex = NULL;
 GMutex *grid_mutex = NULL;
 GCond *grid_cond = NULL;
-int cluster_dims;
 uint32_t cluster_flags;
 list_t *cluster_list = NULL;
 switch_record_bitmaps_t *g_switch_nodes_maps = NULL;
@@ -402,34 +401,6 @@ static void _set_page_opts(GtkToggleAction *action)
 	return;
 }
 
-#ifdef WANT_TOPO_ON_MAIN_OPTIONS
-static void _set_topogrid(GtkToggleAction *action)
-{
-	char *tmp;
-	int rc = SLURM_SUCCESS;
-
-	if (action) {
-		working_sview_config.grid_topological
-			= gtk_toggle_action_get_active(action);
-	}
-	apply_hidden_change = false;
-	if (working_sview_config.grid_topological) {
-		if (!g_switch_nodes_maps)
-			rc = get_topo_conf();
-		if (rc != SLURM_SUCCESS)
-			/*denied*/
-			tmp = g_strdup_printf("Valid topology not detected");
-		else
-			tmp = g_strdup_printf("Grid changed to topology order");
-
-	}
-	refresh_main(NULL, NULL);
-	display_edit_note(tmp);
-	g_free(tmp);
-	return;
-}
-#endif
-
 static void _set_ruled(GtkToggleAction *action)
 {
 	char *tmp;
@@ -695,15 +666,8 @@ static char *_get_ui_description()
 		"      <menuitem action='grid'/>"
 		"      <menuitem action='hidden'/>"
 		"      <menuitem action='page_opts'/>"
-#ifdef WANT_TOPO_ON_MAIN_OPTIONS
-		"      <menuitem action='topoorder'/>"
-#endif
-		"      <menuitem action='ruled'/>");
-	if (cluster_dims == 1)
-		xstrcat(ui_description,
-			"      <menuitem action='grid_specs'/>");
-
-	xstrcat(ui_description,
+		"      <menuitem action='ruled'/>"
+		"      <menuitem action='grid_specs'/>"
 		"      <menuitem action='interval'/>"
 		"      <separator/>"
 		"      <menuitem action='admin'/>"
@@ -861,12 +825,6 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 "<control>w", "Save Page Options",
 		 G_CALLBACK(_set_page_opts),
 		 working_sview_config.save_page_opts},
-#ifdef WANT_TOPO_ON_MAIN_OPTIONS
-		{"topoorder", GTK_STOCK_SELECT_COLOR, "Set Topology Grid",
-		 "<control>t", "Set Topology Grid",
-		 G_CALLBACK(_set_topogrid),
-		 working_sview_config.grid_topological},
-#endif
 		{"ruled", GTK_STOCK_SELECT_COLOR, "R_uled Tables",
 		 "<control>u", "Have ruled tables or not",
 		 G_CALLBACK(_set_ruled), working_sview_config.ruled_treeview},
@@ -1112,13 +1070,6 @@ static void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	g_topo_info_msg_ptr = NULL;
 
 	/* set up working_cluster_rec */
-	if (cluster_dims > 1) {
-		/* reset from a multi-dim cluster */
-		working_sview_config.grid_x_width =
-			default_sview_config.grid_x_width;
-		working_sview_config.grid_hori = default_sview_config.grid_hori;
-		working_sview_config.grid_vert = default_sview_config.grid_vert;
-	}
 	gtk_table_set_col_spacings(main_grid_table, 0);
 	gtk_table_set_row_spacings(main_grid_table, 0);
 
@@ -1126,7 +1077,6 @@ static void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 		working_cluster_rec = NULL;
 	else
 		working_cluster_rec = cluster_rec;
-	cluster_dims = slurmdb_setup_cluster_dims();
 	cluster_flags = slurmdb_setup_cluster_flags();
 
 	gtk_tree_model_get(model, &iter, 0, &selected_name, -1);
@@ -1440,7 +1390,6 @@ int main(int argc, char **argv)
 
 	load_defaults();
 	cluster_flags = slurmdb_setup_cluster_flags();
-	cluster_dims = slurmdb_setup_cluster_dims();
 
 	_init_pages();
 	sview_thread_init(NULL);

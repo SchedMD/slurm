@@ -184,9 +184,6 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 
 	STORE_FIELD(hv, conf, next_job_id, uint32_t);
 
-	if (conf->node_prefix)
-		STORE_FIELD(hv, conf, node_prefix, charp);
-
 	STORE_FIELD(hv, conf, over_time_limit, uint16_t);
 
 	if (conf->plugindir)
@@ -476,7 +473,6 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, msg_timeout, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, next_job_id, uint32_t, TRUE);
 
-	FETCH_FIELD(hv, conf, node_prefix, charp, FALSE);
 	FETCH_FIELD(hv, conf, over_time_limit, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, plugindir, charp, FALSE);
 	FETCH_FIELD(hv, conf, plugstack, charp, FALSE);
