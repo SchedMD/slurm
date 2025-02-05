@@ -129,10 +129,12 @@ extern int license_job_return(job_record_t *job_ptr);
  * IN job_ptr - job identification
  * IN when    - time to check
  * IN reboot    - true if node reboot required to start job
+ * IN check_preempt_licenses - If false, do not look for licenses to preempt
  * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
  */
 extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
-				      bool reboot, list_t *license_list);
+				      bool reboot, list_t *license_list,
+				      bool check_preempt_licenses);
 
 /*
  * license_job_test - Test if the licenses required for a job are available
