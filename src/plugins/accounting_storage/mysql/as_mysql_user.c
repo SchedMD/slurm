@@ -71,8 +71,10 @@ static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while ((cluster_name = list_next(itr))) {
 		// Change assoc_tables
-		xstrfmtcat(query, "update \"%s_%s\" set user='%s' "
+		xstrfmtcat(query, "update \"%s_%s\" set user='%s', "
+			   "lineage=replace(lineage, '0-%s', '0-%s') "
 			   "where user='%s';", cluster_name, assoc_table,
+			   user->name, user->old_name,
 			   user->name, user->old_name);
 		// Change wckey_tables
 		xstrfmtcat(query, "update \"%s_%s\" set user='%s' "
