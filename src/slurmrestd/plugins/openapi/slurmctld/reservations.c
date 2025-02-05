@@ -44,19 +44,12 @@
 
 #include "api.h"
 
-extern int op_handler_reservations(openapi_ctxt_t *ctxt)
+static int _get_reservations(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 	reserve_info_msg_t *res_info_ptr = NULL;
 	openapi_reservation_query_t query = {0};
 	openapi_resp_reserve_info_msg_t resp = {0};
-
-	if (ctxt->method != HTTP_REQUEST_GET) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(ctxt->method));
-		goto done;
-	}
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_RESERVATION_QUERY, query,
 		       ctxt->query, ctxt->parent_path)) {
@@ -85,6 +78,21 @@ extern int op_handler_reservations(openapi_ctxt_t *ctxt)
 
 done:
 	slurm_free_reservation_info_msg(res_info_ptr);
+	return rc;
+}
+
+extern int op_handler_reservations(openapi_ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (ctxt->method == HTTP_REQUEST_GET) {
+		rc = _get_reservations(ctxt);
+	} else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+	}
+
 	return rc;
 }
 
