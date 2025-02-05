@@ -2411,6 +2411,37 @@ static void _set_requeued_job_pending_completing(job_record_t *job_ptr)
 }
 
 /*
+ * _job_signal_id - signal the specified job
+ * IN job_id - id of the job to be signaled
+ * IN signal - signal to send, SIGKILL == cancel the job
+ * IN flags  - see KILL_JOB_* flags in slurm.h
+ * IN uid - uid of requesting user
+ * IN preempt - true if job being preempted
+ * RET 0 on success, otherwise ESLURM error code
+ */
+static int _job_signal_id(uint32_t job_id, uint16_t signal, uint16_t flags,
+			  uid_t uid, bool preempt)
+{
+	job_record_t *job_ptr;
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		info("%s: invalid JobId=%u", __func__, job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					  job_ptr->account, false)) {
+		error("Security violation, JOB_CANCEL RPC for %pJ from uid %u",
+		      job_ptr, uid);
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	return job_signal(job_ptr, signal, flags, uid, preempt);
+}
+
+/*
  * Kill job or job step
  *
  * IN job_step_kill_msg - msg with specs on which job/step to cancel.
@@ -2432,10 +2463,10 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 	/* do RPC call */
 	if (job_step_kill_msg->step_id.step_id == NO_VAL) {
 		/* NO_VAL means the whole job, not individual steps */
-		error_code = job_signal_id(job_step_kill_msg->step_id.job_id,
-					   job_step_kill_msg->signal,
-					   job_step_kill_msg->flags, uid,
-					   false);
+		error_code = _job_signal_id(job_step_kill_msg->step_id.job_id,
+					    job_step_kill_msg->signal,
+					    job_step_kill_msg->flags, uid,
+					    false);
 		END_TIMER2(__func__);
 
 		/* return result */
@@ -5301,37 +5332,6 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 }
 
-/*
- * job_signal_id - signal the specified job
- * IN job_id - id of the job to be signaled
- * IN signal - signal to send, SIGKILL == cancel the job
- * IN flags  - see KILL_JOB_* flags in slurm.h
- * IN uid - uid of requesting user
- * IN preempt - true if job being preempted
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_signal_id(uint32_t job_id, uint16_t signal, uint16_t flags,
-			 uid_t uid, bool preempt)
-{
-	job_record_t *job_ptr;
-
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		info("%s: invalid JobId=%u", __func__, job_id);
-		return ESLURM_INVALID_JOB_ID;
-	}
-
-	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account, false)) {
-		error("Security violation, JOB_CANCEL RPC for %pJ from uid %u",
-		      job_ptr, uid);
-		return ESLURM_ACCESS_DENIED;
-	}
-
-	return job_signal(job_ptr, signal, flags, uid, preempt);
-}
-
 /* Signal all components of a hetjob */
 extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
 			  uint16_t flags, uid_t uid, bool preempt)
@@ -5624,7 +5624,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			 * array. KILL_ARRAY_TASK indicates that the meta job
 			 * should be treated as a single task.
 			 */
-			return job_signal_id(job_id, signal, flags, uid, preempt);
+			return _job_signal_id(job_id, signal, flags,
+					      uid, preempt);
 		}
 
 		/*
