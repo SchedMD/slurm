@@ -8379,7 +8379,7 @@ static const parser_t PARSER_ARRAY(RESERVATION_DESC_MSG)[] = {
 	add_parse(UINT32_NO_VAL, duration, "duration", "The length of a reservation in minutes"),
 	add_parse(TIMESTAMP_NO_VAL, end_time, "end_time", "EndTime (UNIX timestamp)"),
 	add_parse(STRING, features, "features", "Requested node features. Multiple values may be \"&\" separated if all features are required (AND operation) or separated by \"|\" if any of the specified features are required (OR operation). Parenthesis are also supported for features to be ANDed together with counts of nodes having the specified features."),
-	add_parse(RESERVATION_FLAGS, flags, "flags", "Flags associated with this reservation"),
+	add_parse(RESERVATION_FLAGS, flags, "flags", "Flags associated with this reservation. Note, to remove flags use \"NO_\" prefixed flag excluding NO_HOLD_JOBS_AFTER_END"),
 	add_parse(CSV_STRING, groups, "groups", "List of groups permitted to use the reservation. This is mutually exclusive with users."),
 	add_skip(job_ptr), /* internal use only */
 	add_parse(CSV_STRING, licenses, "licenses", "List of license names"),

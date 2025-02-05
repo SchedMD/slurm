@@ -213,6 +213,21 @@ extern int op_handler_reservations(openapi_ctxt_t *ctxt)
 	return rc;
 }
 
+static int _parse_resv_name_param(openapi_ctxt_t *ctxt,
+				  openapi_reservation_param_t *params)
+{
+	xassert(params);
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_RESERVATION_PARAM, *params,
+		       ctxt->parameters, ctxt->parent_path)) {
+		xfree(params->reservation_name);
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Rejecting request. Failure parsing parameters");
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _get_single_reservation(openapi_ctxt_t *ctxt)
 {
 	openapi_reservation_param_t params = { 0 };
@@ -221,12 +236,8 @@ static int _get_single_reservation(openapi_ctxt_t *ctxt)
 	reserve_info_msg_t *res_info_ptr = NULL;
 	reserve_info_t *res = NULL;
 
-	if (DATA_PARSE(ctxt->parser, OPENAPI_RESERVATION_PARAM, params,
-		       ctxt->parameters, ctxt->parent_path)) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Rejecting request. Failure parsing parameters");
+	if (_parse_resv_name_param(ctxt, &params))
 		goto done;
-	}
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_RESERVATION_QUERY, query,
 		       ctxt->query, ctxt->parent_path)) {
@@ -279,12 +290,82 @@ done:
 	return rc;
 }
 
+static int _parse_resv_desc(openapi_ctxt_t *ctxt, resv_desc_msg_t *resv_msg)
+{
+	int rc = SLURM_SUCCESS;
+	xassert(resv_msg);
+
+	if (!ctxt->query) {
+		rc = ESLURM_REST_INVALID_QUERY;
+		resp_error(ctxt, rc, __func__,
+			   "unexpected empty query for reservation creation");
+		return rc;
+	}
+
+	slurm_init_resv_desc_msg(resv_msg);
+	resv_msg->flags = 0; /* required for parsing */
+
+	if (DATA_PARSE(ctxt->parser, RESERVATION_DESC_MSG, *resv_msg,
+		       ctxt->query, ctxt->parent_path)) {
+		rc = ESLURM_REST_INVALID_QUERY;
+		resp_error(ctxt, rc, __func__,
+			   "Rejecting request. Failure parsing parameters");
+		slurm_free_resv_desc_members(resv_msg);
+		return rc;
+	}
+
+	if (!resv_msg->flags)
+		resv_msg->flags = NO_VAL64;
+
+	return rc;
+}
+
+extern int _reservation_update(openapi_ctxt_t *ctxt)
+{
+	openapi_reservation_param_t params = { 0 };
+	resv_desc_msg_t resv_msg = { 0 };
+	int rc = SLURM_SUCCESS;
+
+	if (ctxt->method != HTTP_REQUEST_POST)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+
+	if ((rc = _parse_resv_name_param(ctxt, &params)) ||
+	    (rc = _parse_resv_desc(ctxt, &resv_msg)))
+		return rc;
+
+	xfree(resv_msg.name);
+	SWAP(resv_msg.name, params.reservation_name);
+
+	if (resv_msg.name == NULL) {
+		resp_error(ctxt, ESLURM_RESERVATION_INVALID, __func__,
+			   "Reservation must be given.  No reservation update.");
+	} else if ((rc = slurm_update_reservation(&resv_msg))) {
+		if (errno)
+			rc = errno;
+		resp_error(ctxt, rc, "slurm_update_reservation",
+			   "Error updating the reservation");
+	} else {
+		list_t *resv_list = list_create(NULL);
+		list_append(resv_list, &resv_msg);
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_MOD_RESP,
+					 resv_list, ctxt);
+		FREE_NULL_LIST(resv_list);
+	}
+
+	slurm_free_resv_desc_members(&resv_msg);
+	return rc ? rc : ctxt->rc;
+}
+
 extern int op_handler_reservation(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 
 	if (ctxt->method == HTTP_REQUEST_GET) {
 		rc = _get_single_reservation(ctxt);
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
+		rc = _reservation_update(ctxt);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",

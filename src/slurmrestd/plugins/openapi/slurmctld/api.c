@@ -470,6 +470,20 @@ const openapi_path_binding_t openapi_paths[] = {
 				.parameters = DATA_PARSER_OPENAPI_RESERVATION_PARAM,
 				.query = DATA_PARSER_OPENAPI_RESERVATION_QUERY,
 			},
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "update a reservation",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESERVATION_MOD_RESP,
+					.description = "reservation description",
+				},
+				.body = {
+					.type = DATA_PARSER_RESERVATION_DESC_MSG,
+					.description = "reservation update description",
+				},
+				.parameters = DATA_PARSER_OPENAPI_RESERVATION_PARAM,
+			},
 			{0}
 		},
 		.flags = OP_FLAGS,
