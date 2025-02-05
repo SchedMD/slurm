@@ -108,6 +108,17 @@ static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static topology_ctx_t *tctx = NULL;
 static int tctx_num = -1;
 
+static int _get_plugin_index(int plugin_id)
+{
+	xassert(ops);
+
+	for (int i = 0; i < g_context_num; i++)
+		if (plugin_id == *ops[i].plugin_id)
+			return i;
+
+	return -1;
+}
+
 static int _get_plugin_index_by_type(char *type)
 {
 	char *plugin_type = "topo";
@@ -366,37 +377,40 @@ extern int topology_g_get(topology_data_t type, void *data)
 extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
+	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
+
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	/* Always pack the plugin_id */
-	pack32(active_topo_id, buffer);
+	pack32(topoinfo->plugin_id, buffer);
 	if (!topoinfo)
 		return SLURM_SUCCESS;
 
-	if (topoinfo->plugin_id != active_topo_id)
+	if (plugin_inx < 0)
 		return SLURM_ERROR;
 
-	return (*(ops[tctx[0].idx].topoinfo_pack))(topoinfo->data, buffer,
-						   protocol_version);
+	return (*(ops[plugin_inx].topoinfo_pack))(topoinfo->data, buffer,
+						  protocol_version);
 }
 
 extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
 				     char *nodes_list, char **out)
 {
+	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 	xassert(topoinfo);
-
-	if (topoinfo->plugin_id != active_topo_id)
+	if (plugin_inx < 0)
 		return SLURM_ERROR;
 
-	return (*(ops[tctx[0].idx].topoinfo_print))(topoinfo->data, nodes_list,
-						    out);
+	return (*(ops[tctx[plugin_inx].idx].topoinfo_print))(topoinfo->data,
+							     nodes_list, out);
 }
 
 extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
 				      buf_t *buffer, uint16_t protocol_version)
 {
 	dynamic_plugin_data_t *topoinfo_ptr = NULL;
+	int plugin_inx;
 
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -406,12 +420,14 @@ extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
-		if (plugin_id != active_topo_id) {
+
+		plugin_inx = _get_plugin_index(plugin_id);
+		if (plugin_inx < 0) {
 			error("%s: topology plugin %u not active",
 			      __func__, plugin_id);
 			goto unpack_error;
 		} else {
-			 topoinfo_ptr->plugin_id = active_topo_id;
+			topoinfo_ptr->plugin_id = plugin_id;
 		}
 	} else {
 		error("%s: protocol_version %hu not supported", __func__,
@@ -419,8 +435,9 @@ extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
 		goto unpack_error;
 	}
 
-	if ((*(ops[tctx[0].idx].topoinfo_unpack))(&topoinfo_ptr->data, buffer,
-						  protocol_version) !=
+	if ((*(ops[tctx[plugin_inx].idx].topoinfo_unpack))(&topoinfo_ptr->data,
+							   buffer,
+							   protocol_version) !=
 	    SLURM_SUCCESS)
 		goto unpack_error;
 
@@ -436,13 +453,13 @@ unpack_error:
 extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo)
 {
 	int rc = SLURM_SUCCESS;
+	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
 
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (topoinfo) {
 		if (topoinfo->data)
-			rc = (*(ops[tctx[0].idx]
-					.topoinfo_free))(topoinfo->data);
+			rc = (*(ops[plugin_inx].topoinfo_free))(topoinfo->data);
 		xfree(topoinfo);
 	}
 	return rc;
