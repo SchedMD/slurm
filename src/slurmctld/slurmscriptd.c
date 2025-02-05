@@ -720,6 +720,7 @@ static int _handle_shutdown(slurmscriptd_msg_t *recv_msg)
 
 static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 {
+	extern char **environ;
 	run_script_msg_t *script_msg = recv_msg->msg_data;
 	int rc, status = 0;
 	char *resp_msg = NULL;
@@ -747,7 +748,13 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 
 	switch (script_msg->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
-		/* Set SLURM_SCRIPT_CONTEXT in env for slurmctld */
+		/*
+		 * Set SLURM_SCRIPT_CONTEXT in env for slurmctld, but we also
+		 * need to preserve the parent's environment. There was not any
+		 * env passed to us in script_msg.
+		 */
+		xassert(!run_command_args.env);
+		run_command_args.env = env_array_copy((const char **) environ);
 		env_array_append(&run_command_args.env, "SLURM_SCRIPT_CONTEXT",
 				 "burst_buffer.lua");
 

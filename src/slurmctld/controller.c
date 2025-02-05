@@ -2960,6 +2960,7 @@ static void _parse_commandline(int argc, char **argv)
 		char *ctx = getenv("SLURM_SCRIPT_CONTEXT");
 
 		if (!xstrcmp(ctx, "burst_buffer.lua")) {
+			unsetenv("SLURM_SCRIPT_CONTEXT");
 			slurmscriptd_handle_bb_lua_mode(argc, argv);
 			_exit(127);
 		}
