@@ -5624,7 +5624,10 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 	job_info_resp_msg->job_id         = job_ptr->job_id;
 	job_info_resp_msg->node_cnt       = job_ptr->node_cnt;
 	job_info_resp_msg->node_list      = xstrdup(job_ptr->nodes);
-	job_info_resp_msg->partition      = xstrdup(job_ptr->partition);
+	if (job_ptr->part_ptr)
+		job_info_resp_msg->partition = xstrdup(job_ptr->part_ptr->name);
+	else
+		job_info_resp_msg->partition = xstrdup(job_ptr->partition);
 	if (job_ptr->qos_ptr) {
 		slurmdb_qos_rec_t *qos;
 		qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
