@@ -6685,8 +6685,8 @@ extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 	if (tres_str) {
 		list_t *tmp_list = NULL;
 		/* info("got %s", tres_str); */
-		slurmdb_tres_list_from_string(
-			&tmp_list, tres_str, TRES_STR_FLAG_NONE);
+		slurmdb_tres_list_from_string(&tmp_list, tres_str,
+					      TRES_STR_FLAG_NONE, NULL);
 		diff_cnt = assoc_mgr_set_tres_cnt_array_from_list(
 			tres_cnt, tmp_list, locked,
 			relative, relative_tres_cnt);

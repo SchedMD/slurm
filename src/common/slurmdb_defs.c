@@ -4089,14 +4089,16 @@ extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2)
 	return 0;
 }
 
-extern void slurmdb_tres_list_from_string(
-	list_t **tres_list, const char *tres, uint32_t flags)
+extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
+					  uint32_t flags, list_t *sub_tres_list)
 {
 	const char *tmp_str = tres;
 	int id;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
 	int remove_found = 0;
+	list_t *mgr_tres_list =
+		sub_tres_list ? sub_tres_list : assoc_mgr_tres_list;
 	xassert(tres_list);
 
 	if (!tres || !tres[0])
@@ -4124,16 +4126,17 @@ extern void slurmdb_tres_list_from_string(
 				break;
 			}
 			tres_name = xstrndup(tmp_str, end);
-			assoc_mgr_lock(&locks);
-			if (!assoc_mgr_tres_list) {
+			if (!sub_tres_list)
+				assoc_mgr_lock(&locks);
+			if (!mgr_tres_list) {
 				error("%s: No assoc_mgr_tres_list, this function can't be used here with a formatted tres list.", __func__);
 				break;
 			}
 			tres_rec = list_find_first(
-				assoc_mgr_tres_list,
-				slurmdb_find_tres_in_list_by_type,
-				tres_name);
-			assoc_mgr_unlock(&locks);
+				mgr_tres_list,
+				slurmdb_find_tres_in_list_by_type, tres_name);
+			if (!sub_tres_list)
+				assoc_mgr_unlock(&locks);
 			if (!tres_rec) {
 				error("%s: no TRES known by type %s",
 				      __func__, tres_name);
@@ -4246,7 +4249,7 @@ extern char *slurmdb_combine_tres_strings(
 	if (flags & TRES_STR_FLAG_ONLY_CONCAT)
 		goto endit;
 
-	slurmdb_tres_list_from_string(&tres_list, *tres_str_old, flags);
+	slurmdb_tres_list_from_string(&tres_list, *tres_str_old, flags, NULL);
 	xfree(*tres_str_old);
 
 	/* Always make it a simple string */
@@ -4595,7 +4598,7 @@ extern void slurmdb_transfer_tres_time(
 	xassert(tres_list_out);
 
 	slurmdb_tres_list_from_string(&job_tres_list, tres_str,
-				      TRES_STR_FLAG_NONE);
+				      TRES_STR_FLAG_NONE, NULL);
 
 	if (!job_tres_list)
 		return;
@@ -4632,7 +4635,7 @@ extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks)
 	if (!tres_string || (tres_string[0] == '\0'))
 		return NULL;
 
-	slurmdb_tres_list_from_string(&tres_list, tres_string, flags);
+	slurmdb_tres_list_from_string(&tres_list, tres_string, flags, NULL);
 	if (!tres_list) {
 		error("%s: couldn't make tres_list from \'%s\'", __func__,
 		      tres_string);

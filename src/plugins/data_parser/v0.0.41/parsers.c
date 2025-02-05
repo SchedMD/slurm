@@ -1574,7 +1574,8 @@ static int DUMP_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	slurmdb_tres_list_from_string(&tres_list, *tres, TRES_STR_FLAG_BYTES);
+	slurmdb_tres_list_from_string(&tres_list, *tres, TRES_STR_FLAG_BYTES,
+				      NULL);
 
 	if (!tres_list) {
 		rc = on_error(DUMPING, parser->type, args,
@@ -1692,11 +1693,11 @@ static int _dump_tres_nct(const parser_t *const parser, data_t *dst,
 	fargs.host_list = hostlist_create(nodes);
 
 	slurmdb_tres_list_from_string(&tres_count_list, tres_count,
-				      TRES_STR_FLAG_BYTES);
+				      TRES_STR_FLAG_BYTES, NULL);
 	slurmdb_tres_list_from_string(&tres_node_list, tres_node,
-				      TRES_STR_FLAG_BYTES);
+				      TRES_STR_FLAG_BYTES, NULL);
 	slurmdb_tres_list_from_string(&tres_task_list, tres_task,
-				      TRES_STR_FLAG_BYTES);
+				      TRES_STR_FLAG_BYTES, NULL);
 
 	fargs.type = TRES_EXPLODE_COUNT;
 	if (tres_count_list &&
