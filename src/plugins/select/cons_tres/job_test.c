@@ -788,14 +788,14 @@ static time_t _guess_job_end(job_record_t *job_ptr, time_t now)
  */
 static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 			 bool sharing_only, part_record_t *my_part_ptr,
-			 bool qos_preemptor, list_t *jobs)
+			 bool use_extra_row, list_t *jobs)
 {
 	uint32_t r;
 	uint16_t num_rows;
 
 	for (; p_ptr; p_ptr = p_ptr->next) {
 		num_rows = p_ptr->num_rows;
-		if (preempt_by_qos && !qos_preemptor)
+		if (preempt_by_qos && !use_extra_row)
 			num_rows--;	/* Don't use extra row */
 		if (sharing_only &&
 		    ((num_rows < 2) || (p_ptr->part_ptr == my_part_ptr)))
@@ -994,7 +994,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			      uint16_t cr_type,
 			      node_use_record_t *node_usage,
 			      enum node_cr_state job_node_req,
-			      resv_exc_t *resv_exc_ptr, bool qos_preemptor)
+			      resv_exc_t *resv_exc_ptr, bool use_extra_row)
 {
 	node_record_t *node_ptr;
 	uint32_t gres_cpus, gres_cores;
@@ -1100,7 +1100,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			 * in sharing partitions
 			 */
 			if (_is_node_busy(cr_part_ptr, i, true,
-					  job_ptr->part_ptr, qos_preemptor,
+					  job_ptr->part_ptr, use_extra_row,
 					  node_usage[i].jobs)) {
 				log_flag(SELECT_TYPE, "node %s is running job that shares resouces in other partition",
 					 node_ptr->name);
@@ -1112,7 +1112,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			if (job_node_req == NODE_CR_RESERVED) {
 				if (_is_node_busy(cr_part_ptr, i, false,
 						  job_ptr->part_ptr,
-						  qos_preemptor,
+						  use_extra_row,
 						  node_usage[i].jobs)) {
 					log_flag(SELECT_TYPE, "node %s is running other jobs, cannot run --exclusive job here",
 						 node_ptr->name);
@@ -1125,7 +1125,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 				 */
 				if (_is_node_busy(cr_part_ptr, i, true,
 						  job_ptr->part_ptr,
-						  qos_preemptor,
+						  use_extra_row,
 						  node_usage[i].jobs)) {
 					log_flag(SELECT_TYPE, "node %s is running job that shares resources in other partition",
 						 node_ptr->name);
@@ -1169,7 +1169,8 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		     part_res_record_t *cr_part_ptr,
 		     node_use_record_t *node_usage, list_t *license_list,
 		     resv_exc_t *resv_exc_ptr, bool prefer_alloc_nodes,
-		     bool qos_preemptor, bool preempt_mode)
+		     bool use_extra_row, bool preempt_mode,
+		     list_t *qos_preemptees)
 {
 	int error_code = SLURM_SUCCESS, select_rc = SLURM_SUCCESS;
 	bitstr_t *orig_node_map, **part_core_map = NULL;
@@ -1205,12 +1206,16 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		test_only = true;
 	else if (mode == SELECT_MODE_WILL_RUN)
 		will_run = true;
+	if (qos_preemptees) {
+		use_extra_row = true;
+		preempt_mode = false;
+	}
 
 	/* check node_state and update the node_bitmap as necessary */
 	if (!test_only) {
 		error_code = _verify_node_state(
 			cr_part_ptr, job_ptr, node_bitmap, cr_type,
-			node_usage, job_node_req, resv_exc_ptr, qos_preemptor);
+			node_usage, job_node_req, resv_exc_ptr, use_extra_row);
 		if (error_code != SLURM_SUCCESS) {
 			return error_code;
 		}
@@ -1667,11 +1672,40 @@ skip_test0:
 	}
 
 
-	if ((jp_ptr->num_rows > 1) && !preempt_by_qos)
+	if ((jp_ptr->num_rows > 1) && (!preempt_by_qos || qos_preemptees))
 		part_data_sort_res(jp_ptr);	/* Preserve row order for QOS */
 	c = jp_ptr->num_rows;
-	if (preempt_by_qos && !qos_preemptor)
+	if (preempt_by_qos && !use_extra_row)
 		c--;				/* Do not use extra row */
+	if (qos_preemptees && use_extra_row) {
+		list_itr_t *job_iterator;
+		job_record_t *job_ptr;
+		/*
+		 * We may be putting the job in extra row. We need to make sure
+		 * that extra row allows the use of resources of jobs that we
+		 * were allowed to preempt and we already know the job should
+		 * fit there. If we just leave the row empty, we will select
+		 * the nodes not taking currently running jobs into account
+		 */
+		if (!jp_ptr->row[c - 1].row_bitmap)
+			jp_ptr->row[c - 1].row_bitmap = build_core_array();
+		for (int i = 0; i < (c - 1); i++) {
+			error("%p %p",
+			      jp_ptr->row[c - 1].row_bitmap,
+			      jp_ptr->row[i].row_bitmap);
+			core_array_or(jp_ptr->row[c - 1].row_bitmap,
+				      jp_ptr->row[i].row_bitmap);
+		}
+
+		job_iterator = list_iterator_create(qos_preemptees);
+		while ((job_ptr = list_next(job_iterator))) {
+			job_res_rm_cores(job_ptr->job_resrcs,
+					 &(jp_ptr->row[c - 1]));
+		}
+		list_iterator_destroy(job_iterator);
+	}
+
+
 	if (preempt_by_qos && (job_node_req != NODE_CR_AVAILABLE))
 		c = 1;
 	for (i = 0; i < c; i++) {
@@ -2153,7 +2187,7 @@ static int _test_only(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
 		       select_part_record, select_node_usage,
-		       cluster_license_list, NULL, false, false, false);
+		       cluster_license_list, NULL, false, false, false, NULL);
 	return rc;
 }
 
@@ -2411,7 +2445,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			       req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
 			       job_node_req, future_part, future_usage,
 			       future_license_list, resv_exc_ptr, false,
-			       qos_preemptor, true);
+			       qos_preemptor, true, NULL);
 		if (rc == SLURM_SUCCESS) {
 			/*
 			 * Actual start time will actually be later than "now",
@@ -2505,7 +2539,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			       job_node_req, future_part, future_usage,
 			       future_license_list, resv_exc_ptr,
 			       backfill_busy_nodes, qos_preemptor,
-			       true);
+			       true, NULL);
 		if (rc == SLURM_SUCCESS) {
 			if (last_job_ptr->end_time <= now) {
 				job_ptr->start_time =
@@ -2586,7 +2620,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		       SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
 		       select_part_record, select_node_usage,
 		       cluster_license_list, resv_exc_ptr, false, false,
-		       false);
+		       false, NULL);
 	if (rc == SLURM_SUCCESS) {
 		job_ptr->start_time = now;
 		FREE_NULL_BITMAP(orig_map);
@@ -2677,7 +2711,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 		       SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
 		       select_part_record, select_node_usage,
 		       cluster_license_list, resv_exc_ptr, false, false,
-		       preempt_mode);
+		       false, NULL);
 
 	/* Don't try preempting for licenses if not enabled */
 	if ((rc == ESLURM_LICENSES_UNAVAILABLE) && !preempt_for_licenses)
@@ -2694,13 +2728,77 @@ top:	orig_node_map = bit_copy(save_node_map);
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos &&
 	    (mode == PREEMPT_MODE_SUSPEND) &&
 	    (job_ptr->priority != 0)) {	/* Job can be held by bad allocate */
-		/* Try to schedule job using extra row of core bitmap */
-		bit_or(node_bitmap, orig_node_map);
-		rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
-			       req_nodes, SELECT_MODE_RUN_NOW, tmp_cr_type,
-			       job_node_req, select_part_record,
-			       select_node_usage, cluster_license_list,
-			       resv_exc_ptr, false, true, preempt_mode);
+		list_t *preemptees_to_suspend_by_qos = list_create(NULL);
+
+		future_part = part_data_dup_res(select_part_record,
+						orig_node_map);
+		if (future_part == NULL) {
+			FREE_NULL_BITMAP(orig_node_map);
+			FREE_NULL_BITMAP(save_node_map);
+			return SLURM_ERROR;
+		}
+		future_usage = node_data_dup_use(select_node_usage,
+						 orig_node_map);
+		if (future_usage == NULL) {
+			part_data_destroy_res(future_part);
+			FREE_NULL_BITMAP(orig_node_map);
+			FREE_NULL_BITMAP(save_node_map);
+			return SLURM_ERROR;
+		}
+		future_license_list = license_copy(cluster_license_list);
+
+		job_iterator = list_iterator_create(preemptee_candidates);
+		while ((tmp_job_ptr = list_next(job_iterator))) {
+			int mode = slurm_job_preempt_mode(tmp_job_ptr);
+			if (mode != PREEMPT_MODE_SUSPEND)
+				continue;
+			/*
+			 * Remove resources used by tmp_job_ptr and check if
+			 * the preemptor job can run.
+			 */
+			if (_job_res_rm_job(future_part, future_usage,
+					    NULL, tmp_job_ptr,
+					    JOB_RES_ACTION_RESUME,
+					    orig_node_map))
+				continue;
+			list_append(preemptees_to_suspend_by_qos, tmp_job_ptr);
+			bit_or(node_bitmap, orig_node_map);
+			rc = _job_test(job_ptr, node_bitmap, min_nodes,
+				       max_nodes, req_nodes,
+				       SELECT_MODE_WILL_RUN,
+				       tmp_cr_type, job_node_req,
+				       future_part, future_usage,
+				       future_license_list, resv_exc_ptr,
+				       false, false, preempt_mode, NULL);
+
+			if (rc != SLURM_SUCCESS)
+				continue;
+
+			/*
+			 * We have identified the preemptee jobs that we need
+			 * to suspend to run the preemptor job. Try to
+			 * schedule it using extra row of core bitmap.
+			 */
+			bit_or(node_bitmap, orig_node_map);
+			rc = _job_test(job_ptr, node_bitmap, min_nodes,
+				       max_nodes, req_nodes,
+				       SELECT_MODE_RUN_NOW, tmp_cr_type,
+				       job_node_req, select_part_record,
+				       select_node_usage, cluster_license_list,
+				       resv_exc_ptr, false, true, preempt_mode,
+				       preemptees_to_suspend_by_qos);
+			FREE_NULL_LIST(preemptees_to_suspend_by_qos);
+
+			FREE_NULL_BITMAP(orig_node_map);
+			FREE_NULL_BITMAP(save_node_map);
+			list_iterator_destroy(job_iterator);
+			part_data_destroy_res(future_part);
+			node_data_destroy(future_usage);
+			FREE_NULL_LIST(future_license_list);
+
+			return rc;
+		}
+		FREE_NULL_LIST(preemptees_to_suspend_by_qos);
 	} else if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Remove preemptable jobs from simulated environment */
@@ -2741,7 +2839,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 				       tmp_cr_type, job_node_req,
 				       future_part, future_usage,
 				       future_license_list, resv_exc_ptr,
-				       false, false, preempt_mode);
+				       false, false, preempt_mode, NULL);
 			tmp_job_ptr->details->usable_nodes = 0;
 			if (rc != SLURM_SUCCESS)
 				continue;
