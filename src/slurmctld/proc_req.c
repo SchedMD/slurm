@@ -751,7 +751,10 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	alloc_msg->job_id         = job_ptr->job_id;
 	alloc_msg->node_cnt       = job_ptr->node_cnt;
 	alloc_msg->node_list      = xstrdup(job_ptr->nodes);
-	alloc_msg->partition      = xstrdup(job_ptr->partition);
+	if (job_ptr->part_ptr)
+		alloc_msg->partition = xstrdup(job_ptr->part_ptr->name);
+	else
+		alloc_msg->partition = xstrdup(job_ptr->partition);
 	alloc_msg->batch_host = xstrdup(job_ptr->batch_host);
 	if (job_ptr->details) {
 		if (job_ptr->bit_flags & JOB_MEM_SET) {
