@@ -1799,7 +1799,7 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 
 /*
  * Handle the planned list.
- * set - If true we are setting bits, else we clear them.
+ * set - If true we are setting states, else we clear them.
  */
 static void _handle_planned(bool set)
 {
@@ -1835,15 +1835,26 @@ static void _handle_planned(bool set)
 				idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
 				if (idle_cpus &&
 				    (idle_cpus < node_ptr->cpus_efctv))
+					/* Mixed node as planned */
 					goto mixed;
 
+				/*
+				 * Node fully allocated. Remove from planned.
+				 * This is happening when a mixed node gets
+				 * fully allocated while looping in
+				 * _attempt_backfill (BF sched loop)
+				 */
+				node_ptr->node_state &= ~NODE_STATE_PLANNED;
+				node_update = true;
 				bit_clear(planned_bitmap, n);
 			} else {
+				/* Idle node as planned */
 mixed:
 				node_ptr->node_state |= NODE_STATE_PLANNED;
 				node_update = true;
 			}
 		} else {
+			/* Reset planned state for all nodes */
 			node_ptr->node_state &= ~NODE_STATE_PLANNED;
 			node_update = true;
 			bit_clear(planned_bitmap, n);
