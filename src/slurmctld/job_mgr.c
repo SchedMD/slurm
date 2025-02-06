@@ -2430,14 +2430,6 @@ static int _job_signal_id(uint32_t job_id, uint16_t signal, uint16_t flags,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account, false)) {
-		error("Security violation, JOB_CANCEL RPC for %pJ from uid %u",
-		      job_ptr, uid);
-		return ESLURM_ACCESS_DENIED;
-	}
-
 	return job_signal(job_ptr, signal, flags, uid, preempt);
 }
 
@@ -2570,9 +2562,21 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		info("%s: invalid JobId=%u",
 		     __func__, job_step_kill_msg->step_id.job_id);
 		error_code = ESLURM_INVALID_JOB_ID;
-	} else if (job_ptr->het_job_list &&
-		   (job_step_kill_msg->signal == SIGKILL) &&
-		   (job_step_kill_msg->step_id.step_id != NO_VAL)) {
+		goto endit;
+	}
+
+	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					  job_ptr->account, false)) {
+		error("Security violation, JOB_CANCEL RPC for %pJ from uid %u",
+		      job_ptr, uid);
+		error_code = ESLURM_ACCESS_DENIED;
+		goto endit;
+	}
+
+	if (job_ptr->het_job_list &&
+	    (job_step_kill_msg->signal == SIGKILL) &&
+	    (job_step_kill_msg->step_id.step_id != NO_VAL)) {
 		foreach_kill_hetjob_step_t foreach_kill_hetjob_step = {
 			.job_step_kill_msg = job_step_kill_msg,
 			.rc = SLURM_SUCCESS,
@@ -2586,6 +2590,8 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	} else {
 		error_code = _kill_job_step(job_step_kill_msg, job_ptr, uid);
 	}
+
+endit:
 	unlock_slurmctld(job_write_lock);
 
 	return error_code;
