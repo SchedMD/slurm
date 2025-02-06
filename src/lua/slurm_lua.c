@@ -712,7 +712,8 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 				const char *script_path,
 				const char **req_fxns,
 				time_t *load_time,
-				void (*local_options)(lua_State *L))
+				void (*local_options)(lua_State *L),
+				char **err_msg)
 {
 	lua_State *new = NULL;
 	lua_State *curr = *L;

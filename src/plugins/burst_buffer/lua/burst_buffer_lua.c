@@ -811,7 +811,8 @@ static int _start_lua_script(const char *func, uint32_t job_id, uint32_t argc,
 
 	rc = slurm_lua_loadscript(&L, "burst_buffer/lua",
 				  lua_script_path, req_fxns,
-				  &lua_script_last_loaded, _loadscript_extra);
+				  &lua_script_last_loaded, _loadscript_extra,
+				  NULL);
 
 	if (rc != SLURM_SUCCESS)
 		return rc;
@@ -2201,7 +2202,8 @@ extern int init(void)
 	/* Check that the script can load successfully */
 	rc = slurm_lua_loadscript(&L, "burst_buffer/lua",
 				  lua_script_path, req_fxns,
-				  &lua_script_last_loaded, _loadscript_extra);
+				  &lua_script_last_loaded, _loadscript_extra,
+				  NULL);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 	else

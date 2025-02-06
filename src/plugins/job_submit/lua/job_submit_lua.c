@@ -1395,7 +1395,7 @@ int init(void)
 	return slurm_lua_loadscript(&L, "job_submit/lua",
 				    lua_script_path, req_fxns,
 				    &lua_script_last_loaded,
-				    _loadscript_extra);
+				    _loadscript_extra, NULL);
 }
 
 int fini(void)
@@ -1423,7 +1423,8 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 
 	rc = slurm_lua_loadscript(&L, "job_submit/lua",
 				  lua_script_path, req_fxns,
-				  &lua_script_last_loaded, _loadscript_extra);
+				  &lua_script_last_loaded, _loadscript_extra,
+				  NULL);
 
 	if (rc != SLURM_SUCCESS)
 		goto out;
@@ -1477,7 +1478,8 @@ extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 
 	rc = slurm_lua_loadscript(&L, "job_submit/lua",
 				  lua_script_path, req_fxns,
-				  &lua_script_last_loaded, _loadscript_extra);
+				  &lua_script_last_loaded, _loadscript_extra,
+				  NULL);
 
 	if (rc == SLURM_ERROR)
 		goto out;
