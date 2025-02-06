@@ -242,65 +242,6 @@ eio_handle_t *pmixp_info_io(void)
 	return _io_handle;
 }
 
-/*
- * Job and step nodes/tasks count and hostname extraction routines
- */
-
-/*
- * Derived from src/srun/opt.c
- * _get_task_count()
- *
- * FIXME: original _get_task_count has some additional check
- * for opt.ntasks_per_node & opt.cpus_set
- * Should we care here?
- static int _get_task_count(char ***env, uint32_t *tasks, uint32_t *cpus)
- {
- pmixp_debug_hang(1);
- char *cpus_per_node = NULL, *cpus_per_task_env = NULL, *end_ptr = NULL;
- int cpus_per_task = 1, cpu_count, node_count, task_count;
- int total_tasks = 0, total_cpus = 0;
-
- cpus_per_node = getenvp(*env, PMIX_CPUS_PER_NODE_ENV);
- if (cpus_per_node == NULL) {
- PMIXP_ERROR_NO(0,"Cannot find %s environment variable",
-		PMIX_CPUS_PER_NODE_ENV);
- return SLURM_ERROR;
- }
- cpus_per_task_env = getenvp(*env, PMIX_CPUS_PER_TASK);
- if (cpus_per_task_env != NULL) {
- cpus_per_task = strtol(cpus_per_task_env, &end_ptr, 10);
- }
-
- cpu_count = strtol(cpus_per_node, &end_ptr, 10);
- task_count = cpu_count / cpus_per_task;
- while (1) {
- if ((end_ptr[0] == '(') && (end_ptr[1] == 'x')) {
- end_ptr += 2;
- node_count = strtol(end_ptr, &end_ptr, 10);
- task_count *= node_count;
- total_tasks += task_count;
- cpu_count *= node_count;
- total_cpus += cpu_count;
- if (end_ptr[0] == ')')
- end_ptr++;
- } else if ((end_ptr[0] == ',') || (end_ptr[0] == 0))
- total_tasks += task_count;
- else {
- PMIXP_ERROR_NO(0,"Invalid value for environment variable %s (%s)",
- PMIX_CPUS_PER_NODE_ENV, cpus_per_node);
- return SLURM_ERROR;
- }
- if (end_ptr[0] == ',')
- end_ptr++;
- if (end_ptr[0] == 0)
- break;
- }
- *tasks = total_tasks;
- *cpus = total_cpus;
- return 0;
- }
- */
-
 static int _resources_set(char ***env)
 {
 	char *p = NULL;
@@ -351,15 +292,6 @@ static int _resources_set(char ***env)
 	_pmixp_job_info.node_id_job = hostlist_find(_pmixp_job_info.job_hl,
 						    _pmixp_job_info.hostname);
 
-	/* FIXME!! ------------------------------------------------------- */
-	/* TODO: _get_task_count not always works well.
-	 if (_get_task_count(env, &_pmixp_job_info.ntasks_job,
-		&_pmixp_job_info.ncpus_job) < 0) {
-	 _pmixp_job_info.ntasks_job  = _pmixp_job_info.ntasks;
-	 _pmixp_job_info.ncpus_job  = _pmixp_job_info.ntasks;
-	 }
-	 xassert(_pmixp_job_info.ntasks <= _pmixp_job_info.ntasks_job);
-	 */
 	_pmixp_job_info.ntasks_job = _pmixp_job_info.ntasks;
 	_pmixp_job_info.ncpus_job = _pmixp_job_info.ntasks;
 

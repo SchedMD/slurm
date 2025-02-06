@@ -184,7 +184,10 @@ static void _set_procdatas(list_t *lresp)
 	PMIXP_KVP_CREATE(kvp, PMIX_NODEID, &nsptr->node_id, PMIX_UINT32);
 	list_append(lresp, kvp);
 
-	/* TODO: the same as for previous here */
+	/*
+	 * The leader program (appldr) is the lowest global rank in the
+	 * specified application.
+	 */
 	i = 0;
 	PMIXP_KVP_CREATE(kvp, PMIX_APPLDR, &i, PMIX_INT);
 	list_append(lresp, kvp);
@@ -204,30 +207,41 @@ static void _set_procdatas(list_t *lresp)
 		PMIXP_VAL_SET_RANK(&kvp->value, i);
 		list_append(rankinfo, kvp);
 
-		/* TODO: always use 0 for now. This is not the general case
-		 * though (see Slurm MIMD: man srun, section MULTIPLE PROGRAM
-		 * CONFIGURATION)
+		/*
+		 * The application number within the job in which the specified
+		 * process is a member. In Slurm terminology this number
+		 * identifies the heterogeneous component (step->het_job_offset)
+		 * from this step.
 		 */
 		tmp = 0;
 		PMIXP_KVP_CREATE(kvp, PMIX_APPNUM, &tmp, PMIX_INT);
 		list_append(rankinfo, kvp);
 
-		/* TODO: fix when several apps will appear */
+		/*
+		 * Global task id in the heterogeneous job.
+		 */
 		PMIXP_KVP_CREATE(kvp, PMIX_GLOBAL_RANK, &i, PMIX_UINT32);
 		list_append(rankinfo, kvp);
 
-		/* TODO: fix when several apps will appear */
+		/*
+		 * This is the rank local to each heterogeneous
+		 * component within its app, starting from 0.
+		 */
 		PMIXP_KVP_CREATE(kvp, PMIX_APP_RANK, &i, PMIX_UINT32);
 		list_append(rankinfo, kvp);
 
+		/* localid is the task id in this node */
 		localid = pmixp_info_taskid2localid(i);
-		/* this rank is local, store local info ab't it! */
 		if (0 <= localid) {
 			PMIXP_KVP_CREATE(kvp, PMIX_LOCAL_RANK,
 					 &localid, PMIX_UINT16);
 			list_append(rankinfo, kvp);
 
-			/* TODO: fix when several apps will appear */
+			/*
+			 * Rank of the specified process on its node spanning
+			 * all jobs. For Slurm this is just the rank local to
+			 * this node, so the same as PMIX_LOCAL_RANK.
+			 */
 			PMIXP_KVP_CREATE(kvp, PMIX_NODE_RANK,
 					 &localid, PMIX_UINT16);
 			list_append(rankinfo, kvp);
@@ -283,7 +297,6 @@ static void _set_sizeinfo(list_t *lresp)
 	PMIXP_KVP_CREATE(kvp, PMIX_LOCAL_SIZE, &tmp_val, PMIX_UINT32);
 	list_append(lresp, kvp);
 
-	/* TODO: fix it in future */
 	tmp_val = pmixp_info_tasks_loc();
 	PMIXP_KVP_CREATE(kvp, PMIX_NODE_SIZE, &tmp_val, PMIX_UINT32);
 	list_append(lresp, kvp);
