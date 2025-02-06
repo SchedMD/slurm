@@ -180,6 +180,7 @@ static list_t *_process_grouped_report(
 		tmp_acct_list = job_cond->acct_list;
 		job_cond->acct_list = NULL;
 	}
+	job_cond->flags |= JOBCOND_FLAG_NO_STEP;
 	job_cond->flags |= JOBCOND_FLAG_DUP;
 	job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
 
