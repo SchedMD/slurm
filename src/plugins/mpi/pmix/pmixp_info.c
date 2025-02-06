@@ -162,6 +162,17 @@ extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 			_pmixp_job_info.gtids[i] = step->task[i]->gtid +
 						   step->het_job_task_offset;
 		}
+
+		/* Create an array that contains the step id per each task */
+		msize = _pmixp_job_info.ntasks * sizeof(uint32_t);
+		_pmixp_job_info.het_job_offset = xmalloc(msize);
+		int t = 0;
+		for (int s = 0; s < step->het_job_step_cnt; s++) {
+			for (i = 0; i < step->het_job_step_task_cnts[s];
+			     i++, t++) {
+				_pmixp_job_info.het_job_offset[t] = s;
+			}
+		}
 	} else {
 		_pmixp_job_info.node_id = step->nodeid;
 		_pmixp_job_info.node_tasks = step->node_tasks;
@@ -176,6 +187,8 @@ extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 		_pmixp_job_info.gtids = xmalloc(msize);
 		for (i = 0; i < step->node_tasks; i++)
 			_pmixp_job_info.gtids[i] = step->task[i]->gtid;
+
+		_pmixp_job_info.het_job_offset = NULL;
 	}
 #if 0
 	if ((step->het_job_id != 0) && (step->het_job_id != NO_VAL))
@@ -223,6 +236,7 @@ extern int pmixp_info_free(void)
 	}
 
 	xfree(_pmixp_job_info.srun_ip);
+	xfree(_pmixp_job_info.het_job_offset);
 
 	hostlist_destroy(_pmixp_job_info.job_hl);
 	hostlist_destroy(_pmixp_job_info.step_hl);
@@ -627,6 +641,14 @@ extern uint32_t pmixp_info_jobid()
 {
 	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.step_id.job_id;
+}
+
+extern uint32_t pmixp_info_job_offset(int rank)
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	if (!_pmixp_job_info.het_job_offset)
+		return 0;
+	return _pmixp_job_info.het_job_offset[rank];
 }
 
 extern char *pmixp_info_srun_ip()

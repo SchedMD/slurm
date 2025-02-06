@@ -210,7 +210,7 @@ static void _set_procdatas(list_t *lresp)
 		 * identifies the heterogeneous component (step->het_job_offset)
 		 * from this step.
 		 */
-		tmp = 0;
+		tmp = pmixp_info_job_offset(i);
 		PMIXP_KVP_CREATE(kvp, PMIX_APPNUM, &tmp, PMIX_INT);
 		list_append(rankinfo, kvp);
 

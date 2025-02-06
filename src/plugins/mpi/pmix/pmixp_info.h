@@ -56,6 +56,7 @@ typedef struct {
 #endif
 	pmix_nspace_t nspace;
 	slurm_step_id_t step_id; /* Current step id (or NO_VAL) */
+	uint32_t *het_job_offset;
 	uint32_t nnodes; /* number of nodes in current step */
 	uint32_t nnodes_job; /* number of nodes in current job */
 	uint32_t ntasks; /* total number of tasks in current step */
@@ -113,6 +114,7 @@ extern int pmixp_info_free(void);
 extern uint32_t pmixp_info_jobuid();
 extern uint32_t pmixp_info_jobgid();
 extern uint32_t pmixp_info_jobid();
+extern uint32_t pmixp_info_job_offset(int i);
 extern char *pmixp_info_srun_ip();
 extern int pmixp_info_abort_agent_port();
 extern uint32_t pmixp_info_stepid();
