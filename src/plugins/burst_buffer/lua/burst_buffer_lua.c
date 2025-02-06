@@ -809,10 +809,11 @@ static int _start_lua_script(const char *func, uint32_t job_id, uint32_t argc,
 	time_t lua_script_last_loaded = (time_t) 0;
 	int rc, i;
 
+	errno = 0;
 	rc = slurm_lua_loadscript(&L, "burst_buffer/lua",
 				  lua_script_path, req_fxns,
 				  &lua_script_last_loaded, _loadscript_extra,
-				  NULL);
+				  resp_msg);
 
 	if (rc != SLURM_SUCCESS)
 		return rc;
