@@ -2886,8 +2886,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
 #else
 	int error_code = SLURM_SUCCESS;
-	job_record_t *job_ptr = NULL, *het_job_ptr;
-	char *local_node_list = NULL, *node_list = NULL;
+	job_record_t *job_ptr = NULL;
 	DEF_TIMERS;
 	step_alloc_info_msg_t *job_info_msg = msg->data;
 	job_sbcast_cred_msg_t *job_info_resp_msg = NULL;
@@ -2899,37 +2898,9 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
 	if (job_info_msg->het_job_offset == NO_VAL) {
-		bitstr_t *node_bitmap = NULL;
-		list_itr_t *iter;
 		error_code = job_alloc_info(msg->auth_uid,
 					    job_info_msg->step_id.job_id,
 					    &job_ptr);
-		if (job_ptr && job_ptr->het_job_list) {  /* Do full HetJob */
-			job_info_msg->step_id.step_id = NO_VAL;
-			iter = list_iterator_create(job_ptr->het_job_list);
-			while ((het_job_ptr = list_next(iter))) {
-				error_code = job_alloc_info_ptr(msg->auth_uid,
-							        het_job_ptr);
-				if (error_code)
-					break;
-				if (!het_job_ptr->node_bitmap) {
-					debug("%s: %pJ lacks node bitmap",
-					      __func__, het_job_ptr);
-				} else if (!node_bitmap) {
-					node_bitmap = bit_copy(
-						     het_job_ptr->node_bitmap);
-				} else {
-					bit_or(node_bitmap,
-					       het_job_ptr->node_bitmap);
-				}
-			}
-			list_iterator_destroy(iter);
-			if (!error_code) {
-				local_node_list = bitmap2node_name(node_bitmap);
-				node_list = local_node_list;
-			}
-			FREE_NULL_BITMAP(node_bitmap);
-		}
 	} else {
 		job_ptr = find_het_job_record(job_info_msg->step_id.job_id,
 					      job_info_msg->het_job_offset);
@@ -2961,7 +2932,6 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 			slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
 		}
 		unlock_slurmctld(job_read_lock);
-		xfree(local_node_list);
 		return;
 	}
 
@@ -2973,7 +2943,6 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 
 	error_code = stepmgr_get_job_sbcast_cred_msg(job_ptr,
 						     &job_info_msg->step_id,
-						     node_list,
 						     msg->protocol_version,
 						     &job_info_resp_msg);
 	unlock_slurmctld(job_read_lock);
@@ -2986,20 +2955,18 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	     __func__,
 	     slurm_get_selected_step_id(job_id_str, sizeof(job_id_str),
 					job_info_msg),
-	     node_list,
+	     job_info_resp_msg->node_list,
 	     TIME_STR);
 
 	(void) send_msg_response(msg, RESPONSE_JOB_SBCAST_CRED,
 				 job_info_resp_msg);
 
 	slurm_free_sbcast_cred_msg(job_info_resp_msg);
-	xfree(local_node_list);
 
 	return;
 
 error:
 	unlock_slurmctld(job_read_lock);
-	xfree(local_node_list);
 
 	debug2("%s: JobId=%s, uid=%u: %s",
 	       __func__,

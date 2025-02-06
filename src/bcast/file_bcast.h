@@ -54,6 +54,7 @@ struct bcast_parameters {
 	char *exe_fname;
 	uint16_t flags;
 	char *node_list;
+	list_t *selected_steps; /* HetJob components selected_step list. */
 	slurm_selected_step_t *selected_step;
 	char *src_fname;
 	uint32_t step_id;

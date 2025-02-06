@@ -222,7 +222,6 @@ extern int stepmgr_get_step_layouts(job_record_t *job_ptr,
 extern int stepmgr_get_job_sbcast_cred_msg(
 	job_record_t *job_ptr,
 	slurm_step_id_t *step_id,
-	char *hetjob_nodelist,
 	uint16_t protocol_version,
 	job_sbcast_cred_msg_t **out_sbcast_cred_msg);
 

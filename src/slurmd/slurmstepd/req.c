@@ -769,7 +769,7 @@ static int _handle_job_sbcast_cred(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	slurm_mutex_lock(&stepmgr_mutex);
 	rc = stepmgr_get_job_sbcast_cred_msg(job_step_ptr, &request->step_id,
-					     NULL, msg.protocol_version,
+					     msg.protocol_version,
 					     &job_info_resp_msg);
 	slurm_mutex_unlock(&stepmgr_mutex);
 	if (rc)
