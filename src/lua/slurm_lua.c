@@ -740,9 +740,14 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 
 	/* Initialize lua */
 	if (!(new = luaL_newstate())) {
+		if (curr) {
+			error("%s: %s: luaL_newstate() failed to allocate, using previous script.",
+			      plugin, __func__);
+			return SLURM_SUCCESS;
+		}
 		error("%s: %s: luaL_newstate() failed to allocate.",
 		      plugin, __func__);
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	}
 
 	luaL_openlibs(new);
