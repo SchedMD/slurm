@@ -3703,7 +3703,7 @@ static int _check_core_range_matches_sock(bitstr_t *tmp_bitmap,
 			char *tmp = xstrdup_printf(
 				"%s GRES core specification %s doesn't match socket boundaries. (Socket %d is cores %d-%d)",
 				gres_ctx->gres_type, gres_cores_str, i, first,
-				last);
+				(last - 1));
 			xfree(gres_cores_str);
 			FREE_NULL_BITMAP(gres_ns->topo_core_bitmap[
 						 rebuild_topo->topo_cnt]);
