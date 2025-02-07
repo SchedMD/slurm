@@ -203,11 +203,16 @@ static char *_get_assoc_qos(uint32_t user_id, char *account, char *partition)
 	slurmdb_assoc_rec_t assoc;
 	list_t *qos_name_list;
 	char *qos_name_list_str;
+	list_t *qos_list = NULL;
 
-	_fill_assoc(user_id, account, partition, &assoc);
+	if (_fill_assoc(user_id, account, partition, &assoc) == SLURM_SUCCESS)
+		qos_list = assoc.qos_list;
+
+	if (!qos_list)
+		return NULL;
 
 	qos_name_list = list_create(xfree_ptr);
-	list_for_each_ro(assoc.qos_list, _qos_id_to_qos_name, qos_name_list);
+	list_for_each_ro(qos_list, _qos_id_to_qos_name, qos_name_list);
 
 	qos_name_list_str = slurm_char_list_to_xstr(qos_name_list);
 
