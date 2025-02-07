@@ -1471,15 +1471,13 @@ static int _convert_data_string(data_t *data)
 	case TYPE_FLOAT:
 	{
 		char *str = xstrdup_printf("%lf", data->data.float_u);
-		data_set_string(data, str);
-		xfree(str);
+		data_set_string_own(data, str);
 		return SLURM_SUCCESS;
 	}
 	case TYPE_INT_64:
 	{
 		char *str = xstrdup_printf("%"PRId64, data->data.int_u);
-		data_set_string(data, str);
-		xfree(str);
+		data_set_string_own(data, str);
 		return SLURM_SUCCESS;
 	}
 	default:
