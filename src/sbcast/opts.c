@@ -84,6 +84,11 @@ static bool _need_hetjob_components(job_info_msg_t **job_info_msg)
 	if (params.selected_step->het_job_offset != NO_VAL)
 		return false;
 
+	if (!job_info_msg) {
+		error("job_info_msg pointer is NULL before calling slurm_load_job().");
+		exit(1);
+	}
+
 	if ((rc = slurm_load_job(job_info_msg,
 				 params.selected_step->step_id.job_id,
 				 SHOW_ALL)) != SLURM_SUCCESS) {
@@ -91,8 +96,7 @@ static bool _need_hetjob_components(job_info_msg_t **job_info_msg)
 		      params.selected_step->step_id.job_id,
 		      slurm_strerror(rc));
 		exit(1);
-	} else if (!job_info_msg || !*job_info_msg ||
-		   (((*job_info_msg)->record_count) <= 0)) {
+	} else if (!*job_info_msg || (((*job_info_msg)->record_count) <= 0)) {
 		error("Failed to load JobId=%u: No jobs returned.",
 		      params.selected_step->step_id.job_id);
 		exit(1);
