@@ -78,6 +78,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 
 	slurm_mutex_lock(&mgr.mutex);
 
+	enabled_status = true;
 	mgr.shutdown_requested = false;
 
 	if (mgr.workers.conf_threads > 0)
