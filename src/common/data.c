@@ -403,9 +403,6 @@ static void _check_magic(const data_t *data)
 		xassert(data->type > TYPE_START);
 		xassert(data->type < TYPE_MAX);
 
-		if (data->type == TYPE_NULL)
-			/* make sure NULL type has a NULL value */
-			xassert(data->data.list_u == NULL);
 		if (data->type == TYPE_LIST)
 			_check_data_list_magic(data->data.list_u);
 		if (data->type == TYPE_DICT)
