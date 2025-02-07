@@ -1859,6 +1859,11 @@ fail2:
 	 */
 	while (stepd_send_pending_exit_msgs(step)) {;}
 
+	debug2("Before call to spank_fini()");
+	if (spank_fini(step) < 0)
+		error("spank_fini failed");
+	debug2("After call to spank_fini()");
+
 	/*
 	 * This just cleans up all of the PAM state in case rc == 0
 	 * which means _fork_all_tasks performs well.
@@ -1867,12 +1872,6 @@ fail2:
 	 */
 	if (!rc)
 		pam_finish();
-
-	debug2("Before call to spank_fini()");
-	if (spank_fini (step)  < 0) {
-		error ("spank_fini failed");
-	}
-	debug2("After call to spank_fini()");
 
 fail1:
 	/* If interactive job startup was abnormal,
