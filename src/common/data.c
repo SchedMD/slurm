@@ -800,12 +800,11 @@ extern data_t *data_key_get(data_t *data, const char *key)
 
 extern data_t *data_key_get_int(data_t *data, int64_t key)
 {
-	char *key_str = xstrdup_printf("%"PRId64, key);
-	data_t *node = data_key_get(data, key_str);
+	char key_str[INT64_CHAR_MAX + 1];
 
-	xfree(key_str);
+	(void) snprintf(key_str, sizeof(key_str), "%"PRId64, key);
 
-	return node;
+	return data_key_get(data, key_str);
 }
 
 extern data_t *data_list_find_first(
