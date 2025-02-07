@@ -51,6 +51,9 @@
 #define DATA_LIST_MAGIC 0x1992F89F
 #define DATA_LIST_NODE_MAGIC 0x1921F89F
 
+/* max chars PRId64 could printf(). strlen("-9223372036854775808") = 20 */
+#define INT64_CHAR_MAX 20
+
 typedef struct data_list_s data_list_t;
 typedef struct data_list_node_s data_list_node_t;
 
@@ -907,12 +910,11 @@ extern data_t *data_key_set(data_t *data, const char *key)
 
 extern data_t *data_key_set_int(data_t *data, int64_t key)
 {
-	char *key_str = xstrdup_printf("%"PRId64, key);
-	data_t *node = data_key_set(data, key_str);
+	char key_str[INT64_CHAR_MAX + 1];
 
-	xfree(key_str);
+	(void) snprintf(key_str, sizeof(key_str), "%"PRId64, key);
 
-	return node;
+	return data_key_set(data, key_str);
 }
 
 extern bool data_key_unset(data_t *data, const char *key)
