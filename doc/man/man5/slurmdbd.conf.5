@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "June 2025" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "July 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -557,8 +557,8 @@ Log errors and verbose informational messages and even more debugging messages
 Log errors and verbose informational messages and even more debugging messages
 .RE
 .IP
-\fBNOTE\fR: By default, Slurm's systemd service files start daemons in the
-foreground with the -D option. This means that systemd will capture
+\fBNOTE\fR: By default, Slurm's systemd service file starts the slurmdbd daemon
+in the foreground with the \-D option. This means that systemd will capture
 stdout/stderr output and print that to syslog, independent of Slurm printing to
 syslog directly. To prevent systemd from doing this, add "StandardOutput=null"
 and "StandardError=null" to the respective service files or override files.

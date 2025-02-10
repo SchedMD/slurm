@@ -5410,11 +5410,12 @@ Log errors and verbose informational messages and even more debugging messages
 Log errors and verbose informational messages and even more debugging messages
 .RE
 .IP
-\fBNOTE\fR: By default, Slurm's systemd service files start daemons in the
-foreground with the -D option. This means that systemd will capture
-stdout/stderr output and print that to syslog, independent of Slurm printing to
-syslog directly. To prevent systemd from doing this, add "StandardOutput=null"
-and "StandardError=null" to the respective service files or override files.
+\fBNOTE\fR: By default, Slurm's systemd service file starts the slurmctld daemon
+in the foreground with the \-\-systemd option. This means that systemd will
+capture stdout/stderr output and print that to syslog, independent of Slurm
+printing to syslog directly. To prevent systemd from doing this, add
+"StandardOutput=null" and "StandardError=null" to the respective service files
+or override files.
 .IP
 
 .TP
@@ -5695,8 +5696,8 @@ Log errors and verbose informational messages and even more debugging messages
 Log errors and verbose informational messages and even more debugging messages
 .RE
 .IP
-\fBNOTE\fR: By default, Slurm's systemd service files start daemons in the
-foreground with the -D option. This means that systemd will capture
+\fBNOTE\fR: By default, Slurm's systemd service file starts the slurmd daemon in
+the foreground with the \-\-systemd option. This means that systemd will capture
 stdout/stderr output and print that to syslog, independent of Slurm printing to
 syslog directly. To prevent systemd from doing this, add "StandardOutput=null"
 and "StandardError=null" to the respective service files or override files.
