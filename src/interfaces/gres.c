@@ -3804,26 +3804,24 @@ static int _check_core_range_matches_sock(bitstr_t *tmp_bitmap,
 					  rebuild_topo_t *rebuild_topo)
 {
 	for (int i = 0; (i < rebuild_topo->sock_cnt); i++) {
-		int set_cnt = bit_set_count_range(
-			tmp_bitmap,
-			i * rebuild_topo->cores_per_sock,
-			(i + 1) * rebuild_topo->cores_per_sock);
-		if (set_cnt && (set_cnt != rebuild_topo->cores_per_sock)) {
-			char *node_list = bit_fmt_full(tmp_bitmap);
+		int first = i * rebuild_topo->cores_per_sock;
+		int last = (i + 1) * rebuild_topo->cores_per_sock;
+		int core_cnt = bit_set_count_range(tmp_bitmap, first, last);
+		if (core_cnt && (core_cnt != rebuild_topo->cores_per_sock)) {
 			slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
 			gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
+			char *gres_cores_str = bit_fmt_full(tmp_bitmap);
 			char *tmp = xstrdup_printf(
 				"%s GRES core specification %s doesn't match socket boundaries. (Socket %d is cores %d-%d)",
-				gres_ctx->gres_type, node_list, i,
-				i * rebuild_topo->cores_per_sock,
-				(i + 1) * rebuild_topo->cores_per_sock);
-			xfree(node_list);
+				gres_ctx->gres_type, gres_cores_str, i, first,
+				last);
+			xfree(gres_cores_str);
 			FREE_NULL_BITMAP(gres_ns->topo_core_bitmap[
 						 rebuild_topo->topo_cnt]);
 			rebuild_topo->rc = ESLURM_INVALID_GRES;
 			error("%s: %s", __func__, tmp);
 			if (rebuild_topo->reason_down &&
-			    !*rebuild_topo->reason_down)
+			    !(*rebuild_topo->reason_down))
 				xstrfmtcat(*rebuild_topo->reason_down, "%s",
 					   tmp);
 			xfree(tmp);
