@@ -1379,7 +1379,8 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 		char device_name[NVML_DEVICE_NAME_BUFFER_SIZE] = {0};
 		bool mig_mode = false, added_mig = false;
 		gres_slurmd_conf_t gres_slurmd_conf = {
-			.config_flags = GRES_CONF_ENV_NVML,
+			.config_flags =
+				GRES_CONF_ENV_NVML | GRES_CONF_AUTODETECT,
 			.count = 1,
 			.cpu_cnt = node_config->cpu_cnt,
 			.name = "gpu",

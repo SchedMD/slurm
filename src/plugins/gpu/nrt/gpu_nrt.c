@@ -202,6 +202,7 @@ static list_t *_get_system_gpu_list_neuron(node_config_load_t *node_conf)
 			char *device_name = NULL;
 
 			gres_slurmd_conf_t gres_slurmd_conf = {
+				.config_flags = GRES_CONF_AUTODETECT,
 				.count = 1,
 				.cpu_cnt = node_conf->cpu_cnt,
 				.name = "gpu",

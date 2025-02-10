@@ -191,7 +191,8 @@ static list_t *_get_system_gpu_list_nvidia(node_config_load_t *node_conf)
 		if (strlen(de->d_name) < 5) /* Don't include .. and . */
 			continue;
 		gres_slurmd_conf_t gres_slurmd_conf = {
-			.config_flags = GRES_CONF_ENV_NVML,
+			.config_flags =
+				GRES_CONF_ENV_NVML | GRES_CONF_AUTODETECT,
 			.count = 1,
 			.cpu_cnt = node_conf->cpu_cnt,
 			.name = "gpu",
