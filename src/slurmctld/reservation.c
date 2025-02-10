@@ -1721,11 +1721,12 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 		return SLURM_SUCCESS;
 	} else {
 		info("Reservation request has no valid users");
+		return ESLURM_USER_ID_MISSING;
 	}
 
  inval:	xfree(tmp);
 	xfree(u_list);
-	return ESLURM_USER_ID_MISSING;
+	return SLURM_ERROR;
 }
 
 /*
@@ -4219,18 +4220,22 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		uid_t *user_list = NULL;
 		rc = _build_uid_list(resv_ptr->users,
 				     &user_cnt, &user_list, &user_not, false);
-		if (rc) {
-			error("Reservation %s has invalid users (%s)",
+		if (rc == SLURM_ERROR) {
+			error("Reservation %s has invalid users specification (%s)",
 			      resv_ptr->name, resv_ptr->users);
 			return false;
+		} else if (rc == ESLURM_USER_ID_MISSING) {
+			error("Reservation %s has no valid users (%s), not updating UID list.",
+			      resv_ptr->name, resv_ptr->users);
+		} else {
+			xfree(resv_ptr->user_list);
+			resv_ptr->user_cnt = user_cnt;
+			resv_ptr->user_list = user_list;
+			if (user_not)
+				resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
+			else
+				resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 		}
-		xfree(resv_ptr->user_list);
-		resv_ptr->user_cnt  = user_cnt;
-		resv_ptr->user_list = user_list;
-		if (user_not)
-			resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
-		else
-			resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 	}
 
 	if (resv_ptr->groups) {
