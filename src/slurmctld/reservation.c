@@ -4244,15 +4244,14 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 						      &user_cnt);
 
 		if (!user_list) {
-			error("Reservation %s has invalid groups (%s)",
+			error("Reservation %s has no valid users from groups (%s), not updating UID list",
 			      resv_ptr->name, resv_ptr->groups);
-			return false;
+		} else {
+			xfree(resv_ptr->user_list);
+			resv_ptr->user_list = user_list;
+			resv_ptr->user_cnt = user_cnt;
+			resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 		}
-
-		xfree(resv_ptr->user_list);
-		resv_ptr->user_list = user_list;
-		resv_ptr->user_cnt = user_cnt;
-		resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 	}
 
 	if ((resv_ptr->flags & RESERVE_FLAG_PART_NODES) &&
