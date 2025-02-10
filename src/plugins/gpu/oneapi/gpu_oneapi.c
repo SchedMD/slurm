@@ -1022,7 +1022,8 @@ static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 	/* Loop all of GPU device handles */
 	for (i = 0; i < gpu_num; i++) {
 		gres_slurmd_conf_t gres_slurmd_conf = {
-			.config_flags = GRES_CONF_ENV_ONEAPI,
+			.config_flags =
+				GRES_CONF_ENV_ONEAPI | GRES_CONF_AUTODETECT,
 			.count = 1,
 			.cpu_cnt = node_config->cpu_cnt,
 			.name = "gpu",
