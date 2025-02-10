@@ -1538,8 +1538,7 @@ static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	 * to minimize controller disruption.
 	 */
 	if (rate_limit_exceeded(msg)) {
-		rc = SLURMCTLD_COMMUNICATIONS_BACKOFF;
-		slurm_send_rc_msg(msg, rc);
+		rc = slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
 		slurm_free_msg(msg);
 	} else if ((rc = conmgr_queue_extract_con_fd(
 			    con, _service_connection,
