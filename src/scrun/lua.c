@@ -241,7 +241,7 @@ extern void init_lua(void)
 
 	if ((rc = slurm_lua_loadscript(&L, "scrun", lua_script_path, req_fxns,
 				       &lua_script_last_loaded,
-				       _loadscript_extra)))
+				       _loadscript_extra, NULL)))
 		fatal("%s: unable to load lua script %s: %s",
 		      __func__, lua_script_path, slurm_strerror(rc));
 }

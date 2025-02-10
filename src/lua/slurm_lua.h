@@ -63,6 +63,7 @@ extern void slurm_lua_stack_dump(const char *plugin,
  * req_fxns (in) - NULL terminated array of functions that must exist in the
  *                 script
  * load_time (in/out) - mtime of script from the curr lua state object
+ * err_msg (in/out) - If non-NULL, set this to a descriptive message on error
  *
  * Returns:
  * SLURM_SUCCESS - if a correct Lua object is set.
@@ -72,7 +73,8 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 				const char *script_path,
 				const char **req_fxns,
 				time_t *load_time,
-				void (*local_options)(lua_State *L));
+				void (*local_options)(lua_State *L),
+				char **err_msg);
 
 extern void slurm_lua_table_register(lua_State *L, const char *libname,
 				     const luaL_Reg *l);

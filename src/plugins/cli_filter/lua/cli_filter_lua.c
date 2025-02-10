@@ -139,7 +139,8 @@ int init(void)
 
 	return slurm_lua_loadscript(&L, "cli_filter/lua",
 				    lua_script_path, req_fxns,
-				    &lua_script_last_loaded, _loadscript_extra);
+				    &lua_script_last_loaded, _loadscript_extra,
+				    NULL);
 }
 
 int fini(void)
@@ -387,7 +388,8 @@ extern int cli_filter_p_setup_defaults(slurm_opt_t *opt, bool early)
 
 	rc = slurm_lua_loadscript(&L, "cli_filter/lua",
 				  lua_script_path, req_fxns,
-				  &lua_script_last_loaded, _loadscript_extra);
+				  &lua_script_last_loaded, _loadscript_extra,
+				  NULL);
 
 	if (rc != SLURM_SUCCESS)
 		goto out;
@@ -424,7 +426,8 @@ extern int cli_filter_p_pre_submit(slurm_opt_t *opt, int offset)
 
 	rc = slurm_lua_loadscript(&L, "cli_filter/lua",
 				  lua_script_path, req_fxns,
-				  &lua_script_last_loaded, _loadscript_extra);
+				  &lua_script_last_loaded, _loadscript_extra,
+				  NULL);
 
 	if (rc != SLURM_SUCCESS)
 		goto out;
@@ -468,7 +471,8 @@ extern void cli_filter_p_post_submit(
 
 	rc = slurm_lua_loadscript(&L, "cli_filter/lua",
 				  lua_script_path, req_fxns,
-				  &lua_script_last_loaded, _loadscript_extra);
+				  &lua_script_last_loaded, _loadscript_extra,
+				  NULL);
 
 	if (rc != SLURM_SUCCESS)
 		goto out;
