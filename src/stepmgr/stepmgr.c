@@ -506,11 +506,6 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
-		error("Security violation, JOB_CANCEL RPC from uid %u", uid);
-		return ESLURM_USER_ID_MISSING;
-	}
-
 	if (IS_JOB_FINISHED(job_ptr)) {
 		step_signal.rc_in = ESLURM_ALREADY_DONE;
 		if (signal != SIG_NODE_FAIL)
