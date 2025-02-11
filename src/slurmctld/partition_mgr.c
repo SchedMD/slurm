@@ -696,34 +696,36 @@ extern list_t *part_list_copy(list_t *part_list_src)
 /*
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
+ * OUT part_ptr_list - sorted list of pointers to the partitions or NULL
+ * OUT prim_part_ptr - pointer to the primary partition
  * OUT err_part - The first invalid partition name.
- * RET sorted list of pointers to the partitions or NULL if not found
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
-extern list_t *get_part_list(char *name, char **err_part)
+extern void get_part_list(char *name, list_t **part_ptr_list,
+			  part_record_t **prim_part_ptr, char **err_part)
 {
 	part_record_t *part_ptr;
-	list_t *job_part_list = NULL;
 	char *token, *last = NULL, *tmp_name;
 
+	*part_ptr_list = NULL;
+	*prim_part_ptr = NULL;
+
 	if (name == NULL)
-		return job_part_list;
+		return;
 
 	tmp_name = xstrdup(name);
 	token = strtok_r(tmp_name, ",", &last);
 	while (token) {
 		part_ptr = list_find_first(part_list, &list_find_part, token);
 		if (part_ptr) {
-			if (job_part_list == NULL) {
-				job_part_list = list_create(NULL);
-			}
-			if (!list_find_first(job_part_list, &_match_part_ptr,
-					     part_ptr)) {
-				list_append(job_part_list, part_ptr);
-			}
+			if (!(*part_ptr_list))
+				*part_ptr_list = list_create(NULL);
+			if (!list_find_first(*part_ptr_list, &_match_part_ptr,
+					     part_ptr))
+				list_append(*part_ptr_list, part_ptr);
 		} else {
-			FREE_NULL_LIST(job_part_list);
+			FREE_NULL_LIST(*part_ptr_list);
 			if (err_part) {
 				xfree(*err_part);
 				*err_part = xstrdup(token);
@@ -733,10 +735,13 @@ extern list_t *get_part_list(char *name, char **err_part)
 		token = strtok_r(NULL, ",", &last);
 	}
 
-	if (job_part_list)
-		list_sort(job_part_list, priority_sort_part_tier);
+	if (*part_ptr_list) {
+		list_sort(*part_ptr_list, priority_sort_part_tier);
+		*prim_part_ptr = list_peek(*part_ptr_list);
+		if (list_count(*part_ptr_list) == 1)
+			FREE_NULL_LIST(*part_ptr_list);
+	}
 	xfree(tmp_name);
-	return job_part_list;
 }
 
 /*

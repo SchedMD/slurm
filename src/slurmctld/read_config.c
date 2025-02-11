@@ -1289,14 +1289,9 @@ void _sync_jobs_to_conf(void)
 			char *err_part = NULL;
 			part_ptr = find_part_record(job_ptr->partition);
 			if (part_ptr == NULL) {
-				part_ptr_list = get_part_list(
-					job_ptr->partition,
-					&err_part);
-				if (part_ptr_list) {
-					part_ptr = list_peek(part_ptr_list);
-					if (list_count(part_ptr_list) == 1)
-						FREE_NULL_LIST(part_ptr_list);
-				}
+				get_part_list(job_ptr->partition,
+					      &part_ptr_list, &part_ptr,
+					      &err_part);
 			}
 			if (part_ptr == NULL) {
 				error("Invalid partition (%s) for %pJ",
