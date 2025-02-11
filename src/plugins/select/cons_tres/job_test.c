@@ -2079,6 +2079,16 @@ alloc_job:
 	 */
 	if (mode != SELECT_MODE_RUN_NOW) {
 		/*
+		 * In the cases where we are evaluating a preemptor job,
+		 * we need to save a copy of the assigned node_bitmap so
+		 * we have enough information to accurately determine
+		 * if we are not breaking accounting policy limits later on.
+		 */
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_preempt);
+		job_ptr->node_bitmap_preempt =
+			bit_copy(job_ptr->job_resrcs->node_bitmap);
+
+		/*
 		 * If we are a reservation the job_id == 0, we don't want to
 		 * free job_resrcs here.
 		 */
