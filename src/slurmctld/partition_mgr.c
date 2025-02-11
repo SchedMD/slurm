@@ -736,8 +736,17 @@ extern void get_part_list(char *name, list_t **part_ptr_list,
 	}
 
 	if (*part_ptr_list) {
-		list_sort(*part_ptr_list, priority_sort_part_tier);
+		/*
+		 * Return the first part_ptr in the list before sorting. On
+		 * state load, the first partition in the list is the running
+		 * partition -- for multi-partition jobs. Other times it doesn't
+		 * matter what the returned part_ptr is because it will be
+		 * modified when scheduling the different job_queue_rec_t's.
+		 *
+		 * The part_ptr_list always needs to be sorted by priority_tier.
+		 */
 		*prim_part_ptr = list_peek(*part_ptr_list);
+		list_sort(*part_ptr_list, priority_sort_part_tier);
 		if (list_count(*part_ptr_list) == 1)
 			FREE_NULL_LIST(*part_ptr_list);
 	}
