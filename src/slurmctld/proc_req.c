@@ -6867,6 +6867,13 @@ static bool _is_connection_stale(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc,
 		return true;
 	}
 
+	if (msg->conmgr_con && !conmgr_con_is_output_open(msg->conmgr_con)) {
+		error("%s: [%s] Connection is stale, discarding RPC %s from uid:%u",
+		      __func__, conmgr_con_get_name(msg->conmgr_con),
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		return true;
+	}
+
 	return false;
 }
 
