@@ -205,9 +205,9 @@ static void _check_file_permissions(const char *path, int bad_perms)
 	 */
 	if ((statbuf.st_uid != 0) && slurm_conf.slurm_user_id &&
 	    (statbuf.st_uid != slurm_conf.slurm_user_id))
-		warning("%s: '%s' owned by uid=%u, instead of SlurmUser(%u) or root",
-			plugin_type, path, statbuf.st_uid,
-			slurm_conf.slurm_user_id);
+		fatal("%s: '%s' owned by uid=%u, instead of SlurmUser(%u) or root",
+		      plugin_type, path, statbuf.st_uid,
+		      slurm_conf.slurm_user_id);
 
 	if (statbuf.st_mode & bad_perms)
 		fatal("%s: file is insecure: '%s' mode=0%o",
