@@ -1670,7 +1670,7 @@ extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con)
 	return ref;
 }
 
-static void _fd_free_ref(conmgr_fd_ref_t **ref_ptr)
+extern void fd_free_ref(conmgr_fd_ref_t **ref_ptr)
 {
 	conmgr_fd_ref_t *ref = *ref_ptr;
 	conmgr_fd_t *con = ref->con;
@@ -1698,7 +1698,7 @@ extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr)
 		return;
 
 	slurm_mutex_lock(&mgr.mutex);
-	_fd_free_ref(ref_ptr);
+	fd_free_ref(ref_ptr);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 

@@ -597,4 +597,10 @@ extern void extract_con_fd(conmgr_fd_t *con);
  */
 extern conmgr_fd_ref_t *fd_new_ref(conmgr_fd_t *con);
 
+/*
+ * Release and free connection reference
+ * WARNING: caller must hold mgr.mutex
+ */
+extern void fd_free_ref(conmgr_fd_ref_t **ref_ptr);
+
 #endif /* _CONMGR_MGR_H */
