@@ -267,6 +267,13 @@ extern timespec_diff_ns_t timespec_diff_ns(const timespec_t x,
 		};
 }
 
+extern double timespec_to_secs(const timespec_t x)
+{
+	double s = x.tv_sec;
+	double ns = x.tv_nsec;
+	return (s + (ns / NSEC_IN_SEC));
+}
+
 extern int timeval_tot_wait(struct timeval *start_time)
 {
 	struct timeval end_time;

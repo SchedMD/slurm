@@ -122,6 +122,9 @@ typedef struct {
 extern timespec_diff_ns_t timespec_diff_ns(const timespec_t x,
 					   const timespec_t y);
 
+/* Convert timestamp to seconds with decimal for nanoseconds */
+extern double timespec_to_secs(const timespec_t x);
+
 /*
  * Return time in milliseconds since "start time"
  * Takes a struct timeval.
