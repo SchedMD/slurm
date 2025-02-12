@@ -616,7 +616,7 @@ extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 	log_flag(TLS, "%s: send %zd. fd:%d->%d",
 		 plugin_type, bytes_written, conn->input_fd, conn->output_fd);
 
-	if (blocked == S2N_NOT_BLOCKED)
+	if ((blocked != S2N_NOT_BLOCKED) && !errno)
 		errno = EWOULDBLOCK;
 
 	return bytes_written;
