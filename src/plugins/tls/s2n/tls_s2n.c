@@ -634,3 +634,10 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 
 	return bytes_read;
 }
+
+extern timespec_t tls_p_get_delay(tls_conn_t *conn)
+{
+	xassert(conn);
+
+	return conn->delay;
+}

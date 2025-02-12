@@ -105,3 +105,10 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n, int flags)
 
 	return rc;
 }
+
+extern timespec_t tls_p_get_delay(void *conn)
+{
+	xassert(conn);
+
+	return ((timespec_t) { 0 });
+}

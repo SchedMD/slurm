@@ -40,6 +40,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "src/common/slurm_time.h"
+
 typedef enum {
 	TLS_CONN_NULL = 0,
 	TLS_CONN_SERVER,
@@ -79,6 +81,13 @@ extern int tls_g_fini(void);
  */
 extern void *tls_g_create_conn(const tls_conn_args_t *tls_conn_args);
 extern void tls_g_destroy_conn(void *conn);
+
+/*
+ * Get absolute time that next tls_g_*() should be delayed until after any
+ * failure
+ * NOTE: returned timespec may be {0,0} indicating no delay required
+ */
+extern timespec_t tls_g_get_delay(void *conn);
 
 extern ssize_t tls_g_send(void *conn, const void *buf, size_t n);
 extern ssize_t tls_g_recv(void *conn, void *buf, size_t n);
