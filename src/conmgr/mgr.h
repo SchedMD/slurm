@@ -424,6 +424,20 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 							    delay_nanoseconds),\
 		}, 0, __func__)
 
+#define add_work_con_delayed_abs_fifo(locked, con, _func, func_arg, timestamp) \
+	add_work(locked, con,                                                  \
+		 (conmgr_callback_t) {                                         \
+			 .func = _func,                                        \
+			 .arg = func_arg,                                      \
+			 .func_name = #_func,                                  \
+		 },                                                            \
+		 (conmgr_work_control_t) {                                     \
+			 .depend_type = CONMGR_WORK_DEP_TIME_DELAY,            \
+			 .schedule_type = CONMGR_WORK_SCHED_FIFO,              \
+			 .time_begin = timestamp,                              \
+		 },                                                            \
+		 0, __func__)
+
 extern void work_mask_depend(work_t *work, conmgr_work_depend_t depend_mask);
 extern void handle_work(bool locked, work_t *work);
 
