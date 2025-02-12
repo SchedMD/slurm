@@ -121,8 +121,10 @@ static void _log_work(work_t *work, const char *caller, const char *fmt, ...)
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_CONMGR))
 		return;
 
-	if (work->con)
-		xstrfmtcat(con_name, " [%s]", work->con->name);
+	if (work->ref) {
+		conmgr_fd_t *con = fd_get_ref(work->ref);
+		xstrfmtcat(con_name, " [%s]", con->name);
+	}
 
 	if (work->callback.func)
 		xstrfmtcat(callback, "callback=%s(arg=0x%"PRIxPTR") ",
@@ -172,16 +174,18 @@ static void _log_work(work_t *work, const char *caller, const char *fmt, ...)
 
 extern void wrap_work(work_t *work)
 {
-	conmgr_fd_t *con = work->con;
+	conmgr_fd_t *con = fd_get_ref(work->ref);
 
 	xassert(work->magic == MAGIC_WORK);
 
 	_log_work(work, __func__, "BEGIN");
 
-	work->callback.func((conmgr_callback_args_t) {
-				.con = work->con,
-				.status = work->status,
-			    }, work->callback.arg);
+	work->callback.func(
+		(conmgr_callback_args_t) {
+			.con = con,
+			.status = work->status,
+		},
+		work->callback.arg);
 
 	_log_work(work, __func__, "END");
 
@@ -191,6 +195,8 @@ extern void wrap_work(work_t *work)
 		/* con may be xfree()ed any time once lock is released */
 
 		EVENT_SIGNAL(&mgr.watch_sleep);
+
+		fd_free_ref(&work->ref);
 		slurm_mutex_unlock(&mgr.mutex);
 	}
 
@@ -229,7 +235,7 @@ static void _handle_work_run(work_t *work)
  */
 static void _handle_work_pending(work_t *work)
 {
-	conmgr_fd_t *con = work->con;
+	conmgr_fd_t *con = fd_get_ref(work->ref);
 	conmgr_work_depend_t depend = work->control.depend_type;
 
 	xassert(work->magic == MAGIC_WORK);
@@ -338,14 +344,22 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 	*work = (work_t) {
 		.magic = MAGIC_WORK,
 		.status = CONMGR_WORK_STATUS_PENDING,
-		.con = con,
 		.callback = callback,
 		.control = control,
 	};
 
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
+
+	if (con)
+		work->ref = fd_new_ref(con);
+
 	work_mask_depend(work, depend_mask);
 
-	handle_work(locked, work);
+	handle_work(true, work);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,

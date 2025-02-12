@@ -204,7 +204,7 @@ static void _on_signal(int signal)
 
 extern void add_work_signal(work_t *work)
 {
-	xassert(!work->con);
+	xassert(!work->ref);
 	xassert(work->control.depend_type & CONMGR_WORK_DEP_SIGNAL);
 	xassert(work->control.on_signal_number > 0);
 

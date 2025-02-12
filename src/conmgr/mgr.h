@@ -73,7 +73,7 @@ typedef struct {
 #define MAGIC_WORK 0xD231444A
 	int magic; /* MAGIC_WORK */
 	conmgr_work_status_t status;
-	conmgr_fd_t *con;
+	conmgr_fd_ref_t *ref;
 	conmgr_callback_t callback;
 	conmgr_work_control_t control;
 } work_t;
