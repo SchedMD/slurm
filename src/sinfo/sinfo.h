@@ -222,6 +222,10 @@ struct sinfo_parameters {
 	slurmdb_federation_rec_t *fed;
 };
 
+typedef struct {
+	uint32_t state;
+} sinfo_state_t;
+
 extern struct sinfo_parameters params;
 
 extern void parse_command_line( int argc, char* *argv );

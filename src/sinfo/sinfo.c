@@ -678,7 +678,7 @@ static bool _filter_out(node_info_t *node_ptr)
 		return true;
 
 	if (params.state_list) {
-		int *node_state;
+		sinfo_state_t *node_state;
 		bool match = false;
 		uint32_t base_state;
 		list_itr_t *iterator;
@@ -688,8 +688,8 @@ static bool _filter_out(node_info_t *node_ptr)
 		iterator = list_iterator_create(params.state_list);
 		while ((node_state = list_next(iterator))) {
 			match = false;
-			tmp_node_ptr->node_state = *node_state;
-			if (*node_state == NODE_STATE_DRAIN) {
+			tmp_node_ptr->node_state = node_state->state;
+			if (node_state->state == NODE_STATE_DRAIN) {
 				/* We search for anything that has the
 				 * drain flag set */
 				if (IS_NODE_DRAIN(node_ptr)) {
@@ -707,11 +707,11 @@ static bool _filter_out(node_info_t *node_ptr)
 				if (IS_NODE_DRAINED(node_ptr)) {
 					match = true;
 				}
-			} else if (*node_state & NODE_STATE_FLAGS) {
-				if (*node_state & node_ptr->node_state) {
+			} else if (node_state->state & NODE_STATE_FLAGS) {
+				if (node_state->state & node_ptr->node_state) {
 					match = true;
 				}
-			} else if (*node_state == NODE_STATE_ALLOCATED) {
+			} else if (node_state->state == NODE_STATE_ALLOCATED) {
 				slurm_get_select_nodeinfo(
 					node_ptr->select_nodeinfo,
 					SELECT_NODEDATA_SUBCNT,
@@ -723,7 +723,7 @@ static bool _filter_out(node_info_t *node_ptr)
 			} else {
 				base_state =
 					node_ptr->node_state & NODE_STATE_BASE;
-				if (base_state == *node_state) {
+				if (base_state == node_state->state) {
 					match = true;
 				}
 			}
