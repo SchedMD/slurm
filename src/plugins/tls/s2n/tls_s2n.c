@@ -47,6 +47,7 @@
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -55,6 +56,7 @@
 
 /* Set default security policy to FIPS-compliant version */
 #define DEFAULT_S2N_SECURITY_POLICY "20230317"
+#define CTIME_STR_LEN 72
 
 const char plugin_name[] = "s2n tls plugin";
 const char plugin_type[] = "tls/s2n";
@@ -69,6 +71,8 @@ typedef struct {
 	int input_fd;
 	int output_fd;
 	struct s2n_connection *s2n_conn;
+	/* absolute time shutdown() delayed until (instead of sleep()ing) */
+	timespec_t delay;
 } tls_conn_t;
 
 /*
@@ -85,6 +89,43 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 	/* Save errno now in case error() clobbers it */
 	const int orig_errno = errno;
 	const int error_type = s2n_error_get_type(s2n_errno);
+
+	/*
+	 * Per libs2n docs:
+	 *	After s2n_recv() or s2n_negotiate() return an error, the
+	 *	application must call s2n_connection_get_delay() and pause
+	 *	activity on the connection for the specified number of
+	 *	nanoseconds before calling s2n_shutdown(), close(), or
+	 *	shutdown()
+	 */
+	if ((func_ptr == (void *) s2n_negotiate) ||
+	    (func_ptr == (void *) s2n_recv)) {
+		timespec_t delay = { 0 };
+
+		if ((delay.tv_nsec =
+			     s2n_connection_get_delay(conn->s2n_conn))) {
+			const timespec_t now = timespec_now();
+
+			delay = timespec_normalize(delay);
+
+			if (timespec_is_after(conn->delay, now))
+				conn->delay = timespec_add(conn->delay, delay);
+			else
+				conn->delay = timespec_add(now, delay);
+
+			if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
+				char str[CTIME_STR_LEN];
+
+				timespec_ctime(conn->delay, true, str,
+					       sizeof(str));
+
+				log_flag(TLS, "%s: %s() failed %s[%d] requiring shutdown() be delayed until %s",
+					 caller, funcname,
+					 s2n_strerror_name(s2n_errno),
+					 s2n_errno, str);
+			}
+		}
+	}
 
 	if (error_type == S2N_ERR_T_ALERT) {
 		int alert = S2N_ERR_T_OK;
@@ -147,7 +188,8 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 	s2n_errno = S2N_ERR_T_OK;
 }
 
-static void _check_file_permissions(const char *path, int bad_perms)
+static void _check_file_permissions(const char *path, int bad_perms,
+				    bool check_owner)
 {
 	struct stat statbuf;
 
@@ -162,11 +204,11 @@ static void _check_file_permissions(const char *path, int bad_perms)
 	 * (currently unknown) SlurmUser. (Although if you're running with
 	 * SlurmUser=root, this warning will be skipped inadvertently.)
 	 */
-	if ((statbuf.st_uid != 0) && slurm_conf.slurm_user_id &&
+	if (check_owner && (statbuf.st_uid != 0) && slurm_conf.slurm_user_id &&
 	    (statbuf.st_uid != slurm_conf.slurm_user_id))
-		warning("%s: '%s' owned by uid=%u, instead of SlurmUser(%u) or root",
-			plugin_type, path, statbuf.st_uid,
-			slurm_conf.slurm_user_id);
+		fatal("%s: '%s' owned by uid=%u, instead of SlurmUser(%u) or root",
+		      plugin_type, path, statbuf.st_uid,
+		      slurm_conf.slurm_user_id);
 
 	if (statbuf.st_mode & bad_perms)
 		fatal("%s: file is insecure: '%s' mode=0%o",
@@ -238,7 +280,12 @@ static int _load_ca_cert(void)
 		xfree(cert_file);
 		return SLURM_ERROR;
 	}
-	_check_file_permissions(cert_file, S_IRWXO);
+
+	/*
+	 * Check if CA cert is owned by SlurmUser/root and that it's not
+	 * modifiable/executable by everyone.
+	 */
+	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), true);
 	if (s2n_config_set_verification_ca_location(config, cert_file, NULL) < 0) {
 		on_s2n_error(NULL, s2n_config_set_verification_ca_location);
 		xfree(ca_dir);
@@ -255,12 +302,19 @@ static int _load_self_cert(void)
 	char *cert_conf = NULL, *key_conf = NULL;
 	char *default_cert_path = NULL, *default_key_path = NULL;
 	buf_t *cert_buf, *key_buf;
+	bool check_owner = true;
 
 	if (running_in_slurmdbd()) {
 		cert_conf = "dbd_cert_file=";
 		key_conf = "dbd_cert_key_file=";
 		default_cert_path = "dbd_cert.pem";
 		default_key_path = "dbd_cert_key.pem";
+	} else if (running_in_slurmrestd()) {
+		cert_conf = "restd_cert_file=";
+		key_conf = "restd_cert_key_file=";
+		default_cert_path = "restd_cert.pem";
+		default_key_path = "restd_cert_key.pem";
+		check_owner = false;
 	} else if (running_in_slurmctld()) {
 		cert_conf = "ctld_cert_file=";
 		key_conf = "ctld_cert_key_file=";
@@ -285,9 +339,14 @@ static int _load_self_cert(void)
 		xfree(cert_file);
 		return SLURM_ERROR;
 	}
-	_check_file_permissions(cert_file, S_IRWXO);
+	/*
+	 * Check if our public certificate is owned by SlurmUser/root (unless
+	 * running in slurmrestd) and that it's not modifiable/executable by
+	 * everyone.
+	 */
+	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), check_owner);
 	if (!(cert_buf = create_mmap_buf(cert_file))) {
-		error("%s: Could not load cert file (%s)",
+		error("%s: Could not load cert file (%s): %m",
 		      plugin_type, cert_file);
 		xfree(cert_file);
 		return SLURM_ERROR;
@@ -301,9 +360,14 @@ static int _load_self_cert(void)
 		xfree(key_file);
 		return SLURM_ERROR;
 	}
-	_check_file_permissions(key_file, S_IRWXO);
+	/*
+	 * Check if our private key is owned by SlurmUser/root (unless running
+	 * in slurmrestd) and that it's not readable/writable/executable by
+	 * everyone.
+	 */
+	_check_file_permissions(key_file, S_IRWXO, check_owner);
 	if (!(key_buf = create_mmap_buf(key_file))) {
-		error("%s: Could not private key file (%s)",
+		error("%s: Could not load private key file (%s): %m",
 		      plugin_type, key_file);
 		xfree(key_file);
 		return SLURM_ERROR;
@@ -357,7 +421,8 @@ extern int init(void)
 	/*
 	 * slurmctld and slurmdbd need to load their own pre-signed certificate
 	 */
-	if (running_in_slurmctld() || running_in_slurmdbd()) {
+	if (running_in_slurmctld() || running_in_slurmdbd() ||
+	    running_in_slurmrestd()) {
 		if (_load_self_cert()) {
 			error("Could not load own certificate and private key for s2n");
 			return SLURM_ERROR;
@@ -414,6 +479,13 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 		goto fail;
 	}
 
+	if (tls_conn_args->defer_blinding &&
+	    s2n_connection_set_blinding(conn->s2n_conn,
+					S2N_SELF_SERVICE_BLINDING)) {
+		on_s2n_error(conn, s2n_connection_set_blinding);
+		goto fail;
+	}
+
 	/* Associate a connection with a file descriptor */
 	if (s2n_connection_set_read_fd(conn->s2n_conn,
 				       tls_conn_args->input_fd) < 0) {
@@ -462,13 +534,15 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 	return conn;
 
 fail:
-	if (s2n_connection_free(conn->s2n_conn) < 0)
-		on_s2n_error(conn, s2n_connection_free);
+	if (!tls_conn_args->defer_blinding) {
+		if (s2n_connection_free(conn->s2n_conn) < 0)
+			on_s2n_error(conn, s2n_connection_free);
 
-	slurm_mutex_destroy(&conn->lock);
-	xfree(conn);
+		slurm_mutex_destroy(&conn->lock);
+		xfree(conn);
+	}
 
-	return NULL;
+	return conn;
 }
 
 extern void tls_p_destroy_conn(tls_conn_t *conn)
@@ -542,7 +616,7 @@ extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 	log_flag(TLS, "%s: send %zd. fd:%d->%d",
 		 plugin_type, bytes_written, conn->input_fd, conn->output_fd);
 
-	if (blocked == S2N_NOT_BLOCKED)
+	if ((blocked != S2N_NOT_BLOCKED) && !errno)
 		errno = EWOULDBLOCK;
 
 	return bytes_written;
@@ -583,4 +657,11 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 		 plugin_type, bytes_read, conn->input_fd, conn->output_fd);
 
 	return bytes_read;
+}
+
+extern timespec_t tls_p_get_delay(tls_conn_t *conn)
+{
+	xassert(conn);
+
+	return conn->delay;
 }

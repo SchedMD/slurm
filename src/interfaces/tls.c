@@ -60,6 +60,7 @@ typedef struct {
 	void (*destroy_conn)(void *conn);
 	ssize_t (*send)(void *conn, const void *buf, size_t n);
 	ssize_t (*recv)(void *conn, void *buf, size_t n);
+	timespec_t (*get_delay)(void *conn);
 } tls_ops_t;
 
 /*
@@ -72,6 +73,7 @@ static const char *syms[] = {
 	"tls_p_destroy_conn",
 	"tls_p_send",
 	"tls_p_recv",
+	"tls_p_get_delay",
 };
 
 static tls_ops_t *ops = NULL;
@@ -124,8 +126,9 @@ extern int tls_g_init(void)
 	if (g_context_num > 0)
 		goto done;
 
-	/* Only slurmctld/slurmdbd support tls currently */
-	if (run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmdbd"))
+	/* Only slurmctld/slurmdbd/slurmrestd support tls currently */
+	if (run_in_daemon(&daemon_run, &daemon_set,
+			  "slurmctld,slurmdbd,slurmrestd"))
 		tls_plugin_list = xstrdup(slurm_conf.tls_type);
 	else
 		tls_plugin_list = xstrdup("none");
@@ -251,4 +254,16 @@ extern ssize_t tls_g_recv(void *conn, void *buf, size_t n)
 		return SLURM_ERROR;
 
 	return (*(ops[wrapper->index].recv))(conn, buf, n);
+}
+
+extern timespec_t tls_g_get_delay(void *conn)
+{
+	tls_wrapper_t *wrapper = conn;
+
+	xassert(g_context);
+
+	if (!wrapper)
+		return ((timespec_t) { 0, 0 });
+
+	return (*(ops[wrapper->index].get_delay))(conn);
 }

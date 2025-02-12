@@ -1,4 +1,4 @@
-.TH slurmrestd "8" "Slurm REST Daemon" "July 2023" "Slurm REST Daemon"
+.TH slurmrestd "8" "Slurm REST Daemon" "February 2025" "Slurm REST Daemon"
 
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
@@ -21,11 +21,14 @@ designed to work with piped input, inetd, xinetd or systemd socket activation.
 .SH "OPTIONS"
 
 .TP
-\fB[host]:port\fR
+\fB[https//:][host]:port\fR
 Hostname and port to listen against. \fIhost\fR may be an IPv4/IPv6 IP or a
 resolvable hostname. Hostnames are only looked up at startup and do not change
 for the life of the process. \fIhost\fR is optional; if not provided, slurmrestd
-will listen on all network interfaces.
+will listen on all network interfaces. \fIhttps\fR is optional; if not provided,
+slurmrestd will not use TLS plugin to encrypt traffic. If \fIhttps\fR is
+specified; slurmrestd will use (and require) the configured TLS plugin to
+encrypt traffic.
 .IP
 
 .TP

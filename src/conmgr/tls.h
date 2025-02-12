@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  tls_none.c
+ *  tls.h - Internal declarations for TLS handlers
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -33,82 +33,25 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <sys/socket.h>
+#ifndef _CONMGR_TLS_H
+#define _CONMGR_TLS_H
 
-#include "slurm/slurm.h"
-#include "slurm/slurm_errno.h"
-#include "src/common/slurm_xlator.h"
+#include "src/conmgr/conmgr.h"
+#include "src/conmgr/mgr.h"
 
-#include "src/common/log.h"
-#include "src/common/read_config.h"
-#include "src/common/xmalloc.h"
+/* Perform TLS creation */
+extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg);
 
-#include "src/interfaces/tls.h"
+/*
+ * Perform TLS shutdown and cleanup
+ * WARNING: will defer cleanup if file descriptors are still open
+ */
+extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg);
 
-const char plugin_name[] = "Null tls plugin";
-const char plugin_type[] = "tls/none";
-const uint32_t plugin_id = TLS_PLUGIN_NONE;
-const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+/*
+ * Check and enforce if TLS has requested wait on operations and then close
+ * connection
+ */
+extern void tls_wait_close(bool locked, conmgr_fd_t *con);
 
-typedef struct {
-	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
-	int input_fd;
-	int output_fd;
-} tls_conn_t;
-
-extern int init(void)
-{
-	debug("%s loaded", plugin_type);
-	return SLURM_SUCCESS;
-}
-
-extern int fini(void)
-{
-	return SLURM_SUCCESS;
-}
-
-extern tls_conn_t *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
-{
-	tls_conn_t *conn = xmalloc(sizeof(*conn));
-
-	conn->input_fd = tls_conn_args->input_fd;
-	conn->output_fd = tls_conn_args->output_fd;
-
-	log_flag(TLS, "%s: create connection. fd:%d->%d",
-		 plugin_type, conn->input_fd, conn->output_fd);
-
-	return conn;
-}
-
-extern void tls_p_destroy_conn(tls_conn_t *conn)
-{
-	log_flag(TLS, "%s: destroy connection. fd:%d->%d",
-		 plugin_type, conn->input_fd, conn->output_fd);
-
-	xfree(conn);
-}
-
-extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
-{
-	log_flag(TLS, "%s: send %zd. fd:%d->%d",
-		 plugin_type, n, conn->input_fd, conn->output_fd);
-
-	return send(conn->output_fd, buf, n, 0);
-}
-
-extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n, int flags)
-{
-	ssize_t rc = recv(conn->input_fd, buf, n, 0);
-
-	log_flag(TLS, "%s: recv %zd. fd:%d->%d",
-		 plugin_type, rc, conn->input_fd, conn->output_fd);
-
-	return rc;
-}
-
-extern timespec_t tls_p_get_delay(void *conn)
-{
-	xassert(conn);
-
-	return ((timespec_t) { 0 });
-}
+#endif /* _CONMGR_TLS_H */

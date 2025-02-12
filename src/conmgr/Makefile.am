@@ -23,6 +23,8 @@ libconmgr_la_SOURCES = \
 	rpc.c \
 	signals.c \
 	signals.h \
+	tls.c \
+	tls.h \
 	watch.c \
 	work.c \
 	workers.c

@@ -73,7 +73,7 @@ typedef struct {
 #define MAGIC_WORK 0xD231444A
 	int magic; /* MAGIC_WORK */
 	conmgr_work_status_t status;
-	conmgr_fd_t *con;
+	conmgr_fd_ref_t *ref;
 	conmgr_callback_t callback;
 	conmgr_work_control_t control;
 } work_t;
@@ -114,6 +114,7 @@ typedef enum {
 	 * 	con (will not be moved)
 	 * 	arg
 	 *	FLAG_ON_DATA_TRIED
+	 *	tls
 	 *
 	 */
 	FLAG_WORK_ACTIVE = SLURM_BIT(8),
@@ -135,6 +136,12 @@ typedef enum {
 	FLAG_WATCH_READ_TIMEOUT = CON_FLAG_WATCH_READ_TIMEOUT,
 	/* @see CON_FLAG_WATCH_CONNECT_TIMEOUT */
 	FLAG_WATCH_CONNECT_TIMEOUT = CON_FLAG_WATCH_CONNECT_TIMEOUT,
+	/* @see CON_FLAG_TLS_SERVER */
+	FLAG_TLS_SERVER = CON_FLAG_TLS_SERVER,
+	/* @see CON_FLAG_TLS_CLIENT */
+	FLAG_TLS_CLIENT = CON_FLAG_TLS_CLIENT,
+	/* True if tls_g_create_conn() completed */
+	FLAG_IS_TLS_CONNECTED = SLURM_BIT(20),
 } con_flags_t;
 
 /* Mask over flags that track connection state */
@@ -186,6 +193,8 @@ struct conmgr_fd_s {
 	slurm_addr_t address;
 	/* call backs for events */
 	const conmgr_events_t *events;
+	/* Opaque pointer to TLS state */
+	void *tls;
 	/* buffer holding incoming already read data */
 	buf_t *in;
 	/* timestamp when last read() got >0 bytes or when connect() called */
@@ -424,6 +433,20 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 							    delay_nanoseconds),\
 		}, 0, __func__)
 
+#define add_work_con_delayed_abs_fifo(locked, con, _func, func_arg, timestamp) \
+	add_work(locked, con,                                                  \
+		 (conmgr_callback_t) {                                         \
+			 .func = _func,                                        \
+			 .arg = func_arg,                                      \
+			 .func_name = #_func,                                  \
+		 },                                                            \
+		 (conmgr_work_control_t) {                                     \
+			 .depend_type = CONMGR_WORK_DEP_TIME_DELAY,            \
+			 .schedule_type = CONMGR_WORK_SCHED_FIFO,              \
+			 .time_begin = timestamp,                              \
+		 },                                                            \
+		 0, __func__)
+
 extern void work_mask_depend(work_t *work, conmgr_work_depend_t depend_mask);
 extern void handle_work(bool locked, work_t *work);
 
@@ -576,5 +599,22 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
  * Extract connection file descriptors
  */
 extern void extract_con_fd(conmgr_fd_t *con);
+
+/*
+ * Create new connection reference
+ * WARNING: caller must hold mgr.mutex
+ */
+extern conmgr_fd_ref_t *fd_new_ref(conmgr_fd_t *con);
+
+/*
+ * Release and free connection reference
+ * WARNING: caller must hold mgr.mutex
+ */
+extern void fd_free_ref(conmgr_fd_ref_t **ref_ptr);
+
+/*
+ * Get conmgr_fd_t pointer from reference
+ */
+extern conmgr_fd_t *fd_get_ref(conmgr_fd_ref_t *ref);
 
 #endif /* _CONMGR_MGR_H */

@@ -107,6 +107,9 @@ static const struct {
 	T(FLAG_WATCH_WRITE_TIMEOUT),
 	T(FLAG_WATCH_READ_TIMEOUT),
 	T(FLAG_WATCH_CONNECT_TIMEOUT),
+	T(FLAG_TLS_SERVER),
+	T(FLAG_TLS_CLIENT),
+	T(FLAG_IS_TLS_CONNECTED),
 };
 #undef T
 
@@ -945,6 +948,7 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 	struct addrinfo *addrlist = NULL;
 	parsed_host_port_t *parsed_hp;
 	conmgr_callbacks_t callbacks;
+	conmgr_con_flags_t flags = CON_FLAG_NONE;
 
 	slurm_mutex_lock(&mgr.mutex);
 	callbacks = mgr.callbacks;
@@ -988,9 +992,17 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, listen_on);
 
-		return add_connection(type, NULL, fd, -1, events, CON_FLAG_NONE,
-				      &addr, sizeof(addr), true, unixsock, arg);
+		return add_connection(type, NULL, fd, -1, events, flags, &addr,
+				      sizeof(addr), true, unixsock, arg);
 	} else {
+		static const char TLS_PREFIX[] = "https://";
+
+		if (!xstrncasecmp(listen_on, TLS_PREFIX, strlen(TLS_PREFIX))) {
+			/* shift forward past https: */
+			listen_on += strlen(TLS_PREFIX);
+			flags |= CON_FLAG_TLS_SERVER;
+		}
+
 		/* split up host and port */
 		if (!(parsed_hp = callbacks.parse(listen_on)))
 			fatal("%s: Unable to parse %s", __func__, listen_on);
@@ -1046,7 +1058,7 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, addrinfo_to_string(addr));
 
-		rc = add_connection(type, NULL, fd, -1, events, CON_FLAG_NONE,
+		rc = add_connection(type, NULL, fd, -1, events, flags,
 				    (const slurm_addr_t *) addr->ai_addr,
 				    addr->ai_addrlen, true, NULL, arg);
 	}
@@ -1637,8 +1649,7 @@ extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
 	return open;
 }
 
-/* caller must hold mgr.mutex */
-static conmgr_fd_ref_t *_fd_new_ref(conmgr_fd_t *con)
+extern conmgr_fd_ref_t *fd_new_ref(conmgr_fd_t *con)
 {
 	conmgr_fd_ref_t *ref;
 
@@ -1665,13 +1676,13 @@ extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con)
 		fatal_abort("con must not be null");
 
 	slurm_mutex_lock(&mgr.mutex);
-	ref = _fd_new_ref(con);
+	ref = fd_new_ref(con);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return ref;
 }
 
-static void _fd_free_ref(conmgr_fd_ref_t **ref_ptr)
+extern void fd_free_ref(conmgr_fd_ref_t **ref_ptr)
 {
 	conmgr_fd_ref_t *ref = *ref_ptr;
 	conmgr_fd_t *con = ref->con;
@@ -1699,28 +1710,33 @@ extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr)
 		return;
 
 	slurm_mutex_lock(&mgr.mutex);
-	_fd_free_ref(ref_ptr);
+	fd_free_ref(ref_ptr);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref)
+extern conmgr_fd_t *fd_get_ref(conmgr_fd_ref_t *ref)
 {
-	conmgr_fd_t *con = NULL;
-
 	if (!ref)
 		return NULL;
 
 	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
 	xassert(ref->con);
 
-	con = ref->con;
+	return ref->con;
+}
+
+extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref)
+{
+	conmgr_fd_t *con = fd_get_ref(ref);
 
 #ifndef NDEBUG
-	slurm_mutex_lock(&mgr.mutex);
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->refs < INT_MAX);
-	xassert(con->refs > 0);
-	slurm_mutex_unlock(&mgr.mutex);
+	if (con) {
+		slurm_mutex_lock(&mgr.mutex);
+		xassert(con->magic == MAGIC_CON_MGR_FD);
+		xassert(con->refs < INT_MAX);
+		xassert(con->refs > 0);
+		slurm_mutex_unlock(&mgr.mutex);
+	}
 #endif
 
 	return con;
