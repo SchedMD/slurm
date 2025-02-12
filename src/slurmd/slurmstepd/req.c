@@ -1512,8 +1512,9 @@ static void _block_on_pid(pid_t pid)
 		sleep(1);
 }
 
-/* Wait for the pid given and when it ends get and children it might
- * of left behind and wait on them instead.
+/*
+ * Wait for the given pid and when it ends, get any children that the pid might
+ * have left behind. Then wait on these if so.
  */
 static void *_wait_extern_pid(void *args)
 {
@@ -1544,12 +1545,25 @@ static void *_wait_extern_pid(void *args)
 	}
 	acct_gather_profile_g_task_end(pid);
 
-	/* See if we have any children of init left and add them to track. */
+	/*
+	 * See if we have any children of the given pid left behind, and if
+	 * found add them to track.
+	 */
 	proctrack_g_get_pids(step->cont_id, &pids, &npids);
 	for (i = 0; i < npids; i++) {
 		snprintf(proc_stat_file, 256, "/proc/%d/stat", pids[i]);
 		if (!(stat_fp = fopen(proc_stat_file, "r")))
 			continue;  /* Assume the process went away */
+
+		/*
+		 * If this pid is slurmstepd's pid (ourselves) or it is already
+		 * tracked in the accounting, this is not an orphaned pid,
+		 * so just ignore it.
+		 */
+		if ((getpid() == pids[i]) ||
+		    jobacct_gather_stat_task(pids[i], false))
+			continue;
+
 		fd = fileno(stat_fp);
 		if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
 			error("%s: fcntl(%s): %m", __func__, proc_stat_file);
