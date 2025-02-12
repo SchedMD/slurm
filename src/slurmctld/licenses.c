@@ -729,7 +729,8 @@ static int _foreach_license_job_test(void *x, void *arg)
  * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
  */
 extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
-				      bool reboot, list_t *license_list)
+				      bool reboot, list_t *license_list,
+				      bool check_preempt_licenses)
 {
 	license_test_args_t test_args = {
 		.job_ptr = job_ptr,
@@ -738,17 +739,20 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
 		.reboot = reboot,
 		.when = when,
 	};
+	bool use_licenses_to_preempt;
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return SLURM_SUCCESS;
 
-	if (!job_ptr->licenses_to_preempt && preempt_for_licenses)
+	use_licenses_to_preempt = preempt_for_licenses &&
+		check_preempt_licenses;
+	if (!job_ptr->licenses_to_preempt && use_licenses_to_preempt)
 		job_ptr->licenses_to_preempt = list_create(NULL);
 
 	slurm_mutex_lock(&license_mutex);
 	list_for_each(job_ptr->license_list, _foreach_license_job_test,
 		      &test_args);
-	if (preempt_for_licenses)
+	if (use_licenses_to_preempt)
 		_licenses_print("licenses_to_preempt",
 				job_ptr->licenses_to_preempt, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
@@ -766,7 +770,7 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
 extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 {
 	return license_job_test_with_list(job_ptr, when, reboot,
-					  cluster_license_list);
+					  cluster_license_list, false);
 }
 
 /*
