@@ -188,7 +188,8 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 	s2n_errno = S2N_ERR_T_OK;
 }
 
-static void _check_file_permissions(const char *path, int bad_perms)
+static void _check_file_permissions(const char *path, int bad_perms,
+				    bool check_owner)
 {
 	struct stat statbuf;
 
@@ -203,7 +204,7 @@ static void _check_file_permissions(const char *path, int bad_perms)
 	 * (currently unknown) SlurmUser. (Although if you're running with
 	 * SlurmUser=root, this warning will be skipped inadvertently.)
 	 */
-	if ((statbuf.st_uid != 0) && slurm_conf.slurm_user_id &&
+	if (check_owner && (statbuf.st_uid != 0) && slurm_conf.slurm_user_id &&
 	    (statbuf.st_uid != slurm_conf.slurm_user_id))
 		fatal("%s: '%s' owned by uid=%u, instead of SlurmUser(%u) or root",
 		      plugin_type, path, statbuf.st_uid,
@@ -279,7 +280,12 @@ static int _load_ca_cert(void)
 		xfree(cert_file);
 		return SLURM_ERROR;
 	}
-	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH));
+
+	/*
+	 * Check if CA cert is owned by SlurmUser/root and that it's not
+	 * modifiable/executable by everyone.
+	 */
+	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), true);
 	if (s2n_config_set_verification_ca_location(config, cert_file, NULL) < 0) {
 		on_s2n_error(NULL, s2n_config_set_verification_ca_location);
 		xfree(ca_dir);
@@ -296,6 +302,7 @@ static int _load_self_cert(void)
 	char *cert_conf = NULL, *key_conf = NULL;
 	char *default_cert_path = NULL, *default_key_path = NULL;
 	buf_t *cert_buf, *key_buf;
+	bool check_owner = true;
 
 	if (running_in_slurmdbd()) {
 		cert_conf = "dbd_cert_file=";
@@ -307,6 +314,7 @@ static int _load_self_cert(void)
 		key_conf = "restd_cert_key_file=";
 		default_cert_path = "restd_cert.pem";
 		default_key_path = "restd_cert_key.pem";
+		check_owner = false;
 	} else if (running_in_slurmctld()) {
 		cert_conf = "ctld_cert_file=";
 		key_conf = "ctld_cert_key_file=";
@@ -331,7 +339,12 @@ static int _load_self_cert(void)
 		xfree(cert_file);
 		return SLURM_ERROR;
 	}
-	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH));
+	/*
+	 * Check if our public certificate is owned by SlurmUser/root (unless
+	 * running in slurmrestd) and that it's not modifiable/executable by
+	 * everyone.
+	 */
+	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), check_owner);
 	if (!(cert_buf = create_mmap_buf(cert_file))) {
 		error("%s: Could not load cert file (%s)",
 		      plugin_type, cert_file);
@@ -347,7 +360,12 @@ static int _load_self_cert(void)
 		xfree(key_file);
 		return SLURM_ERROR;
 	}
-	_check_file_permissions(key_file, S_IRWXO);
+	/*
+	 * Check if our private key is owned by SlurmUser/root (unless running
+	 * in slurmrestd) and that it's not readable/writable/executable by
+	 * everyone.
+	 */
+	_check_file_permissions(key_file, S_IRWXO, check_owner);
 	if (!(key_buf = create_mmap_buf(key_file))) {
 		error("%s: Could not private key file (%s)",
 		      plugin_type, key_file);
