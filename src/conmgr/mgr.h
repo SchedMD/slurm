@@ -114,6 +114,7 @@ typedef enum {
 	 * 	con (will not be moved)
 	 * 	arg
 	 *	FLAG_ON_DATA_TRIED
+	 *	tls
 	 *
 	 */
 	FLAG_WORK_ACTIVE = SLURM_BIT(8),
@@ -135,6 +136,12 @@ typedef enum {
 	FLAG_WATCH_READ_TIMEOUT = CON_FLAG_WATCH_READ_TIMEOUT,
 	/* @see CON_FLAG_WATCH_CONNECT_TIMEOUT */
 	FLAG_WATCH_CONNECT_TIMEOUT = CON_FLAG_WATCH_CONNECT_TIMEOUT,
+	/* @see CON_FLAG_TLS_SERVER */
+	FLAG_TLS_SERVER = CON_FLAG_TLS_SERVER,
+	/* @see CON_FLAG_TLS_CLIENT */
+	FLAG_TLS_CLIENT = CON_FLAG_TLS_CLIENT,
+	/* True if tls_g_create_conn() completed */
+	FLAG_IS_TLS_CONNECTED = SLURM_BIT(20),
 } con_flags_t;
 
 /* Mask over flags that track connection state */
@@ -186,6 +193,8 @@ struct conmgr_fd_s {
 	slurm_addr_t address;
 	/* call backs for events */
 	const conmgr_events_t *events;
+	/* Opaque pointer to TLS state */
+	void *tls;
 	/* buffer holding incoming already read data */
 	buf_t *in;
 	/* timestamp when last read() got >0 bytes or when connect() called */

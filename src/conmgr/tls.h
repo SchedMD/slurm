@@ -39,4 +39,19 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
 
+/* Perform TLS creation */
+extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg);
+
+/*
+ * Perform TLS shutdown and cleanup
+ * WARNING: will defer cleanup if file descriptors are still open
+ */
+extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg);
+
+/*
+ * Check and enforce if TLS has requested wait on operations and then close
+ * connection
+ */
+extern void tls_wait_close(bool locked, conmgr_fd_t *con);
+
 #endif /* _CONMGR_TLS_H */

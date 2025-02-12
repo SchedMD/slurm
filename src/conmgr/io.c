@@ -46,6 +46,9 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
+#include "src/conmgr/tls.h"
+
+#include "src/interfaces/tls.h"
 
 #define DEFAULT_READ_BYTES 512
 
@@ -140,9 +143,18 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	/* check for errors with a NULL read */
-	read_c = read(con->input_fd,
-		      (get_buf_data(con->in) + get_buf_offset(con->in)),
-		      readable);
+	if (con_flag(con, FLAG_TLS_CLIENT) || con_flag(con, FLAG_TLS_SERVER)) {
+		xassert(con->tls);
+		read_c = tls_g_recv(con->tls,
+				    (get_buf_data(con->in) +
+				     get_buf_offset(con->in)),
+				    readable);
+	} else {
+		read_c = read(con->input_fd,
+			      (get_buf_data(con->in) + get_buf_offset(con->in)),
+			      readable);
+	}
+
 	if (read_c == -1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			log_flag(NET, "%s: [%s] socket would block on read",
@@ -152,7 +164,12 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 
 		log_flag(NET, "%s: [%s] error while reading: %m",
 			 __func__, con->name);
-		close_con(false, con);
+
+		if (con_flag(con, FLAG_TLS_CLIENT) ||
+		    con_flag(con, FLAG_TLS_SERVER))
+			tls_wait_close(false, con);
+		else
+			close_con(false, con);
 		return;
 	} else if (read_c == 0) {
 		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in buffer",
@@ -293,6 +310,43 @@ static void _handle_writev(conmgr_fd_t *con, const int out_count)
 		xfree(args.iov);
 }
 
+static int _foreach_write_tls(void *x, void *key)
+{
+	buf_t *out = x;
+	handle_writev_args_t *args = key;
+	conmgr_fd_t *con = args->con;
+
+	xassert(out->magic == BUF_MAGIC);
+	xassert(args->magic == HANDLE_WRITEV_ARGS_MAGIC);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->tls);
+
+	args->wrote = tls_g_send(con->tls, get_buf_data(out), size_buf(out));
+	if (args->wrote < 0) {
+		error("%s: [%s] tls_g_send() failed: %m", __func__, con->name);
+		return SLURM_ERROR;
+	}
+
+	return _foreach_writev_flush_bytes(out, args);
+}
+
+static void _handle_tls_write(conmgr_fd_t *con, const int out_count)
+{
+	handle_writev_args_t args = {
+		.magic = HANDLE_WRITEV_ARGS_MAGIC,
+		.con = con,
+	};
+
+	if (list_delete_all(con->out, _foreach_write_tls, &args) < 0) {
+		error("%s: [%s] _foreach_write_tls() failed",
+		      __func__, con->name);
+		/* drop outbound data on the floor */
+		list_flush(con->out);
+		tls_wait_close(false, con);
+	} else if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
+		con->last_write = timespec_now();
+}
+
 extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
@@ -303,6 +357,9 @@ extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg)
 	if (!(out_count = list_count(con->out)))
 		log_flag(CONMGR, "%s: [%s] skipping attempt with zero writes",
 			 __func__, con->name);
+	else if (con_flag(con, FLAG_TLS_CLIENT) ||
+		 con_flag(con, FLAG_TLS_SERVER))
+		_handle_tls_write(con, out_count);
 	else
 		_handle_writev(con, out_count);
 }

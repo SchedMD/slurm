@@ -63,6 +63,9 @@
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/polling.h"
 #include "src/conmgr/signals.h"
+#include "src/conmgr/tls.h"
+
+#include "src/interfaces/tls.h"
 
 #define CTIME_STR_LEN 72
 
@@ -477,6 +480,8 @@ static void _on_read_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 {
 	int count;
+	const bool is_tls = (con_flag(con, FLAG_TLS_SERVER) ||
+			     con_flag(con, FLAG_TLS_CLIENT));
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(!args || (args->magic == MAGIC_HANDLE_CONNECTION));
@@ -493,6 +498,21 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		/* connection already closed */
 	} else if (con_flag(con, FLAG_IS_CONNECTED)) {
 		/* continue on to follow other checks */
+	} else if (!con_flag(con, FLAG_IS_LISTEN) && is_tls &&
+		   !con_flag(con, FLAG_IS_TLS_CONNECTED) &&
+		   !con_flag(con, FLAG_READ_EOF)) {
+		/*
+		 * TLS handshake must happen before setting FLAG_IS_CONNECTED
+		 * (unless connection is closed for any reason) as the handshake
+		 * is considered to be the logical extension of the TCP
+		 * handshake for the event sequence here
+		 */
+		if (list_is_empty(con->work)) {
+			log_flag(CONMGR, "%s: [%s] queuing up TLS handshake",
+				 __func__, con->name);
+			add_work_con_fifo(true, con, tls_create, NULL);
+			return 0;
+		}
 	} else if (!con_flag(con, FLAG_IS_SOCKET) ||
 		   con_flag(con, FLAG_CAN_READ) ||
 		   con_flag(con, FLAG_CAN_WRITE) ||
@@ -847,6 +867,13 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		log_flag(CONMGR, "%s: [%s] waiting to close output_fd=%d",
 			 __func__, con->name, con->output_fd);
 		_on_close_output_fd(con);
+		return 0;
+	}
+
+	if (!con_flag(con, FLAG_IS_LISTEN) && is_tls && con->tls) {
+		log_flag(CONMGR, "%s: [%s] waiting to close TLS connection",
+			 __func__, con->name);
+		add_work_con_fifo(true, con, tls_close, NULL);
 		return 0;
 	}
 

@@ -107,6 +107,9 @@ static const struct {
 	T(FLAG_WATCH_WRITE_TIMEOUT),
 	T(FLAG_WATCH_READ_TIMEOUT),
 	T(FLAG_WATCH_CONNECT_TIMEOUT),
+	T(FLAG_TLS_SERVER),
+	T(FLAG_TLS_CLIENT),
+	T(FLAG_IS_TLS_CONNECTED),
 };
 #undef T
 
@@ -945,6 +948,7 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 	struct addrinfo *addrlist = NULL;
 	parsed_host_port_t *parsed_hp;
 	conmgr_callbacks_t callbacks;
+	conmgr_con_flags_t flags = CON_FLAG_NONE;
 
 	slurm_mutex_lock(&mgr.mutex);
 	callbacks = mgr.callbacks;
@@ -988,9 +992,17 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, listen_on);
 
-		return add_connection(type, NULL, fd, -1, events, CON_FLAG_NONE,
-				      &addr, sizeof(addr), true, unixsock, arg);
+		return add_connection(type, NULL, fd, -1, events, flags, &addr,
+				      sizeof(addr), true, unixsock, arg);
 	} else {
+		static const char TLS_PREFIX[] = "https://";
+
+		if (!xstrncasecmp(listen_on, TLS_PREFIX, strlen(TLS_PREFIX))) {
+			/* shift forward past https: */
+			listen_on += strlen(TLS_PREFIX);
+			flags |= CON_FLAG_TLS_SERVER;
+		}
+
 		/* split up host and port */
 		if (!(parsed_hp = callbacks.parse(listen_on)))
 			fatal("%s: Unable to parse %s", __func__, listen_on);
@@ -1046,7 +1058,7 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, addrinfo_to_string(addr));
 
-		rc = add_connection(type, NULL, fd, -1, events, CON_FLAG_NONE,
+		rc = add_connection(type, NULL, fd, -1, events, flags,
 				    (const slurm_addr_t *) addr->ai_addr,
 				    addr->ai_addrlen, true, NULL, arg);
 	}
