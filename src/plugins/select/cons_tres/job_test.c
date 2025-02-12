@@ -1236,7 +1236,8 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	if (license_list) {
 		/* Ensure job has access to requested licenses */
 		int license_rc = license_job_test_with_list(job_ptr, time(NULL),
-							    true, license_list);
+							    true, license_list,
+							    true);
 		if (license_rc == SLURM_ERROR) {
 			log_flag(SELECT_TYPE,
 				 "test 0 fail: insufficient licenses configured");
@@ -1690,9 +1691,6 @@ skip_test0:
 		if (!jp_ptr->row[c - 1].row_bitmap)
 			jp_ptr->row[c - 1].row_bitmap = build_core_array();
 		for (int i = 0; i < (c - 1); i++) {
-			error("%p %p",
-			      jp_ptr->row[c - 1].row_bitmap,
-			      jp_ptr->row[i].row_bitmap);
 			core_array_or(jp_ptr->row[c - 1].row_bitmap,
 				      jp_ptr->row[i].row_bitmap);
 		}
