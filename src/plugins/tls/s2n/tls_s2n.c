@@ -346,7 +346,7 @@ static int _load_self_cert(void)
 	 */
 	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), check_owner);
 	if (!(cert_buf = create_mmap_buf(cert_file))) {
-		error("%s: Could not load cert file (%s)",
+		error("%s: Could not load cert file (%s): %m",
 		      plugin_type, cert_file);
 		xfree(cert_file);
 		return SLURM_ERROR;
@@ -367,7 +367,7 @@ static int _load_self_cert(void)
 	 */
 	_check_file_permissions(key_file, S_IRWXO, check_owner);
 	if (!(key_buf = create_mmap_buf(key_file))) {
-		error("%s: Could not private key file (%s)",
+		error("%s: Could not load private key file (%s): %m",
 		      plugin_type, key_file);
 		xfree(key_file);
 		return SLURM_ERROR;
