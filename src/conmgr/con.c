@@ -1702,24 +1702,29 @@ extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref)
+extern conmgr_fd_t *fd_get_ref(conmgr_fd_ref_t *ref)
 {
-	conmgr_fd_t *con = NULL;
-
 	if (!ref)
 		return NULL;
 
 	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
 	xassert(ref->con);
 
-	con = ref->con;
+	return ref->con;
+}
+
+extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref)
+{
+	conmgr_fd_t *con = fd_get_ref(ref);
 
 #ifndef NDEBUG
-	slurm_mutex_lock(&mgr.mutex);
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->refs < INT_MAX);
-	xassert(con->refs > 0);
-	slurm_mutex_unlock(&mgr.mutex);
+	if (con) {
+		slurm_mutex_lock(&mgr.mutex);
+		xassert(con->magic == MAGIC_CON_MGR_FD);
+		xassert(con->refs < INT_MAX);
+		xassert(con->refs > 0);
+		slurm_mutex_unlock(&mgr.mutex);
+	}
 #endif
 
 	return con;

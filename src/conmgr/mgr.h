@@ -603,4 +603,9 @@ extern conmgr_fd_ref_t *fd_new_ref(conmgr_fd_t *con);
  */
 extern void fd_free_ref(conmgr_fd_ref_t **ref_ptr);
 
+/*
+ * Get conmgr_fd_t pointer from reference
+ */
+extern conmgr_fd_t *fd_get_ref(conmgr_fd_ref_t *ref);
+
 #endif /* _CONMGR_MGR_H */
