@@ -488,7 +488,10 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
-	if (con_flag(con, FLAG_IS_CONNECTED)) {
+	if ((con->input_fd < 0) && (con->output_fd < 0)) {
+		xassert(con_flag(con, FLAG_READ_EOF));
+		/* connection already closed */
+	} else if (con_flag(con, FLAG_IS_CONNECTED)) {
 		/* continue on to follow other checks */
 	} else if (!con_flag(con, FLAG_IS_SOCKET) ||
 		   con_flag(con, FLAG_CAN_READ) ||
