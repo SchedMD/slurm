@@ -53,6 +53,13 @@ typedef struct {
 	int output_fd;
 	/* TLS connection mode (@see tls_conn_mode_t) */
 	tls_conn_mode_t mode;
+	/*
+	 * False: Enable any library based blinding delays
+	 * True: Disable any library based blinding delays which caller will
+	 *	need to be honored via call to tls_g_get_delay() after any
+	 *	tls_g_*() failure
+	 */
+	bool defer_blinding;
 } tls_conn_args_t;
 
 extern char *tls_conn_mode_to_str(tls_conn_mode_t mode);

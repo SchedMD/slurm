@@ -455,6 +455,13 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 		goto fail;
 	}
 
+	if (tls_conn_args->defer_blinding &&
+	    s2n_connection_set_blinding(conn->s2n_conn,
+					S2N_SELF_SERVICE_BLINDING)) {
+		on_s2n_error(conn, s2n_connection_set_blinding);
+		goto fail;
+	}
+
 	/* Associate a connection with a file descriptor */
 	if (s2n_connection_set_read_fd(conn->s2n_conn,
 				       tls_conn_args->input_fd) < 0) {
@@ -503,13 +510,15 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 	return conn;
 
 fail:
-	if (s2n_connection_free(conn->s2n_conn) < 0)
-		on_s2n_error(conn, s2n_connection_free);
+	if (!tls_conn_args->defer_blinding) {
+		if (s2n_connection_free(conn->s2n_conn) < 0)
+			on_s2n_error(conn, s2n_connection_free);
 
-	slurm_mutex_destroy(&conn->lock);
-	xfree(conn);
+		slurm_mutex_destroy(&conn->lock);
+		xfree(conn);
+	}
 
-	return NULL;
+	return conn;
 }
 
 extern void tls_p_destroy_conn(tls_conn_t *conn)
