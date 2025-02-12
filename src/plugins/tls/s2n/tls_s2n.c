@@ -279,7 +279,7 @@ static int _load_ca_cert(void)
 		xfree(cert_file);
 		return SLURM_ERROR;
 	}
-	_check_file_permissions(cert_file, S_IRWXO);
+	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH));
 	if (s2n_config_set_verification_ca_location(config, cert_file, NULL) < 0) {
 		on_s2n_error(NULL, s2n_config_set_verification_ca_location);
 		xfree(ca_dir);
@@ -331,7 +331,7 @@ static int _load_self_cert(void)
 		xfree(cert_file);
 		return SLURM_ERROR;
 	}
-	_check_file_permissions(cert_file, S_IRWXO);
+	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH));
 	if (!(cert_buf = create_mmap_buf(cert_file))) {
 		error("%s: Could not load cert file (%s)",
 		      plugin_type, cert_file);
