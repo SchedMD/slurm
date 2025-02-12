@@ -1637,8 +1637,7 @@ extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
 	return open;
 }
 
-/* caller must hold mgr.mutex */
-static conmgr_fd_ref_t *_fd_new_ref(conmgr_fd_t *con)
+extern conmgr_fd_ref_t *fd_new_ref(conmgr_fd_t *con)
 {
 	conmgr_fd_ref_t *ref;
 
@@ -1665,7 +1664,7 @@ extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con)
 		fatal_abort("con must not be null");
 
 	slurm_mutex_lock(&mgr.mutex);
-	ref = _fd_new_ref(con);
+	ref = fd_new_ref(con);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return ref;
