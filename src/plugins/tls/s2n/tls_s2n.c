@@ -47,6 +47,7 @@
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -55,6 +56,7 @@
 
 /* Set default security policy to FIPS-compliant version */
 #define DEFAULT_S2N_SECURITY_POLICY "20230317"
+#define CTIME_STR_LEN 72
 
 const char plugin_name[] = "s2n tls plugin";
 const char plugin_type[] = "tls/s2n";
@@ -69,6 +71,8 @@ typedef struct {
 	int input_fd;
 	int output_fd;
 	struct s2n_connection *s2n_conn;
+	/* absolute time shutdown() delayed until (instead of sleep()ing) */
+	timespec_t delay;
 } tls_conn_t;
 
 /*
@@ -85,6 +89,43 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 	/* Save errno now in case error() clobbers it */
 	const int orig_errno = errno;
 	const int error_type = s2n_error_get_type(s2n_errno);
+
+	/*
+	 * Per libs2n docs:
+	 *	After s2n_recv() or s2n_negotiate() return an error, the
+	 *	application must call s2n_connection_get_delay() and pause
+	 *	activity on the connection for the specified number of
+	 *	nanoseconds before calling s2n_shutdown(), close(), or
+	 *	shutdown()
+	 */
+	if ((func_ptr == (void *) s2n_negotiate) ||
+	    (func_ptr == (void *) s2n_recv)) {
+		timespec_t delay = { 0 };
+
+		if ((delay.tv_nsec =
+			     s2n_connection_get_delay(conn->s2n_conn))) {
+			const timespec_t now = timespec_now();
+
+			delay = timespec_normalize(delay);
+
+			if (timespec_is_after(conn->delay, now))
+				conn->delay = timespec_add(conn->delay, delay);
+			else
+				conn->delay = timespec_add(now, delay);
+
+			if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
+				char str[CTIME_STR_LEN];
+
+				timespec_ctime(conn->delay, true, str,
+					       sizeof(str));
+
+				log_flag(TLS, "%s: %s() failed %s[%d] requiring shutdown() be delayed until %s",
+					 caller, funcname,
+					 s2n_strerror_name(s2n_errno),
+					 s2n_errno, str);
+			}
+		}
+	}
 
 	if (error_type == S2N_ERR_T_ALERT) {
 		int alert = S2N_ERR_T_OK;
