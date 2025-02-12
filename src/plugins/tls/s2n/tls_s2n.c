@@ -302,6 +302,11 @@ static int _load_self_cert(void)
 		key_conf = "dbd_cert_key_file=";
 		default_cert_path = "dbd_cert.pem";
 		default_key_path = "dbd_cert_key.pem";
+	} else if (running_in_slurmrestd()) {
+		cert_conf = "restd_cert_file=";
+		key_conf = "restd_cert_key_file=";
+		default_cert_path = "restd_cert.pem";
+		default_key_path = "restd_cert_key.pem";
 	} else if (running_in_slurmctld()) {
 		cert_conf = "ctld_cert_file=";
 		key_conf = "ctld_cert_key_file=";
@@ -398,7 +403,8 @@ extern int init(void)
 	/*
 	 * slurmctld and slurmdbd need to load their own pre-signed certificate
 	 */
-	if (running_in_slurmctld() || running_in_slurmdbd()) {
+	if (running_in_slurmctld() || running_in_slurmdbd() ||
+	    running_in_slurmrestd()) {
 		if (_load_self_cert()) {
 			error("Could not load own certificate and private key for s2n");
 			return SLURM_ERROR;

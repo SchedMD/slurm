@@ -126,8 +126,9 @@ extern int tls_g_init(void)
 	if (g_context_num > 0)
 		goto done;
 
-	/* Only slurmctld/slurmdbd support tls currently */
-	if (run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmdbd"))
+	/* Only slurmctld/slurmdbd/slurmrestd support tls currently */
+	if (run_in_daemon(&daemon_run, &daemon_set,
+			  "slurmctld,slurmdbd,slurmrestd"))
 		tls_plugin_list = xstrdup(slurm_conf.tls_type);
 	else
 		tls_plugin_list = xstrdup("none");
