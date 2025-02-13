@@ -436,6 +436,17 @@ scontrol_create_res(int argc, char **argv)
 	}
 
 	/*
+	 * Ensure RESERVE_FLAG_FORCE_START is specified with a reoccuring flag.
+	 */
+	if ((resv_msg.flags != NO_VAL64) &&
+	    (resv_msg.flags & RESERVE_FLAG_FORCE_START) &&
+	    (!(resv_msg.flags & RESERVE_REOCCURRING))) {
+		exit_code = 1;
+		error("FORCE_START flag requires a reoccuring reservation. No reservation created.");
+		goto SCONTROL_CREATE_RES_CLEANUP;
+	}
+
+	/*
 	 * If the following parameters are null, but a partition is named, then
 	 * make the reservation for the whole partition.
 	 */

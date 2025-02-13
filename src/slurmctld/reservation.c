@@ -1212,6 +1212,7 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 	resv.node_inx = acct_storage_g_node_inx(acct_db_conn,
 						resv_ptr->node_list);
 	resv.time_end = resv_ptr->end_time;
+	resv.time_force = resv_ptr->time_force;
 	resv.time_start = resv_ptr->start_time;
 	resv.tres_str = resv_ptr->tres_str;
 
@@ -1237,6 +1238,7 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 	resv.id = resv_ptr->resv_id;
 	resv.name = resv_ptr->name;
 	resv.time_end = now;
+	resv.time_force = resv_ptr->time_force;
 	resv.time_start = resv_ptr->start_time;
 	/* This is just a time stamp here to delete if the reservation
 	 * hasn't started yet so we don't get trash records in the
@@ -1268,6 +1270,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.cluster = slurm_conf.cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.time_end = resv_ptr->end_time;
+	resv.time_force = resv_ptr->time_force;
 	resv.assocs = resv_ptr->assoc_list;
 	resv.tres_str = resv_ptr->tres_str;
 	resv.flags = resv_ptr->flags;
@@ -2771,6 +2774,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 					RESERVE_FLAG_WEEKDAY  |
 					RESERVE_FLAG_WEEKEND  |
 					RESERVE_FLAG_WEEKLY   |
+					RESERVE_FLAG_FORCE_START |
 					RESERVE_FLAG_STATIC   |
 					RESERVE_FLAG_ANY_NODES   |
 					RESERVE_FLAG_PART_NODES  |
@@ -2808,6 +2812,14 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		if (resv_desc_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
 			if (resv_desc_ptr->start_time < now)
 				resv_desc_ptr->start_time = now;
+		} else if (resv_desc_ptr->flags & RESERVE_FLAG_FORCE_START) {
+			if ((resv_desc_ptr->start_time +
+			     resv_desc_ptr->duration * 60) <
+			    (now - MAX_RESV_DELAY)) {
+				info("Reservation request has start and end time in the past");
+				rc = ESLURM_INVALID_TIME_VALUE;
+				goto bad_parse;
+			}
 		} else if (resv_desc_ptr->start_time < (now - MAX_RESV_DELAY)) {
 			info("Reservation request has invalid start time");
 			rc = ESLURM_INVALID_TIME_VALUE;
@@ -3148,6 +3160,14 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	else
 		resv_ptr->purge_comp_time = 300; /* default to 5 minutes */
 	resv_ptr->end_time	= resv_desc_ptr->end_time;
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_FORCE_START) &&
+	    (now > resv_desc_ptr->start_time)) {
+		/*
+		 * The time_force is needed for correct accounting of
+		 * reservations. Set the time_force to now.
+		 */
+		resv_ptr->time_force = now;
+	}
 	resv_ptr->features	= resv_desc_ptr->features;
 	resv_desc_ptr->features = NULL;		/* Nothing left to free */
 	resv_ptr->licenses	= resv_desc_ptr->licenses;

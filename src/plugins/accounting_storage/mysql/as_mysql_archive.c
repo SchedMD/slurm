@@ -298,6 +298,7 @@ typedef struct {
 	char *nodes;
 	char *node_inx;
 	char *time_end;
+	char *time_force;
 	char *time_start;
 	char *tres_str;
 	char *unused_wall;
@@ -315,6 +316,7 @@ static void _free_local_resv_members(local_resv_t *object)
 		xfree(object->nodes);
 		xfree(object->node_inx);
 		xfree(object->time_end);
+		xfree(object->time_force);
 		xfree(object->time_start);
 		xfree(object->tres_str);
 		xfree(object->unused_wall);
@@ -722,6 +724,7 @@ char *resv_req_inx[] = {
 	"resv_name",
 	"time_start",
 	"time_end",
+	"time_force",
 	"unused_wall",
 	"comment",
 };
@@ -737,6 +740,7 @@ enum {
 	RESV_REQ_NAME,
 	RESV_REQ_START,
 	RESV_REQ_END,
+	RESV_REQ_FORCE,
 	RESV_REQ_UNUSED,
 	RESV_REQ_COMMENT,
 	RESV_REQ_COUNT
@@ -2047,6 +2051,7 @@ static void _pack_local_resv(local_resv_t *object, buf_t *buffer)
 	packstr(object->nodes, buffer);
 	packstr(object->node_inx, buffer);
 	packstr(object->time_end, buffer);
+	packstr(object->time_force, buffer);
 	packstr(object->time_start, buffer);
 	packstr(object->tres_str, buffer);
 	packstr(object->unused_wall, buffer);
@@ -2059,7 +2064,21 @@ static int _unpack_local_resv(local_resv_t *object, uint16_t rpc_version,
 {
 	char *tmp_char;
 
-	if (rpc_version >= SLURM_23_02_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->assocs, buffer);
+		safe_unpackstr(&object->comment, buffer);
+		safe_unpackstr(&object->deleted, buffer);
+		safe_unpackstr(&object->flags, buffer);
+		safe_unpackstr(&object->id, buffer);
+		safe_unpackstr(&object->name, buffer);
+		safe_unpackstr(&object->nodes, buffer);
+		safe_unpackstr(&object->node_inx, buffer);
+		safe_unpackstr(&object->time_end, buffer);
+		safe_unpackstr(&object->time_force, buffer);
+		safe_unpackstr(&object->time_start, buffer);
+		safe_unpackstr(&object->tres_str, buffer);
+		safe_unpackstr(&object->unused_wall, buffer);
+	} else if (rpc_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->assocs, buffer);
 		safe_unpackstr(&object->comment, buffer);
 		safe_unpackstr(&object->deleted, buffer);
@@ -4270,6 +4289,7 @@ static buf_t *_pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
 		resv.node_inx = row[RESV_REQ_NODE_INX];
 		resv.time_end = row[RESV_REQ_END];
 		resv.time_start = row[RESV_REQ_START];
+		resv.time_force = row[RESV_REQ_FORCE];
 		resv.tres_str = row[RESV_REQ_TRES];
 		resv.unused_wall = row[RESV_REQ_UNUSED];
 		resv.comment = row[RESV_REQ_COMMENT];
@@ -4299,6 +4319,7 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 		RESV_REQ_NAME,
 		RESV_REQ_START,
 		RESV_REQ_END,
+		RESV_REQ_FORCE,
 		RESV_REQ_UNUSED,
 		RESV_REQ_COUNT
 	};
@@ -4358,6 +4379,7 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 			     object.name,
 			     object.time_start,
 			     object.time_end,
+			     object.time_force,
 			     object.unused_wall,
 			     object.comment ? object.comment : "NULL");
 

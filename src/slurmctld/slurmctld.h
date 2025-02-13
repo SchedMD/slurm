@@ -396,6 +396,8 @@ typedef struct slurmctld_resv {
 	time_t start_time_prev;	/* If start time was changed this is
 				 * the previous start time.  Needed
 				 * for accounting */
+	time_t time_force; /* The actual start time of the reservation if the
+			    * FORCE_START flag was used */
 	char *tres_fmt_str;     /* formatted string of tres to deal with */
 	char *tres_str;         /* simple string of tres to deal with */
 	char *users;		/* names of users permitted to use	*/
