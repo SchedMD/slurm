@@ -1287,12 +1287,8 @@ void _sync_jobs_to_conf(void)
 			job_fail = true;
 		} else {
 			char *err_part = NULL;
-			part_ptr = find_part_record(job_ptr->partition);
-			if (part_ptr == NULL) {
-				get_part_list(job_ptr->partition,
-					      &part_ptr_list, &part_ptr,
-					      &err_part);
-			}
+			get_part_list(job_ptr->partition, &part_ptr_list,
+				      &part_ptr, &err_part);
 			if (part_ptr == NULL) {
 				error("Invalid partition (%s) for %pJ",
 				      err_part, job_ptr);
