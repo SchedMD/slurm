@@ -1565,6 +1565,8 @@ typedef struct acct_gather_energy {
 	uint64_t base_consumed_energy;
 	uint64_t consumed_energy; /* total energy consumed by node, in joules */
 	uint32_t current_watts;	  /* current power consump of node, in watts */
+	uint64_t last_adjustment; /* last applied adjustment, in joules.
+				   * DO NOT PACK. */
 	uint64_t previous_consumed_energy;
 	time_t poll_time;         /* When information was last retrieved */
 	time_t slurmd_start_time; /* Slurmd start time */
