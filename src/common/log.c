@@ -1434,6 +1434,9 @@ void fatal(const char *fmt, ...)
 	LOG_MACRO(LOG_LEVEL_FATAL, false, fmt);
 	log_flush();
 
+	if (getenv("ABORT_ON_FATAL"))
+		abort();
+
 	exit(1);
 }
 
