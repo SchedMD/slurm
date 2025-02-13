@@ -1026,7 +1026,7 @@ static int _get_joules_task(uint16_t delta)
 			 * start_current_energies.
 			 *
 			 * We will consider a IPMI interface to be faulty when
-			 * slurmd returns 0 consumed jouls but slurmd has not
+			 * slurmd returns 0 consumed joules but slurmd has not
 			 * been restarted.
 			 */
 			if (old->slurmd_start_time != new->slurmd_start_time) {
