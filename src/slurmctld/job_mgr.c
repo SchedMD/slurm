@@ -10338,7 +10338,8 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		else
 			packstr(dump_job_ptr->partition, buffer);
 
-		if (IS_JOB_PENDING(dump_job_ptr))
+		if (IS_JOB_PENDING(dump_job_ptr) &&
+		    dump_job_ptr->details->qos_req)
 			packstr(dump_job_ptr->details->qos_req, buffer);
 		else {
 			if (!has_qos_lock)
