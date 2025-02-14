@@ -75,6 +75,7 @@ static bool has_task_exit = false;
 
 struct spank_plugin_operations {
 	spank_f *init;
+	int *init_failure_mode;
 	spank_f *job_prolog;
 	spank_f *init_post_opt;
 	spank_f *local_user_init;
@@ -88,9 +89,10 @@ struct spank_plugin_operations {
 	spank_f *exit;
 };
 
-const int n_spank_syms = 12;
+const int n_spank_syms = 13;
 const char *spank_syms[] = {
 	"slurm_spank_init",
+	"slurm_spank_init_failure_mode",
 	"slurm_spank_job_prolog",
 	"slurm_spank_init_post_opt",
 	"slurm_spank_local_user_init",
@@ -750,6 +752,8 @@ static int _do_call_stack(struct spank_stack *stack,
 		if (rc && sp->required) {
 			error("spank: required plugin %s: "
 			      "%s() failed with rc=%d", name, fn_name, rc);
+			if ((type == SPANK_INIT) && sp->ops.init_failure_mode)
+				rc = *(sp->ops.init_failure_mode);
 			break;
 		} else
 			rc = SLURM_SUCCESS;

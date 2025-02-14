@@ -101,6 +101,7 @@ typedef int (spank_f) (spank_t spank, int ac, char *argv[]);
  */
 
 extern spank_f slurm_spank_init;
+extern int slurm_spank_init_failure_mode;
 extern spank_f slurm_spank_job_prolog;
 extern spank_f slurm_spank_init_post_opt;
 extern spank_f slurm_spank_local_user_init;
