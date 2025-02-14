@@ -961,7 +961,7 @@ static int _spank_user_child(void *arg)
 		_exit(-1);
 	}
 
-	if (spank_user(step) < 0)
+	if (spank_user(step))
 		rc = 1;
 
 	/*
@@ -986,7 +986,7 @@ static int _spank_task_post_fork_child(void *arg)
 		_exit(-1);
 	}
 
-	if (spank_task_post_fork(step, args->id) < 0)
+	if (spank_task_post_fork(step, args->id))
 		_exit(1);
 
 	_exit(0);
@@ -1002,7 +1002,7 @@ static int _spank_task_exit_child(void *arg)
 		_exit(-1);
 	}
 
-	if (spank_task_exit(step, args->id) < 0)
+	if (spank_task_exit(step, args->id))
 		_exit(1);
 
 	_exit(0);
@@ -1098,13 +1098,13 @@ fail:
 	 * fails.
 	 */
 	if ((spank_func == SPANK_STEP_TASK_EXIT) &&
-	    (spank_task_exit(step, id) < 0)) {
+	    (spank_task_exit(step, id))) {
 		rc = SLURM_ERROR;
 	} else if ((spank_func == SPANK_STEP_TASK_POST_FORK) &&
-		   (spank_task_post_fork(step, id) < 0)) {
+		   (spank_task_post_fork(step, id))) {
 		rc = SLURM_ERROR;
 	} else if ((spank_func == SPANK_STEP_USER_INIT) &&
-		   (spank_user(step) < 0)) {
+		   (spank_user(step))) {
 		rc = SLURM_ERROR;
 	}
 
@@ -1357,7 +1357,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	}
 
 	debug2("%s: Before call to spank_init()", __func__);
-	if (spank_init(step) < 0) {
+	if (spank_init(step)) {
 		error("%s: Plugin stack initialization failed.", __func__);
 		/* let the slurmd know we actually are done with the setup */
 		close_slurmd_conn(SLURM_PLUGIN_NAME_INVALID);
@@ -1548,7 +1548,7 @@ fail1:
 	conmgr_add_work_fifo(_x11_signal_handler, step);
 
 	debug2("%s: Before call to spank_fini()", __func__);
-	if (spank_fini(step) < 0)
+	if (spank_fini(step))
 		error("spank_fini failed");
 	debug2("%s: After call to spank_fini()", __func__);
 
@@ -1654,7 +1654,7 @@ job_manager(stepd_step_rec_t *step)
 		return _spawn_job_container(step);
 
 	debug2("Before call to spank_init()");
-	if (spank_init(step) < 0) {
+	if (spank_init(step)) {
 		error ("Plugin stack initialization failed.");
 		rc = SLURM_PLUGIN_NAME_INVALID;
 		goto fail1;
@@ -1824,7 +1824,7 @@ fail2:
 	while (stepd_send_pending_exit_msgs(step)) {;}
 
 	debug2("Before call to spank_fini()");
-	if (spank_fini(step) < 0)
+	if (spank_fini(step))
 		error("spank_fini failed");
 	debug2("After call to spank_fini()");
 
@@ -1895,7 +1895,7 @@ static int _pre_task_child_privileged(
 		setwd = 1;
 	}
 
-	if (spank_task_privileged(step, taskid) < 0)
+	if (spank_task_privileged(step, taskid))
 		return error("spank_task_init_privileged failed");
 
 	/* sp->gid_list should already be initialized */

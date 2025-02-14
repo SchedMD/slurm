@@ -107,14 +107,14 @@ int main(int argc, char **argv)
 		fatal("failed to initialize cli_filter plugin");
 
 	_set_exit_code();
-	if (spank_init_allocator() < 0) {
+	if (spank_init_allocator()) {
 		error("Failed to initialize plugin stack");
 		exit(error_exit);
 	}
 
 	/* Be sure to call spank_fini when sbatch exits
 	 */
-	if (atexit((void (*) (void)) spank_fini) < 0)
+	if (atexit((void (*) (void)) spank_fini))
 		error("Failed to register atexit handler for plugins: %m");
 
 	script_name = process_options_first_pass(argc, argv);
@@ -175,7 +175,7 @@ int main(int argc, char **argv)
 			FREE_NULL_BUFFER(buf);
 		}
 
-		if (spank_init_post_opt() < 0) {
+		if (spank_init_post_opt()) {
 			error("Plugin stack post-option processing failed");
 			exit(error_exit);
 		}

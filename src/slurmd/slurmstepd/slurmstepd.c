@@ -723,10 +723,10 @@ static int _handle_spank_mode(int argc, char **argv)
 	      mode, jobid, uid, gid);
 
 	if (!xstrcmp(mode, "prolog")) {
-		if (spank_job_prolog(jobid, uid, gid) < 0)
+		if (spank_job_prolog(jobid, uid, gid))
 			return -1;
 	} else if (!xstrcmp(mode, "epilog")) {
-		if (spank_job_epilog(jobid, uid, gid) < 0)
+		if (spank_job_epilog(jobid, uid, gid))
 			return -1;
 	} else {
 		error("Invalid mode %s specified!", mode);

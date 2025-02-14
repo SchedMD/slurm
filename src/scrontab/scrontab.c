@@ -673,7 +673,7 @@ extern int main(int argc, char **argv)
 	}
 
 	/* needed otherwise slurm_option_table_create() always returns NULL */
-	if (spank_init_allocator() < 0)
+	if (spank_init_allocator())
 		fatal("failed to initialize plugin stack");
 
 	_edit_and_update_crontab(crontab);

@@ -191,14 +191,14 @@ int main(int argc, char **argv)
 	argvzero = argv[0];
 	_set_exit_code();
 
-	if (spank_init_allocator() < 0) {
+	if (spank_init_allocator()) {
 		error("Failed to initialize plugin stack");
 		exit(error_exit);
 	}
 
 	/* Be sure to call spank_fini when salloc exits
 	 */
-	if (atexit((void (*) (void)) spank_fini) < 0)
+	if (atexit((void (*) (void)) spank_fini))
 		error("Failed to register atexit handler for plugins: %m");
 
 
@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 			log_alter(logopt, 0, NULL);
 		}
 
-		if (spank_init_post_opt() < 0) {
+		if (spank_init_post_opt()) {
 			error("Plugin stack post-option processing failed");
 			exit(error_exit);
 		}

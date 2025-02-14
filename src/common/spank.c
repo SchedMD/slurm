@@ -816,8 +816,10 @@ static int spank_stack_post_opt (struct spank_stack * stack,
 
 static int spank_init_remote (stepd_step_rec_t *step)
 {
-	if (_spank_init (S_TYPE_REMOTE, step) < 0)
-		return (-1);
+	int rc = SLURM_SUCCESS;
+
+	if ((rc = _spank_init(S_TYPE_REMOTE, step)))
+		return rc;
 
 	/*
 	 * _spank_init initializes global_spank_stack
