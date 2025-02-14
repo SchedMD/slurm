@@ -75,9 +75,9 @@
 #define SLINGSHOT_RDZV_GET_EN_FMT \
 	"/sys/class/cxi/cxi%d/device/properties/rdzv_get_en"
 
-/* File path to the default rdzv_get_en setting */
-#define SLINGSHOT_RDZV_GET_EN_DEFAULT_FILE \
-	"/sys/module/cxi_core/parameters/rdzv_get_en_default"
+/* File path format to the default rdzv_get_en setting */
+#define SLINGSHOT_RDZV_GET_EN_DEFAULT_FMT \
+	"/sys/module/cxi_%s/parameters/rdzv_get_en_default"
 
 extern int free_vnis; /* Number of free VNIs */
 
