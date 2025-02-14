@@ -438,14 +438,14 @@ extern int main(int argc, char **argv)
 
 	only_mem = false;
 ending:
-	rc = stepd_cleanup(msg, step, cli, rc, only_mem);
+	stepd_cleanup(msg, step, cli, rc, only_mem);
 
 	conmgr_fini();
 	return rc;
 }
 
-extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
-			 slurm_addr_t *cli, int rc, bool only_mem)
+extern void stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
+			  slurm_addr_t *cli, int rc, bool only_mem)
 {
 	time_limit_thread_shutdown = true;
 
@@ -538,8 +538,6 @@ done:
 	}
 
 	conmgr_request_shutdown();
-
-	return rc;
 }
 
 extern void close_slurmd_conn(int rc)
