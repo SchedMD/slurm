@@ -108,7 +108,6 @@ static void _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc);
 static void _process_cmdline(int argc, char **argv);
 
 static pthread_mutex_t cleanup_mutex = PTHREAD_MUTEX_INITIALIZER;
-static bool cleanup = false;
 
 /* global variable */
 uint32_t slurm_daemon = IS_SLURMSTEPD;
@@ -447,6 +446,8 @@ ending:
 extern void stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 			  slurm_addr_t *cli, int rc, bool only_mem)
 {
+	static bool cleanup = false;
+
 	time_limit_thread_shutdown = true;
 
 	slurm_mutex_lock(&cleanup_mutex);
