@@ -75,6 +75,15 @@ them available in all levels of the cgroup tree until it reaches Slurm's cgroup
 leaf.
 .IP
 
+.TP
+\fBEnableExtraControllers\fR=\fI<all|controller1[,controller2,...]>\fR
+This will enable extra controllers not natively used by Slurm in the job cgroup
+subtree. If combined with EnableControllers it will enable them in all the
+levels of the cgroup tree from the OS root cgroup. The controllers that can be
+enabled are io, pids, rdma, hugetlb and misc or all. If they do not exist in the
+system an error is logged. Only for cgroup/v2.
+.IP
+
 .SH "TASK/CGROUP PLUGIN"
 
 .LP
