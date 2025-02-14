@@ -1357,11 +1357,11 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	}
 
 	debug2("%s: Before call to spank_init()", __func__);
-	if (spank_init(step)) {
+	if ((rc = spank_init(step))) {
 		error("%s: Plugin stack initialization failed.", __func__);
 		/* let the slurmd know we actually are done with the setup */
-		close_slurmd_conn(SLURM_PLUGIN_NAME_INVALID);
-		return SLURM_PLUGIN_NAME_INVALID;
+		close_slurmd_conn(rc);
+		return rc;
 	}
 	debug2("%s: After call to spank_init()", __func__);
 
@@ -1654,9 +1654,8 @@ job_manager(stepd_step_rec_t *step)
 		return _spawn_job_container(step);
 
 	debug2("Before call to spank_init()");
-	if (spank_init(step)) {
+	if ((rc = spank_init(step))) {
 		error ("Plugin stack initialization failed.");
-		rc = SLURM_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}
 	debug2("After call to spank_init()");
