@@ -431,12 +431,22 @@ static bool _get_rdzv_get_en_default(void)
 	bool enabled = true;
 	FILE *fp = NULL;
 	int param;
+	char *rdzv_file = NULL;
+
+	xstrfmtcat(rdzv_file, SLINGSHOT_RDZV_GET_EN_DEFAULT_FMT, "ss1");
 
 	/* Open the file */
-	if (!(fp = fopen(SLINGSHOT_RDZV_GET_EN_DEFAULT_FILE, "r"))) {
-		error("Couldn't open %s for reading: %m",
-		      SLINGSHOT_RDZV_GET_EN_DEFAULT_FILE);
-		return enabled;
+	if (!(fp = fopen(rdzv_file, "r"))) {
+		log_flag(SWITCH, "Couldn't open %s for reading: %m",
+			 rdzv_file);
+		xfree(rdzv_file);
+		xstrfmtcat(rdzv_file, SLINGSHOT_RDZV_GET_EN_DEFAULT_FMT,
+			   "core");
+		if (!(fp = fopen(rdzv_file, "r"))) {
+			error("Couldn't open %s for reading: %m", rdzv_file);
+			xfree(rdzv_file);
+			return enabled;
+		}
 	}
 
 	/* The file will contain a single character, Y/y/1/N/n/0 */
@@ -453,18 +463,17 @@ static bool _get_rdzv_get_en_default(void)
 		enabled = false;
 		break;
 	case EOF:
-		error("Couldn't read from %s: %m",
-		      SLINGSHOT_RDZV_GET_EN_DEFAULT_FILE);
+		error("Couldn't read from %s: %m", rdzv_file);
 		break;
 	default:
-		error("Unexpected char '%c' from %s",
-		      param, SLINGSHOT_RDZV_GET_EN_DEFAULT_FILE);
+		error("Unexpected char '%c' from %s", param, rdzv_file);
 		break;
 	}
 
 	log_flag(SWITCH, "Rendezvous gets are %s by default",
 		 enabled ? "enabled" : "disabled");
 	fclose(fp);
+	xfree(rdzv_file);
 	return enabled;
 }
 
