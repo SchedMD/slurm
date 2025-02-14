@@ -798,12 +798,14 @@ extern uint32_t get_next_job_id(bool test_only);
 /*
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
+ * OUT part_ptr_list - sorted list of pointers to the partitions or NULL
+ * OUT prim_part_ptr - pointer to the primary partition
  * OUT err_part - The first invalid partition name.
- * RET sorted list of pointers to the partitions or NULL if not found
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
-extern list_t *get_part_list(char *name, char **err_part);
+extern void get_part_list(char *name, list_t **part_ptr_list,
+			  part_record_t **prim_part_ptr, char **err_part);
 
 /*
  * init_depend_policy()
