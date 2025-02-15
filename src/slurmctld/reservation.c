@@ -4960,10 +4960,9 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	}
 
 	/* Ensure if partition exists in reservation otherwise use default */
-	if (!resv_ptr->part_ptr) {
-		resv_ptr->part_ptr = default_part_loc;
-		if (!resv_ptr->part_ptr)
-			return ESLURM_DEFAULT_PARTITION_NOT_SET;
+	if ((rc = _validate_and_set_partition(&resv_ptr->part_ptr,
+					      &resv_ptr->partition))) {
+		return rc;
 	}
 
 	/* Must increase node count. Make this look like new request so
