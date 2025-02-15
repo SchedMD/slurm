@@ -3280,6 +3280,19 @@ static int _validate_reservation_access_update(void *x, void *y)
 	return 0;
 }
 
+static int _validate_and_set_partition(part_record_t **part_ptr,
+				       char **partition)
+{
+	if (*part_ptr == NULL) {
+		*part_ptr = default_part_loc;
+		if (*part_ptr == NULL)
+			return ESLURM_DEFAULT_PARTITION_NOT_SET;
+	}
+	xfree(*partition);
+	*partition = xstrdup((*part_ptr)->name);
+	return SLURM_SUCCESS;
+}
+
 /* Update an exiting resource reservation */
 extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 {
@@ -5203,12 +5216,9 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	list_itr_t *itr;
 	job_record_t *job_ptr;
 
-	if (*part_ptr == NULL) {
-		*part_ptr = default_part_loc;
-		if (*part_ptr == NULL)
-			return ESLURM_DEFAULT_PARTITION_NOT_SET;
-		xfree(resv_desc_ptr->partition);	/* should be no-op */
-		resv_desc_ptr->partition = xstrdup((*part_ptr)->name);
+	if ((rc = _validate_and_set_partition(part_ptr,
+					      &resv_desc_ptr->partition))) {
+		return rc;
 	}
 
 	xassert(resv_desc_ptr->job_ptr);
