@@ -113,6 +113,16 @@ extern int slurm_accept_msg_conn(int open_fd, slurm_addr_t *slurm_address);
  */
 extern int slurm_open_stream(slurm_addr_t *slurm_address, bool retry);
 
+/*
+ * slurm_open_unix_stream
+ * Opens a connection to a unix socket
+ * IN addr_name - name of address of connection destination
+ * IN sock_flags - flags for the socket type, see socket(2)
+ * OUT fd - file descriptor of the connection on success, invalid on error
+ * RET int - SLURM_SUCCESS or Slurm error code
+ */
+extern int slurm_open_unix_stream(char *addr_name, int sock_flags, int *fd);
+
 /* slurm_get_stream_addr
  * essentially a encapsilated get_sockname
  * IN open_fd 		- file descriptor to retrieve slurm_addr_t for

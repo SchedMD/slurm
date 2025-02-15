@@ -51,10 +51,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/un.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"
@@ -1012,36 +1010,14 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 /* connect to srun_cr */
 static int _connect_srun_cr(char *addr)
 {
-	struct sockaddr_un sa;
-	unsigned int sa_len;
-	int fd, rc;
+	int fd = -1, rc;
 
 	if (!addr) {
 		error("%s: socket path name is NULL", __func__);
 		return -1;
 	}
-	if (strlen(addr) >= sizeof(sa.sun_path)) {
-		error("%s: socket path name too long (%s)", __func__, addr);
-		return -1;
-	}
-
-	fd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (fd < 0) {
-		error("failed creating cr socket: %m");
-		return -1;
-	}
-	memset(&sa, 0, sizeof(sa));
-
-	sa.sun_family = AF_UNIX;
-	strlcpy(sa.sun_path, addr, sizeof(sa.sun_path));
-	sa_len = strlen(sa.sun_path) + sizeof(sa.sun_family);
-
-	while (((rc = connect(fd, (struct sockaddr *)&sa, sa_len)) < 0) &&
-	       (errno == EINTR));
-
-	if (rc < 0) {
-		debug2("failed connecting cr socket: %m");
-		close(fd);
+	if ((rc = slurm_open_unix_stream(addr, 0, &fd))) {
+		debug2("failed connecting cr socket: %s", slurm_strerror(rc));
 		return -1;
 	}
 	return fd;

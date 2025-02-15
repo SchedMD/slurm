@@ -33,8 +33,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <sys/un.h>
-
 #include "src/common/fd.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
@@ -62,27 +60,12 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 	xassert(ptr_resp && !*ptr_resp);
 	xassert(!msg->conn);
 
-	if (fd == -1) {
-		struct sockaddr_un addr = {
-			.sun_family = AF_UNIX,
-		};
-
-		if (strlcpy(addr.sun_path, sock, sizeof(addr.sun_path)) !=
-		    strlen(sock)) {
-			debug("Unable to copy socket path: %s", sock);
-			rc = ESLURMD_INVALID_SOCKET_NAME_LEN;
-			goto cleanup;
-		}
-		if ((fd = socket(AF_UNIX, (SOCK_STREAM|SOCK_CLOEXEC), 0)) == -1) {
-			rc = errno;
-			debug("Unable to create socket: %m");
-			goto cleanup;
-		}
-		if ((connect(fd, (struct sockaddr*) &addr, sizeof(addr))) < 0) {
-			rc = errno;
-			debug("Unable to connect to socket %s: %m", sock);
-			goto cleanup;
-		}
+	if ((fd == -1) &&
+	    (rc = slurm_open_unix_stream(state.anchor_socket, SOCK_CLOEXEC,
+					 &fd))) {
+		debug("Failed to set up socket %s: %s",
+		      sock, slurm_strerror(rc));
+		goto cleanup;
 	}
 
 	fd_set_blocking(fd);
