@@ -5029,7 +5029,7 @@ extern int validate_job_resv(job_record_t *job_ptr)
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 {
 	bitstr_t *tmp2_bitmap = NULL;
-	int delta_node_cnt, i;
+	int delta_node_cnt, i, rc;
 	resv_desc_msg_t resv_desc;
 	resv_select_t resv_select = { 0 };
 
@@ -5099,10 +5099,10 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 		bit_and_not(resv_select.node_bitmap, resv_ptr->node_bitmap);
 	}
 
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &resv_select);
+	rc = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &resv_select);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
-	if (i == SLURM_SUCCESS) {
+	if (rc == SLURM_SUCCESS) {
 		job_record_t *job_ptr = resv_desc.job_ptr;
 		/*
 		 * If the reservation was 0 node count before (ANY_NODES) this
@@ -5134,7 +5134,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	}
 	job_record_delete(resv_desc.job_ptr);
 
-	return i;
+	return rc;
 }
 
 static int _feature_has_node_cnt(void *x, void *key)
