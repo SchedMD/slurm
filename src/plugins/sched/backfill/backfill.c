@@ -1804,7 +1804,7 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 static void _handle_planned(bool set)
 {
 	node_record_t *node_ptr;
-	bool node_update = false;
+	bool node_update = false, select_synced = false;
 
 	if (!planned_bitmap)
 		return;
@@ -1822,6 +1822,11 @@ static void _handle_planned(bool set)
 			 */
 			if (IS_NODE_ALLOCATED(node_ptr)) {
 				uint16_t alloc_cpus = 0, idle_cpus = 0;
+
+				if (!select_synced) {
+					select_g_select_nodeinfo_set_all();
+					select_synced = true;
+				}
 
 				select_g_select_nodeinfo_get(
 					node_ptr->select_nodeinfo,
