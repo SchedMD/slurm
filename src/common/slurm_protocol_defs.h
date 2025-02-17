@@ -77,6 +77,13 @@
 
 #define FORWARD_INIT 0xfffe
 
+/*
+ * Used instead of the message length as the first four-bytes
+ * on the wire to enable TLS on a connection.
+ * These bytes are 0xff followed by 'T' 'L' 'S'.
+ */
+#define SLURM_TLS_INIT 0xff544c53
+
 /* Defined job states */
 #define IS_JOB_PENDING(_X)		\
 	((_X->job_state & JOB_STATE_BASE) == JOB_PENDING)
