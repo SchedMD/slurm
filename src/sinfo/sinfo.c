@@ -738,6 +738,8 @@ static bool _filter_out(node_info_t *node_ptr)
 		iterator = list_iterator_create(params.state_list);
 		while ((node_state = list_next(iterator))) {
 			match = _filter_node_state(node_state->state, node_ptr);
+			if (node_state->op == SINFO_STATE_OP_NOT)
+				match = !match;
 			if (!params.state_list_and && match)
 				break;
 			if (params.state_list_and && !match)

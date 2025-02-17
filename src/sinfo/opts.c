@@ -486,6 +486,12 @@ static list_t *_build_state_list(char *state_str)
 	state = strtok_r(state_str, ",&+", &str);
 	while (state) {
 		sinfo_state_t *id = xmalloc(sizeof(*id));
+		if ((state[0] == '~') || (state[0] == '!')) {
+			id->op = SINFO_STATE_OP_NOT;
+			/* Remove one character before parsing */
+			state = state + 1;
+		}
+
 		if ((id->state = _node_state_id(state)) < 0) {
 			error ("Bad state string: \"%s\"", state);
 			return (NULL);
