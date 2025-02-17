@@ -2306,6 +2306,7 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
 		 * despite many pids may have been adopted.
 		 */
 		jobacct_gather_stat_all_task(jobacct);
+		jobacctinfo_aggregate(jobacct, step->jobacct);
 		num_tasks = 1;
 	} else {
 		for (int i = 0; i < step->node_tasks; i++) {
