@@ -118,6 +118,12 @@ void gres_stepmgr_set_job_tres_cnt(list_t *gres_list, uint32_t node_cnt,
 	;
 }
 
+extern void gres_stepmgr_set_node_tres_cnt(list_t *gres_list,
+					   uint64_t *tres_cnt, bool locked)
+{
+	;
+}
+
 void gres_stepmgr_job_clear_alloc(list_t *job_gres_list)
 {
 	;
