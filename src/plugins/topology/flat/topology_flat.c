@@ -141,6 +141,33 @@ extern int topology_p_topology_free(void *topoinfo_ptr)
 
 extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 {
+	switch (type) {
+	case TOPO_DATA_TOPOLOGY_PTR:
+	{
+		dynamic_plugin_data_t **topoinfo_pptr = data;
+
+		*topoinfo_pptr = xmalloc(sizeof(dynamic_plugin_data_t));
+		(*topoinfo_pptr)->data = NULL;
+		(*topoinfo_pptr)->plugin_id = plugin_id;
+
+		break;
+	}
+	case TOPO_DATA_REC_CNT:
+	{
+		int *rec_cnt = data;
+		*rec_cnt = 0;
+		break;
+	}
+	case TOPO_DATA_EXCLUSIVE_TOPO:
+	{
+		int *exclusive_topo = data;
+		*exclusive_topo = 0;
+		break;
+	}
+	default:
+		error("Unsupported option %d", type);
+	}
+
 	return SLURM_SUCCESS;
 }
 
