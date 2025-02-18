@@ -808,13 +808,14 @@ void _process_power_command(const char *tag, int argc, char **argv)
 	bool asap = false;
 	bool force = false;
 	int min_argv = 3;
-	int max_argv = 4;
+	int max_argv = 5;
 
 	/* at least 'power' should have been supplied */
 	xassert(argc);
 
 	if ((argc <= max_argv) && (argc >= min_argv)) {
 		int idx = 1;
+		char *reason = NULL;
 
 		/* up or down subcommand */
 		if (!xstrcasecmp(argv[idx], "UP")) {
@@ -833,31 +834,59 @@ void _process_power_command(const char *tag, int argc, char **argv)
 		 * Optional asap|force if powerering down. Silently ignore
 		 * asap|force if powering up as there's no such option.
 		 */
-		if (argc == max_argv) {
-			if (!xstrcasecmp(argv[idx], "ASAP")) {
-				asap = true;
-			} else if (!xstrcasecmp(argv[idx], "FORCE")) {
-				force = true;
+		if (!xstrcasecmp(argv[idx], "ASAP")) {
+			asap = true;
+			idx++;
+		} else if (!xstrcasecmp(argv[idx], "FORCE")) {
+			force = true;
+			idx++;
+		}
+
+		if ((force || asap) && power_up) {
+			exit_code = 1;
+			fprintf(stderr, "The '%s' argument is not valid for power up requests\n",
+				argv[idx - 1]);
+			goto done;
+		}
+
+		/* Missing list of nodes */
+		if (idx == argc) {
+			exit_code = 1;
+			fprintf(stderr, "Mandatory argument {ALL|<NodeList>|<NodeSet>} missing\n");
+			goto done;
+		}
+
+		/* We have one more argument - it may be Reason= */
+		if ((idx + 1) < argc) {
+			if (!xstrncasecmp(argv[idx + 1],
+					  "Reason=", strlen("Reason="))) {
+				if (!power_up) {
+					char *tmp_ptr =
+						strchr(argv[idx + 1], '=');
+
+					if (!tmp_ptr || !*(tmp_ptr + 1)) {
+						exit_code = 1;
+						fprintf(stderr, "missing reason\n");
+						goto done;
+					}
+					reason = xstrdup(tmp_ptr + 1);
+				} else {
+					exit_code = 1;
+					fprintf(stderr, "Reason only allowed for scontrol power down operation\n");
+					goto done;
+				}
 			} else {
 				exit_code = 1;
-				fprintf(stderr, "unrecognized optional command:%s\n",
-					argv[idx]);
+				fprintf(stderr, "unexpected argument: %s\n",
+					argv[idx + 1]);
 				goto done;
 			}
-
-			if ((force || asap) && power_up) {
-				exit_code = 1;
-				fprintf(stderr, "The '%s' argument is not valid for power up requests\n",
-					argv[idx]);
-				goto done;
-			}
-
-			idx++;
 		}
 
 		/* call with nodelist */
 		error_code = scontrol_power_nodes(argv[idx], power_up, asap,
-						  force);
+						  force, reason);
+		xfree(reason);
 
 	} else if (argc < min_argv) {
 		exit_code = 1;

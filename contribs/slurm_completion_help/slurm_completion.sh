@@ -3523,6 +3523,7 @@ function __scontrol_power_up() {
 # completion handler for: scontrol power down *
 function __scontrol_power_down() {
 	local parameters=(
+		"reason="
 	)
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
