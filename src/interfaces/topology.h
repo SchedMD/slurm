@@ -50,6 +50,7 @@ typedef enum {
 	TOPO_DATA_TOPOLOGY_PTR,
 	TOPO_DATA_REC_CNT,
 	TOPO_DATA_EXCLUSIVE_TOPO,
+	TOPO_DATA_TCTX_IDX,
 } topology_data_t;
 
 typedef struct topology_ctx {

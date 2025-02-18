@@ -379,6 +379,17 @@ extern int topology_g_get(topology_data_t type, char *name, void *data)
 	int tctx_idx = 0;
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
+	if (type == TOPO_DATA_TCTX_IDX) {
+		int tmp_idx;
+		if (!name || ((tmp_idx = _get_tctx_index_by_name(name)) < 0))
+			return SLURM_ERROR;
+		else {
+			int *tctx_idx_ptr = data;
+			*tctx_idx_ptr = tmp_idx;
+			return SLURM_SUCCESS;
+		}
+	}
+
 	if (name) {
 		tctx_idx = _get_tctx_index_by_name(name);
 		if (tctx_idx < 0) {
