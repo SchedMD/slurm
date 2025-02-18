@@ -18,6 +18,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/burst_buffer.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
@@ -392,6 +393,7 @@ int main(int argc, char *argv[])
 
 	select_g_node_init();
 	node_features_g_init();
+	jobcomp_g_init();
 
 	asap_node_bitmap = bit_alloc(node_record_count);
 	rs_node_bitmap = bit_alloc(node_record_count);
