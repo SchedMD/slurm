@@ -1055,50 +1055,6 @@ Issue RPC to modify a node's configuration per request, only usable by user root
 
 
 
-=head2 SLURM SWITCH TOPOLOGY CONFIGURATION READ/PRINT FUNCTIONS
-
-=head3 $resp = $slurm->load_topo();
-
-Issue RPC to get all switch topology configuration information.
-
-=over 2
-
-=item * RET: response hash reference with structure of C<topo_info_response_msg_t>. On failure C<undef> is returned with errno set.
-
-=back
-
-=head3 $slurm->print_topo_info_msg($out, $topo_info_msg, $one_liner=0);
-
-Output information about all switch topology configuration information based upon message as loaded using C<load_topo()>.
-
-=over 2
-
-=item * IN $out: FILE handle to write to.
-
-=item * IN $topo_info_msg: switch topology information message, with structure of C<topo_info_response_msg_t>.
-
-=item * IN $one_liner: print as a single line if not zero.
-
-=back
-
-=head3 $slurm->print_topo_record($out, $topo_info, $one_liner);
-
-Output information about a specific Slurm topology record based upon message as loaded using C<load_topo()>.
-
-=over 2
-
-=item * IN $out: FILE handle to write to.
-
-=item * IN $topo_info: an individual switch information record, with structure of C<topo_info_t>.
-
-=item * IN $one_liner: print as a single line if not zero.
-
-=back
-
-
-
-
-
 =head2 SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 
 =head3 $resp = $slurm->load_partitions($update_time=0, $show_flags=0);
