@@ -824,8 +824,9 @@ void _process_power_command(const char *tag, int argc, char **argv)
 			power_up = false;
 		} else {
 			exit_code = 1;
-			fprintf(stderr, "unexpected argument: %s\n",
-				argv[idx]);
+			if (quiet_flag != 1)
+				fprintf(stderr, "unexpected argument: %s\n",
+					argv[idx]);
 			goto done;
 		}
 		idx++;
@@ -844,15 +845,17 @@ void _process_power_command(const char *tag, int argc, char **argv)
 
 		if ((force || asap) && power_up) {
 			exit_code = 1;
-			fprintf(stderr, "The '%s' argument is not valid for power up requests\n",
-				argv[idx - 1]);
+			if (quiet_flag != 1)
+				fprintf(stderr, "The '%s' argument is not valid for power up requests\n",
+					argv[idx - 1]);
 			goto done;
 		}
 
 		/* Missing list of nodes */
 		if (idx == argc) {
 			exit_code = 1;
-			fprintf(stderr, "Mandatory argument {ALL|<NodeList>|<NodeSet>} missing\n");
+			if (quiet_flag != 1)
+				fprintf(stderr, "Mandatory argument {ALL|<NodeList>|<NodeSet>} missing\n");
 			goto done;
 		}
 
@@ -866,19 +869,22 @@ void _process_power_command(const char *tag, int argc, char **argv)
 
 					if (!tmp_ptr || !*(tmp_ptr + 1)) {
 						exit_code = 1;
-						fprintf(stderr, "missing reason\n");
+						if (quiet_flag != 1)
+							fprintf(stderr, "missing reason\n");
 						goto done;
 					}
 					reason = xstrdup(tmp_ptr + 1);
 				} else {
 					exit_code = 1;
-					fprintf(stderr, "Reason only allowed for scontrol power down operation\n");
+					if (quiet_flag != 1)
+						fprintf(stderr, "Reason only allowed for scontrol power down operation\n");
 					goto done;
 				}
 			} else {
 				exit_code = 1;
-				fprintf(stderr, "unexpected argument: %s\n",
-					argv[idx + 1]);
+				if (quiet_flag != 1)
+					fprintf(stderr, "unexpected argument: %s\n",
+						argv[idx + 1]);
 				goto done;
 			}
 		}
@@ -890,12 +896,14 @@ void _process_power_command(const char *tag, int argc, char **argv)
 
 	} else if (argc < min_argv) {
 		exit_code = 1;
-		fprintf(stderr, "too few arguments for keyword:%s\n",
-			argv[0]);
+		if (quiet_flag != 1)
+			fprintf(stderr, "too few arguments for keyword:%s\n",
+				argv[0]);
 	} else if (argc > max_argv) {
 		exit_code = 1;
-		fprintf(stderr, "too many arguments for keyword:%s\n",
-			argv[0]);
+		if (quiet_flag != 1)
+			fprintf(stderr, "too many arguments for keyword:%s\n",
+				argv[0]);
 	}
 
 done:
