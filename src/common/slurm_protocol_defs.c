@@ -4434,6 +4434,14 @@ extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
 	}
 }
 
+extern void slurm_free_topo_request_msg(topo_info_request_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->name);
+		xfree(msg);
+	}
+}
+
 /*
  * slurm_free_burst_buffer_info_msg - free buffer returned by
  *	slurm_load_burst_buffer
@@ -5132,7 +5140,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_HEALTH_CHECK:
 	case REQUEST_ACCT_GATHER_UPDATE:
 	case ACCOUNTING_FIRST_REG:
-	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_FED_INFO:
@@ -5156,6 +5163,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_TOPO_INFO:
 		slurm_free_topo_info_msg(data);
+		break;
+	case REQUEST_TOPO_INFO:
+		slurm_free_topo_request_msg(data);
 		break;
 	case RESPONSE_JOB_SBCAST_CRED:
 		slurm_free_sbcast_cred_msg(data);

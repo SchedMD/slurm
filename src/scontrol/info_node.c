@@ -308,8 +308,7 @@ extern void	scontrol_print_topo (char *node_list)
 {
 	static topo_info_response_msg_t *topo_info_msg = NULL;
 
-	if ((topo_info_msg == NULL) &&
-	    slurm_load_topo(&topo_info_msg)) {
+	if ((topo_info_msg == NULL) && slurm_load_topo(&topo_info_msg, NULL)) {
 		slurm_perror ("slurm_load_topo error");
 		return;
 	}

@@ -624,7 +624,8 @@ extern int get_topo_conf(void)
 	if (TOPO_DEBUG)
 		g_print("get_topo_conf\n");
 
-	if (!g_topo_info_msg_ptr && slurm_load_topo(&g_topo_info_msg_ptr)) {
+	if (!g_topo_info_msg_ptr &&
+	    slurm_load_topo(&g_topo_info_msg_ptr, NULL)) {
 		slurm_perror ("slurm_load_topo error");
 		if (TOPO_DEBUG)
 			g_print("get_topo_conf error !!\n");

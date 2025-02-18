@@ -2438,6 +2438,10 @@ typedef struct topo_info {
 	char *switches;			/* name if direct descendent switches */
 } topo_info_t;
 
+typedef struct topo_info_request_msg {
+	char *name;
+} topo_info_request_msg_t;
+
 typedef struct topo_info_response_msg {
 	uint32_t record_count;		/* number of records */
 	topo_info_t *topo_array;	/* the switch topology records */
@@ -4498,13 +4502,15 @@ int slurm_delete_node(update_node_msg_t *node_msg);
 \*****************************************************************************/
 
 /*
- * slurm_load_topo - issue RPC to get slurm all switch topology configuration
+ * slurm_load_topo - issue RPC to get slurm topology configuration
  *	information
  * IN node_info_msg_pptr - place to store a node configuration pointer
+ * IN name - topolgy name
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_topo_info_msg
  */
-extern int slurm_load_topo(topo_info_response_msg_t **topo_info_msg_pptr);
+extern int slurm_load_topo(topo_info_response_msg_t **topo_info_msg_pptr,
+			   char *name);
 
 /*
  * slurm_free_topo_info_msg - free the switch topology configuration
@@ -4513,6 +4519,14 @@ extern int slurm_load_topo(topo_info_response_msg_t **topo_info_msg_pptr);
  * NOTE: buffer is loaded by slurm_load_topo.
  */
 extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
+
+/*
+ * slurm_free_topo_request_msg - free the topology configuration
+ *	information request message
+ * IN msg - pointer to topology configuration request message
+ * NOTE: buffer is loaded by slurm_load_topo.
+ */
+extern void slurm_free_topo_request_msg(topo_info_request_msg_t *msg);
 
 /*
  * slurm_print_topo_info_msg - output information about all switch topology
