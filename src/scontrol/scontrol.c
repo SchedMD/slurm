@@ -61,6 +61,11 @@
 #define OPT_LONG_JSON 0x107
 #define OPT_LONG_YAML 0x108
 
+#define _printf_error(format, args...)           \
+	if (quiet_flag != 1) {                   \
+		fprintf(stderr, format, ##args); \
+	}
+
 /* Global externs from scontrol.h */
 char *command_name;
 list_t *clusters = NULL;
@@ -824,9 +829,7 @@ void _process_power_command(const char *tag, int argc, char **argv)
 			power_up = false;
 		} else {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, "unexpected argument: %s\n",
-					argv[idx]);
+			_printf_error("unexpected argument: %s\n", argv[idx]);
 			goto done;
 		}
 		idx++;
@@ -845,17 +848,15 @@ void _process_power_command(const char *tag, int argc, char **argv)
 
 		if ((force || asap) && power_up) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, "The '%s' argument is not valid for power up requests\n",
-					argv[idx - 1]);
+			_printf_error("The '%s' argument is not valid for power up requests\n",
+				      argv[idx - 1]);
 			goto done;
 		}
 
 		/* Missing list of nodes */
 		if (idx == argc) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, "Mandatory argument {ALL|<NodeList>|<NodeSet>} missing\n");
+			_printf_error("Mandatory argument {ALL|<NodeList>|<NodeSet>} missing\n");
 			goto done;
 		}
 
@@ -869,22 +870,19 @@ void _process_power_command(const char *tag, int argc, char **argv)
 
 					if (!tmp_ptr || !*(tmp_ptr + 1)) {
 						exit_code = 1;
-						if (quiet_flag != 1)
-							fprintf(stderr, "missing reason\n");
+						_printf_error("missing reason\n");
 						goto done;
 					}
 					reason = xstrdup(tmp_ptr + 1);
 				} else {
 					exit_code = 1;
-					if (quiet_flag != 1)
-						fprintf(stderr, "Reason only allowed for scontrol power down operation\n");
+					_printf_error("Reason only allowed for scontrol power down operation\n");
 					goto done;
 				}
 			} else {
 				exit_code = 1;
-				if (quiet_flag != 1)
-					fprintf(stderr, "unexpected argument: %s\n",
-						argv[idx + 1]);
+				_printf_error("unexpected argument: %s\n",
+					      argv[idx + 1]);
 				goto done;
 			}
 		}
@@ -896,14 +894,10 @@ void _process_power_command(const char *tag, int argc, char **argv)
 
 	} else if (argc < min_argv) {
 		exit_code = 1;
-		if (quiet_flag != 1)
-			fprintf(stderr, "too few arguments for keyword:%s\n",
-				argv[0]);
+		_printf_error("too few arguments for keyword:%s\n", argv[0]);
 	} else if (argc > max_argv) {
 		exit_code = 1;
-		if (quiet_flag != 1)
-			fprintf(stderr, "too many arguments for keyword:%s\n",
-				argv[0]);
+		_printf_error("too many arguments for keyword:%s\n", argv[0]);
 	}
 
 done:
@@ -925,15 +919,11 @@ static void _setdebug(int argc, char **argv)
 
 	if (argc > 3) {
 		exit_code = 1;
-		if (quiet_flag != 1)
-			fprintf(stderr, "too many arguments for keyword:%s\n",
-				argv[0]);
+		_printf_error("too many arguments for keyword:%s\n", argv[0]);
 		return;
 	} else if (argc < 2) {
 		exit_code = 1;
-		if (quiet_flag != 1)
-			fprintf(stderr, "too few arguments for keyword:%s\n",
-				argv[0]);
+		_printf_error("too few arguments for keyword:%s\n", argv[0]);
 		return;
 	}
 
@@ -950,9 +940,7 @@ static void _setdebug(int argc, char **argv)
 		level = (int) strtoul(argv[1], &endptr, 10);
 		if (*endptr != '\0' || level > 9) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, "invalid debug level: %s\n",
-					argv[1]);
+			_printf_error("invalid debug level: %s\n", argv[1]);
 			return;
 		}
 	}
@@ -971,9 +959,7 @@ static void _setdebug(int argc, char **argv)
 
 		if (xstrncasecmp(argv[2], "Nodes=", 6)) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, "Invalid option: %s\n",
-					argv[1]);
+			_printf_error("Invalid option: %s\n", argv[1]);
 			return;
 		}
 
@@ -982,8 +968,7 @@ static void _setdebug(int argc, char **argv)
 
 		if (slurm_set_slurmd_debug_level(nodes, level)) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, "Failed to change debug level on one or more nodes.\n");
+			_printf_error("Failed to change debug level on one or more nodes.\n");
 		}
 	}
 }
@@ -997,9 +982,7 @@ static void _setdebugflags(int argc, char **argv)
 
 	if (argc < 2) {
 		exit_code = 1;
-		if (quiet_flag != 1)
-			fprintf(stderr, "too few arguments for keyword:%s\n",
-				tag);
+		_printf_error("too few arguments for keyword:%s\n", tag);
 		return;
 	}
 
@@ -1028,15 +1011,11 @@ static void _setdebugflags(int argc, char **argv)
 		if (slurm_set_slurmd_debug_flags(nodes, debug_flags_plus,
 						 debug_flags_minus)) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"Failed to set DebugFlags on one or more nodes.\n");
+			_printf_error("Failed to set DebugFlags on one or more nodes.\n");
 		}
 	} else if (i < argc) {
 		exit_code = 1;
-		if (quiet_flag != 1) {
-			fprintf(stderr, "invalid debug flag: %s\n", argv[i]);
-		}
+		_printf_error("invalid debug flag: %s\n", argv[i]);
 		if ((quiet_flag != 1) && (mode == 0)) {
 			fprintf(stderr, "Usage: setdebugflags {+|-}NAME [{+|-}NAME] [nodes=<NODES>]\n");
 		}
@@ -1366,10 +1345,8 @@ static int _process_command (int argc, char **argv)
 	} else if (!xstrncasecmp(tag, "requeue", MAX(tag_len, 3))) {
 		if (argc < 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
+			_printf_error("too few arguments for keyword:%s\n",
+				      tag);
 		} else {
 			uint32_t i, flags = 0, start_pos = 1;
 			for (i = 1; i < argc; i++) {
@@ -1384,10 +1361,8 @@ static int _process_command (int argc, char **argv)
 	} else if (!xstrncasecmp(tag, "requeuehold", 11)) {
 		if (argc < 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
+			_printf_error("too few arguments for keyword:%s\n",
+				      tag);
 		} else {
 			uint32_t i, flags = 0, start_pos = 1;
 			for (i = 1; i < argc; i++) {
@@ -1406,10 +1381,8 @@ static int _process_command (int argc, char **argv)
 	           !xstrncasecmp(tag, "release", MAX(tag_len, 3))) {
 		if (argc < 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
+			_printf_error("too few arguments for keyword:%s\n",
+				      tag);
 		} else {
 			for (i = 1; i < argc; i++) {
 				error_code = scontrol_hold(argv[0], argv[i]);
@@ -1425,10 +1398,8 @@ static int _process_command (int argc, char **argv)
 		   !xstrncasecmp(tag, "resume", MAX(tag_len, 3))) {
 		if (argc < 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
+			_printf_error("too few arguments for keyword:%s\n",
+				      tag);
 		} else {
 			for (i = 1; i < argc; i++) {
 				scontrol_suspend(argv[0], argv[i]);
@@ -1437,16 +1408,12 @@ static int _process_command (int argc, char **argv)
 	} else if (!xstrncasecmp(tag, "top", MAX(tag_len, 3))) {
 		if (argc < 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
+			_printf_error("too few arguments for keyword:%s\n",
+				      tag);
 		} else if (argc > 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
+			_printf_error("too many arguments for keyword:%s\n",
+				      tag);
 		} else {
 			scontrol_top_job(argv[1]);
 		}
@@ -1455,16 +1422,12 @@ static int _process_command (int argc, char **argv)
 	} else if (!xstrncasecmp(tag, "wait_job", MAX(tag_len, 2))) {
 		if (argc > 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
+			_printf_error("too many arguments for keyword:%s\n",
+				      tag);
 		} else if (argc < 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
+			_printf_error("too few arguments for keyword:%s\n",
+				      tag);
 		} else {
 			error_code = scontrol_job_ready(argv[1]);
 			if (error_code)
@@ -1477,26 +1440,20 @@ static int _process_command (int argc, char **argv)
 			      MAX(tag_len, 3))) {
 		if (argc > 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
+			_printf_error("too many arguments for keyword:%s\n",
+				      tag);
 		} else if (argc < 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
+			_printf_error("too few arguments for keyword:%s\n",
+				      tag);
 		} else {
 			uint16_t factor = 0;
 			char *endptr;
 			factor = (uint16_t)strtoul(argv[1], &endptr, 10);
 			if (*endptr != '\0' || factor == 0) {
 				exit_code = 1;
-				if (quiet_flag != 1)
-					fprintf(stderr,
-						"invalid dampening factor: %s\n",
-						argv[1]);
+				_printf_error("invalid dampening factor: %s\n",
+					      argv[1]);
 			} else {
 				error_code = slurm_set_fs_dampeningfactor(
 						factor);
@@ -1512,16 +1469,12 @@ static int _process_command (int argc, char **argv)
 	} else if (!xstrncasecmp(tag, "schedloglevel", MAX(tag_len, 3))) {
 		if (argc > 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
+			_printf_error("too many arguments for keyword:%s\n",
+				      tag);
 		} else if (argc < 2) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
+			_printf_error("too few arguments for keyword:%s\n",
+				      tag);
 		} else {
 			int level = -1;
 			char *endptr;
@@ -1541,9 +1494,8 @@ static int _process_command (int argc, char **argv)
 				if (*endptr != '\0' || level > 1) {
 					level = -1;
 					exit_code = 1;
-					if (quiet_flag != 1)
-						fprintf(stderr, "invalid schedlog "
-							"level: %s\n", argv[1]);
+					_printf_error("invalid schedlog level: %s\n",
+						      argv[1]);
 				}
 			}
 			if (level != -1) {
@@ -1881,9 +1833,7 @@ static void _show_it(int argc, char **argv)
 
 	if (argc < 2) {
 		exit_code = 1;
-		if (quiet_flag != 1)
-			fprintf(stderr,
-				"too few arguments for keyword:%s\n", argv[0]);
+		_printf_error("too few arguments for keyword:%s\n", argv[0]);
 		return;
 	}
 
@@ -1894,10 +1844,7 @@ static void _show_it(int argc, char **argv)
 
 	if ((argc > 3) && !allow_opt) {
 		exit_code = 1;
-		if (quiet_flag != 1)
-			fprintf(stderr,
-				"too many arguments for keyword:%s\n",
-				argv[0]);
+		_printf_error("too many arguments for keyword:%s\n", argv[0]);
 		return;
 	}
 
@@ -1931,10 +1878,8 @@ static void _show_it(int argc, char **argv)
 	} else if (xstrncasecmp(tag, "daemons", MAX(tag_len, 1)) == 0) {
 		if (val) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					argv[0]);
+			_printf_error("too many arguments for keyword:%s\n",
+				      argv[0]);
 		} else
 			_print_daemons();
 	} else if (xstrncasecmp(tag, "Federations",  MAX(tag_len, 1)) == 0) {
@@ -1981,10 +1926,8 @@ static void _show_it(int argc, char **argv)
 		scontrol_print_topo (val);
 	} else {
 		exit_code = 1;
-		if (quiet_flag != 1)
-			fprintf (stderr,
-				 "invalid entity:%s for keyword:%s \n",
-				 tag, argv[0]);
+		_printf_error("invalid entity:%s for keyword:%s \n",
+			      tag, argv[0]);
 	}
 
 }
@@ -2123,9 +2066,7 @@ static int _update_slurmctld_debug(char *val)
 
 	if ((val == NULL) || (*endptr != '\0') || (level > 9)) {
 		error_code = 1;
-		if (quiet_flag != 1)
-			fprintf(stderr, "invalid debug level: %s\n",
-				val);
+		_printf_error("invalid debug level: %s\n", val);
 	} else {
 		error_code = slurm_set_debug_level(level);
 	}
