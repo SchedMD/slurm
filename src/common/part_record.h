@@ -121,6 +121,7 @@ typedef struct part_record {
 	uint32_t max_cpu_cnt;	/* max # of cpus on a node in the partition */
 	uint32_t max_core_cnt;	/* max # of cores on a node in the partition */
 	uint16_t cr_type;	/* Custom CR values for partition (if supported by select plugin) */
+	int topology_idx; /* index of topology context */
 	char *topology_name;
 	uint64_t *tres_cnt;	/* array of total TRES in partition. NO_PACK */
 	char     *tres_fmt_str;	/* str of configured TRES in partition */
