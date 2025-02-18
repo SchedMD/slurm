@@ -60,6 +60,7 @@ typedef struct {
 	node_use_record_t *future_usage;
 	part_res_record_t *future_part;
 	list_t *future_license_list;
+	list_t *job_license_list;
 	bitstr_t *orig_map;
 	bool *qos_preemptor;
 	time_t start;
@@ -2312,7 +2313,9 @@ static int _build_cr_job_list(void *x, void *arg)
 						       args->orig_map,
 						       args->tmp_bitmap_pptr);
 		if (bit_overlap_any(efctv_bitmap_ptr,
-				    tmp_job_ptr->node_bitmap)) {
+				    tmp_job_ptr->node_bitmap) ||
+		    license_list_overlap(tmp_job_ptr->license_list,
+					 args->job_license_list)) {
 			job_res_rm_job(args->future_part, args->future_usage,
 				       args->future_license_list, tmp_job_ptr,
 				       JOB_RES_ACTION_NORMAL, efctv_bitmap_ptr);
@@ -2429,6 +2432,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		.future_usage = future_usage,
 		.future_part = future_part,
 		.future_license_list = future_license_list,
+		.job_license_list = job_ptr->license_list,
 		.orig_map = orig_map,
 		.qos_preemptor = &qos_preemptor,
 		.start = will_run_ptr ? will_run_ptr->start : 0,
@@ -2494,8 +2498,11 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 						efctv_bitmap_ptr,
 						tmp_job_ptr->
 						node_bitmap);
-			if (overlap == 0)  /* job has no usable nodes */
+			if (overlap == 0 && /* job has no usable nodes */
+			    !license_list_overlap(tmp_job_ptr->license_list,
+						  job_ptr->license_list)) {
 				continue;  /* skip it */
+			}
 			if (!end_time) {
 				time_t delta = 0;
 
