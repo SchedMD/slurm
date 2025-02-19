@@ -171,29 +171,15 @@ list_t *jobs = NULL;
 
 int main(int argc, char **argv)
 {
-	enum {
-		SACCT_LIST,
-		SACCT_HELP,
-		SACCT_USAGE
-	} op;
 	int rc = 0;
 
 	slurm_init(NULL);
 	sacct_init();
 	parse_command_line(argc, argv);
 
-	/* What are we doing? Requests for help take highest priority,
-	 * but then check for illogical switch combinations.
-	 */
-
-	if (params.opt_help)
-		op = SACCT_HELP;
-	else
-		op = SACCT_LIST;
-
-
-	switch (op) {
-	case SACCT_LIST:
+	if (params.opt_help) {
+		do_help();
+	} else {
 		if (!params.mimetype &&
 		    !(params.job_cond->flags & JOBCOND_FLAG_SCRIPT) &&
 		    !(params.job_cond->flags & JOBCOND_FLAG_ENV))
@@ -204,14 +190,6 @@ int main(int argc, char **argv)
 			do_list_completion();
 		else
 			do_list(argc, argv);
-		break;
-	case SACCT_HELP:
-		do_help();
-		break;
-	default:
-		fprintf(stderr, "sacct bug: should never get here\n");
-		sacct_fini();
-		exit(2);
 	}
 
 	sacct_fini();
