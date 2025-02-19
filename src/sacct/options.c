@@ -114,7 +114,6 @@ static void _help_fields_msg(void)
 		printf("%-19s", fields[i].name);
 	}
 	printf("\n");
-	return;
 }
 
 static void _help_job_state_msg(void)
@@ -127,7 +126,6 @@ static void _help_job_state_msg(void)
 		printf("%-19s", job_state_string(idx));
 	}
 	printf("\n");
-	return;
 }
 
 static void _help_job_reason_msg(void)
@@ -140,7 +138,6 @@ static void _help_job_reason_msg(void)
 		printf("%-39s", job_state_reason_string(idx));
 	}
 	printf("\n");
-	return;
 }
 
 /* returns number of objects added to list */
@@ -1228,7 +1225,6 @@ extern void parse_command_line(int argc, char **argv)
 			error(" %s", argv[i]);
 		exit(1);
 	}
-	return;
 }
 
 /* Return true if the specified job id is local to a cluster
