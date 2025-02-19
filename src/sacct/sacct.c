@@ -177,20 +177,16 @@ int main(int argc, char **argv)
 	sacct_init();
 	parse_command_line(argc, argv);
 
-	if (params.opt_help) {
-		do_help();
-	} else {
-		if (!params.mimetype &&
-		    !(params.job_cond->flags & JOBCOND_FLAG_SCRIPT) &&
-		    !(params.job_cond->flags & JOBCOND_FLAG_ENV))
-			print_fields_header(print_fields_list);
-		if (get_data() == SLURM_ERROR)
-			exit(1);
-		if (params.opt_completion)
-			do_list_completion();
-		else
-			do_list(argc, argv);
-	}
+	if (!params.mimetype &&
+	    !(params.job_cond->flags & JOBCOND_FLAG_SCRIPT) &&
+	    !(params.job_cond->flags & JOBCOND_FLAG_ENV))
+		print_fields_header(print_fields_list);
+	if (get_data() == SLURM_ERROR)
+		exit(1);
+	if (params.opt_completion)
+		do_list_completion();
+	else
+		do_list(argc, argv);
 
 	sacct_fini();
 
