@@ -1534,7 +1534,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 
 	if (!job_finished && (job_ptr->qos_id || job_ptr->details->qos_req) &&
 	    (job_ptr->state_reason != FAIL_ACCOUNT)) {
-		int qos_error = _get_qos_info(job_ptr->details->qos_req, 0,
+		int qos_error = _get_qos_info(job_ptr->details->qos_req,
+					      job_ptr->qos_id,
 					      &job_ptr->qos_list,
 					      &job_ptr->qos_ptr,
 					      job_ptr->resv_name,
@@ -10301,7 +10302,8 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		else
 			packstr(dump_job_ptr->partition, buffer);
 
-		if (IS_JOB_PENDING(dump_job_ptr))
+		if (IS_JOB_PENDING(dump_job_ptr) &&
+		    dump_job_ptr->details->qos_req)
 			packstr(dump_job_ptr->details->qos_req, buffer);
 		else {
 			if (!has_qos_lock)
