@@ -56,3 +56,20 @@ repos:
         - --write
         - --simplify
         - --list
+
+- repo: local
+  hooks:
+    - id: shellcheck
+      name: shellcheck
+      description: Test shell scripts with shellcheck
+      entry: shellcheck
+      language: python
+      types: [shell]
+      require_serial: true # shellcheck can detect sourcing this way
+      files: |
+        (?x)(
+          ^contribs/slurm_completion_help/|
+          ^testsuite/
+        )
+      args:
+        - --severity=warning
