@@ -2367,15 +2367,12 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 	int cnt = 0;
 	uint32_t node_flags;
 	node_record_t *node_ptr;
-	bitstr_t *node_bitmap, *orig_job_node_bitmap;
-	bool job_resized = false;
+	bitstr_t *node_bitmap, *orig_job_node_bitmap = NULL;
 
 	if (job_ptr->node_bitmap_cg) /* job completing */
 		node_bitmap = job_ptr->node_bitmap_cg;
 	else
 		node_bitmap = job_ptr->node_bitmap;
-
-	orig_job_node_bitmap = bit_copy(job_ptr->job_resrcs->node_bitmap);
 
 	job_ptr->node_cnt = bit_set_count(node_bitmap);
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
@@ -2431,12 +2428,26 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 			 */
 			save_accounting_enforce = accounting_enforce;
 			accounting_enforce &= (~ACCOUNTING_ENFORCE_LIMITS);
+			if (job_ptr->job_resrcs &&
+			    job_ptr->job_resrcs->node_bitmap) {
+				/*
+				 * node_bitmap is eventually changed within
+				 * extract_job_resources_node() so we need to
+				 * copy it before that.
+				 */
+				if (!orig_job_node_bitmap)
+					orig_job_node_bitmap = bit_copy(
+						job_ptr->job_resrcs->
+						node_bitmap);
+			} else {
+				error("We resized job %pJ, but the original node bitmap is unavailable. Unable to resize step node bitmaps for job's steps, this should never happen",
+				      job_ptr);
+			}
 			job_pre_resize_acctg(job_ptr);
 			srun_node_fail(job_ptr, node_ptr->name);
 			kill_step_on_node(job_ptr, node_ptr, true);
 			excise_node_from_job(job_ptr, node_ptr);
 			job_post_resize_acctg(job_ptr);
-			job_resized = true;
 			accounting_enforce = save_accounting_enforce;
 		} else if (IS_NODE_DOWN(node_ptr) && IS_JOB_RUNNING(job_ptr)) {
 			info("Killing %pJ on DOWN node %s",
@@ -2453,9 +2464,8 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 	}
 
 	/* If the job was resized then resize the bitmaps of the job's steps */
-	if (job_resized) {
+	if (orig_job_node_bitmap)
 		rebuild_step_bitmaps(job_ptr, orig_job_node_bitmap);
-	}
 	FREE_NULL_BITMAP(orig_job_node_bitmap);
 
 	if ((IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
