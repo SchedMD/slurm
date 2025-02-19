@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  sacct.c - job accounting reports for Slurm's jobacct/log plugin
  *****************************************************************************
- *
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *
