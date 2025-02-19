@@ -269,10 +269,14 @@ extern int topology_g_destroy_config(void)
 }
 extern int topology_g_eval_nodes(topology_eval_t *topo_eval)
 {
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-	topo_eval->tctx = &(tctx[0]);
+	int idx = topo_eval->job_ptr->part_ptr->topology_idx;
 
-	return (*(ops[tctx[0].idx].eval_nodes))(topo_eval);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+	xassert((idx >= 0) && (idx < tctx_num));
+
+	topo_eval->tctx = &(tctx[idx]);
+
+	return (*(ops[tctx[idx].idx].eval_nodes))(topo_eval);
 }
 
 extern int topology_g_whole_topo(bitstr_t *node_mask)
