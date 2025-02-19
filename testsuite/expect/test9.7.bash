@@ -58,31 +58,30 @@ exit_code=0
 inx=1
 log="test9.7.$$.output"
 touch $log
-while [ $inx -le $iterations ]
-do
+while [ $inx -le $iterations ]; do
 	echo "########## LOOP $inx ########## " >>$log 2>&1
-	$exec1                                  >>$log 2>&1
+	$exec1 >>$log 2>&1
 	rc=$?
 	if [ $rc -ne 0 ]; then
-		echo "exec1 rc=$rc" >> $log
+		echo "exec1 rc=$rc" >>$log
 		exit_code=$rc
 	fi
 	sleep $sleep_time
-	$exec2 --job-name=test9.7 -N1-$inx -n$inx -O -s -l -t1 hostname  >>$log 2>&1
+	$exec2 --job-name=test9.7 -N1-$inx -n$inx -O -s -l -t1 hostname >>$log 2>&1
 	rc=$?
 	if [ $rc -ne 0 ]; then
-		echo "exec2 rc=$rc" >> $log
+		echo "exec2 rc=$rc" >>$log
 		exit_code=$rc
 	fi
 	sleep $sleep_time
-	$exec3                                  >>$log 2>&1
+	$exec3 >>$log 2>&1
 	rc=$?
 	if [ $rc -ne 0 ]; then
-		echo "exec3 rc=$rc" >> $log
+		echo "exec3 rc=$rc" >>$log
 		exit_code=$rc
 	fi
 	sleep $sleep_time
-	inx=$((inx+1))
+	inx=$((inx + 1))
 done
 
 echo "########## EXIT_CODE $exit_code ########## " >>$log 2>&1
