@@ -744,7 +744,8 @@ static void _do_power_work(time_t now)
 				nodes);
 		if (serialize_g_data_to_string(&json, NULL, resume_json_data,
 					       MIME_TYPE_JSON,
-					       SER_FLAGS_COMPACT))
+					       SER_FLAGS_COMPACT) !=
+		    ESLURM_DATA_UNKNOWN_MIME_TYPE)
 			error("failed to generate json for resume job/node list");
 
 		if (nodes)
