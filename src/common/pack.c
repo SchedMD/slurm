@@ -327,25 +327,6 @@ void *xfer_buf_data(buf_t *my_buf)
 	return data_ptr;
 }
 
-extern int swap_buf_data(buf_t *x, buf_t *y)
-{
-	if (!x || !y)
-		return EINVAL;
-
-	xassert(x->magic == BUF_MAGIC);
-	xassert(y->magic == BUF_MAGIC);
-	xassert(xsize(x->head) >= 0);
-	xassert(xsize(y->head) >= 0);
-
-	SWAP(x->head, y->head);
-	SWAP(x->processed, y->processed);
-	SWAP(x->size, y->size);
-	SWAP(x->mmaped, y->mmaped);
-	SWAP(x->shadow, y->shadow);
-
-	return SLURM_SUCCESS;
-}
-
 /*
  * Given a time_t in host byte order, promote it to int64_t, convert to
  * network byte order, store in buffer and adjust buffer acc'd'ngly
