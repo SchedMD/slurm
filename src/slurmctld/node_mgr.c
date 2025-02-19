@@ -1449,6 +1449,8 @@ static char *_node_changeable_features(char *all_features)
 
 static void _undo_reboot_asap(node_record_t *node_ptr)
 {
+	if (IS_NODE_IDLE(node_ptr) || IS_NODE_ALLOCATED(node_ptr))
+		bit_set(avail_node_bitmap, node_ptr->index);
 	node_ptr->node_state &= (~NODE_STATE_DRAIN);
 	xfree(node_ptr->reason);
 }
