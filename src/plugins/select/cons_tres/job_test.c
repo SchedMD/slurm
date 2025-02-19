@@ -157,8 +157,9 @@ static void _block_by_topology(job_record_t *job_ptr,
 			       part_res_record_t *p_ptr,
 			       bitstr_t *node_bitmap)
 {
-	bitstr_t *tmp_bitmap = NULL;
 	static int enable_exclusive_topo = -1;
+	bitstr_t *tmp2_bitmap = NULL;
+	bool whole_topo;
 
 	if (enable_exclusive_topo == -1) {
 		enable_exclusive_topo = 0;
@@ -169,7 +170,12 @@ static void _block_by_topology(job_record_t *job_ptr,
 	if (!enable_exclusive_topo)
 		return;
 
+	whole_topo = (IS_JOB_WHOLE_TOPO(job_ptr) &&
+		      topology_g_whole_topo_enabled(job_ptr->part_ptr
+							    ->topology_idx));
+
 	for (; p_ptr; p_ptr = p_ptr->next) {
+		bitstr_t *tmp_bitmap = NULL;
 		if (!p_ptr->row)
 			continue;
 		for (int i = 0; i < p_ptr->num_rows; i++) {
@@ -179,8 +185,7 @@ static void _block_by_topology(job_record_t *job_ptr,
 
 				if (!job->node_bitmap)
 					continue;
-				if (IS_JOB_WHOLE_TOPO(job_ptr) ||
-				    (job->whole_node & WHOLE_TOPO) ||
+				if ((job->whole_node & WHOLE_TOPO) ||
 				    (p_ptr->part_ptr->flags &
 				     PART_FLAG_EXCLUSIVE_TOPO)) {
 					if (tmp_bitmap)
@@ -189,16 +194,33 @@ static void _block_by_topology(job_record_t *job_ptr,
 					else
 						tmp_bitmap = bit_copy(
 							job->node_bitmap);
+				} else if (whole_topo) {
+					if (tmp2_bitmap)
+						bit_or(tmp2_bitmap,
+						       job->node_bitmap);
+					else
+						tmp2_bitmap = bit_copy(
+							job->node_bitmap);
 				}
-
 			}
 		}
+		if (tmp_bitmap) {
+			topology_g_whole_topo(tmp_bitmap,
+					      p_ptr->part_ptr->topology_idx);
+			if (tmp2_bitmap)
+				bit_or(tmp2_bitmap, tmp_bitmap);
+			else
+				tmp2_bitmap = bit_copy(tmp_bitmap);
+		}
+		FREE_NULL_BITMAP(tmp_bitmap);
 	}
 
-	if (tmp_bitmap) {
-		topology_g_whole_topo(tmp_bitmap);
-		bit_and_not(node_bitmap, tmp_bitmap);
-		FREE_NULL_BITMAP(tmp_bitmap);
+	if (tmp2_bitmap) {
+		if (whole_topo)
+			topology_g_whole_topo(tmp2_bitmap,
+					      job_ptr->part_ptr->topology_idx);
+		bit_and_not(node_bitmap, tmp2_bitmap);
+		FREE_NULL_BITMAP(tmp2_bitmap);
 	}
 
 	return;
@@ -2268,7 +2290,8 @@ static bitstr_t *_select_topo_bitmap(job_record_t *job_ptr,
 	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
 		if (!(*efctv_bitmap)) {
 			*efctv_bitmap = bit_copy(node_bitmap);
-			topology_g_whole_topo(*efctv_bitmap);
+			topology_g_whole_topo(*efctv_bitmap,
+					      job_ptr->part_ptr->topology_idx);
 		}
 		return *efctv_bitmap;
 	} else

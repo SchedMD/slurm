@@ -281,11 +281,13 @@ extern int topology_g_eval_nodes(topology_eval_t *topo_eval)
 	return (*(ops[tctx[idx].idx].eval_nodes))(topo_eval);
 }
 
-extern int topology_g_whole_topo(bitstr_t *node_mask)
+extern int topology_g_whole_topo(bitstr_t *node_mask, int idx)
 {
 	xassert(plugin_inited);
+	xassert((idx >= 0) && (idx < tctx_num));
 
-	return (*(ops[tctx[0].idx].whole_topo))(node_mask, tctx[0].plugin_ctx);
+	return (*(ops[tctx[idx].idx].whole_topo))(node_mask,
+						  tctx[idx].plugin_ctx);
 }
 
 extern bool topology_g_whole_topo_enabled(int idx)

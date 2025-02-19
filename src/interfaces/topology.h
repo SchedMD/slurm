@@ -125,7 +125,7 @@ extern int topology_g_destroy_config(void);
  */
 extern int topology_g_eval_nodes(topology_eval_t *topo_eval);
 
-extern int topology_g_whole_topo(bitstr_t *node_mask);
+extern int topology_g_whole_topo(bitstr_t *node_mask, int idx);
 
 extern bool topology_g_whole_topo_enabled(int idx);
 

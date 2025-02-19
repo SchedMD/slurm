@@ -1581,7 +1581,8 @@ static int _bf_reserve_running(void *x, void *arg)
 	}
 
 	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
-		topology_g_whole_topo(tmp_bitmap);
+		topology_g_whole_topo(tmp_bitmap,
+				      job_ptr->part_ptr->topology_idx);
 	}
 	bit_not(tmp_bitmap);
 
@@ -3524,7 +3525,8 @@ skip_start:
 		reject_array_resv = NULL;
 
 		if (IS_JOB_WHOLE_TOPO(job_ptr)) {
-			topology_g_whole_topo(avail_bitmap);
+			topology_g_whole_topo(avail_bitmap,
+					      job_ptr->part_ptr->topology_idx);
 		}
 
 		if ((orig_start_time == 0) ||
@@ -3992,7 +3994,8 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 
 	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
 		use_bitmap_efctv = bit_copy(use_bitmap);
-		topology_g_whole_topo(use_bitmap_efctv);
+		topology_g_whole_topo(use_bitmap_efctv,
+				      job_ptr->part_ptr->topology_idx);
 		use_bitmap = use_bitmap_efctv;
 	}
 

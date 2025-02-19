@@ -1134,7 +1134,7 @@ static int _parse_hostlist_function(bitstr_t *node_bitmap, char *node_str)
 		node_ptr = _find_node_record(start_ptr, false, true);
 		if (node_ptr) {
 			bit_set(tmp_bitmap, node_ptr->index);
-			topology_g_whole_topo(tmp_bitmap);
+			topology_g_whole_topo(tmp_bitmap, 0);
 			bit_or(node_bitmap, tmp_bitmap);
 		} else {
 			rc = SLURM_ERROR;

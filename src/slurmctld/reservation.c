@@ -6847,7 +6847,9 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			if (IS_JOB_WHOLE_TOPO(job_ptr)) {
 				bitstr_t *efctv_bitmap =
 					bit_copy(resv_ptr->node_bitmap);
-				topology_g_whole_topo(efctv_bitmap);
+				topology_g_whole_topo(efctv_bitmap,
+						      job_ptr->part_ptr
+							      ->topology_idx);
 
 				log_flag(RESERVATION, "%s: %pJ will can not share topology with %s",
 					 __func__, job_ptr, resv_ptr->name);
