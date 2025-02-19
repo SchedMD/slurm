@@ -61,8 +61,6 @@
 #include "src/interfaces/jobcomp.h"
 #include "src/common/print_fields.h"
 
-#define ERROR 2
-
 #define BRIEF_FIELDS "jobid,state,exitcode"
 #define BRIEF_COMP_FIELDS "jobid,uid,state"
 #define DEFAULT_FIELDS "jobid,jobname,partition,account,alloccpus,state,exitcode"
