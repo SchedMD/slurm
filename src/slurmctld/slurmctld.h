@@ -2282,6 +2282,8 @@ extern void set_node_reason(node_record_t *node_ptr,
 			    char *message,
 			    time_t time);
 
+extern int set_part_topology_idx(void *x, void *arg);
+
 extern void reconfigure_slurm(slurm_msg_t *msg);
 
 extern void notify_parent_of_success(void);

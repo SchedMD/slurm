@@ -66,6 +66,7 @@
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/priority.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/topology.h"
 
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/groups.h"
@@ -2289,4 +2290,17 @@ extern char *part_list_to_xstr(list_t *list)
 	list_for_each(list, _foreach_part_name_to_xstr, &part_names);
 
 	return part_names.names;
+}
+
+extern int set_part_topology_idx(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+
+	if (!part_ptr->topology_name)
+		part_ptr->topology_idx = 0;
+	else if (topology_g_get(TOPO_DATA_TCTX_IDX, part_ptr->topology_name,
+				&(part_ptr->topology_idx)))
+		return -1;
+
+	return 0;
 }
