@@ -1554,9 +1554,11 @@ static int _schedule(bool full_queue)
 			job_ptr = find_job_record(job_ptr->array_job_id);
 			job_queue_rec->job_ptr = job_ptr;
 		}
-		if (!job_ptr || !IS_JOB_PENDING(job_ptr)) {
+		if (!job_ptr ||
+		    !IS_JOB_PENDING(job_ptr) || /* started in other part/qos */
+		    !job_ptr->priority) { /* held from fail in other part/qos */
 			xfree(job_queue_rec);
-			continue;	/* started in other partition/qos */
+			continue;
 		}
 
 		use_prefer = job_queue_rec->use_prefer;
