@@ -642,17 +642,17 @@ extern int sacctmgr_modify_account(int argc, char **argv)
 		notice_thread_init();
 		ret_list = slurmdb_accounts_modify(
 			db_conn, acct_cond, acct);
+		printf(" Modified accounts...\n");
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
 			list_itr_t *itr = list_iterator_create(ret_list);
-			printf(" Modified accounts...\n");
 			while((object = list_next(itr))) {
 				printf("  %s\n", object);
 			}
 			list_iterator_destroy(itr);
 			set = 1;
 		} else if (ret_list) {
-			printf(" Nothing modified\n");
+			printf("  Nothing modified\n");
 			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;

@@ -749,7 +749,7 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 	}
 
 	if (rec_set & SA_SET_CLUST) {
-		printf("Modified Cluster\n");
+		printf(" Modified Cluster\n");
 		if (cluster->fed.name && cluster->fed.name[0]) {
 			int rc;
 			/* Make sure federation exists. */
@@ -780,7 +780,7 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 					 * Irrelevant changes have been removed
 					 * and nothing to change now.
 					 */
-					printf(" Nothing to change\n");
+					printf("  Nothing to change\n");
 					rc = SLURM_ERROR;
 					goto assoc;
 				} else if (existing_fed &&
@@ -805,7 +805,7 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 			list_iterator_destroy(itr);
 			set = 1;
 		} else if (ret_list || errno == SLURM_NO_CHANGE_IN_DATA) {
-			printf(" Nothing modified\n");
+			printf("  Nothing modified\n");
 			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;
@@ -833,7 +833,7 @@ assoc:
 		ret_list = slurmdb_associations_modify(db_conn,
 						       assoc_cond, assoc);
 
-		printf("Modified cluster defaults for associations...\n");
+		printf(" Modified cluster defaults for associations...\n");
 		if (ret_list && list_count(ret_list)) {
 			printf("  Default Limits:\n");
 			sacctmgr_print_assoc_limits(assoc);
@@ -845,7 +845,7 @@ assoc:
 			list_iterator_destroy(itr);
 			set = 1;
 		} else if (ret_list || errno == SLURM_NO_CHANGE_IN_DATA) {
-			printf(" Nothing modified\n");
+			printf("  Nothing modified\n");
 			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;

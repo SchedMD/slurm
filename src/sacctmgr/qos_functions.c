@@ -1294,7 +1294,7 @@ extern int sacctmgr_modify_qos(int argc, char **argv)
 		list_iterator_destroy(itr);
 		set = 1;
 	} else if (ret_list) {
-		printf(" Nothing modified\n");
+		printf("  Nothing modified\n");
 		rc = SLURM_ERROR;
 	} else {
 		exit_code=1;
@@ -1393,7 +1393,7 @@ extern int sacctmgr_delete_qos(int argc, char **argv)
 			slurmdb_connection_commit(db_conn, 0);
 		}
 	} else if (ret_list) {
-		printf(" Nothing deleted\n");
+		printf("  Nothing deleted\n");
 		rc = SLURM_ERROR;
 	} else {
 		exit_code=1;

@@ -1363,7 +1363,7 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 				list_iterator_destroy(itr);
 			}
 		} else if (ret_list || errno == SLURM_NO_CHANGE_IN_DATA) {
-			printf(" Nothing modified\n");
+			printf("  Nothing modified\n");
 			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;
@@ -1414,7 +1414,7 @@ assoc_start:
 			list_iterator_destroy(itr);
 			set = 1;
 		} else if (ret_list || errno == SLURM_NO_CHANGE_IN_DATA) {
-			printf(" Nothing modified\n");
+			printf("  Nothing modified\n");
 			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;
