@@ -1807,11 +1807,28 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->topology_name) {
+		char *old_topo_name = part_ptr->topology_name;
+
 		info("%s: Setting Topology to %s for partition %s",
 		      __func__, part_desc->topology_name, part_desc->name);
-		xfree(part_ptr->topology_name);
-		part_ptr->topology_name = part_desc->topology_name;
-		part_desc->topology_name = NULL;
+
+		if (part_desc->topology_name[0] == '\0') {
+			part_ptr->topology_name = NULL;
+			part_ptr->topology_idx = 0;
+			xfree(old_topo_name);
+		} else {
+			part_ptr->topology_name = part_desc->topology_name;
+
+			if (set_part_topology_idx(part_ptr, NULL)) {
+				error("Failed to set part %s's topology to %s",
+				      part_ptr->name, part_ptr->topology_name);
+				part_ptr->topology_name = old_topo_name;
+				error_code = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+			} else {
+				part_desc->topology_name = NULL;
+				xfree(old_topo_name);
+			}
+		}
 	}
 
 fini:
