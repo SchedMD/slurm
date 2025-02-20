@@ -19351,3 +19351,12 @@ extern void sort_all_jobs_partition_lists()
 {
 	list_for_each(job_list, _sort_part_lists, NULL);
 }
+
+extern void job_mgr_handle_cred_failure(job_record_t *job_ptr)
+{
+	job_ptr->priority = 0; /* Hold job */
+	xfree(job_ptr->system_comment);
+	job_ptr->system_comment =
+		xstrdup("slurm_cred_create failure, holding job.");
+	job_complete(job_ptr->job_id, slurm_conf.slurm_user_id, true, false, 0);
+}
