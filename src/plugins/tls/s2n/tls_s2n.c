@@ -445,6 +445,7 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 	tls_conn_t *conn;
 	s2n_mode s2n_conn_mode;
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
+	uint32_t tls_init = 0;
 
 	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%s",
 		 plugin_type, tls_conn_args->input_fd, tls_conn_args->output_fd,
@@ -452,11 +453,27 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 
 	switch (tls_conn_args->mode) {
 	case TLS_CONN_SERVER:
+	{
 		s2n_conn_mode = S2N_SERVER;
+
+		safe_read(tls_conn_args->input_fd, &tls_init, sizeof(tls_init));
+		tls_init = ntohl(tls_init);
+		if (tls_init != SLURM_TLS_INIT) {
+			error("Could not create s2n server connection, client sent bytes that were not SLURM_TLS_INIT: 0x%08x",
+			      tls_init);
+			return NULL;
+		}
 		break;
+	}
 	case TLS_CONN_CLIENT:
+	{
 		s2n_conn_mode = S2N_CLIENT;
+
+		tls_init = htonl(SLURM_TLS_INIT);
+		safe_write(tls_conn_args->output_fd, &tls_init,
+			   sizeof(tls_init));
 		break;
+	}
 	default:
 		error("Invalid tls connection mode");
 		return NULL;
@@ -543,6 +560,10 @@ fail:
 	}
 
 	return conn;
+
+rwfail:
+	error("failed to read/write SLURM_TLS_INIT");
+	return NULL;
 }
 
 extern void tls_p_destroy_conn(tls_conn_t *conn)
