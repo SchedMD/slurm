@@ -5102,90 +5102,89 @@ static char *_load_cluster_usage(uint16_t rpc_version, buf_t *buffer,
 
 /* Mark records for the archive */
 static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
-                               time_t period_end, char *cluster_name,
-			       char *col_name, char *sql_table)
+			    time_t period_end, char *cluster_name,
+			    char *col_name, char *sql_table)
 {
-        char *cols = NULL, *query = NULL,
-             *parent_table = NULL, *hash_col = NULL;
+	char *cols = NULL, *query = NULL,
+		*parent_table = NULL, *hash_col = NULL;
 
-        cols = _get_archive_columns(type);
+	cols = _get_archive_columns(type);
 
-        switch (type) {
-        case PURGE_JOB_ENV:
-                parent_table = job_table;
-                hash_col = "env_hash_inx";
-                break;
-        case PURGE_JOB_SCRIPT:
-                parent_table = job_table;
-                hash_col = "script_hash_inx";
-                break;
-        default:
-                break;
-        }
+	switch (type) {
+	case PURGE_JOB_ENV:
+		parent_table = job_table;
+		hash_col = "env_hash_inx";
+		break;
+	case PURGE_JOB_SCRIPT:
+		parent_table = job_table;
+		hash_col = "script_hash_inx";
+		break;
+	default:
+		break;
+	}
 
-        switch (type) {
-        case PURGE_TXN:
-                query = xstrdup_printf("update \"%s\" set deleted = 1 where "
+	switch (type) {
+	case PURGE_TXN:
+		query = xstrdup_printf("update \"%s\" set deleted = 1 where "
 				       "%s <= %ld && cluster='%s' "
 				       "order by %s asc LIMIT %d",
 				       sql_table,col_name, period_end,
 				       cluster_name, col_name,
 				       MAX_PURGE_LIMIT);
 
-                break;
+		break;
 
-        case PURGE_USAGE:
-        case PURGE_CLUSTER_USAGE:
-                query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
+	case PURGE_USAGE:
+	case PURGE_CLUSTER_USAGE:
+		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
 				       "%s <= %ld order by %s asc LIMIT %d",
 				       cluster_name, sql_table, col_name,
 				       period_end, col_name, MAX_PURGE_LIMIT);
-                break;
+		break;
 
-        case PURGE_JOB_ENV:
-        case PURGE_JOB_SCRIPT:
-                query = xstrdup_printf("update \"%s_%s\" set deleted = 1 "
-                                       "where hash_inx in "
-                                       "(select distinct hash_inx from "
+	case PURGE_JOB_ENV:
+	case PURGE_JOB_SCRIPT:
+		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 "
+				       "where hash_inx in "
+				       "(select distinct hash_inx from "
 				       "\"%s_%s\" inner join (select %s from "
 				       "\"%s_%s\" where %s <= %ld && "
 				       "time_end != 0 "
-                                       "order by %s asc LIMIT %d) as j "
-                                       "on hash_inx = j.%s "
-                                       "order by hash_inx asc) "
+				       "order by %s asc LIMIT %d) as j "
+				       "on hash_inx = j.%s "
+				       "order by hash_inx asc) "
 				       "order by hash_inx",
-                                       cluster_name, sql_table,
-                                       cluster_name, sql_table, hash_col,
-                                       cluster_name, parent_table, col_name,
-                                       period_end, col_name, MAX_PURGE_LIMIT,
-                                       hash_col);
-                break;
-        default:
-                query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
-                                       "%s <= %ld && time_end != 0 "
-                                       "order by %s asc LIMIT %d",
-				       cluster_name,sql_table,col_name,
+				       cluster_name, sql_table,
+				       cluster_name, sql_table, hash_col,
+				       cluster_name, parent_table, col_name,
+				       period_end, col_name, MAX_PURGE_LIMIT,
+				       hash_col);
+		break;
+	default:
+		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
+				       "%s <= %ld && time_end != 0 "
+				       "order by %s asc LIMIT %d",
+				       cluster_name, sql_table, col_name,
 				       period_end, col_name, MAX_PURGE_LIMIT);
 
-                break;
-        }
+		break;
+	}
 
-        xfree(cols);
+	xfree(cols);
 
-        DB_DEBUG(DB_ARCHIVE, mysql_conn->conn, "update\n%s", query);
-        if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS) {
-                xfree(query);
-                error("Couldn't mark records for archive");
-                return SLURM_ERROR;
-        }
-        xfree(query);
-        if (mysql_db_commit(mysql_conn)) {
-                error("Couldn't commit cluster (%s) mark", cluster_name);
-                return SLURM_ERROR;
-        }
-        return SLURM_SUCCESS;
+	DB_DEBUG(DB_ARCHIVE, mysql_conn->conn, "update\n%s", query);
+	if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS) {
+		xfree(query);
+		error("Couldn't mark records for archive");
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	if (mysql_db_commit(mysql_conn)) {
+		error("Couldn't commit cluster (%s) mark", cluster_name);
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
 }
-
 
 /* returns count of events archived or SLURM_ERROR on error */
 static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
@@ -5251,10 +5250,10 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 
 		break;
 	default:
-                query = xstrdup_printf("select %s from \"%s_%s\" where "
-                                       "deleted = 1 LIMIT %d",
-                                       cols, cluster_name, sql_table,
-                                       MAX_PURGE_LIMIT);
+		query = xstrdup_printf("select %s from \"%s_%s\" where "
+				       "deleted = 1 LIMIT %d",
+				       cols, cluster_name, sql_table,
+				       MAX_PURGE_LIMIT);
 
 		break;
 	}
@@ -5812,7 +5811,7 @@ static int _process_archive_data(char **data_in, uint32_t data_size,
 
 	safe_unpack16(&ver, buffer);
 	DB_DEBUG(DB_ARCHIVE, mysql_conn->conn,
-	         "Version in archive header is %u", ver);
+		 "Version in archive header is %u", ver);
 	/*
 	 * Don't verify the lower limit as we should be keeping all
 	 * older versions around here just to support super old
@@ -6000,7 +5999,7 @@ extern int as_mysql_jobacct_process_archive_load(
 		      slurm_strerror(error_code));
 	else
 		DB_DEBUG(DB_ARCHIVE, mysql_conn->conn,
-		         "%s: archive loaded successfully.", __func__);
+			 "%s: archive loaded successfully.", __func__);
 
 	return error_code;
 }
