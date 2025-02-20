@@ -630,7 +630,6 @@ extern int sacctmgr_modify_account(int argc, char **argv)
 		return rc;
 	}
 
-	notice_thread_init();
 	if (rec_set & SA_SET_USER) { // process the account changes
 		if (cond_set == SA_SET_ASSOC) {
 			exit_code=1;
@@ -640,19 +639,20 @@ extern int sacctmgr_modify_account(int argc, char **argv)
 			rc = SLURM_ERROR;
 			goto assoc_start;
 		}
+		notice_thread_init();
 		ret_list = slurmdb_accounts_modify(
 			db_conn, acct_cond, acct);
+		printf(" Modified accounts...\n");
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
 			list_itr_t *itr = list_iterator_create(ret_list);
-			printf(" Modified accounts...\n");
 			while((object = list_next(itr))) {
 				printf("  %s\n", object);
 			}
 			list_iterator_destroy(itr);
 			set = 1;
 		} else if (ret_list) {
-			printf(" Nothing modified\n");
+			printf("  Nothing modified\n");
 			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;
@@ -663,6 +663,16 @@ extern int sacctmgr_modify_account(int argc, char **argv)
 		}
 
 		FREE_NULL_LIST(ret_list);
+		notice_thread_fini();
+		if (set) {
+			if (commit_check("Would you like to commit changes?"))
+				slurmdb_connection_commit(db_conn, 1);
+			else {
+				printf(" Changes Discarded\n");
+				slurmdb_connection_commit(db_conn, 0);
+			}
+			set = 0;
+		}
 	}
 
 assoc_start:
@@ -677,20 +687,21 @@ assoc_start:
 			goto assoc_end;
 		}
 
+		notice_thread_init();
 		ret_list = slurmdb_associations_modify(
 			db_conn, acct_cond->assoc_cond, assoc);
 
+		printf(" Modified account associations...\n");
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
 			list_itr_t *itr = list_iterator_create(ret_list);
-			printf(" Modified account associations...\n");
 			while ((object = list_next(itr))) {
 				printf("  %s\n", object);
 			}
 			list_iterator_destroy(itr);
 			set = 1;
-		} else if (ret_list) {
-			printf(" Nothing modified\n");
+		} else if (ret_list || (errno == SLURM_NO_CHANGE_IN_DATA)) {
+			printf("  Nothing modified\n");
 			rc = SLURM_ERROR;
 		} else if ((errno == ESLURM_INVALID_PARENT_ACCOUNT) &&
 			   assoc->parent_acct) {
@@ -713,19 +724,21 @@ assoc_start:
 		}
 
 		FREE_NULL_LIST(ret_list);
+
+		notice_thread_fini();
+		if (set) {
+			if (commit_check("Would you like to commit changes?"))
+				slurmdb_connection_commit(db_conn, 1);
+			else {
+				printf(" Changes Discarded\n");
+				slurmdb_connection_commit(db_conn, 0);
+			}
+			set = 0;
+		}
 	}
 
 assoc_end:
 
-	notice_thread_fini();
-	if (set) {
-		if (commit_check("Would you like to commit changes?"))
-			slurmdb_connection_commit(db_conn, 1);
-		else {
-			printf(" Changes Discarded\n");
-			slurmdb_connection_commit(db_conn, 0);
-		}
-	}
 	slurmdb_destroy_account_cond(acct_cond);
 	slurmdb_destroy_account_rec(acct);
 	slurmdb_destroy_assoc_rec(assoc);

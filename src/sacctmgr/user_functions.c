@@ -1306,7 +1306,6 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 
 	_check_and_set_cluster_list(user_cond->assoc_cond->cluster_list);
 
-	notice_thread_init();
 	if (rec_set & SA_SET_USER) { // process the account changes
 		if (cond_set == SA_SET_ASSOC) {
 			rc = SLURM_ERROR;
@@ -1316,7 +1315,7 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 				"'where' options.\n");
 			goto assoc_start;
 		}
-
+		notice_thread_init();
 		if (user_cond->assoc_cond->acct_list
 		    && list_count(user_cond->assoc_cond->acct_list)) {
 			notice_thread_fini();
@@ -1335,6 +1334,7 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 
 		ret_list = slurmdb_users_modify(
 			db_conn, user_cond, user);
+		printf(" Modified users...\n");
 		if (ret_list && list_count(ret_list)) {
 			set = 1;
 			if (user->default_acct && user->default_acct[0]
@@ -1357,14 +1357,13 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 				char *object;
 				list_itr_t *itr =
 					list_iterator_create(ret_list);
-				printf(" Modified users...\n");
 				while ((object = list_next(itr))) {
 					printf("  %s\n", object);
 				}
 				list_iterator_destroy(itr);
 			}
-		} else if (ret_list) {
-			printf(" Nothing modified\n");
+		} else if (ret_list || errno == SLURM_NO_CHANGE_IN_DATA) {
+			printf("  Nothing modified\n");
 			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;
@@ -1376,8 +1375,17 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 					"at a time.\n");
 			rc = SLURM_ERROR;
 		}
-
 		FREE_NULL_LIST(ret_list);
+		notice_thread_fini();
+		if (set) {
+			if (commit_check("Would you like to commit changes?"))
+				slurmdb_connection_commit(db_conn, 1);
+			else {
+				printf(" Changes Discarded\n");
+				slurmdb_connection_commit(db_conn, 0);
+			}
+			set = 0;
+		}
 	}
 
 assoc_start:
@@ -1392,20 +1400,21 @@ assoc_start:
 			goto assoc_end;
 		}
 
+		notice_thread_init();
 		ret_list = slurmdb_associations_modify(
 			db_conn, user_cond->assoc_cond, assoc);
 
+		printf(" Modified user associations...\n");
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
 			list_itr_t *itr = list_iterator_create(ret_list);
-			printf(" Modified user associations...\n");
 			while((object = list_next(itr))) {
 				printf("  %s\n", object);
 			}
 			list_iterator_destroy(itr);
 			set = 1;
-		} else if (ret_list) {
-			printf(" Nothing modified\n");
+		} else if (ret_list || errno == SLURM_NO_CHANGE_IN_DATA) {
+			printf("  Nothing modified\n");
 			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;
@@ -1415,18 +1424,17 @@ assoc_start:
 		}
 
 		FREE_NULL_LIST(ret_list);
-	}
-assoc_end:
-
-	notice_thread_fini();
-	if (set) {
-		if (commit_check("Would you like to commit changes?"))
-			slurmdb_connection_commit(db_conn, 1);
-		else {
-			printf(" Changes Discarded\n");
-			slurmdb_connection_commit(db_conn, 0);
+		notice_thread_fini();
+		if (set) {
+			if (commit_check("Would you like to commit changes?"))
+				slurmdb_connection_commit(db_conn, 1);
+			else {
+				printf(" Changes Discarded\n");
+				slurmdb_connection_commit(db_conn, 0);
+			}
 		}
 	}
+assoc_end:
 
 	slurmdb_destroy_user_cond(user_cond);
 	slurmdb_destroy_user_rec(user);
