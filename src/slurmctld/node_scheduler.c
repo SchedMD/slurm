@@ -3393,12 +3393,10 @@ extern void launch_prolog(job_record_t *job_ptr)
 	xfree(cred_arg.job_mem_alloc_rep_count);
 
 	if (!prolog_msg_ptr->cred) {
-		error("%s: slurm_cred_create failure for %pJ",
+		error("%s: slurm_cred_create failure for %pJ, holding job",
 		      __func__, job_ptr);
 		slurm_free_prolog_launch_msg(prolog_msg_ptr);
-		job_ptr->details->begin_time = time(NULL) + 120;
-		job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
-		             true, false, 0);
+		job_mgr_handle_cred_failure(job_ptr);
 		return;
 	}
 

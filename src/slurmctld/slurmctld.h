@@ -1972,6 +1972,11 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag);
 extern void sort_all_jobs_partition_lists();
 
 /*
+ * Common code to handle a job when a cred can't be created.
+ */
+extern void job_mgr_handle_cred_failure(job_record_t *job_ptr);
+
+/*
  * validate_alloc_node - validate that the allocating node
  * is allowed to use this partition
  * IN part_ptr - pointer to a partition

@@ -1554,9 +1554,11 @@ static int _schedule(bool full_queue)
 			job_ptr = find_job_record(job_ptr->array_job_id);
 			job_queue_rec->job_ptr = job_ptr;
 		}
-		if (!job_ptr || !IS_JOB_PENDING(job_ptr)) {
+		if (!job_ptr ||
+		    !IS_JOB_PENDING(job_ptr) || /* started in other part/qos */
+		    !job_ptr->priority) { /* held from fail in other part/qos */
 			xfree(job_queue_rec);
-			continue;	/* started in other partition/qos */
+			continue;
 		}
 
 		use_prefer = job_queue_rec->use_prefer;
@@ -2419,17 +2421,10 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr->profile       = job_ptr->profile;
 
 	if (make_batch_job_cred(launch_msg_ptr, job_ptr, protocol_version)) {
-		/* FIXME: This is a kludge, but this event indicates a serious
-		 * problem with Munge or OpenSSH and should never happen. We
-		 * are too deep into the job launch to gracefully clean up from
-		 * from the launch, so requeue if possible. */
-		error("Can not create job credential, attempting to requeue batch %pJ",
-		      job_ptr);
+		error("%s: slurm_cred_create failure for %pJ, holding job",
+		      __func__, job_ptr);
 		slurm_free_job_launch_msg(launch_msg_ptr);
-		job_ptr->batch_flag = 1;	/* Allow repeated requeue */
-		job_ptr->details->begin_time = time(NULL) + 120;
-		job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
-		             true, false, 0);
+		job_mgr_handle_cred_failure(job_ptr);
 		return NULL;
 	}
 

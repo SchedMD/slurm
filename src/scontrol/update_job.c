@@ -619,18 +619,9 @@ extern int scontrol_update_job(int argc, char **argv)
 			job_msg.job_id_str = val;
 		} else if (!xstrncasecmp(tag, "AdminComment", MAX(taglen, 6))) {
 			if (add_info) {
-				if (add_info[0] == '-') {
-					error("Invalid syntax, AdminComment can not be subtracted from.");
-					exit_code = 1;
-					return 0;
-				}
-				job_msg.admin_comment = add_info;
-				/*
-				 * Mark as unset so we know we handled this
-				 * correctly as there is a check later to make
-				 * sure we know we got a +-.
-				 */
-				add_info = NULL;
+				error("Invalid syntax, AdminComment can not be added/subtracted from.");
+				exit_code = 1;
+				return 0;
 			} else
 				job_msg.admin_comment = val;
 			update_cnt++;
