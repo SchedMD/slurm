@@ -474,6 +474,18 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 			    (avail_res_array[i]->avail_res_cnt <= count)) {
 				if (req_node_map && bit_test(req_node_map, i))
 					continue;
+				/*
+				 * We adjust avail_res_cnt to the minimum needed
+				 * for the evaluated nodes on every
+				 * eval_nodes().
+				 * So, we need to check again if some more nodes
+				 * can be removed in the updated nodeset before
+				 * increasing the count, or we could end up
+				 * removing more (possibly valid) nodes than
+				 * needed.
+				 */
+				if (nochange)
+					count--;
 				nochange = 0;
 				bit_clear(topo_eval->node_map, i);
 				bit_clear(orig_node_map, i);
