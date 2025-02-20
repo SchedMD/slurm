@@ -770,8 +770,12 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 					    cluster->fed.name,
 					    &existing_fed))
 					goto end_it;
-				else if (!list_count(
-						 cluster_cond.cluster_list)) {
+
+				/*
+				 * _verify_fed_clusters() can remove from
+				 * cluster_list.
+				 */
+				if (!list_count(cluster_cond.cluster_list)) {
 					/*
 					 * Irrelevant changes have been removed
 					 * and nothing to change now.
@@ -779,12 +783,10 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 					printf(" Nothing to change\n");
 					rc = SLURM_ERROR;
 					goto assoc;
-				} else if (existing_fed) {
-					char *warning =	"\nAre you sure you want to continue?";
-					if (!commit_check(warning)) {
-						rc = SLURM_ERROR;
-						goto end_it;
-					}
+				} else if (existing_fed &&
+					   !commit_check("\nAre you sure you want to continue?")) {
+					rc = SLURM_ERROR;
+					goto end_it;
 				}
 			}
 		}
