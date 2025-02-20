@@ -1075,13 +1075,13 @@ static int _process_command (int argc, char **argv)
 	if (argc < 1) {
 		exit_code = 1;
 		if (quiet_flag == -1)
-			fprintf(stderr, "no input");
+			fprintf(stderr, "no input\n");
 		return 0;
 	} else if (tag)
 		tag_len = strlen(tag);
 	else {
 		if (quiet_flag == -1)
-			fprintf(stderr, "input problem");
+			fprintf(stderr, "input problem\n");
 		return 0;
 	}
 
