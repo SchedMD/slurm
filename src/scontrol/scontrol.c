@@ -738,8 +738,7 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 				char *tmp_ptr = strchr(argv[i], '=');
 				if (!tmp_ptr || !*(tmp_ptr + 1)) {
 					exit_code = 1;
-					if (!quiet_flag)
-						fprintf(stderr, "missing reason\n");
+					_printf_error("missing reason\n");
 					xfree(reason);
 					return;
 				}
@@ -754,8 +753,7 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 				char *tmp_ptr = strchr(argv[i], '=');
 				if (!tmp_ptr || !*(tmp_ptr + 1)) {
 					exit_code = 1;
-					if (!quiet_flag)
-						fprintf(stderr, "missing state\n");
+					_printf_error("missing state\n");
 					xfree(reason);
 					return;
 				}
@@ -772,11 +770,8 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 					next_state = NODE_RESUME;
 				else {
 					exit_code = 1;
-					if (!quiet_flag) {
-						fprintf(stderr, "Invalid state: %s\n",
-							state_str);
-						fprintf(stderr, "Valid states: DOWN, RESUME\n");
-					}
+					_printf_error("Invalid state: %s\n Valid states: DOWN, RESUME\n",
+						      state_str);
 					xfree(reason);
 					xfree(state_str);
 					return;
