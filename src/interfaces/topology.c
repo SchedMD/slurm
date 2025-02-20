@@ -522,8 +522,15 @@ extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo)
 
 extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask)
 {
+	uint32_t fragmentation = 0;
 	xassert(plugin_inited);
 
-	return (*(ops[tctx[0].idx].get_fragmentation))(node_mask,
-						       tctx[0].plugin_ctx);
+	for (int i = 0; i < tctx_num; i++) {
+		fragmentation +=
+			(*(ops[tctx[i].idx]
+				   .get_fragmentation))(node_mask,
+							tctx[i].plugin_ctx);
+	}
+
+	return fragmentation;
 }
