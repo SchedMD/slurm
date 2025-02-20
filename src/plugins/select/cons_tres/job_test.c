@@ -2769,11 +2769,9 @@ top:	orig_node_map = bit_copy(save_node_map);
 
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos) {
 		/* Determine QOS preempt mode of first job */
-		job_iterator = list_iterator_create(preemptee_candidates);
-		if ((tmp_job_ptr = list_next(job_iterator))) {
+		if ((tmp_job_ptr = list_peek(preemptee_candidates))) {
 			mode = slurm_job_preempt_mode(tmp_job_ptr);
 		}
-		list_iterator_destroy(job_iterator);
 	}
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos &&
 	    (mode == PREEMPT_MODE_SUSPEND) &&
