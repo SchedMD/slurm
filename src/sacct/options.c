@@ -114,7 +114,6 @@ static void _help_fields_msg(void)
 		printf("%-19s", fields[i].name);
 	}
 	printf("\n");
-	return;
 }
 
 static void _help_job_state_msg(void)
@@ -127,7 +126,6 @@ static void _help_job_state_msg(void)
 		printf("%-19s", job_state_string(idx));
 	}
 	printf("\n");
-	return;
 }
 
 static void _help_job_reason_msg(void)
@@ -140,7 +138,6 @@ static void _help_job_reason_msg(void)
 		printf("%-39s", job_state_reason_string(idx));
 	}
 	printf("\n");
-	return;
 }
 
 /* returns number of objects added to list */
@@ -582,7 +579,8 @@ extern void parse_command_line(int argc, char **argv)
 			job_cond->flags |= JOBCOND_FLAG_DUP;
 			break;
 		case 'e':
-			params.opt_help = 2;
+			_help_fields_msg();
+			exit(0);
 			break;
 		case 'E':
 			job_cond->usage_end = parse_time(optarg, 1);
@@ -620,7 +618,8 @@ extern void parse_command_line(int argc, char **argv)
 				exit(1);
 			break;
 		case 'h':
-			params.opt_help = 1;
+			_help_msg();
+			exit(0);
 			break;
 		case 'i':
 			set = get_resource_arg_range(
@@ -754,7 +753,8 @@ extern void parse_command_line(int argc, char **argv)
 			job_cond->flags &= ~JOBCOND_FLAG_NO_TRUNC;
 			break;
 		case 'U':
-			params.opt_help = 3;
+			_usage();
+			exit(0);
 			break;
 		case 'u':
 			if (!xstrcmp(optarg, "-1")) {
@@ -824,10 +824,12 @@ extern void parse_command_line(int argc, char **argv)
 			exit(0);
 			break;
 		case OPT_LONG_HELPSTATE:
-			params.opt_help = 4;
+			_help_job_state_msg();
+			exit(0);
 			break;
 		case OPT_LONG_HELPREASON:
-			params.opt_help = 5;
+			_help_job_reason_msg();
+			exit(0);
 			break;
 		case ':':
 		case '?':	/* getopt() has explained it */
@@ -915,13 +917,11 @@ extern void parse_command_line(int argc, char **argv)
 	      "\topt_completion=%s\n"
 	      "\topt_dup=%s\n"
 	      "\topt_field_list=%s\n"
-	      "\topt_help=%d\n"
 	      "\topt_no_steps=%s\n"
 	      "\topt_whole_hetjob=%s",
 	      params.opt_completion ? "yes" : "no",
 	      (job_cond->flags & JOBCOND_FLAG_DUP) ? "yes" : "no",
 	      params.opt_field_list,
-	      params.opt_help,
 	      (job_cond->flags & JOBCOND_FLAG_NO_STEP) ? "yes" : "no",
 	      (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB) ? "yes" :
 	      (job_cond->flags & JOBCOND_FLAG_NO_WHOLE_HETJOB ? "no" : 0));
@@ -1224,31 +1224,6 @@ extern void parse_command_line(int argc, char **argv)
 		for (i=optind; i<argc; i++)
 			error(" %s", argv[i]);
 		exit(1);
-	}
-	return;
-}
-
-extern void do_help(void)
-{
-	switch (params.opt_help) {
-	case 1:
-		_help_msg();
-		break;
-	case 2:
-		_help_fields_msg();
-		break;
-	case 3:
-		_usage();
-		break;
-	case 4:
-		_help_job_state_msg();
-		break;
-	case 5:
-		_help_job_reason_msg();
-		break;
-	default:
-		debug2("sacct bug: params.opt_help=%d",
-			params.opt_help);
 	}
 }
 

@@ -61,8 +61,6 @@
 #include "src/interfaces/jobcomp.h"
 #include "src/common/print_fields.h"
 
-#define ERROR 2
-
 #define BRIEF_FIELDS "jobid,state,exitcode"
 #define BRIEF_COMP_FIELDS "jobid,uid,state"
 #define DEFAULT_FIELDS "jobid,jobname,partition,account,alloccpus,state,exitcode"
@@ -217,7 +215,6 @@ typedef struct {
 	bool opt_federation;	/* --federation */
 	char *opt_field_list;	/* --fields= */
 	gid_t opt_gid;		/* running persons gid */
-	int opt_help;		/* --help */
 	bool opt_local;		/* --local */
 	int opt_noheader;	/* can only be cleared */
 	uid_t opt_uid;		/* running persons uid */
@@ -246,7 +243,6 @@ void print_fields(type_t type, void *object);
 /* options.c */
 int  get_data(void);
 void parse_command_line(int argc, char **argv);
-void do_help(void);
 void do_list(int argc, char **argv);
 void do_list_completion(void);
 void sacct_init(void);

@@ -2,15 +2,7 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 import atf
-import pytest
 import re
-
-
-# Setup
-@pytest.fixture(scope="module", autouse=True)
-def setup():
-    atf.require_accounting()
-    atf.require_slurm_running()
 
 
 def test_help():
