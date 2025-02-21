@@ -271,7 +271,6 @@ static struct s2n_config *_create_config(void)
 
 static int _load_ca_cert(void)
 {
-	char *ca_dir;
 	char *cert_file;
 
 	cert_file = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=");
@@ -288,10 +287,11 @@ static int _load_ca_cert(void)
 	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), true);
 	if (s2n_config_set_verification_ca_location(config, cert_file, NULL) < 0) {
 		on_s2n_error(NULL, s2n_config_set_verification_ca_location);
-		xfree(ca_dir);
+		xfree(cert_file);
 		return SLURM_ERROR;
 	}
 
+	xfree(cert_file);
 	return SLURM_SUCCESS;
 }
 
