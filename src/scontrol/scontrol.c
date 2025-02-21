@@ -1492,6 +1492,7 @@ static int _process_command (int argc, char **argv)
 			char *endptr;
 			factor = (uint16_t)strtoul(argv[1], &endptr, 10);
 			if (*endptr != '\0' || factor == 0) {
+				exit_code = 1;
 				if (quiet_flag != 1)
 					fprintf(stderr,
 						"invalid dampening factor: %s\n",
