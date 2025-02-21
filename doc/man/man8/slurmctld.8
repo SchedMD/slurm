@@ -1,4 +1,4 @@
-.TH slurmctld "8" "Slurm Daemon" "December 2024" "Slurm Daemon"
+.TH slurmctld "8" "Slurm Daemon" "January 2025" "Slurm Daemon"
 
 .SH "NAME"
 slurmctld \- The central management daemon of Slurm.
@@ -132,7 +132,7 @@ write permission for SlurmUser, no core file will be produced.
 .SH "SIGNALS"
 
 .TP
-\fBSIGTERM SIGINT\fR
+\fBSIGTERM SIGINT SIGQUIT\fR
 \fBslurmctld\fR will shutdown cleanly, saving its current state to the state
 save directory.
 .IP
@@ -149,13 +149,18 @@ Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
 .IP
 
 .TP
+\fBSIGTSTP\fR
+Stop the process from a terminal. This also stops slurmscriptd.
+.IP
+
+.TP
 \fBSIGUSR2\fR
 Reread the log level from the configs, and then reopen the log file. This
 should be used when setting up \fBlogrotate\fR(8).
 .IP
 
 .TP
-\fBSIGCHLD SIGUSR1 SIGTSTP SIGXCPU SIGQUIT SIGPIPE SIGALRM\fR
+\fBSIGCHLD SIGUSR1 SIGXCPU SIGPIPE SIGALRM\fR
 These signals are explicitly ignored.
 .IP
 

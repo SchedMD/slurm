@@ -364,11 +364,6 @@ static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
 	slurmctld_shutdown();
 }
 
-static void _on_sigtstp(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	debug5("Caught SIGTSTP. Ignoring");
-}
-
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	bool standby_mode;
@@ -417,11 +412,6 @@ static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 	debug5("Caught SIGPIPE. Ignoring.");
 }
 
-static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	debug5("Caught SIGTTIN. Ignoring.");
-}
-
 static void _on_sigxcpu(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	debug5("Caught SIGXCPU. Ignoring.");
@@ -434,6 +424,11 @@ static void _on_sigabrt(conmgr_callback_args_t conmgr_args, void *arg)
 	dump_core = true;
 }
 
+static void _on_sigalrm(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	debug5("Caught SIGALRM. Ignoring.");
+}
+
 static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
 				      void *arg)
 {
@@ -441,14 +436,13 @@ static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
 	conmgr_add_work_signal(SIGCHLD, _on_sigchld, NULL);
 	conmgr_add_work_signal(SIGQUIT, _on_sigquit, NULL);
-	conmgr_add_work_signal(SIGTSTP, _on_sigtstp, NULL);
 	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
 	conmgr_add_work_signal(SIGUSR1, _on_sigusr1, NULL);
 	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
-	conmgr_add_work_signal(SIGTTIN, _on_sigttin, NULL);
 	conmgr_add_work_signal(SIGXCPU, _on_sigxcpu, NULL);
 	conmgr_add_work_signal(SIGABRT, _on_sigabrt, NULL);
+	conmgr_add_work_signal(SIGALRM, _on_sigalrm, NULL);
 }
 
 static void _reopen_stdio(void)
