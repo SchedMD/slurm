@@ -63,11 +63,15 @@ typedef struct {
 
 #define SWITCH_NO_PARENT 0xffff
 
-extern switch_record_t *switch_record_table;  /* ptr to switch records */
-extern int switch_record_cnt;		/* size of switch_record_table */
-extern int switch_levels;               /* number of switch levels     */
+typedef struct {
+	switch_record_t *switch_table; /* ptr to switch records */
+	int switch_count; /* size of switch_table */
+	int switch_levels; /* number of switch levels     */
+} tree_context_t;
 
-/* Free all memory associated with switch_record_table structure */
+extern tree_context_t *ctx;
+
+/* Free all memory associated with switch_table structure */
 extern void switch_record_table_destroy(void);
 
 extern void switch_record_validate(void);

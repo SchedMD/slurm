@@ -46,9 +46,6 @@ typedef struct slurm_conf_switches {
 				 * connected to this switch, if any */
 } slurm_conf_switches_t;
 
-switch_record_t *switch_record_table = NULL;
-int switch_record_cnt = 0;
-int switch_levels = 0; /* number of switch levels */
 static bool allow_empty_switch = false;
 
 static s_p_hashtbl_t *conf_hashtbl = NULL;
@@ -59,8 +56,8 @@ static void _log_switches(void)
 	char *tmp_str = NULL, *sep;
 	switch_record_t *switch_ptr;
 
-	switch_ptr = switch_record_table;
-	for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
+	switch_ptr = ctx->switch_table;
+	for (i = 0; i < ctx->switch_count; i++, switch_ptr++) {
 		if (!switch_ptr->nodes) {
 			switch_ptr->nodes = bitmap2node_name(switch_ptr->
 							     node_bitmap);
@@ -69,21 +66,21 @@ static void _log_switches(void)
 		      switch_ptr->level, switch_ptr->name,
 		      switch_ptr->nodes, switch_ptr->switches);
 	}
-	for (i = 0; i < switch_record_cnt; i++) {
+	for (i = 0; i < ctx->switch_count; i++) {
 		sep = "";
-		for (j = 0; j < switch_record_cnt; j++) {
+		for (j = 0; j < ctx->switch_count; j++) {
 			xstrfmtcat(tmp_str, "%s%u", sep,
-				   switch_record_table[i].switches_dist[j]);
+				   ctx->switch_table[i].switches_dist[j]);
 			sep = ", ";
 		}
 		debug("\tswitches_dist[%d]:\t%s", i, tmp_str);
 		xfree(tmp_str);
 	}
-	for (i = 0; i < switch_record_cnt; i++) {
+	for (i = 0; i < ctx->switch_count; i++) {
 		sep = "";
-		for (j = 0; j < switch_record_table[i].num_desc_switches; j++) {
+		for (j = 0; j < ctx->switch_table[i].num_desc_switches; j++) {
 			xstrfmtcat(tmp_str, "%s%u", sep,
-				   switch_record_table[i].switch_desc_index[j]);
+				   ctx->switch_table[i].switch_desc_index[j]);
 			sep = ", ";
 		}
 		debug("\tswitch_desc_index[%d]:\t%s", i, tmp_str);
@@ -91,24 +88,24 @@ static void _log_switches(void)
 	}
 }
 
-/* Free all memory associated with switch_record_table structure */
+/* Free all memory associated with switch_table structure */
 extern void switch_record_table_destroy(void)
 {
-	if (!switch_record_table)
+	if (!ctx->switch_table)
 		return;
 
-	for (int i = 0; i < switch_record_cnt; i++) {
-		xfree(switch_record_table[i].name);
-		xfree(switch_record_table[i].nodes);
-		xfree(switch_record_table[i].switches);
-		xfree(switch_record_table[i].switches_dist);
-		xfree(switch_record_table[i].switch_desc_index);
-		xfree(switch_record_table[i].switch_index);
-		FREE_NULL_BITMAP(switch_record_table[i].node_bitmap);
+	for (int i = 0; i < ctx->switch_count; i++) {
+		xfree(ctx->switch_table[i].name);
+		xfree(ctx->switch_table[i].nodes);
+		xfree(ctx->switch_table[i].switches);
+		xfree(ctx->switch_table[i].switches_dist);
+		xfree(ctx->switch_table[i].switch_desc_index);
+		xfree(ctx->switch_table[i].switch_index);
+		FREE_NULL_BITMAP(ctx->switch_table[i].node_bitmap);
 	}
-	xfree(switch_record_table);
-	switch_record_cnt = 0;
-	switch_levels = 0;
+	xfree(ctx->switch_table);
+	ctx->switch_count = 0;
+	ctx->switch_levels = 0;
 }
 
 static void _destroy_switches(void *ptr)
@@ -220,20 +217,19 @@ static void _merge_switches_array(uint16_t *switch_index1, uint16_t *cnt1,
 static void _find_desc_switches(int sw)
 {
 	int k;
-	_merge_switches_array(switch_record_table[sw].switch_desc_index,
-			      &(switch_record_table[sw].num_desc_switches),
-			      switch_record_table[sw].switch_index,
-			      switch_record_table[sw].num_switches);
+	_merge_switches_array(ctx->switch_table[sw].switch_desc_index,
+			      &(ctx->switch_table[sw].num_desc_switches),
+			      ctx->switch_table[sw].switch_index,
+			      ctx->switch_table[sw].num_switches);
 
-	for (k = 0; k < switch_record_table[sw].num_switches; k++) {
-		int child_index = switch_record_table[sw].switch_index[k];
+	for (k = 0; k < ctx->switch_table[sw].num_switches; k++) {
+		int child_index = ctx->switch_table[sw].switch_index[k];
 		_merge_switches_array(
-			switch_record_table[sw].switch_desc_index,
-			&(switch_record_table[sw].num_desc_switches),
-			switch_record_table[child_index].switch_desc_index,
-			switch_record_table[child_index].num_desc_switches);
+			ctx->switch_table[sw].switch_desc_index,
+			&(ctx->switch_table[sw].num_desc_switches),
+			ctx->switch_table[child_index].switch_desc_index,
+			ctx->switch_table[child_index].num_desc_switches);
 	}
-
 }
 
 /* Return the index of a given switch name or -1 if not found */
@@ -242,8 +238,8 @@ static int _get_switch_inx(const char *name)
 	int i;
 	switch_record_t *switch_ptr;
 
-	switch_ptr = switch_record_table;
-	for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
+	switch_ptr = ctx->switch_table;
+	for (i = 0; i < ctx->switch_count; i++, switch_ptr++) {
 		if (xstrcmp(switch_ptr->name, name) == 0)
 			return i;
 	}
@@ -263,21 +259,20 @@ static void _find_child_switches(int sw)
 	hostlist_t *swlist;
 	char *swname;
 
-	swlist = hostlist_create(switch_record_table[sw].switches);
-	switch_record_table[sw].num_switches = hostlist_count(swlist);
-	switch_record_table[sw].switch_index =
-			xmalloc(switch_record_table[sw].num_switches
-				* sizeof(uint16_t));
+	swlist = hostlist_create(ctx->switch_table[sw].switches);
+	ctx->switch_table[sw].num_switches = hostlist_count(swlist);
+	ctx->switch_table[sw].switch_index =
+		xmalloc(ctx->switch_table[sw].num_switches * sizeof(uint16_t));
 
 	hi = hostlist_iterator_create(swlist);
 	cldx = 0;
 	while ((swname = hostlist_next(hi))) {
 		/* Find switch whose name is the name of this child.
 		 * and add its index to child index array */
-		for (i = 0; i < switch_record_cnt; i++) {
-			if (xstrcmp(swname, switch_record_table[i].name) == 0) {
-				switch_record_table[sw].switch_index[cldx] = i;
-				switch_record_table[i].parent = sw;
+		for (i = 0; i < ctx->switch_count; i++) {
+			if (xstrcmp(swname, ctx->switch_table[i].name) == 0) {
+				ctx->switch_table[sw].switch_index[cldx] = i;
+				ctx->switch_table[i].parent = sw;
 				cldx++;
 				break;
 			}
@@ -292,16 +287,16 @@ static void _check_better_path(int i, int j ,int k)
 {
 	int tmp;
 
-	if ((switch_record_table[j].switches_dist[i] == INFINITE) ||
-	    (switch_record_table[i].switches_dist[k] == INFINITE)) {
+	if ((ctx->switch_table[j].switches_dist[i] == INFINITE) ||
+	    (ctx->switch_table[i].switches_dist[k] == INFINITE)) {
 		tmp = INFINITE;
 	} else {
-		tmp = switch_record_table[j].switches_dist[i] +
-		      switch_record_table[i].switches_dist[k];
+		tmp = ctx->switch_table[j].switches_dist[i] +
+		      ctx->switch_table[i].switches_dist[k];
 	}
 
-	if (switch_record_table[j].switches_dist[k] > tmp)
-		switch_record_table[j].switches_dist[k] = tmp;
+	if (ctx->switch_table[j].switches_dist[k] > tmp)
+		ctx->switch_table[j].switches_dist[k] = tmp;
 }
 
 extern void switch_record_validate(void)
@@ -318,23 +313,22 @@ extern void switch_record_validate(void)
 
 	switch_record_table_destroy();
 
-	switch_record_cnt = _read_topo_file(&ptr_array);
-	if (switch_record_cnt == 0) {
+	ctx->switch_count = _read_topo_file(&ptr_array);
+	if (ctx->switch_count == 0) {
 		error("No switches configured");
 		s_p_hashtbl_destroy(conf_hashtbl);
 		return;
 	}
 
-	switch_record_table = xcalloc(switch_record_cnt,
-				      sizeof(switch_record_t));
+	ctx->switch_table = xcalloc(ctx->switch_count, sizeof(switch_record_t));
 	multi_homed_bitmap = bit_alloc(node_record_count);
-	switch_ptr = switch_record_table;
-	for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
+	switch_ptr = ctx->switch_table;
+	for (i = 0; i < ctx->switch_count; i++, switch_ptr++) {
 		ptr = ptr_array[i];
 		switch_ptr->parent = SWITCH_NO_PARENT;
 		switch_ptr->name = xstrdup(ptr->switch_name);
 		/* See if switch name has already been defined. */
-		prior_ptr = switch_record_table;
+		prior_ptr = ctx->switch_table;
 		for (j = 0; j < i; j++, prior_ptr++) {
 			if (xstrcmp(switch_ptr->name, prior_ptr->name) == 0) {
 				fatal("Switch (%s) has already been defined",
@@ -376,8 +370,8 @@ extern void switch_record_validate(void)
 
 	for (depth = 1; ; depth++) {
 		bool resolved = true;
-		switch_ptr = switch_record_table;
-		for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
+		switch_ptr = ctx->switch_table;
+		for (i = 0; i < ctx->switch_count; i++, switch_ptr++) {
 			if (switch_ptr->level != -1)
 				continue;
 			hl = hostlist_create(switch_ptr->switches);
@@ -391,7 +385,7 @@ extern void switch_record_validate(void)
 					fatal("Switch configuration %s has invalid child (%s)",
 					      switch_ptr->name, child);
 				}
-				if (switch_record_table[j].level == -1) {
+				if (ctx->switch_table[j].level == -1) {
 					/* Children not resolved */
 					resolved = false;
 					switch_ptr->level = -1;
@@ -401,19 +395,20 @@ extern void switch_record_validate(void)
 					break;
 				}
 				if (switch_ptr->level == -1) {
-					switch_ptr->level = 1 +
-						switch_record_table[j].level;
+					switch_ptr->level =
+						1 + ctx->switch_table[j].level;
 					switch_ptr->node_bitmap =
-						bit_copy(switch_record_table[j].
-							 node_bitmap);
+						bit_copy(ctx->switch_table[j]
+								 .node_bitmap);
 				} else {
 					switch_ptr->level =
 						MAX(switch_ptr->level,
-						     (switch_record_table[j].
-						      level + 1));
+						    (ctx->switch_table[j]
+							     .level +
+						     1));
 					bit_or(switch_ptr->node_bitmap,
-					       switch_record_table[j].
-					       node_bitmap);
+					       ctx->switch_table[j]
+						       .node_bitmap);
 				}
 				free(child);
 			}
@@ -425,11 +420,11 @@ extern void switch_record_validate(void)
 			fatal("Switch configuration is not a tree");
 	}
 
-	switch_levels = 0;
-	switch_ptr = switch_record_table;
-	for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
+	ctx->switch_levels = 0;
+	switch_ptr = ctx->switch_table;
+	for (i = 0; i < ctx->switch_count; i++, switch_ptr++) {
 		xassert(switch_ptr->node_bitmap);
-		switch_levels = MAX(switch_levels, switch_ptr->level);
+		ctx->switch_levels = MAX(ctx->switch_levels, switch_ptr->level);
 	}
 	if (switches_bitmap) {
 		bit_not(switches_bitmap);
@@ -466,46 +461,46 @@ extern void switch_record_validate(void)
 	node_count = active_node_record_count;
 	/* Create array of indexes of children of each switch,
 	 * and see if any switch can reach all nodes */
-	for (i = 0; i < switch_record_cnt; i++) {
-		if (switch_record_table[i].level != 0) {
+	for (i = 0; i < ctx->switch_count; i++) {
+		if (ctx->switch_table[i].level != 0) {
 			_find_child_switches(i);
 		}
 		if (node_count ==
-			bit_set_count(switch_record_table[i].node_bitmap)) {
+		    bit_set_count(ctx->switch_table[i].node_bitmap)) {
 			have_root = true;
 		}
 	}
 
-	for (i = 0; i < switch_record_cnt; i++) {
-		switch_record_table[i].switches_dist = xcalloc(
-			switch_record_cnt, sizeof(uint32_t));
-		switch_record_table[i].switch_desc_index = xcalloc(
-			switch_record_cnt, sizeof(uint16_t));
-		switch_record_table[i].num_desc_switches = 0;
+	for (i = 0; i < ctx->switch_count; i++) {
+		ctx->switch_table[i].switches_dist =
+			xcalloc(ctx->switch_count, sizeof(uint32_t));
+		ctx->switch_table[i].switch_desc_index =
+			xcalloc(ctx->switch_count, sizeof(uint16_t));
+		ctx->switch_table[i].num_desc_switches = 0;
 	}
-	for (i = 0; i < switch_record_cnt; i++) {
-		for (j = i + 1; j < switch_record_cnt; j++) {
-			switch_record_table[i].switches_dist[j] = INFINITE;
-			switch_record_table[j].switches_dist[i] = INFINITE;
+	for (i = 0; i < ctx->switch_count; i++) {
+		for (j = i + 1; j < ctx->switch_count; j++) {
+			ctx->switch_table[i].switches_dist[j] = INFINITE;
+			ctx->switch_table[j].switches_dist[i] = INFINITE;
 		}
-		for (j = 0; j < switch_record_table[i].num_switches; j++) {
-			uint16_t child = switch_record_table[i].switch_index[j];
+		for (j = 0; j < ctx->switch_table[i].num_switches; j++) {
+			uint16_t child = ctx->switch_table[i].switch_index[j];
 
-			switch_record_table[i].switches_dist[child] = 1;
-			switch_record_table[child].switches_dist[i] = 1;
+			ctx->switch_table[i].switches_dist[child] = 1;
+			ctx->switch_table[child].switches_dist[i] = 1;
 		}
 	}
-	for (i = 0; i < switch_record_cnt; i++) {
-		for (j = 0; j < switch_record_cnt; j++) {
+	for (i = 0; i < ctx->switch_count; i++) {
+		for (j = 0; j < ctx->switch_count; j++) {
 			int k;
-			for (k = 0; k < switch_record_cnt; k++) {
+			for (k = 0; k < ctx->switch_count; k++) {
 				_check_better_path(i, j ,k);
 			}
 		}
 	}
-	for (i = 1; i <= switch_levels; i++) {
-		for (j = 0; j < switch_record_cnt; j++) {
-			if (switch_record_table[j].level != i)
+	for (i = 1; i <= ctx->switch_levels; i++) {
+		for (j = 0; j < ctx->switch_count; j++) {
+			if (ctx->switch_table[j].level != i)
 				continue;
 			_find_desc_switches(j);
 		}
