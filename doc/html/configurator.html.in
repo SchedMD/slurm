@@ -122,7 +122,7 @@ function displayfile()
    "#MaxJobCount=10000 <br>" +
    "#MaxStepCount=40000 <br>" +
    "#MaxTasksPerNode=512 <br>" +
-    print_pair("MpiDefault" + get_radio_value(document.config.mpi_default)) + "<br>" +
+    print_pair("MpiDefault",get_radio_value(document.config.mpi_default)) + "<br>" +
    "#MpiParams=ports=#-# <br>" +
    "#PluginDir= <br>" +
    "#PlugStackConfig= <br>" +
@@ -146,7 +146,7 @@ function displayfile()
    get_field("SrunEpilog",document.config.srun_epilog) + "<br>" +
    get_field("SrunProlog",document.config.srun_prolog) + "<br>" +
    "StateSaveLocation=" + document.config.state_save_location.value + "<br>" +
-   print_pair("SwitchType" + get_radio_value(document.config.switch_type)) + "<br>" +
+   print_pair("SwitchType",get_radio_value(document.config.switch_type)) + "<br>" +
    get_field("TaskEpilog",document.config.task_epilog) + "<br>" +
    "TaskPlugin=" + get_checkbox_value(document.config.task_plugin) + "<br>" +
    get_field("TaskProlog",document.config.task_prolog) + "<br>" +
@@ -218,7 +218,7 @@ function displayfile()
    get_field("JobCompUser",document.config.job_comp_user) + "<br>" +
    "#JobContainerType= <br>" +
    get_field("JobAcctGatherFrequency",document.config.job_acct_gather_frequency) + "<br>" +
-   print_pair("JobAcctGatherType" + get_radio_value(document.config.job_acct_gather_type)) + "<br>" +
+   print_pair("JobAcctGatherType",get_radio_value(document.config.job_acct_gather_type)) + "<br>" +
    "SlurmctldDebug=" + document.config.slurmctld_debug.value + "<br>" +
    get_field("SlurmctldLogFile",document.config.slurmctld_logfile) + "<br>" +
    "SlurmdDebug=" + document.config.slurmd_debug.value + "<br>" +
