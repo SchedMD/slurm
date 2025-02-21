@@ -480,10 +480,10 @@ static list_t *_build_state_list(char *state_str)
 	orig = str = xstrdup (state_str);
 	state_ids = list_create (NULL);
 
-	if (xstrstr(state_str, "&"))
+	if ((xstrstr(state_str, "+") || xstrstr(state_str, "&")))
 		params.state_list_and = true;
 
-	state = strtok_r(state_str, ",&", &str);
+	state = strtok_r(state_str, ",&+", &str);
 	while (state) {
 		int *id = xmalloc (sizeof (*id));
 		if ((*id = _node_state_id (state)) < 0) {
@@ -491,7 +491,7 @@ static list_t *_build_state_list(char *state_str)
 			return (NULL);
 		}
 		list_append (state_ids, id);
-		state = strtok_r(NULL, ",&", &str);
+		state = strtok_r(NULL, ",&+", &str);
 	}
 
 	xfree (orig);
