@@ -612,6 +612,10 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 		part_ptr->orig_nodes = part_rec_state->nodes;
 		part_rec_state->nodes = NULL;
 
+		xfree(part_ptr->topology_name);
+		part_ptr->topology_name = part_rec_state->topology_name;
+		part_rec_state->topology_name = NULL;
+
 		part_record_delete(part_rec_state);
 	}
 
