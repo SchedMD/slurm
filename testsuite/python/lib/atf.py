@@ -1868,9 +1868,11 @@ def require_slurmrestd(openapi_plugins, data_parsers):
 def start_slurmrestd():
     os.environ["SLURM_JWT"] = "daemon"
     port = None
+    attempts = 0
 
-    while not port:
+    while not port and attempts < 15:
         port = get_open_port()
+        attempts += 1
         args = [
             "slurmrestd",
             "-a",
@@ -1911,6 +1913,9 @@ def start_slurmrestd():
         properties["slurmrestd"].kill()
         properties["slurmrestd"].wait()
         port = None
+
+    if not port:
+        pytest.fail(f"Unable start slurmrestd after trying {attempts} different ports")
 
     del os.environ["SLURM_JWT"]
 
