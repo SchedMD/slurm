@@ -255,7 +255,7 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
+		xstrcatat(*extra, at, ")");
 	}
 
 	if (acct_cond->description_list
