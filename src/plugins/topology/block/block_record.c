@@ -189,6 +189,7 @@ extern void block_record_table_destroy(void)
 		FREE_NULL_BITMAP(ctx->block_record_table[i].node_bitmap);
 	}
 	xfree(ctx->block_record_table);
+	FREE_NULL_BITMAP(ctx->block_levels);
 	ctx->block_count = 0;
 	ctx->block_sizes_cnt = 0;
 	ctx->ablock_count = 0;
