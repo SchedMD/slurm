@@ -5144,17 +5144,13 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 
 	case PURGE_JOB_ENV:
 	case PURGE_JOB_SCRIPT:
-		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 "
-				       "where hash_inx in "
-				       "(select distinct hash_inx from "
-				       "\"%s_%s\" inner join (select %s from "
+		query = xstrdup_printf("update \"%s_%s\" e "
+				       "inner join (select distinct %s from "
 				       "\"%s_%s\" where %s <= %ld && "
 				       "time_end != 0 "
 				       "order by %s asc LIMIT %d) as j "
-				       "on hash_inx = j.%s "
-				       "order by hash_inx asc) "
-				       "order by hash_inx",
-				       cluster_name, sql_table,
+				       "on e.hash_inx = j.%s set "
+				       "e.deleted = 1",
 				       cluster_name, sql_table, hash_col,
 				       cluster_name, parent_table, col_name,
 				       period_end, col_name, MAX_PURGE_LIMIT,
