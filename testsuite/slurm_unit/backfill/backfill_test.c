@@ -50,6 +50,7 @@ slurmctld_config_t slurmctld_config;
 list_t *cluster_license_list = NULL;
 uint32_t max_powered_nodes = NO_VAL;
 
+bitstr_t *asap_node_bitmap = NULL; /* bitmap of rebooting asap nodes */
 bitstr_t *avail_node_bitmap = NULL; /* bitmap of available nodes */
 bitstr_t *bf_ignore_node_bitmap = NULL; /* bitmap of nodes to ignore during a
 					 * backfill cycle */
@@ -392,6 +393,7 @@ int main(int argc, char *argv[])
 	select_g_node_init();
 	node_features_g_init();
 
+	asap_node_bitmap = bit_alloc(node_record_count);
 	rs_node_bitmap = bit_alloc(node_record_count);
 	cg_node_bitmap = bit_alloc(node_record_count);
 	power_down_node_bitmap = bit_alloc(node_record_count);

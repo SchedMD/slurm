@@ -3918,10 +3918,6 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 		.test_only = test_only,
 	};
 	int rc, best_rc, part_limits_rc;
-	bitstr_t *save_avail_node_bitmap = NULL;
-
-	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
-	bit_or(avail_node_bitmap, rs_node_bitmap);
 
 	if (job_ptr->part_ptr_list) {
 		/* part_ptr_list is already sorted */
@@ -3981,9 +3977,6 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 		job_ptr->state_reason = FAIL_QOS;
 	else if (rc == ESLURM_INVALID_ACCOUNT)
 		job_ptr->state_reason = FAIL_ACCOUNT;
-
-	FREE_NULL_BITMAP(avail_node_bitmap);
-	avail_node_bitmap = save_avail_node_bitmap;
 
 	return rc;
 }

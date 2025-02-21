@@ -105,6 +105,7 @@ typedef struct {
 } pack_node_info_t;
 
 /* Global variables */
+bitstr_t *asap_node_bitmap = NULL; /* bitmap of rebooting asap nodes */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
 bitstr_t *bf_ignore_node_bitmap = NULL; /* bitmap of nodes to ignore during a
 					 * backfill cycle */
@@ -1448,6 +1449,8 @@ static char *_node_changeable_features(char *all_features)
 
 static void _undo_reboot_asap(node_record_t *node_ptr)
 {
+	if (IS_NODE_IDLE(node_ptr) || IS_NODE_ALLOCATED(node_ptr))
+		bit_set(avail_node_bitmap, node_ptr->index);
 	node_ptr->node_state &= (~NODE_STATE_DRAIN);
 	xfree(node_ptr->reason);
 }
@@ -2137,6 +2140,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					node_state_string(state_val));
 			}
 		}
+
+		/*
+		 * After all the possible state changes, check if we need to
+		 * clear the asap_node_bitmap.
+		 */
+		if (!IS_NODE_REBOOT_ASAP(node_ptr))
+			bit_clear(asap_node_bitmap, node_ptr->index);
 
 		if (!acct_updated && !IS_NODE_DOWN(node_ptr) &&
 		    !IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
@@ -3446,6 +3456,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			node_ptr->next_state = NO_VAL;
 			node_ptr->resume_after = 0;
 			bit_clear(rs_node_bitmap, node_ptr->index);
+			bit_clear(asap_node_bitmap, node_ptr->index);
 
 			info("node %s returned to service",
 			     reg_msg->node_name);
@@ -3466,12 +3477,28 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			   (slurm_conf.ret2service != 2)) {
 			if (!node_ptr->reason ||
 			    (node_ptr->reason &&
-			     !xstrcmp(node_ptr->reason, "Not responding"))) {
+			     (!xstrcmp(node_ptr->reason, "Not responding") ||
+			      IS_NODE_REBOOT_REQUESTED(node_ptr)))) {
 				xfree(node_ptr->reason);
 				node_ptr->reason_time = now;
 				node_ptr->reason_uid = slurm_conf.slurm_user_id;
 				node_ptr->reason = xstrdup(
 					"Node unexpectedly rebooted");
+			}
+			/* If a reboot was requested, cancel it. */
+			if (IS_NODE_REBOOT_REQUESTED(node_ptr)) {
+				node_ptr->node_state &=
+					(~NODE_STATE_REBOOT_REQUESTED);
+				if ((node_ptr->next_state & NODE_STATE_FLAGS) &
+				    NODE_STATE_UNDRAIN)
+					/*
+					 * Not using _undo_reboot_asap() so that
+					 * the reason is preserved.
+					 */
+					node_ptr->node_state &=
+						(~NODE_STATE_DRAIN);
+				bit_clear(rs_node_bitmap, node_ptr->index);
+				bit_clear(asap_node_bitmap, node_ptr->index);
 			}
 			info("%s: Node %s unexpectedly rebooted boot_time=%u last response=%u",
 			     __func__, reg_msg->node_name,
@@ -4792,6 +4819,7 @@ extern void node_fini (void)
 {
 	FREE_NULL_LIST(active_feature_list);
 	FREE_NULL_LIST(avail_feature_list);
+	FREE_NULL_BITMAP(asap_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	FREE_NULL_BITMAP(bf_ignore_node_bitmap);
 	FREE_NULL_BITMAP(booting_node_bitmap);
@@ -5274,6 +5302,7 @@ static void _remove_node_from_features(node_record_t *node_ptr)
  */
 static void _remove_node_from_all_bitmaps(node_record_t *node_ptr)
 {
+	bit_clear(asap_node_bitmap, node_ptr->index);
 	bit_clear(avail_node_bitmap, node_ptr->index);
 	bit_clear(bf_ignore_node_bitmap, node_ptr->index);
 	bit_clear(booting_node_bitmap, node_ptr->index);
