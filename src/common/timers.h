@@ -113,9 +113,13 @@ extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
 					      const timespec_t interval);
 
 /* Declare latency timer */
-#define DECL_LATENCY_TIMER \
-	static latency_metric_t latency_metric = {0}; \
-	static __thread timespec_t latency_metric_start = {0};
+#define DECL_LATENCY_TIMER                         \
+	static latency_metric_t latency_metric = { \
+		.total = { 0, 0 },                 \
+		.count = 0,                        \
+		.last_log = { 0, 0 },              \
+	};                                         \
+	static __thread timespec_t latency_metric_start = { 0, 0 };
 
 /* Start latency timer */
 #define START_LATENCY_TIMER() \
