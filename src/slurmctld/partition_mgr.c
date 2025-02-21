@@ -1014,6 +1014,7 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 		packstr(part_ptr->nodesets, buffer);
 		pack_bit_str_hex(part_ptr->node_bitmap, buffer);
 		packstr(part_ptr->billing_weights_str, buffer);
+		packstr(part_ptr->topology_name, buffer);
 		packstr(part_ptr->tres_fmt_str, buffer);
 		(void) slurm_pack_list(part_ptr->job_defaults_list,
 				       job_defaults_pack, buffer,

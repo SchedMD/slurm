@@ -2642,6 +2642,7 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 		unpack_bit_str_hex_as_inx(&part->node_inx, buffer);
 
 		safe_unpackstr(&part->billing_weights_str, buffer);
+		safe_unpackstr(&part->topology_name, buffer);
 		safe_unpackstr(&part->tres_fmt_str, buffer);
 		if (slurm_unpack_list(&part->job_defaults_list,
 				      job_defaults_unpack, xfree_ptr, buffer,
