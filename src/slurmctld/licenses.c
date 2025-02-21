@@ -66,7 +66,7 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 			  uint16_t protocol_version);
 
 typedef struct {
-	uint16_t lic_id;
+	licenses_id_t id;
 	slurmctld_resv_t *resv_ptr;
 } bf_licenses_find_resv_t;
 
@@ -90,11 +90,11 @@ static int _foreach_license_print(void *x, void *arg)
 
 	if (!args->job_ptr) {
 		info("licenses: %s=%s lic_id=%u total=%u used=%u",
-		     args->header, license_entry->name, license_entry->lic_id,
+		     args->header, license_entry->name, license_entry->id.lic_id,
 		     license_entry->total, license_entry->used);
 	} else {
 		info("licenses: %s=%s lic_id=%u %pJ available=%u used=%u",
-		     args->header, license_entry->name, license_entry->lic_id,
+		     args->header, license_entry->name, license_entry->id.lic_id,
 		     args->job_ptr, license_entry->total, license_entry->used);
 	}
 
@@ -143,11 +143,11 @@ static int _license_find_rec(void *x, void *key)
 static int _license_find_rec_by_id(void *x, void *key)
 {
 	licenses_t *license_entry = x;
-	uint16_t *id = key;
+	licenses_id_t *id = key;
 
-	xassert(*id != NO_VAL16);
+	xassert(id->lic_id != NO_VAL16);
 
-	if (license_entry->lic_id == *id)
+	if (license_entry->id.lic_id == id->lic_id)
 		return 1;
 	return 0;
 }
@@ -166,7 +166,7 @@ static int _license_find_rec_in_list_by_id(void *x, void *key)
 	licenses_t *license_entry = x;
 	list_t *licenses = key;
 	if (list_find_first_ro(licenses, _license_find_rec_by_id,
-			       &(license_entry->lic_id))) {
+			       &(license_entry->id))) {
 		return 1;
 	}
 	return 0;
@@ -235,7 +235,7 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 			license_entry->total += num;
 		} else {
 			license_entry = xmalloc(sizeof(licenses_t));
-			license_entry->lic_id = NO_VAL16;
+			license_entry->id.lic_id = NO_VAL16;
 			license_entry->name = xstrdup(token);
 			license_entry->total = num;
 			if (delim[0] == '|')
@@ -331,8 +331,8 @@ static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
 	license_entry->remote = sync ? 2 : 1;
 	_handle_consumed(license_entry, rec);
 
-	license_entry->lic_id = next_lic_id++;
-	xassert(license_entry->lic_id != NO_VAL16);
+	license_entry->id.lic_id = next_lic_id++;
+	xassert(license_entry->id.lic_id != NO_VAL16);
 
 	list_append(cluster_license_list, license_entry);
 	last_license_update = time(NULL);
@@ -342,11 +342,11 @@ static int _foreach_license_set_id(void *x, void *key)
 {
 	licenses_t *license = x;
 
-	if (license->lic_id == NO_VAL16) {
-		license->lic_id = next_lic_id++;
+	if (license->id.lic_id == NO_VAL16) {
+		license->id.lic_id = next_lic_id++;
 	}
 
-	if (license->lic_id == NO_VAL16)
+	if (license->id.lic_id == NO_VAL16)
 		return 1;
 
 	return 0;
@@ -432,7 +432,7 @@ extern int license_update(char *licenses)
 			info("license %s removed with %u in use",
 			     license_entry->name, license_entry->used);
 		} else {
-			match->lic_id = license_entry->lic_id;
+			match->id.lic_id = license_entry->id.lic_id;
 			if (license_entry->used > match->total) {
 				info("license %s count decreased",
 				     match->name);
@@ -713,7 +713,7 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 			break;
 		}
 
-		license_entry->lic_id = match->lic_id;
+		license_entry->id.lic_id = match->id.lic_id;
 
 		if (tres_req_cnt) {
 			tres_req.name = license_entry->name;
@@ -753,7 +753,7 @@ extern void license_job_merge(job_record_t *job_ptr)
 static void _add_license(list_t *license_list, licenses_t *license_entry)
 {
 	if (!list_find_first(license_list, _license_find_rec_by_id,
-			     &license_entry->lic_id)) {
+			     &license_entry->id)) {
 		list_append(license_list, license_entry);
 	}
 }
@@ -777,7 +777,7 @@ static int _foreach_license_job_test(void *x, void *arg)
 	int resv_licenses;
 
 	match = list_find_first(license_list, _license_find_rec_by_id,
-				&(license_entry->lic_id));
+				&(license_entry->id));
 	if (!match) {
 		error("could not find license %s for job %u",
 		      license_entry->name, job_ptr->job_id);
@@ -791,7 +791,7 @@ static int _foreach_license_job_test(void *x, void *arg)
 		return -1;
 	} else if (license_entry->total > match->total) {
 		info("job %u wants more %s(lic_id=%u) licenses than configured",
-		     job_ptr->job_id, license_entry->name, match->lic_id);
+		     job_ptr->job_id, license_entry->name, match->id.lic_id);
 		/*
 		 * Preempting jobs for licenses won't be effective so don't
 		 * preempt for any.
@@ -898,7 +898,7 @@ static int _foreach_license_copy(void *x, void *arg)
 	license_entry_dest->total = license_entry_src->total;
 	license_entry_dest->used = license_entry_src->used;
 	license_entry_dest->last_deficit = license_entry_src->last_deficit;
-	license_entry_dest->lic_id = license_entry_src->lic_id;
+	license_entry_dest->id = license_entry_src->id;
 	license_entry_dest->op_or = license_entry_src->op_or;
 	list_append(license_list_dest, license_entry_dest);
 
@@ -914,7 +914,7 @@ static int _foreach_license_light_copy(void *x, void *arg)
 	license_entry_dest->total = license_entry_src->total;
 	license_entry_dest->used = license_entry_src->used;
 	license_entry_dest->last_deficit = license_entry_src->last_deficit;
-	license_entry_dest->lic_id = license_entry_src->lic_id;
+	license_entry_dest->id = license_entry_src->id;
 	license_entry_dest->op_or = license_entry_src->op_or;
 	list_append(license_list_dest, license_entry_dest);
 
@@ -986,7 +986,7 @@ static int _set_licenses_alloc(job_record_t *job_ptr, bool lic_or,
 		/* Remove all other licenses besides the one we allocated. */
 		list_delete_all(job_ptr->license_list,
 				_license_find_rec_by_id_not,
-				&license_entry->lic_id);
+				&license_entry->id);
 		xassert(list_count(job_ptr->license_list) == 1);
 		xassert(license_entry ==
 			(licenses_t *) list_peek(job_ptr->license_list));
@@ -1020,7 +1020,7 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 		lic_or = license_entry->op_or;
 		match = list_find_first(cluster_license_list,
 					_license_find_rec_by_id,
-					&license_entry->lic_id);
+					&license_entry->id);
 		if (match) {
 			/*
 			 * With OR, we only know that at least one of the job's
@@ -1076,20 +1076,20 @@ static int _foreach_license_job_return(void *x, void *arg)
 	list_t *license_list = arg;
 	licenses_t *match =
 		list_find_first(license_list, _license_find_rec_by_id,
-				&license_entry->lic_id);
+				&license_entry->id);
 	if (match) {
 		if (match->used >= license_entry->total)
 			match->used -= license_entry->total;
 		else {
 			error("%s: license use count underflow for lic_id=%u",
-			      __func__, match->lic_id);
+			      __func__, match->id.lic_id);
 			match->used = 0;
 		}
 		license_entry->used = 0;
 	} else {
 		/* This can happen after a reconfiguration */
 		error("%s: job returning unknown license lic_id=%u",
-		      __func__, license_entry->lic_id);
+		      __func__, license_entry->id.lic_id);
 	}
 	return 0;
 }
@@ -1331,15 +1331,15 @@ static void _bf_license_free_rec(void *x)
 static int _bf_licenses_find_rec(void *x, void *key)
 {
 	bf_license_t *license_entry = x;
-	uint16_t *lic_id = key;
+	licenses_id_t *id = key;
 
-	xassert(license_entry->lic_id != NO_VAL16);
-	xassert(*lic_id != NO_VAL16);
+	xassert(license_entry->id.lic_id != NO_VAL16);
+	xassert(id->lic_id != NO_VAL16);
 
 	if (license_entry->resv_ptr)
 		return 0;
 
-	if (license_entry->lic_id == *lic_id)
+	if (license_entry->id.lic_id == id->lic_id)
 		return 1;
 
 	return 0;
@@ -1353,7 +1353,7 @@ static int _bf_licenses_find_resv(void *x, void *key)
 	if (license_entry->resv_ptr != target->resv_ptr)
 		return 0;
 
-	if (license_entry->lic_id != target->lic_id)
+	if (license_entry->id.lic_id != target->id.lic_id)
 		return 0;
 
 	return 1;
@@ -1378,7 +1378,7 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 	while ((license_entry = list_next(iter))) {
 		bf_entry = xmalloc(sizeof(*bf_entry));
 		bf_entry->remaining = license_entry->total;
-		bf_entry->lic_id = license_entry->lic_id;
+		bf_entry->id = license_entry->id;
 
 		if (!bf_running_job_reserve)
 			bf_entry->remaining -= license_entry->used;
@@ -1407,7 +1407,7 @@ extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
 		xstrfmtcat(licenses, "%s%s%s%slic_id=%u:%u", sep,
 			   (entry->resv_ptr ? "resv=" : ""),
 			   (entry->resv_ptr ? entry->resv_ptr->name : ""),
-			   (entry->resv_ptr ? ":" : ""), entry->lic_id,
+			   (entry->resv_ptr ? ":" : ""), entry->id.lic_id,
 			   entry->remaining);
 		sep = ",";
 	}
@@ -1425,7 +1425,7 @@ static int _foreach_bf_license_copy(void *x, void *arg)
 	entry_dest = xmalloc(sizeof(*entry_dest));
 	entry_dest->remaining = entry_src->remaining;
 	entry_dest->resv_ptr = entry_src->resv_ptr;
-	entry_dest->lic_id = entry_src->lic_id;
+	entry_dest->id = entry_src->id;
 	list_append(licenses_dest, entry_dest);
 
 	return 0;
@@ -1471,7 +1471,7 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 		 */
 		if (job_ptr->resv_ptr) {
 			bf_licenses_find_resv_t target_record = {
-				.lic_id = job_entry->lic_id,
+				.id = job_entry->id,
 				.resv_ptr = job_ptr->resv_ptr,
 			};
 
@@ -1494,11 +1494,11 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 		}
 
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
-					   &job_entry->lic_id);
+					   &job_entry->id);
 
 		if (!bf_entry) {
 			error("%s: missing license lic_id=%u",
-			      __func__, job_entry->lic_id);
+			      __func__, job_entry->id.lic_id);
 		} else if (bf_entry->remaining < needed) {
 			/*
 			 * OR - Not an error;  skip this one and keep going
@@ -1513,7 +1513,7 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 				continue;
 			}
 			error("%s: underflow on lic_id=%u",
-			      __func__, bf_entry->lic_id);
+			      __func__, bf_entry->id.lic_id);
 			bf_entry->remaining = 0;
 		} else {
 			bf_entry->remaining -= needed;
@@ -1559,14 +1559,14 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 		int reservable = resv_entry->total;
 
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
-					   &(resv_entry->lic_id));
+					   &(resv_entry->id));
 
 		if (!bf_entry) {
 			error("%s: missing license lic_id=%u",
-			      __func__, resv_entry->lic_id);
+			      __func__, resv_entry->id.lic_id);
 		} else if (bf_entry->remaining < needed) {
 			error("%s: underflow on lic_id=%u",
-			      __func__,bf_entry->lic_id);
+			      __func__,bf_entry->id.lic_id);
 			reservable = bf_entry->remaining;
 			bf_entry->remaining = 0;
 		} else {
@@ -1575,7 +1575,7 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 		}
 
 		new_entry = xmalloc(sizeof(*new_entry));
-		new_entry->lic_id = resv_entry->lic_id;
+		new_entry->id = resv_entry->id;
 		new_entry->remaining = reservable;
 		new_entry->resv_ptr = job_ptr->resv_ptr;
 
@@ -1606,7 +1606,7 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 		 */
 		if (job_ptr->resv_ptr) {
 			bf_licenses_find_resv_t target_record = {
-				.lic_id = need->lic_id,
+				.id = need->id,
 				.resv_ptr = job_ptr->resv_ptr,
 			};
 
@@ -1631,7 +1631,7 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 		}
 
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
-					   &(need->lic_id));
+					   &(need->id));
 
 		if (!bf_entry || (bf_entry->remaining < needed)) {
 			avail = false;
@@ -1661,7 +1661,7 @@ static int _bf_licenses_find_difference(void *x, void *key)
 	bf_licenses_t *b = key;
 	bf_license_t *entry_b;
 	bf_licenses_find_resv_t target_record = {
-		.lic_id = entry_a->lic_id,
+		.id = entry_a->id,
 		.resv_ptr = entry_a->resv_ptr,
 	};
 

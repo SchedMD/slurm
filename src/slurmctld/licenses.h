@@ -43,6 +43,12 @@
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct {
+	uint16_t lic_id;
+	uint16_t hres_id;
+} licenses_id_t;
+
+typedef struct {
+	licenses_id_t id;
 	char *		name;		/* name associated with a license */
 	bool op_or; /* Whether the licenses were requested with AND or OR */
 	uint32_t	total;		/* total license configured */
@@ -51,8 +57,7 @@ typedef struct {
 	uint8_t         remote;	        /* non-zero if remote (from database) */
 	uint32_t last_deficit;		/* last calculated deficit */
 	uint32_t last_consumed;		/* consumed count (for remote) */
-	time_t last_update;		/* last updated timestamp (for remote) */
-	uint16_t lic_id;
+	time_t last_update; /* last updated timestamp (for remote) */
 } licenses_t;
 
 /*
@@ -61,7 +66,7 @@ typedef struct {
 typedef struct xlist bf_licenses_t;
 
 typedef struct {
-	uint16_t lic_id;
+	licenses_id_t id;
 	uint32_t remaining;
 	slurmctld_resv_t *resv_ptr;
 } bf_license_t;
