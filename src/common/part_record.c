@@ -168,6 +168,7 @@ extern void part_record_pack(part_record_t *part_ptr,
 		packstr(part_ptr->deny_qos, buffer);
 		/* Save orig_nodes as nodes will be built from orig_nodes */
 		packstr(part_ptr->orig_nodes, buffer);
+		packstr(part_ptr->topology_name, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		pack32(part_ptr->cpu_bind, buffer);
 		packstr(part_ptr->name, buffer);
@@ -241,6 +242,7 @@ extern int part_record_unpack(part_record_t **part,
 		safe_unpackstr(&part_ptr->deny_accounts, buffer);
 		safe_unpackstr(&part_ptr->deny_qos, buffer);
 		safe_unpackstr(&part_ptr->nodes, buffer);
+		safe_unpackstr(&part_ptr->topology_name, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpack32(&part_ptr->cpu_bind, buffer);
 		safe_unpackstr(&part_ptr->name, buffer);
