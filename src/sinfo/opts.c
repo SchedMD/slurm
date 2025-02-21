@@ -481,7 +481,7 @@ static list_t *_build_state_list(char *state_str)
 	state_ids = list_create (NULL);
 
 	if (xstrstr(state_str, "&"))
-	    params.state_list_and = true;
+		params.state_list_and = true;
 
 	state = strtok_r(state_str, ",&", &str);
 	while (state) {
