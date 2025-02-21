@@ -208,13 +208,9 @@ extern bitstr_t *topology_p_get_bitmap(char *name)
 	return NULL;
 }
 
-/*
- * When TopologyParam=SwitchAsNodeRank is set, this plugin assigns a unique
- * node_rank for all nodes belonging to the same bblock.
- */
 extern bool topology_p_generate_node_ranking(void)
 {
-	return true;
+	return false;
 }
 
 /*
