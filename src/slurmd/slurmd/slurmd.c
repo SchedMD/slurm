@@ -1860,6 +1860,7 @@ _process_cmdline(int ac, char **av)
 			conf->dynamic_feature = xstrdup(optarg);
 			break;
 		case 'G':
+			conf->daemonize = 0;
 			conf->print_gres = true;
 			break;
 		case 'h':
