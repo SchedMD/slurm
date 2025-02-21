@@ -1675,6 +1675,7 @@ static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->priority_tier, buffer);
 		packstr(msg->qos_char, buffer);
 		pack16(msg->state_up, buffer);
+		packstr(msg->topology_name, buffer);
 	} else if (smsg->protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		packstr(msg->allow_accounts, buffer);
 		packstr(msg->allow_alloc_nodes, buffer);
@@ -1794,6 +1795,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpack16(&tmp_ptr->priority_tier, buffer);
 		safe_unpackstr(&tmp_ptr->qos_char, buffer);
 		safe_unpack16(&tmp_ptr->state_up, buffer);
+		safe_unpackstr(&tmp_ptr->topology_name, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->allow_accounts, buffer);
 		safe_unpackstr(&tmp_ptr->allow_alloc_nodes, buffer);
