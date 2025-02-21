@@ -2210,6 +2210,8 @@ extern void restore_node_features(int recover)
 
 	node_features_plugin_cnt = node_features_g_count();
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		char *gres_name = NULL;
+
 		if (node_ptr->weight != node_ptr->config_ptr->weight) {
 			error("Node %s Weight(%u) differ from slurm.conf",
 			      node_ptr->name, node_ptr->weight);
@@ -2249,13 +2251,15 @@ extern void restore_node_features(int recover)
 			}
 		}
 
-		/*
-		 * We lose the GRES information updated manually and always
-		 * use the information from slurm.conf
-		 */
+		/* node_ptr->gres is set when recover == 2 */
+		if (node_ptr->gres)
+			gres_name = node_ptr->gres;
+		else
+			gres_name = node_ptr->config_ptr->gres;
+
 		(void) gres_node_reconfig(
 			node_ptr->name,
-			node_ptr->config_ptr->gres,
+			gres_name,
 			&node_ptr->gres,
 			&node_ptr->gres_list,
 			slurm_conf.conf_flags & CONF_FLAG_OR,

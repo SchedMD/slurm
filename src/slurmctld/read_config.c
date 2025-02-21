@@ -2039,6 +2039,7 @@ static void _gres_reconfig(void)
 	int i;
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		/* node_ptr->gres is set when recover == 2 */
 		if (node_ptr->gres)
 			gres_name = node_ptr->gres;
 		else
