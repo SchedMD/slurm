@@ -372,24 +372,24 @@ extern int license_init(char *licenses)
  * Remove all previously allocated licenses */
 extern int license_update(char *licenses)
 {
-        list_itr_t *iter;
-        licenses_t *license_entry, *match;
-        list_t *new_list;
-        bool valid = true;
+	list_itr_t *iter;
+	licenses_t *license_entry, *match;
+	list_t *new_list;
+	bool valid = true;
 
-        new_list = _build_license_list(licenses, &valid);
-        if (!valid)
-                fatal("Invalid configured licenses: %s", licenses);
+	new_list = _build_license_list(licenses, &valid);
+	if (!valid)
+		fatal("Invalid configured licenses: %s", licenses);
 
-        slurm_mutex_lock(&license_mutex);
-        if (!cluster_license_list) {        /* no licenses before now */
-                cluster_license_list = new_list;
-                slurm_mutex_unlock(&license_mutex);
-                return SLURM_SUCCESS;
-        }
+	slurm_mutex_lock(&license_mutex);
+	if (!cluster_license_list) { /* no licenses before now */
+		cluster_license_list = new_list;
+		slurm_mutex_unlock(&license_mutex);
+		return SLURM_SUCCESS;
+	}
 
-        iter = list_iterator_create(cluster_license_list);
-        while ((license_entry = list_next(iter))) {
+	iter = list_iterator_create(cluster_license_list);
+	while ((license_entry = list_next(iter))) {
 		/* Always add the remote ones, since we handle those
 		   else where. */
 		if (license_entry->remote) {
@@ -406,21 +406,21 @@ extern int license_update(char *licenses)
 		else
 			match = NULL;
 
-                if (!match) {
-                        info("license %s removed with %u in use",
-                             license_entry->name, license_entry->used);
-                } else {
+		if (!match) {
+			info("license %s removed with %u in use",
+			     license_entry->name, license_entry->used);
+		} else {
 			match->lic_id = license_entry->lic_id;
 			if (license_entry->used > match->total) {
 				info("license %s count decreased",
-                                     match->name);
+				     match->name);
 			}
 		}
 	}
-        list_iterator_destroy(iter);
+	list_iterator_destroy(iter);
 
-        FREE_NULL_LIST(cluster_license_list);
-        cluster_license_list = new_list;
+	FREE_NULL_LIST(cluster_license_list);
+	cluster_license_list = new_list;
 	_set_license_ids();
 
 	_licenses_print("update_license", cluster_license_list, NULL);
