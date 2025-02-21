@@ -1821,6 +1821,14 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		part_ptr->node_bitmap = bit_alloc(node_record_count);
 	}
 
+	if (part_desc->topology_name) {
+		info("%s: Setting Topology to %s for partition %s",
+		      __func__, part_desc->topology_name, part_desc->name);
+		xfree(part_ptr->topology_name);
+		part_ptr->topology_name = part_desc->topology_name;
+		part_desc->topology_name = NULL;
+	}
+
 fini:
 	if (error_code == SLURM_SUCCESS) {
 		gs_reconfig();
