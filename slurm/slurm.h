@@ -2560,6 +2560,7 @@ typedef struct partition_info {
 				 * mode */
 	uint16_t suspend_timeout; /* time required in order to perform a node
 				   * suspend operation */
+	char *topology_name;
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	char    *tres_fmt_str;	/* str of configured TRES in partition */

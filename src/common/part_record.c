@@ -125,6 +125,7 @@ extern void part_record_delete(part_record_t *part_ptr)
 	xfree(part_ptr->nodesets);
 	FREE_NULL_BITMAP(part_ptr->node_bitmap);
 	xfree(part_ptr->qos_char);
+	xfree(part_ptr->topology_name);
 	xfree(part_ptr->tres_cnt);
 	xfree(part_ptr->tres_fmt_str);
 	_bf_data_free(&part_ptr->bf_data);

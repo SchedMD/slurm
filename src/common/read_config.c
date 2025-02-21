@@ -1367,10 +1367,10 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */
 		{"SuspendTime", S_P_STRING},
 		{"SuspendTimeout", S_P_UINT16},
+		{"Topology", S_P_STRING},
 		{"TRESBillingWeights", S_P_STRING},
 		{NULL}
 	};
-
 
 	tbl = s_p_hashtbl_create(_partition_options);
 	s_p_parse_line(tbl, *leftover, leftover);
@@ -1749,6 +1749,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			xfree(tmp);
 		}
 
+		if (!s_p_get_string(&p->topology_name, "Topology", tbl))
+			s_p_get_string(&p->topology_name, "Topology", dflt);
+
 		s_p_hashtbl_destroy(tbl);
 
 		*dest = (void *)p;
@@ -1813,6 +1816,7 @@ static void _destroy_partitionname(void *ptr)
 	xfree(p->name);
 	xfree(p->nodes);
 	xfree(p->qos_char);
+	xfree(p->topology_name);
 	xfree(ptr);
 }
 

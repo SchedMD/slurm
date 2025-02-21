@@ -415,6 +415,9 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	        else
 	                fprintf(fp, " State=UNKNOWN");
 
+		if (p[i].topology_name)
+			fprintf(fp, " Topology=%s", p[i].topology_name);
+
 		if (p[i].billing_weights_str != NULL)
 			fprintf(fp, " TRESBillingWeights=%s",
 			        p[i].billing_weights_str);
