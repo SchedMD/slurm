@@ -5898,6 +5898,10 @@ parameters are supported:
 \fBimex_channel_count\fR
 Number of channels that can be configured. Channels allow nodes to create a
 secure method of sharing memory. The default value is 2048.
+
+\fBNOTE\fR: The batch and interactive steps will not have imex channels
+created since they run on a single node. Once you start creating job steps
+that span nodes you will see the channels created.
 .RE
 .IP
 
