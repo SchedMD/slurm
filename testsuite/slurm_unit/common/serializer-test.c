@@ -777,8 +777,8 @@ extern int main(void)
 	close(fd);
 
 	/* force load of JSON and all others if present */
-	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL) ||
-	    serializer_g_init(NULL, NULL)) {
+	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL, NULL) ||
+	    serializer_g_init(NULL, NULL, NULL)) {
 		error("serializer_g_init() failed");
 		return EXIT_FAILURE;
 	}

@@ -49,10 +49,12 @@
 #include "src/common/log.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/serializer.h"
 
 #define SERIALIZER_JSON_DEFAULT_FORMAT JSON_C_TO_STRING_PLAIN
+#define SERIALIZER_JSON_DEFAULT_FLAGS SER_FLAGS_PRETTY
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -87,6 +89,7 @@ const char *mime_types[] = {
 	"application/jsonrequest",
 	NULL
 };
+static serializer_flags_t global_flags = SERIALIZER_JSON_DEFAULT_FLAGS;
 
 #define MAGIC_CONVERT_FOREACH 0x0a0b0808
 
@@ -98,20 +101,32 @@ typedef struct {
 
 static json_object *_data_to_json(const data_t *d, serializer_flags_t flags);
 
-extern int serializer_p_init(void)
+/* Merge global_flags and flags into the coherent set of flags */
+static serializer_flags_t _merge_flags(serializer_flags_t flags)
 {
+	serializer_flags_t ret = global_flags;
+
+	/* Avoid conflicting flags from global */
+	if (flags & (SER_FLAGS_COMPACT|SER_FLAGS_PRETTY))
+		ret &= ~(SER_FLAGS_COMPACT|SER_FLAGS_PRETTY);
+
+	return (ret | flags);
+}
+
+extern int serialize_p_init(serializer_flags_t flags)
+{
+	if (flags != SER_FLAGS_NONE)
+		global_flags = flags;
+
 	log_flag(DATA, "loaded");
 
 	return SLURM_SUCCESS;
 }
 
-extern int serializer_p_fini(void)
+extern void serialize_p_fini(void)
 {
 	log_flag(DATA, "unloaded");
-
-	return SLURM_SUCCESS;
 }
-
 
 static json_object *_try_parse(const char *src, size_t stringlen,
 			       struct json_tokener *tok)
@@ -272,8 +287,11 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 				      const data_t *src,
 				      serializer_flags_t flags)
 {
-	struct json_object *jobj = _data_to_json(src, flags);
+	struct json_object *jobj = NULL;
 	int jflags = 0;
+
+	flags = _merge_flags(flags);
+	jobj = _data_to_json(src, flags);
 
 	/* can't be pretty and compact at the same time! */
 	xassert((flags & (SER_FLAGS_PRETTY | SER_FLAGS_COMPACT)) !=

@@ -52,8 +52,6 @@
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
 static list_t *paths = NULL;
 static data_parser_t **parsers; /* symlink to parser array */
-serializer_flags_t yaml_flags = SER_FLAGS_PRETTY;
-serializer_flags_t json_flags = SER_FLAGS_PRETTY;
 
 #define MAGIC_HEADER_ACCEPT 0xDF9EAABE
 
@@ -521,12 +519,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 
 	if (data_get_type(resp) != DATA_TYPE_NULL) {
 		int rc2;
-		serializer_flags_t sflags = SER_FLAGS_PRETTY;
-
-		if (!xstrcmp(plugin, MIME_TYPE_JSON_PLUGIN))
-			sflags = json_flags;
-		else if (!xstrcmp(plugin, MIME_TYPE_YAML_PLUGIN))
-			sflags = yaml_flags;
+		serializer_flags_t sflags = SER_FLAGS_NONE;
 
 		if (data_parser_g_is_complex(parser))
 			sflags |= SER_FLAGS_COMPLEX;

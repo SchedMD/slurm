@@ -40,9 +40,6 @@
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
 
-extern serializer_flags_t yaml_flags;
-extern serializer_flags_t json_flags;
-
 /*
  * setup locks.
  * only call once!

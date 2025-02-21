@@ -226,44 +226,6 @@ static void _parse_env(void)
 		xfree(toklist);
 	}
 
-	if ((buffer = getenv("SLURMRESTD_JSON"))) {
-		char *token = NULL, *save_ptr = NULL;
-		char *toklist = xstrdup(buffer);
-
-		token = strtok_r(toklist, ",", &save_ptr);
-		while (token) {
-			if (!xstrcasecmp(token, "compact")) {
-				json_flags = SER_FLAGS_COMPACT;
-			} else if (!xstrcasecmp(token, "pretty")) {
-				json_flags = SER_FLAGS_PRETTY;
-			} else {
-				fatal("Unexpected value in SLURMRESTD_JSON=%s",
-				      token);
-			}
-			token = strtok_r(NULL, ",", &save_ptr);
-		}
-		xfree(toklist);
-	}
-
-	if ((buffer = getenv("SLURMRESTD_YAML"))) {
-		char *token = NULL, *save_ptr = NULL;
-		char *toklist = xstrdup(buffer);
-
-		token = strtok_r(toklist, ",", &save_ptr);
-		while (token) {
-			if (!xstrcasecmp(token, "compact")) {
-				yaml_flags = SER_FLAGS_COMPACT;
-			} else if (!xstrcasecmp(token, "pretty")) {
-				yaml_flags = SER_FLAGS_PRETTY;
-			} else {
-				fatal("Unexpected value in SLURMRESTD_YAML=%s",
-				      token);
-			}
-			token = strtok_r(NULL, ",", &save_ptr);
-		}
-		xfree(toklist);
-	}
-
 	if ((buffer = getenv("SLURMRESTD_RESPONSE_STATUS_CODES"))) {
 		char *token = NULL, *save_ptr = NULL;
 		char *toklist = xstrdup(buffer);
@@ -400,7 +362,7 @@ static void dump_spec(int argc, char **argv)
 		      slurm_conf_filename, slurm_strerror(rc));
 	}
 
-	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
+	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL, NULL))
 		fatal("Unable to initialize JSON serializer");
 
 	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,
@@ -697,8 +659,12 @@ int main(int argc, char **argv)
 	slurm_init(slurm_conf_filename);
 	_check_user();
 
-	if (serializer_g_init(NULL, NULL))
-		fatal("Unable to initialize serializers");
+	/* Load serializers if they are present */
+	(void) serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL,
+				 getenv("SLURMRESTD_JSON"));
+	(void) serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL,
+				 getenv("SLURMRESTD_YAML"));
+	(void) serializer_g_init(MIME_TYPE_URL_ENCODED_PLUGIN, NULL, NULL);
 
 	/* This checks if slurmrestd is running in inetd mode */
 	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),

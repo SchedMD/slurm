@@ -81,7 +81,7 @@ extern int init(void)
 
 	log_flag(JOBCOMP, "loaded");
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
+	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL, NULL))) {
 		error("%s: unable to load JSON serializer: %s",
 		      plugin_type, slurm_strerror(rc));
 		return rc;

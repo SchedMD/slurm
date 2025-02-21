@@ -57,6 +57,8 @@ strong_alias(serializer_g_fini, slurm_serializer_g_fini);
 #define MIME_ARRAY_MAGIC 0xabb00031
 
 typedef struct {
+	int (*init)(serializer_flags_t flags);
+	void (*fini)(void);
 	int (*data_to_string)(char **dest, size_t *length, const data_t *src,
 			      serializer_flags_t flags);
 	int (*string_to_data)(data_t **dest, const char *src, size_t length);
@@ -69,6 +71,8 @@ typedef struct {
 
 /* Must be synchronized with funcs_t above */
 static const char *syms[] = {
+	"serialize_p_init",
+	"serialize_p_fini",
 	"serialize_p_data_to_string",
 	"serialize_p_string_to_data",
 };
@@ -91,6 +95,52 @@ static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* Track when the plugins should no longer be changed */
 static bool should_not_change = false;
 #endif /* !NDEBUG */
+
+static const struct {
+	char *string;
+	serializer_flags_t flag;
+} flags[] = {
+	{ "compact", SER_FLAGS_COMPACT },
+	{ "pretty", SER_FLAGS_PRETTY },
+	{ "complex", SER_FLAGS_COMPLEX },
+};
+
+static serializer_flags_t _parse_flag(const char *flag)
+{
+	for (int i = 0; i < ARRAY_SIZE(flags); i++)
+		if (!xstrcasecmp(flag, flags[i].string))
+			return flags[i].flag;
+
+	return SER_FLAGS_NONE;
+}
+
+static int _parse_config(const char *config, serializer_flags_t *flags)
+{
+	int rc = SLURM_SUCCESS;
+	char *token = NULL, *save_ptr = NULL;
+	char *toklist = xstrdup(config);
+
+	token = strtok_r(toklist, ",", &save_ptr);
+	while (token) {
+		serializer_flags_t flag = SER_FLAGS_NONE;
+
+		if (!token[0])
+			continue;
+
+		if ((flag = _parse_flag(token)) == SER_FLAGS_NONE) {
+			debug("%s: Unknown flag \"%s\" in \"%s\"",
+			      __func__, token, config);
+			rc = EINVAL;
+		}
+
+		*flags |= flag;
+
+		token = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(toklist);
+
+	return rc;
+}
 
 static int _find_serializer_full_type(void *x, void *key)
 {
@@ -234,9 +284,15 @@ extern const char **get_mime_type_array(void)
 	return mime_array;
 }
 
-extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)
+extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf,
+			     const char *config)
 {
 	int rc = SLURM_SUCCESS;
+	serializer_flags_t flags = SER_FLAGS_NONE;
+
+	if (config && config[0] && (rc = _parse_config(config, &flags)))
+		fatal("Unable to parse serializer \"%s\" flags: %s",
+		      config, slurm_strerror(rc));
 
 	slurm_mutex_lock(&init_mutex);
 
@@ -260,8 +316,9 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)
 
 	xrecalloc(mime_array, (plugins->count + 1), sizeof(*mime_array));
 
-	for (size_t i = 0; plugins && (i < plugins->count); i++) {
+	for (size_t i = 0; plugins && (i < plugins->count) && !rc; i++) {
 		const char **mime_types;
+		const funcs_t *func_ptr = plugins->functions[i];
 
 		xassert(plugins->handles[i] != PLUGIN_INVALID_HANDLE);
 
@@ -275,6 +332,21 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)
 		mime_array[i] = mime_types[0];
 
 		_register_mime_types(mime_types_list, i, mime_types);
+
+		if (!config) {
+			if (!xstrcmp(plugins->types[i], MIME_TYPE_JSON_PLUGIN))
+				config = getenv(ENV_CONFIG_JSON);
+			else if (!xstrcmp(plugins->types[i],
+					  MIME_TYPE_YAML_PLUGIN))
+				config = getenv(ENV_CONFIG_YAML);
+
+			if (config && config[0] &&
+			    (rc = _parse_config(config, &flags)))
+				fatal("Unable to parse serializer \"%s\" flags: %s",
+				      config, slurm_strerror(rc));
+		}
+
+		rc = (*func_ptr->init)(flags);
 	}
 
 	slurm_mutex_unlock(&init_mutex);
@@ -294,6 +366,13 @@ extern void serializer_g_fini(void)
 #ifdef MEMORY_LEAK_DEBUG
 	debug3("%s: cleaning up", __func__);
 	slurm_mutex_lock(&init_mutex);
+
+	for (size_t i = 0; plugins && (i < plugins->count); i++) {
+		const funcs_t *func_ptr = plugins->functions[i];
+		xassert(plugins->handles[i] != PLUGIN_INVALID_HANDLE);
+		(*func_ptr->fini)();
+	}
+
 	xfree(mime_array);
 	FREE_NULL_LIST(mime_types_list);
 	FREE_NULL_PLUGINS(plugins);

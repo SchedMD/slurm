@@ -119,7 +119,7 @@ extern int init(void)
 	stored_data = xcalloc(24, sizeof(char *));
 	stored_sz = 24;
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
+	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL, NULL))) {
 		error("%s: unable to load JSON serializer: %s", __func__,
 		      slurm_strerror(rc));
 		return rc;

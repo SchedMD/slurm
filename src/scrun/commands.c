@@ -314,7 +314,7 @@ extern int command_state(void)
 			 data_set_dict(data_key_set(o, "annotations")));
 
 	if ((rc = serialize_g_data_to_string(&str, NULL, o, MIME_TYPE_JSON,
-					     SER_FLAGS_PRETTY)))
+					     SER_FLAGS_NONE)))
 		fatal("unable to serialise: %s", slurm_strerror(rc));
 
 	printf("%s\n", str);

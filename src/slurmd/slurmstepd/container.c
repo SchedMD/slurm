@@ -750,7 +750,7 @@ extern int setup_container(stepd_step_rec_t *step)
 		return ESLURM_CONTAINER_NOT_CONFIGURED;
 	}
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
+	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL, NULL))) {
 		error("Unable to load JSON plugin: %s",
 		      slurm_strerror(rc));
 		goto error;
@@ -1108,7 +1108,7 @@ extern void container_run(stepd_step_rec_t *step,
 
 		if ((rc = serialize_g_data_to_string(&out, NULL, c->config,
 						     MIME_TYPE_JSON,
-						     SER_FLAGS_PRETTY))) {
+						     SER_FLAGS_NONE))) {
 			fatal("%s: serialization of config failed: %s",
 			      __func__, slurm_strerror(rc));
 		}
