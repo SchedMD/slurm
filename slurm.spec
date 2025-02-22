@@ -225,6 +225,10 @@ BuildRequires: libselinux-devel
 %{!?_slurm_mandir: %global _slurm_mandir %{_datadir}/man}
 %define _mandir %{_slurm_mandir}
 
+#  Allow override of bashcompdir via _slurm_bashcompdir.
+%{!?_slurm_bashcompdir: %global _slurm_bashcompdir /usr/share}
+%define _bashcompdir %{_slurm_bashcompdir}
+
 #
 # Never allow rpm to strip binaries as this will break
 #  parallel debugging capability
@@ -560,7 +564,7 @@ rm -rf %{buildroot}
 %exclude %{_mandir}/man1/sjobexit*
 %exclude %{_mandir}/man1/sjstat*
 %dir %{_libdir}/slurm/src
-%{_datadir}/bash-completion/completions/slurm_completion.sh
+%{_bashcompdir}/bash-completion/completions/slurm_completion.sh
 #############################################################################
 
 %files example-configs
@@ -682,50 +686,50 @@ rm -rf %{buildroot}
 
 %post
 /sbin/ldconfig
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,sacct}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,sacctmgr}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,salloc}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,sattach}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,sbatch}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,sbcast}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,scancel}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,scontrol}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,scrontab}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,sdiag}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,sinfo}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,slurmrestd}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,sprio}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,squeue}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,sreport}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,srun}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,sshare}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,sstat}
-ln -sf %{_datadir}/bash-completion/completions/{slurm_completion.sh,strigger}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sacct}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sacctmgr}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,salloc}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sattach}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sbatch}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sbcast}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,scancel}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,scontrol}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,scrontab}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sdiag}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sinfo}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,slurmrestd}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sprio}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,squeue}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sreport}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,srun}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sshare}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sstat}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,strigger}
 
 %preun
 
 %postun
 /sbin/ldconfig
 if [ $1 -eq 0 ]; then
-	rm -f %{_datadir}/bash-completion/completions/sacct
-	rm -f %{_datadir}/bash-completion/completions/sacctmgr
-	rm -f %{_datadir}/bash-completion/completions/salloc
-	rm -f %{_datadir}/bash-completion/completions/sattach
-	rm -f %{_datadir}/bash-completion/completions/sbatch
-	rm -f %{_datadir}/bash-completion/completions/sbcast
-	rm -f %{_datadir}/bash-completion/completions/scancel
-	rm -f %{_datadir}/bash-completion/completions/scontrol
-	rm -f %{_datadir}/bash-completion/completions/scrontab
-	rm -f %{_datadir}/bash-completion/completions/sdiag
-	rm -f %{_datadir}/bash-completion/completions/sinfo
-	rm -f %{_datadir}/bash-completion/completions/slurmrestd
-	rm -f %{_datadir}/bash-completion/completions/sprio
-	rm -f %{_datadir}/bash-completion/completions/squeue
-	rm -f %{_datadir}/bash-completion/completions/sreport
-	rm -f %{_datadir}/bash-completion/completions/srun
-	rm -f %{_datadir}/bash-completion/completions/sshare
-	rm -f %{_datadir}/bash-completion/completions/sstat
-	rm -f %{_datadir}/bash-completion/completions/strigger
+	rm -f %{_bashcompdir}/bash-completion/completions/sacct
+	rm -f %{_bashcompdir}/bash-completion/completions/sacctmgr
+	rm -f %{_bashcompdir}/bash-completion/completions/salloc
+	rm -f %{_bashcompdir}/bash-completion/completions/sattach
+	rm -f %{_bashcompdir}/bash-completion/completions/sbatch
+	rm -f %{_bashcompdir}/bash-completion/completions/sbcast
+	rm -f %{_bashcompdir}/bash-completion/completions/scancel
+	rm -f %{_bashcompdir}/bash-completion/completions/scontrol
+	rm -f %{_bashcompdir}/bash-completion/completions/scrontab
+	rm -f %{_bashcompdir}/bash-completion/completions/sdiag
+	rm -f %{_bashcompdir}/bash-completion/completions/sinfo
+	rm -f %{_bashcompdir}/bash-completion/completions/slurmrestd
+	rm -f %{_bashcompdir}/bash-completion/completions/sprio
+	rm -f %{_bashcompdir}/bash-completion/completions/squeue
+	rm -f %{_bashcompdir}/bash-completion/completions/sreport
+	rm -f %{_bashcompdir}/bash-completion/completions/srun
+	rm -f %{_bashcompdir}/bash-completion/completions/sshare
+	rm -f %{_bashcompdir}/bash-completion/completions/sstat
+	rm -f %{_bashcompdir}/bash-completion/completions/strigger
 fi
 
 %post sackd
