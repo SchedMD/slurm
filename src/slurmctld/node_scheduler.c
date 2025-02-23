@@ -1843,8 +1843,12 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					    cg_node_bitmap);
 			}
 
+			/*
+			 * We must skip the node *only* in the case it is
+			 * rebooted with ASAP flag.
+			 */
 			bit_and_not(node_set_ptr[i].my_bitmap,
-				    rs_node_bitmap);
+				    asap_node_bitmap);
 
 			if (!nodes_busy) {
 				count2 = bit_set_count(node_set_ptr[i].
