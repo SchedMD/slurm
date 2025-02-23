@@ -248,11 +248,12 @@ they are responding.
 .IP
 
 .TP
-\fBpower\fR  {up|down} [asap|force] {ALL|<\fINodeList\fR>|<\fINodeSet\fR>}
+\fBpower\fR  {up|down} [asap|force] {ALL|<\fINodeList\fR>|<\fINodeSet\fR>} [Reason=<\fIreason\fR>]
 Control power state of the provided node list/set. For 'power down', the
 optional ASAP/FORCE flag will be added to the power down request, but will
 otherwise be rejected for power up requests. All arguments will be processed
-insensitive of case except for the node list/set. This subcommand obsoletes the
+insensitive of case except for the node list/set. Optional \fIreason\fR may be
+be specified only when powering down. This subcommand obsoletes the
 prior usage of scontrol's update command:
 
 scontrol update NodeName=<\fInodes\fR>

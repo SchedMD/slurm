@@ -46,7 +46,7 @@
  * RET SLURM_SUCCESS or a slurm error code
  */
 extern int scontrol_power_nodes(char *node_list, bool power_up, bool asap,
-				bool force)
+				bool force, char *reason)
 {
 	update_node_msg_t node_msg;
 
@@ -55,6 +55,7 @@ extern int scontrol_power_nodes(char *node_list, bool power_up, bool asap,
 	slurm_init_update_node_msg(&node_msg);
 
 	node_msg.node_names = node_list;
+	node_msg.reason = reason;
 
 	if (power_up)
 		node_msg.node_state = NODE_STATE_POWER_UP;

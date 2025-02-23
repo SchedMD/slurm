@@ -161,7 +161,7 @@ extern int	scontrol_update_step (int argc, char **argv);
 
 /* power_node.c */
 extern int scontrol_power_nodes(char *node_list, bool power_up, bool asap,
-				bool force);
+				bool force, char *reason);
 
 /* reboot_node.c */
 extern int      scontrol_cancel_reboot(char *nodes);

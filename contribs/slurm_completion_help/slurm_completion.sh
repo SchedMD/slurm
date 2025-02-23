@@ -3523,8 +3523,7 @@ function __scontrol_power_up() {
 # completion handler for: scontrol power down *
 function __scontrol_power_down() {
 	local parameters=(
-		"asap"
-		"force"
+		"reason="
 	)
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
@@ -3532,7 +3531,8 @@ function __scontrol_power_down() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	case "${prev}" in
-	down|asap|force) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	down) __slurm_compreply_list "$(__slurm_nodes)" "ALL asap force" "true" ;;
+	asap | force) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
 		$split && return
 		__slurm_compreply_param "${parameters[*]}"
