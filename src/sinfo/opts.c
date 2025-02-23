@@ -478,20 +478,26 @@ static list_t *_build_state_list(char *state_str)
 		return _build_all_states_list ();
 
 	orig = str = xstrdup (state_str);
-	state_ids = list_create (NULL);
+	state_ids = list_create(xfree_ptr);
 
-	if (xstrstr(state_str, "&"))
-	    params.state_list_and = true;
+	if ((xstrstr(state_str, "+") || xstrstr(state_str, "&")))
+		params.state_list_and = true;
 
-	state = strtok_r(state_str, ",&", &str);
+	state = strtok_r(state_str, ",&+", &str);
 	while (state) {
-		int *id = xmalloc (sizeof (*id));
-		if ((*id = _node_state_id (state)) < 0) {
+		sinfo_state_t *id = xmalloc(sizeof(*id));
+		if ((state[0] == '~') || (state[0] == '!')) {
+			id->op = SINFO_STATE_OP_NOT;
+			/* Remove one character before parsing */
+			state = state + 1;
+		}
+
+		if ((id->state = _node_state_id(state)) < 0) {
 			error ("Bad state string: \"%s\"", state);
 			return (NULL);
 		}
 		list_append (state_ids, id);
-		state = strtok_r(NULL, ",&", &str);
+		state = strtok_r(NULL, ",&+", &str);
 	}
 
 	xfree (orig);

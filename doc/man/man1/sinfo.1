@@ -779,7 +779,8 @@ default sort value is "N" (increasing node name).
 \fB\-t\fR, \fB\-\-states\fR=<\fIstates\fR>
 List nodes only having the given state(s). Multiple states
 may be comma separated and the comparison is case insensitive.
-If the states are separated by '&', then the nodes must be in all states.
+If the states are separated by '+', then the nodes must be in all states.
+The state can be prefixed with '~' which will invert the result of match.
 Possible values include (case insensitive): ALLOC, ALLOCATED, BLOCKED, CLOUD,
 COMP, COMPLETING, DOWN, DRAIN (for node in DRAINING or DRAINED
 states), DRAINED, DRAINING, FAIL, FUTURE, FUTR,

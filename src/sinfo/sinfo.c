@@ -654,6 +654,59 @@ static int _build_sinfo_data(list_t *sinfo_list,
 	return SLURM_SUCCESS;
 }
 
+static bool _filter_node_state(uint32_t node_state, node_info_t *node_ptr)
+{
+	bool match = false;
+	uint16_t cpus = 0;
+	uint32_t base_state;
+	node_info_t tmp_node, *tmp_node_ptr = &tmp_node;
+	tmp_node_ptr->node_state = node_state;
+
+	if (node_state == NODE_STATE_DRAIN) {
+		/*
+		 * We search for anything that has the
+		 * drain flag set
+		 */
+		if (IS_NODE_DRAIN(node_ptr)) {
+			match = true;
+		}
+	} else if (IS_NODE_DRAINING(tmp_node_ptr)) {
+		/*
+		 * We search for anything that gets mapped to
+		 * DRAINING in node_state_string
+		 */
+		if (IS_NODE_DRAINING(node_ptr)) {
+			match = true;
+		}
+	} else if (IS_NODE_DRAINED(tmp_node_ptr)) {
+		/*
+		 * We search for anything that gets mapped to
+		 * DRAINED in node_state_string
+		 */
+		if (IS_NODE_DRAINED(node_ptr)) {
+			match = true;
+		}
+	} else if (node_state & NODE_STATE_FLAGS) {
+		if (node_state & node_ptr->node_state) {
+			match = true;
+		}
+	} else if (node_state == NODE_STATE_ALLOCATED) {
+		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
+					  SELECT_NODEDATA_SUBCNT,
+					  NODE_STATE_ALLOCATED, &cpus);
+		if (cpus) {
+			match = true;
+		}
+	} else {
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		if (base_state == node_state) {
+			match = true;
+		}
+	}
+
+	return match;
+}
+
 /*
  * _filter_out - Determine if the specified node should be filtered out or
  *	reported.
@@ -678,56 +731,15 @@ static bool _filter_out(node_info_t *node_ptr)
 		return true;
 
 	if (params.state_list) {
-		int *node_state;
+		sinfo_state_t *node_state;
 		bool match = false;
-		uint32_t base_state;
 		list_itr_t *iterator;
-		uint16_t cpus = 0;
-		node_info_t tmp_node, *tmp_node_ptr = &tmp_node;
 
 		iterator = list_iterator_create(params.state_list);
 		while ((node_state = list_next(iterator))) {
-			match = false;
-			tmp_node_ptr->node_state = *node_state;
-			if (*node_state == NODE_STATE_DRAIN) {
-				/* We search for anything that has the
-				 * drain flag set */
-				if (IS_NODE_DRAIN(node_ptr)) {
-					match = true;
-				}
-			} else if (IS_NODE_DRAINING(tmp_node_ptr)) {
-				/* We search for anything that gets mapped to
-				 * DRAINING in node_state_string */
-				if (IS_NODE_DRAINING(node_ptr)) {
-					match = true;
-				}
-			} else if (IS_NODE_DRAINED(tmp_node_ptr)) {
-				/* We search for anything that gets mapped to
-				 * DRAINED in node_state_string */
-				if (IS_NODE_DRAINED(node_ptr)) {
-					match = true;
-				}
-			} else if (*node_state & NODE_STATE_FLAGS) {
-				if (*node_state & node_ptr->node_state) {
-					match = true;
-				}
-			} else if (*node_state == NODE_STATE_ALLOCATED) {
-				slurm_get_select_nodeinfo(
-					node_ptr->select_nodeinfo,
-					SELECT_NODEDATA_SUBCNT,
-					NODE_STATE_ALLOCATED,
-					&cpus);
-				if (cpus) {
-					match = true;
-				}
-			} else {
-				base_state =
-					node_ptr->node_state & NODE_STATE_BASE;
-				if (base_state == *node_state) {
-					match = true;
-				}
-			}
-
+			match = _filter_node_state(node_state->state, node_ptr);
+			if (node_state->op == SINFO_STATE_OP_NOT)
+				match = !match;
 			if (!params.state_list_and && match)
 				break;
 			if (params.state_list_and && !match)
