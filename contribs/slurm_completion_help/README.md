@@ -36,20 +36,45 @@ The Bash completion script offers <TAB> completion for Slurm commands.
 
 ### Installation
 
-You must have the bash-completion package installed in order for this to work.
-Source the [slurm_completion.sh][slurm-completion] script. It is
-recommended to automate this by adding a bash sourcing line to your
-`.bashrc` or `.profile`. Alternatively, you can copy the file to
-`/etc/profile.d/` to automatically source it for login shells.
+You must have the `bash-completion` package installed for the script to work properly.
+
+There are a number of ways to configure and install bash completions for Slurm. Please refer to
+[`bash-completion`](https://github.com/scop/bash-completion) for general information.
+
+Enable for all users:
+
+- Install Slurm contribs:
+  ```bash
+  ./configure
+  sudo make install-contrib
+- Install just `contribs/slurm_completion_help`
+  ```bash
+  ./configure
+  cd contribs/slurm_completion_help
+  sudo make install
+  ```
+- Build and install certain Slurm from RPM or DEB packages.
+  - DEB: install `slurm-smd-client_[0-9]*.deb`
+  - RPM: install `slurm_[0-9]*.rpm`
+
+Enable for one user:
+
+- Copy [slurm_completion.sh][slurm-completion] into `$HOME/.local/share/bash-completion/completions`, and
+  symbolic link each supported Slurm command to [slurm_completion.sh][slurm-completion]:
+  ```bash
+  for cmd in sacct sacctmgr salloc sattach sbatch sbcast scancel scontrol scrontab sdiag sinfo slurmrestd sprio squeue sreport srun sshare sstat strigger; do
+    ln -sf "$HOME"/.local/share/bash-completion/completions/{slurm_completion.sh,"$cmd"};
+  done
+  ```
+- Copy [slurm_completion.sh][slurm-completion] into `$HOME`, and add a line to source it in `$HOME/.bashrc`:
+  ```bash
+  cp contribs/slurm_completion_help/slurm_completion.sh $HOME/slurm_completion.sh
+  echo ". $HOME/slurm_completion.sh" >>~/.bashrc
+  ```
 
 Additionally, there are a number of environment variables that can be set to
 alter/customize completion behavior. They are documented in
 [slurm_completion.sh][slurm-completion].
-
-```sh
-# .bashrc
-source /path/to/slurm_completion.sh
-```
 
 ### Examples
 
