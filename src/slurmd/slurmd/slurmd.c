@@ -1789,7 +1789,7 @@ _process_cmdline(int ac, char **av)
 	static char *opt_string = "bcCd:Df:F::GhL:Mn:N:svVZ";
 	int c;
 	char *tmp_char;
-
+	bool print_config = false;
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
 		LONG_OPT_AUTHINFO,
@@ -1835,8 +1835,7 @@ _process_cmdline(int ac, char **av)
 				conf->cleanstart = 1;
 			break;
 		case 'C':
-			_print_config();
-			exit(0);
+			print_config = true;
 			break;
 		case 'd':
 			xfree(conf->stepd_loc);
@@ -1928,6 +1927,11 @@ _process_cmdline(int ac, char **av)
 			exit(1);
 			break;
 		}
+	}
+
+	if (print_config) {
+		_print_config();
+		exit(0);
 	}
 
 	if (under_systemd && !conf->daemonize)
