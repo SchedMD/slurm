@@ -232,6 +232,25 @@ account    required      pam_slurm_adopt.so
 </pre>
 
 <p>
+The pam_listfile module can also be configured to look for membership of a
+group. In this example, instead of checking the user, the plugin checks that
+the user belongs to one of the groups specified in the 'groupfile'.
+If pam_systemd is needed for those users, you can link it to the
+pam_listfile.so module in the session phase, as shown below.
+If the pam_listfile module succeeds, the evaluation continues (success=ignore).
+Otherwise, the next module (pam_systemd) is ignored (default=1 skips the next
+module). The pam_systemd module will only be used for admin users in this
+example.
+</p>
+<pre>
+account    sufficient                    pam_listfile.so item=group sense=allow onerr=fail file=/path/to/allowed_users_file
+-account   required                      pam_slurm_adopt.so
+
+session    [default=1 success=ignore]    pam_listfile.so item=group sense=allow onerr=fail file=/etc/groupfile
+-session   optional                      pam_systemd.so
+</pre>
+
+<p>
 More information about the capabilities and configuration options for pam_access
 and pam_listfile can be found in their respective man pages.
 </p>
@@ -567,6 +586,6 @@ with pam_slurm_adopt.</p>
 <p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
 won't necessarily be in the same context as the job it is associated with.</p>
 
-<p style="text-align:center;">Last modified 31 October 2024</p>
+<p style="text-align:center;">Last modified 26 March 2025</p>
 
 <!--#include virtual="footer.txt"-->
