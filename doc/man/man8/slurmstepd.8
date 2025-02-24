@@ -1,4 +1,4 @@
-.TH slurmstepd "8" "Slurm Component" "August 2022" "Slurm Component"
+.TH slurmstepd "8" "Slurm Component" "January 2025" "Slurm Component"
 
 .SH "NAME"
 slurmstepd \- The job step manager for Slurm.
@@ -26,7 +26,12 @@ variable takes precedence over the setting in the slurm.conf.
 .SH "SIGNALS"
 
 .TP
-\fBSIGINT SIGTERM SIGTSTP SIGQUIT SIGPIPE SIGUSR1 SIGUSR2 SIGALRM SIGHUP\fR
+\fBSIGINT SIGTERM SIGQUIT\fR
+\fBslurmstepd\fR will shutdown cleanly.
+.IP
+
+.TP
+\fBSIGTSTP SIGPIPE SIGUSR1 SIGUSR2 SIGALRM SIGHUP\fR
 These signals are explicitly ignored.
 .IP
 
