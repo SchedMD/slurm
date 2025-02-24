@@ -173,6 +173,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		value = part_ptr->deny_qos;
 	}
 	xstrfmtcat(out, " %sQos=%s", allow_deny, value);
+
 	xstrcat(out, line_end);
 
 	/****** Line 3 ******/
@@ -330,6 +331,12 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	xstrfmtcat(out, " PreemptMode=%s", preempt_mode_string(preempt_mode));
 
 	xstrcat(out, line_end);
+
+	/****** Line ******/
+	if (part_ptr->topology_name) {
+		xstrfmtcat(out, "Topology=%s", part_ptr->topology_name);
+		xstrcat(out, line_end);
+	}
 
 	/****** Line ******/
 	if (part_ptr->state_up == PARTITION_UP)

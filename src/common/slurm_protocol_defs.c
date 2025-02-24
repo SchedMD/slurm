@@ -4365,6 +4365,7 @@ extern void slurm_free_partition_info_members(partition_info_t * part)
 		xfree(part->nodesets);
 		xfree(part->node_inx);
 		xfree(part->qos_char);
+		xfree(part->topology_name);
 		xfree(part->tres_fmt_str);
 	}
 }

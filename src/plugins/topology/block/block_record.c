@@ -43,15 +43,6 @@ typedef struct slurm_conf_block {
 	char *nodes; /* names of nodes directly connect to this block */
 } slurm_conf_block_t;
 
-bitstr_t *blocks_nodes_bitmap = NULL;	/* nodes on any bblock */
-block_record_t *block_record_table = NULL;
-uint16_t bblock_node_cnt = 0;
-bitstr_t *block_levels = NULL;
-uint32_t block_sizes[MAX_BLOCK_LEVELS] = {0};
-uint16_t block_sizes_cnt = 0;
-uint32_t blocks_nodes_cnt = 0;
-int block_record_cnt = 0;
-int ablock_record_cnt = 0;
 static bool allow_gaps = false;
 
 static s_p_hashtbl_t *conf_hashtbl = NULL;
@@ -117,11 +108,11 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 
 	s_p_get_boolean(&allow_gaps, "AllowGaps", conf_hashtbl);
 
-	FREE_NULL_BITMAP(block_levels);
-	block_levels = bit_alloc(MAX_BLOCK_LEVELS);
+	FREE_NULL_BITMAP(ctx->block_levels);
+	ctx->block_levels = bit_alloc(MAX_BLOCK_LEVELS);
 
 	if (!s_p_get_string(&tmp_str, "BlockSizes", conf_hashtbl)) {
-		bit_nset(block_levels, 0, 4);
+		bit_nset(ctx->block_levels, 0, 4);
 	} else {
 		char *save_ptr = NULL;
 		char *str_bsize = strtok_r(tmp_str, ",", &save_ptr);
@@ -132,13 +123,13 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 			bsize = atoi(str_bsize);
 			if (bsize <= 0)
 				break;
-			if (!bblock_node_cnt)
-				bblock_node_cnt = bsize;
-			if (bsize % bblock_node_cnt) {
+			if (!ctx->bblock_node_cnt)
+				ctx->bblock_node_cnt = bsize;
+			if (bsize % ctx->bblock_node_cnt) {
 				bsize = -1;
 				break;
 			}
-			block_level = bsize / bblock_node_cnt;
+			block_level = bsize / ctx->bblock_node_cnt;
 			tmp = log2(block_level);
 			if (tmp != floor(tmp)) {
 				bsize = -1;
@@ -150,7 +141,7 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 				bsize = -1;
 				break;
 			}
-			bit_set(block_levels, block_level);
+			bit_set(ctx->block_levels, block_level);
 
 			str_bsize = strtok_r(NULL, ",", &save_ptr);
 		}
@@ -175,13 +166,13 @@ static void _log_blocks(void)
 	int i;
 	block_record_t *block_ptr;
 
-	block_ptr = block_record_table;
-	for (i = 0; i < block_record_cnt; i++, block_ptr++) {
+	block_ptr = ctx->block_record_table;
+	for (i = 0; i < ctx->block_count; i++, block_ptr++) {
 		debug("Block name:%s nodes:%s",
 		      block_ptr->name, block_ptr->nodes);
 	}
 
-	for (i = 0; i < ablock_record_cnt; i++, block_ptr++) {
+	for (i = 0; i < ctx->ablock_count; i++, block_ptr++) {
 		debug("Aggregated Block name:%s nodes:%s",
 		      block_ptr->name, block_ptr->nodes);
 	}
@@ -189,18 +180,19 @@ static void _log_blocks(void)
 
 extern void block_record_table_destroy(void)
 {
-	if (!block_record_table)
+	if (!ctx->block_record_table)
 		return;
 
-	for (int i = 0; i < block_record_cnt + ablock_record_cnt; i++) {
-		xfree(block_record_table[i].name);
-		xfree(block_record_table[i].nodes);
-		FREE_NULL_BITMAP(block_record_table[i].node_bitmap);
+	for (int i = 0; i < ctx->block_count + ctx->ablock_count; i++) {
+		xfree(ctx->block_record_table[i].name);
+		xfree(ctx->block_record_table[i].nodes);
+		FREE_NULL_BITMAP(ctx->block_record_table[i].node_bitmap);
 	}
-	xfree(block_record_table);
-	block_record_cnt = 0;
-	block_sizes_cnt = 0;
-	ablock_record_cnt = 0;
+	xfree(ctx->block_record_table);
+	FREE_NULL_BITMAP(ctx->block_levels);
+	ctx->block_count = 0;
+	ctx->block_sizes_cnt = 0;
+	ctx->ablock_count = 0;
 }
 
 static int _cmp_block_level(const void *x, const void *y)
@@ -227,8 +219,8 @@ extern void block_record_validate(void)
 
 	block_record_table_destroy();
 
-	block_record_cnt = _read_topo_file(&ptr_array);
-	if (block_record_cnt == 0) {
+	ctx->block_count = _read_topo_file(&ptr_array);
+	if (ctx->block_count == 0) {
 		error("No blocks configured");
 		s_p_hashtbl_destroy(conf_hashtbl);
 		return;
@@ -236,14 +228,15 @@ extern void block_record_validate(void)
 	/*
 	 *  Allocate more than enough space for all aggregated blocks
 	 */
-	block_record_table = xcalloc((2 * block_record_cnt + MAX_BLOCK_LEVELS),
-				     sizeof(block_record_t));
-	block_ptr = block_record_table;
-	for (i = 0; i < block_record_cnt; i++, block_ptr++) {
+	ctx->block_record_table =
+		xcalloc((2 * ctx->block_count + MAX_BLOCK_LEVELS),
+			sizeof(block_record_t));
+	block_ptr = ctx->block_record_table;
+	for (i = 0; i < ctx->block_count; i++, block_ptr++) {
 		ptr = ptr_array[i];
 		block_ptr->name = xstrdup(ptr->block_name);
 		/* See if block name has already been defined. */
-		prior_ptr = block_record_table;
+		prior_ptr = ctx->block_record_table;
 		for (j = 0; j < i; j++, prior_ptr++) {
 			if (xstrcmp(block_ptr->name, prior_ptr->name) == 0) {
 				fatal("Block (%s) has already been defined",
@@ -261,19 +254,19 @@ extern void block_record_validate(void)
 				fatal("Invalid node name (%s) in block config (%s)",
 				      ptr->nodes, ptr->block_name);
 			}
-			if (blocks_nodes_bitmap) {
-				bit_or(blocks_nodes_bitmap,
+			if (ctx->blocks_nodes_bitmap) {
+				bit_or(ctx->blocks_nodes_bitmap,
 				       block_ptr->node_bitmap);
 			} else {
-				blocks_nodes_bitmap = bit_copy(block_ptr->
-							       node_bitmap);
+				ctx->blocks_nodes_bitmap =
+					bit_copy(block_ptr->node_bitmap);
 			}
-			if (bblock_node_cnt == 0) {
-				bblock_node_cnt =
+			if (ctx->bblock_node_cnt == 0) {
+				ctx->bblock_node_cnt =
 					bit_set_count(block_ptr->node_bitmap);
 			} else if (!allow_gaps &&
 				   (bit_set_count(block_ptr->node_bitmap) <
-				    bblock_node_cnt)) {
+				    ctx->bblock_node_cnt)) {
 				fatal("Block configuration (%s) children count lower than bblock_node_cnt",
 				      ptr->block_name);
 			}
@@ -285,13 +278,14 @@ extern void block_record_validate(void)
 			      ptr->block_name);
 		}
 	}
-	if (!bblock_node_cnt)
+	if (!ctx->bblock_node_cnt)
 		fatal("Blocks do not contain any nodes and the BlockSizes are not set");
-	if (blocks_nodes_bitmap) {
-		i = bit_clear_count(blocks_nodes_bitmap);
+	if (ctx->blocks_nodes_bitmap) {
+		i = bit_clear_count(ctx->blocks_nodes_bitmap);
 		if (i > 0) {
 			char *tmp_nodes;
-			bitstr_t *tmp_bitmap = bit_copy(blocks_nodes_bitmap);
+			bitstr_t *tmp_bitmap =
+				bit_copy(ctx->blocks_nodes_bitmap);
 			bit_not(tmp_bitmap);
 			tmp_nodes = bitmap2node_name(tmp_bitmap);
 			warning("Blocks lack access to %d nodes: %s",
@@ -300,7 +294,7 @@ extern void block_record_validate(void)
 			FREE_NULL_BITMAP(tmp_bitmap);
 		}
 	} else if (allow_gaps) {
-		blocks_nodes_bitmap = bit_alloc(node_record_count);
+		ctx->blocks_nodes_bitmap = bit_alloc(node_record_count);
 		warning("Blocks do not contain any nodes");
 	} else
 		fatal("Blocks do not contain any nodes");
@@ -312,69 +306,75 @@ extern void block_record_validate(void)
 		hostlist_destroy(invalid_hl);
 	}
 
-	while ((level = bit_ffs_from_bit(block_levels, level)) >= 0) {
-		if ((block_sizes[block_sizes_cnt++] = (1 << level)) >=
-		    block_record_cnt)
+	while ((level = bit_ffs_from_bit(ctx->block_levels, level)) >= 0) {
+		if ((ctx->block_sizes[ctx->block_sizes_cnt++] = (1 << level)) >=
+		    ctx->block_count)
 			break;
 
 		level++;
 	}
 
-	blocks_nodes_cnt = bit_set_count(blocks_nodes_bitmap);
+	ctx->blocks_nodes_cnt = bit_set_count(ctx->blocks_nodes_bitmap);
 
 	s_p_hashtbl_destroy(conf_hashtbl);
 
-	aggregated_inx = xcalloc(block_sizes_cnt, sizeof(int));
-	record_inx = block_record_cnt;
+	aggregated_inx = xcalloc(ctx->block_sizes_cnt, sizeof(int));
+	record_inx = ctx->block_count;
 
-	for (i = 0; i < block_record_cnt; i++) {
-		for (j = 1; j < block_sizes_cnt; j++) {
-			if (!(i % block_sizes[j])) {
-				int remaining_blocks = (block_record_cnt - i);
+	for (i = 0; i < ctx->block_count; i++) {
+		for (j = 1; j < ctx->block_sizes_cnt; j++) {
+			if (!(i % ctx->block_sizes[j])) {
+				int remaining_blocks = (ctx->block_count - i);
 
-				if ((block_sizes[j] > remaining_blocks) &&
-				    (block_sizes[j - 1] >= remaining_blocks)) {
+				if ((ctx->block_sizes[j] > remaining_blocks) &&
+				    (ctx->block_sizes[j - 1] >=
+				     remaining_blocks)) {
 					aggregated_inx[j] = -1;
 					continue;
 				}
-				block_record_table[record_inx].block_index =
-					record_inx;
-				block_record_table[record_inx].name =
-					xstrdup(block_record_table[i].name);
-				block_record_table[record_inx].node_bitmap =
-					bit_copy(block_record_table[i].
-						 node_bitmap);
-				block_record_table[record_inx].level = j;
+				ctx->block_record_table[record_inx]
+					.block_index = record_inx;
+				ctx->block_record_table[record_inx].name =
+					xstrdup(ctx->block_record_table[i]
+							.name);
+				ctx->block_record_table[record_inx]
+					.node_bitmap =
+					bit_copy(ctx->block_record_table[i]
+							 .node_bitmap);
+				ctx->block_record_table[record_inx].level = j;
 				aggregated_inx[j] = record_inx;
 				record_inx++;
 			} else {
 				int tmp = aggregated_inx[j];
 				if (tmp < 0)
 					continue;
-				xstrfmtcat(block_record_table[tmp].name,
-					   ",%s", block_record_table[i].name);
-				bit_or(block_record_table[tmp].node_bitmap,
-				       block_record_table[i].node_bitmap);
+				xstrfmtcat(ctx->block_record_table[tmp].name,
+					   ",%s",
+					   ctx->block_record_table[i].name);
+				bit_or(ctx->block_record_table[tmp].node_bitmap,
+				       ctx->block_record_table[i].node_bitmap);
 			}
 		}
 	}
 	xfree(aggregated_inx);
 
-	ablock_record_cnt = (record_inx - block_record_cnt);
+	ctx->ablock_count = (record_inx - ctx->block_count);
 
-	qsort(block_record_table + block_record_cnt, ablock_record_cnt,
+	qsort(ctx->block_record_table + ctx->block_count, ctx->ablock_count,
 	      sizeof(block_record_t), _cmp_block_level);
 
-	for (i = block_record_cnt; i < record_inx; i++) {
-		char *tmp_list = block_record_table[i].name;
+	for (i = ctx->block_count; i < record_inx; i++) {
+		char *tmp_list = ctx->block_record_table[i].name;
 		hostlist_t *hl = hostlist_create(tmp_list);
 
 		if (hl == NULL)
 			fatal("Invalid BlockName: %s", tmp_list);
 
-		block_record_table[i].name = hostlist_ranged_string_xmalloc(hl);
-		block_record_table[i].nodes =
-			bitmap2node_name(block_record_table[i].node_bitmap);
+		ctx->block_record_table[i].name =
+			hostlist_ranged_string_xmalloc(hl);
+		ctx->block_record_table[i].nodes =
+			bitmap2node_name(ctx->block_record_table[i]
+						 .node_bitmap);
 
 		hostlist_destroy(hl);
 		xfree(tmp_list);

@@ -912,6 +912,10 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		}
 	}
 
+	if (part->topology_name) {
+		part_ptr->topology_name = xstrdup(part->topology_name);
+	}
+
 	return 0;
 }
 

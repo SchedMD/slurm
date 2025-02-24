@@ -612,6 +612,10 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 		part_ptr->orig_nodes = part_rec_state->nodes;
 		part_rec_state->nodes = NULL;
 
+		xfree(part_ptr->topology_name);
+		part_ptr->topology_name = part_rec_state->topology_name;
+		part_rec_state->topology_name = NULL;
+
 		part_record_delete(part_rec_state);
 	}
 
@@ -970,7 +974,56 @@ extern buf_t *pack_all_part(uint16_t show_flags, uid_t uid,
  */
 void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		if (default_part_loc == part_ptr)
+			part_ptr->flags |= PART_FLAG_DEFAULT;
+		else
+			part_ptr->flags &= (~PART_FLAG_DEFAULT);
+
+		packstr(part_ptr->name, buffer);
+		pack32(part_ptr->cpu_bind, buffer);
+		pack32(part_ptr->grace_time, buffer);
+		pack32(part_ptr->max_time, buffer);
+		pack32(part_ptr->default_time, buffer);
+		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->min_nodes_orig, buffer);
+		pack32(part_ptr->total_nodes, buffer);
+		pack32(part_ptr->total_cpus, buffer);
+		pack64(part_ptr->def_mem_per_cpu, buffer);
+		pack32(part_ptr->max_cpus_per_node, buffer);
+		pack32(part_ptr->max_cpus_per_socket, buffer);
+		pack64(part_ptr->max_mem_per_cpu, buffer);
+
+		pack32(part_ptr->flags, buffer);
+		pack16(part_ptr->max_share, buffer);
+		pack16(part_ptr->over_time_limit, buffer);
+		pack16(part_ptr->preempt_mode, buffer);
+		pack16(part_ptr->priority_job_factor, buffer);
+		pack16(part_ptr->priority_tier, buffer);
+		pack16(part_ptr->state_up, buffer);
+		pack16(part_ptr->cr_type, buffer);
+		pack16(part_ptr->resume_timeout, buffer);
+		pack16(part_ptr->suspend_timeout, buffer);
+		pack32(part_ptr->suspend_time, buffer);
+
+		packstr(part_ptr->allow_accounts, buffer);
+		packstr(part_ptr->allow_groups, buffer);
+		packstr(part_ptr->allow_alloc_nodes, buffer);
+		packstr(part_ptr->allow_qos, buffer);
+		packstr(part_ptr->qos_char, buffer);
+		packstr(part_ptr->alternate, buffer);
+		packstr(part_ptr->deny_accounts, buffer);
+		packstr(part_ptr->deny_qos, buffer);
+		packstr(part_ptr->nodes, buffer);
+		packstr(part_ptr->nodesets, buffer);
+		pack_bit_str_hex(part_ptr->node_bitmap, buffer);
+		packstr(part_ptr->billing_weights_str, buffer);
+		packstr(part_ptr->topology_name, buffer);
+		packstr(part_ptr->tres_fmt_str, buffer);
+		(void) slurm_pack_list(part_ptr->job_defaults_list,
+				       job_defaults_pack, buffer,
+				       protocol_version);
+	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else
@@ -1766,6 +1819,14 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	} else if (part_ptr->node_bitmap == NULL) {
 		/* Newly created partition needs a bitmap, even if empty */
 		part_ptr->node_bitmap = bit_alloc(node_record_count);
+	}
+
+	if (part_desc->topology_name) {
+		info("%s: Setting Topology to %s for partition %s",
+		      __func__, part_desc->topology_name, part_desc->name);
+		xfree(part_ptr->topology_name);
+		part_ptr->topology_name = part_desc->topology_name;
+		part_desc->topology_name = NULL;
 	}
 
 fini:
