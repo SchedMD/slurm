@@ -1773,10 +1773,8 @@ static void _print_gres(void)
 	log_options_t *o = &conf->log_opts;
 
 	o->logfile_level = LOG_LEVEL_QUIET;
-	o->stderr_level = LOG_LEVEL_INFO;
+	o->stderr_level = conf->debug_level;
 	o->syslog_level = LOG_LEVEL_INFO;
-	if (conf->debug_level_set)
-		o->stderr_level = conf->debug_level;
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_USER, NULL);
 
@@ -1860,6 +1858,7 @@ _process_cmdline(int ac, char **av)
 			conf->dynamic_feature = xstrdup(optarg);
 			break;
 		case 'G':
+			conf->debug_level_set = 1;
 			conf->daemonize = 0;
 			conf->print_gres = true;
 			break;
