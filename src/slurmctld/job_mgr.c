@@ -228,6 +228,11 @@ typedef struct {
 	uint32_t uid;
 } foreach_kill_hetjob_step_t;
 
+typedef struct {
+	slurmctld_resv_t *cur_resv;
+	bool found;
+} findfirst_resv_overlap_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -11884,12 +11889,26 @@ static int _will_resv_allow_warn_time(void *x, void *arg)
 	return false;
 }
 
+static int _findfirst_resv_overlap_internal(void *x, void *arg)
+{
+	slurmctld_resv_t *cur_resv_in = x;
+	findfirst_resv_overlap_t *findfirst_resv_overlap = arg;
+	slurmctld_resv_t *cur_resv_check = findfirst_resv_overlap->cur_resv;
+
+	if (cur_resv_check->resv_id == cur_resv_in->resv_id) {
+		findfirst_resv_overlap->found = true;
+		return -1;
+	} else if (cur_resv_check->resv_id < cur_resv_in->resv_id) {
+		return -1;
+	}
+
+	return 0;
+}
+
 static bool _can_resv_overlap(top_prio_args_t *job_args, job_record_t *job_ptr2)
 {
 	job_record_t *job_ptr1 = job_args->job_ptr;
 	slurmctld_resv_t* cur_resv1;
-	slurmctld_resv_t* cur_resv2;
-	list_itr_t *resv_iter2;
 
 	if (job_args->use_none_resv_nodes && _use_none_resv_nodes(job_ptr2))
 		return true;
@@ -11928,19 +11947,25 @@ static bool _can_resv_overlap(top_prio_args_t *job_args, job_record_t *job_ptr2)
 	xassert(job_args->resv_list_iter);
 
 	list_iterator_reset(job_args->resv_list_iter);
-	resv_iter2 = list_iterator_create(job_ptr2->resv_list);
 	while ((cur_resv1 = list_next(job_args->resv_list_iter))) {
-		while ((cur_resv2 = list_next(resv_iter2))) {
-			if (cur_resv1->resv_id == cur_resv2->resv_id) {
-				list_iterator_destroy(resv_iter2);
-				return true;
-			} else if (cur_resv1->resv_id < cur_resv2->resv_id)
-				break;
+		findfirst_resv_overlap_t findfirst_resv_overlap = {
+			.cur_resv = cur_resv1,
+			.found = false,
+		};
+
+		/*
+		 * Continue if the cur_resv is less than any of the resv in the
+		 * second job's list. Otherwise return
+		 * findfirst_resv_overlap.found.
+		 */
+		if (!list_find_first(job_ptr2->resv_list,
+				     _findfirst_resv_overlap_internal,
+				     &findfirst_resv_overlap) ||
+			findfirst_resv_overlap.found) {
+			return findfirst_resv_overlap.found;
 		}
-		if (!cur_resv2)
-			break;
 	}
-	list_iterator_destroy(resv_iter2);
+
 	return false;
 }
 
