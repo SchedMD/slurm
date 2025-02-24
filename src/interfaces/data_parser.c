@@ -209,6 +209,8 @@ static data_parser_t *_new_parser(data_parser_on_error_t on_parse_error,
 	parser->arg = funcs->new(on_parse_error, on_dump_error, on_query_error,
 				 error_arg, on_parse_warn, on_dump_warn,
 				 on_query_warn, warn_arg, params);
+	xstrfmtcat(parser->plugin_string, "%s%s", parser->plugin_type,
+		   (parser->params ? parser->params : ""));
 	END_TIMER2(__func__);
 
 	slurm_mutex_lock(&init_mutex);
@@ -479,14 +481,6 @@ extern const char *data_parser_get_plugin(data_parser_t *parser)
 		return NULL;
 
 	xassert(parser->magic == PARSE_MAGIC);
-
-	/*
-	 * Generate string as requested using full plugin type where the
-	 * original request may not having included data_parser/
-	 */
-	if (!parser->plugin_string)
-		xstrfmtcat(parser->plugin_string, "%s%s", parser->plugin_type,
-			   (parser->params ? parser->params : ""));
 
 	return parser->plugin_string;
 }
