@@ -3,6 +3,67 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 24.11.2
 ==========================
+ -- Fix segfault when submitting --test-only jobs that can preempt.
+ -- Fix regression introduced in 23.11 that prevented the following
+    flags from being added to a reservation on an update:
+    DAILY, HOURLY, WEEKLY, WEEKDAY, and WEEKEND.
+ -- Fix crash and issues evaluating job's suitability for running in
+    nodes with already suspended job(s) there.
+ -- Slurmctld will ensure that healthy nodes are not reported as
+    UnavailableNodes in job reason codes.
+ -- Fix handling of jobs submitted to a current reservation with
+    flags OVERLAP,FLEX or OVERLAP,ANY_NODES when it overlaps nodes with a
+    future maintenance reservation. When a job submission had a time limit that
+    overlapped with the future maintenance reservation, it was rejected. Now
+    the job is accepted but stays pending with the reason "ReqNodeNotAvail,
+    Reserved for maintenance".
+ -- pam_slurm_adopt - avoid errors when explicitly setting
+    some arguments to the default value.
+ -- Fix qos preemption with PreemptMode=SUSPEND
+ -- slurmdbd - When changing a user's name update lineage
+    at the same time.
+ -- Fix regression in 24.11 in which burst_buffer.lua does not
+    inherit the SLURM_CONF environment variable from slurmctld and fails to run
+    if slurm.conf is in a non-standard location.
+ -- Fix memory leak in slurmctld if select/linear and the
+    PreemptParameters=reclaim_licenses options are both set in slurm.conf.
+    Regression in 24.11.1.
+ -- Fix running jobs, that requested multiple partitions, from
+    potentially being set to the wrong partition on restart.
+ -- switch/hpe_slingshot - Fix compatibility with newer cxi
+    drivers, specifically when specifying disable_rdzv_get.
+ -- Add ABORT_ON_FATAL environment variable to capture a backtrace
+    from any fatal() message.
+ -- Fix printing invalid address in rate limiting log statement.
+ -- sched/backfill - Fix node state PLANNED not being cleared from
+    fully allocated nodes during a backfill cycle.
+ -- select/cons_tres - Fix future planning of jobs with bf_licenses.
+ -- Prevent redundant "on_data returned rc: Rate limit exceeded,
+    please retry momentarily" error message from being printed in
+    slurmctld logs.
+ -- Fix loading non-default QOS on pending jobs from pre-24.11 state.
+ -- Fix pending jobs displaying QOS=(null) when not explicitly
+    requesting a QOS.
+ -- Fix segfault issue from job record with no job_resrcs
+ -- Fix failing sacctmgr delete/modify/show account operations
+    with where clauses.
+ -- Fix regression in 24.11 in which Slurm daemons started catching
+    several SIGTSTP, SIGTTIN and SIGUSR1 signals and ignored them, while before
+    they were not ignoring them. This also caused slurmctld to not being
+    able to shutdown after a SIGTSTP because slurmscriptd caught the signal
+    and stopped while slurmctld ignored it. Unify and fix these situations and
+    get back to the previous behavior for these signals.
+ -- Document that SIGQUIT is no longer ignored by slurmctld,
+    slurmdbd, and slurmd in 24.11. As of 24.11.0rc1, SIGQUIT is identical to
+    SIGINT and SIGTERM for these daemons, but this change was not documented.
+ -- Fix not considering nodes marked for reboot without ASAP
+    in the scheduler.
+ -- Remove the boot^ state on unexpected node reboot after
+    return to service.
+ -- Do not allow new jobs to start on a node which is being rebooted
+    with the flag nextstate=resume.
+ -- Prevent lower priority job running after cancelling an ASAP reboot.
+ -- Fix srun jobs starting on nextstate=resume rebooting nodes.
 
 * Changes in Slurm 24.11.1
 ==========================
