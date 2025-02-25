@@ -704,7 +704,6 @@ test36.4   bsub wrapper test
 
 test37.#   Testing of federations.
 ==================================
-test37.1   sacctmgr operations on clusters and federations.
 test37.2   Validate federated clusters return federated job ids.
 test37.3   scontrol show federations
 test37.4   federated job submission
