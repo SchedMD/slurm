@@ -12097,8 +12097,9 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 
 			if (job_ptr2 == job_ptr)
 				continue;
-			if ((het_job_offset != NO_VAL) && (job_ptr->job_id ==
-							   (job_ptr2->job_id + het_job_offset)))
+			if ((het_job_offset != NO_VAL) &&
+			    (job_ptr->job_id ==
+			     (job_ptr2->job_id + het_job_offset)))
 				continue;
 			if (!IS_JOB_PENDING(job_ptr2))
 				continue;
