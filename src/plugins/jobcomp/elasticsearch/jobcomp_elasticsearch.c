@@ -249,7 +249,7 @@ static int _save_state(void)
 	return rc;
 }
 
-extern int jobcomp_p_log_record(job_record_t *job_ptr)
+extern int jobcomp_p_record_job_end(job_record_t *job_ptr)
 {
 	struct job_node *jnode = NULL;
 	data_t *record = NULL;

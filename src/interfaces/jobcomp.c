@@ -52,7 +52,7 @@
 
 typedef struct slurm_jobcomp_ops {
 	int (*set_loc)(void);
-	int (*job_write)(job_record_t *job_ptr);
+	int (*record_job_end)(job_record_t *job_ptr);
 	list_t *(*get_jobs)(slurmdb_job_cond_t *params);
 } slurm_jobcomp_ops_t;
 
@@ -62,7 +62,7 @@ typedef struct slurm_jobcomp_ops {
  */
 static const char *syms[] = {
 	"jobcomp_p_set_location",
-	"jobcomp_p_log_record",
+	"jobcomp_p_record_job_end",
 	"jobcomp_p_get_jobs",
 };
 
@@ -157,7 +157,7 @@ done:
 	return SLURM_SUCCESS;
 }
 
-extern int jobcomp_g_write(job_record_t *job_ptr)
+extern int jobcomp_g_record_job_end(job_record_t *job_ptr)
 {
 	int retval = SLURM_SUCCESS;
 
@@ -169,7 +169,7 @@ extern int jobcomp_g_write(job_record_t *job_ptr)
 	slurm_mutex_lock(&context_lock);
 
 	xassert(g_context);
-	retval = (*(ops.job_write))(job_ptr);
+	retval = (*(ops.record_job_end))(job_ptr);
 
 	slurm_mutex_unlock(&context_lock);
 	return retval;

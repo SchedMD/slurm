@@ -93,7 +93,7 @@ extern int jobcomp_g_init(void);
 extern int jobcomp_g_fini(void);
 
 /* write record of a job's completion */
-extern int jobcomp_g_write(job_record_t *job_ptr);
+extern int jobcomp_g_record_job_end(job_record_t *job_ptr);
 
 /*
  * get info from the storage

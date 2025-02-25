@@ -193,7 +193,7 @@ extern int jobcomp_p_set_location(void)
 	return rc;
 }
 
-extern int jobcomp_p_log_record(job_record_t *job_ptr)
+extern int jobcomp_p_record_job_end(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32], *jname = NULL;
