@@ -278,7 +278,7 @@ extern void bit_cache_init(bitoff_t nbits)
  */
 #ifndef MEMORY_LEAK_DEBUG
 	slurm_mutex_lock(&cache_mutex);
-	if (cached_bitstr_len)
+	if (cached_bitstr_len && (cached_bitstr_len != nbits))
 		fatal_abort("%s: cannot change size once set", __func__);
 	cached_bitstr_len = nbits;
 	slurm_mutex_unlock(&cache_mutex);
