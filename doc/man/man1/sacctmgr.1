@@ -377,7 +377,7 @@ job to be initiated.
 The QOS this association and its children will use by default allowed in the
 QOS list mentioned below.
 This is overridden if set directly on a user.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBFairshare\fR={<\fIfairshare_number\fR>|parent}
@@ -390,21 +390,21 @@ If set on a user, the parent association is used for fairshare.
 If set on an account, that account's children will be effectively re\-parented
 for fairshare calculations to the first parent of their parent that is not
 Fairshare=parent. Limits remain the same, only its fairshare value is affected.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .TP
 \fBGrpJobs\fR=<\fImax_jobs\fR>
 Maximum number of running jobs in aggregate for this association and its
 children.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .TP
 \fBGrpJobsAccrue\fR=<\fImax_jobs\fR>
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and its children.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBGrpSubmit\fR=<\fImax_jobs\fR>
@@ -413,15 +413,14 @@ To clear a previously set value use the modify command with a new value of \-1.
 .PD
 Maximum number of jobs in a pending or running state at any time in aggregate
 for this association and its children.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .TP
 \fBGrpTRES\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
 Maximum number of TRES able to be allocated by running jobs in aggregate for
 this association and its children.
-To clear a previously set value use the modify command with a new
-value of \-1 for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
@@ -432,8 +431,7 @@ of available resources by running \fBsacctmgr show tres\fR.
 \fBGrpTRESMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
 Maximum number of TRES minutes that can possibly be used by past, present, and
 future jobs in this association and its children.
-To clear a previously set value use the modify command with a new
-value of \-1 for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
@@ -457,8 +455,7 @@ Maximum number of TRES minutes able to be allocated by running jobs in this
 association and its children. This takes into consideration time limit of
 running jobs and consumes it. If the limit is reached no new jobs are started
 until other jobs finish to allow time to free up.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
@@ -472,7 +469,7 @@ this association and its children.
 GrpWall format is <min> or <min>:<sec> or <hr>:<min>:<sec> or
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
 The value is recorded in minutes with rounding as needed.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 
 \fBNOTE\fR: Although it may appear in sacctmgr output, this limit will not
 be enforced if set on the root association of a cluster.
@@ -489,7 +486,7 @@ they are able to run inside the limit.
 \fBMaxJobs\fR=<\fImax_jobs\fR>
 Maximum number of running jobs per user in this association. This is overridden
 if set directly on a user. Default is the cluster's limit.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .TP
@@ -497,7 +494,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 Maximum number of pending jobs able to accrue age priority at any given time in
 this association. This is overridden if set directly on a user.
 Default is the cluster's limit.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBMaxSubmit\fR=<\fImax_jobs\fR>
@@ -506,7 +503,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .PD
 Maximum number of jobs in a pending or running state at any time in this
 association. Default is the cluster's limit.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBMaxTRES\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
@@ -518,8 +515,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 Maximum number of TRES each job can use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
-To clear a previously set value use the modify command with a new
-value of \-1 for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 
 .IP \fBMaxTRESMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
 .PD 0
@@ -530,8 +526,7 @@ value of \-1 for each TRES id.
 Maximum number of TRES minutes each job can use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
-To clear a previously set value use the modify command with a new
-value of \-1 for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
@@ -550,8 +545,7 @@ of available resources by running \fBsacctmgr show tres\fR.
 Maximum number of TRES each node in a job allocation can use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
-To clear a previously set value use the modify command with a new
-value of \-1 for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 etc...), or any defined generic resource. You can see the list
@@ -568,7 +562,7 @@ Default is the cluster's limit.
 MaxWall format is <min> or <min>:<sec> or <hr>:<min>:<sec> or
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
 The value is recorded in minutes with rounding as needed.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 
 \fBNOTE\fR: Changing this value will have no effect on any running or
 pending job.
@@ -579,7 +573,7 @@ pending job.
 Association priority factor to be used by the priority/multifactor plugin.
 This is overridden if set directly on a user.
 Unset by default, indicating that no extra priority is granted.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .TP
@@ -1037,8 +1031,8 @@ capapacity.
 .TP
 \fBFeatures\fR=<\fIcomma_separated_list_of_feature_names\fR>
 Features that are specific to the cluster. Federated jobs can be directed to
-clusters that contain the job requested features. To clear a previously set
-value, use the modify command with a new value of '' (two single quotes with
+clusters that contain the job requested features. 
+To clear an existing value, set a new value of '' (two single quotes with
 nothing between them).
 .IP
 
@@ -1614,17 +1608,17 @@ some attributes you can modify for a job record.
 .TP
 \fBAdminComment\fR=<\fIadmin_comment\fR>
 Arbitrary descriptive string. Can only be modified by a Slurm administrator.
-To clear a previously set value, use the modify command with a new value
-of '' (two single quotes with nothing between them).
+To clear an existing value, set a new value of '' (two single quotes with
+nothing between them).
 .IP
 
 .TP
 \fBComment\fR=<\fIcomment\fR>
 The job's comment string when the AccountingStoreFlags parameter
 in the slurm.conf file contains 'job_comment'. The user can only
-modify the comment string of their own job. To clear a previously set value,
-use the modify command with a new value of '' (two single quotes with nothing
-between them).
+modify the comment string of their own job.
+To clear an existing value, set a new value of '' (two single quotes with
+nothing between them).
 .IP
 
 .TP
@@ -1650,8 +1644,9 @@ variable.
 \fBExtra\fR=<\fIextra\fR>
 The job's extra string when the AccountingStoreFlags parameter in the slurm.conf
 file contains 'job_extra'. The user can only modify the extra string of their
-own job. To clear a previously set value, use the modify command with a new
-value of '' (two single quotes with nothing between them).
+own job.
+To clear an existing value, set a new value of '' (two single quotes with
+nothing between them).
 .IP
 
 .TP
@@ -1674,8 +1669,8 @@ Jobs must start at or after this time to be modified in the same format as
 .TP
 \fBSystemComment\fR=<\fIsystem_comment\fR>
 Arbitrary descriptive string, usually managed by the BurstBufferPlugin.
-Can only be modified by a Slurm administrator. To clear a previously set
-value, use the modify command with a new value of '' (two single quotes
+Can only be modified by a Slurm administrator.
+To clear an existing value, set a new value of '' (two single quotes
 with nothing between them).
 .IP
 
@@ -1722,7 +1717,7 @@ administrator.
 .TP
 \fBFlags\fR
 Used by the slurmctld to override or enforce certain characteristics.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .br
 Valid options are
 .RS
@@ -1843,7 +1838,7 @@ time is allowed on this QOS. This value is only applicable for QOS
 .TP
 \fBGrpJobs\fR
 Maximum number of running jobs in aggregate for this QOS.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .TP
@@ -1851,7 +1846,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 QOS.
 This limit only applies to the job's QOS and not the partition's QOS.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBGrpSubmit\fR
@@ -1860,15 +1855,14 @@ To clear a previously set value use the modify command with a new value of \-1.
 .PD
 Maximum number of jobs in a pending or running state at any time in aggregate
 for this QOS.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .TP
 \fBGrpTRES\fR
 Maximum number of TRES able to be allocated by running jobs in aggregate for
 this QOS.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
@@ -1879,8 +1873,7 @@ of available resources by running \fBsacctmgr show tres\fR.
 \fBGrpTRESMins\fR
 Maximum number of TRES minutes that can possibly be used by past, present, and
 future jobs with this QOS.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
@@ -1900,8 +1893,7 @@ Maximum number of TRES minutes able to be allocated by running jobs with this
 QOS. This takes into consideration time limit of running jobs and consumes it,
 if the limit is reached no new jobs are started until other jobs finish to allow
 time to free up.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
@@ -1916,7 +1908,7 @@ denied and the running jobs will be killed.
 GrpWall format is <min> or <min>:<sec> or <hr>:<min>:<sec> or
 <days>-<hr>:<min>:<sec> or <days>-<hr>.
 The value is recorded in minutes with rounding as needed.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 
 \fBNOTE\fR: This limit only applies when using the Priority Multifactor
 plugin. The time is decayed using the value of PriorityDecayHalfLife
@@ -1931,7 +1923,7 @@ inside the limit.
 A float that is factored into an association's [Grp|Max]TRES limits. For
 example, if the LimitFactor is 2, then an association with a GrpTRES of
 30 CPUs, would be allowed to allocate 60 CPUs when running under this QOS.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 \fBNOTE\fR: This factor is only applied to associations running in this QOS
 and is not applied to any limits in the QOS itself.
 .IP
@@ -1943,7 +1935,7 @@ and is not applied to any limits in the QOS itself.
 Maximum number of pending jobs an account (or subacct) can have accruing age
 priority at any given time.
 This limit only applies to the job's QOS and not the partition's QOS.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBMaxJobsAccruePU\fR
@@ -1953,7 +1945,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 Maximum number of pending jobs a user can have accruing age priority at any
 given time.
 This limit only applies to the job's QOS and not the partition's QOS.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBMaxJobsPA\fR
@@ -1961,7 +1953,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP \fBMaxJobsPerAccount\fR
 .PD
 Maximum number of running jobs per account.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBMaxJobsPU\fR
@@ -1969,7 +1961,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP \fBMaxJobsPerUser\fR
 .PD
 Maximum number of running jobs per user.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBMaxSubmitJobsPA\fR
@@ -1977,7 +1969,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP \fBMaxSubmitJobsPerAccount\fR
 .PD
 Maximum number of jobs in a pending or running state per account.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBMaxSubmitJobsPU\fR
@@ -1985,7 +1977,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP \fBMaxSubmitJobsPerUser\fR
 .PD
 Maximum number of jobs in a pending or running state per user.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBMaxTRES\fR
@@ -1999,8 +1991,7 @@ Maximum number of TRES each job can use.
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
 of available resources by running \fBsacctmgr show tres\fR.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 .IP
 
 .IP \fBMaxTRESMins\fR
@@ -2014,8 +2005,7 @@ Maximum number of TRES minutes each job can use.
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
 of available resources by running \fBsacctmgr show tres\fR.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 .IP
 
 .IP \fBMaxTRESPA\fR
@@ -2027,8 +2017,7 @@ Maximum number of TRES each account can use.
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
 of available resources by running \fBsacctmgr show tres\fR.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 .IP
 
 .IP \fBMaxTRESPN\fR
@@ -2040,8 +2029,7 @@ Maximum number of TRES each node in a job allocation can use.
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
 of available resources by running \fBsacctmgr show tres\fR.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 .IP
 
 .IP \fBMaxTRESPU\fR
@@ -2053,8 +2041,7 @@ Maximum number of TRES each user can use.
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
 of available resources by running \fBsacctmgr show tres\fR.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 .IP
 
 .IP \fBMaxTRESRunMinsPA\fR
@@ -2068,8 +2055,7 @@ jobs are started until other jobs finish to allow time to free up.
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
 of available resources by running \fBsacctmgr show tres\fR.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 .IP
 
 .IP \fBMaxTRESRunMinsPU\fR
@@ -2083,8 +2069,7 @@ jobs are started until other jobs finish to allow time to free up.
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
 of available resources by running \fBsacctmgr show tres\fR.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 .IP
 
 .IP \fBMaxWall\fR
@@ -2094,13 +2079,13 @@ for each TRES id.
 Maximum wall clock time each job can use. MaxWall format is <min> or
 <min>:<sec> or <hr>:<min>:<sec> or <days>-<hr>:<min>:<sec> or <days>-<hr>.
 The value is recorded in minutes with rounding as needed.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .TP
 \fBMinPrioThreshold\fR
 Minimum priority required to reserve resources when scheduling.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 .IP \fBMinTRES\fR
@@ -2113,8 +2098,7 @@ Otherwise the job will pend until modified.
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
 of available resources by running \fBsacctmgr show tres\fR.
-To clear a previously set value use the modify command with a new value of \-1
-for each TRES id.
+To clear an existing value, set a new value of \-1 for each TRES type/name.
 .IP
 
 .TP
@@ -2124,8 +2108,8 @@ Name of the QOS. Needed for creation.
 
 .TP
 \fBPreempt\fR
-Other QOSs this QOS can preempt. To clear a previously set
-value, use the modify command with a new value of '' (two single quotes with
+Other QOSs this QOS can preempt.
+To clear an existing value, set a new value of '' (two single quotes with
 nothing between them).
 
 
@@ -2284,8 +2268,7 @@ limits.
 
 See \fIAccountingStorageEnforce\fR in slurm.conf man page.
 
-Default is 1. To clear a previously set value use the modify command with a new
-value of \-1.
+Default is 1. To clear an existing value, set a new value of \-1.
 .IP
 
 .TP
@@ -2295,7 +2278,7 @@ to run a job. If an association falls below this threshold and has
 pending jobs or submits new jobs those jobs will be held until the
 usage goes back above the threshold. Use \fIsshare\fP to see current
 shares on the system.
-To clear a previously set value use the modify command with a new value of \-1.
+To clear an existing value, set a new value of \-1.
 .IP
 
 
