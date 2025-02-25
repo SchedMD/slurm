@@ -12080,6 +12080,12 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 		bool parts_overlap = false;
 
 		top = true;	/* assume top priority until found otherwise */
+		/*
+		 * This cannot be a list_for_each this calls
+		 * job_independent() -> test_job_dependency() which needs to
+		 * call list_find_first() on the job_list making it impossible
+		 * to also have this a list_for_each() on job_list.
+		 */
 		job_iterator = list_iterator_create(job_list);
 		while ((job_ptr2 = list_next(job_iterator))) {
 			bool overlap_with_resv = false;
