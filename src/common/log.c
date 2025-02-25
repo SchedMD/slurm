@@ -1449,11 +1449,8 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 
 		/* Avoid changing errno if syslog fails */
 		int orig_errno = errno;
-		xlogfmtcat(&msgbuf, "%s%s%s", log->prefix, pfx, buf);
-		syslog(priority, "%.500s", msgbuf);
+		syslog(priority, "%s%s%s", log->prefix, pfx, buf);
 		errno = orig_errno;
-
-		xfree(msgbuf);
 	}
 
 	slurm_mutex_unlock(&log_lock);
