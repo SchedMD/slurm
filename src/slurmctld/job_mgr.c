@@ -12247,21 +12247,23 @@ static void _hold_job_rec(job_record_t *job_ptr, uid_t uid)
 	sched_info("%s: hold on %pJ by uid %u", __func__, job_ptr, uid);
 }
 
+static int _foreach_hold_het_comp(void *x, void *arg)
+{
+	_hold_job_rec(x, *(uid_t *) arg);
+	return 0;
+}
+
 static void _hold_job(job_record_t *job_ptr, uid_t uid)
 {
-	job_record_t *het_job_leader = NULL, *het_job;
-	list_itr_t *iter;
+	job_record_t *het_job_leader = NULL;
 
 	if (job_ptr->het_job_id && _get_whole_hetjob())
 		het_job_leader = find_job_record(job_ptr->het_job_id);
-	if (het_job_leader && het_job_leader->het_job_list) {
-		iter = list_iterator_create(het_job_leader->het_job_list);
-		while ((het_job = list_next(iter)))
-			_hold_job_rec(het_job, uid);
-		list_iterator_destroy(iter);
-		return;
-	}
-	_hold_job_rec(job_ptr, uid);
+	if (het_job_leader && het_job_leader->het_job_list)
+		(void) list_for_each(het_job_leader->het_job_list,
+				     _foreach_hold_het_comp, &uid);
+	else
+		_hold_job_rec(job_ptr, uid);
 }
 
 static void _release_job_rec(job_record_t *job_ptr, uid_t uid)
