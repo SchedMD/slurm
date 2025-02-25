@@ -1347,9 +1347,6 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 {
 	jobacctinfo_t *jobacct = NULL;
 	struct rusage rusage;
-	jobacct_id_t jobacct_id;
-	int status = 0;
-	pid_t pid;
 	int rc = SLURM_SUCCESS;
 	uint32_t jobid = step->step_id.job_id;
 
@@ -1400,6 +1397,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 		 * in /tmp from inside the job.
 		 */
 		if (_need_join_container()) {
+			pid_t pid;
 			int to_parent[2] = {-1, -1};
 
 			if (pipe(to_parent) < 0) {
@@ -1444,46 +1442,7 @@ x11_fail:
 		      step->x11_xauthority);
 	}
 
-	pid = fork();
-	if (pid == 0) {
-		setpgid(0, 0);
-		setsid();
-		set_oom_adj(0);	/* the tasks may be killed by OOM */
-		acct_gather_profile_g_child_forked();
-		/*
-		 * Need to exec() something for proctrack/linuxproc to
-		 * work, it will not keep a process named "slurmstepd"
-		 */
-		execl(SLEEP_CMD, "sleep", "100000000", NULL);
-		error("execl: %m");
-		sleep(1);
-		_exit(0);
-	} else if (pid < 0) {
-		rc = errno;
-		error("fork: %m");
-		set_job_state(step, SLURMSTEPD_STEP_ENDING);
-		/* let the slurmd know we actually are done with the setup */
-		close_slurmd_conn(rc);
-		goto fail1;
-	}
-
-	step->pgid = pid;
-
-	if ((rc = proctrack_g_add(step, pid)) != SLURM_SUCCESS) {
-		error("%s: %ps unable to add pid %d to the proctrack plugin",
-		      __func__, &step->step_id, pid);
-		killpg(pid, SIGKILL);
-		kill(pid, SIGKILL);
-		/* let the slurmd know we actually are done with the setup */
-		close_slurmd_conn(rc);
-		goto fail1;
-	}
-
-	jobacct_id.nodeid = step->nodeid;
-	jobacct_id.taskid = step->nodeid; /* Treat node ID as global task ID */
-	jobacct_id.step = step;
 	jobacct_gather_set_proctrack_container_id(step->cont_id);
-	jobacct_gather_add_task(pid, &jobacct_id, 1);
 
 	set_job_state(step, SLURMSTEPD_STEP_RUNNING);
 	if (!slurm_conf.job_acct_gather_freq)
@@ -1520,10 +1479,11 @@ x11_fail:
 	 */
 	close_slurmd_conn(rc);
 
-	while ((wait4(pid, &status, 0, &rusage) < 0) && (errno == EINTR)) {
-		;	       /* Wait until above process exits from signal */
+	slurm_mutex_lock(&step->state_mutex);
+	while ((step->state < SLURMSTEPD_STEP_CANCELLED)) {
+		slurm_cond_wait(&step->state_cond, &step->state_mutex);
 	}
-
+	slurm_mutex_unlock(&step->state_mutex);
 	/* Wait for all steps other than extern (this one) to complete */
 	if (!pause_for_job_completion(jobid, MAX(slurm_conf.kill_wait, 5),
 				      true)) {
@@ -1539,7 +1499,6 @@ x11_fail:
 		_local_jobacctinfo_aggregate(step->jobacct, jobacct);
 		jobacctinfo_destroy(jobacct);
 	}
-	acct_gather_profile_g_task_end(pid);
 	step_complete.rank = step->nodeid;
 	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();

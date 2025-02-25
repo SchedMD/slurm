@@ -136,6 +136,8 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 				   int poll);
 /* must free jobacctinfo_t if not NULL */
 extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid, bool update_data);
+
+extern void jobacct_gather_stat_all_task(jobacctinfo_t *ret_jobacct);
 /*
  * Find task by pid and remove from tracked task list.
  *
