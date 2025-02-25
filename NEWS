@@ -3,6 +3,19 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 24.05.6
 ==========================
+ -- data_parser/v0.0.40 - Prevent a segfault in the slurmrestd when
+    dumping data with v0.0.40+complex data parser.
+ -- Fix sattach when using auth/slurm.
+ -- scrun - Add support '--all' argument for kill subcommand.
+ -- Fix performance regression while packing larger RPCs.
+ -- Fix crash and issues evaluating job's suitability for running in
+    nodes with already suspended job(s) there.
+ -- Fixed a job requeuing issue that merged job entries into the
+    same SLUID when all nodes in a job failed simultaneously.
+ -- switch/hpe_slingshot - Fix compatibility with newer cxi
+    drivers, specifically when specifying disable_rdzv_get.
+ -- Add ABORT_ON_FATAL environment variable to capture a backtrace
+    from any fatal() message.
 
 * Changes in Slurm 24.05.5
 ==========================
