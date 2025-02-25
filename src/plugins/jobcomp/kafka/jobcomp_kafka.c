@@ -89,7 +89,7 @@ extern int init(void)
 
 	jobcomp_kafka_conf_init();
 	jobcomp_kafka_conf_parse_params();
-	if ((rc = jobcomp_kafka_conf_parse_location(slurm_conf.job_comp_loc)))
+	if ((rc = jobcomp_kafka_conf_parse_location()))
 		return rc;
 
 	if ((rc = jobcomp_kafka_message_init()))

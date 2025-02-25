@@ -66,19 +66,20 @@ static void _destroy_kafka_conf(void)
 	slurm_rwlock_unlock(&kafka_conf_rwlock);
 }
 
-static void _parse_flags(char *flags_str)
+static void _parse_flags(void)
 {
 	kafka_conf->flags = 0;
-	if (xstrcasestr(flags_str, "purge_in_flight"))
+
+	if (xstrcasestr(slurm_conf.job_comp_params, "purge_in_flight"))
 		kafka_conf->flags |= KAFKA_CONF_FLAG_PURGE_IN_FLIGHT;
 
-	if (xstrcasestr(flags_str, "purge_non_blocking"))
+	if (xstrcasestr(slurm_conf.job_comp_params, "purge_non_blocking"))
 		kafka_conf->flags |= KAFKA_CONF_FLAG_PURGE_NON_BLOCKING;
 
-	if (xstrcasestr(flags_str, "requeue_on_msg_timeout"))
+	if (xstrcasestr(slurm_conf.job_comp_params, "requeue_on_msg_timeout"))
 		kafka_conf->flags |= KAFKA_CONF_FLAG_REQUEUE_ON_MSG_TIMEOUT;
 
-	if (xstrcasestr(flags_str, "requeue_purge_in_flight"))
+	if (xstrcasestr(slurm_conf.job_comp_params, "requeue_purge_in_flight"))
 		kafka_conf->flags |= KAFKA_CONF_FLAG_REQUEUE_PURGE_IN_FLIGHT;
 }
 
@@ -148,7 +149,7 @@ extern void jobcomp_kafka_conf_fini(void)
 	_destroy_kafka_conf();
 }
 
-extern int jobcomp_kafka_conf_parse_location(char *location)
+extern int jobcomp_kafka_conf_parse_location(void)
 {
 	FILE *fp;
 	char *line = NULL, *key = NULL, *value = NULL;
@@ -157,9 +158,9 @@ extern int jobcomp_kafka_conf_parse_location(char *location)
 
 	xassert(rd_kafka_conf_list);
 
-	if (!(fp = fopen(location, "r"))) {
+	if (!(fp = fopen(slurm_conf.job_comp_loc, "r"))) {
 		error("%s: fopen() failed for file '%s': %m",
-		      plugin_type, location);
+		      plugin_type, slurm_conf.job_comp_loc);
 		return SLURM_ERROR;
 	}
 
@@ -187,7 +188,7 @@ extern void jobcomp_kafka_conf_parse_params(void)
 
 	slurm_rwlock_wrlock(&kafka_conf_rwlock);
 
-	_parse_flags(slurm_conf.job_comp_params);
+	_parse_flags();
 
 	if (!(begin = xstrstr(slurm_conf.job_comp_params, flush_timeout_key))) {
 		kafka_conf->flush_timeout = DEFAULT_FLUSH_TIMEOUT;

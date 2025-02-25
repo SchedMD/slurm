@@ -77,7 +77,7 @@ extern void jobcomp_kafka_conf_fini(void);
  * IN: char *location
  * RET: SLURM_ERROR if problem opening the file, SLURM_SUCCESS otherwise.
  */
-extern int jobcomp_kafka_conf_parse_location(char *location);
+extern int jobcomp_kafka_conf_parse_location(void);
 
 extern void jobcomp_kafka_conf_parse_params(void);
 
