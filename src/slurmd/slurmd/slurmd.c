@@ -1773,10 +1773,8 @@ static void _print_gres(void)
 	log_options_t *o = &conf->log_opts;
 
 	o->logfile_level = LOG_LEVEL_QUIET;
-	o->stderr_level = LOG_LEVEL_INFO;
+	o->stderr_level = conf->debug_level;
 	o->syslog_level = LOG_LEVEL_INFO;
-	if (conf->debug_level_set)
-		o->stderr_level = conf->debug_level;
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_USER, NULL);
 
@@ -1791,7 +1789,7 @@ _process_cmdline(int ac, char **av)
 	static char *opt_string = "bcCd:Df:F::GhL:Mn:N:svVZ";
 	int c;
 	char *tmp_char;
-
+	bool print_config = false;
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
 		LONG_OPT_AUTHINFO,
@@ -1837,8 +1835,7 @@ _process_cmdline(int ac, char **av)
 				conf->cleanstart = 1;
 			break;
 		case 'C':
-			_print_config();
-			exit(0);
+			print_config = true;
 			break;
 		case 'd':
 			xfree(conf->stepd_loc);
@@ -1860,6 +1857,8 @@ _process_cmdline(int ac, char **av)
 			conf->dynamic_feature = xstrdup(optarg);
 			break;
 		case 'G':
+			conf->debug_level_set = 1;
+			conf->daemonize = 0;
 			conf->print_gres = true;
 			break;
 		case 'h':
@@ -1928,6 +1927,11 @@ _process_cmdline(int ac, char **av)
 			exit(1);
 			break;
 		}
+	}
+
+	if (print_config) {
+		_print_config();
+		exit(0);
 	}
 
 	if (under_systemd && !conf->daemonize)
