@@ -1660,7 +1660,8 @@ mechanism, while new steps will use the new mechanism.
 \fBJobAcctGatherFrequency\fR
 The job accounting and profiling sampling intervals, specified for each data
 type. Multiple comma\-separated \fB<datatype>=<interval>\fR intervals may be
-specified. Supported datatypes are as follows:
+specified. If an interval is provided without a datatype, it will be assigned
+to the \fBtask\fR datatype. Supported datatypes are as follows:
 .IP
 .RS
 .TP 12
