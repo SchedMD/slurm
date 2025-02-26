@@ -39,6 +39,7 @@
 #include "src/common/macros.h"
 #include "src/common/sluid.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xrandom.h"
 #include "src/common/xstring.h"
 
 #ifdef __linux__
@@ -102,12 +103,7 @@ extern sluid_t generate_sluid(void)
 extern uint16_t generate_cluster_id(void)
 {
 	/* Cluster IDs must be between 2 and 4095. */
-	static bool seeded = false;
-	if (!seeded) {
-		srandom(time(NULL) + getpid());
-		seeded = true;
-	}
-	return (random() % (4096 - 2)) + 2;
+	return (xrandom() % (4096 - 2)) + 2;
 }
 
 extern char *sluid2str(const sluid_t sluid)
