@@ -30,3 +30,34 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "config.h"
+
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
+
+#ifdef HAVE_GETRANDOM
+#include <sys/random.h>
+#endif
+
+uint32_t xrandom(void)
+{
+	static bool no_seed = true;
+	uint32_t random_value = 0;
+
+#ifdef HAVE_GETRANDOM
+	if (getrandom(&random_value, sizeof(random_value), 0) != -1)
+		return random_value;
+#endif
+	if (no_seed) {
+		srandom(time(NULL) + getpid());
+		no_seed = false;
+	}
+
+	random_value = random();
+
+	return random_value;
+}

@@ -33,4 +33,6 @@
 #ifndef _COMMON_XRANDOM_H
 #define _COMMON_XRANDOM_H
 
+uint32_t xrandom(void);
+
 #endif
