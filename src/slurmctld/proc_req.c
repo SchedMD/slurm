@@ -3255,13 +3255,7 @@ static void _slurm_rpc_request_control(slurm_msg_t *msg)
 /* _slurm_rpc_shutdown_controller - process RPC to shutdown slurmctld */
 static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 {
-	int error_code = SLURM_SUCCESS;
-	slurmctld_shutdown_type_t options = SLURMCTLD_SHUTDOWN_ALL;
-	time_t now = time(NULL);
 	shutdown_msg_t *shutdown_msg = msg->data;
-	/* Locks: Read node */
-	slurmctld_lock_t node_read_lock = {
-		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!validate_super_user(msg->auth_uid)) {
 		error("Security violation, SHUTDOWN RPC from uid=%u",
@@ -3270,23 +3264,13 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 		return;
 	}
 
-	if (msg->msg_type == REQUEST_CONTROL) {
-		info("Performing RPC: REQUEST_CONTROL");
-		slurm_mutex_lock(&slurmctld_config.backup_finish_lock);
-		/* resume backup mode */
-		slurmctld_config.resume_backup = true;
-	} else {
-		info("Performing RPC: REQUEST_SHUTDOWN");
-		options = shutdown_msg->options;
-	}
+	info("Performing RPC: REQUEST_SHUTDOWN");
 
-	/* do RPC call */
 	if (slurmctld_config.shutdown_time)
 		debug2("shutdown RPC issued when already in progress");
 	else {
-		if ((msg->msg_type == REQUEST_SHUTDOWN) &&
-		    (options == SLURMCTLD_SHUTDOWN_ALL)) {
-			/* This means (msg->msg_type != REQUEST_CONTROL) */
+		if (shutdown_msg->options == SLURMCTLD_SHUTDOWN_ALL) {
+			slurmctld_lock_t node_read_lock = { .node = READ_LOCK };
 			lock_slurmctld(node_read_lock);
 			msg_to_slurmd(REQUEST_SHUTDOWN);
 			unlock_slurmctld(node_read_lock);
@@ -3295,40 +3279,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 		pthread_kill(pthread_self(), SIGTERM);
 	}
 
-	if (msg->msg_type == REQUEST_CONTROL) {
-		struct timespec ts = {0, 0};
-
-		/* save_all_state();	performed by _slurmctld_background */
-
-		/*
-		 * Wait for the backup to dump state and finish up everything.
-		 * This should happen in _slurmctld_background and then release
-		 * once we know for sure we are in backup mode in run_backup().
-		 * Here we will wait CONTROL_TIMEOUT - 1 before we reply.
-		 */
-		ts.tv_sec = now + CONTROL_TIMEOUT - 1;
-
-		slurm_cond_timedwait(&slurmctld_config.backup_finish_cond,
-				     &slurmctld_config.backup_finish_lock,
-				     &ts);
-		slurm_mutex_unlock(&slurmctld_config.backup_finish_lock);
-
-		/*
-		 * jobcomp/elasticsearch saves/loads the state to/from file
-		 * elasticsearch_state. Since the jobcomp API isn't designed
-		 * with save/load state operations, the jobcomp/elasticsearch
-		 * _save_state() is highly coupled to its fini() function. This
-		 * state doesn't follow the same execution path as the rest of
-		 * Slurm states, where in save_all_sate() they are all indepen-
-		 * dently scheduled. So we save it manually here.
-		 */
-		jobcomp_g_fini();
-
-		if (slurmctld_config.resume_backup)
-			error("%s: REQUEST_CONTROL reply but backup not completely done relinquishing control.  Old state possible", __func__);
-	}
-
-	slurm_send_rc_msg(msg, error_code);
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
 static int _foreach_step_match_containerid(void *x, void *arg)
