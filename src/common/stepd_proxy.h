@@ -41,4 +41,38 @@
  */
 extern void stepd_proxy_slurmd_init(char *spooldir);
 
+/*
+ * Initialize slurmd address for creating connections
+ */
+extern void stepd_proxy_stepd_init(char *spooldir);
+
+/*
+ * Send message to slurmctld via slurmd. Do not get response.
+ *
+ * See slurm_send_only_controller_msg() for function description
+ */
+extern int stepd_proxy_send_only_ctld_msg(slurm_msg_t *req);
+
+/*
+ * Send message to and receive response from slurmctld via slurmd
+ *
+ * See slurm_send_only_controller_msg() for function description
+ */
+extern int stepd_proxy_send_recv_ctld_msg(slurm_msg_t *req, slurm_msg_t *resp);
+
+/*
+ * Send message to another node via slurmd. Do not get response.
+ *
+ * See slurm_send_only_node_msg() for function description
+ */
+extern int stepd_proxy_send_only_node_msg(slurm_msg_t *req);
+
+/*
+ * Send message to and receive response from another node via slurmd
+ *
+ * See slurm_send_recv_node_msg() for function description
+ */
+extern int stepd_proxy_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp,
+					  int timeout);
+
 #endif

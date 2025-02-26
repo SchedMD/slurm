@@ -59,6 +59,7 @@
 #include "src/common/port_mgr.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
+#include "src/common/stepd_proxy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -1069,6 +1070,14 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 
 	*_cli = cli;
 	*_msg = msg;
+
+	/*
+	 * When using TLS, slurmstepd messages bound to other nodes are relayed
+	 * through slurmd. This caches slurmd spooldir so that slurmstepd can
+	 * get the address for slurmd's local unix socket.
+	 */
+	if (tls_enabled())
+		stepd_proxy_stepd_init(conf->spooldir);
 
 	return 1;
 

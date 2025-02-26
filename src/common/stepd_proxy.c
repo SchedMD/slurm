@@ -48,6 +48,8 @@
 
 #include "src/interfaces/tls.h"
 
+static char *slurmd_spooldir = NULL;
+
 static int _slurmd_pack_msg_to_stepd(slurm_msg_t *resp, buf_t *out)
 {
 	uint32_t length_position, end_position;
@@ -279,4 +281,222 @@ extern void stepd_proxy_slurmd_init(char *spooldir)
 					      NULL)))
 		fatal("%s: [%s] unable to create socket: %s",
 		      __func__, path, slurm_strerror(rc));
+}
+
+extern void stepd_proxy_stepd_init(char *spooldir)
+{
+	slurmd_spooldir = xstrdup(spooldir);
+}
+
+static int _stepd_connect_to_slurmd(void)
+{
+	struct sockaddr_un slurmd_addr = { .sun_family = AF_UNIX };
+	size_t len;
+	int fd;
+
+	(void) snprintf(slurmd_addr.sun_path, sizeof(slurmd_addr.sun_path),
+			"%s/slurmd.socket", slurmd_spooldir);
+
+	len = strlen(slurmd_addr.sun_path) + 1 + sizeof(slurmd_addr.sun_family);
+
+	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+		error("%s: socket() failed: %m", __func__);
+		return -1;
+	}
+
+	if (connect(fd, (struct sockaddr *) &slurmd_addr, len) < 0) {
+		error("%s: connect() failed for %s: %m",
+		      __func__, slurmd_addr.sun_path);
+		close(fd);
+		return -1;
+	}
+
+	log_flag(NET, "%s: Opened connection to slurmd listening socket at '%s'",
+		 __func__, slurmd_addr.sun_path);
+
+	return fd;
+}
+
+static int _stepd_send_to_slurmd(int fd, slurm_msg_t *req, int timeout,
+				 uint16_t proxy_type)
+{
+	uint32_t length_position, end_position;
+	buf_t *buffer = init_buf(BUF_SIZE);
+
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
+
+	/* save position of length for later */
+	length_position = get_buf_offset(buffer);
+	pack32(0, buffer);
+
+	pack16(req->msg_type, buffer);
+	pack32(timeout, buffer);
+	pack16(proxy_type, buffer);
+
+	switch (proxy_type) {
+	case PROXY_TO_NODE_SEND_RECV:
+	case PROXY_TO_NODE_SEND_ONLY:
+		slurm_pack_addr(&req->address, buffer);
+		break;
+	default:
+		/* don't need address for ctld messages */
+		break;
+	}
+	pack32(req->restrict_uid, buffer);
+
+	if (pack_msg(req, buffer) != SLURM_SUCCESS) {
+		error("%s: could not pack req", __func__);
+		goto pack_error;
+	}
+
+	/* write length then reset buffer to end of message */
+	end_position = get_buf_offset(buffer);
+	set_buf_offset(buffer, length_position);
+	pack32(end_position - length_position, buffer);
+	set_buf_offset(buffer, end_position);
+
+	/* send to slurmd */
+	safe_write(fd, get_buf_data(buffer), get_buf_offset(buffer));
+	FREE_NULL_BUFFER(buffer);
+
+	log_flag(NET, "%s: sent message %s using proxy_type %s (via slurmd)",
+		 __func__, rpc_num2string(req->msg_type),
+		 rpc_num2string(proxy_type));
+
+	return SLURM_SUCCESS;
+
+rwfail:
+pack_error:
+	FREE_NULL_BUFFER(buffer);
+	return SLURM_ERROR;
+}
+
+static int _stepd_recv_from_slurmd(int fd, slurm_msg_t *resp)
+{
+	uint32_t len;
+	buf_t *buffer = NULL;
+
+	/* read response from slurmd */
+	safe_read(fd, &len, sizeof(uint32_t));
+	if (!(len = ntohl(len)))
+		goto rwfail;
+	buffer = init_buf(len);
+	safe_read(fd, buffer->head, len);
+
+	slurm_msg_t_init(resp);
+
+	safe_unpack16(&resp->msg_type, buffer);
+	if (unpack_msg(resp, buffer) != SLURM_SUCCESS) {
+		error("%s: could not unpack resp for %s message",
+		      __func__, rpc_num2string(resp->msg_type));
+		goto unpack_error;
+	}
+	FREE_NULL_BUFFER(buffer);
+
+	log_flag(NET, "%s: received message %s (via slurmd)",
+		 __func__, rpc_num2string(resp->msg_type));
+
+	return SLURM_SUCCESS;
+rwfail:
+unpack_error:
+	FREE_NULL_BUFFER(buffer);
+	return SLURM_ERROR;
+}
+
+static int _stepd_send_recv_msg(slurm_msg_t *req, slurm_msg_t *resp,
+				int timeout, uint16_t proxy_type)
+{
+	int fd;
+
+	xassert(req);
+
+	if ((fd = _stepd_connect_to_slurmd()) < 0) {
+		error("%s: failed to connect to slurmd socket", __func__);
+		return SLURM_ERROR;
+	}
+
+	if (_stepd_send_to_slurmd(fd, req, timeout, proxy_type)) {
+		error("%s: failed to send %s message to slurmd using proxy_type %s",
+		      __func__, rpc_num2string(req->msg_type),
+		      rpc_num2string(proxy_type));
+		close(fd);
+		return SLURM_ERROR;
+	}
+
+	if (_stepd_recv_from_slurmd(fd, resp)) {
+		error("%s: failed to receive response from slurmd proxy for %s message", __func__,
+		      rpc_num2string(req->msg_type));
+		close(fd);
+		return SLURM_ERROR;
+	}
+	close(fd);
+
+	/* Check if slurmd hit any errors trying to send our request message */
+	if (resp->msg_type == RESPONSE_SLURM_RC) {
+		switch (((return_code_msg_t *) resp->data)->return_code) {
+		case ESLURMD_STEPD_PROXY_FAILED:
+			error("%s: slurmd was unable to proxy request message to its final destination",
+			      __func__);
+			return SLURM_ERROR;
+		case SLURM_PROTOCOL_AUTHENTICATION_ERROR:
+			error("%s: slurmd was unable to authenticate message we sent",
+			      __func__);
+			return SLURM_ERROR;
+		default:
+			/* No proxy related errors */
+			break;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int stepd_proxy_send_only_ctld_msg(slurm_msg_t *req)
+{
+	int rc;
+	/*
+	 * need response message to see if slurmd successfully sent message to
+	 * its final destination.
+	 */
+	slurm_msg_t resp;
+
+	xassert(running_in_slurmstepd());
+
+	slurm_msg_t_init(&resp);
+	rc = _stepd_send_recv_msg(req, &resp, 0, PROXY_TO_CTLD_SEND_ONLY);
+	slurm_free_msg_data(resp.msg_type, resp.data);
+
+	return rc;
+}
+
+extern int stepd_proxy_send_recv_ctld_msg(slurm_msg_t *req, slurm_msg_t *resp)
+{
+	xassert(running_in_slurmstepd());
+	return _stepd_send_recv_msg(req, resp, 0, PROXY_TO_CTLD_SEND_RECV);
+}
+
+extern int stepd_proxy_send_only_node_msg(slurm_msg_t *req)
+{
+	int rc;
+	/*
+	 * need response message to see if  slurmd successfully sent message to
+	 * its final destination.
+	 */
+	slurm_msg_t resp;
+
+	xassert(running_in_slurmstepd());
+
+	slurm_msg_t_init(&resp);
+	rc = _stepd_send_recv_msg(req, &resp, 0, PROXY_TO_NODE_SEND_ONLY);
+	slurm_free_msg_data(resp.msg_type, resp.data);
+
+	return rc;
+}
+
+extern int stepd_proxy_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp,
+					  int timeout)
+{
+	xassert(running_in_slurmstepd());
+	return _stepd_send_recv_msg(req, resp, timeout,
+				    PROXY_TO_NODE_SEND_RECV);
 }
