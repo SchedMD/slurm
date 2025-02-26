@@ -1029,10 +1029,12 @@ capapacity.
 .IP
 
 .TP
-\fBFeatures\fR=<\fIcomma_separated_list_of_feature_names\fR>
+\fBFeatures\fR[+|-]=<\fIcomma_separated_list_of_feature_names\fR>
 Features that are specific to the cluster. Federated jobs can be directed to
-clusters that contain the job requested features. 
-To clear an existing value, set a new value of '' (two single quotes with
+clusters that contain the job requested features.
+
+To add or remove individual features, use the += or -= operators.
+To clear all existing features, set a new value of '' (two single quotes with
 nothing between them).
 .IP
 
@@ -1717,7 +1719,8 @@ administrator.
 .TP
 \fBFlags\fR
 Used by the slurmctld to override or enforce certain characteristics.
-To clear an existing value, set a new value of \-1.
+To add or remove individual flags, use the += or -= operators.
+To clear all existing flags, set a new value of \-1.
 .br
 Valid options are
 .RS
