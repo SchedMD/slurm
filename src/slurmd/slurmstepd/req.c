@@ -1562,7 +1562,7 @@ static void *_wait_extern_pid(void *args)
 		 */
 		if ((getpid() == pids[i]) ||
 		    jobacct_gather_stat_task(pids[i], false))
-			continue;
+			goto next_pid;
 
 		fd = fileno(stat_fp);
 		if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
