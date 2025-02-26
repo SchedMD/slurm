@@ -552,6 +552,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Unable to satisfy cpu bind request"			},
 	{ ERRTAB_ENTRY(ESLURMD_CPU_LAYOUT_ERROR),
 	  "Unable to layout tasks on given cpus"		},
+	{ ERRTAB_ENTRY(ESLURMD_STEPD_PROXY_FAILED),
+	  "Unable to proxy slurmstepd message"			},
 
 	/* socket specific Slurm communications error */
 

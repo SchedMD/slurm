@@ -32,3 +32,251 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include <sys/un.h>
+
+#include "src/common/fd.h"
+#include "src/common/pack.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_pack.h"
+#include "src/common/stepd_proxy.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#include "src/conmgr/conmgr.h"
+
+#include "src/interfaces/tls.h"
+
+static int _slurmd_pack_msg_to_stepd(slurm_msg_t *resp, buf_t *out)
+{
+	uint32_t length_position, end_position;
+
+	/* save position of length for later */
+	length_position = get_buf_offset(out);
+	pack32(0, out);
+
+	pack16(resp->msg_type, out);
+	if (pack_msg(resp, out) != SLURM_SUCCESS) {
+		FREE_NULL_BUFFER(out);
+		return SLURM_ERROR;
+	}
+
+	/* write length then reset out to end of message */
+	end_position = get_buf_offset(out);
+	set_buf_offset(out, length_position);
+	pack32((end_position - length_position - sizeof(uint32_t)), out);
+	set_buf_offset(out, end_position);
+
+	return SLURM_SUCCESS;
+}
+
+static int _slurmd_send_resp_to_stepd(conmgr_fd_t *con, slurm_msg_t *resp)
+{
+	buf_t *out = init_buf(BUF_SIZE);
+	int rc = SLURM_SUCCESS;
+
+	if (_slurmd_pack_msg_to_stepd(resp, out)) {
+		error("%s: Failed to pack response to slurmstepd", __func__);
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+	if (conmgr_fd_xfer_out_buffer(con, out)) {
+		error("%s: Failed to transfer buffer for response to slurmstepd",
+		      __func__);
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+
+cleanup:
+	FREE_NULL_BUFFER(out);
+	return rc;
+}
+
+static int _slurmd_send_rc_to_stepd(conmgr_fd_t *con, int rc,
+				    uint16_t protocol_version)
+{
+	slurm_msg_t resp;
+	return_code_msg_t rc_msg = { 0 };
+
+	/*
+	 * It's possible we didn't even unpack slurmstepd's protocol version.
+	 * In that case, just try to use slurmd's protocol version.
+	 */
+	if (!protocol_version)
+		protocol_version = SLURM_PROTOCOL_VERSION;
+
+	slurm_msg_t_init(&resp);
+	resp.protocol_version = protocol_version;
+	resp.msg_type = RESPONSE_SLURM_RC;
+	rc_msg.return_code = rc;
+	resp.data = &rc_msg;
+
+	return _slurmd_send_resp_to_stepd(con, &resp);
+}
+
+static int _slurmd_send_recv_msg(conmgr_fd_t *con, slurm_msg_t *req,
+				 slurm_msg_t *resp, int timeout,
+				 uint16_t proxy_type)
+{
+	int rc = SLURM_SUCCESS;
+
+	switch (proxy_type) {
+	case PROXY_TO_CTLD_SEND_ONLY:
+		rc = slurm_send_only_controller_msg(req, working_cluster_rec);
+		break;
+	case PROXY_TO_CTLD_SEND_RECV:
+		rc = slurm_send_recv_controller_msg(req, resp,
+						    working_cluster_rec);
+		break;
+	case PROXY_TO_NODE_SEND_RECV:
+		rc = slurm_send_recv_node_msg(req, resp, timeout);
+		break;
+	case PROXY_TO_NODE_SEND_ONLY:
+		rc = slurm_send_only_node_msg(req);
+		break;
+	default:
+		rc = SLURM_ERROR;
+		error("%s: Unknown proxy type %u", __func__, proxy_type);
+		break;
+	}
+
+	if (rc) {
+		error("%s: Failed to send/recv slurmstepd message %s using proxy_type %s: %m",
+		      __func__, rpc_num2string(req->msg_type),
+		      rpc_num2string(proxy_type));
+	}
+
+	return rc;
+}
+
+static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
+{
+	buf_t *in = NULL;
+	uint32_t length, timeout, r_uid;
+	uint16_t msg_type, protocol_version, proxy_type;
+	int rc = SLURM_SUCCESS;
+	slurm_addr_t req_address = { 0 };
+	return_code_msg_t rc_msg = { 0 };
+	slurm_msg_t req, resp;
+	uid_t uid = SLURM_AUTH_NOBODY;
+	gid_t gid = SLURM_AUTH_NOBODY;
+	pid_t pid = 0;
+
+	if (!(in = conmgr_fd_shadow_in_buffer(con))) {
+		error("%s: conmgr_fd_shadow_in_buffer() failed", __func__);
+		rc = ESLURMD_STEPD_PROXY_FAILED;
+		goto unpack_error;
+	}
+
+	safe_unpack16(&protocol_version, in);
+	safe_unpack32(&length, in);
+	safe_unpack16(&msg_type, in);
+	safe_unpack32(&timeout, in);
+	safe_unpack16(&proxy_type, in);
+
+	switch (proxy_type) {
+	case PROXY_TO_NODE_SEND_RECV:
+	case PROXY_TO_NODE_SEND_ONLY:
+		if (slurm_unpack_addr_no_alloc(&req_address, in))
+			goto unpack_error;
+		break;
+	default:
+		/* don't need address for ctld messages */
+		break;
+	}
+	safe_unpack32(&r_uid, in);
+
+	if (conmgr_get_fd_auth_creds(con, &uid, &gid, &pid)) {
+		error("%s: conmgr_get_fd_auth_creds() failed", __func__);
+		rc = ESLURMD_STEPD_PROXY_FAILED;
+		goto unpack_error;
+	}
+
+	if (uid != slurm_conf.slurmd_user_id) {
+		error("%s: uid %u does not match slurmd user %u",
+		      __func__, uid, slurm_conf.slurmd_user_id);
+		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+		goto unpack_error;
+	}
+
+	if (size_buf(in) < (length + sizeof(uint16_t))) {
+		log_flag(TLS, "incomplete message, only %u bytes available of %u bytes",
+			 size_buf(in), length);
+		FREE_NULL_BUFFER(in);
+		/* Do not close connection */
+		return SLURM_SUCCESS;
+	}
+	conmgr_fd_mark_consumed_in_buffer(con, length);
+
+	slurm_msg_t_init(&req);
+	slurm_msg_t_init(&resp);
+
+	req.protocol_version = protocol_version;
+	req.msg_type = msg_type;
+	req.address = req_address;
+	slurm_msg_set_r_uid(&req, r_uid);
+
+	if (unpack_msg(&req, in) != SLURM_SUCCESS) {
+		error("%s: Failed to unpack message from slurmstepd to relay to slurmctld",
+		      __func__);
+		rc = ESLURMD_STEPD_PROXY_FAILED;
+		goto unpack_error;
+	}
+
+	if (_slurmd_send_recv_msg(con, &req, &resp, timeout, proxy_type)) {
+		rc = ESLURMD_STEPD_PROXY_FAILED;
+		goto unpack_error;
+	}
+
+	/*
+	 * Send success rc back to slurmstepd for SEND_ONLY messages so
+	 * slurmstepd knows its message was successfully sent.
+	 */
+	switch (proxy_type) {
+	case PROXY_TO_NODE_SEND_ONLY:
+	case PROXY_TO_CTLD_SEND_ONLY:
+		resp.protocol_version = protocol_version;
+		resp.msg_type = RESPONSE_SLURM_RC;
+		rc_msg.return_code = SLURM_SUCCESS;
+		resp.data = &rc_msg;
+		break;
+	}
+
+	_slurmd_send_resp_to_stepd(con, &resp);
+
+unpack_error:
+	/*
+	 * attempt to send rc back to slurmstepd so that slurmstepd knows an
+	 * error occurred and its message was not actually sent
+	 */
+	if (rc && _slurmd_send_rc_to_stepd(con, rc, protocol_version)) {
+		error("%s: Failed to send rc to slurmstepd saying that the proxy failed",
+		      __func__);
+	}
+
+	slurm_free_msg_data(req.msg_type, req.data);
+	slurm_free_msg_data(resp.msg_type, resp.data);
+
+	conmgr_queue_close_fd(con);
+	FREE_NULL_BUFFER(in);
+
+	return rc;
+}
+
+extern void stepd_proxy_slurmd_init(char *spooldir)
+{
+	static const conmgr_events_t events = {
+		.on_data = _on_data_local_socket,
+	};
+	static char *path = NULL;
+	int rc;
+
+	if (!path)
+		xstrfmtcat(path, "unix:%s/slurmd.socket", spooldir);
+
+	if ((rc = conmgr_create_listen_socket(CON_TYPE_RAW, path, &events,
+					      NULL)))
+		fatal("%s: [%s] unable to create socket: %s",
+		      __func__, path, slurm_strerror(rc));
+}

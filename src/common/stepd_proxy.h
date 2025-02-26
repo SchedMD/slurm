@@ -36,4 +36,9 @@
 #ifndef _STEPD_PROXY_H
 #define _STEPD_PROXY_H
 
+/*
+ * Initialize listening socket on slurmd for stepd proxy
+ */
+extern void stepd_proxy_slurmd_init(char *spooldir);
+
 #endif
