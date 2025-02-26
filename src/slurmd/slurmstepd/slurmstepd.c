@@ -79,6 +79,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
+#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmd/common/privileges.h"
@@ -1017,6 +1018,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
 	    (job_container_init() != SLURM_SUCCESS) ||
+	    (tls_g_init() != SLURM_SUCCESS) ||
 	    (topology_g_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
 
