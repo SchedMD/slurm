@@ -178,11 +178,12 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	slurm_resource_info.lo slurm_rlimits_info.lo \
 	slurm_step_layout.lo slurm_time.lo slurmdb_defs.lo \
 	slurmdb_pack.lo slurmdbd_defs.lo slurmdbd_pack.lo spank.lo \
-	state_save.lo stepd_api.lo strlcpy.lo strnatcmp.lo timers.lo \
-	track_script.lo tres_bind.lo tres_frequency.lo uid.lo \
-	util-net.lo working_cluster.lo write_labelled_message.lo \
-	x11_util.lo xassert.lo xahash.lo xhash.lo xmalloc.lo xregex.lo \
-	xsystemd.lo xsignal.lo xstring.lo
+	state_save.lo stepd_api.lo stepd_proxy.lo strlcpy.lo \
+	strnatcmp.lo timers.lo track_script.lo tres_bind.lo \
+	tres_frequency.lo uid.lo util-net.lo working_cluster.lo \
+	write_labelled_message.lo x11_util.lo xassert.lo xahash.lo \
+	xhash.lo xmalloc.lo xregex.lo xsystemd.lo xsignal.lo \
+	xstring.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -249,11 +250,12 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/slurmdb_defs.Plo ./$(DEPDIR)/slurmdb_pack.Plo \
 	./$(DEPDIR)/slurmdbd_defs.Plo ./$(DEPDIR)/slurmdbd_pack.Plo \
 	./$(DEPDIR)/spank.Plo ./$(DEPDIR)/state_save.Plo \
-	./$(DEPDIR)/stepd_api.Plo ./$(DEPDIR)/strlcpy.Plo \
-	./$(DEPDIR)/strnatcmp.Plo ./$(DEPDIR)/timers.Plo \
-	./$(DEPDIR)/track_script.Plo ./$(DEPDIR)/tres_bind.Plo \
-	./$(DEPDIR)/tres_frequency.Plo ./$(DEPDIR)/uid.Plo \
-	./$(DEPDIR)/util-net.Plo ./$(DEPDIR)/working_cluster.Plo \
+	./$(DEPDIR)/stepd_api.Plo ./$(DEPDIR)/stepd_proxy.Plo \
+	./$(DEPDIR)/strlcpy.Plo ./$(DEPDIR)/strnatcmp.Plo \
+	./$(DEPDIR)/timers.Plo ./$(DEPDIR)/track_script.Plo \
+	./$(DEPDIR)/tres_bind.Plo ./$(DEPDIR)/tres_frequency.Plo \
+	./$(DEPDIR)/uid.Plo ./$(DEPDIR)/util-net.Plo \
+	./$(DEPDIR)/working_cluster.Plo \
 	./$(DEPDIR)/write_labelled_message.Plo \
 	./$(DEPDIR)/x11_util.Plo ./$(DEPDIR)/xahash.Plo \
 	./$(DEPDIR)/xassert.Plo ./$(DEPDIR)/xhash.Plo \
@@ -710,6 +712,8 @@ libcommon_la_SOURCES = \
 	state_save.h				\
 	stepd_api.c				\
 	stepd_api.h				\
+	stepd_proxy.c				\
+	stepd_proxy.h				\
 	strlcpy.c				\
 	strlcpy.h				\
 	strnatcmp.c				\
@@ -892,6 +896,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spank.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_save.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_proxy.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strnatcmp.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/timers.Plo@am__quote@ # am--include-marker
@@ -1109,6 +1114,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/spank.Plo
 	-rm -f ./$(DEPDIR)/state_save.Plo
 	-rm -f ./$(DEPDIR)/stepd_api.Plo
+	-rm -f ./$(DEPDIR)/stepd_proxy.Plo
 	-rm -f ./$(DEPDIR)/strlcpy.Plo
 	-rm -f ./$(DEPDIR)/strnatcmp.Plo
 	-rm -f ./$(DEPDIR)/timers.Plo
@@ -1246,6 +1252,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/spank.Plo
 	-rm -f ./$(DEPDIR)/state_save.Plo
 	-rm -f ./$(DEPDIR)/stepd_api.Plo
+	-rm -f ./$(DEPDIR)/stepd_proxy.Plo
 	-rm -f ./$(DEPDIR)/strlcpy.Plo
 	-rm -f ./$(DEPDIR)/strnatcmp.Plo
 	-rm -f ./$(DEPDIR)/timers.Plo

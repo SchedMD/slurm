@@ -95,6 +95,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
+#include "src/common/stepd_proxy.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -120,6 +121,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
+#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmd/common/set_oomadj.h"
@@ -442,6 +444,10 @@ main (int argc, char **argv)
 		fatal("Failed to initialize MPI plugins.");
 	if (select_g_init(1) != SLURM_SUCCESS)
 		fatal("Failed to initialize select plugins.");
+	if (tls_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize tls plugin");
+	if (acct_storage_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize acct_storage plugin");
 	file_bcast_init();
 	if ((run_command_init(argc, argv, conf->binary) != SLURM_SUCCESS) &&
 	    conf->binary[0])
@@ -473,6 +479,15 @@ main (int argc, char **argv)
 		run_script_health_check();
 
 	record_launched_jobs();
+
+	/*
+	 * When using TLS, slurmstepd messages bound to other nodes are relayed
+	 * through slurmd. This creates slurmd.socket which slurmstepd will use
+	 * to send its messages.
+	 */
+	if (tls_enabled())
+		stepd_proxy_slurmd_init(conf->spooldir);
+
 	slurm_thread_create_detached(_registration_engine, NULL);
 
 	conmgr_run(true);
@@ -2706,6 +2721,7 @@ _slurmd_fini(void)
 	topology_g_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	select_g_fini();
+	tls_g_fini();
 	if ((rc = spank_slurmd_exit())) {
 		error("%s: SPANK slurmd exit failed: %s",
 		      __func__, slurm_strerror(rc));

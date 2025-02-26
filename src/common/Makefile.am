@@ -157,6 +157,8 @@ libcommon_la_SOURCES =				\
 	state_save.h				\
 	stepd_api.c				\
 	stepd_api.h				\
+	stepd_proxy.c				\
+	stepd_proxy.h				\
 	strlcpy.c				\
 	strlcpy.h				\
 	strnatcmp.c				\

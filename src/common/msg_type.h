@@ -323,6 +323,12 @@ typedef enum {
 	REQUEST_CONTAINER_STATE, /* empty */
 	RESPONSE_CONTAINER_STATE, /* return_code_msg_t */
 
+	/* stepd proxy */
+	PROXY_TO_NODE_SEND_RECV = 13001,
+	PROXY_TO_NODE_SEND_ONLY,
+	PROXY_TO_CTLD_SEND_RECV,
+	PROXY_TO_CTLD_SEND_ONLY,
+
 	/* reserve 64000 for SACK API codes */
 } slurm_msg_type_t;
 

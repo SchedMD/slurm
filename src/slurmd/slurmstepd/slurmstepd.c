@@ -59,6 +59,7 @@
 #include "src/common/port_mgr.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
+#include "src/common/stepd_proxy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -79,6 +80,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
+#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmd/common/privileges.h"
@@ -288,15 +290,7 @@ static void _init_stepd_stepmgr(void)
 
 	_setup_stepmgr_nodes();
 
-	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
-			 "accounting_storage/slurmdbd")) {
-		xfree(slurm_conf.accounting_storage_type);
-		slurm_conf.accounting_storage_type =
-			xstrdup("accounting_storage/ctld_relay");
-		acct_storage_g_init();
-	} else {
-			acct_storage_g_init();
-	}
+	acct_storage_g_init();
 
 	slurm_thread_create(&time_limit_thread_id, _step_time_limit_thread,
 			    NULL);
@@ -1025,6 +1019,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
 	    (job_container_init() != SLURM_SUCCESS) ||
+	    (tls_g_init() != SLURM_SUCCESS) ||
 	    (topology_g_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
 
@@ -1075,6 +1070,14 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 
 	*_cli = cli;
 	*_msg = msg;
+
+	/*
+	 * When using TLS, slurmstepd messages bound to other nodes are relayed
+	 * through slurmd. This caches slurmd spooldir so that slurmstepd can
+	 * get the address for slurmd's local unix socket.
+	 */
+	if (tls_enabled())
+		stepd_proxy_stepd_init(conf->spooldir);
 
 	return 1;
 
