@@ -331,6 +331,21 @@ extern int acct_storage_g_init(void)
 		goto done;
 	}
 
+	/*
+	 * Neither slurmd nor slurmstepd can directly communicate with
+	 * slurmdbd, and will need to use the ctld_relay plugin instead.
+	 * Technically the slurmd would be fine with PLUGIN_NOOP, but
+	 * forcing it to load ctld_relay instead here helps ensure that
+	 * the slurmstepd will be able to load that plugin later.
+	 */
+	if (running_in_slurmd_stepd() &&
+	    !xstrcasecmp(slurm_conf.accounting_storage_type,
+			 "accounting_storage/slurmdbd")) {
+		xfree(slurm_conf.accounting_storage_type);
+		slurm_conf.accounting_storage_type =
+			xstrdup("accounting_storage/ctld_relay");
+	}
+
 	plugin_context = plugin_context_create(
 		plugin_type, slurm_conf.accounting_storage_type, (void **)&ops,
 		syms, sizeof(syms));

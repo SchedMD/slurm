@@ -445,6 +445,8 @@ main (int argc, char **argv)
 		fatal("Failed to initialize select plugins.");
 	if (tls_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize tls plugin");
+	if (acct_storage_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize acct_storage plugin");
 	file_bcast_init();
 	if ((run_command_init(argc, argv, conf->binary) != SLURM_SUCCESS) &&
 	    conf->binary[0])

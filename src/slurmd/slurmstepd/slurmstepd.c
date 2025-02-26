@@ -288,15 +288,7 @@ static void _init_stepd_stepmgr(void)
 
 	_setup_stepmgr_nodes();
 
-	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
-			 "accounting_storage/slurmdbd")) {
-		xfree(slurm_conf.accounting_storage_type);
-		slurm_conf.accounting_storage_type =
-			xstrdup("accounting_storage/ctld_relay");
-		acct_storage_g_init();
-	} else {
-			acct_storage_g_init();
-	}
+	acct_storage_g_init();
 
 	slurm_thread_create(&time_limit_thread_id, _step_time_limit_thread,
 			    NULL);
