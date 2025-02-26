@@ -120,6 +120,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
+#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmd/common/set_oomadj.h"
@@ -442,6 +443,8 @@ main (int argc, char **argv)
 		fatal("Failed to initialize MPI plugins.");
 	if (select_g_init(1) != SLURM_SUCCESS)
 		fatal("Failed to initialize select plugins.");
+	if (tls_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize tls plugin");
 	file_bcast_init();
 	if ((run_command_init(argc, argv, conf->binary) != SLURM_SUCCESS) &&
 	    conf->binary[0])
@@ -2706,6 +2709,7 @@ _slurmd_fini(void)
 	topology_g_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	select_g_fini();
+	tls_g_fini();
 	if ((rc = spank_slurmd_exit())) {
 		error("%s: SPANK slurmd exit failed: %s",
 		      __func__, slurm_strerror(rc));
