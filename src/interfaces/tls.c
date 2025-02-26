@@ -119,16 +119,13 @@ extern int tls_g_init(void)
 	char *plugin_type = "tls";
 	char *tls_plugin_list = NULL, *plugin_list = NULL, *type = NULL;
 	char *save_ptr = NULL;
-	static bool daemon_run = false, daemon_set = false;
 
 	slurm_rwlock_wrlock(&context_lock);
 
 	if (g_context_num > 0)
 		goto done;
 
-	/* Only slurmctld/slurmdbd/slurmrestd support tls currently */
-	if (run_in_daemon(&daemon_run, &daemon_set,
-			  "slurmctld,slurmdbd,slurmrestd"))
+	if (running_in_daemon())
 		tls_plugin_list = xstrdup(slurm_conf.tls_type);
 	else
 		tls_plugin_list = xstrdup("none");
