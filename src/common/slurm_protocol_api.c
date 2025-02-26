@@ -70,6 +70,7 @@
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_protocol_socket.h"
+#include "src/common/stepd_proxy.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -77,6 +78,7 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
 
 #include "src/conmgr/conmgr.h"
@@ -2249,6 +2251,11 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	request_msg->forward_struct = NULL;
 	slurm_msg_set_r_uid(request_msg, SLURM_AUTH_UID_ANY);
 
+	if (tls_enabled() && running_in_slurmstepd()) {
+		return stepd_proxy_send_recv_ctld_msg(request_msg,
+						      response_msg);
+	}
+
 tryagain:
 	if (comm_cluster_rec)
 		request_msg->flags |= SLURM_GLOBAL_AUTH_KEY;
@@ -2357,6 +2364,11 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 	int fd = -1;
 
 	resp->auth_cred = NULL;
+
+	if (tls_enabled() && running_in_slurmstepd()) {
+		return stepd_proxy_send_recv_node_msg(req, resp, timeout);
+	}
+
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req->address);
@@ -2382,6 +2394,10 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 	int fd = -1;
 	slurm_addr_t ctrl_addr;
 	int index = 0;
+
+	if (tls_enabled() && running_in_slurmstepd()) {
+		return stepd_proxy_send_only_ctld_msg(req);
+	}
 
 	/*
 	 *  Open connection to Slurm controller:
@@ -2442,6 +2458,10 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	struct pollfd pfd;
 	int value = -1;
 	int pollrc;
+
+	if (tls_enabled() && running_in_slurmstepd()) {
+		return stepd_proxy_send_only_node_msg(req);
+	}
 
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
