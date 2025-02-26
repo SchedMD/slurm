@@ -95,6 +95,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
+#include "src/common/stepd_proxy.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -478,6 +479,15 @@ main (int argc, char **argv)
 		run_script_health_check();
 
 	record_launched_jobs();
+
+	/*
+	 * When using TLS, slurmstepd messages bound to other nodes are relayed
+	 * through slurmd. This creates slurmd.socket which slurmstepd will use
+	 * to send its messages.
+	 */
+	if (tls_enabled())
+		stepd_proxy_slurmd_init(conf->spooldir);
+
 	slurm_thread_create_detached(_registration_engine, NULL);
 
 	conmgr_run(true);
