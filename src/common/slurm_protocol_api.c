@@ -2638,7 +2638,6 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
  */
 int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 {
-	int fd = -1;
 	int ret_c = 0;
 	slurm_msg_t resp;
 
@@ -2652,12 +2651,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	req->ret_list = NULL;
 	req->forward_struct = NULL;
 
-	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
-		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
-			 __func__, &req->address);
-		return -1;
-	}
-	if (!_send_and_recv_msg(fd, req, &resp, timeout)) {
+	if (!slurm_send_recv_node_msg(req, &resp, timeout)) {
 		if (resp.auth_cred)
 			auth_g_destroy(resp.auth_cred);
 		*rc = slurm_get_return_code(resp.msg_type, resp.data);
