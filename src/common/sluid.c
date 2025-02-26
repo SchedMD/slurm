@@ -101,6 +101,11 @@ extern sluid_t generate_sluid(void)
 extern uint16_t generate_cluster_id(void)
 {
 	/* Cluster IDs must be between 2 and 4095. */
+	static bool seeded = false;
+	if (!seeded) {
+		srandom(time(NULL) + getpid());
+		seeded = true;
+	}
 	return (random() % (4096 - 2)) + 2;
 }
 
