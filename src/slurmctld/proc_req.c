@@ -3211,10 +3211,11 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 	if (!validate_super_user(msg->auth_uid)) {
 		error("Security violation, SHUTDOWN RPC from uid=%u",
 		      msg->auth_uid);
-		error_code = ESLURM_USER_ID_MISSING;
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
 	}
-	if (error_code);
-	else if (msg->msg_type == REQUEST_CONTROL) {
+
+	if (msg->msg_type == REQUEST_CONTROL) {
 		info("Performing RPC: REQUEST_CONTROL");
 		slurm_mutex_lock(&slurmctld_config.backup_finish_lock);
 		/* resume backup mode */
@@ -3225,9 +3226,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 	}
 
 	/* do RPC call */
-	if (error_code)
-		;
-	else if (slurmctld_config.shutdown_time)
+	if (slurmctld_config.shutdown_time)
 		debug2("shutdown RPC issued when already in progress");
 	else {
 		if ((msg->msg_type == REQUEST_SHUTDOWN) &&
