@@ -192,6 +192,50 @@ in every case, but it may serve as a good starting point.</li>
 <li>sched_min_interval=2000000</li>
 </ul>
 </ul></li>
+<li><b>SlurmctldParameters</b>:
+Many slurmctld daemon parameters are available.
+<ul>
+<li>Increasing <b>conmgr_max_connections</b> will allow slurmctld to accept
+more connections at once to avoid connect() timeouts during times of high load
+but not necessarily read or write timeouts. The trade off is that slurmctld will
+use more memory as each connection reserves memory to buffer inbound and
+outbound data along with the connection state. <b>conmgr_max_connections</b>
+should at least be the number of hardware CPU threads available but less than
+<code>sysctl net.nf_conntrack_max</code> and
+<code>sysctl net.core.somaxconn</code>. Enabling
+<code>sysctl net.ipv4.tcp_syncookies=1</code> is also suggested to
+allow the kernel to better manage larger bursts of incoming sockets.
+When modifying this parameter, you should monitor for relative changes in
+<code>sdiag</code>'s output. The <i>ave_time</i> field section under <i>Remote
+Procedure Call statistics</i> should be given special attention as changes to
+that can have a dramatic impact on overall response times. Increasing
+<b>conmgr_max_connections</b> too much could cause an <i>Out of Memory</i>
+event which will cause slurmctld to crash, potentially losing jobs and
+accounting. Sites are advised to try changing <b>MessageTimeout</b> and
+<b>TCPTimeout</b> before changing the <b>conmgr_max_connections</b> parameter.
+</li>
+<li>
+The <b>conmgr_threads</b> option controls the size of the thread pool that is
+used to process communications. Threads are used as needed to handle I/O or to
+process incoming RPCs and generate replies. The trade off is that slurmctld will
+use more memory for each additional thread. Increasing thread counts will also
+cause increased kernel scheduler contention when there are more threads than
+available hardware CPUs, increasing the potential for thread starvation. While
+processing incoming RPC requests, slurmctld usually has to obtain one or
+more of the global slurmctld locks. Each thread attempting to obtain a lock can
+cause increased contention with the scheduler threads. Lock contention will
+result in the job scheduler running slower or with non-neglible delays.
+Sites wishing for more RPC throughput can increase <b>conmgr_threads</b> from
+the defaults, while sites wishing to prioritize scheduler threads can decrease
+the thread count. Sites are advised to monitor for changes in
+<code>sdiag</code>'s job start statistics when changing this parameter.
+<b>conmgr_threads</b> should at least be between 2-4 times the number of
+hardware CPU threads available to slurmctld daemon due to most RPC processing
+needing to wait on global locks. Increasing <b>conmgr_threads</b> too much
+could cause an <i>Out of Memory</i> event which will cause slurmctld to
+crash, potentially losing jobs and accounting.
+</li>
+</ul>
 <li><b>SchedulerType</b>:
 If most jobs are short lived then use of the <i>sched/builtin</i> plugin is
 recommended. This manages a queue of jobs on a First-In-First-Out (FIFO) basis
@@ -249,6 +293,6 @@ appropriate for your environment.</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 6 December 2023</p>
+<p style="text-align:center;">Last modified 13 March 2025</p>
 
 <!--#include virtual="footer.txt"-->
