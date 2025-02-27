@@ -466,6 +466,10 @@ extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
+	/* Ignore empty write requests */
+	if (!bytes)
+		return SLURM_SUCCESS;
+
 	buf = init_buf(bytes);
 
 	/* TODO: would be nice to avoid this copy */
