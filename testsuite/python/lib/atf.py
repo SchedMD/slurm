@@ -536,6 +536,8 @@ def start_slurmctld(clean=False, quiet=False):
     if not properties["auto-config"]:
         require_auto_config("wants to start slurmctld")
 
+    logging.debug("Starting slurmctld...")
+
     if not is_slurmctld_running(quiet=quiet):
         # Start slurmctld
         command = f"{properties['slurm-sbin-dir']}/slurmctld"
@@ -552,6 +554,8 @@ def start_slurmctld(clean=False, quiet=False):
             "scontrol ping", lambda results: re.search(r"is UP", results["stdout"])
         ):
             pytest.fail("Slurmctld is not running")
+        else:
+            logging.debug("Slurmctldd started successfully")
 
 
 def start_slurmdbd(clean=False, quiet=False):
