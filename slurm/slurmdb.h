@@ -1367,6 +1367,7 @@ typedef struct {
 	list_t *acct_list; /* list of char *'s */
 	list_t *assoc_list; /* list of slurmdb_report_assoc_rec_t's */
 	char *name;
+	char *partition; /* Optional partition associated with the user */
 	list_t *tres_list; /* list of slurmdb_tres_rec_t *'s */
 	uid_t uid;
 } slurmdb_report_user_rec_t;
