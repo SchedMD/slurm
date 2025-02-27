@@ -1010,6 +1010,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	 * Init all plugins after receiving the slurm.conf from the slurmd.
 	 */
 	if ((auth_g_init() != SLURM_SUCCESS) ||
+	    (tls_g_init() != SLURM_SUCCESS) ||
 	    (cgroup_g_init() != SLURM_SUCCESS) ||
 	    (hash_g_init() != SLURM_SUCCESS) ||
 	    (acct_gather_conf_init() != SLURM_SUCCESS) ||
@@ -1019,7 +1020,6 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
 	    (job_container_init() != SLURM_SUCCESS) ||
-	    (tls_g_init() != SLURM_SUCCESS) ||
 	    (topology_g_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
 
