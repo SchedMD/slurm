@@ -242,6 +242,12 @@ typedef struct {
 	bool power_save_on;
 } foreach_purge_missing_jobs_t;
 
+typedef struct {
+	int kill_job_cnt;
+	time_t now;
+	part_record_t *part_ptr;
+} foreach_kill_job_by_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -2588,6 +2594,87 @@ endit:
 	return error_code;
 }
 
+static int _foreach_kill_job_by_part_name(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	foreach_kill_job_by_t *foreach_kill_job_by = arg;
+	part_record_t *part_ptr = foreach_kill_job_by->part_ptr;
+	time_t now = foreach_kill_job_by->now;
+	bool pending = false, suspended = false;
+
+	pending = IS_JOB_PENDING(job_ptr);
+	if (job_ptr->part_ptr_list) {
+		/* Remove partition if candidate for a job */
+		bool rebuild_name_list = false;
+		part_record_t *part2_ptr;
+		list_itr_t *part_iterator =
+			list_iterator_create(job_ptr->part_ptr_list);
+		while ((part2_ptr = list_next(part_iterator))) {
+			if (part2_ptr != part_ptr)
+				continue;
+			list_remove(part_iterator);
+			rebuild_name_list = true;
+		}
+		list_iterator_destroy(part_iterator);
+		if (rebuild_name_list) {
+			if (list_count(job_ptr->part_ptr_list) > 0) {
+				rebuild_job_part_list(job_ptr);
+				job_ptr->part_ptr =
+					list_peek(job_ptr->part_ptr_list);
+			} else {
+				FREE_NULL_LIST(job_ptr->part_ptr_list);
+			}
+		}
+	}
+
+	if (job_ptr->part_ptr != part_ptr)
+		return 0;
+
+	if (IS_JOB_SUSPENDED(job_ptr)) {
+		uint32_t suspend_job_state = job_ptr->job_state;
+		/* we can't have it as suspended when we call the
+		 * accounting stuff.
+		 */
+		job_state_set(job_ptr, JOB_CANCELLED);
+		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+		job_state_set(job_ptr, suspend_job_state);
+		suspended = true;
+	}
+	if (IS_JOB_RUNNING(job_ptr) || suspended) {
+		foreach_kill_job_by->kill_job_cnt++;
+		info("Killing %pJ on defunct partition %s",
+		     job_ptr, part_ptr->name);
+		job_state_set(job_ptr, (JOB_NODE_FAIL | JOB_COMPLETING));
+		build_cg_bitmap(job_ptr);
+		job_ptr->state_reason = FAIL_DOWN_PARTITION;
+		xfree(job_ptr->state_desc);
+		if (suspended) {
+			job_ptr->end_time = job_ptr->suspend_time;
+			job_ptr->tot_sus_time +=
+				difftime(now, job_ptr->suspend_time);
+		} else
+			job_ptr->end_time = now;
+		job_ptr->exit_code = 1;
+		job_completion_logger(job_ptr, false);
+		if (!pending)
+			deallocate_nodes(job_ptr, false, suspended, false);
+	} else if (pending) {
+		foreach_kill_job_by->kill_job_cnt++;
+		info("Killing %pJ on defunct partition %s",
+		     job_ptr, part_ptr->name);
+		job_state_set(job_ptr, JOB_CANCELLED);
+		job_ptr->start_time = now;
+		job_ptr->end_time = now;
+		job_ptr->exit_code = 1;
+		job_completion_logger(job_ptr, false);
+		fed_mgr_job_complete(job_ptr, 0, now);
+	}
+	job_ptr->part_ptr = NULL;
+	FREE_NULL_LIST(job_ptr->part_ptr_list);
+
+	return 0;
+}
+
 /*
  * kill_job_by_part_name - Given a partition name, deallocate resource for
  *	its jobs and kill them. All jobs associated with this partition
@@ -2597,96 +2684,20 @@ endit:
  */
 extern int kill_job_by_part_name(char *part_name)
 {
-	list_itr_t *job_iterator, *part_iterator;
-	job_record_t *job_ptr;
-	part_record_t *part_ptr, *part2_ptr;
-	int kill_job_cnt = 0;
-	time_t now = time(NULL);
+	foreach_kill_job_by_t foreach_kill_job_by = {
+		.now = time(NULL),
+		.part_ptr = find_part_record(part_name),
+	};
 
-	part_ptr = find_part_record (part_name);
-	if (part_ptr == NULL)	/* No such partition */
+	if (!foreach_kill_job_by.part_ptr) /* No such partition */
 		return 0;
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		bool pending = false, suspended = false;
+	(void) list_for_each(job_list, _foreach_kill_job_by_part_name,
+			     &foreach_kill_job_by);
 
-		pending = IS_JOB_PENDING(job_ptr);
-		if (job_ptr->part_ptr_list) {
-			/* Remove partition if candidate for a job */
-			bool rebuild_name_list = false;
-			part_iterator = list_iterator_create(job_ptr->
-							     part_ptr_list);
-			while ((part2_ptr = list_next(part_iterator))) {
-				if (part2_ptr != part_ptr)
-					continue;
-				list_remove(part_iterator);
-				rebuild_name_list = true;
-			}
-			list_iterator_destroy(part_iterator);
-			if (rebuild_name_list) {
-				if (list_count(job_ptr->part_ptr_list) > 0) {
-					rebuild_job_part_list(job_ptr);
-					job_ptr->part_ptr =
-						list_peek(job_ptr->
-							  part_ptr_list);
-				} else {
-					FREE_NULL_LIST(job_ptr->part_ptr_list);
-				}
-			}
-		}
-
-		if (job_ptr->part_ptr != part_ptr)
-			continue;
-
-		if (IS_JOB_SUSPENDED(job_ptr)) {
-			uint32_t suspend_job_state = job_ptr->job_state;
-			/* we can't have it as suspended when we call the
-			 * accounting stuff.
-			 */
-			job_state_set(job_ptr, JOB_CANCELLED);
-			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
-			job_state_set(job_ptr, suspend_job_state);
-			suspended = true;
-		}
-		if (IS_JOB_RUNNING(job_ptr) || suspended) {
-			kill_job_cnt++;
-			info("Killing %pJ on defunct partition %s",
-			     job_ptr, part_name);
-			job_state_set(job_ptr, (JOB_NODE_FAIL | JOB_COMPLETING));
-			build_cg_bitmap(job_ptr);
-			job_ptr->state_reason = FAIL_DOWN_PARTITION;
-			xfree(job_ptr->state_desc);
-			if (suspended) {
-				job_ptr->end_time = job_ptr->suspend_time;
-				job_ptr->tot_sus_time +=
-					difftime(now, job_ptr->suspend_time);
-			} else
-				job_ptr->end_time = now;
-			job_ptr->exit_code = 1;
-			job_completion_logger(job_ptr, false);
-			if (!pending)
-				deallocate_nodes(job_ptr, false, suspended,
-						 false);
-		} else if (pending) {
-			kill_job_cnt++;
-			info("Killing %pJ on defunct partition %s",
-			     job_ptr, part_name);
-			job_state_set(job_ptr, JOB_CANCELLED);
-			job_ptr->start_time	= now;
-			job_ptr->end_time	= now;
-			job_ptr->exit_code	= 1;
-			job_completion_logger(job_ptr, false);
-			fed_mgr_job_complete(job_ptr, 0, now);
-		}
-		job_ptr->part_ptr = NULL;
-		FREE_NULL_LIST(job_ptr->part_ptr_list);
-	}
-	list_iterator_destroy(job_iterator);
-
-	if (kill_job_cnt)
-		last_job_update = now;
-	return kill_job_cnt;
+	if (foreach_kill_job_by.kill_job_cnt)
+		last_job_update = foreach_kill_job_by.now;
+	return foreach_kill_job_by.kill_job_cnt;
 }
 
 /*
