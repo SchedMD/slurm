@@ -2883,6 +2883,15 @@ extern int kill_running_job_by_node_name(char *node_name)
 	bitstr_t *orig_job_node_bitmap;
 	int kill_job_cnt = 0;
 	time_t now = time(NULL);
+	static time_t sched_update = 0;
+	static bool requeue_on_resume_failure = false;
+
+	if (sched_update != slurm_conf.last_update) {
+		requeue_on_resume_failure =
+			xstrcasestr(slurm_conf.sched_params,
+				    "requeue_on_resume_failure");
+		sched_update = slurm_conf.last_update;
+	}
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -2955,8 +2964,12 @@ extern int kill_running_job_by_node_name(char *node_name)
 					&job_ptr->gres_detail_str,
 					&job_ptr->gres_used);
 				job_post_resize_acctg(job_ptr);
-			} else if (job_ptr->batch_flag && job_ptr->details &&
-				   job_ptr->details->requeue) {
+			} else if (job_ptr->batch_flag &&
+				   ((job_ptr->details &&
+				     job_ptr->details->requeue) ||
+				    (requeue_on_resume_failure &&
+				     IS_NODE_POWERED_DOWN(node_ptr) &&
+				     IS_JOB_CONFIGURING(job_ptr)))) {
 				srun_node_fail(job_ptr, node_name);
 				info("requeue job %pJ due to failure of node %s",
 				     job_ptr, node_name);
