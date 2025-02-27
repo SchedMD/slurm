@@ -180,6 +180,21 @@ def module_setup(request, tmp_path_factory):
         )
         atf.stop_slurm(quiet=True)
 
+    # Cleanup StateSaveLocation for auto-config
+    if atf.properties["auto-config"]:
+        statesaveloc = atf.get_config_parameter(
+            "StateSaveLocation", live=False, quiet=True
+        )
+        if os.path.exists(statesaveloc):
+            if os.path.exists(statesaveloc + name):
+                logging.warning(
+                    f"Backup for StateSaveLocation already exists ({statesaveloc+name}). Removing it."
+                )
+                atf.run_command(f"rm -rf {statesaveloc+name}", user="root", quiet=True)
+            atf.run_command(
+                f"mv {statesaveloc} {statesaveloc+name}", user="root", quiet=True
+            )
+
     yield
 
     # Return to the folder from which pytest was executed
@@ -187,6 +202,14 @@ def module_setup(request, tmp_path_factory):
 
     # Teardown
     module_teardown()
+
+    # Restore StateSaveLocation for auto-config
+    if atf.properties["auto-config"]:
+        atf.run_command(f"rm -rf {statesaveloc}", user="root", quiet=True)
+        if os.path.exists(statesaveloc + name):
+            atf.run_command(
+                f"mv {statesaveloc+name} {statesaveloc}", user="root", quiet=True
+            )
 
 
 def module_teardown():
