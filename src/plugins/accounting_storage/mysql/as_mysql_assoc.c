@@ -1889,7 +1889,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 
 	if (assoc_cond) {
 		with_raw_qos = assoc_cond->flags & ASSOC_COND_FLAG_RAW_QOS;
-		with_usage = assoc_cond->flags & ASSOC_COND_FLAG_WITH_USAGE;
+		with_usage = assoc_cond->flags &
+			(ASSOC_COND_FLAG_WITH_USAGE |
+			 ASSOC_COND_FLAG_WITH_NG_USAGE);
 		without_parent_limits =
 			assoc_cond->flags & ASSOC_COND_FLAG_WOPL;
 		without_parent_info = assoc_cond->flags & ASSOC_COND_FLAG_WOPI;
@@ -2339,6 +2341,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			};
 			get_usage_for_list(mysql_conn, DBD_GET_QOS_USAGE,
 					   &qos_usage, cluster_name,
+					   assoc_cond->usage_start,
+					   assoc_cond->usage_end);
+		} else if (assoc_cond->flags & ASSOC_COND_FLAG_WITH_NG_USAGE) {
+			get_usage_for_list(mysql_conn, DBD_GET_ASSOC_NG_USAGE,
+					   assoc_list, cluster_name,
 					   assoc_cond->usage_start,
 					   assoc_cond->usage_end);
 		} else {

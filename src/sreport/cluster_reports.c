@@ -195,6 +195,15 @@ static int _set_assoc_cond(int *start, int argc, char **argv,
 	if (cluster_flag)
 		slurm_addto_char_list(assoc_cond->cluster_list, cluster_flag);
 
+	/*
+	 * Each user association totals up all partition based association usage
+	 * by default. Requesting only non-partition based associations will
+	 * eliminate duplicate results.
+	 */
+	if (!assoc_cond->partition_list)
+		assoc_cond->partition_list = list_create(xfree_ptr);
+	list_append(assoc_cond->partition_list, xstrdup(""));
+
 	for (i = (*start); i < argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!end)

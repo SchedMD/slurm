@@ -276,6 +276,7 @@ typedef enum {
 #define	ASSOC_COND_FLAG_WOPI SLURM_BIT(5)
 #define	ASSOC_COND_FLAG_WOPL SLURM_BIT(6)
 #define	ASSOC_COND_FLAG_QOS_USAGE SLURM_BIT(7)
+#define ASSOC_COND_FLAG_WITH_NG_USAGE SLURM_BIT(8)
 
 /* Event condition flags */
 #define SLURMDB_EVENT_COND_OPEN SLURM_BIT(0) /* Return only open events */

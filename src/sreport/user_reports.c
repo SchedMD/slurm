@@ -75,7 +75,7 @@ static int _set_cond(int *start, int argc, char **argv,
 	if (!user_cond->assoc_cond) {
 		user_cond->assoc_cond =
 			xmalloc(sizeof(slurmdb_assoc_cond_t));
-		user_cond->assoc_cond->flags = ASSOC_COND_FLAG_WITH_USAGE;
+		user_cond->assoc_cond->flags = ASSOC_COND_FLAG_WITH_NG_USAGE;
 	}
 	assoc_cond = user_cond->assoc_cond;
 
