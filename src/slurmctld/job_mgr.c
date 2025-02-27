@@ -2605,18 +2605,15 @@ static int _foreach_kill_job_by_part_name(void *x, void *arg)
 	pending = IS_JOB_PENDING(job_ptr);
 	if (job_ptr->part_ptr_list) {
 		/* Remove partition if candidate for a job */
-		bool rebuild_name_list = false;
-		part_record_t *part2_ptr;
-		list_itr_t *part_iterator =
-			list_iterator_create(job_ptr->part_ptr_list);
-		while ((part2_ptr = list_next(part_iterator))) {
-			if (part2_ptr != part_ptr)
-				continue;
-			list_remove(part_iterator);
-			rebuild_name_list = true;
-		}
-		list_iterator_destroy(part_iterator);
-		if (rebuild_name_list) {
+		int rebuild_name_list =
+			list_delete_first(job_ptr->part_ptr_list,
+					  slurm_find_ptr_in_list,
+					  part_ptr);
+
+		if (rebuild_name_list == -1) {
+			error("%s: Processing part_ptr_list, this should never happen.",
+			      __func__);
+		} else if (rebuild_name_list) {
 			if (list_count(job_ptr->part_ptr_list) > 0) {
 				rebuild_job_part_list(job_ptr);
 				job_ptr->part_ptr =
