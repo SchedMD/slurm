@@ -451,17 +451,21 @@ static int _get_object_usage(mysql_conn_t *mysql_conn,
 
 	switch (type) {
 	case DBD_GET_QOS_USAGE:
+	case DBD_GET_ASSOC_NG_USAGE:
 	case DBD_GET_ASSOC_USAGE:
 		query = xstrdup_printf(
-		        "select %s from \"%s_%s\" as t1, "
-		        "\"%s_%s\" as t2, \"%s_%s\" as t3 "
-		        "where (t1.time_start < %ld && t1.time_start >= %ld) "
-		        "&& t1.id=t2.id_assoc && (%s) && "
-		        "t2.lineage like concat(t3.lineage, '%%') "
-		        "order by t3.id_assoc, time_start;",
-		        tmp, cluster_name, my_usage_table,
-		        cluster_name, assoc_table, cluster_name, assoc_table,
-		        end, start, id_str);
+			"select %s from \"%s_%s\" as t1, "
+			"\"%s_%s\" as t2, \"%s_%s\" as t3 "
+			"where (t1.time_start < %ld && t1.time_start >= %ld) "
+			"&& t1.id=t2.id_assoc && (%s) && "
+			"%s "
+			"order by t3.id_assoc, time_start;",
+			tmp, cluster_name, my_usage_table,
+			cluster_name, assoc_table, cluster_name, assoc_table,
+			end, start, id_str,
+			(type == DBD_GET_ASSOC_NG_USAGE) ?
+			"t2.id_assoc = t3.id_assoc" :
+			"t2.lineage like concat(t3.lineage, '%%')");
 		break;
 	case DBD_GET_WCKEY_USAGE:
 		query = xstrdup_printf(
@@ -655,6 +659,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		return ESLURM_DB_CONNECTION;
 
 	switch (type) {
+	case DBD_GET_ASSOC_NG_USAGE:
 	case DBD_GET_ASSOC_USAGE:
 		name_char = "t3.id_assoc";
 		itr = list_iterator_create(object_list);
@@ -752,6 +757,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 
 		switch (type) {
 		case DBD_GET_QOS_USAGE:
+		case DBD_GET_ASSOC_NG_USAGE:
 		case DBD_GET_ASSOC_USAGE:
 			assoc = (slurmdb_assoc_rec_t *)object;
 			if (!assoc->accounting_list)
@@ -826,6 +832,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 	switch (type) {
 	case DBD_GET_QOS_USAGE:
+	case DBD_GET_ASSOC_NG_USAGE:
 	case DBD_GET_ASSOC_USAGE:
 		if (!slurmdb_assoc->id) {
 			error("We need an id to set data for getting usage");
@@ -904,7 +911,8 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			if (username && !xstrcmp(username, user.name))
 				goto is_user;
 
-			if (type != DBD_GET_ASSOC_USAGE)
+			if ((type != DBD_GET_ASSOC_USAGE) &&
+			    (type != DBD_GET_ASSOC_NG_USAGE))
 				goto bad_user;
 
 			if (!slurmdb_assoc->acct) {

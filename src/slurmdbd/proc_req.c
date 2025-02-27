@@ -3308,6 +3308,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		break;
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GET_WCKEY_USAGE:
+	case DBD_GET_ASSOC_NG_USAGE:
 	case DBD_GET_CLUSTER_USAGE:
 		rc = _get_usage(slurmdbd_conn, msg, out_buffer);
 		break;

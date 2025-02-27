@@ -43,6 +43,7 @@
 enum {
 	PRINT_USER_ACCT,
 	PRINT_USER_CLUSTER,
+	PRINT_USER_PARTITION,
 	PRINT_USER_LOGIN,
 	PRINT_USER_PROPER,
 	PRINT_USER_USED,
@@ -75,7 +76,7 @@ static int _set_cond(int *start, int argc, char **argv,
 	if (!user_cond->assoc_cond) {
 		user_cond->assoc_cond =
 			xmalloc(sizeof(slurmdb_assoc_cond_t));
-		user_cond->assoc_cond->flags = ASSOC_COND_FLAG_WITH_USAGE;
+		user_cond->assoc_cond->flags = ASSOC_COND_FLAG_WITH_NG_USAGE;
 	}
 	assoc_cond = user_cond->assoc_cond;
 
@@ -223,8 +224,14 @@ static int _setup_print_fields_list(list_t *format_list)
 			field->name = xstrdup("Login");
 			field->len = 9;
 			field->print_routine = print_fields_str;
+		} else if (!xstrncasecmp("Partition", object,
+					 MAX(command_len, 2))) {
+			field->type = PRINT_USER_PARTITION;
+			field->name = xstrdup("Partition");
+			field->len = 15;
+			field->print_routine = print_fields_str;
 		} else if (!xstrncasecmp("Proper", object,
-					 MAX(command_len, 1))) {
+					 MAX(command_len, 2))) {
 			field->type = PRINT_USER_PROPER;
 			field->name = xstrdup("Proper Name");
 			field->len = 15;
@@ -319,6 +326,11 @@ static void _user_top_tres_report(slurmdb_tres_rec_t *tres,
 			break;
 		case PRINT_USER_LOGIN:
 			field->print_routine(field, slurmdb_report_user->name,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_USER_PARTITION:
+			field->print_routine(field,
+					     slurmdb_report_user->partition,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_USER_PROPER:
@@ -467,25 +479,29 @@ extern int user_top(int argc, char **argv)
 
 	_set_cond(&i, argc, argv, user_cond, format_list);
 
-	if (!list_count(format_list)) {
-		if (tres_str) {
-			slurm_addto_char_list(format_list,
-					      "Cl,L,P,A,TresName,Used");
-		} else {
-			slurm_addto_char_list(format_list, "Cl,L,P,A,U,Energy");
-		}
-	}
-
-	_setup_print_fields_list(format_list);
-	FREE_NULL_LIST(format_list);
-
 	if (!(slurmdb_report_cluster_list =
-	     slurmdb_report_user_top_usage(db_conn, user_cond, group_accts))) {
+	      slurmdb_report_user_top_usage(db_conn, user_cond, group_accts))) {
 		exit_code = 1;
 		goto end_it;
 	}
 	if (fed_name)
 		_merge_user_report(slurmdb_report_cluster_list);
+
+	if (!list_count(format_list)) {
+		if (tres_str) {
+			slurm_addto_char_list(format_list,
+					      "Cl,L,Pr,A,TresName,Used");
+		} else if (user_cond->assoc_cond->partition_list) {
+			slurm_addto_char_list(format_list,
+					      "Cl,L,Pr,A,Pa,U,Energy");
+		} else {
+			slurm_addto_char_list(format_list,
+					      "Cl,L,Pr,A,U,Energy");
+		}
+	}
+
+	_setup_print_fields_list(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (print_fields_have_header) {
 		char start_char[256];

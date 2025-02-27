@@ -84,7 +84,7 @@ extern list_t *slurmdb_report_user_top_usage(void *db_conn,
 
 	user_cond->with_deleted = 1;
 	user_cond->with_assocs = 1;
-	user_cond->assoc_cond->flags = ASSOC_COND_FLAG_WITH_USAGE |
+	user_cond->assoc_cond->flags = ASSOC_COND_FLAG_WITH_NG_USAGE |
 		ASSOC_COND_FLAG_WOPI;
 
 	/* This needs to be done on some systems to make sure
@@ -203,9 +203,27 @@ extern list_t *slurmdb_report_user_top_usage(void *db_conn,
 							user->uid;
 						slurmdb_report_user->acct_list =
 							list_create(xfree_ptr);
+						slurmdb_report_user->partition =
+							xstrdup(assoc->partition);
 						list_append(slurmdb_report_cluster->
 							    user_list,
 							    slurmdb_report_user);
+
+						/*
+						 * In order to know that
+						 * partition associations exist
+						 * for reporting we need to add
+						 * an empty partition list to
+						 * user_cond.
+						 */
+						if (slurmdb_report_user->
+						    partition &&
+						    !user_cond->assoc_cond->
+						    partition_list) {
+							user_cond->assoc_cond->
+								partition_list =
+								list_create(NULL);
+						}
 					}
 					break;
 				}
