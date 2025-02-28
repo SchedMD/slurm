@@ -64,7 +64,8 @@ slurmd_conf_t *conf = NULL;
 
 static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog);
-static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id);
+static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id,
+				 bool is_epilog);
 
 static int _ef(const char *p, int errnum)
 {
@@ -166,7 +167,8 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 	    (!is_epilog && spank_has_prolog())) {
 		if (!env)
 			env = _build_env(job_env, cred, is_epilog);
-		rc = _run_spank_job_script(name, env, job_env->jobid);
+		rc = _run_spank_job_script(name, env, job_env->jobid,
+					   is_epilog);
 	}
 
 	if (script_cnt) {
@@ -379,7 +381,8 @@ static void _send_conf_cb(int write_fd, void *arg)
 		       __func__, spank_mode);
 }
 
-static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
+static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id,
+				 bool is_epilog)
 {
 	int status;
 	char *argv[4];
