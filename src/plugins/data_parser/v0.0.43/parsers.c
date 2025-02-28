@@ -1333,6 +1333,22 @@ static void _fill_job_stp(job_std_pattern_t *job_stp, slurmdb_job_rec_t *job)
 	job_stp->work_dir = job->work_dir;
 }
 
+static void _fill_jobinfo_stp(job_std_pattern_t *job_stp, slurm_job_info_t *job)
+{
+	job_stp->array_task_id = job->array_task_id;
+	if (job->batch_flag) {
+		job_stp->first_step_name = "batch";
+		job_stp->first_step_node = job->batch_host;
+	} else {
+		job_stp->first_step_name = NULL;
+		job_stp->first_step_node = NULL;
+	}
+	job_stp->jobid = job->job_id;
+	job_stp->jobname = job->name;
+	job_stp->user = job->user_name;
+	job_stp->work_dir = job->work_dir;
+}
+
 PARSE_DISABLED(JOB_STDIN)
 PARSE_DISABLED(JOB_STDOUT)
 PARSE_DISABLED(JOB_STDERR)
@@ -5210,6 +5226,64 @@ static int DUMP_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser, void *obj
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(JOB_INFO_STDIN_EXP)
+PARSE_DISABLED(JOB_INFO_STDOUT_EXP)
+PARSE_DISABLED(JOB_INFO_STDERR_EXP)
+
+static int DUMP_FUNC(JOB_INFO_STDIN_EXP)(const parser_t *const parser,
+					 void *obj, data_t *dst, args_t *args)
+{
+	slurm_job_info_t *job = obj;
+	job_std_pattern_t job_stp;
+	char *str = NULL;
+
+	if (job->std_in && (*job->std_in != '\0')) {
+		_fill_jobinfo_stp(&job_stp, job);
+		str = expand_stdio_fields(job->std_in, &job_stp);
+	} else {
+		str = xstrdup("");
+	}
+
+	data_set_string_own(dst, str);
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(JOB_INFO_STDOUT_EXP)(const parser_t *const parser,
+					  void *obj, data_t *dst, args_t *args)
+{
+	slurm_job_info_t *job = obj;
+	job_std_pattern_t job_stp;
+	char *str = NULL;
+
+	if (job->std_out && (*job->std_out != '\0')) {
+		_fill_jobinfo_stp(&job_stp, job);
+		str = expand_stdio_fields(job->std_out, &job_stp);
+	} else {
+		str = xstrdup("");
+	}
+
+	data_set_string_own(dst, str);
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(JOB_INFO_STDERR_EXP)(const parser_t *const parser,
+					  void *obj, data_t *dst, args_t *args)
+{
+	slurm_job_info_t *job = obj;
+	job_std_pattern_t job_stp;
+	char *str = NULL;
+
+	if (job->std_err && (*job->std_err != '\0')) {
+		_fill_jobinfo_stp(&job_stp, job);
+		str = expand_stdio_fields(job->std_err, &job_stp);
+	} else {
+		str = xstrdup("");
+	}
+
+	data_set_string_own(dst, str);
+	return SLURM_SUCCESS;
+}
+
 static int _parse_timestamp(const parser_t *const parser, time_t *time_ptr,
 			    data_t *src, args_t *args, data_t *parent_path)
 {
@@ -7883,6 +7957,9 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, std_in, "standard_input", "Path to stdin file"),
 	add_parse(STRING, std_out, "standard_output", "Path to stdout file"),
 	add_parse(STRING, std_err, "standard_error", "Path to stderr file"),
+	add_cparse(JOB_INFO_STDIN_EXP, "stdin_expanded", "Job stdin with expanded fields"),
+	add_cparse(JOB_INFO_STDOUT_EXP, "stdout_expanded", "Job stdout with expanded fields"),
+	add_cparse(JOB_INFO_STDERR_EXP, "stderr_expanded", "Job stderr with expanded fields"),
 	add_parse(TIMESTAMP_NO_VAL, submit_time, "submit_time", "Time when the job was submitted (UNIX timestamp)"),
 	add_parse(TIMESTAMP_NO_VAL, suspend_time, "suspend_time", "Time the job was last suspended or resumed (UNIX timestamp)"),
 	add_parse(STRING, system_comment, "system_comment", "Arbitrary comment from slurmctld"),
@@ -10109,6 +10186,9 @@ static const parser_t parsers[] = {
 	addpc(JOB_DESC_MSG_NODES, job_desc_msg_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_DESC_MSG_PLANE_SIZE, UINT16_NO_VAL, job_desc_msg_t, NEED_NONE, NULL),
 	addpc(JOB_DESC_MSG_TASK_DISTRIBUTION, job_desc_msg_t, NEED_NONE, STRING, NULL),
+	addpc(JOB_INFO_STDIN_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),
+	addpc(JOB_INFO_STDOUT_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),
+	addpc(JOB_INFO_STDERR_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_USER, slurmdb_job_rec_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_CONDITION_SUBMIT_TIME, TIMESTAMP_NO_VAL, slurmdb_job_cond_t, NEED_NONE, NULL),
 	addpcp(JOB_DESC_MSG_RLIMIT_CPU, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Per-process CPU limit, in seconds."),
