@@ -402,6 +402,9 @@ typedef enum {
 	DATA_PARSER_JOB_INFO_STDIN, /* slurm_job_info_t->stdin (handles % replacements) */
 	DATA_PARSER_JOB_INFO_STDOUT, /* slurm_job_info_t->stdout (handles % replacements) */
 	DATA_PARSER_JOB_INFO_STDERR, /* slurm_job_info_t->stderr (handles % replacements) */
+	DATA_PARSER_JOB_INFO_STDIN_EXP, /* slurm_job_info_t->stdin (handles all pattern replacements) */
+	DATA_PARSER_JOB_INFO_STDOUT_EXP, /* slurm_job_info_t->stdout (handles all pattern replacements) */
+	DATA_PARSER_JOB_INFO_STDERR_EXP, /* slurm_job_info_t->stderr (handles all pattern replacements) */
 	DATA_PARSER_JOB_FLAGS, /* uint64_t & KILL_INV_DEP/HAS_STATE_DIR/... */
 	DATA_PARSER_JOB_SHOW_FLAGS, /* uint32_t & SHOW_* */
 	DATA_PARSER_CORE_SPEC, /* uint16_t & ~CORE_SPEC_THREAD */
