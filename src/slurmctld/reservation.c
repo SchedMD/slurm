@@ -199,7 +199,8 @@ static bool _resv_overlap(resv_desc_msg_t *resv_desc_ptr,
 			  slurmctld_resv_t *this_resv_ptr);
 static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 			       slurmctld_resv_t *resv_ptr);
-static void _run_script(char *script, slurmctld_resv_t *resv_ptr, char *name);
+static void _run_script(char *script, slurmctld_resv_t *resv_ptr,
+			bool is_resv_epilog);
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  part_record_t **part_ptr,
 			  resv_select_t *resv_select_ret);
@@ -7109,11 +7110,9 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 		char *tmp_str = NULL;
 
 		if (!(resv_ptr->ctld_flags & RESV_CTLD_PROLOG))
-			_run_script(slurm_conf.resv_prolog, resv_ptr,
-				    "ResvProlog");
+			_run_script(slurm_conf.resv_prolog, resv_ptr, false);
 		if (!(resv_ptr->ctld_flags & RESV_CTLD_EPILOG))
-			_run_script(slurm_conf.resv_epilog, resv_ptr,
-				    "ResvEpilog");
+			_run_script(slurm_conf.resv_epilog, resv_ptr, true);
 
 		/*
 		 * Repeated reservations need a new reservation id. Try to get a
@@ -7162,10 +7161,12 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 	return rc;
 }
 
-static void _run_script(char *script, slurmctld_resv_t *resv_ptr, char *name)
+static void _run_script(char *script, slurmctld_resv_t *resv_ptr,
+			bool is_resv_epilog)
 {
 	uint32_t argc = 2;
 	char **argv;
+	char *name = is_resv_epilog ? "ResvEpilog" : "ResvProlog";
 
 	if (!script || !script[0])
 		return;
@@ -7254,10 +7255,10 @@ extern void job_resv_check(void)
 
 				if (!(resv_ptr->ctld_flags & RESV_CTLD_PROLOG))
 					_run_script(slurm_conf.resv_prolog,
-						    resv_ptr, "ResvProlog");
+						    resv_ptr, false);
 				if (!(resv_ptr->ctld_flags & RESV_CTLD_EPILOG))
 					_run_script(slurm_conf.resv_epilog,
-						    resv_ptr, "ResvEpilog");
+						    resv_ptr, true);
 				/*
 				 * Clear resv ptrs on finished jobs still
 				 * pointing to this reservation.
@@ -7412,14 +7413,12 @@ static int _set_node_maint_mode(bool reset_all, bitstr_t *node_down_bitmap)
 		    !(resv_ptr->ctld_flags & RESV_CTLD_PROLOG)) {
 			res_start_cnt++;
 			resv_ptr->ctld_flags |= RESV_CTLD_PROLOG;
-			_run_script(slurm_conf.resv_prolog, resv_ptr,
-				    "ResvProlog");
+			_run_script(slurm_conf.resv_prolog, resv_ptr, false);
 		}
 		if ((resv_ptr->end_time <= now) &&
 		    !(resv_ptr->ctld_flags & RESV_CTLD_EPILOG)) {
 			resv_ptr->ctld_flags |= RESV_CTLD_EPILOG;
-			_run_script(slurm_conf.resv_epilog, resv_ptr,
-				    "ResvEpilog");
+			_run_script(slurm_conf.resv_epilog, resv_ptr, true);
 		}
 	}
 	list_iterator_destroy(iter);
