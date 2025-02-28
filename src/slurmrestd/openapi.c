@@ -1247,8 +1247,9 @@ static int _foreach_add_path(void *x, void *arg)
 	xassert(!data_key_get(spec->paths, path->path));
 	dpath = data_set_dict(data_key_set(spec->paths, path->path));
 
-	for (int i = 0; !rc && bound->methods[i].method; i++)
-		rc = _populate_method(path, spec, dpath, &bound->methods[i]);
+	for (int i = 0; !rc && path->methods[i].method; i++)
+		rc = _populate_method(path, spec, dpath,
+				      path->methods[i].bound);
 
 	return rc;
 }
@@ -1268,9 +1269,9 @@ static int _foreach_count_path(void *x, void *arg)
 
 	refs = &spec->references[_resolve_parser_index(path->parser)];
 
-	for (int i = 0; bound->methods[i].method; i++) {
+	for (int i = 0; path->methods[i].method; i++) {
 		const openapi_path_binding_method_t *method =
-			&bound->methods[i];
+			path->methods[i].bound;
 		const char **mime_types = get_mime_type_array();
 
 		if (method->parameters &&

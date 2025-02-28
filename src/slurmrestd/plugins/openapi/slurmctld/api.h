@@ -64,5 +64,6 @@ extern int op_handler_partitions(openapi_ctxt_t *ctxt);
 extern int op_handler_partition(openapi_ctxt_t *ctxt);
 extern int op_handler_reservations(openapi_ctxt_t *ctxt);
 extern int op_handler_reservation(openapi_ctxt_t *ctxt);
+extern int op_handler_reservations_update(openapi_ctxt_t *ctxt);
 
 #endif

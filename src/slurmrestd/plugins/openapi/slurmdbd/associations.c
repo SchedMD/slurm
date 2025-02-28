@@ -96,9 +96,11 @@ static void _diff_tres(char **dst, char *mod)
 		return;
 	}
 
-	slurmdb_tres_list_from_string(&dst_list, *dst, TRES_STR_FLAG_REPLACE);
+	slurmdb_tres_list_from_string(&dst_list, *dst, TRES_STR_FLAG_REPLACE,
+				      NULL);
 	xfree(*dst);
-	slurmdb_tres_list_from_string(&mod_list, mod, TRES_STR_FLAG_REPLACE);
+	slurmdb_tres_list_from_string(&mod_list, mod, TRES_STR_FLAG_REPLACE,
+				      NULL);
 
 	/* find all removed or tres with updated counts */
 	itr = list_iterator_create(dst_list);

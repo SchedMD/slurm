@@ -241,9 +241,13 @@ extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2);
  *                 Meaningful flags are TRES_STR_FLAG_REPLACE
  *                                      TRES_STR_FLAG_REMOVE
  *                                      TRES_STR_FLAG_SORT_ID
+ * IN    : sub_tres_list - list of slurmdb_tres_rec_t * to use instead of
+ *			   assoc_mgr_tres_list. If NULL assoc_mgr_tres_list is
+ *			   used.
  */
-extern void slurmdb_tres_list_from_string(
-	list_t **tres_list, const char *tres, uint32_t flags);
+extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
+					  uint32_t flags,
+					  list_t *sub_tres_list);
 
 /* combine a name array and count array into a string */
 extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,

@@ -552,7 +552,7 @@ extern int resv_utilization(int argc, char **argv)
 
 		slurmdb_tres_list_from_string(&resv_tres_list,
 					      resv_ptr->tres_str,
-					      TRES_STR_FLAG_NONE);
+					      TRES_STR_FLAG_NONE, NULL);
 		if (!resv_tres_list)
 			continue;
 
