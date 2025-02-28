@@ -6671,22 +6671,6 @@ static int DUMP_FUNC(KILL_JOBS_RESP_MSG)(const parser_t *const parser,
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = NEED_NONE,                                           \
 }
-#define add_parse_bit_flag_string(stype, mtype, req, field, path, desc) \
-{                                                                       \
-	.magic = MAGIC_PARSER,                                          \
-	.model = PARSER_MODEL_ARRAY_LINKED_FIELD,                       \
-	.ptr_offset = offsetof(stype, field),                           \
-	.field_name = XSTRINGIFY(field),                                \
-	.key = path,                                                    \
-	.required = req,                                                \
-	.type = DATA_PARSER_ ## mtype,                                  \
-	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),               \
-	.obj_desc = desc,                                               \
-	.obj_type_string = XSTRINGIFY(stype),                           \
-	.size = sizeof(((stype *) NULL)->field),                        \
-	.single_flag = true,                                            \
-	.needs = NEED_NONE,                                             \
-}
 #define add_flag_bit(flag_value, flag_string)                         \
 	add_flag_masked_bit(flag_value, INFINITE64, flag_string)
 #define add_flag_masked_bit(flag_value, flag_mask, flag_string)       \
@@ -9181,17 +9165,14 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PROCESS_EXIT_CODE_STATUS)[] = {
 	add_parser(proc_exit_code_verbose_t, mtype, false, field, 0, path, desc)
 #define add_parse_overload(mtype, field, overloads, path, desc) \
 	add_parser(proc_exit_code_verbose_t, mtype, false, field, overloads, path, desc)
-#define add_flag(mtype, field, path, desc) \
-	add_parse_bit_flag_string(proc_exit_code_verbose_t, mtype, false, field, path, desc)
 static const parser_t PARSER_ARRAY(PROCESS_EXIT_CODE_VERBOSE)[] = {
-	add_flag(PROCESS_EXIT_CODE_STATUS, status, "status", "Status given by return code"),
+	add_parse(PROCESS_EXIT_CODE_STATUS, status, "status", "Status given by return code"),
 	add_parse(UINT32_NO_VAL, return_code, "return_code", "Process return code (numeric)"),
 	add_parse_overload(UINT16_NO_VAL, signal, 1, "signal/id", "Signal sent to process (numeric)"),
 	add_parse_overload(SIGNAL, signal, 1, "signal/name", "Signal sent to process (name)"),
 };
 #undef add_parse
 #undef add_parse_overload
-#undef add_flag
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurm_step_id_t, mtype, false, field, 0, path, desc)
