@@ -5210,48 +5210,6 @@ static int DUMP_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser, void *obj
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(JOB_INFO_STDIN)
-
-static int DUMP_FUNC(JOB_INFO_STDIN)(const parser_t *const parser, void *obj,
-			    data_t *dst, args_t *args)
-{
-	slurm_job_info_t *job = obj;
-	char *str = xmalloc(PATH_MAX);
-
-	slurm_get_job_stdin(str, PATH_MAX, job);
-	data_set_string_own(dst, str);
-
-	return SLURM_SUCCESS;
-}
-
-PARSE_DISABLED(JOB_INFO_STDOUT)
-
-static int DUMP_FUNC(JOB_INFO_STDOUT)(const parser_t *const parser, void *obj,
-			    data_t *dst, args_t *args)
-{
-	slurm_job_info_t *job = obj;
-	char *str = xmalloc(PATH_MAX);
-
-	slurm_get_job_stdout(str, PATH_MAX, job);
-	data_set_string_own(dst, str);
-
-	return SLURM_SUCCESS;
-}
-
-PARSE_DISABLED(JOB_INFO_STDERR)
-
-static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
-			    data_t *dst, args_t *args)
-{
-	slurm_job_info_t *job = obj;
-	char *str = xmalloc(PATH_MAX);
-
-	slurm_get_job_stderr(str, PATH_MAX, job);
-	data_set_string_own(dst, str);
-
-	return SLURM_SUCCESS;
-}
-
 static int _parse_timestamp(const parser_t *const parser, time_t *time_ptr,
 			    data_t *src, args_t *args, data_t *parent_path)
 {
@@ -7922,12 +7880,9 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_skip(start_protocol_ver),
 	add_parse(STRING, state_desc, "state_description", "Optional details for state_reason"),
 	add_parse(JOB_REASON, state_reason, "state_reason", "Reason for current Pending or Failed state"),
-	add_skip(std_err),
-	add_skip(std_in),
-	add_skip(std_out),
-	add_cparse(JOB_INFO_STDERR, "standard_error", "Path to stderr file"),
-	add_cparse(JOB_INFO_STDIN, "standard_input", "Path to stdin file"),
-	add_cparse(JOB_INFO_STDOUT, "standard_output", "Path to stdout file"),
+	add_parse(STRING, std_err, "standard_error", "Path to stderr file"),
+	add_parse(STRING, std_in, "standard_input", "Path to stdin file"),
+	add_parse(STRING, std_out, "standard_output", "Path to stdout file"),
 	add_parse(TIMESTAMP_NO_VAL, submit_time, "submit_time", "Time when the job was submitted (UNIX timestamp)"),
 	add_parse(TIMESTAMP_NO_VAL, suspend_time, "suspend_time", "Time the job was last suspended or resumed (UNIX timestamp)"),
 	add_parse(STRING, system_comment, "system_comment", "Arbitrary comment from slurmctld"),
@@ -10154,9 +10109,6 @@ static const parser_t parsers[] = {
 	addpc(JOB_DESC_MSG_NODES, job_desc_msg_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_DESC_MSG_PLANE_SIZE, UINT16_NO_VAL, job_desc_msg_t, NEED_NONE, NULL),
 	addpc(JOB_DESC_MSG_TASK_DISTRIBUTION, job_desc_msg_t, NEED_NONE, STRING, NULL),
-	addpc(JOB_INFO_STDIN, slurm_job_info_t, NEED_NONE, STRING, NULL),
-	addpc(JOB_INFO_STDOUT, slurm_job_info_t, NEED_NONE, STRING, NULL),
-	addpc(JOB_INFO_STDERR, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_USER, slurmdb_job_rec_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_CONDITION_SUBMIT_TIME, TIMESTAMP_NO_VAL, slurmdb_job_cond_t, NEED_NONE, NULL),
 	addpcp(JOB_DESC_MSG_RLIMIT_CPU, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Per-process CPU limit, in seconds."),
