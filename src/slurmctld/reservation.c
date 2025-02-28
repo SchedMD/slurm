@@ -7167,6 +7167,8 @@ static void _run_script(char *script, slurmctld_resv_t *resv_ptr,
 	uint32_t argc = 2;
 	char **argv;
 	char *name = is_resv_epilog ? "ResvEpilog" : "ResvProlog";
+	int timeout = is_resv_epilog ?
+		slurm_conf.epilog_timeout : slurm_conf.prolog_timeout;
 
 	if (!script || !script[0])
 		return;
@@ -7174,12 +7176,12 @@ static void _run_script(char *script, slurmctld_resv_t *resv_ptr,
 		error("Invalid %s(%s): %m", name, script);
 		return;
 	}
+
 	argv = xcalloc(argc + 1, sizeof(*argv)); /* +1 to NULL-terminate */
 	argv[0] = script;
 	argv[1] = resv_ptr->name;
 
-	slurmscriptd_run_resv(script, argc, argv,
-			      slurm_conf.prolog_epilog_timeout, name);
+	slurmscriptd_run_resv(script, argc, argv, timeout, name);
 
 	xfree(argv);
 }

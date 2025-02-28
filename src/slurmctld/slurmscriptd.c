@@ -1580,6 +1580,8 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 	slurmscriptd_msg_t *send_args = xmalloc(sizeof(*send_args));
 	char *script_name;
 	script_type_t script_type;
+	int timeout = is_epilog ?
+		slurm_conf.epilog_timeout : slurm_conf.prolog_timeout;
 
 	if (is_epilog) {
 		script_name = "EpilogSlurmctld";
@@ -1590,8 +1592,7 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 	}
 
 	run_script_msg = _init_run_script_msg(env, script_name, script,
-					      script_type,
-					      slurm_conf.prolog_epilog_timeout);
+					      script_type, timeout);
 	run_script_msg->argc = 1;
 	run_script_msg->argv = xcalloc(2, sizeof(char *)); /* NULL terminated */
 	run_script_msg->argv[0] = xstrdup(script);

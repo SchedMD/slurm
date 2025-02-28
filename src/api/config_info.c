@@ -978,8 +978,16 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 		xfree(key);
 	}
 
-	add_key_pair(ret_list, "PrologEpilogTimeout", "%u",
-		     conf->prolog_epilog_timeout);
+	/* If prolog and epilog timeouts equal print only PrologEpilogTimeout */
+	if (conf->prolog_timeout == conf->epilog_timeout) {
+		add_key_pair(ret_list, "PrologEpilogTimeout", "%u",
+			     conf->prolog_timeout);
+	} else {
+		add_key_pair(ret_list, "EpilogTimeout", "%u",
+			     conf->epilog_timeout);
+		add_key_pair(ret_list, "PrologTimeout", "%u",
+			     conf->prolog_timeout);
+	}
 
 	for (int i = 0; i < conf->prolog_slurmctld_cnt; i++) {
 		char *key = xstrdup_printf("PrologSlurmctld[%d]", i);

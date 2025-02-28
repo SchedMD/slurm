@@ -173,7 +173,8 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 
 	if (script_cnt) {
 		int status = 0;
-		int timeout = slurm_conf.prolog_epilog_timeout;
+		int timeout = is_epilog ?
+			slurm_conf.epilog_timeout : slurm_conf.prolog_timeout;
 		char *cmd_argv[2] = {0};
 		list_t *path_list = NULL;
 		run_command_args_t run_command_args = {
@@ -186,10 +187,7 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 		if (!env)
 			env = _build_env(job_env, cred, is_epilog);
 
-		if (timeout == NO_VAL16)
-			timeout = -1;
-		else
-			timeout *= 1000;
+		timeout = (timeout != NO_VAL16) ? (timeout * 1000) : -1;
 
 		run_command_args.env = env;
 		run_command_args.max_wait = timeout;
@@ -387,6 +385,8 @@ static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id,
 	int status;
 	char *argv[4];
 	char *resp = NULL;
+	int timeout = is_epilog ?
+		slurm_conf.epilog_timeout : slurm_conf.prolog_timeout;
 	run_command_args_t run_command_args = {
 		.env = env,
 		.job_id = job_id,
@@ -396,11 +396,8 @@ static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id,
 		.write_to_child = true,
 	};
 
-	if (slurm_conf.prolog_epilog_timeout == NO_VAL16)
-		run_command_args.max_wait = -1;
-	else
-		run_command_args.max_wait =
-			slurm_conf.prolog_epilog_timeout * 1000;
+	run_command_args.max_wait =
+		(timeout != NO_VAL16) ? (timeout * 1000) : -1;
 
 	argv[0] = (char *) conf->stepd_loc;
 	argv[1] = "spank";

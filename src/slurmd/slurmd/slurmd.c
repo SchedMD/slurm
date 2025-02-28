@@ -521,8 +521,12 @@ main (int argc, char **argv)
 		error("Unable to remove pidfile `%s': %m",
 		      conf->pidfile);
 
-	/* Wait for prolog/epilog scripts to finish or timeout */
-	_wait_for_all_threads(slurm_conf.prolog_epilog_timeout);
+	/*
+	 * Wait for prolog/epilog scripts to finish or timeout.
+	 * Use the longest timeout value.
+	 */
+	_wait_for_all_threads(MAX(slurm_conf.prolog_timeout,
+				  slurm_conf.epilog_timeout));
 	/*
 	 * run_command_shutdown() will kill any scripts started with
 	 * run_command() including the prolog and epilog.
@@ -1474,8 +1478,10 @@ static void *_try_to_reconfig(void *ptr)
 
 	START_TIMER;
 
-	if (slurm_conf.prolog_epilog_timeout != NO_VAL16)
-		rpc_wait = MAX(rpc_wait, slurm_conf.prolog_epilog_timeout);
+	if (slurm_conf.prolog_timeout != NO_VAL16)
+		rpc_wait = MAX(rpc_wait, slurm_conf.prolog_timeout);
+	if (slurm_conf.epilog_timeout != NO_VAL16)
+		rpc_wait = MAX(rpc_wait, slurm_conf.epilog_timeout);
 
 	/* Wait for RPCs to finish */
 	_wait_for_all_threads(rpc_wait);
