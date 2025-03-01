@@ -39,7 +39,8 @@ def create_resv(request, node_list):
     if re.search(
         rf"(?:Nodes=)({node2})", atf.run_command_output("scontrol show res resv1")
     ):
-        node1, node2 = node_list.reverse()
+        node_list.reverse()
+        node1, node2 = node_list
 
     return [node1, node2, flag]
 
