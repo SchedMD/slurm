@@ -525,6 +525,7 @@ extern int set_usage_information(char **usage_table,
 	if (start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)
 	   || (end > my_time)) {
 		switch (type) {
+		case DBD_GET_ASSOC_NG_USAGE:
 		case DBD_GET_ASSOC_USAGE:
 			my_usage_table = assoc_hour_table;
 			break;
