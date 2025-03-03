@@ -43,16 +43,18 @@
 #include <sys/socket.h>
 
 #include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/util-net.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
+
+#include "src/conmgr/conmgr.h"
 
 typedef struct {
 	int index;
@@ -456,13 +458,38 @@ extern char *auth_g_get_host(void *slurm_msg)
 	}
 
 	/* use remote host IP, then look it up */
-	if ((host = xgetnameinfo(addr))) {
-		debug3("%s: looked up from connection's IP address: %s",
-		       __func__, host);
+	if ((host = sockaddr_to_string(addr, sizeof(*addr)))) {
+		if (msg->conn_fd >= 0)
+			log_flag(NET, "%s: [fd:%d] resolved message address to %s for %s RPC",
+			       __func__, msg->conn_fd, host,
+			       rpc_num2string(msg->msg_type));
+		else if (msg->conn && (msg->conn->fd >= 0))
+			log_flag(NET, "%s: [fd:%d] resolved message address to %s for %s RPC over persistent connection",
+			       __func__, msg->conn->fd, host,
+			       rpc_num2string(msg->msg_type));
+		else if (msg->conmgr_fd)
+			log_flag(NET, "%s: [%s] resolved message address to %s for %s RPC",
+			       __func__, conmgr_fd_get_name(msg->conmgr_fd),
+			       host, rpc_num2string(msg->msg_type));
+		else
+			log_flag(NET, "%s: resolved message address to %s for %s RPC",
+			       __func__, host, rpc_num2string(msg->msg_type));
 	} else {
-		host = xmalloc(INET6_ADDRSTRLEN);
-		slurm_get_ip_str(addr, host, INET6_ADDRSTRLEN);
-		debug3("%s: using connection's IP address: %s", __func__, host);
+		if (msg->conn_fd >= 0)
+			log_flag(NET, "%s: [fd:%d] unable to resolve socket address for %s RPC",
+			      __func__, msg->conn_fd,
+			      rpc_num2string(msg->msg_type));
+		else if (msg->conn && (msg->conn->fd >= 0))
+			log_flag(NET, "%s: [fd:%d] unable to resolve socket address for %s RPC over persistent connection",
+			      __func__, msg->conn->fd,
+			      rpc_num2string(msg->msg_type));
+		else if (msg->conmgr_fd)
+			log_flag(NET, "%s: [%s] unable to resolve socket address for %s RPC",
+			      __func__, conmgr_fd_get_name(msg->conmgr_fd),
+			      rpc_num2string(msg->msg_type));
+		else
+			log_flag(NET, "%s: Unable to resolve address for message without connection for %s RPC",
+			      __func__, rpc_num2string(msg->msg_type));
 	}
 
 	return host;
