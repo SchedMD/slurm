@@ -113,7 +113,7 @@ static int _mod_reservations(openapi_ctxt_t *ctxt, ListFindF validate_func,
 	}
 
 	FREE_NULL_LIST(resv_req.reservations);
-	return rc ? rc : ctxt->rc;
+	return ctxt->rc;
 }
 
 /* return true on error else false, meant for use in list_find_first() */
