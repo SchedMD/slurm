@@ -369,12 +369,13 @@ static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
 	char *resp = NULL;
 
 	if (addr->ss_family == AF_INET) {
-		const int port = ((struct sockaddr_in *) addr)->sin_port;
+		const struct sockaddr_in *in = (struct sockaddr_in *) addr;
+		const uint16_t port = ntohs(in->sin_port);
 
 		if (host && port)
-			xstrfmtcat(resp, "%s:%d", host, port);
+			xstrfmtcat(resp, "%s:%hu", host, port);
 		else if (port)
-			xstrfmtcat(resp, ":%d", port);
+			xstrfmtcat(resp, ":%hu", port);
 	} else if (addr->ss_family == AF_INET6) {
 		const int port = ((struct sockaddr_in6 *) addr)->sin6_port;
 
