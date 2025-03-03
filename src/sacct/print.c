@@ -347,6 +347,30 @@ extern void print_fields(type_t type, void *object)
 	case JOBSTEP:
 		job = step->job_ptr;
 
+		if (params.expand_patterns) {
+			if (step->std_in && (*step->std_in != '\0')) {
+				tmp_path =
+					slurmdb_expand_step_stdio_fields(
+						step->std_in, step);
+				xfree(step->std_in);
+				step->std_in = tmp_path;
+			}
+			if (step->std_err && (*step->std_err != '\0')) {
+				tmp_path =
+					slurmdb_expand_step_stdio_fields(
+						step->std_err, step);
+				xfree(step->std_err);
+				step->std_err = tmp_path;
+			}
+			if (step->std_out && (*step->std_out != '\0')) {
+				tmp_path =
+					slurmdb_expand_step_stdio_fields(
+						step->std_out, step);
+				xfree(step->std_out);
+				step->std_out = tmp_path;
+			}
+		}
+
 		if ((step_cpu_tres_rec_count =
 		     slurmdb_find_tres_count_in_string(
 			     step->tres_alloc_str, TRES_CPU)) == INFINITE64)

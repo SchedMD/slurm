@@ -519,6 +519,8 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 	case 'J': /* Jobid.stepid */
 	case 'j': /* Job ID */
 		xstrfmtcatat(*expanded, pos, "%0*u", padding, job->jobid);
+		if ((*ptr == 'J') && (job->first_step_id != SLURM_BATCH_SCRIPT))
+			xstrfmtcatat(*expanded, pos, ".%d", job->first_step_id);
 		break;
 	case 'a': /* Array task ID */
 		xstrfmtcatat(*expanded, pos, "%0*u", padding,
@@ -557,8 +559,6 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
  * Special expansion function for stdin/stdout/stderr filename patterns.
  * Fields that can potentially map to a range of values will use the first in
  * that range (e.g %t is replaced by 0).
- *
- * The parser do not support steps and is only for batch jobs.
  *
  * \      If we found this symbol, don't replace anything.
  * %%     The character "%".

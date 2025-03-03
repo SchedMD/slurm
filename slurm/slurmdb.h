@@ -2265,6 +2265,19 @@ extern list_t *slurmdb_wckeys_remove(void *db_conn,
 extern char *slurmdb_expand_job_stdio_fields(char *path,
 					     slurmdb_job_rec_t *job);
 
+/*
+ * Take a path and return a string with all the wildcards in the path properly
+ * expanded, based in the values of the passed slurmdb_step_rec_t. This function
+ * is mainly used for job steps, and the generated path refers to the step
+ * output files.
+ * IN: path - The raw path string which may contain wildcards to expand.
+ * IN: step - A slurmdb_step_rec_t struct used to expand the wildcards.
+ * RET: char * - An allocated string with all the paths expanded. The caller
+ * must xfree it.
+ */
+extern char *slurmdb_expand_step_stdio_fields(char *path,
+					      slurmdb_step_rec_t *step);
+
 #ifdef __cplusplus
 }
 #endif

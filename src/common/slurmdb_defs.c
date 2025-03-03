@@ -4824,3 +4824,29 @@ extern char *slurmdb_expand_job_stdio_fields(char *path, slurmdb_job_rec_t *job)
 
 	return ret;
 }
+
+extern char *slurmdb_expand_step_stdio_fields(char *path,
+					      slurmdb_step_rec_t *step)
+{
+	job_std_pattern_t job_stp;
+	slurmdb_job_rec_t *job = step->job_ptr;
+	hostlist_t *nodes = hostlist_create(step->nodes);
+	char *ret;
+
+	job_stp.array_job_id = job->array_job_id;
+	job_stp.array_task_id = job->array_task_id;
+	job_stp.first_step_id = step->step_id.step_id;
+	job_stp.first_step_node = hostlist_shift(nodes);
+	job_stp.jobid = step->step_id.job_id;
+	job_stp.jobname = job->jobname;
+	job_stp.user = job->user;
+	job_stp.work_dir = job->work_dir; //valid for jobs only;
+
+	ret = expand_stdio_fields(path, &job_stp);
+
+	hostlist_destroy(nodes);
+	if (job_stp.first_step_node)
+		free(job_stp.first_step_node);
+
+	return ret;
+}
