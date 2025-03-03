@@ -73,6 +73,9 @@ class Trailer:
                 group.append(peek)
             else:
                 break
+        else:
+            # if for ended on multiline, increment i to consume last line
+            i += 1
         return (cls(tag, "\n".join(group)), lines[i:])
 
     @classmethod
