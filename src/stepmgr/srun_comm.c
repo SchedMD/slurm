@@ -305,6 +305,9 @@ extern void srun_timeout(job_record_t *job_ptr)
 
 	list_for_each(job_ptr->step_list, _srun_step_timeout, NULL);
 
+	if (!job_ptr->other_port || !job_ptr->alloc_node || !job_ptr->resp_host)
+		return;
+
 	if (running_in_slurmctld() &&
 	    job_ptr->batch_host &&
 	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
@@ -324,8 +327,7 @@ extern void srun_timeout(job_record_t *job_ptr)
 		notify_job = false;
 	}
 
-	if (notify_job &&
-	    job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+	if (notify_job) {
 		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
