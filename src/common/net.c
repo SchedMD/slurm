@@ -366,19 +366,27 @@ static const char *_ip_reserved_to_str(const slurm_addr_t *addr)
 
 static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
 {
-	int port = 0;
 	char *resp = NULL;
 
-	if (addr->ss_family == AF_INET)
-		port = ((struct sockaddr_in *) addr)->sin_port;
-	else if (addr->ss_family == AF_INET6)
-		port = ((struct sockaddr_in6 *) addr)->sin6_port;
+	if (addr->ss_family == AF_INET) {
+		const int port = ((struct sockaddr_in *) addr)->sin_port;
 
-	/* construct RFC3986 host port pair */
-	if (host && port)
-		xstrfmtcat(resp, "[%s]:%d", host, port);
-	else if (port)
-		xstrfmtcat(resp, "[::]:%d", port);
+		if (host && port)
+			xstrfmtcat(resp, "%s:%d", host, port);
+		else if (port)
+			xstrfmtcat(resp, ":%d", port);
+	} else if (addr->ss_family == AF_INET6) {
+		const int port = ((struct sockaddr_in6 *) addr)->sin6_port;
+
+		/*
+		 * Construct RFC3986 host port pair:
+		 * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
+		 */
+		if (host && port)
+			xstrfmtcat(resp, "[%s]:%d", host, port);
+		else if (port)
+			xstrfmtcat(resp, "[::]:%d", port);
+	}
 
 	return resp;
 }
