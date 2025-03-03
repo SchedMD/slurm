@@ -91,6 +91,9 @@ extern struct addrinfo *xgetaddrinfo_port(const char *hostname,
 /*
  * Get the short hostname using "nameinfo" for an address.
  * NOTE: caller is responsible for xfree()ing the resulting hostname.
+ * NOTE: In most cases sockaddr_to_string() is preferred over this function
+ *       as it supports more formats and addresses. Use this if only the answer
+ *       from getnameinfo() is needed.
  * Returns hostname or NULL on error.
  */
 extern char *xgetnameinfo(const slurm_addr_t *addr);
