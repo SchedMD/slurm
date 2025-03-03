@@ -346,6 +346,9 @@ typedef struct {
 	char *state;
 	char *stepid;
 	char *step_het_comp;
+	char *std_err;
+	char *std_in;
+	char *std_out;
 	char *submit_line;
 	char *sys_sec;
 	char *sys_usec;
@@ -396,6 +399,9 @@ static void _free_local_step_members(local_step_t *object)
 		xfree(object->state);
 		xfree(object->stepid);
 		xfree(object->step_het_comp);
+		xfree(object->std_err);
+		xfree(object->std_in);
+		xfree(object->std_out);
 		xfree(object->submit_line);
 		xfree(object->sys_sec);
 		xfree(object->sys_usec);
@@ -779,6 +785,9 @@ static char *step_req_inx[] = {
 	"req_cpufreq_min",
 	"req_cpufreq",
 	"req_cpufreq_gov",
+	"std_err",
+	"std_in",
+	"std_out",
 	"submit_line",
 	"tres_alloc",
 	"tres_usage_in_ave",
@@ -828,6 +837,9 @@ enum {
 	STEP_REQ_REQ_CPUFREQ_MIN,
 	STEP_REQ_REQ_CPUFREQ_MAX,
 	STEP_REQ_REQ_CPUFREQ_GOV,
+	STEP_REQ_STDERR,
+	STEP_REQ_STDIN,
+	STEP_REQ_STDOUT,
 	STEP_REQ_SUBMIT_LINE,
 	STEP_REQ_TRES,
 	STEP_TRES_USAGE_IN_AVE,
@@ -2174,6 +2186,9 @@ static void _pack_local_step(local_step_t *object, buf_t *buffer)
 	packstr(object->state, buffer);
 	packstr(object->stepid, buffer);
 	packstr(object->step_het_comp, buffer);
+	packstr(object->std_err, buffer);
+	packstr(object->std_in, buffer);
+	packstr(object->std_out, buffer);
 	packstr(object->submit_line, buffer);
 	packstr(object->sys_sec, buffer);
 	packstr(object->sys_usec, buffer);
@@ -2229,6 +2244,9 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->state, buffer);
 		safe_unpackstr(&object->stepid, buffer);
 		safe_unpackstr(&object->step_het_comp, buffer);
+		safe_unpackstr(&object->std_err, buffer);
+		safe_unpackstr(&object->std_in, buffer);
+		safe_unpackstr(&object->std_out, buffer);
 		safe_unpackstr(&object->submit_line, buffer);
 		safe_unpackstr(&object->sys_sec, buffer);
 		safe_unpackstr(&object->sys_usec, buffer);
@@ -4450,6 +4468,9 @@ static buf_t *_pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 		step.state = row[STEP_REQ_STATE];
 		step.stepid = row[STEP_REQ_STEPID];
 		step.step_het_comp = row[STEP_REQ_STEP_HET_COMP];
+		step.std_err = row[STEP_REQ_STDERR];
+		step.std_in = row[STEP_REQ_STDIN];
+		step.std_out = row[STEP_REQ_STDOUT];
 		step.submit_line = row[STEP_REQ_SUBMIT_LINE];
 		step.sys_sec = row[STEP_REQ_SYS_SEC];
 		step.sys_usec = row[STEP_REQ_SYS_USEC];
@@ -4516,6 +4537,9 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 		STEP_REQ_TASKDIST,
 		STEP_REQ_USER_SEC,
 		STEP_REQ_USER_USEC,
+		STEP_REQ_STDERR,
+		STEP_REQ_STDIN,
+		STEP_REQ_STDOUT,
 		STEP_REQ_SYS_SEC,
 		STEP_REQ_SYS_USEC,
 		STEP_REQ_ACT_CPUFREQ,
@@ -4620,6 +4644,9 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			     object.task_dist,
 			     object.user_sec,
 			     object.user_usec,
+			     object.std_err,
+			     object.std_in,
+			     object.std_out,
 			     object.sys_sec,
 			     object.sys_usec,
 			     object.act_cpufreq,
