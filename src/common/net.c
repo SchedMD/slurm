@@ -377,16 +377,17 @@ static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
 		else if (port)
 			xstrfmtcat(resp, ":%hu", port);
 	} else if (addr->ss_family == AF_INET6) {
-		const int port = ((struct sockaddr_in6 *) addr)->sin6_port;
+		const struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr;
+		const uint16_t port = ntohs(in6->sin6_port);
 
 		/*
 		 * Construct RFC3986 host port pair:
 		 * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
 		 */
 		if (host && port)
-			xstrfmtcat(resp, "[%s]:%d", host, port);
+			xstrfmtcat(resp, "[%s]:%hu", host, port);
 		else if (port)
-			xstrfmtcat(resp, "[::]:%d", port);
+			xstrfmtcat(resp, "[::]:%hu", port);
 	}
 
 	return resp;
