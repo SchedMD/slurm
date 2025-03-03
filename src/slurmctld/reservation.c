@@ -3343,6 +3343,19 @@ static int _validate_reservation_access_update(void *x, void *y)
 	return 0;
 }
 
+static int _validate_and_set_partition(part_record_t **part_ptr,
+				       char **partition)
+{
+	if (*part_ptr == NULL) {
+		*part_ptr = default_part_loc;
+		if (*part_ptr == NULL)
+			return ESLURM_DEFAULT_PARTITION_NOT_SET;
+	}
+	xfree(*partition);
+	*partition = xstrdup((*part_ptr)->name);
+	return SLURM_SUCCESS;
+}
+
 /* Update an exiting resource reservation */
 extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 {
@@ -5016,7 +5029,7 @@ extern int validate_job_resv(job_record_t *job_ptr)
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 {
 	bitstr_t *tmp2_bitmap = NULL;
-	int delta_node_cnt, i;
+	int delta_node_cnt, i, rc;
 	resv_desc_msg_t resv_desc;
 	resv_select_t resv_select = { 0 };
 
@@ -5061,10 +5074,9 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	}
 
 	/* Ensure if partition exists in reservation otherwise use default */
-	if (!resv_ptr->part_ptr) {
-		resv_ptr->part_ptr = default_part_loc;
-		if (!resv_ptr->part_ptr)
-			return ESLURM_DEFAULT_PARTITION_NOT_SET;
+	if ((rc = _validate_and_set_partition(&resv_ptr->part_ptr,
+					      &resv_ptr->partition))) {
+		return rc;
 	}
 
 	/* Must increase node count. Make this look like new request so
@@ -5086,10 +5098,10 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 		bit_and_not(resv_select.node_bitmap, resv_ptr->node_bitmap);
 	}
 
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &resv_select);
+	rc = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &resv_select);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
-	if (i == SLURM_SUCCESS) {
+	if (rc == SLURM_SUCCESS) {
 		job_record_t *job_ptr = resv_desc.job_ptr;
 		/*
 		 * If the reservation was 0 node count before (ANY_NODES) this
@@ -5121,7 +5133,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	}
 	job_record_delete(resv_desc.job_ptr);
 
-	return i;
+	return rc;
 }
 
 static int _feature_has_node_cnt(void *x, void *key)
@@ -5317,12 +5329,9 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	list_itr_t *itr;
 	job_record_t *job_ptr;
 
-	if (*part_ptr == NULL) {
-		*part_ptr = default_part_loc;
-		if (*part_ptr == NULL)
-			return ESLURM_DEFAULT_PARTITION_NOT_SET;
-		xfree(resv_desc_ptr->partition);	/* should be no-op */
-		resv_desc_ptr->partition = xstrdup((*part_ptr)->name);
+	if ((rc = _validate_and_set_partition(part_ptr,
+					      &resv_desc_ptr->partition))) {
+		return rc;
 	}
 
 	xassert(resv_desc_ptr->job_ptr);
