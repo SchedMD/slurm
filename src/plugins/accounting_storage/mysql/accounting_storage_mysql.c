@@ -1337,6 +1337,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "req_cpufreq_min", "int unsigned default 0 not null" },
 		{ "req_cpufreq", "int unsigned default 0 not null" }, /* max */
 		{ "req_cpufreq_gov", "int unsigned default 0 not null" },
+		{ "std_err", "text not null default ''" },
+		{ "std_in", "text not null default ''" },
+		{ "std_out", "text not null default ''" },
 		{ "submit_line", "longtext" },
 		{ "tres_alloc", "text not null default ''" },
 		{ "tres_usage_in_ave", "text not null default ''" },
