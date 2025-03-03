@@ -364,6 +364,20 @@ static const char *_ip_reserved_to_str(const slurm_addr_t *addr)
 	return NULL;
 }
 
+static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host,
+				   int port)
+{
+	char *resp = NULL;
+
+	/* construct RFC3986 host port pair */
+	if (host && port)
+		xstrfmtcat(resp, "[%s]:%d", host, port);
+	else if (port)
+		xstrfmtcat(resp, "[::]:%d", port);
+
+	return resp;
+}
+
 extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 {
 	int prev_errno = errno;
@@ -395,21 +409,11 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 
 	/* Check for reserved addresses that getnameinfo() won't resolve */
 	if ((rsv_host = _ip_reserved_to_str(addr))) {
-		/* construct RFC3986 host port pair */
-		if (rsv_host && port)
-			xstrfmtcat(resp, "[%s]:%d", rsv_host, port);
-		else if (port)
-			xstrfmtcat(resp, "[::]:%d", port);
+		resp = _fmt_ip_host_port_str(addr, rsv_host, port);
 	} else {
 		/* Attempt to resolve hostname */
 		char *host = xgetnameinfo(addr);
-
-		/* construct RFC3986 host port pair */
-		if (host && port)
-			xstrfmtcat(resp, "[%s]:%d", host, port);
-		else if (port)
-			xstrfmtcat(resp, "[::]:%d", port);
-
+		resp = _fmt_ip_host_port_str(addr, host, port);
 		xfree(host);
 	}
 
