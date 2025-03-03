@@ -384,6 +384,11 @@ static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
 	} else if (addr->ss_family == AF_INET6) {
 		const struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr;
 		const uint16_t port = ntohs(in6->sin6_port);
+		char addrbuf[INET6_ADDRSTRLEN];
+
+		if (!host && inet_ntop(AF_INET6, &in6->sin6_addr, addrbuf,
+				       sizeof(addrbuf)))
+			host = addrbuf;
 
 		/*
 		 * Construct RFC3986 host port pair:
