@@ -55,6 +55,7 @@
 #include <unistd.h>
 
 #include "src/common/read_config.h"
+#include "src/common/xrandom.h"
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
 #define	SOL_TCP		IPPROTO_TCP
@@ -269,8 +270,7 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 
 	xassert(num > 0);
 
-	srandom(getpid());
-	*port = min + (random() % num);
+	*port = min + (xrandom() % num);
 
 	slurm_setup_addr(&sin, 0); /* Decide on IPv4 or IPv6 */
 

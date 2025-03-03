@@ -190,6 +190,8 @@ libcommon_la_SOURCES =				\
 	xhash.h					\
 	xmalloc.c				\
 	xmalloc.h				\
+	xrandom.c				\
+	xrandom.h				\
 	xregex.c				\
 	xregex.h				\
 	xsystemd.c				\
