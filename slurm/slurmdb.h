@@ -1173,6 +1173,9 @@ typedef struct {
 	slurmdb_stats_t stats;
 	slurm_step_id_t step_id;	/* job's step number */
 	char *stepname;
+	char *std_err;
+	char *std_in;
+	char *std_out;
 	char *submit_line;
 	uint32_t suspended;
 	uint64_t sys_cpu_sec;
