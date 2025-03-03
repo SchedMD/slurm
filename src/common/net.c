@@ -364,10 +364,15 @@ static const char *_ip_reserved_to_str(const slurm_addr_t *addr)
 	return NULL;
 }
 
-static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host,
-				   int port)
+static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
 {
+	int port = 0;
 	char *resp = NULL;
+
+	if (addr->ss_family == AF_INET)
+		port = ((struct sockaddr_in *) addr)->sin_port;
+	else if (addr->ss_family == AF_INET6)
+		port = ((struct sockaddr_in6 *) addr)->sin6_port;
 
 	/* construct RFC3986 host port pair */
 	if (host && port)
@@ -382,7 +387,6 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 {
 	int prev_errno = errno;
 	char *resp = NULL;
-	int port = 0;
 	const char *rsv_host = NULL;
 
 	if (addr->ss_family == AF_UNSPEC)
@@ -402,18 +406,13 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 			return NULL;
 	}
 
-	if (addr->ss_family == AF_INET)
-		port = ((struct sockaddr_in *) addr)->sin_port;
-	else if (addr->ss_family == AF_INET6)
-		port = ((struct sockaddr_in6 *) addr)->sin6_port;
-
 	/* Check for reserved addresses that getnameinfo() won't resolve */
 	if ((rsv_host = _ip_reserved_to_str(addr))) {
-		resp = _fmt_ip_host_port_str(addr, rsv_host, port);
+		resp = _fmt_ip_host_port_str(addr, rsv_host);
 	} else {
 		/* Attempt to resolve hostname */
 		char *host = xgetnameinfo(addr);
-		resp = _fmt_ip_host_port_str(addr, host, port);
+		resp = _fmt_ip_host_port_str(addr, host);
 		xfree(host);
 	}
 
