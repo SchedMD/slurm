@@ -371,6 +371,11 @@ static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
 	if (addr->ss_family == AF_INET) {
 		const struct sockaddr_in *in = (struct sockaddr_in *) addr;
 		const uint16_t port = ntohs(in->sin_port);
+		char addrbuf[INET_ADDRSTRLEN];
+
+		if (!host &&
+		    inet_ntop(AF_INET, &in->sin_addr, addrbuf, sizeof(addrbuf)))
+			host = addrbuf;
 
 		if (host && port)
 			xstrfmtcat(resp, "%s:%hu", host, port);
