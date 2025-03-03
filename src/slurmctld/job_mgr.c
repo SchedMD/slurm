@@ -16592,7 +16592,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
 		assoc_mgr_set_job_tres_alloc_str(job_ptr, false);
 
-	jobcomp_g_write(job_ptr);
+	jobcomp_g_record_job_end(job_ptr);
 
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 }

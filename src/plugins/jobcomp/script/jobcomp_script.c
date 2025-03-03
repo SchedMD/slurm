@@ -634,7 +634,7 @@ extern int jobcomp_p_set_location(void)
 	return SLURM_SUCCESS;
 }
 
-extern int jobcomp_p_log_record(job_record_t *record)
+extern int jobcomp_p_record_job_end(job_record_t *record, uint32_t event)
 {
 	struct jobcomp_info * job;
 
@@ -683,4 +683,9 @@ extern list_t *jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 
 	info("This function is not implemented.");
 	return NULL;
+}
+
+extern int jobcomp_p_record_job_start(job_record_t *job_ptr, uint32_t event)
+{
+	return SLURM_SUCCESS;
 }

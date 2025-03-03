@@ -38,6 +38,9 @@
 
 #include "src/slurmctld/slurmctld.h"
 
-extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr);
+extern char *jobcomp_common_get_event_name(uint32_t event);
+extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
+						 uint32_t event);
+extern uint32_t jobcomp_common_parse_enabled_events(void);
 
 #endif

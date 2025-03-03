@@ -42,6 +42,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/plugins/jobcomp/kafka/jobcomp_kafka_conf.h"
 
@@ -61,24 +62,26 @@ static void _destroy_kafka_conf(void)
 	}
 
 	xfree(kafka_conf->topic);
+	xfree(kafka_conf->topic_job_start);
 	xfree(kafka_conf);
 	kafka_conf = NULL;
 	slurm_rwlock_unlock(&kafka_conf_rwlock);
 }
 
-static void _parse_flags(char *flags_str)
+static void _parse_flags(void)
 {
 	kafka_conf->flags = 0;
-	if (xstrcasestr(flags_str, "purge_in_flight"))
+
+	if (xstrcasestr(slurm_conf.job_comp_params, "purge_in_flight"))
 		kafka_conf->flags |= KAFKA_CONF_FLAG_PURGE_IN_FLIGHT;
 
-	if (xstrcasestr(flags_str, "purge_non_blocking"))
+	if (xstrcasestr(slurm_conf.job_comp_params, "purge_non_blocking"))
 		kafka_conf->flags |= KAFKA_CONF_FLAG_PURGE_NON_BLOCKING;
 
-	if (xstrcasestr(flags_str, "requeue_on_msg_timeout"))
+	if (xstrcasestr(slurm_conf.job_comp_params, "requeue_on_msg_timeout"))
 		kafka_conf->flags |= KAFKA_CONF_FLAG_REQUEUE_ON_MSG_TIMEOUT;
 
-	if (xstrcasestr(flags_str, "requeue_purge_in_flight"))
+	if (xstrcasestr(slurm_conf.job_comp_params, "requeue_purge_in_flight"))
 		kafka_conf->flags |= KAFKA_CONF_FLAG_REQUEUE_PURGE_IN_FLIGHT;
 }
 
@@ -136,6 +139,45 @@ static int _parse_uint32(uint32_t *result, char *key, const char *nptr)
 	return SLURM_ERROR;
 }
 
+static void _validate_kafka_conf(void)
+{
+	if (kafka_conf->topic && kafka_conf->topic_job_start &&
+	    !xstrcmp(kafka_conf->topic, kafka_conf->topic_job_start))
+		warning("%s: JobCompParams 'topic' and 'topic_job_start' configured with same value '%s'. Use at your own risk.",
+			plugin_type, kafka_conf->topic);
+}
+
+/*
+ * Check if given event is configured and return its associated topic.
+ *
+ * IN: uint32_t event
+ * RET: Event topic or NULL
+ *
+ * NOTE: Caller must acquire read locks for kafka_conf_rwlock.
+ */
+extern char *jobcomp_kafka_conf_get_event_topic(uint32_t event)
+{
+	char *topic = NULL;
+
+	if (!(event & kafka_conf->events))
+		return topic;
+
+	switch (event) {
+	case JOBCOMP_EVENT_JOB_FINISH:
+		topic = kafka_conf->topic;
+		break;
+
+	case JOBCOMP_EVENT_JOB_START:
+		topic = kafka_conf->topic_job_start;
+		break;
+
+	default:
+		break;
+	}
+
+	return topic;
+}
+
 extern void jobcomp_kafka_conf_init(void)
 {
 	kafka_conf = xmalloc(sizeof(*kafka_conf));
@@ -148,7 +190,7 @@ extern void jobcomp_kafka_conf_fini(void)
 	_destroy_kafka_conf();
 }
 
-extern int jobcomp_kafka_conf_parse_location(char *location)
+extern int jobcomp_kafka_conf_parse_location(void)
 {
 	FILE *fp;
 	char *line = NULL, *key = NULL, *value = NULL;
@@ -157,9 +199,9 @@ extern int jobcomp_kafka_conf_parse_location(char *location)
 
 	xassert(rd_kafka_conf_list);
 
-	if (!(fp = fopen(location, "r"))) {
+	if (!(fp = fopen(slurm_conf.job_comp_loc, "r"))) {
 		error("%s: fopen() failed for file '%s': %m",
-		      plugin_type, location);
+		      plugin_type, slurm_conf.job_comp_loc);
 		return SLURM_ERROR;
 	}
 
@@ -182,12 +224,14 @@ extern void jobcomp_kafka_conf_parse_params(void)
 	static char *flush_timeout_key = "flush_timeout=";
 	static char *poll_interval_key = "poll_interval=";
 	static char *topic_key = "topic=";
+	static char *topic_job_start_key = "topic_job_start=";
 
 	xassert(kafka_conf);
 
 	slurm_rwlock_wrlock(&kafka_conf_rwlock);
 
-	_parse_flags(slurm_conf.job_comp_params);
+	kafka_conf->events = jobcomp_common_parse_enabled_events();
+	_parse_flags();
 
 	if (!(begin = xstrstr(slurm_conf.job_comp_params, flush_timeout_key))) {
 		kafka_conf->flush_timeout = DEFAULT_FLUSH_TIMEOUT;
@@ -215,6 +259,22 @@ extern void jobcomp_kafka_conf_parse_params(void)
 		else
 			kafka_conf->topic = xstrdup(start);
 	}
+
+	xfree(kafka_conf->topic_job_start);
+	if (!(begin = xstrstr(slurm_conf.job_comp_params,
+			      topic_job_start_key))) {
+		kafka_conf->topic_job_start =
+			xstrdup_printf("%s-job-start", slurm_conf.cluster_name);
+	} else {
+		start = begin + strlen(topic_job_start_key);
+		if ((end = xstrstr(start, ",")))
+			kafka_conf->topic_job_start =
+				xstrndup(start, (end - start));
+		else
+			kafka_conf->topic_job_start = xstrdup(start);
+	}
+
+	_validate_kafka_conf();
 
 	slurm_rwlock_unlock(&kafka_conf_rwlock);
 }

@@ -37,6 +37,7 @@
 #include "src/common/data.h"
 #include "src/common/list.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/interfaces/serializer.h"
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/plugins/jobcomp/kafka/jobcomp_kafka_conf.h"
@@ -71,6 +72,39 @@ const char plugin_name[]       	= "Job completion logging Kafka plugin";
 const char plugin_type[]       	= "jobcomp/kafka";
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
+static int _produce_internal(job_record_t *job_ptr, uint32_t event)
+{
+	int rc = SLURM_SUCCESS;
+	char *job_record_serialized = NULL;
+	data_t *job_record_data = NULL;
+	kafka_msg_opaque_t *opaque = NULL;
+
+	if (!(job_record_data =
+			jobcomp_common_job_record_to_data(job_ptr, event))) {
+		error("%s: unable to build data_t. %pJ discarded",
+		      plugin_type, job_ptr);
+		rc = SLURM_ERROR;
+		goto end;
+	}
+
+	if ((rc = serialize_g_data_to_string(&job_record_serialized,
+					     NULL,
+					     job_record_data,
+					     MIME_TYPE_JSON,
+					     SER_FLAGS_COMPACT))) {
+		error("%s: %pJ discarded, unable to serialize to JSON: %s",
+		      plugin_type, job_ptr, slurm_strerror(rc));
+		goto end;
+	}
+
+	opaque = jobcomp_kafka_message_init_opaque(event, job_ptr->job_id);
+	jobcomp_kafka_message_produce(opaque, job_record_serialized);
+
+end:
+	FREE_NULL_DATA(job_record_data);
+	return rc;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -89,7 +123,7 @@ extern int init(void)
 
 	jobcomp_kafka_conf_init();
 	jobcomp_kafka_conf_parse_params();
-	if ((rc = jobcomp_kafka_conf_parse_location(slurm_conf.job_comp_loc)))
+	if ((rc = jobcomp_kafka_conf_parse_location()))
 		return rc;
 
 	if ((rc = jobcomp_kafka_message_init()))
@@ -123,38 +157,17 @@ extern int jobcomp_p_set_location(void)
 	return SLURM_SUCCESS;
 }
 
-extern int jobcomp_p_log_record(job_record_t *job_ptr)
+extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 {
-	int rc = SLURM_SUCCESS;
-	char *job_record_serialized = NULL;
-	data_t *job_record_data = NULL;
-
-	if (!(job_record_data = jobcomp_common_job_record_to_data(job_ptr))) {
-		error("%s: unable to build data_t. %pJ discarded",
-		      plugin_type, job_ptr);
-		rc = SLURM_ERROR;
-		goto end;
-	}
-
-	if ((rc = serialize_g_data_to_string(&job_record_serialized,
-					     NULL,
-					     job_record_data,
-					     MIME_TYPE_JSON,
-					     SER_FLAGS_COMPACT))) {
-		error("%s: %pJ discarded, unable to serialize to JSON: %s",
-		      plugin_type, job_ptr, slurm_strerror(rc));
-		goto end;
-	}
-
-	jobcomp_kafka_message_produce(job_ptr->job_id, job_record_serialized);
-
-end:
-	xfree(job_record_serialized);
-	FREE_NULL_DATA(job_record_data);
-	return rc;
+	return _produce_internal(job_ptr, event);
 }
 
 extern list_t *jobcomp_p_get_jobs(void *job_cond)
 {
 	return NULL;
+}
+
+extern int jobcomp_p_record_job_start(job_record_t *job_ptr, uint32_t event)
+{
+	return _produce_internal(job_ptr, event);
 }

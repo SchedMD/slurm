@@ -249,7 +249,7 @@ static int _save_state(void)
 	return rc;
 }
 
-extern int jobcomp_p_log_record(job_record_t *job_ptr)
+extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 {
 	struct job_node *jnode = NULL;
 	data_t *record = NULL;
@@ -261,7 +261,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		return SLURM_ERROR;
 	}
 
-	record = jobcomp_common_job_record_to_data(job_ptr);
+	record = jobcomp_common_job_record_to_data(job_ptr, event);
 	jnode = xmalloc(sizeof(struct job_node));
 	if ((rc = serialize_g_data_to_string(&jnode->serialized_job, NULL,
 					     record, MIME_TYPE_JSON,
@@ -400,4 +400,9 @@ extern list_t *jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	debug("%s function is not implemented", __func__);
 	return NULL;
+}
+
+extern int jobcomp_p_record_job_start(job_record_t *job_ptr, uint32_t event)
+{
+	return SLURM_SUCCESS;
 }

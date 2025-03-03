@@ -49,16 +49,19 @@
 #define KAFKA_CONF_FLAG_REQUEUE_PURGE_IN_FLIGHT		SLURM_BIT(3)
 
 typedef struct {
+	uint32_t events; /* Enabled events. */
 	uint32_t flags;			/* Configuration flags. */
 	int flush_timeout;		/* rd_kafka_flush() timeout in ms. */
 	uint32_t poll_interval;		/* Sec. between rd_kafka_poll(). */
-	char *topic;			/* Target topic name. */
+	char *topic; /* Target topic name for job_finish. */
+	char *topic_job_start; /* Target topic name for job_start. */
 } kafka_conf_t;
 
 extern kafka_conf_t *kafka_conf;
 extern pthread_rwlock_t kafka_conf_rwlock;
 extern list_t *rd_kafka_conf_list;
 
+extern char *jobcomp_kafka_conf_get_event_topic(uint32_t event);
 extern void jobcomp_kafka_conf_init(void);
 extern void jobcomp_kafka_conf_fini(void);
 
@@ -77,7 +80,7 @@ extern void jobcomp_kafka_conf_fini(void);
  * IN: char *location
  * RET: SLURM_ERROR if problem opening the file, SLURM_SUCCESS otherwise.
  */
-extern int jobcomp_kafka_conf_parse_location(char *location);
+extern int jobcomp_kafka_conf_parse_location(void);
 
 extern void jobcomp_kafka_conf_parse_params(void);
 

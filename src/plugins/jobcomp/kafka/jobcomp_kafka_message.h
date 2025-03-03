@@ -39,12 +39,20 @@
 #include <librdkafka/rdkafka.h>
 
 typedef struct {
+	uint32_t event; /* event from jobcomp_event_t */
 	uint32_t job_id;
+} kafka_msg_opaque_t;
+
+typedef struct {
+	kafka_msg_opaque_t *opaque;
 	char *payload;
 } kafka_msg_t;
 
+extern kafka_msg_opaque_t *jobcomp_kafka_message_init_opaque(uint32_t event,
+							     uint32_t job_id);
 extern int jobcomp_kafka_message_init(void);
 extern void jobcomp_kafka_message_fini(void);
-extern void jobcomp_kafka_message_produce(uint32_t job_id, char *payload);
+extern void jobcomp_kafka_message_produce(kafka_msg_opaque_t *opaque,
+					  char *payload);
 
 #endif
