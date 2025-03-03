@@ -1924,6 +1924,8 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job->std_err;
 				break;
 			case JOBSTEP:
+				tmp_char = step->std_err;
+				break;
 			case JOBCOMP:
 			default:
 				tmp_char = NULL;
@@ -1938,6 +1940,8 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job->std_in;
 				break;
 			case JOBSTEP:
+				tmp_char = step->std_in;
+				break;
 			case JOBCOMP:
 			default:
 				tmp_char = NULL;
@@ -1952,6 +1956,8 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job->std_out;
 				break;
 			case JOBSTEP:
+				tmp_char = step->std_out;
+				break;
 			case JOBCOMP:
 			default:
 				tmp_char = NULL;
