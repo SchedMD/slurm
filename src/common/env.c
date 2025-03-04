@@ -402,6 +402,7 @@ int setup_env(env_t *env, bool preserve_env)
 	    (env->stepid != SLURM_INTERACTIVE_STEP)) {
 		char *str_verbose, *str_bind1 = NULL, *str_bind2 = NULL;
 		char *str_bind_list, *str_bind_type = NULL, *str_bind = NULL;
+		bool append_cpu_bind = false;
 
 		unsetenvp(env->env, "SLURM_CPU_BIND");
 		unsetenvp(env->env, "SLURM_CPU_BIND_LIST");
@@ -427,17 +428,21 @@ int setup_env(env_t *env, bool preserve_env)
 			str_bind2 = "none";
 		} else if (env->cpu_bind_type & CPU_BIND_MAP) {
 			str_bind2 = "map_cpu:";
+			append_cpu_bind = true;
 		} else if (env->cpu_bind_type & CPU_BIND_MASK) {
 			str_bind2 = "mask_cpu:";
+			append_cpu_bind = true;
 		} else if (env->cpu_bind_type & CPU_BIND_LDRANK) {
 			str_bind2 = "rank_ldom";
 		} else if (env->cpu_bind_type & CPU_BIND_LDMAP) {
 			str_bind2 = "map_ldom:";
+			append_cpu_bind = true;
 		} else if (env->cpu_bind_type & CPU_BIND_LDMASK) {
 			str_bind2 = "mask_ldom:";
+			append_cpu_bind = true;
 		}
 
-		if (env->cpu_bind)
+		if (env->cpu_bind && append_cpu_bind)
 			str_bind_list = env->cpu_bind;
 		else
 			str_bind_list = "";
