@@ -396,6 +396,16 @@ static int _handle_task_cgroup(cgroup_ctl_type_t sub, stepd_step_rec_t *step,
 	common_cgroup_set_param(&task_cg_info->task_cg, "notify_on_release",
 				"0");
 
+	/* Initialize the cpuset cgroup before moving processes into it */
+	if (sub == CG_CPUS) {
+		rc = xcgroup_cpuset_init(&task_cg_info->task_cg);
+		if (rc != SLURM_SUCCESS) {
+			error("Unable to initialize the cpuset cgroup %s",
+			      task_cg_info->task_cg.path);
+			goto end;
+		}
+	}
+
 	/* Attach the pid to the corresponding step_x/task_y cgroup */
 	rc = common_cgroup_move_process(&task_cg_info->task_cg, pid);
 	if (rc != SLURM_SUCCESS)
@@ -405,6 +415,7 @@ static int _handle_task_cgroup(cgroup_ctl_type_t sub, stepd_step_rec_t *step,
 	if (need_to_add)
 		list_append(g_task_list[sub], task_cg_info);
 
+end:
 	xfree(task_cgroup_path);
 	return rc;
 }
