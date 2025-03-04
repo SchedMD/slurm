@@ -279,6 +279,20 @@ static void _print_expanded_array_job(slurmdb_job_rec_t *job)
 	FREE_NULL_BITMAP(bitmap);
 }
 
+static void _get_step_jobid_str(char **out, slurmdb_step_rec_t *step)
+{
+	int written_sz, rem_sz = FORMAT_STRING_SIZE;
+	slurmdb_job_rec_t *job = step->job_ptr;
+	char *id = slurmdb_get_job_id_str(job);
+
+	*out = xmalloc(rem_sz);
+	written_sz = snprintf(*out, rem_sz, "%s.", id);
+	rem_sz -= written_sz;
+	log_build_step_id_str(&step->step_id, (*out + written_sz), rem_sz,
+			      (STEP_ID_FLAG_NO_PREFIX | STEP_ID_FLAG_NO_JOB));
+	xfree(id);
+}
+
 extern void print_fields(type_t type, void *object)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
@@ -950,29 +964,15 @@ extern void print_fields(type_t type, void *object)
 			xfree(tmp_char);
 			break;
 		case PRINT_JOBID:
-			if (type == JOBSTEP)
-				job = step->job_ptr;
-
-			if (job)
-				id = slurmdb_get_job_id_str(job);
-
 			switch (type) {
 			case JOB:
+				if (job)
+					id = slurmdb_get_job_id_str(job);
 				tmp_char = id;
 				id = NULL;
 				break;
 			case JOBSTEP:
-				tmp_int = FORMAT_STRING_SIZE;
-				tmp_char = xmalloc(tmp_int);
-				tmp_int2 =
-					snprintf(tmp_char, tmp_int, "%s.", id);
-				xfree(id);
-				tmp_int -= tmp_int2;
-				log_build_step_id_str(&step->step_id,
-						      tmp_char + tmp_int2,
-						      tmp_int,
-						      STEP_ID_FLAG_NO_PREFIX |
-						      STEP_ID_FLAG_NO_JOB);
+				_get_step_jobid_str(&tmp_char, step);
 				break;
 			case JOBCOMP:
 				tmp_char = xstrdup_printf("%u",
