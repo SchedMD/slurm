@@ -47,5 +47,9 @@ extern int task_cgroup_cpuset_fini(void);
 extern int task_cgroup_cpuset_create(stepd_step_rec_t *step);
 
 /* add a pid to the cgroup */
-extern int task_cgroup_cpuset_add_pid(pid_t pid);
+extern int task_cgroup_cpuset_add_pid(stepd_step_rec_t *job, pid_t pid,
+				      uint32_t taskid);
+
+/* add a pid to extern step cgroup. This one doesn't go at task_x level. */
+extern int task_cgroup_cpuset_add_extern_pid(pid_t pid);
 #endif
