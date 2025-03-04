@@ -374,8 +374,11 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 		(uintptr_t) dst, parser->type_string, (uintptr_t) parser
 	);
 
-	if (!list_args.list)
-		list_args.list = list_create((ListDelF) parser->free);
+	if (!list_args.list) {
+		const parser_t *const lparser =
+			find_parser_by_type(parser->list_type);
+		list_args.list = list_create((ListDelF) lparser->free);
+	}
 
 	xassert(list_count(list_args.list) >= 0);
 
