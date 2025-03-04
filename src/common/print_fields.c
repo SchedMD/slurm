@@ -612,20 +612,39 @@ extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job)
 				break;
 			}
 			if (isdigit(*ptr)) {
+				char *tmp_ptr = ptr;
 				if ((padding = strtoul(ptr, &end, 10)) > 9) {
 					/* Remove % and double digit 10 */
 					ptr = end;
 					padding = 10;
-				} else
+				} else {
 					ptr++;
+				}
+				/*
+				 * weird behavior fix: we remove all the digits
+				 * except the last one to match with the current
+				 * fname creation.
+				 */
+				if (!_is_wildcard(ptr)) {
+					ptr = tmp_ptr;
+					/* seek until the last digit */
+					while (isdigit(*(ptr + 1))) {
+						ptr++;
+					}
+					xstrfmtcatat(expanded, &pos,
+						     "%c", *ptr);
+					padding = 0;
+					curr_state = STATE_INIT;
+					break;
+				}
 			}
 			if (!_is_wildcard(ptr)) {
-				padding = 0;
 				/* If not a wildcard print also the %. */
 				xstrfmtcatat(expanded, &pos, "%%%c", *ptr);
 			} else {
 				_expand_wildcard(&expanded, &pos, ptr, padding,
 						 job);
+				padding = 0;
 			}
 			curr_state = STATE_INIT;
 			break;
