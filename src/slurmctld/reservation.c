@@ -7171,7 +7171,7 @@ static void _run_script(char *script, slurmctld_resv_t *resv_ptr,
 	if (!script || !script[0])
 		return;
 	if (access(script, X_OK) < 0) {
-		error("Invalid ResvProlog or ResvEpilog(%s): %m", script);
+		error("Invalid %s(%s): %m", name, script);
 		return;
 	}
 	argv = xcalloc(argc + 1, sizeof(*argv)); /* +1 to NULL-terminate */
