@@ -8769,8 +8769,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 				job_desc_msg->cpus_per_task, "cpu",
 				&job_desc_msg->tres_per_task);
 
-		job_desc_msg->pn_min_memory = ((job_mem_limit + mem_ratio - 1) /
-					       mem_ratio) | MEM_PER_CPU;
+		job_desc_msg->pn_min_memory =
+			ROUNDUP(job_mem_limit, mem_ratio) | MEM_PER_CPU;
 		if ((job_desc_msg->num_tasks != NO_VAL) &&
 		    (job_desc_msg->num_tasks != 0) &&
 		    (job_desc_msg->min_cpus  != NO_VAL)) {
@@ -8819,9 +8819,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 		    (job_desc_msg->max_nodes != NO_VAL) &&
 		    (job_desc_msg->max_nodes != 0)) {
 			cpus_per_node = MAX(cpus_per_node,
-					    ((job_desc_msg->num_tasks +
-					      job_desc_msg->max_nodes - 1) /
-					     job_desc_msg->max_nodes));
+					    ROUNDUP(job_desc_msg->num_tasks,
+						    job_desc_msg->max_nodes));
 		}
 
 		if ((job_desc_msg->cpus_per_task != NO_VAL16) &&
@@ -8841,7 +8840,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 		/* Job has per-node memory limit, system has per-CPU limit */
 		uint32_t min_cpus;
 		sys_mem_limit &= (~MEM_PER_CPU);
-		min_cpus = (job_mem_limit + sys_mem_limit - 1) / sys_mem_limit;
+		min_cpus = ROUNDUP(job_mem_limit, sys_mem_limit);
 
 		if ((job_desc_msg->pn_min_cpus == NO_VAL16) ||
 		    (job_desc_msg->pn_min_cpus < min_cpus)) {
@@ -8851,9 +8850,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 			cpus_per_node = MAX(cpus_per_node, min_cpus);
 			if (job_desc_msg->ntasks_per_node)
 				job_desc_msg->cpus_per_task =
-					(job_desc_msg->pn_min_cpus +
-					 job_desc_msg->ntasks_per_node - 1) /
-					job_desc_msg->ntasks_per_node;
+					ROUNDUP(job_desc_msg->pn_min_cpus,
+						job_desc_msg->ntasks_per_node);
 		}
 		sys_mem_limit *= cpus_per_node;
 	}

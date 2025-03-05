@@ -250,8 +250,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		rem_nodes = details_ptr->segment_size;
 	}
 
-	bblock_per_block =
-		((rem_nodes + ctx->bblock_node_cnt - 1) / ctx->bblock_node_cnt);
+	bblock_per_block = ROUNDUP(rem_nodes, ctx->bblock_node_cnt);
 	block_level = ceil(log2(bblock_per_block));
 	if (block_level > 0)
 		llblock_level =
@@ -264,7 +263,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 
 	bblock_per_llblock = (1 << llblock_level);
 	llblock_size = bblock_per_llblock * ctx->bblock_node_cnt;
-	max_llblock = (rem_nodes + llblock_size - 1) / llblock_size;
+	max_llblock = ROUNDUP(rem_nodes, llblock_size);
 
 	/* Validate availability of required nodes */
 	if (job_ptr->details->req_node_bitmap) {
@@ -323,7 +322,7 @@ next_segment:
 		else
 			rem_max_cpus = details_ptr->max_cpus / segment_cnt;
 
-		max_llblock = (rem_nodes + llblock_size - 1) / llblock_size;
+		max_llblock = ROUNDUP(rem_nodes, llblock_size);
 	} else
 		rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr,
 							   rem_nodes);
@@ -390,14 +389,12 @@ next_segment:
 	} else {
 		/* Number of base blocks in block */
 		bblock_per_block = (1 << block_level);
-		block_cnt = (ctx->block_count + bblock_per_block - 1) /
-			    bblock_per_block;
+		block_cnt = ROUNDUP(ctx->block_count, bblock_per_block);
 	}
 
 	if ((bblock_per_block != (bblock_per_llblock * max_llblock)) &&
 	    !nodes_on_llblock) {
-		llblock_cnt = (ctx->block_count + bblock_per_llblock - 1) /
-			      bblock_per_llblock;
+		llblock_cnt = ROUNDUP(ctx->block_count, bblock_per_llblock);
 		nodes_on_llblock = xcalloc(llblock_cnt, sizeof(uint32_t));
 	}
 

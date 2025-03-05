@@ -446,8 +446,7 @@ static uint32_t _socks_per_node(job_record_t *job_ptr)
 	if ((mc_ptr->ntasks_per_socket != NO_VAL16) &&
 	    (mc_ptr->ntasks_per_socket != INFINITE16)) {
 		tasks_per_node = job_ptr->details->num_tasks / min_nodes;
-		s_p_n = (tasks_per_node + mc_ptr->ntasks_per_socket - 1) /
-			mc_ptr->ntasks_per_socket;
+		s_p_n = ROUNDUP(tasks_per_node, mc_ptr->ntasks_per_socket);
 		return s_p_n;
 	}
 
@@ -3311,8 +3310,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 			   (cpus_per_task > threads_per_core)) {
 			/* find out how many cores a task will use */
 			int task_cores =
-				(cpus_per_task + threads_per_core - 1) /
-				threads_per_core;
+				ROUNDUP(cpus_per_task, threads_per_core);
 			int task_cpus  = task_cores * threads_per_core;
 			/* find out how many tasks can fit on a node */
 			int tasks = avail_cpus / task_cpus;

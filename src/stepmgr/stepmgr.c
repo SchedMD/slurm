@@ -819,7 +819,7 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 	if (start_inx >= bit_len)
 		start_inx = 0;
 
-	cpu_target = (cpu_cnt + node_cnt - 1) / node_cnt;
+	cpu_target = ROUNDUP(cpu_cnt, node_cnt);
 	if (cpu_target > 1024)
 		info("%s: high cpu_target (%d)", __func__, cpu_target);
 	if ((cpu_cnt <= node_cnt) || (cpu_target > 1024)) {

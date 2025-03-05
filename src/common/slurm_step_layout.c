@@ -175,8 +175,8 @@ extern slurm_step_layout_t *fake_slurm_step_layout_create(
 				cpu_cnt = 0;
 			}
 		} else {
-			cpn = ((task_cnt - step_layout->task_cnt) +
-			       (node_cnt - i) - 1) / (node_cnt - i);
+			cpn = ROUNDUP((task_cnt - step_layout->task_cnt),
+				      (node_cnt - i));
 			if (step_layout->task_cnt >= task_cnt) {
 				step_layout->tasks[i] = 0;
 				step_layout->tids[i] = NULL;
@@ -805,8 +805,7 @@ static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
 	if (total_cpus < step_layout->task_cnt) {
 		over_subscribe = true;
 		i = step_layout->task_cnt - total_cpus;
-		max_over_subscribe = (i + step_layout->node_cnt - 1) /
-				     step_layout->node_cnt;
+		max_over_subscribe = ROUNDUP(i, step_layout->node_cnt);
 	}
 
 	for (j=0; taskid<step_layout->task_cnt; j++) {   /* cycle counter */

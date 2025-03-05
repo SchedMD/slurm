@@ -183,7 +183,7 @@ job_create_noalloc(void)
 
 	hostlist_destroy(hl);
 
-	cpn[0] = (opt_local->ntasks + ai->nnodes - 1) / ai->nnodes;
+	cpn[0] = ROUNDUP(opt_local->ntasks, ai->nnodes);
 	ai->cpus_per_node  = cpn;
 	cpu_count_reps[0] = ai->nnodes;
 	ai->cpu_count_reps = cpu_count_reps;
