@@ -237,7 +237,7 @@ kvs_init(void)
 {
 	debug3("mpi/pmi2: in kvs_init");
 
-	hash_size = ((job_info.ntasks + TASKS_PER_BUCKET - 1) / TASKS_PER_BUCKET);
+	hash_size = ROUNDUP(job_info.ntasks, TASKS_PER_BUCKET);
 
 	kvs_hash = xmalloc(hash_size * sizeof(kvs_bucket_t));
 

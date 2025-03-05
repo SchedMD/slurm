@@ -3461,7 +3461,7 @@ extern void gres_stepmgr_step_test_per_step(
 			continue;
 
 		gres_req = gres_ss->gres_per_step;
-		limit = (gres_req + min_nodes - 1) / min_nodes;
+		limit = ROUNDUP(gres_req, min_nodes);
 
 		job_search_key.config_flags = gres_state_step->config_flags;
 		job_search_key.plugin_id = gres_state_step->plugin_id;

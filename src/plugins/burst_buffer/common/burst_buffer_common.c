@@ -937,8 +937,7 @@ extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 	}
 
 	if (granularity > 1) {
-		bb_size_u = ((bb_size_u + granularity - 1) / granularity) *
-			    granularity;
+		bb_size_u = ROUNDUP(bb_size_u, granularity) * granularity;
 	}
 
 	return bb_size_u;

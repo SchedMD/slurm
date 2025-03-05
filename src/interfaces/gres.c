@@ -6839,9 +6839,8 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 			} else if ((*gres_js_val->num_tasks != NO_VAL) &&
 				   (*gres_js_val->ntasks_per_socket !=
 				    NO_VAL16)) {
-				cnt *= ((*gres_js_val->num_tasks +
-					 *gres_js_val->ntasks_per_socket - 1) /
-					*gres_js_val->ntasks_per_socket);
+				cnt *= ROUNDUP(*gres_js_val->num_tasks,
+					       *gres_js_val->ntasks_per_socket);
 			} else if (*gres_js_val->sockets_per_node != NO_VAL16) {
 				/* default 1 node */
 				cnt *= *gres_js_val->sockets_per_node;
@@ -9159,8 +9158,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 			//	cnt *= *sockets_per_node;
 			// } else if ((*num_tasks != NO_VAL) &&
 			//	   (*ntasks_per_socket != NO_VAL16)) {
-			//	cnt *= ((*num_tasks + *ntasks_per_socket - 1) /
-			//		*ntasks_per_socket);
+			//	cnt *= ROUNDUP(*num_tasks, *ntasks_per_socket);
 			// }
 			// gres_ss->total_gres =
 			//	MAX(gres_ss->total_gres, cnt);
