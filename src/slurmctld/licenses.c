@@ -1491,12 +1491,14 @@ static int _bf_licenses_find_difference(void *x, void *key)
 	bf_license_t *entry_a = x;
 	bf_licenses_t *b = key;
 	bf_license_t *entry_b;
+	bf_licenses_find_resv_t target_record = {
+		.lic_id = entry_a->lic_id,
+		.resv_ptr = entry_a->resv_ptr,
+	};
 
-	entry_b = list_find_first_ro(b, _bf_licenses_find_rec,
-				     &entry_a->lic_id);
+	entry_b = list_find_first_ro(b, _bf_licenses_find_resv, &target_record);
 
-	if (!entry_b || (entry_a->remaining != entry_b->remaining) ||
-	    (entry_a->resv_ptr != entry_b->resv_ptr)) {
+	if (!entry_b || (entry_a->remaining != entry_b->remaining)) {
 		return 1;
 	}
 	return 0;
