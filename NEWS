@@ -1,6 +1,48 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 24.11.3
+==========================
+ -- Fix race condition in slurmrestd that resulted in "Requested
+    data_parser plugin does not support OpenAPI plugin" error being returned
+    for valid endpoints.
+ -- If multiple partitions are requested, set the SLURM_JOB_PARTITION
+    output environment variable to the partition in which the job is running
+    for salloc and srun in order to match the documentation and the behavior of
+    sbatch.
+ -- Fix regression where slurmd -G gives no output.
+ -- Don't print misleading errors for stepmgr enabled steps.
+ -- slurmrestd - Avoid connection to slurmdbd for the following
+    endpoints:
+    GET /slurm/v0.0.41/jobs
+    GET /slurm/v0.0.41/job/{job_id}
+ -- slurmrestd - Avoid connection to slurmdbd for the following
+    endpoints:
+    GET /slurm/v0.0.40/jobs
+    GET /slurm/v0.0.40/job/{job_id}
+ -- Significantly increase entropy of clusterid portion of the
+    sluid by seeding the random number generator
+ -- Avoid changing process name to "watch" from original daemon name.
+    This could potentially breaking some monitoring scripts.
+ -- Avoid slurmctld being killed by SIGALRM due to race condition
+    at startup.
+ -- Fix slurmctld crash when after updating a reservation with an empty
+    nodelist. The crash could occur after restarting slurmctld, or if
+    downing/draining a node in the reservation with the REPLACE or REPLACE_DOWN
+    flag.
+ -- Fix race between task/cgroup cpuset and jobacctgather/cgroup.
+    The first was removing the pid from task_X cgroup directory causing
+    memory limits to not be applied.
+ -- srun - Fixed wrongly constructed SLURM_CPU_BIND env variable
+    that could get propagated to downward srun calls in certain mpi
+    environments, causing launch failures.
+ -- slurmrestd - Fix possible memory leak when parsing arrays with
+    data_parser/v0.0.40.
+ -- slurmrestd - Fix possible memory leak when parsing arrays with
+    data_parser/v0.0.41.
+ -- slurmrestd - Fix possible memory leak when parsing arrays with
+    data_parser/v0.0.42.
+
 * Changes in Slurm 24.11.2
 ==========================
  -- Fix segfault when submitting --test-only jobs that can preempt.
