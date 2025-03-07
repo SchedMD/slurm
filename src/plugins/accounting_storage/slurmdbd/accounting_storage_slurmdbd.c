@@ -1513,7 +1513,9 @@ extern list_t *acct_storage_p_remove_wckeys(
 		got_msg = (dbd_list_msg_t *) resp.data;
 		ret_list = got_msg->my_list;
 		got_msg->my_list = NULL;
+		rc = got_msg->return_code;
 		slurmdbd_free_list_msg(got_msg);
+		errno = rc;
 	}
 
 	return ret_list;

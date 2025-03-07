@@ -2790,7 +2790,7 @@ static int _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			slurmdbd_conn->conn, rc, comment, DBD_REMOVE_WCKEYS);
 		return rc;
 	}
-	list_msg.return_code = SLURM_SUCCESS;
+	list_msg.return_code = errno;
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
