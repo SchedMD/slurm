@@ -45,12 +45,16 @@ class TrailerType(ExtendedEnum):
 @dataclass
 class Trailer:
     tag: TrailerType | str
-    content: str
+    lines: list[str]
     trailer_re = re.compile(r"([\w\-]+?): (\w.+)")
     trailer_line_re = re.compile(r"\s+.*")
 
     def __repr__(self):
         return self.content
+
+    @property
+    def content(self):
+        return "\n".join(self.lines)
 
     @classmethod
     def from_lines(cls, lines: list[str]) -> tuple[Any, list[str]]:
@@ -73,7 +77,10 @@ class Trailer:
                 group.append(peek)
             else:
                 break
-        return (cls(tag, "\n".join(group)), lines[i:])
+        else:
+            # if for ended on multiline, increment i to consume last line
+            i += 1
+        return (cls(tag, group), lines[i:])
 
     @classmethod
     def pull_non_trailer(cls, lines: list[str]) -> tuple[str, list[str]]:
@@ -209,5 +216,16 @@ class TrailerValidation(CommitRule):
             RuleViolation(self.id, f"Valid trailer outside trailer section: '{line}'")
             for line in chain.from_iterable(sections[:-1])
             if isinstance(line, Trailer) and line.is_known()
+        )
+
+        # check line length of trailers
+        violations.extend(
+            RuleViolation(
+                self.id,
+                f"Trailer line too long, must be less than 76 characters. '{line}'",
+            )
+            for tr in trailers
+            for line in tr.lines
+            if len(line) > 76
         )
         return violations
