@@ -1090,6 +1090,7 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
+	bool jobs_running = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	list_t *cluster_list_tmp = NULL;
@@ -1189,9 +1190,9 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			if ((rc = remove_common(mysql_conn, DBD_REMOVE_QOS, now,
 						user_name, qos_table, name_char,
-						assoc_char, object, NULL, NULL,
-						NULL))
-			    != SLURM_SUCCESS)
+						assoc_char, object, ret_list,
+						&jobs_running, NULL)) !=
+			    SLURM_SUCCESS)
 				break;
 		}
 		list_iterator_destroy(itr);
@@ -1211,6 +1212,11 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
+
+	if (jobs_running)
+		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
+	else
+		errno = SLURM_SUCCESS;
 
 	return ret_list;
 }

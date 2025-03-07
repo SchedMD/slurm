@@ -114,7 +114,10 @@ by assigning all nodes to the partition, then configuring a Partition QOS with
 However, setting a QOS as a partition QOS is accomplished in <b>slurm.conf</b>
 through the <a href="slurm.conf.html#OPT_QOS">QOS=</a> option in the
 configuration of the associated partition. The QOS should be created using
-<b>sacctmgr</b> before it is assigned as a partition QOS.</p>
+<b>sacctmgr</b> before it is assigned as a partition QOS. It is possible to
+delete a QOS attached to a partition without deleting the attachment in the
+<b>slurm.conf</b>. This is not recommended and could cause unintended behavior.
+</p>
 
 <!-------------------------------------------------------------------------->
 <h2 id="relative">Relative QOS
@@ -389,6 +392,6 @@ $ sacctmgr delete qos alligator
   alligator
 </pre>
 
-<p style="text-align: center;">Last modified 22 April 2023</p>
+<p style="text-align: center;">Last modified 17 March 2025</p>
 
 <!--#include virtual="footer.txt"-->
