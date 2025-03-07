@@ -4,6 +4,7 @@ repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v5.0.0
   hooks:
+  - id: check-executables-have-shebangs
   - id: check-merge-conflict
   - id: end-of-file-fixer
   - id: trailing-whitespace
@@ -41,3 +42,35 @@ repos:
     args: [--config, tools/gitlint, --msg-filename]
   - id: gitlint-ci
     args: [--config, tools/gitlint]
+
+- repo: https://github.com/pecigonzalo/pre-commit-shfmt
+  rev: v2.2.0
+  hooks:
+    - id: shell-fmt
+      files: |
+        (?x)(
+          ^contribs/slurm_completion_help/|
+          ^testsuite/
+        )
+      args:
+        - --diff
+        - --write
+        - --simplify
+        - --list
+
+- repo: local
+  hooks:
+    - id: shellcheck
+      name: shellcheck
+      description: Test shell scripts with shellcheck
+      entry: shellcheck
+      language: python
+      types: [shell]
+      require_serial: true # shellcheck can detect sourcing this way
+      files: |
+        (?x)(
+          ^contribs/slurm_completion_help/|
+          ^testsuite/
+        )
+      args:
+        - --severity=warning

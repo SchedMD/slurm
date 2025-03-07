@@ -8,7 +8,7 @@
 # Get current value of scaling parameters,
 # Then set, and get new values.
 # Finally get reset values
-cd $3
+cd $3 || exit
 echo "Starting values"
 $4 --whole $3/test1.76.bash $1
 echo "srun --whole --cpu-freq=$2 $3/test1.76.bash $1"

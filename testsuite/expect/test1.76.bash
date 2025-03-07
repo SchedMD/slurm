@@ -6,12 +6,11 @@
 # o the running slurm is idle
 # o TaskPlugin=task/cgroup
 
-if test -f "/sys/devices/system/cpu/cpu$1/cpufreq/scaling_governor"
-	then
-		echo "scaling frequency is supported"
-	else
-		echo "scaling frequency not supported"
-		exit 0
+if test -f "/sys/devices/system/cpu/cpu$1/cpufreq/scaling_governor"; then
+	echo "scaling frequency is supported"
+else
+	echo "scaling frequency not supported"
+	exit 0
 fi
 
 # Calm down the processor with a sleep to reduce the probability of
