@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "April 2025" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "May 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1674,6 +1674,13 @@ Affects accounting and profiling:
 sampling interval in seconds for task usage by the jobacct_gather plugins and
 for task profiling by the acct_gather_profile plugin.
 Defaults to 30.
+.br
+.br
+If this interval is 0 (disabled), accounting information is collected only at
+job termination, which reduces Slurm
+interference with the job, but also means that the statistics about a job
+are only derived from a single sample and don't reflect the average or maximum
+of several samples throughout the life of the job.
 .IP
 .RE
 
@@ -1703,14 +1710,6 @@ acct_gather_filesystem plugin. Defaults to 0 (disabled).
 .RE
 .RE
 .IP
-An interval of 0 disables sampling of the specified type.
-If the task sampling interval is 0, accounting
-information is collected only at job termination, which reduces Slurm
-interference with the job, but also means that the statistics about a job
-don't reflect the average or maximum of several samples throughout the life
-of the job, but just show the information collected in the single sample.
-.br
-.br
 Smaller (non\-zero) values have a greater impact upon job performance,
 but a value of 30 seconds is not likely to be noticeable for
 applications having less than 10,000 tasks.
