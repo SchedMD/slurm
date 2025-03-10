@@ -925,6 +925,12 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] skipping accept on quiesced connection",
 			 __func__, con->name);
 		return;
+	} else if (_is_accept_deferred()) {
+		log_flag(CONMGR, "%s: [%s] Deferring to attempt to accept new incoming connection due to %d/%d connections",
+			 __func__, con->name, list_count(mgr.connections),
+			 mgr.max_connections);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
 	} else
 		log_flag(CONMGR, "%s: [%s] attempting to accept new connection",
 			 __func__, con->name);
