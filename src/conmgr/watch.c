@@ -967,13 +967,6 @@ static bool _attempt_accept(conmgr_callback_args_t conmgr_args,
 		return true;
 	}
 
-	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		log_flag(CONMGR, "%s: [%s] closing new connection to %pA during shutdown",
-			 __func__, con->name, &addr);
-		fd_close(&fd);
-		return false;
-	}
-
 	if (addrlen <= 0)
 		fatal("%s: empty address returned from accept()",
 		      __func__);
@@ -1033,6 +1026,12 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		log_flag(CONMGR, "%s: [%s] skipping accept during shutdown",
+			 __func__, con->name);
+		return;
+	}
 
 	while (_attempt_accept(conmgr_args, con))
 		;
