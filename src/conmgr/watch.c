@@ -934,12 +934,29 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 		      __func__, addrlen);
 
 	if (addr.ss_family == AF_UNIX) {
-		const struct sockaddr_un *usock = (struct sockaddr_un *) &addr;
+		struct sockaddr_un *usock = (struct sockaddr_un *) &addr;
 
 		xassert(usock->sun_family == AF_UNIX);
 
-		if (!usock->sun_path[0] && (con->address.ss_family == AF_LOCAL))
-			usock = (struct sockaddr_un *) &con->address;
+		if (!usock->sun_path[0]) {
+			/*
+			 * Attempt to use parent socket's path.
+			 * Need to lock to access con->address safely.
+			 */
+			slurm_mutex_lock(&mgr.mutex);
+
+			if (con->address.ss_family == AF_UNIX) {
+				struct sockaddr_un *psock =
+					(struct sockaddr_un *) &con->address;
+
+				if (psock->sun_path[0])
+					(void) memcpy(&usock->sun_path,
+						      &psock->sun_path,
+						      sizeof(usock->sun_path));
+			}
+
+			slurm_mutex_unlock(&mgr.mutex);
+		}
 
 		/* address may not be populated by kernel */
 		if (usock->sun_path[0])
