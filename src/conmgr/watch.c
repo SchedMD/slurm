@@ -902,14 +902,20 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 	slurm_addr_t addr = {0};
 	socklen_t addrlen = sizeof(addr);
-	int fd = -1, rc = EINVAL;
+	int input_fd = -1, fd = -1, rc = EINVAL;
 	const char *unix_path = NULL;
+	conmgr_con_type_t type = CON_TYPE_INVALID;
+	con_flags_t flags = FLAG_NONE;
 
-	if (con->input_fd == -1) {
+	slurm_mutex_lock(&mgr.mutex);
+
+	if ((input_fd = con->input_fd) < 0) {
+		slurm_mutex_unlock(&mgr.mutex);
 		log_flag(CONMGR, "%s: [%s] skipping accept on closed connection",
 			 __func__, con->name);
 		return;
 	} else if (con_flag(con, FLAG_QUIESCE)) {
+		slurm_mutex_unlock(&mgr.mutex);
 		log_flag(CONMGR, "%s: [%s] skipping accept on quiesced connection",
 			 __func__, con->name);
 		return;
@@ -917,9 +923,14 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] attempting to accept new connection",
 			 __func__, con->name);
 
+	type = con->type;
+	flags = con->flags;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
 	/* try to get the new file descriptor and retry on errors */
-	if ((fd = accept4(con->input_fd, (struct sockaddr *) &addr,
-			  &addrlen, SOCK_CLOEXEC)) < 0) {
+	if ((fd = accept4(input_fd, (struct sockaddr *) &addr, &addrlen,
+			  SOCK_CLOEXEC)) < 0) {
 		if (errno == EINTR) {
 			log_flag(CONMGR, "%s: [%s] interrupt on accept(). Retrying.",
 				 __func__, con->name);
@@ -974,9 +985,9 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	/* hand over FD for normal processing */
-	if ((rc = add_connection(con->type, con, fd, fd, con->events,
-				 (conmgr_con_flags_t) con->flags, &addr,
-				 addrlen, false, unix_path, con->new_arg))) {
+	if ((rc = add_connection(type, con, fd, fd, con->events,
+				 (conmgr_con_flags_t) flags, &addr, addrlen,
+				 false, unix_path, con->new_arg))) {
 		log_flag(CONMGR, "%s: [fd:%d] unable to a register new connection: %s",
 			 __func__, fd, slurm_strerror(rc));
 		return;
