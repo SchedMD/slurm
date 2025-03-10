@@ -618,9 +618,16 @@ extern int add_connection(conmgr_con_type_t type,
 		list_append(mgr.connections, con);
 	}
 
-	/* interrupt poll () and wake up watch() to examine new connection */
+	/* Attempt to handle connection state immediately */
+	handle_connection(true, con);
+
+	/*
+	 * interrupt poll () and wake up watch() to eventually re-examine new
+	 * connection.
+	 */
 	pollctl_interrupt(__func__);
 	EVENT_SIGNAL(&mgr.watch_sleep);
+
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return SLURM_SUCCESS;

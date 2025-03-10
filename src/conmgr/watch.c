@@ -889,6 +889,19 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	return 1;
 }
 
+extern void handle_connection(bool locked, conmgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
+
+	(void) _handle_connection(con, NULL);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr.mutex);
+}
+
 static int _list_transfer_handle_connection(void *x, void *arg)
 {
 	conmgr_fd_t *con = x;
