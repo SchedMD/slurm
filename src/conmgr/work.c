@@ -195,6 +195,7 @@ extern void wrap_work(work_t *work)
 		/* con may be xfree()ed any time once lock is released */
 
 		EVENT_SIGNAL(&mgr.watch_sleep);
+		handle_connection(true, con);
 
 		fd_free_ref(&work->ref);
 		slurm_mutex_unlock(&mgr.mutex);
