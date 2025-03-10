@@ -957,6 +957,13 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 	}
 
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		log_flag(CONMGR, "%s: [%s] closing new connection to %pA during shutdown",
+			 __func__, con->name, &addr);
+		fd_close(&fd);
+		return;
+	}
+
 	if (addrlen <= 0)
 		fatal("%s: empty address returned from accept()",
 		      __func__);
@@ -992,13 +999,6 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 		/* address may not be populated by kernel */
 		if (usock->sun_path[0])
 			unix_path = usock->sun_path;
-	}
-
-	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		log_flag(CONMGR, "%s: [%s] closing new connection to %pA during shutdown",
-				 __func__, con->name, &addr);
-		fd_close(&fd);
-		return;
 	}
 
 	/* hand over FD for normal processing */
