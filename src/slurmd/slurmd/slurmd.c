@@ -2030,6 +2030,14 @@ static void _try_service_connection(conmgr_callback_args_t conmgr_args,
 	} else {
 		xassert(rc == EWOULDBLOCK);
 
+		/*
+		 * Servicing the connection will be deferred which means the
+		 * thread count should no longer consider processing this
+		 * connection until the delay is complete and this function is
+		 * called again.
+		 */
+		_decrement_thd_count();
+
 		debug3("%s: [%pA] deferring servicing connection",
 		       __func__, &args->addr);
 
