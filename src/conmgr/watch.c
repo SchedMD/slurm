@@ -471,6 +471,12 @@ static void _on_read_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 	add_work_con_fifo(true, con, _wrap_on_read_timeout, NULL);
 }
 
+/* Caller must hold mgr->mutex lock */
+static bool _is_accept_deferred(void)
+{
+	return (list_count(mgr.connections) >= mgr.max_connections);
+}
+
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -722,7 +728,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
 		con_unset_flag(con, FLAG_CAN_READ);
 
-		if (list_count(mgr.connections) >= mgr.max_connections) {
+		if (_is_accept_deferred()) {
 			log_flag(CONMGR, "%s: [%s] Deferring incoming connection due to %d/%d connections",
 				 __func__, con->name,
 				 list_count(mgr.connections),
@@ -760,7 +766,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 		/* must wait until poll allows read from this socket */
 		if (con_flag(con, FLAG_IS_LISTEN)) {
-			if (list_count(mgr.connections) >= mgr.max_connections) {
+			if (_is_accept_deferred()) {
 				log_flag(CONMGR, "%s: [%s] Deferring polling for new connections due to %d/%d connections",
 					 __func__, con->name,
 					 list_count(mgr.connections),
