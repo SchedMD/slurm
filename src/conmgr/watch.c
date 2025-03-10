@@ -872,7 +872,7 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 	slurm_addr_t addr = {0};
 	socklen_t addrlen = sizeof(addr);
-	int fd, rc;
+	int fd = -1, rc = EINVAL;
 	const char *unix_path = NULL;
 
 	if (con->input_fd == -1) {
