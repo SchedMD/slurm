@@ -276,7 +276,7 @@ const openapi_path_binding_t openapi_paths[] = {
 					.type = DATA_PARSER_OPENAPI_JOB_INFO_RESP,
 					.description = "job(s) state information",
 				},
-				.query = DATA_PARSER_OPENAPI_JOB_INFO_QUERY,
+				.query = DATA_PARSER_OPENAPI_JOB_STATE_QUERY,
 			},
 			{0}
 		},
