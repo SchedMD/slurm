@@ -926,7 +926,8 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 			return;
 		}
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-			log_flag(CONMGR, "%s: [%s] retry: %m", __func__, con->name);
+			log_flag(CONMGR, "%s: [%s] retry: %m",
+				 __func__, con->name);
 			return;
 		}
 
