@@ -900,12 +900,10 @@ static int _list_transfer_handle_connection(void *x, void *arg)
 	return _handle_connection(con, args);
 }
 
-/*
- * listen socket is ready to accept
- */
-static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
+/* RET true to run again */
+static bool _attempt_accept(conmgr_callback_args_t conmgr_args,
+			    conmgr_fd_t *con)
 {
-	conmgr_fd_t *con = conmgr_args.con;
 	slurm_addr_t addr = {0};
 	socklen_t addrlen = sizeof(addr);
 	int input_fd = -1, fd = -1, rc = EINVAL;
@@ -919,18 +917,18 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 		slurm_mutex_unlock(&mgr.mutex);
 		log_flag(CONMGR, "%s: [%s] skipping accept on closed connection",
 			 __func__, con->name);
-		return;
+		return false;
 	} else if (con_flag(con, FLAG_QUIESCE)) {
 		slurm_mutex_unlock(&mgr.mutex);
 		log_flag(CONMGR, "%s: [%s] skipping accept on quiesced connection",
 			 __func__, con->name);
-		return;
+		return false;
 	} else if (_is_accept_deferred()) {
 		log_flag(CONMGR, "%s: [%s] Deferring to attempt to accept new incoming connection due to %d/%d connections",
 			 __func__, con->name, list_count(mgr.connections),
 			 mgr.max_connections);
 		slurm_mutex_unlock(&mgr.mutex);
-		return;
+		return false;
 	} else
 		log_flag(CONMGR, "%s: [%s] attempting to accept new connection",
 			 __func__, con->name);
@@ -946,12 +944,12 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 		if (errno == EINTR) {
 			log_flag(CONMGR, "%s: [%s] interrupt on accept(). Retrying.",
 				 __func__, con->name);
-			return;
+			return true;
 		}
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 			log_flag(CONMGR, "%s: [%s] retry: %m",
 				 __func__, con->name);
-			return;
+			return false;
 		}
 
 		error("%s: [%s] Error on accept socket: %m",
@@ -961,19 +959,19 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 		    (errno == ENOBUFS) || (errno == ENOMEM)) {
 			error("%s: [%s] retry on error: %m",
 			      __func__, con->name);
-			return;
+			return false;
 		}
 
 		/* socket is likely dead: fail out */
 		close_con(false, con);
-		return;
+		return true;
 	}
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		log_flag(CONMGR, "%s: [%s] closing new connection to %pA during shutdown",
 			 __func__, con->name, &addr);
 		fd_close(&fd);
-		return;
+		return false;
 	}
 
 	if (addrlen <= 0)
@@ -1019,11 +1017,24 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 				 false, unix_path, con->new_arg))) {
 		log_flag(CONMGR, "%s: [fd:%d] unable to a register new connection: %s",
 			 __func__, fd, slurm_strerror(rc));
-		return;
+		return true;
 	}
 
 	log_flag(CONMGR, "%s: [%s->fd:%d] registered newly accepted connection",
 		 __func__, con->name, fd);
+	return true;
+}
+
+/*
+ * listen socket is ready to accept
+ */
+static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	(void) _attempt_accept(conmgr_args, con);
 }
 
 /*
