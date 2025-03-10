@@ -68,11 +68,31 @@ typedef struct slurm_conf_switches {
 } slurm_conf_switches_t;
 
 typedef struct topology_ctx {
+	bool cluster_default; /* topo used when operation not tied with part */
+	void *config; /* topology_tree_config_t*, topology_block_config_t*, or
+		       * NULL based on plugin value. */
 	int idx;
 	char *name;
+	char *plugin;
 	char *topo_conf;
 	void *plugin_ctx;
 } topology_ctx_t;
+
+typedef struct {
+	int config_cnt; /* size of config array */
+	slurm_conf_switches_t *switch_configs; /* array of switch configs */
+} topology_tree_config_t;
+
+typedef struct {
+	int config_cnt; /* size of config array */
+	slurm_conf_block_t *block_configs; /* array of block configs */
+	list_t *block_sizes; /* list of int* */
+} topology_block_config_t;
+
+typedef struct {
+	topology_ctx_t *tctx; /* array of topology_ctx_t */
+	int tctx_num; /* size of array */
+} topology_ctx_array_t;
 
 typedef struct topology_eval {
 	bitstr_t **avail_core; /* available core bitmap, UPDATED */
