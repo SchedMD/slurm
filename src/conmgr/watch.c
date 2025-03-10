@@ -901,8 +901,7 @@ static int _list_transfer_handle_connection(void *x, void *arg)
 }
 
 /* RET true to run again */
-static bool _attempt_accept(conmgr_callback_args_t conmgr_args,
-			    conmgr_fd_t *con)
+static bool _attempt_accept(conmgr_fd_t *con)
 {
 	slurm_addr_t addr = {0};
 	socklen_t addrlen = sizeof(addr);
@@ -1033,7 +1032,7 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 	}
 
-	while (_attempt_accept(conmgr_args, con))
+	while (_attempt_accept(con))
 		;
 }
 
