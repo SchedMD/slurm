@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "January 2025" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "March 2025" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -173,7 +173,8 @@ all records that match the selection criteria will be returned.
 \fB\-E\fR, \fB\-\-endtime\fR=<\fIend_time\fR>
 Select jobs in any state before the specified time. If states are
 given with the \-s option return jobs in this state before this period.
-See the \fBDEFAULT TIME WINDOW\fR for more details.
+See the \fBDEFAULT TIME WINDOW\fR section (below) for details about how the
+default values for \-\-starttime and \-\-endtime are determined.
 
 Valid time formats are:
 .br
@@ -338,8 +339,8 @@ option the non\-eligible will be also shown.
 .br
 \fBNOTE\fR: If \-\-state is also specified, as non\-eligible are not PD,
 then non\-eligible jobs will not be displayed.
-See the \fBDEFAULT TIME WINDOW\fR for details about how this option
-changes the default \-S and \-E options.
+See the \fBDEFAULT TIME WINDOW\fR section (below) for details about how this
+option changes the default values for \-\-starttime and \-\-endtime.
 .IP
 
 .TP
@@ -446,7 +447,8 @@ current day, unless the '\-s' or '\-j' options are used. If the '\-s' option is
 used, then the default is 'now'. If states are given with the '\-s' option then
 only jobs in this state at this time will be returned. If the '\-j' option is
 used, then the default time is Unix Epoch 0. See the \fBDEFAULT TIME WINDOW\fR
-for more details.
+section (below) for details about how default values for \-\-starttime and
+\-\-endtime are determined.
 
 Valid time formats are:
 .br
@@ -487,7 +489,9 @@ they are pending indefinitely.
 \fBNOTE\fR: When specifying states and no start time is given the default
 start time is 'now'. This is only when \-j is not used. If \-j is used the
 start time will default to 'Epoch'. In both cases if no end time is given it
-will default to 'now'. See the \fBDEFAULT TIME WINDOW\fR for more details.
+will default to 'now'. See the \fBDEFAULT TIME WINDOW\fR section (below) for
+details about how this option changes the default values for \-\-starttime
+and \-\-endtime.
 .IP
 
 .TP
