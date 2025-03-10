@@ -1034,7 +1034,8 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	(void) _attempt_accept(conmgr_args, con);
+	while (_attempt_accept(conmgr_args, con))
+		;
 }
 
 /*
