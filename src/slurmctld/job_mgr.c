@@ -213,7 +213,6 @@ typedef struct {
 	job_record_t *job_ptr;
 	uint16_t min_part_prio_tier;
 	bitstr_t *part_nodes;
-	list_itr_t *resv_list_iter;
 	bool use_none_resv_nodes;
 } top_prio_args_t;
 
@@ -231,6 +230,7 @@ typedef struct {
 typedef struct {
 	slurmctld_resv_t *cur_resv;
 	bool found;
+	job_record_t *job_ptr2;
 } findfirst_resv_overlap_t;
 
 /* Global variables */
@@ -11905,10 +11905,34 @@ static int _findfirst_resv_overlap_internal(void *x, void *arg)
 	return 0;
 }
 
+static int _findfirst_resv_overlap(void *x, void *arg)
+{
+	findfirst_resv_overlap_t *findfirst_resv_overlap = arg;
+	job_record_t *job_ptr2 = findfirst_resv_overlap->job_ptr2;
+
+	findfirst_resv_overlap->cur_resv = x;
+
+	/*
+	 * Continue if the cur_resv is less than any of the resv in the
+	 * second job's list. Otherwise return
+	 * findfirst_resv_overlap.found.
+	 */
+	if (!list_find_first(job_ptr2->resv_list,
+			     _findfirst_resv_overlap_internal,
+			     findfirst_resv_overlap) ||
+	    findfirst_resv_overlap->found)
+		return -1;
+
+	return 0;
+}
+
 static bool _can_resv_overlap(top_prio_args_t *job_args, job_record_t *job_ptr2)
 {
 	job_record_t *job_ptr1 = job_args->job_ptr;
-	slurmctld_resv_t* cur_resv1;
+	findfirst_resv_overlap_t findfirst_resv_overlap = {
+		.found = false,
+		.job_ptr2 = job_ptr2,
+	};
 
 	if (job_args->use_none_resv_nodes && _use_none_resv_nodes(job_ptr2))
 		return true;
@@ -11944,29 +11968,10 @@ static bool _can_resv_overlap(top_prio_args_t *job_args, job_record_t *job_ptr2)
 				       &job_ptr1->resv_ptr->resv_id);
 
 	/* Both jobs have resv lists - Note resv_list is sorted by id */
-	xassert(job_args->resv_list_iter);
+	(void) list_find_first(job_ptr1->resv_list, _findfirst_resv_overlap,
+			       &findfirst_resv_overlap);
 
-	list_iterator_reset(job_args->resv_list_iter);
-	while ((cur_resv1 = list_next(job_args->resv_list_iter))) {
-		findfirst_resv_overlap_t findfirst_resv_overlap = {
-			.cur_resv = cur_resv1,
-			.found = false,
-		};
-
-		/*
-		 * Continue if the cur_resv is less than any of the resv in the
-		 * second job's list. Otherwise return
-		 * findfirst_resv_overlap.found.
-		 */
-		if (!list_find_first(job_ptr2->resv_list,
-				     _findfirst_resv_overlap_internal,
-				     &findfirst_resv_overlap) ||
-			findfirst_resv_overlap.found) {
-			return findfirst_resv_overlap.found;
-		}
-	}
-
-	return false;
+	return findfirst_resv_overlap.found;
 }
 
 static int _union_part_nodes(void *x, void *arg)
@@ -12041,8 +12046,6 @@ static void _init_top_prio_args(job_record_t *job_ptr, top_prio_args_t *args)
 		list_for_each(job_ptr->part_ptr_list, _set_min_prio_tier,
 			      &args->min_part_prio_tier);
 	args->part_nodes = NULL; /* This is set later if necessary */
-	if (job_ptr->resv_list)
-		args->resv_list_iter = list_iterator_create(job_ptr->resv_list);
 	args->use_none_resv_nodes = _use_none_resv_nodes(job_ptr);
 }
 
@@ -12053,8 +12056,6 @@ static void _destroy_top_prio_args(top_prio_args_t *args)
 
 	/* Intentionally not freeing the job_ptr */
 	FREE_NULL_BITMAP(args->part_nodes);
-	if (args->resv_list_iter)
-		list_iterator_destroy(args->resv_list_iter);
 }
 
 /*
