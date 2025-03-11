@@ -2834,9 +2834,9 @@ TRY_LATER:
 				    job_ptr->details->exc_node_bitmap);
 		}
 
-		if (_filter_exclusive_user_mcs_nodes(job_ptr, min_nodes,
-						     mcs_select,
-						     nodes_used_list, start_res,
+		if (_filter_exclusive_user_mcs_nodes(job_ptr, mcs_select,
+						     min_nodes, nodes_used_list,
+						     start_res,
 						     &later_filter_start,
 						     avail_bitmap)) {
 			/* start_res delayed must check resv times again */
