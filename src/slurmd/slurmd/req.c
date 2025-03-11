@@ -87,6 +87,7 @@
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
+#include "src/common/stepd_proxy.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
@@ -281,12 +282,16 @@ static int _stepmgr_connect(slurm_step_id_t *step_id,
 	return fd;
 }
 
-static void _relay_stepd_msg(slurm_step_id_t *step_id,
-			     slurm_msg_t *msg,
-			     relay_auth_type_t auth_type)
+/*
+ * NOTE: reply must be in sync with corresponding rpc handling in slurmstepd.
+ */
+static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
+			     relay_auth_type_t auth_type, bool reply)
 {
-	int fd, rc;
+	buf_t *resp_buf = NULL;
+	int rc = SLURM_SUCCESS;
 	uid_t job_uid;
+	int stepmgr_fd = -1;
 	uint16_t protocol_version;
 
 	step_id->step_het_comp = NO_VAL; /* het jobs aren't supported. */
@@ -331,24 +336,70 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id,
 		break;
 	}
 
-	if (((fd = _stepmgr_connect(step_id, &protocol_version)) !=
-	     SLURM_ERROR) &&
-	    !stepd_relay_msg(fd, msg, protocol_version)) {
-		/* stepd will reply back directly. */
-		close(fd);
-		return;
-	} else {
+	if ((stepmgr_fd = _stepmgr_connect(step_id, &protocol_version)) ==
+	    SLURM_ERROR) {
+		error("%s: Failed to connect to stepmgr", __func__);
 		rc = SLURM_ERROR;
-		error("failed to return step rpc:%s job:%ps uid:%u",
-		      rpc_num2string(msg->msg_type), step_id, msg->auth_uid);
+		goto done;
 	}
-	if (fd != SLURM_ERROR)
-		close(fd);
 
+	if (protocol_version < SLURM_25_05_PROTOCOL_VERSION) {
+		log_flag(NET, "Relaying message %s to stepd stepmgr for %ps running version %d on fd %d",
+			 rpc_num2string(msg->msg_type), step_id,
+			 protocol_version, stepmgr_fd);
+
+		if (stepd_relay_msg(stepmgr_fd, msg, protocol_version)) {
+			error("%s: Failed to relay message %s to older stepmgr for %ps running version %d on fd %d",
+			      __func__, rpc_num2string(msg->msg_type), step_id,
+			      protocol_version, stepmgr_fd);
+			rc = SLURM_ERROR;
+			goto done;
+		}
+		/* stepd will reply back directly. */
+		goto done;
+	}
+
+	if (stepd_proxy_send_recv_to_stepd(msg, &resp_buf, step_id, stepmgr_fd,
+					   reply)) {
+		error("%s: Failed to send/recv message %s to stepmgr for %ps",
+		      __func__, rpc_num2string(msg->msg_type), step_id);
+		rc = SLURM_ERROR;
+		goto done;
+	}
+
+	if (!reply) {
+		log_flag(NET, "Sent message %s to stepmgr for %ps (this RPC is send only, not waiting for response)",
+		      rpc_num2string(msg->msg_type), step_id);
+		goto done;
+	}
+
+	if (!resp_buf) {
+		error("%s: Failed to get response buffer from stepmgr",
+		      __func__);
+		rc = SLURM_ERROR;
+		goto done;
+	}
+
+	/* send response from stepd back to original client */
+	if (resp_buf && (slurm_msg_sendto(msg->conn_fd, get_buf_data(resp_buf),
+					  size_buf(resp_buf)) < 0)) {
+		error("%s: Failed to send response bufs", __func__);
+		rc = SLURM_ERROR;
+		goto done;
+	}
+
+	log_flag(NET, "Sent message %s to stepmgr for %ps. Got response buf size %d from stepmgr and forwarded buffer to %pA on fd %d",
+		 rpc_num2string(msg->msg_type), step_id, size_buf(resp_buf),
+		 &msg->address, msg->conn_fd);
 done:
+	fd_close(&stepmgr_fd);
+	FREE_NULL_BUFFER(resp_buf);
+
+	if (!rc)
+		return;
+
 	slurm_send_rc_msg(msg, rc);
 }
-
 
 static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 {
@@ -357,21 +408,21 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 	job_step_create_request_msg_t *req_step_msg = msg->data;
 	step_id.job_id = req_step_msg->step_id.job_id;
 
-	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_JOB);
+	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_JOB, true);
 }
 
 static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 {
 	job_step_info_request_msg_t *request = msg->data;
 
-	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_PRIVATE_DATA);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_PRIVATE_DATA, true);
 }
 
 static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 {
 	job_step_kill_msg_t *request = msg->data;
 
-	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, true);
 }
 
 static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
@@ -381,21 +432,21 @@ static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 
 	step_id.job_id = request->job_id;
 
-	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_SLURM_USER);
+	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_SLURM_USER, false);
 }
 
 static void _slurm_rpc_srun_node_fail(slurm_msg_t *msg)
 {
 	srun_node_fail_msg_t *request = msg->data;
 
-	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, false);
 }
 
 static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
 {
 	srun_timeout_msg_t *request = msg->data;
 
-	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, false);
 }
 
 static void _slurm_rpc_update_step(slurm_msg_t *msg)
@@ -406,19 +457,19 @@ static void _slurm_rpc_update_step(slurm_msg_t *msg)
 	step_id.job_id = request->job_id;
 	step_id.step_id = request->step_id;
 
-	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_SLURM_USER);
+	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_SLURM_USER, true);
 }
 
 static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 {
-	_relay_stepd_msg(msg->data, msg, RELAY_AUTH_PRIVATE_DATA);
+	_relay_stepd_msg(msg->data, msg, RELAY_AUTH_PRIVATE_DATA, true);
 }
 
 static void _slurm_rpc_sbcast_cred(slurm_msg_t *msg)
 {
 	step_alloc_info_msg_t *request = msg->data;
 
-	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, true);
 }
 
 static void _slurm_het_job_alloc_info(slurm_msg_t *msg)
@@ -428,7 +479,7 @@ static void _slurm_het_job_alloc_info(slurm_msg_t *msg)
 
 	step_id.job_id = request->job_id;
 
-	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_PRIVATE_DATA);
+	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_PRIVATE_DATA, true);
 }
 
 void
