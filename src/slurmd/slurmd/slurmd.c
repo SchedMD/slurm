@@ -490,6 +490,8 @@ main (int argc, char **argv)
 	if (!under_systemd)
 		pidfd = create_pidfile(conf->pidfile, 0);
 
+	conmgr_run(false);
+
 	if (original)
 		run_script_health_check();
 
