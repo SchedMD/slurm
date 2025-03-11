@@ -462,7 +462,12 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 		if (rc == 0) {
 			log_flag(NET, "%s: recv(fd:%d)=0 at %d/%zu bytes",
 				 __func__, fd, recvlen, size);
-			errno = SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT;
+
+			if (recvlen > 0)
+				errno = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+			else
+				errno = SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT;
+
 			recvlen = SLURM_ERROR;
 			goto done;
 		}
