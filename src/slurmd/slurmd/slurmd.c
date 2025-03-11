@@ -207,6 +207,10 @@ static bool plugins_registered = false;
 bool refresh_cached_features = true;
 pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* Reference to active listening socket */
+pthread_mutex_t listen_mutex = PTHREAD_MUTEX_INITIALIZER;
+conmgr_fd_ref_t *listener = NULL;
+
 static int       _convert_spec_cores(void);
 static int       _core_spec_init(void);
 static void _create_msg_socket(void);
@@ -1967,6 +1971,11 @@ static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 	debug3("%s: [%s] Successfully opened slurm listen port %u",
 	       __func__, conmgr_fd_get_name(con), conf->port);
 
+	slurm_mutex_lock(&listen_mutex);
+	xassert(!listener);
+	listener = conmgr_fd_new_ref(con);
+	slurm_mutex_unlock(&listen_mutex);
+
 	slurmd_req(NULL);	/* initialize timer */
 
 	return con;
@@ -1975,6 +1984,12 @@ static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 {
 	xassert(con == arg);
+
+#ifndef NDEBUG
+	slurm_mutex_lock(&listen_mutex);
+	xassert(!listener);
+	slurm_mutex_unlock(&listen_mutex);
+#endif
 
 	debug3("%s: [%s] closed RPC listener. Queuing up cleanup.",
 	       __func__, conmgr_fd_get_name(con));
@@ -2725,6 +2740,11 @@ _slurmd_fini(void)
 extern void slurmd_shutdown(void)
 {
 	_shutdown = 1;
+
+	slurm_mutex_lock(&listen_mutex);
+	conmgr_fd_free_ref(&listener);
+	slurm_mutex_unlock(&listen_mutex);
+
 	conmgr_request_shutdown();
 }
 
