@@ -304,11 +304,11 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
  * scontrol_print_topo - print the switch topology above the specified node
  * IN node_name - NULL to print all topology information
  */
-extern void	scontrol_print_topo (char *node_list)
+extern void scontrol_print_topo(char *node_list, char *name)
 {
 	static topo_info_response_msg_t *topo_info_msg = NULL;
 
-	if ((topo_info_msg == NULL) && slurm_load_topo(&topo_info_msg, NULL)) {
+	if ((topo_info_msg == NULL) && slurm_load_topo(&topo_info_msg, name)) {
 		slurm_perror ("slurm_load_topo error");
 		return;
 	}

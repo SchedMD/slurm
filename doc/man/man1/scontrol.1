@@ -635,12 +635,12 @@ the given container-id will be displayed.
 .IP
 
 .TP
-\fBtopology\fR
-Displays information about the defined topology layout. If a switch is
-specified, information about that switch will be shown.
-If one node name is specified, all switches connected to that node (and
+\fBtopology\fR[=topology_name] [unit|node_name]
+Displays information about the selected topology layout. If a unit is
+specified, information about that unit will be shown.
+If one node name is specified, all units connected to that node (and
 their parent switches) will be shown.
-If more than one node name is specified, only switches that connect to all
+If more than one node name is specified, only units that connect to all
 named nodes will be shown.
 .RE
 .IP
