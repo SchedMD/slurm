@@ -62,6 +62,7 @@
 
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/topology.h" /* provides topology config structs */
 
 #include "alloc.h"
 #include "api.h"
@@ -457,6 +458,22 @@ typedef struct {
 	args_t *args;
 	data_t *parent_path;
 } foreach_parse_kill_jobs_resp_args_t;
+
+#define PARSE_TOPO_ARRAY_MAGIC 0x11ee3025
+typedef int (*topo_array_item_parse)(void *array, int index, data_t *src,
+				     args_t *args, data_t *parent_path);
+
+typedef struct {
+	int magic; /* PARSE_TOPO_ARRAY_MAGIC */
+	args_t *args;
+	void *array; /* cast to type */
+	int array_size;
+	int index;
+	data_t *parent_path;
+	const parser_t *const parser;
+	topo_array_item_parse parse_callback;
+	int *rc_ptr;
+} foreach_topo_array_args_t;
 
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
@@ -6570,6 +6587,355 @@ static int DUMP_FUNC(KILL_JOBS_RESP_MSG)(const parser_t *const parser,
 	return rc;
 }
 
+static data_for_each_cmd_t _foreach_topo_array(data_t *src, void *arg)
+{
+	foreach_topo_array_args_t *fargs = arg;
+
+	xassert(fargs);
+	xassert(fargs->magic & PARSE_TOPO_ARRAY_MAGIC);
+	xassert(fargs->array_size > fargs->index);
+
+	if ((*fargs->rc_ptr =
+		     fargs->parse_callback(fargs->array, fargs->index, src,
+					   fargs->args, fargs->parent_path)))
+		return DATA_FOR_EACH_FAIL;
+	fargs->index++;
+	return DATA_FOR_EACH_CONT;
+}
+
+static int _parse_topology_conf(void *array, int index, data_t *src,
+				args_t *args, data_t *parent_path)
+{
+	topology_ctx_t *topo_config_array = array;
+	return PARSE(TOPOLOGY_CONF, topo_config_array[index], src, parent_path,
+		     args);
+}
+
+static int PARSE_FUNC(TOPOLOGY_CONF_ARRAY)(const parser_t *const parser,
+					   void *obj, data_t *src, args_t *args,
+					   data_t *parent_path)
+{
+	topology_ctx_array_t *ctx_array = obj;
+	int rc = SLURM_SUCCESS;
+	xassert(ctx_array);
+
+	if (data_get_type(src) == DATA_TYPE_DICT) {
+		/* single topology configuration */
+		ctx_array->tctx_num = 1;
+		xrealloc(ctx_array->tctx, sizeof(*ctx_array->tctx));
+
+		rc = PARSE(TOPOLOGY_CONF, *ctx_array->tctx, src, parent_path,
+			   args);
+	} else if (data_get_type(src) == DATA_TYPE_LIST) {
+		foreach_topo_array_args_t fargs = {
+			.magic = PARSE_TOPO_ARRAY_MAGIC,
+			.args = args,
+			.parent_path = parent_path,
+			.parse_callback = _parse_topology_conf,
+			.rc_ptr = &rc,
+		};
+
+		/* multiple topology configurations */
+		ctx_array->tctx_num = data_get_list_length(src);
+		xrealloc(ctx_array->tctx,
+			 (sizeof(*ctx_array->tctx) * ctx_array->tctx_num));
+
+		fargs.array_size = ctx_array->tctx_num;
+		fargs.array = ctx_array->tctx;
+		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
+	} else {
+		rc = on_error(DUMPING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
+			      "Unexpected type %s when expecting a list",
+			      data_type_to_string(data_get_type(src)));
+	}
+
+	return rc;
+}
+
+static int DUMP_FUNC(TOPOLOGY_CONF_ARRAY)(const parser_t *const parser,
+					  void *obj, data_t *dst, args_t *args)
+{
+	topology_ctx_array_t *ctx_array = obj;
+	int rc = SLURM_SUCCESS;
+	xassert(ctx_array);
+
+	data_set_list(dst);
+
+	for (int i = 0; i < ctx_array->tctx_num; i++)
+		if ((rc = DUMP(TOPOLOGY_CONF, ctx_array->tctx[i],
+			       data_list_append(dst), args)))
+			return rc;
+	return rc;
+}
+
+static int PARSE_FUNC(TOPOLOGY_TREE)(const parser_t *const parser, void *obj,
+				     data_t *src, args_t *args,
+				     data_t *parent_path)
+{
+	topology_ctx_t *tctx = obj;
+	size_t src_dict_count;
+	int rc = SLURM_SUCCESS;
+	xassert(tctx);
+
+	if (data_get_type(src) != DATA_TYPE_DICT)
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_EXPECTED_DICT,
+				   "Rejecting %s when dictionary expected",
+				   data_get_type_string(src));
+
+	src_dict_count = data_get_dict_length(src);
+	if (tctx->plugin && data_get_dict_length(src)) {
+		rc = SLURM_ERROR;
+		parse_error(
+			parser, args, parent_path, rc,
+			"Field tree is mutually excusive with fields block and flat");
+	} else if (src_dict_count) {
+		tctx->plugin = xstrdup("topology/tree");
+		rc = PARSE(TOPOLOGY_TREE_CONFIG_PTR, tctx->config, src,
+			   parent_path, args);
+	}
+
+	return rc;
+}
+
+static int DUMP_FUNC(TOPOLOGY_TREE)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args)
+{
+	topology_ctx_t *tctx = obj;
+	int rc = SLURM_SUCCESS;
+	xassert(tctx);
+
+	if (!xstrcmp(tctx->plugin, "topology/tree"))
+		rc = DUMP(TOPOLOGY_TREE_CONFIG_PTR, tctx->config, dst, args);
+	else
+		data_set_dict(dst);
+
+	return rc;
+}
+
+static int _parse_switch_conf(void *array, int index, data_t *src, args_t *args,
+			      data_t *parent_path)
+{
+	slurm_conf_switches_t *switch_config_array = array;
+	return PARSE(SWITCH_CONFIG, switch_config_array[index], src,
+		     parent_path, args);
+}
+
+static int PARSE_FUNC(TOPOLOGY_TREE_CONFIG_ARRAY)(const parser_t *const parser,
+						  void *obj, data_t *src,
+						  args_t *args,
+						  data_t *parent_path)
+{
+	topology_tree_config_t *tree_configs = obj;
+	int rc = SLURM_SUCCESS;
+
+	xassert(tree_configs);
+
+	if (data_get_type(src) == DATA_TYPE_DICT) {
+		/* single switch configuration */
+		tree_configs->config_cnt = 1;
+		xrealloc(tree_configs->switch_configs,
+			 sizeof(*tree_configs->switch_configs));
+
+		rc = PARSE(SWITCH_CONFIG, *tree_configs->switch_configs, src,
+			   parent_path, args);
+	} else if (data_get_type(src) == DATA_TYPE_LIST) {
+		foreach_topo_array_args_t fargs = {
+			.magic = PARSE_TOPO_ARRAY_MAGIC,
+			.args = args,
+			.parent_path = parent_path,
+			.parse_callback = _parse_switch_conf,
+			.rc_ptr = &rc,
+		};
+
+		/* multiple topology configurations */
+		tree_configs->config_cnt = data_get_list_length(src);
+		xrealloc(tree_configs->switch_configs,
+			 (sizeof(*tree_configs->switch_configs) *
+			  tree_configs->config_cnt));
+
+		fargs.array_size = tree_configs->config_cnt;
+		fargs.array = tree_configs->switch_configs;
+		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
+	} else {
+		rc = on_error(DUMPING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
+			      "Unexpected type %s when expecting a list",
+			      data_type_to_string(data_get_type(src)));
+	}
+
+	return rc;
+}
+
+static int DUMP_FUNC(TOPOLOGY_TREE_CONFIG_ARRAY)(const parser_t *const parser,
+						 void *obj, data_t *dst,
+						 args_t *args)
+{
+	topology_tree_config_t *tree_configs = obj;
+	int rc = SLURM_SUCCESS;
+	xassert(tree_configs);
+
+	data_set_list(dst);
+
+	for (int i = 0; i < tree_configs->config_cnt; i++)
+		if ((rc = DUMP(SWITCH_CONFIG, tree_configs->switch_configs[i],
+			       data_list_append(dst), args)))
+			return rc;
+	return rc;
+}
+
+static int PARSE_FUNC(TOPOLOGY_BLOCK)(const parser_t *const parser, void *obj,
+				      data_t *src, args_t *args,
+				      data_t *parent_path)
+{
+	topology_ctx_t *tctx = obj;
+	size_t src_dict_count;
+	int rc = SLURM_SUCCESS;
+	xassert(tctx);
+
+	if (data_get_type(src) != DATA_TYPE_DICT)
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_EXPECTED_DICT,
+				   "Rejecting %s when dictionary expected",
+				   data_get_type_string(src));
+
+	src_dict_count = data_get_dict_length(src);
+	if (tctx->plugin && src_dict_count) {
+		rc = parse_error(
+			parser, args, parent_path, SLURM_ERROR,
+			"Field block is mutually excusive with fields tree and flat");
+	} else if (src_dict_count) {
+		tctx->plugin = xstrdup("topology/block");
+		rc = PARSE(TOPOLOGY_BLOCK_CONFIG_PTR, tctx->config, src,
+			   parent_path, args);
+	}
+
+	return rc;
+}
+
+static int DUMP_FUNC(TOPOLOGY_BLOCK)(const parser_t *const parser, void *obj,
+				     data_t *dst, args_t *args)
+{
+	topology_ctx_t *tctx = obj;
+	int rc = SLURM_SUCCESS;
+	xassert(tctx);
+
+	if (!xstrcmp(tctx->plugin, "topology/block"))
+		rc = DUMP(TOPOLOGY_BLOCK_CONFIG_PTR, tctx->config, dst, args);
+	else
+		data_set_dict(dst);
+
+	return rc;
+}
+
+static int _parse_block_conf(void *array, int index, data_t *src, args_t *args,
+			     data_t *parent_path)
+{
+	slurm_conf_block_t *block_config_array = array;
+	return PARSE(BLOCK_CONFIG, block_config_array[index], src, parent_path,
+		     args);
+}
+
+static int PARSE_FUNC(TOPOLOGY_BLOCK_CONFIG_ARRAY)(const parser_t *const parser,
+						   void *obj, data_t *src,
+						   args_t *args,
+						   data_t *parent_path)
+{
+	topology_block_config_t *block_configs = obj;
+	int rc = SLURM_SUCCESS;
+	xassert(block_configs);
+
+	if (data_get_type(src) == DATA_TYPE_DICT) {
+		/* single block configuration */
+		block_configs->config_cnt = 1;
+		xrealloc(block_configs->block_configs,
+			 sizeof(*block_configs->block_configs));
+
+		rc = PARSE(BLOCK_CONFIG, *block_configs->block_configs, src,
+			   parent_path, args);
+	} else if (data_get_type(src) == DATA_TYPE_LIST) {
+		foreach_topo_array_args_t fargs = {
+			.magic = PARSE_TOPO_ARRAY_MAGIC,
+			.args = args,
+			.parent_path = parent_path,
+			.parser = parser,
+			.parse_callback = _parse_block_conf,
+			.rc_ptr = &rc,
+		};
+
+		/* multiple topology configurations */
+		block_configs->config_cnt = data_get_list_length(src);
+		xrealloc(block_configs->block_configs,
+			 (sizeof(*block_configs->block_configs) *
+			  block_configs->config_cnt));
+
+		fargs.array_size = block_configs->config_cnt;
+		fargs.array = block_configs->block_configs;
+		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
+	} else {
+		rc = on_error(DUMPING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
+			      "Unexpected type %s when expecting a list",
+			      data_type_to_string(data_get_type(src)));
+	}
+
+	return rc;
+}
+
+static int DUMP_FUNC(TOPOLOGY_BLOCK_CONFIG_ARRAY)(const parser_t *const parser,
+						  void *obj, data_t *dst,
+						  args_t *args)
+{
+	topology_block_config_t *block_configs = obj;
+	int rc = SLURM_SUCCESS;
+	xassert(block_configs);
+
+	data_set_list(dst);
+
+	for (int i = 0; i < block_configs->config_cnt; i++)
+		if ((rc = DUMP(BLOCK_CONFIG, block_configs->block_configs[i],
+			       data_list_append(dst), args)))
+			return rc;
+	return rc;
+}
+
+static int PARSE_FUNC(TOPOLOGY_FLAT)(const parser_t *const parser, void *obj,
+				     data_t *src, args_t *args,
+				     data_t *parent_path)
+{
+	topology_ctx_t *tctx = obj;
+	bool tmp;
+	int rc = SLURM_SUCCESS;
+	xassert(tctx);
+
+	rc = PARSE(BOOL, tmp, src, parent_path, args);
+
+	if (tmp && tctx->plugin) {
+		rc = SLURM_ERROR;
+		parse_error(
+			parser, args, parent_path, rc,
+			"Field flat is mutually excusive with fields tree and block");
+	} else if (tmp)
+		tctx->plugin = xstrdup("topology/flat");
+
+	return rc;
+}
+
+static int DUMP_FUNC(TOPOLOGY_FLAT)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args)
+{
+	topology_ctx_t *tctx = obj;
+	int rc = SLURM_SUCCESS;
+	bool is_topo_flat;
+	xassert(tctx);
+
+	is_topo_flat = !xstrcmp(tctx->plugin, "topology/flat");
+	rc = DUMP(BOOL, is_topo_flat, dst, args);
+
+	return rc;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -9558,6 +9924,59 @@ static const parser_t PARSER_ARRAY(JOB_ALLOC_REQ)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurm_conf_switches_t, mtype, false, field, 0, path, desc)
+#define add_skip(field) \
+	add_parser_skip(slurm_conf_switches_t, field)
+static const parser_t PARSER_ARRAY(SWITCH_CONFIG)[] = {
+	add_parse(STRING, switch_name, "switch", "The name of a switch. This name is internal to Slurm and arbitrary. Each switch should have a unique name. This field must be specified and cannot be longer than 64 characters."),
+	add_parse(STRING, switches, "children", "Child switches of the named switch. Either this option or the Nodes option must be specified."),
+	add_parse(STRING, nodes, "nodes", "Child Nodes of the named leaf switch. Either this option or the Switches option must be specified."),
+	add_skip(link_speed),
+};
+#undef add_skip
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurm_conf_block_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(BLOCK_CONFIG)[] = {
+	add_parse(STRING, block_name, "block", "The name of a block. This name is internal to Slurm and arbitrary. Each block should have a unique name. This field must be specified."),
+	add_parse(STRING, nodes, "nodes", "Child Nodes of the named block. This must be specified along with the BlockName."),
+};
+#undef add_parse
+
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(topology_block_config_t, mtype, false, path, desc)
+static const parser_t PARSER_ARRAY(TOPOLOGY_TREE_CONFIG)[] = {
+	add_cparse(TOPOLOGY_TREE_CONFIG_ARRAY, "switches", "Array of switch configurations"),
+};
+#undef add_cparse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(topology_block_config_t, mtype, false, field, 0, path, desc)
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(topology_block_config_t, mtype, false, path, desc)
+static const parser_t PARSER_ARRAY(TOPOLOGY_BLOCK_CONFIG)[] = {
+	add_parse(INT32_LIST, block_sizes, "block_sizes", "Array of the planning base block size, alongside any higher-level block sizes that would be enforced. Each block must have at least the planning base block size count of nodes. Successive block_sizes must be a power of two larger than the prior values."),
+	add_cparse(TOPOLOGY_BLOCK_CONFIG_ARRAY, "blocks", "Array of block configurations"),
+};
+#undef add_cparse
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(topology_ctx_t, mtype, false, field, 0, path, desc)
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(topology_ctx_t, mtype, false, path, desc)
+static const parser_t PARSER_ARRAY(TOPOLOGY_CONF)[] = {
+	add_parse(STRING, name, "topology", "Arbitrary name of the topology"),
+	add_parse(BOOL, cluster_default, "cluster_default", "topology configuration used outside the context of partitions"),
+	add_cparse(TOPOLOGY_BLOCK, "block", "topology/block plugin configuration, mutually exclusive with tree and default"),
+	add_cparse(TOPOLOGY_FLAT, "flat", "topology/flat plugin, mutually exclusive with tree and block"),
+	add_cparse(TOPOLOGY_TREE, "tree", "topology/tree plugin configuration, mutually exclusive with block and default"),
+};
+#undef add_cparse
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -10202,6 +10621,12 @@ static const parser_t parsers[] = {
 	addpcp(JOB_STATE_RESP_JOB_JOB_ID, STRING, job_state_response_job_t, NEED_NONE, NULL),
 	addpca(KILL_JOBS_MSG_JOBS_ARRAY, STRING, kill_jobs_msg_t, NEED_NONE, NULL),
 	addpsp(JOB_DESC_MSG_CRON_ENTRY, CRON_ENTRY_PTR, cron_entry_t *, NEED_NONE, "crontab entry"),
+	addpca(TOPOLOGY_CONF_ARRAY, TOPOLOGY_CONF, topology_ctx_array_t, NEED_NONE, "Topology configuration array"),
+	addpcp(TOPOLOGY_TREE, TOPOLOGY_TREE_CONFIG_PTR, topology_tree_config_t *, NEED_NONE, "topology/tree plugin configuration"),
+	addpcp(TOPOLOGY_BLOCK, TOPOLOGY_BLOCK_CONFIG_PTR, topology_block_config_t *, NEED_NONE, "topology/block plugin configuration"),
+	addpcp(TOPOLOGY_FLAT, BOOL, bool, NEED_NONE, "topology/flat plugin"),
+	addpca(TOPOLOGY_TREE_CONFIG_ARRAY, SWITCH_CONFIG, topology_tree_config_t, NEED_NONE, "Array of switch configurations"),
+	addpca(TOPOLOGY_BLOCK_CONFIG_ARRAY, BLOCK_CONFIG, topology_block_config_t, NEED_NONE, "Array of block configurations"),
 
 	/* Removed parsers */
 	addr(SELECT_PLUGIN_ID, STRING, SLURM_24_05_PROTOCOL_VERSION),
@@ -10238,6 +10663,7 @@ static const parser_t parsers[] = {
 	addpp(EXT_SENSORS_DATA_PTR, void *, EXT_SENSORS_DATA, true, NULL, NULL),
 	addpp(POWER_MGMT_DATA_PTR, void *, POWER_MGMT_DATA, true, NULL, NULL),
 	addpp(KILL_JOBS_RESP_MSG_PTR, kill_jobs_resp_msg_t *, KILL_JOBS_RESP_MSG, false, NULL, FREE_FUNC(KILL_JOBS_RESP_MSG)),
+	addpp(INT32_PTR, int32_t *, INT32, false, NULL, xfree_ptr),
 
 	/* Array of parsers */
 	addpap(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
@@ -10349,6 +10775,11 @@ static const parser_t parsers[] = {
 	addpap(JOB_ALLOC_REQ, openapi_job_alloc_request_t, NULL, NULL),
 	addpap(RESERVATION_DESC_MSG, resv_desc_msg_t, NEW_FUNC(RESERVATION_DESC_MSG), (parser_free_func_t) slurm_free_resv_desc_msg),
 	addpap(RESERVATION_MOD_REQ, openapi_reservation_mod_request_t, NULL, NULL),
+	addpap(TOPOLOGY_CONF, topology_ctx_t, NULL, (parser_free_func_t) free_topology_ctx),
+	addpap(TOPOLOGY_TREE_CONFIG, topology_tree_config_t, NULL, (parser_free_func_t) free_topology_tree_config),
+	addpap(TOPOLOGY_BLOCK_CONFIG, topology_block_config_t, NULL, (parser_free_func_t) free_topology_block_config),
+	addpap(SWITCH_CONFIG, slurm_conf_switches_t, NULL, (parser_free_func_t) free_switch_conf),
+	addpap(BLOCK_CONFIG, slurm_conf_block_t, NULL, (parser_free_func_t) free_block_conf),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -10472,6 +10903,7 @@ static const parser_t parsers[] = {
 	addpl(SHARES_FLOAT128_TRES_LIST, SHARES_FLOAT128_TRES_PTR, NEED_NONE),
 	addpl(SLURM_STEP_ID_STRING_LIST, SLURM_STEP_ID_STRING_PTR, NEED_NONE),
 	addpl(RESERVATION_DESC_MSG_LIST, RESERVATION_DESC_MSG_PTR, NEED_NONE),
+	addpl(INT32_LIST, INT32_PTR, NEED_NONE),
 };
 #undef addpl
 #undef addps
