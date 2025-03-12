@@ -410,18 +410,21 @@ static int _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 /* caller must hold pctl.mutex */
 static int _unlink_fd(int fd, const char *con_name, const char *caller)
 {
+	int rc = SLURM_SUCCESS;
+
 	_check_pctl_magic();
 
-	if (epoll_ctl(pctl.epoll, EPOLL_CTL_DEL, fd, NULL))
-		fatal_abort("%s->%s: [EPOLL:%s] epoll_ctl(EPOLL_CTL_DEL, %d) failed: %m",
+	if (epoll_ctl(pctl.epoll, EPOLL_CTL_DEL, fd, NULL)) {
+		rc = errno;
+		log_flag(CONMGR, "%s->%s: [EPOLL:%s] epoll_ctl(EPOLL_CTL_DEL, %d) failed: %m",
 			    caller, __func__, con_name, fd);
-	else if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
+	} else if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
 		log_flag(CONMGR, "%s->%s: [EPOLL:%s] deregistered fd:%d events",
 			 caller, __func__, con_name, fd);
 
 	pctl.fd_count--;
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _lock_unlink_fd(int fd, const char *con_name, const char *caller)
