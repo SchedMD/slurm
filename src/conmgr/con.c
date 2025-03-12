@@ -1307,34 +1307,40 @@ extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 	close_con(true, con);
 }
 
-static int _set_fd_polling(int fd, pollctl_fd_type_t old, pollctl_fd_type_t new,
-			   const char *con_name, const char *caller)
+static int _set_fd_polling(int fd, pollctl_fd_type_t *old,
+			   pollctl_fd_type_t new, const char *con_name,
+			   const char *caller)
 {
-	if (old == PCTL_TYPE_UNSUPPORTED)
-		return PCTL_TYPE_UNSUPPORTED;
+	if (*old == PCTL_TYPE_UNSUPPORTED)
+		return SLURM_SUCCESS;
 
-	if (old == new)
-		return new;
+	if (*old == new)
+		return SLURM_SUCCESS;
 
 	if (new == PCTL_TYPE_NONE) {
-		if (old != PCTL_TYPE_NONE)
-			pollctl_unlink_fd(fd, con_name, caller);
-		return new;
+		int rc = SLURM_SUCCESS;
+
+		if ((*old != PCTL_TYPE_NONE) &&
+		    !(rc = pollctl_unlink_fd(fd, con_name, caller)))
+			*old = new;
+
+		return rc;
 	}
 
-	if (old != PCTL_TYPE_NONE) {
-		pollctl_relink_fd(fd, new, con_name, caller);
-		return new;
+	if (*old != PCTL_TYPE_NONE) {
+		int rc;
+
+		if (!(rc = pollctl_relink_fd(fd, new, con_name, caller)))
+			*old = new;
+
+		return rc;
 	} else {
 		int rc = pollctl_link_fd(fd, new, con_name, caller);
 
 		if (!rc)
-			return new;
-		else if (rc == EPERM)
-			return PCTL_TYPE_UNSUPPORTED;
-		else
-			fatal("%s->%s: [%s] Unable to start polling: %s",
-			      caller, __func__, con_name, slurm_strerror(rc));
+			*old = new;
+
+		return rc;
 	}
 }
 
@@ -1387,6 +1393,7 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 			    const char *caller)
 {
 	int has_in, has_out, in, out, is_same;
+	int rc_in = SLURM_SUCCESS, rc_out = SLURM_SUCCESS;
 	pollctl_fd_type_t in_type = PCTL_TYPE_NONE, out_type = PCTL_TYPE_NONE;
 
 	_validate_pctl_type(type);
@@ -1469,18 +1476,19 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 		/* same never link output_fd */
 		xassert(con->polling_output_fd == PCTL_TYPE_NONE);
 
-		con->polling_input_fd =
-			_set_fd_polling(in, con->polling_input_fd, in_type,
+		rc_in = _set_fd_polling(in, &con->polling_input_fd, in_type,
 					con->name, caller);
 	} else {
 		if (has_in)
-			con->polling_input_fd =
-				_set_fd_polling(in, con->polling_input_fd,
+			rc_in = _set_fd_polling(in, &con->polling_input_fd,
 						in_type, con->name, caller);
 		if (has_out)
-			con->polling_output_fd =
-				_set_fd_polling(out, con->polling_output_fd,
-						out_type, con->name, caller);
+			rc_out = _set_fd_polling(out, &con->polling_output_fd,
+						 out_type, con->name, caller);
+	}
+
+	if (rc_in || rc_out) {
+		error("place holder for future logic");
 	}
 }
 
