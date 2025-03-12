@@ -3329,7 +3329,8 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 	if (!is_locked)
 		assoc_mgr_lock(&locks);
 	if (!assoc_mgr_coord_list || !list_count(assoc_mgr_coord_list)) {
-		assoc_mgr_unlock(&locks);
+		if (!is_locked)
+			assoc_mgr_unlock(&locks);
 		return false;
 	}
 
