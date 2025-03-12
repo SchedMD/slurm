@@ -2715,6 +2715,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 	if (node_name == NULL)
 		fatal("kill_job_by_front_end_name: node_name is NULL");
 
+	/* Skipping here as I don't want to touch FrontEnd code */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		bool suspended = false;
