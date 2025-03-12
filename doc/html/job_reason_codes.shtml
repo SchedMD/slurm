@@ -314,9 +314,6 @@ another job that will never be satisfied.</li>
 <li><b>FedJobLock</b> &mdash; The job is waiting for the clusters in the
 federation to sync up and issue a lock.</li>
 
-<li><b>FrontEndDown</b> &mdash; No front end node is available to execute this
-job.</li>
-
 <li><b>InactiveLimit</b> &mdash; The job reached the system InactiveLimit.</li>
 
 <li><b>InvalidAccount</b> &mdash; The job's account is invalid.</li>
@@ -716,6 +713,6 @@ the network, etc.</li>
 
 </ul>
 
-<p style="text-align: center;">Last modified 08 October 2024</li>
+<p style="text-align: center;">Last modified 12 March 2025</li>
 
 <!--#include virtual="footer.txt"-->

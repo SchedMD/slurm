@@ -46,7 +46,7 @@ allocations, when and where they run.</p>
 			</td>
 			<td height="18" width="15%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-				Compute or front end node</font></p>
+				Compute node</font></p>
 			</td>
 			<td height="18" width="15%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
@@ -92,7 +92,7 @@ allocations, when and where they run.</p>
 			</td>
 			<td height="18" width="15%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-				Compute or front end node</font></p>
+				Compute node</font></p>
 			</td>
 			<td height="18" width="15%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
@@ -749,6 +749,6 @@ canceled.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 23 September 2024</p>
+<p style="text-align:center;">Last modified 12 March 2025</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1059,59 +1059,6 @@ PartitionName=mira Default=yes Nodes=dummy26[1-100]
 <a href="programmer_guide.html#multiple_slurmd_support">Programmers Guide</a>
 for more details about configuring multiple slurmd support.</p>
 
-<p>In order to emulate a really large cluster, it can be more
-convenient to use a single <i>slurmd</i> daemon.
-That daemon will not be able to launch many tasks, but can
-suffice for developing or testing scheduling software.
-Do not run job steps with more than a couple of tasks each
-or execute more than a few jobs at any given time.
-Doing so may result in the <i>slurmd</i> daemon exhausting its
-memory and failing.
-<b>Use this method with caution.</b></p>
-<ol>
-<li>Execute the <i>configure</i> program with your normal options
-plus <i>--enable-front-end</i> (this will define HAVE_FRONT_END in
-the resulting <i>config.h</i> file.</li>
-<li>Build and install Slurm in the usual manner.</li>
-<li>In <i>slurm.conf</i> define the desired node names (arbitrary
-names used only by Slurm) as <i>NodeName</i> along with the actual
-name and address of the <b>one</b> physical node in <i>NodeHostName</i>
-and <i>NodeAddr</i>.
-Up to 64k nodes can be configured in this virtual cluster.</li>
-<li>Start your <i>slurmctld</i> and one <i>slurmd</i> daemon.
-It is advisable to use the "-c" option to start the daemons without
-trying to preserve any state files from previous executions.
-Be sure to use the "-c" option when switching from this mode too.</li>
-<li>Create job allocations as desired, but do not run job steps
-with more than a couple of tasks.</li>
-</ol>
-
-<pre>
-$ ./configure --enable-debug --enable-front-end --prefix=... --sysconfdir=...
-$ make install
-$ grep NodeHostName slurm.conf
-<i>NodeName=dummy[1-1200] NodeHostName=localhost NodeAddr=127.0.0.1</i>
-$ slurmctld -c
-$ slurmd -c
-$ sinfo
-<i>PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST</i>
-<i>pdebug*      up      30:00  1200   idle dummy[1-1200]</i>
-$ cat tmp
-<i>#!/bin/bash</i>
-<i>sleep 30</i>
-$ srun -N200 -b tmp
-<i>srun: jobid 65537 submitted</i>
-$ srun -N200 -b tmp
-<i>srun: jobid 65538 submitted</i>
-$ srun -N800 -b tmp
-<i>srun: jobid 65539 submitted</i>
-$ squeue
-<i>JOBID PARTITION  NAME   USER  ST  TIME  NODES NODELIST(REASON)</i>
-<i>65537    pdebug   tmp  jette   R  0:03    200 dummy[1-200]</i>
-<i>65538    pdebug   tmp  jette   R  0:03    200 dummy[201-400]</i>
-<i>65539    pdebug   tmp  jette   R  0:02    800 dummy[401-1200]</i>
-</pre>
-
 <p><a id="extra_procs"><b>Can Slurm emulate nodes with more
 resources than physically exist on the node?</b></a><br>
 Yes. In the slurm.conf file, configure <i>SlurmdParameters=config_overrides</i>
@@ -2445,6 +2392,6 @@ dset TV::parallel_configs {
 }
 !-->
 
-<p style="text-align:center;">Last modified 26 November 2024</p>
+<p style="text-align:center;">Last modified 12 March 2025</p>
 
 <!--#include virtual="footer.txt"-->
