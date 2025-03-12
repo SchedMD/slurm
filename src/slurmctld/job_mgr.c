@@ -308,8 +308,6 @@ static int  _list_find_job_old(void *job_entry, void *key);
 static bitstr_t *_make_requeue_array(char *conf_buf);
 static uint32_t _max_switch_wait(uint32_t input_wait);
 static void _move_to_purge_jobs_list(void *job_entry);
-static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
-				      time_t now, time_t node_boot_time);
 static time_t _get_last_job_state_write_time(void);
 static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				      uint16_t protocol_version);
@@ -15871,11 +15869,11 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
 			     requeue, true, 1);
 	} else {
-		_notify_srun_missing_step(
-			job_ptr,
-			foreach_purge_missing_jobs->node_inx,
-			foreach_purge_missing_jobs->now,
-			foreach_purge_missing_jobs->node_boot_time);
+		foreach_purge_missing_jobs->job_ptr = job_ptr;
+
+		(void) list_for_each(job_ptr->step_list,
+				     _foreach_notify_srun_missing_step,
+				     foreach_purge_missing_jobs);
 	}
 	return 0;
 }
@@ -15918,23 +15916,6 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 		MIN(DEFAULT_MSG_TIMEOUT, slurm_conf.msg_timeout);
 
 	(void) list_for_each(job_list, _foreach_purge_missing_jobs,
-			     &foreach_purge_missing_jobs);
-}
-
-static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
-				      time_t now, time_t node_boot_time)
-{
-	foreach_purge_missing_jobs_t foreach_purge_missing_jobs = {
-		.job_ptr = job_ptr,
-		.node_boot_time = node_boot_time,
-		.node_inx = node_inx,
-		.now = now,
-	};
-
-	xassert(job_ptr);
-
-	(void) list_for_each(job_ptr->step_list,
-			     _foreach_notify_srun_missing_step,
 			     &foreach_purge_missing_jobs);
 }
 
