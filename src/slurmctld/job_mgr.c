@@ -294,7 +294,6 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
 	bool locked, log_level_t log_lvl);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
-static void _get_batch_job_dir_ids(list_t *batch_dirs);
 static bool _get_whole_hetjob(void);
 static bool _higher_precedence(job_record_t *job_ptr, job_record_t *job_ptr2);
 static void _job_array_comp(job_record_t *job_ptr, bool was_running,
@@ -316,7 +315,6 @@ static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
 static void _purge_missing_jobs(int node_inx, time_t now);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 				       uint32_t *size, job_record_t *job_ptr);
-static void _remove_defunct_batch_dirs(list_t *batch_dirs);
 static void _remove_job_hash(job_record_t *job_ptr, job_hash_type_t type);
 static void _resp_array_add(resp_array_struct_t **resp, job_record_t *job_ptr,
 			    uint32_t rc, char *err_msg);
@@ -345,7 +343,10 @@ static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 static int  _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 			       bool cron, uid_t submit_uid,
 			       part_record_t *part_ptr, list_t *part_list);
-static void _validate_job_files(list_t *batch_dirs);
+static void _validate_job_files(void);
+static int _clear_state_dir_flag(void *x, void *arg);
+static int _test_state_dir_flag(void *x, void *arg);
+
 static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 					part_record_t *part_ptr,
 					list_t *part_list);
@@ -16161,40 +16162,62 @@ extern int job_alloc_info(uint32_t uid, uint32_t job_id,
 }
 
 /*
+ * If we can't find the job_id we remove the defunct file. If we do find it we
+ * set HAS_STATE_DIR.
+ */
+static void _sync_job_with_batch_dir(uint32_t job_id)
+{
+	job_record_t *job_ptr = find_job_record(job_id);
+
+	if (job_ptr) {
+		job_ptr->bit_flags |= HAS_STATE_DIR;
+
+		if (job_ptr->array_recs) { /* Update all tasks */
+			uint32_t array_job_id = job_ptr->array_job_id;
+			job_ptr = job_array_hash_j[JOB_HASH_INX(array_job_id)];
+			while (job_ptr) {
+				if (job_ptr->array_job_id == array_job_id)
+					job_ptr->bit_flags |= HAS_STATE_DIR;
+				job_ptr = job_ptr->job_array_next_j;
+			}
+		}
+	} else {
+		info("Purged files for defunct batch JobId=%u", job_id);
+		delete_job_desc_files(job_id);
+	}
+}
+
+/*
  * Synchronize the batch job in the system with their files.
  * All pending batch jobs must have script and environment files
  * No other jobs should have such files
  */
 int sync_job_files(void)
 {
-	list_t *batch_dirs = NULL;
-
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	if (!slurmctld_primary)	/* Don't purge files from backup slurmctld */
 		return SLURM_SUCCESS;
 
-	batch_dirs = list_create(xfree_ptr);
-	_get_batch_job_dir_ids(batch_dirs);
-	_validate_job_files(batch_dirs);
-	_remove_defunct_batch_dirs(batch_dirs);
-	FREE_NULL_LIST(batch_dirs);
+	list_for_each(job_list, _clear_state_dir_flag, NULL);
+
+	_validate_job_files();
+
+	list_for_each(job_list, _test_state_dir_flag, NULL);
+
 	return SLURM_SUCCESS;
 }
 
-/* Append to the batch_dirs list the job_id's associated with
- *	every batch job directory in existence
- */
-static void _get_batch_job_dir_ids(list_t *batch_dirs)
+static void _validate_job_files(void)
 {
 	DIR *f_dir, *h_dir;
 	struct dirent *dir_ent, *hash_ent;
 	uint32_t job_id;
-	uint32_t *job_id_ptr;
 	char *endptr;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	xassert(slurm_conf.state_save_location);
 	f_dir = opendir(slurm_conf.state_save_location);
@@ -16222,10 +16245,7 @@ static void _get_batch_job_dir_ids(list_t *batch_dirs)
 					continue;
 				debug3("Found batch directory for JobId=%u",
 				       job_id);
-				job_id_ptr = xmalloc(sizeof(uint32_t));
-				*job_id_ptr = job_id;
-
-				list_append(batch_dirs, job_id_ptr);
+				_sync_job_with_batch_dir(job_id);
 			}
 			closedir(h_dir);
 		}
@@ -16262,57 +16282,6 @@ static int _test_state_dir_flag(void *x, void *arg)
 	job_ptr->start_time = job_ptr->end_time = time(NULL);
 	job_completion_logger(job_ptr, false);
 	return 0;
-}
-
-/* All pending batch jobs must have a batch_dir entry,
- *	otherwise we flag it as FAILED and don't schedule
- * If the batch_dir entry exists for a PENDING or RUNNING batch job,
- *	remove it the list (of directories to be deleted) */
-static void _validate_job_files(list_t *batch_dirs)
-{
-	job_record_t *job_ptr;
-	list_itr_t *batch_dir_iter;
-	uint32_t *job_id_ptr, array_job_id;
-
-	list_for_each(job_list, _clear_state_dir_flag, NULL);
-
-	batch_dir_iter = list_iterator_create(batch_dirs);
-	while ((job_id_ptr = list_next(batch_dir_iter))) {
-		job_ptr = find_job_record(*job_id_ptr);
-		if (job_ptr) {
-			job_ptr->bit_flags |= HAS_STATE_DIR;
-			list_delete_item(batch_dir_iter);
-		}
-		if (job_ptr && job_ptr->array_recs) { /* Update all tasks */
-			array_job_id = job_ptr->array_job_id;
-			job_ptr = job_array_hash_j[JOB_HASH_INX(array_job_id)];
-			while (job_ptr) {
-				if (job_ptr->array_job_id == array_job_id)
-					job_ptr->bit_flags |= HAS_STATE_DIR;
-				job_ptr = job_ptr->job_array_next_j;
-			}
-		}
-	}
-	list_iterator_destroy(batch_dir_iter);
-
-	list_for_each(job_list, _test_state_dir_flag, NULL);
-}
-
-/* Remove all batch_dir entries in the list */
-static void _remove_defunct_batch_dirs(list_t *batch_dirs)
-{
-	list_itr_t *batch_dir_inx;
-	uint32_t *job_id_ptr;
-
-	xassert(verify_lock(CONF_LOCK, READ_LOCK));
-
-	batch_dir_inx = list_iterator_create(batch_dirs);
-	while ((job_id_ptr = list_next(batch_dir_inx))) {
-		info("Purged files for defunct batch JobId=%u",
-		     *job_id_ptr);
-		delete_job_desc_files(*job_id_ptr);
-	}
-	list_iterator_destroy(batch_dir_inx);
 }
 
 /* Get requested gres but only if mem_per_gres was set for that gres */
