@@ -5083,14 +5083,8 @@ more than one job from being allocated on each core.
 
 .TP
 \fBCR_CPU_Memory\fR
-CPUs and memory are consumable resources.
-Configure the number of \fBCPUs\fR on each node, which may be equal to the
-count of cores or hyper\-threads on the node depending upon the desired minimum
-resource allocation.
-The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR and
-\fBThreadsPerCore\fR may optionally be configured and result in job
-allocations which have improved locality; however doing so will prevent
-more than one job from being allocated on each core.
+CPUs and memory are consumable resources. Refer to \fBCR_CPU\fR for details of
+how CPUs are consumed.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .IP
 
@@ -5107,13 +5101,8 @@ if it is derived from \-\-mem-per-cpu.
 
 .TP
 \fBCR_Core_Memory\fR
-Cores and memory are consumable resources.
-On nodes with hyper\-threads, each thread is counted as a CPU to
-satisfy a job's resource requirement, but multiple jobs are not
-allocated threads on the same core.
-The count of CPUs allocated to a job is rounded up to account for every
-CPU on an allocated core, which may also impact total allocated memory
-if it is derived from \-\-mem-per-cpu.
+Cores and memory are consumable resources. Refer to \fBCR_Core\fR for details of
+how cores are consumed.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .IP
 
@@ -5127,10 +5116,8 @@ allocated resources on the same socket.
 
 .TP
 \fBCR_Socket_Memory\fR
-Memory and sockets are consumable resources.
-On nodes with multiple cores, each core or thread is counted as a CPU
-to satisfy a job's resource requirement, but multiple jobs are not
-allocated resources on the same socket.
+Sockets and memory are consumable resources. Refer to \fBCR_Socket\fR for
+details of how sockets are consumed.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .RE
 
