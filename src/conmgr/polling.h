@@ -120,8 +120,9 @@ extern int pollctl_relink_fd(int fd, pollctl_fd_type_t type,
  * IN fd - file descriptor to stop polling
  * IN con_name - connection name for logging
  * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or error
  */
-extern void pollctl_unlink_fd(int fd, const char *con_name, const char *caller);
+extern int pollctl_unlink_fd(int fd, const char *con_name, const char *caller);
 
 /*
  * Run poll() against array of file descriptors
@@ -187,7 +188,7 @@ typedef struct {
 		       const char *caller);
 	int (*relink_fd)(int fd, pollctl_fd_type_t type, const char *con_name,
 			 const char *caller);
-	void (*unlink_fd)(int fd, const char *con_name, const char *caller);
+	int (*unlink_fd)(int fd, const char *con_name, const char *caller);
 	int (*poll)(const char *caller);
 	int (*for_each_event)(pollctl_event_func_t func, void *arg,
 			      const char *func_name, const char *caller);

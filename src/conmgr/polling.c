@@ -134,9 +134,9 @@ extern int pollctl_relink_fd(int fd, pollctl_fd_type_t type,
 	return _get_funcs()->relink_fd(fd, type, con_name, caller);
 }
 
-extern void pollctl_unlink_fd(int fd, const char *con_name, const char *caller)
+extern int pollctl_unlink_fd(int fd, const char *con_name, const char *caller)
 {
-	_get_funcs()->unlink_fd(fd, con_name, caller);
+	return _get_funcs()->unlink_fd(fd, con_name, caller);
 }
 
 extern int pollctl_poll(const char *caller)
