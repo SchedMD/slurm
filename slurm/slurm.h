@@ -2271,6 +2271,9 @@ typedef struct {
 				      *	it is talking to */
 	uint32_t state;		/* state of the step, see enum job_states */
 	slurm_step_id_t step_id;
+	char *std_err;		/* pathname of step's stderr file */
+	char *std_in;		/* pathname of step's stdin file */
+	char *std_out;		/* pathname of step's stdout file */
 	char *submit_line;      /* The command issued with all it's options in a
 				 * string */
 	uint32_t task_dist;	/* see enum task_dist_state */
