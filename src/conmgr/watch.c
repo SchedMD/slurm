@@ -239,7 +239,7 @@ static void _close_output_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	 * > does not support synchronization.
 	 */
 	if (!con_flag(con, FLAG_IS_SOCKET) && !con_flag(con, FLAG_IS_FIFO) &&
-	    !con_flag(con, FLAG_IS_CHR)) {
+	    !con_flag(con, FLAG_IS_CHR) && (output_fd >= 0)) {
 		do {
 			if (fsync(output_fd)) {
 				rc = errno;
