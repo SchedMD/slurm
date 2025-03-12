@@ -1040,7 +1040,6 @@ enable_optimizations
 enable_developer
 enable_debug
 enable_memory_leak_debug
-enable_front_end
 enable_partial_attach
 enable_salloc_kill_cmd
 with_slurmctld_port
@@ -1749,7 +1748,6 @@ Optional Features:
                           optimizations
   --enable-memory-leak-debug
                           enable memory leak debugging code for development
-  --enable-front-end      enable slurmd operation on a front-end
   --disable-partial-attach
                           disable debugger partial task attach support
   --enable-salloc-kill-cmd
@@ -27403,30 +27401,6 @@ printf "%s\n" "#define MEMORY_LEAK_DEBUG 1" >>confdefs.h
   fi
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${x_ac_memory_debug=no}" >&5
 printf "%s\n" "${x_ac_memory_debug=no}" >&6; }
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to enable slurmd operation on a front-end" >&5
-printf %s "checking whether to enable slurmd operation on a front-end... " >&6; }
-  # Check whether --enable-front-end was given.
-if test ${enable_front_end+y}
-then :
-  enableval=$enable_front_end;  case "$enableval" in
-        yes) x_ac_front_end=yes ;;
-         no) x_ac_front_end=no ;;
-          *) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
-printf "%s\n" "doh!" >&6; }
-             as_fn_error $? "bad value \"$enableval\" for --enable-front-end" "$LINENO" 5 ;;
-      esac
-
-
-fi
-
-  if test "$x_ac_front_end" = yes; then
-
-printf "%s\n" "#define HAVE_FRONT_END 1" >>confdefs.h
-
-  fi
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${x_ac_front_end=no}" >&5
-printf "%s\n" "${x_ac_front_end=no}" >&6; }
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether debugger partial attach enabled" >&5
 printf %s "checking whether debugger partial attach enabled... " >&6; }

@@ -101,23 +101,6 @@ AC_DEFUN([X_AC_DEBUG], [
   fi
   AC_MSG_RESULT([${x_ac_memory_debug=no}])
 
-  AC_MSG_CHECKING([whether to enable slurmd operation on a front-end])
-  AC_ARG_ENABLE(
-    [front-end],
-     AS_HELP_STRING(--enable-front-end, enable slurmd operation on a front-end),
-     [ case "$enableval" in
-        yes) x_ac_front_end=yes ;;
-         no) x_ac_front_end=no ;;
-          *) AC_MSG_RESULT([doh!])
-             AC_MSG_ERROR([bad value "$enableval" for --enable-front-end]) ;;
-      esac
-    ]
-  )
-  if test "$x_ac_front_end" = yes; then
-    AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
-  fi
-  AC_MSG_RESULT([${x_ac_front_end=no}])
-
   AC_MSG_CHECKING([whether debugger partial attach enabled])
   AC_ARG_ENABLE(
     [partial-attach],
