@@ -233,6 +233,15 @@ typedef struct {
 	job_record_t *job_ptr2;
 } findfirst_resv_overlap_t;
 
+typedef struct {
+	time_t batch_startup_time;
+	time_t node_boot_time;
+	node_record_t *node_ptr;
+	int node_inx;
+	time_t now;
+	bool power_save_on;
+} foreach_purge_missing_jobs_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -15773,6 +15782,53 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 	}
 }
 
+static int _foreach_purge_missing_jobs(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	foreach_purge_missing_jobs_t *foreach_purge_missing_jobs = arg;
+	time_t startup_time = foreach_purge_missing_jobs->batch_startup_time;
+
+	if ((IS_JOB_CONFIGURING(job_ptr) ||
+	     (!IS_JOB_RUNNING(job_ptr) &&
+	      !IS_JOB_SUSPENDED(job_ptr))) ||
+	    (!bit_test(job_ptr->node_bitmap,
+		       foreach_purge_missing_jobs->node_inx)))
+		return 0;
+
+	if (job_ptr->batch_flag &&
+	    foreach_purge_missing_jobs->power_save_on &&
+	    (job_ptr->start_time <
+	     foreach_purge_missing_jobs->node_boot_time))
+		startup_time -= slurm_conf.resume_timeout;
+
+	if (job_ptr->batch_flag &&
+	    !job_ptr->het_job_offset &&
+	    (job_ptr->time_last_active < startup_time) &&
+	    (job_ptr->start_time < startup_time) &&
+	    (foreach_purge_missing_jobs->node_ptr ==
+	     find_node_record(job_ptr->batch_host))) {
+		bool requeue = false;
+		char *requeue_msg = "";
+		if (job_ptr->details && job_ptr->details->requeue) {
+			requeue = true;
+			requeue_msg = ", Requeuing job";
+		}
+		info("Batch %pJ missing from batch node %s (not found BatchStartTime after startup)%s",
+		     job_ptr, job_ptr->batch_host, requeue_msg);
+		xfree(job_ptr->failed_node);
+		job_ptr->failed_node = xstrdup(job_ptr->batch_host);
+		job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
+			     requeue, true, 1);
+	} else {
+		_notify_srun_missing_step(
+			job_ptr,
+			foreach_purge_missing_jobs->node_inx,
+			foreach_purge_missing_jobs->now,
+			foreach_purge_missing_jobs->node_boot_time);
+	}
+	return 0;
+}
+
 /* Purge any batch job that should have its script running on node
  * node_inx, but is not. Allow BatchStartTimeout + ResumeTimeout seconds
  * for startup.
@@ -15783,63 +15839,35 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
  * but are not found. */
 static void _purge_missing_jobs(int node_inx, time_t now)
 {
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr;
-	node_record_t *node_ptr = node_record_table_ptr[node_inx];
-	time_t batch_startup_time, node_boot_time = (time_t) 0, startup_time;
 	static bool power_save_on = false;
 	static time_t sched_update = 0;
+	foreach_purge_missing_jobs_t foreach_purge_missing_jobs = {
+		.node_inx = node_inx,
+		.node_ptr = node_record_table_ptr[node_inx],
+		.now = now,
+	};
 
 	if (sched_update != slurm_conf.last_update) {
 		power_save_on = power_save_test();
 		sched_update = slurm_conf.last_update;
 	}
 
-	if (node_ptr->boot_time > (slurm_conf.msg_timeout + 5)) {
+	foreach_purge_missing_jobs.power_save_on = power_save_on;
+
+	if (foreach_purge_missing_jobs.node_ptr->boot_time >
+	    (slurm_conf.msg_timeout + 5)) {
 		/* allow for message timeout and other delays */
-		node_boot_time = node_ptr->boot_time -
+		foreach_purge_missing_jobs.node_boot_time =
+			foreach_purge_missing_jobs.node_ptr->boot_time -
 			(slurm_conf.msg_timeout + 5);
 	}
-	batch_startup_time  = now - slurm_conf.batch_start_timeout;
-	batch_startup_time -= MIN(DEFAULT_MSG_TIMEOUT, slurm_conf.msg_timeout);
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if ((IS_JOB_CONFIGURING(job_ptr) ||
-		     (!IS_JOB_RUNNING(job_ptr) &&
-		      !IS_JOB_SUSPENDED(job_ptr))) ||
-		    (!bit_test(job_ptr->node_bitmap, node_inx)))
-			continue;
-		if ((job_ptr->batch_flag != 0) && power_save_on &&
-		    (job_ptr->start_time < node_boot_time)) {
-			startup_time = batch_startup_time -
-				slurm_conf.resume_timeout;
-		} else
-			startup_time = batch_startup_time;
+	foreach_purge_missing_jobs.batch_startup_time =
+		now - slurm_conf.batch_start_timeout -
+		MIN(DEFAULT_MSG_TIMEOUT, slurm_conf.msg_timeout);
 
-		if ((job_ptr->batch_flag != 0)			&&
-		    (job_ptr->het_job_offset == 0)		&&
-		    (job_ptr->time_last_active < startup_time)	&&
-		    (job_ptr->start_time       < startup_time)	&&
-		    (node_ptr == find_node_record(job_ptr->batch_host))) {
-			bool requeue = false;
-			char *requeue_msg = "";
-			if (job_ptr->details && job_ptr->details->requeue) {
-				requeue = true;
-				requeue_msg = ", Requeuing job";
-			}
-			info("Batch %pJ missing from batch node %s (not found BatchStartTime after startup)%s",
-			     job_ptr, job_ptr->batch_host, requeue_msg);
-			xfree(job_ptr->failed_node);
-			job_ptr->failed_node = xstrdup(job_ptr->batch_host);
-			job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
-			             requeue, true, 1);
-		} else {
-			_notify_srun_missing_step(job_ptr, node_inx,
-						  now, node_boot_time);
-		}
-	}
-	list_iterator_destroy(job_iterator);
+	(void) list_for_each(job_list, _foreach_purge_missing_jobs,
+			     &foreach_purge_missing_jobs);
 }
 
 static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
