@@ -53,6 +53,20 @@ typedef enum {
 	TOPO_DATA_TCTX_IDX,
 } topology_data_t;
 
+typedef struct slurm_conf_block {
+	char *block_name; /* name of this block */
+	char *nodes; /* names of nodes directly connect to this block */
+} slurm_conf_block_t;
+
+typedef struct slurm_conf_switches {
+	uint32_t link_speed; /* link speed, arbitrary units */
+	char *nodes; /* names of nodes directly connect to
+		      * this switch, if any */
+	char *switch_name; /* name of this switch */
+	char *switches; /* names if child switches directly
+			 * connected to this switch, if any */
+} slurm_conf_switches_t;
+
 typedef struct topology_ctx {
 	int idx;
 	char *name;

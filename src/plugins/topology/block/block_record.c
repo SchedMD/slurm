@@ -38,11 +38,6 @@
 #include "src/common/xstring.h"
 #include <math.h>
 
-typedef struct slurm_conf_block {
-	char *block_name; /* name of this block */
-	char *nodes; /* names of nodes directly connect to this block */
-} slurm_conf_block_t;
-
 static bool allow_gaps = false;
 
 static s_p_hashtbl_t *conf_hashtbl = NULL;
