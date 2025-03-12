@@ -574,14 +574,31 @@ extern bool validate_super_user(uid_t uid)
  * IN uid - user to validate
  * RET true if permitted to run, false otherwise
  */
+static bool _validate_operator_internal(uid_t uid, bool locked)
+{
+	if ((uid == 0) || (uid == slurm_conf.slurm_user_id)) {
+		slurmdb_admin_level_t level;
+
+		if (locked)
+			level = assoc_mgr_get_admin_level_locked(acct_db_conn,
+								 uid);
+		else
+			level = assoc_mgr_get_admin_level(acct_db_conn, uid);
+
+		if (level >= SLURMDB_ADMIN_OPERATOR)
+			return true;
+	}
+	return false;
+}
+
 extern bool validate_operator(uid_t uid)
 {
-	if ((uid == 0) || (uid == slurm_conf.slurm_user_id) ||
-	    assoc_mgr_get_admin_level(acct_db_conn, uid) >=
-	    SLURMDB_ADMIN_OPERATOR)
-		return true;
-	else
-		return false;
+	return _validate_operator_internal(uid, false);
+}
+
+extern bool validate_operator_locked(uid_t uid)
+{
+	return _validate_operator_internal(uid, true);
 }
 
 extern bool validate_operator_user_rec(slurmdb_user_rec_t *user)
