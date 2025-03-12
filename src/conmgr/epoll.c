@@ -386,14 +386,16 @@ static int _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 		.events = _fd_type_to_events(type),
 		.data.fd = fd,
 	};
+	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
 
 	if (epoll_ctl(pctl.epoll, EPOLL_CTL_MOD, ev.data.fd, &ev)) {
-		fatal_abort("%s->%s: [EPOLL:%s] epoll_ctl(EPOLL_CTL_MOD, %d, %s) failed: %m",
-			    caller, __func__, con_name,
-			    ev.data.fd, _fd_type_to_events_string(type));
+		rc = errno;
+		log_flag(CONMGR, "%s->%s: [EPOLL:%s] epoll_ctl(EPOLL_CTL_MOD, %d, %s) failed: %m",
+			 caller, __func__, con_name, ev.data.fd,
+			 _fd_type_to_events_string(type));
 	} else if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
 		log_flag(CONMGR, "%s->%s: [EPOLL:%s] Modified fd[%s]:%d for %s events",
 			 caller, __func__, con_name,
@@ -402,7 +404,7 @@ static int _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 
 	slurm_mutex_unlock(&pctl.mutex);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* caller must hold pctl.mutex */
