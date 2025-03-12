@@ -361,6 +361,12 @@ int _print_step_partition(job_step_info_t * step, int width,
 			  bool right_justify, char *suffix);
 int _print_step_prefix(job_step_info_t * step, int width,
 		       bool right_justify, char *suffix);
+int _print_step_std_err(job_step_info_t *step, int width, bool right_justify,
+			char *suffix);
+int _print_step_std_in(job_step_info_t *step, int width, bool right_justify,
+		       char *suffix);
+int _print_step_std_out(job_step_info_t *step, int width, bool right_justify,
+			char *suffix);
 int _print_step_user_id(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
 int _print_step_user_name(job_step_info_t * step, int width,

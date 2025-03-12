@@ -2576,6 +2576,72 @@ int _print_step_prefix(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+int _print_step_std_err(job_step_info_t *step, int width, bool right_justify,
+			char *suffix)
+{
+	if (step == NULL) {
+		_print_str("STDERR", width, right_justify, true);
+	} else if (!step->std_err) {
+		_print_str("", width, right_justify, true);
+	} else if (params.expand_patterns) {
+		char *tmp_str = slurm_expand_step_stdio_fields(step->std_err,
+							       step);
+		_print_str(tmp_str, width, right_justify, true);
+		xfree(tmp_str);
+	} else {
+		_print_str(step->std_err, width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_step_std_in(job_step_info_t *step, int width, bool right_justify,
+		       char *suffix)
+{
+	if (step == NULL) {
+		_print_str("STDIN", width, right_justify, true);
+	} else if (!step->std_in) {
+		_print_str("", width, right_justify, true);
+	} else if (params.expand_patterns) {
+		char *tmp_str = slurm_expand_step_stdio_fields(step->std_in,
+							       step);
+		_print_str(tmp_str, width, right_justify, true);
+		xfree(tmp_str);
+	} else {
+		_print_str(step->std_in, width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_step_std_out(job_step_info_t *step, int width, bool right_justify,
+			char *suffix)
+{
+	if (step == NULL) {
+		_print_str("STDOUT", width, right_justify, true);
+	} else if (!step->std_out) {
+		_print_str("", width, right_justify, true);
+	} else if (params.expand_patterns) {
+		char *tmp_str = slurm_expand_step_stdio_fields(step->std_out,
+							       step);
+		_print_str(tmp_str, width, right_justify, true);
+		xfree(tmp_str);
+	} else {
+		_print_str(step->std_out, width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+
+	return SLURM_SUCCESS;
+}
+
 int _print_step_user_id(job_step_info_t * step, int width, bool right,
 			char* suffix)
 {
