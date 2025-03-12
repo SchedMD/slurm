@@ -2051,6 +2051,7 @@ extern bool validate_super_user(uid_t uid);
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_operator(uid_t uid);
+extern bool validate_operator_locked(uid_t uid);
 
 /*
  * validate_operator_user_rec - validate that the user is authorized at the
