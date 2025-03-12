@@ -678,6 +678,12 @@ static void _pick_restricted_cores(bitstr_t *core_bitmap,
 		gres_js->res_gpu_cores = xcalloc(gres_js->res_array_size,
 						 sizeof(bitstr_t *));
 	}
+	/*
+	 * This function can be called multiple times for the same node_i while
+	 * a job is pending. Free any existing gres_js->res_gpu_cores[node_i]
+	 * first.
+	 */
+	FREE_NULL_BITMAP(gres_js->res_gpu_cores[node_i]);
 	gres_js->res_gpu_cores[node_i] = bit_alloc(bit_size(core_bitmap));
 
 	for (int i = 0; i < gres_ns->topo_cnt; i++) {
