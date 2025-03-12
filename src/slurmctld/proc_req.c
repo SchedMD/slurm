@@ -601,6 +601,11 @@ extern bool validate_operator(uid_t uid)
 	return _validate_operator_internal(uid, false);
 }
 
+extern bool validate_operator_locked(uid_t uid)
+{
+	return _validate_operator_internal(uid, true);
+}
+
 extern bool validate_operator_user_rec(slurmdb_user_rec_t *user)
 {
 #ifndef NDEBUG
