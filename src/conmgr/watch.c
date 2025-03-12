@@ -271,10 +271,12 @@ static void _on_close_output_fd(conmgr_fd_t *con)
 
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 
-	list_flush(con->out);
+	if (con->out)
+		list_flush(con->out);
 
-	add_work_con_fifo(true, con, _close_output_fd,
-			  ((void *) (uint64_t) con->output_fd));
+	if (con->output_fd >= 0)
+		add_work_con_fifo(true, con, _close_output_fd,
+				  ((void *) (uint64_t) con->output_fd));
 
 	con->output_fd = -1;
 }
