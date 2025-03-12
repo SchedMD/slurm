@@ -400,8 +400,8 @@ static int _lock_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 	return rc;
 }
 
-static void _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
-		       const char *caller)
+static int _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
+		      const char *caller)
 {
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
@@ -418,7 +418,7 @@ static void _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 		pctl.fds[i].type = type;
 		slurm_mutex_unlock(&pctl.mutex);
 		_interrupt(caller);
-		return;
+		return SLURM_SUCCESS;
 	}
 
 	fatal_abort("should never happen");

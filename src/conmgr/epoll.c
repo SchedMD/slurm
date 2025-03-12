@@ -379,8 +379,8 @@ static int _lock_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 	return rc;
 }
 
-static void _relink_fd(int fd, pollctl_fd_type_t type,
-			    const char *con_name, const char *caller)
+static int _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
+		      const char *caller)
 {
 	struct epoll_event ev = {
 		.events = _fd_type_to_events(type),
@@ -401,6 +401,8 @@ static void _relink_fd(int fd, pollctl_fd_type_t type,
 			 _fd_type_to_events_string(type));
 
 	slurm_mutex_unlock(&pctl.mutex);
+
+	return SLURM_SUCCESS;
 }
 
 /* caller must hold pctl.mutex */
