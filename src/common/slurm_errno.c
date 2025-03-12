@@ -95,7 +95,7 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Unexpected missing socket error"			},
 	{ ERRTAB_ENTRY(SLURM_COMMUNICATIONS_INVALID_INCOMING_FD),
 	  "Unable to process incoming file descriptor" },
-	{ ERRTAB_ENTRY(SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR),
+	{ ERRTAB_ENTRY(SLURM_COMMUNICATIONS_INVALID_OUTGOING_FD),
 	  "Unable to process outgoing file descriptor" },
 	{ ERRTAB_ENTRY(SLURM_COMMUNICATIONS_INVALID_FD),
 	  "Unable to process incoming and outgoing file descriptors" },
