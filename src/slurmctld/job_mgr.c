@@ -16078,31 +16078,30 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	agent_queue_request(agent_info);
 }
 
+static int _foreach_job_all_finished(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+
+	if (!IS_JOB_FINISHED(het_job))
+		return -1;
+	return 0;
+}
+
 /*
  * Return true if this job is complete (including all elements of a hetjob)
  */
 static bool _job_all_finished(job_record_t *job_ptr)
 {
-	job_record_t *het_job;
-	list_itr_t *iter;
-	bool finished = true;
-
 	if (!IS_JOB_FINISHED(job_ptr))
 		return false;
 
-	if (!job_ptr->het_job_list)
-		return true;
+	if (job_ptr->het_job_list &&
+	    list_find_first(job_ptr->het_job_list,
+			    _foreach_job_all_finished,
+			    NULL))
+		return false;
 
-	iter = list_iterator_create(job_ptr->het_job_list);
-	while ((het_job = list_next(iter))) {
-		if (!IS_JOB_FINISHED(het_job)) {
-			finished = false;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return finished;
+	return true;
 }
 
 /*
