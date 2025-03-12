@@ -235,6 +235,7 @@ typedef struct {
 
 typedef struct {
 	time_t batch_startup_time;
+	job_record_t *job_ptr;
 	time_t node_boot_time;
 	node_record_t *node_ptr;
 	int node_inx;
@@ -15790,6 +15791,48 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 	}
 }
 
+static int _foreach_notify_srun_missing_step(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+	foreach_purge_missing_jobs_t *foreach_purge_missing_jobs = arg;
+	job_record_t *job_ptr = foreach_purge_missing_jobs->job_ptr;
+	time_t node_boot_time = foreach_purge_missing_jobs->node_boot_time;
+	int node_inx = foreach_purge_missing_jobs->node_inx;
+	time_t now = foreach_purge_missing_jobs->now;
+	char *node_name = node_record_table_ptr[node_inx]->name;
+
+	if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) ||
+	    (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
+	    (step_ptr->state != JOB_RUNNING))
+		return 0;
+	if (!bit_test(step_ptr->step_node_bitmap, node_inx))
+		return 0;
+	if (step_ptr->time_last_active >= now) {
+		/* Back up timer in case more than one node
+		 * registration happens at this same time.
+		 * We don't want this node's registration
+		 * to count toward a different node's
+		 * registration message. */
+		step_ptr->time_last_active = now - 1;
+	} else if (step_ptr->host && step_ptr->port) {
+		/* srun may be able to verify step exists on
+		 * this node using I/O sockets and kill the
+		 * job as needed */
+		srun_step_missing(step_ptr, node_name);
+	} else if ((step_ptr->start_time < node_boot_time) &&
+		   !(step_ptr->flags & SSF_NO_KILL)) {
+		/* There is a risk that the job step's tasks completed
+		 * on this node before its reboot, but that should be
+		 * very rare and there is no srun to work with (POE) */
+		info("Node %s rebooted, killing missing step %u.%u",
+		     node_name, job_ptr->job_id, step_ptr->step_id.step_id);
+		signal_step_tasks_on_node(node_name, step_ptr, SIGKILL,
+					  REQUEST_TERMINATE_TASKS);
+	}
+
+	return 0;
+}
+
 static int _foreach_purge_missing_jobs(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
@@ -15881,43 +15924,18 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time)
 {
-	list_itr_t *step_iterator;
-	step_record_t *step_ptr;
-	char *node_name = node_record_table_ptr[node_inx]->name;
+	foreach_purge_missing_jobs_t foreach_purge_missing_jobs = {
+		.job_ptr = job_ptr,
+		.node_boot_time = node_boot_time,
+		.node_inx = node_inx,
+		.now = now,
+	};
 
 	xassert(job_ptr);
-	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) ||
-		    (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
-		    (step_ptr->state != JOB_RUNNING))
-			continue;
-		if (!bit_test(step_ptr->step_node_bitmap, node_inx))
-			continue;
-		if (step_ptr->time_last_active >= now) {
-			/* Back up timer in case more than one node
-			 * registration happens at this same time.
-			 * We don't want this node's registration
-			 * to count toward a different node's
-			 * registration message. */
-			step_ptr->time_last_active = now - 1;
-		} else if (step_ptr->host && step_ptr->port) {
-			/* srun may be able to verify step exists on
-			 * this node using I/O sockets and kill the
-			 * job as needed */
-			srun_step_missing(step_ptr, node_name);
-		} else if ((step_ptr->start_time < node_boot_time) &&
-			   !(step_ptr->flags & SSF_NO_KILL)) {
-			/* There is a risk that the job step's tasks completed
-			 * on this node before its reboot, but that should be
-			 * very rare and there is no srun to work with (POE) */
-			info("Node %s rebooted, killing missing step %u.%u",
-			     node_name, job_ptr->job_id, step_ptr->step_id.step_id);
-			signal_step_tasks_on_node(node_name, step_ptr, SIGKILL,
-						  REQUEST_TERMINATE_TASKS);
-		}
-	}
-	list_iterator_destroy (step_iterator);
+
+	(void) list_for_each(job_ptr->step_list,
+			     _foreach_notify_srun_missing_step,
+			     &foreach_purge_missing_jobs);
 }
 
 /*
