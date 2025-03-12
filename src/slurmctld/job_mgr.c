@@ -15215,7 +15215,6 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	job_desc_msg_t *job_desc = msg->data;
 	job_record_t *job_ptr, *new_job_ptr, *het_job;
 	char *hostname = auth_g_get_host(msg);
-	list_itr_t *iter;
 	long int long_id;
 	uint32_t job_id = 0, het_job_offset;
 	bitstr_t *array_bitmap = NULL, *tmp_bitmap;
@@ -15250,7 +15249,16 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		job_record_t *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
 		if (job_ptr && job_ptr->het_job_list) {
-			iter = list_iterator_create(job_ptr->het_job_list);
+			/*
+			 * This iter can not be a list_for_each() we eventually
+			 * _update_job() can call _release_job() which will then
+			 * call a list_for_each on the het_job_list. This could
+			 * probably be refactored to avoid the second list
+			 * iterator, but is also probably not worth the effort
+			 * to do such a thing. Skipping.
+			 */
+			list_itr_t *iter =
+				list_iterator_create(job_ptr->het_job_list);
 			while ((het_job = list_next(iter))) {
 				if (job_ptr->het_job_id !=
 				    het_job->het_job_id) {
