@@ -16190,7 +16190,7 @@ static void _get_batch_job_dir_ids(list_t *batch_dirs)
 {
 	DIR *f_dir, *h_dir;
 	struct dirent *dir_ent, *hash_ent;
-	long long_job_id;
+	uint32_t job_id;
 	uint32_t *job_id_ptr;
 	char *endptr;
 
@@ -16216,14 +16216,15 @@ static void _get_batch_job_dir_ids(list_t *batch_dirs)
 			while ((hash_ent = readdir(h_dir))) {
 				if (xstrncmp("job.#", hash_ent->d_name, 4))
 					continue;
-				long_job_id = strtol(&hash_ent->d_name[4],
-						     &endptr, 10);
-				if ((long_job_id == 0) || (endptr[0] != '\0'))
+				job_id = strtoul(&hash_ent->d_name[4],
+						 &endptr, 10);
+				if ((job_id == 0) || (endptr[0] != '\0'))
 					continue;
-				debug3("Found batch directory for JobId=%ld",
-				       long_job_id);
+				debug3("Found batch directory for JobId=%u",
+				       job_id);
 				job_id_ptr = xmalloc(sizeof(uint32_t));
-				*job_id_ptr = long_job_id;
+				*job_id_ptr = job_id;
+
 				list_append(batch_dirs, job_id_ptr);
 			}
 			closedir(h_dir);
