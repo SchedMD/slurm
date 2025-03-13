@@ -50,4 +50,20 @@ pack_test_CFLAGS = $(MYCFLAGS)
 pack_test_LDADD = $(LDADD) @CHECK_LIBS@
 reverse_tree_test_CFLAGS = $(MYCFLAGS)
 reverse_tree_test_LDADD = $(LDADD) @CHECK_LIBS@
+
+if HAVE_LUA
+
+TESTS += lua-test
+
+AM_CPPFLAGS += $(lua_CFLAGS)
+
+lua_test_CFLAGS = $(MYCFLAGS) \
+	-DLUA_TEST_SCRIPT=\"$(top_srcdir)/testsuite/slurm_unit/common/lua-test.lua\"
+lua_test_LDADD = \
+	$(LDADD) @CHECK_LIBS@ \
+	$(top_builddir)/src/lua/libslurm_lua.la \
+	$(lua_LIBS)
+
+endif
+
 endif
