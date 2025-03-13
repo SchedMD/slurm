@@ -5425,6 +5425,7 @@ slurm_free_license_info_msg(license_info_msg_t *msg)
 	if (msg->lic_array) {
 		for (cc = 0; cc < msg->num_lic; cc++) {
 			xfree(msg->lic_array[cc].name);
+			xfree(msg->lic_array[cc].nodes);
 		}
 		xfree(msg->lic_array);
 	}

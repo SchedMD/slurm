@@ -13355,6 +13355,8 @@ static int _unpack_license_info_msg(license_info_msg_t **msg_ptr,
 					msg->lic_array[i].total -
 					msg->lic_array[i].in_use -
 					msg->lic_array[i].last_deficit;
+			safe_unpack8(&msg->lic_array[i].mode, buffer);
+			safe_unpackstr(&msg->lic_array[i].nodes, buffer);
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->num_lic, buffer);

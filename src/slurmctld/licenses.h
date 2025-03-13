@@ -39,8 +39,14 @@
 #ifndef _LICENSES_H
 #define _LICENSES_H
 
+#include "src/common/bitstring.h"
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
+
+#define HRES_MODE_OFF 0x00
+#define HRES_MODE_1 0x01
+#define HRES_MODE_2 0x02
+#define HRES_MODE_3 0x03
 
 typedef struct {
 	uint16_t lic_id;
@@ -58,6 +64,9 @@ typedef struct {
 	uint32_t last_deficit;		/* last calculated deficit */
 	uint32_t last_consumed;		/* consumed count (for remote) */
 	time_t last_update; /* last updated timestamp (for remote) */
+	bitstr_t *node_bitmap;
+	char *nodes;
+	uint8_t mode;
 } licenses_t;
 
 /*

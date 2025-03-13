@@ -120,6 +120,8 @@ extern void license_free_rec(void *x)
 
 	if (license_entry) {
 		xfree(license_entry->name);
+		FREE_NULL_BITMAP(license_entry->node_bitmap);
+		xfree(license_entry->nodes);
 		xfree(license_entry);
 	}
 }
@@ -714,6 +716,7 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 		}
 
 		license_entry->id.lic_id = match->id.lic_id;
+		license_entry->mode = match->mode;
 
 		if (tres_req_cnt) {
 			tres_req.name = license_entry->name;
@@ -899,6 +902,7 @@ static int _foreach_license_copy(void *x, void *arg)
 	license_entry_dest->used = license_entry_src->used;
 	license_entry_dest->last_deficit = license_entry_src->last_deficit;
 	license_entry_dest->id = license_entry_src->id;
+	license_entry_dest->mode = license_entry_src->mode;
 	license_entry_dest->op_or = license_entry_src->op_or;
 	list_append(license_list_dest, license_entry_dest);
 
@@ -915,6 +919,7 @@ static int _foreach_license_light_copy(void *x, void *arg)
 	license_entry_dest->used = license_entry_src->used;
 	license_entry_dest->last_deficit = license_entry_src->last_deficit;
 	license_entry_dest->id = license_entry_src->id;
+	license_entry_dest->mode = license_entry_src->mode;
 	license_entry_dest->op_or = license_entry_src->op_or;
 	list_append(license_list_dest, license_entry_dest);
 
@@ -1309,6 +1314,8 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 		pack32(lic->last_consumed, buffer);
 		pack32(lic->last_deficit, buffer);
 		pack_time(lic->last_update, buffer);
+		pack8(lic->mode, buffer);
+		packstr(lic->nodes, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(lic->name, buffer);
 		pack32(lic->total, buffer);
