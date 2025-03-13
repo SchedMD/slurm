@@ -58,6 +58,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 list_t *cluster_license_list = NULL;
+uint16_t next_lic_id = 0;
 time_t last_license_update = 0;
 bool preempt_for_licenses = false;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -65,7 +66,7 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 			  uint16_t protocol_version);
 
 typedef struct {
-	char *name;
+	uint16_t lic_id;
 	slurmctld_resv_t *resv_ptr;
 } bf_licenses_find_resv_t;
 
@@ -77,31 +78,39 @@ typedef struct {
 	time_t when;
 } license_test_args_t;
 
+typedef struct {
+	char *header;
+	job_record_t *job_ptr;
+} foreach_license_print_t;
+
+static int _foreach_license_print(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	foreach_license_print_t *args = arg;
+
+	if (!args->job_ptr) {
+		info("licenses: %s=%s lic_id=%u total=%u used=%u",
+		     args->header, license_entry->name, license_entry->lic_id,
+		     license_entry->total, license_entry->used);
+	} else {
+		info("licenses: %s=%s lic_id=%u %pJ available=%u used=%u",
+		     args->header, license_entry->name, license_entry->lic_id,
+		     args->job_ptr, license_entry->total, license_entry->used);
+	}
+
+	return 0;
+}
+
 /* Print all licenses on a list */
 static void _licenses_print(char *header, list_t *licenses,
 			    job_record_t *job_ptr)
 {
-	list_itr_t *iter;
-	licenses_t *license_entry;
-
+	foreach_license_print_t args = { .header = header, .job_ptr = job_ptr };
 	if (licenses == NULL)
 		return;
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_LICENSE))
 		return;
-
-	iter = list_iterator_create(licenses);
-  	while ((license_entry = list_next(iter))) {
-		if (!job_ptr) {
-			info("licenses: %s=%s total=%u used=%u",
-			     header, license_entry->name,
-			     license_entry->total, license_entry->used);
-		} else {
-			info("licenses: %s=%s %pJ available=%u used=%u",
-			     header, license_entry->name, job_ptr,
-			     license_entry->total, license_entry->used);
-		}
-	}
-	list_iterator_destroy(iter);
+	list_for_each(licenses, _foreach_license_print, &args);
 }
 
 /* Free a license_t record (for use by FREE_NULL_LIST) */
@@ -126,6 +135,32 @@ static int _license_find_rec(void *x, void *key)
 	if (xstrcmp(license_entry->name, name))
 		return 0;
 	return 1;
+}
+
+/*
+ * Find a license_t record by license id (for use by list_find_first)
+ */
+static int _license_find_rec_by_id(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+	uint16_t *id = key;
+
+	xassert(*id != NO_VAL16);
+
+	if (license_entry->lic_id == *id)
+		return 1;
+	return 0;
+}
+
+static int _license_find_rec_in_list_by_id(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+	list_t *licenses = key;
+	if (list_find_first_ro(licenses, _license_find_rec_by_id,
+			       &(license_entry->lic_id))) {
+		return 1;
+	}
+	return 0;
 }
 
 /* Find a license_t record by license name (for use by list_find_first) */
@@ -181,6 +216,7 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 			license_entry->total += num;
 		} else {
 			license_entry = xmalloc(sizeof(licenses_t));
+			license_entry->lic_id = NO_VAL16;
 			license_entry->name = xstrdup(token);
 			license_entry->total = num;
 			list_push(lic_list, license_entry);
@@ -273,8 +309,37 @@ static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
 	license_entry->remote = sync ? 2 : 1;
 	_handle_consumed(license_entry, rec);
 
+	license_entry->lic_id = next_lic_id++;
+	xassert(license_entry->lic_id != NO_VAL16);
+
 	list_push(cluster_license_list, license_entry);
 	last_license_update = time(NULL);
+}
+
+static int _foreach_license_set_id(void *x, void *key)
+{
+	licenses_t *license = x;
+
+	if (license->lic_id == NO_VAL16) {
+		license->lic_id = next_lic_id++;
+	}
+
+	if (license->lic_id == NO_VAL16)
+		return 1;
+
+	return 0;
+}
+
+static void _set_license_ids(void)
+{
+	if (!cluster_license_list) {
+		/* No licenses, nothing to do */
+		return;
+	}
+
+	if (list_for_each(cluster_license_list, _foreach_license_set_id, NULL) <
+	    0)
+		fatal("Can't set lic_id");
 }
 
 /* Initialize licenses on this system based upon slurm.conf */
@@ -295,6 +360,9 @@ extern int license_init(char *licenses)
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
 
+	next_lic_id = 0;
+	_set_license_ids();
+
 	_licenses_print("init_license", cluster_license_list, NULL);
 	slurm_mutex_unlock(&license_mutex);
 	return SLURM_SUCCESS;
@@ -304,24 +372,24 @@ extern int license_init(char *licenses)
  * Remove all previously allocated licenses */
 extern int license_update(char *licenses)
 {
-        list_itr_t *iter;
-        licenses_t *license_entry, *match;
-        list_t *new_list;
-        bool valid = true;
+	list_itr_t *iter;
+	licenses_t *license_entry, *match;
+	list_t *new_list;
+	bool valid = true;
 
-        new_list = _build_license_list(licenses, &valid);
-        if (!valid)
-                fatal("Invalid configured licenses: %s", licenses);
+	new_list = _build_license_list(licenses, &valid);
+	if (!valid)
+		fatal("Invalid configured licenses: %s", licenses);
 
-        slurm_mutex_lock(&license_mutex);
-        if (!cluster_license_list) {        /* no licenses before now */
-                cluster_license_list = new_list;
-                slurm_mutex_unlock(&license_mutex);
-                return SLURM_SUCCESS;
-        }
+	slurm_mutex_lock(&license_mutex);
+	if (!cluster_license_list) { /* no licenses before now */
+		cluster_license_list = new_list;
+		slurm_mutex_unlock(&license_mutex);
+		return SLURM_SUCCESS;
+	}
 
-        iter = list_iterator_create(cluster_license_list);
-        while ((license_entry = list_next(iter))) {
+	iter = list_iterator_create(cluster_license_list);
+	while ((license_entry = list_next(iter))) {
 		/* Always add the remote ones, since we handle those
 		   else where. */
 		if (license_entry->remote) {
@@ -338,23 +406,26 @@ extern int license_update(char *licenses)
 		else
 			match = NULL;
 
-                if (!match) {
-                        info("license %s removed with %u in use",
-                             license_entry->name, license_entry->used);
-                } else {
-                        if (license_entry->used > match->total) {
-                                info("license %s count decreased",
-                                     match->name);
-                        }
-                }
-        }
-        list_iterator_destroy(iter);
+		if (!match) {
+			info("license %s removed with %u in use",
+			     license_entry->name, license_entry->used);
+		} else {
+			match->lic_id = license_entry->lic_id;
+			if (license_entry->used > match->total) {
+				info("license %s count decreased",
+				     match->name);
+			}
+		}
+	}
+	list_iterator_destroy(iter);
 
-        FREE_NULL_LIST(cluster_license_list);
-        cluster_license_list = new_list;
-        _licenses_print("update_license", cluster_license_list, NULL);
-        slurm_mutex_unlock(&license_mutex);
-        return SLURM_SUCCESS;
+	FREE_NULL_LIST(cluster_license_list);
+	cluster_license_list = new_list;
+	_set_license_ids();
+
+	_licenses_print("update_license", cluster_license_list, NULL);
+	slurm_mutex_unlock(&license_mutex);
+	return SLURM_SUCCESS;
 }
 
 extern void license_add_remote(slurmdb_res_rec_t *rec)
@@ -594,7 +665,6 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 	}
 
 	slurm_mutex_lock(&license_mutex);
-	_licenses_print("request_license", job_license_list, NULL);
 	iter = list_iterator_create(job_license_list);
 	while ((license_entry = list_next(iter))) {
 		if (cluster_license_list) {
@@ -621,6 +691,8 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 			break;
 		}
 
+		license_entry->lic_id = match->lic_id;
+
 		if (tres_req_cnt) {
 			tres_req.name = license_entry->name;
 			if ((tres_pos = assoc_mgr_find_tres_pos(
@@ -631,6 +703,8 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 	}
 	list_iterator_destroy(iter);
 	slurm_mutex_unlock(&license_mutex);
+
+	_licenses_print("request_license", job_license_list, NULL);
 
 	if (!(*valid)) {
 		FREE_NULL_LIST(job_license_list);
@@ -656,8 +730,8 @@ extern void license_job_merge(job_record_t *job_ptr)
 
 static void _add_license(list_t *license_list, licenses_t *license_entry)
 {
-	if (!list_find_first(license_list, _license_find_rec,
-			     license_entry->name)) {
+	if (!list_find_first(license_list, _license_find_rec_by_id,
+			     &license_entry->lic_id)) {
 		list_append(license_list, license_entry);
 	}
 }
@@ -673,8 +747,8 @@ static int _foreach_license_job_test(void *x, void *arg)
 	time_t when = test_args->when;
 	int resv_licenses;
 
-	match = list_find_first(license_list, _license_find_rec,
-				license_entry->name);
+	match = list_find_first(license_list, _license_find_rec_by_id,
+				&(license_entry->lic_id));
 	if (!match) {
 		error("could not find license %s for job %u",
 		      license_entry->name, job_ptr->job_id);
@@ -687,8 +761,8 @@ static int _foreach_license_job_test(void *x, void *arg)
 		test_args->rc = SLURM_ERROR;
 		return -1;
 	} else if (license_entry->total > match->total) {
-		info("job %u wants more %s licenses than configured",
-		     job_ptr->job_id, match->name);
+		info("job %u wants more %s(lic_id=%u) licenses than configured",
+		     job_ptr->job_id, license_entry->name, match->lic_id);
 		/*
 		 * Preempting jobs for licenses won't be effective so don't
 		 * preempt for any.
@@ -749,13 +823,11 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
 	if (!job_ptr->licenses_to_preempt && use_licenses_to_preempt)
 		job_ptr->licenses_to_preempt = list_create(NULL);
 
-	slurm_mutex_lock(&license_mutex);
 	list_for_each(job_ptr->license_list, _foreach_license_job_test,
 		      &test_args);
 	if (use_licenses_to_preempt)
 		_licenses_print("licenses_to_preempt",
 				job_ptr->licenses_to_preempt, job_ptr);
-	slurm_mutex_unlock(&license_mutex);
 
 	return test_args.rc;
 }
@@ -769,10 +841,46 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
  */
 extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 {
-	return license_job_test_with_list(job_ptr, when, reboot,
-					  cluster_license_list, false);
+	int rc;
+
+	slurm_mutex_lock(&license_mutex);
+	rc = license_job_test_with_list(job_ptr, when, reboot,
+					cluster_license_list, false);
+	slurm_mutex_unlock(&license_mutex);
+
+	return rc;
 }
 
+static int _foreach_license_copy(void *x, void *arg)
+{
+	licenses_t *license_entry_src = x;
+	licenses_t *license_entry_dest = xmalloc(sizeof(licenses_t));
+	list_t *license_list_dest = arg;
+
+	license_entry_dest->name = xstrdup(license_entry_src->name);
+	license_entry_dest->total = license_entry_src->total;
+	license_entry_dest->used = license_entry_src->used;
+	license_entry_dest->last_deficit = license_entry_src->last_deficit;
+	license_entry_dest->lic_id = license_entry_src->lic_id;
+	list_push(license_list_dest, license_entry_dest);
+
+	return 0;
+}
+
+static int _foreach_license_light_copy(void *x, void *arg)
+{
+	licenses_t *license_entry_src = x;
+	licenses_t *license_entry_dest = xmalloc(sizeof(licenses_t));
+	list_t *license_list_dest = arg;
+
+	license_entry_dest->total = license_entry_src->total;
+	license_entry_dest->used = license_entry_src->used;
+	license_entry_dest->last_deficit = license_entry_src->last_deficit;
+	license_entry_dest->lic_id = license_entry_src->lic_id;
+	list_push(license_list_dest, license_entry_dest);
+
+	return 0;
+}
 /*
  * license_copy - create a copy of a license list
  * IN license_list_src - job license list to be copied
@@ -780,28 +888,37 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
  */
 extern list_t *license_copy(list_t *license_list_src)
 {
-	licenses_t *license_entry_src, *license_entry_dest;
-	list_itr_t *iter;
 	list_t *license_list_dest = NULL;
 
 	if (!license_list_src)
 		return license_list_dest;
 
 	license_list_dest = list_create(license_free_rec);
-	iter = list_iterator_create(license_list_src);
-	while ((license_entry_src = list_next(iter))) {
-		license_entry_dest = xmalloc(sizeof(licenses_t));
-		license_entry_dest->name = xstrdup(license_entry_src->name);
-		license_entry_dest->total = license_entry_src->total;
-		license_entry_dest->used = license_entry_src->used;
-		license_entry_dest->last_deficit =
-			license_entry_src->last_deficit;
-		list_push(license_list_dest, license_entry_dest);
-	}
-	list_iterator_destroy(iter);
+
+	list_for_each(license_list_src, _foreach_license_copy,
+		      license_list_dest);
+
 	return license_list_dest;
 }
 
+/*
+ * cluster_license_copy - create a copy of the cluster_license_list
+ * RET a copy of the license list
+ */
+extern list_t *cluster_license_copy(void)
+{
+	list_t *license_list_dest = NULL;
+
+	slurm_mutex_lock(&license_mutex);
+	if (cluster_license_list) {
+		license_list_dest = list_create(license_free_rec);
+		list_for_each(cluster_license_list, _foreach_license_light_copy,
+			      license_list_dest);
+	}
+	slurm_mutex_unlock(&license_mutex);
+
+	return license_list_dest;
+}
 /*
  * license_job_get - Get the licenses required for a job
  * IN job_ptr - job identification
@@ -821,8 +938,9 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = list_next(iter))) {
-		match = list_find_first(cluster_license_list, _license_find_rec,
-			license_entry->name);
+		match = list_find_first(cluster_license_list,
+					_license_find_rec_by_id,
+					&license_entry->lic_id);
 		if (match) {
 			match->used += license_entry->total;
 			license_entry->used += license_entry->total;
@@ -845,46 +963,48 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 	return rc;
 }
 
+static int _foreach_license_job_return(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	list_t *license_list = arg;
+	licenses_t *match =
+		list_find_first(license_list, _license_find_rec_by_id,
+				&license_entry->lic_id);
+	if (match) {
+		if (match->used >= license_entry->total)
+			match->used -= license_entry->total;
+		else {
+			error("%s: license use count underflow for lic_id=%u",
+			      __func__, match->lic_id);
+			match->used = 0;
+		}
+		license_entry->used = 0;
+	} else {
+		/* This can happen after a reconfiguration */
+		error("%s: job returning unknown license lic_id=%u",
+		      __func__, license_entry->lic_id);
+	}
+	return 0;
+}
+
 /*
  * license_job_return_to_list - Return the licenses allocated to a job to the
  *	`provided list
  * IN job_ptr - job identification
- * RET SLURM_SUCCESS or failure code
+ * RET count of license having state changed
  */
-extern int license_job_return_to_list(job_record_t *job_ptr, list_t *license_list)
+extern int license_job_return_to_list(job_record_t *job_ptr,
+				      list_t *license_list)
 {
-	list_itr_t *iter;
-	licenses_t *license_entry, *match;
-	int rc = SLURM_SUCCESS;
+	int rc = 0;
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
 
-	last_license_update = time(NULL);
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
-	slurm_mutex_lock(&license_mutex);
-	iter = list_iterator_create(job_ptr->license_list);
-	while ((license_entry = list_next(iter))) {
-		match = list_find_first(license_list, _license_find_rec,
-			license_entry->name);
-		if (match) {
-			if (match->used >= license_entry->total)
-				match->used -= license_entry->total;
-			else {
-				error("%s: license use count underflow for %s",
-				      __func__, match->name);
-				match->used = 0;
-				rc = SLURM_ERROR;
-			}
-			license_entry->used = 0;
-		} else {
-			/* This can happen after a reconfiguration */
-			error("%s: job returning unknown license name %s",
-			      __func__, license_entry->name);
-		}
-	}
-	list_iterator_destroy(iter);
-	slurm_mutex_unlock(&license_mutex);
+
+	rc = list_for_each(job_ptr->license_list, _foreach_license_job_return,
+			   license_list);
 	return rc;
 }
 
@@ -895,10 +1015,13 @@ extern int license_job_return_to_list(job_record_t *job_ptr, list_t *license_lis
  */
 extern int license_job_return(job_record_t *job_ptr)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
-	rc = license_job_return_to_list(job_ptr, cluster_license_list);
+	slurm_mutex_lock(&license_mutex);
+	if (license_job_return_to_list(job_ptr, cluster_license_list))
+		last_license_update = time(NULL);
 	_licenses_print("return_license", cluster_license_list, job_ptr);
+	slurm_mutex_unlock(&license_mutex);
 
 	return rc;
 }
@@ -909,24 +1032,10 @@ extern int license_job_return(job_record_t *job_ptr)
  */
 extern bool license_list_overlap(list_t *list_1, list_t *list_2)
 {
-	list_itr_t *iter;
-	licenses_t *license_entry;
-	bool match = false;
-
 	if (!list_1 || !list_2)
 		return false;
-
-	iter = list_iterator_create(list_1);
-	while ((license_entry = list_next(iter))) {
-		if (list_find_first(list_2, _license_find_rec,
-				    license_entry->name)) {
-			match = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return match;
+	return list_find_first_ro(list_1, _license_find_rec_in_list_by_id,
+				  list_2);
 }
 
 /* pack_all_licenses()
@@ -1106,7 +1215,6 @@ static void _bf_license_free_rec(void *x)
 	if (!entry)
 		return;
 
-	xfree(entry->name);
 	xfree(entry);
 }
 
@@ -1116,15 +1224,15 @@ static void _bf_license_free_rec(void *x)
 static int _bf_licenses_find_rec(void *x, void *key)
 {
 	bf_license_t *license_entry = x;
-	char *name = key;
+	uint16_t *lic_id = key;
 
-	xassert(license_entry->name);
-	xassert(name);
+	xassert(license_entry->lic_id != NO_VAL16);
+	xassert(*lic_id != NO_VAL16);
 
 	if (license_entry->resv_ptr)
 		return 0;
 
-	if (!xstrcmp(license_entry->name, name))
+	if (license_entry->lic_id == *lic_id)
 		return 1;
 
 	return 0;
@@ -1138,7 +1246,7 @@ static int _bf_licenses_find_resv(void *x, void *key)
 	if (license_entry->resv_ptr != target->resv_ptr)
 		return 0;
 
-	if (xstrcmp(license_entry->name, target->name))
+	if (license_entry->lic_id != target->lic_id)
 		return 0;
 
 	return 1;
@@ -1151,16 +1259,19 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 	licenses_t *license_entry;
 	bf_license_t *bf_entry;
 
-	if (!cluster_license_list || !list_count(cluster_license_list))
+	slurm_mutex_lock(&license_mutex);
+	if (!cluster_license_list || !list_count(cluster_license_list)) {
+		slurm_mutex_unlock(&license_mutex);
 		return NULL;
+	}
 
 	bf_list = list_create(_bf_license_free_rec);
 
 	iter = list_iterator_create(cluster_license_list);
 	while ((license_entry = list_next(iter))) {
 		bf_entry = xmalloc(sizeof(*bf_entry));
-		bf_entry->name = xstrdup(license_entry->name);
 		bf_entry->remaining = license_entry->total;
+		bf_entry->lic_id = license_entry->lic_id;
 
 		if (!bf_running_job_reserve)
 			bf_entry->remaining -= license_entry->used;
@@ -1168,6 +1279,8 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 		list_push(bf_list, bf_entry);
 	}
 	list_iterator_destroy(iter);
+
+	slurm_mutex_unlock(&license_mutex);
 
 	return bf_list;
 }
@@ -1184,11 +1297,11 @@ extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
 
 	iter = list_iterator_create(licenses_list);
 	while ((entry = list_next(iter))) {
-		xstrfmtcat(licenses, "%s%s%s%s%s:%u",
+		xstrfmtcat(licenses, "%s%s%s%slic_id=%u:%u", sep,
 			   (entry->resv_ptr ? "resv=" : ""),
 			   (entry->resv_ptr ? entry->resv_ptr->name : ""),
-			   (entry->resv_ptr ? ":" : ""),
-			   sep, entry->name, entry->remaining);
+			   (entry->resv_ptr ? ":" : ""), entry->lic_id,
+			   entry->remaining);
 		sep = ",";
 	}
 	list_iterator_destroy(iter);
@@ -1196,10 +1309,23 @@ extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
 	return licenses;
 }
 
+static int _foreach_bf_license_copy(void *x, void *arg)
+{
+	bf_license_t *entry_src = x;
+	bf_licenses_t *licenses_dest = arg;
+	bf_license_t *entry_dest;
+
+	entry_dest = xmalloc(sizeof(*entry_dest));
+	entry_dest->remaining = entry_src->remaining;
+	entry_dest->resv_ptr = entry_src->resv_ptr;
+	entry_dest->lic_id = entry_src->lic_id;
+	list_append(licenses_dest, entry_dest);
+
+	return 0;
+}
+
 extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src)
 {
-	bf_license_t *entry_src, *entry_dest;
-	list_itr_t *iter;
 	bf_licenses_t *licenses_dest = NULL;
 
 	if (!licenses_src)
@@ -1207,15 +1333,7 @@ extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src)
 
 	licenses_dest = list_create(_bf_license_free_rec);
 
-	iter = list_iterator_create(licenses_src);
-	while ((entry_src = list_next(iter))) {
-		entry_dest = xmalloc(sizeof(*entry_dest));
-		entry_dest->name = xstrdup(entry_src->name);
-		entry_dest->remaining = entry_src->remaining;
-		entry_dest->resv_ptr = entry_src->resv_ptr;
-		list_append(licenses_dest, entry_dest);
-	}
-	list_iterator_destroy(iter);
+	list_for_each(licenses_src, _foreach_bf_license_copy, licenses_dest);
 
 	return licenses_dest;
 }
@@ -1243,7 +1361,7 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 		 */
 		if (job_ptr->resv_ptr) {
 			bf_licenses_find_resv_t target_record = {
-				.name = job_entry->name,
+				.lic_id = job_entry->lic_id,
 				.resv_ptr = job_ptr->resv_ptr,
 			};
 
@@ -1260,13 +1378,14 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 		}
 
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
-					   job_entry->name);
+					   &job_entry->lic_id);
 
 		if (!bf_entry) {
-			error("%s: missing license %s",
-			      __func__, job_entry->name);
+			error("%s: missing license lic_id=%u",
+			      __func__, job_entry->lic_id);
 		} else if (bf_entry->remaining < needed) {
-			error("%s: underflow on %s", __func__, bf_entry->name);
+			error("%s: underflow on lic_id=%u",
+			      __func__, bf_entry->lic_id);
 			bf_entry->remaining = 0;
 		} else {
 			bf_entry->remaining -= needed;
@@ -1298,13 +1417,14 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 		int reservable = resv_entry->total;
 
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
-					   resv_entry->name);
+					   &(resv_entry->lic_id));
 
 		if (!bf_entry) {
-			error("%s: missing license %s",
-			      __func__, resv_entry->name);
+			error("%s: missing license lic_id=%u",
+			      __func__, resv_entry->lic_id);
 		} else if (bf_entry->remaining < needed) {
-			error("%s: underflow on %s", __func__, bf_entry->name);
+			error("%s: underflow on lic_id=%u",
+			      __func__,bf_entry->lic_id);
 			reservable = bf_entry->remaining;
 			bf_entry->remaining = 0;
 		} else {
@@ -1313,7 +1433,7 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 		}
 
 		new_entry = xmalloc(sizeof(*new_entry));
-		new_entry->name = xstrdup(resv_entry->name);
+		new_entry->lic_id = resv_entry->lic_id;
 		new_entry->remaining = reservable;
 		new_entry->resv_ptr = job_ptr->resv_ptr;
 
@@ -1344,7 +1464,7 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 		 */
 		if (job_ptr->resv_ptr) {
 			bf_licenses_find_resv_t target_record = {
-				.name = need->name,
+				.lic_id = need->lic_id,
 				.resv_ptr = job_ptr->resv_ptr,
 			};
 
@@ -1359,7 +1479,7 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 		}
 
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
-					   need->name);
+					   &(need->lic_id));
 
 		if (!bf_entry || (bf_entry->remaining < needed)) {
 			avail = false;
@@ -1371,24 +1491,25 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 	return avail;
 }
 
+static int _bf_licenses_find_difference(void *x, void *key)
+{
+	bf_license_t *entry_a = x;
+	bf_licenses_t *b = key;
+	bf_license_t *entry_b;
+	bf_licenses_find_resv_t target_record = {
+		.lic_id = entry_a->lic_id,
+		.resv_ptr = entry_a->resv_ptr,
+	};
+
+	entry_b = list_find_first_ro(b, _bf_licenses_find_resv, &target_record);
+
+	if (!entry_b || (entry_a->remaining != entry_b->remaining)) {
+		return 1;
+	}
+	return 0;
+}
+
 extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b)
 {
-	bf_license_t *entry_a, *entry_b;
-	list_itr_t *iter;
-	bool equivalent = true;
-
-	iter = list_iterator_create(a);
-	while ((entry_a = list_next(iter))) {
-		entry_b = list_find_first(b, _bf_licenses_find_rec,
-					  entry_a->name);
-
-		if (!entry_b || (entry_a->remaining != entry_b->remaining) ||
-		    (entry_a->resv_ptr != entry_b->resv_ptr)) {
-			equivalent = false;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return equivalent;
+	return !(list_find_first_ro(a, _bf_licenses_find_difference, b));
 }

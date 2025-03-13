@@ -51,6 +51,7 @@ typedef struct {
 	uint32_t last_deficit;		/* last calculated deficit */
 	uint32_t last_consumed;		/* consumed count (for remote) */
 	time_t last_update;		/* last updated timestamp (for remote) */
+	uint16_t lic_id;
 } licenses_t;
 
 /*
@@ -59,12 +60,11 @@ typedef struct {
 typedef struct xlist bf_licenses_t;
 
 typedef struct {
-	char *name;
+	uint16_t lic_id;
 	uint32_t remaining;
 	slurmctld_resv_t *resv_ptr;
 } bf_license_t;
 
-extern list_t *cluster_license_list;
 extern time_t last_license_update;
 
 /* Initialize licenses on this system based upon slurm.conf */
@@ -87,10 +87,10 @@ extern void license_free_rec(void *x);
 
 /*
  * license_copy - create a copy of license list
- * IN license_list_src - job license list to be copied
  * RET a copy of the license list
  */
 extern list_t *license_copy(list_t *license_list_src);
+extern list_t *cluster_license_copy(void);
 
 /*
  * license_job_get - Get the licenses required for a job
