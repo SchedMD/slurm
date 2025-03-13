@@ -879,6 +879,7 @@ def stop_slurm(fatal=True, quiet=False):
             properties["slurmrestd"].wait(timeout=60)
         except:
             properties["slurmrestd"].kill()
+        properties["slurmrestd_log"].close()
 
     if failures:
         if fatal:
@@ -1893,6 +1894,13 @@ def start_slurmrestd():
     port = None
     attempts = 0
 
+    log_dir = os.path.dirname(
+        get_config_parameter("SlurmctldLogFile", live=False, quiet=True)
+    )
+    properties["slurmrestd_log"] = open(f"{log_dir}/slurmrestd.log", "w")
+    if not properties["slurmrestd_log"]:
+        pytest.fail(f"Unable to open slurmrestd log: {log_dir}/slurmrestd.log")
+
     while not port and attempts < 15:
         port = get_open_port()
         attempts += 1
@@ -1912,8 +1920,8 @@ def start_slurmrestd():
         properties["slurmrestd"] = subprocess.Popen(
             args,
             stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=properties["slurmrestd_log"],
+            stderr=properties["slurmrestd_log"],
         )
         s = None
 
