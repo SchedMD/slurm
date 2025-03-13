@@ -561,7 +561,7 @@ def start_slurmctld(clean=False, quiet=False):
                 logging.warning("process slurmctld not found")
             for pid in pids:
                 run_command(
-                    f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "thread apply all bt" -ex "quit"'
+                    f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
                 )
             pytest.fail("Slurmctld is not running")
         else:
@@ -614,7 +614,7 @@ def start_slurmdbd(clean=False, quiet=False):
                 logging.warning("process slurmdbd not found")
             for pid in pids:
                 run_command(
-                    f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "thread apply all bt" -ex "quit"'
+                    f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
                 )
             pytest.fail("Slurmdbd is not running")
         else:
@@ -844,7 +844,7 @@ def stop_slurm(fatal=True, quiet=False):
         logging.warning("Getting the bt of the still running slurmctld")
         for pid in pids:
             run_command(
-                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "thread apply all bt" -ex "quit"'
+                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
             )
 
     # Build list of slurmds
@@ -869,7 +869,7 @@ def stop_slurm(fatal=True, quiet=False):
         failures.append(f"Some slurmds are still running ({pids})")
         for pid in pids:
             run_command(
-                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "thread apply all bt" -ex "quit"'
+                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
             )
         run_command(f"pgrep -f {properties['slurm-sbin-dir']}/slurmd -a", quiet=quiet)
 
