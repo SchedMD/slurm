@@ -1,6 +1,17 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 24.05.7
+==========================
+ -- Fix slurmctld crash when after updating a reservation with an empty
+    nodelist. The crash could occur after restarting slurmctld, or if
+    downing/draining a node in the reservation with the REPLACE or REPLACE_DOWN
+    flag.
+ -- Fix jobs being scheduled on higher weighted powered down
+    nodes.
+ -- Fix memory leak when RestrictedCoresPerGPU is enabled.
+ -- Prevent slurmctld deadlock in the assoc mgr.
+
 * Changes in Slurm 24.05.6
 ==========================
  -- data_parser/v0.0.40 - Prevent a segfault in the slurmrestd when
