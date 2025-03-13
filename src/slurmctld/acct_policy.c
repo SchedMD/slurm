@@ -163,6 +163,16 @@ static void _get_unique_job_node_cnt(job_record_t *job_ptr,
 			debug2("%s: %pJ unique allocated node count changed from %"PRIu64" to %"PRIu64,
 				 __func__, job_ptr, *node_cnt + overlap_cnt, *node_cnt);
 		}
+	} else if (job_ptr->node_bitmap_preempt && grp_node_bitmap) {
+		uint64_t overlap_cnt = bit_overlap(job_ptr->node_bitmap_preempt,
+						   grp_node_bitmap);
+		if (overlap_cnt) {
+			uint64_t init_cnt =
+				bit_set_count(job_ptr->node_bitmap_preempt);
+			*node_cnt = init_cnt - overlap_cnt;
+			debug2("%s: %pJ unique allocated node count changed from %"PRIu64" to %"PRIu64,
+			       __func__, job_ptr, init_cnt, *node_cnt);
+		}
 	}
 }
 
@@ -4369,6 +4379,8 @@ end_it:
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 	slurmdb_free_qos_rec_members(&qos_rec);
+
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_preempt);
 
 	return rc;
 }
