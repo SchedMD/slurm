@@ -44,6 +44,7 @@
 
 typedef struct {
 	char *		name;		/* name associated with a license */
+	bool op_or; /* Whether the licenses were requested with AND or OR */
 	uint32_t	total;		/* total license configured */
 	uint32_t	used;		/* used licenses */
 	uint32_t	reserved;	/* currently reserved licenses */
