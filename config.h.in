@@ -73,9 +73,6 @@
 /* Define to 1 if freeipmi library found */
 #undef HAVE_FREEIPMI
 
-/* Define to 1 if running slurmd on front-end only */
-#undef HAVE_FRONT_END
-
 /* Define to 1 if you have the 'getrandom' function. */
 #undef HAVE_GETRANDOM
 

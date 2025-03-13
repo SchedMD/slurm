@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "February 2025" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "March 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1029,11 +1029,6 @@ AcctGatherEnergy debug info
 .TP
 \fBFederation\fR
 Federation scheduling debug info
-.IP
-
-.TP
-\fBFrontEnd\fR
-Front end node details
 .IP
 
 .TP
@@ -6260,10 +6255,7 @@ historical usage reports.
 \fBTreeWidth\fR
 \fBSlurmd\fR daemons use a virtual tree network for communications.
 \fBTreeWidth\fR specifies the width of the tree (i.e. the fanout).
-On architectures with a front end node running the slurmd daemon, the value
-must always be equal to or greater than the number of front end nodes which
-eliminates the need for message forwarding between the slurmd daemons.
-On other architectures the default value is 16, meaning each slurmd daemon can
+The default value is 16, meaning each slurmd daemon can
 communicate with up to 16 other slurmd daemons. This value balances offloading
 slurmctld (max 16 threads running), time of communication, and node fault
 tolerance (4368 nodes can be contacted with three message hops). The default
@@ -6881,120 +6873,6 @@ For more information about these states see the descriptions under \fBState\fR
 in the \fBNodeName=\fR section above.
 The default value is \fIDOWN\fR.
 .IP
-
-.SH "FRONTEND NODE CONFIGURATION"
-On computers where frontend nodes are used to execute batch scripts rather than
-compute nodes, one may configure one or more frontend nodes using the
-configuration parameters defined below. These options are very similar to those
-used in configuring compute nodes. These options may only be used on systems
-configured and built with the appropriate parameters (\-\-enable\-front\-end).
-The front end configuration specifies the following information:
-
-.TP
-\fBAllowGroups\fR
-Comma\-separated list of group names which may execute jobs on this front end
-node. By default, all groups may use this front end node.
-A user will be permitted to use this front end node if AllowGroups has
-\fBat least one\fR group associated with the user.
-May not be used with the \fBDenyGroups\fR option.
-.IP
-
-.TP
-\fBAllowUsers\fR
-Comma\-separated list of user names which may execute jobs on this front end
-node. By default, all users may use this front end node.
-May not be used with the \fBDenyUsers\fR option.
-.IP
-
-.TP
-\fBDenyGroups\fR
-Comma\-separated list of group names which are prevented from executing jobs on
-this front end node.
-May not be used with the \fBAllowGroups\fR option.
-.IP
-
-.TP
-\fBDenyUsers\fR
-Comma\-separated list of user names which are prevented from executing jobs on
-this front end node.
-May not be used with the \fBAllowUsers\fR option.
-.IP
-
-.TP
-\fBFrontendName\fR
-Name that Slurm uses to refer to a frontend node.
-Typically this would be the string that "/bin/hostname \-s" returns.
-It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
-(e.g. "foo1.bar.com"), or any valid domain name associated with the host
-through the host database (/etc/hosts) or DNS, depending on the resolver
-settings. Note that if the short form of the hostname is not used, it
-may prevent use of hostlist expressions (the numeric portion in brackets
-must be at the end of the string).
-If the \fBFrontendName\fR is "DEFAULT", the values specified
-with that record will apply to subsequent node specifications
-unless explicitly set to other values in that frontend node record or
-replaced with a different set of default values.
-Each line where \fBFrontendName\fR is "DEFAULT" will replace or add to previous
-default values and not reinitialize the default values.
-.IP
-
-.TP
-\fBFrontendAddr\fR
-Name that a frontend node should be referred to in establishing
-a communications path. This name will be used as an
-argument to the getaddrinfo() function for identification.
-As with \fBFrontendName\fR, list the individual node addresses rather than
-using a hostlist expression.
-The number of \fBFrontendAddr\fR records per line must equal the number of
-\fBFrontendName\fR records per line (i.e. you can't map to node names to
-one address).
-\fBFrontendAddr\fR may also contain IP addresses.
-By default, the \fBFrontendAddr\fR will be identical in value to
-\fBFrontendName\fR.
-.IP
-
-.TP
-\fBPort\fR
-The port number that the Slurm compute node daemon, \fBslurmd\fR, listens
-to for work on this particular frontend node. By default there is a single port
-number for all \fBslurmd\fR daemons on all frontend nodes as defined by the
-\fBSlurmdPort\fR configuration parameter. Use of this option is not generally
-recommended except for development or testing purposes.
-
-\fBNOTE\fR: On Cray systems, Realm\-Specific IP Addressing (RSIP) will
-automatically try to interact with anything opened on ports 8192\-60000.
-Configure Port to use a port outside of the configured SrunPortRange and
-RSIP's port range.
-.IP
-
-.TP
-\fBReason\fR
-Identifies the reason for a frontend node being in state \fIDOWN\fR,
-\fIDRAINED\fR, \fIDRAINING\fR, \fIFAIL\fR or \fIFAILING\fR.
-Use quotes to enclose a reason having more than one word.
-.IP
-
-.TP
-\fBState\fR
-State of the frontend node with respect to the initiation of user jobs.
-Acceptable values are \fIDOWN\fR, \fIDRAIN\fR, \fIFAIL\fR, \fIFAILING\fR
-and \fIUNKNOWN\fR.
-Node states of \fIBUSY\fR and \fIIDLE\fR should not be specified in the node
-configuration, but set the node state to \fIUNKNOWN\fR instead.
-Setting the node state to \fIUNKNOWN\fR will result in the node state being
-set to \fIBUSY\fR, \fIIDLE\fR or other appropriate state based upon recovered
-system state information.
-For more information about these states see the descriptions under \fBState\fR
-in the \fBNodeName=\fR section above.
-The default value is \fIUNKNOWN\fR.
-.IP
-
-.LP
-As an example, you can do something similar to the following to define four
-front end nodes for running slurmd daemons.
-.nf
-FrontendName=frontend[00\-03] FrontendAddr=efrontend[00\-03] State=UNKNOWN
-.fi
 
 .SH "NODESET CONFIGURATION"
 The nodeset configuration allows you to define a name for a specific set of

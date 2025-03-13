@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "January 2025" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "March 2025" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -558,11 +558,6 @@ and the response returned to the user. Equivalent to \fBbbstat\fR.
 \fBfederation\fR
 The federation name that the controller is part of and the
 sibling clusters part of the federation will be listed.
-.IP
-
-.TP
-\fBfrontend\fR
-Shows configured frontend nodes.
 .IP
 
 .TP
@@ -2052,32 +2047,6 @@ If the reported value is "n/s" (not supported), the node does not support the
 configured \fBAcctGatherEnergyType\fR plugin. If the reported value is zero, energy
 accounting for nodes is disabled.
 .RE
-
-.SH "FRONTEND \- SPECIFICATIONS FOR UPDATE COMMAND"
-
-.TP
-\fBFrontendName\fR=<\fIname\fR>
-Identify the front end node to be updated. This specification is required.
-.IP
-
-.TP
-\fBReason\fR=<\fIreason\fR>
-Identify the reason the node is in a "DOWN" or "DRAIN" state.
-Use quotes to enclose a reason having more than one word.
-.IP
-
-.TP
-\fBState\fR=<\fIstate\fR>
-Identify the state to be assigned to the front end node. Possible values are
-"DOWN", "DRAIN" or "RESUME".
-If you want to remove a front end node from service, you typically want to set
-its state to "DRAIN".
-"RESUME" is not an actual node state, but will return a "DRAINED", "DRAINING",
-or "DOWN" front end node to service, either "IDLE" or "ALLOCATED" state as
-appropriate.
-Setting a front end node "DOWN" will cause all running and suspended jobs on
-that node to be terminated.
-.IP
 
 .SH "PARTITIONS \- SPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS"
 

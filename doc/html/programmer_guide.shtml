@@ -235,20 +235,6 @@ Update <b>Makefile.am</b> files as needed then execute
 <h2 id="Tricks-of-the-Trade">Tricks of the Trade
 <a class="slurm_link" href="#Tricks-of-the-Trade"></a>
 </h2>
-<h3 id="front_end">HAVE_FRONT_END
-<a class="slurm_link" href="#front_end"></a>
-</h3>
-<p>You can make a single node appear to Slurm as a Linux cluster by running
-<i>configure</i> with the <i>--enable-front-end</i> option. This
-defines <b>HAVE_FRONT_END</b> with a non-zero value in the file <b>config.h</b>.
-All (fake) nodes should be defined in the <b>slurm.conf</b> file.
-These nodes should be configured with a single <b>NodeAddr</b> value
-indicating the node on which single <span class="commandline">slurmd</span> daemon
-executes.  Initiate one <span class="commandline">slurmd</span> and one
-<span class="commandline">slurmctld</span> daemon. Do not initiate too many
-simultaneous job steps to avoid overloading the
-<span class="commandline">slurmd</span> daemon executing them all.</p>
-
 <h3 id="multiple_slurmd_support">Multiple slurmd support
 <a class="slurm_link" href="#multiple_slurmd_support"></a>
 </h3>
@@ -337,6 +323,6 @@ systemctl start/stop/restart slurmd@nodeXYZ
 
 </p>
 
-<p style="text-align:center;">Last modified 6 August 2021</p>
+<p style="text-align:center;">Last modified 12 March 2025</p>
 
 <!--#include virtual="footer.txt"-->
