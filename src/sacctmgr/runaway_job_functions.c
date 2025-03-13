@@ -295,8 +295,9 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 			"the state to completed.\n"
 			"Once corrected, this triggers the SlurmDBD to "
 			"recalculate the usage from before the earliest submit "
-			"time of all the runaway jobs.)\n\n";
-
+			"time of all the runaway jobs. "
+			"Warning: This could take a long time and sreport may "
+			"not return data until the recalculation is completed.)\n\n";
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
