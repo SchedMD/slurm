@@ -3490,6 +3490,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->node_bitmap = NULL;
 	job_ptr_pend->node_bitmap_cg = NULL;
 	job_ptr_pend->node_bitmap_pr = NULL;
+	job_ptr_pend->node_bitmap_preempt = NULL;
 	job_ptr_pend->nodes = NULL;
 	job_ptr_pend->nodes_completing = NULL;
 	job_ptr_pend->nodes_pr = NULL;

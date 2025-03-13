@@ -362,6 +362,9 @@ struct job_record {
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	bitstr_t *node_bitmap_cg;	/* bitmap of nodes completing job */
 	bitstr_t *node_bitmap_pr;	/* bitmap of nodes with running prolog */
+	bitstr_t *node_bitmap_preempt; /* bitmap of nodes selected for the job
+					 * when trying to preempt other jobs.
+					 * (DO NOT SAVE OR PACK). */
 	uint32_t node_cnt;		/* count of nodes currently
 					 * allocated to job */
 	uint32_t node_cnt_wag;		/* count of nodes Slurm thinks
