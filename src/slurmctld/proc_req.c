@@ -577,22 +577,24 @@ extern bool validate_super_user(uid_t uid)
  */
 static bool _validate_operator_internal(uid_t uid, bool locked)
 {
+	slurmdb_admin_level_t level;
+
 #ifndef NDEBUG
 	if (drop_priv)
 		return false;
 #endif
-	if ((uid == 0) || (uid == slurm_conf.slurm_user_id)) {
-		slurmdb_admin_level_t level;
 
-		if (locked)
-			level = assoc_mgr_get_admin_level_locked(acct_db_conn,
-								 uid);
-		else
-			level = assoc_mgr_get_admin_level(acct_db_conn, uid);
+	if ((uid == 0) || (uid == slurm_conf.slurm_user_id))
+		return true;
 
-		if (level >= SLURMDB_ADMIN_OPERATOR)
-			return true;
-	}
+	if (locked)
+		level = assoc_mgr_get_admin_level_locked(acct_db_conn, uid);
+	else
+		level = assoc_mgr_get_admin_level(acct_db_conn, uid);
+
+	if (level >= SLURMDB_ADMIN_OPERATOR)
+		return true;
+
 	return false;
 }
 
