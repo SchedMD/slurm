@@ -80,8 +80,9 @@ requested/allocated TRES Type in a given partition
 </DL>
 
 <P> Additionally, a weight can be assigned to each of the above
-  factors.  This provides the ability to enact a policy that blends a
-  combination of any of the above factors in any portion desired.  For
+  factors. The default weight for each factor is 0, so only factors
+  specified in <b>slurm.conf</b> will impact job priority. This allows
+  administrators to configure any combination of the above factors. For
   example, a site could configure fair-share to be the dominant factor
   (say 70%), set the job size and the age factors to each contribute
   15%, and set the partition and QOS influences to zero.</P>
