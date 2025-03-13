@@ -2909,6 +2909,7 @@ later_start_set:
 					later_start = node_space[j].end_time;
 					xfree(job_ptr->state_desc);
 					job_ptr->state_reason = WAIT_LICENSES;
+					break;
 				}
 				if (IS_JOB_WHOLE_TOPO(job_ptr)) {
 					bit_or_not(excluded_topo_bitmap,
