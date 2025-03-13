@@ -187,6 +187,28 @@ done:
 	return true;
 }
 
+/*
+ * Update vni table from config
+ */
+extern int slingshot_update_vni_table(void)
+{
+	uint16_t min = slingshot_state.vni_min;
+	uint16_t max = slingshot_state.vni_max;
+	char *arg = NULL;
+
+	if ((arg = conf_get_opt_str(slurm_conf.switch_param, "vnis="))) {
+		if (!_config_vnis("vnis", arg, &min, &max)) {
+			xfree(arg);
+			return SLURM_ERROR;
+		}
+	}
+	xfree(arg);
+
+	if (!_setup_vni_table(min, max))
+		return SLURM_ERROR;
+	return SLURM_SUCCESS;
+}
+
 /* Mapping between Slingshot traffic class labels and their bitmasks */
 static struct {
 	const char *label;
