@@ -284,7 +284,7 @@ extern int switch_p_restore(bool recover)
 	debug("State file %s recovered", state_file);
 	FREE_NULL_BUFFER(state_buf);
 	xfree(state_file);
-	return SLURM_SUCCESS;
+	return slingshot_update_vni_table();
 
 unpack_error:
 	error("Error unpacking state file %s", state_file);
