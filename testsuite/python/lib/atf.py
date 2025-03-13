@@ -552,9 +552,19 @@ def start_slurmctld(clean=False, quiet=False):
         if not repeat_command_until(
             "scontrol ping", lambda results: re.search(r"is UP", results["stdout"])
         ):
+            logging.warning(
+                "scontrol ping is not responding, trying to get slurmctld backtrace..."
+            )
+            pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
+            if not pids:
+                logging.warning("process slurmctld not found")
+            for pid in pids:
+                run_command(
+                    f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "thread apply all bt" -ex "quit"'
+                )
             pytest.fail("Slurmctld is not running")
         else:
-            logging.debug("Slurmctldd started successfully")
+            logging.debug("Slurmctld started successfully")
 
 
 def start_slurmdbd(clean=False, quiet=False):
@@ -595,7 +605,17 @@ def start_slurmdbd(clean=False, quiet=False):
         if not repeat_command_until(
             "sacctmgr show cluster", lambda results: results["exit_code"] == 0
         ):
-            pytest.fail(f"Slurmdbd is not running")
+            logging.warning(
+                "sacctmgr show cluster is not responding, trying to get slurmdbd backtrace..."
+            )
+            pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmdbd")
+            if not pids:
+                logging.warning("process slurmdbd not found")
+            for pid in pids:
+                run_command(
+                    f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "thread apply all bt" -ex "quit"'
+                )
+            pytest.fail("Slurmdbd is not running")
         else:
             logging.debug("Slurmdbd started successfully")
 
