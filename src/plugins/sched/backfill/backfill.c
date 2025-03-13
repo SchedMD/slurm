@@ -2868,6 +2868,15 @@ TRY_LATER:
 			if ((node_space[j].end_time > start_res) &&
 			     node_space[j].next && (later_start == 0)) {
 				int tmp = node_space[j].next;
+
+				if (job_ptr->license_list &&
+				    !bf_licenses_equal(node_space[tmp].licenses,
+						       node_space[j]
+							       .licenses)) {
+					later_start = node_space[j].end_time;
+					goto later_start_set;
+				}
+
 				COPY_BITMAP(next_bitmap, tmp_bitmap);
 				COPY_BITMAP(current_bitmap, avail_bitmap);
 				bit_and(next_bitmap,
@@ -2888,6 +2897,7 @@ TRY_LATER:
 				if (!bit_super_set(next_bitmap, current_bitmap))
 					later_start = node_space[j].end_time;
 			}
+later_start_set:
 			if (node_space[j].end_time <= start_res)
 				;
 			else if (node_space[j].begin_time <= end_time) {
