@@ -178,6 +178,7 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 {
 	int i;
 	char *end_num, *tmp_str, *token, *last;
+	char *delim = ",;";
 	licenses_t *license_entry;
 	list_t *lic_list;
 
@@ -185,9 +186,18 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 	if ((licenses == NULL) || (licenses[0] == '\0'))
 		return NULL;
 
+	if (strchr(licenses, '|')) {
+		if (strchr(licenses, ',') || strchr(licenses, ';')) {
+			/* Both OR and AND requested, invalid */
+			*valid = false;
+			return NULL;
+		}
+		delim = "|";
+	}
+
 	lic_list = list_create(license_free_rec);
 	tmp_str = xstrdup(licenses);
-	token = strtok_r(tmp_str, ",;", &last);
+	token = strtok_r(tmp_str, delim, &last);
 	while (token && *valid) {
 		int32_t num = 1;
 		for (i = 0; token[i]; i++) {
@@ -219,9 +229,11 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 			license_entry->lic_id = NO_VAL16;
 			license_entry->name = xstrdup(token);
 			license_entry->total = num;
+			if (delim[0] == '|')
+				license_entry->op_or = true;
 			list_push(lic_list, license_entry);
 		}
-		token = strtok_r(NULL, ",;", &last);
+		token = strtok_r(NULL, delim, &last);
 	}
 	xfree(tmp_str);
 
@@ -254,7 +266,7 @@ extern char *license_list_to_string(list_t *license_list)
 	while ((license_entry = list_next(iter))) {
 		xstrfmtcat(licenses, "%s%s:%u",
 			   sep, license_entry->name, license_entry->total);
-		sep = ",";
+		sep = license_entry->op_or ? "|" : ",";
 	}
 	list_iterator_destroy(iter);
 
@@ -862,6 +874,7 @@ static int _foreach_license_copy(void *x, void *arg)
 	license_entry_dest->used = license_entry_src->used;
 	license_entry_dest->last_deficit = license_entry_src->last_deficit;
 	license_entry_dest->lic_id = license_entry_src->lic_id;
+	license_entry_dest->op_or = license_entry_src->op_or;
 	list_push(license_list_dest, license_entry_dest);
 
 	return 0;
@@ -877,6 +890,7 @@ static int _foreach_license_light_copy(void *x, void *arg)
 	license_entry_dest->used = license_entry_src->used;
 	license_entry_dest->last_deficit = license_entry_src->last_deficit;
 	license_entry_dest->lic_id = license_entry_src->lic_id;
+	license_entry_dest->op_or = license_entry_src->op_or;
 	list_push(license_list_dest, license_entry_dest);
 
 	return 0;
