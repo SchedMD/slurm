@@ -251,4 +251,15 @@ extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo);
  * RET: fragmentation
  */
 extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask);
+
+/* Note this does not free tctx->tctx */
+extern void free_topology_ctx(topology_ctx_t *tctx_ptr);
+
+extern void free_topology_block_config(topology_block_config_t *config);
+
+extern void free_topology_tree_config(topology_tree_config_t *config);
+
+extern void free_block_conf(slurm_conf_block_t *config);
+
+extern void free_switch_conf(slurm_conf_switches_t *config);
 #endif

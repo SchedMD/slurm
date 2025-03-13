@@ -108,6 +108,21 @@ static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static topology_ctx_t *tctx = NULL;
 static int tctx_num = -1;
 
+static void _free_topology_ctx_members(topology_ctx_t *tctx_ptr)
+{
+	if (tctx_ptr) {
+		/* topology/flat has NULL config */
+		if (!xstrcmp(tctx_ptr->plugin, "topology/tree"))
+			free_topology_tree_config(tctx_ptr->config);
+		else if (!xstrcmp(tctx_ptr->plugin, "topology/block"))
+			free_topology_block_config(tctx_ptr->config);
+
+		xfree(tctx_ptr->name);
+		xfree(tctx_ptr->plugin);
+		xfree(tctx_ptr->topo_conf);
+	}
+}
+
 static int _get_plugin_index(int plugin_id)
 {
 	xassert(ops);
@@ -533,4 +548,66 @@ extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask)
 	}
 
 	return fragmentation;
+}
+
+extern void free_topology_ctx(topology_ctx_t *tctx_ptr)
+{
+	if (tctx_ptr) {
+		_free_topology_ctx_members(tctx_ptr);
+		xfree(tctx_ptr);
+	}
+}
+
+static void _free_block_conf_members(slurm_conf_block_t *config)
+{
+	if (config) {
+		xfree(config->block_name);
+		xfree(config->nodes);
+	}
+}
+
+extern void free_block_conf(slurm_conf_block_t *config)
+{
+	if (config) {
+		_free_block_conf_members(config);
+		xfree(config);
+	}
+}
+
+extern void free_topology_block_config(topology_block_config_t *config)
+{
+	if (config) {
+		for (int i = 0; i < config->config_cnt; i++)
+			_free_block_conf_members(&config->block_configs[i]);
+		xfree(config->block_configs);
+		FREE_NULL_LIST(config->block_sizes);
+		xfree(config);
+	}
+}
+
+static void _free_switch_conf_members(slurm_conf_switches_t *config)
+{
+	if (config) {
+		xfree(config->nodes);
+		xfree(config->switch_name);
+		xfree(config->switches);
+	}
+}
+
+extern void free_switch_conf(slurm_conf_switches_t *config)
+{
+	if (config) {
+		_free_switch_conf_members(config);
+		xfree(config);
+	}
+}
+
+extern void free_topology_tree_config(topology_tree_config_t *config)
+{
+	if (config) {
+		for (int i = 0; i < config->config_cnt; i++)
+			_free_switch_conf_members(&config->switch_configs[i]);
+		xfree(config->switch_configs);
+		xfree(config);
+	}
 }
