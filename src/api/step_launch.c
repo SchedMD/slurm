@@ -168,10 +168,6 @@ static void _rebuild_mpi_layout(slurm_step_ctx_t *ctx,
 	new_step_layout = xmalloc(sizeof(slurm_step_layout_t));
 	orig_step_layout = ctx->launch_state->mpi_step->step_layout;
 	ctx->launch_state->mpi_step->step_layout = new_step_layout;
-	if (orig_step_layout->front_end) {
-		new_step_layout->front_end =
-			xstrdup(orig_step_layout->front_end);
-	}
 	new_step_layout->node_cnt = params->het_job_nnodes;
 	new_step_layout->node_list = xstrdup(params->het_job_node_list);
 	new_step_layout->plane_size = orig_step_layout->plane_size;
@@ -847,16 +843,9 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 		if (!active)
 			continue;
 
-		if (ctx->step_resp->step_layout->front_end) {
-			hostlist_push_host(hl,
-				      ctx->step_resp->step_layout->front_end);
-			break;
-		} else {
-			name = nodelist_nth_host(sls->layout->node_list,
-						 node_id);
-			hostlist_push_host(hl, name);
-			free(name);
-		}
+		name = nodelist_nth_host(sls->layout->node_list, node_id);
+		hostlist_push_host(hl, name);
+		free(name);
 	}
 
 	slurm_mutex_unlock(&sls->lock);

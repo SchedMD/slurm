@@ -2041,9 +2041,6 @@ typedef struct slurm_step_layout {
 	uint32_t *cpt_compact_reps; /* number of consecutive nodes on which a
 				     * value in cpt_compact_array is
 				     * duplicated */
-	char *front_end;	/* If a front-end architecture, the name of
-				 * of the node running all tasks,
-				 * NULL otherwise */
 	slurm_node_alias_addrs_t *alias_addrs;
 	uint32_t node_cnt;	/* node count */
 	char *node_list;        /* list of nodes in step */
