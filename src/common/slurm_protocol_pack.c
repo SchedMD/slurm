@@ -3012,7 +3012,50 @@ static int
 _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 			      uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpack32(&step->array_job_id, buffer);
+		safe_unpack32(&step->array_task_id, buffer);
+		if (unpack_step_id_members(&step->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&step->user_id, buffer);
+		safe_unpack32(&step->num_cpus, buffer);
+		safe_unpack32(&step->cpu_freq_min, buffer);
+		safe_unpack32(&step->cpu_freq_max, buffer);
+		safe_unpack32(&step->cpu_freq_gov, buffer);
+		safe_unpack32(&step->num_tasks, buffer);
+		safe_unpack32(&step->task_dist, buffer);
+		safe_unpack32(&step->time_limit, buffer);
+		safe_unpack32(&step->state, buffer);
+		safe_unpack32(&step->srun_pid, buffer);
+
+		safe_unpack_time(&step->start_time, buffer);
+		safe_unpack_time(&step->run_time, buffer);
+
+		safe_unpackstr(&step->cluster, buffer);
+		safe_unpackstr(&step->container, buffer);
+		safe_unpackstr(&step->container_id, buffer);
+		safe_unpackstr(&step->partition, buffer);
+		safe_unpackstr(&step->srun_host, buffer);
+		safe_unpackstr(&step->resv_ports, buffer);
+		safe_unpackstr(&step->nodes, buffer);
+		safe_unpackstr(&step->name, buffer);
+		safe_unpackstr(&step->network, buffer);
+		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
+
+		safe_unpackstr(&step->tres_fmt_alloc_str, buffer);
+		safe_unpack16(&step->start_protocol_ver, buffer);
+
+		safe_unpackstr(&step->cpus_per_tres, buffer);
+		safe_unpackstr(&step->mem_per_tres, buffer);
+		safe_unpackstr(&step->submit_line, buffer);
+		safe_unpackstr(&step->tres_bind, buffer);
+		safe_unpackstr(&step->tres_freq, buffer);
+		safe_unpackstr(&step->tres_per_step, buffer);
+		safe_unpackstr(&step->tres_per_node, buffer);
+		safe_unpackstr(&step->tres_per_socket, buffer);
+		safe_unpackstr(&step->tres_per_task, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
 		if (unpack_step_id_members(&step->step_id, buffer,
