@@ -781,7 +781,24 @@ _pack_update_node_msg(update_node_msg_t * msg, buf_t *buffer,
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		packstr(msg->cert_token, buffer);
+		packstr(msg->comment, buffer);
+		pack32(msg->cpu_bind, buffer);
+		packstr(msg->extra, buffer);
+		packstr(msg->features, buffer);
+		packstr(msg->features_act, buffer);
+		packstr(msg->gres, buffer);
+		packstr(msg->instance_id, buffer);
+		packstr(msg->instance_type, buffer);
+		packstr(msg->node_addr, buffer);
+		packstr(msg->node_hostname, buffer);
+		packstr(msg->node_names, buffer);
+		pack32(msg->node_state, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->resume_after, buffer);
+		pack32(msg->weight, buffer);
+	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		packstr(msg->cert_token, buffer);
 		packstr(msg->comment, buffer);
 		pack32(msg->cpu_bind, buffer);
@@ -830,7 +847,24 @@ _unpack_update_node_msg(update_node_msg_t ** msg, buf_t *buffer,
 
 	slurm_init_update_node_msg(tmp_ptr);
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&tmp_ptr->cert_token, buffer);
+		safe_unpackstr(&tmp_ptr->comment, buffer);
+		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
+		safe_unpackstr(&tmp_ptr->extra, buffer);
+		safe_unpackstr(&tmp_ptr->features, buffer);
+		safe_unpackstr(&tmp_ptr->features_act, buffer);
+		safe_unpackstr(&tmp_ptr->gres, buffer);
+		safe_unpackstr(&tmp_ptr->instance_id, buffer);
+		safe_unpackstr(&tmp_ptr->instance_type, buffer);
+		safe_unpackstr(&tmp_ptr->node_addr, buffer);
+		safe_unpackstr(&tmp_ptr->node_hostname, buffer);
+		safe_unpackstr(&tmp_ptr->node_names, buffer);
+		safe_unpack32(&tmp_ptr->node_state, buffer);
+		safe_unpackstr(&tmp_ptr->reason, buffer);
+		safe_unpack32(&tmp_ptr->resume_after, buffer);
+		safe_unpack32(&tmp_ptr->weight, buffer);
+	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->cert_token, buffer);
 		safe_unpackstr(&tmp_ptr->comment, buffer);
 		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
