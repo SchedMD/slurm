@@ -3048,6 +3048,9 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 
 		safe_unpackstr(&step->cpus_per_tres, buffer);
 		safe_unpackstr(&step->mem_per_tres, buffer);
+		safe_unpackstr(&step->std_err, buffer);
+		safe_unpackstr(&step->std_in, buffer);
+		safe_unpackstr(&step->std_out, buffer);
 		safe_unpackstr(&step->submit_line, buffer);
 		safe_unpackstr(&step->tres_bind, buffer);
 		safe_unpackstr(&step->tres_freq, buffer);
