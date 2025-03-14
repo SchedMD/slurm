@@ -3362,7 +3362,6 @@ typedef struct stats_info_response_msg {
 #define TRIGGER_RES_TYPE_SLURMCTLD      0x0003
 #define TRIGGER_RES_TYPE_SLURMDBD       0x0004
 #define TRIGGER_RES_TYPE_DATABASE       0x0005
-#define TRIGGER_RES_TYPE_FRONT_END      0x0006
 #define TRIGGER_RES_TYPE_OTHER          0x0007
 
 #define TRIGGER_TYPE_UP                 SLURM_BIT(0)
