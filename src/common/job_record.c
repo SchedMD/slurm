@@ -761,6 +761,9 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 
 		packstr(step_ptr->cpus_per_tres, buffer);
 		packstr(step_ptr->mem_per_tres, buffer);
+		packstr(step_ptr->std_in, buffer);
+		packstr(step_ptr->std_err, buffer);
+		packstr(step_ptr->std_out, buffer);
 		packstr(step_ptr->submit_line, buffer);
 		packstr(step_ptr->tres_bind, buffer);
 		packstr(step_ptr->tres_freq, buffer);
@@ -912,6 +915,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	time_t start_time, pre_sus_time, tot_sus_time;
 	char *host = NULL, *container = NULL, *container_id = NULL;
 	char *core_job = NULL, *submit_line = NULL;
+	char *std_in = NULL, *std_err = NULL, *std_out = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
 	char *cpus_per_tres = NULL, *mem_per_tres = NULL, *tres_bind = NULL;
@@ -991,6 +995,9 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 		safe_unpackstr(&cpus_per_tres, buffer);
 		safe_unpackstr(&mem_per_tres, buffer);
+		safe_unpackstr(&std_in, buffer);
+		safe_unpackstr(&std_err, buffer);
+		safe_unpackstr(&std_out, buffer);
 		safe_unpackstr(&submit_line, buffer);
 		safe_unpackstr(&tres_bind, buffer);
 		safe_unpackstr(&tres_freq, buffer);
@@ -1153,6 +1160,15 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	xfree(step_ptr->mem_per_tres);
 	step_ptr->mem_per_tres = mem_per_tres;
 	mem_per_tres = NULL;
+	xfree(step_ptr->std_in);
+	step_ptr->std_in = std_in;
+	std_in = NULL;
+	xfree(step_ptr->std_err);
+	step_ptr->std_err = std_err;
+	std_err = NULL;
+	xfree(step_ptr->std_out);
+	step_ptr->std_out = std_out;
+	std_out = NULL;
 	xfree(step_ptr->submit_line);
 	step_ptr->submit_line = submit_line;
 	submit_line = NULL;
@@ -1230,6 +1246,9 @@ unpack_error:
 	xfree(cpus_per_tres);
 	xfree(mem_per_tres);
 	xfree(memory_allocated);
+	xfree(std_in);
+	xfree(std_err);
+	xfree(std_out);
 	xfree(submit_line);
 	xfree(tres_bind);
 	xfree(tres_freq);
