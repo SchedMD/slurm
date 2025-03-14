@@ -92,7 +92,6 @@ extern uint32_t euid; /* send request to the slurmctld in behave of this user */
 extern const char *mime_type; /* user requested JSON or YAML */
 extern const char *data_parser; /* data_parser args */
 
-extern front_end_info_msg_t *old_front_end_info_ptr;
 extern job_info_msg_t *old_job_info_ptr;
 extern node_info_msg_t *old_node_info_ptr;
 extern partition_info_msg_t *old_part_info_ptr;
@@ -114,8 +113,6 @@ extern void scontrol_list_jobs(int argc, char **argv);
 extern void scontrol_list_pids(int argc, char **argv);
 extern void scontrol_list_steps(int argc, char **argv);
 extern void	scontrol_getent(const char *node_name);
-extern int	scontrol_load_front_end(front_end_info_msg_t **
-					front_end_buffer_pptr);
 extern int	scontrol_load_job(job_info_msg_t ** job_buffer_pptr,
 				  uint32_t job_id);
 extern int 	scontrol_load_jobs (job_info_msg_t ** job_buffer_pptr);
@@ -131,10 +128,6 @@ extern void	scontrol_print_completing (void);
 extern void	scontrol_print_completing_job(job_info_t *job_ptr,
 					      node_info_msg_t *node_info_msg);
 extern void	scontrol_print_federation(void);
-extern void	scontrol_print_front_end_list(char *node_list);
-extern void	scontrol_print_front_end(char *node_name,
-					 front_end_info_msg_t  *
-					 front_end_buffer_ptr);
 extern void scontrol_print_job(char *job_id_str, int argc, char **argv);
 extern void	scontrol_print_hosts (char * node_list);
 extern void scontrol_print_licenses(const char *name, int argc, char **argv);
@@ -151,7 +144,6 @@ extern void	scontrol_requeue(uint32_t flags, char *job_str);
 extern void	scontrol_requeue_hold(uint32_t flags, char *job_str);
 extern void	scontrol_suspend(char *op, char *job_id_str);
 extern void	scontrol_top_job(char *job_str);
-extern int	scontrol_update_front_end (int argc, char **argv);
 extern int	scontrol_update_job (int argc, char **argv);
 extern int 	scontrol_create_node(int argc, char **argv);
 extern int	scontrol_update_node (int argc, char **argv);

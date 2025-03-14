@@ -2041,9 +2041,6 @@ typedef struct slurm_step_layout {
 	uint32_t *cpt_compact_reps; /* number of consecutive nodes on which a
 				     * value in cpt_compact_array is
 				     * duplicated */
-	char *front_end;	/* If a front-end architecture, the name of
-				 * of the node running all tasks,
-				 * NULL otherwise */
 	slurm_node_alias_addrs_t *alias_addrs;
 	uint32_t node_cnt;	/* node count */
 	char *node_list;        /* list of nodes in step */
@@ -2811,7 +2808,7 @@ typedef struct reservation_name_msg {
 						    * sched/backfill */
 #define DEBUG_FLAG_GANG		SLURM_BIT(13) /* debug gang scheduler */
 #define DEBUG_FLAG_RESERVATION	SLURM_BIT(14) /* advanced reservations */
-#define DEBUG_FLAG_FRONT_END	SLURM_BIT(15) /* front-end nodes */
+/* #define			SLURM_BIT(15) /\* UNUSED *\/ */
 #define DEBUG_FLAG_SACK		SLURM_BIT(16) /* SACK handling */
 #define DEBUG_FLAG_SWITCH	SLURM_BIT(17) /* SwitchType plugin */
 #define DEBUG_FLAG_ENERGY	SLURM_BIT(18) /* AcctGatherEnergy plugin */
@@ -3365,7 +3362,6 @@ typedef struct stats_info_response_msg {
 #define TRIGGER_RES_TYPE_SLURMCTLD      0x0003
 #define TRIGGER_RES_TYPE_SLURMDBD       0x0004
 #define TRIGGER_RES_TYPE_DATABASE       0x0005
-#define TRIGGER_RES_TYPE_FRONT_END      0x0006
 #define TRIGGER_RES_TYPE_OTHER          0x0007
 
 #define TRIGGER_TYPE_UP                 SLURM_BIT(0)
@@ -4479,76 +4475,6 @@ extern int slurm_update_node(update_node_msg_t *node_msg);
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int slurm_delete_node(update_node_msg_t *node_msg);
-
-/*****************************************************************************\
- *	SLURM FRONT_END CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
-\*****************************************************************************/
-
-/*
- * slurm_load_front_end - issue RPC to get slurm all front_end configuration
- *	information if changed since update_time
- * IN update_time - time of current configuration data
- * IN front_end_info_msg_pptr - place to store a front_end configuration pointer
- * RET 0 or a slurm error code
- * NOTE: free the response using slurm_free_front_end_info_msg
- */
-extern int slurm_load_front_end(time_t update_time,
-				front_end_info_msg_t **resp);
-
-/*
- * slurm_free_front_end_info_msg - free the front_end information response
- *	message
- * IN msg - pointer to front_end information response message
- * NOTE: buffer is loaded by slurm_load_front_end.
- */
-extern void slurm_free_front_end_info_msg(front_end_info_msg_t *front_end_buffer_ptr);
-
-/*
- * slurm_print_front_end_info_msg - output information about all Slurm
- *	front_ends based upon message as loaded using slurm_load_front_end
- * IN out - file to write to
- * IN front_end_info_msg_ptr - front_end information message pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_front_end_info_msg(FILE *out,
-					   front_end_info_msg_t *front_end_info_msg_ptr,
-					   int one_liner);
-/*
- * slurm_print_front_end_table - output information about a specific Slurm
- *	front_ends based upon message as loaded using slurm_load_front_end
- * IN out - file to write to
- * IN front_end_ptr - an individual front_end information record pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_front_end_table(FILE *out,
-					front_end_info_t *front_end_ptr,
-					int one_liner);
-
-/*
- * slurm_sprint_front_end_table - output information about a specific Slurm
- *	front_end based upon message as loaded using slurm_load_front_end
- * IN front_end_ptr - an individual front_end information record pointer
- * IN one_liner - print as a single line if true
- * RET out - char * containing formatted output (must be freed after call)
- *           NULL is returned on failure.
- */
-extern char *slurm_sprint_front_end_table(front_end_info_t *front_end_ptr,
-					  int one_liner);
-
-/*
- * slurm_init_update_front_end_msg - initialize front_end node update message
- * OUT update_front_end_msg - user defined node descriptor
- */
-void slurm_init_update_front_end_msg(update_front_end_msg_t *update_front_end_msg);
-
-/*
- * slurm_update_front_end - issue RPC to a front_end node's configuration per
- *	request, only usable by user root
- * IN front_end_msg - description of front_end node updates
- * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- */
-extern int slurm_update_front_end(update_front_end_msg_t *front_end_msg);
-
 
 /*****************************************************************************\
  *	SLURM SWITCH TOPOLOGY CONFIGURATION READ/PRINT FUNCTIONS

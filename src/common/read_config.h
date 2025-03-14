@@ -165,20 +165,6 @@ typedef struct node_record node_record_t;
  */
 #define DEFAULT_MAX_TASKS_PER_NODE  MAX_TASKS_PER_NODE
 
-typedef struct slurm_conf_frontend {
-	char *allow_groups;		/* allowed group string */
-	char *allow_users;		/* allowed user string */
-	char *deny_groups;		/* denied group string */
-	char *deny_users;		/* denied user string */
-	char *frontends;		/* frontend node name */
-	char *addresses;		/* frontend node address */
-	uint16_t port;			/* frontend specific port */
-	char *reason;			/* reason for down frontend node */
-	uint16_t node_state;		/* enum node_states, ORed with
-					 * NODE_STATE_NO_RESPOND if not
-					 * responding */
-} slurm_conf_frontend_t;
-
 typedef struct slurm_conf_node {
 	char *nodenames;
 	char *hostnames;
@@ -291,9 +277,6 @@ typedef struct {
 	char *name;
 	list_t *key_pairs;
 } config_plugin_params_t;
-
-/* Destroy a front_end record built by slurm_conf_frontend_array() */
-extern void destroy_frontend(void *ptr);
 
 /* Copy list of job_defaults_t elements */
 extern list_t *job_defaults_copy(list_t *in_list);
@@ -422,13 +405,6 @@ extern void slurm_conf_unlock(void);
 
 
 extern int slurm_conf_check_addr(const char *node_name, bool *dynamic);
-/*
- * Set "ptr_array" with the pointer to an array of pointers to
- * slurm_conf_frontend_t structures.
- *
- * Return value is the length of the array.
- */
-extern int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[]);
 
 /*
  * Set "ptr_array" with the pointer to an array of pointers to
@@ -683,13 +659,6 @@ extern void slurm_conf_add_node(node_record_t *node_ptr);
  * Remove node from node conf hash tables.
  */
 extern void slurm_conf_remove_node(char *node_name);
-
-#ifdef HAVE_FRONT_END
-/*
- * Return the frontend port for the given hostname.
- */
-extern uint16_t slurm_conf_get_frontend_port(char *node_hostname);
-#endif
 
 /*
  * Get substring from a csv-style string.

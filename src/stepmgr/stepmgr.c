@@ -574,11 +574,9 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 		       slurm_msg_type_t msg_type)
 {
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 	static bool cloud_dns = false;
 	static time_t last_update = 0;
-#endif
 	signal_tasks_msg_t *signal_tasks_msg;
 	agent_arg_t *agent_args = NULL;
 
@@ -597,14 +595,6 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 	log_flag(STEPS, "%s: queueing signal %d with flags=0x%x for %pS",
 	      __func__, signal, signal_tasks_msg->flags, step_ptr);
 
-#ifdef HAVE_FRONT_END
-	xassert(step_ptr->job_ptr->batch_host);
-	if (step_ptr->job_ptr->front_end_ptr)
-		agent_args->protocol_version =
-			step_ptr->job_ptr->front_end_ptr->protocol_version;
-	hostlist_push_host(agent_args->hostlist, step_ptr->job_ptr->batch_host);
-	agent_args->node_count = 1;
-#else
         if (last_update != slurm_conf.last_update) {
                 if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
                         cloud_dns = true;
@@ -625,7 +615,6 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 		if (PACK_FANOUT_ADDRS(node_ptr))
 			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
-#endif
 
 	if (agent_args->node_count == 0) {
 		xfree(signal_tasks_msg);
@@ -652,29 +641,19 @@ void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
 {
 	signal_tasks_msg_t *signal_tasks_msg;
 	agent_arg_t *agent_args = NULL;
+	node_record_t *node_ptr;
 
 	xassert(step_ptr);
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = msg_type;
 	agent_args->retry    = 1;
-#ifdef HAVE_FRONT_END
-	xassert(step_ptr->job_ptr->batch_host);
-	agent_args->node_count++;
-	if (step_ptr->job_ptr->front_end_ptr)
-		agent_args->protocol_version =
-			step_ptr->job_ptr->front_end_ptr->protocol_version;
-	agent_args->hostlist = hostlist_create(step_ptr->job_ptr->batch_host);
-	if (!agent_args->hostlist)
-		fatal("Invalid batch_host: %s", step_ptr->job_ptr->batch_host);
-#else
-	node_record_t *node_ptr;
+
 	if ((node_ptr = find_node_record(node_name)))
 		agent_args->protocol_version = node_ptr->protocol_version;
 	agent_args->node_count++;
 	agent_args->hostlist = hostlist_create(node_name);
 	if (!agent_args->hostlist)
 		fatal("Invalid node_name: %s", node_name);
-#endif
 	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
 	memcpy(&signal_tasks_msg->step_id, &step_ptr->step_id,
 	       sizeof(signal_tasks_msg->step_id));
@@ -3782,14 +3761,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	} else if (step_ptr->pn_min_memory == MEM_PER_CPU)
 		step_ptr->pn_min_memory = 0;	/* clear MEM_PER_CPU flag */
 
-#ifdef HAVE_FRONT_END
-	if (step_ptr->job_ptr->front_end_ptr &&
-	    (step_ptr->start_protocol_ver >
-	     step_ptr->job_ptr->front_end_ptr->protocol_version))
-		step_ptr->start_protocol_ver =
-			step_ptr->job_ptr->front_end_ptr->protocol_version;
-#endif
-
 	/* build cpus-per-node arrays for the subset of nodes used by step */
 	gres_test_args.max_rem_nodes =
 		bit_set_count(step_ptr->step_node_bitmap);
@@ -3806,11 +3777,9 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			continue;
 		node_ptr = node_record_table_ptr[i];
 
-#ifndef HAVE_FRONT_END
 		if (step_ptr->start_protocol_ver > node_ptr->protocol_version)
 			step_ptr->start_protocol_ver =
 				node_ptr->protocol_version;
-#endif
 
 		/* find out the position in the job */
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
@@ -4027,14 +3996,7 @@ static int _kill_step_on_node(void *x, void *arg)
 	    (step_ptr->step_id.step_id != SLURM_EXTERN_CONT)) {
 		info("Killing %pS due to failed node %s",
 		     step_ptr, args->node_ptr->name);
-
-		/*
-		 * Never signal tasks on a front_end system.
-		 * Otherwise signal step on all nodes
-		 */
-#ifndef HAVE_FRONT_END
 		signal_step_tasks(step_ptr, SIGKILL, REQUEST_TERMINATE_TASKS);
-#endif
 	} else {
 		info("Killing %pS on failed node %s",
 		     step_ptr, args->node_ptr->name);
@@ -4148,9 +4110,7 @@ static int _step_partial_comp(step_record_t *step_ptr,
 			      int *rem, uint32_t *max_rc)
 {
 	int nodes, rem_nodes;
-#ifndef HAVE_FRONT_END
 	int range_bits, set_bits;
-#endif
 
 	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		error("%s: batch step received for %pJ. This should never happen.",
@@ -4188,10 +4148,6 @@ static int _step_partial_comp(step_record_t *step_ptr,
 		step_ptr->exit_code = 0;
 	}
 
-#ifdef HAVE_FRONT_END
-	bit_set_all(step_ptr->exit_node_bitmap);
-	rem_nodes = 0;
-#else
 	range_bits = req->range_last + 1 - req->range_first;
 	set_bits = bit_set_count_range(step_ptr->exit_node_bitmap,
 				       req->range_first,
@@ -4221,14 +4177,10 @@ static int _step_partial_comp(step_record_t *step_ptr,
 	bit_nset(step_ptr->exit_node_bitmap,
 		 req->range_first, req->range_last);
 
-#endif
-
 	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 
-#ifndef HAVE_FRONT_END
 no_aggregate:
 	rem_nodes = bit_clear_count(step_ptr->exit_node_bitmap);
-#endif
 
 	*rem = rem_nodes;
 	if (rem_nodes == 0) {
@@ -4414,11 +4366,9 @@ extern void resume_job_step(job_record_t *job_ptr)
 
 static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 {
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 	static bool cloud_dns = false;
 	static time_t last_update = 0;
-#endif
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	kill_job_msg_t *kill_step;
 	agent_arg_t *agent_args = NULL;
@@ -4442,14 +4392,6 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 	kill_step->start_time = job_ptr->start_time;
 	kill_step->details = xstrdup(job_ptr->state_desc);
 
-#ifdef HAVE_FRONT_END
-	xassert(job_ptr->batch_host);
-	if (job_ptr->front_end_ptr)
-		agent_args->protocol_version =
-			job_ptr->front_end_ptr->protocol_version;
-	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
-	agent_args->node_count++;
-#else
         if (last_update != slurm_conf.last_update) {
                 if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
                         cloud_dns = true;
@@ -4480,7 +4422,6 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 		info("%s: %pJ Step %u has NULL node_bitmap", __func__,
 		     job_ptr, step_ptr->step_id.step_id);
 	}
-#endif
 
 	if (agent_args->node_count == 0) {
 		hostlist_destroy(agent_args->hostlist);
@@ -4723,13 +4664,9 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr)
 	char *node_list;
 	uint32_t node_cnt;
 
-#ifdef HAVE_FRONT_END
-	node_list = job_ptr->front_end_ptr->name;
-	node_cnt = 1;
-#else
 	node_list = job_ptr->nodes;
 	node_cnt = job_ptr->node_cnt;
-#endif
+
 	if (!step_ptr) {
 		error("%s: Can't create step_record! This should never happen",
 		      __func__);
@@ -4786,19 +4723,8 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 
 	*stepmgr_ops->last_job_update = time(NULL);
 
-#ifdef HAVE_FRONT_END
-	front_end_record_t *front_end_ptr =
-		stepmgr_ops->find_front_end_record(job_ptr->batch_host);
-	if (front_end_ptr && front_end_ptr->name)
-		host = front_end_ptr->name;
-	else {
-		error("%s: could not find front-end node for %pJ",__func__,
-		      job_ptr);
-		host = job_ptr->batch_host;
-	}
-#else
 	host = job_ptr->batch_host;
-#endif
+
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		host, NULL, NULL, 1, 1, SLURM_PROTOCOL_VERSION);
 	step_ptr->name = xstrdup("batch");
@@ -4811,13 +4737,11 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->container = xstrdup(job_ptr->container);
 	step_ptr->container_id = xstrdup(job_ptr->container_id);
 
-#ifndef HAVE_FRONT_END
 	if (node_name2bitmap(job_ptr->batch_host, false,
 			     &step_ptr->step_node_bitmap, NULL)) {
 		error("%s: %pJ has invalid node list (%s)",
 		      __func__, job_ptr, job_ptr->batch_host);
 	}
-#endif
 
 	step_ptr->time_last_active = time(NULL);
 	step_set_alloc_tres(step_ptr, 1, false, false);
@@ -4857,19 +4781,7 @@ static step_record_t *_build_interactive_step(
 		return NULL;
 	}
 
-#ifdef HAVE_FRONT_END
-	front_end_record_t *front_end_ptr =
-		stepmgr_ops->find_front_end_record(job_ptr->batch_host);
-	if (front_end_ptr && front_end_ptr->name)
-		host = front_end_ptr->name;
-	else {
-		error("%s: could not find front-end node for %pJ",__func__,
-		      job_ptr);
-		host = job_ptr->batch_host;
-	}
-#else
 	host = job_ptr->batch_host;
-#endif
 	if (!host) {
 		error("%s: %pJ batch_host is NULL! This should never happen",
 		      __func__, job_ptr);
@@ -4904,7 +4816,6 @@ static step_record_t *_build_interactive_step(
 
 	step_ptr->core_bitmap_job = bit_copy(job_ptr->job_resrcs->core_bitmap);
 
-#ifndef HAVE_FRONT_END
 	if (node_name2bitmap(job_ptr->batch_host, false,
 			     &step_ptr->step_node_bitmap, NULL)) {
 		error("%s: %pJ has invalid node list (%s)",
@@ -4912,7 +4823,6 @@ static step_record_t *_build_interactive_step(
 		delete_step_record(job_ptr, step_ptr);
 		return NULL;
 	}
-#endif
 
 	step_ptr->time_last_active = time(NULL);
 	step_set_alloc_tres(step_ptr, 1, false, false);
@@ -5146,12 +5056,7 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 	cred_arg.step_gres_list  = step_ptr->gres_list_alloc;
 
 	cred_arg.step_core_bitmap = step_ptr->core_bitmap_job;
-#ifdef HAVE_FRONT_END
-	xassert(job_ptr->batch_host);
-	cred_arg.step_hostlist   = job_ptr->batch_host;
-#else
 	cred_arg.step_hostlist   = step_ptr->step_layout->node_list;
-#endif
 	if (step_ptr->memory_allocated) {
 		slurm_array64_to_value_reps(step_ptr->memory_allocated,
 					    step_ptr->step_layout->node_cnt,
@@ -5208,17 +5113,6 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return ESLURM_USER_ID_MISSING;
 	}
-
-#if defined HAVE_FRONT_END
-	/* Limited job step support */
-	/* Non-super users not permitted to run job steps on front-end.
-	 * A single slurmd can not handle a heavy load. */
-	if (!validate_slurm_user(msg->auth_uid)) {
-		info("Attempt to execute job step by uid=%u", msg->auth_uid);
-		slurm_send_rc_msg(msg, ESLURM_NO_STEPS);
-		return ESLURM_USER_ID_MISSING;
-	}
-#endif
 
 	dump_step_desc(req_step_msg);
 
@@ -5300,12 +5194,6 @@ end_it:
 		step_layout = slurm_step_layout_copy(step_rec->step_layout);
 		job_step_resp.step_layout = step_layout;
 
-#ifdef HAVE_FRONT_END
-		if (step_rec->job_ptr->batch_host) {
-			job_step_resp.step_layout->front_end =
-				xstrdup(step_rec->job_ptr->batch_host);
-		}
-#endif
 		if (step_rec->job_ptr && step_rec->job_ptr->details &&
 		    (step_rec->job_ptr->details->cpu_bind_type != NO_VAL16)) {
 			job_step_resp.def_cpu_bind_type =
@@ -5472,11 +5360,6 @@ extern int stepmgr_get_step_layouts(job_record_t *job_ptr,
 	xfree(step_layout->cpt_compact_array);
 	xfree(step_layout->cpt_compact_reps);
 	step_layout->cpt_compact_cnt = 0;
-
-#ifdef HAVE_FRONT_END
-	if (job_ptr->batch_host)
-		step_layout->front_end = xstrdup(job_ptr->batch_host);
-#endif
 
 	*out_step_layout = step_layout;
 

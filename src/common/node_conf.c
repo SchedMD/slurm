@@ -86,7 +86,6 @@ strong_alias(find_node_record, slurm_find_node_record);
 list_t *active_feature_list;	/* list of currently active features_records */
 list_t *avail_feature_list;	/* list of available features_records */
 list_t *config_list = NULL;	/* list of config_record entries */
-list_t *front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
 node_record_t **node_record_table_ptr = NULL;	/* node records */
 xhash_t* node_hash_table = NULL;
@@ -122,7 +121,6 @@ static void _delete_config_record(void)
 {
 	last_node_update = time (NULL);
 	list_flush(config_list);
-	list_flush(front_end_list);
 }
 
 #if _DEBUG
@@ -245,94 +243,6 @@ extern char *bitmap2node_name_sortable(bitstr_t *bitmap, bool sort)
 extern char *bitmap2node_name(bitstr_t *bitmap)
 {
 	return bitmap2node_name_sortable(bitmap, 1);
-}
-
-#ifdef HAVE_FRONT_END
-/* Log the contents of a frontend record */
-static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
-{
-	info("fe name:%s addr:%s port:%u state:%u reason:%s "
-	     "allow_groups:%s allow_users:%s "
-	     "deny_groups:%s deny_users:%s",
-	     fe_ptr->frontends, fe_ptr->addresses,
-	     fe_ptr->port, fe_ptr->node_state, fe_ptr->reason,
-	     fe_ptr->allow_groups, fe_ptr->allow_users,
-	     fe_ptr->deny_groups, fe_ptr->deny_users);
-}
-#endif
-
-/*
- * build_all_frontend_info - get a array of slurm_conf_frontend_t structures
- *	from the slurm.conf reader, build table, and set values
- * is_slurmd_context: set to true if run from slurmd
- * RET 0 if no error, error code otherwise
- */
-extern void build_all_frontend_info(bool is_slurmd_context)
-{
-	slurm_conf_frontend_t **ptr_array;
-#ifdef HAVE_FRONT_END
-	slurm_conf_frontend_t *fe_single, *fe_line;
-	int i, count;
-
-	count = slurm_conf_frontend_array(&ptr_array);
-	if (count == 0)
-		fatal("No FrontendName information available!");
-
-	for (i = 0; i < count; i++) {
-		hostlist_t *hl_name, *hl_addr;
-		char *fe_name, *fe_addr;
-
-		fe_line = ptr_array[i];
-		hl_name = hostlist_create(fe_line->frontends);
-		if (hl_name == NULL)
-			fatal("Invalid FrontendName:%s", fe_line->frontends);
-		hl_addr = hostlist_create(fe_line->addresses);
-		if (hl_addr == NULL)
-			fatal("Invalid FrontendAddr:%s", fe_line->addresses);
-		if (hostlist_count(hl_name) != hostlist_count(hl_addr)) {
-			fatal("Inconsistent node count between "
-			      "FrontendName(%s) and FrontendAddr(%s)",
-			      fe_line->frontends, fe_line->addresses);
-		}
-		while ((fe_name = hostlist_shift(hl_name))) {
-			fe_addr = hostlist_shift(hl_addr);
-			fe_single = xmalloc(sizeof(slurm_conf_frontend_t));
-			list_append(front_end_list, fe_single);
-			fe_single->frontends = xstrdup(fe_name);
-			fe_single->addresses = xstrdup(fe_addr);
-			free(fe_name);
-			free(fe_addr);
-			if (fe_line->allow_groups && fe_line->allow_groups[0]) {
-				fe_single->allow_groups =
-					xstrdup(fe_line->allow_groups);
-			}
-			if (fe_line->allow_users && fe_line->allow_users[0]) {
-				fe_single->allow_users =
-					xstrdup(fe_line->allow_users);
-			}
-			if (fe_line->deny_groups && fe_line->deny_groups[0]) {
-				fe_single->deny_groups =
-					xstrdup(fe_line->deny_groups);
-			}
-			if (fe_line->deny_users && fe_line->deny_users[0]) {
-				fe_single->deny_users =
-					xstrdup(fe_line->deny_users);
-			}
-			fe_single->port = fe_line->port;
-			if (fe_line->reason && fe_line->reason[0])
-				fe_single->reason = xstrdup(fe_line->reason);
-			fe_single->node_state = fe_line->node_state;
-			if ((slurm_conf.debug_flags & DEBUG_FLAG_FRONT_END) &&
-			    !is_slurmd_context)
-				_dump_front_end(fe_single);
-		}
-		hostlist_destroy(hl_addr);
-		hostlist_destroy(hl_name);
-	}
-#else
-	if (slurm_conf_frontend_array(&ptr_array) != 0)
-		fatal("FrontendName information configured!");
-#endif
 }
 
 static int _check_callback(char *alias, char *hostname,
@@ -1119,7 +1029,6 @@ extern void init_node_conf(void)
 		_delete_config_record();
 	else {
 		config_list    = list_create (_list_delete_config);
-		front_end_list = list_create (destroy_frontend);
 	}
 	if (xstrcasestr(slurm_conf.sched_params, "spec_cores_first"))
 		spec_cores_first = true;
@@ -1144,7 +1053,6 @@ extern void node_fini2(void)
 		 * node config_ptr's.
 		 */
 		FREE_NULL_LIST(config_list);
-		FREE_NULL_LIST(front_end_list);
 	}
 
 	xfree(node_record_table_ptr);

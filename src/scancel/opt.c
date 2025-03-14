@@ -126,11 +126,7 @@ extern bool has_default_opt(void)
 {
 	if (opt.account == NULL
 	    && opt.batch == false
-#ifdef HAVE_FRONT_END
-	    && opt.ctld
-#else
 	    && !opt.ctld
-#endif
 	    && opt.interactive == false
 	    && opt.job_name == NULL
 	    && opt.partition == NULL
@@ -187,11 +183,7 @@ static void _opt_default(void)
 	opt.account	= NULL;
 	opt.batch	= false;
 	opt.clusters    = NULL;
-#ifdef HAVE_FRONT_END
-	opt.ctld	= true;
-#else
 	opt.ctld	= false;
-#endif
 	opt.cron = false;
 	opt.full	= false;
 	opt.hurry	= false;

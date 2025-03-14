@@ -158,9 +158,7 @@ static int _srun_node_fail(void *x, void *arg)
  */
 extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 {
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
-#endif
 	bool notify_job = true;
 	srun_node_fail_args_t args = {
 		.bit_position = -1,
@@ -172,13 +170,9 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 	if (!job_ptr || !IS_JOB_RUNNING(job_ptr))
 		return;
 
-#ifdef HAVE_FRONT_END
-	/* Purge all jobs steps in front end mode */
-#else
 	if (!node_name || (node_ptr = find_node_record(node_name)) == NULL)
 		return;
 	args.bit_position = node_ptr->index;
-#endif
 
 	list_for_each(job_ptr->step_list, _srun_node_fail, &args);
 
@@ -341,7 +335,6 @@ extern void srun_timeout(job_record_t *job_ptr)
 	}
 }
 
-#ifndef HAVE_FRONT_END
 /*
  * _find_first_node_record - find a record for first node in the bitmap
  * IN node_bitmap
@@ -361,7 +354,6 @@ static node_record_t *_find_first_node_record(bitstr_t *node_bitmap)
 	else
 		return node_record_table_ptr[inx];
 }
-#endif
 
 /*
  * srun_user_message - Send arbitrary message to an srun job (no job steps)
@@ -387,19 +379,12 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 				   job_ptr->start_protocol_ver);
 		return SLURM_SUCCESS;
 	} else if (job_ptr->batch_flag && IS_JOB_RUNNING(job_ptr)) {
-#ifndef HAVE_FRONT_END
 		node_record_t *node_ptr;
-#endif
 		job_notify_msg_t *notify_msg_ptr;
 
-#ifdef HAVE_FRONT_END
-		if (job_ptr->batch_host == NULL)
-			return ESLURM_DISABLED;	/* no allocated nodes */
-#else
 		node_ptr = _find_first_node_record(job_ptr->node_bitmap);
 		if (node_ptr == NULL)
 			return ESLURM_DISABLED;	/* no allocated nodes */
-#endif
 
 		notify_msg_ptr = (job_notify_msg_t *)
 				 xmalloc(sizeof(job_notify_msg_t));
@@ -408,18 +393,9 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 		notify_msg_ptr->step_id.step_het_comp = NO_VAL;
 		notify_msg_ptr->message = xstrdup(msg);
 
-#ifdef HAVE_FRONT_END
-		_srun_agent_launch(NULL, job_ptr->batch_host, REQUEST_JOB_NOTIFY,
-				   notify_msg_ptr, SLURM_AUTH_UID_ANY,
-				   (job_ptr->front_end_ptr ?
-				    job_ptr->front_end_ptr->protocol_version :
-				    0));
-
-#else
 		_srun_agent_launch(NULL, node_ptr->name, REQUEST_JOB_NOTIFY,
 				   notify_msg_ptr, SLURM_AUTH_UID_ANY,
 				   node_ptr->protocol_version);
-#endif
 		return SLURM_SUCCESS;
 	}
 	return ESLURM_DISABLED;

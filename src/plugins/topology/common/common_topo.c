@@ -348,11 +348,8 @@ extern int common_topo_split_hostlist_treewidth(hostlist_t *hl,
 extern int common_topo_get_node_addr(char *node_name, char **addr,
 				     char **pattern)
 {
-
-#ifndef HAVE_FRONT_END
 	if (find_node_record(node_name) == NULL)
 		return SLURM_ERROR;
-#endif
 
 	*addr = xstrdup(node_name);
 	*pattern = xstrdup("node");

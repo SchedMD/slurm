@@ -168,10 +168,6 @@ static void _rebuild_mpi_layout(slurm_step_ctx_t *ctx,
 	new_step_layout = xmalloc(sizeof(slurm_step_layout_t));
 	orig_step_layout = ctx->launch_state->mpi_step->step_layout;
 	ctx->launch_state->mpi_step->step_layout = new_step_layout;
-	if (orig_step_layout->front_end) {
-		new_step_layout->front_end =
-			xstrdup(orig_step_layout->front_end);
-	}
 	new_step_layout->node_cnt = params->het_job_nnodes;
 	new_step_layout->node_list = xstrdup(params->het_job_node_list);
 	new_step_layout->plane_size = orig_step_layout->plane_size;
@@ -847,16 +843,9 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 		if (!active)
 			continue;
 
-		if (ctx->step_resp->step_layout->front_end) {
-			hostlist_push_host(hl,
-				      ctx->step_resp->step_layout->front_end);
-			break;
-		} else {
-			name = nodelist_nth_host(sls->layout->node_list,
-						 node_id);
-			hostlist_push_host(hl, name);
-			free(name);
-		}
+		name = nodelist_nth_host(sls->layout->node_list, node_id);
+		hostlist_push_host(hl, name);
+		free(name);
 	}
 
 	slurm_mutex_unlock(&sls->lock);
@@ -1296,9 +1285,6 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	all_nodes = hostlist_create(sls->layout->node_list);
 	/* find the index number of each down node */
 	for (i = 0; i < num_node_ids; i++) {
-#ifdef HAVE_FRONT_END
-		node_id = 0;
-#else
 		char *node = hostlist_next(fail_itr);
 		node_id = node_ids[i] = hostlist_find(all_nodes, node);
 		if (node_id < 0) {
@@ -1308,7 +1294,6 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 			continue;
 		}
 		free(node);
-#endif
 
 		/* find all of the tasks that should run on this node and
 		 * mark them as having started and exited.  If they haven't
@@ -1584,13 +1569,8 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	slurm_msg_t req;
 	step_complete_msg_t msg;
 	int rc = -1;
-	int nodeid = 0;
 	struct step_launch_state *sls = ctx->launch_state;
-
-#ifndef HAVE_FRONT_END
-	/* It is always 0 for front end systems */
-	nodeid = nodelist_find(ctx->step_resp->step_layout->node_list, node);
-#endif
+	int nodeid = nodelist_find(ctx->step_resp->step_layout->node_list, node);
 
 	slurm_mutex_lock(&sls->lock);
 	for (int i = 0; i < sls->layout->tasks[nodeid]; i++) {
@@ -1627,9 +1607,6 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 launch_tasks_request_msg_t *launch_msg,
 			 uint32_t timeout, uint16_t tree_width, char *nodelist)
 {
-#ifdef HAVE_FRONT_END
-	slurm_cred_arg_t *cred_args;
-#endif
 	slurm_msg_t msg;
 	list_t *ret_list = NULL;
 	list_itr_t *ret_itr;
@@ -1669,14 +1646,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	else
 		msg.protocol_version = SLURM_PROTOCOL_VERSION;
 
-#ifdef HAVE_FRONT_END
-	cred_args = slurm_cred_get_args(ctx->step_resp->cred);
-	//info("hostlist=%s", cred_args->step_hostlist);
-	ret_list = slurm_send_recv_msgs(cred_args->step_hostlist, &msg, timeout);
-	slurm_cred_unlock_args(ctx->step_resp->cred);
-#else
 	ret_list = slurm_send_recv_msgs(nodelist, &msg, timeout);
-#endif
 	if (ret_list == NULL) {
 		error("slurm_send_recv_msgs failed miserably: %m");
 		return SLURM_ERROR;

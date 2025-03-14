@@ -362,7 +362,6 @@ static int _attach_to_tasks(slurm_step_id_t stepid,
 	list_t *nodes_resp = NULL;
 	int timeout = slurm_conf.msg_timeout * 1000; /* sec to msec */
 	reattach_tasks_request_msg_t reattach_msg;
-	char *hosts;
 
 	slurm_msg_t_init(&msg);
 
@@ -379,12 +378,8 @@ static int _attach_to_tasks(slurm_step_id_t stepid,
 	msg.protocol_version = MIN(SLURM_PROTOCOL_VERSION,
 				   layout->start_protocol_ver);
 
-	if (layout->front_end)
-		hosts = layout->front_end;
-	else
-		hosts = layout->node_list;
 	fwd_set_alias_addrs(layout->alias_addrs);
-	nodes_resp = slurm_send_recv_msgs(hosts, &msg, timeout);
+	nodes_resp = slurm_send_recv_msgs(layout->node_list, &msg, timeout);
 	if (nodes_resp == NULL) {
 		error("slurm_send_recv_msgs failed: %m");
 		return SLURM_ERROR;

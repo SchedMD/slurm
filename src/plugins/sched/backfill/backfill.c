@@ -89,7 +89,6 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/fed_mgr.h"
-#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -1188,7 +1187,7 @@ extern void *backfill_agent(void *args)
 		wait_time = difftime(now, last_backfill_time);
 		if ((wait_time < backfill_interval) ||
 		    job_is_completing(NULL) || _many_pending_rpcs() ||
-		    !avail_front_end(NULL) || !_more_work(last_backfill_time)) {
+		    !_more_work(last_backfill_time)) {
 			short_sleep = true;
 			continue;
 		}
@@ -2548,8 +2547,6 @@ next_task:
 		if (!IS_JOB_PENDING(job_ptr) ||	/* Started in other partition */
 		    (job_ptr->priority == 0))	/* Job has been held */
 			continue;
-		if (!avail_front_end(job_ptr))
-			continue;	/* No available frontend for this job */
 		if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {
 			if (reject_array_job &&
 			    (reject_array_job->array_job_id ==
@@ -2754,11 +2751,6 @@ TRY_LATER:
 			 */
 			if (!_job_runnable_now(job_ptr))
 				continue;
-			if (!avail_front_end(job_ptr)) {
-				log_flag(BACKFILL, "%pJ no frontend available after bf yield",
-					 job_ptr);
-				continue;	/* No available frontend */
-			}
 
 			/*
 			 * If the job wasn't scheduled while we didn't have the

@@ -1413,13 +1413,6 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 		xfree(het_job_nodelist);
 	} else {
 		/* Combined job allocation and job step launch */
-#if defined HAVE_FRONT_END
-		uid_t my_uid = getuid();
-		if ((my_uid != 0) && (my_uid != slurm_conf.slurm_user_id)) {
-			error("srun task launch not supported on this system");
-			exit(error_exit);
-		}
-#endif
 		if (slurm_option_set_by_cli(&opt, 'J'))
 			setenvfs("SLURM_JOB_NAME=%s", opt.job_name);
 		else if (!slurm_option_set_by_env(&opt, 'J') && opt.argc)
@@ -1675,10 +1668,6 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 	job->het_job_task_offset = NO_VAL;
 	job->nhosts   = ainfo->nnodes;
 
-#if defined HAVE_FRONT_END
-	/* Limited job step support */
-	opt_local->overcommit = true;
-#else
 	if (opt_local->min_nodes > job->nhosts) {
 		error("Only allocated %d nodes asked for %d",
 		      job->nhosts, opt_local->min_nodes);
@@ -1696,7 +1685,7 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 		xfree(job);
 		return NULL;
 	}
-#endif
+
 	job->ntasks  = opt_local->ntasks;
 	job->ntasks_per_board = ainfo->ntasks_per_board;
 	job->ntasks_per_core = ainfo->ntasks_per_core;

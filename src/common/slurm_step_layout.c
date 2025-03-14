@@ -326,7 +326,7 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 		pack16(i, buffer);
 		if (!i)
 			return;
-		packstr(step_layout->front_end, buffer);
+		packnull(buffer);
 		packstr(step_layout->node_list, buffer);
 		pack32(step_layout->node_cnt, buffer);
 		pack16(step_layout->start_protocol_ver, buffer);
@@ -376,7 +376,7 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 		step_layout = xmalloc(sizeof(slurm_step_layout_t));
 		*layout = step_layout;
 
-		safe_unpackstr(&step_layout->front_end, buffer);
+		safe_skipstr(buffer);
 		safe_unpackstr(&step_layout->node_list, buffer);
 		safe_unpack32(&step_layout->node_cnt, buffer);
 		safe_unpack16(&step_layout->start_protocol_ver, buffer);
@@ -436,7 +436,6 @@ extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout)
 	int i=0;
 	if (step_layout) {
 		slurm_free_node_alias_addrs(step_layout->alias_addrs);
-		xfree(step_layout->front_end);
 		xfree(step_layout->node_list);
 		xfree(step_layout->tasks);
 		xfree(step_layout->cpt_compact_array);

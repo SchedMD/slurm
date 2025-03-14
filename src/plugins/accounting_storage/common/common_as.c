@@ -1044,17 +1044,7 @@ extern int as_build_step_comp_msg(dbd_step_comp_msg_t *req,
 	req->db_index    = step_ptr->job_ptr->db_index;
 	req->end_time    = time(NULL);	/* called at step completion */
 	req->exit_code   = step_ptr->exit_code;
-#ifndef HAVE_FRONT_END
-	/* Only send this info on a non-frontend system since this
-	 * information is of no use on systems that run on a front-end
-	 * node.  Since something else is running the job.
-	 */
 	req->jobacct     = step_ptr->jobacct;
-#else
-	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
-		req->jobacct     = step_ptr->jobacct;
-#endif
-
 	req->req_uid     = step_ptr->requid;
 	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
 		req->start_time = step_ptr->start_time;

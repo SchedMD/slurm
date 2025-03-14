@@ -1622,34 +1622,6 @@ static void _slurm_rpc_get_fed(slurm_msg_t *msg)
 	debug2("%s %s", __func__, TIME_STR);
 }
 
-/* _slurm_rpc_dump_front_end - process RPC for front_end state information */
-static void _slurm_rpc_dump_front_end(slurm_msg_t *msg)
-{
-	DEF_TIMERS;
-	buf_t *buffer = NULL;
-	front_end_info_request_msg_t *front_end_req_msg = msg->data;
-	/* Locks: Read config, read node */
-	slurmctld_lock_t node_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
-
-	START_TIMER;
-	lock_slurmctld(node_read_lock);
-
-	if ((front_end_req_msg->last_update - 1) >= last_front_end_update) {
-		unlock_slurmctld(node_read_lock);
-		debug3("%s, no change", __func__);
-		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
-	} else {
-		buffer = pack_all_front_end(msg->protocol_version);
-		unlock_slurmctld(node_read_lock);
-		END_TIMER2(__func__);
-
-		/* send message */
-		(void) send_msg_response(msg, RESPONSE_FRONT_END_INFO, buffer);
-		FREE_NULL_BUFFER(buffer);
-	}
-}
-
 /* _slurm_rpc_dump_nodes - dump RPC for node state information */
 static void _slurm_rpc_dump_nodes(slurm_msg_t *msg)
 {
@@ -4031,48 +4003,6 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 		schedule_job_save();
 		schedule_node_save();
 		queue_job_scheduler();
-	}
-}
-
-/*
- * _slurm_rpc_update_front_end - process RPC to update the configuration of a
- *	front_end node (e.g. UP/DOWN)
- */
-static void _slurm_rpc_update_front_end(slurm_msg_t *msg)
-{
-	int error_code = SLURM_SUCCESS;
-	DEF_TIMERS;
-	update_front_end_msg_t *update_front_end_msg_ptr = msg->data;
-	/* Locks: write node */
-	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-
-	START_TIMER;
-	if (!validate_super_user(msg->auth_uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, UPDATE_FRONT_END RPC from uid=%u",
-		      msg->auth_uid);
-	}
-
-	if (error_code == SLURM_SUCCESS) {
-		/* do RPC call */
-		lock_slurmctld(node_write_lock);
-		error_code = update_front_end(update_front_end_msg_ptr,
-					      msg->auth_uid);
-		unlock_slurmctld(node_write_lock);
-		END_TIMER2(__func__);
-	}
-
-	/* return result */
-	if (error_code) {
-		info("%s for %s: %s",
-		     __func__, update_front_end_msg_ptr->name,
-		     slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
-	} else {
-		debug2("%s complete for %s %s",
-		       __func__, update_front_end_msg_ptr->name, TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 }
 
@@ -6536,9 +6466,6 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 			.fed = READ_LOCK,
 		},
 	},{
-		.msg_type = REQUEST_FRONT_END_INFO,
-		.func = _slurm_rpc_dump_front_end,
-	},{
 		.msg_type = REQUEST_NODE_INFO,
 		.func = _slurm_rpc_dump_nodes,
 		.queue_enabled = true,
@@ -6678,9 +6605,6 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_SUBMIT_BATCH_HET_JOB,
 		.func = _slurm_rpc_submit_batch_het_job,
-	},{
-		.msg_type = REQUEST_UPDATE_FRONT_END,
-		.func = _slurm_rpc_update_front_end,
 	},{
 		.msg_type = REQUEST_UPDATE_JOB,
 		.func = _slurm_rpc_update_job,

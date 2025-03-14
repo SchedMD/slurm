@@ -1182,13 +1182,11 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 		       opt_local->min_nodes, opt_local->max_nodes);
 		return SLURM_ERROR;
 	}
-#if !defined HAVE_FRONT_END
 	if (opt_local->min_nodes && (opt_local->min_nodes > job->nhosts)) {
 		error ("Minimum node count > allocated node count (%d > %d)",
 		       opt_local->min_nodes, job->nhosts);
 		return SLURM_ERROR;
 	}
-#endif
 
 	step_req = _create_job_step_create_request(
 		opt_local, use_all_cpus, job);

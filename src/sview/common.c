@@ -498,9 +498,6 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 	case BB_PAGE:
 		each.pfunc = &popup_all_bb;
 		break;
-	case FRONT_END_PAGE:
-		each.pfunc = &popup_all_front_end;
-		break;
 	case ADMIN_PAGE:
 		switch(display_data->id) {
 		case JOB_PAGE:
@@ -512,12 +509,6 @@ static void _selected_page(GtkMenuItem *menuitem, display_data_t *display_data)
 						&treedata->iter,
 						display_data,
 						treedata->treeview);
-			break;
-		case FRONT_END_PAGE:
-			select_admin_front_end(treedata->model,
-					       &treedata->iter,
-					       display_data,
-					       treedata->treeview);
 			break;
 		case RESV_PAGE:
 			select_admin_resv(treedata->model, &treedata->iter,
@@ -1677,9 +1668,6 @@ extern void *popup_thr(popup_info_t *popup_win)
 	case RESV_PAGE:
 		specific_info = specific_info_resv;
 		break;
-	case FRONT_END_PAGE:
-		specific_info = specific_info_front_end;
-		break;
 	case BB_PAGE:
 		specific_info = specific_info_bb;
 		break;
@@ -2112,8 +2100,6 @@ extern char *page_to_str(int page)
 		return "BurstBuffer";
 	case NODE_PAGE:
 		return "Node";
-	case FRONT_END_PAGE:
-		return "Frontend";
 	default:
 		return NULL;
 	}

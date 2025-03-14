@@ -198,8 +198,6 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 			sview_config->default_page = RESV_PAGE;
 		else if (!xstrcasecmp(new_text, "node"))
 			sview_config->default_page = NODE_PAGE;
-		else if (!xstrcasecmp(new_text, "frontend"))
-			sview_config->default_page = FRONT_END_PAGE;
 		else if (!xstrcasecmp(new_text, "burstbuffer"))
 			sview_config->default_page = BB_PAGE;
 		else
@@ -565,7 +563,7 @@ extern int load_defaults(void)
 		{"PageOptsNode", S_P_STRING},
 		{"PageOptsPartition", S_P_STRING},
 		{"PageOptsReservation", S_P_STRING},
-		{"PageOptsFrontend", S_P_STRING},
+		{"PageOptsFrontend", S_P_STRING},	/* Vestigal */
 		{"PageOptsBurstBuffer", S_P_STRING},
 		{"RefreshDelay", S_P_UINT16},
 		{"RuledTables", S_P_BOOLEAN},
@@ -623,8 +621,6 @@ extern int load_defaults(void)
 			default_sview_config.default_page = RESV_PAGE;
 		else if (xstrcasestr(tmp_str, "node"))
 			default_sview_config.default_page = NODE_PAGE;
-		else if (xstrcasestr(tmp_str, "frontend"))
-			default_sview_config.default_page = FRONT_END_PAGE;
 		else if (xstrcasestr(tmp_str, "burstbuffer"))
 			default_sview_config.default_page = BB_PAGE;
 
@@ -682,8 +678,6 @@ extern int load_defaults(void)
 			default_sview_config.page_visible[RESV_PAGE] = 1;
 		if (xstrcasestr(tmp_str, "node"))
 			default_sview_config.page_visible[NODE_PAGE] = 1;
-		if (xstrcasestr(tmp_str, "frontend"))
-			default_sview_config.page_visible[FRONT_END_PAGE] = 1;
 		if (xstrcasestr(tmp_str, "burstbuffer"))
 			default_sview_config.page_visible[BB_PAGE] = 1;
 		xfree(tmp_str);
@@ -986,11 +980,6 @@ extern GtkListStore *create_model_defaults(int type)
 				   0, "node",
 				   1, type,
 				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "frontend",
-				   1, type,
-				   -1);
 		break;
 	case SORTID_TAB_POS:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
@@ -1123,7 +1112,6 @@ extern int configure_defaults(void)
 				cluster_change_part();
 				cluster_change_job();
 				cluster_change_node();
-				cluster_change_front_end();
 			} else if (tmp_config.grid_topological !=
 				   working_sview_config.grid_topological) {
 				apply_hidden_change = false;

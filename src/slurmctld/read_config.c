@@ -1533,7 +1533,6 @@ extern int read_slurm_conf(int recover)
 	bit_cache_init(node_record_count);
 
 	(void)acct_storage_g_reconfig(acct_db_conn, 0);
-	build_all_frontend_info(false);
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
 	restore_front_end_state(recover);

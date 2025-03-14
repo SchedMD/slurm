@@ -707,7 +707,6 @@ _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 		depth = 0;
 		max_depth = 0;
 	} else {
-#ifndef HAVE_FRONT_END
 		int count;
 		count = hostlist_count(step_hset);
 		rank = hostlist_find(step_hset, conf->node_name);
@@ -726,18 +725,6 @@ _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 		if (rank > 0 && parent_rank != -1) {
 			parent_alias = hostlist_nth(step_hset, parent_rank);
 		}
-#else
-		/* In FRONT_END mode, one slurmd pretends to be all
-		 * NodeNames, so we can't compare conf->node_name
-		 * to the NodeNames in step_hset.  Just send step complete
-		 * RPC directly to the controller.
-		 */
-		rank = 0;
-		parent_rank = -1;
-		children = 0;
-		depth = 0;
-		max_depth = 0;
-#endif
 	}
 	debug3("slurmstepd rank %d (%s), parent rank %d (%s), "
 	       "children %d, depth %d, max_depth %d",
@@ -1158,9 +1145,6 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id_in,
  */
 static int _get_host_index(char *cred_hostlist)
 {
-#ifdef HAVE_FRONT_END
-	return 0; /* It is always 0 for front end systems */
-#endif
 	hostlist_t *hl;
 	int host_index;
 	if (!(hl = hostlist_create(cred_hostlist))) {
@@ -1659,9 +1643,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	char     host[HOST_NAME_MAX];
 	launch_tasks_request_msg_t *req = msg->data;
 	bool     mem_sort = false;
-#ifndef HAVE_FRONT_END
 	bool     first_job_run;
-#endif
 	char *errmsg = NULL;
 
 	slurm_addr_t *cli = &msg->orig_addr;
@@ -1670,10 +1652,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	int node_id = 0;
 	bitstr_t *numa_bitmap = NULL;
 
-#ifndef HAVE_FRONT_END
-	/* It is always 0 for front end systems */
 	node_id = nodelist_find(req->complete_nodelist, conf->node_name);
-#endif
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr_t));
 
 	if ((req->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
@@ -1713,7 +1692,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	env_array_overwrite(&req->env, "SLURM_SRUN_COMM_HOST", host);
 	req->envc = envcount(req->env);
 
-#ifndef HAVE_FRONT_END
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !cred_jobid_cached(req->step_id.job_id);
 
@@ -1724,15 +1702,13 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
 	}
-#endif
+
 	if (_check_job_credential(req, msg->auth_uid, msg->auth_gid, node_id,
 				  &step_hset, msg->protocol_version) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %u@%s: %m",
 		      msg->auth_uid, host);
-#ifndef HAVE_FRONT_END
 		slurm_mutex_unlock(&prolog_mutex);
-#endif
 		goto done;
 	}
 
@@ -1742,7 +1718,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-#ifndef HAVE_FRONT_END
 	if (first_job_run) {
 		int rc;
 		job_env_t job_env;
@@ -1804,7 +1779,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		errnum = SLURM_SUCCESS;
 		goto done;
 	}
-#endif
 
 	if (req->mem_bind_type & MEM_BIND_SORT) {
 		int task_cnt = -1;
@@ -2324,9 +2298,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	if (req->x11) {
 		bool setup_x11 = false;
 		int host_index = -1;
-#ifdef HAVE_FRONT_END
-		host_index = 0;	/* It is always 0 for front end systems */
-#else
 		hostlist_t *j_hset;
 		/*
 		 * Determine need to setup X11 based upon this node's index into
@@ -2340,7 +2311,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 			host_index = hostlist_find(j_hset, conf->node_name);
 			hostlist_destroy(j_hset);
 		}
-#endif
 
 		if (req->x11 & X11_FORWARD_ALL)
 			setup_x11 = true;
@@ -2504,13 +2474,8 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	slurm_mutex_unlock(&prolog_mutex);
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB)) {
-		int node_id = 0;
 		job_env_t job_env;
-
-#ifndef HAVE_FRONT_END
-		/* It is always 0 for front end systems */
-		node_id = nodelist_find(req->nodes, conf->node_name);
-#endif
+		int node_id = nodelist_find(req->nodes, conf->node_name);
 
 		memset(&job_env, 0, sizeof(job_env));
 		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
@@ -2655,10 +2620,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		_add_job_running_prolog(req->job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
-#ifndef HAVE_FRONT_END
-		/* It is always 0 for front end systems */
 		node_id = nodelist_find(req->nodes, conf->node_name);
-#endif
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = slurm_cred_get(req->cred,
 					       CRED_DATA_JOB_GRES_LIST);
@@ -5285,12 +5247,9 @@ _rpc_abort_job(slurm_msg_t *msg)
 	_file_bcast_job_cleanup(req->step_id.job_id);
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB)) {
-		int node_id = 0;
 		job_env_t job_env;
-#ifndef HAVE_FRONT_END
-		/* It is always 0 for front end systems */
-		node_id = nodelist_find(req->nodes, conf->node_name);
-#endif
+		int node_id = nodelist_find(req->nodes, conf->node_name);
+
 		memset(&job_env, 0, sizeof(job_env));
 		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
 				    node_id);
@@ -5523,12 +5482,9 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	_file_bcast_job_cleanup(req->step_id.job_id);
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB)) {
-		int node_id = 0;
 		job_env_t job_env;
-#ifndef HAVE_FRONT_END
-		/* It is always 0 for front end systems */
-		node_id = nodelist_find(req->nodes, conf->node_name);
-#endif
+		int node_id = nodelist_find(req->nodes, conf->node_name);
+
 		memset(&job_env, 0, sizeof(job_env));
 		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
 				    node_id);

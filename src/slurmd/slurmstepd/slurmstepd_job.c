@@ -275,13 +275,9 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 
 	step = xmalloc(sizeof(stepd_step_rec_t));
 	step->msg = msg;
-#ifndef HAVE_FRONT_END
 	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
 	step->node_name = xstrdup(conf->node_name);
-#else
-	nodeid = 0;
-	step->node_name = xstrdup(msg->complete_nodelist);
-#endif
+
 	if (nodeid < 0) {
 		error("couldn't find node %s in %s",
 		      step->node_name, msg->complete_nodelist);

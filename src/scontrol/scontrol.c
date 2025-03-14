@@ -82,7 +82,6 @@ uint32_t euid = SLURM_AUTH_NOBODY; /* proxy request as user */
 const char *mime_type = NULL; /* mimetype if we are using data_parser */
 const char *data_parser = NULL; /* data_parser args */
 
-front_end_info_msg_t *old_front_end_info_ptr = NULL;
 job_info_msg_t *old_job_info_ptr = NULL;
 node_info_msg_t *old_node_info_ptr = NULL;
 partition_info_msg_t *old_part_info_ptr = NULL;
@@ -328,7 +327,6 @@ int main(int argc, char **argv)
 	slurm_conf_destroy();
 	serializer_g_fini();
 
-	slurm_free_front_end_info_msg(old_front_end_info_ptr);
 	slurm_free_job_info_msg(old_job_info_ptr);
 	slurm_free_node_info_msg(old_node_info_ptr);
 	slurm_free_partition_info_msg(old_part_info_ptr);
@@ -1102,8 +1100,6 @@ static int _process_command (int argc, char **argv)
 			}
 		}
 		cluster_flags = slurmdb_setup_cluster_flags();
-		slurm_free_front_end_info_msg(old_front_end_info_ptr);
-		old_front_end_info_ptr = NULL;
 		slurm_free_job_info_msg(old_job_info_ptr);
 		old_job_info_ptr = NULL;
 		slurm_free_node_info_msg(old_node_info_ptr);
@@ -1807,8 +1803,6 @@ static void _show_it(int argc, char **argv)
 			_print_daemons();
 	} else if (xstrncasecmp(tag, "Federations",  MAX(tag_len, 1)) == 0) {
 		scontrol_print_federation();
-	} else if (xstrncasecmp(tag, "FrontendName",  MAX(tag_len, 1)) == 0) {
-		scontrol_print_front_end_list(val);
 	} else if (xstrncasecmp(tag, "hostnames", MAX(tag_len, 5)) == 0) {
 		if (val)
 			scontrol_print_hosts(val);
@@ -1866,7 +1860,7 @@ static void _update_it(int argc, char **argv)
 	int i, error_code = SLURM_SUCCESS;
 	int node_tag = 0, part_tag = 0, job_tag = 0;
 	int res_tag = 0;
-	int debug_tag = 0, step_tag = 0, front_end_tag = 0;
+	int debug_tag = 0, step_tag = 0;
 	int suspend_exc_nodes_tag = 0, suspend_exc_parts_tag = 0,
 	    suspend_exc_states_tag = 0;
 	int jerror_code = SLURM_SUCCESS;
@@ -1902,9 +1896,6 @@ static void _update_it(int argc, char **argv)
 			job_tag = 1;
 		} else if (!xstrncasecmp(tag, "StepId", MAX(tag_len, 4))) {
 			step_tag = 1;
-		} else if (!xstrncasecmp(tag, "FrontendName",
-					 MAX(tag_len, 2))) {
-			front_end_tag = 1;
 		} else if (!xstrncasecmp(tag, "ReservationName",
 					 MAX(tag_len, 3))) {
 			res_tag = 1;
@@ -1937,8 +1928,6 @@ static void _update_it(int argc, char **argv)
 		error_code = scontrol_update_res (argc, argv);
 	else if (node_tag)
 		error_code = scontrol_update_node (argc, argv);
-	else if (front_end_tag)
-		error_code = scontrol_update_front_end (argc, argv);
 	else if (part_tag)
 		error_code = scontrol_update_part (argc, argv);
 	else if (debug_tag)
