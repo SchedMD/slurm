@@ -153,8 +153,6 @@ typedef struct slurm_conf_server {
 static slurm_conf_node_t *_create_conf_node(void);
 static void _pack_node_conf_lite(void *n, buf_t *buffer);
 static void *_unpack_node_conf_lite(buf_t *buffer);
-static void _pack_frontend_conf_lite(void *n, buf_t *buffer);
-static void *_unpack_frontend_conf_lite(buf_t *buffer);
 static void _init_conf_node(slurm_conf_node_t *conf_node);
 static void _destroy_nodename(void *ptr);
 static int _parse_frontend(void **dest, slurm_parser_enum_t type,
@@ -207,16 +205,9 @@ static s_p_options_t slurm_conf_stepd_options[] = {
 	 .pack = _pack_node_conf_lite,
 	 .unpack = _unpack_node_conf_lite,
 	},
-	{.key = "FrontendName",
-	 .type = S_P_ARRAY,
-	 .handler = _parse_frontend,
-	 .destroy = destroy_frontend,
-	 .pack = _pack_frontend_conf_lite,
-	 .unpack = _unpack_frontend_conf_lite,
-	},
 	{NULL}
 };
-static int slurm_conf_stepd_options_cnt = 2;
+static int slurm_conf_stepd_options_cnt = 1;
 
 s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageBackupHost", S_P_STRING},
@@ -928,33 +919,6 @@ static void *_unpack_node_conf_lite(buf_t *buffer)
 	safe_unpackstr(&n->bcast_addresses, buffer);
 	safe_unpackstr(&n->hostnames, buffer);
 	safe_unpackstr(&n->port_str, buffer);
-
-	return n;
-
-unpack_error:
-	_destroy_nodename(n);
-	return NULL;
-}
-
-/* This should only be going to the stepd, no protocol version needed */
-static void _pack_frontend_conf_lite(void *ptr, buf_t *buffer)
-{
-	slurm_conf_frontend_t *n = ptr;
-
-	xassert(n);
-
-	packstr(n->frontends, buffer);
-	packstr(n->addresses, buffer);
-	pack16(n->port, buffer);
-}
-
-static void *_unpack_frontend_conf_lite(buf_t *buffer)
-{
-	slurm_conf_frontend_t *n = xmalloc(sizeof(*n));
-
-	safe_unpackstr(&n->frontends, buffer);
-	safe_unpackstr(&n->addresses, buffer);
-	safe_unpack16(&n->port, buffer);
 
 	return n;
 
