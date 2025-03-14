@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "April 2025" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "May 2025" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -374,8 +374,8 @@ job to be initiated.
 
 .TP
 \fBDefaultQOS\fR=<\fIdefault_qos\fR>
-The QOS this association and its children will use by default allowed in the
-QOS list mentioned below.
+The QOS this association and its children will use by default if allowed in the
+\fBQosLevel\fR list mentioned below.
 This is overridden if set directly on a user.
 To clear an existing value, set a new value of \-1.
 .IP
@@ -578,13 +578,13 @@ To clear an existing value, set a new value of \-1.
 
 .TP
 \fBQosLevel\fR<\fIoperator\fR><\fIcomma_separated_list_of_qos_names\fR>
-Specify the default Quality of Service's that jobs are able to run at
-for this association. To get a list of valid QOSs use 'sacctmgr list qos'.
+List of QOS names available to jobs running in this association. To get a list
+of valid QOSs use 'sacctmgr list qos'.
 This value will override its parents value and push down to its
 children as the new default. Setting a QosLevel to '' (two single
 quotes with nothing between them) restores its default setting. You
 can also use the operator += and \-= to add or remove certain QOSs
-from a QOS list.
+from the QOS list.
 
 Valid <operator> values include:
 .IP
@@ -599,7 +599,7 @@ account and its children.
 \fB+=\fR
 .RS
 Add the specified <qos> value to the current \fIQosLevel\fP. The account will
-have access to this QOS and the other previously assigned to it.
+have access to this QOS and any others previously assigned to it.
 .RE
 \fB\-=\fR
 .RS
@@ -842,8 +842,8 @@ The name of a cluster in the association.
 
 .TP
 \fBDefaultQOS\fR
-The QOS the association and its children will use by default if allowed in the
-QOS list mentioned below.
+The QOS this association and its children will use by default if allowed in the
+\fBQosLevel\fR list mentioned below.
 .IP
 
 .IP \fBFairshare\fR
@@ -865,7 +865,8 @@ Flags set on the association.
 
 .TP
 \fBGrpJobs\fR
-Maximum number of running jobs in aggregate for this association and its children.
+Maximum number of running jobs in aggregate for this association and its
+children.
 .IP
 
 .TP
@@ -1893,8 +1894,8 @@ inside the limit.
 .TP
 \fBGrpTRESRunMins\fR
 Maximum number of TRES minutes able to be allocated by running jobs with this
-QOS. This takes into consideration time limit of running jobs and consumes it,
-if the limit is reached no new jobs are started until other jobs finish to allow
+QOS. This takes into consideration time limit of running jobs and consumes it.
+If the limit is reached no new jobs are started until other jobs finish to allow
 time to free up.
 To clear an existing value, set a new value of \-1 for each TRES type/name.
 
@@ -3277,19 +3278,19 @@ associations on this cluster. The options for the cluster are:
 
 .TP
 \fBFairShare\fR=
-Number used in conjunction with other associations to determine job priority.
+Allocated shares used for fairshare calculation.
 .IP
 
 .TP
 \fBGrpJobs\fR=
-Maximum number of running jobs in aggregate for this
-association and all associations which are children of this association.
+Maximum number of running jobs in aggregate for this association and its
+children.
 .IP
 
 .TP
 \fBGrpJobsAccrue\fR=
 Maximum number of pending jobs in aggregate able to accrue age priority for this
-association and all associations which are children of this association.
+association and its children.
 .IP
 
 .TP
@@ -3300,54 +3301,49 @@ Equivalent limit definition is now \fBGrpTRES=node=#\fR.
 
 .TP
 \fBGrpSubmitJobs\fR=
-Maximum number of jobs which can be in a pending or
-running state at any time in aggregate for this association and all
-associations which are children of this association.
+Maximum number of jobs in a pending or running state at any time in aggregate
+for this association and its children.
 .IP
 
 .TP
 \fBGrpTRES\fR=
-Maximum number of TRES running jobs are able to be
-allocated in aggregate for this association and all associations which
-are children of this association.
+Maximum number of TRES able to be allocated by running jobs in aggregate for
+this association and its children.
 .IP
 
 .TP
 \fBGrpTRESMins\fR=
-The total number of TRES minutes that can possibly be used by past,
-present and future jobs running from this association and its children.
+Maximum number of TRES minutes that can possibly be used by past, present and
+future jobs in this association and its children.
 .IP
 
 .TP
 \fBGrpTRESRunMins\fR=
-Used to limit the combined total number of TRES minutes used by all
-jobs running with this association and its children. This takes into
-consideration time limit of running jobs and consumes it, if the limit
-is reached no new jobs are started until other jobs finish to allow
-time to free up.
+Maximum number of TRES minutes able to be allocated by running jobs in this
+association and its children. This takes into consideration time limit of
+running jobs and consumes it. If the limit is reached no new jobs are started
+until other jobs finish to allow time to free up.
 .IP
 
 .TP
 \fBGrpWall\fR=
-Maximum wall clock time running jobs are able to be
-allocated in aggregate for this association and all associations which
-are children of this association.
+Maximum wall clock time able to be allocated by running jobs in aggregate in
+this association and its children.
 .IP
 
 .TP
 \fBMaxJobs\fR=
-Maximum number of jobs the children of this association can run.
+Maximum number of running jobs per user in this association.
 .IP
 
 .TP
 \fBMaxTRESPerJob\fR=
-Maximum number of trackable resources per job the children of this association
-can run.
+Maximum number of TRES each job can use in this association.
 .IP
 
 .TP
 \fBMaxWallDurationPerJob\fR=
-Maximum time (not related to job size) children of this accounts jobs can run.
+Maximum wall clock time each job can use in this association.
 .IP
 
 .TP
@@ -3383,38 +3379,35 @@ Number used in conjunction with other associations to determine job priority.
 .IP
 
 .TP
+\fBGrpTRES\fR=
+Maximum number of TRES able to be allocated by running jobs in aggregate for
+this association and its children.
+.IP
+
+.TP
 \fBGrpTRESMins\fR=
-Maximum number of TRES hours running jobs are able to
-be allocated in aggregate for this association and all associations
-which are children of this association.
+Maximum number of TRES minutes that can possibly be used by past, present, and
+future jobs in this association and its children.
 .IP
 
 .TP
 \fBGrpTRESRunMins\fR=
-Used to limit the combined total number of TRES minutes used by all
-jobs running with this association and its children. This takes into
-consideration time limit of running jobs and consumes it, if the limit
-is reached no new jobs are started until other jobs finish to allow
-time to free up.
-.IP
-
-.TP
-\fBGrpTRES\fR=
-Maximum number of TRES running jobs are able to be
-allocated in aggregate for this association and all associations which
-are children of this association.
+Maximum number of TRES minutes able to be allocated by running jobs in this
+association and its children. This takes into consideration time limit of
+running jobs and consumes it. If the limit is reached no new jobs are started
+until other jobs finish to allow time to free up.
 .IP
 
 .TP
 \fBGrpJobs\fR=
-Maximum number of running jobs in aggregate for this
-association and all associations which are children of this association.
+Maximum number of running jobs in aggregate for this association and its
+children.
 .IP
 
 .TP
 \fBGrpJobsAccrue\fR=
 Maximum number of pending jobs in aggregate able to accrue age priority for this
-association and all associations which are children of this association.
+association and its children.
 .IP
 
 .TP
@@ -3425,31 +3418,29 @@ Equivalent limit definition is now \fBGrpTRES=node=#\fR.
 
 .TP
 \fBGrpSubmitJobs\fR=
-Maximum number of jobs which can be in a pending or
-running state at any time in aggregate for this association and all
-associations which are children of this association.
+Maximum number of jobs in a pending or running state at any time in aggregate
+for this association and its children.
 .IP
 
 .TP
 \fBGrpWall\fR=
-Maximum wall clock time running jobs are able to be
-allocated in aggregate for this association and all associations which
-are children of this association.
+Maximum wall clock time able to be allocated by running jobs in aggregate in
+this association and its children.
 .IP
 
 .TP
 \fBMaxJobs\fR=
-Maximum number of jobs the children of this association can run.
+Maximum number of running jobs per user in this association.
 .IP
 
 .TP
 \fBMaxNodesPerJob\fR=
-Maximum number of nodes per job the children of this association can run.
+Maximum number of nodes per job in this association.
 .IP
 
 .TP
 \fBMaxWallDurationPerJob\fR=
-Maximum time (not related to job size) children of this accounts jobs can run.
+Maximum wall clock time each job can use in this association.
 .IP
 
 .TP
@@ -3501,17 +3492,17 @@ Number used in conjunction with other associations to determine job priority.
 
 .TP
 \fBMaxJobs\fR=
-Maximum number of jobs this user can run.
+Maximum number of running jobs from this user.
 .IP
 
 .TP
 \fBMaxTRESPerJob\fR=
-Maximum number of trackable resources per job this user can run.
+Maximum number of TRES each job from this user can use.
 .IP
 
 .TP
 \fBMaxWallDurationPerJob\fR=
-Maximum time (not related to job size) this user can run.
+Maximum wall clock time each job from this user can use.
 .IP
 
 .TP
