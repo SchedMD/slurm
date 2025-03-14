@@ -586,7 +586,6 @@ claim:
 static void
 _random_sleep(stepd_step_rec_t *step)
 {
-#if !defined HAVE_FRONT_END
 	long int delay = 0;
 	long int max = (slurm_conf.tcp_timeout * step->nnodes);
 
@@ -597,7 +596,6 @@ _random_sleep(stepd_step_rec_t *step)
 	debug3("delaying %ldms", delay);
 	if (poll(NULL, 0, delay) == -1)
 		error("%s: poll(): %m", __func__);
-#endif
 }
 
 /*
@@ -2887,13 +2885,8 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 		return;
 	}
 
-#ifndef HAVE_FRONT_END
 	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
 	name = xstrdup(conf->node_name);
-#else
-	nodeid = 0;
-	name = xstrdup(msg->complete_nodelist);
-#endif
 
 	/* Need to fetch the step uid to restrict the response appropriately */
 	cred = slurm_cred_get_args(msg->cred);
