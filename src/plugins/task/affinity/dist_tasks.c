@@ -168,24 +168,12 @@ void batch_bind(batch_job_launch_msg_t *req)
 {
 	bitstr_t *hw_map;
 	int task_cnt = 0;
-
-#ifdef HAVE_FRONT_END
-{
-	/* Since the front-end nodes are a shared resource, we limit each job
-	 * to one CPU based upon monotonically increasing sequence number */
-	static int last_id = 0;
-	hw_map  = bit_alloc(conf->block_map_size);
-	bit_set(hw_map, ((last_id++) % conf->block_map_size));
-	task_cnt = 1;
-}
-#else
-{
 	uint16_t sockets = 0, cores = 0, threads = 0;
+
 	hw_map = _get_avail_map(req->cred, &sockets, &cores, &threads);
 	if (hw_map)
 		task_cnt = bit_set_count(hw_map);
-}
-#endif
+
 	if (task_cnt) {
 		req->cpu_bind_type = CPU_BIND_MASK;
 		if (slurm_conf.task_plugin_param & CPU_BIND_VERBOSE)

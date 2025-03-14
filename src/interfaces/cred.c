@@ -521,11 +521,7 @@ extern void format_core_allocs(slurm_cred_t *credential, char *node_name,
 		      cred->job_hostlist);
 		return;
 	}
-#ifdef HAVE_FRONT_END
-	host_index = 0;
-#else
 	host_index = hostlist_find(hset, node_name);
-#endif
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
 		      host_index, cred->step_id.job_id);
@@ -608,11 +604,7 @@ extern void get_cred_gres(slurm_cred_t *credential, char *node_name,
 		      cred->job_hostlist);
 		return;
 	}
-#ifdef HAVE_FRONT_END
-	host_index = 0;
-#else
 	host_index = hostlist_find(hset, node_name);
-#endif
 	hostlist_destroy(hset);
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
