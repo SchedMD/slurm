@@ -1941,15 +1941,6 @@ extern void slurm_free_node_reg_resp_msg(
 	xfree(msg);
 }
 
-extern void slurm_free_update_front_end_msg(update_front_end_msg_t * msg)
-{
-	if (msg) {
-		xfree(msg->name);
-		xfree(msg->reason);
-		xfree(msg);
-	}
-}
-
 extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 {
 	if (msg) {
@@ -4975,9 +4966,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_SHUTDOWN:
 		slurm_free_shutdown_msg(data);
-		break;
-	case REQUEST_UPDATE_FRONT_END:
-		slurm_free_update_front_end_msg(data);
 		break;
 	case REQUEST_CREATE_NODE:
 	case REQUEST_UPDATE_NODE:
