@@ -488,14 +488,10 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	    (agent_arg_ptr->msg_type != SRUN_STEP_MISSING)	&&
 	    (agent_arg_ptr->msg_type != SRUN_STEP_SIGNAL)	&&
 	    (agent_arg_ptr->msg_type != SRUN_JOB_COMPLETE)) {
-#ifdef HAVE_FRONT_END
-		split = true;
-#else
 		/* Sending message to a possibly large number of slurmd.
 		 * Push all message forwarding to slurmd in order to
 		 * offload as much work from slurmctld as possible. */
 		split = false;
-#endif
 		agent_info_ptr->get_reply = true;
 	} else {
 		/* Message is going to one node (for srun) or we want
@@ -817,13 +813,9 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 					locked = true;
 					lock_slurmctld(node_write_lock);
 				}
-#ifdef HAVE_FRONT_END
-				down_msg = "";
-#else
 				drain_nodes(*node_names, "Prolog/Epilog failure",
 				            slurm_conf.slurm_user_id);
 				down_msg = ", set to state DRAIN";
-#endif
 				error("Prolog/Epilog failure on nodes %s%s",
 				      *node_names, down_msg);
 				break;
@@ -832,13 +824,9 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 					locked = true;
 					lock_slurmctld(node_write_lock);
 				}
-#ifdef HAVE_FRONT_END
-				down_msg = "";
-#else
 				drain_nodes(*node_names, "Duplicate jobid",
 				            slurm_conf.slurm_user_id);
 				down_msg = ", set to state DRAIN";
-#endif
 				error("Duplicate jobid on nodes %s%s",
 				      *node_names, down_msg);
 				break;
@@ -1314,11 +1302,7 @@ cleanup:
 static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 			  int *count, int *spot)
 {
-#ifdef HAVE_FRONT_END
-	front_end_record_t *node_ptr;
-#else
 	node_record_t *node_ptr;
-#endif
 	ret_data_info_t *ret_data_info = NULL;
 	list_itr_t *itr;
 	int rc = 0;
@@ -1330,11 +1314,7 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 		if (ret_data_info->err != DSH_NO_RESP)
 			continue;
 
-#ifdef HAVE_FRONT_END
-		node_ptr = find_front_end_record(ret_data_info->node_name);
-#else
 		node_ptr = find_node_record(ret_data_info->node_name);
-#endif
 		if (node_ptr &&
 		    (IS_NODE_DOWN(node_ptr) ||
 		     IS_NODE_POWERING_DOWN(node_ptr) ||
@@ -1365,11 +1345,7 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
  */
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 {
-#ifdef HAVE_FRONT_END
-	front_end_record_t *node_ptr;
-#else
 	node_record_t *node_ptr;
-#endif
 	agent_arg_t *agent_arg_ptr;
 	queued_request_t *queued_req_ptr = NULL;
 	thd_t *thread_ptr = agent_info_ptr->thread_struct;
@@ -1397,12 +1373,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 
 			debug("got the name %s to resend",
 			      thread_ptr[i].nodename);
-#ifdef HAVE_FRONT_END
-			node_ptr = find_front_end_record(
-						thread_ptr[i].nodename);
-#else
 			node_ptr = find_node_record(thread_ptr[i].nodename);
-#endif
 			if (node_ptr &&
 			    (IS_NODE_DOWN(node_ptr) ||
 			     IS_NODE_POWERING_DOWN(node_ptr) ||
@@ -2363,9 +2334,6 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 			nodes_ready = 1;
 		}
 	} else {
-#ifdef HAVE_FRONT_END
-		nodes_ready = 1;
-#else
 		node_record_t *node_ptr;
 		char *hostname;
 
@@ -2384,7 +2352,6 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		    !IS_NODE_NO_RESPOND(node_ptr)) {
 			nodes_ready = 1;
 		}
-#endif
 	}
 
 	if ((slurm_conf.prolog_flags & PROLOG_FLAG_DEFER_BATCH) &&
