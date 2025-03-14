@@ -1086,11 +1086,9 @@ _read_config(void)
 	slurm_conf_t *cf = NULL;
 	int cc;
 	bool cgroup_mem_confinement = false;
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 	bool cr_flag = false, gang_flag = false;
 	bool config_overrides = false;
-#endif
 
 	slurm_mutex_lock(&conf->config_mutex);
 	cf = slurm_conf_lock();
@@ -1113,8 +1111,6 @@ _read_config(void)
 		xfree(tmp_epilog);
 	}
 
-
-#ifndef HAVE_FRONT_END
 	/*
 	 * We can't call slurm_select_cr_type() because we don't load the select
 	 * plugin here.
@@ -1124,7 +1120,6 @@ _read_config(void)
 
 	if (cf->preempt_mode & PREEMPT_MODE_GANG)
 		gang_flag = true;
-#endif
 
 	slurm_conf_unlock();
 	/* node_name may already be set from a command line parameter */
@@ -1156,7 +1151,6 @@ _read_config(void)
 			conf->node_name,
 			conf->hostname);
 
-#ifndef HAVE_FRONT_END
 	if (!(node_ptr = find_node_record(conf->node_name))) {
 		error("Unable to find node record for %s",
 		      conf->node_name);
@@ -1174,9 +1168,6 @@ _read_config(void)
 	conf->core_spec_cnt = node_ptr->core_spec_cnt;
 	conf->cpu_spec_list = xstrdup(node_ptr->cpu_spec_list);
 	conf->mem_spec_limit = node_ptr->mem_spec_limit;
-#else
-	conf->port = slurm_conf_get_frontend_port(conf->node_name);
-#endif
 
 	/* store hardware properties in slurmd_config */
 	xfree(conf->block_map);
@@ -1222,19 +1213,7 @@ _read_config(void)
 				&conf->actual_threads,
 				&conf->block_map_size,
 				&conf->block_map, &conf->block_map_inv);
-#ifdef HAVE_FRONT_END
-	/*
-	 * When running with multiple frontends, the slurmd S:C:T values are not
-	 * relevant, hence ignored by both _register_front_ends (sets all to 1)
-	 * and validate_nodes_via_front_end (uses slurm.conf values).
-	 * Report actual hardware configuration.
-	 */
-	conf->cpus    = conf->actual_cpus;
-	conf->boards  = conf->actual_boards;
-	conf->sockets = conf->actual_sockets;
-	conf->cores   = conf->actual_cores;
-	conf->threads = conf->actual_threads;
-#else
+
 	/* If the actual resources on a node differ than what is in
 	 * the configuration file and we are using
 	 * cons_res or gang scheduling we have to use what is in the
@@ -1320,11 +1299,7 @@ _read_config(void)
 			conf->cores,   conf->actual_cores,
 			conf->threads, conf->actual_threads);
 	}
-#endif
 
-#ifdef HAVE_FRONT_END
-	get_memory(&conf->conf_memory_size);
-#else
 	/*
 	 * Set the node's configured 'RealMemory' as conf_memory_size as
 	 * slurmd_conf_t->real_memory is set to the actual physical memory. We
@@ -1335,7 +1310,6 @@ _read_config(void)
 	 * memory cgroup.
 	 */
 	conf->conf_memory_size = node_ptr->real_memory;
-#endif
 
 	get_memory(&conf->physical_memory_size);
 	get_up_time(&conf->up_time);
@@ -2590,10 +2564,8 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	}
 
-#ifndef HAVE_FRONT_END
 	if (!find_node_record(conf->node_name))
 		return SLURM_ERROR;
-#endif
 
 	/*
 	 * slurmd -G, calling it here rather than from _process_cmdline
