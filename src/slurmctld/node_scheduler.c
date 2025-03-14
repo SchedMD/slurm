@@ -1116,6 +1116,10 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		filter_by_node_mcs(job_ptr, mcs_select, share_node_bitmap);
 	}
 
+	if (!test_only) {
+		hres_filter(job_ptr, avail_node_bitmap);
+	}
+
 	/* save job and request state */
 	saved_min_nodes = min_nodes;
 	saved_req_nodes = req_nodes;

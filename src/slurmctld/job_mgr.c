@@ -7262,9 +7262,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	_set_tot_license_req(job_desc, NULL);
 
-	license_list = license_validate(job_desc->licenses_tot,
-					validate_cfgd_licenses, true,
-					job_desc->tres_req_cnt, &valid);
+	license_list =
+		license_validate(job_desc->licenses_tot, validate_cfgd_licenses,
+				 true, false, job_desc->tres_req_cnt, &valid);
 
 	if (!valid) {
 		info("Job's requested licenses are invalid: %s",
@@ -13291,11 +13291,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			    __func__, job_ptr->licenses);
 	} else if (job_desc->licenses_tot) {
 		bool pending = IS_JOB_PENDING(job_ptr);
-		license_list = license_validate(job_desc->licenses_tot,
-						true, true,
-						pending ?
-						job_desc->tres_req_cnt : NULL,
-						&valid_licenses);
+		license_list =
+			license_validate(job_desc->licenses_tot, true, true,
+					 false,
+					 pending ? job_desc->tres_req_cnt :
+						   NULL,
+					 &valid_licenses);
 
 		if (!valid_licenses) {
 			sched_info("%s: invalid licenses: %s",

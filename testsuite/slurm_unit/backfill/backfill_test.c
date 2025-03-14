@@ -239,8 +239,8 @@ job_record_t *__add_job(uint32_t job_id, uint32_t priority, uint32_t nodes,
 
 	if (licenses) {
 		bool valid = true;
-		job_ptr->license_list =
-			license_validate(licenses, true, true, NULL, &valid);
+		job_ptr->license_list = license_validate(licenses, true, true,
+							 true, NULL, &valid);
 		job_ptr->licenses = xstrdup(licenses);
 	}
 
