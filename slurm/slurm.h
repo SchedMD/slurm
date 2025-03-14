@@ -4097,6 +4097,9 @@ extern void slurm_get_job_stdin(char *buf, int buf_size, job_info_t *job_ptr);
 /* Given a job record pointer, return its stdout path */
 extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t *job_ptr);
 
+/* Given a step record pointer and path, return the expanded path. */
+extern char *slurm_expand_step_stdio_fields(char *path, job_step_info_t *step);
+
 /* Given a job record pointer and path, return the expanded path. */
 extern char *slurm_expand_job_stdio_fields(char *path, job_info_t *job);
 

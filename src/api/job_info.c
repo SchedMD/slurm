@@ -244,6 +244,30 @@ extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t * job_ptr)
 	}
 }
 
+extern char *slurm_expand_step_stdio_fields(char *path, job_step_info_t *step)
+{
+	job_std_pattern_t job_stp;
+	hostlist_t *nodes = hostlist_create(step->nodes);
+	char *ret;
+
+	job_stp.array_job_id = step->array_job_id;
+	job_stp.array_task_id = step->array_task_id;
+	job_stp.first_step_id = step->step_id.step_id;
+	job_stp.first_step_node = hostlist_shift(nodes);
+	job_stp.jobid = step->step_id.job_id;
+	job_stp.jobname = step->job_name;
+	job_stp.user = uid_to_string_cached((uid_t) step->user_id);
+	job_stp.work_dir = NULL; //valid for jobs only
+
+	ret = expand_stdio_fields(path, &job_stp);
+
+	hostlist_destroy(nodes);
+	if (job_stp.first_step_node)
+		free(job_stp.first_step_node);
+
+	return ret;
+}
+
 extern char *slurm_expand_job_stdio_fields(char *path, job_info_t *job)
 {
 	job_std_pattern_t job_stp;
