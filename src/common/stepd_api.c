@@ -278,7 +278,7 @@ extern int stepd_connect(const char *directory, const char *nodename,
 	return fd;
 
 rwfail:
-	close(fd);
+	fd_close(&fd);
 fail1:
 	xfree(local_nodename);
 	return fd;
