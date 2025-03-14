@@ -2511,7 +2511,6 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (build_all_nodeline_info(true, 0))
 		return SLURM_ERROR;
-	build_all_frontend_info(true);
 
 	/*
 	 * This needs to happen before _read_config where we will try to read

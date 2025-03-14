@@ -84,8 +84,6 @@ typedef struct {
 } config_record_t;
 extern list_t *config_list;	/* list of config_record entries */
 
-extern list_t *front_end_list;	/* list of slurm_conf_frontend_t entries */
-
 typedef struct node_record node_record_t;
 struct node_record {
 	char *arch;			/* computer architecture */
@@ -256,13 +254,6 @@ hostlist_t *bitmap2hostlist(bitstr_t *bitmap);
  * IN tres_cnt - number of TRES configured on system (used on controller side)
  */
 extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt);
-
-/*
- * build_all_frontend_info - get a array of slurm_conf_frontend_t structures
- *	from the slurm.conf reader, build table, and set values
- * is_slurmd_context: set to true if run from slurmd
- */
-extern void build_all_frontend_info (bool is_slurmd_context);
 
 /*
  * Build a node's node_spec_bitmap and core_spec_cnt from it's cpu_spec_list.

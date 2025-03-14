@@ -117,7 +117,6 @@ static s_p_hashtbl_t *conf_hashtbl = NULL;
 static buf_t *conf_buf = NULL;
 static slurm_conf_t *conf_ptr = &slurm_conf;
 static bool conf_initialized = false;
-static s_p_hashtbl_t *default_frontend_tbl;
 static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
 static list_t *config_files = NULL;
@@ -155,9 +154,6 @@ static void _pack_node_conf_lite(void *n, buf_t *buffer);
 static void *_unpack_node_conf_lite(buf_t *buffer);
 static void _init_conf_node(slurm_conf_node_t *conf_node);
 static void _destroy_nodename(void *ptr);
-static int _parse_frontend(void **dest, slurm_parser_enum_t type,
-			   const char *key, const char *value,
-			   const char *line, char **leftover);
 static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover);
@@ -439,7 +435,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"X11Parameters", S_P_STRING},
 
 	{"DownNodes", S_P_ARRAY, _parse_downnodes, _destroy_downnodes},
-	{"FrontendName", S_P_ARRAY, _parse_frontend, destroy_frontend},
 	{"NodeName", S_P_ARRAY, _parse_nodename, _destroy_nodename},
 	{"NodeSet", S_P_ARRAY, _parse_nodeset, _destroy_nodeset},
 	{"PartitionName", S_P_ARRAY, _parse_partitionname,
@@ -495,98 +490,6 @@ static int _defunct_option(void **dest, slurm_parser_enum_t type,
 	error_in_daemon("The option \"%s\" is defunct, please remove it from slurm.conf.",
 			key);
 	return 0;
-}
-
-static int _parse_frontend(void **dest, slurm_parser_enum_t type,
-			   const char *key, const char *value,
-			   const char *line, char **leftover)
-{
-	s_p_hashtbl_t *tbl, *dflt;
-	slurm_conf_frontend_t *n;
-	char *node_state = NULL;
-	static s_p_options_t _frontend_options[] = {
-		{"AllowGroups", S_P_STRING},
-		{"AllowUsers", S_P_STRING},
-		{"DenyGroups", S_P_STRING},
-		{"DenyUsers", S_P_STRING},
-		{"FrontendAddr", S_P_STRING},
-		{"Port", S_P_UINT16},
-		{"Reason", S_P_STRING},
-		{"State", S_P_STRING},
-		{NULL}
-	};
-
-	fatal("Use of FrontendName in slurm.conf without Slurm being configured/built with the --enable-front-end option");
-
-	tbl = s_p_hashtbl_create(_frontend_options);
-	s_p_parse_line(tbl, *leftover, leftover);
-	/* s_p_dump_values(tbl, _frontend_options); */
-
-	if (xstrcasecmp(value, "DEFAULT") == 0) {
-		char *tmp;
-		if (s_p_get_string(&tmp, "FrontendAddr", tbl)) {
-			error("FrontendAddr not allowed with "
-			      "FrontendName=DEFAULT");
-			xfree(tmp);
-			s_p_hashtbl_destroy(tbl);
-			return -1;
-		}
-
-		if (default_frontend_tbl != NULL) {
-			s_p_hashtbl_merge(tbl, default_frontend_tbl);
-			s_p_hashtbl_destroy(default_frontend_tbl);
-		}
-		default_frontend_tbl = tbl;
-
-		return 0;
-	} else {
-		n = xmalloc(sizeof(slurm_conf_frontend_t));
-		dflt = default_frontend_tbl;
-
-		n->frontends = xstrdup(value);
-
-		(void) s_p_get_string(&n->allow_groups, "AllowGroups", tbl);
-		(void) s_p_get_string(&n->allow_users,  "AllowUsers", tbl);
-		(void) s_p_get_string(&n->deny_groups,  "DenyGroups", tbl);
-		(void) s_p_get_string(&n->deny_users,   "DenyUsers", tbl);
-		if (n->allow_groups && n->deny_groups)
-			fatal("FrontEnd options AllowGroups and DenyGroups are incompatible");
-		if (n->allow_users && n->deny_users)
-			fatal("FrontEnd options AllowUsers and DenyUsers are incompatible");
-
-		if (!s_p_get_string(&n->addresses, "FrontendAddr", tbl))
-			n->addresses = xstrdup(n->frontends);
-
-		if (!s_p_get_uint16(&n->port, "Port", tbl) &&
-		    !s_p_get_uint16(&n->port, "Port", dflt)) {
-			/*
-			 * This gets resolved in slurm_conf_get_addr().
-			 * For now just leave with a value of zero.
-			 */
-			n->port = 0;
-		}
-
-		if (!s_p_get_string(&n->reason, "Reason", tbl))
-			s_p_get_string(&n->reason, "Reason", dflt);
-
-		if (!s_p_get_string(&node_state, "State", tbl) &&
-		    !s_p_get_string(&node_state, "State", dflt)) {
-			n->node_state = NODE_STATE_UNKNOWN;
-		} else {
-			n->node_state = state_str2int(node_state,
-						      (char *) value);
-			if (n->node_state == NO_VAL16)
-				n->node_state = NODE_STATE_UNKNOWN;
-			xfree(node_state);
-		}
-
-		*dest = (void *)n;
-
-		s_p_hashtbl_destroy(tbl);
-		return 1;
-	}
-
-	/* should not get here */
 }
 
 static int _parse_nodename(void **dest, slurm_parser_enum_t type,
@@ -955,20 +858,6 @@ static slurm_conf_node_t *_create_conf_node(void)
 	return n;
 }
 
-/* Destroy a front_end record built by slurm_conf_frontend_array() */
-extern void destroy_frontend(void *ptr)
-{
-	slurm_conf_frontend_t *n = (slurm_conf_frontend_t *) ptr;
-	xfree(n->addresses);
-	xfree(n->allow_groups);
-	xfree(n->allow_users);
-	xfree(n->deny_groups);
-	xfree(n->deny_users);
-	xfree(n->frontends);
-	xfree(n->reason);
-	xfree(ptr);
-}
-
 static void _destroy_nodename(void *ptr)
 {
 	slurm_conf_node_t *n = (slurm_conf_node_t *)ptr;
@@ -1030,22 +919,6 @@ hosed:
 
 	return NULL;
 }
-
-int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
-{
-	int count = 0;
-	slurm_conf_frontend_t **ptr;
-
-	if (s_p_get_array((void ***)&ptr, &count, "FrontendName",
-			  conf_hashtbl)) {
-		*ptr_array = ptr;
-		return count;
-	} else {
-		*ptr_array = NULL;
-		return 0;
-	}
-}
-
 
 int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 {
@@ -2119,11 +1992,8 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 	p = node_to_host_hashtbl[alias_idx];
 	while (p) {
 		if (xstrcmp(p->alias, alias) == 0) {
-			if (front_end)
-				fatal("Frontend not configured correctly in slurm.conf. See FrontEndName in slurm.conf man page.");
-			else
-				fatal("Duplicated NodeName %s in the config file",
-				      p->alias);
+			fatal("Duplicated NodeName %s in the config file",
+			      p->alias);
 		}
 		p = p->next_alias;
 	}
@@ -2164,54 +2034,6 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 	}
 }
 
-static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
-{
-	hostlist_t *hostname_list = NULL;
-	hostlist_t *address_list = NULL;
-	char *hostname = NULL;
-	char *address = NULL;
-	int error_code = SLURM_SUCCESS;
-
-	if ((front_end_ptr->frontends == NULL) ||
-	    (front_end_ptr->frontends[0] == '\0'))
-		return -1;
-
-	if ((hostname_list = hostlist_create(front_end_ptr->frontends))
-	     == NULL) {
-		error("Unable to create FrontendNames list from %s",
-		      front_end_ptr->frontends);
-		error_code = errno;
-		goto cleanup;
-	}
-	if ((address_list = hostlist_create(front_end_ptr->addresses))
-	     == NULL) {
-		error("Unable to create FrontendAddr list from %s",
-		      front_end_ptr->addresses);
-		error_code = errno;
-		goto cleanup;
-	}
-	if (hostlist_count(address_list) != hostlist_count(hostname_list)) {
-		error("Node count mismatch between FrontendNames and "
-		      "FrontendAddr");
-		goto cleanup;
-	}
-
-	while ((hostname = hostlist_shift(hostname_list))) {
-		address = hostlist_shift(address_list);
-		_push_to_hashtbls(hostname, hostname, address, NULL,
-				  front_end_ptr->port, true, NULL, false,
-				  false, false);
-		free(hostname);
-		free(address);
-	}
-
-	/* free allocated storage */
-cleanup:
-	FREE_NULL_HOSTLIST(hostname_list);
-	FREE_NULL_HOSTLIST(address_list);
-	return error_code;
-}
-
 static int _check_callback(char *alias, char *hostname, char *address,
 			   char *bcast_address, uint16_t port, int state_val,
 			   slurm_conf_node_t *node_ptr,
@@ -2246,7 +2068,6 @@ static int _check_callback(char *alias, char *hostname, char *address,
 static void _init_slurmd_nodehash(void)
 {
 	slurm_conf_node_t **ptr_array;
-	slurm_conf_frontend_t **ptr_front_end;
 	int count, i;
 
 	if (nodehash_initialized)
@@ -2263,10 +2084,6 @@ static void _init_slurmd_nodehash(void)
 	for (i = 0; i < count; i++) {
 		expand_nodeline_info(ptr_array[i], NULL, NULL, _check_callback);
 	}
-
-	count = slurm_conf_frontend_array(&ptr_front_end);
-	for (i = 0; i < count; i++)
-		_register_front_ends(ptr_front_end[i]);
 }
 
 /*
@@ -3167,10 +2984,6 @@ _destroy_slurm_conf(void)
 
 	s_p_hashtbl_destroy(conf_hashtbl);
 	FREE_NULL_BUFFER(conf_buf);
-	if (default_frontend_tbl != NULL) {
-		s_p_hashtbl_destroy(default_frontend_tbl);
-		default_frontend_tbl = NULL;
-	}
 	if (default_nodename_tbl != NULL) {
 		s_p_hashtbl_destroy(default_nodename_tbl);
 		default_nodename_tbl = NULL;

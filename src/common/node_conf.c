@@ -86,7 +86,6 @@ strong_alias(find_node_record, slurm_find_node_record);
 list_t *active_feature_list;	/* list of currently active features_records */
 list_t *avail_feature_list;	/* list of available features_records */
 list_t *config_list = NULL;	/* list of config_record entries */
-list_t *front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
 node_record_t **node_record_table_ptr = NULL;	/* node records */
 xhash_t* node_hash_table = NULL;
@@ -122,7 +121,6 @@ static void _delete_config_record(void)
 {
 	last_node_update = time (NULL);
 	list_flush(config_list);
-	list_flush(front_end_list);
 }
 
 #if _DEBUG
@@ -245,19 +243,6 @@ extern char *bitmap2node_name_sortable(bitstr_t *bitmap, bool sort)
 extern char *bitmap2node_name(bitstr_t *bitmap)
 {
 	return bitmap2node_name_sortable(bitmap, 1);
-}
-
-/*
- * build_all_frontend_info - get a array of slurm_conf_frontend_t structures
- *	from the slurm.conf reader, build table, and set values
- * is_slurmd_context: set to true if run from slurmd
- * RET 0 if no error, error code otherwise
- */
-extern void build_all_frontend_info(bool is_slurmd_context)
-{
-	slurm_conf_frontend_t **ptr_array;
-	if (slurm_conf_frontend_array(&ptr_array) != 0)
-		fatal("FrontendName information configured!");
 }
 
 static int _check_callback(char *alias, char *hostname,
@@ -1044,7 +1029,6 @@ extern void init_node_conf(void)
 		_delete_config_record();
 	else {
 		config_list    = list_create (_list_delete_config);
-		front_end_list = list_create (destroy_frontend);
 	}
 	if (xstrcasestr(slurm_conf.sched_params, "spec_cores_first"))
 		spec_cores_first = true;
@@ -1069,7 +1053,6 @@ extern void node_fini2(void)
 		 * node config_ptr's.
 		 */
 		FREE_NULL_LIST(config_list);
-		FREE_NULL_LIST(front_end_list);
 	}
 
 	xfree(node_record_table_ptr);
