@@ -61,7 +61,6 @@
 #define OPT_LONG_GET		0x103
 #define OPT_LONG_CLEAR		0x104
 #define OPT_LONG_USER		0x105
-#define OPT_LONG_FRONT_END	0x107
 #define OPT_LONG_FLAGS		0x108
 #define OPT_LONG_BURST_BUFFER	0x109
 #define OPT_LONG_DRAINING 0x10a
@@ -122,7 +121,6 @@ extern void parse_command_line(int argc, char **argv)
 		{"burst_buffer", no_argument,    0, OPT_LONG_BURST_BUFFER},
 		{"clear",     no_argument,       0, OPT_LONG_CLEAR},
 		{"flags",     required_argument, 0, OPT_LONG_FLAGS},
-		{"front_end", no_argument,       0, OPT_LONG_FRONT_END},
 		{"get",       no_argument,       0, OPT_LONG_GET},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
 		{"set",       no_argument,       0, OPT_LONG_SET},
@@ -279,9 +277,6 @@ extern void parse_command_line(int argc, char **argv)
 				exit(1);
 			}
 			break;
-		case (int) OPT_LONG_FRONT_END:
-			params.front_end = true;
-			break;
 		case (int) OPT_LONG_GET:
 			params.mode_get = true;
 			break;
@@ -326,7 +321,6 @@ static void _init_options( void )
 	params.bu_ctld_res_op = false;
 	params.bu_ctld_as_ctrl = false;
 	params.flags        = 0;
-	params.front_end    = false;
 	params.no_header    = false;
 	params.node_down    = false;
 	params.node_drained = false;
@@ -361,7 +355,6 @@ static void _print_options( void )
 	verbose("clear         = %s", params.mode_clear ? "true" : "false");
 	verbose("burst_buffer  = %s", params.burst_buffer ? "true" : "false");
 	verbose("flags         = %u", params.flags);
-	verbose("front_end     = %s", params.front_end ? "true" : "false");
 	verbose("job_id        = %u", params.job_id);
 	verbose("job_fini      = %s", params.job_fini ? "true" : "false");
 	verbose("no_header     = %s", params.no_header ? "true" : "false");
@@ -497,7 +490,6 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
       --get           get trigger information\n\
       --clear         delete a trigger\n\n\
       --burst_buffer  trigger event on burst buffer error\n\
-      --front_end     trigger event on FrontEnd node state changes\n\
   -a, --primary_slurmctld_failure\n\
                       trigger event when primary slurmctld fails\n\
   -A, --primary_slurmctld_resumed_operation\n\

@@ -50,7 +50,6 @@ struct strigger_parameters {
 	bool     burst_buffer;
 	list_t *clusters;
 	uint16_t flags;
-	bool     front_end;
 	bool     job_fini;
 	uint32_t job_id;
 	bool     mode_set;
