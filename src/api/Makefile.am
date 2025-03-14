@@ -102,7 +102,6 @@ slurmapi_src =           \
 	config_info.c    \
 	crontab.c        \
 	federation_info.c \
-	front_end_info.c \
 	init.c           \
 	init_msg.c       \
 	job_info.c       \

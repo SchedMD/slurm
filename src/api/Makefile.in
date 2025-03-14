@@ -226,8 +226,8 @@ am__objects_1 = account_functions.lo archive_functions.lo \
 am__objects_2 = allocate.lo allocate_msg.lo block_info.lo \
 	burst_buffer_info.lo assoc_mgr_info.lo cancel.lo \
 	cluster_info.lo complete.lo config_info.lo crontab.lo \
-	federation_info.lo front_end_info.lo init.lo init_msg.lo \
-	job_info.lo job_step_info.lo license_info.lo node_info.lo \
+	federation_info.lo init.lo init_msg.lo job_info.lo \
+	job_step_info.lo license_info.lo node_info.lo \
 	partition_info.lo pmi_server.lo reservation_info.lo signal.lo \
 	slurm_get_statistics.lo slurm_pmi.lo step_io.lo step_launch.lo \
 	submit.lo suspend.lo token.lo topo_info.lo triggers.lo \
@@ -271,10 +271,9 @@ am__depfiles_remade = ./$(DEPDIR)/account_functions.Plo \
 	./$(DEPDIR)/coord_functions.Plo ./$(DEPDIR)/crontab.Plo \
 	./$(DEPDIR)/extra_get_functions.Plo \
 	./$(DEPDIR)/federation_functions.Plo \
-	./$(DEPDIR)/federation_info.Plo ./$(DEPDIR)/front_end_info.Plo \
-	./$(DEPDIR)/init.Plo ./$(DEPDIR)/init_msg.Plo \
-	./$(DEPDIR)/job_functions.Plo ./$(DEPDIR)/job_info.Plo \
-	./$(DEPDIR)/job_report_functions.Plo \
+	./$(DEPDIR)/federation_info.Plo ./$(DEPDIR)/init.Plo \
+	./$(DEPDIR)/init_msg.Plo ./$(DEPDIR)/job_functions.Plo \
+	./$(DEPDIR)/job_info.Plo ./$(DEPDIR)/job_report_functions.Plo \
 	./$(DEPDIR)/job_step_info.Plo ./$(DEPDIR)/license_info.Plo \
 	./$(DEPDIR)/node_info.Plo ./$(DEPDIR)/partition_info.Plo \
 	./$(DEPDIR)/pmi_server.Plo ./$(DEPDIR)/qos_functions.Plo \
@@ -687,7 +686,6 @@ slurmapi_src = \
 	config_info.c    \
 	crontab.c        \
 	federation_info.c \
-	front_end_info.c \
 	init.c           \
 	init_msg.c       \
 	job_info.c       \
@@ -927,7 +925,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/extra_get_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/federation_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/federation_info.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/init.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/init_msg.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_functions.Plo@am__quote@ # am--include-marker
@@ -1115,7 +1112,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/extra_get_functions.Plo
 	-rm -f ./$(DEPDIR)/federation_functions.Plo
 	-rm -f ./$(DEPDIR)/federation_info.Plo
-	-rm -f ./$(DEPDIR)/front_end_info.Plo
 	-rm -f ./$(DEPDIR)/init.Plo
 	-rm -f ./$(DEPDIR)/init_msg.Plo
 	-rm -f ./$(DEPDIR)/job_functions.Plo
@@ -1211,7 +1207,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/extra_get_functions.Plo
 	-rm -f ./$(DEPDIR)/federation_functions.Plo
 	-rm -f ./$(DEPDIR)/federation_info.Plo
-	-rm -f ./$(DEPDIR)/front_end_info.Plo
 	-rm -f ./$(DEPDIR)/init.Plo
 	-rm -f ./$(DEPDIR)/init_msg.Plo
 	-rm -f ./$(DEPDIR)/job_functions.Plo

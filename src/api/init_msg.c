@@ -169,17 +169,6 @@ void slurm_init_update_node_msg (update_node_msg_t * update_node_msg)
 }
 
 /*
- * slurm_init_update_front_end_msg - initialize front_end node update message
- * OUT update_front_end_msg - user defined node descriptor
- */
-void slurm_init_update_front_end_msg (update_front_end_msg_t *
-				      update_front_end_msg)
-{
-	memset(update_front_end_msg, 0, sizeof(update_front_end_msg_t));
-	update_front_end_msg->node_state = NO_VAL;
-}
-
-/*
  * slurm_init_trigger_msg - initialize trigger clear/update message
  * OUT trigger_info_msg - user defined trigger descriptor
  */
