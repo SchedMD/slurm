@@ -1326,23 +1326,6 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 	return DUMP(ASSOC_SHORT, assoc, dst, args);
 }
 
-static void _fill_jobinfo_stp(job_std_pattern_t *job_stp, slurm_job_info_t *job)
-{
-	job_stp->array_job_id = job->array_job_id;
-	job_stp->array_task_id = job->array_task_id;
-	if (job->batch_flag) {
-		job_stp->first_step_id = SLURM_BATCH_SCRIPT;
-		job_stp->first_step_node = job->batch_host;
-	} else {
-		job_stp->first_step_id = 0;
-		job_stp->first_step_node = NULL;
-	}
-	job_stp->jobid = job->job_id;
-	job_stp->jobname = job->name;
-	job_stp->user = job->user_name;
-	job_stp->work_dir = job->work_dir;
-}
-
 PARSE_DISABLED(JOB_STDIN)
 PARSE_DISABLED(JOB_STDOUT)
 PARSE_DISABLED(JOB_STDERR)
@@ -5162,12 +5145,10 @@ static int DUMP_FUNC(JOB_INFO_STDIN_EXP)(const parser_t *const parser,
 					 void *obj, data_t *dst, args_t *args)
 {
 	slurm_job_info_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *str = NULL;
 
 	if (job->std_in && (*job->std_in != '\0')) {
-		_fill_jobinfo_stp(&job_stp, job);
-		str = expand_stdio_fields(job->std_in, &job_stp);
+		str = slurm_expand_job_stdio_fields(job->std_in, job);
 	} else {
 		str = xstrdup("");
 	}
@@ -5180,12 +5161,10 @@ static int DUMP_FUNC(JOB_INFO_STDOUT_EXP)(const parser_t *const parser,
 					  void *obj, data_t *dst, args_t *args)
 {
 	slurm_job_info_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *str = NULL;
 
 	if (job->std_out && (*job->std_out != '\0')) {
-		_fill_jobinfo_stp(&job_stp, job);
-		str = expand_stdio_fields(job->std_out, &job_stp);
+		str = slurm_expand_job_stdio_fields(job->std_out, job);
 	} else {
 		str = xstrdup("");
 	}
@@ -5198,12 +5177,10 @@ static int DUMP_FUNC(JOB_INFO_STDERR_EXP)(const parser_t *const parser,
 					  void *obj, data_t *dst, args_t *args)
 {
 	slurm_job_info_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *str = NULL;
 
 	if (job->std_err && (*job->std_err != '\0')) {
-		_fill_jobinfo_stp(&job_stp, job);
-		str = expand_stdio_fields(job->std_err, &job_stp);
+		str = slurm_expand_job_stdio_fields(job->std_err, job);
 	} else {
 		str = xstrdup("");
 	}
