@@ -1622,34 +1622,6 @@ static void _slurm_rpc_get_fed(slurm_msg_t *msg)
 	debug2("%s %s", __func__, TIME_STR);
 }
 
-/* _slurm_rpc_dump_front_end - process RPC for front_end state information */
-static void _slurm_rpc_dump_front_end(slurm_msg_t *msg)
-{
-	DEF_TIMERS;
-	buf_t *buffer = NULL;
-	front_end_info_request_msg_t *front_end_req_msg = msg->data;
-	/* Locks: Read config, read node */
-	slurmctld_lock_t node_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
-
-	START_TIMER;
-	lock_slurmctld(node_read_lock);
-
-	if ((front_end_req_msg->last_update - 1) >= last_front_end_update) {
-		unlock_slurmctld(node_read_lock);
-		debug3("%s, no change", __func__);
-		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
-	} else {
-		buffer = pack_all_front_end(msg->protocol_version);
-		unlock_slurmctld(node_read_lock);
-		END_TIMER2(__func__);
-
-		/* send message */
-		(void) send_msg_response(msg, RESPONSE_FRONT_END_INFO, buffer);
-		FREE_NULL_BUFFER(buffer);
-	}
-}
-
 /* _slurm_rpc_dump_nodes - dump RPC for node state information */
 static void _slurm_rpc_dump_nodes(slurm_msg_t *msg)
 {
@@ -6535,9 +6507,6 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.locks = {
 			.fed = READ_LOCK,
 		},
-	},{
-		.msg_type = REQUEST_FRONT_END_INFO,
-		.func = _slurm_rpc_dump_front_end,
 	},{
 		.msg_type = REQUEST_NODE_INFO,
 		.func = _slurm_rpc_dump_nodes,
