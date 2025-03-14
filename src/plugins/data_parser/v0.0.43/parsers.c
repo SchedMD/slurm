@@ -5189,6 +5189,58 @@ static int DUMP_FUNC(JOB_INFO_STDERR_EXP)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(STEP_INFO_STDIN_EXP)
+PARSE_DISABLED(STEP_INFO_STDOUT_EXP)
+PARSE_DISABLED(STEP_INFO_STDERR_EXP)
+
+static int DUMP_FUNC(STEP_INFO_STDIN_EXP)(const parser_t *const parser,
+					  void *obj, data_t *dst, args_t *args)
+{
+	job_step_info_t *step = obj;
+	char *str = NULL;
+
+	if (step->std_in && (*step->std_in != '\0')) {
+		str = slurm_expand_step_stdio_fields(step->std_in, step);
+	} else {
+		str = xstrdup("");
+	}
+
+	data_set_string_own(dst, str);
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(STEP_INFO_STDOUT_EXP)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	job_step_info_t *step = obj;
+	char *str = NULL;
+
+	if (step->std_out && (*step->std_out != '\0')) {
+		str = slurm_expand_step_stdio_fields(step->std_out, step);
+	} else {
+		str = xstrdup("");
+	}
+
+	data_set_string_own(dst, str);
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(STEP_INFO_STDERR_EXP)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	job_step_info_t *step = obj;
+	char *str = NULL;
+
+	if (step->std_err && (*step->std_err != '\0')) {
+		str = slurm_expand_step_stdio_fields(step->std_err, step);
+	} else {
+		str = xstrdup("");
+	}
+
+	data_set_string_own(dst, str);
+	return SLURM_SUCCESS;
+}
+
 static int _parse_timestamp(const parser_t *const parser, time_t *time_ptr,
 			    data_t *src, args_t *args, data_t *parent_path)
 {
@@ -8024,6 +8076,8 @@ static const parser_t PARSER_ARRAY(SLURMDBD_PING)[] = {
 	add_parser(job_step_info_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) \
 	add_parser_skip(job_step_info_t, field)
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(job_step_info_t, mtype, false, path, desc)
 static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 	add_parse(UINT32, array_job_id, "array/job_id", "Job ID of job array, or 0 if N/A"),
 	add_parse(UINT32, array_task_id, "array/task_id", "Task ID of this task in job array"),
@@ -8050,6 +8104,12 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 	add_skip(start_protocol_ver),
 	add_parse(JOB_STATE, state, "state", "Current state"),
 	add_parse(SLURM_STEP_ID_STRING, step_id, "id", "Step ID"),
+	add_parse(STRING, std_err, "stderr", "Step stderr file path"),
+	add_parse(STRING, std_in, "stdin", "Step stdin file path"),
+	add_parse(STRING, std_out, "stdout", "Step stdout file path"),
+	add_cparse(STEP_INFO_STDIN_EXP, "stdin_expanded", "Step stdin with expanded fields"),
+	add_cparse(STEP_INFO_STDOUT_EXP, "stdout_expanded", "Step stdout with expanded fields"),
+	add_cparse(STEP_INFO_STDERR_EXP, "stderr_expanded", "Step stderr with expanded fields"),
 	add_parse(STRING, submit_line, "submit_line", "Full command used to submit the step"),
 	add_parse(TASK_DISTRIBUTION, task_dist, "task/distribution", "Layout"),
 	add_parse(UINT32_NO_VAL, time_limit, "time/limit", "Maximum run time in minutes"),
@@ -8064,6 +8124,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 };
 #undef add_parse
 #undef add_skip
+#undef add_cparse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(partition_info_t, mtype, false, field, 0, path, desc)
@@ -10098,6 +10159,9 @@ static const parser_t parsers[] = {
 	addpc(JOB_INFO_STDIN_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDOUT_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDERR_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),
+	addpc(STEP_INFO_STDIN_EXP, job_step_info_t, NEED_NONE, STRING, NULL),
+	addpc(STEP_INFO_STDOUT_EXP, job_step_info_t, NEED_NONE, STRING, NULL),
+	addpc(STEP_INFO_STDERR_EXP, job_step_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_USER, slurmdb_job_rec_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_CONDITION_SUBMIT_TIME, TIMESTAMP_NO_VAL, slurmdb_job_cond_t, NEED_NONE, NULL),
 	addpcp(JOB_DESC_MSG_RLIMIT_CPU, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Per-process CPU limit, in seconds."),

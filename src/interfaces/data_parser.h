@@ -203,6 +203,9 @@ typedef enum {
 	DATA_PARSER_STEP_INFO, /* job_step_info_t */
 	DATA_PARSER_STEP_INFO_PTR, /* job_step_info_t* */
 	DATA_PARSER_STEP_INFO_ARRAY, /* job_step_info_t* */
+	DATA_PARSER_STEP_INFO_STDIN_EXP, /* step_job_info_t->std_in (handles all pattern replacements) */
+	DATA_PARSER_STEP_INFO_STDOUT_EXP, /* step_job_info_t->std_out (handles all pattern replacements) */
+	DATA_PARSER_STEP_INFO_STDERR_EXP, /* step_job_info_t->std_err (handles all pattern replacements) */
 	DATA_PARSER_STEP, /* slurmdb_step_rec_t */
 	DATA_PARSER_STEP_PTR, /* slurmdb_step_rec_t* */
 	DATA_PARSER_STEP_LIST, /* List of slurmdb_step_rec_t* */
