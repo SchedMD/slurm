@@ -525,9 +525,7 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 		{NULL}
 	};
 
-#ifndef HAVE_FRONT_END
 	fatal("Use of FrontendName in slurm.conf without Slurm being configured/built with the --enable-front-end option");
-#endif
 
 	tbl = s_p_hashtbl_create(_frontend_options);
 	s_p_parse_line(tbl, *leftover, leftover);
@@ -1007,24 +1005,6 @@ extern void destroy_frontend(void *ptr)
 	xfree(ptr);
 }
 
-/*
- * _list_find_frontend - find an entry in the front_end list, see list.h for
- *	documentation
- * IN key - is frontend name
- * RET 1 if found, 0 otherwise
- */
-#ifdef HAVE_FRONT_END
-static int _list_find_frontend(void *front_end_entry, void *key)
-{
-	slurm_conf_frontend_t *front_end_ptr =
-		(slurm_conf_frontend_t *) front_end_entry;
-
-	if (xstrcmp(front_end_ptr->frontends, (char *) key) == 0)
-		return 1;
-	return 0;
-}
-#endif
-
 static void _destroy_nodename(void *ptr)
 {
 	slurm_conf_node_t *n = (slurm_conf_node_t *)ptr;
@@ -1097,45 +1077,8 @@ int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
 		*ptr_array = ptr;
 		return count;
 	} else {
-#ifdef HAVE_FRONT_END
-		/* No FrontendName in slurm.conf. Take the NodeAddr and
-		 * NodeHostName from the first node's record and use that to
-		 * build an equivalent structure to that constructed when
-		 * FrontendName is configured. This is intended for backward
-		 * compatibility with Slurm version 2.2. */
-		static slurm_conf_frontend_t local_front_end;
-		static slurm_conf_frontend_t *local_front_end_array[2] =
-			{NULL, NULL};
-		static char addresses[1024], hostnames[1024];
-
-		if (local_front_end_array[0] == NULL) {
-			slurm_conf_node_t **node_ptr;
-			int node_count = 0;
-			if (!s_p_get_array((void ***)&node_ptr, &node_count,
-					   "NodeName", conf_hashtbl) ||
-			    (node_count == 0)) {
-				fatal("No front end nodes configured");
-			}
-			strlcpy(addresses, node_ptr[0]->addresses,
-				sizeof(addresses));
-			strlcpy(hostnames, node_ptr[0]->hostnames,
-				sizeof(hostnames));
-			local_front_end.addresses = addresses;
-			local_front_end.frontends = hostnames;
-			if (node_ptr[0]->port_str) {
-				local_front_end.port = atoi(node_ptr[0]->
-							    port_str);
-			}
-			local_front_end.reason = NULL;
-			local_front_end.node_state = NODE_STATE_UNKNOWN;
-			local_front_end_array[0] = &local_front_end;
-		}
-		*ptr_array = local_front_end_array;
-		return 1;
-#else
 		*ptr_array = NULL;
 		return 0;
-#endif
 	}
 }
 
@@ -2196,7 +2139,7 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 	alias_idx = _get_hash_idx(alias);
 	hostname_idx = _get_hash_idx(hostname);
 
-#if !defined(HAVE_FRONT_END) && !defined(MULTIPLE_SLURMD)
+#if !defined(MULTIPLE_SLURMD)
 	/* Ensure only one slurmd configured on each host */
 	p = host_to_node_hashtbl[hostname_idx];
 	while (p) {
@@ -2409,26 +2352,8 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 	char *alias = NULL;
 	int idx;
 	names_ll_t *p;
-#ifdef HAVE_FRONT_END
-	slurm_conf_frontend_t *front_end_ptr = NULL;
 
- 	slurm_conf_lock();
-	if (!front_end_list) {
-		debug("front_end_list is NULL");
-	} else {
-		front_end_ptr = list_find_first(front_end_list,
-						_list_find_frontend,
-						(char *) node_hostname);
-		if (front_end_ptr) {
-			alias = xstrdup(front_end_ptr->frontends);
-			slurm_conf_unlock();
-			return alias;
-		}
-	}
-#else
 	slurm_conf_lock();
-#endif
-
 	_init_slurmd_nodehash();
 	idx = _get_hash_idx(node_hostname);
 	p = host_to_node_hashtbl[idx];
@@ -5002,12 +4927,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		if (conf->prolog_flags & PROLOG_FLAG_NOHOLD) {
 			conf->prolog_flags |= PROLOG_FLAG_ALLOC;
 		}
-#ifdef HAVE_FRONT_END
-		if (conf->prolog_flags & PROLOG_FLAG_ALLOC) {
-			/* Batch job launches will fail without enhancements */
-			fatal("PrologFlags=alloc not supported on FrontEnd configurations");
-		}
-#endif
 		xfree(temp_str);
 	} else { /* Default: no Prolog Flags are set */
 		conf->prolog_flags = 0;
@@ -5375,12 +5294,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		xfree(conf->task_plugin);
 
 	_sort_task_plugin(&conf->task_plugin);
-#ifdef HAVE_FRONT_END
-	if (conf->task_plugin) {
-		error("On FrontEnd systems no TaskPlugin should be configured");
-		return SLURM_ERROR;
-	}
-#endif
 
 	conf->task_plugin_param = 0;
 	if (s_p_get_string(&temp_str, "TaskPluginParam", hashtbl)) {
@@ -6553,31 +6466,6 @@ extern void slurm_conf_remove_node(char *node_name)
 	_internal_conf_remove_node(node_name);
 	slurm_conf_unlock();
 }
-
-#ifdef HAVE_FRONT_END
-extern uint16_t slurm_conf_get_frontend_port(char *node_hostname)
-{
-	uint16_t port = 0;
-	slurm_conf_frontend_t *front_end_ptr = NULL;
-
-	slurm_conf_lock();
-	_init_slurmd_nodehash();
-
-	if (!front_end_list) {
-		debug("front_end_list is NULL");
-	} else if ((front_end_ptr = list_find_first(front_end_list,
-						    _list_find_frontend,
-						    node_hostname))) {
-		if (front_end_ptr->port)
-			port = front_end_ptr->port;
-		else
-			port = conf_ptr->slurmd_port;
-	}
-	slurm_conf_unlock();
-
-	return port;
-}
-#endif
 
 extern char *conf_get_opt_str(const char *opts, const char *arg)
 {

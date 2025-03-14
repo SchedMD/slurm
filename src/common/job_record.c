@@ -352,21 +352,6 @@ extern int pack_ctld_job_step_info(void *x, void *arg)
 	time_t begin_time, run_time;
 	bitstr_t *pack_bitstr;
 
-#if defined HAVE_FRONT_END
-	/* On front-end systems, the steps only execute on one node.
-	 * We need to make them appear like they are running on the job's
-	 * entire allocation (which they really are). */
-	task_cnt = step_ptr->job_ptr->cpu_cnt;
-	node_list = step_ptr->job_ptr->nodes;
-	pack_bitstr = step_ptr->job_ptr->node_bitmap;
-
-	if (step_ptr->job_ptr->total_cpus)
-		cpu_cnt = step_ptr->job_ptr->total_cpus;
-	else if (step_ptr->job_ptr->details)
-		cpu_cnt = step_ptr->job_ptr->details->min_cpus;
-	else
-		cpu_cnt = step_ptr->job_ptr->cpu_cnt;
-#else
 	pack_bitstr = step_ptr->step_node_bitmap;
 	if (step_ptr->step_layout) {
 		task_cnt = step_ptr->step_layout->task_cnt;
@@ -376,7 +361,6 @@ extern int pack_ctld_job_step_info(void *x, void *arg)
 		node_list = step_ptr->job_ptr->nodes;
 	}
 	cpu_cnt = step_ptr->cpu_count;
-#endif
 
 	if (args->proto_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);

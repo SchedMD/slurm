@@ -74,9 +74,6 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 #ifdef MULTIPLE_SLURMD
 	cluster_flags |= CLUSTER_FLAG_MULTSD;
 #endif
-#ifdef HAVE_FRONT_END
-	cluster_flags |= CLUSTER_FLAG_FE;
-#endif
 	return cluster_flags;
 }
 

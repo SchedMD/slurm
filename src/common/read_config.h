@@ -684,13 +684,6 @@ extern void slurm_conf_add_node(node_record_t *node_ptr);
  */
 extern void slurm_conf_remove_node(char *node_name);
 
-#ifdef HAVE_FRONT_END
-/*
- * Return the frontend port for the given hostname.
- */
-extern uint16_t slurm_conf_get_frontend_port(char *node_hostname);
-#endif
-
 /*
  * Get substring from a csv-style string.
  *
