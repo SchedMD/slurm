@@ -325,6 +325,11 @@ Used only with the \fBlist\fR or \fBshow\fR command to report current
 jobs that have been orphaned on the local cluster and are now
 runaway. If there are jobs in this state it will also give you an
 option to "fix" them.
+This sets the end time for each job to the latest of the job's start, eligible,
+and submit times, and sets the state to completed. Once corrected, this triggers
+the SlurmDBD to recalculate the usage from before the earliest submit time of
+all the runaway jobs. \fBNOTE\fR: This could take a long time and sreport
+may not return data until the recalculation is completed.
 \fBNOTE\fR: You must have an \fBAdminLevel\fR of at least \fBOperator\fR to perform
 this.
 .IP
