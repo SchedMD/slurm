@@ -5782,11 +5782,6 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Federation");
 	}
-	if (debug_flags & DEBUG_FLAG_FRONT_END) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "FrontEnd");
-	}
 	if (debug_flags & DEBUG_FLAG_GANG) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -6001,8 +5996,6 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_ENERGY;
 		else if (xstrcasecmp(tok, "Federation") == 0)
 			(*flags_out) |= DEBUG_FLAG_FEDR;
-		else if (xstrcasecmp(tok, "FrontEnd") == 0)
-			(*flags_out) |= DEBUG_FLAG_FRONT_END;
 		else if (xstrcasecmp(tok, "Gang") == 0)
 			(*flags_out) |= DEBUG_FLAG_GANG;
 		else if (!xstrcasecmp(tok, "GLOB_SILENCE"))
