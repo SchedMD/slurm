@@ -185,11 +185,11 @@ static int _license_find_remote_rec(void *x, void *key)
 }
 
 /* Given a license string, return a list of license_t records */
-static list_t *_build_license_list(char *licenses, bool *valid)
+static list_t *_build_license_list(char *licenses, bool *valid, bool hres)
 {
 	int i;
 	char *end_num, *tmp_str, *token, *last;
-	char *delim = ",;";
+	char *delim = hres ? ";" : ",;";
 	licenses_t *license_entry;
 	list_t *lic_list;
 
@@ -211,10 +211,24 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 	token = strtok_r(tmp_str, delim, &last);
 	while (token && *valid) {
 		int32_t num = 1;
+		char *nodes = NULL;
+		char *name = token;
 		for (i = 0; token[i]; i++) {
 			if (isspace(token[i])) {
 				*valid = false;
 				break;
+			}
+
+			if ((token[i] == '(') && hres) {
+				token[i++] = '\0';
+				nodes = &(token[i]);
+				token = strchr(nodes, ')');
+				if (!token) {
+					*valid = false;
+					break;
+				}
+				i = 0;
+				token[i++] = '\0';
 			}
 
 			if ((token[i] == ':') ||
@@ -231,14 +245,16 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 			break;
 		}
 
-		license_entry = list_find_first(lic_list, _license_find_rec,
-						token);
-		if (license_entry) {
+		license_entry =
+			list_find_first(lic_list, _license_find_rec, name);
+		if (license_entry && !nodes) {
 			license_entry->total += num;
 		} else {
 			license_entry = xmalloc(sizeof(licenses_t));
 			license_entry->id.lic_id = NO_VAL16;
-			license_entry->name = xstrdup(token);
+			license_entry->id.hres_id = NO_VAL16;
+			license_entry->name = xstrdup(name);
+			license_entry->nodes = xstrdup(nodes);
 			license_entry->total = num;
 			if (delim[0] == '|')
 				license_entry->op_or = true;
@@ -380,7 +396,7 @@ extern int license_init(char *licenses)
 	if (cluster_license_list)
 		fatal("cluster_license_list already defined");
 
-	cluster_license_list = _build_license_list(licenses, &valid);
+	cluster_license_list = _build_license_list(licenses, &valid, false);
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
 
@@ -401,7 +417,7 @@ extern int license_update(char *licenses)
 	list_t *new_list;
 	bool valid = true;
 
-	new_list = _build_license_list(licenses, &valid);
+	new_list = _build_license_list(licenses, &valid, false);
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
 
@@ -677,7 +693,7 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 		assoc_mgr_unlock(&locks);
 	}
 
-	job_license_list = _build_license_list(licenses, valid);
+	job_license_list = _build_license_list(licenses, valid, false);
 	if (!job_license_list)
 		return job_license_list;
 
@@ -748,7 +764,8 @@ extern void license_job_merge(job_record_t *job_ptr)
 	bool valid = true;
 
 	FREE_NULL_LIST(job_ptr->license_list);
-	job_ptr->license_list = _build_license_list(job_ptr->licenses, &valid);
+	job_ptr->license_list =
+		_build_license_list(job_ptr->licenses, &valid, false);
 	xfree(job_ptr->licenses);
 	job_ptr->licenses = license_list_to_string(job_ptr->license_list);
 }
