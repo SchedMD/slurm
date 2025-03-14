@@ -4007,48 +4007,6 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 }
 
 /*
- * _slurm_rpc_update_front_end - process RPC to update the configuration of a
- *	front_end node (e.g. UP/DOWN)
- */
-static void _slurm_rpc_update_front_end(slurm_msg_t *msg)
-{
-	int error_code = SLURM_SUCCESS;
-	DEF_TIMERS;
-	update_front_end_msg_t *update_front_end_msg_ptr = msg->data;
-	/* Locks: write node */
-	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-
-	START_TIMER;
-	if (!validate_super_user(msg->auth_uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, UPDATE_FRONT_END RPC from uid=%u",
-		      msg->auth_uid);
-	}
-
-	if (error_code == SLURM_SUCCESS) {
-		/* do RPC call */
-		lock_slurmctld(node_write_lock);
-		error_code = update_front_end(update_front_end_msg_ptr,
-					      msg->auth_uid);
-		unlock_slurmctld(node_write_lock);
-		END_TIMER2(__func__);
-	}
-
-	/* return result */
-	if (error_code) {
-		info("%s for %s: %s",
-		     __func__, update_front_end_msg_ptr->name,
-		     slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
-	} else {
-		debug2("%s complete for %s %s",
-		       __func__, update_front_end_msg_ptr->name, TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-	}
-}
-
-/*
  * _slurm_rpc_create_node - process RPC to create node(s).
  */
 static void _slurm_rpc_create_node(slurm_msg_t *msg)
@@ -6647,9 +6605,6 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_SUBMIT_BATCH_HET_JOB,
 		.func = _slurm_rpc_submit_batch_het_job,
-	},{
-		.msg_type = REQUEST_UPDATE_FRONT_END,
-		.func = _slurm_rpc_update_front_end,
 	},{
 		.msg_type = REQUEST_UPDATE_JOB,
 		.func = _slurm_rpc_update_job,
