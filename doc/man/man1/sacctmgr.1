@@ -1004,8 +1004,8 @@ The name of a user in the association.
 
 .TP
 \fBWithRawQOSLevel\fR
-Display QosLevel in an unevaluated raw format, consisting of a comma
-separated list of QOS names prepended with '' (nothing), '+' or '\-' for
+Display QosLevel in an unevaluated raw format, consisting of a comma\-separated
+list of QOS names prepended with '' (nothing), '+' or '\-' for
 the association. QOS names without +/\- prepended were assigned (ie,
 sacctmgr modify ... set QosLevel=qos_name) for the entity listed or
 on one of its parents in the hierarchy. QOS names with +/\- prepended
@@ -1083,7 +1083,7 @@ configuration file for some Slurm\-managed cluster.
 
 .TP
 \fBRPC\fR=<\fIrpc_list\fR>
-Comma separated list of numeric RPC values.
+Comma\-separated list of numeric RPC values.
 .IP
 
 .TP
@@ -2145,7 +2145,7 @@ by specifying "OFF", "" or "Cluster", makes it use the default cluster\-wide
 The \fBGANG\fR option is used to enable gang scheduling independent of
 whether preemption is enabled (i.e. independent of the \fBPreemptType\fR
 setting). It can be specified in addition to a \fBPreemptMode\fR setting with
-the two options comma separated (e.g. \fBPreemptMode=SUSPEND,GANG\fR).
+the two options comma\-separated (e.g. \fBPreemptMode=SUSPEND,GANG\fR).
 .br
 See <https://slurm.schedmd.com/preempt.html> and
 <https://slurm.schedmd.com/gang_scheduling.html> for more details.
@@ -2561,12 +2561,12 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 
 .TP
 \fBID\fR=<\fIOPT\fR>
-Comma separated list of reservation ids.
+Comma\-separated list of reservation ids.
 .IP
 
 .TP
 \fBNames\fR=<\fIOPT\fR>
-Comma separated list of reservation names.
+Comma\-separated list of reservation names.
 .IP
 
 .TP
@@ -2668,7 +2668,7 @@ the system being controlled by a resource manager.
 
 .TP
 \fBClusters\fR=<\fIname_list\fR>
-Comma separated list of cluster names on which specified resources are to be
+Comma\-separated list of cluster names on which specified resources are to be
 available. If no names are designated then the clusters already
 allowed to use this resource will be altered.
 .IP
@@ -2703,7 +2703,7 @@ the numbers in the database back to percentages. This is required by the user.
 
 .TP
 \fBNames\fR=<\fIOPT\fR>
-Comma separated list of the name of a resource configured on the
+Comma\-separated list of the name of a resource configured on the
 system being controlled by a resource manager. If this resource is
 seen on the slurmctld its name will be name@server to distinguish it
 from local resources defined in a slurm.conf.
@@ -3157,7 +3157,7 @@ buffer), CPU, Energy, GRES, License, Memory, and Node.
 
 .SH "TRES information"
 Trackable RESources (TRES) are used in many QOS or Association limits.
-When setting the limits they are comma separated list. Each TRES has
+When setting the limits they are comma\-separated list. Each TRES has
 a different limit, i.e. GrpTRESMins=cpu=10,mem=20 would make 2
 different limits 1 for 10 cpu minutes and 1 for 20 MB memory minutes.
 This is the case for each limit that deals with TRES. To remove the
@@ -3190,9 +3190,9 @@ and loaded using the REST API or it must be transferred to a new cluster
 manually. Comments can be put into the file with the # character.
 Each line of information must begin with one of the four titles; \fBCluster\fP,
 \fBParent\fP, \fBAccount\fP or \fBUser\fP. Following the title is a space,
-dash, space, entity value, then specifications. Specifications are colon
-separated. If any variable, such as an Organization name, has a space in it,
-surround the name with single or double quotes.
+dash, space, entity value, then specifications. Specifications are
+colon\-separated. If any variable, such as an Organization name, has a space in
+it, surround the name with single or double quotes.
 
 .P
 sacctmgr dump/load must be run as a Slurm administrator or root. If using
@@ -3241,7 +3241,7 @@ sacctmgr load file=tux.cfg
 Delete what was already there and start from scratch with this information.
 With no options this will only remove the cluster along with it's associations.
 No accounts, users, or QOS will be removed.
-This also accepts a comma separated list of other options to remove. Those
+This also accepts a comma\-separated list of other options to remove. Those
 include 'account', 'qos' and 'user'. If you would like to remove accounts, qos,
 and users along with the cluster and associations give the input of
 \fIclean=account,qos,user\fR.
@@ -3352,7 +3352,7 @@ Maximum time (not related to job size) children of this accounts jobs can run.
 
 .TP
 \fBQOS\fR=
-Comma separated list of Quality of Service names (Defined in sacctmgr).
+Comma\-separated list of Quality of Service names (Defined in sacctmgr).
 .IP
 .RE
 
@@ -3459,7 +3459,7 @@ Name of organization that owns this account.
 
 .TP
 \fBQOS\fR(=,+=,\-=)
-Comma separated list of Quality of Service names (Defined in sacctmgr).
+Comma\-separated list of Quality of Service names (Defined in sacctmgr).
 .RE
 
 
@@ -3482,7 +3482,7 @@ Type of admin this user is (Administrator, Operator)
 
 .TP
 \fBCoordinator\fR=
-Comma separated list of accounts this user is coordinator over
+Comma\-separated list of accounts this user is coordinator over
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .IP
@@ -3516,7 +3516,7 @@ Maximum time (not related to job size) this user can run.
 
 .TP
 \fBQOS\fR(=,+=,\-=)
-Comma separated list of Quality of Service names (Defined in sacctmgr).
+Comma\-separated list of Quality of Service names (Defined in sacctmgr).
 .IP
 .RE
 
