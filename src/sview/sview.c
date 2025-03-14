@@ -87,7 +87,6 @@ switch_record_bitmaps_t *g_switch_nodes_maps = NULL;
 popup_pos_t popup_pos;
 char *federation_name = NULL;
 
-front_end_info_msg_t *g_front_end_info_ptr;
 job_info_msg_t *g_job_info_ptr = NULL;
 node_info_msg_t *g_node_info_ptr = NULL;
 partition_info_msg_t *g_part_info_ptr = NULL;
@@ -134,10 +133,6 @@ display_data_t main_display_data[] = {
 	 refresh_main, NULL, NULL,
 	 get_info_node, specific_info_node,
 	 set_menus_node, NULL},
-	{G_TYPE_NONE, FRONT_END_PAGE, "Front End Nodes", false, -1,
-	 refresh_main, create_model_front_end, admin_edit_front_end,
-	 get_info_front_end, specific_info_front_end,
-	 set_menus_front_end, NULL},
 	{G_TYPE_NONE, SUBMIT_PAGE, NULL, false, -1,
 	 refresh_main, NULL, NULL, NULL,
 	 NULL, NULL, NULL},
@@ -415,7 +410,6 @@ static void _set_ruled(GtkToggleAction *action)
 			"Tables ruled");
 
 	/* get rid of each existing table */
-	cluster_change_front_end();
 	cluster_change_resv();
 	cluster_change_part();
 	cluster_change_job();
@@ -1050,8 +1044,6 @@ static void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	/* } */
 
 	/* free old info under last cluster */
-	slurm_free_front_end_info_msg(g_front_end_info_ptr);
-	g_front_end_info_ptr = NULL;
 	slurm_free_burst_buffer_info_msg(g_bb_info_ptr);
 	g_bb_info_ptr = NULL;
 	slurm_free_job_info_msg(g_job_info_ptr);
@@ -1103,7 +1095,6 @@ static void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	xfree(ui_description);
 
 	/* make changes for each object */
-	cluster_change_front_end();
 	cluster_change_resv();
 	cluster_change_part();
 	cluster_change_job();
