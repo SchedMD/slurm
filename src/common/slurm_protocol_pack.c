@@ -91,10 +91,6 @@ typedef struct {
 static int _unpack_node_info_members(node_info_t *node, buf_t *buffer,
 				     uint16_t protocol_version);
 
-static int _unpack_front_end_info_members(front_end_info_t *front_end,
-					  buf_t *buffer,
-					  uint16_t protocol_version);
-
 static int _unpack_partition_info_members(partition_info_t *part,
 					  buf_t *buffer,
 					  uint16_t protocol_version);
@@ -9637,96 +9633,6 @@ unpack_error:
 }
 
 static void
-_pack_front_end_info_request_msg(front_end_info_request_msg_t * msg,
-				 buf_t *buffer, uint16_t protocol_version)
-{
-	pack_time(msg->last_update, buffer);
-}
-
-static int
-_unpack_front_end_info_request_msg(front_end_info_request_msg_t ** msg,
-				   buf_t *buffer, uint16_t protocol_version)
-{
-	front_end_info_request_msg_t* front_end_info;
-
-	front_end_info = xmalloc(sizeof(front_end_info_request_msg_t));
-	*msg = front_end_info;
-
-	safe_unpack_time(&front_end_info->last_update, buffer);
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_front_end_info_request_msg(front_end_info);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-static int
-_unpack_front_end_info_msg(front_end_info_msg_t ** msg, buf_t *buffer,
-			   uint16_t protocol_version)
-{
-	int i;
-	front_end_info_t *front_end = NULL;
-
-	xassert(msg);
-	*msg = xmalloc(sizeof(front_end_info_msg_t));
-
-	/* load buffer's header (data structure version and time) */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&((*msg)->record_count), buffer);
-		safe_unpack_time(&((*msg)->last_update), buffer);
-		safe_xcalloc(front_end, (*msg)->record_count,
-			     sizeof(front_end_info_t));
-		(*msg)->front_end_array = front_end;
-
-		/* load individual front_end info */
-		for (i = 0; i < (*msg)->record_count; i++) {
-			if (_unpack_front_end_info_members(&front_end[i],
-							   buffer,
-							   protocol_version))
-				goto unpack_error;
-		}
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_front_end_info_msg(*msg);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-static int
-_unpack_front_end_info_members(front_end_info_t *front_end, buf_t *buffer,
-			       uint16_t protocol_version)
-{
-	xassert(front_end);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&front_end->allow_groups, buffer);
-		safe_unpackstr(&front_end->allow_users, buffer);
-		safe_unpack_time(&front_end->boot_time, buffer);
-		safe_unpackstr(&front_end->deny_groups, buffer);
-		safe_unpackstr(&front_end->deny_users, buffer);
-		safe_unpackstr(&front_end->name, buffer);
-		safe_unpack32(&front_end->node_state, buffer);
-		safe_unpackstr(&front_end->version, buffer);
-
-		safe_unpackstr(&front_end->reason, buffer);
-		safe_unpack_time(&front_end->reason_time, buffer);
-		safe_unpack32(&front_end->reason_uid, buffer);
-
-		safe_unpack_time(&front_end->slurmd_start_time, buffer);
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_front_end_info_members(front_end);
-	return SLURM_ERROR;
-}
-
-static void
 _pack_part_info_request_msg(part_info_request_msg_t * msg, buf_t *buffer,
 			    uint16_t protocol_version)
 {
@@ -13015,7 +12921,6 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	switch (msg->msg_type) {
 	case RESPONSE_ASSOC_MGR_INFO:
 	case RESPONSE_BURST_BUFFER_INFO:
-	case RESPONSE_FRONT_END_INFO:
 	case RESPONSE_JOB_INFO:
 	case RESPONSE_JOB_STEP_INFO:
 	case RESPONSE_LICENSE_INFO:
@@ -13529,11 +13434,6 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case RESPONSE_JOB_SBCAST_CRED:
 		_pack_job_sbcast_cred_msg(msg, buffer);
-		break;
-	case REQUEST_FRONT_END_INFO:
-		_pack_front_end_info_request_msg(
-			(front_end_info_request_msg_t *)msg->data, buffer,
-			msg->protocol_version);
 		break;
 	case RESPONSE_FED_INFO:
 		slurmdb_pack_federation_rec(
@@ -14228,16 +14128,6 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = slurmdb_unpack_federation_rec(&msg->data,
 						   msg->protocol_version,
 						   buffer);
-		break;
-	case REQUEST_FRONT_END_INFO:
-		rc = _unpack_front_end_info_request_msg(
-			(front_end_info_request_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_FRONT_END_INFO:
-		rc = _unpack_front_end_info_msg(
-			(front_end_info_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
 		break;
 	case REQUEST_STATS_INFO:
 		rc = _unpack_stats_request_msg((stats_info_request_msg_t **)

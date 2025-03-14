@@ -155,8 +155,6 @@ static const struct {
 	{ "interactive", SLURM_INTERACTIVE_STEP },
 };
 
-static void _free_all_front_end_info(front_end_info_msg_t *msg);
-
 static void _free_all_job_info (job_info_msg_t *msg);
 
 static void _free_all_node_info (node_info_msg_t *msg);
@@ -1575,12 +1573,6 @@ extern void slurm_free_job_state_response_msg(job_state_response_msg_t *msg)
 }
 
 extern void slurm_free_job_step_info_request_msg(job_step_info_request_msg_t *msg)
-{
-	xfree(msg);
-}
-
-extern void slurm_free_front_end_info_request_msg
-		(front_end_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
@@ -4196,46 +4188,6 @@ extern void slurm_free_job_step_info_members(job_step_info_t * msg)
 	}
 }
 
-/*
- * slurm_free_front_end_info - free the front_end information response message
- * IN msg - pointer to front_end information response message
- * NOTE: buffer is loaded by slurm_load_front_end.
- */
-extern void slurm_free_front_end_info_msg(front_end_info_msg_t * msg)
-{
-	if (msg) {
-		if (msg->front_end_array) {
-			_free_all_front_end_info(msg);
-			xfree(msg->front_end_array);
-		}
-		xfree(msg);
-	}
-}
-
-static void _free_all_front_end_info(front_end_info_msg_t *msg)
-{
-	int i;
-
-	if ((msg == NULL) || (msg->front_end_array == NULL))
-		return;
-
-	for (i = 0; i < msg->record_count; i++)
-		slurm_free_front_end_info_members(&msg->front_end_array[i]);
-}
-
-extern void slurm_free_front_end_info_members(front_end_info_t * front_end)
-{
-	if (front_end) {
-		xfree(front_end->allow_groups);
-		xfree(front_end->allow_users);
-		xfree(front_end->deny_groups);
-		xfree(front_end->deny_users);
-		xfree(front_end->name);
-		xfree(front_end->reason);
-		xfree(front_end->version);
-	}
-}
-
 extern void slurm_init_node_info_t(node_info_t *msg, bool clear)
 {
 	xassert(msg);
@@ -4993,9 +4945,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_RESERVATION_INFO:
 		slurm_free_reservation_info_msg(data);
 		break;
-	case REQUEST_FRONT_END_INFO:
-		slurm_free_front_end_info_request_msg(data);
-		break;
 	case REQUEST_SUSPEND:
 	case SRUN_REQUEST_SUSPEND:
 		slurm_free_suspend_msg(data);
@@ -5152,9 +5101,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_FED_INFO:
 		slurmdb_destroy_federation_rec(data);
-		break;
-	case RESPONSE_FRONT_END_INFO:
-		slurm_free_front_end_info_msg(data);
 		break;
 	case REQUEST_PERSIST_INIT:
 	case REQUEST_PERSIST_INIT_TLS:
