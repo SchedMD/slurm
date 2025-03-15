@@ -593,8 +593,13 @@ extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job)
 	if (!stdio_path || !*stdio_path || !job)
 		return NULL;
 
-	if (job->work_dir && (stdio_path[0] != '/'))
-		xstrcatat(expanded, &pos, job->work_dir);
+	if (job->work_dir && (stdio_path[0] != '/')) {
+		size_t len = strlen(job->work_dir);
+		if (job->work_dir[len - 1] == '/')
+			xstrcatat(expanded, &pos, job->work_dir);
+		else
+			xstrfmtcatat(expanded, &pos, "%s/", job->work_dir);
+	}
 
 	/*
 	 * Special case, if we find a \ it means the file has not been
