@@ -589,7 +589,7 @@ extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job)
 	if (!stdio_path || !*stdio_path || !job)
 		return NULL;
 
-	if (stdio_path[0] != '/')
+	if (job->work_dir && (stdio_path[0] != '/'))
 		xstrcatat(expanded, &pos, job->work_dir);
 
 	/*
