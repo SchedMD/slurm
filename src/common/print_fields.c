@@ -605,6 +605,12 @@ extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job)
 				xstrfmtcatat(expanded, &pos, "%c", *ptr);
 			break;
 		case STATE_EXPAND:
+			/* Double %% is escape, so print one %. */
+			if (*ptr == '%') {
+				xstrfmtcatat(expanded, &pos, "%c", *ptr);
+				curr_state = STATE_INIT;
+				break;
+			}
 			if (isdigit(*ptr)) {
 				if ((padding = strtoul(ptr, &end, 10)) > 9) {
 					/* Remove % and double digit 10 */
@@ -615,14 +621,13 @@ extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job)
 			}
 			if (!_is_wildcard(ptr)) {
 				padding = 0;
-				xstrfmtcatat(expanded, &pos, "%c", *ptr);
+				/* If not a wildcard print also the %. */
+				xstrfmtcatat(expanded, &pos, "%%%c", *ptr);
 			} else {
 				_expand_wildcard(&expanded, &pos, ptr, padding,
 						 job);
 			}
-			/* If we find another %, don't leave this state yet. */
-			if (*ptr != '%')
-				curr_state = STATE_INIT;
+			curr_state = STATE_INIT;
 			break;
 		default:
 			break;
