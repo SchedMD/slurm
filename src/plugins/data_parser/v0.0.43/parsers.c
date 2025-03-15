@@ -1378,6 +1378,58 @@ static int DUMP_FUNC(JOB_STDERR)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+PARSE_DISABLED(STEP_STDIN_EXP)
+PARSE_DISABLED(STEP_STDOUT_EXP)
+PARSE_DISABLED(STEP_STDERR_EXP)
+
+static int DUMP_FUNC(STEP_STDIN_EXP)(const parser_t *const parser, void *obj,
+				     data_t *dst, args_t *args)
+{
+	slurmdb_step_rec_t *step = obj;
+	char *tmp_str = NULL;
+	int rc;
+
+	if (step->std_in && (*step->std_in != '\0')) {
+		tmp_str = slurmdb_expand_step_stdio_fields(step->std_in, step);
+	}
+
+	rc = DUMP(STRING, tmp_str, dst, args);
+	xfree(tmp_str);
+	return rc;
+}
+
+static int DUMP_FUNC(STEP_STDOUT_EXP)(const parser_t *const parser, void *obj,
+				      data_t *dst, args_t *args)
+{
+	slurmdb_step_rec_t *step = obj;
+	char *tmp_str = NULL;
+	int rc;
+
+	if (step->std_out && (*step->std_out != '\0')) {
+		tmp_str = slurmdb_expand_step_stdio_fields(step->std_out, step);
+	}
+
+	rc = DUMP(STRING, tmp_str, dst, args);
+	xfree(tmp_str);
+	return rc;
+}
+
+static int DUMP_FUNC(STEP_STDERR_EXP)(const parser_t *const parser, void *obj,
+				      data_t *dst, args_t *args)
+{
+	slurmdb_step_rec_t *step = obj;
+	char *tmp_str = NULL;
+	int rc;
+
+	if (step->std_err && (*step->std_err != '\0')) {
+		tmp_str = slurmdb_expand_step_stdio_fields(step->std_err, step);
+	}
+
+	rc = DUMP(STRING, tmp_str, dst, args);
+	xfree(tmp_str);
+	return rc;
+}
+
 PARSE_DISABLED(JOB_PLANNED_TIME)
 
 static int DUMP_FUNC(JOB_PLANNED_TIME)(const parser_t *const parser, void *obj,
@@ -7291,6 +7343,12 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT64_NO_VAL, stats.consumed_energy, "statistics/energy/consumed", "Total energy consumed by all tasks in a job in joules"),
 	add_parse(SLURM_STEP_ID_STRING, step_id, "step/id", "Step ID"),
 	add_parse(STRING, stepname, "step/name", "Step name"),
+	add_parse(STRING, std_err, "step/stderr", "Path to stderr file"),
+	add_parse(STRING, std_in, "step/stdin", "Path to stdin file"),
+	add_parse(STRING, std_out, "step/stdout", "Path to stdout file"),
+	add_cparse(STEP_STDERR_EXP, "step/stderr_expanded", "Step stderr with expanded fields"),
+	add_cparse(STEP_STDIN_EXP, "step/stdin_expanded", "Step stdin with expanded fields"),
+	add_cparse(STEP_STDOUT_EXP, "step/stdout_expanded", "Step stdout with expanded fields"),
 	add_parse(UINT32, suspended, "time/suspended", "Total time in suspended state in seconds"),
 	add_parse(UINT64, sys_cpu_sec, "time/system/seconds", "System CPU time used by the step in seconds"),
 	add_parse(UINT32, sys_cpu_usec, "time/system/microseconds", "System CPU time used by the step in microseconds"),
@@ -10120,6 +10178,9 @@ static const parser_t parsers[] = {
 	addpca(STEP_TRES_REQ_MIN, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_USAGE_MAX, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_USAGE_MIN, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
+	addpc(STEP_STDIN_EXP, slurmdb_step_rec_t, NEED_NONE, STRING, NULL),
+	addpc(STEP_STDOUT_EXP, slurmdb_step_rec_t, NEED_NONE, STRING, NULL),
+	addpc(STEP_STDERR_EXP, slurmdb_step_rec_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_PLANNED_TIME, UINT64_NO_VAL, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpc(STATS_MSG_CYCLE_MEAN, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
 	addpc(STATS_MSG_CYCLE_MEAN_DEPTH, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
