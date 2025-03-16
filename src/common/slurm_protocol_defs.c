@@ -2040,6 +2040,7 @@ extern void slurm_free_job_step_create_request_msg(
 		xfree(msg->network);
 		xfree(msg->node_list);
 		xfree(msg->step_het_grps);
+		xfree(msg->cwd);
 		xfree(msg->std_err);
 		xfree(msg->std_in);
 		xfree(msg->std_out);

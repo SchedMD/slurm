@@ -229,6 +229,7 @@ static void _build_pending_step(job_record_t *job_ptr,
 	step_ptr->step_id.job_id = job_ptr->job_id;
 	step_ptr->step_id.step_id = SLURM_PENDING_STEP;
 	step_ptr->step_id.step_het_comp = NO_VAL;
+	step_ptr->cwd = xstrdup(step_specs->cwd);
 	step_ptr->std_err = xstrdup(step_specs->std_err);
 	step_ptr->std_in = xstrdup(step_specs->std_in);
 	step_ptr->std_out = xstrdup(step_specs->std_out);
@@ -3579,6 +3580,7 @@ extern int step_create(job_record_t *job_ptr,
 
 	step_ptr->cpus_per_tres = xstrdup(step_specs->cpus_per_tres);
 	step_ptr->mem_per_tres = xstrdup(step_specs->mem_per_tres);
+	step_ptr->cwd = xstrdup(step_specs->cwd);
 	step_ptr->std_err = xstrdup(step_specs->std_err);
 	step_ptr->std_in = xstrdup(step_specs->std_in);
 	step_ptr->std_out = xstrdup(step_specs->std_out);

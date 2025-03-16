@@ -2260,6 +2260,7 @@ static void _pack_job_step_create_request_msg(
 		packstr(msg->cpus_per_tres, buffer);
 		packstr(msg->mem_per_tres, buffer);
 		pack16(msg->ntasks_per_tres, buffer);
+		packstr(msg->cwd, buffer);
 		packstr(msg->std_err, buffer);
 		packstr(msg->std_in, buffer);
 		packstr(msg->std_out, buffer);
@@ -2371,6 +2372,7 @@ static int _unpack_job_step_create_request_msg(
 		safe_unpackstr(&tmp_ptr->cpus_per_tres, buffer);
 		safe_unpackstr(&tmp_ptr->mem_per_tres, buffer);
 		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
+		safe_unpackstr(&tmp_ptr->cwd, buffer);
 		safe_unpackstr(&tmp_ptr->std_err, buffer);
 		safe_unpackstr(&tmp_ptr->std_in, buffer);
 		safe_unpackstr(&tmp_ptr->std_out, buffer);

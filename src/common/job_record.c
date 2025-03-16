@@ -115,6 +115,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->tres_fmt_alloc_str);
 	xfree(step_ptr->cpus_per_tres);
 	xfree(step_ptr->mem_per_tres);
+	xfree(step_ptr->cwd);
 	xfree(step_ptr->std_err);
 	xfree(step_ptr->std_in);
 	xfree(step_ptr->std_out);

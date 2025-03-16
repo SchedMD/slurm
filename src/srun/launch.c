@@ -870,6 +870,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	memcpy(&step_req->step_id, &job->step_id, sizeof(step_req->step_id));
 	step_req->array_task_id = srun_opt->array_task_id;
 
+	step_req->cwd = xstrdup(opt_local->chdir);
 	step_req->std_err = xstrdup(opt_local->efname);
 	step_req->std_in = xstrdup(opt_local->ifname);
 	step_req->std_out = xstrdup(opt_local->ofname);

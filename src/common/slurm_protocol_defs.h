@@ -606,6 +606,7 @@ typedef struct job_step_specs {
 	slurm_step_id_t step_id;
 	uint32_t array_task_id;	/* Array Task Id, or NO_VAL */
 	uint32_t srun_pid;	/* PID of srun command, also see host */
+	char *cwd;		/* path derived from cwd or --chdir */
 	char *std_err;		/* pathname of step stderr */
 	char *std_in;		/* pathname of step stdin */
 	char *std_out;		/* pathname of step stdout */
