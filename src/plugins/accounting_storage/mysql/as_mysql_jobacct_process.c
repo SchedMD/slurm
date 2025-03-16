@@ -215,6 +215,7 @@ char *step_req_inx[] = {
 	"t1.req_cpufreq_min",
 	"t1.req_cpufreq",
 	"t1.req_cpufreq_gov",
+	"t1.cwd",
 	"t1.std_err",
 	"t1.std_in",
 	"t1.std_out",
@@ -264,6 +265,7 @@ enum {
 	STEP_REQ_REQ_CPUFREQ_MIN,
 	STEP_REQ_REQ_CPUFREQ_MAX,
 	STEP_REQ_REQ_CPUFREQ_GOV,
+	STEP_REQ_CWD,
 	STEP_REQ_STDERR,
 	STEP_REQ_STDIN,
 	STEP_REQ_STDOUT,
@@ -1085,6 +1087,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				step->requid = slurm_atoul(
 					step_row[STEP_REQ_KILL_REQUID]);
 
+			step->cwd = xstrdup(step_row[STEP_REQ_CWD]);
 			step->std_err = xstrdup(step_row[STEP_REQ_STDERR]);
 			step->std_in = xstrdup(step_row[STEP_REQ_STDIN]);
 			step->std_out = xstrdup(step_row[STEP_REQ_STDOUT]);
