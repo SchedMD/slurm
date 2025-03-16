@@ -822,6 +822,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 
 		packstr(step_ptr->cpus_per_tres, buffer);
 		packstr(step_ptr->mem_per_tres, buffer);
+		packstr(step_ptr->cwd, buffer);
 		packstr(step_ptr->std_in, buffer);
 		packstr(step_ptr->std_err, buffer);
 		packstr(step_ptr->std_out, buffer);
@@ -976,7 +977,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	time_t start_time, pre_sus_time, tot_sus_time;
 	char *host = NULL, *container = NULL, *container_id = NULL;
 	char *core_job = NULL, *submit_line = NULL;
-	char *std_in = NULL, *std_err = NULL, *std_out = NULL;
+	char *std_in = NULL, *std_err = NULL, *std_out = NULL, *cwd = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
 	char *cpus_per_tres = NULL, *mem_per_tres = NULL, *tres_bind = NULL;
@@ -1056,6 +1057,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 		safe_unpackstr(&cpus_per_tres, buffer);
 		safe_unpackstr(&mem_per_tres, buffer);
+		safe_unpackstr(&cwd, buffer);
 		safe_unpackstr(&std_in, buffer);
 		safe_unpackstr(&std_err, buffer);
 		safe_unpackstr(&std_out, buffer);
@@ -1221,6 +1223,9 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	xfree(step_ptr->mem_per_tres);
 	step_ptr->mem_per_tres = mem_per_tres;
 	mem_per_tres = NULL;
+	xfree(step_ptr->cwd);
+	step_ptr->cwd = cwd;
+	cwd = NULL;
 	xfree(step_ptr->std_in);
 	step_ptr->std_in = std_in;
 	std_in = NULL;
@@ -1307,6 +1312,7 @@ unpack_error:
 	xfree(cpus_per_tres);
 	xfree(mem_per_tres);
 	xfree(memory_allocated);
+	xfree(cwd);
 	xfree(std_in);
 	xfree(std_err);
 	xfree(std_out);
