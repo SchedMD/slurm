@@ -423,6 +423,7 @@ typedef struct dbd_step_start_msg {
 	uint32_t req_cpufreq_max; /* requested maximum CPU frequency  */
 	uint32_t req_cpufreq_gov; /* requested CPU frequency governor */
 	slurm_step_id_t step_id;
+	char *cwd;              /* Current work dir of the step */
 	char *std_err;          /* The stderr file path of the step */
 	char *std_in;           /* The stdin file path of the step */
 	char *std_out;          /* The stdout file path of the step */
