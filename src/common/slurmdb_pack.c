@@ -5215,6 +5215,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		pack16(step->state, buffer);
 		pack_step_id(&step->step_id, buffer, protocol_version);
 		packstr(step->stepname, buffer);
+		packstr(step->cwd, buffer);
 		packstr(step->std_err, buffer);
 		packstr(step->std_in, buffer);
 		packstr(step->std_out, buffer);
@@ -5295,6 +5296,7 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr(&step_ptr->stepname, buffer);
+		safe_unpackstr(&step_ptr->cwd, buffer);
 		safe_unpackstr(&step_ptr->std_err, buffer);
 		safe_unpackstr(&step_ptr->std_in, buffer);
 		safe_unpackstr(&step_ptr->std_out, buffer);

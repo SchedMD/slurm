@@ -1156,6 +1156,7 @@ typedef struct {
 
 typedef struct {
 	char *container;
+	char *cwd;
 	uint32_t elapsed;
 	time_t end;
 	int32_t exitcode;
