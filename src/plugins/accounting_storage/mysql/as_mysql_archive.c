@@ -331,6 +331,7 @@ typedef struct {
 	char *exit_code;
 	char *consumed_energy;
 	char *container;
+	char *cwd;
 	char *job_db_inx;
 	char *kill_requid;
 	char *name;
@@ -384,6 +385,7 @@ static void _free_local_step_members(local_step_t *object)
 		xfree(object->exit_code);
 		xfree(object->consumed_energy);
 		xfree(object->container);
+		xfree(object->cwd);
 		xfree(object->job_db_inx);
 		xfree(object->kill_requid);
 		xfree(object->name);
@@ -785,6 +787,7 @@ static char *step_req_inx[] = {
 	"req_cpufreq_min",
 	"req_cpufreq",
 	"req_cpufreq_gov",
+	"cwd",
 	"std_err",
 	"std_in",
 	"std_out",
@@ -837,6 +840,7 @@ enum {
 	STEP_REQ_REQ_CPUFREQ_MIN,
 	STEP_REQ_REQ_CPUFREQ_MAX,
 	STEP_REQ_REQ_CPUFREQ_GOV,
+	STEP_REQ_CWD,
 	STEP_REQ_STDERR,
 	STEP_REQ_STDIN,
 	STEP_REQ_STDOUT,
@@ -2186,6 +2190,7 @@ static void _pack_local_step(local_step_t *object, buf_t *buffer)
 	packstr(object->state, buffer);
 	packstr(object->stepid, buffer);
 	packstr(object->step_het_comp, buffer);
+	packstr(object->cwd, buffer);
 	packstr(object->std_err, buffer);
 	packstr(object->std_in, buffer);
 	packstr(object->std_out, buffer);
@@ -2244,6 +2249,7 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->state, buffer);
 		safe_unpackstr(&object->stepid, buffer);
 		safe_unpackstr(&object->step_het_comp, buffer);
+		safe_unpackstr(&object->cwd, buffer);
 		safe_unpackstr(&object->std_err, buffer);
 		safe_unpackstr(&object->std_in, buffer);
 		safe_unpackstr(&object->std_out, buffer);
@@ -4468,6 +4474,7 @@ static buf_t *_pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 		step.state = row[STEP_REQ_STATE];
 		step.stepid = row[STEP_REQ_STEPID];
 		step.step_het_comp = row[STEP_REQ_STEP_HET_COMP];
+		step.cwd = row[STEP_REQ_CWD];
 		step.std_err = row[STEP_REQ_STDERR];
 		step.std_in = row[STEP_REQ_STDIN];
 		step.std_out = row[STEP_REQ_STDOUT];
@@ -4537,6 +4544,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 		STEP_REQ_TASKDIST,
 		STEP_REQ_USER_SEC,
 		STEP_REQ_USER_USEC,
+		STEP_REQ_CWD,
 		STEP_REQ_STDERR,
 		STEP_REQ_STDIN,
 		STEP_REQ_STDOUT,
@@ -4644,6 +4652,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			     object.task_dist,
 			     object.user_sec,
 			     object.user_usec,
+			     object.cwd,
 			     object.std_err,
 			     object.std_in,
 			     object.std_out,
