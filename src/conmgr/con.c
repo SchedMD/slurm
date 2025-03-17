@@ -945,6 +945,7 @@ static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
 }
 
 extern int conmgr_create_listen_socket(conmgr_con_type_t type,
+				       conmgr_con_flags_t flags,
 				       const char *listen_on,
 				       const conmgr_events_t *events, void *arg)
 {
@@ -954,7 +955,6 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 	struct addrinfo *addrlist = NULL;
 	parsed_host_port_t *parsed_hp;
 	conmgr_callbacks_t callbacks;
-	conmgr_con_flags_t flags = CON_FLAG_NONE;
 
 	slurm_mutex_lock(&mgr.mutex);
 	callbacks = mgr.callbacks;
@@ -1080,8 +1080,9 @@ static int _setup_listen_socket(void *x, void *arg)
 	const char *hostport = (const char *)x;
 	socket_listen_init_t *init = arg;
 
-	init->rc = conmgr_create_listen_socket(init->type, hostport,
-					       init->events, init->arg);
+	init->rc = conmgr_create_listen_socket(init->type, CON_FLAG_NONE,
+					       hostport, init->events,
+					       init->arg);
 
 	return (init->rc ? SLURM_ERROR : SLURM_SUCCESS);
 }

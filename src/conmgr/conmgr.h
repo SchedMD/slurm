@@ -450,6 +450,7 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
 /*
  * Create listening socket
  * IN type - connection type for new sockets
+ * IN flags - flags for connection
  * IN listen_on - cstrings to listen on:
  *	formats:
  *		host:port
@@ -459,6 +460,7 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_listen_socket(conmgr_con_type_t type,
+				       conmgr_con_flags_t flags,
 				       const char *listen_on,
 				       const conmgr_events_t *events,
 				       void *arg);
