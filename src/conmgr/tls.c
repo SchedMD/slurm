@@ -36,7 +36,9 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
 
 #include "src/conmgr/tls.h"
 #include "src/conmgr/conmgr.h"
@@ -110,6 +112,8 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 	void *tls = NULL;
 	int rc = EINVAL;
+	buf_t *tls_in = NULL;
+	list_t *tls_out = NULL;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -139,10 +143,17 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] tls_g_destroy_conn() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
 
+
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(tls == con->tls);
 	con->tls = NULL;
+
+	SWAP(tls_in, con->tls_in);
+	SWAP(tls_out, con->tls_out);
 	slurm_mutex_unlock(&mgr.mutex);
+
+	FREE_NULL_BUFFER(tls_in);
+	FREE_NULL_LIST(tls_out);
 }
 
 extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
@@ -153,6 +164,8 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	};
 	int rc = SLURM_ERROR;
 	void *tls = NULL;
+	buf_t *tls_in = NULL;
+	list_t *tls_out = NULL;
 
 	if (!tls_enabled()) {
 		log_flag(CONMGR, "%s: [%s] TLS disabled: Unable to secure connection. Closing connection.",
@@ -177,11 +190,18 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(tls_args.mode != TLS_CONN_NULL);
 	xassert(con->input_fd >= 0);
 	xassert(con->output_fd >= 0);
+	xassert(!con->tls_in);
+	xassert(!con->tls_out);
+	/* Should not be any outgoing data yet */
+	xassert(list_is_empty(con->out));
 
 	tls_args.input_fd = con->input_fd;
 	tls_args.output_fd = con->output_fd;
 
 	slurm_mutex_unlock(&mgr.mutex);
+
+	tls_in = create_buf(xmalloc(BUFFER_START_SIZE), BUFFER_START_SIZE);
+	tls_out = list_create((ListDelF) free_buf);
 
 	/* TLS operations must have a blocking FD */
 	fd_set_blocking(tls_args.input_fd);
@@ -206,6 +226,10 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 		xassert(!con->tls);
 		con->tls = tls;
+		xassert(!con->tls_in);
+		con->tls_in = tls_in;
+		xassert(!con->tls_out);
+		con->tls_out = tls_out;
 
 		tls_wait_close(true, con);
 
@@ -220,6 +244,10 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 		xassert(!con->tls);
 		con->tls = tls;
+		xassert(!con->tls_in);
+		con->tls_in = tls_in;
+		xassert(!con->tls_out);
+		con->tls_out = tls_out;
 
 		xassert(con->input_fd == tls_args.input_fd);
 		xassert(con->output_fd == tls_args.output_fd);

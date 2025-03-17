@@ -115,6 +115,8 @@ typedef enum {
 	 * 	arg
 	 *	FLAG_ON_DATA_TRIED
 	 *	tls
+	 *	tls_in
+	 *	tls_out
 	 *
 	 */
 	FLAG_WORK_ACTIVE = SLURM_BIT(8),
@@ -199,10 +201,14 @@ struct conmgr_fd_s {
 	const conmgr_events_t *events;
 	/* Opaque pointer to TLS state */
 	void *tls;
+	/* buffer holding incoming already read encrypted data */
+	buf_t *tls_in;
 	/* buffer holding incoming already read data */
 	buf_t *in;
 	/* timestamp when last read() got >0 bytes or when connect() called */
 	timespec_t last_read;
+	/* list of buf_t holding outgoing encrypted data */
+	list_t *tls_out;
 	/* list of buf_t to write (in order) */
 	list_t *out;
 	/* timestamp when last write() wrote >0 bytes */
