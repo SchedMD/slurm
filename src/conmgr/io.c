@@ -267,7 +267,7 @@ static int _foreach_writev_flush_bytes(void *x, void *arg)
 	}
 }
 
-static void _handle_writev(conmgr_fd_t *con, const int out_count)
+static void _handle_writev(conmgr_fd_t *con, const int out_count, list_t *out)
 {
 	const int iov_count = MIN(IOV_MAX, out_count);
 	struct iovec iov_stack[IOV_STACK_COUNT];
@@ -282,7 +282,7 @@ static void _handle_writev(conmgr_fd_t *con, const int out_count)
 	if (iov_count > ARRAY_SIZE(iov_stack))
 		args.iov = xcalloc(iov_count, sizeof(*args.iov));
 
-	(void) list_for_each_ro(con->out, _foreach_add_writev_iov, &args);
+	(void) list_for_each_ro(out, _foreach_add_writev_iov, &args);
 	xassert(args.index == iov_count);
 
 	args.wrote = writev(con->output_fd, args.iov, iov_count);
@@ -295,7 +295,7 @@ static void _handle_writev(conmgr_fd_t *con, const int out_count)
 			error("%s: [%s] writev(%d) failed: %m",
 			      __func__, con->name, con->output_fd);
 			/* drop outbound data on the floor */
-			list_flush(con->out);
+			list_flush(out);
 			close_con(false, con);
 			close_con_output(false, con);
 		}
@@ -306,7 +306,7 @@ static void _handle_writev(conmgr_fd_t *con, const int out_count)
 			 __func__, con->name, args.wrote);
 
 		args.index = 0;
-		(void) list_delete_all(con->out, _foreach_writev_flush_bytes,
+		(void) list_delete_all(out, _foreach_writev_flush_bytes,
 				       &args);
 		xassert(!args.wrote);
 
@@ -369,7 +369,7 @@ extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg)
 		 con_flag(con, FLAG_TLS_SERVER))
 		_handle_tls_write(con, out_count);
 	else
-		_handle_writev(con, out_count);
+		_handle_writev(con, out_count, con->out);
 }
 
 extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
