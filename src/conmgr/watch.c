@@ -477,6 +477,18 @@ static bool _is_accept_deferred(void)
 	return (list_count(mgr.connections) >= mgr.max_connections);
 }
 
+/* caller must hold mgr->mutex lock */
+static void _queue_on_connection(conmgr_fd_t *con)
+{
+	/* disable polling until on_connect() is done */
+	con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
+
+	add_work_con_fifo(true, con, wrap_on_connection, con);
+
+	log_flag(CONMGR, "%s: [%s] Fully connected. Queuing on_connect() callback.",
+		 __func__, con->name);
+}
+
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -557,12 +569,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 				/* follow normal checks */
 			}
 		} else if (con->events->on_connection) {
-			/* disable polling until on_connect() is done */
-			con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
-			add_work_con_fifo(true, con, wrap_on_connection, con);
-
-			log_flag(CONMGR, "%s: [%s] Fully connected. Queuing on_connect() callback.",
-				 __func__, con->name);
+			_queue_on_connection(con);
 			return 0;
 		} else {
 			/*
