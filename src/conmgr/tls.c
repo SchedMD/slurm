@@ -385,6 +385,18 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 }
 
+extern void tls_handle_read(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+
+	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+	xassert(con->tls);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ||
+		con_flag(con, FLAG_TLS_SERVER));
+
+	read_input(con, con->tls_in, "input TLS buffer");
+}
+
 static int _foreach_write_tls(void *x, void *key)
 {
 	buf_t *out = x;

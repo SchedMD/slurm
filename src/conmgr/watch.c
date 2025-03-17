@@ -827,10 +827,20 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	if (!con_flag(con, FLAG_IS_LISTEN) && !con_flag(con, FLAG_READ_EOF) &&
 	    (con_flag(con, FLAG_CAN_READ) ||
 	     (con->polling_input_fd == PCTL_TYPE_UNSUPPORTED))) {
-		log_flag(CONMGR, "%s: [%s] queuing read", __func__, con->name);
-		/* reset if data has already been tried if about to read data */
+		/*
+		 * reset if data has already been tried if about to read
+		 * data
+		 */
 		con_unset_flag(con, FLAG_ON_DATA_TRIED);
-		add_work_con_fifo(true, con, handle_read, con);
+
+		if (con->tls_in) {
+			log_flag(CONMGR, "%s: [%s] queuing TLS read",
+				 __func__, con->name);
+			add_work_con_fifo(true, con, tls_handle_read, con);
+		} else {
+			log_flag(CONMGR, "%s: [%s] queuing read", __func__, con->name);
+			add_work_con_fifo(true, con, handle_read, con);
+		}
 		return 0;
 	}
 
