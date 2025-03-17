@@ -1479,6 +1479,12 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		"task_dist, req_cpufreq, req_cpufreq_min, req_cpufreq_gov",
 		mysql_conn->cluster_name, step_table);
 
+	if (step_ptr->std_err)
+		xstrcat(query, ", std_err");
+	if (step_ptr->std_in)
+		xstrcat(query, ", std_in");
+	if (step_ptr->std_out)
+		xstrcat(query, ", std_out");
 	if (step_ptr->submit_line)
 		xstrcat(query, ", submit_line");
 	if (step_ptr->container)
@@ -1496,6 +1502,12 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		   step_ptr->cpu_freq_max, step_ptr->cpu_freq_min,
 		   step_ptr->cpu_freq_gov);
 
+	if (step_ptr->std_err)
+		xstrfmtcat(query, ", '%s'", step_ptr->std_err);
+	if (step_ptr->std_in)
+		xstrfmtcat(query, ", '%s'", step_ptr->std_in);
+	if (step_ptr->std_out)
+		xstrfmtcat(query, ", '%s'", step_ptr->std_out);
 	if (step_ptr->submit_line)
 		xstrfmtcat(query, ", '%s'", step_ptr->submit_line);
 	if (step_ptr->container)
@@ -1512,6 +1524,12 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		   step_ptr->cpu_freq_min, step_ptr->cpu_freq_gov,
 		   step_ptr->tres_alloc_str);
 
+	if (step_ptr->std_err)
+		xstrfmtcat(query, ", std_err='%s'", step_ptr->std_err);
+	if (step_ptr->std_in)
+		xstrfmtcat(query, ", std_in='%s'", step_ptr->std_in);
+	if (step_ptr->std_out)
+		xstrfmtcat(query, ", std_out='%s'", step_ptr->std_out);
 	if (step_ptr->submit_line)
 		xstrfmtcat(query, ", submit_line='%s'", step_ptr->submit_line);
 
