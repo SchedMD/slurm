@@ -125,7 +125,7 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (!tls) {
-		log_flag(CONMGR, "%s: [%s] closing Deferred",
+		log_flag(CONMGR, "%s: [%s] closing TLS state skipped",
 			 __func__, con->name);
 		return;
 	}
