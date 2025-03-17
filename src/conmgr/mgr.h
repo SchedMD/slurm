@@ -634,4 +634,10 @@ extern conmgr_fd_t *fd_get_ref(conmgr_fd_ref_t *ref);
  */
 extern void handle_connection(bool locked, conmgr_fd_t *con);
 
+/*
+ * Queue up wrap_on_connection() to call events->on_connection() callback
+ * NOTE: caller must hold mgr->mutex lock
+ */
+extern void queue_on_connection(conmgr_fd_t *con);
+
 #endif /* _CONMGR_MGR_H */

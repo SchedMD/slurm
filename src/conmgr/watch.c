@@ -478,7 +478,7 @@ static bool _is_accept_deferred(void)
 }
 
 /* caller must hold mgr->mutex lock */
-static void _queue_on_connection(conmgr_fd_t *con)
+extern void queue_on_connection(conmgr_fd_t *con)
 {
 	/* disable polling until on_connect() is done */
 	con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
@@ -569,7 +569,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 				/* follow normal checks */
 			}
 		} else if (con->events->on_connection) {
-			_queue_on_connection(con);
+			queue_on_connection(con);
 			return 0;
 		} else {
 			/*
