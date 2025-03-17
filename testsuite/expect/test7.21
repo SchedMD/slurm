@@ -36,6 +36,7 @@ set file_prog       "${cwd}/$test_name.prog"
 set orig_spank_conf "$test_dir/orig_conf"
 set new_spank_conf  "$test_dir/new_conf"
 set spank_out       "$test_dir/spank.out"
+set job_id          0
 
 if {![is_super_user]} {
 	skip "This test must be run as SlurmUser"
