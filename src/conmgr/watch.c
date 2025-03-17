@@ -612,21 +612,6 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		/* connection already closed */
 	} else if (con_flag(con, FLAG_IS_CONNECTED)) {
 		/* continue on to follow other checks */
-	} else if (!con_flag(con, FLAG_IS_LISTEN) && is_tls &&
-		   !con_flag(con, FLAG_IS_TLS_CONNECTED) &&
-		   !con_flag(con, FLAG_READ_EOF)) {
-		/*
-		 * TLS handshake must happen before setting FLAG_IS_CONNECTED
-		 * (unless connection is closed for any reason) as the handshake
-		 * is considered to be the logical extension of the TCP
-		 * handshake for the event sequence here
-		 */
-		if (list_is_empty(con->work)) {
-			log_flag(CONMGR, "%s: [%s] queuing up TLS handshake",
-				 __func__, con->name);
-			add_work_con_fifo(true, con, tls_create, NULL);
-			return 0;
-		}
 	} else if (!con_flag(con, FLAG_IS_SOCKET) ||
 		   con_flag(con, FLAG_CAN_READ) ||
 		   con_flag(con, FLAG_CAN_WRITE) ||
@@ -830,6 +815,23 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		/* reset if data has already been tried if about to read data */
 		con_unset_flag(con, FLAG_ON_DATA_TRIED);
 		add_work_con_fifo(true, con, handle_read, con);
+		return 0;
+	}
+
+	if (!con_flag(con, FLAG_IS_LISTEN) && is_tls &&
+	    !con_flag(con, FLAG_IS_TLS_CONNECTED) &&
+	    !con_flag(con, FLAG_ON_DATA_TRIED) &&
+	    !con_flag(con, FLAG_READ_EOF)) {
+		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+
+		/*
+		 * TLS handshake must happen attempting to process any of the
+		 * incoming data but unwrapped data must flow both directions
+		 * until negotiations are complete
+		 */
+		log_flag(CONMGR, "%s: [%s] queuing up TLS handshake",
+			 __func__, con->name);
+		add_work_con_fifo(true, con, tls_create, NULL);
 		return 0;
 	}
 
