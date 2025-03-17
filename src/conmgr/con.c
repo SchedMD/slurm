@@ -1548,6 +1548,12 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	/* can't extract safely when work running or not connected */
 	xassert(!con_flag(con, FLAG_WORK_ACTIVE));
 	xassert(con_flag(con, FLAG_IS_CONNECTED));
+	xassert(!(con_flag(con, FLAG_TLS_SERVER) ||
+		  con_flag(con, FLAG_TLS_CLIENT)) ||
+		  con_flag(con, FLAG_IS_TLS_CONNECTED));
+	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+	xassert(!con_flag(con, FLAG_WAIT_ON_FINISH));
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *flags = con_flags_string(con->flags);
