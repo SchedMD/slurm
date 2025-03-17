@@ -280,6 +280,9 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(!con->tls);
 	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
 		con_flag(con, FLAG_TLS_SERVER));
+	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+	xassert(con_flag(con, FLAG_IS_CONNECTED));
+	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
 
 	if (con_flag(con, FLAG_TLS_CLIENT))
 		tls_args.mode = TLS_CONN_CLIENT;
