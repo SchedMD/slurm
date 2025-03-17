@@ -515,15 +515,14 @@ static int _handle_connection_wait_write(conmgr_fd_t *con,
 static int _handle_connection_write(conmgr_fd_t *con,
 				    handle_connection_args_t *args)
 {
-	if (con_flag(con, FLAG_CAN_WRITE) ||
-	    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
-		log_flag(CONMGR, "%s: [%s] %u pending writes",
-			 __func__, con->name, list_count(con->out));
-		add_work_con_fifo(true, con, handle_write, con);
-		return 0;
-	} else {
+	if (!con_flag(con, FLAG_CAN_WRITE) &&
+	    (con->polling_output_fd != PCTL_TYPE_UNSUPPORTED))
 		return _handle_connection_wait_write(con, args);
-	}
+
+	log_flag(CONMGR, "%s: [%s] %u pending writes",
+		 __func__, con->name, list_count(con->out));
+	add_work_con_fifo(true, con, handle_write, con);
+	return 0;
 }
 
 /*
