@@ -490,7 +490,8 @@ extern void queue_on_connection(conmgr_fd_t *con)
 }
 
 static int _handle_connection_wait_write(conmgr_fd_t *con,
-					 handle_connection_args_t *args)
+					 handle_connection_args_t *args,
+					 list_t *out)
 {
 	/*
 	 * Only monitor for when connection is ready for writes
@@ -507,7 +508,7 @@ static int _handle_connection_wait_write(conmgr_fd_t *con,
 
 	/* must wait until poll allows write of this socket */
 	log_flag(CONMGR, "%s: [%s] waiting for %u writes",
-		 __func__, con->name, list_count(con->out));
+		 __func__, con->name, list_count(out));
 
 	return 0;
 }
@@ -517,7 +518,7 @@ static int _handle_connection_write(conmgr_fd_t *con,
 {
 	if (!con_flag(con, FLAG_CAN_WRITE) &&
 	    (con->polling_output_fd != PCTL_TYPE_UNSUPPORTED))
-		return _handle_connection_wait_write(con, args);
+		return _handle_connection_wait_write(con, args, con->out);
 
 	log_flag(CONMGR, "%s: [%s] %u pending writes",
 		 __func__, con->name, list_count(con->out));
