@@ -561,7 +561,8 @@ extern void _handle_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		con_unset_flag(con, FLAG_WAIT_ON_FINGERPRINT);
 		con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
-		if (con->events->on_connection)
+		if (con->events->on_connection &&
+		    !con_flag(con, FLAG_TLS_SERVER))
 			queue_on_connection(con);
 		slurm_mutex_unlock(&mgr.mutex);
 	} else if (match == EWOULDBLOCK) {
@@ -649,7 +650,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			} else {
 				/* follow normal checks */
 			}
-		} else if (con->events->on_connection &&
+		} else if (con->events->on_connection && !is_tls &&
 			   !con_flag(con, FLAG_WAIT_ON_FINGERPRINT)) {
 			queue_on_connection(con);
 			return 0;

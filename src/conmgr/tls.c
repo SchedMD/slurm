@@ -382,6 +382,9 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		xassert(con->output_fd == tls_args.output_fd);
 
 		slurm_mutex_unlock(&mgr.mutex);
+
+		if (con->events->on_connection)
+			queue_on_connection(con);
 	}
 }
 
