@@ -1326,20 +1326,6 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 	return DUMP(ASSOC_SHORT, assoc, dst, args);
 }
 
-static void _fill_job_stp(job_std_pattern_t *job_stp, slurmdb_job_rec_t *job)
-{
-	slurmdb_step_rec_t *step = job->first_step_ptr;
-
-	job_stp->array_job_id = job->array_job_id;
-	job_stp->array_task_id = job->array_task_id;
-	job_stp->first_step_id = SLURM_BATCH_SCRIPT;
-	job_stp->first_step_node = step ? step->nodes : NULL;
-	job_stp->jobid = job->jobid;
-	job_stp->jobname = job->jobname;
-	job_stp->user = job->user;
-	job_stp->work_dir = job->work_dir;
-}
-
 static void _fill_jobinfo_stp(job_std_pattern_t *job_stp, slurm_job_info_t *job)
 {
 	job_stp->array_job_id = job->array_job_id;
@@ -1365,13 +1351,11 @@ static int DUMP_FUNC(JOB_STDIN)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *tmp_path = NULL;
 	int rc;
 
 	if (job->std_in && (*job->std_in != '\0')) {
-		_fill_job_stp(&job_stp, job);
-		tmp_path = expand_stdio_fields(job->std_in, &job_stp);
+		tmp_path = slurmdb_expand_job_stdio_fields(job->std_in, job);
 	}
 
 	rc = DUMP(STRING, tmp_path, dst, args);
@@ -1383,13 +1367,11 @@ static int DUMP_FUNC(JOB_STDOUT)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *tmp_path = NULL;
 	int rc;
 
 	if (job->std_out && (*job->std_out != '\0')) {
-		_fill_job_stp(&job_stp, job);
-		tmp_path = expand_stdio_fields(job->std_out, &job_stp);
+		tmp_path = slurmdb_expand_job_stdio_fields(job->std_out, job);
 	}
 
 	rc = DUMP(STRING, tmp_path, dst, args);
@@ -1401,13 +1383,11 @@ static int DUMP_FUNC(JOB_STDERR)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *tmp_path = NULL;
 	int rc;
 
 	if (job->std_err && (*job->std_err != '\0')) {
-		_fill_job_stp(&job_stp, job);
-		tmp_path = expand_stdio_fields(job->std_err, &job_stp);
+		tmp_path = slurmdb_expand_job_stdio_fields(job->std_err, job);
 	}
 
 	rc = DUMP(STRING, tmp_path, dst, args);

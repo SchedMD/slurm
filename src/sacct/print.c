@@ -279,38 +279,6 @@ static void _print_expanded_array_job(slurmdb_job_rec_t *job)
 	FREE_NULL_BITMAP(bitmap);
 }
 
-static void _expand_stdio_patterns(slurmdb_job_rec_t *job)
-{
-	char *tmp_path;
-	job_std_pattern_t job_stp;
-	slurmdb_step_rec_t *step = job->first_step_ptr;
-
-	job_stp.array_job_id = job->array_job_id;
-	job_stp.array_task_id = job->array_task_id;
-	job_stp.first_step_id = SLURM_BATCH_SCRIPT;
-	job_stp.first_step_node = step ? step->nodes : NULL;
-	job_stp.jobid = job->jobid;
-	job_stp.jobname = job->jobname;
-	job_stp.user = job->user;
-	job_stp.work_dir = job->work_dir;
-
-	if (job->std_in && (*job->std_in != '\0')) {
-		tmp_path = expand_stdio_fields(job->std_in, &job_stp);
-		xfree(job->std_in);
-		job->std_in = tmp_path;
-	}
-	if (job->std_err && (*job->std_err != '\0')) {
-		tmp_path = expand_stdio_fields(job->std_err, &job_stp);
-		xfree(job->std_err);
-		job->std_err = tmp_path;
-	}
-	if (job->std_out && (*job->std_out != '\0')) {
-		tmp_path = expand_stdio_fields(job->std_out, &job_stp);
-		xfree(job->std_out);
-		job->std_out = tmp_path;
-	}
-}
-
 extern void print_fields(type_t type, void *object)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
@@ -320,7 +288,7 @@ extern void print_fields(type_t type, void *object)
 	int cpu_tres_rec_count = 0;
 	int step_cpu_tres_rec_count = 0;
 	char tmp1[128];
-	char *nodes = NULL;
+	char *nodes = NULL, *tmp_path = NULL;
 
 	if (!object) {
 		fatal("Job or step record is NULL");
@@ -334,8 +302,29 @@ extern void print_fields(type_t type, void *object)
 
 	switch (type) {
 	case JOB:
-		if (params.expand_patterns)
-			_expand_stdio_patterns(job);
+		if (params.expand_patterns) {
+			if (job->std_in && (*job->std_in != '\0')) {
+				tmp_path =
+					slurmdb_expand_job_stdio_fields(
+						job->std_in, job);
+				xfree(job->std_in);
+				job->std_in = tmp_path;
+			}
+			if (job->std_err && (*job->std_err != '\0')) {
+				tmp_path =
+					slurmdb_expand_job_stdio_fields(
+						job->std_err, job);
+				xfree(job->std_err);
+				job->std_err = tmp_path;
+			}
+			if (job->std_out && (*job->std_out != '\0')) {
+				tmp_path =
+					slurmdb_expand_job_stdio_fields(
+						job->std_out, job);
+				xfree(job->std_out);
+				job->std_out = tmp_path;
+			}
+		}
 		job_comp = NULL;
 		cpu_tres_rec_count = slurmdb_find_tres_count_in_string(
 			job->tres_alloc_str,

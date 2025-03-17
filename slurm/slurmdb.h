@@ -2252,6 +2252,19 @@ extern list_t *slurmdb_wckeys_modify(void *db_conn,
 extern list_t *slurmdb_wckeys_remove(void *db_conn,
 				     slurmdb_wckey_cond_t *wckey_cond);
 
+/*
+ * Take a path and return a string with all the wildcards in the path properly
+ * expanded, based in the values of the passed slurmdb_job_rec_t. This function
+ * is mainly used for batch steps, and the generated path refers to the job
+ * output files.
+ * IN: path - The raw path string which may contain wildcards to expand.
+ * IN: job - A slurmdb_job_rec_t struct used to expand the wildcards.
+ * RET: char * - An allocated string with all the paths expanded. The caller
+ * must xfree it.
+ */
+extern char *slurmdb_expand_job_stdio_fields(char *path,
+					     slurmdb_job_rec_t *job);
+
 #ifdef __cplusplus
 }
 #endif
