@@ -45,7 +45,7 @@
 
 print_field_t *field = NULL;
 int curr_inx = 1;
-char outbuf[FORMAT_STRING_SIZE];
+char outbuf[PATH_MAX];
 
 #define SACCT_TRES_AVE  0x0001
 #define SACCT_TRES_OUT  0x0002
@@ -1948,7 +1948,15 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job->std_err;
 				break;
 			case JOBSTEP:
-				tmp_char = step->std_err;
+				if (step->std_err &&
+				    (step->std_err[0] != '\0') &&
+				    (step->std_err[0] != '/')) {
+					snprintf(outbuf, PATH_MAX, "%s/%s",
+						 step->cwd, step->std_err);
+					tmp_char = outbuf;
+				} else {
+					tmp_char = step->std_err;
+				}
 				break;
 			case JOBCOMP:
 			default:
@@ -1964,7 +1972,15 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job->std_in;
 				break;
 			case JOBSTEP:
-				tmp_char = step->std_in;
+				if (step->std_in &&
+				    (step->std_in[0] != '\0') &&
+				    (step->std_in[0] != '/')) {
+					snprintf(outbuf, PATH_MAX, "%s/%s",
+						 step->cwd, step->std_in);
+					tmp_char = outbuf;
+				} else {
+					tmp_char = step->std_in;
+				}
 				break;
 			case JOBCOMP:
 			default:
@@ -1980,7 +1996,15 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job->std_out;
 				break;
 			case JOBSTEP:
-				tmp_char = step->std_out;
+				if (step->std_out &&
+				    (step->std_out[0] != '\0') &&
+				    (step->std_out[0] != '/')) {
+					snprintf(outbuf, PATH_MAX, "%s/%s",
+						 step->cwd, step->std_out);
+					tmp_char = outbuf;
+				} else {
+					tmp_char = step->std_out;
+				}
 				break;
 			case JOBCOMP:
 			default:

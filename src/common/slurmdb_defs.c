@@ -4841,7 +4841,7 @@ extern char *slurmdb_expand_step_stdio_fields(char *path,
 	job_stp.jobid = step->step_id.job_id;
 	job_stp.jobname = job->jobname;
 	job_stp.user = job->user;
-	job_stp.work_dir = job->work_dir; //valid for jobs only;
+	job_stp.work_dir = step->cwd;
 
 	ret = expand_stdio_fields(path, &job_stp);
 
