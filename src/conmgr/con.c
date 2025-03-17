@@ -461,7 +461,8 @@ extern int add_connection(conmgr_con_type_t type,
 			  conmgr_con_flags_t flags,
 			  const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,
-			  const char *unix_socket_path, void *arg)
+			  const char *unix_socket_path, void *tls_conn,
+			  void *arg)
 {
 	struct stat in_stat = { 0 };
 	struct stat out_stat = { 0 };
@@ -687,7 +688,7 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 			     void *tls_conn, void *arg)
 {
 	return add_connection(type, NULL, input_fd, output_fd, events,
-			      flags, addr, addrlen, false, NULL, arg);
+			      flags, addr, addrlen, false, NULL, tls_conn, arg);
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
@@ -695,7 +696,7 @@ extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 				    conmgr_con_flags_t flags, void *arg)
 {
 	return add_connection(type, NULL, fd, -1, events, flags, NULL,
-			      0, true, NULL, arg);
+			      0, true, NULL, NULL, arg);
 }
 
 static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
@@ -726,7 +727,7 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 		close_con(false, src);
 	} else if (add_connection(args->type, NULL, fd, fd, args->events,
 				  CON_FLAG_NONE, NULL, 0, false, NULL,
-				  args->arg) != SLURM_SUCCESS) {
+				  NULL, args->arg) != SLURM_SUCCESS) {
 		/*
 		 * Error already logged by add_connection() and there is no
 		 * reason to assume that failing is due to the state of src.
@@ -1004,7 +1005,7 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 			      __func__, listen_on);
 
 		return add_connection(type, NULL, fd, -1, events, flags, &addr,
-				      sizeof(addr), true, unixsock, arg);
+				      sizeof(addr), true, unixsock, NULL, arg);
 	} else {
 		static const char TLS_PREFIX[] = "https://";
 
@@ -1071,7 +1072,7 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 
 		rc = add_connection(type, NULL, fd, -1, events, flags,
 				    (const slurm_addr_t *) addr->ai_addr,
-				    addr->ai_addrlen, true, NULL, arg);
+				    addr->ai_addrlen, true, NULL, NULL, arg);
 	}
 
 	freeaddrinfo(addrlist);
@@ -1179,7 +1180,7 @@ again:
 	}
 
 	return add_connection(type, NULL, fd, fd, events, flags, addr, addrlen,
-			      false, NULL, arg);
+			      false, NULL, NULL, arg);
 }
 
 extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con,

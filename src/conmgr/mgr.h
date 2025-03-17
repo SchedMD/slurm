@@ -545,6 +545,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
  * IN addrlen - number of bytes in *addr or 0 if addr==NULL
  * IN is_listen - True if this is a listening socket
  * IN unix_socket_path - Named Unix Socket path in filesystem or NULL
+ * IN tls_conn - TLS connection state or NULL
  * IN arg - arbitrary pointer to hand to events
  * RET SLURM_SUCCESS or error
  */
@@ -555,7 +556,8 @@ extern int add_connection(conmgr_con_type_t type,
 			  conmgr_con_flags_t flags,
 			  const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,
-			  const char *unix_socket_path, void *arg);
+			  const char *unix_socket_path, void *tls_conn,
+			  void *arg);
 
 extern void close_all_connections(void);
 

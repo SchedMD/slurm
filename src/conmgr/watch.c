@@ -1175,7 +1175,7 @@ static bool _attempt_accept(conmgr_fd_t *con)
 	/* hand over FD for normal processing */
 	if ((rc = add_connection(type, con, fd, fd, con->events,
 				 (conmgr_con_flags_t) flags, &addr, addrlen,
-				 false, unix_path, con->new_arg))) {
+				 false, unix_path, NULL, con->new_arg))) {
 		log_flag(CONMGR, "%s: [fd:%d] unable to a register new connection: %s",
 			 __func__, fd, slurm_strerror(rc));
 		return true;
