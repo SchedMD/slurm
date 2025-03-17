@@ -1563,9 +1563,11 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	con_unset_flag(con, FLAG_CAN_WRITE);
 	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
-	/* clear any buffered input/outputs */
-	list_flush(con->out);
-	set_buf_offset(con->in, 0);
+	/* assert input/outputs are empty */
+	xassert(!con->tls_out || list_is_empty(con->out));
+	xassert(!con->tls_in || !get_buf_offset(con->tls_in));
+	xassert(list_is_empty(con->out));
+	xassert(!get_buf_offset(con->in));
 
 	/*
 	 * take the file descriptors, replacing the file descriptors in
