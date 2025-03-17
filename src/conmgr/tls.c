@@ -99,7 +99,6 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
 		con_flag(con, FLAG_TLS_SERVER));
 	xassert(con->input_fd == -1);
-	xassert(con->output_fd == -1);
 	xassert(con_flag(con, FLAG_READ_EOF));
 
 	tls = con->tls;

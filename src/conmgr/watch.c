@@ -883,6 +883,13 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
+	if (!con_flag(con, FLAG_IS_LISTEN) && is_tls && con->tls) {
+		log_flag(CONMGR, "%s: [%s] waiting to close TLS connection",
+			 __func__, con->name);
+		add_work_con_fifo(true, con, tls_close, NULL);
+		return 0;
+	}
+
 	/*
 	 * This connection has no more pending work or possible IO:
 	 * Remove the connection and close everything.
@@ -892,13 +899,6 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		log_flag(CONMGR, "%s: [%s] waiting to close output_fd=%d",
 			 __func__, con->name, con->output_fd);
 		_on_close_output_fd(con);
-		return 0;
-	}
-
-	if (!con_flag(con, FLAG_IS_LISTEN) && is_tls && con->tls) {
-		log_flag(CONMGR, "%s: [%s] waiting to close TLS connection",
-			 __func__, con->name);
-		add_work_con_fifo(true, con, tls_close, NULL);
 		return 0;
 	}
 
