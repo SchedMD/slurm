@@ -48,10 +48,4 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg);
  */
 extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg);
 
-/*
- * Check and enforce if TLS has requested wait on operations and then close
- * connection
- */
-extern void tls_wait_close(bool locked, conmgr_fd_t *con);
-
 #endif /* _CONMGR_TLS_H */

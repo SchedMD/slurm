@@ -71,7 +71,11 @@ static void _delayed_close(conmgr_callback_args_t conmgr_args, void *arg)
 	_post_wait_close_fds(false, con);
 }
 
-extern void tls_wait_close(bool locked, conmgr_fd_t *con)
+/*
+ * Check and enforce if TLS has requested wait on operations and then close
+ * connection
+ */
+static void _wait_close(bool locked, conmgr_fd_t *con)
 {
 	timespec_t delay = { 0 };
 
@@ -231,7 +235,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		xassert(!con->tls_out);
 		con->tls_out = tls_out;
 
-		tls_wait_close(true, con);
+		_wait_close(true, con);
 
 		slurm_mutex_unlock(&mgr.mutex);
 	} else {
