@@ -1106,6 +1106,7 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 }
 
 extern int conmgr_create_connect_socket(conmgr_con_type_t type,
+					conmgr_con_flags_t flags,
 					slurm_addr_t *addr, socklen_t addrlen,
 					const conmgr_events_t *events,
 					void *arg)
@@ -1173,8 +1174,8 @@ again:
 		/* delayed connect() completion is expected */
 	}
 
-	return add_connection(type, NULL, fd, fd, events, CON_FLAG_NONE, addr,
-			      addrlen, false, NULL, arg);
+	return add_connection(type, NULL, fd, fd, events, flags, addr, addrlen,
+			      false, NULL, arg);
 }
 
 extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con,

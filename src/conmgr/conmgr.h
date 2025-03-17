@@ -486,6 +486,7 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 /*
  * Instruct conmgr to create new socket and connect to addr
  * IN type - connection for new socket
+ * IN flags - flags for connection
  * IN addr - destination address to connect() socket
  * IN addrlen - sizeof(*addr)
  * IN events - ptr to function callback on events
@@ -493,6 +494,7 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_connect_socket(conmgr_con_type_t type,
+					conmgr_con_flags_t flags,
 					slurm_addr_t *addr, socklen_t addrlen,
 					const conmgr_events_t *events,
 					void *arg);
