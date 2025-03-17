@@ -168,6 +168,93 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 	FREE_NULL_LIST(tls_out);
 }
 
+extern void tls_handle_decrypt(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	buf_t *buf = con->in;
+	void *start = NULL;
+	size_t need = -1, readable = -1;
+	ssize_t read_c = -1;
+	int rc = EINVAL;
+	int try = 0;
+
+again:
+	if (try > 1) {
+		log_flag(NET, "%s: [%s] need >%d bytes of incoming data to decrypted TLS",
+				 __func__, con->name,
+				 get_buf_offset(con->tls_in));
+
+		slurm_mutex_lock(&mgr.mutex);
+		/* lock to tell mgr that we are done for now */
+		con_set_flag(con, FLAG_ON_DATA_TRIED);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
+	if ((need = get_buf_offset(con->tls_in)) <= 0) {
+		log_flag(NET, "%s: [%s] already decrypted all incoming TLS data",
+			 __func__, con->name);
+		return;
+	}
+
+	if ((rc = try_grow_buf_remaining(buf, need))) {
+		error("%s: [%s] unable to allocate larger input buffer for TLS data: %s",
+		      __func__, con->name, slurm_strerror(rc));
+		_wait_close(false, con);
+		return;
+	}
+
+	readable = remaining_buf(buf);
+	start = ((void *) get_buf_data(buf)) + get_buf_offset(buf);
+
+	xassert(readable >= need);
+	xassert(con->tls);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	/* TLS will callback to _recv() to read from con->tls_in*/
+	read_c = tls_g_recv(con->tls, start, readable);
+
+	if (read_c < 0) {
+		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			log_flag(NET, "%s: [%s] TLS would block on tls_g_recv()",
+				 __func__, con->name);
+			return;
+		}
+
+		log_flag(NET, "%s: [%s] error while decrypting TLS: %m",
+			 __func__, con->name);
+
+		_wait_close(false, con);
+		return;
+	} else if (read_c == 0) {
+		log_flag(NET, "%s: [%s] read EOF with %u bytes previously decrypted",
+			 __func__, con->name, get_buf_offset(buf));
+
+		slurm_mutex_lock(&mgr.mutex);
+		/* lock to tell mgr that we are done */
+		con_set_flag(con, FLAG_READ_EOF);
+		slurm_mutex_unlock(&mgr.mutex);
+
+		return;
+	} else {
+		log_flag(NET, "%s: [%s] decrypted TLS %zd/%zd bytes with %u bytes previously decrypted",
+			 __func__, con->name, read_c, readable,
+			 get_buf_offset(buf));
+		log_flag_hex_range(NET_RAW, get_buf_data(buf),
+				   (get_buf_offset(buf) + read_c),
+				   get_buf_offset(buf),
+				   (get_buf_offset(buf) + read_c),
+				   "%s: [%s] decrypted", __func__, con->name);
+
+		set_buf_offset(buf, (get_buf_offset(buf) + read_c));
+
+		if (get_buf_offset(con->tls_in) > 0) {
+			try++;
+			goto again;
+		}
+	}
+}
+
 extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
