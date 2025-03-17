@@ -1519,7 +1519,7 @@ static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 		 extract->output_fd, (uintptr_t) extract->func_arg);
 
 	extract->func(conmgr_args, extract->input_fd, extract->output_fd,
-		      extract->func_arg);
+		      NULL, extract->func_arg);
 
 	extract->magic = ~MAGIC_EXTRACT_FD;
 	xfree(extract);

@@ -2030,7 +2030,8 @@ static void _try_service_connection(conmgr_callback_args_t conmgr_args,
 }
 
 static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
-			   int input_fd, int output_fd, void *arg)
+			   int input_fd, int output_fd, void *tls_conn,
+			   void *arg)
 {
 	service_connection_args_t *args = NULL;
 	int rc = SLURM_SUCCESS;

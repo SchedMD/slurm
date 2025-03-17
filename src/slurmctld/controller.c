@@ -288,7 +288,8 @@ static void         _restore_job_dependencies(void);
 static void         _run_primary_prog(bool primary_on);
 static void         _send_future_cloud_to_db();
 static void _service_connection(conmgr_callback_args_t conmgr_args,
-				int input_fd, int output_fd, void *arg);
+				int input_fd, int output_fd, void *tls_conn,
+				void *arg);
 static void         _set_work_dir(void);
 static int          _shutdown_backup_controller(void);
 static void *       _slurmctld_background(void *no_data);
@@ -1673,7 +1674,8 @@ static void _open_ports(void)
  * RET - NULL
  */
 static void _service_connection(conmgr_callback_args_t conmgr_args,
-				int input_fd, int output_fd, void *arg)
+				int input_fd, int output_fd, void *tls_conn,
+				void *arg)
 {
 	int rc;
 	slurm_msg_t *msg = arg;

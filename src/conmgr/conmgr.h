@@ -796,10 +796,11 @@ extern bool conmgr_enabled(void);
  * IN conmgr_args - Args relaying conmgr callback state
  * IN input_fd - input file descriptor or -1 - Ownership is transferred.
  * IN output_fd - output file descriptor or -1 - Ownership is transferred.
+ * IN tls_connn - TLS connection state or NULL
  */
 typedef void (*conmgr_extract_fd_func_t)(conmgr_callback_args_t conmgr_args,
 					 int input_fd, int output_fd,
-					 void *arg);
+					 void *tls_conn, void *arg);
 
 /*
  * Queue up extraction of file descriptors from a connection.
