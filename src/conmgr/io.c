@@ -267,7 +267,7 @@ static int _foreach_writev_flush_bytes(void *x, void *arg)
 	}
 }
 
-static void _handle_writev(conmgr_fd_t *con, const int out_count, list_t *out)
+extern void write_output(conmgr_fd_t *con, const int out_count, list_t *out)
 {
 	const int iov_count = MIN(IOV_MAX, out_count);
 	struct iovec iov_stack[IOV_STACK_COUNT];
@@ -369,7 +369,7 @@ extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg)
 		 con_flag(con, FLAG_TLS_SERVER))
 		_handle_tls_write(con, out_count);
 	else
-		_handle_writev(con, out_count, con->out);
+		write_output(con, out_count, con->out);
 }
 
 extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)

@@ -499,6 +499,11 @@ extern void con_close_on_poll_error(conmgr_fd_t *con, int fd);
 extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 			    const char *caller);
 
+/*
+ * Write out list of buf_t to output_fd
+ */
+extern void write_output(conmgr_fd_t *con, const int out_count, list_t *out);
+
 extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
