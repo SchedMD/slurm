@@ -4175,6 +4175,7 @@ extern void slurm_free_job_step_info_members(job_step_info_t * msg)
 		xfree(msg->cluster);
 		xfree(msg->container);
 		xfree(msg->container_id);
+		xfree(msg->job_name);
 		xfree(msg->tres_per_node);
 		xfree(msg->mem_per_tres);
 		xfree(msg->name);

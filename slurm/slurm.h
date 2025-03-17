@@ -2253,6 +2253,7 @@ typedef struct {
 	char *cpus_per_tres;	/* comma delimited list of TRES=# values */
 	char *mem_per_tres;	/* comma delimited list of TRES=# values */
 	char *name;		/* name of job step */
+	char *job_name;		/* name of the job */
 	char *network;		/* network specs for job step */
 	char *nodes;		/* list of nodes allocated to job_step */
 	int32_t *node_inx;	/* list index pairs into node_table for *nodes:
