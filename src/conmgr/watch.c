@@ -489,6 +489,29 @@ extern void queue_on_connection(conmgr_fd_t *con)
 		 __func__, con->name);
 }
 
+static int _handle_connection_wait_write(conmgr_fd_t *con,
+					 handle_connection_args_t *args)
+{
+	/*
+	 * Only monitor for when connection is ready for writes
+	 * as there is no point reading until the write is
+	 * complete since it will be ignored.
+	 */
+	con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
+
+	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) && args &&
+	    _handle_time_limit(args, con->last_write, mgr.conf_write_timeout)) {
+		_on_write_timeout(args, con);
+		return 0;
+	}
+
+	/* must wait until poll allows write of this socket */
+	log_flag(CONMGR, "%s: [%s] waiting for %u writes",
+		 __func__, con->name, list_count(con->out));
+
+	return 0;
+}
+
 static int _handle_connection_write(conmgr_fd_t *con,
 				    handle_connection_args_t *args)
 {
@@ -497,26 +520,10 @@ static int _handle_connection_write(conmgr_fd_t *con,
 		log_flag(CONMGR, "%s: [%s] %u pending writes",
 			 __func__, con->name, list_count(con->out));
 		add_work_con_fifo(true, con, handle_write, con);
+		return 0;
 	} else {
-		/*
-		 * Only monitor for when connection is ready for writes
-		 * as there is no point reading until the write is
-		 * complete since it will be ignored.
-		 */
-		con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
-
-		if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) && args &&
-		    _handle_time_limit(args, con->last_write,
-				       mgr.conf_write_timeout)) {
-			_on_write_timeout(args, con);
-			return 0;
-		}
-
-		/* must wait until poll allows write of this socket */
-		log_flag(CONMGR, "%s: [%s] waiting for %u writes",
-			 __func__, con->name, list_count(con->out));
+		return _handle_connection_wait_write(con, args);
 	}
-	return 0;
 }
 
 /*
