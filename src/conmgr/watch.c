@@ -734,8 +734,24 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 	/* handle out going data */
 	if (!con_flag(con, FLAG_IS_LISTEN) && (con->output_fd >= 0) &&
-	    !list_is_empty(con->out))
-		return _handle_connection_write(con, args);
+	    !list_is_empty(con->out)) {
+		if (con->tls) {
+			if (con_flag(con, FLAG_IS_TLS_CONNECTED)) {
+				log_flag(CONMGR, "%s: [%s] %u pending writes to encrypt",
+					 __func__, con->name,
+					 list_count(con->out));
+				add_work_con_fifo(true, con, tls_handle_encrypt,
+						  con);
+				return 0;
+			} else {
+				log_flag(CONMGR, "%s: [%s] deferring %u pending writes to encrypt until TLS connected",
+					 __func__, con->name,
+					 list_count(con->out));
+			}
+		} else {
+			return _handle_connection_write(con, args);
+		}
+	}
 
 	if (!con_flag(con, FLAG_IS_LISTEN) &&
 	    (count = list_count(con->write_complete_work))) {

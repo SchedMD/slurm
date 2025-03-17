@@ -46,6 +46,14 @@
 
 #include "src/interfaces/tls.h"
 
+#define HANDLE_ENC_ARGS_MAGIC 0x2a4afb43
+typedef struct {
+	int magic; /* HANDLE_ENC_ARGS_MAGIC */
+	int index;
+	conmgr_fd_t *con;
+	ssize_t wrote;
+} handle_enc_args_t;
+
 static void _post_wait_close_fds(bool locked, conmgr_fd_t *con)
 {
 	if (!locked)
@@ -257,5 +265,82 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		xassert(con->output_fd == tls_args.output_fd);
 
 		slurm_mutex_unlock(&mgr.mutex);
+	}
+}
+
+static int _foreach_write_tls(void *x, void *key)
+{
+	buf_t *out = x;
+	handle_enc_args_t *args = key;
+	conmgr_fd_t *con = args->con;
+	void *start = ((void *) get_buf_data(out)) + get_buf_offset(out);
+
+	xassert(out->magic == BUF_MAGIC);
+	xassert(args->magic == HANDLE_ENC_ARGS_MAGIC);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	args->wrote = tls_g_send(con->tls, start, remaining_buf(out));
+	if (args->wrote < 0) {
+		error("%s: [%s] tls_g_send() failed: %m", __func__, con->name);
+		return SLURM_ERROR;
+	} else if (!args->wrote) {
+		log_flag(NET, "%s: [%s] encrypt[%d] of 0/%u bytes to outgoing fd %u",
+			 __func__, args->con->name, args->index,
+			 remaining_buf(out), args->con->output_fd);
+		return 0;
+	}
+
+	if (args->wrote >= remaining_buf(out)) {
+		log_flag(NET, "%s: [%s] completed encrypt[%d] of %u/%u bytes to outgoing fd %u",
+			 __func__, args->con->name, args->index,
+			 remaining_buf(out), size_buf(out),
+			 args->con->output_fd);
+		log_flag_hex_range(NET_RAW, get_buf_data(out), size_buf(out),
+				   get_buf_offset(out),
+				   (get_buf_offset(out) + args->wrote),
+				   "%s: [%s] completed encrypt[%d] of %u/%u bytes",
+				   __func__, args->con->name, args->index,
+				   remaining_buf(out), size_buf(out));
+
+		args->wrote -= remaining_buf(out);
+		args->index++;
+		return 1;
+	} else {
+		log_flag(CONMGR, "%s: [%s] partial encrypt[%d] of %zd/%u bytes to outgoing fd %u",
+			 __func__, args->con->name, args->index,
+			 args->wrote, size_buf(out), args->con->output_fd);
+		log_flag_hex_range(NET_RAW, get_buf_data(out), size_buf(out),
+				   get_buf_offset(out),
+				   (get_buf_offset(out) + args->wrote),
+				   "%s: [%s] partial encrypt[%d] of %zd/%u bytes",
+				   __func__, args->con->name, args->index,
+				   args->wrote, size_buf(out));
+
+		set_buf_offset(out, get_buf_offset(out) + args->wrote);
+		args->wrote = 0;
+		args->index++;
+		return 0;
+	}
+}
+
+extern void tls_handle_encrypt(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	handle_enc_args_t args = {
+		.magic = HANDLE_ENC_ARGS_MAGIC,
+		.con = con,
+	};
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->tls);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ||
+		con_flag(con, FLAG_TLS_SERVER));
+
+	if (list_delete_all(con->out, _foreach_write_tls, &args) < 0) {
+		error("%s: [%s] _foreach_write_tls() failed",
+		      __func__, con->name);
+		/* drop outbound data on the floor */
+		list_flush(con->out);
+		_wait_close(false, con);
 	}
 }
