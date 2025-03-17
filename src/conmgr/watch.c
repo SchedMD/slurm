@@ -728,7 +728,13 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	}
 
 	if (con->extract && !con_flag(con, FLAG_WAIT_ON_FINGERPRINT) &&
-	    (!is_tls || con_flag(con, FLAG_IS_TLS_CONNECTED))) {
+	    (!is_tls || (con_flag(con, FLAG_IS_TLS_CONNECTED) &&
+			 !con_flag(con, FLAG_WAIT_ON_FINISH))) &&
+	    !con_flag(con, FLAG_QUIESCE) && list_is_empty(con->out) &&
+	    (!con->tls_out || list_is_empty(con->tls_out)) &&
+	    (!con->tls_in || !get_buf_offset(con->tls_in)) &&
+	    !con_flag(con, FLAG_READ_EOF) &&
+	    !con_flag(con, FLAG_WAIT_ON_FINISH) && !get_buf_offset(con->in)) {
 		/*
 		 * extraction of file descriptors requested
 		 * but only after starting TLS if needed
