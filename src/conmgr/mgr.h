@@ -142,6 +142,8 @@ typedef enum {
 	FLAG_TLS_CLIENT = CON_FLAG_TLS_CLIENT,
 	/* True if tls_g_create_conn() completed */
 	FLAG_IS_TLS_CONNECTED = SLURM_BIT(20),
+	/* True if on_fingerprint() pending */
+	FLAG_WAIT_ON_FINGERPRINT = SLURM_BIT(21),
 } con_flags_t;
 
 /* Mask over flags that track connection state */

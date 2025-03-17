@@ -110,6 +110,7 @@ static const struct {
 	T(FLAG_TLS_SERVER),
 	T(FLAG_TLS_CLIENT),
 	T(FLAG_IS_TLS_CONNECTED),
+	T(FLAG_WAIT_ON_FINGERPRINT),
 };
 #undef T
 
@@ -543,6 +544,7 @@ extern int add_connection(conmgr_con_type_t type,
 	con_assign_flag(con, FLAG_READ_EOF, !has_in);
 	con_assign_flag(con, FLAG_IS_FIFO, is_fifo);
 	con_assign_flag(con, FLAG_IS_CHR, is_chr);
+	con_assign_flag(con, FLAG_WAIT_ON_FINGERPRINT, events->on_fingerprint);
 
 	if (!is_listen) {
 		con->in = create_buf(xmalloc(BUFFER_START_SIZE),

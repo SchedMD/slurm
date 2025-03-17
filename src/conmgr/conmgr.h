@@ -110,6 +110,29 @@ typedef struct {
 	int (*on_data)(conmgr_fd_t *con, void *arg);
 
 	/*
+	 * Call back when there is initial data ready in "in" buffer but before
+	 * on_data() or on_msg() to allow fingerprinting and re-typing of
+	 * the incoming connection.
+	 *
+	 * This may be called again in the same connection if prior call
+	 * returned EWOULDBLOCK.
+	 *
+	 * If NULL, then fingerprinting will be skipped for this connection.
+	 *
+	 * IN con - connection handler
+	 * IN buffer - pointer to buffer of already read() data
+	 * IN bytes - number of bytes in buffer
+	 * IN arg - ptr returned by on_connection() callback.
+	 * RET
+	 *	SLURM_SUCCESS: fingerprinting complete - stop callback
+	 *	EWOULDBLOCK: fingerprint requires more data, call again on new
+	 *		data.
+	 *	Any other error will cause connection to close in error.
+	 */
+	int (*on_fingerprint)(conmgr_fd_t *con, const void *buffer,
+			      const size_t bytes, void *arg);
+
+	/*
 	 * Call back when there is new RPC msg ready
 	 * This may be called several times in the same connection.
 	 * Only called when type = CON_TYPE_RPC.
