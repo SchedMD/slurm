@@ -44,14 +44,25 @@
 
 #include "src/interfaces/tls.h"
 
-static void _tls_close(conmgr_callback_args_t conmgr_args, void *arg)
+static void _post_wait_close_fds(bool locked, conmgr_fd_t *con)
+{
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
+
+	close_con(true, con);
+	close_con_output(true, con);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr.mutex);
+}
+
+static void _delayed_close(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
 	log_flag(CONMGR, "%s: [%s] close wait complete", __func__, con->name);
 
-	close_con(false, con);
-	close_con_output(false, con);
+	_post_wait_close_fds(false, con);
 }
 
 extern void tls_wait_close(bool locked, conmgr_fd_t *con)
@@ -74,14 +85,13 @@ extern void tls_wait_close(bool locked, conmgr_fd_t *con)
 		log_flag(CONMGR, "%s: [%s] deferring close",
 			 __func__, con->name);
 
-		add_work_con_delayed_abs_fifo(true, con, _tls_close, NULL,
+		add_work_con_delayed_abs_fifo(true, con, _delayed_close, NULL,
 					      delay);
 	} else {
 		log_flag(CONMGR, "%s: [%s] closing now",
 			 __func__, con->name);
 
-		close_con(true, con);
-		close_con_output(true, con);
+		_post_wait_close_fds(true, con);
 	}
 
 	if (!locked)
