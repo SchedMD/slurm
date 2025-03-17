@@ -489,6 +489,36 @@ extern void queue_on_connection(conmgr_fd_t *con)
 		 __func__, con->name);
 }
 
+static int _handle_connection_write(conmgr_fd_t *con,
+				    handle_connection_args_t *args)
+{
+	if (con_flag(con, FLAG_CAN_WRITE) ||
+	    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
+		log_flag(CONMGR, "%s: [%s] %u pending writes",
+			 __func__, con->name, list_count(con->out));
+		add_work_con_fifo(true, con, handle_write, con);
+	} else {
+		/*
+		 * Only monitor for when connection is ready for writes
+		 * as there is no point reading until the write is
+		 * complete since it will be ignored.
+		 */
+		con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
+
+		if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) && args &&
+		    _handle_time_limit(args, con->last_write,
+				       mgr.conf_write_timeout)) {
+			_on_write_timeout(args, con);
+			return 0;
+		}
+
+		/* must wait until poll allows write of this socket */
+		log_flag(CONMGR, "%s: [%s] waiting for %u writes",
+			 __func__, con->name, list_count(con->out));
+	}
+	return 0;
+}
+
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -652,33 +682,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 	/* handle out going data */
 	if (!con_flag(con, FLAG_IS_LISTEN) && (con->output_fd >= 0) &&
-	    !list_is_empty(con->out)) {
-		if (con_flag(con, FLAG_CAN_WRITE) ||
-		    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
-			log_flag(CONMGR, "%s: [%s] %u pending writes",
-				 __func__, con->name, list_count(con->out));
-			add_work_con_fifo(true, con, handle_write, con);
-		} else {
-			/*
-			 * Only monitor for when connection is ready for writes
-			 * as there is no point reading until the write is
-			 * complete since it will be ignored.
-			 */
-			con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
-
-			if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) && args &&
-			    _handle_time_limit(args, con->last_write,
-					       mgr.conf_write_timeout)) {
-				_on_write_timeout(args, con);
-				return 0;
-			}
-
-			/* must wait until poll allows write of this socket */
-			log_flag(CONMGR, "%s: [%s] waiting for %u writes",
-				 __func__, con->name, list_count(con->out));
-		}
-		return 0;
-	}
+	    !list_is_empty(con->out))
+		return _handle_connection_write(con, args);
 
 	if (!con_flag(con, FLAG_IS_LISTEN) &&
 	    (count = list_count(con->write_complete_work))) {
