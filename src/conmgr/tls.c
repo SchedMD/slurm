@@ -527,7 +527,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		FREE_NULL_BUFFER(tls_in);
 		FREE_NULL_LIST(tls_out);
 	} else {
-		log_flag(CONMGR, "%s: [%s] TLS handshake completed successfully",
+		log_flag(CONMGR, "%s: [%s] tls_g_create_conn() success",
 			 __func__, con->name);
 
 		slurm_mutex_lock(&mgr.mutex);
