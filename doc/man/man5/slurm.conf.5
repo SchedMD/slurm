@@ -1409,15 +1409,6 @@ Also see \fBMaxJobId\fR
 .IP
 
 .TP
-\fBGetEnvTimeout\fR
-Controls how long the job should wait (in seconds) to load the user's
-environment before attempting to load it from a cache file.
-Applies when the salloc or sbatch \fI\-\-get\-user\-env\fR option is used.
-If set to 0 then always load the user's environment from the cache file.
-The default value is 2 seconds.
-.IP
-
-.TP
 \fBGresTypes\fR
 A comma\-delimited list of generic resources to be managed (e.g.
 \fIGresTypes=gpu,mps\fR).
