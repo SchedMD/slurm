@@ -185,6 +185,9 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(!con_flag(con, FLAG_TLS_CLIENT) || !con->tls);
+	xassert(!con_flag(con, FLAG_TLS_SERVER));
+	xassert(!con->tls);
 
 	read_input(con, con->in, "input buffer");
 }
