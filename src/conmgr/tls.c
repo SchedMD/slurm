@@ -302,6 +302,36 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	tls_in = create_buf(xmalloc(BUFFER_START_SIZE), BUFFER_START_SIZE);
 	tls_out = list_create((ListDelF) free_buf);
 
+	if (get_buf_offset(con->in)) {
+		/*
+		 * Need to move the TLS handshake to con->tls_in to allow tls
+		 * plugin to read the handshake
+		 */
+		const size_t bytes = get_buf_offset(con->in);
+
+		if ((rc = try_grow_buf_remaining(tls_in, bytes))) {
+			FREE_NULL_BUFFER(tls_in);
+			FREE_NULL_LIST(tls_out);
+
+			log_flag(CONMGR, "%s: [%s] out of memory for TLS handshake: %s",
+				 __func__, con->name, slurm_strerror(rc));
+
+			close_con(false, con);
+			return;
+		}
+
+		log_flag_hex(NET_RAW, get_buf_data(con->in), bytes,
+			     "[%s] transferring for decryption", con->name);
+
+		(void) memcpy(get_buf_data(tls_in), get_buf_data(con->in),
+			      bytes);
+
+		set_buf_offset(con->in, 0);
+		set_buf_offset(tls_in, bytes);
+
+		xassert(!con_flag(con, FLAG_ON_DATA_TRIED));
+	}
+
 	/* TLS operations must have a blocking FD */
 	fd_set_blocking(tls_args.input_fd);
 	if (tls_args.input_fd != tls_args.output_fd)
