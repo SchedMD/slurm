@@ -49,6 +49,16 @@ typedef enum {
 } tls_conn_mode_t;
 
 typedef struct {
+	/* Function pointer type is the same as s2n_recv_fn */
+	int (*recv)(void *io_context, uint8_t *buf, uint32_t len);
+	/* Function pointer type is the same as s2n_send_fn */
+	int (*send)(void *io_context, const uint8_t *buf, uint32_t len);
+
+	/* Pointer to hand to recv() and send() callbacks */
+	void *io_context;
+} tls_conn_callbacks_t;
+
+typedef struct {
 	/* file descriptor for incoming data */
 	int input_fd;
 	/* file descriptor for outgoing data */
