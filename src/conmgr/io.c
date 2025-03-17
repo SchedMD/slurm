@@ -46,9 +46,6 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
-#include "src/conmgr/tls.h"
-
-#include "src/interfaces/tls.h"
 
 #define DEFAULT_READ_BYTES 512
 
