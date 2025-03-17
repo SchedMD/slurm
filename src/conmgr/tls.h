@@ -41,6 +41,8 @@
 
 /* Perform TLS creation */
 extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg);
+/* Extract TLS components from connection */
+extern int tls_extract(conmgr_fd_t *con, extract_fd_t *extract);
 
 /*
  * Perform TLS shutdown and cleanup

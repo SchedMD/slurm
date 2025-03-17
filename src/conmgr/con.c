@@ -71,6 +71,7 @@
 #include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/polling.h"
+#include "src/conmgr/tls.h"
 
 #define T(type) { type, XSTRINGIFY(type) }
 static const struct {
@@ -1519,7 +1520,7 @@ static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 		 extract->output_fd, (uintptr_t) extract->func_arg);
 
 	extract->func(conmgr_args, extract->input_fd, extract->output_fd,
-		      NULL, extract->func_arg);
+		      extract->tls_conn, extract->func_arg);
 
 	extract->magic = ~MAGIC_EXTRACT_FD;
 	xfree(extract);
@@ -1534,6 +1535,7 @@ static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 extern void extract_con_fd(conmgr_fd_t *con)
 {
 	extract_fd_t *extract = NULL;
+	int rc = SLURM_SUCCESS;
 
 	SWAP(extract, con->extract);
 	xassert(extract);
@@ -1575,6 +1577,10 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	xassert(list_is_empty(con->out));
 	xassert(!get_buf_offset(con->in));
 
+	/* Extract TLS state */
+	if (con->tls)
+		rc = tls_extract(con, extract);
+
 	/*
 	 * take the file descriptors, replacing the file descriptors in
 	 * con with invalid values initialized in conmgr_queue_extract_con_fd().
@@ -1586,7 +1592,8 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	 * Queue up work but not against the connection as we want watch() to
 	 * cleanup the connection.
 	 */
-	add_work_fifo(true, _wrap_on_extract, extract);
+	if (!rc)
+		add_work_fifo(true, _wrap_on_extract, extract);
 }
 
 static int _unquiesce_fd(conmgr_fd_t *con)

@@ -708,3 +708,35 @@ extern int on_fingerprint_tls(conmgr_fd_t *con, const void *buffer,
 
 	fatal_abort("should never happen");
 }
+
+extern int tls_extract(conmgr_fd_t *con, extract_fd_t *extract)
+{
+	int rc;
+
+	if (con->input_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] invalid input_fd",
+			 __func__, con->name);
+		close_con(true, con);
+		return EBADF;
+	}
+
+	if (con->output_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] invalid output_fd",
+			 __func__, con->name);
+		close_con(true, con);
+		return EBADF;
+	}
+
+	if ((rc = tls_g_set_conn_fds(con->tls, con->input_fd,
+				     con->output_fd))) {
+		log_flag(CONMGR, "%s: [%s] tls_g_set_conn_fds() failed: %s",
+			 __func__, con->name, slurm_strerror(rc));
+		close_con(true, con);
+		return rc;
+	}
+
+	/* Take the TLS state for extraction */
+	SWAP(extract->tls_conn, con->tls);
+
+	return rc;
+}

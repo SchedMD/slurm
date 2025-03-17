@@ -64,6 +64,7 @@ typedef struct {
 	int magic; /* MAGIC_EXTRACT_FD */
 	int input_fd;
 	int output_fd;
+	void *tls_conn; /* TLS state */
 	conmgr_extract_fd_func_t func;
 	const char *func_name;
 	void *func_arg;
