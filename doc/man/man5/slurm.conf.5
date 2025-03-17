@@ -4373,13 +4373,6 @@ controller resides on an external Cray node.
 .IP
 
 .TP
-\fBno_env_cache\fR
-If used, any job started on node that fails to load the env from a node will
-fail instead of using the cached env. This will also implicitly imply the
-requeue_setup_env_fail option as well.
-.IP
-
-.TP
 \fBnohold_on_prolog_fail\fR
 By default, if the Prolog exits with a non\-zero value the job is requeued in
 a held state. By specifying this parameter the job will be requeued but not
@@ -4431,13 +4424,6 @@ the backfill scheduler.
 In the event that nodes fail to resume by \fBResumeTimeout\fR, all batch jobs
 will be requeued -- even if the jobs requested not to be requeued. This is
 similar to \fBPrologFlags=ForceRequeueOnFail\fR.
-.IP
-
-.TP
-\fBrequeue_setup_env_fail\fR
-By default if a job environment setup fails the job keeps running with
-a limited environment. By specifying this parameter the job will be
-requeued in held state and the execution node drained.
 .IP
 
 .TP
