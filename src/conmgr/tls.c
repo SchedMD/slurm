@@ -109,6 +109,7 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 	void *tls = NULL;
+	int rc = EINVAL;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -123,26 +124,25 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_unlock(&mgr.mutex);
 
-	if (tls) {
-		int rc;
-
-		log_flag(CONMGR, "%s: [%s] closing via tls_g_destroy_conn()",
-			 __func__, con->name);
-
-		errno = SLURM_SUCCESS;
-		tls_g_destroy_conn(tls);
-		if ((rc = errno))
-			log_flag(CONMGR, "%s: [%s] tls_g_destroy_conn() failed: %s",
-				 __func__, con->name, slurm_strerror(rc));
-
-		slurm_mutex_lock(&mgr.mutex);
-		xassert(tls == con->tls);
-		con->tls = NULL;
-		slurm_mutex_unlock(&mgr.mutex);
-	} else {
+	if (!tls) {
 		log_flag(CONMGR, "%s: [%s] closing Deferred",
 			 __func__, con->name);
+		return;
 	}
+
+	log_flag(CONMGR, "%s: [%s] closing via tls_g_destroy_conn()",
+		 __func__, con->name);
+
+	errno = SLURM_SUCCESS;
+	tls_g_destroy_conn(tls);
+	if ((rc = errno))
+		log_flag(CONMGR, "%s: [%s] tls_g_destroy_conn() failed: %s",
+			 __func__, con->name, slurm_strerror(rc));
+
+	slurm_mutex_lock(&mgr.mutex);
+	xassert(tls == con->tls);
+	con->tls = NULL;
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
