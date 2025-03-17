@@ -255,11 +255,64 @@ again:
 	}
 }
 
+/* WARNING: caller must not hold mgr->mutex lock */
+static void _negotiate(conmgr_fd_t *con, void *tls)
+{
+	int rc = tls_g_negotiate_conn(tls);
+
+	if (rc == EWOULDBLOCK) {
+		log_flag(CONMGR, "%s: [%s] tls_g_negotiate_conn() requires more incoming data",
+				 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+		xassert(con_flag(con, FLAG_TLS_SERVER) ||
+			con_flag(con, FLAG_TLS_CLIENT));
+		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+		xassert(con_flag(con, FLAG_WORK_ACTIVE));
+		xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+
+		/* Wait for more incoming data before trying again */
+		con_set_flag(con, FLAG_ON_DATA_TRIED);
+
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	} else if (rc) {
+		log_flag(CONMGR, "%s: [%s] tls_g_negotiate_conn() failed: %s",
+				 __func__, con->name, slurm_strerror(rc));
+		_wait_close(false, con);
+		return;
+	} else {
+		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+		xassert(con_flag(con, FLAG_TLS_SERVER) ||
+			con_flag(con, FLAG_TLS_CLIENT));
+		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+		xassert(con_flag(con, FLAG_WORK_ACTIVE));
+		xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+
+		con_set_flag(con, FLAG_IS_TLS_CONNECTED);
+
+		xassert(!con->tls || (con->tls == tls));
+		con->tls = tls;
+
+		if (con->events->on_connection)
+			queue_on_connection(con);
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] TLS connected", __func__, con->name);
+	}
+}
+
 extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 	tls_conn_args_t tls_args = {
 		.defer_blinding = true,
+		.defer_negotiation = true,
 	};
 	int rc = SLURM_ERROR;
 	void *tls = NULL;
@@ -277,7 +330,6 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	xassert(!con->tls);
 	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
 		con_flag(con, FLAG_TLS_SERVER));
 	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
@@ -297,6 +349,16 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 		log_flag(CONMGR, "%s: [%s] skip TLS create due to partial connection",
 			 __func__, con->name);
+		return;
+	}
+
+	if ((tls = con->tls)) {
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] attempting TLS negotiation again",
+			 __func__, con->name);
+
+		_negotiate(con, tls);
 		return;
 	}
 
@@ -396,8 +458,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 		slurm_mutex_unlock(&mgr.mutex);
 
-		if (con->events->on_connection)
-			queue_on_connection(con);
+		_negotiate(con, tls);
 	}
 }
 
