@@ -1331,12 +1331,15 @@ static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = arg;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(!con->tls);
 
 	log_flag(CONMGR, "%s: [%s] free connection input_fd=%d output_fd=%d",
 		 __func__, con->name, con->input_fd, con->output_fd);
 
 	FREE_NULL_BUFFER(con->in);
+	FREE_NULL_BUFFER(con->tls_in);
 	FREE_NULL_LIST(con->out);
+	FREE_NULL_LIST(con->tls_out);
 	FREE_NULL_LIST(con->work);
 	FREE_NULL_LIST(con->write_complete_work);
 	xfree(con->name);
