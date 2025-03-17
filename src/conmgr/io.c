@@ -309,56 +309,19 @@ extern void write_output(conmgr_fd_t *con, const int out_count, list_t *out)
 		xfree(args.iov);
 }
 
-static int _foreach_write_tls(void *x, void *key)
-{
-	buf_t *out = x;
-	handle_writev_args_t *args = key;
-	conmgr_fd_t *con = args->con;
-
-	xassert(out->magic == BUF_MAGIC);
-	xassert(args->magic == HANDLE_WRITEV_ARGS_MAGIC);
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->tls);
-
-	args->wrote = tls_g_send(con->tls, get_buf_data(out), size_buf(out));
-	if (args->wrote < 0) {
-		error("%s: [%s] tls_g_send() failed: %m", __func__, con->name);
-		return SLURM_ERROR;
-	}
-
-	return _foreach_writev_flush_bytes(out, args);
-}
-
-static void _handle_tls_write(conmgr_fd_t *con, const int out_count)
-{
-	handle_writev_args_t args = {
-		.magic = HANDLE_WRITEV_ARGS_MAGIC,
-		.con = con,
-	};
-
-	if (list_delete_all(con->out, _foreach_write_tls, &args) < 0) {
-		error("%s: [%s] _foreach_write_tls() failed",
-		      __func__, con->name);
-		/* drop outbound data on the floor */
-		list_flush(con->out);
-		tls_wait_close(false, con);
-	} else if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
-		con->last_write = timespec_now();
-}
-
 extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 	int out_count;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(!con_flag(con, FLAG_TLS_CLIENT) || !con->tls);
+	xassert(!con_flag(con, FLAG_TLS_SERVER));
+	xassert(!con->tls);
 
 	if (!(out_count = list_count(con->out)))
 		log_flag(CONMGR, "%s: [%s] skipping attempt with zero writes",
 			 __func__, con->name);
-	else if (con_flag(con, FLAG_TLS_CLIENT) ||
-		 con_flag(con, FLAG_TLS_SERVER))
-		_handle_tls_write(con, out_count);
 	else
 		write_output(con, out_count, con->out);
 }
