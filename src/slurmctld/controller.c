@@ -1617,6 +1617,7 @@ static void _open_ports(void)
 		.on_connection = _on_connection,
 		.on_msg = _on_msg,
 		.on_finish = _on_finish,
+		.on_fingerprint = on_fingerprint_tls,
 	};
 
 	slurm_mutex_lock(&listeners.mutex);
