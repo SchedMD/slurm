@@ -616,6 +616,9 @@ extern int add_connection(conmgr_con_type_t type,
 		xfree(flags);
 	}
 
+	if (tls_conn)
+		tls_adopt(con, tls_conn);
+
 	slurm_mutex_lock(&mgr.mutex);
 	if (is_listen) {
 		xassert(con->output_fd <= 0);

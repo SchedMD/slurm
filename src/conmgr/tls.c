@@ -545,6 +545,34 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 }
 
+extern void tls_adopt(conmgr_fd_t *con, void *tls_conn)
+{
+	tls_conn_callbacks_t callbacks = {
+		.recv = _recv,
+		.send = _send,
+		.io_context = con,
+	};
+
+	xassert(tls_conn);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ||
+		con_flag(con, FLAG_TLS_SERVER));
+
+	con->tls = tls_conn;
+	con->tls_in = create_buf(xmalloc(BUFFER_START_SIZE), BUFFER_START_SIZE);
+	con->tls_out = list_create((ListDelF) free_buf);
+
+	/* TLS state must already be connected */
+	con_set_flag(con, FLAG_IS_TLS_CONNECTED);
+
+	/* Can't finger print existing TLS connections */
+	con_unset_flag(con, FLAG_WAIT_ON_FINGERPRINT);
+
+	tls_g_set_conn_callbacks(tls_conn, &callbacks);
+
+	log_flag(CONMGR, "%s: [%s] adopted TLS state", __func__, con->name);
+}
+
 extern void tls_handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
