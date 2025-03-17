@@ -1068,7 +1068,8 @@ The environment variables are retrieved by running something of this sort
 Be aware that any environment variables already set in sbatch's environment
 will take precedence over any environment variables in the user's
 login environment. Clear any environment variables before calling sbatch
-that you do not want propagated to the spawned program.
+that you do not want propagated to the spawned program. If the user environment
+retrieval fails or times out, the job will be aborted, requeued and held.
 
 \fBNOTE\fR: The explicit or implicit use of \fB--get-user-env\fR relies in
 the capability of being able to create PID and mount namespaces. It is very
