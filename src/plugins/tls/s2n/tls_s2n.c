@@ -698,3 +698,8 @@ extern timespec_t tls_p_get_delay(tls_conn_t *conn)
 
 	return conn->delay;
 }
+
+extern int tls_p_negotiate_conn(void *conn)
+{
+	return ESLURM_NOT_SUPPORTED;
+}

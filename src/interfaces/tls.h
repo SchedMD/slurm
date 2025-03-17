@@ -73,6 +73,12 @@ typedef struct {
 	 */
 	bool defer_blinding;
 	tls_conn_callbacks_t callbacks;
+	/*
+         * False: Attempt TLS negotiation in tls_g_create_conn()
+         * True: Defer TLS negotiation in tls_g_create_conn() to explicit call
+         *      to tls_g_nego_conn()
+         */
+        bool defer_negotiation;
 } tls_conn_args_t;
 
 extern char *tls_conn_mode_to_str(tls_conn_mode_t mode);
@@ -92,6 +98,13 @@ extern int tls_g_fini(void);
  */
 extern void *tls_g_create_conn(const tls_conn_args_t *tls_conn_args);
 extern void tls_g_destroy_conn(void *conn);
+
+/*
+ * Attempt TLS connection negotiation
+ * NOTE: Only to be called at start of connection and if defer_negotiation=true
+ * RET SLURM_SUCCESS or EWOULDBLOCK or error
+ */
+extern int tls_g_negotiate_conn(void *conn);
 
 /*
  * Get absolute time that next tls_g_*() should be delayed until after any
