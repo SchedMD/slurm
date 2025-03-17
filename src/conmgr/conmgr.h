@@ -459,9 +459,9 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_listen_socket(conmgr_con_type_t type,
-					const char *listen_on,
-					const conmgr_events_t *events,
-					void *arg);
+				       const char *listen_on,
+				       const conmgr_events_t *events,
+				       void *arg);
 
 /*
  * Create listening sockets from list of host:port pairs

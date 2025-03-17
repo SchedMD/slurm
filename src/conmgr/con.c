@@ -945,9 +945,8 @@ static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
 }
 
 extern int conmgr_create_listen_socket(conmgr_con_type_t type,
-					const char *listen_on,
-					const conmgr_events_t *events,
-					void *arg)
+				       const char *listen_on,
+				       const conmgr_events_t *events, void *arg)
 {
 	static const char UNIX_PREFIX[] = "unix:";
 	const char *unixsock = xstrstr(listen_on, UNIX_PREFIX);
