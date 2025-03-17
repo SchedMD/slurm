@@ -777,6 +777,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		bool queue_work = false;
 
 		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+		xassert(!is_tls || con_flag(con, FLAG_IS_TLS_CONNECTED));
 
 		if (con->output_fd < 0) {
 			/* output_fd is already closed so no more write()s */
