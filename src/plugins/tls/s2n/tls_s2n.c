@@ -440,11 +440,43 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+static int _negotiate(tls_conn_t *conn)
+{
+	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
+
+	if (s2n_negotiate(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
+		if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
+			/* Avoid calling on_s2n_error for blocking */
+			return EWOULDBLOCK;
+		} else {
+			on_s2n_error(conn, s2n_negotiate);
+			return errno;
+		}
+	}
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
+		const char *cipher = NULL;
+		uint8_t first = 0, second = 0;
+		if (!(cipher = s2n_connection_get_cipher(conn->s2n_conn))) {
+			on_s2n_error(conn, s2n_connection_get_cipher);
+		}
+		if (s2n_connection_get_cipher_iana_value(conn->s2n_conn, &first,
+							 &second) < 0) {
+			on_s2n_error(conn,
+				     s2n_connection_get_cipher_iana_value);
+		}
+		log_flag(TLS, "%s: cipher suite:%s, {0x%02X,0x%02X}. fd:%d->%d.",
+			 plugin_type, cipher, first, second, conn->input_fd,
+			 conn->output_fd);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn;
 	s2n_mode s2n_conn_mode;
-	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
 
 	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%s",
 		 plugin_type, tls_conn_args->input_fd, tls_conn_args->output_fd,
@@ -531,33 +563,23 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 		goto fail;
 	}
 
-	/* Negotiate the TLS handshake */
-	while (s2n_negotiate(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
-		if (s2n_error_get_type(s2n_errno) != S2N_ERR_T_BLOCKED) {
-			on_s2n_error(conn, s2n_negotiate);
+	if (!tls_conn_args->defer_negotiation) {
+		int rc;
+
+		/* Negotiate the TLS handshake */
+		while ((rc = _negotiate(conn))) {
+			if (rc == EWOULDBLOCK) {
+				if (wait_fd_readable(conn->input_fd,
+						     slurm_conf.msg_timeout))
+					error("%s: [fd:%d->fd:%d] Problem reading socket during s2n negotiation",
+					      __func__, tls_conn_args->input_fd,
+					      tls_conn_args->output_fd);
+				else
+					continue;
+			}
+
 			goto fail;
 		}
-
-		if (wait_fd_readable(conn->input_fd, slurm_conf.msg_timeout) ==
-		    -1) {
-			error("Problem reading socket, couldn't do s2n negotiation");
-			goto fail;
-		}
-	}
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
-		const char *cipher = NULL;
-		uint8_t first = 0, second = 0;
-		if (!(cipher = s2n_connection_get_cipher(conn->s2n_conn))) {
-			on_s2n_error(conn, s2n_connection_get_cipher);
-		}
-		if (s2n_connection_get_cipher_iana_value(conn->s2n_conn, &first,
-							 &second) < 0) {
-			on_s2n_error(conn, s2n_connection_get_cipher_iana_value);
-		}
-		log_flag(TLS, "%s: cipher suite:%s, {0x%02X,0x%02X}. fd:%d->%d.",
-			 plugin_type, cipher, first, second, conn->input_fd,
-			 conn->output_fd);
 	}
 
 	log_flag(TLS, "%s: connection successfully created. fd:%d->%d. tls mode:%s",
@@ -699,7 +721,9 @@ extern timespec_t tls_p_get_delay(tls_conn_t *conn)
 	return conn->delay;
 }
 
-extern int tls_p_negotiate_conn(void *conn)
+extern int tls_p_negotiate_conn(tls_conn_t *conn)
 {
-	return ESLURM_NOT_SUPPORTED;
+	xassert(conn);
+
+	return _negotiate(conn);
 }
