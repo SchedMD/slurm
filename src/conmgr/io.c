@@ -142,16 +142,8 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 	}
 
 	/* check for errors with a NULL read */
-	if (con_flag(con, FLAG_TLS_CLIENT) || con_flag(con, FLAG_TLS_SERVER)) {
-		xassert(con->tls);
-		read_c = tls_g_recv(con->tls,
-				    (get_buf_data(buf) + get_buf_offset(buf)),
-				    readable);
-	} else {
-		read_c = read(con->input_fd,
-			      (get_buf_data(buf) + get_buf_offset(buf)),
-			      readable);
-	}
+	read_c = read(con->input_fd, (get_buf_data(buf) +
+				      get_buf_offset(buf)), readable);
 
 	if (read_c == -1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -163,11 +155,7 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 		log_flag(NET, "%s: [%s] error while reading: %m",
 			 __func__, con->name);
 
-		if (con_flag(con, FLAG_TLS_CLIENT) ||
-		    con_flag(con, FLAG_TLS_SERVER))
-			tls_wait_close(false, con);
-		else
-			close_con(false, con);
+		close_con(false, con);
 		return;
 	} else if (read_c == 0) {
 		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in %s",
