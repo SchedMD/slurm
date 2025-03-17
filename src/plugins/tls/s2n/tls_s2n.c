@@ -765,3 +765,45 @@ extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
 
 	return SLURM_SUCCESS;
 }
+
+extern int tls_p_set_conn_callbacks(tls_conn_t *conn,
+				    tls_conn_callbacks_t *callbacks)
+{
+	xassert(conn);
+	xassert(conn->s2n_conn);
+	xassert(callbacks);
+	xassert(callbacks->recv);
+	xassert(callbacks->send);
+
+	/* Set new read/write callbacks/contexts */
+	if (s2n_connection_set_recv_cb(conn->s2n_conn, callbacks->recv)) {
+		on_s2n_error(conn, s2n_connection_set_recv_cb);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_recv_ctx(conn->s2n_conn,
+					callbacks->io_context)) {
+		on_s2n_error(conn, s2n_connection_set_recv_ctx);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_send_cb(conn->s2n_conn, callbacks->send)) {
+		on_s2n_error(conn, s2n_connection_set_send_cb);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_send_ctx(conn->s2n_conn,
+					callbacks->io_context)) {
+		on_s2n_error(conn, s2n_connection_set_send_ctx);
+		return SLURM_ERROR;
+	}
+
+	/* Reset read/write fd's */
+	if (s2n_connection_set_read_fd(conn->s2n_conn, -1)) {
+		on_s2n_error(conn, s2n_connection_set_read_fd);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_write_fd(conn->s2n_conn, -1)) {
+		on_s2n_error(conn, s2n_connection_set_write_fd);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}

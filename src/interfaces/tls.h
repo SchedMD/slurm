@@ -108,12 +108,24 @@ extern int tls_g_negotiate_conn(void *conn);
 
 /*
  * Set read/write fd's on TLS connection
+ * NOTE: This resets send/recv callbacks/contexts in TLS connection
  * IN conn - TLS connection to reconfigure
  * IN input_fd - new read fd
  * IN output_fd - new write fd
  * RET SLURM_SUCCESS or error
  */
 extern int tls_g_set_conn_fds(void *conn, int input_fd, int output_fd);
+
+/*
+ * Set read/write fd's on TLS connection
+ * NOTE: This resets read/write fd's in TLS connection
+ * IN conn - TLS connection to reconfigure
+ * IN input_fd - new read fd
+ * IN output_fd - new write fd
+ * RET SLURM_SUCCESS or error
+ */
+extern int tls_g_set_conn_callbacks(void *conn,
+				    tls_conn_callbacks_t *callbacks);
 
 /*
  * Get absolute time that next tls_g_*() should be delayed until after any
