@@ -117,9 +117,8 @@ static int _get_fd_readable(conmgr_fd_t *con)
 	return readable;
 }
 
-extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
+static void _read(conmgr_fd_t *con, buf_t *buf, const char *what)
 {
-	conmgr_fd_t *con = conmgr_args.con;
 	ssize_t read_c;
 	int rc, readable;
 
@@ -135,9 +134,9 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 	readable = _get_fd_readable(con);
 
 	/* Grow buffer as needed to handle the incoming data */
-	if ((rc = try_grow_buf_remaining(con->in, readable))) {
-		error("%s: [%s] unable to allocate larger input buffer: %s",
-		      __func__, con->name, slurm_strerror(rc));
+	if ((rc = try_grow_buf_remaining(buf, readable))) {
+		error("%s: [%s] unable to allocate larger %s: %s",
+		      __func__, con->name, what, slurm_strerror(rc));
 		close_con(false, con);
 		return;
 	}
@@ -146,12 +145,11 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 	if (con_flag(con, FLAG_TLS_CLIENT) || con_flag(con, FLAG_TLS_SERVER)) {
 		xassert(con->tls);
 		read_c = tls_g_recv(con->tls,
-				    (get_buf_data(con->in) +
-				     get_buf_offset(con->in)),
+				    (get_buf_data(buf) + get_buf_offset(buf)),
 				    readable);
 	} else {
 		read_c = read(con->input_fd,
-			      (get_buf_data(con->in) + get_buf_offset(con->in)),
+			      (get_buf_data(buf) + get_buf_offset(buf)),
 			      readable);
 	}
 
@@ -172,25 +170,35 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 			close_con(false, con);
 		return;
 	} else if (read_c == 0) {
-		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in buffer",
-			 __func__, con->name, get_buf_offset(con->in));
+		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in %s",
+			 __func__, con->name, get_buf_offset(buf), what);
 
 		slurm_mutex_lock(&mgr.mutex);
 		/* lock to tell mgr that we are done */
 		con_set_flag(con, FLAG_READ_EOF);
 		slurm_mutex_unlock(&mgr.mutex);
 	} else {
-		log_flag(NET, "%s: [%s] read %zd bytes with %u bytes to process already in buffer",
-			 __func__, con->name, read_c, get_buf_offset(con->in));
+		log_flag(NET, "%s: [%s] read %zd bytes with %u bytes to process already in %s",
+			 __func__, con->name, read_c, get_buf_offset(buf),
+			 what);
 		log_flag_hex(NET_RAW,
-			     (get_buf_data(con->in) + get_buf_offset(con->in)),
+			     (get_buf_data(buf) + get_buf_offset(buf)),
 			     read_c, "%s: [%s] read", __func__, con->name);
 
-		set_buf_offset(con->in, (get_buf_offset(con->in) + read_c));
+		set_buf_offset(buf, (get_buf_offset(buf) + read_c));
 
 		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT))
 			con->last_read = timespec_now();
 	}
+}
+
+extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	_read(con, con->in, "input buffer");
 }
 
 static int _foreach_add_writev_iov(void *x, void *arg)
