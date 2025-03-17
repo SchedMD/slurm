@@ -290,6 +290,16 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		tls_args.mode = TLS_CONN_SERVER;
 
 	xassert(tls_args.mode != TLS_CONN_NULL);
+
+	if ((con->output_fd < 0) || (con->output_fd < 0)) {
+		xassert(con_flag(con, FLAG_READ_EOF));
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] skip TLS create due to partial connection",
+			 __func__, con->name);
+		return;
+	}
+
 	xassert(con->input_fd >= 0);
 	xassert(con->output_fd >= 0);
 	xassert(!con->tls_in);
