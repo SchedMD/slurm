@@ -893,4 +893,12 @@ extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref);
 #define conmgr_ref_get_name(ref) \
 	conmgr_fd_get_name(conmgr_fd_get_ref(ref))
 
+/*
+ * Checks if incoming data matches a TLS handshake and will change connection to
+ * CON_FLAG_TLS_SERVER on match
+ * Note: function is designed to be a on_fingerprint() event callback
+ */
+extern int on_fingerprint_tls(conmgr_fd_t *con, const void *buffer,
+			      const size_t bytes, void *arg);
+
 #endif /* _CONMGR_H */

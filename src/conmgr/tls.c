@@ -647,3 +647,64 @@ extern void tls_handle_encrypt(conmgr_callback_args_t conmgr_args, void *arg)
 		_wait_close(false, con);
 	}
 }
+
+extern int on_fingerprint_tls(conmgr_fd_t *con, const void *buffer,
+			      const size_t bytes, void *arg)
+{
+	int match = EINVAL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	if (con_flag(con, FLAG_TLS_CLIENT) || con_flag(con, FLAG_TLS_SERVER)) {
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] skipping TLS fingerprinting as TLS already activated",
+				 __func__, con->name);
+
+		return SLURM_SUCCESS;
+	}
+
+	xassert(!con->tls);
+	xassert(!con->tls_in);
+	xassert(!con->tls_out);
+	xassert(!con_flag(con, FLAG_TLS_CLIENT));
+	xassert(!con_flag(con, FLAG_TLS_SERVER));
+	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+	xassert(!con_flag(con, FLAG_READ_EOF));
+	xassert(!con_flag(con, FLAG_IS_LISTEN));
+	xassert(con_flag(con, FLAG_IS_CONNECTED));
+	xassert(con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	if (!(match = tls_is_handshake(get_buf_data(con->in),
+				       get_buf_offset(con->in), con->name))) {
+		log_flag(CONMGR, "%s: [%s] TLS matched",
+			 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+
+		/* Only servers can accept an incoming TLS handshake requests */
+		con_set_flag(con, FLAG_TLS_SERVER);
+
+		slurm_mutex_unlock(&mgr.mutex);
+		return SLURM_SUCCESS;
+	} else if (match == EWOULDBLOCK) {
+		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS match",
+				 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_flag(con, FLAG_ON_DATA_TRIED);
+		slurm_mutex_unlock(&mgr.mutex);
+
+		return EWOULDBLOCK;
+	} else if (match == ENOENT) {
+		log_flag(CONMGR, "%s: [%s] TLS not detected",
+			 __func__, con->name);
+		return SLURM_SUCCESS;
+	}
+
+	fatal_abort("should never happen");
+}
