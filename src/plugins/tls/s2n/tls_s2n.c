@@ -486,14 +486,47 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 		goto fail;
 	}
 
-	/* Associate a connection with a file descriptor */
-	if (s2n_connection_set_read_fd(conn->s2n_conn,
-				       tls_conn_args->input_fd) < 0) {
+	if (tls_conn_args->callbacks.recv) {
+		void *io_context = tls_conn_args->callbacks.io_context;
+
+		if (s2n_connection_set_recv_cb(conn->s2n_conn,
+					       tls_conn_args->callbacks.recv)) {
+			on_s2n_error(conn, s2n_connection_set_recv_cb);
+			goto fail;
+		}
+
+		if (s2n_connection_set_recv_ctx(conn->s2n_conn, io_context)) {
+			on_s2n_error(conn, s2n_connection_set_recv_ctx);
+			goto fail;
+		}
+
+		xassert(tls_conn_args->input_fd < 0);
+		xassert(io_context);
+	} else if (s2n_connection_set_read_fd(conn->s2n_conn,
+					      tls_conn_args->input_fd) < 0) {
+		/* Associate a connection with an incoming descriptor */
 		on_s2n_error(conn, s2n_connection_set_read_fd);
 		goto fail;
 	}
-	if (s2n_connection_set_write_fd(conn->s2n_conn,
-					tls_conn_args->output_fd) < 0) {
+	if (tls_conn_args->callbacks.send) {
+		void *io_context = tls_conn_args->callbacks.io_context;
+
+		if (s2n_connection_set_send_cb(conn->s2n_conn,
+					       tls_conn_args->callbacks.send)) {
+			on_s2n_error(conn, s2n_connection_set_send_cb);
+			goto fail;
+		}
+
+		if (s2n_connection_set_send_ctx(conn->s2n_conn, io_context)) {
+			on_s2n_error(conn, s2n_connection_set_send_ctx);
+			goto fail;
+		}
+
+		xassert(tls_conn_args->output_fd < 0);
+		xassert(io_context);
+	} else if (s2n_connection_set_write_fd(conn->s2n_conn,
+					       tls_conn_args->output_fd) < 0) {
+		/* Associate a connection with an outgoing descriptor */
 		on_s2n_error(conn, s2n_connection_set_write_fd);
 		goto fail;
 	}

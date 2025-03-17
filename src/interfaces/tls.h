@@ -72,6 +72,7 @@ typedef struct {
 	 *	tls_g_*() failure
 	 */
 	bool defer_blinding;
+	tls_conn_callbacks_t callbacks;
 } tls_conn_args_t;
 
 extern char *tls_conn_mode_to_str(tls_conn_mode_t mode);
