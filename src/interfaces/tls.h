@@ -137,4 +137,16 @@ extern timespec_t tls_g_get_delay(void *conn);
 extern ssize_t tls_g_send(void *conn, const void *buf, size_t n);
 extern ssize_t tls_g_recv(void *conn, void *buf, size_t n);
 
+/*
+ * Check if buffer contains a TLS (or SSLv3) handshake
+ * IN buf - pointer to buffer
+ * IN n - number of bytes in buffer
+ * IN name - connection name (for logging)
+ * RET
+ *	SLURM_SUCCESS: buffer contains TLS handshake
+ *	ENOENT: buffer does not contain TLS handshake
+ *	EWOULDBLOCK: buffer needs more bytes to determine match
+ */
+extern int tls_is_handshake(const void *buf, const size_t n, const char *name);
+
 #endif
