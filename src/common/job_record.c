@@ -416,6 +416,7 @@ extern int pack_ctld_job_step_info(void *x, void *arg)
 		packstr(step_ptr->cpus_per_tres, buffer);
 		packstr(step_ptr->mem_per_tres, buffer);
 		packstr(step_ptr->job_ptr->name, buffer);
+		packstr(step_ptr->cwd, buffer);
 		packstr(step_ptr->std_err, buffer);
 		packstr(step_ptr->std_in, buffer);
 		packstr(step_ptr->std_out, buffer);

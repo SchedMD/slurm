@@ -257,7 +257,7 @@ extern char *slurm_expand_step_stdio_fields(char *path, job_step_info_t *step)
 	job_stp.jobid = step->step_id.job_id;
 	job_stp.jobname = step->job_name;
 	job_stp.user = uid_to_string_cached((uid_t) step->user_id);
-	job_stp.work_dir = NULL; //valid for jobs only
+	job_stp.work_dir = step->cwd;
 
 	ret = expand_stdio_fields(path, &job_stp);
 
