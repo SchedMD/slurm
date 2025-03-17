@@ -422,22 +422,14 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	if (tls_args.input_fd != tls_args.output_fd)
 		fd_set_nonblocking(tls_args.output_fd);
 
-	if (rc || !tls) {
+	if (!tls) {
 		log_flag(CONMGR, "%s: [%s] tls_g_create_conn() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
 
-		slurm_mutex_lock(&mgr.mutex);
+		FREE_NULL_BUFFER(tls_in);
+		FREE_NULL_LIST(tls_out);
 
-		xassert(!con->tls);
-		con->tls = tls;
-		xassert(!con->tls_in);
-		con->tls_in = tls_in;
-		xassert(!con->tls_out);
-		con->tls_out = tls_out;
-
-		_wait_close(true, con);
-
-		slurm_mutex_unlock(&mgr.mutex);
+		close_con(false, con);
 	} else {
 		log_flag(CONMGR, "%s: [%s] TLS handshake completed successfully",
 			 __func__, con->name);
