@@ -734,6 +734,20 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 	/* handle out going data */
 	if (!con_flag(con, FLAG_IS_LISTEN) && (con->output_fd >= 0) &&
+	    con->tls_out && !list_is_empty(con->tls_out)) {
+		if (con_flag(con, FLAG_CAN_WRITE) ||
+		    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
+			log_flag(CONMGR, "%s: [%s] %u pending TLS writes",
+				 __func__, con->name, list_count(con->tls_out));
+			add_work_con_fifo(true, con, tls_handle_write, con);
+			return 0;
+		} else {
+			return _handle_connection_wait_write(con, args,
+							     con->tls_out);
+		}
+	}
+
+	if (!con_flag(con, FLAG_IS_LISTEN) && (con->output_fd >= 0) &&
 	    !list_is_empty(con->out)) {
 		if (con->tls) {
 			if (con_flag(con, FLAG_IS_TLS_CONNECTED)) {

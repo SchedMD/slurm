@@ -57,4 +57,7 @@ extern void tls_handle_decrypt(conmgr_callback_args_t conmgr_args, void *arg);
 /* Handle data in con->out */
 extern void tls_handle_encrypt(conmgr_callback_args_t conmgr_args, void *arg);
 
+/* Handle data in con->tls_out buffer */
+extern void tls_handle_write(conmgr_callback_args_t conmgr_args, void *arg);
+
 #endif /* _CONMGR_TLS_H */
