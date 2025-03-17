@@ -881,10 +881,14 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 			if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 				char *flags = con_flags_string(con->flags);
-				log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u work=%d write_complete_work=%d flags=%s",
+				log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u pending_tls_read=%d pending_tls_writes=%d work=%d write_complete_work=%d flags=%s",
 					 __func__, con->name,
 					 get_buf_offset(con->in),
 					 list_count(con->out),
+					 (con->tls_in ?
+					  get_buf_offset(con->tls_in) : -1),
+					 (con->tls_out ?
+					  list_count(con->tls_out) : -1),
 					 list_count(con->work),
 					 list_count(con->write_complete_work),
 					 flags);
