@@ -601,6 +601,12 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
+	if (con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
+		log_flag(CONMGR, "%s: [%s] waiting on delayed close of TLS connection",
+			 __func__, con->name);
+		return 0;
+	}
+
 	if ((con->input_fd < 0) && (con->output_fd < 0)) {
 		xassert(con_flag(con, FLAG_READ_EOF));
 		/* connection already closed */

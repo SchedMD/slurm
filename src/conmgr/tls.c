@@ -49,8 +49,12 @@ static void _post_wait_close_fds(bool locked, conmgr_fd_t *con)
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
+	xassert(con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+
 	close_con(true, con);
 	close_con_output(true, con);
+
+	con_unset_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
@@ -72,9 +76,12 @@ extern void tls_wait_close(bool locked, conmgr_fd_t *con)
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
+	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+
 	/* Soft close the connection to stop any more activity */
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 	con_set_flag(con, FLAG_READ_EOF);
+	con_set_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
 	con_unset_flag(con, FLAG_CAN_WRITE);
 	con_unset_flag(con, FLAG_CAN_READ);
 
@@ -110,6 +117,7 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 		con_flag(con, FLAG_TLS_SERVER));
 	xassert(con->input_fd == -1);
 	xassert(con_flag(con, FLAG_READ_EOF));
+	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 
 	tls = con->tls;
 

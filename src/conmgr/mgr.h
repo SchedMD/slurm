@@ -144,6 +144,8 @@ typedef enum {
 	FLAG_IS_TLS_CONNECTED = SLURM_BIT(20),
 	/* True if on_fingerprint() pending */
 	FLAG_WAIT_ON_FINGERPRINT = SLURM_BIT(21),
+	/* True if waiting for time delayed close of input_fd&output_fd */
+	FLAG_TLS_WAIT_ON_CLOSE = SLURM_BIT(22),
 } con_flags_t;
 
 /* Mask over flags that track connection state */

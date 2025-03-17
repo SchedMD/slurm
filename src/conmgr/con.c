@@ -111,6 +111,7 @@ static const struct {
 	T(FLAG_TLS_CLIENT),
 	T(FLAG_IS_TLS_CONNECTED),
 	T(FLAG_WAIT_ON_FINGERPRINT),
+	T(FLAG_TLS_WAIT_ON_CLOSE),
 };
 #undef T
 
