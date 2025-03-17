@@ -891,6 +891,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	/* handle already read data */
 	if (!con_flag(con, FLAG_IS_LISTEN) && get_buf_offset(con->in) &&
 	    !con_flag(con, FLAG_ON_DATA_TRIED)) {
+		xassert(!is_tls || con_flag(con, FLAG_IS_TLS_CONNECTED));
+
 		if (con_flag(con, FLAG_WAIT_ON_FINGERPRINT)) {
 			log_flag(CONMGR, "%s: [%s] checking for fingerprint in %u bytes",
 				 __func__, con->name, get_buf_offset(con->in));
