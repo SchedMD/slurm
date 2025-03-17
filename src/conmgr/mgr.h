@@ -501,6 +501,11 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 
 extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 
+/*
+ * Read input_fd into buffer
+ */
+extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what);
+
 extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*

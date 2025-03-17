@@ -117,7 +117,7 @@ static int _get_fd_readable(conmgr_fd_t *con)
 	return readable;
 }
 
-static void _read(conmgr_fd_t *con, buf_t *buf, const char *what)
+extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 {
 	ssize_t read_c;
 	int rc, readable;
@@ -198,7 +198,7 @@ extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	_read(con, con->in, "input buffer");
+	read_input(con, con->in, "input buffer");
 }
 
 static int _foreach_add_writev_iov(void *x, void *arg)
