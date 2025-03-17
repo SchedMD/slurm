@@ -54,6 +54,29 @@ typedef struct {
 	ssize_t wrote;
 } handle_enc_args_t;
 
+static void _shift_buf_bytes(buf_t *buf, const size_t bytes)
+{
+	void *start = NULL;
+	size_t remain = 0;
+
+	xassert(get_buf_offset(buf) >= bytes);
+
+	if (get_buf_offset(buf) == bytes) {
+		set_buf_offset(buf, 0);
+		return;
+	}
+
+	start = (((void *) get_buf_data(buf)) + bytes);
+	remain = (get_buf_offset(buf) - bytes);
+
+	xassert(remain > 0);
+	xassert(remain < size_buf(buf));
+
+	(void) memcpy(get_buf_data(buf), start, remain);
+
+	set_buf_offset(buf, remain);
+}
+
 static void _post_wait_close_fds(bool locked, conmgr_fd_t *con)
 {
 	if (!locked)
@@ -168,6 +191,43 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 	FREE_NULL_LIST(tls_out);
 }
 
+static int _recv(void *io_context, uint8_t *buf, uint32_t len)
+{
+	conmgr_fd_t *con = io_context;
+	size_t bytes = 0;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->tls);
+	xassert(con->tls_in);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+
+	if (!(bytes = get_buf_offset(con->tls_in))) {
+		if (con_flag(con, FLAG_READ_EOF)) {
+			log_flag(CONMGR, "%s: [%s] recv() returning EOF",
+				 __func__, con->name);
+			return 0;
+		}
+
+		log_flag(CONMGR, "%s: [%s] recv() returning EWOULDBLOCK",
+			 __func__, con->name);
+		errno = EWOULDBLOCK;
+		return -1;
+	}
+
+	if (bytes > len)
+		bytes = len;
+
+	log_flag_hex_range(NET_RAW, get_buf_data(con->tls_in),
+			   get_buf_offset(con->tls_in), 0, bytes,
+			   "[%s] TLS recv() %u/%u bytes encrypted",
+			   con->name, bytes, len);
+
+	(void) memcpy(buf, get_buf_data(con->tls_in), bytes);
+	_shift_buf_bytes(con->tls_in, bytes);
+
+	return bytes;
+}
+
 extern void tls_handle_decrypt(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
@@ -255,6 +315,30 @@ again:
 	}
 }
 
+static int _send(void *io_context, const uint8_t *src, uint32_t len)
+{
+	conmgr_fd_t *con = io_context;
+	buf_t *buf = NULL;
+	void *dst = NULL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->tls);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+
+	if (!(dst = try_xmalloc(len)) || !(buf = create_buf(dst, len))) {
+		xfree(dst);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	log_flag_hex(NET_RAW, src, len, "[%s] TLS send encrypted", con->name);
+
+	(void) memcpy(dst, src, len);
+	list_append(con->tls_out, buf);
+
+	return len;
+}
+
 /* WARNING: caller must not hold mgr->mutex lock */
 static void _negotiate(conmgr_fd_t *con, void *tls)
 {
@@ -292,11 +376,9 @@ static void _negotiate(conmgr_fd_t *con, void *tls)
 		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
 		xassert(con_flag(con, FLAG_WORK_ACTIVE));
 		xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+		xassert(con->tls == tls);
 
 		con_set_flag(con, FLAG_IS_TLS_CONNECTED);
-
-		xassert(!con->tls || (con->tls == tls));
-		con->tls = tls;
 
 		if (con->events->on_connection)
 			queue_on_connection(con);
@@ -311,7 +393,14 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 	tls_conn_args_t tls_args = {
+		.input_fd = -1,
+		.output_fd = -1,
 		.defer_blinding = true,
+		.callbacks = {
+			.recv = _recv,
+			.send = _send,
+			.io_context = con,
+		},
 		.defer_negotiation = true,
 	};
 	int rc = SLURM_ERROR;
@@ -335,13 +424,6 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
 	xassert(con_flag(con, FLAG_IS_CONNECTED));
 	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
-
-	if (con_flag(con, FLAG_TLS_CLIENT))
-		tls_args.mode = TLS_CONN_CLIENT;
-	else if (con_flag(con, FLAG_TLS_SERVER))
-		tls_args.mode = TLS_CONN_SERVER;
-
-	xassert(tls_args.mode != TLS_CONN_NULL);
 
 	if ((con->output_fd < 0) || (con->output_fd < 0)) {
 		xassert(con_flag(con, FLAG_READ_EOF));
@@ -368,9 +450,6 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(!con->tls_out);
 	/* Should not be any outgoing data yet */
 	xassert(list_is_empty(con->out));
-
-	tls_args.input_fd = con->input_fd;
-	tls_args.output_fd = con->output_fd;
 
 	slurm_mutex_unlock(&mgr.mutex);
 
@@ -407,46 +486,58 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		xassert(!con_flag(con, FLAG_ON_DATA_TRIED));
 	}
 
-	/* TLS operations must have a blocking FD */
-	fd_set_blocking(tls_args.input_fd);
-	if (tls_args.input_fd != tls_args.output_fd)
-		fd_set_blocking(tls_args.output_fd);
+	slurm_mutex_lock(&mgr.mutex);
 
-	errno = SLURM_SUCCESS;
-	tls = tls_g_create_conn(&tls_args);
-	/* Capture errno before it can be clobbered */
-	rc = errno;
+	xassert(!con->tls);
+	xassert(!con->tls_in);
+	xassert(!con->tls_out);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
+		con_flag(con, FLAG_TLS_SERVER));
 
-	/* Revert back to non-blocking */
-	fd_set_nonblocking(tls_args.input_fd);
-	if (tls_args.input_fd != tls_args.output_fd)
-		fd_set_nonblocking(tls_args.output_fd);
+	if (con_flag(con, FLAG_TLS_CLIENT))
+		tls_args.mode = TLS_CONN_CLIENT;
+	else if (con_flag(con, FLAG_TLS_SERVER))
+		tls_args.mode = TLS_CONN_SERVER;
 
-	if (!tls) {
+	xassert(tls_args.mode != TLS_CONN_NULL);
+	xassert(con->input_fd >= 0);
+	xassert(con->output_fd >= 0);
+
+	con->tls_in = tls_in;
+	con->tls_out = tls_out;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	if (!(tls = tls_g_create_conn(&tls_args))) {
+		rc = errno;
 		log_flag(CONMGR, "%s: [%s] tls_g_create_conn() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
 
+		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+		xassert(!con->tls);
+
+		close_con(true, con);
+		con->tls_in = NULL;
+		con->tls_out = NULL;
+
+		slurm_mutex_unlock(&mgr.mutex);
+
 		FREE_NULL_BUFFER(tls_in);
 		FREE_NULL_LIST(tls_out);
-
-		close_con(false, con);
 	} else {
 		log_flag(CONMGR, "%s: [%s] TLS handshake completed successfully",
 			 __func__, con->name);
 
 		slurm_mutex_lock(&mgr.mutex);
 
-		con_set_flag(con, FLAG_IS_TLS_CONNECTED);
+		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
 
 		xassert(!con->tls);
 		con->tls = tls;
-		xassert(!con->tls_in);
-		con->tls_in = tls_in;
-		xassert(!con->tls_out);
-		con->tls_out = tls_out;
-
-		xassert(con->input_fd == tls_args.input_fd);
-		xassert(con->output_fd == tls_args.output_fd);
+		xassert(con->tls_in == tls_in);
+		xassert(con->tls_out == tls_out);
 
 		slurm_mutex_unlock(&mgr.mutex);
 
