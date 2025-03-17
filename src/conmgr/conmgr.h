@@ -468,6 +468,7 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 /*
  * Create listening sockets from list of host:port pairs
  * IN type - connection type for new sockets
+ * IN flags - flags for connection
  * IN hostports - list_t* of cstrings to listen on:
  *	formats:
  *		host:port
@@ -477,6 +478,7 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
+					conmgr_con_flags_t flags,
 					list_t *hostports,
 					const conmgr_events_t *events,
 					void *arg);

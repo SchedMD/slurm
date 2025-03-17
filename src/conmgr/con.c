@@ -118,6 +118,7 @@ typedef struct {
 	void *arg;
 	conmgr_con_type_t type;
 	int rc;
+	conmgr_con_flags_t flags;
 } socket_listen_init_t;
 
 typedef struct {
@@ -1080,7 +1081,7 @@ static int _setup_listen_socket(void *x, void *arg)
 	const char *hostport = (const char *)x;
 	socket_listen_init_t *init = arg;
 
-	init->rc = conmgr_create_listen_socket(init->type, CON_FLAG_NONE,
+	init->rc = conmgr_create_listen_socket(init->type, init->flags,
 					       hostport, init->events,
 					       init->arg);
 
@@ -1088,6 +1089,7 @@ static int _setup_listen_socket(void *x, void *arg)
 }
 
 extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
+					conmgr_con_flags_t flags,
 					list_t *hostports,
 					const conmgr_events_t *events,
 					void *arg)
@@ -1096,6 +1098,7 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 		.events = events,
 		.arg = arg,
 		.type = type,
+		.flags = flags,
 	};
 
 	(void) list_for_each(hostports, _setup_listen_socket, &init);
