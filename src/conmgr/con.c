@@ -1397,7 +1397,20 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 	has_out = (out >= 0);
 	is_same = (con->input_fd == con->output_fd);
 
-	xassert(has_in || has_out);
+	if (!has_in && !has_out) {
+		xassert(con->polling_input_fd == PCTL_TYPE_NONE);
+		xassert(con->polling_output_fd == PCTL_TYPE_NONE);
+		xassert(type == PCTL_TYPE_NONE);
+
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char *flags = con_flags_string(con->flags);
+			log_flag(CONMGR, "%s: skipping connection flags=%s",
+				 __func__, flags);
+			xfree(flags);
+		}
+
+		return;
+	}
 
 	/*
 	 * Map type to type per in/out. The in/out types are initialized to
