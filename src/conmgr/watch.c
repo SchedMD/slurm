@@ -263,6 +263,12 @@ static void _close_output_fd(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_close_output_fd(conmgr_fd_t *con)
 {
+	if (con->output_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] skipping as output_fd already closed",
+			 __func__, con->name);
+		return;
+	}
+
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 
 	list_flush(con->out);
