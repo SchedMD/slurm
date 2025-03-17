@@ -117,3 +117,8 @@ extern int tls_p_negotiate_conn(void *conn)
 {
 	return ESLURM_NOT_SUPPORTED;
 }
+
+extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
+{
+	return ESLURM_NOT_SUPPORTED;
+}

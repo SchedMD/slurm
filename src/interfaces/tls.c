@@ -62,6 +62,7 @@ typedef struct {
 	ssize_t (*recv)(void *conn, void *buf, size_t n);
 	timespec_t (*get_delay)(void *conn);
 	int (*negotiate)(void *conn);
+	int (*set_conn_fds)(void *conn, int input_fd, int output_fd);
 } tls_ops_t;
 
 /*
@@ -76,6 +77,7 @@ static const char *syms[] = {
 	"tls_p_recv",
 	"tls_p_get_delay",
 	"tls_p_negotiate_conn",
+	"tls_p_set_conn_fds",
 };
 
 static tls_ops_t *ops = NULL;
@@ -277,4 +279,16 @@ extern int tls_g_negotiate_conn(void *conn)
 		return ESLURM_NOT_SUPPORTED;
 
 	return (*(ops[wrapper->index].negotiate))(conn);
+}
+
+extern int tls_g_set_conn_fds(void *conn, int input_fd, int output_fd)
+{
+	tls_wrapper_t *wrapper = conn;
+
+	xassert(g_context);
+
+	if (!wrapper)
+		return ESLURM_NOT_SUPPORTED;
+
+	return (*(ops[wrapper->index].set_conn_fds))(conn, input_fd, output_fd);
 }

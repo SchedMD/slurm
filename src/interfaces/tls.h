@@ -107,6 +107,15 @@ extern void tls_g_destroy_conn(void *conn);
 extern int tls_g_negotiate_conn(void *conn);
 
 /*
+ * Set read/write fd's on TLS connection
+ * IN conn - TLS connection to reconfigure
+ * IN input_fd - new read fd
+ * IN output_fd - new write fd
+ * RET SLURM_SUCCESS or error
+ */
+extern int tls_g_set_conn_fds(void *conn, int input_fd, int output_fd);
+
+/*
  * Get absolute time that next tls_g_*() should be delayed until after any
  * failure
  * NOTE: returned timespec may be {0,0} indicating no delay required

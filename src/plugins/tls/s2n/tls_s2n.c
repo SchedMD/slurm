@@ -727,3 +727,41 @@ extern int tls_p_negotiate_conn(tls_conn_t *conn)
 
 	return _negotiate(conn);
 }
+
+extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
+{
+	xassert(conn);
+	xassert(conn->s2n_conn);
+	xassert(input_fd >= 0);
+	xassert(output_fd >= 0);
+
+	/* Reset read/write callbacks/contexts */
+	if (s2n_connection_set_recv_cb(conn->s2n_conn, NULL)) {
+		on_s2n_error(conn, s2n_connection_set_recv_cb);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_recv_ctx(conn->s2n_conn, NULL)) {
+		on_s2n_error(conn, s2n_connection_set_recv_ctx);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_send_cb(conn->s2n_conn, NULL)) {
+		on_s2n_error(conn, s2n_connection_set_send_cb);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_send_ctx(conn->s2n_conn, NULL)) {
+		on_s2n_error(conn, s2n_connection_set_send_ctx);
+		return SLURM_ERROR;
+	}
+
+	/* Set new read/write fd's */
+	if (s2n_connection_set_read_fd(conn->s2n_conn, input_fd)) {
+		on_s2n_error(conn, s2n_connection_set_read_fd);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_write_fd(conn->s2n_conn, output_fd)) {
+		on_s2n_error(conn, s2n_connection_set_write_fd);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
