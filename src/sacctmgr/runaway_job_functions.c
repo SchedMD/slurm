@@ -290,12 +290,12 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 	list_t *format_list = list_create(xfree_ptr);
 	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	char *ask_msg = "\nWould you like to fix these runaway jobs?\n"
-			"(This will set the end time for each job to the "
-			"latest out of the start, eligible, or submit times, "
-			"and set the state to completed.\n"
-			"Once corrected, this will trigger the rollup to "
-			"reroll usage from before the earliest submit time "
-			"of all the runaway jobs.)\n\n";
+			"(This sets the end time for each job to the latest of "
+			"the job's start, eligible, and submit times, and sets "
+			"the state to completed.\n"
+			"Once corrected, this triggers the SlurmDBD to "
+			"recalculate the usage from before the earliest submit "
+			"time of all the runaway jobs.)\n\n";
 
 
 	for (i=0; i<argc; i++) {
