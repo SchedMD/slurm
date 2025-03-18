@@ -1380,7 +1380,7 @@ static void _fill_job_stp(job_std_pattern_t *job_stp, slurmdb_job_rec_t *job)
 	slurmdb_step_rec_t *step = job->first_step_ptr;
 
 	job_stp->array_task_id = job->array_task_id;
-	job_stp->first_step_name = step ? step->stepname : NULL;
+	job_stp->first_step_id = SLURM_BATCH_SCRIPT;
 	job_stp->first_step_node = step ? step->nodes : NULL;
 	job_stp->jobid = job->jobid;
 	job_stp->jobname = job->jobname;

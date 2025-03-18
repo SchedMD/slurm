@@ -287,7 +287,7 @@ static void _expand_stdio_patterns(slurmdb_job_rec_t *job)
 
 	job_stp.array_job_id = job->array_job_id;
 	job_stp.array_task_id = job->array_task_id;
-	job_stp.first_step_name = step ? step->stepname : NULL;
+	job_stp.first_step_id = SLURM_BATCH_SCRIPT;
 	job_stp.first_step_node = step ? step->nodes : NULL;
 	job_stp.jobid = job->jobid;
 	job_stp.jobname = job->jobname;
