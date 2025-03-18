@@ -3974,7 +3974,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack32(build_ptr->first_job_id, buffer);
 		pack16(build_ptr->fs_dampening_factor, buffer);
 
-		pack16(build_ptr->get_env_timeout, buffer);
 		packstr(build_ptr->gres_plugins, buffer);
 		pack16(build_ptr->group_time, buffer);
 		pack16(build_ptr->group_force, buffer);
@@ -5055,7 +5054,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->first_job_id, buffer);
 		safe_unpack16(&build_ptr->fs_dampening_factor, buffer);
 
-		safe_unpack16(&build_ptr->get_env_timeout, buffer);
 		safe_unpackstr(&build_ptr->gres_plugins, buffer);
 		safe_unpack16(&build_ptr->group_time, buffer);
 		safe_unpack16(&build_ptr->group_force, buffer);
