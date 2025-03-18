@@ -1336,27 +1336,6 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		part_ptr->flags &= (~PART_FLAG_EXCLUSIVE_TOPO);
 	}
 
-	if (part_desc->flags & PART_FLAG_DEFAULT) {
-		if (default_part_name == NULL) {
-			info("%s: setting default partition to %s", __func__,
-			     part_desc->name);
-		} else if (xstrcmp(default_part_name, part_desc->name) != 0) {
-			info("%s: changing default partition from %s to %s",
-			     __func__, default_part_name, part_desc->name);
-		}
-		xfree(default_part_name);
-		default_part_name = xstrdup(part_desc->name);
-		default_part_loc = part_ptr;
-		part_ptr->flags |= PART_FLAG_DEFAULT;
-	} else if ((part_desc->flags & PART_FLAG_DEFAULT_CLR) &&
-		   (default_part_loc == part_ptr)) {
-		info("%s: clearing default partition from %s", __func__,
-		     part_desc->name);
-		xfree(default_part_name);
-		default_part_loc = NULL;
-		part_ptr->flags &= (~PART_FLAG_DEFAULT);
-	}
-
 	if (part_desc->flags & PART_FLAG_LLN) {
 		info("%s: setting LLN for partition %s", __func__,
 		     part_desc->name);
@@ -1831,6 +1810,29 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 
 fini:
 	if (error_code == SLURM_SUCCESS) {
+		if (part_desc->flags & PART_FLAG_DEFAULT) {
+			if (default_part_name == NULL) {
+				info("%s: setting default partition to %s",
+				     __func__, part_desc->name);
+			} else if (xstrcmp(default_part_name,
+					   part_desc->name) != 0) {
+				info("%s: changing default partition from %s to %s",
+				     __func__, default_part_name,
+				     part_desc->name);
+			}
+			xfree(default_part_name);
+			default_part_name = xstrdup(part_desc->name);
+			default_part_loc = part_ptr;
+			part_ptr->flags |= PART_FLAG_DEFAULT;
+		} else if ((part_desc->flags & PART_FLAG_DEFAULT_CLR) &&
+			   (default_part_loc == part_ptr)) {
+			info("%s: clearing default partition from %s", __func__,
+			     part_desc->name);
+			xfree(default_part_name);
+			default_part_loc = NULL;
+			part_ptr->flags &= (~PART_FLAG_DEFAULT);
+		}
+
 		gs_reconfig();
 		select_g_reconfigure();		/* notify select plugin too */
 	} else if (create_flag) {
