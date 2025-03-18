@@ -1408,7 +1408,9 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 				 * This is a valid mode, but if GANG was enabled
 				 * at cluster level, always leave it set.
 				 */
-				if (part_ptr->preempt_mode & PREEMPT_MODE_GANG)
+				if ((part_ptr->preempt_mode != NO_VAL16) &&
+				    (part_ptr->preempt_mode &
+				     PREEMPT_MODE_GANG))
 					new_mode = new_mode | PREEMPT_MODE_GANG;
 				info("%s: setting preempt_mode to %s for partition %s",
 				     __func__,
