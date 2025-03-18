@@ -7753,7 +7753,7 @@ static void _figure_out_num_tasks(
 			job_desc->num_tasks = num_tasks;
 			job_desc->bitflags |= TASKS_CHANGED;
 		}
-	} else if (num_tasks != NO_VAL) {
+	} else if (num_tasks != job_desc->num_tasks) {
 		job_desc->num_tasks = num_tasks;
 		job_desc->bitflags |= TASKS_CHANGED;
 	}
