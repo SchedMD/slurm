@@ -460,7 +460,7 @@ SlurmDBD executes</li>
 
 <li><b>AccountingStoragePass</b>: The password used to gain access to the
 database to store the accounting data. Only used for database type storage
-plugins, ignored otherwise. In the case of Slurm DBD (Database Daemon) with
+plugins, ignored otherwise. In the case of SlurmDBD (Database Daemon) with
 MUNGE authentication this can be configured to use a MUNGE daemon specifically
 configured to provide authentication between clusters while the default MUNGE
 daemon provides authentication within a cluster. In that case,

@@ -134,6 +134,7 @@
   expected level?</a></li>
 <li><a href="#delete_partition">How do I safely remove partitions?</a></li>
 <li><a href="#routing_queue">How can a routing queue be configured?</a></li>
+<li><a href="#none_plugins">What happened to the "none" plugins?</a></li>
 </ul>
 <h3>Accounting Database</h3>
 <ul>
@@ -1371,6 +1372,35 @@ See the <a href="https://slurm.schedmd.com/job_submit_plugins.html"> Job Submit 
 guide for more information.
 Also see the available job submit plugins distributed with Slurm for examples
 (look in the "src/plugins/job_submit" directory).</p>
+
+<p><a id="none_plugins"><b>What happened to the "none" plugins?</b></a><br>
+In Slurm 23.02 and earlier, several parameters had a plugin named "none"
+that would essentially disable the setting. In version 23.11, those plugins
+named "none" were removed. To disable a setting you just need to leave it
+unset. If you still have a plugin defined as "none", Slurm will still
+recognize it and treat it as though it was unset. Parameters that previously
+had a "none" plugin are:
+<ul>
+<li>AccountingStorageType</li>
+<li>AcctGatherEnergyType</li>
+<li>AcctGatherInterconnectType</li>
+<li>AcctGatherFilesystemType</li>
+<li>AcctGatherProfileType</li>
+<li>CliFilterPlugins</li>
+<li>CoreSpecPlugin</li>
+<li>ExtSensorsType</li>
+<li>JobAcctGatherType</li>
+<li>JobCompType</li>
+<li>JobContainerType</li>
+<li>MCSPlugin</li>
+<li>MpiDefault</li>
+<li>PowerParameters</li>
+<li>PreemptType</li>
+<li>PrioritySiteFactorPlugin</li>
+<li>SwitchType</li>
+<li>TaskPlugin</li>
+<li>TopologyPlugin</li>
+</ul></p>
 
 <h3>Accounting Database</h3>
 
