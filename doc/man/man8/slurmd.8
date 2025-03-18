@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "January 2025" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "April 2025" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -201,6 +201,12 @@ The following environment variables can be used to override settings
 compiled into slurmd.
 
 .TP 20
+\fBABORT_ON_FATAL\fR
+When a fatal error is detected, use abort() instead of exit() to terminate the
+process. This allows backtraces to be captured without recompiling Slurm.
+.IP
+
+.TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file. This is overridden by
 explicitly naming a configuration file on the command line.
