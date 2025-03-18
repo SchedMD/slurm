@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "January 2025" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "March 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -205,15 +205,6 @@ If not specified, the default authentication information will be used.
 .IP
 .RS
 .TP 14
-\fBcred_expire\fR
-Default job step credential lifetime, in seconds (e.g. "cred_expire=1200").
-It must be sufficiently long enough to load user environment, run prolog,
-deal with the slurmd getting paged out of memory, etc.
-This also controls how long a requeued job must wait before starting again.
-The default value is 120 seconds.
-.IP
-
-.TP
 \fBsocket\fR
 Path name to a MUNGE daemon socket to use
 (e.g. "socket=/var/run/munge/munge.socket.2").
