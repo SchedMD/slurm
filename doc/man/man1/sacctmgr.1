@@ -329,10 +329,12 @@ option to "fix" them.
 This sets the end time for each job to the latest of the job's start, eligible,
 and submit times, and sets the state to completed by default. Once corrected,
 this triggers the SlurmDBD to recalculate the usage from before the earliest
-submit time of all the runaway jobs. \fBNOTE\fR: This could take a long time
-and sreport may not return data until the recalculation is completed.
-\fBNOTE\fR: You must have an \fBAdminLevel\fR of at least \fBOperator\fR to perform
-this.
+submit time of all the runaway jobs. You must have an \fBAdminLevel\fR of at
+least \fBOperator\fR to perform this.
+
+\fBNOTE\fR: This operation could take a long time and sreport may not return
+data until the recalculation is complete. It is best to run this when the
+system is not busy.
 .IP
 
 .TP
