@@ -6947,14 +6947,12 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 			job_desc.cpus_per_task = 1;
 		else
 			job_desc.cpus_per_task = detail_ptr->orig_cpus_per_task;
-		if (detail_ptr->num_tasks)
-			job_desc.num_tasks = detail_ptr->num_tasks;
-		else {
-			job_desc.num_tasks = job_desc.min_nodes;
-			if (detail_ptr->ntasks_per_node != NO_VAL16)
-				job_desc.num_tasks *=
-					detail_ptr->ntasks_per_node;
-		}
+		/*
+		 * Passing the value directly since detail_ptr->num_tasks
+		 * already set correctly. If it is zero _valid_pn_min_mem()
+		 * already handles it.
+		 */
+		job_desc.num_tasks = detail_ptr->num_tasks;
 		//job_desc.min_cpus = detail_ptr->min_cpus; /* init'ed above */
 		job_desc.max_cpus = detail_ptr->orig_max_cpus;
 		job_desc.shared = (uint16_t)detail_ptr->share_res;
