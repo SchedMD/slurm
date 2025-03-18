@@ -24,6 +24,13 @@ Current TRES Types are:
 </ul>
 
 <p>
+  For many TRES types, the units are a count of that item (e.g., CPU). For TRES
+  types in which the value represents an amount of data (e.g., Memory), the
+  default unit is Mebibytes (MiB). Different units can be specified using a
+  suffix [K|M|G|T].
+</p>
+
+<p>
   The Billing TRES is calculated from a partition's TRESBillingWeights. See
   below for details.
 </p>
