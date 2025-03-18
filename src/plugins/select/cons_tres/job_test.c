@@ -2573,9 +2573,9 @@ timer_check:
 		if (DELTA_TIMER >= 2000000)
 			break;	/* Quit after 2 seconds wall time */
 	}
-	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE ||
-	    ((job_ptr->bit_flags & BACKFILL_TEST) &&
-	     slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)) {
+	if (end_time && (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE ||
+			 ((job_ptr->bit_flags & BACKFILL_TEST) &&
+			  slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL))) {
 		char time_str[25];
 		/*
 		 * When time_window gets large it could result in
