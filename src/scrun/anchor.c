@@ -665,7 +665,7 @@ static void _queue_send_console_socket(void)
 
 	if ((rc = conmgr_process_fd(CON_TYPE_RAW, fd, fd, &events, CON_FLAG_NONE,
 				    (slurm_addr_t *) &addr, sizeof(addr),
-				    NULL)))
+				    NULL, NULL)))
 		fatal("%s: [%s] unable to initialize console socket: %s",
 		      __func__, addr.sun_path, slurm_strerror(rc));
 
@@ -1466,8 +1466,9 @@ static int _anchor_child(int pipe_fd[2])
 	/* TODO: only 1 unix socket for now */
 	list_append(socket_listen,
 		    xstrdup_printf("unix:%s", state.anchor_socket));
-	if ((rc = conmgr_create_listen_sockets(CON_TYPE_RPC, socket_listen,
-					       &conmgr_events, NULL)))
+	if ((rc = conmgr_create_listen_sockets(CON_TYPE_RPC, CON_FLAG_NONE,
+					       socket_listen, &conmgr_events,
+					       NULL)))
 		fatal("%s: unable to initialize listeners: %s",
 		      __func__, slurm_strerror(rc));
 	debug("%s: listening on unix:%s", __func__, state.anchor_socket);
@@ -1476,7 +1477,7 @@ static int _anchor_child(int pipe_fd[2])
 
 	if ((rc = conmgr_process_fd(CON_TYPE_RAW, pipe_fd[1], pipe_fd[1],
 				    &conmgr_startup_events, CON_FLAG_NONE, NULL,
-				    0, NULL)))
+				    0, NULL, NULL)))
 		fatal("%s: unable to initialize RPC listener: %s",
 		      __func__, slurm_strerror(rc));
 

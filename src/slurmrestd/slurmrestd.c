@@ -629,6 +629,7 @@ int main(int argc, char **argv)
 		.on_data = parse_http,
 		.on_connection = _setup_http_context,
 		.on_finish = on_http_connection_finish,
+		.on_fingerprint = on_fingerprint_tls,
 	};
 	static const conmgr_events_t inet_events = {
 		.on_data = parse_http,
@@ -760,7 +761,7 @@ int main(int argc, char **argv)
 		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
 					    STDOUT_FILENO, &inet_events,
 					    CON_FLAG_NONE, NULL, 0,
-					    operations_router)))
+					    NULL, operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 
@@ -769,8 +770,8 @@ int main(int argc, char **argv)
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
-		if (conmgr_create_listen_sockets(CON_TYPE_RAW, socket_listen,
-						 &conmgr_events,
+		if (conmgr_create_listen_sockets(CON_TYPE_RAW, CON_FLAG_NONE,
+						 socket_listen, &conmgr_events,
 						 operations_router))
 			fatal("Unable to create sockets");
 

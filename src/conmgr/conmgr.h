@@ -110,6 +110,29 @@ typedef struct {
 	int (*on_data)(conmgr_fd_t *con, void *arg);
 
 	/*
+	 * Call back when there is initial data ready in "in" buffer but before
+	 * on_data() or on_msg() to allow fingerprinting and re-typing of
+	 * the incoming connection.
+	 *
+	 * This may be called again in the same connection if prior call
+	 * returned EWOULDBLOCK.
+	 *
+	 * If NULL, then fingerprinting will be skipped for this connection.
+	 *
+	 * IN con - connection handler
+	 * IN buffer - pointer to buffer of already read() data
+	 * IN bytes - number of bytes in buffer
+	 * IN arg - ptr returned by on_connection() callback.
+	 * RET
+	 *	SLURM_SUCCESS: fingerprinting complete - stop callback
+	 *	EWOULDBLOCK: fingerprint requires more data, call again on new
+	 *		data.
+	 *	Any other error will cause connection to close in error.
+	 */
+	int (*on_fingerprint)(conmgr_fd_t *con, const void *buffer,
+			      const size_t bytes, void *arg);
+
+	/*
 	 * Call back when there is new RPC msg ready
 	 * This may be called several times in the same connection.
 	 * Only called when type = CON_TYPE_RPC.
@@ -369,6 +392,7 @@ extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
  * IN flags bit-or'ed flags to apply to connection
  * IN addr socket address (if known or NULL) (will always xfree())
  * IN addrlen sizeof addr or 0 if addr is NULL
+ * IN tls_conn - TLS connection state or NULL
  * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
@@ -376,7 +400,7 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 			     int output_fd, const conmgr_events_t *events,
 			     conmgr_con_flags_t flags,
 			     const slurm_addr_t *addr, socklen_t addrlen,
-			     void *arg);
+			     void *tls_conn, void *arg);
 
 /*
  * instruct connection manager to listen to fd (async)
@@ -450,6 +474,7 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
 /*
  * Create listening socket
  * IN type - connection type for new sockets
+ * IN flags - flags for connection
  * IN listen_on - cstrings to listen on:
  *	formats:
  *		host:port
@@ -459,13 +484,15 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_listen_socket(conmgr_con_type_t type,
-					const char *listen_on,
-					const conmgr_events_t *events,
-					void *arg);
+				       conmgr_con_flags_t flags,
+				       const char *listen_on,
+				       const conmgr_events_t *events,
+				       void *arg);
 
 /*
  * Create listening sockets from list of host:port pairs
  * IN type - connection type for new sockets
+ * IN flags - flags for connection
  * IN hostports - list_t* of cstrings to listen on:
  *	formats:
  *		host:port
@@ -475,6 +502,7 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
+					conmgr_con_flags_t flags,
 					list_t *hostports,
 					const conmgr_events_t *events,
 					void *arg);
@@ -482,6 +510,7 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
 /*
  * Instruct conmgr to create new socket and connect to addr
  * IN type - connection for new socket
+ * IN flags - flags for connection
  * IN addr - destination address to connect() socket
  * IN addrlen - sizeof(*addr)
  * IN events - ptr to function callback on events
@@ -489,6 +518,7 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_create_connect_socket(conmgr_con_type_t type,
+					conmgr_con_flags_t flags,
 					slurm_addr_t *addr, socklen_t addrlen,
 					const conmgr_events_t *events,
 					void *arg);
@@ -767,10 +797,11 @@ extern bool conmgr_enabled(void);
  * IN conmgr_args - Args relaying conmgr callback state
  * IN input_fd - input file descriptor or -1 - Ownership is transferred.
  * IN output_fd - output file descriptor or -1 - Ownership is transferred.
+ * IN tls_connn - TLS connection state or NULL
  */
 typedef void (*conmgr_extract_fd_func_t)(conmgr_callback_args_t conmgr_args,
 					 int input_fd, int output_fd,
-					 void *arg);
+					 void *tls_conn, void *arg);
 
 /*
  * Queue up extraction of file descriptors from a connection.
@@ -863,5 +894,13 @@ extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref);
 /* Get connection name from reference */
 #define conmgr_ref_get_name(ref) \
 	conmgr_fd_get_name(conmgr_fd_get_ref(ref))
+
+/*
+ * Checks if incoming data matches a TLS handshake and will change connection to
+ * CON_FLAG_TLS_SERVER on match
+ * Note: function is designed to be a on_fingerprint() event callback
+ */
+extern int on_fingerprint_tls(conmgr_fd_t *con, const void *buffer,
+			      const size_t bytes, void *arg);
 
 #endif /* _CONMGR_H */

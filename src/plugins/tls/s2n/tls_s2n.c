@@ -440,11 +440,43 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+static int _negotiate(tls_conn_t *conn)
+{
+	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
+
+	if (s2n_negotiate(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
+		if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
+			/* Avoid calling on_s2n_error for blocking */
+			return EWOULDBLOCK;
+		} else {
+			on_s2n_error(conn, s2n_negotiate);
+			return errno;
+		}
+	}
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
+		const char *cipher = NULL;
+		uint8_t first = 0, second = 0;
+		if (!(cipher = s2n_connection_get_cipher(conn->s2n_conn))) {
+			on_s2n_error(conn, s2n_connection_get_cipher);
+		}
+		if (s2n_connection_get_cipher_iana_value(conn->s2n_conn, &first,
+							 &second) < 0) {
+			on_s2n_error(conn,
+				     s2n_connection_get_cipher_iana_value);
+		}
+		log_flag(TLS, "%s: cipher suite:%s, {0x%02X,0x%02X}. fd:%d->%d.",
+			 plugin_type, cipher, first, second, conn->input_fd,
+			 conn->output_fd);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn;
 	s2n_mode s2n_conn_mode;
-	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
 
 	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%s",
 		 plugin_type, tls_conn_args->input_fd, tls_conn_args->output_fd,
@@ -486,45 +518,68 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 		goto fail;
 	}
 
-	/* Associate a connection with a file descriptor */
-	if (s2n_connection_set_read_fd(conn->s2n_conn,
-				       tls_conn_args->input_fd) < 0) {
+	if (tls_conn_args->callbacks.recv) {
+		void *io_context = tls_conn_args->callbacks.io_context;
+
+		if (s2n_connection_set_recv_cb(conn->s2n_conn,
+					       tls_conn_args->callbacks.recv)) {
+			on_s2n_error(conn, s2n_connection_set_recv_cb);
+			goto fail;
+		}
+
+		if (s2n_connection_set_recv_ctx(conn->s2n_conn, io_context)) {
+			on_s2n_error(conn, s2n_connection_set_recv_ctx);
+			goto fail;
+		}
+
+		xassert(tls_conn_args->input_fd < 0);
+		xassert(io_context);
+	} else if (s2n_connection_set_read_fd(conn->s2n_conn,
+					      tls_conn_args->input_fd) < 0) {
+		/* Associate a connection with an incoming descriptor */
 		on_s2n_error(conn, s2n_connection_set_read_fd);
 		goto fail;
 	}
-	if (s2n_connection_set_write_fd(conn->s2n_conn,
-					tls_conn_args->output_fd) < 0) {
+	if (tls_conn_args->callbacks.send) {
+		void *io_context = tls_conn_args->callbacks.io_context;
+
+		if (s2n_connection_set_send_cb(conn->s2n_conn,
+					       tls_conn_args->callbacks.send)) {
+			on_s2n_error(conn, s2n_connection_set_send_cb);
+			goto fail;
+		}
+
+		if (s2n_connection_set_send_ctx(conn->s2n_conn, io_context)) {
+			on_s2n_error(conn, s2n_connection_set_send_ctx);
+			goto fail;
+		}
+
+		xassert(tls_conn_args->output_fd < 0);
+		xassert(io_context);
+	} else if (s2n_connection_set_write_fd(conn->s2n_conn,
+					       tls_conn_args->output_fd) < 0) {
+		/* Associate a connection with an outgoing descriptor */
 		on_s2n_error(conn, s2n_connection_set_write_fd);
 		goto fail;
 	}
 
-	/* Negotiate the TLS handshake */
-	while (s2n_negotiate(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
-		if (s2n_error_get_type(s2n_errno) != S2N_ERR_T_BLOCKED) {
-			on_s2n_error(conn, s2n_negotiate);
+	if (!tls_conn_args->defer_negotiation) {
+		int rc;
+
+		/* Negotiate the TLS handshake */
+		while ((rc = _negotiate(conn))) {
+			if (rc == EWOULDBLOCK) {
+				if (wait_fd_readable(conn->input_fd,
+						     slurm_conf.msg_timeout))
+					error("%s: [fd:%d->fd:%d] Problem reading socket during s2n negotiation",
+					      __func__, tls_conn_args->input_fd,
+					      tls_conn_args->output_fd);
+				else
+					continue;
+			}
+
 			goto fail;
 		}
-
-		if (wait_fd_readable(conn->input_fd, slurm_conf.msg_timeout) ==
-		    -1) {
-			error("Problem reading socket, couldn't do s2n negotiation");
-			goto fail;
-		}
-	}
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
-		const char *cipher = NULL;
-		uint8_t first = 0, second = 0;
-		if (!(cipher = s2n_connection_get_cipher(conn->s2n_conn))) {
-			on_s2n_error(conn, s2n_connection_get_cipher);
-		}
-		if (s2n_connection_get_cipher_iana_value(conn->s2n_conn, &first,
-							 &second) < 0) {
-			on_s2n_error(conn, s2n_connection_get_cipher_iana_value);
-		}
-		log_flag(TLS, "%s: cipher suite:%s, {0x%02X,0x%02X}. fd:%d->%d.",
-			 plugin_type, cipher, first, second, conn->input_fd,
-			 conn->output_fd);
 	}
 
 	log_flag(TLS, "%s: connection successfully created. fd:%d->%d. tls mode:%s",
@@ -664,4 +719,91 @@ extern timespec_t tls_p_get_delay(tls_conn_t *conn)
 	xassert(conn);
 
 	return conn->delay;
+}
+
+extern int tls_p_negotiate_conn(tls_conn_t *conn)
+{
+	xassert(conn);
+
+	return _negotiate(conn);
+}
+
+extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
+{
+	xassert(conn);
+	xassert(conn->s2n_conn);
+	xassert(input_fd >= 0);
+	xassert(output_fd >= 0);
+
+	/* Reset read/write callbacks/contexts */
+	if (s2n_connection_set_recv_cb(conn->s2n_conn, NULL)) {
+		on_s2n_error(conn, s2n_connection_set_recv_cb);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_recv_ctx(conn->s2n_conn, NULL)) {
+		on_s2n_error(conn, s2n_connection_set_recv_ctx);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_send_cb(conn->s2n_conn, NULL)) {
+		on_s2n_error(conn, s2n_connection_set_send_cb);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_send_ctx(conn->s2n_conn, NULL)) {
+		on_s2n_error(conn, s2n_connection_set_send_ctx);
+		return SLURM_ERROR;
+	}
+
+	/* Set new read/write fd's */
+	if (s2n_connection_set_read_fd(conn->s2n_conn, input_fd)) {
+		on_s2n_error(conn, s2n_connection_set_read_fd);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_write_fd(conn->s2n_conn, output_fd)) {
+		on_s2n_error(conn, s2n_connection_set_write_fd);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int tls_p_set_conn_callbacks(tls_conn_t *conn,
+				    tls_conn_callbacks_t *callbacks)
+{
+	xassert(conn);
+	xassert(conn->s2n_conn);
+	xassert(callbacks);
+	xassert(callbacks->recv);
+	xassert(callbacks->send);
+
+	/* Set new read/write callbacks/contexts */
+	if (s2n_connection_set_recv_cb(conn->s2n_conn, callbacks->recv)) {
+		on_s2n_error(conn, s2n_connection_set_recv_cb);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_recv_ctx(conn->s2n_conn,
+					callbacks->io_context)) {
+		on_s2n_error(conn, s2n_connection_set_recv_ctx);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_send_cb(conn->s2n_conn, callbacks->send)) {
+		on_s2n_error(conn, s2n_connection_set_send_cb);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_send_ctx(conn->s2n_conn,
+					callbacks->io_context)) {
+		on_s2n_error(conn, s2n_connection_set_send_ctx);
+		return SLURM_ERROR;
+	}
+
+	/* Reset read/write fd's */
+	if (s2n_connection_set_read_fd(conn->s2n_conn, -1)) {
+		on_s2n_error(conn, s2n_connection_set_read_fd);
+		return SLURM_ERROR;
+	}
+	if (s2n_connection_set_write_fd(conn->s2n_conn, -1)) {
+		on_s2n_error(conn, s2n_connection_set_write_fd);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }

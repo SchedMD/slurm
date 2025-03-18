@@ -277,8 +277,8 @@ extern void stepd_proxy_slurmd_init(char *spooldir)
 	if (!path)
 		xstrfmtcat(path, "unix:%s/slurmd.socket", spooldir);
 
-	if ((rc = conmgr_create_listen_socket(CON_TYPE_RAW, path, &events,
-					      NULL)))
+	if ((rc = conmgr_create_listen_socket(CON_TYPE_RAW, CON_FLAG_NONE, path,
+					      &events, NULL)))
 		fatal("%s: [%s] unable to create socket: %s",
 		      __func__, path, slurm_strerror(rc));
 }

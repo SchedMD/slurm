@@ -41,6 +41,10 @@
 
 /* Perform TLS creation */
 extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg);
+/* Extract TLS components from connection */
+extern int tls_extract(conmgr_fd_t *con, extract_fd_t *extract);
+/* Adopt existing TLS state into connection */
+extern void tls_adopt(conmgr_fd_t *con, void *tls_conn);
 
 /*
  * Perform TLS shutdown and cleanup
@@ -48,10 +52,16 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg);
  */
 extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg);
 
-/*
- * Check and enforce if TLS has requested wait on operations and then close
- * connection
- */
-extern void tls_wait_close(bool locked, conmgr_fd_t *con);
+/* Read from con->input_fd */
+extern void tls_handle_read(conmgr_callback_args_t conmgr_args, void *arg);
+
+/* Handle data in con->tls_in buffer */
+extern void tls_handle_decrypt(conmgr_callback_args_t conmgr_args, void *arg);
+
+/* Handle data in con->out */
+extern void tls_handle_encrypt(conmgr_callback_args_t conmgr_args, void *arg);
+
+/* Handle data in con->tls_out buffer */
+extern void tls_handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 
 #endif /* _CONMGR_TLS_H */

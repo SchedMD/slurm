@@ -64,6 +64,7 @@ typedef struct {
 	int magic; /* MAGIC_EXTRACT_FD */
 	int input_fd;
 	int output_fd;
+	void *tls_conn; /* TLS state */
 	conmgr_extract_fd_func_t func;
 	const char *func_name;
 	void *func_arg;
@@ -115,6 +116,8 @@ typedef enum {
 	 * 	arg
 	 *	FLAG_ON_DATA_TRIED
 	 *	tls
+	 *	tls_in
+	 *	tls_out
 	 *
 	 */
 	FLAG_WORK_ACTIVE = SLURM_BIT(8),
@@ -142,6 +145,10 @@ typedef enum {
 	FLAG_TLS_CLIENT = CON_FLAG_TLS_CLIENT,
 	/* True if tls_g_create_conn() completed */
 	FLAG_IS_TLS_CONNECTED = SLURM_BIT(20),
+	/* True if on_fingerprint() pending */
+	FLAG_WAIT_ON_FINGERPRINT = SLURM_BIT(21),
+	/* True if waiting for time delayed close of input_fd&output_fd */
+	FLAG_TLS_WAIT_ON_CLOSE = SLURM_BIT(22),
 } con_flags_t;
 
 /* Mask over flags that track connection state */
@@ -195,10 +202,14 @@ struct conmgr_fd_s {
 	const conmgr_events_t *events;
 	/* Opaque pointer to TLS state */
 	void *tls;
+	/* buffer holding incoming already read encrypted data */
+	buf_t *tls_in;
 	/* buffer holding incoming already read data */
 	buf_t *in;
 	/* timestamp when last read() got >0 bytes or when connect() called */
 	timespec_t last_read;
+	/* list of buf_t holding outgoing encrypted data */
+	list_t *tls_out;
 	/* list of buf_t to write (in order) */
 	list_t *out;
 	/* timestamp when last write() wrote >0 bytes */
@@ -499,7 +510,17 @@ extern void con_close_on_poll_error(conmgr_fd_t *con, int fd);
 extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 			    const char *caller);
 
+/*
+ * Write out list of buf_t to output_fd
+ */
+extern void write_output(conmgr_fd_t *con, const int out_count, list_t *out);
+
 extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg);
+
+/*
+ * Read input_fd into buffer
+ */
+extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what);
 
 extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg);
 
@@ -524,6 +545,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
  * IN addrlen - number of bytes in *addr or 0 if addr==NULL
  * IN is_listen - True if this is a listening socket
  * IN unix_socket_path - Named Unix Socket path in filesystem or NULL
+ * IN tls_conn - TLS connection state or NULL
  * IN arg - arbitrary pointer to hand to events
  * RET SLURM_SUCCESS or error
  */
@@ -534,7 +556,8 @@ extern int add_connection(conmgr_con_type_t type,
 			  conmgr_con_flags_t flags,
 			  const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,
-			  const char *unix_socket_path, void *arg);
+			  const char *unix_socket_path, void *tls_conn,
+			  void *arg);
 
 extern void close_all_connections(void);
 
@@ -623,5 +646,11 @@ extern conmgr_fd_t *fd_get_ref(conmgr_fd_ref_t *ref);
  * IN con - connection to process state
  */
 extern void handle_connection(bool locked, conmgr_fd_t *con);
+
+/*
+ * Queue up wrap_on_connection() to call events->on_connection() callback
+ * NOTE: caller must hold mgr->mutex lock
+ */
+extern void queue_on_connection(conmgr_fd_t *con);
 
 #endif /* _CONMGR_MGR_H */

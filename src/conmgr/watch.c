@@ -263,6 +263,12 @@ static void _close_output_fd(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_close_output_fd(conmgr_fd_t *con)
 {
+	if (con->output_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] skipping as output_fd already closed",
+			 __func__, con->name);
+		return;
+	}
+
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 
 	list_flush(con->out);
@@ -477,6 +483,109 @@ static bool _is_accept_deferred(void)
 	return (list_count(mgr.connections) >= mgr.max_connections);
 }
 
+/* caller must hold mgr->mutex lock */
+extern void queue_on_connection(conmgr_fd_t *con)
+{
+	/* disable polling until on_connect() is done */
+	con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
+
+	add_work_con_fifo(true, con, wrap_on_connection, con);
+
+	log_flag(CONMGR, "%s: [%s] Fully connected. Queuing on_connect() callback.",
+		 __func__, con->name);
+}
+
+static int _handle_connection_wait_write(conmgr_fd_t *con,
+					 handle_connection_args_t *args,
+					 list_t *out)
+{
+	/*
+	 * Only monitor for when connection is ready for writes
+	 * as there is no point reading until the write is
+	 * complete since it will be ignored.
+	 */
+	con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
+
+	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) && args &&
+	    _handle_time_limit(args, con->last_write, mgr.conf_write_timeout)) {
+		_on_write_timeout(args, con);
+		return 0;
+	}
+
+	/* must wait until poll allows write of this socket */
+	log_flag(CONMGR, "%s: [%s] waiting for %u writes",
+		 __func__, con->name, list_count(out));
+
+	return 0;
+}
+
+static int _handle_connection_write(conmgr_fd_t *con,
+				    handle_connection_args_t *args)
+{
+	if (!con_flag(con, FLAG_CAN_WRITE) &&
+	    (con->polling_output_fd != PCTL_TYPE_UNSUPPORTED))
+		return _handle_connection_wait_write(con, args, con->out);
+
+	log_flag(CONMGR, "%s: [%s] %u pending writes",
+		 __func__, con->name, list_count(con->out));
+	add_work_con_fifo(true, con, handle_write, con);
+	return 0;
+}
+
+extern void _handle_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	int match = EINVAL;
+	bool bail = false;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con_flag(con, FLAG_IS_CONNECTED));
+	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+
+	if (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_CAN_READ))
+		bail = true;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	if (bail) {
+		log_flag(CONMGR, "%s: [%s] skipping fingerprint match",
+			 __func__, con->name);
+		return;
+	}
+
+	match = con->events->on_fingerprint(con, get_buf_data(con->in),
+					    get_buf_offset(con->in), con->arg);
+
+	if (match == SLURM_SUCCESS) {
+		log_flag(CONMGR, "%s: [%s] fingerprint match completed",
+					 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_unset_flag(con, FLAG_WAIT_ON_FINGERPRINT);
+		con_unset_flag(con, FLAG_ON_DATA_TRIED);
+
+		if (con->events->on_connection &&
+		    !con_flag(con, FLAG_TLS_SERVER))
+			queue_on_connection(con);
+		slurm_mutex_unlock(&mgr.mutex);
+	} else if (match == EWOULDBLOCK) {
+		log_flag(CONMGR, "%s: [%s] waiting for more bytes for fingerprint",
+				 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_flag(con, FLAG_ON_DATA_TRIED);
+		slurm_mutex_unlock(&mgr.mutex);
+	} else {
+		log_flag(CONMGR, "%s: [%s] fingerprint failed: %s",
+				 __func__, con->name, slurm_strerror(match));
+
+		close_con(false, con);
+	}
+}
+
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -499,26 +608,17 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
+	if (con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
+		log_flag(CONMGR, "%s: [%s] waiting on delayed close of TLS connection",
+			 __func__, con->name);
+		return 0;
+	}
+
 	if ((con->input_fd < 0) && (con->output_fd < 0)) {
 		xassert(con_flag(con, FLAG_READ_EOF));
 		/* connection already closed */
 	} else if (con_flag(con, FLAG_IS_CONNECTED)) {
 		/* continue on to follow other checks */
-	} else if (!con_flag(con, FLAG_IS_LISTEN) && is_tls &&
-		   !con_flag(con, FLAG_IS_TLS_CONNECTED) &&
-		   !con_flag(con, FLAG_READ_EOF)) {
-		/*
-		 * TLS handshake must happen before setting FLAG_IS_CONNECTED
-		 * (unless connection is closed for any reason) as the handshake
-		 * is considered to be the logical extension of the TCP
-		 * handshake for the event sequence here
-		 */
-		if (list_is_empty(con->work)) {
-			log_flag(CONMGR, "%s: [%s] queuing up TLS handshake",
-				 __func__, con->name);
-			add_work_con_fifo(true, con, tls_create, NULL);
-			return 0;
-		}
 	} else if (!con_flag(con, FLAG_IS_SOCKET) ||
 		   con_flag(con, FLAG_CAN_READ) ||
 		   con_flag(con, FLAG_CAN_WRITE) ||
@@ -556,13 +656,9 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			} else {
 				/* follow normal checks */
 			}
-		} else if (con->events->on_connection) {
-			/* disable polling until on_connect() is done */
-			con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
-			add_work_con_fifo(true, con, wrap_on_connection, con);
-
-			log_flag(CONMGR, "%s: [%s] Fully connected. Queuing on_connect() callback.",
-				 __func__, con->name);
+		} else if (con->events->on_connection && !is_tls &&
+			   !con_flag(con, FLAG_WAIT_ON_FINGERPRINT)) {
+			queue_on_connection(con);
 			return 0;
 		} else {
 			/*
@@ -637,45 +733,63 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
-	if (con->extract) {
-		/* extraction of file descriptors requested */
+	if (con->extract && !con_flag(con, FLAG_WAIT_ON_FINGERPRINT) &&
+	    (!is_tls || (con_flag(con, FLAG_IS_TLS_CONNECTED) &&
+			 !con_flag(con, FLAG_WAIT_ON_FINISH))) &&
+	    !con_flag(con, FLAG_QUIESCE) && list_is_empty(con->out) &&
+	    (!con->tls_out || list_is_empty(con->tls_out)) &&
+	    (!con->tls_in || !get_buf_offset(con->tls_in)) &&
+	    !con_flag(con, FLAG_READ_EOF) &&
+	    !con_flag(con, FLAG_WAIT_ON_FINISH) && !get_buf_offset(con->in)) {
+		/*
+		 * extraction of file descriptors requested
+		 * but only after starting TLS if needed
+		 */
 		extract_con_fd(con);
 		return 0;
 	}
 
 	/* handle out going data */
 	if (!con_flag(con, FLAG_IS_LISTEN) && (con->output_fd >= 0) &&
-	    !list_is_empty(con->out)) {
+	    con->tls_out && !list_is_empty(con->tls_out)) {
 		if (con_flag(con, FLAG_CAN_WRITE) ||
 		    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
-			log_flag(CONMGR, "%s: [%s] %u pending writes",
-				 __func__, con->name, list_count(con->out));
-			add_work_con_fifo(true, con, handle_write, con);
+			log_flag(CONMGR, "%s: [%s] %u pending TLS writes",
+				 __func__, con->name, list_count(con->tls_out));
+			add_work_con_fifo(true, con, tls_handle_write, con);
+			return 0;
 		} else {
-			/*
-			 * Only monitor for when connection is ready for writes
-			 * as there is no point reading until the write is
-			 * complete since it will be ignored.
-			 */
-			con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
-
-			if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) && args &&
-			    _handle_time_limit(args, con->last_write,
-					       mgr.conf_write_timeout)) {
-				_on_write_timeout(args, con);
-				return 0;
-			}
-
-			/* must wait until poll allows write of this socket */
-			log_flag(CONMGR, "%s: [%s] waiting for %u writes",
-				 __func__, con->name, list_count(con->out));
+			return _handle_connection_wait_write(con, args,
+							     con->tls_out);
 		}
-		return 0;
+	}
+
+	if (!con_flag(con, FLAG_IS_LISTEN) && (con->output_fd >= 0) &&
+	    !list_is_empty(con->out)) {
+		if (con->tls) {
+			if (con_flag(con, FLAG_IS_TLS_CONNECTED)) {
+				log_flag(CONMGR, "%s: [%s] %u pending writes to encrypt",
+					 __func__, con->name,
+					 list_count(con->out));
+				add_work_con_fifo(true, con, tls_handle_encrypt,
+						  con);
+				return 0;
+			} else {
+				log_flag(CONMGR, "%s: [%s] deferring %u pending writes to encrypt until TLS connected",
+					 __func__, con->name,
+					 list_count(con->out));
+			}
+		} else {
+			return _handle_connection_write(con, args);
+		}
 	}
 
 	if (!con_flag(con, FLAG_IS_LISTEN) &&
 	    (count = list_count(con->write_complete_work))) {
 		bool queue_work = false;
+
+		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+		xassert(!is_tls || con_flag(con, FLAG_IS_TLS_CONNECTED));
 
 		if (con->output_fd < 0) {
 			/* output_fd is already closed so no more write()s */
@@ -745,19 +859,63 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	if (!con_flag(con, FLAG_IS_LISTEN) && !con_flag(con, FLAG_READ_EOF) &&
 	    (con_flag(con, FLAG_CAN_READ) ||
 	     (con->polling_input_fd == PCTL_TYPE_UNSUPPORTED))) {
-		log_flag(CONMGR, "%s: [%s] queuing read", __func__, con->name);
-		/* reset if data has already been tried if about to read data */
+		/*
+		 * reset if data has already been tried if about to read
+		 * data
+		 */
 		con_unset_flag(con, FLAG_ON_DATA_TRIED);
-		add_work_con_fifo(true, con, handle_read, con);
+
+		if (con->tls_in) {
+			log_flag(CONMGR, "%s: [%s] queuing TLS read",
+				 __func__, con->name);
+			add_work_con_fifo(true, con, tls_handle_read, con);
+		} else {
+			log_flag(CONMGR, "%s: [%s] queuing read", __func__, con->name);
+			add_work_con_fifo(true, con, handle_read, con);
+		}
+		return 0;
+	}
+
+	if (!con_flag(con, FLAG_IS_LISTEN) && !con_flag(con, FLAG_ON_DATA_TRIED)
+	    && con->tls_in && get_buf_offset(con->tls_in) &&
+	    con_flag(con, FLAG_IS_TLS_CONNECTED)) {
+		log_flag(CONMGR, "%s: [%s] queuing TLS decrypt of %u bytes",
+			 __func__, con->name, get_buf_offset(con->tls_in));
+		add_work_con_fifo(true, con, tls_handle_decrypt, con);
+		return 0;
+	}
+
+	if (!con_flag(con, FLAG_IS_LISTEN) && is_tls &&
+	    !con_flag(con, FLAG_IS_TLS_CONNECTED) &&
+	    !con_flag(con, FLAG_ON_DATA_TRIED) &&
+	    !con_flag(con, FLAG_READ_EOF)) {
+		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+
+		/*
+		 * TLS handshake must happen attempting to process any of the
+		 * incoming data but unwrapped data must flow both directions
+		 * until negotiations are complete
+		 */
+		log_flag(CONMGR, "%s: [%s] queuing up TLS handshake",
+			 __func__, con->name);
+		add_work_con_fifo(true, con, tls_create, NULL);
 		return 0;
 	}
 
 	/* handle already read data */
 	if (!con_flag(con, FLAG_IS_LISTEN) && get_buf_offset(con->in) &&
 	    !con_flag(con, FLAG_ON_DATA_TRIED)) {
-		log_flag(CONMGR, "%s: [%s] need to process %u bytes",
-			 __func__, con->name, get_buf_offset(con->in));
-		add_work_con_fifo(true, con, wrap_on_data, con);
+		xassert(!is_tls || con_flag(con, FLAG_IS_TLS_CONNECTED));
+
+		if (con_flag(con, FLAG_WAIT_ON_FINGERPRINT)) {
+			log_flag(CONMGR, "%s: [%s] checking for fingerprint in %u bytes",
+				 __func__, con->name, get_buf_offset(con->in));
+			add_work_con_fifo(true, con, _handle_fingerprint, con);
+		} else {
+			log_flag(CONMGR, "%s: [%s] need to process %u bytes",
+				 __func__, con->name, get_buf_offset(con->in));
+			add_work_con_fifo(true, con, wrap_on_data, con);
+		}
 		return 0;
 	}
 
@@ -792,10 +950,14 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 			if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 				char *flags = con_flags_string(con->flags);
-				log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u work=%d write_complete_work=%d flags=%s",
+				log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u pending_tls_read=%d pending_tls_writes=%d work=%d write_complete_work=%d flags=%s",
 					 __func__, con->name,
 					 get_buf_offset(con->in),
 					 list_count(con->out),
+					 (con->tls_in ?
+					  get_buf_offset(con->tls_in) : -1),
+					 (con->tls_out ?
+					  list_count(con->tls_out) : -1),
 					 list_count(con->work),
 					 list_count(con->write_complete_work),
 					 flags);
@@ -864,6 +1026,13 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
+	if (!con_flag(con, FLAG_IS_LISTEN) && is_tls && con->tls) {
+		log_flag(CONMGR, "%s: [%s] waiting to close TLS connection",
+			 __func__, con->name);
+		add_work_con_fifo(true, con, tls_close, NULL);
+		return 0;
+	}
+
 	/*
 	 * This connection has no more pending work or possible IO:
 	 * Remove the connection and close everything.
@@ -873,13 +1042,6 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		log_flag(CONMGR, "%s: [%s] waiting to close output_fd=%d",
 			 __func__, con->name, con->output_fd);
 		_on_close_output_fd(con);
-		return 0;
-	}
-
-	if (!con_flag(con, FLAG_IS_LISTEN) && is_tls && con->tls) {
-		log_flag(CONMGR, "%s: [%s] waiting to close TLS connection",
-			 __func__, con->name);
-		add_work_con_fifo(true, con, tls_close, NULL);
 		return 0;
 	}
 
@@ -1019,7 +1181,7 @@ static bool _attempt_accept(conmgr_fd_t *con)
 	/* hand over FD for normal processing */
 	if ((rc = add_connection(type, con, fd, fd, con->events,
 				 (conmgr_con_flags_t) flags, &addr, addrlen,
-				 false, unix_path, con->new_arg))) {
+				 false, unix_path, NULL, con->new_arg))) {
 		log_flag(CONMGR, "%s: [fd:%d] unable to a register new connection: %s",
 			 __func__, fd, slurm_strerror(rc));
 		return true;
@@ -1242,12 +1404,15 @@ static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = arg;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(!con->tls);
 
 	log_flag(CONMGR, "%s: [%s] free connection input_fd=%d output_fd=%d",
 		 __func__, con->name, con->input_fd, con->output_fd);
 
 	FREE_NULL_BUFFER(con->in);
+	FREE_NULL_BUFFER(con->tls_in);
 	FREE_NULL_LIST(con->out);
+	FREE_NULL_LIST(con->tls_out);
 	FREE_NULL_LIST(con->work);
 	FREE_NULL_LIST(con->write_complete_work);
 	xfree(con->name);
