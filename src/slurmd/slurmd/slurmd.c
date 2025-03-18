@@ -444,8 +444,6 @@ main (int argc, char **argv)
 		fatal("Failed to initialize MPI plugins.");
 	if (select_g_init(1) != SLURM_SUCCESS)
 		fatal("Failed to initialize select plugins.");
-	if (tls_g_init() != SLURM_SUCCESS)
-		fatal("Failed to initialize tls plugin");
 	if (acct_storage_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize acct_storage plugin");
 	file_bcast_init();
@@ -2544,6 +2542,8 @@ _slurmd_init(void)
 	if (hash_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (certmgr_g_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
+	if (tls_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	_dynamic_init();
