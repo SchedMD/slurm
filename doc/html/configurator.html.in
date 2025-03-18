@@ -613,7 +613,7 @@ Select one value for <B>AccountingStorageType</B>:<BR>
 <input type="radio" name="accounting_storage_type" value="" checked> <B>None</B>:
 No job accounting storage<BR>
 <input type="radio" name="accounting_storage_type" value="accounting_storage/slurmdbd"> <B>SlurmDBD</B>:
-Write job accounting to Slurm DBD (database daemon) which can securely
+Write job accounting to SlurmDBD (database daemon) which can securely
 save the data from many Slurm managed clusters into a common database<BR>
 <input type="text" name="accounting_storage_loc" value=""> <B>AccountingStorageLoc</B>:
 Location specification or database name.

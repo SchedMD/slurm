@@ -180,7 +180,7 @@ The list of permissible ciphers for SSL encryption.
 \fBAccountingStoragePass\fR
 The password used to gain access to the database to store the
 accounting data. Only used for database type storage plugins, ignored
-otherwise. In the case of Slurm DBD (Database Daemon) with MUNGE
+otherwise. In the case of SlurmDBD (Database Daemon) with MUNGE
 authentication this can be configured to use a MUNGE daemon
 specifically configured to provide authentication between clusters
 while the default MUNGE daemon provides authentication within a
@@ -239,12 +239,17 @@ gres/gpumem and gres/gpuutil can be set individually when gres/gpu is not set.
 
 .TP
 \fBAccountingStorageType\fR
-The accounting storage mechanism type. Acceptable values at
-present "accounting_storage/slurmdbd".
-The "accounting_storage/slurmdbd" value indicates that accounting records
-will be written to the Slurm DBD, which manages an underlying MySQL
-database. See "man slurmdbd" for more information. When this is not set it
-indicates that account records are not maintained.
+The accounting storage mechanism type. Unset by default, which indicates
+that accounting records are not maintained.
+
+Current options are:
+.IP
+.RS
+.TP
+\fBaccounting_storage/slurmdbd\fR
+The accounting records will be written to the SlurmDBD, which manages an
+underlying MySQL database. See "man slurmdbd" for more information.
+.RE
 .IP
 
 .TP
@@ -648,7 +653,8 @@ This can be overridden with either \fBsbcast\fR or \fBsrun\fR
 
 .TP
 \fBBurstBufferType\fR
-The plugin used to manage burst buffers. Acceptable values at present are:
+The plugin used to manage burst buffers. Unset by default.
+Acceptable values at present are:
 .IP
 .RS
 .TP
@@ -661,10 +667,6 @@ Use Cray DataWarp API to provide burst buffer functionality.
 This plugin provides hooks to an API that is defined by a Lua script. This
 plugin was developed to provide system administrators with a way to do any task
 (not only file staging) at different points in a job's life cycle.
-.IP
-
-.TP
-\fBburst_buffer/none\fR
 .RE
 .IP
 
@@ -1614,7 +1616,7 @@ steps may run in parallel with the interactive step.
 The JobAcctGather plugin collects memory, cpu, io, interconnect, energy and gpu
 usage information at the task level, depending on which plugins are configured
 in Slurm. This parameter will control how some of these metrics will be
-collected.
+collected. Unset by default.
 
 Configurable values at present are:
 .IP
@@ -1639,12 +1641,6 @@ This plugin carries a performance penalty on jobs with a large number of spawned
 processes since it needs to iterate over all the task pids and aggregate the
 stats into one single metric for the ppid, and then these values need to be
 aggregated to the task stats.
-.IP
-
-.TP
-\fBjobacct_gather/none\fR
-This is the default value. No accounting data is collected. \fBsstat\fR will
-not work.
 .RE
 .IP
 
@@ -1942,17 +1938,10 @@ Only used for database type storage plugins, ignored otherwise.
 
 .TP
 \fBJobCompType\fR
-The job completion logging mechanism type.
+The job completion logging mechanism type. Unset by default.
 Acceptable values at present include:
 .IP
 .RS
-.TP
-\fBjobcomp/none\fR
-Upon job completion, a record of the job is purged from the system.
-If using the accounting infrastructure this plugin may not be of interest
-since some of the information is redundant.
-.IP
-
 .TP
 \fBjobcomp/elasticsearch\fR
 Upon job completion, a record of the job should be written to an
@@ -2504,17 +2493,10 @@ More information about MCS is available here
 \fBMCSPlugin\fR
 MCS = Multi\-Category Security : associate a security label to jobs and ensure
 that nodes can only be shared among jobs using the same security label.
-Acceptable values include:
+Unset by default. Acceptable values include:
 .IP
 .RS
 .TP 12
-\fBmcs/none\fR
-is the default value.
-No security label associated with jobs,
-no particular security restriction when sharing nodes among jobs.
-.IP
-
-.TP
 \fBmcs/account\fR
 only users with the same account can share the nodes (requires enabling of accounting).
 .IP
@@ -2559,11 +2541,11 @@ value for \fBMinJobAge\fR recommended is 2.
 .TP
 \fBMpiDefault\fR
 Identifies the default type of MPI to be used.
+Unset by default, which allows Slurm to work with versions of MPI other than
+listed below.
 Srun may override this configuration parameter in any case.
 Currently supported versions include:
-\fBpmi2\fR,
-\fBpmix\fR, and
-\fBnone\fR (default, which works for many other versions of MPI).
+\fBpmi2\fR and \fBpmix\fR.
 More information about MPI use is available here
 <https://slurm.schedmd.com/mpi_guide.html>.
 .IP
@@ -2671,7 +2653,7 @@ Heterogeneous jobs are excluded from GANG scheduling operations.
 .TP 12
 \fBOFF\fR
 Is the default value and disables job preemption and gang scheduling.
-It is only compatible with \fBPreemptType=preempt/none\fR at a global level.
+It is only compatible with preemption being disabled at the global level.
 A common use case for this parameter is to set it on a partition to disable
 preemption for that partition.
 .IP
@@ -2827,15 +2809,9 @@ preempt/partition_prio or preempt/qos plugins.)
 .TP
 \fBPreemptType\fR
 Specifies the plugin used to identify which jobs can be
-preempted in order to start a pending job.
+preempted in order to start a pending job. Unset by default.
 .IP
 .RS
-.TP
-\fBpreempt/none\fR
-Job preemption is disabled.
-This is the default.
-.IP
-
 .TP
 \fBpreempt/partition_prio\fR
 Job preemption is based upon partition \fBPriorityTier\fR.
@@ -3021,8 +2997,7 @@ Arbitrary string used by the PrioritySiteFactorPlugin plugin.
 \fBPrioritySiteFactorPlugin\fR
 The specifies an optional plugin to be used alongside "priority/multifactor",
 which is meant to initially set and continuously update the SiteFactor
-priority factor.
-The default value is "site_factor/none".
+priority factor. Unset by default.
 .IP
 
 .TP
@@ -5967,7 +5942,8 @@ See \fBTaskProlog\fR for execution order details.
 Identifies the type of task launch plugin, typically used to provide
 resource management within a node (e.g. pinning tasks to specific
 processors). More than one task plugin can be specified in a comma\-separated
-list. The prefix of "task/" is optional. Acceptable values include:
+list. The prefix of "task/" is optional. Unset by default.
+Acceptable values include:
 .IP
 .RS
 .TP 15
@@ -5981,13 +5957,6 @@ This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
 enables process containment to specified resources using Cgroups cpuset
 interface. This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
 \fBNOTE\fR: see "man cgroup.conf" for configuration details.
-.IP
-
-.TP
-\fBtask/none\fR
-for systems requiring no special handling of user tasks.
-Lacks support for the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
-The default value is "task/none".
 .RE
 .IP
 
