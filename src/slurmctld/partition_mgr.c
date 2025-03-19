@@ -1370,29 +1370,34 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		part_ptr->over_time_limit = part_desc->over_time_limit;
 	}
 
-	if (part_desc->preempt_mode != NO_VAL16 &&
-	    (!(part_desc->preempt_mode & PREEMPT_MODE_GANG))) {
-		uint16_t new_mode;
+	if (part_desc->preempt_mode != NO_VAL16) {
+		if (!(part_desc->preempt_mode & PREEMPT_MODE_GANG)) {
+			uint16_t new_mode;
 
-		new_mode = part_desc->preempt_mode & (~PREEMPT_MODE_GANG);
-		if (new_mode <= PREEMPT_MODE_CANCEL) {
-			/*
-			 * This is a valid mode, but if GANG was enabled at
-			 * cluster level, always leave it set.
-			 */
-			if (part_ptr->preempt_mode & PREEMPT_MODE_GANG)
-				new_mode = new_mode | PREEMPT_MODE_GANG;
+			new_mode =
+				part_desc->preempt_mode & (~PREEMPT_MODE_GANG);
 
-			info("%s: setting preempt_mode to %s for partition %s",
-			     __func__, preempt_mode_string(new_mode),
-			     part_desc->name);
-			part_ptr->preempt_mode = new_mode;
+			if (new_mode <= PREEMPT_MODE_CANCEL) {
+				/*
+				 * This is a valid mode, but if GANG was enabled
+				 * at cluster level, always leave it set.
+				 */
+				if ((part_ptr->preempt_mode != NO_VAL16) &&
+				    (part_ptr->preempt_mode &
+				     PREEMPT_MODE_GANG))
+					new_mode = new_mode | PREEMPT_MODE_GANG;
+				info("%s: setting preempt_mode to %s for partition %s",
+				     __func__,
+				     preempt_mode_string(new_mode),
+				     part_desc->name);
+				part_ptr->preempt_mode = new_mode;
+			} else {
+				info("%s: invalid preempt_mode %u", __func__, new_mode);
+			}
 		} else {
-			info("%s: invalid preempt_mode %u", __func__, new_mode);
+			info("%s: PreemptMode=GANG is a cluster-wide option and cannot be set at partition level",
+			      __func__);
 		}
-	} else if (part_desc->preempt_mode & PREEMPT_MODE_GANG) {
-		info("%s: PreemptMode=GANG is a cluster-wide option and cannot be set at partition level",
-		      __func__);
 	}
 
 	if (part_desc->priority_tier != NO_VAL16) {
