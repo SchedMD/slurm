@@ -108,10 +108,10 @@ struct node_set {		/* set of nodes with same configuration */
 					 * node_weight and flags */
 };
 
-#define NODE_SET_NOFLAG		0x00
-#define NODE_SET_REBOOT		0x01
-#define NODE_SET_OUTSIDE_FLEX	0x02
-#define NODE_SET_POWER_DN	0x04
+#define NODE_SET_NOFLAG SLURM_BIT(0)
+#define NODE_SET_REBOOT SLURM_BIT(1)
+#define NODE_SET_OUTSIDE_FLEX SLURM_BIT(2)
+#define NODE_SET_POWER_DN SLURM_BIT(3)
 
 enum {
 	IN_FL,		/* Inside flex reservation */
