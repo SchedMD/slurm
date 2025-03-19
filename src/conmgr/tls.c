@@ -425,7 +425,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(con_flag(con, FLAG_IS_CONNECTED));
 	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
 
-	if ((con->output_fd < 0) || (con->output_fd < 0)) {
+	if ((con->input_fd < 0) || (con->output_fd < 0)) {
 		xassert(con_flag(con, FLAG_READ_EOF));
 		slurm_mutex_unlock(&mgr.mutex);
 
