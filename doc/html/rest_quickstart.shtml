@@ -71,7 +71,9 @@ which to load) or when attempting JWT authentication.</p>
 <a class="slurm_link" href="#quick_start"></a></h2>
 
 <p>This may be done on a dedicated REST API machine or
-your existing 'slurmctld' machine, depending on demand.</p>
+your existing 'slurmctld' machine, depending on demand.
+If you have multiple clusters, you will need a unique instance of
+<b>slurmrestd</b> for each cluster.</p>
 
 <ol>
 <li>Install components for slurmrestd
@@ -339,6 +341,6 @@ place of the problematic character (e.g., <b>/</b> = <b>%2F</b>).
 authentication, causing failures. This can be fixed by clearing the variable:
 <pre>unset SLURM_JWT</pre></p>
 
-<p style="text-align:center;">Last modified 17 July 2024</p>
+<p style="text-align:center;">Last modified 19 March 2025</p>
 
 <!--#include virtual="footer.txt"-->
