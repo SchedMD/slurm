@@ -348,7 +348,7 @@ static int _is_sslv3_handshake(const void *buf, const size_t n)
 	protocol_version |= p[2];
 	protocol_version = ntohs(protocol_version);
 
-	if ((protocol_version < PROTOCOL_VERSION_MIN) &&
+	if ((protocol_version < PROTOCOL_VERSION_MIN) ||
 	    (protocol_version > PROTOCOL_VERSION_MAX))
 		return ENOENT;
 
