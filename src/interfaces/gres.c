@@ -7007,6 +7007,13 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 	if (job_validate.tmp_min_cpus > *gres_js_val->min_cpus)
 		*gres_js_val->min_cpus = job_validate.tmp_min_cpus;
 
+	if (((*gres_js_val->cpus_per_task) != NO_VAL16) &&
+	    ((*gres_js_val->num_tasks) != NO_VAL)) {
+		cnt = (*gres_js_val->cpus_per_task) * (*gres_js_val->num_tasks);
+		if (*gres_js_val->min_cpus < cnt)
+			*gres_js_val->min_cpus = cnt;
+	}
+
 	if (job_validate.have_gres_shared &&
 	    (job_validate.rc == SLURM_SUCCESS) &&
 	    tres_freq &&
