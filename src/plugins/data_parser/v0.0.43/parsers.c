@@ -6985,6 +6985,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(UINT16, restart_cnt, "restart_cnt", "How many times this job has been requeued/restarted"),
 	add_parse(UINT32, resvid, "reservation/id", "Unique identifier of requested reservation"),
 	add_parse(STRING, resv_name, "reservation/name", "Name of reservation to use"),
+	add_parse(STRING, resv_req, "reservation/requested", "Comma separated list of requested reservation names"),
 	add_cparse(JOB_PLANNED_TIME, "time/planned", "Time required to start job after becoming eligible to run in seconds"),
 	add_parse(STRING, script, "script", "Job batch script; only the first component in a HetJob is populated or honored"),
 	add_parse(UINT16, segment_size, "segment_size", "Requested segment size"),
