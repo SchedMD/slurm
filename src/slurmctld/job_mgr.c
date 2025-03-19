@@ -3625,6 +3625,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	details_new->mem_bind = xstrdup(job_details->mem_bind);
 	details_new->mem_bind_type = job_details->mem_bind_type;
 	details_new->qos_req = xstrdup(job_details->qos_req);
+	details_new->resv_req = xstrdup(job_details->resv_req);
 	if (job_details->req_node_bitmap) {
 		details_new->req_node_bitmap =
 			bit_copy(job_details->req_node_bitmap);
@@ -8563,6 +8564,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 			return error_code;
 	}
 	detail_ptr->req_context = xstrdup(job_desc->req_context);
+	detail_ptr->resv_req = xstrdup(job_desc->reservation);
 	detail_ptr->x11        = job_desc->x11;
 	detail_ptr->x11_magic_cookie = xstrdup(job_desc->x11_magic_cookie);
 	detail_ptr->x11_target = xstrdup(job_desc->x11_target);
@@ -13452,6 +13454,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		FREE_NULL_LIST(job_ptr->resv_list);
 		xfree(job_ptr->resv_name);
 		job_ptr->resv_name = xstrdup(job_desc->reservation);
+		xfree(job_ptr->details->resv_req);
+		job_ptr->details->resv_req = xstrdup(job_desc->reservation);
 		job_ptr->resv_list = new_resv_list;
 		job_ptr->resv_id = new_resv_ptr->resv_id;
 		job_ptr->resv_ptr = new_resv_ptr;

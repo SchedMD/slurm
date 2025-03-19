@@ -2700,6 +2700,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 	req.qos_id = job_ptr->qos_id;
 	req.gres_used = job_ptr->gres_used;
 	req.segment_size = job_ptr->details->segment_size;
+	req.resv_req = job_ptr->details->resv_req;
 
 	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
 		return SLURM_ERROR;

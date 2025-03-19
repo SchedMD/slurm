@@ -79,6 +79,7 @@ char *job_req_inx[] = {
 	"t1.restart_cnt",
 	"t1.id_resv",
 	"t3.resv_name",
+	"t1.resv_req",
 	"t1.id_user",
 	"t1.id_wckey",
 	"t1.job_db_inx",
@@ -145,6 +146,7 @@ enum {
 	JOB_REQ_RESTART_CNT,
 	JOB_REQ_RESVID,
 	JOB_REQ_RESV_NAME,
+	JOB_REQ_RESV_REQ,
 	JOB_REQ_UID,
 	JOB_REQ_WCKEYID,
 	JOB_REQ_DB_INX,
@@ -688,6 +690,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 		if (row[JOB_REQ_RESV_NAME] && row[JOB_REQ_RESV_NAME][0])
 			job->resv_name = xstrdup(row[JOB_REQ_RESV_NAME]);
+		if (row[JOB_REQ_RESV_REQ] && row[JOB_REQ_RESV_REQ][0])
+			job->resv_req = xstrdup(row[JOB_REQ_RESV_REQ]);
 
 		job->cluster = xstrdup(cluster_name);
 

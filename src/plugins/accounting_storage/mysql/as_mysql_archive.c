@@ -152,6 +152,7 @@ typedef struct {
 	char *req_mem;
 	char *restart_cnt;
 	char *resvid;
+	char *resv_req;
 	char *script_hash_inx;
 	char *segment_size;
 	char *start;
@@ -232,6 +233,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->req_mem);
 		xfree(object->restart_cnt);
 		xfree(object->resvid);
+		xfree(object->resv_req);
 		xfree(object->script_hash_inx);
 		xfree(object->segment_size);
 		xfree(object->start);
@@ -596,6 +598,7 @@ static char *job_req_inx[] = {
 	"mem_req",
 	"restart_cnt",
 	"id_resv",
+	"resv_req",
 	"segment_size",
 	"time_start",
 	"state",
@@ -660,6 +663,7 @@ enum {
 	JOB_REQ_REQ_MEM,
 	JOB_REQ_RESTART_CNT,
 	JOB_REQ_RESVID,
+	JOB_REQ_RESV_REQ,
 	JOB_REQ_SEGMENT_SIZE,
 	JOB_REQ_START,
 	JOB_REQ_STATE,
@@ -1065,6 +1069,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->req_mem, buffer);
 	packstr(object->restart_cnt, buffer);
 	packstr(object->resvid, buffer);
+	packstr(object->resv_req, buffer);
 	packstr(object->segment_size, buffer);
 	packstr(object->start, buffer);
 	packstr(object->state, buffer);
@@ -1138,6 +1143,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->req_mem, buffer);
 		safe_unpackstr(&object->restart_cnt, buffer);
 		safe_unpackstr(&object->resvid, buffer);
+		safe_unpackstr(&object->resv_req, buffer);
 		safe_unpackstr(&object->segment_size, buffer);
 		safe_unpackstr(&object->start, buffer);
 		safe_unpackstr(&object->state, buffer);
@@ -3755,6 +3761,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.req_mem = row[JOB_REQ_REQ_MEM];
 		job.restart_cnt = row[JOB_REQ_RESTART_CNT];
 		job.resvid = row[JOB_REQ_RESVID];
+		job.resv_req = row[JOB_REQ_RESV_REQ];
 		job.segment_size = row[JOB_REQ_SEGMENT_SIZE];
 		job.start = row[JOB_REQ_START];
 		job.state = row[JOB_REQ_STATE];
@@ -3851,6 +3858,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_SUBMIT_LINE,
 		JOB_REQ_SYSTEM_COMMENT,
 		JOB_REQ_QOS_REQ,
+		JOB_REQ_RESV_REQ,
 		JOB_REQ_COUNT };
 
 	local_job_t object;
@@ -3949,6 +3957,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			xstrcatat(format, &format_pos, ", %s");
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
+		if (object.resv_req == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
 
 		xstrcatat(format, &format_pos, ")");
 
@@ -4029,7 +4041,9 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     (object.system_comment == NULL) ?
 			     "NULL" : object.system_comment,
 			     (object.qos_req == NULL) ?
-			     "NULL" : object.qos_req);
+			     "NULL" : object.qos_req,
+			     (object.resv_req == NULL) ?
+			     "NULL" : object.resv_req);
 
 		_free_local_job_members(&object);
 		format_pos = NULL;
