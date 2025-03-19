@@ -356,7 +356,7 @@ static int _is_sslv3_handshake(const void *buf, const size_t n)
 	length |= p[4];
 	length = ntohl(length);
 
-	if ((length < HEADER_LENGTH_MIN) && (length > HEADER_LENGTH_MAX))
+	if ((length < HEADER_LENGTH_MIN) || (length > HEADER_LENGTH_MAX))
 		return ENOENT;
 
 	return SLURM_SUCCESS;
