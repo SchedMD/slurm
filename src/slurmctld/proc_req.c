@@ -2527,6 +2527,7 @@ static int _find_avail_future_node(slurm_msg_t *msg)
 			node_ptr->node_state = NODE_STATE_IDLE;
 			node_ptr->node_state |= NODE_STATE_DYNAMIC_FUTURE;
 			node_ptr->last_response = now;
+			node_ptr->last_busy = now;
 
 			bit_clear(future_node_bitmap, node_ptr->index);
 			xfree(comm_name);
