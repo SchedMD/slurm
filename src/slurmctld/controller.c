@@ -325,6 +325,14 @@ static void _attempt_reconfig(void)
 	info("Attempting to reconfigure");
 
 	/*
+	 * Reconfigure requires all connections to fully processed before
+	 * continuing as the file descriptors will be closed during fork() and
+	 * the parent process will call _exit() instead of finishing their
+	 * processing if the new slurmctld process starts successfully.
+	 */
+	conmgr_quiesce(__func__);
+
+	/*
 	 * Send RC to requestors in foreground mode now as slurmctld is about
 	 * to call exec() which will close connections.
 	 */
@@ -341,6 +349,12 @@ static void _attempt_reconfig(void)
 	}
 
 	recover = 2;
+
+	/*
+	 * Reconfigure failed which means this process needs start again
+	 * processing connections.
+	 */
+	conmgr_unquiesce(__func__);
 }
 
 static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
