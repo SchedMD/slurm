@@ -1329,6 +1329,18 @@ static bool _watch_loop(void)
 					   &mgr.mutex);
 
 			log_flag(CONMGR, "%s: END: quiesced state", __func__);
+
+			/*
+			 * All the worker threads may be waiting for a
+			 * worker_sleep event and not an on_start_quiesced
+			 * event. Wake them all up right now if there is any
+			 * pending work queued to avoid workers remaining
+			 * sleeping until add_work() is called enough times to
+			 * wake them all up independent of the size of the
+			 * mgr.work queue.
+			 */
+			if (!list_is_empty(mgr.work))
+				EVENT_BROADCAST(&mgr.worker_sleep);
 		}
 	}
 
