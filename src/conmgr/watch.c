@@ -1230,10 +1230,17 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 
 	args.time = timespec_now();
 
-	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
+	/*
+	 * Always check mgr.connections list first to avoid
+	 * _is_accept_deferred() returning a different answer which could result
+	 * in listeners not being set to PCTL_TYPE_LISTEN after enough
+	 * connections were closed to fall below the max connection count.
+	 */
+
+	if (list_transfer_match(mgr.connections, mgr.complete_conns,
 				_list_transfer_handle_connection, &args))
 		send_signal = true;
-	if (list_transfer_match(mgr.connections, mgr.complete_conns,
+	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
 				_list_transfer_handle_connection, &args))
 		send_signal = true;
 
