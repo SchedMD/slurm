@@ -1117,6 +1117,32 @@ static int _init_slurmd_system_scope()
 	return SLURM_SUCCESS;
 }
 
+static int _unset_cpu_mem_limits(xcgroup_t *cg)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (!bit_test(cg->ns->avail_controllers, CG_CPUS)) {
+		log_flag(CGROUP, "Not resetting limits in %s as %s controller is not enabled",
+			 cg->path, ctl_names[CG_CPUS]);
+	} else {
+		rc += common_cgroup_set_param(cg, "cpuset.cpus", " ");
+		rc += common_cgroup_set_param(cg, "cpuset.mems", " ");
+	}
+
+	if (!bit_test(cg->ns->avail_controllers, CG_MEMORY)) {
+		log_flag(CGROUP, "Not resetting limits in %s as %s controller is not enabled",
+			 cg->path, ctl_names[CG_MEMORY]);
+	} else {
+		rc += common_cgroup_set_param(cg, "memory.max", "max");
+		rc += common_cgroup_set_param(cg, "memory.high", "max");
+	}
+
+	if (cgroup_p_has_feature(CG_MEMCG_SWAP))
+		rc += common_cgroup_set_param(cg, "memory.swap.max", "max");
+
+	return (rc) ? SLURM_ERROR : SLURM_SUCCESS;
+}
+
 /*
  * Slurmd started manually may not remain in the actual scope. Normally there
  * are other pids there, like the terminal from where it's been launched, so
@@ -1166,6 +1192,10 @@ static int _migrate_to_stepd_scope()
 	    SLURM_SUCCESS) {
 		error("Cannot enable subtree_control at the top level %s",
 		      int_cg_ns.mnt_point);
+		return SLURM_ERROR;
+	}
+	if (_unset_cpu_mem_limits(&int_cg[CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
+		error("Cannot reset %s cgroup limits.", new_home);
 		return SLURM_ERROR;
 	}
 
