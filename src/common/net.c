@@ -428,8 +428,8 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 		else if (addr_un->sun_path[1]) /* abstract socket */
 			return xstrdup_printf("unix:@%s",
 					      &addr_un->sun_path[1]);
-		else
-			return NULL;
+		else /* path not defined */
+			return xstrdup_printf("unix:");
 	}
 
 	/* Check for reserved addresses that getnameinfo() won't resolve */
