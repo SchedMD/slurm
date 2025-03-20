@@ -409,8 +409,11 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 	char *resp = NULL;
 	const char *rsv_host = NULL;
 
-	if (addr->ss_family == AF_UNSPEC)
+	if (addr->ss_family == AF_UNSPEC) {
+		log_flag(NET, "%s: Cannot resolve socket's unspecified address family.",
+			 __func__);
 		return NULL;
+	}
 
 	if (addr->ss_family == AF_UNIX) {
 		const struct sockaddr_un *addr_un =
