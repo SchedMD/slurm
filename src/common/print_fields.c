@@ -508,6 +508,14 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 {
 	switch (*ptr) {
 	case 'A': /* Array job ID */
+		if (job->array_job_id) {
+			xstrfmtcatat(*expanded, pos, "%0*u", padding,
+				     job->array_job_id);
+		} else {
+			xstrfmtcatat(*expanded, pos, "%0*u", padding,
+				     job->jobid);
+		}
+		break;
 	case 'J': /* Jobid.stepid */
 	case 'j': /* Job ID */
 		xstrfmtcatat(*expanded, pos, "%0*u", padding, job->jobid);

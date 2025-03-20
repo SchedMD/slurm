@@ -2160,6 +2160,7 @@ static char *_expand_std_patterns(char *path, job_info_t *job)
 {
 	job_std_pattern_t job_stp;
 
+	job_stp.array_job_id = job->array_job_id;
 	job_stp.array_task_id = job->array_task_id;
 	job_stp.first_step_name = "batch";
 	job_stp.first_step_node = job->batch_host;
