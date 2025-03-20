@@ -1238,7 +1238,6 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 	resv.id = resv_ptr->resv_id;
 	resv.name = resv_ptr->name;
 	resv.time_end = now;
-	resv.time_force = resv_ptr->time_force;
 	resv.time_start = resv_ptr->start_time;
 	/* This is just a time stamp here to delete if the reservation
 	 * hasn't started yet so we don't get trash records in the
@@ -1270,7 +1269,6 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.cluster = slurm_conf.cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.time_end = resv_ptr->end_time;
-	resv.time_force = resv_ptr->time_force;
 	resv.assocs = resv_ptr->assoc_list;
 	resv.tres_str = resv_ptr->tres_str;
 	resv.flags = resv_ptr->flags;
