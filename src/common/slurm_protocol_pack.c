@@ -4234,7 +4234,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack32(build_ptr->first_job_id, buffer);
 		pack16(build_ptr->fs_dampening_factor, buffer);
 
-		pack16(build_ptr->get_env_timeout, buffer);
+		pack16(DEFAULT_GET_ENV_TIMEOUT, buffer); /* was get_env_timeout */
 		packstr(build_ptr->gres_plugins, buffer);
 		pack16(build_ptr->group_time, buffer);
 		pack16(build_ptr->group_force, buffer);
@@ -4494,7 +4494,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack32(build_ptr->first_job_id, buffer);
 		pack16(build_ptr->fs_dampening_factor, buffer);
 
-		pack16(build_ptr->get_env_timeout, buffer);
+		pack16(DEFAULT_GET_ENV_TIMEOUT, buffer); /* was get_env_timeout */
 		packstr(build_ptr->gres_plugins, buffer);
 		pack16(build_ptr->group_time, buffer);
 		pack16(build_ptr->group_force, buffer);
@@ -4764,7 +4764,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack32(build_ptr->first_job_id, buffer);
 		pack16(build_ptr->fs_dampening_factor, buffer);
 
-		pack16(build_ptr->get_env_timeout, buffer);
+		pack16(DEFAULT_GET_ENV_TIMEOUT, buffer); /* was get_env_timeout */
 		packstr(build_ptr->gres_plugins, buffer);
 		pack16(build_ptr->group_time, buffer);
 		pack16(build_ptr->group_force, buffer);
@@ -4973,6 +4973,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 			   buf_t *buffer, uint16_t protocol_version)
 {
 	uint32_t uint32_tmp = 0;
+	uint16_t uint16_tmp = 0;
 	slurm_ctl_conf_info_msg_t *build_ptr = xmalloc(sizeof(*build_ptr));
 	*build_buffer_ptr = build_ptr;
 
@@ -5334,7 +5335,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->first_job_id, buffer);
 		safe_unpack16(&build_ptr->fs_dampening_factor, buffer);
 
-		safe_unpack16(&build_ptr->get_env_timeout, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was get_env_timeout */
 		safe_unpackstr(&build_ptr->gres_plugins, buffer);
 		safe_unpack16(&build_ptr->group_time, buffer);
 		safe_unpack16(&build_ptr->group_force, buffer);
@@ -5614,7 +5615,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->first_job_id, buffer);
 		safe_unpack16(&build_ptr->fs_dampening_factor, buffer);
 
-		safe_unpack16(&build_ptr->get_env_timeout, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was get_env_timeout */
 		safe_unpackstr(&build_ptr->gres_plugins, buffer);
 		safe_unpack16(&build_ptr->group_time, buffer);
 		safe_unpack16(&build_ptr->group_force, buffer);
@@ -5921,7 +5922,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->first_job_id, buffer);
 		safe_unpack16(&build_ptr->fs_dampening_factor, buffer);
 
-		safe_unpack16(&build_ptr->get_env_timeout, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was get_env_timeout */
 		safe_unpackstr(&build_ptr->gres_plugins, buffer);
 		safe_unpack16(&build_ptr->group_time, buffer);
 		safe_unpack16(&build_ptr->group_force, buffer);
