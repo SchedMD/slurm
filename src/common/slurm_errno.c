@@ -578,6 +578,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Authentication does not apply to request"		},
 	{ ERRTAB_ENTRY(ESLURM_AUTH_UNABLE_TO_GENERATE_TOKEN),
 	  "Token Generation failed."				},
+	{ ERRTAB_ENTRY(ESLURM_AUTH_UNABLE_TO_RESOLVE_HOST),
+	  "Authentication failed due host being unresolvable"	},
 
 	/* accounting errors */
 	{ ERRTAB_ENTRY(ESLURM_DB_CONNECTION),
