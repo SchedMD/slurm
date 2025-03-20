@@ -425,6 +425,9 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 		/* path may not be set */
 		if (addr_un->sun_path[0])
 			return xstrdup_printf("unix:%s", addr_un->sun_path);
+		else if (addr_un->sun_path[1]) /* abstract socket */
+			return xstrdup_printf("unix:@%s",
+					      &addr_un->sun_path[1]);
 		else
 			return NULL;
 	}
