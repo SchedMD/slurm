@@ -33,6 +33,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
 
@@ -354,8 +355,8 @@ extern int conmgr_set_params(const char *params)
 			const unsigned long count = slurm_atoul(tok +
 				strlen(CONMGR_PARAM_QUIESCE_TIMEOUT));
 
-			if (count < 0)
-				fatal("%s: Timeout must be positive", __func__);
+			if (count == ULONG_MAX)
+				fatal("%s: Invalid timeout: %m", __func__);
 
 			mgr.quiesce.conf_timeout.tv_sec = count;
 			log_flag(CONMGR, "%s: %s activated with %lu seconds",
