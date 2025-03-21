@@ -329,7 +329,7 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 				      char *cluster_name,
 				      char *assoc_char,
 				      list_t *ret_list,
-				      bool *already_flushed)
+				      bool *jobs_running)
 {
 	char *query = NULL, *object = NULL;
 	bool rc = 0;
@@ -384,9 +384,9 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	if (mysql_num_rows(result)) {
 		debug4("We have jobs for this combo");
 		rc = true;
-		if (ret_list && !(*already_flushed)) {
+		if (ret_list && !(*jobs_running)) {
 			list_flush(ret_list);
-			(*already_flushed) = 1;
+			(*jobs_running) = 1;
 			reset_mysql_conn(mysql_conn);
 		}
 	}
