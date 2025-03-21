@@ -705,9 +705,10 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	}
 
 	/****** Line 20 ******/
-	xstrfmtcat(out, "OverSubscribe=%s Contiguous=%d Licenses=%s Network=%s",
+	xstrfmtcat(out, "OverSubscribe=%s Contiguous=%d Licenses=%s LicensesAlloc=%s Network=%s",
 		   job_share_string(job_ptr->shared), job_ptr->contiguous,
-		   job_ptr->licenses, job_ptr->network);
+		   job_ptr->licenses, job_ptr->licenses_allocated,
+		   job_ptr->network);
 	xstrcat(out, line_end);
 
 	/****** Line 21 ******/
