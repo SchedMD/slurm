@@ -1098,7 +1098,7 @@ static bool _attempt_accept(conmgr_fd_t *con)
 			 __func__, con->name);
 		return false;
 	} else if (_is_accept_deferred()) {
-		log_flag(CONMGR, "%s: [%s] Deferring to attempt to accept new incoming connection due to %d/%d connections",
+		warning("%s: [%s] Deferring to attempt to accept new incoming connection due to %d/%d connections",
 			 __func__, con->name, list_count(mgr.connections),
 			 mgr.max_connections);
 		slurm_mutex_unlock(&mgr.mutex);
