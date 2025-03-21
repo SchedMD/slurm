@@ -749,6 +749,13 @@ static void _add_license(list_t *license_list, licenses_t *license_entry)
 	}
 }
 
+static bool _sufficient_licenses(licenses_t *request, licenses_t *match,
+				 int resv_licenses)
+{
+	return (request->total + match->used + match->last_deficit +
+		resv_licenses) <= match->total;
+}
+
 static int _foreach_license_job_test(void *x, void *arg)
 {
 	licenses_t *license_entry = x;
@@ -784,8 +791,7 @@ static int _foreach_license_job_test(void *x, void *arg)
 			FREE_NULL_LIST(job_ptr->licenses_to_preempt);
 		test_args->rc = SLURM_ERROR;
 		return -1;
-	} else if ((license_entry->total + match->used + match->last_deficit) >
-		   match->total) {
+	} else if (!_sufficient_licenses(license_entry, match, 0)) {
 		if (job_ptr->licenses_to_preempt)
 			_add_license(job_ptr->licenses_to_preempt,
 				     license_entry);
@@ -796,8 +802,8 @@ static int _foreach_license_job_test(void *x, void *arg)
 		resv_licenses = job_test_lic_resv(job_ptr,
 						  license_entry->name,
 						  when, reboot);
-		if ((license_entry->total + match->used + match->last_deficit +
-		     resv_licenses) > match->total) {
+		if (!_sufficient_licenses(license_entry, match,
+					  resv_licenses)) {
 			if (job_ptr->licenses_to_preempt)
 				_add_license(job_ptr->licenses_to_preempt,
 					     license_entry);
