@@ -137,7 +137,7 @@ extern void conmgr_init(int thread_count, int max_connections,
 		mgr.conf_connect_timeout.tv_sec = slurm_conf.msg_timeout;
 	if (!mgr.quiesce.conf_timeout.tv_nsec &&
 	    !mgr.quiesce.conf_timeout.tv_sec)
-		mgr.quiesce.conf_timeout.tv_sec = INFINITE;
+		mgr.quiesce.conf_timeout.tv_sec = (2 * slurm_conf.msg_timeout);
 
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);
