@@ -829,6 +829,7 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
 #define CONMGR_PARAM_READ_TIMEOUT "CONMGR_READ_TIMEOUT="
 #define CONMGR_PARAM_WRITE_TIMEOUT "CONMGR_WRITE_TIMEOUT="
 #define CONMGR_PARAM_CONNECT_TIMEOUT "CONMGR_CONNECT_TIMEOUT="
+#define CONMGR_PARAM_QUIESCE_TIMEOUT "CONMGR_QUIESCE_TIMEOUT="
 
 /*
  * Set configuration parameters to be applied when conmgr_init() is called.

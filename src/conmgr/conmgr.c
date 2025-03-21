@@ -135,6 +135,9 @@ extern void conmgr_init(int thread_count, int max_connections,
 	if (!mgr.conf_connect_timeout.tv_nsec &&
 	    !mgr.conf_connect_timeout.tv_sec)
 		mgr.conf_connect_timeout.tv_sec = slurm_conf.msg_timeout;
+	if (!mgr.quiesce.conf_timeout.tv_nsec &&
+	    !mgr.quiesce.conf_timeout.tv_sec)
+		mgr.quiesce.conf_timeout.tv_sec = INFINITE;
 
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);
@@ -345,6 +348,17 @@ extern int conmgr_set_params(const char *params)
 			mgr.conf_max_connections = count;
 
 			log_flag(CONMGR, "%s: %s activated with %lu max connections",
+				 __func__, tok, count);
+		} else if (!xstrncasecmp(tok, CONMGR_PARAM_QUIESCE_TIMEOUT,
+				  strlen(CONMGR_PARAM_QUIESCE_TIMEOUT))) {
+			const unsigned long count = slurm_atoul(tok +
+				strlen(CONMGR_PARAM_QUIESCE_TIMEOUT));
+
+			if (count < 0)
+				fatal("%s: Timeout must be positive", __func__);
+
+			mgr.quiesce.conf_timeout.tv_sec = count;
+			log_flag(CONMGR, "%s: %s activated with %lu seconds",
 				 __func__, tok, count);
 		} else if (!xstrcasecmp(tok, CONMGR_PARAM_POLL_ONLY)) {
 			log_flag(CONMGR, "%s: %s activated", __func__, tok);
