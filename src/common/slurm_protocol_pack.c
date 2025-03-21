@@ -3332,6 +3332,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpack_time(&job->last_sched_eval, buffer);
 		safe_unpackstr(&job->licenses, buffer);
+		safe_unpackstr(&job->licenses_allocated, buffer);
 
 		safe_unpack16(&job->mail_type, buffer);
 		safe_unpackstr(&job->mail_user, buffer);
