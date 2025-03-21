@@ -189,7 +189,14 @@ static int _get_task_count(job_record_t *job_ptr)
 {
 	uint32_t maxtasks;
 
-	if (job_ptr->details->num_tasks) {
+	/*
+	 * Here we need to check to know if the num_tasks here were from the
+	 * user or from us. As if the user requested a range of nodes we
+	 * originally calculate off min_nodes if ntasks_per_node is given we
+	 * will not have the right num_tasks, so recalculate.
+	 */
+	if (job_ptr->details->num_tasks &&
+	    (job_ptr->bit_flags & JOB_NTASKS_SET)) {
 		maxtasks = job_ptr->details->num_tasks;
 	} else if (job_ptr->details->ntasks_per_node) {
 		maxtasks = job_ptr->details->ntasks_per_node *
