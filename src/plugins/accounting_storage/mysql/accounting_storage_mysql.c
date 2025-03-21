@@ -341,6 +341,8 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 		JASSOC_ACCT,
 		JASSOC_USER,
 		JASSOC_PART,
+		JASSOC_QOS,
+		JASSOC_WCKEY,
 		JASSOC_COUNT
 	};
 	/*
@@ -351,8 +353,11 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 		"t0.id_job",
 		"t2.acct",
 		"t2.user",
-		"t2.partition"
+		"t2.partition",
+		"t0.id_qos",
+		"t0.id_wckey",
 	};
+
 	xstrcat(object, jassoc_req_inx[0]);
 	for (int i = 1; i < JASSOC_COUNT; i++)
 		xstrfmtcat(object, ", %s", jassoc_req_inx[i]);
@@ -390,8 +395,22 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	if (ret_list) {
 		MYSQL_ROW row;
 		char *object;
+		assoc_mgr_lock_t locks = {
+			.qos = READ_LOCK,
+			.wckey = READ_LOCK,
+		};
+
+		assoc_mgr_lock(&locks);
 
 		while ((row = mysql_fetch_row(result))) {
+			slurmdb_qos_rec_t qos_req = {
+				.id = slurm_atoul(row[JASSOC_QOS]),
+			};
+			slurmdb_wckey_rec_t wckey_req = {
+				.cluster = cluster_name,
+				.id = slurm_atoul(row[JASSOC_WCKEY]),
+			};
+
 			if (!row[JASSOC_USER][0]) {
 				/* This should never happen */
 				error("How did we get a job running on an association that isn't a user association job %s cluster '%s' acct '%s'?",
@@ -400,6 +419,18 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 				      row[JASSOC_ACCT]);
 				continue;
 			}
+
+			if (qos_req.id)
+				assoc_mgr_fill_in_qos(
+					mysql_conn, &qos_req,
+					ACCOUNTING_ENFORCE_QOS,
+					NULL, true);
+			if (wckey_req.id)
+				assoc_mgr_fill_in_wckey(
+					mysql_conn, &wckey_req,
+					ACCOUNTING_ENFORCE_WCKEYS,
+					NULL, true);
+
 			object = xstrdup_printf(
 				"JobID = %-10s C = %-10s A = %-10s U = %-9s",
 				row[JASSOC_JOB], cluster_name, row[JASSOC_ACCT],
@@ -407,8 +438,14 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 			if (row[JASSOC_PART][0])
 				// see if there is a partition name
 				xstrfmtcat(object, " P = %s", row[JASSOC_PART]);
+			if (qos_req.id)
+				xstrfmtcat(object, " Q = %-9s", qos_req.name);
+			if (wckey_req.id)
+				xstrfmtcat(object, " W = %-9s", wckey_req.name);
+
 			list_append(ret_list, object);
 		}
+		assoc_mgr_unlock(&locks);
 	}
 	mysql_free_result(result);
 	return rc;
