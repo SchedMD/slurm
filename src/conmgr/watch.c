@@ -1225,10 +1225,6 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.inspecting);
 
-	/*
-	 * Always clear max watch sleep as it will be set before releasing lock
-	 */
-	mgr.watch_max_sleep = (struct timespec) {0};
 	args.time = timespec_now();
 
 	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
@@ -1519,6 +1515,35 @@ static int _get_quiesced_waiter_count(void)
 	return waiters;
 }
 
+/* NOTE: must hold mgr.mutex */
+static int _close_con_for_each(void *x, void *arg)
+{
+	conmgr_fd_t *con = x;
+	close_con(true, con);
+	return 1;
+}
+
+static void _on_quiesce_timeout(void)
+{
+	log_flag(CONMGR, "%s: Quiesce timed out. Closing all connections.",
+		 __func__);
+
+	/* Close all connections but not listeners */
+	list_for_each(mgr.connections, _close_con_for_each, NULL);
+}
+
+static void _quiesce_max_sleep(void)
+{
+	handle_connection_args_t args = {
+		.magic = MAGIC_HANDLE_CONNECTION,
+	};
+	args.time = timespec_now();
+
+	if (_handle_time_limit(&args, mgr.quiesce.start,
+			       mgr.quiesce.conf_timeout))
+		_on_quiesce_timeout();
+}
+
 static bool _watch_loop(void)
 {
 	if (mgr.shutdown_requested) {
@@ -1529,6 +1554,12 @@ static bool _watch_loop(void)
 
 	if (mgr.quiesce.requested) {
 		int waiters;
+
+		/*
+		 * Limit amount of time watch() will sleep to ensure that the
+		 * quiesce timeout is enforced
+		 */
+		_quiesce_max_sleep();
 
 		if (signal_mgr_has_incoming()) {
 			/*
@@ -1626,6 +1657,8 @@ extern void *watch(void *arg)
 		EVENT_WAIT_TIMED(&mgr.watch_sleep, mgr.watch_max_sleep,
 				 &mgr.mutex);
 		mgr.waiting_on_work = false;
+		/* Always clear max watch sleep to allow finding next sleep */
+		mgr.watch_max_sleep = (struct timespec) {0};
 	}
 
 	log_flag(CONMGR, "%s: returning shutdown_requested=%c connections=%u listen_conns=%u",

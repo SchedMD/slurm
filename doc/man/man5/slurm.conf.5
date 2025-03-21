@@ -4970,6 +4970,13 @@ timed out. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
 .TP
+\fBconmgr_quiesce_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering quiesce to be timed out. Upon timeout,
+all (non-listening) active connections will be closed to allow the quiesce to
+start. Defaults to two times value of \fBMessageTimeout\fR.
+.IP
+
+.TP
 \fBconmgr_wait_write_delay\fR=\fI<seconds>\fR
 When waiting for kernel to flush outgoing buffer, poll kernel for changes every
 \fI<seconds>\fR for changes. Defaults to the value of \fBMessageTimeout\fR.
@@ -5380,6 +5387,13 @@ timed out. Defaults to the value of \fBMessageTimeout\fR.
 \fBconmgr_read_timeout\fR=\fI<seconds>\fR
 Wait \fI<seconds>\fR before considering a read from a file descriptor to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBconmgr_quiesce_timeout\fR=\fI<seconds>\fR
+Wait \fI<seconds>\fR before considering quiesce to be timed out. Upon timeout,
+all (non-listening) active connections will be closed to allow the quiesce to
+start. Defaults to two times value of \fBMessageTimeout\fR.
 .IP
 
 .TP

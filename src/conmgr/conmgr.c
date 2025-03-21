@@ -135,6 +135,9 @@ extern void conmgr_init(int thread_count, int max_connections,
 	if (!mgr.conf_connect_timeout.tv_nsec &&
 	    !mgr.conf_connect_timeout.tv_sec)
 		mgr.conf_connect_timeout.tv_sec = slurm_conf.msg_timeout;
+	if (!mgr.quiesce.conf_timeout.tv_nsec &&
+	    !mgr.quiesce.conf_timeout.tv_sec)
+		mgr.quiesce.conf_timeout.tv_sec = (2 * slurm_conf.msg_timeout);
 
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);
@@ -195,6 +198,7 @@ extern void conmgr_fini(void)
 
 	xassert(!mgr.quiesce.requested);
 	xassert(!mgr.quiesce.active);
+	xassert(!mgr.quiesce.start.tv_sec);
 
 	/* work should have been cleared by workers_fini() */
 	xassert(list_is_empty(mgr.work));
@@ -345,6 +349,17 @@ extern int conmgr_set_params(const char *params)
 
 			log_flag(CONMGR, "%s: %s activated with %lu max connections",
 				 __func__, tok, count);
+		} else if (!xstrncasecmp(tok, CONMGR_PARAM_QUIESCE_TIMEOUT,
+				  strlen(CONMGR_PARAM_QUIESCE_TIMEOUT))) {
+			const unsigned long count = slurm_atoul(tok +
+				strlen(CONMGR_PARAM_QUIESCE_TIMEOUT));
+
+			if (count < 0)
+				fatal("%s: Timeout must be positive", __func__);
+
+			mgr.quiesce.conf_timeout.tv_sec = count;
+			log_flag(CONMGR, "%s: %s activated with %lu seconds",
+				 __func__, tok, count);
 		} else if (!xstrcasecmp(tok, CONMGR_PARAM_POLL_ONLY)) {
 			log_flag(CONMGR, "%s: %s activated", __func__, tok);
 			pollctl_set_mode(POLL_MODE_POLL);
@@ -393,6 +408,8 @@ extern void conmgr_quiesce(const char *caller)
 
 	xassert(!mgr.quiesce.active);
 	mgr.quiesce.requested = true;
+	xassert(!mgr.quiesce.start.tv_sec);
+	mgr.quiesce.start = timespec_now();
 
 	while (!mgr.quiesce.active) {
 		EVENT_SIGNAL(&mgr.watch_sleep);
@@ -408,9 +425,11 @@ extern void conmgr_unquiesce(const char *caller)
 
 	xassert(mgr.quiesce.requested);
 	xassert(mgr.quiesce.active);
+	xassert(mgr.quiesce.start.tv_sec);
 
 	mgr.quiesce.requested = false;
 	mgr.quiesce.active = false;
+	mgr.quiesce.start.tv_sec = 0;
 
 	EVENT_BROADCAST(&mgr.quiesce.on_stop_quiesced);
 
