@@ -437,6 +437,9 @@ extern int fini(void)
 	if (s2n_config_free(config))
 		on_s2n_error(NULL, s2n_config_free);
 
+	if (s2n_cleanup_final())
+		on_s2n_error(NULL, s2n_cleanup_final);
+
 	return SLURM_SUCCESS;
 }
 
