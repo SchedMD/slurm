@@ -195,6 +195,7 @@ extern void conmgr_fini(void)
 
 	xassert(!mgr.quiesce.requested);
 	xassert(!mgr.quiesce.active);
+	xassert(!mgr.quiesce.start.tv_sec);
 
 	/* work should have been cleared by workers_fini() */
 	xassert(list_is_empty(mgr.work));
@@ -393,6 +394,8 @@ extern void conmgr_quiesce(const char *caller)
 
 	xassert(!mgr.quiesce.active);
 	mgr.quiesce.requested = true;
+	xassert(!mgr.quiesce.start.tv_sec);
+	mgr.quiesce.start = timespec_now();
 
 	while (!mgr.quiesce.active) {
 		EVENT_SIGNAL(&mgr.watch_sleep);
@@ -408,9 +411,11 @@ extern void conmgr_unquiesce(const char *caller)
 
 	xassert(mgr.quiesce.requested);
 	xassert(mgr.quiesce.active);
+	xassert(mgr.quiesce.start.tv_sec);
 
 	mgr.quiesce.requested = false;
 	mgr.quiesce.active = false;
+	mgr.quiesce.start.tv_sec = 0;
 
 	EVENT_BROADCAST(&mgr.quiesce.on_stop_quiesced);
 

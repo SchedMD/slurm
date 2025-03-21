@@ -361,6 +361,8 @@ typedef struct {
 		bool requested;
 		/* Has conmgr quiesced */
 		bool active;
+		/* Timestamp when quiesce requested */
+		timespec_t start;
 		/* Event to broadcast when conmgr enters quiesced state */
 		event_signal_t on_start_quiesced;
 		/* Event to broadcast when conmgr exits quiesced state */
