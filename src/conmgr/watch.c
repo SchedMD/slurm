@@ -1225,10 +1225,6 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.inspecting);
 
-	/*
-	 * Always clear max watch sleep as it will be set before releasing lock
-	 */
-	mgr.watch_max_sleep = (struct timespec) {0};
 	args.time = timespec_now();
 
 	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
@@ -1661,6 +1657,8 @@ extern void *watch(void *arg)
 		EVENT_WAIT_TIMED(&mgr.watch_sleep, mgr.watch_max_sleep,
 				 &mgr.mutex);
 		mgr.waiting_on_work = false;
+		/* Always clear max watch sleep to allow finding next sleep */
+		mgr.watch_max_sleep = (struct timespec) {0};
 	}
 
 	log_flag(CONMGR, "%s: returning shutdown_requested=%c connections=%u listen_conns=%u",
