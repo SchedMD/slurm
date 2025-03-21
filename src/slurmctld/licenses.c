@@ -231,7 +231,8 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 			license_entry->total = num;
 			if (delim[0] == '|')
 				license_entry->op_or = true;
-			list_push(lic_list, license_entry);
+			/* Append to preserve the order requested by the user */
+			list_append(lic_list, license_entry);
 		}
 		token = strtok_r(NULL, delim, &last);
 	}
@@ -324,7 +325,7 @@ static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
 	license_entry->lic_id = next_lic_id++;
 	xassert(license_entry->lic_id != NO_VAL16);
 
-	list_push(cluster_license_list, license_entry);
+	list_append(cluster_license_list, license_entry);
 	last_license_update = time(NULL);
 }
 
@@ -875,7 +876,7 @@ static int _foreach_license_copy(void *x, void *arg)
 	license_entry_dest->last_deficit = license_entry_src->last_deficit;
 	license_entry_dest->lic_id = license_entry_src->lic_id;
 	license_entry_dest->op_or = license_entry_src->op_or;
-	list_push(license_list_dest, license_entry_dest);
+	list_append(license_list_dest, license_entry_dest);
 
 	return 0;
 }
@@ -891,7 +892,7 @@ static int _foreach_license_light_copy(void *x, void *arg)
 	license_entry_dest->last_deficit = license_entry_src->last_deficit;
 	license_entry_dest->lic_id = license_entry_src->lic_id;
 	license_entry_dest->op_or = license_entry_src->op_or;
-	list_push(license_list_dest, license_entry_dest);
+	list_append(license_list_dest, license_entry_dest);
 
 	return 0;
 }
@@ -1290,7 +1291,7 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 		if (!bf_running_job_reserve)
 			bf_entry->remaining -= license_entry->used;
 
-		list_push(bf_list, bf_entry);
+		list_append(bf_list, bf_entry);
 	}
 	list_iterator_destroy(iter);
 
@@ -1451,7 +1452,7 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 		new_entry->remaining = reservable;
 		new_entry->resv_ptr = job_ptr->resv_ptr;
 
-		list_push(licenses, new_entry);
+		list_append(licenses, new_entry);
 	}
 	list_iterator_destroy(iter);
 }

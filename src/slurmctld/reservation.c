@@ -438,7 +438,7 @@ static list_t *_list_dup(list_t *license_list)
 		license_dest = xmalloc(sizeof(licenses_t));
 		license_dest->name = xstrdup(license_src->name);
 		license_dest->used = license_src->used;
-		list_push(lic_list, license_dest);
+		list_append(lic_list, license_dest);
 	}
 	list_iterator_destroy(iter);
 	return lic_list;
