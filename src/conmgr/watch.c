@@ -1519,6 +1519,35 @@ static int _get_quiesced_waiter_count(void)
 	return waiters;
 }
 
+/* NOTE: must hold mgr.mutex */
+static int _close_con_for_each(void *x, void *arg)
+{
+	conmgr_fd_t *con = x;
+	close_con(true, con);
+	return 1;
+}
+
+static void _on_quiesce_timeout(void)
+{
+	log_flag(CONMGR, "%s: Quiesce timed out. Closing all connections.",
+		 __func__);
+
+	/* Close all connections but not listeners */
+	list_for_each(mgr.connections, _close_con_for_each, NULL);
+}
+
+static void _quiesce_max_sleep(void)
+{
+	handle_connection_args_t args = {
+		.magic = MAGIC_HANDLE_CONNECTION,
+	};
+	args.time = timespec_now();
+
+	if (_handle_time_limit(&args, mgr.quiesce.start,
+			       mgr.quiesce.conf_timeout))
+		_on_quiesce_timeout();
+}
+
 static bool _watch_loop(void)
 {
 	if (mgr.shutdown_requested) {
@@ -1529,6 +1558,12 @@ static bool _watch_loop(void)
 
 	if (mgr.quiesce.requested) {
 		int waiters;
+
+		/*
+		 * Limit amount of time watch() will sleep to ensure that the
+		 * quiesce timeout is enforced
+		 */
+		_quiesce_max_sleep();
 
 		if (signal_mgr_has_incoming()) {
 			/*
