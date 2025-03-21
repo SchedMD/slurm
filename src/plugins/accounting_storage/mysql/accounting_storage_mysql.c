@@ -451,37 +451,6 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-/* Same as above but for things having nothing to do with associations
- * like qos or wckey */
-static bool _check_jobs_before_remove_without_assoctable(
-	mysql_conn_t *mysql_conn, char *cluster_name, char *where_char)
-{
-	char *query = NULL;
-	bool rc = 0;
-	MYSQL_RES *result = NULL;
-
-	query = xstrdup_printf("select id_assoc from \"%s_%s\" "
-			       "where (%s) limit 1;",
-			       cluster_name, job_table, where_char);
-
-	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-
-	if (!(result = mysql_db_query_ret(
-		      mysql_conn, query, 0))) {
-		xfree(query);
-		return rc;
-	}
-	xfree(query);
-
-	if (mysql_num_rows(result)) {
-		debug4("We have jobs for this combo");
-		rc = true;
-	}
-
-	mysql_free_result(result);
-	return rc;
-}
-
 /* static int _add_remove_tres_limit(char *tres_limit_str, char *name, */
 /* 				  char **cols, char **vals, char **extra) */
 /* { */
@@ -2260,11 +2229,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
 		 */
-	} else if ((table == qos_table) || (table == wckey_table)) {
-		if (cluster_name)
-			has_jobs = _check_jobs_before_remove_without_assoctable(
-				mysql_conn, cluster_name, assoc_char);
-	} else {
+	} else if (cluster_name) {
+		xassert(jobs_running);
 		/* first check to see if we are running jobs now */
 		if (_check_jobs_before_remove(
 			    mysql_conn, cluster_name, assoc_char,
