@@ -2239,13 +2239,14 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		if (cluster_name)
 			has_jobs = _check_jobs_before_remove_without_assoctable(
 				mysql_conn, cluster_name, assoc_char);
-	} else if (table != assoc_table) {
+	} else {
 		/* first check to see if we are running jobs now */
 		if (_check_jobs_before_remove(
 			    mysql_conn, cluster_name, assoc_char,
 			    ret_list, jobs_running) || (*jobs_running))
 			return SLURM_SUCCESS;
 
+		/* now check to see if any jobs were ever run. */
 		has_jobs = _check_jobs_before_remove(
 			mysql_conn, cluster_name, assoc_char, NULL, NULL);
 
@@ -2271,18 +2272,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			}
 			mysql_free_result(result);
 		}
-	} else {
-		/* first check to see if we are running jobs now */
-		if (_check_jobs_before_remove(
-			    mysql_conn, cluster_name, name_char,
-			    ret_list, jobs_running) || (*jobs_running))
-			return SLURM_SUCCESS;
-
-		/* now check to see if any jobs were ever run. */
-		has_jobs = _check_jobs_before_remove(
-			mysql_conn, cluster_name, name_char,
-			NULL, NULL);
 	}
+
 	/* we want to remove completely all that is less than a day old */
 	if (!has_jobs && table != assoc_table) {
 		if (cluster_centric) {
