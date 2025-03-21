@@ -124,6 +124,8 @@ int _print_job_name(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_licenses(job_info_t * job, int width, bool right_justify,
 			char* suffix);
+int _print_job_licenses_alloc(job_info_t *job, int width, bool right,
+			      char *suffix);
 int _print_job_wckey(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_user_id(job_info_t * job, int width, bool right_justify,
