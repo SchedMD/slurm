@@ -3726,7 +3726,7 @@ static int _build_node_list(job_record_t *job_ptr,
 			    bool can_reboot)
 {
 	int adj_cpus, i, node_set_inx, node_set_len, node_set_inx_base;
-	int power_cnt, rc, qos_cnt;
+	int rc, qos_cnt;
 	struct node_set *node_set_ptr, *prev_node_set_ptr;
 	config_record_t *config_ptr;
 	part_record_t *part_ptr = job_ptr->part_ptr;
@@ -4134,8 +4134,8 @@ end_node_set:
 	 * scheduling jobs on powered down nodes where possible.
 	 */
 	for (i = (node_set_inx-1); i >= 0; i--) {
-		power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
-					power_down_node_bitmap);
+		int power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
+					    power_down_node_bitmap);
 		if (power_cnt == 0)
 			continue;	/* no nodes powered down */
 		if (power_cnt == node_set_ptr[i].node_cnt) {
