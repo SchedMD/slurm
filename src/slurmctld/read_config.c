@@ -2267,6 +2267,24 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 	set_initial_job_alias_list(job_ptr);
 }
 
+static void _restore_job_licenses(job_record_t *job_ptr)
+{
+	list_t *license_list = NULL;
+	bool valid = true;
+
+	license_list = license_validate(job_ptr->licenses, false, false,
+					job_ptr->tres_req_cnt, &valid);
+	FREE_NULL_LIST(job_ptr->license_list);
+	if (valid) {
+		job_ptr->license_list = license_list;
+		xfree(job_ptr->licenses);
+		job_ptr->licenses = license_list_to_string(license_list);
+	}
+
+	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
+		license_job_get(job_ptr, true);
+}
+
 /*
  * Build license_list for every job.
  * Reset accounting for every job.
@@ -2277,8 +2295,6 @@ static void _restore_job_accounting(void)
 {
 	job_record_t *job_ptr;
 	list_itr_t *job_iterator;
-	bool valid = true;
-	list_t *license_list = NULL;
 
 	assoc_mgr_clear_used_info();
 
@@ -2332,20 +2348,7 @@ static void _restore_job_accounting(void)
 						save_accrue_time;
 			}
 		}
-
-		license_list = license_validate(job_ptr->licenses, false, false,
-						job_ptr->tres_req_cnt, &valid);
-		FREE_NULL_LIST(job_ptr->license_list);
-		if (valid) {
-			job_ptr->license_list = license_list;
-			xfree(job_ptr->licenses);
-			job_ptr->licenses =
-				license_list_to_string(license_list);
-		}
-
-		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
-			license_job_get(job_ptr, true);
-
+		_restore_job_licenses(job_ptr);
 	}
 	list_iterator_destroy(job_iterator);
 }
