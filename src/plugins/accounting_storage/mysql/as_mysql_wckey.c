@@ -248,8 +248,9 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond,
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.wckey_name='%s'",
-				   prefix, object);
+			xstrfmtcat(*extra,
+				   "%s.wckey_name='%s' || %s.wckey_name='*%s'",
+				   prefix, object, prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
