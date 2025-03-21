@@ -7873,6 +7873,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(JOB_STATE, job_state, "job_state", "Current state"),
 	add_parse(TIMESTAMP_NO_VAL, last_sched_eval, "last_sched_evaluation", "Last time job was evaluated for scheduling (UNIX timestamp)"),
 	add_parse(STRING, licenses, "licenses", "License(s) required by the job"),
+	add_parse(STRING, licenses_allocated, "licenses_allocated", "License(s) allocated to the job"),
 	add_parse(JOB_MAIL_FLAGS, mail_type, "mail_type", "Mail event type(s)"),
 	add_parse(STRING, mail_user, "mail_user", "User to receive email notifications"),
 	add_parse(UINT32_NO_VAL, max_cpus, "max_cpus", "Maximum number of CPUs usable by the job"),
