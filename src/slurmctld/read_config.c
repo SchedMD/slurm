@@ -2269,16 +2269,31 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 
 static void _restore_job_licenses(job_record_t *job_ptr)
 {
-	list_t *license_list = NULL;
-	bool valid = true;
+	list_t *license_list = NULL, *license_list_alloc = NULL;
+	bool valid = true, alloc_valid = true;
 
 	license_list = license_validate(job_ptr->licenses, false, false,
 					job_ptr->tres_req_cnt, &valid);
+	license_list_alloc = license_validate(job_ptr->licenses_allocated,
+					      false, false, NULL, &alloc_valid);
 	FREE_NULL_LIST(job_ptr->license_list);
+
 	if (valid) {
 		job_ptr->license_list = license_list;
 		xfree(job_ptr->licenses);
 		job_ptr->licenses = license_list_to_string(license_list);
+	}
+
+	/*
+	 * If there are allocated licenses, then set job_ptr->license_list to
+	 * that so we get the correct licenses from the cluster.
+	 */
+	if (license_list_alloc && alloc_valid) {
+		FREE_NULL_LIST(job_ptr->license_list);
+		job_ptr->license_list = license_list_alloc;
+		xfree(job_ptr->licenses_allocated);
+		job_ptr->licenses_allocated =
+			license_list_to_string(job_ptr->license_list);
 	}
 
 	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))

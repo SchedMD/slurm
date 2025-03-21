@@ -2960,6 +2960,12 @@ extern int select_nodes(job_node_select_t *job_node_select,
 
 	job_end_time_reset(job_ptr);
 
+	/*
+	 * job_array_post_sched() must happen before allocate_nodes() because
+	 * we need the pending job array state to be copied. For example,
+	 * allocate_nodes() calls license_job_get() which can modify the job's
+	 * license_list if the job requested OR'd licenses.
+	 */
 	tmp_job = job_array_post_sched(job_ptr, true);
 	if (tmp_job && (tmp_job != job_ptr) && (orig_resv_port_cnt == NO_VAL16))
 		tmp_job->resv_port_cnt = orig_resv_port_cnt;

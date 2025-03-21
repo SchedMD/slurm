@@ -16773,6 +16773,8 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	xfree(job_ptr->alias_list);
 	xfree(job_ptr->batch_host);
 	free_job_resources(&job_ptr->job_resrcs);
+	FREE_NULL_LIST(job_ptr->license_list);
+	xfree(job_ptr->licenses_allocated);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->node_addrs);
 	xfree(job_ptr->nodes_completing);

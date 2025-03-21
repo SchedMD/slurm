@@ -152,6 +152,15 @@ static int _license_find_rec_by_id(void *x, void *key)
 	return 0;
 }
 
+/*
+ * Find a license_t record that does NOT match license id. This is the inverse
+ * of _license_find_rec_by_id
+ */
+static int _license_find_rec_by_id_not(void *x, void *key)
+{
+	return !_license_find_rec_by_id(x, key);
+}
+
 static int _license_find_rec_in_list_by_id(void *x, void *key)
 {
 	licenses_t *license_entry = x;
@@ -808,6 +817,11 @@ static int _foreach_license_job_test(void *x, void *arg)
 				_add_license(job_ptr->licenses_to_preempt,
 					     license_entry);
 			test_args->rc = EAGAIN;
+		} else if (license_entry->op_or) {
+			test_args->rc = SLURM_SUCCESS;
+			FREE_NULL_LIST(job_ptr->licenses_to_preempt);
+			/* Stop list_for_each */
+			return -1;
 		}
 	}
 	return 0;
@@ -832,13 +846,17 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
 		.reboot = reboot,
 		.when = when,
 	};
+	licenses_t *license_entry;
 	bool use_licenses_to_preempt;
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return SLURM_SUCCESS;
 
+	/* reclaim_licenses is disabled with OR'd licenses */
+	license_entry = list_peek(job_ptr->license_list);
 	use_licenses_to_preempt = preempt_for_licenses &&
-		check_preempt_licenses;
+				  check_preempt_licenses &&
+				  !license_entry->op_or;
 	if (!job_ptr->licenses_to_preempt && use_licenses_to_preempt)
 		job_ptr->licenses_to_preempt = list_create(NULL);
 
@@ -940,6 +958,45 @@ extern list_t *cluster_license_copy(void)
 
 	return license_list_dest;
 }
+
+/*
+ * We need to track the allocated licenses separately, so that:
+ *
+ * - when the job is state saved and then restored, or
+ * - when the job completes,
+ *
+ * we update the license counts in cluster_license_list using only the licenses
+ * that were allocated.
+ */
+static int _set_licenses_alloc(job_record_t *job_ptr, bool lic_or,
+			       licenses_t *license_entry)
+{
+	if (lic_or) {
+		if (!license_entry) {
+			/*
+			 * We tested that there were enough licenses available
+			 * but then there weren't enough when we tried to
+			 * allocate. This indicates faulty logic.
+			 */
+			error("Could not allocate licenses %s for %pJ",
+			      job_ptr->licenses, job_ptr);
+			return SLURM_ERROR;
+		}
+
+		/* Remove all other licenses besides the one we allocated. */
+		list_delete_all(job_ptr->license_list,
+				_license_find_rec_by_id_not,
+				&license_entry->lic_id);
+		xassert(list_count(job_ptr->license_list) == 1);
+		xassert(license_entry ==
+			(licenses_t *) list_peek(job_ptr->license_list));
+	}
+	job_ptr->licenses_allocated =
+		license_list_to_string(job_ptr->license_list);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * license_job_get - Get the licenses required for a job
  * IN job_ptr - job identification
@@ -950,6 +1007,7 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 	list_itr_t *iter;
 	licenses_t *license_entry, *match;
 	int rc = SLURM_SUCCESS;
+	bool lic_or = false;
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
@@ -959,10 +1017,30 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = list_next(iter))) {
+		lic_or = license_entry->op_or;
 		match = list_find_first(cluster_license_list,
 					_license_find_rec_by_id,
 					&license_entry->lic_id);
 		if (match) {
+			/*
+			 * With OR, we only know that at least one of the job's
+			 * requested licenses are available, so we need to test
+			 * for availability again. With AND we know that all
+			 * licenses are available so we don't need to check.
+			 */
+			if (lic_or) {
+				int resv_blk_lic_cnt =
+					job_test_lic_resv(job_ptr, match->name,
+							  last_license_update,
+							  false);
+
+				if (!_sufficient_licenses(license_entry, match,
+							  resv_blk_lic_cnt)) {
+					/* Not enough of this license */
+					continue;
+				}
+			}
+
 			match->used += license_entry->total;
 			license_entry->used += license_entry->total;
 			if (match->remote && restore) {
@@ -972,6 +1050,9 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 					match->last_deficit -=
 						license_entry->total;
 			}
+			if (lic_or) {
+				break;
+			}
 		} else {
 			error("could not find license %s for job %u",
 			      license_entry->name, job_ptr->job_id);
@@ -979,6 +1060,11 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 		}
 	}
 	list_iterator_destroy(iter);
+
+	/* When restoring, allocated licenses is already set */
+	if (!rc && !restore)
+		rc = _set_licenses_alloc(job_ptr, lic_or, license_entry);
+
 	_licenses_print("acquire_license", cluster_license_list, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
 	return rc;
