@@ -169,14 +169,6 @@ bool backup_dbd = 0;
 
 static char *default_qos_str = NULL;
 
-enum {
-	JASSOC_JOB,
-	JASSOC_ACCT,
-	JASSOC_USER,
-	JASSOC_PART,
-	JASSOC_COUNT
-};
-
 extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn);
 
 static list_t *_get_cluster_names(mysql_conn_t *mysql_conn, bool with_deleted)
@@ -329,32 +321,6 @@ static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
 	return *default_account;
 }
 
-static void _process_running_jobs_result(char *cluster_name,
-					 MYSQL_RES *result, list_t *ret_list)
-{
-	MYSQL_ROW row;
-	char *object;
-
-	while ((row = mysql_fetch_row(result))) {
-		if (!row[JASSOC_USER][0]) {
-			/* This should never happen */
-			error("How did we get a job running on an association "
-			      "that isn't a user association job %s cluster "
-			      "'%s' acct '%s'?", row[JASSOC_JOB],
-			      cluster_name, row[JASSOC_ACCT]);
-			continue;
-		}
-		object = xstrdup_printf(
-			"JobID = %-10s C = %-10s A = %-10s U = %-9s",
-			row[JASSOC_JOB], cluster_name, row[JASSOC_ACCT],
-			row[JASSOC_USER]);
-		if (row[JASSOC_PART][0])
-			// see if there is a partition name
-			xstrfmtcat(object, " P = %s", row[JASSOC_PART]);
-		list_append(ret_list, object);
-	}
-}
-
 /* this function is here to see if any of what we are trying to remove
  * has jobs that are not completed.  If we have jobs and the object is less
  * than a day old we don't want to delete it, only set the deleted flag.
@@ -369,15 +335,22 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
-	/* if this changes you will need to edit the corresponding
-	 * enum above in the global settings */
-	static char *jassoc_req_inx[] = {
-		"t0.id_job",
-		"t2.acct",
-		"t2.user",
-		"t2.partition"
+	/* Keep this enum in sync with the char *jassoc_req_inx below */
+	enum {
+		JASSOC_JOB,
+		JASSOC_ACCT,
+		JASSOC_USER,
+		JASSOC_PART,
+		JASSOC_COUNT
 	};
+
 	if (ret_list) {
+		char *jassoc_req_inx[] = {
+			"t0.id_job",
+			"t2.acct",
+			"t2.user",
+			"t2.partition"
+		};
 		xstrcat(object, jassoc_req_inx[0]);
 		for (int i = 1; i < JASSOC_COUNT; i++)
 			xstrfmtcat(object, ", %s", jassoc_req_inx[i]);
@@ -418,9 +391,29 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	if (ret_list)
-		_process_running_jobs_result(cluster_name, result, ret_list);
+	if (ret_list) {
+		MYSQL_ROW row;
+		char *object;
 
+		while ((row = mysql_fetch_row(result))) {
+			if (!row[JASSOC_USER][0]) {
+				/* This should never happen */
+				error("How did we get a job running on an association that isn't a user association job %s cluster '%s' acct '%s'?",
+				      row[JASSOC_JOB],
+				      cluster_name,
+				      row[JASSOC_ACCT]);
+				continue;
+			}
+			object = xstrdup_printf(
+				"JobID = %-10s C = %-10s A = %-10s U = %-9s",
+				row[JASSOC_JOB], cluster_name, row[JASSOC_ACCT],
+				row[JASSOC_USER]);
+			if (row[JASSOC_PART][0])
+				// see if there is a partition name
+				xstrfmtcat(object, " P = %s", row[JASSOC_PART]);
+			list_append(ret_list, object);
+		}
+	}
 	mysql_free_result(result);
 	return rc;
 }
