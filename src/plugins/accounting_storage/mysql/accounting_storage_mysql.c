@@ -367,7 +367,6 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 {
 	char *query = NULL, *object = NULL;
 	bool rc = 0;
-	int i;
 	MYSQL_RES *result = NULL;
 
 	/* if this changes you will need to edit the corresponding
@@ -380,7 +379,7 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	};
 	if (ret_list) {
 		xstrcat(object, jassoc_req_inx[0]);
-		for(i=1; i<JASSOC_COUNT; i++)
+		for (int i = 1; i < JASSOC_COUNT; i++)
 			xstrfmtcat(object, ", %s", jassoc_req_inx[i]);
 
 		query = xstrdup_printf(
