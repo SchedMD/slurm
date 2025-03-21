@@ -3683,6 +3683,29 @@ static void _split_node_set(struct node_set *nset, config_record_t *config_ptr,
 	nset[nset_inx_base].node_cnt -= nset[nset_inx].node_cnt;
 }
 
+/* Split from an existing node_set */
+static void _split_node_set2(struct node_set *nset, int idx, int *last_inx,
+			     int cnt, bitstr_t *nset_bitmap,
+			     uint32_t nset_flags)
+{
+	nset[*last_inx].cpus_per_node = nset[idx].cpus_per_node;
+	nset[*last_inx].features = xstrdup(nset[idx].features);
+	nset[*last_inx].feature_bits = bit_copy(nset[idx].feature_bits);
+	nset[*last_inx].flags = nset_flags;
+	nset[*last_inx].real_memory = nset[idx].real_memory;
+	nset[*last_inx].node_weight = nset[idx].node_weight;
+
+	nset[*last_inx].my_bitmap = bit_copy(nset[idx].my_bitmap);
+	bit_and(nset[*last_inx].my_bitmap, nset_bitmap);
+	nset[*last_inx].node_cnt = cnt;
+
+	/* Remove the bits and count from the original set */
+	bit_and_not(nset[idx].my_bitmap, nset_bitmap);
+	nset[idx].node_cnt -= cnt;
+
+	(*last_inx)++;
+}
+
 static void _apply_extra_constraints(job_record_t *job_ptr,
 				     bitstr_t *usable_node_mask)
 {
@@ -4144,26 +4167,8 @@ end_node_set:
 		}
 
 		/* Some nodes powered down, others up, split record */
-		node_set_ptr[node_set_inx].cpus_per_node =
-			node_set_ptr[i].cpus_per_node;
-		node_set_ptr[node_set_inx].real_memory =
-			node_set_ptr[i].real_memory;
-		node_set_ptr[node_set_inx].node_cnt = power_cnt;
-		node_set_ptr[i].node_cnt -= power_cnt;
-		node_set_ptr[node_set_inx].flags = NODE_SET_POWER_DN;
-		node_set_ptr[node_set_inx].node_weight =
-			node_set_ptr[i].node_weight;
-		node_set_ptr[node_set_inx].features =
-			xstrdup(node_set_ptr[i].features);
-		node_set_ptr[node_set_inx].feature_bits =
-			bit_copy(node_set_ptr[i].feature_bits);
-		node_set_ptr[node_set_inx].my_bitmap =
-			bit_copy(node_set_ptr[i].my_bitmap);
-		bit_and(node_set_ptr[node_set_inx].my_bitmap,
-			power_down_node_bitmap);
-		bit_and_not(node_set_ptr[i].my_bitmap, power_down_node_bitmap);
-
-		node_set_inx++;
+		_split_node_set2(node_set_ptr, i, &node_set_inx, power_cnt,
+				 power_down_node_bitmap, NODE_SET_POWER_DN);
 		if (node_set_inx >= node_set_len) {
 			error("%s: node_set buffer filled", __func__);
 			break;
