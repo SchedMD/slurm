@@ -343,36 +343,32 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 		JASSOC_PART,
 		JASSOC_COUNT
 	};
+	/*
+	 * 't2' is what comes from the assoc_char in most of the parts here. It
+	 * needs to remain that way.
+	 */
+	char *jassoc_req_inx[] = {
+		"t0.id_job",
+		"t2.acct",
+		"t2.user",
+		"t2.partition"
+	};
+	xstrcat(object, jassoc_req_inx[0]);
+	for (int i = 1; i < JASSOC_COUNT; i++)
+		xstrfmtcat(object, ", %s", jassoc_req_inx[i]);
 
-	if (ret_list) {
-		char *jassoc_req_inx[] = {
-			"t0.id_job",
-			"t2.acct",
-			"t2.user",
-			"t2.partition"
-		};
-		xstrcat(object, jassoc_req_inx[0]);
-		for (int i = 1; i < JASSOC_COUNT; i++)
-			xstrfmtcat(object, ", %s", jassoc_req_inx[i]);
-
-		query = xstrdup_printf(
-			"select distinct %s "
-			"from \"%s_%s\" as t0, "
-			"\"%s_%s\" as t2 "
-			"where (%s) "
-			"and t0.id_assoc=t2.id_assoc "
-			"and t0.time_end=0 && t0.state<%d;",
-			object, cluster_name, job_table,
-			cluster_name, assoc_table,
-			assoc_char, JOB_COMPLETE);
-		xfree(object);
-	} else {
-		query = xstrdup_printf(
-			"select t0.id_assoc from \"%s_%s\" as t2 STRAIGHT_JOIN \"%s_%s\" as t0 where (%s) and t0.id_assoc=t2.id_assoc limit 1;",
-			cluster_name, assoc_table,
-			cluster_name, job_table,
-			assoc_char);
-	}
+	query = xstrdup_printf(
+		"select distinct %s "
+		"from \"%s_%s\" as t0, "
+		"\"%s_%s\" as t2 "
+		"where (%s) "
+		"and t0.id_assoc=t2.id_assoc "
+		"and t0.time_end=0 && t0.state<%d%s;",
+		object, cluster_name, job_table,
+		cluster_name, assoc_table,
+		assoc_char, JOB_COMPLETE,
+		ret_list ? " limit 1" : "");
+	xfree(object);
 
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
