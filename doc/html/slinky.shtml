@@ -15,12 +15,12 @@ The <a href="https://github.com/SlinkyProject">SlinkyProject</a> on GitHub
 hosts the associated Slinky components:
 <ul>
 <li>The Slurm Operator provides for management and auto-scaling of Slurm clusters running as Kubernetes pods: <a href="https://github.com/SlinkyProject/slurm-operator">slurm-operator</a>
-<li>Slurm REST client Go library, shared by the Slinky projects: <a href="https://github.com/SlinkyProject/slurm-exporter">slurm-exporter</a>
-<li>Slurm Prometheus exporter, used to gather metrics for the Slurm Operator: <a href="https://github.com/SlinkyProject/slurm-client">slurm-client</a>
+<li>Slurm REST client Go library, shared by the Slinky projects: <a href="https://github.com/SlinkyProject/slurm-client">slurm-client</a>
+<li>Slurm Prometheus exporter, used to gather metrics for HPA (Horizontal Pod Autoscaling) and Grafana: <a href="https://github.com/SlinkyProject/slurm-exporter">slurm-exporter</a>
 <li>Docker files for the associated container images: <a href="https://github.com/SlinkyProject/containers">containers</a>
 </ul>
 </p>
 
-<p style="text-align:center;">Last modified 13 November 2024</p>
+<p style="text-align:center;">Last modified 21 March 2025</p>
 
 <!--#include virtual="footer.txt"-->
