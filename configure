@@ -25701,63 +25701,6 @@ fi
   _x_ac_s2n_dirs="/usr /usr/local"
   _x_ac_s2n_libs="lib64 lib"
 
-  check_s2n_version ()
-  {
-      # Check indirectly that s2n 1.5.7+ is installed by checking for the
-      # existence of s2n_cleanup_final
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for s2n_cleanup_final in -ls2n" >&5
-printf %s "checking for s2n_cleanup_final in -ls2n... " >&6; }
-if test ${ac_cv_lib_s2n_s2n_cleanup_final+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_check_lib_save_LIBS=$LIBS
-LIBS="-ls2n  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.
-   The 'extern "C"' is for builds by C++ compilers;
-   although this is not generally supported in C code supporting it here
-   has little cost and some practical benefit (sr 110532).  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char s2n_cleanup_final (void);
-int
-main (void)
-{
-return s2n_cleanup_final ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_s2n_s2n_cleanup_final=yes
-else case e in #(
-  e) ac_cv_lib_s2n_s2n_cleanup_final=no ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_s2n_s2n_cleanup_final" >&5
-printf "%s\n" "$ac_cv_lib_s2n_s2n_cleanup_final" >&6; }
-if test "x$ac_cv_lib_s2n_s2n_cleanup_final" = xyes
-then :
-  ac_s2n_version_good=yes
-else case e in #(
-  e) ac_s2n_version_good=no ;;
-esac
-fi
-
-  }
-
 
 # Check whether --with-s2n was given.
 if test ${with_s2n+y}
@@ -25834,21 +25777,16 @@ printf "%s\n" "$as_me: WARNING: unable to locate s2n library" >&2;}
         as_fn_error $? "unable to locate s2n library" "$LINENO" 5
       fi
     else
-      check_s2n_version
-      if  test "$ac_s2n_version_good" = "yes" ; then
 
 printf "%s\n" "#define HAVE_S2N 1" >>confdefs.h
 
-        S2N_LIBS="-ls2n"
-        S2N_CPPFLAGS="-I$x_ac_cv_s2n_dir/include"
-        S2N_DIR="$x_ac_cv_s2n_dir"
-        if test "$ac_with_rpath" = "yes"; then
-          S2N_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_s2n_dir/$bit -L$x_ac_cv_s2n_dir/$bit"
-        else
-          S2N_LDFLAGS="-L$x_ac_cv_s2n_dir/$bit"
-        fi
+      S2N_LIBS="-ls2n"
+      S2N_CPPFLAGS="-I$x_ac_cv_s2n_dir/include"
+      S2N_DIR="$x_ac_cv_s2n_dir"
+      if test "$ac_with_rpath" = "yes"; then
+        S2N_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_s2n_dir/$bit -L$x_ac_cv_s2n_dir/$bit"
       else
-        as_fn_error $? "s2n library needs to be 1.5.7+" "$LINENO" 5
+        S2N_LDFLAGS="-L$x_ac_cv_s2n_dir/$bit"
       fi
     fi
 

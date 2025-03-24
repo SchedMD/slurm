@@ -17,13 +17,6 @@ AC_DEFUN([X_AC_S2N], [
   _x_ac_s2n_dirs="/usr /usr/local"
   _x_ac_s2n_libs="lib64 lib"
 
-  check_s2n_version ()
-  {
-      # Check indirectly that s2n 1.5.7+ is installed by checking for the
-      # existence of s2n_cleanup_final
-      AC_CHECK_LIB([s2n], [s2n_cleanup_final], [ac_s2n_version_good=yes], [ac_s2n_version_good=no])
-  }
-
   AC_ARG_WITH(
     [s2n],
     AS_HELP_STRING(--with-s2n=PATH,Specify path to s2n installation),
@@ -62,19 +55,14 @@ AC_DEFUN([X_AC_S2N], [
         AC_MSG_ERROR([unable to locate s2n library])
       fi
     else
-      check_s2n_version
-      if [ test "$ac_s2n_version_good" = "yes" ]; then
-        AC_DEFINE([HAVE_S2N], [1], [Define to 1 if s2n library found.])
-        S2N_LIBS="-ls2n"
-        S2N_CPPFLAGS="-I$x_ac_cv_s2n_dir/include"
-        S2N_DIR="$x_ac_cv_s2n_dir"
-        if test "$ac_with_rpath" = "yes"; then
-          S2N_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_s2n_dir/$bit -L$x_ac_cv_s2n_dir/$bit"
-        else
-          S2N_LDFLAGS="-L$x_ac_cv_s2n_dir/$bit"
-        fi
+      AC_DEFINE([HAVE_S2N], [1], [Define to 1 if s2n library found.])
+      S2N_LIBS="-ls2n"
+      S2N_CPPFLAGS="-I$x_ac_cv_s2n_dir/include"
+      S2N_DIR="$x_ac_cv_s2n_dir"
+      if test "$ac_with_rpath" = "yes"; then
+        S2N_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_s2n_dir/$bit -L$x_ac_cv_s2n_dir/$bit"
       else
-        AC_MSG_ERROR([s2n library needs to be 1.5.7+])
+        S2N_LDFLAGS="-L$x_ac_cv_s2n_dir/$bit"
       fi
     fi
 
