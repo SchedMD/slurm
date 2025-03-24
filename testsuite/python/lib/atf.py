@@ -957,8 +957,8 @@ def require_slurm_running():
 
     if properties["auto-config"]:
         if not is_slurmctld_running(quiet=True):
-            start_slurm(clean=True, quiet=True)
             properties["slurm-started"] = True
+            start_slurm(clean=True, quiet=True)
     else:
         if not is_slurmctld_running(quiet=True):
             pytest.skip(
