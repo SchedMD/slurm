@@ -1147,7 +1147,7 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 			      strsignal(sig));
 			msg_sent = 1;
 		} else if (sig == SIG_TERM_KILL) {
-			error("*** %s ON %s CANCELLED AT %s ***",
+			error("*** %s ON %s CANCELLED AT %s DUE TO TASK FAILURE ***",
 			      entity, step->node_name, time_str);
 			msg_sent = 1;
 		}
