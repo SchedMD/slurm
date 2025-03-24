@@ -400,6 +400,27 @@ extern int _reservation_update(openapi_ctxt_t *ctxt)
 	return rc ? rc : ctxt->rc;
 }
 
+static int _delete_resv(openapi_ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
+	openapi_reservation_param_t params = { 0 };
+	reservation_name_msg_t resv_name_msg = { 0 };
+
+	if ((rc = _parse_resv_name_param(ctxt, &params)))
+		return rc;
+	SWAP(resv_name_msg.name, params.reservation_name);
+
+	if ((rc = slurm_delete_reservation(&resv_name_msg))) {
+		if (errno && rc == SLURM_ERROR)
+			rc = errno;
+		resp_error(ctxt, rc, "slurm_delete_reservation",
+			   "Error deleting reservation %s", resv_name_msg.name);
+	}
+
+	xfree(resv_name_msg.name);
+	return rc;
+}
+
 extern int op_handler_reservation(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
@@ -408,6 +429,8 @@ extern int op_handler_reservation(openapi_ctxt_t *ctxt)
 		rc = _get_single_reservation(ctxt);
 	} else if (ctxt->method == HTTP_REQUEST_POST) {
 		rc = _reservation_update(ctxt);
+	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
+		rc = _delete_resv(ctxt);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
