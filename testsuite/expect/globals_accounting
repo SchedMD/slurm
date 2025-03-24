@@ -1181,33 +1181,14 @@ proc remove_coor { accounts names } {
 
 
 proc archive_load { file } {
-	global sacctmgr timeout
+	global sacctmgr
 
 	#
 	# Use sacctmgr to load info
 	#
-	set matches 0
 	set rc $::RETURN_SUCCESS
-	spawn $sacctmgr -i -n archive load $file
-	expect {
-		-re "There was a problem" {
-			log_error "There was a problem with the sacctmgr command"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "SUCCESS" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "sacctmgr archive load not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 1} {
+	set result [run_command "$sacctmgr -i -n archive load $file"]
+	if { [dict get $result exit_code] != 0 || [regexp "There was a problem" [dict get $result output]]} {
 		log_error "sacctmgr didn't load archive correctly"
 		set rc $::RETURN_ERROR
 	}
