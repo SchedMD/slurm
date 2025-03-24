@@ -1365,6 +1365,7 @@ extern void purge_node_rec(void *in)
 	acct_gather_energy_destroy(node_ptr->energy);
 	if (running_in_slurmctld())
 		select_g_select_nodeinfo_free(node_ptr->select_nodeinfo);
+	xfree(node_ptr->topology_str);
 	xfree(node_ptr->tres_str);
 	xfree(node_ptr->tres_fmt_str);
 	xfree(node_ptr->tres_cnt);
@@ -1659,6 +1660,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack16(object->res_cores_per_gpu, buffer);
 		pack_bit_str_hex(object->gpu_spec_bitmap, buffer);
 		pack32(object->tmp_disk, buffer);
+		packstr(object->topology_str, buffer);
 		pack32(object->reason_uid, buffer);
 		pack_time(object->reason_time, buffer);
 		pack_time(object->resume_after, buffer);
@@ -1809,6 +1811,7 @@ extern int node_record_unpack(void **out,
 		safe_unpack16(&object->res_cores_per_gpu, buffer);
 		unpack_bit_str_hex(&object->gpu_spec_bitmap, buffer);
 		safe_unpack32(&object->tmp_disk, buffer);
+		safe_unpackstr(&object->topology_str, buffer);
 		safe_unpack32(&object->reason_uid, buffer);
 		safe_unpack_time(&object->reason_time, buffer);
 		safe_unpack_time(&object->resume_after, buffer);

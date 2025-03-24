@@ -184,6 +184,8 @@ struct node_record {
 					 * power save mode */
 	uint16_t suspend_timeout;	/* time required in order to perform a
 					 * node suspend operation */
+	char *topology_str; /* topology address string
+			     * (used by topology_plugin) */
 	uint64_t *tres_cnt;		/* tres this node has. NO_PACK*/
 	char *tres_fmt_str;		/* tres this node has */
 	char *tres_str;                 /* tres this node has */
