@@ -2606,6 +2606,12 @@ static list_t *_license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 	slurmctld_resv_t *resv_ptr;
 	char *merged_licenses;
 
+	if (xstrchr(resv_desc_ptr->licenses, '|')) {
+		/* Reservations do not support OR licenses */
+		*valid = false;
+		return NULL;
+	}
+
 	license_list = license_validate(resv_desc_ptr->licenses, true, true,
 					NULL, valid);
 	if (resv_desc_ptr->licenses == NULL)
