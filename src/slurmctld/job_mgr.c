@@ -12636,6 +12636,19 @@ extern bool permit_job_shrink(void)
 	return permit_job_shrink;
 }
 
+/*
+ * Job expansion is not allowed for jobs that requested OR licenses.
+ */
+static bool _valid_license_job_expansion(job_record_t *job_ptr1,
+					 job_record_t *job_ptr2)
+{
+	if (xstrchr(job_ptr1->licenses, '|') ||
+	    xstrchr(job_ptr2->licenses, '|'))
+		return false;
+
+	return true;
+}
+
 static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		       uid_t uid, char **err_msg)
 {
@@ -14722,6 +14735,16 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				error_code = ESLURMD_STEP_EXISTS;
 				goto fini;
 			}
+			if (!_valid_license_job_expansion(job_ptr,
+							  expand_job_ptr)) {
+				info("%s: Cannot merge %pJ with %pJ - cannot mix AND and OR licenses (%s vs %s)",
+				     __func__, job_ptr, expand_job_ptr,
+				     job_ptr->licenses,
+				     expand_job_ptr->licenses);
+				error_code = ESLURM_INVALID_LICENSES;
+				goto fini;
+			}
+
 			sched_info("%s: killing %pJ and moving all resources to %pJ",
 				   __func__, job_ptr, expand_job_ptr);
 			job_pre_resize_acctg(job_ptr);
