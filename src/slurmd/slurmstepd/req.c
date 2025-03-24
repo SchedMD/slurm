@@ -1142,8 +1142,9 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 			error("*** %s ON %s UNCORRECTABLE MEMORY ERROR AT %s ***",
 			      entity, step->node_name, time_str);
 		} else if ((sig == SIGTERM) || (sig == SIGKILL)) {
-			error("*** %s ON %s CANCELLED AT %s ***",
-			      entity, step->node_name, time_str);
+			error("*** %s ON %s CANCELLED AT %s DUE to SIGNAL %s ***",
+			      entity, step->node_name, time_str,
+			      strsignal(sig));
 			msg_sent = 1;
 		} else if (sig == SIG_TERM_KILL) {
 			error("*** %s ON %s CANCELLED AT %s ***",
