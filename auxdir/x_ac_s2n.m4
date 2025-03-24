@@ -37,40 +37,47 @@ AC_DEFUN([X_AC_S2N], [
           for bit in $_x_ac_s2n_libs; do
             test -d "$d/$bit" || continue
             _x_ac_s2n_libs_save="$LIBS"
-            LIBS="-L$d/$bit -ls2n $LIBS"
-            AC_LINK_IFELSE(
-              [AC_LANG_CALL([], s2n_init)],
-              AS_VAR_SET(x_ac_cv_s2n_dir, $d))
+            _x_ac_s2n_cppflags_save="$CPPFLAGS"
+	    S2N_DIR="$d"
+	    S2N_LIBS="-ls2n"
+	    S2N_CPPFLAGS="-I$d/include"
+	    if test "$ac_with_rpath" = "yes"; then
+	      S2N_LDFLAGS="-Wl,-rpath -Wl,$d/$bit "
+	    fi
+	    S2N_LDFLAGS+="-L$d/$bit"
+            LIBS="$S2N_LDFLAGS $S2N_LIBS"
+            CPPFLAGS="$S2N_CPPFLAGS $CPPFLAGS"
+	    AC_RUN_IFELSE([AC_LANG_PROGRAM([#include <s2n.h>],[
+		 s2n_init();
+		 s2n_cleanup_final();
+	    ])],
+	    s2n_run_ok=yes)
             LIBS="$_x_ac_s2n_libs_save"
-            test -n "$x_ac_cv_s2n_dir" && break
+            CPPFLAGS="$_x_ac_s2n_cppflags_save"
+
+            if test "$s2n_run_ok" = "yes"; then
+	      break
+	    fi
           done
-          test -n "$x_ac_cv_s2n_dir" && break
+          if test "$s2n_run_ok" = "yes"; then
+	    break
+	  fi
         done
       ])
 
-    if test -z "$x_ac_cv_s2n_dir"; then
-      if [test -z "$with_s2n"] ; then
-        AC_MSG_WARN([unable to locate s2n library])
-      else
-        AC_MSG_ERROR([unable to locate s2n library])
-      fi
-    else
+    if test "$s2n_run_ok" = "yes"; then
       AC_DEFINE([HAVE_S2N], [1], [Define to 1 if s2n library found.])
-      S2N_LIBS="-ls2n"
-      S2N_CPPFLAGS="-I$x_ac_cv_s2n_dir/include"
-      S2N_DIR="$x_ac_cv_s2n_dir"
-      if test "$ac_with_rpath" = "yes"; then
-        S2N_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_s2n_dir/$bit -L$x_ac_cv_s2n_dir/$bit"
+      AC_SUBST(S2N_LIBS)
+      AC_SUBST(S2N_CPPFLAGS)
+      AC_SUBST(S2N_DIR)
+      AC_SUBST(S2N_LDFLAGS)
+    else
+      if [test -z "$with_s2n"] ; then
+        AC_MSG_WARN([unable to locate 1.5.7+ s2n library])
       else
-        S2N_LDFLAGS="-L$x_ac_cv_s2n_dir/$bit"
+        AC_MSG_ERROR([unable to locate 1.5.7+ s2n library])
       fi
     fi
-
-    AC_SUBST(S2N_LIBS)
-    AC_SUBST(S2N_CPPFLAGS)
-    AC_SUBST(S2N_DIR)
-    AC_SUBST(S2N_LDFLAGS)
   fi
-
-  AM_CONDITIONAL(WITH_S2N, test -n "$x_ac_cv_s2n_dir")
+  AM_CONDITIONAL(WITH_S2N, test "$s2n_run_ok" = "yes")
 ])
