@@ -1196,12 +1196,25 @@ Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.
 License names can be followed by a colon and count
 (the default count is one).
-Multiple license names should be comma separated (e.g.
-"\-\-licenses=foo:4,bar").
+Multiple licenses can be requested. If they are separated by a comma (','
+meaning AND), then all requested licenses are required for the job. For example,
+"\-\-licenses=foo:4,bar". If they are separated by a pipe ('|' meaning OR),
+then only one of the license requests are required for the job. For example,
+"\-\-licenses=foo:4\|bar". AND and OR cannot both be used.
 
 \fBNOTE\fR: When submitting heterogeneous jobs, license requests
 may only be made on the first component job.
 For example "salloc \-L ansys:2 :".
+
+\fBNOTE\fR: If licenses are tracked in AccountingStorageTres and OR is used,
+ReqTRES will display all requested tres separated by commas. AllocTRES will
+display only the license that was allocated to the job.
+
+\fBNOTE\fR: When a job requests OR'd licenses, Slurm will attempt to allocate
+the licenses in the order in which they are requested. This specified order
+will take precedence even if the rest of requested licenses could be satisfied
+on a requested reservation. This also applies to backfill planning when
+\fBSchedulerParameters=bf_licenses\fR is configured.
 .IP
 
 .TP
