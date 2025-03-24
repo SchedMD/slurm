@@ -2390,6 +2390,7 @@ typedef struct node_info {
 	uint16_t sockets;       /* total number of sockets per node */
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
+	char *topology_str; /* topology address string */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
 	char *tres_fmt_str;	/* str representing configured TRES on node */
 	char *version;		 /* Slurm version number */

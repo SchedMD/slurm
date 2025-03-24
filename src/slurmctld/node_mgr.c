@@ -1226,6 +1226,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 
 		packstr(dump_node_ptr->tres_fmt_str, buffer);
 		packstr(dump_node_ptr->resv_name, buffer);
+		packstr(dump_node_ptr->topology_str, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		packstr(dump_node_ptr->name, buffer);
 		packstr(dump_node_ptr->node_hostname, buffer);
