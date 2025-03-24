@@ -3241,6 +3241,7 @@ typedef struct slurm_update_node_msg {
 				 * root is sending message) */
 	uint32_t resume_after;	/* automatically resume DOWN or DRAINED node
 				 * after this amount of seconds */
+	char *topology_str; /* new topology address string */
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
 

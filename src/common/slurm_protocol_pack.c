@@ -797,6 +797,7 @@ _pack_update_node_msg(update_node_msg_t * msg, buf_t *buffer,
 		pack32(msg->node_state, buffer);
 		packstr(msg->reason, buffer);
 		pack32(msg->resume_after, buffer);
+		packstr(msg->topology_str, buffer);
 		pack32(msg->weight, buffer);
 	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		packstr(msg->cert_token, buffer);
@@ -863,6 +864,7 @@ _unpack_update_node_msg(update_node_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&tmp_ptr->node_state, buffer);
 		safe_unpackstr(&tmp_ptr->reason, buffer);
 		safe_unpack32(&tmp_ptr->resume_after, buffer);
+		safe_unpackstr(&tmp_ptr->topology_str, buffer);
 		safe_unpack32(&tmp_ptr->weight, buffer);
 	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->cert_token, buffer);
