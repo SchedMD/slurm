@@ -672,7 +672,7 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 	jobacct = jobacctinfo_create(jobacct_id);
 
 	slurm_mutex_lock(&task_list_lock);
-	if (pid <= 0) {
+	if (pid < 0) {
 		error("invalid pid given (%d) for task acct", pid);
 		goto error;
 	} else if (!task_list) {
@@ -1223,19 +1223,21 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 	if (!from)
 		return;
 
-	dest->user_cpu_sec	+= from->user_cpu_sec;
-	dest->user_cpu_usec	+= from->user_cpu_usec;
-	if (dest->user_cpu_usec >= 1E6) {
-		dest->user_cpu_sec += dest->user_cpu_usec / 1E6;
-		dest->user_cpu_usec = dest->user_cpu_usec % (int)1E6;
+	if (from->pid) {
+		dest->user_cpu_sec += from->user_cpu_sec;
+		dest->user_cpu_usec += from->user_cpu_usec;
+		if (dest->user_cpu_usec >= 1E6) {
+			dest->user_cpu_sec += dest->user_cpu_usec / 1E6;
+			dest->user_cpu_usec = dest->user_cpu_usec % (int) 1E6;
+		}
+		dest->sys_cpu_sec += from->sys_cpu_sec;
+		dest->sys_cpu_usec += from->sys_cpu_usec;
+		if (dest->sys_cpu_usec >= 1E6) {
+			dest->sys_cpu_sec += dest->sys_cpu_usec / 1E6;
+			dest->sys_cpu_usec = dest->sys_cpu_usec % (int) 1E6;
+		}
+		dest->act_cpufreq += from->act_cpufreq;
 	}
-	dest->sys_cpu_sec	+= from->sys_cpu_sec;
-	dest->sys_cpu_usec	+= from->sys_cpu_usec;
-	if (dest->sys_cpu_usec >= 1E6) {
-		dest->sys_cpu_sec += dest->sys_cpu_usec / 1E6;
-		dest->sys_cpu_usec = dest->sys_cpu_usec % (int)1E6;
-	}
-	dest->act_cpufreq 	+= from->act_cpufreq;
 	if (dest->energy.consumed_energy != NO_VAL64) {
 		if (from->energy.consumed_energy == NO_VAL64)
 			dest->energy.consumed_energy = NO_VAL64;

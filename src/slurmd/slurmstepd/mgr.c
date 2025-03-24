@@ -266,24 +266,26 @@ static void _local_jobacctinfo_aggregate(
 {
 	int gpumem_pos = -1, gpuutil_pos = -1;
 
-	gpu_get_tres_pos(&gpumem_pos, &gpuutil_pos);
+	if (from->pid) {
+		gpu_get_tres_pos(&gpumem_pos, &gpuutil_pos);
 
-	/*
-	 * Here to make any sense for some variables we need to move the
-	 * Max to the total (i.e. Mem, VMem, gpumem, gpuutil) since the total
-	 * might be incorrect data, this way the total/ave will be of the Max
-	 * values.
-	 */
-	from->tres_usage_in_tot[TRES_ARRAY_MEM] =
-		from->tres_usage_in_max[TRES_ARRAY_MEM];
-	from->tres_usage_in_tot[TRES_ARRAY_VMEM] =
-		from->tres_usage_in_max[TRES_ARRAY_VMEM];
-	if (gpumem_pos != -1)
-		from->tres_usage_in_tot[gpumem_pos] =
-			from->tres_usage_in_max[gpumem_pos];
-	if (gpuutil_pos != -1)
-		from->tres_usage_in_tot[gpuutil_pos] =
-			from->tres_usage_in_max[gpuutil_pos];
+		/*
+		 * Here to make any sense for some variables we need to move the
+		 * Max to the total (i.e. Mem, VMem, gpumem, gpuutil) since the
+		 * total might be incorrect data, this way the total/ave will be
+		 * of the Max values.
+		 */
+		from->tres_usage_in_tot[TRES_ARRAY_MEM] =
+			from->tres_usage_in_max[TRES_ARRAY_MEM];
+		from->tres_usage_in_tot[TRES_ARRAY_VMEM] =
+			from->tres_usage_in_max[TRES_ARRAY_VMEM];
+		if (gpumem_pos != -1)
+			from->tres_usage_in_tot[gpumem_pos] =
+				from->tres_usage_in_max[gpumem_pos];
+		if (gpuutil_pos != -1)
+			from->tres_usage_in_tot[gpuutil_pos] =
+				from->tres_usage_in_max[gpuutil_pos];
+	}
 
 	/*
 	 * Here ave_watts stores the ave of the watts collected so store that
@@ -1345,6 +1347,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 {
 	jobacctinfo_t *jobacct = NULL;
 	struct rusage rusage;
+	jobacct_id_t jobacct_id;
 	int rc = SLURM_SUCCESS;
 	uint32_t jobid = step->step_id.job_id;
 
@@ -1440,7 +1443,11 @@ x11_fail:
 		      step->x11_xauthority);
 	}
 
+	jobacct_id.nodeid = step->nodeid;
+	jobacct_id.taskid = step->nodeid; /* Treat node ID as global task ID */
+	jobacct_id.step = step;
 	jobacct_gather_set_proctrack_container_id(step->cont_id);
+	jobacct_gather_add_task(0, &jobacct_id, 1);
 
 	set_job_state(step, SLURMSTEPD_STEP_RUNNING);
 	if (!slurm_conf.job_acct_gather_freq)
@@ -1490,9 +1497,9 @@ x11_fail:
 
 	/* remove all tracked tasks */
 	while ((jobacct = jobacct_gather_remove_task(0))) {
-		jobacctinfo_setinfo(jobacct,
-				    JOBACCT_DATA_RUSAGE, &rusage,
-				    SLURM_PROTOCOL_VERSION);
+		if (jobacct->pid)
+			jobacctinfo_setinfo(jobacct, JOBACCT_DATA_RUSAGE,
+					    &rusage, SLURM_PROTOCOL_VERSION);
 		step->jobacct->energy.consumed_energy = 0;
 		_local_jobacctinfo_aggregate(step->jobacct, jobacct);
 		jobacctinfo_destroy(jobacct);

@@ -253,6 +253,14 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
 	int rc = SLURM_SUCCESS;
 
+	/*
+	 * If we are the extern step, then our PID is 0. In that case, we want
+	 * to return and not create any cgroups, as we do not exist as a real
+	 * process.
+	 */
+	if (!pid)
+		return rc;
+
 	if (is_first_task) {
 		/* Only do once in this plugin */
 		if (cgroup_g_step_create(CG_CPUACCT, jobacct_id->step)
