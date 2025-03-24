@@ -1184,8 +1184,8 @@ extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 		      __func__);
 		_exit(1);
 	} else if (i != sizeof(int)) {
-		error("%s: slurmscriptd: slurmctld failed to send ack: %m",
-		      __func__);
+		error("%s: slurmscriptd: slurmctld failed to send expected ack: received %zd bytes when %zd bytes was expected.",
+		      __func__, i, sizeof(int));
 		_exit(1);
 	}
 
