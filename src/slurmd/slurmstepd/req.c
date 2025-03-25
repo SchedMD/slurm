@@ -1141,9 +1141,13 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 		} else if (sig == SIG_UME) {
 			error("*** %s ON %s UNCORRECTABLE MEMORY ERROR AT %s ***",
 			      entity, step->node_name, time_str);
-		} else if ((sig == SIGTERM) || (sig == SIGKILL) ||
-			   (sig == SIG_TERM_KILL)) {
-			error("*** %s ON %s CANCELLED AT %s ***",
+		} else if ((sig == SIGTERM) || (sig == SIGKILL)) {
+			error("*** %s ON %s CANCELLED AT %s DUE to SIGNAL %s ***",
+			      entity, step->node_name, time_str,
+			      strsignal(sig));
+			msg_sent = 1;
+		} else if (sig == SIG_TERM_KILL) {
+			error("*** %s ON %s CANCELLED AT %s DUE TO TASK FAILURE ***",
 			      entity, step->node_name, time_str);
 			msg_sent = 1;
 		}
