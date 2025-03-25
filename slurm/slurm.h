@@ -2390,6 +2390,7 @@ typedef struct node_info {
 	uint16_t sockets;       /* total number of sockets per node */
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
+	char *topology_str; /* topology address string */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
 	char *tres_fmt_str;	/* str representing configured TRES on node */
 	char *version;		 /* Slurm version number */
@@ -3240,6 +3241,7 @@ typedef struct slurm_update_node_msg {
 				 * root is sending message) */
 	uint32_t resume_after;	/* automatically resume DOWN or DRAINED node
 				 * after this amount of seconds */
+	char *topology_str; /* new topology address string */
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
 

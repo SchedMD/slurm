@@ -781,7 +781,25 @@ _pack_update_node_msg(update_node_msg_t * msg, buf_t *buffer,
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		packstr(msg->cert_token, buffer);
+		packstr(msg->comment, buffer);
+		pack32(msg->cpu_bind, buffer);
+		packstr(msg->extra, buffer);
+		packstr(msg->features, buffer);
+		packstr(msg->features_act, buffer);
+		packstr(msg->gres, buffer);
+		packstr(msg->instance_id, buffer);
+		packstr(msg->instance_type, buffer);
+		packstr(msg->node_addr, buffer);
+		packstr(msg->node_hostname, buffer);
+		packstr(msg->node_names, buffer);
+		pack32(msg->node_state, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->resume_after, buffer);
+		packstr(msg->topology_str, buffer);
+		pack32(msg->weight, buffer);
+	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		packstr(msg->cert_token, buffer);
 		packstr(msg->comment, buffer);
 		pack32(msg->cpu_bind, buffer);
@@ -830,7 +848,25 @@ _unpack_update_node_msg(update_node_msg_t ** msg, buf_t *buffer,
 
 	slurm_init_update_node_msg(tmp_ptr);
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&tmp_ptr->cert_token, buffer);
+		safe_unpackstr(&tmp_ptr->comment, buffer);
+		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
+		safe_unpackstr(&tmp_ptr->extra, buffer);
+		safe_unpackstr(&tmp_ptr->features, buffer);
+		safe_unpackstr(&tmp_ptr->features_act, buffer);
+		safe_unpackstr(&tmp_ptr->gres, buffer);
+		safe_unpackstr(&tmp_ptr->instance_id, buffer);
+		safe_unpackstr(&tmp_ptr->instance_type, buffer);
+		safe_unpackstr(&tmp_ptr->node_addr, buffer);
+		safe_unpackstr(&tmp_ptr->node_hostname, buffer);
+		safe_unpackstr(&tmp_ptr->node_names, buffer);
+		safe_unpack32(&tmp_ptr->node_state, buffer);
+		safe_unpackstr(&tmp_ptr->reason, buffer);
+		safe_unpack32(&tmp_ptr->resume_after, buffer);
+		safe_unpackstr(&tmp_ptr->topology_str, buffer);
+		safe_unpack32(&tmp_ptr->weight, buffer);
+	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->cert_token, buffer);
 		safe_unpackstr(&tmp_ptr->comment, buffer);
 		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
@@ -1447,7 +1483,72 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 	xassert(node);
 	slurm_init_node_info_t(node, false);
 
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&node->name, buffer);
+		safe_unpackstr(&node->node_hostname, buffer);
+		safe_unpackstr(&node->node_addr, buffer);
+		safe_unpackstr(&node->bcast_address, buffer);
+		safe_unpack16(&node->port, buffer);
+		safe_unpack32(&node->next_state, buffer);
+		safe_unpack32(&node->node_state, buffer);
+		safe_unpackstr(&node->version, buffer);
+
+		safe_unpack16(&node->cpus, buffer);
+		safe_unpack16(&node->boards, buffer);
+		safe_unpack16(&node->sockets, buffer);
+		safe_unpack16(&node->cores, buffer);
+		safe_unpack16(&node->threads, buffer);
+
+		safe_unpack64(&node->real_memory, buffer);
+		safe_unpack32(&node->tmp_disk, buffer);
+
+		safe_unpackstr(&node->gpu_spec, buffer);
+		safe_unpackstr(&node->mcs_label, buffer);
+		safe_unpack32(&node->owner, buffer);
+		safe_unpack16(&node->core_spec_cnt, buffer);
+		safe_unpack32(&node->cpu_bind, buffer);
+		safe_unpack64(&node->mem_spec_limit, buffer);
+		safe_unpackstr(&node->cpu_spec_list, buffer);
+		safe_unpack16(&node->cpus_efctv, buffer);
+
+		safe_unpack32(&node->cpu_load, buffer);
+		safe_unpack64(&node->free_mem, buffer);
+		safe_unpack32(&node->weight, buffer);
+		safe_unpack16(&node->res_cores_per_gpu, buffer);
+		safe_unpack32(&node->reason_uid, buffer);
+
+		safe_unpack_time(&node->boot_time, buffer);
+		safe_unpack_time(&node->last_busy, buffer);
+		safe_unpack_time(&node->reason_time, buffer);
+		safe_unpack_time(&node->resume_after, buffer);
+		safe_unpack_time(&node->slurmd_start_time, buffer);
+
+		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
+						    buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpackstr(&node->arch, buffer);
+		safe_unpackstr(&node->features, buffer);
+		safe_unpackstr(&node->features_act, buffer);
+		safe_unpackstr(&node->gres, buffer);
+		safe_unpackstr(&node->gres_drain, buffer);
+		safe_unpackstr(&node->gres_used, buffer);
+		safe_unpackstr(&node->os, buffer);
+		safe_unpackstr(&node->comment, buffer);
+		safe_unpackstr(&node->extra, buffer);
+		safe_unpackstr(&node->instance_id, buffer);
+		safe_unpackstr(&node->instance_type, buffer);
+		safe_unpackstr(&node->reason, buffer);
+		if (acct_gather_energy_unpack(&node->energy, buffer,
+					      protocol_version,
+					      1) != SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpackstr(&node->tres_fmt_str, buffer);
+		safe_unpackstr(&node->resv_name, buffer);
+		safe_unpackstr(&node->topology_str, buffer);
+	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&node->name, buffer);
 		safe_unpackstr(&node->node_hostname, buffer);
 		safe_unpackstr(&node->node_addr, buffer);

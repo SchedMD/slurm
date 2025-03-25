@@ -1948,6 +1948,7 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 		xfree(msg->node_hostname);
 		xfree(msg->node_names);
 		xfree(msg->reason);
+		xfree(msg->topology_str);
 		xfree(msg);
 	}
 }
@@ -4253,6 +4254,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->resv_name);
 		select_g_select_nodeinfo_free(node->select_nodeinfo);
 		node->select_nodeinfo = NULL;
+		xfree(node->topology_str);
 		xfree(node->tres_fmt_str);
 		xfree(node->version);
 		/* Do NOT free node, it is an element of an array */
