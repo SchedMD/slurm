@@ -348,7 +348,7 @@ static int _is_sslv3_handshake(const void *buf, const size_t n)
 	protocol_version |= p[2];
 	protocol_version = ntohs(protocol_version);
 
-	if ((protocol_version < PROTOCOL_VERSION_MIN) &&
+	if ((protocol_version < PROTOCOL_VERSION_MIN) ||
 	    (protocol_version > PROTOCOL_VERSION_MAX))
 		return ENOENT;
 
@@ -356,7 +356,7 @@ static int _is_sslv3_handshake(const void *buf, const size_t n)
 	length |= p[4];
 	length = ntohl(length);
 
-	if ((length < HEADER_LENGTH_MIN) && (length > HEADER_LENGTH_MAX))
+	if ((length < HEADER_LENGTH_MIN) || (length > HEADER_LENGTH_MAX))
 		return ENOENT;
 
 	return SLURM_SUCCESS;
@@ -392,14 +392,14 @@ static int _is_tls_handshake(const void *buf, const size_t n)
 	length |= p[3];
 	length = ntohl(length);
 
-	if ((length < HEADER_LENGTH_MIN) && (length > HEADER_LENGTH_MAX))
+	if ((length < HEADER_LENGTH_MIN) || (length > HEADER_LENGTH_MAX))
 		return ENOENT;
 
 	protocol_version |= p[4] << 8;
 	protocol_version |= p[5];
 	protocol_version = ntohs(protocol_version);
 
-	if ((protocol_version < PROTOCOL_VERSION_MIN) &&
+	if ((protocol_version < PROTOCOL_VERSION_MIN) ||
 	    (protocol_version > PROTOCOL_VERSION_MAX))
 		return ENOENT;
 
