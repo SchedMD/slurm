@@ -2890,11 +2890,28 @@ static bool _job_node_test(job_record_t *job_ptr, int node_inx)
 	return false;
 }
 
+static int _find_het_job_on_node(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+	int node_inx = *(int *)arg;
+
+	if (_job_node_test(het_job, node_inx))
+		return 1;
+	/*
+	 * After a DOWN node is removed from another job component,
+	 * we have no way to identify other hetjob components with
+	 * the same node, so assume if one component is in NODE_FAILED
+	 * state, they all should be.
+	 */
+	if (IS_JOB_NODE_FAILED(het_job))
+		return 1;
+
+	return 0;
+}
+
 static bool _het_job_on_node(job_record_t *job_ptr, int node_inx)
 {
-	job_record_t *het_job_leader, *het_job;
-	list_itr_t *iter;
-	static bool result = false;
+	job_record_t *het_job_leader;
 
 	if (!job_ptr->het_job_id)
 		return _job_node_test(job_ptr, node_inx);
@@ -2911,24 +2928,8 @@ static bool _het_job_on_node(job_record_t *job_ptr, int node_inx)
 		return _job_node_test(job_ptr, node_inx);
 	}
 
-	iter = list_iterator_create(het_job_leader->het_job_list);
-	while ((het_job = list_next(iter))) {
-		if ((result = _job_node_test(het_job, node_inx)))
-			break;
-		/*
-		 * After a DOWN node is removed from another job component,
-		 * we have no way to identify other hetjob components with
-		 * the same node, so assume if one component is in NODE_FAILED
-		 * state, they all should be.
-		 */
-		if (IS_JOB_NODE_FAILED(het_job)) {
-			result = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return result;
+	return list_find_first(het_job_leader->het_job_list,
+			       _find_het_job_on_node, &node_inx);
 }
 
 /*
