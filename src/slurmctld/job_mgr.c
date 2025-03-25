@@ -3977,6 +3977,21 @@ static int _select_nodes_qos(job_node_select_t *job_node_select)
 	return job_node_select->rc_qos;
 }
 
+static int _foreach_select_nodes_part_list(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	job_node_select_t *job_node_select = arg;
+	job_record_t *job_ptr = job_node_select->job_ptr;
+
+	job_ptr->part_ptr = part_ptr;
+	debug2("Try %pJ on next partition %s", job_ptr, part_ptr->name);
+
+	if (_select_nodes_qos(job_node_select) == SLURM_SUCCESS)
+		return -1;
+
+	return 0;
+}
+
 /*
  * Wrapper for select_nodes() function that will test all valid partitions
  * for a new job
@@ -3988,8 +4003,6 @@ static int _select_nodes_qos(job_node_select_t *job_node_select)
 static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 			       char **err_msg)
 {
-	part_record_t *part_ptr;
-	list_itr_t *iter;
 	job_node_select_t job_node_select = {
 		.err_msg = err_msg,
 		.job_ptr = job_ptr,
@@ -4002,23 +4015,9 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 
 	if (job_ptr->part_ptr_list) {
 		/* part_ptr_list is already sorted */
-		/*
-		 * This iter can not be a list_for_each() we eventually will
-		 * call select_nodes() which will then call
-		 * rebuild_job_part_list() which will need to access this list
-		 * again.
-		 */
-		iter = list_iterator_create(job_ptr->part_ptr_list);
-		while ((part_ptr = list_next(iter))) {
-			job_ptr->part_ptr = part_ptr;
-			debug2("Try %pJ on next partition %s",
-			       job_ptr, part_ptr->name);
-
-			if (_select_nodes_qos(&job_node_select) ==
-			    SLURM_SUCCESS)
-				break;
-		}
-		list_iterator_destroy(iter);
+		(void) list_find_first(job_ptr->part_ptr_list,
+				       _foreach_select_nodes_part_list,
+				       &job_node_select);
 	} else {
 		/*
 		 * We don't need to check the return code of this as the rc we
