@@ -245,8 +245,10 @@ typedef struct {
 
 typedef struct {
 	int kill_job_cnt;
+	node_record_t *node_ptr;
 	time_t now;
 	part_record_t *part_ptr;
+	bool requeue_on_resume_failure;
 } foreach_kill_job_by_t;
 
 /* Global variables */
@@ -2932,6 +2934,152 @@ static bool _het_job_on_node(job_record_t *job_ptr, int node_inx)
 			       _find_het_job_on_node, &node_inx);
 }
 
+static int _foreach_kill_running_job_by_node(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	foreach_kill_job_by_t *foreach_kill_job_by = arg;
+	node_record_t *node_ptr = foreach_kill_job_by->node_ptr;
+	bool suspended = false;
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
+
+	xassert(node_ptr);
+
+	if (!_het_job_on_node(job_ptr, node_ptr->index))
+		return 0; /* job not on this node */
+	if (IS_JOB_SUSPENDED(job_ptr)) {
+		uint32_t suspend_job_state = job_ptr->job_state;
+		/*
+		 * we can't have it as suspended when we call the
+		 * accounting stuff.
+		 */
+		job_state_set(job_ptr, JOB_CANCELLED);
+		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+		job_state_set(job_ptr, suspend_job_state);
+		suspended = true;
+	}
+
+	if (IS_JOB_COMPLETING(job_ptr)) {
+		if (!bit_test(job_ptr->node_bitmap_cg, node_ptr->index))
+			return 0;
+		foreach_kill_job_by->kill_job_cnt++;
+		bit_clear(job_ptr->node_bitmap_cg, node_ptr->index);
+		job_update_tres_cnt(job_ptr, node_ptr->index);
+		if (job_ptr->node_cnt)
+			(job_ptr->node_cnt)--;
+		else {
+			error("node_cnt underflow on %pJ", job_ptr);
+		}
+		cleanup_completing(job_ptr, true);
+
+		if (node_ptr->comp_job_cnt)
+			node_ptr->comp_job_cnt--;
+		else {
+			error("Node %s comp_job_cnt underflow, %pJ",
+			      node_ptr->name, job_ptr);
+		}
+	} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
+		foreach_kill_job_by->kill_job_cnt++;
+		if ((job_ptr->details) &&
+		    (job_ptr->kill_on_node_fail == 0) &&
+		    (job_ptr->node_cnt > 1) &&
+		    !IS_JOB_CONFIGURING(job_ptr)) {
+			bitstr_t *orig_job_node_bitmap;
+
+			/* keep job running on remaining nodes */
+			srun_node_fail(job_ptr, node_ptr->name);
+			error("Removing failed node %s from %pJ",
+			      node_ptr->name, job_ptr);
+			job_pre_resize_acctg(job_ptr);
+			kill_step_on_node(job_ptr, node_ptr, true);
+			orig_job_node_bitmap =
+				bit_copy(job_resrcs_ptr->node_bitmap);
+			excise_node_from_job(job_ptr, node_ptr);
+			/* Resize the bitmaps of the job's steps */
+			rebuild_step_bitmaps(job_ptr, orig_job_node_bitmap);
+			FREE_NULL_BITMAP(orig_job_node_bitmap);
+			(void) gs_job_start(job_ptr);
+			gres_stepmgr_job_build_details(
+				job_ptr->gres_list_alloc,
+				job_ptr->nodes,
+				&job_ptr->gres_detail_cnt,
+				&job_ptr->gres_detail_str,
+				&job_ptr->gres_used);
+			job_post_resize_acctg(job_ptr);
+		} else if (job_ptr->batch_flag &&
+			   ((job_ptr->details &&
+			     job_ptr->details->requeue) ||
+			    (foreach_kill_job_by->requeue_on_resume_failure &&
+			     IS_NODE_POWERED_DOWN(node_ptr) &&
+			     IS_JOB_CONFIGURING(job_ptr)))) {
+			srun_node_fail(job_ptr, node_ptr->name);
+			info("requeue job %pJ due to failure of node %s",
+			     job_ptr, node_ptr->name);
+			job_ptr->time_last_active = foreach_kill_job_by->now;
+			if (suspended) {
+				job_ptr->end_time = job_ptr->suspend_time;
+				job_ptr->tot_sus_time +=
+					difftime(foreach_kill_job_by->now,
+						 job_ptr->suspend_time);
+			} else
+				job_ptr->end_time = foreach_kill_job_by->now;
+
+			/*
+			 * We want this job to look like it
+			 * was terminated in the accounting logs.
+			 * Set a new submit time so the restarted
+			 * job looks like a new job.
+			 */
+			job_state_set(job_ptr, JOB_NODE_FAIL);
+			job_ptr->failed_node = xstrdup(node_ptr->name);
+			build_cg_bitmap(job_ptr);
+			job_ptr->exit_code = 1;
+			job_completion_logger(job_ptr, true);
+			deallocate_nodes(job_ptr, false, suspended, false);
+
+			_set_requeued_job_pending_completing(job_ptr);
+
+			job_ptr->restart_cnt++;
+
+			/* clear signal sent flag on requeue */
+			job_ptr->warn_flags &= ~WARN_SENT;
+
+			job_ptr->exit_code = 0;
+
+			/*
+			 * Since the job completion logger
+			 * removes the submit we need to add it
+			 * again.
+			 */
+			acct_policy_add_job_submit(job_ptr, false);
+
+			if (!job_ptr->node_bitmap_cg ||
+			    bit_ffs(job_ptr->node_bitmap_cg) == -1)
+				batch_requeue_fini(job_ptr);
+		} else {
+			info("Killing %pJ on failed node %s",
+			     job_ptr, node_ptr->name);
+			srun_node_fail(job_ptr, node_ptr->name);
+			job_state_set(job_ptr,
+				      (JOB_NODE_FAIL | JOB_COMPLETING));
+			job_ptr->failed_node = xstrdup(node_ptr->name);
+			build_cg_bitmap(job_ptr);
+			job_ptr->state_reason = FAIL_DOWN_NODE;
+			xfree(job_ptr->state_desc);
+			if (suspended) {
+				job_ptr->end_time = job_ptr->suspend_time;
+				job_ptr->tot_sus_time +=
+					difftime(foreach_kill_job_by->now,
+						 job_ptr->suspend_time);
+			} else
+				job_ptr->end_time = foreach_kill_job_by->now;
+			job_ptr->exit_code = 1;
+			job_completion_logger(job_ptr, false);
+			deallocate_nodes(job_ptr, false, suspended, false);
+		}
+	}
+	return 0;
+}
+
 /*
  * kill_running_job_by_node_name - Given a node name, deallocate RUNNING
  *	or COMPLETING jobs from the node or kill them
@@ -2940,14 +3088,12 @@ static bool _het_job_on_node(job_record_t *job_ptr, int node_inx)
  */
 extern int kill_running_job_by_node_name(char *node_name)
 {
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr;
-	node_record_t *node_ptr;
-	bitstr_t *orig_job_node_bitmap;
-	int kill_job_cnt = 0;
-	time_t now = time(NULL);
 	static time_t sched_update = 0;
 	static bool requeue_on_resume_failure = false;
+	foreach_kill_job_by_t foreach_kill_job_by = {
+		.node_ptr = find_node_record(node_name),
+		.now = time(NULL),
+	};
 
 	if (sched_update != slurm_conf.last_update) {
 		requeue_on_resume_failure =
@@ -2959,158 +3105,19 @@ extern int kill_running_job_by_node_name(char *node_name)
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
-	node_ptr = find_node_record(node_name);
-	if (node_ptr == NULL)	/* No such node */
+	if (!foreach_kill_job_by.node_ptr) /* No such node */
 		return 0;
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		bool suspended = false;
-		job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
-		if (!_het_job_on_node(job_ptr, node_ptr->index))
-			continue;	/* job not on this node */
-		if (IS_JOB_SUSPENDED(job_ptr)) {
-			uint32_t suspend_job_state = job_ptr->job_state;
-			/*
-			 * we can't have it as suspended when we call the
-			 * accounting stuff.
-			 */
-			job_state_set(job_ptr, JOB_CANCELLED);
-			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
-			job_state_set(job_ptr, suspend_job_state);
-			suspended = true;
-		}
+	foreach_kill_job_by.requeue_on_resume_failure =
+		requeue_on_resume_failure;
 
-		if (IS_JOB_COMPLETING(job_ptr)) {
-			if (!bit_test(job_ptr->node_bitmap_cg, node_ptr->index))
-				continue;
-			kill_job_cnt++;
-			bit_clear(job_ptr->node_bitmap_cg, node_ptr->index);
-			job_update_tres_cnt(job_ptr, node_ptr->index);
-			if (job_ptr->node_cnt)
-				(job_ptr->node_cnt)--;
-			else {
-				error("node_cnt underflow on %pJ", job_ptr);
-			}
-			cleanup_completing(job_ptr, true);
+	list_for_each(job_list, _foreach_kill_running_job_by_node,
+		      &foreach_kill_job_by);
 
-			if (node_ptr->comp_job_cnt)
-				(node_ptr->comp_job_cnt)--;
-			else {
-				error("Node %s comp_job_cnt underflow, %pJ",
-				      node_ptr->name, job_ptr);
-			}
-		} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
-			kill_job_cnt++;
-			if ((job_ptr->details) &&
-			    (job_ptr->kill_on_node_fail == 0) &&
-			    (job_ptr->node_cnt > 1) &&
-			    !IS_JOB_CONFIGURING(job_ptr)) {
-				/* keep job running on remaining nodes */
-				srun_node_fail(job_ptr, node_name);
-				error("Removing failed node %s from %pJ",
-				      node_name, job_ptr);
-				job_pre_resize_acctg(job_ptr);
-				kill_step_on_node(job_ptr, node_ptr, true);
-				orig_job_node_bitmap =
-					bit_copy(job_resrcs_ptr->node_bitmap);
-				excise_node_from_job(job_ptr, node_ptr);
-				/* Resize the bitmaps of the job's steps */
-				rebuild_step_bitmaps(job_ptr,
-						     orig_job_node_bitmap);
-				FREE_NULL_BITMAP(orig_job_node_bitmap);
-				(void) gs_job_start(job_ptr);
-				gres_stepmgr_job_build_details(
-					job_ptr->gres_list_alloc,
-					job_ptr->nodes,
-					&job_ptr->gres_detail_cnt,
-					&job_ptr->gres_detail_str,
-					&job_ptr->gres_used);
-				job_post_resize_acctg(job_ptr);
-			} else if (job_ptr->batch_flag &&
-				   ((job_ptr->details &&
-				     job_ptr->details->requeue) ||
-				    (requeue_on_resume_failure &&
-				     IS_NODE_POWERED_DOWN(node_ptr) &&
-				     IS_JOB_CONFIGURING(job_ptr)))) {
-				srun_node_fail(job_ptr, node_name);
-				info("requeue job %pJ due to failure of node %s",
-				     job_ptr, node_name);
-				job_ptr->time_last_active  = now;
-				if (suspended) {
-					job_ptr->end_time =
-						job_ptr->suspend_time;
-					job_ptr->tot_sus_time +=
-						difftime(now,
-							 job_ptr->
-							 suspend_time);
-				} else
-					job_ptr->end_time = now;
+	if (foreach_kill_job_by.kill_job_cnt)
+		last_job_update = foreach_kill_job_by.now;
 
-				/*
-				 * We want this job to look like it
-				 * was terminated in the accounting logs.
-				 * Set a new submit time so the restarted
-				 * job looks like a new job.
-				 */
-				job_state_set(job_ptr, JOB_NODE_FAIL);
-				job_ptr->failed_node = xstrdup(node_name);
-				build_cg_bitmap(job_ptr);
-				job_ptr->exit_code = 1;
-				job_completion_logger(job_ptr, true);
-				deallocate_nodes(job_ptr, false, suspended,
-						 false);
-
-				_set_requeued_job_pending_completing(job_ptr);
-
-				job_ptr->restart_cnt++;
-
-				/* clear signal sent flag on requeue */
-				job_ptr->warn_flags &= ~WARN_SENT;
-
-				job_ptr->exit_code = 0;
-
-				/*
-				 * Since the job completion logger
-				 * removes the submit we need to add it
-				 * again.
-				 */
-				acct_policy_add_job_submit(job_ptr, false);
-
-				if (!job_ptr->node_bitmap_cg ||
-				    bit_ffs(job_ptr->node_bitmap_cg) == -1)
-					batch_requeue_fini(job_ptr);
-			} else {
-				info("Killing %pJ on failed node %s",
-				     job_ptr, node_name);
-				srun_node_fail(job_ptr, node_name);
-				job_state_set(job_ptr, (JOB_NODE_FAIL |
-							JOB_COMPLETING));
-				job_ptr->failed_node = xstrdup(node_name);
-				build_cg_bitmap(job_ptr);
-				job_ptr->state_reason = FAIL_DOWN_NODE;
-				xfree(job_ptr->state_desc);
-				if (suspended) {
-					job_ptr->end_time =
-						job_ptr->suspend_time;
-					job_ptr->tot_sus_time +=
-						difftime(now,
-							 job_ptr->suspend_time);
-				} else
-					job_ptr->end_time = now;
-				job_ptr->exit_code = 1;
-				job_completion_logger(job_ptr, false);
-				deallocate_nodes(job_ptr, false, suspended,
-						 false);
-			}
-		}
-
-	}
-	list_iterator_destroy(job_iterator);
-	if (kill_job_cnt)
-		last_job_update = now;
-
-	return kill_job_cnt;
+	return foreach_kill_job_by.kill_job_cnt;
 }
 
 /* Remove one node from a job's allocation */
