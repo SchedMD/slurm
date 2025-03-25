@@ -766,6 +766,9 @@ extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
 		return SLURM_ERROR;
 	}
 
+	log_flag(TLS, "Successfully set input_fd:%d output_fd:%d on s2n conn %p",
+		 input_fd, output_fd, conn->s2n_conn);
+
 	return SLURM_SUCCESS;
 }
 
@@ -807,6 +810,9 @@ extern int tls_p_set_conn_callbacks(tls_conn_t *conn,
 		on_s2n_error(conn, s2n_connection_set_write_fd);
 		return SLURM_ERROR;
 	}
+	log_flag(TLS, "Successfully set recv_cb:%p recv_ctx:%p send_cb:%p send_ctx:%p on s2n conn %p",
+		 callbacks->recv, callbacks->io_context,
+		 callbacks->send, callbacks->io_context, conn->s2n_conn);
 
 	return SLURM_SUCCESS;
 }
