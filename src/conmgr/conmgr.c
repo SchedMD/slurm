@@ -434,5 +434,14 @@ extern void conmgr_unquiesce(const char *caller)
 
 	EVENT_BROADCAST(&mgr.quiesce.on_stop_quiesced);
 
+	/*
+	 * If watch() never gets to an active quiesce then watch() may not be
+	 * waiting on on_stop_quiesced event before conmgr_unquiesce() is
+	 * called. Then watch() could still be waiting for a watch_sleep event
+	 * and not a on_stop_quiesced event which could result it in never
+	 * waking up.
+	 */
+	EVENT_SIGNAL(&mgr.watch_sleep);
+
 	slurm_mutex_unlock(&mgr.mutex);
 }
