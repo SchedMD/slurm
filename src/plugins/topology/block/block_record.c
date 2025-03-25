@@ -202,9 +202,22 @@ static int _cmp_block_level(const void *x, const void *y)
 	return 0;
 }
 
+static int _list_to_bitmap(void *x, void *arg)
+{
+	int *size = x;
+	bitstr_t *block_levels = arg;
+
+	if (*size >= MAX_BLOCK_LEVELS)
+		return 1;
+
+	bit_set(block_levels, *size);
+
+	return 0;
+}
+
 extern int block_record_validate(topology_ctx_t *tctx)
 {
-	slurm_conf_block_t *ptr, **ptr_array;
+	slurm_conf_block_t *ptr, **ptr_array, **ptr_array_mem = NULL;
 	int i, j;
 	block_record_t *block_ptr, *prior_ptr;
 	hostlist_t *invalid_hl = NULL;
@@ -214,12 +227,35 @@ extern int block_record_validate(topology_ctx_t *tctx)
 	int *aggregated_inx;
 	block_context_t *ctx = xmalloc(sizeof(*ctx));
 
-	ctx->block_count = _read_topo_file(&ptr_array, tctx->topo_conf, ctx);
+	if (tctx->config) {
+		topology_block_config_t *block_config = tctx->config;
+		ctx->block_count = block_config->config_cnt;
+		ptr_array_mem =
+			xcalloc(ctx->block_count, sizeof(*ptr_array_mem));
+		ptr_array = ptr_array_mem;
+		for (int i = 0; i < ctx->block_count; i++)
+			ptr_array[i] = &block_config->block_configs[i];
+
+		ctx->block_levels = bit_alloc(MAX_BLOCK_LEVELS);
+
+		if (!list_count(block_config->block_sizes)) {
+			bit_nset(ctx->block_levels, 0, 4);
+		} else {
+			list_for_each(block_config->block_sizes,
+				      _list_to_bitmap, ctx->block_levels);
+			bit_set(ctx->block_levels, 0);
+		}
+
+	} else {
+		ctx->block_count =
+			_read_topo_file(&ptr_array, tctx->topo_conf, ctx);
+	}
 
 	if (ctx->block_count == 0) {
 		error("No blocks configured");
 		s_p_hashtbl_destroy(conf_hashtbl);
 		xfree(ctx);
+		xfree(ptr_array_mem);
 		return SLURM_ERROR;
 	}
 	/*
@@ -376,7 +412,9 @@ extern int block_record_validate(topology_ctx_t *tctx)
 		hostlist_destroy(hl);
 		xfree(tmp_list);
 	}
+
 	_log_blocks(ctx);
 	tctx->plugin_ctx = ctx;
+	xfree(ptr_array_mem);
 	return SLURM_SUCCESS;
 }

@@ -292,7 +292,7 @@ static void _check_better_path(int i, int j, int k, tree_context_t *ctx)
 
 extern int switch_record_validate(topology_ctx_t *tctx)
 {
-	slurm_conf_switches_t *ptr, **ptr_array;
+	slurm_conf_switches_t *ptr, **ptr_array, **ptr_array_mem = NULL;
 	int depth, i, j, node_count;
 	switch_record_t *switch_ptr, *prior_ptr;
 	hostlist_t *hl, *invalid_hl = NULL;
@@ -303,7 +303,19 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 	bitstr_t *tmp_bitmap = NULL;
 	tree_context_t *ctx = xmalloc(sizeof(*ctx));
 
-	ctx->switch_count = _read_topo_file(&ptr_array, tctx->topo_conf);
+	if (tctx->config) {
+		topology_tree_config_t *tree_config = tctx->config;
+		ctx->switch_count = tree_config->config_cnt;
+		ptr_array_mem =
+			xcalloc(ctx->switch_count, sizeof(*ptr_array_mem));
+		ptr_array = ptr_array_mem;
+		for (int i = 0; i < ctx->switch_count; i++)
+			ptr_array[i] = &tree_config->switch_configs[i];
+	} else {
+		ctx->switch_count =
+			_read_topo_file(&ptr_array, tctx->topo_conf);
+	}
+
 	if (ctx->switch_count == 0) {
 		error("No switches configured");
 		xfree(ctx);
@@ -501,6 +513,7 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 
 	s_p_hashtbl_destroy(conf_hashtbl);
 	_log_switches(ctx);
+	xfree(ptr_array_mem);
 	tctx->plugin_ctx = ctx;
 	return SLURM_SUCCESS;
 }

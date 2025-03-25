@@ -38,14 +38,17 @@
 \*****************************************************************************/
 
 #include <pthread.h>
+#include <sys/stat.h>
 
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/interfaces/topology.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/data_parser.h"
+#include "src/interfaces/serializer.h"
+#include "src/interfaces/topology.h"
 
 strong_alias(topology_g_build_config, slurm_topology_g_build_config);
 strong_alias(topology_g_destroy_config, slurm_topology_g_detroy_config);
@@ -180,6 +183,59 @@ static int _get_tctx_index_by_name(char *name)
 	return -1;
 }
 
+static int _parse_yaml(char *topo_conf)
+{
+	int retval = SLURM_SUCCESS;
+	buf_t *conf_buf = NULL;
+	topology_ctx_array_t tctx_array = {
+		.tctx_num = -1,
+	};
+
+	serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL);
+
+	if (!(conf_buf = create_mmap_buf(topo_conf))) {
+		error("could not load %s, and thus cannot create topo contexts",
+		      topo_conf);
+		retval = SLURM_ERROR;
+		plugin_inited = PLUGIN_NOT_INITED;
+		goto done;
+	}
+
+	DATA_PARSE_FROM_STR(TOPOLOGY_CONF_ARRAY, conf_buf->head, conf_buf->size,
+			    tctx_array, NULL, MIME_TYPE_YAML, retval);
+	if (retval)
+		fatal("Something wrong with reading %s: %s", topo_conf,
+		      slurm_strerror(retval));
+
+	for (int i = 0; i < tctx_array.tctx_num; i++) {
+		debug("Plugin: %s, Topology Name:%s", tctx_array.tctx[i].plugin,
+		     tctx_array.tctx[i].name);
+		if ((tctx_array.tctx[i].idx =
+			     _get_plugin_index_by_type(tctx_array.tctx[i]
+							       .plugin)) < 0) {
+			retval = SLURM_ERROR;
+			goto done;
+		}
+	}
+
+	if (get_log_level() > LOG_LEVEL_DEBUG2) {
+		char *dump_str = NULL;
+		DATA_DUMP_TO_STR(TOPOLOGY_CONF_ARRAY, tctx_array, dump_str,
+				 NULL, MIME_TYPE_YAML, SER_FLAGS_NO_TAG,
+				 retval);
+		debug2("%s", dump_str);
+		xfree(dump_str);
+	}
+
+	tctx_num = tctx_array.tctx_num;
+	tctx = tctx_array.tctx;
+
+done:
+
+	FREE_NULL_BUFFER(conf_buf);
+	return retval;
+}
+
 /*
  * The topology plugin can not be changed via reconfiguration
  * due to background threads, job priorities, etc. slurmctld must
@@ -189,11 +245,20 @@ static int _get_tctx_index_by_name(char *name)
 extern int topology_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
+	struct stat st;
+	char *yaml_config_path = NULL;
 
 	slurm_mutex_lock(&g_context_lock);
 
 	if (plugin_inited)
 		goto done;
+
+	yaml_config_path = get_extra_conf_path("topology.yaml");
+	if (!stat(yaml_config_path, &st)) {
+		retval = _parse_yaml(yaml_config_path);
+		plugin_inited = PLUGIN_INITED;
+		goto done;
+	}
 
 	xassert(slurm_conf.topology_plugin);
 
@@ -213,6 +278,7 @@ extern int topology_g_init(void)
 done:
 
 	slurm_mutex_unlock(&g_context_lock);
+	xfree(yaml_config_path);
 	return retval;
 }
 
