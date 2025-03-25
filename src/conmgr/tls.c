@@ -85,7 +85,6 @@ static void _post_wait_close_fds(bool locked, conmgr_fd_t *con)
 	xassert(con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 
 	close_con(true, con);
-	close_con_output(true, con);
 
 	con_unset_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
 
@@ -239,6 +238,20 @@ extern void tls_handle_decrypt(conmgr_callback_args_t conmgr_args, void *arg)
 	int try = 0;
 
 again:
+	slurm_mutex_lock(&mgr.mutex);
+	if (con_flag(con, FLAG_ON_DATA_TRIED) ||
+	    con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char *flags = con_flags_string(con->flags);
+			log_flag(NET, "%s: [%s] skipping with flags=%s",
+				 __func__, con->name, flags);
+			xfree(flags);
+		}
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+	slurm_mutex_unlock(&mgr.mutex);
+
 	if (try > 1) {
 		log_flag(NET, "%s: [%s] need >%d bytes of incoming data to decrypted TLS",
 				 __func__, con->name,
@@ -552,6 +565,7 @@ extern void tls_adopt(conmgr_fd_t *con, void *tls_conn)
 		.send = _send,
 		.io_context = con,
 	};
+	int rc;
 
 	xassert(tls_conn);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
@@ -562,15 +576,21 @@ extern void tls_adopt(conmgr_fd_t *con, void *tls_conn)
 	con->tls_in = create_buf(xmalloc(BUFFER_START_SIZE), BUFFER_START_SIZE);
 	con->tls_out = list_create((ListDelF) free_buf);
 
-	/* TLS state must already be connected */
-	con_set_flag(con, FLAG_IS_TLS_CONNECTED);
-
 	/* Can't finger print existing TLS connections */
 	con_unset_flag(con, FLAG_WAIT_ON_FINGERPRINT);
 
-	tls_g_set_conn_callbacks(tls_conn, &callbacks);
+	if ((rc = tls_g_set_conn_callbacks(tls_conn, &callbacks))) {
+		log_flag(CONMGR, "%s: [%s] adopting TLS state failed: %s",
+			 __func__, con->name, slurm_strerror(rc));
 
-	log_flag(CONMGR, "%s: [%s] adopted TLS state", __func__, con->name);
+		con_set_flag(con, FLAG_READ_EOF);
+	} else {
+		log_flag(CONMGR, "%s: [%s] adopted TLS state",
+			 __func__, con->name);
+
+		/* TLS state must already be connected */
+		con_set_flag(con, FLAG_IS_TLS_CONNECTED);
+	}
 }
 
 extern void tls_handle_read(conmgr_callback_args_t conmgr_args, void *arg)

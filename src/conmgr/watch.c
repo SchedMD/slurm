@@ -876,9 +876,11 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
-	if (!con_flag(con, FLAG_IS_LISTEN) && !con_flag(con, FLAG_ON_DATA_TRIED)
-	    && con->tls_in && get_buf_offset(con->tls_in) &&
-	    con_flag(con, FLAG_IS_TLS_CONNECTED)) {
+	if (is_tls && !con_flag(con, FLAG_IS_LISTEN) &&
+	    !con_flag(con, FLAG_ON_DATA_TRIED) &&
+	    !con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)
+	    && con_flag(con, FLAG_IS_TLS_CONNECTED) && con->tls_in &&
+	    get_buf_offset(con->tls_in)) {
 		log_flag(CONMGR, "%s: [%s] queuing TLS decrypt of %u bytes",
 			 __func__, con->name, get_buf_offset(con->tls_in));
 		add_work_con_fifo(true, con, tls_handle_decrypt, con);
