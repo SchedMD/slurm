@@ -1074,6 +1074,15 @@ int dump_all_job_state(void)
 	return error_code;
 }
 
+static int _find_job_part(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if ((job_ptr->part_ptr == arg) && !IS_JOB_FINISHED(job_ptr))
+		return 1; /* match */
+	return 0;
+}
+
 static int _find_resv_part(void *x, void *key)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
@@ -2856,8 +2865,6 @@ extern int kill_job_by_front_end_name(char *node_name)
  */
 extern bool partition_in_use(char *part_name)
 {
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr;
 	part_record_t *part_ptr;
 
 	part_ptr = find_part_record (part_name);
@@ -2865,16 +2872,8 @@ extern bool partition_in_use(char *part_name)
 		return false;
 
 	/* check jobs */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (job_ptr->part_ptr == part_ptr) {
-			if (!IS_JOB_FINISHED(job_ptr)) {
-				list_iterator_destroy(job_iterator);
-				return true;
-			}
-		}
-	}
-	list_iterator_destroy(job_iterator);
+	if (list_find_first(job_list, _find_job_part, part_ptr))
+		return true;
 
 	/* check reservations */
 	if (list_find_first(resv_list, _find_resv_part, part_ptr))
