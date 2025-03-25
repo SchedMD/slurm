@@ -709,7 +709,7 @@ static void *_service_connection(void *arg)
 
 	xassert(args->magic == SERVICE_CONNECTION_ARGS_MAGIC);
 
-	debug3("%s: [%pA] processing new RPC connection", __func__, &addr);
+	debug3("%s: [%pA] processing new RPC connection", __func__, addr);
 
 	msg = xmalloc_nz(sizeof(*msg));
 	slurm_msg_t_init(msg);
