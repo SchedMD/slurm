@@ -250,6 +250,8 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	/* drop any unprocessed input buffer */
 	if (con->in)
 		set_buf_offset(con->in, 0);
+	if (con->tls_in)
+		set_buf_offset(con->tls_in, 0);
 
 	is_same_fd = (con->input_fd == con->output_fd);
 	is_socket = con_flag(con, FLAG_IS_SOCKET);
