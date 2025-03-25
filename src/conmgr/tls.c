@@ -85,7 +85,6 @@ static void _post_wait_close_fds(bool locked, conmgr_fd_t *con)
 	xassert(con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 
 	close_con(true, con);
-	close_con_output(true, con);
 
 	con_unset_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
 
