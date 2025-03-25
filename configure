@@ -25701,63 +25701,6 @@ fi
   _x_ac_s2n_dirs="/usr /usr/local"
   _x_ac_s2n_libs="lib64 lib"
 
-  check_s2n_version ()
-  {
-      # Check indirectly that s2n 1.5.7+ is installed by checking for the
-      # existence of s2n_cleanup_final
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for s2n_cleanup_final in -ls2n" >&5
-printf %s "checking for s2n_cleanup_final in -ls2n... " >&6; }
-if test ${ac_cv_lib_s2n_s2n_cleanup_final+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_check_lib_save_LIBS=$LIBS
-LIBS="-ls2n  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.
-   The 'extern "C"' is for builds by C++ compilers;
-   although this is not generally supported in C code supporting it here
-   has little cost and some practical benefit (sr 110532).  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char s2n_cleanup_final (void);
-int
-main (void)
-{
-return s2n_cleanup_final ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_s2n_s2n_cleanup_final=yes
-else case e in #(
-  e) ac_cv_lib_s2n_s2n_cleanup_final=no ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_s2n_s2n_cleanup_final" >&5
-printf "%s\n" "$ac_cv_lib_s2n_s2n_cleanup_final" >&6; }
-if test "x$ac_cv_lib_s2n_s2n_cleanup_final" = xyes
-then :
-  ac_s2n_version_good=yes
-else case e in #(
-  e) ac_s2n_version_good=no ;;
-esac
-fi
-
-  }
-
 
 # Check whether --with-s2n was given.
 if test ${with_s2n+y}
@@ -25787,38 +25730,56 @@ else case e in #(
           for bit in $_x_ac_s2n_libs; do
             test -d "$d/$bit" || continue
             _x_ac_s2n_libs_save="$LIBS"
-            LIBS="-L$d/$bit -ls2n $LIBS"
-            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+            _x_ac_s2n_cppflags_save="$CPPFLAGS"
+	    S2N_DIR="$d"
+	    S2N_LIBS="-ls2n"
+	    S2N_CPPFLAGS="-I$d/include"
+	    if test "$ac_with_rpath" = "yes"; then
+	      S2N_LDFLAGS="-Wl,-rpath -Wl,$d/$bit "
+	    fi
+	    S2N_LDFLAGS+="-L$d/$bit"
+            LIBS="$S2N_LDFLAGS $S2N_LIBS"
+            CPPFLAGS="$S2N_CPPFLAGS $CPPFLAGS"
+	    if test "$cross_compiling" = yes
+then :
+  { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "cannot run test program while cross compiling
+See 'config.log' for more details" "$LINENO" 5; }
+else case e in #(
+  e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.
-   The 'extern "C"' is for builds by C++ compilers;
-   although this is not generally supported in C code supporting it here
-   has little cost and some practical benefit (sr 110532).  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char s2n_init (void);
+#include <s2n.h>
 int
 main (void)
 {
-return s2n_init ();
+
+		 s2n_init();
+		 s2n_cleanup_final();
+
   ;
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_link "$LINENO"
+if ac_fn_c_try_run "$LINENO"
 then :
-  x_ac_cv_s2n_dir=$d
+  s2n_run_ok=yes
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
+esac
+fi
+
             LIBS="$_x_ac_s2n_libs_save"
-            test -n "$x_ac_cv_s2n_dir" && break
+            CPPFLAGS="$_x_ac_s2n_cppflags_save"
+
+            if test "$s2n_run_ok" = "yes"; then
+	      break
+	    fi
           done
-          test -n "$x_ac_cv_s2n_dir" && break
+          if test "$s2n_run_ok" = "yes"; then
+	    break
+	  fi
         done
        ;;
 esac
@@ -25826,39 +25787,24 @@ fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_s2n_dir" >&5
 printf "%s\n" "$x_ac_cv_s2n_dir" >&6; }
 
-    if test -z "$x_ac_cv_s2n_dir"; then
-      if test -z "$with_s2n" ; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate s2n library" >&5
-printf "%s\n" "$as_me: WARNING: unable to locate s2n library" >&2;}
-      else
-        as_fn_error $? "unable to locate s2n library" "$LINENO" 5
-      fi
-    else
-      check_s2n_version
-      if  test "$ac_s2n_version_good" = "yes" ; then
+    if test "$s2n_run_ok" = "yes"; then
 
 printf "%s\n" "#define HAVE_S2N 1" >>confdefs.h
 
-        S2N_LIBS="-ls2n"
-        S2N_CPPFLAGS="-I$x_ac_cv_s2n_dir/include"
-        S2N_DIR="$x_ac_cv_s2n_dir"
-        if test "$ac_with_rpath" = "yes"; then
-          S2N_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_s2n_dir/$bit -L$x_ac_cv_s2n_dir/$bit"
-        else
-          S2N_LDFLAGS="-L$x_ac_cv_s2n_dir/$bit"
-        fi
+
+
+
+
+    else
+      if test -z "$with_s2n" ; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate 1.5.7+ s2n library" >&5
+printf "%s\n" "$as_me: WARNING: unable to locate 1.5.7+ s2n library" >&2;}
       else
-        as_fn_error $? "s2n library needs to be 1.5.7+" "$LINENO" 5
+        as_fn_error $? "unable to locate 1.5.7+ s2n library" "$LINENO" 5
       fi
     fi
-
-
-
-
-
   fi
-
-   if test -n "$x_ac_cv_s2n_dir"; then
+   if test "$s2n_run_ok" = "yes"; then
   WITH_S2N_TRUE=
   WITH_S2N_FALSE='#'
 else
