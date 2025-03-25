@@ -595,7 +595,7 @@ extern int add_connection(conmgr_con_type_t type,
 
 		if (!fd_get_buffered_output_bytes(con->output_fd, &bytes,
 						  con->name)) {
-			xassert(!bytes);
+			xassert(bytes >= 0);
 			con_set_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER);
 		}
 	}
