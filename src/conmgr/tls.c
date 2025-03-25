@@ -239,6 +239,20 @@ extern void tls_handle_decrypt(conmgr_callback_args_t conmgr_args, void *arg)
 	int try = 0;
 
 again:
+	slurm_mutex_lock(&mgr.mutex);
+	if (con_flag(con, FLAG_ON_DATA_TRIED) ||
+	    con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+			char *flags = con_flags_string(con->flags);
+			log_flag(NET, "%s: [%s] skipping with flags=%s",
+				 __func__, con->name, flags);
+			xfree(flags);
+		}
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+	slurm_mutex_unlock(&mgr.mutex);
+
 	if (try > 1) {
 		log_flag(NET, "%s: [%s] need >%d bytes of incoming data to decrypted TLS",
 				 __func__, con->name,
