@@ -326,7 +326,7 @@ extern bool gres_sched_add(uint16_t *avail_cpus,
 		gres_js->total_gres += gres_limit;
 	}
 	list_iterator_destroy(iter);
-	if (gres_cpus && (gres_cpus < *avail_cpus))
+	if (gres_cpus && (gres_cpus < *avail_cpus) && (gres_cpus > min_cpus))
 		*avail_cpus = gres_cpus;
 	xfree(actual_cores_per_sock);
 	return true;
