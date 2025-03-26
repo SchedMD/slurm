@@ -54,7 +54,6 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <pthread.h>
-#include <sched.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>

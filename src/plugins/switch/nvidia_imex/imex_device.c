@@ -35,7 +35,6 @@
 
 #define _GNU_SOURCE
 
-#include <sched.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/mount.h>

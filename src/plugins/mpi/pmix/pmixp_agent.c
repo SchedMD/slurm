@@ -43,7 +43,6 @@
 #define _GNU_SOURCE
 
 #include <pthread.h>
-#include <sched.h>
 #include <poll.h>
 #include <arpa/inet.h>
 #include <time.h>

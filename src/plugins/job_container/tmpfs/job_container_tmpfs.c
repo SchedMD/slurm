@@ -44,7 +44,6 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
-#include <sched.h>
 #include <fcntl.h>
 #include <sys/mount.h>
 #include <semaphore.h>
