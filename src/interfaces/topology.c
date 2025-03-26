@@ -50,8 +50,6 @@
 strong_alias(topology_g_build_config, slurm_topology_g_build_config);
 strong_alias(topology_g_destroy_config, slurm_topology_g_detroy_config);
 
-static uint32_t active_topo_id;
-
 typedef struct slurm_topo_ops {
 	uint32_t (*plugin_id);
 	char(*plugin_type);
@@ -171,7 +169,6 @@ extern int topology_g_init(void)
 		goto done;
 	}
 
-	active_topo_id = *(ops[0].plugin_id);
 	plugin_inited = PLUGIN_INITED;
 	tctx_num = 1;
 done:
