@@ -1114,7 +1114,10 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 
 	if (error_code) {
 		/* Cancel remaining job records */
-		(void) list_for_each(submit_job_list, _het_job_cancel, NULL);
+		iter = list_iterator_create(submit_job_list);
+		while ((job_ptr = list_next(iter)))
+			(void) _het_job_cancel(job_ptr, NULL);
+		list_iterator_destroy(iter);
 		if (!first_job_ptr)
 			FREE_NULL_LIST(submit_job_list);
 	} else {
@@ -3926,7 +3929,10 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	xfree(het_job_id_set);
 
 	if (reject_job && submit_job_list) {
-		(void) list_for_each(submit_job_list, _het_job_cancel, NULL);
+		iter = list_iterator_create(submit_job_list);
+		while ((job_ptr = list_next(iter)))
+			(void) _het_job_cancel(job_ptr, NULL);
+		list_iterator_destroy(iter);
 		if (!first_job_ptr)
 			FREE_NULL_LIST(submit_job_list);
 	}
