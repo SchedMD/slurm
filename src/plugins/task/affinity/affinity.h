@@ -91,10 +91,6 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
-#ifndef CPUSET_DIR
-#define CPUSET_DIR "/dev/cpuset"
-#endif
-
 /*** from affinity.c ***/
 void	slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step, int statval);
 int	get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid);
