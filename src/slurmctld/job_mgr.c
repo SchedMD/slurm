@@ -8929,6 +8929,14 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 				job_desc_msg->min_cpus =
 					MAX(min_cpus,
 					    job_desc_msg->pn_min_cpus);
+			} else if (!job_desc_msg->num_tasks) {
+				/*
+				 * The job did not request any amount of tasks
+				 * explicitly. Assuming 1 per node.
+				 */
+				job_desc_msg->cpus_per_task =
+					MAX(job_desc_msg->pn_min_cpus,
+					    job_desc_msg->cpus_per_task);
 			}
 			debug("JobId=%u: Setting job's pn_min_cpus to %u due to memory limit",
 			      job_desc_msg->job_id,
