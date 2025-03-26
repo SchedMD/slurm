@@ -1901,7 +1901,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	 * if this flag is set.  We also include any accounts they may be
 	 * coordinator of.
 	 */
-	if (!is_admin && (slurm_conf.private_data & PRIVATE_DATA_USERS)) {
+	if (!is_admin &&
+	    ((slurm_conf.private_data & PRIVATE_DATA_USERS) ||
+	     (with_usage && (slurm_conf.private_data & PRIVATE_DATA_USAGE)))) {
 		int set = 0;
 		query = xstrdup_printf("select lineage from \"%s_%s\" where user='%s'",
 				       cluster_name, assoc_table, user->name);
@@ -3914,7 +3916,9 @@ extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	if (slurm_conf.private_data & PRIVATE_DATA_USERS) {
+	if ((slurm_conf.private_data & PRIVATE_DATA_USERS) ||
+	    ((assoc_cond->flags & ASSOC_COND_FLAG_WITH_USAGE) &&
+	     (slurm_conf.private_data & PRIVATE_DATA_USAGE))) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			/* Fill in the user with any accounts they may
