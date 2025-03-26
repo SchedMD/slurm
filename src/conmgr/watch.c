@@ -700,7 +700,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		con_unset_flag(con, FLAG_CAN_READ);
 
 		if (list_count(mgr.connections) >= mgr.max_connections) {
-			log_flag(CONMGR, "%s: [%s] Deferring incoming connection due to %d/%d connections",
+			warning("%s: [%s] Deferring incoming connection due to %d/%d connections",
 				 __func__, con->name,
 				 list_count(mgr.connections),
 				 mgr.max_connections);
@@ -738,10 +738,11 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		/* must wait until poll allows read from this socket */
 		if (con_flag(con, FLAG_IS_LISTEN)) {
 			if (list_count(mgr.connections) >= mgr.max_connections) {
-				log_flag(CONMGR, "%s: [%s] Deferring polling for new connections due to %d/%d connections",
+				warning("%s: [%s] Deferring polling for new connections due to %d/%d connections",
 					 __func__, con->name,
 					 list_count(mgr.connections),
 					 mgr.max_connections);
+
 				con_set_polling(con, PCTL_TYPE_CONNECTED,
 						__func__);
 			} else {
