@@ -5783,6 +5783,12 @@ static int _foreach_node_state_log(void *x, void *arg)
 			     (int)bit_size(gres_ns->topo_core_bitmap[i]));
 		} else
 			info("   topo_core_bitmap[%d]:NULL", i);
+		if (gres_ns->topo_res_core_bitmap[i]) {
+			bit_fmt(tmp_str, sizeof(tmp_str),
+				gres_ns->topo_res_core_bitmap[i]);
+			info("   topo_res_core_bitmap[%d]:%s of %d", i, tmp_str,
+			     (int)bit_size(gres_ns->topo_res_core_bitmap[i]));
+		}
 		if (gres_ns->topo_gres_bitmap[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_ns->topo_gres_bitmap[i]);
