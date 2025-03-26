@@ -134,7 +134,8 @@ projecta:x:1001:tim
 </h2>
 
 <p>Enabling nss_slurm is as simple as adding <b>slurm</b> to the passwd and
-group database in <b>/etc/nsswitch.conf</b>. It is recommended that
+group database in <b>/etc/nsswitch.conf</b> (only on systems that will run
+<b>slurmd</b>). It is recommended that
 <b>slurm</b> is listed first, as the order (from left to right) determines
 the sequence in which the NSS databases will be queried, and this ensures Slurm
 handles the request if able before submitting the query to other sources.</p>
@@ -186,6 +187,6 @@ to determine if it can respond to that request. The login shell spawned with
 and therefore its own pgid, so nss_slurm will not respond to requests in an
 interactive session.</p>
 
-<p style="text-align:center;">Last modified 30 Aug 2023</p>
+<p style="text-align:center;">Last modified 22 May 2025</p>
 
 <!--#include virtual="footer.txt"-->
