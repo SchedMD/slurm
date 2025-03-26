@@ -37,26 +37,6 @@
 
 #include "affinity.h"
 
-/* Older versions of sched.h (ie. Centos5) don't include CPU_OR. */
-#ifndef CPU_OR
-
-#ifndef CPU_OP_S
-# define __CPU_OP_S(setsize, destset, srcset1, srcset2, op) \
-  (__extension__      \
-   ({ cpu_set_t *__dest = (destset);      \
-     const __cpu_mask *__arr1 = (srcset1)->__bits;      \
-     const __cpu_mask *__arr2 = (srcset2)->__bits;      \
-     size_t __imax = (setsize) / sizeof (__cpu_mask);      \
-     size_t __i;      \
-     for (__i = 0; __i < __imax; ++__i)      \
-       ((__cpu_mask *) __dest->__bits)[__i] = __arr1[__i] op __arr2[__i];    \
-     __dest; }))
-#endif
-
-# define CPU_OR(destset, srcset1, srcset2) \
-  __CPU_OP_S (sizeof (cpu_set_t), destset, srcset1, srcset2, |)
-#endif
-
 /* If HAVE_NUMA, create mask for given ldom.
  * Otherwise create mask for given socket
  */
