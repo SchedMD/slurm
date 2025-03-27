@@ -39,7 +39,6 @@
 
 #define _GNU_SOURCE
 #include <pthread.h>
-#include <sched.h>
 #include <ctype.h>
 
 #include "src/common/plugin.h"

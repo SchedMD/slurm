@@ -43,7 +43,6 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <poll.h>
-#include <sched.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>

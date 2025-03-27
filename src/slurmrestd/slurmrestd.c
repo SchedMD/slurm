@@ -41,7 +41,6 @@
 #include <grp.h>
 #include <limits.h>
 #include <netdb.h>
-#include <sched.h>
 #include <signal.h>
 #include <sys/socket.h>
 #include <sys/stat.h>

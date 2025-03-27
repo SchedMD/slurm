@@ -39,7 +39,6 @@
 #define _GNU_SOURCE
 #include <glob.h>
 #include <limits.h>
-#include <sched.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
