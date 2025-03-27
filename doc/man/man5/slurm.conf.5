@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "January 2025" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "March 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -6697,8 +6697,7 @@ A \fBslurmd\fR started with \-F[<feature>] will be associated with a FUTURE
 node that matches the same configuration (sockets, cores, threads) as reported
 by \fBslurmd\fR \-C. The node's NodeAddr and NodeHostname will automatically be
 retrieved from the \fBslurmd\fR and will be cleared when set back to the FUTURE
-state. Dynamic FUTURE nodes retain non\-FUTURE state on restart. Use scontrol to
-put node back into FUTURE state.
+state.
 .RE
 .IP
 
