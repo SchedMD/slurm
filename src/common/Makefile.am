@@ -194,6 +194,8 @@ libcommon_la_SOURCES =				\
 	xrandom.h				\
 	xregex.c				\
 	xregex.h				\
+	xsched.c				\
+	xsched.h				\
 	xsystemd.c				\
 	xsystemd.h				\
 	xsignal.c				\
