@@ -1356,6 +1356,7 @@ extern int sacctmgr_delete_qos(int argc, char **argv)
 
 	notice_thread_init();
 	ret_list = slurmdb_qos_remove(db_conn, qos_cond);
+	rc = errno;
 	notice_thread_fini();
 	slurmdb_destroy_qos_cond(qos_cond);
 
@@ -1368,7 +1369,7 @@ extern int sacctmgr_delete_qos(int argc, char **argv)
 		 * output from slurmdb_qos_remove, and
 		 * with a previously got g_qos_list.
 		 */
-		if (_isdefault(ret_list)) {
+		if ((!rc) && (_isdefault(ret_list))) {
 			exit_code=1;
 			fprintf(stderr, " Please either remove the qos' listed "
 				"above from list and resubmit,\n"
@@ -1376,6 +1377,18 @@ extern int sacctmgr_delete_qos(int argc, char **argv)
 				"remove the qos.\n"
 				" Changes Discarded\n");
 			slurmdb_connection_commit(db_conn, 0);
+			goto end_it;
+		}
+
+		if (rc == ESLURM_JOBS_RUNNING_ON_ASSOC) {
+			itr = list_iterator_create(ret_list);
+			fprintf(stderr, " Error with request: %s\n",
+				slurm_strerror(rc));
+			while ((object = list_next(itr))) {
+				fprintf(stderr, " %s\n", object);
+			}
+			slurmdb_connection_commit(db_conn, 0);
+			list_iterator_destroy(itr);
 			goto end_it;
 		}
 

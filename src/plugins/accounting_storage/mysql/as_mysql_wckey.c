@@ -248,8 +248,9 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond,
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.wckey_name='%s'",
-				   prefix, object);
+			xstrfmtcat(*extra,
+				   "%s.wckey_name='%s' || %s.wckey_name='*%s'",
+				   prefix, object, prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -291,7 +292,8 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 				  char *extra,
 				  char *cluster_name,
 				  char *user_name,
-				  list_t *ret_list)
+				  list_t *ret_list,
+				  bool *jobs_running)
 {
 	int rc = SLURM_SUCCESS;
 	MYSQL_RES *result = NULL;
@@ -347,7 +349,7 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 	xfree(query);
 	rc = remove_common(mysql_conn, DBD_REMOVE_WCKEYS, now,
 			   user_name, wckey_table, assoc_char, assoc_char,
-			   cluster_name, NULL, NULL, NULL);
+			   cluster_name, ret_list, jobs_running, NULL);
 	xfree(assoc_char);
 
 	if (rc == SLURM_ERROR) {
@@ -1009,6 +1011,7 @@ extern list_t *as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *extra = NULL, *object = NULL;
 	char *user_name = NULL;
+	bool jobs_running = 0;
 	list_t *use_cluster_list = NULL;
 	list_itr_t *itr;
 	bool locked = false;
@@ -1048,8 +1051,8 @@ empty:
 	itr = list_iterator_create(use_cluster_list);
 	while ((object = list_next(itr))) {
 		if ((rc = _cluster_remove_wckeys(
-			     mysql_conn, extra, object, user_name, ret_list))
-		    != SLURM_SUCCESS)
+			     mysql_conn, extra, object, user_name, ret_list,
+			     &jobs_running) != SLURM_SUCCESS) || jobs_running)
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -1065,6 +1068,11 @@ empty:
 		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
+
+	if (jobs_running)
+		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
+	else
+		errno = SLURM_SUCCESS;
 
 	return ret_list;
 }
