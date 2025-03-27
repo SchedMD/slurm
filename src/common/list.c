@@ -125,6 +125,7 @@ struct xlist {
 	list_itr_t *iNext;		/* iterator chain for list_destroy() */
 	ListDelF fDel;			/* function to delete node data */
 	pthread_rwlock_t mutex;		/* mutex to protect access to list */
+	pthread_t tid;			/* id of thread holding write lock */
 	list_node_t *free_nodes;	/* head of unused nodes */
 	list_node_t *node_allocations;	/* memory for additional nodes */
 	list_node_t nodes[]; /* THIS MUST BE THE LAST PART OF THE STRUCT */
@@ -136,6 +137,43 @@ struct xlist {
  * overhead.
  */
 static const int nodes_in_page = (4064 - sizeof(list_t)) / sizeof(list_node_t);
+
+/****************
+ *  Macros
+ ****************/
+#define LIST_THREAD_LOCK_DEF pthread_t tid = pthread_self(); bool locked = false;
+
+#define LIST_THREAD_LOCK(l, write_lock)					\
+do {									\
+	/*								\
+	 * If I am on the same thread and already locked,		\
+	 * don't lock again.						\
+	 */								\
+	if (l->tid != tid) {						\
+		if (write_lock) {					\
+			slurm_rwlock_wrlock(&l->mutex);			\
+			/* Only set tid under a write lock */		\
+			l->tid = tid;					\
+		} else {						\
+			slurm_rwlock_rdlock(&l->mutex);			\
+			xassert(!l->tid);				\
+		}							\
+		locked = true;						\
+	} else {							\
+		debug3("%s: list lock already held by this thread",	\
+		       __func__);					\
+	}								\
+} while (0)
+
+#define LIST_THREAD_UNLOCK(l, write_lock)				\
+do {									\
+	if (locked) {							\
+		/* Only clear tid under a write lock */			\
+		if (write_lock)						\
+			l->tid = 0;					\
+		slurm_rwlock_unlock(&l->mutex);				\
+	}								\
+} while (0)
 
 /****************
  *  Prototypes  *
@@ -590,15 +628,13 @@ extern int list_for_each_max(list_t *l, int *max, ListForF f, void *arg,
 	list_node_t *p;
 	int n = 0;
 	bool failed = false;
+	LIST_THREAD_LOCK_DEF;
 
 	xassert(l != NULL);
 	xassert(f != NULL);
 	xassert(l->magic == LIST_MAGIC);
 
-	if (write_lock)
-		slurm_rwlock_wrlock(&l->mutex);
-	else
-		slurm_rwlock_rdlock(&l->mutex);
+	LIST_THREAD_LOCK(l, write_lock);
 
 	for (p = l->head; (*max == -1 || n < *max) && p; p = p->next) {
 		n++;
@@ -609,7 +645,8 @@ extern int list_for_each_max(list_t *l, int *max, ListForF f, void *arg,
 		}
 	}
 	*max = l->count - n;
-	slurm_rwlock_unlock(&l->mutex);
+
+	LIST_THREAD_UNLOCK(l, write_lock);
 
 	if (failed)
 		n = -n;
