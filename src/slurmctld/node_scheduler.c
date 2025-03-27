@@ -3658,34 +3658,29 @@ extern int job_req_node_filter(job_record_t *job_ptr,
  * IN nset_node_bitmap - bitmap of nodes for the new node_set record
  * IN nset_flags - flags of nodes for the new node_set record
  */
-static void _split_node_set(struct node_set *node_set_ptr,
-			    config_record_t *config_ptr,
+static void _split_node_set(struct node_set *nset, config_record_t *config_ptr,
 			    int nset_inx_base, int nset_inx,
 			    bitstr_t *nset_feature_bits,
 			    bitstr_t *nset_node_bitmap, uint32_t nset_flags)
 {
-	node_set_ptr[nset_inx].cpus_per_node = config_ptr->cpus;
-	node_set_ptr[nset_inx].features = xstrdup(config_ptr->feature);
-	node_set_ptr[nset_inx].feature_bits = bit_copy(nset_feature_bits);
-	node_set_ptr[nset_inx].flags = nset_flags;
-	node_set_ptr[nset_inx].real_memory = config_ptr->real_memory;
-	node_set_ptr[nset_inx].node_weight =
-		node_set_ptr[nset_inx_base].node_weight;
+	nset[nset_inx].cpus_per_node = config_ptr->cpus;
+	nset[nset_inx].features = xstrdup(config_ptr->feature);
+	nset[nset_inx].feature_bits = bit_copy(nset_feature_bits);
+	nset[nset_inx].flags = nset_flags;
+	nset[nset_inx].real_memory = config_ptr->real_memory;
+	nset[nset_inx].node_weight = nset[nset_inx_base].node_weight;
 
 	/*
 	 * The bitmap of this new nodeset will contain only the nodes that
 	 * are present both in the original bitmap AND in the new bitmap.
 	 */
-	node_set_ptr[nset_inx].my_bitmap =
-		bit_copy(node_set_ptr[nset_inx_base].my_bitmap);
-	bit_and(node_set_ptr[nset_inx].my_bitmap, nset_node_bitmap);
-	node_set_ptr[nset_inx].node_cnt =
-		bit_set_count(node_set_ptr[nset_inx].my_bitmap);
+	nset[nset_inx].my_bitmap = bit_copy(nset[nset_inx_base].my_bitmap);
+	bit_and(nset[nset_inx].my_bitmap, nset_node_bitmap);
+	nset[nset_inx].node_cnt = bit_set_count(nset[nset_inx].my_bitmap);
 
 	/* Now we remove these nodes from the original bitmap */
-	bit_and_not(node_set_ptr[nset_inx_base].my_bitmap,
-		    nset_node_bitmap);
-	node_set_ptr[nset_inx_base].node_cnt -= node_set_ptr[nset_inx].node_cnt;
+	bit_and_not(nset[nset_inx_base].my_bitmap, nset_node_bitmap);
+	nset[nset_inx_base].node_cnt -= nset[nset_inx].node_cnt;
 }
 
 static void _apply_extra_constraints(job_record_t *job_ptr,
