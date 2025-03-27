@@ -112,6 +112,7 @@ struct node_set {		/* set of nodes with same configuration */
 #define NODE_SET_REBOOT SLURM_BIT(1)
 #define NODE_SET_OUTSIDE_FLEX SLURM_BIT(2)
 #define NODE_SET_POWER_DN SLURM_BIT(3)
+#define NODE_SET_POWERING_UP SLURM_BIT(4)
 
 enum {
 	IN_FL,		/* Inside flex reservation */
@@ -3858,7 +3859,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	if (can_reboot)
 		reboot_bitmap = bit_alloc(node_record_count);
 	node_set_inx = 0;
-	node_set_len = list_count(config_list) * 16 + 1;
+	node_set_len = list_count(config_list) * 32 + 1;
 	node_set_ptr = xcalloc(node_set_len, sizeof(struct node_set));
 	config_iterator = list_iterator_create(config_list);
 	while ((config_ptr = list_next(config_iterator))) {
@@ -4152,10 +4153,31 @@ end_node_set:
 		xfree(*err_msg);
 
 	/*
-	 * If any nodes are powered down, put them into a new node_set
-	 * record with a higher scheduling weight. This means we avoid
-	 * scheduling jobs on powered down nodes where possible.
+	 * If any nodes are powered down or powering up, put them into a
+	 * new node_sets record with a higher scheduling weight. This means
+	 * we avoid scheduling jobs on powered down and powering up nodes where
+	 * possible. If those are required we prefer powering up nodes over
+	 * powered down nodes.
 	 */
+	for (i = (node_set_inx - 1); i >= 0; i--) {
+		int booting_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
+					      booting_node_bitmap);
+		if (booting_cnt == 0)
+			continue; /* no nodes powering up */
+		if (booting_cnt == node_set_ptr[i].node_cnt) {
+			node_set_ptr[i].flags = NODE_SET_POWERING_UP;
+			continue; /* all nodes powering up */
+		}
+
+		/* Some nodes powering up, split record */
+		_split_node_set2(node_set_ptr, i, &node_set_inx, booting_cnt,
+				 booting_node_bitmap, NODE_SET_POWERING_UP);
+		if (node_set_inx >= node_set_len) {
+			error("%s: node_set buffer filled", __func__);
+			break;
+		}
+	}
+
 	for (i = (node_set_inx-1); i >= 0; i--) {
 		int power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
 					    power_down_node_bitmap);
@@ -4245,8 +4267,11 @@ static void _set_sched_weight(struct node_set *node_set_ptr)
 	node_set_ptr->sched_weight |= 0xff;
 	if ((node_set_ptr->flags & NODE_SET_REBOOT) ||
 	    (node_set_ptr->flags & NODE_SET_POWER_DN))	/* Boot required */
+		node_set_ptr->sched_weight |= 0x30000000000;
+	else if ((node_set_ptr->flags & NODE_SET_POWERING_UP))
 		node_set_ptr->sched_weight |= 0x20000000000;
-	if (node_set_ptr->flags & NODE_SET_OUTSIDE_FLEX)
+	else if (node_set_ptr->flags & NODE_SET_OUTSIDE_FLEX ||
+		 node_set_ptr->flags & NODE_SET_POWERING_UP)
 		node_set_ptr->sched_weight |= 0x10000000000;
 }
 

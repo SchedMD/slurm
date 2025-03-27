@@ -443,7 +443,9 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
   <dd>
     <p>Each node can be configured with a weight indicating the desirability
     of using that resource. Nodes with lower weights are used before those
-    with higher weights. The default value is 1.</p>
+    with higher weights. The default value is 1. Slurm will allocate from
+    powered up nodes first, powering up nodes second and lastly powered down
+    nodes -- respecting node weights in each set.
   </dd>
 </dl>
 
