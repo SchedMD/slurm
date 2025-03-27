@@ -36,4 +36,18 @@
 #ifndef _XSCHED_H
 #define _XSCHED_H
 
+#ifdef __FreeBSD__
+#include <sys/param.h> /* param.h must precede cpuset.h */
+#include <sys/cpuset.h>
+typedef cpuset_t cpu_set_t;
+#endif
+
+#ifdef __NetBSD__
+#define CPU_ZERO(c) cpuset_zero(*(c))
+#define CPU_ISSET(i, c) cpuset_isset((i), *(c))
+#define sched_getaffinity sched_getaffinity_np
+#endif
+
+#include <sched.h>
+
 #endif
