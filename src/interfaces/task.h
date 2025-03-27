@@ -40,16 +40,8 @@
 #ifndef _INTERFACES_TASK_H
 #define _INTERFACES_TASK_H
 
-#ifdef __FreeBSD__
-#include <sys/param.h>
-#include <sys/cpuset.h>
-typedef cpuset_t cpu_set_t;
-#endif
-
+#include "src/common/xsched.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
-/* The size to represent a cpu_set_t as a hex string (including null) */
-#define CPU_SET_HEX_STR_SIZE (1 + (CPU_SETSIZE / 4))
 
 /*
  * Initialize the task plugin.
@@ -134,27 +126,4 @@ extern int task_g_add_pid(pid_t pid);
 
 extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,
 				   int statval, uint32_t taskid);
-
-/*
- * Convert a CPU bitmask to a hex string.
- *
- * IN mask - A CPU bitmask pointer.
- * IN/OUT str - A char pointer used to return a string of size
- *		CPU_SET_HEX_STR_SIZE.
- * RET - Returns a pointer to a string slice in str that starts at the first
- *	 non-zero hex char or last zero hex char if all bits are not set.
- */
-extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str);
-
-/*
- * Convert a hex string to a CPU bitmask.
- *
- * IN/OUT mask - An empty CPU bitmask pointer that will be set according to CPUs
- *		 specified by the hex values in str.
- * IN str - A null-terminated hex string that specifies CPUs to set.
- * RET - Returns -1 if str could not be interpreted into valid hex or if str is
- *	 too large, else returns 0 on success.
- */
-extern int task_str_to_cpuset(cpu_set_t *mask, const char* str);
-
 #endif

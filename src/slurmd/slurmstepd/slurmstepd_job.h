@@ -41,11 +41,6 @@
 #ifndef _SLURMSTEPD_JOB_H
 #define _SLURMSTEPD_JOB_H
 
-#ifdef __FreeBSD__
-#include <sys/cpuset.h>
-typedef cpuset_t cpu_set_t;
-#endif
-
 #define _GNU_SOURCE
 
 #include <pthread.h>
@@ -59,6 +54,7 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/eio.h"
 #include "src/common/env.h"
 #include "src/common/stepd_api.h"
+#include "src/common/xsched.h"
 
 #define STEP_CONTAINER_MAGIC 0xa0b9b2ba
 

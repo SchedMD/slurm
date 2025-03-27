@@ -41,16 +41,9 @@
 
 #define _GNU_SOURCE
 
-#ifdef __FreeBSD__
-#  include <sys/param.h>
-#  include <sys/cpuset.h>
-typedef cpuset_t cpu_set_t;
-#endif
-
 #include <ctype.h>
 #include <inttypes.h>
 #include <limits.h>
-#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -63,12 +56,6 @@ typedef cpuset_t cpu_set_t;
 #endif
 #ifdef MAJOR_IN_SYSMACROS
 #  include <sys/sysmacros.h>
-#endif
-
-#ifdef __NetBSD__
-#define CPU_ZERO(c) cpuset_zero(*(c))
-#define CPU_ISSET(i,c) cpuset_isset((i),*(c))
-#define sched_getaffinity sched_getaffinity_np
 #endif
 
 #include "slurm/slurm.h"
@@ -93,6 +80,7 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsched.h"
 #include "src/common/xstring.h"
 
 #define MAX_GRES_BITMAP 1024

@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  src/plugins/task/affinity/affinity.h - task affinity plugin
+ *  sched.h - kernel cpu affinity handlers
  *****************************************************************************
- *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -33,65 +33,52 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
+#ifndef _XSCHED_H
+#define _XSCHED_H
+
+#ifdef __FreeBSD__
+#include <sys/param.h> /* param.h must precede cpuset.h */
+#include <sys/cpuset.h>
+typedef cpuset_t cpu_set_t;
 #endif
 
-#ifdef HAVE_NUMA
-#  include <numa.h>
+#ifdef __NetBSD__
+#define CPU_ZERO(c) cpuset_zero(*(c))
+#define CPU_ISSET(i, c) cpuset_isset((i), *(c))
+#define sched_getaffinity sched_getaffinity_np
 #endif
 
-#ifdef HAVE_SYS_PRCTL_H
-#  include <sys/prctl.h>
+#include <sched.h>
+
+/* The size to represent a cpu_set_t as a hex string (including null) */
+#define CPU_SET_HEX_STR_SIZE (1 + (CPU_SETSIZE / 4))
+
+/*
+ * Convert a CPU bitmask to a hex string.
+ *
+ * IN mask - A CPU bitmask pointer.
+ * IN/OUT str - A char pointer used to return a string of size
+ *		CPU_SET_HEX_STR_SIZE.
+ * RET - Returns a pointer to a string slice in str that starts at the first
+ *	 non-zero hex char or last zero hex char if all bits are not set.
+ */
+extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str);
+
+/*
+ * Convert a hex string to a CPU bitmask.
+ *
+ * IN/OUT mask - An empty CPU bitmask pointer that will be set according to CPUs
+ *		 specified by the hex values in str.
+ * IN str - A null-terminated hex string that specifies CPUs to set.
+ * RET - Returns -1 if str could not be interpreted into valid hex or if str is
+ *	 too large, else returns 0 on success.
+ */
+extern int task_str_to_cpuset(cpu_set_t *mask, const char *str);
+
+/* Wrapper for sched_setaffinity() */
+extern int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
+
+/* Wrapper for sched_getaffinity() */
+extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
+
 #endif
-
-#include <fcntl.h>
-#include <grp.h>
-#include <poll.h>
-#include <pwd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/utsname.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
-#include "slurm/slurm_errno.h"
-
-#include "src/common/slurm_xlator.h"
-#include "src/interfaces/task.h"
-#include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
-#include "src/common/cbuf.h"
-#include "src/common/cpu_frequency.h"
-#include "src/common/fd.h"
-#include "src/common/hostlist.h"
-#include "src/common/log.h"
-#include "src/interfaces/select.h"
-#include "src/common/slurm_resource_info.h"
-#include "src/interfaces/switch.h"
-#include "src/common/util-net.h"
-#include "src/common/xsignal.h"
-#include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xsched.h"
-
-/*** from affinity.c ***/
-void	slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step, int statval);
-int	get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid);
-
-/*** from numa.c ***/
-#ifdef HAVE_NUMA
-int	 get_memset(nodemask_t *mask, stepd_step_rec_t *step);
-void	 slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *step);
-uint16_t slurm_get_numa_node(uint16_t cpuid);
-#endif
-
-/*** from schedutils.c ***/
-int	str_to_cpuset(cpu_set_t *mask, const char* str);
-int	str_to_cnt(const char* str);
-char *	cpuset_to_str(const cpu_set_t *mask, char *str);

@@ -42,7 +42,6 @@
 
 #include "config.h"
 
-/* Needed for sched_setaffinity */
 #define _GNU_SOURCE
 
 #if HAVE_HWLOC
@@ -97,6 +96,7 @@
 #include "src/common/stepd_proxy.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsched.h"
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
 
@@ -2990,14 +2990,7 @@ static int _core_spec_init(void)
 		}
 		FREE_NULL_BITMAP(res_mac_bitmap);
 
-#ifdef __FreeBSD__
-		rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID,
-					  pid, sizeof(cpu_set_t), &mask);
-#else
-		rval = sched_setaffinity(pid, sizeof(cpu_set_t), &mask);
-#endif
-
-		if (rval != 0) {
+		if ((rval = slurm_setaffinity(pid, sizeof(mask), &mask))) {
 			error("Resource spec: unable to establish slurmd CPU "
 			      "affinity: %m");
 			_resource_spec_fini();
