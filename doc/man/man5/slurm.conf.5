@@ -6744,7 +6744,9 @@ for use simply by updating the node state using the scontrol command rather
 than restarting the slurmctld daemon. After these nodes are made available,
 change their \fRState\fR in the slurm.conf file. Until these nodes are made
 available, they will not be seen using any Slurm commands or nor will
-any attempt be made to contact them.
+any attempt be made to contact them. FUTURE nodes retain non\-FUTURE state on
+restart. Use scontrol to put node back into FUTURE state.
+
 .IP
 .RS
 .TP
@@ -6753,8 +6755,7 @@ A \fBslurmd\fR started with \-F[<feature>] will be associated with a FUTURE
 node that matches the same configuration (sockets, cores, threads) as reported
 by \fBslurmd\fR \-C. The node's NodeAddr and NodeHostname will automatically be
 retrieved from the \fBslurmd\fR and will be cleared when set back to the FUTURE
-state. Dynamic FUTURE nodes retain non\-FUTURE state on restart. Use scontrol to
-put node back into FUTURE state.
+state.
 .RE
 .IP
 

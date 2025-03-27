@@ -447,11 +447,9 @@ extern int load_all_node_state ( bool state_only )
 					node_state_rec->comm_name,
 					node_state_rec->node_hostname);
 			}
-			if (IS_NODE_FUTURE(node_ptr) &&
-			    (node_state & NODE_STATE_DYNAMIC_FUTURE)) {
-				/* Preserve active dynamic future node state */
-				node_ptr->node_state    = node_state;
-
+			if IS_NODE_FUTURE(node_ptr) {
+				/* preserve state for conf FUTURE nodes */
+				node_ptr->node_state = node_state;
 			} else if (IS_NODE_CLOUD(node_ptr)) {
 				if ((!power_save_mode) &&
 				    ((node_state & NODE_STATE_POWERED_DOWN) ||
