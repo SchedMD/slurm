@@ -459,18 +459,17 @@ static void *_list_find_first_lock(list_t *l, ListFindF f, void *key,
 				   bool write_lock)
 {
 	void *v = NULL;
+	LIST_THREAD_LOCK_DEF;
 
 	xassert(l != NULL);
 	xassert(f != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	if (write_lock)
-		slurm_rwlock_wrlock(&l->mutex);
-	else
-		slurm_rwlock_rdlock(&l->mutex);
+
+	LIST_THREAD_LOCK(l, write_lock);
 
 	v = _list_find_first_locked(l, f, key);
 
-	slurm_rwlock_unlock(&l->mutex);
+	LIST_THREAD_UNLOCK(l, write_lock);
 
 	return v;
 }
