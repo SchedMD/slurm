@@ -183,6 +183,18 @@ static int _get_tctx_index_by_name(char *name)
 	return -1;
 }
 
+static int _cmp_tctx(const void *x, const void *y)
+{
+	const topology_ctx_t *t1 = x, *t2 = y;
+
+	if (t1->cluster_default && !t2->cluster_default)
+		return -1;
+	else if (!t1->cluster_default && t2->cluster_default)
+		return 1;
+
+	return 0;
+}
+
 static int _parse_yaml(char *topo_conf)
 {
 	int retval = SLURM_SUCCESS;
@@ -206,7 +218,8 @@ static int _parse_yaml(char *topo_conf)
 	if (retval)
 		fatal("Something wrong with reading %s: %s", topo_conf,
 		      slurm_strerror(retval));
-
+	qsort(tctx_array.tctx, tctx_array.tctx_num, sizeof(topology_ctx_t),
+	      _cmp_tctx);
 	for (int i = 0; i < tctx_array.tctx_num; i++) {
 		debug("Plugin: %s, Topology Name:%s", tctx_array.tctx[i].plugin,
 		     tctx_array.tctx[i].name);
