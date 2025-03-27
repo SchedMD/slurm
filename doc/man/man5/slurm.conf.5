@@ -6312,6 +6312,7 @@ used for a hierarchical network with the select/cons_tres plugin,
 as described in the \fBtopology.conf\fR(5)
 man page
 .RE
+\fBNOTE\fR: This option is ignored if topology.yaml exists.
 .IP
 
 .TP
@@ -7695,6 +7696,12 @@ use the \fBSuspendTimeout\fR value set for the entire cluster.
 .IP
 
 .TP
+\fBTopology\fR
+Name of the topology, defined in \fItopology.yaml\fR, used by jobs in this
+partition.
+.IP
+
+.TP
 \fBTRESBillingWeights\fR
 TRESBillingWeights is used to define the billing weights of each tracked TRES
 type (see \fBAccountingStorageTRES\fR) that
@@ -8001,18 +8008,13 @@ web pages available here: <https://slurm.schedmd.com/>.
 For a hierarchical network, Slurm needs to have detailed information
 about how nodes are configured on the network switches.
 .LP
-Given network topology information, Slurm allocates all of a job's
-resources onto a single leaf of the network (if possible) using a best\-fit
-algorithm.
-Otherwise it will allocate a job's resources onto multiple leaf switches
-so as to minimize the use of higher\-level switches.
 The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information.
 The only values presently supported are
 "topology/flat" (best\-fit logic over one\-dimensional topology),
 "topology/tree", and "topology/block" (both determine the network topology
-based upon information contained in a topology.conf file,
-see "man topology.conf" for more information).
+based upon information contained in a topology.conf or topology.yaml file,
+see "man topology.conf" and "man topology.yaml" for more information).
 Future plugins may gather topology information directly from the network.
 The topology information is optional.
 If not provided, Slurm will perform a best\-fit algorithm assuming the

@@ -1,0 +1,75 @@
+.TH "topology.yaml" "5" "Slurm Configuration File" "March 2025" "Slurm Configuration File"
+
+.SH "NAME"
+topology.yaml \-  Slurm configuration file for the topology plugins
+
+.SH "DESCRIPTION"
+
+.LP
+\fBtopology.yaml\fR is a YAML-formatted configuration file that defines multiple
+network topologies for optimizing job resource allocation in Slurm.
+Each topology must have a unique \fBname\fR,
+which can be associated with a partition via the \fBTopology=<name>\fR
+parameter in the partition’s configuration.
+
+Slurm supports three topology types: \fBblock\fR, \fBflat\fR, and \fBtree\fR.
+The first topology defined in the file with the \fBcluster_default: true\fR
+parameter will be used for partitions without an explicitly specified topology
+and cluster-wide operations not tied to a partition
+(e.g., slurmctld-to-slurmd communication).
+
+The file must be located in the same directory as \fBslurm.conf\fR.
+
+\fBNOTE\fR: Slurm will first check for topology.yaml.
+If this file exists, topology.conf file will be ignored.
+.LP
+
+.SH "EXAMPLE"
+.nf
+- topology: topo1
+  cluster_default: True
+  tree:
+    switches:
+    - switch: sw_root
+      nodes: node[01-04]
+- topology: topo2
+  cluster_default: False
+  block:
+    block_sizes:
+      - 4
+      - 16
+    blocks:
+    - block: b1
+      nodes: node[01-04]
+    - block: b2
+      nodes: node[05-08]
+    - block: b3
+      nodes: node[09-12]
+    - block: b4
+      nodes: node[13-16]
+- topology: topo3
+  cluster_default: False
+  flat: True
+
+.fi
+
+.SH "COPYING"
+Copyright (C) 2025 SchedMD LLC.
+
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5), \fBtopology.conf\fR(5)

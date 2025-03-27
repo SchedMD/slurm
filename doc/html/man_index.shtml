@@ -86,6 +86,8 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 	<td>Slurm Database Daemon (SlurmDBD) configuration file.</td></tr>
 <tr><td><a href="topology.conf.html">topology.conf</a></td>
 	<td>Slurm configuration file for defining the network topology.</td></tr>
+<tr><td><a href="topology.yaml.html">topology.yaml</a></td>
+	<td>Slurm configuration file for defining multiple network topologies.</td></tr>
 </table>
 
 <h2 id="daemons">Daemons and Other

@@ -233,6 +233,22 @@ The value will be set component types listed in SLURM_TOPOLOGY_ADDR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.</p>
 
-<p style="text-align:center;">Last modified 13 November 2024</p>
+
+<h2 id="multi_topo">Multiple Topologies
+<a class="slurm_link" href="#multi_topo"></a>
+</h2>
+
+<p>Slurm 25.05 introduced the ability to define multiple network topologies using the
+<a href="topology.yaml.html">topology.yaml</a> configuration file.
+
+Each partition can be configured to use a specific topology by specifying the
+<a href="slurm.conf.html#OPT_Topology">Topology</a>
+in its partition configuration line.
+The Slurm controller will use the selected topology to optimize resource
+allocation for jobs submitted to that partition.
+If no topology is explicitly specified for a partition,
+Slurm will default to the cluster_default topology.</p>
+
+<p style="text-align:center;">Last modified 22 April 2025</p>
 
 <!--#include virtual="footer.txt"-->
