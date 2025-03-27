@@ -127,7 +127,7 @@ struct xlist {
 	pthread_rwlock_t mutex;		/* mutex to protect access to list */
 	list_node_t *free_nodes;	/* head of unused nodes */
 	list_node_t *node_allocations;	/* memory for additional nodes */
-	list_node_t nodes[];
+	list_node_t nodes[]; /* THIS MUST BE THE LAST PART OF THE STRUCT */
 };
 
 /*
