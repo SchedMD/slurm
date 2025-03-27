@@ -40,12 +40,7 @@
 #ifndef _INTERFACES_TASK_H
 #define _INTERFACES_TASK_H
 
-#ifdef __FreeBSD__
-#include <sys/param.h>
-#include <sys/cpuset.h>
-typedef cpuset_t cpu_set_t;
-#endif
-
+#include "src/common/xsched.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /* The size to represent a cpu_set_t as a hex string (including null) */
