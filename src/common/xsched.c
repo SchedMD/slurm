@@ -119,3 +119,52 @@ extern int task_str_to_cpuset(cpu_set_t *mask, const char *str)
 	return 0;
 #endif
 }
+
+extern int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
+{
+	int rval;
+	char mstr[CPU_SET_HEX_STR_SIZE];
+
+#ifdef __FreeBSD__
+	rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid, size,
+				  mask);
+#else
+	rval = sched_setaffinity(pid, size, mask);
+#endif
+	if (rval) {
+		verbose("sched_setaffinity(%d,%zu,0x%s) failed: %m",
+			pid, size, task_cpuset_to_str(mask, mstr));
+	}
+	return rval;
+}
+
+extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
+{
+	int rval;
+	char mstr[CPU_SET_HEX_STR_SIZE];
+
+	CPU_ZERO(mask);
+
+	/*
+	 * The FreeBSD cpuset API is a superset of the Linux API.
+	 * In addition to PIDs, it supports threads, interrupts,
+	 * jails, and potentially other objects.  The first two arguments
+	 * to cpuset_*etaffinity() below indicate that the third argument
+	 * is a PID.  -1 indicates the PID of the calling process.
+	 * Linux sched_*etaffinity() uses 0 for this.
+	 */
+#ifdef __FreeBSD__
+	rval = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid, size,
+				  mask);
+#else
+	rval = sched_getaffinity(pid, size, mask);
+#endif
+	if (rval) {
+		verbose("sched_getaffinity(%d,%zu,0x%s) failed with status %d",
+			pid, size, task_cpuset_to_str(mask, mstr), rval);
+	} else {
+		debug3("sched_getaffinity(%d) = 0x%s",
+		       pid, task_cpuset_to_str(mask, mstr));
+	}
+	return rval;
+}

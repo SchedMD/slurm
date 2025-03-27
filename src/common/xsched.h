@@ -75,4 +75,10 @@ extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str);
  */
 extern int task_str_to_cpuset(cpu_set_t *mask, const char *str);
 
+/* Wrapper for sched_setaffinity() */
+extern int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
+
+/* Wrapper for sched_getaffinity() */
+extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
+
 #endif
