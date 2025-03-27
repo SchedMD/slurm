@@ -1020,8 +1020,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair(ret_list, "ResumeRate", "%u nodes/min",
 		     conf->resume_rate);
 
-	add_key_pair(ret_list, "ResumeTimeout", "%u sec",
-		     conf->resume_timeout);
+	if (conf->resume_timeout == INFINITE16)
+		add_key_pair(ret_list, "ResumeTimeout", "INFINITE");
+	else
+		add_key_pair(ret_list, "ResumeTimeout", "%u sec",
+		     	     conf->resume_timeout);
 
 	add_key_pair(ret_list, "ResvEpilog", "%s", conf->resv_epilog);
 
