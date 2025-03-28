@@ -462,12 +462,22 @@ int setup_env(env_t *env, bool preserve_env)
 		} else
 			str_bind_type = xstrdup("");
 
-		if (setenvf(&env->env, "SLURM_CPU_BIND", "%s", str_bind)) {
+		/*
+		 * Don't set SLURM_CPU_BIND or SLURM_CPU_BIND_LIST in the
+		 * environment if they are too long. These are informational
+		 * for the user and don't merit an error in the log if they
+		 * can't be set, so avoid calling setenvf().
+		 */
+		if (strlen(str_bind) >= MAX_ENV_STRLEN)
+			debug("Not setting SLURM_CPU_BIND: value too long");
+		else if (setenvf(&env->env, "SLURM_CPU_BIND", "%s", str_bind)) {
 			error("Unable to set SLURM_CPU_BIND");
 			rc = SLURM_ERROR;
 		}
-		if (setenvf(&env->env, "SLURM_CPU_BIND_LIST", "%s",
-			    str_bind_list)) {
+		if (strlen(str_bind_list) >= MAX_ENV_STRLEN)
+			debug("Not setting SLURM_CPU_BIND_LIST: value too long");
+		else if (setenvf(&env->env, "SLURM_CPU_BIND_LIST", "%s",
+				 str_bind_list)) {
 			error("Unable to set SLURM_CPU_BIND_LIST");
 			rc = SLURM_ERROR;
 		}
