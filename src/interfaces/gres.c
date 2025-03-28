@@ -861,8 +861,7 @@ extern int gres_init(void)
 	}
 
 fini:
-	if (have_shared && running_in_slurmctld() &&
-	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES)) {
+	if (have_shared && running_in_slurmctld() && !running_cons_tres()) {
 		fatal("Use of shared gres requires the use of select/cons_tres");
 	}
 
@@ -6700,8 +6699,7 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 	tres_per_socket = gres_js_val->tres_per_socket;
 	tres_per_task = gres_js_val->tres_per_task;
 
-	if (tres_per_task && running_in_slurmctld() &&
-	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES)) {
+	if (tres_per_task && running_in_slurmctld() && !running_cons_tres()) {
 		char *tmp = xstrdup(tres_per_task);
 		/*
 		 * Check if cpus_per_task is the only part of tres_per_task. If
@@ -6715,8 +6713,7 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 		}
 	}
 
-	if (running_in_slurmctld() &&
-	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES) &&
+	if (running_in_slurmctld() && !running_cons_tres() &&
 	    (cpus_per_tres || tres_per_job || tres_per_socket || mem_per_tres))
 		return ESLURM_UNSUPPORTED_GRES;
 
@@ -7013,7 +7010,7 @@ static int _find_gres_per_jst(void *x, void *arg)
  */
 extern int gres_job_revalidate(list_t *gres_list)
 {
-	if (!gres_list || (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES))
+	if (!gres_list || running_cons_tres())
 		return SLURM_SUCCESS;
 
 	if (list_find_first(gres_list, _find_gres_per_jst, NULL))

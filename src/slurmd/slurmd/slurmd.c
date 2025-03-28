@@ -1109,7 +1109,7 @@ _read_config(void)
 	}
 
 	/*
-	 * We can't call slurm_select_cr_type() because we don't load the select
+	 * We can't call running_cons_tres() because we don't load the select
 	 * plugin here.
 	 */
 	if (!xstrcmp(cf->select_type, "select/cons_tres"))

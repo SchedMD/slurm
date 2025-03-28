@@ -2799,7 +2799,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		resv_desc_ptr->flags |= RESERVE_FLAG_GRES_REQ;
 
 	/* Validate the request */
-	if ((resv_desc_ptr->core_cnt != NO_VAL) && !slurm_select_cr_type()) {
+	if ((resv_desc_ptr->core_cnt != NO_VAL) && !running_cons_tres()) {
 		char *err_str = "CoreCnt only supported with cons_tres.";
 		info("%s", err_str);
 		if (err_msg)
@@ -3321,7 +3321,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	if (!resv_ptr)
 		return ESLURM_RESERVATION_INVALID;
 
-	if ((resv_desc_ptr->core_cnt != NO_VAL) && !slurm_select_cr_type()) {
+	if ((resv_desc_ptr->core_cnt != NO_VAL) && !running_cons_tres()) {
 		char *err_str = "CoreCnt only supported with cons_tres.";
 		info("%s", err_str);
 		if (err_msg)

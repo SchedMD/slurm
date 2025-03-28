@@ -16083,8 +16083,7 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 	if (pn_min_memory == NO_VAL64)
 		return mem_total;
 
-	if (!user_set_mem && gres_list &&
-	    (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES)) {
+	if (!user_set_mem && gres_list && running_cons_tres()) {
 		/* mem_per_[cpu|node] not set, check if mem_per_gres was set */
 		gres_job_state_t gres_js;
 		memset(&gres_js, 0, sizeof(gres_js));

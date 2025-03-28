@@ -819,7 +819,7 @@ static int _resolve_shared_status(job_record_t *job_ptr,
 		return 1;
 	}
 
-	if (slurm_select_cr_type()) {
+	if (running_cons_tres()) {
 		if ((job_ptr->details->share_res  == 0) ||
 		    (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)) {
 			job_ptr->details->share_res = 0;
@@ -1732,7 +1732,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	       __func__, job_ptr, bit_set_count(idle_node_bitmap),
 		bit_set_count(share_node_bitmap));
 
-	if (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES)
+	if (running_cons_tres())
 		_sync_node_weight(node_set_ptr, node_set_size);
 	/*
 	 * Accumulate resources for this job based upon its required
@@ -1863,8 +1863,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 			tried_sched = false;	/* need to test these nodes */
 
-			if ((slurm_select_cr_type() == SELECT_TYPE_CONS_TRES) &&
-			    ((i+1) < node_set_size)) {
+			if (running_cons_tres() && ((i + 1) < node_set_size)) {
 				/*
 				 * Execute select_g_job_test() _once_ using
 				 * sched_weight in node_record_t as set

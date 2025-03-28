@@ -3229,8 +3229,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			xstrcat(reason_down, "Low CPUs");
 		}
 
-		if ((error_code == SLURM_SUCCESS) &&
-		    slurm_select_cr_type() &&
+		if ((error_code == SLURM_SUCCESS) && running_cons_tres() &&
 		    (node_features_cnt > 0) &&
 		    (reg_msg->sockets != config_ptr->tot_sockets) &&
 		    (reg_msg->cores   != config_ptr->cores) &&
