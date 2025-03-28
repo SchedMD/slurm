@@ -90,10 +90,6 @@ typedef struct {
 						 select_nodedata_type dinfo,
 						 enum node_states state,
 						 void *data);
-	int		(*get_info_from_plugin)	(enum
-						 select_plugindata_info dinfo,
-						 job_record_t *job_ptr,
-						 void *data);
 	int		(*reconfigure)		(void);
 } slurm_select_ops_t;
 
@@ -118,7 +114,6 @@ static const char *node_select_syms[] = {
 	"select_p_select_nodeinfo_set_all",
 	"select_p_select_nodeinfo_set",
 	"select_p_select_nodeinfo_get",
-	"select_p_get_info_from_plugin",
 	"select_p_reconfigure",
 };
 
@@ -766,21 +761,6 @@ extern int select_g_select_jobinfo_pack(buf_t *buffer,
 	}
 
 	return SLURM_SUCCESS;
-}
-
-/*
- * Get select data from a plugin
- * IN dinfo     - type of data to get from the node record
- *                (see enum select_plugindata_info)
- * IN/OUT data  - the data to get from node record
- */
-extern int select_g_get_info_from_plugin(enum select_plugindata_info dinfo,
-					 job_record_t *job_ptr, void *data)
-{
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].
-		  get_info_from_plugin))(dinfo, job_ptr, data);
 }
 
 /*

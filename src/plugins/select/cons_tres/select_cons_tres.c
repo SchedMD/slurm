@@ -1119,25 +1119,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	return rc;
 }
 
-extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
-					 job_record_t *job_ptr,
-					 void *data)
-{
-	int rc = SLURM_SUCCESS;
-	uint32_t *tmp_32 = (uint32_t *) data;
-
-	switch (info) {
-	case SELECT_CR_PLUGIN:
-		*tmp_32 = SELECT_TYPE_CONS_TRES;
-		break;
-	default:
-		error("info type %d invalid", info);
-		rc = SLURM_ERROR;
-		break;
-	}
-	return rc;
-}
-
 extern int select_p_reconfigure(void)
 {
 	list_itr_t *job_iterator;

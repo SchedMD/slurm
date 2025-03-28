@@ -2687,12 +2687,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	return rc;
 }
 
-extern int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
-					 job_record_t *job_ptr, void *data)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_reconfigure(void)
 {
 	slurm_mutex_lock(&cr_mutex);

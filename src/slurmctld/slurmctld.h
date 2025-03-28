@@ -425,23 +425,6 @@ extern list_t *job_list;		/* list of job_record entries */
 extern list_t *purge_jobs_list;		/* list of job_record_t to free */
 
 /*****************************************************************************\
- *  Consumable Resources parameters and data structures
-\*****************************************************************************/
-
-/*
- * Define the type of update and of data retrieval that can happen
- * from the "select/cons_res" plugin. This information needed to
- * support processors as consumable resources.  This structure will be
- * useful when updating other types of consumable resources as well
-*/
-enum select_plugindata_info {
-	SELECT_CR_PLUGIN = 0,    /* data-> uint32 See SELECT_TYPE_* below */
-};
-#define SELECT_TYPE_CONS_RES	1
-#define SELECT_TYPE_CONS_TRES	2
-
-
-/*****************************************************************************\
  *  Global assoc_cache variables
 \*****************************************************************************/
 

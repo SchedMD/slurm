@@ -342,19 +342,4 @@ extern int select_g_job_expand(job_record_t *from_job_ptr,
  */
 extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr);
 
-/*****************************\
- * GET INFORMATION FUNCTIONS *
-\*****************************/
-
-/*
- * Get select data from a plugin
- * IN node_pts  - current node record
- * IN dinfo     - type of data to get from the node record
- *                (see enum select_plugindata_info)
- * IN job_ptr   - pointer to the job that's related to this query (may be NULL)
- * IN/OUT data  - the data to get from node record
- */
-extern int select_g_get_info_from_plugin(enum select_plugindata_info dinfo,
-					 job_record_t *job_ptr, void *data);
-
 #endif
