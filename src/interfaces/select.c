@@ -738,8 +738,8 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 }
 
 /*
- * This stub remains for backwards compatibility, and should be removed.
- * Packs the plugin_id of the active select plugin.
+ * packs the select plugin_id for backwards compatibility
+ * Remove when 24.11 is no longer supported.
  */
 extern int select_g_select_jobinfo_pack(buf_t *buffer,
 					uint16_t protocol_version)
