@@ -883,45 +883,12 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 					  buf_t *buffer,
 					  uint16_t protocol_version)
 {
-	dynamic_plugin_data_t *jobinfo_ptr = NULL;
-
-	xassert(select_context_cnt >= 0);
-
-	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	*jobinfo = jobinfo_ptr;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		int i;
-		uint32_t plugin_id;
-		safe_unpack32(&plugin_id, buffer);
-		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
-			error("%s: select plugin %s not found", __func__,
-			      select_plugin_id_to_string(plugin_id));
-			goto unpack_error;
-		} else
-			jobinfo_ptr->plugin_id = i;
-	} else {
-		jobinfo_ptr->plugin_id = select_context_default;
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
-		goto unpack_error;
-	}
-
-	/*
-	 * Free jobinfo_ptr if it is different from local cluster as it is not
-	 * relevant to this cluster.
-	 */
-	if ((jobinfo_ptr->plugin_id != select_context_default) &&
-	    running_in_slurmctld()) {
-		select_g_select_jobinfo_free(jobinfo_ptr);
-		*jobinfo = select_g_select_jobinfo_alloc();
-	}
+	uint32_t plugin_id;
+	safe_unpack32(&plugin_id, buffer);
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	select_g_select_jobinfo_free(jobinfo_ptr);
-	*jobinfo = NULL;
 	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
 }
