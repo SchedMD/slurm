@@ -759,23 +759,6 @@ extern int select_g_select_jobinfo_pack(buf_t *buffer,
 }
 
 /*
- * This stub remains for backwards compatibility, and should be removed.
- * Ignore the uint32_t which has the plugin_id of the active select plugin.
- */
-extern int select_g_select_jobinfo_unpack(buf_t *buffer,
-					  uint16_t protocol_version)
-{
-	uint32_t plugin_id;
-	safe_unpack32(&plugin_id, buffer);
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	error("%s: unpack error", __func__);
-	return SLURM_ERROR;
-}
-
-/*
  * Get select data from a plugin
  * IN dinfo     - type of data to get from the node record
  *                (see enum select_plugindata_info)
