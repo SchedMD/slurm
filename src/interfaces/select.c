@@ -99,7 +99,6 @@ typedef struct {
 						 void *data);
 	select_jobinfo_t *(*jobinfo_alloc)	(void);
 	int		(*jobinfo_free)		(select_jobinfo_t *jobinfo);
-	select_jobinfo_t *(*jobinfo_copy)	(select_jobinfo_t *jobinfo);
 	int		(*jobinfo_pack)		(select_jobinfo_t *jobinfo,
 						 buf_t *buffer,
 						 uint16_t protocol_version);
@@ -139,7 +138,6 @@ static const char *node_select_syms[] = {
 	"select_p_select_nodeinfo_get",
 	"select_p_select_jobinfo_alloc",
 	"select_p_select_jobinfo_free",
-	"select_p_select_jobinfo_copy",
 	"select_p_select_jobinfo_pack",
 	"select_p_select_jobinfo_unpack",
 	"select_p_get_info_from_plugin",
@@ -859,8 +857,6 @@ extern dynamic_plugin_data_t *select_g_select_jobinfo_copy(
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	if (jobinfo) {
 		jobinfo_ptr->plugin_id = jobinfo->plugin_id;
-		jobinfo_ptr->data = (*(ops[jobinfo->plugin_id].
-				       jobinfo_copy))(jobinfo->data);
 	} else
 		jobinfo_ptr->plugin_id = select_context_default;
 

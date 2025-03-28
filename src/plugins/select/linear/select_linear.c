@@ -2716,18 +2716,6 @@ extern select_jobinfo_t *select_p_select_jobinfo_alloc(void)
 }
 
 /*
- * copy a select job credential
- * IN jobinfo - the select job credential to be copied
- * RET        - the copy or NULL on failure
- * NOTE: returned value must be freed using select_p_select_jobinfo_free
- */
-extern select_jobinfo_t *select_p_select_jobinfo_copy(
-	select_jobinfo_t *jobinfo)
-{
-	return NULL;
-}
-
-/*
  * free storage previously allocated for a select job credential
  * IN jobinfo  - the select job credential to be freed
  * RET         - slurm error code
