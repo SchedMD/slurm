@@ -110,9 +110,7 @@ static int  _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
 static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				  job_step_create_request_msg_t *step_spec,
 				  list_t *step_gres_list, int cpus_per_task,
-				  uint32_t node_count,
-				  dynamic_plugin_data_t *select_jobinfo,
-				  int *return_code);
+				  uint32_t node_count, int *return_code);
 static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt);
@@ -1072,9 +1070,7 @@ static void _set_max_num_tasks(job_step_create_request_msg_t *step_spec,
 static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				  job_step_create_request_msg_t *step_spec,
 				  list_t *step_gres_list, int cpus_per_task,
-				  uint32_t node_count,
-				  dynamic_plugin_data_t *select_jobinfo,
-				  int *return_code)
+				  uint32_t node_count, int *return_code)
 {
 	node_record_t *node_ptr;
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
@@ -3454,8 +3450,7 @@ extern int step_create(job_record_t *job_ptr,
 	/* make sure select_jobinfo exists to avoid xassert */
 	select_jobinfo = select_g_select_jobinfo_alloc();
 	nodeset = _pick_step_nodes(job_ptr, step_specs, step_gres_list,
-				   cpus_per_task, node_count, select_jobinfo,
-				   &ret_code);
+				   cpus_per_task, node_count, &ret_code);
 	if (nodeset == NULL) {
 		FREE_NULL_LIST(step_gres_list);
 		select_g_select_jobinfo_free(select_jobinfo);
@@ -4860,8 +4855,7 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 
 	/* Select the nodes for this job */
 	select_jobinfo = select_g_select_jobinfo_alloc();
-	nodeset = _pick_step_nodes(job_ptr, step_specs, NULL, 0, 0,
-				   select_jobinfo, &rc);
+	nodeset = _pick_step_nodes(job_ptr, step_specs, NULL, 0, 0, &rc);
 	if (nodeset == NULL) {
 		select_g_select_jobinfo_free(select_jobinfo);
 		return rc;
