@@ -97,7 +97,6 @@ typedef struct {
 						 select_nodedata_type dinfo,
 						 enum node_states state,
 						 void *data);
-	select_jobinfo_t *(*jobinfo_alloc)	(void);
 	int		(*jobinfo_free)		(select_jobinfo_t *jobinfo);
 	int		(*jobinfo_pack)		(select_jobinfo_t *jobinfo,
 						 buf_t *buffer,
@@ -136,7 +135,6 @@ static const char *node_select_syms[] = {
 	"select_p_select_nodeinfo_set_all",
 	"select_p_select_nodeinfo_set",
 	"select_p_select_nodeinfo_get",
-	"select_p_select_jobinfo_alloc",
 	"select_p_select_jobinfo_free",
 	"select_p_select_jobinfo_pack",
 	"select_p_select_jobinfo_unpack",
@@ -821,7 +819,6 @@ extern dynamic_plugin_data_t *select_g_select_jobinfo_alloc(void)
 
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	jobinfo_ptr->plugin_id = select_context_default;
-	jobinfo_ptr->data = (*(ops[select_context_default].jobinfo_alloc))();
 	return jobinfo_ptr;
 }
 
