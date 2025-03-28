@@ -377,11 +377,6 @@ extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr);
 /*******************************************************\
  * STEP SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCTIONS *
 \*******************************************************/
-/*
- * Post pick_nodes operations for the step.
- * IN/OUT step_ptr - step pointer to operate on.
- */
-extern int select_g_step_start(step_record_t *step_ptr);
 
 /*
  * clear what happened in select_g_step_pick_nodes and/or select_g_step_start

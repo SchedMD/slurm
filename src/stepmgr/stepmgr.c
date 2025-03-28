@@ -3677,9 +3677,6 @@ extern int step_create(job_record_t *job_ptr,
 
 	*new_step_record = step_ptr;
 
-	select_g_step_start(step_ptr);
-
-
 	step_set_alloc_tres(step_ptr, node_count, false, true);
 	jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn, step_ptr);
 	return SLURM_SUCCESS;

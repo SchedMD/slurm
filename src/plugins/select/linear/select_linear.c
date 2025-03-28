@@ -2492,11 +2492,6 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	return rc;
 }
 
-extern int select_p_step_start(step_record_t *step_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_step_finish(step_record_t *step_ptr, bool killing_step)
 {
 	return SLURM_SUCCESS;

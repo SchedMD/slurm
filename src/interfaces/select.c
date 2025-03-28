@@ -75,7 +75,6 @@ typedef struct {
 						 bool indf_susp);
 	int		(*job_resume)		(job_record_t *job_ptr,
 						 bool indf_susp);
-	int             (*step_start)           (step_record_t *step_ptr);
 	int             (*step_finish)          (step_record_t *step_ptr,
 						 bool killing_step);
 	int		(*nodeinfo_pack)	(select_nodeinfo_t *nodeinfo,
@@ -114,7 +113,6 @@ static const char *node_select_syms[] = {
 	"select_p_job_fini",
 	"select_p_job_suspend",
 	"select_p_job_resume",
-	"select_p_step_start",
 	"select_p_step_finish",
 	"select_p_select_nodeinfo_pack",
 	"select_p_select_nodeinfo_unpack",
@@ -596,18 +594,6 @@ extern int select_g_job_resume(job_record_t *job_ptr, bool indf_susp)
 
 	return (*(ops[select_context_default].job_resume))
 		(job_ptr, indf_susp);
-}
-
-/*
- * Post pick_nodes operations for the step.
- * IN/OUT step_ptr - step pointer to operate on.
- */
-extern int select_g_step_start(step_record_t *step_ptr)
-{
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].step_start))
-		(step_ptr);
 }
 
 /*
