@@ -893,8 +893,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 					      protocol_version)))
 			goto unpack_error;
 
-		if (select_g_select_jobinfo_unpack(buffer, protocol_version))
-			goto unpack_error;
+		safe_unpack32(&tmp32, buffer); /* was select_jobinfo */
 		safe_unpackstr(&tres_alloc_str, buffer);
 		safe_unpackstr(&tres_fmt_alloc_str, buffer);
 
@@ -2467,7 +2466,7 @@ extern int job_record_unpack(job_record_t **out,
 			     buf_t *buffer,
 			     uint16_t protocol_version)
 {
-	uint32_t count;
+	uint32_t count, uint32_tmp;
 	uint8_t uint8_tmp, identity_flag;
 	uint16_t details, step_flag;
 	int error_code;
@@ -2730,8 +2729,7 @@ extern int job_record_unpack(job_record_t **out,
 		}
 		safe_unpackstr(&job_ptr->lic_req, buffer);
 
-		if (select_g_select_jobinfo_unpack(buffer, protocol_version))
-			goto unpack_error;
+		safe_unpack32(&uint32_tmp, buffer); /* was select_jobinfo */
 		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
 			goto unpack_error;
@@ -2948,8 +2946,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpackstr(&job_ptr->burst_buffer_state, buffer);
 		safe_unpackstr(&job_ptr->system_comment, buffer);
 
-		if (select_g_select_jobinfo_unpack(buffer, protocol_version))
-			goto unpack_error;
+		safe_unpack32(&uint32_tmp, buffer); /* was select_jobinfo */
 		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
 			goto unpack_error;
@@ -3174,8 +3171,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpackstr(&job_ptr->burst_buffer_state, buffer);
 		safe_unpackstr(&job_ptr->system_comment, buffer);
 
-		if (select_g_select_jobinfo_unpack(buffer, protocol_version))
-			goto unpack_error;
+		safe_unpack32(&uint32_tmp, buffer); /* was select_jobinfo */
 		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
 					 protocol_version))
 			goto unpack_error;
