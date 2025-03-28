@@ -97,7 +97,6 @@ typedef struct {
 						 select_nodedata_type dinfo,
 						 enum node_states state,
 						 void *data);
-	int		(*jobinfo_free)		(select_jobinfo_t *jobinfo);
 	int		(*jobinfo_pack)		(select_jobinfo_t *jobinfo,
 						 buf_t *buffer,
 						 uint16_t protocol_version);
@@ -135,7 +134,6 @@ static const char *node_select_syms[] = {
 	"select_p_select_nodeinfo_set_all",
 	"select_p_select_nodeinfo_set",
 	"select_p_select_nodeinfo_get",
-	"select_p_select_jobinfo_free",
 	"select_p_select_jobinfo_pack",
 	"select_p_select_jobinfo_unpack",
 	"select_p_get_info_from_plugin",
@@ -830,11 +828,6 @@ extern int select_g_select_jobinfo_free(dynamic_plugin_data_t *jobinfo)
 	int rc = SLURM_SUCCESS;
 
 	if (jobinfo) {
-		if (jobinfo->data) {
-			xassert(select_context_cnt >= 0);
-			rc = (*(ops[jobinfo->plugin_id].
-				jobinfo_free))(jobinfo->data);
-		}
 		xfree(jobinfo);
 	}
 	return rc;

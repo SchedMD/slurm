@@ -2706,16 +2706,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 }
 
 /*
- * free storage previously allocated for a select job credential
- * IN jobinfo  - the select job credential to be freed
- * RET         - slurm error code
- */
-extern int select_p_select_jobinfo_free  (select_jobinfo_t *jobinfo)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
  * pack a select job credential into a buffer in machine independent form
  * IN jobinfo  - the select job credential to be saved
  * OUT buffer  - buffer with select credential appended
