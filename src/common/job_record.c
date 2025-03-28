@@ -111,7 +111,6 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->network);
 	FREE_NULL_LIST(step_ptr->gres_list_alloc);
 	FREE_NULL_LIST(step_ptr->gres_list_req);
-	select_g_select_jobinfo_free(step_ptr->select_jobinfo);
 	xfree(step_ptr->tres_alloc_str);
 	xfree(step_ptr->tres_fmt_alloc_str);
 	xfree(step_ptr->cpus_per_tres);
@@ -308,7 +307,6 @@ extern void job_record_delete(void *job_entry)
 	xfree(job_ptr->tres_req_cnt);
 	xfree(job_ptr->tres_req_str);
 	xfree(job_ptr->tres_fmt_req_str);
-	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	xfree(job_ptr->user_name);
 	xfree(job_ptr->wckey);
 
@@ -1060,7 +1058,6 @@ unpack_error:
 	if (switch_tmp)
 		switch_g_free_stepinfo(switch_tmp);
 	slurm_step_layout_destroy(step_layout);
-	select_g_select_jobinfo_free(select_jobinfo);
 	xfree(tres_alloc_str);
 	xfree(tres_fmt_alloc_str);
 	xfree(cpus_per_tres);

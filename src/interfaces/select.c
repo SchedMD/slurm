@@ -737,19 +737,6 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 		(nodedata, dinfo, state, data);
 }
 
-/* free storage previously allocated for a select job credential
- * IN jobinfo  - the select job credential to be freed
- */
-extern int select_g_select_jobinfo_free(dynamic_plugin_data_t *jobinfo)
-{
-	int rc = SLURM_SUCCESS;
-
-	if (jobinfo) {
-		xfree(jobinfo);
-	}
-	return rc;
-}
-
 /* pack a select job credential into a buffer in machine independent form
  * IN jobinfo  - the select job credential to be saved
  * OUT buffer  - buffer with select credential appended
