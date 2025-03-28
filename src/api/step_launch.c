@@ -343,8 +343,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 
-	launch.select_jobinfo  = ctx->step_resp->select_jobinfo;
-
 	launch.ofname = params->remote_output_filename;
 	launch.efname = params->remote_error_filename;
 	launch.ifname = params->remote_input_filename;
@@ -534,8 +532,6 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
-
-	launch.select_jobinfo  = ctx->step_resp->select_jobinfo;
 
 	launch.ofname = params->remote_output_filename;
 	launch.efname = params->remote_error_filename;
