@@ -82,6 +82,8 @@ extern char *select_plugin_id_to_string(int plugin_id);
  */
 extern int select_string_to_plugin_id(const char *plugin);
 
+extern bool running_cons_tres(void);
+
 /*******************************************\
  * GLOBAL SELECT STATE MANAGEMENT FUNCTIONS *
 \*******************************************/

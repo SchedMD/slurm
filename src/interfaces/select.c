@@ -166,6 +166,16 @@ extern int select_string_to_plugin_id(const char *plugin)
 	return 0;
 }
 
+extern bool running_cons_tres(void)
+{
+	xassert(running_in_slurmctld());
+	xassert(select_context_cnt >= 0);
+
+	if (*ops[select_context_default].plugin_id == SELECT_PLUGIN_CONS_TRES)
+		return true;
+	return false;
+}
+
 static int _load_plugins(void *x, void *arg)
 {
 	char *plugin_name     = (char *)x;
