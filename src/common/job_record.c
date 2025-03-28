@@ -2105,7 +2105,6 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->partition, buffer);
 		packstr(dump_job_ptr->lic_req, buffer);
 
-		select_g_select_jobinfo_pack(buffer, protocol_version);
 		switch_g_pack_jobinfo(dump_job_ptr->switch_jobinfo, buffer,
 				      protocol_version);
 		pack_job_resources(dump_job_ptr->job_resrcs, buffer,
@@ -2573,8 +2572,6 @@ extern int job_record_unpack(job_record_t **out,
 		}
 		safe_unpackstr(&job_ptr->lic_req, buffer);
 
-		if (select_g_select_jobinfo_unpack(buffer, protocol_version))
-			goto unpack_error;
 		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
 			goto unpack_error;
