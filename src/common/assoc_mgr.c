@@ -6974,6 +6974,7 @@ extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
 	double to_bill_node   = 0.0;
 	double to_bill_global = 0.0;
 	double billable_tres  = 0.0;
+	double billable_gres = 0.0;
 	assoc_mgr_lock_t tres_read_lock = { .tres = READ_LOCK };
 
 	/* We don't have any resources allocated, just return 0. */
@@ -7004,21 +7005,33 @@ extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
 
 		tres_value *= tres_weight;
 
-		if ((flags & PRIORITY_FLAGS_MAX_TRES) &&
+		if (((flags & PRIORITY_FLAGS_MAX_TRES) ||
+		     (flags & PRIORITY_FLAGS_MAX_TRES_GRES)) &&
 		    ((i == TRES_ARRAY_CPU) ||
 		     (i == TRES_ARRAY_MEM) ||
 		     (i == TRES_ARRAY_NODE) ||
-		     (!xstrcasecmp(tres_type, "gres"))))
-			to_bill_node = MAX(to_bill_node, tres_value);
-		else
+		     (!xstrcasecmp(tres_type, "gres")))) {
+			if ((flags & PRIORITY_FLAGS_MAX_TRES_GRES) &&
+			    (!xstrcasecmp(tres_type, "gres"))) {
+				billable_gres += tres_value;
+			} else {
+				to_bill_node = MAX(to_bill_node, tres_value);
+			}
+		} else {
 			to_bill_global += tres_value;
+		}
 	}
+
+	if (flags & PRIORITY_FLAGS_MAX_TRES_GRES)
+		to_bill_node += billable_gres;
 
 	billable_tres = to_bill_node + to_bill_global;
 
 	debug3("TRES Weighted: %s = %f",
 	       (flags & PRIORITY_FLAGS_MAX_TRES) ?
-	       "MAX(node TRES) + SUM(Global TRES)" : "SUM(TRES)",
+	       "MAX(node TRES) + SUM(Global TRES)" :
+	       (flags & PRIORITY_FLAGS_MAX_TRES_GRES) ?
+	       "MAX(node TRES) + node GRES + SUM(Global TRES)" : "SUM(TRES)",
 	       billable_tres);
 
 	if (!locked)

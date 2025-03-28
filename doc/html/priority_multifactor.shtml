@@ -288,6 +288,14 @@ This method is turned on by defining the MAX_TRES priority flags in the
 slurm.conf.
 </P>
 
+<P>
+You can also calculate the billable TRES by taking the MAX of the
+individual TRESs on a node (e.g. cpus, mem) plus the billable gres (GPU),
+plus the SUM of the global TRESs (e.g. licenses).
+This method is turned on by defining the MAX_TRES_GRES priority flags in the
+slurm.conf.
+</P>
+
 <h3 id="tree">"Fair Tree" Fairshare<a class="slurm_link" href="#tree"></a></h3>
 
 <p>

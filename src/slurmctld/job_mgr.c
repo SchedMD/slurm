@@ -18908,7 +18908,9 @@ extern double calc_job_billable_tres(job_record_t *job_ptr, time_t start_time,
 	log_flag(PRIO, "BillingWeight: %pJ %s = %f",
 	         job_ptr,
 	         (slurm_conf.priority_flags & PRIORITY_FLAGS_MAX_TRES) ?
-	         "MAX(node TRES) + SUM(Global TRES)" : "SUM(TRES)",
+	         "MAX(node TRES) + SUM(Global TRES)" :
+		 (slurm_conf.priority_flags & PRIORITY_FLAGS_MAX_TRES_GRES) ?
+		 "MAX(node TRES) + node GRES + SUM(Global TRES)" : "SUM(TRES)",
 	         job_ptr->billable_tres);
 
 	return job_ptr->billable_tres;

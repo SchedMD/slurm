@@ -4529,7 +4529,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		if (xstrcasestr(temp_str, "INCR_ONLY"))
 			conf->priority_flags |= PRIORITY_FLAGS_INCR_ONLY;
 
-		if (xstrcasestr(temp_str, "MAX_TRES"))
+		if (xstrcasestr(temp_str, "MAX_TRES_GRES"))
+			conf->priority_flags |= PRIORITY_FLAGS_MAX_TRES_GRES;
+		else if (xstrcasestr(temp_str, "MAX_TRES"))
 			conf->priority_flags |= PRIORITY_FLAGS_MAX_TRES;
 
 		if (xstrcasestr(temp_str, "NO_NORMAL_ALL"))

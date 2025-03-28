@@ -131,6 +131,13 @@ with:
 </p>
 <pre>MAX(1*1.0, 8*0.25, 0*2.0) + (0*1.5) = 2.0</pre>
 
+<p>If <i>PriorityFlags=MAX_TRES_GRES</i> is configured, the billable TRES is
+calculated as the MAX of most individual TRESs on a node (e.g. cpus, mem), plus
+the node GRES, plus the sum of all global TRESs (e.g. licenses). Using the
+same example above, the billable TRES will be:
+</p>
+<pre>MAX(1*1.0, 8*0.25) + (0*2.0) + (0*1.5) = 2.0</pre>
+
 <p>If TRESBillingWeights is not defined then the job is billed against the total
 number of allocated CPUs.
 </p>
