@@ -598,7 +598,6 @@ typedef struct {
 	uint32_t requid;	    	/* requester user ID */
 	time_t start_time;		/* step allocation start time */
 	uint32_t time_limit;	  	/* step allocation time limit */
-	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */
 	uint32_t srun_pid;		/* PID of srun (also see host/port) */
 	uint32_t state;			/* state of the step. See job_states */
 	slurm_step_id_t step_id;	/* step number */
