@@ -737,13 +737,11 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 		(nodedata, dinfo, state, data);
 }
 
-/* pack a select job credential into a buffer in machine independent form
- * IN jobinfo  - the select job credential to be saved
- * OUT buffer  - buffer with select credential appended
- * RET         - slurm error code
+/*
+ * This stub remains for backwards compatibility, and should be removed.
+ * Packs the plugin_id of the active select plugin.
  */
-extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
-					buf_t *buffer,
+extern int select_g_select_jobinfo_pack(buf_t *buffer,
 					uint16_t protocol_version)
 {
 	uint32_t plugin_id = select_context_default;
