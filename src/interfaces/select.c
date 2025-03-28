@@ -97,12 +97,6 @@ typedef struct {
 						 select_nodedata_type dinfo,
 						 enum node_states state,
 						 void *data);
-	int		(*jobinfo_pack)		(select_jobinfo_t *jobinfo,
-						 buf_t *buffer,
-						 uint16_t protocol_version);
-	int		(*jobinfo_unpack)	(select_jobinfo_t **jobinfo_pptr,
-						 buf_t *buffer,
-						 uint16_t protocol_version);
 	int		(*get_info_from_plugin)	(enum
 						 select_plugindata_info dinfo,
 						 job_record_t *job_ptr,
@@ -134,8 +128,6 @@ static const char *node_select_syms[] = {
 	"select_p_select_nodeinfo_set_all",
 	"select_p_select_nodeinfo_set",
 	"select_p_select_nodeinfo_get",
-	"select_p_select_jobinfo_pack",
-	"select_p_select_jobinfo_unpack",
 	"select_p_get_info_from_plugin",
 	"select_p_reconfigure",
 };
@@ -862,11 +854,9 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 					buf_t *buffer,
 					uint16_t protocol_version)
 {
-	void *data = NULL;
 	uint32_t plugin_id;
 
 	if (jobinfo) {
-		data = jobinfo->data;
 		plugin_id = jobinfo->plugin_id;
 	} else
 		plugin_id = select_context_default;
@@ -880,7 +870,7 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 		      protocol_version);
 	}
 
-	return (*(ops[plugin_id].jobinfo_pack))(data, buffer, protocol_version);
+	return SLURM_SUCCESS;
 }
 
 /* unpack a select job credential from a buffer
@@ -916,11 +906,6 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 		      protocol_version);
 		goto unpack_error;
 	}
-
-	if ((*(ops[jobinfo_ptr->plugin_id].jobinfo_unpack))
-		((select_jobinfo_t **)&jobinfo_ptr->data, buffer,
-		 protocol_version) != SLURM_SUCCESS)
-		goto unpack_error;
 
 	/*
 	 * Free jobinfo_ptr if it is different from local cluster as it is not

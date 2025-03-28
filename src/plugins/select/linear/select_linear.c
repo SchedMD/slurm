@@ -2705,35 +2705,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	return rc;
 }
 
-/*
- * pack a select job credential into a buffer in machine independent form
- * IN jobinfo  - the select job credential to be saved
- * OUT buffer  - buffer with select credential appended
- * IN protocol_version - slurm protocol version of client
- * RET         - slurm error code
- */
-extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo,
-					buf_t *buffer,
-					uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
- * unpack a select job credential from a buffer
- * OUT jobinfo - the select job credential read
- * IN  buffer  - buffer with select credential read from current pointer loc
- * IN protocol_version - slurm protocol version of client
- * RET         - slurm error code
- * NOTE: returned value must be freed using select_p_select_jobinfo_free
- */
-extern int select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
-					  buf_t *buffer,
-					  uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
 					 job_record_t *job_ptr, void *data)
 {

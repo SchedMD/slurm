@@ -1139,22 +1139,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	return rc;
 }
 
-/* Unused for this plugin */
-extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo,
-					buf_t *buffer,
-					uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
-
-/* Unused for this plugin */
-extern int select_p_select_jobinfo_unpack(select_jobinfo_t *jobinfo,
-					  buf_t *buffer,
-					  uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 					 job_record_t *job_ptr,
 					 void *data)
