@@ -10265,7 +10265,158 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 	xassert(!has_qos_lock || verify_assoc_lock(QOS_LOCK, READ_LOCK));
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	/*
+	 * NOTE: There are nested pack blocks in
+	 * job_record_pack_details_common() and
+	 * job_record_pack_details_common(). Bump this protocol block when
+	 * bumping the blocks in these functions to help keep symmetry between
+	 * pack and unpacks.
+	 */
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		job_record_pack_common(dump_job_ptr, false, buffer,
+				       protocol_version);
+
+		if (dump_job_ptr->array_recs) {
+			build_array_str(dump_job_ptr);
+			packstr(dump_job_ptr->array_recs->task_id_str, buffer);
+			pack32(dump_job_ptr->array_recs->max_run_tasks, buffer);
+		} else {
+			job_record_t *array_head = NULL;
+			packnull(buffer);
+			if (dump_job_ptr->array_job_id) {
+				array_head = find_job_record(
+					dump_job_ptr->array_job_id);
+			}
+			if (array_head && array_head->array_recs) {
+				pack32(array_head->array_recs->max_run_tasks,
+				       buffer);
+			} else {
+				pack32(0, buffer);
+			}
+		}
+		if ((dump_job_ptr->time_limit == NO_VAL) &&
+		    dump_job_ptr->part_ptr)
+			time_limit = dump_job_ptr->part_ptr->max_time;
+		else
+			time_limit = dump_job_ptr->time_limit;
+
+		pack32(time_limit, buffer);
+
+		if (IS_JOB_STARTED(dump_job_ptr)) {
+			/* Report actual start time, in past */
+			start_time = dump_job_ptr->start_time;
+			end_time = dump_job_ptr->end_time;
+		} else if (dump_job_ptr->start_time != 0) {
+			/*
+			 * Report expected start time,
+			 * making sure that time is not in the past
+			 */
+			start_time = MAX(dump_job_ptr->start_time, time(NULL));
+			if (time_limit != NO_VAL) {
+				end_time = MAX(dump_job_ptr->end_time,
+					       (start_time + time_limit * 60));
+			}
+		} else if (dump_job_ptr->details->begin_time > time(NULL)) {
+			/* earliest start time in the future */
+			start_time = dump_job_ptr->details->begin_time;
+			if (time_limit != NO_VAL) {
+				end_time = MAX(dump_job_ptr->end_time,
+					       (start_time + time_limit * 60));
+			}
+		}
+		pack_time(start_time, buffer);
+		pack_time(end_time, buffer);
+
+		if (dump_job_ptr->part_prio) {
+			pack32_array(dump_job_ptr->part_prio->priority_array,
+				     (dump_job_ptr->part_prio->priority_array) ?
+				     list_count(dump_job_ptr->part_ptr_list) :
+				     0, buffer);
+			packstr(dump_job_ptr->part_prio->priority_array_names,
+				buffer);
+		} else {
+			packnull(buffer);
+			packnull(buffer);
+		}
+
+		packstr(slurm_conf.cluster_name, buffer);
+
+		/*
+		 * Only send the allocated nodelist since we are only sending
+		 * the number of cpus and nodes that are currently allocated.
+		 */
+		if (!IS_JOB_COMPLETING(dump_job_ptr))
+			packstr(dump_job_ptr->nodes, buffer);
+		else {
+			nodelist = bitmap2node_name(
+				dump_job_ptr->node_bitmap_cg);
+			packstr(nodelist, buffer);
+			xfree(nodelist);
+		}
+		packstr(dump_job_ptr->sched_nodes, buffer);
+
+		if (!IS_JOB_PENDING(dump_job_ptr) && dump_job_ptr->part_ptr)
+			packstr(dump_job_ptr->part_ptr->name, buffer);
+		else
+			packstr(dump_job_ptr->partition, buffer);
+
+		if (IS_JOB_PENDING(dump_job_ptr) &&
+		    dump_job_ptr->details->qos_req)
+			packstr(dump_job_ptr->details->qos_req, buffer);
+		else {
+			if (!has_qos_lock)
+				assoc_mgr_lock(&locks);
+			if (dump_job_ptr->qos_ptr)
+				packstr(dump_job_ptr->qos_ptr->name, buffer);
+			else {
+				if (assoc_mgr_qos_list) {
+					packstr(slurmdb_qos_str(
+							assoc_mgr_qos_list,
+							dump_job_ptr->qos_id),
+						buffer);
+				} else
+					packnull(buffer);
+			}
+		}
+
+		if (IS_JOB_STARTED(dump_job_ptr) &&
+		    (slurm_conf.preempt_mode != PREEMPT_MODE_OFF) &&
+		    (slurm_job_preempt_mode(dump_job_ptr) !=
+		     PREEMPT_MODE_OFF)) {
+			time_t preemptable = acct_policy_get_preemptable_time(
+				dump_job_ptr);
+			pack_time(preemptable, buffer);
+		} else {
+			pack_time(0, buffer);
+		}
+		if (!has_qos_lock)
+			assoc_mgr_unlock(&locks);
+
+		if (show_flags & SHOW_DETAIL) {
+			pack_job_resources(dump_job_ptr->job_resrcs, buffer,
+					   protocol_version);
+			_pack_job_gres(dump_job_ptr, buffer, protocol_version);
+		} else {
+			pack32(NO_VAL, buffer);
+			pack32((uint32_t)0, buffer);
+		}
+
+		if (!IS_JOB_COMPLETING(dump_job_ptr))
+			pack_bit_str_hex(dump_job_ptr->node_bitmap, buffer);
+		else
+			pack_bit_str_hex(dump_job_ptr->node_bitmap_cg, buffer);
+
+		/* A few details are always dumped here */
+		_pack_default_job_details(dump_job_ptr, buffer,
+					  protocol_version);
+
+		/*
+		 * other job details are only dumped until the job starts
+		 * running (at which time they become meaningless)
+		 */
+		_pack_pending_job_details(dump_job_ptr->details,
+					  buffer, protocol_version);
+	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, false, buffer,
 				       protocol_version);
 
