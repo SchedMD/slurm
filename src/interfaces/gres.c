@@ -9925,7 +9925,6 @@ end:
 			_translate_step_to_global_device_index(
 				&usable_gres, gres_bit_alloc);
 		else{
-			bit_and(usable_gres, gres_bit_alloc);
 			bit_consolidate(usable_gres);
 		}
 	} else {
