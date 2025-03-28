@@ -854,12 +854,7 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 					buf_t *buffer,
 					uint16_t protocol_version)
 {
-	uint32_t plugin_id;
-
-	if (jobinfo) {
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = select_context_default;
+	uint32_t plugin_id = select_context_default;
 
 	xassert(select_context_cnt >= 0);
 
