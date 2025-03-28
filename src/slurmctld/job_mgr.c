@@ -3524,7 +3524,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->resv_ports = NULL;
 	job_ptr_pend->resv_port_array = NULL;
 	job_ptr_pend->resp_host = xstrdup(job_ptr->resp_host);
-	job_ptr_pend->select_jobinfo = NULL;
 	job_ptr_pend->selinux_context = xstrdup(job_ptr->selinux_context);
 	job_ptr_pend->sched_nodes = NULL;
 	if (job_ptr->spank_job_env_size) {
@@ -8675,7 +8674,6 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 	if (job_desc->begin_time > time(NULL))
 		detail_ptr->begin_time = job_desc->begin_time;
-	job_ptr->select_jobinfo = NULL;
 
 	job_ptr->clusters = xstrdup(job_desc->clusters);
 

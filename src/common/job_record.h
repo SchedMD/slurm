@@ -431,7 +431,6 @@ struct job_record {
 	uint32_t requid;	    	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	char *sched_nodes;		/* list of nodes scheduled for job */
-	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */
 	char *selinux_context;		/* SELinux context */
 	uint32_t site_factor;		/* factor to consider in priority */
 	char **spank_job_env;		/* environment variables for job prolog
