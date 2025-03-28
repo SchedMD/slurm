@@ -436,8 +436,6 @@ extern list_t *purge_jobs_list;		/* list of job_record_t to free */
 */
 enum select_plugindata_info {
 	SELECT_CR_PLUGIN = 0,    /* data-> uint32 See SELECT_TYPE_* below */
-	SELECT_CONFIG_INFO = 6,  /* data-> list_t * get .conf info from select
-				  * plugin */
 };
 #define SELECT_TYPE_CONS_RES	1
 #define SELECT_TYPE_CONS_TRES	2

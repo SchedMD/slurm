@@ -478,8 +478,6 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->schedtype           = xstrdup(conf->schedtype);
 	conf_ptr->scron_params = xstrdup(conf->scron_params);
 	conf_ptr->select_type         = xstrdup(conf->select_type);
-	select_g_get_info_from_plugin(SELECT_CONFIG_INFO, NULL,
-				      &conf_ptr->select_conf_key_pairs);
 	conf_ptr->select_type_param   = conf->select_type_param;
 	conf_ptr->site_factor_params  = xstrdup(conf->site_factor_params);
 	conf_ptr->site_factor_plugin  = xstrdup(conf->site_factor_plugin);

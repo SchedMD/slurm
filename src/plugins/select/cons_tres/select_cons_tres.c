@@ -1125,14 +1125,10 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t *tmp_32 = (uint32_t *) data;
-	list_t **tmp_list = data;
 
 	switch (info) {
 	case SELECT_CR_PLUGIN:
 		*tmp_32 = SELECT_TYPE_CONS_TRES;
-		break;
-	case SELECT_CONFIG_INFO:
-		*tmp_list = NULL;
 		break;
 	default:
 		error("info type %d invalid", info);
