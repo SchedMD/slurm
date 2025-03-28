@@ -1858,13 +1858,6 @@ extern char *slurm_get_tres_sub_string(
 	char *full_tres_str, char *tres_type, uint32_t num_tasks,
 	bool include_tres_type, bool include_type);
 
-/*
- * Return cached select cons res type.
- *
- * Returns SELECT_TYPE_CONS_TRES, SELECT_TYPE_CONS_RES or 0 (linear).
- */
-extern uint32_t slurm_select_cr_type(void);
-
 extern char *schedule_exit2string(uint16_t opcode);
 
 extern char *bf_exit2string(uint16_t opcode);
