@@ -762,26 +762,6 @@ extern int select_g_select_jobinfo_free(dynamic_plugin_data_t *jobinfo)
 	return rc;
 }
 
-/* copy a select job credential
- * IN jobinfo - the select job credential to be copied
- * RET        - the copy or NULL on failure
- * NOTE: returned value must be freed using select_g_free_jobinfo
- */
-extern dynamic_plugin_data_t *select_g_select_jobinfo_copy(
-	dynamic_plugin_data_t *jobinfo)
-{
-	dynamic_plugin_data_t *jobinfo_ptr = NULL;
-	xassert(select_context_cnt >= 0);
-
-	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	if (jobinfo) {
-		jobinfo_ptr->plugin_id = jobinfo->plugin_id;
-	} else
-		jobinfo_ptr->plugin_id = select_context_default;
-
-	return jobinfo_ptr;
-}
-
 /* pack a select job credential into a buffer in machine independent form
  * IN jobinfo  - the select job credential to be saved
  * OUT buffer  - buffer with select credential appended

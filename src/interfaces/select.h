@@ -256,14 +256,6 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
  */
 extern dynamic_plugin_data_t *select_g_select_jobinfo_alloc(void);
 
-/* copy a select job credential
- * IN jobinfo - the select job credential to be copied
- * RET        - the copy or NULL on failure
- * NOTE: returned value must be freed using select_g_select_jobinfo_free
- */
-extern dynamic_plugin_data_t *select_g_select_jobinfo_copy(
-	dynamic_plugin_data_t *jobinfo);
-
 /* free storage previously allocated for a select job credential
  * IN jobinfo  - the select job credential to be freed
  * RET         - slurm error code

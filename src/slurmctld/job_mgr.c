@@ -3524,10 +3524,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->resv_ports = NULL;
 	job_ptr_pend->resv_port_array = NULL;
 	job_ptr_pend->resp_host = xstrdup(job_ptr->resp_host);
-	if (job_ptr->select_jobinfo) {
-		job_ptr_pend->select_jobinfo =
-			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
-	}
+	job_ptr_pend->select_jobinfo = NULL;
 	job_ptr_pend->selinux_context = xstrdup(job_ptr->selinux_context);
 	job_ptr_pend->sched_nodes = NULL;
 	if (job_ptr->spank_job_env_size) {
