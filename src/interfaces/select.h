@@ -259,14 +259,12 @@ extern int select_g_select_jobinfo_pack(buf_t *buffer,
 					uint16_t protocol_version);
 
 /* unpack a select job credential from a buffer
- * OUT jobinfo - the select job credential read
  * IN  buffer  - buffer with select credential read from current pointer loc
  * IN protocol_version - slurm protocol version of client
  * RET         - slurm error code
  * NOTE: returned value must be freed using select_g_select_jobinfo_free
  */
-extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
-					  buf_t *buffer,
+extern int select_g_select_jobinfo_unpack(buf_t *buffer,
 					  uint16_t protocol_version);
 
 /*

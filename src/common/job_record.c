@@ -827,7 +827,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	dynamic_plugin_data_t *switch_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	list_t *gres_list_req = NULL, *gres_list_alloc = NULL;
-	dynamic_plugin_data_t *select_jobinfo = NULL;
 	jobacctinfo_t *jobacct = NULL;
 	slurm_step_id_t step_id = {
 		.job_id = job_ptr->job_id,
@@ -894,8 +893,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 					      protocol_version)))
 			goto unpack_error;
 
-		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
-						   protocol_version))
+		if (select_g_select_jobinfo_unpack(buffer, protocol_version))
 			goto unpack_error;
 		safe_unpackstr(&tres_alloc_str, buffer);
 		safe_unpackstr(&tres_fmt_alloc_str, buffer);
@@ -2575,8 +2573,7 @@ extern int job_record_unpack(job_record_t **out,
 		}
 		safe_unpackstr(&job_ptr->lic_req, buffer);
 
-		if (select_g_select_jobinfo_unpack(&job_ptr->select_jobinfo,
-						   buffer, protocol_version))
+		if (select_g_select_jobinfo_unpack(buffer, protocol_version))
 			goto unpack_error;
 		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
@@ -2736,8 +2733,7 @@ extern int job_record_unpack(job_record_t **out,
 		}
 		safe_unpackstr(&job_ptr->lic_req, buffer);
 
-		if (select_g_select_jobinfo_unpack(&job_ptr->select_jobinfo,
-						   buffer, protocol_version))
+		if (select_g_select_jobinfo_unpack(buffer, protocol_version))
 			goto unpack_error;
 		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
@@ -2955,8 +2951,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpackstr(&job_ptr->burst_buffer_state, buffer);
 		safe_unpackstr(&job_ptr->system_comment, buffer);
 
-		if (select_g_select_jobinfo_unpack(&job_ptr->select_jobinfo,
-						   buffer, protocol_version))
+		if (select_g_select_jobinfo_unpack(buffer, protocol_version))
 			goto unpack_error;
 		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
@@ -3182,8 +3177,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpackstr(&job_ptr->burst_buffer_state, buffer);
 		safe_unpackstr(&job_ptr->system_comment, buffer);
 
-		if (select_g_select_jobinfo_unpack(&job_ptr->select_jobinfo,
-						   buffer, protocol_version))
+		if (select_g_select_jobinfo_unpack(buffer, protocol_version))
 			goto unpack_error;
 		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
 					 protocol_version))

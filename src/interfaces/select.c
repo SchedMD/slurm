@@ -758,14 +758,11 @@ extern int select_g_select_jobinfo_pack(buf_t *buffer,
 	return SLURM_SUCCESS;
 }
 
-/* unpack a select job credential from a buffer
- * OUT jobinfo - the select job credential read
- * IN  buffer  - buffer with select credential read from current pointer loc
- * RET         - slurm error code
- * NOTE: returned value must be freed using select_g_free_jobinfo
+/*
+ * This stub remains for backwards compatibility, and should be removed.
+ * Ignore the uint32_t which has the plugin_id of the active select plugin.
  */
-extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
-					  buf_t *buffer,
+extern int select_g_select_jobinfo_unpack(buf_t *buffer,
 					  uint16_t protocol_version)
 {
 	uint32_t plugin_id;
