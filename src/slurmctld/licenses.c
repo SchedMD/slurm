@@ -1450,6 +1450,7 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 {
 	licenses_t *job_entry;
 	list_itr_t *iter;
+	bool found = false, lic_or = false;
 
 	xassert(job_ptr);
 
@@ -1460,7 +1461,9 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 	while ((job_entry = list_next(iter))) {
 		bf_license_t *resv_entry = NULL, *bf_entry;
 		int needed = job_entry->total;
+		int resv_acquired = 0;
 
+		lic_or = job_entry->op_or;
 		/*
 		 * Jobs with reservations may use licenses out of the
 		 * reservation, as well as global ones. Deduct from
@@ -1477,9 +1480,15 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 						     &target_record);
 			if (resv_entry && (needed <= resv_entry->remaining)) {
 				resv_entry->remaining -= needed;
+				/* OR - reservation has enough, break. */
+				if (lic_or) {
+					found = true;
+					break;
+				}
 				continue;
 			} else if (resv_entry) {
-				needed -= resv_entry->remaining;
+				resv_acquired = resv_entry->remaining;
+				needed -= resv_acquired;
 				resv_entry->remaining = 0;
 			}
 		}
@@ -1491,14 +1500,40 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 			error("%s: missing license lic_id=%u",
 			      __func__, job_entry->lic_id);
 		} else if (bf_entry->remaining < needed) {
+			/*
+			 * OR - Not an error;  skip this one and keep going
+			 * until we find the next one that is available.
+			 */
+			if (lic_or) {
+				/* Return resv_acquired licenses */
+				if (resv_entry) {
+					resv_entry->remaining += resv_acquired;
+					needed += resv_acquired;
+				}
+				continue;
+			}
 			error("%s: underflow on lic_id=%u",
 			      __func__, bf_entry->lic_id);
 			bf_entry->remaining = 0;
 		} else {
 			bf_entry->remaining -= needed;
+			if (lic_or) {
+				found = true;
+				break;
+			}
 		}
 	}
 	list_iterator_destroy(iter);
+
+	if (lic_or && !found) {
+		/*
+		 * If we get to this function, we should always have found an
+		 * available license. If we did not, this indicates an error
+		 * in testing if one is available in slurm_bf_licenses_avail().
+		 */
+		error("%s: %pJ No OR'd licenses available for bf plan",
+		      __func__, job_ptr);
+	}
 }
 
 /*
@@ -1579,9 +1614,19 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 						     _bf_licenses_find_resv,
 						     &target_record);
 
-			if (resv_entry && (needed <= resv_entry->remaining))
+			if (resv_entry && (needed <= resv_entry->remaining)) {
+				/*
+				 * OR - only need one, stop searching.
+				 * Set avail = true in case a previous license
+				 * was unavailable.
+				 */
+				if (need->op_or) {
+					avail = true;
+					break;
+				}
+				/* AND */
 				continue;
-			else if (resv_entry)
+			} else if (resv_entry)
 				needed -= resv_entry->remaining;
 		}
 
@@ -1590,6 +1635,18 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 
 		if (!bf_entry || (bf_entry->remaining < needed)) {
 			avail = false;
+			/*
+			 * OR - keep searching until we find one that is
+			 * available or we get through the whole list.
+			 */
+			if (need->op_or)
+				continue;
+			/* AND */
+			break;
+		}
+		/* OR - only need one, stop searching. */
+		if (need->op_or) {
+			avail = true;
 			break;
 		}
 	}
