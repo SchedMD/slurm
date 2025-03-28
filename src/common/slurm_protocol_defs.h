@@ -630,7 +630,6 @@ typedef struct job_step_create_response_msg {
                                            * step is laid out */
 	char *stepmgr;
 	slurm_cred_t *cred;    	  /* slurm job credential */
-	dynamic_plugin_data_t *select_jobinfo;	/* select opaque data type */
 	dynamic_plugin_data_t *switch_step; /* switch opaque data type
 					     * Remove 3 versions after 24.11 */
 	uint16_t use_protocol_ver;   /* Lowest protocol version running on
