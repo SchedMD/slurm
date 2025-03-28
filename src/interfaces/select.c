@@ -260,17 +260,15 @@ extern int select_g_init(bool only_default)
 	}
 done:
 	slurm_mutex_unlock( &select_context_lock );
-	if (!working_cluster_rec) {
-		if (select_running_linear_based()) {
-			uint16_t cr_type = slurm_conf.select_type_param;
-			if (cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) {
-				fatal("Invalid SelectTypeParameters for "
-				      "%s: %s (%u), it can't contain "
-				      "CR_(CPU|CORE|SOCKET).",
-				      slurm_conf.select_type,
-				      select_type_param_string(cr_type),
-				      cr_type);
-			}
+	if (running_in_slurmctld() && !running_cons_tres()) {
+		uint16_t cr_type = slurm_conf.select_type_param;
+		if (cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) {
+			fatal("Invalid SelectTypeParameters for "
+			      "%s: %s (%u), it can't contain "
+			      "CR_(CPU|CORE|SOCKET).",
+			      slurm_conf.select_type,
+			      select_type_param_string(cr_type),
+			      cr_type);
 		}
 	}
 
