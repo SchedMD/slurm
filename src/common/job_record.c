@@ -969,11 +969,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->pre_sus_time = pre_sus_time;
 	step_ptr->tot_sus_time = tot_sus_time;
 
-	if (!select_jobinfo)
-		select_jobinfo = select_g_select_jobinfo_alloc();
-	step_ptr->select_jobinfo = select_jobinfo;
-	select_jobinfo = NULL;
-
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	step_ptr->step_layout  = step_layout;
 

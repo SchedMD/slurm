@@ -737,18 +737,6 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 		(nodedata, dinfo, state, data);
 }
 
-extern dynamic_plugin_data_t *select_g_select_jobinfo_alloc(void)
-{
-	dynamic_plugin_data_t *jobinfo_ptr = NULL;
-
-	xassert(select_context_cnt >= 0);
-	xassert(!working_cluster_rec);
-
-	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	jobinfo_ptr->plugin_id = select_context_default;
-	return jobinfo_ptr;
-}
-
 /* free storage previously allocated for a select job credential
  * IN jobinfo  - the select job credential to be freed
  */

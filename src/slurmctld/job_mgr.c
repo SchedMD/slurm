@@ -8675,7 +8675,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 	if (job_desc->begin_time > time(NULL))
 		detail_ptr->begin_time = job_desc->begin_time;
-	job_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
+	job_ptr->select_jobinfo = NULL;
 
 	job_ptr->clusters = xstrdup(job_desc->clusters);
 
