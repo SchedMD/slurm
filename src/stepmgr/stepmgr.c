@@ -285,7 +285,6 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 		job_ptr->derived_ec = step_ptr->exit_code;
 
 	step_ptr->state |= JOB_COMPLETING;
-	select_g_step_finish(step_ptr, false);
 
 	_step_dealloc_lps(step_ptr);
 

@@ -4670,8 +4670,6 @@ extern void re_kill_job(job_record_t *job_ptr)
 	char *host_str = NULL;
 	static uint32_t last_job_id = 0;
 	node_record_t *node_ptr;
-	step_record_t *step_ptr;
-	list_itr_t *step_iterator;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #endif
@@ -4686,25 +4684,6 @@ extern void re_kill_job(job_record_t *job_ptr)
 	agent_args->hostlist = hostlist_create(NULL);
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	agent_args->retry = 0;
-
-	/* On a Cray system this will start the NHC early so it is
-	 * able to gather any information it can from the apparent
-	 * unkillable processes.
-	 * NOTE: do not do a list_for_each here, that will hold on the list
-	 * lock while processing the entire list which could
-	 * potentially be needed to lock again in
-	 * select_g_step_finish which could potentially call
-	 * post_job_step which calls delete_step_record which locks
-	 * the list to create a list_iterator on the same list and
-	 * could cause deadlock :).
-	 */
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
-			continue;
-		select_g_step_finish(step_ptr, true);
-	}
-	list_iterator_destroy(step_iterator);
 
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&

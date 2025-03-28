@@ -841,12 +841,6 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	return job_res_add_job(job_ptr, JOB_RES_ACTION_RESUME);
 }
 
-/* Unused for this plugin */
-extern int select_p_step_finish(step_record_t *step_ptr, bool killing_step)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 buf_t *buffer,
 					 uint16_t protocol_version)

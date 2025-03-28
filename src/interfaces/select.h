@@ -374,18 +374,6 @@ extern int select_g_job_expand(job_record_t *from_job_ptr,
  */
 extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr);
 
-/*******************************************************\
- * STEP SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCTIONS *
-\*******************************************************/
-
-/*
- * clear what happened in select_g_step_pick_nodes and/or select_g_step_start
- * IN/OUT step_ptr - step pointer to operate on.
- * IN killing_step - if true then we are just starting to kill the step
- *                   if false, the step is completely terminated
- */
-extern int select_g_step_finish(step_record_t *step_ptr, bool killing_step);
-
 /*****************************\
  * GET INFORMATION FUNCTIONS *
 \*****************************/
