@@ -512,7 +512,6 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 		lua_pushstring(L, job_info->resv_name);
 	} else if (!xstrcmp(name, "sched_nodes")) {
 		lua_pushstring(L, job_info->sched_nodes);
-	/* Ignore select_jobinfo */
 	} else if (!xstrcmp(name, "selinux_context")) {
 		lua_pushstring(L, job_info->selinux_context);
 	} else if (!xstrcmp(name, "shared")) {

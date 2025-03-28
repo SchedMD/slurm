@@ -5845,7 +5845,6 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	if (opt_local->req_switch >= 0)
 		job_desc->req_switch = opt_local->req_switch;
 
-	/* select_jobinfo not filled in here */
 	/* desc->std_[err|in|out] not filled in here */
 	/* tres_req_cnt not filled in here */
 
