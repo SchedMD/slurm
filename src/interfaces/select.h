@@ -101,10 +101,6 @@ extern int select_g_fini(void);
 /* Get this plugin's sequence number in Slurm's internal tables */
 extern int select_get_plugin_id_pos(uint32_t plugin_id);
 
-/* If the slurmctld is running a linear based select plugin return 1
- * else 0. */
-extern int select_running_linear_based(void);
-
 /*
  * Convert SelectTypeParameter to equivalent string
  * NOTE: Not reentrant

@@ -311,25 +311,6 @@ extern int select_get_plugin_id_pos(uint32_t plugin_id)
 	return SLURM_ERROR;
 }
 
-/* If the slurmctld is running a linear based select plugin return 1
- * else 0. */
-extern int select_running_linear_based(void)
-{
-	int rc = 0;
-
-	xassert(select_context_cnt >= 0);
-
-	switch (*(ops[select_context_default].plugin_id)) {
-	case SELECT_PLUGIN_LINEAR: // select/linear
-		rc = 1;
-		break;
-	default:
-		rc = 0;
-		break;
-	}
-	return rc;
-}
-
 /*
  * Convert SelectTypeParameter to equivalent string
  * NOTE: Not reentrant
