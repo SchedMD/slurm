@@ -75,10 +75,6 @@ typedef struct {
 						 bool indf_susp);
 	int		(*job_resume)		(job_record_t *job_ptr,
 						 bool indf_susp);
-	bitstr_t *      (*step_pick_nodes)      (job_record_t *job_ptr,
-						 select_jobinfo_t *step_jobinfo,
-						 uint32_t node_count,
-						 bitstr_t **avail_nodes);
 	int             (*step_start)           (step_record_t *step_ptr);
 	int             (*step_finish)          (step_record_t *step_ptr,
 						 bool killing_step);
@@ -118,7 +114,6 @@ static const char *node_select_syms[] = {
 	"select_p_job_fini",
 	"select_p_job_suspend",
 	"select_p_job_resume",
-	"select_p_step_pick_nodes",
 	"select_p_step_start",
 	"select_p_step_finish",
 	"select_p_select_nodeinfo_pack",
@@ -601,33 +596,6 @@ extern int select_g_job_resume(job_record_t *job_ptr, bool indf_susp)
 
 	return (*(ops[select_context_default].job_resume))
 		(job_ptr, indf_susp);
-}
-
-/*
- * Select the "best" nodes for given job step from those available in
- * a job allocation.
- *
- * IN/OUT job_ptr - pointer to job already allocated and running in a
- *                  block where the step is to run.
- *                  set's start_time when job expected to start
- * OUT step_jobinfo - Fill in the resources to be used if not
- *                    full size of job.
- * IN node_count  - How many nodes we are looking for.
- * OUT avail_nodes - bitmap of available nodes according to the plugin
- *                  (not always set).
- * RET map of slurm nodes to be used for step, NULL on failure
- */
-extern bitstr_t *select_g_step_pick_nodes(job_record_t *job_ptr,
-					  dynamic_plugin_data_t *step_jobinfo,
-					  uint32_t node_count,
-					  bitstr_t **avail_nodes)
-{
-	xassert(select_context_cnt >= 0);
-
-	xassert(step_jobinfo);
-
-	return (*(ops[select_context_default].step_pick_nodes))
-		(job_ptr, step_jobinfo->data, node_count, avail_nodes);
 }
 
 /*

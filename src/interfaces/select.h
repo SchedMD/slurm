@@ -377,28 +377,6 @@ extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr);
 /*******************************************************\
  * STEP SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCTIONS *
 \*******************************************************/
-
-/*
- * Select the "best" nodes for given job from those available
- * IN/OUT job_ptr - pointer to job already allocated and running in a
- *                  block where the step is to run.
- *                  set's start_time when job expected to start
- * OUT step_jobinfo - Fill in the resources to be used if not
- *                    full size of job.
- * IN node_count  - How many nodes we are looking for.
- * OUT avail_nodes - bitmap of available nodes according to the plugin
- *                  (not always set).
- * RET map of slurm nodes to be used for step, NULL if resources not selected
- *
- * NOTE: Most select plugins return NULL and use common code slurmctld to
- * select resources for a job step. Only on IBM Bluegene systems does the
- * select plugin need to select resources and take system topology into
- * consideration.
- */
-extern bitstr_t * select_g_step_pick_nodes(job_record_t *job_ptr,
-					   dynamic_plugin_data_t *step_jobinfo,
-					   uint32_t node_count,
-					   bitstr_t **avail_nodes);
 /*
  * Post pick_nodes operations for the step.
  * IN/OUT step_ptr - step pointer to operate on.

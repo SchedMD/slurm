@@ -2492,14 +2492,6 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	return rc;
 }
 
-extern bitstr_t *select_p_step_pick_nodes(job_record_t *job_ptr,
-					  select_jobinfo_t *jobinfo,
-					  uint32_t node_count,
-					  bitstr_t **avail_nodes)
-{
-	return NULL;
-}
-
 extern int select_p_step_start(step_record_t *step_ptr)
 {
 	return SLURM_SUCCESS;

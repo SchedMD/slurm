@@ -841,14 +841,6 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	return job_res_add_job(job_ptr, JOB_RES_ACTION_RESUME);
 }
 
-extern bitstr_t *select_p_step_pick_nodes(job_record_t *job_ptr,
-					  select_jobinfo_t *jobinfo,
-					  uint32_t node_count,
-					  bitstr_t **avail_nodes)
-{
-	return NULL;
-}
-
 /* Unused for this plugin */
 extern int select_p_step_start(step_record_t *step_ptr)
 {

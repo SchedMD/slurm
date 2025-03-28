@@ -1117,18 +1117,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		return NULL;
 	}
 
-	/*
-	 * If we have a select plugin that selects step resources, then use it
-	 * and return (does not happen today). Otherwise select step resources
-	 * in this function.
-	 */
-	if ((nodes_picked = select_g_step_pick_nodes(job_ptr, select_jobinfo,
-						     node_count,
-						     &select_nodes_avail))) {
-		job_resrcs_ptr->next_step_node_inx = bit_fls(nodes_picked) + 1;
-		return nodes_picked;
-	}
-
 	if (!nodes_avail)
 		nodes_avail = bit_copy (job_ptr->node_bitmap);
 	bit_and(nodes_avail, stepmgr_ops->up_node_bitmap);
