@@ -291,24 +291,6 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 					  buf_t *buffer,
 					  uint16_t protocol_version);
 
-/* fill in a previously allocated select job credential
- * IN/OUT jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * IN data - the data to enter into job credential
- */
-extern int select_g_select_jobinfo_set(dynamic_plugin_data_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data);
-
-/* get data from a select job credential
- * IN jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * OUT data - the data to get from job credential, caller must xfree
- */
-extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data);
-
 /*
  * Select the "best" nodes for given job from those available
  * IN/OUT job_ptr - pointer to job being considered for initiation,

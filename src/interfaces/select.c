@@ -99,14 +99,6 @@ typedef struct {
 						 void *data);
 	select_jobinfo_t *(*jobinfo_alloc)	(void);
 	int		(*jobinfo_free)		(select_jobinfo_t *jobinfo);
-	int		(*jobinfo_set)		(select_jobinfo_t *jobinfo,
-						 enum
-						 select_jobdata_type data_type,
-						 void *data);
-	int		(*jobinfo_get)		(select_jobinfo_t *jobinfo,
-						 enum
-						 select_jobdata_type data_type,
-						 void *data);
 	select_jobinfo_t *(*jobinfo_copy)	(select_jobinfo_t *jobinfo);
 	int		(*jobinfo_pack)		(select_jobinfo_t *jobinfo,
 						 buf_t *buffer,
@@ -147,8 +139,6 @@ static const char *node_select_syms[] = {
 	"select_p_select_nodeinfo_get",
 	"select_p_select_jobinfo_alloc",
 	"select_p_select_jobinfo_free",
-	"select_p_select_jobinfo_set",
-	"select_p_select_jobinfo_get",
 	"select_p_select_jobinfo_copy",
 	"select_p_select_jobinfo_pack",
 	"select_p_select_jobinfo_unpack",
@@ -853,49 +843,6 @@ extern int select_g_select_jobinfo_free(dynamic_plugin_data_t *jobinfo)
 		xfree(jobinfo);
 	}
 	return rc;
-}
-
-extern int select_g_select_jobinfo_set(dynamic_plugin_data_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	void *jobdata = NULL;
-	uint32_t plugin_id;
-
-	xassert(select_context_cnt >= 0);
-
-	if (jobinfo) {
-		jobdata = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = select_context_default;
-
-	return (*(ops[plugin_id].jobinfo_set))
-		(jobdata, data_type, data);
-}
-
-/* get data from a select job credential
- * IN jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * IN/OUT data - the data to enter into job credential
- */
-extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	void *jobdata = NULL;
-	uint32_t plugin_id;
-
-	xassert(select_context_cnt >= 0);
-
-	if (jobinfo) {
-		jobdata = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = select_context_default;
-
-	return (*(ops[plugin_id].jobinfo_get))
-		(jobdata, data_type, data);
 }
 
 /* copy a select job credential

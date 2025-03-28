@@ -1152,22 +1152,6 @@ extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo)
 }
 
 /* Unused for this plugin */
-extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	return SLURM_SUCCESS;
-}
-
-/* Unused for this plugin */
-extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	return SLURM_ERROR;
-}
-
-/* Unused for this plugin */
 extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
 {
 	return NULL;

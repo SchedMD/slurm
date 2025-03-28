@@ -2716,32 +2716,6 @@ extern select_jobinfo_t *select_p_select_jobinfo_alloc(void)
 }
 
 /*
- * fill in a previously allocated select job credential
- * IN/OUT jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * IN data - the data to enter into job credential
- */
-extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
- * get data from a select job credential
- * IN jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * OUT data - the data to get from job credential, caller must xfree
- */
-extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
-					enum select_jobdata_type data_type,
-					void *data)
-{
-	return SLURM_ERROR;
-}
-
-/*
  * copy a select job credential
  * IN jobinfo - the select job credential to be copied
  * RET        - the copy or NULL on failure

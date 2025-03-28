@@ -8680,10 +8680,6 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 
-	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_NETWORK,
-				    job_ptr->network);
-
 	job_ptr->clusters = xstrdup(job_desc->clusters);
 
 	/*
@@ -14678,10 +14674,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_ptr->network = xstrdup(job_desc->network);
 			sched_info("%s: setting Network to %s for %pJ",
 				   __func__, job_ptr->network, job_ptr);
-			select_g_select_jobinfo_set(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_NETWORK,
-				job_ptr->network);
 		}
 	}
 
