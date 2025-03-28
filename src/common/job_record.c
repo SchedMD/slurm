@@ -750,7 +750,6 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 		} else
 			pack8(0, buffer);
 
-		select_g_select_jobinfo_pack(buffer, protocol_version);
 		packstr(step_ptr->tres_alloc_str, buffer);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
 
@@ -981,7 +980,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 					      protocol_version)))
 			goto unpack_error;
 
-		safe_unpack32(&tmp32, buffer); /* was select_jobinfo */
 		safe_unpackstr(&tres_alloc_str, buffer);
 		safe_unpackstr(&tres_fmt_alloc_str, buffer);
 
