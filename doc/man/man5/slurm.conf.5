@@ -2939,6 +2939,13 @@ global TRESs (e.g. licenses).
 .IP
 
 .TP
+\fBMAX_TRES_GRES\fR
+If set, the weighted TRES value (e.g. TRESBillingWeights) is calculated as the
+MAX of individual TRESs on a node (e.g. cpus, mem), plus the billable gres, plus
+the sum of all global TRESs (e.g. licenses).
+.IP
+
+.TP
 \fBNO_NORMAL_ALL\fR
 If set, all NO_NORMAL_* flags are set.
 .IP

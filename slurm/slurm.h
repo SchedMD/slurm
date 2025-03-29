@@ -1145,6 +1145,13 @@ enum node_states {
 #define PRIORITY_FLAGS_NO_NORMAL_QOS	 SLURM_BIT(9)
 #define PRIORITY_FLAGS_NO_NORMAL_TRES	 SLURM_BIT(10)
 
+#define PRIORITY_FLAGS_MAX_TRES_GRES	 SLURM_BIT(11) /* Calculate billed_tres
+							* as the MAX of TRES
+							* (CPU and memory) plus
+							* GRES on a node rather
+							* than the sum of all
+							* TRES. */
+
 /*
  * These bits are set in the bitflags field of job_desc_msg_t and
  * job_flags in slurm_opt_t

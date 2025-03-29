@@ -3185,6 +3185,11 @@ extern char *priority_flags_string(uint16_t priority_flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "MAX_TRES");
 	}
+	if (priority_flags & PRIORITY_FLAGS_MAX_TRES_GRES) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "MAX_TRES_GRES");
+	}
 	if (priority_flags & (PRIORITY_FLAGS_NO_NORMAL_ASSOC |
 			      PRIORITY_FLAGS_NO_NORMAL_PART  |
 			      PRIORITY_FLAGS_NO_NORMAL_QOS   |
