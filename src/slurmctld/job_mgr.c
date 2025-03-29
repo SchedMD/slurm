@@ -3524,10 +3524,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->resv_ports = NULL;
 	job_ptr_pend->resv_port_array = NULL;
 	job_ptr_pend->resp_host = xstrdup(job_ptr->resp_host);
-	if (job_ptr->select_jobinfo) {
-		job_ptr_pend->select_jobinfo =
-			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
-	}
 	job_ptr_pend->selinux_context = xstrdup(job_ptr->selinux_context);
 	job_ptr_pend->sched_nodes = NULL;
 	if (job_ptr->spank_job_env_size) {
@@ -8678,11 +8674,6 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 	if (job_desc->begin_time > time(NULL))
 		detail_ptr->begin_time = job_desc->begin_time;
-	job_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
-
-	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_NETWORK,
-				    job_ptr->network);
 
 	job_ptr->clusters = xstrdup(job_desc->clusters);
 
@@ -14678,10 +14669,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_ptr->network = xstrdup(job_desc->network);
 			sched_info("%s: setting Network to %s for %pJ",
 				   __func__, job_ptr->network, job_ptr);
-			select_g_select_jobinfo_set(
-				job_ptr->select_jobinfo,
-				SELECT_JOBDATA_NETWORK,
-				job_ptr->network);
 		}
 	}
 
@@ -16096,8 +16083,7 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 	if (pn_min_memory == NO_VAL64)
 		return mem_total;
 
-	if (!user_set_mem && gres_list &&
-	    (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES)) {
+	if (!user_set_mem && gres_list && running_cons_tres()) {
 		/* mem_per_[cpu|node] not set, check if mem_per_gres was set */
 		gres_job_state_t gres_js;
 		memset(&gres_js, 0, sizeof(gres_js));

@@ -2171,9 +2171,6 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 
 	FREE_NULL_LIST(msg->options);
 
-	if (msg->select_jobinfo)
-		select_g_select_jobinfo_free(msg->select_jobinfo);
-
 	xfree(msg->tres_bind);
 	xfree(msg->tres_per_task);
 	xfree(msg->tres_freq);
@@ -4056,8 +4053,6 @@ extern void slurm_free_job_step_create_response_msg(
 		xfree(msg->stepmgr);
 		slurm_step_layout_destroy(msg->step_layout);
 		slurm_cred_destroy(msg->cred);
-		if (msg->select_jobinfo)
-			select_g_select_jobinfo_free(msg->select_jobinfo);
 		if (msg->switch_step)
 			switch_g_free_stepinfo(msg->switch_step);
 
@@ -6160,36 +6155,6 @@ extern char *slurm_get_tres_sub_string(
 		xfree(tres_type);
 
 	return sub_tres;
-}
-
-extern uint32_t slurm_select_cr_type(void)
-{
-	static bool cr_set = false;
-	static uint32_t cr_type = 0;
-
-	if (!cr_set) {
-		/*
-		 * Only use in the controller. Currently, only the controller
-		 * and the node_info api load in the select plugin. The slurmd
-		 * doesn't load in the select plugin, but both the controller
-		 * and the slurmd read in interfaces/gres.c which use this
-		 * function. The slurmd is already protected by
-		 * running_in_slurmctld() but we add this assert to guard
-		 * against places that aren't loading in the select plugin.
-		 */
-		xassert(running_in_slurmctld());
-
-		/*
-		 * Here we are looking for the underlying id instead of actual
-		 * id, meaning we want SELECT_TYPE_CONS_TRES not
-		 * SELECT_PLUGIN_CRAY_CONS_TRES.
-		 */
-		(void) select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
-						     &cr_type);
-		cr_set = true;
-	}
-
-	return cr_type;
 }
 
 char *schedule_exit2string(uint16_t opcode)

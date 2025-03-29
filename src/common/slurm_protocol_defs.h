@@ -630,7 +630,6 @@ typedef struct job_step_create_response_msg {
                                            * step is laid out */
 	char *stepmgr;
 	slurm_cred_t *cred;    	  /* slurm job credential */
-	dynamic_plugin_data_t *select_jobinfo;	/* select opaque data type */
 	dynamic_plugin_data_t *switch_step; /* switch opaque data type
 					     * Remove 3 versions after 24.11 */
 	uint16_t use_protocol_ver;   /* Lowest protocol version running on
@@ -738,7 +737,6 @@ typedef struct launch_tasks_request_msg {
 	char *complete_nodelist;
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
-	dynamic_plugin_data_t *select_jobinfo; /* select context, opaque data */
 
 	/* only filled out if step is SLURM_EXTERN_CONT */
 	uint16_t x11;			/* X11 forwarding setup flags */
@@ -1859,13 +1857,6 @@ extern int slurm_get_next_tres(
 extern char *slurm_get_tres_sub_string(
 	char *full_tres_str, char *tres_type, uint32_t num_tasks,
 	bool include_tres_type, bool include_type);
-
-/*
- * Return cached select cons res type.
- *
- * Returns SELECT_TYPE_CONS_TRES, SELECT_TYPE_CONS_RES or 0 (linear).
- */
-extern uint32_t slurm_select_cr_type(void);
 
 extern char *schedule_exit2string(uint16_t opcode);
 

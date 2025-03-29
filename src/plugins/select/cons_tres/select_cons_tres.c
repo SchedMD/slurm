@@ -841,26 +841,6 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	return job_res_add_job(job_ptr, JOB_RES_ACTION_RESUME);
 }
 
-extern bitstr_t *select_p_step_pick_nodes(job_record_t *job_ptr,
-					  select_jobinfo_t *jobinfo,
-					  uint32_t node_count,
-					  bitstr_t **avail_nodes)
-{
-	return NULL;
-}
-
-/* Unused for this plugin */
-extern int select_p_step_start(step_record_t *step_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-/* Unused for this plugin */
-extern int select_p_step_finish(step_record_t *step_ptr, bool killing_step)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 buf_t *buffer,
 					 uint16_t protocol_version)
@@ -1133,79 +1113,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		break;
 	default:
 		error("Unsupported option %d", dinfo);
-		rc = SLURM_ERROR;
-		break;
-	}
-	return rc;
-}
-
-/* Unused for this plugin */
-extern int select_p_select_jobinfo_alloc(void)
-{
-	return SLURM_SUCCESS;
-}
-
-/* Unused for this plugin */
-extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo)
-{
-	return SLURM_SUCCESS;
-}
-
-/* Unused for this plugin */
-extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	return SLURM_SUCCESS;
-}
-
-/* Unused for this plugin */
-extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	return SLURM_ERROR;
-}
-
-/* Unused for this plugin */
-extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
-{
-	return NULL;
-}
-
-/* Unused for this plugin */
-extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo,
-					buf_t *buffer,
-					uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
-
-/* Unused for this plugin */
-extern int select_p_select_jobinfo_unpack(select_jobinfo_t *jobinfo,
-					  buf_t *buffer,
-					  uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
-					 job_record_t *job_ptr,
-					 void *data)
-{
-	int rc = SLURM_SUCCESS;
-	uint32_t *tmp_32 = (uint32_t *) data;
-	list_t **tmp_list = data;
-
-	switch (info) {
-	case SELECT_CR_PLUGIN:
-		*tmp_32 = SELECT_TYPE_CONS_TRES;
-		break;
-	case SELECT_CONFIG_INFO:
-		*tmp_list = NULL;
-		break;
-	default:
-		error("info type %d invalid", info);
 		rc = SLURM_ERROR;
 		break;
 	}

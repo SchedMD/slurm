@@ -819,7 +819,7 @@ static int _resolve_shared_status(job_record_t *job_ptr,
 		return 1;
 	}
 
-	if (slurm_select_cr_type()) {
+	if (running_cons_tres()) {
 		if ((job_ptr->details->share_res  == 0) ||
 		    (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)) {
 			job_ptr->details->share_res = 0;
@@ -1732,7 +1732,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	       __func__, job_ptr, bit_set_count(idle_node_bitmap),
 		bit_set_count(share_node_bitmap));
 
-	if (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES)
+	if (running_cons_tres())
 		_sync_node_weight(node_set_ptr, node_set_size);
 	/*
 	 * Accumulate resources for this job based upon its required
@@ -1863,8 +1863,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 			tried_sched = false;	/* need to test these nodes */
 
-			if ((slurm_select_cr_type() == SELECT_TYPE_CONS_TRES) &&
-			    ((i+1) < node_set_size)) {
+			if (running_cons_tres() && ((i + 1) < node_set_size)) {
 				/*
 				 * Execute select_g_job_test() _once_ using
 				 * sched_weight in node_record_t as set
@@ -3421,9 +3420,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	 */
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN) {
 		step_record_t *step_ptr = build_extern_step(job_ptr);
-		if (step_ptr)
-			select_g_step_start(step_ptr);
-		else
+		if (!step_ptr)
 			error("%s: build_extern_step failure for %pJ",
 			      __func__, job_ptr);
 	}
@@ -4672,8 +4669,6 @@ extern void re_kill_job(job_record_t *job_ptr)
 	char *host_str = NULL;
 	static uint32_t last_job_id = 0;
 	node_record_t *node_ptr;
-	step_record_t *step_ptr;
-	list_itr_t *step_iterator;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #endif
@@ -4688,25 +4683,6 @@ extern void re_kill_job(job_record_t *job_ptr)
 	agent_args->hostlist = hostlist_create(NULL);
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	agent_args->retry = 0;
-
-	/* On a Cray system this will start the NHC early so it is
-	 * able to gather any information it can from the apparent
-	 * unkillable processes.
-	 * NOTE: do not do a list_for_each here, that will hold on the list
-	 * lock while processing the entire list which could
-	 * potentially be needed to lock again in
-	 * select_g_step_finish which could potentially call
-	 * post_job_step which calls delete_step_record which locks
-	 * the list to create a list_iterator on the same list and
-	 * could cause deadlock :).
-	 */
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
-			continue;
-		select_g_step_finish(step_ptr, true);
-	}
-	list_iterator_destroy(step_iterator);
 
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&

@@ -2492,24 +2492,6 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	return rc;
 }
 
-extern bitstr_t *select_p_step_pick_nodes(job_record_t *job_ptr,
-					  select_jobinfo_t *jobinfo,
-					  uint32_t node_count,
-					  bitstr_t **avail_nodes)
-{
-	return NULL;
-}
-
-extern int select_p_step_start(step_record_t *step_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_step_finish(step_record_t *step_ptr, bool killing_step)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 buf_t *buffer,
 					 uint16_t protocol_version)
@@ -2703,99 +2685,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		break;
 	}
 	return rc;
-}
-
-/*
- * allocate storage for a select job credential
- * RET        - storage for a select job credential
- * NOTE: storage must be freed using select_p_select_jobinfo_free
- */
-extern select_jobinfo_t *select_p_select_jobinfo_alloc(void)
-{
-	return NULL;
-}
-
-/*
- * fill in a previously allocated select job credential
- * IN/OUT jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * IN data - the data to enter into job credential
- */
-extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
- * get data from a select job credential
- * IN jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * OUT data - the data to get from job credential, caller must xfree
- */
-extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
-					enum select_jobdata_type data_type,
-					void *data)
-{
-	return SLURM_ERROR;
-}
-
-/*
- * copy a select job credential
- * IN jobinfo - the select job credential to be copied
- * RET        - the copy or NULL on failure
- * NOTE: returned value must be freed using select_p_select_jobinfo_free
- */
-extern select_jobinfo_t *select_p_select_jobinfo_copy(
-	select_jobinfo_t *jobinfo)
-{
-	return NULL;
-}
-
-/*
- * free storage previously allocated for a select job credential
- * IN jobinfo  - the select job credential to be freed
- * RET         - slurm error code
- */
-extern int select_p_select_jobinfo_free  (select_jobinfo_t *jobinfo)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
- * pack a select job credential into a buffer in machine independent form
- * IN jobinfo  - the select job credential to be saved
- * OUT buffer  - buffer with select credential appended
- * IN protocol_version - slurm protocol version of client
- * RET         - slurm error code
- */
-extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo,
-					buf_t *buffer,
-					uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
- * unpack a select job credential from a buffer
- * OUT jobinfo - the select job credential read
- * IN  buffer  - buffer with select credential read from current pointer loc
- * IN protocol_version - slurm protocol version of client
- * RET         - slurm error code
- * NOTE: returned value must be freed using select_p_select_jobinfo_free
- */
-extern int select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
-					  buf_t *buffer,
-					  uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
-					 job_record_t *job_ptr, void *data)
-{
-	return SLURM_SUCCESS;
 }
 
 extern int select_p_reconfigure(void)

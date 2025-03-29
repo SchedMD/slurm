@@ -75,13 +75,6 @@ typedef struct {
 						 bool indf_susp);
 	int		(*job_resume)		(job_record_t *job_ptr,
 						 bool indf_susp);
-	bitstr_t *      (*step_pick_nodes)      (job_record_t *job_ptr,
-						 select_jobinfo_t *step_jobinfo,
-						 uint32_t node_count,
-						 bitstr_t **avail_nodes);
-	int             (*step_start)           (step_record_t *step_ptr);
-	int             (*step_finish)          (step_record_t *step_ptr,
-						 bool killing_step);
 	int		(*nodeinfo_pack)	(select_nodeinfo_t *nodeinfo,
 						 buf_t *buffer,
 						 uint16_t protocol_version);
@@ -96,27 +89,6 @@ typedef struct {
 						 enum
 						 select_nodedata_type dinfo,
 						 enum node_states state,
-						 void *data);
-	select_jobinfo_t *(*jobinfo_alloc)	(void);
-	int		(*jobinfo_free)		(select_jobinfo_t *jobinfo);
-	int		(*jobinfo_set)		(select_jobinfo_t *jobinfo,
-						 enum
-						 select_jobdata_type data_type,
-						 void *data);
-	int		(*jobinfo_get)		(select_jobinfo_t *jobinfo,
-						 enum
-						 select_jobdata_type data_type,
-						 void *data);
-	select_jobinfo_t *(*jobinfo_copy)	(select_jobinfo_t *jobinfo);
-	int		(*jobinfo_pack)		(select_jobinfo_t *jobinfo,
-						 buf_t *buffer,
-						 uint16_t protocol_version);
-	int		(*jobinfo_unpack)	(select_jobinfo_t **jobinfo_pptr,
-						 buf_t *buffer,
-						 uint16_t protocol_version);
-	int		(*get_info_from_plugin)	(enum
-						 select_plugindata_info dinfo,
-						 job_record_t *job_ptr,
 						 void *data);
 	int		(*reconfigure)		(void);
 } slurm_select_ops_t;
@@ -135,9 +107,6 @@ static const char *node_select_syms[] = {
 	"select_p_job_fini",
 	"select_p_job_suspend",
 	"select_p_job_resume",
-	"select_p_step_pick_nodes",
-	"select_p_step_start",
-	"select_p_step_finish",
 	"select_p_select_nodeinfo_pack",
 	"select_p_select_nodeinfo_unpack",
 	"select_p_select_nodeinfo_alloc",
@@ -145,14 +114,6 @@ static const char *node_select_syms[] = {
 	"select_p_select_nodeinfo_set_all",
 	"select_p_select_nodeinfo_set",
 	"select_p_select_nodeinfo_get",
-	"select_p_select_jobinfo_alloc",
-	"select_p_select_jobinfo_free",
-	"select_p_select_jobinfo_set",
-	"select_p_select_jobinfo_get",
-	"select_p_select_jobinfo_copy",
-	"select_p_select_jobinfo_pack",
-	"select_p_select_jobinfo_unpack",
-	"select_p_get_info_from_plugin",
 	"select_p_reconfigure",
 };
 
@@ -198,6 +159,16 @@ extern int select_string_to_plugin_id(const char *plugin)
 	error("%s: unknown select plugin: %s",
 	      __func__, plugin);
 	return 0;
+}
+
+extern bool running_cons_tres(void)
+{
+	xassert(running_in_slurmctld());
+	xassert(select_context_cnt >= 0);
+
+	if (*ops[select_context_default].plugin_id == SELECT_PLUGIN_CONS_TRES)
+		return true;
+	return false;
 }
 
 static int _load_plugins(void *x, void *arg)
@@ -289,17 +260,15 @@ extern int select_g_init(bool only_default)
 	}
 done:
 	slurm_mutex_unlock( &select_context_lock );
-	if (!working_cluster_rec) {
-		if (select_running_linear_based()) {
-			uint16_t cr_type = slurm_conf.select_type_param;
-			if (cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) {
-				fatal("Invalid SelectTypeParameters for "
-				      "%s: %s (%u), it can't contain "
-				      "CR_(CPU|CORE|SOCKET).",
-				      slurm_conf.select_type,
-				      select_type_param_string(cr_type),
-				      cr_type);
-			}
+	if (running_in_slurmctld() && !running_cons_tres()) {
+		uint16_t cr_type = slurm_conf.select_type_param;
+		if (cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) {
+			fatal("Invalid SelectTypeParameters for "
+			      "%s: %s (%u), it can't contain "
+			      "CR_(CPU|CORE|SOCKET).",
+			      slurm_conf.select_type,
+			      select_type_param_string(cr_type),
+			      cr_type);
 		}
 	}
 
@@ -340,25 +309,6 @@ extern int select_get_plugin_id_pos(uint32_t plugin_id)
 	}
 
 	return SLURM_ERROR;
-}
-
-/* If the slurmctld is running a linear based select plugin return 1
- * else 0. */
-extern int select_running_linear_based(void)
-{
-	int rc = 0;
-
-	xassert(select_context_cnt >= 0);
-
-	switch (*(ops[select_context_default].plugin_id)) {
-	case SELECT_PLUGIN_LINEAR: // select/linear
-		rc = 1;
-		break;
-	default:
-		rc = 0;
-		break;
-	}
-	return rc;
 }
 
 /*
@@ -627,59 +577,6 @@ extern int select_g_job_resume(job_record_t *job_ptr, bool indf_susp)
 		(job_ptr, indf_susp);
 }
 
-/*
- * Select the "best" nodes for given job step from those available in
- * a job allocation.
- *
- * IN/OUT job_ptr - pointer to job already allocated and running in a
- *                  block where the step is to run.
- *                  set's start_time when job expected to start
- * OUT step_jobinfo - Fill in the resources to be used if not
- *                    full size of job.
- * IN node_count  - How many nodes we are looking for.
- * OUT avail_nodes - bitmap of available nodes according to the plugin
- *                  (not always set).
- * RET map of slurm nodes to be used for step, NULL on failure
- */
-extern bitstr_t *select_g_step_pick_nodes(job_record_t *job_ptr,
-					  dynamic_plugin_data_t *step_jobinfo,
-					  uint32_t node_count,
-					  bitstr_t **avail_nodes)
-{
-	xassert(select_context_cnt >= 0);
-
-	xassert(step_jobinfo);
-
-	return (*(ops[select_context_default].step_pick_nodes))
-		(job_ptr, step_jobinfo->data, node_count, avail_nodes);
-}
-
-/*
- * Post pick_nodes operations for the step.
- * IN/OUT step_ptr - step pointer to operate on.
- */
-extern int select_g_step_start(step_record_t *step_ptr)
-{
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].step_start))
-		(step_ptr);
-}
-
-/*
- * clear what happened in select_g_step_pick_nodes
- * IN/OUT step_ptr - Flush the resources from the job and step.
- * IN killing_step - if true then we are just starting to kill the step
- *                   if false, the step is completely terminated
- */
-extern int select_g_step_finish(step_record_t *step_ptr, bool killing_step)
-{
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].step_finish))
-		(step_ptr, killing_step);
-}
-
 extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
 					 buf_t *buffer,
 					 uint16_t protocol_version)
@@ -824,119 +721,14 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 		(nodedata, dinfo, state, data);
 }
 
-extern dynamic_plugin_data_t *select_g_select_jobinfo_alloc(void)
-{
-	dynamic_plugin_data_t *jobinfo_ptr = NULL;
-
-	xassert(select_context_cnt >= 0);
-	xassert(!working_cluster_rec);
-
-	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	jobinfo_ptr->plugin_id = select_context_default;
-	jobinfo_ptr->data = (*(ops[select_context_default].jobinfo_alloc))();
-	return jobinfo_ptr;
-}
-
-/* free storage previously allocated for a select job credential
- * IN jobinfo  - the select job credential to be freed
+/*
+ * packs the select plugin_id for backwards compatibility
+ * Remove when 24.11 is no longer supported.
  */
-extern int select_g_select_jobinfo_free(dynamic_plugin_data_t *jobinfo)
-{
-	int rc = SLURM_SUCCESS;
-
-	if (jobinfo) {
-		if (jobinfo->data) {
-			xassert(select_context_cnt >= 0);
-			rc = (*(ops[jobinfo->plugin_id].
-				jobinfo_free))(jobinfo->data);
-		}
-		xfree(jobinfo);
-	}
-	return rc;
-}
-
-extern int select_g_select_jobinfo_set(dynamic_plugin_data_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	void *jobdata = NULL;
-	uint32_t plugin_id;
-
-	xassert(select_context_cnt >= 0);
-
-	if (jobinfo) {
-		jobdata = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = select_context_default;
-
-	return (*(ops[plugin_id].jobinfo_set))
-		(jobdata, data_type, data);
-}
-
-/* get data from a select job credential
- * IN jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * IN/OUT data - the data to enter into job credential
- */
-extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	void *jobdata = NULL;
-	uint32_t plugin_id;
-
-	xassert(select_context_cnt >= 0);
-
-	if (jobinfo) {
-		jobdata = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = select_context_default;
-
-	return (*(ops[plugin_id].jobinfo_get))
-		(jobdata, data_type, data);
-}
-
-/* copy a select job credential
- * IN jobinfo - the select job credential to be copied
- * RET        - the copy or NULL on failure
- * NOTE: returned value must be freed using select_g_free_jobinfo
- */
-extern dynamic_plugin_data_t *select_g_select_jobinfo_copy(
-	dynamic_plugin_data_t *jobinfo)
-{
-	dynamic_plugin_data_t *jobinfo_ptr = NULL;
-	xassert(select_context_cnt >= 0);
-
-	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	if (jobinfo) {
-		jobinfo_ptr->plugin_id = jobinfo->plugin_id;
-		jobinfo_ptr->data = (*(ops[jobinfo->plugin_id].
-				       jobinfo_copy))(jobinfo->data);
-	} else
-		jobinfo_ptr->plugin_id = select_context_default;
-
-	return jobinfo_ptr;
-}
-
-/* pack a select job credential into a buffer in machine independent form
- * IN jobinfo  - the select job credential to be saved
- * OUT buffer  - buffer with select credential appended
- * RET         - slurm error code
- */
-extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
-					buf_t *buffer,
+extern int select_g_select_jobinfo_pack(buf_t *buffer,
 					uint16_t protocol_version)
 {
-	void *data = NULL;
-	uint32_t plugin_id;
-
-	if (jobinfo) {
-		data = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = select_context_default;
+	uint32_t plugin_id = select_context_default;
 
 	xassert(select_context_cnt >= 0);
 
@@ -947,80 +739,7 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 		      protocol_version);
 	}
 
-	return (*(ops[plugin_id].jobinfo_pack))(data, buffer, protocol_version);
-}
-
-/* unpack a select job credential from a buffer
- * OUT jobinfo - the select job credential read
- * IN  buffer  - buffer with select credential read from current pointer loc
- * RET         - slurm error code
- * NOTE: returned value must be freed using select_g_free_jobinfo
- */
-extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
-					  buf_t *buffer,
-					  uint16_t protocol_version)
-{
-	dynamic_plugin_data_t *jobinfo_ptr = NULL;
-
-	xassert(select_context_cnt >= 0);
-
-	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	*jobinfo = jobinfo_ptr;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		int i;
-		uint32_t plugin_id;
-		safe_unpack32(&plugin_id, buffer);
-		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
-			error("%s: select plugin %s not found", __func__,
-			      select_plugin_id_to_string(plugin_id));
-			goto unpack_error;
-		} else
-			jobinfo_ptr->plugin_id = i;
-	} else {
-		jobinfo_ptr->plugin_id = select_context_default;
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
-		goto unpack_error;
-	}
-
-	if ((*(ops[jobinfo_ptr->plugin_id].jobinfo_unpack))
-		((select_jobinfo_t **)&jobinfo_ptr->data, buffer,
-		 protocol_version) != SLURM_SUCCESS)
-		goto unpack_error;
-
-	/*
-	 * Free jobinfo_ptr if it is different from local cluster as it is not
-	 * relevant to this cluster.
-	 */
-	if ((jobinfo_ptr->plugin_id != select_context_default) &&
-	    running_in_slurmctld()) {
-		select_g_select_jobinfo_free(jobinfo_ptr);
-		*jobinfo = select_g_select_jobinfo_alloc();
-	}
-
 	return SLURM_SUCCESS;
-
-unpack_error:
-	select_g_select_jobinfo_free(jobinfo_ptr);
-	*jobinfo = NULL;
-	error("%s: unpack error", __func__);
-	return SLURM_ERROR;
-}
-
-/*
- * Get select data from a plugin
- * IN dinfo     - type of data to get from the node record
- *                (see enum select_plugindata_info)
- * IN/OUT data  - the data to get from node record
- */
-extern int select_g_get_info_from_plugin(enum select_plugindata_info dinfo,
-					 job_record_t *job_ptr, void *data)
-{
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].
-		  get_info_from_plugin))(dinfo, job_ptr, data);
 }
 
 /*

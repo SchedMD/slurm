@@ -82,6 +82,8 @@ extern char *select_plugin_id_to_string(int plugin_id);
  */
 extern int select_string_to_plugin_id(const char *plugin);
 
+extern bool running_cons_tres(void);
+
 /*******************************************\
  * GLOBAL SELECT STATE MANAGEMENT FUNCTIONS *
 \*******************************************/
@@ -98,10 +100,6 @@ extern int select_g_fini(void);
 
 /* Get this plugin's sequence number in Slurm's internal tables */
 extern int select_get_plugin_id_pos(uint32_t plugin_id);
-
-/* If the slurmctld is running a linear based select plugin return 1
- * else 0. */
-extern int select_running_linear_based(void);
 
 /*
  * Convert SelectTypeParameter to equivalent string
@@ -250,64 +248,12 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 	((SELECT_IS_MODE_TEST_ONLY(_X) || SELECT_IS_MODE_WILL_RUN(_X))	\
 	 && SELECT_IS_PREEMPT_SET(_X))
 
-/* allocate storage for a select job credential
- * RET jobinfo - storage for a select job credential
- * NOTE: storage must be freed using select_g_free_jobinfo
+/*
+ * packs the select plugin_id for backwards compatibility
+ * Remove when 24.11 is no longer supported.
  */
-extern dynamic_plugin_data_t *select_g_select_jobinfo_alloc(void);
-
-/* copy a select job credential
- * IN jobinfo - the select job credential to be copied
- * RET        - the copy or NULL on failure
- * NOTE: returned value must be freed using select_g_select_jobinfo_free
- */
-extern dynamic_plugin_data_t *select_g_select_jobinfo_copy(
-	dynamic_plugin_data_t *jobinfo);
-
-/* free storage previously allocated for a select job credential
- * IN jobinfo  - the select job credential to be freed
- * RET         - slurm error code
- */
-extern int select_g_select_jobinfo_free(dynamic_plugin_data_t *jobinfo);
-
-/* pack a select job credential into a buffer in machine independent form
- * IN jobinfo  - the select job credential to be saved
- * OUT buffer  - buffer with select credential appended
- * IN protocol_version - slurm protocol version of client
- * RET         - slurm error code
- */
-extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
-					buf_t *buffer,
+extern int select_g_select_jobinfo_pack(buf_t *buffer,
 					uint16_t protocol_version);
-
-/* unpack a select job credential from a buffer
- * OUT jobinfo - the select job credential read
- * IN  buffer  - buffer with select credential read from current pointer loc
- * IN protocol_version - slurm protocol version of client
- * RET         - slurm error code
- * NOTE: returned value must be freed using select_g_select_jobinfo_free
- */
-extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
-					  buf_t *buffer,
-					  uint16_t protocol_version);
-
-/* fill in a previously allocated select job credential
- * IN/OUT jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * IN data - the data to enter into job credential
- */
-extern int select_g_select_jobinfo_set(dynamic_plugin_data_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data);
-
-/* get data from a select job credential
- * IN jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * OUT data - the data to get from job credential, caller must xfree
- */
-extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data);
 
 /*
  * Select the "best" nodes for given job from those available
@@ -391,59 +337,5 @@ extern int select_g_job_expand(job_record_t *from_job_ptr,
  * RET: 0 or an error code
  */
 extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr);
-
-/*******************************************************\
- * STEP SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCTIONS *
-\*******************************************************/
-
-/*
- * Select the "best" nodes for given job from those available
- * IN/OUT job_ptr - pointer to job already allocated and running in a
- *                  block where the step is to run.
- *                  set's start_time when job expected to start
- * OUT step_jobinfo - Fill in the resources to be used if not
- *                    full size of job.
- * IN node_count  - How many nodes we are looking for.
- * OUT avail_nodes - bitmap of available nodes according to the plugin
- *                  (not always set).
- * RET map of slurm nodes to be used for step, NULL if resources not selected
- *
- * NOTE: Most select plugins return NULL and use common code slurmctld to
- * select resources for a job step. Only on IBM Bluegene systems does the
- * select plugin need to select resources and take system topology into
- * consideration.
- */
-extern bitstr_t * select_g_step_pick_nodes(job_record_t *job_ptr,
-					   dynamic_plugin_data_t *step_jobinfo,
-					   uint32_t node_count,
-					   bitstr_t **avail_nodes);
-/*
- * Post pick_nodes operations for the step.
- * IN/OUT step_ptr - step pointer to operate on.
- */
-extern int select_g_step_start(step_record_t *step_ptr);
-
-/*
- * clear what happened in select_g_step_pick_nodes and/or select_g_step_start
- * IN/OUT step_ptr - step pointer to operate on.
- * IN killing_step - if true then we are just starting to kill the step
- *                   if false, the step is completely terminated
- */
-extern int select_g_step_finish(step_record_t *step_ptr, bool killing_step);
-
-/*****************************\
- * GET INFORMATION FUNCTIONS *
-\*****************************/
-
-/*
- * Get select data from a plugin
- * IN node_pts  - current node record
- * IN dinfo     - type of data to get from the node record
- *                (see enum select_plugindata_info)
- * IN job_ptr   - pointer to the job that's related to this query (may be NULL)
- * IN/OUT data  - the data to get from node record
- */
-extern int select_g_get_info_from_plugin(enum select_plugindata_info dinfo,
-					 job_record_t *job_ptr, void *data);
 
 #endif
