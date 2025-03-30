@@ -224,7 +224,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 	uint16_t alloc_cpus = 0;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	int idle_cpus = node_ptr->cpus_efctv;
-	char *node_alloc_tres = NULL;
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 	if (!treestore)
@@ -317,15 +316,11 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_TRES_CONFIG),
 				   node_ptr->tres_fmt_str);
 
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
-				     NODE_STATE_ALLOCATED, &node_alloc_tres);
-
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_TRES_ALLOC),
-				   node_alloc_tres ? node_alloc_tres : "");
-	xfree(node_alloc_tres);
+				   (node_ptr->alloc_tres_fmt_str ?
+				    node_ptr->alloc_tres_fmt_str : ""));
 
 	upper = node_state_string(node_ptr->node_state);
 	lower = str_tolower(upper);
@@ -500,7 +495,6 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	char tmp_current_watts[50], tmp_ave_watts[50];
 	char tmp_version[50];
 	char *tmp_state_lower, *tmp_state_upper, *tmp_state_complete;
-	char *node_alloc_tres = NULL;
 
 	if (node_ptr->energy->current_watts == NO_VAL) {
 		snprintf(tmp_current_watts, sizeof(tmp_current_watts),
@@ -573,10 +567,6 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 		xfree(user_name);
 	}
 
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
-				     NODE_STATE_ALLOCATED, &node_alloc_tres);
-
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &sview_node_info_ptr->iter_ptr,
 			   SORTID_ACTIVE_FEATURES, node_ptr->features_act,
@@ -617,8 +607,8 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_STATE_COMPLETE, tmp_state_complete,
 			   SORTID_STATE_NUM, node_ptr->node_state,
 			   SORTID_THREADS,   node_ptr->threads,
-			   SORTID_TRES_ALLOC, node_alloc_tres ?
-			   node_alloc_tres : "",
+			   SORTID_TRES_ALLOC, node_ptr->alloc_tres_fmt_str ?
+			   node_ptr->alloc_tres_fmt_str : "",
 			   SORTID_TRES_CONFIG, node_ptr->tres_fmt_str,
 			   SORTID_USED_CPUS, tmp_used_cpus,
 			   SORTID_USED_MEMORY, tmp_used_memory,
@@ -629,7 +619,6 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 
 	xfree(tmp_state_complete);
 	xfree(tmp_state_lower);
-	xfree(node_alloc_tres);
 	return;
 }
 

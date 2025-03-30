@@ -4229,6 +4229,7 @@ static void _free_all_node_info(node_info_msg_t *msg)
 extern void slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
+		xfree(node->alloc_tres_fmt_str);
 		xfree(node->arch);
 		xfree(node->bcast_address);
 		xfree(node->cluster_name);

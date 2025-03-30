@@ -3859,22 +3859,11 @@ static int DUMP_FUNC(NODE_SELECT_TRES_USED)(const parser_t *const parser,
 					    void *obj, data_t *dst,
 					    args_t *args)
 {
-	int rc;
 	node_info_t *node = obj;
-	char *node_alloc_tres = NULL;
-
-	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
-					    SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
-					    NODE_STATE_ALLOCATED,
-					    &node_alloc_tres))) {
-		return on_error(DUMPING, parser->type, args, rc,
-				"slurm_get_select_nodeinfo", __func__,
-				"slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_TRES_ALLOC_FMT_STR) failed",
-				node->name);
-	}
+	char *node_alloc_tres = node->alloc_tres_fmt_str;
 
 	if (node_alloc_tres)
-		data_set_string_own(dst, node_alloc_tres);
+		data_set_string(dst, node_alloc_tres);
 	else
 		data_set_string(dst, "");
 
