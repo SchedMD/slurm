@@ -183,7 +183,7 @@ extern int select_char2coord(char coord)
 extern int select_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
-	int i, j, plugin_cnt;
+	int plugin_cnt;
 	char *plugin_type = "select";
 	list_t *plugin_names = NULL;
 	_plugin_args_t plugin_args = {0};
@@ -212,25 +212,6 @@ extern int select_g_init(void)
 	if (select_context_default == -1)
 		fatal("Can't find plugin for %s", slurm_conf.select_type);
 
-	/* Ensure that plugin_id is valid and unique */
-	for (i=0; i<select_context_cnt; i++) {
-		for (j=i+1; j<select_context_cnt; j++) {
-			if (*(ops[i].plugin_id) !=
-			    *(ops[j].plugin_id))
-				continue;
-			fatal("SelectPlugins: Duplicate plugin_id %u for "
-			      "%s and %s",
-			      *(ops[i].plugin_id),
-			      select_context[i]->type,
-			      select_context[j]->type);
-		}
-		if (*(ops[i].plugin_id) < 100) {
-			fatal("SelectPlugins: Invalid plugin_id %u (<100) %s",
-			      *(ops[i].plugin_id),
-			      select_context[i]->type);
-		}
-
-	}
 done:
 	slurm_mutex_unlock( &select_context_lock );
 	if (running_in_slurmctld() && !running_cons_tres()) {
