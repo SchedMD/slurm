@@ -69,7 +69,6 @@
 #include "src/interfaces/hash.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
-#include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
 
@@ -1529,10 +1528,6 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack64(&node->alloc_memory, buffer);
 		safe_unpackstr(&node->alloc_tres_fmt_str, buffer);
 		safe_unpackdouble(&node->alloc_tres_weighted, buffer);
-		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
-						    buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
 
 		safe_unpackstr(&node->arch, buffer);
 		safe_unpackstr(&node->features, buffer);
@@ -1599,10 +1594,6 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack64(&node->alloc_memory, buffer);
 		safe_unpackstr(&node->alloc_tres_fmt_str, buffer);
 		safe_unpackdouble(&node->alloc_tres_weighted, buffer);
-		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
-						    buffer, protocol_version)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
 
 		safe_unpackstr(&node->arch, buffer);
 		safe_unpackstr(&node->features, buffer);
@@ -1670,10 +1661,6 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack64(&node->alloc_memory, buffer);
 		safe_unpackstr(&node->alloc_tres_fmt_str, buffer);
 		safe_unpackdouble(&node->alloc_tres_weighted, buffer);
-		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
-						    buffer, protocol_version)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
 
 		safe_unpackstr(&node->arch, buffer);
 		safe_unpackstr(&node->features, buffer);
