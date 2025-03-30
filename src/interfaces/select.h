@@ -107,19 +107,6 @@ extern int select_get_plugin_id_pos(uint32_t plugin_id);
  */
 extern char *select_type_param_string(uint16_t select_type_param);
 
-/*
- * Save any global state information
- * IN dir_name - directory into which the data can be stored
- */
-extern int select_g_state_save(char *dir_name);
-
-/*
- * Initialize context for node selection plugin and
- * restore any global state information
- * IN dir_name - directory from which the data can be restored
- */
-extern int select_g_state_restore(char *dir_name);
-
 /*********************************\
  * STATE INITIALIZATION FUNCTIONS *
 \*********************************/

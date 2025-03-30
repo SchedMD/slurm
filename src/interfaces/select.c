@@ -50,8 +50,6 @@
 
 typedef struct {
 	uint32_t	(*plugin_id);
-	int		(*state_save)		(char *dir_name);
-	int		(*state_restore)	(char *dir_name);
 	int		(*job_init)		(list_t *job_list);
 	int		(*node_init)		(void);
 	int		(*job_test)		(job_record_t *job_ptr,
@@ -95,8 +93,6 @@ typedef struct {
 
 static const char *node_select_syms[] = {
 	"plugin_id",
-	"select_p_state_save",
-	"select_p_state_restore",
 	"select_p_job_init",
 	"select_p_node_init",
 	"select_p_job_test",
@@ -382,38 +378,6 @@ extern char *select_type_param_string(uint16_t select_type_param)
 		strcat(select_str, "NONE");
 
 	return select_str;
-}
-
-/*
- * Save any global state information
- * IN dir_name - directory into which the data can be stored
- */
-extern int select_g_state_save(char *dir_name)
-{
-	DEF_TIMERS;
-	int rc;
-
-	xassert(select_context_cnt >= 0);
-
-	START_TIMER;
-	rc = (*(ops[select_context_default].state_save))
-		(dir_name);
-	END_TIMER2(__func__);
-
-	return rc;
-}
-
-/*
- * Initialize context for node selection plugin and
- * restore any global state information
- * IN dir_name - directory from which the data can be restored
- */
-extern int select_g_state_restore(char *dir_name)
-{
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].state_restore))
-		(dir_name);
 }
 
 /*

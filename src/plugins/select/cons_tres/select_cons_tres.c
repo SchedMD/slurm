@@ -225,22 +225,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_state_save(char *dir_name)
-{
-	/* nothing to save */
-	return SLURM_SUCCESS;
-}
-
-/* This is Part 2 of a 4-part procedure which can be found in
- * src/slurmctld/read_config.c. See select_p_node_init for the
- * whole story.
- */
-extern int select_p_state_restore(char *dir_name)
-{
-	/* nothing to restore */
-	return SLURM_SUCCESS;
-}
-
 /* This is Part 3 of a 4-part procedure which can be found in
  * src/slurmctld/read_config.c. See select_p_node_init for the
  * whole story.
@@ -255,7 +239,6 @@ extern int select_p_job_init(list_t *job_list)
  * src/slurmctld/read_config.c. The whole story goes like this:
  *
  * Step 1: select_g_node_init          : initializes the global node arrays
- * Step 2: select_g_state_restore      : NO-OP - nothing to restore
  * Step 3: select_g_job_init           : NO-OP - nothing to initialize
  * Step 4: select_g_select_nodeinfo_set: called from reset_job_bitmaps() with
  *                                       each valid recovered job_ptr AND from

@@ -2203,16 +2203,6 @@ extern int fini ( void )
  * node selection API.
  */
 
-extern int select_p_state_save(char *dir_name)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_state_restore(char *dir_name)
-{
-	return SLURM_SUCCESS;
-}
-
 /*
  * Note the initialization of job records, issued upon restart of
  * slurmctld and used to synchronize any job state.
