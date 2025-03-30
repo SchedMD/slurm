@@ -75,9 +75,6 @@ typedef struct {
 	int		(*nodeinfo_pack)	(select_nodeinfo_t *nodeinfo,
 						 buf_t *buffer,
 						 uint16_t protocol_version);
-	int		(*nodeinfo_unpack)	(select_nodeinfo_t **nodeinfo,
-						 buf_t *buffer,
-						 uint16_t protocol_version);
 	select_nodeinfo_t *(*nodeinfo_alloc)	(void);
 	int		(*nodeinfo_free)	(select_nodeinfo_t *nodeinfo);
 	int		(*nodeinfo_set_all)	(void);
@@ -102,7 +99,6 @@ static const char *node_select_syms[] = {
 	"select_p_job_suspend",
 	"select_p_job_resume",
 	"select_p_select_nodeinfo_pack",
-	"select_p_select_nodeinfo_unpack",
 	"select_p_select_nodeinfo_alloc",
 	"select_p_select_nodeinfo_free",
 	"select_p_select_nodeinfo_set_all",
@@ -552,32 +548,6 @@ extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
 
 	return (*(ops[plugin_id].
 		  nodeinfo_pack))(data, buffer, protocol_version);
-}
-
-extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
-					   buf_t *buffer,
-					   uint16_t protocol_version)
-{
-	dynamic_plugin_data_t *nodeinfo_ptr = NULL;
-
-	xassert(select_context_cnt >= 0);
-
-	nodeinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	*nodeinfo = nodeinfo_ptr;
-	nodeinfo_ptr->plugin_id = select_context_default;
-
-	if ((*(ops[nodeinfo_ptr->plugin_id].nodeinfo_unpack))
-	   ((select_nodeinfo_t **)&nodeinfo_ptr->data, buffer,
-	    protocol_version) != SLURM_SUCCESS)
-		goto unpack_error;
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	select_g_select_nodeinfo_free(nodeinfo_ptr);
-	*nodeinfo = NULL;
-	error("%s: unpack error", __func__);
-	return SLURM_ERROR;
 }
 
 extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void)

@@ -143,19 +143,6 @@ extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
 					 buf_t *buffer,
 					 uint16_t protocol_version);
 
-/*
- * Unpack a select plugin node record from a buffer.
- * OUT nodeinfo - The unpacked node record
- * IN/OUT buffer - The buffer to unpack the record from
- * IN protocol_version - Version used for unpacking the record
- *
- * NOTE: Call select_g_select_nodeinfo_free() to release the memory in the
- * returned value
- */
-extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
-					   buf_t *buffer,
-					   uint16_t protocol_version);
-
 /* Free the memory allocated for a select plugin node record */
 extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo);
 

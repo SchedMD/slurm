@@ -863,18 +863,6 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
-					   buf_t *buffer,
-					   uint16_t protocol_version)
-{
-	select_nodeinfo_t *nodeinfo_ptr = NULL;
-
-	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
-	*nodeinfo = nodeinfo_ptr;
-
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_select_nodeinfo_set_all(void)
 {
 	static time_t last_set_all = 0;
