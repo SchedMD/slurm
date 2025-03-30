@@ -533,8 +533,6 @@ extern int select_g_select_nodeinfo_pack(node_record_t *node_ptr,
 
 	xassert(select_context_cnt >= 0);
 
-	select_plugin_id_pack(buffer);
-
 	if (nodeinfo) {
 		data = nodeinfo->data;
 		plugin_id = nodeinfo->plugin_id;
