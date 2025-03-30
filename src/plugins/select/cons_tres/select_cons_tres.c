@@ -813,13 +813,6 @@ extern int select_p_select_nodeinfo_pack(node_record_t *node_ptr,
 					 buf_t *buffer,
 					 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack16(node_ptr->alloc_cpus, buffer);
-		pack64(node_ptr->alloc_memory, buffer);
-		packstr(node_ptr->alloc_tres_fmt_str, buffer);
-		packdouble(node_ptr->alloc_tres_weighted, buffer);
-	}
-
 	return SLURM_SUCCESS;
 }
 
