@@ -107,10 +107,6 @@ time_t last_node_update;
 slurmctld_config_t slurmctld_config;
 #endif
 
-struct select_nodeinfo {
-	uint16_t magic;		/* magic number */
-};
-
 static int  _add_job_to_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 			      char *pre_err, int suspended);
 static void _add_run_job(struct cr_record *cr_ptr, uint32_t job_id);
@@ -2471,24 +2467,11 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 {
-	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
-
-	nodeinfo->magic = NODEINFO_MAGIC;
-
-	return nodeinfo;
+	return NULL;
 }
 
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
-	if (nodeinfo) {
-		if (nodeinfo->magic != NODEINFO_MAGIC) {
-			error("select_p_select_nodeinfo_free: "
-			      "nodeinfo magic bad");
-			return EINVAL;
-		}
-		nodeinfo->magic = 0;
-		xfree(nodeinfo);
-	}
 	return SLURM_SUCCESS;
 }
 

@@ -91,11 +91,6 @@ bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
 bool     spec_cores_first     = false;
 
-struct select_nodeinfo {
-	uint16_t magic;		/* magic number */
-};
-
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -810,22 +805,11 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 {
-	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(select_nodeinfo_t));
-
-	nodeinfo->magic = nodeinfo_magic;
-
-	return nodeinfo;
+	return NULL;
 }
 
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
-	if (nodeinfo) {
-		if (nodeinfo->magic != nodeinfo_magic) {
-			error("nodeinfo magic bad");
-			return EINVAL;
-		}
-		xfree(nodeinfo);
-	}
 	return SLURM_SUCCESS;
 }
 
