@@ -47,21 +47,3 @@ $slurm->kill_job($jobid, SIGKILL) if $jobid;
 # 20
 $resp = $slurm->load_node();
 ok(ref($resp) eq "HASH", "load node");
-$nodeinfo = $resp->{node_array}->[0]->{select_nodeinfo};
-
-
-my $nodeinfo_data = {
-    SELECT_NODEDATA_SUBCNT() => ["", [qw(linear cons_res)]],
-    SELECT_NODEDATA_PTR() => ["Slurm::select_nodeinfo_t", [qw(linear cray cons_res)]],
-};
-
-
-# 21 - 26
-foreach $type (0 .. SELECT_NODEDATA_PTR) {
-  SKIP: {
-      skip "pluing not support", 1 unless grep {$select_type eq $_} @{$nodeinfo_data->{$type}->[1]};
-      $rc = $slurm->get_select_nodeinfo($nodeinfo, $type, NODE_STATE_ALLOCATED, $data);
-      ok ($rc == SLURM_SUCCESS && ref($data) eq $nodeinfo_data->{$type}->[0], "get select nodeinfo $type")
-	  or diag("get select nodeinfo $type: $rc, " . ref($data));
-    }
-}
