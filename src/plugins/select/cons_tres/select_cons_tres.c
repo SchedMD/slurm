@@ -1046,7 +1046,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
-	char **tmp_char = (char **) data;
 	double *tmp_double = (double *) data;
 	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
@@ -1069,9 +1068,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		break;
 	case SELECT_NODEDATA_PTR:
 		*select_nodeinfo = nodeinfo;
-		break;
-	case SELECT_NODEDATA_TRES_ALLOC_FMT_STR:
-		*tmp_char = xstrdup(nodeinfo->tres_alloc_fmt_str);
 		break;
 	case SELECT_NODEDATA_TRES_ALLOC_WEIGHTED:
 		*tmp_double = nodeinfo->tres_alloc_weighted;
