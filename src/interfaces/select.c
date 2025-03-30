@@ -93,17 +93,9 @@ static const char *node_select_syms[] = {
 	"select_p_reconfigure",
 };
 
-static int select_context_cnt = -1;
-static int select_context_default = -1;
-
-static slurm_select_ops_t *ops = NULL;
-static plugin_context_t **select_context = NULL;
+static slurm_select_ops_t ops;
+static plugin_context_t *select_context = NULL;
 static pthread_mutex_t select_context_lock = PTHREAD_MUTEX_INITIALIZER;
-
-typedef struct _plugin_args {
-	char *plugin_type;
-	char *default_plugin;
-} _plugin_args_t;
 
 typedef struct {
 	int id;
@@ -140,32 +132,10 @@ extern int select_string_to_plugin_id(const char *plugin)
 extern bool running_cons_tres(void)
 {
 	xassert(running_in_slurmctld());
-	xassert(select_context_cnt >= 0);
 
-	if (*ops[select_context_default].plugin_id == SELECT_PLUGIN_CONS_TRES)
+	if (*ops.plugin_id == SELECT_PLUGIN_CONS_TRES)
 		return true;
 	return false;
-}
-
-static int _load_plugins(void *x, void *arg)
-{
-	char *plugin_name     = (char *)x;
-	_plugin_args_t *pargs = (_plugin_args_t *)arg;
-
-	select_context[select_context_cnt] =
-		plugin_context_create(pargs->plugin_type, plugin_name,
-				      (void **)&ops[select_context_cnt],
-				      node_select_syms,
-				      sizeof(node_select_syms));
-
-	if (select_context[select_context_cnt]) {
-		/* set the default */
-		if (!xstrcmp(plugin_name, pargs->default_plugin))
-			select_context_default = select_context_cnt;
-		select_context_cnt++;
-	}
-
-	return 0;
 }
 
 extern int select_char2coord(char coord)
@@ -183,34 +153,23 @@ extern int select_char2coord(char coord)
 extern int select_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
-	int plugin_cnt;
 	char *plugin_type = "select";
-	list_t *plugin_names = NULL;
-	_plugin_args_t plugin_args = {0};
 
 	slurm_mutex_lock( &select_context_lock );
 
 	if ( select_context )
 		goto done;
 
-	select_context_cnt = 0;
+	select_context =
+		plugin_context_create(plugin_type, slurm_conf.select_type,
+				      (void **) &ops, node_select_syms,
+				      sizeof(node_select_syms));
 
-	plugin_args.plugin_type    = plugin_type;
-	plugin_args.default_plugin = slurm_conf.select_type;
-
-	plugin_names = list_create(xfree_ptr);
-	list_append(plugin_names, xstrdup(slurm_conf.select_type));
-
-	if (plugin_names && (plugin_cnt = list_count(plugin_names))) {
-		ops = xcalloc(plugin_cnt, sizeof(slurm_select_ops_t));
-		select_context = xcalloc(plugin_cnt,
-					 sizeof(plugin_context_t *));
-		list_for_each(plugin_names, _load_plugins, &plugin_args);
+	if (!select_context) {
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.select_type);
+		retval = SLURM_ERROR;
 	}
-
-
-	if (select_context_default == -1)
-		fatal("Can't find plugin for %s", slurm_conf.select_type);
 
 done:
 	slurm_mutex_unlock( &select_context_lock );
@@ -226,27 +185,19 @@ done:
 		}
 	}
 
-	FREE_NULL_LIST(plugin_names);
-
 	return retval;
 }
 
 extern int select_g_fini(void)
 {
-	int rc = SLURM_SUCCESS, i, j;
+	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&select_context_lock);
 	if (!select_context)
 		goto fini;
 
-	for (i=0; i<select_context_cnt; i++) {
-		j = plugin_context_destroy(select_context[i]);
-		if (j != SLURM_SUCCESS)
-			rc = j;
-	}
-	xfree(ops);
-	xfree(select_context);
-	select_context_cnt = -1;
+	rc = plugin_context_destroy(select_context);
+	select_context = NULL;
 
 fini:	slurm_mutex_unlock(&select_context_lock);
 	return rc;
@@ -332,9 +283,7 @@ extern char *select_type_param_string(uint16_t select_type_param)
  */
 extern int select_g_node_init(void)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].node_init))();
+	return (*(ops.node_init))();
 }
 
 /*
@@ -366,15 +315,10 @@ extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			     resv_exc_t *resv_exc_ptr,
 			     will_run_data_t *will_run_ptr)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].job_test))
-		(job_ptr, bitmap,
-		 min_nodes, max_nodes,
-		 req_nodes, mode,
-		 preemptee_candidates, preemptee_job_list,
-		 resv_exc_ptr,
-		 will_run_ptr);
+	return (*(ops.job_test))(job_ptr, bitmap, min_nodes, max_nodes,
+				 req_nodes, mode, preemptee_candidates,
+				 preemptee_job_list, resv_exc_ptr,
+				 will_run_ptr);
 }
 
 /*
@@ -384,10 +328,7 @@ extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
  */
 extern int select_g_job_begin(job_record_t *job_ptr)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].job_begin))
-		(job_ptr);
+	return (*(ops.job_begin))(job_ptr);
 }
 
 /*
@@ -398,10 +339,7 @@ extern int select_g_job_begin(job_record_t *job_ptr)
  */
 extern int select_g_job_ready(job_record_t *job_ptr)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].job_ready))
-		(job_ptr);
+	return (*(ops.job_ready))(job_ptr);
 }
 
 /*
@@ -413,10 +351,7 @@ extern int select_g_job_ready(job_record_t *job_ptr)
 extern int select_g_job_expand(job_record_t *from_job_ptr,
 			       job_record_t *to_job_ptr)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].job_expand))
-		(from_job_ptr, to_job_ptr);
+	return (*(ops.job_expand))(from_job_ptr, to_job_ptr);
 }
 
 /*
@@ -426,10 +361,7 @@ extern int select_g_job_expand(job_record_t *from_job_ptr,
  */
 extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].job_resized))
-		(job_ptr, node_ptr);
+	return (*(ops.job_resized))(job_ptr, node_ptr);
 }
 
 /*
@@ -438,10 +370,7 @@ extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
  */
 extern int select_g_job_fini(job_record_t *job_ptr)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].job_fini))
-		(job_ptr);
+	return (*(ops.job_fini))(job_ptr);
 }
 
 /*
@@ -453,10 +382,7 @@ extern int select_g_job_fini(job_record_t *job_ptr)
  */
 extern int select_g_job_suspend(job_record_t *job_ptr, bool indf_susp)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].job_suspend))
-		(job_ptr, indf_susp);
+	return (*(ops.job_suspend))(job_ptr, indf_susp);
 }
 
 /*
@@ -468,26 +394,17 @@ extern int select_g_job_suspend(job_record_t *job_ptr, bool indf_susp)
  */
 extern int select_g_job_resume(job_record_t *job_ptr, bool indf_susp)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].job_resume))
-		(job_ptr, indf_susp);
+	return (*(ops.job_resume))(job_ptr, indf_susp);
 }
 
 extern int select_g_select_nodeinfo_set_all(void)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].nodeinfo_set_all))
-		();
+	return (*(ops.nodeinfo_set_all))();
 }
 
 extern int select_g_select_nodeinfo_set(job_record_t *job_ptr)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].nodeinfo_set))
-		(job_ptr);
+	return (*(ops.nodeinfo_set))(job_ptr);
 }
 
 /*
@@ -496,8 +413,7 @@ extern int select_g_select_nodeinfo_set(job_record_t *job_ptr)
  */
 extern void select_plugin_id_pack(buf_t *buffer)
 {
-	xassert(select_context_cnt >= 0);
-	pack32(*(ops[select_context_default].plugin_id), buffer);
+	pack32(*(ops.plugin_id), buffer);
 }
 
 /*
@@ -505,7 +421,5 @@ extern void select_plugin_id_pack(buf_t *buffer)
  */
 extern int select_g_reconfigure (void)
 {
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].reconfigure))();
+	return (*(ops.reconfigure))();
 }
