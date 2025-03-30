@@ -72,8 +72,6 @@ typedef struct {
 						 bool indf_susp);
 	int		(*job_resume)		(job_record_t *job_ptr,
 						 bool indf_susp);
-	select_nodeinfo_t *(*nodeinfo_alloc)	(void);
-	int		(*nodeinfo_free)	(select_nodeinfo_t *nodeinfo);
 	int		(*nodeinfo_set_all)	(void);
 	int		(*nodeinfo_set)		(job_record_t *job_ptr);
 	int		(*reconfigure)		(void);
@@ -90,8 +88,6 @@ static const char *node_select_syms[] = {
 	"select_p_job_fini",
 	"select_p_job_suspend",
 	"select_p_job_resume",
-	"select_p_select_nodeinfo_alloc",
-	"select_p_select_nodeinfo_free",
 	"select_p_select_nodeinfo_set_all",
 	"select_p_select_nodeinfo_set",
 	"select_p_reconfigure",
@@ -511,34 +507,6 @@ extern int select_g_job_resume(job_record_t *job_ptr, bool indf_susp)
 
 	return (*(ops[select_context_default].job_resume))
 		(job_ptr, indf_susp);
-}
-
-extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void)
-{
-	dynamic_plugin_data_t *nodeinfo_ptr = NULL;
-
-	xassert(select_context_cnt >= 0);
-	xassert(!working_cluster_rec);
-
-	nodeinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	nodeinfo_ptr->plugin_id = select_context_default;
-	nodeinfo_ptr->data = (*(ops[select_context_default].nodeinfo_alloc))();
-	return nodeinfo_ptr;
-}
-
-extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo)
-{
-	int rc = SLURM_SUCCESS;
-
-	xassert(select_context_cnt >= 0);
-
-	if (nodeinfo) {
-		if (nodeinfo->data)
-			rc = (*(ops[nodeinfo->plugin_id].
-				nodeinfo_free))(nodeinfo->data);
-		xfree(nodeinfo);
-	}
-	return rc;
 }
 
 extern int select_g_select_nodeinfo_set_all(void)

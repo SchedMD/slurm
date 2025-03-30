@@ -999,8 +999,6 @@ pack_empty_SLURM_24_11_PROTOCOL_VERSION:
 pack_empty:
 				if (!inited) {
 					blank_node.config_ptr = &blank_config;
-					blank_node.select_nodeinfo =
-						select_g_select_nodeinfo_alloc();
 					inited = true;
 				}
 

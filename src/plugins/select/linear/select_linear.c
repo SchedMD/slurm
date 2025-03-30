@@ -157,9 +157,6 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			  list_t *preemptee_candidates,
 			  list_t **preemptee_job_list);
 
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
-extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -2463,16 +2460,6 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	rc = _add_job_to_nodes(cr_ptr, job_ptr, "select_p_job_resume", 0);
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
-}
-
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
-{
-	return NULL;
-}
-
-extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
-{
-	return SLURM_SUCCESS;
 }
 
 extern int select_p_select_nodeinfo_set_all(void)

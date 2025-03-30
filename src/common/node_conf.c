@@ -690,8 +690,6 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->port = slurm_conf.slurmd_port;
 	node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	node_ptr->resume_timeout = NO_VAL16;
-	if (running_in_slurmctld())
-		node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc();
 	node_ptr->suspend_time = NO_VAL;
 	node_ptr->suspend_timeout = NO_VAL16;
 
@@ -1364,8 +1362,6 @@ extern void purge_node_rec(void *in)
 	xfree(node_ptr->resv_name);
 	xfree(node_ptr->version);
 	acct_gather_energy_destroy(node_ptr->energy);
-	if (running_in_slurmctld())
-		select_g_select_nodeinfo_free(node_ptr->select_nodeinfo);
 	xfree(node_ptr->topology_str);
 	xfree(node_ptr->tres_str);
 	xfree(node_ptr->tres_fmt_str);

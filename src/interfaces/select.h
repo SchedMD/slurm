@@ -125,17 +125,6 @@ extern int select_g_reconfigure(void);
  * NODE SPECIFIC FUNCTIONS *
 \**************************/
 
-/*
- * Allocate a select plugin node record.
- *
- * NOTE: Call select_g_select_nodeinfo_free() to release the memory in the
- * returned value
- */
-extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void);
-
-/* Free the memory allocated for a select plugin node record */
-extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo);
-
 /* Reset select plugin specific information about a job
  * IN job_ptr - The updated job */
 extern int select_g_select_nodeinfo_set(job_record_t *job_ptr);
