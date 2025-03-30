@@ -4513,23 +4513,6 @@ extern void slurm_print_topo_info_msg(FILE *out,
 				      char *node_list, int one_liner);
 
 /*****************************************************************************\
- *	SLURM SELECT READ/PRINT/UPDATE FUNCTIONS
-\*****************************************************************************/
-
-/*
- * slurm_get_select_nodeinfo - get data from a select node credential
- * IN nodeinfo  - updated select node credential
- * IN data_type - type of data to enter into node credential
- * IN state     - state of node query
- * IN/OUT data  - the data to enter into node credential
- * RET 0 or -1 on error
- */
-extern int slurm_get_select_nodeinfo(dynamic_plugin_data_t *nodeinfo,
-				     enum select_nodedata_type data_type,
-				     enum node_states state,
-				     void *data);
-
-/*****************************************************************************\
  *	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
 
