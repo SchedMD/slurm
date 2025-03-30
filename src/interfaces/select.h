@@ -91,7 +91,7 @@ extern bool running_cons_tres(void);
 /*
  * Initialize context for node selection plugin
  */
-extern int select_g_init(bool only_default);
+extern int select_g_init(void);
 
 /*
  * Terminate plugin and free all associated memory

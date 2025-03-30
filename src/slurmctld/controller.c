@@ -804,7 +804,7 @@ int main(int argc, char **argv)
 	 * Initialize plugins.
 	 * If running configuration test, report ALL failures.
 	 */
-	if (select_g_init(true) != SLURM_SUCCESS)
+	if (select_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize node selection plugin");
 	/* gres_init() must follow select_g_init() */
 	if (gres_init() != SLURM_SUCCESS)

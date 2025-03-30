@@ -180,7 +180,7 @@ extern int select_char2coord(char coord)
 /*
  * Initialize context for node selection plugin
  */
-extern int select_g_init(bool only_default)
+extern int select_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	int i, j, plugin_cnt;
@@ -198,12 +198,9 @@ extern int select_g_init(bool only_default)
 	plugin_args.plugin_type    = plugin_type;
 	plugin_args.default_plugin = slurm_conf.select_type;
 
-	if (only_default) {
-		plugin_names = list_create(xfree_ptr);
-		list_append(plugin_names, xstrdup(slurm_conf.select_type));
-	} else {
-		plugin_names = plugin_get_plugins_of_type(plugin_type);
-	}
+	plugin_names = list_create(xfree_ptr);
+	list_append(plugin_names, xstrdup(slurm_conf.select_type));
+
 	if (plugin_names && (plugin_cnt = list_count(plugin_names))) {
 		ops = xcalloc(plugin_cnt, sizeof(slurm_select_ops_t));
 		select_context = xcalloc(plugin_cnt,

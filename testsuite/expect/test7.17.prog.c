@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 
 	slurm_init(NULL);
 
-	if (select_g_init(1) != SLURM_SUCCESS)
+	if (select_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize node selection plugin");
 
 	/*
