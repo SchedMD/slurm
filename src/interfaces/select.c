@@ -107,17 +107,6 @@ const plugin_id_name plugin_ids[] = {
 	{ SELECT_PLUGIN_CONS_TRES, "cons_tres" },
 };
 
-extern char *select_plugin_id_to_string(int plugin_id)
-{
-	for (int i = 0; i < ARRAY_SIZE(plugin_ids); i++)
-		if (plugin_id == plugin_ids[i].id)
-			return plugin_ids[i].name;
-
-	error("%s: unknown select plugin id: %d",
-	      __func__, plugin_id);
-	return NULL;
-}
-
 extern int select_string_to_plugin_id(const char *plugin)
 {
 	for (int i = 0; i < ARRAY_SIZE(plugin_ids); i++)
