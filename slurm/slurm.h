@@ -2623,7 +2623,6 @@ typedef struct will_run_response_msg {
 	list_t *preemptee_job_id; /* jobs preempted to start this job */
 	uint32_t proc_cnt;	/* CPUs allocated to job at start */
 	time_t start_time;	/* time when job will start */
-	double sys_usage_per;	/* System usage percentage */
 } will_run_response_msg_t;
 
 /*********************************/

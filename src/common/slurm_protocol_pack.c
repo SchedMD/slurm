@@ -12019,7 +12019,7 @@ _pack_will_run_response_msg(will_run_response_msg_t *msg, buf_t *buffer,
 
 		pack32(msg->proc_cnt, buffer);
 		pack_time(msg->start_time, buffer);
-		packdouble(msg->sys_usage_per, buffer);
+		packdouble(0, buffer); /* was sys_usage_per */
 	}
 }
 
@@ -12029,6 +12029,7 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, buf_t *buffer,
 {
 	will_run_response_msg_t *msg;
 	uint32_t count, i, uint32_tmp, *job_id_ptr;
+	double double_tmp;
 
 	msg = xmalloc(sizeof(will_run_response_msg_t));
 
@@ -12053,7 +12054,7 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, buf_t *buffer,
 
 		safe_unpack32(&msg->proc_cnt, buffer);
 		safe_unpack_time(&msg->start_time, buffer);
-		safe_unpackdouble(&msg->sys_usage_per, buffer);
+		safe_unpackdouble(&double_tmp, buffer); /* was sys_usage_per */
 	}
 
 	*msg_ptr = msg;
