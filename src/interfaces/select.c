@@ -252,19 +252,6 @@ fini:	slurm_mutex_unlock(&select_context_lock);
 	return rc;
 }
 
-/* Get this plugin's sequence number in Slurm's internal tables */
-extern int select_get_plugin_id_pos(uint32_t plugin_id)
-{
-	xassert(select_context_cnt >= 0);
-
-	for (int i = 0; i < select_context_cnt; i++) {
-		if (*(ops[i].plugin_id) == plugin_id)
-			return i;
-	}
-
-	return SLURM_ERROR;
-}
-
 /*
  * Convert SelectTypeParameter to equivalent string
  * NOTE: Not reentrant

@@ -98,9 +98,6 @@ extern int select_g_init(void);
  */
 extern int select_g_fini(void);
 
-/* Get this plugin's sequence number in Slurm's internal tables */
-extern int select_get_plugin_id_pos(uint32_t plugin_id);
-
 /*
  * Convert SelectTypeParameter to equivalent string
  * NOTE: Not reentrant
