@@ -258,49 +258,6 @@ static int _find_singleton_job (void *x, void *key)
 	return 0;
 }
 
-/*
- * Calculate how busy the system is by figuring out how busy each node is.
- */
-static double _get_system_usage(void)
-{
-	static double sys_usage_per = 0.0;
-	static time_t last_idle_update = 0;
-
-	if (last_idle_update < last_node_update) {
-		int    i;
-		double alloc_tres = 0;
-		double tot_tres   = 0;
-		node_record_t *node_ptr;
-
-		select_g_select_nodeinfo_set_all();
-
-		for (i = 0; (node_ptr = next_node(&i)); i++) {
-			double node_alloc_tres = 0.0;
-			double node_tot_tres   = 0.0;
-
-			select_g_select_nodeinfo_get(
-				node_ptr->select_nodeinfo,
-				SELECT_NODEDATA_TRES_ALLOC_WEIGHTED,
-				NODE_STATE_ALLOCATED, &node_alloc_tres);
-
-			node_tot_tres =
-				assoc_mgr_tres_weighted(
-					node_ptr->tres_cnt,
-					node_ptr->config_ptr->tres_weights,
-					slurm_conf.priority_flags, false);
-
-			alloc_tres += node_alloc_tres;
-			tot_tres   += node_tot_tres;
-		}
-		last_idle_update = last_node_update;
-
-		if (tot_tres)
-			sys_usage_per = (alloc_tres / tot_tres) * 100;
-	}
-
-	return sys_usage_per;
-}
-
 static int _queue_resv_list(void *x, void *key)
 {
 	job_queue_req_t *job_queue_req = (job_queue_req_t *) key;
@@ -4471,8 +4428,6 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 			(void) list_for_each(preemptee_job_list,
 					     _foreach_add_to_preemptee_job_id,
 					     resp_data);
-
-		resp_data->sys_usage_per = _get_system_usage();
 
 		*job_start_data->resp = resp_data;
 	} else {
