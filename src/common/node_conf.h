@@ -91,6 +91,7 @@ struct node_record {
 	 * call select_g_select_nodeinfo_set_all() to update
 	 */
 	uint16_t alloc_cpus;		/* allocated cpus */
+	uint64_t alloc_memory;		/* allocated memory */
 	char *arch;			/* computer architecture */
 	char *bcast_address;		/* BcastAddr */
 	uint16_t boards; 		/* count of boards configured */

@@ -93,7 +93,6 @@ bool     spec_cores_first     = false;
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
-	uint64_t alloc_memory;
 	uint64_t *tres_alloc_cnt;	/* array of tres counts allocated.
 					   NOT PACKED */
 	char     *tres_alloc_fmt_str;	/* formatted str of allocated tres */
@@ -820,7 +819,7 @@ extern int select_p_select_nodeinfo_pack(node_record_t *node_ptr,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(node_ptr->alloc_cpus, buffer);
-		pack64(nodeinfo->alloc_memory, buffer);
+		pack64(node_ptr->alloc_memory, buffer);
 		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
 		packdouble(nodeinfo->tres_alloc_weighted, buffer);
 	}
@@ -937,7 +936,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 			alloc_cpus *= node_ptr->threads;
 		node_ptr->alloc_cpus = alloc_cpus;
 
-		nodeinfo->alloc_memory = select_node_usage[n].alloc_memory;
+		node_ptr->alloc_memory = select_node_usage[n].alloc_memory;
 
 		/* Build allocated TRES info */
 		if (!nodeinfo->tres_alloc_cnt)
@@ -945,7 +944,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 							   sizeof(uint64_t));
 		nodeinfo->tres_alloc_cnt[TRES_ARRAY_CPU] = alloc_cpus;
 		nodeinfo->tres_alloc_cnt[TRES_ARRAY_MEM] =
-			nodeinfo->alloc_memory;
+			node_ptr->alloc_memory;
 		if (select_node_usage[n].gres_list)
 			gres_list = select_node_usage[n].gres_list;
 		else

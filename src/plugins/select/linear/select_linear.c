@@ -109,7 +109,6 @@ slurmctld_config_t slurmctld_config;
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
-	uint64_t alloc_memory;
 	char    *tres_alloc_fmt_str;	/* formatted str of allocated tres */
 	double   tres_alloc_weighted;	/* weighted number of tres allocated. */
 };
@@ -2480,7 +2479,7 @@ extern int select_p_select_nodeinfo_pack(node_record_t *node_ptr,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(node_ptr->alloc_cpus, buffer);
-		pack64(nodeinfo->alloc_memory, buffer);
+		pack64(node_ptr->alloc_memory, buffer);
 		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
 		packdouble(nodeinfo->tres_alloc_weighted, buffer);
 	}
@@ -2554,10 +2553,10 @@ extern int select_p_select_nodeinfo_set_all(void)
 			nodeinfo->tres_alloc_weighted = 0.0;
 		}
 		if (cr_ptr && cr_ptr->nodes) {
-			nodeinfo->alloc_memory =
+			node_ptr->alloc_memory =
 				cr_ptr->nodes[node_ptr->index].alloc_memory;
 		} else {
-			nodeinfo->alloc_memory = 0;
+			node_ptr->alloc_memory = 0;
 		}
 	}
 
