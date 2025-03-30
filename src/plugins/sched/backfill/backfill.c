@@ -1818,18 +1818,15 @@ static void _handle_planned(bool set)
 			 * This only really matters for IDLE and MIXED.
 			 */
 			if (IS_NODE_ALLOCATED(node_ptr)) {
-				uint16_t alloc_cpus = 0, idle_cpus = 0;
+				uint16_t idle_cpus = 0;
 
 				if (!select_synced) {
 					select_g_select_nodeinfo_set_all();
 					select_synced = true;
 				}
 
-				select_g_select_nodeinfo_get(
-					node_ptr,
-					SELECT_NODEDATA_SUBCNT,
-					NODE_STATE_ALLOCATED, &alloc_cpus);
-				idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
+				idle_cpus = node_ptr->cpus_efctv -
+					    node_ptr->alloc_cpus;
 				if (idle_cpus &&
 				    (idle_cpus < node_ptr->cpus_efctv))
 					/* Mixed node as planned */
