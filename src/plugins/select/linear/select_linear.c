@@ -2509,18 +2509,7 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
 	*nodeinfo = nodeinfo_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackdouble(&nodeinfo_ptr->tres_alloc_weighted, buffer);
-	}
-
 	return SLURM_SUCCESS;
-
-unpack_error:
-	error("select_nodeinfo_unpack: error unpacking here");
-	select_p_select_nodeinfo_free(nodeinfo_ptr);
-	*nodeinfo = NULL;
-
-	return SLURM_ERROR;
 }
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)

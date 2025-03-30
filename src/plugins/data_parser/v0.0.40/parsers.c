@@ -3510,21 +3510,9 @@ static int DUMP_FUNC(NODE_SELECT_TRES_WEIGHTED)(const parser_t *const parser,
 						void *obj, data_t *dst,
 						args_t *args)
 {
-	int rc;
 	node_info_t *node = obj;
-	double node_tres_weighted = 0;
 
-	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
-					    SELECT_NODEDATA_TRES_ALLOC_WEIGHTED,
-					    NODE_STATE_ALLOCATED,
-					    &node_tres_weighted))) {
-		return on_error(DUMPING, parser->type, args, rc,
-				"slurm_get_select_nodeinfo", __func__,
-				"slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_TRES_ALLOC_WEIGHTED) failed",
-				node->name);
-	}
-
-	data_set_float(dst, node_tres_weighted);
+	data_set_float(dst, node->alloc_tres_weighted);
 
 	return SLURM_SUCCESS;
 }
