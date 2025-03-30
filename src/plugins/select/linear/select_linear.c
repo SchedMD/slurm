@@ -2203,15 +2203,6 @@ extern int fini ( void )
  * node selection API.
  */
 
-/*
- * Note the initialization of job records, issued upon restart of
- * slurmctld and used to synchronize any job state.
- */
-extern int select_p_job_init(list_t *job_list_arg)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_node_init(void)
 {
 	/* NOTE: We free the consumable resources info here, but

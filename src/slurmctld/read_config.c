@@ -1646,8 +1646,7 @@ extern int read_slurm_conf(int recover)
 	_sync_part_prio();
 	_build_part_bitmaps(); /* Must be called after build_feature_list_*() */
 
-	if ((select_g_node_init() != SLURM_SUCCESS) ||
-	    (select_g_job_init(job_list) != SLURM_SUCCESS))
+	if (select_g_node_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize node selection plugin state, Clean start required.");
 
 	/*

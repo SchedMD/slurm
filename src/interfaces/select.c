@@ -50,7 +50,6 @@
 
 typedef struct {
 	uint32_t	(*plugin_id);
-	int		(*job_init)		(list_t *job_list);
 	int		(*node_init)		(void);
 	int		(*job_test)		(job_record_t *job_ptr,
 						 bitstr_t *bitmap,
@@ -93,7 +92,6 @@ typedef struct {
 
 static const char *node_select_syms[] = {
 	"plugin_id",
-	"select_p_job_init",
 	"select_p_node_init",
 	"select_p_job_test",
 	"select_p_job_begin",
@@ -378,18 +376,6 @@ extern char *select_type_param_string(uint16_t select_type_param)
 		strcat(select_str, "NONE");
 
 	return select_str;
-}
-
-/*
- * Note the initialization of job records, issued upon restart of
- * slurmctld and used to synchronize any job state.
- */
-extern int select_g_job_init(list_t *job_list)
-{
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].job_init))
-		(job_list);
 }
 
 /*

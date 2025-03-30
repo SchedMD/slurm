@@ -118,13 +118,6 @@ extern char *select_type_param_string(uint16_t select_type_param);
  */
 extern int select_g_node_init(void);
 
-/*
- * Note the initialization of job records, issued upon restart of
- * slurmctld and used to synchronize any job state.
- * IN job_list - List of Slurm jobs from slurmctld
- */
-extern int select_g_job_init(list_t *job_list);
-
 /* Note reconfiguration or change in partition configuration */
 extern int select_g_reconfigure(void);
 
