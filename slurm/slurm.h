@@ -2386,10 +2386,6 @@ typedef struct node_info {
 			         * this point in time */
 	char *resv_name;        /* If node is in a reservation this is
 				 * the name of the reservation */
-	dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
-						  * use
-						  * slurm_get_select_nodeinfo()
-						  * to access contents */
 	time_t slurmd_start_time;/* time of slurmd startup */
 	uint16_t sockets;       /* total number of sockets per node */
 	uint16_t threads;       /* number of threads per core */

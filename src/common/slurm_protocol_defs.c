@@ -4253,8 +4253,6 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->partitions);
 		xfree(node->reason);
 		xfree(node->resv_name);
-		select_g_select_nodeinfo_free(node->select_nodeinfo);
-		node->select_nodeinfo = NULL;
 		xfree(node->topology_str);
 		xfree(node->tres_fmt_str);
 		xfree(node->version);

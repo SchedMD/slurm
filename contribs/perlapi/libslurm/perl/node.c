@@ -59,8 +59,6 @@ node_info_to_hv(node_info_t *node_info, HV *hv)
 	STORE_FIELD(hv, node_info, threads, uint16_t);
 	STORE_FIELD(hv, node_info, tmp_disk, uint32_t);
 
-	STORE_PTR_FIELD(hv, node_info, select_nodeinfo, "Slurm::dynamic_plugin_data_t");
-
 	STORE_FIELD(hv, node_info, weight, uint32_t);
 	return 0;
 }
@@ -104,7 +102,6 @@ hv_to_node_info(HV *hv, node_info_t *node_info)
 	FETCH_FIELD(hv, node_info, threads, uint16_t, TRUE);
 	FETCH_FIELD(hv, node_info, tmp_disk, uint32_t, TRUE);
 	FETCH_FIELD(hv, node_info, weight, uint32_t, TRUE);
-	FETCH_PTR_FIELD(hv, node_info, select_nodeinfo, "Slurm::dynamic_plugin_data_t", TRUE);
 	return 0;
 }
 
