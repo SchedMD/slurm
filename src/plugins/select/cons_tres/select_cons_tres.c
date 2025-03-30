@@ -908,16 +908,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 	}
 
 	for (n = 0; (node_ptr = next_node(&n)); n++) {
-		select_nodeinfo_t *nodeinfo = NULL;
+		select_nodeinfo_t *nodeinfo = node_ptr->select_nodeinfo->data;
 
-		/*
-		 * We have to use the '_g_' here to make sure we get the
-		 * correct data to work on.  i.e. select/cray calls this plugin
-		 * and has it's own struct.
-		 */
-		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-					     SELECT_NODEDATA_PTR, 0,
-					     (void *)&nodeinfo);
 		if (!nodeinfo) {
 			error("no nodeinfo returned from structure");
 			continue;
