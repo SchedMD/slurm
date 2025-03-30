@@ -523,10 +523,11 @@ extern int select_g_job_resume(job_record_t *job_ptr, bool indf_susp)
 		(job_ptr, indf_susp);
 }
 
-extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
+extern int select_g_select_nodeinfo_pack(node_record_t *node_ptr,
 					 buf_t *buffer,
 					 uint16_t protocol_version)
 {
+	dynamic_plugin_data_t *nodeinfo = node_ptr->select_nodeinfo;
 	void *data = NULL;
 	uint32_t plugin_id;
 
