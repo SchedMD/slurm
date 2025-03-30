@@ -657,7 +657,6 @@ static int _build_sinfo_data(list_t *sinfo_list,
 static bool _filter_node_state(uint32_t node_state, node_info_t *node_ptr)
 {
 	bool match = false;
-	uint16_t cpus = 0;
 	uint32_t base_state;
 	node_info_t tmp_node, *tmp_node_ptr = &tmp_node;
 	tmp_node_ptr->node_state = node_state;
@@ -691,10 +690,7 @@ static bool _filter_node_state(uint32_t node_state, node_info_t *node_ptr)
 			match = true;
 		}
 	} else if (node_state == NODE_STATE_ALLOCATED) {
-		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
-					  SELECT_NODEDATA_SUBCNT,
-					  NODE_STATE_ALLOCATED, &cpus);
-		if (cpus) {
+		if (node_ptr->alloc_cpus) {
 			match = true;
 		}
 	} else {
@@ -1098,11 +1094,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		hostlist_push_host(sinfo_ptr->hostnames, node_ptr->node_hostname);
 
 	total_cpus = node_ptr->cpus;
+	used_cpus = node_ptr->alloc_cpus;
 
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_SUBCNT,
-				     NODE_STATE_ALLOCATED,
-				     &used_cpus);
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_MEM_ALLOC,
 				     NODE_STATE_ALLOCATED,

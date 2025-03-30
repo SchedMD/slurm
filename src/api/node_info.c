@@ -178,7 +178,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 {
 	char time_str[256];
 	char *out = NULL, *reason_str = NULL, *complete_state = NULL;
-	uint16_t alloc_cpus = 0;
 	uint64_t alloc_memory;
 	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
@@ -200,11 +199,8 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_SUBCNT,
-				     NODE_STATE_ALLOCATED, &alloc_cpus);
 	xstrfmtcat(out, "CPUAlloc=%u CPUEfctv=%u CPUTot=%u ",
-		   alloc_cpus, node_ptr->cpus_efctv, node_ptr->cpus);
+		   node_ptr->alloc_cpus, node_ptr->cpus_efctv, node_ptr->cpus);
 
 	xstrfmtcat(out, "CPULoad=%.2f", (node_ptr->cpu_load / 100.0));
 
@@ -468,7 +464,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 
 static void _set_node_mixed_op(node_info_t *node_ptr)
 {
-	uint16_t alloc_cpus = 0;
 	uint16_t idle_cpus = 0;
 	char *alloc_tres = NULL;
 	bool make_mixed = false;
@@ -479,10 +474,7 @@ static void _set_node_mixed_op(node_info_t *node_ptr)
 	if (!node_ptr->name)
 		return;
 
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_SUBCNT,
-				     NODE_STATE_ALLOCATED, &alloc_cpus);
-	idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
+	idle_cpus = node_ptr->cpus_efctv - node_ptr->alloc_cpus;
 
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_TRES_ALLOC_FMT_STR,

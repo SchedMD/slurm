@@ -296,10 +296,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_FREE_MEM),
 				   tmp_cnt);
 
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_SUBCNT,
-				     NODE_STATE_ALLOCATED,
-				     &alloc_cpus);
+	alloc_cpus = node_ptr->alloc_cpus;
 	idle_cpus -= alloc_cpus;
 	convert_num_unit((float)alloc_cpus, tmp_cnt,
 			 sizeof(tmp_cnt), UNIT_NONE, NO_VAL,
@@ -536,11 +533,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			 sizeof(tmp_cpus), UNIT_NONE, NO_VAL,
 			 working_sview_config.convert_flags);
 
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_SUBCNT,
-				     NODE_STATE_ALLOCATED,
-				     &alloc_cpus);
-
+	alloc_cpus = node_ptr->alloc_cpus;
 	idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
 	convert_num_unit((float)alloc_cpus, tmp_used_cpus,
 			 sizeof(tmp_used_cpus), UNIT_NONE, NO_VAL,

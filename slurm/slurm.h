@@ -2332,6 +2332,7 @@ typedef struct {
 } job_step_stat_response_msg_t;
 
 typedef struct node_info {
+	uint16_t alloc_cpus;	/* allocated cpus */
 	char *arch;		/* computer architecture */
 	char *bcast_address;	/* BcastAddr (optional) */
 	uint16_t boards;        /* total number of boards per node  */
