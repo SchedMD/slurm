@@ -275,10 +275,9 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	}
 
 	/****** Line ******/
-	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
-				  SELECT_NODEDATA_MEM_ALLOC,
-				  NODE_STATE_ALLOCATED,
-				  &alloc_memory);
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_MEM_ALLOC,
+				     NODE_STATE_ALLOCATED, &alloc_memory);
 	xstrfmtcat(out, "RealMemory=%"PRIu64" AllocMem=%"PRIu64" ",
 		   node_ptr->real_memory, alloc_memory);
 
