@@ -732,7 +732,6 @@ enum switch_plugin_type {
 enum select_nodedata_type {
 	SELECT_NODEDATA_SUBCNT = 2,		/* data-> uint16_t */
 	SELECT_NODEDATA_PTR = 5,		/* data-> select_nodeinfo_t *nodeinfo */
-	SELECT_NODEDATA_MEM_ALLOC = 8,		/* data-> uint32_t */
 	SELECT_NODEDATA_TRES_ALLOC_FMT_STR = 9,	/* data-> char *,
 						 * free with xfree */
 	SELECT_NODEDATA_TRES_ALLOC_WEIGHTED = 10, /* data-> double */
