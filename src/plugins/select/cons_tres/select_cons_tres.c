@@ -93,9 +93,8 @@ bool     spec_cores_first     = false;
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
-	uint64_t *tres_alloc_cnt;	/* array of tres counts allocated.
-					   NOT PACKED */
 };
+
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -825,7 +824,6 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 			error("nodeinfo magic bad");
 			return EINVAL;
 		}
-		xfree(nodeinfo->tres_alloc_cnt);
 		xfree(nodeinfo);
 	}
 	return SLURM_SUCCESS;
@@ -876,12 +874,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	}
 
 	for (n = 0; (node_ptr = next_node(&n)); n++) {
-		select_nodeinfo_t *nodeinfo = node_ptr->select_nodeinfo->data;
-
-		if (!nodeinfo) {
-			error("no nodeinfo returned from structure");
-			continue;
-		}
+		uint64_t *tres_alloc_cnt = NULL;
 
 		if (alloc_core_bitmap && alloc_core_bitmap[n])
 			alloc_cores = bit_set_count(alloc_core_bitmap[n]);
@@ -920,29 +913,27 @@ extern int select_p_select_nodeinfo_set_all(void)
 		node_ptr->alloc_memory = select_node_usage[n].alloc_memory;
 
 		/* Build allocated TRES info */
-		if (!nodeinfo->tres_alloc_cnt)
-			nodeinfo->tres_alloc_cnt = xcalloc(slurmctld_tres_cnt,
-							   sizeof(uint64_t));
-		nodeinfo->tres_alloc_cnt[TRES_ARRAY_CPU] = alloc_cpus;
-		nodeinfo->tres_alloc_cnt[TRES_ARRAY_MEM] =
-			node_ptr->alloc_memory;
+		tres_alloc_cnt = xcalloc(slurmctld_tres_cnt, sizeof(uint64_t));
+		tres_alloc_cnt[TRES_ARRAY_CPU] = alloc_cpus;
+		tres_alloc_cnt[TRES_ARRAY_MEM] = node_ptr->alloc_memory;
 		if (select_node_usage[n].gres_list)
 			gres_list = select_node_usage[n].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_stepmgr_set_node_tres_cnt(gres_list,
-					       nodeinfo->tres_alloc_cnt,
+		gres_stepmgr_set_node_tres_cnt(gres_list, tres_alloc_cnt,
 					       false);
 
 		xfree(node_ptr->alloc_tres_fmt_str);
 		node_ptr->alloc_tres_fmt_str =
 			assoc_mgr_make_tres_str_from_array(
-				nodeinfo->tres_alloc_cnt,
-				TRES_STR_CONVERT_UNITS, false);
+				tres_alloc_cnt, TRES_STR_CONVERT_UNITS, false);
 		node_ptr->alloc_tres_weighted =
-			assoc_mgr_tres_weighted(nodeinfo->tres_alloc_cnt,
-						node_ptr->config_ptr->tres_weights,
-						slurm_conf.priority_flags, false);
+			assoc_mgr_tres_weighted(tres_alloc_cnt,
+						node_ptr->config_ptr
+							->tres_weights,
+						slurm_conf.priority_flags,
+						false);
+		xfree(tres_alloc_cnt);
 	}
 	free_core_array(&alloc_core_bitmap);
 
