@@ -2509,13 +2509,6 @@ extern int select_p_select_nodeinfo_set_all(void)
 	last_set_all = last_node_update;
 
 	for (n = 0; (node_ptr = next_node(&n)); n++) {
-		select_nodeinfo_t *nodeinfo = node_ptr->select_nodeinfo->data;
-
-		if (!nodeinfo) {
-			error("no nodeinfo returned from structure");
-			continue;
-		}
-
 		xfree(node_ptr->alloc_tres_fmt_str);
 		if (IS_NODE_COMPLETING(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
 			node_ptr->alloc_cpus = node_ptr->config_ptr->cpus;
