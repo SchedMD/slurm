@@ -95,7 +95,6 @@ struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
 	uint64_t *tres_alloc_cnt;	/* array of tres counts allocated.
 					   NOT PACKED */
-	double    tres_alloc_weighted;	/* weighted number of tres allocated. */
 };
 
 /*
@@ -814,13 +813,11 @@ extern int select_p_select_nodeinfo_pack(node_record_t *node_ptr,
 					 buf_t *buffer,
 					 uint16_t protocol_version)
 {
-	select_nodeinfo_t *nodeinfo = node_ptr->select_nodeinfo->data;
-
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(node_ptr->alloc_cpus, buffer);
 		pack64(node_ptr->alloc_memory, buffer);
 		packstr(node_ptr->alloc_tres_fmt_str, buffer);
-		packdouble(nodeinfo->tres_alloc_weighted, buffer);
+		packdouble(node_ptr->alloc_tres_weighted, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -956,7 +953,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 			assoc_mgr_make_tres_str_from_array(
 				nodeinfo->tres_alloc_cnt,
 				TRES_STR_CONVERT_UNITS, false);
-		nodeinfo->tres_alloc_weighted =
+		node_ptr->alloc_tres_weighted =
 			assoc_mgr_tres_weighted(nodeinfo->tres_alloc_cnt,
 						node_ptr->config_ptr->tres_weights,
 						slurm_conf.priority_flags, false);
