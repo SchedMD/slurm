@@ -897,9 +897,10 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 	time_t now = time(NULL);
 	node_record_t *node_ptr;
 	bool hidden, privileged = validate_operator(uid);
-	static bool inited = false;
 	static config_record_t blank_config = {0};
-	static node_record_t blank_node = {0};
+	static node_record_t blank_node = {
+		.config_ptr = &blank_config,
+	};
 	pack_node_info_t pack_info = {
 		.uid = uid,
 		.visible_parts = build_visible_parts(uid, privileged)
@@ -997,13 +998,6 @@ pack_empty_SLURM_24_11_PROTOCOL_VERSION:
 
 			if (hidden) {
 pack_empty:
-				if (!inited) {
-					blank_node.config_ptr = &blank_config;
-					blank_node.select_nodeinfo =
-						select_g_select_nodeinfo_alloc();
-					inited = true;
-				}
-
 				_pack_node(&blank_node, buffer, protocol_version,
 					   show_flags);
 			} else {
@@ -1190,8 +1184,10 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack_time(dump_node_ptr->resume_after, buffer);
 		pack_time(dump_node_ptr->slurmd_start_time, buffer);
 
-		select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo,
-					      buffer, protocol_version);
+		pack16(dump_node_ptr->alloc_cpus, buffer);
+		pack64(dump_node_ptr->alloc_memory, buffer);
+		packstr(dump_node_ptr->alloc_tres_fmt_str, buffer);
+		packdouble(dump_node_ptr->alloc_tres_weighted, buffer);
 
 		packstr(dump_node_ptr->arch, buffer);
 		packstr(dump_node_ptr->features, buffer);
@@ -1265,8 +1261,11 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack_time(dump_node_ptr->resume_after, buffer);
 		pack_time(dump_node_ptr->slurmd_start_time, buffer);
 
-		select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo,
-					      buffer, protocol_version);
+		select_plugin_id_pack(buffer);
+		pack16(dump_node_ptr->alloc_cpus, buffer);
+		pack64(dump_node_ptr->alloc_memory, buffer);
+		packstr(dump_node_ptr->alloc_tres_fmt_str, buffer);
+		packdouble(dump_node_ptr->alloc_tres_weighted, buffer);
 
 		packstr(dump_node_ptr->arch, buffer);
 		packstr(dump_node_ptr->features, buffer);
@@ -1337,8 +1336,11 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack_time(dump_node_ptr->resume_after, buffer);
 		pack_time(dump_node_ptr->slurmd_start_time, buffer);
 
-		select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo,
-					      buffer, protocol_version);
+		select_plugin_id_pack(buffer);
+		pack16(dump_node_ptr->alloc_cpus, buffer);
+		pack64(dump_node_ptr->alloc_memory, buffer);
+		packstr(dump_node_ptr->alloc_tres_fmt_str, buffer);
+		packdouble(dump_node_ptr->alloc_tres_weighted, buffer);
 
 		packstr(dump_node_ptr->arch, buffer);
 		packstr(dump_node_ptr->features, buffer);

@@ -1274,42 +1274,6 @@ slurm_print_topo_info_msg(slurm_t self, FILE *out, HV *topo_info_msg, char *node
 		xfree(ti_msg.topo_array);
 
 ######################################################################
-#	SLURM SELECT READ/PRINT/UPDATE FUNCTIONS
-######################################################################
-#
-# $rc = $slurm->get_select_nodeinfo($nodeinfo, $data_type, $state, $data);
-#
-int
-slurm_get_select_nodeinfo(slurm_t self, dynamic_plugin_data_t *nodeinfo, uint32_t data_type, uint32_t state, SV *data)
-	PREINIT:
-		uint16_t tmp_16;
-		select_nodeinfo_t *tmp_ptr;
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		switch(data_type) {
-		case SELECT_NODEDATA_SUBCNT:      /* data-> uint16_t */
-			RETVAL = slurm_get_select_nodeinfo(nodeinfo, data_type, state, &tmp_16);
-			if (RETVAL == 0) {
-				sv_setuv(data, (UV)tmp_16);
-			}
-			break;
-		case SELECT_NODEDATA_PTR:         /* data-> select_nodeinfo_t *nodeinfo */
-			RETVAL = slurm_get_select_nodeinfo(nodeinfo, data_type, state, &tmp_ptr);
-			if (RETVAL == 0) {
-				sv_setref_pv(data, "Slurm::select_nodeinfo_t", (void*)tmp_ptr);
-			}
-			break;
-		default:
-			RETVAL = slurm_get_select_nodeinfo(nodeinfo, data_type, state, NULL);
-		}
-	OUTPUT:
-		RETVAL
-
-######################################################################
 #	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
 

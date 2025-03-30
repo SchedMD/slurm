@@ -69,7 +69,6 @@
 #include "src/interfaces/hash.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
-#include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
 
@@ -1480,6 +1479,7 @@ static int
 _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 			  uint16_t protocol_version)
 {
+	uint32_t uint32_tmp;
 	xassert(node);
 	slurm_init_node_info_t(node, false);
 
@@ -1523,10 +1523,10 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack_time(&node->resume_after, buffer);
 		safe_unpack_time(&node->slurmd_start_time, buffer);
 
-		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
-						    buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
+		safe_unpack16(&node->alloc_cpus, buffer);
+		safe_unpack64(&node->alloc_memory, buffer);
+		safe_unpackstr(&node->alloc_tres_fmt_str, buffer);
+		safe_unpackdouble(&node->alloc_tres_weighted, buffer);
 
 		safe_unpackstr(&node->arch, buffer);
 		safe_unpackstr(&node->features, buffer);
@@ -1588,10 +1588,11 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack_time(&node->resume_after, buffer);
 		safe_unpack_time(&node->slurmd_start_time, buffer);
 
-		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
-						    buffer, protocol_version)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
+		safe_unpack32(&uint32_tmp, buffer); /* was select plugin_id */
+		safe_unpack16(&node->alloc_cpus, buffer);
+		safe_unpack64(&node->alloc_memory, buffer);
+		safe_unpackstr(&node->alloc_tres_fmt_str, buffer);
+		safe_unpackdouble(&node->alloc_tres_weighted, buffer);
 
 		safe_unpackstr(&node->arch, buffer);
 		safe_unpackstr(&node->features, buffer);
@@ -1654,10 +1655,11 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack_time(&node->resume_after, buffer);
 		safe_unpack_time(&node->slurmd_start_time, buffer);
 
-		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
-						    buffer, protocol_version)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
+		safe_unpack32(&uint32_tmp, buffer); /* was select plugin_id */
+		safe_unpack16(&node->alloc_cpus, buffer);
+		safe_unpack64(&node->alloc_memory, buffer);
+		safe_unpackstr(&node->alloc_tres_fmt_str, buffer);
+		safe_unpackdouble(&node->alloc_tres_weighted, buffer);
 
 		safe_unpackstr(&node->arch, buffer);
 		safe_unpackstr(&node->features, buffer);
@@ -12016,7 +12018,7 @@ _pack_will_run_response_msg(will_run_response_msg_t *msg, buf_t *buffer,
 
 		pack32(msg->proc_cnt, buffer);
 		pack_time(msg->start_time, buffer);
-		packdouble(msg->sys_usage_per, buffer);
+		packdouble(0, buffer); /* was sys_usage_per */
 	}
 }
 
@@ -12026,6 +12028,7 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, buf_t *buffer,
 {
 	will_run_response_msg_t *msg;
 	uint32_t count, i, uint32_tmp, *job_id_ptr;
+	double double_tmp;
 
 	msg = xmalloc(sizeof(will_run_response_msg_t));
 
@@ -12050,7 +12053,7 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, buf_t *buffer,
 
 		safe_unpack32(&msg->proc_cnt, buffer);
 		safe_unpack_time(&msg->start_time, buffer);
-		safe_unpackdouble(&msg->sys_usage_per, buffer);
+		safe_unpackdouble(&double_tmp, buffer); /* was sys_usage_per */
 	}
 
 	*msg_ptr = msg;

@@ -721,7 +721,6 @@ extern int main(int argc, char **argv)
 	xfree(slurm_conf_filename);
 	xfree(command_argv);
 	fini_setproctitle();
-	select_g_fini();
 	slurm_fini();
 	log_fini();
 #endif /* MEMORY_LEAK_DEBUG */

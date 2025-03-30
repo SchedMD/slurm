@@ -76,14 +76,6 @@ typedef struct slurmdb_cluster_rec slurmdb_cluster_rec_t;
 typedef struct job_resources job_resources_t;
 #endif
 
-/* Define select_jobinfo_t, select_nodeinfo_t below
- * to avoid including extraneous slurm headers */
-#ifndef __select_jobinfo_t_defined
-#  define  __select_jobinfo_t_defined	/* Opaque data for select plugins */
-typedef struct select_jobinfo select_jobinfo_t;  /* for BlueGene */
-typedef struct select_nodeinfo select_nodeinfo_t;  /* for BlueGene */
-#endif
-
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */
 #ifndef __jobacctinfo_t_defined
 #  define  __jobacctinfo_t_defined
@@ -727,15 +719,6 @@ enum switch_plugin_type {
 	/* 103 unused (originally used for NRT) */
 	SWITCH_PLUGIN_SLINGSHOT    = 104, /* HPE Slingshot */
 	SWITCH_PLUGIN_NVIDIA_IMEX = 105,
-};
-
-enum select_nodedata_type {
-	SELECT_NODEDATA_SUBCNT = 2,		/* data-> uint16_t */
-	SELECT_NODEDATA_PTR = 5,		/* data-> select_nodeinfo_t *nodeinfo */
-	SELECT_NODEDATA_MEM_ALLOC = 8,		/* data-> uint32_t */
-	SELECT_NODEDATA_TRES_ALLOC_FMT_STR = 9,	/* data-> char *,
-						 * free with xfree */
-	SELECT_NODEDATA_TRES_ALLOC_WEIGHTED = 10, /* data-> double */
 };
 
 enum select_print_mode {
@@ -2332,6 +2315,10 @@ typedef struct {
 } job_step_stat_response_msg_t;
 
 typedef struct node_info {
+	uint16_t alloc_cpus;	/* allocated cpus */
+	uint64_t alloc_memory;	/* allocated memory */
+	char *alloc_tres_fmt_str; /* allocated TRES */
+	double alloc_tres_weighted; /* load based on TRES usage */
 	char *arch;		/* computer architecture */
 	char *bcast_address;	/* BcastAddr (optional) */
 	uint16_t boards;        /* total number of boards per node  */
@@ -2385,10 +2372,6 @@ typedef struct node_info {
 			         * this point in time */
 	char *resv_name;        /* If node is in a reservation this is
 				 * the name of the reservation */
-	dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
-						  * use
-						  * slurm_get_select_nodeinfo()
-						  * to access contents */
 	time_t slurmd_start_time;/* time of slurmd startup */
 	uint16_t sockets;       /* total number of sockets per node */
 	uint16_t threads;       /* number of threads per core */
@@ -2626,7 +2609,6 @@ typedef struct will_run_response_msg {
 	list_t *preemptee_job_id; /* jobs preempted to start this job */
 	uint32_t proc_cnt;	/* CPUs allocated to job at start */
 	time_t start_time;	/* time when job will start */
-	double sys_usage_per;	/* System usage percentage */
 } will_run_response_msg_t;
 
 /*********************************/
@@ -4514,23 +4496,6 @@ extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
 extern void slurm_print_topo_info_msg(FILE *out,
 				      topo_info_response_msg_t *topo_info_msg_ptr,
 				      char *node_list, int one_liner);
-
-/*****************************************************************************\
- *	SLURM SELECT READ/PRINT/UPDATE FUNCTIONS
-\*****************************************************************************/
-
-/*
- * slurm_get_select_nodeinfo - get data from a select node credential
- * IN nodeinfo  - updated select node credential
- * IN data_type - type of data to enter into node credential
- * IN state     - state of node query
- * IN/OUT data  - the data to enter into node credential
- * RET 0 or -1 on error
- */
-extern int slurm_get_select_nodeinfo(dynamic_plugin_data_t *nodeinfo,
-				     enum select_nodedata_type data_type,
-				     enum node_states state,
-				     void *data);
 
 /*****************************************************************************\
  *	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

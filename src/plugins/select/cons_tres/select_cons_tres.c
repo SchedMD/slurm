@@ -91,16 +91,6 @@ bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
 bool     spec_cores_first     = false;
 
-struct select_nodeinfo {
-	uint16_t magic;		/* magic number */
-	uint16_t alloc_cpus;
-	uint64_t alloc_memory;
-	uint64_t *tres_alloc_cnt;	/* array of tres counts allocated.
-					   NOT PACKED */
-	char     *tres_alloc_fmt_str;	/* formatted str of allocated tres */
-	double    tres_alloc_weighted;	/* weighted number of tres allocated. */
-};
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -225,39 +215,11 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_state_save(char *dir_name)
-{
-	/* nothing to save */
-	return SLURM_SUCCESS;
-}
-
-/* This is Part 2 of a 4-part procedure which can be found in
- * src/slurmctld/read_config.c. See select_p_node_init for the
- * whole story.
- */
-extern int select_p_state_restore(char *dir_name)
-{
-	/* nothing to restore */
-	return SLURM_SUCCESS;
-}
-
-/* This is Part 3 of a 4-part procedure which can be found in
- * src/slurmctld/read_config.c. See select_p_node_init for the
- * whole story.
- */
-extern int select_p_job_init(list_t *job_list)
-{
-	/* nothing to initialize for jobs */
-	return SLURM_SUCCESS;
-}
-
-/* This is Part 1 of a 4-part procedure which can be found in
+/* This is Part 1 of a 2-part procedure which can be found in
  * src/slurmctld/read_config.c. The whole story goes like this:
  *
  * Step 1: select_g_node_init          : initializes the global node arrays
- * Step 2: select_g_state_restore      : NO-OP - nothing to restore
- * Step 3: select_g_job_init           : NO-OP - nothing to initialize
- * Step 4: select_g_select_nodeinfo_set: called from reset_job_bitmaps() with
+ * Step 2: select_g_select_nodeinfo_set: called from reset_job_bitmaps() with
  *                                       each valid recovered job_ptr AND from
  *                                       select_nodes(), this procedure adds
  *                                       job data to the 'select_part_record'
@@ -841,82 +803,6 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	return job_res_add_job(job_ptr, JOB_RES_ACTION_RESUME);
 }
 
-extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-					 buf_t *buffer,
-					 uint16_t protocol_version)
-{
-	select_nodeinfo_t *nodeinfo_empty = NULL;
-
-	if (!nodeinfo) {
-		/*
-		 * We should never get here,
-		 * but avoid abort with bad data structures
-		 */
-		error("nodeinfo is NULL");
-		nodeinfo_empty = xmalloc(sizeof(select_nodeinfo_t));
-		nodeinfo = nodeinfo_empty;
-	}
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack16(nodeinfo->alloc_cpus, buffer);
-		pack64(nodeinfo->alloc_memory, buffer);
-		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
-		packdouble(nodeinfo->tres_alloc_weighted, buffer);
-	}
-	xfree(nodeinfo_empty);
-
-	return SLURM_SUCCESS;
-}
-
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
-{
-	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(select_nodeinfo_t));
-
-	nodeinfo->magic = nodeinfo_magic;
-
-	return nodeinfo;
-}
-
-extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
-{
-	if (nodeinfo) {
-		if (nodeinfo->magic != nodeinfo_magic) {
-			error("nodeinfo magic bad");
-			return EINVAL;
-		}
-		xfree(nodeinfo->tres_alloc_cnt);
-		xfree(nodeinfo->tres_alloc_fmt_str);
-		xfree(nodeinfo);
-	}
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
-					   buf_t *buffer,
-					   uint16_t protocol_version)
-{
-	select_nodeinfo_t *nodeinfo_ptr = NULL;
-
-	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
-	*nodeinfo = nodeinfo_ptr;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
-		safe_unpack64(&nodeinfo_ptr->alloc_memory, buffer);
-		safe_unpackstr(&nodeinfo_ptr->tres_alloc_fmt_str, buffer);
-		safe_unpackdouble(&nodeinfo_ptr->tres_alloc_weighted, buffer);
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	error("error unpacking here");
-	select_p_select_nodeinfo_free(nodeinfo_ptr);
-	*nodeinfo = NULL;
-
-	return SLURM_ERROR;
-}
-
 extern int select_p_select_nodeinfo_set_all(void)
 {
 	static time_t last_set_all = 0;
@@ -962,20 +848,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	}
 
 	for (n = 0; (node_ptr = next_node(&n)); n++) {
-		select_nodeinfo_t *nodeinfo = NULL;
-
-		/*
-		 * We have to use the '_g_' here to make sure we get the
-		 * correct data to work on.  i.e. select/cray calls this plugin
-		 * and has it's own struct.
-		 */
-		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-					     SELECT_NODEDATA_PTR, 0,
-					     (void *)&nodeinfo);
-		if (!nodeinfo) {
-			error("no nodeinfo returned from structure");
-			continue;
-		}
+		uint64_t *tres_alloc_cnt = NULL;
 
 		if (alloc_core_bitmap && alloc_core_bitmap[n])
 			alloc_cores = bit_set_count(alloc_core_bitmap[n]);
@@ -1009,34 +882,32 @@ extern int select_p_select_nodeinfo_set_all(void)
 		 */
 		if (total_node_cores < node_ptr->cpus)
 			alloc_cpus *= node_ptr->threads;
-		nodeinfo->alloc_cpus = alloc_cpus;
+		node_ptr->alloc_cpus = alloc_cpus;
 
-		nodeinfo->alloc_memory = select_node_usage[n].alloc_memory;
+		node_ptr->alloc_memory = select_node_usage[n].alloc_memory;
 
 		/* Build allocated TRES info */
-		if (!nodeinfo->tres_alloc_cnt)
-			nodeinfo->tres_alloc_cnt = xcalloc(slurmctld_tres_cnt,
-							   sizeof(uint64_t));
-		nodeinfo->tres_alloc_cnt[TRES_ARRAY_CPU] = alloc_cpus;
-		nodeinfo->tres_alloc_cnt[TRES_ARRAY_MEM] =
-			nodeinfo->alloc_memory;
+		tres_alloc_cnt = xcalloc(slurmctld_tres_cnt, sizeof(uint64_t));
+		tres_alloc_cnt[TRES_ARRAY_CPU] = alloc_cpus;
+		tres_alloc_cnt[TRES_ARRAY_MEM] = node_ptr->alloc_memory;
 		if (select_node_usage[n].gres_list)
 			gres_list = select_node_usage[n].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_stepmgr_set_node_tres_cnt(gres_list,
-					       nodeinfo->tres_alloc_cnt,
+		gres_stepmgr_set_node_tres_cnt(gres_list, tres_alloc_cnt,
 					       false);
 
-		xfree(nodeinfo->tres_alloc_fmt_str);
-		nodeinfo->tres_alloc_fmt_str =
+		xfree(node_ptr->alloc_tres_fmt_str);
+		node_ptr->alloc_tres_fmt_str =
 			assoc_mgr_make_tres_str_from_array(
-				nodeinfo->tres_alloc_cnt,
-				TRES_STR_CONVERT_UNITS, false);
-		nodeinfo->tres_alloc_weighted =
-			assoc_mgr_tres_weighted(nodeinfo->tres_alloc_cnt,
-						node_ptr->config_ptr->tres_weights,
-						slurm_conf.priority_flags, false);
+				tres_alloc_cnt, TRES_STR_CONVERT_UNITS, false);
+		node_ptr->alloc_tres_weighted =
+			assoc_mgr_tres_weighted(tres_alloc_cnt,
+						node_ptr->config_ptr
+							->tres_weights,
+						slurm_conf.priority_flags,
+						false);
+		xfree(tres_alloc_cnt);
 	}
 	free_core_array(&alloc_core_bitmap);
 
@@ -1067,55 +938,6 @@ extern int select_p_select_nodeinfo_set(job_record_t *job_ptr)
 		info("Alloc GRES");
 	gres_job_state_log(job_ptr->gres_list_alloc, job_ptr->job_id);
 
-	return rc;
-}
-
-extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
-					enum select_nodedata_type dinfo,
-					enum node_states state,
-					void *data)
-{
-	int rc = SLURM_SUCCESS;
-	uint16_t *uint16 = (uint16_t *) data;
-	uint64_t *uint64 = (uint64_t *) data;
-	char **tmp_char = (char **) data;
-	double *tmp_double = (double *) data;
-	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
-
-	if (nodeinfo == NULL) {
-		error("nodeinfo not set");
-		return SLURM_ERROR;
-	}
-
-	if (nodeinfo->magic != nodeinfo_magic) {
-		error("jobinfo magic bad");
-		return SLURM_ERROR;
-	}
-
-	switch (dinfo) {
-	case SELECT_NODEDATA_SUBCNT:
-		if (state == NODE_STATE_ALLOCATED)
-			*uint16 = nodeinfo->alloc_cpus;
-		else
-			*uint16 = 0;
-		break;
-	case SELECT_NODEDATA_PTR:
-		*select_nodeinfo = nodeinfo;
-		break;
-	case SELECT_NODEDATA_MEM_ALLOC:
-		*uint64 = nodeinfo->alloc_memory;
-		break;
-	case SELECT_NODEDATA_TRES_ALLOC_FMT_STR:
-		*tmp_char = xstrdup(nodeinfo->tres_alloc_fmt_str);
-		break;
-	case SELECT_NODEDATA_TRES_ALLOC_WEIGHTED:
-		*tmp_double = nodeinfo->tres_alloc_weighted;
-		break;
-	default:
-		error("Unsupported option %d", dinfo);
-		rc = SLURM_ERROR;
-		break;
-	}
 	return rc;
 }
 

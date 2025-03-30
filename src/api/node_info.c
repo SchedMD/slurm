@@ -178,9 +178,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 {
 	char time_str[256];
 	char *out = NULL, *reason_str = NULL, *complete_state = NULL;
-	uint16_t alloc_cpus = 0;
-	uint64_t alloc_memory;
-	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
 
 	/****** Line 1 ******/
@@ -200,11 +197,8 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_SUBCNT,
-				     NODE_STATE_ALLOCATED, &alloc_cpus);
 	xstrfmtcat(out, "CPUAlloc=%u CPUEfctv=%u CPUTot=%u ",
-		   alloc_cpus, node_ptr->cpus_efctv, node_ptr->cpus);
+		   node_ptr->alloc_cpus, node_ptr->cpus_efctv, node_ptr->cpus);
 
 	xstrfmtcat(out, "CPULoad=%.2f", (node_ptr->cpu_load / 100.0));
 
@@ -275,12 +269,8 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	}
 
 	/****** Line ******/
-	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
-				  SELECT_NODEDATA_MEM_ALLOC,
-				  NODE_STATE_ALLOCATED,
-				  &alloc_memory);
 	xstrfmtcat(out, "RealMemory=%"PRIu64" AllocMem=%"PRIu64" ",
-		   node_ptr->real_memory, alloc_memory);
+		   node_ptr->real_memory, node_ptr->alloc_memory);
 
 	if (node_ptr->free_mem == NO_VAL64)
 		xstrcat(out, "FreeMem=N/A ");
@@ -383,14 +373,11 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	xstrcat(out, line_end);
 
 	/****** TRES Line ******/
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
-				     NODE_STATE_ALLOCATED, &node_alloc_tres);
 	xstrfmtcat(out, "CfgTRES=%s", node_ptr->tres_fmt_str);
 	xstrcat(out, line_end);
 	xstrfmtcat(out, "AllocTRES=%s",
-		   (node_alloc_tres) ?  node_alloc_tres : "");
-	xfree(node_alloc_tres);
+		   (node_ptr->alloc_tres_fmt_str) ?
+		    node_ptr->alloc_tres_fmt_str : "");
 	xstrcat(out, line_end);
 
 	/****** Power Consumption Line ******/
@@ -469,9 +456,7 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 
 static void _set_node_mixed_op(node_info_t *node_ptr)
 {
-	uint16_t alloc_cpus = 0;
 	uint16_t idle_cpus = 0;
-	char *alloc_tres = NULL;
 	bool make_mixed = false;
 
 	xassert(node_ptr);
@@ -480,25 +465,16 @@ static void _set_node_mixed_op(node_info_t *node_ptr)
 	if (!node_ptr->name)
 		return;
 
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_SUBCNT,
-				     NODE_STATE_ALLOCATED, &alloc_cpus);
-	idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
-
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
-				     NODE_STATE_ALLOCATED, &alloc_tres);
+	idle_cpus = node_ptr->cpus_efctv - node_ptr->alloc_cpus;
 
 	if (idle_cpus && (idle_cpus < node_ptr->cpus_efctv))
 		make_mixed = true;
-	if (alloc_tres && (idle_cpus == node_ptr->cpus_efctv))
+	if (node_ptr->alloc_tres_fmt_str && (idle_cpus == node_ptr->cpus_efctv))
 		make_mixed = true;
 	if (make_mixed) {
 		node_ptr->node_state &= NODE_STATE_FLAGS;
 		node_ptr->node_state |= NODE_STATE_MIXED;
 	}
-
-	xfree(alloc_tres);
 }
 
 static void _set_node_mixed(node_info_msg_t *resp)
@@ -522,9 +498,6 @@ static int _load_cluster_nodes(slurm_msg_t *req_msg,
 {
 	slurm_msg_t resp_msg;
 	int rc;
-
-	if (select_g_init(0) != SLURM_SUCCESS)
-		fatal("failed to initialize node selection plugin");
 
 	slurm_msg_t_init(&resp_msg);
 

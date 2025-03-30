@@ -18,8 +18,6 @@ list_itr_t *		T_PTROBJ_SLURM
 
 dynamic_plugin_data_t *	T_PTROBJ_SLURM
 job_resources_t * 	T_PTROBJ_SLURM
-select_jobinfo_t * 	T_PTROBJ_SLURM
-select_nodeinfo_t * 	T_PTROBJ_SLURM
 jobacctinfo_t * 	T_PTROBJ_SLURM
 allocation_msg_thread_t *	T_PTROBJ_SLURM
 node_info_msg_t *	T_PTROBJ_SLURM

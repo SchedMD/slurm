@@ -86,6 +86,14 @@ extern list_t *config_list;	/* list of config_record entries */
 
 typedef struct node_record node_record_t;
 struct node_record {
+	/*
+	 * alloc fields are managed by the select plugin
+	 * call select_g_select_nodeinfo_set_all() to update
+	 */
+	uint16_t alloc_cpus;		/* allocated cpus */
+	uint64_t alloc_memory;		/* allocated memory */
+	char *alloc_tres_fmt_str;	/* allocated TRES */
+	double alloc_tres_weighted;
 	char *arch;			/* computer architecture */
 	char *bcast_address;		/* BcastAddr */
 	uint16_t boards; 		/* count of boards configured */
@@ -175,9 +183,6 @@ struct node_record {
 	uint16_t run_job_cnt;		/* count of jobs running on node */
 	uint64_t sched_weight;		/* Node's weight for scheduling
 					 * purposes. For cons_tres use */
-	dynamic_plugin_data_t *select_nodeinfo; /* opaque data structure,
-						 * use select_g_get_nodeinfo()
-						 * to access contents */
 	time_t slurmd_start_time;	/* Time of slurmd startup */
 	uint16_t sus_job_cnt;		/* count of jobs suspended on node */
 	uint32_t suspend_time; 		/* node idle for this long before

@@ -26,7 +26,7 @@
 int
 node_info_to_hv(node_info_t *node_info, HV *hv)
 {
-	uint16_t alloc_cpus = 0;
+	STORE_FIELD(hv, node_info, alloc_cpus, uint16_t);
 	if(node_info->arch)
 		STORE_FIELD(hv, node_info, arch, charp);
 	STORE_FIELD(hv, node_info, boot_time, time_t);
@@ -58,15 +58,6 @@ node_info_to_hv(node_info_t *node_info, HV *hv)
 	STORE_FIELD(hv, node_info, sockets, uint16_t);
 	STORE_FIELD(hv, node_info, threads, uint16_t);
 	STORE_FIELD(hv, node_info, tmp_disk, uint32_t);
-
-	slurm_get_select_nodeinfo(node_info->select_nodeinfo,
-				  SELECT_NODEDATA_SUBCNT,
-				  NODE_STATE_ALLOCATED,
-				  &alloc_cpus);
-
-	hv_store_uint16_t(hv, "alloc_cpus", alloc_cpus);
-
-	STORE_PTR_FIELD(hv, node_info, select_nodeinfo, "Slurm::dynamic_plugin_data_t");
 
 	STORE_FIELD(hv, node_info, weight, uint32_t);
 	return 0;
@@ -111,7 +102,6 @@ hv_to_node_info(HV *hv, node_info_t *node_info)
 	FETCH_FIELD(hv, node_info, threads, uint16_t, TRUE);
 	FETCH_FIELD(hv, node_info, tmp_disk, uint32_t, TRUE);
 	FETCH_FIELD(hv, node_info, weight, uint32_t, TRUE);
-	FETCH_PTR_FIELD(hv, node_info, select_nodeinfo, "Slurm::dynamic_plugin_data_t", TRUE);
 	return 0;
 }
 

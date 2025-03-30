@@ -376,7 +376,7 @@ int main(int argc, char *argv[])
 
 	_check_params();
 	slurm_init(NULL);
-	select_g_init(true);
+	select_g_init();
 	init_node_conf();
 	build_all_nodeline_info(true, 0);
 	switch_g_init(true);

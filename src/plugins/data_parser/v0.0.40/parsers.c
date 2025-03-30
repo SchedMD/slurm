@@ -3454,22 +3454,9 @@ static int DUMP_FUNC(NODE_SELECT_ALLOC_MEMORY)(const parser_t *const parser,
 					       void *obj, data_t *dst,
 					       args_t *args)
 {
-	int rc;
 	node_info_t *node = obj;
-	uint64_t alloc_memory = 0;
 
-	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
-					    SELECT_NODEDATA_MEM_ALLOC,
-					    NODE_STATE_ALLOCATED,
-					    &alloc_memory))) {
-		return on_error(
-			DUMPING, parser->type, args, rc,
-			"slurm_get_select_nodeinfo", __func__,
-			"slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_MEM_ALLOC) failed",
-			node->name);
-	}
-
-	data_set_int(dst, alloc_memory);
+	data_set_int(dst, node->alloc_memory);
 
 	return SLURM_SUCCESS;
 }
@@ -3480,21 +3467,9 @@ static int DUMP_FUNC(NODE_SELECT_ALLOC_CPUS)(const parser_t *const parser,
 					     void *obj, data_t *dst,
 					     args_t *args)
 {
-	int rc;
 	node_info_t *node = obj;
-	uint16_t alloc_cpus = 0;
 
-	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
-					    SELECT_NODEDATA_SUBCNT,
-					    NODE_STATE_ALLOCATED,
-					    &alloc_cpus))) {
-		return on_error(DUMPING, parser->type, args, rc,
-				"slurm_get_select_nodeinfo", __func__,
-				"slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_SUBCNT) failed",
-				node->name);
-	}
-
-	data_set_int(dst, alloc_cpus);
+	data_set_int(dst, node->alloc_cpus);
 
 	return SLURM_SUCCESS;
 }
@@ -3505,21 +3480,9 @@ static int DUMP_FUNC(NODE_SELECT_ALLOC_IDLE_CPUS)(const parser_t *const parser,
 						  void *obj, data_t *dst,
 						  args_t *args)
 {
-	int rc;
 	node_info_t *node = obj;
-	uint16_t alloc_cpus = 0;
 
-	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
-					    SELECT_NODEDATA_SUBCNT,
-					    NODE_STATE_ALLOCATED,
-					    &alloc_cpus))) {
-		return on_error(DUMPING, parser->type, args, rc,
-				"slurm_get_select_nodeinfo", __func__,
-				"slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_SUBCNT) failed",
-				node->name);
-	}
-
-	data_set_int(dst, (node->cpus - alloc_cpus));
+	data_set_int(dst, (node->cpus - node->alloc_cpus));
 
 	return SLURM_SUCCESS;
 }
@@ -3530,22 +3493,11 @@ static int DUMP_FUNC(NODE_SELECT_TRES_USED)(const parser_t *const parser,
 					    void *obj, data_t *dst,
 					    args_t *args)
 {
-	int rc;
 	node_info_t *node = obj;
-	char *node_alloc_tres = NULL;
-
-	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
-					    SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
-					    NODE_STATE_ALLOCATED,
-					    &node_alloc_tres))) {
-		return on_error(DUMPING, parser->type, args, rc,
-				"slurm_get_select_nodeinfo", __func__,
-				"slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_TRES_ALLOC_FMT_STR) failed",
-				node->name);
-	}
+	char *node_alloc_tres = node->alloc_tres_fmt_str;
 
 	if (node_alloc_tres)
-		data_set_string_own(dst, node_alloc_tres);
+		data_set_string(dst, node_alloc_tres);
 	else
 		data_set_string(dst, "");
 
@@ -3558,21 +3510,9 @@ static int DUMP_FUNC(NODE_SELECT_TRES_WEIGHTED)(const parser_t *const parser,
 						void *obj, data_t *dst,
 						args_t *args)
 {
-	int rc;
 	node_info_t *node = obj;
-	double node_tres_weighted = 0;
 
-	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
-					    SELECT_NODEDATA_TRES_ALLOC_WEIGHTED,
-					    NODE_STATE_ALLOCATED,
-					    &node_tres_weighted))) {
-		return on_error(DUMPING, parser->type, args, rc,
-				"slurm_get_select_nodeinfo", __func__,
-				"slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_TRES_ALLOC_WEIGHTED) failed",
-				node->name);
-	}
-
-	data_set_float(dst, node_tres_weighted);
+	data_set_float(dst, node->alloc_tres_weighted);
 
 	return SLURM_SUCCESS;
 }

@@ -853,11 +853,6 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	if (!(conf = _read_slurmd_conf_lite(sock)))
 		fatal("Failed to read conf from slurmd");
 
-	/*
-	 * Init select plugin after reading slurm.conf and before receiving step
-	 */
-	select_g_init(false);
-
 	slurm_conf.slurmd_port = conf->port;
 	slurm_conf.slurmd_syslog_debug = conf->syslog_debug;
 	/*

@@ -4229,6 +4229,7 @@ static void _free_all_node_info(node_info_msg_t *msg)
 extern void slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
+		xfree(node->alloc_tres_fmt_str);
 		xfree(node->arch);
 		xfree(node->bcast_address);
 		xfree(node->cluster_name);
@@ -4252,8 +4253,6 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->partitions);
 		xfree(node->reason);
 		xfree(node->resv_name);
-		select_g_select_nodeinfo_free(node->select_nodeinfo);
-		node->select_nodeinfo = NULL;
 		xfree(node->topology_str);
 		xfree(node->tres_fmt_str);
 		xfree(node->version);

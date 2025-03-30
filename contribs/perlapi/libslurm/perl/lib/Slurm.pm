@@ -1098,34 +1098,6 @@ Output information about a specific Slurm topology record based upon message as 
 
 
 
-=head2 SLURM SELECT READ/PRINT/UPDATE FUNCTIONS
-
-=head3 $rc = $slurm->get_select_nodeinfo($nodeinfo, $data_type, $state, $data);
-
-Get data from a select node credential.
-
-
-=over 2
-
-=item * IN $nodeinfo: select node credential to get data from.
-
-=item * IN $data_type: type of data to get.
-
-=over 2
-
-=item * TODO: enumerate data type and returned value.
-
-=back
-
-=item * IN $state: state of node query.
-
-=item * OUT $data: the data got.
-
-=back
-
-
-
-
 
 =head2 SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 

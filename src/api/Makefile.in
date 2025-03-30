@@ -223,15 +223,15 @@ am__objects_1 = account_functions.lo archive_functions.lo \
 	job_report_functions.lo qos_functions.lo resource_functions.lo \
 	tres_functions.lo usage_functions.lo user_functions.lo \
 	user_report_functions.lo wckey_functions.lo
-am__objects_2 = allocate.lo allocate_msg.lo block_info.lo \
-	burst_buffer_info.lo assoc_mgr_info.lo cancel.lo \
-	cluster_info.lo complete.lo config_info.lo crontab.lo \
-	federation_info.lo init.lo init_msg.lo job_info.lo \
-	job_step_info.lo license_info.lo node_info.lo \
-	partition_info.lo pmi_server.lo reservation_info.lo signal.lo \
-	slurm_get_statistics.lo slurm_pmi.lo step_io.lo step_launch.lo \
-	submit.lo suspend.lo token.lo topo_info.lo triggers.lo \
-	reconfigure.lo update_config.lo $(am__objects_1)
+am__objects_2 = allocate.lo allocate_msg.lo burst_buffer_info.lo \
+	assoc_mgr_info.lo cancel.lo cluster_info.lo complete.lo \
+	config_info.lo crontab.lo federation_info.lo init.lo \
+	init_msg.lo job_info.lo job_step_info.lo license_info.lo \
+	node_info.lo partition_info.lo pmi_server.lo \
+	reservation_info.lo signal.lo slurm_get_statistics.lo \
+	slurm_pmi.lo step_io.lo step_launch.lo submit.lo suspend.lo \
+	token.lo topo_info.lo triggers.lo reconfigure.lo \
+	update_config.lo $(am__objects_1)
 am_libslurmhelper_la_OBJECTS = $(am__objects_2)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
 libslurmhelper_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
@@ -262,9 +262,8 @@ am__depfiles_remade = ./$(DEPDIR)/account_functions.Plo \
 	./$(DEPDIR)/allocate.Plo ./$(DEPDIR)/allocate_msg.Plo \
 	./$(DEPDIR)/archive_functions.Plo \
 	./$(DEPDIR)/assoc_functions.Plo ./$(DEPDIR)/assoc_mgr_info.Plo \
-	./$(DEPDIR)/block_info.Plo ./$(DEPDIR)/burst_buffer_info.Plo \
-	./$(DEPDIR)/cancel.Plo ./$(DEPDIR)/cluster_functions.Plo \
-	./$(DEPDIR)/cluster_info.Plo \
+	./$(DEPDIR)/burst_buffer_info.Plo ./$(DEPDIR)/cancel.Plo \
+	./$(DEPDIR)/cluster_functions.Plo ./$(DEPDIR)/cluster_info.Plo \
 	./$(DEPDIR)/cluster_report_functions.Plo \
 	./$(DEPDIR)/complete.Plo ./$(DEPDIR)/config_info.Plo \
 	./$(DEPDIR)/connection_functions.Plo \
@@ -677,7 +676,6 @@ slurmdbapi_src = \
 slurmapi_src = \
 	allocate.c       \
 	allocate_msg.c   \
-	block_info.c     \
 	burst_buffer_info.c \
 	assoc_mgr_info.c    \
 	cancel.c         \
@@ -911,7 +909,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/archive_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assoc_functions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assoc_mgr_info.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/block_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cancel.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_functions.Plo@am__quote@ # am--include-marker
@@ -1098,7 +1095,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/archive_functions.Plo
 	-rm -f ./$(DEPDIR)/assoc_functions.Plo
 	-rm -f ./$(DEPDIR)/assoc_mgr_info.Plo
-	-rm -f ./$(DEPDIR)/block_info.Plo
 	-rm -f ./$(DEPDIR)/burst_buffer_info.Plo
 	-rm -f ./$(DEPDIR)/cancel.Plo
 	-rm -f ./$(DEPDIR)/cluster_functions.Plo
@@ -1193,7 +1189,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/archive_functions.Plo
 	-rm -f ./$(DEPDIR)/assoc_functions.Plo
 	-rm -f ./$(DEPDIR)/assoc_mgr_info.Plo
-	-rm -f ./$(DEPDIR)/block_info.Plo
 	-rm -f ./$(DEPDIR)/burst_buffer_info.Plo
 	-rm -f ./$(DEPDIR)/cancel.Plo
 	-rm -f ./$(DEPDIR)/cluster_functions.Plo

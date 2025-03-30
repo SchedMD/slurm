@@ -804,7 +804,7 @@ int main(int argc, char **argv)
 	 * Initialize plugins.
 	 * If running configuration test, report ALL failures.
 	 */
-	if (select_g_init(0) != SLURM_SUCCESS)
+	if (select_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize node selection plugin");
 	/* gres_init() must follow select_g_init() */
 	if (gres_init() != SLURM_SUCCESS)
@@ -2638,8 +2638,6 @@ extern void save_all_state(void)
 	schedule_part_save();
 	schedule_resv_save();
 	schedule_trigger_save();
-
-	select_g_state_save(slurm_conf.state_save_location);
 	dump_assoc_mgr_state();
 	fed_mgr_state_save();
 }

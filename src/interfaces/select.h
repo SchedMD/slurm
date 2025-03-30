@@ -67,21 +67,6 @@ typedef struct will_run_data {
 	time_t end;
 } will_run_data_t;
 
-/* Convert a node coordinate character into its equivalent number:
- * '0' = 0; '9' = 9; 'A' = 10; etc. */
-extern int select_char2coord(char coord);
-
-/*
- * Give string name for plugin_id
- */
-extern char *select_plugin_id_to_string(int plugin_id);
-
-/*
- * Convert string name to plugin_id
- * RET plugin_id or 0 on failure
- */
-extern int select_string_to_plugin_id(const char *plugin);
-
 extern bool running_cons_tres(void);
 
 /*******************************************\
@@ -91,34 +76,18 @@ extern bool running_cons_tres(void);
 /*
  * Initialize context for node selection plugin
  */
-extern int select_g_init(bool only_default);
+extern int select_g_init(void);
 
 /*
  * Terminate plugin and free all associated memory
  */
 extern int select_g_fini(void);
 
-/* Get this plugin's sequence number in Slurm's internal tables */
-extern int select_get_plugin_id_pos(uint32_t plugin_id);
-
 /*
  * Convert SelectTypeParameter to equivalent string
  * NOTE: Not reentrant
  */
 extern char *select_type_param_string(uint16_t select_type_param);
-
-/*
- * Save any global state information
- * IN dir_name - directory into which the data can be stored
- */
-extern int select_g_state_save(char *dir_name);
-
-/*
- * Initialize context for node selection plugin and
- * restore any global state information
- * IN dir_name - directory from which the data can be restored
- */
-extern int select_g_state_restore(char *dir_name);
 
 /*********************************\
  * STATE INITIALIZATION FUNCTIONS *
@@ -131,53 +100,12 @@ extern int select_g_state_restore(char *dir_name);
  */
 extern int select_g_node_init(void);
 
-/*
- * Note the initialization of job records, issued upon restart of
- * slurmctld and used to synchronize any job state.
- * IN job_list - List of Slurm jobs from slurmctld
- */
-extern int select_g_job_init(list_t *job_list);
-
 /* Note reconfiguration or change in partition configuration */
 extern int select_g_reconfigure(void);
 
 /**************************\
  * NODE SPECIFIC FUNCTIONS *
 \**************************/
-
-/*
- * Allocate a select plugin node record.
- *
- * NOTE: Call select_g_select_nodeinfo_free() to release the memory in the
- * returned value
- */
-extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void);
-
-/*
- * Pack a select plugin node record into a buffer.
- * IN nodeinfo - The node record to pack
- * IN/OUT buffer - The buffer to pack the record into
- * IN protocol_version - Version used for packing the record
- */
-extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
-					 buf_t *buffer,
-					 uint16_t protocol_version);
-
-/*
- * Unpack a select plugin node record from a buffer.
- * OUT nodeinfo - The unpacked node record
- * IN/OUT buffer - The buffer to unpack the record from
- * IN protocol_version - Version used for unpacking the record
- *
- * NOTE: Call select_g_select_nodeinfo_free() to release the memory in the
- * returned value
- */
-extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
-					   buf_t *buffer,
-					   uint16_t protocol_version);
-
-/* Free the memory allocated for a select plugin node record */
-extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo);
 
 /* Reset select plugin specific information about a job
  * IN job_ptr - The updated job */
@@ -186,19 +114,6 @@ extern int select_g_select_nodeinfo_set(job_record_t *job_ptr);
 /* Update select plugin information about every node as needed (if changed since
  * previous query) */
 extern int select_g_select_nodeinfo_set_all(void);
-
-/*
- * Get information from a select plugin node record
- * IN nodeinfo - The record to get information from
- * IN dinfo - The data type to be retrieved
- * IN state - Node state filter to be applied (ie. only get information about
- *            ALLOCATED nodes
- * OUT data - The retrieved data
- */
-extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
-					enum select_nodedata_type dinfo,
-					enum node_states state,
-					void *data);
 
 /******************************************************\
  * JOB SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCTIONS *
@@ -252,8 +167,7 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
  * packs the select plugin_id for backwards compatibility
  * Remove when 24.11 is no longer supported.
  */
-extern int select_g_select_jobinfo_pack(buf_t *buffer,
-					uint16_t protocol_version);
+extern void select_plugin_id_pack(buf_t *buffer);
 
 /*
  * Select the "best" nodes for given job from those available
