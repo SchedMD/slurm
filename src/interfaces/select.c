@@ -533,19 +533,13 @@ extern int select_g_select_nodeinfo_pack(node_record_t *node_ptr,
 
 	xassert(select_context_cnt >= 0);
 
+	select_plugin_id_pack(buffer);
+
 	if (nodeinfo) {
 		data = nodeinfo->data;
 		plugin_id = nodeinfo->plugin_id;
 	} else
 		plugin_id = select_context_default;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(*(ops[plugin_id].plugin_id),
-		       buffer);
-	} else {
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
-	}
 
 	return (*(ops[plugin_id].
 		  nodeinfo_pack))(data, buffer, protocol_version);
