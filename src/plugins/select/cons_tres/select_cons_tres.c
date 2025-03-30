@@ -809,13 +809,6 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	return job_res_add_job(job_ptr, JOB_RES_ACTION_RESUME);
 }
 
-extern int select_p_select_nodeinfo_pack(node_record_t *node_ptr,
-					 buf_t *buffer,
-					 uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
-
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(select_nodeinfo_t));

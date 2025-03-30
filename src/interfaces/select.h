@@ -133,16 +133,6 @@ extern int select_g_reconfigure(void);
  */
 extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void);
 
-/*
- * Pack a select plugin node record into a buffer.
- * IN node_ptr - The node record to pack
- * IN/OUT buffer - The buffer to pack the record into
- * IN protocol_version - Version used for packing the record
- */
-extern int select_g_select_nodeinfo_pack(node_record_t *node_ptr,
-					 buf_t *buffer,
-					 uint16_t protocol_version);
-
 /* Free the memory allocated for a select plugin node record */
 extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo);
 

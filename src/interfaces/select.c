@@ -72,9 +72,6 @@ typedef struct {
 						 bool indf_susp);
 	int		(*job_resume)		(job_record_t *job_ptr,
 						 bool indf_susp);
-	int		(*nodeinfo_pack)	(node_record_t *nodeinfo,
-						 buf_t *buffer,
-						 uint16_t protocol_version);
 	select_nodeinfo_t *(*nodeinfo_alloc)	(void);
 	int		(*nodeinfo_free)	(select_nodeinfo_t *nodeinfo);
 	int		(*nodeinfo_set_all)	(void);
@@ -93,7 +90,6 @@ static const char *node_select_syms[] = {
 	"select_p_job_fini",
 	"select_p_job_suspend",
 	"select_p_job_resume",
-	"select_p_select_nodeinfo_pack",
 	"select_p_select_nodeinfo_alloc",
 	"select_p_select_nodeinfo_free",
 	"select_p_select_nodeinfo_set_all",
@@ -515,16 +511,6 @@ extern int select_g_job_resume(job_record_t *job_ptr, bool indf_susp)
 
 	return (*(ops[select_context_default].job_resume))
 		(job_ptr, indf_susp);
-}
-
-extern int select_g_select_nodeinfo_pack(node_record_t *node_ptr,
-					 buf_t *buffer,
-					 uint16_t protocol_version)
-{
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].
-		  nodeinfo_pack))(node_ptr, buffer, protocol_version);
 }
 
 extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void)
