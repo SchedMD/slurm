@@ -369,7 +369,7 @@ extern void run_health_check(void)
 			cpus_total = node_ptr->config_ptr->cpus;
 			if (!IS_NODE_IDLE(node_ptr)) {
 				select_g_select_nodeinfo_get(
-						node_ptr->select_nodeinfo,
+						node_ptr,
 						SELECT_NODEDATA_SUBCNT,
 						NODE_STATE_ALLOCATED,
 						&cpus_used);

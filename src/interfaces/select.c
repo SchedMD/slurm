@@ -79,7 +79,7 @@ typedef struct {
 	int		(*nodeinfo_free)	(select_nodeinfo_t *nodeinfo);
 	int		(*nodeinfo_set_all)	(void);
 	int		(*nodeinfo_set)		(job_record_t *job_ptr);
-	int		(*nodeinfo_get)		(select_nodeinfo_t *nodeinfo,
+	int		(*nodeinfo_get)		(node_record_t *node_ptr,
 						 enum
 						 select_nodedata_type dinfo,
 						 enum node_states state,
@@ -577,17 +577,15 @@ extern int select_g_select_nodeinfo_set(job_record_t *job_ptr)
 		(job_ptr);
 }
 
-extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
+extern int select_g_select_nodeinfo_get(node_record_t *node_ptr,
 					enum select_nodedata_type dinfo,
 					enum node_states state,
 					void *data)
 {
-	void *nodedata = NULL;
-
 	xassert(select_context_cnt >= 0);
 
 	return (*(ops[select_context_default].nodeinfo_get))
-		(nodedata, dinfo, state, data);
+		(node_ptr, dinfo, state, data);
 }
 
 /*

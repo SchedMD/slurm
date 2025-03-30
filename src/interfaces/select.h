@@ -156,13 +156,13 @@ extern int select_g_select_nodeinfo_set_all(void);
 
 /*
  * Get information from a select plugin node record
- * IN nodeinfo - The record to get information from
+ * IN node_ptr - The record to get information from
  * IN dinfo - The data type to be retrieved
  * IN state - Node state filter to be applied (ie. only get information about
  *            ALLOCATED nodes
  * OUT data - The retrieved data
  */
-extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
+extern int select_g_select_nodeinfo_get(node_record_t *node_ptr,
 					enum select_nodedata_type dinfo,
 					enum node_states state,
 					void *data);

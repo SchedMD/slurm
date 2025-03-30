@@ -2577,11 +2577,12 @@ extern int select_p_select_nodeinfo_set(job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
+extern int select_p_select_nodeinfo_get(node_record_t *node_ptr,
 					enum select_nodedata_type dinfo,
 					enum node_states state,
 					void *data)
 {
+	select_nodeinfo_t *nodeinfo = node_ptr->select_nodeinfo->data;
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
 

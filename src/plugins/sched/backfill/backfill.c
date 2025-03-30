@@ -1826,7 +1826,7 @@ static void _handle_planned(bool set)
 				}
 
 				select_g_select_nodeinfo_get(
-					node_ptr->select_nodeinfo,
+					node_ptr,
 					SELECT_NODEDATA_SUBCNT,
 					NODE_STATE_ALLOCATED, &alloc_cpus);
 				idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
