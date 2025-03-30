@@ -619,19 +619,13 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
  * packs the select plugin_id for backwards compatibility
  * Remove when 24.11 is no longer supported.
  */
-extern int select_g_select_jobinfo_pack(buf_t *buffer,
-					uint16_t protocol_version)
+extern int select_plugin_id_pack(buf_t *buffer)
 {
 	uint32_t plugin_id = select_context_default;
 
 	xassert(select_context_cnt >= 0);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(*(ops[plugin_id].plugin_id), buffer);
-	} else {
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
-	}
+	pack32(*(ops[plugin_id].plugin_id), buffer);
 
 	return SLURM_SUCCESS;
 }
