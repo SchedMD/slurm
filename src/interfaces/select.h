@@ -67,12 +67,6 @@ typedef struct will_run_data {
 	time_t end;
 } will_run_data_t;
 
-/*
- * Convert string name to plugin_id
- * RET plugin_id or 0 on failure
- */
-extern int select_string_to_plugin_id(const char *plugin);
-
 extern bool running_cons_tres(void);
 
 /*******************************************\

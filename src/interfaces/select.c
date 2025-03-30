@@ -97,27 +97,6 @@ static slurm_select_ops_t ops;
 static plugin_context_t *select_context = NULL;
 static pthread_mutex_t select_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
-typedef struct {
-	int id;
-	char *name;
-} plugin_id_name;
-
-const plugin_id_name plugin_ids[] = {
-	{ SELECT_PLUGIN_LINEAR, "linear" },
-	{ SELECT_PLUGIN_CONS_TRES, "cons_tres" },
-};
-
-extern int select_string_to_plugin_id(const char *plugin)
-{
-	for (int i = 0; i < ARRAY_SIZE(plugin_ids); i++)
-		if (xstrcasecmp(plugin, plugin_ids[i].name))
-			return plugin_ids[i].id;
-
-	error("%s: unknown select plugin: %s",
-	      __func__, plugin);
-	return 0;
-}
-
 extern bool running_cons_tres(void)
 {
 	xassert(running_in_slurmctld());
