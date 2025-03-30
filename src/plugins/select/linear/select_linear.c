@@ -2473,21 +2473,11 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	return rc;
 }
 
-extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
+extern int select_p_select_nodeinfo_pack(node_record_t *node_ptr,
 					 buf_t *buffer,
 					 uint16_t protocol_version)
 {
-	select_nodeinfo_t *nodeinfo_empty = NULL;
-
-	if (!nodeinfo) {
-		/*
-		 * We should never get here,
-		 * but avoid abort with bad data structures
-		 */
-		error("%s: nodeinfo is NULL", __func__);
-		nodeinfo_empty = xmalloc(sizeof(select_nodeinfo_t));
-		nodeinfo = nodeinfo_empty;
-	}
+	select_nodeinfo_t *nodeinfo = node_ptr->select_nodeinfo->data;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(nodeinfo->alloc_cpus, buffer);
@@ -2495,7 +2485,6 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
 		packdouble(nodeinfo->tres_alloc_weighted, buffer);
 	}
-	xfree(nodeinfo_empty);
 
 	return SLURM_SUCCESS;
 }

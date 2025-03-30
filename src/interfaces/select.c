@@ -72,7 +72,7 @@ typedef struct {
 						 bool indf_susp);
 	int		(*job_resume)		(job_record_t *job_ptr,
 						 bool indf_susp);
-	int		(*nodeinfo_pack)	(select_nodeinfo_t *nodeinfo,
+	int		(*nodeinfo_pack)	(node_record_t *nodeinfo,
 						 buf_t *buffer,
 						 uint16_t protocol_version);
 	select_nodeinfo_t *(*nodeinfo_alloc)	(void);
@@ -527,17 +527,10 @@ extern int select_g_select_nodeinfo_pack(node_record_t *node_ptr,
 					 buf_t *buffer,
 					 uint16_t protocol_version)
 {
-	dynamic_plugin_data_t *nodeinfo = node_ptr->select_nodeinfo;
-	void *data = NULL;
-
 	xassert(select_context_cnt >= 0);
 
-	if (nodeinfo) {
-		data = nodeinfo->data;
-	}
-
 	return (*(ops[select_context_default].
-		  nodeinfo_pack))(data, buffer, protocol_version);
+		  nodeinfo_pack))(node_ptr, buffer, protocol_version);
 }
 
 extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void)
