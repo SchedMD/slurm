@@ -13,7 +13,6 @@ $slurm_perl_api::class_map = {
 
 	"dynamic_plugin_data_tPtr"	=> "Slurm::dynamic_plugin_data_t",
 	"job_resources_tPtr"		=> "Slurm::job_resources_t",
-	"select_nodeinfo_tPtr"          => "Slurm::select_nodeinfo_t",
 	"jobacctinfo_tPtr"              => "Slurm::jobacctinfo_t",
 	"allocation_msg_thread_tPtr"       => "Slurm::allocation_msg_thread_t",
 	"node_info_msg_tPtr"		=> "Slurm::node_info_msg_t",

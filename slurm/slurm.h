@@ -76,14 +76,6 @@ typedef struct slurmdb_cluster_rec slurmdb_cluster_rec_t;
 typedef struct job_resources job_resources_t;
 #endif
 
-/* Define select_jobinfo_t, select_nodeinfo_t below
- * to avoid including extraneous slurm headers */
-#ifndef __select_jobinfo_t_defined
-#  define  __select_jobinfo_t_defined	/* Opaque data for select plugins */
-typedef struct select_jobinfo select_jobinfo_t;  /* for BlueGene */
-typedef struct select_nodeinfo select_nodeinfo_t;  /* for BlueGene */
-#endif
-
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */
 #ifndef __jobacctinfo_t_defined
 #  define  __jobacctinfo_t_defined
