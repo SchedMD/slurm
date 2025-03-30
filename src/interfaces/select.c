@@ -529,17 +529,14 @@ extern int select_g_select_nodeinfo_pack(node_record_t *node_ptr,
 {
 	dynamic_plugin_data_t *nodeinfo = node_ptr->select_nodeinfo;
 	void *data = NULL;
-	uint32_t plugin_id;
 
 	xassert(select_context_cnt >= 0);
 
 	if (nodeinfo) {
 		data = nodeinfo->data;
-		plugin_id = nodeinfo->plugin_id;
-	} else
-		plugin_id = select_context_default;
+	}
 
-	return (*(ops[plugin_id].
+	return (*(ops[select_context_default].
 		  nodeinfo_pack))(data, buffer, protocol_version);
 }
 
@@ -593,17 +590,10 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 					void *data)
 {
 	void *nodedata = NULL;
-	uint32_t plugin_id;
 
 	xassert(select_context_cnt >= 0);
 
-	if (nodeinfo) {
-		nodedata = nodeinfo->data;
-		plugin_id = nodeinfo->plugin_id;
-	} else
-		plugin_id = select_context_default;
-
-	return (*(ops[plugin_id].nodeinfo_get))
+	return (*(ops[select_context_default].nodeinfo_get))
 		(nodedata, dinfo, state, data);
 }
 
