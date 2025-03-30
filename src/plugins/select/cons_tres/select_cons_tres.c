@@ -873,7 +873,6 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	*nodeinfo = nodeinfo_ptr;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack64(&nodeinfo_ptr->alloc_memory, buffer);
 		safe_unpackstr(&nodeinfo_ptr->tres_alloc_fmt_str, buffer);
 		safe_unpackdouble(&nodeinfo_ptr->tres_alloc_weighted, buffer);
 	}

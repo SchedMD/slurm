@@ -178,7 +178,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 {
 	char time_str[256];
 	char *out = NULL, *reason_str = NULL, *complete_state = NULL;
-	uint64_t alloc_memory;
 	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
 
@@ -271,11 +270,8 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	}
 
 	/****** Line ******/
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_MEM_ALLOC,
-				     NODE_STATE_ALLOCATED, &alloc_memory);
 	xstrfmtcat(out, "RealMemory=%"PRIu64" AllocMem=%"PRIu64" ",
-		   node_ptr->real_memory, alloc_memory);
+		   node_ptr->real_memory, node_ptr->alloc_memory);
 
 	if (node_ptr->free_mem == NO_VAL64)
 		xstrcat(out, "FreeMem=N/A ");

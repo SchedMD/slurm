@@ -3820,22 +3820,9 @@ static int DUMP_FUNC(NODE_SELECT_ALLOC_MEMORY)(const parser_t *const parser,
 					       void *obj, data_t *dst,
 					       args_t *args)
 {
-	int rc;
 	node_info_t *node = obj;
-	uint64_t alloc_memory = 0;
 
-	if ((rc = slurm_get_select_nodeinfo(node->select_nodeinfo,
-					    SELECT_NODEDATA_MEM_ALLOC,
-					    NODE_STATE_ALLOCATED,
-					    &alloc_memory))) {
-		return on_error(
-			DUMPING, parser->type, args, rc,
-			"slurm_get_select_nodeinfo", __func__,
-			"slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_MEM_ALLOC) failed",
-			node->name);
-	}
-
-	data_set_int(dst, alloc_memory);
+	data_set_int(dst, node->alloc_memory);
 
 	return SLURM_SUCCESS;
 }

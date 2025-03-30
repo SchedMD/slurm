@@ -2333,6 +2333,7 @@ typedef struct {
 
 typedef struct node_info {
 	uint16_t alloc_cpus;	/* allocated cpus */
+	uint64_t alloc_memory;	/* allocated memory */
 	char *arch;		/* computer architecture */
 	char *bcast_address;	/* BcastAddr (optional) */
 	uint16_t boards;        /* total number of boards per node  */

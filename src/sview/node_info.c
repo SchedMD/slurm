@@ -222,7 +222,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 	char *upper = NULL, *lower = NULL;
 	GtkTreeIter iter;
 	uint16_t alloc_cpus = 0;
-	uint64_t alloc_memory = 0;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	int idle_cpus = node_ptr->cpus_efctv;
 	char *node_alloc_tres = NULL;
@@ -387,11 +386,8 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_REAL_MEMORY),
 				   tmp_cnt);
 
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_MEM_ALLOC,
-				     NODE_STATE_ALLOCATED,
-				     &alloc_memory);
-	snprintf(tmp_cnt, sizeof(tmp_cnt), "%"PRIu64"M", alloc_memory);
+	snprintf(tmp_cnt, sizeof(tmp_cnt), "%"PRIu64"M",
+		 node_ptr->alloc_memory);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_USED_MEMORY),
@@ -497,7 +493,6 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				GtkTreeStore *treestore)
 {
 	uint16_t alloc_cpus = 0, idle_cpus;
-	uint64_t alloc_memory;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	char tmp_disk[20], tmp_cpus[20], tmp_idle_cpus[20];
 	char tmp_mem[20], tmp_used_memory[20];
@@ -539,11 +534,8 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			 sizeof(tmp_used_cpus), UNIT_NONE, NO_VAL,
 			 working_sview_config.convert_flags);
 
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-				     SELECT_NODEDATA_MEM_ALLOC,
-				     NODE_STATE_ALLOCATED,
-				     &alloc_memory);
-	snprintf(tmp_used_memory, sizeof(tmp_used_memory), "%"PRIu64"M", alloc_memory);
+	snprintf(tmp_used_memory, sizeof(tmp_used_memory), "%"PRIu64"M",
+		 node_ptr->alloc_memory);
 
 	convert_num_unit((float)alloc_cpus, tmp_used_cpus,
 			 sizeof(tmp_used_cpus), UNIT_NONE, NO_VAL,

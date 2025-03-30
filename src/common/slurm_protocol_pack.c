@@ -1526,6 +1526,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 
 		safe_unpack32(&uint32_tmp, buffer); /* was select plugin_id */
 		safe_unpack16(&node->alloc_cpus, buffer);
+		safe_unpack64(&node->alloc_memory, buffer);
 		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
 						    buffer, protocol_version) !=
 		    SLURM_SUCCESS)
@@ -1593,6 +1594,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 
 		safe_unpack32(&uint32_tmp, buffer); /* was select plugin_id */
 		safe_unpack16(&node->alloc_cpus, buffer);
+		safe_unpack64(&node->alloc_memory, buffer);
 		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
 						    buffer, protocol_version)
 		    != SLURM_SUCCESS)
@@ -1661,6 +1663,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 
 		safe_unpack32(&uint32_tmp, buffer); /* was select plugin_id */
 		safe_unpack16(&node->alloc_cpus, buffer);
+		safe_unpack64(&node->alloc_memory, buffer);
 		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
 						    buffer, protocol_version)
 		    != SLURM_SUCCESS)
