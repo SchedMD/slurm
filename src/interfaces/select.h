@@ -67,10 +67,6 @@ typedef struct will_run_data {
 	time_t end;
 } will_run_data_t;
 
-/* Convert a node coordinate character into its equivalent number:
- * '0' = 0; '9' = 9; 'A' = 10; etc. */
-extern int select_char2coord(char coord);
-
 /*
  * Give string name for plugin_id
  */

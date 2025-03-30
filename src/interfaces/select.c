@@ -138,15 +138,6 @@ extern bool running_cons_tres(void)
 	return false;
 }
 
-extern int select_char2coord(char coord)
-{
-	if ((coord >= '0') && (coord <= '9'))
-		return (coord - '0');
-	if ((coord >= 'A') && (coord <= 'Z'))
-		return ((coord - 'A') + 10);
-	return -1;
-}
-
 /*
  * Initialize context for node selection plugin
  */
