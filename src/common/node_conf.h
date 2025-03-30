@@ -183,9 +183,6 @@ struct node_record {
 	uint16_t run_job_cnt;		/* count of jobs running on node */
 	uint64_t sched_weight;		/* Node's weight for scheduling
 					 * purposes. For cons_tres use */
-	dynamic_plugin_data_t *select_nodeinfo; /* opaque data structure,
-						 * use select_g_get_nodeinfo()
-						 * to access contents */
 	time_t slurmd_start_time;	/* Time of slurmd startup */
 	uint16_t sus_job_cnt;		/* count of jobs suspended on node */
 	uint32_t suspend_time; 		/* node idle for this long before
