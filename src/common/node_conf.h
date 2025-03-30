@@ -86,6 +86,11 @@ extern list_t *config_list;	/* list of config_record entries */
 
 typedef struct node_record node_record_t;
 struct node_record {
+	/*
+	 * alloc fields are managed by the select plugin
+	 * call select_g_select_nodeinfo_set_all() to update
+	 */
+	uint16_t alloc_cpus;		/* allocated cpus */
 	char *arch;			/* computer architecture */
 	char *bcast_address;		/* BcastAddr */
 	uint16_t boards; 		/* count of boards configured */

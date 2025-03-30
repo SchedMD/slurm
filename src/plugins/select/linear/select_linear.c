@@ -109,7 +109,6 @@ slurmctld_config_t slurmctld_config;
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
-	uint16_t alloc_cpus;
 	uint64_t alloc_memory;
 	char    *tres_alloc_fmt_str;	/* formatted str of allocated tres */
 	double   tres_alloc_weighted;	/* weighted number of tres allocated. */
@@ -2480,7 +2479,7 @@ extern int select_p_select_nodeinfo_pack(node_record_t *node_ptr,
 	select_nodeinfo_t *nodeinfo = node_ptr->select_nodeinfo->data;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack16(nodeinfo->alloc_cpus, buffer);
+		pack16(node_ptr->alloc_cpus, buffer);
 		pack64(nodeinfo->alloc_memory, buffer);
 		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
 		packdouble(nodeinfo->tres_alloc_weighted, buffer);
@@ -2539,7 +2538,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 		xfree(nodeinfo->tres_alloc_fmt_str);
 		if (IS_NODE_COMPLETING(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
-			nodeinfo->alloc_cpus = node_ptr->config_ptr->cpus;
+			node_ptr->alloc_cpus = node_ptr->config_ptr->cpus;
 
 			nodeinfo->tres_alloc_fmt_str =
 				assoc_mgr_make_tres_str_from_array(
@@ -2551,7 +2550,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 					node_ptr->config_ptr->tres_weights,
 					slurm_conf.priority_flags, false);
 		} else {
-			nodeinfo->alloc_cpus = 0;
+			node_ptr->alloc_cpus = 0;
 			nodeinfo->tres_alloc_weighted = 0.0;
 		}
 		if (cr_ptr && cr_ptr->nodes) {
@@ -2599,7 +2598,7 @@ extern int select_p_select_nodeinfo_get(node_record_t *node_ptr,
 	switch (dinfo) {
 	case SELECT_NODEDATA_SUBCNT:
 		if (state == NODE_STATE_ALLOCATED)
-			*uint16 = nodeinfo->alloc_cpus;
+			*uint16 = node_ptr->alloc_cpus;
 		else
 			*uint16 = 0;
 		break;

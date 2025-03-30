@@ -93,7 +93,6 @@ bool     spec_cores_first     = false;
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
-	uint16_t alloc_cpus;
 	uint64_t alloc_memory;
 	uint64_t *tres_alloc_cnt;	/* array of tres counts allocated.
 					   NOT PACKED */
@@ -820,7 +819,7 @@ extern int select_p_select_nodeinfo_pack(node_record_t *node_ptr,
 	select_nodeinfo_t *nodeinfo = node_ptr->select_nodeinfo->data;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack16(nodeinfo->alloc_cpus, buffer);
+		pack16(node_ptr->alloc_cpus, buffer);
 		pack64(nodeinfo->alloc_memory, buffer);
 		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
 		packdouble(nodeinfo->tres_alloc_weighted, buffer);
@@ -936,7 +935,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 		 */
 		if (total_node_cores < node_ptr->cpus)
 			alloc_cpus *= node_ptr->threads;
-		nodeinfo->alloc_cpus = alloc_cpus;
+		node_ptr->alloc_cpus = alloc_cpus;
 
 		nodeinfo->alloc_memory = select_node_usage[n].alloc_memory;
 
@@ -1019,7 +1018,7 @@ extern int select_p_select_nodeinfo_get(node_record_t *node_ptr,
 	switch (dinfo) {
 	case SELECT_NODEDATA_SUBCNT:
 		if (state == NODE_STATE_ALLOCATED)
-			*uint16 = nodeinfo->alloc_cpus;
+			*uint16 = node_ptr->alloc_cpus;
 		else
 			*uint16 = 0;
 		break;
