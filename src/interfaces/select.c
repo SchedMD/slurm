@@ -619,15 +619,10 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
  * packs the select plugin_id for backwards compatibility
  * Remove when 24.11 is no longer supported.
  */
-extern int select_plugin_id_pack(buf_t *buffer)
+extern void select_plugin_id_pack(buf_t *buffer)
 {
-	uint32_t plugin_id = select_context_default;
-
 	xassert(select_context_cnt >= 0);
-
-	pack32(*(ops[plugin_id].plugin_id), buffer);
-
-	return SLURM_SUCCESS;
+	pack32(*(ops[select_context_default].plugin_id), buffer);
 }
 
 /*

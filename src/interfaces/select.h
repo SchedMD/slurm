@@ -219,7 +219,7 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
  * packs the select plugin_id for backwards compatibility
  * Remove when 24.11 is no longer supported.
  */
-extern int select_plugin_id_pack(buf_t *buffer);
+extern void select_plugin_id_pack(buf_t *buffer);
 
 /*
  * Select the "best" nodes for given job from those available
