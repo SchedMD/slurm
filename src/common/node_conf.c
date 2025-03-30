@@ -1338,6 +1338,7 @@ extern void purge_node_rec(void *in)
 {
 	node_record_t *node_ptr = in;
 
+	xfree(node_ptr->alloc_tres_fmt_str);
 	xfree(node_ptr->arch);
 	xfree(node_ptr->cert_token);
 	xfree(node_ptr->comment);

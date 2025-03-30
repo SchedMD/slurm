@@ -92,6 +92,7 @@ struct node_record {
 	 */
 	uint16_t alloc_cpus;		/* allocated cpus */
 	uint64_t alloc_memory;		/* allocated memory */
+	char *alloc_tres_fmt_str;	/* allocated TRES */
 	char *arch;			/* computer architecture */
 	char *bcast_address;		/* BcastAddr */
 	uint16_t boards; 		/* count of boards configured */
