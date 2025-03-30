@@ -897,9 +897,10 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 	time_t now = time(NULL);
 	node_record_t *node_ptr;
 	bool hidden, privileged = validate_operator(uid);
-	static bool inited = false;
 	static config_record_t blank_config = {0};
-	static node_record_t blank_node = {0};
+	static node_record_t blank_node = {
+		.config_ptr = &blank_config,
+	};
 	pack_node_info_t pack_info = {
 		.uid = uid,
 		.visible_parts = build_visible_parts(uid, privileged)
@@ -997,11 +998,6 @@ pack_empty_SLURM_24_11_PROTOCOL_VERSION:
 
 			if (hidden) {
 pack_empty:
-				if (!inited) {
-					blank_node.config_ptr = &blank_config;
-					inited = true;
-				}
-
 				_pack_node(&blank_node, buffer, protocol_version,
 					   show_flags);
 			} else {
