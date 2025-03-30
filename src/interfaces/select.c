@@ -79,11 +79,6 @@ typedef struct {
 	int		(*nodeinfo_free)	(select_nodeinfo_t *nodeinfo);
 	int		(*nodeinfo_set_all)	(void);
 	int		(*nodeinfo_set)		(job_record_t *job_ptr);
-	int		(*nodeinfo_get)		(node_record_t *node_ptr,
-						 enum
-						 select_nodedata_type dinfo,
-						 enum node_states state,
-						 void *data);
 	int		(*reconfigure)		(void);
 } slurm_select_ops_t;
 
@@ -103,7 +98,6 @@ static const char *node_select_syms[] = {
 	"select_p_select_nodeinfo_free",
 	"select_p_select_nodeinfo_set_all",
 	"select_p_select_nodeinfo_set",
-	"select_p_select_nodeinfo_get",
 	"select_p_reconfigure",
 };
 
@@ -575,17 +569,6 @@ extern int select_g_select_nodeinfo_set(job_record_t *job_ptr)
 
 	return (*(ops[select_context_default].nodeinfo_set))
 		(job_ptr);
-}
-
-extern int select_g_select_nodeinfo_get(node_record_t *node_ptr,
-					enum select_nodedata_type dinfo,
-					enum node_states state,
-					void *data)
-{
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].nodeinfo_get))
-		(node_ptr, dinfo, state, data);
 }
 
 /*

@@ -729,10 +729,6 @@ enum switch_plugin_type {
 	SWITCH_PLUGIN_NVIDIA_IMEX = 105,
 };
 
-enum select_nodedata_type {
-	SELECT_NODEDATA_SUBCNT = 2,		/* data-> uint16_t */
-};
-
 enum select_print_mode {
 	SELECT_PRINT_HEAD,	/* Print just the header */
 	SELECT_PRINT_DATA,	/* Print just the data */

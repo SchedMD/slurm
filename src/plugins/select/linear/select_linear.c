@@ -2576,40 +2576,6 @@ extern int select_p_select_nodeinfo_set(job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_select_nodeinfo_get(node_record_t *node_ptr,
-					enum select_nodedata_type dinfo,
-					enum node_states state,
-					void *data)
-{
-	select_nodeinfo_t *nodeinfo = node_ptr->select_nodeinfo->data;
-	int rc = SLURM_SUCCESS;
-	uint16_t *uint16 = (uint16_t *) data;
-
-	if (nodeinfo == NULL) {
-		error("get_nodeinfo: nodeinfo not set");
-		return SLURM_ERROR;
-	}
-
-	if (nodeinfo->magic != NODEINFO_MAGIC) {
-		error("get_nodeinfo: nodeinfo magic bad");
-		return SLURM_ERROR;
-	}
-
-	switch (dinfo) {
-	case SELECT_NODEDATA_SUBCNT:
-		if (state == NODE_STATE_ALLOCATED)
-			*uint16 = node_ptr->alloc_cpus;
-		else
-			*uint16 = 0;
-		break;
-	default:
-		error("Unsupported option %d for get_nodeinfo.", dinfo);
-		rc = SLURM_ERROR;
-		break;
-	}
-	return rc;
-}
-
 extern int select_p_reconfigure(void)
 {
 	slurm_mutex_lock(&cr_mutex);
