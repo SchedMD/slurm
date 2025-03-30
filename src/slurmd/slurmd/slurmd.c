@@ -2697,7 +2697,6 @@ _slurmd_fini(void)
 	prep_g_fini();
 	topology_g_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
-	select_g_fini();
 	tls_g_fini();
 	if ((rc = spank_slurmd_exit())) {
 		error("%s: SPANK slurmd exit failed: %s",
