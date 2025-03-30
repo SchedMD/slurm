@@ -731,7 +731,6 @@ enum switch_plugin_type {
 
 enum select_nodedata_type {
 	SELECT_NODEDATA_SUBCNT = 2,		/* data-> uint16_t */
-	SELECT_NODEDATA_PTR = 5,		/* data-> select_nodeinfo_t *nodeinfo */
 };
 
 enum select_print_mode {

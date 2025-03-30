@@ -2595,7 +2595,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
-	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
 	if (nodeinfo == NULL) {
 		error("get_nodeinfo: nodeinfo not set");
@@ -2613,9 +2612,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 			*uint16 = nodeinfo->alloc_cpus;
 		else
 			*uint16 = 0;
-		break;
-	case SELECT_NODEDATA_PTR:
-		*select_nodeinfo = nodeinfo;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);
