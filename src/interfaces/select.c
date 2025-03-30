@@ -559,15 +559,12 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 					   uint16_t protocol_version)
 {
 	dynamic_plugin_data_t *nodeinfo_ptr = NULL;
-	uint32_t uint32_tmp;
 
 	xassert(select_context_cnt >= 0);
 
 	nodeinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*nodeinfo = nodeinfo_ptr;
 	nodeinfo_ptr->plugin_id = select_context_default;
-
-	safe_unpack32(&uint32_tmp, buffer);
 
 	if ((*(ops[nodeinfo_ptr->plugin_id].nodeinfo_unpack))
 	   ((select_nodeinfo_t **)&nodeinfo_ptr->data, buffer,

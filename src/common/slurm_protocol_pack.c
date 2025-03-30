@@ -1480,6 +1480,7 @@ static int
 _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 			  uint16_t protocol_version)
 {
+	uint32_t uint32_tmp;
 	xassert(node);
 	slurm_init_node_info_t(node, false);
 
@@ -1523,6 +1524,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack_time(&node->resume_after, buffer);
 		safe_unpack_time(&node->slurmd_start_time, buffer);
 
+		safe_unpack32(&uint32_tmp, buffer); /* was select plugin_id */
 		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
 						    buffer, protocol_version) !=
 		    SLURM_SUCCESS)
@@ -1588,6 +1590,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack_time(&node->resume_after, buffer);
 		safe_unpack_time(&node->slurmd_start_time, buffer);
 
+		safe_unpack32(&uint32_tmp, buffer); /* was select plugin_id */
 		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
 						    buffer, protocol_version)
 		    != SLURM_SUCCESS)
@@ -1654,6 +1657,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack_time(&node->resume_after, buffer);
 		safe_unpack_time(&node->slurmd_start_time, buffer);
 
+		safe_unpack32(&uint32_tmp, buffer); /* was select plugin_id */
 		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
 						    buffer, protocol_version)
 		    != SLURM_SUCCESS)
