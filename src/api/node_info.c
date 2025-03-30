@@ -499,9 +499,6 @@ static int _load_cluster_nodes(slurm_msg_t *req_msg,
 	slurm_msg_t resp_msg;
 	int rc;
 
-	if (select_g_init(0) != SLURM_SUCCESS)
-		fatal("failed to initialize node selection plugin");
-
 	slurm_msg_t_init(&resp_msg);
 
 	if (slurm_send_recv_controller_msg(req_msg, &resp_msg, cluster) < 0)
