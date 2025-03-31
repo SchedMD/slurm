@@ -313,6 +313,8 @@ extern bool eval_nodes_gres(topology_eval_t *topo_eval,
 		min_cpus = job_ptr->details->cpus_per_task * used_tasks;
 	else if (use_node)
 		min_cpus = job_ptr->details->cpus_per_task;
+	if (min_cpus < job_ptr->details->pn_min_cpus)
+		min_cpus = job_ptr->details->pn_min_cpus;
 
 	if (!used_tasks)
 		use_node = false;

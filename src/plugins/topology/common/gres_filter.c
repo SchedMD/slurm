@@ -588,8 +588,9 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 			 */
 			gres_cpus = cpus_per_gres * cnt_avail_total;
 
-			if (gres_cpus <
-			    (*min_tasks_this_node * mc_ptr->cpus_per_task)) {
+			if ((gres_cpus <
+			     (*min_tasks_this_node * mc_ptr->cpus_per_task)) ||
+			    (gres_cpus < job_ptr->details->pn_min_cpus)) {
 				/*
 				 * cpus_per_gres may end up requesting fewer
 				 * cpus than tasks on the node. In this case,
