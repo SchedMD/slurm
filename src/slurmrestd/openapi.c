@@ -137,6 +137,7 @@ typedef struct {
 	data_t *license;
 	data_t *servers;
 	data_t *security;
+	data_t *x_slurm;
 	/* tracked references per data_parser */
 	void **references;
 } openapi_spec_t;
@@ -1318,7 +1319,7 @@ extern int generate_spec(data_t *dst)
 		.spec = dst,
 	};
 	data_t *security1, *security2, *security3;
-	char *version_at = NULL;
+	data_t *openapi_plugins, *data_parsers, *slurm_version;
 	char *version = xstrdup_printf("Slurm-%s", SLURM_VERSION_STRING);
 	int parsers_count;
 
@@ -1337,11 +1338,16 @@ extern int generate_spec(data_t *dst)
 	spec.info = data_set_dict(data_key_set(spec.spec, "info"));
 	spec.contact = data_set_dict(data_key_set(spec.info, "contact"));
 	spec.license = data_set_dict(data_key_set(spec.info, "license"));
+	spec.x_slurm = data_set_dict(data_key_set(spec.info, "x-slurm"));
 	spec.servers = data_set_list(data_key_set(spec.spec, "servers"));
 	spec.security = data_set_list(data_key_set(spec.spec, "security"));
 	security1 = data_set_dict(data_list_append(spec.security));
 	security2 = data_set_dict(data_list_append(spec.security));
 	security3 = data_set_dict(data_list_append(spec.security));
+	data_parsers =
+		data_set_list(data_key_set(spec.x_slurm, "data_parsers"));
+	openapi_plugins = data_set_list(data_key_set(spec.x_slurm, "openapi"));
+	slurm_version = data_set_dict(data_key_set(spec.x_slurm, "version"));
 
 	data_set_string(data_key_set(spec.spec, "openapi"),
 			openapi_spec.openapi_version);
@@ -1350,12 +1356,30 @@ extern int generate_spec(data_t *dst)
 			openapi_spec.info.desc);
 	data_set_string(data_key_set(spec.info, "termsOfService"),
 			openapi_spec.info.tos);
-
-	/* Populate OAS version */
-	for (int i = 0; i < plugins->count; i++)
-		xstrfmtcatat(version, &version_at, "&%s", plugins->types[i]);
 	data_set_string_own(data_key_set(spec.info, "version"), version);
 
+	/* Populate info spec extension x-slurm with data_parsers and flags */
+	for (int i = 0; i < parsers_count; i++) {
+		data_t *tmp_data = data_list_append(data_parsers);
+
+		data_set_dict(tmp_data);
+		data_set_string(data_key_set(tmp_data, "plugin"),
+				data_parser_get_plugin_version(parsers[i]));
+		if (data_parser_g_dump_flags(parsers[i],
+					     data_key_set(tmp_data, "flags")))
+			fatal_abort("data_parser_g_dump_flags() failed");
+	}
+
+	/* Populate info spec extension x-slurm with openapi plugins */
+	for (int i = 0; i < plugins->count; i++)
+		data_set_string(data_list_append(openapi_plugins),
+				plugins->types[i]);
+
+	data_set_string(data_key_set(slurm_version, "major"), SLURM_MAJOR);
+	data_set_string(data_key_set(slurm_version, "micro"), SLURM_MICRO);
+	data_set_string(data_key_set(slurm_version, "minor"), SLURM_MINOR);
+	data_set_string(data_key_set(spec.x_slurm, "release"),
+			SLURM_VERSION_STRING);
 	data_set_string(data_key_set(spec.contact, "name"),
 			openapi_spec.info.contact.name);
 	data_set_string(data_key_set(spec.contact, "url"),
