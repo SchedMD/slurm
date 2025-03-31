@@ -1833,6 +1833,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					now + update_node_msg->resume_after;
 		}
 
+		if (update_node_msg->topology_str) {
+			xfree(node_ptr->topology_str);
+			node_ptr->topology_str =
+				xstrdup(update_node_msg->topology_str);
+			topology_g_add_rm_node(node_ptr);
+		}
+
 		state_val = update_node_msg->node_state;
 		if (_equivalent_node_state(node_ptr, state_val)) {
 			/* Update resume time if another equivalent update */
