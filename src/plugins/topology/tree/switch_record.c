@@ -341,13 +341,14 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 		switch_ptr->link_speed = ptr->link_speed;
 		if (ptr->nodes) {
 			switch_ptr->level = 0;	/* leaf switch */
-			switch_ptr->nodes = xstrdup(ptr->nodes);
 			if (node_name2bitmap(ptr->nodes, true,
 					     &switch_ptr->node_bitmap,
 					     &invalid_hl)) {
 				fatal("Invalid node name (%s) in switch config (%s)",
 				      ptr->nodes, ptr->switch_name);
 			}
+			switch_ptr->nodes =
+				bitmap2node_name(switch_ptr->node_bitmap);
 			if (switches_bitmap) {
 				tmp_bitmap = bit_copy(switch_ptr->node_bitmap);
 				bit_and(tmp_bitmap, switches_bitmap);
