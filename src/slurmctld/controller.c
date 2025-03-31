@@ -2459,6 +2459,14 @@ static void *_slurmctld_background(void *no_data)
 
 			_flush_rpcs();
 
+			/*
+			 * Wait for all already accepted connection work to
+			 * finish before continuing on with control loop that
+			 * will unload all the plugins which requires there be
+			 * no active RPCs.
+			 */
+			conmgr_quiesce(__func__);
+
 			if (!report_locks_set()) {
 				info("Saving all slurm state");
 				save_all_state();
@@ -2466,6 +2474,13 @@ static void *_slurmctld_background(void *no_data)
 				error("Semaphores still set after %d seconds, "
 				      "can not save state", CONTROL_TIMEOUT);
 			}
+
+			/*
+			 * Allow other connections to start processing again as
+			 * the listeners are already quiesced
+			 */
+			conmgr_unquiesce(__func__);
+
 			break;
 		}
 
