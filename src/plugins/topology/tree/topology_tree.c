@@ -203,10 +203,10 @@ extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 {
 	tree_context_t *ctx = tctx;
 	for (int i = 0; i < ctx->switch_count; i++) {
+		if (ctx->switch_table[i].level != 0)
+			continue;
 		if (bit_overlap_any(ctx->switch_table[i].node_bitmap,
 				    node_mask)) {
-			if (ctx->switch_table[i].level != 0)
-				continue;
 			bit_or(node_mask, ctx->switch_table[i].node_bitmap);
 		}
 	}
