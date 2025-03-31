@@ -222,6 +222,12 @@ typedef struct {
 	hostset_t *hs;
 } foreach_hetcomp_args_t;
 
+typedef struct {
+	job_step_kill_msg_t *job_step_kill_msg;
+	int rc;
+	uint32_t uid;
+} foreach_kill_hetjob_step_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -2489,6 +2495,24 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 	return error_code;
 }
 
+static int _foreach_kill_hetjob_step(void *x, void *arg)
+{
+	job_record_t *het_job_ptr = x;
+	foreach_kill_hetjob_step_t *foreach_kill_hetjob_step = arg;
+	job_step_kill_msg_t *job_step_kill_msg =
+		foreach_kill_hetjob_step->job_step_kill_msg;
+	int rc;
+
+	job_step_kill_msg->step_id.job_id = het_job_ptr->job_id;
+	rc = _kill_job_step(job_step_kill_msg, het_job_ptr,
+			    foreach_kill_hetjob_step->uid);
+
+	if (rc != SLURM_SUCCESS)
+		foreach_kill_hetjob_step->rc = rc;
+
+	return 0;
+}
+
 /*
  * Kill job or job step
  *
@@ -2505,41 +2529,29 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		.fed = READ_LOCK,
 	};
 
-	job_record_t *job_ptr, *het_job_ptr;
-	uint32_t *het_job_ids = NULL;
-	int cnt = 0, i, rc;
+	job_record_t *job_ptr;
 	int error_code = SLURM_SUCCESS;
-	list_itr_t *iter;
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(job_step_kill_msg->step_id.job_id);
-	if (job_ptr && job_ptr->het_job_list &&
-	    (job_step_kill_msg->signal == SIGKILL) &&
-	    (job_step_kill_msg->step_id.step_id != NO_VAL)) {
-		cnt = list_count(job_ptr->het_job_list);
-		het_job_ids = xcalloc(cnt, sizeof(uint32_t));
-		i = 0;
-		iter = list_iterator_create(job_ptr->het_job_list);
-		while ((het_job_ptr = list_next(iter))) {
-			het_job_ids[i++] = het_job_ptr->job_id;
-		}
-		list_iterator_destroy(iter);
-	}
 
 	if (!job_ptr) {
 		info("%s: invalid JobId=%u",
 		     __func__, job_step_kill_msg->step_id.job_id);
 		error_code = ESLURM_INVALID_JOB_ID;
-	} else if (het_job_ids) {
-		for (i = 0; i < cnt; i++) {
-			job_step_kill_msg->step_id.job_id = het_job_ids[i];
-			job_ptr = find_job_record(
-				job_step_kill_msg->step_id.job_id);
-			rc = _kill_job_step(job_step_kill_msg, job_ptr, uid);
-			if (rc != SLURM_SUCCESS)
-				error_code = rc;
-		}
-		xfree(het_job_ids);
+	} else if (job_ptr->het_job_list &&
+		   (job_step_kill_msg->signal == SIGKILL) &&
+		   (job_step_kill_msg->step_id.step_id != NO_VAL)) {
+		foreach_kill_hetjob_step_t foreach_kill_hetjob_step = {
+			.job_step_kill_msg = job_step_kill_msg,
+			.rc = SLURM_SUCCESS,
+			.uid = uid,
+		};
+		(void) list_for_each(job_ptr->het_job_list,
+				     _foreach_kill_hetjob_step,
+				     &foreach_kill_hetjob_step);
+		if (foreach_kill_hetjob_step.rc != SLURM_SUCCESS)
+			error_code = foreach_kill_hetjob_step.rc;
 	} else {
 		error_code = _kill_job_step(job_step_kill_msg, job_ptr, uid);
 	}
