@@ -147,6 +147,12 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
+				  void *tctx)
+{
+	return SLURM_SUCCESS;
+}
+
 /*
  * topo_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.

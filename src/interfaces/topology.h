@@ -146,6 +146,16 @@ extern int topology_get_plugin_id(void);
  */
 
 /*
+ * topology_g_add_rm_node - update the node's topology affiliation according to
+ * the node's topology_str
+ *
+ * A NULL/empty topology_str will remove the node from the topologies.
+ *
+ * IN node_ptr
+ */
+extern int topology_g_add_rm_node(node_record_t *node_ptr);
+
+/*
  * topology_g_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
  */
