@@ -251,6 +251,15 @@ typedef struct {
 	bool requeue_on_resume_failure;
 } foreach_kill_job_by_t;
 
+typedef struct {
+	uint16_t flags;
+	job_record_t *het_job_leader;
+	bool preempt;
+	int rc;
+	uint16_t signal;
+	uid_t uid;
+} foreach_kill_hetjob_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -5344,33 +5353,51 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 }
 
+static int foreach_het_job_signal(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+	foreach_kill_hetjob_t *foreach_kill_hetjob = arg;
+
+	if (foreach_kill_hetjob->het_job_leader->het_job_id !=
+	    het_job->het_job_id) {
+		error("%s: Bad het_job_list for %pJ",
+		      __func__, foreach_kill_hetjob->het_job_leader);
+	} else {
+		int rc1 = job_signal(het_job,
+				     foreach_kill_hetjob->signal,
+				     foreach_kill_hetjob->flags,
+				     foreach_kill_hetjob->uid,
+				     foreach_kill_hetjob->preempt);
+		if (rc1 != SLURM_SUCCESS)
+			foreach_kill_hetjob->rc = rc1;
+	}
+
+	return 0;
+}
+
 /* Signal all components of a hetjob */
 extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
 			  uint16_t flags, uid_t uid, bool preempt)
 {
-	list_itr_t *iter;
-	int rc = SLURM_SUCCESS, rc1;
-	job_record_t *het_job;
+	foreach_kill_hetjob_t foreach_kill_hetjob = {
+		.flags = flags,
+		.het_job_leader = het_job_leader,
+		.preempt = preempt,
+		.rc = SLURM_SUCCESS,
+		.signal = signal,
+		.uid = uid,
+	};
 
 	if (!het_job_leader->het_job_id)
 		return ESLURM_NOT_HET_JOB;
 	else if (!het_job_leader->het_job_list)
 		return ESLURM_NOT_HET_JOB_LEADER;
 
-	iter = list_iterator_create(het_job_leader->het_job_list);
-	while ((het_job = list_next(iter))) {
-		if (het_job_leader->het_job_id != het_job->het_job_id) {
-			error("%s: Bad het_job_list for %pJ",
-			      __func__, het_job_leader);
-			continue;
-		}
-		rc1 = job_signal(het_job, signal, flags, uid, preempt);
-		if (rc1 != SLURM_SUCCESS)
-			rc = rc1;
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(het_job_leader->het_job_list,
+			     foreach_het_job_signal,
+			     &foreach_kill_hetjob);
 
-	return rc;
+	return foreach_kill_hetjob.rc;
 }
 
 static bool _get_whole_hetjob(void)
