@@ -1307,34 +1307,40 @@ extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 	close_con(true, con);
 }
 
-static int _set_fd_polling(int fd, pollctl_fd_type_t old, pollctl_fd_type_t new,
-			   const char *con_name, const char *caller)
+static int _set_fd_polling(int fd, pollctl_fd_type_t *old,
+			   pollctl_fd_type_t new, const char *con_name,
+			   const char *caller)
 {
-	if (old == PCTL_TYPE_UNSUPPORTED)
-		return PCTL_TYPE_UNSUPPORTED;
+	if (*old == PCTL_TYPE_UNSUPPORTED)
+		return SLURM_SUCCESS;
 
-	if (old == new)
-		return new;
+	if (*old == new)
+		return SLURM_SUCCESS;
 
 	if (new == PCTL_TYPE_NONE) {
-		if (old != PCTL_TYPE_NONE)
-			pollctl_unlink_fd(fd, con_name, caller);
-		return new;
+		int rc = SLURM_SUCCESS;
+
+		if ((*old != PCTL_TYPE_NONE) &&
+		    !(rc = pollctl_unlink_fd(fd, con_name, caller)))
+			*old = new;
+
+		return rc;
 	}
 
-	if (old != PCTL_TYPE_NONE) {
-		pollctl_relink_fd(fd, new, con_name, caller);
-		return new;
+	if (*old != PCTL_TYPE_NONE) {
+		int rc;
+
+		if (!(rc = pollctl_relink_fd(fd, new, con_name, caller)))
+			*old = new;
+
+		return rc;
 	} else {
 		int rc = pollctl_link_fd(fd, new, con_name, caller);
 
 		if (!rc)
-			return new;
-		else if (rc == EPERM)
-			return PCTL_TYPE_UNSUPPORTED;
-		else
-			fatal("%s->%s: [%s] Unable to start polling: %s",
-			      caller, __func__, con_name, slurm_strerror(rc));
+			*old = new;
+
+		return rc;
 	}
 }
 
@@ -1383,10 +1389,100 @@ static void _log_set_polling(conmgr_fd_t *con, bool has_in, bool has_out,
 	xfree(log);
 }
 
+static void _on_change_polling_fail(conmgr_fd_t *con, int rc,
+				    pollctl_fd_type_t old_type,
+				    pollctl_fd_type_t new_type,
+				    const char *fd_name, const int fd,
+				    pollctl_fd_type_t *dst, const char *caller)
+{
+	error("%s->%s: [%s] closing connection after change polling %s->%s for %s=%d failed: %s",
+	      caller, __func__, con->name, pollctl_type_to_string(old_type),
+	      pollctl_type_to_string(new_type), fd_name, fd,
+	      slurm_strerror(rc));
+
+	if (rc == EBADF) {
+		/* Remove defunct FD immediately */
+		if (con->input_fd == fd) {
+			con->input_fd = -1;
+			con->polling_input_fd = PCTL_TYPE_UNSUPPORTED;
+			con_unset_flag(con, FLAG_CAN_READ);
+			con_set_flag(con, FLAG_READ_EOF);
+		}
+
+		if (con->output_fd == fd) {
+			con->output_fd = -1;
+			con->polling_output_fd = PCTL_TYPE_UNSUPPORTED;
+			con_unset_flag(con, FLAG_CAN_WRITE);
+			con_unset_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER);
+		}
+	} else {
+		/* Attempt graceful closing of connection */
+		*dst = PCTL_TYPE_UNSUPPORTED;
+	}
+
+	close_con(true, con);
+	close_con_output(true, con);
+}
+
+static void _on_change_polling_rc(conmgr_fd_t *con, int rc,
+				  pollctl_fd_type_t old_type,
+				  pollctl_fd_type_t new_type, bool input,
+				  const char *caller)
+{
+	const char *fd_name = (input ? "input_fd" : "output_fd");
+	const int fd = (input ? con->input_fd : con->output_fd);
+	pollctl_fd_type_t *dst =
+		(input ? &con->polling_input_fd : &con->polling_output_fd);
+
+	switch (rc) {
+	case EEXIST:
+		/*
+		 * poll() is already monitoring this file descriptor but conmgr
+		 * didn't ask for this poll()ing. conmgr has no idea what mode
+		 * poll() is already monitoring, so instead change to relink to
+		 * to set the correct mode.
+		 */
+
+		log_flag(CONMGR, "%s->%s: [%s] forcing changed polling %s->%s for %s=%d",
+			 caller, __func__, con->name,
+			 pollctl_type_to_string(old_type),
+			 pollctl_type_to_string(new_type), fd_name, fd);
+
+		if ((rc = pollctl_relink_fd(fd, new_type, con->name, __func__)))
+			_on_change_polling_fail(con, rc, old_type, new_type,
+						fd_name, fd, dst, caller);
+		else
+			*dst = new_type;
+
+		break;
+	case ENOENT:
+		log_flag(CONMGR, "%s->%s: [%s] ignoring request to change polling %s->%s for %s=%d",
+			 caller, __func__, con->name,
+			 pollctl_type_to_string(old_type),
+			 pollctl_type_to_string(new_type), fd_name, fd);
+
+		*dst = PCTL_TYPE_NONE;
+		break;
+	case EPERM:
+		log_flag(CONMGR, "%s->%s: [%s] polling %s->%s for %s=%d not supported by kernel",
+			 caller, __func__, con->name,
+			 pollctl_type_to_string(old_type),
+			 pollctl_type_to_string(new_type), fd_name, fd);
+
+		*dst = PCTL_TYPE_UNSUPPORTED;
+		break;
+	default:
+		_on_change_polling_fail(con, rc, old_type, new_type, fd_name,
+					fd, dst, caller);
+		break;
+	}
+}
+
 extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 			    const char *caller)
 {
 	int has_in, has_out, in, out, is_same;
+	int rc_in = SLURM_SUCCESS, rc_out = SLURM_SUCCESS;
 	pollctl_fd_type_t in_type = PCTL_TYPE_NONE, out_type = PCTL_TYPE_NONE;
 
 	_validate_pctl_type(type);
@@ -1467,21 +1563,27 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 
 	if (is_same) {
 		/* same never link output_fd */
-		xassert(con->polling_output_fd == PCTL_TYPE_NONE);
+		xassert((con->polling_output_fd == PCTL_TYPE_NONE) ||
+			(con->polling_output_fd == PCTL_TYPE_UNSUPPORTED));
 
-		con->polling_input_fd =
-			_set_fd_polling(in, con->polling_input_fd, in_type,
+		rc_in = _set_fd_polling(in, &con->polling_input_fd, in_type,
 					con->name, caller);
 	} else {
 		if (has_in)
-			con->polling_input_fd =
-				_set_fd_polling(in, con->polling_input_fd,
+			rc_in = _set_fd_polling(in, &con->polling_input_fd,
 						in_type, con->name, caller);
 		if (has_out)
-			con->polling_output_fd =
-				_set_fd_polling(out, con->polling_output_fd,
-						out_type, con->name, caller);
+			rc_out = _set_fd_polling(out, &con->polling_output_fd,
+						 out_type, con->name, caller);
 	}
+
+	if (rc_in)
+		_on_change_polling_rc(con, rc_in, con->polling_input_fd,
+				      in_type, true, caller);
+
+	if (rc_out)
+		_on_change_polling_rc(con, rc_out, con->polling_output_fd,
+				      out_type, false, caller);
 }
 
 extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,

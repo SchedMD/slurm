@@ -167,7 +167,7 @@ static struct pctl_s {
 
 static int _link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 		    const char *caller);
-static void _unlink_fd(int fd, const char *con_name, const char *caller);
+static int _unlink_fd(int fd, const char *con_name, const char *caller);
 static void _interrupt(const char *caller);
 
 static const char *_type_to_string(pollctl_fd_type_t type)
@@ -330,7 +330,7 @@ static void _fini(void)
 		EVENT_WAIT(&pctl.poll_return, &pctl.mutex);
 
 #ifdef MEMORY_LEAK_DEBUG
-	_unlink_fd(pctl.interrupt.receive, INTERRUPT_CON_NAME, __func__);
+	(void) _unlink_fd(pctl.interrupt.receive, INTERRUPT_CON_NAME, __func__);
 
 	fd_close(&pctl.interrupt.receive);
 	fd_close(&pctl.interrupt.send);
@@ -400,8 +400,8 @@ static int _lock_link_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 	return rc;
 }
 
-static void _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
-		       const char *caller)
+static int _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
+		      const char *caller)
 {
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
@@ -418,14 +418,14 @@ static void _relink_fd(int fd, pollctl_fd_type_t type, const char *con_name,
 		pctl.fds[i].type = type;
 		slurm_mutex_unlock(&pctl.mutex);
 		_interrupt(caller);
-		return;
+		return SLURM_SUCCESS;
 	}
 
 	fatal_abort("should never happen");
 }
 
 /* caller must hold pctl.mutex */
-static void _unlink_fd(int fd, const char *con_name, const char *caller)
+static int _unlink_fd(int fd, const char *con_name, const char *caller)
 {
 	int i = -1;
 
@@ -444,15 +444,21 @@ static void _unlink_fd(int fd, const char *con_name, const char *caller)
 	pctl.fds[i].fd = -1;
 	pctl.fds[i].type = PCTL_TYPE_NONE;
 	pctl.fd_count--;
+
+	return SLURM_SUCCESS;
 }
 
-static void _lock_unlink_fd(int fd, const char *con_name, const char *caller)
+static int _lock_unlink_fd(int fd, const char *con_name, const char *caller)
 {
+	int rc;
+
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
-	_unlink_fd(fd, con_name, caller);
+	rc = _unlink_fd(fd, con_name, caller);
 	slurm_mutex_unlock(&pctl.mutex);
 	_interrupt(caller);
+
+	return rc;
 }
 
 static void _flush_interrupt(int intr_fd, uint32_t events, const char *caller)
