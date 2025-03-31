@@ -8860,6 +8860,11 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 		if ((job_desc_msg->pn_min_cpus == NO_VAL16) ||
 		    (job_desc_msg->pn_min_cpus < min_cpus)) {
 			job_desc_msg->pn_min_cpus = min_cpus;
+			if (min_cpus > job_desc_msg->min_cpus) {
+				job_desc_msg->min_cpus = min_cpus;
+				job_desc_msg->max_cpus =
+					MAX(min_cpus, job_desc_msg->max_cpus);
+			}
 			cpus_per_node = MAX(cpus_per_node, min_cpus);
 			if (job_desc_msg->ntasks_per_node != NO_VAL16) {
 				job_desc_msg->cpus_per_task =
@@ -8869,6 +8874,40 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 					MAX(job_desc_msg->cpus_per_task *
 					    job_desc_msg->ntasks_per_node,
 					    job_desc_msg->pn_min_cpus);
+			} else if (job_desc_msg->num_tasks &&
+				   (job_desc_msg->num_tasks != NO_VAL) &&
+				   job_desc_msg->min_nodes &&
+				   (job_desc_msg->min_nodes != NO_VAL)) {
+				/*
+				 * Calculate a new value of cpus/task given the
+				 * current nodes and tasks values:
+				 * CPUs/Task = (min_cpus_per_node * min_nodes) / num_tasks
+				 */
+				uint32_t cpus =
+					min_cpus * job_desc_msg->min_nodes;
+				job_desc_msg->cpus_per_task =
+					ROUNDUP(cpus, job_desc_msg->num_tasks);
+				/*
+				 * Recalculate pn_min_cpus based on the new
+				 * CPUs/task. This formula aims to get
+				 * an allocation with the least amount of
+				 * CPUs combining all the nodes from the job.
+				 */
+				min_cpus = (job_desc_msg->cpus_per_task *
+					    job_desc_msg->num_tasks) /
+					   job_desc_msg->min_nodes;
+				job_desc_msg->pn_min_cpus = min_cpus;
+				job_desc_msg->min_cpus =
+					MAX(min_cpus,
+					    job_desc_msg->pn_min_cpus);
+			} else if (!job_desc_msg->num_tasks) {
+				/*
+				 * The job did not request any amount of tasks
+				 * explicitly. Assuming 1 per node.
+				 */
+				job_desc_msg->cpus_per_task =
+					MAX(job_desc_msg->pn_min_cpus,
+					    job_desc_msg->cpus_per_task);
 			}
 			debug("JobId=%u: Setting job's pn_min_cpus to %u due to memory limit",
 			      job_desc_msg->job_id,
