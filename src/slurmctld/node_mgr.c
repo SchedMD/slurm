@@ -810,6 +810,7 @@ static bool _is_dup_config_record(config_record_t *c1, config_record_t *c2)
 	    (c1->threads == c2->threads) &&
 	    (c1->tmp_disk == c2->tmp_disk) &&
 	    (c1->tot_sockets == c2->tot_sockets) &&
+	    (!xstrcmp(c1->topology_str, c2->topology_str)) &&
 	    (!xstrcmp(c1->tres_weights_str, c2->tres_weights_str)) &&
 	    (c1->weight == c2->weight)) {
 		/* duplicate records */
@@ -2955,6 +2956,8 @@ static void _split_node_config(node_record_t *node_ptr,
 			xstrdup(config_ptr->cpu_spec_list);
 		new_config_ptr->feature = xstrdup(config_ptr->feature);
 		new_config_ptr->gres = xstrdup(config_ptr->gres);
+		new_config_ptr->topology_str =
+			xstrdup(config_ptr->topology_str);
 		bit_clear(config_ptr->node_bitmap, node_ptr->index);
 		xfree(config_ptr->nodes);
 		config_ptr->nodes = bitmap2node_name(config_ptr->node_bitmap);
