@@ -217,6 +217,11 @@ typedef struct {
 	bool use_none_resv_nodes;
 } top_prio_args_t;
 
+typedef struct {
+	job_record_t *job_ptr;
+	hostset_t *hs;
+} foreach_hetcomp_args_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -18979,6 +18984,30 @@ extern bool job_overlap_and_running(bitstr_t *node_map, list_t *license_list,
 	return overlap_args.rc;
 }
 
+static int _add_hetcomp_hostset(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+	foreach_hetcomp_args_t *args = arg;
+
+	if (args->job_ptr->het_job_id != het_job->het_job_id) {
+		error("%s: Bad het_job_list for %pJ", __func__, args->job_ptr);
+		return 0;
+	}
+
+	if (!het_job->nodes) {
+		debug("%s: %pJ het_job->nodes == NULL.  Usually this means the job was canceled while it was starting and shouldn't be a real issue.",
+		      __func__, args->job_ptr);
+		return 0;
+	}
+
+	if (args->hs)
+		(void) hostset_insert(args->hs, het_job->nodes);
+	else
+		args->hs = hostset_create(het_job->nodes);
+
+	return 0;
+}
+
 extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 {
 	char **my_env, *name, *eq, buf[32];
@@ -19061,41 +19090,21 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 		setenvf(&my_env, "SLURM_HET_JOB_OFFSET", "%u",
 			job_ptr->het_job_offset);
 		if ((job_ptr->het_job_offset == 0) && job_ptr->het_job_list) {
-			job_record_t *het_job = NULL;
-			list_itr_t *iter;
-			hostset_t *hs = NULL;
-			iter = list_iterator_create(job_ptr->het_job_list);
-			while ((het_job = list_next(iter))) {
-				if (job_ptr->het_job_id !=
-				    het_job->het_job_id) {
-					error("%s: Bad het_job_list for %pJ",
-					      __func__, job_ptr);
-					continue;
-				}
-
-				if (!het_job->nodes) {
-					debug("%s: %pJ het_job->nodes == NULL.  Usually this means the job was canceled while it was starting and shouldn't be a real issue.",
-					      __func__, job_ptr);
-					continue;
-				}
-
-				if (hs) {
-					(void) hostset_insert(hs,
-							      het_job->nodes);
-				} else {
-					hs = hostset_create(het_job->nodes);
-				}
-			}
-			list_iterator_destroy(iter);
-			if (hs) {
-				char *buf = hostset_ranged_string_xmalloc(hs);
+			foreach_hetcomp_args_t args = {
+				.job_ptr = job_ptr,
+			};
+			list_for_each(job_ptr->het_job_list,
+				      _add_hetcomp_hostset, &args);
+			if (args.hs) {
+				char *buf = hostset_ranged_string_xmalloc(
+					args.hs);
 				/* Support for old hetjob terminology. */
 				setenvf(&my_env, "SLURM_PACK_JOB_NODELIST",
 					"%s", buf);
 				setenvf(&my_env, "SLURM_HET_JOB_NODELIST",
 					"%s", buf);
 				xfree(buf);
-				hostset_destroy(hs);
+				hostset_destroy(args.hs);
 			}
 		}
 	}
