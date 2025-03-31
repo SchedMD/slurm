@@ -217,10 +217,13 @@ details.</p>
 specific amount of memory on each compute node for exclusive use by the Slurm
 compute node daemon, slurmd.</p>
 
-<p>Slurmstepd is not constrained by this resource specialization, since it is
-considered part of the job and its consumption is completely dependent on the
-typology of the job. For example an MPI job can initialize many ranks with PMI
-and make slurmstepd consume more memory.</p>
+<p>If cgroup/v1 is used the reserved resources will also be used by the
+slurmstepd processes. If cgroup/v2 is used, slurmstepd is not constrained by
+this resource specialization. Instead the slurmstepd is constrained to the
+resources allocated to the job, since it is considered part of the job and its
+consumption is completely dependent on the topology of the job. For example an
+MPI job can initialize many ranks with PMI and make slurmstepd consume more
+memory.</p>
 
 <p>System-level resource specialization is enabled with special node
 configuration parameters. Read <a href="slurm.conf.html">slurm.conf</a> and core
@@ -421,6 +424,6 @@ controllers are under separate directories when using
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 11 October 2024</p>
+<p style="text-align:center;">Last modified 4 April 2025</p>
 
 <!--#include virtual="footer.txt"-->
