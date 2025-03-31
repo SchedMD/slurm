@@ -129,6 +129,44 @@ extern int fini(void)
 extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 				  void *tctx)
 {
+	tree_context_t *ctx = tctx;
+
+	for (int i = 0; i < ctx->switch_count; i++) {
+		bool add, in_switch;
+		int sw = i;
+
+		if (ctx->switch_table[i].level != 0)
+			continue;
+
+		in_switch = bit_test(ctx->switch_table[i].node_bitmap,
+				     node_ptr->index);
+		add = (!xstrcmp(ctx->switch_table[i].name, unit));
+
+		if ((!in_switch && !add) || (in_switch && add))
+			continue;
+
+		while (sw != SWITCH_NO_PARENT) {
+			if (add && !in_switch) {
+				debug2("%s: add %s to %s",
+				       __func__, node_ptr->name,
+				       ctx->switch_table[sw].name);
+				bit_set(ctx->switch_table[sw].node_bitmap,
+					node_ptr->index);
+			} else if (!add && in_switch) {
+				debug2("%s: remove %s from %s",
+				       __func__, node_ptr->name,
+				       ctx->switch_table[sw].name);
+				bit_clear(ctx->switch_table[sw].node_bitmap,
+					  node_ptr->index);
+			}
+			xfree(ctx->switch_table[sw].nodes);
+			ctx->switch_table[sw].nodes =
+				bitmap2node_name(ctx->switch_table[sw]
+							 .node_bitmap);
+			sw = ctx->switch_table[sw].parent;
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
