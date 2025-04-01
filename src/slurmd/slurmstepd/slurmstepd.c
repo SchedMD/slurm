@@ -351,6 +351,14 @@ static void _main_thread_init()
 	}
 }
 
+/*
+ * Validate step record before initialization
+ */
+static int _validate_step(stepd_step_rec_t *step)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int main(int argc, char **argv)
 {
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
@@ -394,9 +402,12 @@ extern int main(int argc, char **argv)
 		fatal("%s: Unable to reliably execute %s",
 		      __func__, conf->stepd_loc);
 
-	/* Create the stepd_step_rec_t, mostly from info in a
-	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
-	if (!(step = _step_setup(cli, msg))) {
+	/*
+	 * Create the stepd_step_rec_t, mostly from info in a
+	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t, and validate
+	 * the new stepd_step_rec_t before continuing
+	 */
+	if (!(step = _step_setup(cli, msg)) || _validate_step(step)) {
 		rc = SLURM_ERROR;
 		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;
