@@ -4116,7 +4116,19 @@ end_node_set:
 		     __func__, job_ptr, job_ptr->part_ptr->name);
 		xfree(node_set_ptr);
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
+		/*
+		 * If the job is being tested, in a 1st attempt, against soft
+		 * constraints, then the failure is considered transient, rather
+		 * than permanent. FAIL_BAD_CONSTRAINTS would have caused the
+		 * job's priority to be set to 0 later in _schedule, thus
+		 * leaving the job w/o schedule forever, and not even tried to
+		 * be tested, in a 2nd attempt, only with hard constraints.
+		 */
+		if (job_ptr->details->feature_list_use !=
+		    job_ptr->details->prefer_list)
+			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
+		else
+			job_ptr->state_reason = FAIL_CONSTRAINTS;
 		debug2("%s: setting %pJ to \"%s\" (%s)",
 		       __func__, job_ptr,
 		       job_state_reason_string(job_ptr->state_reason),
