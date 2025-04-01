@@ -896,11 +896,12 @@ def stop_slurm(fatal=True, quiet=False):
         properties["slurmrestd_log"].close()
 
     if failures:
+        for fail in failures:
+            logging.warning(fail)
         if fatal:
             pytest.fail(failures[0])
-        else:
-            logging.warning(failures[0])
-            return False
+
+        return False
     else:
         return True
 
