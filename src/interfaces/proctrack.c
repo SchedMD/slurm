@@ -471,12 +471,25 @@ extern int proctrack_g_wait(uint64_t cont_id)
  * RET - SLURM_SUCCESS or SLURM_ERROR. SLURM_ERROR and errno set to ECHILD
  *   means all tasks have already ended.
  */
-extern int proctrack_g_wait_for_any_task(int *status, bool block,
-					 struct rusage *rusage)
+extern int proctrack_g_wait_for_any_task(stepd_step_rec_t *step,
+					 stepd_step_task_info_t **ended_task,
+					 bool block)
 {
-	xassert(g_context);
+	int status;
+	struct rusage rusage;
+	int pid;
 
-	return wait3(status, block ? 0 : WNOHANG, rusage);
+	xassert(g_context);
+	xassert(ended_task);
+
+	pid = wait3(&status, block ? 0 : WNOHANG, &rusage);
+
+	if ((pid > 0) && (*ended_task = job_task_info_by_pid(step, pid))) {
+		(*ended_task)->estatus = status;
+		(*ended_task)->rusage = rusage;
+	}
+
+	return pid;
 }
 
 /*

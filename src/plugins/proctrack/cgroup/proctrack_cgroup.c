@@ -291,8 +291,9 @@ extern int proctrack_p_wait(uint64_t cont_id)
 	return SLURM_SUCCESS;
 }
 
-extern int proctrack_p_wait_for_any_task(int *status, bool block,
-					 struct rusage *rusage)
+extern int proctrack_p_wait_for_any_task(stepd_step_rec_t *step,
+					 stepd_step_task_info_t **ended_task,
+					 bool block)
 {
 	return ESLURM_NOT_SUPPORTED;
 }
