@@ -286,7 +286,7 @@ static int _wait_for_job_running(stepd_step_rec_t *step)
 	if (step->state < SLURMSTEPD_STEP_RUNNING) {
 		debug("%ps not running yet %d [cont_id:%"PRIu64"]",
 		      &step->step_id, step->state, step->cont_id);
-		rc = ESLURMD_JOB_NOTRUNNING;
+		rc = ESLURMD_STEP_NOTRUNNING;
 	}
 
 	slurm_mutex_unlock(&step->state_mutex);
@@ -1384,7 +1384,7 @@ _handle_attach(int fd, stepd_step_rec_t *step, uid_t uid)
 	 * Check if jobstep is actually running.
 	 */
 	if (step->state != SLURMSTEPD_STEP_RUNNING) {
-		rc = ESLURMD_JOB_NOTRUNNING;
+		rc = ESLURMD_STEP_NOTRUNNING;
 		goto done;
 	}
 

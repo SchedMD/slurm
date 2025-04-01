@@ -2048,7 +2048,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 
 	/* do RPC call */
 	/* First set node DOWN if fatal error */
-	if ((comp_msg->slurm_rc == ESLURMD_JOB_NOTRUNNING) ||
+	if ((comp_msg->slurm_rc == ESLURMD_STEP_NOTRUNNING) ||
 	    (comp_msg->slurm_rc == ESLURM_ALREADY_DONE) ||
 	    (comp_msg->slurm_rc == ESLURMD_CREDENTIAL_REVOKED)) {
 		/* race condition on job termination, not a real error */

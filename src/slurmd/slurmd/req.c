@@ -3623,7 +3623,7 @@ static int _signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
 	rc = stepd_signal_container(fd, protocol_version, signal, flags,
 				    details, req_uid);
 	if (rc == -1)
-		rc = ESLURMD_JOB_NOTRUNNING;
+		rc = ESLURMD_STEP_NOTRUNNING;
 
 	close(fd);
 	return rc;
@@ -3709,7 +3709,7 @@ _rpc_terminate_tasks(slurm_msg_t *msg)
 
 	rc = stepd_terminate(fd, protocol_version);
 	if (rc == -1)
-		rc = ESLURMD_JOB_NOTRUNNING;
+		rc = ESLURMD_STEP_NOTRUNNING;
 
 done2:
 	close(fd);
@@ -3755,7 +3755,7 @@ static void _rpc_step_complete(slurm_msg_t *msg)
 
 	rc = stepd_completion(fd, protocol_version, req);
 	if (rc == -1)
-		rc = ESLURMD_JOB_NOTRUNNING;
+		rc = ESLURMD_STEP_NOTRUNNING;
 
 done2:
 	close(fd);

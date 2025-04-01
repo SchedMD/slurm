@@ -881,7 +881,7 @@ RESEND:	slurm_msg_t_init(&req);
 		 * probably just means the tasks exited in the meanwhile.
 		 */
 		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID) &&
-		    (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH) &&
+		    (rc != ESLURMD_STEP_NOTRUNNING) && (rc != ESRCH) &&
 		    (rc != EAGAIN) &&
 		    (rc != ESLURM_TRANSITION_STATE_NO_UPDATE)) {
 			error("Failure sending signal %d to %ps on node %s: %s",

@@ -538,7 +538,7 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Too many job steps on node"		        	},
 	{ ERRTAB_ENTRY(ESLURMD_STEP_EXISTS),
 	  "Job step already exists"		        	},
-	{ ERRTAB_ENTRY(ESLURMD_JOB_NOTRUNNING),
+	{ ERRTAB_ENTRY(ESLURMD_STEP_NOTRUNNING),
 	  "Job step not running"	        	        },
 	{ ERRTAB_ENTRY(ESLURMD_STEP_SUSPENDED),
 	  "Job step is suspended"                               },

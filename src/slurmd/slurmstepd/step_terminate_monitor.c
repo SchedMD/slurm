@@ -145,7 +145,7 @@ static void *_monitor(void *arg)
 		if (step->state < SLURMSTEPD_STEP_RUNNING) {
 			error("*** %s STEPD TERMINATED ON %s AT %s DUE TO JOB NOT RUNNING ***",
 			      entity, step->node_name, time_str);
-			rc = ESLURMD_JOB_NOTRUNNING;
+			rc = ESLURMD_STEP_NOTRUNNING;
 		} else {
 			error("*** %s STEPD TERMINATED ON %s AT %s DUE TO JOB NOT ENDING WITH SIGNALS ***",
 			      entity, step->node_name, time_str);
