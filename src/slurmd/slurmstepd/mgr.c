@@ -2607,6 +2607,8 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 		/*********************************************/
 
 		if (t) {
+			debug2("%s: found ended task with primary pid %d ",
+			       __func__, t->pid);
 			completed++;
 			_log_task_exit(t->gtid + task_offset, pid, t->estatus);
 			t->exited  = true;
