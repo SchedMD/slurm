@@ -482,6 +482,9 @@ extern int proctrack_g_wait_for_any_task(stepd_step_rec_t *step,
 	xassert(g_context);
 	xassert(ended_task);
 
+	if (step->flags & LAUNCH_WAIT_FOR_CHILDREN)
+		return (*(ops.wait_for_any_task))(step, ended_task, block);
+
 	pid = wait3(&status, block ? 0 : WNOHANG, &rusage);
 
 	if ((pid > 0) && (*ended_task = job_task_info_by_pid(step, pid))) {
