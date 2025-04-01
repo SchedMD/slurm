@@ -132,6 +132,9 @@ extern bool proctrack_g_has_pid(uint64_t cont_id, pid_t pid);
  */
 extern int proctrack_g_wait(uint64_t cont_id);
 
+extern int proctrack_g_wait_for_any_task(int *status, bool block,
+					 struct rusage *rusage);
+
 /*
  * Get all process IDs within a container.
  *

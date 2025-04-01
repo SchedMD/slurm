@@ -290,3 +290,9 @@ extern int proctrack_p_wait(uint64_t cont_id)
 	xfree(pids);
 	return SLURM_SUCCESS;
 }
+
+extern int proctrack_p_wait_for_any_task(int *status, bool block,
+					 struct rusage *rusage)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
