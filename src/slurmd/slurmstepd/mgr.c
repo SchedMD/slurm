@@ -2552,18 +2552,19 @@ _log_task_exit(unsigned long taskid, unsigned long pid, int status)
 static int
 _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 {
-	stepd_step_task_info_t *t = NULL;
-	int rc = 0, status = 0;
 	pid_t pid;
 	int completed = 0;
-	jobacctinfo_t *jobacct = NULL;
-	struct rusage rusage;
-	char **tmp_env;
 	uint32_t task_offset = 0;
 
 	if (step->het_job_task_offset != NO_VAL)
 		task_offset = step->het_job_task_offset;
 	do {
+		stepd_step_task_info_t *t = NULL;
+		int rc = 0, status = 0;
+		jobacctinfo_t *jobacct = NULL;
+		struct rusage rusage;
+		char **tmp_env;
+
 		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
 		if (pid == -1) {
 			if (errno == ECHILD) {
