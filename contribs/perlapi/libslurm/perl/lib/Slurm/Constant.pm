@@ -1100,7 +1100,7 @@ head2 SLURM ERRNO
 
 =item * ESLURMD_STEP_EXISTS                     4026
 
-=item * ESLURMD_JOB_NOTRUNNING                  4027
+=item * ESLURMD_STEP_NOTRUNNING                 4027
 
 =item * ESLURMD_STEP_SUSPENDED                  4028
 

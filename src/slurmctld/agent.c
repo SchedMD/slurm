@@ -1234,7 +1234,7 @@ static void *_thread_per_group_rpc(void *args)
 			break;
 		case ESLURM_INVALID_JOB_ID:
 			/* Not indicative of a real error */
-		case ESLURMD_JOB_NOTRUNNING:
+		case ESLURMD_STEP_NOTRUNNING:
 			/* Not indicative of a real error */
 			log_flag(AGENT, "%s: RPC to node %s failed, job not running",
 				 __func__, ret_data_info->node_name);
