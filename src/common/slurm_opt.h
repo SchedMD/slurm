@@ -193,6 +193,7 @@ enum {
 	LONG_OPT_USAGE,
 	LONG_OPT_USE_MIN_NODES,
 	LONG_OPT_WAIT_ALL_NODES,
+	LONG_OPT_WAIT_FOR_CHILDREN,
 	LONG_OPT_WCKEY,
 	LONG_OPT_WHOLE,
 	LONG_OPT_WRAP,
@@ -287,6 +288,7 @@ typedef struct {
 	uint16_t tree_width;		/* --treewidth			*/
 	bool unbuffered;		/* --unbuffered			*/
 	bool whole;			/* --whole			*/
+	bool wait_for_children; /* --wait-for-children		*/
 } srun_opt_t;
 
 typedef struct {
