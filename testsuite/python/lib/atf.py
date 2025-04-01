@@ -726,12 +726,13 @@ def start_slurm(clean=False, quiet=False):
         start_slurmrestd()
 
 
-def stop_slurmctld(quiet=False):
+def stop_slurmctld(quiet=False, also_slurmds=False):
     """Stops the Slurm controller daemon (slurmctld).
 
     This function may only be used in auto-config mode.
 
     Args:
+        also_slurmds (boolean): If True, also stop all slurmds.
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
     Returns:
@@ -742,20 +743,59 @@ def stop_slurmctld(quiet=False):
         >>> stop_slurmctld(quiet=True)  # Stop slurmctld with quiet logging
     """
 
+    rc = None
+    failures = []
+
     if not properties["auto-config"]:
         require_auto_config("wants to stop slurmctld")
 
     # Stop slurmctld
-    run_command(
-        "scontrol shutdown slurmctld", user=properties["slurm-user"], quiet=quiet
-    )
+    command = "scontrol shutdown"
+    if not also_slurmds:
+        command += " slurmctld"
+        logging.debug("Stopping slurmctld...")
+    else:
+        logging.debug("Stopping slurmctld and slurmds...")
+
+    results = run_command(command, user=properties["slurm-user"], quiet=quiet)
+    if results["exit_code"] != 0:
+        failures.append(f"Command {command} failed with rc={results['exit_code']}")
 
     # Verify that slurmctld is not running
     if not repeat_until(
         lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"),
         lambda pids: len(pids) == 0,
     ):
-        pytest.fail("Slurmctld is still running")
+        pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
+        failures.append(f"Slurmctld is still running ({pids})")
+        logging.warning("Getting the bt of the still running slurmctld")
+        for pid in pids:
+            run_command(
+                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
+            )
+    else:
+        logging.debug("No slurmctld is running.")
+
+    if also_slurmds:
+        # Verify that slurmds are not running
+        if not repeat_until(
+            lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),
+            lambda pids: len(pids) == 0,
+        ):
+            pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd")
+            failures.append(f"Some slurmds are still running ({pids})")
+            logging.warning("Getting the bt of the still running slurmds")
+            for pid in pids:
+                run_command(
+                    f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
+                )
+        else:
+            logging.debug("No slurmd is running.")
+
+    if failures:
+        rc = failures
+
+    return rc
 
 
 def stop_slurmdbd(quiet=False):
@@ -830,52 +870,9 @@ def stop_slurm(fatal=True, quiet=False):
         stop_slurmdbd(quiet)
 
     # Stop slurmctld and slurmds
-    results = run_command(
-        "scontrol shutdown", user=properties["slurm-user"], quiet=quiet
-    )
-    if results["exit_code"] != 0:
-        failures.append(
-            f"Command \"scontrol shutdown\" failed with rc={results['exit_code']}"
-        )
-
-    # Verify that slurmctld is not running
-    if not repeat_until(
-        lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"),
-        lambda pids: len(pids) == 0,
-    ):
-        pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
-        failures.append(f"Slurmctld is still running ({pids})")
-        logging.warning("Getting the bt of the still running slurmctld")
-        for pid in pids:
-            run_command(
-                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
-            )
-
-    # Build list of slurmds
-    slurmd_list = []
-    output = run_command_output(
-        f"perl -nle 'print $1 if /^NodeName=(\\S+)/' {properties['slurm-config-dir']}/slurm.conf",
-        quiet=quiet,
-    )
-    if not output:
-        failures.append("Unable to determine the slurmd node names")
-    else:
-        for node_name_expression in output.rstrip().split("\n"):
-            if node_name_expression != "DEFAULT":
-                slurmd_list.extend(node_range_to_list(node_name_expression))
-
-    # Verify that slurmds are not running
-    if not repeat_until(
-        lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),
-        lambda pids: len(pids) == 0,
-    ):
-        pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd")
-        failures.append(f"Some slurmds are still running ({pids})")
-        for pid in pids:
-            run_command(
-                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
-            )
-        run_command(f"pgrep -f {properties['slurm-sbin-dir']}/slurmd -a", quiet=quiet)
+    err = stop_slurmctld(quiet=quiet, also_slurmds=True)
+    if err:
+        failures.append(err)
 
     # Stop slurmrestd if was started
     if properties["slurmrestd-started"]:
