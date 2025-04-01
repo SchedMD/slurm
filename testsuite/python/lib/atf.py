@@ -515,7 +515,7 @@ def is_slurmctld_running(quiet=False):
     return False
 
 
-def start_slurmctld(clean=False, quiet=False):
+def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
     """Starts the Slurm controller daemon (slurmctld).
 
     This function may only be used in auto-config mode.
@@ -523,6 +523,7 @@ def start_slurmctld(clean=False, quiet=False):
     Args:
         clean (boolean): If True, clears previous slurmctld state.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+        also_slurmds (boolean): If True, also start all required slurmds.
 
     Returns:
         None
@@ -565,6 +566,60 @@ def start_slurmctld(clean=False, quiet=False):
             pytest.fail("Slurmctld is not running")
         else:
             logging.debug("Slurmctld started successfully")
+    else:
+        logging.warning("Slurmctld was already started")
+
+    if also_slurmds:
+        # Build list of slurmds
+        slurmd_list = []
+        output = run_command_output(
+            f"perl -nle 'print $1 if /^NodeName=(\\S+)/' {properties['slurm-config-dir']}/slurm.conf",
+            user=properties["slurm-user"],
+            quiet=quiet,
+        )
+        if not output:
+            pytest.fail("Unable to determine the slurmd node names")
+        for node_name_expression in output.rstrip().split("\n"):
+            if node_name_expression != "DEFAULT":
+                slurmd_list.extend(node_range_to_list(node_name_expression))
+
+        # (Multi)Slurmds
+        for slurmd_name in slurmd_list:
+            logging.debug(f"Starting slurmd for {slurmd_name}...")
+            # Check whether slurmd is running
+            if (
+                run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
+                != 0
+            ):
+                # Start slurmd
+                results = run_command(
+                    f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
+                    user="root",
+                    quiet=quiet,
+                )
+                if results["exit_code"] != 0:
+                    pytest.fail(
+                        f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}"
+                    )
+
+                # Verify that the slurmd is running
+                if (
+                    run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
+                    != 0
+                ):
+                    pytest.fail(f"Slurmd -N {slurmd_name} is not running")
+            else:
+                logging.warning("slurmd for {slurmd_name} already running")
+
+            # Verify that the slurmd is registered correctly
+            if not repeat_until(
+                lambda: get_node_parameter(slurmd_name, "State"),
+                lambda state: state == "IDLE",
+            ):
+                pytest.fail(
+                    f"Node {slurmd_name} was not able to register correctly, not IDLE."
+                )
+            logging.debug(f"{slurmd_name} is IDLE.")
 
 
 def start_slurmdbd(clean=False, quiet=False):
@@ -664,59 +719,11 @@ def start_slurm(clean=False, quiet=False):
         )
 
     # Start slurmctld
-    start_slurmctld(clean, quiet)
+    start_slurmctld(clean, quiet, also_slurmds=True)
 
     # Start slurmrestd if required
     if properties["slurmrestd-started"]:
         start_slurmrestd()
-
-    # Build list of slurmds
-    slurmd_list = []
-    output = run_command_output(
-        f"perl -nle 'print $1 if /^NodeName=(\\S+)/' {properties['slurm-config-dir']}/slurm.conf",
-        user=properties["slurm-user"],
-        quiet=quiet,
-    )
-    if not output:
-        pytest.fail("Unable to determine the slurmd node names")
-    for node_name_expression in output.rstrip().split("\n"):
-        if node_name_expression != "DEFAULT":
-            slurmd_list.extend(node_range_to_list(node_name_expression))
-
-    # (Multi)Slurmds
-    for slurmd_name in slurmd_list:
-        logging.debug(f"Starting slurmd for {slurmd_name}...")
-        # Check whether slurmd is running
-        if run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet) != 0:
-            # Start slurmd
-            results = run_command(
-                f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
-                user="root",
-                quiet=quiet,
-            )
-            if results["exit_code"] != 0:
-                pytest.fail(
-                    f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}"
-                )
-
-            # Verify that the slurmd is running
-            if (
-                run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
-                != 0
-            ):
-                pytest.fail(f"Slurmd -N {slurmd_name} is not running")
-        else:
-            logging.warning("slurmd for {slurmd_name} already running")
-
-        # Verify that the slurmd is registered correctly
-        if not repeat_until(
-            lambda: get_node_parameter(slurmd_name, "State"),
-            lambda state: state == "IDLE",
-        ):
-            pytest.fail(
-                f"Node {slurmd_name} was not able to register correctly, not IDLE."
-            )
-        logging.debug(f"{slurmd_name} is IDLE.")
 
 
 def stop_slurmctld(quiet=False):
