@@ -810,6 +810,9 @@ def stop_slurmdbd(quiet=False):
         None
     """
 
+    rc = None
+    failures = []
+
     if not properties["auto-config"]:
         require_auto_config("wants to stop slurmdbd")
 
@@ -820,7 +823,9 @@ def stop_slurmdbd(quiet=False):
         "sacctmgr shutdown", user=properties["slurm-user"], quiet=quiet
     )
     if results["exit_code"] != 0:
-        pytest.fail(f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}")
+        failures.append(
+            f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}"
+        )
 
     # Verify that slurmdbd is not running (we might have to wait for rollups to complete)
     if not repeat_until(
@@ -830,7 +835,12 @@ def stop_slurmdbd(quiet=False):
     ):
         failures.append("Slurmdbd is still running")
     else:
-        logging.debug("Slurmdbd stopped successfully")
+        logging.debug("No slurmdbd is running.")
+
+    if failures:
+        rc = failures
+
+    return rc
 
 
 def stop_slurm(fatal=True, quiet=False):
@@ -867,7 +877,9 @@ def stop_slurm(fatal=True, quiet=False):
         get_config_parameter("AccountingStorageType", live=False, quiet=quiet)
         == "accounting_storage/slurmdbd"
     ):
-        stop_slurmdbd(quiet)
+        err = stop_slurmdbd(quiet)
+        if err:
+            failures.append(err)
 
     # Stop slurmctld and slurmds
     err = stop_slurmctld(quiet=quiet, also_slurmds=True)
