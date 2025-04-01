@@ -686,6 +686,7 @@ def start_slurm(clean=False, quiet=False):
 
     # (Multi)Slurmds
     for slurmd_name in slurmd_list:
+        logging.debug(f"Starting slurmd for {slurmd_name}...")
         # Check whether slurmd is running
         if run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet) != 0:
             # Start slurmd
@@ -705,15 +706,18 @@ def start_slurm(clean=False, quiet=False):
                 != 0
             ):
                 pytest.fail(f"Slurmd -N {slurmd_name} is not running")
+        else:
+            logging.warning("slurmd for {slurmd_name} already running")
 
-            # Verify that the slurmd is registered correctly
-            if not repeat_until(
-                lambda: get_node_parameter(slurmd_name, "State"),
-                lambda state: state == "IDLE",
-            ):
-                pytest.fail(
-                    f"Node {slurmd_name} was not able to register correctly, not IDLE."
-                )
+        # Verify that the slurmd is registered correctly
+        if not repeat_until(
+            lambda: get_node_parameter(slurmd_name, "State"),
+            lambda state: state == "IDLE",
+        ):
+            pytest.fail(
+                f"Node {slurmd_name} was not able to register correctly, not IDLE."
+            )
+        logging.debug(f"{slurmd_name} is IDLE.")
 
 
 def stop_slurmctld(quiet=False):
