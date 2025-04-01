@@ -197,6 +197,7 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 {
 	int rc = SLURM_SUCCESS;
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32], *jname = NULL;
+	char *partition = NULL;
 	uint32_t job_state;
 	char *query = NULL, *on_dup = NULL;
 	uint32_t time_limit;
@@ -209,6 +210,8 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 
 	usr_str = user_from_job(job_ptr);
 	grp_str = group_from_job(job_ptr);
+	partition = job_ptr->part_ptr ? job_ptr->part_ptr->name :
+					job_ptr->partition;
 
 	if ((job_ptr->time_limit == NO_VAL) && job_ptr->part_ptr)
 		time_limit = job_ptr->part_ptr->max_time;
@@ -263,14 +266,14 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 		   "'%s', '%s', %ld, %ld, %u",
 		   job_ptr->job_id, job_ptr->user_id, usr_str,
 		   job_ptr->group_id, grp_str, jname,
-		   job_state, job_ptr->total_cpus, job_ptr->partition, lim_str,
+		   job_state, job_ptr->total_cpus, partition, lim_str,
 		   start_time, end_time, job_ptr->node_cnt);
 
 	xstrfmtcat(on_dup, "uid=%u, user_name='%s', gid=%u, group_name='%s', "
 		   "name='%s', state=%u, proc_cnt=%u, `partition`='%s', "
 		   "timelimit='%s', nodecnt=%u",
 		   job_ptr->user_id, usr_str, job_ptr->group_id, grp_str, jname,
-		   job_state, job_ptr->total_cpus, job_ptr->partition, lim_str,
+		   job_state, job_ptr->total_cpus, partition, lim_str,
 		   job_ptr->node_cnt);
 
 	if (job_ptr->nodes) {
