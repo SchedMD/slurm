@@ -356,6 +356,23 @@ static void _main_thread_init()
  */
 static int _validate_step(stepd_step_rec_t *step)
 {
+	/*
+	 * --wait-for-children is only supported by the cgroup proctrack plugin.
+	 */
+	if ((step->flags & LAUNCH_WAIT_FOR_CHILDREN)) {
+		char *cgroup_version = autodetect_cgroup_version();
+		if (!xstrstr(slurm_conf.proctrack_type, "proctrack/cgroup")) {
+			error("Failed to validate step %ps. --wait-for-children requires proctrack/cgroup plugin.",
+			      &step->step_id);
+			return SLURM_ERROR;
+		}
+		if (!xstrcmp(cgroup_version, "cgroup/v1")) {
+			error("Failed to validate step %ps. --wait-for-children is not supported in cgroup/v1. cgroup/v2 is required.",
+			      &step->step_id);
+			return SLURM_ERROR;
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
