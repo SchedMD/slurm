@@ -476,7 +476,7 @@ extern int proctrack_g_wait_for_any_task(int *status, bool block,
 {
 	xassert(g_context);
 
-	return SLURM_SUCCESS;
+	return wait3(status, block ? 0 : WNOHANG, rusage);
 }
 
 /*
