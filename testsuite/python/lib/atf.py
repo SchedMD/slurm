@@ -515,7 +515,7 @@ def is_slurmctld_running(quiet=False):
     return False
 
 
-def start_slurmctld(clean=False, quiet=False):
+def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
     """Starts the Slurm controller daemon (slurmctld).
 
     This function may only be used in auto-config mode.
@@ -523,6 +523,7 @@ def start_slurmctld(clean=False, quiet=False):
     Args:
         clean (boolean): If True, clears previous slurmctld state.
         quiet (boolean): If True, logging is performed at the TRACE log level.
+        also_slurmds (boolean): If True, also start all required slurmds.
 
     Returns:
         None
@@ -565,6 +566,60 @@ def start_slurmctld(clean=False, quiet=False):
             pytest.fail("Slurmctld is not running")
         else:
             logging.debug("Slurmctld started successfully")
+    else:
+        logging.warning("Slurmctld was already started")
+
+    if also_slurmds:
+        # Build list of slurmds
+        slurmd_list = []
+        output = run_command_output(
+            f"perl -nle 'print $1 if /^NodeName=(\\S+)/' {properties['slurm-config-dir']}/slurm.conf",
+            user=properties["slurm-user"],
+            quiet=quiet,
+        )
+        if not output:
+            pytest.fail("Unable to determine the slurmd node names")
+        for node_name_expression in output.rstrip().split("\n"):
+            if node_name_expression != "DEFAULT":
+                slurmd_list.extend(node_range_to_list(node_name_expression))
+
+        # (Multi)Slurmds
+        for slurmd_name in slurmd_list:
+            logging.debug(f"Starting slurmd for {slurmd_name}...")
+            # Check whether slurmd is running
+            if (
+                run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
+                != 0
+            ):
+                # Start slurmd
+                results = run_command(
+                    f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
+                    user="root",
+                    quiet=quiet,
+                )
+                if results["exit_code"] != 0:
+                    pytest.fail(
+                        f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}"
+                    )
+
+                # Verify that the slurmd is running
+                if (
+                    run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
+                    != 0
+                ):
+                    pytest.fail(f"Slurmd -N {slurmd_name} is not running")
+            else:
+                logging.warning("slurmd for {slurmd_name} already running")
+
+            # Verify that the slurmd is registered correctly
+            if not repeat_until(
+                lambda: get_node_parameter(slurmd_name, "State"),
+                lambda state: state == "IDLE",
+            ):
+                pytest.fail(
+                    f"Node {slurmd_name} was not able to register correctly, not IDLE."
+                )
+            logging.debug(f"{slurmd_name} is IDLE.")
 
 
 def start_slurmdbd(clean=False, quiet=False):
@@ -664,63 +719,20 @@ def start_slurm(clean=False, quiet=False):
         )
 
     # Start slurmctld
-    start_slurmctld(clean, quiet)
+    start_slurmctld(clean, quiet, also_slurmds=True)
 
     # Start slurmrestd if required
     if properties["slurmrestd-started"]:
         start_slurmrestd()
 
-    # Build list of slurmds
-    slurmd_list = []
-    output = run_command_output(
-        f"perl -nle 'print $1 if /^NodeName=(\\S+)/' {properties['slurm-config-dir']}/slurm.conf",
-        user=properties["slurm-user"],
-        quiet=quiet,
-    )
-    if not output:
-        pytest.fail("Unable to determine the slurmd node names")
-    for node_name_expression in output.rstrip().split("\n"):
-        if node_name_expression != "DEFAULT":
-            slurmd_list.extend(node_range_to_list(node_name_expression))
 
-    # (Multi)Slurmds
-    for slurmd_name in slurmd_list:
-        # Check whether slurmd is running
-        if run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet) != 0:
-            # Start slurmd
-            results = run_command(
-                f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
-                user="root",
-                quiet=quiet,
-            )
-            if results["exit_code"] != 0:
-                pytest.fail(
-                    f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}"
-                )
-
-            # Verify that the slurmd is running
-            if (
-                run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
-                != 0
-            ):
-                pytest.fail(f"Slurmd -N {slurmd_name} is not running")
-
-            # Verify that the slurmd is registered correctly
-            if not repeat_until(
-                lambda: get_node_parameter(slurmd_name, "State"),
-                lambda state: state == "IDLE",
-            ):
-                pytest.fail(
-                    f"Node {slurmd_name} was not able to register correctly, not IDLE."
-                )
-
-
-def stop_slurmctld(quiet=False):
+def stop_slurmctld(quiet=False, also_slurmds=False):
     """Stops the Slurm controller daemon (slurmctld).
 
     This function may only be used in auto-config mode.
 
     Args:
+        also_slurmds (boolean): If True, also stop all slurmds.
         quiet (boolean): If True, logging is performed at the TRACE log level.
 
     Returns:
@@ -731,20 +743,59 @@ def stop_slurmctld(quiet=False):
         >>> stop_slurmctld(quiet=True)  # Stop slurmctld with quiet logging
     """
 
+    rc = None
+    failures = []
+
     if not properties["auto-config"]:
         require_auto_config("wants to stop slurmctld")
 
     # Stop slurmctld
-    run_command(
-        "scontrol shutdown slurmctld", user=properties["slurm-user"], quiet=quiet
-    )
+    command = "scontrol shutdown"
+    if not also_slurmds:
+        command += " slurmctld"
+        logging.debug("Stopping slurmctld...")
+    else:
+        logging.debug("Stopping slurmctld and slurmds...")
+
+    results = run_command(command, user=properties["slurm-user"], quiet=quiet)
+    if results["exit_code"] != 0:
+        failures.append(f"Command {command} failed with rc={results['exit_code']}")
 
     # Verify that slurmctld is not running
     if not repeat_until(
         lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"),
         lambda pids: len(pids) == 0,
     ):
-        pytest.fail("Slurmctld is still running")
+        pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
+        failures.append(f"Slurmctld is still running ({pids})")
+        logging.warning("Getting the bt of the still running slurmctld")
+        for pid in pids:
+            run_command(
+                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
+            )
+    else:
+        logging.debug("No slurmctld is running.")
+
+    if also_slurmds:
+        # Verify that slurmds are not running
+        if not repeat_until(
+            lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),
+            lambda pids: len(pids) == 0,
+        ):
+            pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd")
+            failures.append(f"Some slurmds are still running ({pids})")
+            logging.warning("Getting the bt of the still running slurmds")
+            for pid in pids:
+                run_command(
+                    f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
+                )
+        else:
+            logging.debug("No slurmd is running.")
+
+    if failures:
+        rc = failures
+
+    return rc
 
 
 def stop_slurmdbd(quiet=False):
@@ -759,6 +810,9 @@ def stop_slurmdbd(quiet=False):
         None
     """
 
+    rc = None
+    failures = []
+
     if not properties["auto-config"]:
         require_auto_config("wants to stop slurmdbd")
 
@@ -769,7 +823,9 @@ def stop_slurmdbd(quiet=False):
         "sacctmgr shutdown", user=properties["slurm-user"], quiet=quiet
     )
     if results["exit_code"] != 0:
-        pytest.fail(f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}")
+        failures.append(
+            f"Command \"sacctmgr shutdown\" failed with rc={results['exit_code']}"
+        )
 
     # Verify that slurmdbd is not running (we might have to wait for rollups to complete)
     if not repeat_until(
@@ -779,7 +835,12 @@ def stop_slurmdbd(quiet=False):
     ):
         failures.append("Slurmdbd is still running")
     else:
-        logging.debug("Slurmdbd stopped successfully")
+        logging.debug("No slurmdbd is running.")
+
+    if failures:
+        rc = failures
+
+    return rc
 
 
 def stop_slurm(fatal=True, quiet=False):
@@ -816,55 +877,14 @@ def stop_slurm(fatal=True, quiet=False):
         get_config_parameter("AccountingStorageType", live=False, quiet=quiet)
         == "accounting_storage/slurmdbd"
     ):
-        stop_slurmdbd(quiet)
+        err = stop_slurmdbd(quiet)
+        if err:
+            failures.append(err)
 
     # Stop slurmctld and slurmds
-    results = run_command(
-        "scontrol shutdown", user=properties["slurm-user"], quiet=quiet
-    )
-    if results["exit_code"] != 0:
-        failures.append(
-            f"Command \"scontrol shutdown\" failed with rc={results['exit_code']}"
-        )
-
-    # Verify that slurmctld is not running
-    if not repeat_until(
-        lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"),
-        lambda pids: len(pids) == 0,
-    ):
-        pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
-        failures.append(f"Slurmctld is still running ({pids})")
-        logging.warning("Getting the bt of the still running slurmctld")
-        for pid in pids:
-            run_command(
-                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
-            )
-
-    # Build list of slurmds
-    slurmd_list = []
-    output = run_command_output(
-        f"perl -nle 'print $1 if /^NodeName=(\\S+)/' {properties['slurm-config-dir']}/slurm.conf",
-        quiet=quiet,
-    )
-    if not output:
-        failures.append("Unable to determine the slurmd node names")
-    else:
-        for node_name_expression in output.rstrip().split("\n"):
-            if node_name_expression != "DEFAULT":
-                slurmd_list.extend(node_range_to_list(node_name_expression))
-
-    # Verify that slurmds are not running
-    if not repeat_until(
-        lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),
-        lambda pids: len(pids) == 0,
-    ):
-        pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd")
-        failures.append(f"Some slurmds are still running ({pids})")
-        for pid in pids:
-            run_command(
-                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
-            )
-        run_command(f"pgrep -f {properties['slurm-sbin-dir']}/slurmd -a", quiet=quiet)
+    err = stop_slurmctld(quiet=quiet, also_slurmds=True)
+    if err:
+        failures.append(err)
 
     # Stop slurmrestd if was started
     if properties["slurmrestd-started"]:
@@ -876,11 +896,12 @@ def stop_slurm(fatal=True, quiet=False):
         properties["slurmrestd_log"].close()
 
     if failures:
+        for fail in failures:
+            logging.warning(fail)
         if fatal:
             pytest.fail(failures[0])
-        else:
-            logging.warning(failures[0])
-            return False
+
+        return False
     else:
         return True
 
