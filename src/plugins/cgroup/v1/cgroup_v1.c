@@ -1564,3 +1564,8 @@ extern int cgroup_p_signal(int signal)
 	error("%s not implemented in %s", __func__, plugin_name);
 	return SLURM_ERROR;
 }
+
+extern int cgroup_p_is_task_empty(uint32_t taskid)
+{
+	return ESLURM_NOT_SUPPORTED;
+}

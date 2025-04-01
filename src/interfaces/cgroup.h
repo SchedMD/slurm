@@ -125,6 +125,11 @@ typedef enum {
 	CG_LEVEL_CNT
 } cgroup_level_t;
 
+typedef enum {
+	CGROUP_EMPTY,
+	CGROUP_POPULATED,
+} cgroup_empty_t;
+
 /* This data type is used to get/set various parameters in cgroup hierarchy */
 typedef struct {
 	/* extra info */
@@ -423,5 +428,7 @@ extern bool cgroup_g_has_feature(cgroup_ctl_feature_t f);
  * OUT - SLURM_ERROR if signal could not be sent, SLURM_SUCCESS otherwise.
  */
 extern int cgroup_g_signal(int signal);
+
+extern int cgroup_g_is_task_empty(uint32_t taskid);
 
 #endif
