@@ -2565,7 +2565,7 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 		struct rusage rusage;
 		char **tmp_env;
 
-		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
+		pid = proctrack_g_wait_for_any_task(&status, waitflag, &rusage);
 		if (pid == -1) {
 			if (errno == ECHILD) {
 				debug("No child processes");
