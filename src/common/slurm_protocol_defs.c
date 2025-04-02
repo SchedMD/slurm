@@ -4418,17 +4418,7 @@ extern void slurm_free_reserve_info_members(reserve_info_t * resv)
  */
 extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
 {
-	int i;
-
 	if (msg) {
-		if (msg->topo_array) {
-			for (i = 0; i < msg->record_count; i++) {
-				xfree(msg->topo_array[i].name);
-				xfree(msg->topo_array[i].nodes);
-				xfree(msg->topo_array[i].switches);
-			}
-			xfree(msg->topo_array);
-		}
 		topology_g_topology_free(msg->topo_info);
 		xfree(msg);
 	}
