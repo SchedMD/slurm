@@ -678,7 +678,6 @@ int main(int argc, char **argv)
 	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 
 	conmgr_run(false);
-	conmgr_quiesce(__func__);
 
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
@@ -998,8 +997,6 @@ int main(int argc, char **argv)
 			_post_reconfig();
 		}
 
-		conmgr_unquiesce(__func__);
-
 		/*
 		 * process slurm background activities, could run as pthread
 		 */
@@ -1152,7 +1149,6 @@ int main(int argc, char **argv)
 #endif
 
 	conmgr_request_shutdown();
-	conmgr_unquiesce(__func__);
 	conmgr_fini();
 
 	rate_limit_shutdown();
@@ -2447,7 +2443,6 @@ static void *_slurmctld_background(void *no_data)
 			/* Always stop listening when shutdown requested */
 			_listeners_quiesce();
 
-			conmgr_quiesce(__func__);
 			_flush_rpcs();
 
 			if (!report_locks_set()) {
