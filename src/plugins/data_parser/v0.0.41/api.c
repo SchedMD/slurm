@@ -308,3 +308,11 @@ extern bool data_parser_p_is_complex(args_t *args)
 	xassert(args->magic == MAGIC_ARGS);
 	return is_complex_mode(args);
 }
+
+extern int data_parser_p_dump_flags(args_t *args, data_t *dst)
+{
+	xassert(args->magic == MAGIC_ARGS);
+
+	return data_parser_p_dump(args, DATA_PARSER_FLAGS, &args->flags,
+				  sizeof(args->flags), dst);
+}
