@@ -203,7 +203,9 @@ static bool _should_be_ref(const parser_t *parser, spec_args_t *sargs)
 	}
 
 	if ((parser->obj_openapi == OPENAPI_FORMAT_OBJECT) ||
-	    (parser->obj_openapi == OPENAPI_FORMAT_ARRAY))
+	    ((parser->obj_openapi == OPENAPI_FORMAT_ARRAY) &&
+	     !((is_inline_enums_mode(sargs->args)) &&
+	       (parser->model == PARSER_MODEL_FLAG_ARRAY))))
 		return true;
 
 	if (parser->array_type || parser->pointer_type || parser->list_type ||

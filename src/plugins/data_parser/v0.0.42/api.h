@@ -48,6 +48,7 @@
 #define is_fast_mode(args) (args->flags & FLAG_FAST)
 #define is_complex_mode(args) (args->flags & FLAG_COMPLEX_VALUES)
 #define is_prefer_refs_mode(args) (~args->flags & FLAG_MINIMIZE_REFS)
+#define is_inline_enums_mode(args) (args->flags & FLAG_INLINE_ENUMS)
 
 typedef enum {
 	FLAG_NONE = 0,
@@ -66,6 +67,8 @@ typedef enum {
 	FLAG_PREFER_REFS = SLURM_BIT(3),
 	/* Prefer to inline $ref into schemas when possible in OpenAPI specification */
 	FLAG_MINIMIZE_REFS = SLURM_BIT(4),
+	/* Prefer to inline $ref into schema for flag arrays */
+	FLAG_INLINE_ENUMS = SLURM_BIT(5),
 } data_parser_flags_t;
 
 typedef struct {
