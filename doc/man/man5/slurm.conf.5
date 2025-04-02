@@ -139,7 +139,7 @@ Comma\-separated list of options.
 .IP
 .RS
 .TP 2
-\fBmax_step_records=#\fR
+\fBmax_step_records\fR=\#
 The number of steps that are recorded in the database for each job -- excluding
 batch, extern, and interactive steps.
 .IP
@@ -484,7 +484,7 @@ proxy, instead of using \fIscontrol token\fR.
 .IP
 
 .TP
-\fBjwks=\fR
+\fBjwks\fR=
 Absolute path to JWKS file. Key should be owned by SlurmUser or root, must be
 readable by SlurmUser, with suggested permissions of 0400. It must not be
 writable by 'other'.
@@ -495,7 +495,7 @@ HS256 key use (and token generation).
 .IP
 
 .TP
-\fBjwt_key=\fR
+\fBjwt_key\fR=
 Absolute path to JWT key file. Key must be HS256. Key should be owned by
 SlurmUser or root, must be readable by SlurmUser, with suggested permissions of
 0400. It must not be accessible by 'other'.
@@ -503,7 +503,7 @@ If not set, the default key file is jwt_hs256.key in \fIStateSaveLocation\fR.
 .IP
 
 .TP
-\fBuserclaimfield=\fR
+\fBuserclaimfield\fR=
 Use an alternative claim field for the Slurm UserName \fBsun\fR field. This
 option is designed to allow compatibility with tokens generated outside of
 Slurm. (This field may also be known as a grant.)
@@ -627,13 +627,13 @@ Supported values include:
 .IP
 .RS
 .TP 15
-\fBDestDir=\fR
+\fBDestDir\fR=
 Destination directory for file being broadcast to allocated compute nodes.
 Default value is current working directory, or \-\-chdir for srun if set.
 .IP
 
 .TP
-\fBCompression=\fR
+\fBCompression\fR=
 Specify default file compression library to be used.
 Supported values are "lz4" and "none".
 The default value with the sbcast \-\-compress option is "lz4" and "none" otherwise.
@@ -753,7 +753,7 @@ set to 0 cache is disabled. The default value is 60.
 .IP
 
 .TP
-\fBkeepaliveinterval=#\fR
+\fBkeepaliveinterval\fR=\#
 Specifies the interval, in seconds, between keepalive probes on idle
 connections.
 This affects connections between srun and its slurmstepd process as well as all
@@ -762,7 +762,7 @@ The default is to use the system default settings.
 .IP
 
 .TP
-\fBkeepaliveprobes=#\fR
+\fBkeepaliveprobes\fR=\#
 Specifies the number of unacknowledged keepalive probes sent before considering
 the connection broken.
 This affects connections between srun and its slurmstepd process as well as all
@@ -771,7 +771,7 @@ The default is to use the system default settings.
 .IP
 
 .TP
-\fBkeepalivetime=#\fR
+\fBkeepalivetime\fR=\#
 Specifies how long, in seconds,  before a connection is marked as needing a
 keepalive probe as well as how long to delay closing a connection to process
 messages still in the queue.
@@ -1269,7 +1269,7 @@ with reason DependencyNeverSatisfied.
 .IP
 
 .TP
-\fBmax_depend_depth=#\fR
+\fBmax_depend_depth\fR=\#
 Maximum number of jobs to test for a circular job dependency. Stop testing
 after this number of job dependencies have been tested. The default value is
 10 jobs.
@@ -1652,7 +1652,7 @@ The supported format is follows:
 .IP
 .RS
 .TP 12
-\fBJobAcctGatherFrequency=\fR\fI<datatype>\fR\fB=\fR\fI<interval>\fR
+\fBJobAcctGatherFrequency\fR=<\fIdatatype\fR>=<\fIinterval\fR>
 where \fI<datatype>\fR=\fI<interval>\fR specifies the task sampling
 interval for the jobacct_gather plugin or a
 sampling interval for a profiling type by the
@@ -1667,8 +1667,8 @@ Affects accounting and profiling:
 .RS
 
 .TP
-\fBtask=\fI<interval>\fR
-where \fI<interval>\fR is the task sampling interval in seconds
+\fBtask\fR=<\fIinterval\fR>
+where <\fIinterval\fR> is the task sampling interval in seconds
 for the jobacct_gather plugins and for task
 profiling by the acct_gather_profile plugin.
 .IP
@@ -1680,20 +1680,20 @@ Affects profiling only:
 .RS
 
 .TP
-\fBenergy=\fI<interval>\fR
+\fBenergy\fR=<\fIinterval\fR>
 where \fI<interval>\fR is the sampling interval in seconds
 for energy profiling using the acct_gather_energy plugin
 .IP
 
 .TP
-\fBnetwork=\fI<interval>\fR
+\fBnetwork\fR=<\fIinterval\fR>
 where \fI<interval>\fR is the sampling interval in seconds
 for infiniband profiling using the acct_gather_interconnect
 plugin.
 .IP
 
 .TP
-\fBfilesystem=\fI<interval>\fR
+\fBfilesystem\fR=<\fIinterval\fR>
 where \fI<interval>\fR is the sampling interval in seconds
 for filesystem profiling using the acct_gather_filesystem
 plugin.
@@ -2536,7 +2536,7 @@ supported parameters include:
 .RS
 
 .TP
-\fBports=#\-#\fR
+\fBports\fR=\#\-\#
 Identifies a range of communication ports used by native Cray's PMI.
 .IP
 
@@ -2718,7 +2718,7 @@ only be set directly on a relevant subset of the system qos values instead.
 Multiple options may be comma separated.
 .RS
 .TP
-\fBmin_exempt_priority=#\fR
+\fBmin_exempt_priority\fR=\#
 Threshold value for the job's global priority. Only those jobs with priority
 lower than this value will be marked as preemptable.
 .IP
@@ -2732,7 +2732,7 @@ plugin.
 .IP
 
 .TP
-\fBreorder_count=#\fR
+\fBreorder_count\fR=\#
 Specify how many attempts should be made in reordering preemptable jobs to
 minimize the total number of jobs that will be preempted.
 The default value is 1. High values may adversely impact performance.
@@ -2756,7 +2756,7 @@ When reordering preemptable jobs, place the most recently tested job at the
 front of the list since we are certain that it actually added resources needed
 by the new job. This ensures that with enough reorder attempts, the minimum
 possible number of jobs will be preempted.
-See also \fBreorder_count=#\fR.
+See also \fBreorder_count\fR.
 The logic to support this option is only available in the select/cons_tres
 plugin.
 .IP
@@ -3719,7 +3719,7 @@ jobs by preventing them from launching indefinitely.
 .IP
 
 .TP
-\fBbatch_sched_delay=#\fR
+\fBbatch_sched_delay\fR=\#
 How long, in seconds, the scheduling of batch jobs can be delayed.
 This can be useful in a high\-throughput environment in which batch jobs are
 submitted at a very high rate (i.e. using the sbatch command) and one wishes
@@ -3728,7 +3728,7 @@ The default value is 3 seconds.
 .IP
 
 .TP
-\fBbb_array_stage_cnt=#\fR
+\fBbb_array_stage_cnt\fR=\#
 Number of tasks from a job array that should be available for burst buffer
 resource allocation. Higher values will increase the system overhead as each
 task from the job array will be moved to its own job record in memory, so
@@ -3823,7 +3823,7 @@ mitigate this problem. By default, this option is disabled.
 .IP
 
 .TP
-\fBbf_interval=#\fR
+\fBbf_interval\fR=\#
 The number of seconds between backfill iterations.
 Higher values result in less overhead and better responsiveness.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
@@ -3832,7 +3832,7 @@ A setting of \-1 will disable the backfill scheduling loop.
 .IP
 
 .TP
-\fBbf_job_part_count_reserve=#\fR
+\fBbf_job_part_count_reserve\fR=\#
 The backfill scheduling logic will reserve resources for the specified count
 of highest priority jobs in each partition.
 For example, bf_job_part_count_reserve=10 will cause the backfill scheduler to
@@ -3855,7 +3855,7 @@ This option implicitly enables \fBbf_running_job_reserve\fR.
 .IP
 
 .TP
-\fBbf_max_job_array_resv=#\fR
+\fBbf_max_job_array_resv\fR=\#
 The maximum number of tasks from a job array for which the backfill scheduler
 will reserve resources in the future.
 Since job arrays can potentially have millions of tasks, the overhead in
@@ -3874,7 +3874,7 @@ submitted to.
 .IP
 
 .TP
-\fBbf_max_job_assoc=#\fR
+\fBbf_max_job_assoc\fR=\#
 The maximum number of jobs per user association to attempt starting with the
 backfill scheduler.
 This setting is similar to \fBbf_max_job_user\fR but is handy if a user
@@ -3884,13 +3884,13 @@ queue with jobs that cannot start and that prevent jobs from other users
 to start.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Also see the \fBbf_max_job_user\fR \fBbf_max_job_part\fR, \fBbf_max_job_test\fR
-and \fBbf_max_job_user_part=#\fR options.
+and \fBbf_max_job_user_part\fR=\# options.
 Set \fBbf_max_job_test\fR to a value much higher than \fBbf_max_job_assoc\fR.
 Default: 0 (no limit), Min: 0, Max: bf_max_job_test.
 .IP
 
 .TP
-\fBbf_max_job_part=#\fR
+\fBbf_max_job_part\fR=\#
 The maximum number of jobs per partition to attempt starting with the backfill
 scheduler. This can be especially helpful for systems with large numbers of
 partitions and jobs.
@@ -3901,7 +3901,7 @@ Default: 0 (no limit), Min: 0, Max: bf_max_job_test.
 .IP
 
 .TP
-\fBbf_max_job_start=#\fR
+\fBbf_max_job_start\fR=\#
 The maximum number of jobs which can be initiated in a single iteration
 of the backfill scheduler.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
@@ -3909,7 +3909,7 @@ Default: 0 (no limit), Min: 0, Max: 10000.
 .IP
 
 .TP
-\fBbf_max_job_test=#\fR
+\fBbf_max_job_test\fR=\#
 The maximum number of jobs to attempt backfill scheduling for
 (i.e. the queue depth).
 Higher values result in more overhead and less responsiveness.
@@ -3922,7 +3922,7 @@ Default: 500, Min: 1, Max: 1,000,000.
 .IP
 
 .TP
-\fBbf_max_job_user=#\fR
+\fBbf_max_job_user\fR=\#
 The maximum number of jobs per user to attempt starting with the backfill
 scheduler for ALL partitions.
 One can set this limit to prevent users from flooding the backfill
@@ -3930,23 +3930,23 @@ queue with jobs that cannot start and that prevent jobs from other users
 to start. This is similar to the MAXIJOB limit in Maui.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Also see the \fBbf_max_job_part\fR, \fBbf_max_job_test\fR and
-\fBbf_max_job_user_part=#\fR options.
+\fBbf_max_job_user_part\fR options.
 Set \fBbf_max_job_test\fR to a value much higher than \fBbf_max_job_user\fR.
 Default: 0 (no limit), Min: 0, Max: bf_max_job_test.
 .IP
 
 .TP
-\fBbf_max_job_user_part=#\fR
+\fBbf_max_job_user_part\fR=\#
 The maximum number of jobs per user per partition to attempt starting with the
 backfill scheduler for any single partition.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Also see the \fBbf_max_job_part\fR, \fBbf_max_job_test\fR and
-\fBbf_max_job_user=#\fR options.
+\fBbf_max_job_user\fR options.
 Default: 0 (no limit), Min: 0, Max: bf_max_job_test.
 .IP
 
 .TP
-\fBbf_max_time=#\fR
+\fBbf_max_time\fR=\#
 The maximum time in seconds the backfill scheduler can spend (including time
 spent sleeping when locks are released) before discontinuing, even if maximum
 job counts have not been reached.
@@ -3967,7 +3967,7 @@ queued RPCs before the scheduler stops to respond to these requests.
 .IP
 
 .TP
-\fBbf_min_age_reserve=#\fR
+\fBbf_min_age_reserve\fR=\#
 The backfill and main scheduling logic will not reserve resources for pending
 jobs until they have been pending and runnable for at least the specified
 number of seconds.
@@ -3983,7 +3983,7 @@ Default: 0, Min: 0, Max: 2592000 (30 days).
 .IP
 
 .TP
-\fBbf_min_prio_reserve=#\fR
+\fBbf_min_prio_reserve\fR=\#
 The backfill and main scheduling logic will not reserve resources for pending
 jobs unless they have a priority equal to or higher than the specified value.
 In addition, jobs with a lower priority will not prevent a newly submitted job
@@ -3997,7 +3997,7 @@ Default: 0, Min: 0, Max: 2^63.
 .IP
 
 .TP
-\fBbf_node_space_size=#\fR
+\fBbf_node_space_size\fR=\#
 Size of backfill node_space table. Adding a single job to backfill reservations
 in the worst case can consume two node_space records.
 In the case of large clusters, configuring a relatively small value may be
@@ -4033,7 +4033,7 @@ This option is disabled by default.
 .IP
 
 .TP
-\fBbf_resolution=#\fR
+\fBbf_resolution\fR=\#
 The number of seconds in the resolution of data maintained about when jobs
 begin and end. Higher values result in better responsiveness and quicker
 backfill cycles by using larger blocks of time to determine node eligibility.
@@ -4070,7 +4070,7 @@ This option applies only when the \fBbf_topopt_enable\fR is set.
 .IP
 
 .TP
-\fBbf_window=#\fR
+\fBbf_window\fR=\#
 The number of minutes into the future to look when considering jobs to schedule.
 Higher values result in more overhead and less responsiveness.
 A value at least as long as the highest allowed time limit is generally
@@ -4083,7 +4083,7 @@ Default: 1440 (1 day), Min: 1, Max: 43200 (30 days).
 .IP
 
 .TP
-\fBbf_window_linear=#\fR
+\fBbf_window_linear\fR=\#
 For performance reasons, the backfill scheduler will decrease precision in
 calculation of job expected termination times. By default, the precision starts
 at 30 seconds and that time interval doubles with each evaluation of currently
@@ -4106,7 +4106,7 @@ with more than a few hundred simultaneously executing jobs.
 .IP
 
 .TP
-\fBbf_yield_interval=#\fR
+\fBbf_yield_interval\fR=\#
 The backfill scheduler will periodically relinquish locks in order for other
 pending operations to take place.
 This specifies the times when the locks are relinquished in microseconds.
@@ -4117,7 +4117,7 @@ Default: 2,000,000 (2 sec), Min: 1, Max: 10,000,000 (10 sec).
 .IP
 
 .TP
-\fBbf_yield_sleep=#\fR
+\fBbf_yield_sleep\fR=\#
 The backfill scheduler will periodically relinquish locks in order for other
 pending operations to take place.
 This specifies the length of time for which the locks are relinquished in
@@ -4127,7 +4127,7 @@ Default: 500,000 (0.5 sec), Min: 1, Max: 10,000,000 (10 sec).
 .IP
 
 .TP
-\fBbuild_queue_timeout=#\fR
+\fBbuild_queue_timeout\fR=\#
 Defines the maximum time that can be devoted to building a queue of jobs to
 be tested for scheduling.
 If the system has a huge number of jobs with dependencies, just building the
@@ -4137,7 +4137,7 @@ The default value is 2,000,000 microseconds (2 seconds).
 .IP
 
 .TP
-\fBcorrespond_after_task_cnt=#\fR
+\fBcorrespond_after_task_cnt\fR=\#
 Defines the number of array tasks that get split for potential aftercorr
 dependency check. Low number may result in dependent task check failures when
 the job one depends on gets purged before the split.
@@ -4145,7 +4145,7 @@ Default: 10.
 .IP
 
 .TP
-\fBdefault_queue_depth=#\fR
+\fBdefault_queue_depth\fR=\#
 The default number of jobs to attempt scheduling (i.e. the queue depth) when a
 running job completes or other routine actions occur, however the frequency
 with which the scheduler is run may be limited by using the \fBdefer\fR or
@@ -4174,7 +4174,7 @@ submission.
 .IP
 
 .TP
-\fBdelay_boot=#\fR
+\fBdelay_boot\fR=\#
 Do not reboot nodes in order to satisfied this job's feature specification if
 the job has been eligible to run for less than this time period.
 If the job has waited for less than the specified period, it will use only
@@ -4266,7 +4266,7 @@ array to 1000.
 .IP
 
 .TP
-\fBmax_rpc_cnt=#\fR
+\fBmax_rpc_cnt\fR=\#
 If the number of active threads in the slurmctld daemon is equal to or
 larger than this value, defer scheduling of jobs. The scheduler will check
 this condition at certain points in code and yield locks if necessary.
@@ -4289,7 +4289,7 @@ period of time.
 .IP
 
 .TP
-\fBmax_sched_time=#\fR
+\fBmax_sched_time\fR=\#
 How long, in seconds, that the main scheduling loop will execute for before
 exiting.
 If a value is configured, be aware that all other Slurm operations will be
@@ -4303,21 +4303,21 @@ For example if MessageTimeout=10, the time limit will be 2 seconds
 .IP
 
 .TP
-\fBmax_script_size=#\fR
+\fBmax_script_size\fR=\#
 Specify the maximum size of a batch script, in bytes.
 The default value is 4 megabytes.
 Larger values may adversely impact system performance.
 .IP
 
 .TP
-\fBmax_submit_line_size=#\fR
+\fBmax_submit_line_size\fR=\#
 Specify the maximum size of a submit line, in bytes.
 The default value is 1 megabtye.
 This option cannot exceed 2 megabytes.
 .IP
 
 .TP
-\fBmax_switch_wait=#\fR
+\fBmax_switch_wait\fR=\#
 Maximum number of seconds that a job can delay execution waiting for the
 specified desired switch count. The default value is 300 seconds.
 .IP
@@ -4353,7 +4353,7 @@ This may reduce resource fragmentation for some workloads.
 .IP
 
 .TP
-\fBpartition_job_depth=#\fR
+\fBpartition_job_depth\fR=\#
 The default number of jobs to attempt scheduling (i.e. the queue depth)
 from each partition/queue in Slurm's main scheduling logic.
 This limit will be enforced for all main scheduler cycles.
@@ -4409,7 +4409,7 @@ parameter.
 .IP
 
 .TP
-\fBsched_interval=#\fR
+\fBsched_interval\fR=\#
 How frequently, in seconds, the main scheduling loop will execute and test all
 pending jobs, with only the \fBpartition_job_depth\fR limit in place.
 The default value is 60 seconds.
@@ -4417,14 +4417,14 @@ A setting of \-1 will disable the main scheduling loop.
 .IP
 
 .TP
-\fBsched_max_job_start=#\fR
+\fBsched_max_job_start\fR=\#
 The maximum number of jobs that the main scheduling logic will start in any
 single execution.
 The default value is zero, which imposes no limit.
 .IP
 
 .TP
-\fBsched_min_interval=#\fR
+\fBsched_min_interval\fR=\#
 How frequently, in microseconds, the main scheduling loop will execute and test
 any pending jobs.
 The scheduler runs in a limited fashion every time that any event happens which
@@ -4446,7 +4446,7 @@ last sockets, cycling through the sockets on a round robin basis.
 .IP
 
 .TP
-\fBstep_retry_count=#\fR
+\fBstep_retry_count\fR=\#
 When a step completes and there are steps ending resource allocation, then
 retry step allocations for at least this number of pending steps.
 Also see \fBstep_retry_time\fR.
@@ -4454,7 +4454,7 @@ The default value is 8 steps.
 .IP
 
 .TP
-\fBstep_retry_time=#\fR
+\fBstep_retry_time\fR=\#
 When a step completes and there are steps ending resource allocation, then
 retry step allocations for all steps which have been pending for at least this
 number of seconds.
@@ -4961,7 +4961,7 @@ time.
 .IP
 
 .TP
-\fBnode_reg_mem_percent=#\fR
+\fBnode_reg_mem_percent\fR=\#
 Percentage of memory a node is allowed to register with without being marked as
 invalid with low memory. Default is 100. For State=CLOUD nodes, the default is
 90. To disable this for cloud nodes set it to 100. \fIconfig_overrides\fR takes
@@ -5026,7 +5026,7 @@ second argument.
 .IP
 
 .TP
-\fBrl_bucket_size=\fR
+\fBrl_bucket_size\fR=
 Size of the token bucket. This permits a certain amount of RPC burst from a
 user before the steady\-state rate limit takes effect.
 The default value is 30.
@@ -5042,7 +5042,7 @@ steady\-state RPC load established by the refill period and rate.
 .IP
 
 .TP
-\fBrl_log_freq=\fR
+\fBrl_log_freq\fR=
 The maximum frequency (in seconds) for which logs about RPC limit being exceeded
 by an individual user are printed to the logs. Set to 0 to see every incidence.
 Set to -1 to disable the log message entirely.
@@ -5050,20 +5050,20 @@ The default value is 0.
 .IP
 
 .TP
-\fBrl_refill_period=\fR
+\fBrl_refill_period\fR=
 How frequently, in seconds, in which additional tokens are added to each user
 bucket.
 The default value is 1.
 .IP
 
 .TP
-\fBrl_refill_rate=\fR
+\fBrl_refill_rate\fR=
 How many tokens to add to the bucket on each period.
 The default value is 2.
 .IP
 
 .TP
-\fBrl_table_size=\fR
+\fBrl_table_size\fR=
 Number of entries in the user hash\-table. Recommended value should be at least
 twice the number of active user accounts on the system.
 The default value is 8192.
@@ -5083,7 +5083,7 @@ Allow any user able to run in a reservation to delete it.
 .IP
 
 .TP
-\fBvalidate_nodeaddr_threads=\fR
+\fBvalidate_nodeaddr_threads\fR=
 During startup, slurmctld looks up the address for each compute node in the
 system. On large systems this can cause considerable delay, this option permits
 the slurmctld to concurrently handle the lookup calls and can reduce system
@@ -6120,7 +6120,7 @@ Incompatible with dynamic nodes.
 .IP
 
 .TP
-\fBTopoMaxSizeUnroll=#\fR
+\fBTopoMaxSizeUnroll\fR=\#
 Maximum number of individual job sizes automatically unrolled
 from min-max nodes job specification.
 Default: -1 (option disabled).
