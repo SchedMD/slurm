@@ -95,6 +95,7 @@ burst_buffer_info_msg_t *g_bb_info_ptr = NULL;
 slurm_ctl_conf_info_msg_t *g_ctl_info_ptr = NULL;
 job_step_info_response_msg_t *g_step_info_ptr = NULL;
 topo_info_response_msg_t *g_topo_info_msg_ptr = NULL;
+int g_switch_nodes_maps_count = 0;
 
 static GtkActionGroup *admin_action_group = NULL;
 static GtkActionGroup *menu_action_group = NULL;

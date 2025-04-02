@@ -551,11 +551,9 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 	sview_node_info_t *sview_node_info_ptr = NULL;
 #endif
 	button_processor->inx = &inx;
-	for (ii=0; ii<g_topo_info_msg_ptr->record_count;
+	for (ii = 0; ii < g_switch_nodes_maps_count;
 	     ii++, sw_nodes_bitmaps_ptr++) {
 		int j = 0, first, last;
-		if (g_topo_info_msg_ptr->topo_array[ii].level)
-			continue;
 		first = bit_ffs(sw_nodes_bitmaps_ptr->node_bitmap);
 		if (first == -1)
 			continue;
