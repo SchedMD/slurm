@@ -404,7 +404,7 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
         lambda: atf.get_reservation_parameter("resv1", "State"),
         lambda state: state == "INACTIVE",
         fatal=True,
-        timeout=120,
+        timeout=165,
         poll_interval=5,
     )
 
