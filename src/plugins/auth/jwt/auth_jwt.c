@@ -180,7 +180,7 @@ static void _init_jwks(void)
 
 	_check_key_permissions(key_file, S_IWOTH);
 
-	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL, NULL))
+	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
 		fatal("%s: serializer_g_init() failed", __func__);
 
 	debug("loading jwks file `%s`", key_file);

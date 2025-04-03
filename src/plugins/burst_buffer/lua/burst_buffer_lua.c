@@ -2209,7 +2209,7 @@ extern int init(void)
                 return rc;
 	lua_script_path = get_extra_conf_path("burst_buffer.lua");
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL, NULL))) {
+	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
 		error("%s: unable to load JSON serializer: %s",
 		      __func__, slurm_strerror(rc));
 		return rc;

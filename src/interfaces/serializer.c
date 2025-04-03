@@ -284,8 +284,7 @@ extern const char **get_mime_type_array(void)
 	return mime_array;
 }
 
-extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf,
-			     const char *config)
+extern int serializer_g_init(const char *plugin_list, const char *config)
 {
 	int rc = SLURM_SUCCESS;
 	serializer_flags_t flags = SER_FLAGS_NONE;
@@ -303,7 +302,7 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf,
 	 * plugins as the code always calls serializer_g_init() to be safe.
 	 */
 	xassert(sizeof(funcs_t) == sizeof(void *) * ARRAY_SIZE(syms));
-	rc = load_plugins(&plugins, SERIALIZER_MAJOR_TYPE, plugin_list, listf,
+	rc = load_plugins(&plugins, SERIALIZER_MAJOR_TYPE, plugin_list, NULL,
 			  syms, ARRAY_SIZE(syms));
 
 	if (rc)
