@@ -379,23 +379,12 @@ extern const char *get_http_method_string_lc(http_request_method_t method)
 
 extern http_request_method_t get_http_method(const char *str)
 {
-	if (str == NULL)
+	if (!str || !str[0])
 		return HTTP_REQUEST_INVALID;
-	if (!xstrcasecmp(str, "get"))
-		return HTTP_REQUEST_GET;
-	if (!xstrcasecmp(str, "post"))
-		return HTTP_REQUEST_POST;
-	if (!xstrcasecmp(str, "put"))
-		return HTTP_REQUEST_PUT;
-	if (!xstrcasecmp(str, "delete"))
-		return HTTP_REQUEST_DELETE;
-	if (!xstrcasecmp(str, "options"))
-		return HTTP_REQUEST_OPTIONS;
-	if (!xstrcasecmp(str, "head"))
-		return HTTP_REQUEST_HEAD;
-	if (!xstrcasecmp(str, "patch"))
-		return HTTP_REQUEST_PATCH;
-	if (!xstrcasecmp(str, "trace"))
-		return HTTP_REQUEST_TRACE;
+
+	for (int i = 0; i < ARRAY_SIZE(method_strings); i++)
+		if (!xstrcasecmp(method_strings[i].lc_text, str))
+			return method_strings[i].method;
+
 	return HTTP_REQUEST_INVALID;
 }
