@@ -880,12 +880,12 @@ def stop_slurm(fatal=True, quiet=False):
     ):
         err = stop_slurmdbd(quiet)
         if err:
-            failures.append(err)
+            failures.extend(err)
 
     # Stop slurmctld and slurmds
     err = stop_slurmctld(quiet=quiet, also_slurmds=True)
     if err:
-        failures.append(err)
+        failures.extend(err)
 
     # Stop slurmrestd if was started
     if properties["slurmrestd-started"]:
