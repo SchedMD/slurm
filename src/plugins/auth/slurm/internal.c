@@ -241,6 +241,9 @@ extern void init_internal(void)
 
 	if (!(lifespan = slurm_get_auth_ttl()))
 		lifespan = DEFAULT_TTL;
+
+	xfree(key_file);
+	xfree(jwks_file);
 }
 
 extern void fini_internal(void)

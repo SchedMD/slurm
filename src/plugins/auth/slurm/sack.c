@@ -323,7 +323,7 @@ extern void init_sack_conmgr(void)
 	 */
 
 	/* Prepare for reconfigure */
-	setenvfs("%s=%d", SACK_RECONFIG_ENV, sack_fd);
+	setenvf(NULL, SACK_RECONFIG_ENV, "%d", sack_fd);
 	fd_set_noclose_on_exec(sack_fd);
 }
 
