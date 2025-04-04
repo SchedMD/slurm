@@ -1239,6 +1239,7 @@ static int _schedule(bool full_queue)
 	uint32_t prio_reserve;
 	DEF_TIMERS;
 	job_node_select_t job_node_select = { 0 };
+	static bool ignore_prefer_val = false;
 
 	if (slurmctld_config.shutdown_time)
 		return 0;
@@ -1454,6 +1455,12 @@ static int _schedule(bool full_queue)
 		} else {
 			sched_max_job_start = 0;
 		}
+
+		if (xstrcasestr(slurm_conf.sched_params,
+				"ignore_prefer_validation"))
+			ignore_prefer_val = true;
+		else
+			ignore_prefer_val = false;
 
 		sched_update = slurm_conf.last_update;
 		if (slurm_conf.sched_params && strlen(slurm_conf.sched_params))
@@ -1866,6 +1873,26 @@ next_task:
 			 */
 			fed_mgr_job_start(job_ptr, job_ptr->start_time);
 		} else {
+			/*
+			 * Node config unavailable plus state_reason
+			 * FAIL_BAD_CONSTRAINTS causes the job to be held
+			 * later. If job specs were unsatisfied due to
+			 * --prefer, give the opportunity to test the record
+			 * without it in a second attempt by resetting
+			 * state_reason to FAIL_CONSTRAINTS.
+			 */
+			if (ignore_prefer_val && job_ptr->details->prefer &&
+			    job_ptr->details->prefer_list &&
+			    (job_ptr->details->prefer_list ==
+			     job_ptr->details->feature_list_use) &&
+			    (error_code ==
+			     ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
+			    (job_ptr->state_reason == FAIL_BAD_CONSTRAINTS)) {
+				sched_debug2("StateReason='%s' set after evaluating %pJ in partition %s (maybe unsatisfied due to --prefer while ignore_prefer_validation configured). Re-testing without --prefer if needed.",
+					     job_state_reason_string(job_ptr->state_reason), job_ptr, job_ptr->part_ptr->name);
+				job_ptr->state_reason = FAIL_CONSTRAINTS;
+			}
+
 			fed_mgr_job_unlock(job_ptr);
 		}
 
