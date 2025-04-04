@@ -136,6 +136,7 @@ typedef enum {
 	QOS_FLAG_RELATIVE = SLURM_BIT(10),
 	QOS_FLAG_RELATIVE_SET = SLURM_BIT(11), // Not stored in the database
 	QOS_FLAG_PART_QOS = SLURM_BIT(12), // Not stored in the database
+	QOS_FLAG_DELETED = SLURM_BIT(13), // Not stored in the database
 
 	/* 28+ are operators and will not be on a normal QOS rec. */
 	QOS_FLAG_BASE = 0x0fffffff,
