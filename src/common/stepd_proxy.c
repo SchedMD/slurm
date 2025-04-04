@@ -40,6 +40,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/stepd_api.h"
 #include "src/common/stepd_proxy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -499,4 +500,69 @@ extern int stepd_proxy_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp,
 	xassert(running_in_slurmstepd());
 	return _stepd_send_recv_msg(req, resp, timeout,
 				    PROXY_TO_NODE_SEND_RECV);
+}
+
+static int _slurmd_send_msg_to_stepmgr(int fd, slurm_msg_t *req)
+{
+	int req_msg_type = req->msg_type;
+	uint32_t buf_size;
+
+	safe_write(fd, &req_msg_type, sizeof(int));
+
+	buf_size = get_buf_offset(req->buffer) - req->body_offset;
+
+	safe_write(fd, &req->protocol_version, sizeof(uint16_t));
+	safe_write(fd, &buf_size, sizeof(uint32_t));
+	safe_write(fd, &req->buffer->head[req->body_offset], buf_size);
+
+	return SLURM_SUCCESS;
+
+rwfail:
+	error("%s: Failed to write to stepmgr: %m", __func__);
+	return SLURM_ERROR;
+}
+
+static int _slurmd_recv_msg_from_stepmgr(int fd, buf_t **resp_buf)
+{
+	uint32_t data_size;
+	char *data = NULL;
+	buf_t *buf;
+
+	safe_read(fd, &data_size, sizeof(uint32_t));
+	data_size = ntohl(data_size);
+	data = xmalloc(data_size);
+	safe_read(fd, data, data_size);
+
+	buf = create_buf(data, data_size);
+
+	*resp_buf = buf;
+
+	return SLURM_SUCCESS;
+rwfail:
+	error("%s: Failed to read from stepmgr: %m", __func__);
+	return SLURM_ERROR;
+}
+
+extern int stepd_proxy_send_recv_to_stepd(slurm_msg_t *req, buf_t **resp_buf,
+					  slurm_step_id_t *step_id,
+					  int stepd_fd, bool reply)
+{
+	xassert(running_in_slurmd());
+
+	fd_set_nonblocking(stepd_fd);
+
+	if (_slurmd_send_msg_to_stepmgr(stepd_fd, req)) {
+		error("%s: Failed to send msg to stepmgr", __func__);
+		return SLURM_ERROR;
+	}
+
+	if (!reply)
+		return SLURM_SUCCESS;
+
+	if (_slurmd_recv_msg_from_stepmgr(stepd_fd, resp_buf)) {
+		error("%s: Failed to receive response from stepmgr", __func__);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }

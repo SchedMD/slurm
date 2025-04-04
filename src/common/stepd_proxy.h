@@ -75,4 +75,17 @@ extern int stepd_proxy_send_only_node_msg(slurm_msg_t *req);
 extern int stepd_proxy_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp,
 					  int timeout);
 
+/*
+ * Send message to slurmstepd, and receive response
+ *
+ * IN req - message to send to slurmstepd
+ * OUT resp_buf - response from slurmstep (if reply is true)
+ * IN step_id - stepd step id
+ * IN stepd_fd - open connection to stepd's unix socket
+ * IN reply - true if stepd needs to send a response
+ */
+extern int stepd_proxy_send_recv_to_stepd(slurm_msg_t *req, buf_t **resp_buf,
+					  slurm_step_id_t *step_id,
+					  int stepd_fd, bool reply);
+
 #endif

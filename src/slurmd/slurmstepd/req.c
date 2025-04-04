@@ -487,6 +487,9 @@ rwfail:
 	return NULL;
 }
 
+/*
+ * NOTE: reply must be in sync with corresponding rpc handling in slurmd.
+ */
 static int _handle_stepmgr_relay_msg(int fd,
 				     uid_t uid,
 				     slurm_msg_t *msg,
@@ -497,17 +500,15 @@ static int _handle_stepmgr_relay_msg(int fd,
 	buf_t *buffer;
 	char *data = NULL;
 	uint16_t protocol_version;
-	uint32_t client_fd;
 	uint32_t data_size;
 
 	safe_read(fd, &protocol_version, sizeof(uint16_t));
-	client_fd = receive_fd_over_socket(fd);
 	safe_read(fd, &data_size, sizeof(uint32_t));
 	data = xmalloc(data_size);
 	safe_read(fd, data, data_size);
 
 	slurm_msg_t_init(msg);
-	msg->conn_fd = client_fd;
+	msg->conn_fd = fd;
 	msg->msg_type = msg_type;
 	msg->protocol_version = protocol_version;
 
