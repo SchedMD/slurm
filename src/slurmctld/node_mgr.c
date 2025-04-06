@@ -3021,6 +3021,10 @@ static int _set_gpu_spec(node_record_t *node_ptr, char **reason_down)
 		/* info("%d has %s", i, */
 		/*      bit_fmt_full(gres_ns->topo_core_bitmap[i])); */
 		for (int j = 0; j < node_ptr->tot_cores; j++) {
+			/* Skip general spec cores */
+			if (node_ptr->node_spec_bitmap &&
+			    !bit_test(node_ptr->node_spec_bitmap, j))
+				continue;
 			/* Only look at the ones set */
 			if (!bit_test(gres_ns->topo_core_bitmap[i], j))
 				continue;
