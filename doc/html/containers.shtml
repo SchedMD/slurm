@@ -858,7 +858,7 @@ Minimalist Dockerfile to generate a image with OpenMPI and PMIx to test basic MP
 <pre>
 FROM almalinux:latest
 RUN dnf -y update && dnf -y upgrade && dnf install -y yum-utils && dnf config-manager --set-enabled powertools
-RUN dnf -y install make automake gcc gcc-c++ kernel-devel bzip2 python3 wget libevent-devel hwloc-devel munge-devel
+RUN dnf -y install make automake gcc gcc-c++ kernel-devel bzip2 python3 wget libevent-devel hwloc-devel
 
 WORKDIR /usr/local/src/
 RUN wget 'https://github.com/openpmix/openpmix/releases/download/v4.2.2/pmix-4.2.2.tar.bz2' -O - | tar -xvjf -
