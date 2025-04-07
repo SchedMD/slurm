@@ -2293,6 +2293,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	details.pn_min_memory = job_start_msg->req_mem;
 	job.qos_id = job_start_msg->qos_id;
 	details.qos_req = job_start_msg->qos_req;
+	details.resv_req = job_start_msg->resv_req;
 	job.restart_cnt = job_start_msg->restart_cnt;
 	job.resv_id = job_start_msg->resv_id;
 	job.priority = job_start_msg->priority;

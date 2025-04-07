@@ -160,6 +160,7 @@ typedef struct {
 	char *req_nodes;		/* required nodes */
 	uint16_t requeue;		/* controls ability requeue job */
 	uint16_t resv_port_cnt;		/* count of MPI ports reserved per node */
+	char *resv_req;			/* original requested reservations */
 	uint16_t segment_size;
 	uint8_t share_res;		/* set if job can share resources with
 					 * other jobs */

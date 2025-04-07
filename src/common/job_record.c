@@ -179,6 +179,7 @@ static void _delete_job_details_members(job_details_t *detail_ptr)
 	xfree(detail_ptr->submit_line);
 	FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 	xfree(detail_ptr->req_nodes);
+	xfree(detail_ptr->resv_req);
 	xfree(detail_ptr->script);
 	xfree(detail_ptr->script_hash);
 	xfree(detail_ptr->arbitrary_tpn);
@@ -497,6 +498,7 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		pack32(detail_ptr->pn_min_tmp_disk, buffer);
 
 		packstr(detail_ptr->req_nodes, buffer);
+		packstr(detail_ptr->resv_req, buffer);
 		packstr(detail_ptr->exc_nodes, buffer);
 		packstr(detail_ptr->features, buffer);
 		packstr(detail_ptr->prefer, buffer);
@@ -1351,6 +1353,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	char *submit_line = NULL, *prefer = NULL;
 	char *env_hash = NULL, *script_hash = NULL, *qos_req = NULL;
 	char *x11_magic_cookie = NULL, *x11_target = NULL;
+	char *resv_req = NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
 	uint32_t pn_min_cpus, pn_min_tmp_disk;
@@ -1425,6 +1428,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack32(&pn_min_tmp_disk, buffer);
 
 		safe_unpackstr(&req_nodes, buffer);
+		safe_unpackstr(&resv_req, buffer);
 		safe_unpackstr(&exc_nodes, buffer);
 		safe_unpackstr(&features, buffer);
 		safe_unpackstr(&prefer, buffer);
@@ -1718,6 +1722,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	xfree(job_ptr->details->std_out);
 	xfree(job_ptr->details->submit_line);
 	xfree(job_ptr->details->req_nodes);
+	xfree(job_ptr->details->resv_req);
 	xfree(job_ptr->details->work_dir);
 	xfree(job_ptr->details->qos_req);
 	xfree(job_ptr->details->x11_magic_cookie);
@@ -1802,6 +1807,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->overcommit = overcommit;
 	job_ptr->details->prolog_running = prolog_running;
 	job_ptr->details->req_nodes = req_nodes;
+	job_ptr->details->resv_req = resv_req;
 	job_ptr->details->requeue = requeue;
 	job_ptr->details->resv_port_cnt = resv_port_cnt;
 	job_ptr->details->segment_size = segment_size;
@@ -1842,6 +1848,7 @@ unpack_error:
 	xfree(out);
 	xfree(qos_req);
 	xfree(req_nodes);
+	xfree(resv_req);
 	xfree(script_hash);
 	xfree(submit_line);
 	xfree(work_dir);

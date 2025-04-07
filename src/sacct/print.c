@@ -1757,6 +1757,19 @@ extern void print_fields(type_t type, void *object)
 					     &tmp_uint32,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_RESERVATION_REQ:
+			switch(type) {
+			case JOB:
+				if (job->resv_req) {
+					tmp_char = job->resv_req;
+				}
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_RESTART_CNT:
 			switch(type) {
 			case JOB:

@@ -902,6 +902,7 @@ typedef struct {
 	uint16_t restart_cnt;
 	uint32_t resvid;
 	char *resv_name;
+	char *resv_req; /* original requested reservations */
 	char *script;
 	uint16_t segment_size;
 	uint32_t show_full;

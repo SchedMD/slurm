@@ -932,6 +932,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->partition);
 		xfree(job->nodes);
 		xfree(job->resv_name);
+		xfree(job->resv_req);
 		xfree(job->script);
 		FREE_NULL_LIST(job->steps);
 		xfree(job->std_err);

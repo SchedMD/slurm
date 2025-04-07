@@ -299,6 +299,7 @@ typedef struct dbd_job_start_msg {
 	uint64_t req_mem;       /* requested minimum memory */
 	uint16_t restart_cnt;   /* How many times the job has been restarted */
 	uint32_t resv_id;	/* reservation id */
+	char *resv_req;		/* original requested reservations */
 	char *script_hash;      /* hash value of script */
 	uint16_t segment_size;	/* requested segment size */
 	time_t   start_time;	/* job start time */
