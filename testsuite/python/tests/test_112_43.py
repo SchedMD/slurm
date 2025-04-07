@@ -380,9 +380,6 @@ def test_db_users(slurmdb):
     from openapi_client.models.v0043_user_default import V0043UserDefault
     from openapi_client.models.v0043_wckey import V0043Wckey
 
-    atf.run_command(f"sacctmgr -i create wckey {wckey_name}", fatal=False)
-    atf.run_command(f"sacctmgr -i create wckey {wckey2_name}", fatal=False)
-
     users = V0043OpenapiUsersResp(
         users=[
             V0043User(
@@ -523,8 +520,6 @@ def test_db_assoc(slurmdb):
         f"sacctmgr -i create user {coord_name} cluster={local_cluster_name}",
         fatal=False,
     )
-    atf.run_command(f"sacctmgr -i create wckey {wckey_name}", fatal=False)
-    atf.run_command(f"sacctmgr -i create wckey {wckey2_name}", fatal=False)
     atf.run_command(f"sacctmgr -i create qos {qos_name}", fatal=False)
     atf.run_command(f"sacctmgr -i create qos {qos2_name}", fatal=False)
 
@@ -782,14 +777,6 @@ def test_db_qos(slurmdb):
     )
     atf.run_command(
         f"sacctmgr -i create user {coord_name} cluster={local_cluster_name} account={account2_name}",
-        fatal=False,
-    )
-    atf.run_command(
-        f"sacctmgr -i create wckey {wckey_name} account={account_name}",
-        fatal=False,
-    )
-    atf.run_command(
-        f"sacctmgr -i create wckey {wckey2_name} account={account2_name}",
         fatal=False,
     )
 
