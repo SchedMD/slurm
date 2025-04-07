@@ -190,11 +190,17 @@ def test_db_accounts(slurm, slurmdb, create_wckeys):
         V0040OpenapiAccountsResp,
     )
     from openapi_client.models.v0040_account import V0040Account
-    from openapi_client.models.v0040_assoc_short import V0040AssocShort
-    from openapi_client.models.v0040_coord import V0040Coord
 
+    # from openapi_client.models.v0040_assoc_short import V0040AssocShort  # noqa: F401
+    from openapi_client.models.v0040_coord import V0040Coord  # noqa: F401
+
+    # make sure account doesn't already exist
+    resp = slurmdb.slurmdb_v0040_get_account_with_http_info(account_name)
+    assert resp.status_code == 200
+    assert len(resp.data.accounts) == 0
     resp = slurmdb.slurmdb_v0040_get_account_with_http_info(account2_name)
     assert resp.status_code == 200
+    assert len(resp.data.accounts) == 0
 
     # create account
     accounts = V0040OpenapiAccountsResp(
