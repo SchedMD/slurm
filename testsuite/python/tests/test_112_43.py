@@ -372,8 +372,6 @@ def test_db_clusters(slurmdb):
     assert not resp.clusters
 
 
-# TODO: Remove xfail once #50200 (t18939) is fixed
-@pytest.mark.xfail
 def test_db_users(slurmdb):
     from openapi_client.models.v0043_openapi_users_resp import V0043OpenapiUsersResp
     from openapi_client.models.v0043_assoc_short import V0043AssocShort
@@ -423,16 +421,23 @@ def test_db_users(slurmdb):
     assert len(resp.errors) == 0
     assert resp.users
 
-    resp = slurmdb.slurmdb_v0043_get_user(user_name)
-    assert not resp.warnings
+    # Using query parameters (i.e. with_wckeys/with_deleted) results in warnings
+    # Slurmrestd expected OpenAPI type=boolean but got OpenAPI type=string
+
+    resp = slurmdb.slurmdb_v0043_get_user(user_name, with_wckeys="true")
+    if resp.warnings:
+        assert len(resp.warnings) == 1
+        assert resp.warnings[0].source == "#/with_wckeys/"
     assert len(resp.errors) == 0
     assert resp.users
     for user in resp.users:
         assert user.name == user_name
         assert user.default.wckey == wckey_name
 
-    resp = slurmdb.slurmdb_v0043_get_user(coord_name)
-    assert not resp.warnings
+    resp = slurmdb.slurmdb_v0043_get_user(coord_name, with_wckeys="true")
+    if resp.warnings:
+        assert len(resp.warnings) == 1
+        assert resp.warnings[0].source == "#/with_wckeys/"
     assert len(resp.errors) == 0
     assert resp.users
     for user in resp.users:
@@ -472,8 +477,10 @@ def test_db_users(slurmdb):
         assert not resp.warnings
         assert len(resp.errors) == 0
 
-        resp = slurmdb.slurmdb_v0043_get_user(coord_name)
-        assert not resp.warnings
+        resp = slurmdb.slurmdb_v0043_get_user(coord_name, with_wckeys="true")
+        if resp.warnings:
+            assert len(resp.warnings) == 1
+            assert resp.warnings[0].source == "#/with_wckeys/"
         assert len(resp.errors) == 0
         assert resp.users
         for user in resp.users:
