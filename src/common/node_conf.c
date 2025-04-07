@@ -1390,7 +1390,10 @@ extern int hostlist2bitmap(hostlist_t *hl, bool test_alias, bitstr_t **bitmap)
 
 	hi = hostlist_iterator_create(hl);
 	while ((name = hostlist_next(hi))) {
-		rc = _single_node_name2bitmap(name, test_alias, *bitmap, NULL);
+		int tmp_rc;
+		if ((tmp_rc = _single_node_name2bitmap(name, test_alias,
+						       *bitmap, NULL)))
+			rc = tmp_rc;
 		free(name);
 	}
 
