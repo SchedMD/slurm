@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "April 2025" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "May 2025" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -3381,17 +3381,18 @@ for backwards compatibility.
 
 .TP
 \fBSLURM_NPROCS\fR
-Set to value of the \fB\-\-ntasks\fR option, if specified. Or, if either of
-the \fB\-\-ntasks\-per\-node\fR or \fB\-\-ntasks\-per\-gpu\fR options are
-specified, set to the number of tasks in the job.
-See \fBSLURM_NTASKS\fR. Included for backwards compatibility.
+Same as \fBSLURM_NTASKS\fR. Included for backwards compatibility.
 .IP
 
 .TP
 \fBSLURM_NTASKS\fR
-Set to value of the \fB\-\-ntasks\fR option, if specified. Or, if either of
-the \fB\-\-ntasks\-per\-node\fR or \fB\-\-ntasks\-per\-gpu\fR options are
-specified, set to the number of tasks in the job.
+Set to value of the \fB\-\-ntasks\fR option, if specified. Or, if any of the
+\fB\-\-ntasks\-per\-*\fR options are specified, set to the number of tasks in
+the job.
+
+\fBNOTE\fR: This is also an input variable for srun, so if set it will
+effectively set the \fB\-\-ntasks\fR option for srun when called from the batch
+script.
 .IP
 
 .TP
