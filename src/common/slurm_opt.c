@@ -4841,17 +4841,21 @@ extern int validate_hint_option(slurm_opt_t *opt)
 
 	if (slurm_option_set_by_cli(opt, LONG_OPT_HINT) &&
 	    ((slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERCORE) ||
+	      slurm_option_set_by_cli(opt, LONG_OPT_CORESPERSOCKET) ||
+	      slurm_option_set_by_cli(opt, LONG_OPT_SOCKETSPERNODE) ||
 	      slurm_option_set_by_cli(opt, LONG_OPT_THREADSPERCORE) ||
 	      slurm_option_set_by_cli(opt, 'B') ||
 	      (slurm_option_set_by_cli(opt, LONG_OPT_CPU_BIND) &&
 	       (cpu_bind_type & ~CPU_BIND_VERBOSE))))) {
 		if (opt->verbose)
-			info("Following options are mutually exclusive with --hint: --ntasks-per-core, --threads-per-core, -B and --cpu-bind (other than --cpu-bind=verbose). Ignoring --hint.");
+			info("Following options are mutually exclusive with --hint: --ntasks-per-core, --cores-per-socket, --threads-per-core, --sockets-per-node, -B and --cpu-bind (other than --cpu-bind=verbose). Ignoring --hint.");
 		slurm_option_reset(opt, "hint");
 		return SLURM_ERROR;
 	} else if (slurm_option_set_by_cli(opt, LONG_OPT_HINT)) {
 		slurm_option_reset(opt, "ntasks-per-core");
 		slurm_option_reset(opt, "threads-per-core");
+		slurm_option_reset(opt, "cores-per-socket");
+		slurm_option_reset(opt, "sockets-per-node");
 		slurm_option_reset(opt, "extra-node-info");
 		if (cpu_bind_type & ~CPU_BIND_VERBOSE) {
 			bool has_verbose;
@@ -4866,6 +4870,8 @@ extern int validate_hint_option(slurm_opt_t *opt)
 			}
 		}
 	} else if (slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERCORE) ||
+		   slurm_option_set_by_cli(opt, LONG_OPT_CORESPERSOCKET) ||
+		   slurm_option_set_by_cli(opt, LONG_OPT_SOCKETSPERNODE) ||
 		   slurm_option_set_by_cli(opt, LONG_OPT_THREADSPERCORE) ||
 		   slurm_option_set_by_cli(opt, 'B') ||
 		   (slurm_option_set_by_cli(opt, LONG_OPT_CPU_BIND) &&
@@ -4874,12 +4880,14 @@ extern int validate_hint_option(slurm_opt_t *opt)
 		return SLURM_ERROR;
 	} else if (slurm_option_set_by_env(opt, LONG_OPT_HINT) &&
 		   (slurm_option_set_by_env(opt, LONG_OPT_NTASKSPERCORE) ||
+		    slurm_option_set_by_cli(opt, LONG_OPT_CORESPERSOCKET) ||
+		    slurm_option_set_by_cli(opt, LONG_OPT_SOCKETSPERNODE) ||
 		    slurm_option_set_by_env(opt, LONG_OPT_THREADSPERCORE) ||
 		    slurm_option_set_by_env(opt, 'B') ||
 		    (slurm_option_set_by_env(opt, LONG_OPT_CPU_BIND) &&
 		     (cpu_bind_type & ~CPU_BIND_VERBOSE)))) {
 		if (opt->verbose)
-			info("Following options are mutually exclusive with --hint: --ntasks-per-core, --threads-per-core, -B and --cpu-bind, but more than one set by environment variables. Ignoring SLURM_HINT.");
+			info("Following options are mutually exclusive with --hint: --ntasks-per-core, --cores-per-socket, --threads-per-core, --sockets-per-node, -B and --cpu-bind, but more than one set by environment variables. Ignoring SLURM_HINT.");
 		slurm_option_reset(opt, "hint");
 		return SLURM_ERROR;
 	}
