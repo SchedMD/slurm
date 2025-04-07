@@ -2860,6 +2860,12 @@ extern int cgroup_p_signal(int signal)
 	return SLURM_SUCCESS;
 }
 
+extern char *cgroup_p_get_task_empty_event_path(uint32_t taskid,
+						bool *on_modify)
+{
+	return NULL;
+}
+
 extern int cgroup_p_is_task_empty(uint32_t taskid)
 {
 	task_cg_info_t *task_cg_info;

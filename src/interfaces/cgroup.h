@@ -429,6 +429,9 @@ extern bool cgroup_g_has_feature(cgroup_ctl_feature_t f);
  */
 extern int cgroup_g_signal(int signal);
 
+extern char *cgroup_g_get_task_empty_event_path(uint32_t taskid,
+						bool *on_modify);
+
 extern int cgroup_g_is_task_empty(uint32_t taskid);
 
 #endif

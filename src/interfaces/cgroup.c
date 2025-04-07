@@ -78,6 +78,7 @@ typedef struct {
 	char *(*get_scope_path)(void);
 	int (*setup_scope)(char *scope_path);
 	int (*signal)(int signal);
+	char *(*get_task_empty_event_path)(uint32_t taskid, bool *on_modify);
 	int (*is_task_empty)(uint32_t taskid);
 } slurm_ops_t;
 
@@ -109,6 +110,7 @@ static const char *syms[] = {
 	"cgroup_p_get_scope_path",
 	"cgroup_p_setup_scope",
 	"cgroup_p_signal",
+	"cgroup_p_get_task_empty_event_path",
 	"cgroup_p_is_task_empty",
 };
 
@@ -1021,6 +1023,17 @@ extern int cgroup_g_signal(int signal)
 		return SLURM_SUCCESS;
 
 	return (*(ops.signal))(signal);
+}
+
+extern char *cgroup_g_get_task_empty_event_path(uint32_t taskid,
+						bool *on_modify)
+{
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
+
+	return (*(ops.get_task_empty_event_path))(taskid, on_modify);
 }
 
 extern int cgroup_g_is_task_empty(uint32_t taskid)
