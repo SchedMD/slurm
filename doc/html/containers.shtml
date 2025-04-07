@@ -866,11 +866,11 @@ WORKDIR /usr/local/src/pmix-5.0.7/
 RUN ./configure && make -j && make install
 
 WORKDIR /usr/local/src/
-RUN wget --quiet --inet4-only 'https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.0rc9.tar.gz' -O - | tar --no-same-owner -xvzf -
-WORKDIR /usr/local/src/openmpi-5.0.0rc9
+RUN wget --quiet --inet4-only 'https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.7.tar.bz2' -O - | tar --no-same-owner -xvjf -
+WORKDIR /usr/local/src/openmpi-5.0.7/
 RUN ./configure --disable-pty-support --enable-ipv6 --without-slurm --with-pmix --enable-debug && make -j && make install
 
-WORKDIR /usr/local/src/openmpi-5.0.0rc9/examples
+WORKDIR /usr/local/src/openmpi-5.0.7/examples
 RUN make && cp -v hello_c ring_c connectivity_c spc_example /usr/local/bin
 </pre>
 
