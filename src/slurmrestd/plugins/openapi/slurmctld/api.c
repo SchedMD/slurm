@@ -484,6 +484,16 @@ const openapi_path_binding_t openapi_paths[] = {
 				},
 				.parameters = DATA_PARSER_OPENAPI_RESERVATION_PARAM,
 			},
+			{
+				.method = HTTP_REQUEST_DELETE,
+				.tags = tags,
+				.summary = "delete a reservation",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "reservation delete request result",
+				},
+				.parameters = DATA_PARSER_OPENAPI_RESERVATION_PARAM,
+			},
 			{0}
 		},
 		.flags = OP_FLAGS,
