@@ -857,7 +857,7 @@ Minimalist Dockerfile to generate a image with OpenMPI and PMIx to test basic MP
 <h4>Dockerfile</h4>
 <pre>
 FROM almalinux:latest
-RUN dnf -y update && dnf -y upgrade && dnf install -y yum-utils && dnf config-manager --set-enabled powertools
+RUN dnf -y update && dnf -y upgrade && dnf install -y epel-release && dnf -y update
 RUN dnf -y install make automake gcc gcc-c++ kernel-devel bzip2 python3 wget libevent-devel hwloc-devel
 
 WORKDIR /usr/local/src/
