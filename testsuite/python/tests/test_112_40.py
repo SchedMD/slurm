@@ -88,6 +88,81 @@ def slurmdb(setup):
     yield atf.openapi_slurmdb()
 
 
+@pytest.fixture(scope="function")
+def create_accounts():
+    atf.run_command(f"sacctmgr -i create account {account_name}", fatal=False)
+    atf.run_command(f"sacctmgr -i create account {account2_name}", fatal=False)
+
+    yield
+
+    atf.run_command(f"sacctmgr -i delete account {account_name}", fatal=False)
+    atf.run_command(f"sacctmgr -i delete account {account2_name}", fatal=False)
+
+
+@pytest.fixture(scope="function")
+def create_users(create_accounts):
+    atf.run_command(
+        f"sacctmgr -i create user {user_name} cluster={local_cluster_name} account={account_name}",
+        fatal=False,
+    )
+
+    yield
+
+    atf.run_command(
+        f"sacctmgr -i delete user {user_name} cluster={local_cluster_name} account={account_name}",
+        fatal=False,
+    )
+
+
+@pytest.fixture(scope="function")
+def create_coords(create_users):
+    atf.run_command(
+        f"sacctmgr -i create user {coord_name} cluster={local_cluster_name} account={account2_name}",
+        fatal=False,
+    )
+
+    yield
+
+    atf.run_command(
+        f"sacctmgr -i delete user {coord_name} cluster={local_cluster_name} account={account2_name}",
+        fatal=False,
+    )
+
+
+@pytest.fixture(scope="function")
+def create_wckeys():
+    atf.run_command(
+        f"sacctmgr -i create user {user_name} cluster={local_cluster_name} wckey={wckey_name}",
+        fatal=True,
+    )
+    atf.run_command(
+        f"sacctmgr -i create user {coord_name} cluster={local_cluster_name} wckey={wckey_name}",
+        fatal=True,
+    )
+
+    yield
+
+    atf.run_command(
+        f"sacctmgr -i delete user {user_name} cluster={local_cluster_name} wckey={wckey_name}",
+        fatal=False,
+    )
+    atf.run_command(
+        f"sacctmgr -i delete user {coord_name} cluster={local_cluster_name} wckey={wckey_name}",
+        fatal=False,
+    )
+
+
+@pytest.fixture(scope="function")
+def create_qos(create_coords):
+    atf.run_command(f"sacctmgr -i create qos {qos_name}", fatal=False)
+    atf.run_command(f"sacctmgr -i create qos {qos2_name}", fatal=False)
+
+    yield
+
+    atf.run_command(f"sacctmgr -i delete qos {qos_name}", fatal=False)
+    atf.run_command(f"sacctmgr -i delete qos {qos2_name}", fatal=False)
+
+
 def test_loaded_versions():
     r = atf.request_slurmrestd("openapi/v3")
     assert r.status_code == 200
@@ -109,7 +184,7 @@ def test_loaded_versions():
     assert "/slurmdb/v0.0.40/jobs/" in spec["paths"].keys()
 
 
-def test_db_accounts(slurm, slurmdb):
+def test_db_accounts(slurm, slurmdb, create_wckeys):
     # from openapi_client import ApiClient as Client  # noqa: F401
     # from openapi_client import Configuration as Config  # noqa: F401
     from openapi_client.models.v0040_openapi_accounts_resp import (
@@ -119,15 +194,6 @@ def test_db_accounts(slurm, slurmdb):
 
     # from openapi_client.models.v0040_assoc_short import V0040AssocShort  # noqa: F401
     from openapi_client.models.v0040_coord import V0040Coord  # noqa: F401
-
-    atf.run_command(
-        f"sacctmgr -i create user {user_name} cluster={local_cluster_name} wckey={wckey_name}",
-        fatal=True,
-    )
-    atf.run_command(
-        f"sacctmgr -i create user {coord_name} cluster={local_cluster_name} wckey={wckey_name}",
-        fatal=True,
-    )
 
     # make sure account doesn't already exist
     resp = slurmdb.slurmdb_v0040_get_account_with_http_info(account2_name)
@@ -247,20 +313,11 @@ def test_db_diag(slurmdb):
     assert resp.statistics.time_start > 0
 
 
-def test_db_wckeys(slurmdb):
+def test_db_wckeys(slurmdb, create_coords):
     from openapi_client.models.v0040_wckey import V0040Wckey  # noqa: F401
     from openapi_client.models.v0040_openapi_wckey_resp import (
         V0040OpenapiWckeyResp,
     )  # noqa: F401
-
-    atf.run_command(
-        f"sacctmgr -i create user {user_name} cluster={local_cluster_name}",
-        fatal=False,
-    )
-    atf.run_command(
-        f"sacctmgr -i create user {coord_name} cluster={local_cluster_name}",
-        fatal=False,
-    )
 
     wckeys = V0040OpenapiWckeyResp(
         wckeys=[
@@ -518,7 +575,7 @@ def test_db_users(slurmdb):
         assert not resp.users
 
 
-def test_db_assoc(slurmdb):
+def test_db_assoc(slurmdb, create_coords, create_qos):
     from openapi_client.models.v0040_openapi_assocs_resp import (
         V0040OpenapiAssocsResp,
     )  # noqa: F401
@@ -529,19 +586,6 @@ def test_db_assoc(slurmdb):
     # from openapi_client.models.v0040_user import V0040User
     # from openapi_client.models.v0040_wckey import V0040Wckey
     from openapi_client.models.v0040_uint32_no_val import V0040Uint32NoVal  # noqa: F401
-
-    atf.run_command(f"sacctmgr -i create account {account_name}", fatal=False)
-    atf.run_command(f"sacctmgr -i create account {account2_name}", fatal=False)
-    atf.run_command(
-        f"sacctmgr -i create user {user_name} cluster={local_cluster_name}",
-        fatal=False,
-    )
-    atf.run_command(
-        f"sacctmgr -i create user {coord_name} cluster={local_cluster_name}",
-        fatal=False,
-    )
-    atf.run_command(f"sacctmgr -i create qos {qos_name}", fatal=False)
-    atf.run_command(f"sacctmgr -i create qos {qos2_name}", fatal=False)
 
     associations = V0040OpenapiAssocsResp(
         associations=[
@@ -748,6 +792,12 @@ def test_db_assoc(slurmdb):
 
     resp = slurmdb.slurmdb_v0040_delete_associations(
         cluster=local_cluster_name,
+        user=user_name,
+    )
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0040_delete_associations(
+        cluster=local_cluster_name,
         account=account_name,
     )
     assert len(resp.errors) == 0
@@ -775,7 +825,7 @@ def test_db_assoc(slurmdb):
     assert not resp.associations
 
 
-def test_db_qos(slurmdb):
+def test_db_qos(slurmdb, create_coords):
     from openapi_client.models.v0040_qos import V0040Qos  # noqa: F401
     from openapi_client.models.v0040_tres import V0040Tres  # noqa: F401
     from openapi_client.models.v0040_openapi_slurmdbd_qos_resp import (
@@ -785,17 +835,6 @@ def test_db_qos(slurmdb):
         V0040Float64NoVal,
     )  # noqa: F401
     from openapi_client.models.v0040_uint32_no_val import V0040Uint32NoVal  # noqa: F401
-
-    atf.run_command(f"sacctmgr -i create account {account_name}", fatal=False)
-    atf.run_command(f"sacctmgr -i create account {account2_name}", fatal=False)
-    atf.run_command(
-        f"sacctmgr -i create user {user_name} cluster={local_cluster_name} account={account_name}",
-        fatal=False,
-    )
-    atf.run_command(
-        f"sacctmgr -i create user {coord_name} cluster={local_cluster_name} account={account2_name}",
-        fatal=False,
-    )
 
     qos = V0040OpenapiSlurmdbdQosResp(
         qos=[
