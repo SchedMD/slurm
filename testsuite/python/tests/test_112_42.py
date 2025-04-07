@@ -185,8 +185,12 @@ def test_db_accounts(slurm, slurmdb, create_wckeys):
     from openapi_client.models.v0042_coord import V0042Coord
 
     # make sure account doesn't already exist
+    resp = slurmdb.slurmdb_v0042_get_account_with_http_info(account_name)
+    assert resp.status_code == 200
+    assert len(resp.data.accounts) == 0
     resp = slurmdb.slurmdb_v0042_get_account_with_http_info(account2_name)
     assert resp.status_code == 200
+    assert len(resp.data.accounts) == 0
 
     # create account
     accounts = V0042OpenapiAccountsResp(
