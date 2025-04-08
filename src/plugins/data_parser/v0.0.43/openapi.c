@@ -132,11 +132,11 @@ static char *_get_parser_path(const parser_t *parser)
  * Populate OpenAPI specification field
  * IN obj - data_t ptr to specific field in OpenAPI schema
  * IN format - OpenAPI format to use
- * IN desc - Description of field to use
+ * IN desc - Description of field to use (will take ownership)
  * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
  */
 static data_t *_set_openapi_props(data_t *obj, openapi_type_format_t format,
-				  const char *desc)
+				  char *desc)
 {
 	data_t *dtype;
 	const char *format_str;
@@ -163,7 +163,7 @@ static data_t *_set_openapi_props(data_t *obj, openapi_type_format_t format,
 	}
 
 	if (desc)
-		data_set_string(data_key_set(obj, "description"), desc);
+		data_set_string_own(data_key_set(obj, "description"), desc);
 
 	if (format == OPENAPI_FORMAT_ARRAY)
 		return data_set_dict(data_key_set(obj, "items"));
@@ -265,6 +265,25 @@ static void _add_param_flag_enum(data_t *param, const parser_t *parser)
 					parser->flag_bit_array[i].name);
 }
 
+static void _gen_desc(char **desc_ptr, char **desc_at_ptr,
+		      const parser_t *parser)
+{
+	bool has_key = (parser && parser->key && parser->key[0]);
+	bool has_parser = (parser && parser->obj_desc && parser->obj_desc[0]);
+
+	xassert(parser);
+
+	if (!has_parser)
+		return;
+
+	if (has_key)
+		_xstrfmtcatat(desc_ptr, desc_at_ptr, "%s", parser->obj_desc);
+	else
+		_xstrfmtcatat(desc_ptr, desc_at_ptr, "%s%s%s",
+			      (*desc_ptr ? " (" : ""), parser->obj_desc,
+			      (*desc_ptr ? ")" : ""));
+}
+
 /*
  * Populate OpenAPI specification field using parser
  * IN obj - data_t ptr to specific field in OpenAPI schema
@@ -275,7 +294,7 @@ static void _add_param_flag_enum(data_t *param, const parser_t *parser)
  * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
  */
 static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
-				  spec_args_t *sargs, const char *desc,
+				  spec_args_t *sargs, char *desc,
 				  bool deprecated)
 {
 	data_t *props;
@@ -305,8 +324,10 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(format > OPENAPI_FORMAT_INVALID);
 	xassert(format < OPENAPI_FORMAT_MAX);
 
-	if (parser->obj_desc && !desc)
-		desc = parser->obj_desc;
+	if (!desc) {
+		char *desc_at = NULL;
+		_gen_desc(&desc, &desc_at, parser);
+	}
 
 	if ((props = _set_openapi_props(obj, format, desc))) {
 		if (parser->array_type) {
@@ -343,19 +364,14 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 		     const parser_t *parser, spec_args_t *sargs)
 {
 	char *str, *key;
-	const char *desc = NULL;
+	char *desc = NULL, *desc_at = NULL;
 	bool deprecated = (parent && parent->deprecated);
 
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
 	while (true) {
-		if (desc)
-			/* do nothing */;
-		else if (parent && parent->obj_desc)
-			desc = parent->obj_desc;
-		else if (parser->obj_desc)
-			desc = parser->obj_desc;
+		_gen_desc(&desc, &desc_at, parser);
 
 		/* All children are deprecated once the parent is */
 		if (parser->deprecated)
@@ -404,8 +420,10 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	str = _get_parser_path(parser);
 	data_set_string_own(data_key_set(obj, "$ref"), str);
 
-	if (desc && !data_key_get(obj, "description"))
-		data_set_string(data_key_set(obj, "description"), desc);
+	if (desc) {
+		xassert(!data_key_get(obj, "description"));
+		data_set_string_own(data_key_set(obj, "description"), desc);
+	}
 
 	if (deprecated)
 		data_set_bool(data_key_set(obj, "deprecated"), true);
