@@ -620,8 +620,14 @@ _opt_verify(void)
 	bool verified = true;
 
 	if (opt.user_name) {	/* translate to user_id */
-		if (uid_from_string(opt.user_name, &opt.user_id) !=
-		    SLURM_SUCCESS) {
+		int rc;
+
+		/*
+		 * Allow numeric uids that no longer exist on underlying system
+		 * so that any old jobs that still use them can be identified.
+		 */
+		rc = uid_from_string(opt.user_name, &opt.user_id);
+		if ((rc != SLURM_SUCCESS) && (rc != ESLURM_USER_ID_UNKNOWN)) {
 			error("Invalid user name: %s", opt.user_name);
 			return false;
 		}
