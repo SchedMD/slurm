@@ -307,7 +307,7 @@ from its previous execution.</li>
 <li><b>Constraints</b> &mdash; The job's constraints cannot be satisfied at
 this time.</li>
 
-<li><b>DeadLine</b> &mdash; This job has violated the configured Deadline.</li>
+<li><b>DeadLine</b> &mdash; This job cannot meet the configured Deadline.</li>
 
 <li><b>Dependency</b> &mdash; This job has a dependency on another job that
 has not been satisfied.</li>
