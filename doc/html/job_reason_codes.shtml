@@ -285,8 +285,9 @@ some resource limit.</li>
 <li><b>AssociationTimeLimit</b> &mdash; The job's association has reached its
 time limit.</li>
 
-<li><b>BadConstraints</b> &mdash; The job's constraints can not be satisfied.
-</li>
+<li><b>BadConstraints</b> &mdash; The job's requirements cannot be satisfied.
+Used in cases when the job is never expected to be runnable, and typically
+results in the job being rejected or held.</li>
 
 <li><b>BeginTime</b> &mdash; The job's earliest start time has not yet been
 reached.</li>
@@ -302,6 +303,9 @@ process of staging the environment for the job.</li>
 
 <li><b>Cleaning</b> &mdash; The job is being requeued and still cleaning up
 from its previous execution.</li>
+
+<li><b>Constraints</b> &mdash; The job's constraints cannot be satisfied at
+this time.</li>
 
 <li><b>DeadLine</b> &mdash; This job has violated the configured Deadline.</li>
 
