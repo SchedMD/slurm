@@ -2863,7 +2863,19 @@ extern int cgroup_p_signal(int signal)
 extern char *cgroup_p_get_task_empty_event_path(uint32_t taskid,
 						bool *on_modify)
 {
-	return NULL;
+	task_cg_info_t *task_cg_info;
+
+	xassert(on_modify);
+
+	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
+					     &taskid))) {
+		return NULL;
+	}
+
+	/* We want to watch when cgroups.events is modified */
+	*on_modify = true;
+
+	return xstrdup_printf("%s/cgroup.events", task_cg_info->task_cg.path);
 }
 
 extern int cgroup_p_is_task_empty(uint32_t taskid)
