@@ -242,7 +242,7 @@ enum cluster_fed_states {
 typedef enum {
 	CLUSTER_FLAG_NONE = 0,
 	CLUSTER_FLAG_REGISTER = SLURM_BIT(0), /* Cluster is registering now */
-	/* SLURM_BIT(1) empty */
+	CLUSTER_FLAG_DELETED = SLURM_BIT(1), /* Cluster is deleted */
 	/* SLURM_BIT(2) empty */
 	/* SLURM_BIT(3) empty */
 	/* SLURM_BIT(4) empty */

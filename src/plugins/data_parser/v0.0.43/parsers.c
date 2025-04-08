@@ -7339,6 +7339,7 @@ static const parser_t PARSER_ARRAY(STATS_RPC)[] = {
 #undef add_parse
 
 static const flag_bit_t PARSER_FLAG_ARRAY(CLUSTER_REC_FLAGS)[] = {
+	add_flag_bit(CLUSTER_FLAG_DELETED, "DELETED"),
 	add_flag_bit(CLUSTER_FLAG_REGISTER, "REGISTERING"),
 	add_flag_bit(CLUSTER_FLAG_MULTSD, "MULTIPLE_SLURMD"),
 	add_flag_bit(CLUSTER_FLAG_FE, "FRONT_END"),
