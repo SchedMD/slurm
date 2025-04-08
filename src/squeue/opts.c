@@ -1667,6 +1667,7 @@ static int _check_only_state(void)
 	       sizeof(denied_params_mask.job_id));
 	memset(&denied_params_mask.job_list, 0,
 	       sizeof(denied_params_mask.job_list));
+	memset(&denied_params_mask.jobs, 0, sizeof(denied_params_mask.jobs));
 	memset(&denied_params_mask.local_flag, 0,
 	       sizeof(denied_params_mask.local_flag));
 	memset(&denied_params_mask.cluster_names, 0,
