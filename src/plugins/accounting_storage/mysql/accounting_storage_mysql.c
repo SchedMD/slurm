@@ -331,7 +331,7 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 				      list_t *ret_list,
 				      bool *jobs_running)
 {
-	char *query = NULL, *object = NULL;
+	char *query = NULL, *object = NULL, *pos = NULL;
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
@@ -358,9 +358,9 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 		"t0.id_wckey",
 	};
 
-	xstrcat(object, jassoc_req_inx[0]);
+	xstrcatat(object, &pos, jassoc_req_inx[0]);
 	for (int i = 1; i < JASSOC_COUNT; i++)
-		xstrfmtcat(object, ", %s", jassoc_req_inx[i]);
+		xstrfmtcatat(object, &pos, ", %s", jassoc_req_inx[i]);
 
 	query = xstrdup_printf(
 		"select distinct %s "
