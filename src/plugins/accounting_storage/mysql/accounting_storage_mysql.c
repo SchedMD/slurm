@@ -366,11 +366,8 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	/* Check for any jobs */
 	xstrfmtcatat(
 		query, &pos,
-		"select distinct %s "
-		"from \"%s_%s\" as t0, "
-		"\"%s_%s\" as t2 "
-		"where (%s) "
-		"and t0.id_assoc=t2.id_assoc",
+		"select distinct %s from \"%s_%s\" as t0, \"%s_%s\" as t2 "
+		"where (%s) and t0.id_assoc=t2.id_assoc",
 		object, cluster_name, job_table,
 		cluster_name, assoc_table,
 		assoc_char);
