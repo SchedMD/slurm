@@ -363,19 +363,25 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 		xstrfmtcatat(object, &pos, ", %s", jassoc_req_inx[i]);
 
 	pos = NULL;
+	/* Check for any jobs */
 	xstrfmtcatat(
 		query, &pos,
 		"select distinct %s "
 		"from \"%s_%s\" as t0, "
 		"\"%s_%s\" as t2 "
 		"where (%s) "
-		"and t0.id_assoc=t2.id_assoc "
-		"and t0.time_end=0 && t0.state<%d%s;",
+		"and t0.id_assoc=t2.id_assoc",
 		object, cluster_name, job_table,
 		cluster_name, assoc_table,
-		assoc_char, JOB_COMPLETE,
-		ret_list ? " limit 1" : "");
+		assoc_char);
 	xfree(object);
+
+	if (ret_list) {
+		/* Check for only running jobs */
+		xstrfmtcatat(query, &pos,
+			     " and t0.time_end=0 && t0.state<%d limit 1",
+			     JOB_COMPLETE);
+	}
 
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
