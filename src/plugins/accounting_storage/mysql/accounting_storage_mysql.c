@@ -362,7 +362,9 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	for (int i = 1; i < JASSOC_COUNT; i++)
 		xstrfmtcatat(object, &pos, ", %s", jassoc_req_inx[i]);
 
-	query = xstrdup_printf(
+	pos = NULL;
+	xstrfmtcatat(
+		query, &pos,
 		"select distinct %s "
 		"from \"%s_%s\" as t0, "
 		"\"%s_%s\" as t2 "
