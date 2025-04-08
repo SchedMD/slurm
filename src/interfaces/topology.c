@@ -251,6 +251,17 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 		xfree(buf);
 	}
 
+	if (hostlist_count(hl) == 1) {
+		/* No need to split a list of 1. */
+		char *name = hostlist_shift(hl);
+		*sp_hl = xcalloc(1, sizeof(hostlist_t *));
+		(*sp_hl)[*count] = hostlist_create(name);
+		free(name);
+		*count = depth = 1;
+
+		goto end;
+	}
+
 	depth = (*(ops.split_hostlist))(hl, sp_hl, count, tree_width);
 	if (!depth && !(*count))
 		goto end;
