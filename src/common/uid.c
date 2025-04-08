@@ -154,16 +154,17 @@ int uid_from_string(const char *name, uid_t *uidp)
 		return SLURM_ERROR;
 	}
 
+	*uidp = (uid_t) l;
+
 	/*
 	 *  Now ensure the supplied uid is in the user database
 	 */
 	slurm_getpwuid_r(l, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
 	if (!result) {
 		xfree(buf_malloc);
-		return SLURM_ERROR;
+		return ESLURM_USER_ID_UNKNOWN;
 	}
 
-	*uidp = (uid_t) l;
 	xfree(buf_malloc);
 	return SLURM_SUCCESS;
 }
