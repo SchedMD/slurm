@@ -1,6 +1,84 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 24.11.4
+==========================
+ -- slurmctld,slurmrestd - Avoid possible race condition that could have caused
+    process to crash when listener socket was closed while accepting a new
+    connection.
+ -- slurmrestd - Avoid race condition that could have resulted in address
+    logged for a UNIX socket to be incorrect.
+ -- slurmrestd - Fix parameters in OpenAPI specification for the following
+    endpoints to have "job_id" field:
+    GET /slurm/v0.0.40/jobs/state/
+    GET /slurm/v0.0.41/jobs/state/
+    GET /slurm/v0.0.42/jobs/state/
+    GET /slurm/v0.0.43/jobs/state/
+ -- slurmd - Fix tracking of thread counts that could cause incoming
+    connections to be ignored after burst of simultaneous incoming connections
+    that trigger delayed response logic.
+ -- Stepmgr - Avoid unnecessary SRUN_TIMEOUT forwarding to stepmgr.
+ -- Fix jobs being scheduled on higher weighted powered down nodes.
+ -- Fix how backfill scheduler filters nodes from the available nodes based on
+    exclusive user and mcs_label requirements.
+ -- acct_gather_energy/{gpu,ipmi} - Fix potential energy consumption adjustment
+    calculation underflow.
+ -- acct_gather_energy/ipmi - Fix regression introduced in 24.05.5 (which
+    introduced the new way of preserving energy measurements through slurmd
+    restarts) when EnergyIPMICalcAdjustment=yes.
+ -- Prevent slurmctld deadlock in the assoc mgr.
+ -- Fix memory leak when RestrictedCoresPerGPU is enabled.
+ -- Fix preemptor jobs not entering execution due to wrong calculation of
+    accounting policy limits.
+ -- Fix certain job requests that were incorrectly denied with node
+    configuration unavailable error.
+ -- slurmd - Avoid crash due when slurmd has a communications failure with
+    slurmstepd.
+ -- Fix memory leak when parsing yaml input.
+ -- Prevent slurmctld from showing error message about PreemptMode=GANG being a
+    cluster-wide option for `scontrol update part` calls that don't attempt to
+    modify partition PreemptMode.
+ -- Fix setting GANG preemption on partition when updating PreemptMode with
+    scontrol.
+ -- Fix CoreSpec and MemSpec limits not being removed from previously
+    configured slurmd.
+ -- Avoid race condition that could lead to a deadlock when slurmd, slurmstepd,
+    slurmctld, slurmrestd or sackd have a fatal event.
+ -- Fix jobs using --ntasks-per-node and --mem keep pending forever when the
+    requested mem divided by the number of cpus will surpass the configured
+    MaxMemPerCPU.
+ -- slurmd - Fix address logged upon new incoming RPC connection from "INVALID"
+    to IP address.
+ -- Fix memory leak when retrieving reservations. This affects scontrol, sinfo,
+    sview, and the following slurmrestd endpoints:
+    'GET /slurm/{any_data_parser}/reservation/{reservation_name}'
+    'GET /slurm/{any_data_parser}/reservations'
+ -- Log warning instead of debuflags=conmgr gated log when deferring new
+    incoming connections when number of active connections exceed
+    conmgr_max_connections.
+ -- Avoid race condition that could result in worker thread pool not activating
+    all threads at once after a reconfigure resulting in lower utilization of
+    available CPU threads until enough internal activity wakes up all threads
+    in the worker pool.
+ -- Avoid theoretical race condition that could result in new incoming RPC
+    socket connections being ignored after reconfigure.
+ -- slurmd - Avoid race condition that could result in a state where new
+    incoming RPC connections will always be ignored.
+ -- Add ReconfigFlags=KeepNodeStateFuture to restore saved FUTURE node state on
+    restart and reconfig instead of reverting to FUTURE state. This will be
+    made the default in 25.05.
+ -- Fix case where hetjob submit would cause slurmctld to crash.
+ -- Fix jobs using --cpus-per-gpu and --mem keep pending forever when the
+    requested mem divided by the number of cpus will surpass the configured
+    MaxMemPerCPU.
+ -- Enforce that jobs using --mem and several --*-per-* options do not violate
+    the MaxMemPerCPU in place.
+ -- slurmctld - Fix use-cases of jobs incorrectly pending held when --prefer
+    features are not initially satisfied.
+ -- slurmctld - Fix jobs incorrectly held when --prefer not satisfied in some
+    use-cases.
+ -- Ensure RestrictedCoresPerGPU and CoreSpecCount don't overlap.
+
 * Changes in Slurm 24.11.3
 ==========================
  -- Fix race condition in slurmrestd that resulted in "Requested
