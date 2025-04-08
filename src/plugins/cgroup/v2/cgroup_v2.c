@@ -706,6 +706,57 @@ static int _find_pid_task(void *x, void *key)
 	return found;
 }
 
+/*
+ * Check the "populated" key in the cgroup.events file
+ * Returns CGROUP_EMPTY, CGROUP_POPULATED, or SLURM_ERROR.
+ */
+static int _is_cgroup_empty(xcgroup_t *cg)
+{
+	char *events_content = NULL, *ptr;
+	int rc;
+	int populated = -1;
+	size_t size;
+
+	/* Check if cgroup is empty in the first place. */
+	if (common_cgroup_get_param(cg, "cgroup.events", &events_content,
+				    &size) != SLURM_SUCCESS) {
+		error("Cannot read %s/cgroup.events", cg->path);
+		return SLURM_ERROR;
+	}
+
+	if (!events_content) {
+		error("%s/cgroup.events is empty", cg->path);
+		return SLURM_ERROR;
+	}
+
+	if (!(ptr = xstrstr(events_content, "populated"))) {
+		error("Could not find \"populated\" field in %s/cgroup.events: \"%s\"",
+		      cg->path, events_content);
+		xfree(events_content);
+		return SLURM_ERROR;
+	}
+
+	if ((rc = sscanf(ptr, "populated %u", &populated) != 1)) {
+		error("Could not find value for \"populated\" field in %s/cgroup.events (\"%s\"): %s",
+		      cg->path, events_content, strerror(rc));
+		xfree(events_content);
+		return SLURM_ERROR;
+	}
+
+	xfree(events_content);
+
+	switch (populated) {
+	case 0:
+		return CGROUP_EMPTY;
+	case 1:
+		return CGROUP_POPULATED;
+	default:
+		error("Cannot determine if %s is empty.", cg->path);
+		break;
+	}
+	return SLURM_ERROR;
+}
+
 static void _wait_cgroup_empty(xcgroup_t *cg, int timeout_ms)
 {
 	char *cgroup_events = NULL, *events_content = NULL, *ptr;
@@ -2833,5 +2884,15 @@ extern int cgroup_p_signal(int signal)
 
 extern int cgroup_p_is_task_empty(uint32_t taskid)
 {
-	return ESLURM_NOT_SUPPORTED;
+	task_cg_info_t *task_cg_info;
+	xcgroup_t cg;
+
+	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
+					     &taskid))) {
+		return SLURM_ERROR;
+	}
+
+	cg = task_cg_info->task_cg;
+
+	return _is_cgroup_empty(&cg);
 }
