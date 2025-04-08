@@ -341,24 +341,41 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 static void *_service_connection(void *arg)
 {
 	persist_service_conn_t *service_conn = arg;
+	int thread_loc;
 
 	xassert(service_conn);
 	xassert(service_conn->pcon);
 
+	/*
+	 * Backup this value for later usage, service_conn can be already freed
+	 * after leaving _process_service_connection on shutdown
+	 */
+	thread_loc = service_conn->thread_loc;
 	service_conn->thread_id = pthread_self();
 
 	_process_service_connection(service_conn->pcon, service_conn->fd,
 				    service_conn->arg);
 
-	if (service_conn->pcon->callback_fini)
+	/*
+	 * service_conn may be already freed by
+	 * slurm_persist_conn_recv_server_fini(), so re-fetch from the
+	 * global array under lock and null-check before dereferencing.
+	 */
+	slurm_mutex_lock(&thread_count_lock);
+	service_conn = persist_service_conn[thread_loc];
+	if (service_conn && service_conn->pcon &&
+	    service_conn->pcon->callback_fini)
 		(service_conn->pcon->callback_fini)(service_conn->arg);
-	else
+	else if (service_conn && service_conn->pcon)
 		log_flag(NET, "%s: Persist connection from cluster %s has disconnected",
 			 __func__, service_conn->pcon->cluster_name);
+	else
+		log_flag(NET, "%s: Persist connection has disconnected",
+			 __func__);
+	slurm_mutex_unlock(&thread_count_lock);
 
-	/* service_conn is freed inside here */
-	slurm_persist_conn_free_thread_loc(service_conn->thread_loc);
-//	xfree(service_conn);
+	/* service_conn is freed inside here, unless already freed */
+	slurm_persist_conn_free_thread_loc(thread_loc);
 
 	/* In order to avoid zombie threads, detach the thread now before
 	 * exiting.  slurm_persist_conn_recv_server_fini() will not try to join
