@@ -102,11 +102,6 @@ extern int certmgr_g_init(void)
 	int rc = SLURM_SUCCESS;
 	char *plugin_type = "certmgr";
 
-	if (!running_in_slurmctld() && !running_in_slurmd()) {
-		error("certmgr plugin only allowed on slurmctld and slurmd");
-		return SLURM_ERROR;
-	}
-
 	slurm_rwlock_wrlock(&context_lock);
 
 	if (plugin_inited != PLUGIN_NOT_INITED)
