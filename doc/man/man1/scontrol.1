@@ -921,7 +921,7 @@ Arbitrary descriptive string.
 \fBContiguous\fR={yes|no}
 Set the job's requirement for contiguous (consecutive) nodes to be allocated.
 Possible values are "YES" and "NO".
-Only the Slurm administrator or root can change this parameter.
+Only a Slurm administrator or root can change this parameter.
 .IP
 
 .TP
@@ -1152,7 +1152,7 @@ Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 .TP
 \fBMinTmpDiskNode\fR=<\fImegabytes\fR>
 Set the job's minimum temporary disk space required per node to the specified value.
-Only the Slurm administrator or root can change this parameter.
+Only a Slurm administrator or root can change this parameter.
 .IP
 
 .TP
@@ -1251,7 +1251,7 @@ Explicitly setting a job's priority clears any previously set nice value and
 removes the priority/multifactor plugin's ability to manage a job's priority.
 In order to restore the priority/multifactor plugin's ability to manage a
 job's priority, hold and then release the job.
-Only the Slurm administrator or root can increase job's priority.
+Only a Slurm administrator or root can increase job's priority.
 .IP
 
 .TP
@@ -1438,7 +1438,7 @@ the current time limit, the \fIJobId\fP specification must precede the
 \fITimeLimit\fP specification.
 Note that incrementing or decrementing the time limit for a job array is only
 allowed before the job array has been split into more than one job record.
-Only the Slurm administrator or root can increase job's TimeLimit.
+Only a Slurm administrator or root can increase job's TimeLimit.
 .IP
 
 .TP
