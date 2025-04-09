@@ -237,6 +237,12 @@ extern char *certmgr_p_sign_csr(char *csr, char *token, node_record_t *node)
 	char *signed_cert_pem = NULL;
 	char *output = NULL;
 
+	if (!node) {
+		error("%s: No node record given, cannot sign CSR.",
+		      plugin_type);
+		return NULL;
+	}
+
 	if (node->cert_token) {
 		if (xstrcmp(node->cert_token, token)) {
 			error("%s: Token does not match what was set in node record table for node '%s'.",
