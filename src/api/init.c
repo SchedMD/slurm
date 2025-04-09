@@ -37,6 +37,7 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/certmgr.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
@@ -49,6 +50,9 @@ extern void slurm_init(const char *conf)
 
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
+
+	if (certmgr_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize certmgr plugin");
 
 	if (hash_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize hash plugin");
