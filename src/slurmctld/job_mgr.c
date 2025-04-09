@@ -8481,6 +8481,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 
 	job_ptr->resp_host = xstrdup(job_desc->resp_host);
 	job_ptr->alloc_resp_port = job_desc->alloc_resp_port;
+	job_ptr->alloc_tls_cert = xstrdup(job_desc->alloc_tls_cert);
 	job_ptr->other_port = job_desc->other_port;
 	job_ptr->time_last_active = time(NULL);
 	job_ptr->derived_ec = 0;

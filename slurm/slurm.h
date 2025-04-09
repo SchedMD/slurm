@@ -1577,6 +1577,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * NOTE: Normally set by slurm_submit* or
 				 * slurm_allocate* function */
 	uint16_t alloc_resp_port; /* port to send allocation confirmation to */
+	char *alloc_tls_cert;	/* TLS certificate for client that is
+				 * getting/has allocation (srun, salloc,etc.) */
 	uint32_t alloc_sid;	/* local sid making resource allocation request
 				 * NOTE: Normally set by slurm_submit* or
 				 * slurm_allocate* function

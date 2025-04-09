@@ -1604,6 +1604,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->acctg_freq);
 		xfree(msg->admin_comment);
 		xfree(msg->alloc_node);
+		xfree(msg->alloc_tls_cert);
 		if (msg->argv) {
 			for (i = 0; i < msg->argc; i++)
 				xfree(msg->argv[i]);
