@@ -5942,7 +5942,7 @@ end_it:
 static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 {
 	tls_cert_request_msg_t *req = msg->data;
-	tls_cert_response_msg_t resp = { 0 };
+	tls_cert_response_msg_t *resp = xmalloc(sizeof(*resp));
 	node_record_t *node = NULL;
 
 	if (!validate_slurm_user(msg->auth_uid)) {
@@ -5957,14 +5957,15 @@ static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, SLURM_ERROR);
 	}
 
-	if (!(resp.signed_cert = certmgr_g_sign_csr(req->csr, req->token,
+	if (!(resp->signed_cert = certmgr_g_sign_csr(req->csr, req->token,
 						    node))) {
 		error("%s: Unable to sign certificate signing request.",
 		      __func__);
 		slurm_send_rc_msg(msg, SLURM_ERROR);
 	}
 
-	(void) send_msg_response(msg, RESPONSE_TLS_CERT, &resp);
+	(void) send_msg_response(msg, RESPONSE_TLS_CERT, resp);
+	slurm_free_msg_data(RESPONSE_TLS_CERT, resp);
 }
 
 static void _slurm_rpc_sib_job_lock(slurm_msg_t *msg)
