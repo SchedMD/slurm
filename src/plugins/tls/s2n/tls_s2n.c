@@ -52,6 +52,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/certmgr.h"
 #include "src/interfaces/tls.h"
 
 /* Set default security policy to FIPS-compliant version */
@@ -359,11 +360,29 @@ static int _load_self_cert(void)
 		default_cert_path = "ctld_cert.pem";
 		default_key_path = "ctld_cert_key.pem";
 	} else {
-		/*
-		 * No one besides slurmctld and slurmdbd should ever be loading
-		 * pre-configured self certificate.
-		 */
-		fatal("%s: called outside of slurmctld or slurmdbd", __func__);
+		int rc;
+		char *cert_pem = NULL, *key_pem = NULL;
+		uint32_t cert_pem_len, key_pem_len;
+
+		if (!certmgr_enabled()) {
+			error("certmgr plugin not enabled, unable to get self signed certificate.");
+			return SLURM_ERROR;
+		}
+		if (certmgr_g_get_self_signed_cert(&cert_pem, &key_pem) ||
+		    !cert_pem || !key_pem) {
+			error("Failed to get self signed certificate and private key");
+			return SLURM_ERROR;
+		}
+
+		cert_pem_len = strlen(cert_pem);
+		key_pem_len = strlen(key_pem);
+
+		rc = _add_cert_and_key_to_store(cert_pem, cert_pem_len, key_pem,
+						key_pem_len);
+		xfree(cert_pem);
+		xfree(key_pem);
+
+		return rc;
 	}
 	xassert(cert_conf);
 	xassert(key_conf);
@@ -453,7 +472,7 @@ extern int init(void)
 	 * slurmctld and slurmdbd need to load their own pre-signed certificate
 	 */
 	if (running_in_slurmctld() || running_in_slurmdbd() ||
-	    running_in_slurmrestd()) {
+	    running_in_slurmrestd() || !running_in_daemon()) {
 		if (_load_self_cert()) {
 			error("Could not load own certificate and private key for s2n");
 			return SLURM_ERROR;
