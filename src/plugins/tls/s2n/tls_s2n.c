@@ -188,15 +188,17 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 	s2n_errno = S2N_ERR_T_OK;
 }
 
-static void _check_file_permissions(const char *path, int bad_perms,
-				    bool check_owner)
+static int _check_file_permissions(const char *path, int bad_perms,
+				   bool check_owner)
 {
 	struct stat statbuf;
 
 	xassert(path);
 
-	if (stat(path, &statbuf))
-		fatal("%s: cannot stat '%s': %m", plugin_type, path);
+	if (stat(path, &statbuf)) {
+		debug("%s: cannot stat '%s': %m", plugin_type, path);
+		return SLURM_ERROR;
+	}
 
 	/*
 	 * Configless operation means slurm_user_id is 0.
@@ -205,14 +207,20 @@ static void _check_file_permissions(const char *path, int bad_perms,
 	 * SlurmUser=root, this warning will be skipped inadvertently.)
 	 */
 	if (check_owner && (statbuf.st_uid != 0) && slurm_conf.slurm_user_id &&
-	    (statbuf.st_uid != slurm_conf.slurm_user_id))
-		fatal("%s: '%s' owned by uid=%u, instead of SlurmUser(%u) or root",
+	    (statbuf.st_uid != slurm_conf.slurm_user_id)) {
+		debug("%s: '%s' owned by uid=%u, instead of SlurmUser(%u) or root",
 		      plugin_type, path, statbuf.st_uid,
 		      slurm_conf.slurm_user_id);
+		return SLURM_ERROR;
+	}
 
-	if (statbuf.st_mode & bad_perms)
-		fatal("%s: file is insecure: '%s' mode=0%o",
+	if (statbuf.st_mode & bad_perms) {
+		debug("%s: file is insecure: '%s' mode=0%o",
 		      plugin_type, path, statbuf.st_mode & 0777);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -284,7 +292,10 @@ static int _load_ca_cert(void)
 	 * Check if CA cert is owned by SlurmUser/root and that it's not
 	 * modifiable/executable by everyone.
 	 */
-	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), true);
+	if (_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), true)) {
+		xfree(cert_file);
+		return SLURM_ERROR;
+	}
 	if (s2n_config_set_verification_ca_location(config, cert_file, NULL) < 0) {
 		on_s2n_error(NULL, s2n_config_set_verification_ca_location);
 		xfree(cert_file);
@@ -344,7 +355,11 @@ static int _load_self_cert(void)
 	 * running in slurmrestd) and that it's not modifiable/executable by
 	 * everyone.
 	 */
-	_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), check_owner);
+	if (_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH),
+				    check_owner)) {
+		xfree(cert_file);
+		return SLURM_ERROR;
+	}
 	if (!(cert_buf = create_mmap_buf(cert_file))) {
 		error("%s: Could not load cert file (%s): %m",
 		      plugin_type, cert_file);
@@ -365,7 +380,10 @@ static int _load_self_cert(void)
 	 * in slurmrestd) and that it's not readable/writable/executable by
 	 * everyone.
 	 */
-	_check_file_permissions(key_file, S_IRWXO, check_owner);
+	if (_check_file_permissions(key_file, S_IRWXO, check_owner)) {
+		xfree(cert_file);
+		return SLURM_ERROR;
+	}
 	if (!(key_buf = create_mmap_buf(key_file))) {
 		error("%s: Could not load private key file (%s): %m",
 		      plugin_type, key_file);
