@@ -9107,6 +9107,13 @@ static void _job_time_limit_incr(job_record_t *job_ptr, uint32_t boot_job_id)
 	}
 }
 
+static int _foreach_het_job_time_limit_incr(void *x, void *arg)
+{
+	_job_time_limit_incr(x, *(uint32_t *)arg);
+
+	return 0;
+}
+
 /*
  * Increment time limit for all components of a hetjob for node configuration.
  * job_ptr IN - pointer to job record for which configuration is complete
@@ -9115,8 +9122,7 @@ static void _job_time_limit_incr(job_record_t *job_ptr, uint32_t boot_job_id)
 static void _het_job_time_limit_incr(job_record_t *job_ptr,
 				     uint32_t boot_job_id)
 {
-	job_record_t *het_job_leader, *het_job;
-	list_itr_t *iter;
+	job_record_t *het_job_leader;
 
 	if (!job_ptr->het_job_id) {
 		_job_time_limit_incr(job_ptr, boot_job_id);
@@ -9137,11 +9143,9 @@ static void _het_job_time_limit_incr(job_record_t *job_ptr,
 		return;
 	}
 
-	iter = list_iterator_create(het_job_leader->het_job_list);
-	while ((het_job = list_next(iter))) {
-		_job_time_limit_incr(het_job, boot_job_id);
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(het_job_leader->het_job_list,
+			     _foreach_het_job_time_limit_incr,
+			     &boot_job_id);
 }
 
 /* Clear job's CONFIGURING flag and advance end time as needed */
