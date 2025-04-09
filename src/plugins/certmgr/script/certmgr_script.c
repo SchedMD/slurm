@@ -54,68 +54,65 @@ typedef enum {
 	GET_TOKEN,
 	SIGN_CSR,
 	VALID_NODE,
-	CERT_SCRIPT_COUNT,
 } cert_script_type_t;
 
 typedef struct {
 	char *key;
 	char *path;
-	bool run_in_slurmctld;
 	bool required;
 } cert_script_t;
 
 cert_script_t cert_scripts[] = {
 	[GEN_CSR] = {
 		.key = "generate_csr_script=",
-		.run_in_slurmctld = false,
 		.required = true,
 	},
 	[GET_TOKEN] = {
 		.key = "get_node_token_script=",
-		.run_in_slurmctld = false,
 		.required = true,
 	},
 	[SIGN_CSR] = {
 		.key = "sign_csr_script=",
-		.run_in_slurmctld = true,
 		.required = true,
 	},
 	[VALID_NODE] = {
 		.key = "validate_node_script=",
-		.run_in_slurmctld = true,
 		.required = false,
 	},
 };
 
-extern int init(void)
+static int _set_script_path(cert_script_t *script)
 {
-	debug("loaded");
-
-	/*
-	 * Make sure that we have the scripts that we need based on where we are
-	 * initializing the plugin from.
-	 */
-	for (int i = 0; i < CERT_SCRIPT_COUNT; i++) {
-		xassert(cert_scripts[i].key);
-
-		if (running_in_slurmctld() != cert_scripts[i].run_in_slurmctld)
-			continue;
-
-		cert_scripts[i].path = conf_get_opt_str(
-			slurm_conf.certmgr_params, cert_scripts[i].key);
-		if (!cert_scripts[i].path && cert_scripts[i].required) {
-			error("No script was set with '%s' in CertmgrParameters setting",
-			      cert_scripts[i].key);
-			return SLURM_ERROR;
-		}
+	script->path = conf_get_opt_str(slurm_conf.certmgr_params, script->key);
+	if (!script->path && script->required) {
+		error("No script was set with '%s' in CertmgrParameters setting",
+		      script->key);
+		return SLURM_ERROR;
 	}
-
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+static int _load_script_paths(void)
 {
-	return SLURM_SUCCESS;
+	if (running_in_slurmctld()) {
+		/* needs to validate nodes and sign CSR's */
+		if (_set_script_path(&cert_scripts[SIGN_CSR]))
+			return SLURM_ERROR;
+		if (_set_script_path(&cert_scripts[VALID_NODE]))
+			return SLURM_ERROR;
+		return SLURM_SUCCESS;
+	}
+
+	if (running_in_daemon()) {
+		/* needs resources to get a signed certificate from slurmctld */
+		if (_set_script_path(&cert_scripts[GEN_CSR]))
+			return SLURM_ERROR;
+		if (_set_script_path(&cert_scripts[GET_TOKEN]))
+			return SLURM_ERROR;
+		return SLURM_SUCCESS;
+	}
+
+	return SLURM_ERROR;
 }
 
 static char *_run_script(cert_script_type_t cert_script_type,
@@ -161,6 +158,21 @@ static char *_run_script(cert_script_type_t cert_script_type,
 fail:
 	xfree(output);
 	return NULL;
+}
+
+extern int init(void)
+{
+	debug("loaded");
+
+	if (_load_script_paths())
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+extern int fini(void)
+{
+	return SLURM_SUCCESS;
 }
 
 extern char *certmgr_p_get_node_token(char *node_name)
