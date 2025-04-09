@@ -289,6 +289,16 @@ typedef struct {
 	uid_t submit_uid;
 } foreach_valid_part_t;
 
+typedef struct {
+	uint16_t cpus_per_task;
+	job_desc_msg_t *job_desc;
+	uint32_t max_cpus;
+	uint32_t min_cpus;
+	uint32_t pn_min_cpus;
+	uint64_t pn_min_memory;
+	int rc;
+} foreach_valid_pn_min_mem_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -9836,6 +9846,36 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_valid_pn_min_mem(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	foreach_valid_pn_min_mem_t *foreach_valid_pn_min_mem = arg;
+	job_desc_msg_t *job_desc_msg = foreach_valid_pn_min_mem->job_desc;
+
+	foreach_valid_pn_min_mem->rc =
+		_valid_pn_min_mem(job_desc_msg, part_ptr);
+
+	/* for ALL we have to test them all */
+	if (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ALL) {
+		if (!foreach_valid_pn_min_mem->rc)
+			return -1;
+	} else if (foreach_valid_pn_min_mem->rc) /* break, we found one! */
+		return -1;
+	else if (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY) {
+		debug("%s: Job requested for (%"PRIu64")MB is invalid for partition %s",
+		      __func__, job_desc_msg->pn_min_memory,
+		      part_ptr->name);
+	}
+
+	job_desc_msg->pn_min_memory = foreach_valid_pn_min_mem->pn_min_memory;
+	job_desc_msg->cpus_per_task = foreach_valid_pn_min_mem->cpus_per_task;
+	job_desc_msg->min_cpus = foreach_valid_pn_min_mem->min_cpus;
+	job_desc_msg->max_cpus = foreach_valid_pn_min_mem->max_cpus;
+	job_desc_msg->pn_min_cpus = foreach_valid_pn_min_mem->pn_min_cpus;
+
+	return 0;
+}
+
 /*
  * Traverse the list of partitions and invoke the
  * function validating the job memory specification.
@@ -9844,8 +9884,6 @@ static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 					part_record_t *part_ptr,
 					list_t *part_list)
 {
-	list_itr_t *iter;
-	part_record_t *part;
 	uint64_t tmp_pn_min_memory;
 	uint16_t tmp_cpus_per_task;
 	uint32_t tmp_min_cpus;
@@ -9866,31 +9904,18 @@ static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 	if (part_list == NULL) {
 		cc = _valid_pn_min_mem(job_desc_msg, part_ptr);
 	} else {
-		iter = list_iterator_create(part_list);
-		while ((part = list_next(iter))) {
-			cc = _valid_pn_min_mem(job_desc_msg, part);
+		foreach_valid_pn_min_mem_t foreach_valid_pn_min_mem = {
+			.cpus_per_task = tmp_cpus_per_task,
+			.job_desc = job_desc_msg,
+			.max_cpus = tmp_max_cpus,
+			.min_cpus = tmp_min_cpus,
+			.pn_min_cpus = tmp_pn_min_cpus,
+			.pn_min_memory = tmp_pn_min_memory,
+		};
 
-			/* for ALL we have to test them all */
-			if (slurm_conf.enforce_part_limits ==
-			    PARTITION_ENFORCE_ALL) {
-				if (!cc)
-					break;
-			} else if (cc) /* break, we found one! */
-				break;
-			else if (slurm_conf.enforce_part_limits ==
-				 PARTITION_ENFORCE_ANY) {
-				debug("%s: Job requested for (%"PRIu64")MB is invalid for partition %s",
-				      __func__, job_desc_msg->pn_min_memory,
-				      part->name);
-			}
-
-			job_desc_msg->pn_min_memory = tmp_pn_min_memory;
-			job_desc_msg->cpus_per_task = tmp_cpus_per_task;
-			job_desc_msg->min_cpus = tmp_min_cpus;
-			job_desc_msg->max_cpus = tmp_max_cpus;
-			job_desc_msg->pn_min_cpus = tmp_pn_min_cpus;
-		}
-		list_iterator_destroy(iter);
+		(void) list_for_each(part_list, _foreach_valid_pn_min_mem,
+				     &foreach_valid_pn_min_mem);
+		cc = foreach_valid_pn_min_mem.rc;
 	}
 
 	/*
