@@ -79,8 +79,10 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
+#include "src/interfaces/certmgr.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/mpi.h"
+#include "src/interfaces/tls.h"
 
 #include "src/srun/step_ctx.h"
 
@@ -358,6 +360,15 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 
 	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
 
+	if (tls_enabled()) {
+		if (certmgr_g_get_self_signed_cert(&launch.alloc_tls_cert,
+						   NULL)) {
+			error("Could not get self signed certificate for step IO");
+			rc = SLURM_ERROR;
+			goto fail1;
+		}
+	}
+
 	ctx->launch_state->io =
 		client_io_handler_create(params->local_fds,
 					 ctx->step_req->num_tasks,
@@ -405,6 +416,7 @@ fail1:
 	xfree(launch.complete_nodelist);
 	xfree(launch.cwd);
 	xfree(launch.stepmgr);
+	xfree(launch.alloc_tls_cert);
 	env_array_free(env);
 	FREE_NULL_LIST(launch.options);
 	return rc;

@@ -52,6 +52,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/certmgr.h"
 #include "src/interfaces/tls.h"
 
 /* Set default security policy to FIPS-compliant version */
@@ -280,6 +281,7 @@ static struct s2n_config *_create_config(void)
 static int _load_ca_cert(void)
 {
 	char *cert_file;
+	buf_t *cert_buf;
 
 	cert_file = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=");
 	if (!cert_file && !(cert_file = get_extra_conf_path("ca_cert.pem"))) {
@@ -296,19 +298,62 @@ static int _load_ca_cert(void)
 		xfree(cert_file);
 		return SLURM_ERROR;
 	}
-	if (s2n_config_set_verification_ca_location(config, cert_file, NULL) < 0) {
-		on_s2n_error(NULL, s2n_config_set_verification_ca_location);
+
+	if (!(cert_buf = create_mmap_buf(cert_file))) {
+		error("%s: Could not load CA cert file (%s)",
+		      plugin_type, cert_file);
 		xfree(cert_file);
 		return SLURM_ERROR;
 	}
+	xfree(cert_file);
+
+	if (s2n_config_add_pem_to_trust_store(config, cert_buf->head)) {
+		on_s2n_error(NULL, s2n_config_add_pem_to_trust_store);
+		FREE_NULL_BUFFER(cert_buf);
+		return SLURM_ERROR;
+	}
+	FREE_NULL_BUFFER(cert_buf);
 
 	xfree(cert_file);
 	return SLURM_SUCCESS;
 }
 
-static int _load_self_cert(void)
+static int _add_cert_and_key_to_store(char *cert_pem, uint32_t cert_pem_len,
+				      char *key_pem, uint32_t key_pem_len)
 {
 	struct s2n_cert_chain_and_key *cert_and_key;
+
+	if (!(cert_and_key = s2n_cert_chain_and_key_new())) {
+		on_s2n_error(NULL, s2n_cert_chain_and_key_new);
+		return SLURM_ERROR;
+	}
+
+	if (s2n_cert_chain_and_key_load_pem_bytes(cert_and_key,
+						  (uint8_t *) cert_pem,
+						  cert_pem_len,
+						  (uint8_t *) key_pem,
+						  key_pem_len) < 0) {
+		on_s2n_error(NULL, s2n_cert_chain_and_key_load_pem_bytes);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Per libs2n docs:
+	 *	It is not recommended to free or modify the `cert_key_pair` as
+	 *	any subsequent changes will be reflected in the config.
+	 */
+	if (s2n_config_add_cert_chain_and_key_to_store(config, cert_and_key) <
+	    0) {
+		on_s2n_error(NULL, s2n_config_add_cert_chain_and_key_to_store);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _load_self_cert(void)
+{
+	int rc;
 	char *cert_file, *key_file;
 	char *cert_conf = NULL, *key_conf = NULL;
 	char *default_cert_path = NULL, *default_key_path = NULL;
@@ -332,11 +377,29 @@ static int _load_self_cert(void)
 		default_cert_path = "ctld_cert.pem";
 		default_key_path = "ctld_cert_key.pem";
 	} else {
-		/*
-		 * No one besides slurmctld and slurmdbd should ever be loading
-		 * pre-configured self certificate.
-		 */
-		fatal("%s: called outside of slurmctld or slurmdbd", __func__);
+		int rc;
+		char *cert_pem = NULL, *key_pem = NULL;
+		uint32_t cert_pem_len, key_pem_len;
+
+		if (!certmgr_enabled()) {
+			error("certmgr plugin not enabled, unable to get self signed certificate.");
+			return SLURM_ERROR;
+		}
+		if (certmgr_g_get_self_signed_cert(&cert_pem, &key_pem) ||
+		    !cert_pem || !key_pem) {
+			error("Failed to get self signed certificate and private key");
+			return SLURM_ERROR;
+		}
+
+		cert_pem_len = strlen(cert_pem);
+		key_pem_len = strlen(key_pem);
+
+		rc = _add_cert_and_key_to_store(cert_pem, cert_pem_len, key_pem,
+						key_pem_len);
+		xfree(cert_pem);
+		xfree(key_pem);
+
+		return rc;
 	}
 	xassert(cert_conf);
 	xassert(key_conf);
@@ -373,6 +436,7 @@ static int _load_self_cert(void)
 	if (!key_file && !(key_file = get_extra_conf_path(default_key_path))) {
 		error("Failed to get %s path", default_key_path);
 		xfree(key_file);
+		FREE_NULL_BUFFER(cert_buf);
 		return SLURM_ERROR;
 	}
 	/*
@@ -381,37 +445,26 @@ static int _load_self_cert(void)
 	 * everyone.
 	 */
 	if (_check_file_permissions(key_file, S_IRWXO, check_owner)) {
-		xfree(cert_file);
+		xfree(key_file);
+		FREE_NULL_BUFFER(cert_buf);
 		return SLURM_ERROR;
 	}
 	if (!(key_buf = create_mmap_buf(key_file))) {
 		error("%s: Could not load private key file (%s): %m",
 		      plugin_type, key_file);
 		xfree(key_file);
+		FREE_NULL_BUFFER(cert_buf);
 		return SLURM_ERROR;
 	}
 	xfree(key_file);
 
-	if (!(cert_and_key = s2n_cert_chain_and_key_new())) {
-		on_s2n_error(NULL, s2n_cert_chain_and_key_new);
-		return SLURM_ERROR;
-	}
+	rc = _add_cert_and_key_to_store(cert_buf->head, cert_buf->size,
+					key_buf->head, key_buf->size);
 
-	if (s2n_cert_chain_and_key_load_pem_bytes(
-		    cert_and_key, (uint8_t *) cert_buf->head,
-		    cert_buf->size, (uint8_t *) key_buf->head,
-		    key_buf->size) < 0) {
-		on_s2n_error(NULL, s2n_cert_chain_and_key_load_pem_bytes);
-		return SLURM_ERROR;
-	}
+	FREE_NULL_BUFFER(cert_buf);
+	FREE_NULL_BUFFER(key_buf);
 
-	if (s2n_config_add_cert_chain_and_key_to_store(config,
-						       cert_and_key) < 0) {
-		on_s2n_error(NULL, s2n_config_add_cert_chain_and_key_to_store);
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int init(void)
@@ -440,7 +493,7 @@ extern int init(void)
 	 * slurmctld and slurmdbd need to load their own pre-signed certificate
 	 */
 	if (running_in_slurmctld() || running_in_slurmdbd() ||
-	    running_in_slurmrestd()) {
+	    running_in_slurmrestd() || !running_in_daemon()) {
 		if (_load_self_cert()) {
 			error("Could not load own certificate and private key for s2n");
 			return SLURM_ERROR;
@@ -452,6 +505,10 @@ extern int init(void)
 
 extern int fini(void)
 {
+	if (config && s2n_config_free_cert_chain_and_key(config)) {
+		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
+	}
+
 	if (s2n_config_free(config))
 		on_s2n_error(NULL, s2n_config_free);
 

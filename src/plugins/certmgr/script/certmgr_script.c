@@ -49,78 +49,92 @@ const char plugin_name[] = "Certificate manager script plugin";
 const char plugin_type[] = "certmgr/script";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-#define GEN_CSR_SCRIPT_KEY "generate_csr_script="
-#define GET_TOKEN_SCRIPT_KEY "get_node_token_script="
-#define SIGN_CSR_SCRIPT_KEY "sign_csr_script="
-#define VALID_NODE_SCRIPT_KEY "validate_node_script="
+static char *self_signed_cert = NULL;
+static char *private_key = NULL;
 
 typedef enum {
 	GEN_CSR,
+	GEN_PRIVATE_KEY,
+	GEN_SELF_SIGNED,
 	GET_TOKEN,
 	SIGN_CSR,
 	VALID_NODE,
-	CERT_SCRIPT_COUNT,
 } cert_script_type_t;
 
 typedef struct {
 	char *key;
 	char *path;
-	bool run_in_slurmctld;
 	bool required;
 } cert_script_t;
 
 cert_script_t cert_scripts[] = {
 	[GEN_CSR] = {
 		.key = "generate_csr_script=",
-		.run_in_slurmctld = false,
+		.required = true,
+	},
+	[GEN_SELF_SIGNED] = {
+		.key = "gen_self_signed_cert_script=",
+		.required = true,
+	},
+	[GEN_PRIVATE_KEY] = {
+		.key = "gen_private_key_script=",
 		.required = true,
 	},
 	[GET_TOKEN] = {
 		.key = "get_node_token_script=",
-		.run_in_slurmctld = false,
 		.required = true,
 	},
 	[SIGN_CSR] = {
 		.key = "sign_csr_script=",
-		.run_in_slurmctld = true,
 		.required = true,
 	},
 	[VALID_NODE] = {
 		.key = "validate_node_script=",
-		.run_in_slurmctld = true,
 		.required = false,
 	},
 };
 
-extern int init(void)
+static int _set_script_path(cert_script_t *script)
 {
-	debug("loaded");
-
-	/*
-	 * Make sure that we have the scripts that we need based on where we are
-	 * initializing the plugin from.
-	 */
-	for (int i = 0; i < CERT_SCRIPT_COUNT; i++) {
-		xassert(cert_scripts[i].key);
-
-		if (running_in_slurmctld() != cert_scripts[i].run_in_slurmctld)
-			continue;
-
-		cert_scripts[i].path = conf_get_opt_str(
-			slurm_conf.certmgr_params, cert_scripts[i].key);
-		if (!cert_scripts[i].path && cert_scripts[i].required) {
-			error("No script was set with '%s' in CertmgrParameters setting",
-			      cert_scripts[i].key);
-			return SLURM_ERROR;
-		}
+	script->path = conf_get_opt_str(slurm_conf.certmgr_params, script->key);
+	if (!script->path && script->required) {
+		error("No script was set with '%s' in CertmgrParameters setting",
+		      script->key);
+		return SLURM_ERROR;
 	}
-
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+static int _load_script_paths(void)
 {
-	return SLURM_SUCCESS;
+	if (running_in_slurmctld()) {
+		/* needs to validate nodes and sign CSR's */
+		if (_set_script_path(&cert_scripts[SIGN_CSR]))
+			return SLURM_ERROR;
+		if (_set_script_path(&cert_scripts[VALID_NODE]))
+			return SLURM_ERROR;
+		return SLURM_SUCCESS;
+	}
+
+	if (!running_in_daemon()) {
+		/* needs ephemeral self signed certificate */
+		if (_set_script_path(&cert_scripts[GEN_PRIVATE_KEY]))
+			return SLURM_ERROR;
+		if (_set_script_path(&cert_scripts[GEN_SELF_SIGNED]))
+			return SLURM_ERROR;
+		return SLURM_SUCCESS;
+	}
+
+	if (running_in_daemon()) {
+		/* needs resources to get a signed certificate from slurmctld */
+		if (_set_script_path(&cert_scripts[GEN_CSR]))
+			return SLURM_ERROR;
+		if (_set_script_path(&cert_scripts[GET_TOKEN]))
+			return SLURM_ERROR;
+		return SLURM_SUCCESS;
+	}
+
+	return SLURM_ERROR;
 }
 
 static char *_run_script(cert_script_type_t cert_script_type,
@@ -168,6 +182,95 @@ fail:
 	return NULL;
 }
 
+static char *_gen_private_key(void)
+{
+	char **script_argv;
+	int script_rc;
+	char *key = NULL;
+
+	script_argv = xcalloc(2, sizeof(char *)); /* NULL terminated */
+	/* script_argv[0] set to script path later */
+
+	key = _run_script(GEN_PRIVATE_KEY, script_argv, &script_rc);
+	xfree(script_argv);
+
+	if (script_rc) {
+		error("%s: Unable to generate private key",
+		      plugin_type);
+		goto fail;
+	} else if (!key || !*key) {
+		error("%s: Unable to generate private key. Script printed nothing to stdout",
+		      plugin_type);
+		goto fail;
+	} else {
+		log_flag(TLS, "Successfully generated private key.");
+	}
+
+	return key;
+fail:
+	xfree(key);
+	return NULL;
+}
+
+static char *_gen_self_signed_cert(char *private_key_pem)
+{
+	char **script_argv;
+	int script_rc;
+	char *cert = NULL;
+
+	script_argv = xcalloc(3, sizeof(char *)); /* NULL terminated */
+	/* script_argv[0] set to script path later */
+	script_argv[1] = private_key_pem;
+
+	cert = _run_script(GEN_SELF_SIGNED, script_argv, &script_rc);
+	xfree(script_argv);
+
+	if (script_rc) {
+		error("%s: Unable to generate self signed certificate",
+		      plugin_type);
+		goto fail;
+	} else if (!cert || !*cert) {
+		error("%s: Unable to generate self signed certificate. Script printed nothing to stdout",
+		      plugin_type);
+		goto fail;
+	} else {
+		log_flag(TLS, "Successfully generated self signed certificate: \n%s", cert);
+	}
+
+	return cert;
+fail:
+	xfree(cert);
+	return NULL;
+}
+
+extern int init(void)
+{
+	debug("loaded");
+
+	if (_load_script_paths())
+		return SLURM_ERROR;
+
+	if (!running_in_daemon()) {
+		if (!(private_key = _gen_private_key())) {
+			error("Could not generate private key");
+			return SLURM_ERROR;
+		}
+		if (!(self_signed_cert = _gen_self_signed_cert(private_key))) {
+			error("Could not generate self signed certificate");
+			return SLURM_ERROR;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int fini(void)
+{
+	xfree(self_signed_cert);
+	xfree(private_key);
+	return SLURM_SUCCESS;
+}
+
 extern char *certmgr_p_get_node_token(char *node_name)
 {
 	char **script_argv;
@@ -197,6 +300,28 @@ extern char *certmgr_p_get_node_token(char *node_name)
 fail:
 	xfree(token);
 	return NULL;
+}
+
+extern int certmgr_p_get_self_signed_cert(char **cert_pem, char **key_pem)
+{
+	/* Retrieve certificate PEM */
+	if (cert_pem && self_signed_cert) {
+		*cert_pem = xstrdup(self_signed_cert);
+	} else if (cert_pem && !self_signed_cert)
+		return SLURM_ERROR;
+	if (cert_pem)
+		log_flag(TLS, "Returning self signed cert: \n%s",
+			 self_signed_cert);
+
+	/* Retrieve private key */
+	if (key_pem && private_key)
+		*key_pem = xstrdup(private_key);
+	else if (key_pem && !private_key)
+		return SLURM_ERROR;
+	if (key_pem)
+		log_flag(TLS, "Returning private key.");
+
+	return SLURM_SUCCESS;
 }
 
 extern char *certmgr_p_generate_csr(char *node_name)
@@ -288,6 +413,8 @@ skip_validation_script:
 	script_argv[1] = csr;
 
 	signed_cert_pem = _run_script(SIGN_CSR, script_argv, &script_rc);
+	xfree(script_argv);
+
 	if (script_rc) {
 		error("%s: Unable to sign node certificate signing request for node '%s'.",
 		      plugin_type, node->name);

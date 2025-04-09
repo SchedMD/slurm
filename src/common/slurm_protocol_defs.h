@@ -723,6 +723,7 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  *io_port;  /* array of available client IO listen ports */
 	/**********  END  "normal" IO only options **********/
 
+	char *alloc_tls_cert; /* TLS certificate for step IO */
 	uint32_t profile;
 	char     *task_prolog;
 	char     *task_epilog;
