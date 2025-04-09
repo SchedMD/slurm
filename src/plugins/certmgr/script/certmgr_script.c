@@ -413,6 +413,8 @@ skip_validation_script:
 	script_argv[1] = csr;
 
 	signed_cert_pem = _run_script(SIGN_CSR, script_argv, &script_rc);
+	xfree(script_argv);
+
 	if (script_rc) {
 		error("%s: Unable to sign node certificate signing request for node '%s'.",
 		      plugin_type, node->name);
