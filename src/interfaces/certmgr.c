@@ -102,11 +102,6 @@ extern int certmgr_g_init(void)
 	int rc = SLURM_SUCCESS;
 	char *plugin_type = "certmgr";
 
-	if (!running_in_slurmctld() && !running_in_slurmd()) {
-		error("certmgr plugin only allowed on slurmctld and slurmd");
-		return SLURM_ERROR;
-	}
-
 	slurm_rwlock_wrlock(&context_lock);
 
 	if (plugin_inited != PLUGIN_NOT_INITED)
@@ -165,7 +160,7 @@ extern char *certmgr_g_get_node_token(char *node_name)
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+		return NULL;
 
 	return (*(ops.get_node_token))(node_name);
 }
@@ -176,7 +171,7 @@ extern char *certmgr_g_generate_csr(char *node_name)
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+		return NULL;
 
 	return (*(ops.generate_csr))(node_name);
 }
@@ -187,7 +182,7 @@ extern char *certmgr_g_sign_csr(char *csr, char *token, node_record_t *node)
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+		return NULL;
 
 	return (*(ops.sign_csr))(csr, token, node);
 }

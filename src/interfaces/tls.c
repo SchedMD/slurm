@@ -140,10 +140,7 @@ extern int tls_g_init(void)
 	if (g_context_num > 0)
 		goto done;
 
-	if (running_in_daemon())
-		tls_plugin_list = xstrdup(slurm_conf.tls_type);
-	else
-		tls_plugin_list = xstrdup("none");
+	tls_plugin_list = xstrdup(slurm_conf.tls_type);
 
 	/* ensure none plugin is always loaded */
 	if (!xstrstr(tls_plugin_list, "none"))
@@ -346,7 +343,6 @@ static int _is_sslv3_handshake(const void *buf, const size_t n)
 
 	protocol_version |= p[1] << 8;
 	protocol_version |= p[2];
-	protocol_version = ntohs(protocol_version);
 
 	if ((protocol_version < PROTOCOL_VERSION_MIN) ||
 	    (protocol_version > PROTOCOL_VERSION_MAX))
@@ -354,7 +350,6 @@ static int _is_sslv3_handshake(const void *buf, const size_t n)
 
 	length |= p[3] << 8;
 	length |= p[4];
-	length = ntohl(length);
 
 	if ((length < HEADER_LENGTH_MIN) || (length > HEADER_LENGTH_MAX))
 		return ENOENT;
@@ -390,14 +385,12 @@ static int _is_tls_handshake(const void *buf, const size_t n)
 	length |= p[1] << 16;
 	length |= p[2] << 8;
 	length |= p[3];
-	length = ntohl(length);
 
 	if ((length < HEADER_LENGTH_MIN) || (length > HEADER_LENGTH_MAX))
 		return ENOENT;
 
 	protocol_version |= p[4] << 8;
 	protocol_version |= p[5];
-	protocol_version = ntohs(protocol_version);
 
 	if ((protocol_version < PROTOCOL_VERSION_MIN) ||
 	    (protocol_version > PROTOCOL_VERSION_MAX))

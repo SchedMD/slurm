@@ -529,6 +529,9 @@ main (int argc, char **argv)
 
 static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status != CONMGR_WORK_STATUS_RUN)
+		return;
+
 	if (_get_tls_certificate()) {
 		error("%s: Unable to get TLS certificate", __func__);
 	}
@@ -537,7 +540,7 @@ static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
 static int _get_tls_certificate(void)
 {
 	slurm_msg_t req, resp;
-	tls_cert_request_msg_t cert_req = { 0 };
+	tls_cert_request_msg_t *cert_req;
 	tls_cert_response_msg_t *cert_resp;
 
 	slurm_msg_t_init(&req);
@@ -553,27 +556,33 @@ static int _get_tls_certificate(void)
 		_get_tls_cert_work, NULL,
 		certmgr_get_renewal_period_mins() * MINUTE_SECONDS, 0);
 
-	if (!(cert_req.token = certmgr_g_get_node_token(conf->node_name))) {
+	cert_req = xmalloc(sizeof(*cert_req));
+
+	if (!(cert_req->token = certmgr_g_get_node_token(conf->node_name))) {
 		error("%s: Failed to get unique node token", __func__);
+		slurm_free_tls_cert_request_msg(cert_req);
 		return SLURM_ERROR;
 	}
 
-	if (!(cert_req.csr = certmgr_g_generate_csr(conf->node_name))) {
+	if (!(cert_req->csr = certmgr_g_generate_csr(conf->node_name))) {
 		error("%s: Failed to generate certificate signing request",
 		      __func__);
+		slurm_free_tls_cert_request_msg(cert_req);
 		return SLURM_ERROR;
 	}
 
-	cert_req.node_name = xstrdup(conf->node_name);
+	cert_req->node_name = xstrdup(conf->node_name);
 
 	req.msg_type = REQUEST_TLS_CERT;
-	req.data = &cert_req;
+	req.data = cert_req;
 
 	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec)
 	    < 0) {
 		error("Unable to get TLS certificate from slurmctld: %m");
+		slurm_free_tls_cert_request_msg(cert_req);
 		return SLURM_ERROR;
 	}
+	slurm_free_tls_cert_request_msg(cert_req);
 
 	switch (resp.msg_type) {
 	case RESPONSE_TLS_CERT:

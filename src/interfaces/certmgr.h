@@ -44,10 +44,46 @@
 extern int certmgr_g_init(void);
 extern int certmgr_g_fini(void);
 
+/*
+ * Check if the certmgr plugin is initialized (and not no-op)
+ */
 extern bool certmgr_enabled(void);
+
+/*
+ * Get period in minutes for which a new certificate will be requested to
+ * replace an old certificate.
+ *
+ * RET SLURM_SUCCESS or error
+ */
 extern int certmgr_get_renewal_period_mins(void);
+
+/*
+ * Get unique node token to validate an accompanying CSR
+ *
+ * IN node_name - get the token associated with this node name
+ *
+ * RET SLURM_SUCCESS or error
+ */
 extern char *certmgr_g_get_node_token(char *node_name);
+
+/*
+ * Generate certificate signing request to send to slurmctld
+ *
+ * IN node_name - generate CSR for node with this node name
+ *
+ * RET SLURM_SUCCESS or error
+ */
 extern char *certmgr_g_generate_csr(char *node_name);
+
+/*
+ * Validate incoming certificate signing request on slurmctld
+ *
+ * IN csr  - CSR PEM character string.
+ * IN token - unique token associated with CSR to check validity
+ * IN node - node record for node sending CSR
+ *
+ * RET CSR PEM character string or NULL on error.
+ */
 extern char *certmgr_g_sign_csr(char *csr, char *token, node_record_t *node);
 
 #endif
