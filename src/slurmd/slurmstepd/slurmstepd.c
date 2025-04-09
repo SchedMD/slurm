@@ -287,6 +287,7 @@ static void _init_stepd_stepmgr(void)
 	reserve_port_stepmgr_init(job_step_ptr);
 
 	_setup_stepmgr_nodes();
+	node_features_build_active_list(job_step_ptr);
 
 	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
 			 "accounting_storage/slurmdbd")) {
@@ -508,6 +509,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	if (job_step_ptr) {
 		xfree(job_step_ptr->resv_ports);
 		reserve_port_stepmgr_init(job_step_ptr);
+		node_features_free_lists();
 	}
 
 	_step_cleanup(step, msg, rc);
