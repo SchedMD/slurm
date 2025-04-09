@@ -6598,6 +6598,12 @@ static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
 		bool rebuild_name_list = false;
 		list_itr_t *iter = list_iterator_create(part_ptr_list);
 
+		/*
+		 * Skipping this for now since we are replacing items in the
+		 * list. This is the only place in the code we use
+		 * list_insert().  There is probably other ways of doing this,
+		 * saving for future generations.
+		 */
 		while ((part_ptr_tmp = list_next(iter))) {
 			rc = _alt_part_test(part_ptr_tmp, &part_ptr_new);
 			if (rc != SLURM_SUCCESS) {
