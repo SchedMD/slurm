@@ -50,6 +50,7 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/forward.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
 #include "src/common/port_mgr.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"

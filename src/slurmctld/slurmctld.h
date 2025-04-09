@@ -256,7 +256,6 @@ extern bool disable_remote_singleton;
 extern int listen_nports;
 extern int max_depend_depth;
 extern uint32_t max_powered_nodes;
-extern bool node_features_updated;
 extern pthread_cond_t purge_thread_cond;
 extern pthread_mutex_t purge_thread_lock;
 extern pthread_mutex_t check_bf_running_lock;
@@ -277,12 +276,6 @@ extern bool running_configless;
 extern bool ping_nodes_now;		/* if set, ping nodes immediately */
 extern bool want_nodes_reboot;		/* if set, check for idle nodes */
 extern bool ignore_state_errors;
-
-typedef struct node_features {
-	uint32_t magic;		/* magic cookie to test data integrity */
-	char *name;		/* name of a feature */
-	bitstr_t *node_bitmap;	/* bitmap of nodes with this feature */
-} node_feature_t;
 
 extern list_t *conf_includes_list;  /* list of conf_includes_map_t */
 

@@ -67,6 +67,7 @@
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/id_util.h"
+#include "src/common/node_features.h"
 #include "src/common/parse_time.h"
 #include "src/common/port_mgr.h"
 #include "src/common/slurm_protocol_pack.h"
