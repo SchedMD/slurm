@@ -494,6 +494,10 @@ extern int init(void)
 
 extern int fini(void)
 {
+	if (config && s2n_config_free_cert_chain_and_key(config)) {
+		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
+	}
+
 	if (s2n_config_free(config))
 		on_s2n_error(NULL, s2n_config_free);
 
