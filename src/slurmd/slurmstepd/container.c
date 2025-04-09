@@ -63,6 +63,12 @@
 #define SLURM_CONTAINER_STDOUT "/tmp/slurm/stdout"
 #define SLURM_CONTAINER_STDERR "/tmp/slurm/stderr"
 
+#define SLURM_CONTAINER_SPOOL_DIR_PATTERN "%m"
+#define SLURM_CONTAINER_BATCH_STEP_PATTERN "oci-job%j-batch"
+#define SLURM_CONTAINER_INTERACT_STEP_PATTERN "oci-job%j-interactive"
+#define SLURM_CONTAINER_STEP_PATTERN "oci-job%j-%s"
+#define SLURM_CONTAINER_TASK_PATTERN "task-%t"
+
 oci_conf_t *oci_conf = NULL;
 
 static char *create_argv[] = {
@@ -588,6 +594,32 @@ static bool _pattern_has_taskid(const char *pattern)
 	return false;
 }
 
+static char *_generate_spooldir_pattern(stepd_step_rec_t *step,
+					stepd_step_task_info_t *task)
+{
+	const char *step_id = NULL;
+	const char *task_id = NULL;
+	const char *parent = NULL;
+
+	parent = SLURM_CONTAINER_SPOOL_DIR_PATTERN;
+
+	if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
+		step_id = SLURM_CONTAINER_BATCH_STEP_PATTERN;
+	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
+		step_id = SLURM_CONTAINER_INTERACT_STEP_PATTERN;
+	} else {
+		step_id = SLURM_CONTAINER_STEP_PATTERN;
+	}
+
+	if (task)
+		task_id = SLURM_CONTAINER_TASK_PATTERN;
+	else
+		task_id = "";
+
+	return xstrdup_printf("%s%s%s%s%s", parent, (step_id[0] ? "/" : ""),
+			      step_id, (task_id[0] ? "/" : ""), task_id);
+}
+
 static char *_generate_spooldir(stepd_step_rec_t *step,
 				stepd_step_task_info_t *task)
 {
@@ -596,12 +628,8 @@ static char *_generate_spooldir(stepd_step_rec_t *step,
 
 	if (oci_conf->container_path) {
 		pattern = xstrdup(oci_conf->container_path);
-	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
-		pattern = xstrdup("%m/oci-job%j-batch/task-%t/");
-	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
-		pattern = xstrdup("%m/oci-job%j-interactive/task-%t/");
 	} else {
-		pattern = xstrdup("%m/oci-job%j-%s/task-%t/");
+		pattern = _generate_spooldir_pattern(step, task);
 	}
 
 	if (task) {
