@@ -78,6 +78,7 @@ static void _config_defaults(void)
 	slingshot_config.limits.ptes.def = SLINGSHOT_PTE_DEF;
 	slingshot_config.limits.les.def = SLINGSHOT_LE_DEF;
 	slingshot_config.limits.acs.def = SLINGSHOT_AC_DEF;
+	slingshot_config.destroy_retries = SLINGSHOT_CXI_DESTROY_RETRIES;
 }
 
 /*
