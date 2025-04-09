@@ -326,6 +326,11 @@ static int _add_cert_and_key_to_store(char *cert_pem, uint32_t cert_pem_len,
 		return SLURM_ERROR;
 	}
 
+	/*
+	 * Per libs2n docs:
+	 *	It is not recommended to free or modify the `cert_key_pair` as
+	 *	any subsequent changes will be reflected in the config.
+	 */
 	if (s2n_config_add_cert_chain_and_key_to_store(config, cert_and_key) <
 	    0) {
 		on_s2n_error(NULL, s2n_config_add_cert_chain_and_key_to_store);
