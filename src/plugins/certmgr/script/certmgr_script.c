@@ -264,9 +264,10 @@ extern char *certmgr_p_sign_csr(char *csr, char *token, node_record_t *node)
 	log_flag(TLS, "No token set in node record table for node '%s'. Will run validation script to check token.",
 		 node->name);
 
-	script_argv = xcalloc(3, sizeof(char *)); /* NULL terminated */
+	script_argv = xcalloc(4, sizeof(char *)); /* NULL terminated */
 	/* script_argv[0] set to script path later */
-	script_argv[1] = token;
+	script_argv[1] = node->name;
+	script_argv[2] = token;
 
 	output = _run_script(VALID_NODE, script_argv, &script_rc);
 	xfree(output);
