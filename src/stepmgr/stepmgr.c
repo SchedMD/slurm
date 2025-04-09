@@ -1207,8 +1207,11 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					(void *) step_spec->features);
 		if (feat_ptr && feat_ptr->node_bitmap)
 			bit_and(nodes_avail, feat_ptr->node_bitmap);
-		else
+		else {
 			bit_clear_all(nodes_avail);
+			*return_code = ESLURM_INVALID_FEATURE;
+			goto cleanup;
+		}
 	}
 
 	if (step_spec->pn_min_memory &&
