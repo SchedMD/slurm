@@ -562,7 +562,7 @@ static int _generate_container_paths(stepd_step_rec_t *step)
 			_generate_pattern(oci_conf->mount_spool_dir, step,
 					  step->task[0]->id, NULL);
 	} else {
-		c->mount_spool_dir = xstrdup("/var/run/slurm/");
+		c->mount_spool_dir = _generate_spooldir(step, NULL);
 	}
 
 	if (!c->spool_dir)
