@@ -1819,28 +1819,29 @@ static void _remove_assoc(slurmdb_assoc_rec_t *rec)
 		debug("Removed association id:%u user:%s", rec->id, rec->user);
 }
 
+static int _foreach_part_remove_qos(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	slurmdb_qos_rec_t *rec = arg;
+
+	if (part_ptr->qos_ptr == rec) {
+		info("Partition %s's QOS %s was just removed, you probably didn't mean for this to happen unless you are also removing the partition.",
+		     part_ptr->name, rec->name);
+		part_ptr->qos_ptr = NULL;
+	}
+
+	return 0;
+}
+
 static void _remove_qos(slurmdb_qos_rec_t *rec)
 {
 	int cnt = 0;
-	list_itr_t *itr;
-	part_record_t *part_ptr;
 	slurmctld_lock_t part_write_lock =
 		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	lock_slurmctld(part_write_lock);
-	if (part_list) {
-		itr = list_iterator_create(part_list);
-		while ((part_ptr = list_next(itr))) {
-			if (part_ptr->qos_ptr != rec)
-				continue;
-			info("Partition %s's QOS %s was just removed, "
-			     "you probably didn't mean for this to happen "
-			     "unless you are also removing the partition.",
-			     part_ptr->name, rec->name);
-			part_ptr->qos_ptr = NULL;
-		}
-		list_iterator_destroy(itr);
-	}
+	if (part_list)
+		(void) list_for_each(part_list, _foreach_part_remove_qos, rec);
 	unlock_slurmctld(part_write_lock);
 
 	bb_g_reconfig();
@@ -1878,31 +1879,28 @@ static void _update_assoc(slurmdb_assoc_rec_t *rec)
 	unlock_slurmctld(job_write_lock);
 }
 
+static int _foreach_part_resize_qos(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+
+	if (part_ptr->allow_qos)
+		qos_list_build(part_ptr->allow_qos,
+			       &part_ptr->allow_qos_bitstr);
+
+	if (part_ptr->deny_qos)
+		qos_list_build(part_ptr->deny_qos,
+			       &part_ptr->deny_qos_bitstr);
+	return 0;
+}
+
 static void _resize_qos(void)
 {
-	list_itr_t *itr;
-	part_record_t *part_ptr;
 	slurmctld_lock_t part_write_lock =
 		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	lock_slurmctld(part_write_lock);
-	if (part_list) {
-		itr = list_iterator_create(part_list);
-		while ((part_ptr = list_next(itr))) {
-			if (part_ptr->allow_qos) {
-				info("got count for %s of %"BITSTR_FMT, part_ptr->name,
-				     bit_size(part_ptr->allow_qos_bitstr));
-				qos_list_build(part_ptr->allow_qos,
-					       &part_ptr->allow_qos_bitstr);
-				info("now count for %s of %"BITSTR_FMT, part_ptr->name,
-				     bit_size(part_ptr->allow_qos_bitstr));
-			}
-			if (part_ptr->deny_qos)
-				qos_list_build(part_ptr->deny_qos,
-					       &part_ptr->deny_qos_bitstr);
-		}
-		list_iterator_destroy(itr);
-	}
+	if (part_list)
+		(void) list_for_each(part_list, _foreach_part_resize_qos, NULL);
 	unlock_slurmctld(part_write_lock);
 }
 
@@ -3461,14 +3459,141 @@ extern void set_slurmctld_state_loc(void)
 		fatal("Incorrect permissions on state save loc: %s", path);
 }
 
+static int _foreach_cache_update_job(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	(void) _update_job_tres(job_ptr, NULL);
+
+	if (job_ptr->assoc_id) {
+		slurmdb_assoc_rec_t assoc_rec = {
+			.id = job_ptr->assoc_id,
+		};
+
+		debug("assoc is %zx (%d) for %pJ",
+		      (size_t)job_ptr->assoc_ptr, job_ptr->assoc_id,
+		      job_ptr);
+
+		if (assoc_mgr_fill_in_assoc(
+			    acct_db_conn, &assoc_rec,
+			    accounting_enforce,
+			    &job_ptr->assoc_ptr, true)) {
+			verbose("Invalid association id %u for %pJ",
+				job_ptr->assoc_id, job_ptr);
+			/* not a fatal error, association could have
+			 * been removed */
+		}
+
+		debug("now assoc is %zx (%d) for %pJ",
+		      (size_t)job_ptr->assoc_ptr, job_ptr->assoc_id,
+		      job_ptr);
+	}
+
+	if (job_ptr->qos_list) {
+		list_flush(job_ptr->qos_list);
+		char *token, *last = NULL;
+		char *tmp_qos_req = xstrdup(job_ptr->details->qos_req);
+		slurmdb_qos_rec_t *qos_ptr = NULL;
+
+		token = strtok_r(tmp_qos_req, ",", &last);
+		while (token) {
+			slurmdb_qos_rec_t qos_rec = {
+				.name = token,
+			};
+			if ((assoc_mgr_fill_in_qos(
+				     acct_db_conn, &qos_rec,
+				     accounting_enforce,
+				     &qos_ptr,
+				     true)) != SLURM_SUCCESS) {
+				verbose("Invalid qos (%u) for %pJ",
+					job_ptr->qos_id, job_ptr);
+				/* not a fatal error, qos could have
+				 * been removed */
+			} else
+				list_append(job_ptr->qos_list, qos_ptr);
+			token = strtok_r(NULL, ",", &last);
+		}
+		xfree(tmp_qos_req);
+
+		if (list_count(job_ptr->qos_list)) {
+			list_sort(job_ptr->qos_list, priority_sort_qos_desc);
+			/* If we are pending we want the highest prio */
+			if (IS_JOB_PENDING(job_ptr)) {
+				job_ptr->qos_ptr = list_peek(job_ptr->qos_list);
+				job_ptr->qos_id = job_ptr->qos_ptr->id;
+			} else {
+				job_ptr->qos_ptr = list_find_first(
+					job_ptr->qos_list,
+					slurmdb_find_qos_in_list,
+					&job_ptr->qos_id);
+				if (!job_ptr->qos_ptr) {
+					verbose("Invalid qos (%u) for %pJ from qos_req '%s'",
+						job_ptr->qos_id,
+						job_ptr,
+						job_ptr->details->qos_req);
+					goto use_qos_id;
+				}
+			}
+		} else
+			FREE_NULL_LIST(job_ptr->qos_list);
+	} else if (job_ptr->qos_id) {
+use_qos_id: ; /* must be a blank ; for older compilers (el7) */
+		slurmdb_qos_rec_t qos_rec = {
+			.id = job_ptr->qos_id,
+		};
+
+		if ((assoc_mgr_fill_in_qos(
+			     acct_db_conn, &qos_rec,
+			     accounting_enforce,
+			     &job_ptr->qos_ptr,
+			     true)) != SLURM_SUCCESS) {
+			verbose("Invalid qos (%u) for %pJ",
+				job_ptr->qos_id, job_ptr);
+			/* not a fatal error, qos could have
+			 * been removed */
+		}
+	}
+
+	return 0;
+}
+
+static int _foreach_cache_update_part(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+
+	if (part_ptr->allow_qos)
+		qos_list_build(part_ptr->allow_qos,
+			       &part_ptr->allow_qos_bitstr);
+
+	if (part_ptr->deny_qos)
+		qos_list_build(part_ptr->deny_qos,
+			       &part_ptr->deny_qos_bitstr);
+
+	if (part_ptr->qos_char) {
+		slurmdb_qos_rec_t qos_rec = {
+			.name = part_ptr->qos_char,
+		};
+
+		part_ptr->qos_ptr = NULL;
+		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					  accounting_enforce,
+					  &part_ptr->qos_ptr,
+					  true) != SLURM_SUCCESS) {
+			fatal("Partition %s has an invalid qos (%s), "
+			      "please check your configuration",
+			      part_ptr->name, qos_rec.name);
+		}
+	}
+
+	part_update_assoc_lists(part_ptr, NULL);
+
+	return 0;
+}
+
 /* _assoc_cache_mgr - hold out until we have real data from the
  * database so we can reset the job ptr's assoc ptr's */
 static void *_assoc_cache_mgr(void *no_data)
 {
-	list_itr_t *itr = NULL;
-	job_record_t *job_ptr = NULL;
-	part_record_t *part_ptr = NULL;
-	slurmdb_assoc_rec_t assoc_rec;
 	/* Write lock on jobs, nodes and partitions */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
@@ -3549,161 +3674,17 @@ static void *_assoc_cache_mgr(void *no_data)
 		slurm_mutex_unlock(&assoc_cache_mutex);
 	}
 
-	if (!job_list) {
-		/* This could happen in rare occasions, it doesn't
-		 * matter since when the job_list is populated things
-		 * will be in sync.
-		 */
-		debug2("No job list yet");
-		unlock_slurmctld(job_write_lock);
-		goto handle_parts;
-	}
-
-	debug2("got real data from the database "
-	       "refreshing the association ptr's for %d jobs",
-	       list_count(job_list));
 	assoc_mgr_lock(&locks);
-	itr = list_iterator_create(job_list);
-	while ((job_ptr = list_next(itr))) {
-		(void) _update_job_tres(job_ptr, NULL);
-
-		if (job_ptr->assoc_id) {
-			memset(&assoc_rec, 0,
-			       sizeof(slurmdb_assoc_rec_t));
-			assoc_rec.id = job_ptr->assoc_id;
-
-			debug("assoc is %zx (%d) for %pJ",
-			      (size_t)job_ptr->assoc_ptr, job_ptr->assoc_id,
-			      job_ptr);
-
-			if (assoc_mgr_fill_in_assoc(
-				    acct_db_conn, &assoc_rec,
-				    accounting_enforce,
-				    (slurmdb_assoc_rec_t **)
-				    &job_ptr->assoc_ptr, true)) {
-				verbose("Invalid association id %u for %pJ",
-					job_ptr->assoc_id, job_ptr);
-				/* not a fatal error, association could have
-				 * been removed */
-			}
-
-			debug("now assoc is %zx (%d) for %pJ",
-			      (size_t)job_ptr->assoc_ptr, job_ptr->assoc_id,
-			      job_ptr);
-		}
-		if (job_ptr->qos_list) {
-			list_flush(job_ptr->qos_list);
-			char *token, *last = NULL;
-			char *tmp_qos_req = xstrdup(job_ptr->details->qos_req);
-			slurmdb_qos_rec_t *qos_ptr = NULL;
-
-			token = strtok_r(tmp_qos_req, ",", &last);
-			while (token) {
-				slurmdb_qos_rec_t qos_rec = {
-					.name = token,
-				};
-				if ((assoc_mgr_fill_in_qos(
-					     acct_db_conn, &qos_rec,
-					     accounting_enforce,
-					     &qos_ptr,
-					     true)) != SLURM_SUCCESS) {
-					verbose("Invalid qos (%u) for %pJ",
-						job_ptr->qos_id, job_ptr);
-					/* not a fatal error, qos could have
-					 * been removed */
-				} else
-					list_append(job_ptr->qos_list, qos_ptr);
-				token = strtok_r(NULL, ",", &last);
-			}
-			xfree(tmp_qos_req);
-
-			if (list_count(job_ptr->qos_list)) {
-				list_sort(job_ptr->qos_list,
-					  priority_sort_qos_desc);
-				/* If we are pending we want the highest prio */
-				if (IS_JOB_PENDING(job_ptr)) {
-					job_ptr->qos_ptr =
-						list_peek(job_ptr->qos_list);
-					job_ptr->qos_id = job_ptr->qos_ptr->id;
-				} else {
-					job_ptr->qos_ptr = list_find_first(
-						job_ptr->qos_list,
-						slurmdb_find_qos_in_list,
-						&job_ptr->qos_id);
-					if (!job_ptr->qos_ptr) {
-						verbose("Invalid qos (%u) for %pJ from qos_req '%s'",
-							job_ptr->qos_id,
-							job_ptr,
-							job_ptr->details->
-							qos_req);
-						goto use_qos_id;
-					}
-				}
-			} else
-				FREE_NULL_LIST(job_ptr->qos_list);
-		} else if (job_ptr->qos_id) {
-use_qos_id: ; /* must be a blank ; for older compilers (el7) */
-			slurmdb_qos_rec_t qos_rec = {
-				.id = job_ptr->qos_id,
-			};
-
-			if ((assoc_mgr_fill_in_qos(
-				    acct_db_conn, &qos_rec,
-				    accounting_enforce,
-				    (slurmdb_qos_rec_t **)&job_ptr->qos_ptr,
-				    true))
-			   != SLURM_SUCCESS) {
-				verbose("Invalid qos (%u) for %pJ",
-					job_ptr->qos_id, job_ptr);
-				/* not a fatal error, qos could have
-				 * been removed */
-			}
-		}
-	}
-	list_iterator_destroy(itr);
-
-handle_parts:
-	if (!part_list) {
-		/* This could happen in rare occasions, it doesn't
-		 * matter since when the job_list is populated things
-		 * will be in sync.
-		 */
-		debug2("No part list yet");
-		goto end_it;
+	if (job_list) {
+		debug2("got real data from the database refreshing the association ptr's for %d jobs",
+		       list_count(job_list));
+		(void) list_for_each(job_list, _foreach_cache_update_job, NULL);
 	}
 
-	itr = list_iterator_create(part_list);
-	while ((part_ptr = list_next(itr))) {
-		if (part_ptr->allow_qos)
-			qos_list_build(part_ptr->allow_qos,
-				       &part_ptr->allow_qos_bitstr);
-
-		if (part_ptr->deny_qos)
-			qos_list_build(part_ptr->deny_qos,
-				       &part_ptr->deny_qos_bitstr);
-
-		if (part_ptr->qos_char) {
-			slurmdb_qos_rec_t qos_rec;
-
-			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
-			qos_rec.name = part_ptr->qos_char;
-			part_ptr->qos_ptr = NULL;
-			if (assoc_mgr_fill_in_qos(
-				    acct_db_conn, &qos_rec, accounting_enforce,
-				    (slurmdb_qos_rec_t **)&part_ptr->qos_ptr,
-				    true)
-			    != SLURM_SUCCESS) {
-				fatal("Partition %s has an invalid qos (%s), "
-				      "please check your configuration",
-				      part_ptr->name, qos_rec.name);
-			}
-		}
-
-		part_update_assoc_lists(part_ptr, NULL);
+	if (part_list) {
+		(void) list_for_each(part_list, _foreach_cache_update_part,
+				     NULL);
 	}
-	list_iterator_destroy(itr);
-
-end_it:
 
 	set_cluster_tres(true);
 
@@ -4037,6 +4018,16 @@ static int _init_dep_job_ptr(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_restore_job_dependencies(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if (job_ptr->details && job_ptr->details->depend_list)
+		list_for_each(job_ptr->details->depend_list,
+			      _init_dep_job_ptr, NULL);
+	return 0;
+}
+
 /*
  * Restore dependency job pointers.
  *
@@ -4049,19 +4040,12 @@ static int _init_dep_job_ptr(void *object, void *arg)
  */
 static void _restore_job_dependencies(void)
 {
-	job_record_t *job_ptr;
-	list_itr_t *job_iterator;
 	slurmctld_lock_t job_fed_lock = {.job = WRITE_LOCK, .fed = READ_LOCK};
 
 	lock_slurmctld(job_fed_lock);
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (job_ptr->details && job_ptr->details->depend_list)
-			list_for_each(job_ptr->details->depend_list,
-				      _init_dep_job_ptr, NULL);
-	}
-	list_iterator_destroy(job_iterator);
+	(void) list_for_each(job_list, _foreach_restore_job_dependencies, NULL);
+
 	unlock_slurmctld(job_fed_lock);
 }
 
