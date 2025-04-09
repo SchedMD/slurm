@@ -306,7 +306,6 @@ static void         _update_qos(slurmdb_qos_rec_t *rec);
 static void _usage(void);
 static void _verify_clustername(void);
 static void *       _wait_primary_prog(void *arg);
-static void _listeners_unquiesce(void);
 
 static void _send_reconfig_replies(void)
 {
@@ -1626,7 +1625,7 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 		return on_backup_msg(con, msg, arg);
 }
 
-static void _listeners_quiesce(void)
+extern void listeners_quiesce(void)
 {
 	slurm_mutex_lock(&listeners.mutex);
 
@@ -1654,7 +1653,7 @@ static void _listeners_quiesce(void)
 	slurm_mutex_unlock(&listeners.mutex);
 }
 
-static void _listeners_unquiesce(void)
+extern void listeners_unquiesce(void)
 {
 	slurm_mutex_lock(&listeners.mutex);
 
@@ -2412,7 +2411,7 @@ static void *_slurmctld_background(void *no_data)
 			struct timespec ts = {0, 0};
 
 			/* Listen to new incoming RPCs if not shutting down */
-			_listeners_unquiesce();
+			listeners_unquiesce();
 
 			ts.tv_sec = time(NULL) + 1;
 			slurm_cond_timedwait(&shutdown_cond, &shutdown_mutex,
@@ -2455,7 +2454,7 @@ static void *_slurmctld_background(void *no_data)
 
 		if (slurmctld_config.shutdown_time) {
 			/* Always stop listening when shutdown requested */
-			_listeners_quiesce();
+			listeners_quiesce();
 
 			_flush_rpcs();
 
