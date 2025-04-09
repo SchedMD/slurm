@@ -696,6 +696,10 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 	return conn;
 
 fail:
+	if (conn->s2n_config && (conn->s2n_config != default_config))
+		if (s2n_config_free(conn->s2n_config))
+			on_s2n_error(NULL, s2n_config_free);
+
 	if (!tls_conn_args->defer_blinding) {
 		if (s2n_connection_free(conn->s2n_conn) < 0)
 			on_s2n_error(conn, s2n_connection_free);
