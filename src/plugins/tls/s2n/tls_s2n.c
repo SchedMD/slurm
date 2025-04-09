@@ -413,7 +413,7 @@ extern int init(void)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS)
 		s2n_stack_traces_enabled_set(true);
 
-	if (_load_ca_cert()) {
+	if (!running_in_slurmstepd() && _load_ca_cert()) {
 		error("Could not load trusted certificates for s2n");
 		return SLURM_ERROR;
 	}
