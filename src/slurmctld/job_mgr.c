@@ -9292,6 +9292,13 @@ void job_time_limit(void)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	DEF_TIMERS;
 
+
+	/*
+	 * Not making this list_next loop a list_for_each. This loop unlocks the
+	 * job_write lock if held too long, but that would not unlock the lists
+	 * write lock in a list_for_each. Unless this can be handled this must
+	 * remain a list_next loop.
+	 */
 	job_iterator = list_iterator_create(job_list);
 	START_TIMER;
 	while ((job_ptr = list_next(job_iterator))) {
