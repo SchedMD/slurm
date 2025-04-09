@@ -140,10 +140,7 @@ extern int tls_g_init(void)
 	if (g_context_num > 0)
 		goto done;
 
-	if (running_in_daemon())
-		tls_plugin_list = xstrdup(slurm_conf.tls_type);
-	else
-		tls_plugin_list = xstrdup("none");
+	tls_plugin_list = xstrdup(slurm_conf.tls_type);
 
 	/* ensure none plugin is always loaded */
 	if (!xstrstr(tls_plugin_list, "none"))
