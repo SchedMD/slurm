@@ -342,6 +342,7 @@ static int _add_cert_and_key_to_store(char *cert_pem, uint32_t cert_pem_len,
 
 static int _load_self_cert(void)
 {
+	int rc;
 	char *cert_file, *key_file;
 	char *cert_conf = NULL, *key_conf = NULL;
 	char *default_cert_path = NULL, *default_key_path = NULL;
@@ -443,12 +444,13 @@ static int _load_self_cert(void)
 	}
 	xfree(key_file);
 
-	if (_add_cert_and_key_to_store(cert_buf->head, cert_buf->size,
-				       key_buf->head, key_buf->size)) {
-		return SLURM_ERROR;
-	}
+	rc = _add_cert_and_key_to_store(cert_buf->head, cert_buf->size,
+					key_buf->head, key_buf->size);
 
-	return SLURM_SUCCESS;
+	FREE_NULL_BUFFER(cert_buf);
+	FREE_NULL_BUFFER(key_buf);
+
+	return rc;
 }
 
 extern int init(void)
