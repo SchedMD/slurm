@@ -66,6 +66,8 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static struct s2n_config *config = NULL;
 
+static struct s2n_cert_chain_and_key *cert_and_key = NULL;
+
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 	pthread_mutex_t lock;
@@ -321,8 +323,6 @@ static int _load_ca_cert(void)
 static int _add_cert_and_key_to_store(char *cert_pem, uint32_t cert_pem_len,
 				      char *key_pem, uint32_t key_pem_len)
 {
-	struct s2n_cert_chain_and_key *cert_and_key;
-
 	if (!(cert_and_key = s2n_cert_chain_and_key_new())) {
 		on_s2n_error(NULL, s2n_cert_chain_and_key_new);
 		return SLURM_ERROR;
@@ -511,6 +511,10 @@ extern int fini(void)
 
 	if (s2n_config_free(config))
 		on_s2n_error(NULL, s2n_config_free);
+
+	if (cert_and_key &&
+	    (s2n_cert_chain_and_key_free(cert_and_key) != S2N_SUCCESS))
+		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
 
 	if (s2n_cleanup_final())
 		on_s2n_error(NULL, s2n_cleanup_final);
