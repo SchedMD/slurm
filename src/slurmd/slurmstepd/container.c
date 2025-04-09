@@ -63,7 +63,6 @@
 #define SLURM_CONTAINER_STDOUT "/tmp/slurm/stdout"
 #define SLURM_CONTAINER_STDERR "/tmp/slurm/stderr"
 
-#define SLURM_CONTAINER_SPOOL_DIR_PATTERN "%m"
 #define SLURM_CONTAINER_BATCH_STEP_PATTERN "oci-job%j-batch"
 #define SLURM_CONTAINER_INTERACT_STEP_PATTERN "oci-job%j-interactive"
 #define SLURM_CONTAINER_EXTERN_STEP_PATTERN "oci-job%j-extern"
@@ -600,12 +599,21 @@ static char *_generate_spooldir_pattern(stepd_step_rec_t *step,
 {
 	const char *step_id = NULL;
 	const char *task_id = NULL;
-	const char *parent = NULL;
+	char *parent = NULL;
 
-	if (oci_conf->container_path)
-		return xstrdup(oci_conf->container_path);
-
-	parent = SLURM_CONTAINER_SPOOL_DIR_PATTERN;
+	if (oci_conf->container_path) {
+		parent = xstrdup(oci_conf->container_path);
+	} else if (conf->spooldir) {
+#ifdef MULTIPLE_SLURMD
+		parent = slurm_conf_expand_slurmd_path(conf->spooldir,
+						       conf->node_name,
+						       conf->hostname);
+#else /* !MULTIPLE_SLURMD */
+		parent = xstrdup(conf->spooldir);
+#endif /* !MULTIPLE_SLURMD */
+	} else {
+		parent = xstrdup(DEFAULT_SPOOLDIR);
+	}
 
 	if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		step_id = SLURM_CONTAINER_BATCH_STEP_PATTERN;
