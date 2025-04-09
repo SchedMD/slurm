@@ -9221,15 +9221,22 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 	return true;
 }
 
+static int _foreach_het_job_configuring_test(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+
+	if (IS_JOB_CONFIGURING(het_job))
+		return 1;
+	return 0;
+}
+
 /*
  * For non-hetjob, return true if this job is configuring.
  * For hetjob, return true if any component of the job is configuring.
  */
 static bool _het_job_configuring_test(job_record_t *job_ptr)
 {
-	job_record_t *het_job_leader, *het_job;
-	list_itr_t *iter;
-	bool result = false;
+	job_record_t *het_job_leader;
 
 	if (IS_JOB_CONFIGURING(job_ptr))
 		return true;
@@ -9247,16 +9254,9 @@ static bool _het_job_configuring_test(job_record_t *job_ptr)
 		return false;
 	}
 
-	iter = list_iterator_create(het_job_leader->het_job_list);
-	while ((het_job = list_next(iter))) {
-		if (IS_JOB_CONFIGURING(het_job)) {
-			result = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return result;
+	return list_find_first(het_job_leader->het_job_list,
+			       _foreach_het_job_configuring_test,
+			       NULL);
 }
 
 /*
