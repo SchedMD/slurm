@@ -150,7 +150,7 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 				break;
 			case 'e':
 				xstrfmtcatat(buffer, &offset, "%s/%s",
-					     c->spool_dir,
+					     c->task_spool_dir,
 					     SLURM_CONTAINER_ENV_FILE);
 				break;
 			case 'j':
@@ -559,8 +559,8 @@ static int _generate_container_paths(stepd_step_rec_t *step)
 		c->mount_spool_dir = xstrdup("/var/run/slurm/");
 	}
 
-	xfree(c->spool_dir);
-	c->spool_dir = _generate_spooldir(step, NULL);
+	if (!c->spool_dir)
+		c->spool_dir = _generate_spooldir(step, NULL);
 
 	if ((rc = _mkpath(c->spool_dir, step->uid, step->gid)))
 		fatal("%s: unable to create spool directory %s: %s",
@@ -663,15 +663,15 @@ extern void container_task_init(stepd_step_rec_t *step,
 		return;
 	}
 
-	xassert(c->spool_dir);
-	xfree(c->spool_dir);
+	if (c->task_spool_dir || !c->spool_dir)
+		fatal_abort("task spool dir already set or spool dir not set");
 
-	/* re-generate out the spool_dir now we know the task */
-	c->spool_dir = _generate_spooldir(step, task);
+	/* generate the task_spool_dir now we know the task */
+	c->task_spool_dir = _generate_spooldir(step, task);
 
-	if ((rc = _mkpath(c->spool_dir, step->uid, step->gid)))
+	if ((rc = _mkpath(c->task_spool_dir, step->uid, step->gid)))
 		fatal("%s: unable to create spool directory %s: %s",
-		      __func__, c->spool_dir, slurm_strerror(rc));
+		      __func__, c->task_spool_dir, slurm_strerror(rc));
 }
 
 static char *_get_config_path(stepd_step_rec_t *step)
@@ -1085,6 +1085,9 @@ extern void container_run(stepd_step_rec_t *step,
 		return;
 	}
 
+	if (!c->spool_dir || !c->task_spool_dir)
+		fatal_abort("spool directory not populated");
+
 	if (oci_conf->env_exclude_set) {
 		char **env = env_array_exclude((const char **) step->env,
 					       &oci_conf->env_exclude);
@@ -1100,7 +1103,7 @@ extern void container_run(stepd_step_rec_t *step,
 		char *jconfig = NULL;
 
 		/* create new config.json in spooldir */
-		xstrfmtcat(jconfig, "%s/config.json", c->spool_dir);
+		xstrfmtcat(jconfig, "%s/config.json", c->task_spool_dir);
 
 		if ((rc = _modify_config(step, task)))
 			fatal("%s: configuring container failed: %s",
@@ -1126,7 +1129,7 @@ extern void container_run(stepd_step_rec_t *step,
 		 * correct config.json
 		 */
 		xfree(c->bundle);
-		c->bundle = xstrdup(c->spool_dir);
+		c->bundle = xstrdup(c->task_spool_dir);
 
 		xfree(out);
 		xfree(jconfig);
@@ -1138,7 +1141,7 @@ extern void container_run(stepd_step_rec_t *step,
 			   NEWLINE_TERMINATED_ENV_FILE);
 
 		/* keep _generate_pattern() in sync with this path */
-		xstrfmtcat(envfile, "%s/%s", c->spool_dir,
+		xstrfmtcat(envfile, "%s/%s", c->task_spool_dir,
 			   SLURM_CONTAINER_ENV_FILE);
 
 		if ((rc = env_array_to_file(envfile, (const char **) step->env,
@@ -1168,10 +1171,10 @@ extern void container_run(stepd_step_rec_t *step,
 		environ = env;
 	}
 
-	debug4("%s: setting cwd from %s to %s",
-	       __func__, step->cwd, c->spool_dir);
+	debug4("%s: setting cwd from %s to task spooldir: %s",
+	       __func__, step->cwd, c->task_spool_dir);
 	xfree(step->cwd);
-	step->cwd = xstrdup(c->spool_dir);
+	step->cwd = xstrdup(c->task_spool_dir);
 
 	_generate_patterns(step, task);
 
@@ -1201,18 +1204,23 @@ extern void cleanup_container(stepd_step_rec_t *step)
 	if (oci_conf->disable_cleanup)
 		goto done;
 
+	if (!c->spool_dir)
+		c->spool_dir = _generate_spooldir(step, NULL);
+
 	if (step->node_tasks > 0) {
 		/* clear every config.json and task dir */
 		for (int i = 0; i < step->node_tasks; i++) {
-			xfree(c->spool_dir);
-			c->spool_dir = _generate_spooldir(step, step->task[i]);
+			xfree(c->task_spool_dir);
+			c->task_spool_dir =
+				_generate_spooldir(step, step->task[i]);
+
 			_generate_patterns(step, step->task[i]);
 
 			if (!oci_conf->ignore_config_json) {
 				char *jconfig = NULL;
 
 				xstrfmtcat(jconfig, "%s/config.json",
-					   c->spool_dir);
+					   c->task_spool_dir);
 
 				if ((unlink(jconfig) < 0) && (errno != ENOENT))
 					error("unlink(%s): %m", jconfig);
@@ -1222,7 +1230,7 @@ extern void cleanup_container(stepd_step_rec_t *step)
 			if (oci_conf->create_env_file) {
 				char *envfile = NULL;
 
-				xstrfmtcat(envfile, "%s/%s", c->spool_dir,
+				xstrfmtcat(envfile, "%s/%s", c->task_spool_dir,
 					   SLURM_CONTAINER_ENV_FILE);
 
 				if (unlink(envfile) && (errno != ENOENT))
@@ -1231,15 +1239,12 @@ extern void cleanup_container(stepd_step_rec_t *step)
 				xfree(envfile);
 			}
 
-			if (rmdir(c->spool_dir) && (errno != ENOENT))
-				error("rmdir(%s): %m", c->spool_dir);
-			xfree(c->spool_dir);
+			if (rmdir(c->task_spool_dir) && (errno != ENOENT))
+				error("rmdir(%s): %m", c->task_spool_dir);
 		}
-	}
 
-	/* swap to non-task spool_dir */
-	xfree(c->spool_dir);
-	c->spool_dir = _generate_spooldir(step, NULL);
+		xfree(c->task_spool_dir);
+	}
 
 	if (rmdir(c->spool_dir) && (errno != ENOENT))
 		error("rmdir(%s): %m", c->spool_dir);

@@ -118,7 +118,8 @@ typedef struct {
 	data_t *config; /* OCI Container config.json contents */
 	char *mount_spool_dir; /* target path to mount container spool dir */
 	char *rootfs; /* path to container rootfs */
-	char *spool_dir; /* path to container spool dir */
+	char *spool_dir; /* path to slurmd's spool dir for container */
+	char *task_spool_dir; /* path to slurmd's spool dir for container task */
 } step_container_t;
 
 typedef struct {
