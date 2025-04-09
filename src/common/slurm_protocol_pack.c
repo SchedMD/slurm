@@ -7931,6 +7931,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack16(msg->num_io_port, buffer);
 		for (i = 0; i < msg->num_io_port; i++)
 			pack16(msg->io_port[i], buffer);
+		packstr(msg->alloc_tls_cert, buffer);
 		pack32(msg->profile, buffer);
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
@@ -8426,6 +8427,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 			for (i = 0; i < msg->num_io_port; i++)
 				safe_unpack16(&msg->io_port[i], buffer);
 		}
+		safe_unpackstr(&msg->alloc_tls_cert, buffer);
 		safe_unpack32(&msg->profile, buffer);
 		safe_unpackstr(&msg->task_prolog, buffer);
 		safe_unpackstr(&msg->task_epilog, buffer);

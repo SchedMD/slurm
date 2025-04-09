@@ -2171,6 +2171,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 
 	FREE_NULL_LIST(msg->options);
 
+	xfree(msg->alloc_tls_cert);
 	xfree(msg->tres_bind);
 	xfree(msg->tres_per_task);
 	xfree(msg->tres_freq);
