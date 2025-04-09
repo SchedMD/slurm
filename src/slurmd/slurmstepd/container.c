@@ -602,6 +602,9 @@ static char *_generate_spooldir_pattern(stepd_step_rec_t *step,
 	const char *task_id = NULL;
 	const char *parent = NULL;
 
+	if (oci_conf->container_path)
+		return xstrdup(oci_conf->container_path);
+
 	parent = SLURM_CONTAINER_SPOOL_DIR_PATTERN;
 
 	if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
@@ -627,13 +630,8 @@ static char *_generate_spooldir(stepd_step_rec_t *step,
 				stepd_step_task_info_t *task)
 {
 	int id = -1;
-	char **argv = NULL, *pattern, *path;
-
-	if (oci_conf->container_path) {
-		pattern = xstrdup(oci_conf->container_path);
-	} else {
-		pattern = _generate_spooldir_pattern(step, task);
-	}
+	char **argv = NULL, *path = NULL;
+	char *pattern = _generate_spooldir_pattern(step, task);
 
 	if (task) {
 		id = task->id;
