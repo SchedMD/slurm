@@ -260,6 +260,15 @@ typedef struct {
 	uid_t uid;
 } foreach_kill_hetjob_t;
 
+typedef struct {
+	job_record_t *het_job_leader;
+	uint32_t job_return_code;
+	bool node_fail;
+	bool requeue;
+	int rc;
+	uid_t uid;
+} foreach_complete_hetjob_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -6255,6 +6264,28 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_het_job_complete(void *x, void *arg)
+{
+	job_record_t *het_job_ptr = x;
+	foreach_complete_hetjob_t *foreach_complete_hetjob = arg;
+	job_record_t *het_job_leader = foreach_complete_hetjob->het_job_leader;
+	int rc;
+
+	if (het_job_leader->het_job_id != het_job_ptr->het_job_id) {
+		error("%s: Bad het_job_list for %pJ",
+		      __func__, het_job_leader);
+		return 0;
+	}
+	rc = _job_complete(het_job_ptr,
+			   foreach_complete_hetjob->uid,
+			   foreach_complete_hetjob->requeue,
+			   foreach_complete_hetjob->node_fail,
+			   foreach_complete_hetjob->job_return_code);
+	if (rc != SLURM_SUCCESS)
+		foreach_complete_hetjob->rc = rc;
+
+	return 0;
+}
 
 /*
  * job_complete - note the normal termination the specified job
@@ -6270,9 +6301,8 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			bool node_fail, uint32_t job_return_code)
 {
-	job_record_t *job_ptr, *het_job_ptr;
-	list_itr_t *iter;
-	int rc, rc1;
+	job_record_t *job_ptr;
+	int rc;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
@@ -6290,20 +6320,19 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	}
 
 	if (job_ptr->het_job_list) {
-		rc = SLURM_SUCCESS;
-		iter = list_iterator_create(job_ptr->het_job_list);
-		while ((het_job_ptr = list_next(iter))) {
-			if (job_ptr->het_job_id != het_job_ptr->het_job_id) {
-				error("%s: Bad het_job_list for %pJ",
-				      __func__, job_ptr);
-				continue;
-			}
-			rc1 = _job_complete(het_job_ptr, uid, requeue,
-					    node_fail, job_return_code);
-			if (rc1 != SLURM_SUCCESS)
-				rc = rc1;
-		}
-		list_iterator_destroy(iter);
+		foreach_complete_hetjob_t foreach_complete_hetjob = {
+			.het_job_leader = job_ptr,
+			.job_return_code = job_return_code,
+			.node_fail = node_fail,
+			.requeue = requeue,
+			.rc = SLURM_SUCCESS,
+			.uid = uid,
+		};
+		(void) list_for_each(job_ptr->het_job_list,
+				     _foreach_het_job_complete,
+				     &foreach_complete_hetjob);
+
+		rc = foreach_complete_hetjob.rc;
 	} else {
 		rc = _job_complete(job_ptr, uid, requeue, node_fail,
 				   job_return_code);
