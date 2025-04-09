@@ -434,7 +434,7 @@ static int _load_self_cert(void)
 	 * everyone.
 	 */
 	if (_check_file_permissions(key_file, S_IRWXO, check_owner)) {
-		xfree(cert_file);
+		xfree(key_file);
 		FREE_NULL_BUFFER(cert_buf);
 		return SLURM_ERROR;
 	}
