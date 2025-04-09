@@ -857,20 +857,20 @@ Minimalist Dockerfile to generate a image with OpenMPI and PMIx to test basic MP
 <h4>Dockerfile</h4>
 <pre>
 FROM almalinux:latest
-RUN dnf -y update && dnf -y upgrade && dnf install -y yum-utils && dnf config-manager --set-enabled powertools
-RUN dnf -y install make automake gcc gcc-c++ kernel-devel bzip2 python3 wget libevent-devel hwloc-devel munge-devel
+RUN dnf -y update && dnf -y upgrade && dnf install -y epel-release && dnf -y update
+RUN dnf -y install make automake gcc gcc-c++ kernel-devel bzip2 python3 wget libevent-devel hwloc-devel
 
 WORKDIR /usr/local/src/
-RUN wget 'https://github.com/openpmix/openpmix/releases/download/v4.2.2/pmix-4.2.2.tar.bz2' -O - | tar -xvjf -
-WORKDIR /usr/local/src/pmix-4.2.2/
+RUN wget --quiet 'https://github.com/openpmix/openpmix/releases/download/v5.0.7/pmix-5.0.7.tar.bz2' -O - | tar --no-same-owner -xvjf -
+WORKDIR /usr/local/src/pmix-5.0.7/
 RUN ./configure && make -j && make install
 
 WORKDIR /usr/local/src/
-RUN wget --inet4-only 'https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.0rc9.tar.gz' -O - | tar -xvzf -
-WORKDIR /usr/local/src/openmpi-5.0.0rc9
+RUN wget --quiet --inet4-only 'https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.7.tar.bz2' -O - | tar --no-same-owner -xvjf -
+WORKDIR /usr/local/src/openmpi-5.0.7/
 RUN ./configure --disable-pty-support --enable-ipv6 --without-slurm --with-pmix --enable-debug && make -j && make install
 
-WORKDIR /usr/local/src/openmpi-5.0.0rc9/examples
+WORKDIR /usr/local/src/openmpi-5.0.7/examples
 RUN make && cp -v hello_c ring_c connectivity_c spc_example /usr/local/bin
 </pre>
 
