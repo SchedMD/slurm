@@ -269,6 +269,12 @@ typedef struct {
 	uid_t uid;
 } foreach_complete_hetjob_t;
 
+typedef struct {
+	char *names;
+	char *names_pos;
+	part_record_t *part_ptr;
+} foreach_rebuild_names_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -6547,6 +6553,24 @@ fini:
 	return rc;
 }
 
+static int _foreach_rebuild_part_names(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	foreach_rebuild_names_t *foreach_rebuild_names = arg;
+
+	if (!foreach_rebuild_names->names)
+		foreach_rebuild_names->part_ptr = part_ptr;
+	else
+		xstrcatat(foreach_rebuild_names->names,
+			  &foreach_rebuild_names->names_pos,
+			  ",");
+	xstrcatat(foreach_rebuild_names->names,
+		  &foreach_rebuild_names->names_pos,
+		  part_ptr->name);
+
+	return 0;
+}
+
 static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
 			  list_t **part_pptr_list, char **err_msg)
 {
@@ -6628,18 +6652,15 @@ static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
 		}
 		rc = SLURM_SUCCESS;	/* At least some partition usable */
 		if (rebuild_name_list) {
-			part_ptr = NULL;
+			foreach_rebuild_names_t foreach_rebuild_names = { 0 };
+			(void) list_for_each(part_ptr_list,
+					     _foreach_rebuild_part_names,
+					     &foreach_rebuild_names);
+			part_ptr = foreach_rebuild_names.part_ptr;
 			xfree(job_desc->partition);
-			iter = list_iterator_create(part_ptr_list);
-			while ((part_ptr_tmp = list_next(iter))) {
-				if (job_desc->partition)
-					xstrcat(job_desc->partition, ",");
-				else
-					part_ptr = part_ptr_tmp;
-				xstrcat(job_desc->partition,
-					part_ptr_tmp->name);
-			}
-			list_iterator_destroy(iter);
+			job_desc->partition = foreach_rebuild_names.names;
+			foreach_rebuild_names.names = NULL;
+
 			if (!part_ptr) {
 				rc = ESLURM_PARTITION_NOT_AVAIL;
 				goto fini;
