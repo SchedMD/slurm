@@ -10084,34 +10084,33 @@ end_it:
 	return 1;		/* Purge the job */
 }
 
+static int _foreach_is_part_visible(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	part_record_t **visible_parts = arg;
+
+	for (int i = 0; visible_parts[i]; i++) {
+		if (visible_parts[i] == part_ptr) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
 /* Determine if ALL partitions associated with a job are hidden */
 static bool _all_parts_hidden(job_record_t *job_ptr,
 			      part_record_t **visible_parts)
 {
-	bool rc;
-	list_itr_t *part_iterator;
-	part_record_t *part_ptr;
-
 	if (job_ptr->part_ptr_list) {
-		rc = true;
-		part_iterator = list_iterator_create(part_list);
-		while (rc && (part_ptr = list_next(part_iterator))) {
-			for (int i = 0; visible_parts[i]; i++) {
-				if (visible_parts[i] == part_ptr) {
-					rc = false;
-					break;
-				}
-			}
-		}
-		list_iterator_destroy(part_iterator);
-		return rc;
+		if (list_find_first(part_list, _foreach_is_part_visible,
+				    visible_parts))
+			return false;
+		return true;
 	}
 
 	if (job_ptr->part_ptr) {
-		for (int i = 0; visible_parts[i]; i++) {
-			if (visible_parts[i] == job_ptr->part_ptr)
-				return false;
-		}
+		if (_foreach_is_part_visible(job_ptr->part_ptr, visible_parts))
+			return false;
 	}
 
 	return true;
