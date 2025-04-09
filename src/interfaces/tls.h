@@ -85,8 +85,14 @@ extern char *tls_conn_mode_to_str(tls_conn_mode_t mode);
 
 /*
  * Returns true if the default plugin is not tls/none.
+ * The default plugin is used for RPC traffic.
  */
 extern bool tls_enabled(void);
+
+/*
+ * Returns true if a plugin besides tls/none is supported.
+ */
+extern bool tls_supported(void);
 
 extern int tls_g_init(void);
 extern int tls_g_fini(void);

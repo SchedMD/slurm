@@ -121,6 +121,13 @@ extern char *tls_conn_mode_to_str(tls_conn_mode_t mode)
 	return "INVALID";
 }
 
+extern bool tls_supported(void)
+{
+	xassert(ops);
+
+	return (g_context_num > 1);
+}
+
 extern bool tls_enabled(void)
 {
 	xassert(ops);
