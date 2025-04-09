@@ -149,8 +149,6 @@ void run_backup(void)
 
 	slurm_thread_create_detached(_trigger_slurmctld_event, NULL);
 
-	conmgr_unquiesce(__func__);
-
 	/* wait for the heartbeat file to exist before starting */
 	while (!get_last_heartbeat(NULL) &&
 	       (slurmctld_config.shutdown_time == 0)) {
@@ -161,6 +159,8 @@ void run_backup(void)
 	for (i = 0; ((i < 5) && (slurmctld_config.shutdown_time == 0)); i++) {
 		sleep(1);       /* Give the primary slurmctld set-up time */
 	}
+
+	listeners_unquiesce();
 
 	/* repeatedly ping ControlMachine */
 	while (slurmctld_config.shutdown_time == 0) {
@@ -244,6 +244,8 @@ void run_backup(void)
 		}
 	}
 
+	listeners_quiesce();
+
 	if (slurmctld_config.shutdown_time != 0) {
 		/*
 		 * Since pidfile is created as user root (its owner is
@@ -274,7 +276,6 @@ void run_backup(void)
 	trigger_backup_ctld_as_ctrl();
 
 	pthread_kill(pthread_self(), SIGTERM);
-	conmgr_quiesce(__func__);
 
 	/*
 	 * Expressly shutdown the agent. The agent can in whole or in part
