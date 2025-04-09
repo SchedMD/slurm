@@ -76,6 +76,7 @@ typedef struct {
 	struct s2n_connection *s2n_conn;
 	/* absolute time shutdown() delayed until (instead of sleep()ing) */
 	timespec_t delay;
+	struct s2n_config *s2n_config;
 } tls_conn_t;
 
 /*
@@ -588,7 +589,31 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 		return NULL;
 	}
 
-	if (s2n_connection_set_config(conn->s2n_conn, default_config) < 0) {
+	if (tls_conn_args->cert) {
+		log_flag(TLS, "%s: using cert to create connection:\n%s",
+			 plugin_type, tls_conn_args->cert);
+
+		/* Use new config with only "cert" loaded in trust store */
+		if (!(conn->s2n_config = _create_config())) {
+			error("Failed to create new config for connection");
+		}
+
+		if (s2n_config_add_pem_to_trust_store(conn->s2n_config,
+						      tls_conn_args->cert)) {
+			on_s2n_error(conn, s2n_config_add_pem_to_trust_store);
+			goto fail;
+		}
+	} else {
+		log_flag(TLS, "%s: no certificate provided for new connection. Using default trust store.",
+			 plugin_type);
+		/*
+		 * Use default trust store containing only "ca_cert_file" and/or
+		 * system defaults if configured
+		 */
+		conn->s2n_config = default_config;
+	}
+
+	if (s2n_connection_set_config(conn->s2n_conn, conn->s2n_config) < 0) {
 		on_s2n_error(conn, s2n_connection_set_config);
 		goto fail;
 	}
