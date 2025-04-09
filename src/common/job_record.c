@@ -223,6 +223,7 @@ extern void job_record_delete(void *job_entry)
 	xfree(job_ptr->admin_comment);
 	xfree(job_ptr->alias_list);
 	xfree(job_ptr->alloc_node);
+	xfree(job_ptr->alloc_tls_cert);
 	job_record_free_null_array_recs(job_ptr);
 	if (job_ptr->array_recs) {
 		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
@@ -2261,6 +2262,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->resp_host, buffer);
 
 		pack16(dump_job_ptr->alloc_resp_port, buffer);
+		packstr(dump_job_ptr->alloc_tls_cert, buffer);
 		pack16(dump_job_ptr->other_port, buffer);
 		pack16(dump_job_ptr->resv_port_cnt, buffer);
 
@@ -2726,6 +2728,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpackstr(&job_ptr->resp_host, buffer);
 
 		safe_unpack16(&job_ptr->alloc_resp_port, buffer);
+		safe_unpackstr(&job_ptr->alloc_tls_cert, buffer);
 		safe_unpack16(&job_ptr->other_port, buffer);
 		safe_unpack16(&job_ptr->resv_port_cnt, buffer);
 

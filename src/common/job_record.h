@@ -249,6 +249,9 @@ struct job_record {
 	char    *admin_comment;		/* administrator's arbitrary comment */
 	char	*alias_list;		/* node name to address aliases */
 	char    *alloc_node;		/* local node making resource alloc */
+	char *alloc_tls_cert;		/* TLS certificate for client that is
+					 * getting/has allocation
+					 * (srun, salloc,etc.) */
 	uint16_t alloc_resp_port;	/* RESPONSE_RESOURCE_ALLOCATION port */
 	uint32_t alloc_sid;		/* local sid making resource alloc */
 	uint32_t array_job_id;		/* job_id of a job array or 0 if N/A */
