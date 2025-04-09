@@ -425,6 +425,7 @@ static int _load_self_cert(void)
 	if (!key_file && !(key_file = get_extra_conf_path(default_key_path))) {
 		error("Failed to get %s path", default_key_path);
 		xfree(key_file);
+		FREE_NULL_BUFFER(cert_buf);
 		return SLURM_ERROR;
 	}
 	/*
@@ -434,12 +435,14 @@ static int _load_self_cert(void)
 	 */
 	if (_check_file_permissions(key_file, S_IRWXO, check_owner)) {
 		xfree(cert_file);
+		FREE_NULL_BUFFER(cert_buf);
 		return SLURM_ERROR;
 	}
 	if (!(key_buf = create_mmap_buf(key_file))) {
 		error("%s: Could not load private key file (%s): %m",
 		      plugin_type, key_file);
 		xfree(key_file);
+		FREE_NULL_BUFFER(cert_buf);
 		return SLURM_ERROR;
 	}
 	xfree(key_file);
