@@ -343,7 +343,6 @@ static int _is_sslv3_handshake(const void *buf, const size_t n)
 
 	protocol_version |= p[1] << 8;
 	protocol_version |= p[2];
-	protocol_version = ntohs(protocol_version);
 
 	if ((protocol_version < PROTOCOL_VERSION_MIN) ||
 	    (protocol_version > PROTOCOL_VERSION_MAX))
@@ -351,7 +350,6 @@ static int _is_sslv3_handshake(const void *buf, const size_t n)
 
 	length |= p[3] << 8;
 	length |= p[4];
-	length = ntohl(length);
 
 	if ((length < HEADER_LENGTH_MIN) || (length > HEADER_LENGTH_MAX))
 		return ENOENT;
