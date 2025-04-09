@@ -275,6 +275,20 @@ typedef struct {
 	part_record_t *part_ptr;
 } foreach_rebuild_names_t;
 
+typedef struct {
+	bool any_check;
+	slurmdb_assoc_rec_t *assoc_ptr;
+	job_desc_msg_t *job_desc;
+	uint32_t max_nodes_orig;
+	uint32_t max_time;
+	uint32_t min_nodes_orig;
+	slurmdb_qos_rec_t *qos_ptr;
+	list_t *qos_ptr_list;
+	int rc;
+	bitstr_t *req_bitmap;
+	uid_t submit_uid;
+} foreach_valid_part_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -6688,6 +6702,55 @@ fini:
 	return rc;
 }
 
+static int _foreach_valid_part(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	foreach_valid_part_t *foreach_valid_part = arg;
+	int rc;
+
+	/*
+	 * Associations should have already be checked before
+	 * this. It is not allowed to have a multiple partition
+	 * request with partition based associations.
+	 */
+	rc = _part_access_check(part_ptr,
+				foreach_valid_part->job_desc,
+				foreach_valid_part->req_bitmap,
+				foreach_valid_part->submit_uid,
+				foreach_valid_part->qos_ptr,
+				foreach_valid_part->qos_ptr_list,
+				foreach_valid_part->assoc_ptr ?
+				foreach_valid_part->assoc_ptr->acct : NULL);
+
+	if ((rc != SLURM_SUCCESS) &&
+	    ((rc == ESLURM_ACCESS_DENIED) ||
+	     (rc == ESLURM_USER_ID_MISSING) ||
+	     (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ALL))) {
+		foreach_valid_part->rc = rc;
+		return -1;
+	} else if (rc != SLURM_SUCCESS) {
+		foreach_valid_part->rc = rc;
+	} else {
+		foreach_valid_part->any_check = true;
+	}
+
+	/* Set to success since we found a usable partition */
+	if (foreach_valid_part->any_check &&
+	    (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY))
+		foreach_valid_part->rc = SLURM_SUCCESS;
+
+	foreach_valid_part->min_nodes_orig =
+		MIN(foreach_valid_part->min_nodes_orig,
+		    part_ptr->min_nodes_orig);
+	foreach_valid_part->max_nodes_orig =
+		MAX(foreach_valid_part->max_nodes_orig,
+		    part_ptr->max_nodes_orig);
+	foreach_valid_part->max_time =
+		MAX(foreach_valid_part->max_time, part_ptr->max_time);
+
+	return 0;
+}
+
 static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			   bitstr_t *req_bitmap, part_record_t *part_ptr,
 			   list_t *part_ptr_list,
@@ -6696,7 +6759,6 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			   list_t *qos_ptr_list)
 {
 	int rc = SLURM_SUCCESS;
-	part_record_t *part_ptr_tmp;
 	uint32_t min_nodes_orig = INFINITE, max_nodes_orig = 1;
 	uint32_t max_time = 0;
 	bool any_check = false;
@@ -6706,61 +6768,39 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 
 	/* Change partition pointer(s) to alternates as needed */
 	if (part_ptr_list) {
-		int fail_rc = SLURM_SUCCESS;
-		list_itr_t *iter = list_iterator_create(part_ptr_list);
-
-		while ((part_ptr_tmp = list_next(iter))) {
-			/*
-			 * Associations should have already be checked before
-			 * this. It is not allowed to have a multiple partition
-			 * request with partition based associations.
-			 */
-			rc = _part_access_check(part_ptr_tmp, job_desc,
-						req_bitmap, submit_uid,
-						qos_ptr, qos_ptr_list,
-						assoc_ptr ?
-						assoc_ptr->acct : NULL);
-
-			if ((rc != SLURM_SUCCESS) &&
-			    ((rc == ESLURM_ACCESS_DENIED) ||
-			     (rc == ESLURM_USER_ID_MISSING) ||
-			     (slurm_conf.enforce_part_limits ==
-			      PARTITION_ENFORCE_ALL))) {
-				fail_rc = rc;
-				break;
-			} else if (rc != SLURM_SUCCESS) {
-				fail_rc = rc;
-			} else {
-				any_check = true;
-			}
-
-			/* Set to success since we found a usable partition */
-			if (any_check && slurm_conf.enforce_part_limits ==
-			    PARTITION_ENFORCE_ANY)
-				fail_rc = SLURM_SUCCESS;
-
-			min_nodes_orig = MIN(min_nodes_orig,
-					     part_ptr_tmp->min_nodes_orig);
-			max_nodes_orig = MAX(max_nodes_orig,
-					     part_ptr_tmp->max_nodes_orig);
-			max_time = MAX(max_time, part_ptr_tmp->max_time);
-		}
-		list_iterator_destroy(iter);
+		foreach_valid_part_t foreach_valid_part = {
+			.any_check = any_check,
+			.assoc_ptr = assoc_ptr,
+			.job_desc = job_desc,
+			.max_nodes_orig = 1,
+			.max_time = 0,
+			.min_nodes_orig = INFINITE,
+			.qos_ptr = qos_ptr,
+			.qos_ptr_list = qos_ptr_list,
+			.req_bitmap = req_bitmap,
+			.submit_uid = submit_uid,
+		};
+		(void) list_for_each(part_ptr_list, _foreach_valid_part,
+				     &foreach_valid_part);
 
 		if (list_is_empty(part_ptr_list) ||
 		    (slurm_conf.enforce_part_limits &&
-		     (fail_rc != SLURM_SUCCESS))) {
+		     (foreach_valid_part.rc != SLURM_SUCCESS))) {
 			if (slurm_conf.enforce_part_limits ==
 			    PARTITION_ENFORCE_ALL)
-				rc = fail_rc;
+				rc = foreach_valid_part.rc;
 			else if (slurm_conf.enforce_part_limits ==
 				 PARTITION_ENFORCE_ANY && !any_check)
-				rc = fail_rc;
+				rc = foreach_valid_part.rc;
 			else {
 				rc = ESLURM_PARTITION_NOT_AVAIL;
 			}
 			goto fini;
 		}
+		any_check = foreach_valid_part.any_check;
+		min_nodes_orig = foreach_valid_part.min_nodes_orig;
+		max_nodes_orig = foreach_valid_part.max_nodes_orig;
+		max_time = foreach_valid_part.max_time;
 		rc = SLURM_SUCCESS;	/* At least some partition usable */
 	} else {
 		min_nodes_orig = part_ptr->min_nodes_orig;
