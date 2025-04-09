@@ -549,7 +549,15 @@ extern int add_connection(conmgr_con_type_t type,
 	con_assign_flag(con, FLAG_READ_EOF, !has_in);
 	con_assign_flag(con, FLAG_IS_FIFO, is_fifo);
 	con_assign_flag(con, FLAG_IS_CHR, is_chr);
-	con_assign_flag(con, FLAG_WAIT_ON_FINGERPRINT, events->on_fingerprint);
+
+	/*
+	 * Check for TLS fingerprint if connection is not already flagged as a
+	 * TLS connection and the fingerprint callback is present.
+	 */
+	con_assign_flag(con, FLAG_WAIT_ON_FINGERPRINT,
+			(events->on_fingerprint &&
+			 !con_flag(con, FLAG_TLS_CLIENT) &&
+			 !con_flag(con, FLAG_TLS_SERVER)));
 
 	if (!is_listen) {
 		con->in = create_buf(xmalloc(BUFFER_START_SIZE),
