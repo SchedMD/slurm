@@ -1000,4 +1000,12 @@ extern void data_parser_g_release_references(data_parser_t *parser,
  */
 extern bool data_parser_g_is_complex(data_parser_t *parser);
 
+/*
+ * Dump the data flags the parser is configure with (i.e. +complex) into dst
+ * IN parser - parser to query
+ * IN/OUT dst - populate dst
+ * RET - SLURM_SUCCESS on success else error
+ */
+extern int data_parser_g_dump_flags(data_parser_t *parser, data_t *dst);
+
 #endif

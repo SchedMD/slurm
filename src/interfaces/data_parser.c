@@ -93,6 +93,7 @@ typedef struct {
 				   data_t *schemas);
 	void (*release_refs)(void *arg, void **references_ptr);
 	bool (*is_complex)(void *arg);
+	int (*dump_flags)(void *arg, data_t *dst);
 } parse_funcs_t;
 
 typedef struct {
@@ -117,6 +118,7 @@ static const char *parse_syms[] = {
 	"data_parser_p_populate_parameters",
 	"data_parser_p_release_references",
 	"data_parser_p_is_complex",
+	"data_parser_p_dump_flags",
 };
 
 static plugins_t *plugins = NULL;
@@ -970,4 +972,22 @@ extern bool data_parser_g_is_complex(data_parser_t *parser)
 	xassert(parser->plugin_offset < plugins->count);
 
 	return funcs->is_complex(parser->arg);
+}
+
+extern int data_parser_g_dump_flags(data_parser_t *parser, data_t *dst)
+{
+	const parse_funcs_t *funcs;
+
+	if (!parser)
+		return EINVAL;
+
+	xassert(data_get_type(dst));
+	xassert(parser->magic == PARSE_MAGIC);
+	xassert(plugins && (plugins->magic == PLUGINS_MAGIC));
+	xassert(parser->plugin_offset < plugins->count);
+	xassert(plugins->functions[parser->plugin_offset]);
+
+	funcs = plugins->functions[parser->plugin_offset];
+
+	return funcs->dump_flags(parser->arg, dst);
 }
