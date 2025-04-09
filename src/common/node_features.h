@@ -60,6 +60,11 @@ extern void node_features_build_list_eq(void);
 extern void node_features_build_list_ne(void);
 
 /*
+ * Build a list of active features available in the job nodes
+ */
+extern void node_features_build_active_list(job_record_t *job_ptr);
+
+/*
  * Update active_feature_list or avail_feature_list
  * feature_list IN - list to update: active_feature_list or avail_feature_list
  * new_features IN - New active_features

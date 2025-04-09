@@ -251,6 +251,27 @@ extern void node_features_update_list(list_t *feature_list, char *new_features,
 	node_features_updated = true;
 }
 
+extern void node_features_build_active_list(job_record_t *job_ptr)
+{
+	node_record_t *node_ptr;
+	char *tmp_str, *token, *saveptr = NULL;
+
+	active_feature_list = list_create(_list_delete_feature);
+
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
+		if (node_ptr->features_act) {
+			tmp_str = xstrdup(node_ptr->features_act);
+			for (token = strtok_r(tmp_str, ",", &saveptr); token;
+			     token = strtok_r(NULL, ",", &saveptr)) {
+				_add_config_feature_inx(active_feature_list,
+							token, node_ptr->index);
+			}
+			xfree(tmp_str);
+		}
+	}
+}
+
 extern void node_features_free_lists(void)
 {
 	FREE_NULL_LIST(active_feature_list);
