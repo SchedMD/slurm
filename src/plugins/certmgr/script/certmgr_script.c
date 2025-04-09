@@ -49,11 +49,6 @@ const char plugin_name[] = "Certificate manager script plugin";
 const char plugin_type[] = "certmgr/script";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-#define GEN_CSR_SCRIPT_KEY "generate_csr_script="
-#define GET_TOKEN_SCRIPT_KEY "get_node_token_script="
-#define SIGN_CSR_SCRIPT_KEY "sign_csr_script="
-#define VALID_NODE_SCRIPT_KEY "validate_node_script="
-
 typedef enum {
 	GEN_CSR,
 	GET_TOKEN,
