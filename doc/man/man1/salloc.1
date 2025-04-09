@@ -564,9 +564,14 @@ MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
 .br
 MM/DD[/YY]\-HH:MM[:SS]
 .br
-YYYY\-MM\-DD[THH:MM[:SS]]]
+YYYY\-MM\-DD[THH:MM[:SS]]
 .br
 now[+\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
+.br
+midnight, elevenses (11 AM), noon, fika (3 PM), teatime (4 PM), or tomorrow
+
+One or more time strings may be specified (e.g., 'tomorrow18:00'). If there is
+a conflict between them, the last one will silently take precedence.
 .IP
 
 .TP
