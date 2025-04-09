@@ -64,7 +64,7 @@ const char plugin_type[] = "tls/s2n";
 const uint32_t plugin_id = TLS_PLUGIN_S2N;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static struct s2n_config *config = NULL;
+static struct s2n_config *default_config = NULL;
 
 static struct s2n_cert_chain_and_key *cert_and_key = NULL;
 
@@ -309,7 +309,7 @@ static int _load_ca_cert(void)
 	}
 	xfree(cert_file);
 
-	if (s2n_config_add_pem_to_trust_store(config, cert_buf->head)) {
+	if (s2n_config_add_pem_to_trust_store(default_config, cert_buf->head)) {
 		on_s2n_error(NULL, s2n_config_add_pem_to_trust_store);
 		FREE_NULL_BUFFER(cert_buf);
 		return SLURM_ERROR;
@@ -342,8 +342,8 @@ static int _add_cert_and_key_to_store(char *cert_pem, uint32_t cert_pem_len,
 	 *	It is not recommended to free or modify the `cert_key_pair` as
 	 *	any subsequent changes will be reflected in the config.
 	 */
-	if (s2n_config_add_cert_chain_and_key_to_store(config, cert_and_key) <
-	    0) {
+	if (s2n_config_add_cert_chain_and_key_to_store(default_config,
+						       cert_and_key) < 0) {
 		on_s2n_error(NULL, s2n_config_add_cert_chain_and_key_to_store);
 		return SLURM_ERROR;
 	}
@@ -476,7 +476,7 @@ extern int init(void)
 		return errno;
 	}
 
-	if (!(config = _create_config())) {
+	if (!(default_config = _create_config())) {
 		error("Could not create configuration for s2n");
 		return errno;
 	}
@@ -505,11 +505,11 @@ extern int init(void)
 
 extern int fini(void)
 {
-	if (config && s2n_config_free_cert_chain_and_key(config)) {
+	if (default_config && s2n_config_free_cert_chain_and_key(default_config)) {
 		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
 	}
 
-	if (s2n_config_free(config))
+	if (s2n_config_free(default_config))
 		on_s2n_error(NULL, s2n_config_free);
 
 	if (cert_and_key &&
@@ -588,7 +588,7 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 		return NULL;
 	}
 
-	if (s2n_connection_set_config(conn->s2n_conn, config) < 0) {
+	if (s2n_connection_set_config(conn->s2n_conn, default_config) < 0) {
 		on_s2n_error(conn, s2n_connection_set_config);
 		goto fail;
 	}
