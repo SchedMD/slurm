@@ -61,6 +61,7 @@
 #include "src/common/job_features.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
 #include "src/common/parse_time.h"
 #include "src/common/strlcpy.h"
 #include "src/common/timers.h"

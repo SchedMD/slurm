@@ -57,6 +57,7 @@
 #include "src/common/fetch_config.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"

@@ -32,3 +32,38 @@
   *  with Slurm; if not, write to the Free Software Foundation, Inc.,
   *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  \*****************************************************************************/
+
+#include "src/common/bitstring.h"
+#include "src/common/job_record.h"
+#include "src/common/list.h"
+
+extern list_t *active_feature_list; /* currently active node_feature_t's */
+extern list_t *avail_feature_list; /* available node_feature_t's */
+extern bool node_features_updated;
+
+typedef struct node_features {
+	uint32_t magic; /* magic cookie to test data integrity */
+	char *name; /* name of a feature */
+	bitstr_t *node_bitmap; /* bitmap of nodes with this feature */
+} node_feature_t;
+
+/*
+ * For a configuration where available_features == active_features,
+ * build new active and available feature lists
+ */
+extern void build_feature_list_eq(void);
+
+/*
+ * For a configuration where available_features != active_features,
+ * build new active and available feature lists
+ */
+extern void build_feature_list_ne(void);
+
+/*
+ * Update active_feature_list or avail_feature_list
+ * feature_list IN - list to update: active_feature_list or avail_feature_list
+ * new_features IN - New active_features
+ * node_bitmap IN - Nodes with the new active_features value
+ */
+extern void update_feature_list(list_t *feature_list, char *new_features,
+				bitstr_t *node_bitmap);

@@ -58,6 +58,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/forward.h"
+#include "src/common/node_features.h"
 #include "src/common/port_mgr.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_protocol_socket.h"
