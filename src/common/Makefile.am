@@ -75,6 +75,8 @@ libcommon_la_SOURCES =				\
 	net.h					\
 	node_conf.c				\
 	node_conf.h				\
+	node_features.c				\
+	node_features.h				\
 	oci_config.c				\
 	oci_config.h				\
 	openapi.c				\
