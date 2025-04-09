@@ -559,6 +559,29 @@ static void _try_enabling_fm_mtls(void)
 		warning("Fabric Manager mTLS authentication is enabled but a certification bundle was not provided. Server identity will not be verified.");
 }
 
+static int _config_destroy_retries(const char *token, char *arg)
+{
+	uint32_t tmp;
+	char *end_ptr = NULL;
+
+	if (!arg)
+		return SLURM_ERROR;
+
+	errno = 0;
+	tmp = strtoul(arg, &end_ptr, 10);
+	if ((errno != 0) || *end_ptr) {
+		error("Invalid value for %s", token);
+		return SLURM_ERROR;
+	}
+
+	slingshot_config.destroy_retries = tmp;
+
+	log_flag(SWITCH, "[token=%s]: destroy_retries = %u",
+		 token, slingshot_config.destroy_retries);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Mapping between Slingshot limit names, slingshot_limits_set_t offset, maximum
  * values
@@ -696,6 +719,8 @@ extern void slingshot_free_config(void)
 extern bool slingshot_setup_config(const char *switch_params)
 {
 	char *params = NULL, *token, *arg, *save_ptr = NULL;
+	const char destroy_retries[] = "destroy_retries";
+	const size_t size_destroy_retries = sizeof(destroy_retries) - 1;
 	const char vnis[] = "vnis";
 	const size_t size_vnis = sizeof(vnis) - 1;
 	const char tcs[] = "tcs";
@@ -847,6 +872,10 @@ extern bool slingshot_setup_config(const char *switch_params)
 		} else if (!xstrncasecmp(token, fm_mtls_url,
 					 size_fm_mtls_url)) {
 			if (!_config_fm_mtls_url(token, arg))
+				goto err;
+		} else if (!xstrncasecmp(token, destroy_retries,
+					 size_destroy_retries)) {
+			if (_config_destroy_retries(token, arg))
 				goto err;
 		} else {
 			if (!_config_limits(token, &slingshot_config.limits))
