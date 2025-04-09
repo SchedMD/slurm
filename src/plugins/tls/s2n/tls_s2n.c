@@ -306,9 +306,36 @@ static int _load_ca_cert(void)
 	return SLURM_SUCCESS;
 }
 
-static int _load_self_cert(void)
+static int _add_cert_and_key_to_store(char *cert_pem, uint32_t cert_pem_len,
+				      char *key_pem, uint32_t key_pem_len)
 {
 	struct s2n_cert_chain_and_key *cert_and_key;
+
+	if (!(cert_and_key = s2n_cert_chain_and_key_new())) {
+		on_s2n_error(NULL, s2n_cert_chain_and_key_new);
+		return SLURM_ERROR;
+	}
+
+	if (s2n_cert_chain_and_key_load_pem_bytes(cert_and_key,
+						  (uint8_t *) cert_pem,
+						  cert_pem_len,
+						  (uint8_t *) key_pem,
+						  key_pem_len) < 0) {
+		on_s2n_error(NULL, s2n_cert_chain_and_key_load_pem_bytes);
+		return SLURM_ERROR;
+	}
+
+	if (s2n_config_add_cert_chain_and_key_to_store(config, cert_and_key) <
+	    0) {
+		on_s2n_error(NULL, s2n_config_add_cert_chain_and_key_to_store);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _load_self_cert(void)
+{
 	char *cert_file, *key_file;
 	char *cert_conf = NULL, *key_conf = NULL;
 	char *default_cert_path = NULL, *default_key_path = NULL;
@@ -392,22 +419,8 @@ static int _load_self_cert(void)
 	}
 	xfree(key_file);
 
-	if (!(cert_and_key = s2n_cert_chain_and_key_new())) {
-		on_s2n_error(NULL, s2n_cert_chain_and_key_new);
-		return SLURM_ERROR;
-	}
-
-	if (s2n_cert_chain_and_key_load_pem_bytes(
-		    cert_and_key, (uint8_t *) cert_buf->head,
-		    cert_buf->size, (uint8_t *) key_buf->head,
-		    key_buf->size) < 0) {
-		on_s2n_error(NULL, s2n_cert_chain_and_key_load_pem_bytes);
-		return SLURM_ERROR;
-	}
-
-	if (s2n_config_add_cert_chain_and_key_to_store(config,
-						       cert_and_key) < 0) {
-		on_s2n_error(NULL, s2n_config_add_cert_chain_and_key_to_store);
+	if (_add_cert_and_key_to_store(cert_buf->head, cert_buf->size,
+				       key_buf->head, key_buf->size)) {
 		return SLURM_ERROR;
 	}
 
