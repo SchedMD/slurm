@@ -44,6 +44,7 @@
 
 typedef struct {
 	char *(*get_node_token)(char *node_name);
+	int (*get_self_signed_cert)(char **cert_pem, char **key_pem);
 	char *(*generate_csr)(char *node_name);
 	char *(*sign_csr)(char *csr, char *token, node_record_t *node);
 } certmgr_ops_t;
@@ -54,6 +55,7 @@ typedef struct {
  */
 static const char *syms[] = {
 	"certmgr_p_get_node_token",
+	"certmgr_p_get_self_signed_cert",
 	"certmgr_p_generate_csr",
 	"certmgr_p_sign_csr",
 };
@@ -163,6 +165,17 @@ extern char *certmgr_g_get_node_token(char *node_name)
 		return NULL;
 
 	return (*(ops.get_node_token))(node_name);
+}
+
+extern int certmgr_g_get_self_signed_cert(char **cert_pem, char **key_pem)
+{
+	xassert(!running_in_daemon());
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
+
+	return (*(ops.get_self_signed_cert))(cert_pem, key_pem);
 }
 
 extern char *certmgr_g_generate_csr(char *node_name)
