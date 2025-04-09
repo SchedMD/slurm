@@ -385,14 +385,12 @@ static int _is_tls_handshake(const void *buf, const size_t n)
 	length |= p[1] << 16;
 	length |= p[2] << 8;
 	length |= p[3];
-	length = ntohl(length);
 
 	if ((length < HEADER_LENGTH_MIN) || (length > HEADER_LENGTH_MAX))
 		return ENOENT;
 
 	protocol_version |= p[4] << 8;
 	protocol_version |= p[5];
-	protocol_version = ntohs(protocol_version);
 
 	if ((protocol_version < PROTOCOL_VERSION_MIN) ||
 	    (protocol_version > PROTOCOL_VERSION_MAX))
