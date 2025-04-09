@@ -937,7 +937,6 @@ int main(int argc, char **argv)
 
 		/* Set pointers after they have been set */
 		stepmgr_ops.acct_db_conn = acct_db_conn;
-		stepmgr_ops.active_feature_list = active_feature_list;
 		stepmgr_ops.job_list = job_list;
 		stepmgr_ops.up_node_bitmap = up_node_bitmap;
 

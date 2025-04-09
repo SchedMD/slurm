@@ -1159,9 +1159,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		 * FIXME: Add support for AND, OR, etc. here if desired
 		 */
 		node_feature_t *feat_ptr;
-		feat_ptr = list_find_first(stepmgr_ops->active_feature_list,
-					   list_find_feature,
-					   (void *) step_spec->features);
+		feat_ptr =
+			list_find_first(active_feature_list, list_find_feature,
+					(void *) step_spec->features);
 		if (feat_ptr && feat_ptr->node_bitmap)
 			bit_and(nodes_avail, feat_ptr->node_bitmap);
 		else
