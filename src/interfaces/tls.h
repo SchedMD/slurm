@@ -79,6 +79,11 @@ typedef struct {
          *      to tls_g_nego_conn()
          */
         bool defer_negotiation;
+	/*
+	 * server certificate used by TLS_CONN_CLIENT connections when server
+	 * certificate is not signed by a CA in our trust store
+	 */
+	char *cert;
 } tls_conn_args_t;
 
 extern char *tls_conn_mode_to_str(tls_conn_mode_t mode);
