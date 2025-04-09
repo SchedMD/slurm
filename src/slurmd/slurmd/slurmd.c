@@ -529,6 +529,9 @@ main (int argc, char **argv)
 
 static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status != CONMGR_WORK_STATUS_RUN)
+		return;
+
 	if (_get_tls_certificate()) {
 		error("%s: Unable to get TLS certificate", __func__);
 	}
