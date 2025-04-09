@@ -64,6 +64,8 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
+#include "src/interfaces/certmgr.h"
+#include "src/interfaces/tls.h"
 
 #define BUFFER_SIZE 1024
 #define MAX_ALLOC_WAIT 60	/* seconds */
@@ -202,11 +204,20 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		req->alloc_resp_port = listen->port;
 	}
 
+	if (tls_enabled()) {
+		if (certmgr_g_get_self_signed_cert(&req->alloc_tls_cert,
+						   NULL)) {
+			error("Could not get self signed certificate for allocation response");
+			return NULL;
+		}
+	}
+
 	req_msg.msg_type = REQUEST_RESOURCE_ALLOCATION;
 	req_msg.data     = req;
 
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					    working_cluster_rec);
+	xfree(req->alloc_tls_cert);
 
 	if (rc == SLURM_ERROR) {
 		int errnum = errno;
