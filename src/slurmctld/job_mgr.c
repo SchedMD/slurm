@@ -17389,6 +17389,22 @@ static int _resume_job_nodes(job_record_t *job_ptr, bool indf_susp)
 	return rc;
 }
 
+static int _foreach_job_resume_test(void *x, void *arg)
+{
+	job_record_t *test_job_ptr = x;
+	job_record_t *job_ptr = arg;
+
+	if (test_job_ptr->details &&
+	    (test_job_ptr->details->core_spec != NO_VAL16) &&
+	    IS_JOB_RUNNING(test_job_ptr) &&
+	    test_job_ptr->node_bitmap &&
+	    bit_overlap_any(test_job_ptr->node_bitmap, job_ptr->node_bitmap)) {
+		return -1;
+	}
+/* FIXME: Also test for ESLURM_INTERCONNECT_BUSY */
+	return 0;
+}
+
 /*
  * Determine if a job can be resumed.
  * Check for multiple jobs on the same nodes with core specialization.
@@ -17397,28 +17413,14 @@ static int _resume_job_nodes(job_record_t *job_ptr, bool indf_susp)
 static int _job_resume_test(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	list_itr_t *job_iterator;
-	job_record_t *test_job_ptr;
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->core_spec == NO_VAL16) ||
 	    (job_ptr->node_bitmap == NULL))
 		return rc;
 
-	job_iterator = list_iterator_create(job_list);
-	while ((test_job_ptr = list_next(job_iterator))) {
-		if (test_job_ptr->details &&
-		    (test_job_ptr->details->core_spec != NO_VAL16) &&
-		    IS_JOB_RUNNING(test_job_ptr) &&
-		    test_job_ptr->node_bitmap &&
-		    bit_overlap_any(test_job_ptr->node_bitmap,
-				    job_ptr->node_bitmap)) {
-			rc = ESLURM_NODES_BUSY;
-			break;
-		}
-/* FIXME: Also test for ESLURM_INTERCONNECT_BUSY */
-	}
-	list_iterator_destroy(job_iterator);
+	if (list_find_first(job_list, _foreach_job_resume_test, job_ptr))
+		rc = ESLURM_NODES_BUSY;
 
 	return rc;
 }
