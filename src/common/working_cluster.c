@@ -84,8 +84,10 @@ static const struct {
 	char *str;
 } slurmdb_cluster_flags_map[] = {
 	T(CLUSTER_FLAG_EXT, "External"),
+	T(CLUSTER_FLAG_FED, "Federation"),
 	T(CLUSTER_FLAG_FE, "FrontEnd"),
 	T(CLUSTER_FLAG_MULTSD, "MultipleSlurmd"),
+	T(CLUSTER_FLAG_REGISTER, "Registering"),
 	T(CLUSTER_FLAG_INVALID, "INVALID"),
 };
 #undef T
