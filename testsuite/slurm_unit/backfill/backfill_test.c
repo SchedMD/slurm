@@ -368,6 +368,66 @@ START_TEST(test_backfill_3)
 	 */
 }
 END_TEST
+
+/*
+ * Test basic simplest backfiling of licences
+ */
+START_TEST(test_backfill_lic_1)
+{
+	uint32_t now = time(NULL);
+	job_record_t *job_ptr;
+
+	/* job_id, priority, nodes, time_limit	*/
+	__add_job(1, 10, 1, 10, "lic1");
+	__add_job(2, 9, 1, 10, "lic1");
+	__add_job(3, 8, 1, 10, "lic1");
+	__add_job(4, 7, 1, 10, NULL);
+
+	__attempt_backfill();
+	list_for_each(job_list, _print_job, &now);
+
+	job_ptr = find_job_record(1);
+	ck_assert_msg(IS_JOB_RUNNING(job_ptr), "Job 1 RUNNING");
+
+	job_ptr = find_job_record(2);
+	ck_assert_msg(!IS_JOB_RUNNING(job_ptr), "Job 2 !RUNNING");
+
+	job_ptr = find_job_record(3);
+	ck_assert_msg(!IS_JOB_RUNNING(job_ptr), "Job 3 !RUNNING");
+
+	job_ptr = find_job_record(4);
+	ck_assert_msg(IS_JOB_RUNNING(job_ptr), "Job 4 RUNNING");
+}
+
+END_TEST
+
+/*
+ * Test for wrong start_time scenario in Issue 50271
+ */
+START_TEST(test_backfill_lic_2)
+{
+	uint32_t now = time(NULL);
+	job_record_t *job1_ptr, *job2_ptr;
+	part_record_t *part_ptr = find_part_record("test");
+
+	part_ptr->max_share = 1;
+
+	for (int i = 0; i < 12; i++) {
+		/* job_id, priority, nodes, time_limit	*/
+		__add_job(0, 10, 1, 10, "lic2");
+	}
+	__attempt_backfill();
+	list_for_each(job_list, _print_job, &now);
+
+	job1_ptr = find_job_record(7);
+	job2_ptr = find_job_record(12);
+
+	if (job1_ptr->start_time != job2_ptr->start_time)
+		ck_abort_msg("Wrong start_time");
+}
+
+END_TEST
+
 #endif
 
 int main(int argc, char *argv[])
@@ -435,6 +495,9 @@ int main(int argc, char *argv[])
 		tcase_add_test(tc, test_backfill_1);
 		tcase_add_test(tc, test_backfill_2);
 		tcase_add_test(tc, test_backfill_3);
+
+		tcase_add_test(tc, test_backfill_lic_1);
+		tcase_add_test(tc, test_backfill_lic_2);
 
 		suite_add_tcase(s, tc);
 
