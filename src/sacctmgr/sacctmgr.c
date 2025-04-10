@@ -595,18 +595,25 @@ static int _process_command (int argc, char **argv)
 			my_end = parse_time(argv[2], 1);
 		if (argc > 3)
 			archive_data = atoi(argv[3]);
-		if (slurmdb_usage_roll(db_conn, my_start,
-				       my_end, archive_data, NULL)
-		   == SLURM_SUCCESS) {
+		if (slurmdb_usage_roll(db_conn, my_start, my_end, archive_data,
+				       NULL) == SLURM_SUCCESS) {
 			if (commit_check("Would you like to commit rollup?")) {
-				slurmdb_connection_commit(db_conn, 1);
+				exit_code =
+					slurmdb_connection_commit(db_conn, 1);
+				if (exit_code != SLURM_SUCCESS)
+					fprintf(stderr, " Error committing changes: %s\n",
+						slurm_strerror(exit_code));
 			} else {
 				printf(" Rollup Discarded\n");
-				slurmdb_connection_commit(db_conn, 0);
+				exit_code =
+					slurmdb_connection_commit(db_conn, 0);
+				if (exit_code != SLURM_SUCCESS)
+					fprintf(stderr, " Error rolling back changes: %s\n",
+						slurm_strerror(exit_code));
 			}
 		}
-	} else if (xstrncasecmp(argv[0], "shutdown",
-				MAX(command_len, 4)) == 0) {
+	} else if (xstrncasecmp(argv[0], "shutdown", MAX(command_len, 4)) ==
+		   0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
