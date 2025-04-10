@@ -220,7 +220,6 @@ static int  _match_jobid(void *s0, void *s1);
 static void _wait_for_job_running_prolog(uint32_t job_id);
 static int _wait_for_request_launch_prolog(uint32_t job_id,
 					    bool *first_job_run);
-static bool _requeue_setup_env_fail(void);
 
 /*
  *  List of threads waiting for jobs to complete
@@ -2117,14 +2116,6 @@ static int _get_user_env(batch_job_launch_msg_t *req, char *user_name)
 {
 	char **new_env;
 	int i;
-	static time_t config_update = 0;
-	static bool no_env_cache = false;
-
-	if (config_update != slurm_conf.last_update) {
-		no_env_cache = (xstrcasestr(slurm_conf.sched_params,
-					    "no_env_cache"));
-		config_update = slurm_conf.last_update;
-	}
 
 	for (i=0; i<req->envc; i++) {
 		if (xstrcmp(req->environment[i], "SLURM_GET_USER_ENV=1") == 0)
@@ -2135,12 +2126,11 @@ static int _get_user_env(batch_job_launch_msg_t *req, char *user_name)
 
 	verbose("%s: get env for user %s here", __func__, user_name);
 
-	/* Permit up to 120 second delay before using cache file */
-	new_env = env_array_user_default(user_name, 120, 0, no_env_cache);
+	/* Permit delay before failing env retrieval */
+	new_env = env_array_user_default(user_name);
 	if (! new_env) {
-		error("%s: Unable to get user's local environment%s",
-		      __func__, no_env_cache ?
-		      "" : ", running only with passed environment");
+		error("%s: Unable to get user's local environment",
+		      __func__);
 		return -1;
 	}
 
@@ -2713,11 +2703,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	}
 
 	if (_get_user_env(req, user_name) < 0) {
-		bool requeue = _requeue_setup_env_fail();
-		if (requeue) {
-			rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
-			goto done;
-		}
+		rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
+		goto done;
 	}
 	_set_batch_job_limits(msg);
 
@@ -2795,9 +2782,8 @@ done:
 	 *  If job prolog failed or we could not reply,
 	 *  initiate message to slurmctld with current state
 	 */
-	if ((rc == ESLURMD_PROLOG_FAILED)
-	    || (rc == SLURM_COMMUNICATIONS_SEND_ERROR)
-	    || (rc == ESLURMD_SETUP_ENVIRONMENT_ERROR)) {
+	if ((rc == ESLURMD_PROLOG_FAILED) ||
+	    (rc == SLURM_COMMUNICATIONS_SEND_ERROR)) {
 		send_registration_msg(rc);
 	}
 	xfree(user_name);
@@ -2892,6 +2878,8 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	req_msg.job_id = job_id;
 	req_msg.job_id_str = NULL;
 	req_msg.flags = JOB_LAUNCH_FAILED;
+	if (slurm_rc == ESLURMD_SETUP_ENVIRONMENT_ERROR)
+		req_msg.flags |= JOB_GETENV_FAILED;
 	resp_msg.msg_type = REQUEST_JOB_REQUEUE;
 	resp_msg.data = &req_msg;
 	rpc_rc = slurm_send_recv_controller_rc_msg(&resp_msg, &rc,
@@ -6066,21 +6054,4 @@ static void _launch_complete_wait(uint32_t job_id)
 	}
 	slurm_mutex_unlock(&job_state_mutex);
 	_launch_complete_log("job wait", job_id);
-}
-
-static bool
-_requeue_setup_env_fail(void)
-{
-	static time_t config_update = 0;
-	static bool requeue = false;
-
-	if (config_update != slurm_conf.last_update) {
-		requeue = ((xstrcasestr(slurm_conf.sched_params,
-					"no_env_cache") ||
-			    xstrcasestr(slurm_conf.sched_params,
-					"requeue_setup_env_fail")));
-		config_update = slurm_conf.last_update;
-	}
-
-	return requeue;
 }

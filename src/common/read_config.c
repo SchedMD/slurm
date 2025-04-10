@@ -269,7 +269,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"FastSchedule", S_P_UINT16},
 	{"FederationParameters", S_P_STRING},
 	{"FirstJobId", S_P_UINT32},
-	{"GetEnvTimeout", S_P_UINT16},
+	{"GetEnvTimeout", S_P_UINT16, _defunct_option},
 	{"GpuFreqDef", S_P_STRING},
 	{"GresTypes", S_P_STRING},
 	{"GroupUpdateForce", S_P_UINT16},
@@ -2758,7 +2758,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->epilog_msg_time		= NO_VAL;
 	xfree(ctl_conf_ptr->fed_params);
 	ctl_conf_ptr->first_job_id		= NO_VAL;
-	ctl_conf_ptr->get_env_timeout		= 0;
 	xfree(ctl_conf_ptr->gres_plugins);
 	ctl_conf_ptr->group_time		= 0;
 	ctl_conf_ptr->group_force		= 0;
@@ -4050,9 +4049,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->job_submit_plugins, "JobSubmitPlugins",
 			      hashtbl);
-
-	if (!s_p_get_uint16(&conf->get_env_timeout, "GetEnvTimeout", hashtbl))
-		conf->get_env_timeout = DEFAULT_GET_ENV_TIMEOUT;
 
 	(void) s_p_get_uint16(&conf->health_check_interval,
 			      "HealthCheckInterval", hashtbl);

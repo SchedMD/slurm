@@ -1060,7 +1060,7 @@ was not specified) as one task per requested thread.
 .IP
 
 .TP
-\fB\-\-get\-user\-env\fR[=\fItimeout\fR][\fImode\fR]
+\fB\-\-get\-user\-env\fR
 This option will tell sbatch to retrieve the
 login environment variables for the user specified in the \fB\-\-uid\fR option.
 The environment variables are retrieved by running something of this sort
@@ -1068,16 +1068,8 @@ The environment variables are retrieved by running something of this sort
 Be aware that any environment variables already set in sbatch's environment
 will take precedence over any environment variables in the user's
 login environment. Clear any environment variables before calling sbatch
-that you do not want propagated to the spawned program.
-The optional \fItimeout\fR value is in seconds. Default value is 8 seconds.
-The optional \fImode\fR value control the "su" options.
-With a \fImode\fR value of "S", "su" is executed without the "\-" option.
-With a \fImode\fR value of "L", "su" is executed with the "\-" option,
-replicating the login environment.
-If \fImode\fR not specified, the mode established at Slurm build time
-is used.
-Example of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
-"\-\-get\-user\-env=10L", and "\-\-get\-user\-env=S".
+that you do not want propagated to the spawned program. If the user environment
+retrieval fails or times out, the job will be aborted, requeued and held.
 
 \fBNOTE\fR: The explicit or implicit use of \fB--get-user-env\fR relies in
 the capability of being able to create PID and mount namespaces. It is very

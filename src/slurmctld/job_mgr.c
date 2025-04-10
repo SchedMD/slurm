@@ -17971,13 +17971,20 @@ reply:
 
 		/* If job not already held, make it so if needed. */
 		if (!(job_ptr->job_state & JOB_REQUEUE_HOLD) &&
-		    !requeue_nohold_prolog) {
+		    ((!requeue_nohold_prolog || (flags & JOB_GETENV_FAILED)))) {
 			job_ptr->state_reason = WAIT_HELD_USER;
 			xfree(job_ptr->state_desc);
-			job_ptr->state_desc =
-				xstrdup("launch failed requeued held");
-			debug("%s: Holding %pJ due to prolog failure",
-			      __func__, job_ptr);
+			if (flags & JOB_GETENV_FAILED) {
+				job_ptr->state_desc =
+					xstrdup("user env retrieval failed requeued held");
+				debug("%s: Holding %pJ due to user environment retrieval failure or timeout",
+				      __func__, job_ptr);
+			} else {
+				job_ptr->state_desc =
+					xstrdup("launch failed requeued held");
+				debug("%s: Holding %pJ due to prolog failure",
+				      __func__, job_ptr);
+			}
 			job_ptr->priority = 0;
 		}
 	}

@@ -401,8 +401,7 @@ typedef struct {
 	char *extra;			/* --extra			*/
 	uint16_t mail_type;		/* --mail-type			*/
 	char *mail_user;		/* --mail-user			*/
-	int get_user_env_time;		/* --get-user-env[=timeout]	*/
-	int get_user_env_mode;		/* --get-user-env=[S|L]		*/
+	bool get_user_env;		/* --get-user-env		*/
 	char *wckey;			/* workload characterization key */
 	char *reservation;		/* --reservation		*/
 	int resv_port_cnt;		/* --resv_ports			*/

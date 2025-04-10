@@ -97,8 +97,6 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, first_job_id, uint32_t);
 	STORE_FIELD(hv, conf, fs_dampening_factor, uint16_t);
 
-	STORE_FIELD(hv, conf, get_env_timeout, uint16_t);
-
 	if (conf->gres_plugins)
 		STORE_FIELD(hv, conf, gres_plugins, charp);
 
@@ -429,7 +427,6 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, conf_flags, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, first_job_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, fs_dampening_factor, uint16_t, FALSE);
-	FETCH_FIELD(hv, conf, get_env_timeout, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, gres_plugins, charp, FALSE);
 	FETCH_FIELD(hv, conf, group_time, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, group_force, uint16_t, TRUE);

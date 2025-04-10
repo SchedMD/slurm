@@ -267,6 +267,10 @@ enum job_states {
 /* SLURM_BIT(0-7) are already taken with base job_states above */
 #define JOB_LAUNCH_FAILED SLURM_BIT(8)
 /*  was JOB_UPDATE_DB     SLURM_BIT(9), removed v24.11 */
+#define JOB_GETENV_FAILED SLURM_BIT(9) /* Job with --get-user-env or
+					 * equivalent failed or timed out at
+					 * user environment retrieval stage
+					 */
 #define JOB_REQUEUE       SLURM_BIT(10) /* Requeue job in completing state */
 #define JOB_REQUEUE_HOLD  SLURM_BIT(11) /* Requeue any job in hold */
 #define JOB_SPECIAL_EXIT  SLURM_BIT(12) /* Requeue an exit job in hold */
@@ -2974,7 +2978,6 @@ typedef struct {
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint16_t fs_dampening_factor; /* dampening for Fairshare factor */
 	uint16_t getnameinfo_cache_timeout; /* for getnameinfo() cache*/
-	uint16_t get_env_timeout; /* timeout for srun --get-user-env option */
 	char * gres_plugins;	/* list of generic resource plugins */
 	uint16_t group_time;    /* update group time interval */
 	uint16_t group_force;   /* update group/partition info even if no change

@@ -744,9 +744,6 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "FirstJobId", "%u", conf->first_job_id);
 
-	add_key_pair(ret_list, "GetEnvTimeout", "%u sec",
-		     conf->get_env_timeout);
-
 	add_key_pair(ret_list, "GresTypes", "%s", conf->gres_plugins);
 
 	add_key_pair(ret_list, "GpuFreqDef", "%s", conf->gpu_freq_def);

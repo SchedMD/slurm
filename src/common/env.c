@@ -98,7 +98,6 @@ strong_alias(env_unset_environment,	slurm_env_unset_environment);
 typedef struct {
 	char *cmdstr;
 	int *fildes;
-	int mode;
 	bool perform_mount;
 	int rlimit;
 	char **tmp_env;
@@ -1890,23 +1889,6 @@ void env_array_merge_slurm_spank(char ***dest_array, const char **src_array)
 	xfree(value);
 }
 
-/*
- * Strip out trailing carriage returns and newlines
- */
-static void _strip_cr_nl(char *line)
-{
-	int len = strlen(line);
-	char *ptr;
-
-	for (ptr = line+len-1; ptr >= line; ptr--) {
-		if (*ptr=='\r' || *ptr=='\n') {
-			*ptr = '\0';
-		} else {
-			return;
-		}
-	}
-}
-
 /* Return the net count of curly brackets in a string
  * '{' adds one and '}' subtracts one (zero means it is balanced).
  * Special case: return -1 if no open brackets are found */
@@ -1929,11 +1911,6 @@ static int _bracket_cnt(char *value)
  * via the --export-file option in sbatch. The NAME=value entries must
  * be NULL separated to support special characters in the environment
  * definitions.
- *
- * (Note: This is being added to a minor release. For the
- * next major release, it might be a consideration to merge
- * this functionality with that of load_env_cache and update
- * env_cache_builder to use the NULL character.)
  */
 char **env_array_from_file(const char *fname)
 {
@@ -2057,65 +2034,6 @@ rwfail:
 	return rc;
 }
 
-/*
- * Load user environment from a cache file located in
- * <state_save_location>/env_username
- */
-static char **_load_env_cache(const char *username)
-{
-	char fname[PATH_MAX];
-	char *line, name[256], *value;
-	char **env = NULL;
-	FILE *fp;
-	int i;
-
-	i = snprintf(fname, sizeof(fname), "%s/env_cache/%s",
-		     slurm_conf.state_save_location, username);
-	if (i < 0) {
-		error("Environment cache filename overflow");
-		return NULL;
-	}
-	if (!(fp = fopen(fname, "r"))) {
-		error("Could not open user environment cache at %s: %m",
-			fname);
-		return NULL;
-	}
-
-	verbose("Getting cached environment variables at %s", fname);
-	env = env_array_create();
-	line  = xmalloc(ENV_BUFSIZE);
-	value = xmalloc(ENV_BUFSIZE);
-	while (1) {
-		if (!fgets(line, ENV_BUFSIZE, fp))
-			break;
-		_strip_cr_nl(line);
-		if (_env_array_entry_splitter(line, name, sizeof(name),
-					      value, ENV_BUFSIZE) &&
-		    (!_discard_env(name, value))) {
-			if (value[0] == '(') {
-				/* This is a bash function.
-				 * It may span multiple lines */
-				while (_bracket_cnt(value) > 0) {
-					if (!fgets(line, ENV_BUFSIZE, fp))
-						break;
-					_strip_cr_nl(line);
-					if ((strlen(value) + strlen(line)) >
-					    (ENV_BUFSIZE - 2))
-						break;
-					strcat(value, "\n");
-					strcat(value, line);
-				}
-			}
-			env_array_overwrite(&env, name, value);
-		}
-	}
-	xfree(line);
-	xfree(value);
-
-	fclose(fp);
-	return env;
-}
-
 static int _child_fn(void *arg)
 {
 	char **tmp_env = NULL;
@@ -2154,17 +2072,11 @@ static int _child_fn(void *arg)
 	while (fd < child_args->rlimit)
 		close(fd++);
 
-	if (child_args->mode == 1)
-		execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
-	else if (child_args->mode == 2)
-		execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
-	else {	/* Default system configuration */
 #ifdef LOAD_ENV_NO_LOGIN
-		execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
+	execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
 #else
-		execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
+	execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
 #endif
-	}
 	if (devnull >= 0)	/* Avoid Coverity resource leak notification */
 		(void) close(devnull);
 
@@ -2260,23 +2172,18 @@ static bool _ns_disabled()
 
 /*
  * Return an array of strings representing the specified user's default
- * environment variables following a two-prongged approach.
- * 1. Execute (more or less): "/bin/su - <username> -c /usr/bin/env"
+ * environment variables:
+ *    Execute (more or less): "/bin/su - <username> -c /usr/bin/env"
  *    Depending upon the user's login scripts, this may take a very
  *    long time to complete or possibly never return
- * 2. Load the user environment from a cache file. This is used
- *    in the event that option 1 times out.  This only happens if no_cache isn't
- *    set.  If it is set then NULL will be returned if the normal load fails.
  *
- * timeout value is in seconds or zero for default (2 secs)
- * mode is 1 for short ("su <user>"), 2 for long ("su - <user>")
+ * timeout value is in seconds or zero for default (120 secs)
  * On error, returns NULL.
  *
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout, int mode,
-			      bool no_cache)
+char **env_array_user_default(const char *username)
 {
 	char *line = NULL, *last = NULL, name[PATH_MAX], *value, *buffer;
 	char **env = NULL;
@@ -2286,6 +2193,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	char *stepd_path = NULL;
 	int fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem, config_timeout;
+	int timeout = DEFAULT_GET_ENV_TIMEOUT;
 	pid_t child;
 	child_args_t child_args = {0};
 	struct timeval begin, now;
@@ -2297,9 +2205,6 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		error("SlurmdUser must be root to use --get-user-env");
 		return NULL;
 	}
-
-	if (!slurm_conf.get_env_timeout)	/* just read directly from cache */
-		return _load_env_cache(username);
 
 	if (stat(SUCMD, &buf))
 		fatal("Could not locate command: "SUCMD);
@@ -2326,7 +2231,6 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		return NULL;
 	}
 
-	child_args.mode = mode;
 	child_args.fildes = fildes;
 	child_args.username = username;
 	child_args.cmdstr = cmdstr;
@@ -2382,8 +2286,6 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	ufds.events = POLLIN;
 
 	/* Read all of the output from /bin/su into buffer */
-	if (timeout == 0)
-		timeout = slurm_conf.get_env_timeout;	/* != 0 test above */
 	found = 0;
 	buf_read = 0;
 	buffer = xmalloc(ENV_BUFSIZE);
@@ -2456,7 +2358,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	if (!found) {
 		error("Failed to load current user environment variables");
 		xfree(buffer);
-		return no_cache ? _load_env_cache(username) : NULL;
+		return NULL;
 	}
 
 	/* First look for the start token in the output */
@@ -2473,7 +2375,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	if (!found) {
 		error("Failed to get current user environment variables");
 		xfree(buffer);
-		return no_cache ? _load_env_cache(username) : NULL;
+		return NULL;
 	}
 
 	/* Process environment variables until we find the stop token */
@@ -2513,7 +2415,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	if (!found) {
 		error("Failed to get all user environment variables");
 		env_array_free(env);
-		return no_cache ? _load_env_cache(username) : NULL;
+		return NULL;
 	}
 
 	return env;
