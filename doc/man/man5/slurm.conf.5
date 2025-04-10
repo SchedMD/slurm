@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "March 2025" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "April 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -6483,6 +6483,7 @@ Number of cores reserved for system use.
 Depending upon the \fBTaskPluginParam\fR option of \fBSlurmdOffSpec\fR,
 the Slurm daemon slurmd may either be confined to these
 resources (the default) or prevented from using these resources.
+If cgroup/v1 is used, the same applies to the slurmstepd processes.
 Isolation of slurmd from user jobs may improve application performance.
 A job can use these cores if AllowSpecResourcesUsage=yes and the user
 explicitly requests less than the configured CoreSpecCount.
@@ -6531,6 +6532,7 @@ The list will be expanded to include all other CPUs, if any, on the same cores.
 Depending upon the \fBTaskPluginParam\fR option of \fBSlurmdOffSpec\fR,
 the Slurm daemon slurmd may either be confined to these
 resources (the default) or prevented from using these resources.
+If cgroup/v1 is used, the same applies to the slurmstepd processes.
 Isolation of slurmd from user jobs may improve application performance.
 A job can use these cores if AllowSpecResourcesUsage=yes and the user
 explicitly requests less than the number of CPUs in this list.
@@ -6597,8 +6599,10 @@ available for user allocations. Must be less than the amount defined for
 \fBRealMemory\fR.
 If the task/cgroup plugin is configured and that plugin constrains memory
 allocations (i.e. the \fItask/cgroup\fR \fBTaskPlugin\fR is enabled and
-\fBConstrainRAMSpace=yes\fR is set in cgroup.conf), then Slurm compute node
-daemons (slurmd plus slurmstepd) will be allocated the specified memory limit.
+\fBConstrainRAMSpace=yes\fR is set in cgroup.conf), then the slurmd will be
+allocated the specified memory limit. If cgroup/v1 is used the slurmstepd will
+also be allocated the specified memory limit. If cgroup/v2 is used, the
+slurmstepd's consumption is completely dependent on the topology of the job.
 Note that having the Memory set in \fBSelectTypeParameters\fR as any of the
 options that has it as a consumable resource is needed for this option to work.
 The daemons will not be killed if they exhaust the memory allocation
