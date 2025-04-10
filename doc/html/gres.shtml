@@ -8,6 +8,7 @@
 <li><a href="#Configuration">Configuration</a></li>
 <li><a href="#Running_Jobs">Running Jobs</a></li>
 <li><a href="#AutoDetect">AutoDetect</a></li>
+<li><a href="#Accounting">Accounting</a></li>
 <li><a href="#GPU_Management">GPU Management</a></li>
 <li><a href="#MPS_Management">MPS Management</a></li>
 <li><a href="#MIG_Management">MIG Management</a></li>
@@ -232,6 +233,69 @@ device <code class="commandline">geforce_rtx_2060</code>.
 To check your configuration you may run: <code class="commandline">slurmd -G
 </code> This will test and print the gres setup based on the current
 configuration, including any autodetected gres that are being ignored.
+
+<h2 id="Accounting">Accounting
+<a class="slurm_link" href="#Accounting"></a>
+</h2>
+
+<p>GPU memory and GPU utilization can be tracked as
+<a href="https://slurm.schedmd.com/tres.html">TRES</a> for tasks using GPU
+resources. If <code>AccountingStorageTRES=gres/gpu</code> is configured,
+gres/gpumem and gres/gpuutil will automatically be configured and gathered from
+GPU jobs. gres/gpumem and gres/gpuutil can also be set individually when
+gres/gpu is not set.</p>
+
+<p>gres/gpumem and gres/gpuutil are only available for NVIDIA GPUs when using
+<code>AutoDetect=nvml</code>, and AMD GPUs when using
+<code>AutoDetect=rsmi</code>.</p>
+
+<p>NVML does not support utilization metrics for MIGs, so Slurm does not
+provide gpumem or gpuutil accounting for MIG devices. See
+<a href="https://docs.nvidia.com/datacenter/tesla/mig-user-guide/#gpu-utilization-metrics">
+NVIDIA's MIG User Guide</a>.</p>
+
+<p>Here is an example node with two NVIDIA A100 GPUs:</p>
+<pre>
+$ nvidia-smi -L
+GPU 0: NVIDIA A100-PCIE-40GB (UUID: GPU-...)
+GPU 1: NVIDIA A100-PCIE-40GB (UUID: GPU-...)
+</pre>
+
+<p>The following is an excerpt from an example slurm.conf and gres.conf which
+will automatically enable tracking for gres/gpumem and gres/gpuutil.</p>
+
+<p>slurm.conf:</p>
+<pre>
+AccountingStorageTres=gres/gpu
+NodeName=n1 Gres=gpu:a100:2
+</pre>
+
+<p>gres.conf:</p>
+<pre>
+AutoDetect=nvml
+</pre>
+
+<p>Here's an example of a job with two tasks that uses one GPU per task, two
+GPUs total.</p>
+<pre>
+$ srun --tres-per-task=gres/gpu:1 -n2 --gpus=2 --mem=2G gpu_burn
+GPU 0: NVIDIA A100-PCIE-40GB (UUID: GPU-...)
+GPU 0: NVIDIA A100-PCIE-40GB (UUID: GPU-...)
+</pre>
+
+<p>After the job has finished, we can see utilization details of these TRES
+using sacct. Note that there are multiple tasks here and we can use
+TRESUsageIn[Min,Max,Ave,Tot] to examine the "highwater marks" for gpumem and
+gpuutil over all the ranks in the step, as is true for other TRESUsage*
+values:</p>
+<pre>
+$ sacct -j 1277.0 --format=tresusageinave -p
+TRESUsageInAve|
+cpu=00:00:11,energy=0,fs/disk=87613,gres/gpumem=36266M,gres/gpuutil=100,mem=628748K,pages=0,vmem=0|
+$ sacct -j 1277.0 --format=tresusageintot -p
+TRESUsageInTot|
+cpu=00:00:22,energy=0,fs/disk=175227,gres/gpumem=72532M,gres/gpuutil=200,mem=1257496K,pages=0,vmem=0|
+</pre>
 
 <h2 id="GPU_Management">GPU Management
 <a class="slurm_link" href="#GPU_Management"></a>
@@ -623,6 +687,6 @@ which would be the same as if it were a GPU.
 <p>Steps with shards have<code class="commandline">SLURM_SHARDS_ON_NODE</code>
 set indicating the number of shards allocated.</p>
 
-<p style="text-align: center;">Last modified 30 October 2024</p>
+<p style="text-align: center;">Last modified 10 April 2025</p>
 
 <!--#include virtual="footer.txt"-->
