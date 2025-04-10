@@ -145,6 +145,17 @@ int gres_stepmgr_job_alloc(list_t *job_gres_list, list_t **job_gres_list_alloc,
 	return SLURM_SUCCESS;
 }
 
+int gres_stepmgr_job_alloc_whole_node(list_t *job_gres_list,
+				      list_t **job_gres_list_alloc,
+				      list_t *node_gres_list, int node_cnt,
+				      int node_index, int node_offset,
+				      uint32_t job_id, char *node_name,
+				      bitstr_t *core_bitmap, bool new_alloc)
+{
+	debug("%s job_id:%u", __func__, job_id);
+	return SLURM_SUCCESS;
+}
+
 void gres_stepmgr_job_build_details(list_t *job_gres_list, char *nodes,
 				    uint32_t *gres_detail_cnt,
 				    char ***gres_detail_str,

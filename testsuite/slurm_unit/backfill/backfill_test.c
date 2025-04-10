@@ -216,6 +216,8 @@ job_record_t *__add_job(uint32_t job_id, uint32_t priority, uint32_t nodes,
 	job_ptr->details->max_cpus = NO_VAL;
 	job_ptr->details->cpus_per_task = 1;
 	job_ptr->details->task_dist = SLURM_DIST_CYCLIC;
+	job_ptr->details->share_res = 1;
+	job_ptr->details->whole_node = 0;
 	job_ptr->time_limit = time_limit;
 	job_ptr->best_switch = true;
 	job_ptr->limit_set.tres = xcalloc(slurmctld_tres_cnt, sizeof(uint16_t));
@@ -395,6 +397,7 @@ int main(int argc, char *argv[])
 	part_list = list_create(NULL);
 	part_ptr->name = xstrdup("test");
 	part_ptr->node_bitmap = bit_copy(avail_node_bitmap);
+	part_ptr->max_share = 0;
 	list_append(part_list, part_ptr);
 
 	select_g_node_init();
