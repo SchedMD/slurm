@@ -5431,10 +5431,15 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 			      __func__, nodelist);
 			slurm_send_rc_msg(msg, ESLURM_INVALID_NODE_NAME);
 			return;
-		} else {
-			hostlist2bitmap(hostlist, true, &bitmap);
+		} else if ((rc = hostlist2bitmap(hostlist, true, &bitmap))) {
+			error("%s: Can't find nodes requested in REBOOT_NODES request: \"%s\"",
+			      __func__, nodelist);
+			FREE_NULL_BITMAP(bitmap);
 			FREE_NULL_HOSTLIST(hostlist);
+			slurm_send_rc_msg(msg, ESLURM_INVALID_NODE_NAME);
+			return;
 		}
+		FREE_NULL_HOSTLIST(hostlist);
 	}
 
 	cannot_reboot_nodes = bit_alloc(node_record_count);
