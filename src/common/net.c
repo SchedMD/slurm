@@ -330,15 +330,90 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 	return -1;
 }
 
+static const char *_ip_reserved_to_str(const slurm_addr_t *addr)
+{
+	if (addr->ss_family == AF_INET) {
+		const struct sockaddr_in *addr4 = (struct sockaddr_in *) addr;
+		const in_addr_t ipv4 = addr4->sin_addr.s_addr;
+
+		if (ipv4 == INADDR_LOOPBACK)
+			return "localhost";
+		else if (ipv4 == INADDR_ANY)
+			return "*";
+		else if (ipv4 == INADDR_BROADCAST)
+			return "255.255.255.255";
+		else if (ipv4 == INADDR_NONE)
+			return "";
+#ifdef INADDR_DUMMY
+		else if (ipv4 == INADDR_DUMMY)
+			return "192.0.0.8";
+#endif /* INADDR_DUMMY */
+	} else if (addr->ss_family == AF_INET6) {
+		const struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *) addr;
+		const struct in6_addr ipv6 = addr6->sin6_addr;
+
+		/* RFC 3513 Section 2.4 reserved addressees */
+		if (IN6_IS_ADDR_UNSPECIFIED(&ipv6))
+			return "::"; /* the unspecified addresses */
+		else if (IN6_IS_ADDR_LOOPBACK(&ipv6))
+			return "localhost"; /* or "::1" */
+		else if (IN6_ARE_ADDR_EQUAL(&ipv6, &in6addr_any))
+			return "*";
+	}
+
+	return NULL;
+}
+
+static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
+{
+	char *resp = NULL;
+
+	if (addr->ss_family == AF_INET) {
+		const struct sockaddr_in *in = (struct sockaddr_in *) addr;
+		const uint16_t port = ntohs(in->sin_port);
+		char addrbuf[INET_ADDRSTRLEN];
+
+		if (!host &&
+		    inet_ntop(AF_INET, &in->sin_addr, addrbuf, sizeof(addrbuf)))
+			host = addrbuf;
+
+		if (host && port)
+			xstrfmtcat(resp, "%s:%hu", host, port);
+		else if (port)
+			xstrfmtcat(resp, ":%hu", port);
+	} else if (addr->ss_family == AF_INET6) {
+		const struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr;
+		const uint16_t port = ntohs(in6->sin6_port);
+		char addrbuf[INET6_ADDRSTRLEN];
+
+		if (!host && inet_ntop(AF_INET6, &in6->sin6_addr, addrbuf,
+				       sizeof(addrbuf)))
+			host = addrbuf;
+
+		/*
+		 * Construct RFC3986 host port pair:
+		 * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
+		 */
+		if (host && port)
+			xstrfmtcat(resp, "[%s]:%hu", host, port);
+		else if (port)
+			xstrfmtcat(resp, "[::]:%hu", port);
+	}
+
+	return resp;
+}
+
 extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 {
 	int prev_errno = errno;
 	char *resp = NULL;
-	int port = 0;
-	char *host = NULL;
+	const char *rsv_host = NULL;
 
-	if (addr->ss_family == AF_UNSPEC)
+	if (addr->ss_family == AF_UNSPEC) {
+		log_flag(NET, "%s: Cannot resolve socket's unspecified address family.",
+			 __func__);
 		return NULL;
+	}
 
 	if (addr->ss_family == AF_UNIX) {
 		const struct sockaddr_un *addr_un =
@@ -350,24 +425,22 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 		/* path may not be set */
 		if (addr_un->sun_path[0])
 			return xstrdup_printf("unix:%s", addr_un->sun_path);
-		else
-			return NULL;
+		else if (addr_un->sun_path[1]) /* abstract socket */
+			return xstrdup_printf("unix:@%s",
+					      &addr_un->sun_path[1]);
+		else /* path not defined */
+			return xstrdup_printf("unix:");
 	}
 
-	if (addr->ss_family == AF_INET)
-		port = ((struct sockaddr_in *) addr)->sin_port;
-	else if (addr->ss_family == AF_INET6)
-		port = ((struct sockaddr_in6 *) addr)->sin6_port;
-
-	host = xgetnameinfo(addr);
-
-	/* construct RFC3986 host port pair */
-	if (host && port)
-		xstrfmtcat(resp, "[%s]:%d", host, port);
-	else if (port)
-		xstrfmtcat(resp, "[::]:%d", port);
-
-	xfree(host);
+	/* Check for reserved addresses that getnameinfo() won't resolve */
+	if ((rsv_host = _ip_reserved_to_str(addr))) {
+		resp = _fmt_ip_host_port_str(addr, rsv_host);
+	} else {
+		/* Attempt to resolve hostname */
+		char *host = xgetnameinfo(addr);
+		resp = _fmt_ip_host_port_str(addr, host);
+		xfree(host);
+	}
 
 	/*
 	 * Avoid clobbering errno as this function is likely to be used for
