@@ -16354,6 +16354,8 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 	if (!user_set_mem && gres_list && running_cons_tres()) {
 		/* mem_per_[cpu|node] not set, check if mem_per_gres was set */
 		gres_job_state_t gres_js;
+		gres_state_t *gres_state_job;
+		uint32_t gpu_plugin_id;
 		memset(&gres_js, 0, sizeof(gres_js));
 		list_for_each(gres_list, _get_req_gres, &gres_js);
 		if (gres_js.mem_per_gres) {
@@ -16393,6 +16395,31 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 			 * We shouldn't get here.
 			 */
 			return 0;
+		}
+		/*
+		 * If no mem_per_gres was explicitly set
+		 * Set mem_per_gres with DefMemPerGPU
+		 */
+		gpu_plugin_id = gres_get_gpu_plugin_id();
+		gres_state_job = list_find_first(
+			gres_list, gres_find_id, &gpu_plugin_id);
+		if (gres_state_job) {
+			gres_job_state_t *gres_js_gpu =
+				gres_state_job->gres_data;
+			mem_total = NO_VAL64;
+			if (part_ptr && part_ptr->job_defaults_list) {
+				mem_total = slurm_get_def_mem_per_gpu(
+					part_ptr->job_defaults_list);
+			}
+			if ((mem_total == NO_VAL64) &&
+			    slurm_conf.job_defaults_list) {
+				mem_total = slurm_get_def_mem_per_gpu(
+					slurm_conf.job_defaults_list);
+			}
+			if (mem_total != NO_VAL64) {
+				mem_total = mem_total * gres_js_gpu->total_gres;
+				return mem_total;
+			}
 		}
 	}
 
