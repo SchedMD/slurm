@@ -46,9 +46,9 @@ int active_node_record_count;
 slurm_conf_t slurm_conf;
 node_record_t **node_record_table_ptr;
 list_t *part_list;
+list_t *resv_list = NULL;
 int node_record_count;
 slurmctld_config_t slurmctld_config;
-list_t *cluster_license_list = NULL;
 uint32_t max_powered_nodes = NO_VAL;
 
 bitstr_t *asap_node_bitmap = NULL; /* bitmap of rebooting asap nodes */
@@ -194,7 +194,7 @@ static int _print_job(void *x, void *arg)
 }
 
 job_record_t *__add_job(uint32_t job_id, uint32_t priority, uint32_t nodes,
-			uint32_t time_limit)
+			uint32_t time_limit, char *licenses)
 {
 	static uint32_t last_job_id = 0;
 
@@ -225,6 +225,13 @@ job_record_t *__add_job(uint32_t job_id, uint32_t priority, uint32_t nodes,
 	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = 1;
 	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = job_ptr->details->min_cpus;
 
+	if (licenses) {
+		bool valid = true;
+		job_ptr->license_list =
+			license_validate(licenses, true, true, NULL, &valid);
+		job_ptr->licenses = xstrdup(licenses);
+	}
+
 	list_append(job_list, job_ptr);
 
 	return job_ptr;
@@ -247,9 +254,9 @@ void load_test()
 		job_id = strtoul(buffer, &p, 10);
 		priority = strtoul(p, &p, 10);
 		nodes = strtoul(p, &p, 10);
-		time_limit = strtoul(p, NULL, 10);
+		time_limit = strtoul(p, &p, 10);
 
-		__add_job(job_id, priority, nodes, time_limit);
+		__add_job(job_id, priority, nodes, time_limit, p);
 	}
 	fclose(f);
 }
@@ -266,10 +273,10 @@ START_TEST(test_backfill_1)
 	job_record_t *job_ptr;
 	uint32_t now = time(NULL);
 
-	/* job_id, priority, nodes, time_limit	*/
-	__add_job(0, 10, 1, 10);
-	__add_job(0, 5, 32, 10);
-	__add_job(0, 1, 31, 5);
+	/* job_id, priority, nodes, time_limit, licenses */
+	__add_job(0, 10, 1, 10, NULL);
+	__add_job(0, 5, 32, 10, NULL);
+	__add_job(0, 1, 31, 5, NULL);
 
 	__attempt_backfill();
 
@@ -298,16 +305,16 @@ START_TEST(test_backfill_2)
 {
 	uint32_t now = time(NULL);
 
-	/* job_id, priority, nodes, time_limit	*/
-	__add_job(0, 10, 6, 10);
-	__add_job(0, 9, 27, 15);
-	__add_job(0, 8, 28, 14);
-	__add_job(0, 7, 29, 13);
-	__add_job(0, 6, 30, 12);
-	__add_job(0, 5, 5, 10);
-	__add_job(0, 5, 5, 10);
+	/* job_id, priority, nodes, time_limit, licenses */
+	__add_job(0, 10, 6, 10, NULL);
+	__add_job(0, 9, 27, 15, NULL);
+	__add_job(0, 8, 28, 14, NULL);
+	__add_job(0, 7, 29, 13, NULL);
+	__add_job(0, 6, 30, 12, NULL);
+	__add_job(0, 5, 5, 10, NULL);
+	__add_job(0, 5, 5, 10, NULL);
 	/* This job would jump ahead of the priority 6 job */
-	__add_job(0, 1, 30, 11);
+	__add_job(0, 1, 30, 11, NULL);
 
 	__attempt_backfill();
 	list_for_each(job_list, _print_job, &now);
@@ -343,8 +350,8 @@ START_TEST(test_backfill_3)
 	job_record_t *job2_ptr;
 
 	for (int i = 0; i < 1000; i++) {
-		/* job_id, priority, nodes, time_limit	*/
-		__add_job(0, 10, 6, 10);
+		/* job_id, priority, nodes, time_limit, licenses */
+		__add_job(0, 10, 6, 10, NULL);
 	}
 
 	__attempt_backfill();
@@ -409,6 +416,10 @@ int main(int argc, char *argv[])
 	power_up_node_bitmap = bit_copy(avail_node_bitmap);
 
 	job_list = list_create(_list_delete_job);
+
+	resv_list = list_create(NULL);
+
+	license_init(slurm_conf.licenses);
 
 	select_g_reconfigure();
 

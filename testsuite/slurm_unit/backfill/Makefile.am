@@ -24,6 +24,7 @@ backfill_test_SOURCES = backfill_test.c	\
 			$(top_srcdir)/src/plugins/sched/backfill/oracle.c	\
 			$(top_srcdir)/src/plugins/sched/backfill/oracle.h	\
 			$(top_srcdir)/src/slurmctld/job_scheduler.c		\
+			$(top_srcdir)/src/slurmctld/licenses.c			\
 			$(top_srcdir)/src/slurmctld/node_scheduler.c
 
 backfill_test_CFLAGS = $(MYCFLAGS)
