@@ -121,24 +121,30 @@ typedef enum {
 } slurmdb_update_type_t;
 
 /* Define QOS flags */
-#define	QOS_FLAG_BASE                0x0fffffff
-#define	QOS_FLAG_NOTSET              0x10000000
-#define	QOS_FLAG_ADD                 0x20000000
-#define	QOS_FLAG_REMOVE              0x40000000
+typedef enum {
+	QOS_FLAG_NONE = 0,
+	QOS_FLAG_PART_MIN_NODE = SLURM_BIT(0),
+	QOS_FLAG_PART_MAX_NODE = SLURM_BIT(1),
+	QOS_FLAG_PART_TIME_LIMIT = SLURM_BIT(2),
+	QOS_FLAG_ENFORCE_USAGE_THRES = SLURM_BIT(3),
+	QOS_FLAG_NO_RESERVE = SLURM_BIT(4),
+	QOS_FLAG_REQ_RESV = SLURM_BIT(5),
+	QOS_FLAG_DENY_LIMIT = SLURM_BIT(6),
+	QOS_FLAG_OVER_PART_QOS = SLURM_BIT(7),
+	QOS_FLAG_NO_DECAY = SLURM_BIT(8),
+	QOS_FLAG_USAGE_FACTOR_SAFE = SLURM_BIT(9),
+	QOS_FLAG_RELATIVE = SLURM_BIT(10),
+	QOS_FLAG_RELATIVE_SET = SLURM_BIT(11),
+	QOS_FLAG_PART_QOS = SLURM_BIT(12),
 
-#define	QOS_FLAG_PART_MIN_NODE       SLURM_BIT(0)
-#define	QOS_FLAG_PART_MAX_NODE       SLURM_BIT(1)
-#define	QOS_FLAG_PART_TIME_LIMIT     SLURM_BIT(2)
-#define	QOS_FLAG_ENFORCE_USAGE_THRES SLURM_BIT(3)
-#define	QOS_FLAG_NO_RESERVE          SLURM_BIT(4)
-#define	QOS_FLAG_REQ_RESV            SLURM_BIT(5)
-#define	QOS_FLAG_DENY_LIMIT          SLURM_BIT(6)
-#define	QOS_FLAG_OVER_PART_QOS       SLURM_BIT(7)
-#define	QOS_FLAG_NO_DECAY            SLURM_BIT(8)
-#define	QOS_FLAG_USAGE_FACTOR_SAFE   SLURM_BIT(9)
-#define	QOS_FLAG_RELATIVE            SLURM_BIT(10)
-#define	QOS_FLAG_RELATIVE_SET        SLURM_BIT(11)
-#define	QOS_FLAG_PART_QOS            SLURM_BIT(12)
+	/* 28+ are operators and will not be on a normal QOS rec. */
+	QOS_FLAG_BASE = 0x0fffffff,
+	QOS_FLAG_NOTSET = SLURM_BIT(28),
+	QOS_FLAG_ADD = SLURM_BIT(29),
+	QOS_FLAG_REMOVE = SLURM_BIT(30),
+
+	QOS_FLAG_INVALID,
+} slurmdb_qos_flags_t;
 
 /* Define QOS Cond flags */
 #define	QOS_COND_FLAG_WITH_DELETED SLURM_BIT(0)
@@ -970,8 +976,8 @@ typedef struct {
 	time_t blocked_until; /* internal use only, DON'T PACK  */
 	char *description;
 	uint32_t id;
-	uint32_t flags; /* flags for various things to enforce or
-			   override other limits */
+	slurmdb_qos_flags_t flags; /* flags for various things to enforce or
+				      override other limits */
 	uint32_t grace_time; /* preemption grace time */
 	uint32_t grp_jobs_accrue; /* max number of jobs this qos can
 				   * have accruing priority time
