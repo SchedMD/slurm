@@ -4900,8 +4900,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 /* node_fini - free all memory associated with node records */
 extern void node_fini (void)
 {
-	FREE_NULL_LIST(active_feature_list);
-	FREE_NULL_LIST(avail_feature_list);
+	node_features_free_lists();
 	FREE_NULL_BITMAP(asap_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	FREE_NULL_BITMAP(bf_ignore_node_bitmap);

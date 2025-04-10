@@ -146,8 +146,7 @@ extern void node_features_build_list_eq(void)
 	list_itr_t *feature_iter;
 	char *tmp_str, *token, *last = NULL;
 
-	FREE_NULL_LIST(active_feature_list);
-	FREE_NULL_LIST(avail_feature_list);
+	node_features_free_lists();
 	active_feature_list = list_create(_list_delete_feature);
 	avail_feature_list = list_create(_list_delete_feature);
 
@@ -189,8 +188,7 @@ extern void node_features_build_list_ne(void)
 	char *tmp_str, *token, *last = NULL;
 	int i;
 
-	FREE_NULL_LIST(active_feature_list);
-	FREE_NULL_LIST(avail_feature_list);
+	node_features_free_lists();
 	active_feature_list = list_create(_list_delete_feature);
 	avail_feature_list = list_create(_list_delete_feature);
 
@@ -251,4 +249,10 @@ extern void node_features_update_list(list_t *feature_list, char *new_features,
 		xfree(tmp_str);
 	}
 	node_features_updated = true;
+}
+
+extern void node_features_free_lists(void)
+{
+	FREE_NULL_LIST(active_feature_list);
+	FREE_NULL_LIST(avail_feature_list);
 }

@@ -67,3 +67,8 @@ extern void node_features_build_list_ne(void);
  */
 extern void node_features_update_list(list_t *feature_list, char *new_features,
 				      bitstr_t *node_bitmap);
+
+/*
+ * Free global active_feature_list and avail_feature_lists.
+ */
+extern void node_features_free_lists(void);
