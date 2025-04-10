@@ -79,7 +79,7 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 {
 	char start_str[32], end_str[32], time_str[32];
 	char *usr_str = NULL, *grp_str = NULL, *state_string = NULL;
-	char *exit_code_str = NULL, *derived_ec_str = NULL;
+	char *exit_code_str = NULL, *derived_ec_str = NULL, *partition = NULL;
 	buf_t *script = NULL;
 	enum job_states job_state;
 	int i, tmp_int, tmp_int2;
@@ -90,6 +90,8 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 
 	usr_str = user_from_job(job_ptr);
 	grp_str = group_from_job(job_ptr);
+	partition = job_ptr->part_ptr ? job_ptr->part_ptr->name :
+					job_ptr->partition;
 
 	if ((job_ptr->time_limit == NO_VAL) && job_ptr->part_ptr)
 		time_limit = job_ptr->part_ptr->max_time;
@@ -171,7 +173,7 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		data_set_string(data_key_set(record, "@end"), end_str);
 	if (event_job_finish)
 		data_set_int(data_key_set(record, "elapsed"), elapsed_time);
-	data_set_string(data_key_set(record, "partition"), job_ptr->partition);
+	data_set_string(data_key_set(record, "partition"), partition);
 	data_set_string(data_key_set(record, "alloc_node"),
 			job_ptr->alloc_node);
 	data_set_string(data_key_set(record, "nodes"), job_ptr->nodes);
