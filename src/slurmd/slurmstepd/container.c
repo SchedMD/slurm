@@ -66,6 +66,7 @@
 #define SLURM_CONTAINER_SPOOL_DIR_PATTERN "%m"
 #define SLURM_CONTAINER_BATCH_STEP_PATTERN "oci-job%j-batch"
 #define SLURM_CONTAINER_INTERACT_STEP_PATTERN "oci-job%j-interactive"
+#define SLURM_CONTAINER_EXTERN_STEP_PATTERN "oci-job%j-extern"
 #define SLURM_CONTAINER_STEP_PATTERN "oci-job%j-%s"
 #define SLURM_CONTAINER_TASK_PATTERN "task-%t"
 
@@ -607,6 +608,8 @@ static char *_generate_spooldir_pattern(stepd_step_rec_t *step,
 		step_id = SLURM_CONTAINER_BATCH_STEP_PATTERN;
 	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
 		step_id = SLURM_CONTAINER_INTERACT_STEP_PATTERN;
+	} else if (step->step_id.step_id == SLURM_EXTERN_CONT) {
+		step_id = SLURM_CONTAINER_EXTERN_STEP_PATTERN;
 	} else {
 		step_id = SLURM_CONTAINER_STEP_PATTERN;
 	}
