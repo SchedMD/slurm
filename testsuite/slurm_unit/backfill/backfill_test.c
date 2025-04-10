@@ -39,7 +39,6 @@ time_t last_job_update = (time_t) 0;
 time_t last_part_update = (time_t) 0;
 time_t last_node_update = (time_t) 0;
 time_t last_resv_update = (time_t) 0;
-slurm_conf_t slurm_conf;
 int slurmctld_tres_cnt = 4;
 uint16_t accounting_enforce = 0;
 int active_node_record_count;
