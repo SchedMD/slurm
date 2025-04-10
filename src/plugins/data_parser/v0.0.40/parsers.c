@@ -944,6 +944,12 @@ static data_for_each_cmd_t _foreach_parse_qos_string_id(data_t *src, void *arg)
 			       caller, false))) {
 		xassert(qos);
 		list_append(qos_list, xstrdup_printf("%u", qos->id));
+	} else {
+		char *path = NULL;
+		on_error(PARSING, parser->type, args, ESLURM_INVALID_QOS,
+			 set_source_path(&path, args, parent_path), __func__,
+			 "Unable to resolve QOS: %s", data_get_string(src));
+		xfree(path);
 	}
 
 	FREE_NULL_DATA(ppath);
