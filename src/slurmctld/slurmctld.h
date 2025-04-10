@@ -1271,11 +1271,6 @@ extern void load_part_uid_allow_list(bool force);
  */
 extern int load_all_part_state(uint16_t reconfig_flags);
 
-/*
- * Log contents of avail_feature_list and active_feature_list
- */
-extern void log_feature_lists(void);
-
 /* make_node_alloc - flag specified node as allocated to a job
  * IN node_ptr - pointer to node being allocated
  * IN job_ptr  - pointer to job that is starting
