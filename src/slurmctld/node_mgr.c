@@ -2491,8 +2491,8 @@ extern int update_node_active_features(char *node_names, char *active_features,
 			     node_names);
 			return rc;
 		}
-		update_feature_list(active_feature_list, active_features,
-				    node_bitmap);
+		node_features_update_list(active_feature_list, active_features,
+					  node_bitmap);
 		(void) node_features_g_node_update(active_features,
 						   node_bitmap);
 	}
@@ -2572,8 +2572,8 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 		}
 		list_iterator_destroy(config_iterator);
 		if (avail_feature_list) {	/* list not set at startup */
-			update_feature_list(avail_feature_list, avail_features,
-					    node_bitmap);
+			node_features_update_list(avail_feature_list,
+						  avail_features, node_bitmap);
 		}
 	}
 
@@ -5232,10 +5232,12 @@ extern int create_nodes(char *nodeline, char **err_msg)
 	}
 
 	if (config_ptr->feature) {
-		update_feature_list(avail_feature_list, config_ptr->feature,
-				    config_ptr->node_bitmap);
-		update_feature_list(active_feature_list, config_ptr->feature,
-				    config_ptr->node_bitmap);
+		node_features_update_list(avail_feature_list,
+					  config_ptr->feature,
+					  config_ptr->node_bitmap);
+		node_features_update_list(active_feature_list,
+					  config_ptr->feature,
+					  config_ptr->node_bitmap);
 	}
 
 	_queue_consolidate_config_list();
@@ -5335,11 +5337,11 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	bit_set(power_up_node_bitmap, node_ptr->index);
 
 	node_ptr->features = xstrdup(node_ptr->config_ptr->feature);
-	update_feature_list(avail_feature_list, node_ptr->features,
-			    config_ptr->node_bitmap);
+	node_features_update_list(avail_feature_list, node_ptr->features,
+				  config_ptr->node_bitmap);
 	node_ptr->features_act = xstrdup(node_ptr->config_ptr->feature);
-	update_feature_list(active_feature_list, node_ptr->features_act,
-			    config_ptr->node_bitmap);
+	node_features_update_list(active_feature_list, node_ptr->features_act,
+				  config_ptr->node_bitmap);
 
 	_queue_consolidate_config_list();
 
@@ -5371,8 +5373,8 @@ static void _remove_node_from_features(node_record_t *node_ptr)
 {
 	bitstr_t *node_bitmap = bit_alloc(node_record_count);
 	bit_set(node_bitmap, node_ptr->index);
-	update_feature_list(avail_feature_list, NULL, node_bitmap);
-	update_feature_list(active_feature_list, NULL, node_bitmap);
+	node_features_update_list(avail_feature_list, NULL, node_bitmap);
+	node_features_update_list(active_feature_list, NULL, node_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
 }
 

@@ -138,7 +138,7 @@ static void _list_delete_feature(void *feature_entry)
  * For a configuration where available_features == active_features,
  * build new active and available feature lists
  */
-extern void build_feature_list_eq(void)
+extern void node_features_build_list_eq(void)
 {
 	list_itr_t *config_iterator;
 	config_record_t *config_ptr;
@@ -209,7 +209,7 @@ extern void log_feature_lists(void)
  * For a configuration where available_features != active_features,
  * build new active and available feature lists
  */
-extern void build_feature_list_ne(void)
+extern void node_features_build_list_ne(void)
 {
 	node_record_t *node_ptr;
 	char *tmp_str, *token, *last = NULL;
@@ -250,8 +250,8 @@ extern void build_feature_list_ne(void)
  * new_features IN - New active_features
  * node_bitmap IN - Nodes with the new active_features value
  */
-extern void update_feature_list(list_t *feature_list, char *new_features,
-				bitstr_t *node_bitmap)
+extern void node_features_update_list(list_t *feature_list, char *new_features,
+				      bitstr_t *node_bitmap)
 {
 	node_feature_t *feature_ptr;
 	list_itr_t *feature_iter;

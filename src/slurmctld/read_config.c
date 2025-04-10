@@ -1632,9 +1632,9 @@ extern int read_slurm_conf(int recover)
 
 	/* Active and available features can be different on -R */
 	if ((node_features_g_count() == 0) && (recover != 2))
-		build_feature_list_eq();
+		node_features_build_list_eq();
 	else
-		build_feature_list_ne();
+		node_features_build_list_ne();
 
 	_sync_part_prio();
 	_build_part_bitmaps(); /* Must be called after build_feature_list_*() */
