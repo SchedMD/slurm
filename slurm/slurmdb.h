@@ -239,20 +239,23 @@ enum cluster_fed_states {
 #define SLURMDB_CLASS_BASE      0x00ff
 
 /* Cluster flags */
-#define CLUSTER_FLAG_REGISTER SLURM_BIT(0) /* If the cluster is registering
-					    * right now or not */
-#define CLUSTER_FLAG_A2     SLURM_BIT(1) /* UNUSED */
-#define CLUSTER_FLAG_A3     SLURM_BIT(2) /* UNUSED */
-#define CLUSTER_FLAG_A4     SLURM_BIT(3) /* UNUSED */
-#define CLUSTER_FLAG_A5     SLURM_BIT(4) /* UNUSED */
-#define CLUSTER_FLAG_A6     SLURM_BIT(5) /* UNUSED */
-#define CLUSTER_FLAG_A7     SLURM_BIT(6) /* UNUSED */
-#define CLUSTER_FLAG_MULTSD SLURM_BIT(7) /* This cluster is multiple slurmd */
-#define CLUSTER_FLAG_A9     SLURM_BIT(8) /* UNUSED */
-#define CLUSTER_FLAG_FE     SLURM_BIT(9) /* This cluster is a front end system*/
-/*                          SLURM_BIT(10)   UNUSED */
-#define CLUSTER_FLAG_FED    SLURM_BIT(11) /* This cluster is in a federation. */
-#define CLUSTER_FLAG_EXT    SLURM_BIT(12) /* This cluster is external */
+typedef enum {
+	CLUSTER_FLAG_NONE = 0,
+	CLUSTER_FLAG_REGISTER = SLURM_BIT(0), /* Cluster is registering now */
+	/* SLURM_BIT(1) empty */
+	/* SLURM_BIT(2) empty */
+	/* SLURM_BIT(3) empty */
+	/* SLURM_BIT(4) empty */
+	/* SLURM_BIT(5) empty */
+	/* SLURM_BIT(6) empty */
+	CLUSTER_FLAG_MULTSD = SLURM_BIT(7), /* Cluster is multiple slurmd */
+	/* SLURM_BIT(8) empty */
+	CLUSTER_FLAG_FE = SLURM_BIT(9), /* This cluster is a front end system */
+	/* SLURM_BIT(10) empty */
+	CLUSTER_FLAG_FED = SLURM_BIT(11), /* This cluster is in a federation. */
+	CLUSTER_FLAG_EXT = SLURM_BIT(12), /* This cluster is external */
+	CLUSTER_FLAG_INVALID
+}  slurmdb_cluster_flags_t;
 
 /* Assoc flags */
 typedef enum {
@@ -715,7 +718,7 @@ typedef struct {
 	uint16_t classification; /* how this machine is classified */
 	list_t *cluster_list; /* list of char * */
 	list_t *federation_list; /* list of char */
-	uint32_t flags;
+	slurmdb_cluster_flags_t flags;
 	list_t *format_list; 	/* list of char * */
 	list_t *rpc_version_list; /* list of char * */
 	time_t usage_end;
@@ -753,7 +756,7 @@ struct slurmdb_cluster_rec {
 			* PACKED, is set up in slurmdb_get_info_cluster */
 	uint16_t id; /* unique id */
 	slurmdb_cluster_fed_t fed; /* Federation information */
-	uint32_t flags;      /* set of CLUSTER_FLAG_* */
+	slurmdb_cluster_flags_t flags;
 	pthread_mutex_t lock; /* For convenience only. DOESN"T GET PACKED */
 	char *name;
 	char *nodes;

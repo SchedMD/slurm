@@ -45,7 +45,7 @@ extern uint16_t slurmdb_setup_cluster_dims(void);
 extern uint32_t slurmdb_setup_cluster_flags(void);
 
 /* Translate architecture flag strings to their equivalent bitmaps */
-extern uint32_t slurmdb_str_2_cluster_flags(char *flags_in);
+extern slurmdb_cluster_flags_t slurmdb_str_2_cluster_flags(char *flags_in);
 
 /*
  * Translate architecture flag bitmaps to their equivalent comma-delimited
@@ -53,7 +53,7 @@ extern uint32_t slurmdb_str_2_cluster_flags(char *flags_in);
  *
  * NOTE: Call xfree() to release memory allocated to the return value
  */
-extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in);
+extern char *slurmdb_cluster_flags_2_str(slurmdb_cluster_flags_t flags_in);
 
 /*
  * Setup the working_cluster_rec with the working_cluster_rec and node_addrs

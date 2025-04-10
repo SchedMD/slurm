@@ -10224,7 +10224,7 @@ static const parser_t parsers[] = {
 	addfa(QOS_FLAGS, slurmdb_qos_flags_t),
 	addfa(QOS_CONDITION_FLAGS, uint16_t),
 	addfa(QOS_PREEMPT_MODES, uint16_t),
-	addfa(CLUSTER_REC_FLAGS, uint32_t),
+	addfa(CLUSTER_REC_FLAGS, slurmdb_cluster_flags_t),
 	addfa(NODE_STATES, uint32_t),
 	addfa(PARTITION_STATES, uint16_t),
 	addfa(JOB_FLAGS, uint64_t),
