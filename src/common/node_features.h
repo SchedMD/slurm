@@ -51,13 +51,13 @@ typedef struct node_features {
  * For a configuration where available_features == active_features,
  * build new active and available feature lists
  */
-extern void build_feature_list_eq(void);
+extern void node_features_build_list_eq(void);
 
 /*
  * For a configuration where available_features != active_features,
  * build new active and available feature lists
  */
-extern void build_feature_list_ne(void);
+extern void node_features_build_list_ne(void);
 
 /*
  * Update active_feature_list or avail_feature_list
@@ -65,5 +65,5 @@ extern void build_feature_list_ne(void);
  * new_features IN - New active_features
  * node_bitmap IN - Nodes with the new active_features value
  */
-extern void update_feature_list(list_t *feature_list, char *new_features,
-				bitstr_t *node_bitmap);
+extern void node_features_update_list(list_t *feature_list, char *new_features,
+				      bitstr_t *node_bitmap);
