@@ -166,13 +166,13 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	half_duplex.lo hostlist.lo http.lo identity.lo id_util.lo \
 	io_hdr.lo job_features.lo job_options.lo job_record.lo \
 	job_resources.lo job_state_reason.lo list.lo log.lo \
-	msg_type.lo net.lo node_conf.lo oci_config.lo openapi.lo \
-	optz.lo pack.lo parse_config.lo parse_time.lo parse_value.lo \
-	part_record.lo persist_conn.lo plugin.lo plugrack.lo \
-	port_mgr.lo print_fields.lo proc_args.lo read_config.lo \
-	reverse_tree.lo run_command.lo run_in_daemon.lo sack_api.lo \
-	setproctitle.lo sluid.lo slurm_errno.lo slurm_opt.lo \
-	slurm_protocol_api.lo slurm_protocol_defs.lo \
+	msg_type.lo net.lo node_conf.lo node_features.lo oci_config.lo \
+	openapi.lo optz.lo pack.lo parse_config.lo parse_time.lo \
+	parse_value.lo part_record.lo persist_conn.lo plugin.lo \
+	plugrack.lo port_mgr.lo print_fields.lo proc_args.lo \
+	read_config.lo reverse_tree.lo run_command.lo run_in_daemon.lo \
+	sack_api.lo setproctitle.lo sluid.lo slurm_errno.lo \
+	slurm_opt.lo slurm_protocol_api.lo slurm_protocol_defs.lo \
 	slurm_protocol_pack.lo slurm_protocol_util.lo \
 	slurm_protocol_socket.lo slurm_resolv.lo \
 	slurm_resource_info.lo slurm_rlimits_info.lo \
@@ -226,18 +226,19 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/job_state_reason.Plo ./$(DEPDIR)/list.Plo \
 	./$(DEPDIR)/log.Plo ./$(DEPDIR)/msg_type.Plo \
 	./$(DEPDIR)/net.Plo ./$(DEPDIR)/node_conf.Plo \
-	./$(DEPDIR)/oci_config.Plo ./$(DEPDIR)/openapi.Plo \
-	./$(DEPDIR)/optz.Plo ./$(DEPDIR)/pack.Plo \
-	./$(DEPDIR)/parse_config.Plo ./$(DEPDIR)/parse_time.Plo \
-	./$(DEPDIR)/parse_value.Plo ./$(DEPDIR)/part_record.Plo \
-	./$(DEPDIR)/persist_conn.Plo ./$(DEPDIR)/plugin.Plo \
-	./$(DEPDIR)/plugrack.Plo ./$(DEPDIR)/port_mgr.Plo \
-	./$(DEPDIR)/print_fields.Plo ./$(DEPDIR)/proc_args.Plo \
-	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/reverse_tree.Plo \
-	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
-	./$(DEPDIR)/sack_api.Plo ./$(DEPDIR)/setproctitle.Plo \
-	./$(DEPDIR)/sluid.Plo ./$(DEPDIR)/slurm_errno.Plo \
-	./$(DEPDIR)/slurm_opt.Plo ./$(DEPDIR)/slurm_protocol_api.Plo \
+	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/oci_config.Plo \
+	./$(DEPDIR)/openapi.Plo ./$(DEPDIR)/optz.Plo \
+	./$(DEPDIR)/pack.Plo ./$(DEPDIR)/parse_config.Plo \
+	./$(DEPDIR)/parse_time.Plo ./$(DEPDIR)/parse_value.Plo \
+	./$(DEPDIR)/part_record.Plo ./$(DEPDIR)/persist_conn.Plo \
+	./$(DEPDIR)/plugin.Plo ./$(DEPDIR)/plugrack.Plo \
+	./$(DEPDIR)/port_mgr.Plo ./$(DEPDIR)/print_fields.Plo \
+	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
+	./$(DEPDIR)/reverse_tree.Plo ./$(DEPDIR)/run_command.Plo \
+	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/sack_api.Plo \
+	./$(DEPDIR)/setproctitle.Plo ./$(DEPDIR)/sluid.Plo \
+	./$(DEPDIR)/slurm_errno.Plo ./$(DEPDIR)/slurm_opt.Plo \
+	./$(DEPDIR)/slurm_protocol_api.Plo \
 	./$(DEPDIR)/slurm_protocol_defs.Plo \
 	./$(DEPDIR)/slurm_protocol_pack.Plo \
 	./$(DEPDIR)/slurm_protocol_socket.Plo \
@@ -628,6 +629,8 @@ libcommon_la_SOURCES = \
 	net.h					\
 	node_conf.c				\
 	node_conf.h				\
+	node_features.c				\
+	node_features.h				\
 	oci_config.c				\
 	oci_config.h				\
 	openapi.c				\
@@ -852,6 +855,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg_type.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_conf.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_features.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oci_config.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openapi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optz.Plo@am__quote@ # am--include-marker
@@ -1069,6 +1073,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/msg_type.Plo
 	-rm -f ./$(DEPDIR)/net.Plo
 	-rm -f ./$(DEPDIR)/node_conf.Plo
+	-rm -f ./$(DEPDIR)/node_features.Plo
 	-rm -f ./$(DEPDIR)/oci_config.Plo
 	-rm -f ./$(DEPDIR)/openapi.Plo
 	-rm -f ./$(DEPDIR)/optz.Plo
@@ -1206,6 +1211,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/msg_type.Plo
 	-rm -f ./$(DEPDIR)/net.Plo
 	-rm -f ./$(DEPDIR)/node_conf.Plo
+	-rm -f ./$(DEPDIR)/node_features.Plo
 	-rm -f ./$(DEPDIR)/oci_config.Plo
 	-rm -f ./$(DEPDIR)/openapi.Plo
 	-rm -f ./$(DEPDIR)/optz.Plo

@@ -58,6 +58,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/forward.h"
+#include "src/common/node_features.h"
 #include "src/common/port_mgr.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_protocol_socket.h"
@@ -1201,13 +1202,16 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		 * FIXME: Add support for AND, OR, etc. here if desired
 		 */
 		node_feature_t *feat_ptr;
-		feat_ptr = list_find_first(stepmgr_ops->active_feature_list,
-					   list_find_feature,
-					   (void *) step_spec->features);
+		feat_ptr =
+			list_find_first(active_feature_list, list_find_feature,
+					(void *) step_spec->features);
 		if (feat_ptr && feat_ptr->node_bitmap)
 			bit_and(nodes_avail, feat_ptr->node_bitmap);
-		else
+		else {
 			bit_clear_all(nodes_avail);
+			*return_code = ESLURM_INVALID_FEATURE;
+			goto cleanup;
+		}
 	}
 
 	if (step_spec->pn_min_memory &&
