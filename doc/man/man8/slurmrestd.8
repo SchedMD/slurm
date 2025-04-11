@@ -361,7 +361,9 @@ Disables unsharing the SYSV namespace.
 .TP
 \fBdisable_user_check\fR
 Disables check that slurmrestd is not running as root or SlurmUser, or with the
-root or SlurmUser's primary group.
+root or SlurmUser's primary group. Disabling this check will allow slurmrestd
+to run as root or SlurmUser which will allow anyone who can communicate with
+this daemon to run anything as the root user on the cluster.
 .RE
 .IP
 
