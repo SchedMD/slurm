@@ -39,16 +39,15 @@ time_t last_job_update = (time_t) 0;
 time_t last_part_update = (time_t) 0;
 time_t last_node_update = (time_t) 0;
 time_t last_resv_update = (time_t) 0;
-slurm_conf_t slurm_conf;
 int slurmctld_tres_cnt = 4;
 uint16_t accounting_enforce = 0;
 int active_node_record_count;
 slurm_conf_t slurm_conf;
 node_record_t **node_record_table_ptr;
 list_t *part_list;
+list_t *resv_list = NULL;
 int node_record_count;
 slurmctld_config_t slurmctld_config;
-list_t *cluster_license_list = NULL;
 uint32_t max_powered_nodes = NO_VAL;
 
 bitstr_t *asap_node_bitmap = NULL; /* bitmap of rebooting asap nodes */
@@ -194,7 +193,7 @@ static int _print_job(void *x, void *arg)
 }
 
 job_record_t *__add_job(uint32_t job_id, uint32_t priority, uint32_t nodes,
-			uint32_t time_limit)
+			uint32_t time_limit, char *licenses)
 {
 	static uint32_t last_job_id = 0;
 
@@ -217,6 +216,8 @@ job_record_t *__add_job(uint32_t job_id, uint32_t priority, uint32_t nodes,
 	job_ptr->details->max_cpus = NO_VAL;
 	job_ptr->details->cpus_per_task = 1;
 	job_ptr->details->task_dist = SLURM_DIST_CYCLIC;
+	job_ptr->details->share_res = 1;
+	job_ptr->details->whole_node = 0;
 	job_ptr->time_limit = time_limit;
 	job_ptr->best_switch = true;
 	job_ptr->limit_set.tres = xcalloc(slurmctld_tres_cnt, sizeof(uint16_t));
@@ -224,6 +225,13 @@ job_record_t *__add_job(uint32_t job_id, uint32_t priority, uint32_t nodes,
 	job_ptr->tres_req_cnt[TRES_ARRAY_NODE] = job_ptr->details->min_nodes;
 	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = 1;
 	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = job_ptr->details->min_cpus;
+
+	if (licenses) {
+		bool valid = true;
+		job_ptr->license_list =
+			license_validate(licenses, true, true, NULL, &valid);
+		job_ptr->licenses = xstrdup(licenses);
+	}
 
 	list_append(job_list, job_ptr);
 
@@ -247,9 +255,9 @@ void load_test()
 		job_id = strtoul(buffer, &p, 10);
 		priority = strtoul(p, &p, 10);
 		nodes = strtoul(p, &p, 10);
-		time_limit = strtoul(p, NULL, 10);
+		time_limit = strtoul(p, &p, 10);
 
-		__add_job(job_id, priority, nodes, time_limit);
+		__add_job(job_id, priority, nodes, time_limit, p);
 	}
 	fclose(f);
 }
@@ -266,10 +274,10 @@ START_TEST(test_backfill_1)
 	job_record_t *job_ptr;
 	uint32_t now = time(NULL);
 
-	/* job_id, priority, nodes, time_limit	*/
-	__add_job(0, 10, 1, 10);
-	__add_job(0, 5, 32, 10);
-	__add_job(0, 1, 31, 5);
+	/* job_id, priority, nodes, time_limit, licenses */
+	__add_job(0, 10, 1, 10, NULL);
+	__add_job(0, 5, 32, 10, NULL);
+	__add_job(0, 1, 31, 5, NULL);
 
 	__attempt_backfill();
 
@@ -298,16 +306,16 @@ START_TEST(test_backfill_2)
 {
 	uint32_t now = time(NULL);
 
-	/* job_id, priority, nodes, time_limit	*/
-	__add_job(0, 10, 6, 10);
-	__add_job(0, 9, 27, 15);
-	__add_job(0, 8, 28, 14);
-	__add_job(0, 7, 29, 13);
-	__add_job(0, 6, 30, 12);
-	__add_job(0, 5, 5, 10);
-	__add_job(0, 5, 5, 10);
+	/* job_id, priority, nodes, time_limit, licenses */
+	__add_job(0, 10, 6, 10, NULL);
+	__add_job(0, 9, 27, 15, NULL);
+	__add_job(0, 8, 28, 14, NULL);
+	__add_job(0, 7, 29, 13, NULL);
+	__add_job(0, 6, 30, 12, NULL);
+	__add_job(0, 5, 5, 10, NULL);
+	__add_job(0, 5, 5, 10, NULL);
 	/* This job would jump ahead of the priority 6 job */
-	__add_job(0, 1, 30, 11);
+	__add_job(0, 1, 30, 11, NULL);
 
 	__attempt_backfill();
 	list_for_each(job_list, _print_job, &now);
@@ -343,8 +351,8 @@ START_TEST(test_backfill_3)
 	job_record_t *job2_ptr;
 
 	for (int i = 0; i < 1000; i++) {
-		/* job_id, priority, nodes, time_limit	*/
-		__add_job(0, 10, 6, 10);
+		/* job_id, priority, nodes, time_limit, licenses */
+		__add_job(0, 10, 6, 10, NULL);
 	}
 
 	__attempt_backfill();
@@ -360,6 +368,66 @@ START_TEST(test_backfill_3)
 	 */
 }
 END_TEST
+
+/*
+ * Test basic simplest backfiling of licences
+ */
+START_TEST(test_backfill_lic_1)
+{
+	uint32_t now = time(NULL);
+	job_record_t *job_ptr;
+
+	/* job_id, priority, nodes, time_limit	*/
+	__add_job(1, 10, 1, 10, "lic1");
+	__add_job(2, 9, 1, 10, "lic1");
+	__add_job(3, 8, 1, 10, "lic1");
+	__add_job(4, 7, 1, 10, NULL);
+
+	__attempt_backfill();
+	list_for_each(job_list, _print_job, &now);
+
+	job_ptr = find_job_record(1);
+	ck_assert_msg(IS_JOB_RUNNING(job_ptr), "Job 1 RUNNING");
+
+	job_ptr = find_job_record(2);
+	ck_assert_msg(!IS_JOB_RUNNING(job_ptr), "Job 2 !RUNNING");
+
+	job_ptr = find_job_record(3);
+	ck_assert_msg(!IS_JOB_RUNNING(job_ptr), "Job 3 !RUNNING");
+
+	job_ptr = find_job_record(4);
+	ck_assert_msg(IS_JOB_RUNNING(job_ptr), "Job 4 RUNNING");
+}
+
+END_TEST
+
+/*
+ * Test for wrong start_time scenario in Issue 50271
+ */
+START_TEST(test_backfill_lic_2)
+{
+	uint32_t now = time(NULL);
+	job_record_t *job1_ptr, *job2_ptr;
+	part_record_t *part_ptr = find_part_record("test");
+
+	part_ptr->max_share = 1;
+
+	for (int i = 0; i < 12; i++) {
+		/* job_id, priority, nodes, time_limit	*/
+		__add_job(0, 10, 1, 10, "lic2");
+	}
+	__attempt_backfill();
+	list_for_each(job_list, _print_job, &now);
+
+	job1_ptr = find_job_record(7);
+	job2_ptr = find_job_record(12);
+
+	if (job1_ptr->start_time != job2_ptr->start_time)
+		ck_abort_msg("Wrong start_time");
+}
+
+END_TEST
+
 #endif
 
 int main(int argc, char *argv[])
@@ -389,6 +457,7 @@ int main(int argc, char *argv[])
 	part_list = list_create(NULL);
 	part_ptr->name = xstrdup("test");
 	part_ptr->node_bitmap = bit_copy(avail_node_bitmap);
+	part_ptr->max_share = 0;
 	list_append(part_list, part_ptr);
 
 	select_g_node_init();
@@ -410,6 +479,10 @@ int main(int argc, char *argv[])
 
 	job_list = list_create(_list_delete_job);
 
+	resv_list = list_create(NULL);
+
+	license_init(slurm_conf.licenses);
+
 	select_g_reconfigure();
 
 	if (!params.testcases) {
@@ -422,6 +495,9 @@ int main(int argc, char *argv[])
 		tcase_add_test(tc, test_backfill_1);
 		tcase_add_test(tc, test_backfill_2);
 		tcase_add_test(tc, test_backfill_3);
+
+		tcase_add_test(tc, test_backfill_lic_1);
+		tcase_add_test(tc, test_backfill_lic_2);
 
 		suite_add_tcase(s, tc);
 
