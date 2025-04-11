@@ -95,7 +95,10 @@ static json_object *_rest_call(slingshot_rest_conn_t *conn,
 	xassert(urlsuffix != NULL);
 
 	/* Create full URL */
-	url = xstrdup_printf("%s%s", conn->base_url, urlsuffix);
+	if (conn->mtls.enabled)
+		url = xstrdup_printf("%s%s", conn->mtls.url, urlsuffix);
+	else
+		url = xstrdup_printf("%s%s", conn->base_url, urlsuffix);
 
 	/* If present, dump JSON payload to string */
 	if (reqjson) {
@@ -125,9 +128,10 @@ again:
 		password = conn->auth.u.basic.password;
 	}
 
-	if (slurm_curl_request(req, url, username, password, NULL, NULL, NULL,
+	if (slurm_curl_request(req, url, username, password, conn->mtls.ca_path,
+			       conn->mtls.cert_path, conn->mtls.key_path,
 			       headers, conn->timeout, &response_str, status,
-			       request_method, false, false))
+			       request_method, false, conn->mtls.enabled))
 		goto err;
 
 	/* Decode response into JSON */
@@ -274,6 +278,14 @@ extern bool slingshot_rest_connection(slingshot_rest_conn_t *conn,
 	conn->timeout = timeout;
 	conn->connect_timeout = connect_timeout;
 
+	conn->mtls.enabled = mtls_enabled;
+	if (mtls_enabled) {
+		conn->mtls.ca_path = xstrdup(mtls_ca_path);
+		conn->mtls.cert_path = xstrdup(mtls_cert_path);
+		conn->mtls.key_path = xstrdup(mtls_key_path);
+		conn->mtls.url = xstrdup(mtls_url);
+	}
+
 	/*
 	 * Attempt to get an OAUTH token for later use
 	 * (returns immediately if not OAUTH)
@@ -410,10 +422,12 @@ static bool _get_auth_header(slingshot_rest_conn_t *conn,
 				     "&scope=openid",
 				     client_id, client_secret);
 
-		if (slurm_curl_request(req, url, NULL, NULL, NULL, NULL, NULL,
-				       NULL, SLINGSHOT_TOKEN_TIMEOUT,
-				       &response_str, &status,
-				       HTTP_REQUEST_POST, false, false))
+		if (slurm_curl_request(req, url, NULL, NULL, conn->mtls.ca_path,
+				       conn->mtls.cert_path,
+				       conn->mtls.key_path, NULL,
+				       SLINGSHOT_TOKEN_TIMEOUT, &response_str,
+				       &status, HTTP_REQUEST_POST, false,
+				       conn->mtls.enabled))
 			goto err;
 
 		/* Decode response into JSON */

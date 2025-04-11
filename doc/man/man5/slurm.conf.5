@@ -5856,6 +5856,44 @@ for BASIC authentication, /etc/wlm-client-auth for OAUTH authentication).
 .IP
 
 .TP
+\fBfm_mtls_url\fR
+This sets an alternative URL to \fBfm_url\fR that slurm daemons will use to
+interface with the fabric manager to enable Slingshot hardware collectives when
+mTLS authentication is enabled. If this is not set, \fBfm_url\fR will be used
+instead. To enable mTLS authentication see \fBfm_mtls_ca\fR, \fBfm_mtls_cert\fR,
+and \fBfm_mtls_key\fR.
+
+\fBNote\fR: Setting \fBfm_url\fR and \fBenable_stepmgr\fR are required to enable
+Slingshot hardware collectives.
+.IP
+
+.TP
+\fBfm_mtls_ca\fR
+Path to Certificate Authority (CA) bundle file or directory containing a file
+signed by the fabric manager certificate. If set, the identity of the fabric
+manager server will be verified if Slingshot hardware collectives are enabled.
+See also \fBfm_mtls_cert\fR and \fBfm_mtls_key\fR.
+
+\fBNote\fR: This option is not required to enable mTLS authentication with the
+fabric manager. However, without it the client (slurmctld and stepmgr processes)
+will not be able to verify the server identity.
+.IP
+
+.TP
+\fBfm_mtls_cert\fR
+Path to client public certificate. This is required to enable mTLS
+authentication with the fabric manager when Slingshot hardware collectives are
+enabled. See also \fBfm_mtls_ca\fR and \fBfm_mtls_key\fR.
+.IP
+
+.TP
+\fBfm_mtls_key\fR
+Path to client private key. This is required to enable mTLS authentication to
+the fabric manager when Slingshot hardware collectives are enabled.
+See also \fBfm_mtls_ca\fR and \fBfm_mtls_cert\fR.
+.IP
+
+.TP
 \fBdef_<rsrc>\fR=<\fIval\fR>
 Per-CPU reserved allocation for this resource.
 .IP

@@ -179,6 +179,16 @@ extern int slurm_curl_request(const char *data, const char *url,
 		CURL_SETOPT(c, CURLOPT_SSL_VERIFYHOST, 0);
 	}
 
+	if (use_mtls) {
+		if (mtls_ca_path) {
+			CURL_SETOPT(c, CURLOPT_CAINFO, mtls_ca_path);
+			CURL_SETOPT(c, CURLOPT_SSL_VERIFYPEER, 1);
+			CURL_SETOPT(c, CURLOPT_SSL_VERIFYHOST, 2);
+		}
+		CURL_SETOPT(c, CURLOPT_SSLCERT, mtls_cert_path);
+		CURL_SETOPT(c, CURLOPT_SSLKEY, mtls_key_path);
+	}
+
 #if CURL_TRACE
 	CURL_SETOPT(c, CURLOPT_DEBUGFUNCTION, _libcurl_trace);
 	CURL_SETOPT(c, CURLOPT_VERBOSE, 1L);
