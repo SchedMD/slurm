@@ -406,6 +406,7 @@ static const struct {
 	T(QOS_FLAG_PART_TIME_LIMIT, "PartitionTimeLimit"),
 	T(QOS_FLAG_REQ_RESV, "RequiresReservation"),
 	T(QOS_FLAG_OVER_PART_QOS, "OverPartQOS"),
+	T(QOS_FLAG_PART_QOS, "PartQOS"),
 	T(QOS_FLAG_NO_RESERVE, "NoReserve"),
 	T(QOS_FLAG_NO_DECAY, "NoDecay"),
 	T(QOS_FLAG_RELATIVE, "Relative"),
