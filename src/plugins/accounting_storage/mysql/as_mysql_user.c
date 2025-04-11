@@ -1668,7 +1668,7 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	list_itr_t *itr = NULL;
 	char *object = NULL;
 	int set = 0;
-	int i=0, is_admin=1;
+	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	slurmdb_user_rec_t user;
@@ -1691,19 +1691,6 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
-
-	if (slurm_conf.private_data & PRIVATE_DATA_USERS) {
-		if (!(is_admin = is_user_min_admin_level(
-			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
-			assoc_mgr_fill_in_user(
-				mysql_conn, &user, 1, NULL, false);
-		}
-		if (!is_admin && !user.name) {
-			debug("User %u has no associations, and is not admin, "
-			      "so not returning any users.", user.uid);
-			return NULL;
-		}
-	}
 
 	if (!user_cond) {
 		xstrcat(extra, "where deleted=0");
@@ -1761,8 +1748,22 @@ empty:
 	/* This is here to make sure we are looking at only this user
 	 * if this flag is set.
 	 */
-	if (!is_admin && (slurm_conf.private_data & PRIVATE_DATA_USERS)) {
-		xstrfmtcat(extra, " && name='%s'", user.name);
+	if ((slurm_conf.private_data & PRIVATE_DATA_USERS) ||
+	    (user_cond->assoc_cond &&
+	     (user_cond->assoc_cond->flags & ASSOC_COND_FLAG_WITH_NG_USAGE) &&
+	     (slurm_conf.private_data & PRIVATE_DATA_USAGE))) {
+		if (!is_user_min_admin_level(
+			    mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+			assoc_mgr_fill_in_user(
+				mysql_conn, &user, 1, NULL, false);
+			if (!user.name) {
+				debug("User %u has no associations, and is not admin, so not returning any users.",
+				      user.uid);
+				xfree(extra);
+				return NULL;
+			}
+			xstrfmtcat(extra, " && name='%s'", user.name);
+		}
 	}
 
 	xfree(tmp);
