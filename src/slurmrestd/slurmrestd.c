@@ -518,7 +518,7 @@ static void _lock_down(void)
 	if (unshare_files && unshare(CLONE_FILES))
 		fatal("Unable to unshare file descriptors: %m");
 
-	if (gid && setgroups(0, NULL))
+	if (gid && (getgroups(0, NULL) > 1) && setgroups(0, NULL))
 		fatal("Unable to drop supplementary groups: %m");
 	if (uid != 0 && (gid == 0))
 		gid = gid_from_uid(uid);
