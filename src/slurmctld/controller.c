@@ -4102,7 +4102,7 @@ static void _run_primary_prog(bool primary_on)
 	wait_arg = xmalloc(sizeof(primary_thread_arg_t));
 	wait_arg->cpid = cpid;
 	wait_arg->prog_type = xstrdup(prog_type);
-	slurm_thread_create_detached(_wait_primary_prog, wait_arg);
+	_wait_primary_prog(wait_arg);
 }
 
 static int _init_dep_job_ptr(void *object, void *arg)

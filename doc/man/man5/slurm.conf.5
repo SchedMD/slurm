@@ -5188,14 +5188,16 @@ and RSIP's port range.
 .TP
 \fBSlurmctldPrimaryOffProg\fR
 This program is executed when a slurmctld daemon running as the primary server
-becomes a backup server. By default no program is executed.
+becomes a backup server. The controller will wait for this script to end before
+fully shutting down. By default no program is executed.
 See also the related "SlurmctldPrimaryOnProg" parameter.
 .IP
 
 .TP
 \fBSlurmctldPrimaryOnProg\fR
 This program is executed when a slurmctld daemon running as a backup server
-becomes the primary server. By default no program is executed.
+becomes the primary server. The controller will wait for this script to end
+before fully starting up. By default no program is executed.
 When using virtual IP addresses to manage High Available Slurm services,
 this program can be used to add the IP address to an interface (and optionally
 try to kill the unresponsive slurmctld daemon and flush the ARP caches on
