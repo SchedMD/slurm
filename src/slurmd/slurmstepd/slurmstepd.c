@@ -50,13 +50,13 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/forward.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
+#include "src/common/port_mgr.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/common/macros.h"
-#include "src/common/port_mgr.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
 #include "src/common/stepd_proxy.h"
@@ -289,6 +289,7 @@ static void _init_stepd_stepmgr(void)
 	reserve_port_stepmgr_init(job_step_ptr);
 
 	_setup_stepmgr_nodes();
+	node_features_build_active_list(job_step_ptr);
 
 	acct_storage_g_init();
 
@@ -502,6 +503,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	if (job_step_ptr) {
 		xfree(job_step_ptr->resv_ports);
 		reserve_port_stepmgr_init(job_step_ptr);
+		node_features_free_lists();
 	}
 
 	_step_cleanup(step, msg, rc);

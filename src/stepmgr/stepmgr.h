@@ -44,7 +44,6 @@
 
 typedef struct {
 	void *acct_db_conn;
-	list_t *active_feature_list;
 	list_t *job_list;
 	time_t *last_job_update;
 	bitstr_t *up_node_bitmap;
