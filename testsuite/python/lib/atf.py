@@ -587,10 +587,10 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
         for slurmd_name in slurmd_list:
             logging.debug(f"Starting slurmd for {slurmd_name}...")
             # Check whether slurmd is running
-            if (
-                run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
-                != 0
-            ):
+            slurmd_pgrep = run_command(
+                f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet
+            )
+            if slurmd_pgrep["exit_code"] != 0:
                 # Start slurmd
                 results = run_command(
                     f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
@@ -609,7 +609,12 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
                 ):
                     pytest.fail(f"Slurmd -N {slurmd_name} is not running")
             else:
-                logging.warning("slurmd for {slurmd_name} already running")
+                logging.warning(f"slurmd for {slurmd_name} already running")
+                logging.warning(f"slurmd_pgrep['stdout']: {slurmd_pgrep['stdout']}")
+                logging.warning(f"slurmd_pgrep['stderr']: {slurmd_pgrep['stderr']}")
+                logging.warning(
+                    f"slurmd_pgrep['exit_code']: {slurmd_pgrep['exit_code']}"
+                )
 
             # Verify that the slurmd is registered correctly
             if not repeat_until(
