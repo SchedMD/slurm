@@ -2331,4 +2331,10 @@ extern void controller_reconfig_scheduling(void);
  */
 extern char *part_list_to_xstr(list_t *list);
 
+/* Allow listener sockets to accept() new incoming requests */
+extern void listeners_unquiesce(void);
+
+/* Stop listener sockets from accept()ing new incoming requests */
+extern void listeners_quiesce(void);
+
 #endif /* !_HAVE_SLURMCTLD_H */

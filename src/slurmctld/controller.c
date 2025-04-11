@@ -257,8 +257,10 @@ static struct {
 	int *fd;
 	conmgr_fd_t **cons;
 	bool standby_mode;
+	bool quiesced;
 } listeners = {
 	.mutex = PTHREAD_MUTEX_INITIALIZER,
+	.quiesced = true,
 };
 
 typedef struct primary_thread_arg {
@@ -324,6 +326,14 @@ static void _attempt_reconfig(void)
 	info("Attempting to reconfigure");
 
 	/*
+	 * Reconfigure requires all connections to fully processed before
+	 * continuing as the file descriptors will be closed during fork() and
+	 * the parent process will call _exit() instead of finishing their
+	 * processing if the new slurmctld process starts successfully.
+	 */
+	conmgr_quiesce(__func__);
+
+	/*
 	 * Send RC to requesters in foreground mode now as slurmctld is about
 	 * to call exec() which will close connections.
 	 */
@@ -340,6 +350,12 @@ static void _attempt_reconfig(void)
 	}
 
 	recover = 2;
+
+	/*
+	 * Reconfigure failed which means this process needs start again
+	 * processing connections.
+	 */
+	conmgr_unquiesce(__func__);
 }
 
 static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
@@ -675,7 +691,6 @@ int main(int argc, char **argv)
 	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 
 	conmgr_run(false);
-	conmgr_quiesce(__func__);
 
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
@@ -995,8 +1010,6 @@ int main(int argc, char **argv)
 			_post_reconfig();
 		}
 
-		conmgr_unquiesce(__func__);
-
 		/*
 		 * process slurm background activities, could run as pthread
 		 */
@@ -1149,7 +1162,6 @@ int main(int argc, char **argv)
 #endif
 
 	conmgr_request_shutdown();
-	conmgr_unquiesce(__func__);
 	conmgr_fini();
 
 	rate_limit_shutdown();
@@ -1462,6 +1474,7 @@ static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 {
 	const int *i_ptr = arg;
 	const int i = *i_ptr;
+	int rc = EINVAL;
 
 	debug3("%s: [%s] Successfully opened RPC listener",
 	       __func__, conmgr_fd_get_name(con));
@@ -1470,6 +1483,12 @@ static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 
 	xassert(!listeners.cons[i]);
 	listeners.cons[i] = con;
+
+	if (!listeners.quiesced &&
+	    (rc = conmgr_unquiesce_fd(listeners.cons[i])))
+		fatal_abort("%s: conmgr_unquiesce_fd(%s) failed: %s",
+			    __func__, conmgr_fd_get_name(con),
+			    slurm_strerror(rc));
 
 	slurm_mutex_unlock(&listeners.mutex);
 
@@ -1606,6 +1625,62 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 		return on_backup_msg(con, msg, arg);
 }
 
+extern void listeners_quiesce(void)
+{
+	slurm_mutex_lock(&listeners.mutex);
+
+	if (listeners.quiesced) {
+		slurm_mutex_unlock(&listeners.mutex);
+		return;
+	}
+
+	for (int i = 0; i < listeners.count; i++) {
+		int rc;
+
+		if (!listeners.cons[i])
+			continue;
+
+		/* This should always work */
+		if ((rc = conmgr_quiesce_fd(listeners.cons[i])))
+			fatal_abort("%s: conmgr_quiesce_fd(%s) failed: %s",
+				    __func__,
+				    conmgr_fd_get_name(listeners.cons[i]),
+				    slurm_strerror(rc));
+	}
+
+	listeners.quiesced = true;
+
+	slurm_mutex_unlock(&listeners.mutex);
+}
+
+extern void listeners_unquiesce(void)
+{
+	slurm_mutex_lock(&listeners.mutex);
+
+	if (!listeners.quiesced) {
+		slurm_mutex_unlock(&listeners.mutex);
+		return;
+	}
+
+	for (int i = 0; i < listeners.count; i++) {
+		int rc;
+
+		if (!listeners.cons[i])
+			continue;
+
+		/* This should always work */
+		if ((rc = conmgr_unquiesce_fd(listeners.cons[i])))
+			fatal_abort("%s: conmgr_unquiesce_fd(%s) failed: %s",
+				    __func__,
+				    conmgr_fd_get_name(listeners.cons[i]),
+				    slurm_strerror(rc));
+	}
+
+	listeners.quiesced = false;
+
+	slurm_mutex_unlock(&listeners.mutex);
+}
+
 /*
  * _open_ports - Open all ports for the slurmctld to listen on.
  */
@@ -1647,7 +1722,7 @@ static void _open_ports(void)
 
 	for (uint64_t i = 0; i < listeners.count; i++) {
 		static const conmgr_con_flags_t flags =
-			CON_FLAG_RPC_KEEP_BUFFER;
+			(CON_FLAG_RPC_KEEP_BUFFER | CON_FLAG_QUIESCE);
 		int rc, *index_ptr;
 
 		index_ptr = xmalloc(sizeof(*index_ptr));
@@ -2332,6 +2407,10 @@ static void *_slurmctld_background(void *no_data)
 		slurm_mutex_lock(&shutdown_mutex);
 		if (!slurmctld_config.shutdown_time) {
 			struct timespec ts = {0, 0};
+
+			/* Listen to new incoming RPCs if not shutting down */
+			listeners_unquiesce();
+
 			ts.tv_sec = time(NULL) + 1;
 			slurm_cond_timedwait(&shutdown_cond, &shutdown_mutex,
 					     &ts);
@@ -2372,8 +2451,18 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (slurmctld_config.shutdown_time) {
-			conmgr_quiesce(__func__);
+			/* Always stop listening when shutdown requested */
+			listeners_quiesce();
+
 			_flush_rpcs();
+
+			/*
+			 * Wait for all already accepted connection work to
+			 * finish before continuing on with control loop that
+			 * will unload all the plugins which requires there be
+			 * no active RPCs.
+			 */
+			conmgr_quiesce(__func__);
 
 			if (!report_locks_set()) {
 				info("Saving all slurm state");
@@ -2382,6 +2471,13 @@ static void *_slurmctld_background(void *no_data)
 				error("Semaphores still set after %d seconds, "
 				      "can not save state", CONTROL_TIMEOUT);
 			}
+
+			/*
+			 * Allow other connections to start processing again as
+			 * the listeners are already quiesced
+			 */
+			conmgr_unquiesce(__func__);
+
 			break;
 		}
 
