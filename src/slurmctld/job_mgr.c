@@ -149,6 +149,7 @@ typedef struct {
 	buf_t *buffer;
 	uint32_t  filter_uid;
 	bool has_qos_lock;
+	job_record_t *het_leader;
 	uint32_t  jobs_packed;
 	uint16_t  protocol_version;
 	uint16_t  show_flags;
@@ -10169,6 +10170,28 @@ static int _pack_job(void *object, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_pack_het_job(void *x, void *arg)
+{
+	job_record_t *het_job_ptr = x;
+	_foreach_pack_job_info_t *pack_info = arg;
+
+	xassert(pack_info->het_leader);
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+	if (het_job_ptr->het_job_id != pack_info->het_leader->het_job_id) {
+		error("%s: Bad het_job_list for %pJ", __func__,
+		      pack_info->het_leader);
+		return 0;
+	}
+
+	pack_job(het_job_ptr, pack_info->show_flags, pack_info->buffer,
+		 pack_info->protocol_version, pack_info->uid,
+		 pack_info->has_qos_lock);
+
+	pack_info->jobs_packed++;
+
+	return 0;
+}
+
 static int _foreach_pack_jobid(void *object, void *arg)
 {
 	job_record_t *job_ptr;
@@ -10299,31 +10322,6 @@ extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
 	return pack_info.buffer;
 }
 
-static int _pack_het_job(job_record_t *job_ptr, uint16_t show_flags,
-			 buf_t *buffer, uint16_t protocol_version, uid_t uid)
-{
-	job_record_t *het_job_ptr;
-	int job_cnt = 0;
-	list_itr_t *iter;
-
-	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
-
-	iter = list_iterator_create(job_ptr->het_job_list);
-	while ((het_job_ptr = list_next(iter))) {
-		if (het_job_ptr->het_job_id == job_ptr->het_job_id) {
-			pack_job(het_job_ptr, show_flags, buffer,
-				 protocol_version, uid, true);
-			job_cnt++;
-		} else {
-			error("%s: Bad het_job_list for %pJ",
-			      __func__, job_ptr);
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return job_cnt;
-}
-
 /*
  * pack_one_job - dump information for one jobs in
  *	machine independent form (for network transmission)
@@ -10361,9 +10359,21 @@ extern buf_t *pack_one_job(uint32_t job_id, uint16_t show_flags, uid_t uid,
 	if (job_ptr && job_ptr->het_job_list) {
 		/* Pack heterogeneous job components */
 		if (!hide_job) {
-			jobs_packed = _pack_het_job(job_ptr, show_flags,
-						    buffer, protocol_version,
-						    uid);
+			_foreach_pack_job_info_t pack_info = {
+				.buffer = buffer,
+				.het_leader = job_ptr,
+				.jobs_packed = 0,
+				.protocol_version = protocol_version,
+				.show_flags = show_flags,
+				.uid = uid,
+				.has_qos_lock = true,
+			};
+			(void) list_for_each(job_ptr->het_job_list,
+					     _foreach_pack_het_job,
+					     &pack_info);
+
+			jobs_packed = pack_info.jobs_packed;
+			buffer = pack_info.buffer;
 		}
 	} else if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
 		   !job_ptr->array_recs) {
