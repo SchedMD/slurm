@@ -11776,6 +11776,34 @@ static inline bool _purge_complete_het_job(job_record_t *het_job_leader)
 	return true;
 }
 
+static int _foreach_pre_purge_old_job(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if (_purge_complete_het_job(job_ptr))
+		return 0;
+	if (!IS_JOB_PENDING(job_ptr))
+		return 0;
+
+	if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL) &&
+	    !deadline_ok(job_ptr, __func__))
+		return 0;
+
+	/*
+	 * If the dependency is already invalid there's no reason to
+	 * keep checking it.
+	 */
+	if (job_ptr->state_reason == WAIT_DEP_INVALID)
+		return 0;
+	if (test_job_dependency(job_ptr, NULL) == FAIL_DEPEND) {
+		/* Check what are the job disposition
+		 * to deal with invalid dependencies
+		 */
+		handle_invalid_dependency(job_ptr);
+	}
+	return 0;
+}
+
 /*
  * If the job or slurm.conf requests to not kill on invalid dependency,
  * then set the job state reason to WAIT_DEP_INVALID. Otherwise, kill the
@@ -11812,8 +11840,6 @@ void handle_invalid_dependency(job_record_t *job_ptr)
  */
 void purge_old_job(void)
 {
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr;
 	int i, purge_job_count;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -11825,31 +11851,8 @@ void purge_old_job(void)
 		debug("%s: job file deletion is falling behind, "
 		      "%d left to remove", __func__, purge_job_count);
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (_purge_complete_het_job(job_ptr))
-			continue;
-		if (!IS_JOB_PENDING(job_ptr))
-			continue;
+	(void) list_for_each(job_list, _foreach_pre_purge_old_job, NULL);
 
-		if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL) &&
-		    !deadline_ok(job_ptr, __func__))
-			continue;
-
-		/*
-		 * If the dependency is already invalid there's no reason to
-		 * keep checking it.
-		 */
-		if (job_ptr->state_reason == WAIT_DEP_INVALID)
-			continue;
-		if (test_job_dependency(job_ptr, NULL) == FAIL_DEPEND) {
-			/* Check what are the job disposition
-			 * to deal with invalid dependencies
-			 */
-			handle_invalid_dependency(job_ptr);
-		}
-	}
-	list_iterator_destroy(job_iterator);
 	fed_mgr_test_remote_dependencies();
 
 	i = list_delete_all(job_list, &_list_find_job_old, "");
