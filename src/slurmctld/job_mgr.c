@@ -11702,15 +11702,28 @@ static int _purge_het_job_filter(void *x, void *key)
 	return 0;
 }
 
+static int _foreach_check_old_het_job(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+	job_record_t *het_leader = arg;
+
+	if (het_leader->het_job_id != het_job->het_job_id) {
+		error("%s: Bad het_job_list for %pJ", __func__, het_leader);
+		return 0;
+	}
+
+	if (!_list_find_job_old(het_job, NULL))
+		return -1;
+
+	return 0;
+}
+
 /* If this is a hetjob leader and all components are complete,
  * then purge all job of its hetjob records
  * RET true if this record purged */
 static inline bool _purge_complete_het_job(job_record_t *het_job_leader)
 {
 	job_record_t purge_job_rec;
-	job_record_t *het_job;
-	list_itr_t *iter;
-	bool incomplete_job = false;
 	int i;
 
 	if (!het_job_leader->het_job_list)
@@ -11718,21 +11731,9 @@ static inline bool _purge_complete_het_job(job_record_t *het_job_leader)
 	if (!IS_JOB_FINISHED(het_job_leader))
 		return false;		/* Hetjob leader incomplete */
 
-	iter = list_iterator_create(het_job_leader->het_job_list);
-	while ((het_job = list_next(iter))) {
-		if (het_job_leader->het_job_id != het_job->het_job_id) {
-			error("%s: Bad het_job_list for %pJ",
-			      __func__, het_job_leader);
-			continue;
-		}
-		if (!_list_find_job_old(het_job, NULL)) {
-			incomplete_job = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	if (incomplete_job)
+	if (list_find_first(het_job_leader->het_job_list,
+			    _foreach_check_old_het_job,
+			    het_job_leader))
 		return false;
 
 	purge_job_rec.het_job_id = het_job_leader->het_job_id;
