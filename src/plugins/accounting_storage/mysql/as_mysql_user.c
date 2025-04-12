@@ -1749,7 +1749,7 @@ empty:
 	 * if this flag is set.
 	 */
 	if ((slurm_conf.private_data & PRIVATE_DATA_USERS) ||
-	    (user_cond->assoc_cond &&
+	    (user_cond && user_cond->assoc_cond &&
 	     (user_cond->assoc_cond->flags & ASSOC_COND_FLAG_WITH_NG_USAGE) &&
 	     (slurm_conf.private_data & PRIVATE_DATA_USAGE))) {
 		if (!is_user_min_admin_level(
