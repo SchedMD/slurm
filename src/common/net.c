@@ -342,8 +342,6 @@ static const char *_ip_reserved_to_str(const slurm_addr_t *addr)
 			return "*";
 		else if (ipv4 == INADDR_BROADCAST)
 			return "255.255.255.255";
-		else if (ipv4 == INADDR_NONE)
-			return "";
 #ifdef INADDR_DUMMY
 		else if (ipv4 == INADDR_DUMMY)
 			return "192.0.0.8";
