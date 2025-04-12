@@ -1312,7 +1312,7 @@ extern void jag_common_poll_data(list_t *task_list, uint64_t cont_id,
 			jobacct->last_time = jobacct->cur_time;
 		}
 		if (!jobacct->pid)
-			xfree(prec);
+			destroy_jag_prec(prec);
 	}
 	list_iterator_destroy(itr);
 
