@@ -1239,6 +1239,7 @@ extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 	/* if this changes you will need to edit the corresponding enum */
 	char *qos_req_inx[] = {
 		"name",
+		"deleted",
 		"description",
 		"id",
 		"flags",
@@ -1276,6 +1277,7 @@ extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 	};
 	enum {
 		QOS_REQ_NAME,
+		QOS_REQ_DELETED,
 		QOS_REQ_DESC,
 		QOS_REQ_ID,
 		QOS_REQ_FLAGS,
@@ -1364,6 +1366,9 @@ empty:
 		qos->id = slurm_atoul(row[QOS_REQ_ID]);
 
 		qos->flags = slurm_atoul(row[QOS_REQ_FLAGS]);
+
+		if (row[QOS_REQ_DELETED] && (row[QOS_REQ_DELETED][0] == '1'))
+			qos->flags |= QOS_FLAG_DELETED;
 
 		if (row[QOS_REQ_NAME] && row[QOS_REQ_NAME][0])
 			qos->name = xstrdup(row[QOS_REQ_NAME]);

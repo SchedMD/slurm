@@ -393,42 +393,42 @@ extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond)
 		job_cond->usage_end++;
 }
 
-static uint32_t _str_2_qos_flags(char *flags)
+#define T(flag, str) { flag, XSTRINGIFY(flag), str }
+static const struct {
+	slurmdb_qos_flags_t flag;
+	char *flag_str;
+	char *str;
+} slurmdb_qos_flags_map[] = {
+	T(QOS_FLAG_RELATIVE, "Deleted"),
+	T(QOS_FLAG_DENY_LIMIT, "DenyOnLimit"),
+	T(QOS_FLAG_ENFORCE_USAGE_THRES, "EnforceUsageThreshold"),
+	T(QOS_FLAG_PART_MIN_NODE, "PartitionMinNodes"),
+	T(QOS_FLAG_PART_MAX_NODE, "PartitionMaxNodes"),
+	T(QOS_FLAG_PART_TIME_LIMIT, "PartitionTimeLimit"),
+	T(QOS_FLAG_REQ_RESV, "RequiresReservation"),
+	T(QOS_FLAG_OVER_PART_QOS, "OverPartQOS"),
+	T(QOS_FLAG_PART_QOS, "PartQOS"),
+	T(QOS_FLAG_NO_RESERVE, "NoReserve"),
+	T(QOS_FLAG_NO_DECAY, "NoDecay"),
+	T(QOS_FLAG_RELATIVE, "Relative"),
+	T(QOS_FLAG_USAGE_FACTOR_SAFE, "UsageFactorSafe"),
+	T(QOS_FLAG_INVALID, "INVALID"),
+};
+#undef T
+
+static slurmdb_qos_flags_t _str_2_qos_flags(char *flag_in)
 {
-	if (xstrcasestr(flags, "DenyOnLimit"))
-		return QOS_FLAG_DENY_LIMIT;
+	if (!flag_in || !flag_in[0])
+		return QOS_FLAG_NONE;
 
-	if (xstrcasestr(flags, "EnforceUsageThreshold"))
-		return QOS_FLAG_ENFORCE_USAGE_THRES;
+	for (int i = 0; i < ARRAY_SIZE(slurmdb_qos_flags_map); i++)
+		if (!xstrncasecmp(flag_in, slurmdb_qos_flags_map[i].str,
+				  strlen(flag_in)))
+			return slurmdb_qos_flags_map[i].flag;
 
-	if (xstrcasestr(flags, "PartitionMinNodes"))
-		return QOS_FLAG_PART_MIN_NODE;
-
-	if (xstrcasestr(flags, "PartitionMaxNodes"))
-		return QOS_FLAG_PART_MAX_NODE;
-
-	if (xstrcasestr(flags, "PartitionTimeLimit"))
-		return QOS_FLAG_PART_TIME_LIMIT;
-
-	if (xstrcasestr(flags, "RequiresReservation"))
-		return QOS_FLAG_REQ_RESV;
-
-	if (xstrcasestr(flags, "OverPartQOS"))
-		return QOS_FLAG_OVER_PART_QOS;
-
-	if (xstrcasestr(flags, "NoReserve"))
-		return QOS_FLAG_NO_RESERVE;
-
-	if (xstrcasestr(flags, "NoDecay"))
-		return QOS_FLAG_NO_DECAY;
-
-	if (xstrcasestr(flags, "Relative"))
-		return QOS_FLAG_RELATIVE;
-
-	if (xstrcasestr(flags, "UsageFactorSafe"))
-		return QOS_FLAG_USAGE_FACTOR_SAFE;
-
-	return 0;
+	debug("%s: Unable to match %s to a slurmdbd_qos_flags_t flag",
+	      __func__, flag_in);
+	return QOS_FLAG_INVALID;
 }
 
 static uint32_t _str_2_res_flags(char *flags)
@@ -2108,49 +2108,27 @@ extern uint32_t str_2_job_flags(char *flags)
 	return job_flags;
 }
 
-extern char *slurmdb_qos_flags_str(uint32_t flags)
+extern char *slurmdb_qos_flags_str(slurmdb_qos_flags_t flags)
 {
-	char *qos_flags = NULL;
+	char *qos_flags = NULL, *at = NULL;
 
-	if (flags & QOS_FLAG_NOTSET)
+	if (flags == QOS_FLAG_NOTSET)
 		return xstrdup("NotSet");
 
-	if (flags & QOS_FLAG_ADD)
-		xstrcat(qos_flags, "Add,");
-	if (flags & QOS_FLAG_REMOVE)
-		xstrcat(qos_flags, "Remove,");
-	if (flags & QOS_FLAG_DENY_LIMIT)
-		xstrcat(qos_flags, "DenyOnLimit,");
-	if (flags & QOS_FLAG_ENFORCE_USAGE_THRES)
-		xstrcat(qos_flags, "EnforceUsageThreshold,");
-	if (flags & QOS_FLAG_NO_RESERVE)
-		xstrcat(qos_flags, "NoReserve,");
-	if (flags & QOS_FLAG_PART_MAX_NODE)
-		xstrcat(qos_flags, "PartitionMaxNodes,");
-	if (flags & QOS_FLAG_PART_MIN_NODE)
-		xstrcat(qos_flags, "PartitionMinNodes,");
-	if (flags & QOS_FLAG_OVER_PART_QOS)
-		xstrcat(qos_flags, "OverPartQOS,");
-	if (flags & QOS_FLAG_PART_TIME_LIMIT)
-		xstrcat(qos_flags, "PartitionTimeLimit,");
-	if (flags & QOS_FLAG_REQ_RESV)
-		xstrcat(qos_flags, "RequiresReservation,");
-	if (flags & QOS_FLAG_NO_DECAY)
-		xstrcat(qos_flags, "NoDecay,");
-	if (flags & QOS_FLAG_RELATIVE)
-		xstrcat(qos_flags, "Relative,");
-	if (flags & QOS_FLAG_USAGE_FACTOR_SAFE)
-		xstrcat(qos_flags, "UsageFactorSafe,");
-
-	if (qos_flags)
-		qos_flags[strlen(qos_flags)-1] = '\0';
+	for (int i = 0; i < ARRAY_SIZE(slurmdb_qos_flags_map); i++) {
+		if ((slurmdb_qos_flags_map[i].flag & flags) ==
+		    slurmdb_qos_flags_map[i].flag)
+			xstrfmtcatat(qos_flags, &at, "%s%s",
+				     (qos_flags ? "," : ""),
+				     slurmdb_qos_flags_map[i].str);
+	}
 
 	return qos_flags;
 }
 
-extern uint32_t str_2_qos_flags(char *flags, int option)
+extern slurmdb_qos_flags_t str_2_qos_flags(char *flags, int option)
 {
-	uint32_t qos_flags = 0;
+	slurmdb_qos_flags_t qos_flags = 0;
 	char *token, *my_flags, *last = NULL;
 
 	if (!flags) {

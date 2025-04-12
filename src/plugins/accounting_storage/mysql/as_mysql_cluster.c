@@ -977,6 +977,7 @@ extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		"classification",
 		"control_host",
 		"control_port",
+		"deleted",
 		"features",
 		"federation",
 		"fed_id",
@@ -991,6 +992,7 @@ extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		CLUSTER_REQ_CLASS,
 		CLUSTER_REQ_CH,
 		CLUSTER_REQ_CP,
+		CLUSTER_REQ_DELETED,
 		CLUSTER_REQ_FEATURES,
 		CLUSTER_REQ_FEDR,
 		CLUSTER_REQ_FEDID,
@@ -1075,6 +1077,10 @@ empty:
 		cluster->rpc_version = slurm_atoul(row[CLUSTER_REQ_VERSION]);
 		cluster->dimensions = slurm_atoul(row[CLUSTER_REQ_DIMS]);
 		cluster->flags = slurm_atoul(row[CLUSTER_REQ_FLAGS]);
+
+		if (row[CLUSTER_REQ_DELETED] &&
+		    (row[CLUSTER_REQ_DELETED][0] == '1'))
+			cluster->flags |= CLUSTER_FLAG_DELETED;
 
 		query = xstrdup_printf(
 			"select tres, cluster_nodes from "

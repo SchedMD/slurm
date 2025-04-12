@@ -7163,6 +7163,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(QOS_FLAGS)[] = {
 	add_flag_masked_bit(QOS_FLAG_NOTSET, ~QOS_FLAG_BASE, "NOT_SET"),
 	add_flag_masked_bit(QOS_FLAG_ADD, ~QOS_FLAG_BASE, "ADD"),
 	add_flag_masked_bit(QOS_FLAG_REMOVE, ~QOS_FLAG_BASE, "REMOVE"),
+	add_flag_masked_bit(QOS_FLAG_DELETED, QOS_FLAG_BASE, "DELETED"),
 	add_flag_masked_bit(QOS_FLAG_PART_MIN_NODE, QOS_FLAG_BASE, "PARTITION_MINIMUM_NODE"),
 	add_flag_masked_bit(QOS_FLAG_PART_MAX_NODE, QOS_FLAG_BASE, "PARTITION_MAXIMUM_NODE"),
 	add_flag_masked_bit(QOS_FLAG_PART_TIME_LIMIT, QOS_FLAG_BASE, "PARTITION_TIME_LIMIT"),
@@ -7171,6 +7172,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(QOS_FLAGS)[] = {
 	add_flag_masked_bit(QOS_FLAG_REQ_RESV, QOS_FLAG_BASE, "REQUIRED_RESERVATION"),
 	add_flag_masked_bit(QOS_FLAG_DENY_LIMIT, QOS_FLAG_BASE, "DENY_LIMIT"),
 	add_flag_masked_bit(QOS_FLAG_OVER_PART_QOS, QOS_FLAG_BASE, "OVERRIDE_PARTITION_QOS"),
+	add_flag_masked_bit(QOS_FLAG_PART_QOS, QOS_FLAG_BASE, "PARTITION_QOS"),
 	add_flag_masked_bit(QOS_FLAG_NO_DECAY, QOS_FLAG_BASE, "NO_DECAY"),
 	add_flag_masked_bit(QOS_FLAG_USAGE_FACTOR_SAFE, QOS_FLAG_BASE, "USAGE_FACTOR_SAFE"),
 	add_flag_masked_bit(QOS_FLAG_RELATIVE, QOS_FLAG_BASE, "RELATIVE"),
@@ -7337,6 +7339,7 @@ static const parser_t PARSER_ARRAY(STATS_RPC)[] = {
 #undef add_parse
 
 static const flag_bit_t PARSER_FLAG_ARRAY(CLUSTER_REC_FLAGS)[] = {
+	add_flag_bit(CLUSTER_FLAG_DELETED, "DELETED"),
 	add_flag_bit(CLUSTER_FLAG_REGISTER, "REGISTERING"),
 	add_flag_bit(CLUSTER_FLAG_MULTSD, "MULTIPLE_SLURMD"),
 	add_flag_bit(CLUSTER_FLAG_FE, "FRONT_END"),
@@ -10353,10 +10356,10 @@ static const parser_t parsers[] = {
 	addfa(SLURMDB_JOB_FLAGS, uint32_t),
 	addfa(ACCOUNT_FLAGS, uint32_t),
 	addfa(WCKEY_FLAGS, uint32_t),
-	addfa(QOS_FLAGS, uint32_t),
+	addfa(QOS_FLAGS, slurmdb_qos_flags_t),
 	addfa(QOS_CONDITION_FLAGS, uint16_t),
 	addfa(QOS_PREEMPT_MODES, uint16_t),
-	addfa(CLUSTER_REC_FLAGS, uint32_t),
+	addfa(CLUSTER_REC_FLAGS, slurmdb_cluster_flags_t),
 	addfa(NODE_STATES, uint32_t),
 	addfa(PARTITION_STATES, uint16_t),
 	addfa(JOB_FLAGS, uint64_t),
