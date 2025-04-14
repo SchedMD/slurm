@@ -41,10 +41,12 @@
 
 extern int slurm_curl_request(const char *data, const char *url,
 			      const char *username, const char *password,
+			      const char *mtls_ca_path,
+			      const char *mtls_cert_path, char *mtls_key_path,
 			      struct curl_slist *headers, uint32_t timeout,
 			      char **response_str, long *response_code,
 			      http_request_method_t request_method,
-			      bool verify_cert);
+			      bool verify_cert, bool use_mtls);
 
 extern int slurm_curl_init(void);
 

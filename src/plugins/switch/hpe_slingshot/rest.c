@@ -125,9 +125,9 @@ again:
 		password = conn->auth.u.basic.password;
 	}
 
-	if (slurm_curl_request(req, url, username, password, headers,
-			       conn->timeout, &response_str, status,
-			       request_method, false))
+	if (slurm_curl_request(req, url, username, password, NULL, NULL, NULL,
+			       headers, conn->timeout, &response_str, status,
+			       request_method, false, false))
 		goto err;
 
 	/* Decode response into JSON */
@@ -402,9 +402,10 @@ static bool _get_auth_header(slingshot_rest_conn_t *conn,
 				     "&scope=openid",
 				     client_id, client_secret);
 
-		if (slurm_curl_request(req, url, NULL, NULL, NULL,
-				       SLINGSHOT_TOKEN_TIMEOUT, &response_str,
-				       &status, HTTP_REQUEST_POST, false))
+		if (slurm_curl_request(req, url, NULL, NULL, NULL, NULL, NULL,
+				       NULL, SLINGSHOT_TOKEN_TIMEOUT,
+				       &response_str, &status,
+				       HTTP_REQUEST_POST, false, false))
 			goto err;
 
 		/* Decode response into JSON */
