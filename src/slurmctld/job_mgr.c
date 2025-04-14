@@ -311,6 +311,13 @@ typedef struct {
 	uid_t uid;
 } foreach_update_hetjob_t;
 
+typedef struct {
+	job_record_t *het_leader;
+	bool indf_susp;
+	uint16_t op;
+	int rc;
+} foreach_sus_hetjob_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -17529,6 +17536,22 @@ static int _job_suspend_op(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 	return rc;
 }
 
+static int _foreach_hetjob_suspend(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+	foreach_sus_hetjob_t *sus_hetjob = arg;
+	int rc = SLURM_SUCCESS;
+
+	if (sus_hetjob->het_leader->het_job_id != het_job->het_job_id) {
+		error("%s: Bad het_job_list for %pJ",
+		      __func__, sus_hetjob->het_leader);
+		return 0;
+	}
+	rc = _job_suspend_op(het_job, sus_hetjob->op, sus_hetjob->indf_susp);
+	if (rc != SLURM_SUCCESS)
+		sus_hetjob->rc = rc;
+	return 0;
+}
 
 /*
  * _job_suspend - perform some suspend/resume operation, if the specified
@@ -17543,9 +17566,7 @@ static int _job_suspend_op(job_record_t *job_ptr, uint16_t op, bool indf_susp)
  */
 static int _job_suspend(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 {
-	job_record_t *het_job;
-	int rc = SLURM_SUCCESS, rc1;
-	list_itr_t *iter;
+	int rc = SLURM_SUCCESS;
 
 	if (job_ptr->het_job_id && !job_ptr->het_job_list)
 		return ESLURM_NOT_WHOLE_HET_JOB;
@@ -17554,18 +17575,16 @@ static int _job_suspend(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 	srun_job_suspend(job_ptr, op);
 
 	if (job_ptr->het_job_list) {
-		iter = list_iterator_create(job_ptr->het_job_list);
-		while ((het_job = list_next(iter))) {
-			if (job_ptr->het_job_id != het_job->het_job_id) {
-				error("%s: Bad het_job_list for %pJ",
-				      __func__, job_ptr);
-				continue;
-			}
-			rc1 = _job_suspend_op(het_job, op, indf_susp);
-			if (rc1 != SLURM_SUCCESS)
-				rc = rc1;
-		}
-		list_iterator_destroy(iter);
+		foreach_sus_hetjob_t sus_hetjob = {
+			.het_leader = job_ptr,
+			.indf_susp = indf_susp,
+			.op = op,
+			.rc = SLURM_SUCCESS,
+		};
+		(void) list_for_each(job_ptr->het_job_list,
+				     _foreach_hetjob_suspend,
+				     &sus_hetjob);
+		rc = sus_hetjob.rc;
 	} else {
 		rc = _job_suspend_op(job_ptr, op, indf_susp);
 	}
