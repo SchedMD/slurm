@@ -18296,6 +18296,11 @@ static int _set_top(list_t *top_job_list, uid_t uid)
 	prio_list = list_create(xfree_ptr);
 	(void) list_for_each(job_list, _top_job_flag_clear, NULL);
 
+	/*
+	 * Skipping all these list iterators.
+	 * We want to rewrite how job_set_top works.
+	 */
+
 	/* Validate the jobs in our "top" list */
 	iter = list_iterator_create(top_job_list);
 	while ((job_ptr = list_next(iter))) {
