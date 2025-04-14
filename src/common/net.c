@@ -377,6 +377,8 @@ static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
 			xstrfmtcat(resp, "%s:%hu", host, port);
 		else if (port)
 			xstrfmtcat(resp, ":%hu", port);
+		else if (host)
+			xstrfmtcat(resp, "%s", host);
 	} else if (addr->ss_family == AF_INET6) {
 		const struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr;
 		const uint16_t port = ntohs(in6->sin6_port);
@@ -394,6 +396,9 @@ static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
 			xstrfmtcat(resp, "[%s]:%hu", host, port);
 		else if (port)
 			xstrfmtcat(resp, "[::]:%hu", port);
+		else if (host)
+			xstrfmtcat(resp, "%s", host);
+
 	}
 
 	return resp;
