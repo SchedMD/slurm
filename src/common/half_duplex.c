@@ -97,8 +97,6 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 shutdown:
 	obj->shutdown = true;
 	shutdown(obj->fd, SHUT_RD);
-	close(obj->fd);
-	obj->fd = -1;
 	if (fd_out) {
 		shutdown(*fd_out, SHUT_WR);
 		xfree(fd_out);
