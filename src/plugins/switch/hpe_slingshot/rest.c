@@ -300,6 +300,10 @@ extern void slingshot_rest_destroy_connection(slingshot_rest_conn_t *conn)
 		}
 	}
 	xfree(conn->auth.auth_dir);
+	xfree(conn->mtls.ca_path);
+	xfree(conn->mtls.cert_path);
+	xfree(conn->mtls.key_path);
+	xfree(conn->mtls.url);
 	_clear_auth_header(conn);
 }
 

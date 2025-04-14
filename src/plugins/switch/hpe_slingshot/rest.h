@@ -78,6 +78,14 @@ typedef struct {
 } slingshot_rest_authdata_t;
 
 typedef struct {
+	char *ca_path; /* path to FM certificate bundle */
+	char *cert_path; /* path to client public certificate */
+	bool enabled; /* true if mTLS is enabled */
+	char *key_path; /* path to client private key */
+	char *url; /* url for mTLS authentication to FM */
+} slingshot_rest_mtls_t;
+
+typedef struct {
 	CURL *handle;            /* CURL connection handle */
 	char *data;              /* Response data buffer */
 	size_t datalen;          /* Length of the response data */
@@ -85,6 +93,7 @@ typedef struct {
 	const char *name;        /* Descriptive name for logging */
 	char *base_url;          /* The current site URL */
 	slingshot_rest_authdata_t auth; /* Authorization method/data */
+	slingshot_rest_mtls_t mtls; /* mTLS data */
 	unsigned short timeout;  /* Communication timeout */
 	unsigned short connect_timeout; /* Connection timeout */
 } slingshot_rest_conn_t;
