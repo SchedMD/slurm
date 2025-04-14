@@ -4052,11 +4052,6 @@ static void _run_primary_prog(bool primary_on)
 	if ((prog_name == NULL) || (prog_name[0] == '\0'))
 		return;
 
-	if (access(prog_name, X_OK) < 0) {
-		error("%s: Invalid %s: %m", __func__, prog_type);
-		return;
-	}
-
 	info("%s: Running %s", __func__, prog_type);
 
 	sep = strrchr(prog_name, '/');
