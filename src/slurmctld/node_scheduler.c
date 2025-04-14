@@ -108,10 +108,11 @@ struct node_set {		/* set of nodes with same configuration */
 					 * node_weight and flags */
 };
 
-#define NODE_SET_NOFLAG		0x00
-#define NODE_SET_REBOOT		0x01
-#define NODE_SET_OUTSIDE_FLEX	0x02
-#define NODE_SET_POWER_DN	0x04
+#define NODE_SET_NOFLAG SLURM_BIT(0)
+#define NODE_SET_REBOOT SLURM_BIT(1)
+#define NODE_SET_OUTSIDE_FLEX SLURM_BIT(2)
+#define NODE_SET_POWER_DN SLURM_BIT(3)
+#define NODE_SET_POWERING_UP SLURM_BIT(4)
 
 enum {
 	IN_FL,		/* Inside flex reservation */
@@ -3658,34 +3659,52 @@ extern int job_req_node_filter(job_record_t *job_ptr,
  * IN nset_node_bitmap - bitmap of nodes for the new node_set record
  * IN nset_flags - flags of nodes for the new node_set record
  */
-static void _split_node_set(struct node_set *node_set_ptr,
-			    config_record_t *config_ptr,
+static void _split_node_set(struct node_set *nset, config_record_t *config_ptr,
 			    int nset_inx_base, int nset_inx,
 			    bitstr_t *nset_feature_bits,
 			    bitstr_t *nset_node_bitmap, uint32_t nset_flags)
 {
-	node_set_ptr[nset_inx].cpus_per_node = config_ptr->cpus;
-	node_set_ptr[nset_inx].features = xstrdup(config_ptr->feature);
-	node_set_ptr[nset_inx].feature_bits = bit_copy(nset_feature_bits);
-	node_set_ptr[nset_inx].flags = nset_flags;
-	node_set_ptr[nset_inx].real_memory = config_ptr->real_memory;
-	node_set_ptr[nset_inx].node_weight =
-		node_set_ptr[nset_inx_base].node_weight;
+	nset[nset_inx].cpus_per_node = config_ptr->cpus;
+	nset[nset_inx].features = xstrdup(config_ptr->feature);
+	nset[nset_inx].feature_bits = bit_copy(nset_feature_bits);
+	nset[nset_inx].flags = nset_flags;
+	nset[nset_inx].real_memory = config_ptr->real_memory;
+	nset[nset_inx].node_weight = nset[nset_inx_base].node_weight;
 
 	/*
 	 * The bitmap of this new nodeset will contain only the nodes that
 	 * are present both in the original bitmap AND in the new bitmap.
 	 */
-	node_set_ptr[nset_inx].my_bitmap =
-		bit_copy(node_set_ptr[nset_inx_base].my_bitmap);
-	bit_and(node_set_ptr[nset_inx].my_bitmap, nset_node_bitmap);
-	node_set_ptr[nset_inx].node_cnt =
-		bit_set_count(node_set_ptr[nset_inx].my_bitmap);
+	nset[nset_inx].my_bitmap = bit_copy(nset[nset_inx_base].my_bitmap);
+	bit_and(nset[nset_inx].my_bitmap, nset_node_bitmap);
+	nset[nset_inx].node_cnt = bit_set_count(nset[nset_inx].my_bitmap);
 
 	/* Now we remove these nodes from the original bitmap */
-	bit_and_not(node_set_ptr[nset_inx_base].my_bitmap,
-		    nset_node_bitmap);
-	node_set_ptr[nset_inx_base].node_cnt -= node_set_ptr[nset_inx].node_cnt;
+	bit_and_not(nset[nset_inx_base].my_bitmap, nset_node_bitmap);
+	nset[nset_inx_base].node_cnt -= nset[nset_inx].node_cnt;
+}
+
+/* Split from an existing node_set */
+static void _split_node_set2(struct node_set *nset, int idx, int *last_inx,
+			     int cnt, bitstr_t *nset_bitmap,
+			     uint32_t nset_flags)
+{
+	nset[*last_inx].cpus_per_node = nset[idx].cpus_per_node;
+	nset[*last_inx].features = xstrdup(nset[idx].features);
+	nset[*last_inx].feature_bits = bit_copy(nset[idx].feature_bits);
+	nset[*last_inx].flags = nset_flags;
+	nset[*last_inx].real_memory = nset[idx].real_memory;
+	nset[*last_inx].node_weight = nset[idx].node_weight;
+
+	nset[*last_inx].my_bitmap = bit_copy(nset[idx].my_bitmap);
+	bit_and(nset[*last_inx].my_bitmap, nset_bitmap);
+	nset[*last_inx].node_cnt = cnt;
+
+	/* Remove the bits and count from the original set */
+	bit_and_not(nset[idx].my_bitmap, nset_bitmap);
+	nset[idx].node_cnt -= cnt;
+
+	(*last_inx)++;
 }
 
 static void _apply_extra_constraints(job_record_t *job_ptr,
@@ -3731,7 +3750,7 @@ static int _build_node_list(job_record_t *job_ptr,
 			    bool can_reboot)
 {
 	int adj_cpus, i, node_set_inx, node_set_len, node_set_inx_base;
-	int power_cnt, rc, qos_cnt;
+	int rc, qos_cnt;
 	struct node_set *node_set_ptr, *prev_node_set_ptr;
 	config_record_t *config_ptr;
 	part_record_t *part_ptr = job_ptr->part_ptr;
@@ -3840,7 +3859,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	if (can_reboot)
 		reboot_bitmap = bit_alloc(node_record_count);
 	node_set_inx = 0;
-	node_set_len = list_count(config_list) * 16 + 1;
+	node_set_len = list_count(config_list) * 32 + 1;
 	node_set_ptr = xcalloc(node_set_len, sizeof(struct node_set));
 	config_iterator = list_iterator_create(config_list);
 	while ((config_ptr = list_next(config_iterator))) {
@@ -4134,13 +4153,34 @@ end_node_set:
 		xfree(*err_msg);
 
 	/*
-	 * If any nodes are powered down, put them into a new node_set
-	 * record with a higher scheduling weight. This means we avoid
-	 * scheduling jobs on powered down nodes where possible.
+	 * If any nodes are powered down or powering up, put them into a
+	 * new node_sets record with a higher scheduling weight. This means
+	 * we avoid scheduling jobs on powered down and powering up nodes where
+	 * possible. If those are required we prefer powering up nodes over
+	 * powered down nodes.
 	 */
+	for (i = (node_set_inx - 1); i >= 0; i--) {
+		int booting_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
+					      booting_node_bitmap);
+		if (booting_cnt == 0)
+			continue; /* no nodes powering up */
+		if (booting_cnt == node_set_ptr[i].node_cnt) {
+			node_set_ptr[i].flags = NODE_SET_POWERING_UP;
+			continue; /* all nodes powering up */
+		}
+
+		/* Some nodes powering up, split record */
+		_split_node_set2(node_set_ptr, i, &node_set_inx, booting_cnt,
+				 booting_node_bitmap, NODE_SET_POWERING_UP);
+		if (node_set_inx >= node_set_len) {
+			error("%s: node_set buffer filled", __func__);
+			break;
+		}
+	}
+
 	for (i = (node_set_inx-1); i >= 0; i--) {
-		power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
-					power_down_node_bitmap);
+		int power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
+					    power_down_node_bitmap);
 		if (power_cnt == 0)
 			continue;	/* no nodes powered down */
 		if (power_cnt == node_set_ptr[i].node_cnt) {
@@ -4149,26 +4189,8 @@ end_node_set:
 		}
 
 		/* Some nodes powered down, others up, split record */
-		node_set_ptr[node_set_inx].cpus_per_node =
-			node_set_ptr[i].cpus_per_node;
-		node_set_ptr[node_set_inx].real_memory =
-			node_set_ptr[i].real_memory;
-		node_set_ptr[node_set_inx].node_cnt = power_cnt;
-		node_set_ptr[i].node_cnt -= power_cnt;
-		node_set_ptr[node_set_inx].flags = NODE_SET_POWER_DN;
-		node_set_ptr[node_set_inx].node_weight =
-			node_set_ptr[i].node_weight;
-		node_set_ptr[node_set_inx].features =
-			xstrdup(node_set_ptr[i].features);
-		node_set_ptr[node_set_inx].feature_bits =
-			bit_copy(node_set_ptr[i].feature_bits);
-		node_set_ptr[node_set_inx].my_bitmap =
-			bit_copy(node_set_ptr[i].my_bitmap);
-		bit_and(node_set_ptr[node_set_inx].my_bitmap,
-			power_down_node_bitmap);
-		bit_and_not(node_set_ptr[i].my_bitmap, power_down_node_bitmap);
-
-		node_set_inx++;
+		_split_node_set2(node_set_ptr, i, &node_set_inx, power_cnt,
+				 power_down_node_bitmap, NODE_SET_POWER_DN);
 		if (node_set_inx >= node_set_len) {
 			error("%s: node_set buffer filled", __func__);
 			break;
@@ -4245,8 +4267,11 @@ static void _set_sched_weight(struct node_set *node_set_ptr)
 	node_set_ptr->sched_weight |= 0xff;
 	if ((node_set_ptr->flags & NODE_SET_REBOOT) ||
 	    (node_set_ptr->flags & NODE_SET_POWER_DN))	/* Boot required */
+		node_set_ptr->sched_weight |= 0x30000000000;
+	else if ((node_set_ptr->flags & NODE_SET_POWERING_UP))
 		node_set_ptr->sched_weight |= 0x20000000000;
-	if (node_set_ptr->flags & NODE_SET_OUTSIDE_FLEX)
+	else if (node_set_ptr->flags & NODE_SET_OUTSIDE_FLEX ||
+		 node_set_ptr->flags & NODE_SET_POWERING_UP)
 		node_set_ptr->sched_weight |= 0x10000000000;
 }
 

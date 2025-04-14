@@ -6815,8 +6815,8 @@ considered for scheduling individually.
 The default value is 1.
 
 \fBNOTE\fR: Node weights are first considered among currently available
-nodes. For example, a POWERED_DOWN node with a lower weight will not be
-evaluated before an IDLE node.
+nodes. For example, POWERED_DOWN and POWERING_UP nodes with lower weights will
+not be evaluated before a powered up IDLE node.
 .IP
 
 .SH "DOWN NODE CONFIGURATION"

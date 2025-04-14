@@ -2375,7 +2375,8 @@ static void _set_sched_weight(bitstr_t *node_bitmap, bool future)
 		    IS_NODE_REBOOT_ISSUED(node_ptr))
 			node_ptr->sched_weight |= 0x200;
 		if (IS_NODE_POWERED_DOWN(node_ptr) ||
-		    IS_NODE_POWERING_DOWN(node_ptr))
+		    IS_NODE_POWERING_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_UP(node_ptr))
 			node_ptr->sched_weight |= 0x2000000000000;
 	}
 }
