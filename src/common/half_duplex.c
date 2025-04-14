@@ -190,8 +190,6 @@ shutdown:
 		*tls_conn_in = NULL;
 	}
 	shutdown(obj->fd, SHUT_RD);
-	close(obj->fd);
-	obj->fd = -1;
 	if (fd_out) {
 		if (tls_conn_out && *tls_conn_out) {
 			conn_g_destroy(*tls_conn_out, false);
