@@ -318,6 +318,14 @@ typedef struct {
 	int rc;
 } foreach_sus_hetjob_t;
 
+typedef struct {
+	uint32_t flags;
+	job_record_t *het_leader;
+	bool preempt;
+	int rc;
+	uid_t uid;
+} foreach_requeue_hetjob_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -18051,6 +18059,26 @@ reply:
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_hetjob_requeue(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+	foreach_requeue_hetjob_t *requeue_hetjob = arg;
+	int rc;
+
+	if (requeue_hetjob->het_leader->het_job_id != het_job->het_job_id) {
+		error("%s: Bad het_job_list for %pJ",
+		      __func__, requeue_hetjob->het_leader);
+		return 0;
+	}
+	rc = _job_requeue_op(requeue_hetjob->uid,
+			     het_job,
+			     requeue_hetjob->preempt,
+			     requeue_hetjob->flags);
+	if (rc != SLURM_SUCCESS)
+		requeue_hetjob->rc = rc;
+	return 0;
+}
+
 /*
  * _job_requeue - Requeue a running or pending batch job, if the specified
  *		  job records is a hetjob leader, perform the operation on all
@@ -18063,26 +18091,23 @@ reply:
 static int _job_requeue(uid_t uid, job_record_t *job_ptr, bool preempt,
 			uint32_t flags)
 {
-	job_record_t *het_job;
-	int rc = SLURM_SUCCESS, rc1;
-	list_itr_t *iter;
+	int rc = SLURM_SUCCESS;
 
 	if (job_ptr->het_job_id && !job_ptr->het_job_list)
 		return ESLURM_NOT_HET_JOB_LEADER;
 
 	if (job_ptr->het_job_list) {
-		iter = list_iterator_create(job_ptr->het_job_list);
-		while ((het_job = list_next(iter))) {
-			if (job_ptr->het_job_id != het_job->het_job_id) {
-				error("%s: Bad het_job_list for %pJ",
-				      __func__, job_ptr);
-				continue;
-			}
-			rc1 = _job_requeue_op(uid, het_job, preempt, flags);
-			if (rc1 != SLURM_SUCCESS)
-				rc = rc1;
-		}
-		list_iterator_destroy(iter);
+		foreach_requeue_hetjob_t requeue_hetjob = {
+			.flags = flags,
+			.het_leader = job_ptr,
+			.preempt = preempt,
+			.rc = SLURM_SUCCESS,
+			.uid = uid,
+		};
+		(void) list_for_each(job_ptr->het_job_list,
+				     _foreach_hetjob_requeue,
+				     &requeue_hetjob);
+		rc = requeue_hetjob.rc;
 	} else {
 		rc = _job_requeue_op(uid, job_ptr, preempt, flags);
 	}
