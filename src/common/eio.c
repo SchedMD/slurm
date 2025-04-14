@@ -279,6 +279,21 @@ static int _eio_wakeup_handler(eio_handle_t *eio)
 	return 0;
 }
 
+static int _close_eio_socket(void *x, void *key)
+{
+	eio_obj_t *e = (eio_obj_t *) x;
+	time_t *now = (time_t *) key;
+
+	if (difftime(*now, e->close_time) < DEFAULT_EIO_SHUTDOWN_WAIT)
+		return 0;
+
+	debug4("%s closing eio->fd: %d", __func__, e->fd);
+	close(e->fd);
+	e->fd = -1;
+
+	return 1;
+}
+
 int eio_handle_mainloop(eio_handle_t *eio)
 {
 	int            retval  = 0;
@@ -286,7 +301,7 @@ int eio_handle_mainloop(eio_handle_t *eio)
 	eio_obj_t    **map     = NULL;
 	unsigned int   maxnfds = 0, nfds = 0;
 	unsigned int   n       = 0;
-	time_t shutdown_time;
+	time_t shutdown_time, now;
 
 	xassert (eio != NULL);
 	xassert (eio->magic == EIO_MAGIC);
@@ -342,11 +357,19 @@ int eio_handle_mainloop(eio_handle_t *eio)
 			      __func__, eio->shutdown_wait);
 			break;
 		}
+
+		/*
+		 * Close and remove all expired eio objects at every wakeup.
+		 */
+		now = time(NULL);
+		list_delete_all(eio->del_objs, _close_eio_socket, &now);
 	}
 
 error:
 	retval = -1;
 done:
+	now = 0;
+	list_delete_all(eio->del_objs, _close_eio_socket, &now);
 	xfree(pollfds);
 	xfree(map);
 	return retval;
@@ -469,7 +492,7 @@ static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList,
 			      obj->fd);
 			obj->shutdown = true;
 		}
-		return;
+		goto end;
 	}
 
 	if ((revents & POLLHUP) && ((revents & POLLIN) == 0)) {
@@ -511,6 +534,11 @@ static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList,
 			debug("No handler for POLLOUT");
 			obj->shutdown = true;
 		}
+	}
+
+end:
+	if (obj->ops->handle_cleanup) {
+		(*obj->ops->handle_cleanup) (obj, objList, del_objs);
 	}
 }
 
