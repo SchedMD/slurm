@@ -18720,6 +18720,40 @@ extern int update_job_wckey(char *module, job_record_t *job_ptr,
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_send_jobs_to_accounting(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if (!job_ptr->assoc_id) {
+		slurmdb_assoc_rec_t assoc_rec = {
+			.acct = job_ptr->account,
+			.partition = job_ptr->part_ptr ?
+			job_ptr->part_ptr->name : NULL,
+			.uid = job_ptr->user_id,
+		};
+
+		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+					    accounting_enforce,
+					    &job_ptr->assoc_ptr, false) &&
+		    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
+			_job_fail_account(job_ptr, __func__, false);
+			return 0;
+		} else
+			job_ptr->assoc_id = assoc_rec.id;
+	}
+
+	/* we only want active, un accounted for jobs */
+	if (IS_JOB_IN_DB(job_ptr) || IS_JOB_FINISHED(job_ptr))
+		return 0;
+
+	debug("first reg: starting %pJ in accounting", job_ptr);
+	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
+	if (IS_JOB_SUSPENDED(job_ptr))
+		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+	return 0;
+}
+
 /*
  * Currently only sends active and suspsended jobs not already in the database.
  *
@@ -18733,46 +18767,12 @@ extern int update_job_wckey(char *module, job_record_t *job_ptr,
  */
 extern int send_jobs_to_accounting(void)
 {
-	list_itr_t *itr = NULL;
-	job_record_t *job_ptr;
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
 	/* send jobs in pending or running state */
 	lock_slurmctld(job_write_lock);
-	itr = list_iterator_create(job_list);
-	while ((job_ptr = list_next(itr))) {
-		if (!job_ptr->assoc_id) {
-			slurmdb_assoc_rec_t assoc_rec;
-			memset(&assoc_rec, 0,
-			       sizeof(assoc_rec));
-			assoc_rec.acct      = job_ptr->account;
-			if (job_ptr->part_ptr)
-				assoc_rec.partition = job_ptr->part_ptr->name;
-			assoc_rec.uid       = job_ptr->user_id;
-
-			if (assoc_mgr_fill_in_assoc(
-				    acct_db_conn, &assoc_rec,
-				    accounting_enforce,
-				    &job_ptr->assoc_ptr, false) &&
-			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
-				_job_fail_account(job_ptr, __func__, false);
-				continue;
-			} else
-				job_ptr->assoc_id = assoc_rec.id;
-		}
-
-		/* we only want active, un accounted for jobs */
-		if (IS_JOB_IN_DB(job_ptr) || IS_JOB_FINISHED(job_ptr))
-			continue;
-
-		debug("first reg: starting %pJ in accounting", job_ptr);
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-
-		if (IS_JOB_SUSPENDED(job_ptr))
-			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
-	}
-	list_iterator_destroy(itr);
+	(void) list_for_each(job_list, _foreach_send_jobs_to_accounting, NULL);
 	unlock_slurmctld(job_write_lock);
 
 	return SLURM_SUCCESS;
