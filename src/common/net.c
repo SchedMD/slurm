@@ -339,7 +339,7 @@ static const char *_ip_reserved_to_str(const slurm_addr_t *addr)
 		if (ipv4 == INADDR_LOOPBACK)
 			return "localhost";
 		else if (ipv4 == INADDR_ANY)
-			return "*";
+			return "0.0.0.0";
 		else if (ipv4 == INADDR_BROADCAST)
 			return "255.255.255.255";
 #ifdef INADDR_DUMMY
