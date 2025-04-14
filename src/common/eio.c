@@ -91,6 +91,7 @@ struct eio_handle_components {
 	uint16_t shutdown_wait;
 	list_t *obj_list;
 	list_t *new_objs;
+	list_t *del_objs;
 };
 
 typedef struct {
@@ -106,8 +107,10 @@ static int          _poll_internal(struct pollfd *pfds, unsigned int nfds,
 static unsigned int _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[],
 					list_t *l);
 static void _poll_dispatch(struct pollfd *pfds, unsigned int nfds,
-			   eio_obj_t *map[], list_t *objList);
-static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList);
+			   eio_obj_t *map[], list_t *objList,
+			   list_t *del_objs);
+static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList,
+			       list_t *del_objs);
 
 eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 {
@@ -125,6 +128,7 @@ eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 
 	eio->obj_list = list_create(eio_obj_destroy);
 	eio->new_objs = list_create(eio_obj_destroy);
+	eio->del_objs = list_create(eio_obj_destroy);
 
 	slurm_mutex_init(&eio->shutdown_mutex);
 	eio->shutdown_wait = DEFAULT_EIO_SHUTDOWN_WAIT;
@@ -142,6 +146,7 @@ void eio_handle_destroy(eio_handle_t *eio)
 	close(eio->fds[1]);
 	FREE_NULL_LIST(eio->obj_list);
 	FREE_NULL_LIST(eio->new_objs);
+	FREE_NULL_LIST(eio->del_objs);
 	slurm_mutex_destroy(&eio->shutdown_mutex);
 
 	eio->magic = ~EIO_MAGIC;
@@ -325,7 +330,8 @@ int eio_handle_mainloop(eio_handle_t *eio)
 		if (pollfds[nfds-1].revents & POLLIN)
 			_eio_wakeup_handler(eio);
 
-		_poll_dispatch(pollfds, nfds - 1, map, eio->obj_list);
+		_poll_dispatch(pollfds, nfds - 1, map, eio->obj_list,
+			       eio->del_objs);
 
 		slurm_mutex_lock(&eio->shutdown_mutex);
 		shutdown_time = eio->shutdown_time;
@@ -432,17 +438,20 @@ static unsigned int _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[],
 }
 
 static void _poll_dispatch(struct pollfd *pfds, unsigned int nfds,
-			   eio_obj_t *map[], list_t *objList)
+			   eio_obj_t *map[], list_t *objList,
+			   list_t *del_objs)
 {
 	int i;
 
 	for (i = 0; i < nfds; i++) {
 		if (pfds[i].revents > 0)
-			_poll_handle_event(pfds[i].revents, map[i], objList);
+			_poll_handle_event(pfds[i].revents, map[i], objList,
+					   del_objs);
 	}
 }
 
-static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList)
+static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList,
+			       list_t *del_objs)
 {
 	bool read_called = false;
 	bool write_called = false;
