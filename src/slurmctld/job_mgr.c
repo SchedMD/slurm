@@ -326,6 +326,11 @@ typedef struct {
 	uid_t uid;
 } foreach_requeue_hetjob_t;
 
+typedef struct {
+	uint32_t id;
+	int cnt;
+} foreach_hold_by_id_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -18569,6 +18574,17 @@ static int _update_job_nodes_str(job_record_t *job_ptr)
 	return 0;
 }
 
+static int _foreach_hold_by_assoc(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	foreach_hold_by_id_t *hold_by_id = arg;
+
+	if (job_ptr->assoc_id == hold_by_id->id)
+		hold_by_id->cnt += _job_fail_account(job_ptr, __func__, false);
+
+	return 0;
+}
+
 /*
  * job_hold_by_assoc_id - Hold all pending jobs with a given
  *	association ID. This happens when an association is deleted (e.g. when
@@ -18577,27 +18593,22 @@ static int _update_job_nodes_str(job_record_t *job_ptr)
  */
 extern int job_hold_by_assoc_id(uint32_t assoc_id)
 {
-	int cnt = 0;
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	foreach_hold_by_id_t hold_by_id = {
+		.id = assoc_id,
+		.cnt = 0,
+	};
 
 	if (!job_list)
-		return cnt;
+		return 0;
 
 	lock_slurmctld(job_write_lock);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (job_ptr->assoc_id != assoc_id)
-			continue;
-
-		cnt += _job_fail_account(job_ptr, __func__, false);
-	}
-	list_iterator_destroy(job_iterator);
+	(void) list_for_each(job_list, _foreach_hold_by_assoc, &hold_by_id);
 	unlock_slurmctld(job_write_lock);
-	return cnt;
+
+	return hold_by_id.cnt;
 }
 
 /*
