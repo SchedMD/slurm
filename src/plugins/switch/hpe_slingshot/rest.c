@@ -243,7 +243,11 @@ extern bool slingshot_rest_connection(slingshot_rest_conn_t *conn,
 				      const char *auth_dir,
 				      const char *basic_user,
 				      const char *basic_pwdfile,
-				      int timeout,
+				      bool mtls_enabled,
+				      const char *mtls_ca_path,
+				      const char *mtls_cert_path,
+				      const char *mtls_key_path,
+				      const char *mtls_url, int timeout,
 				      int connect_timeout,
 				      const char *conn_name)
 {

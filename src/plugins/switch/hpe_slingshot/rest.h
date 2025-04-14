@@ -105,14 +105,14 @@ typedef struct {
 
 /* global functions */
 /* NOTE: all strings are copied to the conn struct */
-bool slingshot_rest_connection(slingshot_rest_conn_t *conn,
-			       const char *url,
+bool slingshot_rest_connection(slingshot_rest_conn_t *conn, const char *url,
 			       slingshot_rest_auth_t auth_type,
-			       const char *auth_dir,
-			       const char *basic_user,
-			       const char *basic_pwdfile,
-			       int timeout,
-			       int conn_timeout,
+			       const char *auth_dir, const char *basic_user,
+			       const char *basic_pwdfile, bool mtls_enabled,
+			       const char *mtls_ca_path,
+			       const char *mtls_cert_path,
+			       const char *mtls_key_path, const char *mtls_url,
+			       int timeout, int conn_timeout,
 			       const char *conn_name);
 void slingshot_rest_destroy_connection(slingshot_rest_conn_t *conn);
 json_object *slingshot_rest_post(slingshot_rest_conn_t *conn,

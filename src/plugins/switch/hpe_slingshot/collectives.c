@@ -157,12 +157,12 @@ extern bool slingshot_init_collectives(void)
 		return false;
 	}
 
-	if (!slingshot_rest_connection(&fm_conn,
-				       slingshot_config.fm_url,
+	if (!slingshot_rest_connection(&fm_conn, slingshot_config.fm_url,
 				       slingshot_config.fm_auth,
 				       slingshot_config.fm_authdir,
 				       SLINGSHOT_FM_AUTH_BASIC_USER,
-				       SLINGSHOT_FM_AUTH_BASIC_PWD_FILE,
+				       SLINGSHOT_FM_AUTH_BASIC_PWD_FILE, false,
+				       NULL, NULL, NULL, NULL,
 				       SLINGSHOT_FM_TIMEOUT,
 				       SLINGSHOT_FM_CONNECT_TIMEOUT,
 				       "Slingshot Fabric Manager"))
