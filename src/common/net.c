@@ -355,8 +355,6 @@ static const char *_ip_reserved_to_str(const slurm_addr_t *addr)
 			return "::"; /* the unspecified addresses */
 		else if (IN6_IS_ADDR_LOOPBACK(&ipv6))
 			return "localhost"; /* or "::1" */
-		else if (IN6_ARE_ADDR_EQUAL(&ipv6, &in6addr_any))
-			return "*";
 	}
 
 	return NULL;
