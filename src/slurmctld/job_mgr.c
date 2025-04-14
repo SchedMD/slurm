@@ -18611,6 +18611,27 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id)
 	return hold_by_id.cnt;
 }
 
+static int _foreach_hold_by_qos(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	foreach_hold_by_id_t *hold_by_id = arg;
+
+	if (job_ptr->qos_blocking_ptr &&
+	    (job_ptr->qos_blocking_ptr->id == hold_by_id->id))
+		job_ptr->qos_blocking_ptr = NULL;
+	if (job_ptr->qos_list) {
+		if (!list_find_first(job_ptr->qos_list,
+				     slurmdb_find_qos_in_list,
+				     &hold_by_id->id))
+			return 0;
+	} else if (job_ptr->qos_id != hold_by_id->id)
+		return 0;
+
+	hold_by_id->cnt += job_fail_qos(job_ptr, __func__, false);
+
+	return 0;
+}
+
 /*
  * job_hold_by_qos_id - Hold all pending jobs with a given
  *	QOS ID. This happens when a QOS is deleted (e.g. when
@@ -18619,35 +18640,21 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id)
  */
 extern int job_hold_by_qos_id(uint32_t qos_id)
 {
-	int cnt = 0;
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	foreach_hold_by_id_t hold_by_id = {
+		.id = qos_id,
+		.cnt = 0,
+	};
 
 	if (!job_list)
-		return cnt;
+		return 0;
 
 	lock_slurmctld(job_write_lock);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (job_ptr->qos_blocking_ptr &&
-		    (job_ptr->qos_blocking_ptr->id == qos_id))
-			job_ptr->qos_blocking_ptr = NULL;
-		if (job_ptr->qos_list) {
-			if (!list_find_first(job_ptr->qos_list,
-					     slurmdb_find_qos_in_list,
-					     &qos_id))
-				continue;
-		} else if (job_ptr->qos_id != qos_id)
-			continue;
-
-		cnt += job_fail_qos(job_ptr, __func__, false);
-	}
-	list_iterator_destroy(job_iterator);
+	(void) list_for_each(job_list, _foreach_hold_by_qos, &hold_by_id);
 	unlock_slurmctld(job_write_lock);
-	return cnt;
+	return hold_by_id.cnt;
 }
 
 /*
