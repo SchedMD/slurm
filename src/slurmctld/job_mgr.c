@@ -303,6 +303,14 @@ typedef struct {
 	int rc;
 } foreach_valid_pn_min_mem_t;
 
+typedef struct {
+	char *err_msg;
+	job_record_t *het_leader;
+	job_desc_msg_t *job_desc;
+	int rc;
+	uid_t uid;
+} foreach_update_hetjob_t;
+
 /* Global variables */
 list_t *job_list = NULL;	/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -15348,6 +15356,29 @@ fini:
 	return error_code;
 }
 
+static int _foreach_update_hetjob(void *x, void *arg)
+{
+	job_record_t *het_job = x;
+	foreach_update_hetjob_t *update_hetjob = arg;
+
+	if (update_hetjob->het_leader->het_job_id != het_job->het_job_id) {
+		error("%s: Bad het_job_list for %pJ",
+		      __func__, update_hetjob->het_leader);
+		return 0;
+	}
+	if (update_hetjob->job_desc->array_inx) {
+		update_hetjob->err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
+		update_hetjob->rc = ESLURM_NOT_SUPPORTED;
+		return -1;
+	} else {
+		update_hetjob->rc = _update_job(het_job,
+						update_hetjob->job_desc,
+						update_hetjob->uid,
+						&update_hetjob->err_msg);
+	}
+	return 0;
+}
+
 /*
  * update_job - update a job's parameters per the supplied specifications
  * IN msg - RPC to update job, including change specification
@@ -15403,7 +15434,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 {
 	job_desc_msg_t *job_desc = msg->data;
-	job_record_t *job_ptr, *new_job_ptr, *het_job;
+	job_record_t *job_ptr, *new_job_ptr;
 	char *hostname = auth_g_get_host(msg);
 	long int long_id;
 	uint32_t job_id = 0, het_job_offset;
@@ -15439,33 +15470,18 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		job_record_t *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
 		if (job_ptr && job_ptr->het_job_list) {
-			/*
-			 * This iter can not be a list_for_each() we eventually
-			 * _update_job() can call _release_job() which will then
-			 * call a list_for_each on the het_job_list. This could
-			 * probably be refactored to avoid the second list
-			 * iterator, but is also probably not worth the effort
-			 * to do such a thing. Skipping.
-			 */
-			list_itr_t *iter =
-				list_iterator_create(job_ptr->het_job_list);
-			while ((het_job = list_next(iter))) {
-				if (job_ptr->het_job_id !=
-				    het_job->het_job_id) {
-					error("%s: Bad het_job_list for %pJ",
-					      __func__, job_ptr);
-					continue;
-				}
-				if (job_desc->array_inx) {
-					err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
-					rc = ESLURM_NOT_SUPPORTED;
-					break;
-				} else {
-					rc = _update_job(het_job, job_desc, uid,
-							 &err_msg);
-				}
-			}
-			list_iterator_destroy(iter);
+			foreach_update_hetjob_t update_hetjob = {
+				.het_leader = job_ptr,
+				.job_desc = job_desc,
+				.rc = SLURM_SUCCESS,
+				.uid = uid,
+			};
+			(void) list_for_each(job_ptr->het_job_list,
+					     _foreach_update_hetjob,
+					     &update_hetjob);
+			rc = update_hetjob.rc;
+			err_msg = update_hetjob.err_msg;
+			update_hetjob.err_msg = NULL;
 			goto reply;
 		}
 		if (job_ptr &&
