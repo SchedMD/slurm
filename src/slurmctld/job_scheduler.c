@@ -752,6 +752,34 @@ static int _foreach_build_job_queue(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_set_job_elig(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	time_t now = *(time_t *) arg;
+	part_record_t *part_ptr = job_ptr->part_ptr;
+
+	if (!IS_JOB_PENDING(job_ptr))
+		return 0;
+	if (!part_ptr)
+		return 0;
+	if (!job_ptr->details ||
+	    (job_ptr->details->begin_time > now))
+		return 0;
+	if (!(part_ptr->state_up & PARTITION_SCHED))
+		return 0;
+	if ((job_ptr->time_limit != NO_VAL) &&
+	    (job_ptr->time_limit > part_ptr->max_time))
+		return 0;
+	if (job_ptr->details->max_nodes &&
+	    ((job_ptr->details->max_nodes < part_ptr->min_nodes) ||
+	     (job_ptr->details->min_nodes > part_ptr->max_nodes)))
+		return 0;
+	/* Job's eligible time is set in job_independent() */
+	(void) job_independent(job_ptr);
+
+	return 0;
+}
+
 extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec)
 {
 	job_record_t *job_ptr;
@@ -861,45 +889,12 @@ extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
  */
 extern void set_job_elig_time(void)
 {
-	job_record_t *job_ptr = NULL;
-	part_record_t *part_ptr = NULL;
-	list_itr_t *job_iterator;
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	time_t now = time(NULL);
 
 	lock_slurmctld(job_write_lock);
-
-	/*
-	 * This cannot be a list_for_each. This calls _job_runnable_test1() ->
-	 * job_independent() -> test_job_dependency() which needs to call
-	 * list_find_first() on the job_list making it impossible to also have
-	 * this a list_find_first() on job_list.
-	 */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		part_ptr = job_ptr->part_ptr;
-		if (!IS_JOB_PENDING(job_ptr))
-			continue;
-		if (part_ptr == NULL)
-			continue;
-		if ((job_ptr->details == NULL) ||
-		    (job_ptr->details->begin_time > now))
-			continue;
-		if ((part_ptr->state_up & PARTITION_SCHED) == 0)
-			continue;
-		if ((job_ptr->time_limit != NO_VAL) &&
-		    (job_ptr->time_limit > part_ptr->max_time))
-			continue;
-		if ((job_ptr->details->max_nodes != 0) &&
-		    ((job_ptr->details->max_nodes < part_ptr->min_nodes) ||
-		     (job_ptr->details->min_nodes > part_ptr->max_nodes)))
-			continue;
-		/* Job's eligible time is set in job_independent() */
-		if (!job_independent(job_ptr))
-			continue;
-	}
-	list_iterator_destroy(job_iterator);
+	(void) list_for_each(job_list, _foreach_set_job_elig, &now);
 	unlock_slurmctld(job_write_lock);
 }
 
