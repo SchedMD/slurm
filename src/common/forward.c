@@ -47,6 +47,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/forward.h"
+#include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/tls.h"
@@ -829,9 +830,14 @@ extern list_t *start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
 	_get_alias_addrs(hl, msg, &host_count);
 	_get_dynamic_addrs(hl, msg);
 
-	if ((depth = topology_g_split_hostlist(hl, &sp_hl, &hl_count,
-					       msg->forward.tree_width)) ==
-	    SLURM_ERROR) {
+	if (running_in_slurmctld())
+		depth = topology_g_split_hostlist(hl, &sp_hl, &hl_count,
+						  msg->forward.tree_width);
+	else
+		depth = hostlist_split_treewidth(hl, &sp_hl, &hl_count,
+						 msg->forward.tree_width);
+
+	if (depth == SLURM_ERROR) {
 		error("unable to split forward hostlist");
 		return NULL;
 	}
