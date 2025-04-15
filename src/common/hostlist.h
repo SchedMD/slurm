@@ -41,6 +41,7 @@
 
 #include "config.h"
 
+#include <stdint.h>
 #include <unistd.h>		/* load ssize_t definition */
 
 /* Since users can specify a numeric range in the prefix, we need to prevent
@@ -297,6 +298,10 @@ void hostlist_uniq(hostlist_t *hl);
 
 /* given a int will parse it into sizes in each dimension */
 void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base);
+
+/* Split a hostlist into a fanout tree */
+extern int hostlist_split_treewidth(hostlist_t *hl, hostlist_t ***sp_hl,
+				    int *count, uint16_t tree_width);
 
 /* ----[ hostlist print functions ]---- */
 

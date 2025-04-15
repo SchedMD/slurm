@@ -161,6 +161,8 @@
 #define	hostlist_shift		slurm_hostlist_shift
 #define	hostlist_shift_dims	slurm_hostlist_shift_dims
 #define	hostlist_sort		slurm_hostlist_sort
+#define	hostlist_split_treewidth \
+				slurm_hostlist_split_treewidth
 #define	hostlist_cmp_first	slurm_hostlist_cmp_first
 #define	hostlist_uniq		slurm_hostlist_uniq
 #define	hostset_count		slurm_hostset_count
