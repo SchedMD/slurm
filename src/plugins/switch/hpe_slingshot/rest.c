@@ -88,7 +88,7 @@ static json_object *_rest_call(slingshot_rest_conn_t *conn,
 	struct curl_slist *headers = NULL;
 	const char *req = NULL;
 	bool use_cache = true;
-	char *response_str, *username = NULL, *password = NULL;
+	char *response_str = NULL, *username = NULL, *password = NULL;
 	char *url = NULL;
 
 	xassert(conn != NULL);
