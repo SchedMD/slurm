@@ -142,8 +142,7 @@ typedef enum {
 	( FLAG_ON_DATA_TRIED | FLAG_IS_SOCKET | FLAG_IS_LISTEN | \
 	  FLAG_WAIT_ON_FINISH | FLAG_CAN_WRITE | FLAG_CAN_READ | \
 	  FLAG_READ_EOF | FLAG_IS_CONNECTED | FLAG_WORK_ACTIVE | \
-	  FLAG_QUIESCE | FLAG_CAN_QUERY_OUTPUT_BUFFER | \
-	  FLAG_IS_FIFO | FLAG_IS_CHR )
+	  FLAG_CAN_QUERY_OUTPUT_BUFFER | FLAG_IS_FIFO | FLAG_IS_CHR )
 
 /* con_flags_t macro helpers to test, set, and unset flags */
 #define con_flag(con, flag) ((con)->flags & (flag))
