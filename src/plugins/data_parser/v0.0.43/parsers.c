@@ -1330,6 +1330,7 @@ static void _fill_job_stp(job_std_pattern_t *job_stp, slurmdb_job_rec_t *job)
 {
 	slurmdb_step_rec_t *step = job->first_step_ptr;
 
+	job_stp->array_job_id = job->array_job_id;
 	job_stp->array_task_id = job->array_task_id;
 	job_stp->first_step_name = step ? step->stepname : NULL;
 	job_stp->first_step_node = step ? step->nodes : NULL;
@@ -1341,6 +1342,7 @@ static void _fill_job_stp(job_std_pattern_t *job_stp, slurmdb_job_rec_t *job)
 
 static void _fill_jobinfo_stp(job_std_pattern_t *job_stp, slurm_job_info_t *job)
 {
+	job_stp->array_job_id = job->array_job_id;
 	job_stp->array_task_id = job->array_task_id;
 	if (job->batch_flag) {
 		job_stp->first_step_name = "batch";
