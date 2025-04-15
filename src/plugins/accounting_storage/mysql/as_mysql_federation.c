@@ -636,13 +636,16 @@ extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
 					   uint32_t uid,
 					   slurmdb_federation_cond_t *fed_cond)
 {
-	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
-	char *extra = NULL, *query = NULL, *name_char = NULL;
-	time_t now = time(NULL);
-	char *user_name = NULL;
+	char *extra = NULL, *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+
+	remove_common_args_t args = {
+		.mysql_conn = mysql_conn,
+		.table = federation_table,
+		.type = DBD_REMOVE_FEDERATIONS,
+	};
 
 	if (!fed_cond) {
 		error("we need something to change");
@@ -675,7 +678,7 @@ extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 	rc = 0;
-	ret_list = list_create(xfree_ptr);
+	args.ret_list = list_create(xfree_ptr);
 
 	if (!mysql_num_rows(result)) {
 		mysql_free_result(result);
@@ -683,38 +686,38 @@ extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
 		DB_DEBUG(FEDR, mysql_conn->conn,
 		         "didn't affect anything\n%s", query);
 		xfree(query);
-		return ret_list;
+		return args.ret_list;
 	}
 	xfree(query);
 
-	user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string((uid_t) uid);
+	args.now = time(NULL);
+
 	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
-		list_append(ret_list, object);
+		list_append(args.ret_list, object);
 
 		if ((rc = _remove_all_clusters_from_fed(mysql_conn, object,
 							NULL)))
 			break;
 
-		xfree(name_char);
-		xstrfmtcat(name_char, "name='%s'", object);
+		xfree(args.name_char);
+		xstrfmtcat(args.name_char, "name='%s'", object);
 
-		if ((rc = remove_common(mysql_conn, DBD_REMOVE_FEDERATIONS, now,
-					user_name, federation_table, name_char,
-					NULL, NULL, ret_list, NULL, NULL)))
+		if ((rc = remove_common(&args)))
 			break;
 	}
 	mysql_free_result(result);
-	xfree(user_name);
-	xfree(name_char);
+	xfree(args.user_name);
+	xfree(args.name_char);
 
 	if (rc != SLURM_SUCCESS) {
-		FREE_NULL_LIST(ret_list);
+		FREE_NULL_LIST(args.ret_list);
 		return NULL;
 	} else
 		as_mysql_add_feds_to_update_list(mysql_conn);
 
-	return ret_list;
+	return args.ret_list;
 }
 
 extern int as_mysql_add_feds_to_update_list(mysql_conn_t *mysql_conn)

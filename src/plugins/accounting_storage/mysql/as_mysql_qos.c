@@ -1089,11 +1089,17 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *extra = NULL, *query = NULL,
 		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
-	bool jobs_running = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	list_t *cluster_list_tmp = NULL;
+
+	remove_common_args_t args = {
+		.jobs_running = false,
+		.mysql_conn = mysql_conn,
+		.now = now,
+		.table = qos_table,
+		.type = DBD_REMOVE_QOS,
+	};
 
 	if (!qos_cond) {
 		error("we need something to change");
@@ -1165,7 +1171,7 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
-	user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string((uid_t) uid);
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	cluster_list_tmp = list_shallow_copy(as_mysql_cluster_list);
@@ -1188,18 +1194,21 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				break;
 			}
 
-			if ((rc = remove_common(mysql_conn, DBD_REMOVE_QOS, now,
-						user_name, qos_table, name_char,
-						assoc_char, object, ret_list,
-						&jobs_running, NULL)) !=
-			    SLURM_SUCCESS)
+			args.assoc_char = assoc_char;
+			args.cluster_name = object;
+			args.name_char = name_char;
+			args.ret_list = ret_list;
+
+			if ((rc = remove_common(&args)) != SLURM_SUCCESS)
 				break;
 		}
 		list_iterator_destroy(itr);
-	} else
-		rc = remove_common(mysql_conn, DBD_REMOVE_QOS, now,
-				   user_name, qos_table, name_char,
-				   assoc_char, NULL, NULL, NULL, NULL);
+	} else {
+		args.assoc_char = assoc_char;
+		args.name_char = name_char;
+
+		rc = remove_common(&args);
+	}
 
 	FREE_NULL_LIST(cluster_list_tmp);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
@@ -1207,13 +1216,13 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(extra);
 	xfree(assoc_char);
 	xfree(name_char);
-	xfree(user_name);
+	xfree(args.user_name);
 	if (rc != SLURM_SUCCESS) {
 		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
 
-	if (jobs_running)
+	if (args.jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
 	else
 		errno = SLURM_SUCCESS;

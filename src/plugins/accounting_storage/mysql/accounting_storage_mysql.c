@@ -2211,18 +2211,21 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 }
 
 /* Every option in assoc_char should have a 't1.' in front of it. */
-extern int remove_common(mysql_conn_t *mysql_conn,
-			 uint16_t type,
-			 time_t now,
-			 char *user_name,
-			 char *table,
-			 char *name_char,
-			 char *assoc_char,
-			 char *cluster_name,
-			 list_t *ret_list,
-			 bool *jobs_running,
-			 bool *default_account)
+extern int remove_common(remove_common_args_t *args)
 {
+	xassert(args);
+	char *assoc_char = args->assoc_char;
+	char *cluster_name = args->cluster_name;
+	bool *default_account = args->default_account;
+	bool *jobs_running = &args->jobs_running;
+	mysql_conn_t *mysql_conn = args->mysql_conn;
+	char *name_char = args->name_char;
+	time_t now = args->now;
+	list_t *ret_list = args->ret_list;
+	char *table = args->table;
+	uint16_t type = args->type;
+	char *user_name = args->user_name;
+
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
 	char *loc_assoc_char = NULL;

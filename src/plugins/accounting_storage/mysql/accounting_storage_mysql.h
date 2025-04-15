@@ -125,6 +125,20 @@ typedef enum {
 	QOS_LEVEL_MODIFY
 } qos_level_t;
 
+typedef struct {
+	char *assoc_char;
+	char *cluster_name;
+	bool *default_account;
+	bool jobs_running;
+	mysql_conn_t *mysql_conn;
+	char *name_char;
+	time_t now;
+	list_t *ret_list;
+	char *table;
+	uint16_t type;
+	char *user_name;
+} remove_common_args_t;
+
 #define DB_DEBUG(flag, conn, fmt, ...) \
 	log_flag(flag, "%d(%s:%d) "fmt, conn, THIS_FILE, __LINE__, ##__VA_ARGS__);
 
@@ -153,17 +167,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 			 char *cond_char,
 			 char *vals,
 			 char *cluster_name);
-extern int remove_common(mysql_conn_t *mysql_conn,
-			 uint16_t type,
-			 time_t now,
-			 char *user_name,
-			 char *table,
-			 char *name_char,
-			 char *assoc_char,
-			 char *cluster_name,
-			 list_t *ret_list,
-			 bool *jobs_running,
-			 bool *default_account);
+extern int remove_common(remove_common_args_t *args);
 
 extern void mod_tres_str(char **out, char *mod, char *cur,
 			 char *cur_par, char *name, char **vals,

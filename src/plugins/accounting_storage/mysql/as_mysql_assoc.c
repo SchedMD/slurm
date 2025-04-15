@@ -1719,26 +1719,21 @@ end_it:
 	return rc;
 }
 
-static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
+static int _process_remove_assoc_results(remove_common_args_t *args,
 					 MYSQL_RES *result,
 					 slurmdb_user_rec_t *user,
 					 char *cluster_name,
-					 char *name_char,
-					 bool is_admin, list_t *ret_list,
-					 bool *jobs_running,
-					 bool *default_account,
+					 bool is_admin,
 					 add_assoc_cond_t *add_assoc_cond)
 {
 	list_itr_t *itr = NULL;
 	MYSQL_ROW row;
 	int rc = SLURM_SUCCESS;
-	char *assoc_char = NULL, *object = NULL;
-	time_t now = time(NULL);
-	char *user_name = NULL;
+	char *object = NULL;
 	bool disable_coord_dbd = false;
 
 	xassert(result);
-	if (*jobs_running || *default_account) {
+	if (args->jobs_running || args->default_account) {
 		goto skip_process;
 	}
 
@@ -1800,19 +1795,20 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 					cluster_name, row[RASSOC_ACCT]);
 			}
 		}
-		list_append(ret_list, object);
-		if (assoc_char)
-			xstrfmtcat(assoc_char, " || id_assoc=%s",
+		list_append(args->ret_list, object);
+		if (args->assoc_char)
+			xstrfmtcat(args->assoc_char, " || id_assoc=%s",
 				   row[RASSOC_ID]);
 		else
-			xstrfmtcat(assoc_char, "id_assoc=%s", row[RASSOC_ID]);
+			xstrfmtcat(args->assoc_char, "id_assoc=%s",
+				   row[RASSOC_ID]);
 
 		rem_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 		slurmdb_init_assoc_rec(rem_assoc, 0);
 		rem_assoc->flags |= ASSOC_FLAG_DELETED;
 		rem_assoc->id = slurm_atoul(row[RASSOC_ID]);
 		rem_assoc->cluster = xstrdup(cluster_name);
-		if (addto_update_list(mysql_conn->update_list,
+		if (addto_update_list(args->mysql_conn->update_list,
 				      SLURMDB_REMOVE_ASSOC,
 				      rem_assoc) != SLURM_SUCCESS) {
 			slurmdb_destroy_assoc_rec(rem_assoc);
@@ -1833,15 +1829,10 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 	}
 
 skip_process:
-	user_name = uid_to_string((uid_t) user->uid);
-
-	rc = remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now, user_name,
-			   assoc_table, name_char, assoc_char, cluster_name,
-			   ret_list, jobs_running, default_account);
+	rc = remove_common(args);
 
 end_it:
-	xfree(user_name);
-	xfree(assoc_char);
+	xfree(args->assoc_char);
 
 	return rc;
 }
@@ -3717,23 +3708,29 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				      slurmdb_assoc_cond_t *assoc_cond)
 {
 	list_itr_t *itr = NULL;
-	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL, *cluster_name = NULL;
-	char *extra = NULL, *query = NULL, *name_char = NULL;
+	char *extra = NULL, *query = NULL;
 	int i = 0, is_admin = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	slurmdb_user_rec_t user;
 	char *prefix = "t1";
 	list_t *use_cluster_list = NULL;
-	bool jobs_running = 0, default_account = false, locked = false;;
+	bool locked = false;
 	add_assoc_cond_t add_assoc_cond = {
 		.mysql_conn = mysql_conn,
 	};
 	bitstr_t *wanted_qos = NULL;
 	assoc_mgr_lock_t assoc_locks = {
 		.assoc = READ_LOCK,
+	};
+	remove_common_args_t args = {
+		.default_account = false,
+		.jobs_running = false,
+		.mysql_conn = mysql_conn,
+		.table = assoc_table,
+		.type = DBD_REMOVE_ASSOCS,
 	};
 
 	if (!assoc_cond) {
@@ -3768,7 +3765,9 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	for(i=1; i<RASSOC_COUNT; i++)
 		xstrfmtcat(object, ", %s", rassoc_req_inx[i]);
 
-	ret_list = list_create(xfree_ptr);
+	args.ret_list = list_create(xfree_ptr);
+	args.user_name = uid_to_string((uid_t) user.uid);
+	args.now = time(NULL);
 
 	if (assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
@@ -3795,8 +3794,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(query);
 			if (mysql_errno(mysql_conn->db_conn)
 			    != ER_NO_SUCH_TABLE) {
-				FREE_NULL_LIST(ret_list);
-				ret_list = NULL;
+				FREE_NULL_LIST(args.ret_list);
 			}
 			break;
 		}
@@ -3819,9 +3817,9 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 						       wanted_qos))
 					continue;
 			}
-			xstrfmtcat(name_char,
+			xstrfmtcat(args.name_char,
 				   "%slineage='%s'",
-				   name_char ? " || " : "", row[1]);
+				   args.name_char ? " || " : "", row[1]);
 		}
 		mysql_free_result(result);
 
@@ -3829,30 +3827,27 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				       "from \"%s_%s\" where (%s) "
 				       "and deleted = 0 order by lineage;",
 				       object,
-				       cluster_name, assoc_table, name_char);
+				       cluster_name, assoc_table,
+				       args.name_char);
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(query);
-			xfree(name_char);
-			FREE_NULL_LIST(ret_list);
-			ret_list = NULL;
+			xfree(args.name_char);
+			FREE_NULL_LIST(args.ret_list);
 			break;
 		}
 		xfree(query);
 
-		rc = _process_remove_assoc_results(mysql_conn, result,
+		rc = _process_remove_assoc_results(&args, result,
 						   &user, cluster_name,
-						   name_char, is_admin,
-						   ret_list, &jobs_running,
-						   &default_account,
+						   is_admin,
 						   &add_assoc_cond);
-		xfree(name_char);
+		xfree(args.name_char);
 		mysql_free_result(result);
 
 		if (rc != SLURM_SUCCESS) {
-			FREE_NULL_LIST(ret_list);
-			ret_list = NULL;
+			FREE_NULL_LIST(args.ret_list);
 			break;
 		}
 	}
@@ -3868,26 +3863,27 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 	}
 
+	xfree(args.user_name);
 	xfree(object);
 	xfree(extra);
 
-	if (!ret_list) {
+	if (!args.ret_list) {
 		reset_mysql_conn(mysql_conn);
 		return NULL;
-	} else if (!list_count(ret_list)) {
+	} else if (!list_count(args.ret_list)) {
 		reset_mysql_conn(mysql_conn);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "didn't affect anything");
-		return ret_list;
+		return args.ret_list;
 	}
 
-	if (default_account)
+	if (args.default_account)
 		errno = ESLURM_NO_REMOVE_DEFAULT_ACCOUNT;
-	else if (jobs_running)
+	else if (args.jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
 	else
 		errno = SLURM_SUCCESS;
-	return ret_list;
+	return args.ret_list;
 }
 
 extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,

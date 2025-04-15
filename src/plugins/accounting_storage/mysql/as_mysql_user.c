@@ -1256,7 +1256,6 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *name_char_pos = NULL, *assoc_char_pos = NULL,
 		*user_char_pos = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1264,8 +1263,15 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_user_rec_t user;
 	slurmdb_assoc_cond_t assoc_cond;
 	slurmdb_wckey_cond_t wckey_cond;
-	bool jobs_running = 0;
 	bool is_coord = false;
+
+	remove_common_args_t args = {
+		.jobs_running = false,
+		.mysql_conn = mysql_conn,
+		.now = now,
+		.table = user_table,
+		.type = DBD_REMOVE_USERS,
+	};
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
@@ -1428,7 +1434,8 @@ no_user_table:
 
 	FREE_NULL_LIST(assoc_cond.user_list);
 
-	user_name = uid_to_string((uid_t) uid);
+	args.user_name = uid_to_string((uid_t) uid);
+
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while ((object = list_next(itr))) {
@@ -1442,17 +1449,18 @@ no_user_table:
 			}
 		}
 
-		if ((rc = remove_common(mysql_conn, DBD_REMOVE_USERS, now,
-					user_name, user_table, name_char,
-					assoc_char, object, ret_list,
-					&jobs_running, NULL))
-		    != SLURM_SUCCESS)
+		args.assoc_char = assoc_char;
+		args.cluster_name = object;
+		args.name_char = name_char;
+		args.ret_list = ret_list;
+
+		if ((rc = remove_common(&args)) != SLURM_SUCCESS)
 			break;
 	}
 	list_iterator_destroy(itr);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
-	xfree(user_name);
+	xfree(args.user_name);
 	xfree(name_char);
 	xfree(user_char);
 	if (rc == SLURM_ERROR) {
@@ -1474,7 +1482,7 @@ no_user_table:
 		return NULL;
 	}
 
-	if (jobs_running)
+	if (args.jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
 	else
 		errno = SLURM_SUCCESS;
@@ -1486,7 +1494,6 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_user_cond_t *user_cond)
 {
 	char *query = NULL, *object = NULL, *extra = NULL, *last_user = NULL;
-	char *user_name = NULL;
 	time_t now = time(NULL);
 	int set = 0, is_admin=0, rc = SLURM_SUCCESS;
 	list_itr_t *itr = NULL;
@@ -1496,6 +1503,13 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	slurmdb_user_rec_t user;
+
+	remove_common_args_t args = {
+		.mysql_conn = mysql_conn,
+		.now = now,
+		.table = acct_coord_table,
+		.type = DBD_REMOVE_ACCOUNT_COORDS,
+	};
 
 	if (!user_cond && !acct_list) {
 		error("we need something to remove");
@@ -1628,11 +1642,12 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	mysql_free_result(result);
 
-	user_name = uid_to_string((uid_t) uid);
-	rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS,
-			   now, user_name, acct_coord_table,
-			   extra, NULL, NULL, NULL, NULL, NULL);
-	xfree(user_name);
+	args.name_char = extra;
+	args.user_name = uid_to_string((uid_t) uid);
+
+	rc = remove_common(&args);
+
+	xfree(args.user_name);
 	xfree(extra);
 	if (rc == SLURM_ERROR) {
 		FREE_NULL_LIST(ret_list);
