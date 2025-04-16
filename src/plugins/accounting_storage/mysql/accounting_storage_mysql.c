@@ -2597,12 +2597,10 @@ extern int remove_common(remove_common_args_t *args)
 		reset_mysql_conn(mysql_conn);
 		return SLURM_ERROR;
 	}
-	if ((table == acct_coord_table) ||
-	    (table == wckey_table) ||
-	    (table == clus_res_table) ||
-	    (table == res_table) ||
-	    (table == federation_table) ||
-	    (table == qos_table))
+	if ((table != acct_table) &&
+	    (table != assoc_table) &&
+	    (table != cluster_table) &&
+	    (table != user_table))
 		return SLURM_SUCCESS;
 
 	args->day_old = day_old;
