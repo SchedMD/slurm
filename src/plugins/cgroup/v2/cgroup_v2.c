@@ -1113,16 +1113,77 @@ static int _init_slurmd_system_scope()
 	return SLURM_SUCCESS;
 }
 
+static void _get_parent_effective_cpus_mems(char **cpus_effective,
+					    char **mems_effective,
+					    xcgroup_t *cg)
+{
+	size_t sz;
+	xcgroup_t parent_cg = { 0 };
+
+	/* Copy the settings from one level up on the hierarchy. */
+	parent_cg.path = xdirname(cg->path);
+
+	*cpus_effective = NULL;
+	*mems_effective = NULL;
+
+	if (common_cgroup_get_param(&parent_cg, "cpuset.cpus.effective",
+				    cpus_effective, &sz) != SLURM_SUCCESS) {
+		error("Cannot read scope %s/cpuset.cpus.effective",
+		      parent_cg.path);
+	}
+
+	if (common_cgroup_get_param(&parent_cg, "cpuset.mems.effective",
+				    mems_effective, &sz) != SLURM_SUCCESS) {
+		error("Cannot read scope %s/cpuset.mems.effective",
+		      parent_cg.path);
+	}
+
+	common_cgroup_destroy(&parent_cg);
+}
+
+/*
+ * Unset the limits applied to slurmd from _resource_spec_init(), namely
+ * cpuset.cpus, cpuset.mems and memory.max. If others are applied in the future
+ * this function can be extended to reset other limits.
+ *
+ * IN: cg - slurmd cgroup to reset the limits.
+ * RET: SLURM_SUCCESS or SLURM_ERROR if any limit could not be reset.
+ */
 static int _unset_cpu_mem_limits(xcgroup_t *cg)
 {
 	int rc = SLURM_SUCCESS;
 
 	if (!bit_test(cg->ns->avail_controllers, CG_CPUS)) {
-		log_flag(CGROUP, "Not resetting limits in %s as %s controller is not enabled",
+		log_flag(CGROUP, "Not resetting cpuset limits in %s as %s controller is not enabled",
 			 cg->path, ctl_names[CG_CPUS]);
+	} else if (!xstrcmp(cg->path, int_cg_ns.init_cg_path)) {
+		log_flag(CGROUP, "Not resetting cpuset limits in %s as we are already in the top cgroup",
+			 cg->path);
 	} else {
-		rc += common_cgroup_set_param(cg, "cpuset.cpus", " ");
-		rc += common_cgroup_set_param(cg, "cpuset.mems", " ");
+		/*
+		 * Normally it should suffice to write a "" into cpuset.cpus to
+		 * reset the allowed cpus, but for some reason this seems to be
+		 * interpreted as an "empty" cpuset by the kernel and it does
+		 * not allow us to do it when there are process in it (e.g. in
+		 * a reconfigure when slurmd is started manually). Instead, the
+		 * kernel allows us to specify the full range of cpus so we
+		 * will grab here the parent cpuset.cpus and apply it to our
+		 * cgroup. The same is done for cpuset.mems, as this interface
+		 * suffers from the same problem.
+		 */
+		char *parent_cpus, *parent_mems;
+		int i;
+		_get_parent_effective_cpus_mems(&parent_cpus, &parent_mems, cg);
+		rc += common_cgroup_set_param(cg, "cpuset.cpus", parent_cpus);
+		rc += common_cgroup_set_param(cg, "cpuset.mems", parent_mems);
+		if ((i = strlen(parent_cpus)))
+			parent_cpus[i - 1] = '\0';
+		if ((i = strlen(parent_mems)))
+			parent_mems[i - 1] = '\0';
+		log_flag(CGROUP, "%s reset cpuset.cpus=%s cpuset.mems=%s",
+			 cg->path, parent_cpus, parent_mems);
+		xfree(parent_cpus);
+		xfree(parent_mems);
 	}
 
 	if (!bit_test(cg->ns->avail_controllers, CG_MEMORY)) {
