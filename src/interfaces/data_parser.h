@@ -203,6 +203,9 @@ typedef enum {
 	DATA_PARSER_STEP_INFO, /* job_step_info_t */
 	DATA_PARSER_STEP_INFO_PTR, /* job_step_info_t* */
 	DATA_PARSER_STEP_INFO_ARRAY, /* job_step_info_t* */
+	DATA_PARSER_STEP_INFO_STDIN_EXP, /* step_job_info_t->std_in (handles all pattern replacements) */
+	DATA_PARSER_STEP_INFO_STDOUT_EXP, /* step_job_info_t->std_out (handles all pattern replacements) */
+	DATA_PARSER_STEP_INFO_STDERR_EXP, /* step_job_info_t->std_err (handles all pattern replacements) */
 	DATA_PARSER_STEP, /* slurmdb_step_rec_t */
 	DATA_PARSER_STEP_PTR, /* slurmdb_step_rec_t* */
 	DATA_PARSER_STEP_LIST, /* List of slurmdb_step_rec_t* */
@@ -212,6 +215,9 @@ typedef enum {
 	DATA_PARSER_STEP_TRES_USAGE_MAX, /* slurmdb_step_rec_t->tres_usage_out_in_max(|_nodeid|taskid) */
 	DATA_PARSER_STEP_TRES_USAGE_MIN, /* slurmdb_step_rec_t->tres_usage_out_in_min(|_nodeid|taskid) */
 	DATA_PARSER_STEP_NAMES, /* uint32_t <-> SLURM_EXTERN_CONT,SLURM_BATCH_SCRIPT,SLURM_PENDING_STEP,SLURM_INTERACTIVE_STEP */
+	DATA_PARSER_STEP_STDIN_EXP, /* slurmdb_step_rec_t->std_in (handles all pattern replacements) */
+	DATA_PARSER_STEP_STDOUT_EXP, /* slurmdb_step_rec_t->std_out (handles all pattern replacements) */
+	DATA_PARSER_STEP_STDERR_EXP, /* slurmdb_step_rec_t->std_err (handles all pattern replacements) */
 	DATA_PARSER_JOB_USER, /* user/uid from slurmdb_job_rec_t* */
 	DATA_PARSER_NEED_PREREQS_FLAGS, /* need_t */
 	DATA_PARSER_QOS_ID, /* uint32_t of QOS->name or stringified QOS->id if name unresolvable */

@@ -50,6 +50,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
+#include "src/common/print_fields.h"
 
 #define FORMAT_STRING_SIZE 34
 
@@ -1018,6 +1019,10 @@ extern void slurmdb_destroy_step_rec(void *object)
 		xfree(step->pid_str);
 		slurmdb_free_slurmdb_stats_members(&step->stats);
 		xfree(step->stepname);
+		xfree(step->cwd);
+		xfree(step->std_err);
+		xfree(step->std_in);
+		xfree(step->std_out);
 		xfree(step->submit_line);
 		xfree(step->tres_alloc_str);
 		xfree(step);
@@ -4785,4 +4790,64 @@ extern char *slurmdb_get_job_id_str(slurmdb_job_rec_t *job)
 
 	return id;
 
+}
+
+/* This always refers to the batch step. */
+extern char *slurmdb_expand_job_stdio_fields(char *path, slurmdb_job_rec_t *job)
+{
+	job_std_pattern_t job_stp;
+	hostlist_t *nodes = NULL;
+	char *ret;
+
+	if (job->nodes) {
+		nodes = hostlist_create(job->nodes);
+		job_stp.first_step_node = hostlist_shift(nodes);
+	} else {
+		/* Can be NULL if job was never allocated. */
+		job_stp.first_step_node = NULL;
+	}
+
+	job_stp.array_job_id = job->array_job_id;
+	job_stp.array_task_id = job->array_task_id;
+	job_stp.first_step_id = SLURM_BATCH_SCRIPT;
+	job_stp.jobid = job->jobid;
+	job_stp.jobname = job->jobname;
+	job_stp.user = job->user;
+	job_stp.work_dir = job->work_dir;
+
+	ret = expand_stdio_fields(path, &job_stp);
+
+	if (nodes) {
+		hostlist_destroy(nodes);
+		if (job_stp.first_step_node)
+			free(job_stp.first_step_node);
+	}
+
+	return ret;
+}
+
+extern char *slurmdb_expand_step_stdio_fields(char *path,
+					      slurmdb_step_rec_t *step)
+{
+	job_std_pattern_t job_stp;
+	slurmdb_job_rec_t *job = step->job_ptr;
+	hostlist_t *nodes = hostlist_create(step->nodes);
+	char *ret;
+
+	job_stp.array_job_id = job->array_job_id;
+	job_stp.array_task_id = job->array_task_id;
+	job_stp.first_step_id = step->step_id.step_id;
+	job_stp.first_step_node = hostlist_shift(nodes);
+	job_stp.jobid = step->step_id.job_id;
+	job_stp.jobname = job->jobname;
+	job_stp.user = job->user;
+	job_stp.work_dir = step->cwd;
+
+	ret = expand_stdio_fields(path, &job_stp);
+
+	hostlist_destroy(nodes);
+	if (job_stp.first_step_node)
+		free(job_stp.first_step_node);
+
+	return ret;
 }

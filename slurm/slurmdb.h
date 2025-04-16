@@ -1156,6 +1156,7 @@ typedef struct {
 
 typedef struct {
 	char *container;
+	char *cwd;
 	uint32_t elapsed;
 	time_t end;
 	int32_t exitcode;
@@ -1173,6 +1174,9 @@ typedef struct {
 	slurmdb_stats_t stats;
 	slurm_step_id_t step_id;	/* job's step number */
 	char *stepname;
+	char *std_err;
+	char *std_in;
+	char *std_out;
 	char *submit_line;
 	uint32_t suspended;
 	uint64_t sys_cpu_sec;
@@ -2248,6 +2252,32 @@ extern list_t *slurmdb_wckeys_modify(void *db_conn,
  */
 extern list_t *slurmdb_wckeys_remove(void *db_conn,
 				     slurmdb_wckey_cond_t *wckey_cond);
+
+/*
+ * Take a path and return a string with all the wildcards in the path properly
+ * expanded, based in the values of the passed slurmdb_job_rec_t. This function
+ * is mainly used for batch steps, and the generated path refers to the job
+ * output files.
+ * IN: path - The raw path string which may contain wildcards to expand.
+ * IN: job - A slurmdb_job_rec_t struct used to expand the wildcards.
+ * RET: char * - An allocated string with all the paths expanded. The caller
+ * must xfree it.
+ */
+extern char *slurmdb_expand_job_stdio_fields(char *path,
+					     slurmdb_job_rec_t *job);
+
+/*
+ * Take a path and return a string with all the wildcards in the path properly
+ * expanded, based in the values of the passed slurmdb_step_rec_t. This function
+ * is mainly used for job steps, and the generated path refers to the step
+ * output files.
+ * IN: path - The raw path string which may contain wildcards to expand.
+ * IN: step - A slurmdb_step_rec_t struct used to expand the wildcards.
+ * RET: char * - An allocated string with all the paths expanded. The caller
+ * must xfree it.
+ */
+extern char *slurmdb_expand_step_stdio_fields(char *path,
+					      slurmdb_step_rec_t *step);
 
 #ifdef __cplusplus
 }

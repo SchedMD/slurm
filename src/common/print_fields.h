@@ -67,7 +67,7 @@ struct print_field {
 typedef struct {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
-	char *first_step_name;
+	uint32_t first_step_id;
 	char *first_step_node;
 	uint32_t jobid;
 	char *jobname;

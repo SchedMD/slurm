@@ -1249,6 +1249,10 @@ static void _pack_step_start_msg(dbd_step_start_msg_t *msg,
 		pack32(msg->req_cpufreq_max, buffer);
 		pack32(msg->req_cpufreq_gov, buffer);
 		pack_step_id(&msg->step_id, buffer, rpc_version);
+		packstr(msg->cwd, buffer);
+		packstr(msg->std_err, buffer);
+		packstr(msg->std_in, buffer);
+		packstr(msg->std_out, buffer);
 		packstr(msg->submit_line, buffer);
 		pack32(msg->task_dist, buffer);
 		pack32(msg->time_limit, buffer);
@@ -1299,6 +1303,10 @@ static int _unpack_step_start_msg(dbd_step_start_msg_t **msg,
 		if (unpack_step_id_members(&msg_ptr->step_id, buffer,
 					   rpc_version) != SLURM_SUCCESS)
 			goto unpack_error;
+		safe_unpackstr(&msg_ptr->cwd, buffer);
+		safe_unpackstr(&msg_ptr->std_err, buffer);
+		safe_unpackstr(&msg_ptr->std_in, buffer);
+		safe_unpackstr(&msg_ptr->std_out, buffer);
 		safe_unpackstr(&msg_ptr->submit_line, buffer);
 		safe_unpack32(&msg_ptr->task_dist, buffer);
 		safe_unpack32(&msg_ptr->time_limit, buffer);

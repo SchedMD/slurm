@@ -2040,6 +2040,10 @@ extern void slurm_free_job_step_create_request_msg(
 		xfree(msg->network);
 		xfree(msg->node_list);
 		xfree(msg->step_het_grps);
+		xfree(msg->cwd);
+		xfree(msg->std_err);
+		xfree(msg->std_in);
+		xfree(msg->std_out);
 		xfree(msg->submit_line);
 		xfree(msg->tres_bind);
 		xfree(msg->tres_freq);
@@ -4172,6 +4176,8 @@ extern void slurm_free_job_step_info_members(job_step_info_t * msg)
 		xfree(msg->cluster);
 		xfree(msg->container);
 		xfree(msg->container_id);
+		xfree(msg->job_name);
+		xfree(msg->cwd);
 		xfree(msg->tres_per_node);
 		xfree(msg->mem_per_tres);
 		xfree(msg->name);
@@ -4181,6 +4187,9 @@ extern void slurm_free_job_step_info_members(job_step_info_t * msg)
 		xfree(msg->partition);
 		xfree(msg->resv_ports);
 		xfree(msg->srun_host);
+		xfree(msg->std_err);
+		xfree(msg->std_in);
+		xfree(msg->std_out);
 		xfree(msg->tres_bind);
 		xfree(msg->tres_fmt_alloc_str);
 		xfree(msg->tres_freq);

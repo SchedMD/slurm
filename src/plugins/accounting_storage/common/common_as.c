@@ -1002,6 +1002,13 @@ extern int as_build_step_start_msg(dbd_step_start_msg_t *req,
 
 	req->total_tasks = tasks;
 
+	if (!(slurm_conf.conf_flags & CONF_FLAG_NO_STDIO)) {
+		req->cwd = step_ptr->cwd;
+		req->std_err = step_ptr->std_err;
+		req->std_in = step_ptr->std_in;
+		req->std_out = step_ptr->std_out;
+	}
+
 	req->submit_line = step_ptr->submit_line;
 	req->tres_alloc_str = step_ptr->tres_alloc_str;
 

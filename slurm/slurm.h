@@ -2251,8 +2251,10 @@ typedef struct {
 	uint32_t cpu_freq_max;	/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;	/* cpu frequency governor */
 	char *cpus_per_tres;	/* comma delimited list of TRES=# values */
+	char *cwd;	        /* current working dir */
 	char *mem_per_tres;	/* comma delimited list of TRES=# values */
 	char *name;		/* name of job step */
+	char *job_name;		/* name of the job */
 	char *network;		/* network specs for job step */
 	char *nodes;		/* list of nodes allocated to job_step */
 	int32_t *node_inx;	/* list index pairs into node_table for *nodes:
@@ -2271,6 +2273,9 @@ typedef struct {
 				      *	it is talking to */
 	uint32_t state;		/* state of the step, see enum job_states */
 	slurm_step_id_t step_id;
+	char *std_err;		/* pathname of step's stderr file */
+	char *std_in;		/* pathname of step's stdin file */
+	char *std_out;		/* pathname of step's stdout file */
 	char *submit_line;      /* The command issued with all it's options in a
 				 * string */
 	uint32_t task_dist;	/* see enum task_dist_state */
@@ -4093,6 +4098,12 @@ extern void slurm_get_job_stdin(char *buf, int buf_size, job_info_t *job_ptr);
 
 /* Given a job record pointer, return its stdout path */
 extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t *job_ptr);
+
+/* Given a step record pointer and path, return the expanded path. */
+extern char *slurm_expand_step_stdio_fields(char *path, job_step_info_t *step);
+
+/* Given a job record pointer and path, return the expanded path. */
+extern char *slurm_expand_job_stdio_fields(char *path, job_info_t *job);
 
 /*
  * slurm_get_rem_time - get the expected time remaining for a given job

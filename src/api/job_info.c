@@ -59,15 +59,16 @@
 #include "src/common/job_state_reason.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
+#include "src/common/print_fields.h"
 #include "src/common/proc_args.h"
-#include "src/interfaces/select.h"
-#include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/uthash.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/select.h"
 
 /* Use a hash table to identify duplicate job records across the clusters in
  * a federation */
@@ -241,6 +242,46 @@ extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t * job_ptr)
 		snprintf(buf, buf_size, "%s/slurm-%u.out",
 			 job_ptr->work_dir, job_ptr->job_id);
 	}
+}
+
+extern char *slurm_expand_step_stdio_fields(char *path, job_step_info_t *step)
+{
+	job_std_pattern_t job_stp;
+	hostlist_t *nodes = hostlist_create(step->nodes);
+	char *ret;
+
+	job_stp.array_job_id = step->array_job_id;
+	job_stp.array_task_id = step->array_task_id;
+	job_stp.first_step_id = step->step_id.step_id;
+	job_stp.first_step_node = hostlist_shift(nodes);
+	job_stp.jobid = step->step_id.job_id;
+	job_stp.jobname = step->job_name;
+	job_stp.user = uid_to_string_cached((uid_t) step->user_id);
+	job_stp.work_dir = step->cwd;
+
+	ret = expand_stdio_fields(path, &job_stp);
+
+	hostlist_destroy(nodes);
+	if (job_stp.first_step_node)
+		free(job_stp.first_step_node);
+
+	return ret;
+}
+
+extern char *slurm_expand_job_stdio_fields(char *path, job_info_t *job)
+{
+	job_std_pattern_t job_stp;
+
+	job_stp.array_job_id = job->array_job_id;
+	job_stp.array_task_id = job->array_task_id;
+	job_stp.first_step_id = SLURM_BATCH_SCRIPT;
+	job_stp.first_step_node = job->batch_host;
+	job_stp.jobid = job->job_id;
+	job_stp.jobname = job->name;
+	job_stp.user = job->user_name;
+	job_stp.work_dir = job->work_dir;
+
+	return expand_stdio_fields(path, &job_stp);
 }
 
 /* Return true if the specified job id is local to a cluster

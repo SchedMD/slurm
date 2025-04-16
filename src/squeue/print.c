@@ -2171,29 +2171,14 @@ int _print_job_sockets_per_board(job_info_t * job, int width,
 
 }
 
-static char *_expand_std_patterns(char *path, job_info_t *job)
-{
-	job_std_pattern_t job_stp;
-
-	job_stp.array_job_id = job->array_job_id;
-	job_stp.array_task_id = job->array_task_id;
-	job_stp.first_step_name = "batch";
-	job_stp.first_step_node = job->batch_host;
-	job_stp.jobid = job->job_id;
-	job_stp.jobname = job->name;
-	job_stp.user = job->user_name;
-	job_stp.work_dir = job->work_dir;
-
-	return expand_stdio_fields(path, &job_stp);
-}
-
 int _print_job_std_err(job_info_t * job, int width,
 		       bool right_justify, char* suffix)
 {
 	if (job == NULL)
 		_print_str("STDERR", width, right_justify, true);
 	else if (params.expand_patterns) {
-		char *tmp_str = _expand_std_patterns(job->std_err, job);
+		char *tmp_str = slurm_expand_job_stdio_fields(job->std_err,
+							      job);
 		_print_str(tmp_str, width, right_justify, true);
 		xfree(tmp_str);
 	} else
@@ -2210,7 +2195,7 @@ int _print_job_std_in(job_info_t * job, int width,
 	if (job == NULL)
 		_print_str("STDIN", width, right_justify, true);
 	else if (params.expand_patterns) {
-		char *tmp_str = _expand_std_patterns(job->std_in, job);
+		char *tmp_str = slurm_expand_job_stdio_fields(job->std_in, job);
 		_print_str(tmp_str, width, right_justify, true);
 		xfree(tmp_str);
 	} else
@@ -2240,7 +2225,8 @@ int _print_job_std_out(job_info_t * job, int width,
 	if (job == NULL)
 		_print_str("STDOUT", width, right_justify, true);
 	else if (params.expand_patterns) {
-		char *tmp_str = _expand_std_patterns(job->std_out, job);
+		char *tmp_str = slurm_expand_job_stdio_fields(job->std_out,
+							      job);
 		_print_str(tmp_str, width, right_justify, true);
 		xfree(tmp_str);
 	} else
@@ -2587,6 +2573,72 @@ int _print_step_prefix(job_step_info_t * step, int width, bool right,
 {
 	if (suffix)
 		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_std_err(job_step_info_t *step, int width, bool right_justify,
+			char *suffix)
+{
+	if (step == NULL) {
+		_print_str("STDERR", width, right_justify, true);
+	} else if (!step->std_err) {
+		_print_str("", width, right_justify, true);
+	} else if (params.expand_patterns) {
+		char *tmp_str = slurm_expand_step_stdio_fields(step->std_err,
+							       step);
+		_print_str(tmp_str, width, right_justify, true);
+		xfree(tmp_str);
+	} else {
+		_print_str(step->std_err, width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_step_std_in(job_step_info_t *step, int width, bool right_justify,
+		       char *suffix)
+{
+	if (step == NULL) {
+		_print_str("STDIN", width, right_justify, true);
+	} else if (!step->std_in) {
+		_print_str("", width, right_justify, true);
+	} else if (params.expand_patterns) {
+		char *tmp_str = slurm_expand_step_stdio_fields(step->std_in,
+							       step);
+		_print_str(tmp_str, width, right_justify, true);
+		xfree(tmp_str);
+	} else {
+		_print_str(step->std_in, width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_step_std_out(job_step_info_t *step, int width, bool right_justify,
+			char *suffix)
+{
+	if (step == NULL) {
+		_print_str("STDOUT", width, right_justify, true);
+	} else if (!step->std_out) {
+		_print_str("", width, right_justify, true);
+	} else if (params.expand_patterns) {
+		char *tmp_str = slurm_expand_step_stdio_fields(step->std_out,
+							       step);
+		_print_str(tmp_str, width, right_justify, true);
+		xfree(tmp_str);
+	} else {
+		_print_str(step->std_out, width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+
 	return SLURM_SUCCESS;
 }
 

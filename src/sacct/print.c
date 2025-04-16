@@ -45,7 +45,7 @@
 
 print_field_t *field = NULL;
 int curr_inx = 1;
-char outbuf[FORMAT_STRING_SIZE];
+char outbuf[PATH_MAX];
 
 #define SACCT_TRES_AVE  0x0001
 #define SACCT_TRES_OUT  0x0002
@@ -279,36 +279,18 @@ static void _print_expanded_array_job(slurmdb_job_rec_t *job)
 	FREE_NULL_BITMAP(bitmap);
 }
 
-static void _expand_stdio_patterns(slurmdb_job_rec_t *job)
+static void _get_step_jobid_str(char **out, slurmdb_step_rec_t *step)
 {
-	char *tmp_path;
-	job_std_pattern_t job_stp;
-	slurmdb_step_rec_t *step = job->first_step_ptr;
+	int written_sz, rem_sz = FORMAT_STRING_SIZE;
+	slurmdb_job_rec_t *job = step->job_ptr;
+	char *id = slurmdb_get_job_id_str(job);
 
-	job_stp.array_job_id = job->array_job_id;
-	job_stp.array_task_id = job->array_task_id;
-	job_stp.first_step_name = step ? step->stepname : NULL;
-	job_stp.first_step_node = step ? step->nodes : NULL;
-	job_stp.jobid = job->jobid;
-	job_stp.jobname = job->jobname;
-	job_stp.user = job->user;
-	job_stp.work_dir = job->work_dir;
-
-	if (job->std_in && (*job->std_in != '\0')) {
-		tmp_path = expand_stdio_fields(job->std_in, &job_stp);
-		xfree(job->std_in);
-		job->std_in = tmp_path;
-	}
-	if (job->std_err && (*job->std_err != '\0')) {
-		tmp_path = expand_stdio_fields(job->std_err, &job_stp);
-		xfree(job->std_err);
-		job->std_err = tmp_path;
-	}
-	if (job->std_out && (*job->std_out != '\0')) {
-		tmp_path = expand_stdio_fields(job->std_out, &job_stp);
-		xfree(job->std_out);
-		job->std_out = tmp_path;
-	}
+	*out = xmalloc(rem_sz);
+	written_sz = snprintf(*out, rem_sz, "%s.", id);
+	rem_sz -= written_sz;
+	log_build_step_id_str(&step->step_id, (*out + written_sz), rem_sz,
+			      (STEP_ID_FLAG_NO_PREFIX | STEP_ID_FLAG_NO_JOB));
+	xfree(id);
 }
 
 extern void print_fields(type_t type, void *object)
@@ -320,7 +302,7 @@ extern void print_fields(type_t type, void *object)
 	int cpu_tres_rec_count = 0;
 	int step_cpu_tres_rec_count = 0;
 	char tmp1[128];
-	char *nodes = NULL;
+	char *nodes = NULL, *tmp_path = NULL;
 
 	if (!object) {
 		fatal("Job or step record is NULL");
@@ -334,8 +316,29 @@ extern void print_fields(type_t type, void *object)
 
 	switch (type) {
 	case JOB:
-		if (params.expand_patterns)
-			_expand_stdio_patterns(job);
+		if (params.expand_patterns) {
+			if (job->std_in && (*job->std_in != '\0')) {
+				tmp_path =
+					slurmdb_expand_job_stdio_fields(
+						job->std_in, job);
+				xfree(job->std_in);
+				job->std_in = tmp_path;
+			}
+			if (job->std_err && (*job->std_err != '\0')) {
+				tmp_path =
+					slurmdb_expand_job_stdio_fields(
+						job->std_err, job);
+				xfree(job->std_err);
+				job->std_err = tmp_path;
+			}
+			if (job->std_out && (*job->std_out != '\0')) {
+				tmp_path =
+					slurmdb_expand_job_stdio_fields(
+						job->std_out, job);
+				xfree(job->std_out);
+				job->std_out = tmp_path;
+			}
+		}
 		job_comp = NULL;
 		cpu_tres_rec_count = slurmdb_find_tres_count_in_string(
 			job->tres_alloc_str,
@@ -343,6 +346,30 @@ extern void print_fields(type_t type, void *object)
 		break;
 	case JOBSTEP:
 		job = step->job_ptr;
+
+		if (params.expand_patterns) {
+			if (step->std_in && (*step->std_in != '\0')) {
+				tmp_path =
+					slurmdb_expand_step_stdio_fields(
+						step->std_in, step);
+				xfree(step->std_in);
+				step->std_in = tmp_path;
+			}
+			if (step->std_err && (*step->std_err != '\0')) {
+				tmp_path =
+					slurmdb_expand_step_stdio_fields(
+						step->std_err, step);
+				xfree(step->std_err);
+				step->std_err = tmp_path;
+			}
+			if (step->std_out && (*step->std_out != '\0')) {
+				tmp_path =
+					slurmdb_expand_step_stdio_fields(
+						step->std_out, step);
+				xfree(step->std_out);
+				step->std_out = tmp_path;
+			}
+		}
 
 		if ((step_cpu_tres_rec_count =
 		     slurmdb_find_tres_count_in_string(
@@ -961,29 +988,15 @@ extern void print_fields(type_t type, void *object)
 			xfree(tmp_char);
 			break;
 		case PRINT_JOBID:
-			if (type == JOBSTEP)
-				job = step->job_ptr;
-
-			if (job)
-				id = slurmdb_get_job_id_str(job);
-
 			switch (type) {
 			case JOB:
+				if (job)
+					id = slurmdb_get_job_id_str(job);
 				tmp_char = id;
 				id = NULL;
 				break;
 			case JOBSTEP:
-				tmp_int = FORMAT_STRING_SIZE;
-				tmp_char = xmalloc(tmp_int);
-				tmp_int2 =
-					snprintf(tmp_char, tmp_int, "%s.", id);
-				xfree(id);
-				tmp_int -= tmp_int2;
-				log_build_step_id_str(&step->step_id,
-						      tmp_char + tmp_int2,
-						      tmp_int,
-						      STEP_ID_FLAG_NO_PREFIX |
-						      STEP_ID_FLAG_NO_JOB);
+				_get_step_jobid_str(&tmp_char, step);
 				break;
 			case JOBCOMP:
 				tmp_char = xstrdup_printf("%u",
@@ -1935,6 +1948,16 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job->std_err;
 				break;
 			case JOBSTEP:
+				if (step->std_err &&
+				    (step->std_err[0] != '\0') &&
+				    (step->std_err[0] != '/')) {
+					snprintf(outbuf, PATH_MAX, "%s/%s",
+						 step->cwd, step->std_err);
+					tmp_char = outbuf;
+				} else {
+					tmp_char = step->std_err;
+				}
+				break;
 			case JOBCOMP:
 			default:
 				tmp_char = NULL;
@@ -1949,6 +1972,16 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job->std_in;
 				break;
 			case JOBSTEP:
+				if (step->std_in &&
+				    (step->std_in[0] != '\0') &&
+				    (step->std_in[0] != '/')) {
+					snprintf(outbuf, PATH_MAX, "%s/%s",
+						 step->cwd, step->std_in);
+					tmp_char = outbuf;
+				} else {
+					tmp_char = step->std_in;
+				}
+				break;
 			case JOBCOMP:
 			default:
 				tmp_char = NULL;
@@ -1963,6 +1996,16 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job->std_out;
 				break;
 			case JOBSTEP:
+				if (step->std_out &&
+				    (step->std_out[0] != '\0') &&
+				    (step->std_out[0] != '/')) {
+					snprintf(outbuf, PATH_MAX, "%s/%s",
+						 step->cwd, step->std_out);
+					tmp_char = outbuf;
+				} else {
+					tmp_char = step->std_out;
+				}
+				break;
 			case JOBCOMP:
 			default:
 				tmp_char = NULL;

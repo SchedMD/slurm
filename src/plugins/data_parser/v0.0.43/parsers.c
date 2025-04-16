@@ -1326,37 +1326,6 @@ static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 	return DUMP(ASSOC_SHORT, assoc, dst, args);
 }
 
-static void _fill_job_stp(job_std_pattern_t *job_stp, slurmdb_job_rec_t *job)
-{
-	slurmdb_step_rec_t *step = job->first_step_ptr;
-
-	job_stp->array_job_id = job->array_job_id;
-	job_stp->array_task_id = job->array_task_id;
-	job_stp->first_step_name = step ? step->stepname : NULL;
-	job_stp->first_step_node = step ? step->nodes : NULL;
-	job_stp->jobid = job->jobid;
-	job_stp->jobname = job->jobname;
-	job_stp->user = job->user;
-	job_stp->work_dir = job->work_dir;
-}
-
-static void _fill_jobinfo_stp(job_std_pattern_t *job_stp, slurm_job_info_t *job)
-{
-	job_stp->array_job_id = job->array_job_id;
-	job_stp->array_task_id = job->array_task_id;
-	if (job->batch_flag) {
-		job_stp->first_step_name = "batch";
-		job_stp->first_step_node = job->batch_host;
-	} else {
-		job_stp->first_step_name = NULL;
-		job_stp->first_step_node = NULL;
-	}
-	job_stp->jobid = job->job_id;
-	job_stp->jobname = job->name;
-	job_stp->user = job->user_name;
-	job_stp->work_dir = job->work_dir;
-}
-
 PARSE_DISABLED(JOB_STDIN)
 PARSE_DISABLED(JOB_STDOUT)
 PARSE_DISABLED(JOB_STDERR)
@@ -1365,13 +1334,11 @@ static int DUMP_FUNC(JOB_STDIN)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *tmp_path = NULL;
 	int rc;
 
 	if (job->std_in && (*job->std_in != '\0')) {
-		_fill_job_stp(&job_stp, job);
-		tmp_path = expand_stdio_fields(job->std_in, &job_stp);
+		tmp_path = slurmdb_expand_job_stdio_fields(job->std_in, job);
 	}
 
 	rc = DUMP(STRING, tmp_path, dst, args);
@@ -1383,13 +1350,11 @@ static int DUMP_FUNC(JOB_STDOUT)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *tmp_path = NULL;
 	int rc;
 
 	if (job->std_out && (*job->std_out != '\0')) {
-		_fill_job_stp(&job_stp, job);
-		tmp_path = expand_stdio_fields(job->std_out, &job_stp);
+		tmp_path = slurmdb_expand_job_stdio_fields(job->std_out, job);
 	}
 
 	rc = DUMP(STRING, tmp_path, dst, args);
@@ -1401,17 +1366,67 @@ static int DUMP_FUNC(JOB_STDERR)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *tmp_path = NULL;
 	int rc;
 
 	if (job->std_err && (*job->std_err != '\0')) {
-		_fill_job_stp(&job_stp, job);
-		tmp_path = expand_stdio_fields(job->std_err, &job_stp);
+		tmp_path = slurmdb_expand_job_stdio_fields(job->std_err, job);
 	}
 
 	rc = DUMP(STRING, tmp_path, dst, args);
 	xfree(tmp_path);
+	return rc;
+}
+
+PARSE_DISABLED(STEP_STDIN_EXP)
+PARSE_DISABLED(STEP_STDOUT_EXP)
+PARSE_DISABLED(STEP_STDERR_EXP)
+
+static int DUMP_FUNC(STEP_STDIN_EXP)(const parser_t *const parser, void *obj,
+				     data_t *dst, args_t *args)
+{
+	slurmdb_step_rec_t *step = obj;
+	char *tmp_str = NULL;
+	int rc;
+
+	if (step->std_in && (*step->std_in != '\0')) {
+		tmp_str = slurmdb_expand_step_stdio_fields(step->std_in, step);
+	}
+
+	rc = DUMP(STRING, tmp_str, dst, args);
+	xfree(tmp_str);
+	return rc;
+}
+
+static int DUMP_FUNC(STEP_STDOUT_EXP)(const parser_t *const parser, void *obj,
+				      data_t *dst, args_t *args)
+{
+	slurmdb_step_rec_t *step = obj;
+	char *tmp_str = NULL;
+	int rc;
+
+	if (step->std_out && (*step->std_out != '\0')) {
+		tmp_str = slurmdb_expand_step_stdio_fields(step->std_out, step);
+	}
+
+	rc = DUMP(STRING, tmp_str, dst, args);
+	xfree(tmp_str);
+	return rc;
+}
+
+static int DUMP_FUNC(STEP_STDERR_EXP)(const parser_t *const parser, void *obj,
+				      data_t *dst, args_t *args)
+{
+	slurmdb_step_rec_t *step = obj;
+	char *tmp_str = NULL;
+	int rc;
+
+	if (step->std_err && (*step->std_err != '\0')) {
+		tmp_str = slurmdb_expand_step_stdio_fields(step->std_err, step);
+	}
+
+	rc = DUMP(STRING, tmp_str, dst, args);
+	xfree(tmp_str);
 	return rc;
 }
 
@@ -5182,12 +5197,10 @@ static int DUMP_FUNC(JOB_INFO_STDIN_EXP)(const parser_t *const parser,
 					 void *obj, data_t *dst, args_t *args)
 {
 	slurm_job_info_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *str = NULL;
 
 	if (job->std_in && (*job->std_in != '\0')) {
-		_fill_jobinfo_stp(&job_stp, job);
-		str = expand_stdio_fields(job->std_in, &job_stp);
+		str = slurm_expand_job_stdio_fields(job->std_in, job);
 	} else {
 		str = xstrdup("");
 	}
@@ -5200,12 +5213,10 @@ static int DUMP_FUNC(JOB_INFO_STDOUT_EXP)(const parser_t *const parser,
 					  void *obj, data_t *dst, args_t *args)
 {
 	slurm_job_info_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *str = NULL;
 
 	if (job->std_out && (*job->std_out != '\0')) {
-		_fill_jobinfo_stp(&job_stp, job);
-		str = expand_stdio_fields(job->std_out, &job_stp);
+		str = slurm_expand_job_stdio_fields(job->std_out, job);
 	} else {
 		str = xstrdup("");
 	}
@@ -5218,12 +5229,62 @@ static int DUMP_FUNC(JOB_INFO_STDERR_EXP)(const parser_t *const parser,
 					  void *obj, data_t *dst, args_t *args)
 {
 	slurm_job_info_t *job = obj;
-	job_std_pattern_t job_stp;
 	char *str = NULL;
 
 	if (job->std_err && (*job->std_err != '\0')) {
-		_fill_jobinfo_stp(&job_stp, job);
-		str = expand_stdio_fields(job->std_err, &job_stp);
+		str = slurm_expand_job_stdio_fields(job->std_err, job);
+	} else {
+		str = xstrdup("");
+	}
+
+	data_set_string_own(dst, str);
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(STEP_INFO_STDIN_EXP)
+PARSE_DISABLED(STEP_INFO_STDOUT_EXP)
+PARSE_DISABLED(STEP_INFO_STDERR_EXP)
+
+static int DUMP_FUNC(STEP_INFO_STDIN_EXP)(const parser_t *const parser,
+					  void *obj, data_t *dst, args_t *args)
+{
+	job_step_info_t *step = obj;
+	char *str = NULL;
+
+	if (step->std_in && (*step->std_in != '\0')) {
+		str = slurm_expand_step_stdio_fields(step->std_in, step);
+	} else {
+		str = xstrdup("");
+	}
+
+	data_set_string_own(dst, str);
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(STEP_INFO_STDOUT_EXP)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	job_step_info_t *step = obj;
+	char *str = NULL;
+
+	if (step->std_out && (*step->std_out != '\0')) {
+		str = slurm_expand_step_stdio_fields(step->std_out, step);
+	} else {
+		str = xstrdup("");
+	}
+
+	data_set_string_own(dst, str);
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(STEP_INFO_STDERR_EXP)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	job_step_info_t *step = obj;
+	char *str = NULL;
+
+	if (step->std_err && (*step->std_err != '\0')) {
+		str = slurm_expand_step_stdio_fields(step->std_err, step);
 	} else {
 		str = xstrdup("");
 	}
@@ -7282,6 +7343,12 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT64_NO_VAL, stats.consumed_energy, "statistics/energy/consumed", "Total energy consumed by all tasks in a job in joules"),
 	add_parse(SLURM_STEP_ID_STRING, step_id, "step/id", "Step ID"),
 	add_parse(STRING, stepname, "step/name", "Step name"),
+	add_parse(STRING, std_err, "step/stderr", "Path to stderr file"),
+	add_parse(STRING, std_in, "step/stdin", "Path to stdin file"),
+	add_parse(STRING, std_out, "step/stdout", "Path to stdout file"),
+	add_cparse(STEP_STDERR_EXP, "step/stderr_expanded", "Step stderr with expanded fields"),
+	add_cparse(STEP_STDIN_EXP, "step/stdin_expanded", "Step stdin with expanded fields"),
+	add_cparse(STEP_STDOUT_EXP, "step/stdout_expanded", "Step stdout with expanded fields"),
 	add_parse(UINT32, suspended, "time/suspended", "Total time in suspended state in seconds"),
 	add_parse(UINT64, sys_cpu_sec, "time/system/seconds", "System CPU time used by the step in seconds"),
 	add_parse(UINT32, sys_cpu_usec, "time/system/microseconds", "System CPU time used by the step in microseconds"),
@@ -8067,6 +8134,8 @@ static const parser_t PARSER_ARRAY(SLURMDBD_PING)[] = {
 	add_parser(job_step_info_t, mtype, false, field, 0, path, desc)
 #define add_skip(field) \
 	add_parser_skip(job_step_info_t, field)
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(job_step_info_t, mtype, false, path, desc)
 static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 	add_parse(UINT32, array_job_id, "array/job_id", "Job ID of job array, or 0 if N/A"),
 	add_parse(UINT32, array_task_id, "array/task_id", "Task ID of this task in job array"),
@@ -8093,6 +8162,12 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 	add_skip(start_protocol_ver),
 	add_parse(JOB_STATE, state, "state", "Current state"),
 	add_parse(SLURM_STEP_ID_STRING, step_id, "id", "Step ID"),
+	add_parse(STRING, std_err, "stderr", "Step stderr file path"),
+	add_parse(STRING, std_in, "stdin", "Step stdin file path"),
+	add_parse(STRING, std_out, "stdout", "Step stdout file path"),
+	add_cparse(STEP_INFO_STDIN_EXP, "stdin_expanded", "Step stdin with expanded fields"),
+	add_cparse(STEP_INFO_STDOUT_EXP, "stdout_expanded", "Step stdout with expanded fields"),
+	add_cparse(STEP_INFO_STDERR_EXP, "stderr_expanded", "Step stderr with expanded fields"),
 	add_parse(STRING, submit_line, "submit_line", "Full command used to submit the step"),
 	add_parse(TASK_DISTRIBUTION, task_dist, "task/distribution", "Layout"),
 	add_parse(UINT32_NO_VAL, time_limit, "time/limit", "Maximum run time in minutes"),
@@ -8107,6 +8182,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 };
 #undef add_parse
 #undef add_skip
+#undef add_cparse
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(partition_info_t, mtype, false, field, 0, path, desc)
@@ -10102,6 +10178,9 @@ static const parser_t parsers[] = {
 	addpca(STEP_TRES_REQ_MIN, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_USAGE_MAX, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_USAGE_MIN, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
+	addpc(STEP_STDIN_EXP, slurmdb_step_rec_t, NEED_NONE, STRING, NULL),
+	addpc(STEP_STDOUT_EXP, slurmdb_step_rec_t, NEED_NONE, STRING, NULL),
+	addpc(STEP_STDERR_EXP, slurmdb_step_rec_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_PLANNED_TIME, UINT64_NO_VAL, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpc(STATS_MSG_CYCLE_MEAN, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
 	addpc(STATS_MSG_CYCLE_MEAN_DEPTH, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
@@ -10141,6 +10220,9 @@ static const parser_t parsers[] = {
 	addpc(JOB_INFO_STDIN_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDOUT_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDERR_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),
+	addpc(STEP_INFO_STDIN_EXP, job_step_info_t, NEED_NONE, STRING, NULL),
+	addpc(STEP_INFO_STDOUT_EXP, job_step_info_t, NEED_NONE, STRING, NULL),
+	addpc(STEP_INFO_STDERR_EXP, job_step_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_USER, slurmdb_job_rec_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_CONDITION_SUBMIT_TIME, TIMESTAMP_NO_VAL, slurmdb_job_cond_t, NEED_NONE, NULL),
 	addpcp(JOB_DESC_MSG_RLIMIT_CPU, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Per-process CPU limit, in seconds."),

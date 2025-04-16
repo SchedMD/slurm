@@ -608,6 +608,10 @@ typedef struct {
 					  * in the step */
 	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job
 					 * step */
+	char *cwd;			/* path derived from cwd or --chdir */
+	char *std_err;			/* pathname of step's stderr file */
+	char *std_in;			/* pathname of step's stdin file */
+	char *std_out;			/* pathname of step's stdout file */
 /*	time_t suspend_time;		 * time step last suspended or resumed
 					 * implicitly the same as suspend_time
 					 * in the job record */
