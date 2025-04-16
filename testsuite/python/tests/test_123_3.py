@@ -70,12 +70,12 @@ def test_overlap_weeks(request, get_and_down_nodes, reocurring_flag):
         fatal=True,
     )
     atf.repeat_until(
-        lambda: atf.get_node_parameter(nodes[0], "State"),
-        lambda state: state == "IDLE",
+        lambda: atf.get_node_parameter(nodes[0], "state"),
+        lambda state: state == ["IDLE"],
         fatal=True,
     )
 
-    logging.info("Creating resv1:")
+    logging.info(f"Creating resv1: {atf.get_node_parameter(nodes[0], 'state')}")
     rc = atf.run_command(
         f"scontrol create reservation ReservationName=resv1 StartTime=NOW+3weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}",
         user=atf.properties["slurm-user"],
@@ -128,8 +128,8 @@ def test_overlap_weeks_reverse(request, get_and_down_nodes, reocurring_flag):
         fatal=True,
     )
     atf.repeat_until(
-        lambda: atf.get_node_parameter(nodes[0], "State"),
-        lambda state: state == "IDLE",
+        lambda: atf.get_node_parameter(nodes[0], "state"),
+        lambda state: state == ["IDLE"],
         fatal=True,
     )
 
@@ -186,8 +186,8 @@ def test_overlap_reocurring(request, get_and_down_nodes, reocurring_flag):
         fatal=True,
     )
     atf.repeat_until(
-        lambda: atf.get_node_parameter(nodes[0], "State"),
-        lambda state: state == "IDLE",
+        lambda: atf.get_node_parameter(nodes[0], "state"),
+        lambda state: state == ["IDLE"],
         fatal=True,
     )
 
@@ -253,8 +253,8 @@ def test_overlap_reocurring_week(request, get_and_down_nodes, reocurring_flag):
         fatal=True,
     )
     atf.repeat_until(
-        lambda: atf.get_node_parameter(nodes[0], "State"),
-        lambda state: state == "IDLE",
+        lambda: atf.get_node_parameter(nodes[0], "state"),
+        lambda state: state == ["IDLE"],
         fatal=True,
     )
 
@@ -307,8 +307,8 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
         fatal=True,
     )
     atf.repeat_until(
-        lambda: atf.get_node_parameter(nodes[0], "State"),
-        lambda state: state == "IDLE",
+        lambda: atf.get_node_parameter(nodes[0], "state"),
+        lambda state: state == ["IDLE"],
         fatal=True,
     )
 
@@ -344,8 +344,8 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
         fatal=True,
     )
     atf.repeat_until(
-        lambda: atf.get_node_parameter(nodes[1], "State"),
-        lambda state: state == "IDLE",
+        lambda: atf.get_node_parameter(nodes[1], "state"),
+        lambda state: state == ["IDLE"],
         fatal=True,
     )
 
@@ -394,7 +394,7 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
         fatal=True,
     )
     atf.repeat_until(
-        lambda: atf.get_node_parameter(nodes[1], "State"),
+        lambda: atf.get_node_parameter(nodes[1], "state"),
         lambda state: "DOWN" in state,
         fatal=True,
     )
@@ -424,8 +424,8 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
         fatal=True,
     )
     atf.repeat_until(
-        lambda: atf.get_node_parameter(nodes[2], "State"),
-        lambda state: state == "IDLE",
+        lambda: atf.get_node_parameter(nodes[2], "state"),
+        lambda state: state == ["IDLE"],
         fatal=True,
     )
 
@@ -469,8 +469,8 @@ def test_overlap_weekdays(request, get_and_down_nodes, reocurring_flag, week_fla
         fatal=True,
     )
     atf.repeat_until(
-        lambda: atf.get_node_parameter(nodes[0], "State"),
-        lambda state: state == "IDLE",
+        lambda: atf.get_node_parameter(nodes[0], "state"),
+        lambda state: state == ["IDLE"],
         fatal=True,
     )
 
@@ -550,8 +550,8 @@ def test_no_overlap_weekday_weekend(
         fatal=True,
     )
     atf.repeat_until(
-        lambda: atf.get_node_parameter(nodes[0], "State"),
-        lambda state: state == "IDLE",
+        lambda: atf.get_node_parameter(nodes[0], "state"),
+        lambda state: state == ["IDLE"],
         fatal=True,
     )
 

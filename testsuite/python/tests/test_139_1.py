@@ -73,7 +73,7 @@ def create_node():
     for node_name in created_nodes:
         # Node must have no jobs running to be deleted
         atf.repeat_until(
-            lambda: atf.get_node_parameter(node_name, "State").split("+"),
+            lambda: atf.get_node_parameter(node_name, "state"),
             lambda states: "ALLOCATED" not in states and "MIXED" not in states,
             fatal=True,
         )
@@ -106,7 +106,7 @@ def register_node():
     for node_name in registered_nodes:
         # Wait for jobs to finish to facilitate deleting node later
         atf.repeat_until(
-            lambda: atf.get_node_parameter(node_name, "State").split("+"),
+            lambda: atf.get_node_parameter(node_name, "state"),
             lambda states: "ALLOCATED" not in states and "MIXED" not in states,
             fatal=True,
         )
@@ -131,7 +131,7 @@ def node_powered_up(node_name):
         node_name, "POWERING_UP", reverse=True, timeout=resume_time + 10
     )
 
-    current_states = atf.get_node_parameter(node_name, "State").split("+")
+    current_states = atf.get_node_parameter(node_name, "state")
     return all(
         undesired_state not in current_states
         for undesired_state in ["POWERING_DOWN", "POWERED_DOWN", "POWERING_UP"]
@@ -139,7 +139,7 @@ def node_powered_up(node_name):
 
 
 def node_is_idle(node_name):
-    return "IDLE" in atf.get_node_parameter(node_name, "State").split("+")
+    return "IDLE" in atf.get_node_parameter(node_name, "state")
 
 
 # Tests
@@ -156,7 +156,7 @@ def test_illegal_scontrol_creation_states(create_node, illegal_state):
 def test_legal_scontrol_creation_states(create_node, legal_state):
     create_node(f"{node_prefix}1", legal_state, "f1", fatal=True)
 
-    node_states = atf.get_node_parameter(f"{node_prefix}1", "State").split("+")
+    node_states = atf.get_node_parameter(f"{node_prefix}1", "state")
     assert (
         legal_state in node_states
     ), f"Dynamic node should have {legal_state} in its state"

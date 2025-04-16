@@ -30,10 +30,10 @@ def node_name():
     global total_cores, available_cores, allowed_cpu_list
 
     node = atf.run_job_nodes("--cpu-bind=core -N1 -n2 true")[0]
-    sockets = atf.get_node_parameter(node, "Sockets")
-    cores_per_socket = atf.get_node_parameter(node, "CoresPerSocket")
+    sockets = atf.get_node_parameter(node, "sockets")
+    cores = atf.get_node_parameter(node, "cores")
 
-    total_cores = sockets * cores_per_socket
+    total_cores = sockets * cores
     available_cores = total_cores - 1
     allowed_cpu_list = create_cpu_list(node)
 

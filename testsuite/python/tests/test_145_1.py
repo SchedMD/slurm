@@ -3,7 +3,6 @@
 ############################################################################
 import atf
 import pytest
-import re
 
 
 # Setup
@@ -16,7 +15,7 @@ def setup():
 def get_nodes_with_feature(feat, nodelist):
     nodes = 0
     for node in nodelist:
-        if re.search(feat, atf.get_node_parameter(node, "AvailableFeatures")):
+        if feat in atf.get_node_parameter(node, "features"):
             nodes += 1
     return nodes
 

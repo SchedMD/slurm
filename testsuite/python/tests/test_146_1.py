@@ -93,16 +93,16 @@ def test_limits(limit_name, limit_cpus, partition_nodes):
     # Verify that the number of allocated CPUs per node is correct, assuming 1 CPU per job
     # First two nodes should have jobs split between them due the limits
     assert (
-        atf.get_node_parameter(partition_nodes[0], "CPUAlloc") == max_jobs / 2
+        atf.get_node_parameter(partition_nodes[0], "alloc_cpus") == max_jobs / 2
     ), f"Verify that node {partition_nodes[0]} has {max_jobs/2} CPUs allocated"
     assert (
-        atf.get_node_parameter(partition_nodes[1], "CPUAlloc") == max_jobs / 2
+        atf.get_node_parameter(partition_nodes[1], "alloc_cpus") == max_jobs / 2
     ), f"Verify that node {partition_nodes[1]} has {max_jobs/2} CPUs allocated"
     assert (
-        atf.get_node_parameter(partition_nodes[2], "CPUAlloc") == 0
+        atf.get_node_parameter(partition_nodes[2], "alloc_cpus") == 0
     ), f"Verify that node {partition_nodes[2]} has 0 CPUs allocated"
     assert (
-        atf.get_node_parameter(partition_nodes[3], "CPUAlloc") == 0
+        atf.get_node_parameter(partition_nodes[3], "alloc_cpus") == 0
     ), f"Verify that node {partition_nodes[3]} has 0 CPUs allocated"
 
     # Submit max_jobs to the partition p2
@@ -117,16 +117,16 @@ def test_limits(limit_name, limit_cpus, partition_nodes):
     # Verify that the number of allocated CPUs per node is incremented correctly
     # Second node is shared between p1 and p2, so should have half of the jobs of each partition.
     assert (
-        atf.get_node_parameter(partition_nodes[0], "CPUAlloc") == max_jobs / 2
+        atf.get_node_parameter(partition_nodes[0], "alloc_cpus") == max_jobs / 2
     ), f"Verify that node {partition_nodes[0]} has {max_jobs/2} CPUs allocated"
     assert (
-        atf.get_node_parameter(partition_nodes[1], "CPUAlloc") == max_jobs
+        atf.get_node_parameter(partition_nodes[1], "alloc_cpus") == max_jobs
     ), f"Verify that node {partition_nodes[1]} has {max_jobs} CPUs allocated"
     assert (
-        atf.get_node_parameter(partition_nodes[2], "CPUAlloc") == max_jobs / 2
+        atf.get_node_parameter(partition_nodes[2], "alloc_cpus") == max_jobs / 2
     ), f"Verify that node {partition_nodes[2]} has {max_jobs/2} CPUs allocated"
     assert (
-        atf.get_node_parameter(partition_nodes[3], "CPUAlloc") == 0
+        atf.get_node_parameter(partition_nodes[3], "alloc_cpus") == 0
     ), f"Verify that node {partition_nodes[3]} has 0 CPUs allocated"
 
     # Submit max_jobs to the last partition
@@ -141,16 +141,16 @@ def test_limits(limit_name, limit_cpus, partition_nodes):
     # Verify that the number of allocated CPUs per node is incremented correctly
     # Third node is also shared, this case between p2 and p3.
     assert (
-        atf.get_node_parameter(partition_nodes[0], "CPUAlloc") == max_jobs / 2
+        atf.get_node_parameter(partition_nodes[0], "alloc_cpus") == max_jobs / 2
     ), f"Verify that node {partition_nodes[0]} has {max_jobs/2} CPUs allocated"
     assert (
-        atf.get_node_parameter(partition_nodes[1], "CPUAlloc") == max_jobs
+        atf.get_node_parameter(partition_nodes[1], "alloc_cpus") == max_jobs
     ), f"Verify that node {partition_nodes[1]} has {max_jobs} CPUs allocated"
     assert (
-        atf.get_node_parameter(partition_nodes[2], "CPUAlloc") == max_jobs
+        atf.get_node_parameter(partition_nodes[2], "alloc_cpus") == max_jobs
     ), f"Verify that node {partition_nodes[2]} has {max_jobs} CPUs allocated"
     assert (
-        atf.get_node_parameter(partition_nodes[3], "CPUAlloc") == max_jobs / 2
+        atf.get_node_parameter(partition_nodes[3], "alloc_cpus") == max_jobs / 2
     ), f"Verify that node {partition_nodes[3]} has 0 CPUs allocated"
 
     # Submit one more job in each partition and make sure we stay within the limits
