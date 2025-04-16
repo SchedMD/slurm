@@ -78,6 +78,14 @@ typedef struct {
 } slingshot_rest_authdata_t;
 
 typedef struct {
+	char *ca_path; /* path to FM certificate bundle */
+	char *cert_path; /* path to client public certificate */
+	bool enabled; /* true if mTLS is enabled */
+	char *key_path; /* path to client private key */
+	char *url; /* url for mTLS authentication to FM */
+} slingshot_rest_mtls_t;
+
+typedef struct {
 	CURL *handle;            /* CURL connection handle */
 	char *data;              /* Response data buffer */
 	size_t datalen;          /* Length of the response data */
@@ -85,6 +93,7 @@ typedef struct {
 	const char *name;        /* Descriptive name for logging */
 	char *base_url;          /* The current site URL */
 	slingshot_rest_authdata_t auth; /* Authorization method/data */
+	slingshot_rest_mtls_t mtls; /* mTLS data */
 	unsigned short timeout;  /* Communication timeout */
 	unsigned short connect_timeout; /* Connection timeout */
 } slingshot_rest_conn_t;
@@ -105,14 +114,14 @@ typedef struct {
 
 /* global functions */
 /* NOTE: all strings are copied to the conn struct */
-bool slingshot_rest_connection(slingshot_rest_conn_t *conn,
-			       const char *url,
+bool slingshot_rest_connection(slingshot_rest_conn_t *conn, const char *url,
 			       slingshot_rest_auth_t auth_type,
-			       const char *auth_dir,
-			       const char *basic_user,
-			       const char *basic_pwdfile,
-			       int timeout,
-			       int conn_timeout,
+			       const char *auth_dir, const char *basic_user,
+			       const char *basic_pwdfile, bool mtls_enabled,
+			       const char *mtls_ca_path,
+			       const char *mtls_cert_path,
+			       const char *mtls_key_path, const char *mtls_url,
+			       int timeout, int conn_timeout,
 			       const char *conn_name);
 void slingshot_rest_destroy_connection(slingshot_rest_conn_t *conn);
 json_object *slingshot_rest_post(slingshot_rest_conn_t *conn,

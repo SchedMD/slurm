@@ -421,6 +421,78 @@ err:
 }
 
 /*
+ * Parse the "fm_mtls_ca" token"
+ */
+static bool _config_fm_mtls_ca(const char *token, char *arg)
+{
+	if (!arg)
+		goto err;
+	slingshot_config.fm_mtls_ca = xstrdup(arg);
+
+	log_flag(SWITCH, "[token=%s]: fm_mtls_ca %s", token,
+		 slingshot_config.fm_mtls_ca);
+	return true;
+err:
+	error("Invalid fm_mtls_ca token '%s' (example 'fm_mtls_ca=/etc/wlm-client-auth/ca.crt')",
+	      token);
+	return false;
+}
+
+/*
+ * Parse the "fm_mtls_cert" token"
+ */
+static bool _config_fm_mtls_cert(const char *token, char *arg)
+{
+	if (!arg)
+		goto err;
+	slingshot_config.fm_mtls_cert = xstrdup(arg);
+
+	log_flag(SWITCH, "[token=%s]: fm_mtls_cert %s", token,
+		 slingshot_config.fm_mtls_cert);
+	return true;
+err:
+	error("Invalid fm_mtls_cert token '%s' (example 'fm_mtls_cert=/etc/wlm-client-auth/public.crt')",
+	      token);
+	return false;
+}
+
+/*
+ * Parse the "fm_mtls_key" token"
+ */
+static bool _config_fm_mtls_key(const char *token, char *arg)
+{
+	if (!arg)
+		goto err;
+	slingshot_config.fm_mtls_key = xstrdup(arg);
+
+	log_flag(SWITCH, "[token=%s]: fm_mtls_key %s", token,
+		 slingshot_config.fm_mtls_key);
+	return true;
+err:
+	error("Invalid fm_mtls_key token '%s' (example 'fm_mtls_key=/etc/wlm-client-auth/private.key')",
+	      token);
+	return false;
+}
+
+/*
+ * Parse the "fm_mtls_url" token"
+ */
+static bool _config_fm_mtls_url(const char *token, char *arg)
+{
+	if (!arg)
+		goto err;
+	slingshot_config.fm_mtls_url = xstrdup(arg);
+
+	log_flag(SWITCH, "[token=%s]: fm_mtls_url %s", token,
+		 slingshot_config.fm_mtls_url);
+	return true;
+err:
+	error("Invalid fm_mtls_url token '%s' (example 'fm_mtls_url=https://api-gw-service-nmn.local/apis/fm')",
+	      token);
+	return false;
+}
+
+/*
  * If fm_url is set, set up default values for fm_auth{dir}
  * (if not already set)
  */
@@ -439,6 +511,29 @@ static void _config_fm_defaults(void)
 					xstrdup(SLINGSHOT_FM_AUTH_BASIC_DIR);
 	}
 	xassert(slingshot_config.fm_authdir);
+}
+
+static void _try_enabling_fm_mtls(void)
+{
+	/* If fm_mtls_url is not provided then default to fm_url */
+	if (!slingshot_config.fm_mtls_url)
+		slingshot_config.fm_mtls_url = xstrdup(slingshot_config.fm_url);
+	/* Only enable mTLS if the following were provided */
+	if (!(slingshot_config.fm_mtls_cert && slingshot_config.fm_mtls_key &&
+	      slingshot_config.fm_mtls_url)) {
+		/* If only partial mTLS config given warn that it is disabled */
+		if (slingshot_config.fm_mtls_ca ||
+		    slingshot_config.fm_mtls_cert ||
+		    slingshot_config.fm_mtls_key ||
+		    slingshot_config.fm_mtls_url)
+			warning("Fabric Manager mTLS authentication is disabled due to fm_mtls_cert, fm_mtls_key, or a fabric manager url (i.e. fm_mtls_url or fm_url) not being configured.");
+		return;
+	}
+
+	slingshot_config.flags |= SLINGSHOT_FLAGS_ENABLE_MTLS;
+
+	if (!slingshot_config.fm_mtls_ca)
+		warning("Fabric Manager mTLS authentication is enabled but a certification bundle was not provided. Server identity will not be verified.");
 }
 
 /*
@@ -565,6 +660,10 @@ extern void slingshot_free_config(void)
 {
 	xfree(slingshot_config.fm_url);
 	xfree(slingshot_config.fm_authdir);
+	xfree(slingshot_config.fm_mtls_ca);
+	xfree(slingshot_config.fm_mtls_cert);
+	xfree(slingshot_config.fm_mtls_key);
+	xfree(slingshot_config.fm_mtls_url);
 }
 
 /*
@@ -597,6 +696,14 @@ extern bool slingshot_setup_config(const char *switch_params)
 	const size_t size_fm_auth = sizeof(fm_auth) - 1;
 	const char fm_authdir[] = "fm_authdir";
 	const size_t size_fm_authdir = sizeof(fm_authdir) - 1;
+	const char fm_mtls_ca[] = "fm_mtls_ca";
+	const size_t size_fm_mtls_ca = sizeof(fm_mtls_ca) - 1;
+	const char fm_mtls_cert[] = "fm_mtls_cert";
+	const size_t size_fm_mtls_cert = sizeof(fm_mtls_cert) - 1;
+	const char fm_mtls_key[] = "fm_mtls_key";
+	const size_t size_fm_mtls_key = sizeof(fm_mtls_key) - 1;
+	const char fm_mtls_url[] = "fm_mtls_url";
+	const size_t size_fm_mtls_url = sizeof(fm_mtls_url) - 1;
 	/* Use min/max in state file if SwitchParameters not set */
 	uint16_t vni_min = slingshot_state.vni_min;
 	uint16_t vni_max = slingshot_state.vni_max;
@@ -625,6 +732,10 @@ extern bool slingshot_setup_config(const char *switch_params)
 	 *   fm_auth="BASIC|OAUTH": fabric manager REST API authentication type
 	 *   fm_authdir=<dir>: fabric manager authentication info directory
 	 *     (i.e. /etc/fmsim for BASIC, /etc/wlm-client-auth for OAUTH)
+	 *   fm_mtls_ca=<path to FM certificate bundle>
+	 *   fm_mtls_cert=<path to client public certificate>
+	 *   fm_mtls_key=<path to client private key>
+	 *   fm_mtls_url=<url for mTLS authentication to FM>
 	 *
 	 *   def_<NIC_resource>: default per-thread value for resource
 	 *   res_<NIC_resource>: reserved value for resource
@@ -699,6 +810,21 @@ extern bool slingshot_setup_config(const char *switch_params)
 		} else if (!xstrncasecmp(token, fm_auth, size_fm_auth)) {
 			if (!_config_fm_auth(token, arg))
 				goto err;
+		} else if (!xstrncasecmp(token, fm_mtls_ca, size_fm_mtls_ca)) {
+			if (!_config_fm_mtls_ca(token, arg))
+				goto err;
+		} else if (!xstrncasecmp(token, fm_mtls_cert,
+					 size_fm_mtls_cert)) {
+			if (!_config_fm_mtls_cert(token, arg))
+				goto err;
+		} else if (!xstrncasecmp(token, fm_mtls_key,
+					 size_fm_mtls_key)) {
+			if (!_config_fm_mtls_key(token, arg))
+				goto err;
+		} else if (!xstrncasecmp(token, fm_mtls_url,
+					 size_fm_mtls_url)) {
+			if (!_config_fm_mtls_url(token, arg))
+				goto err;
 		} else {
 			if (!_config_limits(token, &slingshot_config.limits))
 				goto err;
@@ -706,6 +832,8 @@ extern bool slingshot_setup_config(const char *switch_params)
 	}
 	/* If fm_url is set, set up default values for fm_auth{dir} */
 	_config_fm_defaults();
+
+	_try_enabling_fm_mtls();
 
 	/* Set up connection to fabric manager */
 	if (!slingshot_init_collectives())

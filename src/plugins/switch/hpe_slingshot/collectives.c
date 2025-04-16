@@ -157,12 +157,17 @@ extern bool slingshot_init_collectives(void)
 		return false;
 	}
 
-	if (!slingshot_rest_connection(&fm_conn,
-				       slingshot_config.fm_url,
+	if (!slingshot_rest_connection(&fm_conn, slingshot_config.fm_url,
 				       slingshot_config.fm_auth,
 				       slingshot_config.fm_authdir,
 				       SLINGSHOT_FM_AUTH_BASIC_USER,
 				       SLINGSHOT_FM_AUTH_BASIC_PWD_FILE,
+				       (slingshot_config.flags &
+					SLINGSHOT_FLAGS_ENABLE_MTLS),
+				       slingshot_config.fm_mtls_ca,
+				       slingshot_config.fm_mtls_cert,
+				       slingshot_config.fm_mtls_key,
+				       slingshot_config.fm_mtls_url,
 				       SLINGSHOT_FM_TIMEOUT,
 				       SLINGSHOT_FM_CONNECT_TIMEOUT,
 				       "Slingshot Fabric Manager"))

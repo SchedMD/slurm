@@ -95,7 +95,10 @@ static json_object *_rest_call(slingshot_rest_conn_t *conn,
 	xassert(urlsuffix != NULL);
 
 	/* Create full URL */
-	url = xstrdup_printf("%s%s", conn->base_url, urlsuffix);
+	if (conn->mtls.enabled)
+		url = xstrdup_printf("%s%s", conn->mtls.url, urlsuffix);
+	else
+		url = xstrdup_printf("%s%s", conn->base_url, urlsuffix);
 
 	/* If present, dump JSON payload to string */
 	if (reqjson) {
@@ -125,9 +128,10 @@ again:
 		password = conn->auth.u.basic.password;
 	}
 
-	if (slurm_curl_request(req, url, username, password, headers,
-			       conn->timeout, &response_str, status,
-			       request_method, false))
+	if (slurm_curl_request(req, url, username, password, conn->mtls.ca_path,
+			       conn->mtls.cert_path, conn->mtls.key_path,
+			       headers, conn->timeout, &response_str, status,
+			       request_method, false, conn->mtls.enabled))
 		goto err;
 
 	/* Decode response into JSON */
@@ -243,7 +247,11 @@ extern bool slingshot_rest_connection(slingshot_rest_conn_t *conn,
 				      const char *auth_dir,
 				      const char *basic_user,
 				      const char *basic_pwdfile,
-				      int timeout,
+				      bool mtls_enabled,
+				      const char *mtls_ca_path,
+				      const char *mtls_cert_path,
+				      const char *mtls_key_path,
+				      const char *mtls_url, int timeout,
 				      int connect_timeout,
 				      const char *conn_name)
 {
@@ -269,6 +277,14 @@ extern bool slingshot_rest_connection(slingshot_rest_conn_t *conn,
 	conn->auth.auth_dir = xstrdup(auth_dir);
 	conn->timeout = timeout;
 	conn->connect_timeout = connect_timeout;
+
+	conn->mtls.enabled = mtls_enabled;
+	if (mtls_enabled) {
+		conn->mtls.ca_path = xstrdup(mtls_ca_path);
+		conn->mtls.cert_path = xstrdup(mtls_cert_path);
+		conn->mtls.key_path = xstrdup(mtls_key_path);
+		conn->mtls.url = xstrdup(mtls_url);
+	}
 
 	/*
 	 * Attempt to get an OAUTH token for later use
@@ -296,6 +312,10 @@ extern void slingshot_rest_destroy_connection(slingshot_rest_conn_t *conn)
 		}
 	}
 	xfree(conn->auth.auth_dir);
+	xfree(conn->mtls.ca_path);
+	xfree(conn->mtls.cert_path);
+	xfree(conn->mtls.key_path);
+	xfree(conn->mtls.url);
 	_clear_auth_header(conn);
 }
 
@@ -402,9 +422,12 @@ static bool _get_auth_header(slingshot_rest_conn_t *conn,
 				     "&scope=openid",
 				     client_id, client_secret);
 
-		if (slurm_curl_request(req, url, NULL, NULL, NULL,
+		if (slurm_curl_request(req, url, NULL, NULL, conn->mtls.ca_path,
+				       conn->mtls.cert_path,
+				       conn->mtls.key_path, NULL,
 				       SLINGSHOT_TOKEN_TIMEOUT, &response_str,
-				       &status, HTTP_REQUEST_POST, false))
+				       &status, HTTP_REQUEST_POST, false,
+				       conn->mtls.enabled))
 			goto err;
 
 		/* Decode response into JSON */

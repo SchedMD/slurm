@@ -137,10 +137,12 @@ static size_t _read_function(void *contents, size_t size, size_t nmemb,
 
 extern int slurm_curl_request(const char *data, const char *url,
 			      const char *username, const char *password,
+			      const char *mtls_ca_path,
+			      const char *mtls_cert_path, char *mtls_key_path,
 			      struct curl_slist *headers, uint32_t timeout,
 			      char **response_str, long *response_code,
 			      http_request_method_t request_method,
-			      bool verify_cert)
+			      bool verify_cert, bool use_mtls)
 {
 	CURL *c = NULL;
 	CURLcode res;
@@ -175,6 +177,16 @@ extern int slurm_curl_request(const char *data, const char *url,
 		/* These are needed to work with self-signed certificates */
 		CURL_SETOPT(c, CURLOPT_SSL_VERIFYPEER, 0);
 		CURL_SETOPT(c, CURLOPT_SSL_VERIFYHOST, 0);
+	}
+
+	if (use_mtls) {
+		if (mtls_ca_path) {
+			CURL_SETOPT(c, CURLOPT_CAINFO, mtls_ca_path);
+			CURL_SETOPT(c, CURLOPT_SSL_VERIFYPEER, 1);
+			CURL_SETOPT(c, CURLOPT_SSL_VERIFYHOST, 2);
+		}
+		CURL_SETOPT(c, CURLOPT_SSLCERT, mtls_cert_path);
+		CURL_SETOPT(c, CURLOPT_SSLKEY, mtls_key_path);
 	}
 
 #if CURL_TRACE
