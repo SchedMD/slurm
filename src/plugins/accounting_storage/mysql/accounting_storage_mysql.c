@@ -320,6 +320,18 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 	return args->default_account;
 }
 
+static int _cluster_check_def_acct(void *x, void *arg)
+{
+	remove_common_args_t *args = arg;
+	args->cluster_name = x;
+
+	/* Stop as soon as we find a cluster w/ default account */
+	if (_check_is_def_acct_before_remove(args))
+		return -1;
+	else
+		return 0;
+}
+
 /* this function is here to see if any of what we are trying to remove
  * has jobs that are not completed.  If we have jobs and the object is less
  * than a day old we don't want to delete it, only set the deleted flag.
@@ -2413,8 +2425,14 @@ extern int remove_common(remove_common_args_t *args)
 		cluster_centric = false;
 
 	if (((table == assoc_table) || (table == acct_table))) {
-		if (_check_is_def_acct_before_remove(args))
-			return SLURM_SUCCESS;
+		if (cluster_name) {
+			if (_check_is_def_acct_before_remove(args))
+				return SLURM_SUCCESS;
+		} else {
+			if (list_find_first(use_cluster_list,
+					    _cluster_check_def_acct, args))
+				return SLURM_SUCCESS;
+		}
 	}
 
 	/* If we have jobs associated with this we do not want to
