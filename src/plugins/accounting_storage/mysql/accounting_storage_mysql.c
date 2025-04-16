@@ -395,6 +395,9 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 			(*jobs_running) = 1;
 			reset_mysql_conn(mysql_conn);
 		}
+	} else {
+		mysql_free_result(result);
+		return false;
 	}
 
 	if (ret_list) {
