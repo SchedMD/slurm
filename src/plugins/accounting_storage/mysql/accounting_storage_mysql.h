@@ -128,11 +128,14 @@ typedef enum {
 typedef struct {
 	char *assoc_char;
 	char *cluster_name;
+	time_t day_old;
 	bool *default_account;
+	bool has_jobs;
 	bool jobs_running;
 	mysql_conn_t *mysql_conn;
 	char *name_char;
 	time_t now;
+	int *rc_ptr;
 	list_t *ret_list;
 	char *table;
 	uint16_t type;

@@ -2237,6 +2237,140 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
+static int _remove_from_assoc_table(remove_common_args_t *args)
+{
+	char *assoc_char = args->assoc_char;
+	char *cluster_name = args->cluster_name;
+	time_t day_old = args->day_old;
+	bool has_jobs = args->has_jobs;
+	mysql_conn_t *mysql_conn = args->mysql_conn;
+	time_t now = args->now;
+	char *table = args->table;
+
+	int rc;
+	char *query;
+	char *loc_assoc_char = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+
+	/* mark deleted=1 or remove completely the accounting tables
+	 */
+	if (table != assoc_table) {
+		if (!assoc_char) {
+			error("no assoc_char");
+			if (mysql_conn->flags & DB_CONN_FLAG_ROLLBACK) {
+				mysql_db_rollback(mysql_conn);
+			}
+			list_flush(mysql_conn->update_list);
+			return SLURM_ERROR;
+		}
+
+		/*
+		 * If we are doing this on an assoc_table we have
+		 * already done this, so don't
+		 */
+		query = xstrdup_printf(
+			"select distinct t2.id_assoc from \"%s_%s\" as t2 where %s && t2.deleted=0;",
+			cluster_name, assoc_table, assoc_char);
+
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+		if (!(result = mysql_db_query_ret(
+			      mysql_conn, query, 0))) {
+			xfree(query);
+			if (mysql_conn->flags & DB_CONN_FLAG_ROLLBACK) {
+				mysql_db_rollback(mysql_conn);
+			}
+			list_flush(mysql_conn->update_list);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+
+		rc = 0;
+		xfree(loc_assoc_char);
+		while ((row = mysql_fetch_row(result))) {
+			slurmdb_assoc_rec_t *rem_assoc = NULL;
+			if (loc_assoc_char)
+				xstrcat(loc_assoc_char, " || ");
+			xstrfmtcat(loc_assoc_char, "id_assoc=%s", row[0]);
+
+			rem_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+			rem_assoc->id = slurm_atoul(row[0]);
+			rem_assoc->cluster = xstrdup(cluster_name);
+			if (addto_update_list(mysql_conn->update_list,
+					      SLURMDB_REMOVE_ASSOC,
+					      rem_assoc) != SLURM_SUCCESS)
+				error("couldn't add to the update list");
+		}
+		mysql_free_result(result);
+	} else
+		loc_assoc_char = assoc_char;
+
+	if (!loc_assoc_char) {
+		debug2("No associations with object being deleted");
+		return rc;
+	}
+	/* If we have jobs that have ran don't go through the logic of
+	 * removing the associations. Since we may want them for
+	 * reports in the future since jobs had ran.
+	 */
+	if (has_jobs)
+		goto just_update;
+
+	query = xstrdup_printf("delete quick from \"%s_%s\" where creation_time>%ld && (%s);",
+			       cluster_name, assoc_table,
+			       day_old, loc_assoc_char);
+
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+
+	if (rc == SLURM_ERROR) {
+		reset_mysql_conn(mysql_conn);
+		return rc;
+	}
+
+just_update:
+	/* now update the associations themselves that are still
+	 * around clearing all the limits since if we add them back
+	 * we don't want any residue from past associations lingering
+	 * around.
+	 */
+	query = xstrdup_printf("update \"%s_%s\" as t1 set "
+			       "mod_time=%ld, deleted=1, def_qos_id=DEFAULT, "
+			       "shares=DEFAULT, max_jobs=DEFAULT, "
+			       "max_jobs_accrue=DEFAULT, "
+			       "min_prio_thresh=DEFAULT, "
+			       "max_submit_jobs=DEFAULT, "
+			       "max_wall_pj=DEFAULT, "
+			       "max_tres_pj=DEFAULT, "
+			       "max_tres_pn=DEFAULT, "
+			       "max_tres_mins_pj=DEFAULT, "
+			       "max_tres_run_mins=DEFAULT, "
+			       "grp_jobs=DEFAULT, grp_submit_jobs=DEFAULT, "
+			       "grp_jobs_accrue=DEFAULT, grp_wall=DEFAULT, "
+			       "grp_tres=DEFAULT, "
+			       "grp_tres_mins=DEFAULT, "
+			       "grp_tres_run_mins=DEFAULT, "
+			       "qos=DEFAULT, delta_qos=DEFAULT, "
+			       "priority=DEFAULT, is_def=DEFAULT, "
+			       "comment=DEFAULT, flags=DEFAULT "
+			       "where (%s);",
+			       cluster_name, assoc_table, now,
+			       loc_assoc_char);
+
+	if (table != assoc_table)
+		xfree(loc_assoc_char);
+
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+	if (rc != SLURM_SUCCESS) {
+		reset_mysql_conn(mysql_conn);
+	}
+
+	return rc;
+}
+
 /* Every option in assoc_char should have a 't1.' in front of it. */
 extern int remove_common(remove_common_args_t *args)
 {
@@ -2255,7 +2389,6 @@ extern int remove_common(remove_common_args_t *args)
 
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
-	char *loc_assoc_char = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	time_t day_old = now - DELETE_SEC_BACK;
@@ -2453,120 +2586,11 @@ extern int remove_common(remove_common_args_t *args)
 		   || (table == qos_table))
 		return SLURM_SUCCESS;
 
-	/* mark deleted=1 or remove completely the accounting tables
-	 */
-	if (table != assoc_table) {
-		if (!assoc_char) {
-			error("no assoc_char");
-			if (mysql_conn->flags & DB_CONN_FLAG_ROLLBACK) {
-				mysql_db_rollback(mysql_conn);
-			}
-			list_flush(mysql_conn->update_list);
-			return SLURM_ERROR;
-		}
+	args->day_old = day_old;
+	args->has_jobs = has_jobs;
+	args->rc_ptr = &rc;
 
-		/*
-		 * If we are doing this on an assoc_table we have
-		 * already done this, so don't
-		 */
-		query = xstrdup_printf(
-			"select distinct t2.id_assoc from \"%s_%s\" as t2 where %s && t2.deleted=0;",
-			cluster_name, assoc_table, assoc_char);
-
-		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-		if (!(result = mysql_db_query_ret(
-			      mysql_conn, query, 0))) {
-			xfree(query);
-			if (mysql_conn->flags & DB_CONN_FLAG_ROLLBACK) {
-				mysql_db_rollback(mysql_conn);
-			}
-			list_flush(mysql_conn->update_list);
-			return SLURM_ERROR;
-		}
-		xfree(query);
-
-		rc = 0;
-		xfree(loc_assoc_char);
-		while ((row = mysql_fetch_row(result))) {
-			slurmdb_assoc_rec_t *rem_assoc = NULL;
-			if (loc_assoc_char)
-				xstrcat(loc_assoc_char, " || ");
-			xstrfmtcat(loc_assoc_char, "id_assoc=%s", row[0]);
-
-			rem_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-			rem_assoc->id = slurm_atoul(row[0]);
-			rem_assoc->cluster = xstrdup(cluster_name);
-			if (addto_update_list(mysql_conn->update_list,
-					      SLURMDB_REMOVE_ASSOC,
-					      rem_assoc) != SLURM_SUCCESS)
-				error("couldn't add to the update list");
-		}
-		mysql_free_result(result);
-	} else
-		loc_assoc_char = assoc_char;
-
-	if (!loc_assoc_char) {
-		debug2("No associations with object being deleted");
-		return rc;
-	}
-	/* If we have jobs that have ran don't go through the logic of
-	 * removing the associations. Since we may want them for
-	 * reports in the future since jobs had ran.
-	 */
-	if (has_jobs)
-		goto just_update;
-
-	query = xstrdup_printf("delete quick from \"%s_%s\" where creation_time>%ld && (%s);",
-			       cluster_name, assoc_table,
-			       day_old, loc_assoc_char);
-
-	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-	rc = mysql_db_query(mysql_conn, query);
-	xfree(query);
-
-	if (rc == SLURM_ERROR) {
-		reset_mysql_conn(mysql_conn);
-		return rc;
-	}
-
-just_update:
-	/* now update the associations themselves that are still
-	 * around clearing all the limits since if we add them back
-	 * we don't want any residue from past associations lingering
-	 * around.
-	 */
-	query = xstrdup_printf("update \"%s_%s\" as t1 set "
-			       "mod_time=%ld, deleted=1, def_qos_id=DEFAULT, "
-			       "shares=DEFAULT, max_jobs=DEFAULT, "
-			       "max_jobs_accrue=DEFAULT, "
-			       "min_prio_thresh=DEFAULT, "
-			       "max_submit_jobs=DEFAULT, "
-			       "max_wall_pj=DEFAULT, "
-			       "max_tres_pj=DEFAULT, "
-			       "max_tres_pn=DEFAULT, "
-			       "max_tres_mins_pj=DEFAULT, "
-			       "max_tres_run_mins=DEFAULT, "
-			       "grp_jobs=DEFAULT, grp_submit_jobs=DEFAULT, "
-			       "grp_jobs_accrue=DEFAULT, grp_wall=DEFAULT, "
-			       "grp_tres=DEFAULT, "
-			       "grp_tres_mins=DEFAULT, "
-			       "grp_tres_run_mins=DEFAULT, "
-			       "qos=DEFAULT, delta_qos=DEFAULT, "
-			       "priority=DEFAULT, is_def=DEFAULT, "
-			       "comment=DEFAULT, flags=DEFAULT "
-			       "where (%s);",
-			       cluster_name, assoc_table, now,
-			       loc_assoc_char);
-
-	if (table != assoc_table)
-		xfree(loc_assoc_char);
-
-	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-	rc = mysql_db_query(mysql_conn, query);
-	xfree(query);
-	if (rc != SLURM_SUCCESS) {
-		reset_mysql_conn(mysql_conn);
-	}
+	rc = _remove_from_assoc_table(args);
 
 	return rc;
 }
