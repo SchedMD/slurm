@@ -2414,15 +2414,11 @@ extern int remove_common(remove_common_args_t *args)
 	time_t day_old = now - DELETE_SEC_BACK;
 	bool has_jobs = false;
 	char *tmp_name_char = NULL;
-	bool cluster_centric = true;
+	bool cluster_centric = false;
 
 	/* figure out which tables we need to append the cluster name to */
-	if ((table == cluster_table) || (table == acct_coord_table)
-	    || (table == acct_table) || (table == qos_table)
-	    || (table == txn_table) || (table == user_table)
-	    || (table == res_table) || (table == clus_res_table)
-	    || (table == federation_table))
-		cluster_centric = false;
+	if ((table == wckey_table) || (table == assoc_table))
+		cluster_centric = true;
 
 	if (((table == assoc_table) || (table == acct_table))) {
 		if (cluster_name) {
