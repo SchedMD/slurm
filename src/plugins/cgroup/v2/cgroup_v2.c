@@ -1248,10 +1248,6 @@ static int _migrate_to_stepd_scope()
 		      int_cg_ns.mnt_point);
 		return SLURM_ERROR;
 	}
-	if (_unset_cpu_mem_limits(&int_cg[CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
-		error("Cannot reset %s cgroup limits.", new_home);
-		return SLURM_ERROR;
-	}
 
 	if (common_cgroup_move_process(&int_cg[CG_LEVEL_ROOT], slurmd_pid) !=
 	    SLURM_SUCCESS) {
@@ -1608,6 +1604,20 @@ extern int cgroup_p_setup_scope(char *scope_path)
 				return SLURM_ERROR;
 		} else {
 			log_flag(CGROUP, "INVOCATION_ID env var found. Assuming slurmd has been started by systemd.");
+		}
+
+		/*
+		 * We need to unset any cpu and memory limits as we do not want
+		 * to inherit previous limits. We cannot reset them later
+		 * because _load_gres needs to see all the cpus. The CoreSpec
+		 * initialization will happen afterwards and set whatever
+		 * is needed.
+		 */
+		if (_unset_cpu_mem_limits(&int_cg[CG_LEVEL_ROOT]) !=
+		    SLURM_SUCCESS) {
+			error("Cannot reset %s cgroup limits.",
+			      int_cg[CG_LEVEL_ROOT].path);
+			return SLURM_ERROR;
 		}
 	}
 
