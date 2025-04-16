@@ -121,6 +121,7 @@ extern int init(void)
 		return rc;
 	}
 
+	jobcomp_common_conf_init();
 	jobcomp_kafka_conf_init();
 	jobcomp_kafka_conf_parse_params();
 	if ((rc = jobcomp_kafka_conf_parse_location()))
@@ -136,6 +137,7 @@ extern int fini(void)
 {
 	jobcomp_kafka_message_fini();
 	jobcomp_kafka_conf_fini();
+	jobcomp_common_conf_fini();
 
 	return SLURM_SUCCESS;
 }

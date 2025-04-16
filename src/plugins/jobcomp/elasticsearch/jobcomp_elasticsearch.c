@@ -341,6 +341,7 @@ extern int init(void)
 		return rc;
 	}
 
+	jobcomp_common_conf_init();
 	jobslist = list_create(_jobslist_del);
 	slurm_thread_create(&job_handler_thread, _process_jobs, NULL);
 	slurm_mutex_lock(&pend_jobs_lock);
@@ -362,6 +363,7 @@ extern int fini(void)
 	FREE_NULL_LIST(jobslist);
 	xfree(log_url);
 
+	jobcomp_common_conf_fini();
 	slurm_curl_fini();
 
 	return SLURM_SUCCESS;
