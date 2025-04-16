@@ -2371,6 +2371,17 @@ just_update:
 	return rc;
 }
 
+static int _cluster_remove_from_assoc(void *x, void *arg)
+{
+	remove_common_args_t *args = arg;
+	args->cluster_name = x;
+
+	if ((*(args->rc_ptr) = _remove_from_assoc_table(args)))
+		return -1;
+	else
+		return 0;
+}
+
 /* Every option in assoc_char should have a 't1.' in front of it. */
 extern int remove_common(remove_common_args_t *args)
 {
@@ -2590,7 +2601,12 @@ extern int remove_common(remove_common_args_t *args)
 	args->has_jobs = has_jobs;
 	args->rc_ptr = &rc;
 
-	rc = _remove_from_assoc_table(args);
+	if (cluster_name) {
+		rc = _remove_from_assoc_table(args);
+	} else {
+		(void) list_find_first(use_cluster_list,
+				       _cluster_remove_from_assoc, args);
+	}
 
 	return rc;
 }
