@@ -1996,6 +1996,9 @@ static bool _pick_step_core(step_record_t *step_ptr,
 		log_flag(STEPS, "%s: over-subscribe alloc Node:%d Socket:%d Core:%d",
 			 __func__, job_node_inx, sock_inx, core_inx);
 	} else {
+		if (bit_test(step_ptr->core_bitmap_job, bit_offset))
+			return false; /* already taken by this step */
+
 		/* Check and set the job's used cores. */
 		if (!(step_ptr->flags & SSF_OVERLAP_FORCE)) {
 			if ((use_all_cores == false) &&
