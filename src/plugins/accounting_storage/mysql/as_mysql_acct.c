@@ -801,12 +801,10 @@ extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_account_cond_t *acct_cond)
 {
-	list_itr_t *itr = NULL;
 	list_t *ret_list = NULL;
 	list_t *coord_list = NULL;
-	list_t *cluster_list_tmp = NULL;
 	int rc = SLURM_SUCCESS;
-	char *object = NULL, *at = NULL;
+	char *at = NULL;
 	char *extra = NULL, *query = NULL,
 		*name_char = NULL, *name_char_pos = NULL,
 		*assoc_char = NULL, *assoc_char_pos = NULL;
@@ -893,15 +891,11 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	args.user_name = uid_to_string((uid_t) uid);
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
-	cluster_list_tmp = list_shallow_copy(as_mysql_cluster_list);
-	itr = list_iterator_create(cluster_list_tmp);
-	while ((object = list_next(itr))) {
-		args.cluster_name = object;
-		if ((rc = remove_common(&args)) != SLURM_SUCCESS)
-			break;
-	}
-	list_iterator_destroy(itr);
-	FREE_NULL_LIST(cluster_list_tmp);
+	args.use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+
+	rc = remove_common(&args);
+
+	FREE_NULL_LIST(args.use_cluster_list);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(args.user_name);
