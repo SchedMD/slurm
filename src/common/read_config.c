@@ -264,6 +264,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"Epilog", S_P_ARRAY},
 	{"EpilogMsgTime", S_P_UINT32},
 	{"EpilogSlurmctld", S_P_ARRAY},
+	{"EpilogTimeout", S_P_UINT16},
 	{"ExtSensorsFreq", S_P_UINT16, _defunct_option},
 	{"ExtSensorsType", S_P_STRING, _defunct_option},
 	{"FairShareDampeningFactor", S_P_UINT16},
@@ -357,6 +358,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PrologEpilogTimeout", S_P_UINT16},
 	{"PrologFlags", S_P_STRING},
 	{"PrologSlurmctld", S_P_ARRAY},
+	{"PrologTimeout", S_P_UINT16},
 	{"PropagatePrioProcess", S_P_UINT16},
 	{"PropagateResourceLimits", S_P_STRING},
 	{"PropagateResourceLimitsExcept", S_P_STRING},
@@ -2895,7 +2897,8 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->vsize_factor              = 0;
 	ctl_conf_ptr->wait_time			= NO_VAL16;
 	xfree (ctl_conf_ptr->x11_params);
-	ctl_conf_ptr->prolog_epilog_timeout = NO_VAL16;
+	ctl_conf_ptr->prolog_timeout = NO_VAL16;
+	ctl_conf_ptr->epilog_timeout = NO_VAL16;
 
 	_free_name_hashtbl();
 
@@ -5252,13 +5255,12 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_uint16(&conf->eio_timeout, "EioTimeout", hashtbl))
 		conf->eio_timeout = DEFAULT_EIO_SHUTDOWN_WAIT;
 
-	if (!s_p_get_uint16(&conf->prolog_epilog_timeout,
-			    "PrologEpilogTimeout",
-			    hashtbl)) {
-		/* The default value is wait forever
-		 */
-		conf->prolog_epilog_timeout = NO_VAL16;
-	}
+	if (!s_p_get_uint16(&uint16_tmp, "PrologEpilogTimeout", hashtbl))
+		uint16_tmp = NO_VAL16; /* default - wait forever */
+	if (!s_p_get_uint16(&conf->prolog_timeout, "PrologTimeout", hashtbl))
+		conf->prolog_timeout = uint16_tmp; /* PrologEpilogTimeout */
+	if (!s_p_get_uint16(&conf->epilog_timeout, "EpilogTimeout", hashtbl))
+		conf->epilog_timeout = uint16_tmp; /* PrologEpilogTimeout */
 
 	return SLURM_SUCCESS;
 }

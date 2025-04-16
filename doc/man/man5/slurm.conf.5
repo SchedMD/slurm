@@ -1373,6 +1373,17 @@ this option on multiple lines.\fR
 .IP
 
 .TP
+\fBEpilogTimeout\fR
+The interval in seconds Slurm waits for Epilog before terminating them. The
+default value is \fBPrologEpilogTimeout\fR. This interval applies to the Epilog
+run by slurmd daemon after the job, the EpilogSlurmctld run by slurmctld
+daemon, and the SPANK plugin epilog call: slurm_spank_job_epilog.
+.br
+If the Epilog or slurm_spank_job_epilog time out, the node is drained.
+In all cases, errors are logged.
+.IP
+
+.TP
 \fBFairShareDampeningFactor\fR
 Dampen the effect of exceeding a user or group's fair share of allocated
 resources. Higher values will provides greater ability to differentiate
@@ -3283,6 +3294,21 @@ If the Prolog or slurm_spank_job_prolog time out, the job is requeued if
 possible and the node is drained.
 If the Epilog or slurm_spank_job_epilog time out, the node is drained.
 In all cases, errors are logged.
+.br
+\fB\fBNOTE\fR: This value is not used for prologs if PrologTimeout is configured.
+Likewise, this value is not used for epilogs if EpilogTimout is configured.
+.IP
+
+.TP
+\fBPrologTimeout\fR
+The interval in seconds Slurm waits for Prolog before terminating them. The
+default value is \fBPrologEpilogTimeout\fR. This interval applies to the Prolog
+run by slurmd daemon before the job, the PrologSlurmctld run by slurmctld
+daemon, and the SPANK plugin prolog call: slurm_spank_job_prolog.
+.br
+If the PrologSlurmctld times out, the job is requeued if possible.
+If the Prolog or slurm_spank_job_prolog time out, the job is requeued if
+possible and the node is drained. In all cases, errors are logged.
 .IP
 
 .TP
