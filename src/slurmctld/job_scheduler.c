@@ -3291,7 +3291,8 @@ static int _foreach_test_job_dependency(void *x, void *arg)
 			/* Normal job */
 			is_complete = IS_JOB_COMPLETE(djob_ptr);
 			is_completed = IS_JOB_COMPLETED(djob_ptr);
-			is_pending = IS_JOB_PENDING(djob_ptr);
+			is_pending = IS_JOB_PENDING(djob_ptr) ||
+				     IS_JOB_CONFIGURING(djob_ptr);
 		}
 
 		if (!_test_job_dependency_common(
