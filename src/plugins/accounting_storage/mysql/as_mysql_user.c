@@ -1450,16 +1450,17 @@ no_user_table:
 				break;
 			}
 		}
-
-		args.assoc_char = assoc_char;
-		args.cluster_name = object;
-		args.name_char = name_char;
-		args.ret_list = ret_list;
-
-		if ((rc = remove_common(&args)) != SLURM_SUCCESS)
-			break;
 	}
 	list_iterator_destroy(itr);
+
+	if (!rc) {
+		args.assoc_char = assoc_char;
+		args.name_char = name_char;
+		args.ret_list = ret_list;
+		args.use_cluster_list = use_cluster_list;
+
+		rc = remove_common(&args);
+	}
 
 	FREE_NULL_LIST(use_cluster_list);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
