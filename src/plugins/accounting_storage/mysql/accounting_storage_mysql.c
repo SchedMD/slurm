@@ -241,12 +241,14 @@ static int _set_qos_cnt(mysql_conn_t *mysql_conn)
  * Check to ensure that we do not remove a user's default account unless we are
  * removing all of the user's accounts.
  */
-static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
-					    char *cluster_name,
-					    char *assoc_char,
-					    list_t *ret_list,
-					    bool *default_account)
+static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 {
+	char *assoc_char = args->assoc_char;
+	char *cluster_name = args->cluster_name;
+	bool *default_account = args->default_account;
+	mysql_conn_t *mysql_conn = args->mysql_conn;
+	list_t *ret_list = args->ret_list;
+
 	char *query, *tmp_char = NULL, *as_statement = "";
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -2388,11 +2390,9 @@ extern int remove_common(remove_common_args_t *args)
 	xassert(args);
 	char *assoc_char = args->assoc_char;
 	char *cluster_name = args->cluster_name;
-	bool *default_account = args->default_account;
 	mysql_conn_t *mysql_conn = args->mysql_conn;
 	char *name_char = args->name_char;
 	time_t now = args->now;
-	list_t *ret_list = args->ret_list;
 	char *table = args->table;
 	uint16_t type = args->type;
 	list_t *use_cluster_list = args->use_cluster_list;
@@ -2416,11 +2416,7 @@ extern int remove_common(remove_common_args_t *args)
 		cluster_centric = false;
 
 	if (((table == assoc_table) || (table == acct_table))) {
-		if (_check_is_def_acct_before_remove(mysql_conn,
-						     cluster_name,
-						     assoc_char,
-						     ret_list,
-						     default_account))
+		if (_check_is_def_acct_before_remove(args))
 			return SLURM_SUCCESS;
 	}
 
