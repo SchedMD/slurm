@@ -1402,7 +1402,7 @@ static int DUMP_FUNC(JOB_STDIN)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
-	job_std_pattern_t job_stp;
+	job_std_pattern_t job_stp = { 0 };
 	char *tmp_path = NULL;
 	int rc;
 
@@ -1420,7 +1420,7 @@ static int DUMP_FUNC(JOB_STDOUT)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
-	job_std_pattern_t job_stp;
+	job_std_pattern_t job_stp = { 0 };
 	char *tmp_path = NULL;
 	int rc;
 
@@ -1438,7 +1438,7 @@ static int DUMP_FUNC(JOB_STDERR)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
-	job_std_pattern_t job_stp;
+	job_std_pattern_t job_stp = { 0 };
 	char *tmp_path = NULL;
 	int rc;
 
