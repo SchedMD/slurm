@@ -1193,22 +1193,16 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				reset_mysql_conn(mysql_conn);
 				break;
 			}
-
-			args.assoc_char = assoc_char;
-			args.cluster_name = object;
-			args.name_char = name_char;
-			args.ret_list = ret_list;
-
-			if ((rc = remove_common(&args)) != SLURM_SUCCESS)
-				break;
 		}
 		list_iterator_destroy(itr);
-	} else {
-		args.assoc_char = assoc_char;
-		args.name_char = name_char;
-
-		rc = remove_common(&args);
 	}
+
+	args.assoc_char = assoc_char;
+	args.name_char = name_char;
+	args.ret_list = ret_list;
+	args.use_cluster_list = cluster_list_tmp;
+
+	rc = remove_common(&args);
 
 	FREE_NULL_LIST(cluster_list_tmp);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
