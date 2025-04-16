@@ -2596,12 +2596,13 @@ extern int remove_common(remove_common_args_t *args)
 	if (rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
 		return SLURM_ERROR;
-	} else if ((table == acct_coord_table)
-		   || (table == wckey_table)
-		   || (table == clus_res_table)
-		   || (table == res_table)
-		   || (table == federation_table)
-		   || (table == qos_table))
+	}
+	if ((table == acct_coord_table) ||
+	    (table == wckey_table) ||
+	    (table == clus_res_table) ||
+	    (table == res_table) ||
+	    (table == federation_table) ||
+	    (table == qos_table))
 		return SLURM_SUCCESS;
 
 	args->day_old = day_old;
