@@ -325,12 +325,14 @@ static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
  * has jobs that are not completed.  If we have jobs and the object is less
  * than a day old we don't want to delete it, only set the deleted flag.
  */
-static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
-				      char *cluster_name,
-				      char *assoc_char,
-				      list_t *ret_list,
-				      bool *jobs_running)
+static bool _check_jobs_before_remove(remove_common_args_t *args)
 {
+	char *assoc_char = args->assoc_char;
+	char *cluster_name = args->cluster_name;
+	mysql_conn_t *mysql_conn = args->mysql_conn;
+	bool *jobs_running = &args->jobs_running;
+	list_t *ret_list = args->ret_list;
+
 	char *query = NULL, *object = NULL, *pos = NULL;
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
@@ -2266,16 +2268,17 @@ extern int remove_common(remove_common_args_t *args)
 		 * only looking for association type tables.
 		 */
 	} else if (cluster_name) {
+		list_t *tmp_ret_list = args->ret_list;
 		xassert(jobs_running);
 		/* first check to see if we are running jobs now */
-		if (_check_jobs_before_remove(
-			    mysql_conn, cluster_name, assoc_char,
-			    ret_list, jobs_running) || (*jobs_running))
+		if (_check_jobs_before_remove(args) || (*jobs_running))
 			return SLURM_SUCCESS;
 
 		/* now check to see if any jobs were ever run. */
-		has_jobs = _check_jobs_before_remove(
-			mysql_conn, cluster_name, assoc_char, NULL, NULL);
+		args->ret_list = NULL;
+		args->jobs_running = NULL;
+		has_jobs = _check_jobs_before_remove(args);
+		args->ret_list = tmp_ret_list;
 	}
 
 	/* Don't delete cluster row if it has registered */
