@@ -65,6 +65,7 @@ struct print_field {
 };
 
 typedef struct {
+	uint32_t array_job_id;
 	uint32_t array_task_id;
 	char *first_step_name;
 	char *first_step_node;
