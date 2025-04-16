@@ -687,7 +687,7 @@ function __slurm_comp_filter() {
 # Determine if a slurmctld will respond
 function __slurm_ctld_status() {
 	local output exit_code
-	output=$(scontrol ping)
+	output=$(scontrol ping 2>&1/dev/null)
 	exit_code=$?
 
 	if ((exit_code == 0)); then
@@ -702,7 +702,7 @@ function __slurm_ctld_status() {
 # Determine if a slurmdbd will respond
 function __slurm_dbd_status() {
 	local output exit_code
-	output=$(sacctmgr ping 2>/dev/null)
+	output=$(sacctmgr ping 2>&1/dev/null)
 	exit_code=$?
 
 	if ((exit_code == 0)); then
@@ -4910,6 +4910,7 @@ function __sreport_cluster() {
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
+	qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	*)
