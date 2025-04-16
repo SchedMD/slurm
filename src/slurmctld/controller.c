@@ -4057,6 +4057,8 @@ static void _run_primary_prog(bool primary_on)
 		return;
 	}
 
+	info("%s: Running %s", __func__, prog_type);
+
 	sep = strrchr(prog_name, '/');
 	if (sep)
 		argv[0] = sep + 1;
