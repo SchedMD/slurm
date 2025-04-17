@@ -269,8 +269,6 @@ static void _remove_ecores(hwloc_topology_t *topology)
  * init and destroy topology must be outside this function */
 static int xcpuinfo_hwloc_topo_load(hwloc_topology_t *topology)
 {
-	int ret = SLURM_SUCCESS;
-
 	xassert(topology);
 
 	/* parse all system */
@@ -299,16 +297,14 @@ static int xcpuinfo_hwloc_topo_load(hwloc_topology_t *topology)
 	if (hwloc_topology_load(*topology)) {
 		/* error in load hardware topology */
 		debug("hwloc_topology_load() failed.");
-		ret = SLURM_ERROR;
-		goto end_it;
+		return SLURM_ERROR;
 	}
 
 	_check_full_access(topology);
 
 	_remove_ecores(topology);
 
-end_it:
-	return ret;
+	return SLURM_SUCCESS;
 }
 
 /*
