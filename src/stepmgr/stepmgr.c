@@ -2222,13 +2222,12 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		return ESLURM_NODES_BUSY;
 	}
 
-	/* We need to over-subscribe one or more cores. */
-	log_flag(STEPS, "%s: %pS needs to over-subscribe cores required:%u assigned:%u/%"PRIu64 " overcommit:%c exclusive:%c",
-		 __func__, step_ptr, cores,
-		 bit_set_count(job_resrcs_ptr->core_bitmap),
-		 bit_size(job_resrcs_ptr->core_bitmap),
-		 ((step_ptr->flags & SSF_OVERCOMMIT) ? 'T' : 'F'),
-		 ((step_ptr->flags & SSF_EXCLUSIVE) ? 'T' : 'F'));
+	/* We need to overcommit one or more cores. */
+	log_flag(STEPS, "%s: %pS needs to overcommit cores. Cores still needed:%u Cores assigned to step:%u exclusive:%c overlap:%c",
+		 __func__, step_ptr, core_cnt,
+		bit_set_count(step_ptr->core_bitmap_job),
+		 ((step_ptr->flags & SSF_EXCLUSIVE) ? 'T' : 'F'),
+		 ((step_ptr->flags & SSF_OVERLAP_FORCE) ? 'T' : 'F'));
 
 cleanup:
 	FREE_NULL_BITMAP(all_gres_core_bitmap);
