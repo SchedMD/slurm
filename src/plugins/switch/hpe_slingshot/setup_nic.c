@@ -70,6 +70,7 @@ static int (*cxil_open_device_p)(uint32_t, struct cxil_dev **);
 static int (*cxil_alloc_svc_p)(struct cxil_dev *, struct cxi_svc_desc *,
 	struct cxi_svc_fail_info *);
 static int (*cxil_destroy_svc_p)(struct cxil_dev *, unsigned int);
+static int (*cxil_set_svc_lpr_p)(struct cxil_dev *, unsigned int, unsigned int);
 #if HAVE_STRUCT_CXI_RSRC_USE
 static int (*cxil_get_svc_rsrc_use_p)(struct cxil_dev *, unsigned int,
 				      struct cxi_rsrc_use *);
@@ -95,6 +96,7 @@ static bool _load_cxi_funcs(void *lib)
 #if HAVE_STRUCT_CXI_RSRC_USE
 	LOOKUP_SYM(lib, cxil_get_svc_rsrc_use);
 #endif
+	LOOKUP_SYM(lib, cxil_set_svc_lpr);
 	return true;
 }
 
@@ -611,6 +613,35 @@ static void _alloc_fail_info(struct cxil_dev *dev,
 }
 
 /*
+ * Read the Slingshot device file for this device to get the driver's
+ * value for maximum lnis_per_rgid
+ */
+static int _max_lnis_per_rgid(const char *device)
+{
+	char *path = NULL;
+	FILE *fp = NULL;
+	int rc, retval = 0;
+
+	/* Get the file name to read from */
+	xstrfmtcat(path, SLINGSHOT_RGIDS_AVAIL_FMT, device);
+	/* Open the file */
+	if (!(fp = fopen(path, "r"))) {
+		debug("Couldn't open %s for reading: %m", path);
+		goto err;
+	}
+	rc = fscanf(fp, "%d", &retval);
+	if (rc != 1) {
+		error("Couldn't parse contents of %s (rc=%d): %m", path, rc);
+		goto err;
+	}
+err:
+	xfree(path);
+	if (fp)
+		fclose(fp);
+	return retval;
+}
+
+/*
  * Set up CXI services for each of the CXI NICs on this host
  */
 extern bool slingshot_create_services(slingshot_stepinfo_t *job, uint32_t uid,
@@ -621,6 +652,7 @@ extern bool slingshot_create_services(slingshot_stepinfo_t *job, uint32_t uid,
 	struct cxil_dev *dev;
 	struct cxi_svc_fail_info failinfo;
 	slingshot_comm_profile_t *profile;
+	int max_lnis_per_rgid = 0, lnis_per_rgid = 1;
 
 	xassert(job);
 
@@ -677,11 +709,40 @@ extern bool slingshot_create_services(slingshot_stepinfo_t *job, uint32_t uid,
 		snprintf(profile->device_name, sizeof(profile->device_name),
 			"%s", dev->info.device_name);
 
-		debug("Creating CXI profile[%d] on NIC %d (%s):"
-			" SVC ID %u vnis=[%hu %hu %hu %hu] tcs=%#x",
-			prof, devn, profile->device_name, profile->svc_id,
-			profile->vnis[0], profile->vnis[1], profile->vnis[2],
-			profile->vnis[3], profile->tcs);
+		/*
+		 * If the cxil_set_svc_lpr() function is in this library (and
+		 * /sys/class/cxi/cxiX/device/properties/rgids_avail exists)
+		 * calculate whether we need to adjust the service
+		 * for > max_lnis_per_rgid CPUs
+		 * NOTE: do after profile init so we clean up on error
+		 */
+		if (cxil_set_svc_lpr_p) {
+			max_lnis_per_rgid =
+				_max_lnis_per_rgid(dev->info.device_name);
+			if (max_lnis_per_rgid > 0)
+				lnis_per_rgid =
+					ROUNDUP(step_cpus, max_lnis_per_rgid);
+			log_flag(SWITCH, "device %s step_cpus %hu max_lnis_per_rgid %d lnis_per_rgid %d",
+			         dev->info.device_name, step_cpus,
+			         max_lnis_per_rgid, lnis_per_rgid);
+
+			if (lnis_per_rgid > 1) {
+				int rc = cxil_set_svc_lpr_p(dev, svc_id,
+							    lnis_per_rgid);
+				if (rc < 0) {
+					error("Slingshot service cxil_set_svc_lpr(svc_id=%d, lnis_per_rgid=%d) failed on %s: %s",
+					      svc_id, lnis_per_rgid,
+					      dev->info.device_name,
+					      strerror(-rc));
+					goto error;
+				}
+			}
+		}
+
+		debug("Creating CXI profile[%d] on NIC %d (%s): SVC ID %u vnis=[%hu %hu %hu %hu] tcs=%#x lnis_per_rgid=%d",
+		      prof, devn, profile->device_name, profile->svc_id,
+		      profile->vnis[0], profile->vnis[1], profile->vnis[2],
+		      profile->vnis[3], profile->tcs, lnis_per_rgid);
 		prof++;
 	}
 
