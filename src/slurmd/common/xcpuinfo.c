@@ -396,10 +396,10 @@ extern int xcpuinfo_hwloc_topo_get(
 	}
 
 	/*
-	 * This file will be cached in the spool directory so the slurmstepd
-	 * does not need to regenerate it.
-	 * Do not attempt to remove it - it will be replaced automatically when
-	 * a new slurmd process starts up.
+	 * This file will be cached in the spool directory.
+	 * This is used after reconfigure to ensure the child slurmd process
+	 * has an accurate view of the compute node.
+	 * This is critical when using TaskPluginParam=SlurmdOffSpec.
 	 */
 	hwloc_xml_whole = xstrdup_printf("%s/hwloc_topo_whole.xml",
 					 conf->spooldir);
