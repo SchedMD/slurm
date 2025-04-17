@@ -118,8 +118,6 @@ get_procs(uint16_t *procs)
 
 #ifdef HAVE_HWLOC
 
-static char *hwloc_xml_whole = NULL;
-
 #if _DEBUG
 static void _hwloc_children(hwloc_topology_t topology, hwloc_obj_t obj,
 			    int depth)
@@ -394,6 +392,7 @@ extern int xcpuinfo_hwloc_topo_get(
 	uint16_t **p_block_map, uint16_t **p_block_map_inv)
 {
 	enum { SOCKET=0, CORE=1, PU=2, LAST_OBJ=3 };
+	char *hwloc_xml_whole = NULL;
 	hwloc_topology_t topology;
 	hwloc_obj_t obj;
 	hwloc_obj_type_t objtype[LAST_OBJ];
@@ -414,15 +413,21 @@ extern int xcpuinfo_hwloc_topo_get(
 		return 1;
 	}
 
-	if (!hwloc_xml_whole)
-		hwloc_xml_whole = xstrdup_printf("%s/hwloc_topo_whole.xml",
-						 conf->spooldir);
+	/*
+	 * This file will be cached in the spool directory so the slurmstepd
+	 * does not need to regenerate it.
+	 * Do not attempt to remove it - it will be replaced automatically when
+	 * a new slurmd process starts up.
+	 */
+	hwloc_xml_whole = xstrdup_printf("%s/hwloc_topo_whole.xml",
+					 conf->spooldir);
 	if (xcpuinfo_hwloc_topo_load(&topology, hwloc_xml_whole, true)
 	    == SLURM_ERROR) {
 		hwloc_topology_destroy(topology);
 		xfree(hwloc_xml_whole);
 		return 2;
 	}
+	xfree(hwloc_xml_whole);
 #if _DEBUG
 	_hwloc_children(topology, hwloc_get_root_obj(topology), 0);
 #endif
@@ -1113,19 +1118,6 @@ extern void xcpuinfo_refresh_hwloc(bool refresh)
 int
 xcpuinfo_fini(void)
 {
-#ifdef HAVE_HWLOC
-	if (hwloc_xml_whole) {
-		/*
-		 * When a slurmd is taking over the place of the next
-		 * slurmd it will have already made this file.  So don't
-		 * remove it or it will remove it for the new slurmd.
-		 * If this happens on the slurmstepd we don't want to remove it
-		 * to begin with.
-		 */
-		/* (void)remove(hwloc_xml_whole); */
-		xfree(hwloc_xml_whole);
-	}
-#endif
 	return SLURM_SUCCESS;
 }
 
