@@ -77,8 +77,6 @@ static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 
 extern slurmd_conf_t *conf;
 
-static bool refresh_hwloc = false;
-
 /*
  * get_procs - Return the count of procs on this system
  * Input: procs - buffer for the CPU count
@@ -1015,11 +1013,6 @@ static int _compute_block_map(uint16_t numproc,
 	return 0;
 }
 #endif
-
-extern void xcpuinfo_refresh_hwloc(bool refresh)
-{
-	refresh_hwloc = refresh;
-}
 
 /*
  * Convert an abstract core range string into a machine-specific CPU range

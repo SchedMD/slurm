@@ -60,8 +60,6 @@ extern int xcpuinfo_hwloc_topo_get(
 	uint16_t *block_map_size,
 	uint16_t **block_map, uint16_t **block_map_inv);
 
-extern void xcpuinfo_refresh_hwloc(bool refresh);
-
 /*
  * Convert an abstract core range string into a machine-specific CPU range
  * string. Abstract id to machine id conversion is done using block_map.
