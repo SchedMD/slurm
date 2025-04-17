@@ -220,18 +220,19 @@ static void _set_procdatas(list_t *lresp)
 		PMIXP_KVP_CREATE(kvp, PMIX_GLOBAL_RANK, &i, PMIX_UINT32);
 		list_append(rankinfo, kvp);
 
-		/*
-		 * This is the rank local to each heterogeneous
-		 * component within its app, starting from 0.
-		 */
-		PMIXP_KVP_CREATE(kvp, PMIX_APP_RANK, &i, PMIX_UINT32);
-		list_append(rankinfo, kvp);
-
 		/* localid is the task id in this node */
 		localid = pmixp_info_taskid2localid(i);
 		if (0 <= localid) {
 			PMIXP_KVP_CREATE(kvp, PMIX_LOCAL_RANK,
 					 &localid, PMIX_UINT16);
+			list_append(rankinfo, kvp);
+
+			/*
+			 * This is the rank local to each heterogeneous
+			 * component within its app, starting from 0.
+			 */
+			PMIXP_KVP_CREATE(kvp, PMIX_APP_RANK, &localid,
+					 PMIX_UINT32);
 			list_append(rankinfo, kvp);
 
 			/*
