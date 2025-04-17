@@ -2764,7 +2764,6 @@ _slurmd_fini(void)
 	acct_gather_conf_destroy();
 	fini_system_cgroup();
 	cgroup_g_fini();
-	xcpuinfo_fini();
 	slurm_mutex_lock(&cached_features_mutex);
 	xfree(cached_features_avail);
 	xfree(cached_features_active);

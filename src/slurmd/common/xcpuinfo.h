@@ -76,15 +76,6 @@ int xcpuinfo_init(void);
 extern void xcpuinfo_refresh_hwloc(bool refresh);
 
 /*
- * Destroy xcpuinfo internal data
- *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
- */
-int xcpuinfo_fini(void);
-
-/*
  * Convert an abstract core range string into a machine-specific CPU range
  * string. Abstract id to machine id conversion is done using block_map.
  * When a core is set in the input, all its threads will be set in the output.

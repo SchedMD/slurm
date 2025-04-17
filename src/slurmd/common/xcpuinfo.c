@@ -1115,12 +1115,6 @@ extern void xcpuinfo_refresh_hwloc(bool refresh)
 	refresh_hwloc = refresh;
 }
 
-int
-xcpuinfo_fini(void)
-{
-	return SLURM_SUCCESS;
-}
-
 /*
  * Convert an abstract core range string into a machine-specific CPU range
  * string. Abstract id to machine id conversion is done using block_map.

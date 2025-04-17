@@ -177,12 +177,10 @@ extern int init (void)
 
 		/* Initialize the controllers which we want accounting for. */
 		if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS) {
-			xcpuinfo_fini();
 			return SLURM_ERROR;
 		}
 
 		if (cgroup_g_initialize(CG_CPUACCT) != SLURM_SUCCESS) {
-			xcpuinfo_fini();
 			return SLURM_ERROR;
 		}
 	}

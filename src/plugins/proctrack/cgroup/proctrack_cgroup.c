@@ -139,7 +139,6 @@ extern int init (void)
 
 	/* initialize cgroup internal data */
 	if (cgroup_g_initialize(CG_TRACK) != SLURM_SUCCESS) {
-		xcpuinfo_fini();
 		return SLURM_ERROR;
 	}
 
@@ -148,7 +147,6 @@ extern int init (void)
 
 extern int fini (void)
 {
-	xcpuinfo_fini();
 	return SLURM_SUCCESS;
 }
 
