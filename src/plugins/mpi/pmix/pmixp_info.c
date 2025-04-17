@@ -569,3 +569,228 @@ static int _env_set(const stepd_step_rec_t *step, char ***env)
 
 	return SLURM_SUCCESS;
 }
+
+extern int pmixp_info_timeout()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.timeout;
+}
+
+/* My hostname */
+extern char *pmixp_info_hostname()
+{
+	return _pmixp_job_info.hostname;
+}
+
+/* Cli tempdir */
+extern char *pmixp_info_tmpdir_cli()
+{
+	return _pmixp_job_info.cli_tmpdir;
+}
+
+extern char *pmixp_info_tmpdir_cli_base()
+{
+	return _pmixp_job_info.cli_tmpdir_base;
+}
+
+/* Lib tempdir */
+extern char *pmixp_info_tmpdir_lib()
+{
+	return _pmixp_job_info.lib_tmpdir;
+}
+
+/* client Lib tempdir */
+extern char *_pmixp_info_client_tmpdir_lib()
+{
+	if (_pmixp_job_info.client_lib_tmpdir)
+		return _pmixp_job_info.client_lib_tmpdir;
+	else
+		return pmixp_info_tmpdir_lib();
+}
+
+extern uint32_t pmixp_info_jobuid()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.uid;
+}
+
+extern uint32_t pmixp_info_jobgid()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.gid;
+}
+
+extern uint32_t pmixp_info_jobid()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.step_id.job_id;
+}
+
+extern char *pmixp_info_srun_ip()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.srun_ip;
+}
+
+extern int pmixp_info_abort_agent_port()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.abort_agent_port;
+}
+
+extern uint32_t pmixp_info_stepid()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.step_id.step_id;
+}
+
+extern char *pmixp_info_namespace()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.nspace;
+}
+
+extern uint32_t pmixp_info_nodeid()
+{
+	/* This routine is called from PMIX_DEBUG/ERROR and
+	 * this CAN happen before initialization. Relax demand to have
+	 * _pmix_job_info.magic == PMIX_INFO_MAGIC
+	 * ! xassert(_pmix_job_info.magic == PMIX_INFO_MAGIC);
+	 */
+	return _pmixp_job_info.node_id;
+}
+
+extern uint32_t pmixp_info_nodeid_job()
+{
+	/* This routine is called from PMIX_DEBUG/ERROR and
+	 * this CAN happen before initialization. Relax demand to have
+	 * _pmix_job_info.magic == PMIX_INFO_MAGIC
+	 * ! xassert(_pmix_job_info.magic == PMIX_INFO_MAGIC);
+	 */
+	return _pmixp_job_info.node_id_job;
+}
+
+extern uint32_t pmixp_info_nodes()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.nnodes;
+}
+
+extern uint32_t pmixp_info_nodes_uni()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.nnodes_job;
+}
+
+extern uint32_t pmixp_info_tasks()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.ntasks;
+}
+
+extern uint32_t pmixp_info_tasks_node(uint32_t nodeid)
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	xassert(nodeid < _pmixp_job_info.nnodes);
+	return _pmixp_job_info.task_cnts[nodeid];
+}
+
+extern uint32_t *pmixp_info_tasks_cnts()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.task_cnts;
+}
+
+extern uint32_t pmixp_info_tasks_loc()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.node_tasks;
+}
+
+extern uint32_t pmixp_info_tasks_uni()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.ntasks_job;
+}
+
+extern uint32_t pmixp_info_cpus()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.ncpus_job;
+}
+
+extern uint32_t pmixp_info_taskid(uint32_t localid)
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	xassert(localid < _pmixp_job_info.node_tasks);
+	return _pmixp_job_info.gtids[localid];
+}
+
+/*
+ * Since tasks array in Slurm job structure is uint16_t
+ * task local id can't be grater than 2^16. So we can
+ * safely return int here. We need (-1) for the not-found case
+ */
+extern int pmixp_info_taskid2localid(uint32_t taskid)
+{
+	int i;
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	xassert(taskid < _pmixp_job_info.ntasks);
+
+	for (i = 0; i < _pmixp_job_info.node_tasks; i++) {
+		if (_pmixp_job_info.gtids[i] == taskid)
+			return i;
+	}
+	return -1;
+}
+
+extern char *pmixp_info_task_map()
+{
+	return _pmixp_job_info.task_map_packed;
+}
+
+extern hostlist_t *pmixp_info_step_hostlist()
+{
+	return _pmixp_job_info.step_hl;
+}
+
+extern char *pmixp_info_step_host(int nodeid)
+{
+	xassert(nodeid < _pmixp_job_info.nnodes);
+	char *p = hostlist_nth(_pmixp_job_info.step_hl, nodeid);
+	char *ret = xstrdup(p);
+	free(p);
+	return ret;
+}
+
+extern int pmixp_info_step_hostid(char *hostname)
+{
+	return hostlist_find(_pmixp_job_info.step_hl, hostname);
+}
+
+extern char *pmixp_info_job_host(int nodeid)
+{
+	xassert(nodeid < _pmixp_job_info.nnodes_job);
+	if (nodeid >= _pmixp_job_info.nnodes_job) {
+		return NULL;
+	}
+	char *p = hostlist_nth(_pmixp_job_info.job_hl, nodeid);
+	char *ret = xstrdup(p);
+	free(p);
+	return ret;
+}
+
+extern int pmixp_info_job_hostid(char *hostname)
+{
+	return hostlist_find(_pmixp_job_info.job_hl, hostname);
+}
+
+/* namespaces list operations */
+extern char *pmixp_info_nspace_usock(const char *nspace)
+{
+	char *spool;
+	debug("setup sockets");
+	spool = xstrdup_printf("%s/stepd.%s",
+			       _pmixp_job_info.spool_dir, nspace);
+	return spool;
+}
