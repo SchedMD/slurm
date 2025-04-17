@@ -85,15 +85,15 @@ typedef struct {
 extern pmix_jobinfo_t _pmixp_job_info;
 
 /* slurmd contact information */
-void pmixp_info_srv_usock_set(char *path, int fd);
-const char *pmixp_info_srv_usock_path(void);
-int pmixp_info_srv_usock_fd(void);
-bool pmixp_info_same_arch(void);
-bool pmixp_info_srv_direct_conn(void);
-bool pmixp_info_srv_direct_conn_early(void);
-bool pmixp_info_srv_direct_conn_ucx(void);
-int pmixp_info_srv_fence_coll_type(void);
-bool pmixp_info_srv_fence_coll_barrier(void);
+extern void pmixp_info_srv_usock_set(char *path, int fd);
+extern const char *pmixp_info_srv_usock_path(void);
+extern int pmixp_info_srv_usock_fd(void);
+extern bool pmixp_info_same_arch(void);
+extern bool pmixp_info_srv_direct_conn(void);
+extern bool pmixp_info_srv_direct_conn_early(void);
+extern bool pmixp_info_srv_direct_conn_ucx(void);
+extern int pmixp_info_srv_fence_coll_type(void);
+extern bool pmixp_info_srv_fence_coll_barrier(void);
 
 extern int pmixp_info_timeout();
 extern char *pmixp_info_hostname();
@@ -103,12 +103,12 @@ extern char *pmixp_info_tmpdir_lib();
 extern char *_pmixp_info_client_tmpdir_lib();
 
 /* Dealing with I/O */
-void pmixp_info_io_set(eio_handle_t *h);
-eio_handle_t *pmixp_info_io(void);
+extern void pmixp_info_io_set(eio_handle_t *h);
+extern eio_handle_t *pmixp_info_io(void);
 
 /* Job information */
-int pmixp_info_set(const stepd_step_rec_t *step, char ***env);
-int pmixp_info_free(void);
+extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env);
+extern int pmixp_info_free(void);
 
 extern uint32_t pmixp_info_jobuid();
 extern uint32_t pmixp_info_jobgid();

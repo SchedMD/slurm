@@ -64,45 +64,48 @@ static int _resources_set(char ***env);
 static int _env_set(const stepd_step_rec_t *step, char ***env);
 
 /* stepd global UNIX socket contact information */
-void pmixp_info_srv_usock_set(char *path, int fd)
+extern void pmixp_info_srv_usock_set(char *path, int fd)
 {
 	_srv_usock_path = _pmixp_job_info.server_addr_unfmt;
 	_srv_usock_fd = fd;
 }
 
-const char *pmixp_info_srv_usock_path(void)
+extern const char *pmixp_info_srv_usock_path(void)
 {
 	/* Check that Server address was initialized */
 	xassert(_srv_usock_path);
 	return _srv_usock_path;
 }
 
-int pmixp_info_srv_usock_fd(void)
+extern int pmixp_info_srv_usock_fd(void)
 {
 	/* Check that Server fd was created */
 	xassert(0 <= _srv_usock_fd);
 	return _srv_usock_fd;
 }
 
-bool pmixp_info_same_arch(void){
+extern bool pmixp_info_same_arch(void)
+{
 	return _srv_same_arch;
 }
 
-
-bool pmixp_info_srv_direct_conn(void){
+extern bool pmixp_info_srv_direct_conn(void)
+{
 	return _srv_use_direct_conn;
 }
 
-bool pmixp_info_srv_direct_conn_early(void){
+extern bool pmixp_info_srv_direct_conn_early(void)
+{
 	return _srv_use_direct_conn_early && _srv_use_direct_conn;
 }
 #ifdef HAVE_UCX
-bool pmixp_info_srv_direct_conn_ucx(void){
+extern bool pmixp_info_srv_direct_conn_ucx(void)
+{
 	return _srv_use_direct_conn_ucx && _srv_use_direct_conn;
 }
 #endif
 
-int pmixp_info_srv_fence_coll_type(void)
+extern int pmixp_info_srv_fence_coll_type(void)
 {
 	if (!_srv_use_direct_conn) {
 		static bool printed = false;
@@ -117,13 +120,13 @@ int pmixp_info_srv_fence_coll_type(void)
 	return _srv_fence_coll_type;
 }
 
-bool pmixp_info_srv_fence_coll_barrier(void)
+extern bool pmixp_info_srv_fence_coll_barrier(void)
 {
 	return _srv_fence_coll_barrier;
 }
 
 /* Job information */
-int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
+extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 {
 	int i, rc;
 	size_t msize;
@@ -206,7 +209,7 @@ int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 	return SLURM_SUCCESS;
 }
 
-int pmixp_info_free(void)
+extern int pmixp_info_free(void)
 {
 	if (_pmixp_job_info.task_cnts) {
 		xfree(_pmixp_job_info.task_cnts);
@@ -231,12 +234,12 @@ int pmixp_info_free(void)
 
 static eio_handle_t *_io_handle = NULL;
 
-void pmixp_info_io_set(eio_handle_t *h)
+extern void pmixp_info_io_set(eio_handle_t *h)
 {
 	_io_handle = h;
 }
 
-eio_handle_t *pmixp_info_io(void)
+extern eio_handle_t *pmixp_info_io(void)
 {
 	xassert(_io_handle);
 	return _io_handle;
