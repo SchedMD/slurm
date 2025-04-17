@@ -49,7 +49,6 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/gres.h"
-#include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -111,30 +110,17 @@ static int _handle_device_access(void *x, void *arg)
 
 extern int task_cgroup_devices_init(void)
 {
-	/* initialize cpuinfo internal data */
-	if (xcpuinfo_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
-
 	if (cgroup_g_initialize(CG_DEVICES) != SLURM_SUCCESS) {
 		error("unable to create devices namespace");
-		goto error;
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
-
-error:
-	xcpuinfo_fini();
-	return SLURM_ERROR;
 }
 
 extern int task_cgroup_devices_fini(void)
 {
-	int rc;
-
-	rc = cgroup_g_step_destroy(CG_DEVICES);
-	xcpuinfo_fini();
-
-	return rc;
+	return cgroup_g_step_destroy(CG_DEVICES);
 }
 
 extern int task_cgroup_devices_create(stepd_step_rec_t *step)
