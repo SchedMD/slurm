@@ -111,7 +111,6 @@ typedef struct slurmd_config {
 	uint16_t     block_map_size;	/* size of block map               */
 	uint16_t     *block_map;	/* abstract->machine block map     */
 	uint16_t     *block_map_inv;	/* machine->abstract (inverse) map */
-	char         *hwloc_xml;	/* path of hwloc xml file if using */
 	int           nice;		/* command line nice value spec    */
 	char         *node_name;	/* node name                       */
 	char         *node_topo_addr;   /* node's topology address         */

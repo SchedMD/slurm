@@ -1698,15 +1698,6 @@ _destroy_conf(void)
 		xfree(conf->dynamic_feature);
 		xfree(conf->extra);
 		xfree(conf->hostname);
-		if (conf->hwloc_xml) {
-			/*
-			 * When a slurmd is taking over the place of the next
-			 * slurmd it will have already made this file.  So don't
-			 * remove it or it will remove it for the new slurmd.
-			 */
-			/* (void)remove(conf->hwloc_xml); */
-			xfree(conf->hwloc_xml);
-		}
 		xfree(conf->instance_id);
 		xfree(conf->instance_type);
 		xfree(conf->logfile);
