@@ -64,15 +64,6 @@ extern int xcpuinfo_hwloc_topo_get(
 	uint16_t *block_map_size,
 	uint16_t **block_map, uint16_t **block_map_inv);
 
-/*
- * Initialize xcpuinfo internal data
- *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
- */
-int xcpuinfo_init(void);
-
 extern void xcpuinfo_refresh_hwloc(bool refresh);
 
 /*

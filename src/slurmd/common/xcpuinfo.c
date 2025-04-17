@@ -1094,22 +1094,6 @@ static int _compute_block_map(uint16_t numproc,
 }
 #endif
 
-int
-xcpuinfo_init(void)
-{
-	uint16_t procs, boards, sockets, cores, threads;
-	uint16_t block_map_size, *block_map, *block_map_inv;
-
-	if (xcpuinfo_hwloc_topo_get(&procs,&boards,&sockets,&cores,&threads,
-				    &block_map_size,&block_map,&block_map_inv))
-		return SLURM_ERROR;
-
-	xfree(block_map);
-	xfree(block_map_inv);
-
-	return SLURM_SUCCESS;
-}
-
 extern void xcpuinfo_refresh_hwloc(bool refresh)
 {
 	refresh_hwloc = refresh;

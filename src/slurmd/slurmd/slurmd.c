@@ -2643,10 +2643,6 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	}
 
-	/* Set up the hwloc whole system xml file */
-	if (xcpuinfo_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
-
 	fini_job_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
 	rc = _load_gres();
