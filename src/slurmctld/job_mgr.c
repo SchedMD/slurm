@@ -10043,8 +10043,8 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if ((job_ptr->job_id == NO_VAL) && IS_JOB_REVOKED(job_ptr))
 		return 1;
 
-	if (key && job_ptr->het_job_id)
-		return 0;
+	if (job_ptr->het_job_id && (job_ptr->bit_flags & HETJOB_PURGE))
+		return 1;
 
 	if (IS_JOB_COMPLETING(job_ptr) && !LOTS_OF_AGENTS) {
 		kill_age = now - (slurm_conf.kill_wait +
@@ -11723,12 +11723,18 @@ static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
 	}
 }
 
-static int _purge_het_job_filter(void *x, void *key)
+static int _foreach_set_het_job_for_purge(void *x, void *arg)
 {
-	job_record_t *job_ptr = (job_record_t *) x;
-	job_record_t *job_filter = (job_record_t *) key;
-	if (job_ptr->het_job_id == job_filter->het_job_id)
-		return 1;
+	job_record_t *het_job = x;
+	job_record_t *het_leader = arg;
+
+	if (het_leader->het_job_id != het_job->het_job_id) {
+		error("%s: Bad het_job_list for %pJ", __func__, het_leader);
+		return 0;
+	}
+
+	het_job->bit_flags |= HETJOB_PURGE;
+
 	return 0;
 }
 
@@ -11753,9 +11759,6 @@ static int _foreach_check_old_het_job(void *x, void *arg)
  * RET true if this record purged */
 static inline bool _purge_complete_het_job(job_record_t *het_job_leader)
 {
-	job_record_t purge_job_rec;
-	int i;
-
 	if (!het_job_leader->het_job_list)
 		return false;		/* Not hetjob leader */
 	if (!IS_JOB_FINISHED(het_job_leader))
@@ -11766,15 +11769,10 @@ static inline bool _purge_complete_het_job(job_record_t *het_job_leader)
 			    het_job_leader))
 		return false;
 
-	purge_job_rec.het_job_id = het_job_leader->het_job_id;
-	i = list_delete_all(job_list, &_purge_het_job_filter, &purge_job_rec);
-	if (i) {
-		debug2("%s: purged %d old job records", __func__, i);
-		last_job_update = time(NULL);
-		slurm_mutex_lock(&purge_thread_lock);
-		slurm_cond_signal(&purge_thread_cond);
-		slurm_mutex_unlock(&purge_thread_lock);
-	}
+	(void) list_for_each(het_job_leader->het_job_list,
+			     _foreach_set_het_job_for_purge,
+			     het_job_leader);
+
 	return true;
 }
 
