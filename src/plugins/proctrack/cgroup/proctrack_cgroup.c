@@ -132,11 +132,6 @@ _slurm_cgroup_is_pid_a_slurm_task(uint64_t id, pid_t pid)
  */
 extern int init (void)
 {
-	/* initialize cpuinfo internal data */
-	if (xcpuinfo_init() != SLURM_SUCCESS) {
-		return SLURM_ERROR;
-	}
-
 	/* initialize cgroup internal data */
 	if (cgroup_g_initialize(CG_TRACK) != SLURM_SUCCESS) {
 		return SLURM_ERROR;

@@ -171,10 +171,6 @@ extern int init (void)
 	if (running_in_slurmstepd()) {
 		jag_common_init(cgroup_g_get_acct_units());
 
-		if (xcpuinfo_init() != SLURM_SUCCESS) {
-			return SLURM_ERROR;
-		}
-
 		/* Initialize the controllers which we want accounting for. */
 		if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS) {
 			return SLURM_ERROR;
