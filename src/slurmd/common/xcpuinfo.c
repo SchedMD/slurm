@@ -75,7 +75,6 @@ static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
 static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 #endif
 
-bool     initialized = false;
 extern slurmd_conf_t *conf;
 
 static bool refresh_hwloc = false;
@@ -1096,17 +1095,12 @@ xcpuinfo_init(void)
 	uint16_t procs, boards, sockets, cores, threads;
 	uint16_t block_map_size, *block_map, *block_map_inv;
 
-	if ( initialized )
-		return SLURM_SUCCESS;
-
 	if (xcpuinfo_hwloc_topo_get(&procs,&boards,&sockets,&cores,&threads,
 				    &block_map_size,&block_map,&block_map_inv))
 		return SLURM_ERROR;
 
 	xfree(block_map);
 	xfree(block_map_inv);
-
-	initialized = true ;
 
 	return SLURM_SUCCESS;
 }
@@ -1119,10 +1113,6 @@ extern void xcpuinfo_refresh_hwloc(bool refresh)
 int
 xcpuinfo_fini(void)
 {
-	if ( ! initialized )
-		return SLURM_SUCCESS;
-
-	initialized = false ;
 #ifdef HAVE_HWLOC
 	if (hwloc_xml_whole) {
 		/*
