@@ -111,16 +111,9 @@ static int _handle_device_access(void *x, void *arg)
 
 extern int task_cgroup_devices_init(void)
 {
-	uint16_t cpunum;
-
 	/* initialize cpuinfo internal data */
 	if (xcpuinfo_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
-
-	if (get_procs(&cpunum) != 0) {
-		error("unable to get a number of CPU");
-		goto error;
-	}
 
 	if (cgroup_g_initialize(CG_DEVICES) != SLURM_SUCCESS) {
 		error("unable to create devices namespace");
