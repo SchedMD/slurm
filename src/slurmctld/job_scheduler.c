@@ -1976,6 +1976,12 @@ skip_start:
 			continue;
 		} else if ((error_code ==
 			    ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
+			   (job_ptr->resv_ptr)) {
+			debug("%pJ non-runnable in reservation %s: %s",
+			      job_ptr, job_ptr->resv_ptr->name,
+			      slurm_strerror(error_code));
+		} else if ((error_code ==
+			    ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 			   job_ptr->part_ptr_list) {
 			debug("%pJ non-runnable in partition %s: %s",
 			      job_ptr, job_ptr->part_ptr->name,
