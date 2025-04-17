@@ -2134,12 +2134,6 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	}
 
 	/*
-	 * Create hwloc xml file here to avoid threading issues later.
-	 * This has to be done after task_g_pre_setuid().
-	 */
-	xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);
-
-	/*
 	 * Temporarily drop effective privileges, except for the euid.
 	 * We need to wait until after pam_setup() to drop euid.
 	 */

@@ -476,9 +476,6 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	 */
 	proctrack_g_destroy(step->cont_id);
 
-	if (conf->hwloc_xml)
-		(void)remove(conf->hwloc_xml);
-
 	if (step->container)
 		cleanup_container(step);
 
@@ -517,7 +514,6 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	xfree(conf->block_map_inv);
 	xfree(conf->conffile);
 	xfree(conf->hostname);
-	xfree(conf->hwloc_xml);
 	xfree(conf->logfile);
 	xfree(conf->node_name);
 	xfree(conf->node_topo_addr);
@@ -1047,16 +1043,6 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (mpi_conf_recv_stepd(sock) != SLURM_SUCCESS))
 		fatal("Failed to read MPI conf from slurmd");
 
-	if (!conf->hwloc_xml) {
-		conf->hwloc_xml = xstrdup_printf("%s/hwloc_topo_%u.%u",
-						 conf->spooldir,
-						 step_id.job_id,
-						 step_id.step_id);
-		if (step_id.step_het_comp != NO_VAL)
-			xstrfmtcat(conf->hwloc_xml, ".%u",
-				   step_id.step_het_comp);
-		xstrcat(conf->hwloc_xml, ".xml");
-	}
 	/*
 	 * Swap the field to the srun client version, which will eventually
 	 * end up stored as protocol_version in srun_info_t. It's a hack to

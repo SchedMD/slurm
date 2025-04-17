@@ -1236,16 +1236,14 @@ _read_config(void)
 
 	/*
 	 * xcpuinfo_hwloc_topo_get here needs spooldir to be set before
-	 * it will work properly.  This is the earliest we can unset def_config.
+	 * it will work properly.
 	 */
-	conf->def_config = false;
-	xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
-				&conf->actual_boards,
-				&conf->actual_sockets,
-				&conf->actual_cores,
-				&conf->actual_threads,
-				&conf->block_map_size,
-				&conf->block_map, &conf->block_map_inv);
+	if (xcpuinfo_hwloc_topo_get(&conf->actual_cpus, &conf->actual_boards,
+				    &conf->actual_sockets, &conf->actual_cores,
+				    &conf->actual_threads,
+				    &conf->block_map_size, &conf->block_map,
+				    &conf->block_map_inv))
+		fatal("Failed to detect hardware correctly");
 
 	/* If the actual resources on a node differ than what is in
 	 * the configuration file and we are using
@@ -1670,7 +1668,6 @@ static void _init_conf(void)
 	}
 	conf->hostname = xstrdup(host);
 	conf->daemonize = true;
-	conf->def_config =  true;
 	conf->lfd = -1;
 	conf->log_opts = lopts;
 	conf->debug_level = LOG_LEVEL_INFO;
@@ -1701,15 +1698,6 @@ _destroy_conf(void)
 		xfree(conf->dynamic_feature);
 		xfree(conf->extra);
 		xfree(conf->hostname);
-		if (conf->hwloc_xml) {
-			/*
-			 * When a slurmd is taking over the place of the next
-			 * slurmd it will have already made this file.  So don't
-			 * remove it or it will remove it for the new slurmd.
-			 */
-			/* (void)remove(conf->hwloc_xml); */
-			xfree(conf->hwloc_xml);
-		}
 		xfree(conf->instance_id);
 		xfree(conf->instance_type);
 		xfree(conf->logfile);
@@ -2572,15 +2560,6 @@ _slurmd_init(void)
 		log_flag(CGROUP, "cgroup conf was already initialized.");
 
 	/*
-	 * If we are in the process of daemonizing ourselves, do not refresh
-	 * the hwloc as the grandparent process have already done it. This
-	 * is important as we're already constrained by cgroups in a specific
-	 * cpuset, and hwloc does not return the correct e-cores vs p-cores
-	 * kinds.
-	 */
-	xcpuinfo_refresh_hwloc(original);
-
-	/*
 	 * auth/slurm calls conmgr_init and we need to apply conmgr params
 	 * before conmgr init.
 	 */
@@ -2642,10 +2621,6 @@ _slurmd_init(void)
 		error("Unable to initialize slurmd spooldir");
 		return SLURM_ERROR;
 	}
-
-	/* Set up the hwloc whole system xml file */
-	if (xcpuinfo_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
 
 	fini_job_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
@@ -2764,7 +2739,6 @@ _slurmd_fini(void)
 	acct_gather_conf_destroy();
 	fini_system_cgroup();
 	cgroup_g_fini();
-	xcpuinfo_fini();
 	slurm_mutex_lock(&cached_features_mutex);
 	xfree(cached_features_avail);
 	xfree(cached_features_active);
