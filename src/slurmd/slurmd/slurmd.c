@@ -1239,13 +1239,12 @@ _read_config(void)
 	 * it will work properly.  This is the earliest we can unset def_config.
 	 */
 	conf->def_config = false;
-	xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
-				&conf->actual_boards,
-				&conf->actual_sockets,
-				&conf->actual_cores,
-				&conf->actual_threads,
-				&conf->block_map_size,
-				&conf->block_map, &conf->block_map_inv);
+	if (xcpuinfo_hwloc_topo_get(&conf->actual_cpus, &conf->actual_boards,
+				    &conf->actual_sockets, &conf->actual_cores,
+				    &conf->actual_threads,
+				    &conf->block_map_size, &conf->block_map,
+				    &conf->block_map_inv))
+		fatal("Failed to detect hardware correctly");
 
 	/* If the actual resources on a node differ than what is in
 	 * the configuration file and we are using
