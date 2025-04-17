@@ -284,16 +284,11 @@ static int xcpuinfo_hwloc_topo_load(void *topology_in, char *topo_file)
 	int ret = SLURM_SUCCESS;
 	struct stat buf;
 	hwloc_topology_t *topology = topology_in;
-	hwloc_topology_t tmp_topo;
 	static bool first_full = true;
 	bool check_file = true;
 
+	xassert(topology_in);
 	xassert(topo_file);
-
-	if (!topology_in) {
-		topology = &tmp_topo;
-		goto handle_write;
-	}
 
 	if (first_full) {
 		/* Always regenerate file on slurmd startup */
@@ -315,9 +310,6 @@ static int xcpuinfo_hwloc_topo_load(void *topology_in, char *topo_file)
 	}
 
 	hwloc_topology_destroy(*topology);
-
-handle_write:
-
 	hwloc_topology_init(topology);
 
 	/* parse all system */
@@ -361,9 +353,6 @@ handle_write:
 	}
 
 end_it:
-	if (!topology_in)
-		hwloc_topology_destroy(tmp_topo);
-
 	return ret;
 }
 
