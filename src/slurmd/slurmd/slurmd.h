@@ -136,7 +136,6 @@ typedef struct slurmd_config {
 	time_t	      boot_time;	/* Use this as node boot time if set */
 	bool	      daemonize;	/* daemonize flag (-D)		   */
 	bool          setwd;		/* setwd flag (-s)		   */
-	bool          def_config;       /* We haven't read in the config yet */
 	bool	      cleanstart;	/* clean start requested (-c)      */
 	bool	      mlock_pages;	/* mlock() slurmd  */
 

@@ -358,12 +358,10 @@ handle_write:
 
 	_remove_ecores(topology);
 
-	if (!conf->def_config) {
-		debug2("hwloc_topology_export_xml");
-		if (_internal_hwloc_topology_export_xml(*topology, topo_file)) {
-			/* error in export hardware topology */
-			error("%s: failed (load will be required after read failures).", __func__);
-		}
+	debug2("hwloc_topology_export_xml");
+	if (_internal_hwloc_topology_export_xml(*topology, topo_file)) {
+		/* error in export hardware topology */
+		error("%s: failed (load will be required after read failures).", __func__);
 	}
 
 end_it:

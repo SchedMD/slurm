@@ -1236,9 +1236,8 @@ _read_config(void)
 
 	/*
 	 * xcpuinfo_hwloc_topo_get here needs spooldir to be set before
-	 * it will work properly.  This is the earliest we can unset def_config.
+	 * it will work properly.
 	 */
-	conf->def_config = false;
 	if (xcpuinfo_hwloc_topo_get(&conf->actual_cpus, &conf->actual_boards,
 				    &conf->actual_sockets, &conf->actual_cores,
 				    &conf->actual_threads,
@@ -1669,7 +1668,6 @@ static void _init_conf(void)
 	}
 	conf->hostname = xstrdup(host);
 	conf->daemonize = true;
-	conf->def_config =  true;
 	conf->lfd = -1;
 	conf->log_opts = lopts;
 	conf->debug_level = LOG_LEVEL_INFO;
