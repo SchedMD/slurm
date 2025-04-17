@@ -279,15 +279,14 @@ static void _remove_ecores(hwloc_topology_t *topology)
 
 /* read or load topology and write if needed
  * init and destroy topology must be outside this function */
-static int xcpuinfo_hwloc_topo_load(void *topology_in, char *topo_file)
+static int xcpuinfo_hwloc_topo_load(hwloc_topology_t *topology, char *topo_file)
 {
 	int ret = SLURM_SUCCESS;
 	struct stat buf;
-	hwloc_topology_t *topology = topology_in;
 	static bool first_full = true;
 	bool check_file = true;
 
-	xassert(topology_in);
+	xassert(topology);
 	xassert(topo_file);
 
 	if (first_full) {
