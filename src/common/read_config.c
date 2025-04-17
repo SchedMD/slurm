@@ -71,7 +71,6 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/net.h"
 #include "src/common/node_conf.h"
 #include "src/interfaces/node_features.h"
 #include "src/common/parse_config.h"
@@ -2282,7 +2281,7 @@ extern char *slurm_conf_get_aliased_nodename(void)
 		} else {
 			slurm_addr_t addr = {0};
 			memcpy(&addr, &addr_ptr->ai_addr, addr_ptr->ai_addrlen);
-			tmp_name = sockaddr_to_string(&addr, sizeof(addr));
+			tmp_name = xgetnameinfo(&addr);
 			nodename = slurm_conf_get_nodename(tmp_name);
 			xfree(tmp_name);
 		}
