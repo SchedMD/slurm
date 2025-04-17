@@ -279,8 +279,7 @@ static void _remove_ecores(hwloc_topology_t *topology)
 
 /* read or load topology and write if needed
  * init and destroy topology must be outside this function */
-static int xcpuinfo_hwloc_topo_load(
-	void *topology_in, char *topo_file, bool full)
+static int xcpuinfo_hwloc_topo_load(void *topology_in, char *topo_file)
 {
 	int ret = SLURM_SUCCESS;
 	struct stat buf;
@@ -296,7 +295,7 @@ static int xcpuinfo_hwloc_topo_load(
 		goto handle_write;
 	}
 
-	if (full && first_full) {
+	if (first_full) {
 		/* Always regenerate file on slurmd startup */
 		if (refresh_hwloc)
 			check_file = false;
@@ -321,29 +320,26 @@ handle_write:
 
 	hwloc_topology_init(topology);
 
-	if (full) {
-		/* parse all system */
-		hwloc_topology_set_flags(*topology,
-					 HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
+	/* parse all system */
+	hwloc_topology_set_flags(*topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
 
-		/* ignores cache, misc */
+	/* ignores cache, misc */
 #if HWLOC_API_VERSION < 0x00020000
-		hwloc_topology_ignore_type (*topology, HWLOC_OBJ_CACHE);
-		hwloc_topology_ignore_type (*topology, HWLOC_OBJ_MISC);
+	hwloc_topology_ignore_type(*topology, HWLOC_OBJ_CACHE);
+	hwloc_topology_ignore_type(*topology, HWLOC_OBJ_MISC);
 #else
-		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L1CACHE,
-					       HWLOC_TYPE_FILTER_KEEP_NONE);
-		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L2CACHE,
-					       HWLOC_TYPE_FILTER_KEEP_NONE);
-		/* need to preserve HWLOC_OBJ_L3CACHE for l3cache_as_socket */
-		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L4CACHE,
-					       HWLOC_TYPE_FILTER_KEEP_NONE);
-		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L5CACHE,
-					       HWLOC_TYPE_FILTER_KEEP_NONE);
-		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_MISC,
-					       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L1CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L2CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	/* need to preserve HWLOC_OBJ_L3CACHE for l3cache_as_socket */
+	hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L4CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L5CACHE,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
+	hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_MISC,
+				       HWLOC_TYPE_FILTER_KEEP_NONE);
 #endif
-	}
 
 	/* load topology */
 	debug2("hwloc_topology_load");
@@ -419,7 +415,7 @@ extern int xcpuinfo_hwloc_topo_get(
 	 */
 	hwloc_xml_whole = xstrdup_printf("%s/hwloc_topo_whole.xml",
 					 conf->spooldir);
-	if (xcpuinfo_hwloc_topo_load(&topology, hwloc_xml_whole, true)
+	if (xcpuinfo_hwloc_topo_load(&topology, hwloc_xml_whole)
 	    == SLURM_ERROR) {
 		hwloc_topology_destroy(topology);
 		xfree(hwloc_xml_whole);
