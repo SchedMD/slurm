@@ -148,16 +148,6 @@ static int _core_child_count(hwloc_topology_t topology, hwloc_obj_t obj)
 	return count;
 }
 
-static inline int _internal_hwloc_topology_export_xml(
-	hwloc_topology_t topology, const char *hwloc_xml)
-{
-#if HWLOC_API_VERSION >= 0x00020000
-	return hwloc_topology_export_xml(topology, hwloc_xml, 0);
-#else
-	return hwloc_topology_export_xml(topology, hwloc_xml);
-#endif
-}
-
 static void _check_full_access(hwloc_topology_t *topology)
 {
 	hwloc_const_bitmap_t complete, allowed;
@@ -344,12 +334,6 @@ static int xcpuinfo_hwloc_topo_load(hwloc_topology_t *topology, char *topo_file)
 	_check_full_access(topology);
 
 	_remove_ecores(topology);
-
-	debug2("hwloc_topology_export_xml");
-	if (_internal_hwloc_topology_export_xml(*topology, topo_file)) {
-		/* error in export hardware topology */
-		error("%s: failed (load will be required after read failures).", __func__);
-	}
 
 end_it:
 	return ret;
