@@ -1,4 +1,4 @@
-.TH slurmdbd "8" "Slurm Daemon" "January 2025" "Slurm Daemon"
+.TH slurmdbd "8" "Slurm Daemon" "April 2025" "Slurm Daemon"
 
 .SH "NAME"
 slurmdbd \- Slurm Database Daemon.
@@ -56,6 +56,16 @@ beyond the first increasing verbosity, up to 6 times (i.e. \-vvvvvv).
 .TP
 \fB\-V\fR
 Print version information and exit.
+.IP
+
+.SH "ENVIRONMENT VARIABLES"
+The following environment variables can be used to override settings
+compiled into slurmdbd.
+
+.TP
+\fBABORT_ON_FATAL\fR
+When a fatal error is detected, use abort() instead of exit() to terminate the
+process. This allows backtraces to be captured without recompiling Slurm.
 .IP
 
 .SH "CORE FILE LOCATION"

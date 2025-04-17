@@ -1,4 +1,4 @@
-.TH sackd "8" "Slurm Auth and Cred Kiosk Daemon" "January 2025" "Slurm Auth and Cred Kiosk Daemon"
+.TH sackd "8" "Slurm Auth and Cred Kiosk Daemon" "April 2025" "Slurm Auth and Cred Kiosk Daemon"
 
 .SH "NAME"
 sackd \- Slurm Auth and Cred Kiosk Daemon.
@@ -44,6 +44,12 @@ Verbose mode. Multiple \-v's increase verbosity.
 .SH "ENVIRONMENT VARIABLES"
 The following environment variables can be used to override settings
 compiled into sackd.
+
+.TP
+\fBABORT_ON_FATAL\fR
+When a fatal error is detected, use abort() instead of exit() to terminate the
+process. This allows backtraces to be captured without recompiling Slurm.
+.IP
 
 .TP
 \fBSACKD_DEBUG\fR
