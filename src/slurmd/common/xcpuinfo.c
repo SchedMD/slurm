@@ -279,7 +279,7 @@ static void _remove_ecores(hwloc_topology_t *topology)
 
 /* read or load topology and write if needed
  * init and destroy topology must be outside this function */
-extern int xcpuinfo_hwloc_topo_load(
+static int xcpuinfo_hwloc_topo_load(
 	void *topology_in, char *topo_file, bool full)
 {
 	int ret = SLURM_SUCCESS;
@@ -883,12 +883,6 @@ extern int xcpuinfo_hwloc_topo_get(
 	xfree(cpuinfo);		/* done with raw cpuinfo data */
 
 	return retval;
-}
-
-extern int xcpuinfo_hwloc_topo_load(
-	void *topology_in, char *topo_file, bool full)
-{
-	return SLURM_SUCCESS;
 }
 
 /* _chk_cpuinfo_str

@@ -40,10 +40,6 @@
 
 extern int get_procs(uint16_t *procs);
 
-/* read or load topology and write if needed
- * init and destroy topology must be outside this function */
-extern int xcpuinfo_hwloc_topo_load(
-	void *topology_in, char *topo_file, bool full);
 /*
  * Get the node's cpu info.
  *
