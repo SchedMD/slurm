@@ -60,6 +60,11 @@
 #define PMIX_TDIR_RMCLEAN "pmix.tdir.rmclean"
 #endif
 
+/* Some older PMIx (2.x) do not have this, let them compile. */
+#ifndef PMIX_APP_ARGV
+#define PMIX_APP_ARGV "pmix.app.argv"
+#endif
+
 #define PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array) \
 	{ (kvp)->value.data.array.array = (pmix_info_t *)_array; }
 
@@ -187,6 +192,14 @@ static void _set_procdatas(list_t *lresp)
 	 */
 	i = 0;
 	PMIXP_KVP_CREATE(kvp, PMIX_APPLDR, &i, PMIX_INT);
+	list_append(lresp, kvp);
+
+	/*
+	 * Consolidated argv passed to the spawn command for the given
+	 * application (e.g., "./myapp arg1 arg2 arg3").
+	 */
+	p = pmixp_info_cmd();
+	PMIXP_KVP_CREATE(kvp, PMIX_APP_ARGV, p, PMIX_STRING);
 	list_append(lresp, kvp);
 
 	/* store information about local processes */

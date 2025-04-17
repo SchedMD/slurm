@@ -125,6 +125,24 @@ extern bool pmixp_info_srv_fence_coll_barrier(void)
 	return _srv_fence_coll_barrier;
 }
 
+static char *_argv_to_string(int argc, char **argv)
+{
+	char *res = NULL, *tmp = NULL;
+
+	if (!*argv || !argc)
+		return NULL;
+
+	xstrcat(res, argv[0]);
+	for (int i = 1; i < argc; i++) {
+		xstrfmtcat(tmp, "%s %s", res, argv[i]);
+		xfree(res);
+		res = tmp;
+		tmp = NULL;
+	}
+
+	return res;
+}
+
 /* Job information */
 extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 {
@@ -190,6 +208,11 @@ extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 
 		_pmixp_job_info.het_job_offset = NULL;
 	}
+
+	if (_pmixp_job_info.ntasks > 0)
+		_pmixp_job_info.cmd = _argv_to_string(step->task[0]->argc,
+						      step->task[0]->argv);
+
 #if 0
 	if ((step->het_job_id != 0) && (step->het_job_id != NO_VAL))
 		info("HET_JOB_ID:%u", _pmixp_job_info.step_id.job_id);
@@ -236,6 +259,7 @@ extern int pmixp_info_free(void)
 	}
 
 	xfree(_pmixp_job_info.srun_ip);
+	xfree(_pmixp_job_info.cmd);
 	xfree(_pmixp_job_info.het_job_offset);
 
 	hostlist_destroy(_pmixp_job_info.job_hl);
@@ -623,6 +647,12 @@ extern char *_pmixp_info_client_tmpdir_lib()
 		return _pmixp_job_info.client_lib_tmpdir;
 	else
 		return pmixp_info_tmpdir_lib();
+}
+
+extern char *pmixp_info_cmd()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.cmd;
 }
 
 extern uint32_t pmixp_info_jobuid()

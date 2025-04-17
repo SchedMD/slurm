@@ -75,6 +75,7 @@ typedef struct {
 	char *cli_tmpdir, *cli_tmpdir_base;
 	char *lib_tmpdir;
 	char *client_lib_tmpdir; /* path to lib_tmpdir on client */
+	char *cmd; /* command to execute and its arguments derived from argv */
 	char *server_addr_unfmt;
 	char *spool_dir;
 	uid_t uid;
@@ -111,6 +112,7 @@ extern eio_handle_t *pmixp_info_io(void);
 extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env);
 extern int pmixp_info_free(void);
 
+extern char *pmixp_info_cmd();
 extern uint32_t pmixp_info_jobuid();
 extern uint32_t pmixp_info_jobgid();
 extern uint32_t pmixp_info_jobid();
