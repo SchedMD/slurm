@@ -75,9 +75,6 @@ static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
 static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 #endif
 
-static int _range_to_map(char* range, uint16_t *map, uint16_t map_size,
-			 int add_threads);
-
 bool     initialized = false;
 uint16_t procs, boards, sockets, cores, threads=1;
 uint16_t block_map_size;
@@ -1311,93 +1308,4 @@ end_it:
 		error("%s failed", __func__);
 
 	return rc;
-}
-
-int
-xcpuinfo_abs_to_map(char* lrange,uint16_t **map,uint16_t *map_size)
-{
-	*map_size = block_map_size;
-	*map = xcalloc(block_map_size, sizeof(uint16_t));
-	/* abstract range does not already include the hyperthreads */
-	return _range_to_map(lrange,*map,*map_size,1);
-}
-
-/*
- * set to 1 each element of already allocated map of size
- * map_size if they are present in the input range
- * if add_thread does not equal 0, the input range is a treated
- * as a core range, and it will be mapped to an array of uint16_t
- * that will include all the hyperthreads associated to the cores.
- */
-static int
-_range_to_map(char* range,uint16_t *map,uint16_t map_size,int add_threads)
-{
-	int bad_nb=0;
-	int num_fl=0;
-	int con_fl=0;
-	int last=0;
-
-	char *dup;
-	char *p;
-	char *s=NULL;
-
-	uint16_t start=0,end=0,i;
-
-	/* duplicate input range */
-	dup = xstrdup(range);
-	p = dup;
-	while ( ! last ) {
-		if ( isdigit(*p) ) {
-			if ( !num_fl ) {
-				num_fl++;
-				s=p;
-			}
-		}
-		else if ( *p == '-' ) {
-			if ( s && num_fl ) {
-				*p = '\0';
-				start = (uint16_t) atoi(s);
-				con_fl=1;
-				num_fl=0;
-				s=NULL;
-			}
-		}
-		else if ( *p == ',' || *p == '\0') {
-			if ( *p == '\0' )
-				last = 1;
-			if ( s && num_fl ) {
-				*p = '\0';
-				end = (uint16_t) atoi(s);
-				if ( !con_fl )
-					start = end ;
-				con_fl=2;
-				num_fl=0;
-				s=NULL;
-			}
-		}
-		else {
-			bad_nb++;
-			break;
-		}
-		if ( con_fl == 2 ) {
-			if ( add_threads ) {
-				start = start * threads;
-				end = (end+1)*threads - 1 ;
-			}
-			for( i = start ; i <= end && i < map_size ; i++) {
-				map[i]=1;
-			}
-			con_fl=0;
-		}
-		p++;
-	}
-
-	xfree(dup);
-
-	if ( bad_nb > 0 ) {
-		/* bad format for input range */
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
 }

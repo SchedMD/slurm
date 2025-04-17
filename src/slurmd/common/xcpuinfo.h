@@ -111,19 +111,4 @@ int xcpuinfo_abs_to_mac(char *lrange,char **prange);
  */
 int xcpuinfo_mac_to_abs(char *in_range, char **out_range);
 
-/*
- * Use xcpuinfo internal data to convert an abstract range
- * of cores (slurm internal format) into the equivalent
- * map of cores
- *
- * range is of the form 0-1,4-5
- *
- * on success, the output map must be freed using xfree
- *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
- */
-int xcpuinfo_abs_to_map(char* lrange,uint16_t **map,uint16_t *map_size);
-
 #endif
