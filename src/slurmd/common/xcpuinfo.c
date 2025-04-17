@@ -269,37 +269,11 @@ static void _remove_ecores(hwloc_topology_t *topology)
 
 /* read or load topology and write if needed
  * init and destroy topology must be outside this function */
-static int xcpuinfo_hwloc_topo_load(hwloc_topology_t *topology, char *topo_file)
+static int xcpuinfo_hwloc_topo_load(hwloc_topology_t *topology)
 {
 	int ret = SLURM_SUCCESS;
-	struct stat buf;
-	static bool first_full = true;
-	bool check_file = true;
 
 	xassert(topology);
-	xassert(topo_file);
-
-	if (first_full) {
-		/* Always regenerate file on slurmd startup */
-		if (refresh_hwloc)
-			check_file = false;
-		first_full = false;
-	}
-
-	if (check_file && !stat(topo_file, &buf)) {
-		debug2("%s: xml file (%s) found", __func__, topo_file);
-		if (hwloc_topology_set_xml(*topology, topo_file))
-			error("%s: hwloc_topology_set_xml() failed (%s)",
-			      __func__, topo_file);
-		else if (hwloc_topology_load(*topology))
-			error("%s: hwloc_topology_load() failed (%s)",
-			      __func__, topo_file);
-		else
-			return ret;
-	}
-
-	hwloc_topology_destroy(*topology);
-	hwloc_topology_init(topology);
 
 	/* parse all system */
 	hwloc_topology_set_flags(*topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
@@ -358,7 +332,6 @@ extern int xcpuinfo_hwloc_topo_get(
 	uint16_t **p_block_map, uint16_t **p_block_map_inv)
 {
 	enum { SOCKET=0, CORE=1, PU=2, LAST_OBJ=3 };
-	char *hwloc_xml_whole = NULL;
 	hwloc_topology_t topology;
 	hwloc_obj_t obj;
 	hwloc_obj_type_t objtype[LAST_OBJ];
@@ -379,21 +352,10 @@ extern int xcpuinfo_hwloc_topo_get(
 		return 1;
 	}
 
-	/*
-	 * This file will be cached in the spool directory.
-	 * This is used after reconfigure to ensure the child slurmd process
-	 * has an accurate view of the compute node.
-	 * This is critical when using TaskPluginParam=SlurmdOffSpec.
-	 */
-	hwloc_xml_whole = xstrdup_printf("%s/hwloc_topo_whole.xml",
-					 conf->spooldir);
-	if (xcpuinfo_hwloc_topo_load(&topology, hwloc_xml_whole)
-	    == SLURM_ERROR) {
+	if (xcpuinfo_hwloc_topo_load(&topology) != SLURM_SUCCESS) {
 		hwloc_topology_destroy(topology);
-		xfree(hwloc_xml_whole);
 		return 2;
 	}
-	xfree(hwloc_xml_whole);
 #if _DEBUG
 	_hwloc_children(topology, hwloc_get_root_obj(topology), 0);
 #endif
