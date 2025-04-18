@@ -374,25 +374,42 @@ static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
 
 		port = ntohs(in->sin_port);
 
-		if (!host && inet_ntop(AF_INET, &in->sin_addr, nhost,
-				       sizeof(nhost)))
-			host = nhost;
+		if (!host) {
+			if (inet_ntop(AF_INET, &in->sin_addr, nhost,
+				      sizeof(nhost))) {
+				host = nhost;
+			} else {
+				/* this should never happen */
+				log_flag_hex(NET, addr, sizeof(*addr),
+					     "%s: inet_ntop(AF_INET) failed: %s",
+					     slurm_strerror(errno));
+				return NULL;
+			}
+		}
 	} else if (addr->ss_family == AF_INET6) {
 		const struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr;
 
 		port = ntohs(in6->sin6_port);
 
-		if (!host && inet_ntop(AF_INET6, &in6->sin6_addr, (nhost + 1),
-				       (sizeof(nhost) - 2))) {
-			const size_t len = strlen(nhost + 1);
-			/*
-			 * Construct RFC3986 host port pair:
-			 * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
-			 */
-			nhost[0] = '[';
-			nhost[len] = ']';
-			nhost[len + 1] = '\0';
-			host = nhost;
+		if (!host) {
+			if (inet_ntop(AF_INET6, &in6->sin6_addr, (nhost + 1),
+				      (sizeof(nhost) - 2))) {
+				const size_t len = strlen(nhost + 1);
+				/*
+				 * Construct RFC3986 host port pair:
+				 * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
+				 */
+				nhost[0] = '[';
+				nhost[len + 1] = ']';
+				nhost[len + 2] = '\0';
+				host = nhost;
+			} else {
+				/* this should never happen */
+				log_flag_hex(NET, addr, sizeof(*addr),
+					     "%s: inet_ntop(AF_INET6) failed: %s",
+					     slurm_strerror(errno));
+				return NULL;
+			}
 		}
 	}
 
