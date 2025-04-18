@@ -134,6 +134,20 @@ again:
 			       request_method, false, conn->mtls.enabled))
 		goto err;
 
+	if (((*status == HTTP_UNAUTHORIZED) || (*status == HTTP_FORBIDDEN)) &&
+	    (conn->auth.auth_type == SLINGSHOT_AUTH_OAUTH) && use_cache) {
+		debug("%s %s %s unauthorized status %ld, retrying", conn->name,
+		      get_http_method_string(request_method), url, *status);
+		/*
+		 * On HTTP_UNAUTHORIZED, free auth header and re-cache token
+		 */
+		curl_slist_free_all(headers);
+		headers = NULL;
+		use_cache = false;
+		xfree(response_str);
+		goto again;
+	}
+
 	/* Decode response into JSON */
 	if (response_str && response_str[0]) {
 		enum json_tokener_error jerr;
@@ -145,7 +159,7 @@ again:
 			goto err;
 		}
 	} else if (request_method != HTTP_REQUEST_DELETE) {
-		debug("%s %s %s No response data received %ld, retrying",
+		debug("%s %s %s No response data received %ld",
 		      conn->name, get_http_method_string(request_method), url,
 		      *status);
 		goto err;
@@ -155,19 +169,6 @@ again:
 		(*status == HTTP_NOT_FOUND && not_found_ok)) {
 		debug("%s %s %s successful (%ld)", conn->name,
 		      get_http_method_string(request_method), url, *status);
-	} else if (((*status == HTTP_UNAUTHORIZED) ||
-		    (*status == HTTP_FORBIDDEN)) &&
-		   (conn->auth.auth_type == SLINGSHOT_AUTH_OAUTH) &&
-		   use_cache) {
-		debug("%s %s %s unauthorized status %ld, retrying", conn->name,
-		      get_http_method_string(request_method), url, *status);
-		/*
-		 * On HTTP_UNAUTHORIZED, free auth header and re-cache token
-		 */
-		curl_slist_free_all(headers);
-		headers = NULL;
-		use_cache = false;
-		goto again;
 	} else {
 		_log_rest_detail(conn->name,
 				 get_http_method_string(request_method), url,
