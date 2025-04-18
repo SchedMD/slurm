@@ -263,11 +263,6 @@ static struct {
 	.quiesced = true,
 };
 
-typedef struct primary_thread_arg {
-	pid_t cpid;
-	char *prog_type;
-} primary_thread_arg_t;
-
 static int          _accounting_cluster_ready();
 static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
@@ -305,7 +300,6 @@ static void _update_pidfile(void);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
 static void _usage(void);
 static void _verify_clustername(void);
-static void *       _wait_primary_prog(void *arg);
 
 static void _send_reconfig_replies(void)
 {
@@ -4040,29 +4034,11 @@ static void _update_diag_job_state_counts(void)
 	list_for_each_ro(job_list, _foreach_job_running, NULL);
 }
 
-static void *_wait_primary_prog(void *arg)
-{
-	primary_thread_arg_t *wait_arg = arg;
-	int status = 0;
-
-	waitpid(wait_arg->cpid, &status, 0);
-	if (status != 0) {
-		error("%s: %s exit status %u:%u", __func__, wait_arg->prog_type,
-		      WEXITSTATUS(status), WTERMSIG(status));
-	} else {
-		info("%s: %s completed successfully", __func__,
-		     wait_arg->prog_type);
-	}
-	xfree(wait_arg->prog_type);
-	xfree(wait_arg);
-	return NULL;
-}
-
 static void _run_primary_prog(bool primary_on)
 {
-	primary_thread_arg_t *wait_arg;
 	char *prog_name, *prog_type;
 	char *argv[2], *sep;
+	int status = 0;
 	pid_t cpid;
 
 	if (primary_on) {
@@ -4076,10 +4052,7 @@ static void _run_primary_prog(bool primary_on)
 	if ((prog_name == NULL) || (prog_name[0] == '\0'))
 		return;
 
-	if (access(prog_name, X_OK) < 0) {
-		error("%s: Invalid %s: %m", __func__, prog_type);
-		return;
-	}
+	info("%s: Running %s", __func__, prog_type);
 
 	sep = strrchr(prog_name, '/');
 	if (sep)
@@ -4098,11 +4071,12 @@ static void _run_primary_prog(bool primary_on)
 		_exit(127);
 	}
 
-	/* Create thread to wait for and log program completion */
-	wait_arg = xmalloc(sizeof(primary_thread_arg_t));
-	wait_arg->cpid = cpid;
-	wait_arg->prog_type = xstrdup(prog_type);
-	slurm_thread_create_detached(_wait_primary_prog, wait_arg);
+	waitpid(cpid, &status, 0);
+	if (status != 0)
+		error("%s: %s exit status %u:%u", __func__, prog_type,
+		      WEXITSTATUS(status), WTERMSIG(status));
+	else
+		info("%s: %s completed successfully", __func__, prog_type);
 }
 
 static int _init_dep_job_ptr(void *object, void *arg)
