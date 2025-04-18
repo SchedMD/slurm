@@ -337,7 +337,7 @@ static const char *_ip_reserved_to_str(const slurm_addr_t *addr)
 		const in_addr_t ipv4 = addr4->sin_addr.s_addr;
 
 		if (ipv4 == INADDR_LOOPBACK)
-			return "localhost";
+			return "127.0.0.1";
 		else if (ipv4 == INADDR_ANY)
 			return "0.0.0.0";
 		else if (ipv4 == INADDR_BROADCAST)
