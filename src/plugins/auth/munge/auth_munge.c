@@ -49,7 +49,6 @@
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
-#include "src/common/net.h"
 #include "src/common/slurm_xlator.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
@@ -57,6 +56,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"
+#include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -374,21 +374,25 @@ char *auth_p_get_host(auth_credential_t *cred)
 
 	/*
 	 * For IPv6-native systems, MUNGE always reports the host as 0.0.0.0
-	 * which will resolve as "::"
+	 * which will never resolve successfully. So don't even bother trying.
 	 */
-	if (!(hostname = sockaddr_to_string(&addr, sizeof(addr)))) {
-		error("%s: Unable to resolve credential's socket address. Refusing to authenticate UID=%d GID=%d",
-		      __func__, cred->uid, cred->gid);
-		errno = ESLURM_AUTH_UNABLE_TO_RESOLVE_HOST;
-		return NULL;
+	if (sin->sin_addr.s_addr != 0) {
+		hostname = xgetnameinfo(&addr);
+		/*
+		 * The NI_NOFQDN flag was used here previously, but did not work
+		 * as desired if the primary domain did not match on both sides.
+		 */
+		if (hostname && (dot_ptr = strchr(hostname, '.')))
+			dot_ptr[0] = '\0';
 	}
 
-	/*
-	 * The NI_NOFQDN flag was used here previously, but did not work
-	 * as desired if the primary domain did not match on both sides.
-	 */
-	if (hostname && (dot_ptr = strchr(hostname, '.')))
-		dot_ptr[0] = '\0';
+	if (!hostname) {
+		/* at this point, the name lookup failed */
+		hostname = xmalloc(INET_ADDRSTRLEN);
+		slurm_get_ip_str(&addr, hostname, INET_ADDRSTRLEN);
+		if (!(slurm_conf.conf_flags & CONF_FLAG_IPV6_ENABLED))
+			error("%s: Lookup failed for %s", __func__, hostname);
+	}
 
 	return hostname;
 }
