@@ -362,44 +362,55 @@ static const char *_ip_reserved_to_str(const slurm_addr_t *addr)
 
 static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
 {
+	/* Include 2 extra bytes for [] for IPv6 */
+	static const size_t max_host_bytes =
+		MAX(INET_ADDRSTRLEN, (INET6_ADDRSTRLEN + 2));
 	char *resp = NULL;
+	char nhost[max_host_bytes];
+	uint16_t port = 0;
 
 	if (addr->ss_family == AF_INET) {
 		const struct sockaddr_in *in = (struct sockaddr_in *) addr;
-		const uint16_t port = ntohs(in->sin_port);
-		char addrbuf[INET_ADDRSTRLEN];
 
-		if (!host &&
-		    inet_ntop(AF_INET, &in->sin_addr, addrbuf, sizeof(addrbuf)))
-			host = addrbuf;
+		port = ntohs(in->sin_port);
 
-		if (host && port)
-			xstrfmtcat(resp, "%s:%hu", host, port);
-		else if (port)
-			xstrfmtcat(resp, ":%hu", port);
-		else if (host)
-			xstrfmtcat(resp, "%s", host);
+		if (!host && inet_ntop(AF_INET, &in->sin_addr, nhost,
+				       sizeof(nhost)))
+			host = nhost;
 	} else if (addr->ss_family == AF_INET6) {
 		const struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr;
-		const uint16_t port = ntohs(in6->sin6_port);
-		char addrbuf[INET6_ADDRSTRLEN];
 
-		if (!host && inet_ntop(AF_INET6, &in6->sin6_addr, addrbuf,
-				       sizeof(addrbuf)))
-			host = addrbuf;
+		port = ntohs(in6->sin6_port);
 
-		/*
-		 * Construct RFC3986 host port pair:
-		 * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
-		 */
-		if (host && port)
-			xstrfmtcat(resp, "[%s]:%hu", host, port);
-		else if (port)
-			xstrfmtcat(resp, "[::]:%hu", port);
-		else if (host)
-			xstrfmtcat(resp, "%s", host);
-
+		if (!host && inet_ntop(AF_INET6, &in6->sin6_addr, (nhost + 1),
+				       (sizeof(nhost) - 2))) {
+			const size_t len = strlen(nhost + 1);
+			/*
+			 * Construct RFC3986 host port pair:
+			 * IP-literal = "[" ( IPv6address / IPvFuture  ) "]"
+			 */
+			nhost[0] = '[';
+			nhost[len] = ']';
+			nhost[len + 1] = '\0';
+			host = nhost;
+		}
 	}
+
+	/*
+	 * RFC3986 definitions:
+	 *	host        = IP-literal / IPv4address / reg-name
+	 *	port        = *DIGIT
+	 *	authority   = [ userinfo "@" ] host [ ":" port ]
+	 *
+	 * Where authority obsoletes the prior hostport from RFC2396:
+	 *	hostport    = host [ ":" port ]
+	 */
+	if (host && port)
+		xstrfmtcat(resp, "%s:%hu", host, port);
+	else if (port)
+		xstrfmtcat(resp, ":%hu", port);
+	else if (host)
+		xstrfmtcat(resp, "%s", host);
 
 	return resp;
 }
