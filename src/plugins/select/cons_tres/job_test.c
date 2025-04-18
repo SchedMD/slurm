@@ -2307,7 +2307,7 @@ static int _build_cr_job_list(void *x, void *arg)
 			return 0;
 		}
 	}
-	if (job_ptr_preempt->end_time < args->start) {
+	if (job_ptr_preempt->end_time <= args->start) {
 		bitstr_t *efctv_bitmap_ptr;
 		efctv_bitmap_ptr = _select_topo_bitmap(tmp_job_ptr,
 						       args->orig_map,
