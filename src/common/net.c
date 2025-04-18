@@ -350,11 +350,22 @@ static const char *_ip_reserved_to_str(const slurm_addr_t *addr)
 		const struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *) addr;
 		const struct in6_addr ipv6 = addr6->sin6_addr;
 
-		/* RFC 3513 Section 2.4 reserved addressees */
-		if (IN6_IS_ADDR_UNSPECIFIED(&ipv6))
-			return "::"; /* the unspecified addresses */
-		else if (IN6_IS_ADDR_LOOPBACK(&ipv6))
-			return "localhost"; /* or "::1" */
+		/*
+		 * RFC5156 Special-Use IPv6 Addresses
+		 * defined by RFC4291 as "::" or "::1" formatted by RFC6874
+		 * referencing RFC3986:
+		 *	IP-literal = "[" ( IPv6address / IPv6addrz / IPvFuture  ) "]"
+		 *
+		 * RFC6874 Appendix A gives representing numeric IPv6address
+		 * with brackets and without as both valid options. Returning
+		 * addresses with brackets to avoid a constructed string with
+		 * [::]:PORT over :::PORT and [::1]:PORT over ::1:PORT while
+		 * both are valid.
+		 */
+		if (IN6_IS_ADDR_UNSPECIFIED(&ipv6)) {
+			return "[::]";
+		} else if (IN6_IS_ADDR_LOOPBACK(&ipv6))
+			return "[::1]";
 	}
 
 	return NULL;
