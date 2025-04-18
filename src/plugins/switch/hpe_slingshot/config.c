@@ -726,7 +726,7 @@ extern bool slingshot_setup_config(const char *switch_params)
 	const size_t size_fm_mtls_key = sizeof(fm_mtls_key) - 1;
 	const char fm_mtls_url[] = "fm_mtls_url";
 	const size_t size_fm_mtls_url = sizeof(fm_mtls_url) - 1;
-	/* Use min/max in state file if SwitchParameters not set */
+	/* Will be default size when SwitchParameters is not set */
 	uint16_t vni_min = slingshot_state.vni_min;
 	uint16_t vni_max = slingshot_state.vni_max;
 

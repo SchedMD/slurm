@@ -198,7 +198,6 @@ extern int switch_p_save(void)
 
 /*
  * Restore slingshot_state from state file
- * NOTE: assumes this runs before loading the slurm.conf config
  */
 extern int switch_p_restore(bool recover)
 {
