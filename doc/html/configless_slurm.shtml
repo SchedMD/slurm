@@ -20,8 +20,8 @@ from, those client commands will have to use the DNS record to get the
 configuration information from the controller when they run.
 If you expect to have a lot of traffic from a login node, this
 can generate a lot of requests for the configuration files. In cases like
-this, you may want to consider running slurmd on the machine so it can
-manage the configuration files, but not allowing it to run jobs.</p>
+this, <a href="sackd.html">sackd</a> can be used to manage configuration files
+for the node reducing network requests.</p>
 
 <h2 id="INSTALLATION">Installation
 <a class="slurm_link" href="#INSTALLATION"></a>
@@ -148,6 +148,6 @@ is as follows:</p>
 <li>topology.conf</li>
 </ul>
 
-<p style="text-align:center;">Last modified 31 October 2024</p>
+<p style="text-align:center;">Last modified 18 April 2025</p>
 
 <!--#include virtual="footer.txt"-->
