@@ -189,6 +189,8 @@ static int _print_job(void *x, void *arg)
 		printf(" no planned\n");
 	}
 
+	fflush(stdout);
+
 	return 0;
 }
 
