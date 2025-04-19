@@ -539,6 +539,8 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	FREE_NULL_LIST(assoc_list);
 
+	as_mysql_user_create_user_coords_list(mysql_conn);
+
 	return rc;
 }
 
@@ -677,6 +679,8 @@ end_it:
 		return NULL;
 	}
 
+	as_mysql_user_create_user_coords_list(mysql_conn);
+
 	errno = SLURM_SUCCESS;
 	return add_acct_cond.ret_str;
 }
@@ -790,6 +794,7 @@ extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			.flags = assoc_flags,
 			.mysql_conn = mysql_conn,
 		};
+		as_mysql_user_create_user_coords_list(mysql_conn);
 
 		/* Update associations based on account flags */
 		_handle_flag_coord(&flag_coord_acct);
@@ -910,8 +915,11 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		errno = ESLURM_NO_REMOVE_DEFAULT_ACCOUNT;
 	else if (jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
-	else
+	else {
+		as_mysql_user_create_user_coords_list(mysql_conn);
 		errno = SLURM_SUCCESS;
+	}
+
 	return ret_list;
 }
 
