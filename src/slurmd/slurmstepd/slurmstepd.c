@@ -253,6 +253,8 @@ static int _foreach_job_node_array(void *x, void *arg)
 
 	(*table_index)++;
 
+	job_node_ptr->tot_cores =
+		job_node_ptr->tot_sockets * job_node_ptr->cores;
 	/*
 	 * Sanity check to make sure we can take a version we
 	 * actually understand.
