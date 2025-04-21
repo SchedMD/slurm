@@ -73,6 +73,7 @@ typedef struct {
 	int (*negotiate)(void *conn);
 	int (*set_conn_fds)(void *conn, int input_fd, int output_fd);
 	int (*set_conn_callbacks)(void *conn, tls_conn_callbacks_t *callbacks);
+	void (*set_graceful_shutdown)(void *conn, bool do_graceful_shutdown);
 } tls_ops_t;
 
 /*
@@ -89,6 +90,7 @@ static const char *syms[] = {
 	"tls_p_negotiate_conn",
 	"tls_p_set_conn_fds",
 	"tls_p_set_conn_callbacks",
+	"tls_p_set_graceful_shutdown",
 };
 
 static tls_ops_t *ops = NULL;
@@ -319,6 +321,19 @@ extern int tls_g_set_conn_callbacks(void *conn,
 		return ESLURM_NOT_SUPPORTED;
 
 	return (*(ops[wrapper->index].set_conn_callbacks))(conn, callbacks);
+}
+
+extern void tls_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown)
+{
+	tls_wrapper_t *wrapper = conn;
+
+	xassert(g_context);
+
+	if (!wrapper)
+		return;
+
+	(*(ops[wrapper->index].set_graceful_shutdown))(conn,
+						       do_graceful_shutdown);
 }
 
 static int _is_sslv3_handshake(const void *buf, const size_t n)

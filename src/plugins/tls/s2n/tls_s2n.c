@@ -77,6 +77,7 @@ typedef struct {
 	/* absolute time shutdown() delayed until (instead of sleep()ing) */
 	timespec_t delay;
 	struct s2n_config *s2n_config;
+	bool do_graceful_shutdown;
 } tls_conn_t;
 
 /*
@@ -914,4 +915,16 @@ extern int tls_p_set_conn_callbacks(tls_conn_t *conn,
 		 callbacks->send, callbacks->io_context, conn->s2n_conn);
 
 	return SLURM_SUCCESS;
+}
+
+extern void tls_p_set_graceful_shutdown(tls_conn_t *conn,
+					bool do_graceful_shutdown)
+{
+	xassert(conn);
+
+	log_flag(TLS, "%s: %s graceful shutdown on fd:%d->%d",
+		 plugin_type, do_graceful_shutdown ? "Enabled" : "Disabled",
+		 conn->input_fd, conn->output_fd);
+
+	conn->do_graceful_shutdown = do_graceful_shutdown;
 }
