@@ -925,6 +925,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 
 	for (j = 0; j < 15; j++) {
 		int sd;
+		void *tls_conn = NULL;
 		slurm_addr_t addr;
 
 		/*
@@ -948,6 +949,18 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 
 		debug3("Accepted IO connection: ip=%pA sd=%d", &addr, sd);
 
+		if (tls_enabled()) {
+			tls_conn_args_t tls_args = {
+				.input_fd = sd,
+				.output_fd = sd,
+				.mode = TLS_CONN_SERVER,
+			};
+			if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+				error("Could not create TLS server connection for step IO");
+				return;
+			}
+		}
+
 		/*
 		 * On AIX the new socket [sd] seems to inherit the O_NONBLOCK
 		 * flag from the listening socket [fd], so we need to
@@ -960,7 +973,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 		/*
 		 * Read IO header and update cio structure appropriately
 		 */
-		if (_read_io_init_msg(sd, NULL, cio, &addr) < 0)
+		if (_read_io_init_msg(sd, tls_conn, cio, &addr) < 0)
 			continue;
 
 		fd_set_nonblocking(sd);

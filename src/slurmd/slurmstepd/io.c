@@ -1649,6 +1649,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *step,
 	int sock = -1;
 	struct client_io_info *client;
 	eio_obj_t *obj;
+	void *tls_conn = NULL;
 
 	debug4 ("adding IO connection (logical node rank %d)", step->nodeid);
 
@@ -1668,8 +1669,22 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *step,
 		return SLURM_ERROR;
 	}
 
+	if (tls_enabled()) {
+		tls_conn_args_t tls_args = {
+			.input_fd = sock,
+			.output_fd = sock,
+			.mode = TLS_CONN_CLIENT,
+			.cert = srun->tls_cert,
+		};
+
+		if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+			error("Could not create client TLS connection for step IO");
+			return SLURM_ERROR;
+		}
+	}
+
 	fd_set_blocking(sock);  /* just in case... */
-	_send_io_init_msg(sock, NULL, srun, step, true);
+	_send_io_init_msg(sock, tls_conn, srun, step, true);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
@@ -1687,6 +1702,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *step,
 	client->is_local_file = false;
 
 	obj = eio_obj_create(sock, &client_ops, (void *)client);
+	obj->tls_conn = tls_conn;
 	list_append(step->clients, (void *)obj);
 	eio_new_initial_obj(step->eio, (void *)obj);
 	debug5("Now handling %d IO Client object(s)",
@@ -1707,6 +1723,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
 	int sock = -1;
 	struct client_io_info *client;
 	eio_obj_t *obj;
+	void *tls_conn = NULL;
 
 	debug4 ("adding IO connection (logical node rank %d)", step->nodeid);
 
@@ -1722,8 +1739,22 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
 		return SLURM_ERROR;
 	}
 
+	if (tls_enabled()) {
+		tls_conn_args_t tls_args = {
+			.input_fd = sock,
+			.output_fd = sock,
+			.mode = TLS_CONN_CLIENT,
+			.cert = srun->tls_cert,
+		};
+
+		if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+			error("Could not create client TLS connection for step IO");
+			return SLURM_ERROR;
+		}
+	}
+
 	fd_set_blocking(sock);  /* just in case... */
-	_send_io_init_msg(sock, NULL, srun, step, false);
+	_send_io_init_msg(sock, tls_conn, srun, step, false);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
@@ -1743,6 +1774,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
 	/* client object adds itself to step->clients in _client_writable */
 
 	obj = eio_obj_create(sock, &client_ops, (void *)client);
+	obj->tls_conn = tls_conn;
 	eio_new_obj(step->eio, (void *)obj);
 
 	debug5("New IO Client object added");
