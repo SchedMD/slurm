@@ -380,7 +380,6 @@ typedef enum {
 	DATA_PARSER_OPENAPI_NODES_QUERY_PTR, /* openapi_nodes_query_t* */
 	DATA_PARSER_NODE_STATES, /* uint32_t & NODE_STATE_* */
 	DATA_PARSER_NODE_STATES_NO_VAL, /* uint32_t & NODE_STATE_* or NO_VAL */
-	DATA_PARSER_NODE_SELECT_ALLOC_MEMORY, /* node_info_t->select_nodeinfo  */
 	DATA_PARSER_NODE_SELECT_ALLOC_IDLE_CPUS, /* node_info_t->select_nodeinfo  */
 	DATA_PARSER_NODE_SELECT_TRES_USED, /* node_info_t->select_nodeinfo  */
 	DATA_PARSER_NODE_SELECT_TRES_WEIGHTED, /* node_info_t->select_nodeinfo  */

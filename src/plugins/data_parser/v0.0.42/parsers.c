@@ -3739,19 +3739,6 @@ static int DUMP_FUNC(CSV_STRING_LIST)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(NODE_SELECT_ALLOC_MEMORY)
-
-static int DUMP_FUNC(NODE_SELECT_ALLOC_MEMORY)(const parser_t *const parser,
-					       void *obj, data_t *dst,
-					       args_t *args)
-{
-	node_info_t *node = obj;
-
-	data_set_int(dst, node->alloc_memory);
-
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(NODE_SELECT_ALLOC_IDLE_CPUS)
 
 static int DUMP_FUNC(NODE_SELECT_ALLOC_IDLE_CPUS)(const parser_t *const parser,
@@ -7547,7 +7534,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(USER_ID, reason_uid, "reason_set_by_user", "User who set the reason"),
 	add_parse(TIMESTAMP_NO_VAL, resume_after, "resume_after", "Number of seconds after the node's state is updated to \"DOWN\" or \"DRAIN\" before scheduling a node state resume"),
 	add_parse(STRING, resv_name, "reservation", "Name of reservation containing this node"),
-	add_cparse(NODE_SELECT_ALLOC_MEMORY, "alloc_memory", "Total memory in MB currently allocated for jobs"),
+	add_parse(UINT64, alloc_memory, "alloc_memory", "Total memory in MB currently allocated for jobs"),
 	add_parse(UINT16, alloc_cpus, "alloc_cpus", "Total number of CPUs currently allocated for jobs"),
 	add_cparse(NODE_SELECT_ALLOC_IDLE_CPUS, "alloc_idle_cpus", "Total number of idle CPUs"),
 	add_cparse(NODE_SELECT_TRES_USED, "tres_used", "Trackable resources currently allocated for jobs"),
@@ -9971,7 +9958,6 @@ static const parser_t parsers[] = {
 	addpca(STATS_MSG_RPCS_BY_USER, STATS_MSG_RPC_USER, stats_info_response_msg_t, NEED_NONE, "RPCs by user"),
 	addpca(STATS_MSG_RPCS_QUEUE, STATS_MSG_RPC_QUEUE, stats_info_response_msg_t, NEED_NONE, "Pending RPCs"),
 	addpca(STATS_MSG_RPCS_DUMP, STATS_MSG_RPC_DUMP, stats_info_response_msg_t, NEED_NONE, "Pending RPCs by hostlist"),
-	addpc(NODE_SELECT_ALLOC_MEMORY, node_info_t, NEED_NONE, INT64, NULL),
 	addpc(NODE_SELECT_ALLOC_IDLE_CPUS, node_info_t, NEED_NONE, INT32, NULL),
 	addpc(NODE_SELECT_TRES_USED, node_info_t, NEED_NONE, STRING, NULL),
 	addpc(NODE_SELECT_TRES_WEIGHTED, node_info_t, NEED_NONE, DOUBLE, NULL),
