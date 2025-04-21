@@ -10770,6 +10770,38 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_hostlist_expansion_request(const slurm_msg_t *smsg,
+					     buf_t *buffer)
+{
+	packstr(smsg->data, buffer);
+}
+
+static int _unpack_hostlist_expansion_request(slurm_msg_t *smsg, buf_t *buffer)
+{
+	safe_unpackstr((char **) &smsg->data, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(smsg->data);
+	return SLURM_ERROR;
+}
+
+static void _pack_hostlist_expansion_response(const slurm_msg_t *smsg,
+					      buf_t *buffer)
+{
+	packstr(smsg->data, buffer);
+}
+
+static int _unpack_hostlist_expansion_response(slurm_msg_t *smsg, buf_t *buffer)
+{
+	safe_unpackstr((char **) &smsg->data, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(smsg->data);
+	return SLURM_ERROR;
+}
+
 static void _pack_node_info_single_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	node_info_single_msg_t *msg = smsg->data;
@@ -14098,6 +14130,12 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_NODE_INFO_SINGLE:
 		_pack_node_info_single_msg(msg, buffer);
 		break;
+	case REQUEST_HOSTLIST_EXPANSION:
+		_pack_hostlist_expansion_request(msg, buffer);
+		break;
+	case RESPONSE_HOSTLIST_EXPANSION:
+		_pack_hostlist_expansion_response(msg, buffer);
+		break;
 	case REQUEST_PARTITION_INFO:
 		_pack_part_info_request_msg((part_info_request_msg_t *)
 					    msg->data, buffer,
@@ -14729,6 +14767,12 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case REQUEST_NODE_INFO_SINGLE:
 		rc = _unpack_node_info_single_msg(msg, buffer);
+		break;
+	case REQUEST_HOSTLIST_EXPANSION:
+		rc = _unpack_hostlist_expansion_request(msg, buffer);
+		break;
+	case RESPONSE_HOSTLIST_EXPANSION:
+		rc = _unpack_hostlist_expansion_response(msg, buffer);
 		break;
 	case REQUEST_PARTITION_INFO:
 		rc = _unpack_part_info_request_msg((part_info_request_msg_t **)
