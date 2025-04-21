@@ -22,6 +22,27 @@
 </ul>
 </p>
 
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#stateless">Stateless</a></li>
+<li><a href="#run_modes">Run modes</a>
+<ul>
+<li><a href="#inet">Inet Service Mode</a>
+<li><a href="#listen">Listening Mode</a>
+</ul>
+</li>
+<li><a href="#config">Configuration</a></li>
+<li><a href="#plugins">Plugins</a></li>
+<li><a href="#high_availability">High Availability</a></li>
+<li><a href="#security">Security</a>
+<ul>
+<li><a href="#jwt">JSON Web Token (JWT) Authentication</a></li>
+<li><a href="#local_auth">Local Authentication</a></li>
+<li><a href="#auth_proxy">Authenticating Proxy</a></li>
+</ul>
+</li>
+</ul>
+
 <h2 id="stateless">Stateless<a class="slurm_link" href="#stateless"></a></h2>
 <p>Slurmrestd is stateless as it does not cache or save any state between
 requests. Each request is handled in a thread and then all of that state is
@@ -54,10 +75,10 @@ for new TCP connections. Each connection and request are independently
 authenticated.</p>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
-slurmrestd can be configured either by environment variables or command line
+<p>slurmrestd can be configured either by environment variables or command line
 arguments. Please see the <b>doc/man/man1/slurmrestd.8</b> man page and
 <a href="rest_quickstart.html#customization">REST API Quick Start Guide</a>
-for details.
+for details.</p>
 
 <h2 id="plugins">Plugins<a class="slurm_link" href="#plugins"></a></h2>
 <p>As of Slurm 20.11, the REST API uses plugins for authentication and
@@ -109,6 +130,24 @@ their own plugins and are suggested to submit them as code contributions via
 The plugin API provided may change between releases which could cause site
 specific plugins to break.</p>
 
+<h2 id="high_availability">High Availability
+<a class="slurm_link" href="#high_availability"></a></h2>
+
+<p>Slurmrestd is agnostic to its deployment in a highly available cluster.
+The daemon may be run on multiple nodes but does not provide any coordination
+with other instances for load balancing or failover.
+If such functionality is desired, a separate load balancer may be deployed.
+The load balancer should be able to forward any required authentication
+information on to the slurmrestd machines (see <a href="#security">Security</a>
+section).</p>
+
+<p>The number of connections allowed by the slurmrestd system(s) should also be
+limited so that the slurmctld is not overwhelmed with requests. Pay attention to
+the <code>-t &lt;THREAD COUNT&gt;</code> and
+<code>--max-connections &lt;count&gt;</code> options to <b>slurmrestd</b>, the
+number of nodes deployed, and the specs of the machine running <b>slurmctld</b>.
+</p>
+
 <h2 id="security">Security<a class="slurm_link" href="#security"></a></h2>
 <p>The Slurm REST API is written to provide the necessary functionality for
 clients to control Slurm using REST commands. It is <b>not</b> designed to be
@@ -140,12 +179,12 @@ slurmrestd.</p>
 <p>Slurm tries not to give potential attackers any hints when there are
 authentication failures. This results in the client getting this rather terse
 message: <code>Authentication failure</code>. When this happens, take a look at
-the logs for the relevant Slurm daemon (i.e. <i>slurmdbd</i>, <i>slurmctld</i>
-or <i>slurmd</i>) for information about the actual issue.</p>
+the logs for the relevant Slurm daemon (i.e. <b>slurmdbd</b>, <b>slurmctld</b>,
+or <b>slurmd</b>) for information about the actual issue.</p>
 
-<h2 id="jwt">JSON Web Token (JWT) Authentication
+<h3 id="jwt">JSON Web Token (JWT) Authentication
 <a class="slurm_link" href="#jwt"></a>
-</h2>
+</h3>
 <p>slurmrestd supports using <a href=jwt.html>JWT to authenticate users</a>.
 JWT can be used to authenticate user over REST protocol.
 <ul>
@@ -161,9 +200,9 @@ the proxy and ensuring against any possible accidental authorizations.</p>
 <p>When using JWT, it is important that <u>AuthAltTypes=auth/jwt</u> be
 configured in both your slurm.conf and slurmdbd.conf for slurmrestd.</p>
 
-<h2 id="local_auth">Local Authentication
+<h3 id="local_auth">Local Authentication
 <a class="slurm_link" href="#local_auth"></a>
-</h2>
+</h3>
 <p>slurmrestd supports using UNIX domain sockets to have the kernel
 authenticate local users. By default, slurmrestd will not start as root or
 SlurmUser or if the user's primary group belongs to root or SlurmUser.
@@ -171,9 +210,9 @@ Slurmrestd must be located in the Munge security domain in order to function
 and communicate with Slurm in local authentication mode.
 </p>
 
-<h2 id="auth_proxy">Authenticating Proxy
+<h3 id="auth_proxy">Authenticating Proxy
 <a class="slurm_link" href="#auth_proxy"></a>
-</h2>
+</h3>
 <p>There is a wide array of authentication systems that a site could choose
 from, if using <a href="#jwt">JWT authentication</a> doesn't meet your
 requirements. An authenticating proxy is setup with a JWT token assigned to
@@ -199,10 +238,11 @@ href="https://gitlab.com/SchedMD/training/docker-scale-out/-/tree/master/proxy">
 internal tool</a> used for testing and training. It uses
 <a href="https://www.php.net/">PHP</a> and
 <a href="https://www.nginx.com/">NGINX</a> to provide the authentication logic.
-</p>
+This example should only be used as a basic starting place as it is not suitable
+for deployment in a production environment.</p>
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 07 January 2025</p>
+<p style="text-align:center;">Last modified 21 April 2025</p>
 
 <!--#include virtual="footer.txt"-->
