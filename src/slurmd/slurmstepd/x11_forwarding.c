@@ -271,6 +271,8 @@ extern int setup_x11_forward(stepd_step_rec_t *step)
 
 	eio_handle = eio_handle_create(0);
 	obj = eio_obj_create(listen_socket, &x11_socket_ops, NULL);
+	obj->arg = xstrdup(srun->tls_cert);
+
 	eio_new_initial_obj(eio_handle, obj);
 	slurm_thread_create_detached(_eio_thread, NULL);
 
