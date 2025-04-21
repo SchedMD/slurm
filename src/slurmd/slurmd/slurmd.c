@@ -476,7 +476,7 @@ main (int argc, char **argv)
 	conf->pid = getpid();
 
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));
-	info("%s started on %s", slurm_prog_name, time_stamp);
+	info("slurmd started on %s", time_stamp);
 
 	slurm_conf_install_fork_handlers();
 

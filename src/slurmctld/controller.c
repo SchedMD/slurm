@@ -773,8 +773,8 @@ int main(int argc, char **argv)
 		      slurm_conf.accounting_storage_type);
 	}
 
-	info("%s version %s started on cluster %s(%u)",
-	     slurm_prog_name, SLURM_VERSION_STRING, slurm_conf.cluster_name,
+	info("slurmctld version %s started on cluster %s(%u)",
+	     SLURM_VERSION_STRING, slurm_conf.cluster_name,
 	     slurm_conf.cluster_id);
 	if ((error_code = gethostname_short(slurmctld_config.node_name_short,
 					    HOST_NAME_MAX)))
