@@ -854,6 +854,9 @@ typedef struct reattach_tasks_response_msg {
 } reattach_tasks_response_msg_t;
 
 typedef struct prolog_launch_msg {
+	char *alloc_tls_cert;		/* TLS certificate for client that is
+					 * getting/has allocation
+					 * (srun, salloc,etc.) */
 	slurm_cred_t *cred;
 	uint32_t gid;
 	uint32_t het_job_id;		/* HetJob id or NO_VAL */

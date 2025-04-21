@@ -60,6 +60,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 
+#include "src/interfaces/tls.h"
+
 struct allocation_msg_thread {
 	slurm_allocation_callbacks_t callback;
 	eio_handle_t *handle;
@@ -235,7 +237,6 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 {
 	net_forward_msg_t *msg = forward_msg->data;
 	int *local, *remote;
-	eio_obj_t *e1, *e2;
 
 	local = xmalloc(sizeof(*local));
 	remote = xmalloc(sizeof(*remote));
@@ -275,12 +276,10 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 	/* prevent the upstream call path from closing the connection */
 	forward_msg->conn_fd = -1;
 
-	e1 = eio_obj_create(*local, &half_duplex_ops, remote);
-	e2 = eio_obj_create(*remote, &half_duplex_ops, local);
-
-	/* setup eio to handle both sides of the connection now */
-	eio_new_obj(msg_thr->handle, e1);
-	eio_new_obj(msg_thr->handle, e2);
+	if (half_duplex_add_objs_to_handle(msg_thr->handle, local, remote,
+					   TLS_CONN_SERVER, NULL)) {
+		goto error;
+	}
 
 	return;
 

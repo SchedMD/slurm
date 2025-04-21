@@ -37,6 +37,7 @@
 #include <sys/socket.h>
 
 #include "src/common/eio.h"
+#include "src/common/fd.h"
 #include "src/common/half_duplex.h"
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
@@ -51,12 +52,109 @@ struct io_operations half_duplex_ops = {
 	.handle_read = _half_duplex,
 };
 
+typedef struct {
+	int *fd_out;
+	void **tls_conn_out;
+	void **tls_conn_in;
+} half_duplex_eio_arg_t;
+
+extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
+					  int *local_fd, int *remote_fd,
+					  tls_conn_mode_t remote_tls_mode,
+					  char *remote_tls_cert)
+{
+	half_duplex_eio_arg_t *local_arg = NULL;
+	half_duplex_eio_arg_t *remote_arg = NULL;
+
+	eio_obj_t *remote_to_local_eio, *local_to_remote_eio;
+
+	local_arg = xmalloc(sizeof(*local_arg));
+	local_arg->fd_out = remote_fd;
+
+	remote_arg = xmalloc(sizeof(*remote_arg));
+	remote_arg->fd_out = local_fd;
+
+	local_to_remote_eio =
+		eio_obj_create(*local_fd, &half_duplex_ops, local_arg);
+	remote_to_local_eio =
+		eio_obj_create(*remote_fd, &half_duplex_ops, remote_arg);
+
+	if (tls_enabled()) {
+		void **tls_conn_ptr = xmalloc(sizeof(*tls_conn_ptr));
+		void *tls_conn = NULL;
+
+		tls_conn_args_t tls_args = {
+			.input_fd = *remote_fd,
+			.output_fd = *remote_fd,
+			.mode = remote_tls_mode,
+			.cert = remote_tls_cert,
+		};
+
+		if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+			error("Failed to create remote connection for x11 forwarding");
+			goto fail;
+		}
+
+		*tls_conn_ptr = tls_conn;
+
+		/*
+		 * Ensure that both eio objects point to the same place in
+		 * memory for the remote TLS connection. This way, we avoid
+		 * calling tls_g_destroy_conn() twice.
+		 *
+		 * Because eio_handle_mainloop loops over both eio objects in
+		 * the same thread, we don't have to worry about concurrency
+		 * issues with both eio objects checking the same TLS conn
+		 * memory space.
+		 */
+		local_arg->tls_conn_out = tls_conn_ptr;
+		remote_arg->tls_conn_in = tls_conn_ptr;
+
+		/*
+		 * if fd is blocking, tls_g_recv will want to block until the
+		 * entire buffer size is read (similar to safe_read). For eio,
+		 * we just want to get whatever data is on the line, and forward
+		 * it.
+		 */
+		fd_set_nonblocking(*remote_fd);
+
+		/*
+		 * Peer will be waiting on tls_g_recv(), and they will need to
+		 * know if connection was intentionally closed or if an error
+		 * occurred.
+		 */
+		tls_g_set_graceful_shutdown(tls_conn, true);
+	}
+
+	eio_new_obj(eio_handle, local_to_remote_eio);
+	eio_new_obj(eio_handle, remote_to_local_eio);
+
+	return SLURM_SUCCESS;
+
+fail:
+	eio_obj_destroy(local_to_remote_eio);
+	eio_obj_destroy(remote_to_local_eio);
+
+	xfree(local_arg);
+	xfree(remote_arg);
+
+	return SLURM_ERROR;
+}
+
 static bool _half_duplex_readable(eio_obj_t *obj)
 {
 	if (obj->shutdown) {
-		int *fd_out = (int *) obj->arg;
+		half_duplex_eio_arg_t *args = obj->arg;
+		int *fd_out = args->fd_out;
+		void **tls_conn_out = args->tls_conn_out;
+
 		if (fd_out) {
+			if (tls_conn_out && *tls_conn_out) {
+				tls_g_destroy_conn(*tls_conn_out);
+				*tls_conn_out = NULL;
+			}
 			shutdown(*fd_out, SHUT_WR);
+			xfree(fd_out);
 			xfree(obj->arg);
 		}
 		shutdown(obj->fd, SHUT_RD);
@@ -69,12 +167,21 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 {
 	ssize_t in, out, wr = 0;
 	char buf[BUFFER_SIZE];
-	int *fd_out = (int *) obj->arg;
+	half_duplex_eio_arg_t *args = obj->arg;
+	int *fd_out = args->fd_out;
+	void **tls_conn_out = args->tls_conn_out;
+	void **tls_conn_in = args->tls_conn_in;
+
+	xassert(!(tls_conn_in && tls_conn_out));
 
 	if (obj->shutdown || !fd_out)
 		goto shutdown;
 
-	in = read(obj->fd, buf, sizeof(buf));
+	if (tls_conn_in && *tls_conn_in) {
+		in = tls_g_recv(*tls_conn_in, buf, sizeof(buf));
+	} else {
+		in = read(obj->fd, buf, sizeof(buf));
+	}
 	if (in == 0) {
 		debug("%s: shutting down %d -> %d",
 		      __func__, obj->fd, *fd_out);
@@ -85,7 +192,11 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 	}
 
 	while (wr < in) {
-		out = write(*fd_out, buf, in - wr);
+		if (tls_conn_out && *tls_conn_out) {
+			out = tls_g_send(*tls_conn_out, buf, in - wr);
+		} else {
+			out = write(*fd_out, buf, in - wr);
+		}
 		if (out <= 0) {
 			error("%s: wrote %zd of %zd", __func__, out, in);
 			goto shutdown;
@@ -96,12 +207,21 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 
 shutdown:
 	obj->shutdown = true;
+	if (tls_conn_in && *tls_conn_in) {
+		tls_g_destroy_conn(*tls_conn_in);
+		*tls_conn_in = NULL;
+	}
 	shutdown(obj->fd, SHUT_RD);
 	close(obj->fd);
 	obj->fd = -1;
 	if (fd_out) {
+		if (tls_conn_out && *tls_conn_out) {
+			tls_g_destroy_conn(*tls_conn_out);
+			*tls_conn_out = NULL;
+		}
 		shutdown(*fd_out, SHUT_WR);
 		xfree(fd_out);
+		xfree(obj->arg);
 	}
 	eio_remove_obj(obj, objs);
 	return 0;

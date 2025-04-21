@@ -58,6 +58,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/tls.h"
+
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -96,11 +98,11 @@ static bool _x11_socket_readable(eio_obj_t *obj)
 
 static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 {
-	eio_obj_t *e1, *e2;
 	slurm_msg_t req, resp;
 	net_forward_msg_t rpc;
 	slurm_addr_t sin;
 	int *local, *remote;
+	char *srun_tls_cert = obj->arg;
 	int rc;
 
 	local = xmalloc(sizeof(*local));
@@ -151,11 +153,10 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 	net_set_nodelay(*local, true, NULL);
 	net_set_nodelay(*remote, true, NULL);
 
-	/* setup eio to handle both sides of the connection now */
-	e1 = eio_obj_create(*local, &half_duplex_ops, remote);
-	e2 = eio_obj_create(*remote, &half_duplex_ops, local);
-	eio_new_obj(eio_handle, e1);
-	eio_new_obj(eio_handle, e2);
+	if (half_duplex_add_objs_to_handle(eio_handle, local, remote,
+					   TLS_CONN_CLIENT, srun_tls_cert)) {
+		goto shutdown;
+	}
 
 	debug("%s: X11 forwarding setup successful", __func__);
 
@@ -271,6 +272,8 @@ extern int setup_x11_forward(stepd_step_rec_t *step)
 
 	eio_handle = eio_handle_create(0);
 	obj = eio_obj_create(listen_socket, &x11_socket_ops, NULL);
+	obj->arg = xstrdup(srun->tls_cert);
+
 	eio_new_initial_obj(eio_handle, obj);
 	slurm_thread_create_detached(_eio_thread, NULL);
 

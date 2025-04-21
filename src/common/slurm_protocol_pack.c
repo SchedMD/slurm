@@ -9927,6 +9927,7 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	xassert(msg);
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		packstr(msg->alloc_tls_cert, buffer);
 		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
 				smsg->protocol_version);
 		pack32(msg->job_id, buffer);
@@ -10022,6 +10023,7 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->alloc_tls_cert, buffer);
 		if (gres_prep_unpack_list(&msg->job_gres_prep, buffer,
 					  smsg->protocol_version))
 			goto unpack_error;
