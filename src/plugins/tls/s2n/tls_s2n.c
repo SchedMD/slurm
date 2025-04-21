@@ -604,7 +604,21 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 		return NULL;
 	}
 
-	if (tls_conn_args->cert) {
+	switch (tls_conn_args->mode) {
+	case TLS_CONN_SERVER:
+	{
+		conn->s2n_config = default_config;
+		break;
+	}
+	case TLS_CONN_CLIENT:
+	{
+		if (!tls_conn_args->cert) {
+			log_flag(TLS, "%s: no certificate provided for new connection. Using default trust store.",
+				 plugin_type);
+			conn->s2n_config = default_config;
+			break;
+		}
+
 		log_flag(TLS, "%s: using cert to create connection:\n%s",
 			 plugin_type, tls_conn_args->cert);
 
@@ -618,14 +632,11 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 			on_s2n_error(conn, s2n_config_add_pem_to_trust_store);
 			goto fail;
 		}
-	} else {
-		log_flag(TLS, "%s: no certificate provided for new connection. Using default trust store.",
-			 plugin_type);
-		/*
-		 * Use default trust store containing only "ca_cert_file" and/or
-		 * system defaults if configured
-		 */
-		conn->s2n_config = default_config;
+		break;
+	}
+	default:
+		error("Invalid tls connection mode");
+		return NULL;
 	}
 
 	if (s2n_connection_set_config(conn->s2n_conn, conn->s2n_config) < 0) {
