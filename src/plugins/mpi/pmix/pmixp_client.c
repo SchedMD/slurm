@@ -184,6 +184,11 @@ static void _set_procdatas(list_t *lresp)
 	PMIXP_KVP_CREATE(kvp, PMIX_NODEID, &nsptr->node_id, PMIX_UINT32);
 	list_append(lresp, kvp);
 
+	/* TODO: the same as for previous here */
+	i = 0;
+	PMIXP_KVP_CREATE(kvp, PMIX_APPLDR, &i, PMIX_INT);
+	list_append(lresp, kvp);
+
 	/* store information about local processes */
 	for (i = 0; i < pmixp_info_tasks(); i++) {
 		list_t *rankinfo;
@@ -205,11 +210,6 @@ static void _set_procdatas(list_t *lresp)
 		 */
 		tmp = 0;
 		PMIXP_KVP_CREATE(kvp, PMIX_APPNUM, &tmp, PMIX_INT);
-		list_append(rankinfo, kvp);
-
-		/* TODO: the same as for previous here */
-		tmp = 0;
-		PMIXP_KVP_CREATE(kvp, PMIX_APPLDR, &tmp, PMIX_INT);
 		list_append(rankinfo, kvp);
 
 		/* TODO: fix when several apps will appear */
