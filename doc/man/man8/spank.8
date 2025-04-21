@@ -178,6 +178,28 @@ Slurm when the plugin calls functions like \fBspank_get_item\fR and
 below) are passed in the argument vector \fBargv\fR with argument
 count \fBac\fR.
 .LP
+A plugin may also define the following variables that will be used by Slurm:
+
+.TP
+\fBslurm_spank_init_failure_mode\fR
+When a slurm_spank_init call fails, change how that failure is handled by Slurm.
+Recognized values are:
+.IP
+.RS
+.TP
+\fBESPANK_NODE_FAILURE\fR
+Slurm considers the node to be at fault and marks it as drained. The job may be
+requeued. This is the default.
+.IP
+
+.TP
+\fBESPANK_JOB_FAILURE\fR
+Slurm considers the job to be at fault and marks it as failed (not to be
+requeued). The node will not be drained.
+.RE
+.IP
+
+.LP
 \fBSPANK\fR plugins can query the current list of supported slurm_spank
 symbols to determine if the current version supports a given plugin hook.
 This may be useful because the list of plugin symbols may grow in the
