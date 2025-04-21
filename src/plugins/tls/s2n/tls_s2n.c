@@ -580,38 +580,21 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 		 plugin_type, tls_conn_args->input_fd, tls_conn_args->output_fd,
 		 tls_conn_mode_to_str(tls_conn_args->mode));
 
-	switch (tls_conn_args->mode) {
-	case TLS_CONN_SERVER:
-		s2n_conn_mode = S2N_SERVER;
-		break;
-	case TLS_CONN_CLIENT:
-		s2n_conn_mode = S2N_CLIENT;
-		break;
-	default:
-		error("Invalid tls connection mode");
-		return NULL;
-	}
-
 	conn = xmalloc(sizeof(*conn));
 	conn->input_fd = tls_conn_args->input_fd;
 	conn->output_fd = tls_conn_args->output_fd;
 	slurm_mutex_init(&conn->lock);
 
-	if (!(conn->s2n_conn = s2n_connection_new(s2n_conn_mode))) {
-		on_s2n_error(conn, s2n_connection_new);
-		slurm_mutex_destroy(&conn->lock);
-		xfree(conn);
-		return NULL;
-	}
-
 	switch (tls_conn_args->mode) {
 	case TLS_CONN_SERVER:
 	{
+		s2n_conn_mode = S2N_SERVER;
 		conn->s2n_config = default_config;
 		break;
 	}
 	case TLS_CONN_CLIENT:
 	{
+		s2n_conn_mode = S2N_CLIENT;
 		if (!tls_conn_args->cert) {
 			log_flag(TLS, "%s: no certificate provided for new connection. Using default trust store.",
 				 plugin_type);
@@ -636,6 +619,13 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 	}
 	default:
 		error("Invalid tls connection mode");
+		return NULL;
+	}
+
+	if (!(conn->s2n_conn = s2n_connection_new(s2n_conn_mode))) {
+		on_s2n_error(conn, s2n_connection_new);
+		slurm_mutex_destroy(&conn->lock);
+		xfree(conn);
 		return NULL;
 	}
 
