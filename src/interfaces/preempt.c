@@ -389,19 +389,6 @@ extern bool slurm_preemption_enabled(void)
 }
 
 /*
- * Return the grace time for job
- */
-extern uint32_t slurm_job_get_grace_time(job_record_t *job_ptr)
-{
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return 0;
-
-	return (*(ops.get_grace_time))(job_ptr);
-}
-
-/*
  * Check to see if a job is in a grace time.
  * If no grace_time active then return 1.
  * If grace_time is currently active then return -1.
@@ -430,7 +417,7 @@ static int _job_check_grace_internal(void *x, void *arg)
 	if (job_borrow_from_resv_check(job_ptr, preemptor_ptr))
 		grace_time = job_ptr->warn_time;
 	else
-		grace_time = slurm_job_get_grace_time(job_ptr);
+		grace_time = (*(ops.get_grace_time))(job_ptr);
 
 	job_ptr->preempt_time = time(NULL);
 	job_ptr->end_time = MIN(job_ptr->end_time,

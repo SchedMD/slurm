@@ -84,9 +84,6 @@ extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr);
  */
 extern bool slurm_preemption_enabled(void);
 
-/* Returns 0 if grace time isn't found */
-extern uint32_t slurm_job_get_grace_time(job_record_t *job_ptr);
-
 extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 				  job_record_t *preemptor_ptr,
 				  uint16_t mode, bool ignore_time);
