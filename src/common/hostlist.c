@@ -68,6 +68,7 @@
  */
 strong_alias(hostlist_create_dims,	slurm_hostlist_create_dims);
 strong_alias(hostlist_create,		slurm_hostlist_create);
+strong_alias(hostlist_create_client,	slurm_hostlist_create_client);
 strong_alias(hostlist_copy,		slurm_hostlist_copy);
 strong_alias(hostlist_count,		slurm_hostlist_count);
 strong_alias(hostlist_delete,		slurm_hostlist_delete);
@@ -1813,6 +1814,23 @@ hostlist_t *hostlist_create(const char *str)
 {
 	int dims = slurmdb_setup_cluster_dims();
 	return hostlist_create_dims(str, dims);
+}
+
+extern hostlist_t *hostlist_create_client(const char *str)
+{
+	if (xstrchr(str, '{')) {
+		char *hostlist = NULL;
+		hostlist_t *hl = NULL;
+		if (!slurm_controller_hostlist_expansion(str, &hostlist)) {
+			hl = _hostlist_create(hostlist, "\t, \n", "-", 1);
+			xfree(hostlist);
+			return hl;
+		} else {
+			error("%s: controller failed to expand hostlist function",
+			      __func__);
+		}
+	}
+	return _hostlist_create(str, "\t, \n", "-", 1);
 }
 
 hostlist_t *hostlist_copy(hostlist_t *hl)

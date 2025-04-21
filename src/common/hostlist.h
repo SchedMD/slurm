@@ -142,6 +142,7 @@ int set_grid(int start, int end, int count);
  */
 hostlist_t *hostlist_create_dims(const char *hostlist, int dims);
 hostlist_t *hostlist_create(const char *hostlist);
+extern hostlist_t *hostlist_create_client(const char *hostlist);
 
 /* hostlist_copy():
  *
