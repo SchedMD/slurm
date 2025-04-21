@@ -44,13 +44,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_scheduler.h"
 
-typedef enum {
-	PREEMPT_DATA_ENABLED,
-	PREEMPT_DATA_MODE,
-	PREEMPT_DATA_PRIO,
-	PREEMPT_DATA_GRACE_TIME,
-} slurm_preempt_data_type_t;
-
 /*
  * Initialize the preemption plugin.
  *

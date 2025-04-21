@@ -150,19 +150,3 @@ extern bool preempt_p_preemptable(
 
 	return true;
 }
-
-extern int preempt_p_get_data(job_record_t *job_ptr,
-			      slurm_preempt_data_type_t data_type,
-			      void *data)
-{
-	int rc = SLURM_SUCCESS;
-
-	switch (data_type) {
-	default:
-		error("%s: unknown enum %d", __func__, data_type);
-		rc = SLURM_ERROR;
-		break;
-
-	}
-	return rc;
-}

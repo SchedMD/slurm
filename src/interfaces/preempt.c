@@ -61,9 +61,6 @@ typedef struct slurm_preempt_ops {
 					       job_queue_rec_t *preemptee);
 	bool		(*preemptable) (job_record_t *preemptor,
 					job_record_t *preemptee);
-	int		(*get_data) (job_record_t *job_ptr,
-				     slurm_preempt_data_type_t data_type,
-				     void *data);
 	uint32_t (*get_grace_time)(job_record_t *job_ptr);
 	uint16_t (*get_mode)(job_record_t *job_ptr);
 	uint32_t (*get_prio)(job_record_t *job_ptr);
@@ -80,7 +77,6 @@ typedef struct {
 static const char *syms[] = {
 	"preempt_p_job_preempt_check",
 	"preempt_p_preemptable",
-	"preempt_p_get_data",
 	"preempt_p_get_grace_time",
 	"preempt_p_get_mode",
 	"preempt_p_get_prio",
