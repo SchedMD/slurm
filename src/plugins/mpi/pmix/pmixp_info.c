@@ -213,6 +213,9 @@ extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 		_pmixp_job_info.cmd = _argv_to_string(step->task[0]->argc,
 						      step->task[0]->argv);
 
+	_pmixp_job_info.task_dist =
+		slurm_step_layout_type_name(step->task_dist);
+
 #if 0
 	if ((step->het_job_id != 0) && (step->het_job_id != NO_VAL))
 		info("HET_JOB_ID:%u", _pmixp_job_info.step_id.job_id);
@@ -260,6 +263,7 @@ extern int pmixp_info_free(void)
 
 	xfree(_pmixp_job_info.srun_ip);
 	xfree(_pmixp_job_info.cmd);
+	xfree(_pmixp_job_info.task_dist);
 	xfree(_pmixp_job_info.het_job_offset);
 
 	hostlist_destroy(_pmixp_job_info.job_hl);
@@ -797,6 +801,11 @@ extern int pmixp_info_taskid2localid(uint32_t taskid)
 			return i;
 	}
 	return -1;
+}
+
+extern char *pmixp_info_task_dist()
+{
+	return _pmixp_job_info.task_dist;
 }
 
 extern char *pmixp_info_task_map()

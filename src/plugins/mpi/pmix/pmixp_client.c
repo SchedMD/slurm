@@ -202,6 +202,13 @@ static void _set_procdatas(list_t *lresp)
 	PMIXP_KVP_CREATE(kvp, PMIX_APP_ARGV, p, PMIX_STRING);
 	list_append(lresp, kvp);
 
+	/*
+	 * Type of mapping used to layout the application (e.g., cyclic).
+	 */
+	p = pmixp_info_task_dist();
+	PMIXP_KVP_CREATE(kvp, PMIX_APP_MAP_TYPE, p, PMIX_STRING);
+	list_append(lresp, kvp);
+
 	/* store information about local processes */
 	for (i = 0; i < pmixp_info_tasks(); i++) {
 		list_t *rankinfo;

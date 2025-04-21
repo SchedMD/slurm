@@ -54,6 +54,7 @@ typedef struct {
 #define PMIXP_INFO_MAGIC 0xCAFE01F0
 	int magic;
 #endif
+	char *task_dist;
 	pmix_nspace_t nspace;
 	slurm_step_id_t step_id; /* Current step id (or NO_VAL) */
 	uint32_t *het_job_offset;
@@ -133,6 +134,7 @@ extern uint32_t pmixp_info_tasks_uni();
 extern uint32_t pmixp_info_cpus();
 extern uint32_t pmixp_info_taskid(uint32_t localid);
 extern int pmixp_info_taskid2localid(uint32_t taskid);
+extern char *pmixp_info_task_dist();
 extern char *pmixp_info_task_map();
 extern hostlist_t *pmixp_info_step_hostlist();
 extern char *pmixp_info_step_host(int nodeid);
