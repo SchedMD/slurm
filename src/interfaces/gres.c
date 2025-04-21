@@ -5540,6 +5540,19 @@ static int _foreach_node_state_dup(void *x, void *arg)
 		new_gres = gres_create_state(
 			gres_state_node, GRES_STATE_SRC_STATE_PTR,
 			GRES_STATE_TYPE_NODE, gres_ns);
+		/*
+		 * Because "gres/'shared'" follows "gres/gpu" (see gres_init)
+		 * the sharing gres will be in new list already.
+		 */
+		if (gres_id_shared(new_gres->config_flags)) {
+			/*
+			 * gres_id_sharing currently only includes gpus so we
+			 * can just search for that.
+			 */
+			_set_alt_gres(new_gres,
+				      list_find_first(new_list, gres_find_id,
+						      &gpu_plugin_id));
+		}
 		list_append(new_list, new_gres);
 	}
 	return 0;
