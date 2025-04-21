@@ -3541,6 +3541,25 @@ static void _node_config_init(char *orig_config, slurm_gres_context_t *gres_ctx,
 	}
 }
 
+/* Set up the shared/sharing pointers for easy look up later */
+static void _set_alt_gres(gres_state_t *gres_state_node_shared,
+			  gres_state_t *gres_state_node_sharing)
+{
+	if (gres_state_node_shared) {
+		if (!gres_state_node_sharing) {
+			error("we have a shared gres of '%s' but no gres that is sharing",
+			      gres_state_node_shared->gres_name);
+		} else {
+			gres_node_state_t *gres_ns_shared =
+				gres_state_node_shared->gres_data;
+			gres_node_state_t *gres_ns_sharing =
+				gres_state_node_sharing->gres_data;
+			gres_ns_shared->alt_gres = gres_state_node_sharing;
+			gres_ns_sharing->alt_gres = gres_state_node_shared;
+		}
+	}
+}
+
 /*
  * Build a node's gres record based only upon the slurm.conf contents
  * IN orig_config - Gres information supplied from slurm.conf
@@ -3582,20 +3601,7 @@ extern void gres_init_node_config(char *orig_config, list_t **gres_list)
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
-	/* Set up the shared/sharing pointers for easy look up later */
-	if (gres_state_node_shared) {
-		if (!gres_state_node_sharing) {
-			error("we have a shared gres of '%s' but no gres that is sharing",
-			      gres_state_node_shared->gres_name);
-		} else {
-			gres_node_state_t *gres_ns_shared =
-				gres_state_node_shared->gres_data;
-			gres_node_state_t *gres_ns_sharing =
-				gres_state_node_sharing->gres_data;
-			gres_ns_shared->alt_gres = gres_state_node_sharing;
-			gres_ns_sharing->alt_gres = gres_state_node_shared;
-		}
-	}
+	_set_alt_gres(gres_state_node_shared, gres_state_node_sharing);
 }
 
 static int _foreach_get_tot_from_slurmd_conf(void *x, void *arg)
