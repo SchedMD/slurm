@@ -917,3 +917,41 @@ extern int slurm_get_node_alias_addrs(char *node_list,
 
 	return SLURM_SUCCESS;
 }
+
+extern int slurm_controller_hostlist_expansion(const char *hostlist,
+					       char **expanded)
+{
+	int rc;
+	slurm_msg_t req_msg, resp_msg;
+
+	if (!hostlist)
+		return SLURM_SUCCESS;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	req_msg.data = (void *) hostlist;
+	req_msg.msg_type = REQUEST_HOSTLIST_EXPANSION;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_HOSTLIST_EXPANSION:
+		*expanded = resp_msg.data;
+		resp_msg.data = NULL;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
+			slurm_seterrno_ret(rc);
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return SLURM_SUCCESS;
+}
