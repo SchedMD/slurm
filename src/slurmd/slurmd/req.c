@@ -2326,6 +2326,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->step_mem_lim	= req->job_mem_limit;
 	launch_req->tasks_to_launch	= xcalloc(req->nnodes,
 						  sizeof(uint16_t));
+	launch_req->alloc_tls_cert = req->alloc_tls_cert;
 
 	launch_req->job_ptr = req->job_ptr;
 	launch_req->job_node_array = req->job_node_array;
