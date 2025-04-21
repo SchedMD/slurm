@@ -64,6 +64,7 @@ typedef struct slurm_preempt_ops {
 	int		(*get_data) (job_record_t *job_ptr,
 				     slurm_preempt_data_type_t data_type,
 				     void *data);
+	uint32_t (*get_grace_time)(job_record_t *job_ptr);
 	uint16_t (*get_mode)(job_record_t *job_ptr);
 	uint32_t (*get_prio)(job_record_t *job_ptr);
 } slurm_preempt_ops_t;
@@ -80,6 +81,7 @@ static const char *syms[] = {
 	"preempt_p_job_preempt_check",
 	"preempt_p_preemptable",
 	"preempt_p_get_data",
+	"preempt_p_get_grace_time",
 	"preempt_p_get_mode",
 	"preempt_p_get_prio",
 };
@@ -391,18 +393,12 @@ extern bool slurm_preemption_enabled(void)
  */
 extern uint32_t slurm_job_get_grace_time(job_record_t *job_ptr)
 {
-	uint32_t data = 0;
-
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return 0;
 
-	if ((*(ops.get_data))(job_ptr, PREEMPT_DATA_GRACE_TIME, &data) !=
-	    SLURM_SUCCESS)
-		return data;
-
-	return data;
+	return (*(ops.get_grace_time))(job_ptr);
 }
 
 /*

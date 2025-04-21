@@ -91,8 +91,7 @@ extern uint32_t preempt_p_get_prio(job_record_t *job_ptr)
 	return job_prio;
 }
 
-/* Return grace_time for job */
-static uint32_t _get_grace_time(job_record_t *job_ptr)
+extern uint32_t preempt_p_get_grace_time(job_record_t *job_ptr)
 {
 	if (!job_ptr->part_ptr)
 		return 0;
@@ -144,9 +143,6 @@ extern int preempt_p_get_data(job_record_t *job_ptr,
 	int rc = SLURM_SUCCESS;
 
 	switch (data_type) {
-	case PREEMPT_DATA_GRACE_TIME:
-		(*(uint32_t *)data) = _get_grace_time(job_ptr);
-		break;
 	default:
 		error("%s: unknown enum %d", __func__, data_type);
 		rc = SLURM_ERROR;
