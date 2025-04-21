@@ -58,6 +58,8 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
+#include "src/interfaces/tls.h"
+
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
@@ -530,6 +532,7 @@ void eio_obj_destroy(void *arg)
 		/* 	close(obj->fd); */
 		/* 	obj->fd = -1; */
 		/* } */
+		tls_g_destroy_conn(obj->tls_conn);
 		xfree(obj->ops);
 		xfree(obj);
 	}
