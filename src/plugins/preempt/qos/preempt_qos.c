@@ -62,7 +62,7 @@ const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
 extern bool preempt_p_preemptable(
 	job_record_t *preemptee, job_record_t *preemptor);
 
-static uint16_t _job_preempt_mode(job_record_t *job_ptr)
+extern uint16_t preempt_p_get_mode(job_record_t *job_ptr)
 {
 	uint16_t mode;
 
@@ -159,9 +159,6 @@ extern int preempt_p_get_data(job_record_t *job_ptr,
 	int rc = SLURM_SUCCESS;
 
 	switch (data_type) {
-	case PREEMPT_DATA_MODE:
-		(*(uint16_t *)data) = _job_preempt_mode(job_ptr);
-		break;
 	case PREEMPT_DATA_PRIO:
 		(*(uint32_t *)data) = _gen_job_prio(job_ptr);
 		break;

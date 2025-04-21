@@ -64,6 +64,7 @@ typedef struct slurm_preempt_ops {
 	int		(*get_data) (job_record_t *job_ptr,
 				     slurm_preempt_data_type_t data_type,
 				     void *data);
+	uint16_t (*get_mode)(job_record_t *job_ptr);
 } slurm_preempt_ops_t;
 
 typedef struct {
@@ -78,6 +79,7 @@ static const char *syms[] = {
 	"preempt_p_job_preempt_check",
 	"preempt_p_preemptable",
 	"preempt_p_get_data",
+	"preempt_p_get_mode",
 };
 
 static slurm_preempt_ops_t ops;
@@ -133,9 +135,7 @@ static bool _is_job_preempt_exempt(job_record_t *preemptee_ptr,
  */
 static uint16_t _job_preempt_mode_internal(job_record_t *job_ptr)
 {
-	uint16_t data = (uint16_t)PREEMPT_MODE_OFF;
-
-	(void) (*(ops.get_data))(job_ptr, PREEMPT_DATA_MODE, &data);
+	uint16_t data = (*(ops.get_mode))(job_ptr);
 
 	/* --signal=R jobs must be requeue or cancel */
 	if ((job_ptr->warn_flags & KILL_JOB_RESV) &&

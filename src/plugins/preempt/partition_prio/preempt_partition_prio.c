@@ -57,7 +57,7 @@ const char	plugin_name[]	= "Preempt by partition priority plugin";
 const char	plugin_type[]	= "preempt/partition_prio";
 const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
 
-static uint16_t _job_preempt_mode(job_record_t *job_ptr)
+extern uint16_t preempt_p_get_mode(job_record_t *job_ptr)
 {
 	part_record_t *part_ptr = job_ptr->part_ptr;
 	if (part_ptr && (part_ptr->preempt_mode != NO_VAL16)) {
@@ -144,9 +144,6 @@ extern int preempt_p_get_data(job_record_t *job_ptr,
 	int rc = SLURM_SUCCESS;
 
 	switch (data_type) {
-	case PREEMPT_DATA_MODE:
-		(*(uint16_t *)data) = _job_preempt_mode(job_ptr);
-		break;
 	case PREEMPT_DATA_PRIO:
 		(*(uint32_t *)data) = _gen_job_prio(job_ptr);
 		break;
