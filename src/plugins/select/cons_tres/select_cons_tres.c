@@ -901,12 +901,6 @@ extern int select_p_select_nodeinfo_set_all(void)
 		node_ptr->alloc_tres_fmt_str =
 			assoc_mgr_make_tres_str_from_array(
 				tres_alloc_cnt, TRES_STR_CONVERT_UNITS, false);
-		node_ptr->alloc_tres_weighted =
-			assoc_mgr_tres_weighted(tres_alloc_cnt,
-						node_ptr->config_ptr
-							->tres_weights,
-						slurm_conf.priority_flags,
-						false);
 		xfree(tres_alloc_cnt);
 	}
 	free_core_array(&alloc_core_bitmap);

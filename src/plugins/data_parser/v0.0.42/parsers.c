@@ -3758,9 +3758,7 @@ static int DUMP_FUNC(NODE_SELECT_TRES_WEIGHTED)(const parser_t *const parser,
 						void *obj, data_t *dst,
 						args_t *args)
 {
-	node_info_t *node = obj;
-
-	data_set_float(dst, node->alloc_tres_weighted);
+	data_set_float(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -7521,7 +7519,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(UINT16, alloc_cpus, "alloc_cpus", "Total number of CPUs currently allocated for jobs"),
 	add_cparse(NODE_SELECT_ALLOC_IDLE_CPUS, "alloc_idle_cpus", "Total number of idle CPUs"),
 	add_parse(STRING, alloc_tres_fmt_str, "tres_used", "Trackable resources currently allocated for jobs"),
-	add_cparse(NODE_SELECT_TRES_WEIGHTED, "tres_weighted", "Weighted number of billable trackable resources allocated"),
+	add_removed(NODE_SELECT_TRES_WEIGHTED, "tres_weighted", "Ignored. Was weighted number of billable trackable resources allocated", SLURM_25_05_PROTOCOL_VERSION),
 	add_parse(TIMESTAMP_NO_VAL, slurmd_start_time, "slurmd_start_time", "Time when the slurmd started (UNIX timestamp)"),
 	add_parse(UINT16, sockets, "sockets", "Number of physical processor sockets/chips on the node"),
 	add_parse(UINT16, threads, "threads", "Number of logical threads in a single physical core"),
