@@ -120,13 +120,13 @@ void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer);
  * 	or error
  */
 int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer);
-int io_hdr_read_fd(int fd, io_hdr_t *hdr);
+int io_hdr_read_fd(int fd, void *tls_conn, io_hdr_t *hdr);
 
 /*
  * Validate io init msg
  */
 int io_init_msg_validate(io_init_msg_t *msg, const char *sig);
-int io_init_msg_write_to_fd(int fd, io_init_msg_t *msg);
-int io_init_msg_read_from_fd(int fd, io_init_msg_t *msg);
+int io_init_msg_write_to_fd(int fd, void *tls_conn, io_init_msg_t *msg);
+int io_init_msg_read_from_fd(int fd, void *tls_conn, io_init_msg_t *msg);
 
 #endif /* !_HAVE_IO_HDR_H */
