@@ -841,6 +841,7 @@ typedef struct reattach_tasks_request_msg {
 	uint16_t     num_io_port;
 	uint16_t    *io_port;   /* array of available client IO ports */
 	slurm_step_id_t step_id;
+	char *tls_cert;
 } reattach_tasks_request_msg_t;
 
 typedef struct reattach_tasks_response_msg {

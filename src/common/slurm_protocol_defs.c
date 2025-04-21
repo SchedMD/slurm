@@ -2196,6 +2196,7 @@ extern void slurm_free_reattach_tasks_request_msg(
 		reattach_tasks_request_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->tls_cert);
 		xfree(msg->resp_port);
 		xfree(msg->io_key);
 		xfree(msg->io_port);
