@@ -212,6 +212,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/* Used to free switch_jobinfo when switch_p_job_complete can't be used */
+extern void switch_p_free_jobinfo(job_record_t *job_ptr)
+{
+	xfree(job_ptr->switch_jobinfo);
+	job_ptr->switch_jobinfo = NULL;
+}
+
 extern int switch_p_build_stepinfo(switch_info_t **switch_step,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)

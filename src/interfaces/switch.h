@@ -83,6 +83,9 @@ extern void switch_g_pack_jobinfo(void *switch_jobinfo, buf_t *buffer,
 extern int switch_g_unpack_jobinfo(void **switch_jobinfo, buf_t *buffer,
 				   uint16_t protocol_version);
 
+/* Free switch_jobinfo struct when switch_g_job_complete can't be used */
+extern void switch_g_free_jobinfo(job_record_t *job_ptr);
+
 /******************************************************\
  * STEP-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCTIONS *
 \******************************************************/
