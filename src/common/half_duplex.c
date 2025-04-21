@@ -42,6 +42,8 @@
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
 
+#include "src/interfaces/tls.h"
+
 #define BUFFER_SIZE 4096
 
 static bool _half_duplex_readable(eio_obj_t *obj);
@@ -54,6 +56,8 @@ struct io_operations half_duplex_ops = {
 
 typedef struct {
 	int *fd_out;
+	void **tls_conn_out;
+	void **tls_conn_in;
 } half_duplex_eio_arg_t;
 
 extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
@@ -86,8 +90,13 @@ static bool _half_duplex_readable(eio_obj_t *obj)
 	if (obj->shutdown) {
 		half_duplex_eio_arg_t *args = obj->arg;
 		int *fd_out = args->fd_out;
+		void **tls_conn_out = args->tls_conn_out;
 
 		if (fd_out) {
+			if (tls_conn_out && *tls_conn_out) {
+				tls_g_destroy_conn(*tls_conn_out);
+				*tls_conn_out = NULL;
+			}
 			shutdown(*fd_out, SHUT_WR);
 			xfree(fd_out);
 			xfree(obj->arg);
@@ -103,13 +112,20 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 	ssize_t in, out, wr = 0;
 	char buf[BUFFER_SIZE];
 	half_duplex_eio_arg_t *args = obj->arg;
-
 	int *fd_out = args->fd_out;
+	void **tls_conn_out = args->tls_conn_out;
+	void **tls_conn_in = args->tls_conn_in;
+
+	xassert(!(tls_conn_in && tls_conn_out));
 
 	if (obj->shutdown || !fd_out)
 		goto shutdown;
 
-	in = read(obj->fd, buf, sizeof(buf));
+	if (tls_conn_in && *tls_conn_in) {
+		in = tls_g_recv(*tls_conn_in, buf, sizeof(buf));
+	} else {
+		in = read(obj->fd, buf, sizeof(buf));
+	}
 	if (in == 0) {
 		debug("%s: shutting down %d -> %d",
 		      __func__, obj->fd, *fd_out);
@@ -120,7 +136,11 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 	}
 
 	while (wr < in) {
-		out = write(*fd_out, buf, in - wr);
+		if (tls_conn_out && *tls_conn_out) {
+			out = tls_g_send(*tls_conn_out, buf, in - wr);
+		} else {
+			out = write(*fd_out, buf, in - wr);
+		}
 		if (out <= 0) {
 			error("%s: wrote %zd of %zd", __func__, out, in);
 			goto shutdown;
@@ -131,10 +151,18 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 
 shutdown:
 	obj->shutdown = true;
+	if (tls_conn_in && *tls_conn_in) {
+		tls_g_destroy_conn(*tls_conn_in);
+		*tls_conn_in = NULL;
+	}
 	shutdown(obj->fd, SHUT_RD);
 	close(obj->fd);
 	obj->fd = -1;
 	if (fd_out) {
+		if (tls_conn_out && *tls_conn_out) {
+			tls_g_destroy_conn(*tls_conn_out);
+			*tls_conn_out = NULL;
+		}
 		shutdown(*fd_out, SHUT_WR);
 		xfree(fd_out);
 		xfree(obj->arg);
