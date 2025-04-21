@@ -60,6 +60,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 
+#include "src/interfaces/tls.h"
+
 struct allocation_msg_thread {
 	slurm_allocation_callbacks_t callback;
 	eio_handle_t *handle;
@@ -274,7 +276,8 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 	/* prevent the upstream call path from closing the connection */
 	forward_msg->conn_fd = -1;
 
-	if (half_duplex_add_objs_to_handle(msg_thr->handle, local, remote)) {
+	if (half_duplex_add_objs_to_handle(msg_thr->handle, local, remote,
+					   TLS_CONN_SERVER, NULL)) {
 		goto error;
 	}
 

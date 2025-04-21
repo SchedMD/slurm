@@ -42,8 +42,6 @@
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
 
-#include "src/interfaces/tls.h"
-
 #define BUFFER_SIZE 4096
 
 static bool _half_duplex_readable(eio_obj_t *obj);
@@ -61,7 +59,9 @@ typedef struct {
 } half_duplex_eio_arg_t;
 
 extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
-					  int *local_fd, int *remote_fd)
+					  int *local_fd, int *remote_fd,
+					  tls_conn_mode_t remote_tls_mode,
+					  char *remote_tls_cert)
 {
 	half_duplex_eio_arg_t *local_arg = NULL;
 	half_duplex_eio_arg_t *remote_arg = NULL;
@@ -79,10 +79,66 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 	remote_to_local_eio =
 		eio_obj_create(*remote_fd, &half_duplex_ops, remote_arg);
 
+	if (tls_enabled()) {
+		void **tls_conn_ptr = xmalloc(sizeof(*tls_conn_ptr));
+		void *tls_conn = NULL;
+
+		tls_conn_args_t tls_args = {
+			.input_fd = *remote_fd,
+			.output_fd = *remote_fd,
+			.mode = remote_tls_mode,
+			.cert = remote_tls_cert,
+		};
+
+		if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+			error("Failed to create remote connection for x11 forwarding");
+			goto fail;
+		}
+
+		*tls_conn_ptr = tls_conn;
+
+		/*
+		 * Ensure that both eio objects point to the same place in
+		 * memory for the remote TLS connection. This way, we avoid
+		 * calling tls_g_destroy_conn() twice.
+		 *
+		 * Because eio_handle_mainloop loops over both eio objects in
+		 * the same thread, we don't have to worry about concurrency
+		 * issues with both eio objects checking the same TLS conn
+		 * memory space.
+		 */
+		local_arg->tls_conn_out = tls_conn_ptr;
+		remote_arg->tls_conn_in = tls_conn_ptr;
+
+		/*
+		 * if fd is blocking, tls_g_recv will want to block until the
+		 * entire buffer size is read (similar to safe_read). For eio,
+		 * we just want to get whatever data is on the line, and forward
+		 * it.
+		 */
+		fd_set_nonblocking(*remote_fd);
+
+		/*
+		 * Peer will be waiting on tls_g_recv(), and they will need to
+		 * know if connection was intentionally closed or if an error
+		 * occurred.
+		 */
+		tls_g_set_graceful_shutdown(tls_conn, true);
+	}
+
 	eio_new_obj(eio_handle, local_to_remote_eio);
 	eio_new_obj(eio_handle, remote_to_local_eio);
 
 	return SLURM_SUCCESS;
+
+fail:
+	eio_obj_destroy(local_to_remote_eio);
+	eio_obj_destroy(remote_to_local_eio);
+
+	xfree(local_arg);
+	xfree(remote_arg);
+
+	return SLURM_ERROR;
 }
 
 static bool _half_duplex_readable(eio_obj_t *obj)

@@ -58,6 +58,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/tls.h"
+
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -100,6 +102,7 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 	net_forward_msg_t rpc;
 	slurm_addr_t sin;
 	int *local, *remote;
+	char *srun_tls_cert = obj->arg;
 	int rc;
 
 	local = xmalloc(sizeof(*local));
@@ -150,7 +153,8 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 	net_set_nodelay(*local, true, NULL);
 	net_set_nodelay(*remote, true, NULL);
 
-	if (half_duplex_add_objs_to_handle(eio_handle, local, remote)) {
+	if (half_duplex_add_objs_to_handle(eio_handle, local, remote,
+					   TLS_CONN_CLIENT, srun_tls_cert)) {
 		goto shutdown;
 	}
 
