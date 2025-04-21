@@ -65,6 +65,7 @@ typedef struct slurm_preempt_ops {
 				     slurm_preempt_data_type_t data_type,
 				     void *data);
 	uint16_t (*get_mode)(job_record_t *job_ptr);
+	uint32_t (*get_prio)(job_record_t *job_ptr);
 } slurm_preempt_ops_t;
 
 typedef struct {
@@ -80,6 +81,7 @@ static const char *syms[] = {
 	"preempt_p_preemptable",
 	"preempt_p_get_data",
 	"preempt_p_get_mode",
+	"preempt_p_get_prio",
 };
 
 static slurm_preempt_ops_t ops;
@@ -195,8 +197,8 @@ static int _sort_by_prio(void *x, void *y)
 	job_record_t *j1 = *(job_record_t **)x;
 	job_record_t *j2 = *(job_record_t **)y;
 
-	(void)(*(ops.get_data))(j1, PREEMPT_DATA_PRIO, &job_prio1);
-	(void)(*(ops.get_data))(j2, PREEMPT_DATA_PRIO, &job_prio2);
+	job_prio1 = (*(ops.get_prio))(j1);
+	job_prio2 = (*(ops.get_prio))(j2);
 
 	if (job_prio1 > job_prio2)
 		rc = 1;

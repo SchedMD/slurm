@@ -81,7 +81,7 @@ extern uint16_t preempt_p_get_mode(job_record_t *job_ptr)
  * and partly based upon the job size. We want to put smaller jobs at the top
  * of the preemption queue and use a sort algorithm to minimize the number of
  * job's preempted. */
-static uint32_t _gen_job_prio(job_record_t *job_ptr)
+extern uint32_t preempt_p_get_prio(job_record_t *job_ptr)
 {
 	uint32_t job_prio = 0;
 	slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
@@ -159,9 +159,6 @@ extern int preempt_p_get_data(job_record_t *job_ptr,
 	int rc = SLURM_SUCCESS;
 
 	switch (data_type) {
-	case PREEMPT_DATA_PRIO:
-		(*(uint32_t *)data) = _gen_job_prio(job_ptr);
-		break;
 	case PREEMPT_DATA_GRACE_TIME:
 		(*(uint32_t *)data) = _get_grace_time(job_ptr);
 		break;
