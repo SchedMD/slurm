@@ -475,18 +475,9 @@ static void _incr_script_cnt(void)
 static void _change_proc_name(int argc, char **argv, char *proc_name)
 {
 	char *log_prefix;
-	/*
-	 * Since running_in_slurmctld() is called before we fork()'d,
-	 * the result is cached in static variables, so calling it now
-	 * would return true even though we're now slurmscriptd.
-	 * Reset those cached variables so running_in_slurmctld()
-	 * returns false if called from slurmscriptd.
-	 * But first change slurm_prog_name since that is
-	 * read by run_in_daemon().
-	 */
-	xfree(slurm_prog_name);
-	slurm_prog_name = xstrdup(proc_name);
-	running_in_slurmctld_reset();
+
+	/* Update slurm_daemon to ensure run_in_daemon() works properly. */
+	slurm_daemon = IS_SLURMSCRIPTD;
 
 	/*
 	 * Change the process name to slurmscriptd.

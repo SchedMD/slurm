@@ -181,6 +181,8 @@ decl_static_data(usage_txt);
  *    controller use).
 \**************************************************************************/
 
+uint32_t slurm_daemon = IS_SLURMCTLD;
+
 /* Log to stderr and syslog until becomes a daemon */
 log_options_t log_opts = LOG_OPTS_INITIALIZER;
 /* Scheduler Log options */
@@ -773,8 +775,8 @@ int main(int argc, char **argv)
 		      slurm_conf.accounting_storage_type);
 	}
 
-	info("%s version %s started on cluster %s(%u)",
-	     slurm_prog_name, SLURM_VERSION_STRING, slurm_conf.cluster_name,
+	info("slurmctld version %s started on cluster %s(%u)",
+	     SLURM_VERSION_STRING, slurm_conf.cluster_name,
 	     slurm_conf.cluster_id);
 	if ((error_code = gethostname_short(slurmctld_config.node_name_short,
 					    HOST_NAME_MAX)))

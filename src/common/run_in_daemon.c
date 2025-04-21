@@ -40,111 +40,15 @@
 #include "src/common/xstring.h"
 
 strong_alias(run_in_daemon, slurm_run_in_daemon);
-strong_alias(running_in_daemon, slurm_running_in_daemon);
-strong_alias(running_in_sackd, slurm_running_in_sackd);
-strong_alias(running_in_slurmctld, slurm_running_in_slurmctld);
-strong_alias(running_in_slurmd, slurm_running_in_slurmd);
-strong_alias(running_in_slurmdbd, slurm_running_in_slurmdbd);
-strong_alias(running_in_slurmd_stepd, slurm_running_in_slurmd_stepd);
-strong_alias(running_in_slurmrestd, slurm_running_in_slurmrestd);
-strong_alias(running_in_slurmstepd, slurm_running_in_slurmstepd);
 
-extern bool run_in_daemon(bool *run, bool *set, char *daemons)
+/*
+ * Defined in each daemon to override this symbol.
+ * Tagged as weak to prevent build failures when configured with the
+ * --without-shared-libslurm option.
+ */
+uint32_t slurm_daemon __attribute__((weak)) = 0;
+
+extern bool run_in_daemon(uint32_t daemons)
 {
-	char *full, *start_char, *end_char;
-
-	if (*set)
-		return *run;
-
-	xassert(slurm_prog_name);
-
-	*set = true;
-
-	if (!xstrcmp(daemons, slurm_prog_name))
-		return *run = true;
-
-	full = xstrdup(daemons);
-	start_char = full;
-
-	while (start_char && (end_char = strstr(start_char, ","))) {
-		*end_char = 0;
-		if (!xstrcmp(start_char, slurm_prog_name)) {
-			xfree(full);
-			return *run = true;
-		}
-
-		start_char = end_char + 1;
-	}
-
-	if (start_char && !xstrcmp(start_char, slurm_prog_name)) {
-		xfree(full);
-		return *run = true;
-	}
-
-	xfree(full);
-
-	return *run = false;
-}
-
-extern bool running_in_daemon(void)
-{
-	static bool run = false, set = false;
-	return run_in_daemon(&run, &set,
-			     "sackd,slurmctld,slurmd,slurmdbd,slurmstepd,slurmrestd");
-}
-
-extern bool running_in_sackd(void)
-{
-	static bool run = false, set = false;
-	return run_in_daemon(&run, &set, "sackd");
-}
-
-static bool _running_in_slurmctld(bool reset)
-{
-	static bool run = false, set = false;
-
-	if (reset)
-		set = run = false;
-
-	return run_in_daemon(&run, &set, "slurmctld");
-}
-
-extern bool running_in_slurmctld(void)
-{
-	return _running_in_slurmctld(false);
-}
-
-extern bool running_in_slurmctld_reset(void)
-{
-	return _running_in_slurmctld(true);
-}
-
-extern bool running_in_slurmd(void)
-{
-	static bool run = false, set = false;
-	return run_in_daemon(&run, &set, "slurmd");
-}
-
-extern bool running_in_slurmdbd(void)
-{
-	static bool run = false, set = false;
-	return run_in_daemon(&run, &set, "slurmdbd");
-}
-
-extern bool running_in_slurmd_stepd(void)
-{
-	static bool run = false, set = false;
-	return run_in_daemon(&run, &set, "slurmd,slurmstepd");
-}
-
-extern bool running_in_slurmrestd(void)
-{
-	static bool run = false, set = false;
-	return run_in_daemon(&run, &set, "slurmrestd");
-}
-
-extern bool running_in_slurmstepd(void)
-{
-	static bool run = false, set = false;
-	return run_in_daemon(&run, &set, "slurmstepd");
+	return (slurm_daemon & daemons);
 }

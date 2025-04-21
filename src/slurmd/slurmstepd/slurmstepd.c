@@ -111,6 +111,7 @@ static pthread_mutex_t cleanup_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool cleanup = false;
 
 /* global variable */
+uint32_t slurm_daemon = IS_SLURMSTEPD;
 slurmd_conf_t * conf;
 extern char  ** environ;
 

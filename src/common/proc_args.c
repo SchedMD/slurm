@@ -1139,7 +1139,6 @@ char *print_commandline(const int script_argc, char **script_argv)
 int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
 		    uint16_t *warn_flags)
 {
-	static bool daemon_run = false, daemon_set = false;
 	char *endptr;
 	long num;
 
@@ -1151,7 +1150,6 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
 		optarg++;
 	}
 
-	if (run_in_daemon(&daemon_run, &daemon_set, "sbatch")) {
 		if (!xstrncasecmp(optarg, "B", 1)) {
 			*warn_flags |= KILL_JOB_BATCH;
 			optarg++;
@@ -1162,7 +1160,6 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
 			*warn_flags |= KILL_JOB_RESV;
 			optarg++;
 		}
-	}
 
 	if (*optarg == ':')
 		optarg++;

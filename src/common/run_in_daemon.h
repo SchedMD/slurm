@@ -36,43 +36,31 @@
 #ifndef _HAVE_RUN_IN_DAEMON_H
 #define _HAVE_RUN_IN_DAEMON_H
 
-#include "src/common/log.h"
+/* Must be defined in each daemon to override the symbol from libslurm. */
+extern uint32_t slurm_daemon;
 
-/* Determine slurm_prog_name (calling process) is in list of daemons
- *
- * IN/OUT - run - set to true if running and false if not
- * IN/OUT - set - set to true after the first run.
- * IN - daemons (comma separated list of daemons i.e. slurmd,slurmstepd
- * returns true if slurm_prog_name (set in log.c) is in list, false otherwise.
+#define IS_SLURMDBD SLURM_BIT(1)
+#define IS_SLURMSCRIPTD SLURM_BIT(2)
+#define IS_SLURMCTLD SLURM_BIT(3)
+#define IS_SLURMD SLURM_BIT(4)
+#define IS_SLURMSTEPD SLURM_BIT(5)
+#define IS_SACKD SLURM_BIT(6)
+#define IS_SLURMRESTD SLURM_BIT(7)
+#define IS_ANY_DAEMON 0xFFFFFFFF
+
+/*
+ * Determine if calling process is in bitmask of daemons
  */
-extern bool run_in_daemon(bool *run, bool *set, char *daemons);
+extern bool run_in_daemon(uint32_t daemons);
 
-/* check if running in a daemon */
-extern bool running_in_daemon(void);
-
-/* check if running in the slurmctld */
-extern bool running_in_sackd(void);
-
-/* check if running in the slurmctld */
-extern bool running_in_slurmctld(void);
-
-/* call this if you don't want the cached value for running_in_slurmctld */
-extern bool running_in_slurmctld_reset(void);
-
-/* check if running in the slurmd */
-extern bool running_in_slurmd(void);
-
-/* check if running in the slurmdbd */
-extern bool running_in_slurmdbd(void);
-
-/* check if running in the slurmd or slurmstepd */
-extern bool running_in_slurmd_stepd(void);
-
-/* check if running in the slurmrestd */
-extern bool running_in_slurmrestd(void);
-
-/* check if running in the slurmstepd */
-extern bool running_in_slurmstepd(void);
+#define running_in_daemon() run_in_daemon(IS_ANY_DAEMON)
+#define running_in_sackd() run_in_daemon(IS_SACKD)
+#define running_in_slurmctld() run_in_daemon(IS_SLURMCTLD)
+#define running_in_slurmd() run_in_daemon(IS_SLURMD)
+#define running_in_slurmdbd() run_in_daemon(IS_SLURMDBD)
+#define running_in_slurmd_stepd() run_in_daemon(IS_SLURMD | IS_SLURMSTEPD)
+#define running_in_slurmrestd() run_in_daemon(IS_SLURMRESTD)
+#define running_in_slurmstepd() run_in_daemon(IS_SLURMSTEPD)
 
 #define error_in_daemon(fmt, ...)		\
 do {						\

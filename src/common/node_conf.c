@@ -278,8 +278,6 @@ extern config_record_t *config_record_from_conf_node(
 	slurm_conf_node_t *conf_node, int tres_cnt)
 {
 	config_record_t *config_ptr;
-	bool in_daemon;
-	static bool daemon_run = false, daemon_set = false;
 
 	config_ptr = create_config_record();
 	config_ptr->boards = conf_node->boards;
@@ -307,8 +305,7 @@ extern config_record_t *config_record_from_conf_node(
 						    tres_cnt, true);
 	}
 
-	in_daemon = run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmd");
-	if (in_daemon) {
+	if (run_in_daemon(IS_SLURMCTLD | IS_SLURMD)) {
 		config_ptr->gres = gres_name_filter(conf_node->gres,
 						    conf_node->nodenames);
 	}
