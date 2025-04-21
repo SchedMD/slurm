@@ -183,7 +183,6 @@ extern int auth_g_init(void)
 	char *auth_alt_types = NULL, *list = NULL;
 	char *type, *last = NULL;
 	char *plugin_type = "auth";
-	static bool daemon_run = false, daemon_set = false;
 
 	slurm_rwlock_wrlock(&context_lock);
 
@@ -206,7 +205,7 @@ extern int auth_g_init(void)
 	if (!type || type[0] == '\0')
 		goto done;
 
-	if (run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmdbd"))
+	if (run_in_daemon(IS_SLURMCTLD | IS_SLURMDBD))
 		list = auth_alt_types = xstrdup(slurm_conf.authalttypes);
 	g_context_num = 0;
 

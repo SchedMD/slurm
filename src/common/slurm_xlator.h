@@ -343,15 +343,7 @@
 #define add_key_pair_own	slurm_add_key_pair_own
 
 /* run_in_daemon.[ch] functions */
-#define run_in_daemon           slurm_run_in_daemon
-#define running_in_daemon	slurm_running_in_daemon
-#define running_in_sackd        slurm_running_in_sackd
-#define running_in_slurmctld    slurm_running_in_slurmctld
-#define running_in_slurmd       slurm_running_in_slurmd
-#define running_in_slurmdbd     slurm_running_in_slurmdbd
-#define running_in_slurmd_stepd slurm_running_in_slurmd_stepd
-#define running_in_slurmrestd	slurm_running_in_slurmrestd
-#define running_in_slurmstepd   slurm_running_in_slurmstepd
+#define run_in_daemon slurm_run_in_daemon
 
 /* slurm_auth.[ch] functions
  * None exported today.
