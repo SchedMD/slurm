@@ -159,9 +159,6 @@ extern int preempt_p_get_data(job_record_t *job_ptr,
 	int rc = SLURM_SUCCESS;
 
 	switch (data_type) {
-	case PREEMPT_DATA_ENABLED:
-		(*(bool *)data) = slurm_conf.preempt_mode != PREEMPT_MODE_OFF;
-		break;
 	case PREEMPT_DATA_MODE:
 		(*(uint16_t *)data) = _job_preempt_mode(job_ptr);
 		break;

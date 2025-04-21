@@ -378,18 +378,10 @@ extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr)
  */
 extern bool slurm_preemption_enabled(void)
 {
-	bool data = false;
-
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
 	if (plugin_inited == PLUGIN_NOOP)
 		return false;
 
-	if ((*(ops.get_data))(NULL, PREEMPT_DATA_ENABLED, &data) !=
-	    SLURM_SUCCESS)
-		return data;
-
-	return data;
+	return (slurm_conf.preempt_mode != PREEMPT_MODE_OFF);
 }
 
 /*
