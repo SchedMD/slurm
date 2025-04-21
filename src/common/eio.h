@@ -64,6 +64,7 @@ struct io_operations {
 
 struct eio_obj {
 	int fd;                           /* fd to operate on                */
+	void *tls_conn;
 	void *arg;                        /* application-specific data       */
 	struct io_operations *ops;        /* pointer to ops struct for obj   */
 	bool shutdown;

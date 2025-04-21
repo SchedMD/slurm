@@ -8321,6 +8321,7 @@ _pack_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg,
 
 	xassert(msg);
 	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		packstr(msg->tls_cert, buffer);
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		packstr(msg->io_key, buffer);
 		pack16(msg->num_resp_port, buffer);
@@ -8354,6 +8355,7 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->tls_cert, buffer);
 		if (unpack_step_id_members(&msg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;

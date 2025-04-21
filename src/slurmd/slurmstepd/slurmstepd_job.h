@@ -60,6 +60,7 @@
 
 typedef struct {
 	char *key;                 /* srun key for IO verification         */
+	char *tls_cert;            /* srun public certificate if tls in use */
 	slurm_addr_t resp_addr;	   /* response addr for task exit msg      */
 	slurm_addr_t ioaddr;       /* Address to connect on for normal I/O.
 				      Spawn IO uses messages to the normal
@@ -262,9 +263,9 @@ stepd_step_rec_t * batch_stepd_step_rec_create(batch_job_launch_msg_t *msg);
 
 void stepd_step_rec_destroy(stepd_step_rec_t *step);
 
-srun_info_t * srun_info_create(slurm_cred_t *cred, slurm_addr_t *respaddr,
-			       slurm_addr_t *ioaddr, uid_t uid,
-			       uint16_t protocol_version);
+srun_info_t *srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
+			      slurm_addr_t *respaddr, slurm_addr_t *ioaddr,
+			      uid_t uid, uint16_t protocol_version);
 
 void  srun_info_destroy(srun_info_t *srun);
 

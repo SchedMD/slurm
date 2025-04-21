@@ -372,15 +372,26 @@ rwfail:
  * resp->gtids, resp->ntasks, and resp->executable.
  */
 extern int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
-			slurm_addr_t *respaddr, char *io_key, uid_t uid,
-			reattach_tasks_response_msg_t *resp)
+			slurm_addr_t *respaddr, char *cert, char *io_key,
+			uid_t uid, reattach_tasks_response_msg_t *resp)
 {
 	int req = REQUEST_ATTACH;
 	uint32_t io_key_len = strlen(io_key) + 1;
+	uint32_t cert_len;
 	int rc = SLURM_SUCCESS;
 
 	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		safe_write(fd, &req, sizeof(int));
+		safe_write(fd, &req, sizeof(int)); /* needs to be first */
+
+		if (cert) {
+			cert_len = strlen(cert) + 1;
+			safe_write(fd, &cert_len, sizeof(uint32_t));
+			safe_write(fd, cert, cert_len);
+		} else {
+			cert_len = 0;
+			safe_write(fd, &cert_len, sizeof(uint32_t));
+		}
+
 		safe_write(fd, ioaddr, sizeof(slurm_addr_t));
 		safe_write(fd, respaddr, sizeof(slurm_addr_t));
 		safe_write(fd, &io_key_len, sizeof(uint32_t));
