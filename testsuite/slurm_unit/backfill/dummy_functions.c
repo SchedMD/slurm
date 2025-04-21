@@ -14,6 +14,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -24,6 +25,8 @@
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+
+uint32_t slurm_daemon = IS_SLURMCTLD;
 
 bool avail_front_end(job_record_t *job_ptr)
 {
@@ -410,11 +413,6 @@ job_record_t *job_array_post_sched(job_record_t *job_ptr, bool list_add)
 uint16_t job_mgr_determine_cpus_per_core(job_details_t *details, int node_inx)
 {
 	return 1;
-}
-
-bool running_in_slurmctld(void)
-{
-	return true;
 }
 
 void prolog_slurmctld(job_record_t *job_ptr)
