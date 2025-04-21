@@ -2495,21 +2495,23 @@ extern int remove_common(remove_common_args_t *args)
 		mysql_free_result(result);
 	}
 
-	/* we want to remove completely all that is less than a day old */
-	if (!has_jobs && table != assoc_table) {
-		if (cluster_centric) {
-			query = xstrdup_printf("delete from \"%s_%s\" where "
-					       "creation_time>%ld && (%s);",
-					       cluster_name, table, day_old,
-					       name_char);
-		} else {
-			query = xstrdup_printf("delete from %s where "
-					       "creation_time>%ld && (%s);",
-					       table, day_old, name_char);
-		}
-	}
-
 	if (table != assoc_table) {
+		/* Completely remove all that is less than a day old */
+		if (!has_jobs) {
+			if (cluster_centric) {
+				query = xstrdup_printf(
+					"delete from \"%s_%s\" where "
+					"creation_time>%ld && (%s);",
+					cluster_name, table, day_old,
+					name_char);
+			} else {
+				query = xstrdup_printf(
+					"delete from %s where "
+					"creation_time>%ld && (%s);",
+					table, day_old, name_char);
+			}
+		}
+
 		if (cluster_centric) {
 			xstrfmtcat(query,
 				   "update \"%s_%s\" set mod_time=%ld, "
