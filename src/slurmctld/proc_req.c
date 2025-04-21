@@ -159,6 +159,11 @@ typedef struct {
 	list_t *step_list;
 } find_job_by_container_id_args_t;
 
+typedef struct {
+	list_t *full_resp_list;
+	slurm_msg_t *msg;
+} foreach_multi_msg_t;
+
 extern void record_rpc_stats(slurm_msg_t *msg, long delta)
 {
 	slurm_mutex_lock(&rpc_mutex);
@@ -6062,16 +6067,68 @@ static void _ctld_free_list_msg(void *x)
 	FREE_NULL_BUFFER(x);
 }
 
+static int _foreach_proc_multi_msg(void *x, void *arg)
+{
+	buf_t *single_req_buf = x;
+	foreach_multi_msg_t *multi_msg = arg;
+	slurm_msg_t *msg = multi_msg->msg;
+	slurm_msg_t sub_msg;
+	buf_t *ret_buf;
+
+	slurm_msg_t_init(&sub_msg);
+	sub_msg.protocol_version = msg->protocol_version;
+	if (unpack16(&sub_msg.msg_type, single_req_buf) ||
+	    unpack_msg(&sub_msg, single_req_buf)) {
+		error("Sub-message unpack error for REQUEST_CTLD_MULT_MSG %u RPC",
+		      sub_msg.msg_type);
+		ret_buf = _build_rc_buf(SLURM_ERROR, msg->protocol_version);
+		list_append(multi_msg->full_resp_list, ret_buf);
+		return 0;
+	}
+	sub_msg.conn = msg->conn;
+	sub_msg.auth_cred = msg->auth_cred;
+	ret_buf = NULL;
+
+	log_flag(PROTOCOL, "%s: received opcode %s",
+		 __func__, rpc_num2string(sub_msg.msg_type));
+
+	switch (sub_msg.msg_type) {
+	case REQUEST_PING:
+		ret_buf = _build_rc_buf(SLURM_SUCCESS, msg->protocol_version);
+		break;
+	case REQUEST_SIB_MSG:
+		_slurm_rpc_sib_msg(msg->auth_uid, &sub_msg);
+		ret_buf = _build_rc_buf(SLURM_SUCCESS, msg->protocol_version);
+		break;
+	case REQUEST_SEND_DEP:
+		_slurm_rpc_dependency_msg(msg->auth_uid, &sub_msg);
+		ret_buf = _build_rc_buf(SLURM_SUCCESS, msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_ORIGIN_DEP:
+		_slurm_rpc_update_origin_dep_msg(msg->auth_uid, &sub_msg);
+		ret_buf = _build_rc_buf(SLURM_SUCCESS, msg->protocol_version);
+		break;
+	default:
+		error("%s: Unsupported Message Type:%s",
+		      __func__, rpc_num2string(sub_msg.msg_type));
+	}
+	(void) slurm_free_msg_data(sub_msg.msg_type, sub_msg.data);
+
+	if (!ret_buf)
+		ret_buf = _build_rc_buf(SLURM_ERROR, msg->protocol_version);
+
+	list_append(multi_msg->full_resp_list, ret_buf);
+
+	return 0;
+}
+
 static void _proc_multi_msg(slurm_msg_t *msg)
 {
-	slurm_msg_t sub_msg;
 	ctld_list_msg_t *ctld_req_msg = msg->data;
-	ctld_list_msg_t ctld_resp_msg;
-	list_t *full_resp_list = NULL;
-	buf_t *single_req_buf = NULL;
-	buf_t *ret_buf, *resp_buf = NULL;
-	list_itr_t *iter = NULL;
-	int rc;
+	ctld_list_msg_t ctld_resp_msg = { 0 };
+	foreach_multi_msg_t multi_msg = {
+		.msg = msg,
+	};
 
 	if (!msg->conn) {
 		error("Security violation, REQUEST_CTLD_MULT_MSG RPC from uid=%u",
@@ -6080,68 +6137,16 @@ static void _proc_multi_msg(slurm_msg_t *msg)
 		return;
 	}
 
-	full_resp_list = list_create(_ctld_free_list_msg);
-	iter = list_iterator_create(ctld_req_msg->my_list);
-	while ((single_req_buf = list_next(iter))) {
-		slurm_msg_t_init(&sub_msg);
-		sub_msg.protocol_version = msg->protocol_version;
-		if (unpack16(&sub_msg.msg_type, single_req_buf) ||
-		    unpack_msg(&sub_msg, single_req_buf)) {
-			error("Sub-message unpack error for REQUEST_CTLD_MULT_MSG %u RPC",
-			      sub_msg.msg_type);
-			ret_buf = _build_rc_buf(SLURM_ERROR,
-						msg->protocol_version);
-			list_append(full_resp_list, ret_buf);
-			continue;
-		}
-		sub_msg.conn = msg->conn;
-		sub_msg.auth_cred = msg->auth_cred;
-		ret_buf = NULL;
+	multi_msg.full_resp_list = list_create(_ctld_free_list_msg);
+	(void) list_for_each(ctld_req_msg->my_list,
+			     _foreach_proc_multi_msg,
+			     &multi_msg);
 
-		log_flag(PROTOCOL, "%s: received opcode %s",
-			 __func__, rpc_num2string(sub_msg.msg_type));
-
-		switch (sub_msg.msg_type) {
-		case REQUEST_PING:
-			rc = SLURM_SUCCESS;
-			ret_buf = _build_rc_buf(rc, msg->protocol_version);
-			break;
-		case REQUEST_SIB_MSG:
-			_slurm_rpc_sib_msg(msg->auth_uid, &sub_msg);
-			ret_buf = _build_rc_buf(SLURM_SUCCESS,
-						msg->protocol_version);
-			break;
-		case REQUEST_SEND_DEP:
-			_slurm_rpc_dependency_msg(msg->auth_uid, &sub_msg);
-			ret_buf = _build_rc_buf(SLURM_SUCCESS,
-						msg->protocol_version);
-			break;
-		case REQUEST_UPDATE_ORIGIN_DEP:
-			_slurm_rpc_update_origin_dep_msg(msg->auth_uid,
-							 &sub_msg);
-			ret_buf = _build_rc_buf(SLURM_SUCCESS,
-						msg->protocol_version);
-			break;
-		default:
-			error("%s: Unsupported Message Type:%s",
-			      __func__, rpc_num2string(sub_msg.msg_type));
-		}
-		(void) slurm_free_msg_data(sub_msg.msg_type, sub_msg.data);
-
-		if (!ret_buf) {
-			ret_buf = _build_rc_buf(SLURM_ERROR,
-						msg->protocol_version);
-		}
-		list_append(full_resp_list, ret_buf);
-	}
-	list_iterator_destroy(iter);
-
-	ctld_resp_msg.my_list = full_resp_list;
+	ctld_resp_msg.my_list = multi_msg.full_resp_list;
 
 	/* Send message */
 	(void) send_msg_response(msg, RESPONSE_CTLD_MULT_MSG, &ctld_resp_msg);
-	FREE_NULL_LIST(full_resp_list);
-	FREE_NULL_BUFFER(resp_buf);
+	FREE_NULL_LIST(multi_msg.full_resp_list);
 }
 
 /* Route msg to federated job's origin.

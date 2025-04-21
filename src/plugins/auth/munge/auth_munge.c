@@ -344,7 +344,7 @@ extern void auth_p_get_ids(auth_credential_t *cred, uid_t *uid, gid_t *gid)
  */
 char *auth_p_get_host(auth_credential_t *cred)
 {
-	slurm_addr_t addr;
+	slurm_addr_t addr = { 0 };
 	struct sockaddr_in *sin = (struct sockaddr_in *) &addr;
 	char *hostname = NULL, *dot_ptr = NULL;
 

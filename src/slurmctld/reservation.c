@@ -144,6 +144,12 @@ typedef struct {
 	bitstr_t *node_bitmap;
 } resv_select_t;
 
+typedef struct {
+	char *assoc_list_pos;
+	char *prefix;
+	slurmctld_resv_t *resv_ptr;
+} foreach_set_assoc_t;
+
 static int _advance_resv_time(slurmctld_resv_t *resv_ptr);
 static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
@@ -1021,15 +1027,31 @@ static int _append_acct_to_assoc_list(list_t *assoc_list,
 	return rc;
 }
 
+static int _foreach_set_assoc_list(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc_ptr = x;
+	foreach_set_assoc_t *set_assoc = arg;
+
+	xstrfmtcatat(set_assoc->resv_ptr->assoc_list,
+		     &set_assoc->assoc_list_pos,
+		     "%s%s%u,",
+		     set_assoc->resv_ptr->assoc_list ? "" : ",",
+		     set_assoc->prefix,
+		     assoc_ptr->id);
+	return 0;
+}
+
 /* Set a association list based upon accounts and users */
 static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 {
 	int rc = SLURM_SUCCESS, i = 0, j = 0;
 	list_t *assoc_list_allow = NULL, *assoc_list_deny = NULL;
 	list_t *assoc_list = NULL;
-	slurmdb_assoc_rec_t assoc, *assoc_ptr = NULL;
+	slurmdb_assoc_rec_t assoc;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
-
+	foreach_set_assoc_t set_assoc = {
+		.resv_ptr = resv_ptr,
+	};
 
 	/* no need to do this if we can't ;) */
 	if (!slurm_with_slurmdbd())
@@ -1154,30 +1176,18 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 
 	xfree(resv_ptr->assoc_list);	/* clear for modify */
 	if (list_count(assoc_list_allow)) {
-		list_itr_t *itr = list_iterator_create(assoc_list_allow);
-		while ((assoc_ptr = list_next(itr))) {
-			if (resv_ptr->assoc_list) {
-				xstrfmtcat(resv_ptr->assoc_list, "%u,",
-					   assoc_ptr->id);
-			} else {
-				xstrfmtcat(resv_ptr->assoc_list, ",%u,",
-					   assoc_ptr->id);
-			}
-		}
-		list_iterator_destroy(itr);
+		set_assoc.prefix = "";
+		set_assoc.assoc_list_pos = NULL;
+		(void) list_for_each(assoc_list_allow,
+				     _foreach_set_assoc_list,
+				     &set_assoc);
 	}
 	if (list_count(assoc_list_deny)) {
-		list_itr_t *itr = list_iterator_create(assoc_list_deny);
-		while ((assoc_ptr = list_next(itr))) {
-			if (resv_ptr->assoc_list) {
-				xstrfmtcat(resv_ptr->assoc_list, "-%u,",
-					   assoc_ptr->id);
-			} else {
-				xstrfmtcat(resv_ptr->assoc_list, ",-%u,",
-					   assoc_ptr->id);
-			}
-		}
-		list_iterator_destroy(itr);
+		set_assoc.prefix = "-";
+		set_assoc.assoc_list_pos = NULL;
+		(void) list_for_each(assoc_list_deny,
+				     _foreach_set_assoc_list,
+				     &set_assoc);
 	}
 	debug("assoc_list:%s", resv_ptr->assoc_list);
 

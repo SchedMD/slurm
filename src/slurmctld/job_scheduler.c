@@ -118,11 +118,15 @@ typedef struct {
 
 typedef struct {
 	bool backfill;
+	bool clear_start;
 	int job_prio_pairs;
 	job_record_t *job_ptr;
 	list_t *job_queue;
+	time_t *last_log_time;
 	time_t now;
 	int prio_inx;
+	struct timeval start_tv;
+	int tested_jobs;
 } build_job_queue_for_part_t;
 
 typedef struct {
@@ -680,6 +684,102 @@ static int _foreach_setup_resv_sched(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_build_job_queue(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	build_job_queue_for_part_t *setup_job = arg;
+
+	setup_job->job_ptr = job_ptr;
+
+	if (IS_JOB_PENDING(job_ptr)) {
+		/* Remove backfill flag */
+		job_ptr->bit_flags &= ~BACKFILL_SCHED;
+		set_job_failed_assoc_qos_ptr(job_ptr);
+		acct_policy_handle_accrue_time(job_ptr, false);
+		if ((job_ptr->state_reason != WAIT_NO_REASON) &&
+		    (job_ptr->state_reason != WAIT_PRIORITY) &&
+		    (job_ptr->state_reason != WAIT_RESOURCES) &&
+		    (job_ptr->state_reason != job_ptr->state_reason_prev_db)) {
+			job_ptr->state_reason_prev_db = job_ptr->state_reason;
+			last_job_update = setup_job->now;
+		}
+	}
+
+	if (((setup_job->tested_jobs % 100) == 0) &&
+	    (slurm_delta_tv(&setup_job->start_tv) >= build_queue_timeout)) {
+		if (difftime(setup_job->now, *setup_job->last_log_time) > 600) {
+			/* Log at most once every 10 minutes */
+			info("%s has run for %d usec, exiting with %d of %d jobs tested, %d job-partition-qos pairs added",
+			     __func__, build_queue_timeout,
+			     setup_job->tested_jobs,
+			     list_count(job_list),
+			     setup_job->job_prio_pairs);
+			*setup_job->last_log_time = setup_job->now;
+		}
+		return -1;
+	}
+	setup_job->tested_jobs++;
+	job_ptr->preempt_in_progress = false; /* initialize */
+	if (job_ptr->array_recs && setup_job->backfill)
+		job_ptr->array_recs->pend_run_tasks = 0;
+	if (job_ptr->resv_list)
+		job_ptr->resv_ptr = NULL;
+	if (!_job_runnable_test1(job_ptr, setup_job->clear_start))
+		return 0;
+
+	setup_job->prio_inx = -1;
+	if (job_ptr->part_ptr_list) {
+		(void) list_for_each(job_ptr->part_ptr_list,
+				     _build_job_queue_for_part,
+				     setup_job);
+	} else {
+		if (job_ptr->part_ptr == NULL) {
+			part_record_t *part_ptr =
+				find_part_record(job_ptr->partition);
+			if (!part_ptr) {
+				error("Could not find partition %s for %pJ",
+				      job_ptr->partition, job_ptr);
+				return 0;
+			}
+			job_ptr->part_ptr = part_ptr;
+			error("partition pointer reset for %pJ, part %s",
+			      job_ptr, job_ptr->partition);
+			job_ptr->bit_flags |= JOB_PART_ASSIGNED;
+		}
+		(void) _build_job_queue_for_part(job_ptr->part_ptr, setup_job);
+	}
+
+	return 0;
+}
+
+static int _foreach_set_job_elig(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	time_t now = *(time_t *) arg;
+	part_record_t *part_ptr = job_ptr->part_ptr;
+
+	if (!IS_JOB_PENDING(job_ptr))
+		return 0;
+	if (!part_ptr)
+		return 0;
+	if (!job_ptr->details ||
+	    (job_ptr->details->begin_time > now))
+		return 0;
+	if (!(part_ptr->state_up & PARTITION_SCHED))
+		return 0;
+	if ((job_ptr->time_limit != NO_VAL) &&
+	    (job_ptr->time_limit > part_ptr->max_time))
+		return 0;
+	if (job_ptr->details->max_nodes &&
+	    ((job_ptr->details->max_nodes < part_ptr->min_nodes) ||
+	     (job_ptr->details->min_nodes > part_ptr->max_nodes)))
+		return 0;
+	/* Job's eligible time is set in job_independent() */
+	(void) job_independent(job_ptr);
+
+	return 0;
+}
+
 extern void job_queue_rec_magnetic_resv(job_queue_rec_t *job_queue_rec)
 {
 	job_record_t *job_ptr;
@@ -726,17 +826,16 @@ extern void job_queue_rec_resv_list(job_queue_rec_t *job_queue_rec)
 extern list_t *build_job_queue(bool clear_start, bool backfill)
 {
 	static time_t last_log_time = 0;
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr = NULL;
-	struct timeval start_tv = {0, 0};
-	int tested_jobs = 0;
 	split_job_t split_job = { 0 };
 	build_job_queue_for_part_t setup_job = {
 		.backfill = backfill,
+		.clear_start = clear_start,
+		.last_log_time = &last_log_time,
 		.now = time(NULL),
+		.start_tv = { 0, 0 },
 	};
 	/* init the timer */
-	(void) slurm_delta_tv(&start_tv);
+	(void) slurm_delta_tv(&setup_job.start_tv);
 	setup_job.job_queue = list_create(xfree_ptr);
 
 	(void) list_for_each(job_list, _split_job_on_schedule, &split_job);
@@ -751,78 +850,7 @@ extern list_t *build_job_queue(bool clear_start, bool backfill)
 		FREE_NULL_LIST(split_job.job_list);
 	}
 
-	/*
-	 * This cannot be a list_for_each This calls _job_runnable_test1() ->
-	 * job_independent() -> test_job_dependency() which needs to call
-	 * list_find_first() on the job_list making it impossible to also have
-	 * this a list_find_first() on job_list.
-	 */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		setup_job.job_ptr = job_ptr;
-
-		if (IS_JOB_PENDING(job_ptr)) {
-			/* Remove backfill flag */
-			job_ptr->bit_flags &= ~BACKFILL_SCHED;
-			set_job_failed_assoc_qos_ptr(job_ptr);
-			acct_policy_handle_accrue_time(job_ptr, false);
-			if ((job_ptr->state_reason != WAIT_NO_REASON) &&
-			    (job_ptr->state_reason != WAIT_PRIORITY) &&
-			    (job_ptr->state_reason != WAIT_RESOURCES) &&
-			    (job_ptr->state_reason !=
-			     job_ptr->state_reason_prev_db)) {
-				job_ptr->state_reason_prev_db =
-					job_ptr->state_reason;
-				last_job_update = setup_job.now;
-			}
-		}
-
-		if (((tested_jobs % 100) == 0) &&
-		    (slurm_delta_tv(&start_tv) >= build_queue_timeout)) {
-			if (difftime(setup_job.now, last_log_time) > 600) {
-				/* Log at most once every 10 minutes */
-				info("%s has run for %d usec, exiting with %d of %d jobs tested, %d job-partition-qos pairs added",
-				     __func__, build_queue_timeout, tested_jobs,
-				     list_count(job_list),
-				     setup_job.job_prio_pairs);
-				last_log_time = setup_job.now;
-			}
-			break;
-		}
-		tested_jobs++;
-		job_ptr->preempt_in_progress = false;	/* initialize */
-		if (job_ptr->array_recs && backfill)
-			job_ptr->array_recs->pend_run_tasks = 0;
-		if (job_ptr->resv_list)
-			job_ptr->resv_ptr = NULL;
-		if (!_job_runnable_test1(job_ptr, clear_start))
-			continue;
-
-		setup_job.prio_inx = -1;
-		if (job_ptr->part_ptr_list) {
-			(void) list_for_each(job_ptr->part_ptr_list,
-					     _build_job_queue_for_part,
-					     &setup_job);
-		} else {
-			if (job_ptr->part_ptr == NULL) {
-				part_record_t *part_ptr =
-					find_part_record(job_ptr->partition);
-				if (part_ptr == NULL) {
-					error("Could not find partition %s for %pJ",
-					      job_ptr->partition, job_ptr);
-					continue;
-				}
-				job_ptr->part_ptr = part_ptr;
-				error("partition pointer reset for %pJ, part %s",
-				      job_ptr, job_ptr->partition);
-				job_ptr->bit_flags |= JOB_PART_ASSIGNED;
-
-			}
-			(void) _build_job_queue_for_part(job_ptr->part_ptr,
-							 &setup_job);
-		}
-	}
-	list_iterator_destroy(job_iterator);
+	(void) list_for_each(job_list, _foreach_build_job_queue, &setup_job);
 
 	return setup_job.job_queue;
 }
@@ -861,45 +889,12 @@ extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
  */
 extern void set_job_elig_time(void)
 {
-	job_record_t *job_ptr = NULL;
-	part_record_t *part_ptr = NULL;
-	list_itr_t *job_iterator;
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	time_t now = time(NULL);
 
 	lock_slurmctld(job_write_lock);
-
-	/*
-	 * This cannot be a list_for_each. This calls _job_runnable_test1() ->
-	 * job_independent() -> test_job_dependency() which needs to call
-	 * list_find_first() on the job_list making it impossible to also have
-	 * this a list_find_first() on job_list.
-	 */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		part_ptr = job_ptr->part_ptr;
-		if (!IS_JOB_PENDING(job_ptr))
-			continue;
-		if (part_ptr == NULL)
-			continue;
-		if ((job_ptr->details == NULL) ||
-		    (job_ptr->details->begin_time > now))
-			continue;
-		if ((part_ptr->state_up & PARTITION_SCHED) == 0)
-			continue;
-		if ((job_ptr->time_limit != NO_VAL) &&
-		    (job_ptr->time_limit > part_ptr->max_time))
-			continue;
-		if ((job_ptr->details->max_nodes != 0) &&
-		    ((job_ptr->details->max_nodes < part_ptr->min_nodes) ||
-		     (job_ptr->details->min_nodes > part_ptr->max_nodes)))
-			continue;
-		/* Job's eligible time is set in job_independent() */
-		if (!job_independent(job_ptr))
-			continue;
-	}
-	list_iterator_destroy(job_iterator);
+	(void) list_for_each(job_list, _foreach_set_job_elig, &now);
 	unlock_slurmctld(job_write_lock);
 }
 

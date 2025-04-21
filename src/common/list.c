@@ -266,14 +266,15 @@ extern int list_is_empty(list_t *l)
 extern int list_count(list_t *l)
 {
 	int n;
+	LIST_THREAD_LOCK_DEF;
 
 	if (!l)
 		return 0;
 
 	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_rdlock(&l->mutex);
+	LIST_THREAD_LOCK(l, false);
 	n = l->count;
-	slurm_rwlock_unlock(&l->mutex);
+	LIST_THREAD_UNLOCK(l, false);
 
 	return n;
 }
