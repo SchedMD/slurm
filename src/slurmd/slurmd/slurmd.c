@@ -571,6 +571,8 @@ static int _get_tls_certificate(void)
 	slurm_msg_t req, resp;
 	tls_cert_request_msg_t *cert_req;
 	tls_cert_response_msg_t *cert_resp;
+	size_t cert_len, key_len;
+	char *key;
 
 	slurm_msg_t_init(&req);
 	slurm_msg_t_init(&resp);
@@ -634,6 +636,24 @@ static int _get_tls_certificate(void)
 
 	log_flag(TLS, "Successfully got signed certificate from slurmctld: \n%s",
 		 cert_resp->signed_cert);
+
+	if (!(key = certmgr_g_get_node_cert_key(conf->node_name))) {
+		error("%s: Could not get node's private key", __func__);
+		return SLURM_ERROR;
+	}
+
+	cert_len = strlen(cert_resp->signed_cert);
+	key_len = strlen(key);
+
+	if (tls_g_load_self_cert(cert_resp->signed_cert, cert_len, key,
+				 key_len)) {
+		error("%s: Could not load signed certificate and private key into tls plugin",
+		      __func__);
+		return SLURM_ERROR;
+	}
+
+	xfree(key);
+	slurm_free_msg_data(RESPONSE_TLS_CERT, cert_resp);
 
 	return SLURM_SUCCESS;
 }
