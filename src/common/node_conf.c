@@ -1870,6 +1870,8 @@ extern int node_record_unpack(void **out,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&object->weight, buffer);
+
+		object->tot_cores = object->tot_sockets * object->cores;
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->comm_name, buffer);
 		safe_unpackstr(&object->name, buffer);
@@ -1912,6 +1914,8 @@ extern int node_record_unpack(void **out,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&object->weight, buffer);
+
+		object->tot_cores = object->tot_sockets * object->cores;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->comm_name, buffer);
 		safe_unpackstr(&object->name, buffer);
@@ -1950,6 +1954,8 @@ extern int node_record_unpack(void **out,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&object->weight, buffer);
+
+		object->tot_cores = object->tot_sockets * object->cores;
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);

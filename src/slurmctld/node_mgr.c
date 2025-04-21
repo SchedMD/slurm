@@ -539,8 +539,7 @@ extern int load_all_node_state ( bool state_only )
 						node_state_rec->tot_sockets;
 					node_ptr->cores = node_state_rec->cores;
 					node_ptr->tot_cores =
-						node_state_rec->tot_sockets *
-						node_state_rec->cores;
+						node_state_rec->tot_cores;
 					node_ptr->threads =
 						node_state_rec->threads;
 					node_ptr->real_memory =
@@ -683,9 +682,7 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->boards = node_state_rec->boards;
 			node_ptr->tot_sockets = node_state_rec->tot_sockets;
 			node_ptr->cores = node_state_rec->cores;
-			node_ptr->tot_cores =
-				node_state_rec->tot_sockets *
-				node_state_rec->cores;
+			node_ptr->tot_cores = node_state_rec->tot_cores;
 			node_ptr->threads = node_state_rec->threads;
 			node_ptr->real_memory = node_state_rec->real_memory;
 			node_ptr->res_cores_per_gpu =
