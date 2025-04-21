@@ -64,7 +64,9 @@ const char plugin_type[] = "tls/s2n";
 const uint32_t plugin_id = TLS_PLUGIN_S2N;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static struct s2n_config *default_config = NULL;
+/* Default client/server s2n_config objects used for most connections */
+static struct s2n_config *client_config = NULL;
+static struct s2n_config *server_config = NULL;
 
 /*
  * If non-NULL, server_cert_and_key was successfully loaded into server_config
@@ -246,7 +248,7 @@ static uint8_t _verify_hostname(const char *host_name, size_t host_name_len,
 	return 1;
 }
 
-static struct s2n_config *_create_config(void)
+static struct s2n_config *_create_config_common(void)
 {
 	struct s2n_config *new_conf = NULL;
 	char *security_policy = NULL;
@@ -281,6 +283,16 @@ static struct s2n_config *_create_config(void)
 	 * s2n_verify_host_fn, because the default behavior will likely reject
 	 * all client certificates.
 	 */
+	return new_conf;
+}
+
+static struct s2n_config *_create_client_config(void)
+{
+	struct s2n_config *new_conf = NULL;
+
+	if (!(new_conf = _create_config_common()))
+		return NULL;
+
 	if (s2n_config_set_verify_host_callback(new_conf, _verify_hostname,
 						NULL) < 0) {
 		on_s2n_error(NULL, s2n_config_set_verify_host_callback);
@@ -288,6 +300,11 @@ static struct s2n_config *_create_config(void)
 	}
 
 	return new_conf;
+}
+
+static struct s2n_config *_create_server_config(void)
+{
+	return _create_config_common();
 }
 
 static int _load_ca_cert(void)
@@ -319,7 +336,7 @@ static int _load_ca_cert(void)
 	}
 	xfree(cert_file);
 
-	if (s2n_config_add_pem_to_trust_store(default_config, cert_buf->head)) {
+	if (s2n_config_add_pem_to_trust_store(client_config, cert_buf->head)) {
 		on_s2n_error(NULL, s2n_config_add_pem_to_trust_store);
 		FREE_NULL_BUFFER(cert_buf);
 		return SLURM_ERROR;
@@ -358,8 +375,8 @@ static int _add_cert_and_key_to_store(char *cert_pem, uint32_t cert_pem_len,
 	 *	It is not recommended to free or modify the `cert_key_pair` as
 	 *	any subsequent changes will be reflected in the config.
 	 */
-	if (s2n_config_add_cert_chain_and_key_to_store(default_config,
-						       server_cert_and_key) < 0) {
+	if (s2n_config_add_cert_chain_and_key_to_store(server_config,
+						       server_cert_and_key)) {
 		on_s2n_error(NULL, s2n_config_add_cert_chain_and_key_to_store);
 		goto fail;
 	}
@@ -500,17 +517,23 @@ extern int init(void)
 		return errno;
 	}
 
-	if (!(default_config = _create_config())) {
-		error("Could not create configuration for s2n");
-		return errno;
-	}
-
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS)
 		s2n_stack_traces_enabled_set(true);
 
+	/* Create client s2n_config */
+	if (!(client_config = _create_client_config())) {
+		error("Could not create client configuration for s2n");
+		return errno;
+	}
 	if (!running_in_slurmstepd() && _load_ca_cert()) {
 		error("Could not load trusted certificates for s2n");
 		return SLURM_ERROR;
+	}
+
+	/* Create server s2n_config */
+	if (!(server_config = _create_server_config())) {
+		error("Could not create server configuration for s2n");
+		return errno;
 	}
 
 	/*
@@ -529,16 +552,20 @@ extern int init(void)
 
 extern int fini(void)
 {
-	if (default_config && s2n_config_free_cert_chain_and_key(default_config)) {
+	if (s2n_config_free(client_config))
+		on_s2n_error(NULL, s2n_config_free);
+
+	if (server_config &&
+	    s2n_config_free_cert_chain_and_key(server_config)) {
 		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
 	}
-
-	if (s2n_config_free(default_config))
-		on_s2n_error(NULL, s2n_config_free);
 
 	if (server_cert_and_key &&
 	    (s2n_cert_chain_and_key_free(server_cert_and_key) != S2N_SUCCESS))
 		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
+
+	if (s2n_config_free(server_config))
+		on_s2n_error(NULL, s2n_config_free);
 
 	if (s2n_cleanup_final())
 		on_s2n_error(NULL, s2n_cleanup_final);
@@ -620,7 +647,7 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 	case TLS_CONN_SERVER:
 	{
 		s2n_conn_mode = S2N_SERVER;
-		conn->s2n_config = default_config;
+		conn->s2n_config = server_config;
 		break;
 	}
 	case TLS_CONN_CLIENT:
@@ -629,7 +656,7 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 		if (!tls_conn_args->cert) {
 			log_flag(TLS, "%s: no certificate provided for new connection. Using default trust store.",
 				 plugin_type);
-			conn->s2n_config = default_config;
+			conn->s2n_config = client_config;
 			break;
 		}
 
@@ -637,7 +664,7 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 			 plugin_type, tls_conn_args->cert);
 
 		/* Use new config with only "cert" loaded in trust store */
-		if (!(conn->s2n_config = _create_config())) {
+		if (!(conn->s2n_config = _create_client_config())) {
 			error("Failed to create new config for connection");
 		}
 
@@ -746,7 +773,8 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 	return conn;
 
 fail:
-	if (conn->s2n_config && (conn->s2n_config != default_config))
+	if (conn->s2n_config && (conn->s2n_config != server_config) &&
+	    (conn->s2n_config != client_config))
 		if (s2n_config_free(conn->s2n_config))
 			on_s2n_error(NULL, s2n_config_free);
 
@@ -805,6 +833,11 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 
 	slurm_mutex_unlock(&conn->lock);
 	slurm_mutex_destroy(&conn->lock);
+	if (conn->s2n_config && (conn->s2n_config != server_config) &&
+	    (conn->s2n_config != client_config))
+		if (s2n_config_free(conn->s2n_config))
+			on_s2n_error(NULL, s2n_config_free);
+
 	xfree(conn);
 }
 
