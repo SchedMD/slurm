@@ -108,8 +108,6 @@ typedef struct {
 	log_file_fmt_t logfile_fmt; /* format of logfile output */
 } 	log_options_t;
 
-extern char *slurm_prog_name;
-
 /* some useful initializers for log_options_t
  */
 #define LOG_OPTS_INITIALIZER	\
