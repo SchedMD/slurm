@@ -4462,6 +4462,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	} else if (xstrcmp(conf->preempt_type, "preempt/qos") == 0) {
 		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
 		preempt_mode &= ~PREEMPT_MODE_WITHIN;
+		preempt_mode &= ~PREEMPT_MODE_PRIORITY;
 		if (preempt_mode == PREEMPT_MODE_OFF) {
 			error("PreemptType and PreemptMode values "
 			      "incompatible");
@@ -4470,6 +4471,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	} else if (xstrcmp(conf->preempt_type, "preempt/partition_prio") == 0) {
 		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
 		preempt_mode &= ~PREEMPT_MODE_WITHIN;
+		preempt_mode &= ~PREEMPT_MODE_PRIORITY;
 		if (preempt_mode == PREEMPT_MODE_OFF) {
 			error("PreemptType and PreemptMode values "
 			      "incompatible");

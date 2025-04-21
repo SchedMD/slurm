@@ -66,6 +66,7 @@ extern uint16_t preempt_p_get_mode(job_record_t *job_ptr)
 		mode = part_ptr->preempt_mode;
 
 	mode &= ~PREEMPT_MODE_GANG;
+	mode &= ~PREEMPT_MODE_PRIORITY;
 
 	return mode;
 }
@@ -114,6 +115,11 @@ extern void fini(void)
 extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
 					job_queue_rec_t *preemptee)
 {
+	if ((preemptor->part_ptr->preempt_mode & PREEMPT_MODE_PRIORITY) ||
+	    (slurm_conf.preempt_mode & PREEMPT_MODE_PRIORITY))
+		if (preemptor->priority < preemptee->priority)
+			return false;
+
 	if (preemptor->part_ptr && preemptee->part_ptr &&
 	    (bit_overlap_any(preemptor->part_ptr->node_bitmap,
 			     preemptee->part_ptr->node_bitmap)) &&
@@ -127,6 +133,11 @@ extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
 extern bool preempt_p_preemptable(
 	job_record_t *preemptee, job_record_t *preemptor)
 {
+	if ((preemptor->part_ptr->preempt_mode & PREEMPT_MODE_PRIORITY) ||
+	    (slurm_conf.preempt_mode & PREEMPT_MODE_PRIORITY))
+		if (preemptor->priority < preemptee->priority)
+			return false;
+
 	if ((preemptee->part_ptr == NULL) ||
 	    (preemptee->part_ptr->priority_tier >=
 	     preemptor->part_ptr->priority_tier) ||

@@ -2730,12 +2730,18 @@ be able to preempt to gain access to GRES.
 .IP
 
 .TP
+\fBPRIORITY\fR
+Allow preemption only if the preemptor's job priority is higher than the
+preemptee's job priority.
+
+.TP
 \fBWITHIN\fR
 For \fBPreemptType=preempt/qos\fR, allow jobs within the same qos to preempt
 one another. While this can be set globally here, it is recommend that this
 only be set directly on a relevant subset of the system qos values instead.
 .RE
 .IP
+
 
 .TP
 \fBPreemptParameters\fR
