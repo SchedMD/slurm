@@ -125,6 +125,7 @@
 /* hostlist.[ch] functions */
 #define	hostlist_create_dims	slurm_hostlist_create_dims
 #define	hostlist_create		slurm_hostlist_create
+#define	hostlist_create_client	slurm_hostlist_create_client
 #define	hostlist_copy		slurm_hostlist_copy
 #define	hostlist_count		slurm_hostlist_count
 #define	hostlist_delete		slurm_hostlist_delete

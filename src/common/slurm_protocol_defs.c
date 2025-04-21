@@ -5304,6 +5304,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_CONTAINER_EXEC:
 		slurm_destroy_container_exec_msg(data);
 		break;
+	case REQUEST_HOSTLIST_EXPANSION:
+	case RESPONSE_HOSTLIST_EXPANSION:
 	case REQUEST_CONTAINER_KILL:
 	case REQUEST_CONTAINER_DELETE:
 	case RESPONSE_CONTAINER_START:

@@ -2125,7 +2125,7 @@ scontrol_print_hosts (char * node_list)
 		error("host list is empty");
 		return;
 	}
-	hl = hostlist_create_dims(node_list, 0);
+	hl = hostlist_create_client(node_list);
 	if (!hl) {
 		fprintf(stderr, "Invalid hostlist: %s\n", node_list);
 		return;
@@ -2211,7 +2211,7 @@ extern int scontrol_encode_hostlist(char *arg_hostlist, bool sorted)
 	} else
 		tmp_list = hostlist;
 
-	hl = hostlist_create(tmp_list);
+	hl = hostlist_create_client(tmp_list);
 	if (hl == NULL) {
 		fprintf(stderr, "Invalid hostlist: %s\n", tmp_list);
 		xfree(io_buf);

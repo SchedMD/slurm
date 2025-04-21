@@ -4414,6 +4414,9 @@ extern int slurm_get_node_energy(char *host,
 extern int slurm_get_node_alias_addrs(char *node_list,
 				      slurm_node_alias_addrs_t **alias_addrs);
 
+extern int slurm_controller_hostlist_expansion(const char *hostlist,
+					       char **expanded);
+
 /*
  * slurm_free_node_info_msg - free the node information response message
  * IN msg - pointer to node information response message

@@ -49,7 +49,8 @@ extern void scontrol_getaddrs(char *node_list)
 		hostlist_t *host_list = NULL;
 		int i = 0;
 
-		if (!(host_list = hostlist_create(alias_addrs->node_list))) {
+		if (!(host_list =
+			      hostlist_create_client(alias_addrs->node_list))) {
 			error("hostlist_create error for %s: %m",
 			      node_list);
 			return;
@@ -226,7 +227,7 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 			scontrol_print_node(NULL, node_info_ptr);
 		}
 	} else {
-		if (!(host_list = hostlist_create(node_list))) {
+		if (!(host_list = hostlist_create_client(node_list))) {
 			exit_code = 1;
 			if (quiet_flag != 1) {
 				if (errno == EINVAL) {
