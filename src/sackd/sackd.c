@@ -47,6 +47,7 @@
 #include "src/common/fetch_config.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -58,6 +59,8 @@
 #include "src/interfaces/hash.h"
 
 decl_static_data(usage_txt);
+
+uint32_t slurm_daemon = IS_SACKD;
 
 static bool daemonize = true;
 static bool original = true;

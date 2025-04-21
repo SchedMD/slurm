@@ -60,6 +60,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -92,6 +93,8 @@
 #endif
 
 decl_static_data(usage_txt);
+
+uint32_t slurm_daemon = IS_SLURMRESTD;
 
 typedef struct {
 	bool stdin_tty; /* running with a TTY for stdin */

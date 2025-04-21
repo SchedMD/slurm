@@ -59,6 +59,7 @@
 #include "src/common/log.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_time.h"
@@ -77,6 +78,8 @@
 #include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
+
+uint32_t slurm_daemon = IS_SLURMDBD;
 
 /* Global variables */
 time_t shutdown_time = 0;		/* when shutdown request arrived */

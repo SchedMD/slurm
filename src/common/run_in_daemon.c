@@ -49,6 +49,9 @@ strong_alias(running_in_slurmd_stepd, slurm_running_in_slurmd_stepd);
 strong_alias(running_in_slurmrestd, slurm_running_in_slurmrestd);
 strong_alias(running_in_slurmstepd, slurm_running_in_slurmstepd);
 
+/* Defined in each daemon to override this symbol. */
+uint32_t slurm_daemon = 0;
+
 extern bool run_in_daemon(bool *run, bool *set, char *daemons)
 {
 	char *full, *start_char, *end_char;

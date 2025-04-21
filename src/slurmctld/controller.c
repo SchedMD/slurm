@@ -181,6 +181,8 @@ decl_static_data(usage_txt);
  *    controller use).
 \**************************************************************************/
 
+uint32_t slurm_daemon = IS_SLURMCTLD;
+
 /* Log to stderr and syslog until becomes a daemon */
 log_options_t log_opts = LOG_OPTS_INITIALIZER;
 /* Scheduler Log options */

@@ -135,7 +135,7 @@
 
 decl_static_data(usage_txt);
 
-
+uint32_t slurm_daemon = IS_SLURMD;
 
 #define MAX_THREADS		256
 #define TIMEOUT_SIGUSR2 5000000

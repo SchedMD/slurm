@@ -38,6 +38,18 @@
 
 #include "src/common/log.h"
 
+/* Must be defined in each daemon to override the symbol from libslurm. */
+extern uint32_t slurm_daemon;
+
+#define IS_SLURMDBD SLURM_BIT(1)
+#define IS_SLURMSCRIPTD SLURM_BIT(2)
+#define IS_SLURMCTLD SLURM_BIT(3)
+#define IS_SLURMD SLURM_BIT(4)
+#define IS_SLURMSTEPD SLURM_BIT(5)
+#define IS_SACKD SLURM_BIT(6)
+#define IS_SLURMRESTD SLURM_BIT(7)
+#define IS_ANY_DAEMON 0xFFFFFFFF
+
 /* Determine slurm_prog_name (calling process) is in list of daemons
  *
  * IN/OUT - run - set to true if running and false if not
