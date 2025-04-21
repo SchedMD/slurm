@@ -309,7 +309,7 @@ static struct s2n_config *_create_server_config(void)
 	return _create_config_common();
 }
 
-static int _load_ca_cert(void)
+static int _add_ca_cert_to_client(void)
 {
 	char *cert_file;
 	buf_t *cert_buf;
@@ -527,7 +527,7 @@ extern int init(void)
 		error("Could not create client configuration for s2n");
 		return errno;
 	}
-	if (!running_in_slurmstepd() && _load_ca_cert()) {
+	if (!running_in_slurmstepd() && _add_ca_cert_to_client()) {
 		error("Could not load trusted certificates for s2n");
 		return SLURM_ERROR;
 	}
