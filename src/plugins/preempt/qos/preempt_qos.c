@@ -72,6 +72,7 @@ extern uint16_t preempt_p_get_mode(job_record_t *job_ptr)
 		mode = slurm_conf.preempt_mode;
 
 	mode &= ~PREEMPT_MODE_GANG;
+	mode &= ~PREEMPT_MODE_PRIORITY;
 	mode &= ~PREEMPT_MODE_WITHIN;
 
 	return mode;
@@ -147,6 +148,10 @@ extern bool preempt_p_preemptable(
 		   !bit_test(qos_or->preempt_bitstr, qos_ee->id)) {
 		return false;
 	}
+
+	if ((qos_or->preempt_mode & PREEMPT_MODE_PRIORITY) ||
+	    (slurm_conf.preempt_mode & PREEMPT_MODE_PRIORITY))
+		return (preemptor->priority > preemptee->priority);
 
 	return true;
 }

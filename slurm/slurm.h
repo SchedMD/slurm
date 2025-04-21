@@ -2859,6 +2859,7 @@ typedef struct reservation_name_msg {
 
 #define PREEMPT_MODE_CANCEL	0x0008	/* always cancel the job */
 #define PREEMPT_MODE_COND_OFF	0x0010	/* represents PREEMPT_MODE_OFF in list*/
+#define PREEMPT_MODE_PRIORITY	0x2000  /* preemptor must have a higher priority */
 #define PREEMPT_MODE_WITHIN	0x4000	/* enable preemption within qos */
 #define PREEMPT_MODE_GANG	0x8000	/* enable gang scheduling */
 

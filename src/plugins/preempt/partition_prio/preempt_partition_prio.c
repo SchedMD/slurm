@@ -59,15 +59,16 @@ const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
 
 extern uint16_t preempt_p_get_mode(job_record_t *job_ptr)
 {
+	uint16_t mode = slurm_conf.preempt_mode;
 	part_record_t *part_ptr = job_ptr->part_ptr;
-	if (part_ptr && (part_ptr->preempt_mode != NO_VAL16)) {
-		if (part_ptr->preempt_mode & PREEMPT_MODE_GANG)
-			verbose("Partition '%s' preempt mode 'gang' has no "
-				"sense. Filtered out.\n", part_ptr->name);
-		return (part_ptr->preempt_mode & (~PREEMPT_MODE_GANG));
-	}
 
-	return (slurm_conf.preempt_mode & (~PREEMPT_MODE_GANG));
+	if (part_ptr && (part_ptr->preempt_mode != NO_VAL16))
+		mode = part_ptr->preempt_mode;
+
+	mode &= ~PREEMPT_MODE_GANG;
+	mode &= ~PREEMPT_MODE_PRIORITY;
+
+	return mode;
 }
 
 /* Generate a job priority. It is partly based upon the partition priority_tier
@@ -114,6 +115,11 @@ extern void fini(void)
 extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
 					job_queue_rec_t *preemptee)
 {
+	if ((preemptor->part_ptr->preempt_mode & PREEMPT_MODE_PRIORITY) ||
+	    (slurm_conf.preempt_mode & PREEMPT_MODE_PRIORITY))
+		if (preemptor->priority < preemptee->priority)
+			return false;
+
 	if (preemptor->part_ptr && preemptee->part_ptr &&
 	    (bit_overlap_any(preemptor->part_ptr->node_bitmap,
 			     preemptee->part_ptr->node_bitmap)) &&
@@ -127,6 +133,11 @@ extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
 extern bool preempt_p_preemptable(
 	job_record_t *preemptee, job_record_t *preemptor)
 {
+	if ((preemptor->part_ptr->preempt_mode & PREEMPT_MODE_PRIORITY) ||
+	    (slurm_conf.preempt_mode & PREEMPT_MODE_PRIORITY))
+		if (preemptor->priority < preemptee->priority)
+			return false;
+
 	if ((preemptee->part_ptr == NULL) ||
 	    (preemptee->part_ptr->priority_tier >=
 	     preemptor->part_ptr->priority_tier) ||

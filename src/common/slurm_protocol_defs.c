@@ -2453,6 +2453,8 @@ extern const char *preempt_mode_string(uint16_t preempt_mode)
 		return "GANG";
 	if (preempt_mode == PREEMPT_MODE_WITHIN)
 		return "WITHIN";
+	if (preempt_mode == PREEMPT_MODE_PRIORITY)
+		return "PRIORITY";
 
 	if (preempt_mode & PREEMPT_MODE_GANG) {
 		preempt_mode &= (~PREEMPT_MODE_GANG);
@@ -2472,6 +2474,15 @@ extern const char *preempt_mode_string(uint16_t preempt_mode)
 		else if (preempt_mode == PREEMPT_MODE_SUSPEND)
 			return "WITHIN,SUSPEND";
 		return "WITHIN,UNKNOWN";
+	} else if (preempt_mode & PREEMPT_MODE_PRIORITY) {
+		preempt_mode &= (~PREEMPT_MODE_PRIORITY);
+		if (preempt_mode == PREEMPT_MODE_CANCEL)
+			return "PRIORITY,CANCEL";
+		else if (preempt_mode == PREEMPT_MODE_REQUEUE)
+			return "PRIORITY,REQUEUE";
+		else if (preempt_mode == PREEMPT_MODE_SUSPEND)
+			return "PRIORITY,SUSPEND";
+		return "PRIORITY,UNKNOWN";
 	} else {
 		if (preempt_mode == PREEMPT_MODE_CANCEL)
 			return "CANCEL";
@@ -2500,6 +2511,8 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 			mode_num |= PREEMPT_MODE_GANG;
 		} else if (!xstrcasecmp(tok, "within")) {
 			mode_num |= PREEMPT_MODE_WITHIN;
+		} else if (!xstrcasecmp(tok, "priority")) {
+			mode_num |= PREEMPT_MODE_PRIORITY;
 		} else if ((xstrcasecmp(tok, "off") == 0)
 			   || (xstrcasecmp(tok, "cluster") == 0)) {
 			mode_num += PREEMPT_MODE_OFF;
@@ -2532,6 +2545,10 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 	} else if ((mode_num & PREEMPT_MODE_GANG) &&
 		   (mode_num & PREEMPT_MODE_WITHIN)) {
 		/* "GANG,WITHIN" is an invalid combination */
+		mode_num = NO_VAL16;
+	} else if ((mode_num & PREEMPT_MODE_GANG) &&
+		   (mode_num & PREEMPT_MODE_PRIORITY)) {
+		/* "GANG,PRIORITY" is an invalid combination */
 		mode_num = NO_VAL16;
 	}
 
