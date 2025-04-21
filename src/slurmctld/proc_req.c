@@ -1533,6 +1533,44 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t *msg)
 	FREE_NULL_BUFFER(buffer);
 }
 
+static void _slurm_rpc_hostlist_expansion(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	slurmctld_lock_t node_read_lock = {
+		.node = READ_LOCK,
+	};
+	bitstr_t *bitmap = NULL;
+	char *expanded = NULL;
+
+	START_TIMER;
+	if ((slurm_conf.private_data & PRIVATE_DATA_NODES) &&
+	    (!validate_operator(msg->auth_uid))) {
+		error("Security violation, REQUEST_HOSTLIST_EXPANSION RPC from uid=%u",
+		      msg->auth_uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		lock_slurmctld(node_read_lock);
+
+	if (!node_name2bitmap(msg->data, false, &bitmap, NULL))
+		expanded = bitmap2node_name_sortable(bitmap, false);
+	FREE_NULL_BITMAP(bitmap);
+
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		unlock_slurmctld(node_read_lock);
+	END_TIMER2(__func__);
+
+	if (!expanded) {
+		slurm_send_rc_msg(msg, ESLURM_INVALID_NODE_NAME);
+	} else {
+		(void) send_msg_response(msg, RESPONSE_HOSTLIST_EXPANSION,
+					 expanded);
+	}
+	xfree(expanded);
+}
+
 static void _slurm_rpc_get_shares(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
@@ -6455,6 +6493,13 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 			.job = READ_LOCK,
 			.part = READ_LOCK,
 			.fed = READ_LOCK,
+		},
+	},{
+		.msg_type = REQUEST_HOSTLIST_EXPANSION,
+		.func = _slurm_rpc_hostlist_expansion,
+		.queue_enabled = true,
+		.locks = {
+			.node = READ_LOCK,
 		},
 	},{
 		.msg_type = REQUEST_BATCH_SCRIPT,
