@@ -58,6 +58,15 @@ extern bool certmgr_enabled(void);
 extern int certmgr_get_renewal_period_mins(void);
 
 /*
+ * Get node private key
+ *
+ * IN node_name - get private key associated with this node name
+ *
+ * RET SLURM_SUCCESS or error
+ */
+extern char *certmgr_g_get_node_cert_key(char *node_name);
+
+/*
  * Get unique node token to validate an accompanying CSR
  *
  * IN node_name - get the token associated with this node name
