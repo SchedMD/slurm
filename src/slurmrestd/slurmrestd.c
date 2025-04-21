@@ -614,9 +614,9 @@ static void _check_user(void)
 	if (gid_from_uid(slurm_conf.slurm_user_id) == getgid())
 		fatal("slurmrestd should not be run with SlurmUser's group.");
 
-	if (!getuid())
+	if (!getuid() && !become_user)
 		fatal("slurmrestd should not be run as the root user.");
-	if (!getgid())
+	if (!getgid() && !become_user)
 		fatal("slurmrestd should not be run with the root group.");
 
 	if ((gid_count = getgroups(0, NULL)) > 0) {
@@ -629,7 +629,7 @@ static void _check_user(void)
 			if (list[i] == slurm_conf.slurm_user_id)
 				fatal("slurmrestd should not be run with SlurmUser's group.");
 
-			if (!list[i])
+			if (!list[i] && !become_user)
 				fatal("slurmrestd should not be run with the root group.");
 
 			if (list[i] == SLURM_AUTH_NOBODY)
