@@ -724,7 +724,7 @@ fail:
 	slurm_mutex_destroy(&conn->lock);
 	xfree(conn);
 
-	return conn;
+	return NULL;
 }
 
 extern void tls_p_destroy_conn(tls_conn_t *conn)
