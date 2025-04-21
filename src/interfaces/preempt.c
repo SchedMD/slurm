@@ -534,14 +534,3 @@ extern bool preempt_g_job_preempt_check(job_queue_rec_t *preemptor,
 
 	return (*(ops.job_preempt_check))(preemptor, preemptee);
 }
-
-extern bool preempt_g_preemptable(
-	job_record_t *preemptee, job_record_t *preemptor)
-{
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return false;
-
-	return (*(ops.preemptable))(preemptor, preemptee);
-}

@@ -95,11 +95,4 @@ extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 extern bool preempt_g_job_preempt_check(job_queue_rec_t *preemptor,
 					job_queue_rec_t *preemptee);
 
-/*
- * Return true if the preemptor can preempt the preemptee, otherwise false
- * This requires the part_ptr of both job_record_t to be set correctly.
- */
-extern bool preempt_g_preemptable(
-	job_record_t *preemptee, job_record_t *preemptor);
-
 #endif
