@@ -557,6 +557,20 @@ static int _negotiate(tls_conn_t *conn)
 	return SLURM_SUCCESS;
 }
 
+extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
+				uint32_t key_len)
+{
+	if (_add_cert_and_key_to_store(cert, cert_len, key, key_len)) {
+		error("%s: Could not add certificate and private key to s2n_config.",
+		      plugin_type);
+		return SLURM_ERROR;
+	}
+
+	log_flag(TLS, "Successfully loaded signed certificate into TLS store.");
+
+	return SLURM_SUCCESS;
+}
+
 extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn;

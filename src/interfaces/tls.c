@@ -65,6 +65,8 @@ typedef struct {
 
 typedef struct {
 	uint32_t (*plugin_id);
+	int (*load_self_cert)(char *cert, uint32_t cert_len, char *key,
+			      uint32_t key_len);
 	void *(*create_conn)(const tls_conn_args_t *tls_conn_args);
 	void (*destroy_conn)(void *conn);
 	ssize_t (*send)(void *conn, const void *buf, size_t n);
@@ -82,6 +84,7 @@ typedef struct {
  */
 static const char *syms[] = {
 	"plugin_id",
+	"tls_p_load_self_cert",
 	"tls_p_create_conn",
 	"tls_p_destroy_conn",
 	"tls_p_send",
@@ -212,6 +215,22 @@ extern int tls_g_fini(void)
 	slurm_rwlock_unlock(&context_lock);
 
 	return rc;
+}
+
+extern int tls_g_load_self_cert(char *cert, uint32_t cert_len, char *key,
+				uint32_t key_len)
+{
+	int plugin_index;
+
+	xassert(g_context);
+
+	if (tls_enabled()) {
+		plugin_index = _get_plugin_index(TLS_PLUGIN_S2N);
+		return (*(ops[plugin_index].load_self_cert))(cert, cert_len,
+							     key, key_len);
+	}
+
+	return ESLURM_NOT_SUPPORTED;
 }
 
 extern void *tls_g_create_conn(const tls_conn_args_t *tls_conn_args)
