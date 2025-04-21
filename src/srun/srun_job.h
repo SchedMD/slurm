@@ -84,6 +84,7 @@ typedef struct srun_job {
 	uint32_t het_job_nnodes; /* total node count for entire hetjob */
 	uint32_t het_job_ntasks; /* total task count for entire hetjob */
 	uint32_t het_job_offset; /* Hetjob offset or NO_VAL */
+	uint32_t *het_job_step_task_cnts; /* ntasks on each comp. of hetjob */
 	uint32_t het_job_task_offset; /* Hetjob task offset or NO_VAL */
 	uint16_t *het_job_task_cnts; /* tasks invoked on each node of hetjob */
 	uint32_t **het_job_tids;	/* Task IDs on each node of hetjob */

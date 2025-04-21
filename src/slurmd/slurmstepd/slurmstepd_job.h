@@ -143,6 +143,7 @@ typedef struct {
 	uint32_t       het_job_ntasks;	/* total task count for entire hetjob */
 	uint32_t       het_job_offset;	/* Hetjob offset or NO_VAL        */
 	uint32_t       het_job_step_cnt;  /* number of steps for entire hetjob */
+	uint32_t      *het_job_step_task_cnts; /* ntasks on each comp of hetjob */
 	uint32_t       het_job_task_offset;/* Hetjob task offset or NO_VAL   */
 	uint16_t      *het_job_task_cnts; /* Number of tasks on each node in hetjob */
 	uint32_t     **het_job_tids;       /* Task IDs on each node of hetjob */

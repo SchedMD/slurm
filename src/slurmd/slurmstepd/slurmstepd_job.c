@@ -338,6 +338,13 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	/* Used for env vars */
 	step->het_job_node_offset = msg->het_job_node_offset;
 	step->het_job_step_cnt = msg->het_job_step_cnt;
+	if (msg->het_job_step_task_cnts) {
+		step->het_job_step_task_cnts =
+			xcalloc(sizeof(uint32_t), msg->het_job_step_cnt);
+		memcpy(step->het_job_step_task_cnts,
+		       msg->het_job_step_task_cnts,
+		       (msg->het_job_step_cnt * sizeof(uint32_t)));
+	}
 	step->het_job_id  = msg->het_job_id;	/* Used for env vars */
 	step->het_job_nnodes = msg->het_job_nnodes;	/* Used for env vars */
 	if (msg->het_job_nnodes && msg->het_job_ntasks &&
@@ -693,6 +700,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 	}
 	xfree(step->node_name);
 	xfree(step->het_job_task_cnts);
+	xfree(step->het_job_step_task_cnts);
 	if (step->het_job_nnodes != NO_VAL) {
 		for (i = 0; i < step->het_job_nnodes; i++)
 			xfree(step->het_job_tids[i]);

@@ -2153,6 +2153,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	}
 	xfree(msg->gids);
 	xfree(msg->het_job_node_list);
+	xfree(msg->het_job_step_task_cnts);
 	xfree(msg->het_job_task_cnts);
 	if (msg->het_job_nnodes != NO_VAL) {
 		for (i = 0; i < msg->het_job_nnodes; i++)

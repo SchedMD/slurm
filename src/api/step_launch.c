@@ -261,6 +261,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.het_job_nnodes = params->het_job_nnodes;
 	launch.het_job_ntasks = params->het_job_ntasks;
 	launch.het_job_offset = params->het_job_offset;
+	launch.het_job_step_task_cnts = params->het_job_step_task_cnts;
 	launch.het_job_task_offset = params->het_job_task_offset;
 	launch.het_job_task_cnts = params->het_job_task_cnts;
 	launch.het_job_tids = params->het_job_tids;
@@ -473,6 +474,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.het_job_step_cnt = params->het_job_step_cnt;
+	launch.het_job_step_task_cnts = params->het_job_step_task_cnts;
 	launch.het_job_id = params->het_job_id;
 	launch.het_job_nnodes = params->het_job_nnodes;
 	launch.het_job_ntasks = params->het_job_ntasks;

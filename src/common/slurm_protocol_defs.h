@@ -657,6 +657,7 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  het_job_nnodes;	/* total node count for entire hetjob */
 	uint32_t  het_job_ntasks;	/* total task count for entire hetjob */
 	uint16_t *het_job_task_cnts;	/* Tasks count on each node in hetjob */
+	uint32_t *het_job_step_task_cnts; /* ntasks on each comp of hetjob */
 	uint32_t **het_job_tids;	/* Task IDs on each node of hetjob */
 	uint32_t *het_job_tid_offsets;	/* map of tasks (by id) to originating
 					 * hetjob */
