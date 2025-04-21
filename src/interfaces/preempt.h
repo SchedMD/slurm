@@ -112,20 +112,4 @@ extern bool preempt_g_job_preempt_check(job_queue_rec_t *preemptor,
 extern bool preempt_g_preemptable(
 	job_record_t *preemptee, job_record_t *preemptor);
 
-/*
- * Get various preemption variables from the plugin.
- * job_ptr - Pointer to job to use.
- * PREEMPT_DATA_ENABLED - Set 'data' to a boolean if preemption is enabled or
- *                        not.
- * PREEMPT_DATA_MODE - Set 'data' to uint16_t on which PreemptMode which should
- *                     apply to stop this job.
- * PREEMPT_DATA_PRIO - Set 'data' to a uint32_t of what the priority should be
- *                     for the given job.
- * PREEMPT_DATA_GRACE_TIME - Set 'data' to a uint32_t of what grace_time should
- *                           be for the given job.
- */
-extern int preempt_g_get_data(job_record_t *job_ptr,
-			      slurm_preempt_data_type_t data_type,
-			      void *data);
-
 #endif

@@ -572,15 +572,3 @@ extern bool preempt_g_preemptable(
 
 	return (*(ops.preemptable))(preemptor, preemptee);
 }
-
-extern int preempt_g_get_data(job_record_t *job_ptr,
-			      slurm_preempt_data_type_t data_type,
-			      void *data)
-{
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
-
-	return (*(ops.get_data))(job_ptr, data_type, data);
-}
