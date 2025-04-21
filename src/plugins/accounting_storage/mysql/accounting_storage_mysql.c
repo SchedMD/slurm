@@ -2409,6 +2409,7 @@ extern int remove_common(remove_common_args_t *args)
 
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
+	char *pos = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	time_t day_old = now - DELETE_SEC_BACK;
@@ -2513,57 +2514,57 @@ extern int remove_common(remove_common_args_t *args)
 		}
 
 		if (cluster_centric) {
-			xstrfmtcat(query,
-				   "update \"%s_%s\" set mod_time=%ld, "
-				   "deleted=1 where deleted=0 && (%s);",
-				   cluster_name, table, now, name_char);
+			xstrfmtcatat(query, &pos,
+				     "update \"%s_%s\" set mod_time=%ld, "
+				     "deleted=1 where deleted=0 && (%s);",
+				     cluster_name, table, now, name_char);
 		} else if (table == federation_table) {
-			xstrfmtcat(query,
-				   "update %s set "
-				   "mod_time=%ld, deleted=1, "
-				   "flags=DEFAULT "
-				   "where deleted=0 && (%s);",
-				   federation_table, now,
-				   name_char);
+			xstrfmtcatat(query, &pos,
+				     "update %s set "
+				     "mod_time=%ld, deleted=1, "
+				     "flags=DEFAULT "
+				     "where deleted=0 && (%s);",
+				     federation_table, now, name_char);
 		} else if (table == qos_table) {
-			xstrfmtcat(query,
-				   "update %s set "
-				   "mod_time=%ld, deleted=1, "
-				   "grace_time=DEFAULT, "
-				   "max_jobs_pa=DEFAULT, "
-				   "max_jobs_per_user=DEFAULT, "
-				   "max_jobs_accrue_pa=DEFAULT, "
-				   "max_jobs_accrue_pu=DEFAULT, "
-				   "min_prio_thresh=DEFAULT, "
-				   "max_submit_jobs_pa=DEFAULT, "
-				   "max_submit_jobs_per_user=DEFAULT, "
-				   "max_tres_pa=DEFAULT, "
-				   "max_tres_pj=DEFAULT, "
-				   "max_tres_pn=DEFAULT, "
-				   "max_tres_pu=DEFAULT, "
-				   "max_tres_mins_pj=DEFAULT, "
-				   "max_tres_run_mins_pa=DEFAULT, "
-				   "max_tres_run_mins_pu=DEFAULT, "
-				   "min_tres_pj=DEFAULT, "
-				   "max_wall_duration_per_job=DEFAULT, "
-				   "grp_jobs=DEFAULT, grp_submit_jobs=DEFAULT, "
-				   "grp_jobs_accrue=DEFAULT, grp_tres=DEFAULT, "
-				   "grp_tres_mins=DEFAULT, "
-				   "grp_tres_run_mins=DEFAULT, "
-				   "grp_wall=DEFAULT, "
-				   "preempt=DEFAULT, "
-				   "preempt_exempt_time=DEFAULT, "
-				   "priority=DEFAULT, "
-				   "usage_factor=DEFAULT, "
-				   "usage_thres=DEFAULT, "
-				   "limit_factor=DEFAULT "
-				   "where deleted=0 && (%s);",
-				   qos_table, now, name_char);
+			xstrfmtcatat(
+				query, &pos,
+				"update %s set "
+				"mod_time=%ld, deleted=1, "
+				"grace_time=DEFAULT, "
+				"max_jobs_pa=DEFAULT, "
+				"max_jobs_per_user=DEFAULT, "
+				"max_jobs_accrue_pa=DEFAULT, "
+				"max_jobs_accrue_pu=DEFAULT, "
+				"min_prio_thresh=DEFAULT, "
+				"max_submit_jobs_pa=DEFAULT, "
+				"max_submit_jobs_per_user=DEFAULT, "
+				"max_tres_pa=DEFAULT, "
+				"max_tres_pj=DEFAULT, "
+				"max_tres_pn=DEFAULT, "
+				"max_tres_pu=DEFAULT, "
+				"max_tres_mins_pj=DEFAULT, "
+				"max_tres_run_mins_pa=DEFAULT, "
+				"max_tres_run_mins_pu=DEFAULT, "
+				"min_tres_pj=DEFAULT, "
+				"max_wall_duration_per_job=DEFAULT, "
+				"grp_jobs=DEFAULT, grp_submit_jobs=DEFAULT, "
+				"grp_jobs_accrue=DEFAULT, grp_tres=DEFAULT, "
+				"grp_tres_mins=DEFAULT, "
+				"grp_tres_run_mins=DEFAULT, "
+				"grp_wall=DEFAULT, "
+				"preempt=DEFAULT, "
+				"preempt_exempt_time=DEFAULT, "
+				"priority=DEFAULT, "
+				"usage_factor=DEFAULT, "
+				"usage_thres=DEFAULT, "
+				"limit_factor=DEFAULT "
+				"where deleted=0 && (%s);",
+				qos_table, now, name_char);
 		} else {
-			xstrfmtcat(query,
-				   "update %s set mod_time=%ld, deleted=1 "
-				   "where deleted=0 && (%s);",
-				   table, now, name_char);
+			xstrfmtcatat(query, &pos,
+				     "update %s set mod_time=%ld, deleted=1 "
+				     "where deleted=0 && (%s);",
+				     table, now, name_char);
 		}
 	}
 
@@ -2577,18 +2578,17 @@ extern int remove_common(remove_common_args_t *args)
 		tmp_name_char = slurm_add_slash_to_quotes(name_char);
 
 	if (cluster_centric)
-		xstrfmtcat(query,
-			   "insert into %s (timestamp, action, name, "
-			   "actor, cluster) values "
-			   "(%ld, %d, '%s', '%s', '%s');",
-			   txn_table,
-			   now, type, tmp_name_char, user_name, cluster_name);
+		xstrfmtcatat(query, &pos,
+			     "insert into %s (timestamp, action, name, "
+			     "actor, cluster) values "
+			     "(%ld, %d, '%s', '%s', '%s');",
+			     txn_table, now, type, tmp_name_char, user_name,
+			     cluster_name);
 	else
-		xstrfmtcat(query,
-			   "insert into %s (timestamp, action, name, actor) "
-			   "values (%ld, %d, '%s', '%s');",
-			   txn_table,
-			   now, type, tmp_name_char, user_name);
+		xstrfmtcatat(query, &pos,
+			     "insert into %s (timestamp, action, name, actor) "
+			     "values (%ld, %d, '%s', '%s');",
+			     txn_table, now, type, tmp_name_char, user_name);
 
 	xfree(tmp_name_char);
 
