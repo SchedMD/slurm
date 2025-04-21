@@ -3289,6 +3289,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 #endif
 	}
 
+	prolog_msg_ptr->alloc_tls_cert = xstrdup(job_ptr->alloc_tls_cert);
 	prolog_msg_ptr->job_gres_prep =
 		 gres_g_prep_build_env(job_ptr->gres_list_alloc,
 				       job_ptr->nodes);
