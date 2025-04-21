@@ -44,6 +44,8 @@
 
 #define JOBCOMP_CONF_DEFAULT_EVENTS JOBCOMP_CONF_JOB_FINISH
 
+static bool send_script = false;
+
 static bool _valid_date_format(char *date_str)
 {
 	if (!date_str || !*date_str ||
@@ -52,6 +54,17 @@ static bool _valid_date_format(char *date_str)
 		return false;
 
 	return true;
+}
+
+extern void jobcomp_common_conf_init(void)
+{
+	if (xstrcasestr(slurm_conf.job_comp_params, "send_script"))
+		send_script = true;
+}
+
+extern void jobcomp_common_conf_fini(void)
+{
+	/* not currently used */
 }
 
 /*
@@ -333,10 +346,11 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		data_set_string(data_key_set(record, "account"),
 				job_ptr->account);
 
-	if ((script = get_job_script(job_ptr)))
+	if (send_script && (script = get_job_script(job_ptr))) {
 		data_set_string(data_key_set(record, "script"),
 				get_buf_data(script));
-	FREE_NULL_BUFFER(script);
+		FREE_NULL_BUFFER(script);
+	}
 
 	if (job_ptr->assoc_ptr) {
 		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
