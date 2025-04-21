@@ -37,6 +37,7 @@
 #include <sys/socket.h>
 
 #include "src/common/eio.h"
+#include "src/common/fd.h"
 #include "src/common/half_duplex.h"
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
@@ -51,12 +52,44 @@ struct io_operations half_duplex_ops = {
 	.handle_read = _half_duplex,
 };
 
+typedef struct {
+	int *fd_out;
+} half_duplex_eio_arg_t;
+
+extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
+					  int *local_fd, int *remote_fd)
+{
+	half_duplex_eio_arg_t *local_arg = NULL;
+	half_duplex_eio_arg_t *remote_arg = NULL;
+
+	eio_obj_t *remote_to_local_eio, *local_to_remote_eio;
+
+	local_arg = xmalloc(sizeof(*local_arg));
+	local_arg->fd_out = remote_fd;
+
+	remote_arg = xmalloc(sizeof(*remote_arg));
+	remote_arg->fd_out = local_fd;
+
+	local_to_remote_eio =
+		eio_obj_create(*local_fd, &half_duplex_ops, local_arg);
+	remote_to_local_eio =
+		eio_obj_create(*remote_fd, &half_duplex_ops, remote_arg);
+
+	eio_new_obj(eio_handle, local_to_remote_eio);
+	eio_new_obj(eio_handle, remote_to_local_eio);
+
+	return SLURM_SUCCESS;
+}
+
 static bool _half_duplex_readable(eio_obj_t *obj)
 {
 	if (obj->shutdown) {
-		int *fd_out = (int *) obj->arg;
+		half_duplex_eio_arg_t *args = obj->arg;
+		int *fd_out = args->fd_out;
+
 		if (fd_out) {
 			shutdown(*fd_out, SHUT_WR);
+			xfree(fd_out);
 			xfree(obj->arg);
 		}
 		shutdown(obj->fd, SHUT_RD);
@@ -69,7 +102,9 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 {
 	ssize_t in, out, wr = 0;
 	char buf[BUFFER_SIZE];
-	int *fd_out = (int *) obj->arg;
+	half_duplex_eio_arg_t *args = obj->arg;
+
+	int *fd_out = args->fd_out;
 
 	if (obj->shutdown || !fd_out)
 		goto shutdown;
@@ -102,6 +137,7 @@ shutdown:
 	if (fd_out) {
 		shutdown(*fd_out, SHUT_WR);
 		xfree(fd_out);
+		xfree(obj->arg);
 	}
 	eio_remove_obj(obj, objs);
 	return 0;
