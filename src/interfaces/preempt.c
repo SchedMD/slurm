@@ -66,11 +66,6 @@ typedef struct slurm_preempt_ops {
 	uint32_t (*get_prio)(job_record_t *job_ptr);
 } slurm_preempt_ops_t;
 
-typedef struct {
-	job_record_t *preemptor;
-	list_t *preemptee_job_list;
-} preempt_candidates_t;
-
 /*
  * Must be synchronized with slurm_preempt_ops_t above.
  */
@@ -85,6 +80,11 @@ static const char *syms[] = {
 static slurm_preempt_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t	    g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+
+typedef struct {
+	job_record_t *preemptor;
+	list_t *preemptee_job_list;
+} preempt_candidates_t;
 
 static int _is_job_preempt_exempt_internal(void *x, void *key)
 {
