@@ -3742,23 +3742,6 @@ static int DUMP_FUNC(NODE_SELECT_ALLOC_IDLE_CPUS)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(NODE_SELECT_TRES_USED)
-
-static int DUMP_FUNC(NODE_SELECT_TRES_USED)(const parser_t *const parser,
-					    void *obj, data_t *dst,
-					    args_t *args)
-{
-	node_info_t *node = obj;
-	char *node_alloc_tres = node->alloc_tres_fmt_str;
-
-	if (node_alloc_tres)
-		data_set_string(dst, node_alloc_tres);
-	else
-		data_set_string(dst, "");
-
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(NODE_SELECT_TRES_WEIGHTED)
 
 static int DUMP_FUNC(NODE_SELECT_TRES_WEIGHTED)(const parser_t *const parser,
@@ -7694,7 +7677,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(UINT64, alloc_memory, "alloc_memory", "Total memory in MB currently allocated for jobs"),
 	add_parse(UINT16, alloc_cpus, "alloc_cpus", "Total number of CPUs currently allocated for jobs"),
 	add_cparse(NODE_SELECT_ALLOC_IDLE_CPUS, "alloc_idle_cpus", "Total number of idle CPUs"),
-	add_cparse(NODE_SELECT_TRES_USED, "tres_used", "Trackable resources currently allocated for jobs"),
+	add_parse(STRING, alloc_tres_fmt_str, "tres_used", "Trackable resources currently allocated for jobs"),
 	add_cparse(NODE_SELECT_TRES_WEIGHTED, "tres_weighted", "Weighted number of billable trackable resources allocated"),
 	add_parse(TIMESTAMP_NO_VAL, slurmd_start_time, "slurmd_start_time", "Time when the slurmd started (UNIX timestamp)"),
 	add_parse(UINT16, sockets, "sockets", "Number of physical processor sockets/chips on the node"),
@@ -10034,7 +10017,6 @@ static const parser_t parsers[] = {
 	addpca(STATS_MSG_RPCS_QUEUE, STATS_MSG_RPC_QUEUE, stats_info_response_msg_t, NEED_NONE, "Pending RPCs"),
 	addpca(STATS_MSG_RPCS_DUMP, STATS_MSG_RPC_DUMP, stats_info_response_msg_t, NEED_NONE, "Pending RPCs by hostlist"),
 	addpc(NODE_SELECT_ALLOC_IDLE_CPUS, node_info_t, NEED_NONE, INT32, NULL),
-	addpc(NODE_SELECT_TRES_USED, node_info_t, NEED_NONE, STRING, NULL),
 	addpc(NODE_SELECT_TRES_WEIGHTED, node_info_t, NEED_NONE, DOUBLE, NULL),
 	addpca(NODES, NODE, node_info_msg_t, NEED_NONE, NULL),
 	addpca(JOB_INFO_GRES_DETAIL, STRING, slurm_job_info_t, NEED_NONE, NULL),
