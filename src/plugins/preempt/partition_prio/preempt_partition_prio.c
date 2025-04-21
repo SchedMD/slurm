@@ -57,7 +57,7 @@ const char	plugin_name[]	= "Preempt by partition priority plugin";
 const char	plugin_type[]	= "preempt/partition_prio";
 const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
 
-static uint16_t _job_preempt_mode(job_record_t *job_ptr)
+extern uint16_t preempt_p_get_mode(job_record_t *job_ptr)
 {
 	part_record_t *part_ptr = job_ptr->part_ptr;
 	if (part_ptr && (part_ptr->preempt_mode != NO_VAL16)) {
@@ -74,7 +74,7 @@ static uint16_t _job_preempt_mode(job_record_t *job_ptr)
  * and partly based upon the job size. We want to put smaller jobs at the top
  * of the preemption queue and use a sort algorithm to minimize the number of
  * job's preempted. */
-static uint32_t _gen_job_prio(job_record_t *job_ptr)
+extern uint32_t preempt_p_get_prio(job_record_t *job_ptr)
 {
 	uint32_t job_prio;
 
@@ -91,8 +91,7 @@ static uint32_t _gen_job_prio(job_record_t *job_ptr)
 	return job_prio;
 }
 
-/* Return grace_time for job */
-static uint32_t _get_grace_time(job_record_t *job_ptr)
+extern uint32_t preempt_p_get_grace_time(job_record_t *job_ptr)
 {
 	if (!job_ptr->part_ptr)
 		return 0;
@@ -135,32 +134,4 @@ extern bool preempt_p_preemptable(
 		return false;
 
 	return true;
-}
-
-extern int preempt_p_get_data(job_record_t *job_ptr,
-			      slurm_preempt_data_type_t data_type,
-			      void *data)
-{
-	int rc = SLURM_SUCCESS;
-
-	switch (data_type) {
-	case PREEMPT_DATA_ENABLED:
-		(*(bool *)data) = slurm_conf.preempt_mode != PREEMPT_MODE_OFF;
-		break;
-	case PREEMPT_DATA_MODE:
-		(*(uint16_t *)data) = _job_preempt_mode(job_ptr);
-		break;
-	case PREEMPT_DATA_PRIO:
-		(*(uint32_t *)data) = _gen_job_prio(job_ptr);
-		break;
-	case PREEMPT_DATA_GRACE_TIME:
-		(*(uint32_t *)data) = _get_grace_time(job_ptr);
-		break;
-	default:
-		error("%s: unknown enum %d", __func__, data_type);
-		rc = SLURM_ERROR;
-		break;
-
-	}
-	return rc;
 }
