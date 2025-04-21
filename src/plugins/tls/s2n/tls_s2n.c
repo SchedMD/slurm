@@ -71,6 +71,11 @@ static struct s2n_config *default_config = NULL;
  */
 static struct s2n_cert_chain_and_key *server_cert_and_key = NULL;
 
+static char *server_cert = NULL;
+static uint32_t server_cert_len = 0;
+static char *server_key = NULL;
+static uint32_t server_key_len = 0;
+
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 	pthread_mutex_t lock;
@@ -577,6 +582,15 @@ static int _negotiate(tls_conn_t *conn)
 extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
 				uint32_t key_len)
 {
+	xfree(server_cert);
+	xfree(server_key);
+
+	/* Save certificate details for later */
+	server_cert = xstrdup(cert);
+	server_cert_len = cert_len;
+	server_key = xstrdup(key);
+	server_key_len = key_len;
+
 	if (_add_cert_and_key_to_store(cert, cert_len, key, key_len)) {
 		error("%s: Could not add certificate and private key to s2n_config.",
 		      plugin_type);
