@@ -162,6 +162,14 @@ extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 	if (step->het_job_id && (step->het_job_id != NO_VAL))
 		_pmixp_job_info.step_id.job_id = step->het_job_id;
 
+	if ((step->het_job_offset != NO_VAL) &&
+	    (step->het_job_step_task_cnts)) {
+		for (i = 0; i < step->het_job_offset; i++) {
+			_pmixp_job_info.app_ldr +=
+				step->het_job_step_task_cnts[i];
+		}
+	}
+
 	if (step->het_job_offset != NO_VAL) {
 		_pmixp_job_info.node_id = step->nodeid +
 					  step->het_job_node_offset;
@@ -857,4 +865,10 @@ extern char *pmixp_info_nspace_usock(const char *nspace)
 	spool = xstrdup_printf("%s/stepd.%s",
 			       _pmixp_job_info.spool_dir, nspace);
 	return spool;
+}
+
+extern uint32_t pmixp_info_appldr()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.app_ldr;
 }

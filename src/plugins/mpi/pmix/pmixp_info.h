@@ -64,6 +64,7 @@ typedef struct {
 	uint32_t ntasks_job; /* total possible number of tasks in job */
 	uint32_t ncpus_job; /* total possible number of cpus in job */
 	uint32_t *task_cnts; /* Number of tasks on each node in this step */
+	uint32_t app_ldr; /* first global rank of this het component */
 	int node_id; /* relative position of this node in this step */
 	int node_id_job; /* relative position of this node in Slurm job */
 	hostlist_t *job_hl;
@@ -131,6 +132,7 @@ extern uint32_t pmixp_info_tasks_node(uint32_t nodeid);
 extern uint32_t *pmixp_info_tasks_cnts();
 extern uint32_t pmixp_info_tasks_loc();
 extern uint32_t pmixp_info_tasks_uni();
+extern uint32_t pmixp_info_appldr();
 extern uint32_t pmixp_info_cpus();
 extern uint32_t pmixp_info_taskid(uint32_t localid);
 extern int pmixp_info_taskid2localid(uint32_t taskid);

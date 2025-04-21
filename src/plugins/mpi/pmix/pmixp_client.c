@@ -190,7 +190,7 @@ static void _set_procdatas(list_t *lresp)
 	 * The leader program (appldr) is the lowest global rank in the
 	 * specified application.
 	 */
-	i = 0;
+	i = pmixp_info_appldr();
 	PMIXP_KVP_CREATE(kvp, PMIX_APPLDR, &i, PMIX_INT);
 	list_append(lresp, kvp);
 
