@@ -78,6 +78,12 @@ static uint32_t server_cert_len = 0;
 static char *server_key = NULL;
 static uint32_t server_key_len = 0;
 
+static pthread_rwlock_t server_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
+
+static uint32_t server_conf_conn_cnt = 0;
+static pthread_mutex_t server_conf_cnt_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t server_conf_cnt_cond = PTHREAD_COND_INITIALIZER;
+
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 	pthread_mutex_t lock;
@@ -87,7 +93,9 @@ typedef struct {
 	/* absolute time shutdown() delayed until (instead of sleep()ing) */
 	timespec_t delay;
 	struct s2n_config *s2n_config;
+	struct s2n_cert_chain_and_key *cert_and_key;
 	bool do_graceful_shutdown;
+	bool using_global_server_conf;
 } tls_conn_t;
 
 /*
@@ -401,9 +409,62 @@ fail:
 static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
 				      char *key_pem, uint32_t key_pem_len)
 {
-	return _add_cert_to_server(server_config, &server_cert_and_key,
-				   cert_pem, cert_pem_len, key_pem,
-				   key_pem_len);
+	if (!server_cert_and_key) {
+		return _add_cert_to_server(server_config, &server_cert_and_key,
+					   cert_pem, cert_pem_len, key_pem,
+					   key_pem_len);
+	}
+
+	/* Stop new connections from using current server_config */
+	slurm_rwlock_wrlock(&server_conf_lock);
+
+	log_flag(TLS, "%s: Updating global server_conf with new certificate and key now...", plugin_type);
+
+	/* Wait until connections using server_config are finished */
+	slurm_mutex_lock(&server_conf_cnt_lock);
+	if (server_conf_conn_cnt)
+		slurm_cond_wait(&server_conf_cnt_cond, &server_conf_cnt_lock);
+
+	if (server_cert_and_key &&
+	    s2n_cert_chain_and_key_free(server_cert_and_key)) {
+		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
+	}
+	server_cert_and_key = NULL;
+
+	/*
+	 * s2n_config_free_cert_chain_and_key not enough to reset the
+	 * certificate associated with server_config. server_config must be
+	 * recreated.
+	 */
+	if (server_config && s2n_config_free(server_config)) {
+		on_s2n_error(NULL, s2n_config_free);
+	}
+
+	if (!(server_config = _create_server_config())) {
+		error("Could not create new server_config");
+		goto fail;
+	}
+	if (_add_cert_to_server(server_config, &server_cert_and_key, cert_pem,
+				cert_pem_len, key_pem, key_pem_len)) {
+		if (s2n_config_free(server_config)) {
+			on_s2n_error(NULL, s2n_config_free);
+		}
+		server_config = NULL;
+		error("Could not add cert to server_config");
+		goto fail;
+	}
+
+	slurm_mutex_unlock(&server_conf_cnt_lock);
+	log_flag(TLS, "%s: Successfully updated global server_conf with new certificate and key", plugin_type);
+	slurm_rwlock_unlock(&server_conf_lock);
+
+	return SLURM_SUCCESS;
+fail:
+	slurm_mutex_unlock(&server_conf_cnt_lock);
+	log_flag(TLS, "%s: Failed to update global server_conf with new certificate and key", plugin_type);
+	slurm_rwlock_unlock(&server_conf_lock);
+
+	return SLURM_ERROR;
 }
 
 static int _add_self_signed_cert_to_server(void)
@@ -649,6 +710,30 @@ extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
 	return SLURM_SUCCESS;
 }
 
+static void _server_config_inc(tls_conn_t *conn)
+{
+	slurm_mutex_lock(&server_conf_cnt_lock);
+	server_conf_conn_cnt++;
+	slurm_mutex_unlock(&server_conf_cnt_lock);
+}
+
+static void _server_config_dec(tls_conn_t *conn)
+{
+	slurm_mutex_lock(&server_conf_cnt_lock);
+
+	if (server_conf_conn_cnt > 0) {
+		server_conf_conn_cnt--;
+	} else {
+		error("%s: unexpected underflow", __func__);
+	}
+
+	if (server_conf_conn_cnt == 0) {
+		slurm_cond_signal(&server_conf_cnt_cond);
+	}
+
+	slurm_mutex_unlock(&server_conf_cnt_lock);
+}
+
 extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn;
@@ -667,7 +752,49 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 	case TLS_CONN_SERVER:
 	{
 		s2n_conn_mode = S2N_SERVER;
-		conn->s2n_config = server_config;
+		if (!slurm_rwlock_tryrdlock(&server_conf_lock)) {
+			if (!server_cert_and_key) {
+				error("%s: No server certificate has been loaded yet, cannot create connection for fd:%d->%d",
+				      __func__, tls_conn_args->input_fd,
+				      tls_conn_args->output_fd);
+				slurm_rwlock_unlock(&server_conf_lock);
+				goto fail;
+			}
+			_server_config_inc(conn);
+			conn->s2n_config = server_config;
+			conn->using_global_server_conf = true;
+			slurm_rwlock_unlock(&server_conf_lock);
+			break;
+		}
+
+		/*
+		 * Create a new s2n_config with the same certificate while the
+		 * old one is getting updated.
+		 */
+		log_flag(TLS, "%s: server_conf is being updated, creating new s2n_config for conn to fd:%d->%d",
+			 plugin_type, tls_conn_args->input_fd,
+			 tls_conn_args->output_fd);
+		if (!server_cert || !server_cert_len || !server_key ||
+		    !server_key_len) {
+			error("%s: Global server s2n_config is busy being updated and there's no saved certificate/key to create a temporary server s2n_config for conn to fd:%d->%d",
+			      __func__, tls_conn_args->input_fd,
+			      tls_conn_args->output_fd);
+			goto fail;
+		}
+		if (!(conn->s2n_config = _create_server_config())) {
+			error("Could not create server config for fd:%d->%d",
+			      tls_conn_args->input_fd,
+			      tls_conn_args->output_fd);
+			goto fail;
+		}
+		if (_add_cert_to_server(conn->s2n_config, &conn->cert_and_key,
+					server_cert, server_cert_len,
+					server_key, server_key_len)) {
+			error("Could not add certificate to server config for fd:%d->%d",
+			      tls_conn_args->input_fd,
+			      tls_conn_args->output_fd);
+			goto fail;
+		}
 		break;
 	}
 	case TLS_CONN_CLIENT:
@@ -798,8 +925,15 @@ fail:
 		if (s2n_config_free(conn->s2n_config))
 			on_s2n_error(NULL, s2n_config_free);
 
+	if (conn->cert_and_key &&
+	    (s2n_cert_chain_and_key_free(conn->cert_and_key) != S2N_SUCCESS))
+		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
+
 	if (conn->s2n_conn && s2n_connection_free(conn->s2n_conn) < 0)
 		on_s2n_error(conn, s2n_connection_free);
+
+	if (conn->using_global_server_conf)
+		_server_config_dec(conn);
 
 	slurm_mutex_destroy(&conn->lock);
 	xfree(conn);
@@ -821,6 +955,10 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 	if (!conn->s2n_conn) {
 		slurm_mutex_unlock(&conn->lock);
 		slurm_mutex_destroy(&conn->lock);
+
+		if (conn->using_global_server_conf)
+			_server_config_dec(conn);
+
 		xfree(conn);
 		return;
 	}
@@ -857,6 +995,9 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 	    (conn->s2n_config != client_config))
 		if (s2n_config_free(conn->s2n_config))
 			on_s2n_error(NULL, s2n_config_free);
+
+	if (conn->using_global_server_conf)
+		_server_config_dec(conn);
 
 	xfree(conn);
 }
