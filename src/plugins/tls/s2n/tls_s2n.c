@@ -272,6 +272,7 @@ static struct s2n_config *_create_config_common(void)
 	if (s2n_config_set_cipher_preferences(new_conf, security_policy) < 0) {
 		on_s2n_error(NULL, s2n_config_set_cipher_preferences);
 		xfree(security_policy);
+		(void) s2n_config_free(new_conf);
 		return NULL;
 	}
 	xfree(security_policy);
@@ -296,6 +297,7 @@ static struct s2n_config *_create_client_config(void)
 	if (s2n_config_set_verify_host_callback(new_conf, _verify_hostname,
 						NULL) < 0) {
 		on_s2n_error(NULL, s2n_config_set_verify_host_callback);
+		(void) s2n_config_free(new_conf);
 		return NULL;
 	}
 
