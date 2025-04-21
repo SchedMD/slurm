@@ -4740,7 +4740,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 
 	/* Following call fills in gtids and local_pids when successful. */
 	rc = stepd_attach(fd, protocol_version, &ioaddr, &resp_msg.address,
-			  req->io_key, msg->auth_uid, resp);
+			  req->tls_cert, req->io_key, msg->auth_uid, resp);
 	if (rc != SLURM_SUCCESS) {
 		debug2("stepd_attach call failed");
 		goto done2;
