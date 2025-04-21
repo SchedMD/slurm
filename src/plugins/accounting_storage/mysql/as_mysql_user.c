@@ -1264,6 +1264,7 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_assoc_cond_t assoc_cond;
 	slurmdb_wckey_cond_t wckey_cond;
 	bool is_coord = false;
+	list_t *use_cluster_list;
 
 	remove_common_args_t args = {
 		.jobs_running = false,
@@ -1437,7 +1438,8 @@ no_user_table:
 	args.user_name = uid_to_string((uid_t) uid);
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
-	itr = list_iterator_create(as_mysql_cluster_list);
+	use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+	itr = list_iterator_create(use_cluster_list);
 	while ((object = list_next(itr))) {
 
 		if (is_coord) {
@@ -1458,6 +1460,8 @@ no_user_table:
 			break;
 	}
 	list_iterator_destroy(itr);
+
+	FREE_NULL_LIST(use_cluster_list);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(args.user_name);
