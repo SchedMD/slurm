@@ -1188,7 +1188,6 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack16(dump_node_ptr->alloc_cpus, buffer);
 		pack64(dump_node_ptr->alloc_memory, buffer);
 		packstr(dump_node_ptr->alloc_tres_fmt_str, buffer);
-		packdouble(dump_node_ptr->alloc_tres_weighted, buffer);
 
 		packstr(dump_node_ptr->arch, buffer);
 		packstr(dump_node_ptr->features, buffer);

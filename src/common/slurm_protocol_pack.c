@@ -1526,7 +1526,6 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack16(&node->alloc_cpus, buffer);
 		safe_unpack64(&node->alloc_memory, buffer);
 		safe_unpackstr(&node->alloc_tres_fmt_str, buffer);
-		safe_unpackdouble(&node->alloc_tres_weighted, buffer);
 
 		safe_unpackstr(&node->arch, buffer);
 		safe_unpackstr(&node->features, buffer);
