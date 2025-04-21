@@ -4795,7 +4795,7 @@ extern char *slurmdb_get_job_id_str(slurmdb_job_rec_t *job)
 /* This always refers to the batch step. */
 extern char *slurmdb_expand_job_stdio_fields(char *path, slurmdb_job_rec_t *job)
 {
-	job_std_pattern_t job_stp;
+	job_std_pattern_t job_stp = { 0 };
 	hostlist_t *nodes = NULL;
 	char *ret;
 
@@ -4829,7 +4829,7 @@ extern char *slurmdb_expand_job_stdio_fields(char *path, slurmdb_job_rec_t *job)
 extern char *slurmdb_expand_step_stdio_fields(char *path,
 					      slurmdb_step_rec_t *step)
 {
-	job_std_pattern_t job_stp;
+	job_std_pattern_t job_stp = { 0 };
 	slurmdb_job_rec_t *job = step->job_ptr;
 	hostlist_t *nodes = hostlist_create(step->nodes);
 	char *ret;

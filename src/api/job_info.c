@@ -246,7 +246,7 @@ extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t * job_ptr)
 
 extern char *slurm_expand_step_stdio_fields(char *path, job_step_info_t *step)
 {
-	job_std_pattern_t job_stp;
+	job_std_pattern_t job_stp = { 0 };
 	hostlist_t *nodes = hostlist_create(step->nodes);
 	char *ret;
 
@@ -270,7 +270,7 @@ extern char *slurm_expand_step_stdio_fields(char *path, job_step_info_t *step)
 
 extern char *slurm_expand_job_stdio_fields(char *path, job_info_t *job)
 {
-	job_std_pattern_t job_stp;
+	job_std_pattern_t job_stp = { 0 };
 
 	job_stp.array_job_id = job->array_job_id;
 	job_stp.array_task_id = job->array_task_id;
