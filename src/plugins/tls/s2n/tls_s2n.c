@@ -813,6 +813,7 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 		/* Use new config with only "cert" loaded in trust store */
 		if (!(conn->s2n_config = _create_client_config())) {
 			error("Failed to create new config for connection");
+			goto fail;
 		}
 
 		if (s2n_config_add_pem_to_trust_store(conn->s2n_config,
