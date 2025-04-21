@@ -66,7 +66,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static struct s2n_config *default_config = NULL;
 
-static struct s2n_cert_chain_and_key *cert_and_key = NULL;
+static struct s2n_cert_chain_and_key *server_cert_and_key = NULL;
 
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
@@ -325,12 +325,12 @@ static int _load_ca_cert(void)
 static int _add_cert_and_key_to_store(char *cert_pem, uint32_t cert_pem_len,
 				      char *key_pem, uint32_t key_pem_len)
 {
-	if (!(cert_and_key = s2n_cert_chain_and_key_new())) {
+	if (!(server_cert_and_key = s2n_cert_chain_and_key_new())) {
 		on_s2n_error(NULL, s2n_cert_chain_and_key_new);
 		return SLURM_ERROR;
 	}
 
-	if (s2n_cert_chain_and_key_load_pem_bytes(cert_and_key,
+	if (s2n_cert_chain_and_key_load_pem_bytes(server_cert_and_key,
 						  (uint8_t *) cert_pem,
 						  cert_pem_len,
 						  (uint8_t *) key_pem,
@@ -345,7 +345,7 @@ static int _add_cert_and_key_to_store(char *cert_pem, uint32_t cert_pem_len,
 	 *	any subsequent changes will be reflected in the config.
 	 */
 	if (s2n_config_add_cert_chain_and_key_to_store(default_config,
-						       cert_and_key) < 0) {
+						       server_cert_and_key) < 0) {
 		on_s2n_error(NULL, s2n_config_add_cert_chain_and_key_to_store);
 		return SLURM_ERROR;
 	}
@@ -514,8 +514,8 @@ extern int fini(void)
 	if (s2n_config_free(default_config))
 		on_s2n_error(NULL, s2n_config_free);
 
-	if (cert_and_key &&
-	    (s2n_cert_chain_and_key_free(cert_and_key) != S2N_SUCCESS))
+	if (server_cert_and_key &&
+	    (s2n_cert_chain_and_key_free(server_cert_and_key) != S2N_SUCCESS))
 		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
 
 	if (s2n_cleanup_final())
