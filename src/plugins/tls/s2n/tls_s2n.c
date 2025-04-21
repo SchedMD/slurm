@@ -349,21 +349,25 @@ static int _add_ca_cert_to_client(void)
 	return SLURM_SUCCESS;
 }
 
-static int _add_cert_and_key_to_store(char *cert_pem, uint32_t cert_pem_len,
-				      char *key_pem, uint32_t key_pem_len)
+static int _add_cert_to_server(struct s2n_config *s2n_config,
+			       struct s2n_cert_chain_and_key **cert_and_key,
+			       char *cert_pem, uint32_t cert_pem_len,
+			       char *key_pem, uint32_t key_pem_len)
 {
-	if (server_cert_and_key &&
-	    (s2n_cert_chain_and_key_free(server_cert_and_key) != S2N_SUCCESS)) {
+	xassert(cert_and_key);
+
+	if (*cert_and_key &&
+	    (s2n_cert_chain_and_key_free(*cert_and_key) != S2N_SUCCESS)) {
 		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
 	}
-	server_cert_and_key = NULL;
+	*cert_and_key = NULL;
 
-	if (!(server_cert_and_key = s2n_cert_chain_and_key_new())) {
+	if (!(*cert_and_key = s2n_cert_chain_and_key_new())) {
 		on_s2n_error(NULL, s2n_cert_chain_and_key_new);
 		return SLURM_ERROR;
 	}
 
-	if (s2n_cert_chain_and_key_load_pem_bytes(server_cert_and_key,
+	if (s2n_cert_chain_and_key_load_pem_bytes(*cert_and_key,
 						  (uint8_t *) cert_pem,
 						  cert_pem_len,
 						  (uint8_t *) key_pem,
@@ -377,21 +381,29 @@ static int _add_cert_and_key_to_store(char *cert_pem, uint32_t cert_pem_len,
 	 *	It is not recommended to free or modify the `cert_key_pair` as
 	 *	any subsequent changes will be reflected in the config.
 	 */
-	if (s2n_config_add_cert_chain_and_key_to_store(server_config,
-						       server_cert_and_key)) {
+	if (s2n_config_add_cert_chain_and_key_to_store(s2n_config,
+						       *cert_and_key)) {
 		on_s2n_error(NULL, s2n_config_add_cert_chain_and_key_to_store);
 		goto fail;
 	}
 
 	return SLURM_SUCCESS;
 fail:
-	if (server_cert_and_key &&
-	    (s2n_cert_chain_and_key_free(server_cert_and_key) != S2N_SUCCESS)) {
+	if (*cert_and_key &&
+	    (s2n_cert_chain_and_key_free(*cert_and_key) != S2N_SUCCESS)) {
 		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
 	}
-	server_cert_and_key = NULL;
+	*cert_and_key = NULL;
 
 	return SLURM_ERROR;
+}
+
+static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
+				      char *key_pem, uint32_t key_pem_len)
+{
+	return _add_cert_to_server(server_config, &server_cert_and_key,
+				   cert_pem, cert_pem_len, key_pem,
+				   key_pem_len);
 }
 
 static int _add_self_signed_cert_to_server(void)
@@ -413,7 +425,7 @@ static int _add_self_signed_cert_to_server(void)
 	cert_pem_len = strlen(cert_pem);
 	key_pem_len = strlen(key_pem);
 
-	rc = _add_cert_and_key_to_store(cert_pem, cert_pem_len, key_pem,
+	rc = _add_cert_to_global_server(cert_pem, cert_pem_len, key_pem,
 					key_pem_len);
 
 	xfree(cert_pem);
@@ -507,7 +519,7 @@ static int _add_cert_from_file_to_server(void)
 	}
 	xfree(key_file);
 
-	rc = _add_cert_and_key_to_store(cert_buf->head, cert_buf->size,
+	rc = _add_cert_to_global_server(cert_buf->head, cert_buf->size,
 					key_buf->head, key_buf->size);
 
 	FREE_NULL_BUFFER(cert_buf);
@@ -626,7 +638,7 @@ extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
 	server_key = xstrdup(key);
 	server_key_len = key_len;
 
-	if (_add_cert_and_key_to_store(cert, cert_len, key, key_len)) {
+	if (_add_cert_to_global_server(cert, cert_len, key, key_len)) {
 		error("%s: Could not add certificate and private key to s2n_config.",
 		      plugin_type);
 		return SLURM_ERROR;
