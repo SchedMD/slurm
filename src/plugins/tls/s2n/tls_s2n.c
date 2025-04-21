@@ -394,7 +394,35 @@ fail:
 	return SLURM_ERROR;
 }
 
-static int _load_self_cert(void)
+static int _add_self_signed_cert_to_server(void)
+{
+	int rc;
+	char *cert_pem = NULL, *key_pem = NULL;
+	uint32_t cert_pem_len, key_pem_len;
+
+	if (!certmgr_enabled()) {
+		error("certmgr plugin not enabled, unable to get self signed certificate.");
+		return SLURM_ERROR;
+	}
+	if (certmgr_g_get_self_signed_cert(&cert_pem, &key_pem) || !cert_pem ||
+	    !key_pem) {
+		error("Failed to get self signed certificate and private key");
+		return SLURM_ERROR;
+	}
+
+	cert_pem_len = strlen(cert_pem);
+	key_pem_len = strlen(key_pem);
+
+	rc = _add_cert_and_key_to_store(cert_pem, cert_pem_len, key_pem,
+					key_pem_len);
+
+	xfree(cert_pem);
+	xfree(key_pem);
+
+	return rc;
+}
+
+static int _add_cert_from_file_to_server(void)
 {
 	int rc;
 	char *cert_file, *key_file;
@@ -420,29 +448,7 @@ static int _load_self_cert(void)
 		default_cert_path = "ctld_cert.pem";
 		default_key_path = "ctld_cert_key.pem";
 	} else {
-		int rc;
-		char *cert_pem = NULL, *key_pem = NULL;
-		uint32_t cert_pem_len, key_pem_len;
-
-		if (!certmgr_enabled()) {
-			error("certmgr plugin not enabled, unable to get self signed certificate.");
-			return SLURM_ERROR;
-		}
-		if (certmgr_g_get_self_signed_cert(&cert_pem, &key_pem) ||
-		    !cert_pem || !key_pem) {
-			error("Failed to get self signed certificate and private key");
-			return SLURM_ERROR;
-		}
-
-		cert_pem_len = strlen(cert_pem);
-		key_pem_len = strlen(key_pem);
-
-		rc = _add_cert_and_key_to_store(cert_pem, cert_pem_len, key_pem,
-						key_pem_len);
-		xfree(cert_pem);
-		xfree(key_pem);
-
-		return rc;
+		return SLURM_ERROR;
 	}
 	xassert(cert_conf);
 	xassert(key_conf);
@@ -538,15 +544,15 @@ extern int init(void)
 		return errno;
 	}
 
-	/*
-	 * slurmctld and slurmdbd need to load their own pre-signed certificate
-	 */
-	if (running_in_slurmctld() || running_in_slurmdbd() ||
-	    running_in_slurmrestd() || !running_in_daemon()) {
-		if (_load_self_cert()) {
-			error("Could not load own certificate and private key for s2n");
-			return SLURM_ERROR;
-		}
+	if ((running_in_slurmctld() || running_in_slurmdbd() ||
+	     running_in_slurmrestd()) &&
+	    _add_cert_from_file_to_server()) {
+		error("Could not load own TLS certificate from file");
+		return SLURM_ERROR;
+	}
+	if (!running_in_daemon() && _add_self_signed_cert_to_server()) {
+		error("Could not load self-signed TLS certificate");
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
