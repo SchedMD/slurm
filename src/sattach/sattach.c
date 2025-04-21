@@ -364,7 +364,7 @@ static int _attach_to_tasks(slurm_step_id_t stepid,
 	slurm_msg_t msg;
 	list_t *nodes_resp = NULL;
 	int timeout = slurm_conf.msg_timeout * 1000; /* sec to msec */
-	reattach_tasks_request_msg_t reattach_msg;
+	reattach_tasks_request_msg_t reattach_msg = { 0 };
 
 	slurm_msg_t_init(&msg);
 
