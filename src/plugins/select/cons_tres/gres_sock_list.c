@@ -158,16 +158,20 @@ static void _handle_gres_exc_basic(resv_exc_t *resv_exc_ptr,
 static sock_gres_t *_build_sock_gres_by_topo(
 	gres_state_t *gres_state_job,
 	gres_state_t *gres_state_node,
-	resv_exc_t *resv_exc_ptr,
-	bool use_total_gres, bitstr_t *core_bitmap,
-	uint16_t sockets, uint16_t cores_per_sock, uint32_t res_cores_per_gpu,
-	char *node_name,
-	bool enforce_binding, uint32_t s_p_n,
-	bitstr_t **req_sock_map,
-	const uint32_t node_inx)
+	gres_sock_list_create_t *create_args,
+	uint32_t s_p_n)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	resv_exc_t *resv_exc_ptr = create_args->resv_exc_ptr;
+	bool use_total_gres = create_args->use_total_gres;
+	bitstr_t *core_bitmap = create_args->core_bitmap;
+	uint16_t sockets = create_args->sockets;
+	uint16_t cores_per_sock = create_args->cores_per_sock;
+	uint32_t res_cores_per_gpu = create_args->res_cores_per_gpu;
+	char *node_name = create_args->node_name;
+	bool enforce_binding = create_args->enforce_binding;
+
 	gres_node_state_t *alt_gres_ns = NULL;
 	int i, j, s, c;
 	uint32_t tot_cores;
@@ -203,7 +207,8 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			continue;	/* No GRES remaining */
 		}
 
-		if (!_can_use_gres_exc_topo(resv_exc_ptr, node_inx, i))
+		if (!_can_use_gres_exc_topo(resv_exc_ptr,
+					    create_args->node_inx, i))
 			continue;   /* Not allowed in resv_exc_ptr */
 
 		if (!use_total_gres && !gres_ns->no_consume) {
@@ -459,9 +464,9 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			}
 		}
 		while ((best_sock_inx != -1) && (add_gres > 0)) {
-			if (*req_sock_map == NULL)
-				*req_sock_map = bit_alloc(sockets);
-			bit_set(*req_sock_map, best_sock_inx);
+			if (!create_args->req_sock_map)
+				create_args->req_sock_map = bit_alloc(sockets);
+			bit_set(create_args->req_sock_map, best_sock_inx);
 			add_gres -= sock_gres->cnt_by_sock[best_sock_inx];
 			avail_sock_flag[best_sock_inx] = false;
 			if (add_gres <= 0)
@@ -878,18 +883,8 @@ extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 			 * rejected as never runnable.
 			 */
 			sock_gres = _build_sock_gres_by_topo(
-				gres_state_job,
-				gres_state_node,
-				create_args->resv_exc_ptr,
-				create_args->use_total_gres,
-				create_args->core_bitmap,
-				create_args->sockets,
-				create_args->cores_per_sock,
-				create_args->res_cores_per_gpu,
-				create_args->node_name,
-				create_args->enforce_binding, local_s_p_n,
-				&create_args->req_sock_map,
-				create_args->node_inx);
+				gres_state_job,	gres_state_node, create_args,
+				local_s_p_n);
 		} else if (gres_ns->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(
 				gres_js,
