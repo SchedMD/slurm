@@ -500,7 +500,7 @@ static sock_gres_t *_build_sock_gres_by_type(
 	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
-	char *node_name, uint32_t node_inx)
+	uint32_t node_inx)
 {
 	int i;
 	sock_gres_t *sock_gres;
@@ -558,7 +558,7 @@ static sock_gres_t *_build_sock_gres_basic(
 	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
-	char *node_name, uint32_t node_inx)
+	uint32_t node_inx)
 {
 	sock_gres_t *sock_gres;
 	uint64_t avail_gres, min_gres = 1;
@@ -896,13 +896,13 @@ extern list_t *gres_sock_list_create(
 				gres_js,
 				gres_ns, resv_exc_ptr, use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
-				node_name, node_inx);
+				node_inx);
 		} else {
 			sock_gres = _build_sock_gres_basic(
 				gres_js,
 				gres_ns, resv_exc_ptr, use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
-				node_name, node_inx);
+				node_inx);
 		}
 		if (!sock_gres) {
 			/* node lack available resources required by the job */
