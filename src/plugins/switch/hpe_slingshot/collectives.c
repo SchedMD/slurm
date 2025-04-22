@@ -83,6 +83,7 @@ static void *_cleanup_thread(void *data)
 		slurm_mutex_unlock(&cleanup_thread_lock);
 
 		json_object_put(respjson);
+		respjson = NULL;
 		if (!(respjson = slingshot_rest_get(&fm_conn, url, &status))) {
 			error("GET %s to fabric manager for job failed: %ld",
 			      url, status);
@@ -138,6 +139,7 @@ static void *_cleanup_thread(void *data)
 
 	debug("shutting down collectives cleanup thread");
 
+	json_object_put(respjson);
 	return NULL;
 }
 

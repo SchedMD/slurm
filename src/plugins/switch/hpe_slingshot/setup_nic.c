@@ -64,6 +64,7 @@ struct cxi_rsrc_use {
 
 /* Function pointers loaded from libcxi */
 static int (*cxil_get_device_list_p)(struct cxil_device_list **);
+static void (*cxil_free_device_list_p)(struct cxil_device_list *);
 static int (*cxil_get_svc_list_p)(struct cxil_dev *dev,
 				  struct cxil_svc_list **svc_list);
 static int (*cxil_open_device_p)(uint32_t, struct cxil_dev **);
@@ -89,6 +90,7 @@ do { \
 static bool _load_cxi_funcs(void *lib)
 {
 	LOOKUP_SYM(lib, cxil_get_device_list);
+	LOOKUP_SYM(lib, cxil_free_device_list);
 	LOOKUP_SYM(lib, cxil_get_svc_list);
 	LOOKUP_SYM(lib, cxil_open_device);
 	LOOKUP_SYM(lib, cxil_alloc_svc);
@@ -214,19 +216,22 @@ static bool _adjust_dev_limits(int dev, struct cxil_devinfo *devinfo)
  */
 static bool _create_cxi_devs(slingshot_stepinfo_t *job)
 {
-	struct cxil_device_list *list;
+	struct cxil_device_list *list = NULL;
 	int dev, rc;
+	bool retval = true;
 
 	if ((rc = cxil_get_device_list_p(&list))) {
 		error("Could not get a list of the CXI devices: %s",
 		      strerror(-rc));
-		return false;
+		retval = false;
+		goto endit;
 	}
 
 	/* If there are no CXI NICs, just say it's unsupported */
 	if (!list->count) {
 		error("No CXI devices available");
-		return false;
+		retval = false;
+		goto endit;
 	}
 
 	cxi_devs = xcalloc(list->count, sizeof(struct cxil_dev *));
@@ -252,7 +257,10 @@ static bool _create_cxi_devs(slingshot_stepinfo_t *job)
 			_adjust_dev_limits(dev, &cxi_devs[dev]->info);
 	}
 
-	return true;
+endit:
+	if (list)
+		cxil_free_device_list_p(list);
+	return retval;
 }
 
 /*

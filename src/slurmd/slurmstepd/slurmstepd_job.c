@@ -709,6 +709,10 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 	xfree(step->tres_freq);
 	xfree(step->user_name);
 	xfree(step->x11_xauthority);
+
+	if (step->switch_step)
+		switch_g_free_stepinfo(step->switch_step);
+
 	xfree(step);
 }
 

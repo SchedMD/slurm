@@ -353,6 +353,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/* Used to free switch_jobinfo when switch_p_job_complete can't be used */
+extern void switch_p_free_jobinfo(job_record_t *job_ptr)
+{
+	slingshot_free_jobinfo(job_ptr->switch_jobinfo);
+	job_ptr->switch_jobinfo = NULL;
+}
+
 static void _copy_stepinfo(slingshot_stepinfo_t *old, slingshot_stepinfo_t *new)
 {
 	/* Copy static (non-malloced) fields */
