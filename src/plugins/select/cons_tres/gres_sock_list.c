@@ -158,8 +158,7 @@ static void _handle_gres_exc_basic(resv_exc_t *resv_exc_ptr,
 static sock_gres_t *_build_sock_gres_by_topo(
 	gres_state_t *gres_state_job,
 	gres_state_t *gres_state_node,
-	gres_sock_list_create_t *create_args,
-	uint32_t s_p_n)
+	gres_sock_list_create_t *create_args)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_node_state_t *gres_ns = gres_state_node->gres_data;
@@ -171,6 +170,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	uint32_t res_cores_per_gpu = create_args->res_cores_per_gpu;
 	char *node_name = create_args->node_name;
 	bool enforce_binding = create_args->enforce_binding;
+	uint32_t s_p_n = NO_VAL; /* No need to optimize socket */
 
 	gres_node_state_t *alt_gres_ns = NULL;
 	int i, j, s, c;
@@ -383,6 +383,10 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			}
 		}
 	}
+
+	/* Maximize GRES per node */
+	if (gres_js->gres_per_job && !gres_js->gres_per_socket)
+		s_p_n = create_args->s_p_n;
 
 	/*
 	 * Satisfy sockets-per-node (s_p_n) limit by selecting the sockets with
@@ -793,7 +797,6 @@ extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 	gres_state_t *gres_state_job, *gres_state_node;
 	gres_job_state_t  *gres_js;
 	gres_node_state_t *gres_ns;
-	uint32_t local_s_p_n;
 	list_t *gres_list_resv = NULL;
 	gres_job_state_t **gres_js_resv = NULL;
 	node_record_t *node_ptr = node_record_table_ptr[create_args->node_inx];
@@ -860,12 +863,6 @@ extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 				*gres_js_resv = NULL;
 		}
 
-		if (gres_js->gres_per_job &&
-		    !gres_js->gres_per_socket)
-			/* Maximize GRES per node */
-			local_s_p_n = create_args->s_p_n;
-		else
-			local_s_p_n = NO_VAL;	/* No need to optimize socket */
 		if (create_args->core_bitmap &&
 		    (bit_ffs(create_args->core_bitmap) == -1)) {
 			sock_gres = NULL;	/* No cores available */
@@ -883,8 +880,7 @@ extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 			 * rejected as never runnable.
 			 */
 			sock_gres = _build_sock_gres_by_topo(
-				gres_state_job,	gres_state_node, create_args,
-				local_s_p_n);
+				gres_state_job,	gres_state_node, create_args);
 		} else if (gres_ns->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(
 				gres_js,
