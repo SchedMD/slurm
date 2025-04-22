@@ -1647,6 +1647,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack32(object->cpu_bind, buffer);
 		pack16(object->cpus, buffer);
 		pack16(object->boards, buffer);
+		pack16(object->tot_cores, buffer);
 		pack16(object->tot_sockets, buffer);
 		pack16(object->cores, buffer);
 		pack16(object->core_spec_cnt, buffer);
@@ -1798,6 +1799,7 @@ extern int node_record_unpack(void **out,
 		safe_unpack32(&object->cpu_bind, buffer);
 		safe_unpack16(&object->cpus, buffer);
 		safe_unpack16(&object->boards, buffer);
+		safe_unpack16(&object->tot_cores, buffer);
 		safe_unpack16(&object->tot_sockets, buffer);
 		safe_unpack16(&object->cores, buffer);
 		safe_unpack16(&object->core_spec_cnt, buffer);
@@ -1868,6 +1870,8 @@ extern int node_record_unpack(void **out,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&object->weight, buffer);
+
+		object->tot_cores = object->tot_sockets * object->cores;
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->comm_name, buffer);
 		safe_unpackstr(&object->name, buffer);
@@ -1910,6 +1914,8 @@ extern int node_record_unpack(void **out,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&object->weight, buffer);
+
+		object->tot_cores = object->tot_sockets * object->cores;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->comm_name, buffer);
 		safe_unpackstr(&object->name, buffer);
@@ -1948,6 +1954,8 @@ extern int node_record_unpack(void **out,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&object->weight, buffer);
+
+		object->tot_cores = object->tot_sockets * object->cores;
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
