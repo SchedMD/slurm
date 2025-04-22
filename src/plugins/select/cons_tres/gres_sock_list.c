@@ -164,7 +164,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	uint32_t job_id, char *node_name,
 	bool enforce_binding, uint32_t s_p_n,
 	bitstr_t **req_sock_map,
-	uint32_t user_id, const uint32_t node_inx)
+	const uint32_t node_inx)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_node_state_t *gres_ns = gres_state_node->gres_data;
@@ -790,7 +790,7 @@ extern list_t *gres_sock_list_create(
 	uint16_t sockets, uint16_t cores_per_sock,
 	uint32_t job_id, char *node_name,
 	bool enforce_binding, uint32_t s_p_n,
-	bitstr_t **req_sock_map, uint32_t user_id,
+	bitstr_t **req_sock_map,
 	const uint32_t node_inx, bitstr_t *gpu_spec_bitmap,
 	uint32_t res_cores_per_gpu, uint16_t cr_type)
 {
@@ -890,7 +890,7 @@ extern list_t *gres_sock_list_create(
 				core_bitmap, sockets, cores_per_sock,
 				res_cores_per_gpu, job_id, node_name,
 				enforce_binding, local_s_p_n, req_sock_map,
-				user_id, node_inx);
+				node_inx);
 		} else if (gres_ns->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(
 				gres_js,

@@ -536,7 +536,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 					node_ptr->tot_sockets, node_ptr->cores,
 					job_ptr->job_id, node_ptr->name,
 					enforce_binding, s_p_n, &req_sock_map,
-					job_ptr->user_id, node_i,
+					node_i,
 					node_ptr->gpu_spec_bitmap,
 					node_ptr->res_cores_per_gpu,
 					cr_type);

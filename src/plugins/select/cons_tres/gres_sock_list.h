@@ -55,7 +55,6 @@
  * IN enforce_binding - if true then only use GRES with direct access to cores
  * IN s_p_n           - Expected sockets_per_node (NO_VAL if not limited)
  * OUT req_sock_map   - bitmap of specific requires sockets
- * IN user_id         - job's user ID
  * IN node_inx        - index of node to be evaluated
  * IN gpu_spec_bitmap - bitmap of reserved gpu cores
  * IN res_cores_per_gpu - number of cores reserved for each gpu
@@ -71,7 +70,7 @@ extern list_t *gres_sock_list_create(
 	uint16_t sockets, uint16_t cores_per_sock,
 	uint32_t job_id, char *node_name,
 	bool enforce_binding, uint32_t s_p_n,
-	bitstr_t **req_sock_map, uint32_t user_id,
+	bitstr_t **req_sock_map,
 	const uint32_t node_inx, bitstr_t *gpu_spec_bitmap,
 	uint32_t res_cores_per_gpu, uint16_t cr_type);
 
