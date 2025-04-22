@@ -506,11 +506,9 @@ static sock_gres_t *_build_sock_gres_by_topo(
 static sock_gres_t *_build_sock_gres_by_type(
 	gres_job_state_t *gres_js,
 	gres_node_state_t *gres_ns,
-	resv_exc_t *resv_exc_ptr,
-	bool use_total_gres, bitstr_t *core_bitmap,
-	uint16_t sockets, uint16_t cores_per_sock,
-	uint32_t node_inx)
+	gres_sock_list_create_t *create_args)
 {
+	bool use_total_gres = create_args->use_total_gres;
 	int i;
 	sock_gres_t *sock_gres;
 	uint64_t avail_gres, min_gres = 1, gres_tmp;
@@ -538,8 +536,8 @@ static sock_gres_t *_build_sock_gres_by_type(
 			avail_gres = gres_ns->type_cnt_avail[i];
 		}
 
-		_handle_gres_exc_by_type(resv_exc_ptr, gres_js,
-					 node_inx, &avail_gres);
+		_handle_gres_exc_by_type(create_args->resv_exc_ptr, gres_js,
+					 create_args->node_inx, &avail_gres);
 
 		gres_tmp = gres_ns->gres_cnt_avail;
 		if (!use_total_gres)
@@ -883,14 +881,7 @@ extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 				gres_state_job,	gres_state_node, create_args);
 		} else if (gres_ns->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(
-				gres_js,
-				gres_ns,
-				create_args->resv_exc_ptr,
-				create_args->use_total_gres,
-				create_args->core_bitmap,
-				create_args->sockets,
-				create_args->cores_per_sock,
-				create_args->node_inx);
+				gres_js, gres_ns, create_args);
 		} else {
 			sock_gres = _build_sock_gres_basic(
 				gres_js,
