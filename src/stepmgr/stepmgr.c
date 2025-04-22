@@ -1363,7 +1363,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					FREE_NULL_BITMAP(select_nodes_avail);
 					xfree(usable_cpu_cnt);
 					*return_code = ESLURM_NODES_BUSY;
-					if (total_tasks == 0) {
+					if (total_tasks == 0 &&
+					    (fail_mode !=
+					     ESLURM_INVALID_TASK_MEMORY)) {
 						*return_code = fail_mode;
 						log_flag(STEPS, "%s: %pJ Step cannot ever run in the allocation: %s",
 							 __func__,
