@@ -5697,6 +5697,13 @@ This parameter is required.
 .IP
 
 .TP
+\fBdestroy_retries\fR=<\fIretry attempts\fR>
+Configure the number of times destroying CXI services is retried at the end of
+the step. There is a one second pause between each retry.
+The default value is 5.
+.IP
+
+.TP
 \fBtcs\fR=<\fIclass1\fR>[:<\fIclass2\fR>]...
 Set of traffic classes to configure for applications.
 Supported traffic classes are DEDICATED_ACCESS, LOW_LATENCY, BULK_DATA, and

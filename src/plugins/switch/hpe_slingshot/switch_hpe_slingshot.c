@@ -122,6 +122,10 @@ extern int init(void)
 		if (!slingshot_setup_config(slurm_conf.switch_param))
 			return SLURM_ERROR;
 	}
+	if (running_in_slurmstepd()) {
+		if (!slingshot_stepd_init(slurm_conf.switch_param))
+			return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }

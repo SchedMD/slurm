@@ -78,6 +78,7 @@ static void _config_defaults(void)
 	slingshot_config.limits.ptes.def = SLINGSHOT_PTE_DEF;
 	slingshot_config.limits.les.def = SLINGSHOT_LE_DEF;
 	slingshot_config.limits.acs.def = SLINGSHOT_AC_DEF;
+	slingshot_config.destroy_retries = SLINGSHOT_CXI_DESTROY_RETRIES;
 }
 
 /*
@@ -463,6 +464,29 @@ static void _config_fm_defaults(void)
 	xassert(slingshot_config.fm_authdir);
 }
 
+static int _config_destroy_retries(const char *token, char *arg)
+{
+	uint32_t tmp;
+	char *end_ptr = NULL;
+
+	if (!arg)
+		return SLURM_ERROR;
+
+	errno = 0;
+	tmp = strtoul(arg, &end_ptr, 10);
+	if ((errno != 0) || *end_ptr) {
+		error("Invalid value for %s", token);
+		return SLURM_ERROR;
+	}
+
+	slingshot_config.destroy_retries = tmp;
+
+	log_flag(SWITCH, "[token=%s]: destroy_retries = %u",
+		 token, slingshot_config.destroy_retries);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Mapping between Slingshot limit names, slingshot_limits_set_t offset, maximum
  * values
@@ -589,6 +613,31 @@ extern void slingshot_free_config(void)
 	xfree(slingshot_config.fm_authdir);
 }
 
+extern bool slingshot_stepd_init(const char *switch_params)
+{
+	char *params = NULL, *token, *arg, *save_ptr = NULL;
+	const char destroy_retries[] = "destroy_retries";
+	const size_t size_destroy_retries = sizeof(destroy_retries) - 1;
+
+	params = xstrdup(switch_params);
+	for (token = strtok_r(params, ",", &save_ptr); token;
+	     token = strtok_r(NULL, ",", &save_ptr)) {
+		if ((arg = strchr(token, '=')))
+			arg++; /* points to argument after = if any */
+		if (!xstrncasecmp(token, destroy_retries,
+				  size_destroy_retries)) {
+			if (_config_destroy_retries(token, arg))
+				goto err;
+		}
+	}
+
+	xfree(params);
+	return true;
+err:
+	xfree(params);
+	return false;
+}
+
 /*
  * Set up passed-in slingshot_config_t based on values in 'SwitchParameters'
  * slurm.conf setting.  Return true on success, false on bad parameters
@@ -596,6 +645,8 @@ extern void slingshot_free_config(void)
 extern bool slingshot_setup_config(const char *switch_params)
 {
 	char *params = NULL, *token, *arg, *save_ptr = NULL;
+	const char destroy_retries[] = "destroy_retries";
+	const size_t size_destroy_retries = sizeof(destroy_retries) - 1;
 	const char vnis[] = "vnis";
 	const size_t size_vnis = sizeof(vnis) - 1;
 	const char tcs[] = "tcs";
@@ -720,6 +771,10 @@ extern bool slingshot_setup_config(const char *switch_params)
 				goto err;
 		} else if (!xstrncasecmp(token, fm_auth, size_fm_auth)) {
 			if (!_config_fm_auth(token, arg))
+				goto err;
+		} else if (!xstrncasecmp(token, destroy_retries,
+					 size_destroy_retries)) {
+			if (_config_destroy_retries(token, arg))
 				goto err;
 		} else {
 			if (!_config_limits(token, &slingshot_config.limits))

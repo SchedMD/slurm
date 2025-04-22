@@ -151,6 +151,7 @@ typedef struct slingshot_limits_set {
  * 'SwitchParameters' slurm.conf variable
  */
 typedef struct slingshot_config {
+	uint32_t destroy_retries; /* retry count for destroying services */
 	uint8_t single_node_vni;        /* Allocate VNIs for single-node apps */
 	uint8_t job_vni;                /* Allocate extra VNI per-job */
 	uint32_t tcs;                   /* Bitmap of default traffic classes */
@@ -297,6 +298,7 @@ extern void slingshot_release_collectives_job_step(slingshot_stepinfo_t *job);
 extern void slingshot_release_collectives_job(uint32_t job_id);
 /* config.c */
 extern void slingshot_free_config(void);
+extern bool slingshot_stepd_init(const char *switch_params);
 extern bool slingshot_setup_config(const char *switch_params);
 extern int slingshot_update_vni_table(void);
 extern bool slingshot_setup_job_vni_pool(job_record_t *job_ptr);

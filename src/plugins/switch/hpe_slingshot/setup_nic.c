@@ -407,7 +407,7 @@ static bool _destroy_cxi_service(struct cxil_dev *dev, const char *devname,
 {
 	int i, rc;
 
-	for (i = 0; i < SLINGSHOT_CXI_DESTROY_RETRIES; i++) {
+	for (i = 0; i < slingshot_config.destroy_retries; i++) {
 		debug("Destroying CXI SVC ID %d on NIC %s (retry %d)",
 		      svc_id, devname, i);
 		rc = cxil_destroy_svc_p(dev, svc_id);
