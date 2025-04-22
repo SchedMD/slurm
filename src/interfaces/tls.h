@@ -103,6 +103,18 @@ extern int tls_g_init(void);
 extern int tls_g_fini(void);
 
 /*
+ * Load own certificate into store
+ * This is useful when certificate is not known on startup, and must be loaded
+ * later (e.g. slurmd getting a signed certificate from slurmctld)
+ * IN cert - certificate PEM
+ * IN cert_len - length of cert
+ * IN key - key PEM
+ * IN key_len - length of key
+ */
+extern int tls_g_load_self_cert(char *cert, uint32_t cert_len, char *key,
+				uint32_t key_len);
+
+/*
  * Create new TLS connection
  * IN tls_conn_args - ptr to tls_conn_args_t
  * RET ptr to TLS state

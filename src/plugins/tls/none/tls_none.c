@@ -67,6 +67,12 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
+				uint32_t key_len)
+{
+	return SLURM_SUCCESS;
+}
+
 extern tls_conn_t *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn = xmalloc(sizeof(*conn));

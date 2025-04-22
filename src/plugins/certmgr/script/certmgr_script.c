@@ -56,6 +56,7 @@ typedef enum {
 	GEN_CSR,
 	GEN_PRIVATE_KEY,
 	GEN_SELF_SIGNED,
+	GET_CERT_KEY,
 	GET_TOKEN,
 	SIGN_CSR,
 	VALID_NODE,
@@ -78,6 +79,10 @@ cert_script_t cert_scripts[] = {
 	},
 	[GEN_PRIVATE_KEY] = {
 		.key = "gen_private_key_script=",
+		.required = true,
+	},
+	[GET_CERT_KEY] = {
+		.key = "get_node_cert_key_script=",
 		.required = true,
 	},
 	[GET_TOKEN] = {
@@ -128,6 +133,8 @@ static int _load_script_paths(void)
 	if (running_in_daemon()) {
 		/* needs resources to get a signed certificate from slurmctld */
 		if (_set_script_path(&cert_scripts[GEN_CSR]))
+			return SLURM_ERROR;
+		if (_set_script_path(&cert_scripts[GET_CERT_KEY]))
 			return SLURM_ERROR;
 		if (_set_script_path(&cert_scripts[GET_TOKEN]))
 			return SLURM_ERROR;
@@ -207,6 +214,38 @@ static char *_gen_private_key(void)
 	}
 
 	return key;
+
+fail:
+	xfree(key);
+	return NULL;
+}
+
+extern char *certmgr_p_get_node_cert_key(char *node_name)
+{
+	char **script_argv;
+	int script_rc;
+	char *key = NULL;
+
+	script_argv = xcalloc(3, sizeof(char *)); /* NULL terminated */
+	/* script_argv[0] set to script path later */
+	script_argv[1] = node_name;
+
+	key = _run_script(GET_CERT_KEY, script_argv, &script_rc);
+	xfree(script_argv);
+
+	if (script_rc) {
+		error("%s: Unable to get node's private certificate key.", plugin_type);
+		goto fail;
+	} else if (!key || !*key) {
+		error("%s: Unable to get node's private certificate key. Script printed nothing to stdout",
+		      plugin_type);
+		goto fail;
+	} else {
+		log_flag(TLS, "Successfully retrieved node's private certificate key");
+	}
+
+	return key;
+
 fail:
 	xfree(key);
 	return NULL;

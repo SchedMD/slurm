@@ -43,6 +43,7 @@
 #include "src/interfaces/certmgr.h"
 
 typedef struct {
+	char *(*get_node_cert_key)(char *node_name);
 	char *(*get_node_token)(char *node_name);
 	int (*get_self_signed_cert)(char **cert_pem, char **key_pem);
 	char *(*generate_csr)(char *node_name);
@@ -54,6 +55,7 @@ typedef struct {
  * declared for certmgr_ops_t.
  */
 static const char *syms[] = {
+	"certmgr_p_get_node_cert_key",
 	"certmgr_p_get_node_token",
 	"certmgr_p_get_self_signed_cert",
 	"certmgr_p_generate_csr",
@@ -154,6 +156,17 @@ extern int certmgr_g_fini(void)
 	slurm_rwlock_unlock(&context_lock);
 
 	return rc;
+}
+
+extern char *certmgr_g_get_node_cert_key(char *node_name)
+{
+	xassert(running_in_slurmd());
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
+
+	return (*(ops.get_node_cert_key))(node_name);
 }
 
 extern char *certmgr_g_get_node_token(char *node_name)
