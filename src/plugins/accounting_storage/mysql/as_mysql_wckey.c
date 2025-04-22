@@ -993,6 +993,7 @@ is_same_user:
 	}
 	list_iterator_destroy(itr);
 	xfree(extra);
+	xfree(vals);
 	xfree(user_name);
 
 	if (locked) {
