@@ -783,16 +783,7 @@ static void _gres_limit_reserved_cores(
 	bit_free(gpu_spec_cpy);
 }
 
-extern list_t *gres_sock_list_create(
-	list_t *job_gres_list, list_t *node_gres_list,
-	resv_exc_t *resv_exc_ptr,
-	bool use_total_gres, bitstr_t *core_bitmap,
-	uint16_t sockets, uint16_t cores_per_sock,
-	char *node_name,
-	bool enforce_binding, uint32_t s_p_n,
-	bitstr_t **req_sock_map,
-	const uint32_t node_inx, bitstr_t *gpu_spec_bitmap,
-	uint32_t res_cores_per_gpu, uint16_t cr_type)
+extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 {
 	list_t *sock_gres_list = NULL;
 	list_itr_t *job_gres_iter;
@@ -802,40 +793,49 @@ extern list_t *gres_sock_list_create(
 	uint32_t local_s_p_n;
 	list_t *gres_list_resv = NULL;
 	gres_job_state_t **gres_js_resv = NULL;
-	node_record_t *node_ptr = node_record_table_ptr[node_inx];
+	node_record_t *node_ptr = node_record_table_ptr[create_args->node_inx];
 
-	if (!job_gres_list || (list_count(job_gres_list) == 0)) {
-		if (gpu_spec_bitmap && core_bitmap)
-			bit_and(core_bitmap, gpu_spec_bitmap);
+	if (!create_args->job_gres_list ||
+	    (list_count(create_args->job_gres_list) == 0)) {
+		if (create_args->gpu_spec_bitmap && create_args->core_bitmap)
+			bit_and(create_args->core_bitmap,
+				create_args->gpu_spec_bitmap);
 		return sock_gres_list;
 	}
-	if (!node_gres_list)	/* Node lacks GRES to match */
+	if (!create_args->node_gres_list) /* Node lacks GRES to match */
 		return sock_gres_list;
 	(void) gres_init();
 
-	if (!(cr_type & CR_SOCKET))
-		_gres_limit_reserved_cores(job_gres_list, node_gres_list,
-					   core_bitmap, sockets, cores_per_sock,
-					   node_inx, gpu_spec_bitmap,
-					   res_cores_per_gpu);
+	if (!(create_args->cr_type & CR_SOCKET))
+		_gres_limit_reserved_cores(create_args->job_gres_list,
+					   create_args->node_gres_list,
+					   create_args->core_bitmap,
+					   create_args->sockets,
+					   create_args->cores_per_sock,
+					   create_args->node_inx,
+					   create_args->gpu_spec_bitmap,
+					   create_args->res_cores_per_gpu);
 
-	if (resv_exc_ptr) {
-		if (resv_exc_ptr->gres_list_exc) {
-			gres_list_resv = resv_exc_ptr->gres_list_exc;
-			gres_js_resv = (gres_job_state_t **)&(
-				resv_exc_ptr->gres_js_exc);
-		} else if (resv_exc_ptr->gres_list_inc) {
-			gres_list_resv = resv_exc_ptr->gres_list_inc;
-			gres_js_resv = (gres_job_state_t **)&(
-				resv_exc_ptr->gres_js_inc);
+	if (create_args->resv_exc_ptr) {
+		if (create_args->resv_exc_ptr->gres_list_exc) {
+			gres_list_resv =
+				create_args->resv_exc_ptr->gres_list_exc;
+			gres_js_resv = (gres_job_state_t **)
+				&create_args->resv_exc_ptr->gres_js_exc;
+		} else if (create_args->resv_exc_ptr->gres_list_inc) {
+			gres_list_resv =
+				create_args->resv_exc_ptr->gres_list_inc;
+			gres_js_resv = (gres_job_state_t **)
+				&create_args->resv_exc_ptr->gres_js_inc;
 		}
 	}
 
 	sock_gres_list = list_create(gres_sock_delete);
-	job_gres_iter = list_iterator_create(job_gres_list);
+	job_gres_iter = list_iterator_create(create_args->job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
 		sock_gres_t *sock_gres = NULL;
-		gres_state_node = list_find_first(node_gres_list, gres_find_id,
+		gres_state_node = list_find_first(create_args->node_gres_list,
+						  gres_find_id,
 						  &gres_state_job->plugin_id);
 		if (gres_state_node == NULL) {
 			/* node lack GRES of type required by the job */
@@ -866,10 +866,12 @@ extern list_t *gres_sock_list_create(
 
 		if (gres_js->gres_per_job &&
 		    !gres_js->gres_per_socket)
-			local_s_p_n = s_p_n;	/* Maximize GRES per node */
+			/* Maximize GRES per node */
+			local_s_p_n = create_args->s_p_n;
 		else
 			local_s_p_n = NO_VAL;	/* No need to optimize socket */
-		if (core_bitmap && (bit_ffs(core_bitmap) == -1)) {
+		if (create_args->core_bitmap &&
+		    (bit_ffs(create_args->core_bitmap) == -1)) {
 			sock_gres = NULL;	/* No cores available */
 		} else if (gres_ns->topo_cnt &&
 			   (gres_ns->gres_cnt_found != NO_VAL64 ||
@@ -885,32 +887,46 @@ extern list_t *gres_sock_list_create(
 			 * rejected as never runnable.
 			 */
 			sock_gres = _build_sock_gres_by_topo(
-				gres_state_job, gres_state_node, resv_exc_ptr,
-				use_total_gres,
-				core_bitmap, sockets, cores_per_sock,
-				res_cores_per_gpu, node_name,
-				enforce_binding, local_s_p_n, req_sock_map,
-				node_inx);
+				gres_state_job,
+				gres_state_node,
+				create_args->resv_exc_ptr,
+				create_args->use_total_gres,
+				create_args->core_bitmap,
+				create_args->sockets,
+				create_args->cores_per_sock,
+				create_args->res_cores_per_gpu,
+				create_args->node_name,
+				create_args->enforce_binding, local_s_p_n,
+				&create_args->req_sock_map,
+				create_args->node_inx);
 		} else if (gres_ns->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(
 				gres_js,
-				gres_ns, resv_exc_ptr, use_total_gres,
-				core_bitmap, sockets, cores_per_sock,
-				node_inx);
+				gres_ns,
+				create_args->resv_exc_ptr,
+				create_args->use_total_gres,
+				create_args->core_bitmap,
+				create_args->sockets,
+				create_args->cores_per_sock,
+				create_args->node_inx);
 		} else {
 			sock_gres = _build_sock_gres_basic(
 				gres_js,
-				gres_ns, resv_exc_ptr, use_total_gres,
-				core_bitmap, sockets, cores_per_sock,
-				node_inx);
+				gres_ns,
+				create_args->resv_exc_ptr,
+				create_args->use_total_gres,
+				create_args->core_bitmap,
+				create_args->sockets,
+				create_args->cores_per_sock,
+				create_args->node_inx);
 		}
 		if (!sock_gres) {
 			/* node lack available resources required by the job */
-			bit_clear_all(core_bitmap);
+			bit_clear_all(create_args->core_bitmap);
 			FREE_NULL_LIST(sock_gres_list);
 			break;
 		}
-		sock_gres->use_total_gres = use_total_gres;
+		sock_gres->use_total_gres = create_args->use_total_gres;
 		sock_gres->gres_state_job = gres_state_job;
 		sock_gres->gres_state_node = gres_state_node;
 		list_append(sock_gres_list, sock_gres);
@@ -918,7 +934,7 @@ extern list_t *gres_sock_list_create(
 	list_iterator_destroy(job_gres_iter);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES)
-		_sock_gres_log(sock_gres_list, node_name);
+		_sock_gres_log(sock_gres_list, create_args->node_name);
 
 	return sock_gres_list;
 }

@@ -497,12 +497,28 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 	uint64_t avail_mem = NO_VAL64, req_mem;
 	int cpu_alloc_size, i, rc;
 	node_record_t *node_ptr = node_record_table_ptr[node_i];
-	list_t *node_gres_list;
-	bitstr_t *part_core_map_ptr = NULL, *req_sock_map = NULL;
+	bitstr_t *part_core_map_ptr = NULL;
 	avail_res_t *avail_res = NULL;
 	list_t *sock_gres_list = NULL;
-	bool enforce_binding = false;
 	uint16_t min_cpus_per_node, ntasks_per_node = 1;
+	gres_sock_list_create_t create_args = {
+		.cores_per_sock = node_ptr->cores,
+		.core_bitmap = NULL,
+		.cr_type = cr_type,
+		.enforce_binding = false,
+		.gpu_spec_bitmap = node_ptr->gpu_spec_bitmap,
+		.job_gres_list = job_ptr->gres_list_req,
+		.node_gres_list = node_usage[node_i].gres_list ?
+		node_usage[node_i].gres_list : node_ptr->gres_list,
+		.node_inx = node_i,
+		.node_name = node_ptr->name,
+		.resv_exc_ptr = resv_exc_ptr,
+		.req_sock_map = NULL,
+		.res_cores_per_gpu = node_ptr->res_cores_per_gpu,
+		.sockets = node_ptr->tot_sockets,
+		.s_p_n = s_p_n,
+		.use_total_gres = test_only,
+	};
 
 	if (((job_ptr->bit_flags & BACKFILL_TEST) == 0) &&
 	    !test_only && !will_run && IS_NODE_COMPLETING(node_ptr)) {
@@ -515,34 +531,22 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 
 	if (part_core_map)
 		part_core_map_ptr = part_core_map[node_i];
-	if (node_usage[node_i].gres_list)
-		node_gres_list = node_usage[node_i].gres_list;
-	else
-		node_gres_list = node_ptr->gres_list;
 
 	if (job_ptr->gres_list_req) {
 		/* Identify available GRES and adjacent cores */
 
 		if (job_ptr->bit_flags & GRES_ENFORCE_BIND)
-			enforce_binding = true;
+			create_args.enforce_binding = true;
 		if (!core_map[node_i]) {
 			core_map[node_i] = bit_alloc(node_ptr->tot_cores);
 			bit_set_all(core_map[node_i]);
 		}
-		sock_gres_list = gres_sock_list_create(
-					job_ptr->gres_list_req, node_gres_list,
-					resv_exc_ptr,
-					test_only, core_map[node_i],
-					node_ptr->tot_sockets, node_ptr->cores,
-					node_ptr->name,
-					enforce_binding, s_p_n, &req_sock_map,
-					node_i,
-					node_ptr->gpu_spec_bitmap,
-					node_ptr->res_cores_per_gpu,
-					cr_type);
+		create_args.core_bitmap = core_map[node_i];
+
+		sock_gres_list = gres_sock_list_create(&create_args);
 		if (!sock_gres_list) {	/* GRES requirement fail */
 			log_flag(SELECT_TYPE, "Test fail on node %s: gres_sock_list_create",
-			     node_ptr->name);
+				 node_ptr->name);
 			return NULL;
 		}
 	}
@@ -550,9 +554,10 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 	/* Identify available CPUs */
 	avail_res = _allocate(job_ptr, core_map[node_i],
 			      part_core_map_ptr, node_i,
-			      &cpu_alloc_size, req_sock_map, cr_type);
+			      &cpu_alloc_size, create_args.req_sock_map,
+			      cr_type);
 
-	FREE_NULL_BITMAP(req_sock_map);
+	FREE_NULL_BITMAP(create_args.req_sock_map);
 	if (!avail_res || (avail_res->avail_cpus == 0)) {
 		_free_avail_res(avail_res);
 		log_flag(SELECT_TYPE, "Test fail on node %d: _allocate_cores/sockets",
@@ -592,7 +597,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		rc = gres_select_filter_remove_unusable(
 			sock_gres_list, avail_mem,
 			avail_res->avail_cpus,
-			enforce_binding, core_map[node_i],
+			create_args.enforce_binding, core_map[node_i],
 			node_ptr->tot_sockets, node_ptr->cores, node_ptr->tpc,
 			s_p_n,
 			job_ptr->details->ntasks_per_node,
