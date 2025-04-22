@@ -742,29 +742,26 @@ static int _foreach_restricted_gpu(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _gres_limit_reserved_cores(
-	list_t *job_gres_list, list_t *node_gres_list, bitstr_t *core_bitmap,
-	uint16_t sockets, uint16_t cores_per_sock,
-	const uint32_t node_inx, bitstr_t *gpu_spec_bitmap,
-	uint32_t res_cores_per_gpu)
+static void _gres_limit_reserved_cores(gres_sock_list_create_t *create_args)
 {
 	gres_state_t *gres_state_node;
 	gres_node_state_t *gres_ns;
 	bitstr_t *gpu_spec_cpy;
 	uint32_t gpu_plugin_id = gres_get_gpu_plugin_id();
 	foreach_res_gpu_t args = {
-		.core_bitmap = core_bitmap,
-		.cores_per_sock = cores_per_sock,
-		.node_inx = node_inx,
-		.res_cores_per_gpu = res_cores_per_gpu,
-		.sockets = sockets,
+		.core_bitmap = create_args->core_bitmap,
+		.cores_per_sock = create_args->cores_per_sock,
+		.node_inx = create_args->node_inx,
+		.res_cores_per_gpu = create_args->res_cores_per_gpu,
+		.sockets = create_args->sockets,
 	};
 
-	if (!gpu_spec_bitmap || !core_bitmap ||
-	    !job_gres_list || !node_gres_list)
+	if (!create_args->gpu_spec_bitmap || !create_args->core_bitmap ||
+	    !create_args->job_gres_list || !create_args->node_gres_list)
 		return;
 
-	gres_state_node = list_find_first(node_gres_list, gres_find_id,
+	gres_state_node = list_find_first(create_args->node_gres_list,
+					  gres_find_id,
 					  &gpu_plugin_id);
 	if (!gres_state_node)
 		return;
@@ -774,12 +771,13 @@ static void _gres_limit_reserved_cores(
 	if (!gres_ns || !gres_ns->topo_cnt || !gres_ns->topo_core_bitmap)
 		return;
 
-	gpu_spec_cpy = bit_copy(gpu_spec_bitmap);
+	gpu_spec_cpy = bit_copy(create_args->gpu_spec_bitmap);
 	args.gpu_spec_bitmap = gpu_spec_cpy;
 	args.gres_state_node = gres_state_node;
 
-	list_for_each(job_gres_list, _foreach_restricted_gpu, &args);
-	bit_and(core_bitmap, gpu_spec_cpy);
+	list_for_each(create_args->job_gres_list, _foreach_restricted_gpu,
+		      &args);
+	bit_and(create_args->core_bitmap, gpu_spec_cpy);
 	bit_free(gpu_spec_cpy);
 }
 
@@ -807,14 +805,7 @@ extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 	(void) gres_init();
 
 	if (!(create_args->cr_type & CR_SOCKET))
-		_gres_limit_reserved_cores(create_args->job_gres_list,
-					   create_args->node_gres_list,
-					   create_args->core_bitmap,
-					   create_args->sockets,
-					   create_args->cores_per_sock,
-					   create_args->node_inx,
-					   create_args->gpu_spec_bitmap,
-					   create_args->res_cores_per_gpu);
+		_gres_limit_reserved_cores(create_args);
 
 	if (create_args->resv_exc_ptr) {
 		if (create_args->resv_exc_ptr->gres_list_exc) {
