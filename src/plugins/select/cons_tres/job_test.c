@@ -543,7 +543,9 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		}
 		create_args.core_bitmap = core_map[node_i];
 
-		sock_gres_list = gres_sock_list_create(&create_args);
+		gres_sock_list_create(&create_args);
+		sock_gres_list = create_args.sock_gres_list;
+		create_args.sock_gres_list = NULL;
 		if (!sock_gres_list) {	/* GRES requirement fail */
 			log_flag(SELECT_TYPE, "Test fail on node %s: gres_sock_list_create",
 				 node_ptr->name);

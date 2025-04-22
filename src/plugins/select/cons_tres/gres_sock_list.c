@@ -786,9 +786,8 @@ static void _gres_limit_reserved_cores(gres_sock_list_create_t *create_args)
 	bit_free(gpu_spec_cpy);
 }
 
-extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
+extern void gres_sock_list_create(gres_sock_list_create_t *create_args)
 {
-	list_t *sock_gres_list = NULL;
 	list_itr_t *job_gres_iter;
 	gres_state_t *gres_state_job, *gres_state_node;
 	gres_job_state_t  *gres_js;
@@ -797,15 +796,17 @@ extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 	gres_job_state_t **gres_js_resv = NULL;
 	node_record_t *node_ptr = node_record_table_ptr[create_args->node_inx];
 
+	FREE_NULL_LIST(create_args->sock_gres_list);
+
 	if (!create_args->job_gres_list ||
 	    (list_count(create_args->job_gres_list) == 0)) {
 		if (create_args->gpu_spec_bitmap && create_args->core_bitmap)
 			bit_and(create_args->core_bitmap,
 				create_args->gpu_spec_bitmap);
-		return sock_gres_list;
+		return;
 	}
 	if (!create_args->node_gres_list) /* Node lacks GRES to match */
-		return sock_gres_list;
+		return;
 	(void) gres_init();
 
 	if (!(create_args->cr_type & CR_SOCKET))
@@ -825,7 +826,7 @@ extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 		}
 	}
 
-	sock_gres_list = list_create(gres_sock_delete);
+	create_args->sock_gres_list = list_create(gres_sock_delete);
 	job_gres_iter = list_iterator_create(create_args->job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
 		sock_gres_t *sock_gres = NULL;
@@ -834,7 +835,7 @@ extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 						  &gres_state_job->plugin_id);
 		if (gres_state_node == NULL) {
 			/* node lack GRES of type required by the job */
-			FREE_NULL_LIST(sock_gres_list);
+			FREE_NULL_LIST(create_args->sock_gres_list);
 			break;
 		}
 		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
@@ -887,18 +888,17 @@ extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 		if (!sock_gres) {
 			/* node lack available resources required by the job */
 			bit_clear_all(create_args->core_bitmap);
-			FREE_NULL_LIST(sock_gres_list);
+			FREE_NULL_LIST(create_args->sock_gres_list);
 			break;
 		}
 		sock_gres->use_total_gres = create_args->use_total_gres;
 		sock_gres->gres_state_job = gres_state_job;
 		sock_gres->gres_state_node = gres_state_node;
-		list_append(sock_gres_list, sock_gres);
+		list_append(create_args->sock_gres_list, sock_gres);
 	}
 	list_iterator_destroy(job_gres_iter);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES)
-		_sock_gres_log(sock_gres_list, create_args->node_name);
-
-	return sock_gres_list;
+		_sock_gres_log(create_args->sock_gres_list,
+			       create_args->node_name);
 }

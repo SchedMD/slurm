@@ -61,6 +61,10 @@ typedef struct {
 	uint32_t res_cores_per_gpu; /* IN - number of cores reserved for each
 				     * gpu */
 	uint16_t sockets; /* IN - Count of sockets on the node */
+	list_t *sock_gres_list; /* OUT - list of sock_gres_t entries identifying
+				 * what resources are available on each
+				 * socket. Returns NULL if none available. Call
+				 * FREE_NULL_LIST() to release memory. */
 	uint32_t s_p_n; /* IN - Expected sockets_per_node */
 	bool use_total_gres; /* IN - if set then consider all gres resources as
 			      * available, and none are committed to running
@@ -69,11 +73,12 @@ typedef struct {
 
 
 /*
- * Determine how many cores on each socket of a node can be used by this job
- * RET: list of sock_gres_t entries identifying what resources are available on
- *	each socket. Returns NULL if none available. Call FREE_NULL_LIST() to
- *	release memory.
+ * Determine how many cores on each socket of a node can be used by this job.
+ *
+ * core_bitmap, req_sock_map and sock_gres_list are the possibly altered from
+ * this function. sock_gres_list needs to be freed. See gres_sock_list_create_t
+ * declaration above.
  */
-extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args);
+extern void gres_sock_list_create(gres_sock_list_create_t *create_args);
 
 #endif /* _GRES_SCHED_H */
