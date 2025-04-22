@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "October 2024" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "April 2025" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -928,11 +928,8 @@ The id of the association.
 .IP
 
 .TP
-\fBLFT\fR
-Associations are kept in a hierarchy: this is the left most
-spot in the hierarchy. When used with the RGT variable, all
-associations with a LFT inside this LFT and before the RGT are
-children of this association.
+\fBLineage\fR
+Complete path up the hierarchy to the root association.
 .IP
 
 .TP
@@ -1013,14 +1010,6 @@ The name of a partition in the association.
 .TP
 \fBPriority\fR
 What priority will be added to a job's priority when using this association.
-.IP
-
-.TP
-\fBRGT\fR
-Associations are kept in a hierarchy: this is the right most
-spot in the hierarchy. When used with the LFT variable, all
-associations with a LFT inside this RGT and after the LFT are
-children of this association.
 .IP
 
 .TP
@@ -3419,6 +3408,9 @@ Number used in conjunction with other associations to determine job priority.
 Maximum number of TRES hours running jobs are able to
 be allocated in aggregate for this association and all associations
 which are children of this association.
+.IP
+
+.TP
 \fBGrpTRESRunMins=\fP
 Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children. This takes into
