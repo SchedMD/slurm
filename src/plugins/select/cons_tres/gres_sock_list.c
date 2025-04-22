@@ -593,47 +593,47 @@ static sock_gres_t *_build_sock_gres_basic(
 	return sock_gres;
 }
 
+static int _foreach_sock_gres_log(void *x, void *arg)
+{
+	sock_gres_t *sock_gres = x;
+	gres_job_state_t *gres_js = sock_gres->gres_state_job->gres_data;
+	char tmp[32] = "";
+	int len = -1;
+
+	info("Gres:%s Type:%s TotalCnt:%"PRIu64" MaxNodeGres:%"PRIu64,
+	     sock_gres->gres_state_job->gres_name, gres_js->type_name,
+	     sock_gres->total_cnt, sock_gres->max_node_gres);
+	if (sock_gres->bits_any_sock) {
+		bit_fmt(tmp, sizeof(tmp), sock_gres->bits_any_sock);
+		len = bit_size(sock_gres->bits_any_sock);
+	}
+	info("  Sock[ANY]Cnt:%"PRIu64" Bits:%s of %d",
+	     sock_gres->cnt_any_sock, tmp, len);
+
+	for (int i = 0; i < sock_gres->sock_cnt; i++) {
+		if (sock_gres->cnt_by_sock[i] == 0)
+			continue;
+
+		tmp[0] = '\0';
+		len = -1;
+
+		if (sock_gres->bits_by_sock && sock_gres->bits_by_sock[i]) {
+			bit_fmt(tmp, sizeof(tmp), sock_gres->bits_by_sock[i]);
+			len = bit_size(sock_gres->bits_by_sock[i]);
+		}
+		info("  Sock[%d]Cnt:%"PRIu64" Bits:%s of %d", i,
+		     sock_gres->cnt_by_sock[i], tmp, len);
+	}
+	return 0;
+}
+
 static void _sock_gres_log(list_t *sock_gres_list, char *node_name)
 {
-	sock_gres_t *sock_gres;
-	list_itr_t *iter;
-	int i, len = -1;
-	char tmp[32] = "";
-
 	if (!sock_gres_list)
 		return;
 
 	info("Sock_gres state for %s", node_name);
-	iter = list_iterator_create(sock_gres_list);
-	while ((sock_gres = (sock_gres_t *) list_next(iter))) {
-		gres_job_state_t *gres_js =
-			sock_gres->gres_state_job->gres_data;
-		info("Gres:%s Type:%s TotalCnt:%"PRIu64" MaxNodeGres:%"PRIu64,
-		     sock_gres->gres_state_job->gres_name, gres_js->type_name,
-		     sock_gres->total_cnt, sock_gres->max_node_gres);
-		if (sock_gres->bits_any_sock) {
-			bit_fmt(tmp, sizeof(tmp), sock_gres->bits_any_sock);
-			len = bit_size(sock_gres->bits_any_sock);
-		}
-		info("  Sock[ANY]Cnt:%"PRIu64" Bits:%s of %d",
-		     sock_gres->cnt_any_sock, tmp, len);
-
-		for (i = 0; i < sock_gres->sock_cnt; i++) {
-			if (sock_gres->cnt_by_sock[i] == 0)
-				continue;
-			tmp[0] = '\0';
-			len = -1;
-			if (sock_gres->bits_by_sock &&
-			    sock_gres->bits_by_sock[i]) {
-				bit_fmt(tmp, sizeof(tmp),
-					sock_gres->bits_by_sock[i]);
-				len = bit_size(sock_gres->bits_by_sock[i]);
-			}
-			info("  Sock[%d]Cnt:%"PRIu64" Bits:%s of %d", i,
-			     sock_gres->cnt_by_sock[i], tmp, len);
-		}
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(sock_gres_list, _foreach_sock_gres_log, NULL);
 }
 
 /* Return true if group_size cores could be selected in the given range */
