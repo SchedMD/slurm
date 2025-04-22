@@ -380,8 +380,11 @@ static int _cluster_modify_wckeys(mysql_conn_t *mysql_conn,
 	}
 
 	/* This key doesn't exist on this cluster, that is ok. */
-	if (!mysql_num_rows(result))
+	if (!mysql_num_rows(result)) {
+		xfree(query);
+		mysql_free_result(result);
 		return SLURM_SUCCESS;
+	}
 
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_wckey_rec_t *wckey_rec = NULL;
