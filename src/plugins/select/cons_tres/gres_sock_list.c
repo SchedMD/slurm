@@ -562,17 +562,14 @@ static sock_gres_t *_build_sock_gres_by_type(
 static sock_gres_t *_build_sock_gres_basic(
 	gres_job_state_t *gres_js,
 	gres_node_state_t *gres_ns,
-	resv_exc_t *resv_exc_ptr,
-	bool use_total_gres, bitstr_t *core_bitmap,
-	uint16_t sockets, uint16_t cores_per_sock,
-	uint32_t node_inx)
+	gres_sock_list_create_t *create_args)
 {
 	sock_gres_t *sock_gres;
 	uint64_t avail_gres, min_gres = 1;
 
 	if (gres_js->type_name)
 		return NULL;
-	if (!use_total_gres &&
+	if (!create_args->use_total_gres &&
 	    (gres_ns->gres_cnt_alloc >= gres_ns->gres_cnt_avail))
 		return NULL;	/* No GRES remaining */
 
@@ -582,13 +579,14 @@ static sock_gres_t *_build_sock_gres_basic(
 		min_gres = MAX(min_gres, gres_js->gres_per_socket);
 	if (gres_js->gres_per_task)
 		min_gres = MAX(min_gres, gres_js->gres_per_task);
-	if (!use_total_gres) {
+	if (!create_args->use_total_gres) {
 		avail_gres = gres_ns->gres_cnt_avail -
 			gres_ns->gres_cnt_alloc;
 	} else
 		avail_gres = gres_ns->gres_cnt_avail;
 
-	_handle_gres_exc_basic(resv_exc_ptr, gres_js, node_inx, &avail_gres);
+	_handle_gres_exc_basic(create_args->resv_exc_ptr, gres_js,
+			       create_args->node_inx, &avail_gres);
 
 	if (avail_gres < min_gres)
 		return NULL;	/* Insufficient GRES remaining */
@@ -884,14 +882,7 @@ extern list_t *gres_sock_list_create(gres_sock_list_create_t *create_args)
 				gres_js, gres_ns, create_args);
 		} else {
 			sock_gres = _build_sock_gres_basic(
-				gres_js,
-				gres_ns,
-				create_args->resv_exc_ptr,
-				create_args->use_total_gres,
-				create_args->core_bitmap,
-				create_args->sockets,
-				create_args->cores_per_sock,
-				create_args->node_inx);
+				gres_js, gres_ns, create_args);
 		}
 		if (!sock_gres) {
 			/* node lack available resources required by the job */
