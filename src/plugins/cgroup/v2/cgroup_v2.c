@@ -759,28 +759,16 @@ static int _is_cgroup_empty(xcgroup_t *cg)
 
 static void _wait_cgroup_empty(xcgroup_t *cg, int timeout_ms)
 {
-	char *cgroup_events = NULL, *events_content = NULL, *ptr;
+	char *cgroup_events = NULL;
 	int rc, fd, wd, populated = -1;
-	size_t sz;
 	struct pollfd pfd[1];
 
-	/* Check if cgroup is empty in the first place. */
-	if (common_cgroup_get_param(
-		    cg, "cgroup.events", &events_content, &sz) != SLURM_SUCCESS)
-		error("Cannot read %s/cgroup.events", cg->path);
+	populated = _is_cgroup_empty(cg);
 
-	if (events_content) {
-		if ((ptr = xstrstr(events_content, "populated"))) {
-			if (sscanf(ptr, "populated %u", &populated) != 1)
-				error("Cannot read populated counter from cgroup.events file.");
-		}
-		xfree(events_content);
-	}
-
-	if (populated < 0) {
+	if (populated == SLURM_ERROR) {
 		error("Cannot determine if %s is empty.", cg->path);
 		return;
-	} else if (populated == 0) //We're done
+	} else if (populated == CGROUP_EMPTY) //We're done
 		return;
 
 	/*
@@ -819,21 +807,11 @@ static void _wait_cgroup_empty(xcgroup_t *cg, int timeout_ms)
 		error("Timeout waiting for %s to become empty.", cgroup_events);
 
 	/* Check if cgroup is empty again. */
-	if (common_cgroup_get_param(cg, "cgroup.events",
-				    &events_content, &sz) != SLURM_SUCCESS)
-		error("Cannot read %s/cgroup.events", cg->path);
+	populated = _is_cgroup_empty(cg);
 
-	if (events_content) {
-		if ((ptr = xstrstr(events_content, "populated"))) {
-			if (sscanf(ptr, "populated %u", &populated) != 1)
-				error("Cannot read populated counter from cgroup.events file.");
-		}
-		xfree(events_content);
-	}
-
-	if (populated < 0)
+	if (populated == SLURM_ERROR)
 		error("Cannot determine if %s is empty.", cg->path);
-	else if (populated == 1)
+	else if (populated == CGROUP_POPULATED)
 		log_flag(CGROUP, "Cgroup %s is not empty.", cg->path);
 
 end_inotify:
