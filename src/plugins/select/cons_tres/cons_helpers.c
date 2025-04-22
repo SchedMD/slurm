@@ -89,23 +89,7 @@ extern uint64_t cons_helpers_get_def_cpu_per_gpu(list_t *job_defaults_list)
  */
 extern uint64_t cons_helpers_get_def_mem_per_gpu(list_t *job_defaults_list)
 {
-	uint64_t mem_per_gpu = NO_VAL64;
-	list_itr_t *iter;
-	job_defaults_t *job_defaults;
-
-	if (!job_defaults_list)
-		return mem_per_gpu;
-
-	iter = list_iterator_create(job_defaults_list);
-	while ((job_defaults = (job_defaults_t *) list_next(iter))) {
-		if (job_defaults->type == JOB_DEF_MEM_PER_GPU) {
-			mem_per_gpu = job_defaults->value;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return mem_per_gpu;
+	return _get_default(job_defaults_list, JOB_DEF_MEM_PER_GPU);
 }
 
 extern bitstr_t **cons_helpers_mark_avail_cores(
