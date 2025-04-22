@@ -4,7 +4,6 @@
 AUTOMAKE_OPTIONS = foreign
 
 bashcomp_DATA = slurm_completion.sh
-bashcompdir = $(datadir)/bash-completion/completions
 bashcompbin := \
 	sacct \
 	sacctmgr \

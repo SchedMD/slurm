@@ -670,6 +670,7 @@ WITH_SYSTEMD_UNITS_TRUE
 systemdsystemunitdir
 SYSTEMD_TASKSMAX_OPTION
 READLINE_LIBS
+bashcompdir
 HAVE_MAN2HTML
 HAVE_MAN2HTML_FALSE
 HAVE_MAN2HTML_TRUE
@@ -1086,7 +1087,8 @@ GOBJECT_QUERY
 GLIB_MKENUMS
 GLIB_COMPILE_RESOURCES
 lua_CFLAGS
-lua_LIBS'
+lua_LIBS
+bashcompdir'
 
 
 # Initialize some variables set by options.
@@ -1856,6 +1858,8 @@ Some influential environment variables:
               pkg-config
   lua_CFLAGS  C compiler flags for lua, overriding pkg-config
   lua_LIBS    linker flags for lua, overriding pkg-config
+  bashcompdir value of completionsdir for bash-completion, overriding
+              pkg-config
 
 Use these variables to override the choices made by 'configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -27968,6 +27972,73 @@ else
   HAVE_MAN2HTML_FALSE=
 fi
 
+
+
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for bash-completion package" >&5
+printf %s "checking for bash-completion package... " >&6; }
+
+if test -n "$bashcompdir"; then
+    pkg_cv_bashcompdir="$bashcompdir"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"bash-completion\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "bash-completion") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_bashcompdir=`$PKG_CONFIG --variable="completionsdir" "bash-completion" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+bashcompdir=$pkg_cv_bashcompdir
+
+if test "x$bashcompdir" = x""
+then :
+  ac_have_bash_completion=no
+else case e in #(
+  e) ac_have_bash_completion=yes ;;
+esac
+fi
+
+	if test "x$ac_have_bash_completion" != "xyes" ; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate bash-completion package" >&5
+printf "%s\n" "$as_me: WARNING: unable to locate bash-completion package" >&2;}
+	fi
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_have_bash_completion" >&5
+printf "%s\n" "$ac_have_bash_completion" >&6; }
+
+	# Ref: https://github.com/scop/bash-completion/blob/main/README.md#faq
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for bash-completion completionsdir path" >&5
+printf %s "checking for bash-completion completionsdir path... " >&6; }
+	if  $PKG_CONFIG --atleast-version=2.12 bash-completion ; then
+		# For 'bash-completion >= 2.12':
+		#   When the real location of the command is in the directory
+		#   `<prefix>/bin` or `<prefix>/sbin`, the directory
+		#   `<prefix>/share/bash-completion/completions` is considered.
+		completionsdir="${datadir}/bash-completion/completions"
+	elif test "x$prefix" = "xNONE" || test "x$prefix" = "x/usr/local"; then
+		# PREFIX is default value; use a known supported directory.
+		if test "x$ac_have_bash_completion" = "xyes"; then
+			# PKG_CHECK_VAR:
+			# pkg-config --variable=completionsdir bash-completion
+			completionsdir="$bashcompdir"
+		else
+			# Default to known directory path.
+			completionsdir="/usr/share/bash-completion/completions"
+		fi
+	else
+		# Default to a permission safe directory.
+		completionsdir="${datadir}/bash-completion/completions"
+	fi
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $completionsdir" >&5
+printf "%s\n" "$completionsdir" >&6; }
+
+	bashcompdir=$completionsdir
 
 
 

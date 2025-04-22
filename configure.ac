@@ -310,6 +310,10 @@ X_AC_MAN2HTML
 AM_CONDITIONAL(HAVE_MAN2HTML, test "x$ac_have_man2html" = "xyes")
 AC_SUBST(HAVE_MAN2HTML)
 
+dnl
+dnl Check bash-completion support
+dnl
+X_AC_BASH_COMPLETION
 
 dnl check if we can use standard printf functions
 dnl
