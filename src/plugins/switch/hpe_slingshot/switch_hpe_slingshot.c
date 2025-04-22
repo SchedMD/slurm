@@ -198,7 +198,6 @@ extern int switch_p_save(void)
 
 /*
  * Restore slingshot_state from state file
- * NOTE: assumes this runs before loading the slurm.conf config
  */
 extern int switch_p_restore(bool recover)
 {
@@ -284,7 +283,7 @@ extern int switch_p_restore(bool recover)
 	debug("State file %s recovered", state_file);
 	FREE_NULL_BUFFER(state_buf);
 	xfree(state_file);
-	return SLURM_SUCCESS;
+	return slingshot_update_vni_table();
 
 unpack_error:
 	error("Error unpacking state file %s", state_file);
