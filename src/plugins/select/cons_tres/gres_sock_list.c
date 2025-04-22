@@ -161,7 +161,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock, uint32_t res_cores_per_gpu,
-	uint32_t job_id, char *node_name,
+	char *node_name,
 	bool enforce_binding, uint32_t s_p_n,
 	bitstr_t **req_sock_map,
 	const uint32_t node_inx)
@@ -500,7 +500,7 @@ static sock_gres_t *_build_sock_gres_by_type(
 	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
-	uint32_t job_id, char *node_name, uint32_t node_inx)
+	char *node_name, uint32_t node_inx)
 {
 	int i;
 	sock_gres_t *sock_gres;
@@ -558,7 +558,7 @@ static sock_gres_t *_build_sock_gres_basic(
 	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
-	uint32_t job_id, char *node_name, uint32_t node_inx)
+	char *node_name, uint32_t node_inx)
 {
 	sock_gres_t *sock_gres;
 	uint64_t avail_gres, min_gres = 1;
@@ -788,7 +788,7 @@ extern list_t *gres_sock_list_create(
 	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
-	uint32_t job_id, char *node_name,
+	char *node_name,
 	bool enforce_binding, uint32_t s_p_n,
 	bitstr_t **req_sock_map,
 	const uint32_t node_inx, bitstr_t *gpu_spec_bitmap,
@@ -888,7 +888,7 @@ extern list_t *gres_sock_list_create(
 				gres_state_job, gres_state_node, resv_exc_ptr,
 				use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
-				res_cores_per_gpu, job_id, node_name,
+				res_cores_per_gpu, node_name,
 				enforce_binding, local_s_p_n, req_sock_map,
 				node_inx);
 		} else if (gres_ns->type_cnt) {
@@ -896,13 +896,13 @@ extern list_t *gres_sock_list_create(
 				gres_js,
 				gres_ns, resv_exc_ptr, use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
-				job_id, node_name, node_inx);
+				node_name, node_inx);
 		} else {
 			sock_gres = _build_sock_gres_basic(
 				gres_js,
 				gres_ns, resv_exc_ptr, use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
-				job_id, node_name, node_inx);
+				node_name, node_inx);
 		}
 		if (!sock_gres) {
 			/* node lack available resources required by the job */

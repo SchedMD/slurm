@@ -50,7 +50,6 @@
  * IN/OUT core_bitmap - Identification of available cores on this node
  * IN sockets         - Count of sockets on the node
  * IN cores_per_sock  - Count of cores per socket on this node
- * IN job_id          - job's ID (for logging)
  * IN node_name       - name of the node (for logging)
  * IN enforce_binding - if true then only use GRES with direct access to cores
  * IN s_p_n           - Expected sockets_per_node (NO_VAL if not limited)
@@ -68,7 +67,7 @@ extern list_t *gres_sock_list_create(
 	resv_exc_t *resv_exc_ptr,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
-	uint32_t job_id, char *node_name,
+	char *node_name,
 	bool enforce_binding, uint32_t s_p_n,
 	bitstr_t **req_sock_map,
 	const uint32_t node_inx, bitstr_t *gpu_spec_bitmap,
