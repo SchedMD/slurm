@@ -1879,11 +1879,11 @@ extern int update_node_record_acct_gather_data(
 /*
  * Create nodes from scontrol using slurm.conf nodeline syntax.
  *
- * IN nodeline - slurm.conf nodename description.
+ * IN msg - creation message including nodeline
  * OUT err_msg - pass error messages out.
  * RET SLURM_SUCCESS on success, SLURM_ERROR otherwise.
  */
-extern int create_nodes(char *nodeline, char **err_msg);
+extern int create_nodes(update_node_msg_t *msg, char **err_msg);
 
 /*
  * Create and add dynamic node to system from registration.

@@ -4066,7 +4066,7 @@ static void _slurm_rpc_create_node(slurm_msg_t *msg)
 	}
 
 	if (error_code == SLURM_SUCCESS) {
-		error_code = create_nodes(node_msg->extra, &err_msg);
+		error_code = create_nodes(node_msg, &err_msg);
 		END_TIMER2(__func__);
 	}
 

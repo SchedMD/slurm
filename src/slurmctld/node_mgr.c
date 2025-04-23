@@ -5167,8 +5167,9 @@ extern void consolidate_config_list(bool is_locked, bool force)
 	}
 }
 
-extern int create_nodes(char *nodeline, char **err_msg)
+extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 {
+	char *nodeline = msg->extra;
 	int state_val, rc = SLURM_SUCCESS;
 	slurm_conf_node_t *conf_node;
 	config_record_t *config_ptr;
@@ -5198,6 +5199,10 @@ extern int create_nodes(char *nodeline, char **err_msg)
 		rc = SLURM_ERROR;
 		goto fini;
 	}
+
+	/* copy this so upstream logging messages are more detailed */
+	xfree(msg->node_names);
+	msg->node_names = xstrdup(conf_node->nodenames);
 
 	if ((rc = _validate_nodes_vs_nodeset(conf_node->nodenames))
 	    != SLURM_SUCCESS)
