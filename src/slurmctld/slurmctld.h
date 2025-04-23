@@ -1215,12 +1215,12 @@ extern void kill_job_on_node(job_record_t *job_ptr, node_record_t *node_ptr);
 extern int kill_job_by_front_end_name(char *node_name);
 
 /*
- * kill_running_job_by_node_name - Given a node name, deallocate RUNNING
+ * kill_running_job_by_node_ptr - Given a node_ptr, deallocate RUNNING
  *	or COMPLETING jobs from the node or kill them
  * IN node_name - name of a node
  * RET number of killed jobs
  */
-extern int kill_running_job_by_node_name(char *node_name);
+extern int kill_running_job_by_node_ptr(node_record_t *node_ptr);
 
 /* list_compare_config - compare two entry from the config list based upon
  *	weight, see common/list.h for documentation */
