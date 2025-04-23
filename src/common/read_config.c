@@ -5201,7 +5201,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->topology_plugin,
 			    "TopologyPlugin", hashtbl)) {
 		/* empty */
-	} else if (xstrcasestr(conf->topology_plugin, "none"))
+	} else if (!xstrcasecmp(conf->topology_plugin, "none") ||
+		   !xstrcasecmp(conf->topology_plugin, "default") ||
+		   !xstrcasecmp(conf->topology_plugin, "topology/none") ||
+		   !xstrcasecmp(conf->topology_plugin, "topology/default"))
 		xfree(conf->topology_plugin);
 
 	if (!conf->topology_plugin)
