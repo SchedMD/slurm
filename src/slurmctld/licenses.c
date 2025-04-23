@@ -152,6 +152,15 @@ static int _license_find_rec_by_id(void *x, void *key)
 	return 0;
 }
 
+/*
+ * Find a license_t record that does NOT match license id. This is the inverse
+ * of _license_find_rec_by_id
+ */
+static int _license_find_rec_by_id_not(void *x, void *key)
+{
+	return !_license_find_rec_by_id(x, key);
+}
+
 static int _license_find_rec_in_list_by_id(void *x, void *key)
 {
 	licenses_t *license_entry = x;
@@ -178,6 +187,7 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 {
 	int i;
 	char *end_num, *tmp_str, *token, *last;
+	char *delim = ",;";
 	licenses_t *license_entry;
 	list_t *lic_list;
 
@@ -185,9 +195,18 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 	if ((licenses == NULL) || (licenses[0] == '\0'))
 		return NULL;
 
+	if (strchr(licenses, '|')) {
+		if (strchr(licenses, ',') || strchr(licenses, ';')) {
+			/* Both OR and AND requested, invalid */
+			*valid = false;
+			return NULL;
+		}
+		delim = "|";
+	}
+
 	lic_list = list_create(license_free_rec);
 	tmp_str = xstrdup(licenses);
-	token = strtok_r(tmp_str, ",;", &last);
+	token = strtok_r(tmp_str, delim, &last);
 	while (token && *valid) {
 		int32_t num = 1;
 		for (i = 0; token[i]; i++) {
@@ -219,9 +238,12 @@ static list_t *_build_license_list(char *licenses, bool *valid)
 			license_entry->lic_id = NO_VAL16;
 			license_entry->name = xstrdup(token);
 			license_entry->total = num;
-			list_push(lic_list, license_entry);
+			if (delim[0] == '|')
+				license_entry->op_or = true;
+			/* Append to preserve the order requested by the user */
+			list_append(lic_list, license_entry);
 		}
-		token = strtok_r(NULL, ",;", &last);
+		token = strtok_r(NULL, delim, &last);
 	}
 	xfree(tmp_str);
 
@@ -254,7 +276,7 @@ extern char *license_list_to_string(list_t *license_list)
 	while ((license_entry = list_next(iter))) {
 		xstrfmtcat(licenses, "%s%s:%u",
 			   sep, license_entry->name, license_entry->total);
-		sep = ",";
+		sep = license_entry->op_or ? "|" : ",";
 	}
 	list_iterator_destroy(iter);
 
@@ -312,7 +334,7 @@ static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
 	license_entry->lic_id = next_lic_id++;
 	xassert(license_entry->lic_id != NO_VAL16);
 
-	list_push(cluster_license_list, license_entry);
+	list_append(cluster_license_list, license_entry);
 	last_license_update = time(NULL);
 }
 
@@ -736,6 +758,13 @@ static void _add_license(list_t *license_list, licenses_t *license_entry)
 	}
 }
 
+static bool _sufficient_licenses(licenses_t *request, licenses_t *match,
+				 int resv_licenses)
+{
+	return (request->total + match->used + match->last_deficit +
+		resv_licenses) <= match->total;
+}
+
 static int _foreach_license_job_test(void *x, void *arg)
 {
 	licenses_t *license_entry = x;
@@ -771,8 +800,7 @@ static int _foreach_license_job_test(void *x, void *arg)
 			FREE_NULL_LIST(job_ptr->licenses_to_preempt);
 		test_args->rc = SLURM_ERROR;
 		return -1;
-	} else if ((license_entry->total + match->used + match->last_deficit) >
-		   match->total) {
+	} else if (!_sufficient_licenses(license_entry, match, 0)) {
 		if (job_ptr->licenses_to_preempt)
 			_add_license(job_ptr->licenses_to_preempt,
 				     license_entry);
@@ -783,12 +811,17 @@ static int _foreach_license_job_test(void *x, void *arg)
 		resv_licenses = job_test_lic_resv(job_ptr,
 						  license_entry->name,
 						  when, reboot);
-		if ((license_entry->total + match->used + match->last_deficit +
-		     resv_licenses) > match->total) {
+		if (!_sufficient_licenses(license_entry, match,
+					  resv_licenses)) {
 			if (job_ptr->licenses_to_preempt)
 				_add_license(job_ptr->licenses_to_preempt,
 					     license_entry);
 			test_args->rc = EAGAIN;
+		} else if (license_entry->op_or) {
+			test_args->rc = SLURM_SUCCESS;
+			FREE_NULL_LIST(job_ptr->licenses_to_preempt);
+			/* Stop list_for_each */
+			return -1;
 		}
 	}
 	return 0;
@@ -813,13 +846,17 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
 		.reboot = reboot,
 		.when = when,
 	};
+	licenses_t *license_entry;
 	bool use_licenses_to_preempt;
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return SLURM_SUCCESS;
 
+	/* reclaim_licenses is disabled with OR'd licenses */
+	license_entry = list_peek(job_ptr->license_list);
 	use_licenses_to_preempt = preempt_for_licenses &&
-		check_preempt_licenses;
+				  check_preempt_licenses &&
+				  !license_entry->op_or;
 	if (!job_ptr->licenses_to_preempt && use_licenses_to_preempt)
 		job_ptr->licenses_to_preempt = list_create(NULL);
 
@@ -862,7 +899,8 @@ static int _foreach_license_copy(void *x, void *arg)
 	license_entry_dest->used = license_entry_src->used;
 	license_entry_dest->last_deficit = license_entry_src->last_deficit;
 	license_entry_dest->lic_id = license_entry_src->lic_id;
-	list_push(license_list_dest, license_entry_dest);
+	license_entry_dest->op_or = license_entry_src->op_or;
+	list_append(license_list_dest, license_entry_dest);
 
 	return 0;
 }
@@ -877,7 +915,8 @@ static int _foreach_license_light_copy(void *x, void *arg)
 	license_entry_dest->used = license_entry_src->used;
 	license_entry_dest->last_deficit = license_entry_src->last_deficit;
 	license_entry_dest->lic_id = license_entry_src->lic_id;
-	list_push(license_list_dest, license_entry_dest);
+	license_entry_dest->op_or = license_entry_src->op_or;
+	list_append(license_list_dest, license_entry_dest);
 
 	return 0;
 }
@@ -919,6 +958,45 @@ extern list_t *cluster_license_copy(void)
 
 	return license_list_dest;
 }
+
+/*
+ * We need to track the allocated licenses separately, so that:
+ *
+ * - when the job is state saved and then restored, or
+ * - when the job completes,
+ *
+ * we update the license counts in cluster_license_list using only the licenses
+ * that were allocated.
+ */
+static int _set_licenses_alloc(job_record_t *job_ptr, bool lic_or,
+			       licenses_t *license_entry)
+{
+	if (lic_or) {
+		if (!license_entry) {
+			/*
+			 * We tested that there were enough licenses available
+			 * but then there weren't enough when we tried to
+			 * allocate. This indicates faulty logic.
+			 */
+			error("Could not allocate licenses %s for %pJ",
+			      job_ptr->licenses, job_ptr);
+			return SLURM_ERROR;
+		}
+
+		/* Remove all other licenses besides the one we allocated. */
+		list_delete_all(job_ptr->license_list,
+				_license_find_rec_by_id_not,
+				&license_entry->lic_id);
+		xassert(list_count(job_ptr->license_list) == 1);
+		xassert(license_entry ==
+			(licenses_t *) list_peek(job_ptr->license_list));
+	}
+	job_ptr->licenses_allocated =
+		license_list_to_string(job_ptr->license_list);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * license_job_get - Get the licenses required for a job
  * IN job_ptr - job identification
@@ -929,6 +1007,7 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 	list_itr_t *iter;
 	licenses_t *license_entry, *match;
 	int rc = SLURM_SUCCESS;
+	bool lic_or = false;
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
@@ -938,10 +1017,30 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = list_next(iter))) {
+		lic_or = license_entry->op_or;
 		match = list_find_first(cluster_license_list,
 					_license_find_rec_by_id,
 					&license_entry->lic_id);
 		if (match) {
+			/*
+			 * With OR, we only know that at least one of the job's
+			 * requested licenses are available, so we need to test
+			 * for availability again. With AND we know that all
+			 * licenses are available so we don't need to check.
+			 */
+			if (lic_or) {
+				int resv_blk_lic_cnt =
+					job_test_lic_resv(job_ptr, match->name,
+							  last_license_update,
+							  false);
+
+				if (!_sufficient_licenses(license_entry, match,
+							  resv_blk_lic_cnt)) {
+					/* Not enough of this license */
+					continue;
+				}
+			}
+
 			match->used += license_entry->total;
 			license_entry->used += license_entry->total;
 			if (match->remote && restore) {
@@ -951,6 +1050,9 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 					match->last_deficit -=
 						license_entry->total;
 			}
+			if (lic_or) {
+				break;
+			}
 		} else {
 			error("could not find license %s for job %u",
 			      license_entry->name, job_ptr->job_id);
@@ -958,6 +1060,11 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 		}
 	}
 	list_iterator_destroy(iter);
+
+	/* When restoring, allocated licenses is already set */
+	if (!rc && !restore)
+		rc = _set_licenses_alloc(job_ptr, lic_or, license_entry);
+
 	_licenses_print("acquire_license", cluster_license_list, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
 	return rc;
@@ -1276,7 +1383,7 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 		if (!bf_running_job_reserve)
 			bf_entry->remaining -= license_entry->used;
 
-		list_push(bf_list, bf_entry);
+		list_append(bf_list, bf_entry);
 	}
 	list_iterator_destroy(iter);
 
@@ -1343,6 +1450,7 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 {
 	licenses_t *job_entry;
 	list_itr_t *iter;
+	bool found = false, lic_or = false;
 
 	xassert(job_ptr);
 
@@ -1353,7 +1461,9 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 	while ((job_entry = list_next(iter))) {
 		bf_license_t *resv_entry = NULL, *bf_entry;
 		int needed = job_entry->total;
+		int resv_acquired = 0;
 
+		lic_or = job_entry->op_or;
 		/*
 		 * Jobs with reservations may use licenses out of the
 		 * reservation, as well as global ones. Deduct from
@@ -1370,9 +1480,15 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 						     &target_record);
 			if (resv_entry && (needed <= resv_entry->remaining)) {
 				resv_entry->remaining -= needed;
+				/* OR - reservation has enough, break. */
+				if (lic_or) {
+					found = true;
+					break;
+				}
 				continue;
 			} else if (resv_entry) {
-				needed -= resv_entry->remaining;
+				resv_acquired = resv_entry->remaining;
+				needed -= resv_acquired;
 				resv_entry->remaining = 0;
 			}
 		}
@@ -1384,14 +1500,40 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 			error("%s: missing license lic_id=%u",
 			      __func__, job_entry->lic_id);
 		} else if (bf_entry->remaining < needed) {
+			/*
+			 * OR - Not an error;  skip this one and keep going
+			 * until we find the next one that is available.
+			 */
+			if (lic_or) {
+				/* Return resv_acquired licenses */
+				if (resv_entry) {
+					resv_entry->remaining += resv_acquired;
+					needed += resv_acquired;
+				}
+				continue;
+			}
 			error("%s: underflow on lic_id=%u",
 			      __func__, bf_entry->lic_id);
 			bf_entry->remaining = 0;
 		} else {
 			bf_entry->remaining -= needed;
+			if (lic_or) {
+				found = true;
+				break;
+			}
 		}
 	}
 	list_iterator_destroy(iter);
+
+	if (lic_or && !found) {
+		/*
+		 * If we get to this function, we should always have found an
+		 * available license. If we did not, this indicates an error
+		 * in testing if one is available in slurm_bf_licenses_avail().
+		 */
+		error("%s: %pJ No OR'd licenses available for bf plan",
+		      __func__, job_ptr);
+	}
 }
 
 /*
@@ -1437,7 +1579,7 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 		new_entry->remaining = reservable;
 		new_entry->resv_ptr = job_ptr->resv_ptr;
 
-		list_push(licenses, new_entry);
+		list_append(licenses, new_entry);
 	}
 	list_iterator_destroy(iter);
 }
@@ -1472,9 +1614,19 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 						     _bf_licenses_find_resv,
 						     &target_record);
 
-			if (resv_entry && (needed <= resv_entry->remaining))
+			if (resv_entry && (needed <= resv_entry->remaining)) {
+				/*
+				 * OR - only need one, stop searching.
+				 * Set avail = true in case a previous license
+				 * was unavailable.
+				 */
+				if (need->op_or) {
+					avail = true;
+					break;
+				}
+				/* AND */
 				continue;
-			else if (resv_entry)
+			} else if (resv_entry)
 				needed -= resv_entry->remaining;
 		}
 
@@ -1483,6 +1635,18 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 
 		if (!bf_entry || (bf_entry->remaining < needed)) {
 			avail = false;
+			/*
+			 * OR - keep searching until we find one that is
+			 * available or we get through the whole list.
+			 */
+			if (need->op_or)
+				continue;
+			/* AND */
+			break;
+		}
+		/* OR - only need one, stop searching. */
+		if (need->op_or) {
+			avail = true;
 			break;
 		}
 	}

@@ -343,7 +343,11 @@ struct job_record {
 					 * node failure */
 	time_t last_sched_eval;		/* last time job was evaluated for scheduling */
 	char *licenses;			/* licenses required by the job */
-	list_t *license_list;		/* structure with license info */
+	char *licenses_allocated;	/* licenses allocated to the job */
+	list_t *license_list;		/* structure with license info; when
+					 * the job is allocated, this list is
+					 * changed to match "licenses_allocated"
+					 */
 	list_t *licenses_to_preempt;    /* list of licenses the job will look
 					   for in its preemptee candidates
 					   Don't pack, don't save it's only used

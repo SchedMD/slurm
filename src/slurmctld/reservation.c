@@ -438,7 +438,7 @@ static list_t *_list_dup(list_t *license_list)
 		license_dest = xmalloc(sizeof(licenses_t));
 		license_dest->name = xstrdup(license_src->name);
 		license_dest->used = license_src->used;
-		list_push(lic_list, license_dest);
+		list_append(lic_list, license_dest);
 	}
 	list_iterator_destroy(iter);
 	return lic_list;
@@ -2605,6 +2605,12 @@ static list_t *_license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	char *merged_licenses;
+
+	if (xstrchr(resv_desc_ptr->licenses, '|')) {
+		/* Reservations do not support OR licenses */
+		*valid = false;
+		return NULL;
+	}
 
 	license_list = license_validate(resv_desc_ptr->licenses, true, true,
 					NULL, valid);

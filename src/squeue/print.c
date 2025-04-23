@@ -801,6 +801,19 @@ int _print_job_licenses(job_info_t * job, int width, bool right, char* suffix)
 	return SLURM_SUCCESS;
 }
 
+int _print_job_licenses_alloc(job_info_t *job, int width, bool right,
+			      char *suffix)
+{
+	if (job == NULL) /* Print the Header instead */
+		_print_str("LICENSES_ALLOC", width, right, true);
+	else
+		_print_str(job->licenses_allocated, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_wckey(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */

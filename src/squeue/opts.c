@@ -662,6 +662,7 @@ static fmt_data_job_t fmt_data_job[] = {
 	{"JobId", 'A', _print_job_job_id2, 0},
 	{"LastSchedEval", 0, _print_job_last_sched_eval, 0},
 	{"Licenses", 'W', _print_job_licenses, 0},
+	{"LicensesAlloc", 0, _print_job_licenses_alloc, 0},
 	{"MaxCPUs", 0, _print_job_max_cpus, 0},
 	{"MaxNodes", 0, _print_job_max_nodes, 0},
 	{"mem-per-tres", 0, _print_job_mem_per_tres, 0},

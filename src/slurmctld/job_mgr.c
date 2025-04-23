@@ -3624,6 +3624,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 
 	job_ptr_pend->id = copy_identity(job_ptr->id);
 	job_ptr_pend->licenses = xstrdup(job_ptr->licenses);
+	job_ptr_pend->licenses_allocated = NULL;
 	job_ptr_pend->license_list = license_copy(job_ptr->license_list);
 	job_ptr_pend->licenses_to_preempt = NULL;
 	job_ptr_pend->lic_req = xstrdup(job_ptr->lic_req);
@@ -12630,6 +12631,19 @@ extern bool permit_job_shrink(void)
 	return permit_job_shrink;
 }
 
+/*
+ * Job expansion is not allowed for jobs that requested OR licenses.
+ */
+static bool _valid_license_job_expansion(job_record_t *job_ptr1,
+					 job_record_t *job_ptr2)
+{
+	if (xstrchr(job_ptr1->licenses, '|') ||
+	    xstrchr(job_ptr2->licenses, '|'))
+		return false;
+
+	return true;
+}
+
 static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		       uid_t uid, char **err_msg)
 {
@@ -14716,6 +14730,16 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				error_code = ESLURMD_STEP_EXISTS;
 				goto fini;
 			}
+			if (!_valid_license_job_expansion(job_ptr,
+							  expand_job_ptr)) {
+				info("%s: Cannot merge %pJ with %pJ - cannot mix AND and OR licenses (%s vs %s)",
+				     __func__, job_ptr, expand_job_ptr,
+				     job_ptr->licenses,
+				     expand_job_ptr->licenses);
+				error_code = ESLURM_INVALID_LICENSES;
+				goto fini;
+			}
+
 			sched_info("%s: killing %pJ and moving all resources to %pJ",
 				   __func__, job_ptr, expand_job_ptr);
 			job_pre_resize_acctg(job_ptr);
@@ -16743,6 +16767,8 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	xfree(job_ptr->alias_list);
 	xfree(job_ptr->batch_host);
 	free_job_resources(&job_ptr->job_resrcs);
+	FREE_NULL_LIST(job_ptr->license_list);
+	xfree(job_ptr->licenses_allocated);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->node_addrs);
 	xfree(job_ptr->nodes_completing);
