@@ -2701,7 +2701,7 @@ controlled by a resource manager.
 .IP
 
 .TP
-\fBDescriptions=\fR
+\fBDescriptions\fR=
 A brief description of the resource.
 .IP
 
@@ -3234,12 +3234,12 @@ sacctmgr dump tux file=tux.cfg
 
 .RS
 .TP
-\fBCluster=\fR
+\fBCluster\fR=
 Specify the cluster to dump the information for.
 .IP
 
 .TP
-\fBFile=\fR
+\fBFile\fR=
 Specify a file to save flat file data to.
 If the filename is not specified it uses clustername.cfg filename by default.
 .IP
@@ -3269,12 +3269,12 @@ and users along with the cluster and associations give the input of
 .IP
 
 .TP
-\fBCluster=\fR
+\fBCluster\fR=
 Specify a different name for the cluster than that which is in the file.
 .IP
 
 .TP
-\fBFile=\fR
+\fBFile\fR=
 Specify a flat file to load from.
 .IP
 .RE
@@ -3297,50 +3297,50 @@ associations on this cluster. The options for the cluster are:
 .RS
 
 .TP
-\fBFairShare=\fR
+\fBFairShare\fR=
 Number used in conjunction with other associations to determine job priority.
 .IP
 
 .TP
-\fBGrpJobs=\fR
+\fBGrpJobs\fR=
 Maximum number of running jobs in aggregate for this
 association and all associations which are children of this association.
 .IP
 
 .TP
-\fBGrpJobsAccrue=\fR
+\fBGrpJobsAccrue\fR=
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and all associations which are children of this association.
 .IP
 
 .TP
-\fBGrpNodes=\fR
+\fBGrpNodes\fR=
 This option has been deprecated in favor of the more versatile TRES.
 Equivalent limit definition is now \fBGrpTRES=node=#\fR.
 .IP
 
 .TP
-\fBGrpSubmitJobs=\fR
+\fBGrpSubmitJobs\fR=
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
 associations which are children of this association.
 .IP
 
 .TP
-\fBGrpTRES=\fR
+\fBGrpTRES\fR=
 Maximum number of TRES running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .IP
 
 .TP
-\fBGrpTRESMins=\fR
+\fBGrpTRESMins\fR=
 The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this association and its children.
 .IP
 
 .TP
-\fBGrpTRESRunMins=\fR
+\fBGrpTRESRunMins\fR=
 Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children. This takes into
 consideration time limit of running jobs and consumes it, if the limit
@@ -3349,30 +3349,30 @@ time to free up.
 .IP
 
 .TP
-\fBGrpWall=\fR
+\fBGrpWall\fR=
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .IP
 
 .TP
-\fBMaxJobs=\fR
+\fBMaxJobs\fR=
 Maximum number of jobs the children of this association can run.
 .IP
 
 .TP
-\fBMaxTRESPerJob=\fR
+\fBMaxTRESPerJob\fR=
 Maximum number of trackable resources per job the children of this association
 can run.
 .IP
 
 .TP
-\fBMaxWallDurationPerJob=\fR
+\fBMaxWallDurationPerJob\fR=
 Maximum time (not related to job size) children of this accounts jobs can run.
 .IP
 
 .TP
-\fBQOS=\fR
+\fBQOS\fR=
 Comma separated list of Quality of Service names (Defined in sacctmgr).
 .IP
 .RE
@@ -3394,24 +3394,24 @@ BEEN CREATED before the account you are adding.
 Account options are:
 .RS
 .TP
-\fBDescription=\fR
+\fBDescription\fR=
 A brief description of the account.
 .IP
 
 .TP
-\fBFairShare=\fR
+\fBFairShare\fR=
 Number used in conjunction with other associations to determine job priority.
 .IP
 
 .TP
-\fBGrpTRESMins=\fR
+\fBGrpTRESMins\fR=
 Maximum number of TRES hours running jobs are able to
 be allocated in aggregate for this association and all associations
 which are children of this association.
 .IP
 
 .TP
-\fBGrpTRESRunMins=\fP
+\fBGrpTRESRunMins\fR=
 Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children. This takes into
 consideration time limit of running jobs and consumes it, if the limit
@@ -3420,66 +3420,66 @@ time to free up.
 .IP
 
 .TP
-\fBGrpTRES=\fR
+\fBGrpTRES\fR=
 Maximum number of TRES running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .IP
 
 .TP
-\fBGrpJobs=\fR
+\fBGrpJobs\fR=
 Maximum number of running jobs in aggregate for this
 association and all associations which are children of this association.
 .IP
 
 .TP
-\fBGrpJobsAccrue\fR
+\fBGrpJobsAccrue\fR=
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and all associations which are children of this association.
 .IP
 
 .TP
-\fBGrpNodes=\fR
+\fBGrpNodes\fR=
 This option has been deprecated in favor of the more versatile TRES.
 Equivalent limit definition is now \fBGrpTRES=node=#\fR.
 .IP
 
 .TP
-\fBGrpSubmitJobs=\fR
+\fBGrpSubmitJobs\fR=
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
 associations which are children of this association.
 .IP
 
 .TP
-\fBGrpWall=\fR
+\fBGrpWall\fR=
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .IP
 
 .TP
-\fBMaxJobs=\fR
+\fBMaxJobs\fR=
 Maximum number of jobs the children of this association can run.
 .IP
 
 .TP
-\fBMaxNodesPerJob=\fR
+\fBMaxNodesPerJob\fR=
 Maximum number of nodes per job the children of this association can run.
 .IP
 
 .TP
-\fBMaxWallDurationPerJob=\fR
+\fBMaxWallDurationPerJob\fR=
 Maximum time (not related to job size) children of this accounts jobs can run.
 .IP
 
 .TP
-\fBOrganization=\fR
+\fBOrganization\fR=
 Name of organization that owns this account.
 .IP
 
 .TP
-\fBQOS(=,+=,\-=)\fR
+\fBQOS\fR(=,+=,\-=)
 Comma separated list of Quality of Service names (Defined in sacctmgr).
 .RE
 
@@ -3495,48 +3495,48 @@ User\ \-\ adam:MaxTRESPerJob=node:2:MaxJobs=3:FairShare=1:MaxWallDurationPerJob=
 User options are:
 .RS
 .TP
-\fBAdminLevel=\fP
+\fBAdminLevel\fR=
 Type of admin this user is (Administrator, Operator)
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .IP
 
 .TP
-\fBCoordinator=\fP
+\fBCoordinator\fR=
 Comma separated list of accounts this user is coordinator over
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .IP
 
 .TP
-\fBDefaultAccount=\fP
+\fBDefaultAccount\fR=
 System wide default account name
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .IP
 
 .TP
-\fBFairShare=\fP
+\fBFairShare\fR=
 Number used in conjunction with other associations to determine job priority.
 .IP
 
 .TP
-\fBMaxJobs=\fP
+\fBMaxJobs\fR=
 Maximum number of jobs this user can run.
 .IP
 
 .TP
-\fBMaxTRESPerJob=\fP
+\fBMaxTRESPerJob\fR=
 Maximum number of trackable resources per job this user can run.
 .IP
 
 .TP
-\fBMaxWallDurationPerJob=\fP
+\fBMaxWallDurationPerJob\fR=
 Maximum time (not related to job size) this user can run.
 .IP
 
 .TP
-\fBQOS(=,+=,\-=)\fP
+\fBQOS\fR(=,+=,\-=)
 Comma separated list of Quality of Service names (Defined in sacctmgr).
 .IP
 .RE
@@ -3561,7 +3561,7 @@ is called, the value configured in slurmdbd.conf is used.
 
 .RS
 .TP
-\fBDirectory=\fR
+\fBDirectory\fR=
 Directory to store the archive data.
 .IP
 
@@ -3578,7 +3578,7 @@ all job data removed will be lost permanently.
 .IP
 
 .TP
-\fBPurgeEventAfter=\fR
+\fBPurgeEventAfter\fR=
 Purge cluster event records older than time stated in months. If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
@@ -3586,7 +3586,7 @@ value of '12hours' would purge everything older than 12 hours.)
 .IP
 
 .TP
-\fBPurgeJobAfter=\fR
+\fBPurgeJobAfter\fR=
 Purge job records older than time stated in months. If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
@@ -3594,7 +3594,7 @@ value of '12hours' would purge everything older than 12 hours.)
 .IP
 
 .TP
-\fBPurgeStepAfter=\fR
+\fBPurgeStepAfter\fR=
 Purge step records older than time stated in months. If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
@@ -3602,7 +3602,7 @@ value of '12hours' would purge everything older than 12 hours.)
 .IP
 
 .TP
-\fBPurgeSuspendAfter=\fR
+\fBPurgeSuspendAfter\fR=
 Purge job suspend records older than time stated in months. If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
@@ -3610,7 +3610,7 @@ value of '12hours' would purge everything older than 12 hours.)
 .IP
 
 .TP
-\fBScript=\fR
+\fBScript\fR=
 Run this script instead of the generic form of archive to flat files.
 .IP
 
@@ -3642,13 +3642,13 @@ through \fBarchive load\fR.
 
 .RS
 .TP
-\fBFile=\fR
+\fBFile\fR=
 File to load into database. The specified file must exist on the slurmdbd host,
 which is not necessarily the machine running the command.
 .IP
 
 .TP
-\fBInsert=\fR
+\fBInsert\fR=
 SQL to insert directly into the database. This should be used very
 cautiously since this is writing your sql into the database.
 .IP

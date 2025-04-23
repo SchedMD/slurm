@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "March 2025" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "April 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -177,7 +177,7 @@ be comma separated.
 .IP
 .RS
 .TP
-\fBjwks=\fR
+\fBjwks\fR=
 Absolute path to JWKS file. Key should be owned by SlurmUser or root, must be
 readable by SlurmUser, with suggested permissions of 0400. It must not be
 writable by 'other'.
@@ -188,7 +188,7 @@ HS256 key use (and token generation).
 .IP
 
 .TP
-\fBjwt_key=\fR
+\fBjwt_key\fR=
 Absolute path to JWT key file. Key must be HS256. Key should be owned by
 SlurmUser or root, must be readable by SlurmUser, with suggested permissions of
 0400. It must not be accessible by 'other'.
@@ -279,7 +279,7 @@ should also be set in your \fBslurm.conf\fR file.
 .IP
 
 .TP
-\fBkeepaliveinterval=#\fR
+\fBkeepaliveinterval\fR=\#
 Specifies the interval, in seconds, between keepalive probes on idle
 connections.
 This affects most outgoing connections from the slurmdbd (e.g. between the
@@ -288,7 +288,7 @@ The default value is 30 seconds.
 .IP
 
 .TP
-\fBkeepaliveprobes=#\fR
+\fBkeepaliveprobes\fR=\#
 Specifies the number of unacknowledged keepalive probes sent before considering
 a connection broken.
 This affects most outgoing connections from the slurmdbd (e.g. between the
@@ -297,7 +297,7 @@ The default value is 3.
 .IP
 
 .TP
-\fBkeepalivetime=#\fR
+\fBkeepalivetime\fR=\#
 Specifies how long, in seconds, a connection must be idle before starting to
 send keepalive probes as well as how long to delay closing a connection to
 process messages still in the queue.
