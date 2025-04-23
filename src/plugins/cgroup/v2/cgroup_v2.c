@@ -74,7 +74,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 /* Internal cgroup structs */
 static list_t *task_list;
 static uint16_t step_active_cnt;
-static xcgroup_ns_t int_cg_ns;
+static xcgroup_ns_t int_cg_ns = { 0 };
 static xcgroup_t int_cg[CG_LEVEL_CNT];
 static bpf_program_t p[CG_LEVEL_CNT];
 static char *stepd_scope_path = NULL;
@@ -402,21 +402,17 @@ static char *_get_init_cg_path()
  */
 static void _set_int_cg_ns()
 {
-	char *init_cg_path = _get_init_cg_path();
+	int_cg_ns.init_cg_path = _get_init_cg_path();
 
 #ifdef MULTIPLE_SLURMD
 	xstrfmtcat(stepd_scope_path, "%s/%s/%s_%s.scope",
-		   init_cg_path,
-		   SYSTEM_CGSLICE, conf->node_name,
+		   int_cg_ns.init_cg_path, SYSTEM_CGSLICE, conf->node_name,
 		   SYSTEM_CGSCOPE);
 #else
-	xstrfmtcat(stepd_scope_path, "%s/%s/%s.scope",
-		   init_cg_path,
+	xstrfmtcat(stepd_scope_path, "%s/%s/%s.scope", int_cg_ns.init_cg_path,
 		   SYSTEM_CGSLICE, SYSTEM_CGSCOPE);
 #endif
 	int_cg_ns.mnt_point = _get_proc_cg_path("self");
-
-	xfree(init_cg_path);
 }
 
 /*

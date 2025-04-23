@@ -68,6 +68,7 @@ typedef struct {
 	char *mnt_point;	/* mount point to use */
 	char *mnt_args;		/* additional mount args */
 	char *subsystems;	/* comma-separated subsystems to provide */
+	char *init_cg_path; /* cgroup path of the init process */
 } xcgroup_ns_t;
 
 typedef struct {

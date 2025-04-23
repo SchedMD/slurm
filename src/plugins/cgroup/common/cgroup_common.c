@@ -465,6 +465,7 @@ extern void common_cgroup_ns_destroy(xcgroup_ns_t *cgns)
 	xfree(cgns->mnt_point);
 	xfree(cgns->mnt_args);
 	xfree(cgns->subsystems);
+	xfree(cgns->init_cg_path);
 	FREE_NULL_BITMAP(cgns->avail_controllers);
 }
 
