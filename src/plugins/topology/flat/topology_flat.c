@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  topology_default.c - Default for system topology
+ *  topology_flat.c - Default for system topology
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -74,10 +74,10 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[]        = "topology Default plugin";
-const char plugin_type[]        = "topology/default";
-const uint32_t plugin_id = TOPOLOGY_PLUGIN_DEFAULT;
-const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+const char plugin_name[] = "topology Flat plugin";
+const char plugin_type[] = "topology/flat";
+const uint32_t plugin_id = TOPOLOGY_PLUGIN_FLAT;
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 extern int init(void)
 {

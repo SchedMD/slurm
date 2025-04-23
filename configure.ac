@@ -550,7 +550,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/topology/Makefile
 		 src/plugins/topology/block/Makefile
 		 src/plugins/topology/common/Makefile
-		 src/plugins/topology/default/Makefile
+		 src/plugins/topology/flat/Makefile
 		 src/plugins/topology/tree/Makefile
 		 src/sacct/Makefile
 		 src/sackd/Makefile

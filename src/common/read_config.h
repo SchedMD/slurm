@@ -152,7 +152,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_TCP_TIMEOUT         2
 #define DEFAULT_TLS_TYPE "tls/none"
 #define DEFAULT_TMP_FS              "/tmp"
-#define DEFAULT_TOPOLOGY_PLUGIN     "topology/none"
+#define DEFAULT_TOPOLOGY_PLUGIN "topology/flat"
 #define DEFAULT_WAIT_TIME           0
 #define DEFAULT_TREE_WIDTH	    16
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */

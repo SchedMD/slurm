@@ -37,7 +37,7 @@ source ./globals
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
-if {[get_config_param "TopologyPlugin"] ne "topology/default"} {
+if {[get_config_param "TopologyPlugin"] ne "topology/flat"} {
 	skip "This test is incompatible with topology configured systems"
 }
 

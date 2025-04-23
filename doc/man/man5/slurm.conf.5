@@ -4650,7 +4650,7 @@ for allocation of entire nodes assuming a one\-dimensional array of nodes in
 which sequentially ordered nodes are preferable.
 For a heterogeneous cluster (e.g. different CPU counts on the various nodes),
 resource allocations will favor nodes with high CPU counts as needed based upon
-the job's node and CPU specification if TopologyPlugin=topology/default is
+the job's node and CPU specification if TopologyPlugin=topology/flat is
 configured. Use of other topology plugins with select/linear and heterogeneous
 nodes is not recommended and may result in valid job allocation requests being
 rejected. The linear plugin is not designed to track generic resources on a
@@ -6297,7 +6297,7 @@ man page
 .IP
 
 .TP
-\fBtopology/default\fR
+\fBtopology/flat\fR
 default for other systems, best\-fit logic over one\-dimensional topology
 .IP
 
@@ -8004,7 +8004,7 @@ so as to minimize the use of higher\-level switches.
 The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information.
 The only values presently supported are
-"topology/default" (best\-fit logic over one\-dimensional topology),
+"topology/flat" (best\-fit logic over one\-dimensional topology),
 "topology/tree", and "topology/block" (both determine the network topology
 based upon information contained in a topology.conf file,
 see "man topology.conf" for more information).

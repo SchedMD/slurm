@@ -5205,7 +5205,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		xfree(conf->topology_plugin);
 
 	if (!conf->topology_plugin)
-		conf->topology_plugin = xstrdup("topology/default");
+		conf->topology_plugin = xstrdup("topology/flat");
 
 	if (!xstrcasecmp(conf->select_type, "select/linear") &&
 	    !xstrcasecmp(conf->topology_plugin, "topology/tree"))
