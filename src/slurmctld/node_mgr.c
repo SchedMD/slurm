@@ -1961,7 +1961,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 				/* We must set node DOWN before killing
 				 * its jobs */
 				_make_node_down(node_ptr, now);
-				kill_running_job_by_node_name (this_node_name);
+				kill_running_job_by_node_ptr(node_ptr);
 				if (state_val == NODE_STATE_FUTURE) {
 					bool dyn_norm_node = false;
 					if (IS_NODE_DYNAMIC_FUTURE(node_ptr)) {
@@ -2035,8 +2035,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 				     IS_NODE_POWERING_UP(node_ptr))) {
 					info("%s: DRAIN/FAIL request for node %s which is allocated and being powered up. Requeuing jobs",
 					     __func__, this_node_name);
-					kill_running_job_by_node_name(
-								this_node_name);
+					kill_running_job_by_node_ptr(node_ptr);
 				}
 				trigger_node_draining(node_ptr);
 				bit_clear (avail_node_bitmap, node_ptr->index);
@@ -2106,8 +2105,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					 * Kill any running jobs and requeue if
 					 * possible.
 					 */
-					kill_running_job_by_node_name(
-						this_node_name);
+					kill_running_job_by_node_ptr(node_ptr);
 					node_ptr->node_state &=
 						(~NODE_STATE_POWERING_UP);
 				} else if (state_val & NODE_STATE_POWER_DRAIN) {
@@ -3440,7 +3438,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			       reg_msg->node_name, reason_down);
 
 			if (was_powering_up || was_powered_down)
-				kill_running_job_by_node_name(node_ptr->name);
+				kill_running_job_by_node_ptr(node_ptr);
 		}
 
 		if (!IS_NODE_DOWN(node_ptr)
@@ -3584,7 +3582,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			     (uint32_t)node_ptr->boot_time,
 			     (uint32_t)node_ptr->last_response);
 			_make_node_down(node_ptr, now);
-			kill_running_job_by_node_name(reg_msg->node_name);
+			kill_running_job_by_node_ptr(node_ptr);
 			last_node_update = now;
 			reg_msg->job_count = 0;
 		} else if (IS_NODE_ALLOCATED(node_ptr) &&
@@ -4289,7 +4287,7 @@ void set_node_down_ptr(node_record_t *node_ptr, char *reason)
 
 	set_node_reason(node_ptr, reason, now);
 	_make_node_down(node_ptr, now);
-	(void) kill_running_job_by_node_name(node_ptr->name);
+	(void) kill_running_job_by_node_ptr(node_ptr);
 	_sync_bitmaps(node_ptr, 0);
 }
 

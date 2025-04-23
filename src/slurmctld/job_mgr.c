@@ -3160,18 +3160,12 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 	return 0;
 }
 
-/*
- * kill_running_job_by_node_name - Given a node name, deallocate RUNNING
- *	or COMPLETING jobs from the node or kill them
- * IN node_name - name of a node
- * RET number of killed jobs
- */
-extern int kill_running_job_by_node_name(char *node_name)
+extern int kill_running_job_by_node_ptr(node_record_t *node_ptr)
 {
 	static time_t sched_update = 0;
 	static bool requeue_on_resume_failure = false;
 	foreach_kill_job_by_t foreach_kill_job_by = {
-		.node_ptr = find_node_record(node_name),
+		.node_ptr = node_ptr,
 		.now = time(NULL),
 	};
 
