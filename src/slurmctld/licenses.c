@@ -41,6 +41,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "slurm/slurm_errno.h"
 
@@ -52,6 +53,8 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/data_parser.h"
+#include "src/interfaces/serializer.h"
 
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/reservation.h"
@@ -382,6 +385,48 @@ static void _set_license_ids(void)
 		fatal("Can't set lic_id");
 }
 
+static void _parse_hierarchical_resources(list_t **license_list_ptr)
+{
+	char *resources_conf = get_extra_conf_path("resources.yaml");
+	struct stat stat_buf;
+
+	xassert(license_list_ptr);
+
+	/* Parse hierarchical resources from resources.yaml if config exists */
+	if (!stat(resources_conf, &stat_buf)) {
+		int rc;
+		buf_t *conf_buf = NULL;
+
+		if (!*license_list_ptr)
+			*license_list_ptr = list_create(license_free_rec);
+
+		if (!(conf_buf = create_mmap_buf(resources_conf))) {
+			fatal("Hierarchical resources could not be loaded from %s",
+			      resources_conf);
+		}
+		DATA_PARSE_FROM_STR(H_RESOURCES_AS_LICENSE_LIST, conf_buf->head,
+				    conf_buf->size, *license_list_ptr, NULL,
+				    MIME_TYPE_YAML, rc);
+		if (rc)
+			fatal("Something wrong with reading %s: %s",
+			      resources_conf, slurm_strerror(rc));
+
+		if ((slurm_conf.debug_flags & DEBUG_FLAG_LICENSE)) {
+			char *dump_str = NULL;
+			DATA_DUMP_TO_STR(H_RESOURCES_AS_LICENSE_LIST,
+					 *license_list_ptr, dump_str, NULL,
+					 MIME_TYPE_YAML, SER_FLAGS_NO_TAG, rc);
+			if (rc)
+				error("Hierarchical resources dump failed");
+			verbose("Dump hierarchical resources:\n %s", dump_str);
+			xfree(dump_str);
+		}
+		FREE_NULL_BUFFER(conf_buf);
+	}
+
+	xfree(resources_conf);
+}
+
 /* Initialize licenses on this system based upon slurm.conf */
 extern int license_init(char *licenses)
 {
@@ -399,6 +444,8 @@ extern int license_init(char *licenses)
 	cluster_license_list = _build_license_list(licenses, &valid, false);
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
+
+	_parse_hierarchical_resources(&cluster_license_list);
 
 	next_lic_id = 0;
 	_set_license_ids();
@@ -420,6 +467,8 @@ extern int license_update(char *licenses)
 	new_list = _build_license_list(licenses, &valid, false);
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
+
+	_parse_hierarchical_resources(&new_list);
 
 	slurm_mutex_lock(&license_mutex);
 	if (!cluster_license_list) { /* no licenses before now */
