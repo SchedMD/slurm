@@ -193,8 +193,6 @@
 	(IS_NODE_REBOOT_REQUESTED(_X) && IS_NODE_DRAIN(_X))
 
 #define THIS_FILE ((strrchr(__FILE__, '/') ?: __FILE__ - 1) + 1)
-#define INFO_LINE(fmt, ...) \
-	info("%s (%s:%d) "fmt, __func__, THIS_FILE, __LINE__, ##__VA_ARGS__);
 
 #define MINUTE_SECONDS 60
 #define HOUR_MINUTES 60
