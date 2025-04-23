@@ -141,6 +141,12 @@ extern data_t *openapi_fork_rel_path_list(data_t *relative_path, int index);
  */
 extern int openapi_append_rel_path(data_t *relative_path, const char *sub_path);
 
+/* For list_for_each() to emit error() message for openapi_resp_error_t */
+extern int openapi_error_log_foreach(void *x, void *arg);
+
+/* For list_for_each() to emit warning() message for openapi_resp_warning_t */
+extern int openapi_warn_log_foreach(void *x, void *arg);
+
 typedef struct {
 	struct {
 		char *type;
