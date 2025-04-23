@@ -429,6 +429,9 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	desc->wait_all_nodes = sbopt.wait_all_nodes;
 
+	if (sbopt.requeue != NO_VAL)
+		desc->requeue = sbopt.requeue;
+
 	desc->environment = NULL;
 	if (sbopt.export_file) {
 		desc->environment = env_array_from_file(sbopt.export_file);
@@ -470,9 +473,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->std_err  = xstrdup(opt.efname);
 	desc->std_in   = xstrdup(opt.ifname);
 	desc->std_out  = xstrdup(opt.ofname);
-
-	if (sbopt.requeue != NO_VAL)
-		desc->requeue = sbopt.requeue;
 
 	return 0;
 }
