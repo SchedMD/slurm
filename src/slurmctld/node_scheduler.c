@@ -4223,28 +4223,10 @@ end_node_set:
 				continue;	/* all nodes overlap */
 			}
 			/* Some nodes overlap, split record */
-			node_set_ptr[node_set_inx].cpus_per_node =
-				node_set_ptr[i].cpus_per_node;
-			node_set_ptr[node_set_inx].real_memory =
-				node_set_ptr[i].real_memory;
-			node_set_ptr[node_set_inx].node_cnt = qos_cnt;
-			node_set_ptr[i].node_cnt -= qos_cnt;
-			node_set_ptr[node_set_inx].node_weight =
-				node_set_ptr[i].node_weight;
+			_split_node_set2(node_set_ptr, i, &node_set_inx,
+					 qos_cnt, grp_node_bitmap,
+					 node_set_ptr[i].flags);
 			node_set_ptr[i].node_weight++;
-			node_set_ptr[node_set_inx].flags =
-				node_set_ptr[i].flags;
-			node_set_ptr[node_set_inx].features =
-				xstrdup(node_set_ptr[i].features);
-			node_set_ptr[node_set_inx].feature_bits =
-				bit_copy(node_set_ptr[i].feature_bits);
-			node_set_ptr[node_set_inx].my_bitmap =
-				bit_copy(node_set_ptr[i].my_bitmap);
-			bit_and(node_set_ptr[node_set_inx].my_bitmap,
-				grp_node_bitmap);
-			bit_and_not(node_set_ptr[i].my_bitmap, grp_node_bitmap);
-
-			node_set_inx++;
 			if (node_set_inx >= node_set_len) {
 				error("%s: node_set buffer filled", __func__);
 				break;
