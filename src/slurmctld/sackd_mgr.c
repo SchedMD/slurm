@@ -66,9 +66,15 @@ static void _destroy_sackd_node(void *x)
 	xfree(node);
 }
 
+/*
+ * protocol_version is only here because of pack_list().
+ * There's no need to ever pack an old version though.
+ */
 static void _pack_node(void *x, uint16_t protocol_version, buf_t *buffer)
 {
 	sackd_node_t *node = x;
+
+	xassert(protocol_version == SLURM_PROTOCOL_VERSION);
 
 	pack16(node->protocol_version, buffer);
 	pack64(node->last_update, buffer);
@@ -81,11 +87,19 @@ static int _unpack_node(void **x, uint16_t protocol_version, buf_t *buffer)
 	uint64_t time_tmp;
 	sackd_node_t *node = xmalloc(sizeof(*node));
 
-	safe_unpack16(&node->protocol_version, buffer);
-	safe_unpack64(&time_tmp, buffer);
-	node->last_update = time_tmp;
-	safe_unpackstr(&node->hostname, buffer);
-	safe_unpackstr(&node->nodeaddr, buffer);
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpack16(&node->protocol_version, buffer);
+		safe_unpack64(&time_tmp, buffer);
+		node->last_update = time_tmp;
+		safe_unpackstr(&node->hostname, buffer);
+		safe_unpackstr(&node->nodeaddr, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack16(&node->protocol_version, buffer);
+		safe_unpack64(&time_tmp, buffer);
+		node->last_update = time_tmp;
+		safe_unpackstr(&node->hostname, buffer);
+		safe_unpackstr(&node->nodeaddr, buffer);
+	}
 
 	*x = node;
 	return SLURM_SUCCESS;
