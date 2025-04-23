@@ -1223,57 +1223,6 @@ slurm_update_node(slurm_t self, HV *update_req)
 
 
 ######################################################################
-#	SLURM SWITCH TOPOLOGY CONFIGURATION READ/PRINT FUNCTIONS
-######################################################################
-
-HV *
-slurm_load_topo(slurm_t self)
-	PREINIT:
-		topo_info_response_msg_t *topo_info_msg = NULL;
-		int rc;
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		rc = slurm_load_topo( &topo_info_msg);
-		if(rc == SLURM_SUCCESS) {
-			RETVAL = newHV();
-			sv_2mortal((SV*)RETVAL);
-			rc = topo_info_response_msg_to_hv(topo_info_msg, RETVAL);
-			slurm_free_topo_info_msg(topo_info_msg);
-			if (rc < 0) {
-				XSRETURN_UNDEF;
-			}
-		} else {
-			XSRETURN_UNDEF;
-		}
-	OUTPUT:
-		RETVAL
-
-void
-slurm_print_topo_info_msg(slurm_t self, FILE *out, HV *topo_info_msg, char *node_list, int one_liner=0)
-	PREINIT:
-		topo_info_response_msg_t ti_msg;
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if (out == NULL) {
-			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
-		}
-		if(hv_to_topo_info_response_msg(topo_info_msg, &ti_msg) < 0) {
-			XSRETURN_UNDEF;
-		}
-	C_ARGS:
-		out, &ti_msg, node_list, one_liner
-	CLEANUP:
-		xfree(ti_msg.topo_array);
-
-######################################################################
 #	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
 

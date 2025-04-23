@@ -23,7 +23,6 @@ perl_sources = \
 	       $(perl_dir)/reservation.c \
 	       $(perl_dir)/step.c \
 	       $(perl_dir)/step_ctx.c \
-	       $(perl_dir)/topo.c \
 	       $(perl_dir)/trigger.c
 test_sources = \
 	$(perl_dir)/t/00-use.t \
@@ -38,7 +37,6 @@ test_sources = \
 	$(perl_dir)/t/10-job.t \
 	$(perl_dir)/t/11-step.t \
 	$(perl_dir)/t/12-node.t \
-	$(perl_dir)/t/13-topo.t \
 	$(perl_dir)/t/14-select.t \
 	$(perl_dir)/t/15-partition.t \
 	$(perl_dir)/t/16-reservation.t \
