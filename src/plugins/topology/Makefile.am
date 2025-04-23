@@ -1,3 +1,3 @@
 # Makefile for topology plugins
 
-SUBDIRS = block common default tree
+SUBDIRS = block common flat tree

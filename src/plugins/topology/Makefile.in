@@ -460,7 +460,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = block common default tree
+SUBDIRS = block common flat tree
 all: all-recursive
 
 .SUFFIXES:

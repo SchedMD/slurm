@@ -1224,7 +1224,7 @@ typedef enum {
 } step_spec_flags_t;
 
 enum topology_plugin_type {
-	TOPOLOGY_PLUGIN_DEFAULT = 100,
+	TOPOLOGY_PLUGIN_FLAT = 100,
 	TOPOLOGY_PLUGIN_3DTORUS = 101,
 	TOPOLOGY_PLUGIN_TREE = 102,
 	TOPOLOGY_PLUGIN_BLOCK = 103,
