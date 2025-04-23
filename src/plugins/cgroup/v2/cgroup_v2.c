@@ -74,7 +74,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 /* Internal cgroup structs */
 static list_t *task_list;
 static uint16_t step_active_cnt;
-static xcgroup_ns_t int_cg_ns;
+static xcgroup_ns_t int_cg_ns = { 0 };
 static xcgroup_t int_cg[CG_LEVEL_CNT];
 static bpf_program_t p[CG_LEVEL_CNT];
 static char *stepd_scope_path = NULL;
@@ -402,21 +402,17 @@ static char *_get_init_cg_path()
  */
 static void _set_int_cg_ns()
 {
-	char *init_cg_path = _get_init_cg_path();
+	int_cg_ns.init_cg_path = _get_init_cg_path();
 
 #ifdef MULTIPLE_SLURMD
 	xstrfmtcat(stepd_scope_path, "%s/%s/%s_%s.scope",
-		   init_cg_path,
-		   SYSTEM_CGSLICE, conf->node_name,
+		   int_cg_ns.init_cg_path, SYSTEM_CGSLICE, conf->node_name,
 		   SYSTEM_CGSCOPE);
 #else
-	xstrfmtcat(stepd_scope_path, "%s/%s/%s.scope",
-		   init_cg_path,
+	xstrfmtcat(stepd_scope_path, "%s/%s/%s.scope", int_cg_ns.init_cg_path,
 		   SYSTEM_CGSLICE, SYSTEM_CGSCOPE);
 #endif
 	int_cg_ns.mnt_point = _get_proc_cg_path("self");
-
-	xfree(init_cg_path);
 }
 
 /*
@@ -1117,16 +1113,77 @@ static int _init_slurmd_system_scope()
 	return SLURM_SUCCESS;
 }
 
+static void _get_parent_effective_cpus_mems(char **cpus_effective,
+					    char **mems_effective,
+					    xcgroup_t *cg)
+{
+	size_t sz;
+	xcgroup_t parent_cg = { 0 };
+
+	/* Copy the settings from one level up on the hierarchy. */
+	parent_cg.path = xdirname(cg->path);
+
+	*cpus_effective = NULL;
+	*mems_effective = NULL;
+
+	if (common_cgroup_get_param(&parent_cg, "cpuset.cpus.effective",
+				    cpus_effective, &sz) != SLURM_SUCCESS) {
+		error("Cannot read scope %s/cpuset.cpus.effective",
+		      parent_cg.path);
+	}
+
+	if (common_cgroup_get_param(&parent_cg, "cpuset.mems.effective",
+				    mems_effective, &sz) != SLURM_SUCCESS) {
+		error("Cannot read scope %s/cpuset.mems.effective",
+		      parent_cg.path);
+	}
+
+	common_cgroup_destroy(&parent_cg);
+}
+
+/*
+ * Unset the limits applied to slurmd from _resource_spec_init(), namely
+ * cpuset.cpus, cpuset.mems and memory.max. If others are applied in the future
+ * this function can be extended to reset other limits.
+ *
+ * IN: cg - slurmd cgroup to reset the limits.
+ * RET: SLURM_SUCCESS or SLURM_ERROR if any limit could not be reset.
+ */
 static int _unset_cpu_mem_limits(xcgroup_t *cg)
 {
 	int rc = SLURM_SUCCESS;
 
 	if (!bit_test(cg->ns->avail_controllers, CG_CPUS)) {
-		log_flag(CGROUP, "Not resetting limits in %s as %s controller is not enabled",
+		log_flag(CGROUP, "Not resetting cpuset limits in %s as %s controller is not enabled",
 			 cg->path, ctl_names[CG_CPUS]);
+	} else if (!xstrcmp(cg->path, int_cg_ns.init_cg_path)) {
+		log_flag(CGROUP, "Not resetting cpuset limits in %s as we are already in the top cgroup",
+			 cg->path);
 	} else {
-		rc += common_cgroup_set_param(cg, "cpuset.cpus", " ");
-		rc += common_cgroup_set_param(cg, "cpuset.mems", " ");
+		/*
+		 * Normally it should suffice to write a "" into cpuset.cpus to
+		 * reset the allowed cpus, but for some reason this seems to be
+		 * interpreted as an "empty" cpuset by the kernel and it does
+		 * not allow us to do it when there are process in it (e.g. in
+		 * a reconfigure when slurmd is started manually). Instead, the
+		 * kernel allows us to specify the full range of cpus so we
+		 * will grab here the parent cpuset.cpus and apply it to our
+		 * cgroup. The same is done for cpuset.mems, as this interface
+		 * suffers from the same problem.
+		 */
+		char *parent_cpus, *parent_mems;
+		int i;
+		_get_parent_effective_cpus_mems(&parent_cpus, &parent_mems, cg);
+		rc += common_cgroup_set_param(cg, "cpuset.cpus", parent_cpus);
+		rc += common_cgroup_set_param(cg, "cpuset.mems", parent_mems);
+		if ((i = strlen(parent_cpus)))
+			parent_cpus[i - 1] = '\0';
+		if ((i = strlen(parent_mems)))
+			parent_mems[i - 1] = '\0';
+		log_flag(CGROUP, "%s reset cpuset.cpus=%s cpuset.mems=%s",
+			 cg->path, parent_cpus, parent_mems);
+		xfree(parent_cpus);
+		xfree(parent_mems);
 	}
 
 	if (!bit_test(cg->ns->avail_controllers, CG_MEMORY)) {
@@ -1134,11 +1191,8 @@ static int _unset_cpu_mem_limits(xcgroup_t *cg)
 			 cg->path, ctl_names[CG_MEMORY]);
 	} else {
 		rc += common_cgroup_set_param(cg, "memory.max", "max");
-		rc += common_cgroup_set_param(cg, "memory.high", "max");
+		log_flag(CGROUP, "%s reset memory.max=max", cg->path);
 	}
-
-	if (cgroup_p_has_feature(CG_MEMCG_SWAP))
-		rc += common_cgroup_set_param(cg, "memory.swap.max", "max");
 
 	return (rc) ? SLURM_ERROR : SLURM_SUCCESS;
 }
@@ -1158,8 +1212,8 @@ static int _migrate_to_stepd_scope()
 	pid_t slurmd_pid = getpid();
 
 	bit_clear_all(int_cg_ns.avail_controllers);
+	xfree(int_cg_ns.mnt_point);
 	common_cgroup_destroy(&int_cg[CG_LEVEL_ROOT]);
-	common_cgroup_ns_destroy(&int_cg_ns);
 
 	xstrfmtcat(new_home, "%s/slurmd", stepd_scope_path);
 	int_cg_ns.mnt_point = new_home;
@@ -1192,10 +1246,6 @@ static int _migrate_to_stepd_scope()
 	    SLURM_SUCCESS) {
 		error("Cannot enable subtree_control at the top level %s",
 		      int_cg_ns.mnt_point);
-		return SLURM_ERROR;
-	}
-	if (_unset_cpu_mem_limits(&int_cg[CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
-		error("Cannot reset %s cgroup limits.", new_home);
 		return SLURM_ERROR;
 	}
 
@@ -1554,6 +1604,20 @@ extern int cgroup_p_setup_scope(char *scope_path)
 				return SLURM_ERROR;
 		} else {
 			log_flag(CGROUP, "INVOCATION_ID env var found. Assuming slurmd has been started by systemd.");
+		}
+
+		/*
+		 * We need to unset any cpu and memory limits as we do not want
+		 * to inherit previous limits. We cannot reset them later
+		 * because _load_gres needs to see all the cpus. The CoreSpec
+		 * initialization will happen afterwards and set whatever
+		 * is needed.
+		 */
+		if (_unset_cpu_mem_limits(&int_cg[CG_LEVEL_ROOT]) !=
+		    SLURM_SUCCESS) {
+			error("Cannot reset %s cgroup limits.",
+			      int_cg[CG_LEVEL_ROOT].path);
+			return SLURM_ERROR;
 		}
 	}
 
