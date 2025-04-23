@@ -2853,7 +2853,7 @@ no_job:
 	}
 }
 
-/* Wrapper for slurm_kill_job2() */
+/* Wrapper for slurm_kill_job() */
 static uint32_t _kill_job(uint32_t job_id)
 {
 	/*
