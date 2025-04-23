@@ -482,6 +482,18 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		return;
 	}
 
+	if (job_ptr->bit_flags & EXTERNAL_JOB) {
+		debug("%s: %pJ is external, no need to wait to complete",
+		      __func__, job_ptr);
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap_cg, &i));
+		     i++) {
+			make_node_idle(node_ptr, job_ptr);
+		}
+		hostlist_destroy(hostlist);
+		return;
+	}
+
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	if (timeout)
 		agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
@@ -3274,6 +3286,9 @@ extern void launch_prolog(job_record_t *job_ptr)
 	if (protocol_version > job_ptr->front_end_ptr->protocol_version)
 		protocol_version = job_ptr->front_end_ptr->protocol_version;
 #else
+	if (job_ptr->bit_flags & EXTERNAL_JOB)
+		return;
+
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
 		if (protocol_version > node_ptr->protocol_version)
