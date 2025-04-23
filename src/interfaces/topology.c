@@ -123,6 +123,18 @@ static void _free_topology_ctx_members(topology_ctx_t *tctx_ptr)
 	}
 }
 
+static void _free_tctx_array(void)
+{
+	if (tctx_num < 0)
+		return;
+
+	for (int i = 0; i < tctx_num; i++) {
+		_free_topology_ctx_members(&tctx[i]);
+	}
+	xfree(tctx);
+	tctx_num = -1;
+}
+
 static int _get_plugin_index(int plugin_id)
 {
 	xassert(ops);
@@ -209,6 +221,7 @@ extern int topology_g_fini(void)
 	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&g_context_lock);
+	_free_tctx_array();
 	for (int i = 0; i < g_context_num; i++) {
 		int rc2 = plugin_context_destroy(g_context[i]);
 		if (rc2) {
