@@ -242,10 +242,16 @@ static bool _is_cgroup2_mount(char *path)
 		}
 	}
 
+	if (!rc) {
+		error("The cgroup mountpoint %s is not mounted", path);
+		goto end;
+	}
+
 	minfo = _get_root_mount_mountinfo(path, "self");
 	if (xstrcmp(minfo, "/"))
 		error("The cgroup mountpoint does not align with the current namespace. Please, ensure all namespaces are correctly mounted. Refer to the slurm cgroup_v2 documentation.");
 
+end:
 	xfree(minfo);
 	endmntent(fp);
 	return rc;
