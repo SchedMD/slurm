@@ -229,6 +229,27 @@ extern int openapi_append_rel_path(data_t *relative_path, const char *sub_path)
 	return data_list_split_str(relative_path, sub_path, OPENAPI_PATH_SEP);
 }
 
+extern int openapi_error_log_foreach(void *x, void *arg)
+{
+	openapi_resp_error_t *error_ptr = x;
+	xassert(error_ptr);
+
+	error("source: %s, description: %s, rc: %d", error_ptr->source,
+	      error_ptr->description, error_ptr->num);
+
+	return SLURM_SUCCESS;
+}
+
+extern int openapi_warn_log_foreach(void *x, void *arg)
+{
+	openapi_resp_warning_t *warn = x;
+	xassert(warn);
+
+	warning("source: %s, description: %s", warn->source, warn->description);
+
+	return SLURM_SUCCESS;
+}
+
 extern void free_openapi_resp_meta(void *obj)
 {
 	openapi_resp_meta_t *x = obj;
