@@ -35,6 +35,7 @@ diag_stats_t slurmctld_diag_stats;
 void *acct_db_conn = NULL;
 uint32_t cluster_cpus = NO_VAL;
 list_t *job_list = NULL;
+list_t *resume_job_list = NULL;
 time_t last_job_update = (time_t) 0;
 time_t last_part_update = (time_t) 0;
 time_t last_node_update = (time_t) 0;
@@ -49,6 +50,13 @@ list_t *resv_list = NULL;
 int node_record_count;
 slurmctld_config_t slurmctld_config;
 uint32_t max_powered_nodes = NO_VAL;
+bool preempt_send_user_signal = false;
+int sched_interval = 60;
+int batch_sched_delay = 3;
+bool disable_remote_singleton = false;
+int max_depend_depth = 10;
+bool cloud_dns = false;
+uint32_t validate_resv_cnt = 0;
 
 bitstr_t *asap_node_bitmap = NULL; /* bitmap of rebooting asap nodes */
 bitstr_t *avail_node_bitmap = NULL; /* bitmap of available nodes */
