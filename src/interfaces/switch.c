@@ -444,7 +444,8 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpack32(&length, buffer);
 		switch_stepinfo_end = get_buf_offset(buffer) + length;
-		if (!running_in_slurmstepd() || !length || !switch_context_cnt)
+		if (!(running_in_slurmstepd() || running_in_slurmctld()) ||
+		    !length || !switch_context_cnt)
 			goto skip_buf;
 
 		if (remaining_buf(buffer) < length)
