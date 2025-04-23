@@ -5200,6 +5200,10 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 		goto fini;
 	}
 
+	/* copy this so upstream logging messages are more detailed */
+	xfree(msg->node_names);
+	msg->node_names = xstrdup(conf_node->nodenames);
+
 	if ((rc = _validate_nodes_vs_nodeset(conf_node->nodenames))
 	    != SLURM_SUCCESS)
 		goto fini;
