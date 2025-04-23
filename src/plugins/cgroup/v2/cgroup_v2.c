@@ -1154,8 +1154,8 @@ static int _migrate_to_stepd_scope()
 	pid_t slurmd_pid = getpid();
 
 	bit_clear_all(int_cg_ns.avail_controllers);
+	xfree(int_cg_ns.mnt_point);
 	common_cgroup_destroy(&int_cg[CG_LEVEL_ROOT]);
-	common_cgroup_ns_destroy(&int_cg_ns);
 
 	xstrfmtcat(new_home, "%s/slurmd", stepd_scope_path);
 	int_cg_ns.mnt_point = new_home;
