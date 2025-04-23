@@ -205,6 +205,35 @@ static char *arg_get_##field(slurm_opt_t *opt)			\
 }								\
 COMMON_OPTION_RESET(field, false)
 
+#define COMMON_SBATCH_BOOL_OPTION(field)			\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+__attribute__((nonnull (1)));					\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+{								\
+	if (!opt->sbatch_opt)					\
+		return SLURM_ERROR;				\
+								\
+	opt->sbatch_opt->field = true;				\
+								\
+	return SLURM_SUCCESS;					\
+}								\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+{								\
+	if (!opt->sbatch_opt)					\
+		return xstrdup("invalid-context");		\
+								\
+	return xstrdup(opt->sbatch_opt->field ? "set" : "unset");\
+}								\
+static void arg_reset_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static void arg_reset_##field(slurm_opt_t *opt)			\
+{								\
+	if (opt->sbatch_opt)					\
+		opt->sbatch_opt->field = false;			\
+}
+
 #define COMMON_SRUN_BOOL_OPTION(field)				\
 static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
 __attribute__((nonnull (1)));					\
@@ -1364,6 +1393,31 @@ static slurm_cli_opt_t slurm_opt_export_file = {
 	.set_func_sbatch = arg_set_export_file,
 	.get_func = arg_get_export_file,
 	.reset_func = arg_reset_export_file,
+};
+
+static int arg_set_external(slurm_opt_t *opt, const char *arg)
+{
+	opt->job_flags |= EXTERNAL_JOB;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_external(slurm_opt_t *opt)
+{
+	if (opt->job_flags & EXTERNAL_JOB)
+		return xstrdup("set");
+	return xstrdup("unset");
+}
+static void arg_reset_external(slurm_opt_t *opt)
+{
+	opt->job_flags &= ~EXTERNAL_JOB;
+}
+static slurm_cli_opt_t slurm_opt_external = {
+	.name = "external",
+	.has_arg = no_argument,
+	.val = LONG_OPT_EXTERNAL,
+	.set_func_sbatch = arg_set_external,
+	.get_func = arg_get_external,
+	.reset_func = arg_reset_external,
 };
 
 COMMON_SRUN_BOOL_OPTION(external_launcher);
@@ -4125,6 +4179,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_exclusive,
 	&slurm_opt_export,
 	&slurm_opt_export_file,
+	&slurm_opt_external,
 	&slurm_opt_external_launcher,
 	&slurm_opt_extra,
 	&slurm_opt_extra_node_info,
