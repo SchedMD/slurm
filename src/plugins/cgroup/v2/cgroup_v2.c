@@ -1191,6 +1191,7 @@ static int _unset_cpu_mem_limits(xcgroup_t *cg)
 			 cg->path, ctl_names[CG_MEMORY]);
 	} else {
 		rc += common_cgroup_set_param(cg, "memory.max", "max");
+		log_flag(CGROUP, "%s reset memory.max=max", cg->path);
 	}
 
 	return (rc) ? SLURM_ERROR : SLURM_SUCCESS;
