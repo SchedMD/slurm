@@ -106,6 +106,11 @@ typedef enum {
 	YAML_PARSE_LIST,
 } yaml_parse_mode_t;
 
+typedef struct {
+	yaml_emitter_t *emitter;
+	bool no_tag;
+} foreach_item_to_yaml_args_t;
+
 /* Map of suffix to local data_t type */
 static const struct {
 	data_type_t type;
@@ -186,7 +191,7 @@ static const struct {
 
 static serializer_flags_t global_flags = SERIALIZER_YAML_DEFAULT_FLAGS;
 
-static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter);
+static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter, bool no_tag);
 static parse_state_t _yaml_to_data(int depth, yaml_parser_t *parser,
 				   data_t *dst, int *rc);
 static parse_state_t _on_parse_event(int depth, yaml_parser_t *parser,
@@ -426,16 +431,16 @@ static int _parse_yaml(const char *buffer, yaml_parser_t *parser, data_t *data)
 		goto yaml_fail;                                               \
 	} while (false)
 
-static int _emit_string(const char *str, yaml_emitter_t *emitter)
+static int _emit_string(const char *str, yaml_emitter_t *emitter, bool no_tag)
 {
 	yaml_event_t event;
 
 	if (!str) {
 		/* NULL string handed to emitter -> emit NULL instead */
 		if (!yaml_scalar_event_initialize(
-			    &event, NULL, (yaml_char_t *)YAML_NULL_TAG,
-			    (yaml_char_t *)YAML_NULL, strlen(YAML_NULL), 0, 0,
-			    YAML_ANY_SCALAR_STYLE))
+			    &event, NULL, (yaml_char_t *) YAML_NULL_TAG,
+			    (yaml_char_t *) YAML_NULL, strlen(YAML_NULL),
+			    no_tag, no_tag, YAML_ANY_SCALAR_STYLE))
 			_yaml_emitter_error;
 
 		if (!yaml_emitter_emit(emitter, &event))
@@ -445,8 +450,9 @@ static int _emit_string(const char *str, yaml_emitter_t *emitter)
 	}
 
 	if (!yaml_scalar_event_initialize(&event, NULL,
-					  (yaml_char_t *)YAML_STR_TAG,
-					  (yaml_char_t *)str, strlen(str), 0, 0,
+					  (yaml_char_t *) YAML_STR_TAG,
+					  (yaml_char_t *) str, strlen(str),
+					  no_tag, no_tag,
 					  YAML_ANY_SCALAR_STYLE))
 		_yaml_emitter_error;
 
@@ -463,17 +469,17 @@ static data_for_each_cmd_t _convert_dict_yaml(const char *key,
 					      const data_t *data,
 					      void *arg)
 {
-	yaml_emitter_t *emitter = arg;
+	foreach_item_to_yaml_args_t *args = arg;
 
 	/*
 	 * Emitter doesn't have a key field
 	 * it just sends it as a scalar before
 	 * the value is sent
 	 */
-	if (_emit_string(key, emitter))
+	if (_emit_string(key, args->emitter, args->no_tag))
 		return DATA_FOR_EACH_FAIL;
 
-	if (_data_to_yaml(data, emitter))
+	if (_data_to_yaml(data, args->emitter, args->no_tag))
 		return DATA_FOR_EACH_FAIL;
 
 	return DATA_FOR_EACH_CONT;
@@ -481,17 +487,21 @@ static data_for_each_cmd_t _convert_dict_yaml(const char *key,
 
 static data_for_each_cmd_t _convert_list_yaml(const data_t *data, void *arg)
 {
-	yaml_emitter_t *emitter = arg;
+	foreach_item_to_yaml_args_t *args = arg;
 
-	if (_data_to_yaml(data, emitter))
+	if (_data_to_yaml(data, args->emitter, args->no_tag))
 		return DATA_FOR_EACH_FAIL;
 
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter)
+static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter, bool no_tag)
 {
 	yaml_event_t event;
+	foreach_item_to_yaml_args_t fargs = {
+		.emitter = emitter,
+		.no_tag = no_tag,
+	};
 
 	if (!d)
 		return SLURM_ERROR;
@@ -499,9 +509,9 @@ static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter)
 	switch (data_get_type(d)) {
 	case DATA_TYPE_NULL:
 		if (!yaml_scalar_event_initialize(
-			    &event, NULL, (yaml_char_t *)YAML_NULL_TAG,
-			    (yaml_char_t *)YAML_NULL, strlen(YAML_NULL), 0, 0,
-			    YAML_ANY_SCALAR_STYLE))
+			    &event, NULL, (yaml_char_t *) YAML_NULL_TAG,
+			    (yaml_char_t *) YAML_NULL, strlen(YAML_NULL),
+			    no_tag, no_tag, YAML_ANY_SCALAR_STYLE))
 			_yaml_emitter_error;
 
 		if (!yaml_emitter_emit(emitter, &event))
@@ -511,15 +521,16 @@ static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter)
 	case DATA_TYPE_BOOL:
 		if (data_get_bool(d)) {
 			if (!yaml_scalar_event_initialize(
-				    &event, NULL, (yaml_char_t *)YAML_BOOL_TAG,
-				    (yaml_char_t *)YAML_TRUE, strlen(YAML_TRUE),
-				    0, 0, YAML_ANY_SCALAR_STYLE))
+				    &event, NULL, (yaml_char_t *) YAML_BOOL_TAG,
+				    (yaml_char_t *) YAML_TRUE,
+				    strlen(YAML_TRUE), no_tag, no_tag,
+				    YAML_ANY_SCALAR_STYLE))
 				_yaml_emitter_error;
 		} else {
 			if (!yaml_scalar_event_initialize(
-				    &event, NULL, (yaml_char_t *)YAML_BOOL_TAG,
-				    (yaml_char_t *)YAML_FALSE,
-				    strlen(YAML_FALSE), 0, 0,
+				    &event, NULL, (yaml_char_t *) YAML_BOOL_TAG,
+				    (yaml_char_t *) YAML_FALSE,
+				    strlen(YAML_FALSE), no_tag, no_tag,
 				    YAML_ANY_SCALAR_STYLE))
 				_yaml_emitter_error;
 		}
@@ -538,9 +549,9 @@ static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter)
 		}
 
 		if (!yaml_scalar_event_initialize(
-			    &event, NULL, (yaml_char_t *)YAML_FLOAT_TAG,
-			    (yaml_char_t *)buffer, strlen(buffer), 0, 0,
-			    YAML_ANY_SCALAR_STYLE)) {
+			    &event, NULL, (yaml_char_t *) YAML_FLOAT_TAG,
+			    (yaml_char_t *) buffer, strlen(buffer), no_tag,
+			    no_tag, YAML_ANY_SCALAR_STYLE)) {
 			xfree(buffer);
 			_yaml_emitter_error;
 		}
@@ -562,9 +573,9 @@ static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter)
 		}
 
 		if (!yaml_scalar_event_initialize(
-			    &event, NULL, (yaml_char_t *)YAML_INT_TAG,
-			    (yaml_char_t *)buffer, strlen(buffer), 0, 0,
-			    YAML_ANY_SCALAR_STYLE)) {
+			    &event, NULL, (yaml_char_t *) YAML_INT_TAG,
+			    (yaml_char_t *) buffer, strlen(buffer), no_tag,
+			    no_tag, YAML_ANY_SCALAR_STYLE)) {
 			xfree(buffer);
 			_yaml_emitter_error;
 		}
@@ -581,15 +592,14 @@ static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter)
 		int count;
 
 		if (!yaml_mapping_start_event_initialize(
-			    &event, NULL, (yaml_char_t *)YAML_MAP_TAG, 0,
+			    &event, NULL, (yaml_char_t *) YAML_MAP_TAG, no_tag,
 			    YAML_ANY_MAPPING_STYLE))
 			_yaml_emitter_error;
 
 		if (!yaml_emitter_emit(emitter, &event))
 			_yaml_emitter_error;
 
-		count = data_dict_for_each_const(d, _convert_dict_yaml,
-						 emitter);
+		count = data_dict_for_each_const(d, _convert_dict_yaml, &fargs);
 		xassert(count >= 0);
 
 		if (!yaml_mapping_end_event_initialize(&event))
@@ -605,15 +615,14 @@ static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter)
 		int count;
 
 		if (!yaml_sequence_start_event_initialize(
-			    &event, NULL, (yaml_char_t *)YAML_SEQ_TAG, 0,
+			    &event, NULL, (yaml_char_t *) YAML_SEQ_TAG, no_tag,
 			    YAML_ANY_SEQUENCE_STYLE))
 			_yaml_emitter_error;
 
 		if (!yaml_emitter_emit(emitter, &event))
 			_yaml_emitter_error;
 
-		count = data_list_for_each_const(d, _convert_list_yaml,
-						 emitter);
+		count = data_list_for_each_const(d, _convert_list_yaml, &fargs);
 		xassert(count >= 0);
 
 		if (!yaml_sequence_end_event_initialize(&event))
@@ -625,7 +634,7 @@ static int _data_to_yaml(const data_t *d, yaml_emitter_t *emitter)
 		return count >= 0 ? SLURM_SUCCESS : SLURM_ERROR;
 	}
 	case DATA_TYPE_STRING:
-		return _emit_string(data_get_string(d), emitter);
+		return _emit_string(data_get_string(d), emitter, no_tag);
 	default:
 		xassert(false);
 	};
@@ -663,7 +672,7 @@ static int _yaml_write_handler(void *data, unsigned char *buffer, size_t size)
 }
 
 static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter, buf_t *buf,
-		      serializer_flags_t flags)
+		      serializer_flags_t flags, bool no_tags)
 {
 	yaml_event_t event;
 
@@ -696,7 +705,7 @@ static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter, buf_t *buf,
 	if (!yaml_emitter_emit(emitter, &event))
 		_yaml_emitter_error;
 
-	if (_data_to_yaml(data, emitter))
+	if (_data_to_yaml(data, emitter, no_tags))
 		goto yaml_fail;
 
 	if (!yaml_document_end_event_initialize(&event, 0))
@@ -726,7 +735,8 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 	yaml_emitter_t emitter;
 	buf_t *buf = init_buf(0);
 
-	if (_dump_yaml(src, &emitter, buf, _merge_flags(flags))) {
+	if (_dump_yaml(src, &emitter, buf, _merge_flags(flags),
+		       (flags & SER_FLAGS_NO_TAG))) {
 		error("%s: dump yaml failed", __func__);
 
 		FREE_NULL_BUFFER(buf);
