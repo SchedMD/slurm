@@ -181,6 +181,10 @@ static void _check_full_access(hwloc_topology_t *topology)
 
 		warning("%s: subset of restricted cpus (not available for jobs): %s",
 			__func__, restricted_cpus_as_mac);
+
+		/* We don't need this any further */
+		if (!(slurm_conf.task_plugin_param & SLURMD_SPEC_OVERRIDE))
+			xfree(restricted_cpus_as_mac);
 	} else {
 		debug2("%s: got full access to the cpuset topology", __func__);
 	}
