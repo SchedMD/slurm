@@ -66,6 +66,7 @@ decl_static_data(usage_txt);
 uint32_t slurm_daemon = IS_SACKD;
 
 static bool daemonize = true;
+static bool disable_reconfig = false;
 static bool original = true;
 static bool registered = false;
 static bool under_systemd = false;
@@ -96,12 +97,14 @@ static void _parse_args(int argc, char **argv)
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
 		LONG_OPT_CONF_SERVER,
+		LONG_OPT_DISABLE_RECONFIG,
 		LONG_OPT_PORT,
 		LONG_OPT_SYSTEMD,
 	};
 
 	static struct option long_options[] = {
 		{"conf-server", required_argument, 0, LONG_OPT_CONF_SERVER},
+		{ "disable-reconfig", no_argument, 0, LONG_OPT_DISABLE_RECONFIG },
 		{ "port", required_argument, 0, LONG_OPT_PORT },
 		{"systemd", no_argument, 0, LONG_OPT_SYSTEMD},
 		{NULL, no_argument, 0, 'v'},
@@ -118,6 +121,9 @@ static void _parse_args(int argc, char **argv)
 		if (logopt.syslog_level == NO_VAL16)
 			fatal("Invalid env SACKD_DEBUG: %s", str);
 	}
+
+	if ((str = getenv("SACKD_DISABLE_RECONFIG")))
+		disable_reconfig = true;
 
 	if ((str = getenv("SACKD_PORT"))) {
 		if (parse_uint16(str, &port))
@@ -173,6 +179,9 @@ static void _parse_args(int argc, char **argv)
 			xfree(conf_server);
 			conf_server = xstrdup(optarg);
 			break;
+		case LONG_OPT_DISABLE_RECONFIG:
+			disable_reconfig = true;
+			break;
 		case LONG_OPT_PORT:
 			if (parse_uint16(optarg, &port))
 				fatal("Invalid port '%s'", optarg);
@@ -221,6 +230,7 @@ static bool _slurm_conf_file_exists(void)
 static void _establish_config_source(void)
 {
 	config_response_msg_t *configs;
+	uint32_t fetch_type = CONFIG_REQUEST_SACKD;
 
 	if (!conf_server && _slurm_conf_file_exists()) {
 		debug("%s: config will load from file", __func__);
@@ -246,8 +256,10 @@ static void _establish_config_source(void)
 			      __func__, dir);
 	}
 
-	while (!(configs = fetch_config(conf_server, CONFIG_REQUEST_SACKD,
-					port))) {
+	if (disable_reconfig)
+		fetch_type = CONFIG_REQUEST_SLURM_CONF;
+
+	while (!(configs = fetch_config(conf_server, fetch_type, port))) {
 		error("Failed to load configs from slurmctld. Retrying in 10 seconds.");
 		sleep(10);
 	}
