@@ -109,9 +109,43 @@ static int _sack_connect_cluster(char *cluster_name)
 	return fd;
 }
 
+static int _sack_connect_env(char *sack_socket)
+{
+	int fd, ret;
+	struct sockaddr_un sack_addr = { .sun_family = AF_UNIX };
+
+	ret = snprintf(sack_addr.sun_path, sizeof(sack_addr.sun_path), "%s",
+		       sack_socket);
+
+	if (ret < 0) {
+		error("snprintf failed with 'SLURM_SACK_SOCKET=%s'",
+		      sack_socket);
+		return -1;
+	}
+
+	if (ret >= (sizeof(sack_addr.sun_path))) {
+		error("'SLURM_SACK_SOCKET=%s' exceeds unix socket path max size",
+		      sack_socket);
+		return -1;
+	}
+
+	if ((fd = _sack_try_connection(&sack_addr)) < 0) {
+		error("failed to connect to 'SLURM_SACK_SOCKET=%s'",
+		      sack_addr.sun_path);
+		return -1;
+	}
+
+	debug2("%s: connected to %s", __func__, sack_addr.sun_path);
+	return fd;
+}
+
 static int _sack_connect(char *cluster_name)
 {
+	char *sack_socket = NULL;
 	int fd;
+
+	if ((sack_socket = getenv("SLURM_SACK_SOCKET")))
+		return _sack_connect_env(sack_socket);
 
 	if (cluster_name && ((fd = _sack_connect_cluster(cluster_name)) >= 0))
 		return fd;
