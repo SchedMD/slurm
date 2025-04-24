@@ -48,6 +48,7 @@ typedef struct {
 	char *hostname;
 	char *nodeaddr;
 	time_t last_update;
+	uint16_t port;
 	uint16_t protocol_version;
 } sackd_node_t;
 
@@ -80,6 +81,7 @@ static void _pack_node(void *x, uint16_t protocol_version, buf_t *buffer)
 	pack64(node->last_update, buffer);
 	packstr(node->hostname, buffer);
 	packstr(node->nodeaddr, buffer);
+	pack16(node->port, buffer);
 }
 
 static int _unpack_node(void **x, uint16_t protocol_version, buf_t *buffer)
@@ -93,6 +95,7 @@ static int _unpack_node(void **x, uint16_t protocol_version, buf_t *buffer)
 		node->last_update = time_tmp;
 		safe_unpackstr(&node->hostname, buffer);
 		safe_unpackstr(&node->nodeaddr, buffer);
+		safe_unpack16(&node->port, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&node->protocol_version, buffer);
 		safe_unpack64(&time_tmp, buffer);
