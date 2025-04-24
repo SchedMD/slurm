@@ -11446,6 +11446,7 @@ static void _pack_config_request_msg(config_request_msg_t *msg,
 
 	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		pack32(msg->flags, buffer);
+		pack16(msg->port, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->flags, buffer);
 	}
@@ -11460,6 +11461,7 @@ static int _unpack_config_request_msg(config_request_msg_t **msg_ptr,
 
 	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->flags, buffer);
+		safe_unpack16(&msg->port, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->flags, buffer);
 	}

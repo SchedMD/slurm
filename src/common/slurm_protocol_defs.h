@@ -967,6 +967,7 @@ typedef enum {
 
 typedef struct {
 	uint32_t flags;		/* see config_request_flags_t */
+	uint16_t port; /* sackd port to push conf changes to */
 } config_request_msg_t;
 
 typedef struct {
