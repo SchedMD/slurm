@@ -3129,7 +3129,7 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
 	slurm_rwlock_unlock(&configless_lock);
 
 	if (req->flags & CONFIG_REQUEST_SACKD)
-		sackd_mgr_add_node(msg);
+		sackd_mgr_add_node(msg, req->port);
 }
 
 /* _slurm_rpc_reconfigure_controller - process RPC to re-initialize
