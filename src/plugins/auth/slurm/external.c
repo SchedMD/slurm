@@ -41,6 +41,7 @@
 
 #include "src/common/log.h"
 #include "src/common/sack_api.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
@@ -48,7 +49,8 @@ extern auth_cred_t *create_external(uid_t r_uid, void *data, int dlen)
 {
 	auth_cred_t *cred = new_cred();
 
-	if (!(cred->token = sack_create(r_uid, data, dlen))) {
+	if (!(cred->token = sack_create(r_uid, data, dlen,
+					slurm_conf.cluster_name))) {
 		error("%s: failed to create token", __func__);
 		xfree(cred);
 	}
@@ -74,7 +76,7 @@ extern int verify_external(auth_cred_t *cred)
 		goto fail;
 	}
 
-	if ((rc = sack_verify(cred->token))) {
+	if ((rc = sack_verify(cred->token, slurm_conf.cluster_name))) {
 		error("%s: sack_verify failure: %s",
 		      __func__, slurm_strerror(rc));
 		goto fail;

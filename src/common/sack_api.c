@@ -93,7 +93,7 @@ static int _sack_connect(void)
 	return -1;
 }
 
-extern char *sack_create(uid_t r_uid, void *data, int dlen)
+extern char *sack_create(uid_t r_uid, void *data, int dlen, char *cluster_name)
 {
 	int fd = -1;
 	char *token = NULL;
@@ -130,7 +130,7 @@ rwfail:
 	return token;
 }
 
-extern int sack_verify(char *token)
+extern int sack_verify(char *token, char *cluster_name)
 {
 	int fd = -1;
 	uint32_t result = SLURM_ERROR;
