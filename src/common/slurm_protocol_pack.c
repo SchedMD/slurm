@@ -1015,6 +1015,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		packstr(msg->node_name, buffer);
 		packstr(msg->arch, buffer);
 		packstr(msg->cpu_spec_list, buffer);
+		pack64(msg->mem_spec_limit, buffer);
 		packstr(msg->os, buffer);
 		pack16(msg->cpus, buffer);
 		pack16(msg->boards, buffer);
@@ -1125,6 +1126,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpackstr(&node_reg_ptr->node_name, buffer);
 		safe_unpackstr(&node_reg_ptr->arch, buffer);
 		safe_unpackstr(&node_reg_ptr->cpu_spec_list, buffer);
+		safe_unpack64(&node_reg_ptr->mem_spec_limit, buffer);
 		safe_unpackstr(&node_reg_ptr->os, buffer);
 		safe_unpack16(&node_reg_ptr->cpus, buffer);
 		safe_unpack16(&node_reg_ptr->boards, buffer);
