@@ -49,6 +49,8 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/interfaces/cred.h"
 
+#define MAX_CPU_CNT 1024
+
 extern int devnull;
 extern bool get_reg_resp;
 extern bool refresh_cached_features;

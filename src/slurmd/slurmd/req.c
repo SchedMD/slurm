@@ -118,7 +118,6 @@
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
 
-#define MAX_CPU_CNT 1024
 #define MAX_NUMA_CNT 128
 
 typedef struct {
