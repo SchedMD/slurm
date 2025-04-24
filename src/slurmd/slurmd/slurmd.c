@@ -2551,6 +2551,18 @@ _slurmd_init(void)
 		log_flag(CGROUP, "cgroup conf was already initialized.");
 
 	/*
+	 * This will move the slurmd into its correct cgroup and reset its
+	 * constraints. Need to do before hwloc detection or it will detect
+	 * restrictions from incorrect cgroups.
+	 *
+	 * This needs to happen before _resource_spec_init() too.
+	 */
+	if (cgroup_g_init() != SLURM_SUCCESS) {
+		error("Unable to initialize cgroup plugin");
+		return SLURM_ERROR;
+	}
+
+	/*
 	 * auth/slurm calls conmgr_init and we need to apply conmgr params
 	 * before conmgr init.
 	 */
@@ -2577,15 +2589,6 @@ _slurmd_init(void)
 	 * defaults and command line.
 	 */
 	_read_config();
-	/*
-	 * This needs to happen before _resource_spec_init where we will try to
-	 * attach the slurmd pid to system cgroup, and after _read_config to
-	 * have proper logging.
-	 */
-	if (cgroup_g_init() != SLURM_SUCCESS) {
-		error("Unable to initialize cgroup plugin");
-		return SLURM_ERROR;
-	}
 
 	if (!find_node_record(conf->node_name))
 		return SLURM_ERROR;
