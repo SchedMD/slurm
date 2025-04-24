@@ -1237,6 +1237,7 @@ _read_config(void)
 	 * task/cgroup. This is guaranteed by CpuSpecOverride parameter.
 	 */
 	if (slurm_conf.task_plugin_param & SLURMD_SPEC_OVERRIDE) {
+		cgroup_limits_t *slurmd_limits;
 		char *tmp_str = xcpuinfo_get_cpuspec();
 		if (tmp_str) {
 			info("Overriding CpuSpecList from %s to %s",
@@ -1245,6 +1246,23 @@ _read_config(void)
 			conf->cpu_spec_list = tmp_str;
 			slurm_conf.task_plugin_param &= ~SLURMD_OFF_SPEC;
 		}
+
+		slurmd_limits =
+			cgroup_g_constrain_get(CG_MEMORY, CG_LEVEL_ROOT);
+
+		if (!slurmd_limits ||
+		    (slurmd_limits->limit_in_bytes == NO_VAL64)) {
+			info("No memory limits detected for this system, assuming the available memory equals the physical memory");
+		} else {
+			slurmd_limits->limit_in_bytes /= 1024 * 1024;
+			conf->mem_spec_limit = node_ptr->real_memory -
+				slurmd_limits->limit_in_bytes;
+			info("Detected real memory of %luM but constrained to %luM, setting MemSpecLimit=%luM",
+			     node_ptr->real_memory,
+			     slurmd_limits->limit_in_bytes,
+			     conf->mem_spec_limit);
+		}
+		cgroup_free_limits(slurmd_limits);
 	}
 
 	/*
