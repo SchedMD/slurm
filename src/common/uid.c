@@ -108,7 +108,7 @@ int uid_from_string(const char *name, uid_t *uidp)
 	long l;
 
 	if (!name)
-		return -1;
+		return SLURM_ERROR;
 
 	/*
 	 *  Check to see if name is a valid username first.
@@ -140,7 +140,7 @@ int uid_from_string(const char *name, uid_t *uidp)
 	if (result) {
 		*uidp = result->pw_uid;
 		xfree(buf_malloc);
-		return 0;
+		return SLURM_SUCCESS;
 	}
 
 	/*
@@ -151,7 +151,7 @@ int uid_from_string(const char *name, uid_t *uidp)
 	if (((errno == ERANGE) && ((l == LONG_MIN) || (l == LONG_MAX))) ||
 	    (name == p) || (*p != '\0') || (l < 0) || (l > UINT32_MAX)) {
 		xfree(buf_malloc);
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	/*
@@ -160,12 +160,12 @@ int uid_from_string(const char *name, uid_t *uidp)
 	slurm_getpwuid_r(l, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
 	if (!result) {
 		xfree(buf_malloc);
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	*uidp = (uid_t) l;
 	xfree(buf_malloc);
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 /*
