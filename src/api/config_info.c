@@ -569,6 +569,8 @@ static void _sprint_task_plugin_params(char *str,
 		strcat(str, "OOMKillStep,");
 	if (task_plugin_params & SLURMD_OFF_SPEC)
 		strcat(str, "SlurmdOffSpec,");
+	if (task_plugin_params & SLURMD_SPEC_OVERRIDE)
+		strcat(str, "SlurmdSpecOverride");
 
 	slurm_sprint_cpu_bind_type(tmp_str, task_plugin_params);
 	/*
