@@ -113,7 +113,7 @@ rwfail:
 	return NULL;
 }
 
-static void _fetch_child(list_t *controllers, uint32_t flags)
+static void _fetch_child(list_t *controllers, uint32_t flags, uint16_t port)
 {
 	config_response_msg_t *config;
 	ctl_entry_t *ctl = NULL;
@@ -138,13 +138,13 @@ static void _fetch_child(list_t *controllers, uint32_t flags)
 	else
 		_init_minimal_conf_server_config(controllers, false, false);
 
-	config = fetch_config_from_controller(flags);
+	config = fetch_config_from_controller(flags, port);
 
 	if (!config && ctl->has_ipv6 && ctl->has_ipv4) {
 		warning("%s: failed to fetch remote configs via IPv4, retrying with IPv6: %m",
 			__func__);
 		_init_minimal_conf_server_config(controllers, true, true);
-		config = fetch_config_from_controller(flags);
+		config = fetch_config_from_controller(flags, port);
 	}
 
 	if (!config) {
@@ -176,7 +176,8 @@ static int _get_controller_addr_type(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
+extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags,
+					   uint16_t port)
 {
 	char *env_conf_server = getenv("SLURM_CONF_SERVER");
 	list_t *controllers = NULL;
@@ -268,11 +269,12 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 		return _fetch_parent(pid);
 	}
 
-	_fetch_child(controllers, flags);
+	_fetch_child(controllers, flags, port);
 	_exit(0);
 }
 
-extern config_response_msg_t *fetch_config_from_controller(uint32_t flags)
+extern config_response_msg_t *fetch_config_from_controller(uint32_t flags,
+							   uint16_t port)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -285,6 +287,7 @@ extern config_response_msg_t *fetch_config_from_controller(uint32_t flags)
 
 	memset(&req, 0, sizeof(req));
 	req.flags = flags;
+	req.port = port;
 	req_msg.msg_type = REQUEST_CONFIG;
 	req_msg.data = &req;
 

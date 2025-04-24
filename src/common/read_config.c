@@ -3063,7 +3063,7 @@ static int _establish_config_source(char **config_file, bool *memfd)
 	 * One last shot - try the SLURM_CONF_SERVER envvar or DNS SRV
 	 * entries to fetch the configs from the slurmctld.
 	 */
-	if (!(config = fetch_config(NULL, CONFIG_REQUEST_SLURM_CONF)) ||
+	if (!(config = fetch_config(NULL, CONFIG_REQUEST_SLURM_CONF, 0)) ||
 	    !config->config_files) {
 		error("%s: failed to fetch config", __func__);
 		return SLURM_ERROR;
