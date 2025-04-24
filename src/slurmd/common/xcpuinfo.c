@@ -64,6 +64,7 @@
 #include "xcpuinfo.h"
 
 #define _DEBUG 0
+#define MAX_CPUSET_STR 2048
 #define _MAX_SOCKET_INX 1024
 
 #if !defined(HAVE_HWLOC)
@@ -75,6 +76,7 @@ static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
 static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 #endif
 
+static char *restricted_cpus_as_mac = NULL;
 extern slurmd_conf_t *conf;
 
 /*
@@ -146,15 +148,42 @@ static int _core_child_count(hwloc_topology_t topology, hwloc_obj_t obj)
 	return count;
 }
 
+/*
+* This needs to run before _remove_ecores() as the call to
+* hwloc_topology_restrict() will change the view.
+*
+* There appears to be a bug in HWLOC 2.x where the IntelCore list
+* is restricted by the cgroup cpuset.
+*/
 static void _check_full_access(hwloc_topology_t *topology)
 {
 	hwloc_const_bitmap_t complete, allowed;
+	hwloc_bitmap_t restricted_cpus_mask;
 
 	complete = hwloc_topology_get_complete_cpuset(*topology);
 	allowed = hwloc_topology_get_allowed_cpuset(*topology);
 
-	if (!hwloc_bitmap_isequal(complete, allowed))
-		warning("restricted to a subset of cpus");
+	if (!hwloc_bitmap_isequal(complete, allowed)) {
+		/*
+		 * Get the cpus that are not set in both bitmaps and which
+		 * represent the cpus that slurm will not be able to run on,
+		 * a.k.a. CpuSpecList (without SlurmdOffSpec).
+		 */
+		restricted_cpus_mask = hwloc_bitmap_alloc();
+		hwloc_bitmap_andnot(restricted_cpus_mask, complete, allowed);
+		restricted_cpus_as_mac = xmalloc(MAX_CPUSET_STR);
+
+		/* And convert them into a string*/
+		hwloc_bitmap_list_snprintf(restricted_cpus_as_mac,
+					   MAX_CPUSET_STR,
+					   restricted_cpus_mask);
+		hwloc_bitmap_free(restricted_cpus_mask);
+
+		warning("%s: subset of restricted cpus (not available for jobs): %s",
+			__func__, restricted_cpus_as_mac);
+	} else {
+		debug2("%s: got full access to the cpuset topology", __func__);
+	}
 }
 
 static void _remove_ecores(hwloc_topology_t *topology)
