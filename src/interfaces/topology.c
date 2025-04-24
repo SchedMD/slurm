@@ -255,7 +255,7 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 		/* No need to split a list of 1. */
 		char *name = hostlist_shift(hl);
 		*sp_hl = xcalloc(1, sizeof(hostlist_t *));
-		(*sp_hl)[*count] = hostlist_create(name);
+		(*sp_hl)[0] = hostlist_create(name);
 		free(name);
 		*count = depth = 1;
 
