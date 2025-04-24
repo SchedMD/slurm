@@ -196,6 +196,8 @@ extern int parse_send_libs(const char *arg);
 
 extern int validate_acctg_freq(char *acctg_freq);
 
+extern bool valid_runtime_directory(char *runtime_dir);
+
 /*
  * Format a tres_per_* argument
  * dest OUT - resulting string

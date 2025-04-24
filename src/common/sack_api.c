@@ -45,6 +45,8 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 
+#define SACK_CLUSTER_PATTERN "/run/slurm-%s/sack.socket"
+
 static struct sockaddr_un sack_addrs[] =
 {
 	{
@@ -79,10 +81,76 @@ static int _sack_try_connection(struct sockaddr_un *addr)
 	return fd;
 }
 
-static int _sack_connect(void)
+static int _sack_connect_cluster(char *cluster_name)
 {
+	int fd, ret;
+	struct sockaddr_un sack_addr = { .sun_family = AF_UNIX };
+
+	ret = snprintf(sack_addr.sun_path, sizeof(sack_addr.sun_path),
+		       SACK_CLUSTER_PATTERN, cluster_name);
+
+	if (ret < 0) {
+		error("snprintf failed for '/run/slurm-%s/sack.socket'",
+		      cluster_name);
+		return -1;
+	}
+
+	if (ret >= (sizeof(sack_addr.sun_path))) {
+		error("'/run/slurm-%s/sack.socket' exceeds unix socket path max size",
+		      cluster_name);
+		return -1;
+	}
+
+	/* Don't error, fall back to sack_addrs[]. */
+	if ((fd = _sack_try_connection(&sack_addr)) < 0)
+		return -1;
+
+	debug2("%s: connected to %s", __func__, sack_addr.sun_path);
+	return fd;
+}
+
+static int _sack_connect_env(char *sack_socket)
+{
+	int fd, ret;
+	struct sockaddr_un sack_addr = { .sun_family = AF_UNIX };
+
+	ret = snprintf(sack_addr.sun_path, sizeof(sack_addr.sun_path), "%s",
+		       sack_socket);
+
+	if (ret < 0) {
+		error("snprintf failed with 'SLURM_SACK_SOCKET=%s'",
+		      sack_socket);
+		return -1;
+	}
+
+	if (ret >= (sizeof(sack_addr.sun_path))) {
+		error("'SLURM_SACK_SOCKET=%s' exceeds unix socket path max size",
+		      sack_socket);
+		return -1;
+	}
+
+	if ((fd = _sack_try_connection(&sack_addr)) < 0) {
+		error("failed to connect to 'SLURM_SACK_SOCKET=%s'",
+		      sack_addr.sun_path);
+		return -1;
+	}
+
+	debug2("%s: connected to %s", __func__, sack_addr.sun_path);
+	return fd;
+}
+
+static int _sack_connect(char *cluster_name)
+{
+	char *sack_socket = NULL;
+	int fd;
+
+	if ((sack_socket = getenv("SLURM_SACK_SOCKET")))
+		return _sack_connect_env(sack_socket);
+
+	if (cluster_name && ((fd = _sack_connect_cluster(cluster_name)) >= 0))
+		return fd;
+
 	for (int i = 0; i < ARRAY_SIZE(sack_addrs); i++) {
-		int fd;
 		if ((fd = _sack_try_connection(&sack_addrs[i])) < 0)
 			continue;
 		debug2("%s: connected to %s", __func__, sack_addrs[i].sun_path);
@@ -93,7 +161,7 @@ static int _sack_connect(void)
 	return -1;
 }
 
-extern char *sack_create(uid_t r_uid, void *data, int dlen)
+extern char *sack_create(uid_t r_uid, void *data, int dlen, char *cluster_name)
 {
 	int fd = -1;
 	char *token = NULL;
@@ -101,7 +169,7 @@ extern char *sack_create(uid_t r_uid, void *data, int dlen)
 	uint32_t len;
 	uint32_t length_position, end_position;
 
-	if ((fd = _sack_connect()) < 0)
+	if ((fd = _sack_connect(cluster_name)) < 0)
 		goto rwfail;
 
 	/* version is not included in length calculation */
@@ -130,14 +198,14 @@ rwfail:
 	return token;
 }
 
-extern int sack_verify(char *token)
+extern int sack_verify(char *token, char *cluster_name)
 {
 	int fd = -1;
 	uint32_t result = SLURM_ERROR;
 	buf_t *request = init_buf(1024);
 	uint32_t length_position, end_position;
 
-	if ((fd = _sack_connect()) < 0)
+	if ((fd = _sack_connect(cluster_name)) < 0)
 		goto rwfail;
 
 	/* version is not included in length calculation */

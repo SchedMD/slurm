@@ -48,6 +48,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/sack_api.h"
 #include "src/common/slurm_protocol_api.h"
@@ -273,6 +274,7 @@ extern void init_sack_conmgr(void)
 			fatal("%s: Invalid %s=%s environment variable",
 			      __func__, SACK_RECONFIG_ENV, env_fd);
 	} else {
+		char *runtime_dir = NULL, *runtime_socket = NULL;
 		slurm_addr_t addr = {0};
 		mode_t mask;
 
@@ -282,6 +284,14 @@ extern void init_sack_conmgr(void)
 		} else if (running_in_slurmdbd()) {
 			_prepare_run_dir("slurmdbd");
 			path = SLURMDBD_SACK_SOCKET;
+		} else if ((runtime_dir = getenv("RUNTIME_DIRECTORY"))) {
+			if (!valid_runtime_directory(runtime_dir))
+				fatal("%s: Invalid RUNTIME_DIRECTORY=%s environment variable",
+				      __func__, runtime_dir);
+			_prepare_run_dir(runtime_dir + 5);
+			xstrfmtcat(runtime_socket, "%s/sack.socket",
+				   runtime_dir);
+			path = runtime_socket;
 		} else {
 			_prepare_run_dir("slurm");
 			path = SLURM_SACK_SOCKET;
@@ -290,6 +300,9 @@ extern void init_sack_conmgr(void)
 		if ((addr = sockaddr_from_unix_path(path)).ss_family != AF_UNIX)
 			fatal("%s: Unexpected invalid socket address",
 			      __func__);
+
+		path = NULL; /* avoid reuse as it may point to runtime_socket */
+		xfree(runtime_socket);
 
 		if ((sack_fd = socket(AF_UNIX, (SOCK_STREAM | SOCK_CLOEXEC), 0))
 		     < 0)

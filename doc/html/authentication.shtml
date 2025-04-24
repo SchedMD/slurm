@@ -200,6 +200,13 @@ daemon should be run to allow the Slurm client commands to authenticate to
 the rest of the cluster. This daemon can also manage cached configuration files
 for <a href="configless_slurm.html">configless</a> environments.</p>
 
+<p>Beginning with version 25.05, it's possible for multiple <b>sackd</b> daemons
+to co-exist on the same login node by changing the RuntimeDirectory option in
+separate systemd service files. Clients can authenticate against different sackd
+daemons on the same login node by managing the <b>SLURM_CONF</b> environment
+variable to point at the different cluster configuration files. Refer to the
+<a href="sackd.html">sackd(8)</a> manual for more information.
+
 <h2 id="jwt">JWT<a class="slurm_link" href="#jwt"></a></h2>
 
 <p>Slurm can be configured to use JSON Web Tokens (JWT) for authentication
@@ -207,6 +214,6 @@ purposes. This is configured with the AuthAltType parameter and is used only
 for client to server communication. You can read more about this authentication
 mechanism and how to install it <a href="jwt.html">here</a>.</p>
 
-<p style="text-align:center;">Last modified 02 July 2024</p>
+<p style="text-align:center;">Last modified 23 April 2025</p>
 
 <!--#include virtual="footer.txt"-->

@@ -45,9 +45,11 @@ typedef struct {
 
 extern list_t *conf_includes_list;
 
-extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags);
+extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags,
+					   uint16_t port);
 
-extern config_response_msg_t *fetch_config_from_controller(uint32_t flags);
+extern config_response_msg_t *fetch_config_from_controller(uint32_t flags,
+							   uint16_t port);
 
 extern int dump_to_memfd(char *type, char *config, char **filename);
 

@@ -53,9 +53,11 @@ typedef enum {
  * The r_uid restricts decoding to a specific uid,
  * or SLURM_AUTH_UID_ANY to permit anyone to decode.
  *
+ * Optional cluster_name for multi-sackd UNIX socket path support or NULL.
+ *
  * Returns an xmalloc()'d string, caller must xfree().
  */
-extern char *sack_create(uid_t r_uid, void *data, int dlen);
+extern char *sack_create(uid_t r_uid, void *data, int dlen, char *cluster_name);
 
 /*
  * Given a SACK token, ensure the signature is valid,
@@ -65,8 +67,10 @@ extern char *sack_create(uid_t r_uid, void *data, int dlen);
  * Only works for "auth" and "sack" context tokens,
  * all others will be rejected.
  *
+ * Optional cluster_name for multi-sackd UNIX socket path support or NULL.
+ *
  * Returns SLURM_SUCCESS if verified.
  */
-extern int sack_verify(char *token);
+extern int sack_verify(char *token, char *cluster_name);
 
 #endif

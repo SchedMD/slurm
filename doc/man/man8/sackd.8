@@ -11,7 +11,7 @@ sackd \- Slurm Auth and Cred Kiosk Daemon.
 nodes that are not running slurmd daemons to allow authentication to the
 cluster. The program will run as the \fISlurmdUser\fR. When running in Slurm's
 "configless" mode, in which case configuration files are retrieved and written
-under the /run/slurm/conf directory.
+under the /run/slurm/conf directory (unless \fBRUNTIME_DIRECTORY\fR is set).
 
 .SH "OPTIONS"
 .TP
@@ -22,6 +22,12 @@ SlurmctldParameters.
 .IP
 
 .TP
+\fB\-\-disable\-reconfig\fR
+Fetch configurations in configless mode once, but do not register with slurmctld
+for further reconfiguration updates.
+.IP
+
+.TP
 \fB\-f config\fR
 Read configuration from the specified file.
 .IP
@@ -29,6 +35,13 @@ Read configuration from the specified file.
 .TP
 \fB\-h\fR
 Help; print a brief summary of command options.
+.IP
+
+.TP
+\fB\-\-port number\fR
+Port socket number to listen for reconfiguration updates. This can be useful
+when multiple sackds co-exist on the same login node. The default value is
+\fBSlurmdPort\fR.
 .IP
 
 .TP
@@ -52,10 +65,36 @@ process. This allows backtraces to be captured without recompiling Slurm.
 .IP
 
 .TP
+\fBRUNTIME_DIRECTORY\fR
+Absolute path governing the location for both the configuration cache sackd
+maintains, and the sack.socket unix socket used to provide authentication
+services.
+
+If multiple sackds need to be started on the same login node, the
+\fBRuntimeDirectory\fR systemd unit option should be set to
+\fBslurm-<clustername>\fR. Systemd v240+ automatically sets
+\fBRUNTIME_DIRECTORY\fR to \fB/run/$RuntimeDirectory\fR for each sackd service,
+otherwise it requires manual setting (i.e. via \fBEnvironmentFile\fR unit
+option).
+
+If this is not set, the default value is \fb/run/slurm/\fR.
+.IP
+
+.TP
 \fBSACKD_DEBUG\fR
 Set debug level explicitly for syslog and stderr. Valid values are 0\-9, or the
 same string values as the debug options such as SlurmctldDebug in
 slurm.conf(5).
+.IP
+
+.TP
+\fBSACKD_DISABLE_RECONFIG\fR
+Same as \fB\-\disable-reconfig\fR.
+.IP
+
+.TP
+\fBSACKD_PORT\fR
+Same as \fB\-\-port\fR.
 .IP
 
 .TP

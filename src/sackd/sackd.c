@@ -45,6 +45,7 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/run_in_daemon.h"
@@ -58,17 +59,21 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/hash.h"
 
+#define DEFAULT_RUN_DIR "/run/slurm"
+
 decl_static_data(usage_txt);
 
 uint32_t slurm_daemon = IS_SACKD;
 
 static bool daemonize = true;
+static bool disable_reconfig = false;
 static bool original = true;
 static bool registered = false;
 static bool under_systemd = false;
 static char *conf_file = NULL;
 static char *conf_server = NULL;
-static char *dir = "/run/slurm/conf";
+static char *dir = NULL;
+static uint16_t port = 0;
 
 static char **main_argv = NULL;
 static int listen_fd = -1;
@@ -92,11 +97,15 @@ static void _parse_args(int argc, char **argv)
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
 		LONG_OPT_CONF_SERVER,
+		LONG_OPT_DISABLE_RECONFIG,
+		LONG_OPT_PORT,
 		LONG_OPT_SYSTEMD,
 	};
 
 	static struct option long_options[] = {
 		{"conf-server", required_argument, 0, LONG_OPT_CONF_SERVER},
+		{ "disable-reconfig", no_argument, 0, LONG_OPT_DISABLE_RECONFIG },
+		{ "port", required_argument, 0, LONG_OPT_PORT },
 		{"systemd", no_argument, 0, LONG_OPT_SYSTEMD},
 		{NULL, no_argument, 0, 'v'},
 		{NULL, 0, 0, 0}
@@ -113,6 +122,15 @@ static void _parse_args(int argc, char **argv)
 			fatal("Invalid env SACKD_DEBUG: %s", str);
 	}
 
+	if ((str = getenv("SACKD_DISABLE_RECONFIG")))
+		disable_reconfig = true;
+
+	if ((str = getenv("SACKD_PORT"))) {
+		if (parse_uint16(str, &port))
+			fatal("Invalid SACKD_PORT=%s", str);
+	} else
+		port = slurm_conf.slurmd_port;
+
 	if ((str = getenv("SACKD_SYSLOG_DEBUG"))) {
 		logopt.syslog_level = log_string2num(str);
 
@@ -128,6 +146,15 @@ static void _parse_args(int argc, char **argv)
 	}
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
+
+	if ((str = getenv("RUNTIME_DIRECTORY"))) {
+		if (!valid_runtime_directory(str))
+			fatal("%s: Invalid RUNTIME_DIRECTORY=%s environment variable",
+			      __func__, str);
+		xstrfmtcat(dir, "%s/conf", str);
+	} else {
+		xstrfmtcat(dir, "%s/conf", DEFAULT_RUN_DIR);
+	}
 
 	opterr = 0;
 	while ((c = getopt_long(argc, argv, "Df:hv",
@@ -151,6 +178,13 @@ static void _parse_args(int argc, char **argv)
 		case LONG_OPT_CONF_SERVER:
 			xfree(conf_server);
 			conf_server = xstrdup(optarg);
+			break;
+		case LONG_OPT_DISABLE_RECONFIG:
+			disable_reconfig = true;
+			break;
+		case LONG_OPT_PORT:
+			if (parse_uint16(optarg, &port))
+				fatal("Invalid port '%s'", optarg);
 			break;
 		case LONG_OPT_SYSTEMD:
 			under_systemd = true;
@@ -196,6 +230,7 @@ static bool _slurm_conf_file_exists(void)
 static void _establish_config_source(void)
 {
 	config_response_msg_t *configs;
+	uint32_t fetch_type = CONFIG_REQUEST_SACKD;
 
 	if (!conf_server && _slurm_conf_file_exists()) {
 		debug("%s: config will load from file", __func__);
@@ -221,7 +256,10 @@ static void _establish_config_source(void)
 			      __func__, dir);
 	}
 
-	while (!(configs = fetch_config(conf_server, CONFIG_REQUEST_SACKD))) {
+	if (disable_reconfig)
+		fetch_type = CONFIG_REQUEST_SLURM_CONF;
+
+	while (!(configs = fetch_config(conf_server, fetch_type, port))) {
 		error("Failed to load configs from slurmctld. Retrying in 10 seconds.");
 		sleep(10);
 	}
@@ -285,8 +323,7 @@ static void _listen_for_reconf(void)
 
 	if (getenv("SACKD_RECONF_LISTEN_FD")) {
 		listen_fd = atoi(getenv("SACKD_RECONF_LISTEN_FD"));
-	} else if ((listen_fd =
-		slurm_init_msg_engine_port(slurm_conf.slurmd_port)) < 0) {
+	} else if ((listen_fd = slurm_init_msg_engine_port(port)) < 0) {
 		error("%s: failed to open port: %m", __func__);
 		return;
 	}
@@ -477,5 +514,6 @@ extern int main(int argc, char **argv)
 
 	xfree(conf_file);
 	xfree(conf_server);
+	xfree(dir);
 	return 0;
 }

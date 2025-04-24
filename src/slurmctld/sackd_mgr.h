@@ -39,7 +39,7 @@
 extern void sackd_mgr_dump_state(buf_t *buffer, uint16_t protocol_version);
 extern int sackd_mgr_load_state(buf_t *buffer, uint16_t protocol_version);
 
-extern void sackd_mgr_add_node(slurm_msg_t *msg);
+extern void sackd_mgr_add_node(slurm_msg_t *msg, uint16_t port);
 extern void sackd_mgr_push_reconfig(void);
 extern void sackd_mgr_remove_node(char *node);
 
