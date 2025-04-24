@@ -72,6 +72,7 @@ static bool under_systemd = false;
 static char *conf_file = NULL;
 static char *conf_server = NULL;
 static char *dir = NULL;
+static uint16_t port = 0;
 
 static char **main_argv = NULL;
 static int listen_fd = -1;
@@ -95,11 +96,13 @@ static void _parse_args(int argc, char **argv)
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
 		LONG_OPT_CONF_SERVER,
+		LONG_OPT_PORT,
 		LONG_OPT_SYSTEMD,
 	};
 
 	static struct option long_options[] = {
 		{"conf-server", required_argument, 0, LONG_OPT_CONF_SERVER},
+		{ "port", required_argument, 0, LONG_OPT_PORT },
 		{"systemd", no_argument, 0, LONG_OPT_SYSTEMD},
 		{NULL, no_argument, 0, 'v'},
 		{NULL, 0, 0, 0}
@@ -115,6 +118,12 @@ static void _parse_args(int argc, char **argv)
 		if (logopt.syslog_level == NO_VAL16)
 			fatal("Invalid env SACKD_DEBUG: %s", str);
 	}
+
+	if ((str = getenv("SACKD_PORT"))) {
+		if (parse_uint16(str, &port))
+			fatal("Invalid SACKD_PORT=%s", str);
+	} else
+		port = slurm_conf.slurmd_port;
 
 	if ((str = getenv("SACKD_SYSLOG_DEBUG"))) {
 		logopt.syslog_level = log_string2num(str);
@@ -163,6 +172,10 @@ static void _parse_args(int argc, char **argv)
 		case LONG_OPT_CONF_SERVER:
 			xfree(conf_server);
 			conf_server = xstrdup(optarg);
+			break;
+		case LONG_OPT_PORT:
+			if (parse_uint16(optarg, &port))
+				fatal("Invalid port '%s'", optarg);
 			break;
 		case LONG_OPT_SYSTEMD:
 			under_systemd = true;

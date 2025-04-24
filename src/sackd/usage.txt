@@ -2,5 +2,6 @@ usage:	sackd [OPTIONS]
     --conf-server host[:port]   Get configs from slurmctld at `host[:port]`.
     -f config                   Read configuration from the specified file.
     -h                          Print this help message.
+    -p port                     Listening port for configuration updates.
     --systemd                   Started from a systemd unit file.
     -v                          Verbose mode. Multiple -v's increase verbosity.
