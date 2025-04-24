@@ -2621,6 +2621,8 @@ _slurmd_init(void)
 	/*
 	 * If configured, apply resource specialization
 	 */
+
+	/* Apply the configured CpuSpecList and MemSpecList */
 	_resource_spec_init();
 
 	_print_conf();
