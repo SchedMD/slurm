@@ -11,7 +11,7 @@ sackd \- Slurm Auth and Cred Kiosk Daemon.
 nodes that are not running slurmd daemons to allow authentication to the
 cluster. The program will run as the \fISlurmdUser\fR. When running in Slurm's
 "configless" mode, in which case configuration files are retrieved and written
-under the /run/slurm/conf directory.
+under the /run/slurm/conf directory (unless \fBRUNTIME_DIRECTORY\fR is set).
 
 .SH "OPTIONS"
 .TP
@@ -49,6 +49,22 @@ compiled into sackd.
 \fBABORT_ON_FATAL\fR
 When a fatal error is detected, use abort() instead of exit() to terminate the
 process. This allows backtraces to be captured without recompiling Slurm.
+.IP
+
+.TP
+\fBRUNTIME_DIRECTORY\fR
+Absolute path governing the location for both the configuration cache sackd
+maintains, and the sack.socket unix socket used to provide authentication
+services.
+
+If multiple sackds need to be started on the same login node, the
+\fBRuntimeDirectory\fR systemd unit option should be set to
+\fBslurm-<clustername>\fR. Systemd v240+ automatically sets
+\fBRUNTIME_DIRECTORY\fR to \fB/run/$RuntimeDirectory\fR for each sackd service,
+otherwise it requires manual setting (i.e. via \fBEnvironmentFile\fR unit
+option).
+
+If this is not set, the default value is \fb/run/slurm/\fR.
 .IP
 
 .TP
