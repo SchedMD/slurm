@@ -1786,3 +1786,18 @@ extern void xfmt_tres_freq(char **dest, char *prefix, char *src)
 	xstrfmtcat(result, "%s%s:%s", sep, prefix, src);
 	*dest = result;
 }
+
+extern bool valid_runtime_directory(char *runtime_dir)
+{
+	/*
+	 * systemd >= v240 prepends "/run" to generate RUNTIME_DIRECTORY
+	 * environment variable off of RuntimeDirectory unit option.
+	 *
+	 * Example:
+	 * RuntimeDirectory=foo/bar results in RUNTIME_DIRECTORY=/run/foo/bar.
+	 */
+	if (xstrncmp(runtime_dir, "/run/", 5) || (strlen(runtime_dir) < 6))
+		return false;
+
+	return true;
+}

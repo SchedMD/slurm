@@ -45,6 +45,7 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/run_in_daemon.h"
@@ -58,6 +59,8 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/hash.h"
 
+#define DEFAULT_RUN_DIR "/run/slurm"
+
 decl_static_data(usage_txt);
 
 uint32_t slurm_daemon = IS_SACKD;
@@ -68,7 +71,7 @@ static bool registered = false;
 static bool under_systemd = false;
 static char *conf_file = NULL;
 static char *conf_server = NULL;
-static char *dir = "/run/slurm/conf";
+static char *dir = NULL;
 
 static char **main_argv = NULL;
 static int listen_fd = -1;
@@ -128,6 +131,15 @@ static void _parse_args(int argc, char **argv)
 	}
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
+
+	if ((str = getenv("RUNTIME_DIRECTORY"))) {
+		if (!valid_runtime_directory(str))
+			fatal("%s: Invalid RUNTIME_DIRECTORY=%s environment variable",
+			      __func__, str);
+		xstrfmtcat(dir, "%s/conf", str);
+	} else {
+		xstrfmtcat(dir, "%s/conf", DEFAULT_RUN_DIR);
+	}
 
 	opterr = 0;
 	while ((c = getopt_long(argc, argv, "Df:hv",
@@ -477,5 +489,6 @@ extern int main(int argc, char **argv)
 
 	xfree(conf_file);
 	xfree(conf_server);
+	xfree(dir);
 	return 0;
 }
