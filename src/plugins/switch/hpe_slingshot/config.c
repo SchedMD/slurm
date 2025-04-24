@@ -538,12 +538,9 @@ static void _config_fm_defaults(void)
 
 static void _try_enabling_fm_mtls(void)
 {
-	/* If fm_mtls_url is not provided then default to fm_url */
-	if (!slingshot_config.fm_mtls_url)
-		slingshot_config.fm_mtls_url = xstrdup(slingshot_config.fm_url);
 	/* Only enable mTLS if the following were provided */
 	if (!(slingshot_config.fm_mtls_cert && slingshot_config.fm_mtls_key &&
-	      slingshot_config.fm_mtls_url)) {
+	      (slingshot_config.fm_mtls_url || slingshot_config.fm_url))) {
 		/* If only partial mTLS config given warn that it is disabled */
 		if (slingshot_config.fm_mtls_ca ||
 		    slingshot_config.fm_mtls_cert ||
@@ -552,6 +549,9 @@ static void _try_enabling_fm_mtls(void)
 			warning("Fabric Manager mTLS authentication is disabled due to fm_mtls_cert, fm_mtls_key, or a fabric manager url (i.e. fm_mtls_url or fm_url) not being configured.");
 		return;
 	}
+	/* If fm_mtls_url is not provided then default to fm_url */
+	if (!slingshot_config.fm_mtls_url)
+		slingshot_config.fm_mtls_url = xstrdup(slingshot_config.fm_url);
 
 	slingshot_config.flags |= SLINGSHOT_FLAGS_ENABLE_MTLS;
 
