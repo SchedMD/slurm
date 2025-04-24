@@ -311,8 +311,7 @@ static void _listen_for_reconf(void)
 
 	if (getenv("SACKD_RECONF_LISTEN_FD")) {
 		listen_fd = atoi(getenv("SACKD_RECONF_LISTEN_FD"));
-	} else if ((listen_fd =
-		slurm_init_msg_engine_port(slurm_conf.slurmd_port)) < 0) {
+	} else if ((listen_fd = slurm_init_msg_engine_port(port)) < 0) {
 		error("%s: failed to open port: %m", __func__);
 		return;
 	}
