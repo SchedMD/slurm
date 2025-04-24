@@ -22,6 +22,12 @@ SlurmctldParameters.
 .IP
 
 .TP
+\fB\-\-disable\-reconfig\fR
+Fetch configurations in configless mode once, but do not register with slurmctld
+for further reconfiguration updates.
+.IP
+
+.TP
 \fB\-f config\fR
 Read configuration from the specified file.
 .IP
@@ -79,6 +85,11 @@ If this is not set, the default value is \fb/run/slurm/\fR.
 Set debug level explicitly for syslog and stderr. Valid values are 0\-9, or the
 same string values as the debug options such as SlurmctldDebug in
 slurm.conf(5).
+.IP
+
+.TP
+\fBSACKD_DISABLE_RECONFIG\fR
+Same as \fB\-\disable-reconfig\fR.
 .IP
 
 .TP
