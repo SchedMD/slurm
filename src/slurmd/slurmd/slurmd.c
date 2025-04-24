@@ -1064,9 +1064,6 @@ _read_config(void)
 	slurm_mutex_lock(&conf->config_mutex);
 	cf = slurm_conf_lock();
 
-	if (conf->conffile == NULL)
-		conf->conffile = xstrdup(cf->slurm_conf);
-
 	/*
 	 * Allow for Prolog and Epilog scripts to have non-absolute paths.
 	 * This is needed for configless to work with Prolog and Epilog.
@@ -1093,34 +1090,12 @@ _read_config(void)
 		gang_flag = true;
 
 	slurm_conf_unlock();
-	/* node_name may already be set from a command line parameter */
-	if (conf->node_name == NULL)
-		conf->node_name = slurm_conf_get_nodename(conf->hostname);
-
-	/*
-	 * If we didn't match the form of the hostname already stored in
-	 * conf->hostname, check to see if we match any valid aliases
-	 */
-	if (conf->node_name == NULL)
-		conf->node_name = slurm_conf_get_aliased_nodename();
-
-	if (conf->node_name == NULL)
-		conf->node_name = slurm_conf_get_nodename("localhost");
-
-	if (!conf->node_name || conf->node_name[0] == '\0')
-		fatal("Unable to determine this slurmd's NodeName");
 
 	if ((bcast_address = slurm_conf_get_bcast_address(conf->node_name))) {
 		if (xstrcasestr(slurm_conf.comm_params, "NoInAddrAny"))
 			fatal("Cannot use BcastAddr option on this node with CommunicationParameters=NoInAddrAny");
 		xfree(bcast_address);
 	}
-
-	if (!conf->logfile)
-		conf->logfile = slurm_conf_expand_slurmd_path(
-			cf->slurmd_logfile,
-			conf->node_name,
-			conf->hostname);
 
 	if (!(node_ptr = find_node_record(conf->node_name))) {
 		error("Unable to find node record for %s",
@@ -1145,16 +1120,6 @@ _read_config(void)
 	xfree(conf->block_map_inv);
 
 	/*
-	 * This must be reset before update_slurmd_logging(), otherwise the
-	 * slurmstepd processes will not get the reconfigure request, and logs
-	 * may be lost if the path changed or the log was rotated.
-	 */
-	_free_and_set(conf->spooldir,
-		      slurm_conf_expand_slurmd_path(
-			      cf->slurmd_spooldir,
-			      conf->node_name,
-			      conf->hostname));
-	/*
 	 * Only rebuild this if running configless, which is indicated by
 	 * the presence of a conf_cache value.
 	 */
@@ -1162,8 +1127,6 @@ _read_config(void)
 		_free_and_set(conf->conf_cache,
 			      xstrdup_printf("%s/conf-cache", conf->spooldir));
 
-	update_slurmd_logging(LOG_LEVEL_END);
-	update_stepd_logging(true);
 	_update_nice();
 
 	conf->actual_cpus = 0;
@@ -2398,22 +2361,6 @@ static void _dynamic_init(void)
 
 	slurm_mutex_lock(&conf->config_mutex);
 
-	if ((conf->dynamic_type == DYN_NODE_FUTURE) && conf->node_name) {
-		/*
-		 * You can't specify a node name with dynamic future nodes,
-		 * otherwise the slurmd will keep registering as a new dynamic
-		 * future node because the node_name won't map to the hostname.
-		 */
-		fatal("Specifying a node name for dynamic future nodes is not supported.");
-	}
-
-	/* Use -N name if specified. */
-	if (!conf->node_name) {
-		char hostname[HOST_NAME_MAX];
-		if (!gethostname(hostname, HOST_NAME_MAX))
-			conf->node_name = xstrdup(hostname);
-	}
-
 	xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
 				&conf->actual_boards,
 				&conf->actual_sockets,
@@ -2496,6 +2443,73 @@ static void _dynamic_init(void)
 	slurm_mutex_unlock(&conf->config_mutex);
 }
 
+static void _log_setup()
+{
+	slurm_conf_t *cf = NULL;
+
+	if ((conf->dynamic_type == DYN_NODE_FUTURE) && conf->node_name) {
+		/*
+		 * You can't specify a node name with dynamic future nodes,
+		 * otherwise the slurmd will keep registering as a new dynamic
+		 * future node because the node_name won't map to the hostname.
+		 */
+		fatal("Specifying a node name for dynamic future nodes is not supported.");
+	}
+
+	/* Use -N name if specified. */
+	if (conf->dynamic_type && !conf->node_name) {
+		char hostname[HOST_NAME_MAX];
+		if (!gethostname(hostname, HOST_NAME_MAX))
+			conf->node_name = xstrdup(hostname);
+	}
+
+	/* node_name may already be set from a command line parameter */
+	if (conf->node_name == NULL)
+		conf->node_name = slurm_conf_get_nodename(conf->hostname);
+
+	/*
+	 * If we didn't match the form of the hostname already stored in
+	 * conf->hostname, check to see if we match any valid aliases
+	 */
+	if (conf->node_name == NULL)
+		conf->node_name = slurm_conf_get_aliased_nodename();
+
+	if (conf->node_name == NULL)
+		conf->node_name = slurm_conf_get_nodename("localhost");
+
+	if (!conf->node_name || (conf->node_name[0] == '\0'))
+		fatal("Unable to determine this slurmd's NodeName");
+
+	slurm_mutex_lock(&conf->config_mutex);
+	cf = slurm_conf_lock();
+
+	if (conf->conffile == NULL)
+		conf->conffile = xstrdup(cf->slurm_conf);
+
+	if (!conf->logfile)
+		conf->logfile = slurm_conf_expand_slurmd_path(
+			cf->slurmd_logfile,
+			conf->node_name,
+			conf->hostname);
+
+	/*
+	 * This must be reset before update_slurmd_logging(), otherwise the
+	 * slurmstepd processes will not get the reconfigure request, and logs
+	 * may be lost if the path changed or the log was rotated.
+	 */
+	_free_and_set(conf->spooldir,
+		      slurm_conf_expand_slurmd_path(
+			      cf->slurmd_spooldir,
+			      conf->node_name,
+			      conf->hostname));
+
+	slurm_conf_unlock();
+	slurm_mutex_unlock(&conf->config_mutex);
+
+	update_slurmd_logging(LOG_LEVEL_END);
+	update_stepd_logging(true);
+}
+
 static int
 _slurmd_init(void)
 {
@@ -2518,6 +2532,9 @@ _slurmd_init(void)
 	 */
 	slurm_conf_init(conf->conffile);
 	init_node_conf();
+
+	/* Setup logging previous to any plugin init or we will not get logs. */
+	_log_setup();
 
 	if (conf->print_gres)
 		slurm_conf.debug_flags = DEBUG_FLAG_GRES;
