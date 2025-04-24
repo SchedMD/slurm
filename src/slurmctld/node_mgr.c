@@ -3337,6 +3337,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		FREE_NULL_BITMAP(node_spec_bitmap_old);
 	}
 
+	if ((slurm_conf.task_plugin_param & SLURMD_SPEC_OVERRIDE) &&
+	    reg_msg->mem_spec_limit) {
+		node_ptr->mem_spec_limit = reg_msg->mem_spec_limit;
+	}
+
 	xfree(node_ptr->arch);
 	node_ptr->arch = reg_msg->arch;
 	reg_msg->arch = NULL;	/* Nothing left to free */
