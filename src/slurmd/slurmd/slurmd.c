@@ -1233,6 +1233,21 @@ _read_config(void)
 	}
 
 	/*
+	 * CoreSpec overwrite can only be done under cons_tres and with
+	 * task/cgroup. This is guaranteed by CpuSpecOverride parameter.
+	 */
+	if (slurm_conf.task_plugin_param & SLURMD_SPEC_OVERRIDE) {
+		char *tmp_str = xcpuinfo_get_cpuspec();
+		if (tmp_str) {
+			info("Overriding CpuSpecList from %s to %s",
+			     conf->cpu_spec_list, tmp_str);
+			xfree(conf->cpu_spec_list);
+			conf->cpu_spec_list = tmp_str;
+			slurm_conf.task_plugin_param &= ~SLURMD_OFF_SPEC;
+		}
+	}
+
+	/*
 	 * Set the node's configured 'RealMemory' as conf_memory_size as
 	 * slurmd_conf_t->real_memory is set to the actual physical memory. We
 	 * need to distinguish from configured memory and actual physical

@@ -3303,9 +3303,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 		if (build_node_spec_bitmap(node_ptr) != SLURM_SUCCESS)
 			error_code = EINVAL;
-		else if (!node_spec_bitmap_old ||
-			 !bit_equal(node_spec_bitmap_old,
-				    node_ptr->node_spec_bitmap)) {
+		else if (!(slurm_conf.task_plugin_param &
+			   SLURMD_SPEC_OVERRIDE) &&
+			 (!node_spec_bitmap_old ||
+			  !bit_equal(node_spec_bitmap_old,
+				     node_ptr->node_spec_bitmap))) {
 			debug("Node %s has different spec CPUs than expected (%s, %s)",
 			      reg_msg->node_name, cpu_spec_list_old,
 			      node_ptr->cpu_spec_list);
@@ -3314,6 +3316,23 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 				xstrcat(reason_down, ", ");
 			xstrcat(reason_down, "CoreSpec differ");
 		}
+
+		/* Regenerate core spec count and effective cpus */
+		if (node_ptr->cpu_spec_list &&
+		    (slurm_conf.task_plugin_param & SLURMD_SPEC_OVERRIDE)) {
+			if (node_ptr->cpu_spec_list) {
+				build_node_spec_bitmap(node_ptr);
+				if (node_ptr->tpc > 1)
+					node_conf_convert_cpu_spec_list(
+						node_ptr);
+			} else if (node_ptr->core_spec_cnt) {
+				node_conf_select_spec_cores(node_ptr);
+			}
+			node_ptr->cpus_efctv =
+				node_ptr->cpus -
+				(node_ptr->core_spec_cnt * node_ptr->tpc);
+		}
+
 		xfree(cpu_spec_list_old);
 		FREE_NULL_BITMAP(node_spec_bitmap_old);
 	}
