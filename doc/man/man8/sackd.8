@@ -32,6 +32,13 @@ Help; print a brief summary of command options.
 .IP
 
 .TP
+\fB\-\-port number\fR
+Port socket number to listen for reconfiguration updates. This can be useful
+when multiple sackds co-exist on the same login node. The default value is
+\fBSlurmdPort\fR.
+.IP
+
+.TP
 \fB\-\-systemd\fR
 To be used when started from a systemd unit file.
 .IP
@@ -72,6 +79,11 @@ If this is not set, the default value is \fb/run/slurm/\fR.
 Set debug level explicitly for syslog and stderr. Valid values are 0\-9, or the
 same string values as the debug options such as SlurmctldDebug in
 slurm.conf(5).
+.IP
+
+.TP
+\fBSACKD_PORT\fR
+Same as \fB\-\-port\fR.
 .IP
 
 .TP
