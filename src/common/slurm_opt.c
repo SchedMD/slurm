@@ -3728,7 +3728,7 @@ static int arg_set_uid(slurm_opt_t *opt, const char *arg)
 		return SLURM_ERROR;
 	}
 
-	if (uid_from_string(arg, &opt->uid) < 0) {
+	if (uid_from_string(arg, &opt->uid) != SLURM_SUCCESS) {
 		error("Invalid --uid specification");
 		return SLURM_ERROR;
 	}

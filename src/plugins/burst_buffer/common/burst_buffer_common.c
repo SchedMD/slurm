@@ -98,7 +98,7 @@ static uid_t *_parse_users(char *buf)
 	user_array = xcalloc(array_size, sizeof(uid_t));
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
-		if ((uid_from_string(tok, user_array + inx) == -1) ||
+		if ((uid_from_string(tok, user_array + inx) != SLURM_SUCCESS) ||
 		    (user_array[inx] == 0)) {
 			error("%s: ignoring invalid user: %s", __func__, tok);
 		} else {

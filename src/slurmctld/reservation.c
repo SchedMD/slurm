@@ -1705,7 +1705,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 			info("Reservation request has some not/users");
 			goto inval;
 		}
-		if (uid_from_string (tok, &u_tmp) < 0) {
+		if (uid_from_string(tok, &u_tmp) != SLURM_SUCCESS) {
 			info("Reservation request has invalid user %s", tok);
 			if (strict)
 				goto inval;
@@ -1772,7 +1772,7 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 		} else
 			u_type[u_cnt] = 3;	/* set */
 
-		if (uid_from_string (tok, &u_tmp) < 0) {
+		if (uid_from_string(tok, &u_tmp) != SLURM_SUCCESS) {
 			info("Reservation request has invalid user %s", tok);
 			goto inval;
 		}

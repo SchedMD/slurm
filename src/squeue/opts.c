@@ -1374,7 +1374,7 @@ static list_t *_build_user_list(char *str)
 	user = strtok_r(my_user_list, ",", &tmp_char);
 	while (user) {
 		uid_t some_uid;
-		if (uid_from_string(user, &some_uid) == 0) {
+		if (uid_from_string(user, &some_uid) == SLURM_SUCCESS) {
 			uint32_t *user_id = NULL;
 			user_id = xmalloc(sizeof(uint32_t));
 			*user_id = (uint32_t) some_uid;

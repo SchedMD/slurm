@@ -743,7 +743,7 @@ static int _check_uid(void *x, void *arg)
 	char *name = x;
 	uid_t pw_uid;
 
-	if (uid_from_string(name, &pw_uid) < 0) {
+	if (uid_from_string(name, &pw_uid) != SLURM_SUCCESS) {
 		char *warning = xstrdup_printf(
 			"There is no uid for user '%s'\nAre you sure you want to continue?",
 			name);

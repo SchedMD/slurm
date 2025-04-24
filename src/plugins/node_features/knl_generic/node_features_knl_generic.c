@@ -686,7 +686,8 @@ static void _make_uid_array(char *uid_str)
 	tmp_str = xstrdup(uid_str);
 	tok = strtok_r(tmp_str, ",", &save_ptr);
 	while (tok) {
-		if (uid_from_string(tok, &allowed_uid[allowed_uid_cnt++]) < 0)
+		if (uid_from_string(tok, &allowed_uid[allowed_uid_cnt++]) !=
+		    SLURM_SUCCESS)
 			fatal("knl_generic.conf: Invalid AllowUserBoot: %s",
 			      tok);
 		tok = strtok_r(NULL, ",", &save_ptr);

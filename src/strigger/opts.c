@@ -284,7 +284,8 @@ extern void parse_command_line(int argc, char **argv)
 			params.mode_set = true;
 			break;
 		case (int) OPT_LONG_USER:
-			if ( uid_from_string( optarg, &some_uid ) != 0 ) {
+			if (uid_from_string(optarg, &some_uid) !=
+			    SLURM_SUCCESS) {
 				error("Invalid user %s", optarg);
 				exit(1);
 			}

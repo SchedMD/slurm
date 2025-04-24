@@ -4859,7 +4859,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->slurm_user_id   = 0;
 	} else {
 		uid_t my_uid;
-		if (uid_from_string (conf->slurm_user_name, &my_uid) < 0) {
+		if (uid_from_string(conf->slurm_user_name, &my_uid) !=
+		    SLURM_SUCCESS) {
 			error ("Invalid user for SlurmUser %s, ignored",
 			       conf->slurm_user_name);
 			xfree(conf->slurm_user_name);
@@ -4874,7 +4875,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->slurmd_user_id   = 0;
 	} else {
 		uid_t my_uid;
-		if (uid_from_string (conf->slurmd_user_name, &my_uid) < 0) {
+		if (uid_from_string(conf->slurmd_user_name, &my_uid) !=
+		    SLURM_SUCCESS) {
 			error("Invalid user for SlurmdUser %s, ignored",
 			       conf->slurmd_user_name);
 			xfree(conf->slurmd_user_name);

@@ -561,7 +561,8 @@ extern int read_slurmdbd_conf(void)
 		if (slurm_conf.slurm_user_name) {
 			uid_t uid;
 
-			if (uid_from_string(slurm_conf.slurm_user_name, &uid) < 0)
+			if (uid_from_string(slurm_conf.slurm_user_name, &uid) !=
+			    SLURM_SUCCESS)
 				fatal("failed to look up SlurmUser uid");
 
 			if (conf_path_uid != uid)
@@ -646,7 +647,7 @@ extern int read_slurmdbd_conf(void)
 		slurm_conf.plugindir = xstrdup(default_plugin_path);
 	if (slurm_conf.slurm_user_name) {
 		if (uid_from_string(slurm_conf.slurm_user_name,
-		                    &slurm_conf.slurm_user_id) < 0)
+				    &slurm_conf.slurm_user_id) != SLURM_SUCCESS)
 			fatal("Invalid user for SlurmUser %s, ignored",
 			      slurm_conf.slurm_user_name);
 	} else {

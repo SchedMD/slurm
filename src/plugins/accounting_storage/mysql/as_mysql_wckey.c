@@ -944,8 +944,8 @@ extern list_t *as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 			uid_t pw_uid;
 			char *name;
 			name = list_peek(wckey_cond->user_list);
-		        if ((uid_from_string (name, &pw_uid) >= 0)
-			    && (pw_uid == uid)) {
+			if ((uid_from_string(name, &pw_uid) == SLURM_SUCCESS) &&
+			    (pw_uid == uid)) {
 				/* Make sure they aren't trying to
 				   change something else and then set
 				   this association as a default.

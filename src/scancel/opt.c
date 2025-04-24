@@ -620,7 +620,8 @@ _opt_verify(void)
 	bool verified = true;
 
 	if (opt.user_name) {	/* translate to user_id */
-		if ( uid_from_string( opt.user_name, &opt.user_id ) != 0 ) {
+		if (uid_from_string(opt.user_name, &opt.user_id) !=
+		    SLURM_SUCCESS) {
 			error("Invalid user name: %s", opt.user_name);
 			return false;
 		}

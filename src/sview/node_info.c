@@ -1343,7 +1343,8 @@ extern int update_state_node(GtkDialog *dialog,
 				goto end_it;
 			}
 			if (uid_from_string(getlogin(),
-					    &node_msg->reason_uid) < 0)
+					    &node_msg->reason_uid) !=
+			    SLURM_SUCCESS)
 				node_msg->reason_uid = getuid();
 
 		}
