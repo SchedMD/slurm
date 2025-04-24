@@ -1208,3 +1208,47 @@ end_it:
 
 	return rc;
 }
+
+extern char *xcpuinfo_get_cpuspec(void)
+{
+	char *res_abs_cores = NULL;
+	bitstr_t *res_core_bitmap = NULL;
+	bitstr_t *res_cpu_bitmap = NULL;
+	char *restricted_cpus_as_abs = NULL;
+
+	if (!restricted_cpus_as_mac)
+		return NULL;
+
+	xcpuinfo_mac_to_abs(restricted_cpus_as_mac, &restricted_cpus_as_abs);
+
+	debug2("%s: restricted cpus as machine: %s",
+	       __func__, restricted_cpus_as_mac);
+	debug2("%s: restricted cpus as abstract: %s",
+	       __func__, restricted_cpus_as_abs);
+
+	if (!restricted_cpus_as_abs || !restricted_cpus_as_abs[0])
+		return NULL;
+
+	res_core_bitmap = bit_alloc(MAX_CPU_CNT);
+	res_cpu_bitmap = bit_alloc(MAX_CPU_CNT);
+	bit_unfmt(res_core_bitmap, restricted_cpus_as_abs);
+
+	for (int core_off = 0; core_off < conf->cores; core_off++) {
+		if (!bit_test(res_core_bitmap, core_off))
+			continue;
+		for (int thread_off = 0; thread_off < conf->threads;
+		     thread_off++) {
+			int thread_inx =
+				(core_off * (int) conf->threads) + thread_off;
+			bit_set(res_cpu_bitmap, thread_inx);
+		}
+	}
+
+	res_abs_cores = xmalloc(MAX_CPU_CNT);
+	bit_fmt(res_abs_cores, MAX_CPU_CNT, res_cpu_bitmap);
+
+	xfree(restricted_cpus_as_abs);
+	FREE_NULL_BITMAP(res_core_bitmap);
+	FREE_NULL_BITMAP(res_cpu_bitmap);
+	return res_abs_cores;
+}

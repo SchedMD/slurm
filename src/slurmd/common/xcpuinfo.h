@@ -87,4 +87,12 @@ int xcpuinfo_abs_to_mac(char *lrange,char **prange);
  */
 int xcpuinfo_mac_to_abs(char *in_range, char **out_range);
 
+/*
+ * Return an abstract CpuSpecList in string format generated from the allowed
+ * cpus in the node.
+ *
+ * RET: A string representing the allowed abstract cpus, NULL if error.
+ */
+extern char *xcpuinfo_get_cpuspec(void);
+
 #endif
