@@ -50,6 +50,12 @@ typedef struct {
 	uint16_t sockets;
 } foreach_res_gpu_t;
 
+typedef struct {
+	gres_sock_list_create_t *create_args;
+	gres_job_state_t **gres_js_resv;
+	list_t *gres_list_resv;
+} foreach_gres_sock_list_create_t;
+
 static bool _can_use_gres_exc_topo(resv_exc_t *resv_exc_ptr,
 				   int node_inx, int gres_bit)
 {
@@ -786,15 +792,89 @@ static void _gres_limit_reserved_cores(gres_sock_list_create_t *create_args)
 	bit_free(gpu_spec_cpy);
 }
 
+static int _foreach_gres_sock_list_create(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_gres_sock_list_create_t *foreach_create_args = arg;
+	gres_sock_list_create_t *create_args = foreach_create_args->create_args;
+	sock_gres_t *sock_gres = NULL;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	gres_node_state_t *gres_ns;
+	gres_state_t *gres_state_node =
+		list_find_first(create_args->node_gres_list,
+				gres_find_id,
+				&gres_state_job->plugin_id);
+	node_record_t *node_ptr = node_record_table_ptr[create_args->node_inx];
+
+	if (!gres_state_node) {
+		/* node lack GRES of type required by the job */
+		FREE_NULL_LIST(create_args->sock_gres_list);
+		return -1;
+	}
+	gres_ns = gres_state_node->gres_data;
+
+	if (foreach_create_args->gres_list_resv) {
+		gres_key_t job_search_key = {
+			.config_flags = gres_state_job->config_flags,
+			.plugin_id = gres_state_job->plugin_id,
+			.type_id = gres_js->type_id,
+		};
+
+		gres_state_t *gres_state_job_tmp =
+			list_find_first(foreach_create_args->gres_list_resv,
+					gres_find_job_by_key_exact_type,
+					&job_search_key);
+		if (gres_state_job_tmp)
+			*foreach_create_args->gres_js_resv =
+				gres_state_job_tmp->gres_data;
+		else
+			*foreach_create_args->gres_js_resv = NULL;
+	}
+
+	if (create_args->core_bitmap &&
+	    (bit_ffs(create_args->core_bitmap) == -1)) {
+		sock_gres = NULL; /* No cores available */
+	} else if (gres_ns->topo_cnt &&
+		   (gres_ns->gres_cnt_found != NO_VAL64 ||
+		    !(IS_NODE_UNKNOWN(node_ptr) ||
+		      IS_NODE_DOWN(node_ptr) ||
+		      IS_NODE_DRAIN(node_ptr) ||
+		      IS_NODE_NO_RESPOND(node_ptr)))) {
+		/*
+		 * If the node has not yet registered and isn't
+		 * available to allocate jobs, we build the list with
+		 * _build_sock_gres_by_type() (which uses the newest
+		 * slurm.conf gres configuration) so that it won't be
+		 * rejected as never runnable.
+		 */
+		sock_gres = _build_sock_gres_by_topo(
+			gres_state_job,	gres_state_node, create_args);
+	} else if (gres_ns->type_cnt) {
+		sock_gres = _build_sock_gres_by_type(
+			gres_js, gres_ns, create_args);
+	} else {
+		sock_gres = _build_sock_gres_basic(
+			gres_js, gres_ns, create_args);
+	}
+	if (!sock_gres) {
+		/* node lack available resources required by the job */
+		bit_clear_all(create_args->core_bitmap);
+		FREE_NULL_LIST(create_args->sock_gres_list);
+		return -1;
+	}
+	sock_gres->use_total_gres = create_args->use_total_gres;
+	sock_gres->gres_state_job = gres_state_job;
+	sock_gres->gres_state_node = gres_state_node;
+	list_append(create_args->sock_gres_list, sock_gres);
+
+	return 0;
+}
+
 extern void gres_sock_list_create(gres_sock_list_create_t *create_args)
 {
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job, *gres_state_node;
-	gres_job_state_t  *gres_js;
-	gres_node_state_t *gres_ns;
-	list_t *gres_list_resv = NULL;
-	gres_job_state_t **gres_js_resv = NULL;
-	node_record_t *node_ptr = node_record_table_ptr[create_args->node_inx];
+	foreach_gres_sock_list_create_t foreach_create_args = {
+		.create_args = create_args,
+	};
 
 	FREE_NULL_LIST(create_args->sock_gres_list);
 
@@ -814,89 +894,22 @@ extern void gres_sock_list_create(gres_sock_list_create_t *create_args)
 
 	if (create_args->resv_exc_ptr) {
 		if (create_args->resv_exc_ptr->gres_list_exc) {
-			gres_list_resv =
+			foreach_create_args.gres_list_resv =
 				create_args->resv_exc_ptr->gres_list_exc;
-			gres_js_resv = (gres_job_state_t **)
+			foreach_create_args.gres_js_resv = (gres_job_state_t **)
 				&create_args->resv_exc_ptr->gres_js_exc;
 		} else if (create_args->resv_exc_ptr->gres_list_inc) {
-			gres_list_resv =
+			foreach_create_args.gres_list_resv =
 				create_args->resv_exc_ptr->gres_list_inc;
-			gres_js_resv = (gres_job_state_t **)
+			foreach_create_args.gres_js_resv = (gres_job_state_t **)
 				&create_args->resv_exc_ptr->gres_js_inc;
 		}
 	}
 
 	create_args->sock_gres_list = list_create(gres_sock_delete);
-	job_gres_iter = list_iterator_create(create_args->job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		sock_gres_t *sock_gres = NULL;
-		gres_state_node = list_find_first(create_args->node_gres_list,
-						  gres_find_id,
-						  &gres_state_job->plugin_id);
-		if (gres_state_node == NULL) {
-			/* node lack GRES of type required by the job */
-			FREE_NULL_LIST(create_args->sock_gres_list);
-			break;
-		}
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
-
-		if (gres_list_resv) {
-			gres_key_t job_search_key = {
-				.config_flags = gres_state_job->config_flags,
-				.plugin_id = gres_state_job->plugin_id,
-				.type_id = gres_js->type_id,
-			};
-
-			gres_state_t *gres_state_job_tmp =
-				list_find_first(
-					gres_list_resv,
-					gres_find_job_by_key_exact_type,
-					&job_search_key);
-			if (gres_state_job_tmp)
-				*gres_js_resv =
-					gres_state_job_tmp->gres_data;
-			else
-				*gres_js_resv = NULL;
-		}
-
-		if (create_args->core_bitmap &&
-		    (bit_ffs(create_args->core_bitmap) == -1)) {
-			sock_gres = NULL;	/* No cores available */
-		} else if (gres_ns->topo_cnt &&
-			   (gres_ns->gres_cnt_found != NO_VAL64 ||
-			    !(IS_NODE_UNKNOWN(node_ptr) ||
-			      IS_NODE_DOWN(node_ptr) ||
-			      IS_NODE_DRAIN(node_ptr) ||
-			      IS_NODE_NO_RESPOND(node_ptr)))) {
-			/*
-			 * If the node has not yet registered and isn't
-			 * available to allocate jobs, we build the list with
-			 * _build_sock_gres_by_type() (which uses the newest
-			 * slurm.conf gres configuration) so that it won't be
-			 * rejected as never runnable.
-			 */
-			sock_gres = _build_sock_gres_by_topo(
-				gres_state_job,	gres_state_node, create_args);
-		} else if (gres_ns->type_cnt) {
-			sock_gres = _build_sock_gres_by_type(
-				gres_js, gres_ns, create_args);
-		} else {
-			sock_gres = _build_sock_gres_basic(
-				gres_js, gres_ns, create_args);
-		}
-		if (!sock_gres) {
-			/* node lack available resources required by the job */
-			bit_clear_all(create_args->core_bitmap);
-			FREE_NULL_LIST(create_args->sock_gres_list);
-			break;
-		}
-		sock_gres->use_total_gres = create_args->use_total_gres;
-		sock_gres->gres_state_job = gres_state_job;
-		sock_gres->gres_state_node = gres_state_node;
-		list_append(create_args->sock_gres_list, sock_gres);
-	}
-	list_iterator_destroy(job_gres_iter);
+	(void) list_for_each(create_args->job_gres_list,
+			     _foreach_gres_sock_list_create,
+			     &foreach_create_args);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES)
 		_sock_gres_log(create_args->sock_gres_list,
