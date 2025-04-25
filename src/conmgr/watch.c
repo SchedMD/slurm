@@ -117,6 +117,9 @@ static bool _handle_time_limit(handle_connection_args_t *args,
 
 	if (change_max_sleep) {
 		mgr.watch_max_sleep = deadline;
+
+		/* Always wake up watch() as if deadline changed */
+		EVENT_SIGNAL(&mgr.watch_sleep);
 	}
 
 	return false;
