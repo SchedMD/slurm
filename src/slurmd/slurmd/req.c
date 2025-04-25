@@ -2853,7 +2853,7 @@ no_job:
 	}
 }
 
-/* Wrapper for slurm_kill_job2() */
+/* Wrapper for slurm_kill_job() */
 static uint32_t _kill_job(uint32_t job_id)
 {
 	/*
@@ -2861,6 +2861,16 @@ static uint32_t _kill_job(uint32_t job_id)
 	 * job.
 	 */
 	return slurm_kill_job(job_id, SIGKILL, KILL_ARRAY_TASK);
+}
+
+/* Wrapper for slurm_kill_job() */
+static uint32_t _kill_fail_job(uint32_t job_id)
+{
+	/*
+	 * If we have a meta array job, kill only it and not the whole array
+	 * job.
+	 */
+	return slurm_kill_job(job_id, SIGKILL, KILL_ARRAY_TASK | KILL_FAIL_JOB);
 }
 
 static int
@@ -2874,6 +2884,8 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 
 	if (slurm_rc == ESLURMD_CREDENTIAL_REVOKED)
 		return _kill_job(job_id);
+	if (slurm_rc == ESPANK_JOB_FAILURE)
+		return _kill_fail_job(job_id);
 
 	/* Try to requeue the job. If that doesn't work, kill the job. */
 	req_msg.job_id = job_id;

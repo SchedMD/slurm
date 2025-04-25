@@ -2616,7 +2616,7 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (task_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	if (spank_slurmd_init() < 0)
+	if (spank_slurmd_init())
 		return SLURM_ERROR;
 	if (cred_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;

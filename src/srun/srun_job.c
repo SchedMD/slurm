@@ -686,7 +686,7 @@ extern void init_srun(int argc, char **argv, log_options_t *logopt,
 	 * Initialize plugin stack, read options from plugins, etc.
 	 */
 	init_spank_env();
-	if (spank_init(NULL) < 0) {
+	if (spank_init(NULL)) {
 		error("Plug-in initialization failed");
 		exit(error_exit);
 	}
@@ -1529,7 +1529,7 @@ extern void pre_launch_srun_job(srun_job_t *job, slurm_opt_t *opt_local)
 		slurm_thread_create(&signal_thread, _srun_signal_mgr, job);
 
 	_run_srun_prolog(job);
-	if (_call_spank_local_user(job, opt_local) < 0) {
+	if (_call_spank_local_user(job, opt_local)) {
 		error("Failure in local plugin stack");
 		slurm_step_launch_abort(job->step_ctx);
 		exit(error_exit);

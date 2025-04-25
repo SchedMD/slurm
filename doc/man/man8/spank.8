@@ -178,6 +178,28 @@ Slurm when the plugin calls functions like \fBspank_get_item\fR and
 below) are passed in the argument vector \fBargv\fR with argument
 count \fBac\fR.
 .LP
+A plugin may also define the following variables that will be used by Slurm:
+
+.TP
+\fBslurm_spank_init_failure_mode\fR
+When a slurm_spank_init call fails, change how that failure is handled by Slurm.
+Recognized values are:
+.IP
+.RS
+.TP
+\fBESPANK_NODE_FAILURE\fR
+Slurm considers the node to be at fault and marks it as drained. The job may be
+requeued. This is the default.
+.IP
+
+.TP
+\fBESPANK_JOB_FAILURE\fR
+Slurm considers the job to be at fault and marks it as failed (not to be
+requeued). The node will not be drained.
+.RE
+.IP
+
+.LP
 \fBSPANK\fR plugins can query the current list of supported slurm_spank
 symbols to determine if the current version supports a given plugin hook.
 This may be useful because the list of plugin symbols may grow in the
@@ -494,6 +516,7 @@ Command@Function                         @Context   @Exitcode @Drains Node @Fail
 srun   @slurm_spank_init                 @local     @1        @no          @yes
 srun   @slurm_spank_init_post_opt        @local     @1        @no          @yes
 srun   @slurm_spank_local_user_init      @local     @1        @no          @yes
+srun   @slurm_spank_init                 @remote    @1        @no          @no
 srun   @slurm_spank_user_init            @remote    @0        @no          @no
 srun   @slurm_spank_task_init_privileged @remote    @1        @no          @yes
 srun   @slurm_spank_task_post_fork       @remote    @0        @no          @no
@@ -503,6 +526,7 @@ srun   @slurm_spank_exit                 @local     @0        @no          @yes
 =
 salloc @slurm_spank_init                 @allocator @1        @no          @yes
 salloc @slurm_spank_init_post_opt        @allocator @1        @no          @yes
+salloc @slurm_spank_init                 @remote    @1        @no          @no
 salloc @slurm_spank_user_init            @remote    @1        @no          @yes
 salloc @slurm_spank_task_init_privileged @remote    @1        @no          @yes
 salloc @slurm_spank_task_post_fork       @remote    @1        @no          @yes
@@ -512,6 +536,7 @@ salloc @slurm_spank_exit                 @allocator @0        @no          @yes
 =
 sbatch @slurm_spank_init                 @allocator @1        @no          @yes
 sbatch @slurm_spank_init_post_opt        @allocator @1        @no          @yes
+sbatch @slurm_spank_init                 @remote    @1        @yes         @no
 sbatch @slurm_spank_user_init            @remote    @1        @yes         @yes
 sbatch @slurm_spank_task_init_privileged @remote    @1        @no          @yes
 sbatch @slurm_spank_task_post_fork       @remote    @1        @yes         @yes

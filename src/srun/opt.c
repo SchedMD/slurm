@@ -455,7 +455,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		if (opt.verbose)
 			slurm_print_set_options(&opt);
 
-		if (spank_init_post_opt() < 0) {
+		if (spank_init_post_opt()) {
 			error("Plugin stack post-option processing failed.");
 			exit(error_exit);
 		}

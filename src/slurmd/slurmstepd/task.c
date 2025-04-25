@@ -428,7 +428,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	 * lock here.
 	 */
 	auth_setuid_unlock();
-	if (spank_user_task(step, local_proc_id) < 0) {
+	if (spank_user_task(step, local_proc_id)) {
 		error("Failed to invoke spank plugin stack");
 		_exit(1);
 	}

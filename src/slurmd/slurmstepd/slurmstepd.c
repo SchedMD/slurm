@@ -108,7 +108,6 @@ static void _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc);
 static void _process_cmdline(int argc, char **argv);
 
 static pthread_mutex_t cleanup_mutex = PTHREAD_MUTEX_INITIALIZER;
-static bool cleanup = false;
 
 /* global variable */
 uint32_t slurm_daemon = IS_SLURMSTEPD;
@@ -438,15 +437,17 @@ extern int main(int argc, char **argv)
 
 	only_mem = false;
 ending:
-	rc = stepd_cleanup(msg, step, cli, rc, only_mem);
+	stepd_cleanup(msg, step, cli, rc, only_mem);
 
 	conmgr_fini();
 	return rc;
 }
 
-extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
-			 slurm_addr_t *cli, int rc, bool only_mem)
+extern void stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
+			  slurm_addr_t *cli, int rc, bool only_mem)
 {
+	static bool cleanup = false;
+
 	time_limit_thread_shutdown = true;
 
 	slurm_mutex_lock(&cleanup_mutex);
@@ -538,8 +539,6 @@ done:
 	}
 
 	conmgr_request_shutdown();
-
-	return rc;
 }
 
 extern void close_slurmd_conn(int rc)
@@ -724,10 +723,10 @@ static int _handle_spank_mode(int argc, char **argv)
 	      mode, jobid, uid, gid);
 
 	if (!xstrcmp(mode, "prolog")) {
-		if (spank_job_prolog(jobid, uid, gid) < 0)
+		if (spank_job_prolog(jobid, uid, gid))
 			return -1;
 	} else if (!xstrcmp(mode, "epilog")) {
-		if (spank_job_epilog(jobid, uid, gid) < 0)
+		if (spank_job_epilog(jobid, uid, gid))
 			return -1;
 	} else {
 		error("Invalid mode %s specified!", mode);

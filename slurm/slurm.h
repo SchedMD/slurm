@@ -3796,6 +3796,7 @@ typedef struct {
 #define KILL_NO_SIG_FAIL SLURM_BIT(10) /* Don't fail job due to signal (steps only) */
 #define KILL_JOBS_VERBOSE SLURM_BIT(11) /* Verbose response requested */
 #define KILL_CRON SLURM_BIT(12) /* Request killing cron jobs */
+#define KILL_FAIL_JOB SLURM_BIT(13) /* Request killing and failing a job */
 
 /* Use top bit of uint16_t in conjunction with KILL_* flags to indicate signal
  * has been sent to job previously. Does not need to be passed to slurmd. */

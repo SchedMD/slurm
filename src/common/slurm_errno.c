@@ -506,6 +506,10 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Item not available from this callback"		},
 	{ ERRTAB_ENTRY(ESPANK_NOT_LOCAL),
 	  "Valid only in local or allocator context"		},
+	{ ERRTAB_ENTRY(ESPANK_NODE_FAILURE),
+	  "Spank plugin failure, node failed" },
+	{ ERRTAB_ENTRY(ESPANK_JOB_FAILURE),
+	  "Spank plugin failure, job failed" },
 
 	/* slurmd error codes */
 	{ ERRTAB_ENTRY(ESLURMD_KILL_TASK_FAILED),

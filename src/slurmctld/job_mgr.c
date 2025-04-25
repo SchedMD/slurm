@@ -5347,6 +5347,8 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 
 	if (preempt)
 		job_term_state = JOB_PREEMPTED;
+	else if (flags & KILL_FAIL_JOB)
+		job_term_state = JOB_FAILED;
 	else
 		job_term_state = JOB_CANCELLED;
 	if (IS_JOB_SUSPENDED(job_ptr) && (signal == SIGKILL)) {
