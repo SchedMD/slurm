@@ -1642,6 +1642,177 @@ total_return:
 
 }
 
+extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
+					slurm_addr_t *orig_addr, int fd,
+					buf_t *buffer)
+{
+	header_t header;
+	int rc;
+	void *auth_cred = NULL;
+	char *peer = NULL;
+
+	xassert(fd >= 0);
+
+	if (slurm_conf.debug_flags & (DEBUG_FLAG_NET | DEBUG_FLAG_NET_RAW)) {
+		/*
+		 * cache to avoid resolving multiple times
+		 * this call is expensive
+		 */
+		peer = fd_resolve_peer(fd);
+	}
+
+	/*
+	 * Set msg connection fd to accepted fd. This allows slurmd_req() to
+	 * close the accepted connection if necessary.
+	 */
+	msg->conn_fd = fd;
+	/* this is the direct peer connection */
+	memcpy(&msg->address, orig_addr, sizeof(slurm_addr_t));
+
+	/*
+	 * Where the connection originated from. This will change to the
+	 * originator if the header is unpacked successfully later.
+	 */
+	memcpy(&msg->orig_addr, orig_addr, sizeof(slurm_addr_t));
+
+	msg->ret_list = list_create(destroy_data_info);
+
+	if ((rc = unpack_header(&header, buffer)))
+		goto total_return;
+
+	if (header.ret_cnt > 0) {
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] we received more than one message back use slurm_receive_msgs instead",
+		      __func__, peer);
+		header.ret_cnt = 0;
+		FREE_NULL_LIST(header.ret_list);
+		header.ret_list = NULL;
+	}
+
+	/*
+	 * Update orig_addr to where the connection originated from before
+	 * the forwarding subsystem relayed it to us.
+	 */
+	if (!slurm_addr_is_unspec(&header.orig_addr)) {
+		memcpy(&msg->orig_addr, &header.orig_addr,
+		       sizeof(slurm_addr_t));
+	}
+
+	/* Forward message to other nodes */
+	if (header.forward.cnt > 0) {
+		log_flag(NET, "%s: [%s] forwarding to %u nodes",
+			 __func__, peer, header.forward.cnt);
+		msg->forward_struct = xmalloc(sizeof(forward_struct_t));
+		slurm_mutex_init(&msg->forward_struct->forward_mutex);
+		slurm_cond_init(&msg->forward_struct->notify, NULL);
+
+		msg->forward_struct->buf_len = remaining_buf(buffer);
+		msg->forward_struct->buf =
+			xmalloc(msg->forward_struct->buf_len);
+		memcpy(msg->forward_struct->buf,
+		       &buffer->head[buffer->processed],
+		       msg->forward_struct->buf_len);
+
+		msg->forward_struct->ret_list = msg->ret_list;
+		/* take out the amount of timeout from this hop */
+		msg->forward_struct->timeout = header.forward.timeout;
+		if (!msg->forward_struct->timeout)
+			msg->forward_struct->timeout = message_timeout;
+		msg->forward_struct->fwd_cnt = header.forward.cnt;
+
+		log_flag(NET, "%s: [%s] forwarding messages to %u nodes with timeout of %d",
+			 __func__, peer, msg->forward_struct->fwd_cnt,
+			 msg->forward_struct->timeout);
+
+		if (forward_msg(msg->forward_struct, &header) == SLURM_ERROR) {
+			/* peer may have not been resolved already */
+			if (!peer)
+				peer = fd_resolve_peer(fd);
+
+			error("%s: [%s] problem with forward msg",
+			      __func__, peer);
+		}
+	}
+
+	if (header.flags & SLURM_NO_AUTH_CRED)
+		goto skip_auth;
+
+	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] auth_g_unpack: %s has authentication error: %m",
+		      __func__, peer, rpc_num2string(header.msg_type));
+		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+		goto total_return;
+	}
+	msg->auth_index = auth_index(auth_cred);
+	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
+		rc = auth_g_verify(auth_cred, _global_auth_key());
+	} else {
+		rc = auth_g_verify(auth_cred, slurm_conf.authinfo);
+	}
+
+	if (rc != SLURM_SUCCESS) {
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] auth_g_verify: %s has authentication error: %m",
+		      __func__, peer, rpc_num2string(header.msg_type));
+		auth_g_destroy(auth_cred);
+		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+		goto total_return;
+	}
+
+	auth_g_get_ids(auth_cred, &msg->auth_uid, &msg->auth_gid);
+	msg->auth_ids_set = true;
+
+skip_auth:
+	/* Unpack message body */
+	msg->protocol_version = header.version;
+	msg->msg_type = header.msg_type;
+	msg->flags = header.flags;
+
+	msg->body_offset = get_buf_offset(buffer);
+
+	if ((header.body_length != remaining_buf(buffer)) ||
+	    _check_hash(buffer, &header, msg, auth_cred) ||
+	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
+		auth_g_destroy(auth_cred);
+		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+		goto total_return;
+	}
+	msg->auth_cred = auth_cred;
+
+	rc = SLURM_SUCCESS;
+
+total_return:
+	destroy_forward(&header.forward);
+
+	errno = rc;
+	if (rc != SLURM_SUCCESS) {
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		msg->msg_type = RESPONSE_FORWARD_FAILED;
+		msg->auth_cred = NULL;
+		msg->data = NULL;
+
+		error("%s: [%s] failed: %s",
+		      __func__, peer, slurm_strerror(rc));
+		usleep(10000); /* Discourage brute force attack */
+	}
+
+	xfree(peer);
+	return rc;
+}
+
 /**********************************************************************\
  * message packing routines
 \**********************************************************************/
