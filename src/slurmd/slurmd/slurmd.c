@@ -1247,8 +1247,12 @@ _read_config(void)
 			slurm_conf.task_plugin_param &= ~SLURMD_OFF_SPEC;
 		}
 
-		slurmd_limits =
-			cgroup_g_constrain_get(CG_MEMORY, CG_LEVEL_ROOT);
+		/*
+		 * We should use CG_LEVEL_ROOT but for compatibility with
+		 * cgroup/v1 we need to use CG_LEVEL_SYSTEM
+		 */
+		slurmd_limits = cgroup_g_constrain_get(CG_MEMORY,
+						       CG_LEVEL_SLURM);
 
 		if (!slurmd_limits ||
 		    (slurmd_limits->limit_in_bytes == NO_VAL64)) {
