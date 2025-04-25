@@ -1253,7 +1253,7 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.inspecting);
 
-	args.time = timespec_now();
+	_set_time(&args);
 
 	/*
 	 * Always check mgr.connections list first to avoid
