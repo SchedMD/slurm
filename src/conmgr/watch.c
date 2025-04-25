@@ -78,11 +78,19 @@ typedef struct {
 
 static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg);
 
-static bool _handle_time_limit(const handle_connection_args_t *args,
+static void _set_time(handle_connection_args_t *args)
+{
+	if (!args->time.tv_sec)
+		args->time = timespec_now();
+}
+
+static bool _handle_time_limit(handle_connection_args_t *args,
 			       const struct timespec timestamp,
 			       const struct timespec limit)
 {
 	const struct timespec deadline = timespec_add(timestamp, limit);
+
+	_set_time(args);
 
 	if (timespec_is_after(args->time, deadline))
 		return true;
