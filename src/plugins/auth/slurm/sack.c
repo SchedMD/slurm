@@ -77,7 +77,7 @@ static int sack_fd = -1;
  * requested payload.
  */
 
-static void _prepare_run_dir(const char *subdir)
+static void _prepare_run_dir(const char *subdir, bool slurm_user)
 {
 	int dirfd, subdirfd;
 	struct stat statbuf;
@@ -279,21 +279,24 @@ extern void init_sack_conmgr(void)
 		mode_t mask;
 
 		if (running_in_slurmctld()) {
-			_prepare_run_dir("slurmctld");
+			_prepare_run_dir("slurmctld", true);
 			path = SLURMCTLD_SACK_SOCKET;
 		} else if (running_in_slurmdbd()) {
-			_prepare_run_dir("slurmdbd");
+			_prepare_run_dir("slurmdbd", true);
 			path = SLURMDBD_SACK_SOCKET;
 		} else if ((runtime_dir = getenv("RUNTIME_DIRECTORY"))) {
 			if (!valid_runtime_directory(runtime_dir))
 				fatal("%s: Invalid RUNTIME_DIRECTORY=%s environment variable",
 				      __func__, runtime_dir);
-			_prepare_run_dir(runtime_dir + 5);
+			_prepare_run_dir(runtime_dir + 5, true);
 			xstrfmtcat(runtime_socket, "%s/sack.socket",
 				   runtime_dir);
 			path = runtime_socket;
+		} else if (running_in_sackd()) {
+			_prepare_run_dir("slurm", true);
+			path = SLURM_SACK_SOCKET;
 		} else {
-			_prepare_run_dir("slurm");
+			_prepare_run_dir("slurm", false);
 			path = SLURM_SACK_SOCKET;
 		}
 
