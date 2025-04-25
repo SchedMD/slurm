@@ -1704,6 +1704,8 @@ extern void *watch(void *arg)
 	add_work_fifo(true, signal_mgr_start, NULL);
 
 	while (_watch_loop()) {
+		char timeout_str[CTIME_STR_LEN];
+
 		if (mgr.poll_active && _is_poll_interrupt()) {
 			/*
 			 * poll() hasn't returned yet but we want to
@@ -1713,7 +1715,11 @@ extern void *watch(void *arg)
 			pollctl_interrupt(__func__);
 		}
 
-		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesce_requested:%c waiting_on_work:%c",
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
+			timespec_ctime(mgr.watch_max_sleep, true, timeout_str,
+				       sizeof(timeout_str));
+
+		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesce_requested:%c waiting_on_work:%c timeout:%s",
 				 __func__, mgr.workers.active,
 				 mgr.workers.total, list_count(mgr.work),
 				 list_count(mgr.delayed_work),
@@ -1724,7 +1730,8 @@ extern void *watch(void *arg)
 				 BOOL_CHARIFY(mgr.inspecting),
 				 BOOL_CHARIFY(mgr.shutdown_requested),
 				 BOOL_CHARIFY(mgr.quiesce.requested),
-				 BOOL_CHARIFY(mgr.waiting_on_work));
+				 BOOL_CHARIFY(mgr.waiting_on_work),
+				 timeout_str);
 
 		EVENT_WAIT_TIMED(&mgr.watch_sleep, mgr.watch_max_sleep,
 				 &mgr.mutex);
