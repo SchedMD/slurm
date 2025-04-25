@@ -57,6 +57,7 @@
 #include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/auth.h"
+#include "src/interfaces/certmgr.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/tls.h"
 
@@ -503,6 +504,8 @@ extern int main(int argc, char **argv)
 		fatal("hash_g_init() failed");
 	if (tls_g_init())
 		fatal("tls_g_init() failed");
+	if (certmgr_g_init())
+		fatal("certmgr_g_init() failed");
 
 	if (registered)
 		_listen_for_reconf();
