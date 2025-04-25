@@ -160,7 +160,7 @@ extern int certmgr_g_fini(void)
 
 extern char *certmgr_g_get_node_cert_key(char *node_name)
 {
-	xassert(running_in_slurmd());
+	xassert(running_in_slurmd() || running_in_sackd());
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
@@ -171,7 +171,7 @@ extern char *certmgr_g_get_node_cert_key(char *node_name)
 
 extern char *certmgr_g_get_node_token(char *node_name)
 {
-	xassert(running_in_slurmd());
+	xassert(running_in_slurmd() || running_in_sackd());
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
@@ -193,7 +193,7 @@ extern int certmgr_g_get_self_signed_cert(char **cert_pem, char **key_pem)
 
 extern char *certmgr_g_generate_csr(char *node_name)
 {
-	xassert(running_in_slurmd());
+	xassert(running_in_slurmd() || running_in_sackd());
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
