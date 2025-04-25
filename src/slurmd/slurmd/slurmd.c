@@ -220,6 +220,7 @@ static void _create_msg_socket(void);
 static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
+static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg);
 static int _get_tls_certificate(void);
 static int _increment_thd_count(bool block);
 static void      _init_conf(void);
@@ -512,6 +513,10 @@ main (int argc, char **argv)
 	/* Allow listening socket to start accept()ing incoming */
 	_unquiesce_fd_listener();
 
+	/* Periodically renew TLS certificate indefinitely */
+	if (tls_enabled())
+		conmgr_add_work_fifo(_get_tls_cert_work, NULL);
+
 	conmgr_run(true);
 
 	/*
@@ -560,12 +565,27 @@ main (int argc, char **argv)
 
 static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	time_t delay_seconds;
+
 	if (conmgr_args.status != CONMGR_WORK_STATUS_RUN)
 		return;
 
 	if (_get_tls_certificate()) {
-		error("%s: Unable to get TLS certificate", __func__);
+		/*
+		 * Don't do full delay between tries to get TLS certificate if
+		 * we failed to get it.
+		 */
+		delay_seconds = slurm_conf.msg_timeout;
+		debug("Retry getting TLS certificate in %lu seconds...",
+		      delay_seconds);
+	} else {
+		delay_seconds =
+			certmgr_get_renewal_period_mins() * MINUTE_SECONDS;
 	}
+
+	/* Periodically renew TLS certificate indefinitely */
+	conmgr_add_work_delayed_fifo(_get_tls_cert_work, NULL, delay_seconds,
+				     0);
 }
 
 static int _get_tls_certificate(void)
@@ -583,11 +603,6 @@ static int _get_tls_certificate(void)
 		log_flag(TLS, "certmgr not enabled, skipping process to get signed TLS certificate from slurmctld (assume node already has signed TLS certificate)");
 		return SLURM_SUCCESS;
 	}
-
-	/* Periodically renew TLS certificate indefinitely */
-	conmgr_add_work_delayed_fifo(
-		_get_tls_cert_work, NULL,
-		certmgr_get_renewal_period_mins() * MINUTE_SECONDS, 0);
 
 	cert_req = xmalloc(sizeof(*cert_req));
 
@@ -674,9 +689,6 @@ _registration_engine(void *arg)
 
 	while (!_shutdown && !sent_reg_time) {
 		int rc;
-
-		if (_get_tls_certificate())
-			error("Unable to get TLS certificate");
 
 		if (!(rc = send_registration_msg(SLURM_SUCCESS)))
 			break;
