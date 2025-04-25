@@ -46,6 +46,32 @@
 
 /* Global variables */
 
+static int _foreach_get_default(void *x, void *arg)
+{
+	job_defaults_t *job_defaults = x;
+	uint16_t type = *(uint16_t *) arg;
+
+	if (job_defaults->type == type)
+		return -1;
+	return 0;
+}
+
+static uint64_t _get_default(list_t *job_defaults_list, uint16_t type)
+{
+	uint64_t def_value = NO_VAL64;
+	job_defaults_t *job_defaults;
+
+	if (!job_defaults_list)
+		return def_value;
+
+	if ((job_defaults = list_find_first(job_defaults_list,
+					    _foreach_get_default,
+					    &type)))
+		def_value = job_defaults->value;
+
+	return def_value;
+}
+
 /*
  * Get configured DefCpuPerGPU information from a list
  * (either global or per partition list)
@@ -53,23 +79,7 @@
  */
 extern uint64_t cons_helpers_get_def_cpu_per_gpu(list_t *job_defaults_list)
 {
-	uint64_t cpu_per_gpu = NO_VAL64;
-	list_itr_t *iter;
-	job_defaults_t *job_defaults;
-
-	if (!job_defaults_list)
-		return cpu_per_gpu;
-
-	iter = list_iterator_create(job_defaults_list);
-	while ((job_defaults = (job_defaults_t *) list_next(iter))) {
-		if (job_defaults->type == JOB_DEF_CPU_PER_GPU) {
-			cpu_per_gpu = job_defaults->value;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return cpu_per_gpu;
+	return _get_default(job_defaults_list, JOB_DEF_CPU_PER_GPU);
 }
 
 /*
@@ -79,23 +89,7 @@ extern uint64_t cons_helpers_get_def_cpu_per_gpu(list_t *job_defaults_list)
  */
 extern uint64_t cons_helpers_get_def_mem_per_gpu(list_t *job_defaults_list)
 {
-	uint64_t mem_per_gpu = NO_VAL64;
-	list_itr_t *iter;
-	job_defaults_t *job_defaults;
-
-	if (!job_defaults_list)
-		return mem_per_gpu;
-
-	iter = list_iterator_create(job_defaults_list);
-	while ((job_defaults = (job_defaults_t *) list_next(iter))) {
-		if (job_defaults->type == JOB_DEF_MEM_PER_GPU) {
-			mem_per_gpu = job_defaults->value;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return mem_per_gpu;
+	return _get_default(job_defaults_list, JOB_DEF_MEM_PER_GPU);
 }
 
 extern bitstr_t **cons_helpers_mark_avail_cores(

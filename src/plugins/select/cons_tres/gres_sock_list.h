@@ -39,40 +39,46 @@
 
 #include "src/interfaces/gres.h"
 
+typedef struct {
+	uint16_t cores_per_sock; /* IN - Count of cores per socket on this node
+				  */
+	bitstr_t *core_bitmap; /* IN/OUT - Identification of available cores on
+				* this node */
+	uint16_t cr_type;
+	bool enforce_binding; /* IN - if true then only use GRES with direct
+			       * access to cores */
+	bitstr_t *gpu_spec_bitmap; /* IN - bitmap of reserved gpu cores */
+	list_t *job_gres_list; /* IN - job's gres_list built by
+				* gres_job_state_validate() */
+	list_t *node_gres_list; /* IN - node's gres_list built by
+				 * gres_node_config_validate() */
+	uint32_t node_inx; /* IN - index of node to be evaluated */
+	char *node_name; /* IN - name of the node (for logging) */
+	resv_exc_t *resv_exc_ptr; /* IN - gres that can be included
+				   * (gres_list_inc) or excluded (gres_list_exc)
+				  */
+	bitstr_t *req_sock_map; /* OUT - bitmap of specific requires sockets */
+	uint32_t res_cores_per_gpu; /* IN - number of cores reserved for each
+				     * gpu */
+	uint16_t sockets; /* IN - Count of sockets on the node */
+	list_t *sock_gres_list; /* OUT - list of sock_gres_t entries identifying
+				 * what resources are available on each
+				 * socket. Returns NULL if none available. Call
+				 * FREE_NULL_LIST() to release memory. */
+	uint32_t s_p_n; /* IN - Expected sockets_per_node */
+	bool use_total_gres; /* IN - if set then consider all gres resources as
+			      * available, and none are committed to running
+			      * jobs */
+} gres_sock_list_create_t;
+
+
 /*
- * Determine how many cores on each socket of a node can be used by this job
- * IN job_gres_list   - job's gres_list built by gres_job_state_validate()
- * IN node_gres_list  - node's gres_list built by gres_node_config_validate()
- * IN resv_exc_ptr - gres that can be included (gres_list_inc)
- *                   or excluded (gres_list_exc)
- * IN use_total_gres  - if set then consider all gres resources as available,
- *			and none are committed to running jobs
- * IN/OUT core_bitmap - Identification of available cores on this node
- * IN sockets         - Count of sockets on the node
- * IN cores_per_sock  - Count of cores per socket on this node
- * IN job_id          - job's ID (for logging)
- * IN node_name       - name of the node (for logging)
- * IN enforce_binding - if true then only use GRES with direct access to cores
- * IN s_p_n           - Expected sockets_per_node (NO_VAL if not limited)
- * OUT req_sock_map   - bitmap of specific requires sockets
- * IN user_id         - job's user ID
- * IN node_inx        - index of node to be evaluated
- * IN gpu_spec_bitmap - bitmap of reserved gpu cores
- * IN res_cores_per_gpu - number of cores reserved for each gpu
- * IN sockets_per_node - number of requested sockets per node
- * RET: list of sock_gres_t entries identifying what resources are available on
- *	each socket. Returns NULL if none available. Call FREE_NULL_LIST() to
- *	release memory.
+ * Determine how many cores on each socket of a node can be used by this job.
+ *
+ * core_bitmap, req_sock_map and sock_gres_list are the possibly altered from
+ * this function. sock_gres_list needs to be freed. See gres_sock_list_create_t
+ * declaration above.
  */
-extern list_t *gres_sock_list_create(
-	list_t *job_gres_list, list_t *node_gres_list,
-	resv_exc_t *resv_exc_ptr,
-	bool use_total_gres, bitstr_t *core_bitmap,
-	uint16_t sockets, uint16_t cores_per_sock,
-	uint32_t job_id, char *node_name,
-	bool enforce_binding, uint32_t s_p_n,
-	bitstr_t **req_sock_map, uint32_t user_id,
-	const uint32_t node_inx, bitstr_t *gpu_spec_bitmap,
-	uint32_t res_cores_per_gpu, uint16_t cr_type);
+extern void gres_sock_list_create(gres_sock_list_create_t *create_args);
 
 #endif /* _GRES_SCHED_H */
