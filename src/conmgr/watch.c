@@ -86,18 +86,38 @@ static void _set_time(handle_connection_args_t *args)
 
 static bool _handle_time_limit(handle_connection_args_t *args,
 			       const struct timespec timestamp,
-			       const struct timespec limit)
+			       const struct timespec limit, const char *what,
+			       const char *name, const char *caller)
 {
 	const struct timespec deadline = timespec_add(timestamp, limit);
+	bool after, change_max_sleep = false;
 
 	_set_time(args);
 
-	if (timespec_is_after(args->time, deadline))
+	if (!(after = timespec_is_after(args->time, deadline)))
+		change_max_sleep =
+			(!mgr.watch_max_sleep.tv_sec ||
+			 timespec_is_after(mgr.watch_max_sleep, deadline));
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char str[CTIME_STR_LEN];
+
+		timespec_ctime(limit, false, str, sizeof(str));
+
+		log_flag(CONMGR, "%s->%s: %s%s%s%s %s timeout %s %s",
+			 caller, __func__, (name ? "[" : ""), name,
+			 (name ? "] " : ""),
+			 (change_max_sleep ? "updating watch() sleep" :
+			  "evaluating"),
+			 what, (after ? "triggered" : "ETA"), str);
+	}
+
+	if (after)
 		return true;
 
-	if (!mgr.watch_max_sleep.tv_sec ||
-	    timespec_is_after(mgr.watch_max_sleep, deadline))
+	if (change_max_sleep) {
 		mgr.watch_max_sleep = deadline;
+	}
 
 	return false;
 }
@@ -523,7 +543,8 @@ static int _handle_connection_wait_write(conmgr_fd_t *con,
 	con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
 
 	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) &&
-	    _handle_time_limit(args, con->last_write, mgr.conf_write_timeout)) {
+	    _handle_time_limit(args, con->last_write, mgr.conf_write_timeout,
+			       "write", con->name, __func__)) {
 		_on_write_timeout(args, con);
 		return 0;
 	}
@@ -716,7 +737,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 		if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT) &&
 		    _handle_time_limit(args, con->last_read,
-				       mgr.conf_connect_timeout)) {
+				       mgr.conf_connect_timeout, "connect",
+				       con->name, __func__)) {
 			_on_connect_timeout(args, con);
 			return 0;
 		}
@@ -971,7 +993,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			if (con_flag(con, CON_FLAG_WATCH_READ_TIMEOUT) &&
 			    list_is_empty(con->write_complete_work) &&
 			    _handle_time_limit(args, con->last_read,
-					       mgr.conf_read_timeout)) {
+					       mgr.conf_read_timeout, "read",
+					       con->name, __func__)) {
 				_on_read_timeout(args, con);
 				return 0;
 			}
@@ -1576,7 +1599,8 @@ static void _quiesce_max_sleep(void)
 	_set_time(&args);
 
 	if (_handle_time_limit(&args, mgr.quiesce.start,
-			       mgr.quiesce.conf_timeout))
+			       mgr.quiesce.conf_timeout, "quiesce", NULL,
+			       __func__))
 		_on_quiesce_timeout();
 }
 
