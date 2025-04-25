@@ -599,11 +599,6 @@ static int _get_tls_certificate(void)
 	slurm_msg_t_init(&req);
 	slurm_msg_t_init(&resp);
 
-	if (!certmgr_enabled()) {
-		log_flag(TLS, "certmgr not enabled, skipping process to get signed TLS certificate from slurmctld (assume node already has signed TLS certificate)");
-		return SLURM_SUCCESS;
-	}
-
 	cert_req = xmalloc(sizeof(*cert_req));
 
 	if (!(cert_req->token = certmgr_g_get_node_token(conf->node_name))) {
