@@ -885,7 +885,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		if (!peer)
 			peer = fd_resolve_peer(fd);
 
-		error("%s: [%s] We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
+		error("%s: [%s] We need to forward this to other nodes use slurm_unpack_msg_and_forward instead",
 		      __func__, peer);
 		header.forward.cnt = 0;
 		xfree(header.forward.nodelist);
@@ -1169,7 +1169,7 @@ list_t *slurm_receive_msgs(int fd, int steps, int timeout)
 		if (!peer)
 			peer = fd_resolve_peer(fd);
 
-		error("%s: [%s] We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
+		error("%s: [%s] We need to forward this to other nodes use slurm_unpack_msg_and_forward instead",
 		      __func__, peer);
 	}
 
@@ -1354,7 +1354,7 @@ extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout)
 		if (!peer)
 			peer = fd_resolve_peer(fd);
 
-		error("%s: [%s] We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
+		error("%s: [%s] We need to forward this to other nodes use slurm_unpack_msg_and_forward instead",
 		      __func__, peer);
 	}
 
