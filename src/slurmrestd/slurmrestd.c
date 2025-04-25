@@ -216,6 +216,9 @@ static void _parse_env(void)
 						"disable_unshare_files")) {
 				unshare_files = false;
 			} else if (!xstrcasecmp(token, "disable_user_check")) {
+#ifdef NDEBUG
+				fatal_abort("SLURMRESTD_SECURITY=disable_user_check should only be used for development. Disabling the user check to run slurmrestd as root or SlurmUser will allow anyone to run any command on the cluster as root.");
+#endif /* NDEBUG */
 				check_user = false;
 			} else if (!xstrcasecmp(token, "become_user")) {
 				become_user = true;
