@@ -93,8 +93,12 @@ static bool _handle_time_limit(handle_connection_args_t *args,
 		return true;
 
 	if (!mgr.watch_max_sleep.tv_sec ||
-	    timespec_is_after(mgr.watch_max_sleep, deadline))
+	    timespec_is_after(mgr.watch_max_sleep, deadline)) {
 		mgr.watch_max_sleep = deadline;
+
+		/* Wake up watch() if as deadline may have changed */
+		EVENT_SIGNAL(&mgr.watch_sleep);
+	}
 
 	return false;
 }
