@@ -162,15 +162,15 @@ pthread_mutex_t tres_mutex     = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  tres_cond      = PTHREAD_COND_INITIALIZER;
 bool tres_packed = false;
 
-#define SERVICE_CONNECTION_ARGS_MAGIC 0x2aeaa8af
+#define SERVICE_MSG_ARGS_MAGIC 0x2aeaa8af
 typedef struct {
-	int magic; /* SERVICE_CONNECTION_ARGS_MAGIC */
+	int magic; /* SERVICE_MSG_ARGS_MAGIC */
 	timespec_t delay;
 	slurm_addr_t addr;
 	int fd;
 	void *tls_conn;
 	slurm_msg_t *msg;
-} service_connection_args_t;
+} service_msg_args_t;
 
 /*
  * count of active threads
@@ -245,7 +245,7 @@ static void      _usage(void);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
-static void *_service_connection(void *arg);
+static void *_service_msg(void *arg);
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
@@ -769,14 +769,14 @@ _wait_for_all_threads(int secs)
 	verbose("all threads complete");
 }
 
-static void *_service_connection(void *arg)
+static void *_service_msg(void *arg)
 {
-	service_connection_args_t *args = arg;
+	service_msg_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
 	slurm_addr_t *addr = &args->addr;
 	int fd = args->fd;
 
-	xassert(args->magic == SERVICE_CONNECTION_ARGS_MAGIC);
+	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 
 	debug3("%s: [%pA] processing new RPC connection", __func__, addr);
 
@@ -804,7 +804,7 @@ static void *_service_connection(void *arg)
 
 	slurm_free_msg(msg);
 
-	args->magic = ~SERVICE_CONNECTION_ARGS_MAGIC;
+	args->magic = ~SERVICE_MSG_ARGS_MAGIC;
 	xfree(args);
 
 	_decrement_thd_count();
@@ -2034,19 +2034,18 @@ static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 }
 
 /* Try to process connection if thread max has not been hit */
-static void _try_service_connection(conmgr_callback_args_t conmgr_args,
-				    void *arg)
+static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	service_connection_args_t *args = arg;
+	service_msg_args_t *args = arg;
 	int rc = SLURM_ERROR;
 
-	xassert(args->magic == SERVICE_CONNECTION_ARGS_MAGIC);
+	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 
 	if (!(rc = _increment_thd_count(false))) {
 		debug3("%s: [%pA] detaching new thread for RPC connection",
 		       __func__, &args->addr);
 
-		slurm_thread_create_detached(_service_connection, args);
+		slurm_thread_create_detached(_service_msg, args);
 	} else {
 		xassert(rc == EWOULDBLOCK);
 
@@ -2069,7 +2068,7 @@ static void _try_service_connection(conmgr_callback_args_t conmgr_args,
 		if (timespec_is_after(args->delay, MAX_THREAD_DELAY_MAX))
 			args->delay = MAX_THREAD_DELAY_MAX;
 
-		conmgr_add_work_delayed_fifo(_try_service_connection, args,
+		conmgr_add_work_delayed_fifo(_try_service_msg, args,
 					     args->delay.tv_sec,
 					     args->delay.tv_sec);
 	}
@@ -2079,7 +2078,7 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 			   int input_fd, int output_fd, void *tls_conn,
 			   void *arg)
 {
-	service_connection_args_t *args = NULL;
+	service_msg_args_t *args = NULL;
 	int rc = SLURM_SUCCESS;
 	slurm_msg_t *msg = arg;
 
@@ -2105,7 +2104,7 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 	}
 
 	args = xmalloc(sizeof(*args));
-	args->magic = SERVICE_CONNECTION_ARGS_MAGIC;
+	args->magic = SERVICE_MSG_ARGS_MAGIC;
 	args->addr.ss_family = AF_UNSPEC;
 	args->fd = input_fd;
 	args->tls_conn = tls_conn;
@@ -2115,7 +2114,7 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 		error("%s: [fd:%d] getting socket peer failed: %s",
 		      __func__, input_fd, slurm_strerror(rc));
 		fd_close(&input_fd);
-		args->magic = ~SERVICE_CONNECTION_ARGS_MAGIC;
+		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
 		xfree(args);
 		return;
 	}
@@ -2123,7 +2122,7 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 	/* force blocking mode for blocking handlers */
 	fd_set_blocking(input_fd);
 
-	_try_service_connection(conmgr_args, args);
+	_try_service_msg(conmgr_args, args);
 }
 
 static void *_on_connection(conmgr_fd_t *con, void *arg)
