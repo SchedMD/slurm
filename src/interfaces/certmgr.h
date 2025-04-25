@@ -101,10 +101,10 @@ extern char *certmgr_g_generate_csr(char *node_name);
  *
  * IN csr  - CSR PEM character string.
  * IN token - unique token associated with CSR to check validity
- * IN node - node record for node sending CSR
+ * IN name - hostname or node name of client that generated CSR
  *
  * RET CSR PEM character string or NULL on error.
  */
-extern char *certmgr_g_sign_csr(char *csr, char *token, node_record_t *node);
+extern char *certmgr_g_sign_csr(char *csr, char *token, char *name);
 
 #endif

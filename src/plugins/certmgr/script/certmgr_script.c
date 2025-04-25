@@ -394,43 +394,53 @@ fail:
 	return NULL;
 }
 
-extern char *certmgr_p_sign_csr(char *csr, char *token, node_record_t *node)
+extern char *certmgr_p_sign_csr(char *csr, char *token, char *name)
 {
 	char **script_argv;
 	int script_rc = SLURM_ERROR;
 	char *signed_cert_pem = NULL;
 	char *output = NULL;
+	node_record_t *node = NULL;
 
-	if (!node) {
-		error("%s: No node record given, cannot sign CSR.",
+	if (!name) {
+		error("%s: No name given, cannot sign CSR.",
 		      plugin_type);
 		return NULL;
 	}
 
-	if (node->cert_token) {
+	if (!(node = find_node_record(name))) {
+		log_flag(TLS, "Could not find node record for '%s'.", name);
+	}
+
+	if (node && node->cert_token) {
 		if (xstrcmp(node->cert_token, token)) {
 			error("%s: Token does not match what was set in node record table for node '%s'.",
-			      plugin_type, node->name);
+			      plugin_type, name);
 			return NULL;
 		}
 
 		log_flag(TLS, "Token received from node '%s' matches what was set in node record table.",
-			 node->name);
+			 name);
 		goto skip_validation_script;
 	}
 
 	if (!cert_scripts[VALID_NODE].path) {
 		log_flag(TLS, "No token set in node record table for node '%s', and no validation script is configured. Token is invalid.",
-			 node->name);
+			 name);
 		return NULL;
 	}
 
-	log_flag(TLS, "No token set in node record table for node '%s'. Will run validation script to check token.",
-		 node->name);
+	if (node) {
+		log_flag(TLS, "No token set in node record table for node '%s'. Will run validation script to check token.",
+			 name);
+	} else {
+		log_flag(TLS, "Running validation script to check token for '%s'.",
+			 name);
+	}
 
 	script_argv = xcalloc(4, sizeof(char *)); /* NULL terminated */
 	/* script_argv[0] set to script path later */
-	script_argv[1] = node->name;
+	script_argv[1] = name;
 	script_argv[2] = token;
 
 	output = _run_script(VALID_NODE, script_argv, &script_rc);
@@ -439,13 +449,13 @@ extern char *certmgr_p_sign_csr(char *csr, char *token, node_record_t *node)
 
 	if (script_rc) {
 		error("%s: Unable to validate node certificate signing request for node '%s'.",
-		      plugin_type, node->name);
+		      plugin_type, name);
 		return NULL;
 	}
 
 skip_validation_script:
 	log_flag(TLS, "Successfully validated node token for node %s.",
-		 node->name);
+		 name);
 
 	script_argv = xcalloc(3, sizeof(char *));
 	/* script_argv[0] set to script path later */
@@ -456,15 +466,15 @@ skip_validation_script:
 
 	if (script_rc) {
 		error("%s: Unable to sign node certificate signing request for node '%s'.",
-		      plugin_type, node->name);
+		      plugin_type, name);
 		goto fail;
 	} else if (!signed_cert_pem || !*signed_cert_pem) {
 		error("%s: Unable to sign node certificate signing request for node '%s'. Script printed nothing to stdout",
-		      plugin_type, node->name);
+		      plugin_type, name);
 		goto fail;
 	} else {
 		log_flag(TLS, "Successfully generated signed certificate for node '%s': \n%s",
-			 node->name, signed_cert_pem);
+			 name, signed_cert_pem);
 	}
 
 	return signed_cert_pem;

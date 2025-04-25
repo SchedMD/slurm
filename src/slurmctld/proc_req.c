@@ -5996,12 +5996,12 @@ static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 	}
 
 	if (!(node = find_node_record(req->node_name))) {
-		error("%s: Could not find node record.", __func__);
-		slurm_send_rc_msg(msg, SLURM_ERROR);
+		log_flag(TLS, "%s: Could not find node record. Request might not be from a slurmd node",
+			 __func__);
 	}
 
 	if (!(resp->signed_cert = certmgr_g_sign_csr(req->csr, req->token,
-						    node))) {
+						     req->node_name))) {
 		error("%s: Unable to sign certificate signing request.",
 		      __func__);
 		slurm_send_rc_msg(msg, SLURM_ERROR);
