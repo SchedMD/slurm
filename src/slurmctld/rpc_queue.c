@@ -192,12 +192,16 @@ static data_t *_load_config(void)
 	char *file = get_extra_conf_path("rpc_queue.yaml");
 	buf_t *buf = create_mmap_buf(file);
 	data_t *conf = NULL;
+	int rc = SLURM_SUCCESS;
 
 	if (!buf) {
 		debug("%s: could not load %s, ignoring", __func__, file);
 		xfree(file);
 		return NULL;
 	}
+
+	if ((rc = serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL)))
+		fatal("YAML plugin loading failed: %s", slurm_strerror(rc));
 
 	if (serialize_g_string_to_data(&conf, buf->head, buf->size,
 				       MIME_TYPE_YAML))
