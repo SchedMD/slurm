@@ -67,6 +67,12 @@
 
 #include "src/interfaces/tls.h"
 
+/* Default watch() sleep to only 5 minutes */
+#define WATCH_DEFAULT_SLEEP    \
+	(timespec_t)           \
+	{                      \
+		.tv_sec = 300, \
+	}
 #define CTIME_STR_LEN 72
 
 typedef struct {
@@ -123,6 +129,27 @@ static bool _handle_time_limit(handle_connection_args_t *args,
 	}
 
 	return false;
+}
+
+static void _reset_watch_max_sleep(void)
+{
+	const timespec_t now = timespec_now();
+
+	/* skip if the timeout hasn't elapsed yet */
+	if (timespec_is_after(mgr.watch_max_sleep, now))
+		return;
+
+	/* timeout triggered and needs reset */
+	mgr.watch_max_sleep = timespec_add(now, WATCH_DEFAULT_SLEEP);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char str[CTIME_STR_LEN];
+
+		timespec_ctime(mgr.watch_max_sleep, true, str, sizeof(str));
+
+		log_flag(CONMGR, "%s: reset watch() sleep to %s",
+			 __func__, str);
+	}
 }
 
 static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
@@ -1729,8 +1756,7 @@ extern void *watch(void *arg)
 		EVENT_WAIT_TIMED(&mgr.watch_sleep, mgr.watch_max_sleep,
 				 &mgr.mutex);
 		mgr.waiting_on_work = false;
-		/* Always clear max watch sleep to allow finding next sleep */
-		mgr.watch_max_sleep = (struct timespec) {0};
+		_reset_watch_max_sleep();
 	}
 
 	log_flag(CONMGR, "%s: returning shutdown_requested=%c connections=%u listen_conns=%u",
