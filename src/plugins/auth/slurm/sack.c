@@ -77,10 +77,20 @@ static int sack_fd = -1;
  * requested payload.
  */
 
-static void _prepare_run_dir(const char *subdir)
+static void _prepare_run_dir(const char *subdir, bool slurm_user)
 {
+	char *user;
 	int dirfd, subdirfd;
+	uint32_t uid;
 	struct stat statbuf;
+
+	if (slurm_user) {
+		uid = slurm_conf.slurm_user_id;
+		user = "SlurmUser";
+	} else {
+		uid = slurm_conf.slurmd_user_id;
+		user = "SlurmdUser";
+	}
 
 	if ((dirfd = open("/run", O_DIRECTORY | O_NOFOLLOW)) < 0)
 		fatal("%s: could not open /run", __func__);
@@ -90,10 +100,9 @@ static void _prepare_run_dir(const char *subdir)
 		/* just assume ENOENT and attempt to create */
 		if (mkdirat(dirfd, subdir, 0755) < 0)
 			fatal("%s: failed to create /run/%s", __func__, subdir);
-		if (fchownat(dirfd, subdir, slurm_conf.slurm_user_id, -1,
-			     AT_SYMLINK_NOFOLLOW) < 0)
-			fatal("%s: failed to change ownership of /run/%s to SlurmUser",
-			      __func__, subdir);
+		if (fchownat(dirfd, subdir, uid, -1, AT_SYMLINK_NOFOLLOW) < 0)
+			fatal("%s: failed to change ownership of /run/%s to %s",
+			      __func__, subdir, user);
 		close(dirfd);
 		return;
 	}
@@ -102,12 +111,12 @@ static void _prepare_run_dir(const char *subdir)
 		if (!(statbuf.st_mode & S_IFDIR))
 			fatal("%s: /run/%s exists but is not a directory",
 			      __func__, subdir);
-		if (statbuf.st_uid != slurm_conf.slurm_user_id) {
+		if (statbuf.st_uid != uid) {
 			if (statbuf.st_uid)
 				fatal("%s: /run/%s exists but is owned by %u",
-				      __func__, subdir, statbuf.st_uid);
-			warning("%s: /run/%s exists but is owned by root, not SlurmUser",
-				__func__, subdir);
+				      __func__, subdir, uid);
+			warning("%s: /run/%s exists but is owned by %u, not %s",
+				__func__, subdir, statbuf.st_uid, user);
 		}
 	}
 
@@ -279,21 +288,24 @@ extern void init_sack_conmgr(void)
 		mode_t mask;
 
 		if (running_in_slurmctld()) {
-			_prepare_run_dir("slurmctld");
+			_prepare_run_dir("slurmctld", true);
 			path = SLURMCTLD_SACK_SOCKET;
 		} else if (running_in_slurmdbd()) {
-			_prepare_run_dir("slurmdbd");
+			_prepare_run_dir("slurmdbd", true);
 			path = SLURMDBD_SACK_SOCKET;
 		} else if ((runtime_dir = getenv("RUNTIME_DIRECTORY"))) {
 			if (!valid_runtime_directory(runtime_dir))
 				fatal("%s: Invalid RUNTIME_DIRECTORY=%s environment variable",
 				      __func__, runtime_dir);
-			_prepare_run_dir(runtime_dir + 5);
+			_prepare_run_dir(runtime_dir + 5, true);
 			xstrfmtcat(runtime_socket, "%s/sack.socket",
 				   runtime_dir);
 			path = runtime_socket;
+		} else if (running_in_sackd()) {
+			_prepare_run_dir("slurm", true);
+			path = SLURM_SACK_SOCKET;
 		} else {
-			_prepare_run_dir("slurm");
+			_prepare_run_dir("slurm", false);
 			path = SLURM_SACK_SOCKET;
 		}
 
