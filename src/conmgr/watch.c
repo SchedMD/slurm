@@ -1572,7 +1572,8 @@ static void _quiesce_max_sleep(void)
 	handle_connection_args_t args = {
 		.magic = MAGIC_HANDLE_CONNECTION,
 	};
-	args.time = timespec_now();
+
+	_set_time(&args);
 
 	if (_handle_time_limit(&args, mgr.quiesce.start,
 			       mgr.quiesce.conf_timeout))
