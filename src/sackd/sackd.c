@@ -229,6 +229,36 @@ static bool _slurm_conf_file_exists(void)
 	return false;
 }
 
+static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	char hostname[HOST_NAME_MAX];
+	time_t delay_seconds;
+
+	if (conmgr_args.status != CONMGR_WORK_STATUS_RUN)
+		return;
+
+	if (gethostname(hostname, HOST_NAME_MAX)) {
+		fatal("Could not get hostname, cannot get TLS certificate from slurmctld.");
+	}
+
+	if (tls_get_cert_from_ctld(hostname)) {
+		/*
+		 * Don't do full delay between tries to get TLS certificate if
+		 * we failed to get it.
+		 */
+		delay_seconds = slurm_conf.msg_timeout;
+		debug("Retry getting TLS certificate in %lu seconds...",
+		      delay_seconds);
+	} else {
+		delay_seconds =
+			certmgr_get_renewal_period_mins() * MINUTE_SECONDS;
+	}
+
+	/* Periodically renew TLS certificate indefinitely */
+	conmgr_add_work_delayed_fifo(_get_tls_cert_work, NULL, delay_seconds,
+				     0);
+}
+
 static void _establish_config_source(void)
 {
 	config_response_msg_t *configs;
@@ -514,6 +544,10 @@ extern int main(int argc, char **argv)
 		_notify_parent_of_success();
 	else if (under_systemd)
 		xsystemd_change_mainpid(getpid());
+
+	/* Periodically renew TLS certificate indefinitely */
+	if (tls_enabled())
+		conmgr_add_work_fifo(_get_tls_cert_work, NULL);
 
 	info("running");
 	conmgr_run(true);
