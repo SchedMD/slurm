@@ -361,6 +361,10 @@ typedef enum {
 	 * Mutually exclusive with CON_FLAG_TLS_SERVER.
 	 */
 	CON_FLAG_TLS_CLIENT = SLURM_BIT(19),
+	/*
+	 * Receive and forward incoming messages to their intended destinations.
+	 */
+	CON_FLAG_RPC_RECV_FORWARD = SLURM_BIT(23),
 } conmgr_con_flags_t;
 
 /*
