@@ -1292,16 +1292,6 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 				_list_transfer_handle_connection, &args))
 		send_signal = true;
 
-	if ((slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) &&
-	    mgr.watch_max_sleep.tv_sec) {
-		char str[CTIME_STR_LEN];
-
-		timespec_ctime(mgr.watch_max_sleep, true, str, sizeof(str));
-
-		log_flag(CONMGR, "%s: set max watch sleep wait: %s",
-			 __func__, str);
-	}
-
 	mgr.inspecting = false;
 
 	if (send_signal)
