@@ -79,8 +79,18 @@ static int sack_fd = -1;
 
 static void _prepare_run_dir(const char *subdir, bool slurm_user)
 {
+	char *user;
 	int dirfd, subdirfd;
+	uint32_t uid;
 	struct stat statbuf;
+
+	if (slurm_user) {
+		uid = slurm_conf.slurm_user_id;
+		user = "SlurmUser";
+	} else {
+		uid = slurm_conf.slurmd_user_id;
+		user = "SlurmdUser";
+	}
 
 	if ((dirfd = open("/run", O_DIRECTORY | O_NOFOLLOW)) < 0)
 		fatal("%s: could not open /run", __func__);
@@ -90,10 +100,9 @@ static void _prepare_run_dir(const char *subdir, bool slurm_user)
 		/* just assume ENOENT and attempt to create */
 		if (mkdirat(dirfd, subdir, 0755) < 0)
 			fatal("%s: failed to create /run/%s", __func__, subdir);
-		if (fchownat(dirfd, subdir, slurm_conf.slurm_user_id, -1,
-			     AT_SYMLINK_NOFOLLOW) < 0)
-			fatal("%s: failed to change ownership of /run/%s to SlurmUser",
-			      __func__, subdir);
+		if (fchownat(dirfd, subdir, uid, -1, AT_SYMLINK_NOFOLLOW) < 0)
+			fatal("%s: failed to change ownership of /run/%s to %s",
+			      __func__, subdir, user);
 		close(dirfd);
 		return;
 	}
@@ -102,12 +111,12 @@ static void _prepare_run_dir(const char *subdir, bool slurm_user)
 		if (!(statbuf.st_mode & S_IFDIR))
 			fatal("%s: /run/%s exists but is not a directory",
 			      __func__, subdir);
-		if (statbuf.st_uid != slurm_conf.slurm_user_id) {
+		if (statbuf.st_uid != uid) {
 			if (statbuf.st_uid)
 				fatal("%s: /run/%s exists but is owned by %u",
-				      __func__, subdir, statbuf.st_uid);
-			warning("%s: /run/%s exists but is owned by root, not SlurmUser",
-				__func__, subdir);
+				      __func__, subdir, uid);
+			warning("%s: /run/%s exists but is owned by %u, not %s",
+				__func__, subdir, statbuf.st_uid, user);
 		}
 	}
 
