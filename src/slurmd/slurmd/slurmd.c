@@ -221,7 +221,6 @@ static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
 static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg);
-static int _get_tls_certificate(void);
 static int _increment_thd_count(bool block);
 static void      _init_conf(void);
 static int       _memory_spec_init(void);
@@ -570,7 +569,7 @@ static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status != CONMGR_WORK_STATUS_RUN)
 		return;
 
-	if (_get_tls_certificate()) {
+	if (tls_get_cert_from_ctld(conf->node_name)) {
 		/*
 		 * Don't do full delay between tries to get TLS certificate if
 		 * we failed to get it.
@@ -586,88 +585,6 @@ static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
 	/* Periodically renew TLS certificate indefinitely */
 	conmgr_add_work_delayed_fifo(_get_tls_cert_work, NULL, delay_seconds,
 				     0);
-}
-
-static int _get_tls_certificate(void)
-{
-	slurm_msg_t req, resp;
-	tls_cert_request_msg_t *cert_req;
-	tls_cert_response_msg_t *cert_resp;
-	size_t cert_len, key_len;
-	char *key;
-
-	slurm_msg_t_init(&req);
-	slurm_msg_t_init(&resp);
-
-	cert_req = xmalloc(sizeof(*cert_req));
-
-	if (!(cert_req->token = certmgr_g_get_node_token(conf->node_name))) {
-		error("%s: Failed to get unique node token", __func__);
-		slurm_free_tls_cert_request_msg(cert_req);
-		return SLURM_ERROR;
-	}
-
-	if (!(cert_req->csr = certmgr_g_generate_csr(conf->node_name))) {
-		error("%s: Failed to generate certificate signing request",
-		      __func__);
-		slurm_free_tls_cert_request_msg(cert_req);
-		return SLURM_ERROR;
-	}
-
-	cert_req->node_name = xstrdup(conf->node_name);
-
-	req.msg_type = REQUEST_TLS_CERT;
-	req.data = cert_req;
-
-	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec)
-	    < 0) {
-		error("Unable to get TLS certificate from slurmctld: %m");
-		slurm_free_tls_cert_request_msg(cert_req);
-		return SLURM_ERROR;
-	}
-	slurm_free_tls_cert_request_msg(cert_req);
-
-	switch (resp.msg_type) {
-	case RESPONSE_TLS_CERT:
-		break;
-	case RESPONSE_SLURM_RC:
-	{
-		uint32_t resp_rc =
-			((return_code_msg_t *) resp.data)->return_code;
-		error("%s: slurmctld response to TLS certificate request: %s",
-		      __func__, slurm_strerror(resp_rc));
-		return SLURM_ERROR;
-	}
-	default:
-		error("%s: slurmctld responded with unexpected msg type: %s",
-		      __func__, rpc_num2string(resp.msg_type));
-		return SLURM_ERROR;
-	}
-
-	cert_resp = resp.data;
-
-	log_flag(TLS, "Successfully got signed certificate from slurmctld: \n%s",
-		 cert_resp->signed_cert);
-
-	if (!(key = certmgr_g_get_node_cert_key(conf->node_name))) {
-		error("%s: Could not get node's private key", __func__);
-		return SLURM_ERROR;
-	}
-
-	cert_len = strlen(cert_resp->signed_cert);
-	key_len = strlen(key);
-
-	if (tls_g_load_self_cert(cert_resp->signed_cert, cert_len, key,
-				 key_len)) {
-		error("%s: Could not load signed certificate and private key into tls plugin",
-		      __func__);
-		return SLURM_ERROR;
-	}
-
-	xfree(key);
-	slurm_free_msg_data(RESPONSE_TLS_CERT, cert_resp);
-
-	return SLURM_SUCCESS;
 }
 
 /*
