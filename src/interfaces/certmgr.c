@@ -47,7 +47,7 @@ typedef struct {
 	char *(*get_node_token)(char *node_name);
 	int (*get_self_signed_cert)(char **cert_pem, char **key_pem);
 	char *(*generate_csr)(char *node_name);
-	char *(*sign_csr)(char *csr, char *token, node_record_t *node);
+	char *(*sign_csr)(char *csr, char *token, char *name);
 } certmgr_ops_t;
 
 /*
@@ -202,7 +202,7 @@ extern char *certmgr_g_generate_csr(char *node_name)
 	return (*(ops.generate_csr))(node_name);
 }
 
-extern char *certmgr_g_sign_csr(char *csr, char *token, node_record_t *node)
+extern char *certmgr_g_sign_csr(char *csr, char *token, char *name)
 {
 	xassert(running_in_slurmctld());
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -210,5 +210,5 @@ extern char *certmgr_g_sign_csr(char *csr, char *token, node_record_t *node)
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.sign_csr))(csr, token, node);
+	return (*(ops.sign_csr))(csr, token, name);
 }
