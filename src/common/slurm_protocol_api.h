@@ -258,22 +258,6 @@ extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
 					slurm_addr_t *orig_addr, int fd,
 					buf_t *buffer);
 
-/*
- *  Receive a slurm message on the open slurm descriptor "fd". This will also
- *  forward the message to the nodes contained in the forward_t structure
- *  inside the header of the message. The 'resp' is the actual message received
- *  and contains the ret_list of it's children and the forward_structure_t
- *  containing information about it's children also. Memory is allocated for
- *  the returned msg and the returned list both must be freed at some point
- *  using the slurm_free_functions and list_destroy function.
- *
- * IN open_fd	- file descriptor to receive msg on
- * OUT resp	- a slurm_msg struct to be filled in by the function
- * RET int	- returns 0 on success, -1 on failure and sets errno
- */
-int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
-				  slurm_msg_t *resp);
-
 /**********************************************************************\
  * send message functions
 \**********************************************************************/
