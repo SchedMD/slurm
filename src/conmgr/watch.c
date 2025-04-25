@@ -508,7 +508,7 @@ static int _handle_connection_wait_write(conmgr_fd_t *con,
 	 */
 	con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
 
-	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) && args &&
+	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) &&
 	    _handle_time_limit(args, con->last_write, mgr.conf_write_timeout)) {
 		_on_write_timeout(args, con);
 		return 0;
@@ -599,9 +599,20 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	int count;
 	const bool is_tls = (con_flag(con, FLAG_TLS_SERVER) ||
 			     con_flag(con, FLAG_TLS_CLIENT));
+	handle_connection_args_t local_args = {
+		.magic = MAGIC_HANDLE_CONNECTION,
+	};
+
+	if (!args) {
+		/*
+		 * Always have args pointer populated to avoid breaking timeout
+		 * logic
+		 */
+		args = &local_args;
+	}
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(!args || (args->magic == MAGIC_HANDLE_CONNECTION));
+	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
 
 	/* connection may have a running thread, do nothing */
 	if (con_flag(con, FLAG_WORK_ACTIVE)) {
@@ -632,7 +643,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		con_set_flag(con, FLAG_IS_CONNECTED);
 
 		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT)) {
-			if (args)
+			if (args->time.tv_sec)
 				con->last_read = args->time;
 			else
 				con->last_read = timespec_now();
@@ -691,7 +702,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		 */
 		con_set_polling(con, PCTL_TYPE_READ_WRITE, __func__);
 
-		if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT) && args &&
+		if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT) &&
 		    _handle_time_limit(args, con->last_read,
 				       mgr.conf_connect_timeout)) {
 			_on_connect_timeout(args, con);
@@ -946,7 +957,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			con_set_polling(con, PCTL_TYPE_READ_ONLY, __func__);
 
 			if (con_flag(con, CON_FLAG_WATCH_READ_TIMEOUT) &&
-			    args && list_is_empty(con->write_complete_work) &&
+			    list_is_empty(con->write_complete_work) &&
 			    _handle_time_limit(args, con->last_read,
 					       mgr.conf_read_timeout)) {
 				_on_read_timeout(args, con);
