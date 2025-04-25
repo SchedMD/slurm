@@ -75,11 +75,19 @@ typedef struct {
 
 static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg);
 
-static bool _handle_time_limit(const handle_connection_args_t *args,
+static void _set_time(handle_connection_args_t *args)
+{
+	if (!args->time.tv_sec)
+		args->time = timespec_now();
+}
+
+static bool _handle_time_limit(handle_connection_args_t *args,
 			       const struct timespec timestamp,
 			       const struct timespec limit)
 {
 	const struct timespec deadline = timespec_add(timestamp, limit);
+
+	_set_time(args);
 
 	if (timespec_is_after(args->time, deadline))
 		return true;
@@ -329,6 +337,8 @@ static void _on_connect_timeout(handle_connection_args_t *args,
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
 
+		_set_time(args);
+
 		timespec_ctime(timespec_diff_ns(con->last_read,
 						args->time).diff, false,
 			       time_str, sizeof(time_str));
@@ -396,6 +406,8 @@ static void _on_write_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
 
+		_set_time(args);
+
 		timespec_ctime(timespec_diff_ns(con->last_write,
 						args->time).diff, false,
 			       time_str, sizeof(time_str));
@@ -456,6 +468,8 @@ static void _on_read_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
 
+		_set_time(args);
+
 		timespec_ctime(timespec_diff_ns(con->last_read, args->time).diff,
 			       false, time_str, sizeof(time_str));
 		timespec_ctime(mgr.conf_read_timeout, false, total_str,
@@ -512,10 +526,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		con_set_flag(con, FLAG_IS_CONNECTED);
 
 		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT)) {
-			if (args->time.tv_sec)
-				con->last_read = args->time;
-			else
-				con->last_read = timespec_now();
+			_set_time(args);
+			con->last_read = args->time;
 		}
 
 		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1)) {
@@ -641,7 +653,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			 */
 			con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
 
-			if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) && args &&
+			if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) &&
 			    _handle_time_limit(args, con->last_write,
 					       mgr.conf_write_timeout)) {
 				_on_write_timeout(args, con);
@@ -1013,7 +1025,7 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	 * Always clear max watch sleep as it will be set before releasing lock
 	 */
 	mgr.watch_max_sleep = (struct timespec) {0};
-	args.time = timespec_now();
+	_set_time(&args);
 
 	/*
 	 * Always check mgr.connections list first to avoid
