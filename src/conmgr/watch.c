@@ -479,6 +479,8 @@ static void _on_read_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
 
+		_set_time(args);
+
 		timespec_ctime(timespec_diff_ns(con->last_read, args->time).diff,
 			       false, time_str, sizeof(time_str));
 		timespec_ctime(mgr.conf_read_timeout, false, total_str,
