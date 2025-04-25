@@ -657,10 +657,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		con_set_flag(con, FLAG_IS_CONNECTED);
 
 		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT)) {
-			if (args->time.tv_sec)
-				con->last_read = args->time;
-			else
-				con->last_read = timespec_now();
+			_set_time(args);
+			con->last_read = args->time;
 		}
 
 		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1)) {
