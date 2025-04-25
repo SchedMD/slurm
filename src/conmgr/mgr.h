@@ -149,6 +149,8 @@ typedef enum {
 	FLAG_WAIT_ON_FINGERPRINT = SLURM_BIT(21),
 	/* True if waiting for time delayed close of input_fd&output_fd */
 	FLAG_TLS_WAIT_ON_CLOSE = SLURM_BIT(22),
+	/* @see CON_FLAG_RPC_RECV_FORWARD */
+	FLAG_RPC_RECV_FORWARD = CON_FLAG_RPC_RECV_FORWARD,
 } con_flags_t;
 
 /* Mask over flags that track connection state */

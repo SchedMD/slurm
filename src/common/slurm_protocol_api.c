@@ -885,7 +885,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		if (!peer)
 			peer = fd_resolve_peer(fd);
 
-		error("%s: [%s] We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
+		error("%s: [%s] We need to forward this to other nodes use slurm_unpack_msg_and_forward instead",
 		      __func__, peer);
 		header.forward.cnt = 0;
 		xfree(header.forward.nodelist);
@@ -1169,7 +1169,7 @@ list_t *slurm_receive_msgs(int fd, int steps, int timeout)
 		if (!peer)
 			peer = fd_resolve_peer(fd);
 
-		error("%s: [%s] We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
+		error("%s: [%s] We need to forward this to other nodes use slurm_unpack_msg_and_forward instead",
 		      __func__, peer);
 	}
 
@@ -1354,7 +1354,7 @@ extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout)
 		if (!peer)
 			peer = fd_resolve_peer(fd);
 
-		error("%s: [%s] We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
+		error("%s: [%s] We need to forward this to other nodes use slurm_unpack_msg_and_forward instead",
 		      __func__, peer);
 	}
 
@@ -1427,29 +1427,14 @@ total_return:
 	return ret_list;
 }
 
-/*
- * NOTE: memory is allocated for the returned msg and the returned list
- *       both must be freed at some point using the slurm_free_functions
- *       and list_destroy function.
- * IN open_fd	- file descriptor to receive msg on
- * IN/OUT msg	- a slurm_msg struct to be filled in by the function
- *		  we use the orig_addr from this var for forwarding.
- * RET int	- returns 0 on success, -1 on failure and sets errno
- */
-int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
-				  slurm_msg_t *msg)
+extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
+					slurm_addr_t *orig_addr, int fd,
+					buf_t *buffer)
 {
-	char *buf = NULL;
-	size_t buflen = 0;
 	header_t header;
 	int rc;
 	void *auth_cred = NULL;
-	buf_t *buffer;
 	char *peer = NULL;
-	bool keep_buffer = false;
-
-	if (msg->flags & SLURM_MSG_KEEP_BUFFER)
-		keep_buffer = true;
 
 	xassert(fd >= 0);
 
@@ -1461,41 +1446,24 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		peer = fd_resolve_peer(fd);
 	}
 
-	if (msg->forward.init != FORWARD_INIT)
-		slurm_msg_t_init(msg);
-	/* set msg connection fd to accepted fd. This allows
-	 *  possibility for slurmd_req () to close accepted connection
+	/*
+	 * Set msg connection fd to accepted fd. This allows slurmd_req() to
+	 * close the accepted connection if necessary.
 	 */
 	msg->conn_fd = fd;
-	/* this always is the connection */
+	/* this is the direct peer connection */
 	memcpy(&msg->address, orig_addr, sizeof(slurm_addr_t));
 
-	/* where the connection originated from, this
-	 * might change based on the header we receive */
+	/*
+	 * Where the connection originated from. This will change to the
+	 * originator if the header is unpacked successfully later.
+	 */
 	memcpy(&msg->orig_addr, orig_addr, sizeof(slurm_addr_t));
 
 	msg->ret_list = list_create(destroy_data_info);
 
-
-	/*
-	 * Receive a msg. slurm_msg_recvfrom() will read the message
-	 *  length and allocate space on the heap for a buffer containing
-	 *  the message.
-	 */
-	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen,
-				       (slurm_conf.msg_timeout * 1000)) < 0) {
-		forward_init(&header.forward);
-		rc = errno;
+	if ((rc = unpack_header(&header, buffer)))
 		goto total_return;
-	}
-
-	log_flag_hex(NET_RAW, buf, buflen, "%s: [%s] read", __func__, peer);
-	buffer = create_buf(buf, buflen);
-
-	if ((rc = unpack_header(&header, buffer))) {
-		FREE_NULL_BUFFER(buffer);
-		goto total_return;
-	}
 
 	if (header.ret_cnt > 0) {
 		/* peer may have not been resolved already */
@@ -1510,14 +1478,12 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	}
 
 	/*
-	 * header.orig_addr will be set to where the first message
-	 * came from if this is a forward else we set the
-	 * header.orig_addr to our addr just in case we need to send it off.
+	 * Update orig_addr to where the connection originated from before
+	 * the forwarding subsystem relayed it to us.
 	 */
 	if (!slurm_addr_is_unspec(&header.orig_addr)) {
-		memcpy(&msg->orig_addr, &header.orig_addr, sizeof(slurm_addr_t));
-	} else {
-		memcpy(&header.orig_addr, orig_addr, sizeof(slurm_addr_t));
+		memcpy(&msg->orig_addr, &header.orig_addr,
+		       sizeof(slurm_addr_t));
 	}
 
 	/* Forward message to other nodes */
@@ -1566,7 +1532,6 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 
 		error("%s: [%s] auth_g_unpack: %s has authentication error: %m",
 		      __func__, peer, rpc_num2string(header.msg_type));
-		FREE_NULL_BUFFER(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
@@ -1585,7 +1550,6 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		error("%s: [%s] auth_g_verify: %s has authentication error: %m",
 		      __func__, peer, rpc_num2string(header.msg_type));
 		auth_g_destroy(auth_cred);
-		FREE_NULL_BUFFER(buffer);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
 	}
@@ -1594,9 +1558,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	msg->auth_ids_set = true;
 
 skip_auth:
-	/*
-	 * Unpack message body
-	 */
+	/* Unpack message body */
 	msg->protocol_version = header.version;
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
@@ -1605,18 +1567,13 @@ skip_auth:
 
 	if ((header.body_length != remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, msg, auth_cred) ||
-	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
+	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
 		auth_g_destroy(auth_cred);
-		FREE_NULL_BUFFER(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
 	msg->auth_cred = auth_cred;
 
-	if (keep_buffer)
-		msg->buffer = buffer;
-	else
-		FREE_NULL_BUFFER(buffer);
 	rc = SLURM_SUCCESS;
 
 total_return:
@@ -1624,22 +1581,21 @@ total_return:
 
 	errno = rc;
 	if (rc != SLURM_SUCCESS) {
-		msg->msg_type = RESPONSE_FORWARD_FAILED;
-		msg->auth_cred = NULL;
-		msg->data = NULL;
 		/* peer may have not been resolved already */
 		if (!peer)
 			peer = fd_resolve_peer(fd);
 
+		msg->msg_type = RESPONSE_FORWARD_FAILED;
+		msg->auth_cred = NULL;
+		msg->data = NULL;
+
 		error("%s: [%s] failed: %s",
 		      __func__, peer, slurm_strerror(rc));
-		usleep(10000);	/* Discourage brute force attack */
-	} else {
-		rc = 0;
+		usleep(10000); /* Discourage brute force attack */
 	}
+
 	xfree(peer);
 	return rc;
-
 }
 
 /**********************************************************************\
