@@ -401,7 +401,7 @@ extern int build_node_spec_bitmap(node_record_t *node_ptr)
 /*
  * Select cores and CPUs to be reserved for core specialization.
  */
-static void _select_spec_cores(node_record_t *node_ptr)
+extern void node_conf_select_spec_cores(node_record_t *node_ptr)
 {
 	int spec_cores, res_core, res_sock, res_off;
 	int from_core, to_core, incr_core, from_sock, to_sock, incr_sock;
@@ -645,7 +645,7 @@ extern config_record_t *create_config_record(void)
  * OUT:
  *	node_ptr->cpu_spec_list
  */
-static int _convert_cpu_spec_list(node_record_t *node_ptr)
+extern int node_conf_convert_cpu_spec_list(node_record_t *node_ptr)
 {
 	int i;
 	bitstr_t *cpu_spec_bitmap;
@@ -716,9 +716,9 @@ static void _init_node_record(node_record_t *node_ptr,
 	if (node_ptr->cpu_spec_list) {
 		build_node_spec_bitmap(node_ptr);
 		if (node_ptr->tpc > 1)
-			_convert_cpu_spec_list(node_ptr);
+			node_conf_convert_cpu_spec_list(node_ptr);
 	} else if (node_ptr->core_spec_cnt) {
-		_select_spec_cores(node_ptr);
+		node_conf_select_spec_cores(node_ptr);
 	}
 
 	node_ptr->cpus_efctv = node_ptr->cpus -
