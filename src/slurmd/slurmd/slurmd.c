@@ -168,6 +168,8 @@ typedef struct {
 	timespec_t delay;
 	slurm_addr_t addr;
 	int fd;
+	void *tls_conn;
+	slurm_msg_t *msg;
 } service_connection_args_t;
 
 /*
@@ -770,35 +772,14 @@ _wait_for_all_threads(int secs)
 static void *_service_connection(void *arg)
 {
 	service_connection_args_t *args = arg;
-	slurm_msg_t *msg = NULL;
+	slurm_msg_t *msg = args->msg;
 	slurm_addr_t *addr = &args->addr;
 	int fd = args->fd;
-	int rc = SLURM_SUCCESS;
 
 	xassert(args->magic == SERVICE_CONNECTION_ARGS_MAGIC);
 
 	debug3("%s: [%pA] processing new RPC connection", __func__, addr);
 
-	msg = xmalloc_nz(sizeof(*msg));
-	slurm_msg_t_init(msg);
-
-	msg->flags |= SLURM_MSG_KEEP_BUFFER;
-
-	if ((rc = slurm_receive_msg_and_forward(fd, addr, msg))) {
-		error("service_connection: slurm_receive_msg: %m");
-		/*
-		 * if this fails we need to make sure the nodes we forward
-		 * to are taken care of and sent back. This way the control
-		 * also has a better idea what happened to us
-		 */
-		if (msg->auth_ids_set)
-			slurm_send_rc_msg(msg, rc);
-		else {
-			debug("%s: incomplete message", __func__);
-			forward_wait(msg);
-		}
-		goto cleanup;
-	}
 	debug2("Start processing RPC: %s", rpc_num2string(msg->msg_type));
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
@@ -807,9 +788,15 @@ static void *_service_connection(void *arg)
 			 &addr, msg->protocol_version);
 	}
 
+	/*
+	 * The fd was extracted from conmgr, so the conmgr connection is
+	 * invalid.
+	 */
+	msg->conmgr_fd = NULL;
+	msg->conn_fd = args->fd;
+
 	slurmd_req(msg);
 
-cleanup:
 	if ((msg->conn_fd >= 0) && close(msg->conn_fd) < 0)
 		error ("close(%d): %m", fd);
 
@@ -2094,8 +2081,9 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 {
 	service_connection_args_t *args = NULL;
 	int rc = SLURM_SUCCESS;
+	slurm_msg_t *msg = arg;
 
-	xassert(!arg);
+	xassert(msg);
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		debug3("%s: [fd:%d] connection work cancelled",
@@ -2120,6 +2108,8 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 	args->magic = SERVICE_CONNECTION_ARGS_MAGIC;
 	args->addr.ss_family = AF_UNSPEC;
 	args->fd = input_fd;
+	args->tls_conn = tls_conn;
+	args->msg = msg;
 
 	if ((rc = slurm_get_peer_addr(input_fd, &args->addr))) {
 		error("%s: [fd:%d] getting socket peer failed: %s",
@@ -2138,20 +2128,50 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 
 static void *_on_connection(conmgr_fd_t *con, void *arg)
 {
-	int rc;
-
 	debug3("%s: [%s] New RPC connection",
 	       __func__, conmgr_fd_get_name(con));
 
-	if ((rc = conmgr_queue_extract_con_fd(con, _on_extract_fd,
-					      XSTRINGIFY(_on_extract_fd),
-					      NULL))) {
-		error("%s: [%s] Extracting FDs failed: %s",
-		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
-		return NULL;
+	return con;
+}
+
+static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
+{
+	int rc = SLURM_SUCCESS;
+
+	if ((unpack_rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR) ||
+	    !msg->auth_ids_set) {
+		/*
+		 * Avoid closing connection immediately on authentication
+		 * failure to give the sender a hint to fix their authentication
+		 * issue with authentication disabled.
+		 */
+		msg->flags |= SLURM_NO_AUTH_CRED;
+		slurm_send_rc_msg(msg, SLURM_PROTOCOL_AUTHENTICATION_ERROR);
+		slurm_free_msg(msg);
+		return SLURM_SUCCESS;
+	} else if (unpack_rc) {
+		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
+		      __func__, conmgr_fd_get_name(con),
+		      slurm_strerror(unpack_rc));
+		slurm_free_msg(msg);
+		return unpack_rc;
 	}
 
-	return con;
+	if (!msg->auth_ids_set)
+		fatal_abort("this should never happen");
+
+	log_flag(AUDIT_RPCS, "[%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
+		 conmgr_fd_get_name(con), rpc_num2string(msg->msg_type),
+		 msg->auth_uid, &msg->address, msg->protocol_version);
+
+	if ((rc = conmgr_queue_extract_con_fd(con, _on_extract_fd,
+					      XSTRINGIFY(_on_extract_fd),
+							 msg))) {
+		error("%s: [%s] Extracting FDs failed: %s",
+		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
+	}
+
+	return rc;
 }
 
 static void _on_finish(conmgr_fd_t *con, void *arg)
@@ -2160,11 +2180,6 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 
 	debug3("%s: [%s] RPC connection closed",
 	       __func__, conmgr_fd_get_name(con));
-}
-
-static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
-{
-	fatal_abort("should never happen");
 }
 
 static void _create_msg_socket(void)
@@ -2177,6 +2192,9 @@ static void _create_msg_socket(void)
 		.on_finish = _on_finish,
 	};
 	int rc;
+	static conmgr_con_flags_t flags = CON_FLAG_RPC_RECV_FORWARD |
+					  CON_FLAG_RPC_KEEP_BUFFER |
+					  CON_FLAG_QUIESCE;
 
 	if (getenv("SLURMD_RECONF_LISTEN_FD")) {
 		conf->lfd = atoi(getenv("SLURMD_RECONF_LISTEN_FD"));
@@ -2186,7 +2204,7 @@ static void _create_msg_socket(void)
 	}
 
 	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, &events,
-					   CON_FLAG_QUIESCE, NULL)))
+					   flags, NULL)))
 		fatal("%s: unable to process fd:%d error:%s",
 		      __func__, conf->lfd, slurm_strerror(rc));
 }
