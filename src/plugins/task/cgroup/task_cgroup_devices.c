@@ -154,7 +154,12 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *step)
 			rc = SLURM_ERROR;
 			goto fini;
 		}
-		cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_JOB, NO_VAL);
+		if (cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_JOB,
+					     NO_VAL) != SLURM_SUCCESS) {
+			error("Could not apply device constrain to job");
+			rc = SLURM_ERROR;
+			goto fini;
+		}
 	}
 
 	if ((step->step_id.step_id != SLURM_BATCH_SCRIPT) &&
@@ -180,8 +185,12 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *step)
 				rc = SLURM_ERROR;
 				goto fini;
 			}
-			cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_STEP,
-						 NO_VAL);
+			if (cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_STEP,
+						     NO_VAL) != SLURM_SUCCESS) {
+				error("Could not apply device constrain to step");
+				rc = SLURM_ERROR;
+				goto fini;
+			}
 		}
 	}
 
@@ -238,7 +247,12 @@ extern int task_cgroup_devices_constrain(stepd_step_rec_t *step,
 		if (tmp < 0)
 			return SLURM_ERROR;
 
-		cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_TASK, global_tid);
+		if (cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_TASK,
+					     global_tid) != SLURM_SUCCESS) {
+			error("Could not apply device constrain to task %u",
+			      global_tid);
+			return SLURM_ERROR;
+		}
 	}
 
 	return SLURM_SUCCESS;
