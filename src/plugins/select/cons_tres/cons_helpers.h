@@ -41,20 +41,6 @@
 #include "src/slurmctld/slurmctld.h"
 
 /*
- * Get configured DefCpuPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t cons_helpers_get_def_cpu_per_gpu(list_t *job_defaults_list);
-
-/*
- * Get configured DefMemPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t cons_helpers_get_def_mem_per_gpu(list_t *job_defaults_list);
-
-/*
  * Bit a core bitmap array of available cores
  * node_bitmap IN - Nodes available for use
  * job_ptr IN - Various things set to restrict cores.

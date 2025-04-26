@@ -1929,6 +1929,20 @@ extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
 /* Resv creation msg client validation. On error err_msg is set */
 extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg);
 
+/*
+ * Get configured DefCpuPerGPU information from a list
+ * (either global or per partition list)
+ * Returns NO_VAL64 if configuration parameter not set
+ */
+extern uint64_t slurm_get_def_cpu_per_gpu(list_t *job_defaults_list);
+
+/*
+ * Get configured DefMemPerGPU information from a list
+ * (either global or per partition list)
+ * Returns NO_VAL64 if configuration parameter not set
+ */
+extern uint64_t slurm_get_def_mem_per_gpu(list_t *job_defaults_list);
+
 #define safe_read(fd, buf, size) do {					\
 		size_t remaining = size;				\
 		char *ptr = (char *) buf;				\
