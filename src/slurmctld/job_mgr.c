@@ -1978,7 +1978,7 @@ extern bool test_job_array_pending(uint32_t array_job_id)
 
 	job_ptr = find_job_record(array_job_id);
 	if (job_ptr) {
-		if (IS_JOB_PENDING(job_ptr))
+		if (IS_JOB_PENDING(job_ptr) || IS_JOB_CONFIGURING(job_ptr))
 			return true;
 		if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
 			return true;
@@ -1989,7 +1989,8 @@ extern bool test_job_array_pending(uint32_t array_job_id)
 	job_ptr = job_array_hash_j[inx];
 	while (job_ptr) {
 		if (job_ptr->array_job_id == array_job_id) {
-			if (IS_JOB_PENDING(job_ptr))
+			if (IS_JOB_PENDING(job_ptr) ||
+			    IS_JOB_CONFIGURING(job_ptr))
 				return true;
 		}
 		job_ptr = job_ptr->job_array_next_j;
