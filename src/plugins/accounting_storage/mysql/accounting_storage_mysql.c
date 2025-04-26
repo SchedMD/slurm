@@ -245,7 +245,6 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 {
 	char *assoc_char = args->assoc_char;
 	char *cluster_name = args->cluster_name;
-	bool *default_account = args->default_account;
 	mysql_conn_t *mysql_conn = args->mysql_conn;
 	list_t *ret_list = args->ret_list;
 
@@ -264,8 +263,6 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 		DASSOC_ACCT,
 		DASSOC_COUNT
 	};
-
-	xassert(default_account);
 
 	xstrcat(tmp_char, dassoc_inx[0]);
 	for (i = 1; i < DASSOC_COUNT; i++)
@@ -297,14 +294,14 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 	xfree(query);
 
 	if (!result)
-		return *default_account;
+		return args->default_account;
 
 	if (!mysql_num_rows(result)) {
 		mysql_free_result(result);
-		return *default_account;
+		return args->default_account;
 	}
 
-	*default_account = true;
+	args->default_account = true;
 	list_flush(ret_list);
 	reset_mysql_conn(mysql_conn);
 
@@ -320,7 +317,7 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 	}
 
 	mysql_free_result(result);
-	return *default_account;
+	return args->default_account;
 }
 
 /* this function is here to see if any of what we are trying to remove

@@ -129,7 +129,7 @@ typedef struct {
 	char *assoc_char;
 	char *cluster_name;
 	time_t day_old;
-	bool *default_account;
+	bool default_account;
 	bool has_jobs;
 	bool jobs_running;
 	mysql_conn_t *mysql_conn;

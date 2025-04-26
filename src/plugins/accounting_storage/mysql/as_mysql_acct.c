@@ -813,10 +813,9 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	time_t now = time(NULL);
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	bool default_account = 0;
 
 	remove_common_args_t args = {
-		.default_account = &default_account,
+		.default_account = false,
 		.jobs_running = false,
 		.mysql_conn = mysql_conn,
 		.now = now,
@@ -913,7 +912,7 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if (default_account)
+	if (args.default_account)
 		errno = ESLURM_NO_REMOVE_DEFAULT_ACCOUNT;
 	else if (args.jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
