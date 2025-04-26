@@ -460,6 +460,29 @@ static bool _check_jobs_before_remove(remove_common_args_t *args)
 	return rc;
 }
 
+static int _cluster_check_running_jobs(void *x, void *arg)
+{
+	remove_common_args_t *args = arg;
+	args->cluster_name = x;
+
+	/* Check for every cluster to fill ret_list */
+	(void) _check_jobs_before_remove(args);
+
+	return 0;
+}
+
+static int _cluster_check_any_jobs(void *x, void *arg)
+{
+	remove_common_args_t *args = arg;
+	args->cluster_name = x;
+
+	/* Return as soon as we find a cluster that has matching jobs */
+	if (_check_jobs_before_remove(args))
+		return -1;
+	else
+		return 0;
+}
+
 /* static int _add_remove_tres_limit(char *tres_limit_str, char *name, */
 /* 				  char **cols, char **vals, char **extra) */
 /* { */
@@ -2227,6 +2250,7 @@ extern int remove_common(remove_common_args_t *args)
 	list_t *ret_list = args->ret_list;
 	char *table = args->table;
 	uint16_t type = args->type;
+	list_t *use_cluster_list = args->use_cluster_list;
 	char *user_name = args->user_name;
 
 	int rc = SLURM_SUCCESS;
@@ -2268,6 +2292,9 @@ extern int remove_common(remove_common_args_t *args)
 	} else if (cluster_name) {
 		list_t *tmp_ret_list = args->ret_list;
 
+		/*
+		 * Only check for running/completed jobs in the relevant cluster
+		 */
 		/* first check to see if we are running jobs now */
 		if (_check_jobs_before_remove(args) || args->jobs_running)
 			return SLURM_SUCCESS;
@@ -2275,6 +2302,23 @@ extern int remove_common(remove_common_args_t *args)
 		/* now check to see if any jobs were ever run. */
 		args->ret_list = NULL;
 		has_jobs = _check_jobs_before_remove(args);
+		args->ret_list = tmp_ret_list;
+	} else {
+		list_t *tmp_ret_list = args->ret_list;
+		/* Check for running/completed jobs in any cluster */
+
+		/* Check for running jobs first */
+		list_for_each(use_cluster_list, _cluster_check_running_jobs,
+			      args);
+		if (args->jobs_running)
+			return SLURM_SUCCESS;
+
+		/* Check for any jobs now */
+		args->ret_list = NULL;
+
+		if (list_find_first(use_cluster_list, _cluster_check_any_jobs,
+				    args))
+			has_jobs = true;
 		args->ret_list = tmp_ret_list;
 	}
 
