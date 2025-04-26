@@ -1011,7 +1011,6 @@ extern list_t *as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 {
 	int rc = SLURM_SUCCESS;
 	char *extra = NULL, *object = NULL;
-	list_t *use_cluster_list = NULL;
 	list_itr_t *itr;
 	bool locked = false;
 	remove_common_args_t args = {
@@ -1048,13 +1047,14 @@ empty:
 
 	if (wckey_cond && wckey_cond->cluster_list &&
 	    list_count(wckey_cond->cluster_list)) {
-		use_cluster_list = wckey_cond->cluster_list;
+		args.use_cluster_list = wckey_cond->cluster_list;
 	} else {
 		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
-		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		args.use_cluster_list =
+			list_shallow_copy(as_mysql_cluster_list);
 		locked = true;
 	}
-	itr = list_iterator_create(use_cluster_list);
+	itr = list_iterator_create(args.use_cluster_list);
 	while ((object = list_next(itr))) {
 		if ((rc = _cluster_remove_wckeys(&args, extra, object) !=
 		    SLURM_SUCCESS) || args.jobs_running)
@@ -1065,7 +1065,7 @@ empty:
 	xfree(args.user_name);
 
 	if (locked) {
-		FREE_NULL_LIST(use_cluster_list);
+		FREE_NULL_LIST(args.use_cluster_list);
 		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 	}
 

@@ -3716,7 +3716,6 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	slurmdb_user_rec_t user;
 	char *prefix = "t1";
-	list_t *use_cluster_list = NULL;
 	bool locked = false;
 	add_assoc_cond_t add_assoc_cond = {
 		.mysql_conn = mysql_conn,
@@ -3770,10 +3769,11 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	args.now = time(NULL);
 
 	if (assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
-		use_cluster_list = assoc_cond->cluster_list;
+		args.use_cluster_list = assoc_cond->cluster_list;
 	else {
 		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
-		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		args.use_cluster_list =
+			list_shallow_copy(as_mysql_cluster_list);
 		locked = true;
 	}
 
@@ -3783,7 +3783,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		assoc_mgr_lock(&assoc_locks);
 	}
 
-	itr = list_iterator_create(use_cluster_list);
+	itr = list_iterator_create(args.use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
 		query = _setup_assoc_table_query(cluster_name,
 						 "t1.id_assoc, t1.lineage",
@@ -3859,7 +3859,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	list_iterator_destroy(itr);
 	if (locked) {
-		FREE_NULL_LIST(use_cluster_list);
+		FREE_NULL_LIST(args.use_cluster_list);
 		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 	}
 
