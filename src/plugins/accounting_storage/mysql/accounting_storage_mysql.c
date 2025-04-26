@@ -330,7 +330,6 @@ static bool _check_jobs_before_remove(remove_common_args_t *args)
 	char *assoc_char = args->assoc_char;
 	char *cluster_name = args->cluster_name;
 	mysql_conn_t *mysql_conn = args->mysql_conn;
-	bool *jobs_running = &args->jobs_running;
 	list_t *ret_list = args->ret_list;
 
 	char *query = NULL, *object = NULL, *pos = NULL;
@@ -392,9 +391,9 @@ static bool _check_jobs_before_remove(remove_common_args_t *args)
 	if (mysql_num_rows(result)) {
 		debug4("We have jobs for this combo");
 		rc = true;
-		if (ret_list && !(*jobs_running)) {
+		if (ret_list && !args->jobs_running) {
 			list_flush(ret_list);
-			(*jobs_running) = 1;
+			args->jobs_running = 1;
 			reset_mysql_conn(mysql_conn);
 		}
 	} else {
@@ -2222,7 +2221,6 @@ extern int remove_common(remove_common_args_t *args)
 	char *assoc_char = args->assoc_char;
 	char *cluster_name = args->cluster_name;
 	bool *default_account = args->default_account;
-	bool *jobs_running = &args->jobs_running;
 	mysql_conn_t *mysql_conn = args->mysql_conn;
 	char *name_char = args->name_char;
 	time_t now = args->now;
@@ -2269,14 +2267,13 @@ extern int remove_common(remove_common_args_t *args)
 		 */
 	} else if (cluster_name) {
 		list_t *tmp_ret_list = args->ret_list;
-		xassert(jobs_running);
+
 		/* first check to see if we are running jobs now */
-		if (_check_jobs_before_remove(args) || (*jobs_running))
+		if (_check_jobs_before_remove(args) || args->jobs_running)
 			return SLURM_SUCCESS;
 
 		/* now check to see if any jobs were ever run. */
 		args->ret_list = NULL;
-		args->jobs_running = NULL;
 		has_jobs = _check_jobs_before_remove(args);
 		args->ret_list = tmp_ret_list;
 	}
