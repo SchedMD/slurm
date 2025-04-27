@@ -515,8 +515,15 @@ main (int argc, char **argv)
 	_unquiesce_fd_listener();
 
 	/* Periodically renew TLS certificate indefinitely */
-	if (tls_enabled())
-		conmgr_add_work_fifo(_get_tls_cert_work, NULL);
+	if (tls_enabled()) {
+		if (tls_g_own_cert_loaded()) {
+			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
+		} else if (certmgr_enabled()) {
+			conmgr_add_work_fifo(_get_tls_cert_work, NULL);
+		} else {
+			fatal("No static TLS certificate key pair loaded, and the certmgr plugin is not enabled to get signed certificates.");
+		}
+	}
 
 	conmgr_run(true);
 
