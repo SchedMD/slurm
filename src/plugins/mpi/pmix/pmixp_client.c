@@ -181,9 +181,6 @@ static void _set_procdatas(list_t *lresp)
 	xfree(p);
 	list_append(lresp, kvp);
 
-	PMIXP_KVP_CREATE(kvp, PMIX_NODEID, &nsptr->node_id, PMIX_UINT32);
-	list_append(lresp, kvp);
-
 	/*
 	 * The leader program (appldr) is the lowest global rank in the
 	 * specified application.
@@ -253,8 +250,7 @@ static void _set_procdatas(list_t *lresp)
 		list_append(rankinfo, kvp);
 		free(nodename);
 
-		PMIXP_KVP_CREATE(kvp, PMIX_NODEID, &nsptr->node_id,
-				 PMIX_UINT32);
+		PMIXP_KVP_CREATE(kvp, PMIX_NODEID, &nodeid, PMIX_UINT32);
 		list_append(rankinfo, kvp);
 
 		/* merge rankinfo into one PMIX_PROC_DATA key */
