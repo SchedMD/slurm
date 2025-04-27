@@ -2806,7 +2806,7 @@ typedef struct reservation_name_msg {
 						    * sched/backfill */
 #define DEBUG_FLAG_GANG		SLURM_BIT(13) /* debug gang scheduler */
 #define DEBUG_FLAG_RESERVATION	SLURM_BIT(14) /* advanced reservations */
-/* #define			SLURM_BIT(15) /\* UNUSED *\/ */
+#define	DEBUG_FLAG_AUDIT_TLS	SLURM_BIT(15) /* Audit TLS */
 #define DEBUG_FLAG_SACK		SLURM_BIT(16) /* SACK handling */
 #define DEBUG_FLAG_SWITCH	SLURM_BIT(17) /* SwitchType plugin */
 #define DEBUG_FLAG_ENERGY	SLURM_BIT(18) /* AcctGatherEnergy plugin */
