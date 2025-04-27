@@ -185,13 +185,6 @@ extern int slurm_init_msg_engine_ports(uint16_t *);
  */
 extern int slurm_init_msg_engine(slurm_addr_t *slurm_address, bool permissive);
 
-/* In the bsd implementation maps directly to a accept call
- * IN open_fd		- file descriptor to accept connection on
- * OUT slurm_address 	- slurm_addr_t of the accepted connection
- * RET slurm_fd		- file descriptor of the connection created
- */
-extern int slurm_accept_msg_conn(int open_fd, slurm_addr_t * slurm_address);
-
 /**********************************************************************\
  * receive message functions
 \**********************************************************************/
