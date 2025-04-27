@@ -532,6 +532,11 @@ static int _add_cert_from_file_to_server(void)
 		key_conf = "ctld_cert_key_file=";
 		default_cert_path = "ctld_cert.pem";
 		default_key_path = "ctld_cert_key.pem";
+	} else if (running_in_slurmd()) {
+		cert_conf = "slurmd_cert_file=";
+		key_conf = "slurmd_cert_key_file=";
+		default_cert_path = "slurmd_cert.pem";
+		default_key_path = "slurmd_cert_key.pem";
 	} else {
 		return SLURM_ERROR;
 	}
@@ -549,8 +554,15 @@ static int _add_cert_from_file_to_server(void)
 	 * running in slurmrestd) and that it's not modifiable/executable by
 	 * everyone.
 	 */
-	if (_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH),
-				    check_owner)) {
+	if ((rc = _check_file_permissions(cert_file, (S_IWOTH | S_IXOTH),
+					  check_owner))) {
+		/*
+		 * If no static certificate was found in slurmd, get a signed
+		 * one from slurmctld later.
+		 */
+		if ((rc == ENOENT) && running_in_slurmd())
+			return SLURM_SUCCESS;
+
 		xfree(cert_file);
 		return SLURM_ERROR;
 	}
@@ -634,7 +646,7 @@ extern int init(void)
 	}
 
 	if ((running_in_slurmctld() || running_in_slurmdbd() ||
-	     running_in_slurmrestd()) &&
+	     running_in_slurmrestd() || running_in_slurmd()) &&
 	    _add_cert_from_file_to_server()) {
 		error("Could not load own TLS certificate from file");
 		return SLURM_ERROR;
