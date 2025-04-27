@@ -71,6 +71,8 @@ typedef struct {
 	void *(*create_conn)(const tls_conn_args_t *tls_conn_args);
 	void (*destroy_conn)(void *conn);
 	ssize_t (*send)(void *conn, const void *buf, size_t n);
+	ssize_t (*sendv)(void *conn, const struct iovec *bufs, int count);
+	uint32_t (*peek)(void *conn);
 	ssize_t (*recv)(void *conn, void *buf, size_t n);
 	timespec_t (*get_delay)(void *conn);
 	int (*negotiate)(void *conn);
@@ -89,6 +91,8 @@ static const char *syms[] = {
 	"tls_p_create_conn",
 	"tls_p_destroy_conn",
 	"tls_p_send",
+	"tls_p_sendv",
+	"tls_p_peek",
 	"tls_p_recv",
 	"tls_p_get_delay",
 	"tls_p_negotiate_conn",
@@ -220,6 +224,18 @@ extern ssize_t tls_g_send(void *conn, const void *buf, size_t n)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.send))(conn, buf, n);
+}
+
+extern ssize_t tls_g_sendv(void *conn, const struct iovec *bufs, int count)
+{
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.sendv))(conn, bufs, count);
+}
+
+extern uint32_t tls_g_peek(void *conn)
+{
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.peek))(conn);
 }
 
 extern ssize_t tls_g_recv(void *conn, void *buf, size_t n)

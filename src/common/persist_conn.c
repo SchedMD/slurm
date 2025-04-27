@@ -104,6 +104,13 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 
 	xassert(persist_conn->shutdown);
 
+	/*
+	 * The tls layer may already have data buffered, which could lead to
+	 * poll blocking indefinitely.
+	 */
+	if (tls_g_peek(persist_conn->tls_conn))
+		return true;
+
 	ufds.fd     = persist_conn->fd;
 	ufds.events = POLLIN;
 	while (!(*persist_conn->shutdown)) {

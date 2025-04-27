@@ -707,7 +707,7 @@ int slurm_init_msg_engine_ports(uint16_t *ports)
  * IN slurm_address	- slurm_addr_t of the connection destination
  * RET slurm_fd		- file descriptor of the connection created
  */
-int slurm_open_msg_conn(slurm_addr_t * slurm_address)
+extern int slurm_open_msg_conn(slurm_addr_t *slurm_address)
 {
 	int fd = slurm_open_stream(slurm_address, false);
 

@@ -185,13 +185,6 @@ extern int slurm_init_msg_engine_ports(uint16_t *);
  */
 extern int slurm_init_msg_engine(slurm_addr_t *slurm_address, bool permissive);
 
-/* In the bsd implementation maps directly to a accept call
- * IN open_fd		- file descriptor to accept connection on
- * OUT slurm_address 	- slurm_addr_t of the accepted connection
- * RET slurm_fd		- file descriptor of the connection created
- */
-extern int slurm_accept_msg_conn(int open_fd, slurm_addr_t * slurm_address);
-
 /**********************************************************************\
  * receive message functions
 \**********************************************************************/
@@ -284,11 +277,10 @@ int slurm_send_node_msg(int open_fd, slurm_msg_t *msg);
 extern int slurm_open_controller_conn_spec(int dest,
 				      slurmdb_cluster_rec_t *comm_cluster_rec);
 
-/* In the bsd socket implementation it creates a SOCK_STREAM socket
- *	and calls connect on it a SOCK_DGRAM socket called with connect
- *	is defined to only receive messages from the address/port pair
- *	argument of the connect call slurm_address
- * IN slurm_address 	- slurm_addr_t of the connection destination
+/*
+ * Creates a SOCK_STREAM (TCP) socket and calls connect() on it.
+ * Will only receive messages from the address (w/port) argument.
+ * IN slurm_address	- slurm_addr_t of the connection destination
  * RET slurm_fd		- file descriptor of the connection created
  */
 extern int slurm_open_msg_conn(slurm_addr_t * slurm_address);
