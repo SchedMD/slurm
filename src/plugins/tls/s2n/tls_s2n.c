@@ -261,9 +261,16 @@ static struct s2n_config *_create_config_common(void)
 	struct s2n_config *new_conf = NULL;
 	char *security_policy = NULL;
 
-	if (!(new_conf = s2n_config_new_minimal())) {
-		on_s2n_error(NULL, s2n_config_new_minimal);
-		return NULL;
+	if (xstrstr(slurm_conf.tls_params, "load_system_certificates")) {
+		if (!(new_conf = s2n_config_new())) {
+			on_s2n_error(NULL, s2n_config_new_minimal);
+			return NULL;
+		}
+	} else {
+		if (!(new_conf = s2n_config_new_minimal())) {
+			on_s2n_error(NULL, s2n_config_new_minimal);
+			return NULL;
+		}
 	}
 
 	/*
