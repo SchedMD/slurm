@@ -428,6 +428,9 @@ extern int tls_get_cert_from_ctld(char *name)
 	req.msg_type = REQUEST_TLS_CERT;
 	req.data = cert_req;
 
+	log_flag(AUDIT_TLS, "Sending certificate signing request to slurmctld:\n%s",
+		 cert_req->csr);
+
 	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec) <
 	    0) {
 		error("Unable to get TLS certificate from slurmctld: %m");
@@ -455,7 +458,7 @@ extern int tls_get_cert_from_ctld(char *name)
 
 	cert_resp = resp.data;
 
-	log_flag(TLS, "Successfully got signed certificate from slurmctld: \n%s",
+	log_flag(AUDIT_TLS, "Successfully got signed certificate from slurmctld:\n%s",
 		 cert_resp->signed_cert);
 
 	if (!(key = certmgr_g_get_node_cert_key(name))) {
