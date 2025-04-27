@@ -97,21 +97,13 @@ static const char *syms[] = {
 	"tls_p_set_graceful_shutdown",
 };
 
-static tls_ops_t *ops = NULL;
-static plugin_context_t **g_context = NULL;
-static int g_context_num = 0;
+static tls_ops_t ops;
+static plugin_context_t *g_context = NULL;
+static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
-static int _get_plugin_index(int plugin_id)
-{
-	xassert(ops);
-
-	for (int i = 0; i < g_context_num; i++)
-		if (plugin_id == *ops[i].plugin_id)
-			return i;
-
-	return 0;
-}
+static bool tls_enabled_bool = false;
+static bool tls_supported_bool = false;
 
 extern char *tls_conn_mode_to_str(tls_conn_mode_t mode)
 {
@@ -129,68 +121,52 @@ extern char *tls_conn_mode_to_str(tls_conn_mode_t mode)
 
 extern bool tls_supported(void)
 {
-	xassert(ops);
-
-	return (g_context_num > 1);
+	return tls_supported_bool;
 }
 
 extern bool tls_enabled(void)
 {
-	xassert(ops);
-
-	return (*ops[0].plugin_id != TLS_PLUGIN_NONE);
+	return tls_enabled_bool;
 }
 
 extern int tls_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *plugin_type = "tls";
-	char *tls_plugin_list = NULL, *plugin_list = NULL, *type = NULL;
-	char *save_ptr = NULL;
+	char *tls_type = NULL;
 
 	slurm_rwlock_wrlock(&context_lock);
 
-	if (g_context_num > 0)
+	if (plugin_inited != PLUGIN_NOT_INITED)
 		goto done;
 
-	tls_plugin_list = xstrdup(slurm_conf.tls_type);
+	tls_type = xstrdup(slurm_conf.tls_type);
 
-	/* ensure none plugin is always loaded */
-	if (!xstrstr(tls_plugin_list, "none"))
-		xstrcat(tls_plugin_list, ",none");
-	plugin_list = tls_plugin_list;
-
-	while ((type = strtok_r(tls_plugin_list, ",", &save_ptr))) {
-		char *full_type = NULL;
-
-		xrecalloc(ops, g_context_num + 1, sizeof(tls_ops_t));
-		xrecalloc(g_context, g_context_num + 1,
-			  sizeof(plugin_context_t));
-
-		if (!xstrncmp(type, "tls/", 4))
-			type += 4;
-		full_type = xstrdup_printf("tls/%s", type);
-
-		g_context[g_context_num] = plugin_context_create(
-			plugin_type, full_type, (void **) &ops[g_context_num],
-			syms, sizeof(syms));
-
-		if (!g_context[g_context_num]) {
-			error("cannot create %s context for %s",
-			      plugin_type, full_type);
-			rc = SLURM_ERROR;
-			xfree(full_type);
-			goto done;
-		}
-		xfree(full_type);
-
-		g_context_num++;
-		tls_plugin_list = NULL; /* for next iteration */
+	if (!tls_type) {
+		plugin_inited = PLUGIN_NOOP;
+		goto done;
 	}
 
+	g_context = plugin_context_create(plugin_type, tls_type, (void **) &ops,
+					  syms, sizeof(syms));
+
+	if (!g_context) {
+		error("cannot create %s context for %s",
+		      plugin_type, tls_type);
+		rc = SLURM_ERROR;
+		plugin_inited = PLUGIN_NOT_INITED;
+		goto done;
+	}
+
+	tls_supported_bool = true;
+
+	if (xstrstr(slurm_conf.tls_type, "s2n"))
+		tls_enabled_bool = true;
+
+	plugin_inited = PLUGIN_INITED;
 done:
+	xfree(tls_type);
 	slurm_rwlock_unlock(&context_lock);
-	xfree(plugin_list);
 	return rc;
 }
 
@@ -199,19 +175,13 @@ extern int tls_g_fini(void)
 	int rc = SLURM_SUCCESS;
 
 	slurm_rwlock_wrlock(&context_lock);
-	for (int i = 0; i < g_context_num; i++) {
-		int rc2 = plugin_context_destroy(g_context[i]);
-		if (rc2) {
-			debug("%s: %s: %s",
-			      __func__, g_context[i]->type,
-			      slurm_strerror(rc2));
-			rc = SLURM_ERROR;
-		}
+
+	if (g_context) {
+		rc = plugin_context_destroy(g_context);
+		g_context = NULL;
 	}
 
-	xfree(ops);
-	xfree(g_context);
-	g_context_num = -1;
+	plugin_inited = PLUGIN_NOT_INITED;
 
 	slurm_rwlock_unlock(&context_lock);
 
@@ -221,139 +191,72 @@ extern int tls_g_fini(void)
 extern int tls_g_load_self_cert(char *cert, uint32_t cert_len, char *key,
 				uint32_t key_len)
 {
-	int plugin_index;
-
-	xassert(g_context);
-
-	if (tls_enabled()) {
-		plugin_index = _get_plugin_index(TLS_PLUGIN_S2N);
-		return (*(ops[plugin_index].load_self_cert))(cert, cert_len,
-							     key, key_len);
-	}
-
-	return ESLURM_NOT_SUPPORTED;
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.load_self_cert))(cert, cert_len, key, key_len);
 }
 
 extern void *tls_g_create_conn(const tls_conn_args_t *tls_conn_args)
 {
-	int plugin_index = 0;
-	tls_wrapper_t *wrapper = NULL;
-	xassert(g_context);
+	xassert(plugin_inited == PLUGIN_INITED);
 
 	log_flag(TLS, "%s: fd:%d->%d mode:%d",
 		 __func__, tls_conn_args->input_fd, tls_conn_args->output_fd,
 		 tls_conn_args->mode);
 
-	/*
-	 * All other modes use the default plugin.
-	 */
-	if (tls_conn_args->mode == TLS_CONN_NULL)
-		plugin_index = _get_plugin_index(TLS_PLUGIN_NONE);
-
-	wrapper = (*(ops[plugin_index].create_conn))(tls_conn_args);
-
-	if (wrapper)
-		wrapper->index = plugin_index;
-
-	return wrapper;
+	return (*(ops.create_conn))(tls_conn_args);
 }
 
 extern void tls_g_destroy_conn(void *conn)
 {
-	tls_wrapper_t *wrapper = conn;
-
-	if (!wrapper)
+	if (!conn)
 		return;
 
-	xassert(g_context);
+	xassert(plugin_inited == PLUGIN_INITED);
 
-	(*(ops[wrapper->index].destroy_conn))(conn);
+	(*(ops.destroy_conn))(conn);
 }
 
 extern ssize_t tls_g_send(void *conn, const void *buf, size_t n)
 {
-	tls_wrapper_t *wrapper = conn;
-
-	xassert(g_context);
-
-	if (!wrapper)
-		return SLURM_ERROR;
-
-	return (*(ops[wrapper->index].send))(conn, buf, n);
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.send))(conn, buf, n);
 }
 
 extern ssize_t tls_g_recv(void *conn, void *buf, size_t n)
 {
-	tls_wrapper_t *wrapper = conn;
-
-	xassert(g_context);
-
-	if (!wrapper)
-		return SLURM_ERROR;
-
-	return (*(ops[wrapper->index].recv))(conn, buf, n);
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.recv))(conn, buf, n);
 }
 
 extern timespec_t tls_g_get_delay(void *conn)
 {
-	tls_wrapper_t *wrapper = conn;
-
-	xassert(g_context);
-
-	if (!wrapper)
-		return ((timespec_t) { 0, 0 });
-
-	return (*(ops[wrapper->index].get_delay))(conn);
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.get_delay))(conn);
 }
 
 extern int tls_g_negotiate_conn(void *conn)
 {
-	tls_wrapper_t *wrapper = conn;
-
-	xassert(g_context);
-
-	if (!wrapper)
-		return ESLURM_NOT_SUPPORTED;
-
-	return (*(ops[wrapper->index].negotiate))(conn);
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.negotiate))(conn);
 }
 
 extern int tls_g_set_conn_fds(void *conn, int input_fd, int output_fd)
 {
-	tls_wrapper_t *wrapper = conn;
-
-	xassert(g_context);
-
-	if (!wrapper)
-		return ESLURM_NOT_SUPPORTED;
-
-	return (*(ops[wrapper->index].set_conn_fds))(conn, input_fd, output_fd);
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.set_conn_fds))(conn, input_fd, output_fd);
 }
 
 extern int tls_g_set_conn_callbacks(void *conn,
 				    tls_conn_callbacks_t *callbacks)
 {
-	tls_wrapper_t *wrapper = conn;
-
-	xassert(g_context);
-
-	if (!wrapper)
-		return ESLURM_NOT_SUPPORTED;
-
-	return (*(ops[wrapper->index].set_conn_callbacks))(conn, callbacks);
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.set_conn_callbacks))(conn, callbacks);
 }
 
 extern void tls_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown)
 {
-	tls_wrapper_t *wrapper = conn;
-
-	xassert(g_context);
-
-	if (!wrapper)
-		return;
-
-	(*(ops[wrapper->index].set_graceful_shutdown))(conn,
-						       do_graceful_shutdown);
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.set_graceful_shutdown))(conn, do_graceful_shutdown);
 }
 
 static int _is_sslv3_handshake(const void *buf, const size_t n)
