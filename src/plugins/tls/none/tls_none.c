@@ -68,10 +68,25 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
-				uint32_t key_len)
+extern int tls_p_load_ca_cert(char *cert_file)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
+			       uint32_t key_len)
 {
 	return SLURM_SUCCESS;
+}
+
+extern char *tls_p_get_own_public_cert(void)
+{
+	return NULL;
+}
+
+extern bool tls_p_own_cert_loaded(void)
+{
+	return true;
 }
 
 extern tls_conn_t *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)

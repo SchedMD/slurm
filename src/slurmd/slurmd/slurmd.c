@@ -214,6 +214,8 @@ pthread_mutex_t listen_mutex = PTHREAD_MUTEX_INITIALIZER;
 conmgr_fd_ref_t *listener = NULL;
 bool unquiesce_listener = false;
 
+static char *ca_cert_file = NULL;
+
 static int       _convert_spec_cores(void);
 static int       _core_spec_init(void);
 static void _create_msg_socket(void);
@@ -513,8 +515,15 @@ main (int argc, char **argv)
 	_unquiesce_fd_listener();
 
 	/* Periodically renew TLS certificate indefinitely */
-	if (tls_enabled())
-		conmgr_add_work_fifo(_get_tls_cert_work, NULL);
+	if (tls_enabled()) {
+		if (tls_g_own_cert_loaded()) {
+			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
+		} else if (certmgr_enabled()) {
+			conmgr_add_work_fifo(_get_tls_cert_work, NULL);
+		} else {
+			fatal("No static TLS certificate key pair loaded, and the certmgr plugin is not enabled to get signed certificates.");
+		}
+	}
 
 	conmgr_run(true);
 
@@ -1736,6 +1745,7 @@ _process_cmdline(int ac, char **av)
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
 		LONG_OPT_AUTHINFO,
+		LONG_OPT_CA_CERT_FILE,
 		LONG_OPT_CONF,
 		LONG_OPT_CONF_SERVER,
 		LONG_OPT_EXTRA,
@@ -1746,6 +1756,7 @@ _process_cmdline(int ac, char **av)
 
 	static struct option long_options[] = {
 		{"authinfo",		required_argument, 0, LONG_OPT_AUTHINFO},
+		{"ca-cert-file",	required_argument, 0, LONG_OPT_CA_CERT_FILE},
 		{"conf",		required_argument, 0, LONG_OPT_CONF},
 		{"conf-server",		required_argument, 0, LONG_OPT_CONF_SERVER},
 		{"extra",		required_argument, 0, LONG_OPT_EXTRA},
@@ -1846,6 +1857,9 @@ _process_cmdline(int ac, char **av)
 			break;
 		case LONG_OPT_AUTHINFO:
 			slurm_conf.authinfo = xstrdup(optarg);
+			break;
+		case LONG_OPT_CA_CERT_FILE:
+			ca_cert_file = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONF:
 			conf->dynamic_conf = xstrdup(optarg);
@@ -2248,8 +2262,9 @@ static int _establish_configuration(void)
 		return SLURM_SUCCESS;
 	}
 
-	while (!(configs = fetch_config(conf->conf_server,
-					CONFIG_REQUEST_SLURMD, 0))) {
+	while (!(configs =
+			 fetch_config(conf->conf_server, CONFIG_REQUEST_SLURMD,
+				      0, ca_cert_file))) {
 		error("%s: failed to load configs. Retrying in 10 seconds.",
 		      __func__);
 		sleep(10);

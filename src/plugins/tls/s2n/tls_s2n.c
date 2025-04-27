@@ -51,6 +51,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 #include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
@@ -79,11 +80,24 @@ static uint32_t server_cert_len = 0;
 static char *server_key = NULL;
 static uint32_t server_key_len = 0;
 
+static bool is_own_cert_loaded = false;
+
 static pthread_rwlock_t server_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static uint32_t server_conf_conn_cnt = 0;
 static pthread_mutex_t server_conf_cnt_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t server_conf_cnt_cond = PTHREAD_COND_INITIALIZER;
+
+/*
+ * These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern slurmd_conf_t *conf __attribute__((weak_import));
+#else
+slurmd_conf_t *conf = NULL;
+#endif
 
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
@@ -220,7 +234,7 @@ static int _check_file_permissions(const char *path, int bad_perms,
 
 	if (stat(path, &statbuf)) {
 		debug("%s: cannot stat '%s': %m", plugin_type, path);
-		return SLURM_ERROR;
+		return ENOENT;
 	}
 
 	/*
@@ -261,9 +275,16 @@ static struct s2n_config *_create_config_common(void)
 	struct s2n_config *new_conf = NULL;
 	char *security_policy = NULL;
 
-	if (!(new_conf = s2n_config_new_minimal())) {
-		on_s2n_error(NULL, s2n_config_new_minimal);
-		return NULL;
+	if (xstrstr(slurm_conf.tls_params, "load_system_certificates")) {
+		if (!(new_conf = s2n_config_new())) {
+			on_s2n_error(NULL, s2n_config_new_minimal);
+			return NULL;
+		}
+	} else {
+		if (!(new_conf = s2n_config_new_minimal())) {
+			on_s2n_error(NULL, s2n_config_new_minimal);
+			return NULL;
+		}
 	}
 
 	/*
@@ -317,10 +338,38 @@ static struct s2n_config *_create_server_config(void)
 	return _create_config_common();
 }
 
-static int _add_ca_cert_to_client(void)
+static int _add_ca_cert_to_client(struct s2n_config *config, char* cert_file)
 {
-	char *cert_file;
 	buf_t *cert_buf;
+
+	/*
+	 * Check if CA cert is owned by SlurmUser/root and that it's not
+	 * modifiable/executable by everyone.
+	 */
+	if (_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), true)) {
+		return SLURM_ERROR;
+	}
+
+	if (!(cert_buf = create_mmap_buf(cert_file))) {
+		error("%s: Could not load CA cert file (%s)",
+		      plugin_type, cert_file);
+		return SLURM_ERROR;
+	}
+
+	if (s2n_config_add_pem_to_trust_store(config, cert_buf->head)) {
+		on_s2n_error(NULL, s2n_config_add_pem_to_trust_store);
+		FREE_NULL_BUFFER(cert_buf);
+		return SLURM_ERROR;
+	}
+	FREE_NULL_BUFFER(cert_buf);
+
+	return SLURM_SUCCESS;
+}
+
+static int _add_ca_cert_from_conf_to_client(struct s2n_config *config)
+{
+	int rc;
+	char *cert_file;
 
 	cert_file = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=");
 	if (!cert_file && !(cert_file = get_extra_conf_path("ca_cert.pem"))) {
@@ -329,32 +378,10 @@ static int _add_ca_cert_to_client(void)
 		return SLURM_ERROR;
 	}
 
-	/*
-	 * Check if CA cert is owned by SlurmUser/root and that it's not
-	 * modifiable/executable by everyone.
-	 */
-	if (_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), true)) {
-		xfree(cert_file);
-		return SLURM_ERROR;
-	}
-
-	if (!(cert_buf = create_mmap_buf(cert_file))) {
-		error("%s: Could not load CA cert file (%s)",
-		      plugin_type, cert_file);
-		xfree(cert_file);
-		return SLURM_ERROR;
-	}
+	rc = _add_ca_cert_to_client(config, cert_file);
 	xfree(cert_file);
 
-	if (s2n_config_add_pem_to_trust_store(client_config, cert_buf->head)) {
-		on_s2n_error(NULL, s2n_config_add_pem_to_trust_store);
-		FREE_NULL_BUFFER(cert_buf);
-		return SLURM_ERROR;
-	}
-	FREE_NULL_BUFFER(cert_buf);
-
-	xfree(cert_file);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _add_cert_to_server(struct s2n_config *s2n_config,
@@ -410,6 +437,7 @@ static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
 				      char *key_pem, uint32_t key_pem_len)
 {
 	if (!server_cert_and_key) {
+		is_own_cert_loaded = true;
 		return _add_cert_to_server(server_config, &server_cert_and_key,
 					   cert_pem, cert_pem_len, key_pem,
 					   key_pem_len);
@@ -469,35 +497,49 @@ fail:
 
 static int _add_self_signed_cert_to_server(void)
 {
-	int rc;
-	char *cert_pem = NULL, *key_pem = NULL;
-	uint32_t cert_pem_len, key_pem_len;
-
-	if (certgen_g_self_signed(&cert_pem, &key_pem) || !cert_pem ||
-	    !key_pem) {
+	if (certgen_g_self_signed(&server_cert, &server_key) ||
+	    !server_cert || !server_key) {
 		error("Failed to generate self signed certificate and private key");
 		return SLURM_ERROR;
 	}
 
-	cert_pem_len = strlen(cert_pem);
-	key_pem_len = strlen(key_pem);
+	server_cert_len = strlen(server_cert);
+	server_key_len = strlen(server_key);
 
-	rc = _add_cert_to_global_server(cert_pem, cert_pem_len, key_pem,
-					key_pem_len);
+	return _add_cert_to_global_server(server_cert, server_cert_len,
+					  server_key, server_key_len);
+}
 
-	xfree(cert_pem);
-	xfree(key_pem);
+static char *_get_cert_or_key_path(char *conf_opt, char *default_path)
+{
+	char *file_path = NULL;
 
-	return rc;
+	file_path = conf_get_opt_str(slurm_conf.tls_params, conf_opt);
+
+	if (!file_path)
+		file_path = get_extra_conf_path(default_path);
+
+	/* Expand %h and %n in path for slurmd */
+	if (running_in_slurmd() && conf) {
+		char *tmp;
+		slurm_conf_lock();
+		tmp = slurm_conf_expand_slurmd_path(file_path, conf->node_name,
+						    NULL);
+		slurm_conf_unlock();
+		xfree(file_path);
+		file_path = tmp;
+	}
+
+	return file_path;
 }
 
 static int _add_cert_from_file_to_server(void)
 {
-	int rc;
-	char *cert_file, *key_file;
+	int rc = SLURM_SUCCESS;
+	char *cert_file = NULL, *key_file = NULL;
 	char *cert_conf = NULL, *key_conf = NULL;
 	char *default_cert_path = NULL, *default_key_path = NULL;
-	buf_t *cert_buf, *key_buf;
+	buf_t *cert_buf = NULL, *key_buf = NULL;
 	bool check_owner = true;
 
 	if (running_in_slurmdbd()) {
@@ -516,46 +558,55 @@ static int _add_cert_from_file_to_server(void)
 		key_conf = "ctld_cert_key_file=";
 		default_cert_path = "ctld_cert.pem";
 		default_key_path = "ctld_cert_key.pem";
+	} else if (running_in_slurmd()) {
+		cert_conf = "slurmd_cert_file=";
+		key_conf = "slurmd_cert_key_file=";
+		default_cert_path = "slurmd_cert.pem";
+		default_key_path = "slurmd_cert_key.pem";
+	} else if (running_in_sackd()) {
+		cert_conf = "sackd_cert_file=";
+		key_conf = "sackd_cert_key_file=";
+		default_cert_path = "sackd_cert.pem";
+		default_key_path = "sackd_cert_key.pem";
 	} else {
 		return SLURM_ERROR;
 	}
-	xassert(cert_conf);
-	xassert(key_conf);
-	xassert(default_cert_path);
 
-	/* Get self certificate file */
-	cert_file = conf_get_opt_str(slurm_conf.tls_params, cert_conf);
-	if (!cert_file &&
-	    !(cert_file = get_extra_conf_path(default_cert_path))) {
+	if (!(cert_file = _get_cert_or_key_path(cert_conf, default_cert_path))) {
 		error("Failed to get %s path", default_cert_path);
-		xfree(cert_file);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	/*
 	 * Check if our public certificate is owned by SlurmUser/root (unless
 	 * running in slurmrestd) and that it's not modifiable/executable by
 	 * everyone.
 	 */
-	if (_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH),
-				    check_owner)) {
-		xfree(cert_file);
-		return SLURM_ERROR;
+	if ((rc = _check_file_permissions(cert_file, (S_IWOTH | S_IXOTH),
+					  check_owner))) {
+		/*
+		 * If no static certificate was found, get a signed one from
+		 * slurmctld later.
+		 */
+		if ((rc == ENOENT) &&
+		    (running_in_slurmd() || running_in_sackd()))
+			return SLURM_SUCCESS;
+
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	if (!(cert_buf = create_mmap_buf(cert_file))) {
 		error("%s: Could not load cert file (%s): %m",
 		      plugin_type, cert_file);
-		xfree(cert_file);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	xfree(cert_file);
 
-	/* Get private key file */
-	key_file = conf_get_opt_str(slurm_conf.tls_params, key_conf);
-	if (!key_file && !(key_file = get_extra_conf_path(default_key_path))) {
+	if (!(key_file = _get_cert_or_key_path(key_conf, default_key_path))) {
 		error("Failed to get %s path", default_key_path);
-		xfree(key_file);
-		FREE_NULL_BUFFER(cert_buf);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	/*
 	 * Check if our private key is owned by SlurmUser/root (unless running
@@ -563,22 +614,22 @@ static int _add_cert_from_file_to_server(void)
 	 * everyone.
 	 */
 	if (_check_file_permissions(key_file, S_IRWXO, check_owner)) {
-		xfree(key_file);
-		FREE_NULL_BUFFER(cert_buf);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	if (!(key_buf = create_mmap_buf(key_file))) {
 		error("%s: Could not load private key file (%s): %m",
 		      plugin_type, key_file);
-		xfree(key_file);
-		FREE_NULL_BUFFER(cert_buf);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
-	xfree(key_file);
 
 	rc = _add_cert_to_global_server(cert_buf->head, cert_buf->size,
 					key_buf->head, key_buf->size);
 
+cleanup:
+	xfree(key_file);
+	xfree(cert_file);
 	FREE_NULL_BUFFER(cert_buf);
 	FREE_NULL_BUFFER(key_buf);
 
@@ -602,7 +653,14 @@ extern int init(void)
 		error("Could not create client configuration for s2n");
 		return errno;
 	}
-	if (!running_in_slurmstepd() && _add_ca_cert_to_client()) {
+
+	/*
+	 * CA cert loaded later for configless support.
+	 * Relies on slurm_conf.last_update being left unset in configless mode.
+	 */
+	if (!running_in_slurmstepd() &&
+	    slurm_conf.last_update &&
+	    _add_ca_cert_from_conf_to_client(client_config)) {
 		error("Could not load trusted certificates for s2n");
 		return SLURM_ERROR;
 	}
@@ -614,7 +672,8 @@ extern int init(void)
 	}
 
 	if ((running_in_slurmctld() || running_in_slurmdbd() ||
-	     running_in_slurmrestd()) &&
+	     running_in_slurmrestd() || running_in_slurmd() ||
+	     running_in_sackd()) &&
 	    _add_cert_from_file_to_server()) {
 		error("Could not load own TLS certificate from file");
 		return SLURM_ERROR;
@@ -646,6 +705,9 @@ extern int fini(void)
 
 	if (s2n_cleanup_final())
 		on_s2n_error(NULL, s2n_cleanup_final);
+
+	xfree(server_cert);
+	xfree(server_key);
 
 	return SLURM_SUCCESS;
 }
@@ -683,8 +745,24 @@ static int _negotiate(tls_conn_t *conn)
 	return SLURM_SUCCESS;
 }
 
-extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
-				uint32_t key_len)
+extern int tls_p_load_ca_cert(char *cert_file)
+{
+	if (_add_ca_cert_to_client(client_config, cert_file)) {
+		error("Could not load trusted certificates for s2n");
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+extern char *tls_p_get_own_public_cert(void)
+{
+	log_flag(AUDIT_TLS, "Returning own public cert: \n%s", server_cert);
+
+	return xstrdup(server_cert);
+}
+
+extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
+			       uint32_t key_len)
 {
 	xfree(server_cert);
 	xfree(server_key);
@@ -704,6 +782,11 @@ extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
 	log_flag(TLS, "Successfully loaded signed certificate into TLS store.");
 
 	return SLURM_SUCCESS;
+}
+
+extern bool tls_p_own_cert_loaded(void)
+{
+	return is_own_cert_loaded;
 }
 
 static void _server_config_inc(tls_conn_t *conn)
@@ -1046,6 +1129,9 @@ extern ssize_t tls_p_sendv(tls_conn_t *conn, const struct iovec *bufs,
 
 extern uint32_t tls_p_peek(tls_conn_t *conn)
 {
+	if (!conn)
+		return 0;
+
 	return s2n_peek(conn->s2n_conn);
 }
 

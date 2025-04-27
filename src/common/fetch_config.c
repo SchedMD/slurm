@@ -51,6 +51,8 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
+#include "src/interfaces/tls.h"
+
 static char *slurmd_config_files[] = {
 	"slurm.conf", "acct_gather.conf", "cgroup.conf",
 	"cli_filter.lua", "gres.conf", "helpers.conf",
@@ -113,7 +115,8 @@ rwfail:
 	return NULL;
 }
 
-static void _fetch_child(list_t *controllers, uint32_t flags, uint16_t port)
+static void _fetch_child(list_t *controllers, uint32_t flags, uint16_t port,
+			 char *ca_cert_file)
 {
 	config_response_msg_t *config;
 	ctl_entry_t *ctl = NULL;
@@ -130,6 +133,21 @@ static void _fetch_child(list_t *controllers, uint32_t flags, uint16_t port)
 	 * This is safe as we're single-threaded due to the fork().
 	 */
 	slurm_conf_unlock();
+
+	if (ca_cert_file) {
+		slurm_conf.plugindir = xstrdup(default_plugin_path);
+		slurm_conf.tls_type = xstrdup("tls/s2n");
+
+		/* certmgr plugin will be loaded after getting configuration */
+		if (tls_g_init()) {
+			error("--ca-cert-file was specified but TLS plugin failed to load");
+			goto rwfail;
+		}
+		if (tls_g_load_ca_cert(ca_cert_file)) {
+			error("Failed to load certificate file '%s'", ca_cert_file);
+			goto rwfail;
+		}
+	}
 
 	ctl = list_peek(controllers);
 
@@ -177,7 +195,7 @@ static int _get_controller_addr_type(void *x, void *arg)
 }
 
 extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags,
-					   uint16_t port)
+					   uint16_t port, char *ca_cert_file)
 {
 	char *env_conf_server = getenv("SLURM_CONF_SERVER");
 	list_t *controllers = NULL;
@@ -269,7 +287,7 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags,
 		return _fetch_parent(pid);
 	}
 
-	_fetch_child(controllers, flags, port);
+	_fetch_child(controllers, flags, port, ca_cert_file);
 	_exit(0);
 }
 

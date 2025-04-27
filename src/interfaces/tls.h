@@ -94,13 +94,13 @@ extern char *tls_conn_mode_to_str(tls_conn_mode_t mode);
  */
 extern bool tls_enabled(void);
 
-/*
- * Returns true if a TLS plugin is loaded
- */
-extern bool tls_supported(void);
-
 extern int tls_g_init(void);
 extern int tls_g_fini(void);
+
+/*
+ * Get self signed public certificate pem.
+ */
+extern char *tls_g_get_own_public_cert(void);
 
 /*
  * Load own certificate into store
@@ -111,8 +111,20 @@ extern int tls_g_fini(void);
  * IN key - key PEM
  * IN key_len - length of key
  */
-extern int tls_g_load_self_cert(char *cert, uint32_t cert_len, char *key,
-				uint32_t key_len);
+extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
+			       uint32_t key_len);
+
+/*
+ * Returns true if own certificate has ever been loaded
+ */
+extern bool tls_g_own_cert_loaded(void);
+
+/*
+ * Load CA cert into trust store
+ * IN cert_file - path to CA certificate pem
+ * RET SLURM_SUCCESS or error
+ */
+extern int tls_g_load_ca_cert(char *cert_file);
 
 /*
  * Create new TLS connection

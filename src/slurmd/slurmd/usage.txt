@@ -2,6 +2,7 @@ Usage: slurmd [OPTIONS]
    -b                         Report node reboot now.
    -c                         Force cleanup of slurmd shared memory.
    -C                         Print node configuration information and exit.
+   --ca-cert-file             Absolute path to CA cert for configless TLS
    --conf                     Dynamic node configuration, works with -Z.
    --conf-server host[:port]  Get configs from slurmctld at `host[:port]`.
    -d stepd                   Pathname to the slurmstepd program.

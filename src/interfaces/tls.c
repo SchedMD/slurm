@@ -66,8 +66,11 @@ typedef struct {
 
 typedef struct {
 	uint32_t (*plugin_id);
-	int (*load_self_cert)(char *cert, uint32_t cert_len, char *key,
-			      uint32_t key_len);
+	int (*load_ca_cert)(char *cert_file);
+	char *(*get_own_public_cert)(void);
+	int (*load_own_cert)(char *cert, uint32_t cert_len, char *key,
+			     uint32_t key_len);
+	bool (*own_cert_loaded)(void);
 	void *(*create_conn)(const tls_conn_args_t *tls_conn_args);
 	void (*destroy_conn)(void *conn);
 	ssize_t (*send)(void *conn, const void *buf, size_t n);
@@ -87,7 +90,10 @@ typedef struct {
  */
 static const char *syms[] = {
 	"plugin_id",
-	"tls_p_load_self_cert",
+	"tls_p_load_ca_cert",
+	"tls_p_get_own_public_cert",
+	"tls_p_load_own_cert",
+	"tls_p_own_cert_loaded",
 	"tls_p_create_conn",
 	"tls_p_destroy_conn",
 	"tls_p_send",
@@ -107,7 +113,6 @@ static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static bool tls_enabled_bool = false;
-static bool tls_supported_bool = false;
 
 extern char *tls_conn_mode_to_str(tls_conn_mode_t mode)
 {
@@ -121,11 +126,6 @@ extern char *tls_conn_mode_to_str(tls_conn_mode_t mode)
 	}
 
 	return "INVALID";
-}
-
-extern bool tls_supported(void)
-{
-	return tls_supported_bool;
 }
 
 extern bool tls_enabled(void)
@@ -162,8 +162,6 @@ extern int tls_g_init(void)
 		goto done;
 	}
 
-	tls_supported_bool = true;
-
 	if (xstrstr(slurm_conf.tls_type, "s2n"))
 		tls_enabled_bool = true;
 
@@ -192,11 +190,29 @@ extern int tls_g_fini(void)
 	return rc;
 }
 
-extern int tls_g_load_self_cert(char *cert, uint32_t cert_len, char *key,
-				uint32_t key_len)
+extern int tls_g_load_ca_cert(char *cert_file)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.load_self_cert))(cert, cert_len, key, key_len);
+	return (*(ops.load_ca_cert))(cert_file);
+}
+
+extern char *tls_g_get_own_public_cert(void)
+{
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.get_own_public_cert))();
+}
+
+extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
+			       uint32_t key_len)
+{
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.load_own_cert))(cert, cert_len, key, key_len);
+}
+
+extern bool tls_g_own_cert_loaded(void)
+{
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.own_cert_loaded))();
 }
 
 extern void *tls_g_create_conn(const tls_conn_args_t *tls_conn_args)
@@ -428,6 +444,9 @@ extern int tls_get_cert_from_ctld(char *name)
 	req.msg_type = REQUEST_TLS_CERT;
 	req.data = cert_req;
 
+	log_flag(AUDIT_TLS, "Sending certificate signing request to slurmctld:\n%s",
+		 cert_req->csr);
+
 	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec) <
 	    0) {
 		error("Unable to get TLS certificate from slurmctld: %m");
@@ -455,7 +474,7 @@ extern int tls_get_cert_from_ctld(char *name)
 
 	cert_resp = resp.data;
 
-	log_flag(TLS, "Successfully got signed certificate from slurmctld: \n%s",
+	log_flag(AUDIT_TLS, "Successfully got signed certificate from slurmctld:\n%s",
 		 cert_resp->signed_cert);
 
 	if (!(key = certmgr_g_get_node_cert_key(name))) {
@@ -466,8 +485,8 @@ extern int tls_get_cert_from_ctld(char *name)
 	cert_len = strlen(cert_resp->signed_cert);
 	key_len = strlen(key);
 
-	if (tls_g_load_self_cert(cert_resp->signed_cert, cert_len, key,
-				 key_len)) {
+	if (tls_g_load_own_cert(cert_resp->signed_cert, cert_len, key,
+				key_len)) {
 		error("%s: Could not load signed certificate and private key into tls plugin",
 		      __func__);
 		return SLURM_ERROR;

@@ -3069,7 +3069,8 @@ static int _establish_config_source(char **config_file, bool *memfd)
 	 * One last shot - try the SLURM_CONF_SERVER envvar or DNS SRV
 	 * entries to fetch the configs from the slurmctld.
 	 */
-	if (!(config = fetch_config(NULL, CONFIG_REQUEST_SLURM_CONF, 0)) ||
+	if (!(config =
+		      fetch_config(NULL, CONFIG_REQUEST_SLURM_CONF, 0, NULL)) ||
 	    !config->config_files) {
 		error("%s: failed to fetch config", __func__);
 		return SLURM_ERROR;
@@ -5459,6 +5460,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "AuditRPCs");
 	}
+	if (debug_flags & DEBUG_FLAG_AUDIT_TLS) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "AuditTLS");
+	}
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5744,6 +5750,8 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_AGENT;
 		else if (!xstrcasecmp(tok, "AuditRPCs"))
 			(*flags_out) |= DEBUG_FLAG_AUDIT_RPCS;
+		else if (!xstrcasecmp(tok, "AuditTLS"))
+			(*flags_out) |= DEBUG_FLAG_AUDIT_TLS;
 		else if (xstrcasecmp(tok, "Backfill") == 0)
 			(*flags_out) |= DEBUG_FLAG_BACKFILL;
 		else if (xstrcasecmp(tok, "BackfillMap") == 0)
@@ -5845,7 +5853,7 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 		else if (xstrcasecmp(tok, "Task") == 0)
 			error("DebugFlag Task has been removed, please use CPU_Bind");
 		else if (xstrcasecmp(tok, "TLS") == 0)
-			(*flags_out) |= DEBUG_FLAG_TLS;
+			(*flags_out) |= DEBUG_FLAG_TLS | DEBUG_FLAG_AUDIT_TLS;
 		else if (xstrcasecmp(tok, "TraceJobs") == 0)
 			(*flags_out) |= DEBUG_FLAG_TRACE_JOBS;
 		else if (xstrcasecmp(tok, "Trigger") == 0)

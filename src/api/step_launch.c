@@ -362,7 +362,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
 
 	if (tls_enabled()) {
-		if (certgen_g_self_signed(&launch.alloc_tls_cert, NULL)) {
+		if (!(launch.alloc_tls_cert = tls_g_get_own_public_cert())) {
 			error("Could not get self signed certificate for step IO");
 			rc = SLURM_ERROR;
 			goto fail1;
