@@ -5852,7 +5852,7 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 		else if (xstrcasecmp(tok, "Task") == 0)
 			error("DebugFlag Task has been removed, please use CPU_Bind");
 		else if (xstrcasecmp(tok, "TLS") == 0)
-			(*flags_out) |= DEBUG_FLAG_TLS;
+			(*flags_out) |= DEBUG_FLAG_TLS | DEBUG_FLAG_AUDIT_TLS;
 		else if (xstrcasecmp(tok, "TraceJobs") == 0)
 			(*flags_out) |= DEBUG_FLAG_TRACE_JOBS;
 		else if (xstrcasecmp(tok, "Trigger") == 0)
