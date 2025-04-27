@@ -64,6 +64,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
+#include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/tls.h"
 
@@ -205,8 +206,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	}
 
 	if (tls_enabled()) {
-		if (certmgr_g_get_self_signed_cert(&req->alloc_tls_cert,
-						   NULL)) {
+		if (certgen_g_self_signed(&req->alloc_tls_cert, NULL)) {
 			error("Could not get self signed certificate for allocation response");
 			return NULL;
 		}

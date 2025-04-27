@@ -59,6 +59,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
+#include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/tls.h"
 
@@ -375,8 +376,7 @@ static int _attach_to_tasks(slurm_step_id_t stepid,
 	reattach_msg.io_key = xstrdup(io_key);
 	reattach_msg.io_port = io_ports;
 	if (tls_enabled()) {
-		if (certmgr_g_get_self_signed_cert(&reattach_msg.tls_cert,
-						   NULL)) {
+		if (certgen_g_self_signed(&reattach_msg.tls_cert, NULL)) {
 			error("Could not get self signed certificate for step IO");
 			return SLURM_ERROR;
 		}
