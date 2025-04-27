@@ -618,6 +618,7 @@ typedef enum {
 	DATA_PARSER_PRIORITY_BY_PARTITION, /* slurm_job_info_t */
 	DATA_PARSER_PART_PRIO, /* part_prio_t */
 	DATA_PARSER_PART_PRIO_PTR,
+	DATA_PARSER_NODE_CERT_FLAGS,
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
