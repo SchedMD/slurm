@@ -932,33 +932,31 @@ static void *_commit_handler(void *db_conn)
  */
 static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 {
-	slurm_addr_t ctld_address;
+	slurm_msg_t req_msg;
 	int fd;
-	int rc = SLURM_SUCCESS;
 
-	memset(&ctld_address, 0, sizeof(ctld_address));
-	slurm_set_addr(&ctld_address, cluster_rec->control_port,
+	slurm_msg_t_init(&req_msg);
+
+	slurm_set_addr(&req_msg.address, cluster_rec->control_port,
 		       cluster_rec->control_host);
-	fd = slurm_open_msg_conn(&ctld_address);
-	if (fd < 0) {
+
+	if ((fd = slurm_open_msg_conn(&req_msg.address)) < 0) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
-			 __func__, &ctld_address);
-		rc = SLURM_ERROR;
-	} else {
-		slurm_msg_t out_msg;
-		slurm_msg_t_init(&out_msg);
-		slurm_msg_set_r_uid(&out_msg, SLURM_AUTH_UID_ANY);
-		out_msg.msg_type = ACCOUNTING_REGISTER_CTLD;
-		out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
-		out_msg.protocol_version = cluster_rec->rpc_version;
-		slurm_send_node_msg(fd, &out_msg);
-		/* We probably need to add matching recv_msg function
-		 * for an arbitrary fd or should these be fire
-		 * and forget?  For this, that we can probably
-		 * forget about it */
-		close(fd);
+			 __func__, &req_msg.address);
+		return SLURM_ERROR;
 	}
-	return rc;
+
+	slurm_msg_set_r_uid(&req_msg, SLURM_AUTH_UID_ANY);
+	req_msg.msg_type = ACCOUNTING_REGISTER_CTLD;
+	req_msg.flags = SLURM_GLOBAL_AUTH_KEY;
+	req_msg.protocol_version = cluster_rec->rpc_version;
+	slurm_send_node_msg(fd, &req_msg);
+
+	/* response is ignored */
+
+	close(fd);
+
+	return SLURM_SUCCESS;
 }
 
 static void _restart_self(int argc, char **argv)
