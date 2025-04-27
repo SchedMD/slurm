@@ -1018,6 +1018,32 @@ extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 	return bytes_written;
 }
 
+extern ssize_t tls_p_sendv(tls_conn_t *conn, const struct iovec *bufs,
+			   int count)
+{
+	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
+	ssize_t w = 0;
+
+	xassert(conn);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
+		log_flag(TLS, "%s: s2n_sendv %d bufs. fd:%d->%d:",
+			 plugin_type, count, conn->input_fd, conn->output_fd);
+		for (int i = 0; i < count; i++) {
+			log_flag(TLS, "%s:  bufs[%d] %zd. fd:%d->%d",
+				 plugin_type, i, bufs[i].iov_len, conn->input_fd,
+				 conn->output_fd);
+		}
+	}
+
+	if ((w = s2n_sendv(conn->s2n_conn, bufs, count, &blocked)) < 0) {
+		on_s2n_error(conn, s2n_sendv);
+		return SLURM_ERROR;
+	}
+
+	return w;
+}
+
 extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 {
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;

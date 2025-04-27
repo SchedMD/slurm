@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include <sys/socket.h>
+#include <sys/uio.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -100,6 +101,12 @@ extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 		 plugin_type, n, conn->input_fd, conn->output_fd);
 
 	return send(conn->output_fd, buf, n, 0);
+}
+
+extern ssize_t tls_p_sendv(tls_conn_t *conn, const struct iovec *bufs,
+			   int count)
+{
+	return writev(conn->output_fd, bufs, count);
 }
 
 extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n, int flags)
