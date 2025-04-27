@@ -446,6 +446,17 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 		xstrfmtcat(out, "ReservationName=%s", node_ptr->resv_name);
 	}
 
+	/****** TLS certificate info ******/
+	if (node_ptr->cert_flags || node_ptr->cert_last_renewal) {
+		bool token_set = node_ptr->cert_flags & NODE_CERT_TOKEN_SET;
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TLSCertTokenSet=%s ",
+			   token_set ? "Yes" : "No");
+		slurm_make_time_str((time_t *) &node_ptr->cert_last_renewal,
+				    time_str, sizeof(time_str));
+		xstrfmtcat(out, "TLSCertLastRenewal=%s", time_str);
+	}
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else
