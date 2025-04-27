@@ -608,7 +608,13 @@ extern int init(void)
 		error("Could not create client configuration for s2n");
 		return errno;
 	}
+
+	/*
+	 * CA cert loaded later for configless support.
+	 * Relies on slurm_conf.last_update being left unset in configless mode.
+	 */
 	if (!running_in_slurmstepd() &&
+	    slurm_conf.last_update &&
 	    _add_ca_cert_from_conf_to_client(client_config)) {
 		error("Could not load trusted certificates for s2n");
 		return SLURM_ERROR;
