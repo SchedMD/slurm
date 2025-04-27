@@ -76,18 +76,6 @@ extern char *certmgr_g_get_node_cert_key(char *node_name);
 extern char *certmgr_g_get_node_token(char *node_name);
 
 /*
- * Get self signed certificate pem and associated private key pem
- *
- * OUT cert_pem - pointer to certificate PEM character string. If not needed,
- *	set to NULL. If retrieved, must be must be freed with xfree().
- * OUT key_pem - pointer to private key PEM character string. If not needed, set
- *	to NULL. If retrieved, must be must be freed with xfree().
- *
- * RET SLURM_SUCCESS or error
- */
-extern int certmgr_g_get_self_signed_cert(char **cert_pem, char **key_pem);
-
-/*
  * Generate certificate signing request to send to slurmctld
  *
  * IN node_name - generate CSR for node with this node name

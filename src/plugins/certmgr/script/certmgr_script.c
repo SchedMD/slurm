@@ -341,28 +341,6 @@ fail:
 	return NULL;
 }
 
-extern int certmgr_p_get_self_signed_cert(char **cert_pem, char **key_pem)
-{
-	/* Retrieve certificate PEM */
-	if (cert_pem && self_signed_cert) {
-		*cert_pem = xstrdup(self_signed_cert);
-	} else if (cert_pem && !self_signed_cert)
-		return SLURM_ERROR;
-	if (cert_pem)
-		log_flag(TLS, "Returning self signed cert: \n%s",
-			 self_signed_cert);
-
-	/* Retrieve private key */
-	if (key_pem && private_key)
-		*key_pem = xstrdup(private_key);
-	else if (key_pem && !private_key)
-		return SLURM_ERROR;
-	if (key_pem)
-		log_flag(TLS, "Returning private key.");
-
-	return SLURM_SUCCESS;
-}
-
 extern char *certmgr_p_generate_csr(char *node_name)
 {
 	char **script_argv;
