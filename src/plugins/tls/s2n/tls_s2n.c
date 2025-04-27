@@ -497,26 +497,17 @@ fail:
 
 static int _add_self_signed_cert_to_server(void)
 {
-	int rc;
-	char *cert_pem = NULL, *key_pem = NULL;
-	uint32_t cert_pem_len, key_pem_len;
-
-	if (certgen_g_self_signed(&cert_pem, &key_pem) || !cert_pem ||
-	    !key_pem) {
+	if (certgen_g_self_signed(&server_cert, &server_key) ||
+	    !server_cert || !server_key) {
 		error("Failed to generate self signed certificate and private key");
 		return SLURM_ERROR;
 	}
 
-	cert_pem_len = strlen(cert_pem);
-	key_pem_len = strlen(key_pem);
+	server_cert_len = strlen(server_cert);
+	server_key_len = strlen(server_key);
 
-	rc = _add_cert_to_global_server(cert_pem, cert_pem_len, key_pem,
-					key_pem_len);
-
-	xfree(cert_pem);
-	xfree(key_pem);
-
-	return rc;
+	return _add_cert_to_global_server(server_cert, server_cert_len,
+					  server_key, server_key_len);
 }
 
 static char *_get_cert_or_key_path(char *conf_opt, char *default_path)
@@ -714,6 +705,9 @@ extern int fini(void)
 
 	if (s2n_cleanup_final())
 		on_s2n_error(NULL, s2n_cleanup_final);
+
+	xfree(server_cert);
+	xfree(server_key);
 
 	return SLURM_SUCCESS;
 }
