@@ -51,6 +51,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 #include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
@@ -86,6 +87,17 @@ static pthread_rwlock_t server_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
 static uint32_t server_conf_conn_cnt = 0;
 static pthread_mutex_t server_conf_cnt_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t server_conf_cnt_cond = PTHREAD_COND_INITIALIZER;
+
+/*
+ * These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern slurmd_conf_t *conf __attribute__((weak_import));
+#else
+slurmd_conf_t *conf = NULL;
+#endif
 
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
@@ -513,12 +525,19 @@ static char *_get_cert_or_key_path(char *conf_opt, char *default_path)
 
 	file_path = conf_get_opt_str(slurm_conf.tls_params, conf_opt);
 
-	/* Use configured certificate path */
-	if (file_path)
-		return file_path;
+	if (!file_path)
+		file_path = get_extra_conf_path(default_path);
 
-	/* Use default certificate path */
-	file_path = get_extra_conf_path(default_path);
+	/* Expand %h and %n in path for slurmd */
+	if (running_in_slurmd() && conf) {
+		char *tmp;
+		slurm_conf_lock();
+		tmp = slurm_conf_expand_slurmd_path(file_path, conf->node_name,
+						    NULL);
+		slurm_conf_unlock();
+		xfree(file_path);
+		file_path = tmp;
+	}
 
 	return file_path;
 }
