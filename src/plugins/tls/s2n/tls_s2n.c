@@ -507,6 +507,22 @@ static int _add_self_signed_cert_to_server(void)
 	return rc;
 }
 
+static char *_get_cert_or_key_path(char *conf_opt, char *default_path)
+{
+	char *file_path = NULL;
+
+	file_path = conf_get_opt_str(slurm_conf.tls_params, conf_opt);
+
+	/* Use configured certificate path */
+	if (file_path)
+		return file_path;
+
+	/* Use default certificate path */
+	file_path = get_extra_conf_path(default_path);
+
+	return file_path;
+}
+
 static int _add_cert_from_file_to_server(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -541,10 +557,7 @@ static int _add_cert_from_file_to_server(void)
 		return SLURM_ERROR;
 	}
 
-	/* Get self certificate file */
-	cert_file = conf_get_opt_str(slurm_conf.tls_params, cert_conf);
-	if (!cert_file &&
-	    !(cert_file = get_extra_conf_path(default_cert_path))) {
+	if (!(cert_file = _get_cert_or_key_path(cert_conf, default_cert_path))) {
 		error("Failed to get %s path", default_cert_path);
 		rc = SLURM_ERROR;
 		goto cleanup;
@@ -574,9 +587,7 @@ static int _add_cert_from_file_to_server(void)
 	}
 	xfree(cert_file);
 
-	/* Get private key file */
-	key_file = conf_get_opt_str(slurm_conf.tls_params, key_conf);
-	if (!key_file && !(key_file = get_extra_conf_path(default_key_path))) {
+	if (!(key_file = _get_cert_or_key_path(key_conf, default_key_path))) {
 		error("Failed to get %s path", default_key_path);
 		rc = SLURM_ERROR;
 		goto cleanup;
