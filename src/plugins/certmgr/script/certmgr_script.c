@@ -455,6 +455,13 @@ skip_validation_script:
 			 name, signed_cert_pem);
 	}
 
+	if ((xstrstr(slurm_conf.certmgr_params, "single_use_tokens")) && node &&
+	    node->cert_token) {
+		xfree(node->cert_token);
+		log_flag(TLS, "Token for node '%s' has been reset following successful certificate signing.",
+			 node->name);
+	}
+
 	return signed_cert_pem;
 
 fail:
