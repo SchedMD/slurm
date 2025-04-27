@@ -100,6 +100,12 @@ typedef enum {
 	CG_MEMORY,
 	CG_DEVICES,
 	CG_CPUACCT,
+	/* Below are extra controllers not explicitly tracked by Slurm. */
+	CG_IO,
+	CG_HUGETLB,
+	CG_PIDS,
+	CG_RDMA,
+	CG_MISC,
 	CG_CTL_CNT
 } cgroup_ctl_type_t;
 

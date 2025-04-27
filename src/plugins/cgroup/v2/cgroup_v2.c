@@ -86,6 +86,12 @@ static char *ctl_names[] = {
 	[CG_MEMORY] = "memory",
 	[CG_CPUACCT] = "cpu",
 	[CG_DEVICES] = "devices",
+	/* Below are extra controllers not explicitly tracked by Slurm. */
+	[CG_IO] = "io",
+	[CG_HUGETLB] = "hugetlb",
+	[CG_PIDS] = "pids",
+	[CG_RDMA] = "rdma",
+	[CG_MISC] = "misc"
 };
 
 typedef struct {
@@ -466,10 +472,25 @@ static int _enable_subtree_control(char *path, bitstr_t *ctl_bitmap)
 
 static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 {
-	char *buf = NULL, *ptr, *save_ptr, *ctl_filepath = NULL;
+	char *buf = NULL, *ptr, *save_ptr, *ctl_filepath = NULL, *extra;
 	size_t sz;
 
 	xassert(ctl_bitmap);
+
+	/* Remove the extra controllers if not explicitly asked */
+	extra = slurm_cgroup_conf.enable_extra_controllers;
+	if (!xstrstr(extra, "all")) {
+		if (extra) {
+			for (int i = CG_IO; i < CG_CTL_CNT; i++) {
+				if (!xstrstr(extra, ctl_names[i])) {
+					ctl_names[i] = "";
+				}
+			}
+		} else {
+			for (int i = CG_IO; i < CG_CTL_CNT; i++)
+				ctl_names[i] = "";
+		}
+	}
 
 	xstrfmtcat(ctl_filepath, "%s/cgroup.controllers", path);
 	if (common_file_read_content(ctl_filepath, &buf, &sz) !=
@@ -500,7 +521,8 @@ static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 	for (int i = 0; i < CG_CTL_CNT; i++) {
 		if ((i == CG_DEVICES) || (i == CG_TRACK))
 			continue;
-		if (invoc_id && !bit_test(ctl_bitmap, i))
+		if (invoc_id && !bit_test(ctl_bitmap, i) &&
+		    xstrcmp(ctl_names[i], ""))
 			error("Controller %s is not enabled!", ctl_names[i]);
 	}
 	return SLURM_SUCCESS;
