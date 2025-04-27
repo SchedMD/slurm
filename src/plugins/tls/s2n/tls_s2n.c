@@ -87,7 +87,6 @@ static pthread_cond_t server_conf_cnt_cond = PTHREAD_COND_INITIALIZER;
 
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
-	pthread_mutex_t lock;
 	int input_fd;
 	int output_fd;
 	struct s2n_connection *s2n_conn;
@@ -743,7 +742,6 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 	conn = xmalloc(sizeof(*conn));
 	conn->input_fd = tls_conn_args->input_fd;
 	conn->output_fd = tls_conn_args->output_fd;
-	slurm_mutex_init(&conn->lock);
 
 	switch (tls_conn_args->mode) {
 	case TLS_CONN_SERVER:
@@ -827,7 +825,6 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 
 	if (!(conn->s2n_conn = s2n_connection_new(s2n_conn_mode))) {
 		on_s2n_error(conn, s2n_connection_new);
-		slurm_mutex_destroy(&conn->lock);
 		xfree(conn);
 		return NULL;
 	}
@@ -933,7 +930,6 @@ fail:
 	if (conn->using_global_server_conf)
 		_server_config_dec(conn);
 
-	slurm_mutex_destroy(&conn->lock);
 	xfree(conn);
 
 	return NULL;
@@ -948,12 +944,7 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 	log_flag(TLS, "%s: destroying connection. fd:%d->%d",
 		 plugin_type, conn->input_fd, conn->output_fd);
 
-	slurm_mutex_lock(&conn->lock);
-
 	if (!conn->s2n_conn) {
-		slurm_mutex_unlock(&conn->lock);
-		slurm_mutex_destroy(&conn->lock);
-
 		if (conn->using_global_server_conf)
 			_server_config_dec(conn);
 
@@ -987,8 +978,6 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 	if (s2n_connection_free(conn->s2n_conn) < 0)
 		on_s2n_error(conn, s2n_connection_free);
 
-	slurm_mutex_unlock(&conn->lock);
-	slurm_mutex_destroy(&conn->lock);
 	if (conn->s2n_config && (conn->s2n_config != server_config) &&
 	    (conn->s2n_config != client_config))
 		if (s2n_config_free(conn->s2n_config))
@@ -1007,7 +996,6 @@ extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 
 	xassert(conn);
 
-	slurm_mutex_lock(&conn->lock);
 	while ((bytes_written < n) && (blocked == S2N_NOT_BLOCKED)) {
 		ssize_t w = s2n_send(conn->s2n_conn, (buf + bytes_written),
 				     (n - bytes_written), &blocked);
@@ -1020,7 +1008,6 @@ extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 
 		bytes_written += w;
 	}
-	slurm_mutex_unlock(&conn->lock);
 
 	log_flag(TLS, "%s: send %zd. fd:%d->%d",
 		 plugin_type, bytes_written, conn->input_fd, conn->output_fd);
@@ -1038,7 +1025,6 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 
 	xassert(conn);
 
-	slurm_mutex_lock(&conn->lock);
 	while (bytes_read < n) {
 		ssize_t r = s2n_recv(conn->s2n_conn, (buf + bytes_read),
 				     (n - bytes_read), &blocked);
@@ -1056,11 +1042,9 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 			break;
 		} else {
 			on_s2n_error(conn, s2n_recv);
-			slurm_mutex_unlock(&conn->lock);
 			return SLURM_ERROR;
 		}
 	}
-	slurm_mutex_unlock(&conn->lock);
 
 	log_flag(TLS, "%s: recv %zd. fd:%d->%d",
 		 plugin_type, bytes_read, conn->input_fd, conn->output_fd);
