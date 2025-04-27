@@ -2249,7 +2249,7 @@ static int _establish_configuration(void)
 	}
 
 	while (!(configs = fetch_config(conf->conf_server,
-					CONFIG_REQUEST_SLURMD, 0))) {
+					CONFIG_REQUEST_SLURMD, 0, NULL))) {
 		error("%s: failed to load configs. Retrying in 10 seconds.",
 		      __func__);
 		sleep(10);

@@ -291,7 +291,7 @@ static void _establish_config_source(void)
 	if (disable_reconfig)
 		fetch_type = CONFIG_REQUEST_SLURM_CONF;
 
-	while (!(configs = fetch_config(conf_server, fetch_type, port))) {
+	while (!(configs = fetch_config(conf_server, fetch_type, port, NULL))) {
 		error("Failed to load configs from slurmctld. Retrying in 10 seconds.");
 		sleep(10);
 	}
