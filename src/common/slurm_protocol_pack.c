@@ -1523,6 +1523,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack_time(&node->reason_time, buffer);
 		safe_unpack_time(&node->resume_after, buffer);
 		safe_unpack_time(&node->slurmd_start_time, buffer);
+		safe_unpack_time(&node->cert_last_renewal, buffer);
 
 		safe_unpack16(&node->alloc_cpus, buffer);
 		safe_unpack64(&node->alloc_memory, buffer);

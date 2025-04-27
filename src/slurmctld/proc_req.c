@@ -6006,6 +6006,8 @@ static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 		error("%s: Unable to sign certificate signing request.",
 		      __func__);
 		slurm_send_rc_msg(msg, SLURM_ERROR);
+	} else if (node) {
+		node->cert_last_renewal = time(NULL);
 	}
 
 	log_flag(AUDIT_TLS, "Sending signed certificate back to node \'%s\':\n%s",

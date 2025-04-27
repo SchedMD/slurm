@@ -1181,6 +1181,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack_time(dump_node_ptr->reason_time, buffer);
 		pack_time(dump_node_ptr->resume_after, buffer);
 		pack_time(dump_node_ptr->slurmd_start_time, buffer);
+		pack_time(dump_node_ptr->cert_last_renewal, buffer);
 
 		pack16(dump_node_ptr->alloc_cpus, buffer);
 		pack64(dump_node_ptr->alloc_memory, buffer);
