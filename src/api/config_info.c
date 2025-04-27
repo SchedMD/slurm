@@ -669,6 +669,9 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "BurstBufferType", "%s", conf->bb_type);
 
+	add_key_pair(ret_list, "CertgenParameters", "%s", conf->certgen_params);
+	add_key_pair(ret_list, "CertgenType", "%s", conf->certgen_type);
+
 	add_key_pair(ret_list, "CertmgrParameters", "%s", conf->certmgr_params);
 	add_key_pair(ret_list, "CertmgrType", "%s", conf->certmgr_type);
 

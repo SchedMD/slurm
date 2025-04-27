@@ -2950,6 +2950,8 @@ typedef struct {
 	char *bcast_exclude;	/* Bcast exclude library paths */
 	char *bcast_parameters; /* bcast options */
 	time_t boot_time;	/* time slurmctld last booted */
+	char *certgen_params;	/* certgen parameters */
+	char *certgen_type;	/* certgen type */
 	char *certmgr_params;	/* certmgr parameters */
 	char *certmgr_type;	/* certmgr type */
 	void *cgroup_conf;	/* cgroup support config file */
