@@ -79,6 +79,8 @@ static uint32_t server_cert_len = 0;
 static char *server_key = NULL;
 static uint32_t server_key_len = 0;
 
+static bool is_own_cert_loaded = false;
+
 static pthread_rwlock_t server_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static uint32_t server_conf_conn_cnt = 0;
@@ -423,6 +425,7 @@ static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
 				      char *key_pem, uint32_t key_pem_len)
 {
 	if (!server_cert_and_key) {
+		is_own_cert_loaded = true;
 		return _add_cert_to_server(server_config, &server_cert_and_key,
 					   cert_pem, cert_pem_len, key_pem,
 					   key_pem_len);
@@ -733,6 +736,11 @@ extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
 	log_flag(TLS, "Successfully loaded signed certificate into TLS store.");
 
 	return SLURM_SUCCESS;
+}
+
+extern bool tls_p_own_cert_loaded(void)
+{
+	return is_own_cert_loaded;
 }
 
 static void _server_config_inc(tls_conn_t *conn)

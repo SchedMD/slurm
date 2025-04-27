@@ -115,6 +115,11 @@ extern int tls_g_load_self_cert(char *cert, uint32_t cert_len, char *key,
 				uint32_t key_len);
 
 /*
+ * Returns true if own certificate has ever been loaded
+ */
+extern bool tls_g_own_cert_loaded(void);
+
+/*
  * Load CA cert into trust store
  * IN cert_file - path to CA certificate pem
  * RET SLURM_SUCCESS or error

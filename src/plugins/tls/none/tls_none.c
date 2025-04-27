@@ -79,6 +79,11 @@ extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
 	return SLURM_SUCCESS;
 }
 
+extern bool tls_p_own_cert_loaded(void)
+{
+	return true;
+}
+
 extern tls_conn_t *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn = xmalloc(sizeof(*conn));
