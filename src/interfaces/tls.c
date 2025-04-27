@@ -67,8 +67,8 @@ typedef struct {
 typedef struct {
 	uint32_t (*plugin_id);
 	int (*load_ca_cert)(char *cert_file);
-	int (*load_self_cert)(char *cert, uint32_t cert_len, char *key,
-			      uint32_t key_len);
+	int (*load_own_cert)(char *cert, uint32_t cert_len, char *key,
+			     uint32_t key_len);
 	bool (*own_cert_loaded)(void);
 	void *(*create_conn)(const tls_conn_args_t *tls_conn_args);
 	void (*destroy_conn)(void *conn);
@@ -90,7 +90,7 @@ typedef struct {
 static const char *syms[] = {
 	"plugin_id",
 	"tls_p_load_ca_cert",
-	"tls_p_load_self_cert",
+	"tls_p_load_own_cert",
 	"tls_p_own_cert_loaded",
 	"tls_p_create_conn",
 	"tls_p_destroy_conn",
@@ -202,11 +202,11 @@ extern int tls_g_load_ca_cert(char *cert_file)
 	return (*(ops.load_ca_cert))(cert_file);
 }
 
-extern int tls_g_load_self_cert(char *cert, uint32_t cert_len, char *key,
-				uint32_t key_len)
+extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
+			       uint32_t key_len)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.load_self_cert))(cert, cert_len, key, key_len);
+	return (*(ops.load_own_cert))(cert, cert_len, key, key_len);
 }
 
 extern bool tls_g_own_cert_loaded(void)
@@ -485,8 +485,8 @@ extern int tls_get_cert_from_ctld(char *name)
 	cert_len = strlen(cert_resp->signed_cert);
 	key_len = strlen(key);
 
-	if (tls_g_load_self_cert(cert_resp->signed_cert, cert_len, key,
-				 key_len)) {
+	if (tls_g_load_own_cert(cert_resp->signed_cert, cert_len, key,
+				key_len)) {
 		error("%s: Could not load signed certificate and private key into tls plugin",
 		      __func__);
 		return SLURM_ERROR;

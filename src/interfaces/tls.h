@@ -111,8 +111,8 @@ extern int tls_g_fini(void);
  * IN key - key PEM
  * IN key_len - length of key
  */
-extern int tls_g_load_self_cert(char *cert, uint32_t cert_len, char *key,
-				uint32_t key_len);
+extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
+			       uint32_t key_len);
 
 /*
  * Returns true if own certificate has ever been loaded

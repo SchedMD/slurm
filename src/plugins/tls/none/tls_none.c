@@ -73,8 +73,8 @@ extern int tls_p_load_ca_cert(char *cert_file)
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
-				uint32_t key_len)
+extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
+			       uint32_t key_len)
 {
 	return SLURM_SUCCESS;
 }
