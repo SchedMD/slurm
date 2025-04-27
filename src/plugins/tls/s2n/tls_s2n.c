@@ -509,11 +509,11 @@ static int _add_self_signed_cert_to_server(void)
 
 static int _add_cert_from_file_to_server(void)
 {
-	int rc;
-	char *cert_file, *key_file;
+	int rc = SLURM_SUCCESS;
+	char *cert_file = NULL, *key_file = NULL;
 	char *cert_conf = NULL, *key_conf = NULL;
 	char *default_cert_path = NULL, *default_key_path = NULL;
-	buf_t *cert_buf, *key_buf;
+	buf_t *cert_buf = NULL, *key_buf = NULL;
 	bool check_owner = true;
 
 	if (running_in_slurmdbd()) {
@@ -546,8 +546,8 @@ static int _add_cert_from_file_to_server(void)
 	if (!cert_file &&
 	    !(cert_file = get_extra_conf_path(default_cert_path))) {
 		error("Failed to get %s path", default_cert_path);
-		xfree(cert_file);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	/*
 	 * Check if our public certificate is owned by SlurmUser/root (unless
@@ -563,14 +563,14 @@ static int _add_cert_from_file_to_server(void)
 		if ((rc == ENOENT) && running_in_slurmd())
 			return SLURM_SUCCESS;
 
-		xfree(cert_file);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	if (!(cert_buf = create_mmap_buf(cert_file))) {
 		error("%s: Could not load cert file (%s): %m",
 		      plugin_type, cert_file);
-		xfree(cert_file);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	xfree(cert_file);
 
@@ -578,9 +578,8 @@ static int _add_cert_from_file_to_server(void)
 	key_file = conf_get_opt_str(slurm_conf.tls_params, key_conf);
 	if (!key_file && !(key_file = get_extra_conf_path(default_key_path))) {
 		error("Failed to get %s path", default_key_path);
-		xfree(key_file);
-		FREE_NULL_BUFFER(cert_buf);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	/*
 	 * Check if our private key is owned by SlurmUser/root (unless running
@@ -588,22 +587,22 @@ static int _add_cert_from_file_to_server(void)
 	 * everyone.
 	 */
 	if (_check_file_permissions(key_file, S_IRWXO, check_owner)) {
-		xfree(key_file);
-		FREE_NULL_BUFFER(cert_buf);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 	if (!(key_buf = create_mmap_buf(key_file))) {
 		error("%s: Could not load private key file (%s): %m",
 		      plugin_type, key_file);
-		xfree(key_file);
-		FREE_NULL_BUFFER(cert_buf);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
-	xfree(key_file);
 
 	rc = _add_cert_to_global_server(cert_buf->head, cert_buf->size,
 					key_buf->head, key_buf->size);
 
+cleanup:
+	xfree(key_file);
+	xfree(cert_file);
 	FREE_NULL_BUFFER(cert_buf);
 	FREE_NULL_BUFFER(key_buf);
 
