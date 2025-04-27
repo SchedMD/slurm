@@ -317,10 +317,38 @@ static struct s2n_config *_create_server_config(void)
 	return _create_config_common();
 }
 
-static int _add_ca_cert_to_client(void)
+static int _add_ca_cert_to_client(struct s2n_config *config, char* cert_file)
 {
-	char *cert_file;
 	buf_t *cert_buf;
+
+	/*
+	 * Check if CA cert is owned by SlurmUser/root and that it's not
+	 * modifiable/executable by everyone.
+	 */
+	if (_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), true)) {
+		return SLURM_ERROR;
+	}
+
+	if (!(cert_buf = create_mmap_buf(cert_file))) {
+		error("%s: Could not load CA cert file (%s)",
+		      plugin_type, cert_file);
+		return SLURM_ERROR;
+	}
+
+	if (s2n_config_add_pem_to_trust_store(config, cert_buf->head)) {
+		on_s2n_error(NULL, s2n_config_add_pem_to_trust_store);
+		FREE_NULL_BUFFER(cert_buf);
+		return SLURM_ERROR;
+	}
+	FREE_NULL_BUFFER(cert_buf);
+
+	return SLURM_SUCCESS;
+}
+
+static int _add_ca_cert_from_conf_to_client(struct s2n_config *config)
+{
+	int rc;
+	char *cert_file;
 
 	cert_file = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=");
 	if (!cert_file && !(cert_file = get_extra_conf_path("ca_cert.pem"))) {
@@ -329,32 +357,10 @@ static int _add_ca_cert_to_client(void)
 		return SLURM_ERROR;
 	}
 
-	/*
-	 * Check if CA cert is owned by SlurmUser/root and that it's not
-	 * modifiable/executable by everyone.
-	 */
-	if (_check_file_permissions(cert_file, (S_IWOTH | S_IXOTH), true)) {
-		xfree(cert_file);
-		return SLURM_ERROR;
-	}
-
-	if (!(cert_buf = create_mmap_buf(cert_file))) {
-		error("%s: Could not load CA cert file (%s)",
-		      plugin_type, cert_file);
-		xfree(cert_file);
-		return SLURM_ERROR;
-	}
+	rc = _add_ca_cert_to_client(config, cert_file);
 	xfree(cert_file);
 
-	if (s2n_config_add_pem_to_trust_store(client_config, cert_buf->head)) {
-		on_s2n_error(NULL, s2n_config_add_pem_to_trust_store);
-		FREE_NULL_BUFFER(cert_buf);
-		return SLURM_ERROR;
-	}
-	FREE_NULL_BUFFER(cert_buf);
-
-	xfree(cert_file);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _add_cert_to_server(struct s2n_config *s2n_config,
@@ -602,7 +608,8 @@ extern int init(void)
 		error("Could not create client configuration for s2n");
 		return errno;
 	}
-	if (!running_in_slurmstepd() && _add_ca_cert_to_client()) {
+	if (!running_in_slurmstepd() &&
+	    _add_ca_cert_from_conf_to_client(client_config)) {
 		error("Could not load trusted certificates for s2n");
 		return SLURM_ERROR;
 	}
