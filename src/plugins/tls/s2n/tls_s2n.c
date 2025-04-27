@@ -535,9 +535,6 @@ static int _add_cert_from_file_to_server(void)
 	} else {
 		return SLURM_ERROR;
 	}
-	xassert(cert_conf);
-	xassert(key_conf);
-	xassert(default_cert_path);
 
 	/* Get self certificate file */
 	cert_file = conf_get_opt_str(slurm_conf.tls_params, cert_conf);
