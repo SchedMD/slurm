@@ -1147,6 +1147,14 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		packstr(dump_node_ptr->node_hostname, buffer);
 		packstr(dump_node_ptr->comm_name, buffer);
 		packstr(dump_node_ptr->bcast_address, buffer);
+
+		/* turns into cert_flags field on remote */
+		if (dump_node_ptr->cert_token) {
+			pack16(NODE_CERT_TOKEN_SET, buffer);
+		} else {
+			pack16(0, buffer);
+		}
+
 		pack16(dump_node_ptr->port, buffer);
 		pack32(dump_node_ptr->next_state, buffer);
 		pack32(dump_node_ptr->node_state, buffer);
@@ -1181,6 +1189,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack_time(dump_node_ptr->reason_time, buffer);
 		pack_time(dump_node_ptr->resume_after, buffer);
 		pack_time(dump_node_ptr->slurmd_start_time, buffer);
+		pack_time(dump_node_ptr->cert_last_renewal, buffer);
 
 		pack16(dump_node_ptr->alloc_cpus, buffer);
 		pack64(dump_node_ptr->alloc_memory, buffer);

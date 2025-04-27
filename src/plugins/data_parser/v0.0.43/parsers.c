@@ -7613,6 +7613,10 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_STATES)[] = {
 	add_flag_equal(PARTITION_DRAIN, INFINITE16, "DRAIN"),
 };
 
+static const flag_bit_t PARSER_FLAG_ARRAY(NODE_CERT_FLAGS)[] = {
+	add_flag_bit(NODE_CERT_TOKEN_SET, "TOKEN_SET"),
+};
+
 #define add_parse(mtype, field, path, desc) \
 	add_parser(node_info_t, mtype, false, field, 0, path, desc)
 #define add_cparse(mtype, path, desc) \
@@ -7624,6 +7628,8 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, bcast_address, "burstbuffer_network_address", "Alternate network path to be used for sbcast network traffic"),
 	add_parse(UINT16, boards, "boards", "Number of Baseboards in nodes with a baseboard controller"),
 	add_parse(TIMESTAMP_NO_VAL, boot_time, "boot_time", "Time when the node booted (UNIX timestamp)"),
+	add_parse(TIMESTAMP_NO_VAL, cert_last_renewal, "tls_cert_last_renewal", "Time when TLS certificate was created"),
+	add_parse(NODE_CERT_FLAGS, cert_flags, "cert_flags", "Certmgr status flags"),
 	add_parse(STRING, cluster_name, "cluster_name", "Cluster name (only set in federated environments)"),
 	add_parse(UINT16, cores, "cores", "Number of cores in a single physical processor socket"),
 	add_parse(UINT16, core_spec_cnt, "specialized_cores", "Number of cores reserved for system use"),
@@ -10427,6 +10433,7 @@ static const parser_t parsers[] = {
 	addfa(CR_TYPE, uint16_t),
 	addfa(NODE_CR_TYPE, uint32_t),
 	addfa(JOB_RES_CORE_STATUS, JOB_RES_CORE_status_t),
+	addfa(NODE_CERT_FLAGS, uint16_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
