@@ -37,8 +37,18 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/fetch_config.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
+#include "src/common/ref.h"
+#include "src/common/run_command.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
 #include "src/interfaces/certgen.h"
+
+decl_static_data(keygen_sh_txt);
+decl_static_data(certgen_sh_txt);
 
 const char plugin_name[] = "Certificate generation script plugin";
 const char plugin_type[] = "certgen/script";
@@ -56,7 +66,151 @@ extern void fini(void)
 	debug("unloaded");
 }
 
+static char *_exec_script(char *script_path, char *input)
+{
+	int rc = SLURM_SUCCESS;
+	char **script_argv = NULL;
+	int status = SLURM_ERROR;
+	bool timed_out = false;
+	char *output = NULL;
+
+	run_command_args_t run_command_args = {
+		.max_wait = 5000,
+		.status = &status,
+		.timed_out = &timed_out,
+	};
+
+	script_argv = xcalloc(3, sizeof(char *)); /* NULL terminated */
+	script_argv[0] = script_path;
+	script_argv[1] = input;
+
+	run_command_args.script_path = script_path;
+	run_command_args.script_argv = script_argv;
+
+	output = run_command(&run_command_args);
+
+	if (timed_out) {
+		error("%s: Timed out running script '%s'",
+		      plugin_type, script_path);
+		rc = SLURM_ERROR;
+	} else if (status) {
+		error("%s: '%s' returned rc %d. stdout+stderr from script:\n%s",
+		      plugin_type, script_path, status, output);
+		rc = SLURM_ERROR;
+	} else if (!output || !*output) {
+		error("%s: Expected output from '%s', but got nothing",
+		      plugin_type, script_path);
+		rc = SLURM_ERROR;
+	}
+
+	xfree(script_argv);
+
+	if (rc)
+		xfree(output);
+
+	return output;
+}
+
+static int _create_exec_script(char *name, char *contents, char **script_path)
+{
+	int fd = -1;
+
+	if ((fd = dump_to_memfd(name, contents, script_path)) < 0) {
+		error("%s: Failed to create script file", plugin_type);
+		xfree(script_path);
+	}
+
+	return fd;
+}
+
+static char *_exec_internal_keygen(void)
+{
+	char *keygen_contents = NULL;
+	char *name = "keygen.sh";
+	char *script_path = NULL;
+	int script_fd = -1;
+	char *key = NULL;
+
+	static_ref_to_cstring(keygen_contents, keygen_sh_txt);
+
+	script_fd = _create_exec_script(name, keygen_contents, &script_path);
+	if (script_fd < 0) {
+		error("%s: Failed to create executable script '%s'",
+		      plugin_type, name);
+		xfree(keygen_contents);
+		return NULL;
+	}
+
+	key = _exec_script(script_path, NULL);
+
+	close(script_fd);
+	xfree(script_path);
+	xfree(keygen_contents);
+
+	return key;
+}
+
+static char *_exec_internal_certgen(char *key)
+{
+	char *certgen_contents = NULL;
+	char *name = "certgen.sh";
+	char *script_path = NULL;
+	int script_fd = -1;
+	char *cert = NULL;
+
+	static_ref_to_cstring(certgen_contents, certgen_sh_txt);
+
+	script_fd = _create_exec_script(name, certgen_contents, &script_path);
+	if (script_fd < 0) {
+		error("%s: Failed to create executable script '%s'",
+		      plugin_type, name);
+		xfree(certgen_contents);
+		return NULL;
+	}
+
+	cert = _exec_script(script_path, key);
+
+	close(script_fd);
+	xfree(script_path);
+	xfree(certgen_contents);
+
+	return cert;
+}
+
 extern int certgen_p_self_signed(char **cert_pem, char **key_pem)
 {
-	return ESLURM_NOT_SUPPORTED;
+	int rc = SLURM_SUCCESS;
+	char *cert = NULL, *key = NULL;
+
+	xassert(cert_pem);
+	xassert(key_pem);
+
+	if (!(key = _exec_internal_keygen())) {
+		error("%s: Unable to generate private key",
+		      plugin_type);
+		rc = SLURM_ERROR;
+		goto end;
+	}
+
+	log_flag(TLS, "Successfully generated private key");
+
+	if (!(cert = _exec_internal_certgen(key))) {
+		error("%s: Unable to generate certificate",
+		      plugin_type);
+		rc = SLURM_ERROR;
+		goto end;
+	}
+
+	log_flag(TLS, "Successfully generated certificate:\n%s", cert);
+
+	*cert_pem = cert;
+	*key_pem = key;
+
+end:
+	if (rc) {
+		xfree(cert);
+		xfree(key);
+	}
+
+	return rc;
 }
