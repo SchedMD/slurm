@@ -1129,6 +1129,9 @@ extern ssize_t tls_p_sendv(tls_conn_t *conn, const struct iovec *bufs,
 
 extern uint32_t tls_p_peek(tls_conn_t *conn)
 {
+	if (!conn)
+		return 0;
+
 	return s2n_peek(conn->s2n_conn);
 }
 
