@@ -31,6 +31,8 @@ libcommon_interfaces_la_SOURCES =    \
 	acct_gather_profile.h			\
 	auth.c					\
 	auth.h					\
+	certgen.c				\
+	certgen.h				\
 	certmgr.c				\
 	certmgr.h				\
 	cgroup.c				\

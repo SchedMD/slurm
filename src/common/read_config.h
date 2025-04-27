@@ -80,6 +80,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_BATCH_START_TIMEOUT 10
 #define DEFAULT_BCAST_EXCLUDE       "/lib,/usr/lib,/lib64,/usr/lib64"
 #define DEFAULT_COMPLETE_WAIT       0
+#define DEFAULT_CERTGEN_TYPE "certgen/script"
 #define DEFAULT_CRED_TYPE           "cred/munge"
 #define DEFAULT_EPILOG_MSG_TIME     2000
 #define DEFAULT_FIRST_JOB_ID        1
