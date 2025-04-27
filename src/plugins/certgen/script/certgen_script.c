@@ -180,12 +180,25 @@ static char *_exec_internal_certgen(char *key)
 extern int certgen_p_self_signed(char **cert_pem, char **key_pem)
 {
 	int rc = SLURM_SUCCESS;
+	char *certgen_script = NULL, *keygen_script = NULL;
 	char *cert = NULL, *key = NULL;
 
 	xassert(cert_pem);
 	xassert(key_pem);
 
-	if (!(key = _exec_internal_keygen())) {
+	certgen_script =
+		conf_get_opt_str(slurm_conf.certgen_params, "certgen_script=");
+	keygen_script =
+		conf_get_opt_str(slurm_conf.certgen_params, "keygen_script=");
+
+	if (keygen_script) {
+		if (!(key = _exec_script(keygen_script, NULL))) {
+			error("%s: Unable to generate private key from script '%s'",
+			      plugin_type, keygen_script);
+			rc = SLURM_ERROR;
+			goto end;
+		}
+	} else if (!(key = _exec_internal_keygen())) {
 		error("%s: Unable to generate private key",
 		      plugin_type);
 		rc = SLURM_ERROR;
@@ -194,7 +207,14 @@ extern int certgen_p_self_signed(char **cert_pem, char **key_pem)
 
 	log_flag(TLS, "Successfully generated private key");
 
-	if (!(cert = _exec_internal_certgen(key))) {
+	if (certgen_script) {
+		if (!(cert = _exec_script(certgen_script, key))) {
+			error("%s: Unable to generate certificate from script '%s'",
+			      plugin_type, certgen_script);
+			rc = SLURM_ERROR;
+			goto end;
+		}
+	} else if (!(cert = _exec_internal_certgen(key))) {
 		error("%s: Unable to generate certificate",
 		      plugin_type);
 		rc = SLURM_ERROR;
@@ -207,6 +227,9 @@ extern int certgen_p_self_signed(char **cert_pem, char **key_pem)
 	*key_pem = key;
 
 end:
+	xfree(certgen_script);
+	xfree(keygen_script);
+
 	if (rc) {
 		xfree(cert);
 		xfree(key);
