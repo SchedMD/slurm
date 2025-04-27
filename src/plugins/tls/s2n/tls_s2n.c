@@ -1044,6 +1044,11 @@ extern ssize_t tls_p_sendv(tls_conn_t *conn, const struct iovec *bufs,
 	return w;
 }
 
+extern uint32_t tls_p_peek(tls_conn_t *conn)
+{
+	return s2n_peek(conn->s2n_conn);
+}
+
 extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 {
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;

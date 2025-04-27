@@ -109,6 +109,11 @@ extern ssize_t tls_p_sendv(tls_conn_t *conn, const struct iovec *bufs,
 	return writev(conn->output_fd, bufs, count);
 }
 
+extern uint32_t tls_p_peek(tls_conn_t *conn)
+{
+	return 0;
+}
+
 extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n, int flags)
 {
 	ssize_t rc = recv(conn->input_fd, buf, n, 0);
