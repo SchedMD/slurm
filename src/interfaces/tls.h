@@ -89,13 +89,12 @@ typedef struct {
 extern char *tls_conn_mode_to_str(tls_conn_mode_t mode);
 
 /*
- * Returns true if the default plugin is not tls/none.
- * The default plugin is used for RPC traffic.
+ * Return true if TLS is enabled for Slurm communications
  */
 extern bool tls_enabled(void);
 
 /*
- * Returns true if a plugin besides tls/none is supported.
+ * Returns true if a TLS plugin is loaded
  */
 extern bool tls_supported(void);
 
