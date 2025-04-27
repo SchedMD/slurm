@@ -1626,8 +1626,11 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		pack_time(object->cert_last_renewal, buffer);
+
 		if (pack_secrets)
 			packstr(object->cert_token, buffer);
+		else if (object->cert_token)
+			packstr("set", buffer);
 		else
 			packnull(buffer);
 

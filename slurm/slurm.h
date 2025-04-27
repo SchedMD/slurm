@@ -1012,6 +1012,8 @@ enum node_states {
 #define NODE_STATE_DYNAMIC_NORM SLURM_BIT(26) /* dynamic norm node */
 #define NODE_STATE_BLOCKED SLURM_BIT(27) /* node blocked by exclusive topo */
 
+#define NODE_CERT_TOKEN_SET SLURM_BIT(0)
+
 /* Used as show_flags for slurm_get_ and slurm_load_ function calls.
  * Values can be ORed */
 #define SHOW_ALL SLURM_BIT(0) /* Show info for "hidden" partitions */
@@ -2335,6 +2337,7 @@ typedef struct node_info {
 	char *bcast_address;	/* BcastAddr (optional) */
 	uint16_t boards;        /* total number of boards per node  */
 	time_t boot_time;	/* time of node boot */
+	uint16_t cert_flags;	/* is the token set */
 	time_t cert_last_renewal; /* Time of last TLS cert renewal */
 	char *cluster_name;	/* Cluster name ONLY set in federation */
 	uint16_t cores;         /* number of cores per socket       */

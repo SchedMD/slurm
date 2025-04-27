@@ -1489,6 +1489,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->node_hostname, buffer);
 		safe_unpackstr(&node->node_addr, buffer);
 		safe_unpackstr(&node->bcast_address, buffer);
+		safe_unpack16(&node->cert_flags, buffer);
 		safe_unpack16(&node->port, buffer);
 		safe_unpack32(&node->next_state, buffer);
 		safe_unpack32(&node->node_state, buffer);
