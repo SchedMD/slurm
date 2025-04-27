@@ -79,6 +79,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
+#include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/mpi.h"
@@ -361,8 +362,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
 
 	if (tls_enabled()) {
-		if (certmgr_g_get_self_signed_cert(&launch.alloc_tls_cert,
-						   NULL)) {
+		if (certgen_g_self_signed(&launch.alloc_tls_cert, NULL)) {
 			error("Could not get self signed certificate for step IO");
 			rc = SLURM_ERROR;
 			goto fail1;

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  init.c - libslurm library initialization
+ *  certgen.c - certgen API definitions
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -33,51 +33,90 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/macros.h"
+#include "src/common/plugin.h"
+#include "src/common/plugrack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
-#include "src/interfaces/accounting_storage.h"
-#include "src/interfaces/auth.h"
 #include "src/interfaces/certgen.h"
-#include "src/interfaces/cred.h"
-#include "src/interfaces/gres.h"
-#include "src/interfaces/hash.h"
-#include "src/interfaces/select.h"
-#include "src/interfaces/tls.h"
 
-extern void slurm_init(const char *conf)
+typedef struct {
+	int (*gen_self_signed)(char **cert_pem, char **key_pem);
+} certgen_ops_t;
+
+/*
+ * These strings must be kept in the same order as the fields
+ * declared for certgen_ops_t.
+ */
+static const char *syms[] = {
+	"certgen_p_self_signed",
+};
+
+static certgen_ops_t ops;
+static plugin_context_t *g_context = NULL;
+static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
+static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
+
+extern int certgen_g_init(void)
 {
-	slurm_conf_init(conf);
+	int rc = SLURM_SUCCESS;
+	char *plugin_type = "certgen";
+	char *plugin = slurm_conf.certgen_type;
 
-	if (auth_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize auth plugin");
+	slurm_rwlock_wrlock(&context_lock);
 
-	if (certgen_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize certgen plugin");
+	if (plugin_inited != PLUGIN_NOT_INITED)
+		goto done;
 
-	if (hash_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize hash plugin");
+	if (!plugin)
+		plugin = DEFAULT_CERTGEN_TYPE;
 
-	if (tls_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize tls plugin");
+	g_context = plugin_context_create(plugin_type, plugin, (void **) &ops,
+					  syms, sizeof(syms));
 
-	if (acct_storage_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize the accounting storage plugin");
+	if (!g_context) {
+		error("cannot create %s context for %s",
+		      plugin_type, plugin);
+		rc = SLURM_ERROR;
+		plugin_inited = PLUGIN_NOT_INITED;
+		goto done;
+	}
 
-	if (gres_init() != SLURM_SUCCESS)
-		fatal("failed to initialize gres plugin");
+	plugin_inited = PLUGIN_INITED;
 
-	if (cred_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize cred plugin");
+done:
+	slurm_rwlock_unlock(&context_lock);
+	return rc;
 }
 
-extern void slurm_fini(void)
+extern int certgen_g_fini(void)
 {
-	cred_g_fini();
-	gres_fini();
-	acct_storage_g_fini();
-	tls_g_fini();
-	hash_g_fini();
-	auth_g_fini();
+	int rc = SLURM_SUCCESS;
 
-	slurm_conf_destroy();
+	slurm_rwlock_wrlock(&context_lock);
+
+	if (g_context) {
+		rc = plugin_context_destroy(g_context);
+		g_context = NULL;
+	}
+
+	plugin_inited = PLUGIN_NOT_INITED;
+
+	slurm_rwlock_unlock(&context_lock);
+
+	return rc;
+}
+
+extern int certgen_g_self_signed(char **cert_pem, char **key_pem)
+{
+	int rc = SLURM_SUCCESS;
+
+	slurm_rwlock_rdlock(&context_lock);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+	rc = (*(ops.gen_self_signed))(cert_pem, key_pem);
+	slurm_rwlock_unlock(&context_lock);
+
+	return rc;
 }

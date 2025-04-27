@@ -204,11 +204,11 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 DIST_SUBDIRS = accounting_storage acct_gather_energy \
 	acct_gather_profile acct_gather_interconnect \
-	acct_gather_filesystem auth burst_buffer certmgr cli_filter \
-	cred data_parser gpu gres hash jobacct_gather jobcomp \
-	job_container job_submit mcs mpi node_features preempt prep \
-	priority proctrack sched select serializer site_factor switch \
-	task tls topology cgroup
+	acct_gather_filesystem auth burst_buffer certgen certmgr \
+	cli_filter cred data_parser gpu gres hash jobacct_gather \
+	jobcomp job_container job_submit mcs mpi node_features preempt \
+	prep priority proctrack sched select serializer site_factor \
+	switch task tls topology cgroup
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -467,9 +467,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = accounting_storage acct_gather_energy acct_gather_profile \
 	acct_gather_interconnect acct_gather_filesystem auth \
-	burst_buffer certmgr cli_filter cred data_parser gpu gres hash \
-	jobacct_gather jobcomp job_container job_submit mcs mpi \
-	node_features preempt prep priority proctrack sched select \
+	burst_buffer certgen certmgr cli_filter cred data_parser gpu \
+	gres hash jobacct_gather jobcomp job_container job_submit mcs \
+	mpi node_features preempt prep priority proctrack sched select \
 	serializer site_factor switch task tls topology \
 	$(am__append_1)
 all: all-recursive

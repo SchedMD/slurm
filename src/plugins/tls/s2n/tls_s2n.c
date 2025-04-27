@@ -52,6 +52,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/tls.h"
 
@@ -473,13 +474,9 @@ static int _add_self_signed_cert_to_server(void)
 	char *cert_pem = NULL, *key_pem = NULL;
 	uint32_t cert_pem_len, key_pem_len;
 
-	if (!certmgr_enabled()) {
-		error("certmgr plugin not enabled, unable to get self signed certificate.");
-		return SLURM_ERROR;
-	}
-	if (certmgr_g_get_self_signed_cert(&cert_pem, &key_pem) || !cert_pem ||
+	if (certgen_g_self_signed(&cert_pem, &key_pem) || !cert_pem ||
 	    !key_pem) {
-		error("Failed to get self signed certificate and private key");
+		error("Failed to generate self signed certificate and private key");
 		return SLURM_ERROR;
 	}
 
