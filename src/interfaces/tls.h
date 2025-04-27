@@ -103,6 +103,11 @@ extern int tls_g_init(void);
 extern int tls_g_fini(void);
 
 /*
+ * Get self signed public certificate pem.
+ */
+extern char *tls_g_get_own_public_cert(void);
+
+/*
  * Load own certificate into store
  * This is useful when certificate is not known on startup, and must be loaded
  * later (e.g. slurmd getting a signed certificate from slurmctld)

@@ -754,6 +754,13 @@ extern int tls_p_load_ca_cert(char *cert_file)
 	return SLURM_SUCCESS;
 }
 
+extern char *tls_p_get_own_public_cert(void)
+{
+	log_flag(AUDIT_TLS, "Returning own public cert: \n%s", server_cert);
+
+	return xstrdup(server_cert);
+}
+
 extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
 			       uint32_t key_len)
 {
