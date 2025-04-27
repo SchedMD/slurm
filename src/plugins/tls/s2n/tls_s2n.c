@@ -222,7 +222,7 @@ static int _check_file_permissions(const char *path, int bad_perms,
 
 	if (stat(path, &statbuf)) {
 		debug("%s: cannot stat '%s': %m", plugin_type, path);
-		return SLURM_ERROR;
+		return ENOENT;
 	}
 
 	/*
