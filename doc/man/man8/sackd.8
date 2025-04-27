@@ -15,6 +15,12 @@ under the /run/slurm/conf directory (unless \fBRUNTIME_DIRECTORY\fR is set).
 
 .SH "OPTIONS"
 .TP
+\fB\-\-ca\-cert\-file <file>\fR
+Absolute path to CA certificate used for fetching configuration when running
+configless in a TLS enabled cluster.
+.IP
+
+.TP
 \fB\-\-conf\-server host[:port]\fR
 Retrieve configs from slurmctld running at \fIhost[:port]\fR.
 Requires slurmctld support provided by setting \fBenable_configless\fR in

@@ -72,6 +72,7 @@ static bool disable_reconfig = false;
 static bool original = true;
 static bool registered = false;
 static bool under_systemd = false;
+static char *ca_cert_file = NULL;
 static char *conf_file = NULL;
 static char *conf_server = NULL;
 static char *dir = NULL;
@@ -98,6 +99,7 @@ static void _parse_args(int argc, char **argv)
 
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
+		LONG_OPT_CA_CERT_FILE,
 		LONG_OPT_CONF_SERVER,
 		LONG_OPT_DISABLE_RECONFIG,
 		LONG_OPT_PORT,
@@ -105,6 +107,7 @@ static void _parse_args(int argc, char **argv)
 	};
 
 	static struct option long_options[] = {
+		{"ca-cert-file", required_argument, 0, LONG_OPT_CA_CERT_FILE},
 		{"conf-server", required_argument, 0, LONG_OPT_CONF_SERVER},
 		{ "disable-reconfig", no_argument, 0, LONG_OPT_DISABLE_RECONFIG },
 		{ "port", required_argument, 0, LONG_OPT_PORT },
@@ -176,6 +179,10 @@ static void _parse_args(int argc, char **argv)
 		case (int) 'v':
 			logopt.stderr_level++;
 			log_alter(logopt, 0, NULL);
+			break;
+		case LONG_OPT_CA_CERT_FILE:
+			xfree(ca_cert_file);
+			ca_cert_file = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONF_SERVER:
 			xfree(conf_server);
@@ -291,7 +298,8 @@ static void _establish_config_source(void)
 	if (disable_reconfig)
 		fetch_type = CONFIG_REQUEST_SLURM_CONF;
 
-	while (!(configs = fetch_config(conf_server, fetch_type, port, NULL))) {
+	while (!(configs = fetch_config(conf_server, fetch_type, port,
+					ca_cert_file))) {
 		error("Failed to load configs from slurmctld. Retrying in 10 seconds.");
 		sleep(10);
 	}
