@@ -113,7 +113,6 @@ static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static bool tls_enabled_bool = false;
-static bool tls_supported_bool = false;
 
 extern char *tls_conn_mode_to_str(tls_conn_mode_t mode)
 {
@@ -127,11 +126,6 @@ extern char *tls_conn_mode_to_str(tls_conn_mode_t mode)
 	}
 
 	return "INVALID";
-}
-
-extern bool tls_supported(void)
-{
-	return tls_supported_bool;
 }
 
 extern bool tls_enabled(void)
@@ -167,8 +161,6 @@ extern int tls_g_init(void)
 		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
-
-	tls_supported_bool = true;
 
 	if (xstrstr(slurm_conf.tls_type, "s2n"))
 		tls_enabled_bool = true;
