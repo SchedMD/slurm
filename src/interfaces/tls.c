@@ -66,6 +66,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t (*plugin_id);
+	int (*load_ca_cert)(char *cert_file);
 	int (*load_self_cert)(char *cert, uint32_t cert_len, char *key,
 			      uint32_t key_len);
 	void *(*create_conn)(const tls_conn_args_t *tls_conn_args);
@@ -87,6 +88,7 @@ typedef struct {
  */
 static const char *syms[] = {
 	"plugin_id",
+	"tls_p_load_ca_cert",
 	"tls_p_load_self_cert",
 	"tls_p_create_conn",
 	"tls_p_destroy_conn",
@@ -190,6 +192,12 @@ extern int tls_g_fini(void)
 	slurm_rwlock_unlock(&context_lock);
 
 	return rc;
+}
+
+extern int tls_g_load_ca_cert(char *cert_file)
+{
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.load_ca_cert))(cert_file);
 }
 
 extern int tls_g_load_self_cert(char *cert, uint32_t cert_len, char *key,

@@ -696,6 +696,15 @@ static int _negotiate(tls_conn_t *conn)
 	return SLURM_SUCCESS;
 }
 
+extern int tls_p_load_ca_cert(char *cert_file)
+{
+	if (_add_ca_cert_to_client(client_config, cert_file)) {
+		error("Could not load trusted certificates for s2n");
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
 extern int tls_p_load_self_cert(char *cert, uint32_t cert_len, char *key,
 				uint32_t key_len)
 {

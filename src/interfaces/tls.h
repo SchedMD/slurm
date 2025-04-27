@@ -115,6 +115,13 @@ extern int tls_g_load_self_cert(char *cert, uint32_t cert_len, char *key,
 				uint32_t key_len);
 
 /*
+ * Load CA cert into trust store
+ * IN cert_file - path to CA certificate pem
+ * RET SLURM_SUCCESS or error
+ */
+extern int tls_g_load_ca_cert(char *cert_file);
+
+/*
  * Create new TLS connection
  * IN tls_conn_args - ptr to tls_conn_args_t
  * RET ptr to TLS state
