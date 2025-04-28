@@ -567,6 +567,35 @@ extern int slurm_accept_conn(int fd, slurm_addr_t *addr)
 	return sock;
 }
 
+extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
+{
+	socklen_t len = sizeof(*addr);
+	int sock = -1;
+	void *tls_conn = NULL;
+	tls_conn_args_t tls_args = {
+		.mode = TLS_CONN_SERVER,
+	};
+
+	sock = accept4(fd, (struct sockaddr *) addr, &len, SOCK_CLOEXEC);
+
+	if (sock < 0) {
+		error("%s: Unable to accept() connection to address %pA: %m",
+		      __func__, addr);
+		return NULL;
+	}
+
+	tls_args.input_fd = tls_args.output_fd = sock;
+	net_set_nodelay(sock, true, NULL);
+
+	if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+		error("%s: Unable to create server TLS connection to address %pA: %m",
+		      __func__, addr);
+		(void) close(sock);
+	}
+
+	return tls_conn;
+}
+
 extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 {
 	int retry_cnt = 0, ehostunreach_cnt = 0;

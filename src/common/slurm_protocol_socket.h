@@ -105,6 +105,7 @@ extern int slurm_init_msg_engine(slurm_addr_t *slurm_address, bool quiet);
  * RET int		- file descriptor of the accepted connection
  */
 extern int slurm_accept_conn(int open_fd, slurm_addr_t *slurm_address);
+extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr);
 
 /* slurm_open_stream
  * opens a client connection to stream server
