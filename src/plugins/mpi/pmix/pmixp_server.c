@@ -1089,7 +1089,7 @@ void pmixp_abort_propagate(int status)
 
 	len = slurm_write_stream(fd, (char*)&status_net, sizeof(status_net));
 	if (len != sizeof(status_net)) {
-		PMIXP_ERROR("slurm_open_msg_conn() failed: %m");
+		PMIXP_ERROR("slurm_write_stream() failed: %m");
 		PMIXP_ERROR("Communicating with abort agent failed: %s:%d",
 			    pmixp_info_srun_ip(),
 			    pmixp_info_abort_agent_port());
@@ -1098,7 +1098,7 @@ void pmixp_abort_propagate(int status)
 
 	len = slurm_read_stream(fd, (char*)&status_net, sizeof(status_net));
 	if (len != sizeof(status_net)) {
-		PMIXP_ERROR("slurm_open_msg_conn() failed: %m");
+		PMIXP_ERROR("slurm_read_stream() failed: %m");
 		PMIXP_ERROR("Communicating with abort agent failed: %s:%d",
 			    pmixp_info_srun_ip(),
 			    pmixp_info_abort_agent_port());
