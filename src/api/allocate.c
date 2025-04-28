@@ -82,13 +82,9 @@ typedef struct {
 typedef struct {
 	slurmdb_cluster_rec_t *cluster;
 	job_desc_msg_t        *req;
+	int *will_run_rc;
 	list_t *resp_msg_list;
 } load_willrun_req_struct_t;
-
-typedef struct {
-	int                      rc;
-	will_run_response_msg_t *willrun_resp_msg;
-} load_willrun_resp_struct_t;
 
 static int _handle_rc_msg(slurm_msg_t *msg);
 static listen_t *_create_allocation_response_socket(void);
@@ -295,17 +291,29 @@ static void *_load_willrun_thread(void *args)
 		(load_willrun_req_struct_t *)args;
 	slurmdb_cluster_rec_t *cluster       = load_args->cluster;
 	will_run_response_msg_t *new_msg = NULL;
-	load_willrun_resp_struct_t *resp;
 
-	_job_will_run_cluster(load_args->req, &new_msg, cluster);
-
-	resp = xmalloc(sizeof(load_willrun_resp_struct_t));
-	resp->rc               = errno;
-	resp->willrun_resp_msg = new_msg;
-	list_append(load_args->resp_msg_list, resp);
+	if (!_job_will_run_cluster(load_args->req, &new_msg, cluster)) {
+		list_append(load_args->resp_msg_list, new_msg);
+	} else {
+		debug("Problem with submit to cluster %s: %m", cluster->name);
+		*(load_args->will_run_rc) = errno;
+	}
 	xfree(args);
 
 	return NULL;
+}
+
+static int _sort_will_run_resp(void *a, void *b)
+{
+	will_run_response_msg_t *resp_a = *(will_run_response_msg_t **) a;
+	will_run_response_msg_t *resp_b = *(will_run_response_msg_t **) b;
+
+	if (resp_a->start_time < resp_b->start_time)
+		return -1;
+	else if (resp_a->start_time > resp_b->start_time)
+		return 1;
+
+	return 0;
 }
 
 static int _fed_job_will_run(job_desc_msg_t *req,
@@ -313,12 +321,10 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 			     slurmdb_federation_rec_t *fed)
 {
 	list_t *resp_msg_list;
-	int pthread_count = 0, i;
+	int pthread_count = 0, i, will_run_rc = SLURM_SUCCESS;
 	pthread_t *load_thread = 0;
 	load_willrun_req_struct_t *load_args;
 	list_itr_t *iter;
-	will_run_response_msg_t *earliest_resp = NULL;
-	load_willrun_resp_struct_t *tmp_resp;
 	slurmdb_cluster_rec_t *cluster;
 	list_t *req_clusters = NULL;
 
@@ -337,7 +343,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	}
 
 	/* Spawn one pthread per cluster to collect job information */
-	resp_msg_list = list_create(NULL);
+	resp_msg_list = list_create(slurm_free_will_run_response_msg);
 	load_thread = xcalloc(list_count(fed->cluster_list), sizeof(pthread_t));
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *)list_next(iter))) {
@@ -354,6 +360,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 		load_args->cluster       = cluster;
 		load_args->req           = req;
 		load_args->resp_msg_list = resp_msg_list;
+		load_args->will_run_rc = &will_run_rc;
 		slurm_thread_create(&load_thread[pthread_count],
 				    _load_willrun_thread, load_args);
 		pthread_count++;
@@ -366,28 +373,14 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 		slurm_thread_join(load_thread[i]);
 	xfree(load_thread);
 
-	iter = list_iterator_create(resp_msg_list);
-	while ((tmp_resp = (load_willrun_resp_struct_t *)list_next(iter))) {
-		if (!tmp_resp->willrun_resp_msg)
-			errno = tmp_resp->rc;
-		else if ((!earliest_resp) ||
-			 (tmp_resp->willrun_resp_msg->start_time <
-			  earliest_resp->start_time)) {
-			slurm_free_will_run_response_msg(earliest_resp);
-			earliest_resp = tmp_resp->willrun_resp_msg;
-			tmp_resp->willrun_resp_msg = NULL;
-		}
-
-		slurm_free_will_run_response_msg(tmp_resp->willrun_resp_msg);
-		xfree(tmp_resp);
-	}
-	list_iterator_destroy(iter);
+	list_sort(resp_msg_list, _sort_will_run_resp);
+	*will_run_resp = list_pop(resp_msg_list);
 	FREE_NULL_LIST(resp_msg_list);
 
-	*will_run_resp = earliest_resp;
-
-	if (!earliest_resp)
+	if (!*will_run_resp) {
+		errno = will_run_rc;
 		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
