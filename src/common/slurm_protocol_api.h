@@ -297,14 +297,12 @@ extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert);
 
 /* slurm_write_stream
  * writes a buffer out a stream file descriptor
- * IN open_fd		- file descriptor to write on
  * IN tls_conn
  * IN buffer		- buffer to send
  * IN size		- size of buffer send
  * RET size_t		- bytes sent , or -1 on error
  */
-extern size_t slurm_write_stream(int open_fd, void *tls_conn, char *buffer,
-				 size_t size);
+extern size_t slurm_write_stream(void *tls_conn, char *buffer, size_t size);
 
 /* slurm_read_stream
  * read into buffer grom a stream file descriptor

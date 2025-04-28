@@ -1844,16 +1844,15 @@ cleanup:
 
 /* slurm_write_stream
  * writes a buffer out a stream file descriptor
- * IN open_fd		- file descriptor to write on
  * IN tls_conn
  * IN buffer		- buffer to send
  * IN size		- size of buffer send
  * IN timeout		- how long to wait in milliseconds
  * RET size_t		- bytes sent , or -1 on error
  */
-size_t slurm_write_stream(int open_fd, void *tls_conn, char *buffer,
-			  size_t size)
+extern size_t slurm_write_stream(void *tls_conn, char *buffer, size_t size)
 {
+	int open_fd = tls_g_get_conn_fd(tls_conn);
 	return slurm_send_timeout(open_fd, tls_conn, buffer, size,
 				  (slurm_conf.msg_timeout * 1000));
 }

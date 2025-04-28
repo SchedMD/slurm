@@ -1052,8 +1052,7 @@ void pmixp_abort_handle(void *tls_conn)
 	}
 
 	/* Reply back to confirm that the status was processed */
-	len = slurm_write_stream(fd, tls_conn, (char *) &status,
-				 sizeof(status));
+	len = slurm_write_stream(tls_conn, (char *) &status, sizeof(status));
 	if (len != sizeof(status)) {
 		PMIXP_ERROR("slurm_write_stream() failed: fd=%d; %m", fd);
 		return;
@@ -1093,7 +1092,7 @@ void pmixp_abort_propagate(int status)
 
 	fd = tls_g_get_conn_fd(tls_conn);
 
-	len = slurm_write_stream(fd, tls_conn, (char *) &status_net,
+	len = slurm_write_stream(tls_conn, (char *) &status_net,
 				 sizeof(status_net));
 	if (len != sizeof(status_net)) {
 		PMIXP_ERROR("slurm_write_stream() failed: %m");

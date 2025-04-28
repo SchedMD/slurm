@@ -128,13 +128,12 @@ static void _notify_winsize_change(void *tls_conn, srun_job_t *job)
 	pty_winsz_t winsz;
 	int len;
 	char buf[4];
-	int fd = tls_g_get_conn_fd(tls_conn);
 
 	winsz.cols = htons(job->ws_col);
 	winsz.rows = htons(job->ws_row);
 	memcpy(buf, &winsz.cols, 2);
 	memcpy(buf+2, &winsz.rows, 2);
-	len = slurm_write_stream(fd, tls_conn, buf, 4);
+	len = slurm_write_stream(tls_conn, buf, 4);
 	if (len < sizeof(winsz))
 		error("pty: window size change notification error: %m");
 }
