@@ -2299,6 +2299,7 @@ tryagain:
  */
 int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 {
+	void *tls_conn = NULL;
 	int fd = -1, rc;
 
 	resp->auth_cred = NULL;
@@ -2307,17 +2308,16 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 		return stepd_proxy_send_recv_node_msg(req, resp, timeout);
 	}
 
-	if ((fd = slurm_open_stream(&req->address, false)) < 0) {
-		log_flag(NET, "%s: slurm_open_stream(%pA): %m",
+	if (!(tls_conn = slurm_open_msg_conn(&req->address, NULL))) {
+		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req->address);
 		return -1;
 	}
 
+	fd = tls_g_get_conn_fd(tls_conn);
 	rc = slurm_send_recv_msg(fd, req, resp, timeout);
 
-	if (close(fd))
-		error("%s: closing fd:%d error: %m",
-		      __func__, fd);
+	tls_g_destroy_conn(tls_conn, true);
 
 	return rc;
 }
