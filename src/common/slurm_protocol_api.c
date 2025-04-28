@@ -1802,6 +1802,9 @@ extern int slurm_send_node_msg(int fd, void *tls_conn, slurm_msg_t *msg)
 		return rc;
 	}
 
+	if (fd < 0)
+		fd = tls_g_get_conn_fd(tls_conn);
+
 	log_flag(NET, "Sending message %s to %pA on fd %d",
 		 rpc_num2string(msg->msg_type), &msg->address, fd);
 
