@@ -355,7 +355,7 @@ static void _wrap_on_connect_timeout(conmgr_callback_args_t conmgr_args,
 	int rc;
 
 	if (con->events->on_connect_timeout)
-		rc = con->events->on_connect_timeout(con, con->arg);
+		rc = con->events->on_connect_timeout(con, con->new_arg);
 	else
 		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
 
