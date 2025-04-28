@@ -162,6 +162,7 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 	slurm_addr_t req_address = { 0 };
 	slurm_msg_t req, resp;
 	return_code_msg_t *rc_msg;
+	char *req_tls_cert = NULL;
 
 	uid_t uid = SLURM_AUTH_NOBODY;
 	gid_t gid = SLURM_AUTH_NOBODY;
@@ -184,6 +185,7 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 	case PROXY_TO_NODE_SEND_ONLY:
 		if (slurm_unpack_addr_no_alloc(&req_address, in))
 			goto unpack_error;
+		safe_unpackstr(&req_tls_cert, in);
 		break;
 	default:
 		/* don't need address for ctld messages */
@@ -219,6 +221,7 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 	req.protocol_version = protocol_version;
 	req.msg_type = msg_type;
 	req.address = req_address;
+	req.tls_cert = req_tls_cert;
 	slurm_msg_set_r_uid(&req, r_uid);
 
 	if (unpack_msg(&req, in) != SLURM_SUCCESS) {
@@ -260,6 +263,7 @@ unpack_error:
 		      __func__);
 	}
 
+	xfree(req_tls_cert);
 	slurm_free_msg_data(req.msg_type, req.data);
 	slurm_free_msg_data(resp.msg_type, resp.data);
 
@@ -340,6 +344,7 @@ static int _stepd_send_to_slurmd(int fd, slurm_msg_t *req, int timeout,
 	case PROXY_TO_NODE_SEND_RECV:
 	case PROXY_TO_NODE_SEND_ONLY:
 		slurm_pack_addr(&req->address, buffer);
+		packstr(req->tls_cert, buffer);
 		break;
 	default:
 		/* don't need address for ctld messages */
