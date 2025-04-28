@@ -127,6 +127,8 @@ extern int topology_g_eval_nodes(topology_eval_t *topo_eval);
 
 extern int topology_g_whole_topo(bitstr_t *node_mask);
 
+extern bool topology_g_whole_topo_enabled(int idx);
+
 /*
  * topology_g_get_bitmap - Get bitmap of nodes in topo group
  *

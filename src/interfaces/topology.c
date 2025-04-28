@@ -288,6 +288,13 @@ extern int topology_g_whole_topo(bitstr_t *node_mask)
 	return (*(ops[tctx[0].idx].whole_topo))(node_mask, tctx[0].plugin_ctx);
 }
 
+extern bool topology_g_whole_topo_enabled(int idx)
+{
+	xassert(plugin_inited);
+	xassert((idx >= 0) && (idx < tctx_num));
+
+	return (*(ops[tctx[idx].idx].supports_exclusive_topo));
+}
 
 /*
  * topology_g_get_bitmap - Get bitmap of nodes in topo group
