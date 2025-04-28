@@ -186,7 +186,7 @@ static int _send_message_controller(int dest, slurm_msg_t *req)
 	}
 	slurm_msg_t_init(&resp_msg);
 
-	if ((rc = slurm_receive_msg(fd, &resp_msg, 0)) != 0) {
+	if ((rc = slurm_receive_msg(fd, NULL, &resp_msg, 0)) != 0) {
 		slurm_free_msg_members(&resp_msg);
 		close(fd);
 		return SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;

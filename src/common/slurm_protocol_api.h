@@ -209,11 +209,12 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer);
  *    freed with auth_g_destroy() if it exists.
  *
  * IN open_fd	- file descriptor to receive msg on
+ * IN tls_conn
  * OUT msg	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout);
+int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg, int timeout);
 
 /*
  *  Receive a slurm message on the open slurm descriptor "fd" waiting

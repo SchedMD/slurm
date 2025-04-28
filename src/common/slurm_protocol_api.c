@@ -978,11 +978,13 @@ total_return:
  * NOTE: memory is allocated for the returned msg must be freed at
  *       some point using the slurm_free_functions.
  * IN fd	- file descriptor to receive msg on
+ * IN tls_conn
  * OUT msg	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
+extern int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg,
+			     int timeout)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -1044,7 +1046,8 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, NULL, &buf, &buflen, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, tls_conn, &buf, &buflen, timeout) <
+	    0) {
 		rc = errno;
 		if (!rc)
 			rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
@@ -2110,7 +2113,7 @@ extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
 	 * expecting anything other than one message. The default timeout will
 	 * be used if it is set to 0.
 	 */
-	if (slurm_receive_msg(fd, resp, timeout))
+	if (slurm_receive_msg(fd, NULL, resp, timeout))
 		return -1;
 
 	return 0;
