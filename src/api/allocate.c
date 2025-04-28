@@ -294,6 +294,7 @@ static void *_load_willrun_thread(void *args)
 
 	if (!_job_will_run_cluster(load_args->req, &new_msg, cluster)) {
 		list_append(load_args->resp_msg_list, new_msg);
+		new_msg->cluster_name = xstrdup(cluster->name);
 	} else {
 		debug("Problem with submit to cluster %s: %m", cluster->name);
 		*(load_args->will_run_rc) = errno;
@@ -567,10 +568,19 @@ int slurm_job_will_run(job_desc_msg_t *req)
 			-1, LOG_LEVEL_INFO);
 
 	if ((rc == 0) && will_run_resp) {
+		char *cluster_name = NULL;
 		slurm_make_time_str(&will_run_resp->start_time,
 				    buf, sizeof(buf));
-		info("Job %u to start at %s using %u processors on nodes %s in partition %s",
+
+		if (working_cluster_rec)
+			cluster_name = working_cluster_rec->name;
+		else if (will_run_resp->cluster_name)
+			cluster_name = will_run_resp->cluster_name;
+
+		info("Job %u to start at %s%s%s a using %u processors on nodes %s in partition %s",
 		     will_run_resp->job_id, buf,
+		     cluster_name ? " on cluster " : "",
+		     cluster_name ? cluster_name : "",
 		     will_run_resp->proc_cnt,
 		     will_run_resp->node_list,
 		     will_run_resp->part_name);

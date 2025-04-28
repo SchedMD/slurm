@@ -2424,6 +2424,7 @@ extern void slurm_free_will_run_response_msg(void *data)
 {
 	will_run_response_msg_t *msg = data;
 	if (msg) {
+		xfree(msg->cluster_name);
 		xfree(msg->job_submit_user_msg);
 		xfree(msg->node_list);
 		xfree(msg->part_name);
