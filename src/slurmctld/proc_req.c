@@ -6916,7 +6916,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	record_rpc_stats(msg, DELTA_TIMER);
 }
 
-static void _srun_agent_launch(slurm_addr_t *addr, char *host,
+static void _srun_agent_launch(slurm_addr_t *addr, char *tls_cert, char *host,
 			       slurm_msg_type_t type, void *msg_args,
 			       uid_t r_uid, uint16_t protocol_version)
 {
@@ -6928,6 +6928,7 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 	agent_args->hostlist   = hostlist_create(host);
 	agent_args->msg_type   = type;
 	agent_args->msg_args   = msg_args;
+	agent_args->tls_cert = xstrdup(tls_cert);
 	set_agent_arg_r_uid(agent_args, r_uid);
 
 	/*
@@ -7017,7 +7018,8 @@ extern void srun_allocate(job_record_t *job_ptr)
 		msg_arg = build_alloc_msg(job_ptr, SLURM_SUCCESS, NULL);
 		log_flag(TLS, "Certificate for allocation response listening socket:\n%s\n",
 			 job_ptr->alloc_tls_cert);
-		_srun_agent_launch(addr, job_ptr->alloc_node,
+		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
+				   job_ptr->alloc_node,
 				   RESPONSE_RESOURCE_ALLOCATION, msg_arg,
 				   job_ptr->user_id,
 				   job_ptr->start_protocol_ver);
@@ -7043,7 +7045,8 @@ extern void srun_allocate(job_record_t *job_ptr)
 			msg_arg = NULL;
 		}
 		list_iterator_destroy(iter);
-		_srun_agent_launch(addr, job_ptr->alloc_node,
+		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
+				   job_ptr->alloc_node,
 				   RESPONSE_HET_JOB_ALLOCATION, job_resp_list,
 				   job_ptr->user_id,
 				   job_ptr->start_protocol_ver);

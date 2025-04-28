@@ -6251,6 +6251,7 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
 
 	hostlist_destroy(agent_arg_ptr->hostlist);
 	xfree(agent_arg_ptr->addr);
+	xfree(agent_arg_ptr->tls_cert);
 	if (agent_arg_ptr->msg_args) {
 		if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
 			slurm_free_job_launch_msg(agent_arg_ptr->msg_args);

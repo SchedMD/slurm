@@ -1904,6 +1904,7 @@ typedef struct {
 	slurm_msg_type_t msg_type;	/* RPC to be issued */
 	void		*msg_args;	/* RPC data to be transmitted */
 	uint16_t msg_flags;		/* Flags to be added to msg */
+	char *tls_cert;
 } agent_arg_t;
 
 /* Set r_uid of agent_arg */
