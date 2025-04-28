@@ -1080,6 +1080,9 @@ extern int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg,
 	else
 		FREE_NULL_BUFFER(buffer);
 
+	log_flag(NET, "Received message %s from %pA on fd %d",
+		 rpc_num2string(msg->msg_type), &msg->address, fd);
+
 endit:
 	errno = rc;
 
@@ -1765,6 +1768,10 @@ extern int slurm_send_node_msg(int fd, void *tls_conn, slurm_msg_t *msg)
 		buf_t *buffer;
 		char *peer = NULL;
 
+		log_flag(NET, "Sending persist_msg_t %s to %pA on fd %d",
+			 rpc_num2string(msg->msg_type), &msg->address,
+			 msg->conn->fd);
+
 		memset(&persist_msg, 0, sizeof(persist_msg_t));
 		persist_msg.msg_type  = msg->msg_type;
 		persist_msg.data      = msg->data;
@@ -1794,6 +1801,9 @@ extern int slurm_send_node_msg(int fd, void *tls_conn, slurm_msg_t *msg)
 		xfree(peer);
 		return rc;
 	}
+
+	log_flag(NET, "Sending message %s to %pA on fd %d",
+		 rpc_num2string(msg->msg_type), &msg->address, fd);
 
 	/*
 	 * Pack and send message
