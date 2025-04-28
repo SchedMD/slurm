@@ -701,17 +701,32 @@ int slurm_init_msg_engine_ports(uint16_t *ports)
  * msg connection establishment functions used by msg clients
 \**********************************************************************/
 
-/*
- * Creates a SOCK_STREAM (TCP) socket and calls connect() on it.
- * Will only receive messages from the address (w/port) argument.
- * IN slurm_address	- slurm_addr_t of the connection destination
- * RET slurm_fd		- file descriptor of the connection created
- */
-extern int slurm_open_msg_conn(slurm_addr_t *slurm_address)
+extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert)
 {
-	int fd = slurm_open_stream(slurm_address, false);
+	int fd;
+	void *tls_conn = NULL;
+	tls_conn_args_t tls_args = {
+		.mode = TLS_CONN_CLIENT,
+		.cert = tls_cert,
+	};
 
-	return fd;
+	if ((fd = slurm_open_stream(addr, false)) < 0) {
+		log_flag(NET, "Unable to connect to address %pA: %m", addr);
+		return NULL;
+	}
+
+	tls_args.input_fd = tls_args.output_fd = fd;
+
+	if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+		log_flag(NET, "Unable to create client TLS connection to address %pA on fd %d: %m",
+			 addr, fd);
+		return NULL;
+	}
+
+	log_flag(NET, "Successfully opened connection to %pA on fd %d",
+		 addr, fd);
+
+	return tls_conn;
 }
 
 /*

@@ -285,10 +285,11 @@ extern int slurm_open_controller_conn_spec(int dest,
 /*
  * Creates a SOCK_STREAM (TCP) socket and calls connect() on it.
  * Will only receive messages from the address (w/port) argument.
- * IN slurm_address	- slurm_addr_t of the connection destination
- * RET slurm_fd		- file descriptor of the connection created
+ * IN addr - slurm_addr_t of the connection destination
+ * IN tls_cert - public certificate for destination if not already trusted
+ * RET tls_conn	- TLS connection to destination
  */
-extern int slurm_open_msg_conn(slurm_addr_t * slurm_address);
+extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert);
 
 /**********************************************************************\
  * stream functions
