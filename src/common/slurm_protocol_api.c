@@ -2548,19 +2548,11 @@ list_t *slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout
  */
 list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 {
-	static pthread_mutex_t conn_lock = PTHREAD_MUTEX_INITIALIZER;
-	static uint16_t conn_timeout = NO_VAL16;
 	time_t start, now;
+	uint16_t conn_timeout = MIN(slurm_conf.msg_timeout, 10);
 	list_t *ret_list = NULL;
 	int fd = -1;
 	bool first = true;
-
-	slurm_mutex_lock(&conn_lock);
-
-	if (conn_timeout == NO_VAL16) {
-		conn_timeout = MIN(slurm_conf.msg_timeout, 10);
-	}
-	slurm_mutex_unlock(&conn_lock);
 
 	start = now = time(NULL);
 	/* This connect retry logic permits Slurm hierarchical communications
