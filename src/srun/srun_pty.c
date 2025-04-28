@@ -54,6 +54,8 @@
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
 
+#include "src/interfaces/tls.h"
+
 #include "opt.h"
 #include "srun_job.h"
 #include "srun_pty.h"
@@ -143,6 +145,7 @@ static void _notify_winsize_change(int fd, srun_job_t *job)
 
 static void *_pty_thread(void *arg)
 {
+	void *tls_conn = NULL;
 	int fd = -1;
 	srun_job_t *job = (srun_job_t *) arg;
 	slurm_addr_t client_addr;
@@ -150,10 +153,12 @@ static void *_pty_thread(void *arg)
 	xsignal_unblock(pty_sigarray);
 	xsignal(SIGWINCH, _handle_sigwinch);
 
-	if ((fd = slurm_accept_conn(job->pty_fd, &client_addr)) < 0) {
+	if (!(tls_conn = slurm_accept_msg_conn(job->pty_fd, &client_addr))) {
 		error("pty: accept failure: %m");
 		return NULL;
 	}
+
+	fd = tls_g_get_conn_fd(tls_conn);
 
 	net_set_keep_alive(fd);
 	while (job->state <= SRUN_JOB_RUNNING) {
@@ -168,6 +173,7 @@ static void *_pty_thread(void *arg)
 		}
 		winch = 0;
 	}
-	close(fd);
+
+	tls_g_destroy_conn(tls_conn, true);
 	return NULL;
 }
