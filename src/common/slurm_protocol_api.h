@@ -306,14 +306,12 @@ extern size_t slurm_write_stream(void *tls_conn, char *buffer, size_t size);
 
 /* slurm_read_stream
  * read into buffer grom a stream file descriptor
- * IN open_fd		- file descriptor to read from
  * IN tls_conn
  * OUT buffer	- buffer to receive into
  * IN size		- size of buffer
  * RET size_t		- bytes read , or -1 on error
  */
-extern size_t slurm_read_stream(int open_fd, void *tls_conn, char *buffer,
-				size_t size);
+extern size_t slurm_read_stream(void *tls_conn, char *buffer, size_t size);
 
 /**********************************************************************\
  * address conversion and management functions

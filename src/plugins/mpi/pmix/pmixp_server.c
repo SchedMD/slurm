@@ -1036,14 +1036,13 @@ static int _abort_status = SLURM_SUCCESS;
 
 void pmixp_abort_handle(void *tls_conn)
 {
-	int fd = tls_g_get_conn_fd(tls_conn);
 	uint32_t status;
 	int len;
 
 	/* Receive the status from stepd */
-	len = slurm_read_stream(fd, tls_conn, (char *) &status, sizeof(status));
+	len = slurm_read_stream(tls_conn, (char *) &status, sizeof(status));
 	if (len != sizeof(status)) {
-		PMIXP_ERROR("slurm_read_stream() failed: fd=%d; %m", fd);
+		PMIXP_ERROR("slurm_read_stream() failed: %m");
 		return;
 	}
 	/* Apply the received status */
@@ -1054,7 +1053,7 @@ void pmixp_abort_handle(void *tls_conn)
 	/* Reply back to confirm that the status was processed */
 	len = slurm_write_stream(tls_conn, (char *) &status, sizeof(status));
 	if (len != sizeof(status)) {
-		PMIXP_ERROR("slurm_write_stream() failed: fd=%d; %m", fd);
+		PMIXP_ERROR("slurm_write_stream() failed: %m");
 		return;
 	}
 }
@@ -1064,7 +1063,6 @@ void pmixp_abort_propagate(int status)
 	void *tls_conn = NULL;
 	uint32_t status_net = htonl((uint32_t)status);
 	int len;
-	int fd;
 	slurm_addr_t abort_server;
 
 	if (!(pmixp_info_srun_ip()) || (pmixp_info_abort_agent_port() <= 0)) {
@@ -1090,8 +1088,6 @@ void pmixp_abort_propagate(int status)
 		return;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
-
 	len = slurm_write_stream(tls_conn, (char *) &status_net,
 				 sizeof(status_net));
 	if (len != sizeof(status_net)) {
@@ -1102,7 +1098,7 @@ void pmixp_abort_propagate(int status)
 		goto close_fd;
 	}
 
-	len = slurm_read_stream(fd, tls_conn, (char *) &status_net,
+	len = slurm_read_stream(tls_conn, (char *) &status_net,
 				sizeof(status_net));
 	if (len != sizeof(status_net)) {
 		PMIXP_ERROR("slurm_read_stream() failed: %m");
