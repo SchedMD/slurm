@@ -2126,12 +2126,13 @@ int slurm_send_reroute_msg(slurm_msg_t *msg,
  * Send and recv a slurm request and response on the open slurm descriptor
  * Doesn't close the connection.
  * IN fd	- file descriptor to receive msg on
+ * IN tls_conn
  * IN req	- a slurm_msg struct to be sent by the function
  * OUT resp	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
+extern int slurm_send_recv_msg(int fd, void *tls_conn, slurm_msg_t *req,
 			       slurm_msg_t *resp, int timeout)
 {
 	slurm_msg_t_init(resp);
@@ -2145,7 +2146,7 @@ extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
 		resp->conn = req->conn;
 	}
 
-	if (slurm_send_node_msg(fd, NULL, req) < 0)
+	if (slurm_send_node_msg(fd, tls_conn, req) < 0)
 		return -1;
 
 	/*
@@ -2153,7 +2154,7 @@ extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
 	 * expecting anything other than one message. The default timeout will
 	 * be used if it is set to 0.
 	 */
-	if (slurm_receive_msg(fd, NULL, resp, timeout))
+	if (slurm_receive_msg(fd, tls_conn, resp, timeout))
 		return -1;
 
 	return 0;
@@ -2231,7 +2232,7 @@ tryagain:
 
 		fd = tls_g_get_conn_fd(tls_conn);
 
-		rc = slurm_send_recv_msg(fd, request_msg, response_msg, 0);
+		rc = slurm_send_recv_msg(fd, tls_conn, request_msg, response_msg, 0);
 
 		tls_g_destroy_conn(tls_conn, true);
 
@@ -2335,7 +2336,7 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 	}
 
 	fd = tls_g_get_conn_fd(tls_conn);
-	rc = slurm_send_recv_msg(fd, req, resp, timeout);
+	rc = slurm_send_recv_msg(fd, tls_conn, req, resp, timeout);
 
 	tls_g_destroy_conn(tls_conn, true);
 

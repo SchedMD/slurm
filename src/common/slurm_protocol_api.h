@@ -525,12 +525,13 @@ extern int slurm_send_only_node_msg(slurm_msg_t *request_msg);
 /* Send and recv a slurm request and response on the open slurm descriptor
  * Doesn't close the connection.
  * IN fd	- file descriptor to receive msg on
+ * IN tls_conn
  * IN req	- a slurm_msg struct to be sent by the function
  * OUT resp	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
+extern int slurm_send_recv_msg(int fd, void *tls_conn, slurm_msg_t *req,
 			       slurm_msg_t *resp, int timeout);
 
 /* Slurm message functions */
