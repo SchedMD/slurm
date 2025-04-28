@@ -738,8 +738,7 @@ extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert)
  * IN comm_cluster_rec	- Communication record (host/port/version)/
  * RET slurm_fd	- file descriptor of the connection created
  */
-static int _open_controller(slurm_addr_t *addr, int *index,
-			    slurmdb_cluster_rec_t *comm_cluster_rec)
+static int _open_controller(int *index, slurmdb_cluster_rec_t *comm_cluster_rec)
 {
 	int fd = -1;
 	int retry = false;
@@ -768,13 +767,13 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 					comm_cluster_rec->control_port,
 					comm_cluster_rec->control_host);
 			}
-			addr = &comm_cluster_rec->control_addr;
 
-			fd = slurm_open_stream(addr, false);
+			fd = slurm_open_stream(&comm_cluster_rec->control_addr,
+					       false);
 			if (fd >= 0)
 				goto end_it;
 			log_flag(NET, "%s: Failed to contact controller(%pA): %m",
-				 __func__, addr);
+				 __func__, &comm_cluster_rec->control_addr);
 		} else if (proto_conf->vip_addr_set) {
 			fd = slurm_open_stream(&proto_conf->vip_addr, false);
 			if (fd >= 0)
@@ -801,7 +800,6 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 			*index = 0;
 		}
 	}
-	addr = NULL;
 	_slurm_api_free_comm_config(proto_conf);
 	slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 
@@ -2188,7 +2186,6 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	slurm_conf_t *conf;
 	bool have_backup;
 	uint16_t slurmctld_timeout;
-	slurm_addr_t ctrl_addr;
 	static int index = 0;
 	slurmdb_cluster_rec_t *save_comm_cluster_rec = comm_cluster_rec;
 	int ratelimited = 0;
@@ -2218,8 +2215,7 @@ tryagain:
 	slurm_conf_unlock();
 
 	while (true) {
-		if ((fd = _open_controller(&ctrl_addr, &index,
-					   comm_cluster_rec)) < 0) {
+		if ((fd = _open_controller(&index, comm_cluster_rec)) < 0) {
 			rc = -1;
 			break;
 		}
@@ -2354,7 +2350,6 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 {
 	int      rc = SLURM_SUCCESS;
 	int fd = -1;
-	slurm_addr_t ctrl_addr;
 	int index = 0;
 
 	if (tls_enabled() && running_in_slurmstepd()) {
@@ -2364,8 +2359,7 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 	/*
 	 *  Open connection to Slurm controller:
 	 */
-	if ((fd = _open_controller(&ctrl_addr, &index,
-				   comm_cluster_rec)) < 0) {
+	if ((fd = _open_controller(&index, comm_cluster_rec)) < 0) {
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
