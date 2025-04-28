@@ -403,6 +403,18 @@ extern int topology_g_get(topology_data_t type, char *name, void *data)
 		}
 	}
 
+	if (type == TOPO_DATA_EXCLUSIVE_TOPO && !name) {
+		int *exclusive_topo = data;
+		*exclusive_topo = 0;
+		for (int i = 0; i < g_context_num; i++) {
+			if (*ops[i].supports_exclusive_topo) {
+				*exclusive_topo = 1;
+				break;
+			}
+		}
+		return SLURM_SUCCESS;
+	}
+
 	if (name) {
 		tctx_idx = _get_tctx_index_by_name(name);
 		if (tctx_idx < 0) {
