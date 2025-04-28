@@ -736,11 +736,12 @@ extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert)
  * IN/OUT index      - IN: which controller to start from
  *                   - OUT: which controller is connected
  * IN comm_cluster_rec	- Communication record (host/port/version)/
- * RET slurm_fd	- file descriptor of the connection created
+ * RET tls_conn or NULL on error
  */
-static int _open_controller(int *index, slurmdb_cluster_rec_t *comm_cluster_rec)
+static void *_open_controller(int *index,
+			      slurmdb_cluster_rec_t *comm_cluster_rec)
 {
-	int fd = -1;
+	void *tls_conn = NULL;
 	int retry = false;
 	time_t start;
 	slurm_protocol_config_t *proto_conf = NULL;
@@ -748,7 +749,7 @@ static int _open_controller(int *index, slurmdb_cluster_rec_t *comm_cluster_rec)
 	if (!comm_cluster_rec) {
 		/* This means the addr wasn't set up already */
 		if (!(proto_conf = _slurm_api_get_comm_config()))
-			return SLURM_ERROR;
+			return NULL;
 	}
 
 	start = time(NULL);
@@ -768,15 +769,15 @@ static int _open_controller(int *index, slurmdb_cluster_rec_t *comm_cluster_rec)
 					comm_cluster_rec->control_host);
 			}
 
-			fd = slurm_open_stream(&comm_cluster_rec->control_addr,
-					       false);
-			if (fd >= 0)
+			if ((tls_conn = slurm_open_msg_conn(
+				     &comm_cluster_rec->control_addr, NULL)))
 				goto end_it;
 			log_flag(NET, "%s: Failed to contact controller(%pA): %m",
 				 __func__, &comm_cluster_rec->control_addr);
 		} else if (proto_conf->vip_addr_set) {
-			fd = slurm_open_stream(&proto_conf->vip_addr, false);
-			if (fd >= 0)
+			if ((tls_conn =
+				     slurm_open_msg_conn(&proto_conf->vip_addr,
+							 NULL)))
 				goto end_it;
 			log_flag(NET, "%s: Failed to contact controller(%pA): %m",
 				 __func__, &proto_conf->vip_addr);
@@ -787,8 +788,9 @@ static int _open_controller(int *index, slurmdb_cluster_rec_t *comm_cluster_rec)
 					&proto_conf->controller_addr[inx];
 				if (slurm_addr_is_unspec(ctrl_addr))
 					continue;
-				fd = slurm_open_stream(ctrl_addr, false);
-				if (fd >= 0) {
+
+				if ((tls_conn = slurm_open_msg_conn(ctrl_addr,
+								    NULL))) {
 					log_flag(NET, "%s: Contacted SlurmctldHost[%d](%pA)",
 						 __func__, inx, ctrl_addr);
 					*index = inx;
@@ -801,11 +803,12 @@ static int _open_controller(int *index, slurmdb_cluster_rec_t *comm_cluster_rec)
 		}
 	}
 	_slurm_api_free_comm_config(proto_conf);
-	slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
+	errno = SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR;
+	return NULL;
 
 end_it:
 	_slurm_api_free_comm_config(proto_conf);
-	return fd;
+	return tls_conn;
 }
 
 /*
@@ -2215,7 +2218,9 @@ tryagain:
 	slurm_conf_unlock();
 
 	while (true) {
-		if ((fd = _open_controller(&index, comm_cluster_rec)) < 0) {
+		void *tls_conn = NULL;
+
+		if (!(tls_conn = _open_controller(&index, comm_cluster_rec))) {
 			rc = -1;
 			break;
 		}
@@ -2224,11 +2229,11 @@ tryagain:
 			request_msg->protocol_version =
 				comm_cluster_rec->rpc_version;
 
+		fd = tls_g_get_conn_fd(tls_conn);
+
 		rc = slurm_send_recv_msg(fd, request_msg, response_msg, 0);
 
-		if (close(fd))
-			error("%s: closing fd:%d error: %m",
-			      __func__, fd);
+		tls_g_destroy_conn(tls_conn, true);
 
 		if (response_msg->auth_cred)
 			auth_g_destroy(response_msg->auth_cred);
@@ -2348,6 +2353,7 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 				slurmdb_cluster_rec_t *comm_cluster_rec)
 {
+	void *tls_conn = NULL;
 	int      rc = SLURM_SUCCESS;
 	int fd = -1;
 	int index = 0;
@@ -2359,21 +2365,22 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 	/*
 	 *  Open connection to Slurm controller:
 	 */
-	if ((fd = _open_controller(&index, comm_cluster_rec)) < 0) {
+	if (!(tls_conn = _open_controller(&index, comm_cluster_rec))) {
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 
+	fd = tls_g_get_conn_fd(tls_conn);
 	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
 
-	if ((rc = slurm_send_node_msg(fd, NULL, req)) < 0) {
+	if ((rc = slurm_send_node_msg(fd, tls_conn, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		log_flag(NET, "%s: sent %d", __func__, rc);
 		rc = SLURM_SUCCESS;
 	}
 
-	(void) close(fd);
+	tls_g_destroy_conn(tls_conn, true);
 
 cleanup:
 	if (rc != SLURM_SUCCESS)
