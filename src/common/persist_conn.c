@@ -426,6 +426,12 @@ extern void slurm_persist_conn_recv_server_fini(void)
 			slurm_thread_join(thread_id);
 			slurm_mutex_lock(&thread_count_lock);
 		}
+
+		if (persist_service_conn[i]->conn) {
+			void *tls = persist_service_conn[i]->conn->tls_conn;
+			tls_g_set_graceful_shutdown(tls, false);
+		}
+
 		_destroy_persist_service(persist_service_conn[i]);
 		persist_service_conn[i] = NULL;
 	}
@@ -865,6 +871,8 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 				 __func__, persist_conn->fd);
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
+			tls_g_set_graceful_shutdown(persist_conn->tls_conn,
+						    false);
 			return -1;
 		}
 		if (ufds.revents & POLLNVAL) {
