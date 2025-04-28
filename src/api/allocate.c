@@ -556,15 +556,14 @@ int slurm_job_will_run(job_desc_msg_t *req)
 	will_run_response_msg_t *will_run_resp = NULL;
 	char buf[256];
 	int rc;
-	char *cluster_name = NULL;
 	void *ptr = NULL;
 
-	if (working_cluster_rec)
-		cluster_name = working_cluster_rec->name;
-	else
-		cluster_name = slurm_conf.cluster_name;
-	if (!slurm_load_federation(&ptr) &&
-	    cluster_in_federation(ptr, cluster_name))
+	/*
+	 * If working_cluster_rec is defined, the it's already gone through
+	 * slurmdb_get_first_avail_cluster() to find the cluster to go to.
+	 */
+	if (!working_cluster_rec && !slurm_load_federation(&ptr) &&
+	    cluster_in_federation(ptr, slurm_conf.cluster_name))
 		rc = _fed_job_will_run(req, &will_run_resp, ptr);
 	else
 		rc = slurm_job_will_run2(req, &will_run_resp);
