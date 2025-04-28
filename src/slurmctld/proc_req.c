@@ -6828,9 +6828,6 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.msg_type = REQUEST_PERSIST_INIT,
 		.func = _slurm_rpc_persist_init,
 	},{
-		.msg_type = REQUEST_PERSIST_INIT_TLS,
-		.func = _slurm_rpc_persist_init,
-	},{
 		.msg_type = REQUEST_SET_FS_DAMPENING_FACTOR,
 		.func = _slurm_rpc_set_fs_dampening_factor,
 	},{

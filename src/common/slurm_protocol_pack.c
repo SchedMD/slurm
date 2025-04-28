@@ -14410,7 +14410,6 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 			buffer, msg->protocol_version);
 		break;
 	case REQUEST_PERSIST_INIT:
-	case REQUEST_PERSIST_INIT_TLS:
 		slurm_persist_pack_init_req_msg(
 			(persist_init_req_msg_t *)msg->data,
 			buffer);
@@ -15075,7 +15074,6 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 			buffer, msg->protocol_version);
 		break;
 	case REQUEST_PERSIST_INIT:
-	case REQUEST_PERSIST_INIT_TLS:
 		/* the version is contained in the data so use that instead of
 		   what is in the message */
 		rc = slurm_persist_unpack_init_req_msg(

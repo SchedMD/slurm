@@ -789,8 +789,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 		return rc;
 	}
 
-	if ((persist_msg->msg_type == REQUEST_PERSIST_INIT) ||
-	    (persist_msg->msg_type == REQUEST_PERSIST_INIT_TLS))
+	if (persist_msg->msg_type == REQUEST_PERSIST_INIT)
 		init_msg = true;
 
 	if (first && !init_msg) {
@@ -1127,8 +1126,7 @@ extern int slurm_persist_msg_unpack(persist_conn_t *persist_conn,
 	 * future we need to use it in some way to verify things for messages
 	 * that don't have on that will follow on the connection.
 	 */
-	if ((resp_msg->msg_type == REQUEST_PERSIST_INIT) ||
-	    (resp_msg->msg_type == REQUEST_PERSIST_INIT_TLS)) {
+	if (resp_msg->msg_type == REQUEST_PERSIST_INIT) {
 		slurm_msg_t *msg = resp_msg->data;
 		if (persist_conn->auth_cred)
 			auth_g_destroy(persist_conn->auth_cred);
