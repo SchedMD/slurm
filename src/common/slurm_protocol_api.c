@@ -1044,7 +1044,7 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, NULL, &buf, &buflen, timeout) < 0) {
 		rc = errno;
 		if (!rc)
 			rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
@@ -1140,7 +1140,7 @@ list_t *slurm_receive_msgs(int fd, int steps, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, NULL, &buf, &buflen, timeout) < 0) {
 		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
@@ -1325,7 +1325,7 @@ extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	 * length and allocate space on the heap for a buffer containing the
 	 * message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, NULL, &buf, &buflen, timeout) < 0) {
 		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
@@ -1832,8 +1832,8 @@ size_t slurm_write_stream(int open_fd, char *buffer, size_t size)
  */
 size_t slurm_read_stream(int open_fd, char *buffer, size_t size)
 {
-	return slurm_recv_timeout(open_fd, buffer, size,
-	                          (slurm_conf.msg_timeout * 1000));
+	return slurm_recv_timeout(open_fd, NULL, buffer, size,
+				  (slurm_conf.msg_timeout * 1000));
 }
 
 /**********************************************************************\

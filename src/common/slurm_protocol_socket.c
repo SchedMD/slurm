@@ -115,13 +115,14 @@ static void _sock_bind_wild(int sockfd)
 	return;
 }
 
-extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
-					  int timeout)
+extern ssize_t slurm_msg_recvfrom_timeout(int fd, void *tls_conn, char **pbuf,
+					  size_t *lenp, int timeout)
 {
 	ssize_t  len;
 	uint32_t msglen;
 
-	len = slurm_recv_timeout(fd, (char *) &msglen, sizeof(msglen), timeout);
+	len = slurm_recv_timeout(fd, tls_conn, (char *) &msglen, sizeof(msglen),
+				 timeout);
 
 	if (len < ((ssize_t) sizeof(msglen)))
 		return SLURM_ERROR;
@@ -137,7 +138,8 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
 	if (!(*pbuf = try_xmalloc(msglen)))
 		slurm_seterrno_ret(ENOMEM);
 
-	if (slurm_recv_timeout(fd, *pbuf, msglen, timeout) != msglen) {
+	if (slurm_recv_timeout(fd, tls_conn, *pbuf, msglen, timeout) !=
+	    msglen) {
 		xfree(*pbuf);
 		*pbuf = NULL;
 		return SLURM_ERROR;
@@ -380,7 +382,8 @@ extern ssize_t slurm_bufs_sendto(int fd, void *tls_conn, msg_bufs_t *buffers)
 
 /* Get slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error */
-extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
+extern int slurm_recv_timeout(int fd, void *tls_conn, char *buffer, size_t size,
+			      int timeout)
 {
 	int rc;
 	int recvlen = 0;
@@ -455,7 +458,13 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout)
 			continue;
 		}
 
-		rc = recv(fd, &buffer[recvlen], (size - recvlen), 0);
+		if (tls_conn) {
+			rc = tls_g_recv(tls_conn, &buffer[recvlen],
+					(size - recvlen));
+		} else {
+			rc = recv(fd, &buffer[recvlen], (size - recvlen), 0);
+		}
+
 		if (rc < 0)  {
 			if ((errno == EINTR) || (errno == EAGAIN)) {
 				log_flag(NET, "%s: recv(fd:%d) got %m. retrying.",

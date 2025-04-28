@@ -63,8 +63,8 @@
  * timing out after `timeout' milliseconds.
  *
  */
-extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **buf, size_t *len,
-					  int timeout);
+extern ssize_t slurm_msg_recvfrom_timeout(int fd, void *tls_conn, char **pbuf,
+					  size_t *lenp, int timeout);
 
 /* slurm_msg_sendto
  * Send message over the given connection, default timeout value
@@ -133,7 +133,8 @@ extern int slurm_open_unix_stream(char *addr_name, int sock_flags, int *fd);
 extern int slurm_get_stream_addr(int open_fd, slurm_addr_t *address);
 
 extern int slurm_send_timeout(int fd, char *buffer, size_t size, int timeout);
-extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout);
+extern int slurm_recv_timeout(int fd, void *tls_conn, char *buffer, size_t size,
+			      int timeout);
 
 /*****************************/
 /* slurm addr pack functions */
