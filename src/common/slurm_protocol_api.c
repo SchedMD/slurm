@@ -2432,6 +2432,7 @@ cleanup:
  */
 int slurm_send_only_node_msg(slurm_msg_t *req)
 {
+	void *tls_conn = NULL;
 	int rc = SLURM_SUCCESS;
 	int fd = -1;
 	struct pollfd pfd;
@@ -2441,13 +2442,15 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	if (tls_enabled() && running_in_slurmstepd()) {
 		return stepd_proxy_send_only_node_msg(req);
 	}
-	if ((fd = slurm_open_stream(&req->address, false)) < 0) {
-		log_flag(NET, "%s: slurm_open_stream(%pA): %m",
+
+	if (!(tls_conn = slurm_open_msg_conn(&req->address, NULL))) {
+		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req->address);
 		return SLURM_ERROR;
 	}
+	fd = tls_g_get_conn_fd(tls_conn);
 
-	if ((rc = slurm_send_node_msg(fd, NULL, req)) < 0) {
+	if ((rc = slurm_send_node_msg(fd, tls_conn, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		log_flag(NET, "%s: sent %d", __func__, rc);
@@ -2466,8 +2469,11 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	 * which case the code path above may opt to retransmit an already
 	 * received message. If this is a concern, you should not be using
 	 * this function.
+	 *
+	 * Skip this if running with TLS enabled as it may mess up the internal
+	 * session state.
 	 */
-	if (shutdown(fd, SHUT_WR))
+	if (!tls_enabled() && shutdown(fd, SHUT_WR))
 		log_flag(NET, "%s: shutdown call failed: %m", __func__);
 
 again:
@@ -2478,7 +2484,7 @@ again:
 		if (errno == EINTR)
 			goto again;
 		log_flag(NET, "%s: poll error: %m", __func__);
-		(void) close(fd);
+		tls_g_destroy_conn(tls_conn, true);
 		return SLURM_ERROR;
 	}
 
@@ -2488,7 +2494,7 @@ again:
 				 __func__);
 		log_flag(NET, "%s: poll timed out with %d outstanding: %m",
 			 __func__, value);
-		(void) close(fd);
+		tls_g_destroy_conn(tls_conn, true);
 		return SLURM_ERROR;
 	}
 
@@ -2507,11 +2513,11 @@ again:
 			log_flag(NET, "%s: poll error with %d outstanding: %s",
 				 __func__, value, slurm_strerror(err));
 
-		(void) close(fd);
+		tls_g_destroy_conn(tls_conn, true);
 		return SLURM_ERROR;
 	}
 
-	(void) close(fd);
+	tls_g_destroy_conn(tls_conn, true);
 
 	return rc;
 }
