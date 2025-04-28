@@ -705,7 +705,6 @@ static void *_service_msg(void *arg)
 	service_msg_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
 	slurm_addr_t *addr = &args->addr;
-	int fd = args->fd;
 
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 
@@ -725,15 +724,19 @@ static void *_service_msg(void *arg)
 	 */
 	msg->conmgr_fd = NULL;
 	msg->conn_fd = args->fd;
-	msg->tls_conn = args->tls_conn;
-
+	if (args->tls_conn) {
+		msg->tls_conn = args->tls_conn;
+	} else {
+		tls_conn_args_t tls_args = {
+			.input_fd = args->fd,
+			.output_fd = args->fd,
+		};
+		msg->tls_conn = tls_g_create_conn(&tls_args);
+	}
 	slurmd_req(msg);
 
-	tls_g_destroy_conn(msg->tls_conn, false);
+	tls_g_destroy_conn(msg->tls_conn, true);
 	msg->tls_conn = NULL;
-
-	if ((msg->conn_fd >= 0) && close(msg->conn_fd) < 0)
-		error ("close(%d): %m", fd);
 
 	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));
 
