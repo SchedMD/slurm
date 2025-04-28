@@ -2161,30 +2161,6 @@ _send_and_recv_msg(int fd, slurm_msg_t *req,
 	return rc;
 }
 
-/*
- * Send and recv a slurm request and response on the open slurm descriptor
- * with a list containing the responses of the children (if any) we
- * forwarded the message to. List containing type (ret_data_info_t).
- * IN fd	- file descriptor to receive msg on
- * IN req	- a slurm_msg struct to be sent by the function
- * IN timeout	- how long to wait in milliseconds
- * RET List	- List containing the responses of the children (if any) we
- *		  forwarded the message to. List containing type
- *		  (ret_data_info_t).
- */
-static list_t *_send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
-{
-	list_t *ret_list = NULL;
-
-	if (slurm_send_node_msg(fd, NULL, req) >= 0)
-		ret_list = slurm_receive_msgs(fd, NULL, req->forward.tree_depth,
-					      req->forward.timeout);
-
-	(void) close(fd);
-
-	return ret_list;
-}
-
 static int _foreach_ret_list_hostname_set(void *x, void *arg)
 {
 	ret_data_info_t *ret_data_info = x;
@@ -2578,6 +2554,7 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 {
 	time_t start, now;
 	uint16_t conn_timeout = MIN(slurm_conf.msg_timeout, 10);
+	void *tls_conn = NULL;
 	list_t *ret_list = NULL;
 	int fd = -1;
 	bool first = true;
@@ -2586,8 +2563,9 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	/* This connect retry logic permits Slurm hierarchical communications
 	 * to better survive slurmd restarts */
 	while ((now - start) < conn_timeout) {
-		fd = slurm_open_stream(&msg->address, false);
-		if ((fd >= 0) || (errno != ECONNREFUSED && errno != ETIMEDOUT))
+		if ((tls_conn = slurm_open_msg_conn(&msg->address, NULL)))
+			break;
+		if ((errno != ECONNREFUSED) && (errno != ETIMEDOUT))
 			break;
 		if (errno == ETIMEDOUT) {
 			if (first)
@@ -2602,7 +2580,8 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 		first = false;
 		now = time(NULL);
 	}
-	if (fd < 0) {
+
+	if (!tls_conn) {
 		log_flag(NET, "Failed to connect to %pA, %m", &msg->address);
 		mark_as_failed_forward(&ret_list, name,
 				       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
@@ -2610,16 +2589,26 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 		return ret_list;
 	}
 
+	fd = tls_g_get_conn_fd(tls_conn);
 	msg->ret_list = NULL;
 	msg->forward_struct = NULL;
-	if (!(ret_list = _send_and_recv_msgs(fd, msg, timeout))) {
+
+	if (slurm_send_node_msg(fd, NULL, msg) >= 0)
+		ret_list = slurm_receive_msgs(fd, tls_conn, msg->forward.tree_depth,
+					      msg->forward.timeout);
+
+	if (!ret_list) {
 		mark_as_failed_forward(&ret_list, name, errno);
+		tls_g_destroy_conn(tls_conn, true);
 		errno = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
 		return ret_list;
-	} else {
-		(void) list_for_each(
-			ret_list, _foreach_ret_list_hostname_set, name);
 	}
+
+	(void) list_for_each(
+			ret_list, _foreach_ret_list_hostname_set, name);
+
+	tls_g_destroy_conn(tls_conn, true);
+
 	return ret_list;
 }
 
