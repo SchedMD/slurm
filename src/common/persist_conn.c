@@ -539,7 +539,11 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 	xassert(persist_conn->rem_port);
 	xassert(persist_conn->cluster_name);
 
-	if (persist_conn->fd > 0)
+	if (persist_conn->tls_conn) {
+		tls_g_destroy_conn(persist_conn->tls_conn, true);
+		persist_conn->tls_conn = NULL;
+		persist_conn->fd = -1;
+	} else if (persist_conn->fd > 0)
 		fd_close(&persist_conn->fd);
 	else
 		persist_conn->fd = -1;
@@ -558,7 +562,8 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 		persist_conn->timeout = slurm_conf.msg_timeout * 1000;
 
 	slurm_set_addr(&addr, persist_conn->rem_port, persist_conn->rem_host);
-	if ((persist_conn->fd = slurm_open_stream(&addr, false)) < 0) {
+
+	if (!(persist_conn->tls_conn = slurm_open_msg_conn(&addr, NULL))) {
 		if (_comm_fail_log(persist_conn)) {
 			if (persist_conn->flags & PERSIST_FLAG_SUPPRESS_ERR)
 				log_flag(NET, "%s: failed to open persistent connection (with error suppression active) to host:%s:%d: %m",
@@ -571,6 +576,9 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 		}
 		return SLURM_ERROR;
 	}
+
+	persist_conn->fd = tls_g_get_conn_fd(persist_conn->tls_conn);
+
 	fd_set_nonblocking(persist_conn->fd);
 	net_set_keep_alive(persist_conn->fd);
 
@@ -601,10 +609,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 	 * other side is running yet.
 	 */
 	req_msg.protocol_version = persist_conn->version;
-
-	req_msg.msg_type = tls_enabled() ? REQUEST_PERSIST_INIT_TLS :
-					   REQUEST_PERSIST_INIT;
-
+	req_msg.msg_type = REQUEST_PERSIST_INIT;
 	req_msg.flags |= SLURM_GLOBAL_AUTH_KEY;
 	if (persist_conn->flags & PERSIST_FLAG_DBD)
 		req_msg.flags |= SLURMDBD_CONNECTION;
@@ -618,25 +623,17 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 
 	req_msg.data = &req;
 
-	if (slurm_send_node_msg(persist_conn->fd, NULL, &req_msg) < 0) {
+	if (slurm_send_node_msg(persist_conn->fd, persist_conn->tls_conn,
+				&req_msg) < 0) {
 		error("%s: failed to send persistent connection init message to %s:%d",
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
-		fd_close(&persist_conn->fd);
+		tls_g_destroy_conn(persist_conn->tls_conn, true);
+		persist_conn->tls_conn = NULL;
+		persist_conn->fd = -1;
 	} else {
 		buf_t *buffer = NULL;
 		persist_msg_t msg;
 		persist_conn_t persist_conn_tmp;
-		const tls_conn_args_t tls_args = {
-			.input_fd = persist_conn->fd,
-			.output_fd = persist_conn->fd,
-			.mode = TLS_CONN_CLIENT,
-		};
-
-		persist_conn->tls_conn = tls_g_create_conn(&tls_args);
-		if (!persist_conn->tls_conn) {
-			error("Failed to enable tls on persistent connection");
-			goto end_it;
-		}
 
 		buffer = _slurm_persist_recv_msg(persist_conn, false);
 
@@ -645,7 +642,11 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 				error("%s: No response to persist_init",
 				      __func__);
 			}
-			fd_close(&persist_conn->fd);
+
+			tls_g_destroy_conn(persist_conn->tls_conn, true);
+			persist_conn->tls_conn = NULL;
+			persist_conn->fd = -1;
+
 			if (!errno)
 				errno = SLURM_ERROR;
 			goto end_it;
@@ -678,7 +679,9 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 				      persist_conn->rem_host,
 				      persist_conn->rem_port);
 			}
-			fd_close(&persist_conn->fd);
+			tls_g_destroy_conn(persist_conn->tls_conn, true);
+			persist_conn->tls_conn = NULL;
+			persist_conn->fd = -1;
 		} else if (resp) {
 			persist_conn->version = resp->ret_info;
 			persist_conn->flags |= resp->flags;
