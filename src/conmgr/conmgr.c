@@ -364,22 +364,28 @@ extern int conmgr_set_params(const char *params)
 		} else if (!xstrcasecmp(tok, CONMGR_PARAM_POLL_ONLY)) {
 			log_flag(CONMGR, "%s: %s activated", __func__, tok);
 			pollctl_set_mode(POLL_MODE_POLL);
-		} else if (!xstrcasecmp(tok, CONMGR_PARAM_WAIT_WRITE_DELAY)) {
+		} else if (
+			!xstrncasecmp(tok, CONMGR_PARAM_WAIT_WRITE_DELAY,
+				      strlen(CONMGR_PARAM_WAIT_WRITE_DELAY))) {
 			const unsigned long count = slurm_atoul(tok +
 				strlen(CONMGR_PARAM_WAIT_WRITE_DELAY));
 			log_flag(CONMGR, "%s: %s activated", __func__, tok);
 			mgr.conf_delay_write_complete = count;
-		} else if (!xstrcasecmp(tok, CONMGR_PARAM_READ_TIMEOUT)) {
+		} else if (!xstrncasecmp(tok, CONMGR_PARAM_READ_TIMEOUT,
+					 strlen(CONMGR_PARAM_READ_TIMEOUT))) {
 			const unsigned long count = slurm_atoul(tok +
 				strlen(CONMGR_PARAM_READ_TIMEOUT));
 			log_flag(CONMGR, "%s: %s activated", __func__, tok);
 			mgr.conf_read_timeout.tv_sec = count;
-		} else if (!xstrcasecmp(tok, CONMGR_PARAM_WRITE_TIMEOUT)) {
+		} else if (!xstrncasecmp(tok, CONMGR_PARAM_WRITE_TIMEOUT,
+					 strlen(CONMGR_PARAM_WRITE_TIMEOUT))) {
 			const unsigned long count = slurm_atoul(tok +
 				strlen(CONMGR_PARAM_WRITE_TIMEOUT));
 			log_flag(CONMGR, "%s: %s activated", __func__, tok);
 			mgr.conf_write_timeout.tv_sec = count;
-		} else if (!xstrcasecmp(tok, CONMGR_PARAM_CONNECT_TIMEOUT)) {
+		} else if (
+			!xstrncasecmp(tok, CONMGR_PARAM_CONNECT_TIMEOUT,
+				      strlen(CONMGR_PARAM_CONNECT_TIMEOUT))) {
 			const unsigned long count = slurm_atoul(tok +
 				strlen(CONMGR_PARAM_CONNECT_TIMEOUT));
 			log_flag(CONMGR, "%s: %s activated", __func__, tok);
