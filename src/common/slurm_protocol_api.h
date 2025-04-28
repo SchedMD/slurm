@@ -224,6 +224,7 @@ int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg, int timeout);
  *    list_destroy function.
  *
  * IN open_fd	- file descriptor to receive msg on
+ * IN tls_conn
  * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
  * RET list	- list containing the responses of the children (if any) we
@@ -231,7 +232,8 @@ int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg, int timeout);
  *                (ret_data_info_t). NULL is returned on failure. and
  *                errno set.
  */
-extern list_t *slurm_receive_msgs(int fd, int steps, int timeout);
+extern list_t *slurm_receive_msgs(int fd, void *tls_conn, int steps,
+				  int timeout);
 extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout);
 
 /*

@@ -1080,13 +1080,15 @@ endit:
  * NOTE: memory is allocated for the returned list
  *       and must be freed at some point using the list_destroy function.
  * IN open_fd	- file descriptor to receive msg on
+ * IN tls_conn
  * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
  * RET List	- List containing the responses of the children (if any) we
  *		  forwarded the message to. List containing type
  *		  (ret_data_info_t).
  */
-list_t *slurm_receive_msgs(int fd, int steps, int timeout)
+extern list_t *slurm_receive_msgs(int fd, void *tls_conn, int steps,
+				  int timeout)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -1143,7 +1145,8 @@ list_t *slurm_receive_msgs(int fd, int steps, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, NULL, &buf, &buflen, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, tls_conn, &buf, &buflen, timeout) <
+	    0) {
 		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
@@ -2157,7 +2160,7 @@ static list_t *_send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
 	list_t *ret_list = NULL;
 
 	if (slurm_send_node_msg(fd, req) >= 0)
-		ret_list = slurm_receive_msgs(fd, req->forward.tree_depth,
+		ret_list = slurm_receive_msgs(fd, NULL, req->forward.tree_depth,
 					      req->forward.timeout);
 
 	(void) close(fd);
