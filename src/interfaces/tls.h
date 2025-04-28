@@ -142,6 +142,13 @@ extern void tls_g_destroy_conn(void *conn);
 extern int tls_g_negotiate_conn(void *conn);
 
 /*
+ * Retrieve connection read file descriptor.
+ * Needed for poll() and similar status monitoring.
+ * Assumes both read and write file descriptor are the same.
+ */
+extern int tls_g_get_conn_fd(void *conn);
+
+/*
  * Set read/write fd's on TLS connection
  * NOTE: This resets send/recv callbacks/contexts in TLS connection
  * IN conn - TLS connection to reconfigure

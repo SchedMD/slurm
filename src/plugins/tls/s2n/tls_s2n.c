@@ -1183,6 +1183,17 @@ extern int tls_p_negotiate_conn(tls_conn_t *conn)
 	return _negotiate(conn);
 }
 
+extern int tls_p_get_conn_fd(tls_conn_t *conn)
+{
+	xassert(conn);
+
+	if (conn->input_fd != conn->output_fd)
+		debug("%s: asymmetric connection %d->%d",
+		      __func__, conn->input_fd, conn->output_fd);
+
+	return conn->input_fd;
+}
+
 extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
 {
 	xassert(conn);
