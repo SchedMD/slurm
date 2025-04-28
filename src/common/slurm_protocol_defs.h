@@ -1605,7 +1605,7 @@ extern void slurm_free_partition_info_members(partition_info_t * part);
 extern void slurm_free_reservation_info_msg(reserve_info_msg_t * msg);
 extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
 extern void slurm_free_kvs_comm_set(kvs_comm_set_t *msg);
-extern void slurm_free_will_run_response_msg(will_run_response_msg_t *msg);
+extern void slurm_free_will_run_response_msg(void *data);
 extern void slurm_free_reserve_info_members(reserve_info_t * resv);
 extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
 extern void slurm_free_topo_request_msg(topo_info_request_msg_t *msg);
