@@ -5895,19 +5895,11 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn_t *persist_conn = NULL, p_tmp;
 	persist_init_req_msg_t *persist_init = msg->data;
 	slurm_addr_t rem_addr;
-	tls_conn_args_t tls_args = {
-		.input_fd = -1,
-		.output_fd = -1,
-		.mode = TLS_CONN_NULL,
-	};
 
 	if (msg->conn)
 		error("We already have a persistent connect, this should never happen");
 
 	START_TIMER;
-
-	if (msg->msg_type == REQUEST_PERSIST_INIT_TLS)
-		tls_args.mode = TLS_CONN_SERVER;
 
 	if (persist_init->version > SLURM_PROTOCOL_VERSION)
 		persist_init->version = SLURM_PROTOCOL_VERSION;
@@ -5939,8 +5931,9 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	persist_conn->fd = msg->conn_fd;
 	msg->conn_fd = -1;
-	tls_args.input_fd = persist_conn->fd;
-	tls_args.output_fd = persist_conn->fd;
+
+	persist_conn->tls_conn = msg->tls_conn;
+	msg->tls_conn = NULL;
 
 	persist_conn->callback_proc = _process_persist_conn;
 
@@ -5958,11 +5951,6 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	//persist_conn->timeout = 0; /* we want this to be 0 */
 
 	persist_conn->version = persist_init->version;
-
-	if (!(persist_conn->tls_conn = tls_g_create_conn(&tls_args))) {
-		error("tls_g_create_conn() failed on persistent connection request");
-		goto end_it;
-	}
 
 	memcpy(&p_tmp, persist_conn, sizeof(persist_conn_t));
 
