@@ -3300,7 +3300,6 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	list_itr_t *itr;
 	list_t *cluster_list = NULL;
 	list_t *ret_list = NULL;
-	list_t *tried_feds = NULL;
 
 	*cluster_rec = NULL;
 
@@ -3325,28 +3324,17 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	if (working_cluster_rec)
 		*cluster_rec = working_cluster_rec;
 
-	tried_feds = list_create(NULL);
 	ret_list = list_create(xfree_ptr);
 	itr = list_iterator_create(cluster_list);
 	while ((working_cluster_rec = list_next(itr))) {
-		/* only try one cluster from each federation */
-		if (working_cluster_rec->fed.id &&
-		    list_find_first(tried_feds, slurm_find_char_in_list,
-				    working_cluster_rec->fed.name))
-			continue;
-
 		if ((local_cluster = _job_will_run(req))) {
 			list_append(ret_list, local_cluster);
-			if (working_cluster_rec->fed.id)
-				list_append(tried_feds,
-					    working_cluster_rec->fed.name);
 		} else {
 			error("Problem with submit to cluster %s: %m",
 			      working_cluster_rec->name);
 		}
 	}
 	list_iterator_destroy(itr);
-	FREE_NULL_LIST(tried_feds);
 
 	/* restore working_cluster_rec in case it was already set */
 	if (*cluster_rec) {
@@ -3434,7 +3422,6 @@ extern int slurmdb_get_first_het_job_cluster(list_t *job_req_list,
 	list_itr_t *itr;
 	list_t *cluster_list = NULL;
 	list_t *ret_list = NULL;
-	list_t *tried_feds = NULL;
 
 	*cluster_rec = NULL;
 
@@ -3462,27 +3449,17 @@ extern int slurmdb_get_first_het_job_cluster(list_t *job_req_list,
 	if (working_cluster_rec)
 		*cluster_rec = working_cluster_rec;
 
-	tried_feds = list_create(NULL);
 	ret_list = list_create(xfree_ptr);
 	itr = list_iterator_create(cluster_list);
 	while ((working_cluster_rec = list_next(itr))) {
-		/* only try one cluster from each federation */
-		if (working_cluster_rec->fed.id &&
-		    list_find_first(tried_feds, slurm_find_char_in_list,
-				    working_cluster_rec->fed.name))
-			continue;
 		if ((local_cluster = _het_job_will_run(job_req_list))) {
 			list_append(ret_list, local_cluster);
-			if (working_cluster_rec->fed.id)
-				list_append(tried_feds,
-					    working_cluster_rec->fed.name);
 		} else {
 			error("Problem with submit to cluster %s: %m",
 			      working_cluster_rec->name);
 		}
 	}
 	list_iterator_destroy(itr);
-	FREE_NULL_LIST(tried_feds);
 
 	/* restore working_cluster_rec in case it was already set */
 	if (*cluster_rec) {
