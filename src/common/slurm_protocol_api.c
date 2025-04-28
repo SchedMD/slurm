@@ -2035,6 +2035,7 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 
 	resp_msg.conn_fd = source_msg->conn_fd;
 	resp_msg.conn = source_msg->conn;
+	resp_msg.tls_conn = source_msg->tls_conn;
 
 	rc = slurm_send_node_msg(source_msg->conn_fd, NULL, &resp_msg);
 
