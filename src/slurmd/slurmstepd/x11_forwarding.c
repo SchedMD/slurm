@@ -156,7 +156,7 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 	net_set_nodelay(*remote, true, NULL);
 
 	if (half_duplex_add_objs_to_handle(eio_handle, local, remote,
-					   TLS_CONN_CLIENT, srun_tls_cert)) {
+					   tls_conn)) {
 		goto shutdown;
 	}
 

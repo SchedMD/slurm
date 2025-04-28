@@ -278,7 +278,7 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 	forward_msg->tls_conn = NULL;
 
 	if (half_duplex_add_objs_to_handle(msg_thr->handle, local, remote,
-					   TLS_CONN_SERVER, NULL)) {
+					   forward_msg->tls_conn)) {
 		goto error;
 	}
 

@@ -60,8 +60,7 @@ typedef struct {
 
 extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 					  int *local_fd, int *remote_fd,
-					  tls_conn_mode_t remote_tls_mode,
-					  char *remote_tls_cert)
+					  void *tls_conn)
 {
 	half_duplex_eio_arg_t *local_arg = NULL;
 	half_duplex_eio_arg_t *remote_arg = NULL;
@@ -79,22 +78,8 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 	remote_to_local_eio =
 		eio_obj_create(*remote_fd, &half_duplex_ops, remote_arg);
 
-	if (tls_enabled()) {
+	if (tls_conn) {
 		void **tls_conn_ptr = xmalloc(sizeof(*tls_conn_ptr));
-		void *tls_conn = NULL;
-
-		tls_conn_args_t tls_args = {
-			.input_fd = *remote_fd,
-			.output_fd = *remote_fd,
-			.mode = remote_tls_mode,
-			.cert = remote_tls_cert,
-		};
-
-		if (!(tls_conn = tls_g_create_conn(&tls_args))) {
-			error("Failed to create remote connection for x11 forwarding");
-			goto fail;
-		}
-
 		*tls_conn_ptr = tls_conn;
 
 		/*
@@ -130,15 +115,6 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 	eio_new_obj(eio_handle, remote_to_local_eio);
 
 	return SLURM_SUCCESS;
-
-fail:
-	eio_obj_destroy(local_to_remote_eio);
-	eio_obj_destroy(remote_to_local_eio);
-
-	xfree(local_arg);
-	xfree(remote_arg);
-
-	return SLURM_ERROR;
 }
 
 static bool _half_duplex_readable(eio_obj_t *obj)
