@@ -307,7 +307,8 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 		return errno;
 	}
 
-	while ((rc = slurm_receive_msg(srun_fd, &msg_rcv, timeout)) != 0) {
+	while ((rc = slurm_receive_msg(srun_fd, NULL, &msg_rcv, timeout)) !=
+	       0) {
 		if (errno == EINTR)
 			continue;
 		error("slurm_receive_msg: %m");

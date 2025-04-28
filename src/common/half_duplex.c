@@ -150,7 +150,7 @@ static bool _half_duplex_readable(eio_obj_t *obj)
 
 		if (fd_out) {
 			if (tls_conn_out && *tls_conn_out) {
-				tls_g_destroy_conn(*tls_conn_out);
+				tls_g_destroy_conn(*tls_conn_out, false);
 				*tls_conn_out = NULL;
 			}
 			shutdown(*fd_out, SHUT_WR);
@@ -208,7 +208,7 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 shutdown:
 	obj->shutdown = true;
 	if (tls_conn_in && *tls_conn_in) {
-		tls_g_destroy_conn(*tls_conn_in);
+		tls_g_destroy_conn(*tls_conn_in, false);
 		*tls_conn_in = NULL;
 	}
 	shutdown(obj->fd, SHUT_RD);
@@ -216,7 +216,7 @@ shutdown:
 	obj->fd = -1;
 	if (fd_out) {
 		if (tls_conn_out && *tls_conn_out) {
-			tls_g_destroy_conn(*tls_conn_out);
+			tls_g_destroy_conn(*tls_conn_out, false);
 			*tls_conn_out = NULL;
 		}
 		shutdown(*fd_out, SHUT_WR);

@@ -424,7 +424,7 @@ extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 
 	memset(&ctld_address, 0, sizeof(ctld_address));
 	slurm_set_addr(&ctld_address, port, host);
-	fd = slurm_open_msg_conn(&ctld_address);
+	fd = slurm_open_stream(&ctld_address, false);
 	if (fd < 0) {
 		error("can not open socket back to slurmctld "
 		      "%s(%u): %m", host, port);
@@ -443,7 +443,7 @@ extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 		out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
 		out_msg.data = &update;
 		slurm_msg_set_r_uid(&out_msg, SLURM_AUTH_UID_ANY);
-		slurm_send_node_msg(fd, &out_msg);
+		slurm_send_node_msg(fd, NULL, &out_msg);
 		/* We probably need to add matching recv_msg function
 		 * for an arbitrary fd or should these be fire
 		 * and forget?  For this, that we can probably

@@ -172,7 +172,7 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 		 __func__, con->name);
 
 	errno = SLURM_SUCCESS;
-	tls_g_destroy_conn(tls);
+	tls_g_destroy_conn(tls, false);
 	if ((rc = errno))
 		log_flag(CONMGR, "%s: [%s] tls_g_destroy_conn() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));

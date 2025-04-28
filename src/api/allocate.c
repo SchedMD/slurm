@@ -1348,7 +1348,7 @@ static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
 
-	if ((rc = slurm_receive_msg(conn_fd, msg, 0)) != 0) {
+	if ((rc = slurm_receive_msg(conn_fd, NULL, msg, 0)) != 0) {
 		slurm_free_msg(msg);
 
 		if (errno == EINTR) {

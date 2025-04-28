@@ -137,9 +137,9 @@ static int _tcp_connect(void *_priv, void *ep_data, size_t ep_len,
 		if (i) {
 			usleep(i * 1000);
 		}
-		fd = slurm_open_msg_conn(&address);
+		fd = slurm_open_stream(&address, false);
 		if ((fd >= 0) || (errno != ECONNREFUSED)) {
-			log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+			log_flag(NET, "%s: slurm_open_stream(%pA): %m",
 				 __func__, &address);
 			break;
 		}

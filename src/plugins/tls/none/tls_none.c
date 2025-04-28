@@ -35,6 +35,7 @@
 
 #include <sys/socket.h>
 #include <sys/uio.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -102,10 +103,18 @@ extern tls_conn_t *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 	return conn;
 }
 
-extern void tls_p_destroy_conn(tls_conn_t *conn)
+extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 {
 	log_flag(TLS, "%s: destroy connection. fd:%d->%d",
 		 plugin_type, conn->input_fd, conn->output_fd);
+
+	if (close_fds) {
+		if (conn->input_fd >= 0)
+			close(conn->input_fd);
+		if ((conn->output_fd >= 0) &&
+		    (conn->output_fd != conn->input_fd))
+			close(conn->output_fd);
+	}
 
 	xfree(conn);
 }
@@ -149,6 +158,17 @@ extern timespec_t tls_p_get_delay(void *conn)
 extern int tls_p_negotiate_conn(void *conn)
 {
 	return ESLURM_NOT_SUPPORTED;
+}
+
+extern int tls_p_get_conn_fd(tls_conn_t *conn)
+{
+	xassert(conn);
+
+	if (conn->input_fd != conn->output_fd)
+		debug("%s: asymmetric connection %d->%d",
+		      __func__, conn->input_fd, conn->output_fd);
+
+	return conn->input_fd;
 }
 
 extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)

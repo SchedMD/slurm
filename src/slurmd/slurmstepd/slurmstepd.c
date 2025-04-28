@@ -121,22 +121,6 @@ time_t last_job_update = 0;
 bool time_limit_thread_shutdown = false;
 pthread_t time_limit_thread_id = 0;
 
-/* See _send_msg_maybe() in src/slurmctld/agent.c */
-static void _send_msg_maybe(slurm_msg_t *req)
-{
-	int fd = -1;
-
-	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
-		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
-			 __func__, &req->address);
-		return;
-	}
-
-	(void) slurm_send_node_msg(fd, req);
-
-	(void) close(fd);
-}
-
 static int _foreach_ret_data_info(void *x, void *arg)
 {
 	int rc;
@@ -180,7 +164,7 @@ static void *_rpc_thread(void *data)
 		msg.address = *agent_arg_ptr->addr;
 
 		if (msg.msg_type == SRUN_JOB_COMPLETE) {
-			_send_msg_maybe(&msg);
+			slurm_send_msg_maybe(&msg);
 		} else if (slurm_send_only_node_msg(&msg) && !srun_agent) {
 			error("failed to send message type %d/%s",
 			      msg.msg_type, rpc_num2string(msg.msg_type));

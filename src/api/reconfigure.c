@@ -51,6 +51,8 @@
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 
+#include "src/interfaces/tls.h"
+
 static int _send_message_controller(int dest, slurm_msg_t *req);
 
 /*
@@ -167,6 +169,7 @@ extern int slurm_takeover(int backup_inx)
 static int _send_message_controller(int dest, slurm_msg_t *req)
 {
 	int rc = SLURM_SUCCESS;
+	void *tls_conn = NULL;
 	int fd = -1;
 	slurm_msg_t resp_msg;
 
@@ -174,27 +177,28 @@ static int _send_message_controller(int dest, slurm_msg_t *req)
 	 * always communicate with a single node (primary or some backup per
 	 * value of "dest")
 	 */
-	if ((fd = slurm_open_controller_conn_spec(dest,
-						  working_cluster_rec)) < 0) {
+	if (!(tls_conn = slurm_open_controller(dest, working_cluster_rec))) {
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
+	fd = tls_g_get_conn_fd(tls_conn);
+
 	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
-	if (slurm_send_node_msg(fd, req) < 0) {
-		close(fd);
+	if (slurm_send_node_msg(fd, tls_conn, req) < 0) {
+		tls_g_destroy_conn(tls_conn, true);
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
 	}
-	slurm_msg_t_init(&resp_msg);
 
-	if ((rc = slurm_receive_msg(fd, &resp_msg, 0)) != 0) {
+	slurm_msg_t_init(&resp_msg);
+	if ((rc = slurm_receive_msg(fd, tls_conn, &resp_msg, 0)) != 0) {
 		slurm_free_msg_members(&resp_msg);
-		close(fd);
+		tls_g_destroy_conn(tls_conn, true);
 		return SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
 	}
 
-	if (close(fd) != SLURM_SUCCESS)
-		rc = SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR;
-	else if (resp_msg.msg_type != RESPONSE_SLURM_RC)
+	tls_g_destroy_conn(tls_conn, true);
+
+	if (resp_msg.msg_type != RESPONSE_SLURM_RC)
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 	else
 		rc = slurm_get_return_code(resp_msg.msg_type,

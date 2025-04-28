@@ -558,7 +558,7 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 		persist_conn->timeout = slurm_conf.msg_timeout * 1000;
 
 	slurm_set_addr(&addr, persist_conn->rem_port, persist_conn->rem_host);
-	if ((persist_conn->fd = slurm_open_msg_conn(&addr)) < 0) {
+	if ((persist_conn->fd = slurm_open_stream(&addr, false)) < 0) {
 		if (_comm_fail_log(persist_conn)) {
 			if (persist_conn->flags & PERSIST_FLAG_SUPPRESS_ERR)
 				log_flag(NET, "%s: failed to open persistent connection (with error suppression active) to host:%s:%d: %m",
@@ -618,7 +618,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 
 	req_msg.data = &req;
 
-	if (slurm_send_node_msg(persist_conn->fd, &req_msg) < 0) {
+	if (slurm_send_node_msg(persist_conn->fd, NULL, &req_msg) < 0) {
 		error("%s: failed to send persistent connection init message to %s:%d",
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
 		fd_close(&persist_conn->fd);
@@ -697,7 +697,7 @@ extern void slurm_persist_conn_close(persist_conn_t *persist_conn)
 	if (!persist_conn)
 		return;
 
-	tls_g_destroy_conn(persist_conn->tls_conn);
+	tls_g_destroy_conn(persist_conn->tls_conn, false);
 	persist_conn->tls_conn = NULL;
 	fd_close(&persist_conn->fd);
 }

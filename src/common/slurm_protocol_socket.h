@@ -53,6 +53,7 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_common.h"
+#include "src/common/slurm_protocol_defs.h"
 
 /*****************/
 /* msg functions */
@@ -62,27 +63,28 @@
  * timing out after `timeout' milliseconds.
  *
  */
-extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **buf, size_t *len,
-					  int timeout);
+extern ssize_t slurm_msg_recvfrom_timeout(int fd, void *tls_conn, char **pbuf,
+					  size_t *lenp, int timeout);
 
 /* slurm_msg_sendto
  * Send message over the given connection, default timeout value
  * IN open_fd - an open file descriptor
+ * IN tls_conn - an open TLS connection (NULL if no TLS connection)
  * IN buffer - data to transmit
  * IN size - size of buffer in bytes
  * RET number of bytes written
  */
-extern ssize_t slurm_msg_sendto(int open_fd,
-				char *buffer,
+extern ssize_t slurm_msg_sendto(int fd, void *tls_conn, char *buffer,
 				size_t size);
 
 /*
  * Send message over the given connection, default timeout value
- * IN open_fd - an open file descriptor
+ * IN fd - an open file descriptor
+ * IN tls_conn - tls connection context
  * IN buffers - array of buffers to transmit
  * RET number of bytes written or SLURM_ERROR on error
  */
-extern ssize_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers);
+extern ssize_t slurm_bufs_sendto(int fd, void *tls_conn, msg_bufs_t *buffers);
 
 /********************/
 /* stream functions */
@@ -131,7 +133,8 @@ extern int slurm_open_unix_stream(char *addr_name, int sock_flags, int *fd);
 extern int slurm_get_stream_addr(int open_fd, slurm_addr_t *address);
 
 extern int slurm_send_timeout(int fd, char *buffer, size_t size, int timeout);
-extern int slurm_recv_timeout(int fd, char *buffer, size_t size, int timeout);
+extern int slurm_recv_timeout(int fd, void *tls_conn, char *buffer, size_t size,
+			      int timeout);
 
 /*****************************/
 /* slurm addr pack functions */

@@ -915,9 +915,9 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 
 	port_u = atoi(port);
 	slurm_set_addr(&pty_addr, port_u, host);
-	pty_fd = slurm_open_msg_conn(&pty_addr);
+	pty_fd = slurm_open_stream(&pty_addr, false);
 	if (pty_fd < 0) {
-		error("slurm_open_msg_conn(pty_conn) %s,%u: %m",
+		error("slurm_open_stream(pty_conn) %s,%u: %m",
 			host, port_u);
 		return;
 	}

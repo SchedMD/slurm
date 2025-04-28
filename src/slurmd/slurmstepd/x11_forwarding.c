@@ -113,9 +113,9 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 		goto shutdown;
 	}
 
-	*remote = slurm_open_msg_conn(&alloc_node);
+	*remote = slurm_open_stream(&alloc_node, false);
 	if (*remote < 0) {
-		error("%s: slurm_open_msg_conn(%pA): %m",
+		error("%s: slurm_open_stream(%pA): %m",
 		      __func__, &alloc_node);
 		goto shutdown;
 	}
@@ -133,7 +133,7 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 	slurm_msg_set_r_uid(&req, job_uid);
 	req.data = &rpc;
 
-	slurm_send_recv_msg(*remote, &req, &resp, 0);
+	slurm_send_recv_msg(*remote, NULL, &req, &resp, 0);
 
 	if (resp.msg_type != RESPONSE_SLURM_RC) {
 		error("Unexpected response on setup, forwarding failed.");

@@ -447,7 +447,7 @@ static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 	rc = _check_send(cluster);
 	if ((rc == SLURM_SUCCESS) && cluster->fed.send) {
 		resp->conn = req->conn = cluster->fed.send;
-		rc = slurm_send_recv_msg(req->conn->fd, req, resp, 0);
+		rc = slurm_send_recv_msg(req->conn->fd, req->conn->tls_conn, req, resp, 0);
 	}
 	if (!locked)
 		slurm_mutex_unlock(&cluster->lock);

@@ -380,8 +380,9 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
 	}
 
 	/* send response from stepd back to original client */
-	if (resp_buf && (slurm_msg_sendto(msg->conn_fd, get_buf_data(resp_buf),
-					  size_buf(resp_buf)) < 0)) {
+	if (resp_buf &&
+	    (slurm_msg_sendto(msg->conn_fd, NULL, get_buf_data(resp_buf),
+			      size_buf(resp_buf)) < 0)) {
 		error("%s: Failed to send response bufs", __func__);
 		rc = SLURM_ERROR;
 		goto done;
@@ -3447,7 +3448,7 @@ static void _rpc_ping(slurm_msg_t *msg)
 		resp_msg.msg_type = RESPONSE_PING_SLURMD;
 		resp_msg.data     = &ping_resp;
 
-		slurm_send_node_msg(msg->conn_fd, &resp_msg);
+		slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
 
 		/* Take this opportunity to enforce any job memory limits */
 		_enforce_job_mem_limit();
@@ -3540,7 +3541,7 @@ static void _rpc_acct_gather_update(slurm_msg_t *msg)
 		resp_msg.msg_type = RESPONSE_ACCT_GATHER_UPDATE;
 		resp_msg.data     = &acct_msg;
 
-		slurm_send_node_msg(msg->conn_fd, &resp_msg);
+		slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
 
 		acct_gather_energy_destroy(acct_msg.energy);
 	}
@@ -3635,7 +3636,7 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 		resp_msg.msg_type = RESPONSE_ACCT_GATHER_ENERGY;
 		resp_msg.data     = &acct_msg;
 
-		slurm_send_node_msg(msg->conn_fd, &resp_msg);
+		slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
 
 		acct_gather_energy_destroy(acct_msg.energy);
 	}
@@ -3889,7 +3890,7 @@ static void _rpc_daemon_status(slurm_msg_t *msg)
 	slurm_msg_t_copy(&resp_msg, msg);
 	resp_msg.msg_type = RESPONSE_SLURMD_STATUS;
 	resp_msg.data     = resp;
-	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
 	slurm_free_slurmd_status(resp);
 }
 
@@ -3962,7 +3963,7 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 	resp_msg.msg_type     = RESPONSE_JOB_STEP_STAT;
 	resp_msg.data         = resp;
 
-	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
 	slurm_free_job_step_stat(resp);
 }
 
@@ -4051,7 +4052,7 @@ static void _rpc_network_callerid(slurm_msg_t *msg)
 	resp_msg.msg_type = RESPONSE_NETWORK_CALLERID;
 	resp_msg.data     = resp;
 
-	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
 	slurm_free_network_callerid_resp(resp);
 }
 
@@ -4115,7 +4116,7 @@ static void _rpc_list_pids(slurm_msg_t *msg)
 	resp_msg.msg_type = RESPONSE_JOB_STEP_PIDS;
 	resp_msg.data     = resp;
 
-	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
 	slurm_free_job_step_pids(resp);
 }
 
@@ -4238,7 +4239,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 		resp_msg.msg_type     = RESPONSE_JOB_ID;
 		resp_msg.data         = &resp;
 
-		slurm_send_node_msg(msg->conn_fd, &resp_msg);
+		slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
 	} else {
 		debug3("_rpc_pid2jid: pid(%u) not found", req->job_pid);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
@@ -4769,7 +4770,7 @@ done:
 	resp->return_code     = rc;
 	debug2("node %s sending rc = %d", conf->node_name, rc);
 
-	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
 	slurm_free_reattach_tasks_response_msg(resp);
 	FREE_NULL_LIST(steps);
 }

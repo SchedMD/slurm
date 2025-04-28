@@ -205,7 +205,7 @@ int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
 again:
-	if (slurm_receive_msg(fd, msg, obj->ops->timeout) != 0) {
+	if (slurm_receive_msg(fd, NULL, msg, obj->ops->timeout) != 0) {
 		if (errno == EINTR)
 			goto again;
 		error_in_daemon("%s: slurm_receive_msg[%pA]: %m",
@@ -532,7 +532,7 @@ void eio_obj_destroy(void *arg)
 		/* 	close(obj->fd); */
 		/* 	obj->fd = -1; */
 		/* } */
-		tls_g_destroy_conn(obj->tls_conn);
+		tls_g_destroy_conn(obj->tls_conn, false);
 		xfree(obj->ops);
 		xfree(obj);
 	}
