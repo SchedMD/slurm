@@ -100,6 +100,12 @@ typedef enum {
 	CG_MEMORY,
 	CG_DEVICES,
 	CG_CPUACCT,
+	/* Below are extra controllers not explicitly tracked by Slurm. */
+	CG_IO,
+	CG_HUGETLB,
+	CG_PIDS,
+	CG_RDMA,
+	CG_MISC,
 	CG_CTL_CNT
 } cgroup_ctl_type_t;
 
@@ -188,6 +194,8 @@ typedef struct {
 	bool ignore_systemd_on_failure;
 
 	bool enable_controllers;
+	char *enable_extra_controllers;
+
 	bool signal_children_processes;
 	uint64_t systemd_timeout; /* How much time to wait on systemd operations (msec)*/
 } cgroup_conf_t;
