@@ -2139,28 +2139,6 @@ extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
 	return 0;
 }
 
-/*
- * Send and recv a slurm request and response on the open slurm descriptor
- * Closes the connection.
- * IN fd	- file descriptor to receive msg on
- * IN req	- a slurm_msg struct to be sent by the function
- * OUT resp	- a slurm_msg struct to be filled in by the function
- * IN timeout	- how long to wait in milliseconds
- * RET int	- returns 0 on success, -1 on failure and sets errno
- */
-static int
-_send_and_recv_msg(int fd, slurm_msg_t *req,
-		   slurm_msg_t *resp, int timeout)
-{
-	int rc = slurm_send_recv_msg(fd, req, resp, timeout);
-
-	if (close(fd))
-		error("%s: closing fd:%d error: %m",
-		      __func__, fd);
-
-	return rc;
-}
-
 static int _foreach_ret_list_hostname_set(void *x, void *arg)
 {
 	ret_data_info_t *ret_data_info = x;
@@ -2231,7 +2209,12 @@ tryagain:
 			request_msg->protocol_version =
 				comm_cluster_rec->rpc_version;
 
-		rc = _send_and_recv_msg(fd, request_msg, response_msg, 0);
+		rc = slurm_send_recv_msg(fd, request_msg, response_msg, 0);
+
+		if (close(fd))
+			error("%s: closing fd:%d error: %m",
+			      __func__, fd);
+
 		if (response_msg->auth_cred)
 			auth_g_destroy(response_msg->auth_cred);
 
@@ -2316,7 +2299,7 @@ tryagain:
  */
 int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 {
-	int fd = -1;
+	int fd = -1, rc;
 
 	resp->auth_cred = NULL;
 
@@ -2330,8 +2313,13 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 		return -1;
 	}
 
-	return _send_and_recv_msg(fd, req, resp, timeout);
+	rc = slurm_send_recv_msg(fd, req, resp, timeout);
 
+	if (close(fd))
+		error("%s: closing fd:%d error: %m",
+		      __func__, fd);
+
+	return rc;
 }
 
 /* slurm_send_only_controller_msg
