@@ -73,6 +73,8 @@
 #include "src/conmgr/polling.h"
 #include "src/conmgr/tls.h"
 
+#include "src/interfaces/tls.h"
+
 #define T(type) { type, XSTRINGIFY(type) }
 static const struct {
 	conmgr_con_type_t type;
@@ -1024,6 +1026,10 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 		static const char TLS_PREFIX[] = "https://";
 
 		if (!xstrncasecmp(listen_on, TLS_PREFIX, strlen(TLS_PREFIX))) {
+			if (!tls_enabled()) {
+				fatal("Unable to create %s listening socket because no TLS plugin is loaded.",
+				      listen_on);
+			}
 			/* shift forward past https: */
 			listen_on += strlen(TLS_PREFIX);
 			flags |= CON_FLAG_TLS_SERVER;
