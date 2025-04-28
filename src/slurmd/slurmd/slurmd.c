@@ -2138,6 +2138,7 @@ static void _create_msg_socket(void)
 		.on_connection = _on_connection,
 		.on_msg = _on_msg,
 		.on_finish = _on_finish,
+		.on_fingerprint = on_fingerprint_tls,
 	};
 	int rc;
 	static conmgr_con_flags_t flags = CON_FLAG_RPC_RECV_FORWARD |
