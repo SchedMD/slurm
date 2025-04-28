@@ -110,10 +110,11 @@ static int _foreach_flag_coord_user(void *x, void *arg)
 		flag_coord_acct->acct = NULL;
 	}
 
-	if (assoc_ptr->usage->children_list)
-		rc = list_for_each(assoc_ptr->usage->children_list,
-				   _foreach_flag_coord_user,
-				   flag_coord_acct);
+	/*
+	 * Do not evaluate the assoc_ptr->usage->children_list here, it means we
+	 * would be in a sub-account from the account that has the flag. So any
+	 * users further down the hierarchy shouldn't be part of this flag.
+	 */
 
 	return rc;
 }
