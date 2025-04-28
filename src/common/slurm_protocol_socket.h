@@ -69,12 +69,12 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, void *tls_conn, char **pbuf,
 /* slurm_msg_sendto
  * Send message over the given connection, default timeout value
  * IN open_fd - an open file descriptor
+ * IN tls_conn - an open TLS connection (NULL if no TLS connection)
  * IN buffer - data to transmit
  * IN size - size of buffer in bytes
  * RET number of bytes written
  */
-extern ssize_t slurm_msg_sendto(int open_fd,
-				char *buffer,
+extern ssize_t slurm_msg_sendto(int fd, void *tls_conn, char *buffer,
 				size_t size);
 
 /*

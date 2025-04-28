@@ -380,8 +380,9 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
 	}
 
 	/* send response from stepd back to original client */
-	if (resp_buf && (slurm_msg_sendto(msg->conn_fd, get_buf_data(resp_buf),
-					  size_buf(resp_buf)) < 0)) {
+	if (resp_buf &&
+	    (slurm_msg_sendto(msg->conn_fd, NULL, get_buf_data(resp_buf),
+			      size_buf(resp_buf)) < 0)) {
 		error("%s: Failed to send response bufs", __func__);
 		rc = SLURM_ERROR;
 		goto done;

@@ -315,7 +315,8 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size, int timeout)
 	return _writev_timeout(fd, NULL, &iov, 1, timeout);
 }
 
-extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
+extern ssize_t slurm_msg_sendto(int fd, void *tls_conn, char *buffer,
+				size_t size)
 {
 	struct iovec iov[2];
 	uint32_t usize;
@@ -336,7 +337,7 @@ extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 
 	usize = htonl(iov[1].iov_len);
 
-	len = _writev_timeout(fd, NULL, iov, 2, timeout);
+	len = _writev_timeout(fd, tls_conn, iov, 2, timeout);
 
 	xsignal(SIGPIPE, ohandler);
 

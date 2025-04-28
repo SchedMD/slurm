@@ -201,8 +201,7 @@ static void *_forward_thread(void *arg)
 		/*
 		 * forward message
 		 */
-		if (slurm_msg_sendto(fd,
-				     get_buf_data(buffer),
+		if (slurm_msg_sendto(fd, NULL, get_buf_data(buffer),
 				     get_buf_offset(buffer)) < 0) {
 			error("%s: slurm_msg_sendto: %m", __func__);
 
