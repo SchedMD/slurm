@@ -1739,7 +1739,7 @@ skip_auth2:
  * Send a slurm message over an open file descriptor `fd'
  * Returns the size of the message sent in bytes, or -1 on failure.
  */
-extern int slurm_send_node_msg(int fd, slurm_msg_t *msg)
+extern int slurm_send_node_msg(int fd, void *tls_conn, slurm_msg_t *msg)
 {
 	msg_bufs_t buffers = { 0 };
 	int rc;
@@ -1785,7 +1785,7 @@ extern int slurm_send_node_msg(int fd, slurm_msg_t *msg)
 	if ((rc = slurm_buffers_pack_msg(msg, &buffers, true)))
 		goto cleanup;
 
-	rc = slurm_bufs_sendto(fd, NULL, &buffers);
+	rc = slurm_bufs_sendto(fd, tls_conn, &buffers);
 
 	if (rc >= 0) {
 		/* sent successfully */
@@ -2005,7 +2005,7 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	resp_msg.conn_fd = source_msg->conn_fd;
 	resp_msg.conn = source_msg->conn;
 
-	rc = slurm_send_node_msg(source_msg->conn_fd, &resp_msg);
+	rc = slurm_send_node_msg(source_msg->conn_fd, NULL, &resp_msg);
 
 	if (rc >= 0)
 		return SLURM_SUCCESS;
@@ -2110,7 +2110,7 @@ extern int slurm_send_recv_msg(int fd, slurm_msg_t *req,
 		resp->conn = req->conn;
 	}
 
-	if (slurm_send_node_msg(fd, req) < 0)
+	if (slurm_send_node_msg(fd, NULL, req) < 0)
 		return -1;
 
 	/*
@@ -2161,7 +2161,7 @@ static list_t *_send_and_recv_msgs(int fd, slurm_msg_t *req, int timeout)
 {
 	list_t *ret_list = NULL;
 
-	if (slurm_send_node_msg(fd, req) >= 0)
+	if (slurm_send_node_msg(fd, NULL, req) >= 0)
 		ret_list = slurm_receive_msgs(fd, NULL, req->forward.tree_depth,
 					      req->forward.timeout);
 
@@ -2374,7 +2374,7 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 
 	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
 
-	if ((rc = slurm_send_node_msg(fd, req)) < 0) {
+	if ((rc = slurm_send_node_msg(fd, NULL, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		log_flag(NET, "%s: sent %d", __func__, rc);
@@ -2433,7 +2433,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 		return SLURM_ERROR;
 	}
 
-	if ((rc = slurm_send_node_msg(fd, req)) < 0) {
+	if ((rc = slurm_send_node_msg(fd, NULL, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		log_flag(NET, "%s: sent %d", __func__, rc);

@@ -132,7 +132,7 @@ static void _send_msg_maybe(slurm_msg_t *req)
 		return;
 	}
 
-	(void) slurm_send_node_msg(fd, req);
+	(void) slurm_send_node_msg(fd, NULL, req);
 
 	(void) close(fd);
 }

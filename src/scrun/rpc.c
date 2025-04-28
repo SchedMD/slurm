@@ -71,7 +71,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 	fd_set_blocking(fd);
 	fd_set_close_on_exec(fd);
 
-	if ((rc = slurm_send_node_msg(fd, msg)) == -1) {
+	if ((rc = slurm_send_node_msg(fd, NULL, msg)) == -1) {
 		/* capture real error */
 		rc = errno;
 
