@@ -3700,6 +3700,14 @@ extern int slurm_job_will_run2(job_desc_msg_t *req,
 			       will_run_response_msg_t **will_run_resp);
 
 /*
+ * Sort a list of will_run_response_msg_t's by:
+ * start_time
+ * preemptee count
+ * cluster name
+ */
+extern int slurm_sort_will_run_resp(void *a, void *b);
+
+/*
  * slurm_sbcast_lookup - retrieve info for an existing resource allocation
  *	including a credential needed for sbcast.
  * IN selected_step - filled in with step_id and het_job_offset

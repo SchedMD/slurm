@@ -304,7 +304,7 @@ static void *_load_willrun_thread(void *args)
 	return NULL;
 }
 
-static int _sort_will_run_resp(void *a, void *b)
+extern int slurm_sort_will_run_resp(void *a, void *b)
 {
 	will_run_response_msg_t *resp_a = *(will_run_response_msg_t **) a;
 	will_run_response_msg_t *resp_b = *(will_run_response_msg_t **) b;
@@ -386,7 +386,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 		slurm_thread_join(load_thread[i]);
 	xfree(load_thread);
 
-	list_sort(resp_msg_list, _sort_will_run_resp);
+	list_sort(resp_msg_list, slurm_sort_will_run_resp);
 	*will_run_resp = list_pop(resp_msg_list);
 	FREE_NULL_LIST(resp_msg_list);
 
