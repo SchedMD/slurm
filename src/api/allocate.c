@@ -285,6 +285,42 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	return resp;
 }
 
+static int _foreach_log_will_run_resp(void *x, void *key)
+{
+	will_run_response_msg_t *will_run_resp = x;
+	char buf[256];
+	slurm_make_time_str(&will_run_resp->start_time, buf, sizeof(buf));
+	debug("Job %u to start at %s on cluster %s using %u processors on nodes %s in partition %s",
+	      will_run_resp->job_id, buf, will_run_resp->cluster_name,
+	      will_run_resp->proc_cnt, will_run_resp->node_list,
+	      will_run_resp->part_name);
+
+	if (will_run_resp->preemptee_job_id) {
+		list_itr_t *itr;
+		uint32_t *job_id_ptr;
+		char *job_list = NULL, *sep = "";
+		itr = list_iterator_create(will_run_resp->preemptee_job_id);
+		while ((job_id_ptr = list_next(itr))) {
+			if (job_list)
+				sep = ",";
+			xstrfmtcat(job_list, "%s%u", sep, *job_id_ptr);
+		}
+		list_iterator_destroy(itr);
+		debug("  Preempts: %s", job_list);
+		xfree(job_list);
+	}
+
+	return 0;
+}
+
+static void log_will_run_resps(list_t *list)
+{
+	if (get_log_level() < LOG_LEVEL_DEBUG)
+		return;
+
+	list_for_each(list, _foreach_log_will_run_resp, NULL);
+}
+
 static void *_load_willrun_thread(void *args)
 {
 	load_willrun_req_struct_t *load_args =
@@ -387,6 +423,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	xfree(load_thread);
 
 	list_sort(resp_msg_list, slurm_sort_will_run_resp);
+	log_will_run_resps(resp_msg_list);
 	*will_run_resp = list_pop(resp_msg_list);
 	FREE_NULL_LIST(resp_msg_list);
 
