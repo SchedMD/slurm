@@ -47,6 +47,8 @@
 #include <arpa/inet.h>
 #include <time.h>
 
+#include "src/interfaces/tls.h"
+
 #include "pmixp_common.h"
 #include "pmixp_server.h"
 #include "pmixp_client.h"
@@ -172,8 +174,8 @@ static int _abort_conn_close(eio_obj_t *obj, list_t *objs)
 
 static int _abort_conn_read(eio_obj_t *obj, list_t *objs)
 {
+	void *tls_conn = NULL;
 	slurm_addr_t abort_client;
-	int client_fd;
 	int shutdown = 0;
 
 	while (1) {
@@ -189,14 +191,14 @@ static int _abort_conn_read(eio_obj_t *obj, list_t *objs)
 			return SLURM_SUCCESS;
 		}
 
-		client_fd = slurm_accept_conn(obj->fd, &abort_client);
-		if (client_fd < 0) {
+		if (!(tls_conn =
+			      slurm_accept_msg_conn(obj->fd, &abort_client))) {
 			PMIXP_ERROR("slurm_accept_conn: %m");
 			continue;
 		}
 		PMIXP_DEBUG("New abort client: %pA", &abort_client);
-		pmixp_abort_handle(client_fd);
-		close(client_fd);
+		pmixp_abort_handle(tls_conn);
+		tls_g_destroy_conn(tls_conn, true);
 	}
 	return SLURM_SUCCESS;
 }

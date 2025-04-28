@@ -89,7 +89,7 @@ int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
 buf_t *pmixp_server_buf_new(void);
 size_t pmixp_server_buf_reset(buf_t *buf);
 
-void pmixp_abort_handle(int fd);
+void pmixp_abort_handle(void *tls_conn);
 void pmixp_abort_propagate(int status);
 int pmixp_abort_code_get(void);
 
