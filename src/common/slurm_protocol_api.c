@@ -815,14 +815,14 @@ end_it:
  *	primary or backup slurmctld message engine
  * IN dest      - controller to contact (0=primary, 1=backup, 2=backup2, etc.)
  * IN comm_cluster_rec	- Communication record (host/port/version)/
- * RET int      - file descriptor of the connection created
+ * RET tls_conn or NULL
  */
-extern int slurm_open_controller_conn_spec(int dest,
-				      slurmdb_cluster_rec_t *comm_cluster_rec)
+extern void *slurm_open_controller(int dest,
+				   slurmdb_cluster_rec_t *comm_cluster_rec)
 {
 	slurm_protocol_config_t *proto_conf = NULL;
-	slurm_addr_t *addr;
-	int rc;
+	slurm_addr_t *addr = NULL;
+	void *tls_conn = NULL;
 
 	if (comm_cluster_rec) {
 		if (slurm_addr_is_unspec(&comm_cluster_rec->control_addr)) {
@@ -835,25 +835,26 @@ extern int slurm_open_controller_conn_spec(int dest,
 	} else {	/* Some backup slurmctld */
 		if (!(proto_conf = _slurm_api_get_comm_config())) {
 			debug3("Error: Unable to set default config");
-			return SLURM_ERROR;
+			return NULL;
 		}
 		addr = NULL;
 		if ((dest >= 0) && (dest <= proto_conf->control_cnt))
 			addr = &proto_conf->controller_addr[dest];
-		if (!addr) {
-			rc = SLURM_ERROR;
+		if (!addr)
 			goto fini;
-		}
 	}
 
-	rc = slurm_open_stream(addr, false);
-	if (rc == -1) {
-		log_flag(NET, "%s: slurm_open_stream(%pA): %m",
+	xassert(addr);
+
+	if (!(tls_conn = slurm_open_msg_conn(addr, NULL))) {
+		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, addr);
 		_remap_slurmctld_errno();
 	}
-fini:	_slurm_api_free_comm_config(proto_conf);
-	return rc;
+
+fini:
+	_slurm_api_free_comm_config(proto_conf);
+	return tls_conn;
 }
 
 extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)

@@ -277,10 +277,10 @@ extern int slurm_send_node_msg(int open_fd, void *tls_conn, slurm_msg_t *msg);
  *	primary or backup slurmctld message engine
  * IN dest      - controller to contact (0=primary, 1=backup, 2=backup2, etc.)
  * IN comm_cluster_rec	- Communication record (host/port/version)/
- * RET int      - file descriptor of the connection created
+ * RET tls_conn
  */
-extern int slurm_open_controller_conn_spec(int dest,
-				      slurmdb_cluster_rec_t *comm_cluster_rec);
+extern void *slurm_open_controller(int dest,
+				   slurmdb_cluster_rec_t *comm_cluster_rec);
 
 /*
  * Creates a SOCK_STREAM (TCP) socket and calls connect() on it.
