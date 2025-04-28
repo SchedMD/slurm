@@ -168,6 +168,7 @@ bool eio_message_socket_readable(eio_obj_t *obj)
 
 int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 {
+	void *tls_conn = NULL;
 	int fd;
 	slurm_addr_t addr;
 	slurm_msg_t *msg = NULL;
@@ -177,7 +178,7 @@ int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 	xassert(obj);
 	xassert(obj->ops->handle_msg);
 
-	while ((fd = slurm_accept_conn(obj->fd, &addr)) < 0) {
+	while (!(tls_conn = slurm_accept_msg_conn(obj->fd, &addr))) {
 		if (errno == EINTR)
 			continue;
 		if ((errno == EAGAIN) ||
@@ -196,6 +197,7 @@ int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 		return SLURM_SUCCESS;
 	}
 
+	fd = tls_g_get_conn_fd(tls_conn);
 	net_set_keep_alive(fd);
 	fd_set_blocking(fd);
 
@@ -205,7 +207,7 @@ int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
 again:
-	if (slurm_receive_msg(fd, NULL, msg, obj->ops->timeout) != 0) {
+	if (slurm_receive_msg(fd, tls_conn, msg, obj->ops->timeout) != 0) {
 		if (errno == EINTR)
 			goto again;
 		error_in_daemon("%s: slurm_receive_msg[%pA]: %m",
@@ -213,11 +215,14 @@ again:
 		goto cleanup;
 	}
 
+	msg->conn_fd = fd;
+	msg->tls_conn = tls_conn;
 	(*obj->ops->handle_msg)(obj->arg, msg);
 
 cleanup:
-	if ((msg->conn_fd >= STDERR_FILENO) && (close(msg->conn_fd) < 0))
-		error_in_daemon("%s: close(%d): %m", __func__, msg->conn_fd);
+	/* may be adopted by the handle_msg routine */
+	if (msg->tls_conn)
+		tls_g_destroy_conn(tls_conn, true);
 	slurm_free_msg(msg);
 
 	return SLURM_SUCCESS;
