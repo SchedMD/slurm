@@ -254,6 +254,8 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 	dest->orig_addr.ss_family = AF_UNSPEC;
 	if (src->auth_ids_set)
 		slurm_msg_set_r_uid(dest, src->auth_uid);
+
+	dest->tls_conn = src->tls_conn;
 }
 
 /* here to add \\ to all \" in a string this needs to be xfreed later */
