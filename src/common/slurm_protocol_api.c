@@ -1852,8 +1852,8 @@ cleanup:
  */
 size_t slurm_write_stream(int open_fd, char *buffer, size_t size)
 {
-	return slurm_send_timeout(open_fd, buffer, size,
-	                          (slurm_conf.msg_timeout * 1000));
+	return slurm_send_timeout(open_fd, NULL, buffer, size,
+				  (slurm_conf.msg_timeout * 1000));
 }
 
 /* slurm_read_stream
