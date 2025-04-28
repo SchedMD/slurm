@@ -1018,7 +1018,7 @@ fail:
 	return NULL;
 }
 
-extern void tls_p_destroy_conn(tls_conn_t *conn)
+extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 {
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
 
@@ -1068,6 +1068,14 @@ extern void tls_p_destroy_conn(tls_conn_t *conn)
 
 	if (conn->using_global_server_conf)
 		_server_config_dec(conn);
+
+	if (close_fds) {
+		if (conn->input_fd >= 0)
+			close(conn->input_fd);
+		if ((conn->output_fd >= 0) &&
+		    (conn->output_fd != conn->input_fd))
+			close(conn->output_fd);
+	}
 
 	xfree(conn);
 }

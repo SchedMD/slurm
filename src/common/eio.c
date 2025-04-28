@@ -532,7 +532,7 @@ void eio_obj_destroy(void *arg)
 		/* 	close(obj->fd); */
 		/* 	obj->fd = -1; */
 		/* } */
-		tls_g_destroy_conn(obj->tls_conn);
+		tls_g_destroy_conn(obj->tls_conn, false);
 		xfree(obj->ops);
 		xfree(obj);
 	}

@@ -132,7 +132,7 @@ extern int tls_g_load_ca_cert(char *cert_file);
  * RET ptr to TLS state
  */
 extern void *tls_g_create_conn(const tls_conn_args_t *tls_conn_args);
-extern void tls_g_destroy_conn(void *conn);
+extern void tls_g_destroy_conn(void *conn, bool close_fds);
 
 /*
  * Attempt TLS connection negotiation
