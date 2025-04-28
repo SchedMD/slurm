@@ -725,8 +725,12 @@ static void *_service_msg(void *arg)
 	 */
 	msg->conmgr_fd = NULL;
 	msg->conn_fd = args->fd;
+	msg->tls_conn = args->tls_conn;
 
 	slurmd_req(msg);
+
+	tls_g_destroy_conn(msg->tls_conn, false);
+	msg->tls_conn = NULL;
 
 	if ((msg->conn_fd >= 0) && close(msg->conn_fd) < 0)
 		error ("close(%d): %m", fd);
