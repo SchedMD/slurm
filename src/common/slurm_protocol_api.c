@@ -1845,28 +1845,31 @@ cleanup:
 /* slurm_write_stream
  * writes a buffer out a stream file descriptor
  * IN open_fd		- file descriptor to write on
+ * IN tls_conn
  * IN buffer		- buffer to send
  * IN size		- size of buffer send
  * IN timeout		- how long to wait in milliseconds
  * RET size_t		- bytes sent , or -1 on error
  */
-size_t slurm_write_stream(int open_fd, char *buffer, size_t size)
+size_t slurm_write_stream(int open_fd, void *tls_conn, char *buffer,
+			  size_t size)
 {
-	return slurm_send_timeout(open_fd, NULL, buffer, size,
+	return slurm_send_timeout(open_fd, tls_conn, buffer, size,
 				  (slurm_conf.msg_timeout * 1000));
 }
 
 /* slurm_read_stream
  * read into buffer grom a stream file descriptor
  * IN open_fd	- file descriptor to read from
+ * IN tls_conn
  * OUT buffer   - buffer to receive into
  * IN size	- size of buffer
  * IN timeout	- how long to wait in milliseconds
  * RET size_t	- bytes read , or -1 on error
  */
-size_t slurm_read_stream(int open_fd, char *buffer, size_t size)
+size_t slurm_read_stream(int open_fd, void *tls_conn, char *buffer, size_t size)
 {
-	return slurm_recv_timeout(open_fd, NULL, buffer, size,
+	return slurm_recv_timeout(open_fd, tls_conn, buffer, size,
 				  (slurm_conf.msg_timeout * 1000));
 }
 

@@ -1039,7 +1039,7 @@ void pmixp_abort_handle(int fd)
 	int len;
 
 	/* Receive the status from stepd */
-	len = slurm_read_stream(fd, (char*)&status, sizeof(status));
+	len = slurm_read_stream(fd, NULL, (char *) &status, sizeof(status));
 	if (len != sizeof(status)) {
 		PMIXP_ERROR("slurm_read_stream() failed: fd=%d; %m", fd);
 		return;
@@ -1050,7 +1050,7 @@ void pmixp_abort_handle(int fd)
 	}
 
 	/* Reply back to confirm that the status was processed */
-	len = slurm_write_stream(fd, (char*)&status, sizeof(status));
+	len = slurm_write_stream(fd, NULL, (char *) &status, sizeof(status));
 	if (len != sizeof(status)) {
 		PMIXP_ERROR("slurm_write_stream() failed: fd=%d; %m", fd);
 		return;
@@ -1087,7 +1087,8 @@ void pmixp_abort_propagate(int status)
 		return;
 	}
 
-	len = slurm_write_stream(fd, (char*)&status_net, sizeof(status_net));
+	len = slurm_write_stream(fd, NULL, (char *) &status_net,
+				 sizeof(status_net));
 	if (len != sizeof(status_net)) {
 		PMIXP_ERROR("slurm_write_stream() failed: %m");
 		PMIXP_ERROR("Communicating with abort agent failed: %s:%d",
@@ -1096,7 +1097,8 @@ void pmixp_abort_propagate(int status)
 		goto close_fd;
 	}
 
-	len = slurm_read_stream(fd, (char*)&status_net, sizeof(status_net));
+	len = slurm_read_stream(fd, NULL, (char *) &status_net,
+				sizeof(status_net));
 	if (len != sizeof(status_net)) {
 		PMIXP_ERROR("slurm_read_stream() failed: %m");
 		PMIXP_ERROR("Communicating with abort agent failed: %s:%d",

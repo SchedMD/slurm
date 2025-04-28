@@ -138,7 +138,7 @@ static void _notify_winsize_change(int fd, srun_job_t *job)
 	winsz.rows = htons(job->ws_row);
 	memcpy(buf, &winsz.cols, 2);
 	memcpy(buf+2, &winsz.rows, 2);
-	len = slurm_write_stream(fd, buf, 4);
+	len = slurm_write_stream(fd, NULL, buf, 4);
 	if (len < sizeof(winsz))
 		error("pty: window size change notification error: %m");
 }

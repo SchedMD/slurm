@@ -848,7 +848,7 @@ static void *_window_manager(void *arg)
 			 *  (ufds.revents & POLLERR)) */
 			break;
 		}
-		len = slurm_read_stream(win_info->pty_fd, buf, 4);
+		len = slurm_read_stream(win_info->pty_fd, NULL, buf, 4);
 		if ((len == -1) && ((errno == EINTR) || (errno == EAGAIN)))
 			continue;
 		if (len < 4) {
