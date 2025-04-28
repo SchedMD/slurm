@@ -53,6 +53,7 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_common.h"
+#include "src/common/slurm_protocol_defs.h"
 
 /*****************/
 /* msg functions */
@@ -78,11 +79,12 @@ extern ssize_t slurm_msg_sendto(int open_fd,
 
 /*
  * Send message over the given connection, default timeout value
- * IN open_fd - an open file descriptor
+ * IN fd - an open file descriptor
+ * IN tls_conn - tls connection context
  * IN buffers - array of buffers to transmit
  * RET number of bytes written or SLURM_ERROR on error
  */
-extern ssize_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers);
+extern ssize_t slurm_bufs_sendto(int fd, void *tls_conn, msg_bufs_t *buffers);
 
 /********************/
 /* stream functions */

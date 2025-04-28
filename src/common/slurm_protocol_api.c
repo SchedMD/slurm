@@ -1777,7 +1777,7 @@ extern int slurm_send_node_msg(int fd, slurm_msg_t *msg)
 	if ((rc = slurm_buffers_pack_msg(msg, &buffers, true)))
 		goto cleanup;
 
-	rc = slurm_bufs_sendto(fd, &buffers);
+	rc = slurm_bufs_sendto(fd, NULL, &buffers);
 
 	if (rc >= 0) {
 		/* sent successfully */

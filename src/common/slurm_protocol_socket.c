@@ -63,7 +63,6 @@
 #include "src/common/net.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_time.h"
 #include "src/common/strlcpy.h"
@@ -71,6 +70,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/tls.h"
 
 #define PORT_RETRIES    3
 #define MIN_USER_PORT   (IPPORT_RESERVED + 1)
@@ -147,7 +148,8 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
 	return (ssize_t) msglen;
 }
 
-static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
+static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
+			   int iovcnt, int timeout)
 {
 	int tot_bytes_sent = 0;
 	size_t size = 0;
@@ -171,6 +173,9 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 		ssize_t bytes_sent = 0;
 		int rc;
 		int timeleft = timeout - timeval_tot_wait(&tstart);
+
+		if (tls_g_peek(tls_conn))
+			goto ready;
 
 		if (timeleft <= 0) {
 			debug("%s at %d of %zu, timeout",
@@ -232,7 +237,12 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 			      __func__, ufds.revents);
 		}
 
-		bytes_sent = writev(fd, iov, iovcnt);
+ready:
+		if (tls_conn) {
+			bytes_sent = tls_g_sendv(tls_conn, iov, iovcnt);
+		} else {
+			bytes_sent = writev(fd, iov, iovcnt);
+		}
 
 		if (bytes_sent < 0) {
  			if (errno == EINTR)
@@ -300,7 +310,7 @@ static int _writev_timeout(int fd, struct iovec *iov, int iovcnt, int timeout)
 extern int slurm_send_timeout(int fd, char *buf, size_t size, int timeout)
 {
 	struct iovec iov = { .iov_base = buf, .iov_len = size };
-	return _writev_timeout(fd, &iov, 1, timeout);
+	return _writev_timeout(fd, NULL, &iov, 1, timeout);
 }
 
 extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
@@ -324,7 +334,7 @@ extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 
 	usize = htonl(iov[1].iov_len);
 
-	len = _writev_timeout(fd, iov, 2, timeout);
+	len = _writev_timeout(fd, NULL, iov, 2, timeout);
 
 	xsignal(SIGPIPE, ohandler);
 
@@ -334,7 +344,7 @@ extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 	return size;
 }
 
-extern ssize_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
+extern ssize_t slurm_bufs_sendto(int fd, void *tls_conn, msg_bufs_t *buffers)
 {
 	struct iovec iov[4];
 	int len;
@@ -362,7 +372,7 @@ extern ssize_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
 
 	usize = htonl(iov[1].iov_len + iov[2].iov_len + iov[3].iov_len);
 
-	len = _writev_timeout(fd, iov, 4, timeout);
+	len = _writev_timeout(fd, tls_conn, iov, 4, timeout);
 
 	xsignal(SIGPIPE, ohandler);
 	return len;
