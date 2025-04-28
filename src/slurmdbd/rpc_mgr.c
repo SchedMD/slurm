@@ -91,12 +91,11 @@ extern void *rpc_mgr(void *no_data)
 		 * accept needed for stream implementation is a no-op in
 		 * message implementation that just passes sockfd to newsockfd
 		 */
-		if ((newsockfd = slurm_accept_msg_conn(sockfd,
-						       &cli_addr)) ==
+		if ((newsockfd = slurm_accept_conn(sockfd, &cli_addr)) ==
 		    SLURM_ERROR) {
 			slurm_persist_conn_free_thread_loc(i);
 			if (errno != EINTR)
-				error("slurm_accept_msg_conn: %m");
+				error("slurm_accept_conn: %m");
 			continue;
 		}
 		fd_set_nonblocking(newsockfd);

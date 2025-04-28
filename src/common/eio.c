@@ -177,7 +177,7 @@ int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 	xassert(obj);
 	xassert(obj->ops->handle_msg);
 
-	while ((fd = slurm_accept_msg_conn(obj->fd, &addr)) < 0) {
+	while ((fd = slurm_accept_conn(obj->fd, &addr)) < 0) {
 		if (errno == EINTR)
 			continue;
 		if ((errno == EAGAIN) ||

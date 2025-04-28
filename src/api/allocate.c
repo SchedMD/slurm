@@ -1388,7 +1388,7 @@ static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 	slurm_addr_t cli_addr;
 	int          rc = 0;
 
-	conn_fd = slurm_accept_msg_conn(listen_fd, &cli_addr);
+	conn_fd = slurm_accept_conn(listen_fd, &cli_addr);
 	if (conn_fd < 0) {
 		error("Unable to accept connection: %m");
 		return rc;

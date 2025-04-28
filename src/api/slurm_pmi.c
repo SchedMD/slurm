@@ -301,9 +301,9 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	}
 
 	/* get the message after all tasks reach the barrier */
-	srun_fd = slurm_accept_msg_conn(pmi_fd, &srun_reply_addr);
+	srun_fd = slurm_accept_conn(pmi_fd, &srun_reply_addr);
 	if (srun_fd < 0) {
-		error("slurm_accept_msg_conn: %m");
+		error("slurm_accept_conn: %m");
 		return errno;
 	}
 

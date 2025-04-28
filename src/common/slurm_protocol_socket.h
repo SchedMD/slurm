@@ -98,13 +98,13 @@ extern ssize_t slurm_bufs_sendto(int fd, void *tls_conn, msg_bufs_t *buffers);
  */
 extern int slurm_init_msg_engine(slurm_addr_t *slurm_address, bool quiet);
 
-/* slurm_accept_msg_conn
+/* slurm_accept_conn
  * accepts a incoming stream connection on a stream server slurm_fd
  * IN open_fd		- file descriptor to accept connection on
  * OUT slurm_address 	- slurm_addr_t of the accepted connection
  * RET int		- file descriptor of the accepted connection
  */
-extern int slurm_accept_msg_conn(int open_fd, slurm_addr_t *slurm_address);
+extern int slurm_accept_conn(int open_fd, slurm_addr_t *slurm_address);
 
 /* slurm_open_stream
  * opens a client connection to stream server

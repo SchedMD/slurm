@@ -150,7 +150,7 @@ static void *_pty_thread(void *arg)
 	xsignal_unblock(pty_sigarray);
 	xsignal(SIGWINCH, _handle_sigwinch);
 
-	if ((fd = slurm_accept_msg_conn(job->pty_fd, &client_addr)) < 0) {
+	if ((fd = slurm_accept_conn(job->pty_fd, &client_addr)) < 0) {
 		error("pty: accept failure: %m");
 		return NULL;
 	}

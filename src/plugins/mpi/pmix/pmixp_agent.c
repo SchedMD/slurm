@@ -189,9 +189,9 @@ static int _abort_conn_read(eio_obj_t *obj, list_t *objs)
 			return SLURM_SUCCESS;
 		}
 
-		client_fd = slurm_accept_msg_conn(obj->fd, &abort_client);
+		client_fd = slurm_accept_conn(obj->fd, &abort_client);
 		if (client_fd < 0) {
-			PMIXP_ERROR("slurm_accept_msg_conn: %m");
+			PMIXP_ERROR("slurm_accept_conn: %m");
 			continue;
 		}
 		PMIXP_DEBUG("New abort client: %pA", &abort_client);

@@ -108,7 +108,7 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 	local = xmalloc(sizeof(*local));
 	remote = xmalloc(sizeof(*remote));
 
-	if ((*local = slurm_accept_msg_conn(obj->fd, &sin)) == -1) {
+	if ((*local = slurm_accept_conn(obj->fd, &sin)) == -1) {
 		error("accept call failure, shutting down");
 		goto shutdown;
 	}

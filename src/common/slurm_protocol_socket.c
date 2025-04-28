@@ -559,7 +559,7 @@ error:
  * set *ADDR (which is *ADDR_LEN bytes long) to the address of the connecting
  * peer and *ADDR_LEN to the address's actual length, and return the
  * new socket's descriptor, or -1 for errors.  */
-extern int slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
+extern int slurm_accept_conn(int fd, slurm_addr_t *addr)
 {
 	socklen_t len = sizeof(*addr);
 	int sock = accept4(fd, (struct sockaddr *) addr, &len, SOCK_CLOEXEC);
