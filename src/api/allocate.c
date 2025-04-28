@@ -314,6 +314,18 @@ static int _sort_will_run_resp(void *a, void *b)
 	else if (resp_a->start_time > resp_b->start_time)
 		return 1;
 
+	if (list_count(resp_a->preemptee_job_id) <
+	    list_count(resp_b->preemptee_job_id))
+		return -1;
+	else if (list_count(resp_a->preemptee_job_id) >
+		 list_count(resp_b->preemptee_job_id))
+		return 1;
+
+	if (!xstrcmp(slurm_conf.cluster_name, resp_a->cluster_name))
+		return -1;
+	else if (!xstrcmp(slurm_conf.cluster_name, resp_b->cluster_name))
+		return 1;
+
 	return 0;
 }
 
