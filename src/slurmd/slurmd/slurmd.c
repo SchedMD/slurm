@@ -1047,6 +1047,46 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	return;
 }
 
+static void _spec_override(uint64_t phys_mem)
+{
+	cgroup_limits_t *slurmd_limits;
+	char *tmp_str;
+
+	/*
+	 * CoreSpec overwrite can only be done under cons_tres and with
+	 * task/cgroup. This is guaranteed by SlurmdSpecOverride parameter.
+	 */
+	if (!(slurm_conf.task_plugin_param & SLURMD_SPEC_OVERRIDE))
+		return;
+
+	tmp_str = xcpuinfo_get_cpuspec();
+	if (tmp_str) {
+		info("Overriding CpuSpecList from %s to %s",
+		     conf->cpu_spec_list, tmp_str);
+		xfree(conf->cpu_spec_list);
+		conf->cpu_spec_list = tmp_str;
+		slurm_conf.task_plugin_param &= ~SLURMD_OFF_SPEC;
+	}
+
+	/*
+	 * We should use CG_LEVEL_ROOT but for compatibility with
+	 * cgroup/v1 we need to use CG_LEVEL_SYSTEM
+	 */
+	slurmd_limits = cgroup_g_constrain_get(CG_MEMORY, CG_LEVEL_SLURM);
+
+	if (!slurmd_limits || (slurmd_limits->limit_in_bytes == NO_VAL64)) {
+		info("No memory limits detected for this system, assuming the available memory equals the physical memory");
+	} else {
+		slurmd_limits->limit_in_bytes /= 1024 * 1024;
+		conf->mem_spec_limit = phys_mem - slurmd_limits->limit_in_bytes;
+		info("Detected real memory of %luM but constrained to %luM, setting MemSpecLimit=%luM",
+		     phys_mem, slurmd_limits->limit_in_bytes,
+		     conf->mem_spec_limit);
+	}
+
+	cgroup_free_limits(slurmd_limits);
+}
+
 /*
  * Read the slurm configuration file (slurm.conf) and substitute some
  * values into the slurmd configuration in preference of the defaults.
@@ -1233,42 +1273,7 @@ _read_config(void)
 			conf->threads, conf->actual_threads);
 	}
 
-	/*
-	 * CoreSpec overwrite can only be done under cons_tres and with
-	 * task/cgroup. This is guaranteed by CpuSpecOverride parameter.
-	 */
-	if (slurm_conf.task_plugin_param & SLURMD_SPEC_OVERRIDE) {
-		cgroup_limits_t *slurmd_limits;
-		char *tmp_str = xcpuinfo_get_cpuspec();
-		if (tmp_str) {
-			info("Overriding CpuSpecList from %s to %s",
-			     conf->cpu_spec_list, tmp_str);
-			xfree(conf->cpu_spec_list);
-			conf->cpu_spec_list = tmp_str;
-			slurm_conf.task_plugin_param &= ~SLURMD_OFF_SPEC;
-		}
-
-		/*
-		 * We should use CG_LEVEL_ROOT but for compatibility with
-		 * cgroup/v1 we need to use CG_LEVEL_SYSTEM
-		 */
-		slurmd_limits = cgroup_g_constrain_get(CG_MEMORY,
-						       CG_LEVEL_SLURM);
-
-		if (!slurmd_limits ||
-		    (slurmd_limits->limit_in_bytes == NO_VAL64)) {
-			info("No memory limits detected for this system, assuming the available memory equals the physical memory");
-		} else {
-			slurmd_limits->limit_in_bytes /= 1024 * 1024;
-			conf->mem_spec_limit = node_ptr->real_memory -
-				slurmd_limits->limit_in_bytes;
-			info("Detected real memory of %luM but constrained to %luM, setting MemSpecLimit=%luM",
-			     node_ptr->real_memory,
-			     slurmd_limits->limit_in_bytes,
-			     conf->mem_spec_limit);
-		}
-		cgroup_free_limits(slurmd_limits);
-	}
+	_spec_override(node_ptr->real_memory);
 
 	/*
 	 * Set the node's configured 'RealMemory' as conf_memory_size as
@@ -2413,6 +2418,8 @@ static void _dynamic_init(void)
 	conf->cores   = conf->actual_cores;
 	conf->threads = conf->actual_threads;
 	get_memory(&conf->physical_memory_size);
+
+	_spec_override(conf->physical_memory_size);
 
 	switch (conf->dynamic_type) {
 	case DYN_NODE_FUTURE:
