@@ -594,6 +594,7 @@ typedef struct {
 					 * real memory per CPU | MEM_PER_CPU,
 					 * default=0 (use job limit) */
 	uint16_t port;			/* port for srun communications */
+	char *alloc_tls_cert;
 	time_t pre_sus_time;		/* time step ran prior to last suspend */
 	uint16_t start_protocol_ver;	/* Slurm version step was
 					 * started with either srun
