@@ -2681,6 +2681,7 @@ extern void slurm_free_msg_members(slurm_msg_t *msg)
 		FREE_NULL_BUFFER(msg->buffer);
 		slurm_free_msg_data(msg->msg_type, msg->data);
 		FREE_NULL_LIST(msg->ret_list);
+		xfree(msg->tls_cert);
 	}
 }
 

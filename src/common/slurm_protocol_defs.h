@@ -331,6 +331,9 @@ typedef struct slurm_msg {
 				 * so that we'll respond with the same hash
 				 * plugin used to connect to us originally.
 				 */
+	char *tls_cert; /* TLS certificate for server. Only needed when server's
+			 * cert is not already trusted (i.e. signed by a cert in
+			 * our trust store) */
 	uint16_t msg_type; /* really a slurm_msg_type_t but needs to be
 			    * this way for packing purposes.  message type */
 	uint16_t protocol_version; /* DON'T PACK!  Only used if
