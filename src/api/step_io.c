@@ -934,7 +934,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 		if (!_is_fd_ready(fd))
 			return;
 
-		while ((sd = slurm_accept_conn(fd, &addr)) < 0) {
+		while (!(tls_conn = slurm_accept_msg_conn(fd, &addr))) {
 			if (errno == EINTR)
 				continue;
 			if (errno == EAGAIN)	/* No more connections */
@@ -947,19 +947,8 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 			return;
 		}
 
+		sd = tls_g_get_conn_fd(tls_conn);
 		debug3("Accepted IO connection: ip=%pA sd=%d", &addr, sd);
-
-		if (tls_enabled()) {
-			tls_conn_args_t tls_args = {
-				.input_fd = sd,
-				.output_fd = sd,
-				.mode = TLS_CONN_SERVER,
-			};
-			if (!(tls_conn = tls_g_create_conn(&tls_args))) {
-				error("Could not create TLS server connection for step IO");
-				return;
-			}
-		}
 
 		/*
 		 * On AIX the new socket [sd] seems to inherit the O_NONBLOCK
