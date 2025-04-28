@@ -53,6 +53,7 @@ strong_alias(topology_g_destroy_config, slurm_topology_g_detroy_config);
 typedef struct slurm_topo_ops {
 	uint32_t (*plugin_id);
 	char(*plugin_type);
+	bool(*supports_exclusive_topo);
 	int (*build_config)(topology_ctx_t *tctx);
 	int (*destroy_config)(topology_ctx_t *tctx);
 	int (*eval_nodes) (topology_eval_t *topo_eval);
@@ -82,6 +83,7 @@ typedef struct slurm_topo_ops {
 static const char *syms[] = {
 	"plugin_id",
 	"plugin_type",
+	"supports_exclusive_topo",
 	"topology_p_build_config",
 	"topology_p_destroy_config",
 	"topology_p_eval_nodes",

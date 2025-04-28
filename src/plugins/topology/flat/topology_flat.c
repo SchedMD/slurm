@@ -78,6 +78,7 @@ const char plugin_name[] = "topology Flat plugin";
 const char plugin_type[] = "topology/flat";
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_FLAT;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+const bool supports_exclusive_topo = false;
 
 extern int init(void)
 {

@@ -90,6 +90,7 @@ const char plugin_name[]        = "topology block plugin";
 const char plugin_type[]        = "topology/block";
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_BLOCK;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+const bool supports_exclusive_topo = true;
 
 typedef struct topoinfo_bblock {
 	bool aggregated;
