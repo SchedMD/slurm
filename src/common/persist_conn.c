@@ -232,6 +232,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
 		persist_conn->fd = -1;
 		return SLURM_ERROR;
 	}
+	tls_g_set_graceful_shutdown(persist_conn->tls_conn, true);
 
 	while (!(*persist_conn->shutdown) && !fini) {
 		if (!_conn_readable(persist_conn))
@@ -582,6 +583,12 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 	}
 
 	persist_conn->fd = tls_g_get_conn_fd(persist_conn->tls_conn);
+
+	/*
+	 * Peer will be waiting on tls_g_recv(), and they will need to know if
+	 * connection was intentionally closed or if an error occurred.
+	 */
+	tls_g_set_graceful_shutdown(persist_conn->tls_conn, true);
 
 	fd_set_nonblocking(persist_conn->fd);
 	net_set_keep_alive(persist_conn->fd);
