@@ -160,8 +160,9 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 	uint16_t msg_type, protocol_version, proxy_type;
 	int rc = SLURM_SUCCESS;
 	slurm_addr_t req_address = { 0 };
-	return_code_msg_t rc_msg = { 0 };
 	slurm_msg_t req, resp;
+	return_code_msg_t *rc_msg;
+
 	uid_t uid = SLURM_AUTH_NOBODY;
 	gid_t gid = SLURM_AUTH_NOBODY;
 	pid_t pid = 0;
@@ -239,10 +240,11 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 	switch (proxy_type) {
 	case PROXY_TO_NODE_SEND_ONLY:
 	case PROXY_TO_CTLD_SEND_ONLY:
+		rc_msg = xmalloc(sizeof(*rc_msg));
 		resp.protocol_version = protocol_version;
 		resp.msg_type = RESPONSE_SLURM_RC;
-		rc_msg.return_code = SLURM_SUCCESS;
-		resp.data = &rc_msg;
+		rc_msg->return_code = SLURM_SUCCESS;
+		resp.data = rc_msg;
 		break;
 	}
 
