@@ -902,33 +902,6 @@ static int _wif_status(void)
 }
 
 /*
- * slurm_send_msg_maybe
- * opens a connection, sends a message across while ignoring any errors,
- * then closes the connection
- *
- * Open a connection to the "address" specified in the slurm msg `req'
- * Then, immediately close the connection w/out waiting for a reply.
- * Ignore any errors. This should only be used when you do not care if
- * the message is ever received.
- *
- * IN request_msg	- slurm_msg request
- */
-static void _send_msg_maybe(slurm_msg_t *req)
-{
-	int fd = -1;
-
-	if ((fd = slurm_open_stream(&req->address, false)) < 0) {
-		log_flag(NET, "%s: slurm_open_stream(%pA): %m",
-			 __func__, &req->address);
-		return;
-	}
-
-	(void) slurm_send_node_msg(fd, NULL, req);
-
-	(void) close(fd);
-}
-
-/*
  * _thread_per_group_rpc - thread to issue an RPC for a group of nodes
  *                         sending message out to one and forwarding it to
  *                         others if necessary.
@@ -1059,7 +1032,7 @@ static void *_thread_per_group_rpc(void *args)
 			 * flings the message out and disregards any
 			 * communication problems that may arise.
 			 */
-			_send_msg_maybe(&msg);
+			slurm_send_msg_maybe(&msg);
 			thread_state = DSH_DONE;
 		} else if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) {
 			thread_state = DSH_DONE;

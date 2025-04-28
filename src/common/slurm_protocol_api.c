@@ -2077,6 +2077,21 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 	return SLURM_SUCCESS;
 }
 
+extern void slurm_send_msg_maybe(slurm_msg_t *req)
+{
+	int fd = -1;
+
+	if ((fd = slurm_open_stream(&req->address, false)) < 0) {
+		log_flag(NET, "%s: slurm_open_stream(%pA): %m",
+			 __func__, &req->address);
+		return;
+	}
+
+	(void) slurm_send_node_msg(fd, NULL, req);
+
+	(void) close(fd);
+}
+
 /*
  * Sends back reroute_msg_t which directs the client to make the request to
  * another cluster.

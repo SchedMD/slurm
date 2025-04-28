@@ -469,6 +469,14 @@ int slurm_send_reroute_msg(slurm_msg_t *msg,
 			   char *stepmgr);
 
 /*
+ * Open a connection to the "address" specified in the slurm msg `req'
+ * Then, immediately close the connection w/out waiting for a reply.
+ * Ignore any errors. This should only be used when you do not care if
+ * the message is ever actually received.
+ */
+extern void slurm_send_msg_maybe(slurm_msg_t *req);
+
+/*
  *  Send a message to msg->address
  *    Then return list containing type (ret_data_info_t).
  * IN msg           - a slurm_msg struct to be sent by the function
