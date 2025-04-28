@@ -2079,17 +2079,20 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 
 extern void slurm_send_msg_maybe(slurm_msg_t *req)
 {
+	void *tls_conn = NULL;
 	int fd = -1;
 
-	if ((fd = slurm_open_stream(&req->address, false)) < 0) {
-		log_flag(NET, "%s: slurm_open_stream(%pA): %m",
+	if (!(tls_conn = slurm_open_msg_conn(&req->address, NULL))) {
+		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req->address);
 		return;
 	}
 
-	(void) slurm_send_node_msg(fd, NULL, req);
+	fd = tls_g_get_conn_fd(tls_conn);
 
-	(void) close(fd);
+	(void) slurm_send_node_msg(fd, tls_conn, req);
+
+	tls_g_destroy_conn(tls_conn, true);
 }
 
 /*
