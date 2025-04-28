@@ -234,7 +234,8 @@ int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg, int timeout);
  */
 extern list_t *slurm_receive_msgs(int fd, void *tls_conn, int steps,
 				  int timeout);
-extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout);
+extern list_t *slurm_receive_resp_msgs(int fd, void *tls_conn, int steps,
+				       int timeout);
 
 /*
  *  Unpack a Slurm message from the supplied 'buffer' and forward.

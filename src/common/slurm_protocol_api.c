@@ -1273,7 +1273,8 @@ total_return:
 
 }
 
-extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout)
+extern list_t *slurm_receive_resp_msgs(int fd, void *tls_conn, int steps,
+				       int timeout)
 {
 	char *buf = NULL;
 	size_t buflen = 0;
@@ -1331,7 +1332,8 @@ extern list_t *slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	 * length and allocate space on the heap for a buffer containing the
 	 * message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, NULL, &buf, &buflen, timeout) < 0) {
+	if (slurm_msg_recvfrom_timeout(fd, tls_conn, &buf, &buflen, timeout) <
+	    0) {
 		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
