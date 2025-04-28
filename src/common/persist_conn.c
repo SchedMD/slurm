@@ -558,7 +558,7 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 		persist_conn->timeout = slurm_conf.msg_timeout * 1000;
 
 	slurm_set_addr(&addr, persist_conn->rem_port, persist_conn->rem_host);
-	if ((persist_conn->fd = slurm_open_msg_conn(&addr)) < 0) {
+	if ((persist_conn->fd = slurm_open_stream(&addr, false)) < 0) {
 		if (_comm_fail_log(persist_conn)) {
 			if (persist_conn->flags & PERSIST_FLAG_SUPPRESS_ERR)
 				log_flag(NET, "%s: failed to open persistent connection (with error suppression active) to host:%s:%d: %m",

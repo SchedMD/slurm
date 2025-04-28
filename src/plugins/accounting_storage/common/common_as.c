@@ -424,7 +424,7 @@ extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 
 	memset(&ctld_address, 0, sizeof(ctld_address));
 	slurm_set_addr(&ctld_address, port, host);
-	fd = slurm_open_msg_conn(&ctld_address);
+	fd = slurm_open_stream(&ctld_address, false);
 	if (fd < 0) {
 		error("can not open socket back to slurmctld "
 		      "%s(%u): %m", host, port);

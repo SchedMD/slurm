@@ -940,8 +940,8 @@ static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 	slurm_set_addr(&req_msg.address, cluster_rec->control_port,
 		       cluster_rec->control_host);
 
-	if ((fd = slurm_open_msg_conn(&req_msg.address)) < 0) {
-		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+	if ((fd = slurm_open_stream(&req_msg.address, false)) < 0) {
+		log_flag(NET, "%s: slurm_open_stream(%pA): %m",
 			 __func__, &req_msg.address);
 		return SLURM_ERROR;
 	}

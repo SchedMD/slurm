@@ -917,8 +917,8 @@ static void _send_msg_maybe(slurm_msg_t *req)
 {
 	int fd = -1;
 
-	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
-		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+	if ((fd = slurm_open_stream(&req->address, false)) < 0) {
+		log_flag(NET, "%s: slurm_open_stream(%pA): %m",
 			 __func__, &req->address);
 		return;
 	}

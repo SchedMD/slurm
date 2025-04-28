@@ -755,13 +755,13 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 			}
 			addr = &comm_cluster_rec->control_addr;
 
-			fd = slurm_open_msg_conn(addr);
+			fd = slurm_open_stream(addr, false);
 			if (fd >= 0)
 				goto end_it;
 			log_flag(NET, "%s: Failed to contact controller(%pA): %m",
 				 __func__, addr);
 		} else if (proto_conf->vip_addr_set) {
-			fd = slurm_open_msg_conn(&proto_conf->vip_addr);
+			fd = slurm_open_stream(&proto_conf->vip_addr, false);
 			if (fd >= 0)
 				goto end_it;
 			log_flag(NET, "%s: Failed to contact controller(%pA): %m",
@@ -773,7 +773,7 @@ static int _open_controller(slurm_addr_t *addr, int *index,
 					&proto_conf->controller_addr[inx];
 				if (slurm_addr_is_unspec(ctrl_addr))
 					continue;
-				fd = slurm_open_msg_conn(ctrl_addr);
+				fd = slurm_open_stream(ctrl_addr, false);
 				if (fd >= 0) {
 					log_flag(NET, "%s: Contacted SlurmctldHost[%d](%pA)",
 						 __func__, inx, ctrl_addr);
@@ -831,9 +831,9 @@ extern int slurm_open_controller_conn_spec(int dest,
 		}
 	}
 
-	rc = slurm_open_msg_conn(addr);
+	rc = slurm_open_stream(addr, false);
 	if (rc == -1) {
-		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+		log_flag(NET, "%s: slurm_open_stream(%pA): %m",
 			 __func__, addr);
 		_remap_slurmctld_errno();
 	}
@@ -2333,8 +2333,8 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 		return stepd_proxy_send_recv_node_msg(req, resp, timeout);
 	}
 
-	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
-		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+	if ((fd = slurm_open_stream(&req->address, false)) < 0) {
+		log_flag(NET, "%s: slurm_open_stream(%pA): %m",
 			 __func__, &req->address);
 		return -1;
 	}
@@ -2426,9 +2426,8 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	if (tls_enabled() && running_in_slurmstepd()) {
 		return stepd_proxy_send_only_node_msg(req);
 	}
-
-	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
-		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+	if ((fd = slurm_open_stream(&req->address, false)) < 0) {
+		log_flag(NET, "%s: slurm_open_stream(%pA): %m",
 			 __func__, &req->address);
 		return SLURM_ERROR;
 	}
@@ -2566,7 +2565,7 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	/* This connect retry logic permits Slurm hierarchical communications
 	 * to better survive slurmd restarts */
 	while ((now - start) < conn_timeout) {
-		fd = slurm_open_msg_conn(&msg->address);
+		fd = slurm_open_stream(&msg->address, false);
 		if ((fd >= 0) || (errno != ECONNREFUSED && errno != ETIMEDOUT))
 			break;
 		if (errno == ETIMEDOUT) {

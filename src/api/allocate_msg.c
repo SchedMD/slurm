@@ -249,7 +249,8 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 		slurm_addr_t local_addr;
 		memset(&local_addr, 0, sizeof(local_addr));
 		slurm_set_addr(&local_addr, msg->port, msg->target);
-		*local = slurm_open_msg_conn(&local_addr);
+
+		*local = slurm_open_stream(&local_addr, false);
 		if (*local == -1) {
 			error("%s: failed to open x11 port `%s:%d`: %m",
 			      __func__, msg->target, msg->port);

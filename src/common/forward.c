@@ -141,7 +141,7 @@ static void *_forward_thread(void *arg)
 			}
 			goto cleanup;
 		}
-		if ((fd = slurm_open_msg_conn(&addr)) < 0) {
+		if ((fd = slurm_open_stream(&addr, false)) < 0) {
 			error("%s: failed to %s (%pA): %m",
 			      __func__, name, &addr);
 

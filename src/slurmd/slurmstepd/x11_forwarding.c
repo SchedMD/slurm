@@ -113,9 +113,9 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 		goto shutdown;
 	}
 
-	*remote = slurm_open_msg_conn(&alloc_node);
+	*remote = slurm_open_stream(&alloc_node, false);
 	if (*remote < 0) {
-		error("%s: slurm_open_msg_conn(%pA): %m",
+		error("%s: slurm_open_stream(%pA): %m",
 		      __func__, &alloc_node);
 		goto shutdown;
 	}
