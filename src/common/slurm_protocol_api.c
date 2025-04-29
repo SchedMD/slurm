@@ -1062,8 +1062,7 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, tls_conn, &buf, &buflen, timeout) <
-	    0) {
+	if (slurm_msg_recvfrom_timeout(tls_conn, &buf, &buflen, timeout) < 0) {
 		rc = errno;
 		if (!rc)
 			rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
@@ -1163,8 +1162,7 @@ extern list_t *slurm_receive_msgs(void *tls_conn, int steps, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, tls_conn, &buf, &buflen, timeout) <
-	    0) {
+	if (slurm_msg_recvfrom_timeout(tls_conn, &buf, &buflen, timeout) < 0) {
 		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
@@ -1350,8 +1348,7 @@ extern list_t *slurm_receive_resp_msgs(void *tls_conn, int steps, int timeout)
 	 * length and allocate space on the heap for a buffer containing the
 	 * message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, tls_conn, &buf, &buflen, timeout) <
-	    0) {
+	if (slurm_msg_recvfrom_timeout(tls_conn, &buf, &buflen, timeout) < 0) {
 		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
