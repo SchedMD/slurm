@@ -222,7 +222,6 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout);
  *    returned list and must be freed at some point using the
  *    list_destroy function.
  *
- * IN open_fd	- file descriptor to receive msg on
  * IN tls_conn
  * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
@@ -232,8 +231,7 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout);
  *                errno set.
  */
 extern list_t *slurm_receive_msgs(void *tls_conn, int steps, int timeout);
-extern list_t *slurm_receive_resp_msgs(int fd, void *tls_conn, int steps,
-				       int timeout);
+extern list_t *slurm_receive_resp_msgs(void *tls_conn, int steps, int timeout);
 
 /*
  *  Unpack a Slurm message from the supplied 'buffer' and forward.

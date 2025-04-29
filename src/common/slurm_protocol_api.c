@@ -1290,9 +1290,9 @@ total_return:
 
 }
 
-extern list_t *slurm_receive_resp_msgs(int fd, void *tls_conn, int steps,
-				       int timeout)
+extern list_t *slurm_receive_resp_msgs(void *tls_conn, int steps, int timeout)
 {
+	int fd = -1;
 	char *buf = NULL;
 	size_t buflen = 0;
 	header_t header;
@@ -1305,7 +1305,7 @@ extern list_t *slurm_receive_resp_msgs(int fd, void *tls_conn, int steps,
 	int orig_timeout = timeout;
 	char *peer = NULL;
 
-	xassert(fd >= 0);
+	fd = tls_g_get_conn_fd(tls_conn);
 
 	if (slurm_conf.debug_flags & (DEBUG_FLAG_NET | DEBUG_FLAG_NET_RAW)) {
 		/*
