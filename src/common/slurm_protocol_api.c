@@ -1756,8 +1756,9 @@ skip_auth2:
  * Send a slurm message over an open file descriptor `fd'
  * Returns the size of the message sent in bytes, or -1 on failure.
  */
-extern int slurm_send_node_msg(int fd, void *tls_conn, slurm_msg_t *msg)
+extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 {
+	int fd = -1;
 	msg_bufs_t buffers = { 0 };
 	int rc;
 
@@ -1800,8 +1801,7 @@ extern int slurm_send_node_msg(int fd, void *tls_conn, slurm_msg_t *msg)
 		return rc;
 	}
 
-	if (fd < 0)
-		fd = tls_g_get_conn_fd(tls_conn);
+	fd = tls_g_get_conn_fd(tls_conn);
 
 	log_flag(NET, "Sending message %s to %pA on fd %d",
 		 rpc_num2string(msg->msg_type), &msg->address, fd);
@@ -2034,7 +2034,7 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	resp_msg.conn_fd = source_msg->conn_fd;
 	resp_msg.conn = source_msg->conn;
 
-	rc = slurm_send_node_msg(-1, source_msg->tls_conn, &resp_msg);
+	rc = slurm_send_node_msg(source_msg->tls_conn, &resp_msg);
 
 	if (rc >= 0)
 		return SLURM_SUCCESS;
@@ -2100,7 +2100,7 @@ extern void slurm_send_msg_maybe(slurm_msg_t *req)
 		return;
 	}
 
-	(void) slurm_send_node_msg(-1, tls_conn, req);
+	(void) slurm_send_node_msg(tls_conn, req);
 
 	tls_g_destroy_conn(tls_conn, true);
 }
@@ -2155,7 +2155,7 @@ extern int slurm_send_recv_msg(int fd, void *tls_conn, slurm_msg_t *req,
 		resp->conn = req->conn;
 	}
 
-	if (slurm_send_node_msg(fd, tls_conn, req) < 0)
+	if (slurm_send_node_msg(tls_conn, req) < 0)
 		return -1;
 
 	/*
@@ -2381,7 +2381,7 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 
 	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
 
-	if ((rc = slurm_send_node_msg(-1, tls_conn, req)) < 0) {
+	if ((rc = slurm_send_node_msg(tls_conn, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		log_flag(NET, "%s: sent %d", __func__, rc);
@@ -2442,7 +2442,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	}
 	fd = tls_g_get_conn_fd(tls_conn);
 
-	if ((rc = slurm_send_node_msg(-1, tls_conn, req)) < 0) {
+	if ((rc = slurm_send_node_msg(tls_conn, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		log_flag(NET, "%s: sent %d", __func__, rc);
@@ -2597,7 +2597,7 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	msg->ret_list = NULL;
 	msg->forward_struct = NULL;
 
-	if (slurm_send_node_msg(-1, tls_conn, msg) >= 0)
+	if (slurm_send_node_msg(tls_conn, msg) >= 0)
 		ret_list = slurm_receive_msgs(tls_conn, msg->forward.tree_depth,
 					      msg->forward.timeout);
 

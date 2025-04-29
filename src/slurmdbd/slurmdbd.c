@@ -950,7 +950,7 @@ static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 	req_msg.msg_type = ACCOUNTING_REGISTER_CTLD;
 	req_msg.flags = SLURM_GLOBAL_AUTH_KEY;
 	req_msg.protocol_version = cluster_rec->rpc_version;
-	slurm_send_node_msg(-1, tls_conn, &req_msg);
+	slurm_send_node_msg(tls_conn, &req_msg);
 
 	/* response is ignored */
 

@@ -259,12 +259,11 @@ extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
 
 /* sends a message to an arbitrary node
  *
- * IN open_fd		- file descriptor to send msg on
  * IN tls_conn
  * IN msg		- a slurm msg struct to be sent
  * RET int		- size of msg sent in bytes
  */
-extern int slurm_send_node_msg(int open_fd, void *tls_conn, slurm_msg_t *msg);
+extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg);
 
 /**********************************************************************\
  * msg connection establishment functions used by msg clients

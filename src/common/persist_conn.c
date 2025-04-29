@@ -640,7 +640,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 
 	req_msg.data = &req;
 
-	if (slurm_send_node_msg(-1, persist_conn->tls_conn, &req_msg) < 0) {
+	if (slurm_send_node_msg(persist_conn->tls_conn, &req_msg) < 0) {
 		error("%s: failed to send persistent connection init message to %s:%d",
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
 		tls_g_destroy_conn(persist_conn->tls_conn, true);

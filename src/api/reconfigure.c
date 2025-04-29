@@ -181,7 +181,7 @@ static int _send_message_controller(int dest, slurm_msg_t *req)
 	}
 
 	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
-	if (slurm_send_node_msg(-1, tls_conn, req) < 0) {
+	if (slurm_send_node_msg(tls_conn, req) < 0) {
 		tls_g_destroy_conn(tls_conn, true);
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
 	}
