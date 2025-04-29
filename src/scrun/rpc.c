@@ -41,12 +41,16 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/tls.h"
+
 #include "src/scrun/scrun.h"
 
 extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 		    int *conn_fd)
 {
-	int rc;
+	int rc = SLURM_ERROR;
+	void *tls_conn = NULL;
+	tls_conn_args_t tls_args = { 0 };
 	slurm_msg_t *resp_msg = NULL;
 	int fd = conn_fd ? *conn_fd : -1;
 	const char *sock = state.anchor_socket;
@@ -71,7 +75,13 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 	fd_set_blocking(fd);
 	fd_set_close_on_exec(fd);
 
-	if ((rc = slurm_send_node_msg(fd, NULL, msg)) == -1) {
+	tls_args.input_fd = tls_args.output_fd = fd;
+	if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+
+	if ((rc = slurm_send_node_msg(fd, tls_conn, msg)) == -1) {
 		/* capture real error */
 		rc = errno;
 
@@ -96,7 +106,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 
 	wait_fd_readable(fd, slurm_conf.msg_timeout);
 
-	if ((rc = slurm_receive_msg(fd, NULL, resp_msg, INFINITE))) {
+	if ((rc = slurm_receive_msg(fd, tls_conn, resp_msg, INFINITE))) {
 		/* capture real error */
 		rc = errno;
 
@@ -120,13 +130,7 @@ cleanup:
 		*ptr_resp = resp_msg;
 	}
 
-	if (!conn_fd && close(fd)) {
-		if (!rc)
-			rc = errno;
-
-		debug("%s: unable to close RPC socket %s: %m",
-		      __func__, sock);
-	}
+	tls_g_destroy_conn(tls_conn, true);
 
 	return rc;
 }
