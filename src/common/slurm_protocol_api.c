@@ -2134,14 +2134,13 @@ int slurm_send_reroute_msg(slurm_msg_t *msg,
 /*
  * Send and recv a slurm request and response on the open slurm descriptor
  * Doesn't close the connection.
- * IN fd	- file descriptor to receive msg on
  * IN tls_conn
  * IN req	- a slurm_msg struct to be sent by the function
  * OUT resp	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-extern int slurm_send_recv_msg(int fd, void *tls_conn, slurm_msg_t *req,
+extern int slurm_send_recv_msg(void *tls_conn, slurm_msg_t *req,
 			       slurm_msg_t *resp, int timeout)
 {
 	slurm_msg_t_init(resp);
@@ -2151,7 +2150,6 @@ extern int slurm_send_recv_msg(int fd, void *tls_conn, slurm_msg_t *req,
 	 * sure.
 	 */
 	if (req->conn) {
-		fd = req->conn->fd;
 		resp->conn = req->conn;
 	}
 
@@ -2193,7 +2191,6 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 				slurm_msg_t * response_msg,
 				slurmdb_cluster_rec_t *comm_cluster_rec)
 {
-	int fd = -1;
 	int rc = 0;
 	time_t start_time = time(NULL);
 	slurm_conf_t *conf;
@@ -2239,9 +2236,8 @@ tryagain:
 			request_msg->protocol_version =
 				comm_cluster_rec->rpc_version;
 
-		fd = tls_g_get_conn_fd(tls_conn);
-
-		rc = slurm_send_recv_msg(fd, tls_conn, request_msg, response_msg, 0);
+		rc = slurm_send_recv_msg(tls_conn, request_msg, response_msg,
+					 0);
 
 		tls_g_destroy_conn(tls_conn, true);
 
@@ -2330,7 +2326,7 @@ tryagain:
 int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 {
 	void *tls_conn = NULL;
-	int fd = -1, rc;
+	int rc;
 
 	resp->auth_cred = NULL;
 
@@ -2344,8 +2340,7 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 		return -1;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
-	rc = slurm_send_recv_msg(fd, tls_conn, req, resp, timeout);
+	rc = slurm_send_recv_msg(tls_conn, req, resp, timeout);
 
 	tls_g_destroy_conn(tls_conn, true);
 
