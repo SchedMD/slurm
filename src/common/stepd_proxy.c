@@ -535,6 +535,7 @@ static int _slurmd_recv_msg_from_stepd(int fd, buf_t **resp_buf)
 	char *data = NULL;
 	buf_t *buf;
 
+	/* see _stepd_send_resp_to_slurmd() */
 	safe_read(fd, &data_size, sizeof(uint32_t));
 	data_size = ntohl(data_size);
 	data = xmalloc(data_size);
