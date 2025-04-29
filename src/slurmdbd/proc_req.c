@@ -60,6 +60,7 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/tls.h"
 
 #include "src/slurmctld/slurmctld.h"
 
@@ -80,7 +81,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 static char *_internal_rc_to_str(uint32_t rc, slurmdbd_conn_t *dbd_conn,
 				 bool new_line)
 {
-	int fd = dbd_conn->conn->fd;
+	int fd = tls_g_get_conn_fd(dbd_conn->conn->tls_conn);
 	char *comment = NULL;
 
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {
