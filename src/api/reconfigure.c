@@ -170,7 +170,6 @@ static int _send_message_controller(int dest, slurm_msg_t *req)
 {
 	int rc = SLURM_SUCCESS;
 	void *tls_conn = NULL;
-	int fd = -1;
 	slurm_msg_t resp_msg;
 
 	/*
@@ -181,8 +180,6 @@ static int _send_message_controller(int dest, slurm_msg_t *req)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
-
 	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
 	if (slurm_send_node_msg(-1, tls_conn, req) < 0) {
 		tls_g_destroy_conn(tls_conn, true);
@@ -190,7 +187,7 @@ static int _send_message_controller(int dest, slurm_msg_t *req)
 	}
 
 	slurm_msg_t_init(&resp_msg);
-	if ((rc = slurm_receive_msg(fd, tls_conn, &resp_msg, 0)) != 0) {
+	if ((rc = slurm_receive_msg(tls_conn, &resp_msg, 0)) != 0) {
 		slurm_free_msg_members(&resp_msg);
 		tls_g_destroy_conn(tls_conn, true);
 		return SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;

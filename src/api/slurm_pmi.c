@@ -220,7 +220,7 @@ extern int slurm_pmi_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
 extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 				      int pmi_rank, int pmi_size)
 {
-	int rc, srun_fd, retries = 0, timeout = 0;
+	int rc, retries = 0, timeout = 0;
 	void *tls_conn = NULL;
 	slurm_msg_t msg_send, msg_rcv;
 	slurm_addr_t slurm_addr, srun_reply_addr;
@@ -308,10 +308,7 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 		return errno;
 	}
 
-	srun_fd = tls_g_get_conn_fd(tls_conn);
-
-	while ((rc = slurm_receive_msg(srun_fd, tls_conn, &msg_rcv, timeout)) !=
-	       0) {
+	while ((rc = slurm_receive_msg(tls_conn, &msg_rcv, timeout)) != 0) {
 		if (errno == EINTR)
 			continue;
 		error("slurm_receive_msg: %m");

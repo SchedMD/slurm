@@ -106,7 +106,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 
 	wait_fd_readable(fd, slurm_conf.msg_timeout);
 
-	if ((rc = slurm_receive_msg(fd, tls_conn, resp_msg, INFINITE))) {
+	if ((rc = slurm_receive_msg(tls_conn, resp_msg, INFINITE))) {
 		/* capture real error */
 		rc = errno;
 
