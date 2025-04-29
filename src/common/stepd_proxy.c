@@ -509,7 +509,7 @@ extern int stepd_proxy_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp,
 				    PROXY_TO_NODE_SEND_RECV);
 }
 
-static int _slurmd_send_msg_to_stepmgr(int fd, slurm_msg_t *req)
+static int _slurmd_send_msg_to_stepd(int fd, slurm_msg_t *req)
 {
 	int req_msg_type = req->msg_type;
 	uint32_t buf_size;
@@ -525,11 +525,11 @@ static int _slurmd_send_msg_to_stepmgr(int fd, slurm_msg_t *req)
 	return SLURM_SUCCESS;
 
 rwfail:
-	error("%s: Failed to write to stepmgr: %m", __func__);
+	error("%s: Failed to write to stepd: %m", __func__);
 	return SLURM_ERROR;
 }
 
-static int _slurmd_recv_msg_from_stepmgr(int fd, buf_t **resp_buf)
+static int _slurmd_recv_msg_from_stepd(int fd, buf_t **resp_buf)
 {
 	uint32_t data_size;
 	char *data = NULL;
@@ -546,7 +546,7 @@ static int _slurmd_recv_msg_from_stepmgr(int fd, buf_t **resp_buf)
 
 	return SLURM_SUCCESS;
 rwfail:
-	error("%s: Failed to read from stepmgr: %m", __func__);
+	error("%s: Failed to read from stepd: %m", __func__);
 	return SLURM_ERROR;
 }
 
@@ -558,23 +558,24 @@ extern int stepd_proxy_send_recv_to_stepd(slurm_msg_t *req, buf_t **resp_buf,
 
 	fd_set_nonblocking(stepd_fd);
 
-	if (_slurmd_send_msg_to_stepmgr(stepd_fd, req)) {
-		error("%s: Failed to send msg to stepmgr", __func__);
+	if (_slurmd_send_msg_to_stepd(stepd_fd, req)) {
+		error("%s: Failed to send msg to stepd", __func__);
 		return SLURM_ERROR;
 	}
 
 	if (!reply)
 		return SLURM_SUCCESS;
 
-	if (_slurmd_recv_msg_from_stepmgr(stepd_fd, resp_buf)) {
-		error("%s: Failed to receive response from stepmgr", __func__);
+	if (_slurmd_recv_msg_from_stepd(stepd_fd, resp_buf)) {
+		error("%s: Failed to receive response from stepd", __func__);
 		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
 }
 
-static int _send_resp_to_slurmd(int fd, uint32_t msglen, msg_bufs_t *buffers)
+static int _stepd_send_resp_to_slurmd(int fd, uint32_t msglen,
+				      msg_bufs_t *buffers)
 {
 	xassert(buffers);
 
@@ -614,7 +615,7 @@ extern int stepd_proxy_send_resp_to_slurmd(int fd, slurm_msg_t *source_msg,
 
 	msglen = htonl(msglen);
 
-	rc = _send_resp_to_slurmd(fd, msglen, &buffers);
+	rc = _stepd_send_resp_to_slurmd(fd, msglen, &buffers);
 
 end:
 	FREE_NULL_BUFFER(buffers.auth);
