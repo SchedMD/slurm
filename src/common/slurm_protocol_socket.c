@@ -411,6 +411,9 @@ extern int slurm_recv_timeout(int fd, void *tls_conn, char *buffer, size_t size,
 			goto done;
 		}
 
+		if (tls_g_peek(tls_conn))
+			goto ready;
+
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
 			if ((errno == EINTR) || (errno == EAGAIN) || (rc == 0))
 				continue;
@@ -459,6 +462,7 @@ extern int slurm_recv_timeout(int fd, void *tls_conn, char *buffer, size_t size,
 			continue;
 		}
 
+ready:
 		if (tls_conn) {
 			rc = tls_g_recv(tls_conn, &buffer[recvlen],
 					(size - recvlen));
