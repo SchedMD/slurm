@@ -687,7 +687,7 @@ function __slurm_comp_filter() {
 # Determine if a slurmctld will respond
 function __slurm_ctld_status() {
 	local output exit_code
-	output=$(scontrol ping 2>&1/dev/null)
+	output=$(scontrol ping >/dev/null 2>&1)
 	exit_code=$?
 
 	if ((exit_code == 0)); then
@@ -702,7 +702,7 @@ function __slurm_ctld_status() {
 # Determine if a slurmdbd will respond
 function __slurm_dbd_status() {
 	local output exit_code
-	output=$(sacctmgr ping 2>&1/dev/null)
+	output=$(sacctmgr ping >/dev/null 2>&1)
 	exit_code=$?
 
 	if ((exit_code == 0)); then
