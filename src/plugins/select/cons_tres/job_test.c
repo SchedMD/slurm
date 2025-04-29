@@ -65,6 +65,7 @@ typedef struct {
 	bool *qos_preemptor;
 	time_t start;
 	bitstr_t **tmp_bitmap_pptr;
+	int *topology_idx;
 } cr_job_list_args_t;
 
 typedef struct {
@@ -2285,11 +2286,16 @@ static int _job_res_rm_job(part_res_record_t *part_record_ptr,
 
 static bitstr_t *_select_topo_bitmap(job_record_t *job_ptr,
 				     bitstr_t *node_bitmap,
-				     bitstr_t **efctv_bitmap)
+				     bitstr_t **efctv_bitmap, int *topology_idx)
 {
 	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
 		if (!(*efctv_bitmap)) {
 			*efctv_bitmap = bit_copy(node_bitmap);
+			topology_g_whole_topo(*efctv_bitmap,
+					      job_ptr->part_ptr->topology_idx);
+		} else if (*topology_idx != job_ptr->part_ptr->topology_idx) {
+			*topology_idx = job_ptr->part_ptr->topology_idx;
+			bit_copybits(*efctv_bitmap, node_bitmap);
 			topology_g_whole_topo(*efctv_bitmap,
 					      job_ptr->part_ptr->topology_idx);
 		}
@@ -2339,9 +2345,10 @@ static int _build_cr_job_list(void *x, void *arg)
 	}
 	if (job_ptr_preempt->end_time <= args->start) {
 		bitstr_t *efctv_bitmap_ptr;
-		efctv_bitmap_ptr = _select_topo_bitmap(tmp_job_ptr,
-						       args->orig_map,
-						       args->tmp_bitmap_pptr);
+		efctv_bitmap_ptr =
+			_select_topo_bitmap(tmp_job_ptr, args->orig_map,
+					    args->tmp_bitmap_pptr,
+					    args->topology_idx);
 		if (bit_overlap_any(efctv_bitmap_ptr,
 				    tmp_job_ptr->node_bitmap) ||
 		    license_list_overlap(tmp_job_ptr->license_list,
@@ -2434,6 +2441,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	int time_window = 30;
 	time_t end_time = 0;
 	bool more_jobs = true;
+	int topology_idx;
 	DEF_TIMERS;
 
 	if (will_run_ptr && will_run_ptr->start)
@@ -2468,6 +2476,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		.qos_preemptor = &qos_preemptor,
 		.start = will_run_ptr ? will_run_ptr->start : 0,
 		.tmp_bitmap_pptr = &efctv_bitmap,
+		.topology_idx = &topology_idx,
 	};
 	list_for_each(job_list, _build_cr_job_list, &args);
 
@@ -2517,10 +2526,10 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				more_jobs = false;
 				break;
 			}
-			efctv_bitmap_ptr = _select_topo_bitmap(
-						tmp_job_ptr,
-						node_bitmap,
-						&efctv_bitmap);
+			efctv_bitmap_ptr =
+				_select_topo_bitmap(tmp_job_ptr, node_bitmap,
+						    &efctv_bitmap,
+						    &topology_idx);
 			if (slurm_conf.debug_flags &
 			    DEBUG_FLAG_SELECT_TYPE) {
 				overlap = bit_overlap(efctv_bitmap_ptr,
@@ -2701,6 +2710,7 @@ test_future:
 	    preemptee_candidates) {
 		job_record_t *tmp_job_ptr;
 		bitstr_t *efctv_bitmap_ptr, *efctv_bitmap = NULL;
+		int topo_idx;
 		/*
 		 * Build list of preemptee jobs whose resources are
 		 * actually used. list returned even if not killed
@@ -2711,9 +2721,9 @@ test_future:
 		}
 		preemptee_iterator = list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = list_next(preemptee_iterator))) {
-			efctv_bitmap_ptr = _select_topo_bitmap(tmp_job_ptr,
-							       node_bitmap,
-							       &efctv_bitmap);
+			efctv_bitmap_ptr =
+				_select_topo_bitmap(tmp_job_ptr, node_bitmap,
+						    &efctv_bitmap, &topo_idx);
 			if (!bit_overlap_any(efctv_bitmap_ptr,
 					     tmp_job_ptr->node_bitmap))
 				continue;
