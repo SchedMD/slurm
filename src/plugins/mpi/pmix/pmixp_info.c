@@ -170,7 +170,7 @@ extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 		}
 	}
 
-	if (step->het_job_offset != NO_VAL) {
+	if (step->het_job_offset < NO_VAL) {
 		_pmixp_job_info.node_id = step->nodeid +
 					  step->het_job_node_offset;
 		_pmixp_job_info.node_tasks = step->node_tasks;
