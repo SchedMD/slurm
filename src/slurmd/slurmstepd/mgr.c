@@ -2905,6 +2905,7 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
 	resp_msg.protocol_version = protocol_version;
+	resp_msg.tls_cert = xstrdup(msg->alloc_tls_cert);
 	slurm_msg_set_r_uid(&resp_msg, launch_uid);
 
 	memcpy(&resp.step_id, &msg->step_id, sizeof(resp.step_id));
