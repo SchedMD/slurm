@@ -1040,7 +1040,8 @@ extern int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg,
 		return SLURM_SUCCESS;
 	}
 
-	xassert(fd >= 0);
+	if (fd < 0)
+		fd = tls_g_get_conn_fd(tls_conn);
 
 	msg->conn_fd = fd;
 
