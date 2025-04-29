@@ -1868,8 +1868,7 @@ extern size_t slurm_write_stream(void *tls_conn, char *buffer, size_t size)
  */
 extern size_t slurm_read_stream(void *tls_conn, char *buffer, size_t size)
 {
-	int open_fd = tls_g_get_conn_fd(tls_conn);
-	return slurm_recv_timeout(open_fd, tls_conn, buffer, size,
+	return slurm_recv_timeout(tls_conn, buffer, size,
 				  (slurm_conf.msg_timeout * 1000));
 }
 
