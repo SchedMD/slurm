@@ -176,6 +176,9 @@ static int _find_user(void *x, void *arg)
 	slurmdb_user_rec_t *user_rec = x;
 	char *name = arg;
 
+	if (!user_rec)
+		return 0;
+
 	return slurm_find_char_exact_in_list(user_rec->name, name);
 }
 
