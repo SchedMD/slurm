@@ -87,5 +87,20 @@ extern int stepd_proxy_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp,
 extern int stepd_proxy_send_recv_to_stepd(slurm_msg_t *req, buf_t **resp_buf,
 					  slurm_step_id_t *step_id,
 					  int stepd_fd, bool reply);
+/*
+ * Send response message to slurmd
+ *
+ * Use this when message was sent to slurmstepd via
+ * stepd_proxy_send_recv_to_stepd(). This is meant to replace
+ * send_msg_response() for slurmstepd sending response to slurmd.
+ *
+ * IN source_msg - Message to send response about
+ * IN msg_type - RPC message type
+ * IN data - pointer to message data which corresponds to msg_type
+ * RET SLURM_SUCCESS or error
+ */
+extern int stepd_proxy_send_resp_to_slurmd(int fd, slurm_msg_t *source_msg,
+					   slurm_msg_type_t msg_type,
+					   void *data);
 
 #endif
