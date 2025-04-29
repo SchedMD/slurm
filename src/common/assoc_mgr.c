@@ -207,6 +207,17 @@ extern int assoc_mgr_find_nondirect_coord_by_name(void *x, void *y)
 	return _find_acct_by_name(x, y);
 }
 
+extern int assoc_mgr_find_flag_coord_by_name(void *x, void *y)
+{
+	slurmdb_coord_rec_t *acct = x;
+
+	/* We want COORD_SET_[INDIRECT|BY_ACCT] */
+	if (acct->direct == COORD_SET_DIRECT)
+		return 0;
+
+	return _find_acct_by_name(x, y);
+}
+
 /*
  * _find_assoc_rec - return a pointer to the assoc_ptr with the given
  * contents of assoc.

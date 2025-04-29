@@ -1983,7 +1983,7 @@ extern void as_mysql_user_handle_user_coord_flag(slurmdb_user_rec_t *user_rec,
 
 	if (flags & ASSOC_FLAG_USER_COORD_NO) {
 		(void) list_delete_first(user_rec->coord_accts,
-					 assoc_mgr_find_nondirect_coord_by_name,
+					 assoc_mgr_find_flag_coord_by_name,
 					 acct);
 		debug2("Removing user %s from being a coordinator of account %s",
 		       user_rec->name, acct);
@@ -2129,11 +2129,8 @@ extern int as_mysql_user_create_user_coords_list(mysql_conn_t *mysql_conn)
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
 
-		/*
-		 * direct is set 0 on purpose. If this flag is removed we want
-		 * to remove it from the assoc_mgr.
-		 */
-		user = _process_coord_results(user, row[1], row[0], 1);
+		user = _process_coord_results(user, row[1], row[0],
+					      COORD_SET_BY_ACCT);
 		if (!user) {
 			error("For some reason we didn't get a user from '%s'. This should never happen.",
 			      row[1]);
