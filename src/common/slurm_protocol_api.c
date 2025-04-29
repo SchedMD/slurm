@@ -2082,7 +2082,7 @@ extern void slurm_send_msg_maybe(slurm_msg_t *req)
 	void *tls_conn = NULL;
 	int fd = -1;
 
-	if (!(tls_conn = slurm_open_msg_conn(&req->address, NULL))) {
+	if (!(tls_conn = slurm_open_msg_conn(&req->address, req->tls_cert))) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req->address);
 		return;
@@ -2328,7 +2328,7 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 		return stepd_proxy_send_recv_node_msg(req, resp, timeout);
 	}
 
-	if (!(tls_conn = slurm_open_msg_conn(&req->address, NULL))) {
+	if (!(tls_conn = slurm_open_msg_conn(&req->address, req->tls_cert))) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req->address);
 		return -1;
@@ -2427,7 +2427,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 		return stepd_proxy_send_only_node_msg(req);
 	}
 
-	if (!(tls_conn = slurm_open_msg_conn(&req->address, NULL))) {
+	if (!(tls_conn = slurm_open_msg_conn(&req->address, req->tls_cert))) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req->address);
 		return SLURM_ERROR;
@@ -2560,7 +2560,8 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	/* This connect retry logic permits Slurm hierarchical communications
 	 * to better survive slurmd restarts */
 	while ((now - start) < conn_timeout) {
-		if ((tls_conn = slurm_open_msg_conn(&msg->address, NULL)))
+		if ((tls_conn =
+			     slurm_open_msg_conn(&msg->address, msg->tls_cert)))
 			break;
 		if ((errno != ECONNREFUSED) && (errno != ETIMEDOUT))
 			break;
