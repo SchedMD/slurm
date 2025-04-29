@@ -2706,7 +2706,7 @@ static void *_slurmctld_background(void *no_data)
 			 */
 			now = time(NULL);
 			last_uid_update = now;
-			assoc_mgr_set_missing_uids();
+			assoc_mgr_set_missing_uids(NULL);
 		}
 
 		END_TIMER2(__func__);
