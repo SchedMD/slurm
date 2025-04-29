@@ -2090,7 +2090,7 @@ static void _attempt_backfill(void)
 	uint32_t time_limit, comp_time_limit, orig_time_limit = 0, part_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
-	bitstr_t *resv_bitmap = NULL;
+	bitstr_t *resv_bitmap = NULL, *excluded_topo_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end, window_end;
 	time_t het_job_time, orig_sched_start, orig_start_time = (time_t) 0;
 	time_t later_filter_start;
@@ -2861,6 +2861,14 @@ TRY_LATER:
 						orig_start_time);
 		}
 
+		if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+			if (excluded_topo_bitmap)
+				bit_clear_all(excluded_topo_bitmap);
+			else
+				excluded_topo_bitmap =
+					bit_alloc(node_record_count);
+		}
+
 		COPY_BITMAP(tmp_bitmap, avail_bitmap);
 		for (j = 0; ; ) {
 			if ((node_space[j].end_time > start_res) &&
@@ -2898,6 +2906,10 @@ TRY_LATER:
 					xfree(job_ptr->state_desc);
 					job_ptr->state_reason = WAIT_LICENSES;
 				}
+				if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+					bit_or_not(excluded_topo_bitmap,
+						   node_space[j].avail_bitmap);
+				}
 			} else {
 				int next = node_space[j].next;
 				if ((later_start == 0) && next &&
@@ -2911,6 +2923,14 @@ TRY_LATER:
 		if (resv_end && (++resv_end < window_end) &&
 		    ((later_start == 0) || (resv_end < later_start))) {
 			later_start = resv_end;
+		}
+
+		if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+			bit_and(excluded_topo_bitmap,
+				node_space[0].avail_bitmap);
+			topology_g_whole_topo(excluded_topo_bitmap,
+					      job_ptr->part_ptr->topology_idx);
+			bit_and_not(avail_bitmap, excluded_topo_bitmap);
 		}
 
 		/* Test if licenses are unavailable OR
@@ -3638,6 +3658,7 @@ skip_start:
 		_het_job_start_test(node_space, 0, NULL, NULL);
 
 	FREE_NULL_BITMAP(avail_bitmap);
+	FREE_NULL_BITMAP(excluded_topo_bitmap);
 	reservation_delete_resv_exc_parts(&resv_exc);
 	FREE_NULL_BITMAP(resv_bitmap);
 	FREE_NULL_BITMAP(tmp_bitmap);
