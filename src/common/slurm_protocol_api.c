@@ -1042,6 +1042,7 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout)
 	fd = tls_g_get_conn_fd(tls_conn);
 
 	msg->conn_fd = fd;
+	msg->tls_conn = tls_conn;
 
 	if (timeout <= 0) {
 		/* convert secs to msec */
