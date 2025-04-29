@@ -140,7 +140,7 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 extern int slurm_persist_conn_wait_for_thread_loc(void);
 
 /* Free the index given from slurm_persist_conn_wait_for_thread_loc */
-extern void slurm_persist_conn_free_thread_loc(int thread_loc);
+extern void slurm_persist_conn_free_thread_loc(int thread_loc, bool detach);
 
 /* Open a persistent socket connection and sends an init message to establish
  * the connection.

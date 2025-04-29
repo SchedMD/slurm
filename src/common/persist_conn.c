@@ -377,23 +377,7 @@ static void *_service_connection(void *arg)
 	slurm_mutex_unlock(&thread_count_lock);
 
 	/* service_conn is freed inside here, unless already freed */
-	slurm_persist_conn_free_thread_loc(thread_loc);
-
-	/* In order to avoid zombie threads, detach the thread now before
-	 * exiting.  slurm_persist_conn_recv_server_fini() will not try to join
-	 * the thread because slurm_persist_conn_free_thread_loc() will have
-	 * free'd the connection. If their are threads at shutdown, the join
-	 * will happen before the detach so recv_fini() will wait until the
-	 * thread is done.
-	 *
-	 * pthread_join man page:
-	 * Failure to join with a thread that is joinable (i.e., one that is not
-	 * detached), produces a "zombie thread". Avoid doing this, since each
-	 * zombie thread consumes some system resources, and when enough zombie
-	 * threads have accumulated, it will no longer be possible to create new
-	 * threads (or processes).
-	 */
-	slurm_thread_detach(pthread_self());
+	slurm_persist_conn_free_thread_loc(thread_loc, true);
 
 	return NULL;
 }
@@ -417,8 +401,8 @@ extern void slurm_persist_conn_recv_server_fini(void)
 {
 	int i;
 
-	shutdown_time = time(NULL);
 	slurm_mutex_lock(&thread_count_lock);
+	shutdown_time = time(NULL);
 	for (i=0; i<MAX_THREAD_COUNT; i++) {
 		if (!persist_service_conn[i])
 			continue;
@@ -546,8 +530,10 @@ extern int slurm_persist_conn_wait_for_thread_loc(void)
 }
 
 /* my_tid IN - Thread ID of spawned thread, 0 if no thread spawned */
-extern void slurm_persist_conn_free_thread_loc(int thread_loc)
+extern void slurm_persist_conn_free_thread_loc(int thread_loc, bool detach)
 {
+	pthread_t thread_id;
+
 	/* we will handle this in the fini */
 	if (shutdown_time)
 		return;
@@ -558,8 +544,20 @@ extern void slurm_persist_conn_free_thread_loc(int thread_loc)
 	else
 		error("thread_count underflow");
 
+	thread_id = persist_service_conn[thread_loc]->thread_id;
 	_destroy_persist_service(persist_service_conn[thread_loc]);
 	persist_service_conn[thread_loc] = NULL;
+
+	/*
+	 * In order to avoid zombie threads, detach the thread now before
+	 * exiting. slurm_persist_conn_recv_server_fini() will not try to join
+	 * the thread because here we have just free'd the connection. If the
+	 * threads are at shutdown, the join will happen before the detach so
+	 * slurm_persist_conn_recv_server_fini() will wait at the join until the
+	 * thread is done.
+	 */
+	if (detach)
+		slurm_thread_detach(thread_id);
 
 	slurm_cond_broadcast(&thread_count_cond);
 	slurm_mutex_unlock(&thread_count_lock);
