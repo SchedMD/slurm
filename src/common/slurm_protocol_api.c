@@ -1810,7 +1810,7 @@ extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 	if ((rc = slurm_buffers_pack_msg(msg, &buffers, true)))
 		goto cleanup;
 
-	rc = slurm_bufs_sendto(fd, tls_conn, &buffers);
+	rc = slurm_bufs_sendto(tls_conn, &buffers);
 
 	if (rc >= 0) {
 		/* sent successfully */

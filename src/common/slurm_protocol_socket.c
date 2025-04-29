@@ -377,7 +377,7 @@ extern ssize_t slurm_msg_sendto_socket(int fd, char *buffer, size_t size)
 	return size;
 }
 
-extern ssize_t slurm_bufs_sendto(int fd, void *tls_conn, msg_bufs_t *buffers)
+extern ssize_t slurm_bufs_sendto(void *tls_conn, msg_bufs_t *buffers)
 {
 	struct iovec iov[4];
 	int len;
