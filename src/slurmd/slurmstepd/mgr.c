@@ -2552,19 +2552,19 @@ _log_task_exit(unsigned long taskid, unsigned long pid, int status)
 static int
 _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 {
-	stepd_step_task_info_t *t = NULL;
-	int rc = 0, status = 0;
 	pid_t pid;
 	int completed = 0;
-	jobacctinfo_t *jobacct = NULL;
-	struct rusage rusage;
-	char **tmp_env;
 	uint32_t task_offset = 0;
 
 	if (step->het_job_task_offset != NO_VAL)
 		task_offset = step->het_job_task_offset;
 	do {
-		pid = wait3(&status, waitflag ? 0 : WNOHANG, &rusage);
+		stepd_step_task_info_t *t = NULL;
+		int rc = 0;
+		jobacctinfo_t *jobacct = NULL;
+		char **tmp_env;
+
+		pid = proctrack_g_wait_for_any_task(step, &t, waitflag);
 		if (pid == -1) {
 			if (errno == ECHILD) {
 				debug("No child processes");
@@ -2586,7 +2586,7 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 		jobacct = jobacct_gather_remove_task(pid);
 		if (jobacct) {
 			jobacctinfo_setinfo(jobacct,
-					    JOBACCT_DATA_RUSAGE, &rusage,
+					    JOBACCT_DATA_RUSAGE, &t->rusage,
 					    SLURM_PROTOCOL_VERSION);
 			/* Since we currently don't track energy
 			   usage per task (only per step).  We take
@@ -2606,11 +2606,12 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 		acct_gather_profile_g_task_end(pid);
 		/*********************************************/
 
-		if ((t = job_task_info_by_pid(step, pid))) {
+		if (t) {
+			debug2("%s: found ended task with primary pid %d ",
+			       __func__, t->pid);
 			completed++;
-			_log_task_exit(t->gtid + task_offset, pid, status);
+			_log_task_exit(t->gtid + task_offset, pid, t->estatus);
 			t->exited  = true;
-			t->estatus = status;
 			step->envtp->procid = t->gtid + task_offset;
 			step->envtp->localid = t->id;
 			step->envtp->distribution = -1;

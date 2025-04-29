@@ -1223,6 +1223,7 @@ typedef enum {
 	SSF_NO_SIG_FAIL = 1 << 7, /* Don't fail step due to signal */
 	SSF_EXT_LAUNCHER = 1 << 8, /* Request is for an external launcher */
 	SSF_GRES_ALLOW_TASK_SHARING = 1 << 9,
+	SSF_WAIT_FOR_CHILDREN = 1 << 10,
 } step_spec_flags_t;
 
 enum topology_plugin_type {

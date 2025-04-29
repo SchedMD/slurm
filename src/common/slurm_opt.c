@@ -3976,6 +3976,44 @@ static slurm_cli_opt_t slurm_opt_wait_all_nodes = {
 	.reset_func = arg_reset_wait_all_nodes,
 };
 
+static int arg_set_wait_for_children(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	if (!xstrstr(slurm_conf.proctrack_type, "proctrack/cgroup")) {
+		fatal("--wait-for-children only compatible with proctrack/cgroup plugin");
+		return SLURM_ERROR;
+	}
+
+	opt->srun_opt->wait_for_children = true;
+
+	return SLURM_SUCCESS;
+}
+
+static char *arg_get_wait_for_children(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup(opt->srun_opt->wait_for_children ? "set" : "unset");
+}
+
+static void arg_reset_wait_for_children(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->wait_for_children = false;
+}
+
+static slurm_cli_opt_t slurm_opt_wait_for_children = {
+	.name = "wait-for-children",
+	.has_arg = no_argument,
+	.val = LONG_OPT_WAIT_FOR_CHILDREN,
+	.set_func_srun = arg_set_wait_for_children,
+	.get_func = arg_get_wait_for_children,
+	.reset_func = arg_reset_wait_for_children,
+};
+
 COMMON_STRING_OPTION(wckey);
 static slurm_cli_opt_t slurm_opt_wckey = {
 	.name = "wckey",
@@ -4199,6 +4237,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_wait,
 	&slurm_opt_wait_all_nodes,
 	&slurm_opt_wait_srun,
+	&slurm_opt_wait_for_children,
 	&slurm_opt_wckey,
 	&slurm_opt_whole,
 	&slurm_opt_wrap,

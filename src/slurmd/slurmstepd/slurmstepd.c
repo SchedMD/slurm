@@ -334,6 +334,48 @@ static void _on_sigttin(conmgr_callback_args_t conmgr_args, void *arg)
 	debug("Caught SIGTTIN. Ignoring.");
 }
 
+static void _main_thread_init()
+{
+	sigset_t mask;
+
+	/*
+	 * Block SIGCHLD so that we can create a SIGCHLD signalfd later. This
+	 * needs to be done before creating any threads so that all threads
+	 * inherit this signal mask. This ensures that no threads consume
+	 * SIGCHLD, and that a SIGCHLD signalfd can reliably catch SIGCHLD.
+	 */
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGCHLD);
+	if (pthread_sigmask(SIG_BLOCK, &mask, NULL) == -1) {
+		error("pthread_sigmask() failed: %m");
+	}
+}
+
+/*
+ * Validate step record before initialization
+ */
+static int _validate_step(stepd_step_rec_t *step)
+{
+	/*
+	 * --wait-for-children is only supported by the cgroup proctrack plugin.
+	 */
+	if ((step->flags & LAUNCH_WAIT_FOR_CHILDREN)) {
+		char *cgroup_version = autodetect_cgroup_version();
+		if (!xstrstr(slurm_conf.proctrack_type, "proctrack/cgroup")) {
+			error("Failed to validate step %ps. --wait-for-children requires proctrack/cgroup plugin.",
+			      &step->step_id);
+			return SLURM_ERROR;
+		}
+		if (!xstrcmp(cgroup_version, "cgroup/v1")) {
+			error("Failed to validate step %ps. --wait-for-children is not supported in cgroup/v1. cgroup/v2 is required.",
+			      &step->step_id);
+			return SLURM_ERROR;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern int main(int argc, char **argv)
 {
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
@@ -342,6 +384,8 @@ extern int main(int argc, char **argv)
 	stepd_step_rec_t *step;
 	int rc = SLURM_SUCCESS;
 	bool only_mem = true;
+
+	_main_thread_init();
 
 	_process_cmdline(argc, argv);
 
@@ -375,9 +419,12 @@ extern int main(int argc, char **argv)
 		fatal("%s: Unable to reliably execute %s",
 		      __func__, conf->stepd_loc);
 
-	/* Create the stepd_step_rec_t, mostly from info in a
-	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
-	if (!(step = _step_setup(cli, msg))) {
+	/*
+	 * Create the stepd_step_rec_t, mostly from info in a
+	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t, and validate
+	 * the new stepd_step_rec_t before continuing
+	 */
+	if (!(step = _step_setup(cli, msg)) || _validate_step(step)) {
 		rc = SLURM_ERROR;
 		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;

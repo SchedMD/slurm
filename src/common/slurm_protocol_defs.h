@@ -649,6 +649,7 @@ typedef struct job_step_create_response_msg {
 #define LAUNCH_OVERCOMMIT 	SLURM_BIT(7)
 #define LAUNCH_NO_SIG_FAIL 	SLURM_BIT(8)
 #define LAUNCH_GRES_ALLOW_TASK_SHARING SLURM_BIT(9)
+#define LAUNCH_WAIT_FOR_CHILDREN SLURM_BIT(9)
 
 typedef struct launch_tasks_request_msg {
 	uint32_t  het_job_node_offset;	/* Hetjob node offset or NO_VAL */

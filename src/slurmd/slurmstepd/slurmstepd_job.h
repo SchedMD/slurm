@@ -56,6 +56,9 @@
 #include "src/common/stepd_api.h"
 #include "src/common/xsched.h"
 
+/* required for rusage */
+#include <sys/resource.h>
+
 #define STEP_CONTAINER_MAGIC 0xa0b9b2ba
 
 typedef struct {
@@ -103,6 +106,7 @@ typedef struct {
 	bool            esent;      /* true if exit status has been sent    */
 	bool            exited;     /* true if task has exited              */
 	int             estatus;    /* this task's exit status              */
+	struct rusage rusage;
 
 	uint32_t	argc;
 	char	      **argv;

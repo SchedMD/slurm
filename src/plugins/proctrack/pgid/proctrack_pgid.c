@@ -192,6 +192,11 @@ proctrack_p_wait(uint64_t cont_id)
 	return SLURM_SUCCESS;
 }
 
+extern int proctrack_p_wait_for_any_task(int *status, bool block,
+					 struct rusage *rusage)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
 
 /*
  * Get list of all PIDs belonging to process group cont_id

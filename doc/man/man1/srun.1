@@ -3147,6 +3147,15 @@ Display version information and exit.
 .IP
 
 .TP
+\fB\-W\fR, \fB\-\-wait-for-children\fR>
+Wait for all processes in each task to finish before considering a task as
+ended. The default behavior without this option is to only wait for the parent
+process in each task to finish. Note that if the parent process exits with a
+non-zero exit code, the task will end regardless of whether there are still
+children processes running. This option requires proctrack/cgroup and cgroup/v2.
+.IP
+
+.TP
 \fB\-W\fR, \fB\-\-wait\fR=<\fIseconds\fR>
 Specify how long to wait after the first task terminates before terminating
 all remaining tasks. A value of 0 indicates an unlimited wait (a warning will

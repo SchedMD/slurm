@@ -141,6 +141,12 @@ proctrack_p_wait(uint64_t cont_id)
 	return proctrack_p_destroy(cont_id);
 }
 
+extern int proctrack_p_wait_for_any_task(int *status, bool block,
+					 struct rusage *rusage)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
 extern int
 proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {

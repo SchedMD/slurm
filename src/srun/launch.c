@@ -715,6 +715,8 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	}
 	if (opt_local->job_flags & GRES_ALLOW_TASK_SHARING)
 		step_req->flags |= SSF_GRES_ALLOW_TASK_SHARING;
+	if (srun_opt->wait_for_children)
+		step_req->flags |= SSF_WAIT_FOR_CHILDREN;
 
 	if (opt_local->immediate == 1)
 		step_req->immediate = opt_local->immediate;

@@ -39,13 +39,18 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/eventfd.h>
+#include <sys/inotify.h>
+#include <sys/signalfd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/cgroup.h"
@@ -82,6 +87,21 @@
 const char plugin_name[]      = "Process tracking via linux cgroup freezer subsystem";
 const char plugin_type[]      = "proctrack/cgroup";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+static pthread_mutex_t monitor_setup_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t monitor_setup_cond = PTHREAD_COND_INITIALIZER;
+static bool monitor_setup = false;
+
+static pthread_mutex_t ended_task_check_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t ended_task_check_cond = PTHREAD_COND_INITIALIZER;
+static bool ended_task_check_complete = false;
+
+typedef struct {
+	stepd_step_rec_t *step;
+	uint32_t task_offset;
+	stepd_step_task_info_t **ended_task;
+	int end_fd;
+} ended_task_monitor_args_t;
 
 int
 _slurm_cgroup_is_pid_a_slurm_task(uint64_t id, pid_t pid)
@@ -289,4 +309,644 @@ extern int proctrack_p_wait(uint64_t cont_id)
 	}
 	xfree(pids);
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Check if a task cgroup is empty
+ *
+ * IN task - Check if this task is empty
+ * IN task_offset - task offset used for het jobs
+ * OUT ended_task - Pointer to ended task info. Only set if a task ended
+ *
+ * RET SLURM_SUCCESS or error
+ */
+static int _check_if_task_cg_empty(stepd_step_task_info_t *task,
+				   uint32_t task_offset,
+				   stepd_step_task_info_t **ended_task)
+{
+	int cgroup_state;
+
+	cgroup_state = cgroup_g_is_task_empty(task->gtid + task_offset);
+
+	switch (cgroup_state) {
+	case CGROUP_EMPTY:
+		if (!(*ended_task)) {
+			int pid;
+
+			/* Get primary pid exit code */
+			pid = wait4(task->pid, &task->estatus, WNOHANG,
+				    &task->rusage);
+			if (pid == 0) {
+				error("Task %d's primary pid %d is running but task cgroup says it is empty. Unable to get exit code for this task",
+				      task->gtid + task_offset, task->pid);
+			} else if (pid == -1) {
+				/*
+				 * wait4 may not find the process specified by
+				 * pid and set ECHILD. This likely means the
+				 * non-zero exit monitor already recorded
+				 * wstatus and rusage.
+				 */
+				if (!(errno == ECHILD)) {
+					error("wait4() failed for pid %d task %d. Unable to get exit code for this task: %m",
+					      task->pid,
+					      task->gtid + task_offset);
+				}
+			}
+
+			*ended_task = task;
+		}
+		return SLURM_SUCCESS;
+	case CGROUP_POPULATED:
+		/* processes still running in task */
+		return SLURM_SUCCESS;
+	default:
+		error("Could not determine if task %d cgroup is empty",
+		      task->gtid + task_offset);
+		break;
+	}
+
+	return SLURM_ERROR;
+}
+
+/*
+ * Check for any empty task cgroups in a step
+ *
+ * IN step - Step record in which we are checking for any ended tasks
+ * IN task_offset - task offset used for het jobs
+ * OUT ended_task - Pointer to ended task info. Only set if a task ended
+ *
+ * RET SLURM_SUCCESS or error
+ */
+static int _check_for_any_empty_task_cg(stepd_step_rec_t *step,
+					uint32_t task_offset,
+					stepd_step_task_info_t **ended_task)
+{
+	for (int i = 0; i < step->node_tasks; i++) {
+		/* skip tasks that we already know have exited */
+		if (step->task[i]->exited)
+			continue;
+
+		if (_check_if_task_cg_empty(step->task[i], task_offset,
+					    ended_task)) {
+			return SLURM_ERROR;
+		}
+		if (*ended_task) {
+			return SLURM_SUCCESS;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Check whether any child processes exited non-zero
+ *
+ * OUT pid - pointer to rc from wait3()
+ * OUT wstatus - wstatus output from wait3()
+ * OUT rusage - rusage output from wait3()
+ * in block - if true, use WNOHANG for wait3()
+ *
+ * RET SLURM_SUCCESS or error
+ */
+static int _wait_for_any_child(int *pid, int *wstatus, struct rusage *rusage,
+			       bool block)
+{
+	*pid = wait3(wstatus, block ? 0 : WNOHANG, rusage);
+
+	if (*pid == -1) {
+		if (errno == EINTR) {
+			debug2("wait3 was interrupted");
+			return SLURM_SUCCESS;
+		}
+		if (errno == ECHILD) {
+			debug2("wait3 returned ECHILD, no more child processes");
+			return SLURM_ERROR;
+		}
+		error("wait3() failed: %m");
+		return SLURM_ERROR;
+	}
+	if (*pid == 0) {
+		/*
+		 * WNOHANG was used, one or more children exist but have not yet
+		 * changed state.
+		 */
+		return SLURM_SUCCESS;
+	}
+
+	debug2("wait3 reaped pid %d", *pid);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Check whether any child processes exited non-zero
+ *
+ * IN step - Step record in which we are checking for any ended tasks
+ * IN task_offset - task offset used for het jobs
+ * OUT ended_task - Pointer to ended task info. Only set if a task ended
+ *
+ * RET SLURM_SUCCESS or error
+ */
+static int _check_for_child_non_zero_exit(stepd_step_rec_t *step,
+					  uint32_t task_offset,
+					  stepd_step_task_info_t **ended_task)
+{
+	int pid = 0;
+	int wstatus = 0;
+	struct rusage rusage;
+
+	/*
+	 * Read all process changes until we find a child that exited non-zero
+	 * or until there are no more changes left to read.
+	 */
+	while (1) {
+		stepd_step_task_info_t *task;
+
+		if (_wait_for_any_child(&pid, &wstatus, &rusage, false)) {
+			/*
+			 * We are only checking for children who have exited
+			 * non-zero in this function. If there are no more
+			 * children left, then there aren't any children who can
+			 * exit non-zero.
+			 */
+			if (errno == ECHILD)
+				return SLURM_SUCCESS;
+			else
+				return SLURM_ERROR;
+		}
+
+		/* No more process state changes */
+		if (pid == 0) {
+			return SLURM_SUCCESS;
+		}
+
+		if (!(task = job_task_info_by_pid(step, pid)))
+			return SLURM_ERROR;
+
+		/* save wstatus and rusage from wait */
+		task->estatus = wstatus;
+		memcpy(&task->rusage, &rusage, sizeof(rusage));
+
+		/*
+		 * Check if a task primary pid exited with
+		 * non-zero exit code
+		 */
+		if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus)) {
+			if (!(*ended_task = task)) {
+				error("%s: Could not find pid %d in any task",
+				      __func__, pid);
+				return SLURM_ERROR;
+			}
+
+			debug2("pid %d exited non-zero (%d). task %d will now be considered ended",
+			       pid, WEXITSTATUS(wstatus),
+			       (*ended_task)->gtid + task_offset);
+
+			return SLURM_SUCCESS;
+		}
+		if (get_log_level() >= LOG_LEVEL_DEBUG2) {
+			stepd_step_task_info_t *task = NULL;
+
+			if (!(task = job_task_info_by_pid(step, pid))) {
+				debug2("Could not find pid %d in any task",
+				      pid);
+			}
+			debug2("child pid %d for task %d exited without any error codes. Ignoring because --wait-for-children was set",
+				pid, task->gtid + task_offset);
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Handle SIGCHLD signal events
+ *
+ * IN child_sig_fd - signalfd with SIGCHLD mask
+ * IN step - Step record in which we are checking for any ended tasks
+ * IN task_offset - task offset used for het jobs
+ * OUT ended_task - Pointer to ended task info. Only set if a task ended
+ *
+ * RET SLURM_SUCCESS or error
+ */
+static int _handle_child_signalfd(int child_sig_fd, stepd_step_rec_t *step,
+				  uint32_t task_offset,
+				  stepd_step_task_info_t **ended_task)
+
+{
+	struct signalfd_siginfo fdsi;
+	ssize_t r;
+
+	r = read(child_sig_fd, &fdsi, sizeof(fdsi));
+	if ((r == -1) && ((errno == EAGAIN) || (errno == EAGAIN))) {
+		debug2("%s: read from child_sig_fd would block. go back to poll()",
+		       __func__);
+		return SLURM_SUCCESS;
+	}
+	if (r != sizeof(fdsi)) {
+		error("Incorrect bytes (%ld) returned by signalfd() fd. Expected %ld bytes",
+		      r, sizeof(fdsi));
+		return SLURM_ERROR;
+	}
+	if (!(fdsi.ssi_signo == SIGCHLD)) {
+		error("signalfd accepted signal other than SIGCHLD");
+		return SLURM_ERROR;
+	}
+
+	return _check_for_child_non_zero_exit(step, task_offset, ended_task);
+}
+
+/*
+ * Handle task cgroup file events
+ *
+ * IN inotify_fd - inotify instance fd for all tasks
+ * IN wd - array of inotify watches
+ * IN wd_count - count of inotify watches
+ * IN step - Step record in which we are checking for any ended tasks
+ * IN task_offset - task offset used for het jobs
+ * OUT ended_task - Pointer to ended task info. Only set if a task ended
+ *
+ * RET SLURM_SUCCESS or error
+ */
+static int _handle_task_cg_inotify_event(int inotify_fd, int *wd, int wd_count,
+					 stepd_step_rec_t *step,
+					 uint32_t task_offset,
+					 stepd_step_task_info_t **ended_task)
+{
+	char buf[4096]
+		__attribute__((aligned(__alignof__(struct inotify_event))));
+	const struct inotify_event *event;
+	ssize_t len;
+
+	while (1) {
+		int task_i = -1;
+		len = read(inotify_fd, buf, sizeof(buf));
+		if ((len == -1) && ((errno == EAGAIN) || (errno == EAGAIN))) {
+			debug2("read from inotify_fd would block. go back to poll()");
+			return SLURM_SUCCESS;
+		}
+		if (len == -1) {
+			error("Could not read from inotify instance: %m");
+			return SLURM_ERROR;
+		}
+		if (len < 0) {
+			break;
+		}
+
+		/* Loop over all events in the buffer. */
+		for (char *ptr = buf; ptr < (buf + len);
+		     ptr += (sizeof(struct inotify_event) + event->len)) {
+			event = (const struct inotify_event *) ptr;
+
+			/*
+			 * Find which task cg had the inotify event
+			 */
+			for (int i = 0; i < wd_count; ++i) {
+				if (wd[i] == event->wd) {
+					task_i = i;
+					break;
+				}
+			}
+
+			if ((task_i < 0) || (task_i >= step->node_tasks)) {
+				error("Could not match watch file descriptor from inotify_event");
+				return SLURM_ERROR;
+			}
+
+			/*
+			 * Check if this inotify event was the task cg being
+			 * modified to reflect that the task has ended
+			 */
+			if (_check_if_task_cg_empty(step->task[task_i],
+						    task_offset, ended_task)) {
+				return SLURM_ERROR;
+			}
+			if (*ended_task) {
+				debug2("cgroup for task id %d is empty",
+				       (*ended_task)->gtid + task_offset);
+				return SLURM_SUCCESS;
+			}
+		}
+	}
+
+	/* We read all inotify events see any tasks that have ended. */
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Watch and detect these events:
+ * - Main task processes (child processes of this process) exiting non-zero
+ * - Task cgroups becoming empty
+ * - Signal to stop waiting for ended tasks.
+ */
+static void *_ended_task_cg_monitor(void *arg)
+{
+	ended_task_monitor_args_t *args = arg;
+
+	stepd_step_rec_t *step = args->step;
+	uint32_t task_offset = args->task_offset;
+	stepd_step_task_info_t **ended_task = args->ended_task;
+	int end_fd = args->end_fd;
+
+	int inotify_fd = -1;
+	int *watch_fd;
+	struct pollfd fds[3];
+
+	sigset_t mask;
+	int child_sig_fd = -1;
+
+	/*
+	 * Create an inotify instance which will watch a cgroup file associated
+	 * with each task. On any event for each task, the task will then be
+	 * checked to see if it still has any processes in it.
+	 */
+	if ((inotify_fd = inotify_init()) == -1) {
+		error("Could not initialize inotify instance: %m");
+		return NULL;
+	}
+	fd_set_nonblocking(inotify_fd);
+
+	watch_fd = xmalloc(step->node_tasks * sizeof(int));
+
+	/* Setup watch for each task */
+	for (int i = 0; i < step->node_tasks; i++) {
+		bool on_modify = false;
+		char *events_file_path;
+		stepd_step_task_info_t *task = step->task[i];
+
+		if (task->exited)
+			continue;
+
+		if (!(events_file_path = cgroup_g_get_task_empty_event_path(
+			      task->gtid + task_offset, &on_modify))) {
+			goto cleanup;
+		}
+		debug2("Adding inotify watch for path \"%s\"",
+		       events_file_path);
+
+		watch_fd[i] = inotify_add_watch(inotify_fd, events_file_path,
+						IN_MODIFY);
+
+		xfree(events_file_path);
+
+		if (watch_fd[i] == -1) {
+			error("Could not add watch to inotify instance: %m");
+			goto cleanup;
+		}
+	}
+
+	/*
+	 * Create a signalfd() for any SIGCHLD signals from the main task
+	 * processes. This will allow us to check via wait3() if any main task
+	 * processes ended non-zero which indicates that the task should be
+	 * cleaned up.
+	 *
+	 * Should already have SIGCHLD block from inherited signal mask from
+	 * main thread.
+	 */
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGCHLD);
+	if ((child_sig_fd = signalfd(-1, &mask, 0)) == -1) {
+		error("signalfd() failed: %m");
+		goto cleanup;
+	}
+
+	/*
+	 * Signal parent thread to check for any ended tasks while we were
+	 * setting up fd's
+	 */
+	slurm_mutex_lock(&monitor_setup_lock);
+	monitor_setup = true;
+	slurm_cond_signal(&monitor_setup_cond);
+	slurm_mutex_unlock(&monitor_setup_lock);
+
+	/*
+	 * Make sure parent thread is done looking for any ended tasks before we
+	 * continue. If it did find any, we'll see data on end_fd and exit. Our
+	 * fd's are already setup at this point and will catch anything in case
+	 * it happens after the parent thread checks.
+	 */
+	slurm_mutex_lock(&ended_task_check_lock);
+	while (!ended_task_check_complete)
+		slurm_cond_wait(&ended_task_check_cond, &ended_task_check_lock);
+	slurm_mutex_unlock(&ended_task_check_lock);
+
+	fds[0].fd = end_fd;
+	fds[0].events = POLLIN;
+	fds[1].fd = child_sig_fd;
+	fds[1].events = POLLIN;
+	fds[2].fd = inotify_fd;
+	fds[2].events = POLLIN;
+
+	while (1) {
+		int poll_rc;
+		debug2("poll() waiting for task cgroup.events changes and SIGCHLD...");
+		poll_rc = poll(fds, 3, -1);
+		if (poll_rc == -1) {
+			if (errno == EINTR)
+				continue;
+			error("%s: poll() failed: %m", __func__);
+			goto cleanup;
+		}
+		if (poll_rc == 0) {
+			error("%s: poll() timed out: %m", __func__);
+			goto cleanup;
+		}
+
+		/* end_fd */
+		if (fds[0].revents & POLLIN) {
+			debug2("end_fd %d received data", end_fd);
+			goto cleanup;
+		}
+
+		/* child_sig_fd */
+		if (fds[1].revents & POLLIN) {
+			debug2("child_sig_fd %d received data", child_sig_fd);
+			if (_handle_child_signalfd(child_sig_fd, step,
+						   task_offset, ended_task)) {
+				goto cleanup;
+			}
+			if (*ended_task)
+				goto cleanup;
+		}
+
+		/* inotify_fd */
+		if (fds[2].revents & POLLIN) {
+			debug2("inotify_fd %d received data", inotify_fd);
+			if (_handle_task_cg_inotify_event(inotify_fd, watch_fd,
+							  step->node_tasks,
+							  step, task_offset,
+							  ended_task)) {
+				goto cleanup;
+			}
+
+			if (*ended_task)
+				goto cleanup;
+		}
+	}
+
+cleanup:
+	/*
+	 * inotify man page:
+	 * "When all file descriptors referring to an inotify instance have been
+	 * closed ... all associated watches are automatically freed."
+	 */
+	close(inotify_fd);
+	close(child_sig_fd);
+	xfree(watch_fd);
+	return NULL;
+}
+
+/*
+ * This does a non-blocking check for two things:
+ * - Did a child process (main process for a task) exit non-zero?
+ * - Are any task cgroups empty?
+ *
+ * IN step - Step record in which we are checking for any ended tasks
+ * IN task_offset - task offset used for het jobs
+ * OUT ended_task - Pointer to ended task info. Only set if a task ended
+ *
+ * RET SLURM_SUCCESS or error
+ */
+static int _check_for_ended_task(stepd_step_rec_t *step, uint32_t task_offset,
+				 stepd_step_task_info_t **ended_task)
+{
+	if (_check_for_child_non_zero_exit(step, task_offset, ended_task)) {
+		return SLURM_ERROR;
+	}
+	if (*ended_task) {
+		return SLURM_SUCCESS;
+	}
+
+	if (_check_for_any_empty_task_cg(step, task_offset, ended_task)) {
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * This function implements the --wait-for-children behavior for srun.
+ *
+ * This function creates a poll() thread that waits for two events:
+ *	- Check for any direct children processes (parent processes of tasks)
+ *	  exiting non-zero.
+ *	- Check for any changes to the processes in each task cgroup
+ *
+ * If either of those events happen, *ended_task will be set to the task that
+ * was ended, and then function will return. Extra care is taken before/after
+ * setting up this poll() thread to ensure that all task endings are accounted
+ * for. This means that there is thread communication required to stop the poll
+ * if necessary.
+ */
+extern int proctrack_p_wait_for_any_task(stepd_step_rec_t *step,
+					 stepd_step_task_info_t **ended_task,
+					 bool block)
+{
+	int write_rc = 0;
+	int end_fd = -1;
+	pthread_t ended_task_cg_monitor_tid = 0;
+	ended_task_monitor_args_t args = { 0 };
+	bool any_task_running = false;
+	uint32_t task_offset = 0;
+
+	*ended_task = NULL;
+
+	/*
+	 * Check step record for any running tasks. This function does not rely
+	 * on wait3 returning ECHLD because it's possible there are still
+	 * processes in the cgroup even if all children of this process have
+	 * exited. This function depends on the caller properly cleaning up
+	 * tasks in the step by setting task->exited to true.
+	 */
+	for (int i = 0; i < step->node_tasks; i++) {
+		if (!step->task[i]->exited) {
+			any_task_running = true;
+			break;
+		}
+	}
+	if (!any_task_running) {
+		errno = ECHILD;
+		return SLURM_ERROR;
+	}
+
+	if (step->het_job_task_offset != NO_VAL)
+		task_offset = step->het_job_task_offset;
+
+	/*
+	 * Check if any task has already ended before we start
+	 * _ended_task_cg_monitor thread
+	 */
+	if (_check_for_ended_task(step, task_offset, ended_task)) {
+		return SLURM_ERROR;
+	}
+	if (*ended_task) {
+		return (*ended_task)->pid;
+	}
+
+	/* match behavior of wait3/waitpid */
+	if (!block) {
+		return 0;
+	}
+
+	/*
+	 * Create eventfd that we can use to signal _ended_task_cg_monitor to
+	 * end if needed.
+	 */
+	if ((end_fd = eventfd(0, EFD_SEMAPHORE)) == -1) {
+		error("eventfd() failed creating end_fd: %m");
+		return SLURM_ERROR;
+	}
+
+	args.step = step;
+	args.task_offset = task_offset;
+	args.ended_task = ended_task;
+	args.end_fd = end_fd;
+
+	slurm_thread_create(&ended_task_cg_monitor_tid, _ended_task_cg_monitor,
+			    &args);
+
+	/* Wait for monitor to create fd's that listen for ended task events */
+	slurm_mutex_lock(&monitor_setup_lock);
+	while (!monitor_setup)
+		slurm_cond_wait(&monitor_setup_cond, &monitor_setup_lock);
+	slurm_mutex_unlock(&monitor_setup_lock);
+
+	/*
+	 * Check if any task ended while setting up _ended_task_cg_monitor
+	 * thread fd's.
+	 */
+	if (_check_for_ended_task(step, task_offset, ended_task)) {
+		uint64_t inc = 1;
+
+		debug2("Could not check for any tasks ending. Signaling monitor to end.");
+		if ((write_rc = write(end_fd, &inc, sizeof(uint32_t)))) {
+			debug2("Could not write to end_fd to signal monitor to end, returning without joining.");
+		}
+	} else if (*ended_task) {
+		uint64_t inc = 1;
+
+		debug2("Task id %d ended while monitor was being setup. Signaling monitor to end.",
+		       (*ended_task)->gtid + task_offset);
+		if ((write_rc = write(end_fd, &inc, sizeof(uint32_t)))) {
+			debug2("Could not write to end_fd to signal monitor to end, returning without joining.");
+		}
+	}
+
+	/* allow monitor thread to poll for ended task events */
+	slurm_mutex_lock(&ended_task_check_lock);
+	ended_task_check_complete = true;
+	slurm_cond_signal(&ended_task_check_cond);
+	slurm_mutex_unlock(&ended_task_check_lock);
+
+	/* Wait indefinitely until monitor detects a task that has ended. */
+	if (!write_rc)
+		slurm_thread_join(ended_task_cg_monitor_tid);
+
+	close(end_fd);
+
+	if (*ended_task)
+		return (*ended_task)->pid;
+
+	return SLURM_ERROR;
 }

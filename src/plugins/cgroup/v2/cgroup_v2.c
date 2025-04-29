@@ -728,30 +728,69 @@ static int _find_pid_task(void *x, void *key)
 	return found;
 }
 
-static void _wait_cgroup_empty(xcgroup_t *cg, int timeout_ms)
+/*
+ * Check the "populated" key in the cgroup.events file
+ * Returns CGROUP_EMPTY, CGROUP_POPULATED, or SLURM_ERROR.
+ */
+static int _is_cgroup_empty(xcgroup_t *cg)
 {
-	char *cgroup_events = NULL, *events_content = NULL, *ptr;
-	int rc, fd, wd, populated = -1;
-	size_t sz;
-	struct pollfd pfd[1];
+	char *events_content = NULL, *ptr;
+	int rc;
+	int populated = -1;
+	size_t size;
 
 	/* Check if cgroup is empty in the first place. */
-	if (common_cgroup_get_param(
-		    cg, "cgroup.events", &events_content, &sz) != SLURM_SUCCESS)
+	if (common_cgroup_get_param(cg, "cgroup.events", &events_content,
+				    &size) != SLURM_SUCCESS) {
 		error("Cannot read %s/cgroup.events", cg->path);
-
-	if (events_content) {
-		if ((ptr = xstrstr(events_content, "populated"))) {
-			if (sscanf(ptr, "populated %u", &populated) != 1)
-				error("Cannot read populated counter from cgroup.events file.");
-		}
-		xfree(events_content);
+		return SLURM_ERROR;
 	}
 
-	if (populated < 0) {
+	if (!events_content) {
+		error("%s/cgroup.events is empty", cg->path);
+		return SLURM_ERROR;
+	}
+
+	if (!(ptr = xstrstr(events_content, "populated"))) {
+		error("Could not find \"populated\" field in %s/cgroup.events: \"%s\"",
+		      cg->path, events_content);
+		xfree(events_content);
+		return SLURM_ERROR;
+	}
+
+	if ((rc = sscanf(ptr, "populated %u", &populated) != 1)) {
+		error("Could not find value for \"populated\" field in %s/cgroup.events (\"%s\"): %s",
+		      cg->path, events_content, strerror(rc));
+		xfree(events_content);
+		return SLURM_ERROR;
+	}
+
+	xfree(events_content);
+
+	switch (populated) {
+	case 0:
+		return CGROUP_EMPTY;
+	case 1:
+		return CGROUP_POPULATED;
+	default:
+		error("Cannot determine if %s is empty.", cg->path);
+		break;
+	}
+	return SLURM_ERROR;
+}
+
+static void _wait_cgroup_empty(xcgroup_t *cg, int timeout_ms)
+{
+	char *cgroup_events = NULL;
+	int rc, fd, wd, populated = -1;
+	struct pollfd pfd[1];
+
+	populated = _is_cgroup_empty(cg);
+
+	if (populated == SLURM_ERROR) {
 		error("Cannot determine if %s is empty.", cg->path);
 		return;
-	} else if (populated == 0) //We're done
+	} else if (populated == CGROUP_EMPTY) //We're done
 		return;
 
 	/*
@@ -790,21 +829,11 @@ static void _wait_cgroup_empty(xcgroup_t *cg, int timeout_ms)
 		error("Timeout waiting for %s to become empty.", cgroup_events);
 
 	/* Check if cgroup is empty again. */
-	if (common_cgroup_get_param(cg, "cgroup.events",
-				    &events_content, &sz) != SLURM_SUCCESS)
-		error("Cannot read %s/cgroup.events", cg->path);
+	populated = _is_cgroup_empty(cg);
 
-	if (events_content) {
-		if ((ptr = xstrstr(events_content, "populated"))) {
-			if (sscanf(ptr, "populated %u", &populated) != 1)
-				error("Cannot read populated counter from cgroup.events file.");
-		}
-		xfree(events_content);
-	}
-
-	if (populated < 0)
+	if (populated == SLURM_ERROR)
 		error("Cannot determine if %s is empty.", cg->path);
-	else if (populated == 1)
+	else if (populated == CGROUP_POPULATED)
 		log_flag(CGROUP, "Cgroup %s is not empty.", cg->path);
 
 end_inotify:
@@ -2851,4 +2880,37 @@ extern int cgroup_p_signal(int signal)
 		 int_cg[CG_LEVEL_STEP_USER].path);
 
 	return SLURM_SUCCESS;
+}
+
+extern char *cgroup_p_get_task_empty_event_path(uint32_t taskid,
+						bool *on_modify)
+{
+	task_cg_info_t *task_cg_info;
+
+	xassert(on_modify);
+
+	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
+					     &taskid))) {
+		return NULL;
+	}
+
+	/* We want to watch when cgroups.events is modified */
+	*on_modify = true;
+
+	return xstrdup_printf("%s/cgroup.events", task_cg_info->task_cg.path);
+}
+
+extern int cgroup_p_is_task_empty(uint32_t taskid)
+{
+	task_cg_info_t *task_cg_info;
+	xcgroup_t cg;
+
+	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
+					     &taskid))) {
+		return SLURM_ERROR;
+	}
+
+	cg = task_cg_info->task_cg;
+
+	return _is_cgroup_empty(&cg);
 }

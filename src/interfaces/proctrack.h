@@ -133,6 +133,21 @@ extern bool proctrack_g_has_pid(uint64_t cont_id, pid_t pid);
 extern int proctrack_g_wait(uint64_t cont_id);
 
 /*
+ * Wait for any task to end in a step
+ *
+ * step IN - tasks in this step record will be checked
+ * ended_task OUT - pointer to ended task info if one was found
+ * block IN - If true and there are still tasks running, wait until any task
+ *	ends in the step. If false, do an immediate check of whether any tasks
+ *	have ended. If none have ended, *ended_task will not be modified.
+ *
+ * Return SLURM_SUCCESS or SLURM_ERROR.
+ */
+extern int proctrack_g_wait_for_any_task(stepd_step_rec_t *step,
+					 stepd_step_task_info_t **ended_task,
+					 bool block);
+
+/*
  * Get all process IDs within a container.
  *
  * IN cont_id - Container ID.

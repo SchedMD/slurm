@@ -76,6 +76,8 @@ typedef struct slurm_proctrack_ops {
 	uint64_t         (*find_cont) (pid_t pid);
 	bool             (*has_pid)   (uint64_t id, pid_t pid);
 	int              (*wait)      (uint64_t id);
+	int (*wait_for_any_task)(stepd_step_rec_t *step,
+				 stepd_step_task_info_t **task, bool block);
 	int              (*get_pids)  (uint64_t id, pid_t ** pids, int *npids);
 } slurm_proctrack_ops_t;
 
@@ -90,6 +92,7 @@ static const char *syms[] = {
 	"proctrack_p_find",
 	"proctrack_p_has_pid",
 	"proctrack_p_wait",
+	"proctrack_p_wait_for_any_task",
 	"proctrack_p_get_pids"
 };
 
@@ -454,6 +457,42 @@ extern int proctrack_g_wait(uint64_t cont_id)
 	xassert(g_context);
 
 	return (*(ops.wait)) (cont_id);
+}
+
+/*
+ * Wait for any task to end
+ *
+ * IN step - wait for any task in this step
+ * OUT ended_task - pointer to task that ended. NULL if no tasks ended
+ * IN block - If true, wait until any task ends, or return immediately if all
+ *   tasks have already ended. If false, check for any ended tasks and then
+ *   immediately return.
+ *
+ * RET - SLURM_SUCCESS or SLURM_ERROR. SLURM_ERROR and errno set to ECHILD
+ *   means all tasks have already ended.
+ */
+extern int proctrack_g_wait_for_any_task(stepd_step_rec_t *step,
+					 stepd_step_task_info_t **ended_task,
+					 bool block)
+{
+	int status;
+	struct rusage rusage;
+	int pid;
+
+	xassert(g_context);
+	xassert(ended_task);
+
+	if (step->flags & LAUNCH_WAIT_FOR_CHILDREN)
+		return (*(ops.wait_for_any_task))(step, ended_task, block);
+
+	pid = wait3(&status, block ? 0 : WNOHANG, &rusage);
+
+	if ((pid > 0) && (*ended_task = job_task_info_by_pid(step, pid))) {
+		(*ended_task)->estatus = status;
+		(*ended_task)->rusage = rusage;
+	}
+
+	return pid;
 }
 
 /*
