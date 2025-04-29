@@ -2699,6 +2699,7 @@ static void *_slurmctld_background(void *no_data)
 		unlock_slurmctld(config_read_lock);
 
 		if (difftime(now, last_uid_update) >= 3600) {
+			bool uid_set = false;
 			/*
 			 * Make sure we update the uids in the
 			 * assoc_mgr if there were any users
@@ -2706,7 +2707,14 @@ static void *_slurmctld_background(void *no_data)
 			 */
 			now = time(NULL);
 			last_uid_update = now;
-			assoc_mgr_set_missing_uids(NULL);
+			assoc_mgr_set_missing_uids(&uid_set);
+			/*
+			 * If a missing uid was set, schedule a full reservation
+			 * validation to make sure that the reservations are up
+			 * to date.
+			 */
+			if (uid_set)
+				validate_all_reservations(false, true);
 		}
 
 		END_TIMER2(__func__);
