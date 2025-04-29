@@ -416,6 +416,18 @@ static void _set_int_cg_ns()
 {
 	int_cg_ns.init_cg_path = _get_init_cg_path();
 
+	/*
+	 * When started manually in a container and reconfiguring, if we are pid
+	 * 1 we can directly get the cgroup as it has been configured in our
+	 * previous instance.
+	 */
+	if (slurm_cgroup_conf.ignore_systemd && getenv("SLURMD_RECONF") &&
+	    (getpid() == 1)) {
+		stepd_scope_path = xdirname(int_cg_ns.init_cg_path);
+		int_cg_ns.mnt_point = xstrdup(int_cg_ns.init_cg_path);
+		return;
+	}
+
 #ifdef MULTIPLE_SLURMD
 	xstrfmtcat(stepd_scope_path, "%s/%s/%s_%s.scope",
 		   int_cg_ns.init_cg_path, SYSTEM_CGSLICE, conf->node_name,
