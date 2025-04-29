@@ -231,8 +231,7 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout);
  *                (ret_data_info_t). NULL is returned on failure. and
  *                errno set.
  */
-extern list_t *slurm_receive_msgs(int fd, void *tls_conn, int steps,
-				  int timeout);
+extern list_t *slurm_receive_msgs(void *tls_conn, int steps, int timeout);
 extern list_t *slurm_receive_resp_msgs(int fd, void *tls_conn, int steps,
 				       int timeout);
 

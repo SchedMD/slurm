@@ -1097,7 +1097,6 @@ endit:
 /*
  * NOTE: memory is allocated for the returned list
  *       and must be freed at some point using the list_destroy function.
- * IN open_fd	- file descriptor to receive msg on
  * IN tls_conn
  * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
@@ -1105,9 +1104,9 @@ endit:
  *		  forwarded the message to. List containing type
  *		  (ret_data_info_t).
  */
-extern list_t *slurm_receive_msgs(int fd, void *tls_conn, int steps,
-				  int timeout)
+extern list_t *slurm_receive_msgs(void *tls_conn, int steps, int timeout)
 {
+	int fd = -1;
 	char *buf = NULL;
 	size_t buflen = 0;
 	header_t header;
@@ -1120,7 +1119,7 @@ extern list_t *slurm_receive_msgs(int fd, void *tls_conn, int steps,
 	int orig_timeout = timeout;
 	char *peer = NULL;
 
-	xassert(fd >= 0);
+	fd = tls_g_get_conn_fd(tls_conn);
 
 	if (slurm_conf.debug_flags & (DEBUG_FLAG_NET | DEBUG_FLAG_NET_RAW)) {
 		/*
@@ -2562,7 +2561,6 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	uint16_t conn_timeout = MIN(slurm_conf.msg_timeout, 10);
 	void *tls_conn = NULL;
 	list_t *ret_list = NULL;
-	int fd = -1;
 	bool first = true;
 
 	start = now = time(NULL);
@@ -2596,12 +2594,11 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 		return ret_list;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
 	msg->ret_list = NULL;
 	msg->forward_struct = NULL;
 
 	if (slurm_send_node_msg(-1, tls_conn, msg) >= 0)
-		ret_list = slurm_receive_msgs(fd, tls_conn, msg->forward.tree_depth,
+		ret_list = slurm_receive_msgs(tls_conn, msg->forward.tree_depth,
 					      msg->forward.timeout);
 
 	if (!ret_list) {
