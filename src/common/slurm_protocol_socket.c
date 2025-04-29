@@ -496,12 +496,7 @@ extern int slurm_recv_timeout(void *tls_conn, char *buffer, size_t size,
 		}
 
 ready:
-		if (tls_conn) {
-			rc = tls_g_recv(tls_conn, &buffer[recvlen],
-					(size - recvlen));
-		} else {
-			rc = recv(fd, &buffer[recvlen], (size - recvlen), 0);
-		}
+		rc = tls_g_recv(tls_conn, &buffer[recvlen], (size - recvlen));
 
 		if (rc < 0)  {
 			if ((errno == EINTR) || (errno == EAGAIN)) {
