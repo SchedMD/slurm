@@ -81,7 +81,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 		goto cleanup;
 	}
 
-	if ((rc = slurm_send_node_msg(fd, tls_conn, msg)) == -1) {
+	if ((rc = slurm_send_node_msg(-1, tls_conn, msg)) == -1) {
 		/* capture real error */
 		rc = errno;
 

@@ -2095,7 +2095,6 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 extern void slurm_send_msg_maybe(slurm_msg_t *req)
 {
 	void *tls_conn = NULL;
-	int fd = -1;
 
 	if (!(tls_conn = slurm_open_msg_conn(&req->address, req->tls_cert))) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
@@ -2103,9 +2102,7 @@ extern void slurm_send_msg_maybe(slurm_msg_t *req)
 		return;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
-
-	(void) slurm_send_node_msg(fd, tls_conn, req);
+	(void) slurm_send_node_msg(-1, tls_conn, req);
 
 	tls_g_destroy_conn(tls_conn, true);
 }
@@ -2369,8 +2366,7 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 				slurmdb_cluster_rec_t *comm_cluster_rec)
 {
 	void *tls_conn = NULL;
-	int      rc = SLURM_SUCCESS;
-	int fd = -1;
+	int rc = SLURM_SUCCESS;
 	int index = 0;
 
 	if (tls_enabled() && running_in_slurmstepd()) {
@@ -2385,10 +2381,9 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 		goto cleanup;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
 	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
 
-	if ((rc = slurm_send_node_msg(fd, tls_conn, req)) < 0) {
+	if ((rc = slurm_send_node_msg(-1, tls_conn, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		log_flag(NET, "%s: sent %d", __func__, rc);
@@ -2449,7 +2444,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	}
 	fd = tls_g_get_conn_fd(tls_conn);
 
-	if ((rc = slurm_send_node_msg(fd, tls_conn, req)) < 0) {
+	if ((rc = slurm_send_node_msg(-1, tls_conn, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		log_flag(NET, "%s: sent %d", __func__, rc);
@@ -2606,7 +2601,7 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	msg->ret_list = NULL;
 	msg->forward_struct = NULL;
 
-	if (slurm_send_node_msg(fd, NULL, msg) >= 0)
+	if (slurm_send_node_msg(-1, tls_conn, msg) >= 0)
 		ret_list = slurm_receive_msgs(fd, tls_conn, msg->forward.tree_depth,
 					      msg->forward.timeout);
 
