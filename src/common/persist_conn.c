@@ -351,6 +351,8 @@ static void *_service_connection(void *arg)
 	 * after leaving _process_service_connection on shutdown
 	 */
 	thread_loc = service_conn->thread_loc;
+	xassert(!service_conn->thread_id ||
+		pthread_equal(service_conn->thread_id, pthread_self()));
 	service_conn->thread_id = pthread_self();
 
 	_process_service_connection(service_conn->pcon, service_conn->fd,
