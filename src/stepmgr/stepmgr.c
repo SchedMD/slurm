@@ -63,6 +63,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/stepd_proxy.h"
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xstring.h"
@@ -4988,6 +4989,30 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 	return SLURM_SUCCESS;
 }
 
+static int _send_msg(slurm_msg_t *msg, slurm_msg_type_t type, void *data)
+{
+	xassert(running_in_slurmctld() || running_in_slurmstepd());
+	int rc;
+
+	if (running_in_slurmctld()) {
+		if ((rc = send_msg_response(msg, type, data))) {
+			errno = rc;
+			return SLURM_ERROR;
+		}
+		return SLURM_SUCCESS;
+	}
+
+	if (running_in_slurmstepd()) {
+		if ((stepd_proxy_send_resp_to_slurmd(msg->conn_fd, msg, type,
+						     data))) {
+			return SLURM_ERROR;
+		}
+		return SLURM_SUCCESS;
+	}
+
+	return SLURM_ERROR;
+}
+
 extern int step_create_from_msg(slurm_msg_t *msg,
 				void (*lock_func)(bool lock),
 				void (*fail_lock_func)(bool lock))
@@ -5015,9 +5040,12 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 			xfree(host);
 		}
 	} else if (msg->auth_uid != req_step_msg->user_id) {
+		return_code_msg_t rc_msg = {
+			.return_code = ESLURM_USER_ID_MISSING,
+		};
 		error("Security violation, JOB_STEP_CREATE RPC from uid=%u to run as uid %u",
 		      msg->auth_uid, req_step_msg->user_id);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		_send_msg(msg, RESPONSE_SLURM_RC, &rc_msg);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -5049,12 +5077,19 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 	if (running_in_slurmctld() &&
 	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
 		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
+			return_code_msg_t rc_msg = {
+				.return_code = ESLURM_NOT_SUPPORTED,
+			};
 			error("rpc %s from non-supported client version %d for stepmgr job",
 			      rpc_num2string(msg->msg_type),
 			      msg->protocol_version);
-			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+			_send_msg(msg, RESPONSE_SLURM_RC, &rc_msg);
 		} else {
-			slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
+			reroute_msg_t reroute_msg = {
+				.stepmgr = job_ptr->batch_host,
+			};
+			_send_msg(msg, RESPONSE_SLURM_REROUTE_MSG,
+				  &reroute_msg);
 		}
 		if (lock_func)
 			lock_func(false);
@@ -5088,10 +5123,18 @@ end_it:
 			log_flag(STEPS, "%s for %ps: %s",
 				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
-		if (err_msg)
-			slurm_send_rc_err_msg(msg, error_code, err_msg);
-		else
-			slurm_send_rc_msg(msg, error_code);
+		if (err_msg) {
+			return_code2_msg_t rc_msg = {
+				.return_code = error_code,
+				.err_msg = err_msg,
+			};
+			_send_msg(msg, RESPONSE_SLURM_RC_MSG, &rc_msg);
+		} else {
+			return_code_msg_t rc_msg = {
+				.return_code = error_code,
+			};
+			_send_msg(msg, RESPONSE_SLURM_RC, &rc_msg);
+		}
 	} else {
 		slurm_step_layout_t *step_layout = NULL;
 		dynamic_plugin_data_t *switch_step = NULL;
@@ -5133,8 +5176,7 @@ end_it:
 			msg->protocol_version = step_rec->start_protocol_ver;
 		}
 
-		if (send_msg_response(msg, RESPONSE_JOB_STEP_CREATE,
-				      &job_step_resp)) {
+		if (_send_msg(msg, RESPONSE_JOB_STEP_CREATE, &job_step_resp)) {
 			step_complete_msg_t req;
 
 			memset(&req, 0, sizeof(req));
