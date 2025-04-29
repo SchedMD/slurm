@@ -1966,8 +1966,8 @@ unpack_error:
  * the function
 \**********************************************************************/
 
-static void _response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
-			   uint16_t msg_type, void *data)
+extern void slurm_resp_msg_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
+				uint16_t msg_type, void *data)
 {
 	slurm_msg_t_init(resp_msg);
 	resp_msg->address = msg->address;
@@ -2018,7 +2018,7 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	    !source_msg->conmgr_fd)
 		return ENOTCONN;
 
-	_response_init(&resp_msg, source_msg, msg_type, data);
+	slurm_resp_msg_init(&resp_msg, source_msg, msg_type, data);
 
 	if (source_msg->conmgr_fd) {
 		rc = conmgr_queue_write_msg(source_msg->conmgr_fd, &resp_msg);

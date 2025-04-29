@@ -384,6 +384,19 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 \**********************************************************************/
 
 /*
+ * Initialize response msg
+ *
+ * NOTE: This sets SLURM_NO_AUTH_CRED on resp_msg
+ *
+ * OUT resp_msg - pointer to response message
+ * IN source_msg - create response to this message
+ * IN msg_type - RPC message type
+ * IN data - pointer to message data which corresponds to msg_type
+ */
+extern void slurm_resp_msg_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
+				uint16_t msg_type, void *data);
+
+/*
  * Send message in response to a source message
  *
  * Handles creating response slurm_msg_t and sending based on source_msg.
