@@ -3081,6 +3081,12 @@ TRY_LATER:
 					       job_ptr, start_time,
 					       end_reserve)) {
 				later_start = job_ptr->start_time;
+
+				if (start_res == job_ptr->start_time) {
+					later_start += backfill_resolution;
+					log_flag(BACKFILL, "%pJ inf loop detect", job_ptr);
+				}
+
 				job_ptr->start_time = 0;
 				log_flag(BACKFILL, "%pJ overlaps with existing reservation start_time=%u end_reserve=%u boot_time=%u later_start %ld",
 					 job_ptr, start_time, end_reserve,
