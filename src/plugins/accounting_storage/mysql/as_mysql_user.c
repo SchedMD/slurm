@@ -171,6 +171,14 @@ no_wckeys:
 	return ret_list;
 }
 
+static int _find_user(void *x, void *arg)
+{
+	slurmdb_user_rec_t *user_rec = x;
+	char *name = arg;
+
+	return slurm_find_char_exact_in_list(user_rec->name, name);
+}
+
 /* Fill in all the accounts this user is coordinator over.  This
  * will fill in all the sub accounts they are coordinator over also.
  */
@@ -1958,14 +1966,6 @@ get_wckeys:
 	}
 
 	return user_list;
-}
-
-static int _find_user(void *x, void *arg)
-{
-	slurmdb_user_rec_t *user_rec = x;
-	char *name = arg;
-
-	return slurm_find_char_exact_in_list(user_rec->name, name);
 }
 
 static slurmdb_user_rec_t *_make_user_rec_with_coords(
