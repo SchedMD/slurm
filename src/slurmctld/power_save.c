@@ -226,6 +226,7 @@ static void _parse_exc_states(void)
 					  NODE_STATE_DRAIN |
 					  NODE_STATE_DYNAMIC_FUTURE |
 					  NODE_STATE_DYNAMIC_NORM |
+					  NODE_STATE_EXTERNAL |
 					  NODE_STATE_FAIL |
 					  NODE_STATE_INVALID_REG |
 					  NODE_STATE_MAINT |

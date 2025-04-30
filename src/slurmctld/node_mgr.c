@@ -113,6 +113,7 @@ bitstr_t *bf_ignore_node_bitmap = NULL; /* bitmap of nodes to ignore during a
 bitstr_t *booting_node_bitmap = NULL;	/* bitmap of booting nodes */
 bitstr_t *cg_node_bitmap    = NULL;	/* bitmap of completing nodes */
 bitstr_t *cloud_node_bitmap = NULL;	/* bitmap of cloud nodes */
+bitstr_t *external_node_bitmap = NULL;	/* bitmap of external nodes */
 bitstr_t *future_node_bitmap = NULL;	/* bitmap of FUTURE nodes */
 bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
 bitstr_t *power_down_node_bitmap = NULL; /* bitmap of powered down nodes */
@@ -451,7 +452,7 @@ extern int load_all_node_state ( bool state_only )
 			if (IS_NODE_FUTURE(node_ptr)) {
 				/* preserve state for conf FUTURE nodes */
 				node_ptr->node_state = node_state;
-			} else if (IS_NODE_CLOUD(node_ptr)) {
+			} else if (IS_NODE_CLOUD(node_ptr) || IS_NODE_EXTERNAL(node_ptr)) {
 				if ((!power_save_mode) &&
 				    ((node_state & NODE_STATE_POWERED_DOWN) ||
 				     (node_state & NODE_STATE_POWERING_DOWN) ||
@@ -4910,6 +4911,7 @@ extern void node_fini (void)
 	FREE_NULL_BITMAP(booting_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
 	FREE_NULL_BITMAP(cloud_node_bitmap);
+	FREE_NULL_BITMAP(external_node_bitmap);
 	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_down_node_bitmap);
@@ -5120,10 +5122,14 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 	bit_clear(power_up_node_bitmap, node_ptr->index);
 	if (IS_NODE_FUTURE(node_ptr)) {
 		bit_set(future_node_bitmap, node_ptr->index);
-	} else if (IS_NODE_CLOUD(node_ptr)) {
+	} else if (IS_NODE_CLOUD(node_ptr) || IS_NODE_EXTERNAL(node_ptr)) {
 		make_node_idle(node_ptr, NULL);
-		bit_set(cloud_node_bitmap, node_ptr->index);
-		bit_set(power_down_node_bitmap, node_ptr->index);
+		if (IS_NODE_CLOUD(node_ptr)) {
+			bit_set(cloud_node_bitmap, node_ptr->index);
+			bit_set(power_down_node_bitmap, node_ptr->index);
+		} else {
+			bit_set(external_node_bitmap, node_ptr->index);
+		}
 
 		if ((rc = gres_g_node_config_load(node_ptr->config_ptr->cpus,
 						  node_ptr->name,
@@ -5220,8 +5226,9 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 	state_val = state_str2int(conf_node->state, conf_node->nodenames);
 	if ((state_val == NO_VAL) ||
 	    ((state_val != NODE_STATE_FUTURE) &&
-	     !(state_val & NODE_STATE_CLOUD))) {
-		*err_msg = xstrdup("Only State=FUTURE and State=CLOUD allowed for nodes created by scontrol");
+	     !(state_val & NODE_STATE_CLOUD) &&
+	     !(state_val & NODE_STATE_EXTERNAL))) {
+		*err_msg = xstrdup("Only State=FUTURE, CLOUD, or EXTERNAL allowed for nodes created by scontrol");
 		error("%s", *err_msg);
 		rc = ESLURM_INVALID_NODE_STATE;
 		goto fini;
@@ -5398,6 +5405,7 @@ static void _remove_node_from_all_bitmaps(node_record_t *node_ptr)
 	bit_clear(booting_node_bitmap, node_ptr->index);
 	bit_clear(cg_node_bitmap, node_ptr->index);
 	bit_clear(cloud_node_bitmap, node_ptr->index);
+	bit_clear(external_node_bitmap, node_ptr->index);
 	bit_clear(future_node_bitmap, node_ptr->index);
 	bit_clear(idle_node_bitmap, node_ptr->index);
 	bit_clear(power_down_node_bitmap, node_ptr->index);
@@ -5414,7 +5422,7 @@ static int _delete_node_ptr(node_record_t *node_ptr)
 {
 	xassert(node_ptr);
 
-	if (!IS_NODE_DYNAMIC_NORM(node_ptr)) {
+	if (!IS_NODE_DYNAMIC_NORM(node_ptr) && !IS_NODE_EXTERNAL(node_ptr)) {
 		error("Can't delete non-dynamic node '%s'.", node_ptr->name);
 		return ESLURM_INVALID_NODE_STATE;
 	}

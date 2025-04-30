@@ -193,6 +193,7 @@ void ping_nodes (void)
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		node_offset++;
 		if (IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_EXTERNAL(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_UP(node_ptr) ||
@@ -357,6 +358,7 @@ extern void run_health_check(void)
 		    (node_test_cnt++ >= node_limit))
 				break;
 		if (IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_EXTERNAL(node_ptr) ||
 		    IS_NODE_INVALID_REG(node_ptr) ||
 		    IS_NODE_NO_RESPOND(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
@@ -437,6 +439,7 @@ extern void update_nodes_acct_gather_data(void)
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_EXTERNAL(node_ptr) ||
 		    IS_NODE_INVALID_REG(node_ptr) ||
 		    IS_NODE_NO_RESPOND(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||

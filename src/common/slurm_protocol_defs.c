@@ -129,6 +129,7 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_DRAIN, "DRAIN" },
 	{ NODE_STATE_DYNAMIC_FUTURE, "DYNAMIC_FUTURE" },
 	{ NODE_STATE_DYNAMIC_NORM, "DYNAMIC_NORM" },
+	{ NODE_STATE_EXTERNAL, "EXTERNAL" },
 	{ NODE_STATE_INVALID_REG, "INVALID_REG" },
 	{ NODE_STATE_FAIL, "FAIL" },
 	{ NODE_STATE_MAINT, "MAINTENANCE" },
@@ -3512,6 +3513,8 @@ extern char *node_state_string(uint32_t inx)
 		return "CANCEL_REBOOT";
 	if (inx == NODE_STATE_CLOUD)
 		return "CLOUD";
+	if (inx == NODE_STATE_EXTERNAL)
+		return "EXTERNAL";
 	if (inx == NODE_STATE_POWER_DOWN)
 		return "POWER_DOWN";
 	if (inx == NODE_STATE_POWER_UP)
@@ -3762,6 +3765,8 @@ extern char *node_state_string_compact(uint32_t inx)
 		return "CANC_R";
 	if (inx == NODE_STATE_CLOUD)
 		return "CLOUD";
+	if (inx == NODE_STATE_EXTERNAL)
+		return "EXT";
 	if (inx == NODE_STATE_POWER_DOWN)
 		return "POW_DN";
 	if (inx == NODE_STATE_POWER_UP)
