@@ -556,11 +556,12 @@ extern void slurm_persist_conn_free_thread_loc(int thread_loc, bool detach)
 {
 	pthread_t thread_id;
 
+	slurm_mutex_lock(&thread_count_lock);
+
 	/* we will handle this in the fini */
 	if (shutdown_time)
-		return;
+		goto end;
 
-	slurm_mutex_lock(&thread_count_lock);
 	if (thread_count > 0)
 		thread_count--;
 	else
@@ -581,6 +582,15 @@ extern void slurm_persist_conn_free_thread_loc(int thread_loc, bool detach)
 	if (detach)
 		slurm_thread_detach(thread_id);
 
+end:
+	/*
+	 * We need to ensure we broadcast cond even if no thread is cleaned,
+	 * something that happens if we delegate cleanup to the shutdown
+	 * procedure; or we, otherwise, can cause slurm_cond_wait in
+	 * slurm_persist_conn_wait_for_thread_loc to wait forever.
+	 *
+	 * If this happens, the daemon will never finish.
+	 */
 	slurm_cond_broadcast(&thread_count_cond);
 	slurm_mutex_unlock(&thread_count_lock);
 }
