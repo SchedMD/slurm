@@ -65,6 +65,7 @@ bitstr_t *bf_ignore_node_bitmap = NULL; /* bitmap of nodes to ignore during a
 bitstr_t *booting_node_bitmap = NULL; /* bitmap of booting nodes */
 bitstr_t *cg_node_bitmap = NULL; /* bitmap of completing nodes */
 bitstr_t *cloud_node_bitmap = NULL; /* bitmap of cloud nodes */
+bitstr_t *external_node_bitmap = NULL; /* bitmap of external nodes */
 bitstr_t *future_node_bitmap = NULL; /* bitmap of FUTURE nodes */
 bitstr_t *idle_node_bitmap = NULL; /* bitmap of idle nodes */
 bitstr_t *power_down_node_bitmap = NULL; /* bitmap of powered down nodes */
@@ -477,6 +478,7 @@ int main(int argc, char *argv[])
 	asap_node_bitmap = bit_alloc(node_record_count);
 	rs_node_bitmap = bit_alloc(node_record_count);
 	cg_node_bitmap = bit_alloc(node_record_count);
+	external_node_bitmap = bit_alloc(node_record_count);
 	power_down_node_bitmap = bit_alloc(node_record_count);
 	booting_node_bitmap = bit_alloc(node_record_count);
 
