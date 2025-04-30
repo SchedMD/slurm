@@ -60,6 +60,11 @@
 #define PMIX_TDIR_RMCLEAN "pmix.tdir.rmclean"
 #endif
 
+/* Some older PMIx (2.x) do not have this, let them compile. */
+#ifndef PMIX_APP_ARGV
+#define PMIX_APP_ARGV "pmix.app.argv"
+#endif
+
 #define PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array) \
 	{ (kvp)->value.data.array.array = (pmix_info_t *)_array; }
 
@@ -181,7 +186,27 @@ static void _set_procdatas(list_t *lresp)
 	xfree(p);
 	list_append(lresp, kvp);
 
-	PMIXP_KVP_CREATE(kvp, PMIX_NODEID, &nsptr->node_id, PMIX_UINT32);
+	/*
+	 * The leader program (appldr) is the lowest global rank in the
+	 * specified application.
+	 */
+	i = pmixp_info_appldr();
+	PMIXP_KVP_CREATE(kvp, PMIX_APPLDR, &i, PMIX_INT);
+	list_append(lresp, kvp);
+
+	/*
+	 * Consolidated argv passed to the spawn command for the given
+	 * application (e.g., "./myapp arg1 arg2 arg3").
+	 */
+	p = pmixp_info_cmd();
+	PMIXP_KVP_CREATE(kvp, PMIX_APP_ARGV, p, PMIX_STRING);
+	list_append(lresp, kvp);
+
+	/*
+	 * Type of mapping used to layout the application (e.g., cyclic).
+	 */
+	p = pmixp_info_task_dist();
+	PMIXP_KVP_CREATE(kvp, PMIX_APP_MAP_TYPE, p, PMIX_STRING);
 	list_append(lresp, kvp);
 
 	/* store information about local processes */
@@ -199,35 +224,42 @@ static void _set_procdatas(list_t *lresp)
 		PMIXP_VAL_SET_RANK(&kvp->value, i);
 		list_append(rankinfo, kvp);
 
-		/* TODO: always use 0 for now. This is not the general case
-		 * though (see Slurm MIMD: man srun, section MULTIPLE PROGRAM
-		 * CONFIGURATION)
+		/*
+		 * The application number within the job in which the specified
+		 * process is a member. In Slurm terminology this number
+		 * identifies the heterogeneous component (step->het_job_offset)
+		 * from this step.
 		 */
-		tmp = 0;
+		tmp = pmixp_info_job_offset(i);
 		PMIXP_KVP_CREATE(kvp, PMIX_APPNUM, &tmp, PMIX_INT);
 		list_append(rankinfo, kvp);
 
-		/* TODO: the same as for previous here */
-		tmp = 0;
-		PMIXP_KVP_CREATE(kvp, PMIX_APPLDR, &tmp, PMIX_INT);
-		list_append(rankinfo, kvp);
-
-		/* TODO: fix when several apps will appear */
+		/*
+		 * Global task id in the heterogeneous job.
+		 */
 		PMIXP_KVP_CREATE(kvp, PMIX_GLOBAL_RANK, &i, PMIX_UINT32);
 		list_append(rankinfo, kvp);
 
-		/* TODO: fix when several apps will appear */
-		PMIXP_KVP_CREATE(kvp, PMIX_APP_RANK, &i, PMIX_UINT32);
-		list_append(rankinfo, kvp);
-
+		/* localid is the task id in this node */
 		localid = pmixp_info_taskid2localid(i);
-		/* this rank is local, store local info ab't it! */
 		if (0 <= localid) {
 			PMIXP_KVP_CREATE(kvp, PMIX_LOCAL_RANK,
 					 &localid, PMIX_UINT16);
 			list_append(rankinfo, kvp);
 
-			/* TODO: fix when several apps will appear */
+			/*
+			 * This is the rank local to each heterogeneous
+			 * component within its app, starting from 0.
+			 */
+			PMIXP_KVP_CREATE(kvp, PMIX_APP_RANK, &localid,
+					 PMIX_UINT32);
+			list_append(rankinfo, kvp);
+
+			/*
+			 * Rank of the specified process on its node spanning
+			 * all jobs. For Slurm this is just the rank local to
+			 * this node, so the same as PMIX_LOCAL_RANK.
+			 */
 			PMIXP_KVP_CREATE(kvp, PMIX_NODE_RANK,
 					 &localid, PMIX_UINT16);
 			list_append(rankinfo, kvp);
@@ -239,8 +271,7 @@ static void _set_procdatas(list_t *lresp)
 		list_append(rankinfo, kvp);
 		free(nodename);
 
-		PMIXP_KVP_CREATE(kvp, PMIX_NODEID, &nsptr->node_id,
-				 PMIX_UINT32);
+		PMIXP_KVP_CREATE(kvp, PMIX_NODEID, &nodeid, PMIX_UINT32);
 		list_append(rankinfo, kvp);
 
 		/* merge rankinfo into one PMIX_PROC_DATA key */
@@ -283,13 +314,21 @@ static void _set_sizeinfo(list_t *lresp)
 	PMIXP_KVP_CREATE(kvp, PMIX_LOCAL_SIZE, &tmp_val, PMIX_UINT32);
 	list_append(lresp, kvp);
 
-	/* TODO: fix it in future */
 	tmp_val = pmixp_info_tasks_loc();
 	PMIXP_KVP_CREATE(kvp, PMIX_NODE_SIZE, &tmp_val, PMIX_UINT32);
 	list_append(lresp, kvp);
 
 	tmp_val = pmixp_info_tasks_uni();
 	PMIXP_KVP_CREATE(kvp, PMIX_MAX_PROCS, &tmp_val, PMIX_UINT32);
+	list_append(lresp, kvp);
+
+	/*
+	 * When using MULTIPLE PROGRAM this is the number of tasks of
+	 * this specific program. In Slurm terminology, number of tasks
+	 * of this heterogeneous component (a.k.a step).
+	 */
+	tmp_val = pmixp_info_tasks_loc();
+	PMIXP_KVP_CREATE(kvp, PMIX_APP_SIZE, &tmp_val, PMIX_UINT32);
 	list_append(lresp, kvp);
 }
 

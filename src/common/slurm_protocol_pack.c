@@ -8591,6 +8591,11 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		}
 		pack32(msg->het_job_offset, buffer);
 		pack32(msg->het_job_step_cnt, buffer);
+		if ((msg->het_job_offset < NO_VAL) &&
+		    (msg->het_job_step_cnt > 0)) {
+			pack32_array(msg->het_job_step_task_cnts,
+				     msg->het_job_step_cnt, buffer);
+		}
 		pack32(msg->het_job_task_offset, buffer);
 		packstr(msg->het_job_node_list, buffer);
 		pack32(msg->mpi_plugin_id, buffer);
@@ -9065,6 +9070,11 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		}
 		safe_unpack32(&msg->het_job_offset, buffer);
 		safe_unpack32(&msg->het_job_step_cnt, buffer);
+		if ((msg->het_job_offset < NO_VAL) &&
+		    (msg->het_job_step_cnt > 0)) {
+			safe_unpack32_array(&msg->het_job_step_task_cnts,
+					    &msg->het_job_step_cnt, buffer);
+		}
 		safe_unpack32(&msg->het_job_task_offset, buffer);
 		safe_unpackstr(&msg->het_job_node_list, buffer);
 		safe_unpack32(&msg->mpi_plugin_id, buffer);

@@ -1403,6 +1403,7 @@ extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.het_job_ntasks = job->het_job_ntasks;
 	launch_params.het_job_offset = job->het_job_offset;
 	launch_params.het_job_step_cnt = srun_opt->het_step_cnt;
+	launch_params.het_job_step_task_cnts = job->het_job_step_task_cnts;
 	launch_params.het_job_task_offset = job->het_job_task_offset;
 	launch_params.het_job_task_cnts = job->het_job_task_cnts;
 	launch_params.het_job_tids = job->het_job_tids;
