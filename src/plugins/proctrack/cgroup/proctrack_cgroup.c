@@ -509,10 +509,11 @@ static int _check_for_child_non_zero_exit(stepd_step_rec_t *step,
 
 			if (!(task = job_task_info_by_pid(step, pid))) {
 				debug2("Could not find pid %d in any task",
-				      pid);
+				       pid);
+			} else {
+				debug2("Child pid %d for task %d exited without any error codes. Ignoring because --wait-for-children was set",
+				       pid, (task->gtid + task_offset));
 			}
-			debug2("child pid %d for task %d exited without any error codes. Ignoring because --wait-for-children was set",
-				pid, task->gtid + task_offset);
 		}
 	}
 
