@@ -90,6 +90,14 @@ typedef struct {
 	slurmdb_used_limits_t *used_limits_user;
 } acct_policy_accrue_t;
 
+typedef struct {
+	uint32_t job_cnt;
+	job_record_t *job_ptr;
+	list_t *part_qos_list;
+	int type;
+	uint64_t *used_tres_run_secs;
+} foreach_part_qos_limit_usage_t;
+
 static void _apply_limit_factor(uint64_t *limit, double limit_factor)
 {
 	int64_t new_val;
@@ -866,6 +874,32 @@ static int _find_qos_part(void *x, void *key)
 	return 0;
 }
 
+static int _foreach_part_qos_limit_usage(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	foreach_part_qos_limit_usage_t *part_qos_limit_usage = arg;
+
+	if (!part_ptr->qos_ptr)
+		return 0;
+	if (!part_qos_limit_usage->part_qos_list)
+		part_qos_limit_usage->part_qos_list = list_create(NULL);
+	/*
+	 * Don't adjust usage to this partition's qos if
+	 * it's the same as the qos of another partition
+	 * that we already handled.
+	 */
+	if (list_find_first(part_qos_limit_usage->part_qos_list, _find_qos_part,
+			    part_ptr->qos_ptr))
+		return 0;
+	list_push(part_qos_limit_usage->part_qos_list, part_ptr->qos_ptr);
+	_qos_adjust_limit_usage(part_qos_limit_usage->type,
+				part_qos_limit_usage->job_ptr,
+				part_ptr->qos_ptr,
+				part_qos_limit_usage->used_tres_run_secs,
+				part_qos_limit_usage->job_cnt);
+	return 0;
+}
+
 static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 				bool assoc_locked)
 {
@@ -947,10 +981,13 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 	    job_ptr->part_ptr_list &&
 	    (IS_JOB_PENDING(job_ptr) || !job_ptr->tres_alloc_str)) {
 		bool job_first = false;
-		list_itr_t *part_itr;
-		part_record_t *part_ptr;
-		list_t *part_qos_list = NULL;
-
+		foreach_part_qos_limit_usage_t part_qos_limit_usage = {
+			.job_cnt = job_cnt,
+			.job_ptr = job_ptr,
+			.part_qos_list = NULL,
+			.type = type,
+			.used_tres_run_secs = used_tres_run_secs,
+		};
 		if (job_ptr->qos_ptr &&
 		    (((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->flags
 		     & QOS_FLAG_OVER_PART_QOS))
@@ -959,30 +996,14 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 		if (job_first) {
 			_qos_adjust_limit_usage(type, job_ptr, job_ptr->qos_ptr,
 						used_tres_run_secs, job_cnt);
-			part_qos_list = list_create(NULL);
-			list_push(part_qos_list, job_ptr->qos_ptr);
+			part_qos_limit_usage.part_qos_list = list_create(NULL);
+			list_push(part_qos_limit_usage.part_qos_list,
+				  job_ptr->qos_ptr);
 		}
 
-		part_itr = list_iterator_create(job_ptr->part_ptr_list);
-		while ((part_ptr = list_next(part_itr))) {
-			if (!part_ptr->qos_ptr)
-				continue;
-			if (!part_qos_list)
-				part_qos_list = list_create(NULL);
-			/*
-			 * Don't adjust usage to this partition's qos if
-			 * it's the same as the qos of another partition
-			 * that we already handled.
-			 */
-			if (list_find_first(part_qos_list, _find_qos_part,
-					    part_ptr->qos_ptr))
-				continue;
-			list_push(part_qos_list, part_ptr->qos_ptr);
-			_qos_adjust_limit_usage(type, job_ptr,
-						part_ptr->qos_ptr,
-						used_tres_run_secs, job_cnt);
-		}
-		list_iterator_destroy(part_itr);
+		(void) list_for_each(job_ptr->part_ptr_list,
+				     _foreach_part_qos_limit_usage,
+				     &part_qos_limit_usage);
 
 		/*
 		 * Don't adjust usage to this job's qos if
@@ -990,13 +1011,14 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 		 * that we already handled.
 		 */
 		if (!job_first && job_ptr->qos_ptr &&
-		    (!part_qos_list ||
-		     !list_find_first(part_qos_list, _find_qos_part,
+		    (!part_qos_limit_usage.part_qos_list ||
+		     !list_find_first(part_qos_limit_usage.part_qos_list,
+				      _find_qos_part,
 				      job_ptr->qos_ptr)))
 			_qos_adjust_limit_usage(type, job_ptr, job_ptr->qos_ptr,
 						used_tres_run_secs, job_cnt);
 
-		FREE_NULL_LIST(part_qos_list);
+		FREE_NULL_LIST(part_qos_limit_usage.part_qos_list);
 	} else {
 		slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 
@@ -1007,39 +1029,27 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 		 */
 		if ((type == ACCT_POLICY_JOB_BEGIN) &&
 		    job_ptr->part_ptr_list) {
-			list_itr_t *part_itr;
-			part_record_t *part_ptr;
-			list_t *part_qos_list = list_create(NULL);
+			foreach_part_qos_limit_usage_t part_qos_limit_usage = {
+				.job_cnt = job_cnt,
+				.job_ptr = job_ptr,
+				.part_qos_list = list_create(NULL),
+				.type = ACCT_POLICY_REM_SUBMIT,
+				.used_tres_run_secs = used_tres_run_secs,
+			};
 
 			if (job_ptr->qos_ptr)
-				list_push(part_qos_list, job_ptr->qos_ptr);
+				list_push(part_qos_limit_usage.part_qos_list,
+					  job_ptr->qos_ptr);
 			if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr &&
 			    job_ptr->qos_ptr != job_ptr->part_ptr->qos_ptr)
-				list_push(part_qos_list,
+				list_push(part_qos_limit_usage.part_qos_list,
 					  job_ptr->part_ptr->qos_ptr);
 
-			part_itr = list_iterator_create(job_ptr->part_ptr_list);
-			while ((part_ptr = list_next(part_itr))) {
-				if (!part_ptr->qos_ptr)
-					continue;
+			(void) list_for_each(job_ptr->part_ptr_list,
+					     _foreach_part_qos_limit_usage,
+					     &part_qos_limit_usage);
 
-				/*
-				 * Don't adjust usage to this partition's qos if
-				 * it's the same as the qos of another partition
-				 * that we already handled.
-				 */
-				if (list_find_first(part_qos_list,
-						    _find_qos_part,
-						    part_ptr->qos_ptr))
-					continue;
-				_qos_adjust_limit_usage(ACCT_POLICY_REM_SUBMIT,
-							job_ptr,
-							part_ptr->qos_ptr,
-							used_tres_run_secs,
-							job_cnt);
-			}
-			list_iterator_destroy(part_itr);
-			FREE_NULL_LIST(part_qos_list);
+			FREE_NULL_LIST(part_qos_limit_usage.part_qos_list);
 		}
 
 		acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
