@@ -2813,7 +2813,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				 * This needs to be committed or
 				 * problems may arise
 				 */
-				slurmdb_connection_commit(db_conn, 1);
+				rc = slurmdb_connection_commit(db_conn, 1);
 			}
 
 			/* Add QOS now */
@@ -2863,11 +2863,21 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				FREE_NULL_LIST(g_qos_list);
 
 			if (list_count(qos_list) || list_count(mod_qos_list)) {
-				if (commit_check("Would you like to commit changes?")) {
-					slurmdb_connection_commit(db_conn, 1);
+				if (commit_check(
+					    "Would you like to commit changes?")) {
+					rc = slurmdb_connection_commit(db_conn,
+								       1);
+					if (rc != SLURM_SUCCESS)
+						fprintf(stderr," Error committing changes: %s\n",
+							slurm_strerror(rc));
+
 				} else {
 					printf(" Changes Discarded\n");
-					slurmdb_connection_commit(db_conn, 0);
+					rc = slurmdb_connection_commit(db_conn,
+								       0);
+					if (rc != SLURM_SUCCESS)
+						fprintf(stderr, " Error rolling back changes: %s\n",
+							slurm_strerror(rc));
 				}
 			}
 
@@ -2931,7 +2941,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				}
 				/* This needs to be committed or
 				   problems may arise */
-				slurmdb_connection_commit(db_conn, 1);
+				rc = slurmdb_connection_commit(db_conn, 1);
 				set = 1;
 			} else {
 				set = _mod_cluster(file_opts,
@@ -3355,16 +3365,22 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	if (rc == SLURM_SUCCESS) {
 		if (set) {
 			if (commit_check("Would you like to commit changes?")) {
-				slurmdb_connection_commit(db_conn, 1);
+				rc = slurmdb_connection_commit(db_conn, 1);
+				if (rc != SLURM_SUCCESS)
+					fprintf(stderr, " Error committing changes: %s\n",
+						slurm_strerror(rc));
 			} else {
 				printf(" Changes Discarded\n");
-				slurmdb_connection_commit(db_conn, 0);
+				rc = slurmdb_connection_commit(db_conn, 0);
+				if (rc != SLURM_SUCCESS)
+					fprintf(stderr, " Error rolling back changes: %s\n",
+						slurm_strerror(rc));
 			}
 		} else {
 			printf(" Nothing new added.\n");
 		}
 	} else {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr, " Problem with requests: %s\n",
 			slurm_strerror(rc));
 	}

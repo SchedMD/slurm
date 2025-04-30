@@ -494,10 +494,16 @@ extern int sacctmgr_add_federation(int argc, char **argv)
 
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check("Would you like to commit changes?")) {
-			slurmdb_connection_commit(db_conn, 1);
+			rc = slurmdb_connection_commit(db_conn, 1);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error committing changes: %s\n",
+					slurm_strerror(rc));
 		} else {
 			printf(" Changes Discarded\n");
-			slurmdb_connection_commit(db_conn, 0);
+			rc = slurmdb_connection_commit(db_conn, 0);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error rolling back changes: %s\n",
+					slurm_strerror(rc));
 		}
 	} else {
 		exit_code = 1;
@@ -915,11 +921,17 @@ extern int sacctmgr_modify_federation(int argc, char **argv)
 	notice_thread_fini();
 
 	if (set) {
-		if (commit_check("Would you like to commit changes?"))
-			slurmdb_connection_commit(db_conn, 1);
-		else {
+		if (commit_check("Would you like to commit changes?")) {
+			rc = slurmdb_connection_commit(db_conn, 1);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error committing changes: %s\n",
+					slurm_strerror(rc));
+		} else {
 			printf(" Changes Discarded\n");
-			slurmdb_connection_commit(db_conn, 0);
+			rc = slurmdb_connection_commit(db_conn, 0);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error rolling back changes: %s\n",
+					slurm_strerror(rc));
 		}
 	}
 end_it:
@@ -986,10 +998,16 @@ extern int sacctmgr_delete_federation(int argc, char **argv)
 		}
 		list_iterator_destroy(itr);
 		if (commit_check("Would you like to commit changes?")) {
-			slurmdb_connection_commit(db_conn, 1);
+			rc = slurmdb_connection_commit(db_conn, 1);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error committing changes: %s\n",
+					slurm_strerror(rc));
 		} else {
 			printf(" Changes Discarded\n");
-			slurmdb_connection_commit(db_conn, 0);
+			rc = slurmdb_connection_commit(db_conn, 0);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error rolling back changes: %s\n",
+					slurm_strerror(rc));
 		}
 	} else if (ret_list) {
 		printf(" Nothing deleted\n");

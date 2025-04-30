@@ -748,10 +748,16 @@ extern int sacctmgr_add_res(int argc, char **argv)
 		goto end_it;
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check("Would you like to commit changes?")) {
-			slurmdb_connection_commit(db_conn, 1);
+			rc = slurmdb_connection_commit(db_conn, 1);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error committing changes: %s\n",
+					slurm_strerror(rc));
 		} else {
 			printf(" Changes Discarded\n");
-			slurmdb_connection_commit(db_conn, 0);
+			rc = slurmdb_connection_commit(db_conn, 0);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error rolling back changes: %s\n",
+					slurm_strerror(rc));
 		}
 	} else {
 		exit_code = 1;
@@ -946,11 +952,17 @@ extern int sacctmgr_modify_res(int argc, char **argv)
 	}
 
 	if (set) {
-		if (commit_check("Would you like to commit changes?")){
-			slurmdb_connection_commit(db_conn, 1);
+		if (commit_check("Would you like to commit changes?")) {
+			rc = slurmdb_connection_commit(db_conn, 1);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error committing changes: %s\n",
+					slurm_strerror(rc));
 		} else {
 			printf(" Changes Discarded\n");
-			slurmdb_connection_commit(db_conn, 0);
+			rc = slurmdb_connection_commit(db_conn, 0);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error rolling back changes: %s\n",
+					slurm_strerror(rc));
 		}
 	}
 
@@ -1008,10 +1020,16 @@ extern int sacctmgr_delete_res(int argc, char **argv)
 		}
 		list_iterator_destroy(itr);
 		if (commit_check("Would you like to commit changes?")) {
-			slurmdb_connection_commit(db_conn, 1);
+			rc = slurmdb_connection_commit(db_conn, 1);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error committing changes: %s\n",
+					slurm_strerror(rc));
 		} else {
 			printf(" Changes Discarded\n");
-			slurmdb_connection_commit(db_conn, 0);
+			rc = slurmdb_connection_commit(db_conn, 0);
+			if (rc != SLURM_SUCCESS)
+				fprintf(stderr, " Error rolling back changes: %s\n",
+					slurm_strerror(rc));
 		}
 	} else if (ret_list) {
 		printf("  Nothing deleted\n");
