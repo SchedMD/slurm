@@ -168,3 +168,20 @@ extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
 	}
 	return rval;
 }
+
+extern int task_cpuset_get_assigned_count(size_t size, cpu_set_t *mask)
+{
+	int count = 0;
+
+	if (!size || !mask)
+		return -1;
+
+	/*
+	 * Count CPUs assigned instead of assuming all CPUs should be included.
+	 */
+	for (size_t max = CPU_COUNT(mask), cpu = 0; cpu < max; cpu++)
+		if (CPU_ISSET(cpu, mask))
+			count++;
+
+	return count;
+}

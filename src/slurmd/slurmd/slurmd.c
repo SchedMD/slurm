@@ -140,7 +140,6 @@ uint32_t slurm_daemon = IS_SLURMD;
 #define MAX_THREADS		256
 #define TIMEOUT_SIGUSR2 5000000
 #define TIMEOUT_RECONFIG 5000000
-#define SLURMD_CONMGR_DEFAULT_THREADS 10
 #define SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
 #define MAX_THREAD_DELAY_INC ((timespec_t) { .tv_nsec = 1500, })
 #define MAX_THREAD_DELAY_MAX ((timespec_t) { .tv_sec = 1, })
@@ -418,9 +417,8 @@ main (int argc, char **argv)
 	info("slurmd version %s started", SLURM_VERSION_STRING);
 	debug3("finished daemonize");
 
-	conmgr_init(SLURMD_CONMGR_DEFAULT_THREADS,
-		    SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS,
-		    (conmgr_callbacks_t) {0});
+	conmgr_init(0, SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS,
+		    (conmgr_callbacks_t) { 0 });
 
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);

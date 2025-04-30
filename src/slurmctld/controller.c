@@ -141,11 +141,6 @@
 
 decl_static_data(usage_txt);
 
-#ifdef MEMORY_LEAK_DEBUG
-#define SLURMCTLD_CONMGR_DEFAULT_THREADS 8
-#else
-#define SLURMCTLD_CONMGR_DEFAULT_THREADS 64
-#endif
 #define SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to
 				 * check-in before we ping them */
@@ -680,9 +675,8 @@ int main(int argc, char **argv)
 	if (slurm_conf.slurmctld_params)
 		conmgr_set_params(slurm_conf.slurmctld_params);
 
-	conmgr_init(SLURMCTLD_CONMGR_DEFAULT_THREADS,
-		    SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS,
-		    (conmgr_callbacks_t) {0});
+	conmgr_init(0, SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS,
+		    (conmgr_callbacks_t) { 0 });
 
 	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 

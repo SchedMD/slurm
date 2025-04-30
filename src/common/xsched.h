@@ -81,4 +81,10 @@ extern int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
 /* Wrapper for sched_getaffinity() */
 extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
 
+/*
+ * Get number of CPUs assigned in mask
+ * RET CPUs set or -1 on error
+ */
+extern int task_cpuset_get_assigned_count(size_t size, cpu_set_t *mask);
+
 #endif
