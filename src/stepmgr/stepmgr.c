@@ -1973,8 +1973,7 @@ static int _gres_filter_avail_cores(void *x, void *arg)
 static bool _pick_step_core(step_record_t *step_ptr,
 			    job_resources_t *job_resrcs_ptr,
 			    bitstr_t *avail_core_bitmap, int job_node_inx,
-			    int sock_inx, int core_inx, bool use_all_cores,
-			    bool oversubscribing_cores)
+			    int sock_inx, int core_inx, bool use_all_cores)
 {
 	int bit_offset;
 
@@ -1988,27 +1987,19 @@ static bool _pick_step_core(step_record_t *step_ptr,
 	if (!bit_test(avail_core_bitmap, bit_offset))
 		return false;
 
-	if (oversubscribing_cores) {
-		/* Already allocated cores, now we are oversubscribing cores */
-		if (bit_test(step_ptr->core_bitmap_job, bit_offset))
-			return false; /* already taken by this step */
+	if (bit_test(step_ptr->core_bitmap_job, bit_offset))
+		return false; /* already taken by this step */
 
-		log_flag(STEPS, "%s: over-subscribe alloc Node:%d Socket:%d Core:%d",
-			 __func__, job_node_inx, sock_inx, core_inx);
-	} else {
-		/* Check and set the job's used cores. */
-		if (!(step_ptr->flags & SSF_OVERLAP_FORCE)) {
-			if ((use_all_cores == false) &&
-			    bit_test(job_resrcs_ptr->core_bitmap_used,
-				     bit_offset))
-				return false;
-			bit_set(job_resrcs_ptr->core_bitmap_used, bit_offset);
-		}
-
-		log_flag(STEPS, "%s: alloc Node:%d Socket:%d Core:%d",
-			 __func__, job_node_inx, sock_inx, core_inx);
+	/* Check and set the job's used cores. */
+	if (!(step_ptr->flags & SSF_OVERLAP_FORCE)) {
+		if ((use_all_cores == false) &&
+		    bit_test(job_resrcs_ptr->core_bitmap_used, bit_offset))
+			return false;
+		bit_set(job_resrcs_ptr->core_bitmap_used, bit_offset);
 	}
 
+	log_flag(STEPS, "%s: alloc Node:%d Socket:%d Core:%d",
+			 __func__, job_node_inx, sock_inx, core_inx);
 	bit_set(step_ptr->core_bitmap_job, bit_offset);
 
 	return true;
@@ -2019,23 +2010,14 @@ static bool _handle_core_select(step_record_t *step_ptr,
 				bitstr_t *avail_core_bitmap,
 				int job_node_inx, uint16_t sockets,
 				uint16_t cores, bool use_all_cores,
-				bool oversubscribing_cores, int *core_cnt,
-				uint16_t cores_per_task)
+				int *core_cnt, uint16_t cores_per_task)
 {
-	int core_inx, i, sock_inx;
-	static int last_core_inx;
+	int core_inx, sock_inx;
 
 	xassert(core_cnt);
 
 	if (*core_cnt <= 0)
 		return true;
-
-	/*
-	 * Use last_core_inx to avoid putting all of the extra
-	 * work onto core zero when oversubscribing cpus.
-	 */
-	if (oversubscribing_cores)
-		last_core_inx = (last_core_inx + 1) % cores;
 
 	/*
 	 * Figure out the task distribution. The default is to cyclically
@@ -2046,17 +2028,11 @@ static bool _handle_core_select(step_record_t *step_ptr,
 	     SLURM_DIST_SOCKBLOCK)) {
 		/* Fill sockets before allocating to the next socket */
 		for (sock_inx=0; sock_inx < sockets; sock_inx++) {
-			for (i=0; i < cores; i++) {
-				if (oversubscribing_cores)
-					core_inx = (last_core_inx + i) % cores;
-				else
-					core_inx = i;
-
+			for (core_inx = 0; core_inx < cores; core_inx++) {
 				if (!_pick_step_core(step_ptr, job_resrcs_ptr,
 						     avail_core_bitmap,
 						     job_node_inx, sock_inx,
-						     core_inx, use_all_cores,
-						     oversubscribing_cores))
+						     core_inx, use_all_cores))
 					continue;
 
 				if (--(*core_cnt) == 0)
@@ -2066,17 +2042,12 @@ static bool _handle_core_select(step_record_t *step_ptr,
 	} else if (step_ptr->step_layout &&
 		   ((step_ptr->step_layout->task_dist & SLURM_DIST_SOCKMASK) ==
 		    SLURM_DIST_SOCKCFULL)) {
-		for (i = 0; i < cores; i++) {
-			if (oversubscribing_cores)
-				core_inx = (last_core_inx + i) % cores;
-			else
-				core_inx = i;
+		for (core_inx = 0; core_inx < cores; core_inx++) {
 			for (sock_inx = 0; sock_inx < sockets; sock_inx++) {
 				if (!_pick_step_core(step_ptr, job_resrcs_ptr,
 						     avail_core_bitmap,
 						     job_node_inx, sock_inx,
-						     core_inx, use_all_cores,
-						     oversubscribing_cores)) {
+						     core_inx, use_all_cores)) {
 						if (sock_inx == sockets)
 							sock_inx = 0;
 						continue;
@@ -2092,15 +2063,9 @@ static bool _handle_core_select(step_record_t *step_ptr,
 		while (!nothing_allocated) {
 			nothing_allocated = true;
 			for (sock_inx = 0; sock_inx < sockets; sock_inx++) {
-				for (i = next_core[sock_inx]; i < cores;
-				     i++) {
-					if (oversubscribing_cores)
-						core_inx = (last_core_inx + i) %
-							   cores;
-					else
-						core_inx = i;
-
-					next_core[sock_inx] = i + 1;
+				for (core_inx = next_core[sock_inx];
+				     core_inx < cores; core_inx++) {
+					next_core[sock_inx] = core_inx + 1;
 					if (!_pick_step_core(
 						step_ptr,
 						job_resrcs_ptr,
@@ -2108,8 +2073,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 						job_node_inx,
 						sock_inx,
 						core_inx,
-						use_all_cores,
-						oversubscribing_cores))
+						use_all_cores))
 						continue;
 					nothing_allocated = false;
 					if (--(*core_cnt) == 0) {
@@ -2221,7 +2185,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	/* select idle cores that fit all gres binding first */
 	if (_handle_core_select(step_ptr, job_resrcs_ptr,
 				all_gres_core_bitmap, job_node_inx,
-				sockets, cores, use_all_cores, false, &core_cnt,
+				sockets, cores, use_all_cores, &core_cnt,
 				cores_per_task))
 		goto cleanup;
 
@@ -2229,7 +2193,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	if (!bit_equal(all_gres_core_bitmap, any_gres_core_bitmap) &&
 	    _handle_core_select(step_ptr, job_resrcs_ptr,
 				any_gres_core_bitmap, job_node_inx,
-				sockets, cores, use_all_cores, false, &core_cnt,
+				sockets, cores, use_all_cores, &core_cnt,
 				cores_per_task))
 		goto cleanup;
 
@@ -2241,7 +2205,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		if (_handle_core_select(step_ptr, job_resrcs_ptr,
 					job_resrcs_ptr->core_bitmap,
 					job_node_inx, sockets, cores,
-					use_all_cores, false, &core_cnt,
+					use_all_cores, &core_cnt,
 					cores_per_task))
 			goto cleanup;
 	}
@@ -2258,38 +2222,12 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		return ESLURM_NODES_BUSY;
 	}
 
-	/* We need to over-subscribe one or more cores. */
-	log_flag(STEPS, "%s: %pS needs to over-subscribe cores required:%u assigned:%u/%"PRIu64 " overcommit:%c exclusive:%c",
-		 __func__, step_ptr, cores,
-		 bit_set_count(job_resrcs_ptr->core_bitmap),
-		 bit_size(job_resrcs_ptr->core_bitmap),
-		 ((step_ptr->flags & SSF_OVERCOMMIT) ? 'T' : 'F'),
-		 ((step_ptr->flags & SSF_EXCLUSIVE) ? 'T' : 'F'));
-
-	/* oversubscribe cores that fit all gres binding first */
-	if (_handle_core_select(step_ptr, job_resrcs_ptr,
-				all_gres_core_bitmap, job_node_inx,
-				sockets, cores, use_all_cores, true, &core_cnt,
-				cores_per_task))
-		goto cleanup;
-
-	/* oversubscribe cores that fit any gres binding second */
-	if (!bit_equal(all_gres_core_bitmap, any_gres_core_bitmap) &&
-	    _handle_core_select(step_ptr, job_resrcs_ptr,
-				any_gres_core_bitmap, job_node_inx,
-				sockets, cores, use_all_cores, true, &core_cnt,
-				cores_per_task))
-		goto cleanup;
-
-	/* oversubscribe any cores */
-	if (!(step_ptr->job_ptr->bit_flags & GRES_ENFORCE_BIND) &&
-	    !bit_equal(any_gres_core_bitmap, job_resrcs_ptr->core_bitmap) &&
-	    _handle_core_select(step_ptr, job_resrcs_ptr,
-				job_resrcs_ptr->core_bitmap, job_node_inx,
-				sockets, cores, use_all_cores, true, &core_cnt,
-				cores_per_task))
-		goto cleanup;
-
+	/* We need to overcommit one or more cores. */
+	log_flag(STEPS, "%s: %pS needs to overcommit cores. Cores still needed:%u Cores assigned to step:%u exclusive:%c overlap:%c",
+		 __func__, step_ptr, core_cnt,
+		bit_set_count(step_ptr->core_bitmap_job),
+		 ((step_ptr->flags & SSF_EXCLUSIVE) ? 'T' : 'F'),
+		 ((step_ptr->flags & SSF_OVERLAP_FORCE) ? 'T' : 'F'));
 
 cleanup:
 	FREE_NULL_BITMAP(all_gres_core_bitmap);
