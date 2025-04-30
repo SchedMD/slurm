@@ -107,30 +107,21 @@ or built it manually such that the files are in the same places.
 <br><b>Note</b> the versions associated with certain steps in the instructions
 below; these steps should be ignored on other versions.</p>
 <ol>
-<li>Create a local service account to run slurmrestd. To prevent privilege
-  escalation, the user account should be:
+  <li>Create a local service account and group of <code>slurmrestd</code> to
+  run the slurmrestd daemon. To prevent privilege escalation, the user account
+  should be:
   <ul>
     <li>Not root or SlurmUser</li>
     <li>Not used by real users or for any other functions</li>
     <li>Not granted any special permissions</li>
   </ul>
   <pre>sudo useradd -M -r -s /usr/sbin/nologin -U slurmrestd</pre></li>
-<li>Configure slurmrestd service to use this user and associated group.
-This can be accomplished in either of two ways:
-<ul>
-<li>Edit <code>/etc/default/slurmrestd</code>
-or <code>/etc/sysconfig/slurmrestd</code>
-<br>Add <code>-u slurmrestd</code> and <code>-g slurmrestd</code>
-to <code>SLURMRESTD_OPTIONS</code></li>
-<li>Run <code>systemctl edit slurmrestd</code> to edit overrides for the
-service.
-<br>Add content like this to the prescribed location in the overrides file:
-<pre>
-[Service]
-User=slurmrestd
-Group=slurmrestd
-</pre></li>
-</ul>
+  <li>If needed, sites can run <code>systemctl edit slurmrestd</code> to
+  override the default User and Group to the site specific user and group:
+  <pre>[Service]
+  User=slurmrestd
+  Group=slurmrestd</pre></li>
+  </ul>
 </li>
 <li>(Slurm <b>24.05</b> and newer) Optional: Customize the socket for
 slurmrestd. By default it will listen only on TCP port 6820. You may change
