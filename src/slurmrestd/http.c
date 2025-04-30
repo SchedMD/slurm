@@ -962,6 +962,7 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 	xassert(!context->request);
 	request->magic = MAGIC_REQUEST_T;
 	context->con = con;
+	context->ref = conmgr_fd_new_ref(con);
 	context->on_http_request = on_http_request;
 	context->request = request;
 	request->headers = list_create(_free_http_header);
@@ -983,5 +984,7 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 	/* auth should have been released long before now */
 	xassert(!context->auth);
 	FREE_NULL_REST_AUTH(context->auth);
+	conmgr_fd_free_ref(&context->ref);
+
 	xfree(context);
 }
