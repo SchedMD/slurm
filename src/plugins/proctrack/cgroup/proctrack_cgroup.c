@@ -509,10 +509,11 @@ static int _check_for_child_non_zero_exit(stepd_step_rec_t *step,
 
 			if (!(task = job_task_info_by_pid(step, pid))) {
 				debug2("Could not find pid %d in any task",
-				      pid);
+				       pid);
+			} else {
+				debug2("Child pid %d for task %d exited without any error codes. Ignoring because --wait-for-children was set",
+				       pid, (task->gtid + task_offset));
 			}
-			debug2("child pid %d for task %d exited without any error codes. Ignoring because --wait-for-children was set",
-				pid, task->gtid + task_offset);
 		}
 	}
 
@@ -791,8 +792,8 @@ cleanup:
 	 * "When all file descriptors referring to an inotify instance have been
 	 * closed ... all associated watches are automatically freed."
 	 */
-	close(inotify_fd);
-	close(child_sig_fd);
+	fd_close(&inotify_fd);
+	fd_close(&child_sig_fd);
 	xfree(watch_fd);
 	return NULL;
 }
@@ -917,18 +918,18 @@ extern int proctrack_p_wait_for_any_task(stepd_step_rec_t *step,
 	 * thread fd's.
 	 */
 	if (_check_for_ended_task(step, task_offset, ended_task)) {
-		uint64_t inc = 1;
+		uint32_t inc = 1;
 
 		debug2("Could not check for any tasks ending. Signaling monitor to end.");
-		if ((write_rc = write(end_fd, &inc, sizeof(uint32_t)))) {
+		if ((write_rc = write(end_fd, &inc, sizeof(inc)))) {
 			debug2("Could not write to end_fd to signal monitor to end, returning without joining.");
 		}
 	} else if (*ended_task) {
-		uint64_t inc = 1;
+		uint32_t inc = 1;
 
 		debug2("Task id %d ended while monitor was being setup. Signaling monitor to end.",
 		       (*ended_task)->gtid + task_offset);
-		if ((write_rc = write(end_fd, &inc, sizeof(uint32_t)))) {
+		if ((write_rc = write(end_fd, &inc, sizeof(inc)))) {
 			debug2("Could not write to end_fd to signal monitor to end, returning without joining.");
 		}
 	}
@@ -943,7 +944,7 @@ extern int proctrack_p_wait_for_any_task(stepd_step_rec_t *step,
 	if (!write_rc)
 		slurm_thread_join(ended_task_cg_monitor_tid);
 
-	close(end_fd);
+	fd_close(&end_fd);
 
 	if (*ended_task)
 		return (*ended_task)->pid;
