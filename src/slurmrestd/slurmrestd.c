@@ -114,7 +114,7 @@ static run_mode_t run_mode = { 0 };
 static list_t *socket_listen = NULL;
 static char *slurm_conf_filename = NULL;
 /* Number of requested threads */
-static int thread_count = 20;
+static int thread_count = 0;
 /* Max number of connections */
 static int max_connections = 124;
 /* User to become once loaded */
