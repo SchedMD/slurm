@@ -510,7 +510,6 @@ static int _handle_stepmgr_relay_msg(int fd,
 	safe_read(fd, data, data_size);
 
 	slurm_msg_t_init(msg);
-	msg->conn_fd = fd;
 	msg->msg_type = msg_type;
 	msg->protocol_version = protocol_version;
 
