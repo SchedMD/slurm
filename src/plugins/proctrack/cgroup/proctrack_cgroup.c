@@ -791,8 +791,8 @@ cleanup:
 	 * "When all file descriptors referring to an inotify instance have been
 	 * closed ... all associated watches are automatically freed."
 	 */
-	close(inotify_fd);
-	close(child_sig_fd);
+	fd_close(&inotify_fd);
+	fd_close(&child_sig_fd);
 	xfree(watch_fd);
 	return NULL;
 }
@@ -943,7 +943,7 @@ extern int proctrack_p_wait_for_any_task(stepd_step_rec_t *step,
 	if (!write_rc)
 		slurm_thread_join(ended_task_cg_monitor_tid);
 
-	close(end_fd);
+	fd_close(&end_fd);
 
 	if (*ended_task)
 		return (*ended_task)->pid;
