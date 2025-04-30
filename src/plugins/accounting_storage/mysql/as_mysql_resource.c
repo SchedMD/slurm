@@ -898,15 +898,18 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 {
 	list_t *ret_list = NULL;
 	char *name_char = NULL, *clus_char = NULL;
-	char *user_name = NULL;
 	char *query = NULL, *extra = NULL, *clus_extra = NULL;
-	time_t now = time(NULL);
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int query_clusters;
 	bool res_added = 0;
 	bool have_clusters = 0;
 	int last_res = -1;
+	remove_common_args_t args = {
+		.mysql_conn = mysql_conn,
+		.table = clus_res_table,
+		.type = DBD_REMOVE_CLUS_RES,
+	};
 
 	if (!res_cond) {
 		error("we need something to remove");
@@ -1023,23 +1026,23 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	xfree(query);
 
-	user_name = uid_to_string((uid_t) uid);
+	args.name_char = clus_char;
+	args.user_name = uid_to_string((uid_t) uid);
+	args.now = time(NULL);
+
 	if (query_clusters) {
-		remove_common(mysql_conn, DBD_REMOVE_CLUS_RES,
-			      now, user_name, clus_res_table,
-			      clus_char, NULL, NULL, NULL, NULL, NULL);
+		remove_common(&args);
 	} else {
-		remove_common(mysql_conn, DBD_REMOVE_CLUS_RES,
-			      now, user_name, clus_res_table,
-			      clus_char, NULL, NULL, NULL, NULL, NULL);
-		remove_common(mysql_conn, DBD_REMOVE_RES,
-			      now, user_name, res_table,
-			      name_char, NULL, NULL, NULL, NULL, NULL);
+		remove_common(&args);
+
+		args.name_char = name_char;
+		args.table = res_table;
+		remove_common(&args);
 	}
 
 	xfree(clus_char);
 	xfree(name_char);
-	xfree(user_name);
+	xfree(args.user_name);
 
 	return ret_list;
 }

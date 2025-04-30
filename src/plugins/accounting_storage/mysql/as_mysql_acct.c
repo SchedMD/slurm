@@ -807,21 +807,25 @@ extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_account_cond_t *acct_cond)
 {
-	list_itr_t *itr = NULL;
 	list_t *ret_list = NULL;
 	list_t *coord_list = NULL;
-	list_t *cluster_list_tmp = NULL;
 	int rc = SLURM_SUCCESS;
-	char *object = NULL, *at = NULL;
+	char *at = NULL;
 	char *extra = NULL, *query = NULL,
 		*name_char = NULL, *name_char_pos = NULL,
 		*assoc_char = NULL, *assoc_char_pos = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	bool jobs_running = 0;
-	bool default_account = 0;
+
+	remove_common_args_t args = {
+		.default_account = false,
+		.jobs_running = false,
+		.mysql_conn = mysql_conn,
+		.now = now,
+		.table = acct_table,
+		.type = DBD_REMOVE_ACCOUNTS,
+	};
 
 	if (!acct_cond) {
 		error("we need something to change");
@@ -887,24 +891,20 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		mysql_conn, uid, ret_list, NULL);
 	FREE_NULL_LIST(coord_list);
 
-	user_name = uid_to_string((uid_t) uid);
+	args.assoc_char = assoc_char;
+	args.name_char = name_char;
+	args.ret_list = ret_list;
+	args.user_name = uid_to_string((uid_t) uid);
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
-	cluster_list_tmp = list_shallow_copy(as_mysql_cluster_list);
-	itr = list_iterator_create(cluster_list_tmp);
-	while ((object = list_next(itr))) {
-		if ((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
-					user_name, acct_table, name_char,
-					assoc_char, object, ret_list,
-					&jobs_running, &default_account))
-		    != SLURM_SUCCESS)
-			break;
-	}
-	list_iterator_destroy(itr);
-	FREE_NULL_LIST(cluster_list_tmp);
+	args.use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+
+	rc = remove_common(&args);
+
+	FREE_NULL_LIST(args.use_cluster_list);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
-	xfree(user_name);
+	xfree(args.user_name);
 	xfree(name_char);
 	xfree(assoc_char);
 	if (rc == SLURM_ERROR) {
@@ -912,9 +912,9 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if (default_account)
+	if (args.default_account)
 		errno = ESLURM_NO_REMOVE_DEFAULT_ACCOUNT;
-	else if (jobs_running)
+	else if (args.jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
 	else {
 		as_mysql_user_create_user_coords_list(mysql_conn);
