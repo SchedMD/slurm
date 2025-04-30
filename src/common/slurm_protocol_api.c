@@ -2038,7 +2038,7 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	rc = errno;
 	log_flag(NET, "%s: [fd:%d] write response RPC %s failed: %s",
 		 __func__, (source_msg->conn ? source_msg->conn->fd :
-			    source_msg->conn_fd),
+			    tls_g_get_conn_fd(source_msg->tls_conn)),
 		 rpc_num2string(msg_type), slurm_strerror(rc));
 
 	return rc;
