@@ -45,10 +45,14 @@
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsched.h"
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
+
+/* Threads to create per kernel reported CPU */
+#define CPU_THREAD_MULTIPLIER 2
 
 /*
  * From man prctl:
@@ -118,15 +122,40 @@ static void _increase_thread_count(int count)
 	}
 }
 
+static int _detect_cpu_count(void)
+{
+	cpu_set_t mask = { { 0 } };
+	int rc = EINVAL, count = 0;
+
+	if ((rc = slurm_getaffinity(getpid(), sizeof(mask), &mask))) {
+		error("%s: Unable to query assigned CPU mask: %s",
+		      __func__, slurm_strerror(rc));
+		return 0;
+	}
+
+	if ((count = task_cpuset_get_assigned_count(sizeof(mask), &mask)) < 0)
+		return 0;
+
+	log_flag(CONMGR, "%s: detected %d CPUs available from kernel",
+		 __func__, count);
+	return count;
+}
+
 extern void workers_init(int count)
 {
+	if (!count)
+		count = _detect_cpu_count() * CPU_THREAD_MULTIPLIER;
+
 	if (!count) {
 		count = CONMGR_THREAD_COUNT_DEFAULT;
-	} else if ((count < CONMGR_THREAD_COUNT_MIN) ||
-		   (count > CONMGR_THREAD_COUNT_MAX)) {
-		fatal("%s: Invalid thread count=%d; thread count must be between %d and %d",
-		      __func__, count, CONMGR_THREAD_COUNT_MIN,
-		      CONMGR_THREAD_COUNT_MAX);
+	} else if (count < CONMGR_THREAD_COUNT_MIN) {
+		error("%s: thread count=%d too low, increasing to %d",
+		      __func__, count, CONMGR_THREAD_COUNT_MIN);
+		count = CONMGR_THREAD_COUNT_MIN;
+	} else if (count > CONMGR_THREAD_COUNT_MAX) {
+		error("%s: thread count=%d too high, decreasing to %d",
+		      __func__, count, CONMGR_THREAD_COUNT_MAX);
+		count = CONMGR_THREAD_COUNT_MAX;
 	}
 
 	if (mgr.workers.threads) {
