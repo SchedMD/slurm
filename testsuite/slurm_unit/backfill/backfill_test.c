@@ -35,6 +35,7 @@ diag_stats_t slurmctld_diag_stats;
 void *acct_db_conn = NULL;
 uint32_t cluster_cpus = NO_VAL;
 list_t *job_list = NULL;
+list_t *resume_job_list = NULL;
 time_t last_job_update = (time_t) 0;
 time_t last_part_update = (time_t) 0;
 time_t last_node_update = (time_t) 0;
@@ -49,6 +50,13 @@ list_t *resv_list = NULL;
 int node_record_count;
 slurmctld_config_t slurmctld_config;
 uint32_t max_powered_nodes = NO_VAL;
+bool preempt_send_user_signal = false;
+int sched_interval = 60;
+int batch_sched_delay = 3;
+bool disable_remote_singleton = false;
+int max_depend_depth = 10;
+bool cloud_dns = false;
+uint32_t validate_resv_cnt = 0;
 
 bitstr_t *asap_node_bitmap = NULL; /* bitmap of rebooting asap nodes */
 bitstr_t *avail_node_bitmap = NULL; /* bitmap of available nodes */
@@ -57,6 +65,7 @@ bitstr_t *bf_ignore_node_bitmap = NULL; /* bitmap of nodes to ignore during a
 bitstr_t *booting_node_bitmap = NULL; /* bitmap of booting nodes */
 bitstr_t *cg_node_bitmap = NULL; /* bitmap of completing nodes */
 bitstr_t *cloud_node_bitmap = NULL; /* bitmap of cloud nodes */
+bitstr_t *external_node_bitmap = NULL; /* bitmap of external nodes */
 bitstr_t *future_node_bitmap = NULL; /* bitmap of FUTURE nodes */
 bitstr_t *idle_node_bitmap = NULL; /* bitmap of idle nodes */
 bitstr_t *power_down_node_bitmap = NULL; /* bitmap of powered down nodes */
@@ -188,6 +197,8 @@ static int _print_job(void *x, void *arg)
 	} else {
 		printf(" no planned\n");
 	}
+
+	fflush(stdout);
 
 	return 0;
 }
@@ -467,6 +478,7 @@ int main(int argc, char *argv[])
 	asap_node_bitmap = bit_alloc(node_record_count);
 	rs_node_bitmap = bit_alloc(node_record_count);
 	cg_node_bitmap = bit_alloc(node_record_count);
+	external_node_bitmap = bit_alloc(node_record_count);
 	power_down_node_bitmap = bit_alloc(node_record_count);
 	booting_node_bitmap = bit_alloc(node_record_count);
 
