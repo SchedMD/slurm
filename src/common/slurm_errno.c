@@ -703,6 +703,10 @@ slurm_errtab_t slurm_errtab[] = {
 	/* container  errors */
 	{ ERRTAB_ENTRY(ESLURM_CONTAINER_NOT_CONFIGURED),
 	  "Container support is not configured"},
+
+	/* http and url errors */
+	{ ERRTAB_ENTRY(ESLURM_URL_UNKNOWN_SCHEME),
+	  "Unknown URL scheme"},
 };
 
 unsigned int slurm_errtab_size = sizeof(slurm_errtab) / sizeof(slurm_errtab_t);
