@@ -58,6 +58,13 @@ extern bool is_ping_done (void);
 extern void ping_begin (void);
 
 /*
+ * ping_nodes_update - A ping cycle can end but the update can still be pending
+ * for the _agent_nodes_update thread. This call will confirm node info was
+ * updated.
+ */
+extern void ping_nodes_update(void);
+
+/*
  * ping_end - record that a ping cycle has ended. This can be called more
  *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION
  *	for selected nodes). Matching ping_end calls must be made for each

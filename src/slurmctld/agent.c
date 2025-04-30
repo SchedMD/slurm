@@ -1534,11 +1534,13 @@ static void *_agent_nodes_update(void *arg)
 			break;
 		}
 
-		if (!list_count(update_node_list))
-			continue;
-		lock_slurmctld(node_write_lock);
-		list_delete_all(update_node_list, _foreach_node_did_resp, NULL);
-		unlock_slurmctld(node_write_lock);
+		if (list_count(update_node_list)) {
+			lock_slurmctld(node_write_lock);
+			list_delete_all(update_node_list,
+					_foreach_node_did_resp, NULL);
+			unlock_slurmctld(node_write_lock);
+		}
+		ping_nodes_update();
 	}
 
 	return NULL;
