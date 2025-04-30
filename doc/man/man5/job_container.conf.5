@@ -1,4 +1,4 @@
-.TH "job_container.conf" "5" "Slurm Configuration File" "December 2024" "Slurm Configuration File"
+.TH "job_container.conf" "5" "Slurm Configuration File" "April 2025" "Slurm Configuration File"
 
 .SH "NAME"
 job_container.conf \- Slurm configuration file for job_container/tmpfs plugin
@@ -75,7 +75,7 @@ when trying to mount and unmount the private directories for the job.
 Specify fully qualified pathname of an optional initialization script. This
 script is run fter the namespace construction of a job. This script will be
 provided the SLURM_NS environment variable to allow the script to join the
-newly created namespate and do further setup work. This parameter is optional.
+newly created namespace and do further setup work. This parameter is optional.
 .IP
 
 .TP
@@ -89,7 +89,7 @@ considering the script failed. The default value is 10 seconds.
 Specify fully qualified pathname of an optional epilog script. This script runs
 just before the namespace is torn down. This script will be provided the
 SLURM_NS environment variable to allow the script to join the soon to be
-removed namespate and do any cleanup work. This parameter is optional.
+removed namespace and do any cleanup work. This parameter is optional.
 .IP
 
 .TP
