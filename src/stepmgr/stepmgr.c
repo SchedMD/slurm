@@ -5102,6 +5102,12 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 		goto end_it;
 	}
 
+	if (job_ptr->bit_flags & EXTERNAL_JOB) {
+		error("%s: step creation disabled for external jobs", __func__);
+		error_code = ESLURM_NOT_SUPPORTED;
+		goto end_it;
+	}
+
 	if (running_in_slurmctld() &&
 	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
 		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {

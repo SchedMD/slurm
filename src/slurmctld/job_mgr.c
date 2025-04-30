@@ -9759,7 +9759,8 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 		return ESLURM_JOB_MISSING_SIZE_SPECIFICATION;
 	}
 	if ((allocate == SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0) &&
-	    (job_desc_msg->script == NULL)) {
+	    (job_desc_msg->script == NULL) &&
+	    !(job_desc_msg->bitflags & EXTERNAL_JOB)) {
 		info("%s: job failed to specify Script", __func__);
 		return ESLURM_JOB_SCRIPT_MISSING;
 	}

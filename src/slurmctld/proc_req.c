@@ -2958,6 +2958,14 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		goto error;
 	}
 
+	if (job_ptr->bit_flags & EXTERNAL_JOB) {
+		error("%s: job step creation disabled for external jobs",
+		      __func__);
+		slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
+		unlock_slurmctld(job_read_lock);
+		return;
+	}
+
 	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
 		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
 			error("rpc %s from non-supported client version %d for stepmgr job",

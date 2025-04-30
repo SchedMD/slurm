@@ -132,11 +132,13 @@ int main(int argc, char **argv)
 
 	if (sbopt.wrap != NULL) {
 		script_body = _script_wrap(sbopt.wrap);
+	} else if (opt.job_flags & EXTERNAL_JOB) {
+		script_body = NULL;
 	} else {
 		script_body = _get_script_buffer(script_name, &script_size);
+		if (!script_body)
+			exit(error_exit);
 	}
-	if (script_body == NULL)
-		exit(error_exit);
 
 	het_job_argc = argc - opt.argc;
 	het_job_argv = argv;
@@ -429,7 +431,14 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	desc->wait_all_nodes = sbopt.wait_all_nodes;
 
+	if (sbopt.requeue != NO_VAL)
+		desc->requeue = sbopt.requeue;
+
 	desc->environment = NULL;
+
+	if (opt.job_flags & EXTERNAL_JOB)
+		return 0;
+
 	if (sbopt.export_file) {
 		desc->environment = env_array_from_file(sbopt.export_file);
 		if (desc->environment == NULL)
@@ -470,9 +479,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->std_err  = xstrdup(opt.efname);
 	desc->std_in   = xstrdup(opt.ifname);
 	desc->std_out  = xstrdup(opt.ofname);
-
-	if (sbopt.requeue != NO_VAL)
-		desc->requeue = sbopt.requeue;
 
 	return 0;
 }

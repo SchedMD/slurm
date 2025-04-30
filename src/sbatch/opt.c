@@ -326,6 +326,10 @@ extern char *process_options_first_pass(int argc, char **argv)
 		error("Script arguments not permitted with --wrap option");
 		exit(error_exit);
 	}
+	if ((local_argc > optind) && (opt.job_flags & EXTERNAL_JOB)) {
+		error("Script arguments not permitted with --external option");
+		exit(error_exit);
+	}
 	if (local_argc > optind) {
 		int i;
 		char **leftover;
@@ -750,6 +754,8 @@ static bool _opt_verify(void)
 
 	if (!opt.job_name && sbopt.wrap)
 		opt.job_name = xstrdup("wrap");
+	else if (!opt.job_name && (opt.job_flags & EXTERNAL_JOB))
+		opt.job_name = xstrdup("external");
 	else if (!opt.job_name && (opt.argc > 0))
 		opt.job_name = base_name(opt.argv[0]);
 

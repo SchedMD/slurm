@@ -1171,8 +1171,7 @@ enum node_states {
 #define RESET_ACCRUE_TIME  SLURM_BIT(21) /* Reset the job's accrue time */
 #define CRON_JOB           SLURM_BIT(22) /* Job submitted through scrontab */
 #define JOB_MEM_SET        SLURM_BIT(23) /* Memory limit explicitly set by job */
-/*                         SLURM_BIT(24)    Removed in 23.11, free in 25.05 */
-
+#define EXTERNAL_JOB       SLURM_BIT(24) /* External job, no batch/env */
 #define USE_DEFAULT_ACCT   SLURM_BIT(25) /* Job submitted to default account */
 #define USE_DEFAULT_PART   SLURM_BIT(26) /* Job submitted to default
 					  * partition */
