@@ -918,18 +918,18 @@ extern int proctrack_p_wait_for_any_task(stepd_step_rec_t *step,
 	 * thread fd's.
 	 */
 	if (_check_for_ended_task(step, task_offset, ended_task)) {
-		uint64_t inc = 1;
+		uint32_t inc = 1;
 
 		debug2("Could not check for any tasks ending. Signaling monitor to end.");
-		if ((write_rc = write(end_fd, &inc, sizeof(uint32_t)))) {
+		if ((write_rc = write(end_fd, &inc, sizeof(inc)))) {
 			debug2("Could not write to end_fd to signal monitor to end, returning without joining.");
 		}
 	} else if (*ended_task) {
-		uint64_t inc = 1;
+		uint32_t inc = 1;
 
 		debug2("Task id %d ended while monitor was being setup. Signaling monitor to end.",
 		       (*ended_task)->gtid + task_offset);
-		if ((write_rc = write(end_fd, &inc, sizeof(uint32_t)))) {
+		if ((write_rc = write(end_fd, &inc, sizeof(inc)))) {
 			debug2("Could not write to end_fd to signal monitor to end, returning without joining.");
 		}
 	}
