@@ -455,9 +455,23 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 
 	slurm_mutex_lock(&thread_count_lock);
 	service_conn = persist_service_conn[thread_loc];
-	xassert(service_conn);
+	/*
+	 * Between call for slurm_persist_conn_wait_for_thread_loc and this
+	 * point we have unlocked and locked again, so we may have let the
+	 * shutdown procedure to start.
+	 *
+	 * This causes persist_service_conn to be freed, thus service_conn may
+	 * be NULL at this point.
+	 *
+	 * If this is the case, just return immediately.
+	 */
+	if (!service_conn) {
+		slurm_mutex_unlock(&thread_count_lock);
+		slurm_persist_conn_destroy(persist_conn);
+		fd_close(&fd);
+		return;
+	}
 	xassert(!service_conn->arg);
-	slurm_mutex_unlock(&thread_count_lock);
 
 	service_conn->arg = arg;
 	service_conn->pcon = persist_conn;
@@ -471,8 +485,16 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 	(void) snprintf(name, sizeof(name), "p-%s",
 			service_conn->pcon->cluster_name);
 
+	/*
+	 * Hold thread_count_lock through slurm_thread_create() so that
+	 * recv_server_fini() cannot destroy this slot before thread_id is
+	 * set. Without the lock, fini sees thread_id == 0, skips the join,
+	 * and frees persist_service_conn[thread_loc] while we are still
+	 * writing to it.
+	 */
 	slurm_thread_create(name, &persist_service_conn[thread_loc]->thread_id,
 			    _service_connection, service_conn);
+	slurm_mutex_unlock(&thread_count_lock);
 }
 
 /* Increment thread_count and don't return until its value is no larger
