@@ -77,6 +77,7 @@ static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 #endif
 
 static char *restricted_cpus_as_mac = NULL;
+static hwloc_bitmap_t cpuset_tot = NULL;
 extern slurmd_conf_t *conf;
 
 /*
@@ -194,7 +195,7 @@ static void _remove_ecores(hwloc_topology_t *topology)
 {
 #if HWLOC_API_VERSION > 0x00020401
 	int type_cnt;
-	hwloc_bitmap_t cpuset, cpuset_tot = NULL;
+	hwloc_bitmap_t cpuset;
 	char *pcore_freq = NULL;
 	bool found = false;
 
@@ -293,7 +294,6 @@ static void _remove_ecores(hwloc_topology_t *topology)
 	}
 
 	hwloc_topology_restrict(*topology, cpuset_tot, 0);
-	hwloc_bitmap_free(cpuset_tot);
 	hwloc_bitmap_free(cpuset);
 #endif
 }
@@ -1117,6 +1117,42 @@ end_it:
 	return rc;
 }
 
+static char *_remove_ecores_range(const char *orig_range)
+{
+	hwloc_bitmap_t r = NULL, rout = NULL;
+	char *pcores_range = NULL;
+
+	/*
+	 * This comes from _remove_ecores() and contains a bitmap of performance
+	 * cores.
+	 */
+	if (!cpuset_tot)
+		return NULL;
+
+	r = hwloc_bitmap_alloc();
+
+	if (hwloc_bitmap_list_sscanf(r, orig_range)) {
+		error("Cannot convert cpuset range %s into a hwloc bitmap",
+		      orig_range);
+		goto end_it;
+	}
+
+	rout = hwloc_bitmap_alloc();
+	hwloc_bitmap_and(rout, r, cpuset_tot);
+	pcores_range = xmalloc(MAX_CPUSET_STR);
+	hwloc_bitmap_list_snprintf(pcores_range, MAX_CPUSET_STR, rout);
+
+	debug2("Reduced original range from %s to %s to only include p-cores",
+	       orig_range, pcores_range);
+end_it:
+	hwloc_bitmap_free(r);
+	hwloc_bitmap_free(rout);
+	/* We do not need the cpuset_tot anymore */
+	hwloc_bitmap_free(cpuset_tot);
+
+	return pcores_range;
+}
+
 /*
  * Convert a machine-specific CPU range string into an abstract core range
  * string. Machine id to abstract id conversion is done using block_map_inv.
@@ -1136,6 +1172,15 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 	bitstr_t *absmap = NULL;
 	bitstr_t *absmap_core = NULL;
 	int rc = SLURM_SUCCESS;
+	char *pcores_range = NULL;
+
+	/*
+	 * In case we are in a system with ecores, remove them from in_range in
+	 * order to provide a correct abstract list.
+	 */
+	pcores_range = _remove_ecores_range(in_range);
+	if (!pcores_range)
+		pcores_range = in_range;
 
 	if (total_cores == -1) {
 		total_cores = conf->sockets * conf->cores;
@@ -1153,7 +1198,7 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 	}
 
 	/* string to bitmap conversion */
-	if (bit_unfmt(macmap, in_range)) {
+	if (bit_unfmt(macmap, pcores_range)) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -1169,7 +1214,7 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 			macid = (icore * conf->actual_threads) + ithread;
 			macid %= total_cpus;
 
-			/* Skip this machine CPU id if not in in_range */
+			/* Skip this machine CPU id if not in pcores_range */
 			if (!bit_test(macmap, macid))
 				continue;
 
@@ -1203,6 +1248,7 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 
 	/* free unused bitmaps */
 end_it:
+	xfree(pcores_range);
 	FREE_NULL_BITMAP(macmap);
 	FREE_NULL_BITMAP(absmap);
 	FREE_NULL_BITMAP(absmap_core);
