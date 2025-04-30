@@ -201,6 +201,14 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 			      url_get_scheme_string(request->scheme));
 			return 1;
 		}
+
+		if ((request->scheme == URL_SCHEME_HTTPS) &&
+		    !conmgr_fd_is_tls(request->context->ref)) {
+			error("%s: [%s] URL requested HTTPS but connection is not TLS wrapped",
+			      __func__,
+			      conmgr_fd_get_name(request->context->con));
+			return 1;
+		}
 	}
 	if (url.field_set & (1 << UF_HOST))
 		log_flag(NET, "%s: [%s] URL host currently not supported",
