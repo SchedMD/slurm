@@ -334,6 +334,7 @@ static void _init_bitmaps(void)
 	FREE_NULL_BITMAP(booting_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
 	FREE_NULL_BITMAP(cloud_node_bitmap);
+	FREE_NULL_BITMAP(external_node_bitmap);
 	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_down_node_bitmap);
@@ -347,6 +348,7 @@ static void _init_bitmaps(void)
 	booting_node_bitmap = bit_alloc(node_record_count);
 	cg_node_bitmap = bit_alloc(node_record_count);
 	cloud_node_bitmap = bit_alloc(node_record_count);
+	external_node_bitmap = bit_alloc(node_record_count);
 	future_node_bitmap = bit_alloc(node_record_count);
 	idle_node_bitmap = bit_alloc(node_record_count);
 	power_down_node_bitmap = bit_alloc(node_record_count);
@@ -536,6 +538,8 @@ static void _build_bitmaps(void)
 			bit_set(cg_node_bitmap, node_ptr->index);
 		if (IS_NODE_CLOUD(node_ptr))
 			bit_set(cloud_node_bitmap, node_ptr->index);
+		if (IS_NODE_EXTERNAL(node_ptr))
+			bit_set(external_node_bitmap, node_ptr->index);
 		if (IS_NODE_IDLE(node_ptr) ||
 		    IS_NODE_ALLOCATED(node_ptr) ||
 		    ((IS_NODE_REBOOT_REQUESTED(node_ptr) ||

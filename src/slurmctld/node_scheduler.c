@@ -3848,6 +3848,10 @@ static int _build_node_list(job_record_t *job_ptr,
 		usable_node_mask = node_conf_get_active_bitmap();
 	}
 
+	if (!(job_ptr->bit_flags & EXTERNAL_JOB)) {
+		bit_and_not(usable_node_mask, external_node_bitmap);
+	}
+
 	if (!test_only && job_ptr->extra_constraints) {
 		_apply_extra_constraints(job_ptr, usable_node_mask);
 		if (!bit_set_count(usable_node_mask)) {
