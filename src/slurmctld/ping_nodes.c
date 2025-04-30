@@ -59,6 +59,7 @@
 #define PING_TIMEOUT 100
 
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool ping_updated = false;
 static int ping_count = 0;
 static time_t ping_start = 0;
 
@@ -82,8 +83,17 @@ bool is_ping_done (void)
 			      PING_TIMEOUT);
 			ping_msg_sent = true;
 		}
-	} else
+	} else {
 		ping_msg_sent = false;
+		/*
+		 * We can only consider the last node ping cycle to be fully
+		 * completed if ping_updated is true, meaning the
+		 * _agent_nodes_update thread finished updating the nodes
+		 * response. Otherwise, we could hit a race and incorrectly set
+		 * responding/healthy nodes to DOWN.
+		 */
+		is_done = ping_updated;
+	}
 	slurm_mutex_unlock(&lock_mutex);
 
 	return is_done;
@@ -104,6 +114,18 @@ void ping_begin (void)
 }
 
 /*
+ * ping_nodes_update - A ping cycle can end but the update can still be pending
+ * for the _agent_nodes_update thread. This call will confirm node info was
+ * updated.
+ */
+void ping_nodes_update(void)
+{
+	slurm_mutex_lock(&lock_mutex);
+	ping_updated = true;
+	slurm_mutex_unlock(&lock_mutex);
+}
+
+/*
  * ping_end - record that a ping cycle has ended. This can be called more
  *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION
  *	for selected nodes). Matching ping_end calls must be made for each
@@ -120,7 +142,7 @@ void ping_end (void)
 
 	if (ping_count == 0) /* no more running ping cycles */
 		ping_start = 0;
-
+	ping_updated = false;
 	slurm_mutex_unlock(&lock_mutex);
 }
 
