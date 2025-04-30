@@ -105,6 +105,7 @@
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
+#include "src/interfaces/tls.h"
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/common/slurmd_common.h"
@@ -5075,14 +5076,13 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 	/* send a response now, which will include any errors
 	 * detected with the request */
-	if (msg->conn_fd >= 0) {
-		slurm_send_rc_msg(msg, rc);
-		if (close(msg->conn_fd) < 0)
-			error("%s: close(%d): %m", __func__, msg->conn_fd);
-		msg->conn_fd = -1;
-	}
+	slurm_send_rc_msg(msg, rc);
 	if (rc != SLURM_SUCCESS)
 		return;
+
+	tls_g_destroy_conn(msg->tls_conn, true);
+	msg->conn_fd = -1;
+	msg->tls_conn = NULL;
 
 	/* now we can focus on performing the requested action,
 	 * which could take a few seconds to complete */
@@ -5263,12 +5263,10 @@ _rpc_abort_job(slurm_msg_t *msg)
 	 *  At this point, if connection still open, we send controller
 	 *   a "success" reply to indicate that we've recvd the msg.
 	 */
-	if (msg->conn_fd >= 0) {
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		if (close(msg->conn_fd) < 0)
-			error ("rpc_abort_job: close(%d): %m", msg->conn_fd);
-		msg->conn_fd = -1;
-	}
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	tls_g_destroy_conn(msg->tls_conn, true);
+	msg->conn_fd = -1;
+	msg->tls_conn = NULL;
 
 	if (_kill_all_active_steps(req->step_id.job_id, SIG_ABORT, 0,
 				   req->details, true, msg->auth_uid)) {
