@@ -59,6 +59,8 @@ typedef int (*on_http_request_t)(on_http_request_args_t *args);
 
 typedef struct {
 	int magic;
+	/* reference to assigned connection */
+	conmgr_fd_ref_t *ref;
 	/* assigned connection */
 	conmgr_fd_t *con;
 	/* Authentication context (auth_context_type_t) */

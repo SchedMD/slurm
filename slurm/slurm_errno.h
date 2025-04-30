@@ -392,6 +392,10 @@ typedef enum {
 
 	/* container errors */
 	ESLURM_CONTAINER_NOT_CONFIGURED = 10000,
+
+	/* http and URL errors */
+	ESLURM_URL_UNKNOWN_SCHEME = 11000,
+	ESLURM_URL_EMPTY,
 } slurm_err_t;
 
 /* Type for error string table entries */

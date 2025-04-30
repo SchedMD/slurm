@@ -142,6 +142,31 @@ extern const char *get_http_method_string(const http_request_method_t method);
 extern const char *get_http_method_string_lc(
 	const http_request_method_t method);
 
+/* RFC3986 section 3.1 URL Scheme */
+typedef enum {
+	URL_SCHEME_INVALID = 0,
+	URL_SCHEME_HTTP,
+	URL_SCHEME_HTTPS,
+	URL_SCHEME_INVALID_MAX /* place holder */
+} url_scheme_t;
+
+/*
+ * Get URL scheme from string
+ * IN string containing method name (case insensitive)
+ * IN bytes - number of bytes in string
+ * IN scheme_ptr - pointer to populate with scheme
+ * RET SLURM_SUCCESS or error
+ */
+extern int url_get_scheme(const char *str, size_t bytes,
+			  url_scheme_t *scheme_ptr);
+
+/*
+ * Dump scheme as string into str
+ * IN scheme - pointer to scheme to dump into str
+ * RET string for scheme or NULL if unknown
+ */
+extern const char *url_get_scheme_string(const url_scheme_t scheme);
+
 /*
  * Parses url path into a data struct.
  * IN query rfc3986&rfc1866 query string

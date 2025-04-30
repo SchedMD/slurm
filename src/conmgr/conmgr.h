@@ -908,4 +908,7 @@ extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref);
 extern int on_fingerprint_tls(conmgr_fd_t *con, const void *buffer,
 			      const size_t bytes, void *arg);
 
+/* Return true if connection is TLS wrapped */
+extern bool conmgr_fd_is_tls(conmgr_fd_ref_t *ref);
+
 #endif /* _CONMGR_H */

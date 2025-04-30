@@ -132,6 +132,65 @@ static const struct {
 	{ HTTP_REQUEST_TRACE, "TRACE", "trace" },
 };
 
+#define T(tscheme, str) \
+	{ \
+		.scheme = tscheme, \
+		.string = str, \
+		.bytes = (sizeof(str) - 1), \
+	}
+static const struct {
+	url_scheme_t scheme;
+	const char *string;
+	size_t bytes;
+} schemes[] = {
+	T(URL_SCHEME_INVALID, "INVALID"),
+	T(URL_SCHEME_HTTP, "http"),
+	T(URL_SCHEME_HTTPS, "https"),
+	T(URL_SCHEME_INVALID_MAX, "INVALID_MAX")
+};
+#undef T
+
+extern int url_get_scheme(const char *str, size_t bytes,
+			  url_scheme_t *scheme_ptr)
+{
+	if (!str || !str[0] || !bytes) {
+		*scheme_ptr = URL_SCHEME_INVALID;
+		return ESLURM_URL_EMPTY;
+	}
+
+	for (int i = (URL_SCHEME_INVALID + 1); i < URL_SCHEME_INVALID_MAX;
+	     i++) {
+		if (bytes != schemes[i].bytes)
+			continue;
+
+		if (xstrncasecmp(schemes[i].string, str, bytes))
+			continue;
+
+		*scheme_ptr = schemes[i].scheme;
+		return SLURM_SUCCESS;
+	}
+
+	*scheme_ptr = URL_SCHEME_INVALID;
+	return ESLURM_URL_UNKNOWN_SCHEME;
+}
+
+extern const char *url_get_scheme_string(const url_scheme_t scheme)
+{
+	xassert(scheme >= URL_SCHEME_INVALID);
+	xassert(scheme < URL_SCHEME_INVALID_MAX);
+
+	if (scheme == URL_SCHEME_INVALID)
+		return NULL;
+
+	for (int i = (URL_SCHEME_INVALID + 1); i < URL_SCHEME_INVALID_MAX;
+	     i++) {
+		if (scheme == schemes[i].scheme)
+			return schemes[i].string;
+	}
+
+	fatal_abort("should never happen");
+}
+
 /*
  * chars that can pass without decoding.
  * rfc3986: unreserved characters.

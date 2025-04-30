@@ -43,6 +43,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/http.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
@@ -65,6 +66,8 @@
 /* Data to handed around by http_parser to call backs */
 typedef struct {
 	int magic;
+	/* URL scheme requested by client */
+	url_scheme_t scheme;
 	/* URL path requested by client */
 	const char *path;
 	/* URL query parameters by client */
@@ -175,10 +178,38 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 
 		return 1;
 	}
+	if (url.field_set & (1 << UF_SCHEMA)) {
+		int rc = EINVAL;
 
-	if (url.field_set & (1 << UF_SCHEMA))
-		log_flag(NET, "%s: [%s] URL Schema currently not supported",
-			 __func__, conmgr_fd_get_name(request->context->con));
+		xassert(url.field_data[UF_SCHEMA].len <= length);
+
+		if ((rc = url_get_scheme((at + url.field_data[UF_SCHEMA].off),
+					 url.field_data[UF_SCHEMA].len,
+					 &request->scheme))) {
+			error("%s: [%s] Invalid URL scheme for URL:%s: %s",
+			      __func__,
+			      conmgr_fd_get_name(request->context->con), at,
+			      slurm_strerror(rc));
+			return 1;
+		}
+
+		if ((request->scheme != URL_SCHEME_HTTP) &&
+		    (request->scheme != URL_SCHEME_HTTPS)) {
+			error("%s: [%s] URL scheme not supported: %s",
+			      __func__,
+			      conmgr_fd_get_name(request->context->con),
+			      url_get_scheme_string(request->scheme));
+			return 1;
+		}
+
+		if ((request->scheme == URL_SCHEME_HTTPS) &&
+		    !conmgr_fd_is_tls(request->context->ref)) {
+			error("%s: [%s] URL requested HTTPS but connection is not TLS wrapped",
+			      __func__,
+			      conmgr_fd_get_name(request->context->con));
+			return 1;
+		}
+	}
 	if (url.field_set & (1 << UF_HOST))
 		log_flag(NET, "%s: [%s] URL host currently not supported",
 			 __func__, conmgr_fd_get_name(request->context->con));
@@ -202,9 +233,10 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 		log_flag(NET, "%s: [%s] URL user currently not supported",
 			 __func__, conmgr_fd_get_name(request->context->con));
 
-	debug("%s: [%s] url path: %s query: %s",
+	debug("%s: [%s] url scheme:%s path:%s query:%s",
 	      __func__, conmgr_fd_get_name(request->context->con),
-	      request->path, request->query);
+	      url_get_scheme_string(request->scheme), request->path,
+	      request->query);
 
 	return 0;
 }
@@ -938,9 +970,11 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 	xassert(!context->request);
 	request->magic = MAGIC_REQUEST_T;
 	context->con = con;
+	context->ref = conmgr_fd_new_ref(con);
 	context->on_http_request = on_http_request;
 	context->request = request;
 	request->headers = list_create(_free_http_header);
+	request->scheme = URL_SCHEME_INVALID;
 
 	return context;
 }
@@ -958,5 +992,7 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 	/* auth should have been released long before now */
 	xassert(!context->auth);
 	FREE_NULL_REST_AUTH(context->auth);
+	conmgr_fd_free_ref(&context->ref);
+
 	xfree(context);
 }
