@@ -110,10 +110,11 @@ static int _foreach_flag_coord_user(void *x, void *arg)
 		flag_coord_acct->acct = NULL;
 	}
 
-	if (assoc_ptr->usage->children_list)
-		rc = list_for_each(assoc_ptr->usage->children_list,
-				   _foreach_flag_coord_user,
-				   flag_coord_acct);
+	/*
+	 * Do not evaluate the assoc_ptr->usage->children_list here, it means we
+	 * would be in a sub-account from the account that has the flag. So any
+	 * users further down the hierarchy shouldn't be part of this flag.
+	 */
 
 	return rc;
 }
@@ -539,6 +540,8 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	FREE_NULL_LIST(assoc_list);
 
+	as_mysql_user_create_user_coords_list(mysql_conn);
+
 	return rc;
 }
 
@@ -677,6 +680,8 @@ end_it:
 		return NULL;
 	}
 
+	as_mysql_user_create_user_coords_list(mysql_conn);
+
 	errno = SLURM_SUCCESS;
 	return add_acct_cond.ret_str;
 }
@@ -790,6 +795,7 @@ extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			.flags = assoc_flags,
 			.mysql_conn = mysql_conn,
 		};
+		as_mysql_user_create_user_coords_list(mysql_conn);
 
 		/* Update associations based on account flags */
 		_handle_flag_coord(&flag_coord_acct);
@@ -910,8 +916,11 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		errno = ESLURM_NO_REMOVE_DEFAULT_ACCOUNT;
 	else if (jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
-	else
+	else {
+		as_mysql_user_create_user_coords_list(mysql_conn);
 		errno = SLURM_SUCCESS;
+	}
+
 	return ret_list;
 }
 

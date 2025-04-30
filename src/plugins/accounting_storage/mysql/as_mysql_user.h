@@ -92,4 +92,11 @@ extern void as_mysql_user_handle_user_coord_flag(slurmdb_user_rec_t *user_rec,
 						 slurmdb_assoc_flags_t flags,
 						 char *acct);
 
+/*
+ * as_mysql_user_create_user_coords_list - Create list of users who are
+ *  coordinators similar to assoc_mgr_coord_list but with it's own
+ *  pointers. Primarily needed before assoc_mgr_coord_list is created.
+ */
+extern int as_mysql_user_create_user_coords_list(mysql_conn_t *mysql_conn);
+
 #endif

@@ -207,6 +207,17 @@ extern int assoc_mgr_find_nondirect_coord_by_name(void *x, void *y)
 	return _find_acct_by_name(x, y);
 }
 
+extern int assoc_mgr_find_flag_coord_by_name(void *x, void *y)
+{
+	slurmdb_coord_rec_t *acct = x;
+
+	/* We want COORD_SET_[INDIRECT|BY_ACCT] */
+	if (acct->direct == COORD_SET_DIRECT)
+		return 0;
+
+	return _find_acct_by_name(x, y);
+}
+
 /*
  * _find_assoc_rec - return a pointer to the assoc_ptr with the given
  * contents of assoc.
@@ -2234,7 +2245,6 @@ static int _foreach_add2coord(void *x, void *arg)
 	slurmdb_user_rec_t *user = x;
 	slurmdb_assoc_rec_t *assoc_in = arg;
 	slurmdb_assoc_rec_t *assoc = assoc_in;
-	slurmdb_coord_rec_t *coord;
 
 	/* Check to see if user a coord */
 	if (!user->coord_accts)
@@ -2253,12 +2263,8 @@ static int _foreach_add2coord(void *x, void *arg)
 	/* If it is add any missing to the list */
 	assoc = assoc_in;
 	while (assoc) {
-		if (assoc_mgr_is_user_acct_coord_user_rec(user, assoc->acct))
+		if (!slurmdb_add_coord_to_user(user, assoc->acct, 0))
 			break;
-		coord = xmalloc(sizeof(*coord));
-		list_append(user->coord_accts, coord);
-		coord->name = xstrdup(assoc->acct);
-		coord->direct = 0;
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
 	return 0;

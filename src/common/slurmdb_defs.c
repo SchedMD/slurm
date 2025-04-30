@@ -4851,3 +4851,24 @@ extern char *slurmdb_expand_step_stdio_fields(char *path,
 
 	return ret;
 }
+
+extern int slurmdb_add_coord_to_user(slurmdb_user_rec_t *user, char *acct_name,
+				     uint16_t direct)
+{
+	slurmdb_coord_rec_t *coord = NULL;
+
+	xassert(user);
+	xassert(user->coord_accts);
+
+	if (assoc_mgr_is_user_acct_coord_user_rec(user, acct_name))
+		return 0;
+
+	coord = xmalloc(sizeof(*coord));
+	coord->name = xstrdup(acct_name);
+	coord->direct = direct;
+	list_append(user->coord_accts, coord);
+	debug2("adding %s to coord_accts for user %s %s",
+	       coord->name, user->name,
+	       coord->direct ? "directly" : "indirectly");
+	return 1;
+}

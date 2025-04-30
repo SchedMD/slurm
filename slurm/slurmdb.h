@@ -789,6 +789,10 @@ typedef struct {
 			   * allowed for this cluster */
 } slurmdb_clus_res_rec_t;
 
+#define COORD_SET_INDIRECT 0
+#define COORD_SET_DIRECT 1
+#define COORD_SET_BY_ACCT 2
+
 typedef struct {
 	char *name;
 	uint16_t direct;

@@ -324,4 +324,11 @@ extern void slurmdb_merge_grp_node_usage(bitstr_t **grp_node_bitmap1,
 
 extern char *slurmdb_get_job_id_str(slurmdb_job_rec_t *job);
 
+/*
+ * Add an account to the user->coord_accts list.
+ * RETURN - 0 if not added 1 if added.
+ */
+extern int slurmdb_add_coord_to_user(slurmdb_user_rec_t *user, char *acct_name,
+				     uint16_t direct);
+
 #endif

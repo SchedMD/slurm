@@ -165,6 +165,8 @@ char *resv_ext_view = "resv_ext_view";
 char *step_view = "step_view";
 char *step_ext_view = "step_ext_view";
 
+list_t *g_user_coords_list = NULL;
+
 bool backup_dbd = 0;
 
 static char *default_qos_str = NULL;
@@ -2756,6 +2758,11 @@ extern int init(void)
 			error("rollback failed");
 	}
 
+	/*
+	 * Build the list for the first time after _as_mysql_acct_check_tables()
+	 */
+	as_mysql_user_create_user_coords_list(mysql_conn);
+
 	/* If streaming replication was changed, restore to initial values */
 	mysql_db_restore_streaming_replication(mysql_conn);
 
@@ -2769,6 +2776,7 @@ extern int fini ( void )
 	slurm_rwlock_wrlock(&as_mysql_cluster_list_lock);
 	FREE_NULL_LIST(as_mysql_cluster_list);
 	FREE_NULL_LIST(as_mysql_total_cluster_list);
+	FREE_NULL_LIST(g_user_coords_list);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 	slurm_rwlock_destroy(&as_mysql_cluster_list_lock);
 	destroy_mysql_db_info(mysql_db_info);

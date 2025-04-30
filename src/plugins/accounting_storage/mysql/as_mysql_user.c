@@ -57,6 +57,12 @@ typedef struct {
 	char *user_name;
 } add_user_cond_t;
 
+typedef struct {
+	char *extra;
+	char *query;
+	char *query_pos;
+} create_string_t;
+
 static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 {
 	int rc = SLURM_SUCCESS;
@@ -171,18 +177,44 @@ no_wckeys:
 	return ret_list;
 }
 
+static int _find_user(void *x, void *arg)
+{
+	slurmdb_user_rec_t *user_rec = x;
+	char *name = arg;
+
+	if (!user_rec)
+		return 0;
+
+	return slurm_find_char_exact_in_list(user_rec->name, name);
+}
+
+static int _transfer_coords(void *x, void *arg)
+{
+	slurmdb_coord_rec_t *coord = x;
+	slurmdb_user_rec_t *user = arg;
+	slurmdb_coord_rec_t *coord_add;
+
+	if (assoc_mgr_is_user_acct_coord_user_rec(user, coord->name))
+		return 0;
+
+	coord_add = xmalloc(sizeof(*coord_add));
+	coord_add->name = xstrdup(coord->name);
+	coord_add->direct = coord->direct;
+	list_append(user->coord_accts, coord_add);
+
+	debug2("adding %s to coord_accts for user %s %s",
+	       coord->name, user->name,
+	       coord->direct ? "directly" : "indirectly");
+
+	return 0;
+}
+
 /* Fill in all the accounts this user is coordinator over.  This
  * will fill in all the sub accounts they are coordinator over also.
  */
 static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 {
-	char *query = NULL, *query_pos = NULL;
-	char *meat_query = NULL, *meat_query_pos = NULL;
-	slurmdb_coord_rec_t *coord = NULL;
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-	list_itr_t *itr = NULL;
-	char *cluster_name = NULL;
+	slurmdb_user_rec_t *user2;
 
 	if (!user) {
 		error("We need a user to fill in.");
@@ -191,130 +223,16 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 
 	if (!user->coord_accts)
 		user->coord_accts = list_create(slurmdb_destroy_coord_rec);
+	else
+		list_flush(user->coord_accts);
 
-	/*
-	 * Get explicit account coordinators
-	 */
-	query = xstrdup_printf(
-		"select acct from %s where user='%s' && deleted=0",
-		acct_coord_table, user->name);
-
-	if (!(result =
-	      mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
+	if (g_user_coords_list &&
+	    (user2 = list_find_first(g_user_coords_list,
+				     _find_user,
+				     user->name))) {
+		(void) list_for_each(user2->coord_accts, _transfer_coords,
+				     user);
 	}
-	xfree(query);
-
-	while ((row = mysql_fetch_row(result))) {
-		if (assoc_mgr_is_user_acct_coord_user_rec(user, row[0]))
-			continue;
-
-		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
-		list_append(user->coord_accts, coord);
-		coord->name = xstrdup(row[0]);
-		coord->direct = 1;
-	}
-	mysql_free_result(result);
-
-	/*
-	 * Get implicit account coordinators
-	 */
-	query_pos = NULL;
-	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
-	itr = list_iterator_create(as_mysql_cluster_list);
-	while ((cluster_name = list_next(itr))) {
-		xstrfmtcatat(query, &query_pos,
-			     "%sselect distinct t2.acct from \"%s_%s\" as t1, "
-			     "\"%s_%s\" as t2 where t1.deleted=0 && "
-			     "t2.deleted=0 && "
-			     "(t1.flags & %u) && t2.lineage like "
-			     "concat('%%/', t1.acct, '/%%0-%s/%%')",
-			     query ? " union " : "", cluster_name, assoc_table,
-			     cluster_name, assoc_table,
-			     ASSOC_FLAG_USER_COORD, user->name);
-	}
-	list_iterator_destroy(itr);
-	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
-
-	if (query) {
-		query_pos = NULL;
-
-		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-
-		if (!(result =
-		      mysql_db_query_ret(mysql_conn, query, 0))) {
-			xfree(query);
-			return SLURM_ERROR;
-		}
-		xfree(query);
-
-		while ((row = mysql_fetch_row(result))) {
-			if (assoc_mgr_is_user_acct_coord_user_rec(user, row[0]))
-				continue;
-
-			coord = xmalloc(sizeof(slurmdb_coord_rec_t));
-			debug2("adding %s to coord_accts for user %s",
-			       row[0], user->name);
-			list_append(user->coord_accts, coord);
-			coord->name = xstrdup(row[0]);
-		}
-		mysql_free_result(result);
-	}
-
-	if (!list_count(user->coord_accts))
-		return SLURM_SUCCESS;
-
-	itr = list_iterator_create(user->coord_accts);
-	while ((coord = list_next(itr))) {
-		/*
-		 * Make sure we don't get the same account back since we want to
-		 * keep track of the sub-accounts.
-		 */
-		xstrfmtcatat(meat_query, &meat_query_pos,
-			     "%s(lineage like '%%/%s/%%' && user='' && acct!='%s')",
-			     meat_query ? " || " : "",
-			     coord->name, coord->name);
-
-	}
-	list_iterator_destroy(itr);
-
-	if (!meat_query)
-		return SLURM_SUCCESS;
-
-	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
-	itr = list_iterator_create(as_mysql_cluster_list);
-	while ((cluster_name = list_next(itr))) {
-		xstrfmtcatat(query, &query_pos,
-			     "%sselect distinct acct from \"%s_%s\" where deleted=0 && (%s)",
-			     query ? " union " : "",
-			     cluster_name, assoc_table, meat_query);
-	}
-	xfree(meat_query);
-	list_iterator_destroy(itr);
-	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
-
-	if (!query)
-		return SLURM_SUCCESS;
-
-	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	result = mysql_db_query_ret(mysql_conn, query, 0);
-	xfree(query);
-
-	if (!result)
-		return SLURM_ERROR;
-
-	while ((row = mysql_fetch_row(result))) {
-		if (assoc_mgr_is_user_acct_coord_user_rec(user, row[0]))
-			continue;
-
-		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
-		list_append(user->coord_accts, coord);
-		coord->name = xstrdup(row[0]);
-		coord->direct = 0;
-	}
-	mysql_free_result(result);
 	return SLURM_SUCCESS;
 }
 
@@ -413,6 +331,7 @@ static int _add_coords(add_user_cond_t *add_user_cond)
 		}
 	}
 
+	as_mysql_user_create_user_coords_list(add_user_cond->mysql_conn);
 	_get_user_coords(add_user_cond->mysql_conn, add_user_cond->user_in);
 
 	return SLURM_SUCCESS;
@@ -1476,8 +1395,10 @@ no_user_table:
 
 	if (jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
-	else
+	else {
+		as_mysql_user_create_user_coords_list(mysql_conn);
 		errno = SLURM_SUCCESS;
+	}
 	return ret_list;
 }
 
@@ -1640,6 +1561,8 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		errno = SLURM_ERROR;
 		return NULL;
 	}
+
+	as_mysql_user_create_user_coords_list(mysql_conn);
 
 	/* get the update list set */
 	itr = list_iterator_create(user_list);
@@ -1960,14 +1883,6 @@ get_wckeys:
 	return user_list;
 }
 
-static int _find_user(void *x, void *arg)
-{
-	slurmdb_user_rec_t *user_rec = x;
-	char *name = arg;
-
-	return slurm_find_char_exact_in_list(user_rec->name, name);
-}
-
 static slurmdb_user_rec_t *_make_user_rec_with_coords(
 	mysql_conn_t *mysql_conn, char *user, bool locked)
 {
@@ -2068,7 +1983,7 @@ extern void as_mysql_user_handle_user_coord_flag(slurmdb_user_rec_t *user_rec,
 
 	if (flags & ASSOC_FLAG_USER_COORD_NO) {
 		(void) list_delete_first(user_rec->coord_accts,
-					 assoc_mgr_find_nondirect_coord_by_name,
+					 assoc_mgr_find_flag_coord_by_name,
 					 acct);
 		debug2("Removing user %s from being a coordinator of account %s",
 		       user_rec->name, acct);
@@ -2083,4 +1998,166 @@ extern void as_mysql_user_handle_user_coord_flag(slurmdb_user_rec_t *user_rec,
 		debug2("Adding user %s as a coordinator of account %s",
 		       user_rec->name, acct);
 	}
+}
+
+static int _get_accts_coords(void *x, void *arg)
+{
+	char *cluster_name = x;
+	create_string_t *create_string = arg;
+
+	/*
+	 * Here we are doing a join on all the clusters to see what users are
+	 * directly in accounts/users listed in the acct_coord_table.
+	 */
+	xstrfmtcatat(create_string->query, &create_string->query_pos,
+		     "%sselect distinct t1.acct, t1.user, t2.acct from "
+		     "\"%s\" as t1, \"%s_%s\" as t2 where t1.deleted=0 && "
+		     "t2.deleted=0 && t2.user='' && "
+		     "t2.lineage like concat('%%/', t1.acct, '/%%')",
+		     create_string->query ? " union " : "",
+		     acct_coord_table,
+		     cluster_name, assoc_table);
+	return 0;
+}
+
+static int _get_accts_with_user_coords_users(void *x, void *arg)
+{
+	char *cluster_name = x;
+	create_string_t *create_string = arg;
+	/*
+	 * Here we are doing a join on all the clusters to see what users are
+	 * directly in accounts with ASSOC_FLAG_USER_COORD set.
+	 */
+	xstrfmtcatat(create_string->query, &create_string->query_pos,
+		     "%sselect distinct t2.acct, t2.user from \"%s_%s\" as t1, "
+		     "\"%s_%s\" as t2 where t1.deleted=0 && "
+		     "t2.deleted=0 && (t1.flags & %u) && t2.lineage like "
+		     "concat('%%/', t1.acct, '/0-%%')",
+		     create_string->query ? " union " : "",
+		     cluster_name, assoc_table,
+		     cluster_name, assoc_table,
+		     ASSOC_FLAG_USER_COORD);
+	return 0;
+}
+
+static int _get_accts_with_user_coords_indirect(void *x, void *arg)
+{
+	char *cluster_name = x;
+	create_string_t *create_string = arg;
+
+	/*
+	 * This is used to determine what sub-accounts exist from accounts with
+	 * ASSOC_FLAG_USER_COORD set. These will be added as indirect coord
+	 * accounts.
+	 */
+	xstrfmtcatat(create_string->query, &create_string->query_pos,
+		     "%sselect distinct acct from \"%s_%s\" where deleted=0 && "
+		     "user='' && acct!='%s' && lineage like concat('%%/%s/%%')",
+		     create_string->query ? " union " : "",
+		     cluster_name, assoc_table,
+		     create_string->extra, create_string->extra);
+	return 0;
+}
+
+static slurmdb_user_rec_t *_process_coord_results(
+	slurmdb_user_rec_t *user,
+	char *user_name, char *acct_name,
+	uint16_t direct)
+{
+	if (!user_name || !user_name[0])
+		return NULL; /* This should never happen */
+
+	if (!g_user_coords_list ||
+	    (!_find_user(user, user_name) &&
+	     !(user = list_find_first(g_user_coords_list,
+				      _find_user,
+				      user_name)))) {
+		user = xmalloc(sizeof(*user));
+		user->name = xstrdup(user_name);
+		user->coord_accts = list_create(slurmdb_destroy_coord_rec);
+		if (!g_user_coords_list)
+			g_user_coords_list =
+				list_create(slurmdb_destroy_user_rec);
+		list_append(g_user_coords_list, user);
+	}
+
+	(void) slurmdb_add_coord_to_user(user, acct_name, direct);
+
+	return user;
+}
+
+extern int as_mysql_user_create_user_coords_list(mysql_conn_t *mysql_conn)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	create_string_t create_string = { 0 };
+	slurmdb_user_rec_t *user = NULL;
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	slurm_rwlock_wrlock(&as_mysql_cluster_list_lock);
+
+	FREE_NULL_LIST(g_user_coords_list);
+
+	/* Get the direct list of users coords */
+	create_string.query_pos = NULL;
+	(void) list_for_each(as_mysql_cluster_list, _get_accts_coords,
+			     &create_string);
+
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", create_string.query);
+	result = mysql_db_query_ret(mysql_conn, create_string.query, 0);
+	xfree(create_string.query);
+
+	while ((row = mysql_fetch_row(result))) {
+		user = _process_coord_results(user, row[1], row[2],
+					      xstrcmp(row[0], row[2]) ? 0 : 1);
+	}
+	mysql_free_result(result);
+
+	/* Get the list of users */
+	create_string.query_pos = NULL;
+	(void) list_for_each(as_mysql_cluster_list,
+			     _get_accts_with_user_coords_users,
+			     &create_string);
+
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", create_string.query);
+	result = mysql_db_query_ret(mysql_conn, create_string.query, 0);
+	xfree(create_string.query);
+
+	while ((row = mysql_fetch_row(result))) {
+		MYSQL_RES *result2 = NULL;
+		MYSQL_ROW row2;
+
+		user = _process_coord_results(user, row[1], row[0],
+					      COORD_SET_BY_ACCT);
+		if (!user) {
+			error("For some reason we didn't get a user from '%s'. This should never happen.",
+			      row[1]);
+			continue;
+		}
+		/*
+		 * Now let's get the indirect accounts from this direct account
+		 */
+		create_string.query_pos = NULL;
+		create_string.extra = row[0];
+		(void) list_for_each(as_mysql_cluster_list,
+				     _get_accts_with_user_coords_indirect,
+				     &create_string);
+
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s",
+			 create_string.query);
+		result2 = mysql_db_query_ret(mysql_conn,
+					     create_string.query, 0);
+		xfree(create_string.query);
+
+		while ((row2 = mysql_fetch_row(result2))) {
+			(void) slurmdb_add_coord_to_user(user, row2[0], 0);
+		}
+		mysql_free_result(result2);
+	}
+	mysql_free_result(result);
+	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+
+	return SLURM_SUCCESS;
 }
