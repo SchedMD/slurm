@@ -1906,3 +1906,19 @@ extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref)
 
 	return con;
 }
+
+extern bool conmgr_fd_is_tls(conmgr_fd_ref_t *ref)
+{
+	conmgr_fd_t *con = fd_get_ref(ref);
+	bool tls = false;
+
+	xassert(con);
+
+	slurm_mutex_lock(&mgr.mutex);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	tls = (con_flag(con, FLAG_TLS_CLIENT) ||
+	       con_flag(con, FLAG_TLS_SERVER));
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return tls;
+}
