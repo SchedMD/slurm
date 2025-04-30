@@ -55,6 +55,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
 #include "src/common/strnatcmp.h"
 #include "src/common/timers.h"
 #include "src/common/working_cluster.h"
@@ -104,6 +105,7 @@ strong_alias(hostlist_remove,		slurm_hostlist_remove);
 strong_alias(hostlist_shift,		slurm_hostlist_shift);
 strong_alias(hostlist_shift_dims,	slurm_hostlist_shift_dims);
 strong_alias(hostlist_sort,		slurm_hostlist_sort);
+strong_alias(hostlist_split_treewidth, slurm_hostlist_split_treewidth);
 strong_alias(hostlist_cmp_first,	slurm_hostlist_cmp_first);
 strong_alias(hostlist_uniq,		slurm_hostlist_uniq);
 strong_alias(hostset_count,		slurm_hostset_count);
@@ -2414,6 +2416,143 @@ void hostlist_parse_int_to_array(int in, int *out, int dims, int base)
 
 	for ( ; --dims >= 0; in /= hostlist_base)
 		out[dims] = in % hostlist_base;
+}
+
+/* this is used to set how many nodes are going to be on each branch
+ * of the tree.
+ * IN total       - total number of nodes to send to
+ * IN tree_width  - how wide the tree should be on each hop
+ * OUT span       - pointer to int array tree_width in length each space
+ *		    containing the number of nodes to send to each hop
+ *		    on the span.
+ * RET int	  - the number of levels opened in the tree, or SLURM_ERROR
+ */
+static int _set_span(int total, uint16_t tree_width, int **span)
+{
+	int depth = 0;
+
+	/* This should not happen. This is an error. */
+	if (!span || total < 1)
+		return SLURM_ERROR;
+
+	/* If default span */
+	if (!tree_width)
+		tree_width = slurm_conf.tree_width;
+
+	/* Safeguard from leaks */
+	if (*span)
+		xfree(*span);
+
+	/*
+	 * Memory optimization:
+	 * Don't allocate if we are in the last step to the leaves, as this is
+	 * considered direct communication and we don't really need it.
+	 */
+	if (total <= tree_width)
+		return 1;
+
+	/* Each cell will contain the #nodes below this specific branch */
+	*span = xcalloc(tree_width, sizeof(int));
+
+	/*
+	 * Try to fill levels until no more nodes are available.
+	 *
+	 * Each time a new level is created, it is exponentially bigger than the
+	 * previous one
+	 */
+	for (int branch_capacity = 1, level_capacity = tree_width; total;
+	     branch_capacity *= tree_width, level_capacity *= tree_width) {
+		/* Remaining nodes can fill a whole new level up, or not */
+		if (level_capacity <= total) {
+			for (int i = 0; i < tree_width; i++)
+				(*span)[i] += branch_capacity;
+			total -= level_capacity;
+		} else {
+			/* Evenly distribute remaining nodes */
+			branch_capacity = total / tree_width;
+			/* But left the division remainder ones */
+			level_capacity = branch_capacity * tree_width;
+			/* Fill current level up, as much as possible */
+			for (int i = 0; i < tree_width; i++)
+				(*span)[i] += branch_capacity;
+			total -= level_capacity;
+
+			/* Evenly distribute the remainder nodes */
+			for (int i = 0; total; i++, total--)
+				(*span)[i]++;
+
+			/* total == 0 always at this point */
+		}
+
+		/* One level more has been added */
+		depth++;
+
+		/* The level needed all the nodes, no more levels are added */
+		if (!total)
+			break;
+	}
+
+	/* Inform the caller about the number of levels below itself */
+	return depth;
+}
+
+/* Split a hostlist into a fanout tree */
+extern int hostlist_split_treewidth(hostlist_t *hl, hostlist_t ***sp_hl,
+				    int *count, uint16_t tree_width)
+{
+	int host_count = hostlist_count(hl), depth, *span = NULL;
+	char *name;
+
+	/* If default span */
+	if (!tree_width)
+		tree_width = slurm_conf.tree_width;
+
+	/* This should not happen. This is an error. */
+	if ((depth = _set_span(host_count, tree_width, &span)) < 0)
+		return SLURM_ERROR;
+
+	/*
+	 * Memory optimization:
+	 * _set_span doesn't return array for direct communication
+	 * (if depth == 1 then span == NULL), so we just fill the hostlist array
+	 * directly.
+	 */
+	if (depth == 1)
+		tree_width = host_count;
+
+	/* Each cell will contain the hostlist below this specific branch */
+	*sp_hl = xcalloc(tree_width, sizeof(hostlist_t *));
+
+	/*
+	 * Fill the hostlists for each branch according to the distribution in
+	 * set_span.
+	 *
+	 * Additionally, try to preserve network locality (based on distance)
+	 * for subtrees, by assuming consecutive nodes are placed one next to
+	 * each other
+	 */
+	for (*count = 0; (*count < tree_width) && (name = hostlist_shift(hl));
+	     (*count)++) {
+		/* Open the new branch, and add the 1st one */
+		(*sp_hl)[*count] = hostlist_create(name);
+		free(name);
+
+		/* Consecutively add the rest of nodes for this branch */
+		for (int i = 1; span && (i < span[*count]); i++) {
+			name = hostlist_shift(hl);
+			hostlist_push_host((*sp_hl)[*count], name);
+			free(name);
+		}
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
+			char *buf =
+			hostlist_ranged_string_xmalloc((*sp_hl)[*count]);
+			debug("ROUTE: ... sublist[%d] %s", *count, buf);
+			xfree(buf);
+		}
+	}
+
+	xfree(span);
+	return depth;
 }
 
 /* return true if a bracket is needed for the range at i in hostlist hl */

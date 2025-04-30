@@ -79,7 +79,6 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/tls.h"
-#include "src/interfaces/topology.h"
 
 #include "src/conmgr/conmgr.h"
 
@@ -2521,17 +2520,6 @@ list_t *slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout
 {
 	list_t *ret_list = NULL;
 	hostlist_t *hl = NULL;
-
-	if (!running_in_daemon()) {
-		/*
-		 * Load topo plugin here to make it so the api can do
-		 * it easily
-		 */
-		if (topology_g_init() != SLURM_SUCCESS) {
-			error("failed to initialize route plugins");
-			return NULL;
-		}
-	}
 
 	if (!nodelist || !strlen(nodelist)) {
 		error("slurm_send_recv_msgs: no nodelist given");
