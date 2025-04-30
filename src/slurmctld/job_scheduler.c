@@ -2708,7 +2708,7 @@ static int _foreach_set_het_job_env(void *x, void *arg)
 			"SLURM_MEM_PER_NODE",
 			het_job_offset, "%"PRIu64"", tmp_mem);
 	}
-	/* SLURM_SEGMENT_SIZE is only set is sbatch environment */
+	/* SLURM_JOB_SEGMENT_SIZE is only set is sbatch environment */
 	if (het_job->details && het_job->details->segment_size)
 		(void) env_array_overwrite_het_fmt(
 			&launch_msg_ptr->environment, "SLURM_JOB_SEGMENT_SIZE",
