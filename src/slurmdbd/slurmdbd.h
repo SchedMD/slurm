@@ -44,7 +44,7 @@ extern time_t shutdown_time;		/* when shutdown request arrived */
 extern pthread_mutex_t registered_lock;
 extern list_t *registered_clusters;
 extern pthread_mutex_t rpc_mutex;
-extern slurmdb_stats_rec_t rpc_stats;
+extern slurmdb_stats_rec_t *rpc_stats;
 
 extern void shutdown_threads(void);
 

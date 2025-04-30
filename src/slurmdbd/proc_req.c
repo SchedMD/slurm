@@ -3001,10 +3001,22 @@ static int _get_stats(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	debug2("Get stats request received from UID %u",
 	       slurmdbd_conn->conn->auth_uid);
+
+	/* Assume rpc_stats is present to hold lock as beifly as possible */
 	*out_buffer = init_buf(32 * 1024);
 	pack16((uint16_t) DBD_GOT_STATS, *out_buffer);
 	slurm_mutex_lock(&rpc_mutex);
-	slurmdb_pack_stats_msg(&rpc_stats, slurmdbd_conn->conn->version,
+	if (!rpc_stats) {
+		slurm_mutex_unlock(&rpc_mutex);
+		free_buf(*out_buffer);
+		rc = ESLURM_NO_RPC_STATS;
+		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
+		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn, rc,
+							comment, DBD_GET_STATS);
+
+		return rc;
+	}
+	slurmdb_pack_stats_msg(rpc_stats, slurmdbd_conn->conn->version,
 			       *out_buffer);
 	slurm_mutex_unlock(&rpc_mutex);
 
@@ -3367,23 +3379,27 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 	END_TIMER;
 
 	slurm_mutex_lock(&rpc_mutex);
+	if (!rpc_stats) {
+		slurm_mutex_unlock(&rpc_mutex);
+		return rc;
+	}
 
-	if (!(rpc_obj = list_find_first(rpc_stats.rpc_list,
-					_find_rpc_obj_in_list,
-					&msg->msg_type))) {
+	if (!(rpc_obj =
+		      list_find_first(rpc_stats->rpc_list,
+				      _find_rpc_obj_in_list, &msg->msg_type))) {
 		rpc_obj = xmalloc(sizeof(slurmdb_rpc_obj_t));
 		rpc_obj->id = msg->msg_type;
-		list_append(rpc_stats.rpc_list, rpc_obj);
+		list_append(rpc_stats->rpc_list, rpc_obj);
 	}
 	rpc_obj->cnt++;
 	rpc_obj->time += DELTA_TIMER;
 
-	if (!(rpc_obj = list_find_first(rpc_stats.user_list,
+	if (!(rpc_obj = list_find_first(rpc_stats->user_list,
 					_find_rpc_obj_in_list,
 					&slurmdbd_conn->conn->auth_uid))) {
 		rpc_obj = xmalloc(sizeof(slurmdb_rpc_obj_t));
 		rpc_obj->id = slurmdbd_conn->conn->auth_uid;
-		list_append(rpc_stats.user_list, rpc_obj);
+		list_append(rpc_stats->user_list, rpc_obj);
 	}
 	rpc_obj->cnt++;
 	rpc_obj->time += DELTA_TIMER;
