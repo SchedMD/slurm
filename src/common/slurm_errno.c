@@ -707,6 +707,8 @@ slurm_errtab_t slurm_errtab[] = {
 	/* http and url errors */
 	{ ERRTAB_ENTRY(ESLURM_URL_UNKNOWN_SCHEME),
 	  "Unknown URL scheme"},
+	{ ERRTAB_ENTRY(ESLURM_URL_EMPTY),
+	  "URL string is empty"},
 };
 
 unsigned int slurm_errtab_size = sizeof(slurm_errtab) / sizeof(slurm_errtab_t);

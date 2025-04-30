@@ -395,6 +395,7 @@ typedef enum {
 
 	/* http and URL errors */
 	ESLURM_URL_UNKNOWN_SCHEME = 11000,
+	ESLURM_URL_EMPTY,
 } slurm_err_t;
 
 /* Type for error string table entries */
