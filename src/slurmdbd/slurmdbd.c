@@ -396,7 +396,7 @@ extern void *reconfig(void *arg)
 	conmgr_quiesce(__func__);
 
 	read_slurmdbd_conf();
-	assoc_mgr_set_missing_uids();
+	assoc_mgr_set_missing_uids(NULL);
 	acct_storage_g_reconfig(NULL, 0);
 	_update_logging(false);
 
@@ -845,7 +845,7 @@ static void *_rollup_handler(void *db_conn)
 			 * Just in case some new uids were added to the system
 			 * pick them up here. Only run this if we ran before.
 			 */
-			assoc_mgr_set_missing_uids();
+			assoc_mgr_set_missing_uids(NULL);
 		}
 
 		/* run the roll up */

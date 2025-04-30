@@ -492,7 +492,7 @@ extern void assoc_mgr_set_uid(uid_t uid, char *username);
  * Sets the uids of users added to the system after the start of the
  * calling program.
  */
-extern int assoc_mgr_set_missing_uids(void);
+extern int assoc_mgr_set_missing_uids(bool *uid_set);
 
 /* Normalize shares for an association. External so a priority plugin
  * can call it if needed.

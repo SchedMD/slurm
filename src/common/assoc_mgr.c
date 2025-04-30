@@ -6454,6 +6454,7 @@ static int _for_each_assoc_missing_uids(void *x, void *arg)
 		debug2("%s: refresh association couldn't get a uid for user %s",
 		       __func__, object->user);
 	} else {
+		bool *uid_set = arg;
 		/*
 		 * Since the uid changed the hash will change.
 		 * Remove the assoc from the hash, then add it back.
@@ -6463,6 +6464,8 @@ static int _for_each_assoc_missing_uids(void *x, void *arg)
 		_add_assoc_hash(object);
 		debug3("%s: found uid %u for user %s",
 		       __func__, pw_uid, object->user);
+		if (uid_set)
+			*uid_set = true;
 	}
 
 	return 1;
@@ -6480,9 +6483,12 @@ static int _for_each_wckey_missing_uids(void *x, void *arg)
 		debug2("%s: refresh wckey couldn't get a uid for user %s",
 		       __func__, object->user);
 	} else {
+		bool *uid_set = arg;
 		object->uid = pw_uid;
 		debug3("%s: found uid %u for user %s",
 		       __func__, pw_uid, object->name);
+		if (uid_set)
+			*uid_set = true;
 	}
 
 	return 1;
@@ -6500,15 +6506,18 @@ static int _for_each_user_missing_uids(void *x, void *arg)
 		debug2("%s: refresh user couldn't get uid for user %s",
 		       __func__, object->name);
 	} else {
+		bool *uid_set = arg;
 		debug3("%s: found uid %u for user %s",
 		       __func__, pw_uid, object->name);
 		object->uid = pw_uid;
+		if (uid_set)
+			*uid_set = true;
 	}
 
 	return 1;
 }
 
-extern int assoc_mgr_set_missing_uids(void)
+extern int assoc_mgr_set_missing_uids(bool *uid_set)
 {
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .user = WRITE_LOCK,
 				   .wckey = WRITE_LOCK };
@@ -6516,17 +6525,17 @@ extern int assoc_mgr_set_missing_uids(void)
 	assoc_mgr_lock(&locks);
 	if (assoc_mgr_assoc_list) {
 		list_for_each(assoc_mgr_assoc_list,
-			      _for_each_assoc_missing_uids, NULL);
+			      _for_each_assoc_missing_uids, uid_set);
 	}
 
 	if (assoc_mgr_wckey_list) {
 		list_for_each(assoc_mgr_wckey_list,
-			      _for_each_wckey_missing_uids, NULL);
+			      _for_each_wckey_missing_uids, uid_set);
 	}
 
 	if (assoc_mgr_user_list) {
 		list_for_each(assoc_mgr_user_list,
-			      _for_each_user_missing_uids, NULL);
+			      _for_each_user_missing_uids, uid_set);
 	}
 	assoc_mgr_unlock(&locks);
 
