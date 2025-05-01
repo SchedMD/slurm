@@ -4989,7 +4989,8 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 	return SLURM_SUCCESS;
 }
 
-static int _send_msg(slurm_msg_t *msg, slurm_msg_type_t type, void *data)
+static int _send_msg(slurm_msg_t *msg, int slurmd_fd, slurm_msg_type_t type,
+		     void *data)
 {
 	xassert(running_in_slurmctld() || running_in_slurmstepd());
 	int rc;
@@ -5003,7 +5004,7 @@ static int _send_msg(slurm_msg_t *msg, slurm_msg_type_t type, void *data)
 	}
 
 	if (running_in_slurmstepd()) {
-		if ((stepd_proxy_send_resp_to_slurmd(msg->conn_fd, msg, type,
+		if ((stepd_proxy_send_resp_to_slurmd(slurmd_fd, msg, type,
 						     data))) {
 			return SLURM_ERROR;
 		}
@@ -5013,7 +5014,7 @@ static int _send_msg(slurm_msg_t *msg, slurm_msg_type_t type, void *data)
 	return SLURM_ERROR;
 }
 
-extern int step_create_from_msg(slurm_msg_t *msg,
+extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 				void (*lock_func)(bool lock),
 				void (*fail_lock_func)(bool lock))
 {
@@ -5045,7 +5046,7 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 		};
 		error("Security violation, JOB_STEP_CREATE RPC from uid=%u to run as uid %u",
 		      msg->auth_uid, req_step_msg->user_id);
-		_send_msg(msg, RESPONSE_SLURM_RC, &rc_msg);
+		_send_msg(msg, slurmd_fd, RESPONSE_SLURM_RC, &rc_msg);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -5083,12 +5084,12 @@ extern int step_create_from_msg(slurm_msg_t *msg,
 			error("rpc %s from non-supported client version %d for stepmgr job",
 			      rpc_num2string(msg->msg_type),
 			      msg->protocol_version);
-			_send_msg(msg, RESPONSE_SLURM_RC, &rc_msg);
+			_send_msg(msg, slurmd_fd, RESPONSE_SLURM_RC, &rc_msg);
 		} else {
 			reroute_msg_t reroute_msg = {
 				.stepmgr = job_ptr->batch_host,
 			};
-			_send_msg(msg, RESPONSE_SLURM_REROUTE_MSG,
+			_send_msg(msg, slurmd_fd, RESPONSE_SLURM_REROUTE_MSG,
 				  &reroute_msg);
 		}
 		if (lock_func)
@@ -5128,12 +5129,13 @@ end_it:
 				.return_code = error_code,
 				.err_msg = err_msg,
 			};
-			_send_msg(msg, RESPONSE_SLURM_RC_MSG, &rc_msg);
+			_send_msg(msg, slurmd_fd, RESPONSE_SLURM_RC_MSG,
+				  &rc_msg);
 		} else {
 			return_code_msg_t rc_msg = {
 				.return_code = error_code,
 			};
-			_send_msg(msg, RESPONSE_SLURM_RC, &rc_msg);
+			_send_msg(msg, slurmd_fd, RESPONSE_SLURM_RC, &rc_msg);
 		}
 	} else {
 		slurm_step_layout_t *step_layout = NULL;
@@ -5176,7 +5178,8 @@ end_it:
 			msg->protocol_version = step_rec->start_protocol_ver;
 		}
 
-		if (_send_msg(msg, RESPONSE_JOB_STEP_CREATE, &job_step_resp)) {
+		if (_send_msg(msg, slurmd_fd, RESPONSE_JOB_STEP_CREATE,
+			      &job_step_resp)) {
 			step_complete_msg_t req;
 
 			memset(&req, 0, sizeof(req));

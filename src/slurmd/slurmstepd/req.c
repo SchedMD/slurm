@@ -569,7 +569,7 @@ static int _handle_step_create(int fd, stepd_step_rec_t *step, uid_t uid)
 	msg.auth_ids_set = true;
 
 	/* step_create_from_msg responds to the client */
-	step_create_from_msg(&msg, NULL, NULL);
+	step_create_from_msg(&msg, fd, NULL, NULL);
 
 	slurm_mutex_unlock(&stepmgr_mutex);
 

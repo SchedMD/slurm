@@ -2263,11 +2263,13 @@ static void _step_create_job_fail_lock(bool lock)
  *	with the stepmgr */
 static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 {
-	if (!step_create_from_msg(msg,
+	if (!step_create_from_msg(msg, -1,
 				  ((!(msg->flags & CTLD_QUEUE_PROCESSING)) ?
-				   _step_create_job_lock : NULL),
+					   _step_create_job_lock :
+					   NULL),
 				  ((!(msg->flags & CTLD_QUEUE_PROCESSING)) ?
-				   _step_create_job_fail_lock : NULL))) {
+					   _step_create_job_fail_lock :
+					   NULL))) {
 		schedule_job_save();	/* Sets own locks */
 	}
 }
