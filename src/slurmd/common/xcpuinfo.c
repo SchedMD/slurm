@@ -1177,15 +1177,6 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 	bitstr_t *absmap = NULL;
 	bitstr_t *absmap_core = NULL;
 	int rc = SLURM_SUCCESS;
-	char *pcores_range = NULL;
-
-	/*
-	 * In case we are in a system with ecores, remove them from in_range in
-	 * order to provide a correct abstract list.
-	 */
-	pcores_range = _remove_ecores_range(in_range);
-	if (!pcores_range)
-		pcores_range = in_range;
 
 	if (total_cores == -1) {
 		total_cores = conf->sockets * conf->cores;
@@ -1203,7 +1194,7 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 	}
 
 	/* string to bitmap conversion */
-	if (bit_unfmt(macmap, pcores_range)) {
+	if (bit_unfmt(macmap, in_range)) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -1219,7 +1210,7 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 			macid = (icore * conf->actual_threads) + ithread;
 			macid %= total_cpus;
 
-			/* Skip this machine CPU id if not in pcores_range */
+			/* Skip this machine CPU id if not in in_range */
 			if (!bit_test(macmap, macid))
 				continue;
 
@@ -1253,7 +1244,6 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 
 	/* free unused bitmaps */
 end_it:
-	xfree(pcores_range);
 	FREE_NULL_BITMAP(macmap);
 	FREE_NULL_BITMAP(absmap);
 	FREE_NULL_BITMAP(absmap_core);
@@ -1270,11 +1260,20 @@ extern char *xcpuinfo_get_cpuspec(void)
 	bitstr_t *res_core_bitmap = NULL;
 	bitstr_t *res_cpu_bitmap = NULL;
 	char *restricted_cpus_as_abs = NULL;
+	char *pcores_range = NULL;
 
 	if (!restricted_cpus_as_mac)
 		return NULL;
 
-	xcpuinfo_mac_to_abs(restricted_cpus_as_mac, &restricted_cpus_as_abs);
+	/* We need to remove the e-cores to compute the cpuspec list */
+	pcores_range = _remove_ecores_range(restricted_cpus_as_mac);
+	if (pcores_range) {
+		xcpuinfo_mac_to_abs(pcores_range, &restricted_cpus_as_abs);
+		xfree(pcores_range);
+	} else {
+		xcpuinfo_mac_to_abs(restricted_cpus_as_mac,
+				    &restricted_cpus_as_abs);
+	}
 
 	debug2("%s: restricted cpus as machine: %s",
 	       __func__, restricted_cpus_as_mac);
