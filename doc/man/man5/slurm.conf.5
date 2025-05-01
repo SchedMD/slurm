@@ -6105,6 +6105,16 @@ Overrides automatic binding.
 .IP
 
 .TP
+\fBSlurmdSpecOverride\fR
+If slurmd is started in a cgroup which has cpuset or memory constraints, then
+CpuSpecList and MemSpecLimit will be set and will override the configured
+values. This will avoid scheduling resources from these constraints. In
+cgroup/v1, slurmd and slurmstepd daemons will now not be able to use any
+of these resources. While in normal behavior, cgroup/v1 constrains the
+daemons to CpuSpecList and MemSpecList.
+.IP
+
+.TP
 \fBSlurmdOffSpec\fR
 If specialized cores or CPUs are identified for the node (i.e. the
 \fBCoreSpecCount\fR or \fBCpuSpecList\fR are configured for the node),

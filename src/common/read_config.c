@@ -5162,6 +5162,17 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 					return SLURM_ERROR;
 				}
 				conf->task_plugin_param |= OOM_KILL_STEP;
+			} else if (!xstrcasecmp(tok, "SlurmdSpecOverride")) {
+				if (!xstrstr(conf->task_plugin,
+					     "task/cgroup")) {
+					error("TaskPluginParam=SlurmdSpecOverride must be used with task/cgroup");
+					return SLURM_ERROR;
+				}
+				if (!xstrstr(conf->select_type, "cons_tres")) {
+					error("TaskPluginParam=SlurmdSpecOverride must be used with cons/tres");
+					return SLURM_ERROR;
+				}
+				conf->task_plugin_param |= SLURMD_SPEC_OVERRIDE;
 			} else {
 				error("Bad TaskPluginParam: %s", tok);
 				return SLURM_ERROR;
@@ -5169,6 +5180,12 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			tok = strtok_r(NULL, ",", &last);
 		}
 		xfree(temp_str);
+	}
+
+	if ((conf->task_plugin_param & SLURMD_OFF_SPEC) &&
+	    (conf->task_plugin_param & SLURMD_SPEC_OVERRIDE)) {
+		error("TaskPluginParams SlurmdOffSpec and SlurmdSpecOverride are mutually exclusive");
+		return SLURM_ERROR;
 	}
 
 	(void) s_p_get_string(&conf->task_epilog, "TaskEpilog", hashtbl);

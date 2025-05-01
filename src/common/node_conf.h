@@ -541,6 +541,18 @@ extern int node_record_unpack(void **out,
 			      uint16_t protocol_version,
 			      buf_t *buffer);
 
+/*
+ * Convert CPU list to reserve whole cores
+ * OUT:
+ *	node_ptr->cpu_spec_list
+ */
+extern int node_conf_convert_cpu_spec_list(node_record_t *node_ptr);
+
+/*
+ * Select cores and CPUs to be reserved for core specialization.
+ */
+extern void node_conf_select_spec_cores(node_record_t *node_ptr);
+
 /* Create config_record_t from a packed node_record_t */
 extern config_record_t *config_record_from_node_record(node_record_t *node_ptr);
 

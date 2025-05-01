@@ -935,6 +935,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->threads	 = conf->threads;
 	msg->cpu_spec_list = xstrdup(conf->cpu_spec_list);
 	msg->real_memory = conf->physical_memory_size;
+	msg->mem_spec_limit = conf->mem_spec_limit;
 	msg->tmp_disk    = conf->tmp_disk_space;
 	msg->hash_val = slurm_conf.hash_val;
 	get_cpu_load(&msg->cpu_load);
@@ -1046,6 +1047,46 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	return;
 }
 
+static void _spec_override(uint64_t phys_mem)
+{
+	cgroup_limits_t *slurmd_limits;
+	char *tmp_str;
+
+	/*
+	 * CoreSpec overwrite can only be done under cons_tres and with
+	 * task/cgroup. This is guaranteed by SlurmdSpecOverride parameter.
+	 */
+	if (!(slurm_conf.task_plugin_param & SLURMD_SPEC_OVERRIDE))
+		return;
+
+	tmp_str = xcpuinfo_get_cpuspec();
+	if (tmp_str) {
+		info("Overriding CpuSpecList from %s to %s",
+		     conf->cpu_spec_list, tmp_str);
+		xfree(conf->cpu_spec_list);
+		conf->cpu_spec_list = tmp_str;
+		slurm_conf.task_plugin_param &= ~SLURMD_OFF_SPEC;
+	}
+
+	/*
+	 * We should use CG_LEVEL_ROOT but for compatibility with
+	 * cgroup/v1 we need to use CG_LEVEL_SYSTEM
+	 */
+	slurmd_limits = cgroup_g_constrain_get(CG_MEMORY, CG_LEVEL_SLURM);
+
+	if (!slurmd_limits || (slurmd_limits->limit_in_bytes == NO_VAL64)) {
+		info("No memory limits detected for this system, assuming the available memory equals the physical memory");
+	} else {
+		slurmd_limits->limit_in_bytes /= 1024 * 1024;
+		conf->mem_spec_limit = phys_mem - slurmd_limits->limit_in_bytes;
+		info("Detected real memory of %luM but constrained to %luM, setting MemSpecLimit=%luM",
+		     phys_mem, slurmd_limits->limit_in_bytes,
+		     conf->mem_spec_limit);
+	}
+
+	cgroup_free_limits(slurmd_limits);
+}
+
 /*
  * Read the slurm configuration file (slurm.conf) and substitute some
  * values into the slurmd configuration in preference of the defaults.
@@ -1063,9 +1104,6 @@ _read_config(void)
 
 	slurm_mutex_lock(&conf->config_mutex);
 	cf = slurm_conf_lock();
-
-	if (conf->conffile == NULL)
-		conf->conffile = xstrdup(cf->slurm_conf);
 
 	/*
 	 * Allow for Prolog and Epilog scripts to have non-absolute paths.
@@ -1093,34 +1131,12 @@ _read_config(void)
 		gang_flag = true;
 
 	slurm_conf_unlock();
-	/* node_name may already be set from a command line parameter */
-	if (conf->node_name == NULL)
-		conf->node_name = slurm_conf_get_nodename(conf->hostname);
-
-	/*
-	 * If we didn't match the form of the hostname already stored in
-	 * conf->hostname, check to see if we match any valid aliases
-	 */
-	if (conf->node_name == NULL)
-		conf->node_name = slurm_conf_get_aliased_nodename();
-
-	if (conf->node_name == NULL)
-		conf->node_name = slurm_conf_get_nodename("localhost");
-
-	if (!conf->node_name || conf->node_name[0] == '\0')
-		fatal("Unable to determine this slurmd's NodeName");
 
 	if ((bcast_address = slurm_conf_get_bcast_address(conf->node_name))) {
 		if (xstrcasestr(slurm_conf.comm_params, "NoInAddrAny"))
 			fatal("Cannot use BcastAddr option on this node with CommunicationParameters=NoInAddrAny");
 		xfree(bcast_address);
 	}
-
-	if (!conf->logfile)
-		conf->logfile = slurm_conf_expand_slurmd_path(
-			cf->slurmd_logfile,
-			conf->node_name,
-			conf->hostname);
 
 	if (!(node_ptr = find_node_record(conf->node_name))) {
 		error("Unable to find node record for %s",
@@ -1145,16 +1161,6 @@ _read_config(void)
 	xfree(conf->block_map_inv);
 
 	/*
-	 * This must be reset before update_slurmd_logging(), otherwise the
-	 * slurmstepd processes will not get the reconfigure request, and logs
-	 * may be lost if the path changed or the log was rotated.
-	 */
-	_free_and_set(conf->spooldir,
-		      slurm_conf_expand_slurmd_path(
-			      cf->slurmd_spooldir,
-			      conf->node_name,
-			      conf->hostname));
-	/*
 	 * Only rebuild this if running configless, which is indicated by
 	 * the presence of a conf_cache value.
 	 */
@@ -1162,8 +1168,6 @@ _read_config(void)
 		_free_and_set(conf->conf_cache,
 			      xstrdup_printf("%s/conf-cache", conf->spooldir));
 
-	update_slurmd_logging(LOG_LEVEL_END);
-	update_stepd_logging(true);
 	_update_nice();
 
 	conf->actual_cpus = 0;
@@ -1268,6 +1272,8 @@ _read_config(void)
 			conf->cores,   conf->actual_cores,
 			conf->threads, conf->actual_threads);
 	}
+
+	_spec_override(node_ptr->real_memory);
 
 	/*
 	 * Set the node's configured 'RealMemory' as conf_memory_size as
@@ -2398,22 +2404,6 @@ static void _dynamic_init(void)
 
 	slurm_mutex_lock(&conf->config_mutex);
 
-	if ((conf->dynamic_type == DYN_NODE_FUTURE) && conf->node_name) {
-		/*
-		 * You can't specify a node name with dynamic future nodes,
-		 * otherwise the slurmd will keep registering as a new dynamic
-		 * future node because the node_name won't map to the hostname.
-		 */
-		fatal("Specifying a node name for dynamic future nodes is not supported.");
-	}
-
-	/* Use -N name if specified. */
-	if (!conf->node_name) {
-		char hostname[HOST_NAME_MAX];
-		if (!gethostname(hostname, HOST_NAME_MAX))
-			conf->node_name = xstrdup(hostname);
-	}
-
 	xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
 				&conf->actual_boards,
 				&conf->actual_sockets,
@@ -2428,6 +2418,8 @@ static void _dynamic_init(void)
 	conf->cores   = conf->actual_cores;
 	conf->threads = conf->actual_threads;
 	get_memory(&conf->physical_memory_size);
+
+	_spec_override(conf->physical_memory_size);
 
 	switch (conf->dynamic_type) {
 	case DYN_NODE_FUTURE:
@@ -2496,6 +2488,73 @@ static void _dynamic_init(void)
 	slurm_mutex_unlock(&conf->config_mutex);
 }
 
+static void _log_setup()
+{
+	slurm_conf_t *cf = NULL;
+
+	if ((conf->dynamic_type == DYN_NODE_FUTURE) && conf->node_name) {
+		/*
+		 * You can't specify a node name with dynamic future nodes,
+		 * otherwise the slurmd will keep registering as a new dynamic
+		 * future node because the node_name won't map to the hostname.
+		 */
+		fatal("Specifying a node name for dynamic future nodes is not supported.");
+	}
+
+	/* Use -N name if specified. */
+	if (conf->dynamic_type && !conf->node_name) {
+		char hostname[HOST_NAME_MAX];
+		if (!gethostname(hostname, HOST_NAME_MAX))
+			conf->node_name = xstrdup(hostname);
+	}
+
+	/* node_name may already be set from a command line parameter */
+	if (conf->node_name == NULL)
+		conf->node_name = slurm_conf_get_nodename(conf->hostname);
+
+	/*
+	 * If we didn't match the form of the hostname already stored in
+	 * conf->hostname, check to see if we match any valid aliases
+	 */
+	if (conf->node_name == NULL)
+		conf->node_name = slurm_conf_get_aliased_nodename();
+
+	if (conf->node_name == NULL)
+		conf->node_name = slurm_conf_get_nodename("localhost");
+
+	if (!conf->node_name || (conf->node_name[0] == '\0'))
+		fatal("Unable to determine this slurmd's NodeName");
+
+	slurm_mutex_lock(&conf->config_mutex);
+	cf = slurm_conf_lock();
+
+	if (conf->conffile == NULL)
+		conf->conffile = xstrdup(cf->slurm_conf);
+
+	if (!conf->logfile)
+		conf->logfile = slurm_conf_expand_slurmd_path(
+			cf->slurmd_logfile,
+			conf->node_name,
+			conf->hostname);
+
+	/*
+	 * This must be reset before update_slurmd_logging(), otherwise the
+	 * slurmstepd processes will not get the reconfigure request, and logs
+	 * may be lost if the path changed or the log was rotated.
+	 */
+	_free_and_set(conf->spooldir,
+		      slurm_conf_expand_slurmd_path(
+			      cf->slurmd_spooldir,
+			      conf->node_name,
+			      conf->hostname));
+
+	slurm_conf_unlock();
+	slurm_mutex_unlock(&conf->config_mutex);
+
+	update_slurmd_logging(LOG_LEVEL_END);
+	update_stepd_logging(true);
+}
+
 static int
 _slurmd_init(void)
 {
@@ -2519,6 +2578,9 @@ _slurmd_init(void)
 	slurm_conf_init(conf->conffile);
 	init_node_conf();
 
+	/* Setup logging previous to any plugin init or we will not get logs. */
+	_log_setup();
+
 	if (conf->print_gres)
 		slurm_conf.debug_flags = DEBUG_FLAG_GRES;
 	if (gres_init() != SLURM_SUCCESS)
@@ -2532,6 +2594,18 @@ _slurmd_init(void)
 	 */
 	if (cgroup_conf_init() != SLURM_SUCCESS)
 		log_flag(CGROUP, "cgroup conf was already initialized.");
+
+	/*
+	 * This will move the slurmd into its correct cgroup and reset its
+	 * constraints. Need to do before hwloc detection or it will detect
+	 * restrictions from incorrect cgroups.
+	 *
+	 * This needs to happen before _resource_spec_init() too.
+	 */
+	if (cgroup_g_init() != SLURM_SUCCESS) {
+		error("Unable to initialize cgroup plugin");
+		return SLURM_ERROR;
+	}
 
 	/*
 	 * auth/slurm calls conmgr_init and we need to apply conmgr params
@@ -2560,15 +2634,6 @@ _slurmd_init(void)
 	 * defaults and command line.
 	 */
 	_read_config();
-	/*
-	 * This needs to happen before _resource_spec_init where we will try to
-	 * attach the slurmd pid to system cgroup, and after _read_config to
-	 * have proper logging.
-	 */
-	if (cgroup_g_init() != SLURM_SUCCESS) {
-		error("Unable to initialize cgroup plugin");
-		return SLURM_ERROR;
-	}
 
 	if (!find_node_record(conf->node_name))
 		return SLURM_ERROR;
@@ -2621,6 +2686,8 @@ _slurmd_init(void)
 	/*
 	 * If configured, apply resource specialization
 	 */
+
+	/* Apply the configured CpuSpecList and MemSpecList */
 	_resource_spec_init();
 
 	_print_conf();

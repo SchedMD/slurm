@@ -1137,6 +1137,7 @@ typedef struct slurm_node_registration_status_msg {
 	char *instance_id;	/* cloud instance id */
 	char *instance_type;	/* cloud instance type */
 	uint32_t job_count;	/* number of associate job_id's */
+	uint64_t mem_spec_limit; /* memspec detected by the node */
 	char *node_name;
 	uint16_t boards;
 	char *os;

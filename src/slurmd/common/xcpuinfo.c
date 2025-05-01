@@ -64,6 +64,7 @@
 #include "xcpuinfo.h"
 
 #define _DEBUG 0
+#define MAX_CPUSET_STR 2048
 #define _MAX_SOCKET_INX 1024
 
 #if !defined(HAVE_HWLOC)
@@ -75,6 +76,8 @@ static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
 static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 #endif
 
+static char *restricted_cpus_as_mac = NULL;
+static hwloc_bitmap_t cpuset_tot = NULL;
 extern slurmd_conf_t *conf;
 
 /*
@@ -146,22 +149,53 @@ static int _core_child_count(hwloc_topology_t topology, hwloc_obj_t obj)
 	return count;
 }
 
+/*
+* This needs to run before _remove_ecores() as the call to
+* hwloc_topology_restrict() will change the view.
+*
+* There appears to be a bug in HWLOC 2.x where the IntelCore list
+* is restricted by the cgroup cpuset.
+*/
 static void _check_full_access(hwloc_topology_t *topology)
 {
 	hwloc_const_bitmap_t complete, allowed;
+	hwloc_bitmap_t restricted_cpus_mask;
 
 	complete = hwloc_topology_get_complete_cpuset(*topology);
 	allowed = hwloc_topology_get_allowed_cpuset(*topology);
 
-	if (!hwloc_bitmap_isequal(complete, allowed))
-		warning("restricted to a subset of cpus");
+	if (!hwloc_bitmap_isequal(complete, allowed)) {
+		/*
+		 * Get the cpus that are not set in both bitmaps and which
+		 * represent the cpus that slurm will not be able to run on,
+		 * a.k.a. CpuSpecList (without SlurmdOffSpec).
+		 */
+		restricted_cpus_mask = hwloc_bitmap_alloc();
+		hwloc_bitmap_andnot(restricted_cpus_mask, complete, allowed);
+		restricted_cpus_as_mac = xmalloc(MAX_CPUSET_STR);
+
+		/* And convert them into a string*/
+		hwloc_bitmap_list_snprintf(restricted_cpus_as_mac,
+					   MAX_CPUSET_STR,
+					   restricted_cpus_mask);
+		hwloc_bitmap_free(restricted_cpus_mask);
+
+		warning("%s: subset of restricted cpus (not available for jobs): %s",
+			__func__, restricted_cpus_as_mac);
+
+		/* We don't need this any further */
+		if (!(slurm_conf.task_plugin_param & SLURMD_SPEC_OVERRIDE))
+			xfree(restricted_cpus_as_mac);
+	} else {
+		debug2("%s: got full access to the cpuset topology", __func__);
+	}
 }
 
 static void _remove_ecores(hwloc_topology_t *topology)
 {
 #if HWLOC_API_VERSION > 0x00020401
 	int type_cnt;
-	hwloc_bitmap_t cpuset, cpuset_tot = NULL;
+	hwloc_bitmap_t cpuset;
 	char *pcore_freq = NULL;
 	bool found = false;
 
@@ -260,7 +294,6 @@ static void _remove_ecores(hwloc_topology_t *topology)
 	}
 
 	hwloc_topology_restrict(*topology, cpuset_tot, 0);
-	hwloc_bitmap_free(cpuset_tot);
 	hwloc_bitmap_free(cpuset);
 #endif
 }
@@ -1084,6 +1117,42 @@ end_it:
 	return rc;
 }
 
+static char *_remove_ecores_range(const char *orig_range)
+{
+	hwloc_bitmap_t r = NULL, rout = NULL;
+	char *pcores_range = NULL;
+
+	/*
+	 * This comes from _remove_ecores() and contains a bitmap of performance
+	 * cores.
+	 */
+	if (!cpuset_tot)
+		return NULL;
+
+	r = hwloc_bitmap_alloc();
+
+	if (hwloc_bitmap_list_sscanf(r, orig_range)) {
+		error("Cannot convert cpuset range %s into a hwloc bitmap",
+		      orig_range);
+		goto end_it;
+	}
+
+	rout = hwloc_bitmap_alloc();
+	hwloc_bitmap_and(rout, r, cpuset_tot);
+	pcores_range = xmalloc(MAX_CPUSET_STR);
+	hwloc_bitmap_list_snprintf(pcores_range, MAX_CPUSET_STR, rout);
+
+	debug2("Reduced original range from %s to %s to only include p-cores",
+	       orig_range, pcores_range);
+end_it:
+	hwloc_bitmap_free(r);
+	hwloc_bitmap_free(rout);
+	/* We do not need the cpuset_tot anymore */
+	hwloc_bitmap_free(cpuset_tot);
+
+	return pcores_range;
+}
+
 /*
  * Convert a machine-specific CPU range string into an abstract core range
  * string. Machine id to abstract id conversion is done using block_map_inv.
@@ -1103,6 +1172,15 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 	bitstr_t *absmap = NULL;
 	bitstr_t *absmap_core = NULL;
 	int rc = SLURM_SUCCESS;
+	char *pcores_range = NULL;
+
+	/*
+	 * In case we are in a system with ecores, remove them from in_range in
+	 * order to provide a correct abstract list.
+	 */
+	pcores_range = _remove_ecores_range(in_range);
+	if (!pcores_range)
+		pcores_range = in_range;
 
 	if (total_cores == -1) {
 		total_cores = conf->sockets * conf->cores;
@@ -1120,7 +1198,7 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 	}
 
 	/* string to bitmap conversion */
-	if (bit_unfmt(macmap, in_range)) {
+	if (bit_unfmt(macmap, pcores_range)) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -1136,7 +1214,7 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 			macid = (icore * conf->actual_threads) + ithread;
 			macid %= total_cpus;
 
-			/* Skip this machine CPU id if not in in_range */
+			/* Skip this machine CPU id if not in pcores_range */
 			if (!bit_test(macmap, macid))
 				continue;
 
@@ -1170,6 +1248,7 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 
 	/* free unused bitmaps */
 end_it:
+	xfree(pcores_range);
 	FREE_NULL_BITMAP(macmap);
 	FREE_NULL_BITMAP(absmap);
 	FREE_NULL_BITMAP(absmap_core);
@@ -1178,4 +1257,48 @@ end_it:
 		error("%s failed", __func__);
 
 	return rc;
+}
+
+extern char *xcpuinfo_get_cpuspec(void)
+{
+	char *res_abs_cores = NULL;
+	bitstr_t *res_core_bitmap = NULL;
+	bitstr_t *res_cpu_bitmap = NULL;
+	char *restricted_cpus_as_abs = NULL;
+
+	if (!restricted_cpus_as_mac)
+		return NULL;
+
+	xcpuinfo_mac_to_abs(restricted_cpus_as_mac, &restricted_cpus_as_abs);
+
+	debug2("%s: restricted cpus as machine: %s",
+	       __func__, restricted_cpus_as_mac);
+	debug2("%s: restricted cpus as abstract: %s",
+	       __func__, restricted_cpus_as_abs);
+
+	if (!restricted_cpus_as_abs || !restricted_cpus_as_abs[0])
+		return NULL;
+
+	res_core_bitmap = bit_alloc(MAX_CPU_CNT);
+	res_cpu_bitmap = bit_alloc(MAX_CPU_CNT);
+	bit_unfmt(res_core_bitmap, restricted_cpus_as_abs);
+
+	for (int core_off = 0; core_off < conf->cores; core_off++) {
+		if (!bit_test(res_core_bitmap, core_off))
+			continue;
+		for (int thread_off = 0; thread_off < conf->threads;
+		     thread_off++) {
+			int thread_inx =
+				(core_off * (int) conf->threads) + thread_off;
+			bit_set(res_cpu_bitmap, thread_inx);
+		}
+	}
+
+	res_abs_cores = xmalloc(MAX_CPU_CNT);
+	bit_fmt(res_abs_cores, MAX_CPU_CNT, res_cpu_bitmap);
+
+	xfree(restricted_cpus_as_abs);
+	FREE_NULL_BITMAP(res_core_bitmap);
+	FREE_NULL_BITMAP(res_cpu_bitmap);
+	return res_abs_cores;
 }

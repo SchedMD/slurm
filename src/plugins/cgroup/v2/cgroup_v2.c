@@ -2391,10 +2391,55 @@ extern char *cgroup_p_get_scope_path(void)
 	return stepd_scope_path;
 }
 
+static void _get_mem_recursive(xcgroup_t *cg, cgroup_limits_t *limits)
+{
+	char *mem_max = NULL, *tmp_str = NULL, file_path[PATH_MAX];
+	size_t mem_sz;
+
+	if (!xstrcmp(cg->path, "/"))
+		goto end;
+
+	/*
+	 * Break when there is no memory controller anymore.
+	 *
+	 * We check if the file exists before getting its value because at the
+	 * moment we do not have proper error propagation and common_get_param
+	 * will emit an error(), which in our case it would just be a
+	 * verification and not an error.
+	 */
+	snprintf(file_path, PATH_MAX, "%s/memory.max", cg->path);
+	if (access(file_path, F_OK)) {
+		log_flag(CGROUP, "Reached %s cgroup without memory controller",
+			 cg->path);
+		goto end;
+	}
+
+	if (common_cgroup_get_param(cg, "memory.max", &mem_max, &mem_sz) !=
+	    SLURM_SUCCESS)
+		goto end;
+
+	/* Check ancestor */
+	if (xstrstr(mem_max, "max")) {
+		tmp_str = xdirname(cg->path);
+		xfree(cg->path);
+		cg->path = tmp_str;
+		_get_mem_recursive(cg, limits);
+		if (limits->limit_in_bytes != NO_VAL64)
+			goto end;
+	} else {
+		/* found it! */
+		mem_max[mem_sz - 1] = '\0';
+		limits->limit_in_bytes = slurm_atoull(mem_max);
+	}
+end:
+	xfree(mem_max);
+}
+
 extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t ctl,
 					       cgroup_level_t level)
 {
 	cgroup_limits_t *limits;
+	xcgroup_t tmp_cg = { 0 };
 
 	/*
 	 * cgroup/v1 legacy compatibility: We have no such levels in cgroup/v2
@@ -2511,8 +2556,10 @@ extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t ctl,
 			limits->allow_mems[(limits->mems_size)-1] = '\0';
 		break;
 	case CG_MEMORY:
-		/* Not implemented. */
-		goto fail;
+		tmp_cg.path = xstrdup(int_cg[level].path);
+		_get_mem_recursive(&tmp_cg, limits);
+		xfree(tmp_cg.path);
+		break;
 	case CG_DEVICES:
 		/* Not implemented. */
 		goto fail;
