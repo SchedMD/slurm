@@ -133,8 +133,7 @@ static void _parse_args(int argc, char **argv)
 	if ((str = getenv("SACKD_PORT"))) {
 		if (parse_uint16(str, &port))
 			fatal("Invalid SACKD_PORT=%s", str);
-	} else
-		port = slurm_conf.slurmd_port;
+	}
 
 	if ((str = getenv("SACKD_SYSLOG_DEBUG"))) {
 		logopt.syslog_level = log_string2num(str);
@@ -298,6 +297,16 @@ static void _establish_config_source(void)
 	if (disable_reconfig)
 		fetch_type = CONFIG_REQUEST_SLURM_CONF;
 
+	/*
+	 * If --port / SACKD_PORT is not specified the default is to register
+	 * sackd for ctld reconfig updates with SlurmdPort, but at this point
+	 * the configuration hasn't been parsed yet so we pass 0 which will be
+	 * interpreted as SlurmdPort by slurmctld.
+	 *
+	 * This agreement needs to be in sync both in:
+	 * slurmctld/sack_mgr.c sackd_mgr_add_node() and
+	 * sackd/sackd.c _listen_for_reconf().
+	 */
 	while (!(configs = fetch_config(conf_server, fetch_type, port,
 					ca_cert_file))) {
 		error("Failed to load configs from slurmctld. Retrying in 10 seconds.");
@@ -357,13 +366,14 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 static void _listen_for_reconf(void)
 {
 	int rc = SLURM_SUCCESS;
+	uint16_t listen_port = port ? port : slurm_conf.slurmd_port;
 	static const conmgr_events_t events = {
 		.on_msg = _on_msg,
 	};
 
 	if (getenv("SACKD_RECONF_LISTEN_FD")) {
 		listen_fd = atoi(getenv("SACKD_RECONF_LISTEN_FD"));
-	} else if ((listen_fd = slurm_init_msg_engine_port(port)) < 0) {
+	} else if ((listen_fd = slurm_init_msg_engine_port(listen_port)) < 0) {
 		error("%s: failed to open port: %m", __func__);
 		return;
 	}
