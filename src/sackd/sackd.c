@@ -338,7 +338,7 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 
 	switch (msg->msg_type) {
 	case REQUEST_RECONFIGURE_SACKD:
-		info("reconfigure requested by slurmd");
+		info("reconfigure requested by slurmctld");
 		if (write_configs_to_conf_cache(msg->data, dir))
 			error("%s: failed to write configs to cache", __func__);
 		slurm_thread_create_detached(_try_to_reconfig, NULL);
