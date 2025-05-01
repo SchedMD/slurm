@@ -340,7 +340,7 @@ static int _cluster_check_def_acct(void *x, void *arg)
  */
 static bool _check_jobs_before_remove(remove_common_args_t *args)
 {
-	char *assoc_char = args->assoc_char;
+	char *assoc_char;
 	char *cluster_name = args->cluster_name;
 	mysql_conn_t *mysql_conn = args->mysql_conn;
 	list_t *ret_list = args->ret_list;
@@ -371,6 +371,11 @@ static bool _check_jobs_before_remove(remove_common_args_t *args)
 		"t0.id_qos",
 		"t0.id_wckey",
 	};
+
+	if (args->table == assoc_table)
+		assoc_char = args->name_char;
+	else
+		assoc_char = args->assoc_char;
 
 	xstrcatat(object, &pos, jassoc_req_inx[0]);
 	for (int i = 1; i < JASSOC_COUNT; i++)
