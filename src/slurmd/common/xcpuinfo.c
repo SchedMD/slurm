@@ -273,6 +273,7 @@ static void _remove_ecores(hwloc_topology_t *topology)
 	if (!found) {
 		hwloc_bitmap_free(cpuset);
 		hwloc_bitmap_free(cpuset_tot);
+		cpuset_tot = NULL;
 		return;
 	}
 
@@ -1127,6 +1128,9 @@ static char *_remove_ecores_range(const char *orig_range)
 #if HWLOC_API_VERSION > 0x00020401
 	hwloc_bitmap_t r = NULL, rout = NULL;
 
+	if (slurm_conf.conf_flags & CONF_FLAG_ECORE)
+		return NULL;
+
 	/*
 	 * This comes from _remove_ecores() and contains a bitmap of performance
 	 * cores.
@@ -1154,6 +1158,7 @@ end_it:
 	hwloc_bitmap_free(rout);
 	/* We do not need the cpuset_tot anymore */
 	hwloc_bitmap_free(cpuset_tot);
+	cpuset_tot = NULL;
 #endif
 	return pcores_range;
 }
