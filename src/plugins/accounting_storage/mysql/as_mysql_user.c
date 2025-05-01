@@ -2125,9 +2125,15 @@ extern int as_mysql_user_create_user_coords_list(mysql_conn_t *mysql_conn)
 	(void) list_for_each(as_mysql_cluster_list, _get_accts_coords,
 			     &create_string);
 
+	/* Empty as_mysql_cluster_list */
+	if (!create_string.query)
+		goto end_it;
+
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", create_string.query);
 	result = mysql_db_query_ret(mysql_conn, create_string.query, 0);
 	xfree(create_string.query);
+	if (!result)
+		goto end_it;
 
 	while ((row = mysql_fetch_row(result))) {
 		user = _process_coord_results(user, row[1], row[2],
@@ -2144,6 +2150,8 @@ extern int as_mysql_user_create_user_coords_list(mysql_conn_t *mysql_conn)
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", create_string.query);
 	result = mysql_db_query_ret(mysql_conn, create_string.query, 0);
 	xfree(create_string.query);
+	if (!result)
+		goto end_it;
 
 	while ((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
@@ -2170,6 +2178,8 @@ extern int as_mysql_user_create_user_coords_list(mysql_conn_t *mysql_conn)
 		result2 = mysql_db_query_ret(mysql_conn,
 					     create_string.query, 0);
 		xfree(create_string.query);
+		if (!result2)
+			continue;
 
 		while ((row2 = mysql_fetch_row(result2))) {
 			(void) slurmdb_add_coord_to_user(user, row2[0], 0);
@@ -2177,6 +2187,8 @@ extern int as_mysql_user_create_user_coords_list(mysql_conn_t *mysql_conn)
 		mysql_free_result(result2);
 	}
 	mysql_free_result(result);
+
+end_it:
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	return SLURM_SUCCESS;
