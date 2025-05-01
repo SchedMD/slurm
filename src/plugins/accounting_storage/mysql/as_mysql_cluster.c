@@ -539,6 +539,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			assoc->user = xstrdup("root");
 			assoc->acct = xstrdup("root");
 			assoc->is_def = 1;
+			assoc->flags = ASSOC_FLAG_BLOCK_ADD;
+
 			/*
 			 * If the cluster is registering then don't add to the
 			 * update_list.
