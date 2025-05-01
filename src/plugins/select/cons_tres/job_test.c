@@ -162,7 +162,7 @@ static void _block_by_topology(job_record_t *job_ptr,
 
 	if (enable_exclusive_topo == -1) {
 		enable_exclusive_topo = 0;
-		(void) topology_g_get(TOPO_DATA_EXCLUSIVE_TOPO,
+		(void) topology_g_get(TOPO_DATA_EXCLUSIVE_TOPO, NULL,
 				      &enable_exclusive_topo);
 	}
 

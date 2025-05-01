@@ -1638,7 +1638,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	if (loc_topo_record_cnt == -1) {
 		loc_topo_record_cnt = 0;
-		(void) topology_g_get(TOPO_DATA_REC_CNT, &loc_topo_record_cnt);
+		(void) topology_g_get(TOPO_DATA_REC_CNT, NULL,
+				      &loc_topo_record_cnt);
 	}
 
 	if (test_only)

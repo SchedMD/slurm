@@ -141,6 +141,16 @@ static int _get_plugin_index_by_type(char *type)
 	return g_context_num++;
 }
 
+static int _get_tctx_index_by_name(char *name)
+{
+	for (int i = 0; i < tctx_num; i++) {
+		if (!xstrcmp(name, tctx[i].name))
+			return i;
+	}
+
+	return -1;
+}
+
 /*
  * The topology plugin can not be changed via reconfiguration
  * due to background threads, job priorities, etc. slurmctld must
@@ -364,11 +374,21 @@ end:
 	return depth;
 }
 
-extern int topology_g_get(topology_data_t type, void *data)
+extern int topology_g_get(topology_data_t type, char *name, void *data)
 {
+	int tctx_idx = 0;
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
-	return (*(ops[tctx[0].idx].get))(type, data, tctx[0].plugin_ctx);
+	if (name) {
+		tctx_idx = _get_tctx_index_by_name(name);
+		if (tctx_idx < 0) {
+			error("%s: topology %s not active", __func__, name);
+			tctx_idx = 0;
+		}
+	}
+
+	return (*(ops[tctx[tctx_idx].idx].get))(type, data,
+						tctx[tctx_idx].plugin_ctx);
 }
 
 extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,

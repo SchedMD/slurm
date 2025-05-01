@@ -172,13 +172,14 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 
 /* Get various information from the topology plugin
  * IN - type see topology_data_t
+ * IN - topology name
  * OUT data
  *     type = TOPO_DATA_TOPOLOGY_PTR - the system topology - Returned value must
  *                                     be freed using topology_g_topology_free.
  * RET         - slurm error code
  * NOTE: returned value must be freed using topology_g_topology_free
  */
-extern int topology_g_get(topology_data_t type, void *data);
+extern int topology_g_get(topology_data_t type, char *name, void *data);
 
 /* pack a mchine independent form system topology
  * OUT buffer  - buffer with node topology appended
