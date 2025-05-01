@@ -333,6 +333,7 @@ extern slurm_ctl_conf_info_msg_t *g_ctl_info_ptr;
 extern job_step_info_response_msg_t *g_step_info_ptr;
 extern topo_info_response_msg_t *g_topo_info_msg_ptr;
 extern switch_record_bitmaps_t *g_switch_nodes_maps;
+extern int g_switch_nodes_maps_count;
 extern popup_positioner_t main_popup_positioner[];
 extern popup_pos_t popup_pos;
 extern char *federation_name;

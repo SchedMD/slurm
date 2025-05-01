@@ -40,7 +40,7 @@
 
 #include "src/common/xstring.h"
 
-static void _topo_add_dist(uint32_t *dist, int inx)
+static void _topo_add_dist(uint32_t *dist, int inx, tree_context_t *ctx)
 {
 	for (int i = 0; i < ctx->switch_count; i++) {
 		if (ctx->switch_table[inx].switches_dist[i] == INFINITE ||
@@ -59,7 +59,8 @@ static void _topo_add_dist(uint32_t *dist, int inx)
  */
 static int _topo_compare_switches(int i, int j, int rem_nodes,
 				  int *switch_node_cnt, int rem_cpus,
-				  uint32_t *switch_cpu_cnt, bool *i_fit_out)
+				  uint32_t *switch_cpu_cnt, bool *i_fit_out,
+				  tree_context_t *ctx)
 {
 	while (1) {
 		bool i_fit = ((switch_node_cnt[i] >= rem_nodes) &&
@@ -106,7 +107,8 @@ static int _topo_compare_switches(int i, int j, int rem_nodes,
 
 static void _topo_choose_best_switch(uint32_t *dist, int *switch_node_cnt,
 				     int rem_nodes, uint32_t *switch_cpu_cnt,
-				     int rem_cpus, int i, int *best_switch)
+				     int rem_cpus, int i, int *best_switch,
+				     tree_context_t *ctx)
 {
 	int tcs = 0;
 	bool i_fit = false;
@@ -122,7 +124,7 @@ static void _topo_choose_best_switch(uint32_t *dist, int *switch_node_cnt,
 
 	tcs = _topo_compare_switches(i, *best_switch, rem_nodes,
 				     switch_node_cnt, rem_cpus, switch_cpu_cnt,
-				     &i_fit);
+				     &i_fit, ctx);
 	if (((dist[i] < dist[*best_switch]) && i_fit) ||
 	    ((dist[i] == dist[*best_switch]) && (tcs > 0))) {
 		/*
@@ -170,6 +172,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	uint32_t min_nodes = topo_eval->min_nodes;
 	uint32_t req_nodes = topo_eval->req_nodes;
 	uint64_t maxtasks;
+	tree_context_t *ctx = topo_eval->tctx->plugin_ctx;
 
 	topo_eval->avail_cpus = 0;
 
@@ -748,7 +751,7 @@ fini:
 }
 
 static void _decrement_node_cnt(int num_nodes_taken, int switch_index,
-				int *switch_node_cnt)
+				int *switch_node_cnt, tree_context_t *ctx)
 {
 	for (int i = switch_index; i >= 0; i = ctx->switch_table[i].parent) {
 		if (switch_node_cnt[i] <= num_nodes_taken) {
@@ -802,6 +805,7 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 	uint32_t req_nodes = topo_eval->req_nodes;
 	uint32_t org_max_nodes = topo_eval->max_nodes;
 	uint64_t maxtasks;
+	tree_context_t *ctx = topo_eval->tctx->plugin_ctx;
 
 	topo_eval->avail_cpus = 0;
 
@@ -1240,8 +1244,8 @@ try_again:
 				}
 			}
 
-			_decrement_node_cnt(num_nodes_taken, i,
-					    switch_node_cnt);
+			_decrement_node_cnt(num_nodes_taken, i, switch_node_cnt,
+					    ctx);
 		}
 	}
 
@@ -1249,7 +1253,7 @@ try_again:
 
 	for (i = 0; i < ctx->switch_count; i++) {
 		if (switch_required[i])
-			_topo_add_dist(switches_dist, i);
+			_topo_add_dist(switches_dist, i, ctx);
 	}
 	/* Add additional resources as required from additional leaf switches */
 	prev_rem_nodes = rem_nodes + 1;
@@ -1266,12 +1270,13 @@ try_again:
 				continue;
 			_topo_choose_best_switch(switches_dist, switch_node_cnt,
 						 rem_nodes, switch_cpu_cnt,
-						 rem_cpus, i, &best_switch_inx);
+						 rem_cpus, i, &best_switch_inx,
+						 ctx);
 		}
 		if (best_switch_inx == -1)
 			break;
 
-		_topo_add_dist(switches_dist, best_switch_inx);
+		_topo_add_dist(switches_dist, best_switch_inx, ctx);
 		/*
 		 * NOTE: Ideally we would add nodes in order of resource
 		 * availability rather than in order of bitmap position, but
@@ -1307,7 +1312,7 @@ try_again:
 			}
 		}
 		_decrement_node_cnt(switch_node_cnt[best_switch_inx],
-				    best_switch_inx, switch_node_cnt);
+				    best_switch_inx, switch_node_cnt, ctx);
 		switch_node_cnt[best_switch_inx] = 0;	/* Used all */
 	}
 	if ((min_rem_nodes <= 0) && (rem_cpus <= 0) &&
@@ -1423,8 +1428,8 @@ extern int eval_nodes_tree(topology_eval_t *topo_eval)
 		set = true;
 	}
 
-	xassert(ctx->switch_count);
-	xassert(ctx->switch_table);
+	xassert(((tree_context_t *) topo_eval->tctx->plugin_ctx)->switch_count);
+	xassert(((tree_context_t *) topo_eval->tctx->plugin_ctx)->switch_table);
 
 	if (!details_ptr->contiguous &&
 	    ((topo_optional == false) || topo_eval->job_ptr->req_switch)) {

@@ -61,12 +61,11 @@ static bool _bblocks_in_same_block(int block_inx1, int block_inx2,
 	return false;
 }
 
-static void _choose_best_bblock(bitstr_t *bblock_required,
-				int llblock_level, int rem_nodes,
-				uint32_t *nodes_on_bblock,
-				uint32_t *nodes_on_llblock,
-				int i, bool *best_same_block,
-				bool *best_fit, int *best_bblock_inx)
+static void _choose_best_bblock(bitstr_t *bblock_required, int llblock_level,
+				int rem_nodes, uint32_t *nodes_on_bblock,
+				uint32_t *nodes_on_llblock, int i,
+				bool *best_same_block, bool *best_fit,
+				int *best_bblock_inx, block_context_t *ctx)
 {
 	bool fit = (nodes_on_bblock[i] >= rem_nodes);
 	bool same_block = false;
@@ -213,6 +212,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	int block_level;
 	int bblock_per_llblock;
 	uint64_t maxtasks;
+	block_context_t *ctx = topo_eval->tctx->plugin_ctx;
 
 	int segment_cnt = 1, rem_segment_cnt = 0;
 	bitstr_t *orig_node_map = bit_copy(topo_eval->node_map);
@@ -816,7 +816,7 @@ next_segment:
 					    rem_nodes, nodes_on_bblock,
 					    nodes_on_llblock, i,
 					    &best_same_block, &best_fit,
-					    &best_bblock_inx);
+					    &best_bblock_inx, ctx);
 		}
 		log_flag(SELECT_TYPE, "%s: rem_nodes:%d  best_bblock_inx:%d",
 			 __func__, rem_nodes, best_bblock_inx);

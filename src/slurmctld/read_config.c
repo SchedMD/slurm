@@ -1642,6 +1642,11 @@ extern int read_slurm_conf(int recover)
 
 	_sync_part_prio();
 	_build_part_bitmaps(); /* Must be called after build_feature_list_*() */
+	if (list_for_each(part_list, set_part_topology_idx, NULL) < 0) {
+		error("Invalid partition topology");
+		error_code = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		goto end_it;
+	}
 
 	if (select_g_node_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize node selection plugin state, Clean start required.");

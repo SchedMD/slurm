@@ -12924,6 +12924,35 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_topo_info_request_msg(topo_info_request_msg_t *msg,
+					buf_t *buffer,
+					uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		packstr(msg->name, buffer);
+	}
+}
+
+static int _unpack_topo_info_request_msg(topo_info_request_msg_t **msg,
+					 buf_t *buffer,
+					 uint16_t protocol_version)
+{
+	topo_info_request_msg_t *msg_ptr =
+		xmalloc(sizeof(topo_info_request_msg_t));
+
+	*msg = msg_ptr;
+	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg_ptr->name, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_topo_request_msg(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
 static void _pack_stats_request_msg(stats_info_request_msg_t *msg, buf_t *buffer,
 				    uint16_t protocol_version)
 {
@@ -14262,7 +14291,6 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_ACCT_GATHER_UPDATE:
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
-	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_FED_INFO:
 	case SRUN_PING:
@@ -14650,6 +14678,11 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 			buffer,
 			msg->protocol_version);
 		break;
+	case REQUEST_TOPO_INFO:
+		_pack_topo_info_request_msg((topo_info_request_msg_t *)
+						    msg->data,
+					    buffer, msg->protocol_version);
+		break;
 	case RESPONSE_TOPO_INFO:
 		_pack_topo_info_msg(
 			(topo_info_response_msg_t *)msg->data, buffer,
@@ -14923,7 +14956,6 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_ACCT_GATHER_UPDATE:
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
-	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_FED_INFO:
 	case SRUN_PING:
@@ -15344,6 +15376,12 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 			(accounting_update_msg_t **)&msg->data,
 			buffer,
 			msg->protocol_version);
+		break;
+	case REQUEST_TOPO_INFO:
+		rc = _unpack_topo_info_request_msg((topo_info_request_msg_t *
+							    *) &msg->data,
+						   buffer,
+						   msg->protocol_version);
 		break;
 	case RESPONSE_TOPO_INFO:
 		rc = _unpack_topo_info_msg(

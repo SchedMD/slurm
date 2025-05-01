@@ -1126,6 +1126,7 @@ int main(int argc, char **argv)
 	jobacct_gather_fini();
 	acct_gather_conf_destroy();
 	select_g_fini();
+	topology_g_destroy_config();
 	topology_g_fini();
 	auth_g_fini();
 	hash_g_fini();

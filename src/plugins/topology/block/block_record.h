@@ -61,11 +61,9 @@ typedef struct {
 	int ablock_count;
 } block_context_t;
 
-extern block_context_t *ctx;
-
 /* Free all memory associated with block_record_table structure */
-extern void block_record_table_destroy(void);
+extern void block_record_table_destroy(block_context_t *ctx);
 
-extern void block_record_validate(void);
+extern int block_record_validate(topology_ctx_t *tctx);
 
 #endif

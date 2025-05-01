@@ -71,6 +71,8 @@ typedef enum {
 	DATA_PARSER_UINT64_NO_VAL_STRUCT, /* UINT64_NO_VAL_t */
 	DATA_PARSER_UINT64_NO_VAL_STRUCT_PTR, /* UINT64_NO_VAL_t* */
 	DATA_PARSER_INT32, /* int32_t */
+	DATA_PARSER_INT32_PTR, /* int32_t* */
+	DATA_PARSER_INT32_LIST, /* list_t* int32_t* */
 	DATA_PARSER_INT64, /* int64_t */
 	DATA_PARSER_INT64_NO_VAL, /* int64_t - NO_VAL64 or INFINTE64 */
 	DATA_PARSER_INT64_NO_VAL_STRUCT, /* INT64_NO_VAL_t */
@@ -619,6 +621,22 @@ typedef enum {
 	DATA_PARSER_PART_PRIO, /* part_prio_t */
 	DATA_PARSER_PART_PRIO_PTR,
 	DATA_PARSER_NODE_CERT_FLAGS,
+	DATA_PARSER_TOPOLOGY_CONF, /* topology_ctx_t */
+	DATA_PARSER_TOPOLOGY_CONF_PTR, /* topology_ctx_t* */
+	DATA_PARSER_TOPOLOGY_CONF_ARRAY, /* topology_ctx_array_t */
+	DATA_PARSER_TOPOLOGY_TREE, /* topology_ctx_t topology/tree plugin */
+	DATA_PARSER_TOPOLOGY_BLOCK, /* topology_ctx_t topology/block plugin */
+	DATA_PARSER_TOPOLOGY_FLAT, /* topology_ctx_t topology/flat plugin */
+	DATA_PARSER_TOPOLOGY_TREE_CONFIG, /* topology_tree_config_t */
+	DATA_PARSER_TOPOLOGY_TREE_CONFIG_PTR, /* topology_tree_config_t* */
+	DATA_PARSER_TOPOLOGY_TREE_CONFIG_ARRAY, /* topology_tree_config_t->switch_configs,config_cnt */
+	DATA_PARSER_TOPOLOGY_BLOCK_CONFIG, /* topology_block_config_t */
+	DATA_PARSER_TOPOLOGY_BLOCK_CONFIG_PTR, /* topology_block_config_t* */
+	DATA_PARSER_TOPOLOGY_BLOCK_CONFIG_ARRAY, /* topology_block_config_t->block_configs,config_cnt */
+	DATA_PARSER_SWITCH_CONFIG, /* slurm_conf_switches_t */
+	DATA_PARSER_SWITCH_CONFIG_PTR, /* slurm_conf_switches_t* */
+	DATA_PARSER_BLOCK_CONFIG, /* slurm_conf_block_t */
+	DATA_PARSER_BLOCK_CONFIG_PTR, /* slurm_conf_block_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

@@ -50,8 +50,49 @@ typedef enum {
 	TOPO_DATA_TOPOLOGY_PTR,
 	TOPO_DATA_REC_CNT,
 	TOPO_DATA_EXCLUSIVE_TOPO,
+	TOPO_DATA_TCTX_IDX,
 } topology_data_t;
 
+typedef struct slurm_conf_block {
+	char *block_name; /* name of this block */
+	char *nodes; /* names of nodes directly connect to this block */
+} slurm_conf_block_t;
+
+typedef struct slurm_conf_switches {
+	uint32_t link_speed; /* link speed, arbitrary units */
+	char *nodes; /* names of nodes directly connect to
+		      * this switch, if any */
+	char *switch_name; /* name of this switch */
+	char *switches; /* names if child switches directly
+			 * connected to this switch, if any */
+} slurm_conf_switches_t;
+
+typedef struct topology_ctx {
+	bool cluster_default; /* topo used when operation not tied with part */
+	void *config; /* topology_tree_config_t*, topology_block_config_t*, or
+		       * NULL based on plugin value. */
+	int idx;
+	char *name;
+	char *plugin;
+	char *topo_conf;
+	void *plugin_ctx;
+} topology_ctx_t;
+
+typedef struct {
+	int config_cnt; /* size of config array */
+	slurm_conf_switches_t *switch_configs; /* array of switch configs */
+} topology_tree_config_t;
+
+typedef struct {
+	int config_cnt; /* size of config array */
+	slurm_conf_block_t *block_configs; /* array of block configs */
+	list_t *block_sizes; /* list of int* */
+} topology_block_config_t;
+
+typedef struct {
+	topology_ctx_t *tctx; /* array of topology_ctx_t */
+	int tctx_num; /* size of array */
+} topology_ctx_array_t;
 
 typedef struct topology_eval {
 	bitstr_t **avail_core; /* available core bitmap, UPDATED */
@@ -72,9 +113,8 @@ typedef struct topology_eval {
 	uint32_t req_nodes; /* number of requested nodes */
 	bool trump_others; /* If ->eval_nodes and set do not consider other
 			    * algorithms. Only use ->eval_nodes. */
+	topology_ctx_t *tctx;
 } topology_eval_t;
-
-extern char *topo_conf;
 
 /*****************************************************************************\
  *  Slurm topology functions
@@ -111,13 +151,17 @@ extern int topology_get_plugin_id(void);
  */
 extern int topology_g_build_config(void);
 
+extern int topology_g_destroy_config(void);
+
 /*
  * topology_g_eval_nodes - Evaluate topology based on the topology plugin when
  *                         selecting nodes in the select plugin.
  */
 extern int topology_g_eval_nodes(topology_eval_t *topo_eval);
 
-extern int topology_g_whole_topo(bitstr_t *node_mask);
+extern int topology_g_whole_topo(bitstr_t *node_mask, int idx);
+
+extern bool topology_g_whole_topo_enabled(int idx);
 
 /*
  * topology_g_get_bitmap - Get bitmap of nodes in topo group
@@ -165,13 +209,14 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
 
 /* Get various information from the topology plugin
  * IN - type see topology_data_t
+ * IN - topology name
  * OUT data
  *     type = TOPO_DATA_TOPOLOGY_PTR - the system topology - Returned value must
  *                                     be freed using topology_g_topology_free.
  * RET         - slurm error code
  * NOTE: returned value must be freed using topology_g_topology_free
  */
-extern int topology_g_get(topology_data_t type, void *data);
+extern int topology_g_get(topology_data_t type, char *name, void *data);
 
 /* pack a mchine independent form system topology
  * OUT buffer  - buffer with node topology appended
@@ -206,4 +251,15 @@ extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo);
  * RET: fragmentation
  */
 extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask);
+
+/* Note this does not free tctx->tctx */
+extern void free_topology_ctx(topology_ctx_t *tctx_ptr);
+
+extern void free_topology_block_config(topology_block_config_t *config);
+
+extern void free_topology_tree_config(topology_tree_config_t *config);
+
+extern void free_block_conf(slurm_conf_block_t *config);
+
+extern void free_switch_conf(slurm_conf_switches_t *config);
 #endif

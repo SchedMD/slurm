@@ -38,11 +38,6 @@
 #include "src/common/xstring.h"
 #include <math.h>
 
-typedef struct slurm_conf_block {
-	char *block_name; /* name of this block */
-	char *nodes; /* names of nodes directly connect to this block */
-} slurm_conf_block_t;
-
 static bool allow_gaps = false;
 
 static s_p_hashtbl_t *conf_hashtbl = NULL;
@@ -83,7 +78,8 @@ static int _parse_block(void **dest, slurm_parser_enum_t type,
 }
 
 /* Return count of block configuration entries read */
-static int _read_topo_file(slurm_conf_block_t **ptr_array[])
+static int _read_topo_file(slurm_conf_block_t **ptr_array[], char *topo_conf,
+			   block_context_t *ctx)
 {
 	static s_p_options_t block_options[] = {
 		{"AllowGaps", S_P_BOOLEAN},
@@ -161,7 +157,7 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[])
 	return count;
 }
 
-static void _log_blocks(void)
+static void _log_blocks(block_context_t *ctx)
 {
 	int i;
 	block_record_t *block_ptr;
@@ -178,7 +174,7 @@ static void _log_blocks(void)
 	}
 }
 
-extern void block_record_table_destroy(void)
+extern void block_record_table_destroy(block_context_t *ctx)
 {
 	if (!ctx->block_record_table)
 		return;
@@ -206,9 +202,22 @@ static int _cmp_block_level(const void *x, const void *y)
 	return 0;
 }
 
-extern void block_record_validate(void)
+static int _list_to_bitmap(void *x, void *arg)
 {
-	slurm_conf_block_t *ptr, **ptr_array;
+	int *size = x;
+	bitstr_t *block_levels = arg;
+
+	if (*size >= MAX_BLOCK_LEVELS)
+		return 1;
+
+	bit_set(block_levels, *size);
+
+	return 0;
+}
+
+extern int block_record_validate(topology_ctx_t *tctx)
+{
+	slurm_conf_block_t *ptr, **ptr_array, **ptr_array_mem = NULL;
 	int i, j;
 	block_record_t *block_ptr, *prior_ptr;
 	hostlist_t *invalid_hl = NULL;
@@ -216,14 +225,38 @@ extern void block_record_validate(void)
 	int level = 0;
 	int record_inx = 0;
 	int *aggregated_inx;
+	block_context_t *ctx = xmalloc(sizeof(*ctx));
 
-	block_record_table_destroy();
+	if (tctx->config) {
+		topology_block_config_t *block_config = tctx->config;
+		ctx->block_count = block_config->config_cnt;
+		ptr_array_mem =
+			xcalloc(ctx->block_count, sizeof(*ptr_array_mem));
+		ptr_array = ptr_array_mem;
+		for (int i = 0; i < ctx->block_count; i++)
+			ptr_array[i] = &block_config->block_configs[i];
 
-	ctx->block_count = _read_topo_file(&ptr_array);
+		ctx->block_levels = bit_alloc(MAX_BLOCK_LEVELS);
+
+		if (!list_count(block_config->block_sizes)) {
+			bit_nset(ctx->block_levels, 0, 4);
+		} else {
+			list_for_each(block_config->block_sizes,
+				      _list_to_bitmap, ctx->block_levels);
+			bit_set(ctx->block_levels, 0);
+		}
+
+	} else {
+		ctx->block_count =
+			_read_topo_file(&ptr_array, tctx->topo_conf, ctx);
+	}
+
 	if (ctx->block_count == 0) {
 		error("No blocks configured");
 		s_p_hashtbl_destroy(conf_hashtbl);
-		return;
+		xfree(ctx);
+		xfree(ptr_array_mem);
+		return SLURM_ERROR;
 	}
 	/*
 	 *  Allocate more than enough space for all aggregated blocks
@@ -379,5 +412,9 @@ extern void block_record_validate(void)
 		hostlist_destroy(hl);
 		xfree(tmp_list);
 	}
-	_log_blocks();
+
+	_log_blocks(ctx);
+	tctx->plugin_ctx = ctx;
+	xfree(ptr_array_mem);
+	return SLURM_SUCCESS;
 }

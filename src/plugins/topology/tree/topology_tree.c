@@ -98,6 +98,7 @@ const char plugin_name[]        = "topology tree plugin";
 const char plugin_type[]        = "topology/tree";
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_TREE;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+const bool supports_exclusive_topo = false;
 
 typedef topo_info_t topoinfo_switch_t;
 
@@ -106,15 +107,12 @@ typedef struct topoinfo_tree {
 	topoinfo_switch_t *topo_array;	/* the switch topology records */
 } topoinfo_tree_t;
 
-tree_context_t *ctx = NULL;
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  *	are called.  Put global initialization here.
  */
 extern int init(void)
 {
-	ctx = xmalloc(sizeof(*ctx));
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -125,8 +123,6 @@ extern int init(void)
  */
 extern int fini(void)
 {
-	switch_record_table_destroy();
-	xfree(ctx);
 	return SLURM_SUCCESS;
 }
 
@@ -134,10 +130,20 @@ extern int fini(void)
  * topo_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
  */
-extern int topology_p_build_config(void)
+extern int topology_p_build_config(topology_ctx_t *tctx)
 {
 	if (node_record_count)
-		switch_record_validate();
+		return switch_record_validate(tctx);
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_destroy_config(topology_ctx_t *tctx)
+{
+	tree_context_t *ctx = tctx->plugin_ctx;
+
+	switch_record_table_destroy(ctx);
+	xfree(tctx->plugin_ctx);
+
 	return SLURM_SUCCESS;
 }
 
@@ -149,8 +155,9 @@ extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 	return common_topo_choose_nodes(topo_eval);
 }
 
-extern int topology_p_whole_topo(bitstr_t *node_mask)
+extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 {
+	tree_context_t *ctx = tctx;
 	for (int i = 0; i < ctx->switch_count; i++) {
 		if (bit_overlap_any(ctx->switch_table[i].node_bitmap,
 				    node_mask)) {
@@ -168,8 +175,10 @@ extern int topology_p_whole_topo(bitstr_t *node_mask)
  * IN name of block
  * RET bitmap of nodes from ctx->switch_table (do not free)
  */
-extern bitstr_t *topology_p_get_bitmap(char *name)
+extern bitstr_t *topology_p_get_bitmap(char *name, void *tctx)
 {
+	tree_context_t *ctx = tctx;
+
 	for (int i = 0; i < ctx->switch_count; i++) {
 		if (!xstrcmp(ctx->switch_table[i].name, name)) {
 			return ctx->switch_table[i].node_bitmap;
@@ -183,19 +192,24 @@ extern bitstr_t *topology_p_get_bitmap(char *name)
  * When TopologyParam=SwitchAsNodeRank is set, this plugin assigns a unique
  * node_rank for all nodes belonging to the same leaf switch.
  */
-extern bool topology_p_generate_node_ranking(void)
+extern bool topology_p_generate_node_ranking(topology_ctx_t *tctx)
 {
 	/* By default, node_rank is 0, so start at 1 */
 	int switch_rank = 1;
+	tree_context_t *ctx;
 
 	if (!xstrcasestr(slurm_conf.topology_param, "SwitchAsNodeRank"))
 		return false;
 
 	/* Build a temporary topology to be able to find the leaf switches. */
-	switch_record_validate();
+	switch_record_validate(tctx);
 
-	if (ctx->switch_count == 0)
+	ctx = tctx->plugin_ctx;
+
+	if (ctx->switch_count == 0) {
+		topology_p_destroy_config(tctx);
 		return false;
+	}
 
 	for (int sw = 0; sw < ctx->switch_count; sw++) {
 		/* skip if not a leaf switch */
@@ -214,8 +228,7 @@ extern bool topology_p_generate_node_ranking(void)
 	}
 
 	/* Discard the temporary topology since it is using node bitmaps */
-	switch_record_table_destroy();
-	xfree(ctx);
+	topology_p_destroy_config(tctx);
 
 	return true;
 }
@@ -229,10 +242,11 @@ extern bool topology_p_generate_node_ranking(void)
  *      pattern : switch.switch.switch.node
  */
 extern int topology_p_get_node_addr(char *node_name, char **paddr,
-				    char **ppattern)
+				    char **ppattern, void *tctx)
 {
 	node_record_t *node_ptr;
 	hostlist_t *sl = NULL;
+	tree_context_t *ctx = tctx;
 
 	int s_max_level = 0;
 	int i, j;
@@ -303,7 +317,7 @@ extern int topology_p_get_node_addr(char *node_name, char **paddr,
  */
 static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
 				   int *msg_count, hostlist_t ***sp_hl,
-				   int *count)
+				   int *count, tree_context_t *ctx)
 {
 	int lst_count = 0, sw_count;
 	bitstr_t *fwd_bitmap = NULL;		/* nodes in forward list */
@@ -343,7 +357,8 @@ static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
 }
 
 extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
-				     int *count, uint16_t tree_width)
+				     int *count, uint16_t tree_width,
+				     void *tctx)
 {
 	int i, j, k, msg_count, switch_count, switch_nodes_cnt, depth = 0,
 		upper_switch_level = 0;
@@ -353,6 +368,7 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	bitstr_t *switch_bitmap = NULL;		/* switches  */
 	slurmctld_lock_t node_read_lock = { .node = READ_LOCK };
 	static pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
+	tree_context_t *ctx = tctx;
 
 	if (!common_topo_route_tree()) {
 		return common_topo_split_hostlist_treewidth(
@@ -485,7 +501,7 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		if (!bit_test(switch_bitmap, j))
 			continue;
 		_subtree_split_hostlist(nodes_bitmap, j, &msg_count, sp_hl,
-					count);
+					count, ctx);
 	}
 	xassert(msg_count == bit_set_count(nodes_bitmap));
 	if (msg_count) {
@@ -535,9 +551,10 @@ extern int topology_p_topology_free(void *topoinfo_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int topology_p_get(topology_data_t type, void *data)
+extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 {
 	int rc = SLURM_SUCCESS;
+	tree_context_t *ctx = tctx;
 
 	switch (type) {
 	case TOPO_DATA_TOPOLOGY_PTR:
@@ -708,7 +725,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask)
+extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask, void *tcxt)
 {
 	return 0;
 }

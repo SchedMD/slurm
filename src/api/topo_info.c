@@ -58,19 +58,21 @@
  * slurm_load_topo - issue RPC to get slurm all switch topology configuration
  *	information
  * IN node_info_msg_pptr - place to store a node configuration pointer
+ * IN name - topolgy name
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_topo_info_msg
  */
-extern int slurm_load_topo(topo_info_response_msg_t **resp)
+extern int slurm_load_topo(topo_info_response_msg_t **resp, char *name)
 {
 	int rc;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
+	topo_info_request_msg_t data = { .name = name };
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_TOPO_INFO;
-	req_msg.data     = NULL;
+	req_msg.data = &data;
 
 	topology_g_init();
 

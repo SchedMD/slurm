@@ -4904,6 +4904,7 @@ static void _slurm_rpc_trigger_pull(slurm_msg_t *msg)
 static void _slurm_rpc_get_topo(slurm_msg_t *msg)
 {
 	topo_info_response_msg_t *topo_resp_msg;
+	topo_info_request_msg_t *topo_req_msg = msg->data;
 	/* Locks: read node lock */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
@@ -4912,7 +4913,7 @@ static void _slurm_rpc_get_topo(slurm_msg_t *msg)
 	topo_resp_msg = xmalloc(sizeof(topo_info_response_msg_t));
 	START_TIMER;
 	lock_slurmctld(node_read_lock);
-	(void) topology_g_get(TOPO_DATA_TOPOLOGY_PTR,
+	(void) topology_g_get(TOPO_DATA_TOPOLOGY_PTR, topo_req_msg->name,
 			      &topo_resp_msg->topo_info);
 	unlock_slurmctld(node_read_lock);
 	END_TIMER2(__func__);

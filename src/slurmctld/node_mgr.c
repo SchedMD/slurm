@@ -4567,7 +4567,7 @@ extern void node_mgr_make_node_blocked(job_record_t *job_ptr, bool set)
 		return;
 
 	tmp_bitmap = bit_copy(job_ptr->job_resrcs->node_bitmap);
-	topology_g_whole_topo(tmp_bitmap);
+	topology_g_whole_topo(tmp_bitmap, job_ptr->part_ptr->topology_idx);
 	bit_and_not(tmp_bitmap, job_ptr->job_resrcs->node_bitmap);
 
 	for (int i = 0; (node_ptr = next_node_bitmap(tmp_bitmap, &i)); i++) {

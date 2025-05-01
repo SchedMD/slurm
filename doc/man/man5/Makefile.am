@@ -12,7 +12,8 @@ man5_MANS = \
 	oci.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
-	topology.conf.5
+	topology.conf.5 \
+	topology.yaml.5
 
 if HAVE_MAN2HTML
 
@@ -28,7 +29,8 @@ html_DATA = \
 	oci.conf.html \
 	slurm.conf.html \
 	slurmdbd.conf.html \
-	topology.conf.html
+	topology.conf.html \
+	topology.yaml.html
 
 MOSTLYCLEANFILES = ${html_DATA}
 

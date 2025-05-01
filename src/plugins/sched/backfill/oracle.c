@@ -94,7 +94,8 @@ static void _add_slot(job_record_t *job_ptr, bitstr_t *job_bitmap,
 		COPY_BITMAP(new_slot->job_mask, job_bitmap);
 
 		if (IS_JOB_WHOLE_TOPO(job_ptr))
-			topology_g_whole_topo(new_slot->job_mask);
+			topology_g_whole_topo(new_slot->job_mask,
+					      job_ptr->part_ptr->topology_idx);
 
 		bit_not(new_slot->job_mask);
 

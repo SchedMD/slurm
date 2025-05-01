@@ -2700,6 +2700,7 @@ _slurmd_fini(void)
 	node_fini2();
 	gres_fini();
 	prep_g_fini();
+	topology_g_destroy_config();
 	topology_g_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	tls_g_fini();

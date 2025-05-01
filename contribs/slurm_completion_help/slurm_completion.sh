@@ -4216,6 +4216,7 @@ function __scontrol_update_partitionname() {
 		"reqresv="
 		"shared="
 		"state="
+		"topology="
 		"tresbillingweights="
 	)
 	local job_defaults=(

@@ -8,6 +8,7 @@ topology.conf \-  Slurm configuration file for the topology plugins
 \fBtopology.conf\fP is an ASCII file which describes the
 cluster's network topology for optimized job resource allocation.
 The file will always be located in the same directory as the \fBslurm.conf\fR.
+\fBNOTE\fR: This file is ignored if topology.yaml exists.
 .LP
 Parameter names are case insensitive.
 Any text following a "#" in the configuration file is treated
@@ -175,4 +176,4 @@ details.
 
 .SH "SEE ALSO"
 .LP
-\fBslurm.conf\fR(5)
+\fBslurm.conf\fR(5), \fBtopology.yaml\fR(5)
