@@ -242,10 +242,16 @@ static bool _is_cgroup2_mount(char *path)
 		}
 	}
 
+	if (!rc) {
+		error("The cgroup mountpoint %s is not mounted", path);
+		goto end;
+	}
+
 	minfo = _get_root_mount_mountinfo(path, "self");
 	if (xstrcmp(minfo, "/"))
 		error("The cgroup mountpoint does not align with the current namespace. Please, ensure all namespaces are correctly mounted. Refer to the slurm cgroup_v2 documentation.");
 
+end:
 	xfree(minfo);
 	endmntent(fp);
 	return rc;
@@ -409,6 +415,18 @@ static char *_get_init_cg_path()
 static void _set_int_cg_ns()
 {
 	int_cg_ns.init_cg_path = _get_init_cg_path();
+
+	/*
+	 * When started manually in a container and reconfiguring, if we are pid
+	 * 1 we can directly get the cgroup as it has been configured in our
+	 * previous instance.
+	 */
+	if (slurm_cgroup_conf.ignore_systemd && getenv("SLURMD_RECONF") &&
+	    (getpid() == 1)) {
+		stepd_scope_path = xdirname(int_cg_ns.init_cg_path);
+		int_cg_ns.mnt_point = xstrdup(int_cg_ns.init_cg_path);
+		return;
+	}
 
 #ifdef MULTIPLE_SLURMD
 	xstrfmtcat(stepd_scope_path, "%s/%s/%s_%s.scope",
@@ -1547,6 +1565,32 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
+static bool _pid_in_root(char *pid_str)
+{
+	char *cg_path, *tmp_str, file_path[PATH_MAX];
+	bool rc = false;
+
+	cg_path = _get_proc_cg_path(pid_str);
+	tmp_str = xdirname(cg_path);
+	xfree(cg_path);
+	cg_path = tmp_str;
+	tmp_str = NULL;
+
+	if (snprintf(file_path, PATH_MAX, "%s/cgroup.procs", cg_path) >=
+	    PATH_MAX) {
+		error("Could not generate cgroup path: %s", file_path);
+		goto end;
+	}
+
+	/* If cgroup.procs is not found one level up, we are in the root */
+	if (access(file_path, F_OK))
+		rc = true;
+
+end:
+	xfree(cg_path);
+	return rc;
+}
+
 extern int cgroup_p_setup_scope(char *scope_path)
 {
 	/*
@@ -1619,7 +1663,7 @@ extern int cgroup_p_setup_scope(char *scope_path)
 	 * Only do that if IgnoreSystemd is set.
 	 */
 	if (running_in_slurmd() && cgroup_p_has_feature(CG_FALSE_ROOT) &&
-	    slurm_cgroup_conf.ignore_systemd) {
+	    slurm_cgroup_conf.ignore_systemd && _pid_in_root("self")) {
 		if (_empty_pids(&int_cg[CG_LEVEL_ROOT], "/system") !=
 		    SLURM_SUCCESS){
 			error("cannot empty the false root cgroup (%s) of pids.",
