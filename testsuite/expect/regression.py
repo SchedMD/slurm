@@ -157,6 +157,9 @@ def main(argv=None):
             os.remove(testlog_name + ".failed")
         except:
             pass
+
+        if os.path.exists(testlog_name):
+            os.remove(testlog_name)
         testlog = open(testlog_name, "w+")
 
         if options.time_individual:
