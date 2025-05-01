@@ -91,11 +91,11 @@ START_TEST(pack_back2_rec)
 	pack_rec.rpc_version      = 9;
 
 	persist_conn_t p_recv = {0};
-	p_recv.fd = 11;
+	p_recv.tls_conn = (void *) 1;
 	pack_rec.fed.recv         = &p_recv;
 
 	persist_conn_t p_send = {0};
-	p_send.fd = 10;
+	p_send.tls_conn = (void *) 1;
 	pack_rec.fed.send         = &p_send;
 
 
@@ -117,8 +117,6 @@ START_TEST(pack_back2_rec)
 
 	ck_assert(unpack_rec->fed.recv != NULL);
 	ck_assert(unpack_rec->fed.send != NULL);
-	ck_assert_int_eq(((persist_conn_t *)unpack_rec->fed.recv)->fd, -1);
-	ck_assert_int_eq(((persist_conn_t *)unpack_rec->fed.send)->fd, -1);
 
 	ck_assert_str_eq(pack_rec.control_host, unpack_rec->control_host);
 	ck_assert_str_eq(pack_rec.fed.name, unpack_rec->fed.name);
@@ -262,11 +260,11 @@ START_TEST(pack_back1_rec)
 	pack_rec.rpc_version      = 9;
 
 	persist_conn_t p_recv = {0};
-	p_recv.fd = 11;
+	p_recv.tls_conn = (void *) 1;
 	pack_rec.fed.recv         = &p_recv;
 
 	persist_conn_t p_send = {0};
-	p_send.fd = 10;
+	p_send.tls_conn = (void *) 1;
 	pack_rec.fed.send         = &p_send;
 
 
@@ -288,8 +286,6 @@ START_TEST(pack_back1_rec)
 
 	ck_assert(unpack_rec->fed.recv != NULL);
 	ck_assert(unpack_rec->fed.send != NULL);
-	ck_assert_int_eq(((persist_conn_t *)unpack_rec->fed.recv)->fd, -1);
-	ck_assert_int_eq(((persist_conn_t *)unpack_rec->fed.send)->fd, -1);
 
 	ck_assert_str_eq(pack_rec.control_host, unpack_rec->control_host);
 	ck_assert_str_eq(pack_rec.fed.name, unpack_rec->fed.name);
