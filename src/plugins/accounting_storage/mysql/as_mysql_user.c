@@ -2121,6 +2121,17 @@ extern int as_mysql_user_create_user_coords_list(mysql_conn_t *mysql_conn)
 	FREE_NULL_LIST(g_user_coords_list);
 
 	/* Get the direct list of users coords */
+	create_string.query = xstrdup_printf(
+		"select user, acct from %s where deleted=0",
+		acct_coord_table);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", create_string.query);
+	result = mysql_db_query_ret(mysql_conn, create_string.query, 0);
+	xfree(create_string.query);
+	if (!result)
+		goto end_it;
+	while ((row = mysql_fetch_row(result))) {
+		user = _process_coord_results(user, row[0], row[1], 1);
+	}
 	create_string.query_pos = NULL;
 	(void) list_for_each(as_mysql_cluster_list, _get_accts_coords,
 			     &create_string);
