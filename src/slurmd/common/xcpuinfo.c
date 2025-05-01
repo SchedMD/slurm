@@ -76,8 +76,12 @@ static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
 static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 #endif
 
-static char *restricted_cpus_as_mac = NULL;
+#if HWLOC_API_VERSION > 0x00020401
+/* Contains a bitmap of all the cpus of the node, but only p-cores are set. */
 static hwloc_bitmap_t cpuset_tot = NULL;
+#endif
+
+static char *restricted_cpus_as_mac = NULL;
 extern slurmd_conf_t *conf;
 
 /*
@@ -1119,8 +1123,9 @@ end_it:
 
 static char *_remove_ecores_range(const char *orig_range)
 {
-	hwloc_bitmap_t r = NULL, rout = NULL;
 	char *pcores_range = NULL;
+#if HWLOC_API_VERSION > 0x00020401
+	hwloc_bitmap_t r = NULL, rout = NULL;
 
 	/*
 	 * This comes from _remove_ecores() and contains a bitmap of performance
@@ -1149,7 +1154,7 @@ end_it:
 	hwloc_bitmap_free(rout);
 	/* We do not need the cpuset_tot anymore */
 	hwloc_bitmap_free(cpuset_tot);
-
+#endif
 	return pcores_range;
 }
 
