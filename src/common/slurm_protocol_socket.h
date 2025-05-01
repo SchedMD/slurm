@@ -76,6 +76,7 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, void *tls_conn, char **pbuf,
  */
 extern ssize_t slurm_msg_sendto(int fd, void *tls_conn, char *buffer,
 				size_t size);
+extern ssize_t slurm_msg_sendto_socket(int fd, char *buffer, size_t size);
 
 /*
  * Send message over the given connection, default timeout value
