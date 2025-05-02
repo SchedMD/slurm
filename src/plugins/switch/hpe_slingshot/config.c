@@ -718,6 +718,8 @@ extern bool slingshot_stepd_init(const char *switch_params)
 	const char destroy_retries[] = "destroy_retries";
 	const size_t size_destroy_retries = sizeof(destroy_retries) - 1;
 
+	slingshot_config.destroy_retries = SLINGSHOT_CXI_DESTROY_RETRIES;
+
 	params = xstrdup(switch_params);
 	for (token = strtok_r(params, ",", &save_ptr); token;
 	     token = strtok_r(NULL, ",", &save_ptr)) {
