@@ -500,6 +500,59 @@ static void _parse_commandline(int argc, char **argv)
 }
 
 /*
+ * Check for supplementary group that could result in an unintended privilege
+ * escalation
+ */
+static void _check_gids(void)
+{
+	gid_t *gids = NULL;
+	bool need_drop = false;
+	int gid_count = getgroups(0, NULL);
+
+	if (gid_count < 0)
+		fatal("%s: getgroups(0, NULL) failed: %m", __func__);
+
+	if (!gid_count)
+		return;
+
+	gids = xcalloc(gid_count, sizeof(*gids));
+
+	if ((gid_count = getgroups(gid_count, gids)) < 0)
+		fatal("%s: getgroups() failed: %m", __func__);
+
+	for (int i = 0; i < gid_count; i++) {
+		/*
+		 * Ignore same gid being in supplementary groups
+		 * as it won't change permissions
+		 */
+		if (gids[i] == gid)
+			continue;
+
+		need_drop = true;
+		debug("%s: Supplementary group %d needs to be dropped",
+		      __func__, gids[i]);
+	}
+
+	xfree(gids);
+
+	if (!need_drop)
+		return;
+
+	debug("%s: Dropping all supplementary groups", __func__);
+
+	if (!setgroups(0, NULL))
+		return;
+
+#ifdef __linux__
+	if (errno == EPERM)
+		fatal("slurmrestd process lacks CAP_SETGID to drop supplementary groups. Supplementary groups must be removed from slurmrestd user (uid=%d,gid=%d) prior to starting slurmrestd.",
+		      uid, gid);
+#endif /* __linux__ */
+
+	fatal("Unable to drop supplementary groups: %m");
+}
+
+/*
  * slurmrestd is merely a translator from REST to Slurm.
  * Try to lock down any extra unneeded permissions.
  */
@@ -518,10 +571,10 @@ static void _lock_down(void)
 	if (unshare_files && unshare(CLONE_FILES))
 		fatal("Unable to unshare file descriptors: %m");
 
-	if (gid && setgroups(0, NULL))
-		fatal("Unable to drop supplementary groups: %m");
 	if (uid != 0 && (gid == 0))
 		gid = gid_from_uid(uid);
+	if (gid)
+		_check_gids();
 	if (gid != 0 && setgid(gid))
 		fatal("Unable to setgid: %m");
 	if (uid != 0 && setuid(uid))
