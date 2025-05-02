@@ -457,6 +457,12 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 		xstrfmtcat(out, "TLSCertLastRenewal=%s", time_str);
 	}
 
+	/****** Line (optional) ******/
+	if (node_ptr->topology_str) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "Topology=%s", node_ptr->topology_str);
+	}
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else
