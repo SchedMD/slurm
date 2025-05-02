@@ -1839,6 +1839,7 @@ static slurmdb_assoc_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 	case MOD_USER:
 		assoc->acct = xstrdup(parent);
 		assoc->cluster = xstrdup(cluster);
+		assoc->flags |= ASSOC_FLAG_BLOCK_ADD;
 		assoc->partition = xstrdup(file_opts->assoc_rec.partition);
 		assoc->user = xstrdup(file_opts->name);
 		if (!xstrcmp(assoc->acct, file_opts->def_acct))

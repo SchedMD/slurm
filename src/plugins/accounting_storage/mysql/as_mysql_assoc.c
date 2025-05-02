@@ -1672,6 +1672,10 @@ static int _handle_coord_parent_flag(add_assoc_cond_t *add_assoc_cond,
 	};
 	int rc = SLURM_SUCCESS;
 
+	/* This is a new cluster, tree might not be set up yet correctly */
+	if (assoc->flags & ASSOC_FLAG_BLOCK_ADD)
+		return rc;
+
 	if (!add_assoc_cond->assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 

@@ -923,7 +923,9 @@ extern int sacctmgr_delete_cluster(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	if (!list_count(cluster_cond->cluster_list)
+	if (!list_count(cluster_cond->cluster_list) &&
+	    (!cluster_cond->rpc_version_list ||
+	     !list_count(cluster_cond->rpc_version_list))
 	   && !cluster_cond->classification
 	   && (!cluster_cond->federation_list ||
 	       !list_count(cluster_cond->federation_list))) {

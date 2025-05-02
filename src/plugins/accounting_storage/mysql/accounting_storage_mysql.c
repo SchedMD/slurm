@@ -340,7 +340,7 @@ static int _cluster_check_def_acct(void *x, void *arg)
  */
 static bool _check_jobs_before_remove(remove_common_args_t *args)
 {
-	char *assoc_char = args->assoc_char;
+	char *assoc_char;
 	char *cluster_name = args->cluster_name;
 	mysql_conn_t *mysql_conn = args->mysql_conn;
 	list_t *ret_list = args->ret_list;
@@ -364,13 +364,18 @@ static bool _check_jobs_before_remove(remove_common_args_t *args)
 	 * needs to remain that way.
 	 */
 	char *jassoc_req_inx[] = {
-		"t0.id_job",
+		"t1.id_job",
 		"t2.acct",
 		"t2.user",
 		"t2.partition",
-		"t0.id_qos",
-		"t0.id_wckey",
+		"t1.id_qos",
+		"t1.id_wckey",
 	};
+
+	if (args->table == assoc_table)
+		assoc_char = args->name_char;
+	else
+		assoc_char = args->assoc_char;
 
 	xstrcatat(object, &pos, jassoc_req_inx[0]);
 	for (int i = 1; i < JASSOC_COUNT; i++)
@@ -380,8 +385,8 @@ static bool _check_jobs_before_remove(remove_common_args_t *args)
 	/* Check for any jobs */
 	xstrfmtcatat(
 		query, &pos,
-		"select distinct %s from \"%s_%s\" as t0, \"%s_%s\" as t2 "
-		"where (%s) and t0.id_assoc=t2.id_assoc",
+		"select distinct %s from \"%s_%s\" as t1, \"%s_%s\" as t2 "
+		"where (%s) and t1.id_assoc=t2.id_assoc",
 		object, cluster_name, job_table,
 		cluster_name, assoc_table,
 		assoc_char);
@@ -390,7 +395,7 @@ static bool _check_jobs_before_remove(remove_common_args_t *args)
 	if (ret_list) {
 		/* Check for only running jobs */
 		xstrfmtcatat(query, &pos,
-			     " and t0.time_end=0 && t0.state<%d limit 1",
+			     " and t1.time_end=0 && t1.state<%d limit 1",
 			     JOB_COMPLETE);
 	}
 

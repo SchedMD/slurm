@@ -539,6 +539,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			assoc->user = xstrdup("root");
 			assoc->acct = xstrdup("root");
 			assoc->is_def = 1;
+			assoc->flags = ASSOC_FLAG_BLOCK_ADD;
+
 			/*
 			 * If the cluster is registering then don't add to the
 			 * update_list.
@@ -820,12 +822,10 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 					slurmdb_cluster_cond_t *cluster_cond)
 {
 	list_itr_t *itr = NULL;
-	list_t *ret_list = NULL;
 	list_t *tmp_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *extra = NULL, *query = NULL, *cluster_name = NULL,
-		*name_char = NULL, *assoc_char = NULL;
+	char *extra = NULL, *query = NULL, *cluster_name = NULL;
 	time_t now = time(NULL);
 	slurmdb_wckey_cond_t wckey_cond;
 	MYSQL_RES *result = NULL;
@@ -872,7 +872,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 	rc = 0;
-	ret_list = list_create(xfree_ptr);
+	args.ret_list = list_create(xfree_ptr);
 
 	if (!mysql_num_rows(result)) {
 		mysql_free_result(result);
@@ -880,15 +880,11 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn,
 		         "didn't affect anything\n%s", query);
 		xfree(query);
-		return ret_list;
+		return args.ret_list;
 	}
 	xfree(query);
 
-	assoc_char = xstrdup_printf("t2.lineage like '/%%'");
-
-	args.assoc_char = assoc_char;
-	args.name_char = name_char;
-	args.ret_list = ret_list;
+	args.assoc_char = xstrdup_printf("t2.lineage like '/%%'");
 	args.user_name = uid_to_string((uid_t) uid);
 
 	while ((row = mysql_fetch_row(result))) {
@@ -899,14 +895,14 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			 * invalid read because _check_jobs_before_remove() will
 			 * still try to access "cluster_name" which was
 			 * "object". */
-			list_append(ret_list, xstrdup(object));
+			list_append(args.ret_list, xstrdup(object));
 		}
 
 		if (row[1] && (*row[1] != '\0'))
 			fed_update = true;
 
-		xfree(name_char);
-		xstrfmtcat(name_char, "name='%s'", object);
+		xfree(args.name_char);
+		xstrfmtcat(args.name_char, "name='%s'", object);
 
 		args.cluster_name = object;
 		rc = remove_common(&args);
@@ -917,21 +913,21 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	mysql_free_result(result);
 	xfree(args.user_name);
-	xfree(name_char);
-	xfree(assoc_char);
+	xfree(args.name_char);
+	xfree(args.assoc_char);
 
 	if (rc != SLURM_SUCCESS) {
-		FREE_NULL_LIST(ret_list);
+		FREE_NULL_LIST(args.ret_list);
 		return NULL;
 	}
 	if (!args.jobs_running) {
 		/* We need to remove these clusters from the wckey table */
 		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
-		wckey_cond.cluster_list = ret_list;
+		wckey_cond.cluster_list = args.ret_list;
 		tmp_list = as_mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
 		FREE_NULL_LIST(tmp_list);
 
-		itr = list_iterator_create(ret_list);
+		itr = list_iterator_create(args.ret_list);
 		while ((object = list_next(itr))) {
 			if ((rc = remove_cluster_tables(mysql_conn, object))
 			    != SLURM_SUCCESS)
@@ -946,7 +942,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (rc != SLURM_SUCCESS) {
 			reset_mysql_conn(mysql_conn);
-			FREE_NULL_LIST(ret_list);
+			FREE_NULL_LIST(args.ret_list);
 			errno = rc;
 			return NULL;
 		}
@@ -960,7 +956,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	xfree(query);
 
-	return ret_list;
+	return args.ret_list;
 }
 
 extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,

@@ -2020,7 +2020,7 @@ extern void as_mysql_user_handle_user_coord_flag(slurmdb_user_rec_t *user_rec,
 	}
 }
 
-static int _get_accts_coords(void *x, void *arg)
+static int _get_indirect_acct_coords(void *x, void *arg)
 {
 	char *cluster_name = x;
 	create_string_t *create_string = arg;
@@ -2030,9 +2030,9 @@ static int _get_accts_coords(void *x, void *arg)
 	 * directly in accounts/users listed in the acct_coord_table.
 	 */
 	xstrfmtcatat(create_string->query, &create_string->query_pos,
-		     "%sselect distinct t1.acct, t1.user, t2.acct from "
+		     "%sselect distinct t1.user, t2.acct from "
 		     "\"%s\" as t1, \"%s_%s\" as t2 where t1.deleted=0 && "
-		     "t2.deleted=0 && t2.user='' && "
+		     "t2.deleted=0 && t2.user='' && (t1.acct != t2.acct) && "
 		     "t2.lineage like concat('%%/', t1.acct, '/%%')",
 		     create_string->query ? " union " : "",
 		     acct_coord_table,
@@ -2121,8 +2121,21 @@ extern int as_mysql_user_create_user_coords_list(mysql_conn_t *mysql_conn)
 	FREE_NULL_LIST(g_user_coords_list);
 
 	/* Get the direct list of users coords */
+	create_string.query = xstrdup_printf(
+		"select user, acct from %s where deleted=0",
+		acct_coord_table);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", create_string.query);
+	result = mysql_db_query_ret(mysql_conn, create_string.query, 0);
+	xfree(create_string.query);
+	if (!result)
+		goto end_it;
+	while ((row = mysql_fetch_row(result))) {
+		user = _process_coord_results(user, row[0], row[1], 1);
+	}
+
+	/* Get the indirect list of users coords */
 	create_string.query_pos = NULL;
-	(void) list_for_each(as_mysql_cluster_list, _get_accts_coords,
+	(void) list_for_each(as_mysql_cluster_list, _get_indirect_acct_coords,
 			     &create_string);
 
 	/* Empty as_mysql_cluster_list */
@@ -2136,8 +2149,7 @@ extern int as_mysql_user_create_user_coords_list(mysql_conn_t *mysql_conn)
 		goto end_it;
 
 	while ((row = mysql_fetch_row(result))) {
-		user = _process_coord_results(user, row[1], row[2],
-					      xstrcmp(row[0], row[2]) ? 0 : 1);
+		user = _process_coord_results(user, row[0], row[1], 0);
 	}
 	mysql_free_result(result);
 
