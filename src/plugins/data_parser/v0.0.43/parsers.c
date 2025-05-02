@@ -8047,6 +8047,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(UINT16, threads, "threads", "Number of logical threads in a single physical core"),
 	add_parse(UINT32, tmp_disk, "temporary_disk", "Total size in MB of temporary disk storage in TmpFS"),
 	add_parse(UINT32, weight, "weight", "Weight of the node for scheduling purposes"),
+	add_parse(STRING, topology_str, "topology", "Topology"),
 	add_parse(STRING, tres_fmt_str, "tres", "Configured trackable resources"),
 	add_parse(STRING, version, "version", "Slurmd version"),
 };
