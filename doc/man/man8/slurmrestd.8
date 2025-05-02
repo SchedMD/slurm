@@ -1,4 +1,4 @@
-.TH slurmrestd "8" "Slurm REST Daemon" "April 2025" "Slurm REST Daemon"
+.TH slurmrestd "8" "Slurm REST Daemon" "May 2025" "Slurm REST Daemon"
 
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
@@ -198,10 +198,27 @@ Default: 124
 .IP
 
 .TP
-\fB\-s <OpenAPI plugins to load>\fR
-Comma\-delimited list of OpenAPI plugins.
-Set to "list" to dump a list of the possible plugins to load.
-Defaults: all builtin supported OpenAPI plugins.
+\fB\-s <plugin>\fR[,plugin]...
+Comma\-delimited list of OpenAPI plugins to load, which will determine the
+available content. By default all available OpenAPI plugins will be loaded.
+See also \fB-d\fR for the data_parser plugins controlling the output format.
+.RS
+.TP
+\fBlist\fR
+Display a list of the possible plugins to load.
+.IP
+
+.TP
+\fB[openapi/]slurmctld\fR
+Provides 'slurm/' endpoints for the loaded data_parser plugins.
+.IP
+
+.TP
+\fB[openapi/]slurmdbd\fR
+Provides 'slurmdb/' endpoints for the loaded data_parser plugins. This plugin
+will fail if \fBaccounting_storage/slurmdbd\fR is not used in the cluster.
+.IP
+.RE
 .IP
 
 .TP
