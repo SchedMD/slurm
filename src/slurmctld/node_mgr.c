@@ -5476,6 +5476,9 @@ static int _delete_node_ptr(node_record_t *node_ptr)
 		return ESLURM_NODES_BUSY;
 	}
 
+	xfree(node_ptr->topology_str);
+	topology_g_add_rm_node(node_ptr);
+
 	_remove_node_from_all_bitmaps(node_ptr);
 	_remove_node_from_features(node_ptr);
 	gres_node_remove(node_ptr);
