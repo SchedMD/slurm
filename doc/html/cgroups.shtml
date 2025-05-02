@@ -53,8 +53,15 @@ groups, the plural form "cgroups" is used.</p>
 (cgroup v2). Hybrid mode where controllers from both version 1 and version 2 are
 mixed in a system is not supported.</p>
 
+<p><b>NOTE</b>: The cgroup/v1 plugin is deprecated and will not be supported in
+future Slurm versions. Newer GNU/Linux distributions are dropping, or have
+dropped, support for cgroup v1 and may even not provide kernel support for the
+required cgroup v1 interfaces. Systemd also deprecated cgroup v1. Starting with
+Slurm version 25.05, no new features will be added to cgroup v1. Support for
+critical bugs will be provided until its final removal.</p>
+
 <p>See the kernel.org documentation for a more comprehensive description of
-cgroup:</p>
+cgroup:</p>o
 
 <ul>
 <li><a href="https://www.kernel.org/doc/Documentation/cgroup-v1/cgroups.txt">
@@ -71,7 +78,6 @@ Kernel's Cgroup v2 documentation </a>
 
 For extended information on Slurm's internal Cgroup plugin read:
 <ul>
-<li>cgroup/v1 plugin documentation (not available yet)</li>
 <li><a href="cgroup_v2.html">cgroup/v2 plugin documentation</a> </li>
 </ul>
 
@@ -235,9 +241,9 @@ information.</p>
 </h2>
 
 <p>
-Since 22.05, Slurm supports cgroup/v1 and cgroup/v2. Both plugins have very
-different ways of organizing their hierarchies and respond to different design
-constraints. The design is the responsibility of the kernel maintainers.
+Both cgroup v1 and v2 plugins have very different ways of organizing their
+hierarchies and respond to different design constraints. The design is the
+responsibility of the kernel maintainers.
 </p>
 
 <h3 id="differences">Main differences between cgroup/v1 and cgroup/v2
@@ -424,6 +430,6 @@ controllers are under separate directories when using
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 4 April 2025</p>
+<p style="text-align:center;">Last modified 5 May 2025</p>
 
 <!--#include virtual="footer.txt"-->
