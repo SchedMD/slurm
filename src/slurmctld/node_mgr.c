@@ -5151,6 +5151,9 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 		node_ptr->features_act = xstrdup(config_ptr->feature);
 	}
 
+	if (node_ptr->topology_str)
+		topology_g_add_rm_node(node_ptr);
+
 	bit_clear(power_up_node_bitmap, node_ptr->index);
 	if (IS_NODE_FUTURE(node_ptr)) {
 		bit_set(future_node_bitmap, node_ptr->index);
@@ -5388,6 +5391,9 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	node_ptr->features_act = xstrdup(node_ptr->config_ptr->feature);
 	node_features_update_list(active_feature_list, node_ptr->features_act,
 				  config_ptr->node_bitmap);
+
+	if (node_ptr->topology_str)
+		topology_g_add_rm_node(node_ptr);
 
 	_queue_consolidate_config_list();
 
