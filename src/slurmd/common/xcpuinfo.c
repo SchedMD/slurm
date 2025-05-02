@@ -1286,7 +1286,7 @@ extern char *xcpuinfo_get_cpuspec(void)
 	       __func__, restricted_cpus_as_abs);
 
 	if (!restricted_cpus_as_abs || !restricted_cpus_as_abs[0])
-		return NULL;
+		goto empty_end;
 
 	res_core_bitmap = bit_alloc(MAX_CPU_CNT);
 	res_cpu_bitmap = bit_alloc(MAX_CPU_CNT);
@@ -1306,8 +1306,10 @@ extern char *xcpuinfo_get_cpuspec(void)
 	res_abs_cores = xmalloc(MAX_CPU_CNT);
 	bit_fmt(res_abs_cores, MAX_CPU_CNT, res_cpu_bitmap);
 
-	xfree(restricted_cpus_as_abs);
 	FREE_NULL_BITMAP(res_core_bitmap);
 	FREE_NULL_BITMAP(res_cpu_bitmap);
+
+empty_end:
+	xfree(restricted_cpus_as_abs);
 	return res_abs_cores;
 }

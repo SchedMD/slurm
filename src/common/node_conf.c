@@ -645,10 +645,14 @@ extern config_record_t *create_config_record(void)
  * OUT:
  *	node_ptr->cpu_spec_list
  */
-extern int node_conf_convert_cpu_spec_list(node_record_t *node_ptr)
+extern void node_conf_convert_cpu_spec_list(node_record_t *node_ptr)
 {
-	int i;
+	uint16_t i;
 	bitstr_t *cpu_spec_bitmap;
+
+	/* Nothing to convert if threads per core is 1 */
+	if (node_ptr->tpc < 2)
+		return;
 
 	/* create CPU bitmap from input CPU list */
 	cpu_spec_bitmap = bit_alloc(node_ptr->cpus);
@@ -656,18 +660,14 @@ extern int node_conf_convert_cpu_spec_list(node_record_t *node_ptr)
 	/* Expand CPU bitmap to reserve whole cores */
 	for (i = 0; i < node_ptr->tot_cores; i++) {
 		if (!bit_test(node_ptr->node_spec_bitmap, i)) {
-			/* typecast to int to avoid coverity error */
-			bit_nset(cpu_spec_bitmap,
-				 (i * (int) node_ptr->tpc),
-				 ((i + 1) * (int) node_ptr->tpc) - 1);
+			bit_nset(cpu_spec_bitmap, (i * node_ptr->tpc),
+				 ((i + 1) * node_ptr->tpc) - 1);
 		}
 	}
 	xfree(node_ptr->cpu_spec_list);
 	node_ptr->cpu_spec_list = bit_fmt_full(cpu_spec_bitmap);
 
 	FREE_NULL_BITMAP(cpu_spec_bitmap);
-
-	return SLURM_SUCCESS;
 }
 
 static void _init_node_record(node_record_t *node_ptr,
@@ -715,8 +715,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	if (node_ptr->cpu_spec_list) {
 		build_node_spec_bitmap(node_ptr);
-		if (node_ptr->tpc > 1)
-			node_conf_convert_cpu_spec_list(node_ptr);
+		node_conf_convert_cpu_spec_list(node_ptr);
 	} else if (node_ptr->core_spec_cnt) {
 		node_conf_select_spec_cores(node_ptr);
 	}

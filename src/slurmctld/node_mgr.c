@@ -3322,9 +3322,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		    (slurm_conf.task_plugin_param & SLURMD_SPEC_OVERRIDE)) {
 			if (node_ptr->cpu_spec_list) {
 				build_node_spec_bitmap(node_ptr);
-				if (node_ptr->tpc > 1)
-					node_conf_convert_cpu_spec_list(
-						node_ptr);
+				node_conf_convert_cpu_spec_list(node_ptr);
 			} else if (node_ptr->core_spec_cnt) {
 				node_conf_select_spec_cores(node_ptr);
 			}
