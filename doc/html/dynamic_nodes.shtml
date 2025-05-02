@@ -124,9 +124,6 @@ reservation can be deleted.
 <p>
 <ol>
 <li>
-Dynamic nodes are incompatible with <b>TopologyParam=RouteTree</b>.
-</li>
-<li>
 When non-default topology options are in use, extra steps should be taken
 to include dynamic nodes in the topology:
 <ol>
