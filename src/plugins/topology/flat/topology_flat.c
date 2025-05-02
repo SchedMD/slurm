@@ -122,7 +122,7 @@ extern bool topology_p_generate_node_ranking(topology_ctx_t *tctx)
 }
 
 extern int topology_p_get_node_addr(
-	char *node_name, char **paddr, char **ppattern)
+	char *node_name, char **paddr, char **ppattern, void *tctx)
 {
 	return common_topo_get_node_addr(node_name, paddr, ppattern);
 }

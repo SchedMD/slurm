@@ -66,7 +66,9 @@ typedef struct slurm_topo_ops {
 	bool (*node_ranking)(topology_ctx_t *tctx);
 	int		(*get_node_addr)	( char* node_name,
 						  char** addr,
-						  char** pattern );
+						  char** pattern,
+						  void *tctx
+					       	);
 	int (*split_hostlist)(hostlist_t *hl, hostlist_t ***sp_hl, int *count,
 			      uint16_t tree_width, void *tctx);
 	int (*topoinfo_free) (void *topoinfo_ptr);
@@ -434,7 +436,8 @@ extern int topology_g_get_node_addr(char *node_name, char **addr,
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
-	return (*(ops[tctx[0].idx].get_node_addr))(node_name, addr, pattern);
+	return (*(ops[tctx[0].idx].get_node_addr))(node_name, addr, pattern,
+						   tctx[0].plugin_ctx);
 }
 
 extern int topology_g_split_hostlist(hostlist_t *hl,
