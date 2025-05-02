@@ -123,10 +123,11 @@ static int _foreach_license_print(void *x, void *arg)
 	foreach_license_print_t *args = arg;
 
 	if (license_entry->id.hres_id != NO_VAL16) {
-		info("licenses: %s=%s lic_id=%u hres_id=%u nodes:%s total=%u used=%u",
+		info("licenses: %s=%s lic_id=%u hres_id=%u mode=%u nodes:%s total=%u used=%u",
 		     args->header, license_entry->name, license_entry->id.lic_id,
-		     license_entry->id.hres_id, license_entry->nodes,
-		     license_entry->total, license_entry->used);
+		     license_entry->id.hres_id, license_entry->mode,
+		     license_entry->nodes, license_entry->total,
+		     license_entry->used);
 	} else if (!args->job_ptr) {
 		info("licenses: %s=%s lic_id=%u total=%u used=%u",
 		     args->header, license_entry->name, license_entry->id.lic_id,
