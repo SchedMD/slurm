@@ -375,6 +375,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
 	bool locked, log_level_t log_lvl);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
+static uint64_t _get_def_mem(part_record_t *part_ptr);
 static bool _get_whole_hetjob(void);
 static bool _higher_precedence(job_record_t *job_ptr, job_record_t *job_ptr2);
 static void _job_array_comp(job_record_t *job_ptr, bool was_running,
@@ -5316,6 +5317,14 @@ extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
 	return foreach_kill_hetjob.rc;
 }
 
+static uint64_t _get_def_mem(part_record_t *part_ptr)
+{
+	if (part_ptr && part_ptr->def_mem_per_cpu)
+		return part_ptr->def_mem_per_cpu;
+	else
+		return slurm_conf.def_mem_per_cpu;
+}
+
 static bool _get_whole_hetjob(void)
 {
 	static time_t sched_update = 0;
@@ -6953,10 +6962,9 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 		 */
 		if (job_ptr->bit_flags & JOB_MEM_SET)
 			job_desc.pn_min_memory = detail_ptr->orig_pn_min_memory;
-		else if (part_ptr->def_mem_per_cpu)
-			job_desc.pn_min_memory = part_ptr->def_mem_per_cpu;
 		else
-			job_desc.pn_min_memory = slurm_conf.def_mem_per_cpu;
+			job_desc.pn_min_memory =
+				_get_def_mem(part_ptr);
 		if (detail_ptr->orig_cpus_per_task == NO_VAL16)
 			job_desc.cpus_per_task = 1;
 		else
@@ -9652,17 +9660,10 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 	if (job_desc_msg->nice == NO_VAL)
 		job_desc_msg->nice = NICE_OFFSET;
 
-	if (job_desc_msg->pn_min_memory == NO_VAL64) {
-		/* Default memory limit is DefMemPerCPU (if set) or no limit */
-		if (part_ptr && part_ptr->def_mem_per_cpu) {
-			job_desc_msg->pn_min_memory =
-				part_ptr->def_mem_per_cpu;
-		} else {
-			job_desc_msg->pn_min_memory =
-				slurm_conf.def_mem_per_cpu;
-		}
-	} else if (!_validate_min_mem_partition(job_desc_msg, part_ptr,
-						part_list)) {
+	if (job_desc_msg->pn_min_memory == NO_VAL64)
+		job_desc_msg->pn_min_memory = _get_def_mem(part_ptr);
+	else if (!_validate_min_mem_partition(job_desc_msg, part_ptr,
+					      part_list)) {
 		return ESLURM_INVALID_TASK_MEMORY;
 	} else {
 		/* Memory limit explicitly set by user */
@@ -19472,10 +19473,8 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 
 	if (job_ptr->partition)
 		part_ptr = find_part_record(job_ptr->partition);
-	if (part_ptr && part_ptr->def_mem_per_cpu)
-		detail_ptr->pn_min_memory = part_ptr->def_mem_per_cpu;
-	else
-		detail_ptr->pn_min_memory = slurm_conf.def_mem_per_cpu;
+	detail_ptr->pn_min_memory =
+		_get_def_mem(part_ptr);
 
 	job_ptr->time_limit = resv_desc_ptr->duration;
 
