@@ -755,7 +755,6 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 	}
 
 	if (rec_set & SA_SET_CLUST) {
-		printf(" Modified Cluster\n");
 		if (cluster->fed.name && cluster->fed.name[0]) {
 			int rc;
 			/* Make sure federation exists. */
@@ -803,8 +802,10 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
+			printf(" Setting\n");
 			sacctmgr_print_cluster(cluster);
 			list_itr_t *itr = list_iterator_create(ret_list);
+			printf(" Modified cluster...\n");
 			while((object = list_next(itr))) {
 				printf("  %s\n", object);
 			}
