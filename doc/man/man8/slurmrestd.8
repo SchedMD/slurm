@@ -35,9 +35,9 @@ filesystem.
 .IP
 
 .TP
-\fB\-a <authentication plugins>\fR
+\fB\-a <plugin>\fR[,plugin]...
 Comma\-delimited list of authentication plugins to load.
-Default behavior is to load all REST authentication plugins found at load time.
+By default all available authentication plugins will be loaded.
 .RS
 .TP
 \fBlist\fR
@@ -69,9 +69,11 @@ is active. User must specify the following HTTP cookies with each request:
 .IP
 
 .TP
-\fB\-d <plugin_description>,...\fR
-Comma\-delimited list of data_parser plugins including per plugin flags as
-denoted by '+' symbol.
+\fB\-d <plugin>\fR[,plugin]...
+Comma\-delimited list of data_parser plugins, which will determine the
+output format. May include optional flags denoted by '+' symbol. By default all
+available data_parser plugins will be loaded without any optional flags.
+See also \fB-s\fR for OpenAPI plugins controlling the available content.
 .BR
 Defaults: all builtin supported data_parser plugins.
 .RS
