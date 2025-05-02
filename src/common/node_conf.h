@@ -546,7 +546,7 @@ extern int node_record_unpack(void **out,
  * OUT:
  *	node_ptr->cpu_spec_list
  */
-extern int node_conf_convert_cpu_spec_list(node_record_t *node_ptr);
+extern void node_conf_convert_cpu_spec_list(node_record_t *node_ptr);
 
 /*
  * Select cores and CPUs to be reserved for core specialization.
