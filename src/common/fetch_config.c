@@ -195,7 +195,8 @@ static int _get_controller_addr_type(void *x, void *arg)
 }
 
 extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags,
-					   uint16_t port, char *ca_cert_file)
+					   uint16_t sackd_port,
+					   char *ca_cert_file)
 {
 	char *env_conf_server = getenv("SLURM_CONF_SERVER");
 	list_t *controllers = NULL;
@@ -287,7 +288,7 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags,
 		return _fetch_parent(pid);
 	}
 
-	_fetch_child(controllers, flags, port, ca_cert_file);
+	_fetch_child(controllers, flags, sackd_port, ca_cert_file);
 	_exit(0);
 }
 
