@@ -461,73 +461,46 @@ static uint32_t _str_2_job_flags(char *flags)
 	return SLURMDB_JOB_FLAG_NOTSET;
 }
 
-static int _sort_local_cluster(void *v1, void *v2)
+static will_run_response_msg_t *_job_will_run(job_desc_msg_t *req)
 {
-	local_cluster_rec_t* rec_a = *(local_cluster_rec_t**)v1;
-	local_cluster_rec_t* rec_b = *(local_cluster_rec_t**)v2;
-
-	if (rec_a->start_time < rec_b->start_time)
-		return -1;
-	else if (rec_a->start_time > rec_b->start_time)
-		return 1;
-
-	if (rec_a->preempt_cnt < rec_b->preempt_cnt)
-		return -1;
-	else if (rec_a->preempt_cnt > rec_b->preempt_cnt)
-		return 1;
-
-	if (!xstrcmp(slurm_conf.cluster_name, rec_a->cluster_rec->name))
-		return -1;
-	else if (!xstrcmp(slurm_conf.cluster_name, rec_b->cluster_rec->name))
-		return 1;
-
-	return 0;
-}
-
-static local_cluster_rec_t * _job_will_run (job_desc_msg_t *req)
-{
-	local_cluster_rec_t *local_cluster = NULL;
-	will_run_response_msg_t *will_run_resp;
-	char buf[256];
+	will_run_response_msg_t *will_run_resp = NULL;
 	int rc;
 
 	rc = slurm_job_will_run2(req, &will_run_resp);
 
 	if (rc >= 0) {
-		slurm_make_time_str(&will_run_resp->start_time,
-				    buf, sizeof(buf));
-		debug("Job %u to start at %s on cluster %s using %u processors on nodes %s in partition %s",
-		      will_run_resp->job_id, buf, working_cluster_rec->name,
-		      will_run_resp->proc_cnt, will_run_resp->node_list,
-		      will_run_resp->part_name);
+		will_run_resp->cluster_name =
+			xstrdup(working_cluster_rec->name);
+		if (get_log_level() >= LOG_LEVEL_DEBUG) {
+			char buf[256];
+			slurm_make_time_str(&will_run_resp->start_time, buf,
+					    sizeof(buf));
+			debug("Job %u to start at %s on cluster %s using %u processors on nodes %s in partition %s",
+			      will_run_resp->job_id, buf,
+			      working_cluster_rec->name,
+			      will_run_resp->proc_cnt, will_run_resp->node_list,
+			      will_run_resp->part_name);
 
-		local_cluster = xmalloc(sizeof(local_cluster_rec_t));
-		local_cluster->cluster_rec = working_cluster_rec;
-		local_cluster->start_time = will_run_resp->start_time;
-
-		if (will_run_resp->preemptee_job_id) {
-			list_itr_t *itr;
-			uint32_t *job_id_ptr;
-			char *job_list = NULL, *sep = "";
-			local_cluster->preempt_cnt = list_count(
-				will_run_resp->preemptee_job_id);
-			itr = list_iterator_create(will_run_resp->
-						   preemptee_job_id);
-			while ((job_id_ptr = list_next(itr))) {
-				if (job_list)
-					sep = ",";
-				xstrfmtcat(job_list, "%s%u",
-					   sep, *job_id_ptr);
+			if (will_run_resp->preemptee_job_id) {
+				list_itr_t *itr;
+				uint32_t *job_id_ptr;
+				char *job_list = NULL, *sep = "";
+				itr = list_iterator_create(
+					will_run_resp->preemptee_job_id);
+				while ((job_id_ptr = list_next(itr))) {
+					if (job_list)
+						sep = ",";
+					xstrfmtcat(job_list, "%s%u",
+						   sep, *job_id_ptr);
+				}
+				list_iterator_destroy(itr);
+				debug("  Preempts: %s", job_list);
+				xfree(job_list);
 			}
-			list_iterator_destroy(itr);
-			debug("  Preempts: %s", job_list);
-			xfree(job_list);
 		}
-
-		slurm_free_will_run_response_msg(will_run_resp);
 	}
 
-	return local_cluster;
+	return will_run_resp;
 }
 
 static int _set_qos_bit_from_string(bitstr_t *valid_qos, char *name)
@@ -3294,13 +3267,12 @@ extern slurmdb_report_cluster_rec_t *slurmdb_cluster_rec_2_report(
 extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec)
 {
-	local_cluster_rec_t *local_cluster = NULL;
+	will_run_response_msg_t *will_run_resp;
 	int rc = SLURM_SUCCESS;
 	char local_hostname[HOST_NAME_MAX];
 	list_itr_t *itr;
 	list_t *cluster_list = NULL;
 	list_t *ret_list = NULL;
-	list_t *tried_feds = NULL;
 
 	*cluster_rec = NULL;
 
@@ -3325,28 +3297,17 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	if (working_cluster_rec)
 		*cluster_rec = working_cluster_rec;
 
-	tried_feds = list_create(NULL);
-	ret_list = list_create(xfree_ptr);
+	ret_list = list_create(slurm_free_will_run_response_msg);
 	itr = list_iterator_create(cluster_list);
 	while ((working_cluster_rec = list_next(itr))) {
-		/* only try one cluster from each federation */
-		if (working_cluster_rec->fed.id &&
-		    list_find_first(tried_feds, slurm_find_char_in_list,
-				    working_cluster_rec->fed.name))
-			continue;
-
-		if ((local_cluster = _job_will_run(req))) {
-			list_append(ret_list, local_cluster);
-			if (working_cluster_rec->fed.id)
-				list_append(tried_feds,
-					    working_cluster_rec->fed.name);
+		if ((will_run_resp = _job_will_run(req))) {
+			list_append(ret_list, will_run_resp);
 		} else {
 			error("Problem with submit to cluster %s: %m",
 			      working_cluster_rec->name);
 		}
 	}
 	list_iterator_destroy(itr);
-	FREE_NULL_LIST(tried_feds);
 
 	/* restore working_cluster_rec in case it was already set */
 	if (*cluster_rec) {
@@ -3364,18 +3325,12 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	}
 
 	/* sort the list so the first spot is on top */
-	list_sort(ret_list, (ListCmpF)_sort_local_cluster);
-	local_cluster = list_peek(ret_list);
-
+	list_sort(ret_list, slurm_sort_will_run_resp);
+	will_run_resp = list_peek(ret_list);
 	/* prevent cluster_rec from being freed when cluster_list is destroyed */
-	itr = list_iterator_create(cluster_list);
-	while ((*cluster_rec = list_next(itr))) {
-		if (*cluster_rec == local_cluster->cluster_rec) {
-			list_remove(itr);
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
+	working_cluster_rec = list_remove_first(cluster_list,
+						slurmdb_find_cluster_in_list,
+						will_run_resp->cluster_name);
 end_it:
 	FREE_NULL_LIST(ret_list);
 	FREE_NULL_LIST(cluster_list);
@@ -3385,29 +3340,30 @@ end_it:
 
 /* Report the latest start time for any hetjob component on this cluster.
  * Return NULL if any component can not run here */
-static local_cluster_rec_t *_het_job_will_run(list_t *job_req_list)
+static will_run_response_msg_t *_het_job_will_run(list_t *job_req_list)
 {
-	local_cluster_rec_t *local_cluster = NULL, *tmp_cluster;
+	will_run_response_msg_t *ret_resp = NULL, *tmp_resp;
 	job_desc_msg_t *req;
 	list_itr_t *iter;
 
 	iter = list_iterator_create(job_req_list);
 	while ((req = (job_desc_msg_t *) list_next(iter))) {
-		tmp_cluster = _job_will_run(req);
-		if (!tmp_cluster) {	/* Some het component can't run here */
-			xfree(local_cluster);
+		tmp_resp = _job_will_run(req);
+		if (!tmp_resp) { /* Some het component can't run here */
+			slurm_free_will_run_response_msg(ret_resp);
+			ret_resp = NULL;
 			break;
 		}
-		if (!local_cluster) {
-			local_cluster = tmp_cluster;
-			tmp_cluster = NULL;
-		} else if (local_cluster->start_time < tmp_cluster->start_time)
-			local_cluster->start_time = tmp_cluster->start_time;
-		xfree(tmp_cluster);
+		if (!ret_resp) {
+			ret_resp = tmp_resp;
+			ret_resp = NULL;
+		} else if (ret_resp->start_time < tmp_resp->start_time)
+			ret_resp->start_time = tmp_resp->start_time;
+		xfree(ret_resp);
 	}
 	list_iterator_destroy(iter);
 
-	return local_cluster;
+	return ret_resp;
 }
 
 /*
@@ -3428,13 +3384,12 @@ extern int slurmdb_get_first_het_job_cluster(list_t *job_req_list,
 	char *cluster_names, slurmdb_cluster_rec_t **cluster_rec)
 {
 	job_desc_msg_t *req;
-	local_cluster_rec_t *local_cluster = NULL;
+	will_run_response_msg_t *will_run_resp = NULL;
 	int rc = SLURM_SUCCESS;
 	char local_hostname[HOST_NAME_MAX] = "";
 	list_itr_t *itr;
 	list_t *cluster_list = NULL;
 	list_t *ret_list = NULL;
-	list_t *tried_feds = NULL;
 
 	*cluster_rec = NULL;
 
@@ -3462,27 +3417,17 @@ extern int slurmdb_get_first_het_job_cluster(list_t *job_req_list,
 	if (working_cluster_rec)
 		*cluster_rec = working_cluster_rec;
 
-	tried_feds = list_create(NULL);
 	ret_list = list_create(xfree_ptr);
 	itr = list_iterator_create(cluster_list);
 	while ((working_cluster_rec = list_next(itr))) {
-		/* only try one cluster from each federation */
-		if (working_cluster_rec->fed.id &&
-		    list_find_first(tried_feds, slurm_find_char_in_list,
-				    working_cluster_rec->fed.name))
-			continue;
-		if ((local_cluster = _het_job_will_run(job_req_list))) {
-			list_append(ret_list, local_cluster);
-			if (working_cluster_rec->fed.id)
-				list_append(tried_feds,
-					    working_cluster_rec->fed.name);
+		if ((will_run_resp = _het_job_will_run(job_req_list))) {
+			list_append(ret_list, will_run_resp);
 		} else {
 			error("Problem with submit to cluster %s: %m",
 			      working_cluster_rec->name);
 		}
 	}
 	list_iterator_destroy(itr);
-	FREE_NULL_LIST(tried_feds);
 
 	/* restore working_cluster_rec in case it was already set */
 	if (*cluster_rec) {
@@ -3504,18 +3449,12 @@ extern int slurmdb_get_first_het_job_cluster(list_t *job_req_list,
 	}
 
 	/* sort the list so the first spot is on top */
-	list_sort(ret_list, (ListCmpF)_sort_local_cluster);
-	local_cluster = list_peek(ret_list);
-
+	list_sort(ret_list, slurm_sort_will_run_resp);
+	will_run_resp = list_peek(ret_list);
 	/* prevent cluster_rec from being freed when cluster_list is destroyed */
-	itr = list_iterator_create(cluster_list);
-	while ((*cluster_rec = list_next(itr))) {
-		if (*cluster_rec == local_cluster->cluster_rec) {
-			list_remove(itr);
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
+	working_cluster_rec = list_remove_first(cluster_list,
+						slurmdb_find_cluster_in_list,
+						will_run_resp->cluster_name);
 end_it:
 	FREE_NULL_LIST(ret_list);
 	FREE_NULL_LIST(cluster_list);

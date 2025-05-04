@@ -112,12 +112,6 @@ typedef enum {
 					      * unless INFINITE64 or NO_VAL64 */
 #define TRES_STR_FLAG_BYTES       0x00000800 /* Convertible Usage in Bytes */
 
-typedef struct {
-	slurmdb_cluster_rec_t *cluster_rec;
-	int preempt_cnt;
-	time_t start_time;
-} local_cluster_rec_t;
-
 extern slurmdb_job_rec_t *slurmdb_create_job_rec(void);
 extern slurmdb_step_rec_t *slurmdb_create_step_rec(void);
 extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt);

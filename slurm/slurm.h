@@ -2622,6 +2622,7 @@ typedef struct partition_info_msg {
 } partition_info_msg_t;
 
 typedef struct will_run_response_msg {
+	char *cluster_name; /* cluster giving response, set by client */
 	uint32_t job_id;	/* ID of job to start */
 	char *job_submit_user_msg; /* job submit plugin user_msg */
 	char *node_list;	/* nodes where job will start */
@@ -3697,6 +3698,14 @@ extern int slurm_het_job_will_run(list_t *job_req_list);
  */
 extern int slurm_job_will_run2(job_desc_msg_t *req,
 			       will_run_response_msg_t **will_run_resp);
+
+/*
+ * Sort a list of will_run_response_msg_t's by:
+ * start_time
+ * preemptee count
+ * cluster name
+ */
+extern int slurm_sort_will_run_resp(void *a, void *b);
 
 /*
  * slurm_sbcast_lookup - retrieve info for an existing resource allocation
