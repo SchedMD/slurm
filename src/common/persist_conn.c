@@ -88,13 +88,6 @@ static bool _comm_fail_log(persist_conn_t *persist_conn)
 	return false;
 }
 
-/* static void _reopen_persist_conn(persist_conn_t *persist_conn) */
-/* { */
-/*	xassert(persist_conn); */
-/*	fd_close(&persist_conn->fd); */
-/*	slurm_persist_conn_open(persist_conn); */
-/* } */
-
 /* Wait until a file is readable,
  * RET false if can not be read */
 static bool _conn_readable(persist_conn_t *persist_conn)
