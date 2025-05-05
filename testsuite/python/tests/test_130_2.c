@@ -492,6 +492,7 @@ int main (int argc, char **argv)
 	/* now init the priorities of the associations */
 	if (priority_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize priority plugin");
+	priority_g_thread_start();
 	/* on some systems that don't have multiple cores we need to
 	 * sleep to make sure the thread gets started. */
 	sleep(1);
