@@ -416,7 +416,7 @@ extern int topology_g_add_rm_node(node_record_t *node_ptr)
 
 	xassert(plugin_inited);
 
-	if (!node_ptr->topology_str) {
+	if (!node_ptr->topology_str || !node_ptr->topology_str[0]) {
 		for (int i = 0; i < tctx_num; i++) {
 			rc = (*(ops[tctx[i].idx]
 					.add_rm_node))(node_ptr, NULL,
