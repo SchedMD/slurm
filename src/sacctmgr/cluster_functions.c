@@ -848,10 +848,13 @@ assoc:
 
 		printf(" Modified cluster defaults for associations...\n");
 		if (ret_list && list_count(ret_list)) {
+			char *object = NULL;
+			list_itr_t *itr;
+
 			printf("  Default Limits:\n");
 			sacctmgr_print_assoc_limits(assoc);
-			char *object = NULL;
-			list_itr_t *itr = list_iterator_create(ret_list);
+
+			itr = list_iterator_create(ret_list);
 			while((object = list_next(itr))) {
 				printf("  %s\n", object);
 			}
