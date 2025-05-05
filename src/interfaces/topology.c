@@ -57,6 +57,7 @@ typedef struct slurm_topo_ops {
 	uint32_t (*plugin_id);
 	char(*plugin_type);
 	bool(*supports_exclusive_topo);
+	int (*add_rm_node)(node_record_t *node_ptr, char *addr, void *tctx);
 	int (*build_config)(topology_ctx_t *tctx);
 	int (*destroy_config)(topology_ctx_t *tctx);
 	int (*eval_nodes) (topology_eval_t *topo_eval);
@@ -89,6 +90,7 @@ static const char *syms[] = {
 	"plugin_id",
 	"plugin_type",
 	"supports_exclusive_topo",
+	"topology_p_add_rm_node",
 	"topology_p_build_config",
 	"topology_p_destroy_config",
 	"topology_p_eval_nodes",
@@ -405,6 +407,53 @@ extern bool topology_g_whole_topo_enabled(int idx)
 	xassert((idx >= 0) && (idx < tctx_num));
 
 	return (*(ops[tctx[idx].idx].supports_exclusive_topo));
+}
+
+extern int topology_g_add_rm_node(node_record_t *node_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	char *topology_str, *token, *save_ptr = NULL;
+
+	xassert(plugin_inited);
+
+	if (!node_ptr->topology_str || !node_ptr->topology_str[0]) {
+		for (int i = 0; i < tctx_num; i++) {
+			rc = (*(ops[tctx[i].idx]
+					.add_rm_node))(node_ptr, NULL,
+						       tctx[i].plugin_ctx);
+			if (rc)
+				break;
+		}
+		return rc;
+	}
+
+	topology_str = xstrdup(node_ptr->topology_str);
+	token = strtok_r(topology_str, ",", &save_ptr);
+
+	while (token) {
+		char *name, *unit = NULL;
+		int tctx_idx;
+
+		name = strtok_r(token, ":", &unit);
+
+		tctx_idx = _get_tctx_index_by_name(name);
+
+		if (tctx_idx < 0) {
+			rc = SLURM_ERROR;
+			break;
+		}
+		rc = (*(ops[tctx[tctx_idx].idx]
+				.add_rm_node))(node_ptr, unit,
+					       tctx[tctx_idx].plugin_ctx);
+		if (rc)
+			break;
+
+		token = strtok_r(NULL, ",", &save_ptr);
+	}
+
+	xfree(topology_str);
+
+	return rc;
 }
 
 /*

@@ -6904,6 +6904,15 @@ The default value is 0.
 .IP
 
 .TP
+\fBTopology\fR
+Comma-separated list of pairs in the format
+\fR\fI<topology_name>\fR\fB:\fR\fI<topology_unit>\fR.
+This setting overwrites the node topology affiliation configuration specified
+in \fBtopology.conf\fR(5) and \fBtopology.yaml\fR(5).
+
+.IP
+
+.TP
 \fBWeight\fR
 The priority of the node for scheduling purposes.
 All things being equal, jobs will be allocated the nodes with

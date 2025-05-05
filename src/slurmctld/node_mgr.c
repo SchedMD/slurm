@@ -810,6 +810,7 @@ static bool _is_dup_config_record(config_record_t *c1, config_record_t *c2)
 	    (c1->threads == c2->threads) &&
 	    (c1->tmp_disk == c2->tmp_disk) &&
 	    (c1->tot_sockets == c2->tot_sockets) &&
+	    (!xstrcmp(c1->topology_str, c2->topology_str)) &&
 	    (!xstrcmp(c1->tres_weights_str, c2->tres_weights_str)) &&
 	    (c1->weight == c2->weight)) {
 		/* duplicate records */
@@ -1830,6 +1831,23 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			else
 				resume_after =
 					now + update_node_msg->resume_after;
+		}
+
+		if (update_node_msg->topology_str) {
+			char *topology_str_old = node_ptr->topology_str;
+			node_ptr->topology_str =
+				xstrdup(update_node_msg->topology_str);
+			if (topology_g_add_rm_node(node_ptr)) {
+				info("Invalid node topology specified %s",
+				     node_ptr->topology_str);
+				xfree(node_ptr->topology_str);
+				node_ptr->topology_str = topology_str_old;
+				topology_g_add_rm_node(node_ptr);
+				error_code =
+					ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+			} else {
+				xfree(topology_str_old);
+			}
 		}
 
 		state_val = update_node_msg->node_state;
@@ -2955,6 +2973,8 @@ static void _split_node_config(node_record_t *node_ptr,
 			xstrdup(config_ptr->cpu_spec_list);
 		new_config_ptr->feature = xstrdup(config_ptr->feature);
 		new_config_ptr->gres = xstrdup(config_ptr->gres);
+		new_config_ptr->topology_str =
+			xstrdup(config_ptr->topology_str);
 		bit_clear(config_ptr->node_bitmap, node_ptr->index);
 		xfree(config_ptr->nodes);
 		config_ptr->nodes = bitmap2node_name(config_ptr->node_bitmap);
@@ -5141,6 +5161,11 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 		node_ptr->features_act = xstrdup(config_ptr->feature);
 	}
 
+	if (node_ptr->topology_str && topology_g_add_rm_node(node_ptr)) {
+		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		goto fini;
+	}
+
 	bit_clear(power_up_node_bitmap, node_ptr->index);
 	if (IS_NODE_FUTURE(node_ptr)) {
 		bit_set(future_node_bitmap, node_ptr->index);
@@ -5379,6 +5404,13 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	node_features_update_list(active_feature_list, node_ptr->features_act,
 				  config_ptr->node_bitmap);
 
+	if (node_ptr->topology_str && topology_g_add_rm_node(node_ptr)) {
+		error("%s Invalid node topology specified %s ignored",
+		      __func__, node_ptr->topology_str);
+		xfree(node_ptr->topology_str);
+		topology_g_add_rm_node(node_ptr);
+	}
+
 	_queue_consolidate_config_list();
 
 	/* Handle DOWN and DRAIN, otherwise make the node idle */
@@ -5459,6 +5491,9 @@ static int _delete_node_ptr(node_record_t *node_ptr)
 		      node_ptr->name);
 		return ESLURM_NODES_BUSY;
 	}
+
+	xfree(node_ptr->topology_str);
+	topology_g_add_rm_node(node_ptr);
 
 	_remove_node_from_all_bitmaps(node_ptr);
 	_remove_node_from_features(node_ptr);

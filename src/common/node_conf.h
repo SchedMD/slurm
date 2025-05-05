@@ -77,6 +77,7 @@ typedef struct {
 	uint16_t threads;	/* number of threads per core */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
 	uint16_t tot_sockets;	/* number of sockets per node */
+	char *topology_str; /* topology address string */
 	double  *tres_weights;	/* array of TRES weights */
 	char    *tres_weights_str; /* per TRES billing weight string */
 	uint32_t weight;	/* arbitrary priority of node for

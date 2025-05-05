@@ -147,6 +147,80 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
+				  void *tctx)
+{
+	block_context_t *ctx = tctx;
+	int *change = xcalloc(ctx->block_count, sizeof(int));
+
+	bit_clear(ctx->blocks_nodes_bitmap, node_ptr->index);
+
+	for (int i = 0; i < ctx->block_count; i++) {
+		bool in_block = bit_test(ctx->block_record_table[i].node_bitmap,
+					 node_ptr->index);
+		bool add = (!xstrcmp(ctx->block_record_table[i].name, unit));
+
+		if (add && !in_block) {
+			debug2("%s: add %s to %s",
+			       __func__, node_ptr->name,
+			       ctx->block_record_table[i].name);
+			bit_set(ctx->block_record_table[i].node_bitmap,
+				node_ptr->index);
+			bit_set(ctx->blocks_nodes_bitmap, node_ptr->index);
+			change[i] = 1;
+		} else if (!add && in_block) {
+			debug2("%s: remove %s from %s",
+			       __func__, node_ptr->name,
+			       ctx->block_record_table[i].name);
+			bit_clear(ctx->block_record_table[i].node_bitmap,
+				  node_ptr->index);
+			change[i] = -1;
+		}
+	}
+
+	for (int i = 0; i < ctx->block_count; i++) {
+		if (!change[i])
+			continue;
+
+		xfree(ctx->block_record_table[i].nodes);
+		ctx->block_record_table[i].nodes =
+			bitmap2node_name(ctx->block_record_table[i]
+						 .node_bitmap);
+
+		for (int j = ctx->block_count;
+		     j < ctx->block_count + ctx->ablock_count; j++) {
+			char *tmp_list = ctx->block_record_table[j].name;
+			hostlist_t *hl = hostlist_create(tmp_list);
+
+			if (hl == NULL)
+				fatal("Invalid BlockName: %s", tmp_list);
+
+			if (hostlist_find(hl,
+					  ctx->block_record_table[i].name) >=
+			    0) {
+				if (change[i] > 0) {
+					bit_set(ctx->block_record_table[j]
+							.node_bitmap,
+						node_ptr->index);
+				} else {
+					bit_clear(ctx->block_record_table[j]
+							  .node_bitmap,
+						  node_ptr->index);
+				}
+
+				xfree(ctx->block_record_table[j].nodes);
+				ctx->block_record_table[j]
+					.nodes = bitmap2node_name(
+					ctx->block_record_table[j].node_bitmap);
+			}
+			hostlist_destroy(hl);
+		}
+	}
+	xfree(change);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * topo_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.

@@ -3380,6 +3380,7 @@ function __scontrol_create_nodename() {
 		"state="
 		"threadspercore="
 		"tmpdisk="
+		"topology="
 		"weight="
 	)
 	local states=(
@@ -4136,6 +4137,7 @@ function __scontrol_update_nodename() {
 		"reason="
 		"resumeafter="
 		"state="
+		"topology="
 		"weight="
 	)
 	local states=(

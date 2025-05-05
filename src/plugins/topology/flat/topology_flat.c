@@ -91,6 +91,12 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
+				  void *tctx)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int topology_p_build_config(topology_ctx_t *tctx)
 {
 	return SLURM_SUCCESS;

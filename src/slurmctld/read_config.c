@@ -573,6 +573,24 @@ static void _build_bitmaps(void)
 	}
 }
 
+static int _set_nodes_topo(void)
+{
+	node_record_t *node_ptr;
+	int rc = SLURM_SUCCESS;
+
+	last_node_update = time(NULL);
+
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
+		if (node_ptr->topology_str &&
+		    (rc = topology_g_add_rm_node(node_ptr))) {
+			error("Invalid node topology specified %s for %s",
+			      node_ptr->topology_str, node_ptr->name);
+			break;
+		}
+	}
+
+	return rc;
+}
 
 /*
  * _init_all_slurm_conf - initialize or re-initialize the slurm
@@ -1633,6 +1651,12 @@ extern int read_slurm_conf(int recover)
 	 * precede build_features_list_*()
 	 */
 	_build_bitmaps();
+
+	if (_set_nodes_topo()) {
+		error("Invalid node topology");
+		error_code = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		goto end_it;
+	}
 
 	/* Active and available features can be different on -R */
 	if ((node_features_g_count() == 0) && (recover != 2))

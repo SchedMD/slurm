@@ -8047,6 +8047,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(UINT16, threads, "threads", "Number of logical threads in a single physical core"),
 	add_parse(UINT32, tmp_disk, "temporary_disk", "Total size in MB of temporary disk storage in TmpFS"),
 	add_parse(UINT32, weight, "weight", "Weight of the node for scheduling purposes"),
+	add_parse(STRING, topology_str, "topology", "Topology"),
 	add_parse(STRING, tres_fmt_str, "tres", "Configured trackable resources"),
 	add_parse(STRING, version, "version", "Slurmd version"),
 };
@@ -9040,6 +9041,7 @@ static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
 	add_parse(STRING, reason, "reason", "Reason for node being DOWN or DRAINING"),
 	add_parse(USER_ID, reason_uid, "reason_uid", "User ID to associate with the reason (needed if user root is sending message)"),
 	add_parse(UINT32_NO_VAL, resume_after, "resume_after", "Number of seconds after which to automatically resume DOWN or DRAINED node"),
+	add_parse(STRING, topology_str, "topology_str", "Topology"),
 	add_parse(UINT32_NO_VAL, weight, "weight", "Weight of the node for scheduling purposes"),
 };
 #undef add_parse

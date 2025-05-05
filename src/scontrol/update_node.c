@@ -250,6 +250,9 @@ scontrol_update_node (int argc, char **argv)
 				node_msg.node_state = state_val;
 				update_cnt++;
 			}
+		} else if (!xstrncasecmp(tag, "Topology", MAX(tag_len, 4))) {
+			node_msg.topology_str = val;
+			update_cnt++;
 		} else {
 			exit_code = 1;
 			fprintf (stderr, "Update of this parameter is not "

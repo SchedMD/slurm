@@ -165,6 +165,7 @@ static void _list_delete_config(void *config_entry)
 	xfree(config_ptr->gres);
 	xfree (config_ptr->nodes);
 	FREE_NULL_BITMAP (config_ptr->node_bitmap);
+	xfree(config_ptr->topology_str);
 	xfree(config_ptr->tres_weights);
 	xfree(config_ptr->tres_weights_str);
 	xfree (config_ptr);
@@ -294,6 +295,7 @@ extern config_record_t *config_record_from_conf_node(
 	config_ptr->res_cores_per_gpu = conf_node->res_cores_per_gpu;
 	config_ptr->threads = conf_node->threads;
 	config_ptr->tmp_disk = conf_node->tmp_disk;
+	config_ptr->topology_str = xstrdup(conf_node->topology_str);
 	config_ptr->tot_sockets = conf_node->tot_sockets;
 	config_ptr->weight = conf_node->weight;
 
@@ -722,6 +724,8 @@ static void _init_node_record(node_record_t *node_ptr,
 
 	node_ptr->cpus_efctv = node_ptr->cpus -
 		(node_ptr->core_spec_cnt * node_ptr->tpc);
+
+	node_ptr->topology_str = xstrdup(config_ptr->topology_str);
 }
 
 extern void grow_node_record_table_ptr(void)
@@ -1994,6 +1998,7 @@ extern config_record_t *config_record_from_node_record(node_record_t *node_ptr)
 	config_ptr->res_cores_per_gpu = node_ptr->res_cores_per_gpu;
 	config_ptr->threads = node_ptr->threads;
 	config_ptr->tmp_disk = node_ptr->tmp_disk;
+	config_ptr->topology_str = xstrdup(node_ptr->topology_str);
 	config_ptr->tot_sockets = node_ptr->tot_sockets;
 	config_ptr->weight = node_ptr->weight;
 

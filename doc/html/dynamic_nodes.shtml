@@ -118,22 +118,34 @@ Only dynamic nodes that have no running jobs and that are not part of a
 reservation can be deleted.
 </p>
 
+<h2 id="delete">Dynamic Nodes + Topology
+<a class="slurm_link" href="#topology"></a>
+</h2>
+<p>
+Nodes can be dynamically added to topologies, defined in either
+<i>topology.conf</i> or <i>topology.yaml</i>, by specifying the node's
+<b>Topology</b> option and providing the list of topology names and units.
+</p>
+<p>
+<b>NOTE</b>: When using topology.conf, the topology name is "default".
+</p>
+
+e.g.
+<pre>
+scontrol create NodeName=d[1-100] ... Topology=topo-switch:s1,topo-block:b1"
+</pre>
+<pre>
+slurmd -Z --conf "... Topology=topo-switch:s1,topo-block:b1"
+</pre>
+<pre>
+slurmd -Z --conf "... Topology=default:b1"
+</pre>
+
 <h2 id="limitations">Limitations
 <a class="slurm_link" href="#limitations"></a>
 </h2>
 <p>
 <ol>
-<li>
-Dynamic nodes are incompatible with <b>TopologyParam=RouteTree</b>.
-</li>
-<li>
-When non-default topology options are in use, extra steps should be taken
-to include dynamic nodes in the topology:
-<ol>
-<li>Dynamic nodes must be added to <b>topology.conf</b></li>
-<li>The <b>slurmctld</b> must be restarted or reconfigured</li>
-</ol>
-</li>
 <li>
 Dynamic nodes are not sorted internally and when added to Slurm they will
 potentially be alphabetically out of order internally &mdash; leading to
