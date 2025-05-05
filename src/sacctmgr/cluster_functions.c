@@ -846,14 +846,15 @@ assoc:
 		ret_list = slurmdb_associations_modify(db_conn,
 						       assoc_cond, assoc);
 
-		printf(" Modified cluster defaults for associations...\n");
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
 			list_itr_t *itr;
 
+			printf(" Setting\n");
 			printf("  Default Limits:\n");
 			sacctmgr_print_assoc_limits(assoc);
 
+			printf(" Modified cluster defaults for associations...\n");
 			itr = list_iterator_create(ret_list);
 			while((object = list_next(itr))) {
 				printf("  %s\n", object);
