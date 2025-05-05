@@ -208,13 +208,12 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer);
  *    Also a slurm_cred is allocated (msg->auth_cred) which must be
  *    freed with auth_g_destroy() if it exists.
  *
- * IN open_fd	- file descriptor to receive msg on
  * IN tls_conn
  * OUT msg	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg, int timeout);
+extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout);
 
 /*
  *  Receive a slurm message on the open slurm descriptor "fd" waiting
@@ -223,7 +222,6 @@ int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg, int timeout);
  *    returned list and must be freed at some point using the
  *    list_destroy function.
  *
- * IN open_fd	- file descriptor to receive msg on
  * IN tls_conn
  * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
@@ -232,10 +230,8 @@ int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg, int timeout);
  *                (ret_data_info_t). NULL is returned on failure. and
  *                errno set.
  */
-extern list_t *slurm_receive_msgs(int fd, void *tls_conn, int steps,
-				  int timeout);
-extern list_t *slurm_receive_resp_msgs(int fd, void *tls_conn, int steps,
-				       int timeout);
+extern list_t *slurm_receive_msgs(void *tls_conn, int steps, int timeout);
+extern list_t *slurm_receive_resp_msgs(void *tls_conn, int steps, int timeout);
 
 /*
  *  Unpack a Slurm message from the supplied 'buffer' and forward.
@@ -261,12 +257,11 @@ extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
 
 /* sends a message to an arbitrary node
  *
- * IN open_fd		- file descriptor to send msg on
  * IN tls_conn
  * IN msg		- a slurm msg struct to be sent
  * RET int		- size of msg sent in bytes
  */
-extern int slurm_send_node_msg(int open_fd, void *tls_conn, slurm_msg_t *msg);
+extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg);
 
 /**********************************************************************\
  * msg connection establishment functions used by msg clients
@@ -297,21 +292,21 @@ extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert);
 
 /* slurm_write_stream
  * writes a buffer out a stream file descriptor
- * IN open_fd		- file descriptor to write on
+ * IN tls_conn
  * IN buffer		- buffer to send
  * IN size		- size of buffer send
  * RET size_t		- bytes sent , or -1 on error
  */
-extern size_t slurm_write_stream(int open_fd, char *buffer, size_t size);
+extern size_t slurm_write_stream(void *tls_conn, char *buffer, size_t size);
 
 /* slurm_read_stream
  * read into buffer grom a stream file descriptor
- * IN open_fd		- file descriptor to read from
+ * IN tls_conn
  * OUT buffer	- buffer to receive into
  * IN size		- size of buffer
  * RET size_t		- bytes read , or -1 on error
  */
-extern size_t slurm_read_stream(int open_fd, char *buffer, size_t size);
+extern size_t slurm_read_stream(void *tls_conn, char *buffer, size_t size);
 
 /**********************************************************************\
  * address conversion and management functions
@@ -387,6 +382,19 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
  * They open a connection do work then close the connection all within
  * the function
 \**********************************************************************/
+
+/*
+ * Initialize response msg
+ *
+ * NOTE: This sets SLURM_NO_AUTH_CRED on resp_msg
+ *
+ * OUT resp_msg - pointer to response message
+ * IN source_msg - create response to this message
+ * IN msg_type - RPC message type
+ * IN data - pointer to message data which corresponds to msg_type
+ */
+extern void slurm_resp_msg_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
+				uint16_t msg_type, void *data);
 
 /*
  * Send message in response to a source message
@@ -524,14 +532,13 @@ extern int slurm_send_only_node_msg(slurm_msg_t *request_msg);
 
 /* Send and recv a slurm request and response on the open slurm descriptor
  * Doesn't close the connection.
- * IN fd	- file descriptor to receive msg on
  * IN tls_conn
  * IN req	- a slurm_msg struct to be sent by the function
  * OUT resp	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-extern int slurm_send_recv_msg(int fd, void *tls_conn, slurm_msg_t *req,
+extern int slurm_send_recv_msg(void *tls_conn, slurm_msg_t *req,
 			       slurm_msg_t *resp, int timeout);
 
 /* Slurm message functions */

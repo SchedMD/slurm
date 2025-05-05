@@ -159,6 +159,7 @@ typedef struct {
 	void **msg_args_pptr;		/* RPC data to be used */
 	uint16_t msg_flags;		/* Flags to be added to msg*/
 	uint16_t protocol_version;	/* if set, use this version */
+	char *tls_cert;
 } agent_info_t;
 
 typedef struct {
@@ -174,6 +175,7 @@ typedef struct {
 	void *msg_args_ptr;		/* ptr to RPC data to be used */
 	uint16_t msg_flags;		/* Flags to be added to msg*/
 	uint16_t protocol_version;	/* if set, use this version */
+	char *tls_cert;
 } task_info_t;
 
 typedef struct {
@@ -468,6 +470,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
 	agent_info_ptr->msg_flags = agent_arg_ptr->msg_flags;
 	agent_info_ptr->protocol_version = agent_arg_ptr->protocol_version;
+	agent_info_ptr->tls_cert = xstrdup(agent_arg_ptr->tls_cert);
 
 	if (!agent_info_ptr->thread_count)
 		return agent_info_ptr;
@@ -566,6 +569,7 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
 	task_info_ptr->msg_args_ptr      = *agent_info_ptr->msg_args_pptr;
 	task_info_ptr->msg_flags = agent_info_ptr->msg_flags;
 	task_info_ptr->protocol_version  = agent_info_ptr->protocol_version;
+	task_info_ptr->tls_cert = xstrdup(agent_info_ptr->tls_cert);
 
 	return task_info_ptr;
 }
@@ -969,6 +973,8 @@ static void *_thread_per_group_rpc(void *args)
 	msg.data     = task_ptr->msg_args_ptr;
 	slurm_msg_set_r_uid(&msg, task_ptr->r_uid);
 	msg.flags |= task_ptr->msg_flags;
+	msg.tls_cert = task_ptr->tls_cert;
+	task_ptr->tls_cert = NULL;
 
 	if (thread_ptr->nodename)
 		log_flag(AGENT, "%s: sending %s to %s", __func__,

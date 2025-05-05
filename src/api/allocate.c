@@ -1383,33 +1383,30 @@ static int _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp,
 static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 				  uint32_t job_id)
 {
-	int	     conn_fd;
+	void *tls_conn = NULL;
 	slurm_msg_t  *msg = NULL;
 	slurm_addr_t cli_addr;
 	int          rc = 0;
 
-	conn_fd = slurm_accept_msg_conn(listen_fd, &cli_addr);
-	if (conn_fd < 0) {
-		error("Unable to accept connection: %m");
-		return rc;
-	}
+	if (!(tls_conn = slurm_accept_msg_conn(listen_fd, &cli_addr)))
+		return 0;
 
 	debug2("got message connection from %pA", &cli_addr);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
 
-	if ((rc = slurm_receive_msg(conn_fd, NULL, msg, 0)) != 0) {
+	if ((rc = slurm_receive_msg(tls_conn, msg, 0)) != 0) {
 		slurm_free_msg(msg);
 
 		if (errno == EINTR) {
-			close(conn_fd);
+			tls_g_destroy_conn(tls_conn, true);
 			*resp = NULL;
 			return 0;
 		}
 
 		error("%s[%pA]: %m", __func__, &cli_addr);
-		close(conn_fd);
+		tls_g_destroy_conn(tls_conn, true);
 		return SLURM_ERROR;
 	}
 
@@ -1417,7 +1414,7 @@ static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 
 	slurm_free_msg(msg);
 
-	close(conn_fd);
+	tls_g_destroy_conn(tls_conn, true);
 	return rc;
 }
 

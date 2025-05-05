@@ -57,6 +57,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/stepd_api.h"
+#include "src/common/stepd_proxy.h"
 #include "src/common/strlcpy.h"
 #include "src/common/timers.h"
 #include "src/common/tres_frequency.h"
@@ -501,6 +502,7 @@ static int _handle_stepmgr_relay_msg(int fd,
 	char *data = NULL;
 	uint16_t protocol_version;
 	uint32_t data_size;
+	return_code_msg_t rc_msg = { 0 };
 
 	safe_read(fd, &protocol_version, sizeof(uint16_t));
 	safe_read(fd, &data_size, sizeof(uint32_t));
@@ -535,8 +537,12 @@ static int _handle_stepmgr_relay_msg(int fd,
 
 done:
 	if (rc) {
-		if (reply)
-			slurm_send_rc_msg(msg, rc);
+		if (reply) {
+			rc_msg.return_code = rc;
+			stepd_proxy_send_resp_to_slurmd(fd, msg,
+							RESPONSE_SLURM_RC,
+							&rc_msg);
+		}
 		slurm_free_msg_members(msg);
 	}
 
@@ -563,7 +569,7 @@ static int _handle_step_create(int fd, stepd_step_rec_t *step, uid_t uid)
 	msg.auth_ids_set = true;
 
 	/* step_create_from_msg responds to the client */
-	step_create_from_msg(&msg, NULL, NULL);
+	step_create_from_msg(&msg, fd, NULL, NULL);
 
 	slurm_mutex_unlock(&stepmgr_mutex);
 
@@ -602,7 +608,8 @@ static int _handle_job_step_get_info(int fd, stepd_step_rec_t *step, uid_t uid)
 	pack_job_step_info_response_msg(&args);
 	slurm_mutex_unlock(&stepmgr_mutex);
 
-	(void) send_msg_response(&msg, RESPONSE_JOB_STEP_INFO, buffer);
+	(void) stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_JOB_STEP_INFO,
+					       buffer);
 	FREE_NULL_BUFFER(buffer);
 	slurm_free_msg_members(&msg);
 
@@ -615,6 +622,7 @@ static int _handle_cancel_job_step(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc;
 	slurm_msg_t msg;
 	job_step_kill_msg_t *request;
+	return_code_msg_t rc_msg = { 0 };
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
 					    REQUEST_CANCEL_JOB_STEP, true)))
@@ -627,7 +635,8 @@ static int _handle_cancel_job_step(int fd, stepd_step_rec_t *step, uid_t uid)
 			     request->flags, uid);
 	slurm_mutex_unlock(&stepmgr_mutex);
 
-	slurm_send_rc_msg(&msg, rc);
+	rc_msg.return_code = rc;
+	stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_SLURM_RC, &rc_msg);
 	slurm_free_msg_members(&msg);
 
 done:
@@ -707,6 +716,7 @@ static int _handle_update_step(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc;
 	slurm_msg_t msg;
 	step_update_request_msg_t *request;
+	return_code_msg_t rc_msg = { 0 };
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
 					    REQUEST_UPDATE_JOB_STEP, true)))
@@ -718,7 +728,8 @@ static int _handle_update_step(int fd, stepd_step_rec_t *step, uid_t uid)
 	rc = update_step(request, uid);
 	slurm_mutex_unlock(&stepmgr_mutex);
 
-	slurm_send_rc_msg(&msg, rc);
+	rc_msg.return_code = rc;
+	stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_SLURM_RC, &rc_msg);
 	slurm_free_msg_members(&msg);
 
 done:
@@ -731,6 +742,7 @@ static int _handle_step_layout(int fd, stepd_step_rec_t *step, uid_t uid)
 	slurm_msg_t msg;
 	slurm_step_id_t *request;
 	slurm_step_layout_t *step_layout = NULL;
+	return_code_msg_t rc_msg = { 0 };
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg, REQUEST_STEP_LAYOUT,
 					    true)))
@@ -742,11 +754,14 @@ static int _handle_step_layout(int fd, stepd_step_rec_t *step, uid_t uid)
 	rc = stepmgr_get_step_layouts(job_step_ptr, request, &step_layout);
 	slurm_mutex_unlock(&stepmgr_mutex);
 	if (!rc) {
-		(void) send_msg_response(&msg, RESPONSE_STEP_LAYOUT,
-					 step_layout);
+		(void) stepd_proxy_send_resp_to_slurmd(fd, &msg,
+						       RESPONSE_STEP_LAYOUT,
+						       step_layout);
 		slurm_step_layout_destroy(step_layout);
 	} else {
-		slurm_send_rc_msg(&msg, rc);
+		rc_msg.return_code = rc;
+		stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_SLURM_RC,
+						&rc_msg);
 	}
 
 	slurm_free_msg_members(&msg);
@@ -761,6 +776,7 @@ static int _handle_job_sbcast_cred(int fd, stepd_step_rec_t *step, uid_t uid)
 	slurm_msg_t msg;
 	step_alloc_info_msg_t *request;
 	job_sbcast_cred_msg_t *job_info_resp_msg = NULL;
+	return_code_msg_t rc_msg = { 0 };
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
 					    REQUEST_JOB_SBCAST_CRED, true)))
@@ -776,15 +792,17 @@ static int _handle_job_sbcast_cred(int fd, stepd_step_rec_t *step, uid_t uid)
 	if (rc)
 		goto resp;
 
-	(void) send_msg_response(&msg, RESPONSE_JOB_SBCAST_CRED,
-				 job_info_resp_msg);
+	(void) stepd_proxy_send_resp_to_slurmd(fd, &msg,
+					       RESPONSE_JOB_SBCAST_CRED,
+					       job_info_resp_msg);
 
 	slurm_free_sbcast_cred_msg(job_info_resp_msg);
 	slurm_free_msg_members(&msg);
 	return rc;
 
 resp:
-	slurm_send_rc_msg(&msg, rc);
+	rc_msg.return_code = rc;
+	stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_SLURM_RC, &rc_msg);
 	slurm_free_msg_members(&msg);
 
 done:
@@ -804,6 +822,7 @@ static int _handle_het_job_alloc_info(int fd, stepd_step_rec_t *step, uid_t uid)
 	job_alloc_info_msg_t *request;
 	resource_allocation_response_msg_t *job_info_resp_msg = NULL;
 	list_t *resp_list = NULL;
+	return_code_msg_t rc_msg = { 0 };
 
 	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
 					    REQUEST_HET_JOB_ALLOC_INFO, true)))
@@ -827,14 +846,17 @@ static int _handle_het_job_alloc_info(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	slurm_mutex_unlock(&stepmgr_mutex);
 
-	(void) send_msg_response(&msg, RESPONSE_HET_JOB_ALLOCATION, resp_list);
+	(void) stepd_proxy_send_resp_to_slurmd(fd, &msg,
+					       RESPONSE_HET_JOB_ALLOCATION,
+					       resp_list);
 
 	FREE_NULL_LIST(resp_list);
 	slurm_free_msg_members(&msg);
 	return rc;
 
 resp:
-	slurm_send_rc_msg(&msg, rc);
+	rc_msg.return_code = rc;
+	stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_SLURM_RC, &rc_msg);
 	slurm_free_msg_members(&msg);
 
 done:

@@ -254,6 +254,8 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 	dest->orig_addr.ss_family = AF_UNSPEC;
 	if (src->auth_ids_set)
 		slurm_msg_set_r_uid(dest, src->auth_uid);
+
+	dest->tls_conn = src->tls_conn;
 }
 
 /* here to add \\ to all \" in a string this needs to be xfreed later */
@@ -5141,7 +5143,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurmdb_destroy_federation_rec(data);
 		break;
 	case REQUEST_PERSIST_INIT:
-	case REQUEST_PERSIST_INIT_TLS:
 		slurm_persist_free_init_req_msg(data);
 		break;
 	case PERSIST_RC:
@@ -6250,6 +6251,7 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
 
 	hostlist_destroy(agent_arg_ptr->hostlist);
 	xfree(agent_arg_ptr->addr);
+	xfree(agent_arg_ptr->tls_cert);
 	if (agent_arg_ptr->msg_args) {
 		if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
 			slurm_free_job_launch_msg(agent_arg_ptr->msg_args);

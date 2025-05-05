@@ -160,8 +160,10 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 	uint16_t msg_type, protocol_version, proxy_type;
 	int rc = SLURM_SUCCESS;
 	slurm_addr_t req_address = { 0 };
-	return_code_msg_t rc_msg = { 0 };
 	slurm_msg_t req, resp;
+	return_code_msg_t *rc_msg;
+	char *req_tls_cert = NULL;
+
 	uid_t uid = SLURM_AUTH_NOBODY;
 	gid_t gid = SLURM_AUTH_NOBODY;
 	pid_t pid = 0;
@@ -183,6 +185,7 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 	case PROXY_TO_NODE_SEND_ONLY:
 		if (slurm_unpack_addr_no_alloc(&req_address, in))
 			goto unpack_error;
+		safe_unpackstr(&req_tls_cert, in);
 		break;
 	default:
 		/* don't need address for ctld messages */
@@ -218,6 +221,7 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 	req.protocol_version = protocol_version;
 	req.msg_type = msg_type;
 	req.address = req_address;
+	req.tls_cert = req_tls_cert;
 	slurm_msg_set_r_uid(&req, r_uid);
 
 	if (unpack_msg(&req, in) != SLURM_SUCCESS) {
@@ -239,10 +243,11 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 	switch (proxy_type) {
 	case PROXY_TO_NODE_SEND_ONLY:
 	case PROXY_TO_CTLD_SEND_ONLY:
+		rc_msg = xmalloc(sizeof(*rc_msg));
 		resp.protocol_version = protocol_version;
 		resp.msg_type = RESPONSE_SLURM_RC;
-		rc_msg.return_code = SLURM_SUCCESS;
-		resp.data = &rc_msg;
+		rc_msg->return_code = SLURM_SUCCESS;
+		resp.data = rc_msg;
 		break;
 	}
 
@@ -258,6 +263,7 @@ unpack_error:
 		      __func__);
 	}
 
+	xfree(req_tls_cert);
 	slurm_free_msg_data(req.msg_type, req.data);
 	slurm_free_msg_data(resp.msg_type, resp.data);
 
@@ -338,6 +344,7 @@ static int _stepd_send_to_slurmd(int fd, slurm_msg_t *req, int timeout,
 	case PROXY_TO_NODE_SEND_RECV:
 	case PROXY_TO_NODE_SEND_ONLY:
 		slurm_pack_addr(&req->address, buffer);
+		packstr(req->tls_cert, buffer);
 		break;
 	default:
 		/* don't need address for ctld messages */
@@ -502,7 +509,7 @@ extern int stepd_proxy_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp,
 				    PROXY_TO_NODE_SEND_RECV);
 }
 
-static int _slurmd_send_msg_to_stepmgr(int fd, slurm_msg_t *req)
+static int _slurmd_send_msg_to_stepd(int fd, slurm_msg_t *req)
 {
 	int req_msg_type = req->msg_type;
 	uint32_t buf_size;
@@ -518,16 +525,17 @@ static int _slurmd_send_msg_to_stepmgr(int fd, slurm_msg_t *req)
 	return SLURM_SUCCESS;
 
 rwfail:
-	error("%s: Failed to write to stepmgr: %m", __func__);
+	error("%s: Failed to write to stepd: %m", __func__);
 	return SLURM_ERROR;
 }
 
-static int _slurmd_recv_msg_from_stepmgr(int fd, buf_t **resp_buf)
+static int _slurmd_recv_msg_from_stepd(int fd, buf_t **resp_buf)
 {
 	uint32_t data_size;
 	char *data = NULL;
 	buf_t *buf;
 
+	/* see _stepd_send_resp_to_slurmd() */
 	safe_read(fd, &data_size, sizeof(uint32_t));
 	data_size = ntohl(data_size);
 	data = xmalloc(data_size);
@@ -539,7 +547,7 @@ static int _slurmd_recv_msg_from_stepmgr(int fd, buf_t **resp_buf)
 
 	return SLURM_SUCCESS;
 rwfail:
-	error("%s: Failed to read from stepmgr: %m", __func__);
+	error("%s: Failed to read from stepd: %m", __func__);
 	return SLURM_ERROR;
 }
 
@@ -551,18 +559,69 @@ extern int stepd_proxy_send_recv_to_stepd(slurm_msg_t *req, buf_t **resp_buf,
 
 	fd_set_nonblocking(stepd_fd);
 
-	if (_slurmd_send_msg_to_stepmgr(stepd_fd, req)) {
-		error("%s: Failed to send msg to stepmgr", __func__);
+	if (_slurmd_send_msg_to_stepd(stepd_fd, req)) {
+		error("%s: Failed to send msg to stepd", __func__);
 		return SLURM_ERROR;
 	}
 
 	if (!reply)
 		return SLURM_SUCCESS;
 
-	if (_slurmd_recv_msg_from_stepmgr(stepd_fd, resp_buf)) {
-		error("%s: Failed to receive response from stepmgr", __func__);
+	if (_slurmd_recv_msg_from_stepd(stepd_fd, resp_buf)) {
+		error("%s: Failed to receive response from stepd", __func__);
 		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static int _stepd_send_resp_to_slurmd(int fd, uint32_t msglen,
+				      msg_bufs_t *buffers)
+{
+	xassert(buffers);
+
+	/* see _slurmd_recv_msg_from_stepd() */
+	safe_write(fd, &msglen, sizeof(msglen));
+	safe_write(fd, get_buf_data(buffers->header),
+		   get_buf_offset(buffers->header));
+	/* No auth, SLURM_NO_AUTH_CRED is set */
+	safe_write(fd, get_buf_data(buffers->body),
+		   get_buf_offset(buffers->body));
+
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
+}
+
+extern int stepd_proxy_send_resp_to_slurmd(int fd, slurm_msg_t *source_msg,
+					   slurm_msg_type_t msg_type,
+					   void *data)
+{
+	msg_bufs_t buffers = { 0 };
+	uint32_t msglen = 0;
+	int rc;
+	slurm_msg_t resp_msg;
+
+	xassert(running_in_slurmstepd());
+
+	slurm_resp_msg_init(&resp_msg, source_msg, msg_type, data);
+
+	if (slurm_buffers_pack_msg(&resp_msg, &buffers, true)) {
+		rc = SLURM_ERROR;
+		goto end;
+	}
+
+	msglen = get_buf_offset(buffers.body) + get_buf_offset(buffers.header);
+	/* No auth, SLURM_NO_AUTH_CRED is set */
+
+	msglen = htonl(msglen);
+
+	rc = _stepd_send_resp_to_slurmd(fd, msglen, &buffers);
+
+end:
+	FREE_NULL_BUFFER(buffers.auth);
+	FREE_NULL_BUFFER(buffers.body);
+	FREE_NULL_BUFFER(buffers.header);
+
+	return rc;
 }

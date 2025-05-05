@@ -54,6 +54,8 @@
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
 
+#include "src/interfaces/tls.h"
+
 #include "opt.h"
 #include "srun_job.h"
 #include "srun_pty.h"
@@ -121,28 +123,24 @@ static void  _handle_sigwinch(int sig)
 	xsignal(SIGWINCH, _handle_sigwinch);
 }
 
-static void _notify_winsize_change(int fd, srun_job_t *job)
+static void _notify_winsize_change(void *tls_conn, srun_job_t *job)
 {
 	pty_winsz_t winsz;
 	int len;
 	char buf[4];
 
-	if (fd < 0) {
-		error("pty: no file to write window size changes to");
-		return;
-	}
-
 	winsz.cols = htons(job->ws_col);
 	winsz.rows = htons(job->ws_row);
 	memcpy(buf, &winsz.cols, 2);
 	memcpy(buf+2, &winsz.rows, 2);
-	len = slurm_write_stream(fd, buf, 4);
+	len = slurm_write_stream(tls_conn, buf, 4);
 	if (len < sizeof(winsz))
 		error("pty: window size change notification error: %m");
 }
 
 static void *_pty_thread(void *arg)
 {
+	void *tls_conn = NULL;
 	int fd = -1;
 	srun_job_t *job = (srun_job_t *) arg;
 	slurm_addr_t client_addr;
@@ -150,10 +148,12 @@ static void *_pty_thread(void *arg)
 	xsignal_unblock(pty_sigarray);
 	xsignal(SIGWINCH, _handle_sigwinch);
 
-	if ((fd = slurm_accept_msg_conn(job->pty_fd, &client_addr)) < 0) {
+	if (!(tls_conn = slurm_accept_msg_conn(job->pty_fd, &client_addr))) {
 		error("pty: accept failure: %m");
 		return NULL;
 	}
+
+	fd = tls_g_get_conn_fd(tls_conn);
 
 	net_set_keep_alive(fd);
 	while (job->state <= SRUN_JOB_RUNNING) {
@@ -164,10 +164,11 @@ static void *_pty_thread(void *arg)
 		}
 		if (winch) {
 			set_winsize(STDOUT_FILENO, job);
-			_notify_winsize_change(fd, job);
+			_notify_winsize_change(tls_conn, job);
 		}
 		winch = 0;
 	}
-	close(fd);
+
+	tls_g_destroy_conn(tls_conn, true);
 	return NULL;
 }

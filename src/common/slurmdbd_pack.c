@@ -1739,7 +1739,6 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 
 	switch (req->msg_type) {
 	case REQUEST_PERSIST_INIT:
-	case REQUEST_PERSIST_INIT_TLS:
 		slurm_persist_pack_init_req_msg(req->data, buffer);
 		break;
 	case PERSIST_RC:
@@ -1947,7 +1946,6 @@ extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
 		resp->data = msg.data;
 		break;
 	case REQUEST_PERSIST_INIT:
-	case REQUEST_PERSIST_INIT_TLS:
 		resp->data = xmalloc(sizeof(slurm_msg_t));
 		slurm_msg_t_init(resp->data);
 		rc = slurm_unpack_received_msg(

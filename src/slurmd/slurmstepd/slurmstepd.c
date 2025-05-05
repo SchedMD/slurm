@@ -148,6 +148,7 @@ static void *_rpc_thread(void *data)
 	msg.flags = agent_arg_ptr->msg_flags;
 	msg.msg_type = agent_arg_ptr->msg_type;
 	msg.protocol_version = agent_arg_ptr->protocol_version;
+	msg.tls_cert = xstrdup(agent_arg_ptr->tls_cert);
 
 	slurm_msg_set_r_uid(&msg, agent_arg_ptr->r_uid);
 

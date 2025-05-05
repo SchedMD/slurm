@@ -192,7 +192,7 @@ extern slurm_node_alias_addrs_t *build_alias_addrs(job_record_t *job_ptr);
  */
 extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap);
 
-extern int step_create_from_msg(slurm_msg_t *msg,
+extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 				void (*lock_func)(bool lock),
 				void (*fail_lock_func)(bool lock));
 

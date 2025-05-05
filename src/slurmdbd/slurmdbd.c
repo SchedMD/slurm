@@ -934,7 +934,6 @@ static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 {
 	slurm_msg_t req_msg;
 	void *tls_conn = NULL;
-	int fd;
 
 	slurm_msg_t_init(&req_msg);
 
@@ -947,13 +946,11 @@ static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 		return SLURM_ERROR;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
-
 	slurm_msg_set_r_uid(&req_msg, SLURM_AUTH_UID_ANY);
 	req_msg.msg_type = ACCOUNTING_REGISTER_CTLD;
 	req_msg.flags = SLURM_GLOBAL_AUTH_KEY;
 	req_msg.protocol_version = cluster_rec->rpc_version;
-	slurm_send_node_msg(fd, tls_conn, &req_msg);
+	slurm_send_node_msg(tls_conn, &req_msg);
 
 	/* response is ignored */
 

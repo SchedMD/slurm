@@ -2263,11 +2263,13 @@ static void _step_create_job_fail_lock(bool lock)
  *	with the stepmgr */
 static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 {
-	if (!step_create_from_msg(msg,
+	if (!step_create_from_msg(msg, -1,
 				  ((!(msg->flags & CTLD_QUEUE_PROCESSING)) ?
-				   _step_create_job_lock : NULL),
+					   _step_create_job_lock :
+					   NULL),
 				  ((!(msg->flags & CTLD_QUEUE_PROCESSING)) ?
-				   _step_create_job_fail_lock : NULL))) {
+					   _step_create_job_fail_lock :
+					   NULL))) {
 		schedule_job_save();	/* Sets own locks */
 	}
 }
@@ -5895,19 +5897,11 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn_t *persist_conn = NULL, p_tmp;
 	persist_init_req_msg_t *persist_init = msg->data;
 	slurm_addr_t rem_addr;
-	tls_conn_args_t tls_args = {
-		.input_fd = -1,
-		.output_fd = -1,
-		.mode = TLS_CONN_NULL,
-	};
 
 	if (msg->conn)
 		error("We already have a persistent connect, this should never happen");
 
 	START_TIMER;
-
-	if (msg->msg_type == REQUEST_PERSIST_INIT_TLS)
-		tls_args.mode = TLS_CONN_SERVER;
 
 	if (persist_init->version > SLURM_PROTOCOL_VERSION)
 		persist_init->version = SLURM_PROTOCOL_VERSION;
@@ -5939,8 +5933,9 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	persist_conn->fd = msg->conn_fd;
 	msg->conn_fd = -1;
-	tls_args.input_fd = persist_conn->fd;
-	tls_args.output_fd = persist_conn->fd;
+
+	persist_conn->tls_conn = msg->tls_conn;
+	msg->tls_conn = NULL;
 
 	persist_conn->callback_proc = _process_persist_conn;
 
@@ -5958,11 +5953,6 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	//persist_conn->timeout = 0; /* we want this to be 0 */
 
 	persist_conn->version = persist_init->version;
-
-	if (!(persist_conn->tls_conn = tls_g_create_conn(&tls_args))) {
-		error("tls_g_create_conn() failed on persistent connection request");
-		goto end_it;
-	}
 
 	memcpy(&p_tmp, persist_conn, sizeof(persist_conn_t));
 
@@ -6840,9 +6830,6 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.msg_type = REQUEST_PERSIST_INIT,
 		.func = _slurm_rpc_persist_init,
 	},{
-		.msg_type = REQUEST_PERSIST_INIT_TLS,
-		.func = _slurm_rpc_persist_init,
-	},{
 		.msg_type = REQUEST_SET_FS_DAMPENING_FACTOR,
 		.func = _slurm_rpc_set_fs_dampening_factor,
 	},{
@@ -6931,7 +6918,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	record_rpc_stats(msg, DELTA_TIMER);
 }
 
-static void _srun_agent_launch(slurm_addr_t *addr, char *host,
+static void _srun_agent_launch(slurm_addr_t *addr, char *tls_cert, char *host,
 			       slurm_msg_type_t type, void *msg_args,
 			       uid_t r_uid, uint16_t protocol_version)
 {
@@ -6943,6 +6930,7 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 	agent_args->hostlist   = hostlist_create(host);
 	agent_args->msg_type   = type;
 	agent_args->msg_args   = msg_args;
+	agent_args->tls_cert = xstrdup(tls_cert);
 	set_agent_arg_r_uid(agent_args, r_uid);
 
 	/*
@@ -7032,7 +7020,8 @@ extern void srun_allocate(job_record_t *job_ptr)
 		msg_arg = build_alloc_msg(job_ptr, SLURM_SUCCESS, NULL);
 		log_flag(TLS, "Certificate for allocation response listening socket:\n%s\n",
 			 job_ptr->alloc_tls_cert);
-		_srun_agent_launch(addr, job_ptr->alloc_node,
+		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
+				   job_ptr->alloc_node,
 				   RESPONSE_RESOURCE_ALLOCATION, msg_arg,
 				   job_ptr->user_id,
 				   job_ptr->start_protocol_ver);
@@ -7058,7 +7047,8 @@ extern void srun_allocate(job_record_t *job_ptr)
 			msg_arg = NULL;
 		}
 		list_iterator_destroy(iter);
-		_srun_agent_launch(addr, job_ptr->alloc_node,
+		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
+				   job_ptr->alloc_node,
 				   RESPONSE_HET_JOB_ALLOCATION, job_resp_list,
 				   job_ptr->user_id,
 				   job_ptr->start_protocol_ver);

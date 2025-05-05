@@ -993,15 +993,14 @@ total_return:
 /*
  * NOTE: memory is allocated for the returned msg must be freed at
  *       some point using the slurm_free_functions.
- * IN fd	- file descriptor to receive msg on
  * IN tls_conn
  * OUT msg	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-extern int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg,
-			     int timeout)
+extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout)
 {
+	int fd = -1;
 	char *buf = NULL;
 	size_t buflen = 0;
 	int rc;
@@ -1040,9 +1039,10 @@ extern int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg,
 		return SLURM_SUCCESS;
 	}
 
-	xassert(fd >= 0);
+	fd = tls_g_get_conn_fd(tls_conn);
 
 	msg->conn_fd = fd;
+	msg->tls_conn = tls_conn;
 
 	if (timeout <= 0) {
 		/* convert secs to msec */
@@ -1080,6 +1080,9 @@ extern int slurm_receive_msg(int fd, void *tls_conn, slurm_msg_t *msg,
 	else
 		FREE_NULL_BUFFER(buffer);
 
+	log_flag(NET, "Received message %s from %pA on fd %d",
+		 rpc_num2string(msg->msg_type), &msg->address, fd);
+
 endit:
 	errno = rc;
 
@@ -1095,7 +1098,6 @@ endit:
 /*
  * NOTE: memory is allocated for the returned list
  *       and must be freed at some point using the list_destroy function.
- * IN open_fd	- file descriptor to receive msg on
  * IN tls_conn
  * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
@@ -1103,9 +1105,9 @@ endit:
  *		  forwarded the message to. List containing type
  *		  (ret_data_info_t).
  */
-extern list_t *slurm_receive_msgs(int fd, void *tls_conn, int steps,
-				  int timeout)
+extern list_t *slurm_receive_msgs(void *tls_conn, int steps, int timeout)
 {
+	int fd = -1;
 	char *buf = NULL;
 	size_t buflen = 0;
 	header_t header;
@@ -1118,7 +1120,7 @@ extern list_t *slurm_receive_msgs(int fd, void *tls_conn, int steps,
 	int orig_timeout = timeout;
 	char *peer = NULL;
 
-	xassert(fd >= 0);
+	fd = tls_g_get_conn_fd(tls_conn);
 
 	if (slurm_conf.debug_flags & (DEBUG_FLAG_NET | DEBUG_FLAG_NET_RAW)) {
 		/*
@@ -1289,9 +1291,9 @@ total_return:
 
 }
 
-extern list_t *slurm_receive_resp_msgs(int fd, void *tls_conn, int steps,
-				       int timeout)
+extern list_t *slurm_receive_resp_msgs(void *tls_conn, int steps, int timeout)
 {
+	int fd = -1;
 	char *buf = NULL;
 	size_t buflen = 0;
 	header_t header;
@@ -1304,7 +1306,7 @@ extern list_t *slurm_receive_resp_msgs(int fd, void *tls_conn, int steps,
 	int orig_timeout = timeout;
 	char *peer = NULL;
 
-	xassert(fd >= 0);
+	fd = tls_g_get_conn_fd(tls_conn);
 
 	if (slurm_conf.debug_flags & (DEBUG_FLAG_NET | DEBUG_FLAG_NET_RAW)) {
 		/*
@@ -1755,8 +1757,9 @@ skip_auth2:
  * Send a slurm message over an open file descriptor `fd'
  * Returns the size of the message sent in bytes, or -1 on failure.
  */
-extern int slurm_send_node_msg(int fd, void *tls_conn, slurm_msg_t *msg)
+extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 {
+	int fd = -1;
 	msg_bufs_t buffers = { 0 };
 	int rc;
 
@@ -1764,6 +1767,10 @@ extern int slurm_send_node_msg(int fd, void *tls_conn, slurm_msg_t *msg)
 		persist_msg_t persist_msg;
 		buf_t *buffer;
 		char *peer = NULL;
+
+		log_flag(NET, "Sending persist_msg_t %s to %pA on fd %d",
+			 rpc_num2string(msg->msg_type), &msg->address,
+			 msg->conn->fd);
 
 		memset(&persist_msg, 0, sizeof(persist_msg_t));
 		persist_msg.msg_type  = msg->msg_type;
@@ -1794,6 +1801,11 @@ extern int slurm_send_node_msg(int fd, void *tls_conn, slurm_msg_t *msg)
 		xfree(peer);
 		return rc;
 	}
+
+	fd = tls_g_get_conn_fd(tls_conn);
+
+	log_flag(NET, "Sending message %s to %pA on fd %d",
+		 rpc_num2string(msg->msg_type), &msg->address, fd);
 
 	/*
 	 * Pack and send message
@@ -1834,29 +1846,31 @@ cleanup:
 
 /* slurm_write_stream
  * writes a buffer out a stream file descriptor
- * IN open_fd		- file descriptor to write on
+ * IN tls_conn
  * IN buffer		- buffer to send
  * IN size		- size of buffer send
  * IN timeout		- how long to wait in milliseconds
  * RET size_t		- bytes sent , or -1 on error
  */
-size_t slurm_write_stream(int open_fd, char *buffer, size_t size)
+extern size_t slurm_write_stream(void *tls_conn, char *buffer, size_t size)
 {
-	return slurm_send_timeout(open_fd, buffer, size,
-	                          (slurm_conf.msg_timeout * 1000));
+	int open_fd = tls_g_get_conn_fd(tls_conn);
+	return slurm_send_timeout(open_fd, tls_conn, buffer, size,
+				  (slurm_conf.msg_timeout * 1000));
 }
 
 /* slurm_read_stream
  * read into buffer grom a stream file descriptor
- * IN open_fd	- file descriptor to read from
+ * IN tls_conn
  * OUT buffer   - buffer to receive into
  * IN size	- size of buffer
  * IN timeout	- how long to wait in milliseconds
  * RET size_t	- bytes read , or -1 on error
  */
-size_t slurm_read_stream(int open_fd, char *buffer, size_t size)
+extern size_t slurm_read_stream(void *tls_conn, char *buffer, size_t size)
 {
-	return slurm_recv_timeout(open_fd, NULL, buffer, size,
+	int open_fd = tls_g_get_conn_fd(tls_conn);
+	return slurm_recv_timeout(open_fd, tls_conn, buffer, size,
 				  (slurm_conf.msg_timeout * 1000));
 }
 
@@ -1952,8 +1966,8 @@ unpack_error:
  * the function
 \**********************************************************************/
 
-static void _response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
-			   uint16_t msg_type, void *data)
+extern void slurm_resp_msg_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
+				uint16_t msg_type, void *data)
 {
 	slurm_msg_t_init(resp_msg);
 	resp_msg->address = msg->address;
@@ -2004,7 +2018,7 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	    !source_msg->conmgr_fd)
 		return ENOTCONN;
 
-	_response_init(&resp_msg, source_msg, msg_type, data);
+	slurm_resp_msg_init(&resp_msg, source_msg, msg_type, data);
 
 	if (source_msg->conmgr_fd) {
 		rc = conmgr_queue_write_msg(source_msg->conmgr_fd, &resp_msg);
@@ -2021,7 +2035,7 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	resp_msg.conn_fd = source_msg->conn_fd;
 	resp_msg.conn = source_msg->conn;
 
-	rc = slurm_send_node_msg(source_msg->conn_fd, NULL, &resp_msg);
+	rc = slurm_send_node_msg(source_msg->tls_conn, &resp_msg);
 
 	if (rc >= 0)
 		return SLURM_SUCCESS;
@@ -2080,17 +2094,14 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 extern void slurm_send_msg_maybe(slurm_msg_t *req)
 {
 	void *tls_conn = NULL;
-	int fd = -1;
 
-	if (!(tls_conn = slurm_open_msg_conn(&req->address, NULL))) {
+	if (!(tls_conn = slurm_open_msg_conn(&req->address, req->tls_cert))) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req->address);
 		return;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
-
-	(void) slurm_send_node_msg(fd, tls_conn, req);
+	(void) slurm_send_node_msg(tls_conn, req);
 
 	tls_g_destroy_conn(tls_conn, true);
 }
@@ -2124,14 +2135,13 @@ int slurm_send_reroute_msg(slurm_msg_t *msg,
 /*
  * Send and recv a slurm request and response on the open slurm descriptor
  * Doesn't close the connection.
- * IN fd	- file descriptor to receive msg on
  * IN tls_conn
  * IN req	- a slurm_msg struct to be sent by the function
  * OUT resp	- a slurm_msg struct to be filled in by the function
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-extern int slurm_send_recv_msg(int fd, void *tls_conn, slurm_msg_t *req,
+extern int slurm_send_recv_msg(void *tls_conn, slurm_msg_t *req,
 			       slurm_msg_t *resp, int timeout)
 {
 	slurm_msg_t_init(resp);
@@ -2141,11 +2151,10 @@ extern int slurm_send_recv_msg(int fd, void *tls_conn, slurm_msg_t *req,
 	 * sure.
 	 */
 	if (req->conn) {
-		fd = req->conn->fd;
 		resp->conn = req->conn;
 	}
 
-	if (slurm_send_node_msg(fd, tls_conn, req) < 0)
+	if (slurm_send_node_msg(tls_conn, req) < 0)
 		return -1;
 
 	/*
@@ -2153,7 +2162,7 @@ extern int slurm_send_recv_msg(int fd, void *tls_conn, slurm_msg_t *req,
 	 * expecting anything other than one message. The default timeout will
 	 * be used if it is set to 0.
 	 */
-	if (slurm_receive_msg(fd, tls_conn, resp, timeout))
+	if (slurm_receive_msg(tls_conn, resp, timeout))
 		return -1;
 
 	return 0;
@@ -2183,7 +2192,6 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 				slurm_msg_t * response_msg,
 				slurmdb_cluster_rec_t *comm_cluster_rec)
 {
-	int fd = -1;
 	int rc = 0;
 	time_t start_time = time(NULL);
 	slurm_conf_t *conf;
@@ -2229,9 +2237,8 @@ tryagain:
 			request_msg->protocol_version =
 				comm_cluster_rec->rpc_version;
 
-		fd = tls_g_get_conn_fd(tls_conn);
-
-		rc = slurm_send_recv_msg(fd, tls_conn, request_msg, response_msg, 0);
+		rc = slurm_send_recv_msg(tls_conn, request_msg, response_msg,
+					 0);
 
 		tls_g_destroy_conn(tls_conn, true);
 
@@ -2320,7 +2327,7 @@ tryagain:
 int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 {
 	void *tls_conn = NULL;
-	int fd = -1, rc;
+	int rc;
 
 	resp->auth_cred = NULL;
 
@@ -2328,14 +2335,13 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 		return stepd_proxy_send_recv_node_msg(req, resp, timeout);
 	}
 
-	if (!(tls_conn = slurm_open_msg_conn(&req->address, NULL))) {
+	if (!(tls_conn = slurm_open_msg_conn(&req->address, req->tls_cert))) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req->address);
 		return -1;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
-	rc = slurm_send_recv_msg(fd, tls_conn, req, resp, timeout);
+	rc = slurm_send_recv_msg(tls_conn, req, resp, timeout);
 
 	tls_g_destroy_conn(tls_conn, true);
 
@@ -2354,8 +2360,7 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 				slurmdb_cluster_rec_t *comm_cluster_rec)
 {
 	void *tls_conn = NULL;
-	int      rc = SLURM_SUCCESS;
-	int fd = -1;
+	int rc = SLURM_SUCCESS;
 	int index = 0;
 
 	if (tls_enabled() && running_in_slurmstepd()) {
@@ -2370,10 +2375,9 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 		goto cleanup;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
 	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
 
-	if ((rc = slurm_send_node_msg(fd, tls_conn, req)) < 0) {
+	if ((rc = slurm_send_node_msg(tls_conn, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		log_flag(NET, "%s: sent %d", __func__, rc);
@@ -2427,14 +2431,14 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 		return stepd_proxy_send_only_node_msg(req);
 	}
 
-	if (!(tls_conn = slurm_open_msg_conn(&req->address, NULL))) {
+	if (!(tls_conn = slurm_open_msg_conn(&req->address, req->tls_cert))) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req->address);
 		return SLURM_ERROR;
 	}
 	fd = tls_g_get_conn_fd(tls_conn);
 
-	if ((rc = slurm_send_node_msg(fd, tls_conn, req)) < 0) {
+	if ((rc = slurm_send_node_msg(tls_conn, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
 		log_flag(NET, "%s: sent %d", __func__, rc);
@@ -2553,14 +2557,14 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	uint16_t conn_timeout = MIN(slurm_conf.msg_timeout, 10);
 	void *tls_conn = NULL;
 	list_t *ret_list = NULL;
-	int fd = -1;
 	bool first = true;
 
 	start = now = time(NULL);
 	/* This connect retry logic permits Slurm hierarchical communications
 	 * to better survive slurmd restarts */
 	while ((now - start) < conn_timeout) {
-		if ((tls_conn = slurm_open_msg_conn(&msg->address, NULL)))
+		if ((tls_conn =
+			     slurm_open_msg_conn(&msg->address, msg->tls_cert)))
 			break;
 		if ((errno != ECONNREFUSED) && (errno != ETIMEDOUT))
 			break;
@@ -2586,12 +2590,11 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 		return ret_list;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
 	msg->ret_list = NULL;
 	msg->forward_struct = NULL;
 
-	if (slurm_send_node_msg(fd, NULL, msg) >= 0)
-		ret_list = slurm_receive_msgs(fd, tls_conn, msg->forward.tree_depth,
+	if (slurm_send_node_msg(tls_conn, msg) >= 0)
+		ret_list = slurm_receive_msgs(tls_conn, msg->forward.tree_depth,
 					      msg->forward.timeout);
 
 	if (!ret_list) {
@@ -2681,6 +2684,7 @@ extern void slurm_free_msg_members(slurm_msg_t *msg)
 		FREE_NULL_BUFFER(msg->buffer);
 		slurm_free_msg_data(msg->msg_type, msg->data);
 		FREE_NULL_LIST(msg->ret_list);
+		xfree(msg->tls_cert);
 	}
 }
 

@@ -201,7 +201,7 @@ struct task_read_info {
 struct window_info {
 	stepd_step_task_info_t *task;
 	stepd_step_rec_t *step;
-	int pty_fd;
+	void *tls_conn;
 };
 #ifdef HAVE_PTY_H
 static void  _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step);
@@ -833,7 +833,7 @@ static void *_window_manager(void *arg)
 	struct pollfd ufds;
 	char buf[4];
 
-	ufds.fd = win_info->pty_fd;
+	ufds.fd = tls_g_get_conn_fd(win_info->tls_conn);
 	ufds.events = POLLIN;
 
 	while (1) {
@@ -848,7 +848,7 @@ static void *_window_manager(void *arg)
 			 *  (ufds.revents & POLLERR)) */
 			break;
 		}
-		len = slurm_read_stream(win_info->pty_fd, buf, 4);
+		len = slurm_read_stream(win_info->tls_conn, buf, 4);
 		if ((len == -1) && ((errno == EINTR) || (errno == EAGAIN)))
 			continue;
 		if (len < 4) {
@@ -878,8 +878,9 @@ static void *_window_manager(void *arg)
 static void
 _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 {
+	void *tls_conn = NULL;
+	char *tls_cert = NULL;
 	char *host, *port, *rows, *cols;
-	int pty_fd;
 	slurm_addr_t pty_addr;
 	uint16_t port_u;
 	struct window_info *win_info;
@@ -915,8 +916,14 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 
 	port_u = atoi(port);
 	slurm_set_addr(&pty_addr, port_u, host);
-	pty_fd = slurm_open_stream(&pty_addr, false);
-	if (pty_fd < 0) {
+
+	if (tls_enabled()) {
+		srun_info_t *srun = list_peek(step->sruns);
+		if (srun)
+			tls_cert = srun->tls_cert;
+	}
+
+	if (!(tls_conn = slurm_open_msg_conn(&pty_addr, tls_cert))) {
 		error("slurm_open_stream(pty_conn) %s,%u: %m",
 			host, port_u);
 		return;
@@ -925,7 +932,7 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 	win_info = xmalloc(sizeof(struct window_info));
 	win_info->task   = task;
 	win_info->step    = step;
-	win_info->pty_fd = pty_fd;
+	win_info->tls_conn = tls_conn;
 	slurm_thread_create_detached(_window_manager, win_info);
 }
 #endif

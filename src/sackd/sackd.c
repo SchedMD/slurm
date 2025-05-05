@@ -369,6 +369,7 @@ static void _listen_for_reconf(void)
 	uint16_t listen_port = port ? port : slurm_conf.slurmd_port;
 	static const conmgr_events_t events = {
 		.on_msg = _on_msg,
+		.on_fingerprint = on_fingerprint_tls,
 	};
 
 	if (getenv("SACKD_RECONF_LISTEN_FD")) {

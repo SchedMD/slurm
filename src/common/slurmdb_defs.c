@@ -3139,7 +3139,7 @@ extern int slurmdb_send_accounting_update_persist(list_t *update_list,
 	req.data = &msg;
 
 	/* resp is inited in slurm_send_recv_msg */
-	rc = slurm_send_recv_msg(0, NULL, &req, &resp, 0);
+	rc = slurm_send_recv_msg(persist_conn->tls_conn, &req, &resp, 0);
 
 	if (rc != SLURM_SUCCESS) {
 		error("update cluster: %s at %s(%hu): %m",

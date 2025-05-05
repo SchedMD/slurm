@@ -275,10 +275,10 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 	slurm_send_rc_msg(forward_msg, SLURM_SUCCESS);
 
 	/* prevent the upstream call path from closing the connection */
-	forward_msg->conn_fd = -1;
+	forward_msg->tls_conn = NULL;
 
 	if (half_duplex_add_objs_to_handle(msg_thr->handle, local, remote,
-					   TLS_CONN_SERVER, NULL)) {
+					   forward_msg->tls_conn)) {
 		goto error;
 	}
 

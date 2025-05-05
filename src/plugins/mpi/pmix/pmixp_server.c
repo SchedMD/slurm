@@ -51,6 +51,7 @@
 #include "pmixp_dconn.h"
 
 #include "src/interfaces/auth.h"
+#include "src/interfaces/tls.h"
 
 #define PMIXP_DEBUG_SERVER 1
 
@@ -1033,15 +1034,15 @@ send_direct:
 
 static int _abort_status = SLURM_SUCCESS;
 
-void pmixp_abort_handle(int fd)
+void pmixp_abort_handle(void *tls_conn)
 {
 	uint32_t status;
 	int len;
 
 	/* Receive the status from stepd */
-	len = slurm_read_stream(fd, (char*)&status, sizeof(status));
+	len = slurm_read_stream(tls_conn, (char *) &status, sizeof(status));
 	if (len != sizeof(status)) {
-		PMIXP_ERROR("slurm_read_stream() failed: fd=%d; %m", fd);
+		PMIXP_ERROR("slurm_read_stream() failed: %m");
 		return;
 	}
 	/* Apply the received status */
@@ -1050,18 +1051,18 @@ void pmixp_abort_handle(int fd)
 	}
 
 	/* Reply back to confirm that the status was processed */
-	len = slurm_write_stream(fd, (char*)&status, sizeof(status));
+	len = slurm_write_stream(tls_conn, (char *) &status, sizeof(status));
 	if (len != sizeof(status)) {
-		PMIXP_ERROR("slurm_write_stream() failed: fd=%d; %m", fd);
+		PMIXP_ERROR("slurm_write_stream() failed: %m");
 		return;
 	}
 }
 
 void pmixp_abort_propagate(int status)
 {
+	void *tls_conn = NULL;
 	uint32_t status_net = htonl((uint32_t)status);
 	int len;
-	int fd;
 	slurm_addr_t abort_server;
 
 	if (!(pmixp_info_srun_ip()) || (pmixp_info_abort_agent_port() <= 0)) {
@@ -1078,8 +1079,8 @@ void pmixp_abort_propagate(int status)
 	slurm_set_addr(&abort_server, pmixp_info_abort_agent_port(),
 		       pmixp_info_srun_ip());
 
-	fd = slurm_open_stream(&abort_server, false);
-	if (fd < 0) {
+	/* WARNING - this cannot use encryption currently */
+	if (!(tls_conn = slurm_open_msg_conn(&abort_server, NULL))) {
 		PMIXP_ERROR("slurm_open_stream() failed: %m");
 		PMIXP_ERROR("Connecting to abort agent failed: %s:%d",
 			    pmixp_info_srun_ip(),
@@ -1087,7 +1088,8 @@ void pmixp_abort_propagate(int status)
 		return;
 	}
 
-	len = slurm_write_stream(fd, (char*)&status_net, sizeof(status_net));
+	len = slurm_write_stream(tls_conn, (char *) &status_net,
+				 sizeof(status_net));
 	if (len != sizeof(status_net)) {
 		PMIXP_ERROR("slurm_write_stream() failed: %m");
 		PMIXP_ERROR("Communicating with abort agent failed: %s:%d",
@@ -1096,7 +1098,8 @@ void pmixp_abort_propagate(int status)
 		goto close_fd;
 	}
 
-	len = slurm_read_stream(fd, (char*)&status_net, sizeof(status_net));
+	len = slurm_read_stream(tls_conn, (char *) &status_net,
+				sizeof(status_net));
 	if (len != sizeof(status_net)) {
 		PMIXP_ERROR("slurm_read_stream() failed: %m");
 		PMIXP_ERROR("Communicating with abort agent failed: %s:%d",
@@ -1106,7 +1109,7 @@ void pmixp_abort_propagate(int status)
 	}
 	xassert(status_net == htonl((uint32_t)status));
 close_fd:
-	close(fd);
+	tls_g_destroy_conn(tls_conn, true);
 }
 
 int pmixp_abort_code_get(void)

@@ -1237,6 +1237,9 @@ extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
 		return SLURM_ERROR;
 	}
 
+	conn->input_fd = input_fd;
+	conn->output_fd = output_fd;
+
 	log_flag(TLS, "Successfully set input_fd:%d output_fd:%d on s2n conn %p",
 		 input_fd, output_fd, conn->s2n_conn);
 

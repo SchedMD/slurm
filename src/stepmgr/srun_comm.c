@@ -54,7 +54,7 @@
  * we don't want to clog the system up with messages destined for
  * defunct srun processes
  */
-static void _srun_agent_launch(slurm_addr_t *addr, char *host,
+static void _srun_agent_launch(slurm_addr_t *addr, char *tls_cert, char *host,
 			       slurm_msg_type_t type, void *msg_args,
 			       uid_t r_uid, uint16_t protocol_version)
 {
@@ -66,6 +66,7 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 	agent_args->hostlist   = hostlist_create(host);
 	agent_args->msg_type   = type;
 	agent_args->msg_args   = msg_args;
+	agent_args->tls_cert = xstrdup(tls_cert);
 	set_agent_arg_r_uid(agent_args, r_uid);
 
 	/*
@@ -96,8 +97,8 @@ extern void srun_allocate_abort(job_record_t *job_ptr)
 		msg_arg->job_id = job_ptr->job_id;
 		msg_arg->step_id = NO_VAL;
 		msg_arg->step_het_comp = NO_VAL;
-		_srun_agent_launch(addr, job_ptr->alloc_node,
-				   SRUN_JOB_COMPLETE,
+		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
+				   job_ptr->alloc_node, SRUN_JOB_COMPLETE,
 				   msg_arg, job_ptr->user_id,
 				   job_ptr->start_protocol_ver);
 	}
@@ -144,8 +145,8 @@ static int _srun_node_fail(void *x, void *arg)
 	msg_arg = xmalloc(sizeof(*msg_arg));
 	memcpy(&msg_arg->step_id, &step_ptr->step_id, sizeof(msg_arg->step_id));
 	msg_arg->nodelist = xstrdup(args->node_name);
-	_srun_agent_launch(addr, step_ptr->host, SRUN_NODE_FAIL,
-			   msg_arg, step_ptr->job_ptr->user_id,
+	_srun_agent_launch(addr, step_ptr->alloc_tls_cert, step_ptr->host,
+			   SRUN_NODE_FAIL, msg_arg, step_ptr->job_ptr->user_id,
 			   step_ptr->start_protocol_ver);
 
 	return 0;
@@ -187,8 +188,10 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 		msg_arg->step_id.step_het_comp = NO_VAL;
 		msg_arg->nodelist = xstrdup(node_name);
 
-		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_NODE_FAIL,
-				   msg_arg, slurm_conf.slurmd_user_id,
+		//FIXME
+		_srun_agent_launch(NULL, NULL, job_ptr->batch_host,
+				   SRUN_NODE_FAIL, msg_arg,
+				   slurm_conf.slurmd_user_id,
 				   job_ptr->start_protocol_ver);
 
 		/* If step mgr, if enabled, will take care of notify the job. */
@@ -207,8 +210,9 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 		msg_arg->step_id.step_id  = NO_VAL;
 		msg_arg->step_id.step_het_comp = NO_VAL;
 		msg_arg->nodelist = xstrdup(node_name);
-		_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_NODE_FAIL,
-				   msg_arg, job_ptr->user_id,
+		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
+				   job_ptr->alloc_node, SRUN_NODE_FAIL, msg_arg,
+				   job_ptr->user_id,
 				   job_ptr->start_protocol_ver);
 	}
 }
@@ -234,8 +238,9 @@ static int _srun_ping(void *x, void *arg)
 	slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 	msg_arg->job_id = job_ptr->job_id;
 
-	_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_PING, msg_arg,
-			   job_ptr->user_id, job_ptr->start_protocol_ver);
+	_srun_agent_launch(addr, job_ptr->alloc_tls_cert, job_ptr->alloc_node,
+			   SRUN_PING, msg_arg, job_ptr->user_id,
+			   job_ptr->start_protocol_ver);
 
 	return 0;
 }
@@ -276,8 +281,8 @@ static int _srun_step_timeout(void *x, void *arg)
 	memcpy(&msg_arg->step_id, &step_ptr->step_id, sizeof(msg_arg->step_id));
 	msg_arg->timeout = step_ptr->job_ptr->end_time;
 
-	_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT, msg_arg,
-			   step_ptr->job_ptr->user_id,
+	_srun_agent_launch(addr, step_ptr->alloc_tls_cert, step_ptr->host,
+			   SRUN_TIMEOUT, msg_arg, step_ptr->job_ptr->user_id,
 			   step_ptr->start_protocol_ver);
 
 	return 0;
@@ -313,8 +318,10 @@ extern void srun_timeout(job_record_t *job_ptr)
 		msg_arg->step_id.step_het_comp = NO_VAL;
 		msg_arg->timeout = job_ptr->end_time;
 
-		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_TIMEOUT,
-				   msg_arg, slurm_conf.slurmd_user_id,
+		//FIXME
+		_srun_agent_launch(NULL, NULL, job_ptr->batch_host,
+				   SRUN_TIMEOUT, msg_arg,
+				   slurm_conf.slurmd_user_id,
 				   job_ptr->start_protocol_ver);
 
 		/* If step mgr, if enabled, will take care of notify the job. */
@@ -329,8 +336,9 @@ extern void srun_timeout(job_record_t *job_ptr)
 		msg_arg->step_id.step_id  = NO_VAL;
 		msg_arg->step_id.step_het_comp = NO_VAL;
 		msg_arg->timeout  = job_ptr->end_time;
-		_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_TIMEOUT,
-				   msg_arg, job_ptr->user_id,
+		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
+				   job_ptr->alloc_node, SRUN_TIMEOUT, msg_arg,
+				   job_ptr->user_id,
 				   job_ptr->start_protocol_ver);
 	}
 }
@@ -374,8 +382,9 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 		msg_arg = xmalloc(sizeof(srun_user_msg_t));
 		msg_arg->job_id = job_ptr->job_id;
 		msg_arg->msg    = xstrdup(msg);
-		_srun_agent_launch(addr, job_ptr->resp_host, SRUN_USER_MSG,
-				   msg_arg, job_ptr->user_id,
+		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
+				   job_ptr->resp_host, SRUN_USER_MSG, msg_arg,
+				   job_ptr->user_id,
 				   job_ptr->start_protocol_ver);
 		return SLURM_SUCCESS;
 	} else if (job_ptr->batch_flag && IS_JOB_RUNNING(job_ptr)) {
@@ -393,8 +402,9 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 		notify_msg_ptr->step_id.step_het_comp = NO_VAL;
 		notify_msg_ptr->message = xstrdup(msg);
 
-		_srun_agent_launch(NULL, node_ptr->name, REQUEST_JOB_NOTIFY,
-				   notify_msg_ptr, SLURM_AUTH_UID_ANY,
+		_srun_agent_launch(NULL, NULL, node_ptr->name,
+				   REQUEST_JOB_NOTIFY, notify_msg_ptr,
+				   SLURM_AUTH_UID_ANY,
 				   node_ptr->protocol_version);
 		return SLURM_SUCCESS;
 	}
@@ -433,8 +443,9 @@ extern void srun_job_complete(job_record_t *job_ptr)
 		msg_arg->step_id = NO_VAL;
 		msg_arg->step_het_comp = NO_VAL;
 
-		_srun_agent_launch(NULL, job_ptr->batch_host, SRUN_JOB_COMPLETE,
-				   msg_arg, slurm_conf.slurmd_user_id,
+		_srun_agent_launch(NULL, NULL, job_ptr->batch_host,
+				   SRUN_JOB_COMPLETE, msg_arg,
+				   slurm_conf.slurmd_user_id,
 				   job_ptr->start_protocol_ver);
 
 		notify_job = false;
@@ -452,9 +463,9 @@ extern void srun_job_complete(job_record_t *job_ptr)
 		msg_arg->job_id = job_ptr->job_id;
 		msg_arg->step_id = NO_VAL;
 		msg_arg->step_het_comp = NO_VAL;
-		_srun_agent_launch(addr, job_ptr->alloc_node,
-				   SRUN_JOB_COMPLETE, msg_arg,
-				   job_ptr->user_id,
+		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
+				   job_ptr->alloc_node, SRUN_JOB_COMPLETE,
+				   msg_arg, job_ptr->user_id,
 				   job_ptr->start_protocol_ver);
 	}
 }
@@ -479,9 +490,9 @@ extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op)
 		msg_arg = xmalloc(sizeof(suspend_msg_t));
 		msg_arg->job_id  = job_ptr->job_id;
 		msg_arg->op     = op;
-		_srun_agent_launch(addr, job_ptr->alloc_node,
-				   SRUN_REQUEST_SUSPEND, msg_arg,
-				   job_ptr->user_id,
+		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
+				   job_ptr->alloc_node, SRUN_REQUEST_SUSPEND,
+				   msg_arg, job_ptr->user_id,
 				   job_ptr->start_protocol_ver);
 		msg_sent = true;
 	}
@@ -503,8 +514,9 @@ extern void srun_step_complete(step_record_t *step_ptr)
 
 		msg_arg = xmalloc(sizeof(srun_job_complete_msg_t));
 		memcpy(msg_arg, &step_ptr->step_id, sizeof(*msg_arg));
-		_srun_agent_launch(addr, step_ptr->host, SRUN_JOB_COMPLETE,
-				   msg_arg, step_ptr->job_ptr->user_id,
+		_srun_agent_launch(addr, step_ptr->alloc_tls_cert,
+				   step_ptr->host, SRUN_JOB_COMPLETE, msg_arg,
+				   step_ptr->job_ptr->user_id,
 				   step_ptr->start_protocol_ver);
 	}
 }
@@ -528,8 +540,9 @@ extern void srun_step_missing(step_record_t *step_ptr, char *node_list)
 		memcpy(&msg_arg->step_id, &step_ptr->step_id,
 		       sizeof(msg_arg->step_id));
 		msg_arg->nodelist = xstrdup(node_list);
-		_srun_agent_launch(addr, step_ptr->host, SRUN_STEP_MISSING,
-				   msg_arg, step_ptr->job_ptr->user_id,
+		_srun_agent_launch(addr, step_ptr->alloc_tls_cert,
+				   step_ptr->host, SRUN_STEP_MISSING, msg_arg,
+				   step_ptr->job_ptr->user_id,
 				   step_ptr->start_protocol_ver);
 	}
 }
@@ -553,8 +566,9 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal)
 		memcpy(&msg_arg->step_id, &step_ptr->step_id,
 		       sizeof(msg_arg->step_id));
 		msg_arg->signal      = signal;
-		_srun_agent_launch(addr, step_ptr->host, SRUN_STEP_SIGNAL,
-				   msg_arg, step_ptr->job_ptr->user_id,
+		_srun_agent_launch(addr, step_ptr->alloc_tls_cert,
+				   step_ptr->host, SRUN_STEP_SIGNAL, msg_arg,
+				   step_ptr->job_ptr->user_id,
 				   step_ptr->start_protocol_ver);
 	}
 }

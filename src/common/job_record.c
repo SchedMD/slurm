@@ -95,6 +95,7 @@ extern void free_step_record(void *x)
 	}
 	resv_port_step_free(step_ptr);
 
+	xfree(step_ptr->alloc_tls_cert);
 	xfree(step_ptr->container);
 	xfree(step_ptr->container_id);
 	xfree(step_ptr->host);
@@ -3738,6 +3739,8 @@ extern step_record_t *create_step_record(job_record_t *job_ptr,
 		step_ptr->start_protocol_ver = protocol_version;
 	else
 		step_ptr->start_protocol_ver = job_ptr->start_protocol_ver;
+
+	step_ptr->alloc_tls_cert = xstrdup(job_ptr->alloc_tls_cert);
 
 	step_ptr->magic = STEP_MAGIC;
 	list_append(job_ptr->step_list, step_ptr);

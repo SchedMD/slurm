@@ -258,9 +258,9 @@ static void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 
-		ret_list = slurm_receive_resp_msgs(fd, tls_conn,
-						   fwd_ptr->tree_depth,
-						   fwd_ptr->timeout);
+		ret_list =
+			slurm_receive_resp_msgs(tls_conn, fwd_ptr->tree_depth,
+						fwd_ptr->timeout);
 		/* info("sent %d forwards got %d back", */
 		/*      fwd_ptr->cnt, list_count(ret_list)); */
 

@@ -172,7 +172,7 @@ static void _rpc_terminate_tasks(slurm_msg_t *);
 static void _rpc_timelimit(slurm_msg_t *);
 static void _rpc_reattach_tasks(slurm_msg_t *);
 static void _rpc_suspend_job(slurm_msg_t *msg);
-static void _rpc_terminate_job(slurm_msg_t *);
+static void _rpc_terminate_job(slurm_msg_t *msg, bool send_response);
 static void _rpc_shutdown(slurm_msg_t *msg);
 static void _rpc_set_slurmd_debug_flags(slurm_msg_t *msg);
 static void _rpc_set_slurmd_debug(slurm_msg_t *msg);
@@ -379,9 +379,9 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
 	}
 
 	/* send response from stepd back to original client */
-	if (resp_buf &&
-	    (slurm_msg_sendto(msg->conn_fd, NULL, get_buf_data(resp_buf),
-			      size_buf(resp_buf)) < 0)) {
+	if (resp_buf && (slurm_msg_sendto(msg->conn_fd, msg->tls_conn,
+					  get_buf_data(resp_buf),
+					  size_buf(resp_buf)) < 0)) {
 		error("%s: Failed to send response bufs", __func__);
 		rc = SLURM_ERROR;
 		goto done;
@@ -551,7 +551,7 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_TERMINATE_JOB:
 		last_slurmctld_msg = time(NULL);
-		_rpc_terminate_job(msg);
+		_rpc_terminate_job(msg, true);
 		break;
 	case REQUEST_SHUTDOWN:
 		_rpc_shutdown(msg);
@@ -3447,7 +3447,7 @@ static void _rpc_ping(slurm_msg_t *msg)
 		resp_msg.msg_type = RESPONSE_PING_SLURMD;
 		resp_msg.data     = &ping_resp;
 
-		slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
+		slurm_send_node_msg(msg->tls_conn, &resp_msg);
 
 		/* Take this opportunity to enforce any job memory limits */
 		_enforce_job_mem_limit();
@@ -3540,7 +3540,7 @@ static void _rpc_acct_gather_update(slurm_msg_t *msg)
 		resp_msg.msg_type = RESPONSE_ACCT_GATHER_UPDATE;
 		resp_msg.data     = &acct_msg;
 
-		slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
+		slurm_send_node_msg(msg->tls_conn, &resp_msg);
 
 		acct_gather_energy_destroy(acct_msg.energy);
 	}
@@ -3635,7 +3635,7 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 		resp_msg.msg_type = RESPONSE_ACCT_GATHER_ENERGY;
 		resp_msg.data     = &acct_msg;
 
-		slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
+		slurm_send_node_msg(msg->tls_conn, &resp_msg);
 
 		acct_gather_energy_destroy(acct_msg.energy);
 	}
@@ -3889,7 +3889,7 @@ static void _rpc_daemon_status(slurm_msg_t *msg)
 	slurm_msg_t_copy(&resp_msg, msg);
 	resp_msg.msg_type = RESPONSE_SLURMD_STATUS;
 	resp_msg.data     = resp;
-	slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
+	slurm_send_node_msg(msg->tls_conn, &resp_msg);
 	slurm_free_slurmd_status(resp);
 }
 
@@ -3962,7 +3962,7 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 	resp_msg.msg_type     = RESPONSE_JOB_STEP_STAT;
 	resp_msg.data         = resp;
 
-	slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
+	slurm_send_node_msg(msg->tls_conn, &resp_msg);
 	slurm_free_job_step_stat(resp);
 }
 
@@ -4051,7 +4051,7 @@ static void _rpc_network_callerid(slurm_msg_t *msg)
 	resp_msg.msg_type = RESPONSE_NETWORK_CALLERID;
 	resp_msg.data     = resp;
 
-	slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
+	slurm_send_node_msg(msg->tls_conn, &resp_msg);
 	slurm_free_network_callerid_resp(resp);
 }
 
@@ -4115,7 +4115,7 @@ static void _rpc_list_pids(slurm_msg_t *msg)
 	resp_msg.msg_type = RESPONSE_JOB_STEP_PIDS;
 	resp_msg.data     = resp;
 
-	slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
+	slurm_send_node_msg(msg->tls_conn, &resp_msg);
 	slurm_free_job_step_pids(resp);
 }
 
@@ -4140,8 +4140,6 @@ _rpc_timelimit(slurm_msg_t *msg)
 	 *  Indicate to slurmctld that we've received the message
 	 */
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-	close(msg->conn_fd);
-	msg->conn_fd = -1;
 
 	if (req->step_id.step_id != NO_VAL) {
 		slurm_conf_t *cf;
@@ -4192,7 +4190,7 @@ _rpc_timelimit(slurm_msg_t *msg)
 		req->step_id.job_id, nsteps);
 
 	/* Revoke credential, send SIGKILL, run epilog, etc. */
-	_rpc_terminate_job(msg);
+	_rpc_terminate_job(msg, false);
 }
 
 static void  _rpc_pid2jid(slurm_msg_t *msg)
@@ -4238,7 +4236,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 		resp_msg.msg_type     = RESPONSE_JOB_ID;
 		resp_msg.data         = &resp;
 
-		slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
+		slurm_send_node_msg(msg->tls_conn, &resp_msg);
 	} else {
 		debug3("_rpc_pid2jid: pid(%u) not found", req->job_pid);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
@@ -4769,7 +4767,7 @@ done:
 	resp->return_code     = rc;
 	debug2("node %s sending rc = %d", conf->node_name, rc);
 
-	slurm_send_node_msg(msg->conn_fd, NULL, &resp_msg);
+	slurm_send_node_msg(msg->tls_conn, &resp_msg);
 	slurm_free_reattach_tasks_response_msg(resp);
 	FREE_NULL_LIST(steps);
 }
@@ -5322,8 +5320,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	_launch_complete_rm(req->step_id.job_id);
 }
 
-static void
-_rpc_terminate_job(slurm_msg_t *msg)
+static void _rpc_terminate_job(slurm_msg_t *msg, bool send_response)
 {
 	int             rc     = SLURM_SUCCESS;
 	kill_job_msg_t *req    = msg->data;
@@ -5337,7 +5334,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	if (!_slurm_authorized_user(msg->auth_uid)) {
 		error("Security violation: kill_job(%u) from uid %u",
 		      req->step_id.job_id, msg->auth_uid);
-		if (msg->conn_fd >= 0)
+		if (send_response)
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
@@ -5350,7 +5347,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 *   then exit this thread.
 	 */
 	if (_waiter_init(req->step_id.job_id) == SLURM_ERROR) {
-		if (msg->conn_fd >= 0) {
+		if (send_response) {
 			/* No matter if the step hasn't started yet or
 			 * not just send a success to let the
 			 * controller know we got this request.
@@ -5376,7 +5373,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	}
 
 	if (_prolog_is_running(req->step_id.job_id)) {
-		if (msg->conn_fd >= 0) {
+		if (send_response) {
 			/* If the step hasn't finished running the prolog
 			 * (or finished starting the extern step) yet just send
 			 * a success to let the controller know we got
@@ -5385,10 +5382,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			debug("%s: sent SUCCESS for %u, waiting for prolog to finish",
 			      __func__, req->step_id.job_id);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			if (close(msg->conn_fd) < 0)
-				error("%s: close(%d): %m",
-				      __func__, msg->conn_fd);
-			msg->conn_fd = -1;
+			send_response = false;
 		}
 		_wait_for_job_running_prolog(req->step_id.job_id);
 	}
@@ -5400,17 +5394,14 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 * job termination message and run indefinitely.
 	 */
 	if (_step_is_starting(&req->step_id)) {
-		if (msg->conn_fd >= 0) {
+		if (send_response) {
 			/* If the step hasn't started yet just send a
 			 * success to let the controller know we got
 			 * this request.
 			 */
 			debug("sent SUCCESS, waiting for step to start");
 			slurm_send_rc_msg (msg, SLURM_SUCCESS);
-			if (close(msg->conn_fd) < 0)
-				error("rpc_kill_job: close(%d): %m",
-				      msg->conn_fd);
-			msg->conn_fd = -1;
+			send_response = false;
 		}
 		if (_wait_for_starting_step(&req->step_id)) {
 			/*
@@ -5462,7 +5453,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 */
 	if ((nsteps == 0) && !slurm_conf.epilog && !spank_has_epilog()) {
 		debug4("sent ALREADY_COMPLETE");
-		if (msg->conn_fd >= 0) {
+		if (send_response) {
 			slurm_send_rc_msg(msg,
 					  ESLURMD_KILL_JOB_ALREADY_COMPLETE);
 		}
@@ -5476,7 +5467,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		 * could remain "completing" unnecessarily, until the request
 		 * to terminate is resent.
 		 */
-		if (msg->conn_fd < 0) {
+		if (!send_response) {
 			/* The epilog complete message processing on
 			 * slurmctld is equivalent to that of a
 			 * ESLURMD_KILL_JOB_ALREADY_COMPLETE reply above */
@@ -5491,12 +5482,10 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 *  At this point, if connection still open, we send controller
 	 *   a "success" reply to indicate that we've recvd the msg.
 	 */
-	if (msg->conn_fd >= 0) {
+	if (send_response) {
 		debug4("sent SUCCESS");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		if (close(msg->conn_fd) < 0)
-			error ("rpc_kill_job: close(%d): %m", msg->conn_fd);
-		msg->conn_fd = -1;
+		send_response = false;
 	}
 
 	/*

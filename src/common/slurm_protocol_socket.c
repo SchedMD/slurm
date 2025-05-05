@@ -309,10 +309,11 @@ ready:
  * Send slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error
  */
-extern int slurm_send_timeout(int fd, char *buf, size_t size, int timeout)
+extern int slurm_send_timeout(int fd, void *tls_conn, char *buf, size_t size,
+			      int timeout)
 {
 	struct iovec iov = { .iov_base = buf, .iov_len = size };
-	return _writev_timeout(fd, NULL, &iov, 1, timeout);
+	return _writev_timeout(fd, tls_conn, &iov, 1, timeout);
 }
 
 extern ssize_t slurm_msg_sendto(int fd, void *tls_conn, char *buffer,
@@ -411,6 +412,9 @@ extern int slurm_recv_timeout(int fd, void *tls_conn, char *buffer, size_t size,
 			goto done;
 		}
 
+		if (tls_g_peek(tls_conn))
+			goto ready;
+
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
 			if ((errno == EINTR) || (errno == EAGAIN) || (rc == 0))
 				continue;
@@ -459,6 +463,7 @@ extern int slurm_recv_timeout(int fd, void *tls_conn, char *buffer, size_t size,
 			continue;
 		}
 
+ready:
 		if (tls_conn) {
 			rc = tls_g_recv(tls_conn, &buffer[recvlen],
 					(size - recvlen));
@@ -555,12 +560,41 @@ error:
  * set *ADDR (which is *ADDR_LEN bytes long) to the address of the connecting
  * peer and *ADDR_LEN to the address's actual length, and return the
  * new socket's descriptor, or -1 for errors.  */
-extern int slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
+extern int slurm_accept_conn(int fd, slurm_addr_t *addr)
 {
 	socklen_t len = sizeof(*addr);
 	int sock = accept4(fd, (struct sockaddr *) addr, &len, SOCK_CLOEXEC);
 	net_set_nodelay(sock, true, NULL);
 	return sock;
+}
+
+extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
+{
+	socklen_t len = sizeof(*addr);
+	int sock = -1;
+	void *tls_conn = NULL;
+	tls_conn_args_t tls_args = {
+		.mode = TLS_CONN_SERVER,
+	};
+
+	sock = accept4(fd, (struct sockaddr *) addr, &len, SOCK_CLOEXEC);
+
+	if (sock < 0) {
+		error("%s: Unable to accept() connection to address %pA: %m",
+		      __func__, addr);
+		return NULL;
+	}
+
+	tls_args.input_fd = tls_args.output_fd = sock;
+	net_set_nodelay(sock, true, NULL);
+
+	if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+		error("%s: Unable to create server TLS connection to address %pA: %m",
+		      __func__, addr);
+		(void) close(sock);
+	}
+
+	return tls_conn;
 }
 
 extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
