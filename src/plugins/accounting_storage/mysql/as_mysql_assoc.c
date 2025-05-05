@@ -1726,7 +1726,6 @@ end_it:
 static int _process_remove_assoc_results(remove_common_args_t *args,
 					 MYSQL_RES *result,
 					 slurmdb_user_rec_t *user,
-					 char *cluster_name,
 					 bool is_admin,
 					 add_assoc_cond_t *add_assoc_cond)
 {
@@ -1780,23 +1779,23 @@ static int _process_remove_assoc_results(remove_common_args_t *args,
 			// see if there is a partition name
 			object = xstrdup_printf(
 				"C = %-10s A = %-10s U = %-9s P = %s",
-				cluster_name, row[RASSOC_ACCT],
+				args->cluster_name, row[RASSOC_ACCT],
 				row[RASSOC_USER], row[RASSOC_PART]);
 		} else if (row[RASSOC_USER][0]){
 			object = xstrdup_printf(
 				"C = %-10s A = %-10s U = %-9s",
-				cluster_name, row[RASSOC_ACCT],
+				args->cluster_name, row[RASSOC_ACCT],
 				row[RASSOC_USER]);
 		} else {
 			if (row[RASSOC_PACCT][0]) {
 				object = xstrdup_printf(
 					"C = %-10s A = %s of %s",
-					cluster_name, row[RASSOC_ACCT],
+					args->cluster_name, row[RASSOC_ACCT],
 					row[RASSOC_PACCT]);
 			} else {
 				object = xstrdup_printf(
 					"C = %-10s A = %s",
-					cluster_name, row[RASSOC_ACCT]);
+					args->cluster_name, row[RASSOC_ACCT]);
 			}
 		}
 		list_append(args->ret_list, object);
@@ -1811,7 +1810,7 @@ static int _process_remove_assoc_results(remove_common_args_t *args,
 		slurmdb_init_assoc_rec(rem_assoc, 0);
 		rem_assoc->flags |= ASSOC_FLAG_DELETED;
 		rem_assoc->id = slurm_atoul(row[RASSOC_ID]);
-		rem_assoc->cluster = xstrdup(cluster_name);
+		rem_assoc->cluster = xstrdup(args->cluster_name);
 		if (addto_update_list(args->mysql_conn->update_list,
 				      SLURMDB_REMOVE_ASSOC,
 				      rem_assoc) != SLURM_SUCCESS) {
@@ -3713,7 +3712,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 {
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
-	char *object = NULL, *cluster_name = NULL;
+	char *object = NULL;
 	char *extra = NULL, *query = NULL;
 	int i = 0, is_admin = 0;
 	MYSQL_RES *result = NULL;
@@ -3788,8 +3787,8 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	itr = list_iterator_create(args.use_cluster_list);
-	while ((cluster_name = list_next(itr))) {
-		query = _setup_assoc_table_query(cluster_name,
+	while ((args.cluster_name = list_next(itr))) {
+		query = _setup_assoc_table_query(args.cluster_name,
 						 "t1.id_assoc, t1.lineage",
 						 extra, " ORDER BY lineage;");
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
@@ -3817,7 +3816,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (wanted_qos) {
 				uint32_t id = slurm_atoul(row[0]);
 				if (!_assoc_id_has_qos(mysql_conn,
-						       cluster_name, id,
+						       args.cluster_name, id,
 						       wanted_qos))
 					continue;
 			}
@@ -3831,7 +3830,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				       "from \"%s_%s\" where (%s) "
 				       "and deleted = 0 order by lineage;",
 				       object,
-				       cluster_name, assoc_table,
+				       args.cluster_name, assoc_table,
 				       args.name_char);
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
@@ -3844,7 +3843,7 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 
 		rc = _process_remove_assoc_results(&args, result,
-						   &user, cluster_name,
+						   &user,
 						   is_admin,
 						   &add_assoc_cond);
 		xfree(args.name_char);
