@@ -53,15 +53,11 @@ This field must be specified and cannot be longer than 64 characters.
 .TP
 \fBSwitches\fR
 Child switches of the named switch.
-Either this option or the \fBNodes\fR option must be specified otherwise,
-\fBBAllowEmptySwitch\fR need to be set.
 .IP
 
 .TP
 \fBNodes\fR
 Child Nodes of the named leaf switch.
-Either this option or the \fBSwitches\fR option must be specified otherwise,
-\fBBAllowEmptySwitch\fR need to be set.
 .IP
 
 .TP
@@ -69,13 +65,6 @@ Either this option or the \fBSwitches\fR option must be specified otherwise,
 An optional value specifying the performance of this communication link.
 The units used are arbitrary and this information is currently not used.
 It may be used in the future to optimize resource allocations.
-.IP
-
-.TP
-\fBAllowEmptySwitch\fR=\fI<yes|no>\fR
-Allow leaf switch definitions without child nodes.
-.sp
-Default is "no".
 .IP
 
 .SH "topology/block"

@@ -37,8 +37,6 @@
 
 #include "src/common/xstring.h"
 
-static bool allow_empty_switch = false;
-
 static s_p_hashtbl_t *conf_hashtbl = NULL;
 
 static void _log_switches(tree_context_t *ctx)
@@ -154,7 +152,6 @@ static int _parse_switches(void **dest, slurm_parser_enum_t type,
 static int _read_topo_file(slurm_conf_switches_t **ptr_array[], char *topo_conf)
 {
 	static s_p_options_t switch_options[] = {
-		{"AllowEmptySwitch", S_P_BOOLEAN},
 		{"SwitchName", S_P_ARRAY, _parse_switches, _destroy_switches},
 		{NULL}
 	};
@@ -171,8 +168,6 @@ static int _read_topo_file(slurm_conf_switches_t **ptr_array[], char *topo_conf)
 		fatal("something wrong with opening/reading %s: %m",
 		      topo_conf);
 	}
-
-	s_p_get_boolean(&allow_empty_switch, "AllowEmptySwitch", conf_hashtbl);
 
 	if (s_p_get_array((void ***)&ptr, &count, "SwitchName", conf_hashtbl))
 		*ptr_array = ptr;
@@ -363,12 +358,9 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 		} else if (ptr->switches) {
 			switch_ptr->level = -1;	/* determine later */
 			switch_ptr->switches = xstrdup(ptr->switches);
-		} else if (allow_empty_switch) {
+		} else {
 			switch_ptr->level = 0; /* empty leaf switch */
 			switch_ptr->node_bitmap = bit_alloc(node_record_count);
-		} else {
-			fatal("Switch configuration (%s) lacks children",
-			      ptr->switch_name);
 		}
 	}
 
@@ -440,10 +432,8 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 			xfree(child);
 		}
 		FREE_NULL_BITMAP(switches_bitmap);
-	} else if (allow_empty_switch) {
-		switches_bitmap = bit_alloc(node_record_count);
 	} else
-		fatal("switches contain no nodes");
+		switches_bitmap = bit_alloc(node_record_count);
 
 	if (invalid_hl) {
 		buf = hostlist_ranged_string_xmalloc(invalid_hl);
