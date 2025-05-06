@@ -1956,13 +1956,13 @@ static void _resize_qos(void)
 			if (part_ptr->allow_qos) {
 				info("got count for %s of %"BITSTR_FMT, part_ptr->name,
 				     bit_size(part_ptr->allow_qos_bitstr));
-				qos_list_build(part_ptr->allow_qos,
+				qos_list_build(part_ptr->allow_qos, false,
 					       &part_ptr->allow_qos_bitstr);
 				info("now count for %s of %"BITSTR_FMT, part_ptr->name,
 				     bit_size(part_ptr->allow_qos_bitstr));
 			}
 			if (part_ptr->deny_qos)
-				qos_list_build(part_ptr->deny_qos,
+				qos_list_build(part_ptr->deny_qos, false,
 					       &part_ptr->deny_qos_bitstr);
 		}
 		list_iterator_destroy(itr);
@@ -3760,11 +3760,11 @@ handle_parts:
 	itr = list_iterator_create(part_list);
 	while ((part_ptr = list_next(itr))) {
 		if (part_ptr->allow_qos)
-			qos_list_build(part_ptr->allow_qos,
+			qos_list_build(part_ptr->allow_qos, true,
 				       &part_ptr->allow_qos_bitstr);
 
 		if (part_ptr->deny_qos)
-			qos_list_build(part_ptr->deny_qos,
+			qos_list_build(part_ptr->deny_qos, true,
 				       &part_ptr->deny_qos_bitstr);
 
 		if (part_ptr->qos_char) {
