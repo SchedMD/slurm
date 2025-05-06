@@ -61,7 +61,7 @@ Slurm version 25.05, no new features will be added to cgroup v1. Support for
 critical bugs will be provided until its final removal.</p>
 
 <p>See the kernel.org documentation for a more comprehensive description of
-cgroup:</p>o
+cgroup:</p>
 
 <ul>
 <li><a href="https://www.kernel.org/doc/Documentation/cgroup-v1/cgroups.txt">
