@@ -568,7 +568,6 @@ int main(int argc, char **argv)
 	stepmgr_ops_t stepmgr_ops = {0};
 
 	stepmgr_ops.agent_queue_request = agent_queue_request;
-	stepmgr_ops.find_front_end_record = find_front_end_record;
 	stepmgr_ops.find_job_array_rec = find_job_array_rec;
 	stepmgr_ops.find_job_record = find_job_record;
 	stepmgr_ops.job_config_fini = job_config_fini;
