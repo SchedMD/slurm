@@ -2156,8 +2156,6 @@ static int _sync_nodes_to_comp_job(void)
 			if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
 				acct_policy_job_begin(job_ptr, false);
 
-			if (job_ptr->front_end_ptr)
-				job_ptr->front_end_ptr->job_cnt_run++;
 			deallocate_nodes(job_ptr, false, false, false);
 			/* The job in completing state at slurmctld restart or
 			 * reconfiguration, do not log completion again.
@@ -2277,10 +2275,6 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 	if (orig_job_node_bitmap)
 		rebuild_step_bitmaps(job_ptr, orig_job_node_bitmap);
 	FREE_NULL_BITMAP(orig_job_node_bitmap);
-
-	if ((IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
-	    (job_ptr->front_end_ptr != NULL))
-		job_ptr->front_end_ptr->job_cnt_run++;
 
 	set_initial_job_alias_list(job_ptr);
 

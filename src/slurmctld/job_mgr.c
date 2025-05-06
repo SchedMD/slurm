@@ -3610,7 +3610,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 
 	job_ptr_pend->fed_details = _dup_job_fed_details(job_ptr->fed_details);
 
-	job_ptr_pend->front_end_ptr = NULL;
 	/* job_details_t *details;		*** NOTE: Copied below */
 
 	job_ptr_pend->limit_set.tres = xcalloc(slurmctld_tres_cnt,
