@@ -1110,7 +1110,6 @@ int main(int argc, char **argv)
 	node_fini();
 	mpi_fini();
 	node_features_g_fini();
-	purge_front_end_state();
 	resv_fini();
 	trigger_fini();
 	assoc_mgr_fini(1);
