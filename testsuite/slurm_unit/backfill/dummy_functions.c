@@ -63,7 +63,7 @@ int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
 	return SLURM_SUCCESS;
 }
 
-int job_test_lic_resv(job_record_t *job_ptr, char *lic_name, time_t when,
+int job_test_lic_resv(job_record_t *job_ptr, licenses_id_t id, time_t when,
 		      bool reboot)
 {
 	debug("%s %pJ", __func__, job_ptr);

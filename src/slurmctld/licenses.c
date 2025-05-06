@@ -1209,8 +1209,7 @@ static int _foreach_license_job_test(void *x, void *arg)
 	} else {
 		/* Assume node reboot required since we have not
 		 * selected the compute nodes yet */
-		resv_licenses = job_test_lic_resv(job_ptr,
-						  license_entry->name,
+		resv_licenses = job_test_lic_resv(job_ptr, license_entry->id,
 						  when, reboot);
 		if (!_sufficient_licenses(license_entry, match,
 					  resv_licenses)) {
@@ -1472,7 +1471,7 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 			 */
 			if (lic_or) {
 				int resv_blk_lic_cnt =
-					job_test_lic_resv(job_ptr, match->name,
+					job_test_lic_resv(job_ptr, match->id,
 							  last_license_update,
 							  false);
 

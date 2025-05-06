@@ -6336,9 +6336,9 @@ extern void job_time_adj_resv(job_record_t *job_ptr)
 
 /*
  * For a given license_list, return the total count of licenses of the
- * specified name
+ * specified id
  */
-static int _license_cnt(list_t *license_list, char *lic_name)
+static int _license_cnt(list_t *license_list, licenses_id_t id)
 {
 	int lic_cnt = 0;
 	list_itr_t *iter;
@@ -6349,7 +6349,7 @@ static int _license_cnt(list_t *license_list, char *lic_name)
 
 	iter = list_iterator_create(license_list);
 	while ((license_ptr = list_next(iter))) {
-		if (xstrcmp(license_ptr->name, lic_name) == 0)
+		if (license_ptr->id.lic_id == id.lic_id)
 			lic_cnt += license_ptr->total;
 	}
 	list_iterator_destroy(iter);
@@ -6541,12 +6541,12 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(job_record_t *job_ptr,
  *	prevented from using due to reservations
  *
  * IN job_ptr   - job to test
- * IN lic_name  - name of license
+ * IN id        - id of license
  * IN when      - when the job is expected to start
  * IN reboot    - true if node reboot required to start job
  * RET number of licenses of this type the job is prevented from using
  */
-extern int job_test_lic_resv(job_record_t *job_ptr, char *lic_name,
+extern int job_test_lic_resv(job_record_t *job_ptr, licenses_id_t id,
 			     time_t when, bool reboot)
 {
 	slurmctld_resv_t * resv_ptr;
@@ -6576,12 +6576,12 @@ extern int job_test_lic_resv(job_record_t *job_ptr, char *lic_name,
 		    (xstrcmp(job_ptr->resv_name, resv_ptr->name) == 0))
 			continue;	/* job can use this reservation */
 
-		resv_cnt += _license_cnt(resv_ptr->license_list, lic_name);
+		resv_cnt += _license_cnt(resv_ptr->license_list, id);
 	}
 	list_iterator_destroy(iter);
 
-	/* info("%pJ blocked from %d licenses of type %s",
-	     job_ptr, resv_cnt, lic_name); */
+	/* info("%pJ blocked from %d licenses:%u",
+	     job_ptr, resv_cnt, id.lic_id); */
 	return resv_cnt;
 }
 

@@ -146,12 +146,12 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(job_record_t *job_ptr,
  *	prevented from using due to reservations
  *
  * IN job_ptr   - job to test
- * IN lic_name  - name of license
+ * IN id        - id of license
  * IN when      - when the job is expected to start
  * IN reboot    - true if node reboot required to start job
  * RET number of licenses of this type the job is prevented from using
  */
-extern int job_test_lic_resv(job_record_t *job_ptr, char *lic_name,
+extern int job_test_lic_resv(job_record_t *job_ptr, licenses_id_t id,
 			     time_t when, bool reboot);
 
 /*
