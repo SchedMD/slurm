@@ -4359,7 +4359,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		job_ptr->fed_details;
 
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
-		(!top_prio) || (!independent) || !avail_front_end(job_ptr) ||
+		(!top_prio) || (!independent) ||
 		(job_desc->het_job_offset != NO_VAL) || defer_this ||
 		(job_ptr->details->prefer && ignore_prefer_val) ||
 		(job_ptr->details->features && ignore_constraint_val);

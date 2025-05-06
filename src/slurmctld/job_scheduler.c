@@ -623,26 +623,6 @@ static int _foreach_job_is_completing(void *x, void *arg)
 	return 0;
 }
 
-static int _foreach_wait_front_end(void *x, void *arg)
-{
-	job_record_t *job_ptr = x;
-	time_t now = *(time_t *)arg;
-
-	if (!IS_JOB_PENDING(job_ptr))
-		return 0;
-
-	if ((job_ptr->state_reason != WAIT_NO_REASON) &&
-	    (job_ptr->state_reason != WAIT_RESOURCES) &&
-	    (job_ptr->state_reason != WAIT_NODE_NOT_AVAIL))
-		return 0;
-
-	job_ptr->state_reason = WAIT_FRONT_END;
-	xfree(job_ptr->state_desc);
-	last_job_update = now;
-
-	return 0;
-}
-
 static int _foreach_part_reduce_frag(void *x, void *arg)
 {
 	part_record_t *part_ptr = x;
@@ -1439,13 +1419,6 @@ static int _schedule(bool full_queue)
 	sched_start = now;
 	last_job_sched_start = now;
 	START_TIMER;
-	if (!avail_front_end(NULL)) {
-		(void) list_for_each(job_list, _foreach_wait_front_end, &now);
-		unlock_slurmctld(job_write_lock);
-		sched_debug("schedule() returning, no front end nodes are available");
-		goto out;
-	}
-
 	if (!reduce_completing_frag && job_is_completing(NULL)) {
 		unlock_slurmctld(job_write_lock);
 		sched_debug("schedule() returning, some job is still completing");
@@ -1499,13 +1472,6 @@ static int _schedule(bool full_queue)
 		job_ptr = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;
 
-		if (!avail_front_end(job_ptr)) {
-			job_ptr->state_reason = WAIT_FRONT_END;
-			xfree(job_ptr->state_desc);
-			last_job_update = now;
-			xfree(job_queue_rec);
-			continue;
-		}
 		if ((job_ptr->array_task_id != array_task_id) &&
 		    (array_task_id == NO_VAL)) {
 			/* Job array element started in other partition,
