@@ -1537,9 +1537,7 @@ static void _undo_reboot_asap(node_record_t *node_ptr)
 
 static void _require_node_reg(node_record_t *node_ptr)
 {
-#ifndef HAVE_FRONT_END
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
-#endif
 	node_ptr->last_response = time(NULL);
 	node_ptr->boot_time = 0;
 	ping_nodes_now = true;
@@ -3722,43 +3720,6 @@ static void _sync_bitmaps(node_record_t *node_ptr, int job_count)
 		bit_set   (up_node_bitmap, node_ptr->index);
 }
 
-#ifdef HAVE_FRONT_END
-static void _node_did_resp(front_end_record_t *fe_ptr)
-{
-	uint32_t node_flags;
-	time_t now = time(NULL);
-
-	fe_ptr->last_response = now;
-
-	if (IS_NODE_NO_RESPOND(fe_ptr)) {
-		info("Node %s now responding", fe_ptr->name);
-		last_front_end_update = now;
-		fe_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
-	}
-
-	node_flags = fe_ptr->node_state & NODE_STATE_FLAGS;
-	if (IS_NODE_UNKNOWN(fe_ptr)) {
-		last_front_end_update = now;
-		fe_ptr->node_state = NODE_STATE_IDLE | node_flags;
-	}
-	if (IS_NODE_DOWN(fe_ptr) &&
-	    !IS_NODE_INVALID_REG(fe_ptr) &&
-	    ((slurm_conf.ret2service == 2) ||
-	     ((slurm_conf.ret2service == 1) &&
-	      !xstrcmp(fe_ptr->reason, "Not responding")))) {
-		last_front_end_update = now;
-		fe_ptr->node_state = NODE_STATE_IDLE | node_flags;
-		info("node_did_resp: node %s returned to service",
-		     fe_ptr->name);
-		trigger_front_end_up(fe_ptr);
-		if (!IS_NODE_DRAIN(fe_ptr) && !IS_NODE_FAIL(fe_ptr)) {
-			xfree(fe_ptr->reason);
-			fe_ptr->reason_time = 0;
-			fe_ptr->reason_uid = NO_VAL;
-		}
-	}
-}
-#else
 static void _node_did_resp(node_record_t *node_ptr)
 {
 	uint32_t node_flags;
@@ -3828,7 +3789,6 @@ static void _node_did_resp(node_record_t *node_ptr)
 	else
 		bit_set   (up_node_bitmap, node_ptr->index);
 }
-#endif
 
 /*
  * node_did_resp - record that the specified node is responding
@@ -3836,13 +3796,8 @@ static void _node_did_resp(node_record_t *node_ptr)
  */
 void node_did_resp (char *name)
 {
-#ifdef HAVE_FRONT_END
-	front_end_record_t *node_ptr;
-	node_ptr = find_front_end_record (name);
-#else
 	node_record_t *node_ptr;
 	node_ptr = find_node_record (name);
-#endif
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
@@ -3861,15 +3816,10 @@ void node_did_resp (char *name)
  */
 void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 {
-#ifdef HAVE_FRONT_END
-	front_end_record_t *node_ptr;
-
-	node_ptr = find_front_end_record (name);
-#else
 	node_record_t *node_ptr;
 
 	node_ptr = find_node_record (name);
-#endif
+
 	if (node_ptr == NULL) {
 		error ("node_not_resp unable to find node %s", name);
 		return;
@@ -3907,12 +3857,8 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 	}
 
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
-#ifdef HAVE_FRONT_END
-	last_front_end_update = time(NULL);
-#else
 	last_node_update = time(NULL);
 	bit_clear (avail_node_bitmap, node_ptr->index);
-#endif
 }
 
 /* For every node with the "not_responding" flag set, clear the flag
@@ -4009,15 +3955,9 @@ bool is_node_down (char *name)
  */
 bool is_node_resp (char *name)
 {
-#ifdef HAVE_FRONT_END
-	front_end_record_t *node_ptr;
-
-	node_ptr = find_front_end_record (name);
-#else
 	node_record_t *node_ptr;
 
 	node_ptr = find_node_record (name);
-#endif
 	if (node_ptr == NULL) {
 		error ("is_node_resp unable to find node %s", name);
 		return false;
@@ -4037,11 +3977,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	int i;
 	shutdown_msg_t *shutdown_req;
 	agent_arg_t *kill_agent_args;
-#ifdef HAVE_FRONT_END
-	front_end_record_t *front_end_ptr;
-#else
 	node_record_t *node_ptr;
-#endif
 
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
 	kill_agent_args->msg_type = msg_type;
@@ -4055,19 +3991,6 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 
 	kill_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 
-#ifdef HAVE_FRONT_END
-	for (i = 0, front_end_ptr = front_end_nodes;
-	     i < front_end_node_cnt; i++, front_end_ptr++) {
-		if (kill_agent_args->protocol_version >
-		    front_end_ptr->protocol_version)
-			kill_agent_args->protocol_version =
-				front_end_ptr->protocol_version;
-
-		hostlist_push_host(kill_agent_args->hostlist,
-				   front_end_ptr->name);
-		kill_agent_args->node_count++;
-	}
-#else
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
@@ -4083,7 +4006,6 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		hostlist_push_host(kill_agent_args->hostlist, node_ptr->name);
 		kill_agent_args->node_count++;
 	}
-#endif
 
 	if (kill_agent_args->node_count == 0) {
 		hostlist_destroy(kill_agent_args->hostlist);
@@ -4106,12 +4028,10 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
  * older slurmds get REQUEST_RECONFIGURE_WITH_CONFIG and ignore it.
  *
  * So explicitly split the pool into three groups.
- * Note: DOES NOT SUPPORT FRONTEND.
  */
 #define RELEVANT_VER 4
 extern void push_reconfig_to_slurmd(void)
 {
-#ifndef HAVE_FRONT_END
 	agent_arg_t *ver_args[RELEVANT_VER] = { 0 }, *curr_args;
 	node_record_t *node_ptr;
 	int ver;
@@ -4170,11 +4090,6 @@ extern void push_reconfig_to_slurmd(void)
 		set_agent_arg_r_uid(curr_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(curr_args);
 	}
-#else
-	error("%s: Cannot use configless with FrontEnd mode! Sending normal reconfigure request.",
-	      __func__);
-	msg_to_slurmd(REQUEST_RECONFIGURE);
-#endif
 }
 
 
@@ -4606,7 +4521,6 @@ extern void node_fini (void)
 /* Reset a node's CPU load value */
 extern void reset_node_load(char *node_name, uint32_t cpu_load)
 {
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 
 	node_ptr = find_node_record(node_name);
@@ -4617,13 +4531,11 @@ extern void reset_node_load(char *node_name, uint32_t cpu_load)
 		last_node_update = now;
 	} else
 		error("reset_node_load unable to find node %s", node_name);
-#endif
 }
 
 /* Reset a node's free memory value */
 extern void reset_node_free_mem(char *node_name, uint64_t free_mem)
 {
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 
 	node_ptr = find_node_record(node_name);
@@ -4634,7 +4546,6 @@ extern void reset_node_free_mem(char *node_name, uint64_t free_mem)
 		last_node_update = now;
 	} else
 		error("reset_node_free_mem unable to find node %s", node_name);
-#endif
 }
 
 

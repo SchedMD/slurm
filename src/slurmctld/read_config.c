@@ -411,7 +411,6 @@ static int _set_share_node_bitmap(void *x, void *arg)
 	return 0;
 }
 
-#ifndef HAVE_FRONT_END
 static void *_set_node_addrs(void *arg)
 {
 	list_t *nodes = arg;
@@ -434,14 +433,12 @@ static void *_set_node_addrs(void *arg)
 
 	return NULL;
 }
-#endif
 
 /*
  * Validate that nodes are addressable.
  */
 static void _validate_slurmd_addr(void)
 {
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 	DEF_TIMERS;
 	pthread_t *work_threads;
@@ -489,7 +486,6 @@ static void _validate_slurmd_addr(void)
 	FREE_NULL_LIST(nodes);
 
 	END_TIMER2(__func__);
-#endif
 }
 
 /*
@@ -1350,7 +1346,6 @@ void _sync_jobs_to_conf(void)
 			job_fail = true;
 		}
 		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
-#ifndef HAVE_FRONT_END
 		if (job_ptr->nodes_pr &&
 		    node_name2bitmap(job_ptr->nodes_pr, false,
 				     &job_ptr->node_bitmap_pr, NULL)) {
@@ -1358,7 +1353,6 @@ void _sync_jobs_to_conf(void)
 			      job_ptr->nodes_pr, job_ptr);
 			job_fail = true;
 		}
-#endif
 		if (reset_node_bitmap(job_ptr))
 			job_fail = true;
 		if (!job_fail &&

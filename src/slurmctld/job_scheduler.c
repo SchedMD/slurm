@@ -342,15 +342,6 @@ static bool _job_runnable_test1(job_record_t *job_ptr, bool sched_plugin)
 		return false;
 	}
 
-#ifdef HAVE_FRONT_END
-	/* At least one front-end node up at this point */
-	if (job_ptr->state_reason == WAIT_FRONT_END) {
-		job_ptr->state_reason = WAIT_NO_REASON;
-		xfree(job_ptr->state_desc);
-		last_job_update = now;
-	}
-#endif
-
 	job_indepen = job_independent(job_ptr);
 	if (sched_plugin)
 		job_ptr->start_time = (time_t) 0;
@@ -2802,11 +2793,7 @@ extern void launch_job(job_record_t *job_ptr)
 	uint16_t protocol_version = NO_VAL16;
 	agent_arg_t *agent_arg_ptr;
 	job_record_t *launch_job_ptr;
-#ifdef HAVE_FRONT_END
-	front_end_record_t *front_end_ptr;
-#else
 	node_record_t *node_ptr;
-#endif
 
 	xassert(job_ptr);
 	xassert(job_ptr->batch_flag);
@@ -2821,15 +2808,9 @@ extern void launch_job(job_record_t *job_ptr)
 	if (pick_batch_host(launch_job_ptr) != SLURM_SUCCESS)
 		return;
 
-#ifdef HAVE_FRONT_END
-	front_end_ptr = find_front_end_record(job_ptr->batch_host);
-	if (front_end_ptr)
-		protocol_version = front_end_ptr->protocol_version;
-#else
 	node_ptr = find_node_record(job_ptr->batch_host);
 	if (node_ptr)
 		protocol_version = node_ptr->protocol_version;
-#endif
 
 	(void)build_batch_step(job_ptr);
 
@@ -4560,12 +4541,6 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr,
  * IN job_ptr - pointer to job that will be initiated
  * RET SLURM_SUCCESS(0) or error code
  */
-#ifdef HAVE_FRONT_END
-extern void reboot_job_nodes(job_record_t *job_ptr)
-{
-	return;
-}
-#else
 static void _send_reboot_msg(bitstr_t *node_bitmap, char *features,
 			     uint16_t protocol_version)
 {
@@ -4798,7 +4773,6 @@ cleanup:
 	FREE_NULL_BITMAP(non_feature_node_bitmap);
 	FREE_NULL_BITMAP(feature_node_bitmap);
 }
-#endif
 
 /*
  * Deferring this setup ensures that all calling paths into select_nodes()
