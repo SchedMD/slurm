@@ -8560,6 +8560,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(UINT16, priority_tier, "priority/tier", "PriorityTier"),
 	add_parse(STRING, qos_char, "qos/assigned", "QOS"),
 	add_parse(UINT16_NO_VAL, resume_timeout, "timeouts/resume", "ResumeTimeout (GLOBAL if both set and infinite are false)"),
+	add_parse(STRING, topology_name, "topology", "Name of the topology, defined in topology.yaml, used by jobs in this partition"),
 	add_parse(PARTITION_STATES, state_up, "partition/state", "Current state(s)"),
 	add_parse(UINT32_NO_VAL, suspend_time, "suspend_time", "SuspendTime (GLOBAL if both set and infinite are false)"),
 	add_parse(UINT16_NO_VAL, suspend_timeout, "timeouts/suspend", "SuspendTimeout (GLOBAL if both set and infinite are false)"),
