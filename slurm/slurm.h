@@ -355,7 +355,7 @@ enum job_state_reason {
 	WAIT_RESERVATION,	/* reservation not available */
 	WAIT_NODE_NOT_AVAIL,	/* required node is DOWN or DRAINED */
 	WAIT_HELD_USER,		/* job is held by user */
-	WAIT_FRONT_END,		/* Front end nodes are DOWN */
+	DEFUNCT_WAIT_17, /* free for reuse */
 	FAIL_DEFER,		/* individual submit time sched deferred */
 	FAIL_DOWN_PARTITION,	/* partition for job is DOWN */
 	FAIL_DOWN_NODE,		/* some node in the allocation failed */
