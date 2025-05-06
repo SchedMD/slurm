@@ -1209,14 +1209,6 @@ extern int kill_job_by_part_name(char *part_name);
 extern void kill_job_on_node(job_record_t *job_ptr, node_record_t *node_ptr);
 
 /*
- * kill_job_by_front_end_name - Given a front end node name, deallocate
- *	resource for its jobs and kill them.
- * IN node_name - name of a front end node
- * RET number of jobs associated with this front end node
- */
-extern int kill_job_by_front_end_name(char *node_name);
-
-/*
  * kill_running_job_by_node_ptr - Given a node_ptr, deallocate RUNNING
  *	or COMPLETING jobs from the node or kill them
  * IN node_name - name of a node
