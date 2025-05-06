@@ -2429,7 +2429,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 {
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
-	list_t *future_license_list;
+	list_t *future_license_list = NULL;
 	list_t *cr_job_list;
 	list_itr_t *job_iterator;
 	int rc = SLURM_ERROR;
@@ -2461,7 +2461,8 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		return SLURM_ERROR;
 	}
 
-	future_license_list = cluster_license_copy();
+	if (!(job_ptr->bit_flags & BACKFILL_TEST))
+		future_license_list = cluster_license_copy();
 
 	/* Build list of running and suspended jobs */
 	cr_job_list = list_create(NULL);
@@ -2504,10 +2505,6 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	 * pending job after each one (or a few jobs that end close in time).
 	 */
 	list_sort(cr_job_list, _cr_job_list_sort);
-
-	if (job_ptr->bit_flags & BACKFILL_TEST) {
-		FREE_NULL_LIST(future_license_list);
-	}
 
 	START_TIMER;
 	job_iterator = list_iterator_create(cr_job_list);
