@@ -1955,11 +1955,11 @@ static int _foreach_part_resize_qos(void *x, void *arg)
 	part_record_t *part_ptr = x;
 
 	if (part_ptr->allow_qos)
-		qos_list_build(part_ptr->allow_qos,
+		qos_list_build(part_ptr->allow_qos, false,
 			       &part_ptr->allow_qos_bitstr);
 
 	if (part_ptr->deny_qos)
-		qos_list_build(part_ptr->deny_qos,
+		qos_list_build(part_ptr->deny_qos, false,
 			       &part_ptr->deny_qos_bitstr);
 	return 0;
 }
@@ -3661,11 +3661,11 @@ static int _foreach_cache_update_part(void *x, void *arg)
 	part_record_t *part_ptr = x;
 
 	if (part_ptr->allow_qos)
-		qos_list_build(part_ptr->allow_qos,
+		qos_list_build(part_ptr->allow_qos, true,
 			       &part_ptr->allow_qos_bitstr);
 
 	if (part_ptr->deny_qos)
-		qos_list_build(part_ptr->deny_qos,
+		qos_list_build(part_ptr->deny_qos, true,
 			       &part_ptr->deny_qos_bitstr);
 
 	if (part_ptr->qos_char) {

@@ -725,7 +725,7 @@ extern list_t *accounts_list_build(char *accounts, bool locked)
 }
 
 /* Convert a comma delimited list of QOS names into a bitmap */
-extern void qos_list_build(char *qos, bitstr_t **qos_bits)
+extern void qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 {
 	char *tmp_qos, *one_qos_name, *name_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr = NULL;
@@ -739,12 +739,14 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 	}
 
 	/* Lock here to avoid g_qos_count changing under us */
-	assoc_mgr_lock(&locks);
+	if (!locked)
+		assoc_mgr_lock(&locks);
 	if (!g_qos_count) {
 		error("We have no QOS on the system Ignoring invalid "
 		      "Allow/DenyQOS value(s) %s",
 		      qos);
-		assoc_mgr_unlock(&locks);
+		if (!locked)
+			assoc_mgr_unlock(&locks);
 		FREE_NULL_BITMAP(*qos_bits);
 		*qos_bits = NULL;
 		return;
@@ -767,7 +769,8 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 		}
 		one_qos_name = strtok_r(NULL, ",", &name_ptr);
 	}
-	assoc_mgr_unlock(&locks);
+	if (!locked)
+		assoc_mgr_unlock(&locks);
 	xfree(tmp_qos);
 	FREE_NULL_BITMAP(*qos_bits);
 	*qos_bits = tmp_qos_bitstr;
@@ -885,7 +888,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 
 	if (part->allow_qos) {
 		part_ptr->allow_qos = xstrdup(part->allow_qos);
-		qos_list_build(part_ptr->allow_qos,&part_ptr->allow_qos_bitstr);
+		qos_list_build(part_ptr->allow_qos, false,
+			       &part_ptr->allow_qos_bitstr);
 	}
 
 	if (part->deny_accounts) {
@@ -896,7 +900,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 
 	if (part->deny_qos) {
 		part_ptr->deny_qos = xstrdup(part->deny_qos);
-		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
+		qos_list_build(part_ptr->deny_qos, false,
+			       &part_ptr->deny_qos_bitstr);
 	}
 
 	if (part->qos_char) {
