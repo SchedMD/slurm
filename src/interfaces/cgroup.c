@@ -771,6 +771,10 @@ extern int cgroup_g_init(void)
 		}
 	}
 
+	if (running_in_slurmd())
+		if (!xstrcmp(type, "cgroup/v1"))
+			warning("cgroup/v1 plugin is deprecated, please upgrade to cgroup/v2 at your earliest convenience");
+
 	g_context = plugin_context_create(
 		plugin_type, type, (void **)&ops, syms, sizeof(syms));
 
