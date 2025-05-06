@@ -526,6 +526,12 @@ static int _foreach_license_set_hres(void *x, void *key)
 		list_find_first_ro(cluster_license_list, _license_find_rec,
 				   license->name);
 	if (license->nodes) {
+		if (hres_head->mode != license->mode) {
+			error("%s HRES Mode mismatch %s", __func__,
+			      license->name);
+			return -1;
+		}
+
 		if (license != hres_head)
 			license->id.hres_id = hres_head->id.hres_id;
 		else
