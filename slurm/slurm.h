@@ -2406,31 +2406,6 @@ typedef struct node_info_msg {
 	node_info_t *node_array;	/* the node records */
 } node_info_msg_t;
 
-typedef struct front_end_info {
-	char *allow_groups;		/* allowed group string */
-	char *allow_users;		/* allowed user string */
-	time_t boot_time;		/* Time of node boot,
-					 * computed from up_time */
-	char *deny_groups;		/* denied group string */
-	char *deny_users;		/* denied user string */
-	char *name;			/* node name */
-	uint32_t node_state;		/* see enum node_states */
-	char *reason;			/* reason for node being DOWN or
-					 * DRAINING */
-	time_t reason_time;		/* Time stamp when reason was set,
-					 * ignore if no reason is set. */
-	uint32_t reason_uid;   		/* User that set the reason,
-					 * ignore if no reason is set. */
-	time_t slurmd_start_time;	/* Time of slurmd startup */
-	char *version;			/* Slurm version number */
-} front_end_info_t;
-
-typedef struct front_end_info_msg {
-	time_t last_update;		/* time of latest info */
-	uint32_t record_count;		/* number of records */
-	front_end_info_t *front_end_array;	/* the front_end records */
-} front_end_info_msg_t;
-
 typedef struct topo_info {
 	uint16_t level;			/* level in hierarchy, leaf=0 */
 	uint32_t link_speed;		/* link speed, arbitrary units */
@@ -3253,14 +3228,6 @@ typedef struct slurm_update_node_msg {
 	char *topology_str; /* new topology address string */
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
-
-typedef struct slurm_update_front_end_msg {
-	char *name;		/* comma separated list of front end nodes */
-	uint32_t node_state;	/* see enum node_states */
-	char *reason;		/* reason for node being DOWN or DRAINING */
-	uint32_t reason_uid;	/* user ID of sending (needed if user
-				 * root is sending message) */
-} update_front_end_msg_t;
 
 typedef struct partition_info update_part_msg_t;
 
