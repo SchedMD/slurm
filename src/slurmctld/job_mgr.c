@@ -100,7 +100,6 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/fed_mgr.h"
-#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -2790,157 +2789,6 @@ extern int kill_job_by_part_name(char *part_name)
 }
 
 /*
- * kill_job_by_front_end_name - Given a front end node name, deallocate
- *	resource for its jobs and kill them.
- * IN node_name - name of a front end node
- * RET number of jobs associated with this front end node
- * NOTE: Patterned after kill_running_job_by_node_name()
- */
-extern int kill_job_by_front_end_name(char *node_name)
-{
-#ifdef HAVE_FRONT_END
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr, *het_job_leader;
-	node_record_t *node_ptr;
-	time_t now = time(NULL);
-	int i, kill_job_cnt = 0;
-
-	if (node_name == NULL)
-		fatal("kill_job_by_front_end_name: node_name is NULL");
-
-	/* Skipping here as I don't want to touch FrontEnd code */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		bool suspended = false;
-
-		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr) &&
-		    !IS_JOB_COMPLETING(job_ptr))
-			continue;
-		het_job_leader = NULL;
-		if (job_ptr->het_job_id)
-			het_job_leader = find_job_record(job_ptr->het_job_id);
-		if (!het_job_leader)
-			het_job_leader = job_ptr;
-		if ((het_job_leader->batch_host == NULL) ||
-		    xstrcmp(het_job_leader->batch_host, node_name))
-			continue;	/* no match on node name */
-
-		if (IS_JOB_SUSPENDED(job_ptr)) {
-			uint32_t suspend_job_state = job_ptr->job_state;
-			/*
-			 * we can't have it as suspended when we call the
-			 * accounting stuff.
-			 */
-			job_state_set(job_ptr, JOB_CANCELLED);
-			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
-			job_state_set(job_ptr, suspend_job_state);
-			suspended = true;
-		}
-		if (IS_JOB_COMPLETING(job_ptr)) {
-			kill_job_cnt++;
-			while ((i = bit_ffs(job_ptr->node_bitmap_cg)) >= 0) {
-				bit_clear(job_ptr->node_bitmap_cg, i);
-				if (job_ptr->node_cnt)
-					(job_ptr->node_cnt)--;
-				else {
-					error("node_cnt underflow on %pJ",
-					      job_ptr);
-				}
-				job_update_tres_cnt(job_ptr, i);
-				cleanup_completing(job_ptr, true);
-				node_ptr = node_record_table_ptr[i];
-				if (node_ptr->comp_job_cnt)
-					(node_ptr->comp_job_cnt)--;
-				else {
-					error("Node %s comp_job_cnt underflow, %pJ",
-					      node_ptr->name, job_ptr);
-				}
-			}
-		} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
-			kill_job_cnt++;
-			if (job_ptr->batch_flag && job_ptr->details &&
-			    slurm_conf.job_requeue &&
-			    (job_ptr->details->requeue > 0)) {
-				srun_node_fail(job_ptr, node_name);
-				info("requeue %pJ due to failure of node %s",
-				     job_ptr, node_name);
-				set_job_prio(job_ptr);
-				job_ptr->time_last_active  = now;
-				if (suspended) {
-					job_ptr->end_time =
-						job_ptr->suspend_time;
-					job_ptr->tot_sus_time +=
-						difftime(now,
-							 job_ptr->
-							 suspend_time);
-				} else
-					job_ptr->end_time = now;
-
-				/*
-				 * We want this job to look like it
-				 * was terminated in the accounting logs.
-				 * Set a new submit time so the restarted
-				 * job looks like a new job.
-				 */
-				job_state_set(job_ptr, JOB_NODE_FAIL);
-				build_cg_bitmap(job_ptr);
-				job_ptr->exit_code = 1;
-				job_completion_logger(job_ptr, true);
-				deallocate_nodes(job_ptr, false, suspended,
-						 false);
-
-				_set_requeued_job_pending_completing(job_ptr);
-
-				job_ptr->restart_cnt++;
-
-				/* clear signal sent flag on requeue */
-				job_ptr->warn_flags &= ~WARN_SENT;
-
-				job_ptr->exit_code = 0;
-
-				/* Since the job completion logger
-				 * removes the submit we need to add it
-				 * again. */
-				acct_policy_add_job_submit(job_ptr, false);
-
-				if (!job_ptr->node_bitmap_cg ||
-				    bit_ffs(job_ptr->node_bitmap_cg) == -1)
-					batch_requeue_fini(job_ptr);
-			} else {
-				info("Killing %pJ on failed node %s",
-				     job_ptr, node_name);
-				srun_node_fail(job_ptr, node_name);
-				job_state_set(job_ptr, (JOB_NODE_FAIL |
-							JOB_COMPLETING));
-				build_cg_bitmap(job_ptr);
-				job_ptr->state_reason = FAIL_DOWN_NODE;
-				xfree(job_ptr->state_desc);
-				if (suspended) {
-					job_ptr->end_time =
-						job_ptr->suspend_time;
-					job_ptr->tot_sus_time +=
-						difftime(now,
-							 job_ptr->suspend_time);
-				} else
-					job_ptr->end_time = now;
-				job_ptr->exit_code = 1;
-				job_completion_logger(job_ptr, false);
-				deallocate_nodes(job_ptr, false, suspended,
-						 false);
-			}
-		}
-	}
-	list_iterator_destroy(job_iterator);
-
-	if (kill_job_cnt)
-		last_job_update = now;
-	return kill_job_cnt;
-#else
-	return 0;
-#endif
-}
-
-/*
  * partition_in_use - determine whether a partition is in use by a RUNNING
  *	PENDING or SUSPENDED job or reservations
  * IN part_name - name of a partition
@@ -3610,7 +3458,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 
 	job_ptr_pend->fed_details = _dup_job_fed_details(job_ptr->fed_details);
 
-	job_ptr_pend->front_end_ptr = NULL;
 	/* job_details_t *details;		*** NOTE: Copied below */
 
 	job_ptr_pend->limit_set.tres = xcalloc(slurmctld_tres_cnt,
@@ -4360,7 +4207,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		job_ptr->fed_details;
 
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
-		(!top_prio) || (!independent) || !avail_front_end(job_ptr) ||
+		(!top_prio) || (!independent) ||
 		(job_desc->het_job_offset != NO_VAL) || defer_this ||
 		(job_ptr->details->prefer && ignore_prefer_val) ||
 		(job_ptr->details->features && ignore_constraint_val);
@@ -5998,6 +5845,7 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 	bitoff_t i;
 	signal_tasks_msg_t *signal_tasks_msg = NULL;
 	agent_arg_t *agent_args = NULL;
+	node_record_t *node_ptr;
 
 	xassert(job_ptr);
 	xassert(job_ptr->batch_host);
@@ -6011,15 +5859,8 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 	agent_args->msg_type	= REQUEST_SIGNAL_TASKS;
 	agent_args->retry	= 1;
 	agent_args->node_count  = 1;
-#ifdef HAVE_FRONT_END
-	if (job_ptr->front_end_ptr)
-		agent_args->protocol_version =
-			job_ptr->front_end_ptr->protocol_version;
-#else
-	node_record_t *node_ptr;
 	if ((node_ptr = find_node_record(job_ptr->batch_host)))
 		agent_args->protocol_version = node_ptr->protocol_version;
-#endif
 	agent_args->hostlist	= hostlist_create(job_ptr->batch_host);
 	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
 	signal_tasks_msg->step_id.job_id      = job_ptr->job_id;
@@ -6893,7 +6734,6 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	}
-#ifndef HAVE_FRONT_END
 	/* Zero node count OK for persistent burst buffer create or destroy */
 	if ((job_desc->min_nodes == 0) &&
 	    (job_desc->array_inx || (job_desc->het_job_offset != NO_VAL) ||
@@ -6902,7 +6742,6 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	}
-#endif
 
 	if ((job_desc->time_limit   == NO_VAL) &&
 	    (part_ptr->default_time == 0)) {
@@ -7218,7 +7057,6 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 
 static void _enable_stepmgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 {
-#ifndef HAVE_FRONT_END
 	static bool first_time = true;
 	static bool stepmgr_enabled = false;
 
@@ -7241,7 +7079,6 @@ static void _enable_stepmgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 		error("STEP_MGR not supported without PrologFlags=contain");
 		job_ptr->bit_flags &= ~STEPMGR_ENABLED;
 	}
-#endif
 }
 
 /*
@@ -9237,17 +9074,6 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 		if ((select_g_job_ready(job_ptr) & READY_NODE_STATE) == 0)
 			return false;
 	} else if (job_ptr->batch_flag) {
-
-#ifdef HAVE_FRONT_END
-		/* Make sure frontend node is ready to start batch job */
-		front_end_record_t *front_end_ptr =
-			find_front_end_record(job_ptr->batch_host);
-		if (!front_end_ptr ||
-		    IS_NODE_POWERED_DOWN(front_end_ptr) ||
-		    IS_NODE_POWERING_UP(front_end_ptr)) {
-			return false;
-		}
-#else
 		/* Make sure first node is ready to start batch job */
 		node_record_t *node_ptr =
 			find_node_record(job_ptr->batch_host);
@@ -9256,7 +9082,6 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 		    IS_NODE_POWERING_UP(node_ptr)) {
 			return false;
 		}
-#endif
 	}
 
 	return true;
@@ -13127,9 +12952,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_pre_resize_acctg(job_ptr);
 			rem_nodes = bit_copy(job_ptr->node_bitmap);
 			bit_and_not(rem_nodes, new_req_bitmap);
-#ifndef HAVE_FRONT_END
 			abort_job_on_nodes(job_ptr, rem_nodes);
-#endif
 			orig_job_node_bitmap =
 				bit_copy(job_ptr->job_resrcs->node_bitmap);
 			for (int i = 0;
@@ -14844,9 +14667,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 					continue;
 				bit_set(rem_nodes, i);
 			}
-#ifndef HAVE_FRONT_END
 			abort_job_on_nodes(job_ptr, rem_nodes);
-#endif
 			orig_job_node_bitmap =
 				bit_copy(job_ptr->job_resrcs->node_bitmap);
 			for (int i = 0;
@@ -15748,11 +15569,7 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 static void _send_job_kill(job_record_t *job_ptr)
 {
 	agent_arg_t *agent_args = NULL;
-#ifdef HAVE_FRONT_END
-	front_end_record_t *front_end_ptr;
-#else
 	node_record_t *node_ptr;
-#endif
 	kill_job_msg_t *kill_job;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
@@ -15762,14 +15579,6 @@ static void _send_job_kill(job_record_t *job_ptr)
 
 	last_node_update    = time(NULL);
 
-#ifdef HAVE_FRONT_END
-	if (job_ptr->batch_host &&
-	    (front_end_ptr = job_ptr->front_end_ptr)) {
-		agent_args->protocol_version = front_end_ptr->protocol_version;
-		hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
-		agent_args->node_count++;
-	}
-#else
 	if (!job_ptr->node_bitmap_cg)
 		build_cg_bitmap(job_ptr);
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
@@ -15783,7 +15592,6 @@ static void _send_job_kill(job_record_t *job_ptr)
 		if (PACK_FANOUT_ADDRS(node_ptr))
 			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
-#endif
 	if (agent_args->node_count == 0) {
 		if (job_ptr->details->expanding_jobid == 0) {
 			error("%s: %pJ allocated no nodes to be killed on",
@@ -16176,17 +15984,6 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	agent_info->node_count	= 1;
 	agent_info->retry	= 0;
 	agent_info->hostlist	= hostlist_create(node_name);
-#ifdef HAVE_FRONT_END
-	if (job_ptr && job_ptr->front_end_ptr)
-		agent_info->protocol_version =
-			job_ptr->front_end_ptr->protocol_version;
-	if (job_ptr) {
-		debug("Aborting %pJ on front end node %s", job_ptr, node_name);
-	} else {
-		debug("Aborting JobId=%u on front end node %s", job_id,
-		      node_name);
-	}
-#else
 	node_record_t *node_ptr;
 	if ((node_ptr = find_node_record(node_name)))
 		agent_info->protocol_version = node_ptr->protocol_version;
@@ -16194,7 +15991,6 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 		debug("Aborting %pJ on node %s", job_ptr, node_name);
 	else
 		debug("Aborting JobId=%u on node %s", job_id, node_name);
-#endif
 
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req = create_kill_job_msg(job_ptr,
@@ -16238,9 +16034,6 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 	kill_job_msg_t *kill_req;
 	uint16_t protocol_version;
 
-#ifdef HAVE_FRONT_END
-	fatal("%s: front-end mode not supported", __func__);
-#endif
 	xassert(node_bitmap);
 	/* Send a separate message for nodes at different protocol_versions */
 	full_node_bitmap = bit_copy(node_bitmap);
@@ -16286,19 +16079,9 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
 	agent_info->retry	= 0;
-#ifdef HAVE_FRONT_END
-	xassert(job_ptr->batch_host);
-	if (job_ptr->front_end_ptr)
-		agent_info->protocol_version =
-			job_ptr->front_end_ptr->protocol_version;
-	agent_info->hostlist	= hostlist_create(job_ptr->batch_host);
-	debug("Killing %pJ on front end node %s",
-	      job_ptr, job_ptr->batch_host);
-#else
 	agent_info->protocol_version = node_ptr->protocol_version;
 	agent_info->hostlist	= hostlist_create(node_ptr->name);
 	debug("Killing %pJ on node %s", job_ptr, node_ptr->name);
-#endif
 
 	kill_req = create_kill_job_msg(job_ptr, agent_info->protocol_version);
 	kill_req->nodes	= xstrdup(node_ptr->name);
@@ -16658,7 +16441,6 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	 */
 	if ((IS_JOB_PENDING(job_ptr) && (!IS_JOB_COMPLETING(job_ptr))) ||
 	    (job_ptr->node_bitmap == NULL)) {
-#ifndef HAVE_FRONT_END
 		uint32_t base_state = NODE_STATE_UNKNOWN;
 		node_ptr = find_node_record(node_name);
 		if (node_ptr)
@@ -16676,53 +16458,9 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 			error("%s: %pJ is non-running slurmctld and slurmd out of sync",
 			      __func__, job_ptr);
 		}
-#endif
 		return false;
 	}
 
-#ifdef HAVE_FRONT_END
-	xassert(job_ptr->batch_host);
-	/*
-	 * If there is a bad epilog error don't down the frontend node.
-	 * If needed the nodes in use by the job will be downed below.
-	 */
-	if (return_code)
-		error("%s: %pJ epilog error on %s",
-		      __func__, job_ptr, job_ptr->batch_host);
-
-	if (job_ptr->front_end_ptr && IS_JOB_COMPLETING(job_ptr)) {
-		front_end_record_t *front_end_ptr = job_ptr->front_end_ptr;
-		if (front_end_ptr->job_cnt_comp)
-			front_end_ptr->job_cnt_comp--;
-		else {
-			error("%s: %pJ job_cnt_comp underflow on front end %s",
-			      __func__, job_ptr, front_end_ptr->name);
-		}
-		if (front_end_ptr->job_cnt_comp == 0)
-			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
-	}
-
-	if ((job_ptr->total_nodes == 0) && IS_JOB_COMPLETING(job_ptr)) {
-		/*
-		 * Job resources moved into another job and
-		 * tasks already killed
-		 */
-		front_end_record_t *front_end_ptr = job_ptr->front_end_ptr;
-		if (front_end_ptr)
-			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
-	} else {
-		for (int i = 0;
-		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
-		     i++) {
-			if (return_code) {
-				drain_nodes(node_ptr->name, "Epilog error",
-				            slurm_conf.slurm_user_id);
-			}
-			/* Change job from completing to completed */
-			make_node_idle(node_ptr, job_ptr);
-		}
-	}
-#else
 	if (return_code) {
 		error("%s: %pJ epilog error on %s, draining the node",
 		      __func__, job_ptr, node_name);
@@ -16733,7 +16471,6 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	node_ptr = find_node_record(node_name);
 	if (node_ptr)
 		make_node_idle(node_ptr, job_ptr);
-#endif
 
 	/* nodes_completing is out of date, rebuild when next saved */
 	xfree(job_ptr->nodes_completing);
@@ -17227,9 +16964,7 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 /* Send specified signal to all steps associated with a job */
 static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 {
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
-#endif
 	agent_arg_t *agent_args = NULL;
 	signal_tasks_msg_t *signal_job_msg = NULL;
 
@@ -17262,14 +16997,6 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 
 	signal_job_msg->signal = signal;
 
-#ifdef HAVE_FRONT_END
-	xassert(job_ptr->batch_host);
-	if (job_ptr->front_end_ptr)
-		agent_args->protocol_version =
-			job_ptr->front_end_ptr->protocol_version;
-	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
-	agent_args->node_count = 1;
-#else
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
@@ -17281,7 +17008,6 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 		if (PACK_FANOUT_ADDRS(node_ptr))
 			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
-#endif
 
 	if (agent_args->node_count == 0) {
 		xfree(signal_job_msg);
@@ -17302,9 +17028,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
  */
 static void _suspend_job(job_record_t *job_ptr, uint16_t op)
 {
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
-#endif
 	agent_arg_t *agent_args;
 	suspend_int_msg_t *sus_ptr;
 
@@ -17318,15 +17042,6 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op)
 	sus_ptr->job_id = job_ptr->job_id;
 	sus_ptr->op = op;
 
-#ifdef HAVE_FRONT_END
-	xassert(job_ptr->batch_host);
-	if (job_ptr->front_end_ptr) {
-		agent_args->protocol_version =
-			job_ptr->front_end_ptr->protocol_version;
-	}
-	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
-	agent_args->node_count = 1;
-#else
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
@@ -17338,7 +17053,6 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op)
 		if (PACK_FANOUT_ADDRS(node_ptr))
 			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
-#endif
 
 	if (agent_args->node_count == 0) {
 		slurm_free_suspend_int_msg(sus_ptr);

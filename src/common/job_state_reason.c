@@ -112,9 +112,6 @@ const static entry_t jsra[] = {
 		.flags = JSR_MISC,
 		.str = "ReqNodeNotAvail",
 	},
-	[WAIT_FRONT_END] = {
-		.str = "FrontEndDown",
-	},
 	[FAIL_DEFER] = {
 		.str = "SchedDefer",
 	},

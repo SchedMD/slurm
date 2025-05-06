@@ -485,10 +485,6 @@ typedef struct node_info_single_msg {
 	uint16_t show_flags;
 } node_info_single_msg_t;
 
-typedef struct front_end_info_request_msg {
-	time_t last_update;
-} front_end_info_request_msg_t;
-
 typedef struct part_info_request_msg {
 	time_t last_update;
 	uint16_t show_flags;
@@ -1486,8 +1482,6 @@ extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg);
 extern void slurm_free_job_state_request_msg(job_state_request_msg_t *msg);
 extern void slurm_free_job_step_info_request_msg(
 		job_step_info_request_msg_t *msg);
-extern void slurm_free_front_end_info_request_msg(
-		front_end_info_request_msg_t *msg);
 extern void slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
 extern void slurm_free_node_info_single_msg(node_info_single_msg_t *msg);
 extern void slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
@@ -1538,7 +1532,6 @@ extern void slurm_free_step_id(slurm_step_id_t *msg);
 
 extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
-extern void slurm_free_update_front_end_msg(update_front_end_msg_t * msg);
 extern void slurm_free_update_node_msg(update_node_msg_t * msg);
 extern void slurm_free_update_part_msg(update_part_msg_t * msg);
 extern void slurm_free_delete_part_msg(delete_part_msg_t * msg);
@@ -1601,8 +1594,6 @@ extern void slurm_free_job_info_msg(job_info_msg_t * job_buffer_ptr);
 extern void slurm_free_job_step_info_response_msg(
 		job_step_info_response_msg_t * msg);
 extern void slurm_free_job_step_info_members (job_step_info_t * msg);
-extern void slurm_free_front_end_info_msg (front_end_info_msg_t * msg);
-extern void slurm_free_front_end_info_members(front_end_info_t * front_end);
 extern void slurm_free_node_info_msg(node_info_msg_t * msg);
 extern void slurm_init_node_info_t(node_info_t * msg, bool clear);
 extern void slurm_free_node_info_members(node_info_t * node);

@@ -78,7 +78,6 @@ slurm_step_layout_t *slurm_step_layout_create(
 	char *arbitrary_nodes = NULL;
 	slurm_step_layout_t *step_layout =
 		xmalloc(sizeof(slurm_step_layout_t));
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	step_layout->task_dist = step_layout_req->task_dist;
 	if ((step_layout->task_dist & SLURM_DIST_STATE_BASE)
@@ -99,14 +98,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 	}
 
 	step_layout->task_cnt  = step_layout_req->num_tasks;
-	if (cluster_flags & CLUSTER_FLAG_FE) {
-		/* Limited job step support on front-end systems.
-		 * Normally we would not permit execution of job steps,
-		 * but can fake it by just allocating all tasks to
-		 * one of the allocated nodes. */
-		step_layout->node_cnt  = 1;
-	} else
-		step_layout->node_cnt = step_layout_req->num_hosts;
+	step_layout->node_cnt = step_layout_req->num_hosts;
 
 	if (_init_task_layout(step_layout_req, step_layout, arbitrary_nodes)
 	    != SLURM_SUCCESS) {
@@ -480,7 +472,6 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 			     const char *arbitrary_nodes)
 {
 	int cpu_cnt = 0, cpu_inx = 0, cpu_task_cnt = 0, cpu_task_inx = 0, i;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	hostlist_t *hl;
 
 	uint16_t cpus[step_layout->node_cnt];
@@ -578,9 +569,8 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 	if ((step_layout->task_dist & SLURM_DIST_NODEMASK)
 	    == SLURM_DIST_NODECYCLIC)
 		return _task_layout_cyclic(step_layout, cpus);
-	else if (((step_layout->task_dist & SLURM_DIST_STATE_BASE)
-		  == SLURM_DIST_ARBITRARY)
-		 && !(cluster_flags & CLUSTER_FLAG_FE))
+	else if ((step_layout->task_dist & SLURM_DIST_STATE_BASE)
+		 == SLURM_DIST_ARBITRARY)
 		return _task_layout_hostfile(step_layout, arbitrary_nodes);
 	else if ((step_layout->task_dist & SLURM_DIST_STATE_BASE)
 		 == SLURM_DIST_PLANE)

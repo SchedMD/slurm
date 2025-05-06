@@ -82,7 +82,6 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/fed_mgr.h"
-#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -342,15 +341,6 @@ static bool _job_runnable_test1(job_record_t *job_ptr, bool sched_plugin)
 		sched_debug3("%pJ. State=PENDING. Reason=Cleaning.", job_ptr);
 		return false;
 	}
-
-#ifdef HAVE_FRONT_END
-	/* At least one front-end node up at this point */
-	if (job_ptr->state_reason == WAIT_FRONT_END) {
-		job_ptr->state_reason = WAIT_NO_REASON;
-		xfree(job_ptr->state_desc);
-		last_job_update = now;
-	}
-#endif
 
 	job_indepen = job_independent(job_ptr);
 	if (sched_plugin)
@@ -619,26 +609,6 @@ static int _foreach_job_is_completing(void *x, void *arg)
 			bit_or(job_is_comp->eff_cg_bitmap,
 			       job_ptr->part_ptr->node_bitmap);
 	}
-
-	return 0;
-}
-
-static int _foreach_wait_front_end(void *x, void *arg)
-{
-	job_record_t *job_ptr = x;
-	time_t now = *(time_t *)arg;
-
-	if (!IS_JOB_PENDING(job_ptr))
-		return 0;
-
-	if ((job_ptr->state_reason != WAIT_NO_REASON) &&
-	    (job_ptr->state_reason != WAIT_RESOURCES) &&
-	    (job_ptr->state_reason != WAIT_NODE_NOT_AVAIL))
-		return 0;
-
-	job_ptr->state_reason = WAIT_FRONT_END;
-	xfree(job_ptr->state_desc);
-	last_job_update = now;
 
 	return 0;
 }
@@ -1439,13 +1409,6 @@ static int _schedule(bool full_queue)
 	sched_start = now;
 	last_job_sched_start = now;
 	START_TIMER;
-	if (!avail_front_end(NULL)) {
-		(void) list_for_each(job_list, _foreach_wait_front_end, &now);
-		unlock_slurmctld(job_write_lock);
-		sched_debug("schedule() returning, no front end nodes are available");
-		goto out;
-	}
-
 	if (!reduce_completing_frag && job_is_completing(NULL)) {
 		unlock_slurmctld(job_write_lock);
 		sched_debug("schedule() returning, some job is still completing");
@@ -1499,13 +1462,6 @@ static int _schedule(bool full_queue)
 		job_ptr = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;
 
-		if (!avail_front_end(job_ptr)) {
-			job_ptr->state_reason = WAIT_FRONT_END;
-			xfree(job_ptr->state_desc);
-			last_job_update = now;
-			xfree(job_queue_rec);
-			continue;
-		}
 		if ((job_ptr->array_task_id != array_task_id) &&
 		    (array_task_id == NO_VAL)) {
 			/* Job array element started in other partition,
@@ -2837,11 +2793,7 @@ extern void launch_job(job_record_t *job_ptr)
 	uint16_t protocol_version = NO_VAL16;
 	agent_arg_t *agent_arg_ptr;
 	job_record_t *launch_job_ptr;
-#ifdef HAVE_FRONT_END
-	front_end_record_t *front_end_ptr;
-#else
 	node_record_t *node_ptr;
-#endif
 
 	xassert(job_ptr);
 	xassert(job_ptr->batch_flag);
@@ -2856,15 +2808,9 @@ extern void launch_job(job_record_t *job_ptr)
 	if (pick_batch_host(launch_job_ptr) != SLURM_SUCCESS)
 		return;
 
-#ifdef HAVE_FRONT_END
-	front_end_ptr = find_front_end_record(job_ptr->batch_host);
-	if (front_end_ptr)
-		protocol_version = front_end_ptr->protocol_version;
-#else
 	node_ptr = find_node_record(job_ptr->batch_host);
 	if (node_ptr)
 		protocol_version = node_ptr->protocol_version;
-#endif
 
 	(void)build_batch_step(job_ptr);
 
@@ -4595,12 +4541,6 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr,
  * IN job_ptr - pointer to job that will be initiated
  * RET SLURM_SUCCESS(0) or error code
  */
-#ifdef HAVE_FRONT_END
-extern void reboot_job_nodes(job_record_t *job_ptr)
-{
-	return;
-}
-#else
 static void _send_reboot_msg(bitstr_t *node_bitmap, char *features,
 			     uint16_t protocol_version)
 {
@@ -4833,7 +4773,6 @@ cleanup:
 	FREE_NULL_BITMAP(non_feature_node_bitmap);
 	FREE_NULL_BITMAP(feature_node_bitmap);
 }
-#endif
 
 /*
  * Deferring this setup ensures that all calling paths into select_nodes()

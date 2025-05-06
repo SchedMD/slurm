@@ -117,7 +117,6 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/fed_mgr.h"
-#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/heartbeat.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -568,7 +567,6 @@ int main(int argc, char **argv)
 	stepmgr_ops_t stepmgr_ops = {0};
 
 	stepmgr_ops.agent_queue_request = agent_queue_request;
-	stepmgr_ops.find_front_end_record = find_front_end_record;
 	stepmgr_ops.find_job_array_rec = find_job_array_rec;
 	stepmgr_ops.find_job_record = find_job_record;
 	stepmgr_ops.job_config_fini = job_config_fini;
@@ -1111,7 +1109,6 @@ int main(int argc, char **argv)
 	node_fini();
 	mpi_fini();
 	node_features_g_fini();
-	purge_front_end_state();
 	resv_fini();
 	trigger_fini();
 	assoc_mgr_fini(1);
@@ -2736,7 +2733,6 @@ static void *_slurmctld_background(void *no_data)
 extern void save_all_state(void)
 {
 	/* Each of these functions lock their own databases */
-	schedule_front_end_save();
 	schedule_job_save();
 	schedule_node_save();
 	schedule_part_save();

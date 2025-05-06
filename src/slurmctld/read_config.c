@@ -80,7 +80,6 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/fed_mgr.h"
-#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -412,7 +411,6 @@ static int _set_share_node_bitmap(void *x, void *arg)
 	return 0;
 }
 
-#ifndef HAVE_FRONT_END
 static void *_set_node_addrs(void *arg)
 {
 	list_t *nodes = arg;
@@ -435,14 +433,12 @@ static void *_set_node_addrs(void *arg)
 
 	return NULL;
 }
-#endif
 
 /*
  * Validate that nodes are addressable.
  */
 static void _validate_slurmd_addr(void)
 {
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 	DEF_TIMERS;
 	pthread_t *work_threads;
@@ -490,7 +486,6 @@ static void _validate_slurmd_addr(void)
 	FREE_NULL_LIST(nodes);
 
 	END_TIMER2(__func__);
-#endif
 }
 
 /*
@@ -1351,7 +1346,6 @@ void _sync_jobs_to_conf(void)
 			job_fail = true;
 		}
 		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
-#ifndef HAVE_FRONT_END
 		if (job_ptr->nodes_pr &&
 		    node_name2bitmap(job_ptr->nodes_pr, false,
 				     &job_ptr->node_bitmap_pr, NULL)) {
@@ -1359,7 +1353,6 @@ void _sync_jobs_to_conf(void)
 			      job_ptr->nodes_pr, job_ptr);
 			job_fail = true;
 		}
-#endif
 		if (reset_node_bitmap(job_ptr))
 			job_fail = true;
 		if (!job_fail &&
@@ -1550,7 +1543,6 @@ extern int read_slurm_conf(int recover)
 	(void)acct_storage_g_reconfig(acct_db_conn, 0);
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
-	restore_front_end_state(recover);
 
 	/*
 	 * Currently load/dump_state_lite has to run before load_all_job_state.
@@ -1600,11 +1592,9 @@ extern int read_slurm_conf(int recover)
 		(void) load_all_node_state(true);
 		_set_features(node_record_table_ptr, node_record_count,
 			      recover);
-		(void) load_all_front_end_state(true);
 	} else if (recover > 1) {	/* Load node, part & job state files */
 		(void) load_all_node_state(false);
 		_set_features(NULL, 0, recover);
-		(void) load_all_front_end_state(false);
 	}
 
 	rehash_node();
@@ -2118,7 +2108,6 @@ static int _sync_nodes_to_jobs(void)
 		info("_sync_nodes_to_jobs updated state of %d nodes",
 		     update_cnt);
 	}
-	sync_front_end_state();
 	return update_cnt;
 }
 
@@ -2156,8 +2145,6 @@ static int _sync_nodes_to_comp_job(void)
 			if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
 				acct_policy_job_begin(job_ptr, false);
 
-			if (job_ptr->front_end_ptr)
-				job_ptr->front_end_ptr->job_cnt_run++;
 			deallocate_nodes(job_ptr, false, false, false);
 			/* The job in completing state at slurmctld restart or
 			 * reconfiguration, do not log completion again.
@@ -2277,10 +2264,6 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 	if (orig_job_node_bitmap)
 		rebuild_step_bitmaps(job_ptr, orig_job_node_bitmap);
 	FREE_NULL_BITMAP(orig_job_node_bitmap);
-
-	if ((IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
-	    (job_ptr->front_end_ptr != NULL))
-		job_ptr->front_end_ptr->job_cnt_run++;
 
 	set_initial_job_alias_list(job_ptr);
 

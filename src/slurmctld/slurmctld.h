@@ -55,7 +55,6 @@
 #include "src/common/bitstring.h"
 #include "src/common/cron.h"
 #include "src/common/extra_constraints.h"
-#include "src/common/front_end.h"
 #include "src/common/identity.h"
 #include "src/common/job_record.h"
 #include "src/common/job_resources.h"
@@ -1209,14 +1208,6 @@ extern int kill_job_by_part_name(char *part_name);
 extern void kill_job_on_node(job_record_t *job_ptr, node_record_t *node_ptr);
 
 /*
- * kill_job_by_front_end_name - Given a front end node name, deallocate
- *	resource for its jobs and kill them.
- * IN node_name - name of a front end node
- * RET number of jobs associated with this front end node
- */
-extern int kill_job_by_front_end_name(char *node_name);
-
-/*
  * kill_running_job_by_node_ptr - Given a node_ptr, deallocate RUNNING
  *	or COMPLETING jobs from the node or kill them
  * IN node_name - name of a node
@@ -1983,20 +1974,6 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg);
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up);
-
-/*
- * validate_nodes_via_front_end - validate all nodes on a cluster as having
- *	a valid configuration as soon as the front-end registers. Individual
- *	nodes will not register with this configuration
- * IN reg_msg - node registration message
- * IN protocol_version - Version of Slurm on this node
- * OUT newly_up - set if node newly brought into service
- * RET 0 if no error, Slurm error code otherwise
- * NOTE: READ lock_slurmctld config before entry
- */
-extern int validate_nodes_via_front_end(
-		slurm_node_registration_status_msg_t *reg_msg,
-		uint16_t protocol_version, bool *newly_up);
 
 /*
  * validate_super_user - validate that the uid is authorized at the

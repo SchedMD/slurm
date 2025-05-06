@@ -36,7 +36,6 @@
 
 #include "src/common/cron.h"
 #include "src/common/extra_constraints.h"
-#include "src/common/front_end.h"
 #include "src/common/part_record.h"
 #include "src/common/slurm_protocol_defs.h"
 
@@ -308,8 +307,6 @@ struct job_record {
 					 * this job to be killed.
 					 * NULL in all other situations */
 	job_fed_details_t *fed_details;	/* details for federated jobs. */
-	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
-					 * this job */
 	list_t *gres_list_req;		/* Requested generic resource allocation
 					   detail */
 	list_t *gres_list_req_accum;	/* Requested generic resource allocation

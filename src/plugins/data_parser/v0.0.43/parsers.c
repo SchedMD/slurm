@@ -7732,7 +7732,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CLUSTER_REC_FLAGS)[] = {
 	add_flag_bit(CLUSTER_FLAG_DELETED, "DELETED"),
 	add_flag_bit(CLUSTER_FLAG_REGISTER, "REGISTERING"),
 	add_flag_bit(CLUSTER_FLAG_MULTSD, "MULTIPLE_SLURMD"),
-	add_flag_bit(CLUSTER_FLAG_FE, "FRONT_END"),
 	add_flag_bit(CLUSTER_FLAG_FED, "FEDERATION"),
 	add_flag_bit(CLUSTER_FLAG_EXT, "EXTERNAL"),
 };

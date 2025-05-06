@@ -49,7 +49,6 @@
 #include "src/interfaces/select.h"
 
 #include "src/slurmctld/agent.h"
-#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
 

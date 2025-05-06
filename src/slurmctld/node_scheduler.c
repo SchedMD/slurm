@@ -79,7 +79,6 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
-#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -326,9 +325,6 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	hostlist_t *hostlist = NULL;
 	uint16_t use_protocol_version = 0;
 	uint16_t msg_flags = 0;
-#ifdef HAVE_FRONT_END
-	front_end_record_t *front_end_ptr;
-#endif
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
@@ -350,57 +346,6 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	if (!job_ptr->details->prolog_running)
 		hostlist = hostlist_create(NULL);
 
-#ifdef HAVE_FRONT_END
-	if (job_ptr->batch_host &&
-	    (front_end_ptr = job_ptr->front_end_ptr)) {
-		use_protocol_version = front_end_ptr->protocol_version;
-		if (IS_NODE_DOWN(front_end_ptr)) {
-			/* Issue the KILL RPC, but don't verify response */
-			front_end_ptr->job_cnt_comp = 0;
-			front_end_ptr->job_cnt_run  = 0;
-			if (job_ptr->node_bitmap_cg) {
-				bit_clear_all(job_ptr->node_bitmap_cg);
-			} else {
-				error("deallocate_nodes: node_bitmap_cg is "
-				      "not set");
-				/* Create empty node_bitmap_cg */
-				job_ptr->node_bitmap_cg =
-					bit_alloc(node_record_count);
-			}
-			job_ptr->cpu_cnt  = 0;
-			job_ptr->node_cnt = 0;
-		} else {
-			bool set_fe_comp = false;
-			if (front_end_ptr->job_cnt_run) {
-				front_end_ptr->job_cnt_run--;
-			} else {
-				error("%s: front_end %s job_cnt_run underflow",
-				      __func__, front_end_ptr->name);
-			}
-			if (front_end_ptr->job_cnt_run == 0) {
-				uint32_t state_flags;
-				state_flags = front_end_ptr->node_state &
-					      NODE_STATE_FLAGS;
-				front_end_ptr->node_state = NODE_STATE_IDLE |
-							    state_flags;
-			}
-			for (int i = 0; (node_ptr = next_node_bitmap(
-					     job_ptr->node_bitmap, &i));
-			     i++) {
-				make_node_comp(node_ptr, job_ptr, suspended);
-				set_fe_comp = true;
-			}
-			if (set_fe_comp) {
-				front_end_ptr->job_cnt_comp++;
-				front_end_ptr->node_state |=
-					NODE_STATE_COMPLETING;
-			}
-		}
-
-		if (hostlist)
-			hostlist_push_host(hostlist, job_ptr->batch_host);
-	}
-#else
 	if (!job_ptr->node_bitmap_cg)
 		build_cg_bitmap(job_ptr);
 	use_protocol_version = SLURM_PROTOCOL_VERSION;
@@ -440,7 +385,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 				msg_flags |= SLURM_PACK_ADDRS;
 		}
 	}
-#endif
+
 	if (job_ptr->details->prolog_running) {
 		/*
 		 * Job was configuring when it was cancelled and epilog wasn't
@@ -3253,23 +3198,10 @@ extern void launch_prolog(job_record_t *job_ptr)
 	agent_arg_t *agent_arg_ptr;
 	job_resources_t *job_resrcs_ptr;
 	slurm_cred_arg_t cred_arg;
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
-#endif
 
 	xassert(job_ptr);
 
-#ifdef HAVE_FRONT_END
-	/* For a batch job the prolog will be
-	 * started synchronously by slurmd.
-	 */
-	if (job_ptr->batch_flag)
-		return;
-
-	xassert(job_ptr->front_end_ptr);
-	if (protocol_version > job_ptr->front_end_ptr->protocol_version)
-		protocol_version = job_ptr->front_end_ptr->protocol_version;
-#else
 	if (job_ptr->bit_flags & EXTERNAL_JOB)
 		return;
 
@@ -3280,7 +3212,6 @@ extern void launch_prolog(job_record_t *job_ptr)
 		if (PACK_FANOUT_ADDRS(node_ptr))
 			msg_flags |= SLURM_PACK_ADDRS;
 	}
-#endif
 
 	prolog_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
 
@@ -3288,10 +3219,8 @@ extern void launch_prolog(job_record_t *job_ptr)
 	if ((slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
 	    !(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD)) {
 		job_ptr->state_reason = WAIT_PROLOG;
-#ifndef HAVE_FRONT_END
 		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 		job_ptr->node_bitmap_pr = bit_copy(job_ptr->node_bitmap);
-#endif
 	}
 
 	prolog_msg_ptr->alloc_tls_cert = xstrdup(job_ptr->alloc_tls_cert);
@@ -3383,14 +3312,10 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	cred_arg.step_core_bitmap    = job_resrcs_ptr->core_bitmap;
 
-#ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
 	/* override */
 	cred_arg.job_hostlist    = job_ptr->batch_host;
 	cred_arg.step_hostlist   = job_ptr->batch_host;
-#else
-	cred_arg.step_hostlist   = job_ptr->job_resrcs->nodes;
-#endif
 
 	switch_g_extern_stepinfo(&cred_arg.switch_step, job_ptr);
 
@@ -3411,14 +3336,8 @@ extern void launch_prolog(job_record_t *job_ptr)
 	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->retry = 0;
 	agent_arg_ptr->protocol_version = protocol_version;
-#ifdef HAVE_FRONT_END
-	xassert(job_ptr->front_end_ptr->name);
-	agent_arg_ptr->hostlist = hostlist_create(job_ptr->front_end_ptr->name);
-	agent_arg_ptr->node_count = 1;
-#else
 	agent_arg_ptr->hostlist = hostlist_create(job_ptr->nodes);
 	agent_arg_ptr->node_count = job_ptr->node_cnt;
-#endif
 	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
 	agent_arg_ptr->msg_args = (void *) prolog_msg_ptr;
 	agent_arg_ptr->msg_flags = msg_flags;
@@ -4392,24 +4311,7 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
 	job_ptr->total_nodes = job_ptr->node_cnt = hostlist_count(host_list);
 
-#ifdef HAVE_FRONT_END
-	if (new_alloc) {
-		/* Find available front-end node and assign it to this job */
-		xfree(job_ptr->batch_host);
-		job_ptr->front_end_ptr = assign_front_end(job_ptr);
-		if (job_ptr->front_end_ptr) {
-			job_ptr->batch_host = xstrdup(job_ptr->
-						      front_end_ptr->name);
-		}
-	} else if (job_ptr->batch_host) {
-		/* Reset pointer to this job's front-end node */
-		job_ptr->front_end_ptr = assign_front_end(job_ptr);
-		if (!job_ptr->front_end_ptr)
-			xfree(job_ptr->batch_host);
-	}
-#else
 	xfree(job_ptr->batch_host);
-#endif
 
 	while ((this_node_name = hostlist_shift(host_list))) {
 		if ((node_ptr = find_node_record(this_node_name))) {
@@ -4687,9 +4589,6 @@ extern void re_kill_job(job_record_t *job_ptr)
 	char *host_str = NULL;
 	static uint32_t last_job_id = 0;
 	node_record_t *node_ptr;
-#ifdef HAVE_FRONT_END
-	front_end_record_t *front_end_ptr;
-#endif
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
@@ -4702,37 +4601,6 @@ extern void re_kill_job(job_record_t *job_ptr)
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	agent_args->retry = 0;
 
-#ifdef HAVE_FRONT_END
-	if (job_ptr->batch_host &&
-	    (front_end_ptr = find_front_end_record(job_ptr->batch_host))) {
-		agent_args->protocol_version = front_end_ptr->protocol_version;
-		if (IS_NODE_DOWN(front_end_ptr) &&
-		    job_ptr->node_bitmap_cg) {
-			for (int i = 0;
-			     (node_ptr =
-				next_node_bitmap(job_ptr->node_bitmap_cg, &i));
-			     i++) {
-				bit_clear(job_ptr->node_bitmap_cg,
-					  node_ptr->index);
-				job_update_tres_cnt(job_ptr, node_ptr->index);
-				if (node_ptr->comp_job_cnt)
-					(node_ptr->comp_job_cnt)--;
-				if ((job_ptr->node_cnt > 0) &&
-				    ((--job_ptr->node_cnt) == 0)) {
-					last_node_update = time(NULL);
-					cleanup_completing(job_ptr, true);
-					last_node_update = time(NULL);
-				}
-			}
-		} else if (!IS_NODE_NO_RESPOND(front_end_ptr)) {
-			(void) hostlist_push_host(kill_hostlist,
-						  job_ptr->batch_host);
-			hostlist_push_host(agent_args->hostlist,
-				      job_ptr->batch_host);
-			agent_args->node_count++;
-		}
-	}
-#else
 	if (job_ptr->node_bitmap_cg) {
 		for (int i = 0;
 		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap_cg, &i));
@@ -4764,7 +4632,6 @@ extern void re_kill_job(job_record_t *job_ptr)
 				agent_args->msg_flags |= SLURM_PACK_ADDRS;
 		}
 	}
-#endif
 
 	if (agent_args->node_count == 0) {
 		FREE_NULL_HOSTLIST(agent_args->hostlist);

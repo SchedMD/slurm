@@ -250,7 +250,7 @@ typedef enum {
 	/* SLURM_BIT(6) empty */
 	CLUSTER_FLAG_MULTSD = SLURM_BIT(7), /* Cluster is multiple slurmd */
 	/* SLURM_BIT(8) empty */
-	CLUSTER_FLAG_FE = SLURM_BIT(9), /* This cluster is a front end system */
+	/* SLURM_BIT(9) empty */
 	/* SLURM_BIT(10) empty */
 	CLUSTER_FLAG_FED = SLURM_BIT(11), /* This cluster is in a federation. */
 	CLUSTER_FLAG_EXT = SLURM_BIT(12), /* This cluster is external */

@@ -79,7 +79,6 @@
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/agent.h"
-#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/power_save.h"
@@ -125,8 +124,6 @@ bitstr_t *power_up_node_bitmap = NULL;	/* bitmap of power_up requested nodes */
 static int _delete_node_ptr(node_record_t *node_ptr);
 static void	_drain_node(node_record_t *node_ptr, char *reason,
 			    uint32_t reason_uid);
-static front_end_record_t * _front_end_reg(
-				slurm_node_registration_status_msg_t *reg_msg);
 static void    _make_node_unavail(node_record_t *node_ptr);
 static void 	_make_node_down(node_record_t *node_ptr,
 				time_t event_time);
@@ -1540,9 +1537,7 @@ static void _undo_reboot_asap(node_record_t *node_ptr)
 
 static void _require_node_reg(node_record_t *node_ptr)
 {
-#ifndef HAVE_FRONT_END
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
-#endif
 	node_ptr->last_response = time(NULL);
 	node_ptr->boot_time = 0;
 	ping_nodes_now = true;
@@ -3707,364 +3702,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	return error_code;
 }
 
-static front_end_record_t * _front_end_reg(
-		slurm_node_registration_status_msg_t *reg_msg)
-{
-	front_end_record_t *front_end_ptr;
-	uint32_t state_base, state_flags;
-	time_t now = time(NULL);
-
-	debug2("name:%s boot_time:%u up_time:%u",
-	       reg_msg->node_name, (unsigned int) reg_msg->slurmd_start_time,
-	       reg_msg->up_time);
-
-	front_end_ptr = find_front_end_record(reg_msg->node_name);
-	if (front_end_ptr == NULL) {
-		error("Registration message from unknown node %s",
-		      reg_msg->node_name);
-		return NULL;
-	}
-
-	front_end_ptr->boot_time = now - reg_msg->up_time;
-	if (front_end_ptr->last_response &&
-	    (front_end_ptr->boot_time > front_end_ptr->last_response)) {
-		info("front end %s unexpectedly rebooted, "
-		     "killing all previously running jobs running on it.",
-		     reg_msg->node_name);
-		(void) kill_job_by_front_end_name(front_end_ptr->name);
-		reg_msg->job_count = 0;
-	}
-
-	front_end_ptr->last_response = now;
-	front_end_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
-	state_base  = front_end_ptr->node_state & JOB_STATE_BASE;
-	state_flags = front_end_ptr->node_state & JOB_STATE_FLAGS;
-	if ((state_base == NODE_STATE_DOWN) && (front_end_ptr->reason) &&
-	    (!xstrncmp(front_end_ptr->reason, "Not responding", 14))) {
-		error("front end node %s returned to service",
-		      reg_msg->node_name);
-		state_base = NODE_STATE_IDLE;
-		xfree(front_end_ptr->reason);
-		front_end_ptr->reason_time = (time_t) 0;
-		front_end_ptr->reason_uid = 0;
-	}
-	if (state_base == NODE_STATE_UNKNOWN)
-		state_base = NODE_STATE_IDLE;
-
-	state_flags &= (~NODE_STATE_NO_RESPOND);
-
-	front_end_ptr->node_state = state_base | state_flags;
-	last_front_end_update = now;
-	return front_end_ptr;
-}
-
-/*
- * validate_nodes_via_front_end - validate all nodes on a cluster as having
- *	a valid configuration as soon as the front-end registers. Individual
- *	nodes will not register with this configuration
- * IN reg_msg - node registration message
- * IN protocol_version - Version of Slurm on this node
- * OUT newly_up - set if node newly brought into service
- * RET 0 if no error, Slurm error code otherwise
- */
-extern int validate_nodes_via_front_end(
-		slurm_node_registration_status_msg_t *reg_msg,
-		uint16_t protocol_version, bool *newly_up)
-{
-	int error_code = 0, i, j, rc;
-	bool update_node_state = false;
-	job_record_t *job_ptr;
-	config_record_t *config_ptr;
-	node_record_t *node_ptr = NULL;
-	time_t now = time(NULL);
-	list_itr_t *job_iterator;
-	hostlist_t *reg_hostlist = NULL;
-	char *host_str = NULL, *reason_down = NULL;
-	uint32_t node_flags;
-	front_end_record_t *front_end_ptr;
-
-	xassert(verify_lock(CONF_LOCK, READ_LOCK));
-	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
-	xassert(verify_lock(FED_LOCK, READ_LOCK));
-
-	if (reg_msg->up_time > now) {
-		error("Node up_time on %s is invalid: %u>%u",
-		      reg_msg->node_name, reg_msg->up_time, (uint32_t) now);
-		reg_msg->up_time = 0;
-	}
-
-	front_end_ptr = _front_end_reg(reg_msg);
-	if (front_end_ptr == NULL)
-		return ESLURM_INVALID_NODE_NAME;
-
-	front_end_ptr->protocol_version = protocol_version;
-	xfree(front_end_ptr->version);
-	front_end_ptr->version = reg_msg->version;
-	reg_msg->version = NULL;
-	*newly_up = false;
-
-	if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
-		error("Prolog failed on node %s", reg_msg->node_name);
-		/* Do NOT set the node DOWN here. Unlike non-front-end systems,
-		 * this failure is likely due to some problem in the underlying
-		 * infrastructure (e.g. the block failed to boot). */
-		/* set_front_end_down(front_end_ptr, "Prolog failed"); */
-	}
-
-	/* First validate the job info */
-	for (i = 0; i < reg_msg->job_count; i++) {
-		if ( (reg_msg->step_id[i].job_id >= MIN_NOALLOC_JOBID) &&
-		     (reg_msg->step_id[i].job_id <= MAX_NOALLOC_JOBID) ) {
-			info("NoAllocate %ps reported",
-			     &reg_msg->step_id[i]);
-			continue;
-		}
-
-		job_ptr = find_job_record(reg_msg->step_id[i].job_id);
-		if (job_ptr && job_ptr->node_bitmap &&
-		    ((j = bit_ffs(job_ptr->node_bitmap)) >= 0))
-			node_ptr = node_record_table_ptr[j];
-
-		if (job_ptr == NULL) {
-			error("Orphan %ps reported on node %s",
-			      &reg_msg->step_id[i],
-			      front_end_ptr->name);
-			abort_job_on_node(reg_msg->step_id[i].job_id,
-					  job_ptr, front_end_ptr->name);
-			continue;
-		} else if (job_ptr->batch_host == NULL) {
-			error("Resetting NULL batch_host of JobId=%u to %s",
-			      reg_msg->step_id[i].job_id, front_end_ptr->name);
-			job_ptr->batch_host = xstrdup(front_end_ptr->name);
-		}
-
-
-		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
-			debug3("Registered %pJ %ps on %s",
-			       job_ptr,
-			       &reg_msg->step_id[i],
-			       front_end_ptr->name);
-			if (job_ptr->batch_flag) {
-				/* NOTE: Used for purging defunct batch jobs */
-				job_ptr->time_last_active = now;
-			}
-		}
-
-		else if (IS_JOB_COMPLETING(job_ptr)) {
-			/*
-			 * Re-send kill request as needed,
-			 * not necessarily an error
-			 */
-			kill_job_on_node(job_ptr, node_ptr);
-		}
-
-		else if (IS_JOB_PENDING(job_ptr)) {
-			/* Typically indicates a job requeue and the hung
-			 * slurmd that went DOWN is now responding */
-			error("Registered PENDING %pJ %ps on %s",
-			      job_ptr,
-			      &reg_msg->step_id[i],
-			      front_end_ptr->name);
-			abort_job_on_node(reg_msg->step_id[i].job_id, job_ptr,
-					  front_end_ptr->name);
-		} else if (difftime(now, job_ptr->end_time) <
-		           slurm_conf.msg_timeout) {
-			/* Race condition */
-			debug("Registered newly completed %pJ %ps on %s",
-			      job_ptr,
-			      &reg_msg->step_id[i],
-			      front_end_ptr->name);
-		}
-
-		else {		/* else job is supposed to be done */
-			error("Registered %pJ %ps in state %s on %s",
-			      job_ptr,
-			      &reg_msg->step_id[i],
-			      job_state_string(job_ptr->job_state),
-			      front_end_ptr->name);
-			kill_job_on_node(job_ptr, node_ptr);
-		}
-	}
-
-
-	/* purge orphan batch jobs */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(job_ptr) ||
-		    IS_JOB_CONFIGURING(job_ptr) ||
-		    (job_ptr->batch_flag == 0))
-			continue;
-		if (job_ptr->front_end_ptr != front_end_ptr)
-			continue;
-		if (difftime(now, job_ptr->time_last_active) <= 5)
-			continue;
-		info("Killing orphan batch %pJ", job_ptr);
-		job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
-		             false, false, 0);
-	}
-	list_iterator_destroy(job_iterator);
-
-	(void) gres_node_config_unpack(reg_msg->gres_info,
-				       node_record_table_ptr[0]->name);
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		bool acct_updated = false;
-
-		config_ptr = node_ptr->config_ptr;
-		node_ptr->last_response = now;
-
-		rc = gres_node_config_validate(
-			node_ptr->name,
-			config_ptr->gres,
-			&node_ptr->gres,
-			&node_ptr->gres_list,
-			reg_msg->threads,
-			reg_msg->cores,
-			reg_msg->sockets,
-			slurm_conf.conf_flags & CONF_FLAG_OR,
-			&reason_down);
-		if (rc) {
-			if (!IS_NODE_DOWN(node_ptr)) {
-				error("Setting node %s state to DOWN",
-				      node_ptr->name);
-			}
-			set_node_down(node_ptr->name, reason_down);
-			last_node_update = now;
-		}
-		xfree(reason_down);
-		gres_node_state_log(node_ptr->gres_list, node_ptr->name);
-
-		if (reg_msg->up_time) {
-			node_ptr->up_time = reg_msg->up_time;
-			node_ptr->boot_time = now - reg_msg->up_time;
-		}
-		node_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
-
-		if (IS_NODE_NO_RESPOND(node_ptr)) {
-			update_node_state = true;
-			/* This is handled by the select/cray plugin */
-			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
-			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
-		}
-
-		if (reg_msg->status != ESLURMD_PROLOG_FAILED) {
-			if (reg_hostlist)
-				(void) hostlist_push_host(reg_hostlist,
-							  node_ptr->name);
-			else
-				reg_hostlist = hostlist_create(node_ptr->name);
-
-			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-			if (IS_NODE_UNKNOWN(node_ptr)) {
-				update_node_state = true;
-				*newly_up = true;
-				if (node_ptr->run_job_cnt) {
-					node_ptr->node_state =
-						NODE_STATE_ALLOCATED |
-						node_flags;
-				} else {
-					node_ptr->node_state =
-						NODE_STATE_IDLE |
-						node_flags;
-					node_ptr->last_busy = now;
-				}
-				if (!IS_NODE_DRAIN(node_ptr) &&
-				    !IS_NODE_FAIL(node_ptr)) {
-					/* reason information is handled in
-					 * clusteracct_storage_g_node_up() */
-					clusteracct_storage_g_node_up(
-						acct_db_conn,
-						node_ptr, now);
-					acct_updated = true;
-				}
-			} else if (IS_NODE_DOWN(node_ptr) &&
-				   ((slurm_conf.ret2service == 2) ||
-				    (node_ptr->boot_req_time != 0)    ||
-				    ((slurm_conf.ret2service == 1) &&
-				     !xstrcmp(node_ptr->reason,
-					      "Not responding")))) {
-				update_node_state = true;
-				*newly_up = true;
-				if (node_ptr->run_job_cnt) {
-					node_ptr->node_state =
-						NODE_STATE_ALLOCATED |
-						node_flags;
-				} else {
-					node_ptr->node_state =
-						NODE_STATE_IDLE |
-						node_flags;
-					node_ptr->last_busy = now;
-				}
-				trigger_node_up(node_ptr);
-				if (!IS_NODE_DRAIN(node_ptr) &&
-				    !IS_NODE_FAIL(node_ptr)) {
-					/* reason information is handled in
-					 * clusteracct_storage_g_node_up() */
-					clusteracct_storage_g_node_up(
-						acct_db_conn,
-						node_ptr, now);
-					acct_updated = true;
-				}
-			} else if (IS_NODE_ALLOCATED(node_ptr) &&
-				   (node_ptr->run_job_cnt == 0)) {
-				/* job vanished */
-				update_node_state = true;
-				node_ptr->node_state = NODE_STATE_IDLE |
-					node_flags;
-				node_ptr->last_busy = now;
-			} else if (IS_NODE_COMPLETING(node_ptr) &&
-				   (node_ptr->comp_job_cnt == 0)) {
-				/* job already done */
-				update_node_state = true;
-				node_ptr->node_state &=
-					(~NODE_STATE_COMPLETING);
-				bit_clear(cg_node_bitmap, i);
-			} else if (IS_NODE_IDLE(node_ptr) &&
-				   (node_ptr->run_job_cnt != 0)) {
-				update_node_state = true;
-				node_ptr->node_state = NODE_STATE_ALLOCATED |
-						       node_flags;
-				error("Invalid state for node %s, was IDLE "
-				      "with %u running jobs",
-				      node_ptr->name, reg_msg->job_count);
-			}
-			if (IS_NODE_IDLE(node_ptr)) {
-				node_ptr->owner = NO_VAL;
-				xfree(node_ptr->mcs_label);
-			}
-
-			_sync_bitmaps(node_ptr,
-				      (node_ptr->run_job_cnt +
-				       node_ptr->comp_job_cnt));
-		}
-		if (reg_msg->energy)
-			memcpy(node_ptr->energy, reg_msg->energy,
-			       sizeof(acct_gather_energy_t));
-
-		if (!acct_updated && slurmctld_init_db &&
-		    !IS_NODE_DOWN(node_ptr) &&
-		    !IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
-			/* reason information is handled in
-			   clusteracct_storage_g_node_up()
-			*/
-			clusteracct_storage_g_node_up(
-				acct_db_conn, node_ptr, now);
-		}
-
-	}
-
-	if (reg_hostlist) {
-		hostlist_uniq(reg_hostlist);
-		host_str = hostlist_ranged_string_xmalloc(reg_hostlist);
-		debug("Nodes %s have registered", host_str);
-		xfree(host_str);
-		hostlist_destroy(reg_hostlist);
-	}
-
-	if (update_node_state)
-		last_node_update = time (NULL);
-	return error_code;
-}
-
 /* Sync idle, share, and avail_node_bitmaps for a given node */
 static void _sync_bitmaps(node_record_t *node_ptr, int job_count)
 {
@@ -4083,43 +3720,6 @@ static void _sync_bitmaps(node_record_t *node_ptr, int job_count)
 		bit_set   (up_node_bitmap, node_ptr->index);
 }
 
-#ifdef HAVE_FRONT_END
-static void _node_did_resp(front_end_record_t *fe_ptr)
-{
-	uint32_t node_flags;
-	time_t now = time(NULL);
-
-	fe_ptr->last_response = now;
-
-	if (IS_NODE_NO_RESPOND(fe_ptr)) {
-		info("Node %s now responding", fe_ptr->name);
-		last_front_end_update = now;
-		fe_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
-	}
-
-	node_flags = fe_ptr->node_state & NODE_STATE_FLAGS;
-	if (IS_NODE_UNKNOWN(fe_ptr)) {
-		last_front_end_update = now;
-		fe_ptr->node_state = NODE_STATE_IDLE | node_flags;
-	}
-	if (IS_NODE_DOWN(fe_ptr) &&
-	    !IS_NODE_INVALID_REG(fe_ptr) &&
-	    ((slurm_conf.ret2service == 2) ||
-	     ((slurm_conf.ret2service == 1) &&
-	      !xstrcmp(fe_ptr->reason, "Not responding")))) {
-		last_front_end_update = now;
-		fe_ptr->node_state = NODE_STATE_IDLE | node_flags;
-		info("node_did_resp: node %s returned to service",
-		     fe_ptr->name);
-		trigger_front_end_up(fe_ptr);
-		if (!IS_NODE_DRAIN(fe_ptr) && !IS_NODE_FAIL(fe_ptr)) {
-			xfree(fe_ptr->reason);
-			fe_ptr->reason_time = 0;
-			fe_ptr->reason_uid = NO_VAL;
-		}
-	}
-}
-#else
 static void _node_did_resp(node_record_t *node_ptr)
 {
 	uint32_t node_flags;
@@ -4189,7 +3789,6 @@ static void _node_did_resp(node_record_t *node_ptr)
 	else
 		bit_set   (up_node_bitmap, node_ptr->index);
 }
-#endif
 
 /*
  * node_did_resp - record that the specified node is responding
@@ -4197,13 +3796,8 @@ static void _node_did_resp(node_record_t *node_ptr)
  */
 void node_did_resp (char *name)
 {
-#ifdef HAVE_FRONT_END
-	front_end_record_t *node_ptr;
-	node_ptr = find_front_end_record (name);
-#else
 	node_record_t *node_ptr;
 	node_ptr = find_node_record (name);
-#endif
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
@@ -4222,15 +3816,10 @@ void node_did_resp (char *name)
  */
 void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 {
-#ifdef HAVE_FRONT_END
-	front_end_record_t *node_ptr;
-
-	node_ptr = find_front_end_record (name);
-#else
 	node_record_t *node_ptr;
 
 	node_ptr = find_node_record (name);
-#endif
+
 	if (node_ptr == NULL) {
 		error ("node_not_resp unable to find node %s", name);
 		return;
@@ -4268,12 +3857,8 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 	}
 
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
-#ifdef HAVE_FRONT_END
-	last_front_end_update = time(NULL);
-#else
 	last_node_update = time(NULL);
 	bit_clear (avail_node_bitmap, node_ptr->index);
-#endif
 }
 
 /* For every node with the "not_responding" flag set, clear the flag
@@ -4370,15 +3955,9 @@ bool is_node_down (char *name)
  */
 bool is_node_resp (char *name)
 {
-#ifdef HAVE_FRONT_END
-	front_end_record_t *node_ptr;
-
-	node_ptr = find_front_end_record (name);
-#else
 	node_record_t *node_ptr;
 
 	node_ptr = find_node_record (name);
-#endif
 	if (node_ptr == NULL) {
 		error ("is_node_resp unable to find node %s", name);
 		return false;
@@ -4398,11 +3977,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	int i;
 	shutdown_msg_t *shutdown_req;
 	agent_arg_t *kill_agent_args;
-#ifdef HAVE_FRONT_END
-	front_end_record_t *front_end_ptr;
-#else
 	node_record_t *node_ptr;
-#endif
 
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
 	kill_agent_args->msg_type = msg_type;
@@ -4416,19 +3991,6 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 
 	kill_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 
-#ifdef HAVE_FRONT_END
-	for (i = 0, front_end_ptr = front_end_nodes;
-	     i < front_end_node_cnt; i++, front_end_ptr++) {
-		if (kill_agent_args->protocol_version >
-		    front_end_ptr->protocol_version)
-			kill_agent_args->protocol_version =
-				front_end_ptr->protocol_version;
-
-		hostlist_push_host(kill_agent_args->hostlist,
-				   front_end_ptr->name);
-		kill_agent_args->node_count++;
-	}
-#else
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
@@ -4444,7 +4006,6 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		hostlist_push_host(kill_agent_args->hostlist, node_ptr->name);
 		kill_agent_args->node_count++;
 	}
-#endif
 
 	if (kill_agent_args->node_count == 0) {
 		hostlist_destroy(kill_agent_args->hostlist);
@@ -4467,12 +4028,10 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
  * older slurmds get REQUEST_RECONFIGURE_WITH_CONFIG and ignore it.
  *
  * So explicitly split the pool into three groups.
- * Note: DOES NOT SUPPORT FRONTEND.
  */
 #define RELEVANT_VER 4
 extern void push_reconfig_to_slurmd(void)
 {
-#ifndef HAVE_FRONT_END
 	agent_arg_t *ver_args[RELEVANT_VER] = { 0 }, *curr_args;
 	node_record_t *node_ptr;
 	int ver;
@@ -4531,11 +4090,6 @@ extern void push_reconfig_to_slurmd(void)
 		set_agent_arg_r_uid(curr_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(curr_args);
 	}
-#else
-	error("%s: Cannot use configless with FrontEnd mode! Sending normal reconfigure request.",
-	      __func__);
-	msg_to_slurmd(REQUEST_RECONFIGURE);
-#endif
 }
 
 
@@ -4967,7 +4521,6 @@ extern void node_fini (void)
 /* Reset a node's CPU load value */
 extern void reset_node_load(char *node_name, uint32_t cpu_load)
 {
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 
 	node_ptr = find_node_record(node_name);
@@ -4978,13 +4531,11 @@ extern void reset_node_load(char *node_name, uint32_t cpu_load)
 		last_node_update = now;
 	} else
 		error("reset_node_load unable to find node %s", node_name);
-#endif
 }
 
 /* Reset a node's free memory value */
 extern void reset_node_free_mem(char *node_name, uint64_t free_mem)
 {
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 
 	node_ptr = find_node_record(node_name);
@@ -4995,7 +4546,6 @@ extern void reset_node_free_mem(char *node_name, uint64_t free_mem)
 		last_node_update = now;
 	} else
 		error("reset_node_free_mem unable to find node %s", node_name);
-#endif
 }
 
 

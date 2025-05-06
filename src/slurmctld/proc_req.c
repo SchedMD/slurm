@@ -95,7 +95,6 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/fed_mgr.h"
-#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -1995,7 +1994,6 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 	bool job_requeue = false;
 	bool dump_job = false, dump_node = false;
 	job_record_t *job_ptr = NULL;
-	char *msg_title = "node(s)";
 	char *nodes = comp_msg->node_name;
 
 	/* init */
@@ -2083,21 +2081,14 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		}
 	}
 
-#ifdef HAVE_FRONT_END
-	if (job_ptr && job_ptr->front_end_ptr)
-		nodes = job_ptr->front_end_ptr->name;
-	msg_title = "front_end";
-#endif
-
 	/* do RPC call */
 	/* First set node DOWN if fatal error */
 	if ((comp_msg->slurm_rc == ESLURMD_STEP_NOTRUNNING) ||
 	    (comp_msg->slurm_rc == ESLURM_ALREADY_DONE) ||
 	    (comp_msg->slurm_rc == ESLURMD_CREDENTIAL_REVOKED)) {
 		/* race condition on job termination, not a real error */
-		info("slurmd error running JobId=%u from %s=%s: %s",
-		     comp_msg->job_id,
-		     msg_title, nodes,
+		info("slurmd error running JobId=%u from Node(s)=%s: %s",
+		     comp_msg->job_id, nodes,
 		     slurm_strerror(comp_msg->slurm_rc));
 		comp_msg->slurm_rc = SLURM_SUCCESS;
 	} else if ((comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR) ||
@@ -2105,34 +2096,18 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		   (comp_msg->slurm_rc == ESLURMD_INVALID_ACCT_FREQ) ||
 		   (comp_msg->slurm_rc == ESPANK_JOB_FAILURE)) {
 		/* Handle non-fatal errors here. All others drain the node. */
-		error("Slurmd error running JobId=%u on %s=%s: %s",
-		      comp_msg->job_id, msg_title, nodes,
+		error("Slurmd error running JobId=%u on Node(s)=%s: %s",
+		      comp_msg->job_id, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
 	} else if (comp_msg->slurm_rc != SLURM_SUCCESS) {
-		error("slurmd error running JobId=%u on %s=%s: %s",
-		      comp_msg->job_id,
-		      msg_title, nodes,
+		error("slurmd error running JobId=%u on Node(s)=%s: %s",
+		      comp_msg->job_id, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
 		slurmctld_diag_stats.jobs_failed++;
 		if (error_code == SLURM_SUCCESS) {
-#ifdef HAVE_FRONT_END
-			if (job_ptr && job_ptr->front_end_ptr) {
-				update_front_end_msg_t update_node_msg;
-				memset(&update_node_msg, 0,
-				       sizeof(update_node_msg));
-				update_node_msg.name = job_ptr->front_end_ptr->
-						       name;
-				update_node_msg.node_state = NODE_STATE_DRAIN;
-				update_node_msg.reason =
-					"batch job complete failure";
-				error_code = update_front_end(&update_node_msg,
-							      msg->auth_uid);
-			}
-#else
 			error_code = drain_nodes(comp_msg->node_name,
 			                         "batch job complete failure",
 			                         slurm_conf.slurm_user_id);
-#endif	/* !HAVE_FRONT_END */
 			if ((comp_msg->job_rc != SLURM_SUCCESS) && job_ptr &&
 			    job_ptr->details && job_ptr->details->requeue)
 				job_requeue = true;
@@ -2709,14 +2684,9 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 			}
 		}
 
-#ifdef HAVE_FRONT_END		/* Operates only on front-end */
-		error_code = validate_nodes_via_front_end(node_reg_stat_msg,
-							  msg->protocol_version,
-							  &newly_up);
-#else
 		validate_jobs_on_node(msg);
 		error_code = validate_node_specs(msg, &newly_up);
-#endif
+
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_write_lock);
 		END_TIMER2(__func__);
@@ -2920,9 +2890,6 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
  *	plus sbcast credential */
 static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 {
-#ifdef HAVE_FRONT_END
-	slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
-#else
 	int error_code = SLURM_SUCCESS;
 	job_record_t *job_ptr = NULL;
 	DEF_TIMERS;
@@ -3023,15 +2990,10 @@ error:
 	       slurm_strerror(error_code));
 
 	slurm_send_rc_msg(msg, error_code);
-#endif
 }
 
 static void _slurm_rpc_sbcast_cred_no_job(slurm_msg_t *msg)
 {
-#ifdef HAVE_FRONT_END
-	slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
-	return;
-#endif
 	job_sbcast_cred_msg_t *cred_resp_msg = NULL;
 	sbcast_cred_req_msg_t *cred_req_msg = msg->data;
 	sbcast_cred_arg_t sbcast_arg = { 0 };
@@ -5343,7 +5305,6 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 {
 	int rc;
 	char *err_msg = NULL;
-#ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 	reboot_msg_t *reboot_msg = msg->data;
 	char *nodelist = NULL;
@@ -5352,7 +5313,6 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	time_t now = time(NULL);
-#endif
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -5362,10 +5322,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, EACCES);
 		return;
 	}
-#ifdef HAVE_FRONT_END
-	err_msg = xstrdup("Node reboot is not supported in configuration when Slurm is built with --enable-front-end node support.");
-	rc = ESLURM_NOT_SUPPORTED;
-#else
+
 	/* do RPC call */
 	if (reboot_msg)
 		nodelist = reboot_msg->node_list;
@@ -5465,7 +5422,6 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	FREE_NULL_BITMAP(cannot_reboot_nodes);
 	FREE_NULL_BITMAP(bitmap);
 	rc = SLURM_SUCCESS;
-#endif
 	END_TIMER2(__func__);
 	slurm_send_rc_err_msg(msg, rc, err_msg);
 	xfree(err_msg);
