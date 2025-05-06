@@ -165,7 +165,7 @@ extern void *slurmctld_state_save(void *no_data)
 
 		/* save job info if necessary */
 		run_save = false;
-		slurm_mutex_lock(&state_save_lock);
+		/* slurm_mutex_lock(&state_save_lock); done above */
 		if (save_jobs) {
 			run_save = true;
 			save_jobs = 0;
