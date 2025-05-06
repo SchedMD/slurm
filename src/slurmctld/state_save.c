@@ -46,7 +46,6 @@
 #include <pthread.h>
 
 #include "src/common/macros.h"
-#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"

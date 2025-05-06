@@ -18,8 +18,6 @@ slurmctld_SOURCES =     \
 	crontab.c 	\
 	fed_mgr.c 	\
 	fed_mgr.h 	\
-	front_end.c	\
-	front_end.h	\
 	gang.c		\
 	gang.h		\
 	groups.c	\
