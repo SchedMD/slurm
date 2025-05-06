@@ -181,6 +181,88 @@ JWKS is configured as a safety mechanism, to avoid accidentally having both
 enabled at the same time.
 </p>
 
+<h3 id="keycloak">Keycloak
+<a class="slurm_link" href="#keycloak"></a></h3>
+
+<p><a href="https://www.keycloak.org/">KeyCloak</a> can be used to manage
+authentication tokens through JWT or JWKS. Certain items should be customized
+when using it with Slurm. Refer to the
+<a href="https://www.keycloak.org/getting-started/getting-started-docker">
+official documentation</a> for initial setup. Or, if you need to automate the
+initial setup, you can implement the following customizations:</p>
+
+<ol>
+<li><code>startup.sh</code> (replace <code>secret</code> with a randomly
+	generated client secret):
+<pre>
+#!/bin/bash
+export SECRET=secret
+/opt/keycloak/bin/kc.sh bootstrap-admin service --client-id test --client-secret:env=SECRET
+exec /opt/keycloak/bin/kc.sh start-dev --log=console --log-console-level=debug --http-enabled true
+</pre>
+</li>
+<li>Dockerfile:
+<pre>
+FROM keycloak/keycloak
+COPY startup.sh /startup.sh
+ENTRYPOINT [ "/startup.sh" ]
+</pre>
+</li>
+<li>Environment variables (replace with actual username and password):
+<pre>
+KC_BOOTSTRAP_ADMIN_USERNAME=admin
+KC_BOOTSTRAP_ADMIN_PASSWORD=password
+</pre>
+</li>
+</ol>
+
+<p>Once you have a running KeyCloak instance, log into the admin console and
+create a new Realm, User, and Client as documented in their
+<a href="https://www.keycloak.org/getting-started/getting-started-docker">
+official documentation</a>. When creating the client, ensure that <b>Direct
+access grants</b> is checked. You can then set up a mechanism to use to
+integrate this authentication method into Slurm.</p>
+
+<p>For example, using <b>JWKS</b>:</p>
+
+<ol>
+<li>Create a JSON file with valid RS256 keys:
+<pre>
+curl "http://10.11.1.23:8080/realms/master/protocol/openid-connect/certs" > /etc/slurm/jwks.json
+</pre></li>
+<li>Point Slurm to that file for authentication:
+<pre>
+AuthAltTypes=auth/jwt
+AuthAltParameters=jwks=/etc/slurm/jwks.json,userclaimfield=preferred_username
+</pre></li>
+</ol>
+
+<p>Alternately, using <b>JWT</b>:</p>
+
+<ol>
+<li>Create script to generate JWT from KeyCloak:
+<pre>
+#!/bin/bash
+[ -z "$1" -o -z "$2" ] && echo "USAGE:\n$0 {user_name} {user_password}" && exit 1
+
+curl -s \
+  -d "client_id=test" \
+  -d "client_secret=secret" \
+  -d "username=$1" \
+  -d "password=$2" \
+  -d "grant_type=password" \
+  -d "scope=openid" \
+  "http://10.11.1.23:8080/realms/master/protocol/openid-connect/token" | \
+  jq -r '.id_token'
+</pre></li>
+<li>You can then use that script to set the JWT variable for Slurm commands or
+	REST API requests:
+<pre>
+env SLURM_JWT=$(get_keycloak_jwt.sh username password) \
+sbatch -o none -e none --wrap 'unset SLURM_JWT; srun uptime'
+</pre></li>
+</ol>
+
 <h3 id="user_mapping">User Mapping
 <a class="slurm_link" href="#user_mapping"></a></h3>
 
@@ -300,6 +382,6 @@ b = a.decode(sys.argv[1], signing_key, algorithms=["HS256"])
 print(b)
 </pre>
 
-<p style="text-align:center;">Last modified 07 January 2025</p>
+<p style="text-align:center;">Last modified 11 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
