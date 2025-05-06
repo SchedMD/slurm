@@ -21,6 +21,7 @@ MYCFLAGS  = @CHECK_CFLAGS@ -Wall
 MYCFLAGS += -D_ISO99_SOURCE
 TESTS += xhash-test \
 	 data-test \
+	 dns-test \
 	 http-test \
 	 serializer-test \
 	 sluid-test \
@@ -37,6 +38,8 @@ xahash_test_CFLAGS = $(MYCFLAGS)
 xahash_test_LDADD  = $(LDADD) @CHECK_LIBS@
 data_test_CFLAGS  = $(MYCFLAGS)
 data_test_LDADD   = $(LDADD) @CHECK_LIBS@
+dns_test_CFLAGS  = $(MYCFLAGS)
+dns_test_LDADD   = $(LDADD) @CHECK_LIBS@
 http_test_CFLAGS  = $(MYCFLAGS)
 http_test_LDADD   = $(LDADD) @CHECK_LIBS@
 serializer_test_CFLAGS  = $(MYCFLAGS)

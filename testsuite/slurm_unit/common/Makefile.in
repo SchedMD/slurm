@@ -92,6 +92,7 @@ check_PROGRAMS = $(am__EXEEXT_3)
 TESTS = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 @HAVE_CHECK_TRUE@am__append_1 = xhash-test \
 @HAVE_CHECK_TRUE@	 data-test \
+@HAVE_CHECK_TRUE@	 dns-test \
 @HAVE_CHECK_TRUE@	 http-test \
 @HAVE_CHECK_TRUE@	 serializer-test \
 @HAVE_CHECK_TRUE@	 sluid-test \
@@ -168,8 +169,9 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = xhash-test$(EXEEXT) data-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	http-test$(EXEEXT) serializer-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	sluid-test$(EXEEXT) xstring-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	dns-test$(EXEEXT) http-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	serializer-test$(EXEEXT) sluid-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	xstring-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	parse_time-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	job-resources-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	pack-test$(EXEEXT) reverse_tree-test$(EXEEXT) \
@@ -187,6 +189,12 @@ am__v_lt_0 = --silent
 am__v_lt_1 = 
 data_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(data_test_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+dns_test_SOURCES = dns-test.c
+dns_test_OBJECTS = dns_test-dns-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@dns_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
+dns_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(dns_test_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 http_test_SOURCES = http-test.c
 http_test_OBJECTS = http_test-http-test.$(OBJEXT)
@@ -285,6 +293,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/data_test-data-test.Po \
+	./$(DEPDIR)/dns_test-dns-test.Po \
 	./$(DEPDIR)/http_test-http-test.Po \
 	./$(DEPDIR)/job_resources_test-job-resources-test.Po \
 	./$(DEPDIR)/log-test.Po ./$(DEPDIR)/lua_test-lua-test.Po \
@@ -315,10 +324,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = data-test.c http-test.c job-resources-test.c log-test.c \
-	lua-test.c pack-test.c parse_time-test.c reverse_tree-test.c \
-	serializer-test.c sluid-test.c xahash-test.c xhash-test.c \
-	xstring-test.c
+SOURCES = data-test.c dns-test.c http-test.c job-resources-test.c \
+	log-test.c lua-test.c pack-test.c parse_time-test.c \
+	reverse_tree-test.c serializer-test.c sluid-test.c \
+	xahash-test.c xhash-test.c xstring-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -835,6 +844,8 @@ LDADD = -ldl -lpthread $(LIB_SLURM)
 @HAVE_CHECK_TRUE@xahash_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@data_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@data_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@dns_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@dns_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@http_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@http_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@serializer_test_CFLAGS = $(MYCFLAGS)
@@ -906,6 +917,10 @@ data-test$(EXEEXT): $(data_test_OBJECTS) $(data_test_DEPENDENCIES) $(EXTRA_data_
 	@rm -f data-test$(EXEEXT)
 	$(AM_V_CCLD)$(data_test_LINK) $(data_test_OBJECTS) $(data_test_LDADD) $(LIBS)
 
+dns-test$(EXEEXT): $(dns_test_OBJECTS) $(dns_test_DEPENDENCIES) $(EXTRA_dns_test_DEPENDENCIES) 
+	@rm -f dns-test$(EXEEXT)
+	$(AM_V_CCLD)$(dns_test_LINK) $(dns_test_OBJECTS) $(dns_test_LDADD) $(LIBS)
+
 http-test$(EXEEXT): $(http_test_OBJECTS) $(http_test_DEPENDENCIES) $(EXTRA_http_test_DEPENDENCIES) 
 	@rm -f http-test$(EXEEXT)
 	$(AM_V_CCLD)$(http_test_LINK) $(http_test_OBJECTS) $(http_test_LDADD) $(LIBS)
@@ -961,6 +976,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_test-data-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dns_test-dns-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_test-http-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources_test-job-resources-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@ # am--include-marker
@@ -1014,6 +1030,20 @@ data_test-data-test.obj: data-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='data-test.c' object='data_test-data-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_test_CFLAGS) $(CFLAGS) -c -o data_test-data-test.obj `if test -f 'data-test.c'; then $(CYGPATH_W) 'data-test.c'; else $(CYGPATH_W) '$(srcdir)/data-test.c'; fi`
+
+dns_test-dns-test.o: dns-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(dns_test_CFLAGS) $(CFLAGS) -MT dns_test-dns-test.o -MD -MP -MF $(DEPDIR)/dns_test-dns-test.Tpo -c -o dns_test-dns-test.o `test -f 'dns-test.c' || echo '$(srcdir)/'`dns-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/dns_test-dns-test.Tpo $(DEPDIR)/dns_test-dns-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='dns-test.c' object='dns_test-dns-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(dns_test_CFLAGS) $(CFLAGS) -c -o dns_test-dns-test.o `test -f 'dns-test.c' || echo '$(srcdir)/'`dns-test.c
+
+dns_test-dns-test.obj: dns-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(dns_test_CFLAGS) $(CFLAGS) -MT dns_test-dns-test.obj -MD -MP -MF $(DEPDIR)/dns_test-dns-test.Tpo -c -o dns_test-dns-test.obj `if test -f 'dns-test.c'; then $(CYGPATH_W) 'dns-test.c'; else $(CYGPATH_W) '$(srcdir)/dns-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/dns_test-dns-test.Tpo $(DEPDIR)/dns_test-dns-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='dns-test.c' object='dns_test-dns-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(dns_test_CFLAGS) $(CFLAGS) -c -o dns_test-dns-test.obj `if test -f 'dns-test.c'; then $(CYGPATH_W) 'dns-test.c'; else $(CYGPATH_W) '$(srcdir)/dns-test.c'; fi`
 
 http_test-http-test.o: http-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(http_test_CFLAGS) $(CFLAGS) -MT http_test-http-test.o -MD -MP -MF $(DEPDIR)/http_test-http-test.Tpo -c -o http_test-http-test.o `test -f 'http-test.c' || echo '$(srcdir)/'`http-test.c
@@ -1436,6 +1466,13 @@ data-test.log: data-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+dns-test.log: dns-test$(EXEEXT)
+	@p='dns-test$(EXEEXT)'; \
+	b='dns-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 http-test.log: http-test$(EXEEXT)
 	@p='http-test$(EXEEXT)'; \
 	b='http-test'; \
@@ -1567,6 +1604,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 
 distclean: distclean-recursive
 		-rm -f ./$(DEPDIR)/data_test-data-test.Po
+	-rm -f ./$(DEPDIR)/dns_test-dns-test.Po
 	-rm -f ./$(DEPDIR)/http_test-http-test.Po
 	-rm -f ./$(DEPDIR)/job_resources_test-job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
@@ -1625,6 +1663,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
 		-rm -f ./$(DEPDIR)/data_test-data-test.Po
+	-rm -f ./$(DEPDIR)/dns_test-dns-test.Po
 	-rm -f ./$(DEPDIR)/http_test-http-test.Po
 	-rm -f ./$(DEPDIR)/job_resources_test-job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
