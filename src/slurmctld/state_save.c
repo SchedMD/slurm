@@ -59,18 +59,8 @@
 static pthread_mutex_t state_save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  state_save_cond = PTHREAD_COND_INITIALIZER;
 static int save_jobs = 0, save_nodes = 0, save_parts = 0;
-static int save_front_end = 0, save_triggers = 0, save_resv = 0;
+static int save_triggers = 0, save_resv = 0;
 static bool run_save_thread = true;
-
-
-/* Queue saving of front_end state information */
-extern void schedule_front_end_save(void)
-{
-	slurm_mutex_lock(&state_save_lock);
-	save_front_end++;
-	slurm_cond_broadcast(&state_save_cond);
-	slurm_mutex_unlock(&state_save_lock);
-}
 
 /* Queue saving of job state information */
 extern void schedule_job_save(void)
@@ -151,8 +141,7 @@ extern void *slurmctld_state_save(void *no_data)
 		slurm_mutex_lock(&state_save_lock);
 		while (1) {
 			save_count = save_jobs + save_nodes + save_parts +
-				     save_front_end + save_resv +
-				     save_triggers;
+				     save_resv + save_triggers;
 			now = time(NULL);
 			save_delay = difftime(now, last_save);
 			if (save_count &&
@@ -174,17 +163,6 @@ extern void *slurmctld_state_save(void *no_data)
 					  	&state_save_lock);
 			}
 		}
-
-		/* save front_end node info if necessary */
-		run_save = false;
-		/* slurm_mutex_lock(&state_save_lock); done above */
-		if (save_front_end) {
-			run_save = true;
-			save_front_end = 0;
-		}
-		slurm_mutex_unlock(&state_save_lock);
-		if (run_save)
-			(void)dump_all_front_end_state();
 
 		/* save job info if necessary */
 		run_save = false;

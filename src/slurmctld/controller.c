@@ -2734,7 +2734,6 @@ static void *_slurmctld_background(void *no_data)
 extern void save_all_state(void)
 {
 	/* Each of these functions lock their own databases */
-	schedule_front_end_save();
 	schedule_job_save();
 	schedule_node_save();
 	schedule_part_save();

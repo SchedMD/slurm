@@ -1550,7 +1550,6 @@ extern int read_slurm_conf(int recover)
 	(void)acct_storage_g_reconfig(acct_db_conn, 0);
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
-	restore_front_end_state(recover);
 
 	/*
 	 * Currently load/dump_state_lite has to run before load_all_job_state.
@@ -1600,11 +1599,9 @@ extern int read_slurm_conf(int recover)
 		(void) load_all_node_state(true);
 		_set_features(node_record_table_ptr, node_record_count,
 			      recover);
-		(void) load_all_front_end_state(true);
 	} else if (recover > 1) {	/* Load node, part & job state files */
 		(void) load_all_node_state(false);
 		_set_features(NULL, 0, recover);
-		(void) load_all_front_end_state(false);
 	}
 
 	rehash_node();
@@ -2118,7 +2115,6 @@ static int _sync_nodes_to_jobs(void)
 		info("_sync_nodes_to_jobs updated state of %d nodes",
 		     update_cnt);
 	}
-	sync_front_end_state();
 	return update_cnt;
 }
 

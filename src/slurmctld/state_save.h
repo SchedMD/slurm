@@ -40,9 +40,6 @@
 #ifndef _SLURMCTLD_STATE_SAVE_H
 #define _SLURMCTLD_STATE_SAVE_H
 
-/* Queue saving of front_end state information */
-extern void schedule_front_end_save(void);
-
 /* Queue saving of job state information */
 extern void schedule_job_save(void);
 
@@ -64,8 +61,7 @@ extern void shutdown_state_save(void);
 /*
  * Run as pthread to keep saving slurmctld state information as needed,
  * Use schedule_job_save(), schedule_node_save(), schedule_part_save(),
- * schedule_front_end_save(), and schedule_trigger_save() to queue state save
- * of each data structures
+ * and schedule_trigger_save() to queue state save of each data structures
  * no_data IN - unused
  * RET - NULL
  */
