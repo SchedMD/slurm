@@ -2709,14 +2709,9 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 			}
 		}
 
-#ifdef HAVE_FRONT_END		/* Operates only on front-end */
-		error_code = validate_nodes_via_front_end(node_reg_stat_msg,
-							  msg->protocol_version,
-							  &newly_up);
-#else
 		validate_jobs_on_node(msg);
 		error_code = validate_node_specs(msg, &newly_up);
-#endif
+
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_write_lock);
 		END_TIMER2(__func__);

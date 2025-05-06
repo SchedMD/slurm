@@ -1985,20 +1985,6 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg);
 extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up);
 
 /*
- * validate_nodes_via_front_end - validate all nodes on a cluster as having
- *	a valid configuration as soon as the front-end registers. Individual
- *	nodes will not register with this configuration
- * IN reg_msg - node registration message
- * IN protocol_version - Version of Slurm on this node
- * OUT newly_up - set if node newly brought into service
- * RET 0 if no error, Slurm error code otherwise
- * NOTE: READ lock_slurmctld config before entry
- */
-extern int validate_nodes_via_front_end(
-		slurm_node_registration_status_msg_t *reg_msg,
-		uint16_t protocol_version, bool *newly_up);
-
-/*
  * validate_super_user - validate that the uid is authorized at the
  *      root, SlurmUser, or SLURMDB_ADMIN_SUPER_USER level
  * IN uid - user to validate
