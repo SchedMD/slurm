@@ -78,6 +78,5 @@ typedef struct {
 
 extern front_end_record_t *front_end_nodes;
 extern uint16_t front_end_node_cnt;
-extern time_t last_front_end_update;	/* time of last front_end update */
 
 #endif /* _SLURM_FRONT_END_RECORD_H */
