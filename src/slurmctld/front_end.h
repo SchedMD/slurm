@@ -40,6 +40,7 @@
 #define __SLURM_FRONT_END_H__
 
 #include "src/slurmctld/slurmctld.h"
+typedef struct {} front_end_record_t;
 
 /*
  * assign_front_end - assign a front end node for starting a job

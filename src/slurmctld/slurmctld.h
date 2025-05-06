@@ -55,7 +55,6 @@
 #include "src/common/bitstring.h"
 #include "src/common/cron.h"
 #include "src/common/extra_constraints.h"
-#include "src/common/front_end.h"
 #include "src/common/identity.h"
 #include "src/common/job_record.h"
 #include "src/common/job_resources.h"
