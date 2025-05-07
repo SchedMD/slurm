@@ -200,3 +200,111 @@ expect {
 if {$matches != 3} {
 	fail "User modification 3 incorrect ($matches != 3)"
 }
+
+# Next, make nm3 parent of nm1
+array unset acct_mod_assoc_vals
+array unset acct_mod_acct_vals
+set acct_mod_acct_vals(parent) $nm3
+if [mod_acct $nm1 [array get acct_req] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]] {
+        fail "Unable to modify account $nm1"
+}
+
+#
+# Use sacctmgr to list the test coordinator additions
+#
+set matches 0
+spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,Coord
+expect {
+	-re "There was a problem" {
+		fail "There was a problem with the sacctmgr command"
+	}
+	-re "(($us2|$us3).$nm1,$nm3)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list associations not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 2} {
+	fail "User modification 2 incorrect ($matches != 2)"
+}
+
+# Next, remove nm2 account from tc3
+if [remove_acct $tc3 $nm2] {
+	fail "Unable to remove account $nm2 from cluster $tc3"
+}
+
+# Next, remove all accounts from tc2
+if [remove_acct $tc2 "$nm1,$nm2,$nm3"] {
+	fail "Unable to remove accounts ($nm1,$nm2,$nm3) from cluster $tc2"
+}
+
+#
+# Use sacctmgr to list the test coordinator changes
+#
+set matches 0
+spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,Coord
+expect {
+	-re "There was a problem" {
+		fail "There was a problem with the sacctmgr command"
+	}
+	-re "(($us2|$us3).$nm1,$nm3)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list associations not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 2} {
+	fail "User modification 2 incorrect ($matches != 2)"
+}
+
+# Next, remove all coordinators
+if [remove_coor "$nm1,$nm2,$nm3" "$us1,$us2,$us3"] {
+	fail "Unable to remove coordinators ($nm1,$nm2,$nm3 $us1,$us2,$us3)"
+}
+
+# Next, make all acct members coordinators of nm3 and subs on tc3
+array unset acct_req
+set acct_req(cluster) $tc3
+array unset acct_mod_assoc_vals
+array unset acct_mod_acct_vals
+set acct_mod_acct_vals(flags) UsersAreCoords
+if [mod_acct "$nm3" [array get acct_req] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]] {
+        fail "Unable to modify account $nm3"
+}
+
+#
+# Use sacctmgr to list the test coordinator changes
+#
+set matches 0
+spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,Coord
+expect {
+	-re "There was a problem" {
+		fail "There was a problem with the sacctmgr command"
+	}
+	-re "(($us1|$us2|$us3).$nm1,$nm3)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list associations not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 3} {
+	fail "User modification 3 incorrect ($matches != 3)"
+}
