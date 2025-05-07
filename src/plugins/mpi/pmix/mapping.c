@@ -54,7 +54,7 @@ static void _dump_config(uint32_t node_cnt, uint32_t task_cnt,
 }
 
 /*
- * pack_process_mapping()
+ * pack_process_mapping() - Return NULL on error
  */
 char *
 pack_process_mapping(uint32_t node_cnt,
@@ -143,6 +143,13 @@ pack_process_mapping(uint32_t node_cnt,
 				end_node = i;
 			}
 		}
+
+		if (depth < 0) {
+			xfree(next_task);
+			xfree(packing);
+			return NULL;
+		}
+
 		xstrfmtcat(packing,",(%u,%u,%u)",
 			   start_node, end_node - start_node, depth);
 		offset += mapped;
