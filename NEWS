@@ -1,6 +1,12 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 24.05.8
+==========================
+ -- Testsuite - fix python test 130_2.
+ -- Fix security issue where a coordinator could add a user with elevated
+    privileges. CVE-2025-43904.
+
 * Changes in Slurm 24.05.7
 ==========================
  -- Fix slurmctld crash when after updating a reservation with an empty
