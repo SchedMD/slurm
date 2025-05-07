@@ -41,14 +41,17 @@
 
 #include <stdint.h>
 
-int s_p_handle_long(long* data, const char* key, const char* value);
-int s_p_handle_uint16(uint16_t* data, const char* key, const char *value);
-int s_p_handle_uint32(uint32_t* data, const char* key, const char* value);
-int s_p_handle_uint64(uint64_t* data, const char* key, const char* value);
-int s_p_handle_boolean(bool* data, const char* key, const char* value);
-int s_p_handle_float(float* data, const char* key, const char* value);
-int s_p_handle_double(double* data, const char* key, const char* value);
-int s_p_handle_long_double(long double* data, const char* key,
-			   const char* value);
+extern int s_p_handle_long(long* data, const char* key, const char* value);
+extern int s_p_handle_uint16(uint16_t* data, const char* key,
+			     const char *value);
+extern int s_p_handle_uint32(uint32_t* data, const char* key,
+			     const char* value);
+extern int s_p_handle_uint64(uint64_t* data, const char* key,
+			     const char* value);
+extern int s_p_handle_boolean(bool* data, const char* key, const char* value);
+extern int s_p_handle_float(float* data, const char* key, const char* value);
+extern int s_p_handle_double(double* data, const char* key, const char* value);
+extern int s_p_handle_long_double(long double* data, const char* key,
+				  const char* value);
 
 #endif /* !_PARSE_VALUE_H */
