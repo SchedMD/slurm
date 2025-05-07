@@ -97,6 +97,11 @@ typedef struct {
 } foreach_get_hres_t;
 
 typedef struct {
+	uint32_t *count;
+	char *name;
+} foreach_get_total_t;
+
+typedef struct {
 	licenses_t *license_entry;
 	bitstr_t *node_mask;
 } foreach_hres_filter_t;
@@ -1671,18 +1676,34 @@ extern buf_t *get_all_license_info(uint16_t protocol_version)
 	return buffer;
 }
 
+static int _foreach_get_total_license_cnt(void *x, void *arg)
+{
+	licenses_t *license_entry = (licenses_t *) x;
+	foreach_get_total_t *args = arg;
+
+	if ((license_entry->name == NULL) || (args->name == NULL))
+		return 0;
+
+	if (xstrcmp(license_entry->name, args->name))
+		return 0;
+
+	*(args->count) = +license_entry->total;
+	return 0;
+}
+
 extern uint32_t get_total_license_cnt(char *name)
 {
 	uint32_t count = 0;
-	licenses_t *lic;
 
 	slurm_mutex_lock(&license_mutex);
 	if (cluster_license_list) {
-		lic = list_find_first(
-			cluster_license_list, _license_find_rec, name);
+		foreach_get_total_t arg = {
+			.count = &count,
+			.name = name,
+		};
 
-		if (lic)
-			count = lic->total;
+		list_for_each_ro(cluster_license_list,
+				 _foreach_get_total_license_cnt, &arg);
 	}
 	slurm_mutex_unlock(&license_mutex);
 
