@@ -40,6 +40,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/macros.h"
+#include "src/common/parse_value.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -1543,16 +1544,15 @@ extern int get_uint64(char *in_value, uint64_t *out_value, char *type)
 
 extern int get_double(char *in_value, double *out_value, char *type)
 {
-	char *ptr = NULL, *meat = NULL;
+	char *meat = NULL;
 	double num;
 
 	if (!(meat = strip_quotes(in_value, NULL, 1))) {
 		error("Problem with strip_quotes");
 		return SLURM_ERROR;
 	}
-	num = strtod(meat, &ptr);
-	if ((num == 0) && ptr && ptr[0]) {
-		error("Invalid value for %s (%s)", type, meat);
+
+	if (s_p_handle_double(&num, type, meat)) {
 		xfree(meat);
 		return SLURM_ERROR;
 	}

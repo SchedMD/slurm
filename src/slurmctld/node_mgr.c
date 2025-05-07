@@ -61,6 +61,7 @@
 #include "src/common/node_features.h"
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
+#include "src/common/parse_value.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/state_save.h"
@@ -3114,12 +3115,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		char *tmp_ptr;
 		if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
 					   "node_reg_mem_percent="))) {
-			conf_node_reg_mem_percent = strtod(tmp_ptr + 21, NULL);
-			if (errno) {
+			if (s_p_handle_double(&conf_node_reg_mem_percent,
+					      "node_reg_mem_percent",
+					      tmp_ptr + 21))
 				conf_node_reg_mem_percent = -1;
-				error("%s: Unable to convert %s value to double",
-				      __func__, tmp_ptr);
-			}
 			sched_update = slurm_conf.last_update;
 		}
 	}
