@@ -375,7 +375,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
 	bool locked, log_level_t log_lvl);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
-static uint64_t _get_def_mem(part_record_t *part_ptr);
+static uint64_t _get_def_mem(part_record_t *part_ptr, uint64_t *tres_req_cnt);
 static bool _get_whole_hetjob(void);
 static bool _higher_precedence(job_record_t *job_ptr, job_record_t *job_ptr2);
 static void _job_array_comp(job_record_t *job_ptr, bool was_running,
@@ -5317,11 +5317,24 @@ extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
 	return foreach_kill_hetjob.rc;
 }
 
-static uint64_t _get_def_mem(part_record_t *part_ptr)
+/*
+ * Returns average pn_min_memory, considering DefMemPer{CPU,Node,GPU} from both
+ * the partition and cluster configuration
+ * WARNING: assumes memory is evenly distributed across all nodes in job,
+ * may return an inaccurate value if this is not the case
+ */
+static uint64_t _get_def_mem(part_record_t *part_ptr, uint64_t *tres_req_cnt)
 {
-	if (part_ptr && part_ptr->def_mem_per_cpu)
+	if (part_ptr && part_ptr->def_mem_per_cpu &&
+	    (part_ptr->def_mem_per_cpu != MEM_PER_CPU) &&
+	    (part_ptr->def_mem_per_cpu != NO_VAL64))
 		return part_ptr->def_mem_per_cpu;
-	else
+	else if (tres_req_cnt && tres_req_cnt[TRES_ARRAY_MEM] &&
+		 (tres_req_cnt[TRES_ARRAY_MEM] != NO_VAL64)) {
+		xassert(tres_req_cnt[TRES_ARRAY_NODE]);
+		return tres_req_cnt[TRES_ARRAY_MEM] /
+		       tres_req_cnt[TRES_ARRAY_NODE];
+	} else
 		return slurm_conf.def_mem_per_cpu;
 }
 
@@ -6962,9 +6975,15 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 		 */
 		if (job_ptr->bit_flags & JOB_MEM_SET)
 			job_desc.pn_min_memory = detail_ptr->orig_pn_min_memory;
-		else
-			job_desc.pn_min_memory =
-				_get_def_mem(part_ptr);
+		else {
+			/*
+			 * Don't consider DefMemPerGPU here when coming up with
+			 * a pn_min_memory, we don't know how many nodes the
+			 * gpus may be split over yet so _get_def_mem may
+			 * overestimate.
+			 */
+			job_desc.pn_min_memory = _get_def_mem(part_ptr, NULL);
+		}
 		if (detail_ptr->orig_cpus_per_task == NO_VAL16)
 			job_desc.cpus_per_task = 1;
 		else
@@ -9661,7 +9680,7 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 		job_desc_msg->nice = NICE_OFFSET;
 
 	if (job_desc_msg->pn_min_memory == NO_VAL64)
-		job_desc_msg->pn_min_memory = _get_def_mem(part_ptr);
+		job_desc_msg->pn_min_memory = _get_def_mem(part_ptr, NULL);
 	else if (!_validate_min_mem_partition(job_desc_msg, part_ptr,
 					      part_list)) {
 		return ESLURM_INVALID_TASK_MEMORY;
@@ -19474,7 +19493,7 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	if (job_ptr->partition)
 		part_ptr = find_part_record(job_ptr->partition);
 	detail_ptr->pn_min_memory =
-		_get_def_mem(part_ptr);
+		_get_def_mem(part_ptr, job_ptr->tres_req_cnt);
 
 	job_ptr->time_limit = resv_desc_ptr->duration;
 
