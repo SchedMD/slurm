@@ -7767,7 +7767,7 @@ static int _foreach_reservation_license(void *x, void *key)
 	licenses_t *resv_license = (licenses_t *) x;
 	licenses_t *license = (licenses_t *) key;
 
-	if (!xstrcmp(resv_license->name, license->name))
+	if (resv_license->id.lic_id == license->id.lic_id)
 		license->reserved += resv_license->total;
 
 	return 0;
