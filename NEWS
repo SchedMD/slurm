@@ -1,6 +1,65 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 24.11.5
+==========================
+ -- Return error to scontrol reboot on bad nodelists.
+ -- slurmrestd - Report an error when QOS resolution fails for v0.0.40
+    endpoints.
+ -- slurmrestd - Report an error when QOS resolution fails for v0.0.41
+    endpoints.
+ -- slurmrestd - Report an error when QOS resolution fails for v0.0.42
+    endpoints.
+ -- data_parser/v0.0.42 - Added +inline_enums flag which modifies the
+    output when generating OpenAPI specification. It causes enum arrays to not
+    be defined in their own schema with references ($ref) to them. Instead they
+    will be dumped inline.
+ -- Fix binding error with tres-bind map/mask on partial node allocations.
+ -- Fix stepmgr enabled steps being able to request features.
+ -- Reject step creation if requested feature is not available in job.
+ -- slurmd - Restrict listening for new incoming RPC requests further into
+    startup.
+ -- slurmd - Avoid auth/slurm related hangs of CLI commands during startup
+    and shutdown.
+ -- slurmctld - Restrict processing new incoming RPC requests further into
+    startup. Stop processing requests sooner during shutdown.
+ -- slurmcltd - Avoid auth/slurm related hangs of CLI commands during
+    startup and shutdown.
+ -- slurmctld: Avoid race condition during shutdown or reconfigure that
+    could result in a crash due delayed processing of a connection while
+    plugins are unloaded.
+ -- Fix small memleak when getting the job list from the database.
+ -- Fix incorrect printing of % escape characters when printing stdio
+    fields for jobs.
+ -- Fix padding parsing when printing stdio fields for jobs.
+ -- Fix printing %A array job id when expanding patterns.
+ -- Fix reservations causing jobs to be held for Bad Constraints
+ -- switch/hpe_slingshot - Prevent potential segfault on failed curl
+    request to the fabric manager.
+ -- Fix printing incorrect array job id when expanding stdio file names.
+    The %A will now be substituted by the correct value.
+ -- Fix printing incorrect array job id when expanding stdio file names.
+    The %A will now be substituted by the correct value.
+ -- switch/hpe_slingshot - Fix vni range not updating on slurmctld restart
+    or reconfigre.
+ -- Fix steps not being created when using certain combinations of -c and
+    -n inferior to the jobs requested resources, when using stepmgr and nodes
+    are configured with CPUs == Sockets*CoresPerSocket.
+ -- Permit configuring the number of retry attempts to destroy CXI service
+    via the new destroy_retries SwitchParameter.
+ -- Do not reset memory.high and memory.swap.max in slurmd startup or
+    reconfigure as we are never really touching this in slurmd.
+ -- Fix reconfigure failure of slurmd when it has been started manually and
+    the CoreSpecLimits have been removed from slurm.conf.
+ -- Set or reset CoreSpec limits when slurmd is reconfigured and it was
+    started with systemd.
+ -- switch/hpe-slingshot - Make sure the slurmctld can free step VNIs after
+    the controller restarts or reconfigures while the job is running.
+ -- Fix backup slurmctld failure on 2nd takeover.
+ -- Testsuite - fix python test 130_2.
+ -- Fix security issue where a coordinator could add a user with elevated
+    privileges. CVE-2025-43904.
+
 * Changes in Slurm 24.11.4
 ==========================
  -- slurmctld,slurmrestd - Avoid possible race condition that could have caused
