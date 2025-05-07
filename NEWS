@@ -3,6 +3,13 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.11.11
 ===========================
+ -- Fixed a job requeuing issue that merged job entries into the same SLUID
+    when all nodes in a job failed simultaneously.
+ -- Add ABORT_ON_FATAL environment variable to capture a backtrace from any
+    fatal() message.
+ -- Testsuite - fix python test 130_2.
+ -- Fix security issue where a coordinator could add a user with elevated
+    privileges. CVE-2025-43904.
 
 * Changes in Slurm 23.11.10
 ===========================
