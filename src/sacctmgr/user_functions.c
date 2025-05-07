@@ -842,8 +842,8 @@ extern int sacctmgr_add_user(int argc, char **argv)
 	} else {
 		exit_code=1;
 		fprintf(stderr,
-			" error: Problem adding user associations: %s\n",
-			slurm_strerror(rc));
+			" error: Problem adding user associations: %s (%s)\n",
+			slurm_strerror(rc), ret_str);
 		rc = SLURM_ERROR;
 	}
 
