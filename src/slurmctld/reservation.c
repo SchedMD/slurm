@@ -6341,18 +6341,15 @@ extern void job_time_adj_resv(job_record_t *job_ptr)
 static int _license_cnt(list_t *license_list, licenses_id_t id)
 {
 	int lic_cnt = 0;
-	list_itr_t *iter;
 	licenses_t *license_ptr;
 
 	if (license_list == NULL)
 		return lic_cnt;
 
-	iter = list_iterator_create(license_list);
-	while ((license_ptr = list_next(iter))) {
-		if (license_ptr->id.lic_id == id.lic_id)
-			lic_cnt += license_ptr->total;
-	}
-	list_iterator_destroy(iter);
+	license_ptr = license_find_rec_by_id(license_list, id);
+
+	if (license_ptr)
+		lic_cnt = license_ptr->total;
 
 	return lic_cnt;
 }
