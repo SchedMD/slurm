@@ -41,6 +41,7 @@
 #include <sys/prctl.h>
 #endif
 
+#include "src/common/data.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
@@ -209,6 +210,11 @@ static data_t *_load_config(void)
 
 	FREE_NULL_BUFFER(buf);
 	xfree(file);
+
+	if (data_get_type(conf) != DATA_TYPE_DICT)
+		fatal("%s: Unexpected root of rpc_queue.yaml is %s when dictionary expected",
+		      __func__, data_get_type_string(conf));
+
 	return conf;
 }
 
