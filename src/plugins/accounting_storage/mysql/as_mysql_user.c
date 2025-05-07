@@ -711,7 +711,9 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
-		slurmdb_user_rec_t user;
+		slurmdb_user_rec_t user_coord = {
+			.uid = uid,
+		};
 
 		if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) {
 			ret_str = xstrdup("Coordinator privilege revoked with DisableCoordDBD, only admins/operators can add accounts.");
@@ -720,10 +722,7 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 			return ret_str;
 		}
 
-		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = uid;
-
-		if (!is_user_any_coord(mysql_conn, &user)) {
+		if (!is_user_any_coord(mysql_conn, &user_coord)) {
 			ret_str = xstrdup("Only admins/operators/coordinators can add accounts");
 			error("%s", ret_str);
 			errno = ESLURM_ACCESS_DENIED;
