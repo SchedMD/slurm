@@ -487,6 +487,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int affect_rows = 0;
 	List assoc_list;
 	List wckey_list;
+	bool is_admin = false;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -507,6 +508,8 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * these accounts if they are coordinators of the
 		 * parent they are trying to add to
 		 */
+	} else {
+		is_admin = true;
 	}
 
 	if (!user_list || !list_count(user_list)) {
@@ -532,6 +535,11 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			   (long)now, (long)now, object->name);
 
 		if (object->admin_level != SLURMDB_ADMIN_NOTSET) {
+			if (!is_admin) {
+				error("Only admins/operators can add an admin/operator");
+				rc = ESLURM_ACCESS_DENIED;
+				break;
+			}
 			xstrcat(cols, ", admin_level");
 			xstrfmtcat(vals, ", %u", object->admin_level);
 			xstrfmtcat(extra, ", admin_level=%u",
@@ -613,7 +621,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
-	if (rc != SLURM_ERROR) {
+	if (rc == SLURM_SUCCESS) {
 		if (txn_query) {
 			xstrcat(txn_query, ";");
 			rc = mysql_db_query(mysql_conn,
@@ -661,6 +669,13 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		slurmdb_user_rec_t user_coord = {
 			.uid = uid,
 		};
+
+		if (user->admin_level != SLURMDB_ADMIN_NOTSET) {
+			ret_str = xstrdup("Only admins/operators can add an admin/operator");
+			error("%s", ret_str);
+			errno = ESLURM_ACCESS_DENIED;
+			return ret_str;
+		}
 
 		if (!is_user_any_coord(mysql_conn, &user_coord)) {
 			ret_str = xstrdup("Only admins/operators/coordinators can add accounts");
