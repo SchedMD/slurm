@@ -1012,7 +1012,20 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			job->het_job_ntasks = job->ntasks;
 			job->het_job_task_offset = 0;
 		}
-		return create_job_step(job, use_all_cpus, &opt);
+		if ((rc = create_job_step(job, use_all_cpus, &opt)) < 0)
+			return rc;
+
+		if (het_job_id) {
+			/*
+			 * If packing nodes (CR_PACK_NODES, -mpack), the step
+			 * may have an updated layout.
+			 */
+			job->het_job_nnodes = job->nhosts;
+			/* The stepmgr logic can modify ntasks */
+			job->het_job_ntasks = job->ntasks;
+		}
+
+		return rc;
 	} else {
 		return -1;
 	}
