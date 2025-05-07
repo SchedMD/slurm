@@ -114,6 +114,8 @@ extern void license_free_rec(void *x);
 extern list_t *license_copy(list_t *license_list_src);
 extern list_t *cluster_license_copy(void);
 
+extern licenses_t *license_find_rec_by_id(list_t *license_list,
+					  licenses_id_t id);
 /*
  * license_job_get - Get the licenses required for a job
  * IN job_ptr - job identification

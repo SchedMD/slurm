@@ -775,6 +775,12 @@ extern void slurm_bf_hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	return;
 }
 
+extern licenses_t *license_find_rec_by_id(list_t *license_list,
+					  licenses_id_t id)
+{
+	return list_find_first_ro(license_list, _license_find_rec_by_id, &id);
+}
+
 /* Update licenses on this system based upon slurm.conf.
  * Remove all previously allocated licenses */
 extern int license_update(char *licenses)
