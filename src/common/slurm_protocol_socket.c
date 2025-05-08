@@ -121,7 +121,7 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, void *tls_conn, char **pbuf,
 	ssize_t  len;
 	uint32_t msglen;
 
-	len = slurm_recv_timeout(fd, tls_conn, (char *) &msglen, sizeof(msglen),
+	len = slurm_recv_timeout(tls_conn, (char *) &msglen, sizeof(msglen),
 				 timeout);
 
 	if (len < ((ssize_t) sizeof(msglen)))
@@ -138,8 +138,7 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, void *tls_conn, char **pbuf,
 	if (!(*pbuf = try_xmalloc(msglen)))
 		slurm_seterrno_ret(ENOMEM);
 
-	if (slurm_recv_timeout(fd, tls_conn, *pbuf, msglen, timeout) !=
-	    msglen) {
+	if (slurm_recv_timeout(tls_conn, *pbuf, msglen, timeout) != msglen) {
 		xfree(*pbuf);
 		*pbuf = NULL;
 		return SLURM_ERROR;
@@ -418,15 +417,18 @@ extern ssize_t slurm_bufs_sendto(int fd, void *tls_conn, msg_bufs_t *buffers)
 
 /* Get slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error */
-extern int slurm_recv_timeout(int fd, void *tls_conn, char *buffer, size_t size,
+extern int slurm_recv_timeout(void *tls_conn, char *buffer, size_t size,
 			      int timeout)
 {
+	int fd = -1;
 	int rc;
 	int recvlen = 0;
 	int fd_flags;
 	struct pollfd  ufds;
 	struct timeval tstart;
 	int timeleft = timeout;
+
+	fd = tls_g_get_conn_fd(tls_conn);
 
 	ufds.fd     = fd;
 	ufds.events = POLLIN;
