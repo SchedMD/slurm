@@ -439,7 +439,8 @@ extern void slurm_persist_conn_recv_server_fini(void)
 }
 
 extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
-						int thread_loc, void *arg)
+						int fd, int thread_loc,
+						void *arg)
 {
 	persist_service_conn_t *service_conn;
 

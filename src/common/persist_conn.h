@@ -127,7 +127,8 @@ extern void slurm_persist_conn_recv_server_fini(void);
  *            the callback in the persist_conn.
  */
 extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
-						int thread_loc, void *arg);
+						int fd, int thread_loc,
+						void *arg);
 
 /* Increment thread_count and don't return until its value is no larger
  *	than MAX_THREAD_COUNT,

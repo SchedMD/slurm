@@ -114,7 +114,7 @@ extern void *rpc_mgr(void *no_data)
 				 INET6_ADDRSTRLEN);
 
 		slurm_persist_conn_recv_thread_init(
-			conn_arg->conn, i, conn_arg);
+			conn_arg->conn, newsockfd, i, conn_arg);
 	}
 
 	debug("rpc_mgr shutting down");

@@ -5914,7 +5914,8 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	else if (persist_init->persist_type == PERSIST_TYPE_ACCT_UPDATE) {
 		persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
 		slurm_persist_conn_recv_thread_init(
-			persist_conn, -1, persist_conn);
+			persist_conn, tls_g_get_conn_fd(persist_conn->tls_conn),
+			-1, persist_conn);
 	} else
 		rc = SLURM_ERROR;
 end_it:

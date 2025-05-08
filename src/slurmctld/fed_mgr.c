@@ -3571,7 +3571,9 @@ extern int fed_mgr_add_sibling_conn(persist_conn_t *persist_conn,
 	 * timeout and resolved itself. */
 	cluster->fed.recv = persist_conn;
 
-	slurm_persist_conn_recv_thread_init(persist_conn, -1, persist_conn);
+	slurm_persist_conn_recv_thread_init(
+		persist_conn, tls_g_get_conn_fd(persist_conn->tls_conn), -1,
+		persist_conn);
 	_q_send_job_sync(cluster->name);
 
 	unlock_slurmctld(fed_read_lock);
