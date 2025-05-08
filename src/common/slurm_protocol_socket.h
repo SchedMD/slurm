@@ -80,12 +80,11 @@ extern ssize_t slurm_msg_sendto_socket(int fd, char *buffer, size_t size);
 
 /*
  * Send message over the given connection, default timeout value
- * IN fd - an open file descriptor
  * IN tls_conn - tls connection context
  * IN buffers - array of buffers to transmit
  * RET number of bytes written or SLURM_ERROR on error
  */
-extern ssize_t slurm_bufs_sendto(int fd, void *tls_conn, msg_bufs_t *buffers);
+extern ssize_t slurm_bufs_sendto(void *tls_conn, msg_bufs_t *buffers);
 
 /********************/
 /* stream functions */
