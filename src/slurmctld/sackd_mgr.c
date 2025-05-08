@@ -41,6 +41,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/tls.h"
+
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -128,8 +130,10 @@ static void _update_sackd_node(sackd_node_t *node, slurm_msg_t *msg)
 
 	/* Resolve IP of slurmd if needed */
 	xfree(node->nodeaddr);
-	if ((addr->ss_family == AF_UNSPEC) && (msg->conn_fd >= 0))
-		(void) slurm_get_peer_addr(msg->conn_fd, addr);
+	if (addr->ss_family == AF_UNSPEC) {
+		int fd = tls_g_get_conn_fd(msg->tls_conn);
+		(void) slurm_get_peer_addr(fd, addr);
+	}
 
 	if (addr->ss_family != AF_UNSPEC) {
 		node->nodeaddr = xmalloc(INET6_ADDRSTRLEN);
