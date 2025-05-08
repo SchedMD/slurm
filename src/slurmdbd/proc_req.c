@@ -269,6 +269,7 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 			    persist_init_req_msg_t *init_msg)
 {
 	int rc = SLURM_SUCCESS;
+	int fd = tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn);
 
 #if HAVE_SYS_PRCTL_H
 	{
@@ -281,8 +282,7 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 
 	debug("REQUEST_PERSIST_INIT: CLUSTER:%s VERSION:%u UID:%u IP:%s CONN:%d",
 	      init_msg->cluster_name, init_msg->version,
-	      slurmdbd_conn->conn->auth_uid, slurmdbd_conn->conn->rem_host,
-	      slurmdbd_conn->conn->fd);
+	      slurmdbd_conn->conn->auth_uid, slurmdbd_conn->conn->rem_host, fd);
 
 	slurmdbd_conn->conn->cluster_name = xstrdup(init_msg->cluster_name);
 
@@ -292,8 +292,7 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 	   avoid such a slow down.
 	*/
 	slurmdbd_conn->db_conn = acct_storage_g_get_connection(
-		slurmdbd_conn->conn->fd, NULL, true,
-		slurmdbd_conn->conn->cluster_name);
+		fd, NULL, true, slurmdbd_conn->conn->cluster_name);
 	slurmdbd_conn->conn->version = init_msg->version;
 	if (errno)
 		rc = errno;
@@ -391,7 +390,9 @@ static int _fix_runaway_jobs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	if (rc == ESLURM_ACCESS_DENIED) {
 		comment = "You must have an AdminLevel>=Operator to fix runaway jobs";
-		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
+		error("CONN:%d %s",
+		      tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn),
+		      comment);
 	}
 
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
@@ -464,7 +465,9 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			    slurmdbd_conn->db_conn, &user, 1, NULL, false)
 		    != SLURM_SUCCESS) {
 			comment = "Your user has not been added to the accounting system yet.";
-			error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
+			error("CONN:%d %s",
+			      tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn),
+			      comment);
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
@@ -774,8 +777,8 @@ static int _cluster_tres(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	debug2("DBD_CLUSTER_TRES: called in CONN %d for %s(%s)",
-	       slurmdbd_conn->conn->fd, slurmdbd_conn->conn->cluster_name,
-	       cluster_tres_msg->tres_str);
+	       tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn),
+	       slurmdbd_conn->conn->cluster_name, cluster_tres_msg->tres_str);
 
 	rc = clusteracct_storage_g_cluster_tres(
 		slurmdbd_conn->db_conn,
@@ -1261,10 +1264,10 @@ static int _get_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	uint16_t ret_type = 0;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
+	int fd = tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn);
 
 	info("DBD_GET_USAGE: called in CONN %d. Type is %s",
-	     slurmdbd_conn->conn->fd,
-	     slurmdbd_msg_type_2_str(msg->msg_type, 1));
+	     fd, slurmdbd_msg_type_2_str(msg->msg_type, 1));
 
 	switch(msg->msg_type) {
 	case DBD_GET_ASSOC_USAGE:
@@ -1295,7 +1298,7 @@ static int _get_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	if (rc != SLURM_SUCCESS) {
 		comment = "Problem getting usage info";
-		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
+		error("CONN:%d %s", fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 							rc, comment,
 							msg->msg_type);
@@ -1462,7 +1465,8 @@ static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	debug2("DBD_FLUSH_JOBS: called in CONN %d for %s",
-	       slurmdbd_conn->conn->fd, slurmdbd_conn->conn->cluster_name);
+	       tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn),
+	       slurmdbd_conn->conn->cluster_name);
 
 	rc = acct_storage_g_flush_jobs_on_cluster(
 		slurmdbd_conn->db_conn,
@@ -1516,7 +1520,7 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	if (!_validate_slurm_user(slurmdbd_conn)) {
 		comment = "DBD_JOB_COMPLETE message from invalid uid";
 		error("CONN:%d %s %u",
-		      slurmdbd_conn->conn->fd, comment,
+		      tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn), comment,
 		      slurmdbd_conn->conn->auth_uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
@@ -1587,7 +1591,7 @@ static int _job_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	if (!_validate_slurm_user(slurmdbd_conn)) {
 		comment = "DBD_JOB_START message from invalid uid";
 		error("CONN:%d %s %u",
-		      slurmdbd_conn->conn->fd, comment,
+		      tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn), comment,
 		      slurmdbd_conn->conn->auth_uid);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 							ESLURM_ACCESS_DENIED,
@@ -1617,7 +1621,7 @@ static int _job_heavy(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	if (!_validate_slurm_user(slurmdbd_conn)) {
 		comment = "DBD_JOB_HEAVY message from invalid uid";
 		error("CONN:%d %s %u",
-		      slurmdbd_conn->conn->fd, comment,
+		      tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn), comment,
 		      slurmdbd_conn->conn->auth_uid);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 							ESLURM_ACCESS_DENIED,
@@ -1665,7 +1669,7 @@ static int _job_suspend(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	if (!_validate_slurm_user(slurmdbd_conn)) {
 		comment = "DBD_JOB_SUSPEND message from invalid uid";
 		error("CONN:%d %s %u",
-		      slurmdbd_conn->conn->fd, comment,
+		      tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn), comment,
 		      slurmdbd_conn->conn->auth_uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
@@ -1929,6 +1933,7 @@ static int _modify_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int same_user = 0;
 	slurmdb_user_cond_t *user_cond = NULL;
 	slurmdb_user_rec_t *user_rec = NULL;
+	int fd = tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn);
 
 	user_cond = (slurmdb_user_cond_t *)get_msg->cond;
 	user_rec = (slurmdb_user_rec_t *)get_msg->rec;
@@ -1965,7 +1970,7 @@ is_same_user:
 		 */
 		if ((user_rec->admin_level != SLURMDB_ADMIN_NOTSET)) {
 			comment = "You can only change your own default account, default wckey nothing else";
-			error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
+			error("CONN:%d %s", fd, comment);
 			*out_buffer = slurm_persist_make_rc_msg(
 				slurmdbd_conn->conn,
 				ESLURM_ACCESS_DENIED,
@@ -1979,7 +1984,7 @@ is_same_user:
 	if ((user_rec->admin_level != SLURMDB_ADMIN_NOTSET) &&
 	    !_validate_super_user(slurmdbd_conn)) {
 		comment = "You must be a super user to modify a users admin level";
-		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
+		error("CONN:%d %s", fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(
 			slurmdbd_conn->conn,
 			ESLURM_ACCESS_DENIED,
@@ -2044,7 +2049,7 @@ static int _modify_reservation(slurmdbd_conn_t *slurmdbd_conn,
 	if (!_validate_slurm_user(slurmdbd_conn)) {
 		comment = "DBD_MODIFY_RESV message from invalid uid";
 		error("CONN:%d %s %u",
-		      slurmdbd_conn->conn->fd, comment,
+		      tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn), comment,
 		      slurmdbd_conn->conn->auth_uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
@@ -2066,12 +2071,12 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	node_record_t node_ptr;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
+	int fd = tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn);
 
 	if (!_validate_slurm_user(slurmdbd_conn)) {
 		comment = "DBD_NODE_STATE message from invalid uid";
 		error("CONN:%d %s %u",
-		      slurmdbd_conn->conn->fd, comment,
-		      slurmdbd_conn->conn->auth_uid);
+		      fd, comment, slurmdbd_conn->conn->auth_uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
@@ -2131,8 +2136,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	default:
 		comment = "DBD_NODE_STATE message has invalid new_state";
 		error("CONN:%d %s %u",
-		      slurmdbd_conn->conn->fd, comment,
-		      slurmdbd_conn->conn->auth_uid);
+		      fd, comment, slurmdbd_conn->conn->auth_uid);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -2289,19 +2293,18 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	slurmdb_cluster_rec_t cluster;
 	dbd_list_msg_t list_msg = { NULL };
 	list_t *cluster_list;
+	int fd = tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn);
 
 	if (!_validate_slurm_user(slurmdbd_conn)) {
 		comment = "DBD_REGISTER_CTLD message from invalid uid";
 		error("CONN:%d %s %u",
-		      slurmdbd_conn->conn->fd, comment,
-		      slurmdbd_conn->conn->auth_uid);
+		      fd, comment, slurmdbd_conn->conn->auth_uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
 
 	debug2("DBD_REGISTER_CTLD: called in CONN %d for %s(%u)",
-	       slurmdbd_conn->conn->fd, slurmdbd_conn->conn->cluster_name,
-	       register_ctld_msg->port);
+	       fd, slurmdbd_conn->conn->cluster_name, register_ctld_msg->port);
 
 	/* Just to make sure we don't allow a NULL cluster name to attempt
 	   to connect.  This should never happen, but here just for
@@ -2309,7 +2312,7 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	*/
 	if (!slurmdbd_conn->conn->cluster_name) {
 		comment = "Must have a cluster name to register it";
-		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
+		error("CONN:%d %s", fd, comment);
 		rc = ESLURM_BAD_NAME;
 		goto end_it;
 	}
@@ -2696,7 +2699,8 @@ static int _roll_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	list_t *rollup_stats_list = NULL;
 	DEF_TIMERS;
 
-	info("DBD_ROLL_USAGE: called in CONN %d", slurmdbd_conn->conn->fd);
+	info("DBD_ROLL_USAGE: called in CONN %d",
+	     tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn));
 
 	if (!_validate_operator(slurmdbd_conn)) {
 		rc = ESLURM_ACCESS_DENIED;
@@ -3073,6 +3077,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 	slurmdb_rpc_obj_t *rpc_obj;
+	int fd = tls_g_get_conn_fd(slurmdbd_conn->conn->tls_conn);
 
 	DEF_TIMERS;
 	START_TIMER;
@@ -3097,7 +3102,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
 		slurm_addr_t cli_addr;
-		(void) slurm_get_peer_addr(slurmdbd_conn->conn->fd, &cli_addr);
+		(void) slurm_get_peer_addr(fd, &cli_addr);
 		log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
 			 slurmdbd_msg_type_2_str(msg->msg_type, 1),
 			 slurmdbd_conn->conn->auth_uid,
@@ -3333,8 +3338,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 	default:
 		comment = "Invalid RPC";
 		error("CONN:%d %s msg_type=%s",
-		      slurmdbd_conn->conn->fd, comment,
-		      rpc_num2string(msg->msg_type));
+		      fd, comment, rpc_num2string(msg->msg_type));
 		rc = EINVAL;
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 							rc, comment, 0);
@@ -3343,8 +3347,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 
 	if (rc == ESLURM_ACCESS_DENIED)
 		error("CONN:%d Security violation, %s",
-		      slurmdbd_conn->conn->fd,
-		      slurmdbd_msg_type_2_str(msg->msg_type, 1));
+		      fd, slurmdbd_msg_type_2_str(msg->msg_type, 1));
 	else if (slurmdbd_conn->conn->rem_port &&
 		 (!slurmdbd_conf->commit_delay ||
 		  (msg->msg_type == DBD_REGISTER_CTLD))) {

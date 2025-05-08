@@ -5895,7 +5895,8 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn->rem_port = persist_init->port;
 
 	persist_conn->rem_host = xmalloc(INET6_ADDRSTRLEN);
-	(void) slurm_get_peer_addr(persist_conn->fd, &rem_addr);
+	(void) slurm_get_peer_addr(tls_g_get_conn_fd(persist_conn->tls_conn),
+				   &rem_addr);
 	slurm_get_ip_str(&rem_addr, persist_conn->rem_host, INET6_ADDRSTRLEN);
 
 	/* info("got it from %d %s %s(%u)", persist_conn->fd, */
@@ -5924,7 +5925,7 @@ end_it:
 	ret_buf = slurm_persist_make_rc_msg(&p_tmp, rc, comment, p_tmp.version);
 	if (slurm_persist_send_msg(&p_tmp, ret_buf) != SLURM_SUCCESS) {
 		debug("Problem sending response to connection %d uid(%u)",
-		      p_tmp.fd, msg->auth_uid);
+		      tls_g_get_conn_fd(p_tmp.tls_conn), msg->auth_uid);
 	}
 
 	if (rc && persist_conn) {

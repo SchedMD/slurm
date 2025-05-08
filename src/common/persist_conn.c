@@ -780,7 +780,8 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 		comment = xstrdup_printf("Failed to unpack %s message",
 					 slurmdbd_msg_type_2_str(
 						 persist_msg->msg_type, true));
-		error("CONN:%u %s", persist_conn->fd, comment);
+		error("CONN:%u %s",
+		      tls_g_get_conn_fd(persist_conn->tls_conn), comment);
 		*out_buffer = slurm_persist_make_rc_msg(
 			persist_conn, rc, comment, persist_msg->msg_type);
 		xfree(comment);
@@ -794,14 +795,17 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 	if (first && !init_msg) {
 		comment = "Initial RPC not REQUEST_PERSIST_INIT";
 		error("CONN:%u %s type (%d)",
-		      persist_conn->fd, comment, persist_msg->msg_type);
+		      tls_g_get_conn_fd(persist_conn->tls_conn), comment,
+		      persist_msg->msg_type);
 		rc = EINVAL;
 		*out_buffer = slurm_persist_make_rc_msg(
 			persist_conn, rc, comment,
 			REQUEST_PERSIST_INIT);
 	} else if (!first && init_msg) {
 		comment = "REQUEST_PERSIST_INIT sent after connection established";
-		error("CONN:%u %s", persist_conn->fd, comment);
+		error("CONN:%u %s",
+		      tls_g_get_conn_fd(persist_conn->tls_conn),
+		      comment);
 		rc = EINVAL;
 		*out_buffer =
 			slurm_persist_make_rc_msg(persist_conn, rc, comment,
@@ -994,7 +998,7 @@ static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 
 	if (!_conn_readable(persist_conn)) {
 		log_flag(NET, "%s: Unable to read from file descriptor (%d)",
-			 __func__, persist_conn->fd);
+			 __func__, tls_g_get_conn_fd(persist_conn->tls_conn));
 		goto endit;
 	}
 
@@ -1028,7 +1032,8 @@ static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 				      (msg_size - offset));
 		if (msg_read <= 0) {
 			error("%s: read of fd %u failed: %m",
-			      __func__, persist_conn->fd);
+			      __func__,
+			      tls_g_get_conn_fd(persist_conn->tls_conn));
 			break;
 		}
 		offset += msg_read;

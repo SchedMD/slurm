@@ -1756,10 +1756,11 @@ extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 		persist_msg_t persist_msg;
 		buf_t *buffer;
 		char *peer = NULL;
+		int persist_fd = tls_g_get_conn_fd(msg->conn->tls_conn);
 
 		log_flag(NET, "Sending persist_msg_t %s to %pA on fd %d",
 			 rpc_num2string(msg->msg_type), &msg->address,
-			 msg->conn->fd);
+			 persist_fd);
 
 		memset(&persist_msg, 0, sizeof(persist_msg_t));
 		persist_msg.msg_type  = msg->msg_type;
@@ -1773,7 +1774,7 @@ extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 		FREE_NULL_BUFFER(buffer);
 
 		if ((rc < 0) && (fd < 0))
-			fd = msg->conn->fd;
+			fd = persist_fd;
 
 		if ((rc < 0) && (errno == ENOTCONN)) {
 			if (slurm_conf.debug_flags & DEBUG_FLAG_NET)
@@ -2024,7 +2025,8 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 
 	rc = errno;
 	log_flag(NET, "%s: [fd:%d] write response RPC %s failed: %s",
-		 __func__, (source_msg->conn ? source_msg->conn->fd :
+		 __func__, (source_msg->conn ?
+			    tls_g_get_conn_fd(source_msg->conn->tls_conn) :
 			    tls_g_get_conn_fd(source_msg->tls_conn)),
 		 rpc_num2string(msg_type), slurm_strerror(rc));
 
