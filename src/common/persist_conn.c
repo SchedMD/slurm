@@ -646,7 +646,6 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
 		tls_g_destroy_conn(persist_conn->tls_conn, true);
 		persist_conn->tls_conn = NULL;
-		persist_conn->fd = -1;
 	} else {
 		buf_t *buffer = NULL;
 		persist_msg_t msg;
@@ -662,7 +661,6 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 
 			tls_g_destroy_conn(persist_conn->tls_conn, true);
 			persist_conn->tls_conn = NULL;
-			persist_conn->fd = -1;
 
 			if (!errno)
 				errno = SLURM_ERROR;
@@ -698,7 +696,6 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 			}
 			tls_g_destroy_conn(persist_conn->tls_conn, true);
 			persist_conn->tls_conn = NULL;
-			persist_conn->fd = -1;
 		} else if (resp) {
 			persist_conn->version = resp->ret_info;
 			persist_conn->flags |= resp->flags;
