@@ -61,6 +61,7 @@
 typedef struct {
 	void *arg;
 	persist_conn_t *conn;
+	int fd;
 	int thread_loc;
 	pthread_t thread_id;
 } persist_service_conn_t;
@@ -457,6 +458,7 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 
 	service_conn->arg = arg;
 	service_conn->conn = persist_conn;
+	service_conn->fd = fd;
 	service_conn->thread_loc = thread_loc;
 
 	persist_conn->timeout = 0; /* If this isn't zero we won't wait forever
