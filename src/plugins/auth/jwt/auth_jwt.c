@@ -457,7 +457,7 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 		/* if they match, ignore it, they were being redundant */
 		xfree(username);
 	} else {
-		uid_t uid;
+		uid_t uid = NO_VAL;
 		if (uid_from_string(username, &uid)) {
 			error("%s: uid_from_string failure", __func__);
 			goto fail;
@@ -485,6 +485,8 @@ fail:
 
 extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
 {
+	uid_t pw_uid = NO_VAL;
+
 	*uid = SLURM_AUTH_NOBODY;
 	*gid = SLURM_AUTH_NOBODY;
 
@@ -501,8 +503,9 @@ extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
 		return;
 	}
 
-	if (uid_from_string(cred->username, &cred->uid))
+	if (uid_from_string(cred->username, &pw_uid))
 		return;
+	cred->uid = pw_uid;
 
 	if (((cred->gid = gid_from_uid(cred->uid)) == (gid_t) -1))
 		return;
