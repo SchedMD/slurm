@@ -6832,9 +6832,9 @@ extern slurmctld_rpc_t *find_rpc(uint16_t msg_type)
 extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 {
 	DEF_TIMERS;
+	int fd = tls_g_get_conn_fd(msg->tls_conn);
 
-	if (msg->conn_fd >= 0)
-		fd_set_nonblocking(msg->conn_fd);
+	fd_set_nonblocking(fd);
 
 	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
@@ -6856,7 +6856,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 			     __func__, p, &msg->address, msg->auth_uid);
 		} else {
 			slurm_addr_t cli_addr;
-			(void) slurm_get_peer_addr(msg->conn_fd, &cli_addr);
+			(void) slurm_get_peer_addr(fd, &cli_addr);
 			info("%s: received opcode %s from %pA uid %u",
 			     __func__, p, &cli_addr, msg->auth_uid);
 		}
@@ -6865,7 +6865,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	debug2("Processing RPC: %s from UID=%u",
 	       rpc_num2string(msg->msg_type), msg->auth_uid);
 
-	if (this_rpc->skip_stale && !fd_is_writable(msg->conn_fd)) {
+	if (this_rpc->skip_stale && !fd_is_writable(fd)) {
 		error("Connection is stale, discarding RPC %s",
 		      rpc_num2string(msg->msg_type));
 		/* do not record RPC stats, we didn't process this */
