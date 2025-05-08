@@ -203,7 +203,8 @@ static void _persist_free_msg_members(persist_conn_t *persist_conn,
 		slurm_free_msg_data(persist_msg->msg_type, persist_msg->data);
 }
 
-static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
+static int _process_service_connection(persist_conn_t *persist_conn, int fd,
+				       void *arg)
 {
 	uint32_t nw_size = 0, msg_size = 0;
 	char *msg_char = NULL;
@@ -212,8 +213,8 @@ static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
 	buf_t *buffer = NULL;
 	int rc = SLURM_SUCCESS;
 	tls_conn_args_t tls_args = {
-		.input_fd = persist_conn->fd,
-		.output_fd = persist_conn->fd,
+		.input_fd = fd,
+		.output_fd = fd,
 		.mode = TLS_CONN_SERVER,
 	};
 
@@ -221,16 +222,15 @@ static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
 	xassert(persist_conn->shutdown);
 
 	log_flag(NET, "%s: Opened connection %d from %s",
-		 __func__, persist_conn->fd, persist_conn->rem_host);
+		 __func__, fd, persist_conn->rem_host);
 
 	if (persist_conn->flags & PERSIST_FLAG_ALREADY_INITED)
 		first = false;
 
 	if (first && !(persist_conn->tls_conn = tls_g_create_conn(&tls_args))) {
 		error("%s: tls_g_create_conn() failed negotiation, closing connection %d(%s)",
-		      __func__, persist_conn->fd, persist_conn->rem_host);
-		(void) close(persist_conn->fd);
-		persist_conn->fd = -1;
+		      __func__, fd, persist_conn->rem_host);
+		(void) close(fd);
 		return SLURM_ERROR;
 	}
 	tls_g_set_graceful_shutdown(persist_conn->tls_conn, true);
@@ -245,15 +245,15 @@ static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
 			break;
 		if (msg_read != sizeof(nw_size)) {
 			error("Could not read msg_size from connection %d(%s) uid(%u)",
-			      persist_conn->fd, persist_conn->rem_host,
+			      fd, persist_conn->rem_host,
 			      persist_conn->auth_uid);
 			break;
 		}
 		msg_size = ntohl(nw_size);
 		if ((msg_size < 2) || (msg_size > MAX_MSG_SIZE)) {
 			error("Invalid msg_size (%u) from connection %d(%s) uid(%u)",
-			      msg_size, persist_conn->fd,
-			      persist_conn->rem_host, persist_conn->auth_uid);
+			      msg_size, fd, persist_conn->rem_host,
+			      persist_conn->auth_uid);
 			break;
 		}
 
@@ -266,7 +266,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
 					      (msg_char + offset),
 					      (msg_size - offset));
 			if (msg_read <= 0) {
-				error("read(%d): %m", persist_conn->fd);
+				error("read(%d): %m", fd);
 				break;
 			}
 			offset += msg_read;
@@ -289,8 +289,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
 				    (rc != ACCOUNTING_TRES_CHANGE_DB) &&
 				    (rc != ACCOUNTING_NODES_CHANGE_DB)) {
 					error("Processing last message from connection %d(%s) uid(%u)",
-					      persist_conn->fd,
-					      persist_conn->rem_host,
+					      fd, persist_conn->rem_host,
 					      persist_conn->auth_uid);
 					if (rc == ESLURM_ACCESS_DENIED ||
 					    rc == SLURM_PROTOCOL_VERSION_ERROR)
@@ -315,8 +314,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
 				if (persist_conn->rem_port)
 					log_flag(NET, "%s: Problem sending response to connection host:%s fd:%d uid:%u",
 						 __func__,
-						 persist_conn->rem_host,
-						 persist_conn->fd,
+						 persist_conn->rem_host, fd,
 						 persist_conn->auth_uid);
 				fini = true;
 			}
@@ -325,8 +323,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
 	}
 
 	log_flag(NET, "%s: Closed connection host:%s fd:%d uid:%u",
-		 __func__, persist_conn->rem_host, persist_conn->fd,
-		 persist_conn->auth_uid);
+		 __func__, persist_conn->rem_host, fd, persist_conn->auth_uid);
 
 	return rc;
 }
@@ -349,7 +346,8 @@ static void *_service_connection(void *arg)
 
 	service_conn->thread_id = pthread_self();
 
-	_process_service_connection(service_conn->conn, service_conn->arg);
+	_process_service_connection(service_conn->conn, service_conn->fd,
+				    service_conn->arg);
 
 	if (service_conn->conn->callback_fini)
 		(service_conn->conn->callback_fini)(service_conn->arg);
