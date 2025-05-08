@@ -189,15 +189,25 @@ static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 	slurm_mutex_lock(&registered_lock);
 	itr = list_iterator_create(registered_clusters);
 	while ((slurmdbd_conn = list_next(itr))) {
+		int new_fd = -1, existing_fd = -1;
+
 		if (db_conn == slurmdbd_conn)
 			break;
 
+		if (db_conn->conn->tls_conn) {
+			new_fd = tls_g_get_conn_fd(db_conn->conn->tls_conn);
+		}
+
+		if (slurmdbd_conn->conn->tls_conn) {
+			existing_fd = tls_g_get_conn_fd(
+						slurmdbd_conn->conn->tls_conn);
+		}
+
 		if (!xstrcmp(db_conn->conn->cluster_name,
 			     slurmdbd_conn->conn->cluster_name) &&
-		    (db_conn->conn->fd != slurmdbd_conn->conn->fd)) {
+		    (new_fd != existing_fd)) {
 			error("A new registration for cluster %s CONN:%d just came in, but I am already talking to that cluster (CONN:%d), closing other connection.",
-			      db_conn->conn->cluster_name, db_conn->conn->fd,
-			      slurmdbd_conn->conn->fd);
+			      db_conn->conn->cluster_name, new_fd, existing_fd);
 			slurmdbd_conn->conn->rem_port = 0;
 			list_delete_item(itr);
 		}
