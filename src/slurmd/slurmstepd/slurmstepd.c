@@ -466,10 +466,18 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 		goto done;
 	}
 
-	if (!only_mem) {
-		if (step->batch)
-			batch_finish(step, rc); /* sends batch complete message */
+	if (!only_mem && step->batch)
+		batch_finish(step, rc); /* sends batch complete message */
 
+	/*
+	 * Call auth_setuid_lock after sending the batch_finish message as in
+	 * there the auth_g_create function is called, and that function uses
+	 * the lock. The lock is needed to ensure that the privileges are not
+	 * dropped from a different thread, like X11 shutdown thread.
+	 */
+	auth_setuid_lock();
+
+	if (!only_mem) {
 		/* signal the message thread to shutdown, and wait for it */
 		if (step->msg_handle)
 			eio_signal_shutdown(step->msg_handle);
@@ -496,6 +504,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 			      step->step_id.job_id);
 	}
 
+	auth_setuid_unlock();
 	run_command_shutdown();
 
 	/*
