@@ -5816,6 +5816,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 	msg.auth_ids_set = persist_conn->auth_ids_set;
 
 	msg.conn = persist_conn;
+	msg.tls_conn = persist_conn->tls_conn;
 
 	msg.msg_type = persist_msg->msg_type;
 	msg.data = persist_msg->data;
