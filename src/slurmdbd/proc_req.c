@@ -321,8 +321,6 @@ static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	debug2("DBD_ADD_ACCOUNTS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	rc = acct_storage_g_add_accounts(slurmdbd_conn->db_conn,
 					 slurmdbd_conn->conn->auth_uid,
 					 get_msg->my_list);
@@ -341,9 +339,6 @@ static int _add_accounts_cond(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_modify_msg_t *modify_msg = msg->data;
 	char *comment = NULL;
 	bool free_comment = true;
-
-	debug2("DBD_ADD_ACCOUNTS_COND: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
 
 	/*
 	 * All authentication needs to be done inside the plugin since we are
@@ -403,9 +398,6 @@ static int _add_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_acct_coord_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	debug2("DBD_ADD_ACCOUNT_COORDS: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
-
 	rc = acct_storage_g_add_coord(slurmdbd_conn->db_conn,
 				      slurmdbd_conn->conn->auth_uid,
 				      get_msg->acct_list, get_msg->cond);
@@ -425,8 +417,6 @@ static int _add_tres(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
-
-	debug2("DBD_ADD_TRES: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	rc = acct_storage_g_add_tres(slurmdbd_conn->db_conn,
 				     slurmdbd_conn->conn->auth_uid,
@@ -450,8 +440,6 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
-
-	debug2("DBD_ADD_ASSOCS: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	if (!_validate_operator(slurmdbd_conn)) {
 		list_itr_t *itr = NULL;
@@ -516,8 +504,6 @@ static int _add_clusters(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	debug2("DBD_ADD_CLUSTERS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	rc = acct_storage_g_add_clusters(slurmdbd_conn->db_conn,
 					 slurmdbd_conn->conn->auth_uid,
 					 get_msg->my_list);
@@ -537,9 +523,6 @@ static int _add_federations(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
-
-	debug2("DBD_ADD_FEDERATIONS: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
 
 	rc = acct_storage_g_add_federations(slurmdbd_conn->db_conn,
 					    slurmdbd_conn->conn->auth_uid,
@@ -562,8 +545,6 @@ static int _add_qos(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	debug2("DBD_ADD_QOS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	rc = acct_storage_g_add_qos(slurmdbd_conn->db_conn,
 				    slurmdbd_conn->conn->auth_uid,
 				    get_msg->my_list);
@@ -583,8 +564,6 @@ static int _add_res(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
-
-	debug2("DBD_ADD_RES: called in CONN %d", slurmdbd_conn->conn->fd);
 
 
 	rc = acct_storage_g_add_res(slurmdbd_conn->db_conn,
@@ -606,7 +585,6 @@ static int _add_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
-	debug2("DBD_ADD_USERS: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	rc = acct_storage_g_add_users(slurmdbd_conn->db_conn,
 				      slurmdbd_conn->conn->auth_uid,
@@ -628,9 +606,6 @@ static int _add_users_cond(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_modify_msg_t *modify_msg = msg->data;
 	char *comment = NULL;
 	bool free_comment = true;
-
-	debug2("DBD_ADD_USERS_COND: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
 
 	/*
 	 * All authentication needs to be done inside the plugin since we are
@@ -664,8 +639,6 @@ static int _add_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	debug2("DBD_ADD_WCKEYS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	rc = acct_storage_g_add_wckeys(slurmdbd_conn->db_conn,
 				       slurmdbd_conn->conn->auth_uid,
 				       get_msg->my_list);
@@ -690,8 +663,6 @@ static int _add_reservation(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		goto end_it;
 	}
 
-	debug2("DBD_ADD_RESV: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	rc = acct_storage_g_add_reservation(slurmdbd_conn->db_conn,
 					    rec_msg->rec);
 
@@ -708,8 +679,6 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_cond_msg_t *get_msg = msg->data;
 	char *comment = "SUCCESS";
 	slurmdb_archive_cond_t *arch_cond = NULL;
-
-	debug2("DBD_ARCHIVE_DUMP: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	if (!_validate_super_user(slurmdbd_conn)) {
 		rc = ESLURM_ACCESS_DENIED;
@@ -759,8 +728,6 @@ static int _archive_load(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	slurmdb_archive_rec_t *arch_rec = msg->data;
 	char *comment = "SUCCESS";
-
-	debug2("DBD_ARCHIVE_LOAD: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	if (!_validate_super_user(slurmdbd_conn)) {
 		rc = ESLURM_ACCESS_DENIED;
@@ -838,8 +805,6 @@ static int _get_accounts(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
-	debug2("DBD_GET_ACCOUNTS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	list_msg.my_list = acct_storage_g_get_accounts(
 		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		get_msg->cond);
@@ -872,8 +837,6 @@ static int _get_tres(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
-	debug2("DBD_GET_TRES: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	list_msg.my_list = acct_storage_g_get_tres(
 		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		get_msg->cond);
@@ -905,8 +868,6 @@ static int _get_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
-	debug2("DBD_GET_ASSOCS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	list_msg.my_list = acct_storage_g_get_assocs(
 		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		get_msg->cond);
@@ -937,8 +898,6 @@ static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
-
-	debug2("DBD_GET_CLUSTERS: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	list_msg.my_list = acct_storage_g_get_clusters(
 		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
@@ -972,9 +931,6 @@ static int _get_federations(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
-	debug2("DBD_GET_FEDERATIONS: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
-
 	list_msg.my_list = acct_storage_g_get_federations(
 		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		get_msg->cond);
@@ -1006,8 +962,6 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	char *config_name = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 
-	debug2("DBD_GET_CONFIG: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	if (config_name == NULL ||
 	    xstrcmp(config_name, "slurmdbd.conf") == 0)
 		list_msg.my_list = dump_config();
@@ -1037,8 +991,6 @@ static int _get_events(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
-
-	debug2("DBD_GET_EVENTS: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	list_msg.my_list = acct_storage_g_get_events(
 		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
@@ -1072,8 +1024,6 @@ static int _get_instances(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
-	debug2("DBD_GET_INSTANCES: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	list_msg.my_list = acct_storage_g_get_instances(
 		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		get_msg->cond);
@@ -1106,8 +1056,6 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	slurmdb_job_cond_t *job_cond = cond_msg->cond;
 	int rc = SLURM_SUCCESS;
-
-	debug2("DBD_GET_JOBS_COND: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	/* fail early if requesting runaways and not super user */
 	if ((job_cond->flags & JOBCOND_FLAG_RUNAWAY) &&
@@ -1175,8 +1123,6 @@ static int _get_probs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
-	debug2("DBD_GET_PROBS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	list_msg.my_list = acct_storage_g_get_problems(
 		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		get_msg->cond);
@@ -1207,8 +1153,6 @@ static int _get_qos(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_cond_msg_t *cond_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
-
-	debug2("DBD_GET_QOS: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	list_msg.my_list = acct_storage_g_get_qos(slurmdbd_conn->db_conn,
 						  slurmdbd_conn->conn->auth_uid,
@@ -1244,8 +1188,6 @@ static int _get_res(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
-	debug2("DBD_GET_RES: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	list_msg.my_list = acct_storage_g_get_res(
 		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		get_msg->cond);
@@ -1276,8 +1218,6 @@ static int _get_txn(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_cond_msg_t *cond_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
-
-	debug2("DBD_GET_TXN: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	list_msg.my_list = acct_storage_g_get_txn(slurmdbd_conn->db_conn,
 						  slurmdbd_conn->conn->auth_uid,
@@ -1371,8 +1311,6 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_cond_t * user_cond = NULL;
 
-	debug2("DBD_GET_USERS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	user_cond = get_msg->cond;
 	if ((!user_cond->with_assocs && !user_cond->with_wckeys)
 	    && ((slurmdbd_conn->conn->version < 8) ||
@@ -1422,8 +1360,6 @@ static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	char *comment = NULL;
 	int rc = SLURM_SUCCESS;
 
-	debug2("DBD_GET_WCKEYS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	/* We have to check this here, and not in the plugin.  There
 	 * are places in the plugin that a non-admin can call this and
 	 * it be ok. */
@@ -1466,8 +1402,6 @@ static int _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
-
-	debug2("DBD_GET_RESVS: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	list_msg.my_list = acct_storage_g_get_reservations(
 		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
@@ -1766,9 +1700,6 @@ static int _modify_accounts(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	debug2("DBD_MODIFY_ACCOUNTS: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
-
 	if (!(list_msg.my_list = acct_storage_g_modify_accounts(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		      get_msg->cond, get_msg->rec))) {
@@ -1796,8 +1727,6 @@ static int _modify_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
-
-	debug2("DBD_MODIFY_ASSOCS: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	/* All authentication needs to be done inside the plugin since we are
 	 * unable to know what accounts this request is talking about
@@ -1840,9 +1769,6 @@ static int _modify_clusters(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	debug2("DBD_MODIFY_CLUSTERS: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
-
 	if (!(list_msg.my_list = acct_storage_g_modify_clusters(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		      get_msg->cond, get_msg->rec))) {
@@ -1871,9 +1797,6 @@ static int _modify_federations(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	debug2("DBD_MODIFY_FEDERATIONS: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
-
 	if (!(list_msg.my_list = acct_storage_g_modify_federations(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		      get_msg->cond, get_msg->rec))) {
@@ -1901,8 +1824,6 @@ static int _modify_job(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
-
-	debug2("DBD_MODIFY_JOB: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	if (!(list_msg.my_list = acct_storage_g_modify_job(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
@@ -1941,8 +1862,6 @@ static int _modify_qos(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	debug2("DBD_MODIFY_QOS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	if (!(list_msg.my_list = acct_storage_g_modify_qos(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		      get_msg->cond, get_msg->rec))) {
@@ -1970,8 +1889,6 @@ static int _modify_res(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
-
-	debug2("DBD_MODIFY_RES: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	if (!(list_msg.my_list = acct_storage_g_modify_res(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
@@ -2002,8 +1919,6 @@ static int _modify_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int same_user = 0;
 	slurmdb_user_cond_t *user_cond = NULL;
 	slurmdb_user_rec_t *user_rec = NULL;
-
-	debug2("DBD_MODIFY_USERS: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	user_cond = (slurmdb_user_cond_t *)get_msg->cond;
 	user_rec = (slurmdb_user_rec_t *)get_msg->rec;
@@ -2090,8 +2005,6 @@ static int _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_modify_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	debug2("DBD_MODIFY_WCKEYS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	if (!(list_msg.my_list = acct_storage_g_modify_wckeys(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		      get_msg->cond, get_msg->rec))) {
@@ -2126,8 +2039,6 @@ static int _modify_reservation(slurmdbd_conn_t *slurmdbd_conn,
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
-
-	debug2("DBD_MODIFY_RESV: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	rc = acct_storage_g_modify_reservation(slurmdbd_conn->db_conn,
 					       rec_msg->rec);
@@ -2486,9 +2397,6 @@ static int _remove_accounts(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
-	debug2("DBD_REMOVE_ACCOUNTS: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
-
 	if (!(list_msg.my_list = acct_storage_g_remove_accounts(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		      get_msg->cond))) {
@@ -2516,9 +2424,6 @@ static int _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_acct_coord_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
-
-	debug2("DBD_REMOVE_ACCOUNT_COORDS: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
 
 	/* All authentication needs to be done inside the plugin since we are
 	 * unable to know what accounts this request is talking about
@@ -2554,8 +2459,6 @@ static int _remove_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
-	debug2("DBD_REMOVE_ASSOCS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	/* All authentication needs to be done inside the plugin since we are
 	 * unable to know what accounts this request is talking about
 	 * until we process it through the database.
@@ -2590,9 +2493,6 @@ static int _remove_clusters(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
-	debug2("DBD_REMOVE_CLUSTERS: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
-
 	if (!(list_msg.my_list = acct_storage_g_remove_clusters(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		      get_msg->cond))) {
@@ -2620,9 +2520,6 @@ static int _remove_federations(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
-
-	debug2("DBD_REMOVE_FEDERATIONS: called in CONN %d",
-	       slurmdbd_conn->conn->fd);
 
 	if (!(list_msg.my_list = acct_storage_g_remove_federations(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
@@ -2653,8 +2550,6 @@ static int _remove_qos(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
-	debug2("DBD_REMOVE_QOS: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	if (!(list_msg.my_list = acct_storage_g_remove_qos(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		      get_msg->cond))) {
@@ -2683,8 +2578,6 @@ static int _remove_res(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 
-	debug2("DBD_REMOVE_RES: called in CONN %d", slurmdbd_conn->conn->fd);
-
 	if (!(list_msg.my_list = acct_storage_g_remove_res(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
 		      get_msg->cond))) {
@@ -2711,8 +2604,6 @@ static int _remove_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
-
-	debug2("DBD_REMOVE_USERS: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	if (!(list_msg.my_list = acct_storage_g_remove_users(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
@@ -2741,8 +2632,6 @@ static int _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
-
-	debug2("DBD_REMOVE_WCKEYS: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	if (!(list_msg.my_list = acct_storage_g_remove_wckeys(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
@@ -2778,8 +2667,6 @@ static int _remove_reservation(slurmdbd_conn_t *slurmdbd_conn,
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
-
-	debug2("DBD_REMOVE_RESV: called in CONN %d", slurmdbd_conn->conn->fd);
 
 	rc = acct_storage_g_remove_reservation(slurmdbd_conn->db_conn,
 					       rec_msg->rec);
