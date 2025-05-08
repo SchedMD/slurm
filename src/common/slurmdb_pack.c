@@ -794,13 +794,11 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			conn = xmalloc(sizeof(*conn));
-			conn->fd = -1;
 			object_ptr->fed.recv = conn;
 		}
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			conn = xmalloc(sizeof(*conn));
-			conn->fd = -1;
 			object_ptr->fed.send = conn;
 		}
 		safe_unpackstr(&object_ptr->tres_str, buffer);
@@ -846,13 +844,11 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			conn = xmalloc(sizeof(*conn));
-			conn->fd = -1;
 			object_ptr->fed.recv = conn;
 		}
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			conn = xmalloc(sizeof(*conn));
-			conn->fd = -1;
 			object_ptr->fed.send = conn;
 		}
 		safe_unpackstr(&object_ptr->tres_str, buffer);
@@ -900,13 +896,11 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			conn = xmalloc(sizeof(*conn));
-			conn->fd = -1;
 			object_ptr->fed.recv = conn;
 		}
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			conn = xmalloc(sizeof(*conn));
-			conn->fd = -1;
 			object_ptr->fed.send = conn;
 		}
 		safe_unpackstr(&object_ptr->tres_str, buffer);
