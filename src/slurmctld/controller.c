@@ -303,10 +303,8 @@ static void _send_reconfig_replies(void)
 
 	while ((msg = list_pop(reconfig_reqs))) {
 		/* Must avoid sending reply via msg->conmgr_fd */
-		xassert((msg->conn_fd >= 0) || msg->conn);
-
 		(void) slurm_send_rc_msg(msg, reconfig_rc);
-		fd_close(&msg->conn_fd);
+		tls_g_destroy_conn(msg->tls_conn, true);
 		slurm_free_msg(msg);
 	}
 }
