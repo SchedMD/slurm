@@ -351,6 +351,37 @@ extern ssize_t slurm_msg_sendto(int fd, void *tls_conn, char *buffer,
 	return size;
 }
 
+extern ssize_t slurm_msg_sendto_socket(int fd, char *buffer, size_t size)
+{
+	struct iovec iov[2];
+	uint32_t usize;
+	int len;
+	SigFunc *ohandler;
+	int timeout = slurm_conf.msg_timeout * 1000;
+
+	/*
+	 *  Ignore SIGPIPE so that send can return a error code if the
+	 *    other side closes the socket
+	 */
+	ohandler = xsignal(SIGPIPE, SIG_IGN);
+
+	iov[0].iov_base = &usize;
+	iov[0].iov_len = sizeof(usize);
+	iov[1].iov_base = buffer;
+	iov[1].iov_len = size;
+
+	usize = htonl(iov[1].iov_len);
+
+	len = _writev_timeout(fd, NULL, iov, 2, timeout);
+
+	xsignal(SIGPIPE, ohandler);
+
+	/* Returned size should not include the 4-byte length header. */
+	if (len < 0)
+		return SLURM_ERROR;
+	return size;
+}
+
 extern ssize_t slurm_bufs_sendto(int fd, void *tls_conn, msg_bufs_t *buffers)
 {
 	struct iovec iov[4];
