@@ -15509,7 +15509,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	}
 
 reply:
-	if (msg->tls_conn) {
+	if (msg->conn_fd >= 0) {
 		if (resp_array) {
 			job_array_resp_msg_t *resp_array_msg =
 				_resp_array_xlate(resp_array, job_id);

@@ -105,7 +105,6 @@
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
-#include "src/interfaces/tls.h"
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/common/slurmd_common.h"
@@ -380,7 +379,8 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
 	}
 
 	/* send response from stepd back to original client */
-	if (resp_buf && (slurm_msg_sendto(msg->tls_conn, get_buf_data(resp_buf),
+	if (resp_buf && (slurm_msg_sendto(msg->conn_fd, msg->tls_conn,
+					  get_buf_data(resp_buf),
 					  size_buf(resp_buf)) < 0)) {
 		error("%s: Failed to send response bufs", __func__);
 		rc = SLURM_ERROR;
@@ -389,7 +389,7 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
 
 	log_flag(NET, "Sent message %s to stepmgr for %ps. Got response buf size %d from stepmgr and forwarded buffer to %pA on fd %d",
 		 rpc_num2string(msg->msg_type), step_id, size_buf(resp_buf),
-		 &msg->address, stepmgr_fd);
+		 &msg->address, msg->conn_fd);
 done:
 	fd_close(&stepmgr_fd);
 	FREE_NULL_BUFFER(resp_buf);
@@ -3917,7 +3917,8 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 	if ((uid = stepd_get_uid(fd, protocol_version)) == INFINITE) {
 		debug("stat_jobacct couldn't read from %ps: %m", req);
 		close(fd);
-		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 		return;
 	}
 
@@ -3928,9 +3929,13 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 	    !_slurm_authorized_user(msg->auth_uid)) {
 		error("stat_jobacct from uid %u for job %u owned by uid %u",
 		      msg->auth_uid, req->job_id, uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		/* or bad in this case */
-		return;
+
+		if (msg->conn_fd >= 0) {
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+			/* or bad in this case */
+			close(fd);
+			return;
+		}
 	}
 
 	resp = xmalloc(sizeof(job_step_stat_t));
@@ -4066,7 +4071,8 @@ static void _rpc_list_pids(slurm_msg_t *msg)
 	if (job_uid == INFINITE) {
 		error("stat_pid for invalid job_id: %u",
 		      req->job_id);
-		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 		return;
 	}
 
@@ -4078,9 +4084,11 @@ static void _rpc_list_pids(slurm_msg_t *msg)
 		error("stat_pid from uid %u for job %u owned by uid %u",
 		      msg->auth_uid, req->job_id, job_uid);
 
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		/* or bad in this case */
-		return;
+		if (msg->conn_fd >= 0) {
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+			/* or bad in this case */
+			return;
+		}
 	}
 
 	resp = xmalloc(sizeof(job_step_pids_t));
@@ -5067,12 +5075,14 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 	/* send a response now, which will include any errors
 	 * detected with the request */
-	slurm_send_rc_msg(msg, rc);
+	if (msg->conn_fd >= 0) {
+		slurm_send_rc_msg(msg, rc);
+		if (close(msg->conn_fd) < 0)
+			error("%s: close(%d): %m", __func__, msg->conn_fd);
+		msg->conn_fd = -1;
+	}
 	if (rc != SLURM_SUCCESS)
 		return;
-
-	tls_g_destroy_conn(msg->tls_conn, true);
-	msg->tls_conn = NULL;
 
 	/* now we can focus on performing the requested action,
 	 * which could take a few seconds to complete */
@@ -5234,7 +5244,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 	if (!_slurm_authorized_user(msg->auth_uid)) {
 		error("Security violation: abort_job(%u) from uid %u",
 		      req->step_id.job_id, msg->auth_uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
 
@@ -5252,9 +5263,12 @@ _rpc_abort_job(slurm_msg_t *msg)
 	 *  At this point, if connection still open, we send controller
 	 *   a "success" reply to indicate that we've recvd the msg.
 	 */
-	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-	tls_g_destroy_conn(msg->tls_conn, true);
-	msg->tls_conn = NULL;
+	if (msg->conn_fd >= 0) {
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		if (close(msg->conn_fd) < 0)
+			error ("rpc_abort_job: close(%d): %m", msg->conn_fd);
+		msg->conn_fd = -1;
+	}
 
 	if (_kill_all_active_steps(req->step_id.job_id, SIG_ABORT, 0,
 				   req->details, true, msg->auth_uid)) {

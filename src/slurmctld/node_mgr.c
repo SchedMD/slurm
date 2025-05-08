@@ -77,7 +77,6 @@
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
-#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/agent.h"
@@ -145,10 +144,9 @@ static char *_get_msg_hostname(slurm_msg_t *msg)
 	slurm_addr_t *addr = &msg->address;
 	char *name = NULL;
 
-	if (addr->ss_family == AF_UNSPEC) {
-		int fd = tls_g_get_conn_fd(msg->tls_conn);
-		(void) slurm_get_peer_addr(fd, addr);
-	}
+	if ((addr->ss_family == AF_UNSPEC) && (msg->conn_fd >= 0))
+		(void) slurm_get_peer_addr(msg->conn_fd, addr);
+
 	if (addr->ss_family != AF_UNSPEC) {
 		name = xmalloc(INET6_ADDRSTRLEN);
 		slurm_get_ip_str(addr, name, INET6_ADDRSTRLEN);
