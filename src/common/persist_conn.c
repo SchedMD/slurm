@@ -822,6 +822,7 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 	int rc, time_left;
 	struct timeval tstart;
 	char temp[2];
+	int fd;
 
 	if (!persist_conn || !persist_conn->shutdown)
 		fatal("%s: unexpected NULL persist_conn", __func__);
@@ -834,17 +835,18 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 		         persist_conn->rem_port);
 		return -1;
 	}
+	fd = tls_g_get_conn_fd(persist_conn->tls_conn);
 
 	if (*persist_conn->shutdown) {
 		log_flag(NET, "%s: called on shutdown fd:%d to host %s:%hu",
-		         __func__, persist_conn->fd,
-		         (persist_conn->rem_host ? persist_conn->rem_host :
-                                                   "unknown"),
+		         __func__, fd, (persist_conn->rem_host ?
+					persist_conn->rem_host :
+					"unknown"),
 		         persist_conn->rem_port);
 		return -1;
 	}
 
-	ufds.fd     = persist_conn->fd;
+	ufds.fd = fd;
 	ufds.events = POLLOUT;
 	gettimeofday(&tstart, NULL);
 	while (!*persist_conn->shutdown) {
