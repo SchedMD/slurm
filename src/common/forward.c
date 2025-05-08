@@ -120,7 +120,6 @@ static void *_forward_thread(void *arg)
 	buf_t *buffer = init_buf(BUF_SIZE);	/* probably enough for header */
 	list_t *ret_list = NULL;
 	void *tls_conn = NULL;
-	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
 	hostlist_t *hl = hostlist_create(fwd_ptr->nodelist);
@@ -203,12 +202,10 @@ static void *_forward_thread(void *arg)
 			buffer->processed += fwd_struct->buf_len;
 		}
 
-		fd = tls_g_get_conn_fd(tls_conn);
-
 		/*
 		 * forward message
 		 */
-		if (slurm_msg_sendto(fd, tls_conn, get_buf_data(buffer),
+		if (slurm_msg_sendto(tls_conn, get_buf_data(buffer),
 				     get_buf_offset(buffer)) < 0) {
 			error("%s: slurm_msg_sendto: %m", __func__);
 
@@ -222,7 +219,6 @@ static void *_forward_thread(void *arg)
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
 				tls_g_destroy_conn(tls_conn, true);
 				tls_conn = NULL;
-				fd = -1;
 				/* Abandon tree. This way if all the
 				 * nodes in the branch are down we
 				 * don't have to time out for each
@@ -276,7 +272,6 @@ static void *_forward_thread(void *arg)
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
 				tls_g_destroy_conn(tls_conn, true);
 				tls_conn = NULL;
-				fd = -1;
 				continue;
 			}
 			goto cleanup;

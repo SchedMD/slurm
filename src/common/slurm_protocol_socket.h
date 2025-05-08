@@ -74,8 +74,7 @@ extern ssize_t slurm_msg_recvfrom_timeout(void *tls_conn, char **pbuf,
  * IN size - size of buffer in bytes
  * RET number of bytes written
  */
-extern ssize_t slurm_msg_sendto(int fd, void *tls_conn, char *buffer,
-				size_t size);
+extern ssize_t slurm_msg_sendto(void *tls_conn, char *buffer, size_t size);
 extern ssize_t slurm_msg_sendto_socket(int fd, char *buffer, size_t size);
 
 /*

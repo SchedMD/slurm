@@ -318,8 +318,7 @@ extern int slurm_send_timeout(void *tls_conn, char *buf, size_t size,
 	return _writev_timeout(-1, tls_conn, &iov, 1, timeout);
 }
 
-extern ssize_t slurm_msg_sendto(int fd, void *tls_conn, char *buffer,
-				size_t size)
+extern ssize_t slurm_msg_sendto(void *tls_conn, char *buffer, size_t size)
 {
 	struct iovec iov[2];
 	uint32_t usize;
