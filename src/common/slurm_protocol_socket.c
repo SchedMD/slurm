@@ -160,6 +160,9 @@ static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
 	struct timeval tstart;
 	char temp[2];
 
+	if (tls_conn)
+		fd = tls_g_get_conn_fd(tls_conn);
+
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
 
@@ -313,7 +316,7 @@ extern int slurm_send_timeout(int fd, void *tls_conn, char *buf, size_t size,
 			      int timeout)
 {
 	struct iovec iov = { .iov_base = buf, .iov_len = size };
-	return _writev_timeout(fd, tls_conn, &iov, 1, timeout);
+	return _writev_timeout(-1, tls_conn, &iov, 1, timeout);
 }
 
 extern ssize_t slurm_msg_sendto(int fd, void *tls_conn, char *buffer,
@@ -338,7 +341,7 @@ extern ssize_t slurm_msg_sendto(int fd, void *tls_conn, char *buffer,
 
 	usize = htonl(iov[1].iov_len);
 
-	len = _writev_timeout(fd, tls_conn, iov, 2, timeout);
+	len = _writev_timeout(-1, tls_conn, iov, 2, timeout);
 
 	xsignal(SIGPIPE, ohandler);
 
@@ -376,7 +379,7 @@ extern ssize_t slurm_bufs_sendto(int fd, void *tls_conn, msg_bufs_t *buffers)
 
 	usize = htonl(iov[1].iov_len + iov[2].iov_len + iov[3].iov_len);
 
-	len = _writev_timeout(fd, tls_conn, iov, 4, timeout);
+	len = _writev_timeout(-1, tls_conn, iov, 4, timeout);
 
 	xsignal(SIGPIPE, ohandler);
 	return len;
