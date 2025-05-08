@@ -983,8 +983,8 @@ static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 
 	if (!persist_conn->tls_conn) {
 		if (!persist_conn->shutdown || *persist_conn->shutdown)
-			log_flag(NET, "%s: Invalid file descriptor fd:%d host:%s port:%u",
-				 __func__, persist_conn->fd,
+			log_flag(NET, "%s: Invalid connection to host:%s port:%u",
+				 __func__,
 				 persist_conn->rem_host,
 				 persist_conn->rem_port);
 		return NULL;
