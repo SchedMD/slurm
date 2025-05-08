@@ -1854,8 +1854,7 @@ cleanup:
  */
 extern size_t slurm_write_stream(void *tls_conn, char *buffer, size_t size)
 {
-	int open_fd = tls_g_get_conn_fd(tls_conn);
-	return slurm_send_timeout(open_fd, tls_conn, buffer, size,
+	return slurm_send_timeout(tls_conn, buffer, size,
 				  (slurm_conf.msg_timeout * 1000));
 }
 

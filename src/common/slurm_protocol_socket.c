@@ -312,7 +312,7 @@ ready:
  * Send slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error
  */
-extern int slurm_send_timeout(int fd, void *tls_conn, char *buf, size_t size,
+extern int slurm_send_timeout(void *tls_conn, char *buf, size_t size,
 			      int timeout)
 {
 	struct iovec iov = { .iov_base = buf, .iov_len = size };

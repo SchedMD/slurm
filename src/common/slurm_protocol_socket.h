@@ -134,7 +134,7 @@ extern int slurm_open_unix_stream(char *addr_name, int sock_flags, int *fd);
  */
 extern int slurm_get_stream_addr(int open_fd, slurm_addr_t *address);
 
-extern int slurm_send_timeout(int fd, void *tls_conn, char *buffer, size_t size,
+extern int slurm_send_timeout(void *tls_conn, char *buffer, size_t size,
 			      int timeout);
 extern int slurm_recv_timeout(int fd, void *tls_conn, char *buffer, size_t size,
 			      int timeout);
