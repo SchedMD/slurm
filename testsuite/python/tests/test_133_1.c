@@ -294,8 +294,16 @@ int main(int argc, char *argv[])
 
 	slurm_init(NULL);
 
+	init_node_conf();
+	build_all_nodeline_info(true, 0);
+
 	if (topology_g_init() != SLURM_SUCCESS) {
 		error("failed to initialize topology plugins");
+		exit(1);
+	}
+
+	if (topology_g_build_config() != SLURM_SUCCESS) {
+		error("failed to build topology config");
 		exit(1);
 	}
 
