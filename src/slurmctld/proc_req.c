@@ -5930,7 +5930,7 @@ end_it:
 
 	if (rc && persist_conn) {
 		/* Free AFTER message has been sent back to remote */
-		persist_conn->fd = -1;
+		persist_conn->tls_conn = NULL;
 		slurm_persist_conn_destroy(persist_conn);
 	}
 	xfree(comment);
