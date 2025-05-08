@@ -38,8 +38,6 @@
 #include "src/common/xstring.h"
 #include <math.h>
 
-static bool allow_gaps = false;
-
 static s_p_hashtbl_t *conf_hashtbl = NULL;
 
 static void _destroy_block(void *ptr)
@@ -82,7 +80,6 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[], char *topo_conf,
 			   block_context_t *ctx)
 {
 	static s_p_options_t block_options[] = {
-		{"AllowGaps", S_P_BOOLEAN},
 		{"BlockName", S_P_ARRAY, _parse_block, _destroy_block},
 		{"BlockSizes", S_P_STRING},
 		{NULL}
@@ -101,8 +98,6 @@ static int _read_topo_file(slurm_conf_block_t **ptr_array[], char *topo_conf,
 		fatal("something wrong with opening/reading %s: %m",
 		      topo_conf);
 	}
-
-	s_p_get_boolean(&allow_gaps, "AllowGaps", conf_hashtbl);
 
 	FREE_NULL_BITMAP(ctx->block_levels);
 	ctx->block_levels = bit_alloc(MAX_BLOCK_LEVELS);
@@ -297,18 +292,10 @@ extern int block_record_validate(topology_ctx_t *tctx)
 			if (ctx->bblock_node_cnt == 0) {
 				ctx->bblock_node_cnt =
 					bit_set_count(block_ptr->node_bitmap);
-			} else if (!allow_gaps &&
-				   (bit_set_count(block_ptr->node_bitmap) <
-				    ctx->bblock_node_cnt)) {
-				fatal("Block configuration (%s) children count lower than bblock_node_cnt",
-				      ptr->block_name);
 			}
 
-		} else if (allow_gaps) {
-			block_ptr->node_bitmap = bit_alloc(node_record_count);
 		} else {
-			fatal("Block configuration (%s) lacks children",
-			      ptr->block_name);
+			block_ptr->node_bitmap = bit_alloc(node_record_count);
 		}
 	}
 	if (!ctx->bblock_node_cnt)
@@ -326,11 +313,10 @@ extern int block_record_validate(topology_ctx_t *tctx)
 			xfree(tmp_nodes);
 			FREE_NULL_BITMAP(tmp_bitmap);
 		}
-	} else if (allow_gaps) {
+	} else {
 		ctx->blocks_nodes_bitmap = bit_alloc(node_record_count);
 		warning("Blocks do not contain any nodes");
-	} else
-		fatal("Blocks do not contain any nodes");
+	}
 
 	if (invalid_hl) {
 		buf = hostlist_ranged_string_xmalloc(invalid_hl);
