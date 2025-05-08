@@ -225,7 +225,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
 	if (persist_conn->flags & PERSIST_FLAG_ALREADY_INITED)
 		first = false;
 
-	if (!(persist_conn->tls_conn = tls_g_create_conn(&tls_args))) {
+	if (first && !(persist_conn->tls_conn = tls_g_create_conn(&tls_args))) {
 		error("%s: tls_g_create_conn() failed negotiation, closing connection %d(%s)",
 		      __func__, persist_conn->fd, persist_conn->rem_host);
 		(void) close(persist_conn->fd);
