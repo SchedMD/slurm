@@ -918,7 +918,7 @@ extern int slurm_persist_send_msg(persist_conn_t *persist_conn,
 
 	xassert(persist_conn);
 
-	if (persist_conn->fd < 0)
+	if (!persist_conn->tls_conn)
 		return EAGAIN;
 
 	if (!buffer)
