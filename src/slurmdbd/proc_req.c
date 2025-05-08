@@ -219,7 +219,6 @@ static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 		db_conn->conn_send = xmalloc(sizeof(persist_conn_t));
 		db_conn->conn_send->cluster_name =
 			xstrdup(db_conn->conn->cluster_name);
-		db_conn->conn_send->fd = PERSIST_CONN_NOT_INITED;
 		db_conn->conn_send->persist_type = PERSIST_TYPE_ACCT_UPDATE;
 		db_conn->conn_send->my_port = slurmdbd_conf->dbd_port;
 		db_conn->conn_send->rem_host = xstrdup(db_conn->conn->rem_host);
