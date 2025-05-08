@@ -544,6 +544,7 @@ extern void slurm_persist_conn_free_thread_loc(int thread_loc)
 static int _open_persist_conn(persist_conn_t *persist_conn)
 {
 	slurm_addr_t addr;
+	int fd;
 
 	xassert(persist_conn);
 	xassert(persist_conn->rem_host);
@@ -588,16 +589,16 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 		return SLURM_ERROR;
 	}
 
-	persist_conn->fd = tls_g_get_conn_fd(persist_conn->tls_conn);
-
 	/*
 	 * Peer will be waiting on tls_g_recv(), and they will need to know if
 	 * connection was intentionally closed or if an error occurred.
 	 */
 	tls_g_set_graceful_shutdown(persist_conn->tls_conn, true);
 
-	fd_set_nonblocking(persist_conn->fd);
-	net_set_keep_alive(persist_conn->fd);
+	fd = tls_g_get_conn_fd(persist_conn->tls_conn);
+
+	fd_set_nonblocking(fd);
+	net_set_keep_alive(fd);
 
 	return SLURM_SUCCESS;
 }
