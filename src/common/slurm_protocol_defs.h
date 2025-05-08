@@ -321,6 +321,8 @@ typedef struct slurm_msg {
 				 * normal connection. It should be filled in
 				 * with the connection before sending the
 				 * message so that it is handled correctly. */
+	int conn_fd; /* Only used when the message isn't on a persistent
+		      * connection. */
 	conmgr_fd_t *conmgr_fd; /* msg originates from conmgr connection. */
 	void *data;
 	uint16_t flags;
@@ -352,6 +354,7 @@ typedef struct slurm_msg {
 	{ \
 		.auth_uid = SLURM_AUTH_NOBODY, \
 		.auth_gid = SLURM_AUTH_NOBODY, \
+		.conn_fd = -1, \
 		.msg_type = NO_VAL16, \
 		.protocol_version = NO_VAL16, \
 		.flags = SLURM_PROTOCOL_NO_FLAGS, \

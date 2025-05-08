@@ -723,6 +723,7 @@ static void *_service_msg(void *arg)
 	 * invalid.
 	 */
 	msg->conmgr_fd = NULL;
+	msg->conn_fd = args->fd;
 	if (args->tls_conn) {
 		msg->tls_conn = args->tls_conn;
 	} else {

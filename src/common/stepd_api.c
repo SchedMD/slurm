@@ -61,7 +61,6 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/jobacct_gather.h"
-#include "src/interfaces/tls.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/stepd_api.h"
 #include "src/common/strlcpy.h"
@@ -1390,7 +1389,7 @@ extern int stepd_relay_msg(int fd, slurm_msg_t *msg, uint16_t protocol_version)
 	buf_size = get_buf_offset(msg->buffer) - msg->body_offset;
 
 	safe_write(fd, &msg->protocol_version, sizeof(uint16_t));
-	send_fd_over_socket(fd, tls_g_get_conn_fd(msg->tls_conn));
+	send_fd_over_socket(fd, msg->conn_fd);
 	safe_write(fd, &buf_size, sizeof(uint32_t));
 	safe_write(fd, &msg->buffer->head[msg->body_offset], buf_size);
 

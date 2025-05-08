@@ -3117,8 +3117,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		tls_g_destroy_conn(msg->tls_conn, true);
-		msg->tls_conn = NULL;
+		fd_close(&msg->conn_fd);
 		slurm_free_msg(msg);
 		return;
 	} else
@@ -5816,6 +5815,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 	msg.auth_ids_set = persist_conn->auth_ids_set;
 
 	msg.conn = persist_conn;
+	msg.conn_fd = persist_conn->fd;
 
 	msg.msg_type = persist_msg->msg_type;
 	msg.data = persist_msg->data;
@@ -5864,6 +5864,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	if (!validate_slurm_user(msg->auth_uid)) {
 		memset(&p_tmp, 0, sizeof(p_tmp));
+		p_tmp.fd = msg->conn_fd;
 		p_tmp.cluster_name = persist_init->cluster_name;
 		p_tmp.version = persist_init->version;
 		p_tmp.shutdown = &slurmctld_config.shutdown_time;
@@ -5885,6 +5886,9 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	persist_conn->cluster_name = persist_init->cluster_name;
 	persist_init->cluster_name = NULL;
+
+	persist_conn->fd = msg->conn_fd;
+	msg->conn_fd = -1;
 
 	persist_conn->tls_conn = msg->tls_conn;
 	msg->tls_conn = NULL;
@@ -6826,9 +6830,9 @@ extern slurmctld_rpc_t *find_rpc(uint16_t msg_type)
 extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 {
 	DEF_TIMERS;
-	int fd = tls_g_get_conn_fd(msg->tls_conn);
 
-	fd_set_nonblocking(fd);
+	if (msg->conn_fd >= 0)
+		fd_set_nonblocking(msg->conn_fd);
 
 	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
@@ -6850,7 +6854,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 			     __func__, p, &msg->address, msg->auth_uid);
 		} else {
 			slurm_addr_t cli_addr;
-			(void) slurm_get_peer_addr(fd, &cli_addr);
+			(void) slurm_get_peer_addr(msg->conn_fd, &cli_addr);
 			info("%s: received opcode %s from %pA uid %u",
 			     __func__, p, &cli_addr, msg->auth_uid);
 		}
@@ -6859,7 +6863,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	debug2("Processing RPC: %s from UID=%u",
 	       rpc_num2string(msg->msg_type), msg->auth_uid);
 
-	if (this_rpc->skip_stale && !fd_is_writable(fd)) {
+	if (this_rpc->skip_stale && !fd_is_writable(msg->conn_fd)) {
 		error("Connection is stale, discarding RPC %s",
 		      rpc_num2string(msg->msg_type));
 		/* do not record RPC stats, we didn't process this */

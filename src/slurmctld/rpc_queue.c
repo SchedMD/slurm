@@ -50,7 +50,6 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/serializer.h"
-#include "src/interfaces/tls.h"
 
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
@@ -175,8 +174,8 @@ static void *_rpc_queue_worker(void *arg)
 			}
 			msg->flags |= CTLD_QUEUE_PROCESSING;
 			q->func(msg);
-			tls_g_destroy_conn(msg->tls_conn, true);
-			msg->tls_conn = NULL;
+			if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
+				error("close(%d): %m", msg->conn_fd);
 
 			END_TIMER;
 			record_rpc_stats(msg, DELTA_TIMER);

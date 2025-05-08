@@ -3122,11 +3122,12 @@ extern int slurmdb_send_accounting_update_persist(list_t *update_list,
 
 	xassert(persist_conn);
 
-	if (!persist_conn->tls_conn) {
+	if (persist_conn->fd == PERSIST_CONN_NOT_INITED) {
 		if (slurm_persist_conn_open(persist_conn) !=
 		    SLURM_SUCCESS) {
 			error("slurmdb_send_accounting_update_persist: Unable to open connection to registered cluster %s.",
 			      persist_conn->cluster_name);
+			persist_conn->fd = PERSIST_CONN_NOT_INITED;
 		}
 	}
 
