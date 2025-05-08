@@ -1041,7 +1041,6 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout)
 
 	fd = tls_g_get_conn_fd(tls_conn);
 
-	msg->conn_fd = fd;
 	msg->tls_conn = tls_conn;
 
 	if (timeout <= 0) {
@@ -1062,8 +1061,7 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, tls_conn, &buf, &buflen, timeout) <
-	    0) {
+	if (slurm_msg_recvfrom_timeout(tls_conn, &buf, &buflen, timeout) < 0) {
 		rc = errno;
 		if (!rc)
 			rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
@@ -1131,7 +1129,6 @@ extern list_t *slurm_receive_msgs(void *tls_conn, int steps, int timeout)
 	}
 
 	slurm_msg_t_init(&msg);
-	msg.conn_fd = fd;
 
 	if (timeout <= 0) {
 		/* convert secs to msec */
@@ -1163,8 +1160,7 @@ extern list_t *slurm_receive_msgs(void *tls_conn, int steps, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, tls_conn, &buf, &buflen, timeout) <
-	    0) {
+	if (slurm_msg_recvfrom_timeout(tls_conn, &buf, &buflen, timeout) < 0) {
 		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
@@ -1317,7 +1313,6 @@ extern list_t *slurm_receive_resp_msgs(void *tls_conn, int steps, int timeout)
 	}
 
 	slurm_msg_t_init(&msg);
-	msg.conn_fd = fd;
 
 	if (timeout <= 0) {
 		/* convert secs to msec */
@@ -1350,8 +1345,7 @@ extern list_t *slurm_receive_resp_msgs(void *tls_conn, int steps, int timeout)
 	 * length and allocate space on the heap for a buffer containing the
 	 * message.
 	 */
-	if (slurm_msg_recvfrom_timeout(fd, tls_conn, &buf, &buflen, timeout) <
-	    0) {
+	if (slurm_msg_recvfrom_timeout(tls_conn, &buf, &buflen, timeout) < 0) {
 		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
@@ -1472,11 +1466,6 @@ extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
 		peer = fd_resolve_peer(fd);
 	}
 
-	/*
-	 * Set msg connection fd to accepted fd. This allows slurmd_req() to
-	 * close the accepted connection if necessary.
-	 */
-	msg->conn_fd = fd;
 	/* this is the direct peer connection */
 	memcpy(&msg->address, orig_addr, sizeof(slurm_addr_t));
 
@@ -1767,10 +1756,11 @@ extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 		persist_msg_t persist_msg;
 		buf_t *buffer;
 		char *peer = NULL;
+		int persist_fd = tls_g_get_conn_fd(msg->conn->tls_conn);
 
 		log_flag(NET, "Sending persist_msg_t %s to %pA on fd %d",
 			 rpc_num2string(msg->msg_type), &msg->address,
-			 msg->conn->fd);
+			 persist_fd);
 
 		memset(&persist_msg, 0, sizeof(persist_msg_t));
 		persist_msg.msg_type  = msg->msg_type;
@@ -1784,7 +1774,7 @@ extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 		FREE_NULL_BUFFER(buffer);
 
 		if ((rc < 0) && (fd < 0))
-			fd = msg->conn->fd;
+			fd = persist_fd;
 
 		if ((rc < 0) && (errno == ENOTCONN)) {
 			if (slurm_conf.debug_flags & DEBUG_FLAG_NET)
@@ -1813,7 +1803,7 @@ extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 	if ((rc = slurm_buffers_pack_msg(msg, &buffers, true)))
 		goto cleanup;
 
-	rc = slurm_bufs_sendto(fd, tls_conn, &buffers);
+	rc = slurm_bufs_sendto(tls_conn, &buffers);
 
 	if (rc >= 0) {
 		/* sent successfully */
@@ -1854,8 +1844,7 @@ cleanup:
  */
 extern size_t slurm_write_stream(void *tls_conn, char *buffer, size_t size)
 {
-	int open_fd = tls_g_get_conn_fd(tls_conn);
-	return slurm_send_timeout(open_fd, tls_conn, buffer, size,
+	return slurm_send_timeout(tls_conn, buffer, size,
 				  (slurm_conf.msg_timeout * 1000));
 }
 
@@ -1869,8 +1858,7 @@ extern size_t slurm_write_stream(void *tls_conn, char *buffer, size_t size)
  */
 extern size_t slurm_read_stream(void *tls_conn, char *buffer, size_t size)
 {
-	int open_fd = tls_g_get_conn_fd(tls_conn);
-	return slurm_recv_timeout(open_fd, tls_conn, buffer, size,
+	return slurm_recv_timeout(tls_conn, buffer, size,
 				  (slurm_conf.msg_timeout * 1000));
 }
 
@@ -2014,10 +2002,6 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	int rc;
 	slurm_msg_t resp_msg;
 
-	if ((source_msg->conn_fd < 0) && !source_msg->conn &&
-	    !source_msg->conmgr_fd)
-		return ENOTCONN;
-
 	slurm_resp_msg_init(&resp_msg, source_msg, msg_type, data);
 
 	if (source_msg->conmgr_fd) {
@@ -2032,7 +2016,6 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 		return rc;
 	}
 
-	resp_msg.conn_fd = source_msg->conn_fd;
 	resp_msg.conn = source_msg->conn;
 
 	rc = slurm_send_node_msg(source_msg->tls_conn, &resp_msg);
@@ -2042,8 +2025,9 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 
 	rc = errno;
 	log_flag(NET, "%s: [fd:%d] write response RPC %s failed: %s",
-		 __func__, (source_msg->conn ? source_msg->conn->fd :
-			    source_msg->conn_fd),
+		 __func__, (source_msg->conn ?
+			    tls_g_get_conn_fd(source_msg->conn->tls_conn) :
+			    tls_g_get_conn_fd(source_msg->tls_conn)),
 		 rpc_num2string(msg_type), slurm_strerror(rc));
 
 	return rc;

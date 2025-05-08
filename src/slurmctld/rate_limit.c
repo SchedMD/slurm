@@ -39,6 +39,8 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/tls.h"
+
 #include "src/slurmctld/slurmctld.h"
 
 /*
@@ -190,8 +192,10 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 	    ((user_buckets[position].last_logged + log_freq) <= now)) {
 		slurm_addr_t *cli_addr = &msg->address;
 
-		if ((cli_addr->ss_family == AF_UNSPEC) && (msg->conn_fd >= 0))
-			(void) slurm_get_peer_addr(msg->conn_fd, cli_addr);
+		if (cli_addr->ss_family == AF_UNSPEC) {
+			int fd = tls_g_get_conn_fd(msg->tls_conn);
+			(void) slurm_get_peer_addr(fd, cli_addr);
+		}
 
 		info("RPC rate limit exceeded by uid %u with %s from %pA, telling to back off",
 		     msg->auth_uid, rpc_num2string(msg->msg_type), cli_addr);

@@ -3117,7 +3117,8 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		fd_close(&msg->conn_fd);
+		tls_g_destroy_conn(msg->tls_conn, true);
+		msg->tls_conn = NULL;
 		slurm_free_msg(msg);
 		return;
 	} else
@@ -5641,7 +5642,7 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 		 * isn't then _signal_job will signal the sibling jobs
 		 */
 		if (origin && origin->fed.send &&
-		    (((persist_conn_t *) origin->fed.send)->fd != -1) &&
+		    ((persist_conn_t *) origin->fed.send)->tls_conn &&
 		    (origin != fed_mgr_cluster_rec) &&
 		    (!(job_ptr = find_job_record(job_id)) ||
 		     (job_ptr && job_ptr->fed_details &&
@@ -5815,7 +5816,6 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 	msg.auth_ids_set = persist_conn->auth_ids_set;
 
 	msg.conn = persist_conn;
-	msg.conn_fd = persist_conn->fd;
 
 	msg.msg_type = persist_msg->msg_type;
 	msg.data = persist_msg->data;
@@ -5864,7 +5864,6 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	if (!validate_slurm_user(msg->auth_uid)) {
 		memset(&p_tmp, 0, sizeof(p_tmp));
-		p_tmp.fd = msg->conn_fd;
 		p_tmp.cluster_name = persist_init->cluster_name;
 		p_tmp.version = persist_init->version;
 		p_tmp.shutdown = &slurmctld_config.shutdown_time;
@@ -5887,9 +5886,6 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn->cluster_name = persist_init->cluster_name;
 	persist_init->cluster_name = NULL;
 
-	persist_conn->fd = msg->conn_fd;
-	msg->conn_fd = -1;
-
 	persist_conn->tls_conn = msg->tls_conn;
 	msg->tls_conn = NULL;
 
@@ -5899,7 +5895,8 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn->rem_port = persist_init->port;
 
 	persist_conn->rem_host = xmalloc(INET6_ADDRSTRLEN);
-	(void) slurm_get_peer_addr(persist_conn->fd, &rem_addr);
+	(void) slurm_get_peer_addr(tls_g_get_conn_fd(persist_conn->tls_conn),
+				   &rem_addr);
 	slurm_get_ip_str(&rem_addr, persist_conn->rem_host, INET6_ADDRSTRLEN);
 
 	/* info("got it from %d %s %s(%u)", persist_conn->fd, */
@@ -5917,7 +5914,8 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	else if (persist_init->persist_type == PERSIST_TYPE_ACCT_UPDATE) {
 		persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
 		slurm_persist_conn_recv_thread_init(
-			persist_conn, -1, persist_conn);
+			persist_conn, tls_g_get_conn_fd(persist_conn->tls_conn),
+			-1, persist_conn);
 	} else
 		rc = SLURM_ERROR;
 end_it:
@@ -5928,12 +5926,12 @@ end_it:
 	ret_buf = slurm_persist_make_rc_msg(&p_tmp, rc, comment, p_tmp.version);
 	if (slurm_persist_send_msg(&p_tmp, ret_buf) != SLURM_SUCCESS) {
 		debug("Problem sending response to connection %d uid(%u)",
-		      p_tmp.fd, msg->auth_uid);
+		      tls_g_get_conn_fd(p_tmp.tls_conn), msg->auth_uid);
 	}
 
 	if (rc && persist_conn) {
 		/* Free AFTER message has been sent back to remote */
-		persist_conn->fd = -1;
+		persist_conn->tls_conn = NULL;
 		slurm_persist_conn_destroy(persist_conn);
 	}
 	xfree(comment);
@@ -6830,9 +6828,9 @@ extern slurmctld_rpc_t *find_rpc(uint16_t msg_type)
 extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 {
 	DEF_TIMERS;
+	int fd = tls_g_get_conn_fd(msg->tls_conn);
 
-	if (msg->conn_fd >= 0)
-		fd_set_nonblocking(msg->conn_fd);
+	fd_set_nonblocking(fd);
 
 	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
@@ -6854,7 +6852,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 			     __func__, p, &msg->address, msg->auth_uid);
 		} else {
 			slurm_addr_t cli_addr;
-			(void) slurm_get_peer_addr(msg->conn_fd, &cli_addr);
+			(void) slurm_get_peer_addr(fd, &cli_addr);
 			info("%s: received opcode %s from %pA uid %u",
 			     __func__, p, &cli_addr, msg->auth_uid);
 		}
@@ -6863,7 +6861,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	debug2("Processing RPC: %s from UID=%u",
 	       rpc_num2string(msg->msg_type), msg->auth_uid);
 
-	if (this_rpc->skip_stale && !fd_is_writable(msg->conn_fd)) {
+	if (this_rpc->skip_stale && !fd_is_writable(fd)) {
 		error("Connection is stale, discarding RPC %s",
 		      rpc_num2string(msg->msg_type));
 		/* do not record RPC stats, we didn't process this */

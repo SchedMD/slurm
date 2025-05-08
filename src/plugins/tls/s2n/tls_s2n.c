@@ -1159,11 +1159,18 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 			/* connection closed */
 			break;
 		} else if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
+			if (!bytes_read) {
+				log_flag(TLS, "%s: recv would block. fd:%d->%d",
+					 plugin_type, conn->input_fd,
+					 conn->output_fd);
+				errno = EWOULDBLOCK;
+				return -1;
+			}
+
 			/*
 			 * recv() would block so consider the recv() complete
 			 * for now
 			 */
-			errno = EWOULDBLOCK;
 			break;
 		} else {
 			on_s2n_error(conn, s2n_recv);

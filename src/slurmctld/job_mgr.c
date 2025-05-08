@@ -5097,7 +5097,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 			fed_mgr_remove_remote_dependencies(job_ptr);
 		} else if (!origin ||
 			   !origin->fed.send ||
-			   (((persist_conn_t *) origin->fed.send)->fd == -1)) {
+			   !((persist_conn_t *) origin->fed.send)->tls_conn) {
 			/*
 			 * The origin is down just signal all of the viable
 			 * sibling jobs
@@ -9895,7 +9895,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 		/* keep job around until origin comes back and is synced */
 		if (origin &&
 		    (!origin->fed.send ||
-		     (((persist_conn_t *) origin->fed.send)->fd == -1) ||
+		     !((persist_conn_t *) origin->fed.send)->tls_conn ||
 		     !origin->fed.sync_sent))
 			return 0;
 	}
@@ -15509,7 +15509,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	}
 
 reply:
-	if (msg->conn_fd >= 0) {
+	if (msg->tls_conn) {
 		if (resp_array) {
 			job_array_resp_msg_t *resp_array_msg =
 				_resp_array_xlate(resp_array, job_id);
