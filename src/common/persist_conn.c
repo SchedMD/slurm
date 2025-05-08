@@ -977,7 +977,7 @@ static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 
 	xassert(persist_conn);
 
-	if (persist_conn->fd < 0) {
+	if (!persist_conn->tls_conn) {
 		if (!persist_conn->shutdown || *persist_conn->shutdown)
 			log_flag(NET, "%s: Invalid file descriptor fd:%d host:%s port:%u",
 				 __func__, persist_conn->fd,

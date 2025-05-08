@@ -5642,7 +5642,7 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 		 * isn't then _signal_job will signal the sibling jobs
 		 */
 		if (origin && origin->fed.send &&
-		    (((persist_conn_t *) origin->fed.send)->fd != -1) &&
+		    ((persist_conn_t *) origin->fed.send)->tls_conn &&
 		    (origin != fed_mgr_cluster_rec) &&
 		    (!(job_ptr = find_job_record(job_id)) ||
 		     (job_ptr && job_ptr->fed_details &&

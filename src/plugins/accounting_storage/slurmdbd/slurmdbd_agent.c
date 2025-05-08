@@ -711,11 +711,11 @@ static void *_agent(void *x)
 		}
 
 		START_TIMER;
-		if ((slurmdbd_conn->fd < 0) &&
+		if (!slurmdbd_conn->tls_conn &&
 		    (difftime(time(NULL), fail_time) >= 10)) {
 			/* The connection to Slurm DBD is not open */
 			dbd_conn_check_and_reopen(slurmdbd_conn);
-			if (slurmdbd_conn->fd < 0) {
+			if (!slurmdbd_conn->tls_conn) {
 				fail_time = time(NULL);
 
 				log_flag(DBD_AGENT, "slurmdbd disconnected with agent_count=%d",
@@ -725,7 +725,7 @@ static void *_agent(void *x)
 
 		slurm_mutex_lock(&agent_lock);
 		cnt = list_count(agent_list);
-		if ((cnt == 0) || (slurmdbd_conn->fd < 0) ||
+		if ((cnt == 0) || !slurmdbd_conn->tls_conn ||
 		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
 			slurm_mutex_unlock(&slurmdbd_lock);
 			_max_dbd_msg_action(&cnt);
@@ -769,7 +769,7 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&slurmdbd_lock);
 
 			slurm_mutex_lock(&assoc_cache_mutex);
-			if (slurmdbd_conn->fd >= 0 &&
+			if (slurmdbd_conn->tls_conn &&
 			    (running_cache != RUNNING_CACHE_STATE_NOTRUNNING))
 				slurm_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
@@ -810,7 +810,7 @@ static void *_agent(void *x)
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
 		slurm_mutex_lock(&assoc_cache_mutex);
-		if (slurmdbd_conn->fd >= 0 &&
+		if (slurmdbd_conn->tls_conn &&
 		    (running_cache != RUNNING_CACHE_STATE_NOTRUNNING))
 			slurm_cond_signal(&assoc_cache_cond);
 		slurm_mutex_unlock(&assoc_cache_mutex);
@@ -1039,7 +1039,7 @@ extern int slurmdbd_agent_send(uint16_t rpc_version, persist_msg_t *req)
 /* Return true if connection to slurmdbd is active, false otherwise. */
 extern bool slurmdbd_conn_active(void)
 {
-	if (!slurmdbd_conn || (slurmdbd_conn->fd < 0))
+	if (!slurmdbd_conn || !slurmdbd_conn->tls_conn)
 		return false;
 
 	return true;

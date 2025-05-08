@@ -5097,7 +5097,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 			fed_mgr_remove_remote_dependencies(job_ptr);
 		} else if (!origin ||
 			   !origin->fed.send ||
-			   (((persist_conn_t *) origin->fed.send)->fd == -1)) {
+			   !((persist_conn_t *) origin->fed.send)->tls_conn) {
 			/*
 			 * The origin is down just signal all of the viable
 			 * sibling jobs
@@ -9895,7 +9895,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 		/* keep job around until origin comes back and is synced */
 		if (origin &&
 		    (!origin->fed.send ||
-		     (((persist_conn_t *) origin->fed.send)->fd == -1) ||
+		     !((persist_conn_t *) origin->fed.send)->tls_conn ||
 		     !origin->fed.sync_sent))
 			return 0;
 	}

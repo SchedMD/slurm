@@ -391,7 +391,7 @@ static int _check_send(slurmdb_cluster_rec_t *cluster)
 {
 	persist_conn_t *send = cluster->fed.send;
 
-	if (!send || send->fd == -1) {
+	if (!send || !send->tls_conn) {
 		return _open_controller_conn(cluster, true);
 	}
 
@@ -423,7 +423,7 @@ static void _open_persist_sends(void)
 			continue;
 
 		send = cluster->fed.send;
-		if (!send || send->fd == -1)
+		if (!send || !send->tls_conn)
 			_open_controller_conn(cluster, false);
 	}
 	list_iterator_destroy(itr);
@@ -970,7 +970,7 @@ static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	sib_msg_t   sib_msg;
 
 	if (!conn->fed.send ||
-	    (((persist_conn_t *) conn->fed.send)->fd == -1))
+	    (!((persist_conn_t *) conn->fed.send)->tls_conn))
 		return SLURM_SUCCESS;
 
 	slurm_msg_t_init(&req_msg);
@@ -4553,7 +4553,7 @@ extern int fed_mgr_job_lock(job_record_t *job_ptr)
 
 		/* Check dbd is up to make sure ctld isn't on an island. */
 		if (acct_db_conn && _slurmdbd_conn_active() &&
-		    (!origin_conn || (origin_conn->fd < 0))) {
+		    (!origin_conn || !origin_conn->tls_conn)) {
 			rc = _job_lock_all_sibs(job_ptr);
 		} else if (origin_cluster) {
 			rc = _persist_fed_job_lock(origin_cluster,
@@ -4704,7 +4704,7 @@ extern int fed_mgr_job_unlock(job_record_t *job_ptr)
 				(persist_conn_t *) origin_cluster->fed.send;
 		}
 
-		if (!origin_conn || (origin_conn->fd < 0)) {
+		if (!origin_conn || !origin_conn->tls_conn) {
 			uint64_t tmp_sibs;
 			tmp_sibs = job_ptr->fed_details->siblings_viable &
 				   ~FED_SIBLING_BIT(origin_id);
@@ -4765,7 +4765,7 @@ extern int fed_mgr_job_start(job_record_t *job_ptr, time_t start_time)
 				(persist_conn_t *) origin_cluster->fed.send;
 		}
 
-		if (!origin_conn || (origin_conn->fd < 0)) {
+		if (!origin_conn || !origin_conn->tls_conn) {
 			uint64_t viable_sibs;
 			viable_sibs = job_ptr->fed_details->siblings_viable;
 			viable_sibs &= ~FED_SIBLING_BIT(origin_id);
@@ -5187,7 +5187,7 @@ static int _cancel_sibling_jobs(job_record_t *job_ptr, uint16_t signal,
 			/* Don't send request to siblings that are down when
 			 * killing viables */
 			sib_conn = (persist_conn_t *) cluster->fed.send;
-			if (kill_viable && (!sib_conn || sib_conn->fd == -1))
+			if (kill_viable && (!sib_conn || !sib_conn->tls_conn))
 				goto next_job;
 
 			_persist_fed_job_cancel(cluster, job_ptr->job_id,
@@ -6098,7 +6098,7 @@ static int _list_find_not_synced_sib(void *x, void *key)
 
 	if (sib != fed_mgr_cluster_rec &&
 	    sib->fed.send &&
-	    (((persist_conn_t *) sib->fed.send)->fd >= 0) &&
+	    ((persist_conn_t *) sib->fed.send)->tls_conn &&
 	    !sib->fed.sync_recvd)
 		return 1;
 
