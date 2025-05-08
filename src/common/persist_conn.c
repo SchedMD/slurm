@@ -111,7 +111,7 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 	if (tls_g_peek(persist_conn->tls_conn))
 		return true;
 
-	ufds.fd     = persist_conn->fd;
+	ufds.fd = tls_g_get_conn_fd(persist_conn->tls_conn);
 	ufds.events = POLLIN;
 	while (!(*persist_conn->shutdown)) {
 		if (persist_conn->timeout) {
@@ -127,27 +127,27 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 		if (rc == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN)) {
 				debug3("%s: retrying poll for fd %d: %m",
-					__func__, persist_conn->fd);
+					__func__, ufds.fd);
 				continue;
 			}
 			error("%s: poll error for fd %d: %m",
-			      __func__, persist_conn->fd);
+			      __func__, ufds.fd);
 			return false;
 		}
 		if (rc == 0) {
 			debug("%s: poll for fd %d timeout after %d msecs of total wait %d msecs.",
-			      __func__, persist_conn->fd, time_left,
+			      __func__, ufds.fd, time_left,
 			      persist_conn->timeout);
 			return false;
 		}
 		if (ufds.revents & POLLHUP) {
 			log_flag(NET, "%s: persistent connection for fd %d closed",
-				 __func__, persist_conn->fd);
+				 __func__, ufds.fd);
 			return false;
 		}
 		if (ufds.revents & POLLNVAL) {
 			error("%s: persistent connection for fd %d is invalid",
-			       __func__, persist_conn->fd);
+			       __func__, ufds.fd);
 			return false;
 		}
 		if (ufds.revents & POLLERR) {
@@ -164,7 +164,7 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 		}
 		if ((ufds.revents & POLLIN) == 0) {
 			error("%s: persistent connection for fd %d missing POLLIN flag with revents 0x%"PRIx64,
-			      __func__, persist_conn->fd, (uint64_t) ufds.revents);
+			      __func__, ufds.fd, (uint64_t) ufds.revents);
 			return false;
 		}
 		if (ufds.revents == POLLIN) {
@@ -177,7 +177,7 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 	}
 
 	debug("%s: shutdown request detected for fd %d",
-	      __func__, persist_conn->fd);
+	      __func__, ufds.fd);
 	return false;
 }
 
