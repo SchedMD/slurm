@@ -554,11 +554,7 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 	if (persist_conn->tls_conn) {
 		tls_g_destroy_conn(persist_conn->tls_conn, true);
 		persist_conn->tls_conn = NULL;
-		persist_conn->fd = -1;
-	} else if (persist_conn->fd > 0)
-		fd_close(&persist_conn->fd);
-	else
-		persist_conn->fd = -1;
+	}
 
 	if (!persist_conn->inited)
 		persist_conn->inited = true;
