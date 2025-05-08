@@ -20,6 +20,7 @@
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/jobcomp.h"
 #include "src/interfaces/node_features.h"
+#include "src/interfaces/serializer.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
 
@@ -239,8 +240,8 @@ job_record_t *__add_job(uint32_t job_id, uint32_t priority, uint32_t nodes,
 
 	if (licenses) {
 		bool valid = true;
-		job_ptr->license_list =
-			license_validate(licenses, true, true, NULL, &valid);
+		job_ptr->license_list = license_validate(licenses, true, true,
+							 true, NULL, &valid);
 		job_ptr->licenses = xstrdup(licenses);
 	}
 
@@ -458,6 +459,7 @@ int main(int argc, char *argv[])
 	select_g_init();
 	init_node_conf();
 	build_all_nodeline_info(true, 0);
+	serializer_g_init(NULL, NULL);
 	switch_g_init(true);
 	topology_g_init();
 	topology_g_build_config();

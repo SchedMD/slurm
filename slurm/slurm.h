@@ -3400,6 +3400,8 @@ typedef struct slurm_license_info {
 				   (for remote) */
 	uint32_t last_deficit;
 	time_t last_update;  /* last updated (for remote) */
+	uint8_t mode;
+	char *nodes;
 } slurm_license_info_t;
 
 /* License information array as returned by the controller.

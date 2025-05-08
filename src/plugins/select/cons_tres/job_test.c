@@ -2764,16 +2764,15 @@ top:	orig_node_map = bit_copy(save_node_map);
 		       resv_exc_ptr, false, false, false, NULL);
 
 	/* Don't try preempting for licenses if not enabled */
-	if ((rc == ESLURM_LICENSES_UNAVAILABLE) && !preempt_for_licenses)
+	if ((rc == ESLURM_LICENSES_UNAVAILABLE) &&
+	    (!preempt_for_licenses || (mode == PREEMPT_MODE_SUSPEND)))
 		preemptee_candidates = NULL;
 
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos) {
 		/* Determine QOS preempt mode of first job */
-		job_iterator = list_iterator_create(preemptee_candidates);
-		if ((tmp_job_ptr = list_next(job_iterator))) {
+		if ((tmp_job_ptr = list_peek(preemptee_candidates))) {
 			mode = slurm_job_preempt_mode(tmp_job_ptr);
 		}
-		list_iterator_destroy(job_iterator);
 	}
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos &&
 	    (mode == PREEMPT_MODE_SUSPEND) &&
@@ -2816,7 +2815,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 				       max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN, tmp_cr_type,
 				       job_node_req, future_part, future_usage,
-				       license_list, resv_exc_ptr, false, false,
+				       NULL, resv_exc_ptr, false, false,
 				       preempt_mode, NULL);
 
 			if (rc != SLURM_SUCCESS)
@@ -2832,8 +2831,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 				       max_nodes, req_nodes,
 				       SELECT_MODE_RUN_NOW, tmp_cr_type,
 				       job_node_req, select_part_record,
-				       select_node_usage, license_list,
-				       resv_exc_ptr, false, true, preempt_mode,
+				       select_node_usage, NULL, resv_exc_ptr,
+				       false, true, preempt_mode,
 				       preemptees_to_suspend_by_qos);
 			FREE_NULL_LIST(preemptees_to_suspend_by_qos);
 

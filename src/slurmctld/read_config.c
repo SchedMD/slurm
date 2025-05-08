@@ -1709,7 +1709,7 @@ extern int read_slurm_conf(int recover)
 		trigger_state_restore();
 		controller_reconfig_scheduling();
 	}
-
+	hres_init();
 	_restore_job_accounting();
 
 	/* sort config_list by weight for scheduling */
@@ -2288,10 +2288,11 @@ static void _restore_job_licenses(job_record_t *job_ptr)
 	list_t *license_list = NULL, *license_list_alloc = NULL;
 	bool valid = true, alloc_valid = true;
 
-	license_list = license_validate(job_ptr->licenses, false, false,
+	license_list = license_validate(job_ptr->licenses, false, false, false,
 					job_ptr->tres_req_cnt, &valid);
-	license_list_alloc = license_validate(job_ptr->licenses_allocated,
-					      false, false, NULL, &alloc_valid);
+	license_list_alloc =
+		license_validate(job_ptr->licenses_allocated, false, false,
+				 true, NULL, &alloc_valid);
 	FREE_NULL_LIST(job_ptr->license_list);
 
 	if (valid) {

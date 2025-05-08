@@ -159,8 +159,11 @@ static void _print_license_info(const char *name, license_info_msg_t *msg)
 		       (sorted_lic[cc])->available,
 		       (sorted_lic[cc])->reserved,
 		       (sorted_lic[cc])->remote ? "yes" : "no");
-
-		if (sorted_lic[cc]->remote) {
+		if (sorted_lic[cc]->mode) {
+			printf("%sNodes=%s Mode=%u\n",
+			       one_liner ? " " : "\n    ",
+			       sorted_lic[cc]->nodes, sorted_lic[cc]->mode);
+		} else if (sorted_lic[cc]->remote) {
 			char time_str[256];
 			slurm_make_time_str(&sorted_lic[cc]->last_update,
 					    time_str, sizeof(time_str));
@@ -171,9 +174,6 @@ static void _print_license_info(const char *name, license_info_msg_t *msg)
 		} else {
 			printf("\n");
 		}
-
-		if (name)
-			break;
 	}
 
 	xfree(sorted_lic);

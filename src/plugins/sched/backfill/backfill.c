@@ -248,8 +248,8 @@ static bool soft_time_limit = false;
 /*********************** local functions *********************/
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     bitstr_t *res_bitmap, job_record_t *job_ptr,
-			     node_space_map_t *node_space,
-			     int *node_space_recs);
+			     node_space_map_t *node_space, int *node_space_recs,
+			     time_t orig_start_time);
 static void _adjust_hetjob_prio(uint32_t *prio, uint32_t val);
 static void _attempt_backfill(void);
 static int  _clear_job_estimates(void *x, void *arg);
@@ -1525,7 +1525,7 @@ static int _bf_reserve_resv_licenses(void *x, void *arg)
 	}
 
 	_add_reservation(start_time, end_time, NULL, &fake_job, node_space,
-			 ns_recs_ptr);
+			 ns_recs_ptr, 0);
 
 	return 0;
 }
@@ -1580,12 +1580,6 @@ static int _bf_reserve_running(void *x, void *arg)
 		tmp_bitmap = bit_copy(job_ptr->node_bitmap);
 	}
 
-	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
-		topology_g_whole_topo(tmp_bitmap,
-				      job_ptr->part_ptr->topology_idx);
-	}
-	bit_not(tmp_bitmap);
-
 	/*
 	 * Ensure reservation start time is aligned to the start of the
 	 * backfill map by sending 0 in instead of the actual start time.
@@ -1594,7 +1588,7 @@ static int _bf_reserve_running(void *x, void *arg)
 	 * would fragment the start of the backfill map.
 	 */
 	_add_reservation(0, end_time, tmp_bitmap, job_ptr, node_space,
-			 ns_recs_ptr);
+			 ns_recs_ptr, 0);
 
 	FREE_NULL_BITMAP(tmp_bitmap);
 
@@ -2874,6 +2868,15 @@ TRY_LATER:
 			if ((node_space[j].end_time > start_res) &&
 			     node_space[j].next && (later_start == 0)) {
 				int tmp = node_space[j].next;
+
+				if (job_ptr->license_list &&
+				    !bf_licenses_equal(node_space[tmp].licenses,
+						       node_space[j]
+							       .licenses)) {
+					later_start = node_space[j].end_time;
+					goto later_start_set;
+				}
+
 				COPY_BITMAP(next_bitmap, tmp_bitmap);
 				COPY_BITMAP(current_bitmap, avail_bitmap);
 				bit_and(next_bitmap,
@@ -2894,17 +2897,21 @@ TRY_LATER:
 				if (!bit_super_set(next_bitmap, current_bitmap))
 					later_start = node_space[j].end_time;
 			}
+later_start_set:
 			if (node_space[j].end_time <= start_res)
 				;
 			else if (node_space[j].begin_time <= end_time) {
 				bit_and(avail_bitmap,
 					node_space[j].avail_bitmap);
+				bf_hres_filter(job_ptr, avail_bitmap,
+					       node_space[j].licenses);
 				if (!bf_licenses_avail(node_space[j].licenses,
-						       job_ptr)) {
+						       job_ptr, NULL)) {
 					licenses_unavail = true;
 					later_start = node_space[j].end_time;
 					xfree(job_ptr->state_desc);
 					job_ptr->state_reason = WAIT_LICENSES;
+					break;
 				}
 				if (IS_JOB_WHOLE_TOPO(job_ptr)) {
 					bit_or_not(excluded_topo_bitmap,
@@ -3550,23 +3557,6 @@ skip_start:
 		reject_array_qos = NULL;
 		reject_array_resv = NULL;
 
-		if (IS_JOB_WHOLE_TOPO(job_ptr)) {
-			topology_g_whole_topo(avail_bitmap,
-					      job_ptr->part_ptr->topology_idx);
-		}
-
-		if ((orig_start_time == 0) ||
-		    (job_ptr->start_time < orig_start_time)) {
-			/* Can't start earlier in different partition. */
-			xfree(job_ptr->sched_nodes);
-			job_ptr->sched_nodes = bitmap2node_name(avail_bitmap);
-			/*
-			 * These nodes are planned.  We will set the state
-			 * afterwards.
-			 */
-			bit_or(planned_bitmap, avail_bitmap);
-		}
-		bit_not(avail_bitmap);
 		if ((!bf_one_resv_per_job || !orig_start_time) &&
 		    (!(job_ptr->bit_flags & JOB_MAGNETIC) ||
 		     bf_allow_magnetic_slot)) {
@@ -3597,7 +3587,8 @@ skip_start:
 				break;
 			}
 			_add_reservation(start_time, end_reserve, avail_bitmap,
-					 job_ptr, node_space, &node_space_recs);
+					 job_ptr, node_space, &node_space_recs,
+					 orig_start_time);
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 			_dump_node_space_table(node_space);
@@ -3797,7 +3788,8 @@ static uint32_t _get_job_max_tl(job_record_t *job_ptr, time_t now,
 		    (node_space[j].begin_time < job_ptr->end_time) &&
 		    (!bit_super_set(job_ptr->node_bitmap,
 				    node_space[j].avail_bitmap) ||
-		     !bf_licenses_avail(node_space[j].licenses, job_ptr))) {
+		     !bf_licenses_avail(node_space[j].licenses, job_ptr,
+					job_ptr->node_bitmap))) {
 			/* Job overlaps pending job's resource reservation */
 			if ((comp_time == 0) ||
 			    (comp_time > node_space[j].begin_time))
@@ -3874,11 +3866,13 @@ static bool _more_work(time_t last_backfill_time)
 /* Create a reservation for a job in the future */
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     bitstr_t *res_bitmap, job_record_t *job_ptr,
-			     node_space_map_t *node_space,
-			     int *node_space_recs)
+			     node_space_map_t *node_space, int *node_space_recs,
+			     time_t orig_start_time)
 {
 	bool placed = false;
 	int i, j, one_before = 0, one_after = -1;
+	bitstr_t *res_bitmap_orig = res_bitmap;
+	bitstr_t *res_bitmap_efctv = NULL;
 
 #if 0
 	info("add job start:%u end:%u", start_time, end_reserve);
@@ -3890,6 +3884,27 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			break;
 	}
 #endif
+	if (res_bitmap) {
+		if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+			res_bitmap_efctv = bit_copy(res_bitmap);
+			topology_g_whole_topo(res_bitmap_efctv,
+					      job_ptr->part_ptr->topology_idx);
+			res_bitmap = res_bitmap_efctv;
+		}
+
+		if (!IS_JOB_RUNNING(job_ptr) &&
+		    ((orig_start_time == 0) ||
+		     (job_ptr->start_time < orig_start_time))) {
+			/* Can't start earlier in different partition. */
+			xfree(job_ptr->sched_nodes);
+			job_ptr->sched_nodes = bitmap2node_name(res_bitmap);
+			/*
+			 * These nodes are planned.  We will set the state
+			 * afterwards.
+			 */
+			bit_or(planned_bitmap, res_bitmap);
+		}
+	}
 
 	start_time = MAX(start_time, node_space[0].begin_time);
 	/*
@@ -3949,8 +3964,13 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 
 		/* merge in new usage with this record */
 		if (res_bitmap) {
-			bit_and(node_space[j].avail_bitmap, res_bitmap);
+			bitstr_t *node_bitmap_orig = job_ptr->node_bitmap;
+			bit_and_not(node_space[j].avail_bitmap, res_bitmap);
+			if (!IS_JOB_RUNNING(job_ptr))
+				job_ptr->node_bitmap = res_bitmap_orig;
 			bf_licenses_deduct(node_space[j].licenses, job_ptr);
+			if (!IS_JOB_RUNNING(job_ptr))
+				job_ptr->node_bitmap = node_bitmap_orig;
 			if (bf_topopt_enable) {
 				node_space[j].fragmentation =
 					topology_g_get_fragmentation(
@@ -4000,6 +4020,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 		FREE_NULL_BF_LICENSES(node_space[j].licenses);
 		break;
 	}
+	FREE_NULL_BITMAP(res_bitmap_efctv);
 }
 
 /*
@@ -4018,6 +4039,7 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 	bool overlap = false;
 	int j = 0;
 	bitstr_t *use_bitmap_efctv = NULL;
+	bitstr_t *use_bitmap_orig = use_bitmap;
 
 	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
 		use_bitmap_efctv = bit_copy(use_bitmap);
@@ -4038,8 +4060,8 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 				overlap = true;
 				break;
 			}
-			if (!bf_licenses_avail(node_space[j].licenses,
-					       job_ptr)) {
+			if (!bf_licenses_avail(node_space[j].licenses, job_ptr,
+					       use_bitmap_orig)) {
 				overlap = true;
 				break;
 			}

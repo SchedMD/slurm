@@ -637,6 +637,14 @@ typedef enum {
 	DATA_PARSER_SWITCH_CONFIG_PTR, /* slurm_conf_switches_t* */
 	DATA_PARSER_BLOCK_CONFIG, /* slurm_conf_block_t */
 	DATA_PARSER_BLOCK_CONFIG_PTR, /* slurm_conf_block_t* */
+	DATA_PARSER_H_RESOURCE, /* hierarchical_resource_t */
+	DATA_PARSER_H_RESOURCE_PTR, /* hierarchical_resource_t* */
+	DATA_PARSER_H_RESOURCE_LIST, /* list_t* hierarchical_resource_t* */
+	DATA_PARSER_H_RESOURCE_MODE_FLAG, /* HRES_MODE_* */
+	DATA_PARSER_H_LAYER, /* hierarchy_layer_t */
+	DATA_PARSER_H_LAYER_PTR, /* hierarchy_layer_t* */
+	DATA_PARSER_H_LAYER_LIST, /* list_t* hierarchy_layer_t* */
+	DATA_PARSER_H_RESOURCES_AS_LICENSE_LIST, /* parse H_RESOURCE_LIST to list_t* of licenses_t*  */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

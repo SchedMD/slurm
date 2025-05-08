@@ -39,10 +39,22 @@
 #ifndef _LICENSES_H
 #define _LICENSES_H
 
+#include "src/common/bitstring.h"
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
 
+#define HRES_MODE_OFF 0x00
+#define HRES_MODE_1 0x01
+#define HRES_MODE_2 0x02
+#define HRES_MODE_3 0x03
+
 typedef struct {
+	uint16_t lic_id;
+	uint16_t hres_id;
+} licenses_id_t;
+
+typedef struct {
+	licenses_id_t id;
 	char *		name;		/* name associated with a license */
 	bool op_or; /* Whether the licenses were requested with AND or OR */
 	uint32_t	total;		/* total license configured */
@@ -51,8 +63,10 @@ typedef struct {
 	uint8_t         remote;	        /* non-zero if remote (from database) */
 	uint32_t last_deficit;		/* last calculated deficit */
 	uint32_t last_consumed;		/* consumed count (for remote) */
-	time_t last_update;		/* last updated timestamp (for remote) */
-	uint16_t lic_id;
+	time_t last_update; /* last updated timestamp (for remote) */
+	bitstr_t *node_bitmap;
+	char *nodes;
+	uint8_t mode;
 } licenses_t;
 
 /*
@@ -61,7 +75,7 @@ typedef struct {
 typedef struct xlist bf_licenses_t;
 
 typedef struct {
-	uint16_t lic_id;
+	licenses_id_t id;
 	uint32_t remaining;
 	slurmctld_resv_t *resv_ptr;
 } bf_license_t;
@@ -70,6 +84,13 @@ extern time_t last_license_update;
 
 /* Initialize licenses on this system based upon slurm.conf */
 extern int license_init(char *licenses);
+
+extern int hres_init(void);
+extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
+extern int hres_filter_with_list(job_record_t *job_ptr, bitstr_t *node_bitmap,
+				 list_t *license_list);
+extern void slurm_bf_hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap,
+				 bf_licenses_t *bf_licenses);
 
 /* Update licenses on this system based upon slurm.conf.
  * Remove all previously allocated licenses */
@@ -115,7 +136,7 @@ extern void license_job_merge(job_record_t *job_ptr);
  * RET SLURM_SUCCESS or failure code
  */
 extern int license_job_return_to_list(job_record_t *job_ptr,
-				      list_t *license_list);
+				      list_t *license_list, bool locked);
 
 /*
  * license_job_return - Return the licenses allocated to a job
@@ -160,7 +181,7 @@ extern int license_job_test(job_record_t *job_ptr, time_t when,
  * RET license_list, must be destroyed by caller
  */
 extern list_t *license_validate(char *licenses, bool validate_configured,
-				bool validate_existing,
+				bool validate_existing, bool hres,
 				uint64_t *tres_req_cnt, bool *valid);
 
 /*
@@ -221,6 +242,11 @@ extern char *bf_licenses_to_string(bf_licenses_t *licenses_list);
  * functions is wrapped in a macro that avoids the function call when a NULL
  * licenses list is provided as the first argument.
  */
+#define bf_hres_filter(_x, _y, _z) \
+	(_z ? slurm_bf_hres_filter(_x, _y, _z) : NULL)
+extern void slurm_bf_hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap,
+				 bf_licenses_t *bf_license_list);
+
 #define bf_licenses_copy(_x) (_x ? slurm_bf_licenses_copy(_x) : NULL)
 extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src);
 
@@ -232,9 +258,11 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 				       job_record_t *job_ptr);
 
-#define bf_licenses_avail(_x, _y) (_x ? slurm_bf_licenses_avail(_x, _y) : true)
+#define bf_licenses_avail(_x, _y, _z) \
+	(_x ? slurm_bf_licenses_avail(_x, _y, _z) : true)
 extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
-				    job_record_t *job_ptr);
+				    job_record_t *job_ptr,
+				    bitstr_t *node_bitmap);
 
 #define bf_licenses_equal(_x, _y) (_x ? slurm_bf_licenses_equal(_x, _y) : true)
 extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b);

@@ -727,9 +727,6 @@ int main(int argc, char **argv)
 	} else if (!slurm_conf.job_acct_gather_type)
 		info("Job accounting information stored, but details not gathered");
 
-	if (license_init(slurm_conf.licenses) != SLURM_SUCCESS)
-		fatal("Invalid Licenses value: %s", slurm_conf.licenses);
-
 #ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
@@ -834,6 +831,10 @@ int main(int argc, char **argv)
 		fatal("Extra constraints feature requires a json serializer.");
 	if (switch_g_init(true) != SLURM_SUCCESS)
 		fatal("Failed to initialize switch plugin");
+
+	/* Initialize licenses - serializer required to be initialized */
+	if (license_init(slurm_conf.licenses) != SLURM_SUCCESS)
+		fatal("Invalid Licenses value: %s", slurm_conf.licenses);
 
 	if (original && under_systemd)
 		xsystemd_change_mainpid(getpid());

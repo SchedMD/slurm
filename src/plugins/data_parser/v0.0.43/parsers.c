@@ -73,6 +73,7 @@
 #include "slurmdb_helpers.h"
 
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
+#include "src/slurmctld/licenses.h" /* provides licenses_t - don't use funcs */
 
 #define IS_INFINITE(x) is_overloaded_INFINITE(&(x), sizeof(x))
 #define IS_NO_VAL(x) is_overloaded_NO_VAL(&(x), sizeof(x), false)
@@ -474,6 +475,22 @@ typedef struct {
 	topo_array_item_parse parse_callback;
 	int *rc_ptr;
 } foreach_topo_array_args_t;
+
+typedef struct {
+	uint32_t count;
+	char *nodes;
+} hierarchy_layer_t;
+
+typedef struct {
+	list_t *layers; /* list of hierarchy_layer_t */
+	uint8_t mode;
+	char *name;
+} hierarchical_resource_t;
+
+typedef struct {
+	list_t *licenses;
+	hierarchical_resource_t *resource;
+} resource_as_licenses_args_t;
 
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
@@ -6936,6 +6953,151 @@ static int DUMP_FUNC(TOPOLOGY_FLAT)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+static void FREE_FUNC(H_LAYER)(void *ptr)
+{
+	hierarchy_layer_t *layer = ptr;
+
+	if (!layer)
+		return;
+
+	xfree(layer->nodes);
+	xfree(layer);
+}
+
+static void FREE_FUNC(H_RESOURCE)(void *ptr)
+{
+	hierarchical_resource_t *resource = ptr;
+
+	if (!resource)
+		return;
+
+	xfree(resource->name);
+	FREE_NULL_LIST(resource->layers);
+	xfree(resource);
+}
+
+static int _foreach_layer(void *x, void *arg)
+{
+	hierarchy_layer_t *layer = x;
+	resource_as_licenses_args_t *args = arg;
+	licenses_t *license = xmalloc(sizeof(licenses_t));
+
+	xassert(args && args->resource && args->licenses);
+
+	license->id.lic_id = NO_VAL16;
+	license->id.hres_id = NO_VAL16;
+	license->name = xstrdup(args->resource->name);
+	license->mode = args->resource->mode;
+	license->nodes = xstrdup(layer->nodes);
+	license->total = layer->count;
+	list_append(args->licenses, license);
+
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_resource(void *x, void *arg)
+{
+	resource_as_licenses_args_t *args = arg;
+
+	args->resource = x;
+	xassert(args->resource && args->resource->layers);
+	list_for_each(args->resource->layers, _foreach_layer, args);
+
+	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(H_RESOURCES_AS_LICENSE_LIST)(const parser_t *const parser,
+						   void *obj, data_t *src,
+						   args_t *args,
+						   data_t *parent_path)
+{
+	int rc = SLURM_SUCCESS;
+	list_t **license_list_ptr = obj;
+	list_t *resources = NULL;
+	resource_as_licenses_args_t fargs;
+
+	xassert(license_list_ptr && *license_list_ptr);
+
+	rc = PARSE(H_RESOURCE_LIST, resources, src, parent_path, args);
+	if (rc || !resources)
+		return rc;
+
+	fargs.licenses = *license_list_ptr;
+	list_for_each(resources, _foreach_resource, &fargs);
+
+	FREE_NULL_LIST(resources);
+
+	return rc;
+}
+
+static int _cmp_resource_name(void *x, void *key)
+{
+	hierarchical_resource_t *resource = x;
+	return !xstrcmp(resource->name, key);
+}
+
+static int _foreach_license(void *x, void *arg)
+{
+	licenses_t *license = x;
+	list_t **resources = arg;
+	hierarchical_resource_t *resource = NULL;
+	hierarchy_layer_t *layer = NULL;
+
+	xassert(license);
+	xassert(resources);
+
+	if (!license->nodes)
+		return SLURM_SUCCESS; /* not a hierarchical resource - skip */
+
+	if (!*resources)
+		*resources = list_create(FREE_FUNC(H_RESOURCE));
+
+	resource =
+		list_find_first(*resources, _cmp_resource_name, license->name);
+
+	if (!resource) {
+		resource = xmalloc(sizeof(*resource));
+		resource->name = xstrdup(license->name);
+		resource->mode = license->mode;
+		list_append(*resources, resource);
+	}
+
+	if (!resource->layers)
+		resource->layers = list_create(FREE_FUNC(H_LAYER));
+	layer = xmalloc(sizeof(*layer));
+	layer->nodes = xstrdup(license->nodes);
+	layer->count = license->total;
+
+	list_append(resource->layers, layer);
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(H_RESOURCES_AS_LICENSE_LIST)(const parser_t *const parser,
+						  void *obj, data_t *dst,
+						  args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	list_t **license_list_ptr = obj;
+	list_t *resources = NULL;
+
+	xassert(license_list_ptr);
+
+	if (!*license_list_ptr) {
+		data_set_list(dst);
+		return rc;
+	}
+
+	list_for_each(*license_list_ptr, _foreach_license, &resources);
+	if (resources)
+		rc = DUMP(H_RESOURCE_LIST, resources, dst, args);
+	else
+		data_set_list(dst);
+
+	FREE_NULL_LIST(resources);
+	return rc;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -9979,6 +10141,33 @@ static const parser_t PARSER_ARRAY(TOPOLOGY_CONF)[] = {
 #undef add_cparse
 #undef add_parse
 
+#define add_flag_eq(flag_value, flag_string, desc)                      \
+	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL, XSTRINGIFY(flag_value), \
+			   flag_value, INFINITE8, XSTRINGIFY(INFINITE),  \
+			   flag_string, false, desc)
+static const flag_bit_t PARSER_FLAG_ARRAY(H_RESOURCE_MODE_FLAG)[] = {
+	add_flag_eq(HRES_MODE_1, "MODE_1", NULL),
+	add_flag_eq(HRES_MODE_2, "MODE_2", NULL),
+};
+#undef add_flag_eq
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(hierarchy_layer_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(H_LAYER)[] = {
+	add_parse(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
+	add_parse(UINT32, count, "count", "Resource quantity"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(hierarchical_resource_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(H_RESOURCE)[] = {
+	add_parse(STRING, name, "resource", "Name of hierarchical resource"),
+	add_parse(H_RESOURCE_MODE_FLAG, mode, "mode", "Hierarchical resource mode"),
+	add_parse(H_LAYER_LIST, layers, "layers", "Hierarchical resource layers"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -10549,6 +10738,7 @@ static const parser_t parsers[] = {
 	addpsa(JOB_STATE_RESP_MSG, JOB_STATE_RESP_JOB, job_state_response_msg_t, NEED_NONE, "List of jobs"),
 	addpsa(KILL_JOBS_RESP_MSG, KILL_JOBS_RESP_JOB, kill_jobs_resp_msg_t, NEED_NONE, "List of jobs signal responses"),
 	addpsp(CONTROLLER_PING_PRIMARY, BOOL, int, NEED_NONE, "Is responding slurmctld the primary controller"),
+	addpsp(H_RESOURCES_AS_LICENSE_LIST, H_RESOURCE_LIST, list_t *, NEED_NONE, "List of hierarchical resources"),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_NONE, "Association ID"),
@@ -10782,6 +10972,8 @@ static const parser_t parsers[] = {
 	addpap(TOPOLOGY_BLOCK_CONFIG, topology_block_config_t, NULL, (parser_free_func_t) free_topology_block_config),
 	addpap(SWITCH_CONFIG, slurm_conf_switches_t, NULL, (parser_free_func_t) free_switch_conf),
 	addpap(BLOCK_CONFIG, slurm_conf_block_t, NULL, (parser_free_func_t) free_block_conf),
+	addpap(H_RESOURCE, hierarchical_resource_t, NULL, FREE_FUNC(H_RESOURCE)),
+	addpap(H_LAYER, hierarchy_layer_t, NULL, FREE_FUNC(H_LAYER)),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -10868,6 +11060,7 @@ static const parser_t parsers[] = {
 	addfa(NODE_CR_TYPE, uint32_t),
 	addfa(JOB_RES_CORE_STATUS, JOB_RES_CORE_status_t),
 	addfa(NODE_CERT_FLAGS, uint16_t),
+	addfa(H_RESOURCE_MODE_FLAG, uint8_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
@@ -10906,6 +11099,8 @@ static const parser_t parsers[] = {
 	addpl(SLURM_STEP_ID_STRING_LIST, SLURM_STEP_ID_STRING_PTR, NEED_NONE),
 	addpl(RESERVATION_DESC_MSG_LIST, RESERVATION_DESC_MSG_PTR, NEED_NONE),
 	addpl(INT32_LIST, INT32_PTR, NEED_NONE),
+	addpl(H_RESOURCE_LIST, H_RESOURCE_PTR, NEED_NONE),
+	addpl(H_LAYER_LIST, H_LAYER_PTR, NEED_NONE),
 };
 #undef addpl
 #undef addps
