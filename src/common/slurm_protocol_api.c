@@ -1041,7 +1041,6 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout)
 
 	fd = tls_g_get_conn_fd(tls_conn);
 
-	msg->conn_fd = fd;
 	msg->tls_conn = tls_conn;
 
 	if (timeout <= 0) {
@@ -1130,7 +1129,6 @@ extern list_t *slurm_receive_msgs(void *tls_conn, int steps, int timeout)
 	}
 
 	slurm_msg_t_init(&msg);
-	msg.conn_fd = fd;
 
 	if (timeout <= 0) {
 		/* convert secs to msec */
@@ -1315,7 +1313,6 @@ extern list_t *slurm_receive_resp_msgs(void *tls_conn, int steps, int timeout)
 	}
 
 	slurm_msg_t_init(&msg);
-	msg.conn_fd = fd;
 
 	if (timeout <= 0) {
 		/* convert secs to msec */
@@ -1469,11 +1466,6 @@ extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
 		peer = fd_resolve_peer(fd);
 	}
 
-	/*
-	 * Set msg connection fd to accepted fd. This allows slurmd_req() to
-	 * close the accepted connection if necessary.
-	 */
-	msg->conn_fd = fd;
 	/* this is the direct peer connection */
 	memcpy(&msg->address, orig_addr, sizeof(slurm_addr_t));
 
@@ -2009,10 +2001,6 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	int rc;
 	slurm_msg_t resp_msg;
 
-	if ((source_msg->conn_fd < 0) && !source_msg->conn &&
-	    !source_msg->conmgr_fd)
-		return ENOTCONN;
-
 	slurm_resp_msg_init(&resp_msg, source_msg, msg_type, data);
 
 	if (source_msg->conmgr_fd) {
@@ -2027,7 +2015,6 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 		return rc;
 	}
 
-	resp_msg.conn_fd = source_msg->conn_fd;
 	resp_msg.conn = source_msg->conn;
 
 	rc = slurm_send_node_msg(source_msg->tls_conn, &resp_msg);

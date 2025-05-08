@@ -1769,7 +1769,6 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	 * invalid.
 	 */
 	msg->conmgr_fd = NULL;
-	msg->conn_fd = input_fd;
 	if (tls_conn) {
 		msg->tls_conn = tls_conn;
 	} else {
@@ -1804,7 +1803,6 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 		msg->tls_conn = NULL;
 		log_flag(TLS, "Destroyed server TLS connection for incoming RPC on fd %d->%d",
 			 input_fd, output_fd);
-		msg->conn_fd = -1;
 		slurm_free_msg(msg);
 	}
 

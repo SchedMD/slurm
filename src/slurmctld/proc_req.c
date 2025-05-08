@@ -3118,7 +3118,6 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		tls_g_destroy_conn(msg->tls_conn, true);
-		msg->conn_fd = -1;
 		msg->tls_conn = NULL;
 		slurm_free_msg(msg);
 		return;
@@ -5817,7 +5816,6 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 	msg.auth_ids_set = persist_conn->auth_ids_set;
 
 	msg.conn = persist_conn;
-	msg.conn_fd = persist_conn->fd;
 
 	msg.msg_type = persist_msg->msg_type;
 	msg.data = persist_msg->data;
@@ -5866,7 +5864,6 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	if (!validate_slurm_user(msg->auth_uid)) {
 		memset(&p_tmp, 0, sizeof(p_tmp));
-		p_tmp.fd = msg->conn_fd;
 		p_tmp.cluster_name = persist_init->cluster_name;
 		p_tmp.version = persist_init->version;
 		p_tmp.shutdown = &slurmctld_config.shutdown_time;
@@ -5888,9 +5885,6 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	persist_conn->cluster_name = persist_init->cluster_name;
 	persist_init->cluster_name = NULL;
-
-	persist_conn->fd = msg->conn_fd;
-	msg->conn_fd = -1;
 
 	persist_conn->tls_conn = msg->tls_conn;
 	msg->tls_conn = NULL;
