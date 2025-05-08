@@ -559,7 +559,7 @@ static int _change_user_name(slurmdb_user_rec_t *user)
 	xassert(user->name);
 	xassert(user->old_name);
 
-	if (uid_from_string(user->name, &pw_uid) < 0) {
+	if (uid_from_string(user->name, &pw_uid) != SLURM_SUCCESS) {
 		debug("%s: couldn't get new uid for user %s",
 		      __func__, user->name);
 		user->uid = NO_VAL;
@@ -971,7 +971,8 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc)
 		g_user_assoc_count++;
 		if (assoc->uid == NO_VAL || assoc->uid == INFINITE ||
 				assoc->uid == 0) {
-			if (uid_from_string(assoc->user, &pw_uid) < 0)
+			if (uid_from_string(assoc->user, &pw_uid) !=
+			    SLURM_SUCCESS)
 				assoc->uid = NO_VAL;
 			else
 				assoc->uid = pw_uid;
@@ -1180,7 +1181,7 @@ static int _post_user_list(list_t *user_list)
 		*/
 		if (!user->default_wckey)
 			user->default_wckey = xstrdup("");
-		if (uid_from_string (user->name, &pw_uid) < 0) {
+		if (uid_from_string(user->name, &pw_uid) != SLURM_SUCCESS) {
 			debug("%s: couldn't get a uid for user: %s",
 			      __func__, user->name);
 			user->uid = NO_VAL;
@@ -1205,7 +1206,7 @@ static int _post_wckey_list(list_t *wckey_list)
 
 	while ((wckey = list_next(itr))) {
 		uid_t pw_uid;
-		if (uid_from_string (wckey->user, &pw_uid) < 0) {
+		if (uid_from_string(wckey->user, &pw_uid) != SLURM_SUCCESS) {
 			if (slurmdbd_conf)
 				debug("post wckey: couldn't get a uid "
 				      "for user %s",
@@ -4589,7 +4590,8 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			if (uid_from_string (object->user, &pw_uid) < 0) {
+			if (uid_from_string(object->user, &pw_uid) !=
+			    SLURM_SUCCESS) {
 				debug("wckey add couldn't get a uid "
 				      "for user %s",
 				      object->user);
@@ -4705,7 +4707,8 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			if (uid_from_string (object->name, &pw_uid) < 0) {
+			if (uid_from_string(object->name, &pw_uid) !=
+			    SLURM_SUCCESS) {
 				debug("user add couldn't get a uid for user %s",
 				      object->name);
 				object->uid = NO_VAL;
@@ -6450,7 +6453,7 @@ static int _for_each_assoc_missing_uids(void *x, void *arg)
 	if (!object->user || (object->uid != NO_VAL))
 		return 1;
 
-	if (uid_from_string(object->user, &pw_uid) < 0) {
+	if (uid_from_string(object->user, &pw_uid) != SLURM_SUCCESS) {
 		debug2("%s: refresh association couldn't get a uid for user %s",
 		       __func__, object->user);
 	} else {
@@ -6479,7 +6482,7 @@ static int _for_each_wckey_missing_uids(void *x, void *arg)
 	if (!object->user || (object->uid != NO_VAL))
 		return 1;
 
-	if (uid_from_string(object->user, &pw_uid) < 0) {
+	if (uid_from_string(object->user, &pw_uid) != SLURM_SUCCESS) {
 		debug2("%s: refresh wckey couldn't get a uid for user %s",
 		       __func__, object->user);
 	} else {
@@ -6502,7 +6505,7 @@ static int _for_each_user_missing_uids(void *x, void *arg)
 	if (!object->name || (object->uid != NO_VAL))
 		return 1;
 
-	if (uid_from_string(object->name, &pw_uid) < 0) {
+	if (uid_from_string(object->name, &pw_uid) != SLURM_SUCCESS) {
 		debug2("%s: refresh user couldn't get uid for user %s",
 		       __func__, object->name);
 	} else {

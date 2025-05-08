@@ -1945,8 +1945,8 @@ static int _modify_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			uid_t pw_uid;
 			char *name;
 			name = list_peek (user_cond->assoc_cond->user_list);
-		        if ((uid_from_string (name, &pw_uid) >= 0)
-			    && (pw_uid == slurmdbd_conn->conn->auth_uid)) {
+			if ((uid_from_string(name, &pw_uid) == SLURM_SUCCESS) &&
+			    (pw_uid == slurmdbd_conn->conn->auth_uid)) {
 				same_user = 1;
 				goto is_same_user;
 			}

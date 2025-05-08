@@ -367,7 +367,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 		slurmdb_assoc_rec_t *assoc = NULL;
 		uid_t pw_uid;
 
-		if (uid_from_string (row[0], &pw_uid) < 0) {
+		if (uid_from_string(row[0], &pw_uid) != SLURM_SUCCESS) {
 			assoc =	xmalloc(sizeof(slurmdb_assoc_rec_t));
 			list_append(ret_list, assoc);
 

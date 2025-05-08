@@ -1373,14 +1373,21 @@ static list_t *_build_user_list(char *str)
 	my_user_list = xstrdup(str);
 	user = strtok_r(my_user_list, ",", &tmp_char);
 	while (user) {
+		int rc;
 		uid_t some_uid;
-		if (uid_from_string(user, &some_uid) == 0) {
+
+		/*
+		 * Allow numeric uids that no longer exist on underlying system
+		 * so that any old jobs that still use them can be identified.
+		 */
+		rc = uid_from_string(user, &some_uid);
+		if ((rc != SLURM_SUCCESS) && (rc != ESLURM_USER_ID_UNKNOWN)) {
+			error("Invalid user: %s\n", user);
+		} else {
 			uint32_t *user_id = NULL;
 			user_id = xmalloc(sizeof(uint32_t));
 			*user_id = (uint32_t) some_uid;
 			list_append(my_list, user_id);
-		} else {
-			error("Invalid user: %s\n", user);
 		}
 		user = strtok_r(NULL, ",", &tmp_char);
 	}

@@ -89,6 +89,7 @@ static uid_t *_parse_users(char *buf)
 {
 	char *tmp, *tok, *save_ptr = NULL;
 	int inx = 0, array_size;
+	uid_t uid = NO_VAL;
 	uid_t *user_array = NULL;
 
 	if (!buf)
@@ -98,10 +99,12 @@ static uid_t *_parse_users(char *buf)
 	user_array = xcalloc(array_size, sizeof(uid_t));
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
-		if ((uid_from_string(tok, user_array + inx) == -1) ||
-		    (user_array[inx] == 0)) {
+		uid = NO_VAL;
+		if ((uid_from_string(tok, &uid) != SLURM_SUCCESS) ||
+		    (uid == 0)) {
 			error("%s: ignoring invalid user: %s", __func__, tok);
 		} else {
+			user_array[inx] = uid;
 			if (++inx >= array_size) {
 				array_size *= 2;
 				user_array = xrealloc(user_array,

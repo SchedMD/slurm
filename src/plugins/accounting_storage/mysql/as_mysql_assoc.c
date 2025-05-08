@@ -2760,7 +2760,8 @@ static int _add_assoc_cond_user(void *x, void *arg)
 	bool set_def = false;
 
 	add_assoc_cond->add_assoc->assoc.user = x;
-	if (uid_from_string(add_assoc_cond->add_assoc->assoc.user, &pw_uid) < 0)
+	if (uid_from_string(add_assoc_cond->add_assoc->assoc.user, &pw_uid) !=
+	    SLURM_SUCCESS)
 		add_assoc_cond->add_assoc->assoc.uid = NO_VAL;
 	else
 		add_assoc_cond->add_assoc->assoc.uid = pw_uid;
@@ -3530,8 +3531,8 @@ extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			uid_t pw_uid;
 			char *name;
 			name = list_peek(assoc_cond->user_list);
-		        if ((uid_from_string (name, &pw_uid) >= 0)
-			    && (pw_uid == uid)) {
+			if ((uid_from_string(name, &pw_uid) == SLURM_SUCCESS) &&
+			    (pw_uid == uid)) {
 				uint16_t is_def = assoc->is_def;
 				uint32_t def_qos_id = assoc->def_qos_id;
 				/* Make sure they aren't trying to

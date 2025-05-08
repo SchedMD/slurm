@@ -433,7 +433,7 @@ static int _set_options(const int argc, char **argv)
 			params.keepfiles = 1;
 			break;
 		case 'u':
-			if (uid_from_string(optarg, &u) < 0) {
+			if (uid_from_string(optarg, &u) != SLURM_SUCCESS) {
 				error("No such user --uid=\"%s\"",
 				      optarg);
 				return -1;

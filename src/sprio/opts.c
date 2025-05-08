@@ -525,7 +525,7 @@ static list_t *_build_user_list(char *str)
 	my_user_list = xstrdup(str);
 	user = strtok_r(my_user_list, ",", &tmp_char);
 	while (user) {
-		if (uid_from_string(user, &uid) < 0) {
+		if (uid_from_string(user, &uid) != SLURM_SUCCESS) {
 			error("Invalid user: %s\n", user);
 		} else {
 			uint32_t *u_tmp = xmalloc(sizeof( uint32_t ));

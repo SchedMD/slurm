@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 			sibling_flag = 1;
 			break;
 		case (int)'u':
-			if (uid_from_string(optarg, &euid) < 0) {
+			if (uid_from_string(optarg, &euid) != SLURM_SUCCESS) {
 				error("--uid=\"%s\" invalid", optarg);
 				exit(exit_code);
 			}
