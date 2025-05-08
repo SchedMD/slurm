@@ -3930,13 +3930,9 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 	    !_slurm_authorized_user(msg->auth_uid)) {
 		error("stat_jobacct from uid %u for job %u owned by uid %u",
 		      msg->auth_uid, req->job_id, uid);
-
-		if (msg->conn_fd >= 0) {
-			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-			/* or bad in this case */
-			close(fd);
-			return;
-		}
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		/* or bad in this case */
+		return;
 	}
 
 	resp = xmalloc(sizeof(job_step_stat_t));
