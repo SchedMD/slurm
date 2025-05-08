@@ -215,7 +215,6 @@ again:
 		goto cleanup;
 	}
 
-	msg->conn_fd = fd;
 	msg->tls_conn = tls_conn;
 	(*obj->ops->handle_msg)(obj->arg, msg);
 

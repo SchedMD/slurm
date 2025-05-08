@@ -88,13 +88,6 @@ static bool _comm_fail_log(persist_conn_t *persist_conn)
 	return false;
 }
 
-/* static void _reopen_persist_conn(persist_conn_t *persist_conn) */
-/* { */
-/*	xassert(persist_conn); */
-/*	fd_close(&persist_conn->fd); */
-/*	slurm_persist_conn_open(persist_conn); */
-/* } */
-
 /* Wait until a file is readable,
  * RET false if can not be read */
 static bool _conn_readable(persist_conn_t *persist_conn)
@@ -111,7 +104,7 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 	if (tls_g_peek(persist_conn->tls_conn))
 		return true;
 
-	ufds.fd     = persist_conn->fd;
+	ufds.fd = tls_g_get_conn_fd(persist_conn->tls_conn);
 	ufds.events = POLLIN;
 	while (!(*persist_conn->shutdown)) {
 		if (persist_conn->timeout) {
@@ -127,27 +120,27 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 		if (rc == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN)) {
 				debug3("%s: retrying poll for fd %d: %m",
-					__func__, persist_conn->fd);
+					__func__, ufds.fd);
 				continue;
 			}
 			error("%s: poll error for fd %d: %m",
-			      __func__, persist_conn->fd);
+			      __func__, ufds.fd);
 			return false;
 		}
 		if (rc == 0) {
 			debug("%s: poll for fd %d timeout after %d msecs of total wait %d msecs.",
-			      __func__, persist_conn->fd, time_left,
+			      __func__, ufds.fd, time_left,
 			      persist_conn->timeout);
 			return false;
 		}
 		if (ufds.revents & POLLHUP) {
 			log_flag(NET, "%s: persistent connection for fd %d closed",
-				 __func__, persist_conn->fd);
+				 __func__, ufds.fd);
 			return false;
 		}
 		if (ufds.revents & POLLNVAL) {
 			error("%s: persistent connection for fd %d is invalid",
-			       __func__, persist_conn->fd);
+			       __func__, ufds.fd);
 			return false;
 		}
 		if (ufds.revents & POLLERR) {
@@ -164,7 +157,7 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 		}
 		if ((ufds.revents & POLLIN) == 0) {
 			error("%s: persistent connection for fd %d missing POLLIN flag with revents 0x%"PRIx64,
-			      __func__, persist_conn->fd, (uint64_t) ufds.revents);
+			      __func__, ufds.fd, (uint64_t) ufds.revents);
 			return false;
 		}
 		if (ufds.revents == POLLIN) {
@@ -177,7 +170,7 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 	}
 
 	debug("%s: shutdown request detected for fd %d",
-	      __func__, persist_conn->fd);
+	      __func__, ufds.fd);
 	return false;
 }
 
@@ -225,7 +218,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, void *arg)
 	if (persist_conn->flags & PERSIST_FLAG_ALREADY_INITED)
 		first = false;
 
-	if (!(persist_conn->tls_conn = tls_g_create_conn(&tls_args))) {
+	if (first && !(persist_conn->tls_conn = tls_g_create_conn(&tls_args))) {
 		error("%s: tls_g_create_conn() failed negotiation, closing connection %d(%s)",
 		      __func__, persist_conn->fd, persist_conn->rem_host);
 		(void) close(persist_conn->fd);
@@ -864,9 +857,9 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 		 * nonblocking read means just that.
 		 */
 		if (ufds.revents & POLLHUP ||
-		    (recv(persist_conn->fd, &temp, 1, 0) == 0)) {
+		    (recv(ufds.fd, &temp, 1, 0) == 0)) {
 			log_flag(NET, "%s: persistent connection %d is closed for writes",
-				 __func__, persist_conn->fd);
+				 __func__, ufds.fd);
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
 			tls_g_set_graceful_shutdown(persist_conn->tls_conn,
@@ -875,20 +868,19 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 		}
 		if (ufds.revents & POLLNVAL) {
 			error("%s: persistent connection %d is invalid",
-			      __func__, persist_conn->fd);
+			      __func__, ufds.fd);
 			return 0;
 		}
 		if (ufds.revents & POLLERR) {
 			if (_comm_fail_log(persist_conn)) {
 				int rc, err;
-				if ((rc = fd_get_socket_error(persist_conn->fd,
-							      &err)))
+				if ((rc = fd_get_socket_error(ufds.fd, &err)))
 					error("%s: unable to get error for persistent connection %d: %s",
-					      __func__, persist_conn->fd,
+					      __func__, ufds.fd,
 					      strerror(rc));
 				else
 					error("%s: persistent connection %d experienced an error: %s",
-					      __func__, persist_conn->fd,
+					      __func__, ufds.fd,
 					      strerror(err));
 				errno = err;
 			}
@@ -898,7 +890,7 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 		}
 		if ((ufds.revents & POLLOUT) == 0) {
 			error("%s: persistent connection %d events %d",
-			      __func__, persist_conn->fd, ufds.revents);
+			      __func__, ufds.fd, ufds.revents);
 			return 0;
 		}
 		/* revents == POLLOUT */
@@ -918,7 +910,7 @@ extern int slurm_persist_send_msg(persist_conn_t *persist_conn,
 
 	xassert(persist_conn);
 
-	if (persist_conn->fd < 0)
+	if (!persist_conn->tls_conn)
 		return EAGAIN;
 
 	if (!buffer)
