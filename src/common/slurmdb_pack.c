@@ -594,9 +594,9 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 
 		pack16(object->rpc_version, buffer);
 		persist_conn = object->fed.recv;
-		pack8((persist_conn && persist_conn->fd != -1) ? 1 : 0, buffer);
+		pack8((persist_conn && persist_conn->tls_conn) ? 1 : 0, buffer);
 		persist_conn = object->fed.send;
-		pack8((persist_conn && persist_conn->fd != -1) ? 1 : 0, buffer);
+		pack8((persist_conn && persist_conn->tls_conn) ? 1 : 0, buffer);
 		packstr(object->tres_str, buffer);
 	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
 		if (!object) {
@@ -656,9 +656,9 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 
 		pack16(object->rpc_version, buffer);
 		persist_conn = object->fed.recv;
-		pack8((persist_conn && persist_conn->fd != -1) ? 1 : 0, buffer);
+		pack8((persist_conn && persist_conn->tls_conn) ? 1 : 0, buffer);
 		persist_conn = object->fed.send;
-		pack8((persist_conn && persist_conn->fd != -1) ? 1 : 0, buffer);
+		pack8((persist_conn && persist_conn->tls_conn) ? 1 : 0, buffer);
 		packstr(object->tres_str, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -723,9 +723,9 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 
 		pack16(object->rpc_version, buffer);
 		persist_conn = object->fed.recv;
-		pack8((persist_conn && persist_conn->fd != -1) ? 1 : 0, buffer);
+		pack8((persist_conn && persist_conn->tls_conn) ? 1 : 0, buffer);
 		persist_conn = object->fed.send;
-		pack8((persist_conn && persist_conn->fd != -1) ? 1 : 0, buffer);
+		pack8((persist_conn && persist_conn->tls_conn) ? 1 : 0, buffer);
 		packstr(object->tres_str, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
