@@ -864,9 +864,9 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 		 * nonblocking read means just that.
 		 */
 		if (ufds.revents & POLLHUP ||
-		    (recv(persist_conn->fd, &temp, 1, 0) == 0)) {
+		    (recv(ufds.fd, &temp, 1, 0) == 0)) {
 			log_flag(NET, "%s: persistent connection %d is closed for writes",
-				 __func__, persist_conn->fd);
+				 __func__, ufds.fd);
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
 			tls_g_set_graceful_shutdown(persist_conn->tls_conn,
@@ -875,20 +875,19 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 		}
 		if (ufds.revents & POLLNVAL) {
 			error("%s: persistent connection %d is invalid",
-			      __func__, persist_conn->fd);
+			      __func__, ufds.fd);
 			return 0;
 		}
 		if (ufds.revents & POLLERR) {
 			if (_comm_fail_log(persist_conn)) {
 				int rc, err;
-				if ((rc = fd_get_socket_error(persist_conn->fd,
-							      &err)))
+				if ((rc = fd_get_socket_error(ufds.fd, &err)))
 					error("%s: unable to get error for persistent connection %d: %s",
-					      __func__, persist_conn->fd,
+					      __func__, ufds.fd,
 					      strerror(rc));
 				else
 					error("%s: persistent connection %d experienced an error: %s",
-					      __func__, persist_conn->fd,
+					      __func__, ufds.fd,
 					      strerror(err));
 				errno = err;
 			}
@@ -898,7 +897,7 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 		}
 		if ((ufds.revents & POLLOUT) == 0) {
 			error("%s: persistent connection %d events %d",
-			      __func__, persist_conn->fd, ufds.revents);
+			      __func__, ufds.fd, ufds.revents);
 			return 0;
 		}
 		/* revents == POLLOUT */
