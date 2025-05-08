@@ -716,9 +716,8 @@ extern void slurm_persist_conn_close(persist_conn_t *persist_conn)
 	if (!persist_conn)
 		return;
 
-	tls_g_destroy_conn(persist_conn->tls_conn, false);
+	tls_g_destroy_conn(persist_conn->tls_conn, true);
 	persist_conn->tls_conn = NULL;
-	fd_close(&persist_conn->fd);
 }
 
 extern int slurm_persist_conn_reopen(persist_conn_t *persist_conn)
