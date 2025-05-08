@@ -825,14 +825,16 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 
 	if (!persist_conn || !persist_conn->shutdown)
 		fatal("%s: unexpected NULL persist_conn", __func__);
-	else if (*persist_conn->shutdown) {
+
+	if (*persist_conn->shutdown) {
 		log_flag(NET, "%s: called on shutdown fd:%d to host %s:%hu",
 		         __func__, persist_conn->fd,
 		         (persist_conn->rem_host ? persist_conn->rem_host :
                                                    "unknown"),
 		         persist_conn->rem_port);
 		return -1;
-	} else if (persist_conn->fd < 0) {
+	}
+	if (persist_conn->fd < 0) {
 		log_flag(NET, "%s: called on invalid fd:%d to host %s:%hu",
 		         __func__, persist_conn->fd,
 		         (persist_conn->rem_host ? persist_conn->rem_host :
