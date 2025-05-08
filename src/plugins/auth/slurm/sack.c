@@ -282,6 +282,7 @@ extern void init_sack_conmgr(void)
 		if ((sack_fd = atoi(env_fd)) < 0)
 			fatal("%s: Invalid %s=%s environment variable",
 			      __func__, SACK_RECONFIG_ENV, env_fd);
+		unsetenv(SACK_RECONFIG_ENV);
 	} else {
 		char *runtime_dir = NULL, *runtime_socket = NULL;
 		slurm_addr_t addr = {0};
@@ -347,13 +348,13 @@ extern void init_sack_conmgr(void)
 	 * We do not need to call conmgr_run() here since only the daemons
 	 * get here, and all the daemons call conmgr_run() separately.
 	 */
-
-	/* Prepare for reconfigure */
-	setenvf(NULL, SACK_RECONFIG_ENV, "%d", sack_fd);
-	fd_set_noclose_on_exec(sack_fd);
 }
 
 extern int auth_p_get_reconfig_fd(void)
 {
+	/* Prepare for reconfigure */
+	setenvf(NULL, SACK_RECONFIG_ENV, "%d", sack_fd);
+	fd_set_noclose_on_exec(sack_fd);
+
 	return sack_fd;
 }
