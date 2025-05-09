@@ -370,8 +370,10 @@ static parse_state_t _yaml_to_data(int depth, yaml_parser_t *parser,
 
 		if (!yaml_parser_parse(parser, &event)) {
 			yaml_event_delete(&event);
-			error("%s: YAML parser error: %s",
-			      __func__, (char *) parser->problem);
+			error("%s: YAML parser error: %s, line: %lu, column: %lu",
+			      __func__, (char *) parser->problem,
+			      parser->problem_mark.line,
+			      parser->problem_mark.column);
 			*rc = ESLURM_DATA_PARSER_INVALID_STATE;
 			return PARSE_FAIL;
 		}
