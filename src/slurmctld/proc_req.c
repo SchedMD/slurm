@@ -2559,6 +2559,26 @@ static int _find_avail_future_node(slurm_msg_t *msg)
 			node_ptr->node_state |= NODE_STATE_DYNAMIC_FUTURE;
 			node_ptr->last_response = now;
 
+			/*
+			 * As we don't validate the node specs until the
+			 * 2nd registration RPC, and slurmd only sends
+			 * instance-like attributes in the 1st
+			 * registration RPC of its lifetime, we need to
+			 * store these values here.
+			 */
+			if (reg_msg->instance_id) {
+				xfree(node_ptr->instance_id);
+				if (reg_msg->instance_id[0])
+					node_ptr->instance_id =
+						xstrdup(reg_msg->instance_id);
+			}
+			if (reg_msg->instance_type) {
+				xfree(node_ptr->instance_type);
+				if (reg_msg->instance_type[0])
+					node_ptr->instance_type =
+						xstrdup(reg_msg->instance_type);
+			}
+
 			bit_clear(future_node_bitmap, node_ptr->index);
 			xfree(comm_name);
 
