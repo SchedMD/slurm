@@ -130,6 +130,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 				  void *tctx)
 {
 	tree_context_t *ctx = tctx;
+	bool *added = xcalloc(ctx->switch_count, sizeof(bool));
 
 	for (int i = 0; i < ctx->switch_count; i++) {
 		bool add, in_switch;
@@ -146,12 +147,16 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 			continue;
 
 		while (sw != SWITCH_NO_PARENT) {
+			if (added[sw])
+				break;
+
 			if (add && !in_switch) {
 				debug2("%s: add %s to %s",
 				       __func__, node_ptr->name,
 				       ctx->switch_table[sw].name);
 				bit_set(ctx->switch_table[sw].node_bitmap,
 					node_ptr->index);
+				added[sw] = true;
 			} else if (!add && in_switch) {
 				debug2("%s: remove %s from %s",
 				       __func__, node_ptr->name,
@@ -167,6 +172,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 		}
 	}
 
+	xfree(added);
 	return SLURM_SUCCESS;
 }
 
