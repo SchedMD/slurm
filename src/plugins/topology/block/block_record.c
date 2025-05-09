@@ -200,12 +200,31 @@ static int _cmp_block_level(const void *x, const void *y)
 static int _list_to_bitmap(void *x, void *arg)
 {
 	int *size = x;
-	bitstr_t *block_levels = arg;
+	block_context_t *ctx = arg;
+	int block_level;
+	double tmp;
 
-	if (*size >= MAX_BLOCK_LEVELS)
+	if (*size <= 0)
 		return 1;
 
-	bit_set(block_levels, *size);
+	if (!ctx->bblock_node_cnt)
+		ctx->bblock_node_cnt = *size;
+
+	if (*size % ctx->bblock_node_cnt)
+		return 1;
+
+	block_level = *size / ctx->bblock_node_cnt;
+	tmp = log2(block_level);
+
+	if (tmp != floor(tmp))
+		return 1;
+
+	block_level = tmp;
+
+	if (block_level >= MAX_BLOCK_LEVELS)
+		return 1;
+
+	bit_set(ctx->block_levels, block_level);
 
 	return 0;
 }
@@ -236,8 +255,11 @@ extern int block_record_validate(topology_ctx_t *tctx)
 		if (!list_count(block_config->block_sizes)) {
 			bit_nset(ctx->block_levels, 0, 4);
 		} else {
-			list_for_each(block_config->block_sizes,
-				      _list_to_bitmap, ctx->block_levels);
+			if (list_for_each(block_config->block_sizes,
+					  _list_to_bitmap, ctx) < 0) {
+				fatal("Invalid BlockSizes value in topology %s",
+				      tctx->name);
+			}
 			bit_set(ctx->block_levels, 0);
 		}
 
