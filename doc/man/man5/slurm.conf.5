@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "April 2025" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "May 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1647,30 +1647,29 @@ mechanism, while new steps will use the new mechanism.
 
 .TP
 \fBJobAcctGatherFrequency\fR
-The job accounting and profiling sampling intervals.
-The supported format is follows:
+The job accounting and profiling sampling intervals, specified for each data
+type. Multiple comma\-separated \fB<datatype>=<interval>\fR intervals may be
+specified. If an interval is provided without a datatype, it will be assigned
+to the \fBtask\fR datatype. Supported datatypes are as follows:
 .IP
 .RS
 .TP 12
-\fBJobAcctGatherFrequency\fR=<\fIdatatype\fR>=<\fIinterval\fR>
-where \fI<datatype>\fR=\fI<interval>\fR specifies the task sampling
-interval for the jobacct_gather plugin or a
-sampling interval for a profiling type by the
-acct_gather_profile plugin. Multiple,
-comma\-separated \fI<datatype>\fR=\fI<interval>\fR intervals
-may be specified. Supported datatypes are as follows:
-.IP
-.RS
-.TP
 Affects accounting and profiling:
 .IP
 .RS
 
 .TP
 \fBtask\fR=<\fIinterval\fR>
-where <\fIinterval\fR> is the task sampling interval in seconds
-for the jobacct_gather plugins and for task
-profiling by the acct_gather_profile plugin.
+sampling interval in seconds for task usage by the jobacct_gather plugins and
+for task profiling by the acct_gather_profile plugin.
+Defaults to 30.
+.br
+.br
+If this interval is 0 (disabled), accounting information is collected only at
+job termination, which reduces Slurm
+interference with the job, but also means that the statistics about a job
+are only derived from a single sample and don't reflect the average or maximum
+of several samples throughout the life of the job.
 .IP
 .RE
 
@@ -1681,35 +1680,25 @@ Affects profiling only:
 
 .TP
 \fBenergy\fR=<\fIinterval\fR>
-where \fI<interval>\fR is the sampling interval in seconds
-for energy profiling using the acct_gather_energy plugin
+sampling interval in seconds for energy profiling using the acct_gather_energy
+plugin. Defaults to 0 (disabled).
 .IP
 
 .TP
 \fBnetwork\fR=<\fIinterval\fR>
-where \fI<interval>\fR is the sampling interval in seconds
-for infiniband profiling using the acct_gather_interconnect
-plugin.
+sampling interval in seconds for infiniband profiling using the
+acct_gather_interconnect plugin. Defaults to 0 (disabled).
 .IP
 
 .TP
 \fBfilesystem\fR=<\fIinterval\fR>
-where \fI<interval>\fR is the sampling interval in seconds
-for filesystem profiling using the acct_gather_filesystem
-plugin.
-
+sampling interval in seconds for filesystem profiling using the
+acct_gather_filesystem plugin. Defaults to 0 (disabled).
+.IP
+.br
 .RE
 .RE
-The default value for task sampling interval
-is 30 seconds. The default value for all other intervals is 0.
-An interval of 0 disables sampling of the specified type.
-If the task sampling interval is 0, accounting
-information is collected only at job termination, which reduces Slurm
-interference with the job, but also means that the statistics about a job
-don't reflect the average or maximum of several samples throughout the life
-of the job, but just show the information collected in the single sample.
-.br
-.br
+.IP
 Smaller (non\-zero) values have a greater impact upon job performance,
 but a value of 30 seconds is not likely to be noticeable for
 applications having less than 10,000 tasks.
@@ -1721,7 +1710,6 @@ Users can independently override each interval on a per job basis using the
 This value should be lower or equal to \fBEnergyIPMIFreq\fR when using
 \fIacct_gather_energy/ipmi\fR or xcc plugins as otherwise it will unnecessarily
 get repeated values on successive polls.
-.RE
 .IP
 
 .TP
