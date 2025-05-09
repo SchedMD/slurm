@@ -1260,15 +1260,16 @@ an option of "limits", then resource limits will not be enforced on that cluster
 See <a href="resource_limits.html">Resource Limits</a> for more information.</p>
 
 <p><a id="licenses"><b>Can Slurm be configured to manage licenses?</b></a><br>
-Slurm is not currently integrated with FlexLM, but it does provide for the
-allocation of global resources called licenses. Use the Licenses configuration
-parameter in your slurm.conf file (e.g. "Licenses=foo:10,bar:20").
-Jobs can request licenses and be granted exclusive use of those resources
-(e.g. "sbatch --licenses=foo:2,bar:1 ...").
+Slurm does not provide a native integration with third party license managers,
+but it does provide for the allocation of global resources called licenses.
+Use the Licenses configuration parameter in your slurm.conf file
+(e.g. "Licenses=foo:10,bar:20"). Jobs can request licenses and be granted
+exclusive use of those resources (e.g. "sbatch --licenses=foo:2,bar:1 ...").
 It is not currently possible to change the total number of licenses on a system
 without restarting the slurmctld daemon, but it is possible to dynamically
 reserve licenses and remove them from being available to jobs on the system
-(e.g. "scontrol update reservation=licenses_held licenses=foo:5,bar:2").</p>
+(e.g. "scontrol update reservation=licenses_held licenses=foo:5,bar:2").
+For more information see the <a href="licenses.html">Licenses Guide</a>.</p>
 
 <p><a id="torque"><b>How easy is it to switch from PBS or Torque to Slurm?</b></a><br>
 A lot of users don't even notice the difference.
@@ -2422,6 +2423,6 @@ dset TV::parallel_configs {
 }
 !-->
 
-<p style="text-align:center;">Last modified 12 March 2025</p>
+<p style="text-align:center;">Last modified 09 May 2025</p>
 
 <!--#include virtual="footer.txt"-->

@@ -83,6 +83,17 @@ LicenseName=fluent
 <a class="slurm_link" href="#remote_licenses"></a>
 </h2>
 
+<p>Remote licenses <b>do not</b> offer any kind of integration with third party
+license managers by themselves. The use of the "Server" and "ServerType"
+parameters when creating these licenses is just for informative purposes and
+does not imply any kind of automatic license management with those servers.
+It is the responsibility of the system administrator to implement any
+integration needed with these systems. For example, that would include ensuring
+that only users requesting remote licenses through Slurm can check out licenses
+from the license server, or making sure that Slurm's license count stays
+synchronized with license server's
+(see <a href="#dynamic_licenses">Dynamic Licenses</a>).</p>
+
 <h3 id="use_case">Use Case<a class="slurm_link" href="#use_case"></a></h3>
 <p>A site has two license servers, one serves 100 Nastran licenses provided by
 FlexNet and the other serves 50 Matlab licenses from Reprise License
@@ -299,7 +310,7 @@ $ sacctmgr show resource withclusters
 by adding <i>AllResourcesAbsolute=yes</i> to <i>slurmdbd.conf</i> (and restarting
 SlurmDBD to make the change take effect).</p>
 
-<h2 id="dynamic_licenses">Dynamic licenses
+<h2 id="dynamic_licenses">Dynamic Licenses
 <a class="slurm_link" href="#dynamic_licenses"></a>
 </h2>
 <p>Starting with Slurm 23.02, the <i>LastConsumed</i> field for remote licenses
@@ -386,6 +397,6 @@ LicenseName=foobar@slurmdb
     LastConsumed=20 LastDeficit=0 LastUpdate=2023-02-28T16:44:26
 </pre>
 
-<p style="text-align:center;">Last modified 25 April 2024</p>
+<p style="text-align:center;">Last modified 09 May 2024</p>
 
 <!--#include virtual="footer.txt"-->

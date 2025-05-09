@@ -2717,14 +2717,17 @@ Percentage/Count of a specific resource that can be used on specified cluster.
 
 .TP
 \fBServer\fR=<\fIOPT\fR>
-The name of the server serving up the resource. Default is 'slurmdb' indicating
-the licenses are being served by the database.
+Arbitrary string indicating the name of the server serving up the resource.
+Default is 'slurmdb' indicating the licenses are being served by the database.
+This parameter is only for tagging purposes.
 .IP
 
 .TP
 \fBServerType\fR=<\fIOPT\fR>
-The type of a software resource manager providing the licenses. For example
-FlexNext Publisher Flexlm license server or Reprise License Manager RLM.
+Arbitrary string used to tag the type of the software resource manager
+providing the licenses. For example FlexNext Publisher Flexlm license server
+or Reprise License Manager RLM. This does not imply any kind of integration
+with license managers.
 .IP
 
 .TP
