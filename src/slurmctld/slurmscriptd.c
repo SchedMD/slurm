@@ -209,7 +209,7 @@ static void _wait_for_script_resp(script_response_t *script_resp,
 				  int *status, char **resp_msg,
 				  bool *track_script_signalled)
 {
-	slurm_mutex_lock(&script_resp->mutex);
+	/* script_resp->mutex should already be locked */
 	slurm_cond_wait(&script_resp->cond, &script_resp->mutex);
 	/* The script is done now, and we should have the response */
 	*status = script_resp->rc;
@@ -217,7 +217,6 @@ static void _wait_for_script_resp(script_response_t *script_resp,
 		*resp_msg = xstrdup(script_resp->resp_msg);
 	if (track_script_signalled)
 		*track_script_signalled = script_resp->track_script_signalled;
-	slurm_mutex_unlock(&script_resp->mutex);
 }
 
 static void _wait_for_powersave_scripts()
@@ -390,12 +389,16 @@ static int _send_to_slurmscriptd(uint32_t msg_type, void *msg_data, bool wait,
 	}
 	if (msg_type == SLURMSCRIPTD_REQUEST_RUN_SCRIPT)
 		_incr_script_cnt();
+
+	if (wait)
+		slurm_mutex_lock(&script_resp->mutex);
 	rc = _write_msg(slurmctld_writefd, msg.msg_type, buffer, true);
 
 	if ((rc == SLURM_SUCCESS) && wait) {
 		_wait_for_script_resp(script_resp, &rc, resp_msg, signalled);
 	}
 	if (wait) {
+		slurm_mutex_unlock(&script_resp->mutex);
 		_script_resp_map_remove(script_resp->key);
 	}
 
