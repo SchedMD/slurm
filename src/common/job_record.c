@@ -3328,6 +3328,8 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->wait4switch, buffer);
 		safe_unpack32(&job_ptr->profile, buffer);
 		safe_unpack32(&job_ptr->db_flags, buffer);
+		if (job_ptr->db_index && (job_ptr->db_index != NO_VAL64))
+			job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
 
 		safe_unpack_time(&job_ptr->last_sched_eval, buffer);
 		safe_unpack_time(&job_ptr->preempt_time, buffer);
@@ -3557,6 +3559,8 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->wait4switch, buffer);
 		safe_unpack32(&job_ptr->profile, buffer);
 		safe_unpack32(&job_ptr->db_flags, buffer);
+		if (job_ptr->db_index && (job_ptr->db_index != NO_VAL64))
+			job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
 
 		safe_unpack_time(&job_ptr->last_sched_eval, buffer);
 		safe_unpack_time(&job_ptr->preempt_time, buffer);
