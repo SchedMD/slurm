@@ -67,6 +67,12 @@
 
 #include "src/interfaces/tls.h"
 
+/* Default watch() sleep to only 5 minutes */
+#define WATCH_DEFAULT_SLEEP    \
+	(timespec_t)           \
+	{                      \
+		.tv_sec = 300, \
+	}
 #define CTIME_STR_LEN 72
 
 typedef struct {
@@ -78,20 +84,72 @@ typedef struct {
 
 static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg);
 
-static bool _handle_time_limit(const handle_connection_args_t *args,
+static void _set_time(handle_connection_args_t *args)
+{
+	if (!args->time.tv_sec)
+		args->time = timespec_now();
+}
+
+static bool _handle_time_limit(handle_connection_args_t *args,
 			       const struct timespec timestamp,
-			       const struct timespec limit)
+			       const struct timespec limit, const char *what,
+			       const char *name, const char *caller)
 {
 	const struct timespec deadline = timespec_add(timestamp, limit);
+	bool after, change_max_sleep = false;
 
-	if (timespec_is_after(args->time, deadline))
+	_set_time(args);
+
+	if (!(after = timespec_is_after(args->time, deadline)))
+		change_max_sleep =
+			(!mgr.watch_max_sleep.tv_sec ||
+			 timespec_is_after(mgr.watch_max_sleep, deadline));
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char str[CTIME_STR_LEN];
+
+		timespec_ctime(limit, false, str, sizeof(str));
+
+		log_flag(CONMGR, "%s->%s: %s%s%s%s %s timeout %s %s",
+			 caller, __func__, (name ? "[" : ""), name,
+			 (name ? "] " : ""),
+			 (change_max_sleep ? "updating watch() sleep" :
+			  "evaluating"),
+			 what, (after ? "triggered" : "ETA"), str);
+	}
+
+	if (after)
 		return true;
 
-	if (!mgr.watch_max_sleep.tv_sec ||
-	    timespec_is_after(mgr.watch_max_sleep, deadline))
+	if (change_max_sleep) {
 		mgr.watch_max_sleep = deadline;
 
+		/* Always wake up watch() as if deadline changed */
+		EVENT_SIGNAL(&mgr.watch_sleep);
+	}
+
 	return false;
+}
+
+static void _reset_watch_max_sleep(void)
+{
+	const timespec_t now = timespec_now();
+
+	/* skip if the timeout hasn't elapsed yet */
+	if (timespec_is_after(mgr.watch_max_sleep, now))
+		return;
+
+	/* timeout triggered and needs reset */
+	mgr.watch_max_sleep = timespec_add(now, WATCH_DEFAULT_SLEEP);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char str[CTIME_STR_LEN];
+
+		timespec_ctime(mgr.watch_max_sleep, true, str, sizeof(str));
+
+		log_flag(CONMGR, "%s: reset watch() sleep to %s",
+			 __func__, str);
+	}
 }
 
 static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
@@ -340,6 +398,8 @@ static void _on_connect_timeout(handle_connection_args_t *args,
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
 
+		_set_time(args);
+
 		timespec_ctime(timespec_diff_ns(con->last_read,
 						args->time).diff, false,
 			       time_str, sizeof(time_str));
@@ -407,6 +467,8 @@ static void _on_write_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
 
+		_set_time(args);
+
 		timespec_ctime(timespec_diff_ns(con->last_write,
 						args->time).diff, false,
 			       time_str, sizeof(time_str));
@@ -467,6 +529,8 @@ static void _on_read_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
 
+		_set_time(args);
+
 		timespec_ctime(timespec_diff_ns(con->last_read, args->time).diff,
 			       false, time_str, sizeof(time_str));
 		timespec_ctime(mgr.conf_read_timeout, false, total_str,
@@ -508,8 +572,9 @@ static int _handle_connection_wait_write(conmgr_fd_t *con,
 	 */
 	con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
 
-	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) && args &&
-	    _handle_time_limit(args, con->last_write, mgr.conf_write_timeout)) {
+	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) &&
+	    _handle_time_limit(args, con->last_write, mgr.conf_write_timeout,
+			       "write", con->name, __func__)) {
 		_on_write_timeout(args, con);
 		return 0;
 	}
@@ -599,9 +664,20 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	int count;
 	const bool is_tls = (con_flag(con, FLAG_TLS_SERVER) ||
 			     con_flag(con, FLAG_TLS_CLIENT));
+	handle_connection_args_t local_args = {
+		.magic = MAGIC_HANDLE_CONNECTION,
+	};
+
+	if (!args) {
+		/*
+		 * Always have args pointer populated to avoid breaking timeout
+		 * logic
+		 */
+		args = &local_args;
+	}
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(!args || (args->magic == MAGIC_HANDLE_CONNECTION));
+	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
 
 	/* connection may have a running thread, do nothing */
 	if (con_flag(con, FLAG_WORK_ACTIVE)) {
@@ -632,10 +708,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		con_set_flag(con, FLAG_IS_CONNECTED);
 
 		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT)) {
-			if (args)
-				con->last_read = args->time;
-			else
-				con->last_read = timespec_now();
+			_set_time(args);
+			con->last_read = args->time;
 		}
 
 		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1)) {
@@ -691,9 +765,10 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		 */
 		con_set_polling(con, PCTL_TYPE_READ_WRITE, __func__);
 
-		if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT) && args &&
+		if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT) &&
 		    _handle_time_limit(args, con->last_read,
-				       mgr.conf_connect_timeout)) {
+				       mgr.conf_connect_timeout, "connect",
+				       con->name, __func__)) {
 			_on_connect_timeout(args, con);
 			return 0;
 		}
@@ -946,9 +1021,10 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			con_set_polling(con, PCTL_TYPE_READ_ONLY, __func__);
 
 			if (con_flag(con, CON_FLAG_WATCH_READ_TIMEOUT) &&
-			    args && list_is_empty(con->write_complete_work) &&
+			    list_is_empty(con->write_complete_work) &&
 			    _handle_time_limit(args, con->last_read,
-					       mgr.conf_read_timeout)) {
+					       mgr.conf_read_timeout, "read",
+					       con->name, __func__)) {
 				_on_read_timeout(args, con);
 				return 0;
 			}
@@ -1230,7 +1306,7 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.inspecting);
 
-	args.time = timespec_now();
+	_set_time(&args);
 
 	/*
 	 * Always check mgr.connections list first to avoid
@@ -1245,16 +1321,6 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 	if (list_transfer_match(mgr.listen_conns, mgr.complete_conns,
 				_list_transfer_handle_connection, &args))
 		send_signal = true;
-
-	if ((slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) &&
-	    mgr.watch_max_sleep.tv_sec) {
-		char str[CTIME_STR_LEN];
-
-		timespec_ctime(mgr.watch_max_sleep, true, str, sizeof(str));
-
-		log_flag(CONMGR, "%s: set max watch sleep wait: %s",
-			 __func__, str);
-	}
 
 	mgr.inspecting = false;
 
@@ -1549,10 +1615,12 @@ static void _quiesce_max_sleep(void)
 	handle_connection_args_t args = {
 		.magic = MAGIC_HANDLE_CONNECTION,
 	};
-	args.time = timespec_now();
+
+	_set_time(&args);
 
 	if (_handle_time_limit(&args, mgr.quiesce.start,
-			       mgr.quiesce.conf_timeout))
+			       mgr.quiesce.conf_timeout, "quiesce", NULL,
+			       __func__))
 		_on_quiesce_timeout();
 }
 
@@ -1656,6 +1724,8 @@ extern void *watch(void *arg)
 	add_work_fifo(true, signal_mgr_start, NULL);
 
 	while (_watch_loop()) {
+		char timeout_str[CTIME_STR_LEN];
+
 		if (mgr.poll_active && _is_poll_interrupt()) {
 			/*
 			 * poll() hasn't returned yet but we want to
@@ -1665,7 +1735,11 @@ extern void *watch(void *arg)
 			pollctl_interrupt(__func__);
 		}
 
-		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesce_requested:%c waiting_on_work:%c",
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
+			timespec_ctime(mgr.watch_max_sleep, true, timeout_str,
+				       sizeof(timeout_str));
+
+		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesce_requested:%c waiting_on_work:%c timeout:%s",
 				 __func__, mgr.workers.active,
 				 mgr.workers.total, list_count(mgr.work),
 				 list_count(mgr.delayed_work),
@@ -1676,13 +1750,13 @@ extern void *watch(void *arg)
 				 BOOL_CHARIFY(mgr.inspecting),
 				 BOOL_CHARIFY(mgr.shutdown_requested),
 				 BOOL_CHARIFY(mgr.quiesce.requested),
-				 BOOL_CHARIFY(mgr.waiting_on_work));
+				 BOOL_CHARIFY(mgr.waiting_on_work),
+				 timeout_str);
 
 		EVENT_WAIT_TIMED(&mgr.watch_sleep, mgr.watch_max_sleep,
 				 &mgr.mutex);
 		mgr.waiting_on_work = false;
-		/* Always clear max watch sleep to allow finding next sleep */
-		mgr.watch_max_sleep = (struct timespec) {0};
+		_reset_watch_max_sleep();
 	}
 
 	log_flag(CONMGR, "%s: returning shutdown_requested=%c connections=%u listen_conns=%u",
