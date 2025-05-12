@@ -554,14 +554,14 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
             "scontrol ping", lambda results: re.search(r"is UP", results["stdout"])
         ):
             logging.warning(
-                "scontrol ping is not responding, trying to get slurmctld backtrace..."
+                "scontrol ping is not responding, trying to get slurmctld core file..."
             )
             pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
             if not pids:
                 logging.warning("process slurmctld not found")
             for pid in pids:
                 run_command(
-                    f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
+                    f'sudo gcore -o {os.path.dirname(get_config_parameter("SlurmctldLogFile"))}/slurmctld.core {pid}'
                 )
             pytest.fail("Slurmctld is not running")
         else:
@@ -666,14 +666,14 @@ def start_slurmdbd(clean=False, quiet=False):
             "sacctmgr show cluster", lambda results: results["exit_code"] == 0
         ):
             logging.warning(
-                "sacctmgr show cluster is not responding, trying to get slurmdbd backtrace..."
+                "sacctmgr show cluster is not responding, trying to get slurmdbd core file..."
             )
             pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmdbd")
             if not pids:
                 logging.warning("process slurmdbd not found")
             for pid in pids:
                 run_command(
-                    f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
+                    f'sudo gcore -o {os.path.dirname(get_config_parameter("SlurmctldLogFile"))}/slurmdbd.core {pid}'
                 )
             pytest.fail("Slurmdbd is not running")
         else:
@@ -773,10 +773,10 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
     ):
         pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
         failures.append(f"Slurmctld is still running ({pids})")
-        logging.warning("Getting the bt of the still running slurmctld")
+        logging.warning("Getting the core files of the still running slurmctld")
         for pid in pids:
             run_command(
-                f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
+                f'sudo gcore -o {os.path.dirname(get_config_parameter("SlurmctldLogFile"))}/slurmctld.core {pid}'
             )
     else:
         logging.debug("No slurmctld is running.")
@@ -808,10 +808,10 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
         ):
             pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd")
             failures.append(f"Some slurmds are still running ({pids})")
-            logging.warning("Getting the bt of the still running slurmds")
+            logging.warning("Getting the core files of the still running slurmds")
             for pid in pids:
                 run_command(
-                    f'sudo gdb -p {pid} -ex "set debuginfod enabled on" -ex "set pagination off" -ex "set confirm off" -ex "set print pretty on" -ex "set max-value-size unlimited" -ex "set print array-indexes on" -ex "set print array off" -ex "thread apply all bt full" -ex "quit"'
+                    f'sudo gcore -o {os.path.dirname(get_config_parameter("SlurmctldLogFile"))}/slurmd.core {pid}'
                 )
         else:
             logging.debug("No slurmd is running.")
