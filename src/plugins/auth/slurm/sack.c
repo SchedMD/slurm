@@ -293,7 +293,8 @@ extern void init_sack_conmgr(void)
 		} else if (running_in_slurmdbd()) {
 			_prepare_run_dir("slurmdbd", true);
 			path = SLURMDBD_SACK_SOCKET;
-		} else if ((runtime_dir = getenv("RUNTIME_DIRECTORY"))) {
+		} else if (running_in_sackd() &&
+			   (runtime_dir = getenv("RUNTIME_DIRECTORY"))) {
 			if (!valid_runtime_directory(runtime_dir))
 				fatal("%s: Invalid RUNTIME_DIRECTORY=%s environment variable",
 				      __func__, runtime_dir);
