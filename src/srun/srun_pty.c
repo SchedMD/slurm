@@ -42,6 +42,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <termios.h>
 
 #include "slurm/slurm_errno.h"
 
@@ -144,6 +145,7 @@ static void *_pty_thread(void *arg)
 	int fd = -1;
 	srun_job_t *job = (srun_job_t *) arg;
 	slurm_addr_t client_addr;
+	struct termios term;
 
 	xsignal_unblock(pty_sigarray);
 	xsignal(SIGWINCH, _handle_sigwinch);
@@ -152,6 +154,11 @@ static void *_pty_thread(void *arg)
 		error("pty: accept failure: %m");
 		return NULL;
 	}
+
+	/* Set raw mode on local tty once slurmstepd has connected */
+	tcgetattr(job->input_fd, &term);
+	cfmakeraw(&term);
+	tcsetattr(job->input_fd, TCSANOW, &term);
 
 	fd = tls_g_get_conn_fd(tls_conn);
 

@@ -706,14 +706,8 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 			      (srun_opt->pty[0] ? srun_opt->pty : ""));
 			xfree(srun_opt->pty);
 		} else {
-			struct termios term;
-
 			/* Save terminal settings for restore */
 			tcgetattr(job->input_fd, &termdefaults);
-			tcgetattr(job->input_fd, &term);
-			/* Set raw mode on local tty */
-			cfmakeraw(&term);
-			tcsetattr(job->input_fd, TCSANOW, &term);
 			atexit(&_pty_restore);
 
 			block_sigwinch();
