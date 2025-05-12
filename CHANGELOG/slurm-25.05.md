@@ -183,8 +183,6 @@
 * scontrol - Add 'partitions[].topology' field to the output of 'scontrol show partitions --{json/yaml}'
 * data_parser/v0.0.43 - Add 'partitions[].topology' field to the following REST API endpoints: 'GET /slurm/v0.0.43/partition/{partition_name}' 'GET /slurm/v0.0.43/partitions/'
 * Fix security issue where a coordinator could add a user with elevated privileges. CVE-2025-43904.
-* Remove topology.conf AllowGaps and make it the default behavior.
-* Remove topology.conf AllowEmptySwitch and make it the default behavior.
 * sched/backfill - Prevent jobs that are running on nodes not planned for a pending job from delaying the start of the pending job.
 * Add ability to configure "Hierarchical Resources" via the new resources.yaml configuration file. Hierarchical resources are independent and orthogonal to any network topology (topology/tree or topology/block) already established. Each resource is independently defined and associated with specific nodes.
 * squeue, scancel - When given numeric uids that no longer exist on the underlying system, show (or cancel) any old jobs in the queue that still use them.
