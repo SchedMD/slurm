@@ -782,6 +782,7 @@ extern bool slingshot_setup_config(const char *switch_params)
 	/* Will be default size when SwitchParameters is not set */
 	uint16_t vni_min = slingshot_state.vni_min;
 	uint16_t vni_max = slingshot_state.vni_max;
+	bool vni_range_set = false;
 
 	/*
 	 * Handle SwitchParameters values (separated by commas):
@@ -829,11 +830,9 @@ extern bool slingshot_setup_config(const char *switch_params)
 
 	slingshot_free_config();
 	_config_defaults();
-	if (!switch_params) {
-		if (!_setup_vni_table(vni_min, vni_max))
-			goto err;
+	if (!switch_params)
 		goto out;
-	}
+
 	log_flag(SWITCH, "switch_params=%s", switch_params);
 
 	params = xstrdup(switch_params);
@@ -847,6 +846,7 @@ extern bool slingshot_setup_config(const char *switch_params)
 			/* See if any incompatible changes in VNI range */
 			if (!_setup_vni_table(vni_min, vni_max))
 				goto err;
+			vni_range_set = true;
 		} else if (!xstrncasecmp(token, tcs, size_tcs)) {
 			if (!_config_tcs(token, arg, &slingshot_config.tcs))
 				goto err;
@@ -919,6 +919,9 @@ extern bool slingshot_setup_config(const char *switch_params)
 		goto err;
 
 out:
+	if (!vni_range_set && !_setup_vni_table(vni_min, vni_max))
+		goto err;
+
 	debug("single_node_vni=%d job_vni=%d tcs=%#x flags=%#x",
 	      slingshot_config.single_node_vni, slingshot_config.job_vni,
 	      slingshot_config.tcs, slingshot_config.flags);
