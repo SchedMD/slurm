@@ -80,10 +80,7 @@ clients sooner than would be otherwise required.</p>
 <!--#include virtual="openapi_release_notes/slurm-21.08.6.html"-->
 <!--#include virtual="openapi_release_notes/slurm-21.08.3.html"-->
 <!--#include virtual="openapi_release_notes/slurm-21.08.0.html"-->
-<!--#include virtual="openapi_release_notes/slurm-20.11.5.html"-->
-<!--#include virtual="openapi_release_notes/slurm-20.11.3.html"-->
-<!--#include virtual="openapi_release_notes/slurm-20.11.1.html"-->
-<!--#include virtual="openapi_release_notes/slurm-20.11.0.html"-->
+<!--#include virtual="openapi_release_notes/slurm-20.11.html"-->
 <!--#include virtual="openapi_release_notes/slurm-20.02.html"-->
 
 <hr size=4 width="100%">
