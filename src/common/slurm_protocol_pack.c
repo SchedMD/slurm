@@ -4199,6 +4199,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->bb_type, buffer);
 		packstr(build_ptr->bcast_exclude, buffer);
 		packstr(build_ptr->bcast_parameters, buffer);
+		packstr(build_ptr->certmgr_params, buffer);
+		packstr(build_ptr->certmgr_type, buffer);
 
 		pack_key_pair_list(build_ptr->cgroup_conf, protocol_version,
 		                   buffer);
@@ -4415,6 +4417,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->task_plugin, buffer);
 		pack32(build_ptr->task_plugin_param, buffer);
 		pack16(build_ptr->tcp_timeout, buffer);
+		packstr(build_ptr->tls_params, buffer);
 		packstr(build_ptr->tls_type, buffer);
 		packstr(build_ptr->tmp_fs, buffer);
 		packstr(build_ptr->topology_param, buffer);
@@ -5280,6 +5283,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->bb_type, buffer);
 		safe_unpackstr(&build_ptr->bcast_exclude, buffer);
 		safe_unpackstr(&build_ptr->bcast_parameters, buffer);
+		safe_unpackstr(&build_ptr->certmgr_params, buffer);
+		safe_unpackstr(&build_ptr->certmgr_type, buffer);
 
 		if (unpack_key_pair_list(&build_ptr->cgroup_conf,
 		                         protocol_version, buffer)
@@ -5511,6 +5516,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->task_plugin, buffer);
 		safe_unpack32(&build_ptr->task_plugin_param, buffer);
 		safe_unpack16(&build_ptr->tcp_timeout, buffer);
+		safe_unpackstr(&build_ptr->tls_params, buffer);
 		safe_unpackstr(&build_ptr->tls_type, buffer);
 		safe_unpackstr(&build_ptr->tmp_fs, buffer);
 		safe_unpackstr(&build_ptr->topology_param, buffer);
