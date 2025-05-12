@@ -3315,11 +3315,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	}
 
 	cred_arg.step_core_bitmap    = job_resrcs_ptr->core_bitmap;
-
-	xassert(job_ptr->batch_host);
-	/* override */
-	cred_arg.job_hostlist    = job_ptr->batch_host;
-	cred_arg.step_hostlist   = job_ptr->batch_host;
+	cred_arg.step_hostlist = job_ptr->job_resrcs->nodes;
 
 	switch_g_extern_stepinfo(&cred_arg.switch_step, job_ptr);
 
