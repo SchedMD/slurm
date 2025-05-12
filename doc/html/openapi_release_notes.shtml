@@ -70,11 +70,7 @@ clients sooner than would be otherwise required.</p>
 <!--#include virtual="openapi_release_notes/slurm-23.02.3.html"-->
 <!--#include virtual="openapi_release_notes/slurm-23.02.2.html"-->
 <!--#include virtual="openapi_release_notes/slurm-23.02.0.html"-->
-<!--#include virtual="openapi_release_notes/slurm-22.05.8.html"-->
-<!--#include virtual="openapi_release_notes/slurm-22.05.7.html"-->
-<!--#include virtual="openapi_release_notes/slurm-22.05.6.html"-->
-<!--#include virtual="openapi_release_notes/slurm-22.05.4.html"-->
-<!--#include virtual="openapi_release_notes/slurm-22.05.0.html"-->
+<!--#include virtual="openapi_release_notes/slurm-22.05.html"-->
 <!--#include virtual="openapi_release_notes/slurm-21.08.html"-->
 <!--#include virtual="openapi_release_notes/slurm-20.11.html"-->
 <!--#include virtual="openapi_release_notes/slurm-20.02.html"-->
