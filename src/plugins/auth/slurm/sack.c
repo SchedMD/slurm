@@ -114,7 +114,7 @@ static void _prepare_run_dir(const char *subdir, bool slurm_user)
 		if (statbuf.st_uid != uid) {
 			if (statbuf.st_uid)
 				fatal("%s: /run/%s exists but is owned by %u",
-				      __func__, subdir, uid);
+				      __func__, subdir, statbuf.st_uid);
 			warning("%s: /run/%s exists but is owned by %u, not %s",
 				__func__, subdir, statbuf.st_uid, user);
 		}
