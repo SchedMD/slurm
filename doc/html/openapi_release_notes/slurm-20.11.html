@@ -1,3 +1,78 @@
+<h2 id="20115">Slurm 20.11.5<a class="slurm_link" href="#20115"></a></h2>
+
+<h3>openapi/dbv0.0.36</h3>
+
+<h4>Mark job environment as required</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.36_job_properties".required</td>
+</tr>
+</table>
+
+<h4>Add state flags</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.state_flags</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.next_state_after_reboot_flags</td>
+</tr>
+</table>
+
+<h4>Correct description for previous state</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.36_job".properties.state.properties.previous</td>
+</tr>
+</table>
+
+<h2 id="20113">Slurm 20.11.3<a class="slurm_link" href="#20113"></a></h2>
+
+<h3>openapi/dbv0.0.36</h3>
+
+<h4>Correct structure of dbv0.0.36_tres_list</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.36_tres_list"</td>
+</tr>
+</table>
+
+<h4>Accept Job Query CSV parameters as a list (JSON array)</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.paths."/jobs/".get.parameters</td>
+</tr>
+</table>
+
+<h2 id="20111">Slurm 20.11.1<a class="slurm_link" href="#20111"></a></h2>
+
+<h3>openapi/v0.0.36</h3>
+<h4>Correct name for partition field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."v0.0.36_partition".properties."min nodes per job"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.36_partition".properties."min_nodes_per_job"</td>
+</tr>
+</table>
+
+<h4>Add node comment field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.36_node".properties.comment</td>
+</tr>
+</table>
+
 <h2 id="20110">Slurm 20.11.0<a class="slurm_link" href="#20110"></a></h2>
 
 <h3>openapi/dbv0.0.36</h3>
