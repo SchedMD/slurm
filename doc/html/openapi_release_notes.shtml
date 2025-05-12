@@ -50,11 +50,7 @@ to use the highest version of the plugins available to avoid needing to port
 clients sooner than would be otherwise required.</p>
 
 <!--#include virtual="openapi_release_notes/slurm-25.05.0.html"-->
-<!--#include virtual="openapi_release_notes/slurm-24.11.4.html"-->
-<!--#include virtual="openapi_release_notes/slurm-24.11.3.html"-->
-<!--#include virtual="openapi_release_notes/slurm-24.11.2.html"-->
-<!--#include virtual="openapi_release_notes/slurm-24.11.1.html"-->
-<!--#include virtual="openapi_release_notes/slurm-24.11.0.html"-->
+<!--#include virtual="openapi_release_notes/slurm-24.11.html"-->
 <!--#include virtual="openapi_release_notes/slurm-24.05.html"-->
 <!--#include virtual="openapi_release_notes/slurm-23.11.html"-->
 <!--#include virtual="openapi_release_notes/slurm-23.02.html"-->
