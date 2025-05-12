@@ -4449,6 +4449,7 @@ static void _validate_all_reservations(void)
 {
 	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
+	job_record_t *job_ptr = NULL;
 
 	/* Make sure we have node write locks. */
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -4473,7 +4474,10 @@ static void _validate_all_reservations(void)
 	list_iterator_destroy(iter);
 
 	/* Validate all job reservation pointers */
-	list_for_each(job_list, _validate_job_resv, NULL);
+	iter = list_iterator_create(job_list);
+	while ((job_ptr = list_next(iter)))
+		_validate_job_resv(job_ptr, NULL);
+	list_iterator_destroy(iter);
 }
 
 /*
