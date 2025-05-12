@@ -1,0 +1,372 @@
+<h2 id="23117">Slurm 23.11.7<a class="slurm_link" href="#23117"></a></h2>
+
+<h3>data_parser/v0.0.40</h3>
+
+<h4>Add missing schema for job states query</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modified field</td>
+	<td class="tdchange">.paths."/slurm/v0.0.40/jobs/state".get.responses."200".content</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified field</td>
+	<td class="tdchange">.paths."/slurm/v0.0.40/jobs/state".get.responses."default".content</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new schema</td>
+	<td class="tdchange">.components.schemas."v0.0.40_openapi_job_state_resp"</td>
+</tr>
+</table>
+
+<h2 id="23116">Slurm 23.11.6<a class="slurm_link" href="#23116"></a></h2>
+
+<h3>data_parser/v0.0.40</h3>
+
+<h4>Add new endpoint</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.paths."/slurm/v0.0.40/jobs".delete</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.40_openapi_kill_jobs_resp"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.40_kill_jobs_msg"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.40_kill_jobs_resp_msg"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Modified field</td>
+	<td class="tdchange">.components.schemas."v0.0.40_kill_jobs_msg".properties.flags.items.enum</td>
+</tr>
+</table>
+
+<h2 id="23115">Slurm 23.11.5<a class="slurm_link" href="#23115"></a></h2>
+
+<h3>data_parser/v0.0.40</h3>
+
+<h4>Add field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.components.schemas."v0.0.40_job_desc_msg".properties.cores_per_socket</td>
+</tr>
+</table>
+
+<h2 id="23112">Slurm 23.11.2<a class="slurm_link" href="#23112"></a></h2>
+
+<h3>data_parser/v0.0.40</h3>
+
+<h4>Added field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">before</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.40_job".properties.hold</li>
+			<li>.components.schemas."v0.0.40_job".properties.priority.description</li>
+			<li>.components.schemas."v0.0.40_job_desc_msg".properties.hold</li>
+			<li>.components.schemas."v0.0.40_job_desc_msg".properties.priority.description</li>
+			<li>.components.schemas."v0.0.40_job_info".properties.hold</li>
+			<li>.components.schemas."v0.0.40_job_info".properties.priority.description</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add GRES_ONE_TASK_PER_SHARING and GRES_MULT_TASKS_PER_SHARING flags to /job_info, /job_desc_msg output</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">New property</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."v0.0.40_job_info".properties.flags</li>
+			<li>.components.schemas."v0.0.40_job_desc_msg".properties.flags</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h2 id="23111">Slurm 23.11.1<a class="slurm_link" href="#23111"></a></h2>
+
+<h3>data_parser/v0.0.40</h3>
+
+<h4>Renamed field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">before</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas.v0.0.39_job_mem_per_node</li>
+		</ul>
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">after</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas.v0.0.39_mem_per_node</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Renamed field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">before</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas.v0.0.39_job_mem_per_cpu</li>
+		</ul>
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">after</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas.v0.0.39_mem_per_cpu</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h3>openapi/slurmctld</h3>
+
+<h4>Add field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">add</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.40_openapi_meta".properties.slurm.properties.cluster</li>
+		</ul>
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">add</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.40_partition_info".properties.defaults.properties.partition_memory_per_cpu</li>
+		</ul>
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">add</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.40_partition_info".properties.defaults.properties.partition_memory_per_node</li>
+		</ul>
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">add</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.40_partition_info".properties.maximums.properties.partition_memory_per_cpu</li>
+		</ul>
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">add</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.40_partition_info".properties.maximums.properties.oversubscribe</li>
+		</ul>
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">add</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.40_partition_info".properties.maximums.properties.partition_memory_per_node</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h3>openapi/slurmdbd</h3>
+
+<h4>Add field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">add</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.40_openapi_meta".properties.slurm.properties.cluster</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h2 id="23110">Slurm 23.11.0<a class="slurm_link" href="#23110"></a></h2>
+
+<h3>openapi/slurmctld</h3>
+
+<h4>New plugin</h4>
+The openapi/slurmctld plugin forked from the openapi/v0.0.39 plugin.
+
+<h4>Swap job exit codes to verbose output</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.40_job_info".properties.exit_code
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.40_job_info".properties.derived_exit_code
+	</td>
+</tr>
+</table>
+
+<h4>Remove the "required/memory" field. It would dump very large integers if
+    the job required per cpu memory but dump correct amounts for per node
+    memory.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field removed</td>
+	<td class="tdchange">
+		.component.schemas."v0.0.40_job".properties.required.properties.memory
+	</td>
+</tr>
+</table>
+
+<h4>Add timestamps for last change to data or generation times.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Fields added</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.40_openapi_job_info_resp".properties.last_backfill
+		.components.schemas."v0.0.40_openapi_job_info_resp".properties.last_update
+		.components.schemas."v0.0.40_openapi_nodes_resp".properties.last_update
+		.components.schemas."v0.0.40_openapi_partition_resp".properties.last_update
+		.components.schemas."v0.0.40_openapi_reservation_resp".properties.last_update
+		.components.schemas."v0.0.40_openapi_licenses_resp".properties.last_update
+	</td>
+</tr>
+</table>
+
+<h3>openapi/v0.0.38 (src/plugins/openapi/v0.0.38/openapi.json)</h3>
+
+<h4>Deprecation notice</h4>
+The v0.0.38 plugin has now been marked as deprecated.
+
+<h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>
+
+<h4>Removal notice</h4>
+The v0.0.37 plugin has now been removed.
+
+<h3>openapi/slurmdbd</h3>
+
+<h4>New plugin</h4>
+The openapi/slurmdbd plugin forked from the openapi/dbv0.0.39 plugin.
+
+<h4>Swap job exit codes to process exit codes</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.40_job".properties.exit_code
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.40_job".properties.derived_exit_code
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.40_step".properties.exit_code
+	</td>
+</tr>
+</table>
+
+<h4>Switch StepID field to be string to match CLI format</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.40_step".properties.step
+	</td>
+</tr>
+</table>
+
+<h4>Add fields to associations</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.40_assoc".properties.accounting
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.40_assoc".properties.id
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.40_assoc".properties.comment
+	</td>
+</tr>
+</table>
+
+<h4>Removed field from associations</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.40_assoc".properties.usage
+	</td>
+</tr>
+</table>
+
+<h4>Add new /accounts_association endpoint</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">add</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.40_openapi_accounts_add_cond_resp_str"</li>
+			<li>.components.schemas."v0.0.40_openapi_accounts_add_cond_resp"</li>
+			<li>.paths."/slurmdb/v0.0.40/accounts_association"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add new /users_association endpoint</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">add</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.40_openapi_users_add_cond_resp_str"</li>
+			<li>.components.schemas."v0.0.40_openapi_users_add_cond_resp"</li>
+			<li>.paths."/slurmdb/v0.0.40/users_association"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.38 (src/plugins/openapi/dbv0.0.38/openapi.json)</h3>
+
+<h4>Deprecation notice</h4>
+The dbv0.0.38 plugin has now been marked as deprecated.
+
+<h3>openapi/dbv0.0.37 (src/plugins/openapi/dbv0.0.37/openapi.json)</h3>
+
+<h4>Removal notice</h4>
+The dbv0.0.37 plugin has now been removed.
