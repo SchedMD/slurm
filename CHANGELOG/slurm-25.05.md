@@ -10,8 +10,11 @@
 * Remove races during slurmdbd shutdown
 * Sigkill user processes atomically by using cgroup.kill interface
 * Update jobs' SLURM_CPUS_PER_TASK and SLURM_TRES_PER_TASK environment variables if they are modified before the job is allocated.
+* Deprecate v0.0.43 *_CONDITION field "format" as it is not interpreted; users should instead process the resulting JSON or YAML object manually.
+* Remove LogTimeFormat=format_stderr, logs and stderr will always print the same.
 * slurmdbd: Fix race condition that could cause a crash during shutdown.
 * Fix libslurm(db) install paths when PREFIX contains /usr(/local)/
+* Add CommunicationParameters=host_unreach_retry_count=# to retry connecting when a host might be temporarily unreachable.
 * Make "--spread-job" option works as documented
 * data_parser/v0.0.43 - Deprecating the 'instances' field of the GET /slurmdb/v0.0.43/config endpoint. This field was never populated.
 * Fix the --gpus-per-task option to allow a list of gpu types to be specified.
@@ -31,6 +34,7 @@
 * Avoid expensive lookup of all associations when dumping or parsing for v0.0.43 endpoints.
 * sacctmgr - avoid freeing username in the username cache.
 * sacctmgr - avoid leaking user_list in sacctmgr dump cluster
+* Allow topology/block Block definitions to have fewer nodes than the minimum BlockSize.
 * slurmrestd: Allow use of "-d list" option without loading slurm.conf.
 * Allow topology/tree leaf switch definitions without child nodes.
 * data_parser/v0.0.43 - Added field '.jobs[].segment_size' to the following endpoints: 'GET /slurm/v0.0.43/jobs' 'GET /slurm/v0.0.43/job/{job_id}'
