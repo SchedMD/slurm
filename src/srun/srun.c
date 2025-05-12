@@ -688,7 +688,7 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	env->oom_kill_step = opt_local->oom_kill_step;
 
 	if (srun_opt->pty) {
-		int fd = STDIN_FILENO;
+		job->input_fd = STDIN_FILENO;
 
 		if (srun_opt->pty[0]) {
 			/* srun passed FD to use for pty */
@@ -697,23 +697,17 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 				      srun_opt->pty);
 			}
 
-			fd = atoi(srun_opt->pty);
+			job->input_fd = atoi(srun_opt->pty);
 		}
 
-		if (set_winsize(fd, job)) {
+		if (set_winsize(job->input_fd, job)) {
 			error("Not using a pseudo-terminal, disregarding --pty%s%s option",
 			      (srun_opt->pty[0] ? "=" : ""),
 			      (srun_opt->pty[0] ? srun_opt->pty : ""));
 			xfree(srun_opt->pty);
 		} else {
-			struct termios term;
-
 			/* Save terminal settings for restore */
-			tcgetattr(fd, &termdefaults);
-			tcgetattr(fd, &term);
-			/* Set raw mode on local tty */
-			cfmakeraw(&term);
-			tcsetattr(fd, TCSANOW, &term);
+			tcgetattr(job->input_fd, &termdefaults);
 			atexit(&_pty_restore);
 
 			block_sigwinch();
