@@ -155,6 +155,10 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 		return;
 	}
 
+	/* Always update read timestamp on read() success */
+	if (con_flag(con, FLAG_WATCH_READ_TIMEOUT))
+		con->last_read = timespec_now();
+
 	if (read_c == 0) {
 		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in %s",
 			 __func__, con->name, get_buf_offset(buf), what);
@@ -172,9 +176,6 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 			     read_c, "%s: [%s] read", __func__, con->name);
 
 		set_buf_offset(buf, (get_buf_offset(buf) + read_c));
-
-		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT))
-			con->last_read = timespec_now();
 	}
 }
 
