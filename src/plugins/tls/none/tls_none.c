@@ -80,6 +80,11 @@ extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
 	return SLURM_SUCCESS;
 }
 
+extern int tls_p_load_self_signed_cert(void)
+{
+	return SLURM_SUCCESS;
+}
+
 extern char *tls_p_get_own_public_cert(void)
 {
 	return NULL;

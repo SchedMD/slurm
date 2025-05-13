@@ -366,24 +366,6 @@ static int _add_ca_cert_to_client(struct s2n_config *config, char* cert_file)
 	return SLURM_SUCCESS;
 }
 
-static int _add_ca_cert_from_conf_to_client(struct s2n_config *config)
-{
-	int rc;
-	char *cert_file;
-
-	cert_file = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=");
-	if (!cert_file && !(cert_file = get_extra_conf_path("ca_cert.pem"))) {
-		error("Failed to get cert.pem path");
-		xfree(cert_file);
-		return SLURM_ERROR;
-	}
-
-	rc = _add_ca_cert_to_client(config, cert_file);
-	xfree(cert_file);
-
-	return rc;
-}
-
 static int _add_cert_to_server(struct s2n_config *s2n_config,
 			       struct s2n_cert_chain_and_key **cert_and_key,
 			       char *cert_pem, uint32_t cert_pem_len,
@@ -493,21 +475,6 @@ fail:
 	slurm_rwlock_unlock(&server_conf_lock);
 
 	return SLURM_ERROR;
-}
-
-static int _add_self_signed_cert_to_server(void)
-{
-	if (certgen_g_self_signed(&server_cert, &server_key) ||
-	    !server_cert || !server_key) {
-		error("Failed to generate self signed certificate and private key");
-		return SLURM_ERROR;
-	}
-
-	server_cert_len = strlen(server_cert);
-	server_key_len = strlen(server_key);
-
-	return _add_cert_to_global_server(server_cert, server_cert_len,
-					  server_key, server_key_len);
 }
 
 static char *_get_cert_or_key_path(char *conf_opt, char *default_path)
@@ -636,6 +603,22 @@ cleanup:
 	return rc;
 }
 
+extern int tls_p_load_self_signed_cert(void)
+{
+	if (certgen_g_self_signed(&server_cert, &server_key) ||
+	    !server_cert || !server_key) {
+		error("Failed to generate self signed certificate and private key");
+		return SLURM_ERROR;
+	}
+
+	server_cert_len = strlen(server_cert);
+	server_key_len = strlen(server_key);
+
+	return _add_cert_to_global_server(server_cert, server_cert_len,
+					  server_key, server_key_len);
+}
+
+
 extern int init(void)
 {
 	debug("%s loaded", plugin_type);
@@ -654,33 +637,10 @@ extern int init(void)
 		return errno;
 	}
 
-	/*
-	 * CA cert loaded later for configless support.
-	 * Relies on slurm_conf.last_update being left unset in configless mode.
-	 */
-	if (!running_in_slurmstepd() &&
-	    slurm_conf.last_update &&
-	    _add_ca_cert_from_conf_to_client(client_config)) {
-		error("Could not load trusted certificates for s2n");
-		return SLURM_ERROR;
-	}
-
 	/* Create server s2n_config */
 	if (!(server_config = _create_server_config())) {
 		error("Could not create server configuration for s2n");
 		return errno;
-	}
-
-	if ((running_in_slurmctld() || running_in_slurmdbd() ||
-	     running_in_slurmrestd() || running_in_slurmd() ||
-	     running_in_sackd()) &&
-	    _add_cert_from_file_to_server()) {
-		error("Could not load own TLS certificate from file");
-		return SLURM_ERROR;
-	}
-	if (!running_in_daemon() && _add_self_signed_cert_to_server()) {
-		error("Could not load self-signed TLS certificate");
-		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -745,13 +705,38 @@ static int _negotiate(tls_conn_t *conn)
 	return SLURM_SUCCESS;
 }
 
+static char *_get_ca_cert_file_from_conf(void)
+{
+	char *cert;
+
+	/* Get explicit path configuration */
+	if ((cert = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=")))
+		return cert;
+
+	/* Try to find default path */
+	if ((cert = get_extra_conf_path("ca_cert.pem")))
+		return cert;
+
+	return NULL;
+}
+
 extern int tls_p_load_ca_cert(char *cert_file)
 {
-	if (_add_ca_cert_to_client(client_config, cert_file)) {
-		error("Could not load trusted certificates for s2n");
-		return SLURM_ERROR;
+	int rc;
+	bool free_cert = false;
+
+	if (!cert_file) {
+		if (!(cert_file = _get_ca_cert_file_from_conf()))
+			return SLURM_ERROR;
+		free_cert = true;
 	}
-	return SLURM_SUCCESS;
+
+	rc = _add_ca_cert_to_client(client_config, cert_file);
+
+	if (free_cert)
+		xfree(cert_file);
+
+	return rc;
 }
 
 extern char *tls_p_get_own_public_cert(void)
@@ -764,6 +749,9 @@ extern char *tls_p_get_own_public_cert(void)
 extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
 			       uint32_t key_len)
 {
+	if (!cert)
+		return _add_cert_from_file_to_server();
+
 	xfree(server_cert);
 	xfree(server_key);
 

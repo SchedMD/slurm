@@ -104,9 +104,15 @@ extern char *tls_g_get_own_public_cert(void);
 
 /*
  * Load own certificate into store
+ *
  * This is useful when certificate is not known on startup, and must be loaded
  * later (e.g. slurmd getting a signed certificate from slurmctld)
- * IN cert - certificate PEM
+ *
+ * Set 'cert' to NULL to try to load certificate from file. This is only
+ * relevant to Slurm daemons that have statically configured certificates.
+ * If 'cert' is NULL, all other arguments will be ignored.
+ *
+ * IN cert - certificate PEM, or NULL if loading from file.
  * IN cert_len - length of cert
  * IN key - key PEM
  * IN key_len - length of key
@@ -115,13 +121,22 @@ extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
 			       uint32_t key_len);
 
 /*
+ * Load self-signed certificate into store
+ *
+ * This is needed for client commands that open listening sockets.
+ * RET SLURM_SUCCESS or error
+ */
+extern int tls_g_load_self_signed_cert(void);
+
+/*
  * Returns true if own certificate has ever been loaded
  */
 extern bool tls_g_own_cert_loaded(void);
 
 /*
  * Load CA cert into trust store
- * IN cert_file - path to CA certificate pem
+ * IN cert_file - path to CA certificate pem. Set to NULL to load CA certificate
+ *	pem file from the configuration in slurm.conf or in the default path
  * RET SLURM_SUCCESS or error
  */
 extern int tls_g_load_ca_cert(char *cert_file);
