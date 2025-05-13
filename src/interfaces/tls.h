@@ -121,6 +121,14 @@ extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
 			       uint32_t key_len);
 
 /*
+ * Load self-signed certificate into store
+ *
+ * This is needed for client commands that open listening sockets.
+ * RET SLURM_SUCCESS or error
+ */
+extern int tls_g_load_self_signed_cert(void);
+
+/*
  * Returns true if own certificate has ever been loaded
  */
 extern bool tls_g_own_cert_loaded(void);

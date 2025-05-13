@@ -495,21 +495,6 @@ fail:
 	return SLURM_ERROR;
 }
 
-static int _add_self_signed_cert_to_server(void)
-{
-	if (certgen_g_self_signed(&server_cert, &server_key) ||
-	    !server_cert || !server_key) {
-		error("Failed to generate self signed certificate and private key");
-		return SLURM_ERROR;
-	}
-
-	server_cert_len = strlen(server_cert);
-	server_key_len = strlen(server_key);
-
-	return _add_cert_to_global_server(server_cert, server_cert_len,
-					  server_key, server_key_len);
-}
-
 static char *_get_cert_or_key_path(char *conf_opt, char *default_path)
 {
 	char *file_path = NULL;
@@ -636,6 +621,22 @@ cleanup:
 	return rc;
 }
 
+extern int tls_p_load_self_signed_cert(void)
+{
+	if (certgen_g_self_signed(&server_cert, &server_key) ||
+	    !server_cert || !server_key) {
+		error("Failed to generate self signed certificate and private key");
+		return SLURM_ERROR;
+	}
+
+	server_cert_len = strlen(server_cert);
+	server_key_len = strlen(server_key);
+
+	return _add_cert_to_global_server(server_cert, server_cert_len,
+					  server_key, server_key_len);
+}
+
+
 extern int init(void)
 {
 	debug("%s loaded", plugin_type);
@@ -678,7 +679,7 @@ extern int init(void)
 		error("Could not load own TLS certificate from file");
 		return SLURM_ERROR;
 	}
-	if (!running_in_daemon() && _add_self_signed_cert_to_server()) {
+	if (!running_in_daemon() && tls_p_load_self_signed_cert()) {
 		error("Could not load self-signed TLS certificate");
 		return SLURM_ERROR;
 	}

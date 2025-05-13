@@ -70,6 +70,7 @@ typedef struct {
 	char *(*get_own_public_cert)(void);
 	int (*load_own_cert)(char *cert, uint32_t cert_len, char *key,
 			     uint32_t key_len);
+	int (*load_self_signed_cert)(void);
 	bool (*own_cert_loaded)(void);
 	void *(*create_conn)(const tls_conn_args_t *tls_conn_args);
 	void (*destroy_conn)(void *conn, bool close_fds);
@@ -94,6 +95,7 @@ static const char *syms[] = {
 	"tls_p_load_ca_cert",
 	"tls_p_get_own_public_cert",
 	"tls_p_load_own_cert",
+	"tls_p_load_self_signed_cert",
 	"tls_p_own_cert_loaded",
 	"tls_p_create_conn",
 	"tls_p_destroy_conn",
@@ -209,6 +211,12 @@ extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.load_own_cert))(cert, cert_len, key, key_len);
+}
+
+extern int tls_g_load_self_signed_cert(void)
+{
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.load_self_signed_cert))();
 }
 
 extern bool tls_g_own_cert_loaded(void)
