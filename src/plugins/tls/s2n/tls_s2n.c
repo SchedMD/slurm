@@ -746,13 +746,38 @@ static int _negotiate(tls_conn_t *conn)
 	return SLURM_SUCCESS;
 }
 
+static char *_get_ca_cert_file_from_conf(void)
+{
+	char *cert;
+
+	/* Get explicit path configuration */
+	if ((cert = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=")))
+		return cert;
+
+	/* Try to find default path */
+	if ((cert = get_extra_conf_path("ca_cert.pem")))
+		return cert;
+
+	return NULL;
+}
+
 extern int tls_p_load_ca_cert(char *cert_file)
 {
-	if (_add_ca_cert_to_client(client_config, cert_file)) {
-		error("Could not load trusted certificates for s2n");
-		return SLURM_ERROR;
+	int rc;
+	bool free_cert = false;
+
+	if (!cert_file) {
+		if (!(cert_file = _get_ca_cert_file_from_conf()))
+			return SLURM_ERROR;
+		free_cert = true;
 	}
-	return SLURM_SUCCESS;
+
+	rc = _add_ca_cert_to_client(client_config, cert_file);
+
+	if (free_cert)
+		xfree(cert_file);
+
+	return rc;
 }
 
 extern char *tls_p_get_own_public_cert(void)

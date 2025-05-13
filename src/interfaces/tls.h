@@ -135,7 +135,8 @@ extern bool tls_g_own_cert_loaded(void);
 
 /*
  * Load CA cert into trust store
- * IN cert_file - path to CA certificate pem
+ * IN cert_file - path to CA certificate pem. Set to NULL to load CA certificate
+ *	pem file from the configuration in slurm.conf or in the default path
  * RET SLURM_SUCCESS or error
  */
 extern int tls_g_load_ca_cert(char *cert_file);
