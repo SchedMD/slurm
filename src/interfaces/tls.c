@@ -170,6 +170,34 @@ extern int tls_g_init(void)
 		tls_enabled_bool = true;
 
 	plugin_inited = PLUGIN_INITED;
+
+	if (tls_enabled_bool) {
+		/* Load CA cert now, wait until later in configless */
+		if (!running_in_slurmstepd() && slurm_conf.last_update &&
+		    tls_g_load_ca_cert(NULL)) {
+			error("Could not load trusted certificates for s2n");
+			rc = SLURM_ERROR;
+			goto done;
+		}
+
+		/* Load own cert from file */
+		if ((running_in_slurmctld() || running_in_slurmdbd() ||
+		     running_in_slurmrestd() || running_in_slurmd() ||
+		     running_in_sackd()) &&
+		    tls_g_load_own_cert(NULL, 0, NULL, 0)) {
+			error("Could not load own TLS certificate from file");
+			rc = SLURM_ERROR;
+			goto done;
+		}
+
+		/* Load self-signed certificate in client commands */
+		if (!running_in_daemon() && tls_g_load_self_signed_cert()) {
+			error("Could not load self-signed TLS certificate");
+			rc = SLURM_ERROR;
+			goto done;
+		}
+	}
+
 done:
 	xfree(tls_type);
 	slurm_rwlock_unlock(&context_lock);

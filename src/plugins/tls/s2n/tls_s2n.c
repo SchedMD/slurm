@@ -366,24 +366,6 @@ static int _add_ca_cert_to_client(struct s2n_config *config, char* cert_file)
 	return SLURM_SUCCESS;
 }
 
-static int _add_ca_cert_from_conf_to_client(struct s2n_config *config)
-{
-	int rc;
-	char *cert_file;
-
-	cert_file = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=");
-	if (!cert_file && !(cert_file = get_extra_conf_path("ca_cert.pem"))) {
-		error("Failed to get cert.pem path");
-		xfree(cert_file);
-		return SLURM_ERROR;
-	}
-
-	rc = _add_ca_cert_to_client(config, cert_file);
-	xfree(cert_file);
-
-	return rc;
-}
-
 static int _add_cert_to_server(struct s2n_config *s2n_config,
 			       struct s2n_cert_chain_and_key **cert_and_key,
 			       char *cert_pem, uint32_t cert_pem_len,
@@ -655,33 +637,10 @@ extern int init(void)
 		return errno;
 	}
 
-	/*
-	 * CA cert loaded later for configless support.
-	 * Relies on slurm_conf.last_update being left unset in configless mode.
-	 */
-	if (!running_in_slurmstepd() &&
-	    slurm_conf.last_update &&
-	    _add_ca_cert_from_conf_to_client(client_config)) {
-		error("Could not load trusted certificates for s2n");
-		return SLURM_ERROR;
-	}
-
 	/* Create server s2n_config */
 	if (!(server_config = _create_server_config())) {
 		error("Could not create server configuration for s2n");
 		return errno;
-	}
-
-	if ((running_in_slurmctld() || running_in_slurmdbd() ||
-	     running_in_slurmrestd() || running_in_slurmd() ||
-	     running_in_sackd()) &&
-	    _add_cert_from_file_to_server()) {
-		error("Could not load own TLS certificate from file");
-		return SLURM_ERROR;
-	}
-	if (!running_in_daemon() && tls_p_load_self_signed_cert()) {
-		error("Could not load self-signed TLS certificate");
-		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
