@@ -1969,11 +1969,9 @@ static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 {
 	xassert(con == arg);
 
-#ifndef NDEBUG
 	slurm_mutex_lock(&listen_mutex);
-	xassert(!listener);
+	conmgr_fd_free_ref(&listener);
 	slurm_mutex_unlock(&listen_mutex);
-#endif
 
 	debug3("%s: [%s] closed RPC listener. Queuing up cleanup.",
 	       __func__, conmgr_fd_get_name(con));
