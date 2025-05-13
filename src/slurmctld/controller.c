@@ -1002,6 +1002,7 @@ int main(int argc, char **argv)
 		_slurmctld_background(NULL);
 
 		controller_fini_scheduling(); /* Stop all scheduling */
+		rpc_queue_shutdown();
 		agent_fini();
 
 		/* termination of controller */
@@ -1151,7 +1152,6 @@ int main(int argc, char **argv)
 	conmgr_fini();
 
 	rate_limit_shutdown();
-	rpc_queue_shutdown();
 	log_fini();
 	sched_log_fini();
 
