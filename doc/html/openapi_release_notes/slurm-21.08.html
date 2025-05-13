@@ -1,3 +1,171 @@
+<h2 id="21080">Slurm 21.08.8<a class="slurm_link" href="#21080"></a></h2>
+
+<h3>openapi/dbv0.0.37</h3>
+
+<h4>Move response fields in dbv0.0.37_diag under "statistics"</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new parent field</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.37_diag".properties.statistics</li>
+		</ul>
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">subordinated fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.37_diag".properties.time_start</li>
+			<li>.components.schemas."dbv0.0.37_diag".properties.rollups</li>
+			<li>.components.schemas."dbv0.0.37_diag".properties.RPCs</li>
+			<li>.components.schemas."dbv0.0.37_diag".properties.users</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h2 id="21087">Slurm 21.08.7<a class="slurm_link" href="#21087"></a></h2>
+
+<h3>openapi/v0.0.37</h3>
+
+<h4>Fix misspelling: change account_gather_freqency to account_gather_frequency
+(only the spec was wrong; the underlying code already worked with the correct spelling).</h4>
+
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_properties".properties.account_gather_freqency</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_properties".properties.account_gather_frequency</td>
+</tr>
+</table>
+
+<h4>Fix misspelling: change cluster_constraints to cluster_constraint (only the
+spec was wrong; the underlying code already worked with the correct spelling).
+</h4>
+
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_properties".properties.cluster_constraints</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_properties".properties.cluster_constraint</td>
+</tr>
+</table>
+
+<h2 id="21086">Slurm 21.08.6<a class="slurm_link" href="#21086"></a></h2>
+
+<h3>openapi/dbv0.0.37</h3>
+
+<h4>Add association fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.37_association".properties.is_default</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.tres.group.minutes</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.tres.group.active</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.jobs.active</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.jobs.accruing</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.jobs.total</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.tres.minutes.per.job</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Move incorrectly named field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">old path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.max.jobs.per.account</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.max.jobs.active_jobs.per.account</td>
+</tr>
+</table>
+
+<h4>Move incorrectly named field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">old path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.jobs.properties.per.properties.user</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.jobs.properties.active_jobs.properties.per.properties.user</td>
+</tr>
+</table>
+
+<h4>Add QOS fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.37_qos".properties.limits.properties.factor</li>
+			<li>.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.accruing.properties.per.properties.account</li>
+			<li>.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.accruing.properties.per.properties.user</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h2 id="21083">Slurm 21.08.3<a class="slurm_link" href="#21083"></a></h2>
+
+<h3>openapi/v0.0.37</h3>
+
+<h4>Allow strings for JobIds instead of only numerical JobIds.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Change job_id parameter to string</td>
+	<td class="tdchange">
+		<ul>
+			<li>.paths."/job/{job_id}".get.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".post.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".delete.parameters[].schema</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.37</h3>
+
+<h4>Correct placement of step TRES</h4>
+
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_job_step".properties.step.properties.tres</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_job_step".properties.tres</td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.36</h3>
+
+<h4>Correct placement of step TRES</h4>
+
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.36_job_step".properties.step.properties.tres</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.36_job_step".properties.tres</td>
+</tr>
+</table>
+
 <h2 id="21080">Slurm 21.08.0<a class="slurm_link" href="#21080"></a></h2>
 
 <p>All of the OpenAPI plugins have moved from "src/slurmrestd/plugins/openapi/"

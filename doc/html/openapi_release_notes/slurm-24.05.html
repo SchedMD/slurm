@@ -1,3 +1,113 @@
+<h2 id="24053">Slurm 24.05.3<a class="slurm_link" href="#24053"></a></h2>
+
+<h3>data_parser/v0.0.41</h3>
+
+<h4>Modified Fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.41_kill_jobs_msg"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.41_kill_jobs_msg"].required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.41_kill_jobs_msg"].type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].parameters = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/json"].schema.$ref = "#/components/schemas/v0.0.41_kill_jobs_msg";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/x-yaml"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/x-yaml"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.content["application/x-yaml"].schema.$ref = "#/components/schemas/v0.0.41_kill_jobs_msg";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/jobs/"]["delete"].requestBody.description = "Signal or cancel jobs";</td>
+</tr>
+</table>
+
+<h3>data_parser/v0.0.40</h3>
+
+<h4>Modified Fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.40_kill_jobs_msg"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].parameters = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/json"].schema.$ref = "#/components/schemas/v0.0.40_kill_jobs_msg";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/x-yaml"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/x-yaml"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.content["application/x-yaml"].schema.$ref = "#/components/schemas/v0.0.40_kill_jobs_msg";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/jobs/"]["delete"].requestBody.description = "Signal or cancel jobs";</td>
+</tr>
+</table>
+
 <h2 id="24051">Slurm 24.05.1<a class="slurm_link" href="#24051"></a></h2>
 
 <h3>data_parser/v0.0.41</h3>
@@ -6131,3 +6241,701 @@
 	<td class="tdchange">.paths["/slurmdb/v0.0.40/wckeys/"].post.responses["default"].content["text/yaml"].schema.$ref = "#/components/schemas/v0.0.40_openapi_resp";</td>
 </tr>
 </table>
+
+<h2 id="24050">Slurm 24.05.0<a class="slurm_link" href="#24050"></a></h2>
+
+<h3>openapi/slurmctld</h3>
+
+<h3>data_parser/v0.0.41</h3>
+
+<h2>Only populate "deprecated" fields if true.</h2>
+<table class="tchange">
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/jobs/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/jobs/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/node"/{node_name}/delete/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/node"/{node_name}/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/node"/{node_name}/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/node"/{node_name}/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/node"/{node_name}/post/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[5]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[6]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[7]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[8]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[9]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[10]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[11]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[12]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[13]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[14]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[15]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[16]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/delete/parameters[17]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[5]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[6]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[7]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[8]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[9]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[10]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[11]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[12]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[13]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[14]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[15]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[16]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/associations/get/parameters[17]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/nodes/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/nodes/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/clusters/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/clusters/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/clusters/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/clusters/get/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/clusters/get/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/clusters/get/parameters[5]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/clusters/get/parameters[6]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/clusters/get/parameters[7]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/clusters/get/parameters[8]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/clusters/get/parameters[9]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/qos/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/qos/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/qos/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/qos/get/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/qos/get/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/qos/get/parameters[5]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_openapi_job_post_response/properties/step_id/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/user"/{name}/delete/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/user"/{name}/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/user"/{name}/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/user"/{name}/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/user"/{name}/get/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/user"/{name}/get/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/accounts/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/accounts/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/accounts/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/accounts/get/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/account"/{account_name}/delete/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/account"/{account_name}/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/account"/{account_name}/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/account"/{account_name}/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/account"/{account_name}/get/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_openapi_job_post_response/properties/job_id/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_openapi_job_post_response/properties/job_submit_user_msg/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/qos"/{qos}/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/shares/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/shares/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckeys/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckeys/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckeys/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckeys/get/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckeys/get/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckeys/get/parameters[5]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckeys/get/parameters[6]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckeys/get/parameters[7]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckeys/get/parameters[8]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckeys/get/parameters[9]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckey"/{id}/delete/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/wckey"/{id}/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/users/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/users/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/users/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/users/get/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/users/get/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/users/get/parameters[5]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/users/get/parameters[6]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/users/get/parameters[7]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[5]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[6]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[7]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[8]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[9]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[10]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[11]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[12]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[13]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[14]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[15]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[16]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[17]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[18]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[19]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[20]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[21]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[22]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[23]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[24]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[25]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[26]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[27]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[28]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[29]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[30]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[31]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[32]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[33]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/job"/{job_id}/delete/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/job"/{job_id}/delete/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/job"/{job_id}/delete/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/job"/{job_id}/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/job"/{job_id}/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/job"/{job_id}/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurm/v0.0.41"/job"/{job_id}/post/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[5]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[6]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[7]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[8]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[9]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[10]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[11]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[12]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[13]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[14]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[15]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[16]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/delete/parameters[17]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[5]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[6]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[7]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[8]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[9]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[10]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[11]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[12]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[13]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[14]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[15]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[16]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/association/get/parameters[17]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/delete/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/delete/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/delete/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/delete/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/delete/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/delete/parameters[5]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/delete/parameters[6]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/delete/parameters[7]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/delete/parameters[8]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/delete/parameters[9]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/delete/parameters[10]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/get/parameters[0]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/get/parameters[1]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/get/parameters[2]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/get/parameters[3]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/get/parameters[4]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/get/parameters[5]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/get/parameters[6]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/get/parameters[7]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/get/parameters[8]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/get/parameters[9]/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/cluster"/{cluster_name}/get/parameters[10]/deprecated</td></tr>
+</table>
+
+<h2>Populate missing "deprecated" fields</h2>
+
+<table class="tchange">
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_openapi_job_submit_response/properties/result/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/exclusive/deprecated</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/oversubscribe/deprecated</td></tr>
+</table>
+
+<h2>Reduced number of "$ref" fields.</h2>
+Where there was only 1 reference for the schema, the "$ref" schema will be
+directly populated in place. Content of the schemas will be relatively
+unchanged.
+<table class="tchange">
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_openapi_nodes_resp/properties/last_update/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/timeouts/properties/suspend/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/timeouts/properties/resume/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/suspend_time/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/cpus_per_node/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/cpus_per_socket/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/nodes/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/time/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/partition_memory_per_cpu/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/over_time_limit/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/partition_memory_per_node/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/defaults/properties/time/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/defaults/properties/partition_memory_per_cpu/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/defaults/properties/partition_memory_per_node/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_assoc_rec_set/properties/grpwall/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_assoc_rec_set/properties/minpriothresh/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_assoc_rec_set/properties/grpsubmitjobs/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_assoc_rec_set/properties/maxjobsaccrue/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_assoc_rec_set/properties/maxwalldurationperjob/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_assoc_rec_set/properties/maxjobs/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_assoc_rec_set/properties/maxsubmitjobs/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_assoc_rec_set/properties/qoslevel/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_assoc_rec_set/properties/grpjobsaccrue/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_assoc_rec_set/properties/grpjobs/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_assoc_rec_set/properties/priority/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_process_exit_code_verbose/properties/signal/properties/id/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_process_exit_code_verbose/properties/return_code/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_acct_gather_energy/properties/current_watts/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_res/properties/nodes/type</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_openapi_partition_resp/properties/last_update/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_type/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_type/items/properties/count/format</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_type/items/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_update_node_msg/properties/weight/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_update_node_msg/properties/resume_after/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_openapi_job_info_resp/properties/last_update/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_openapi_job_info_resp/properties/last_backfill/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_power_mgmt_data/properties/new_job_time/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_power_mgmt_data/properties/maximum_watts/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_openapi_reservation_resp/properties/last_update/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/kill_warning_delay/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/priority/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/time_minimum/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/memory_per_cpu/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/rlimits/properties/cpu/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/rlimits/properties/nofile/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/rlimits/properties/nproc/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/rlimits/properties/core/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/rlimits/properties/rss/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/rlimits/properties/data/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/rlimits/properties/stack/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/rlimits/properties/fsize/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/rlimits/properties/memlock/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/rlimits/properties/as/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/begin_time/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/time_limit/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/required_switches/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/memory_per_node/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_ext_sensors_data/properties/consumed_energy/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_ext_sensors_data/properties/temperature/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_user/items/properties/count/format</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_user/items/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_job_res_nodes/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_openapi_licenses_resp/properties/last_update/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/job_states_ts/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/req_time_start/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/req_time/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/bf_when_last_cycle/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/pending_rpcs_by_hostlist</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/pending_rpcs</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/schedule_cycle_sum</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/bf_cycle_max</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/bf_table_size_sum</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/schedule_cycle_depth</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_rollup_stats/type</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_rollup_stats/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_rollup_stats/required</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[4]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[4]/allowEmptyValue</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[5]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[5]/allowEmptyValue</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[6]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[7]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[8]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[9]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[9]/allowEmptyValue</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[10]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[11]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[11]/allowEmptyValue</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[12]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[13]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[14]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[15]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[16]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[17]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[18]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[19]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[19]/allowEmptyValue</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[20]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[20]/allowEmptyValue</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[21]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[21]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[22]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[22]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[23]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[23]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[24]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[24]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[25]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[25]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[26]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[26]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[27]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[27]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[28]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[28]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[29]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[29]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[30]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[30]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[31]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[31]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[32]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[32]/description</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[33]/name</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[33]/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_type/items/properties/average_time/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_type/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_type/items/properties/average_time/format</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_type/items/properties/average_time/type</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_user/items/properties/average_time/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_user/items/properties/average_time/format</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_user/items/properties/average_time/type</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_by_user/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_accounting_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_accounting_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_accounting_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_accounting_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_account_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_account_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_account_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_account_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_assoc_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_assoc_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_assoc_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_assoc_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_assoc_shares_obj_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_assoc_shares_obj_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_assoc_shares_obj_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_assoc_shares_obj_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_cluster_rec_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_cluster_rec_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_cluster_rec_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_cluster_rec_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_controller_ping_array/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_controller_ping_array/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_controller_ping_array/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_controller_ping_array/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_coord_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_coord_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_coord_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_coord_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_instance_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_instance_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_instance_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_instance_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_job_array_response_array/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_array_response_array/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_array_response_array/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_array_response_array/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_job_info_msg/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_info_msg/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_info_msg/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_info_msg/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_licenses/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_licenses/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_licenses/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_licenses/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_nodes/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_nodes/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_nodes/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_nodes/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_openapi_errors/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_openapi_errors/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_openapi_errors/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_openapi_errors/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_openapi_slurmdbd_jobs_resp/properties/jobs/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_openapi_slurmdbd_jobs_resp/properties/jobs/items</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_openapi_slurmdbd_jobs_resp/properties/jobs/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_openapi_warnings/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_openapi_warnings/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_openapi_warnings/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_openapi_warnings/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_qos_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_qos_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_qos_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_qos_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_reservation_info_core_spec/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_reservation_info_core_spec/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_reservation_info_core_spec/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_reservation_info_core_spec/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_reservation_info_msg/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_reservation_info_msg/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_reservation_info_msg/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_reservation_info_msg/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_shares_float128_tres_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_shares_float128_tres_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_shares_float128_tres_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_shares_float128_tres_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_shares_uint64_tres_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_shares_uint64_tres_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_shares_uint64_tres_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_shares_uint64_tres_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_stats_rpc_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_rpc_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_rpc_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_rpc_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_stats_user_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_user_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_user_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_user_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_tres_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_tres_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_tres_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_tres_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_user_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_user_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_user_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_user_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_wckey_list/items/$ref</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_wckey_list/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_wckey_list/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_wckey_list/items/type</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res_socket_array</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_dump</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg_rpcs_queue</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_job_res/properties/allocated_nodes</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/properties/cpus</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/properties/nodes/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/properties/select_type</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/properties/threads_per_core</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/required[0]</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/required[1]</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/required[2]</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/required[3]</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/required[4]</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/required[5]</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/required[6]</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res/required[7]</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_accounting</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_account</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_assoc_shares_obj_wrap</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_assoc</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_cluster_rec</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_controller_ping</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_coord</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_instance</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_job_array_response_msg_entry</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_job_info</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_job_list</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_job</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_license</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_node</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_openapi_error</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_openapi_warning</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_qos</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_reservation_core_spec</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_reservation_info</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_rollup_stats/items</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_shares_float128_tres</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_shares_uint64_tres</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_stats_rpc</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_stats_user</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_step_list</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_step</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_step_tres_req_max</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_step_tres_req_min</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_step_tres_usage_max</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_step_tres_usage_min</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_user</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_wckey_tag_struct</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_wckey</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res_core_array</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res_nodes/items/properties</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res_nodes/items/required</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res_nodes/items/type</td></tr>
+</table>
+
+<h2>Rename NO_VAL schemas to add correct integer sizes</h2>
+<table class="tchange">
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_uint16_no_val</td>
+<td class="tdfield">/components/schemas/v0.0.41_uint16_no_val_struct</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_float64_no_val</td>
+<td class="tdfield">/components/schemas/v0.0.41_float64_no_val_struct</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_uint64_no_val</td>
+<td class="tdfield">/components/schemas/v0.0.41_uint64_no_val_struct</td></tr>
+<tr class="trchange"><td class="tdfield">replace</td><td class="tdfield">/components/schemas/v0.0.41_uint32_no_val</td>
+<td class="tdfield">/components/schemas/v0.0.41_uint32_no_val_struct</td></tr>
+</table>
+
+<h2>Correct description generation</h2>
+<table class="tchange">
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_acct_gather_energy/properties/current_watts/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_ext_sensors_data/properties/consumed_energy/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_ext_sensors_data/properties/temperature/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/begin_time/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/kill_warning_delay/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/memory_per_cpu/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/memory_per_node/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/priority/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/required_switches/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/time_limit/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_desc_msg/properties/time_minimum/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_job_res_nodes/items/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/defaults/properties/partition_memory_per_cpu/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/defaults/properties/partition_memory_per_node/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/defaults/properties/time/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/cpus_per_node/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/cpus_per_socket/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/nodes/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/over_time_limit/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/partition_memory_per_cpu/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/partition_memory_per_node/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/maximums/properties/time/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/suspend_time/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/timeouts/properties/resume/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/timeouts/properties/suspend/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_partition_info/properties/select_type</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_power_mgmt_data/properties/maximum_watts/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_power_mgmt_data/properties/new_job_time/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/bf_when_last_cycle/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/job_states_ts/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/req_time/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/req_time_start/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/rpcs_by_message_type/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/components/schemas/v0.0.41_stats_msg/properties/rpcs_by_user/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[19]/description</td></tr>
+<tr class="trchange"><td class="tdfield">add</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[20]/description</td></tr>
+<tr class="trchange"><td class="tdfield">move</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[9]/description</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/components/schemas/v0.0.41_rollup_stats/description</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[4]/description</td></tr>
+<tr class="trchange"><td class="tdfield">remove</td><td class="tdfield">/paths/"/slurmdb/v0.0.41"/jobs/get/parameters[5]/description</td></tr>
+
+<h4>Add node fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."v0.0.41_node".properties.res_cores_per_gpu</li>
+			<li>.components.schemas."v0.0.41_node".properties.gpu_spec</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Switch integer to have NO_VAL tagging to allow for complex values.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.41_job_desc_msg".properties.distribution_plane_size
+	</td>
+</tr>
+</table>
+
+<h4>Fields tagged as deprecated</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Deprecated field</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.41_job_submit_req".properties.script
+	</td>
+</tr>
+</table>
+
+<h4>Modified Fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Modified field</td>
+	<td class="tdchange">.components.schemas."v0.0.41_kill_jobs_msg".properties.flags.items.enum</td>
+</tr>
+<tr class="trchange">
+       <td class="tdfield">Added STEPMGR_ENABLED flag</td>
+       <td class="tdchange">.components.schemas."v0.0.41_openapi_job_info_resp".properties.jobs.items.properties.flags</td>
+</tr>
+</table>
+
+<h4>New enum values</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">New values</td>
+	<td class="tdchange">.components.schemas."v0.0.41_openapi_slurmdbd_config_resp".properties.accounts.items.properties.flags.items.enum</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">New values</td>
+	<td class="tdchange">.components.schemas."v0.0.41_openapi_accounts_resp".properties.accounts.items.properties.flags.items.enum</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">New values</td>
+	<td class="tdchange">.components.schemas."v0.0.41_openapi_assocs_resp".properties.associations.items.properties.flags.items.enum</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">New values</td>
+	<td class="tdchange">.components.schemas."v0.0.41_job_desc_msg".properties.shared.items.enum.topo</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">New values</td>
+	<td class="tdchange">.components.schemas."v0.0.41_openapi_job_info_resp".properties.shared.items.enum.topo</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">New values</td>
+	<td class="tdchange">.components.schemas."v0.0.41_job_desc_msg".properties.exclusive.items.enum.topo</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">New values</td>
+	<td class="tdchange">.components.schemas."v0.0.41_openapi_job_info_resp".properties.exclusive.items.enum.topo</td>
+</tr>
+</table>
+
+<h4>Add fields to job description</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new field</td>
+	<td class="tdchange" colspan=2>
+		.components.schemas."v0.0.41_job_desc_msg".properties.segment_size
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new field</td>
+	<td class="tdchange" colspan=2>
+		.components.schemas."v0.0.41_job_desc_msg".properties.resv_mpi_ports
+	</td>
+</tr>
+</table>
+
+<h3>data_parser/v0.0.40</h3>
+
+<h4>Modified Fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Modified field</td>
+	<td class="tdchange">.components.schemas."v0.0.40_kill_jobs_msg".properties.flags.items.enum</td>
+</tr>
+</table>
+
+<h3>openapi/v0.0.39 (src/plugins/openapi/v0.0.39/openapi.json)</h3>
+
+<h4>Deprecation notice</h4>
+The v0.0.39 plugin has now been marked as deprecated.
+
+<h3>openapi/v0.0.38 (src/plugins/openapi/v0.0.38/openapi.json)</h3>
+
+<h4>Removal notice</h4>
+The v0.0.38 plugin has now been removed.
+
+<h3>openapi/slurmdbd</h3>
+
+<h2>Generated openapi.json will only populate "deprecated" fields if true.</h2>
+
+<h2>Reduced number of "$ref" fields. Where there was only 1 reference for the
+	schema, the "$ref" schema will be directly populated in place. Content
+	of the schemas will be relatively unchanged.</h2>
+
+<h3>openapi/dbv0.0.39 (src/plugins/openapi/dbv0.0.39/openapi.json)</h3>
+
+<h4>Deprecation notice</h4>
+The dbv0.0.39 plugin has now been marked as deprecated.
+
+<h3>openapi/dbv0.0.38 (src/plugins/openapi/dbv0.0.38/openapi.json)</h3>
+
+<h4>Removal notice</h4>
+The dbv0.0.38 plugin has now been removed.
