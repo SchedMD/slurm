@@ -184,6 +184,7 @@ extern int tls_g_init(void)
 		if ((running_in_slurmctld() || running_in_slurmdbd() ||
 		     running_in_slurmrestd() || running_in_slurmd() ||
 		     running_in_sackd()) &&
+		    slurm_conf.last_update &&
 		    tls_g_load_own_cert(NULL, 0, NULL, 0)) {
 			error("Could not load own TLS certificate from file");
 			rc = SLURM_ERROR;
