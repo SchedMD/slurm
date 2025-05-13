@@ -1,12 +1,11 @@
 # RELEASE NOTES FOR SLURM VERSION 25.05
 
 ## IMPORTANT NOTES
-* If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
+* If using the slurmdbd (Slurm DataBase Daemon) you must update this first. If
+using a backup DBD you must start the primary first to do any database
+conversion, the backup will not start until this has happened.
 
-NOTE: If using a backup DBD you must start the primary first to do any
-database conversion, the backup will not start until this has happened.
-
-* The 24.05 slurmdbd will work with Slurm daemons of version 23.02 and above.
+* The 25.05 slurmdbd will work with Slurm daemons of version 23.11 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.
