@@ -12,18 +12,18 @@
 * Update jobs' SLURM_CPUS_PER_TASK and SLURM_TRES_PER_TASK environment variables if they are modified before the job is allocated.
 * Deprecate v0.0.43 *_CONDITION field "format" as it is not interpreted; users should instead process the resulting JSON or YAML object manually.
 * Remove LogTimeFormat=format_stderr, logs and stderr will always print the same.
-* slurmdbd: Fix race condition that could cause a crash during shutdown.
+* slurmdbd - Fix race condition that could cause a crash during shutdown.
 * Fix libslurm(db) install paths when PREFIX contains /usr(/local)/
 * Add CommunicationParameters=host_unreach_retry_count=# to retry connecting when a host might be temporarily unreachable.
 * Make "--spread-job" option works as documented
 * data_parser/v0.0.43 - Deprecating the 'instances' field of the GET /slurmdb/v0.0.43/config endpoint. This field was never populated.
 * Fix the --gpus-per-task option to allow a list of gpu types to be specified.
 * Fix how the --tres-bind option was being implicitly set for the --[tres|gpu]_per_task options when multiple gpu types are specified. It now sets the per_task binding count to the sum of the types.
-* data_parser/v0.0.43: Avoid setting dumped value of JSON or YAML for a 64 bit float as "Infinity" or "NaN".
-* data_parser/v0.0.43: Avoid setting dumped value of JSON or YAML for a 128 bit float as "Infinity" or "NaN". Add warning when values are truncated on conversion of 128 bit float to 64 bit float.
-* data_parser/v0.0.43: Avoid setting dumped value of JSON or YAML as null when integer value is Infinity or NaN.
-* data_parser/v0.0.43: Avoid setting dumped value of JSON or YAML as null when integer value is Infinity or NaN.
-* data_parser/v0.0.43: Avoid misparsing integer of INFINITE64 as INFINITE
+* data_parser/v0.0.43 - Avoid setting dumped value of JSON or YAML for a 64 bit float as "Infinity" or "NaN".
+* data_parser/v0.0.43 - Avoid setting dumped value of JSON or YAML for a 128 bit float as "Infinity" or "NaN". Add warning when values are truncated on conversion of 128 bit float to 64 bit float.
+* data_parser/v0.0.43 - Avoid setting dumped value of JSON or YAML as null when integer value is Infinity or NaN.
+* data_parser/v0.0.43 - Avoid setting dumped value of JSON or YAML as null when integer value is Infinity or NaN.
+* data_parser/v0.0.43 - Avoid misparsing integer of INFINITE64 as INFINITE
 * Avoid dumping Infinity and NaN as values in JSON output.
 * Remove an unnecessary thread creation in acct_gather_energy/gpu
 * Correct DRAM units for some cpus in rapl energy gathering.
@@ -35,7 +35,7 @@
 * sacctmgr - avoid freeing username in the username cache.
 * sacctmgr - avoid leaking user_list in sacctmgr dump cluster
 * Allow topology/block Block definitions to have fewer nodes than the minimum BlockSize.
-* slurmrestd: Allow use of "-d list" option without loading slurm.conf.
+* slurmrestd - Allow use of "-d list" option without loading slurm.conf.
 * Allow topology/tree leaf switch definitions without child nodes.
 * data_parser/v0.0.43 - Added field '.jobs[].segment_size' to the following endpoints: 'GET /slurm/v0.0.43/jobs' 'GET /slurm/v0.0.43/job/{job_id}'
 * squeue - Add "SegmentSize" as a format option
@@ -78,9 +78,9 @@
 * interfaces/jobcomp - Add new jobcomp_[g|p]_record_job_start() hook.
 * jobcomp/kafka - Add support for sending job information when jobs start running. This can be optionally configured via two new JobCompParams of 'enable_job_start' and 'topic_job_start=<topic>'.
 * MailType arguments set in the command line will override MailType arguments set in the batch script, and multiple --mail-type arguments will not be merged, honoring the documentation which states that multiple kinds of --mail-type can be set by providing a comma-separated list and making this behave like any other command line arguments.
-* slurmctld,slurmrestd: Avoid race condition that could result in more connections accepted than configured via conmgr_max_connections.
+* slurmctld,slurmrestd - Avoid race condition that could result in more connections accepted than configured via conmgr_max_connections.
 * slurmctld - Improve incoming connection throughput by accepting new connections faster.
-* slurmctld: Reduce latency in some responses times for incoming RPCs.
+* slurmctld - Reduce latency in some responses times for incoming RPCs.
 * Add new SchedulerParameter option to force job requeue in the situation that a cloud node failed to be resumed.
 * Improve debug log message in slurm_recv_timeout() when EOF encountered from remote socket.
 * Improve error logged when slurm_recv_timeout() encounters EOF when part of RPC has already been read from socket.
@@ -134,8 +134,8 @@
 * Fix steps not being created when using certain combinations of -c and -n inferior to the jobs requested resources, when using stepmgr and nodes are configured with CPUs == Sockets*CoresPerSocket.
 * jobcomp/elasticsearch - Don't send the batch script by default. A new option - JobCompParams=send_script - has been added to explicitly permit sites to send it.
 * jobcomp/kafka - Don't send the batch script by default. A new option - JobCompParams=send_script - has been added to explicitly permit sites to send it.
-* scontrol: The `.nodes[].tres_weighted` field has been marked deprecated and is now ignored.
-* slurmrestd: The `.nodes[].tres_weighted` field for following endpoints has been marked deprecated and is now ignored: GET /slurm/v0.0.40/nodes GET /slurm/v0.0.41/nodes GET /slurm/v0.0.42/nodes GET /slurm/v0.0.43/nodes
+* scontrol - The `.nodes[].tres_weighted` field has been marked deprecated and is now ignored.
+* slurmrestd - The `.nodes[].tres_weighted` field for following endpoints has been marked deprecated and is now ignored: GET /slurm/v0.0.40/nodes GET /slurm/v0.0.41/nodes GET /slurm/v0.0.42/nodes GET /slurm/v0.0.43/nodes
 * Improve support for newer bash-completion packages.
 * switch/hpe_slingshot - Always try to renew the fabric manager token on a HTTP 401 or 403 error status regardless of the contents of the response body.
 * switch/hpe_slingshot - Fix slurmctld memory leak when cleaning up the switch/hpe_slingshot plugin.
@@ -171,7 +171,7 @@
 * Don't remove reservation that doesn't have any user resolvable in nsswitch configured data sources.
 * Add ability to configure multiple topology plugins via the new topology.yaml configuration file.
 * slurmrestd - Avoid fatal() during startup when unable to drop supplementary groups when running process lacks any supplementary groups.
-* slurmrestd: Check to drop supplementary groups after resolving future process group ID is changing.
+* slurmrestd - Check to drop supplementary groups after resolving future process group ID is changing.
 * slurmrestd - Avoid dropping supplementary groups when supplementary are redundantly to primary group.
 * When running slurmd in a container and a reconfigure is issued, do not re-generate the cgroup hierarchy inside the actual cgroup, which would end up having unnecessary cgroup sub-levels.
 * Fix stepd scope path generation after reconfiguring a non-daemonized and manually-started slurmd that is pid 1. This might happen only in containers and would cause incorrect cgroup hierarchy to be created.
@@ -189,7 +189,7 @@
 * When an error occurs while serializing a yaml file, the line number and column number causing the error will now be logged.
 * slurmctld - Fix regression where configured timeouts would not be enforced for new incoming RPC connections until after the incoming RPC packet has been read.
 * slurmctld - Avoid timeouts not getting enforced due to race condition of when connections are examined for timeouts.
-* slurmctld/slurmd/sackd/slurmrestd/slurmdbd/scrun: Modified internal monitoring of I/O activity to always wake up with a maximum sleep of 300s seconds to check for changes and to restart polling of file descriptors. This will avoid daemons from getting effectively stuck forever (or until a POSIX signal) while idle if another bug is triggered which could cause an I/O event to be missed by the internal monitoring.
+* slurmctld/slurmd/sackd/slurmrestd/slurmdbd/scrun - Modified internal monitoring of I/O activity to always wake up with a maximum sleep of 300s seconds to check for changes and to restart polling of file descriptors. This will avoid daemons from getting effectively stuck forever (or until a POSIX signal) while idle if another bug is triggered which could cause an I/O event to be missed by the internal monitoring.
 * Fix race condition on x11 shutdown which caused other privileged cleanup operations to fail and leave stray cgroup or spool directories and errors in the logs.
 * slurmctld - Prevent sending repeat job start messages to the slurmdbd that can cause the loss of the reservation a job used in the database when upgrading from <24.11.
 * switch/hpe_slingshot - Fix defaulting VNI range to 1024-65535 when no SwitchParameters specified.
