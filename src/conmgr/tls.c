@@ -347,7 +347,12 @@ static int _send(void *io_context, const uint8_t *src, uint32_t len)
 	log_flag_hex(NET_RAW, src, len, "[%s] TLS send encrypted", con->name);
 
 	(void) memcpy(dst, src, len);
+
+	slurm_mutex_lock(&mgr.mutex);
+
 	list_append(con->tls_out, buf);
+
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return len;
 }
