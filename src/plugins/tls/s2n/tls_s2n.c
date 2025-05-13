@@ -764,6 +764,9 @@ extern char *tls_p_get_own_public_cert(void)
 extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
 			       uint32_t key_len)
 {
+	if (!cert)
+		return _add_cert_from_file_to_server();
+
 	xfree(server_cert);
 	xfree(server_key);
 

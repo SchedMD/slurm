@@ -104,9 +104,15 @@ extern char *tls_g_get_own_public_cert(void);
 
 /*
  * Load own certificate into store
+ *
  * This is useful when certificate is not known on startup, and must be loaded
  * later (e.g. slurmd getting a signed certificate from slurmctld)
- * IN cert - certificate PEM
+ *
+ * Set 'cert' to NULL to try to load certificate from file. This is only
+ * relevant to Slurm daemons that have statically configured certificates.
+ * If 'cert' is NULL, all other arguments will be ignored.
+ *
+ * IN cert - certificate PEM, or NULL if loading from file.
  * IN cert_len - length of cert
  * IN key - key PEM
  * IN key_len - length of key
