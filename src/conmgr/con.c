@@ -1646,6 +1646,16 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
 	return rc;
 }
 
+static void _free_extract(extract_fd_t **extract_ptr)
+{
+	extract_fd_t *extract = NULL;
+	SWAP(*extract_ptr, extract);
+
+	xassert(extract->magic == MAGIC_EXTRACT_FD);
+	extract->magic = ~MAGIC_EXTRACT_FD;
+	xfree(extract);
+}
+
 static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	extract_fd_t *extract = arg;
@@ -1658,8 +1668,7 @@ static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	extract->func(conmgr_args, extract->input_fd, extract->output_fd,
 		      extract->tls_conn, extract->func_arg);
 
-	extract->magic = ~MAGIC_EXTRACT_FD;
-	xfree(extract);
+	_free_extract(&extract);
 
 	/* wake up watch() to cleanup connection */
 	slurm_mutex_lock(&mgr.mutex);
@@ -1671,7 +1680,6 @@ static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 extern void extract_con_fd(conmgr_fd_t *con)
 {
 	extract_fd_t *extract = NULL;
-	int rc = SLURM_SUCCESS;
 
 	SWAP(extract, con->extract);
 	xassert(extract);
@@ -1713,9 +1721,11 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	xassert(list_is_empty(con->out));
 	xassert(!get_buf_offset(con->in));
 
-	/* Extract TLS state */
-	if (con->tls)
-		rc = tls_extract(con, extract);
+	/* Extract TLS state (or fail) */
+	if (con->tls && tls_extract(con, extract)) {
+		_free_extract(&extract);
+		return;
+	}
 
 	/*
 	 * take the file descriptors, replacing the file descriptors in
@@ -1728,8 +1738,7 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	 * Queue up work but not against the connection as we want watch() to
 	 * cleanup the connection.
 	 */
-	if (!rc)
-		add_work_fifo(true, _wrap_on_extract, extract);
+	add_work_fifo(true, _wrap_on_extract, extract);
 }
 
 static int _unquiesce_fd(conmgr_fd_t *con)
