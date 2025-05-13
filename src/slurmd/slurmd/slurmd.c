@@ -576,7 +576,7 @@ static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status != CONMGR_WORK_STATUS_RUN)
 		return;
 
-	if (tls_get_cert_from_ctld(conf->node_name)) {
+	if (certmgr_get_cert_from_ctld(conf->node_name)) {
 		/*
 		 * Don't do full delay between tries to get TLS certificate if
 		 * we failed to get it.

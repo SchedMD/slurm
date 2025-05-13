@@ -223,6 +223,4 @@ extern ssize_t tls_g_recv(void *conn, void *buf, size_t n);
  */
 extern int tls_is_handshake(const void *buf, const size_t n, const char *name);
 
-extern int tls_get_cert_from_ctld(char *name);
-
 #endif
