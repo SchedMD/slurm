@@ -1546,7 +1546,7 @@ static void _help(void)
 "      --epilog=program        run \"program\" after launching job step\n"
 "  -E, --preserve-env          env vars for node and task counts override\n"
 "                              command-line flags\n"
-"      --gres=list             required generic resources\n"
+"      --gres=list             required generic resources per node\n"
 "      --gres-flags=opts       flags related to GRES management\n"
 "  -H, --hold                  submit job in held state\n"
 "  -i, --input=in              location of stdin redirection\n"

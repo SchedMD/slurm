@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "February 2025" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "May 2025" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1416,7 +1416,8 @@ overridden with an explicit \-\-tres\-bind=gres/gpu specification.
 
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
-Specifies a comma\-delimited list of generic consumable resources.
+Specifies a comma\-delimited list of generic consumable resources requested per
+node.
 The format for each entry in the list is "name[[:type]:count]".
 The \fIname\fR is the type of consumable resource (e.g. gpu).
 The \fItype\fR is an optional classification for the resource (e.g. a100).

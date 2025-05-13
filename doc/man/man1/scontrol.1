@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "March 2025" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "May 2025" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1054,7 +1054,8 @@ Value may be cleared with blank data value, for example "Features=".
 
 .TP
 \fBGres\fR=<\fIlist\fR>
-Specifies a comma\-delimited list of generic consumable resources.
+Specifies a comma\-delimited list of generic consumable resources requested per
+node.
 The format of each entry on the list is "name[:count[*cpu]]".
 The name is that of the consumable resource.
 The count is the number of those resources with a default value of 1.

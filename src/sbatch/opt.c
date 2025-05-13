@@ -1129,7 +1129,7 @@ static void _help(void)
 "                              descriptor to export\n"
 "      --get-user-env          load environment from local cluster\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
-"      --gres=list             required generic resources\n"
+"      --gres=list             required generic resources per node\n"
 "      --gres-flags=opts       flags related to GRES management\n"
 "  -H, --hold                  submit job in held state\n"
 "      --ignore-pbs            Ignore #PBS and #BSUB options in the batch script\n"
