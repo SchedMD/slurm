@@ -1,6 +1,6 @@
 Name:		slurm
 Version:	25.05.0
-%define rel	0rc1
+%define rel	0rc2
 %if %{defined patch} && %{undefined extraver}
 %define extraver .patched
 %endif
