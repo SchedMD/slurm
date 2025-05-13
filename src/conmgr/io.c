@@ -139,10 +139,9 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 	}
 
 	/* check for errors with a NULL read */
-	read_c = read(con->input_fd, (get_buf_data(buf) +
-				      get_buf_offset(buf)), readable);
-
-	if (read_c == -1) {
+	if ((read_c = read(con->input_fd,
+			   (get_buf_data(buf) + get_buf_offset(buf)),
+			   readable)) < 0) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			log_flag(NET, "%s: [%s] socket would block on read",
 				 __func__, con->name);
@@ -154,7 +153,9 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 
 		close_con(false, con);
 		return;
-	} else if (read_c == 0) {
+	}
+
+	if (read_c == 0) {
 		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in %s",
 			 __func__, con->name, get_buf_offset(buf), what);
 
