@@ -1680,7 +1680,6 @@ static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 extern void extract_con_fd(conmgr_fd_t *con)
 {
 	extract_fd_t *extract = NULL;
-	int rc = SLURM_SUCCESS;
 
 	SWAP(extract, con->extract);
 	xassert(extract);
@@ -1722,9 +1721,11 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	xassert(list_is_empty(con->out));
 	xassert(!get_buf_offset(con->in));
 
-	/* Extract TLS state */
-	if (con->tls)
-		rc = tls_extract(con, extract);
+	/* Extract TLS state (or fail) */
+	if (con->tls && tls_extract(con, extract)) {
+		_free_extract(&extract);
+		return;
+	}
 
 	/*
 	 * take the file descriptors, replacing the file descriptors in
@@ -1737,8 +1738,7 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	 * Queue up work but not against the connection as we want watch() to
 	 * cleanup the connection.
 	 */
-	if (!rc)
-		add_work_fifo(true, _wrap_on_extract, extract);
+	add_work_fifo(true, _wrap_on_extract, extract);
 }
 
 static int _unquiesce_fd(conmgr_fd_t *con)
