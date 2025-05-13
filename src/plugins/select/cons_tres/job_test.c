@@ -2488,10 +2488,9 @@ static int _is_job_relevant(void *x, void *key)
 	/* Verify there are enough licenses without this job's licenses */
 	if (running_job_ptr->license_list && args->needed_licenses) {
 		for (uint32_t i = 0; i < args->license_cnt; i++) {
-			license_req_t needed_license = args->needed_licenses[i];
+			license_req_t *needed_lic = &args->needed_licenses[i];
 			match = _find_license_in_list(
-				running_job_ptr->license_list,
-				needed_license.id);
+				running_job_ptr->license_list, needed_lic->id);
 			if (!match)
 				continue;
 
@@ -2502,11 +2501,11 @@ static int _is_job_relevant(void *x, void *key)
 			 * there still enough for the job to run? If not, then
 			 * we know running_job is relevant for this job request.
 			 */
-			if (needed_license.remaining < match->total)
-				needed_license.remaining = 0;
+			if (needed_lic->remaining < match->total)
+				needed_lic->remaining = 0;
 			else
-				needed_license.remaining -= match->total;
-			if (needed_license.remaining < needed_license.required)
+				needed_lic->remaining -= match->total;
+			if (needed_lic->remaining < needed_lic->required)
 				return true;
 		}
 	}
