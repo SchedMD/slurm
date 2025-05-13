@@ -1646,6 +1646,16 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
 	return rc;
 }
 
+static void _free_extract(extract_fd_t **extract_ptr)
+{
+	extract_fd_t *extract = NULL;
+	SWAP(*extract_ptr, extract);
+
+	xassert(extract->magic == MAGIC_EXTRACT_FD);
+	extract->magic = ~MAGIC_EXTRACT_FD;
+	xfree(extract);
+}
+
 static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	extract_fd_t *extract = arg;
@@ -1658,8 +1668,7 @@ static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	extract->func(conmgr_args, extract->input_fd, extract->output_fd,
 		      extract->tls_conn, extract->func_arg);
 
-	extract->magic = ~MAGIC_EXTRACT_FD;
-	xfree(extract);
+	_free_extract(&extract);
 
 	/* wake up watch() to cleanup connection */
 	slurm_mutex_lock(&mgr.mutex);
