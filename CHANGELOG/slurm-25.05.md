@@ -21,8 +21,8 @@
 * Fix how the --tres-bind option was being implicitly set for the --[tres|gpu]_per_task options when multiple gpu types are specified. It now sets the per_task binding count to the sum of the types.
 * data_parser/v0.0.43 - Avoid setting dumped value of JSON or YAML for a 64 bit float as "Infinity" or "NaN".
 * data_parser/v0.0.43 - Avoid setting dumped value of JSON or YAML for a 128 bit float as "Infinity" or "NaN". Add warning when values are truncated on conversion of 128 bit float to 64 bit float.
-* data_parser/v0.0.43 - Avoid setting dumped value of JSON or YAML as null when integer value is Infinity or NaN.
-* data_parser/v0.0.43 - Avoid setting dumped value of JSON or YAML as null when integer value is Infinity or NaN.
+* data_parser/v0.0.43 - Avoid setting dumped value of JSON or YAML as null when 64 bit integer value is Infinity or NaN.
+* data_parser/v0.0.43 - Avoid setting dumped value of JSON or YAML as null when 32 bit integer value is Infinity or NaN.
 * data_parser/v0.0.43 - Avoid misparsing integer of INFINITE64 as INFINITE
 * Avoid dumping Infinity and NaN as values in JSON output.
 * Remove an unnecessary thread creation in acct_gather_energy/gpu
@@ -85,7 +85,6 @@
 * Improve debug log message in slurm_recv_timeout() when EOF encountered from remote socket.
 * Improve error logged when slurm_recv_timeout() encounters EOF when part of RPC has already been read from socket.
 * Removed support for FrontEnd systems (--enable-front-end).
-* Improve backfill performance when testing licenses.
 * Improve backfill performance when testing licenses.
 * Add std[in,out,err]_expanded fields to json output when querying in-memory job information. The non-expanded fields will be shown exactly as the user specified them. This will match sacct behavior.
 * slurmctld - Fix bad memory reference to default part record.
