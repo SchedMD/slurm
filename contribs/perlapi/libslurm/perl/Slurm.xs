@@ -1254,27 +1254,6 @@ slurm_load_partitions(slurm_t self, time_t update_time=0, uint16_t show_flags=0)
 		RETVAL
 
 void
-slurm_print_partition_info_msg(slurm_t self, FILE *out, HV *part_info_msg, int one_liner=0)
-	PREINIT:
-		partition_info_msg_t pi_msg;
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if (out == NULL) {
-			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
-		}
-		if(hv_to_partition_info_msg(part_info_msg, &pi_msg) < 0) {
-			XSRETURN_UNDEF;
-		}
-	C_ARGS:
-		out, &pi_msg, one_liner
-	CLEANUP:
-		xfree(pi_msg.partition_array);
-
-void
 slurm_print_partition_info(slurm_t self, FILE *out, HV *part_info, int one_liner=0)
 	PREINIT:
 		partition_info_t pi;
