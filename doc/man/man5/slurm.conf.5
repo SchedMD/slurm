@@ -3179,16 +3179,30 @@ decrease in value.
 
 .TP
 \fBMAX_TRES\fR
-If set, the weighted TRES value (e.g. TRESBillingWeights) is calculated as the
-MAX of individual TRESs on a node (e.g. cpus, mem, gres) plus the sum of all
-global TRESs (e.g. licenses).
+If set, the weighted TRES value (TRESBillingWeights) is calculated as the sum of
+the following:
+.RS
+- MAX of individual TRESs (those tied to a specific node, e.g., cpus, mem, gres)
+.br
+- SUM of all global TRESs (those available on any nodes, e.g., licenses)
+.RE
+Refer to the description of \fBTRESBillingWeights\fR for more details and
+examples.
 .IP
 
 .TP
 \fBMAX_TRES_GRES\fR
-If set, the weighted TRES value (e.g. TRESBillingWeights) is calculated as the
-MAX of individual TRESs on a node (e.g. cpus, mem), plus the billable gres, plus
-the sum of all global TRESs (e.g. licenses).
+If set, the weighted TRES value (TRESBillingWeights) is calculated as the sum of
+the following:
+.RS
+- SUM of all billable GRESs (e.g., GPUs)
+.br
+- MAX of other individual TRESs (those tied to a specific node, e.g., cpus, mem)
+.br
+- SUM of all global TRESs (those available on any nodes, e.g., licenses)
+.RE
+Added in Slurm 25.05. Refer to the description of \fBTRESBillingWeights\fR for
+more details and examples.
 .IP
 
 .TP
@@ -8167,9 +8181,6 @@ Billing weights are specified as a comma\-separated list of
 Any TRES Type is available for billing. Note that the base unit for memory and
 burst buffers is megabytes.
 
-By default the billing of TRES is calculated as the sum of all TRES types
-multiplied by their corresponding billing weight.
-
 The weighted amount of a resource can be adjusted by adding a suffix of K,M,G,T
 or P after the billing weight. For example, a memory weight of "mem=.25" on a
 job allocated 8GB will be billed 2048 (8192MB *.25) units. A memory weight of
@@ -8177,17 +8188,28 @@ job allocated 8GB will be billed 2048 (8192MB *.25) units. A memory weight of
 
 Negative values are allowed.
 
-When a job is allocated 1 CPU and 8 GB of memory on a partition configured with
-TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0,license/licA=1.5", the
-billable TRES will be: (1*1.0) + (8*0.25) + (0*2.0) + (0*1.5) = 3.0.
+For example, consider a partition with these billing weights configured:
+.nf
+TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0,license/licA=1.5"
+.fi
+By default the billing of TRES is calculated as the sum of all TRES types
+multiplied by their corresponding billing weight. So a job in this partition
+that gets allocated 1 CPU and 8 GB or memory would be billed as
+(1*1.0) + (8*0.25) + (0*2.0) + (0*1.5) = 3.0.
 
 If PriorityFlags=MAX_TRES is configured, the billable TRES is calculated as the
-MAX of individual TRESs on a node (e.g. cpus, mem, gres) plus the sum of all
-global TRESs (e.g. licenses). Using the same example above the billable TRES
-will be MAX(1*1.0, 8*0.25, 0*2.0) + (0*1.5) = 2.0.
+MAX of individual TRESs (those tied to a specific node, e.g., cpus, mem,
+gres) plus the sum of all global TRESs (those available on any nodes, e.g.,
+licenses). Using the same example above the billable TRES will be
+MAX(1*1.0, 8*0.25, 0*2.0) + (0*1.5) = 2.0.
+
+PriorityFlags=MAX_TRES_GRES operates similarly but adds in billable GRESs
+(e.g., GPUs) separately instead of including them in the MAX calculation. With
+this flag set, the billable TRES will be
+MAX(1*1.0, 8*0.25) + (0*2.0) + (0*1.5) = 2.0.
 
 If TRESBillingWeights is not defined then the job is billed against the total
-number of allocated CPUs.
+number of allocated CPUs (TRESBillingWeights="CPU=1").
 
 \fBNOTE\fR: TRESBillingWeights doesn't affect job priority directly as it is
 currently not used for the size of the job. If you want TRESs to play a role in
