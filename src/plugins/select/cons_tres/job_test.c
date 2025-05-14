@@ -82,7 +82,7 @@ typedef struct {
 
 typedef struct {
 	bitstr_t *effective_nodes;
-	list_t *job_license_list;
+	list_t *future_license_list;
 	uint32_t license_cnt;
 	license_req_t *needed_licenses;
 	bitstr_t *selected_nodes;
@@ -2519,24 +2519,26 @@ static int _is_job_relevant(void *x, void *key)
 static int _set_license_req(void *x, void *arg)
 {
 	first_relevant_job_arg_t *args = arg;
-	licenses_t *future_license = x;
-	licenses_t *match = NULL;
+	licenses_t *job_license = x;
+	licenses_t *future_license = NULL;
 
-	if ((match = _find_license_in_list(args->job_license_list,
-					   &future_license->id))) {
+	/*
+	 * Populate needed_licenses with the required # of licenses for the job
+	 * and the amount of licenses available to be used.
+	 */
+	if ((future_license = _find_license_in_list(args->future_license_list,
+						    &job_license->id))) {
 		args->needed_licenses[args->license_cnt].id =
 			&future_license->id;
 		args->needed_licenses[args->license_cnt].required =
-			match->total;
+			job_license->total;
 		args->needed_licenses[args->license_cnt].remaining =
 			future_license->total - future_license->used;
 
 		args->license_cnt++;
 	}
 
-	if (args->license_cnt == list_count(args->job_license_list))
-		return true;
-	return false;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -2572,10 +2574,10 @@ static job_record_t *_get_last_relevant_job(job_record_t *job_ptr,
 		relevant_job_args.needed_licenses =
 			xcalloc(list_count(job_ptr->license_list),
 				sizeof(license_req_t));
-		relevant_job_args.job_license_list = job_ptr->license_list;
+		relevant_job_args.future_license_list = future_license_list;
 
-		list_find_first(future_license_list, _set_license_req,
-				&relevant_job_args);
+		list_for_each(job_ptr->license_list, _set_license_req,
+			      &relevant_job_args);
 	}
 
 	last_relevant_job = list_find_first(removed_jobs, _is_job_relevant,
