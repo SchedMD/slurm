@@ -4025,7 +4025,14 @@ extern void reservation_delete_resv_exc_parts(resv_exc_t *resv_exc)
 {
 	if (!resv_exc)
 		return;
-
+	/*
+	 * These are pointers into the lists that are about to be freed right
+	 * afterwards.
+	 */
+	resv_exc->gres_js_exc = NULL;
+	resv_exc->gres_js_inc = NULL;
+	FREE_NULL_LIST(resv_exc->gres_list_exc);
+	FREE_NULL_LIST(resv_exc->gres_list_inc);
 	FREE_NULL_BITMAP(resv_exc->core_bitmap);
 	free_core_array(&resv_exc->exc_cores);
 }
