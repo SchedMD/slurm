@@ -311,6 +311,7 @@ extern void parse_command_line(int argc, char **argv)
 			print_slurm_version();
 			exit(0);
 		case (int) 'w':
+			xfree(params.node_list);
 			params.node_list = xstrdup(optarg);
 			break;
 		case (int) 'Z':
