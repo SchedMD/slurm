@@ -1078,6 +1078,9 @@ extern int scontrol_update_job(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "MailUser", MAX(taglen, 5))) {
 			job_msg.mail_user = val;
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "MCSLabel", MAX(taglen, 4))) {
+			job_msg.mcs_label = val;
+			update_cnt++;
 		} else {
 			exit_code = 1;
 			fprintf (stderr, "Update of this parameter is not "

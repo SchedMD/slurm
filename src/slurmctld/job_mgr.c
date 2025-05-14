@@ -12637,6 +12637,25 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
+	/* Do not update MCS label unless explicitly provided */
+	if (job_desc->mcs_label) {
+		/* Only pending jobs can be updated */
+		if (!IS_JOB_PENDING(job_ptr))
+			return ESLURM_JOB_NOT_PENDING;
+		/* This is an attempt to explicitly reset the value */
+		if (job_desc->mcs_label[0] == '\0')
+			xfree(job_desc->mcs_label);
+
+		if (mcs_g_set_mcs_label(job_ptr, job_desc->mcs_label)) {
+			if (!job_desc->mcs_label)
+				error("Failed to update job: No valid mcs_label found");
+			else
+				error("Failed to update job: Invalid mcs-label: %s",
+				      job_desc->mcs_label);
+			return ESLURM_INVALID_MCS_LABEL;
+		}
+	}
+
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set));
 	acct_policy_limit_set.tres = tres;
 

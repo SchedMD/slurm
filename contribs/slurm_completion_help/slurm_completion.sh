@@ -4023,6 +4023,7 @@ function __scontrol_update_jobid() {
 		"minmemorycpu="
 		"minmemorynode="
 		"mintmpdisknode="
+		"mcslabel="
 		"name="
 		"nice="
 		"nodelist="
