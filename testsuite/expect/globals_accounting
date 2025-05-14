@@ -1113,7 +1113,6 @@ proc remove_coor { accounts names } {
 	set rc $::RETURN_SUCCESS
 	set matches 0
 	set nothing 1
-	set check "Deleting coordinator"
 
 	if { ![string length $names] } {
 		fail "At least one coordinator name must be specified"
@@ -1147,7 +1146,7 @@ proc remove_coor { accounts names } {
 			set rc $::RETURN_ERROR
 			exp_continue
 		}
-		-re "$check" {
+		-re "Removing Coordinator" {
 			incr matches
 			exp_continue
 		}

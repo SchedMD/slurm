@@ -2286,9 +2286,12 @@ static int _remove_from_assoc_table(remove_common_args_t *args)
 		/*
 		 * If we are doing this on an assoc_table we have
 		 * already done this, so don't
+		 *
+		 * Order by lineage so we push on the update list child ->
+		 * parent (which will happen in addto_update_list()).
 		 */
 		query = xstrdup_printf(
-			"select distinct t2.id_assoc from \"%s_%s\" as t2 where %s && t2.deleted=0;",
+			"select distinct t2.id_assoc from \"%s_%s\" as t2 where %s && t2.deleted=0 order by t2.lineage;",
 			cluster_name, assoc_table, assoc_char);
 
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);

@@ -121,7 +121,6 @@ static int _foreach_flag_coord_user(void *x, void *arg)
 
 static int _foreach_flag_coord_acct(void *x, void *arg)
 {
-	int rc = 1;
 	flag_coord_acct_t *flag_coord_acct = arg;
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 	slurmdb_assoc_rec_t assoc_req = {
@@ -134,8 +133,14 @@ static int _foreach_flag_coord_acct(void *x, void *arg)
 				    &assoc_req,
 				    ACCOUNTING_ENFORCE_ASSOCS,
 				    &assoc_ptr,
-				    true) != SLURM_SUCCESS)
-		return -1;
+				    true) != SLURM_SUCCESS) {
+		/*
+		 * Return 0 since the account requested might not exist on
+		 * every cluster in the system.
+		 */
+		return 0;
+	}
+
 	/* Only change if needed */
 	if (((assoc_ptr->flags & ASSOC_FLAG_USER_COORD) &&
 	     (flag_coord_acct->flags & ASSOC_FLAG_USER_COORD_NO)) ||
@@ -175,26 +180,23 @@ static int _foreach_flag_coord_acct(void *x, void *arg)
 		}
 
 		if (assoc_ptr->usage->children_list)
-			rc = list_for_each(assoc_ptr->usage->children_list,
-					   _foreach_flag_coord_user,
-					   flag_coord_acct);
+			(void) list_for_each(assoc_ptr->usage->children_list,
+					     _foreach_flag_coord_user,
+					     flag_coord_acct);
 	}
 
-	return rc;
+	return 0;
 }
 
 static int _foreach_flag_coord_cluster(void *x, void *arg)
 {
-	int rc;
 	flag_coord_acct_t *flag_coord_acct = arg;
 
 	flag_coord_acct->cluster_name = x;
 
-	rc = list_for_each_ro(flag_coord_acct->acct_list,
-			      _foreach_flag_coord_acct,
-			      flag_coord_acct);
-	if (!rc)
-		return rc;
+	(void) list_for_each_ro(flag_coord_acct->acct_list,
+				_foreach_flag_coord_acct,
+				flag_coord_acct);
 
 	if (flag_coord_acct->query) {
 		xstrcatat(flag_coord_acct->query,
@@ -204,17 +206,18 @@ static int _foreach_flag_coord_cluster(void *x, void *arg)
 		DB_DEBUG(DB_ASSOC, flag_coord_acct->mysql_conn->conn,
 			 "query\n%s",
 			 flag_coord_acct->query);
-		if ((rc = mysql_db_query(flag_coord_acct->mysql_conn,
-					 flag_coord_acct->query)) !=
-		    SLURM_SUCCESS) {
+		if (mysql_db_query(flag_coord_acct->mysql_conn,
+				   flag_coord_acct->query) != SLURM_SUCCESS)
 			error("Couldn't update flags");
-			rc = 0;
-		}
 
 		xfree(flag_coord_acct->query);
 	}
 
-	return rc;
+	/*
+	 * Return 0 since the accounts requested might not exist on
+	 * every cluster in the system.
+	 */
+	return 0;
 }
 
 static void _handle_flag_coord(flag_coord_acct_t *flag_coord_acct)
