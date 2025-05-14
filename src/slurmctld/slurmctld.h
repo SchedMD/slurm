@@ -194,7 +194,7 @@ typedef struct diag_stats {
 	uint32_t jobs_canceled;
 	uint32_t jobs_failed;
 
-	uint32_t job_states_ts;
+	time_t job_states_ts;
 	uint32_t jobs_pending;
 	uint32_t jobs_running;
 

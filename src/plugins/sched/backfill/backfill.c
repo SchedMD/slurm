@@ -246,7 +246,7 @@ static bitstr_t *planned_bitmap = NULL;
 static bool soft_time_limit = false;
 
 /*********************** local functions *********************/
-static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
+static void _add_reservation(time_t start_time, time_t end_reserve,
 			     bitstr_t *res_bitmap, job_record_t *job_ptr,
 			     node_space_map_t *node_space, int *node_space_recs,
 			     time_t orig_start_time);
@@ -3864,7 +3864,7 @@ static bool _more_work(time_t last_backfill_time)
 }
 
 /* Create a reservation for a job in the future */
-static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
+static void _add_reservation(time_t start_time, time_t end_reserve,
 			     bitstr_t *res_bitmap, job_record_t *job_ptr,
 			     node_space_map_t *node_space, int *node_space_recs,
 			     time_t orig_start_time)

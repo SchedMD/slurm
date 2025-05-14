@@ -70,31 +70,6 @@ typedef struct load_part_resp_struct {
 } load_part_resp_struct_t;
 
 /*
- * slurm_print_partition_info_msg - output information about all Slurm
- *	partitions based upon message as loaded using slurm_load_partitions
- * IN out - file to write to
- * IN part_info_ptr - partitions information message pointer
- * IN one_liner - print as a single line if true
- */
-void slurm_print_partition_info_msg ( FILE* out,
-		partition_info_msg_t * part_info_ptr, int one_liner )
-{
-	int i ;
-	partition_info_t * part_ptr = part_info_ptr->partition_array ;
-	char time_str[256];
-
-	slurm_make_time_str ((time_t *)&part_info_ptr->last_update, time_str,
-		sizeof(time_str));
-	fprintf( out, "Partition data as of %s, record count %d\n",
-		time_str, part_info_ptr->record_count);
-
-	for (i = 0; i < part_info_ptr->record_count; i++) {
-		slurm_print_partition_info ( out, & part_ptr[i], one_liner ) ;
-	}
-
-}
-
-/*
  * slurm_print_partition_info - output information about a specific Slurm
  *	partition based upon message as loaded using slurm_load_partitions
  * IN out - file to write to

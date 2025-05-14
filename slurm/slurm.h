@@ -4561,15 +4561,6 @@ extern int slurm_load_partitions2(time_t update_time,
 extern void slurm_free_partition_info_msg(partition_info_msg_t *part_info_ptr);
 
 /*
- * slurm_print_partition_info_msg - output information about all Slurm
- *	partitions based upon message as loaded using slurm_load_partitions
- * IN out - file to write to
- * IN part_info_ptr - partitions information message pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_partition_info_msg(FILE *out, partition_info_msg_t *part_info_ptr, int one_liner);
-
-/*
  * slurm_print_partition_info - output information about a specific Slurm
  *	partition based upon message as loaded using slurm_load_partitions
  * IN out - file to write to

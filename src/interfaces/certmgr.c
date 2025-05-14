@@ -74,10 +74,10 @@ extern bool certmgr_enabled(void)
 
 extern int certmgr_get_renewal_period_mins(void)
 {
-	static time_t renewal_period = NO_VAL;
+	static int renewal_period = -1;
 	char *renewal_str = NULL;
 
-	if (renewal_period != NO_VAL)
+	if (renewal_period > 0)
 		return renewal_period;
 
 	if ((renewal_str = conf_get_opt_str(slurm_conf.certmgr_params,
