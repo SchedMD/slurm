@@ -1945,9 +1945,9 @@ char **env_array_from_file(const char *fname)
 	/*
 	 * Read in the user's environment data.
 	 */
-	buf = ptr = xmalloc(buf_size);
+	buf = xmalloc(buf_size);
 	buf_left = buf_size;
-	while ((tmp_size = read(fd, ptr, buf_left))) {
+	while ((tmp_size = read(fd, &buf[file_size], buf_left))) {
 		if (tmp_size < 0) {
 			if (errno == EINTR)
 				continue;
@@ -1961,7 +1961,6 @@ char **env_array_from_file(const char *fname)
 		}
 
 		file_size += tmp_size;
-		ptr = buf + file_size;
 		buf_left = buf_size - file_size;
 		if (buf_left < 0) {
 			error("%s: We don't have a large enough buffer.",
