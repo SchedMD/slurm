@@ -104,42 +104,43 @@ since the number can change for different partitions.<p>
 and burst buffers is megabytes.
 </p>
 
-<p>By default the billing of TRES is calculated as the sum of all TRES types
-multiplied by their corresponding billing weight.
-</p>
-
 <p>The weighted amount of a resource can be adjusted by adding a suffix of
 K,M,G,T or P after the billing weight. For example, a memory weight of "mem=.25"
 on a job allocated 8GB will be billed 2048 (8192MB *.25) units. A memory weight
 of "mem=.25G" on the same job will be billed 2 (8192MB * (.25/1024)) units.
 </p>
 
-<p>When a job is allocated 1 CPU and 8 GB of memory on a partition configured
-with:
-</p>
+<p>For example, consider a partition with these billing weights configured:</p>
 
 <pre>TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0,license/licA=1.5"</pre>
 
-<p>the billable TRES will be:
-</p>
+<p>By default the billing of TRES is calculated as the sum of all TRES types
+multiplied by their corresponding billing weight. So a job in this partition
+that gets allocated 1 CPU and 8 GB or memory would be billed as:</p>
 <pre>(1*1.0) + (8*0.25) + (0*2.0) + (0*1.5) = 3.0</pre>
 
-<p>If <i>PriorityFlags=MAX_TRES</i> is configured, the billable TRES is
-  calculated as the MAX of individual TRESs on a node (e.g. cpus, mem,
-  gres) plus the sum of all global TRESs (e.g. licenses). Using the
-  same example above, the billable TRES will be:
-</p>
+<p>If <code>PriorityFlags=MAX_TRES</code> is set, the billable TRES is
+  calculated as the sum of the following:
+<ul>
+<li>MAX of individual TRESs (those tied to a specific node, e.g., cpus, mem, gres)</li>
+<li>SUM of all global TRESs (those available on any nodes, e.g., licenses)</li>
+</ul>
+Using the same example above, the billable TRES will be:</p>
 <pre>MAX(1*1.0, 8*0.25, 0*2.0) + (0*1.5) = 2.0</pre>
 
-<p>If <i>PriorityFlags=MAX_TRES_GRES</i> is configured, the billable TRES is
-calculated as the MAX of most individual TRESs on a node (e.g. cpus, mem), plus
-the node GRES, plus the sum of all global TRESs (e.g. licenses). Using the
-same example above, the billable TRES will be:
+<p>If <code>PriorityFlags=MAX_TRES_GRES</code> is set, the billable TRES is
+  calculated as the sum of the following:
+<ul>
+<li>SUM of all billable GRESs (e.g., GPUs)</li>
+<li>MAX of other individual TRESs (those tied to a specific node, e.g., cpus, mem)</li>
+<li>SUM of all global TRESs (those available on any nodes, e.g., licenses)</li>
+</ul>
+With this flag set, the billable TRES will be:
 </p>
 <pre>MAX(1*1.0, 8*0.25) + (0*2.0) + (0*1.5) = 2.0</pre>
 
 <p>If TRESBillingWeights is not defined then the job is billed against the total
-number of allocated CPUs.
+number of allocated CPUs (<code>TRESBillingWeights="CPU=1"</code>).
 </p>
 
 <p><b>NOTE</b>: TRESBillingWeights is only used when calculating fairshare and
