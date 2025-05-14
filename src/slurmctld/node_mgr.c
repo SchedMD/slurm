@@ -3625,10 +3625,9 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 				bit_clear(rs_node_bitmap, node_ptr->index);
 				bit_clear(asap_node_bitmap, node_ptr->index);
 			}
-			info("%s: Node %s unexpectedly rebooted boot_time=%u last response=%u",
-			     __func__, reg_msg->node_name,
-			     (uint32_t)node_ptr->boot_time,
-			     (uint32_t)node_ptr->last_response);
+			info("%s: Node %s unexpectedly rebooted boot_time=%ld last response=%ld",
+			     __func__, reg_msg->node_name, node_ptr->boot_time,
+			     node_ptr->last_response);
 			_make_node_down(node_ptr, now);
 			kill_running_job_by_node_ptr(node_ptr);
 			last_node_update = now;
