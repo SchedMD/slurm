@@ -2862,6 +2862,10 @@ the reservation is created with explicitly requested nodes.
 
 Note that if GRES is requested those GRES must be TRES listed in
 AccountingStorageTRES to be valid.
+
+.br
+\fBNOTE\fR: Reservations will automatically attempt to enforce binding on GRES.
+Multiple GRES cannot be reserved across multiple sockets.
 .IP
 
 .TP
