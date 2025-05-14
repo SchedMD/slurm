@@ -241,6 +241,22 @@ static int _license_find_rec_in_list_by_id(void *x, void *key)
 	return 0;
 }
 
+static int _license_find_non_hres_rec_in_list_by_id(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+	list_t *licenses = key;
+
+	/* Ignore hres licenses */
+	if (license_entry->id.hres_id != NO_VAL16)
+		return 0;
+
+	if (list_find_first_ro(licenses, _license_find_rec_by_id,
+			       &(license_entry->id))) {
+		return 1;
+	}
+	return 0;
+}
+
 /* Find a license_t record by license name (for use by list_find_first) */
 static int _license_find_remote_rec(void *x, void *key)
 {
@@ -1732,6 +1748,19 @@ extern bool license_list_overlap(list_t *list_1, list_t *list_2)
 	if (!list_1 || !list_2)
 		return false;
 	return list_find_first_ro(list_1, _license_find_rec_in_list_by_id,
+				  list_2);
+}
+
+/*
+ * license_list_overlap_non_hres - test if there is any overlap in non-hres
+ *	licenses names found in the two lists
+ */
+extern bool license_list_overlap_non_hres(list_t *list_1, list_t *list_2)
+{
+	if (!list_1 || !list_2)
+		return false;
+	return list_find_first_ro(list_1,
+				  _license_find_non_hres_rec_in_list_by_id,
 				  list_2);
 }
 

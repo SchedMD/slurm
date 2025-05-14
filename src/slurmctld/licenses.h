@@ -197,6 +197,12 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 extern bool license_list_overlap(list_t *list_1, list_t *list_2);
 
 /*
+ * license_list_overlap_non_hres - test if there is any overlap in non-hres
+ *	licenses names found in the two lists
+ */
+extern bool license_list_overlap_non_hres(list_t *list_1, list_t *list_2);
+
+/*
  * Given a list of license_t records, return a license string.
  *
  * This can be combined with _build_license_list() to eliminate duplicates

@@ -2722,8 +2722,9 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 						node_bitmap);
 			if (overlap == 0 && /* job has no usable nodes */
 			    (!future_license_list ||
-			     !license_list_overlap(tmp_job_ptr->license_list,
-						   job_ptr->license_list))) {
+			     !license_list_overlap_non_hres( /* ignore hres */
+				tmp_job_ptr->license_list,
+				job_ptr->license_list))) {
 				continue;  /* skip it */
 			}
 			if (!end_time) {
