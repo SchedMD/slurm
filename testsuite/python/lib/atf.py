@@ -25,6 +25,8 @@ import traceback
 import requests
 import signal
 
+import json
+
 # This module will be (un)imported in require_openapi_generator()
 openapi_client = None
 import importlib
@@ -2858,11 +2860,12 @@ def run_job_nodes(srun_args, **run_command_kwargs):
     return node_list
 
 
-def get_jobs(job_id=None, **run_command_kwargs):
-    """Returns the job configuration as a dictionary of dictionaries.
+def get_jobs(job_id=None, dbd=False, **run_command_kwargs):
+    """Returns the jobs in the system as a dictionary of dictionaries.
 
     Args:
         job_id (integer): The id of a specific job of which to get parameters.
+        dbd (boolean): If True, obtain the jobs from sacct instead of scontrol.
 
     Returns:
         A dictionary of dictionaries where the first level keys are the job ids
@@ -2879,39 +2882,52 @@ def get_jobs(job_id=None, **run_command_kwargs):
 
     jobs_dict = {}
 
-    command = "scontrol -d -o show jobs"
-    if job_id is not None:
-        command += f" {job_id}"
-    output = run_command_output(command, fatal=True, **run_command_kwargs)
+    if dbd:
+        command = "sacct --json -X"
+        if job_id is not None:
+            command += f" -j {job_id}"
+        output = run_command_output(
+            command, fatal=True, quiet=True, **run_command_kwargs
+        )
 
-    job_dict = {}
-    for line in output.splitlines():
-        if line == "":
-            continue
+        jobs_list = json.loads(output)["jobs"]
+        for job in jobs_list:
+            jobs_dict[job["job_id"]] = job
 
-        while match := re.search(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", line):
-            param_name, param_value = match.group(1), match.group(2)
+    else:
+        command = "scontrol -d -o show jobs"
+        if job_id is not None:
+            command += f" {job_id}"
+        output = run_command_output(command, fatal=True, **run_command_kwargs)
 
-            # Remove the consumed parameter from the line
-            line = re.sub(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", "", line)
+        job_dict = {}
+        for line in output.splitlines():
+            if line == "":
+                continue
 
-            # Reformat the value if necessary
-            if is_integer(param_value):
-                param_value = int(param_value)
-            elif is_float(param_value):
-                param_value = float(param_value)
-            elif param_value == "(null)":
-                param_value = None
+            while match := re.search(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", line):
+                param_name, param_value = match.group(1), match.group(2)
 
-            # Add it to the temporary job dictionary
-            job_dict[param_name] = param_value
+                # Remove the consumed parameter from the line
+                line = re.sub(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", "", line)
 
-        # Add the job dictionary to the jobs dictionary
-        if job_dict:
-            jobs_dict[job_dict["JobId"]] = job_dict
+                # Reformat the value if necessary
+                if is_integer(param_value):
+                    param_value = int(param_value)
+                elif is_float(param_value):
+                    param_value = float(param_value)
+                elif param_value == "(null)":
+                    param_value = None
 
-            # Clear the job dictionary for use by the next job
-            job_dict = {}
+                # Add it to the temporary job dictionary
+                job_dict[param_name] = param_value
+
+            # Add the job dictionary to the jobs dictionary
+            if job_dict:
+                jobs_dict[job_dict["JobId"]] = job_dict
+
+                # Clear the job dictionary for use by the next job
+                job_dict = {}
 
     return jobs_dict
 
