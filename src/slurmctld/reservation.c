@@ -269,6 +269,71 @@ static int _switch_select_alloc_gres(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_create_str(void *x, void *arg)
+{
+	slurmdb_tres_rec_t *tres_rec = x;
+	resv_desc_msg_t *resv_desc_ptr = arg;
+
+	xstrfmtcat(resv_desc_ptr->tres_str, ",%s/%s=%" PRIu64, tres_rec->type,
+		   tres_rec->name, tres_rec->count);
+	return 0;
+}
+
+static int _append_typeless_gres(resv_desc_msg_t *resv_desc_ptr)
+{
+	char *name = NULL, *type = NULL, *save_ptr = NULL;
+	int rc = true;
+	uint64_t cnt = 0;
+	char *tres_type = "gres";
+	list_t *typeless_list = NULL;
+	slurmdb_tres_rec_t *tres_rec;
+
+	/* check for a typed gres */
+	if (!strchr(resv_desc_ptr->tres_str, ':'))
+		return 0;
+
+	while (((rc = slurm_get_next_tres(&tres_type, resv_desc_ptr->tres_str,
+					  &name, &type, &cnt, &save_ptr)) ==
+		SLURM_SUCCESS) &&
+	       save_ptr) {
+		char *typeless = NULL, *typeless_pos = NULL;
+		xstrfmtcatat(typeless, &typeless_pos, "gres/%s=", name);
+		if (xstrstr(resv_desc_ptr->tres_str, typeless)) {
+			xfree(typeless);
+			xfree(name);
+			xfree(type);
+			continue;
+		}
+		if (!typeless_list)
+			typeless_list = list_create(slurmdb_destroy_tres_rec);
+		typeless_pos--;
+		*typeless_pos = '\0';
+
+		tres_rec = list_find_first(typeless_list,
+					   slurmdb_find_tres_in_list_by_type,
+					   typeless);
+		xfree(typeless);
+		if (!tres_rec) {
+			tres_rec = xmalloc(sizeof(*tres_rec));
+			tres_rec->name = xstrdup(name);
+			tres_rec->type = xstrdup(tres_type);
+			list_append(typeless_list, tres_rec);
+		}
+		tres_rec->count += cnt;
+
+		xfree(name);
+		xfree(type);
+	}
+
+	if (typeless_list) {
+		(void) list_for_each(typeless_list, _foreach_create_str,
+				     resv_desc_ptr);
+		FREE_NULL_LIST(typeless_list);
+	}
+
+	return 0;
+}
+
 static int _parse_tres_str(resv_desc_msg_t *resv_desc_ptr)
 {
 	char *tmp_str, *tres_sub_str;
@@ -337,6 +402,9 @@ static int _parse_tres_str(resv_desc_msg_t *resv_desc_ptr)
 		resv_desc_ptr->burst_buffer = tres_sub_str;
 		tres_sub_str = NULL;
 	}
+
+	if (_append_typeless_gres(resv_desc_ptr))
+		return ESLURM_INVALID_TRES;
 
 	return SLURM_SUCCESS;
 }
