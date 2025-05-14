@@ -503,7 +503,6 @@ const openapi_path_binding_t openapi_paths[] = {
 					.type = DATA_PARSER_RESERVATION_DESC_MSG,
 					.description = "reservation description",
 				},
-				.parameters = DATA_PARSER_OPENAPI_RESERVATION_PARAM,
 			},
 			{
 				.method = HTTP_REQUEST_DELETE,
