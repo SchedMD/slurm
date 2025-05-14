@@ -1954,14 +1954,20 @@ char **env_array_from_file(const char *fname)
 			error("read(environment_file): %m");
 			break;
 		}
-		buf_left  -= tmp_size;
-		file_size += tmp_size;
-		if (buf_left == 0) {
+
+		if (buf_left <= tmp_size) {
 			buf_size += BUFSIZ;
 			xrealloc(buf, buf_size);
 		}
+
+		file_size += tmp_size;
 		ptr = buf + file_size;
 		buf_left = buf_size - file_size;
+		if (buf_left < 0) {
+			error("%s: We don't have a large enough buffer.",
+			      __func__);
+			break;
+		}
 	}
 	close(fd);
 
