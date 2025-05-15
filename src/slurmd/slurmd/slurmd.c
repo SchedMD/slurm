@@ -2135,7 +2135,6 @@ static void _create_msg_socket(void)
 		.on_connection = _on_connection,
 		.on_msg = _on_msg,
 		.on_finish = _on_finish,
-		.on_fingerprint = on_fingerprint_tls,
 	};
 	int rc;
 	static conmgr_con_flags_t flags = CON_FLAG_RPC_RECV_FORWARD |
@@ -2148,6 +2147,9 @@ static void _create_msg_socket(void)
 	} else if ((conf->lfd = slurm_init_msg_engine_port(conf->port)) < 0) {
 		fatal("Unable to bind listen port (%u): %m", conf->port);
 	}
+
+	if (tls_enabled())
+		flags |= CON_FLAG_TLS_SERVER;
 
 	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, &events,
 					   flags, NULL)))
