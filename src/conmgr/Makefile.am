@@ -25,6 +25,8 @@ libconmgr_la_SOURCES = \
 	signals.h \
 	tls.c \
 	tls.h \
+	tls_fingerprint.c \
+	tls_fingerprint.h \
 	watch.c \
 	work.c \
 	workers.c
