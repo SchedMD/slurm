@@ -92,7 +92,7 @@ extern int fini(void)
 }
 
 extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
-				  void *tctx)
+				  topology_ctx_t *tctx)
 {
 	return SLURM_SUCCESS;
 }

@@ -127,9 +127,9 @@ extern int fini(void)
 }
 
 extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
-				  void *tctx)
+				  topology_ctx_t *tctx)
 {
-	tree_context_t *ctx = tctx;
+	tree_context_t *ctx = tctx->plugin_ctx;
 	bool *added = xcalloc(ctx->switch_count, sizeof(bool));
 
 	for (int i = 0; i < ctx->switch_count; i++) {
