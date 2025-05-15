@@ -721,11 +721,23 @@ extern int hres_filter_with_list(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap)
 {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE) {
+		char *tmp_str = bitmap2node_name(node_bitmap);
+		verbose("%s: %pJ IN node_bitmap:%s",
+			__func__, job_ptr, tmp_str);
+		xfree(tmp_str);
+	}
 	slurm_mutex_lock(&license_mutex);
 
 	hres_filter_with_list(job_ptr, node_bitmap, cluster_license_list);
 
 	slurm_mutex_unlock(&license_mutex);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE) {
+		char *tmp_str = bitmap2node_name(node_bitmap);
+		verbose("%s: %pJ OUT node_bitmap:%s",
+			__func__, job_ptr, tmp_str);
+		xfree(tmp_str);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -767,11 +779,24 @@ extern void slurm_bf_hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	if (!job_ptr->license_list || !bf_license_list)
 		return;
 
+	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE) {
+		char *tmp_str = bitmap2node_name(node_bitmap);
+		verbose("%s: %pJ IN node_bitmap:%s",
+			__func__, job_ptr, tmp_str);
+		xfree(tmp_str);
+	}
+
 	slurm_mutex_lock(&license_mutex);
 	list_for_each(job_ptr->license_list, _foreach_bf_hres_filter,
 		      &filter_args);
 	slurm_mutex_unlock(&license_mutex);
 
+	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE) {
+		char *tmp_str = bitmap2node_name(node_bitmap);
+		verbose("%s: %pJ OUT node_bitmap:%s",
+			__func__, job_ptr, tmp_str);
+		xfree(tmp_str);
+	}
 	return;
 }
 
