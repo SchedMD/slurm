@@ -128,6 +128,8 @@ static bool _half_duplex_readable(eio_obj_t *obj)
 			if (tls_conn_out && *tls_conn_out) {
 				tls_g_destroy_conn(*tls_conn_out, false);
 				*tls_conn_out = NULL;
+			} else if (tls_conn_out) {
+				xfree(tls_conn_out);
 			}
 			shutdown(*fd_out, SHUT_WR);
 			xfree(fd_out);
@@ -194,6 +196,8 @@ shutdown:
 		if (tls_conn_out && *tls_conn_out) {
 			tls_g_destroy_conn(*tls_conn_out, false);
 			*tls_conn_out = NULL;
+		} else if (tls_conn_out) {
+			xfree(tls_conn_out);
 		}
 		shutdown(*fd_out, SHUT_WR);
 		xfree(fd_out);
