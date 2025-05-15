@@ -9,8 +9,9 @@ import re
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_accounting()
-    atf.require_slurm_running()
+    if atf.get_version("bin/sacct") < (25, 5):
+        atf.require_accounting()
+        atf.require_slurm_running()
 
 
 def test_help():
