@@ -66,4 +66,6 @@ extern void block_record_table_destroy(block_context_t *ctx);
 
 extern int block_record_validate(topology_ctx_t *tctx);
 
+extern void block_record_update_block_config(topology_ctx_t *tctx, int idx);
+
 #endif

@@ -426,3 +426,16 @@ extern int block_record_validate(topology_ctx_t *tctx)
 	xfree(ptr_array_mem);
 	return SLURM_SUCCESS;
 }
+
+extern void block_record_update_block_config(topology_ctx_t *tctx, int idx)
+{
+	topology_block_config_t *block_config = tctx->config;
+	block_context_t *ctx = tctx->plugin_ctx;
+
+	if (!tctx->config)
+		return;
+
+	xfree(block_config->block_configs[idx].nodes);
+	block_config->block_configs[idx].nodes =
+		xstrdup(ctx->block_record_table[idx].nodes);
+}
