@@ -42,12 +42,13 @@ def test_salloc_normal():
 
     atf.cancel_all_jobs()
 
-    # Test that salloc -n2 is rejected with only one node
-    result = atf.run_command("salloc -Q -n2 true", timeout=3)
-    assert result["exit_code"] != 0, "Verify salloc failed"
-    assert re.search(
-        "Requested node configuration is not available", result["stderr"]
-    ), f"Error message should contain 'Requested node configuration is not available'. Got: {result['stderr']}"
-    assert (
-        result["stdout"] == ""
-    ), f"There should be no stdout from the salloc command. Got: {result['stdout']}"
+    if atf.get_version() >= (25, 5):
+        # Test that salloc -n2 is rejected with only one node
+        result = atf.run_command("salloc -Q -n2 true", timeout=3)
+        assert result["exit_code"] != 0, "Verify salloc failed"
+        assert re.search(
+            "Requested node configuration is not available", result["stderr"]
+        ), f"Error message should contain 'Requested node configuration is not available'. Got: {result['stderr']}"
+        assert (
+            result["stdout"] == ""
+        ), f"There should be no stdout from the salloc command. Got: {result['stdout']}"

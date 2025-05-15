@@ -1,8 +1,16 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
+import pytest
 import atf
 import re
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup():
+    if atf.get_version("bin/sacct") < (25, 5):
+        atf.require_accounting()
+        atf.require_slurm_running()
 
 
 def test_help():
