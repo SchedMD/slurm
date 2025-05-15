@@ -369,8 +369,8 @@ static void _listen_for_reconf(void)
 	uint16_t listen_port = port ? port : slurm_conf.slurmd_port;
 	static const conmgr_events_t events = {
 		.on_msg = _on_msg,
-		.on_fingerprint = on_fingerprint_tls,
 	};
+	static conmgr_con_flags_t flags = CON_FLAG_NONE;
 
 	if (getenv("SACKD_RECONF_LISTEN_FD")) {
 		listen_fd = atoi(getenv("SACKD_RECONF_LISTEN_FD"));
@@ -379,8 +379,11 @@ static void _listen_for_reconf(void)
 		return;
 	}
 
+	if (tls_enabled())
+		flags |= CON_FLAG_TLS_SERVER;
+
 	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, &events,
-					   CON_FLAG_NONE, NULL)))
+					   flags, NULL)))
 		fatal("%s: conmgr refused fd=%d: %s",
 		      __func__, listen_fd, slurm_strerror(rc));
 }

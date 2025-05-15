@@ -1678,7 +1678,6 @@ static void _open_ports(void)
 		.on_connection = _on_connection,
 		.on_msg = _on_msg,
 		.on_finish = _on_finish,
-		.on_fingerprint = on_fingerprint_tls,
 	};
 
 	slurm_mutex_lock(&listeners.mutex);
@@ -1707,7 +1706,7 @@ static void _open_ports(void)
 	}
 
 	for (uint64_t i = 0; i < listeners.count; i++) {
-		static const conmgr_con_flags_t flags =
+		static conmgr_con_flags_t flags =
 			(CON_FLAG_RPC_KEEP_BUFFER | CON_FLAG_QUIESCE |
 			 CON_FLAG_WATCH_WRITE_TIMEOUT |
 			 CON_FLAG_WATCH_READ_TIMEOUT |
@@ -1716,6 +1715,9 @@ static void _open_ports(void)
 
 		index_ptr = xmalloc(sizeof(*index_ptr));
 		*index_ptr = i;
+
+		if (tls_enabled())
+			flags |= CON_FLAG_TLS_SERVER;
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
 						   CON_TYPE_RPC, &events, flags,
