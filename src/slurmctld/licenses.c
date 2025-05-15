@@ -1983,7 +1983,10 @@ static int _foreach_hres_deduct(void *x, void *arg)
 	licenses_t *match;
 	foreach_get_hres_t *args = arg;
 
-	if (bf_lic->id.hres_id != args->license_entry->id.hres_id)
+	if ((bf_lic->id.hres_id != args->license_entry->id.hres_id) ||
+	    ((args->license_entry->mode == HRES_MODE_1) &&
+	     IS_JOB_RUNNING(args->job_ptr) &&
+	     (bf_lic->id.lic_id != args->license_entry->id.lic_id)))
 		return 0;
 
 	match = list_find_first(cluster_license_list, _license_find_rec_by_id,
