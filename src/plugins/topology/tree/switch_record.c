@@ -219,7 +219,7 @@ static void _find_desc_switches(int sw, tree_context_t *ctx)
 }
 
 /* Return the index of a given switch name or -1 if not found */
-static int _get_switch_inx(const char *name, tree_context_t *ctx)
+extern int switch_record_get_switch_inx(const char *name, tree_context_t *ctx)
 {
 	int i;
 	switch_record_t *switch_ptr;
@@ -376,7 +376,7 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 				      switch_ptr->switches);
 			}
 			while ((child = hostlist_pop(hl))) {
-				j = _get_switch_inx(child, ctx);
+				j = switch_record_get_switch_inx(child, ctx);
 				if ((j < 0) || (j == i)) {
 					fatal("Switch configuration %s has invalid child (%s)",
 					      switch_ptr->name, child);

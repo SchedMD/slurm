@@ -76,4 +76,7 @@ extern int switch_record_validate(topology_ctx_t *tctx);
 
 extern void switch_record_update_block_config(topology_ctx_t *tctx, int idx);
 
+/* Return the index of a given switch name or -1 if not found */
+extern int switch_record_get_switch_inx(const char *name, tree_context_t *ctx);
+
 #endif
