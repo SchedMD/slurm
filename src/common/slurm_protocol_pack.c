@@ -4566,6 +4566,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		                               protocol_version, buffer);
 
 		packstr(build_ptr->node_features_plugins, buffer);
+		packnull(buffer); /* was node_prefix */
 
 		pack16(build_ptr->over_time_limit, buffer);
 
