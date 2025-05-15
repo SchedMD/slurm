@@ -50,9 +50,14 @@ def test_gpu_socket_sharing_no_alloc():
         fatal=False,
     )
     assert output["exit_code"] != 0, "Verify that srun command failed"
+    if atf.get_version() >= (24, 11):
+        expected_msg = r"srun: error: .+ Requested node configuration is not available"
+    else:
+        expected_msg = r"srun: job [0-9]+ queued and waiting for resources"
+
     assert (
         re.search(
-            r"srun: error: .+ Requested node configuration is not available",
+            expected_msg,
             str(output["stderr"]),
         )
         is not None
