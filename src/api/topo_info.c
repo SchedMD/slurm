@@ -99,6 +99,39 @@ extern int slurm_load_topo(topo_info_response_msg_t **resp, char *name)
 	return SLURM_SUCCESS;
 }
 
+extern int slurm_load_topo_config(topo_config_response_msg_t **resp)
+{
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+	req_msg.msg_type = REQUEST_TOPO_CONFIG;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_TOPO_CONFIG:
+		*resp = (topo_config_response_msg_t *) resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
+			slurm_seterrno_ret(rc);
+		*resp = NULL;
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * slurm_print_topo_info_msg - output information about all switch topology
  *	configuration information based upon message as loaded using

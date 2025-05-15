@@ -4436,6 +4436,15 @@ extern void slurm_free_topo_request_msg(topo_info_request_msg_t *msg)
 	}
 }
 
+extern void slurm_free_topo_config_msg(topo_config_response_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->config);
+	xfree(msg);
+}
+
 /*
  * slurm_free_burst_buffer_info_msg - free buffer returned by
  *	slurm_load_burst_buffer

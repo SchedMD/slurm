@@ -148,9 +148,9 @@ extern int fini(void)
 }
 
 extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
-				  void *tctx)
+				  topology_ctx_t *tctx)
 {
-	block_context_t *ctx = tctx;
+	block_context_t *ctx = tctx->plugin_ctx;
 	int *change =
 		xcalloc(ctx->block_count + ctx->ablock_count, sizeof(int));
 
@@ -187,6 +187,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 		ctx->block_record_table[i].nodes =
 			bitmap2node_name(ctx->block_record_table[i]
 						 .node_bitmap);
+		block_record_update_block_config(tctx, i);
 
 		for (int j = ctx->block_count;
 		     j < ctx->block_count + ctx->ablock_count; j++) {

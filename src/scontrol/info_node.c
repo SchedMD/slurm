@@ -314,3 +314,14 @@ extern void scontrol_print_topo(char *node_list, char *name)
 	}
 	slurm_print_topo_info_msg(stdout, topo_info_msg, node_list, one_liner);
 }
+
+extern void scontrol_print_topo_conf(void)
+{
+	topo_config_response_msg_t *topo_config_msg = NULL;
+
+	slurm_load_topo_config(&topo_config_msg);
+	if (topo_config_msg && topo_config_msg->config) {
+		printf("%s", topo_config_msg->config);
+	}
+	slurm_free_topo_config_msg(topo_config_msg);
+}

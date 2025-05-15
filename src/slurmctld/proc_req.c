@@ -4890,6 +4890,25 @@ static void _slurm_rpc_get_topo(slurm_msg_t *msg)
 	slurm_free_topo_info_msg(topo_resp_msg);
 }
 
+static void _slurm_rpc_get_topo_config(slurm_msg_t *msg)
+{
+	topo_config_response_msg_t *topo_resp_msg;
+	slurmctld_lock_t node_read_lock = {
+		.node = READ_LOCK,
+	};
+	DEF_TIMERS;
+
+	topo_resp_msg = xmalloc(sizeof(*topo_resp_msg));
+	START_TIMER;
+	lock_slurmctld(node_read_lock);
+	topo_resp_msg->config = topology_g_get_config();
+	unlock_slurmctld(node_read_lock);
+	END_TIMER2(__func__);
+
+	(void) send_msg_response(msg, RESPONSE_TOPO_CONFIG, topo_resp_msg);
+	slurm_free_topo_config_msg(topo_resp_msg);
+}
+
 static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 {
 	int error_code;
@@ -6747,6 +6766,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = ACCOUNTING_REGISTER_CTLD,
 		.func = _slurm_rpc_accounting_register_ctld,
+	},{
+		.msg_type = REQUEST_TOPO_CONFIG,
+		.func = _slurm_rpc_get_topo_config,
 	},{
 		.msg_type = REQUEST_TOPO_INFO,
 		.func = _slurm_rpc_get_topo,

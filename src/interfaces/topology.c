@@ -57,7 +57,8 @@ typedef struct slurm_topo_ops {
 	uint32_t (*plugin_id);
 	char(*plugin_type);
 	bool(*supports_exclusive_topo);
-	int (*add_rm_node)(node_record_t *node_ptr, char *addr, void *tctx);
+	int (*add_rm_node)(node_record_t *node_ptr, char *addr,
+			   topology_ctx_t *tctx);
 	int (*build_config)(topology_ctx_t *tctx);
 	int (*destroy_config)(topology_ctx_t *tctx);
 	int (*eval_nodes) (topology_eval_t *topo_eval);
@@ -380,6 +381,25 @@ extern int topology_g_destroy_config(void)
 
 	return rc;
 }
+
+extern char *topology_g_get_config(void)
+{
+	int retval = SLURM_SUCCESS;
+	char *dump_str = NULL;
+	topology_ctx_array_t tctx_array = {
+		.tctx = tctx,
+		.tctx_num = tctx_num,
+	};
+
+	DATA_DUMP_TO_STR(TOPOLOGY_CONF_ARRAY, tctx_array, dump_str, NULL,
+			 MIME_TYPE_YAML, SER_FLAGS_NO_TAG, retval);
+
+	if (retval)
+		xfree(dump_str);
+
+	return dump_str;
+}
+
 extern int topology_g_eval_nodes(topology_eval_t *topo_eval)
 {
 	int idx = topo_eval->job_ptr->part_ptr->topology_idx;
@@ -418,9 +438,8 @@ extern int topology_g_add_rm_node(node_record_t *node_ptr)
 
 	if (!node_ptr->topology_str || !node_ptr->topology_str[0]) {
 		for (int i = 0; i < tctx_num; i++) {
-			rc = (*(ops[tctx[i].idx]
-					.add_rm_node))(node_ptr, NULL,
-						       tctx[i].plugin_ctx);
+			rc = (*(ops[tctx[i].idx].add_rm_node))(node_ptr, NULL,
+							       &(tctx[i]));
 			if (rc)
 				break;
 		}
@@ -444,7 +463,7 @@ extern int topology_g_add_rm_node(node_record_t *node_ptr)
 		}
 		rc = (*(ops[tctx[tctx_idx].idx]
 				.add_rm_node))(node_ptr, unit,
-					       tctx[tctx_idx].plugin_ctx);
+					       &(tctx[tctx_idx]));
 		if (rc)
 			break;
 

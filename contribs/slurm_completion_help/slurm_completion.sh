@@ -3888,6 +3888,7 @@ function __scontrol_show() {
 		"reservations"
 		"slurmd"
 		"steps"
+		"topoconf"
 		"topology"
 	)
 	local subcmd
