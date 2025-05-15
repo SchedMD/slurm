@@ -1007,6 +1007,28 @@ def require_slurm_running():
     nodes = get_nodes(quiet=True)
 
 
+def get_version(component="sbin/slurmctld"):
+    return tuple(
+        int(part) if part.isdigit() else 0
+        for part in run_command_output(
+            f"sudo {properties['slurm-sbin-dir']}/../{component} -V"
+        )
+        .replace("slurm ", "")
+        .split(".")
+    )
+
+
+def require_version(version, component="sbin/slurmctld"):
+    component_version = get_version(component)
+    required_version = tuple(
+        int(part) if part.isdigit() else 0 for part in version.split(".")
+    )
+    if component_version < required_version:
+        pytest.skip(
+            f"The version of {component} is {component_version}, required is {required_version}"
+        )
+
+
 def request_slurmrestd(request):
     """Returns the slurmrestd response of a given request.
     It needs slurmrestd to be running (see require_slurmrestd())
