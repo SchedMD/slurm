@@ -41,6 +41,7 @@
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/tls.h"
+#include "src/conmgr/tls_fingerprint.h"
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
 

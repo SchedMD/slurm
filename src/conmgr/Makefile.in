@@ -162,8 +162,8 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 libconmgr_la_LIBADD =
 @HAVE_EPOLL_TRUE@am__objects_1 = epoll.lo
 am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo events.lo io.lo \
-	poll.lo polling.lo rpc.lo signals.lo tls.lo watch.lo work.lo \
-	workers.lo $(am__objects_1)
+	poll.lo polling.lo rpc.lo signals.lo tls.lo tls_fingerprint.lo \
+	watch.lo work.lo workers.lo $(am__objects_1)
 libconmgr_la_OBJECTS = $(am_libconmgr_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -195,8 +195,8 @@ am__depfiles_remade = ./$(DEPDIR)/con.Plo ./$(DEPDIR)/conmgr.Plo \
 	./$(DEPDIR)/events.Plo ./$(DEPDIR)/io.Plo ./$(DEPDIR)/poll.Plo \
 	./$(DEPDIR)/polling.Plo ./$(DEPDIR)/rpc.Plo \
 	./$(DEPDIR)/signals.Plo ./$(DEPDIR)/tls.Plo \
-	./$(DEPDIR)/watch.Plo ./$(DEPDIR)/work.Plo \
-	./$(DEPDIR)/workers.Plo
+	./$(DEPDIR)/tls_fingerprint.Plo ./$(DEPDIR)/watch.Plo \
+	./$(DEPDIR)/work.Plo ./$(DEPDIR)/workers.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -500,8 +500,8 @@ AM_CPPFLAGS = -I$(top_srcdir)
 noinst_LTLIBRARIES = libconmgr.la
 libconmgr_la_SOURCES = con.c conmgr.c conmgr.h delayed.c delayed.h \
 	events.c events.h io.c mgr.h poll.c polling.c polling.h rpc.c \
-	signals.c signals.h tls.c tls.h watch.c work.c workers.c \
-	$(am__append_1)
+	signals.c signals.h tls.c tls.h tls_fingerprint.c \
+	tls_fingerprint.h watch.c work.c workers.c $(am__append_1)
 libconmgr_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 
 # This was made so we could export all symbols from libconmgr
@@ -581,6 +581,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signals.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tls.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tls_fingerprint.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/watch.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/work.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/workers.Plo@am__quote@ # am--include-marker
@@ -720,6 +721,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/rpc.Plo
 	-rm -f ./$(DEPDIR)/signals.Plo
 	-rm -f ./$(DEPDIR)/tls.Plo
+	-rm -f ./$(DEPDIR)/tls_fingerprint.Plo
 	-rm -f ./$(DEPDIR)/watch.Plo
 	-rm -f ./$(DEPDIR)/work.Plo
 	-rm -f ./$(DEPDIR)/workers.Plo
@@ -779,6 +781,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/rpc.Plo
 	-rm -f ./$(DEPDIR)/signals.Plo
 	-rm -f ./$(DEPDIR)/tls.Plo
+	-rm -f ./$(DEPDIR)/tls_fingerprint.Plo
 	-rm -f ./$(DEPDIR)/watch.Plo
 	-rm -f ./$(DEPDIR)/work.Plo
 	-rm -f ./$(DEPDIR)/workers.Plo
