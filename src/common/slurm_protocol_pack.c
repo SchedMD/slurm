@@ -13065,6 +13065,33 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_topo_config_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	topo_config_response_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		packstr(msg->config, buffer);
+	}
+}
+
+static int _unpack_topo_config_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	topo_config_response_msg_t *msg = xmalloc(sizeof(*msg));
+
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->config, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_topo_config_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
 static void _pack_stats_request_msg(stats_info_request_msg_t *msg, buf_t *buffer,
 				    uint16_t protocol_version)
 {
@@ -14443,6 +14470,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_CONTAINER_START:
 	case REQUEST_CONTAINER_STATE:
 	case REQUEST_CONTAINER_PTY:
+	case REQUEST_TOPO_CONFIG:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -14833,6 +14861,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 			(topo_info_response_msg_t *)msg->data, buffer,
 			msg->protocol_version);
 		break;
+	case RESPONSE_TOPO_CONFIG:
+		_pack_topo_config_msg(msg, buffer);
+		break;
 	case RESPONSE_JOB_SBCAST_CRED:
 		_pack_job_sbcast_cred_msg(msg, buffer);
 		break;
@@ -15107,6 +15138,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_CONTAINER_START:
 	case REQUEST_CONTAINER_STATE:
 	case REQUEST_CONTAINER_PTY:
+	case REQUEST_TOPO_CONFIG:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -15531,6 +15563,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_topo_info_msg(
 			(topo_info_response_msg_t **)&msg->data, buffer,
 			msg->protocol_version);
+		break;
+	case RESPONSE_TOPO_CONFIG:
+		rc = _unpack_topo_config_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_SBCAST_CRED:
 		rc = _unpack_job_sbcast_cred_msg(msg, buffer);

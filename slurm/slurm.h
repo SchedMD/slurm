@@ -2422,6 +2422,10 @@ typedef struct topo_info_response_msg {
 	dynamic_plugin_data_t *topo_info;
 } topo_info_response_msg_t;
 
+typedef struct topo_config_response_msg {
+	char *config;
+} topo_config_response_msg_t;
+
 typedef struct job_alloc_info_msg {
 	uint32_t job_id;	/* job ID */
 	char    *req_cluster;   /* requesting cluster */
@@ -4496,6 +4500,13 @@ extern int slurm_load_topo(topo_info_response_msg_t **topo_info_msg_pptr,
  * NOTE: buffer is loaded by slurm_load_topo.
  */
 extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
+
+/*
+ * slurm_free_topo_config_msg - free the topology configuration
+ *	information response message
+ * IN msg - pointer to topology configuration response message
+ */
+extern void slurm_free_topo_config_msg(topo_config_response_msg_t *msg);
 
 /*
  * slurm_free_topo_request_msg - free the topology configuration

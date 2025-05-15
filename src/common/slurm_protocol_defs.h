@@ -1602,6 +1602,7 @@ extern void slurm_free_kvs_comm_set(kvs_comm_set_t *msg);
 extern void slurm_free_will_run_response_msg(void *data);
 extern void slurm_free_reserve_info_members(reserve_info_t * resv);
 extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
+extern void slurm_free_topo_config_msg(topo_config_response_msg_t *msg);
 extern void slurm_free_topo_request_msg(topo_info_request_msg_t *msg);
 extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 extern void slurm_free_step_complete_msg(step_complete_msg_t *msg);
