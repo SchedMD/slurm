@@ -2614,7 +2614,7 @@ static list_t *_license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 	}
 
 	license_list = license_validate(resv_desc_ptr->licenses, true, true,
-					false, NULL, valid);
+					true, NULL, valid);
 	if (resv_desc_ptr->licenses == NULL)
 		return license_list;
 
@@ -2632,7 +2632,7 @@ static list_t *_license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 		xstrcat(merged_licenses, resv_ptr->licenses);
 	}
 	list_iterator_destroy(iter);
-	merged_list = license_validate(merged_licenses, true, true, false, NULL,
+	merged_list = license_validate(merged_licenses, true, true, true, NULL,
 				       valid);
 	xfree(merged_licenses);
 	FREE_NULL_LIST(merged_list);
@@ -3186,8 +3186,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	}
 	resv_ptr->features	= resv_desc_ptr->features;
 	resv_desc_ptr->features = NULL;		/* Nothing left to free */
-	resv_ptr->licenses	= resv_desc_ptr->licenses;
-	resv_desc_ptr->licenses = NULL;		/* Nothing left to free */
+	resv_ptr->licenses = license_list_to_string(license_list);
 	resv_ptr->license_list	= license_list;
 	license_list = NULL;
 
@@ -3623,8 +3622,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			goto update_failure;
 		}
 		xfree(resv_ptr->licenses);
-		resv_ptr->licenses	= resv_desc_ptr->licenses;
-		resv_desc_ptr->licenses = NULL; /* Nothing left to free */
+		resv_ptr->licenses = license_list_to_string(license_list);
 		FREE_NULL_LIST(resv_ptr->license_list);
 		resv_ptr->license_list  = license_list;
 	}
@@ -4207,7 +4205,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		bool valid = true;
 		FREE_NULL_LIST(resv_ptr->license_list);
 		resv_ptr->license_list =
-			license_validate(resv_ptr->licenses, true, true, false,
+			license_validate(resv_ptr->licenses, true, true, true,
 					 NULL, &valid);
 		if (!valid) {
 			error("Reservation %s has invalid licenses (%s)",

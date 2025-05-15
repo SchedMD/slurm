@@ -255,8 +255,8 @@ static int _license_find_remote_rec(void *x, void *key)
 static list_t *_build_license_list(char *licenses, bool *valid, bool hres)
 {
 	int i;
-	char *end_num, *tmp_str, *token, *last;
-	char *delim = hres ? ";" : ",;";
+	char *end_num, *tmp_str, *token;
+	char *delim = ",;";
 	licenses_t *license_entry;
 	list_t *lic_list;
 
@@ -265,7 +265,8 @@ static list_t *_build_license_list(char *licenses, bool *valid, bool hres)
 		return NULL;
 
 	if (strchr(licenses, '|')) {
-		if (strchr(licenses, ',') || strchr(licenses, ';')) {
+		if (strchr(licenses, ',') || strchr(licenses, ';') ||
+		    strchr(licenses, '(')) {
 			/* Both OR and AND requested, invalid */
 			*valid = false;
 			return NULL;
@@ -275,11 +276,16 @@ static list_t *_build_license_list(char *licenses, bool *valid, bool hres)
 
 	lic_list = list_create(license_free_rec);
 	tmp_str = xstrdup(licenses);
-	token = strtok_r(tmp_str, delim, &last);
-	while (token && *valid) {
+	token = tmp_str;
+	while (*token && *valid) {
 		int32_t num = 1;
 		char *nodes = NULL;
 		char *name = token;
+		if (strchr(delim, token[0])) {
+			token++;
+			continue;
+		}
+
 		for (i = 0; token[i]; i++) {
 			if (isspace(token[i])) {
 				*valid = false;
@@ -302,19 +308,43 @@ static list_t *_build_license_list(char *licenses, bool *valid, bool hres)
 			    (token[i] == '=')) {
 				token[i++] = '\0';
 				num = (int32_t)strtol(&token[i], &end_num, 10);
-				if (*end_num != '\0')
-					 *valid = false;
+				if ((*end_num != '\0') &&
+				    !strchr(delim, *end_num))
+					*valid = false;
+				token = end_num;
+				break;
+			}
+
+			if (strchr(delim, token[i])) {
+				token[i++] = '\0';
+				token = &(token[i]);
 				break;
 			}
 		}
+
+		if (name == token)
+			token = &(token[i]);
+
 		if (num < 0 || !(*valid)) {
 			*valid = false;
 			break;
 		}
+		if (nodes) {
+			licenses_find_rec_by_nodes_t args = {
+				.name = name,
+				.nodes = nodes,
+			};
+			license_entry =
+				list_find_first(lic_list,
+						_license_find_rec_by_nodes,
+						&args);
+		} else {
+			license_entry =
+				list_find_first(lic_list, _license_find_rec,
+						name);
+		}
 
-		license_entry =
-			list_find_first(lic_list, _license_find_rec, name);
-		if (license_entry && !nodes) {
+		if (license_entry) {
 			license_entry->total += num;
 		} else {
 			license_entry = xmalloc(sizeof(licenses_t));
@@ -328,7 +358,6 @@ static list_t *_build_license_list(char *licenses, bool *valid, bool hres)
 			/* Append to preserve the order requested by the user */
 			list_append(lic_list, license_entry);
 		}
-		token = strtok_r(NULL, delim, &last);
 	}
 	xfree(tmp_str);
 
