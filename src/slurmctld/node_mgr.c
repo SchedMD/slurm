@@ -695,6 +695,9 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->mcs_label);
 			node_ptr->mcs_label = node_state_rec->mcs_label;
 			node_state_rec->mcs_label = NULL;
+			xfree(node_ptr->topology_str);
+			node_ptr->topology_str = node_state_rec->topology_str;
+			node_state_rec->topology_str = NULL;
 		}
 
 		if (node_ptr) {
