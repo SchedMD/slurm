@@ -131,6 +131,16 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 {
 	tree_context_t *ctx = tctx->plugin_ctx;
 	bool *added = xcalloc(ctx->switch_count, sizeof(bool));
+	int add_inx = -1;
+
+	for (int i = 0; i < ctx->switch_count; i++) {
+		if (ctx->switch_table[i].level != 0)
+			continue;
+		if (!xstrcmp(ctx->switch_table[i].name, unit)) {
+			add_inx = i;
+			break;
+		}
+	}
 
 	for (int i = 0; i < ctx->switch_count; i++) {
 		bool add, in_switch;
@@ -141,7 +151,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 
 		in_switch = bit_test(ctx->switch_table[i].node_bitmap,
 				     node_ptr->index);
-		add = (!xstrcmp(ctx->switch_table[i].name, unit));
+		add = (add_inx == i);
 
 		if ((!in_switch && !add) || (in_switch && add))
 			continue;
