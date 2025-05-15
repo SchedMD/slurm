@@ -163,6 +163,8 @@ extern int topology_g_build_config(void);
 
 extern int topology_g_destroy_config(void);
 
+extern char *topology_g_get_config(void);
+
 /*
  * topology_g_eval_nodes - Evaluate topology based on the topology plugin when
  *                         selecting nodes in the select plugin.
