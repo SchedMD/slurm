@@ -4494,6 +4494,15 @@ extern int slurm_load_topo(topo_info_response_msg_t **topo_info_msg_pptr,
 			   char *name);
 
 /*
+ * slurm_load_topo_config - issue RPC to get slurm topology configuration
+ *	information
+ * IN resp - place to store a node configuration pointer
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_free_topo_config_msg
+ */
+extern int slurm_load_topo_config(topo_config_response_msg_t **resp);
+
+/*
  * slurm_free_topo_info_msg - free the switch topology configuration
  *	information response message
  * IN msg - pointer to switch topology configuration response message
