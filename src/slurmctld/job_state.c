@@ -33,6 +33,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+#include <pthread.h>
+
 #include "src/common/macros.h"
 #include "src/common/xahash.h"
 #include "src/common/xstring.h"
@@ -45,6 +48,17 @@
 #define ONLY_DEBUG(...) __VA_ARGS__
 #else
 #define ONLY_DEBUG(...)
+#endif
+
+/*
+ * Favor writer lock acquisition to avoid delaying the scheduling thread
+ * when under heavy client load. Clients can be safely delayed, job launch
+ * is most important.
+ */
+#ifdef PTHREAD_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP
+#define CACHE_LOCK_INIT PTHREAD_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP
+#else
+#define CACHE_LOCK_INIT PTHREAD_RWLOCK_INITIALIZER
 #endif
 
 #define JOB_STATE_MIMIC_RECORD(js)                                             \
@@ -187,7 +201,7 @@ static xahash_table_t *array_job_cache_table = NULL;
  *	Maintains table_size for number of jobs reserved in hashtable
  */
 static xahash_table_t *array_task_cache_table = NULL;
-static pthread_rwlock_t cache_lock = PTHREAD_RWLOCK_INITIALIZER;
+static pthread_rwlock_t cache_lock = CACHE_LOCK_INIT;
 
 #ifndef NDEBUG
 
