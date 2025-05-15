@@ -94,6 +94,7 @@ typedef struct {
 typedef struct {
 	licenses_t *license_entry;
 	job_record_t *job_ptr;
+	time_t when;
 } foreach_get_hres_t;
 
 typedef struct {
@@ -102,17 +103,22 @@ typedef struct {
 } foreach_get_total_t;
 
 typedef struct {
+	job_record_t *job_ptr;
 	licenses_t *license_entry;
 	bitstr_t *node_mask;
+	time_t when;
 } foreach_hres_filter_t;
 
 typedef struct {
+	job_record_t *job_ptr;
 	list_t *license_list;
 	bitstr_t *node_bitmap;
+	time_t when;
 } hres_filter_args_t;
 
 typedef struct {
 	bf_licenses_t *bf_license_list;
+	job_record_t *job_ptr;
 	bitstr_t *node_bitmap;
 } bf_hres_filter_args_t;
 
@@ -617,11 +623,14 @@ static int _foreach_hres_filter_mode1(void *x, void *arg)
 {
 	licenses_t *match = x;
 	foreach_hres_filter_t *args = arg;
+	int resv_licenses = 0;
 
 	if (match->id.hres_id != args->license_entry->id.hres_id)
 		return 0;
 
-	if (_sufficient_licenses(args->license_entry, match, 0))
+	resv_licenses =
+		job_test_lic_resv(args->job_ptr, match->id, args->when, false);
+	if (_sufficient_licenses(args->license_entry, match, resv_licenses))
 		bit_or(args->node_mask, match->node_bitmap);
 
 	return 0;
@@ -631,11 +640,15 @@ static int _foreach_hres_filter_mode2(void *x, void *arg)
 {
 	licenses_t *match = x;
 	foreach_hres_filter_t *args = arg;
+	int resv_licenses = 0;
 
 	if (match->id.hres_id != args->license_entry->id.hres_id)
 		return 0;
 
-	if (!_sufficient_licenses(args->license_entry, match, 0))
+	resv_licenses =
+		job_test_lic_resv(args->job_ptr, match->id, args->when, false);
+
+	if (!_sufficient_licenses(args->license_entry, match, resv_licenses))
 		bit_and_not(args->node_mask, match->node_bitmap);
 
 	return 0;
@@ -647,6 +660,8 @@ static int _foreach_bf_hres_filter_mode1(void *x, void *arg)
 	foreach_hres_filter_t *args = arg;
 
 	if (bf_lic->id.hres_id != args->license_entry->id.hres_id)
+		return 0;
+	if (bf_lic->resv_ptr && (args->job_ptr->resv_ptr != bf_lic->resv_ptr))
 		return 0;
 
 	if (args->license_entry->total <= bf_lic->remaining) {
@@ -665,6 +680,8 @@ static int _foreach_bf_hres_filter_mode2(void *x, void *arg)
 	foreach_hres_filter_t *args = arg;
 
 	if (bf_lic->id.hres_id != args->license_entry->id.hres_id)
+		return 0;
+	if (bf_lic->resv_ptr && (args->job_ptr->resv_ptr != bf_lic->resv_ptr))
 		return 0;
 
 	if (args->license_entry->total > bf_lic->remaining) {
@@ -685,8 +702,10 @@ static int _foreach_hres_filter(void *x, void *arg)
 	if (license_entry->id.hres_id != NO_VAL16) {
 		bitstr_t *node_mask = bit_alloc(node_record_count);
 		foreach_hres_filter_t arg2 = {
+			.job_ptr = args->job_ptr,
 			.node_mask = node_mask,
 			.license_entry = license_entry,
+			.when = args->when,
 		};
 
 		list_for_each_ro(args->license_list, _foreach_hres_filter_mode1,
@@ -707,8 +726,10 @@ extern int hres_filter_with_list(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				 list_t *license_list)
 {
 	hres_filter_args_t filter_args = {
+		.job_ptr = job_ptr,
 		.license_list = license_list,
 		.node_bitmap = node_bitmap,
+		.when = time(NULL),
 	};
 
 	if (!job_ptr->license_list || !license_list)
@@ -749,6 +770,7 @@ static int _foreach_bf_hres_filter(void *x, void *arg)
 	if (license_entry->id.hres_id != NO_VAL16) {
 		bitstr_t *node_mask = bit_alloc(node_record_count);
 		foreach_hres_filter_t arg2 = {
+			.job_ptr = args->job_ptr,
 			.node_mask = node_mask,
 			.license_entry = license_entry,
 		};
@@ -773,6 +795,7 @@ extern void slurm_bf_hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap,
 {
 	bf_hres_filter_args_t filter_args = {
 		.bf_license_list = bf_license_list,
+		.job_ptr = job_ptr,
 		.node_bitmap = node_bitmap,
 	};
 
@@ -1441,8 +1464,12 @@ static int _foreach_hres_job_get(void *x, void *arg)
 	if (!bit_overlap_any(match->node_bitmap, args->job_ptr->node_bitmap))
 		return 0;
 
-	if (args->license_entry->mode == HRES_MODE_1 &&
-	    _sufficient_licenses(args->license_entry, match, 0)) {
+	if (args->license_entry->mode == HRES_MODE_1) {
+		int resv_licenses = job_test_lic_resv(args->job_ptr, match->id,
+						      args->when, false);
+		if (!_sufficient_licenses(args->license_entry, match,
+					  resv_licenses))
+			return 0;
 		match->used += args->license_entry->total;
 		args->license_entry->id.lic_id = match->id.lic_id;
 		xfree(args->license_entry->nodes);
@@ -1480,6 +1507,7 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 			foreach_get_hres_t arg = {
 				.job_ptr = job_ptr,
 				.license_entry = license_entry,
+				.when = last_license_update,
 			};
 			list_for_each_ro(cluster_license_list,
 					 _foreach_hres_job_get, &arg);
@@ -2012,6 +2040,9 @@ static int _foreach_hres_deduct(void *x, void *arg)
 	    ((args->license_entry->mode == HRES_MODE_1) &&
 	     IS_JOB_RUNNING(args->job_ptr) &&
 	     (bf_lic->id.lic_id != args->license_entry->id.lic_id)))
+		return 0;
+
+	if (bf_lic->resv_ptr && (args->job_ptr->resv_ptr != bf_lic->resv_ptr))
 		return 0;
 
 	match = list_find_first(cluster_license_list, _license_find_rec_by_id,
