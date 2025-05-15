@@ -508,3 +508,16 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 	tctx->plugin_ctx = ctx;
 	return SLURM_SUCCESS;
 }
+
+extern void switch_record_update_block_config(topology_ctx_t *tctx, int idx)
+{
+	topology_tree_config_t *tree_config = tctx->config;
+	tree_context_t *ctx = tctx->plugin_ctx;
+
+	if (!tctx->config)
+		return;
+
+	xfree(tree_config->switch_configs[idx].nodes);
+	tree_config->switch_configs[idx].nodes =
+		xstrdup(ctx->switch_table[idx].nodes);
+}

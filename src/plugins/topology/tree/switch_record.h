@@ -74,4 +74,6 @@ extern void switch_record_table_destroy(tree_context_t *ctx);
 
 extern int switch_record_validate(topology_ctx_t *tctx);
 
+extern void switch_record_update_block_config(topology_ctx_t *tctx, int idx);
+
 #endif

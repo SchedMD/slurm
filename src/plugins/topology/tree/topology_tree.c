@@ -168,6 +168,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 			ctx->switch_table[sw].nodes =
 				bitmap2node_name(ctx->switch_table[sw]
 							 .node_bitmap);
+			switch_record_update_block_config(tctx, sw);
 			sw = ctx->switch_table[sw].parent;
 		}
 	}
