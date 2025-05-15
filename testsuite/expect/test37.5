@@ -679,7 +679,39 @@ log_info "################################################################"
 log_info "Test requeue on subset of siblings"
 log_info "################################################################"
 
-spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t1 --requeue -M$fedc1,$fedc2 $complete_script
+# Set feature so we can exclude a sibling
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc3 set features=fc
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fc" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+sleep 2
+
+spawn $sbatch -N$node_count --exclusive -o /dev/null -e /dev/null -t1 --requeue --cluster-constraint='!fc' $complete_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
