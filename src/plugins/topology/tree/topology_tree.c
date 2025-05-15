@@ -130,18 +130,43 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 				  topology_ctx_t *tctx)
 {
 	tree_context_t *ctx = tctx->plugin_ctx;
-	bool *added = xcalloc(ctx->switch_count, sizeof(bool));
+	bool *added = NULL;
 	int add_inx = -1;
+	char *tmp_str = NULL, *tok = NULL, *saveptr = NULL;
+	int rc = SLURM_SUCCESS;
 
-	for (int i = 0; i < ctx->switch_count; i++) {
-		if (ctx->switch_table[i].level != 0)
-			continue;
-		if (!xstrcmp(ctx->switch_table[i].name, unit)) {
-			add_inx = i;
-			break;
-		}
+	if (unit) {
+		tmp_str = xstrdup(unit);
+		tok = strtok_r(tmp_str, ":", &saveptr);
 	}
 
+	while (tok) {
+		int inx = switch_record_get_switch_inx(tok, ctx);
+
+		if ((inx < 0) && (add_inx < 0)) {
+			error("Don't know where to add switch %s", tok);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
+		if (inx < 0)
+			inx = switch_record_add_switch(tctx, tok, add_inx);
+
+		if (inx < 0) {
+			error("Failed to add switch %s", tok);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
+		tok = strtok_r(NULL, ":", &saveptr);
+		add_inx = inx;
+	}
+
+	if ((add_inx >= 0) && (ctx->switch_table[add_inx].level != 0)) {
+		error("%s isn't a leaf switch", ctx->switch_table[add_inx].name);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	added = xcalloc(ctx->switch_count, sizeof(bool));
 	for (int i = 0; i < ctx->switch_count; i++) {
 		bool add, in_switch;
 		int sw = i;
@@ -182,9 +207,10 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 			sw = ctx->switch_table[sw].parent;
 		}
 	}
-
+fini:
 	xfree(added);
-	return SLURM_SUCCESS;
+	xfree(tmp_str);
+	return rc;
 }
 
 /*

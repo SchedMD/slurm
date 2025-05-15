@@ -285,6 +285,119 @@ static void _check_better_path(int i, int j, int k, tree_context_t *ctx)
 		ctx->switch_table[j].switches_dist[k] = tmp;
 }
 
+static void _recal_switches_dist(tree_context_t *ctx)
+{
+	for (int i = 0; i < ctx->switch_count; i++) {
+		for (int j = 0; j < ctx->switch_count; j++) {
+			for (int k = 0; k < ctx->switch_count; k++) {
+				_check_better_path(i, j, k, ctx);
+			}
+		}
+	}
+}
+
+extern int switch_record_add_switch(topology_ctx_t *tctx, char *name,
+				    int parent)
+{
+	topology_tree_config_t *tree_config = tctx->config;
+	tree_context_t *ctx = tctx->plugin_ctx;
+	switch_record_t *switch_ptr, *parent_ptr;
+	int prior_level = 0;
+	int new_idx = ctx->switch_count;
+	uint16_t sw;
+
+	parent_ptr = &(ctx->switch_table[parent]);
+	if (!parent_ptr->level && bit_set_count(parent_ptr->node_bitmap)) {
+		error("%s: has nodes:%s", ctx->switch_table[parent].name,
+		      ctx->switch_table[parent].nodes);
+		return -1;
+	}
+
+	ctx->switch_count++;
+	xrecalloc(ctx->switch_table, ctx->switch_count,
+		  sizeof(*ctx->switch_table));
+
+	parent_ptr = &(ctx->switch_table[parent]);
+
+	for (int i = 0; i < ctx->switch_count; i++) {
+		xrecalloc(ctx->switch_table[i].switches_dist, ctx->switch_count,
+			  sizeof(*ctx->switch_table[i].switches_dist));
+		xrecalloc(ctx->switch_table[i].switch_desc_index,
+			  ctx->switch_count,
+			  sizeof(*ctx->switch_table[i].switch_desc_index));
+	}
+	switch_ptr = &(ctx->switch_table[new_idx]);
+	switch_ptr->parent = parent;
+	switch_ptr->name = xstrdup(name);
+	switch_ptr->level = 0;
+	switch_ptr->num_desc_switches = 0;
+	switch_ptr->node_bitmap = bit_alloc(node_record_count);
+
+	if (parent_ptr->level == 0)
+		parent_ptr->level++;
+
+	if (parent_ptr->switches)
+		xstrfmtcat(parent_ptr->switches, ",%s", name);
+	else
+		parent_ptr->switches = xstrdup(name);
+
+	parent_ptr->num_switches++;
+	xrecalloc(parent_ptr->switch_index, parent_ptr->num_switches,
+		  sizeof(*parent_ptr->switch_index));
+	parent_ptr->switch_index[parent_ptr->num_switches - 1] = new_idx;
+
+	switch_ptr->switches_dist[new_idx] = 0;
+	for (int i = 0; i < new_idx; i++) {
+		if (i == parent) {
+			ctx->switch_table[i].switches_dist[new_idx] = 1;
+			ctx->switch_table[new_idx].switches_dist[i] = 1;
+		} else {
+			ctx->switch_table[i].switches_dist[new_idx] = INFINITE;
+			ctx->switch_table[new_idx].switches_dist[i] = INFINITE;
+		}
+	}
+
+	sw = parent;
+	while (sw != SWITCH_NO_PARENT) {
+		switch_record_t *sw_ptr = &(ctx->switch_table[sw]);
+
+		sw_ptr->switch_desc_index[sw_ptr->num_desc_switches] =
+			ctx->switch_count - 1;
+		sw_ptr->num_desc_switches++;
+
+		if (prior_level >= sw_ptr->level) {
+			sw_ptr->level = prior_level + 1;
+		}
+		prior_level = sw_ptr->level;
+
+		sw = sw_ptr->parent;
+	}
+
+	if (prior_level > ctx->switch_levels)
+		ctx->switch_levels = prior_level;
+
+	_recal_switches_dist(ctx);
+
+	if (tree_config) {
+		xrecalloc(tree_config->switch_configs,
+			  tree_config->config_cnt + 1,
+			  sizeof(*tree_config->switch_configs));
+		tree_config->switch_configs[new_idx].switch_name =
+			xstrdup(name);
+		tree_config->config_cnt++;
+
+		if (tree_config->switch_configs[parent].switches)
+			xstrfmtcat(tree_config->switch_configs[parent].switches,
+				   ",%s", name);
+		else
+			tree_config->switch_configs[parent].switches =
+				xstrdup(name);
+	}
+	_log_switches(ctx);
+
+	return new_idx;
+}
+
 extern int switch_record_validate(topology_ctx_t *tctx)
 {
 	slurm_conf_switches_t *ptr, **ptr_array, **ptr_array_mem = NULL;

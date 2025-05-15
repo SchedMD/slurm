@@ -125,6 +125,9 @@ reservation can be deleted.
 Nodes can be dynamically added to topologies, defined in either
 <i>topology.conf</i> or <i>topology.yaml</i>, by specifying the node's
 <b>Topology</b> option and providing the list of topology names and units.
+A <b>topology unit</b> is the block name or the name of a leaf switch.
+Intermediate switch names -- ':' delimited -- can be provided and will be
+created if needed (e.g. Topology=topo-tree:sw_root:s1:s2).
 </p>
 <p>
 <b>NOTE</b>: When using topology.conf, the topology name is "default".
