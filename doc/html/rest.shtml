@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>REST API Reference</h1>
+<h1>REST API Details</h1>
 
 <p>Slurm provides a
 	<a href="https://en.wikipedia.org/wiki/Representational_state_transfer">
@@ -16,7 +16,7 @@
 <ul>
 <li><a href="rest_quickstart.html#common_issues">Common Issues</a></li>
 </ul></li>
-<li><a href="rest_api.html">REST API Implementation Details</a></li>
+<li><a href="rest_api.html">REST API Methods and Models</a></li>
 <li><a href="openapi_release_notes.html">OpenAPI Plugin Release Notes</a></li>
 <li><a href="rest_clients.html">REST API Client Guide</a></li>
 </ul>
@@ -243,6 +243,6 @@ for deployment in a production environment.</p>
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 21 April 2025</p>
+<p style="text-align:center;">Last modified 16 May 2025</p>
 
 <!--#include virtual="footer.txt"-->
