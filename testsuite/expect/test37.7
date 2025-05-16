@@ -49,7 +49,7 @@ set my_sbatch    "${fed_slurm_base}/$fedc1/bin/sbatch"
 set my_srun      "${fed_slurm_base}/$fedc1/bin/srun"
 set my_salloc    "${fed_slurm_base}/$fedc1/bin/salloc"
 set my_squeue    "${fed_slurm_base}/$fedc1/bin/squeue"
-set drain_time   10
+set drain_time   5
 
 #
 # Check accounting config and bail if not found.
@@ -262,15 +262,17 @@ sacctmgr_show ".+ACTIVE.+ACTIVE.+"
 
 scontrol fed ".+ACTIVE.+ACTIVE.+"
 
-sbatch 1 0
+set job1 [sbatch 1 0]
 
 set job_id [sbatch 1 0]
 
 sacctmgr_mod INACTIVE
 
+wait_for_fed_job $job1 RUNNING $fedc1
 squeue "PD\\s+R\\s+"
 
-sleep 10
+sleep 8
+wait_for_fed_job $job1 DONE $fedc1
 
 squeue "PD\\s+"
 
@@ -316,17 +318,12 @@ if {$matches != 1} {
 
 sacctmgr_mod ACTIVE
 
-wait_for_fed_job $job_id RUNNING $fedc1,$fedc2
+wait_for_fed_job $job_id RUNNING $fedc1
 
 squeue "R\\s+"
 
-sbatch 1 0
-
-squeue "R\\s+"
-
-sbatch 1 0
-
-sbatch 1 0
+set job1 [sbatch 1 0]
+set job2 [sbatch 1 0]
 
 sacctmgr_mod DRAIN
 
@@ -336,15 +333,10 @@ sacctmgr_show "\\s+DRAIN.+ACTIVE\\s+"
 
 scontrol fed ".+DRAIN.+ACTIVE.+"
 
-squeue "PD\\s+R\\s+"
-
-sleep 10
-
-squeue "R\\s+"
-
-sleep 10
-
-squeue ""
+sleep 8
+wait_for_fed_job $job1 DONE $fedc1
+sleep 8
+wait_for_fed_job $job2 DONE $fedc1
 
 log_info "Sleep $drain_time seconds until system is drained"
 sleep $drain_time
@@ -355,8 +347,9 @@ sacctmgr_show "\\s+DRAINED.+ACTIVE\\s+"
 
 sacctmgr_mod ACTIVE
 
-sbatch 1 0
+set job1 [sbatch 1 0]
 
+wait_for_fed_job $job1 RUNNING $fedc1
 squeue "R\\s+"
 
 set matches 0
@@ -390,8 +383,10 @@ if {$matches != 4} {
 	fail "Unexpected error (got $matches)"
 }
 
-sbatch  1 1
+set job2 [sbatch  1 1]
 
+sleep 5
+wait_for_fed_job $job1 DONE $fedc1
 squeue ""
 
 log_info "Sleep $drain_time seconds until system is removed"
@@ -413,6 +408,7 @@ if {[expr $job_id >> 26]} {
 	fail "Removed cluster still giving federated job id"
 }
 
+sleep 8
 wait_for_fed_job $job_id DONE $fedc1
 
 set matches 0
@@ -484,10 +480,12 @@ sacctmgr_show "\\s+ACTIVE.+DRAIN\\s+"
 
 scontrol fed ".+ACTIVE.+DRAIN.+"
 
-sbatch 0 0
+set job1 [sbatch 0 0]
 
+wait_for_fed_job $job1 RUNNING $fedc1
 squeue "R\\s+"
 
-sbatch 0 0
+set job2 [sbatch 0 0]
 
+wait_for_fed_job $job2 PENDING $fedc1
 squeue "PD\\s+R\\s+"
