@@ -536,10 +536,22 @@ static int _foreach_license_set_hres(void *x, void *key)
 			      license->name);
 			return -1;
 		}
-
-		if (license != hres_head)
+		if (license != hres_head) {
+			licenses_find_rec_by_nodes_t args = {
+				.name = license->name,
+				.nodes = license->nodes,
+			};
+			licenses_t *hres_dup =
+				list_find_first_ro(cluster_license_list,
+						   _license_find_rec_by_nodes,
+						   &args);
+			if (hres_dup != license) {
+				error("%s HRes %s duplicate layer", __func__,
+				      license->name);
+				return -1;
+			}
 			license->id.hres_id = hres_head->id.hres_id;
-		else
+		} else
 			license->id.hres_id = license->id.lic_id;
 
 		if (node_name2bitmap(license->nodes, false,
