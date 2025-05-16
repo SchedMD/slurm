@@ -42,6 +42,7 @@ def setup():
     atf.require_slurmrestd("slurmctld,slurmdbd", "v0.0.42+prefer_refs")
     atf.require_version("24.11", "sbin/slurmdbd")
     atf.require_version("24.11", "sbin/slurmctld")
+    atf.require_version("24.11", "sbin/slurmrestd")
     atf.require_slurm_running()
 
     # Setup OpenAPI client with OpenAPI-Generator once Slurm(restd) is running
