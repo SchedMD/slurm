@@ -673,7 +673,9 @@ static void *_job_watch_thread(void *arg)
 		unlock_slurmctld(job_write_fed_write_lock);
 	}
 
+	slurm_mutex_lock(&job_watch_mutex);
 	job_watch_thread_running = false;
+	slurm_mutex_unlock(&job_watch_mutex);
 
 	log_flag(FEDR, "%s: exiting job watch thread", __func__);
 
@@ -682,27 +684,27 @@ static void *_job_watch_thread(void *arg)
 
 static void _spawn_job_watch_thread()
 {
+	slurm_mutex_lock(&job_watch_mutex);
 	if (!job_watch_thread_running) {
 		/* Detach the thread since it will exit once the cluster is
 		 * drained or removed. */
-		slurm_mutex_lock(&job_watch_mutex);
 		stop_job_watch_thread = false;
 		job_watch_thread_running = true;
 		slurm_thread_create_detached(_job_watch_thread, NULL);
-		slurm_mutex_unlock(&job_watch_mutex);
 	} else {
 		info("a job_watch_thread already exists");
 	}
+	slurm_mutex_unlock(&job_watch_mutex);
 }
 
 static void _remove_job_watch_thread()
 {
+	slurm_mutex_lock(&job_watch_mutex);
 	if (job_watch_thread_running) {
-		slurm_mutex_lock(&job_watch_mutex);
 		stop_job_watch_thread = true;
 		slurm_cond_broadcast(&job_watch_cond);
-		slurm_mutex_unlock(&job_watch_mutex);
 	}
+	slurm_mutex_unlock(&job_watch_mutex);
 }
 
 static int _clear_recv_conns(void *object, void *arg)
