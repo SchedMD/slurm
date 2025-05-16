@@ -138,7 +138,7 @@ extern int xcgroup_ns_is_available(xcgroup_ns_t *cgns)
 	size_t s;
 	xcgroup_t cg;
 
-	if (common_cgroup_create(cgns, &cg, "/", 0, 0) == SLURM_ERROR)
+	if (common_cgroup_create(cgns, &cg, "", 0, 0) == SLURM_ERROR)
 		return 0;
 
 	if (common_cgroup_get_param(&cg, "tasks", &value, &s) != SLURM_SUCCESS)
