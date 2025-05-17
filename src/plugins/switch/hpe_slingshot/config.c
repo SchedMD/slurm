@@ -443,22 +443,47 @@ err:
 	return false;
 }
 
+/* Verify that the path is a fully qualified and readable */
+static bool _is_valid_file(const char *token, char *path, char *option,
+			   char *example)
+{
+	struct stat statbuf;
+
+	if (!path) {
+		error("Invalid %s token '%s' (example '%s=%s')",
+		      option, token, option, example);
+	} else if (path[0] != '/') {
+		error("%s's path (%s) is required to be a fully qualified pathname",
+		      option, path);
+	} else if ((stat(path, &statbuf) != 0)) {
+		error("%s's path (%s) can not be accessed or it doesn't exist",
+		      option, path);
+	} else if (!S_ISREG(statbuf.st_mode)) {
+		error("%s's path (%s) is not a regular file", option, path);
+	} else if (access(path, R_OK)) {
+		error("%s's path (%s) does not have read permissions",
+		      option, path);
+	} else {
+		return true;
+	}
+
+	return false;
+}
+
 /*
  * Parse the "fm_mtls_ca" token"
  */
 static bool _config_fm_mtls_ca(const char *token, char *arg)
 {
-	if (!arg)
-		goto err;
+	if (!_is_valid_file(token, arg, "fm_mtls_ca",
+			    "/etc/wlm-client-auth/ca.crt"))
+		return false;
+
 	slingshot_config.fm_mtls_ca = xstrdup(arg);
 
 	log_flag(SWITCH, "[token=%s]: fm_mtls_ca %s", token,
 		 slingshot_config.fm_mtls_ca);
 	return true;
-err:
-	error("Invalid fm_mtls_ca token '%s' (example 'fm_mtls_ca=/etc/wlm-client-auth/ca.crt')",
-	      token);
-	return false;
 }
 
 /*
@@ -466,17 +491,15 @@ err:
  */
 static bool _config_fm_mtls_cert(const char *token, char *arg)
 {
-	if (!arg)
-		goto err;
+	if (!_is_valid_file(token, arg, "fm_mtls_cert",
+			    "/etc/wlm-client-auth/public.crt"))
+		return false;
+
 	slingshot_config.fm_mtls_cert = xstrdup(arg);
 
 	log_flag(SWITCH, "[token=%s]: fm_mtls_cert %s", token,
 		 slingshot_config.fm_mtls_cert);
 	return true;
-err:
-	error("Invalid fm_mtls_cert token '%s' (example 'fm_mtls_cert=/etc/wlm-client-auth/public.crt')",
-	      token);
-	return false;
 }
 
 /*
@@ -484,17 +507,15 @@ err:
  */
 static bool _config_fm_mtls_key(const char *token, char *arg)
 {
-	if (!arg)
-		goto err;
+	if (!_is_valid_file(token, arg, "fm_mtls_key",
+			    "/etc/wlm-client-auth/private.key"))
+		return false;
+
 	slingshot_config.fm_mtls_key = xstrdup(arg);
 
 	log_flag(SWITCH, "[token=%s]: fm_mtls_key %s", token,
 		 slingshot_config.fm_mtls_key);
 	return true;
-err:
-	error("Invalid fm_mtls_key token '%s' (example 'fm_mtls_key=/etc/wlm-client-auth/private.key')",
-	      token);
-	return false;
 }
 
 /*
