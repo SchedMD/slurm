@@ -4759,6 +4759,18 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 	return rc;
 }
 
+/* Clear a bit in QOS preempt bitmaps */
+static int _for_each_qos_clear_preempt_bit(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos = x;
+	uint32_t *offset = arg;
+
+	if (qos->preempt_bitstr && (bit_size(qos->preempt_bitstr) > *offset))
+		bit_clear(qos->preempt_bitstr, *offset);
+
+	return 0;
+}
+
 extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 {
 	slurmdb_qos_rec_t *rec = NULL;
@@ -5129,6 +5141,13 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				list_append(remove_list, rec);
 			} else
 				list_delete_item(itr);
+
+			/*
+			 * Remove this qos from preempt lists
+			 */
+			list_for_each(assoc_mgr_qos_list,
+				      _for_each_qos_clear_preempt_bit,
+				      &object->id);
 
 			if (!assoc_mgr_assoc_list)
 				break;

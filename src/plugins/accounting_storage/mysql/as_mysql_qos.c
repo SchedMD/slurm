@@ -1088,6 +1088,7 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
 		*name_char = NULL, *assoc_char = NULL;
+	char *removed_ids = NULL, *rmid_pos = NULL;
 	time_t now = time(NULL);
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1152,6 +1153,16 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			   ", delta_qos=replace(delta_qos, ',-%s,', if(delta_qos=',-%s,', '', ','))",
 			   row[0], row[0], row[0], row[0], row[0], row[0]);
 
+		/* Track removed QOS ids for removal from preempt lists */
+		if (!removed_ids) {
+			xstrfmtcatat(removed_ids, &rmid_pos,
+				     "update %s set preempt=regexp_replace("
+				     "preempt, '",
+				     qos_table);
+		}
+
+		xstrfmtcatat(removed_ids, &rmid_pos, ",%s[[:>:]]|", row[0]);
+
 		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
 		/* we only need id when removing no real need to init */
 		qos_rec->id = slurm_atoul(row[0]);
@@ -1170,6 +1181,20 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		return ret_list;
 	}
 	xfree(query);
+
+	if (removed_ids) {
+		/* write over trailing | from removed_ids */
+		xassert(rmid_pos);
+		rmid_pos--;
+
+		xstrcatat(removed_ids, &rmid_pos, "', '');");
+		DB_DEBUG(DB_QOS, mysql_conn->conn, "query\n%s", removed_ids);
+		rc = mysql_db_query(mysql_conn, removed_ids);
+		xfree(removed_ids);
+
+		if (rc != SLURM_SUCCESS)
+			goto end_it;
+	}
 
 	args.user_name = uid_to_string((uid_t) uid);
 
@@ -1206,7 +1231,7 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	FREE_NULL_LIST(cluster_list_tmp);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
-
+end_it:
 	xfree(extra);
 	xfree(assoc_char);
 	xfree(name_char);
