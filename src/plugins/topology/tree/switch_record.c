@@ -629,6 +629,8 @@ extern void switch_record_update_block_config(topology_ctx_t *tctx, int idx)
 
 	if (!tctx->config)
 		return;
+	if (ctx->switch_table[idx].level)
+		return;
 
 	xfree(tree_config->switch_configs[idx].nodes);
 	tree_config->switch_configs[idx].nodes =
