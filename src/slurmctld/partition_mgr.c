@@ -1554,10 +1554,10 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.name = part_desc->qos_char;
 		assoc_mgr_lock(&locks);
-		if (assoc_mgr_fill_in_qos(
+		if ((assoc_mgr_fill_in_qos(
 			    acct_db_conn, &qos_rec, accounting_enforce,
 			    (slurmdb_qos_rec_t **)&qos, true)
-		    != SLURM_SUCCESS) {
+		     != SLURM_SUCCESS) || !qos) {
 			error("%s: invalid qos (%s) given",
 			      __func__, qos_rec.name);
 			error_code = ESLURM_INVALID_QOS;
