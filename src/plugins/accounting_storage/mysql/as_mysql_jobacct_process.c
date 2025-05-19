@@ -485,8 +485,7 @@ static void _destroy_local_cluster(void *object)
 {
 	local_cluster_t *local_cluster = (local_cluster_t *)object;
 	if (local_cluster) {
-		if (local_cluster->hl)
-			hostlist_destroy(local_cluster->hl);
+		FREE_NULL_HOSTLIST(local_cluster->hl);
 		FREE_NULL_BITMAP(local_cluster->asked_bitmap);
 		xfree(local_cluster);
 	}
