@@ -452,62 +452,43 @@ end:
 	return rc;
 }
 
-static int _remove_process_cg_limits(pid_t pid)
+static void _remove_process_cg_limits(pid_t pid)
 {
-	int rc = SLURM_ERROR;
 	xcgroup_t cg_cpu = { 0 };
 	xcgroup_t cg_mem = { 0 };
 	xcgroup_ns_t cpu_ns = { 0 };
 	xcgroup_ns_t mem_ns = { 0 };
 
-	/* Initialize cpu and memory cgroup namespace */
-	if (xcgroup_ns_create(&cpu_ns, "", g_cg_name[CG_CPUS]) !=
-	    SLURM_SUCCESS) {
+	/* Try to reset cpuset limits */
+	if (xcgroup_ns_create(&cpu_ns, "", g_cg_name[CG_CPUS])) {
 		log_flag(CGROUP,"Not resetting cpuset, controller not found");
-		goto end;
-	}
-	if (xcgroup_ns_create(&mem_ns, "", g_cg_name[CG_MEMORY]) !=
-	    SLURM_SUCCESS) {
-		log_flag(CGROUP,"Not resetting memory, controller not found");
-		goto end;
-	}
-
-	/* Get the process memory and cpu cgroups. */
-	if (xcgroup_ns_find_by_pid(&cpu_ns, &cg_cpu, pid) != SLURM_SUCCESS) {
+	} else if (xcgroup_ns_find_by_pid(&cpu_ns, &cg_cpu, pid)) {
 		error("Cannot find slurmd cpu cgroup");
-		goto fail;
-	}
-	if (xcgroup_ns_find_by_pid(&mem_ns, &cg_mem, pid) != SLURM_SUCCESS) {
-		error("Cannot find slurmd memory cgroup");
-		goto fail;
-	}
-
-	/* Limits should not be modified on the root cgroup. */
-	if (!_is_root_path(cg_cpu.path)) {
-		if (xcgroup_cpuset_init(&cg_cpu) != SLURM_SUCCESS) {
+	} else if (!_is_root_path(cg_cpu.path)) {
+		if (xcgroup_cpuset_init(&cg_cpu)) {
 			error("Cannot reset slurmd cpuset limits");
-			goto fail;
+		} else {
+			log_flag(CGROUP, "Reset slurmd cpuset limits");
 		}
-		log_flag(CGROUP, "Reset slurmd cpuset limits");
 	}
-	if (!_is_root_path(cg_mem.path)) {
-		if (common_cgroup_set_param(&cg_mem, "memory.limit_in_bytes",
-					    "-1") != SLURM_SUCCESS) {
-			error("Cannot reset slurmd memory limits");
-			goto fail;
-		}
-		log_flag(CGROUP, "Reset slurmd memory limits");
-	}
-
-end:
-	rc = SLURM_SUCCESS;
-
-fail:
 	common_cgroup_destroy(&cg_cpu);
-	common_cgroup_destroy(&cg_mem);
 	common_cgroup_ns_destroy(&cpu_ns);
+
+	/* Try to reset memory limits */
+	if (xcgroup_ns_create(&mem_ns, "", g_cg_name[CG_MEMORY])) {
+		log_flag(CGROUP,"Not resetting memory, controller not found");
+	} else if (xcgroup_ns_find_by_pid(&mem_ns, &cg_mem, pid)) {
+		error("Cannot find slurmd memory cgroup");
+	} else if (!_is_root_path(cg_mem.path)) {
+		if (common_cgroup_set_param(&cg_mem, "memory.limit_in_bytes",
+					    "-1")) {
+			error("Cannot reset slurmd memory limits");
+		} else {
+			log_flag(CGROUP, "Reset slurmd memory limits");
+		}
+	}
+	common_cgroup_destroy(&cg_mem);
 	common_cgroup_ns_destroy(&mem_ns);
-	return rc;
 }
 
 extern int init(void)
@@ -542,7 +523,7 @@ extern int fini(void)
 extern int cgroup_p_setup_scope(char *scope_path)
 {
 	if (running_in_slurmd())
-		return _remove_process_cg_limits(getpid());
+		_remove_process_cg_limits(getpid());
 	return SLURM_SUCCESS;
 }
 
