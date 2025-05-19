@@ -691,9 +691,14 @@ def test_scontrol_power_down_force():
     atf.wait_for_node_state(
         f"{node_prefix}1", "POWERING_DOWN", timeout=power_interval + 5, fatal=True
     )
+    power_down_timeout = suspend_timeout + 5
+    # FIXED: Ticket 19895
+    if atf.get_version("sbin/slurmctld") < (24, 5):
+        power_down_timeout += power_interval
+
     atf.wait_for_node_state(
         f"{node_prefix}1",
         "POWERED_DOWN",
-        timeout=suspend_timeout + 5,
+        timeout=power_down_timeout,
         fatal=True,
     )
