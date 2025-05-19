@@ -3352,3 +3352,18 @@ int _print_com_invalid(void * p, int width, bool right, char* suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
+
+int _print_job_cron_flag(job_info_t *job, int width, bool right_justify,
+			 char *suffix)
+{
+	if (!job)
+		_print_str("CRON_JOB", width, right_justify, true);
+	else if (job->bitflags & CRON_JOB)
+		_print_str("Yes", width, right_justify, true);
+	else
+		_print_str("No", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}

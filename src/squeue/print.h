@@ -243,6 +243,8 @@ int _print_job_cpus_per_task(job_info_t * job, int width, bool right_justify,
 			     char* suffix);
 int _print_job_cpus_per_task(job_info_t * job, int width, bool right_justify,
 			     char* suffix);
+int _print_job_cron_flag(job_info_t *job, int width, bool right_justify,
+			 char *suffix);
 int _print_job_derived_ec(job_info_t * job, int width, bool right_justify,
 			  char* suffix);
 int _print_job_eligible_time(job_info_t * job, int width, bool right_justify,

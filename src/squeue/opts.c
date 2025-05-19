@@ -643,6 +643,7 @@ static fmt_data_job_t fmt_data_job[] = {
 	{"CPUsPerTask", 0, _print_job_cpus_per_task, 0},
 	{"cpus-per-task", 0, _print_job_cpus_per_task, 0},
 	{"cpus-per-tres", 0, _print_job_cpus_per_tres, 0},
+	{"CronJob", 0, _print_job_cron_flag, 0},
 	{"Deadline", 0, _print_job_deadline, 0},
 	{"DelayBoot", 0, _print_job_delay_boot, 0},
 	{"Dependency", 'E', _print_job_dependency, 0},
