@@ -180,8 +180,14 @@ def test_loaded_versions():
     assert "/slurm/v0.0.35/jobs" not in spec["paths"].keys()
 
     # verify current plugins are loaded
-    assert "/slurm/v0.0.40/jobs/" in spec["paths"].keys()
-    assert "/slurmdb/v0.0.40/jobs/" in spec["paths"].keys()
+    # TODO: Ticket 22817
+    #       In 24.05+ we have trailing "/"
+    if atf.get_version("sbin/slurmrestd") >= (24, 5):
+        assert "/slurm/v0.0.40/jobs/" in spec["paths"].keys()
+        assert "/slurmdb/v0.0.40/jobs/" in spec["paths"].keys()
+    else:
+        assert "/slurm/v0.0.40/jobs" in spec["paths"].keys()
+        assert "/slurmdb/v0.0.40/jobs" in spec["paths"].keys()
 
 
 def test_db_accounts(slurm, slurmdb, create_wckeys):
@@ -978,7 +984,11 @@ def test_db_tres(slurmdb):
 
 def test_db_config(slurmdb):
     resp = slurmdb.slurmdb_v0040_get_config()
-    assert len(resp.warnings) == 0
+    # FIXED: Ticket 22817 for 24.05+
+    if atf.get_version("sbin/slurmrestd") >= (24, 5):
+        assert len(resp.warnings) == 0
+    else:
+        assert len(resp.warnings) == 1
     assert len(resp.errors) == 0
 
 
