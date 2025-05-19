@@ -93,7 +93,10 @@ def test_gpus_per_cpu(init_gpu_vars):
     assert job_dict["TresFreq"] == f"gpu:{gpu_freq}"
     assert job_dict["TresPerJob"] == f"gres/gpu:{gpu_count}"
     assert job_dict["TresPerNode"] == f"gres/gpu:{gpus_per_node}"
-    assert job_dict["TresPerTask"] == f"gres/gpu={gpus_per_task}"
+    if atf.get_version("bin/scontrol") >= (24, 5):
+        assert job_dict["TresPerTask"] == f"gres/gpu={gpus_per_task}"
+    else:
+        assert job_dict["TresPerTask"] == f"gres/gpu:{gpus_per_task}"
 
 
 def test_gpus_per_socket(init_gpu_vars):
