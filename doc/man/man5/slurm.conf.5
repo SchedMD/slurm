@@ -8125,7 +8125,9 @@ Job ID.
 
 .TP
 \fBSLURM_STEP_ID\fR
-Job Step ID.
+Job Step ID. Note that the special steps "batch", "interactive", and "extern"
+are reported not by name but with integer Step IDs 4294967291, 4294967290, and
+4294967292 respectively.
 .IP
 
 .SH "NETWORK TOPOLOGY"
