@@ -25,7 +25,8 @@
 ############################################################################
 source ./globals
 
-set bcast_file  "/tmp/${test_name}_sbcast"
+set bcast_file  "/tmp/${test_name}_sbcast_"
+append bcast_file [expr int(rand() * 1000 + 1000 )]
 set job_id      0
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
