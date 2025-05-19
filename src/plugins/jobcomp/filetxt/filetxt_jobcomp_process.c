@@ -99,71 +99,179 @@ static jobcomp_job_rec_t *_parse_line(list_t *job_info_list)
 	itr = list_iterator_create(job_info_list);
 	while ((jobcomp_info = list_next(itr))) {
 		if (!xstrcasecmp("JobId", jobcomp_info->name)) {
-			job->jobid = atoi(jobcomp_info->val);
+			if (!job->jobid)
+				job->jobid = atoi(jobcomp_info->val);
+			else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "JobID", jobcomp_info->val);
 		} else if (!xstrcasecmp("Partition", jobcomp_info->name)) {
-			job->partition = xstrdup(jobcomp_info->val);
+			if (!job->partition)
+				job->partition = xstrdup(jobcomp_info->val);
+			else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "Partition", jobcomp_info->val);
 		} else if (!xstrcasecmp("StartTime", jobcomp_info->name)) {
-			job->start_time = xstrdup(jobcomp_info->val);
-			start_time = parse_time(job->start_time, 1);
+			if (!job->start_time) {
+				job->start_time = xstrdup(jobcomp_info->val);
+				start_time = parse_time(job->start_time, 1);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "StartTime", jobcomp_info->val);
 		} else if (!xstrcasecmp("EndTime", jobcomp_info->name)) {
-			job->end_time = xstrdup(jobcomp_info->val);
-			end_time = parse_time(job->end_time, 1);
+			if (!job->end_time) {
+				job->end_time = xstrdup(jobcomp_info->val);
+				end_time = parse_time(job->end_time, 1);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "EndTime", jobcomp_info->val);
 		} else if (!xstrcasecmp("UserId", jobcomp_info->name)) {
-			temp = strstr(jobcomp_info->val, "(");
-			if (!temp) {
-				job->uid = atoi(jobcomp_info->val);
-				error("problem getting correct uid from %s",
-				      jobcomp_info->val);
-			} else {
-				job->uid = atoi(temp + 1);
-				job->uid_name = xstrdup(jobcomp_info->val);
-			}
+			if (!job->uid_name) {
+				temp = strstr(jobcomp_info->val, "(");
+				if (!temp) {
+					job->uid = atoi(jobcomp_info->val);
+					error("problem getting correct uid from %s",
+					      jobcomp_info->val);
+				} else {
+					job->uid = atoi(temp + 1);
+					job->uid_name =
+						xstrdup(jobcomp_info->val);
+				}
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "UserId", jobcomp_info->val);
+
 		} else if (!xstrcasecmp("GroupId", jobcomp_info->name)) {
-			temp = strstr(jobcomp_info->val, "(");
-			if (!temp) {
-				job->gid = atoi(jobcomp_info->val);
-				error("problem getting correct gid from %s",
-				      jobcomp_info->val);
-			} else {
-				job->gid = atoi(temp + 1);
-				job->gid_name = xstrdup(jobcomp_info->val);
-			}
+			if (!job->gid_name) {
+				temp = strstr(jobcomp_info->val, "(");
+				if (!temp) {
+					job->gid = atoi(jobcomp_info->val);
+					error("problem getting correct gid from %s",
+					      jobcomp_info->val);
+				} else {
+					job->gid = atoi(temp + 1);
+					job->gid_name =
+						xstrdup(jobcomp_info->val);
+				}
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "GroupId", jobcomp_info->val);
+
 		} else if (!xstrcasecmp("Name", jobcomp_info->name)) {
-			job->jobname = xstrdup(jobcomp_info->val);
+			if (!job->jobname) {
+				job->jobname = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "Name", jobcomp_info->val);
+
 		} else if (!xstrcasecmp("NodeList", jobcomp_info->name)) {
-			job->nodelist = xstrdup(jobcomp_info->val);
+			if (!job->nodelist) {
+				job->nodelist = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "NodeList", jobcomp_info->val);
 		} else if (!xstrcasecmp("NodeCnt", jobcomp_info->name)) {
-			job->node_cnt = atoi(jobcomp_info->val);
+			if (!job->node_cnt)
+				job->node_cnt = atoi(jobcomp_info->val);
+			else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "NodeCnt", jobcomp_info->val);
 		} else if (!xstrcasecmp("ProcCnt", jobcomp_info->name)) {
-			job->proc_cnt = atoi(jobcomp_info->val);
+			if (!job->proc_cnt)
+				job->proc_cnt = atoi(jobcomp_info->val);
+			else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "ProcCnt", jobcomp_info->val);
 		} else if (!xstrcasecmp("JobState", jobcomp_info->name)) {
-			job->state = xstrdup(jobcomp_info->val);
+			if (!job->state) {
+				job->state = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "JobState", jobcomp_info->val);
 		} else if (!xstrcasecmp("Timelimit", jobcomp_info->name)) {
-			job->timelimit = xstrdup(jobcomp_info->val);
+			if (!job->timelimit) {
+				job->timelimit = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "Timelimit", jobcomp_info->val);
 		} else if (!xstrcasecmp("Workdir", jobcomp_info->name)) {
-			job->work_dir = xstrdup(jobcomp_info->val);
+			if (!job->work_dir) {
+				job->work_dir = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "Workdir", jobcomp_info->val);
 		} else if (!xstrcasecmp("ReservationName", jobcomp_info->name)) {
-			job->resv_name = xstrdup(jobcomp_info->val);
+			if (!job->resv_name) {
+				job->resv_name = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "ReservationName",
+				      jobcomp_info->val);
 		} else if (!xstrcasecmp("Gres", jobcomp_info->name)) {
-			job->tres_fmt_req_str = xstrdup(jobcomp_info->val);
+			if (!job->tres_fmt_req_str) {
+				job->tres_fmt_req_str =
+					xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "Gres", jobcomp_info->val);
 		} else if (!xstrcasecmp("Tres", jobcomp_info->name)) {
-			job->tres_fmt_req_str = xstrdup(jobcomp_info->val);
+			if (!job->tres_fmt_req_str) {
+				job->tres_fmt_req_str =
+					xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "Tres", jobcomp_info->val);
 		} else if (!xstrcasecmp("Account", jobcomp_info->name)) {
-			job->account = xstrdup(jobcomp_info->val);
+			if (!job->account) {
+				job->account = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "Account", jobcomp_info->val);
 		} else if (!xstrcasecmp("QOS", jobcomp_info->name)) {
-			job->qos_name = xstrdup(jobcomp_info->val);
+			if (!job->qos_name) {
+				job->qos_name = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "QOS", jobcomp_info->val);
 		} else if (!xstrcasecmp("WcKey", jobcomp_info->name)) {
-			job->wckey = xstrdup(jobcomp_info->val);
+			if (!job->wckey) {
+				job->wckey = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "WcKey", jobcomp_info->val);
 		} else if (!xstrcasecmp("Cluster", jobcomp_info->name)) {
-			job->cluster = xstrdup(jobcomp_info->val);
+			if (!job->cluster) {
+				job->cluster = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "Cluster", jobcomp_info->val);
 		} else if (!xstrcasecmp("SubmitTime", jobcomp_info->name)) {
-			job->submit_time = xstrdup(jobcomp_info->val);
+			if (!job->submit_time) {
+				job->submit_time = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "SubmitTime",
+				      jobcomp_info->val);
 		} else if (!xstrcasecmp("EligibleTime", jobcomp_info->name)) {
-			job->eligible_time = xstrdup(jobcomp_info->val);
-		} else if (!xstrcasecmp("DerivedExitCode", jobcomp_info->name)) {
-			job->derived_ec = xstrdup(jobcomp_info->val);
+			if (!job->eligible_time) {
+				job->eligible_time = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "EligibleTime",
+				      jobcomp_info->val);
+		} else if (!xstrcasecmp("DerivedExitCode",
+					jobcomp_info->name)) {
+			if (!job->derived_ec) {
+				job->derived_ec = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "DerivedExitCode",
+				      jobcomp_info->val);
 		} else if (!xstrcasecmp("ExitCode", jobcomp_info->name)) {
-			job->exit_code = xstrdup(jobcomp_info->val);
+			if (!job->exit_code) {
+				job->exit_code = xstrdup(jobcomp_info->val);
+			} else
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "ExitCode", jobcomp_info->val);
 		} else {
 			error("Unknown type %s: %s", jobcomp_info->name,
 			      jobcomp_info->val);
