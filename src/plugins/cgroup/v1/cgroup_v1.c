@@ -455,8 +455,8 @@ end:
 static int _remove_process_cg_limits(pid_t pid)
 {
 	int rc = SLURM_ERROR;
-	xcgroup_t cg_cpu;
-	xcgroup_t cg_mem;
+	xcgroup_t cg_cpu = { 0 };
+	xcgroup_t cg_mem = { 0 };
 	xcgroup_ns_t cpu_ns = { 0 };
 	xcgroup_ns_t mem_ns = { 0 };
 
