@@ -114,6 +114,7 @@ typedef struct {
 	char *key;
 	pthread_mutex_t mutex;
 	int rc;
+	bool received_response;
 	char *resp_msg;
 	bool track_script_signalled;
 } script_response_t;
@@ -210,7 +211,10 @@ static void _wait_for_script_resp(script_response_t *script_resp,
 				  bool *track_script_signalled)
 {
 	/* script_resp->mutex should already be locked */
-	slurm_cond_wait(&script_resp->cond, &script_resp->mutex);
+	/* Loop to handle spurious wakeups */
+	while (!script_resp->received_response) {
+		slurm_cond_wait(&script_resp->cond, &script_resp->mutex);
+	}
 	/* The script is done now, and we should have the response */
 	*status = script_resp->rc;
 	if (resp_msg)
@@ -838,11 +842,12 @@ static int _notify_script_done(char *key, script_complete_t *script_complete)
 		      script_complete->script_name, key);
 		rc = SLURM_ERROR;
 	} else {
+		slurm_mutex_lock(&script_resp->mutex);
+		script_resp->received_response = true;
 		script_resp->resp_msg = xstrdup(script_complete->resp_msg);
 		script_resp->rc = script_complete->status;
 		script_resp->track_script_signalled =
 			script_complete->signalled;
-		slurm_mutex_lock(&script_resp->mutex);
 		slurm_cond_signal(&script_resp->cond);
 		slurm_mutex_unlock(&script_resp->mutex);
 	}
