@@ -49,6 +49,7 @@ set my_sacctmgr  "${fed_slurm_base}/$fedc1/bin/sacctmgr"
 set my_srun      "${fed_slurm_base}/$fedc2/bin/srun"
 set my_sacct     "${fed_slurm_base}/$fedc1/bin/sacct"
 set my_scontrol  "${fed_slurm_base}/$fedc1/bin/scontrol"
+set my_scancel3  "${fed_slurm_base}/$fedc3/bin/scancel"
 
 #
 # Check accounting config and bail if not found.
@@ -161,8 +162,19 @@ proc scontrol { fed job_id index regex } {
 
 	set matches 0
 
-	log_debug "Executing $my_scontrol -M$fed notify $job_id I'm Alive"
-	log_debug "Output: [exec $my_scontrol -M$fed notify $job_id I'm Alive]"
+	# ignore fed_display error for non-federation jobs
+	spawn $my_scontrol -M$fed notify $job_id {I'm Alive}
+	expect {
+		-re "error:.*(!?could not load federation information)\n" {
+			fail "unexpected scontrol error"
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
 
 	set spawn_id $srun_spawn_id($index)
 	expect {
@@ -242,7 +254,6 @@ proc srun { options index } {
 
 proc squeue { fed m regex } {
 	global my_squeue
-
 	set matches 0
 	set command "$my_squeue -Ostatecompact:.4,name:.10,jobid:.10,siblingsviable:.20,siblingsactive:.20 -a -M$fed"
 	spawn {*}$command
@@ -535,7 +546,8 @@ squeue "$fedc3" "4" $r3
 
 # Cancel running job on fed3 so that j(7) will schedule be scheduled on fed3.
 # j(7) is still considered a federated job but only has one sibling.
-cancel_job $j(2) "-M$fedc3"
+# Using the fed3 scancel binary because j(2) is a non-federated job now.
+exec $my_scancel3 $j(2)
 
 set run_cluster [wait_for_fed_job $j(7) RUNNING $fedc3]
 if {$run_cluster eq ""} {
@@ -597,8 +609,8 @@ set clus2 [wait_for_fed_job $j(2) RUNNING $fedc3,$fedc2]
 # fed1        fed2
 #             clus1     clus2
 # j(0)O:R
-#             j(1)O:R
-#             j(2)O:RV  j(2)R
+# j(1)O:RV    j(1):R
+# j(2)O:RV              j(2)R
 
 set f1      "\\s*$fedc1"
 set f2      "\\s*$clus1"
