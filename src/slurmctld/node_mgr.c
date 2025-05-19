@@ -1836,8 +1836,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 
 		if (update_node_msg->topology_str) {
 			char *topology_str_old = node_ptr->topology_str;
-			node_ptr->topology_str =
-				xstrdup(update_node_msg->topology_str);
+
+			node_ptr->topology_str = NULL;
+			if (*update_node_msg->topology_str) {
+				node_ptr->topology_str =
+					xstrdup(update_node_msg->topology_str);
+			}
+
 			if (topology_g_add_rm_node(node_ptr)) {
 				info("Invalid node topology specified %s",
 				     node_ptr->topology_str);
