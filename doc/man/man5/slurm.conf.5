@@ -6895,6 +6895,9 @@ The default value is 0.
 \fBTopology\fR
 Comma-separated list of pairs in the format
 \fR\fI<topology_name>\fR\fB:\fR\fI<topology_unit>\fR.
+Where <\fItopology_unit\fR> is the block name or the name of a leaf switch.
+Intermediate switch names -- ':' delimited -- can be provided and will be
+created if needed (e.g. Topology=topo-tree:sw_root:s1:s2).
 This setting overwrites the node topology affiliation configuration specified
 in \fBtopology.conf\fR(5) and \fBtopology.yaml\fR(5).
 

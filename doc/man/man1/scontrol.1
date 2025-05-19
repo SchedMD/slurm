@@ -1822,6 +1822,9 @@ Cray systems. Use Cray tools such as \fIxtprocadmin\fR instead.
 
 .TP
 \fBTopology\fR=<\fItopology_name\fR>:<\fItopology_unit\fR>[,<\fItopology_name\fR>:<\fItopology_unit\fR>,...]
+Where <\fItopology_unit\fR> is the block name or the name of a leaf switch.
+Intermediate switch names -- ':' delimited -- can be provided and will be
+created if needed (e.g. Topology=topo-tree:sw_root:s1:s2).
 This configuration overrides node topology affiliation settings from
 \fItopology.conf\fR and \fItopology.yaml\fR.
 .IP
