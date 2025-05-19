@@ -1821,6 +1821,7 @@ _process_cmdline(int ac, char **av)
 				exit(1);
 			}
 			conf->dynamic_type = DYN_NODE_FUTURE;
+			xfree(conf->dynamic_feature);
 			conf->dynamic_feature = xstrdup(optarg);
 			break;
 		case 'G':
@@ -1869,24 +1870,31 @@ _process_cmdline(int ac, char **av)
 			conf->dynamic_type = DYN_NODE_NORM;
 			break;
 		case LONG_OPT_AUTHINFO:
+			xfree(slurm_conf.authinfo);
 			slurm_conf.authinfo = xstrdup(optarg);
 			break;
 		case LONG_OPT_CA_CERT_FILE:
+			xfree(ca_cert_file);
 			ca_cert_file = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONF:
+			xfree(conf->dynamic_conf);
 			conf->dynamic_conf = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONF_SERVER:
+			xfree(conf->conf_server);
 			conf->conf_server = xstrdup(optarg);
 			break;
 		case LONG_OPT_EXTRA:
+			xfree(conf->extra);
 			conf->extra = xstrdup(optarg);
 			break;
 		case LONG_OPT_INSTANCE_ID:
+			xfree(conf->instance_id);
 			conf->instance_id = xstrdup(optarg);
 			break;
 		case LONG_OPT_INSTANCE_TYPE:
+			xfree(conf->instance_type);
 			conf->instance_type = xstrdup(optarg);
 			break;
 		case LONG_OPT_SYSTEMD:
