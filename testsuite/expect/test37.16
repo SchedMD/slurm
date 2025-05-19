@@ -252,10 +252,13 @@ proc srun { options index } {
 	return $job_id
 }
 
-proc squeue { fed m regex } {
+proc squeue { fed m regex_ors } {
 	global my_squeue
+
+	set regex [join $regex_ors "|"]
 	set matches 0
-	set command "$my_squeue -Ostatecompact:.4,name:.10,jobid:.10,siblingsviable:.20,siblingsactive:.20 -a -M$fed"
+	set fmt "statecompact:.4,name:.10,jobid:.10,siblingsviable:.20,siblingsactive:.20,origin:.8"
+	set command "$my_squeue -O$fmt -a -M$fed"
 	spawn {*}$command
 	expect {
 		-re "$regex" {
@@ -387,9 +390,39 @@ set srun_job "sleep\\s+\\d+"
 set sib  "\\s+$fedc1,$fedc2,$fedc3"
 set sib2 "\\s+$fedc2,$fedc3"
 
-set r1 "$j(0)$f1$f1|$j(2)$sib$f3|$j(3)$sib$sib|$j(4)$sib$n|$j(5)$sib$n|$srun_job$sib$n|$j(6)$sib2$sib2|$j(7)$sib2$sib2|$j(8)$sib2$sib2|$j(9)$f2$f2|$j(10)$f1$f1"
-set r2 "$j(1)$f2$f2|$j(3)$sib$n|$j(4)$sib$sib|$j(5)$sib$n|$srun_job$sib$sib|$j(6)$sib2$n|$j(7)$sib2$n|$j(8)$sib2$n|$j(9)$f2$n"
-set r3 "$j(2)$sib$f3|$j(3)$sib$n|$j(4)$sib$n|$j(5)$sib$sib|$srun_job$sib$n"
+set r1 {}
+lappend r1 \
+	$j(0)$f1$f1$f1 \
+	$j(2)$sib$f3$f1 \
+	$j(3)$sib$sib$f1 \
+	$j(4)$sib$n$f2 \
+	$j(5)$sib$n$f3 \
+	$j(6)$sib2$sib2$f1 \
+	$j(7)$sib2$sib2$f1 \
+	$j(8)$sib2$sib2$f1 \
+	$j(9)$f2$f2$f1 \
+	$j(10)$f1$f1$f1 \
+	$srun_job$sib$n$f2
+
+set r2 {}
+lappend r2 \
+	$j(1)$f2$f2$f2 \
+	$j(3)$sib$n$f1 \
+	$j(4)$sib$sib$f2 \
+	$j(5)$sib$n$f3 \
+	$j(6)$sib2$n$f1 \
+	$j(7)$sib2$n$f1 \
+	$j(8)$sib2$n$f1 \
+	$j(9)$f2$n$f1 \
+	$srun_job$sib$sib$f2
+
+set r3 {}
+lappend r3 \
+	$j(2)$sib$f3$f1 \
+	$j(3)$sib$n$f1 \
+	$j(4)$sib$n$f2 \
+	$j(5)$sib$sib$f3 \
+	$srun_job$sib$n$f2
 
 squeue "$fedc1" "11" $r1
 squeue "$fedc2" "9" $r2
@@ -422,25 +455,49 @@ sleep 5
 # 7. Verify jobs run when the only viable sibling and the origin is removed.
 #
 # fed1        fed2       fed3
-# j(0)O:R
+# j(0)R
 #             j(1)O:R
 #                        j(2)R
-# j(3)O:PD
+# j(3)PD
 #             j(4)O:PD   j(4)PD
 #             j(5)PD     j(5)O:PD
-#             srun:O:PD  srun:PD
 #
-#             j(6)PD     j(6)PD
-#             j(7)PD     j(7)PD
-#             j(8)PD     j(8)PD
+#             j(6)PD     j(6)PD (O=fed1)
+#             j(7)PD     j(7)PD (O=fed1)
+#             j(8)PD     j(8)PD (O=fed1)
 #             j(9)PD
-# j(10)O:PD
+# j(10)PD
+#
+#             srun:O:PD  srun:PD
 
 set sib "\\s+$fedc2,$fedc3"
 
-set r1 "$j(0)$n$n|$j(3)$n$n|$j(10)$n$n"
-set r2 "$j(1)$f2$f2|$j(4)$sib$sib|$j(5)$sib$n|$srun_job$sib$sib|$j(6)$sib$n|$j(7)$sib$n|$j(8)$sib$n|$j(9)$n$n"
-set r3 "$j(2)$n$n|$j(4)$sib$n|$j(5)$sib$sib|$srun_job$sib$n|$j(6)$sib$n|$j(7)$sib$n|$j(8)$sib$n"
+set r1 {}
+lappend r1 \
+	$j(0)$n$n$n \
+	$j(3)$n$n$n \
+	$j(10)$n$n$n
+
+set r2 {}
+lappend r2 \
+	$j(1)$f2$f2$f2 \
+	$j(4)$sib$sib$f2 \
+	$j(5)$sib$n$f3 \
+	$j(6)$sib$n$f1 \
+	$j(7)$sib$n$f1 \
+	$j(8)$sib$n$f1 \
+	$j(9)$n$n$n \
+	$srun_job$sib$sib$f2
+
+set r3 {}
+lappend r3 \
+	$j(2)$n$n$n \
+	$j(4)$sib$n$f2 \
+	$j(5)$sib$sib$f3 \
+	$j(6)$sib$n$f1 \
+	$j(7)$sib$n$f1 \
+	$j(8)$sib$n$f1 \
+	$srun_job$sib$n$f2
 
 squeue "$fedc1" "3" $r1
 squeue "$fedc2" "8" $r2
@@ -506,18 +563,18 @@ sleep 5
 
 # Verify:
 # fed1        fed2       fed3
-# j(0)O:R
+# j(0)R
 #             j(6)R
 #                        j(2)R
-# j(3)O:PD
-#             j(4)O:PD
+# j(3)PD
+#             j(4)PD
 #                        j(5)O:PD
-#             srun:O:PD
+#             srun:PD
 #
 #                        j(7)PD
 #                        j(8)PD
 #             j(9)PD
-# j(10)O:PD
+# j(10)PD
 
 set old_timeout $timeout
 set timeout 1
@@ -535,9 +592,25 @@ if {$matches != 0} {
 }
 set timeout $old_timeout
 
-set r1 "$j(0)$n$n|$j(3)$n$n|$j(10)$n$n"
-set r2 "$j(6)$n$n|$j(4)$n$n|$srun_job$n$n|$j(9)$n$n"
-set r3 "$j(2)$n$n|$j(5)$f3$f3|$j(7)$f3$n|$j(8)$f3$n"
+set r1 {}
+lappend r1 \
+	$j(0)$n$n$n \
+	$j(3)$n$n$n \
+	$j(10)$n$n$n
+
+set r2 {}
+lappend r2 \
+	$j(6)$n$n$n \
+	$j(4)$n$n$n \
+	$srun_job$n$n$n \
+	$j(9)$n$n$n
+
+set r3 {}
+lappend r3 \
+	$j(2)$n$n \
+	$j(5)$f3$f3 \
+	$j(7)$f3$n \
+	$j(8)$f3$n
 
 squeue "$fedc1" "3" $r1
 squeue "$fedc2" "4" $r2
@@ -568,15 +641,32 @@ sleep 5
 # j(3)O:PD
 #             j(4)O:PD
 #                        j(5)O:PD
-#             srun:O:PD
 #
 #                        j(7)R
 #                        j(8)PD
 #             j(9)PD
 # j(10)O:PD
-set r1 "$j(0)$n$n|$j(3)$n$n|$j(10)$n$n"
-set r2 "$j(6)$n$n|$j(4)$n$n|$srun_job$n$n|$j(9)$n$n"
-set r3 "$j(5)$n$n|$j(7)$n$n|$j(8)$n$n"
+#
+#             srun:O:PD
+
+set r1 {}
+lappend r1 \
+	$j(0)$n$n$n \
+	$j(3)$n$n$n \
+	$j(10)$n$n$n
+
+set r2 {}
+lappend r2 \
+	$j(6)$n$n$n \
+	$j(4)$n$n$n \
+	$j(9)$n$n$n \
+	$srun_job$n$n$n
+
+set r3 {}
+lappend r3 \
+	$j(5)$n$n$n \
+	$j(7)$n$n$n \
+	$j(8)$n$n$n
 
 squeue "$fedc1" "3" $r1
 squeue "$fedc2" "4" $r2
@@ -619,7 +709,11 @@ set n       "\\s*NA"
 
 set sib "\\s*($fedc1,*|$clus1,*|$clus2,*){3}"
 
-set r1 "$j(0)$f1$f1|$j(1)$sib$f2|$j(2)$sib$f3"
+set r1 {}
+lappend r1 \
+	$j(0)$f1$f1$f1 \
+	$j(1)$sib$f2$f1 \
+	$j(2)$sib$f3$f1
 
 squeue "$fedc1" "3" $r1
 
@@ -629,7 +723,10 @@ sleep 5
 
 set sib "\\s*$fedc1,$clus2"
 
-set r1 "$j(0)$f1$f1|$j(2)$sib$f3"
+set r1 {}
+lappend r1 \
+	$j(0)$f1$f1$f1 \
+	$j(2)$sib$f3$f1
 
 squeue "$fedc1" "2" $r1
 
@@ -637,7 +734,9 @@ spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$clus2
 
 sleep 5
 
-set r1 "$j(0)$f1$f1"
+set r1 {}
+lappend r1 \
+	$j(0)$f1$f1$f1
 
 squeue "$fedc1" "1" $r1
 
