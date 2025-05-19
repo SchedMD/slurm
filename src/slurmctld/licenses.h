@@ -131,12 +131,16 @@ extern int license_job_get(job_record_t *job_ptr, bool restore);
 extern void license_job_merge(job_record_t *job_ptr);
 
 /*
- * license_job_return - Return the licenses allocated to a job
+ * Return the licenses allocated to a job to the provided list
  * IN job_ptr - job identification
+ * IN license_list - list of license_t records
+ * IN locked - if the license_mutex is locked or not
+ * IN future - if true, don't modify the job record
  * RET SLURM_SUCCESS or failure code
  */
 extern int license_job_return_to_list(job_record_t *job_ptr,
-				      list_t *license_list, bool locked);
+				      list_t *license_list, bool locked,
+				      bool future);
 
 /*
  * license_job_return - Return the licenses allocated to a job

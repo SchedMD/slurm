@@ -117,6 +117,7 @@ typedef struct {
 } bf_hres_filter_args_t;
 
 typedef struct {
+	bool future;
 	job_record_t *job_ptr;
 	list_t *license_list;
 	bool locked;
@@ -1570,9 +1571,12 @@ static int _foreach_license_job_return(void *x, void *arg)
 			      __func__, match->id.lic_id);
 			match->used = 0;
 		}
-		license_entry->used = 0;
-		if (license_entry->mode == HRES_MODE_1) {
-			license_entry->id.lic_id = license_entry->id.hres_id;
+		if (!args->future) {
+			license_entry->used = 0;
+			if (license_entry->mode == HRES_MODE_1) {
+				license_entry->id.lic_id =
+					license_entry->id.hres_id;
+			}
 		}
 	} else {
 		/* This can happen after a reconfiguration */
@@ -1583,16 +1587,17 @@ static int _foreach_license_job_return(void *x, void *arg)
 }
 
 /*
- * license_job_return_to_list - Return the licenses allocated to a job to the
- *	`provided list
+ * Return the licenses allocated to a job to the provided list
  * IN job_ptr - job identification
  * RET count of license having state changed
  */
 extern int license_job_return_to_list(job_record_t *job_ptr,
-				      list_t *license_list, bool locked)
+				      list_t *license_list, bool locked,
+				      bool future)
 {
 	int rc = 0;
 	license_return_args_t args = {
+		.future = future,
 		.job_ptr = job_ptr,
 		.license_list = license_list,
 		.locked = locked,
@@ -1619,7 +1624,8 @@ extern int license_job_return(job_record_t *job_ptr)
 	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&license_mutex);
-	if (license_job_return_to_list(job_ptr, cluster_license_list, true))
+	if (license_job_return_to_list(job_ptr, cluster_license_list, true,
+				       false))
 		last_license_update = time(NULL);
 	_licenses_print("return_license", cluster_license_list, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
