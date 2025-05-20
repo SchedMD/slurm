@@ -20,7 +20,6 @@ If this file exists, topology.conf will be ignored.
 .LP
 
 .SH "PARAMETERS"
-
 .LP
 Each topology contains the following attributes:
 .LP
@@ -60,6 +59,70 @@ This topology will use the \fBtopology/tree\fR plugin. Must contain additional
 fields, see below.
 .IP
 .RE
+
+.SS "Block definitions"
+.LP
+Each block topology contains the following attributes:
+.LP
+
+.TP
+\fBblock_sizes\fR
+List of the planning base block size, alongside any
+higher-level block sizes that would be enforced.
+Each block must have at least the planning base block size count of nodes.
+Successive \fBBlockSizes\fR must be a power of two larger than the prior values.
+.IP
+
+.TP
+\fBblocks\fR
+List of blocks available in this topology. Each block contains the following
+attributes:
+
+.RS
+.TP
+\fBblock\fR
+The name of a block. This name is internal to Slurm and arbitrary.
+Each block should have a unique name.
+This field must be specified.
+.IP
+
+.TP
+\fBnodes\fR
+Child Nodes of the named block.
+.IP
+.RE
+.IP
+
+.SS "Tree definitions"
+.LP
+Each tree topology contains the following attribute:
+.LP
+
+.TP
+\fBswitches\fR
+List of switches available in this topology. Each switch contains the following
+attributes:
+
+.RS
+.TP
+\fBswitch\fR
+The name of a switch. This name is internal to Slurm and arbitrary.
+Each switch should have a unique name.
+This field must be specified and cannot be longer than 64 characters.
+.IP
+
+.TP
+\fBchildren\fR
+Child switches of the named switch.
+.IP
+
+.TP
+\fBnodes\fR
+Child Nodes of the named leaf switch.
+.IP
+
+.RE
+.IP
 
 .SH "EXAMPLE"
 .nf
