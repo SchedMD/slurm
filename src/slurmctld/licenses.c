@@ -2159,6 +2159,7 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 				avail = false;
 				break;
 			}
+			continue;
 		}
 		/*
 		 * Jobs with reservations may use licenses out of the
