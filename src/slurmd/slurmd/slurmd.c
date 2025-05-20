@@ -2440,6 +2440,7 @@ static void _dynamic_init(void)
 
 		/* send registration again after loading everything in */
 		sent_reg_time = 0;
+		sent_successful_registration = false;
 		break;
 	case DYN_NODE_NORM:
 	{
