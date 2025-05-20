@@ -379,10 +379,20 @@ static void _set_gpu_defaults(job_record_t *job_ptr)
 	if (job_ptr->part_ptr != last_part_ptr) {
 		/* Cache data from last partition referenced */
 		last_part_ptr = job_ptr->part_ptr;
-		last_cpu_per_gpu = cons_helpers_get_def_cpu_per_gpu(
+		last_cpu_per_gpu = slurm_get_def_cpu_per_gpu(
 			last_part_ptr->job_defaults_list);
-		last_mem_per_gpu = cons_helpers_get_def_mem_per_gpu(
+		if (last_cpu_per_gpu == NO_VAL64) {
+			last_cpu_per_gpu = slurm_get_def_cpu_per_gpu(
+				slurm_conf.job_defaults_list);
+		}
+		last_mem_per_gpu = slurm_get_def_mem_per_gpu(
 			last_part_ptr->job_defaults_list);
+		/* DefMemPerGPU is mutually exclusive with DefMemPer{CPU,Node} */
+		if ((last_mem_per_gpu == NO_VAL64) &&
+		    !last_part_ptr->def_mem_per_cpu) {
+			last_mem_per_gpu = slurm_get_def_mem_per_gpu(
+				slurm_conf.job_defaults_list);
+		}
 	}
 	if ((last_cpu_per_gpu != NO_VAL64) &&
 	    (job_ptr->details->orig_cpus_per_task == NO_VAL16))

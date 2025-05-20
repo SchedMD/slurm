@@ -1237,6 +1237,10 @@ $ sacct \-j $SLURM_JOB_ID \-X \-o jobid%7,reqtres%35,alloctres%35
 \fBDefMemPerGPU\fR
 Default real memory size available per allocated GPU in megabytes.
 The default value is 0 (unlimited).
+Please note a best effort attempt is made to predict which GPUs on the system
+will be used, but this could change between job submission and start time,
+causing \fBMaxMemPerNode\fR to potentially not work as expected for
+heterogeneous jobs.
 Also see \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR.
 \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBDefMemPerNode\fR are
 mutually exclusive.
@@ -7127,6 +7131,10 @@ exclusive.
 .TP
 \fBDefMemPerGPU\fR
 Default real memory size available per allocated GPU in megabytes.
+Please note a best effort attempt is made to predict which GPUs on the system
+will be used, but this could change between job submission and start time,
+causing \fBMaxMemPerNode\fR to potentially not work as expected for
+heterogeneous jobs.
 Also see \fBDefMemPerCPU\fR, \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBDefMemPerNode\fR are mutually
 exclusive.

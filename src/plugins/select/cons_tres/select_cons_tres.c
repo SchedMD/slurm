@@ -947,10 +947,10 @@ extern int select_p_reconfigure(void)
 	def_cpu_per_gpu = 0;
 	def_mem_per_gpu = 0;
 	if (slurm_conf.job_defaults_list) {
-		def_cpu_per_gpu = cons_helpers_get_def_cpu_per_gpu(
-			slurm_conf.job_defaults_list);
-		def_mem_per_gpu = cons_helpers_get_def_mem_per_gpu(
-			slurm_conf.job_defaults_list);
+		def_cpu_per_gpu =
+			slurm_get_def_cpu_per_gpu(slurm_conf.job_defaults_list);
+		def_mem_per_gpu =
+			slurm_get_def_mem_per_gpu(slurm_conf.job_defaults_list);
 	}
 
 	rc = select_p_node_init();
