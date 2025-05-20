@@ -5,10 +5,21 @@ import sys
 import os
 import codecs
 
+try:
+    import pypandoc
+
+    no_pandoc = 0
+except ImportError:
+    print("WARNING: pypandoc not found, will wrap markdown in <pre> tags instead")
+    no_pandoc = 1
+
 canonical_url = "https://slurm.schedmd.com/"
 
 include_pat = r'(<!--\s*#include\s*virtual\s*=\s*"([^"]+)"\s*-->)'
 include_regex = re.compile(include_pat)
+
+markdown_pat = r'(<!--\s*#include\s*markdown\s*=\s*"([^"]+)"\s*-->)'
+markdown_regex = re.compile(markdown_pat)
 
 canonical_pat = r"(<!--\s*#canonical\s*-->)"
 canonical_regex = re.compile(canonical_pat)
@@ -41,6 +52,24 @@ def include_virtual(matchobj):
         # print('Including file', filename)
         lines = open(filename, "r").read()
         return lines
+    else:
+        return matchobj.group(0)
+
+
+def include_markdown(matchobj):
+    global dirname
+    if dirname:
+        filename = dirname + "/" + matchobj.group(2)
+    else:
+        filename = matchobj.group(2)
+
+    if os.access(filename, os.F_OK):
+        if no_pandoc:
+            lines = open(filename, "r").read()
+            return "<pre>\n" + lines + "</pre>"
+        else:
+            lines = pypandoc.convert_file(filename, "html", format="md")
+            return lines
     else:
         return matchobj.group(0)
 
@@ -106,6 +135,7 @@ for filename in files:
     shtml.seek(0)
     for line in shtml.readlines():
         line = include_regex.sub(include_virtual, line)
+        line = markdown_regex.sub(include_markdown, line)
         line = page_title_regex.sub(page_title_rewrite, line)
         line = version_regex.sub(version_rewrite, line)
         line = canonical_regex.sub(canonical_rewrite, line)
