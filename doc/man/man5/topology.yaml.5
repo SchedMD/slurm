@@ -126,31 +126,31 @@ Child Nodes of the named leaf switch.
 
 .SH "EXAMPLE"
 .nf
+---
 - topology: topo1
-  cluster_default: True
+  cluster_default: true
   tree:
     switches:
-    - switch: sw_root
-      nodes: node[01-04]
+      - switch: sw_root
+        nodes: node[01-04]
 - topology: topo2
-  cluster_default: False
+  cluster_default: false
   block:
     block_sizes:
       - 4
       - 16
     blocks:
-    - block: b1
-      nodes: node[01-04]
-    - block: b2
-      nodes: node[05-08]
-    - block: b3
-      nodes: node[09-12]
-    - block: b4
-      nodes: node[13-16]
+      - block: b1
+        nodes: node[01-04]
+      - block: b2
+        nodes: node[05-08]
+      - block: b3
+        nodes: node[09-12]
+      - block: b4
+        nodes: node[13-16]
 - topology: topo3
-  cluster_default: False
-  flat: True
-
+  cluster_default: false
+  flat: true
 .fi
 
 .SH "COPYING"
