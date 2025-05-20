@@ -593,29 +593,41 @@ static int _enable_system_controllers()
 {
 	char *slice_path = NULL;
 	bitstr_t *system_ctrls = bit_alloc(CG_CTL_CNT);
+	int rc = SLURM_ERROR;
 
 	if (_get_controllers(slurm_cgroup_conf.cgroup_mountpoint,
 			     system_ctrls) != SLURM_SUCCESS) {
-		FREE_NULL_BITMAP(system_ctrls);
-		return SLURM_ERROR;
+		error("Could not obtain system controllers from %s",
+		      slurm_cgroup_conf.cgroup_mountpoint);
+		goto end;
 	}
+
 	if (_enable_controllers(int_cg_ns.mnt_point, system_ctrls) !=
 	    SLURM_SUCCESS) {
 		error("Could not enable controllers for cgroup path %s",
 		      int_cg_ns.mnt_point);
-		return SLURM_ERROR;
+		goto end;
 	}
 
 	/*
 	 * Enable it for system.slice, where the stepd scope will reside when
-	 * it is created later.
+	 * it is created later. Do not do it when ignoresystemd is true as it
+	 * will be done when the stepd_scope_path is created.
 	 */
-	slice_path = xdirname(stepd_scope_path);
-	_enable_subtree_control(slice_path, system_ctrls);
+	if (!slurm_cgroup_conf.ignore_systemd) {
+		slice_path = xdirname(stepd_scope_path);
+		if (_enable_subtree_control(slice_path, system_ctrls) !=
+		    SLURM_SUCCESS) {
+			error("Could not enable subtree control at %s",
+			      slice_path);
+			goto end;
+		}
+	}
+	rc = SLURM_SUCCESS;
+end:
 	xfree(slice_path);
-
 	FREE_NULL_BITMAP(system_ctrls);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
