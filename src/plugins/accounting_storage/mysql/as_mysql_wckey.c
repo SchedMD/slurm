@@ -871,14 +871,7 @@ extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		use_cluster_list = as_mysql_cluster_list;
 
 	memset(&add_wckey_cond, 0, sizeof(add_wckey_cond));
-	if (user->default_wckey) {
-		add_wckey_cond.default_wckey = user->default_wckey;
-	} else {
-		add_wckey_cond.default_wckey = list_peek(add_assoc->wckey_list);
-		DB_DEBUG(DB_WCKEY, mysql_conn->conn,
-			 "Default wckey not given, using %s",
-			 add_wckey_cond.default_wckey);
-	}
+	add_wckey_cond.default_wckey = user->default_wckey;
 	add_wckey_cond.mysql_conn = mysql_conn;
 	add_wckey_cond.now = time(NULL);
 	add_wckey_cond.user_list = add_assoc->user_list;
