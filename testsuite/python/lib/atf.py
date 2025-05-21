@@ -782,6 +782,25 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
         logging.debug("No slurmctld is running.")
 
     if also_slurmds:
+        if get_version("sbin/slurmd") < (24, 11):
+            # FIXED: t20764.
+            slurmd_list = []
+            output = run_command_output(
+                f"perl -nle 'print $1 if /^NodeName=(\\S+)/' {properties['slurm-config-dir']}/slurm.conf",
+                quiet=quiet,
+            )
+            if not output:
+                failures.append("Unable to determine the slurmd node names")
+            else:
+                for node_name_expression in output.rstrip().split("\n"):
+                    if node_name_expression != "DEFAULT":
+                        slurmd_list.extend(node_range_to_list(node_name_expression))
+
+            for slurmd_name in slurmd_list:
+                run_command(
+                    f"sudo systemctl stop {slurmd_name}_slurmstepd.scope", quiet=quiet
+                )
+
         # Verify that slurmds are not running
         if not repeat_until(
             lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),
