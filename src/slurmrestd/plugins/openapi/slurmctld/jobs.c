@@ -356,7 +356,8 @@ static void _job_post_submit(ctxt_t *ctxt, job_desc_msg_t *job, char *script)
 		job->script = xstrdup(script);
 	}
 
-	if (!job->script || !job->script[0]) {
+	if ((!job->script || !job->script[0]) &&
+	    !(job->bitflags & EXTERNAL_JOB)) {
 		resp_error(ctxt, ESLURM_JOB_SCRIPT_MISSING, "script",
 			   "Batch job script empty or missing");
 	} else if (slurm_submit_batch_job(job, &resp) || !resp) {
@@ -473,7 +474,8 @@ static void _job_post(ctxt_t *ctxt)
 		goto cleanup;
 
 	if (!req.jobs && (!req.script || !req.script[0]) &&
-	    (!req.job || !req.job->script)) {
+	    (!req.job || !req.job->script) &&
+	    !(req.job->bitflags & EXTERNAL_JOB)) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Populated \"script\" field is required for job submission");
 		goto cleanup;
