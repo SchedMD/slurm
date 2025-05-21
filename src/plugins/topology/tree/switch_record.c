@@ -436,6 +436,11 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 	switch_ptr = ctx->switch_table;
 	for (i = 0; i < ctx->switch_count; i++, switch_ptr++) {
 		ptr = ptr_array[i];
+
+		if (!ptr->switch_name) {
+			fatal("Can't create a switch without a name");
+		}
+
 		switch_ptr->parent = SWITCH_NO_PARENT;
 		switch_ptr->name = xstrdup(ptr->switch_name);
 		/* See if switch name has already been defined. */
