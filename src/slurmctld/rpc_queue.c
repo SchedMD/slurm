@@ -258,6 +258,9 @@ static void _apply_config(data_t *conf, slurmctld_rpc_t *q)
 		}
 	}
 
+	if ((field = data_key_get(settings, "rl_exempt")))
+		(void) data_get_bool_converted(field, &q->rl_exempt);
+
 	if ((field = data_key_get(settings, "hard_drop")))
 		(void) data_get_bool_converted(field, &q->hard_drop);
 
@@ -296,16 +299,19 @@ extern void rpc_queue_init(void)
 	conf = _load_config();
 
 	for (slurmctld_rpc_t *q = slurmctld_rpcs; q->msg_type; q++) {
-		if (!q->queue_enabled)
-			continue;
-
+		bool was_enabled = q->queue_enabled;
 		q->msg_name = rpc_num2string(q->msg_type);
 
 		_apply_config(conf, q);
 
 		/* config may have disabled this queue, check again */
 		if (!q->queue_enabled) {
-			verbose("disabled rpc_queue for %s", q->msg_name);
+			if (was_enabled)
+				verbose("disabled rpc_queue for %s",
+					q->msg_name);
+			else if (q->rl_exempt)
+				verbose("disabled rate limiting for %s",
+					q->msg_name);
 			continue;
 		}
 

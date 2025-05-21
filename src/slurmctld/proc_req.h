@@ -59,6 +59,7 @@ typedef struct {
 	bool hard_drop; /* discard traffic if max_queued exceeded */
 	bool shutdown;
 	bool keep_msg; /* skip freeing msg and closing connection */
+	bool rl_exempt; /* ignore this rpc for rate limiting */
 
 	int yield_sleep; /* usec sleep between cycles when busy */
 	int interval; /* usec sleep after cycle if no longer busy */
