@@ -41,6 +41,7 @@
 
 #include "src/interfaces/tls.h"
 
+#include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
@@ -111,11 +112,15 @@ extern void rate_limit_shutdown(void)
  */
 extern bool rate_limit_exceeded(slurm_msg_t *msg)
 {
+	slurmctld_rpc_t *this_rpc = NULL;
 	bool exceeded = false;
 	int start_position = 0, position = 0;
 	time_t now;
 
 	if (!rate_limit_enabled)
+		return false;
+
+	if ((this_rpc = find_rpc(msg->msg_type)) && this_rpc->rl_exempt)
 		return false;
 
 	/*
