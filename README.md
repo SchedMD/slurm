@@ -17,7 +17,7 @@ queue of pending work.
 
 The official issue tracker for Slurm is at
 
-:   <https://bugs.schedmd.com/>
+:   <https://support.schedmd.com/>
 
 We welcome code contributions and patches, but **we do not accept Pull
 Requests through Github at this time.** Please submit patches as
