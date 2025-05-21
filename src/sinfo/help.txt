@@ -1,7 +1,7 @@
 Usage: sinfo [OPTIONS]
   -a, --all                  show all partitions (including hidden and those
                              not accessible)
-  -d, --dead                 show only non-responding nodes
+  -d, --dead                 show only nodes that are unexpectedly unresponsive
   -e, --exact                group nodes only on exact match of configuration
       --federation           Report federated information if a member of one
   -F, --future               Report information about nodes in \"FUTURE\" state.
@@ -21,7 +21,7 @@ Usage: sinfo [OPTIONS]
   -o, --format=format        format specification
   -O, --Format=format        long format specification
   -p, --partition=PARTITION  report on specific partition
-  -r, --responding           report only responding nodes
+  -r, --responding           report only responding nodes (opposite of --dead)
   -R, --list-reasons         list reason nodes are down or drained
   -s, --summarize            report state summary only
   -S, --sort=fields          comma separated list of fields to sort on

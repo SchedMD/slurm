@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "June 2023" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "May 2025" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- View information about Slurm nodes and partitions.
@@ -30,7 +30,8 @@ This option implicitly sets the \fB\-\-local\fR option.
 
 .TP
 \fB\-d\fR, \fB\-\-dead\fR
-If set, only report state information for non\-responding (dead) nodes.
+Only show nodes that have unexpectedly stopped responding. This may not show
+nodes in a POWERED_DOWN state since they are expected to be down.
 .IP
 
 .TP
@@ -754,7 +755,8 @@ which are focused on partition and node information.
 
 .TP
 \fB\-r\fR, \fB\-\-responding\fR
-If set only report state information for responding nodes.
+Exclude any nodes that have unexpectedly stopped responding. This is the
+opposite of \fB\-\-dead\fR.
 .IP
 
 .TP
