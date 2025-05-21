@@ -4035,6 +4035,13 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	    (gres_id_sharing(slurmd_conf_tot.plugin_id) && gres_ns->alt_gres))
 		slurmd_conf_tot.topo_cnt = slurmd_conf_tot.rec_cnt;
 
+	/*
+	 * Check existing config_flags before overriding from
+	 * slurmd_conf_tot.config_flags.
+	 */
+	if (gres_state_node->config_flags & GRES_CONF_UPDATE_CONFIG)
+		updated_config = true;
+
 	/* Make sure these are insync after we get it from the slurmd */
 	gres_state_node->config_flags = slurmd_conf_tot.config_flags;
 
@@ -4127,6 +4134,17 @@ static int _node_config_validate(char *node_name, char *orig_config,
 
 	if (!updated_config)
 		return rc;
+
+	if (gres_id_sharing(slurmd_conf_tot.plugin_id) && gres_ns->alt_gres) {
+		/*
+		 * Tell the shared gres to update itself if the sharing gres is
+		 * updated -- which will happen in a subsequent call to
+		 * _node_config_validate() since gres_node_config_validate() is
+		 * looping on all gres_contexts.
+		 */
+		gres_ns->alt_gres->config_flags |= GRES_CONF_UPDATE_CONFIG;
+	}
+
 	if ((slurmd_conf_tot.gres_cnt > gres_ns->gres_cnt_config) &&
 	    config_overrides) {
 		info("%s: %s: count on node %s inconsistent with slurmctld count (%"PRIu64" != %"PRIu64")",
