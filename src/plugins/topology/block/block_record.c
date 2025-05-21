@@ -284,6 +284,11 @@ extern int block_record_validate(topology_ctx_t *tctx)
 	block_ptr = ctx->block_record_table;
 	for (i = 0; i < ctx->block_count; i++, block_ptr++) {
 		ptr = ptr_array[i];
+
+		if (!ptr->block_name) {
+			fatal("Can't create a block without a name");
+		}
+
 		block_ptr->name = xstrdup(ptr->block_name);
 		/* See if block name has already been defined. */
 		prior_ptr = ctx->block_record_table;
