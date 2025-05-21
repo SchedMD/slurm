@@ -4,11 +4,8 @@
 import atf
 import pytest
 import pathlib
-import re
 import signal
 import time
-
-# import logging
 
 
 # Setup
@@ -18,40 +15,71 @@ def setup():
 
 
 def test_signal_forwarding():
-    """Test of srun signal forwarding"""
+    """
+    Test of srun signal forwarding.
+    Submits a batch job running a python script via srun.
+    Waits for the script to signal readiness by creating a file.
+    Sends SIGUSR1 and SIGUSR2 signals via scancel.
+    Verifies the script received the correct number of signals via job output.
+    """
 
-    sig1_count = 2
-    sig2_count = 2
+    sig1_expected_count = 2
+    sig2_expected_count = 3
+    readiness_timeout = 30  # Max seconds to wait for the script ready file
+    job_wait_timeout = 60  # Max seconds to wait for job completion
 
-    file_in = atf.module_tmp_path / "file_in"
-    file_out = atf.module_tmp_path / "file_out"
+    # Define file paths within the module's temporary directory
+    file_in = "batch_script.sh"
+    file_out = "job_output.log"
+    file_ready = "script_ready.txt"
+
+    # Get path to the python script
     script_file = (
         pathlib.Path(atf.properties["testsuite_python_lib"])
         / "signal_forwarding_script.py"
     )
-    atf.make_bash_script(file_in, f"""srun --output={file_out} python3 {script_file}""")
-    job_id = atf.submit_job_sbatch(f"{file_in}")
+    if not script_file.exists():
+        pytest.fail(f"Signal script not found at: {script_file}")
 
-    for i in range(sig1_count):
+    # Create the batch script content
+    # Pass the readiness file path as an argument to the python script
+    atf.make_bash_script(
+        file_in, f"""srun --output={file_out} python3 {script_file} {file_ready}"""
+    )
+
+    # Submit the batch job
+    job_id = atf.submit_job_sbatch(f"{file_in}", fatal=True)
+
+    # Wait for the script to signal readiness by creating the file
+    atf.wait_for_file(file_ready, fatal=True, timeout=readiness_timeout)
+
+    # Send SIGUSR1 signals
+    for i in range(sig1_expected_count):
         atf.run_command(f"scancel --signal {signal.SIGUSR1.value} {job_id}")
+        # Keep a small delay between signals
         time.sleep(1)
-    for i in range(sig2_count):
+
+    # Send SIGUSR2 signals
+    for i in range(sig2_expected_count):
         atf.run_command(f"scancel --signal {signal.SIGUSR2.value} {job_id}")
         time.sleep(1)
-    atf.wait_for_job_state(job_id, "DONE", timeout=60)
 
-    received_all_sigs = False
-    user1_count = 0
-    user2_count = 0
+    # Wait for the job and file to complete
+    atf.wait_for_job_state(job_id, "DONE", timeout=job_wait_timeout, fatal=True)
+    atf.wait_for_file(file_out, timeout=5, fatal=True)
+
+    # Define expected exact lines from the signal handler
+    expected_sig1_line = f"Received: {signal.SIGUSR1.value}"
+    expected_sig2_line = f"Received: {signal.SIGUSR2.value}"
+
+    # Read the output file
     with open(file_out, "r") as fp:
-        for line in fp:
-            if re.search(str(signal.SIGUSR1.value), line) is not None:
-                user1_count += 1
-            if re.search(str(signal.SIGUSR2.value), line) is not None:
-                user2_count += 1
-            if user1_count == sig1_count and user2_count == sig2_count:
-                received_all_sigs = True
-                break
+        content = fp.read()
+
+    # Verify signal counts in the output file
     assert (
-        received_all_sigs is True
-    ), f"Did not receive all signals. Signal {signal.SIGUSR1.value} count: {user1_count}, Signal {signal.SIGUSR2.value} count: {user2_count}"
+        content.count(expected_sig1_line) == sig1_expected_count
+    ), f"Incorrect SIGUSR1 ({signal.SIGUSR1.value}) count. Expected: {sig1_expected_count}, Got: {content.count(expected_sig1_line)}"
+    assert (
+        content.count(expected_sig2_line) == sig2_expected_count
+    ), f"Incorrect SIGUSR2 ({signal.SIGUSR2.value}) count. Expected: {sig2_expected_count}, Got: {content.count(expected_sig2_line)}"
