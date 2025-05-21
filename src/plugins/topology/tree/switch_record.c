@@ -473,6 +473,10 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 				switches_bitmap = bit_copy(switch_ptr->
 							   node_bitmap);
 			}
+
+			if (ptr->switches)
+				warning("Ignoring children switches for %s",
+					ptr->switch_name);
 		} else if (ptr->switches) {
 			switch_ptr->level = -1;	/* determine later */
 			switch_ptr->switches = xstrdup(ptr->switches);
