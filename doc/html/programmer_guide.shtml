@@ -208,7 +208,7 @@ functions work correctly.</p>
 directory.  These tests are executed after Slurm has been installed
 and the daemons initiated. These tests exercise all Slurm commands
 and options including stress tests.  The file <b>testsuite/expect/globals</b>
-contains the Expect test framewrok for all of the individual tests.  At
+contains the Expect test framework for all of the individual tests.  At
 the very least, you will need to set the <i>slurm_dir</i> variable to the correct
 value.  To avoid conflicts with other developers, you can override variable settings
 in a separate file named <b>testsuite/expect/globals.local</b>.</p>
@@ -323,6 +323,6 @@ systemctl start/stop/restart slurmd@nodeXYZ
 
 </p>
 
-<p style="text-align:center;">Last modified 12 March 2025</p>
+<p style="text-align:center;">Last modified 21 May 2025</p>
 
 <!--#include virtual="footer.txt"-->
