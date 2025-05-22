@@ -668,18 +668,6 @@ static int _find_task_cg_info(void *x, void *key)
 	return 0;
 }
 
-static int _find_purge_task_special(task_cg_info_t *task_ptr, uint32_t *id)
-{
-	if (task_ptr->taskid == *id) {
-		if (common_cgroup_delete(&task_ptr->task_cg) != SLURM_SUCCESS)
-			log_flag(CGROUP, "Failed to cleanup %s: %m",
-				 task_ptr->task_cg.path);
-		return 1;
-	}
-	return 0;
-}
-
-
 static void _free_task_cg_info(void *x)
 {
 	task_cg_info_t *task_cg = (task_cg_info_t *)x;
@@ -2733,18 +2721,6 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
 	    SLURM_SUCCESS)
 		error("Unable to move pid %d to %s cg",
 		      pid, (task_cg_info->task_cg).path);
-
-	/*
-	 * If we did not play with task_special and task_special exists it is
-	 * possible that another plugin (proctrack) added a pid there and now
-	 * this pid has been moved to another normal task, leaving task_special
-	 * empty. In that case, try to remove task_special directory and purge
-	 * it from the tasks list.
-	 */
-	if (task_id != task_special_id)
-		list_delete_first(task_list,
-				  (ListFindF)_find_purge_task_special,
-				  &task_special_id);
 
 	return SLURM_SUCCESS;
 }
