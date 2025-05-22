@@ -97,12 +97,12 @@ extern int fini(void)
 extern int mcs_p_set_mcs_label(job_record_t *job_ptr, char *label)
 {
 	int rc = SLURM_SUCCESS;
-	xfree(job_ptr->mcs_label);
+	char *mcs_label = NULL;
 
 	if (label != NULL) {
 		/* test label param */
 		if (!xstrcmp(label, job_ptr->account))
-			job_ptr->mcs_label = xstrdup(job_ptr->account);
+			mcs_label = xstrdup(job_ptr->account);
 		else
 			rc = SLURM_ERROR;
 	} else {
@@ -110,7 +110,12 @@ extern int mcs_p_set_mcs_label(job_record_t *job_ptr, char *label)
 		    !(job_ptr->details->whole_node & WHOLE_NODE_MCS))
 			;
 		else
-			job_ptr->mcs_label = xstrdup(job_ptr->account);
+			mcs_label = xstrdup(job_ptr->account);
+	}
+
+	if (!rc) {
+		xfree(job_ptr->mcs_label);
+		job_ptr->mcs_label = mcs_label;
 	}
 
 	return rc;

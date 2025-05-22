@@ -95,14 +95,14 @@ extern int mcs_p_set_mcs_label(job_record_t *job_ptr, char *label)
 {
 	char *user = NULL;
 	int rc = SLURM_SUCCESS;
+	char *mcs_label = NULL;
 
 	user = uid_to_string((uid_t) job_ptr->user_id);
-	xfree(job_ptr->mcs_label);
 
 	if (label != NULL) {
 		/* test label param */
 		if (xstrcmp(label, user) == 0)
-			job_ptr->mcs_label = xstrdup(user);
+			mcs_label = xstrdup(user);
 		else
 			rc = SLURM_ERROR;
 	} else {
@@ -110,7 +110,12 @@ extern int mcs_p_set_mcs_label(job_record_t *job_ptr, char *label)
 		    !(job_ptr->details->whole_node & WHOLE_NODE_MCS))
 			;
 		else
-			job_ptr->mcs_label = xstrdup(user);
+			mcs_label = xstrdup(user);
+	}
+
+	if (!rc) {
+		xfree(job_ptr->mcs_label);
+		job_ptr->mcs_label = mcs_label;
 	}
 
 	xfree(user);
