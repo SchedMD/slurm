@@ -16252,6 +16252,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	 * really started. Very rare obviously.
 	 */
 	if ((IS_JOB_PENDING(job_ptr) && (!IS_JOB_COMPLETING(job_ptr))) ||
+	    ((!job_ptr->node_bitmap_cg) && (!IS_JOB_COMPLETING(job_ptr))) ||
 	    (job_ptr->node_bitmap == NULL)) {
 #ifndef HAVE_FRONT_END
 		uint32_t base_state = NODE_STATE_UNKNOWN;
