@@ -773,7 +773,7 @@ the <i>SchedulerParameters=salloc_wait_nodes</i> option.</p>
 <p>Features defined by <a href=
 "slurm.conf.html#OPT_NodeFeaturesPlugins">NodeFeaturesPlugins</a>, and
 associated to cloud nodes in the <b>slurm.conf</b>, will be available but not
-active when the node is powered down. If a job requests available nut not
+active when the node is powered down. If a job requests available but not
 active features, the controller will allocate nodes that are powered down and
 have the features as available. At allocation, the features will be made
 active. A cloud node will remain with the active features until the node is
@@ -938,5 +938,5 @@ $ curl -k -s \
 ]
 </pre>
 
-<p style="text-align:center;">Last modified 02 February 2024</p>
+<p style="text-align:center;">Last modified 20 May 2025</p>
 <!--#include virtual="footer.txt"-->
