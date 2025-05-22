@@ -610,7 +610,7 @@ slurm_errtab_t slurm_errtab[] = {
 	  "This request would make it so some associations would not have access to their default qos."                                         },
 	{ ERRTAB_ENTRY(ESLURM_COORD_NO_INCREASE_JOB_LIMIT),
 	  "Coordinators can not increase job limits beyond the parent ones" },
-
+	{ ERRTAB_ENTRY(ESLURM_NO_RPC_STATS), "No RPC stats are available" },
 
 	/* Federation Errors */
 	{ ERRTAB_ENTRY(ESLURM_FED_CLUSTER_MAX_CNT),

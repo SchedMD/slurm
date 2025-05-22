@@ -4607,6 +4607,7 @@ extern void slurmdb_free_stats_rec_members(void *object)
 		return;
 
 	slurmdb_destroy_rollup_stats(rpc_stats->dbd_rollup_stats);
+	rpc_stats->dbd_rollup_stats = NULL;
 
 	FREE_NULL_LIST(rpc_stats->rollup_stats);
 	FREE_NULL_LIST(rpc_stats->rpc_list);
