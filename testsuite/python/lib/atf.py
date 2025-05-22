@@ -2852,6 +2852,31 @@ def run_job_nodes(srun_args, **run_command_kwargs):
     return node_list
 
 
+def get_qos(name=None, **run_command_kwargs):
+    """Returns the QOSes in the system as a dictionary of dictionaries.
+
+    Args:
+        name: The name of a specific QOS of which to get parameters.
+
+    Returns:
+        A dictionary of dictionaries where the first level keys are the QOSes names
+        and with their values being a dictionary of configuration parameters for
+        the respective QOS.
+    """
+
+    command = "sacctmgr --json show qos"
+    if id is not None:
+        command += f" {name}"
+    output = run_command_output(command, fatal=True, quiet=True, **run_command_kwargs)
+
+    qos_dict = {}
+    qos_list = json.loads(output)["qos"]
+    for qos in qos_list:
+        qos_dict[qos["name"]] = qos
+
+    return qos_dict
+
+
 def get_jobs(job_id=None, dbd=False, **run_command_kwargs):
     """Returns the jobs in the system as a dictionary of dictionaries.
 
