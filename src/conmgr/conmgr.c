@@ -180,7 +180,7 @@ extern void conmgr_fini(void)
 	close_all_connections();
 
 	/* tell all timers about being canceled */
-	cancel_delayed_work();
+	cancel_delayed_work(false);
 
 	/* wait until all workers are done */
 	workers_shutdown();

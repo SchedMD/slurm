@@ -55,6 +55,13 @@ typedef struct {
 	timespec_t time;
 } foreach_delayed_work_t;
 
+#define MAGIC_FOREACH_CANCEL_WORK 0xA238483A
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_CANCEL_WORK */
+	bool connections_only;
+} foreach_cancel_work_t;
+
 /* timer to trigger SIGALRM */
 static timer_t timer = {0};
 /* Mutex to protect timer */
@@ -64,51 +71,69 @@ static int _inspect_work(void *x, void *key);
 static void _update_timer(work_t *shortest, const timespec_t time);
 static bool _work_clear_time_delay(work_t *work);
 
-/* mgr.mutex must be locked when calling this function */
-extern void cancel_delayed_work(void)
+/*
+ * Remove delay dependency and release work back into work queue
+ *
+ * WARNING: caller must hold mgr.mutex
+ * IN x - work to release back to normal work handling.
+ *	takes ownership of pointer.
+ */
+static void _release_work(void *x)
 {
-	work_t *work;
+	work_t *work = x;
+	xassert(work->magic == MAGIC_WORK);
+
+	(void) _work_clear_time_delay(work);
+	handle_work(true, work);
+}
+
+static int _cancel_work(void *x, void *key)
+{
+	work_t *work = x;
+	foreach_cancel_work_t *args = key;
+
+	xassert(work->magic == MAGIC_WORK);
+	xassert(args->magic == MAGIC_FOREACH_CANCEL_WORK);
+
+	if (args->connections_only && !work->ref)
+		return 0;
+
+	work->status = CONMGR_WORK_STATUS_CANCELLED;
+	return 1;
+}
+
+extern void cancel_delayed_work(bool connections_only)
+{
+	foreach_cancel_work_t args = {
+		.magic = MAGIC_FOREACH_CANCEL_WORK,
+		.connections_only = connections_only,
+	};
 
 	if (!mgr.delayed_work || list_is_empty(mgr.delayed_work))
 		return;
 
-	log_flag(CONMGR, "%s: cancelling %d delayed work",
-		 __func__, list_count(mgr.delayed_work));
+	log_flag(CONMGR, "%s: cancelling%s %d delayed work",
+		 __func__, (connections_only ? " connection" : ""),
+		 list_count(mgr.delayed_work));
 
 	/* run everything immediately but with cancelled status */
-	while ((work = list_pop(mgr.delayed_work))) {
-		work->status = CONMGR_WORK_STATUS_CANCELLED;
-		handle_work(true, work);
-	}
+	(void) list_delete_all(mgr.delayed_work, _cancel_work, &args);
 }
 
-static list_t *_inspect(void)
+static void _inspect(void)
 {
 	int count, total;
-	work_t *work;
-	list_t *elapsed = list_create(xfree_ptr);
 	foreach_delayed_work_t dargs = {
 		.magic = MAGIC_FOREACH_DELAYED_WORK,
 		.time = timespec_now(),
 	};
 
 	total = list_count(mgr.delayed_work);
-	count = list_transfer_match(mgr.delayed_work, elapsed,
-				    _inspect_work, &dargs);
-
+	count = list_delete_all(mgr.delayed_work, _inspect_work, &dargs);
 	_update_timer(dargs.shortest, dargs.time);
-
-	while ((work = list_pop(elapsed))) {
-		if (!_work_clear_time_delay(work))
-			fatal_abort("should never happen");
-
-		handle_work(true, work);
-	}
 
 	log_flag(CONMGR, "%s: checked all timers and triggered %d/%d delayed work",
 		 __func__, count, total);
-
-	return elapsed;
 }
 
 static struct itimerspec _calc_timer(work_t *shortest,
@@ -206,7 +231,7 @@ extern void init_delayed_work(void)
 {
 	int rc;
 
-	mgr.delayed_work = list_create(xfree_ptr);
+	mgr.delayed_work = list_create(_release_work);
 
 again:
 	slurm_mutex_lock(&mutex);
@@ -253,17 +278,13 @@ extern void free_delayed_work(void)
 
 static void _update_delayed_work(bool locked)
 {
-	list_t *elapsed = NULL;
-
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
-	elapsed = _inspect();
+	_inspect();
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
-
-	FREE_NULL_LIST(elapsed);
 }
 
 extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
