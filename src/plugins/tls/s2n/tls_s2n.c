@@ -735,7 +735,8 @@ extern int tls_p_load_ca_cert(char *cert_file)
 		free_cert = true;
 	}
 
-	rc = _add_ca_cert_to_config(client_config, cert_file);
+	rc = (_add_ca_cert_to_config(client_config, cert_file) ||
+	      _add_ca_cert_to_config(server_config, cert_file));
 
 	if (free_cert)
 		xfree(cert_file);
