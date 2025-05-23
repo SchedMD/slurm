@@ -2003,6 +2003,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 						set_node_comm_name(
 							node_ptr, NULL,
 							node_ptr->name);
+						reset_node_instance(node_ptr);
 					}
 					/*
 					 * Preserve dynamic norm state until
