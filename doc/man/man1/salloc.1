@@ -1244,9 +1244,10 @@ The default value is the submitting user.
 
 .TP
 \fB\-\-mcs\-label\fR=<\fImcs\fR>
-Used only when the mcs/group plugin is enabled.
-This parameter is a group among the groups of the user.
-Default value is calculated by the Plugin mcs if it's enabled.
+Used only when a compatible \fBMCSPlugin\fR is enabled. This parameter is a
+group that the user belongs to (\fBmcs/group\fR) or an arbitrary label string
+(\fBmcs/label\fR). In both cases, no label will be assigned by default. Refer to
+the MCS documentation for more details: <https://slurm.schedmd.com/mcs.html>
 .IP
 
 .TP
