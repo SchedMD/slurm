@@ -371,7 +371,7 @@ static int _server_read(eio_obj_t *obj, list_t *objs)
 		buf = s->in_msg->data + (s->in_msg->length - s->in_remaining);
 	again:
 		if (obj->tls_conn) {
-			n = tls_g_recv(obj->tls_conn, buf, s->in_remaining);
+			n = conn_g_recv(obj->tls_conn, buf, s->in_remaining);
 		} else {
 			n = read(obj->fd, buf, s->in_remaining);
 		}

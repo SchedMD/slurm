@@ -286,11 +286,11 @@ again:
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	/* TLS will callback to _recv() to read from con->tls_in*/
-	read_c = tls_g_recv(con->tls, start, readable);
+	read_c = conn_g_recv(con->tls, start, readable);
 
 	if (read_c < 0) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
-			log_flag(NET, "%s: [%s] TLS would block on tls_g_recv()",
+			log_flag(NET, "%s: [%s] TLS would block on conn_g_recv()",
 				 __func__, con->name);
 			return;
 		}

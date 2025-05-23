@@ -102,7 +102,7 @@ static int _full_read(int fd, void *tls_conn, void *buf, size_t count)
 	while (left > 0) {
 	again:
 		if (tls_conn) {
-			n = tls_g_recv(tls_conn, (void *) ptr, left);
+			n = conn_g_recv(tls_conn, (void *) ptr, left);
 		} else {
 			n = read(fd, (void *) ptr, left);
 		}
@@ -258,7 +258,7 @@ extern int io_init_msg_read_from_fd(int fd, void *tls_conn, io_init_msg_t *msg)
 	}
 
 	if (tls_enabled()) {
-		tls_g_recv(tls_conn, &len, sizeof(uint32_t));
+		conn_g_recv(tls_conn, &len, sizeof(uint32_t));
 	} else {
 		safe_read(fd, &len, sizeof(uint32_t));
 	}
@@ -266,7 +266,7 @@ extern int io_init_msg_read_from_fd(int fd, void *tls_conn, io_init_msg_t *msg)
 	buf = init_buf(len);
 
 	if (tls_enabled()) {
-		tls_g_recv(tls_conn, buf->head, len);
+		conn_g_recv(tls_conn, buf->head, len);
 	} else {
 		safe_read(fd, buf->head, len);
 	}

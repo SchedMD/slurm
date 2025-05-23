@@ -377,7 +377,8 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 			(client->in_msg->length - client->in_remaining);
 	again:
 		if (obj->tls_conn) {
-			n = tls_g_recv(obj->tls_conn, buf, client->in_remaining);
+			n = conn_g_recv(obj->tls_conn, buf,
+					client->in_remaining);
 		} else {
 			n = read(obj->fd, buf, client->in_remaining);
 		}

@@ -239,8 +239,8 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 		if (!_conn_readable(persist_conn))
 			break;		/* problem with this socket */
 
-		msg_read = tls_g_recv(persist_conn->tls_conn, &nw_size,
-				      sizeof(nw_size));
+		msg_read = conn_g_recv(persist_conn->tls_conn, &nw_size,
+				       sizeof(nw_size));
 		if (msg_read == 0)	/* EOF */
 			break;
 		if (msg_read != sizeof(nw_size)) {
@@ -262,9 +262,9 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 		while (msg_size > offset) {
 			if (!_conn_readable(persist_conn))
 				break;		/* problem with this socket */
-			msg_read = tls_g_recv(persist_conn->tls_conn,
-					      (msg_char + offset),
-					      (msg_size - offset));
+			msg_read = conn_g_recv(persist_conn->tls_conn,
+					       (msg_char + offset),
+					       (msg_size - offset));
 			if (msg_read <= 0) {
 				error("read(%d): %m", fd);
 				break;
@@ -587,7 +587,7 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 	}
 
 	/*
-	 * Peer will be waiting on tls_g_recv(), and they will need to know if
+	 * Peer will be waiting on conn_g_recv(), and they will need to know if
 	 * connection was intentionally closed or if an error occurred.
 	 */
 	tls_g_set_graceful_shutdown(persist_conn->tls_conn, true);
@@ -996,8 +996,8 @@ static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 		goto endit;
 	}
 
-	msg_read = tls_g_recv(persist_conn->tls_conn, &nw_size,
-			      sizeof(nw_size));
+	msg_read =
+		conn_g_recv(persist_conn->tls_conn, &nw_size, sizeof(nw_size));
 	if (msg_read != sizeof(nw_size)) {
 		log_flag(NET, "%s: Unable to read message size: only read %zd bytes of expected %zu.",
 			 __func__, msg_read, sizeof(nw_size));
@@ -1022,8 +1022,8 @@ static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 	while (msg_size > offset) {
 		if (!_conn_readable(persist_conn))
 			break;		/* problem with this socket */
-		msg_read = tls_g_recv(persist_conn->tls_conn, (msg + offset),
-				      (msg_size - offset));
+		msg_read = conn_g_recv(persist_conn->tls_conn, (msg + offset),
+				       (msg_size - offset));
 		if (msg_read <= 0) {
 			error("%s: read of fd %u failed: %m",
 			      __func__,

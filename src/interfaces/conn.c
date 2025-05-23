@@ -279,7 +279,7 @@ extern uint32_t conn_g_peek(void *conn)
 	return (*(ops.peek))(conn);
 }
 
-extern ssize_t tls_g_recv(void *conn, void *buf, size_t n)
+extern ssize_t conn_g_recv(void *conn, void *buf, size_t n)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.recv))(conn, buf, n);

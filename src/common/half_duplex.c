@@ -96,7 +96,7 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 		remote_arg->tls_conn_in = tls_conn_ptr;
 
 		/*
-		 * if fd is blocking, tls_g_recv will want to block until the
+		 * if fd is blocking, conn_g_recv will want to block until the
 		 * entire buffer size is read (similar to safe_read). For eio,
 		 * we just want to get whatever data is on the line, and forward
 		 * it.
@@ -104,7 +104,7 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 		fd_set_nonblocking(*remote_fd);
 
 		/*
-		 * Peer will be waiting on tls_g_recv(), and they will need to
+		 * Peer will be waiting on conn_g_recv(), and they will need to
 		 * know if connection was intentionally closed or if an error
 		 * occurred.
 		 */
@@ -156,7 +156,7 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 		goto shutdown;
 
 	if (tls_conn_in && *tls_conn_in) {
-		in = tls_g_recv(*tls_conn_in, buf, sizeof(buf));
+		in = conn_g_recv(*tls_conn_in, buf, sizeof(buf));
 	} else {
 		in = read(obj->fd, buf, sizeof(buf));
 	}
