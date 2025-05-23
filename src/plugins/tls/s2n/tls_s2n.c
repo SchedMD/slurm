@@ -836,7 +836,7 @@ static int _set_conn_s2n_conf(tls_conn_t *conn,
 	bool is_server = (tls_conn_args->mode == TLS_CONN_SERVER);
 
 	if (!slurm_rwlock_tryrdlock(&s2n_conf_lock)) {
-		if (!own_cert_and_key) {
+		if (is_server && !own_cert_and_key) {
 			error("%s: No own certificate has been loaded yet, cannot create connection for fd:%d->%d",
 			      __func__, tls_conn_args->input_fd,
 			      tls_conn_args->output_fd);
