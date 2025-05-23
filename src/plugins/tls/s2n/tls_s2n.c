@@ -414,6 +414,19 @@ fail:
 	return SLURM_ERROR;
 }
 
+static int _reset_global_conf(struct s2n_config **config)
+{
+	if (*config && s2n_config_free(*config))
+		on_s2n_error(NULL, s2n_config_free);
+
+	if (!(*config = _create_config()))
+		return SLURM_ERROR;
+	if (_add_own_cert_to_config(*config, &own_cert_and_key))
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
 static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
 				      char *key_pem, uint32_t key_pem_len)
 {
@@ -448,16 +461,7 @@ static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
 	 * certificate associated with server_config. server_config must be
 	 * recreated.
 	 */
-	if (server_config && s2n_config_free(server_config)) {
-		on_s2n_error(NULL, s2n_config_free);
-	}
-
-	if (!(server_config = _create_config())) {
-		error("Could not create new server_config");
-		goto fail;
-	}
-
-	if (_add_own_cert_to_config(server_config, &own_cert_and_key))
+	if (_reset_global_conf(&server_config))
 		goto fail;
 
 	slurm_mutex_unlock(&s2n_conf_cnt_lock);
