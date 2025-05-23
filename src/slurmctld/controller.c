@@ -686,7 +686,7 @@ int main(int argc, char **argv)
 		fatal("Failed to initialize tls plugin");
 	if (certmgr_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize certmgr plugin");
-	if (serializer_g_init(NULL, NULL))
+	if (serializer_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize serialization plugins.");
 
 	if (original && !under_systemd) {

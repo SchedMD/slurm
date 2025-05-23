@@ -285,14 +285,10 @@ extern const char **get_mime_type_array(void)
 	return mime_array;
 }
 
-extern int serializer_g_init(const char *plugin_list, const char *config)
+extern int serializer_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	serializer_flags_t flags = SER_FLAGS_NONE;
-
-	if (config && config[0] && (rc = _parse_config(config, &flags)))
-		fatal("Unable to parse serializer \"%s\" flags: %s",
-		      config, slurm_strerror(rc));
 
 	slurm_mutex_lock(&init_mutex);
 
@@ -303,13 +299,12 @@ extern int serializer_g_init(const char *plugin_list, const char *config)
 	 * plugins as the code always calls serializer_g_init() to be safe.
 	 */
 	xassert(sizeof(funcs_t) == sizeof(void *) * ARRAY_SIZE(syms));
-	rc = load_plugins(&plugins, SERIALIZER_MAJOR_TYPE, plugin_list, NULL,
-			  syms, ARRAY_SIZE(syms));
+	rc = load_plugins(&plugins, SERIALIZER_MAJOR_TYPE, NULL, NULL, syms,
+			  ARRAY_SIZE(syms));
 
 	if (rc)
-		fatal("%s: Unable to load serializer plugins%s%s: %s",
-		      __func__, (plugin_list ? " " : ""), plugin_list,
-		      slurm_strerror(rc));
+		fatal("%s: Unable to load serializer plugins: %s",
+		      __func__, slurm_strerror(rc));
 
 	if (!mime_types_list)
 		mime_types_list = list_create(xfree_ptr);
@@ -362,7 +357,7 @@ extern int serializer_g_init(const char *plugin_list, const char *config)
 
 extern void serializer_required(const char *mime_type)
 {
-	serializer_g_init(NULL, NULL);
+	serializer_g_init();
 
 	slurm_mutex_lock(&init_mutex);
 	if (!_find_serializer(mime_type))
