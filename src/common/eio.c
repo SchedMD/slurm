@@ -89,6 +89,7 @@ struct eio_handle_components {
 	uint16_t shutdown_wait;
 	list_t *obj_list;
 	list_t *new_objs;
+	list_t *del_objs;
 };
 
 typedef struct {
@@ -104,8 +105,10 @@ static int          _poll_internal(struct pollfd *pfds, unsigned int nfds,
 static unsigned int _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[],
 					list_t *l);
 static void _poll_dispatch(struct pollfd *pfds, unsigned int nfds,
-			   eio_obj_t *map[], list_t *objList);
-static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList);
+			   eio_obj_t *map[], list_t *objList,
+			   list_t *del_objs);
+static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList,
+			       list_t *del_objs);
 
 eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 {
@@ -123,6 +126,7 @@ eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 
 	eio->obj_list = list_create(eio_obj_destroy);
 	eio->new_objs = list_create(eio_obj_destroy);
+	eio->del_objs = list_create(eio_obj_destroy);
 
 	slurm_mutex_init(&eio->shutdown_mutex);
 	eio->shutdown_wait = DEFAULT_EIO_SHUTDOWN_WAIT;
@@ -140,6 +144,7 @@ void eio_handle_destroy(eio_handle_t *eio)
 	close(eio->fds[1]);
 	FREE_NULL_LIST(eio->obj_list);
 	FREE_NULL_LIST(eio->new_objs);
+	FREE_NULL_LIST(eio->del_objs);
 	slurm_mutex_destroy(&eio->shutdown_mutex);
 
 	eio->magic = ~EIO_MAGIC;
@@ -268,6 +273,21 @@ static int _eio_wakeup_handler(eio_handle_t *eio)
 	return 0;
 }
 
+static int _close_eio_socket(void *x, void *key)
+{
+	eio_obj_t *e = (eio_obj_t *) x;
+	time_t *now = (time_t *) key;
+
+	if (difftime(*now, e->close_time) < DEFAULT_EIO_SHUTDOWN_WAIT)
+		return 0;
+
+	debug4("%s closing eio->fd: %d", __func__, e->fd);
+	close(e->fd);
+	e->fd = -1;
+
+	return 1;
+}
+
 int eio_handle_mainloop(eio_handle_t *eio)
 {
 	int            retval  = 0;
@@ -275,7 +295,7 @@ int eio_handle_mainloop(eio_handle_t *eio)
 	eio_obj_t    **map     = NULL;
 	unsigned int   maxnfds = 0, nfds = 0;
 	unsigned int   n       = 0;
-	time_t shutdown_time;
+	time_t shutdown_time, now;
 
 	xassert (eio != NULL);
 	xassert (eio->magic == EIO_MAGIC);
@@ -319,7 +339,8 @@ int eio_handle_mainloop(eio_handle_t *eio)
 		if (pollfds[nfds-1].revents & POLLIN)
 			_eio_wakeup_handler(eio);
 
-		_poll_dispatch(pollfds, nfds - 1, map, eio->obj_list);
+		_poll_dispatch(pollfds, nfds - 1, map, eio->obj_list,
+			       eio->del_objs);
 
 		slurm_mutex_lock(&eio->shutdown_mutex);
 		shutdown_time = eio->shutdown_time;
@@ -330,11 +351,19 @@ int eio_handle_mainloop(eio_handle_t *eio)
 			      __func__, eio->shutdown_wait);
 			break;
 		}
+
+		/*
+		 * Close and remove all expired eio objects at every wakeup.
+		 */
+		now = time(NULL);
+		list_delete_all(eio->del_objs, _close_eio_socket, &now);
 	}
 
 error:
 	retval = -1;
 done:
+	now = 0;
+	list_delete_all(eio->del_objs, _close_eio_socket, &now);
 	xfree(pollfds);
 	xfree(map);
 	return retval;
@@ -348,7 +377,7 @@ static int _poll_internal(struct pollfd *pfds, unsigned int nfds,
 	if (shutdown_time)
 		timeout = 1000;	/* Return every 1000 msec during shutdown */
 	else
-		timeout = -1;
+		timeout = 60000;
 	while ((n = poll(pfds, nfds, timeout)) < 0) {
 		switch (errno) {
 		case EINTR:
@@ -426,17 +455,20 @@ static unsigned int _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[],
 }
 
 static void _poll_dispatch(struct pollfd *pfds, unsigned int nfds,
-			   eio_obj_t *map[], list_t *objList)
+			   eio_obj_t *map[], list_t *objList,
+			   list_t *del_objs)
 {
 	int i;
 
 	for (i = 0; i < nfds; i++) {
 		if (pfds[i].revents > 0)
-			_poll_handle_event(pfds[i].revents, map[i], objList);
+			_poll_handle_event(pfds[i].revents, map[i], objList,
+					   del_objs);
 	}
 }
 
-static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList)
+static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList,
+			       list_t *del_objs)
 {
 	bool read_called = false;
 	bool write_called = false;
@@ -454,7 +486,7 @@ static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList)
 			      obj->fd);
 			obj->shutdown = true;
 		}
-		return;
+		goto end;
 	}
 
 	if ((revents & POLLHUP) && ((revents & POLLIN) == 0)) {
@@ -496,6 +528,11 @@ static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList)
 			debug("No handler for POLLOUT");
 			obj->shutdown = true;
 		}
+	}
+
+end:
+	if (obj->ops->handle_cleanup) {
+		(*obj->ops->handle_cleanup) (obj, objList, del_objs);
 	}
 }
 
