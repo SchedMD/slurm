@@ -2194,10 +2194,27 @@ def get_nodes(live=True, quiet=False, **run_command_kwargs):
     nodes_dict = {}
 
     if live:
-        output = run_command_output(
-            "scontrol show nodes -oF", fatal=True, quiet=quiet, **run_command_kwargs
+        # TODO: Remove extra debug info for t22858 instead of fatal
+        result = run_command(
+            "scontrol show nodes -oF", fatal=False, quiet=quiet, **run_command_kwargs
         )
+        if result["exit_code"]:
+            logging.debug(
+                "Fatal failure of 'scontrol show nodes', probably due 'Unable to contact slurm controller' (t22858)"
+            )
+            logging.debug("Getting gcore from slurmctld before fatal.")
+            pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
+            if not pids:
+                logging.warning("process slurmctld not found")
+            for pid in pids:
+                run_command(
+                    f'sudo gcore -o {os.path.dirname(get_config_parameter("SlurmctldLogFile"))}/slurmctld.core {pid}'
+                )
+            pytest.fail(
+                f"Command 'scontrol show nodes -oF' failed with rc={result['exit_code']}: {result['stderr']}"
+            )
 
+        output = result["stdout"]
         node_dict = {}
         for line in output.splitlines():
             if line == "":
