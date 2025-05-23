@@ -917,8 +917,6 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	case TLS_CONN_SERVER:
 	{
 		s2n_conn_mode = S2N_SERVER;
-		if (_set_conn_s2n_conf(conn, tls_conn_args))
-			goto fail;
 		break;
 	}
 	case TLS_CONN_CLIENT:
@@ -927,7 +925,6 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 		if (!tls_conn_args->cert) {
 			log_flag(TLS, "%s: no certificate provided for new connection. Using default trust store.",
 				 plugin_type);
-			conn->s2n_config = client_config;
 			break;
 		}
 
@@ -951,6 +948,9 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 		error("Invalid tls connection mode");
 		return NULL;
 	}
+
+	if (!conn->s2n_config && _set_conn_s2n_conf(conn, tls_conn_args))
+		goto fail;
 
 	if (!(conn->s2n_conn = s2n_connection_new(s2n_conn_mode))) {
 		on_s2n_error(conn, s2n_connection_new);
