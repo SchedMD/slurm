@@ -110,7 +110,7 @@ typedef struct {
 	struct s2n_config *s2n_config;
 	struct s2n_cert_chain_and_key *cert_and_key;
 	bool do_graceful_shutdown;
-	bool using_global_server_conf;
+	bool using_global_s2n_conf;
 } tls_conn_t;
 
 /*
@@ -802,7 +802,7 @@ static void _cleanup_tls_conn(tls_conn_t *conn)
 	if (conn->s2n_conn && s2n_connection_free(conn->s2n_conn) < 0)
 		on_s2n_error(conn, s2n_connection_free);
 
-	if (conn->using_global_server_conf)
+	if (conn->using_global_s2n_conf)
 		_s2n_config_dec(conn);
 }
 
@@ -819,7 +819,7 @@ static int _set_conn_s2n_conf(tls_conn_t *conn,
 		}
 		_s2n_config_inc(conn);
 		conn->s2n_config = server_config;
-		conn->using_global_server_conf = true;
+		conn->using_global_s2n_conf = true;
 		slurm_rwlock_unlock(&s2n_conf_lock);
 		return SLURM_SUCCESS;
 	}
