@@ -344,10 +344,10 @@ static int _add_ca_cert_to_client(struct s2n_config *config, char* cert_file)
 	return SLURM_SUCCESS;
 }
 
-static int _add_cert_to_server(struct s2n_config *s2n_config,
-			       struct s2n_cert_chain_and_key **cert_and_key,
-			       char *cert_pem, uint32_t cert_pem_len,
-			       char *key_pem, uint32_t key_pem_len)
+static int _add_own_cert_to_config(struct s2n_config *s2n_config,
+				   struct s2n_cert_chain_and_key **cert_and_key,
+				   char *cert_pem, uint32_t cert_pem_len,
+				   char *key_pem, uint32_t key_pem_len)
 {
 	xassert(cert_and_key);
 
@@ -398,9 +398,10 @@ static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
 {
 	if (!server_cert_and_key) {
 		is_own_cert_loaded = true;
-		return _add_cert_to_server(server_config, &server_cert_and_key,
-					   cert_pem, cert_pem_len, key_pem,
-					   key_pem_len);
+		return _add_own_cert_to_config(server_config,
+					       &server_cert_and_key, cert_pem,
+					       cert_pem_len, key_pem,
+					       key_pem_len);
 	}
 
 	/* Stop new connections from using current server_config */
@@ -432,8 +433,9 @@ static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
 		error("Could not create new server_config");
 		goto fail;
 	}
-	if (_add_cert_to_server(server_config, &server_cert_and_key, cert_pem,
-				cert_pem_len, key_pem, key_pem_len)) {
+	if (_add_own_cert_to_config(server_config, &server_cert_and_key,
+				    cert_pem, cert_pem_len, key_pem,
+				    key_pem_len)) {
 		if (s2n_config_free(server_config)) {
 			on_s2n_error(NULL, s2n_config_free);
 		}
@@ -849,9 +851,10 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 			      tls_conn_args->output_fd);
 			goto fail;
 		}
-		if (_add_cert_to_server(conn->s2n_config, &conn->cert_and_key,
-					server_cert, server_cert_len,
-					server_key, server_key_len)) {
+		if (_add_own_cert_to_config(conn->s2n_config,
+					    &conn->cert_and_key, server_cert,
+					    server_cert_len, server_key,
+					    server_key_len)) {
 			error("Could not add certificate to server config for fd:%d->%d",
 			      tls_conn_args->input_fd,
 			      tls_conn_args->output_fd);
