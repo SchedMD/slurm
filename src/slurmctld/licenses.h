@@ -114,6 +114,8 @@ extern void license_free_rec(void *x);
 extern list_t *license_copy(list_t *license_list_src);
 extern list_t *cluster_license_copy(void);
 
+extern licenses_t *license_find_rec_by_id(list_t *license_list,
+					  licenses_id_t id);
 /*
  * license_job_get - Get the licenses required for a job
  * IN job_ptr - job identification
@@ -131,12 +133,16 @@ extern int license_job_get(job_record_t *job_ptr, bool restore);
 extern void license_job_merge(job_record_t *job_ptr);
 
 /*
- * license_job_return - Return the licenses allocated to a job
+ * Return the licenses allocated to a job to the provided list
  * IN job_ptr - job identification
+ * IN license_list - list of license_t records
+ * IN locked - if the license_mutex is locked or not
+ * IN future - if true, don't modify the job record
  * RET SLURM_SUCCESS or failure code
  */
 extern int license_job_return_to_list(job_record_t *job_ptr,
-				      list_t *license_list, bool locked);
+				      list_t *license_list, bool locked,
+				      bool future);
 
 /*
  * license_job_return - Return the licenses allocated to a job
