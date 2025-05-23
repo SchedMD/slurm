@@ -79,7 +79,7 @@ static int _find_node_inx (char *name)
 
 static void _display_topology(void)
 {
-	slurm_print_topo_info_msg(stdout, g_topo_info_msg_ptr, NULL, 0);
+	slurm_print_topo_info_msg(stdout, g_topo_info_msg_ptr, NULL, NULL, 0);
 }
 
 static void _foreach_popup_all(GtkTreeModel  *model,

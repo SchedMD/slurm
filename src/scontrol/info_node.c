@@ -312,7 +312,8 @@ extern void scontrol_print_topo(char *node_list, char *name)
 		slurm_perror ("slurm_load_topo error");
 		return;
 	}
-	slurm_print_topo_info_msg(stdout, topo_info_msg, node_list, one_liner);
+	slurm_print_topo_info_msg(stdout, topo_info_msg, node_list, NULL,
+				  one_liner);
 }
 
 extern void scontrol_print_topo_conf(void)
