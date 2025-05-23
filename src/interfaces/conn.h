@@ -159,6 +159,12 @@ extern void conn_g_destroy(void *conn, bool close_fds);
 extern int conn_g_negotiate_tls(void *conn);
 
 /*
+ * Return true if client is authenticated (mTLS)
+ * NOTE: Only to be called by server connections
+ */
+extern bool conn_g_is_client_authenticated(void *conn);
+
+/*
  * Retrieve connection read file descriptor.
  * Needed for poll() and similar status monitoring.
  * Assumes both read and write file descriptor are the same.

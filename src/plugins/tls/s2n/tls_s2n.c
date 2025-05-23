@@ -1225,6 +1225,13 @@ extern int tls_p_negotiate_conn(tls_conn_t *conn)
 	return _negotiate(conn);
 }
 
+extern bool tls_p_is_client_authenticated(tls_conn_t *conn)
+{
+	xassert(conn);
+
+	return conn->is_client_authenticated;
+}
+
 extern int tls_p_get_conn_fd(tls_conn_t *conn)
 {
 	xassert(conn);
