@@ -291,13 +291,13 @@ extern int serializer_g_init(void)
 	serializer_flags_t flags = SER_FLAGS_NONE;
 
 	slurm_mutex_lock(&init_mutex);
+	if (plugins) {
+		slurm_mutex_unlock(&init_mutex);
+		return rc;
+	}
 
 	xassert(!should_not_change);
 
-	/*
-	 * There will be multiple calls to serializer_g_init() to load different
-	 * plugins as the code always calls serializer_g_init() to be safe.
-	 */
 	xassert(sizeof(funcs_t) == sizeof(void *) * ARRAY_SIZE(syms));
 	rc = load_plugins(&plugins, SERIALIZER_MAJOR_TYPE, NULL, NULL, syms,
 			  ARRAY_SIZE(syms));
