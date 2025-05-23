@@ -71,14 +71,14 @@ static struct s2n_config *client_config = NULL;
 static struct s2n_config *server_config = NULL;
 
 /*
- * If non-NULL, server_cert_and_key was successfully loaded into server_config
+ * If non-NULL, own_cert_and_key was successfully loaded into server_config
  */
-static struct s2n_cert_chain_and_key *server_cert_and_key = NULL;
+static struct s2n_cert_chain_and_key *own_cert_and_key = NULL;
 
-static char *server_cert = NULL;
-static uint32_t server_cert_len = 0;
-static char *server_key = NULL;
-static uint32_t server_key_len = 0;
+static char *own_cert = NULL;
+static uint32_t own_cert_len = 0;
+static char *own_key = NULL;
+static uint32_t own_key_len = 0;
 
 static bool is_own_cert_loaded = false;
 static bool is_own_cert_trusted_by_ca = false;
@@ -397,10 +397,10 @@ fail:
 static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
 				      char *key_pem, uint32_t key_pem_len)
 {
-	if (!server_cert_and_key) {
+	if (!own_cert_and_key) {
 		is_own_cert_loaded = true;
 		return _add_own_cert_to_config(server_config,
-					       &server_cert_and_key, cert_pem,
+					       &own_cert_and_key, cert_pem,
 					       cert_pem_len, key_pem,
 					       key_pem_len);
 	}
@@ -415,11 +415,11 @@ static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
 	if (s2n_conf_conn_cnt)
 		slurm_cond_wait(&s2n_conf_cnt_cond, &s2n_conf_cnt_lock);
 
-	if (server_cert_and_key &&
-	    s2n_cert_chain_and_key_free(server_cert_and_key)) {
+	if (own_cert_and_key &&
+	    s2n_cert_chain_and_key_free(own_cert_and_key)) {
 		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
 	}
-	server_cert_and_key = NULL;
+	own_cert_and_key = NULL;
 
 	/*
 	 * s2n_config_free_cert_chain_and_key not enough to reset the
@@ -434,7 +434,7 @@ static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
 		error("Could not create new server_config");
 		goto fail;
 	}
-	if (_add_own_cert_to_config(server_config, &server_cert_and_key,
+	if (_add_own_cert_to_config(server_config, &own_cert_and_key,
 				    cert_pem, cert_pem_len, key_pem,
 				    key_pem_len)) {
 		if (s2n_config_free(server_config)) {
@@ -586,17 +586,17 @@ cleanup:
 
 extern int tls_p_load_self_signed_cert(void)
 {
-	if (certgen_g_self_signed(&server_cert, &server_key) ||
-	    !server_cert || !server_key) {
+	if (certgen_g_self_signed(&own_cert, &own_key) || !own_cert ||
+	    !own_key) {
 		error("Failed to generate self signed certificate and private key");
 		return SLURM_ERROR;
 	}
 
-	server_cert_len = strlen(server_cert);
-	server_key_len = strlen(server_key);
+	own_cert_len = strlen(own_cert);
+	own_key_len = strlen(own_key);
 
-	return _add_cert_to_global_server(server_cert, server_cert_len,
-					  server_key, server_key_len);
+	return _add_cert_to_global_server(own_cert, own_cert_len,
+					  own_key, own_key_len);
 }
 
 
@@ -637,8 +637,8 @@ extern int fini(void)
 		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
 	}
 
-	if (server_cert_and_key &&
-	    (s2n_cert_chain_and_key_free(server_cert_and_key) != S2N_SUCCESS))
+	if (own_cert_and_key &&
+	    (s2n_cert_chain_and_key_free(own_cert_and_key) != S2N_SUCCESS))
 		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
 
 	if (s2n_config_free(server_config))
@@ -647,8 +647,8 @@ extern int fini(void)
 	if (s2n_cleanup_final())
 		on_s2n_error(NULL, s2n_cleanup_final);
 
-	xfree(server_cert);
-	xfree(server_key);
+	xfree(own_cert);
+	xfree(own_key);
 
 	return SLURM_SUCCESS;
 }
@@ -722,9 +722,9 @@ extern int tls_p_load_ca_cert(char *cert_file)
 
 extern char *tls_p_get_own_public_cert(void)
 {
-	log_flag(AUDIT_TLS, "Returning own public cert: \n%s", server_cert);
+	log_flag(AUDIT_TLS, "Returning own public cert: \n%s", own_cert);
 
-	return xstrdup(server_cert);
+	return xstrdup(own_cert);
 }
 
 extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
@@ -736,14 +736,14 @@ extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
 		goto cert_loaded;
 	}
 
-	xfree(server_cert);
-	xfree(server_key);
+	xfree(own_cert);
+	xfree(own_key);
 
 	/* Save certificate details for later */
-	server_cert = xstrdup(cert);
-	server_cert_len = cert_len;
-	server_key = xstrdup(key);
-	server_key_len = key_len;
+	own_cert = xstrdup(cert);
+	own_cert_len = cert_len;
+	own_key = xstrdup(key);
+	own_key_len = key_len;
 
 	if (_add_cert_to_global_server(cert, cert_len, key, key_len)) {
 		error("%s: Could not add certificate and private key to s2n_config.",
@@ -824,7 +824,7 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	{
 		s2n_conn_mode = S2N_SERVER;
 		if (!slurm_rwlock_tryrdlock(&s2n_conf_lock)) {
-			if (!server_cert_and_key) {
+			if (!own_cert_and_key) {
 				error("%s: No server certificate has been loaded yet, cannot create connection for fd:%d->%d",
 				      __func__, tls_conn_args->input_fd,
 				      tls_conn_args->output_fd);
@@ -845,8 +845,8 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 		log_flag(TLS, "%s: server_conf is being updated, creating new s2n_config for conn to fd:%d->%d",
 			 plugin_type, tls_conn_args->input_fd,
 			 tls_conn_args->output_fd);
-		if (!server_cert || !server_cert_len || !server_key ||
-		    !server_key_len) {
+		if (!own_cert || !own_cert_len || !own_key ||
+		    !own_key_len) {
 			error("%s: Global server s2n_config is busy being updated and there's no saved certificate/key to create a temporary server s2n_config for conn to fd:%d->%d",
 			      __func__, tls_conn_args->input_fd,
 			      tls_conn_args->output_fd);
@@ -858,10 +858,9 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 			      tls_conn_args->output_fd);
 			goto fail;
 		}
-		if (_add_own_cert_to_config(conn->s2n_config,
-					    &conn->cert_and_key, server_cert,
-					    server_cert_len, server_key,
-					    server_key_len)) {
+		if (_add_own_cert_to_config(
+			    conn->s2n_config, &conn->cert_and_key, own_cert,
+			    own_cert_len, own_key, own_key_len)) {
 			error("Could not add certificate to server config for fd:%d->%d",
 			      tls_conn_args->input_fd,
 			      tls_conn_args->output_fd);
