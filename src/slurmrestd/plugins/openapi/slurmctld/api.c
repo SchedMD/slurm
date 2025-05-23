@@ -483,6 +483,16 @@ const openapi_path_binding_t openapi_paths[] = {
 				.parameters = DATA_PARSER_OPENAPI_RESERVATION_PARAM,
 				.query = DATA_PARSER_OPENAPI_RESERVATION_QUERY,
 			},
+			{
+				.method = HTTP_REQUEST_DELETE,
+				.tags = tags,
+				.summary = "delete a reservation",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "reservation delete request result",
+				},
+				.parameters = DATA_PARSER_OPENAPI_RESERVATION_PARAM,
+			},
 			{0}
 		},
 		.flags = OP_FLAGS,
@@ -503,17 +513,6 @@ const openapi_path_binding_t openapi_paths[] = {
 					.type = DATA_PARSER_RESERVATION_DESC_MSG,
 					.description = "reservation description",
 				},
-				.parameters = DATA_PARSER_OPENAPI_RESERVATION_PARAM,
-			},
-			{
-				.method = HTTP_REQUEST_DELETE,
-				.tags = tags,
-				.summary = "delete a reservation",
-				.response = {
-					.type = DATA_PARSER_OPENAPI_RESP,
-					.description = "reservation delete request result",
-				},
-				.parameters = DATA_PARSER_OPENAPI_RESERVATION_PARAM,
 			},
 			{0}
 		},
