@@ -465,7 +465,9 @@ static xahash_foreach_control_t _foreach_cache_job(void *entry, void *state_ptr,
 	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
 	xassert(js->magic == MAGIC_JOB_STATE_CACHED);
 
-	(void) _add_cache_job(args, js);
+	if (_add_cache_job(args, js))
+		return XAHASH_FOREACH_FAIL;
+
 	return XAHASH_FOREACH_CONT;
 }
 
