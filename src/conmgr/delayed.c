@@ -80,11 +80,18 @@ static void _release_work(void *x)
 	handle_work(true, work);
 }
 
+static int _cancel_work(void *x, void *key)
+{
+	work_t *work = x;
+	xassert(work->magic == MAGIC_WORK);
+
+	work->status = CONMGR_WORK_STATUS_CANCELLED;
+	return 1;
+}
+
 /* mgr.mutex must be locked when calling this function */
 extern void cancel_delayed_work(void)
 {
-	work_t *work;
-
 	if (!mgr.delayed_work || list_is_empty(mgr.delayed_work))
 		return;
 
@@ -92,10 +99,7 @@ extern void cancel_delayed_work(void)
 		 __func__, list_count(mgr.delayed_work));
 
 	/* run everything immediately but with cancelled status */
-	while ((work = list_pop(mgr.delayed_work))) {
-		work->status = CONMGR_WORK_STATUS_CANCELLED;
-		handle_work(true, work);
-	}
+	(void) list_delete_all(mgr.delayed_work, _cancel_work, NULL);
 }
 
 static list_t *_inspect(void)
