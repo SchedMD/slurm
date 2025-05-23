@@ -131,7 +131,7 @@ extern int conn_g_load_self_signed_cert(void);
 /*
  * Returns true if own certificate has ever been loaded
  */
-extern bool tls_g_own_cert_loaded(void);
+extern bool conn_g_own_cert_loaded(void);
 
 /*
  * Load CA cert into trust store

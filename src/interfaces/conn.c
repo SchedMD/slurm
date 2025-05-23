@@ -234,7 +234,7 @@ extern int conn_g_load_self_signed_cert(void)
 	return (*(ops.load_self_signed_cert))();
 }
 
-extern bool tls_g_own_cert_loaded(void)
+extern bool conn_g_own_cert_loaded(void)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.own_cert_loaded))();
