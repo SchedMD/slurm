@@ -51,11 +51,6 @@
 #include "src/interfaces/conn.h"
 
 typedef struct {
-	int index;
-	char data[];
-} tls_wrapper_t;
-
-typedef struct {
 	uint32_t (*plugin_id);
 	int (*load_ca_cert)(char *cert_file);
 	char *(*get_own_public_cert)(void);
