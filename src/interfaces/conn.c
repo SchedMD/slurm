@@ -285,7 +285,7 @@ extern ssize_t conn_g_recv(void *conn, void *buf, size_t n)
 	return (*(ops.recv))(conn, buf, n);
 }
 
-extern timespec_t tls_g_get_delay(void *conn)
+extern timespec_t conn_g_get_delay(void *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.get_delay))(conn);

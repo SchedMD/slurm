@@ -69,8 +69,8 @@ typedef struct {
 	/*
 	 * False: Enable any library based blinding delays
 	 * True: Disable any library based blinding delays which caller will
-	 *	need to be honored via call to tls_g_get_delay() after any
-	 *	tls_g_*() failure
+	 *	need to be honored via call to conn_g_get_delay() after any
+	 *	conn_g_*() failure
 	 */
 	bool defer_blinding;
 	tls_conn_callbacks_t callbacks;
@@ -199,11 +199,11 @@ extern int conn_g_set_callbacks(void *conn, tls_conn_callbacks_t *callbacks);
 extern void tls_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown);
 
 /*
- * Get absolute time that next tls_g_*() should be delayed until after any
+ * Get absolute time that next conn_g_*() should be delayed until after any
  * failure
  * NOTE: returned timespec may be {0,0} indicating no delay required
  */
-extern timespec_t tls_g_get_delay(void *conn);
+extern timespec_t conn_g_get_delay(void *conn);
 
 extern ssize_t conn_g_send(void *conn, const void *buf, size_t n);
 extern ssize_t conn_g_sendv(void *conn, const struct iovec *bufs, int count);

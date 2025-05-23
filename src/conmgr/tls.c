@@ -123,7 +123,7 @@ static void _wait_close(bool locked, conmgr_fd_t *con)
 	con_unset_flag(con, FLAG_CAN_READ);
 
 	xassert(con->tls);
-	delay = tls_g_get_delay(con->tls);
+	delay = conn_g_get_delay(con->tls);
 
 	if (delay.tv_sec) {
 		log_flag(CONMGR, "%s: [%s] deferring close",
