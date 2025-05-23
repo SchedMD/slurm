@@ -241,7 +241,7 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 	local = xmalloc(sizeof(*local));
 	remote = xmalloc(sizeof(*remote));
 
-	*remote = tls_g_get_conn_fd(forward_msg->tls_conn);
+	*remote = conn_g_get_fd(forward_msg->tls_conn);
 	net_set_nodelay(*remote, true, NULL);
 
 	if (msg->port) {

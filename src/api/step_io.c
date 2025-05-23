@@ -947,7 +947,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 			return;
 		}
 
-		sd = tls_g_get_conn_fd(tls_conn);
+		sd = conn_g_get_fd(tls_conn);
 		debug3("Accepted IO connection: ip=%pA sd=%d", &addr, sd);
 
 		/*

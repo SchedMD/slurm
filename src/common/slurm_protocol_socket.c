@@ -160,7 +160,7 @@ static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
 	char temp[2];
 
 	if (tls_conn)
-		fd = tls_g_get_conn_fd(tls_conn);
+		fd = conn_g_get_fd(tls_conn);
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
@@ -427,7 +427,7 @@ extern int slurm_recv_timeout(void *tls_conn, char *buffer, size_t size,
 	struct timeval tstart;
 	int timeleft = timeout;
 
-	fd = tls_g_get_conn_fd(tls_conn);
+	fd = conn_g_get_fd(tls_conn);
 
 	ufds.fd     = fd;
 	ufds.events = POLLIN;

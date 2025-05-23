@@ -160,7 +160,7 @@ static void *_pty_thread(void *arg)
 	cfmakeraw(&term);
 	tcsetattr(job->input_fd, TCSANOW, &term);
 
-	fd = tls_g_get_conn_fd(tls_conn);
+	fd = conn_g_get_fd(tls_conn);
 
 	net_set_keep_alive(fd);
 	while (job->state <= SRUN_JOB_RUNNING) {

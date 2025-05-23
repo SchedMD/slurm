@@ -297,7 +297,7 @@ extern int tls_g_negotiate_conn(void *conn)
 	return (*(ops.negotiate))(conn);
 }
 
-extern int tls_g_get_conn_fd(void *conn)
+extern int conn_g_get_fd(void *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.get_conn_fd))(conn);

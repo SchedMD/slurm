@@ -197,7 +197,7 @@ int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 		return SLURM_SUCCESS;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
+	fd = conn_g_get_fd(tls_conn);
 	net_set_keep_alive(fd);
 	fd_set_blocking(fd);
 

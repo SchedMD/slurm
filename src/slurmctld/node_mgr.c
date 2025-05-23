@@ -146,7 +146,7 @@ static char *_get_msg_hostname(slurm_msg_t *msg)
 	char *name = NULL;
 
 	if (addr->ss_family == AF_UNSPEC) {
-		int fd = tls_g_get_conn_fd(msg->tls_conn);
+		int fd = conn_g_get_fd(msg->tls_conn);
 		(void) slurm_get_peer_addr(fd, addr);
 	}
 	if (addr->ss_family != AF_UNSPEC) {

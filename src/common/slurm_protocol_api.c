@@ -1039,7 +1039,7 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout)
 		return SLURM_SUCCESS;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
+	fd = conn_g_get_fd(tls_conn);
 
 	msg->tls_conn = tls_conn;
 
@@ -1118,7 +1118,7 @@ extern list_t *slurm_receive_msgs(void *tls_conn, int steps, int timeout)
 	int orig_timeout = timeout;
 	char *peer = NULL;
 
-	fd = tls_g_get_conn_fd(tls_conn);
+	fd = conn_g_get_fd(tls_conn);
 
 	if (slurm_conf.debug_flags & (DEBUG_FLAG_NET | DEBUG_FLAG_NET_RAW)) {
 		/*
@@ -1302,7 +1302,7 @@ extern list_t *slurm_receive_resp_msgs(void *tls_conn, int steps, int timeout)
 	int orig_timeout = timeout;
 	char *peer = NULL;
 
-	fd = tls_g_get_conn_fd(tls_conn);
+	fd = conn_g_get_fd(tls_conn);
 
 	if (slurm_conf.debug_flags & (DEBUG_FLAG_NET | DEBUG_FLAG_NET_RAW)) {
 		/*
@@ -1756,7 +1756,7 @@ extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 		persist_msg_t persist_msg;
 		buf_t *buffer;
 		char *peer = NULL;
-		int persist_fd = tls_g_get_conn_fd(msg->conn->tls_conn);
+		int persist_fd = conn_g_get_fd(msg->conn->tls_conn);
 
 		log_flag(NET, "Sending persist_msg_t %s to %pA on fd %d",
 			 rpc_num2string(msg->msg_type), &msg->address,
@@ -1792,7 +1792,7 @@ extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 		return rc;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
+	fd = conn_g_get_fd(tls_conn);
 
 	log_flag(NET, "Sending message %s to %pA on fd %d",
 		 rpc_num2string(msg->msg_type), &msg->address, fd);
@@ -2026,8 +2026,8 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	rc = errno;
 	log_flag(NET, "%s: [fd:%d] write response RPC %s failed: %s",
 		 __func__, (source_msg->conn ?
-			    tls_g_get_conn_fd(source_msg->conn->tls_conn) :
-			    tls_g_get_conn_fd(source_msg->tls_conn)),
+			    conn_g_get_fd(source_msg->conn->tls_conn) :
+			    conn_g_get_fd(source_msg->tls_conn)),
 		 rpc_num2string(msg_type), slurm_strerror(rc));
 
 	return rc;
@@ -2420,7 +2420,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 			 __func__, &req->address);
 		return SLURM_ERROR;
 	}
-	fd = tls_g_get_conn_fd(tls_conn);
+	fd = conn_g_get_fd(tls_conn);
 
 	if ((rc = slurm_send_node_msg(tls_conn, req)) < 0) {
 		rc = SLURM_ERROR;

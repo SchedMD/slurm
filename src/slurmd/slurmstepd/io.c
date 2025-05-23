@@ -834,7 +834,7 @@ static void *_window_manager(void *arg)
 	struct pollfd ufds;
 	char buf[4];
 
-	ufds.fd = tls_g_get_conn_fd(win_info->tls_conn);
+	ufds.fd = conn_g_get_fd(win_info->tls_conn);
 	ufds.events = POLLIN;
 
 	while (1) {
@@ -1677,7 +1677,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *step,
 		return SLURM_ERROR;
 	}
 
-	sock = tls_g_get_conn_fd(tls_conn);
+	sock = conn_g_get_fd(tls_conn);
 
 	fd_set_blocking(sock);  /* just in case... */
 	_send_io_init_msg(sock, tls_conn, srun, step, true);

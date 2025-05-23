@@ -120,7 +120,7 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 		goto shutdown;
 	}
 
-	*remote = tls_g_get_conn_fd(tls_conn);
+	*remote = conn_g_get_fd(tls_conn);
 
 	rpc.job_id = job_id;
 	rpc.flags = 0;

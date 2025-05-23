@@ -161,7 +161,7 @@ extern int tls_g_negotiate_conn(void *conn);
  * Needed for poll() and similar status monitoring.
  * Assumes both read and write file descriptor are the same.
  */
-extern int tls_g_get_conn_fd(void *conn);
+extern int conn_g_get_fd(void *conn);
 
 /*
  * Set read/write fd's on TLS connection

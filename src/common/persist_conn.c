@@ -112,7 +112,7 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 	if (conn_g_peek(persist_conn->tls_conn))
 		return true;
 
-	ufds.fd = tls_g_get_conn_fd(persist_conn->tls_conn);
+	ufds.fd = conn_g_get_fd(persist_conn->tls_conn);
 	ufds.events = POLLIN;
 	while (!(*persist_conn->shutdown)) {
 		if (persist_conn->timeout) {
@@ -592,7 +592,7 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 	 */
 	tls_g_set_graceful_shutdown(persist_conn->tls_conn, true);
 
-	fd = tls_g_get_conn_fd(persist_conn->tls_conn);
+	fd = conn_g_get_fd(persist_conn->tls_conn);
 
 	fd_set_nonblocking(fd);
 	net_set_keep_alive(fd);
@@ -775,7 +775,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 					 slurmdbd_msg_type_2_str(
 						 persist_msg->msg_type, true));
 		error("CONN:%u %s",
-		      tls_g_get_conn_fd(persist_conn->tls_conn), comment);
+		      conn_g_get_fd(persist_conn->tls_conn), comment);
 		*out_buffer = slurm_persist_make_rc_msg(
 			persist_conn, rc, comment, persist_msg->msg_type);
 		xfree(comment);
@@ -789,7 +789,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 	if (first && !init_msg) {
 		comment = "Initial RPC not REQUEST_PERSIST_INIT";
 		error("CONN:%u %s type (%d)",
-		      tls_g_get_conn_fd(persist_conn->tls_conn), comment,
+		      conn_g_get_fd(persist_conn->tls_conn), comment,
 		      persist_msg->msg_type);
 		rc = EINVAL;
 		*out_buffer = slurm_persist_make_rc_msg(
@@ -798,7 +798,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 	} else if (!first && init_msg) {
 		comment = "REQUEST_PERSIST_INIT sent after connection established";
 		error("CONN:%u %s",
-		      tls_g_get_conn_fd(persist_conn->tls_conn),
+		      conn_g_get_fd(persist_conn->tls_conn),
 		      comment);
 		rc = EINVAL;
 		*out_buffer =
@@ -834,7 +834,7 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 			 persist_conn->rem_port);
 		return -1;
 	}
-	fd = tls_g_get_conn_fd(persist_conn->tls_conn);
+	fd = conn_g_get_fd(persist_conn->tls_conn);
 
 	if (*persist_conn->shutdown) {
 		log_flag(NET, "%s: called on shutdown fd:%d to host %s:%hu",
@@ -992,7 +992,7 @@ static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 
 	if (!_conn_readable(persist_conn)) {
 		log_flag(NET, "%s: Unable to read from file descriptor (%d)",
-			 __func__, tls_g_get_conn_fd(persist_conn->tls_conn));
+			 __func__, conn_g_get_fd(persist_conn->tls_conn));
 		goto endit;
 	}
 
@@ -1027,7 +1027,7 @@ static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 		if (msg_read <= 0) {
 			error("%s: read of fd %u failed: %m",
 			      __func__,
-			      tls_g_get_conn_fd(persist_conn->tls_conn));
+			      conn_g_get_fd(persist_conn->tls_conn));
 			break;
 		}
 		offset += msg_read;
