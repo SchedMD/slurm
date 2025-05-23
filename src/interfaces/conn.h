@@ -126,7 +126,7 @@ extern int conn_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
  * This is needed for client commands that open listening sockets.
  * RET SLURM_SUCCESS or error
  */
-extern int tls_g_load_self_signed_cert(void);
+extern int conn_g_load_self_signed_cert(void);
 
 /*
  * Returns true if own certificate has ever been loaded

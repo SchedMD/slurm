@@ -178,7 +178,7 @@ extern int conn_g_init(void)
 		}
 
 		/* Load self-signed certificate in client commands */
-		if (!running_in_daemon() && tls_g_load_self_signed_cert()) {
+		if (!running_in_daemon() && conn_g_load_self_signed_cert()) {
 			error("Could not load self-signed TLS certificate");
 			rc = SLURM_ERROR;
 			goto done;
@@ -228,7 +228,7 @@ extern int conn_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
 	return (*(ops.load_own_cert))(cert, cert_len, key, key_len);
 }
 
-extern int tls_g_load_self_signed_cert(void)
+extern int conn_g_load_self_signed_cert(void)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.load_self_signed_cert))();
