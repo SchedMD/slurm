@@ -55,6 +55,13 @@ typedef struct {
 	timespec_t time;
 } foreach_delayed_work_t;
 
+#define MAGIC_FOREACH_CANCEL_WORK 0xA238483A
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_CANCEL_WORK */
+	bool connections_only;
+} foreach_cancel_work_t;
+
 /* timer to trigger SIGALRM */
 static timer_t timer = {0};
 /* Mutex to protect timer */
@@ -83,23 +90,34 @@ static void _release_work(void *x)
 static int _cancel_work(void *x, void *key)
 {
 	work_t *work = x;
+	foreach_cancel_work_t *args = key;
+
 	xassert(work->magic == MAGIC_WORK);
+	xassert(args->magic == MAGIC_FOREACH_CANCEL_WORK);
+
+	if (args->connections_only && !work->ref)
+		return 0;
 
 	work->status = CONMGR_WORK_STATUS_CANCELLED;
 	return 1;
 }
 
-/* mgr.mutex must be locked when calling this function */
-extern void cancel_delayed_work(void)
+extern void cancel_delayed_work(bool connections_only)
 {
+	foreach_cancel_work_t args = {
+		.magic = MAGIC_FOREACH_CANCEL_WORK,
+		.connections_only = connections_only,
+	};
+
 	if (!mgr.delayed_work || list_is_empty(mgr.delayed_work))
 		return;
 
-	log_flag(CONMGR, "%s: cancelling %d delayed work",
-		 __func__, list_count(mgr.delayed_work));
+	log_flag(CONMGR, "%s: cancelling%s %d delayed work",
+		 __func__, (connections_only ? " connection" : ""),
+		 list_count(mgr.delayed_work));
 
 	/* run everything immediately but with cancelled status */
-	(void) list_delete_all(mgr.delayed_work, _cancel_work, NULL);
+	(void) list_delete_all(mgr.delayed_work, _cancel_work, &args);
 }
 
 static void _inspect(void)

@@ -1629,7 +1629,7 @@ static bool _watch_loop(void)
 {
 	if (mgr.shutdown_requested) {
 		signal_mgr_stop();
-		cancel_delayed_work();
+		cancel_delayed_work(false);
 		close_all_connections();
 	}
 
