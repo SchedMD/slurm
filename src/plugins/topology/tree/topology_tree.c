@@ -733,7 +733,7 @@ void _print_topo_record(topoinfo_switch_t * topo_ptr, char **out)
 }
 
 extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
-				     char **out)
+				     char *unit, char **out)
 {
 	int i, match, match_cnt = 0;;
 	topoinfo_tree_t *topoinfo = topoinfo_ptr;

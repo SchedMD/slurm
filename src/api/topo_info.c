@@ -150,7 +150,7 @@ extern void slurm_print_topo_info_msg(
 
 	topology_g_init();
 
-	topology_g_topology_print(topo_info_msg_ptr->topo_info, node_list,
+	topology_g_topology_print(topo_info_msg_ptr->topo_info, node_list, NULL,
 				  &out_str);
 	if (out_str)
 		fprintf(out, "%s", out_str);

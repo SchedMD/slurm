@@ -77,8 +77,8 @@ typedef struct slurm_topo_ops {
 	int (*get)(topology_data_t type, void *data, void *tctx);
 	int (*topoinfo_pack) (void *topoinfo_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
-	int (*topoinfo_print) (void *topoinfo_ptr, char *nodes_list,
-			       char **out);
+	int (*topoinfo_print)(void *topoinfo_ptr, char *nodes_list, char *unit,
+			      char **out);
 	int (*topoinfo_unpack) (void **topoinfo_pptr, buf_t *buffer,
 				uint16_t protocol_version);
 	uint32_t (*get_fragmentation)(bitstr_t *node_mask, void *tctx);
@@ -627,7 +627,7 @@ extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 }
 
 extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
-				     char *nodes_list, char **out)
+				     char *nodes_list, char *unit, char **out)
 {
 	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -636,7 +636,8 @@ extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
 		return SLURM_ERROR;
 
 	return (*(ops[tctx[plugin_inx].idx].topoinfo_print))(topoinfo->data,
-							     nodes_list, out);
+							     nodes_list, unit,
+							     out);
 }
 
 extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,

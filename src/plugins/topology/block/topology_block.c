@@ -450,7 +450,7 @@ extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
 }
 
 extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
-				     char **out)
+				     char *unit, char **out)
 {
 	int i, match, match_cnt = 0;;
 	topoinfo_block_t *topoinfo = topoinfo_ptr;
