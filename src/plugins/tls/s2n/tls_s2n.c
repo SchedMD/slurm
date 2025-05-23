@@ -270,7 +270,7 @@ static uint8_t _verify_hostname(const char *host_name, size_t host_name_len,
 	return 1;
 }
 
-static struct s2n_config *_create_config_common(void)
+static struct s2n_config *_create_config(void)
 {
 	struct s2n_config *new_conf = NULL;
 	char *security_policy = NULL;
@@ -314,21 +314,6 @@ static struct s2n_config *_create_config_common(void)
 	}
 
 	return new_conf;
-}
-
-static struct s2n_config *_create_client_config(void)
-{
-	struct s2n_config *new_conf = NULL;
-
-	if (!(new_conf = _create_config_common()))
-		return NULL;
-
-	return new_conf;
-}
-
-static struct s2n_config *_create_server_config(void)
-{
-	return _create_config_common();
 }
 
 static int _add_ca_cert_to_client(struct s2n_config *config, char* cert_file)
@@ -443,7 +428,7 @@ static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
 		on_s2n_error(NULL, s2n_config_free);
 	}
 
-	if (!(server_config = _create_server_config())) {
+	if (!(server_config = _create_config())) {
 		error("Could not create new server_config");
 		goto fail;
 	}
@@ -625,13 +610,13 @@ extern int init(void)
 		s2n_stack_traces_enabled_set(true);
 
 	/* Create client s2n_config */
-	if (!(client_config = _create_client_config())) {
+	if (!(client_config = _create_config())) {
 		error("Could not create client configuration for s2n");
 		return errno;
 	}
 
 	/* Create server s2n_config */
-	if (!(server_config = _create_server_config())) {
+	if (!(server_config = _create_config())) {
 		error("Could not create server configuration for s2n");
 		return errno;
 	}
@@ -840,7 +825,7 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 			      tls_conn_args->output_fd);
 			goto fail;
 		}
-		if (!(conn->s2n_config = _create_server_config())) {
+		if (!(conn->s2n_config = _create_config())) {
 			error("Could not create server config for fd:%d->%d",
 			      tls_conn_args->input_fd,
 			      tls_conn_args->output_fd);
@@ -870,7 +855,7 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 			 plugin_type, tls_conn_args->cert);
 
 		/* Use new config with only "cert" loaded in trust store */
-		if (!(conn->s2n_config = _create_client_config())) {
+		if (!(conn->s2n_config = _create_config())) {
 			error("Failed to create new config for connection");
 			goto fail;
 		}
