@@ -182,8 +182,10 @@ extern int gpu_plugin_fini(void)
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (ext_lib_handle)
+	if (ext_lib_handle) {
 		dlclose(ext_lib_handle);
+		ext_lib_handle = NULL;
+	}
 
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
