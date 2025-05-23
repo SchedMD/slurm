@@ -419,7 +419,7 @@ static void _dump_job_state_locked(job_state_args_t *args,
 	}
 }
 
-static void _add_cache_job(job_state_args_t *args, const job_state_cached_t *js)
+static int _add_cache_job(job_state_args_t *args, const job_state_cached_t *js)
 {
 	job_state_response_job_t *rjob;
 
@@ -429,11 +429,11 @@ static void _add_cache_job(job_state_args_t *args, const job_state_cached_t *js)
 	rjob = _append_job_state(args);
 
 	if (args->count_only)
-		return;
+		return SLURM_SUCCESS;
 
 	if (!rjob) {
 		xassert(rjob);
-		return;
+		return ERANGE;
 	}
 
 	if (_is_debug()) {
@@ -459,6 +459,8 @@ static void _add_cache_job(job_state_args_t *args, const job_state_cached_t *js)
 		rjob->array_task_id_bitmap = bit_copy(js->task_id_bitmap);
 	rjob->het_job_id = js->het_job_id;
 	rjob->state = js->job_state;
+
+	return SLURM_SUCCESS;
 }
 
 static xahash_foreach_control_t _foreach_cache_job(void *entry, void *state_ptr,
@@ -472,7 +474,7 @@ static xahash_foreach_control_t _foreach_cache_job(void *entry, void *state_ptr,
 	xassert(args->magic == MAGIC_JOB_STATE_ARGS);
 	xassert(js->magic == MAGIC_JOB_STATE_CACHED);
 
-	_add_cache_job(args, js);
+	(void) _add_cache_job(args, js);
 	return XAHASH_FOREACH_CONT;
 }
 
@@ -490,7 +492,7 @@ static void _find_job_state_cached_by_job_id(job_state_args_t *args,
 
 	LOG("[%pJ] Resolved from JobId=%u", JOB_STATE_MIMIC_RECORD(js), job_id);
 
-	_add_cache_job(args, js);
+	(void) _add_cache_job(args, js);
 
 	if (!resolve) {
 		LOG("[%pJ] Not fully resolving job", JOB_STATE_MIMIC_RECORD(js));
@@ -521,7 +523,7 @@ static void _find_job_state_cached_by_job_id(job_state_args_t *args,
 				    JOB_STATE_MIMIC_RECORD(js),
 				    JOB_STATE_MIMIC_RECORD(next),
 				    ARRAY_JOB_STATE_MIMIC_RECORD(ajs));
-				_add_cache_job(args, next);
+				(void) _add_cache_job(args, next);
 			} else {
 				fatal_abort("Unable to resolve next_job_id");
 			}
@@ -543,7 +545,7 @@ static void _find_job_state_cached_by_job_id(job_state_args_t *args,
 				LOG("[%pJ] Resolved HetJobId=%u+%u to %pJ",
 				    JOB_STATE_MIMIC_RECORD(js), job_id, i,
 				    JOB_STATE_MIMIC_RECORD(hjs));
-				_add_cache_job(args, hjs);
+				(void) _add_cache_job(args, hjs);
 			} else {
 				/*
 				 * Next job not found or not part of the HetJob
