@@ -179,8 +179,7 @@ static void _read_keys_file(char *key_file)
 	buf_t *jwks = NULL;
 	data_t *keys = NULL;
 
-	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
-		fatal("%s: serializer_g_init() failed", __func__);
+	serializer_required(MIME_TYPE_JSON);
 
 	debug("loading keys file `%s`", key_file);
 

@@ -787,11 +787,7 @@ extern int setup_container(stepd_step_rec_t *step)
 		return ESLURM_CONTAINER_NOT_CONFIGURED;
 	}
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
-		error("Unable to load JSON plugin: %s",
-		      slurm_strerror(rc));
-		goto error;
-	}
+	serializer_required(MIME_TYPE_JSON);
 
 	if (!oci_conf->ignore_config_json) {
 		if ((rc = _load_config(step)))

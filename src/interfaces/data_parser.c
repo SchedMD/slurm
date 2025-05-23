@@ -277,8 +277,7 @@ static int _load_plugins(plugin_param_t *pparams, plugrack_foreach_t listf,
 
 	slurm_mutex_lock(&init_mutex);
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)))
-		fatal("JSON plugin loading failed: %s", slurm_strerror(rc));
+	serializer_required(MIME_TYPE_JSON);
 
 	xassert(sizeof(parse_funcs_t) ==
 		(sizeof(void *) * ARRAY_SIZE(parse_syms)));

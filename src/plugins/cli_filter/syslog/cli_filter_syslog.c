@@ -115,15 +115,10 @@ static char *_retrieve_data(int key)
  */
 extern int init(void)
 {
-	int rc;
 	stored_data = xcalloc(24, sizeof(char *));
 	stored_sz = 24;
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
-		error("%s: unable to load JSON serializer: %s", __func__,
-		      slurm_strerror(rc));
-		return rc;
-	}
+	serializer_required(MIME_TYPE_JSON);
 
 	return SLURM_SUCCESS;
 }

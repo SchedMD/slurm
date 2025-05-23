@@ -112,8 +112,7 @@ extern int init(void)
 		return SLURM_SUCCESS;
 	init_run = true;
 
-	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
-		fatal("%s: serializer_g_init() failed", __func__);
+	serializer_required(MIME_TYPE_JSON);
 
 	internal = run_in_daemon(IS_SACKD | IS_SLURMD | IS_SLURMCTLD |
 				 IS_SLURMDBD);

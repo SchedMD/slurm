@@ -127,11 +127,7 @@ int init(void)
 	if ((rc = slurm_lua_init()) != SLURM_SUCCESS)
 		return rc;
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
-		error("%s: unable to load JSON serializer: %s", __func__,
-		      slurm_strerror(rc));
-		return rc;
-	}
+	serializer_required(MIME_TYPE_JSON);
 
 	stored_data = xcalloc(24, sizeof(char *));
 	stored_sz = 24;

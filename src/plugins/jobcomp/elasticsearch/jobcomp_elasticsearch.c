@@ -333,13 +333,7 @@ static void _jobslist_del(void *x)
  */
 extern int init(void)
 {
-	int rc;
-
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
-		error("%s: unable to load JSON serializer: %s",
-		      __func__, slurm_strerror(rc));
-		return rc;
-	}
+	serializer_required(MIME_TYPE_JSON);
 
 	jobcomp_common_conf_init();
 	jobslist = list_create(_jobslist_del);

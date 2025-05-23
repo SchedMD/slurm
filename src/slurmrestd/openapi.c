@@ -929,9 +929,7 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 	paths = list_create(_list_delete_path_t);
 
 	/* must have JSON plugin to parse the openapi.json */
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)))
-		fatal("Plugin serializer/json failed to load: %s",
-		      slurm_strerror(rc));
+	serializer_required(MIME_TYPE_JSON);
 
 	if ((rc = _bind_paths(openapi_paths, NULL)))
 		fatal("Unable to bind openapi specification paths: %s",
