@@ -316,6 +316,21 @@ static struct s2n_config *_create_config(void)
 		return NULL;
 	}
 
+	/*
+	 * Per libs2n docs:
+	 *   Server behavior:
+	 *   - Optional: Request the client's certificate and validate it. If no
+	 *     certificate is received then no validation is performed.
+	 *   Client behavior:
+	 *   - Optional (default): Sends the client certificate if the server
+	 *     requests client authentication. No certificate is sent if the
+	 *     application hasn't provided a certificate.
+	 */
+	if (s2n_config_set_client_auth_type(new_conf, S2N_CERT_AUTH_OPTIONAL)) {
+		on_s2n_error(NULL, s2n_config_set_client_auth_type);
+		return NULL;
+	}
+
 	return new_conf;
 }
 
