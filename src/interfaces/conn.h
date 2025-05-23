@@ -112,6 +112,8 @@ extern char *conn_g_get_own_public_cert(void);
  * relevant to Slurm daemons that have statically configured certificates.
  * If 'cert' is NULL, all other arguments will be ignored.
  *
+ * Note that this certificate must be trusted by the configured CA trust store.
+ *
  * IN cert - certificate PEM, or NULL if loading from file.
  * IN cert_len - length of cert
  * IN key - key PEM
