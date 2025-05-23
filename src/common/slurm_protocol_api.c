@@ -704,7 +704,7 @@ extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert)
 {
 	int fd;
 	void *tls_conn = NULL;
-	tls_conn_args_t tls_args = {
+	conn_args_t tls_args = {
 		.mode = TLS_CONN_CLIENT,
 		.cert = tls_cert,
 	};

@@ -801,7 +801,7 @@ static void _server_config_dec(tls_conn_t *conn)
 	slurm_mutex_unlock(&server_conf_cnt_lock);
 }
 
-extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
+extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn;
 	s2n_mode s2n_conn_mode;

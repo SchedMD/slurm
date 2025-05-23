@@ -85,7 +85,7 @@ typedef struct {
 	 * certificate is not signed by a CA in our trust store
 	 */
 	char *cert;
-} tls_conn_args_t;
+} conn_args_t;
 
 extern char *conn_mode_to_str(conn_mode_t mode);
 
@@ -143,10 +143,10 @@ extern int conn_g_load_ca_cert(char *cert_file);
 
 /*
  * Create new TLS connection
- * IN tls_conn_args - ptr to tls_conn_args_t
+ * IN tls_conn_args - ptr to conn_args_t
  * RET ptr to TLS state
  */
-extern void *conn_g_create(const tls_conn_args_t *tls_conn_args);
+extern void *conn_g_create(const conn_args_t *tls_conn_args);
 extern void conn_g_destroy(void *conn, bool close_fds);
 
 /*

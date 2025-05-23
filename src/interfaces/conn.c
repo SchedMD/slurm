@@ -58,7 +58,7 @@ typedef struct {
 			     uint32_t key_len);
 	int (*load_self_signed_cert)(void);
 	bool (*own_cert_loaded)(void);
-	void *(*create_conn)(const tls_conn_args_t *tls_conn_args);
+	void *(*create_conn)(const conn_args_t *tls_conn_args);
 	void (*destroy_conn)(void *conn, bool close_fds);
 	ssize_t (*send)(void *conn, const void *buf, size_t n);
 	ssize_t (*sendv)(void *conn, const struct iovec *bufs, int count);
@@ -240,7 +240,7 @@ extern bool conn_g_own_cert_loaded(void)
 	return (*(ops.own_cert_loaded))();
 }
 
-extern void *conn_g_create(const tls_conn_args_t *tls_conn_args)
+extern void *conn_g_create(const conn_args_t *tls_conn_args)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 

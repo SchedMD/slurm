@@ -95,7 +95,7 @@ extern bool tls_p_own_cert_loaded(void)
 	return true;
 }
 
-extern tls_conn_t *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
+extern tls_conn_t *tls_p_create_conn(const conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn = xmalloc(sizeof(*conn));
 

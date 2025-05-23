@@ -413,7 +413,7 @@ static void _negotiate(conmgr_fd_t *con, void *tls)
 extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
-	tls_conn_args_t tls_args = {
+	conn_args_t tls_args = {
 		.input_fd = -1,
 		.output_fd = -1,
 		.defer_blinding = true,

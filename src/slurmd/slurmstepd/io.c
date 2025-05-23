@@ -1736,7 +1736,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
 	}
 
 	if (tls_enabled()) {
-		tls_conn_args_t tls_args = {
+		conn_args_t tls_args = {
 			.input_fd = sock,
 			.output_fd = sock,
 			.mode = TLS_CONN_CLIENT,

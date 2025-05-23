@@ -212,7 +212,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 	bool first = true, fini = false;
 	buf_t *buffer = NULL;
 	int rc = SLURM_SUCCESS;
-	tls_conn_args_t tls_args = {
+	conn_args_t tls_args = {
 		.input_fd = fd,
 		.output_fd = fd,
 		.mode = TLS_CONN_SERVER,

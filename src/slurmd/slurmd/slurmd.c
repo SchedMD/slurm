@@ -726,7 +726,7 @@ static void *_service_msg(void *arg)
 	if (args->tls_conn) {
 		msg->tls_conn = args->tls_conn;
 	} else {
-		tls_conn_args_t tls_args = {
+		conn_args_t tls_args = {
 			.input_fd = args->fd,
 			.output_fd = args->fd,
 		};
