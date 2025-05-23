@@ -1024,7 +1024,8 @@ static void *_thread_per_group_rpc(void *args)
 			}
 		}
 		//info("sending %u to %s", msg_type, thread_ptr->nodename);
-		if (msg_type == SRUN_JOB_COMPLETE) {
+		if ((msg_type == SRUN_JOB_COMPLETE) ||
+		    (msg_type == SRUN_STEP_SIGNAL)) {
 			/*
 			 * The srun runs as a single thread, while the kernel
 			 * listen() may be queuing messages for further
