@@ -20,7 +20,6 @@
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/jobcomp.h"
 #include "src/interfaces/node_features.h"
-#include "src/interfaces/serializer.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
 
@@ -459,7 +458,6 @@ int main(int argc, char *argv[])
 	select_g_init();
 	init_node_conf();
 	build_all_nodeline_info(true, 0);
-	serializer_g_init(NULL, NULL);
 	switch_g_init(true);
 	topology_g_init();
 	topology_g_build_config();
