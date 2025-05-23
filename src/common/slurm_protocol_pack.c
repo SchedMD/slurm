@@ -13380,9 +13380,11 @@ static int _unpack_license_info_msg(license_info_msg_t **msg_ptr,
 			/* The total number of licenses can decrease
 			 * at runtime.
 			 */
-			if (msg->lic_array[i].total <
-			    (msg->lic_array[i].in_use +
-			     msg->lic_array[i].last_deficit))
+			if (msg->lic_array[i].total == INFINITE)
+				msg->lic_array[i].available = INFINITE;
+			else if (msg->lic_array[i].total <
+				 (msg->lic_array[i].in_use +
+				  msg->lic_array[i].last_deficit))
 				msg->lic_array[i].available = 0;
 			else
 				msg->lic_array[i].available =
