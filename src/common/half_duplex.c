@@ -46,10 +46,12 @@
 
 static bool _half_duplex_readable(eio_obj_t *obj);
 static int _half_duplex(eio_obj_t *obj, list_t *objs);
+static int _cleanup_sockets(eio_obj_t *obj, list_t *objs, list_t *del_objs);
 
 struct io_operations half_duplex_ops = {
 	.readable = _half_duplex_readable,
 	.handle_read = _half_duplex,
+	.handle_cleanup = _cleanup_sockets,
 };
 
 typedef struct {
@@ -190,8 +192,6 @@ shutdown:
 		*tls_conn_in = NULL;
 	}
 	shutdown(obj->fd, SHUT_RD);
-	close(obj->fd);
-	obj->fd = -1;
 	if (fd_out) {
 		if (tls_conn_out && *tls_conn_out) {
 			conn_g_destroy(*tls_conn_out, false);
@@ -203,6 +203,21 @@ shutdown:
 		xfree(fd_out);
 		xfree(obj->arg);
 	}
-	eio_remove_obj(obj, objs);
+	return 0;
+}
+
+static int _cleanup_sockets(eio_obj_t *obj, list_t *objs, list_t *del_objs)
+{
+	eio_obj_t *e;
+
+	if (obj->shutdown) {
+		e = eio_obj_create(obj->fd, obj->ops, obj->arg);
+		e->close_time = time(NULL);
+		list_enqueue(del_objs, e);
+		eio_remove_obj(obj, objs);
+	} else {
+		eio_remove_obj(obj, del_objs);
+	}
+
 	return 0;
 }
