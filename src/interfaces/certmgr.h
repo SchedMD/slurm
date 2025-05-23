@@ -88,12 +88,14 @@ extern char *certmgr_g_generate_csr(char *node_name);
  * Validate incoming certificate signing request on slurmctld
  *
  * IN csr  - CSR PEM character string.
+ * IN is_client_auth - True if client connected via mTLS connection
  * IN token - unique token associated with CSR to check validity
  * IN name - hostname or node name of client that generated CSR
  *
  * RET CSR PEM character string or NULL on error.
  */
-extern char *certmgr_g_sign_csr(char *csr, char *token, char *name);
+extern char *certmgr_g_sign_csr(char *csr, bool is_client_auth, char *token,
+				char *name);
 
 extern int certmgr_get_cert_from_ctld(char *name);
 
