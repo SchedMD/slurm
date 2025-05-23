@@ -117,8 +117,8 @@ extern char *conn_g_get_own_public_cert(void);
  * IN key - key PEM
  * IN key_len - length of key
  */
-extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
-			       uint32_t key_len);
+extern int conn_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
+				uint32_t key_len);
 
 /*
  * Load self-signed certificate into store

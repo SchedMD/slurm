@@ -171,7 +171,7 @@ extern int conn_g_init(void)
 		     running_in_slurmrestd() || running_in_slurmd() ||
 		     running_in_sackd()) &&
 		    slurm_conf.last_update &&
-		    tls_g_load_own_cert(NULL, 0, NULL, 0)) {
+		    conn_g_load_own_cert(NULL, 0, NULL, 0)) {
 			error("Could not load own TLS certificate from file");
 			rc = SLURM_ERROR;
 			goto done;
@@ -221,8 +221,8 @@ extern char *conn_g_get_own_public_cert(void)
 	return (*(ops.get_own_public_cert))();
 }
 
-extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
-			       uint32_t key_len)
+extern int conn_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
+				uint32_t key_len)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.load_own_cert))(cert, cert_len, key, key_len);
