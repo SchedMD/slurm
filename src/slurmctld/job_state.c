@@ -422,7 +422,8 @@ static int _add_cache_job(job_state_args_t *args, const job_state_cached_t *js)
 		return SLURM_SUCCESS;
 
 	if (!rjob) {
-		xassert(rjob);
+		LOG("[%pJ] packing at %d/%d failed",
+		    JOB_STATE_MIMIC_RECORD(js), args->count, args->jobs_count);
 		return ERANGE;
 	}
 
