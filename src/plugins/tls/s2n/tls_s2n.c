@@ -55,7 +55,7 @@
 
 #include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 /* Set default security policy to FIPS-compliant version */
 #define DEFAULT_S2N_SECURITY_POLICY "20230317"

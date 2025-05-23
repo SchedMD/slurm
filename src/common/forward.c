@@ -49,15 +49,16 @@
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
-#include "src/interfaces/auth.h"
-#include "src/interfaces/tls.h"
-#include "src/interfaces/topology.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/slurm_protocol_socket.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
+#include "src/interfaces/topology.h"
 
 static slurm_node_alias_addrs_t *last_alias_addrs = NULL;
 static pthread_mutex_t alias_addrs_mutex = PTHREAD_MUTEX_INITIALIZER;

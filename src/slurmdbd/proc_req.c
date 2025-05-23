@@ -58,9 +58,9 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/jobacct_gather.h"
-#include "src/interfaces/tls.h"
 
 #include "src/slurmctld/slurmctld.h"
 

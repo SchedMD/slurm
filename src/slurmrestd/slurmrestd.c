@@ -70,12 +70,12 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
-#include "src/interfaces/tls.h"
 
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"

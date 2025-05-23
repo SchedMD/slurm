@@ -41,7 +41,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"

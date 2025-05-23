@@ -47,7 +47,7 @@
 #include <arpa/inet.h>
 #include <time.h>
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #include "pmixp_common.h"
 #include "pmixp_server.h"

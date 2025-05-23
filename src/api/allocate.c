@@ -66,7 +66,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/interfaces/auth.h"
 #include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define BUFFER_SIZE 1024
 #define MAX_ALLOC_WAIT 60	/* seconds */

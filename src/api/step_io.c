@@ -59,8 +59,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
-#include "src/interfaces/tls.h"
 
 #define STDIO_MAX_FREE_BUF 1024
 

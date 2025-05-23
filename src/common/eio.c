@@ -58,7 +58,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h

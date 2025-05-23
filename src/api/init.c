@@ -38,11 +38,11 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/certgen.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/select.h"
-#include "src/interfaces/tls.h"
 
 extern void slurm_init(const char *conf)
 {

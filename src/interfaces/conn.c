@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  tls.c - tls API definitions
+ *  conn.c - connection API definitions
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -47,8 +47,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
 #include "src/interfaces/certmgr.h"
+#include "src/interfaces/conn.h"
 
 typedef struct {
 	int index;
@@ -314,8 +314,7 @@ extern int tls_g_set_conn_fds(void *conn, int input_fd, int output_fd)
 	return (*(ops.set_conn_fds))(conn, input_fd, output_fd);
 }
 
-extern int tls_g_set_conn_callbacks(void *conn,
-				    tls_conn_callbacks_t *callbacks)
+extern int tls_g_set_conn_callbacks(void *conn, tls_conn_callbacks_t *callbacks)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_conn_callbacks))(conn, callbacks);

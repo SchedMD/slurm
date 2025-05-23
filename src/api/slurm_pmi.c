@@ -51,7 +51,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/fd.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define DEFAULT_PMI_TIME 500
 #define MAX_RETRIES      5

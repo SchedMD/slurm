@@ -61,7 +61,7 @@
 
 #include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #include "src/sattach/attach.h"
 #include "src/sattach/opt.h"

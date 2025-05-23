@@ -45,7 +45,7 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define HANDLE_ENC_ARGS_MAGIC 0x2a4afb43
 typedef struct {

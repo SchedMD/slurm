@@ -47,7 +47,7 @@
 
 #include "src/conmgr/conmgr.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 static char *slurmd_spooldir = NULL;
 

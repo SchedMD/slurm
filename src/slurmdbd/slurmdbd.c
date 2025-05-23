@@ -71,8 +71,8 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/hash.h"
-#include "src/interfaces/tls.h"
 
 #include "src/slurmdbd/backup.h"
 #include "src/slurmdbd/proc_req.h"

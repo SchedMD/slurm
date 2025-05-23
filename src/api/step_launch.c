@@ -81,9 +81,9 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/mpi.h"
-#include "src/interfaces/tls.h"
 
 #include "src/srun/step_ctx.h"
 

@@ -51,7 +51,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 static char *slurmd_config_files[] = {
 	"slurm.conf", "acct_gather.conf", "cgroup.conf",

@@ -58,8 +58,8 @@
 
 #include "src/interfaces/auth.h"
 #include "src/interfaces/certmgr.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/hash.h"
-#include "src/interfaces/tls.h"
 
 #define DEFAULT_RUN_DIR "/run/slurm"
 

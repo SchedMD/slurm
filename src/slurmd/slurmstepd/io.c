@@ -72,7 +72,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/slurmd/slurmd.h"

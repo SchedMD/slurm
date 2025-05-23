@@ -53,7 +53,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 typedef struct {
 	int index;

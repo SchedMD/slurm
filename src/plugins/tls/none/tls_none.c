@@ -45,7 +45,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 const char plugin_name[] = "Null tls plugin";
 const char plugin_type[] = "tls/none";

@@ -39,7 +39,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"

@@ -60,7 +60,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 struct allocation_msg_thread {
 	slurm_allocation_callbacks_t callback;

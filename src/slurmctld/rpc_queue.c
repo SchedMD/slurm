@@ -49,8 +49,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/conn.h"
 #include "src/interfaces/serializer.h"
-#include "src/interfaces/tls.h"
 
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"

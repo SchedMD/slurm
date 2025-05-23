@@ -51,7 +51,7 @@
 #include "pmixp_dconn.h"
 
 #include "src/interfaces/auth.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define PMIXP_DEBUG_SERVER 1
 

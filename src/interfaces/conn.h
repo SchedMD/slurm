@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  tls.h - tls API definitions
+ *  conn.h - connection API definitions
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -33,8 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_TLS_H
-#define _INTERFACES_TLS_H
+#ifndef _INTERFACES_CONN_H
+#define _INTERFACES_CONN_H
 
 #include <inttypes.h>
 #include <stdbool.h>
@@ -79,7 +79,7 @@ typedef struct {
          * True: Defer TLS negotiation in tls_g_create_conn() to explicit call
          *      to tls_g_nego_conn()
          */
-        bool defer_negotiation;
+	bool defer_negotiation;
 	/*
 	 * server certificate used by TLS_CONN_CLIENT connections when server
 	 * certificate is not signed by a CA in our trust store

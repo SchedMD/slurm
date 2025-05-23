@@ -96,6 +96,7 @@
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cgroup.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/job_container.h"
@@ -105,7 +106,6 @@
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
-#include "src/interfaces/tls.h"
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/common/slurmd_common.h"

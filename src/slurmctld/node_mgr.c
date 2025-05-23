@@ -72,12 +72,12 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/mcs.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
-#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/agent.h"

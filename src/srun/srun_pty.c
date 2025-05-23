@@ -55,7 +55,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #include "opt.h"
 #include "srun_job.h"

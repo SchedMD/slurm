@@ -54,7 +54,7 @@
 #include "src/common/slurmdbd_pack.h"
 #include "src/common/xsignal.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define MAX_THREAD_COUNT 100
 

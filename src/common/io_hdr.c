@@ -42,7 +42,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer)
 {

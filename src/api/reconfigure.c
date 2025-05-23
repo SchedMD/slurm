@@ -51,7 +51,7 @@
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 static int _send_message_controller(int dest, slurm_msg_t *req);
 

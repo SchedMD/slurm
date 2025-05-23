@@ -60,7 +60,7 @@
 #include "src/slurmdbd/read_config.h"
 #include "src/stepmgr/srun_comm.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define FED_MGR_STATE_FILE       "fed_mgr_state"
 #define FED_MGR_CLUSTER_ID_BEGIN 26

@@ -71,7 +71,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define PORT_RETRIES    3
 #define MIN_USER_PORT   (IPPORT_RESERVED + 1)
