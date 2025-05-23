@@ -720,9 +720,12 @@ static int _negotiate(tls_conn_t *conn)
 			on_s2n_error(conn,
 				     s2n_connection_get_cipher_iana_value);
 		}
-		log_flag(TLS, "%s: cipher suite:%s, {0x%02X,0x%02X}. fd:%d->%d.",
-			 plugin_type, cipher, first, second, conn->input_fd,
-			 conn->output_fd);
+		log_flag(TLS, "%s: cipher suite:%s, {0x%02X,0x%02X}%s. fd:%d->%d.",
+			 plugin_type, cipher, first, second,
+			 conn->is_client_authenticated ?
+				 " Client is authenticated (mTLS)" :
+				 "",
+			 conn->input_fd, conn->output_fd);
 	}
 
 	return SLURM_SUCCESS;
