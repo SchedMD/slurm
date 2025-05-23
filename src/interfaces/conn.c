@@ -68,7 +68,7 @@ typedef struct {
 	int (*negotiate)(void *conn);
 	int (*get_conn_fd)(void *conn);
 	int (*set_conn_fds)(void *conn, int input_fd, int output_fd);
-	int (*set_conn_callbacks)(void *conn, tls_conn_callbacks_t *callbacks);
+	int (*set_conn_callbacks)(void *conn, conn_callbacks_t *callbacks);
 	void (*set_graceful_shutdown)(void *conn, bool do_graceful_shutdown);
 } conn_ops_t;
 
@@ -309,7 +309,7 @@ extern int conn_g_set_fds(void *conn, int input_fd, int output_fd)
 	return (*(ops.set_conn_fds))(conn, input_fd, output_fd);
 }
 
-extern int conn_g_set_callbacks(void *conn, tls_conn_callbacks_t *callbacks)
+extern int conn_g_set_callbacks(void *conn, conn_callbacks_t *callbacks)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_conn_callbacks))(conn, callbacks);

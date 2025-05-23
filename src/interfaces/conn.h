@@ -57,7 +57,7 @@ typedef struct {
 
 	/* Pointer to hand to recv() and send() callbacks */
 	void *io_context;
-} tls_conn_callbacks_t;
+} conn_callbacks_t;
 
 typedef struct {
 	/* file descriptor for incoming data */
@@ -73,7 +73,7 @@ typedef struct {
 	 *	conn_g_*() failure
 	 */
 	bool defer_blinding;
-	tls_conn_callbacks_t callbacks;
+	conn_callbacks_t callbacks;
 	/*
          * False: Attempt TLS negotiation in conn_g_create()
          * True: Defer TLS negotiation in conn_g_create() to explicit call
@@ -181,7 +181,7 @@ extern int conn_g_set_fds(void *conn, int input_fd, int output_fd);
  * IN output_fd - new write fd
  * RET SLURM_SUCCESS or error
  */
-extern int conn_g_set_callbacks(void *conn, tls_conn_callbacks_t *callbacks);
+extern int conn_g_set_callbacks(void *conn, conn_callbacks_t *callbacks);
 
 /*
  * Enable graceful TLS shutdown on connection

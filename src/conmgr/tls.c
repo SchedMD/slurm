@@ -568,7 +568,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 extern void tls_adopt(conmgr_fd_t *con, void *tls_conn)
 {
-	tls_conn_callbacks_t callbacks = {
+	conn_callbacks_t callbacks = {
 		.recv = _recv,
 		.send = _send,
 		.io_context = con,

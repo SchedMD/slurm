@@ -182,7 +182,7 @@ extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
 }
 
 extern int tls_p_set_conn_callbacks(tls_conn_t *conn,
-				    tls_conn_callbacks_t *callbacks)
+				    conn_callbacks_t *callbacks)
 {
 	return ESLURM_NOT_SUPPORTED;
 }
