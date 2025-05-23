@@ -377,7 +377,7 @@ static int _poll_internal(struct pollfd *pfds, unsigned int nfds,
 	if (shutdown_time)
 		timeout = 1000;	/* Return every 1000 msec during shutdown */
 	else
-		timeout = -1;
+		timeout = 60000;
 	while ((n = poll(pfds, nfds, timeout)) < 0) {
 		switch (errno) {
 		case EINTR:
