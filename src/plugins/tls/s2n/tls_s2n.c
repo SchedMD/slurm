@@ -306,6 +306,13 @@ static struct s2n_config *_create_config_common(void)
 	}
 	xfree(security_policy);
 
+	if (s2n_config_set_verify_host_callback(new_conf, _verify_hostname,
+						NULL) < 0) {
+		on_s2n_error(NULL, s2n_config_set_verify_host_callback);
+		(void) s2n_config_free(new_conf);
+		return NULL;
+	}
+
 	return new_conf;
 }
 
@@ -315,13 +322,6 @@ static struct s2n_config *_create_client_config(void)
 
 	if (!(new_conf = _create_config_common()))
 		return NULL;
-
-	if (s2n_config_set_verify_host_callback(new_conf, _verify_hostname,
-						NULL) < 0) {
-		on_s2n_error(NULL, s2n_config_set_verify_host_callback);
-		(void) s2n_config_free(new_conf);
-		return NULL;
-	}
 
 	return new_conf;
 }
