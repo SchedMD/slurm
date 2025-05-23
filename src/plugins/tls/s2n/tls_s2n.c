@@ -394,7 +394,7 @@ fail:
 	return SLURM_ERROR;
 }
 
-static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
+static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
 				      char *key_pem, uint32_t key_pem_len)
 {
 	if (!own_cert_and_key) {
@@ -572,7 +572,7 @@ static int _add_cert_from_file_to_server(void)
 		goto cleanup;
 	}
 
-	rc = _add_cert_to_global_server(cert_buf->head, cert_buf->size,
+	rc = _add_cert_to_global_config(cert_buf->head, cert_buf->size,
 					key_buf->head, key_buf->size);
 
 cleanup:
@@ -595,8 +595,8 @@ extern int tls_p_load_self_signed_cert(void)
 	own_cert_len = strlen(own_cert);
 	own_key_len = strlen(own_key);
 
-	return _add_cert_to_global_server(own_cert, own_cert_len,
-					  own_key, own_key_len);
+	return _add_cert_to_global_config(own_cert, own_cert_len, own_key,
+					  own_key_len);
 }
 
 
@@ -745,7 +745,7 @@ extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
 	own_key = xstrdup(key);
 	own_key_len = key_len;
 
-	if (_add_cert_to_global_server(cert, cert_len, key, key_len)) {
+	if (_add_cert_to_global_config(cert, cert_len, key, key_len)) {
 		error("%s: Could not add certificate and private key to s2n_config.",
 		      plugin_type);
 		return SLURM_ERROR;
