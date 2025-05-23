@@ -485,7 +485,8 @@ static void _find_job_state_cached_by_job_id(job_state_args_t *args,
 
 	LOG("[%pJ] Resolved from JobId=%u", JOB_STATE_MIMIC_RECORD(js), job_id);
 
-	(void) _add_cache_job(args, js);
+	if (_add_cache_job(args, js))
+		return;
 
 	if (!resolve) {
 		LOG("[%pJ] Not fully resolving job", JOB_STATE_MIMIC_RECORD(js));
@@ -516,7 +517,8 @@ static void _find_job_state_cached_by_job_id(job_state_args_t *args,
 				    JOB_STATE_MIMIC_RECORD(js),
 				    JOB_STATE_MIMIC_RECORD(next),
 				    ARRAY_JOB_STATE_MIMIC_RECORD(ajs));
-				(void) _add_cache_job(args, next);
+				if (_add_cache_job(args, next))
+					break;
 			} else {
 				fatal_abort("Unable to resolve next_job_id");
 			}
@@ -538,7 +540,8 @@ static void _find_job_state_cached_by_job_id(job_state_args_t *args,
 				LOG("[%pJ] Resolved HetJobId=%u+%u to %pJ",
 				    JOB_STATE_MIMIC_RECORD(js), job_id, i,
 				    JOB_STATE_MIMIC_RECORD(hjs));
-				(void) _add_cache_job(args, hjs);
+				if (_add_cache_job(args, hjs))
+					break;
 			} else {
 				/*
 				 * Next job not found or not part of the HetJob
