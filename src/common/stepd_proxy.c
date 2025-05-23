@@ -279,7 +279,9 @@ extern void stepd_proxy_slurmd_init(char *spooldir)
 		.on_data = _on_data_local_socket,
 	};
 	static char *path = NULL;
-	static const conmgr_con_flags_t flags = CON_FLAG_NONE;
+	static const conmgr_con_flags_t flags =
+		(CON_FLAG_WATCH_WRITE_TIMEOUT | CON_FLAG_WATCH_READ_TIMEOUT |
+		 CON_FLAG_WATCH_CONNECT_TIMEOUT);
 	int rc;
 
 	if (!path)
