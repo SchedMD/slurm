@@ -47,7 +47,7 @@ typedef enum {
 	TLS_CONN_NULL = 0,
 	TLS_CONN_SERVER,
 	TLS_CONN_CLIENT,
-} tls_conn_mode_t;
+} conn_mode_t;
 
 typedef struct {
 	/* Function pointer type is the same as s2n_recv_fn */
@@ -64,8 +64,8 @@ typedef struct {
 	int input_fd;
 	/* file descriptor for outgoing data */
 	int output_fd;
-	/* TLS connection mode (@see tls_conn_mode_t) */
-	tls_conn_mode_t mode;
+	/* TLS connection mode (@see conn_mode_t) */
+	conn_mode_t mode;
 	/*
 	 * False: Enable any library based blinding delays
 	 * True: Disable any library based blinding delays which caller will
@@ -87,7 +87,7 @@ typedef struct {
 	char *cert;
 } tls_conn_args_t;
 
-extern char *tls_conn_mode_to_str(tls_conn_mode_t mode);
+extern char *tls_conn_mode_to_str(conn_mode_t mode);
 
 /*
  * Return true if TLS is enabled for Slurm communications
