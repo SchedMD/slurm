@@ -112,6 +112,7 @@ typedef struct {
 	struct s2n_cert_chain_and_key *cert_and_key;
 	bool do_graceful_shutdown;
 	bool using_global_s2n_conf;
+	bool is_client_authenticated;
 } tls_conn_t;
 
 /*
@@ -704,6 +705,9 @@ static int _negotiate(tls_conn_t *conn)
 			return errno;
 		}
 	}
+
+	if (s2n_connection_client_cert_used(conn->s2n_conn) == 1)
+		conn->is_client_authenticated = true;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
 		const char *cipher = NULL;
