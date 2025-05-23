@@ -117,6 +117,7 @@ typedef struct {
 	int rc;
 	uint32_t count;
 	job_state_response_job_t *jobs;
+	int jobs_count; /* Number of entries in jobs[] */
 	bool count_only;
 } job_state_args_t;
 
@@ -341,6 +342,9 @@ static job_state_response_job_t *_append_job_state(job_state_args_t *args)
 	args->count++;
 
 	if (args->count_only)
+		return NULL;
+
+	if (args->count > args->jobs_count)
 		return NULL;
 
 	index = args->count - 1;
@@ -659,6 +663,8 @@ extern int dump_job_state(const uint32_t filter_jobs_count,
 			goto cleanup;
 		}
 
+		args.jobs_count = args.count;
+
 		/* reset count */
 		args.count_only = false;
 		args.count = 0;
@@ -672,7 +678,7 @@ extern int dump_job_state(const uint32_t filter_jobs_count,
 	}
 
 	*jobs_pptr = args.jobs;
-	*jobs_count_ptr = args.count;
+	*jobs_count_ptr = args.jobs_count;
 cleanup:
 	if (!use_cache)
 		unlock_slurmctld(job_read_lock);
