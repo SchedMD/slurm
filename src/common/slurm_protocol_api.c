@@ -1830,6 +1830,28 @@ cleanup:
 	return rc;
 }
 
+/*
+ * Send a slurm message over an open connection ignoring any errors.
+ * Not usable for persistent connections.
+ */
+static void _send_node_msg_maybe(void *tls_conn, slurm_msg_t *msg)
+{
+	msg_bufs_t buffers = { 0 };
+
+	if (!msg->conn) {
+		/* Pack and send message */
+		if (slurm_buffers_pack_msg(msg, &buffers, true))
+			goto cleanup;
+
+		slurm_bufs_sendto(tls_conn, &buffers);
+	}
+
+cleanup:
+	FREE_NULL_BUFFER(buffers.header);
+	FREE_NULL_BUFFER(buffers.auth);
+	FREE_NULL_BUFFER(buffers.body);
+}
+
 /**********************************************************************\
  * stream functions
 \**********************************************************************/
@@ -2085,7 +2107,7 @@ extern void slurm_send_msg_maybe(slurm_msg_t *req)
 		return;
 	}
 
-	(void) slurm_send_node_msg(tls_conn, req);
+	_send_node_msg_maybe(tls_conn, req);
 
 	conn_g_destroy(tls_conn, true);
 }
