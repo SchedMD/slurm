@@ -87,7 +87,7 @@ typedef struct {
 	char *cert;
 } tls_conn_args_t;
 
-extern char *tls_conn_mode_to_str(conn_mode_t mode);
+extern char *conn_mode_to_str(conn_mode_t mode);
 
 /*
  * Return true if TLS is enabled for Slurm communications

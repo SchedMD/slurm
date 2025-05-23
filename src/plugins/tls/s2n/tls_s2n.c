@@ -808,7 +808,7 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 
 	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%s",
 		 plugin_type, tls_conn_args->input_fd, tls_conn_args->output_fd,
-		 tls_conn_mode_to_str(tls_conn_args->mode));
+		 conn_mode_to_str(tls_conn_args->mode));
 
 	conn = xmalloc(sizeof(*conn));
 	conn->input_fd = tls_conn_args->input_fd;
@@ -981,7 +981,7 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 
 	log_flag(TLS, "%s: connection successfully created. fd:%d->%d. tls mode:%s",
 		 plugin_type, conn->input_fd, conn->output_fd,
-		 tls_conn_mode_to_str(tls_conn_args->mode));
+		 conn_mode_to_str(tls_conn_args->mode));
 
 	return conn;
 

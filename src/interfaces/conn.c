@@ -104,7 +104,7 @@ static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static bool tls_enabled_bool = false;
 
-extern char *tls_conn_mode_to_str(conn_mode_t mode)
+extern char *conn_mode_to_str(conn_mode_t mode)
 {
 	switch (mode) {
 	case TLS_CONN_NULL:
