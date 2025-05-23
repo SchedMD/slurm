@@ -273,7 +273,7 @@ extern ssize_t conn_g_sendv(void *conn, const struct iovec *bufs, int count)
 	return (*(ops.sendv))(conn, bufs, count);
 }
 
-extern uint32_t tls_g_peek(void *conn)
+extern uint32_t conn_g_peek(void *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.peek))(conn);

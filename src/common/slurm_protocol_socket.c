@@ -178,7 +178,7 @@ static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
 		int rc;
 		int timeleft = timeout - timeval_tot_wait(&tstart);
 
-		if (tls_g_peek(tls_conn))
+		if (conn_g_peek(tls_conn))
 			goto ready;
 
 		if (timeleft <= 0) {
@@ -447,7 +447,7 @@ extern int slurm_recv_timeout(void *tls_conn, char *buffer, size_t size,
 			goto done;
 		}
 
-		if (tls_g_peek(tls_conn))
+		if (conn_g_peek(tls_conn))
 			goto ready;
 
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {

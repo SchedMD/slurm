@@ -109,7 +109,7 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 	 * The tls layer may already have data buffered, which could lead to
 	 * poll blocking indefinitely.
 	 */
-	if (tls_g_peek(persist_conn->tls_conn))
+	if (conn_g_peek(persist_conn->tls_conn))
 		return true;
 
 	ufds.fd = tls_g_get_conn_fd(persist_conn->tls_conn);
