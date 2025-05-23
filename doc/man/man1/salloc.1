@@ -371,8 +371,9 @@ Unique name for OCI container.
 \fB\-\-contiguous\fR
 If set, then the allocated nodes must form a contiguous set.
 
-\fBNOTE\fR: If the SelectType is cons_tres this option won't be honored
-with the \fBtopology/tree\fR plugin, which can modify the node ordering.
+\fBNOTE\fR: This option will only work with the \fBtopology/flat\fR plugin.
+Other topology plugins modify the node ordering and prevent this option from
+taking effect.
 .IP
 
 .TP
