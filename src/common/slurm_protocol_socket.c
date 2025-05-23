@@ -243,7 +243,7 @@ static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
 
 ready:
 		if (tls_conn) {
-			bytes_sent = tls_g_sendv(tls_conn, iov, iovcnt);
+			bytes_sent = conn_g_sendv(tls_conn, iov, iovcnt);
 		} else {
 			bytes_sent = writev(fd, iov, iovcnt);
 		}

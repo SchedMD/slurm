@@ -639,9 +639,9 @@ static int _foreach_write_tls(void *x, void *key)
 	xassert(args->magic == HANDLE_ENC_ARGS_MAGIC);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	args->wrote = tls_g_send(con->tls, start, remaining_buf(out));
+	args->wrote = conn_g_send(con->tls, start, remaining_buf(out));
 	if (args->wrote < 0) {
-		error("%s: [%s] tls_g_send() failed: %m", __func__, con->name);
+		error("%s: [%s] conn_g_send() failed: %m", __func__, con->name);
 		return SLURM_ERROR;
 	} else if (!args->wrote) {
 		log_flag(NET, "%s: [%s] encrypt[%d] of 0/%u bytes to outgoing fd %u",

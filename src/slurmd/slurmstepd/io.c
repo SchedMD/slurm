@@ -484,7 +484,7 @@ static int _client_write(eio_obj_t *obj, list_t *objs)
 		(client->out_msg->length - client->out_remaining);
 again:
 	if (obj->tls_conn) {
-		n = tls_g_send(obj->tls_conn, buf, client->out_remaining);
+		n = conn_g_send(obj->tls_conn, buf, client->out_remaining);
 	} else {
 		n = write(obj->fd, buf, client->out_remaining);
 	}

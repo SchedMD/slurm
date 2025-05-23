@@ -261,13 +261,13 @@ extern void tls_g_destroy_conn(void *conn, bool close_fds)
 	(*(ops.destroy_conn))(conn, close_fds);
 }
 
-extern ssize_t tls_g_send(void *conn, const void *buf, size_t n)
+extern ssize_t conn_g_send(void *conn, const void *buf, size_t n)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.send))(conn, buf, n);
 }
 
-extern ssize_t tls_g_sendv(void *conn, const struct iovec *bufs, int count)
+extern ssize_t conn_g_sendv(void *conn, const struct iovec *bufs, int count)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.sendv))(conn, bufs, count);

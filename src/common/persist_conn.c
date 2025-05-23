@@ -949,8 +949,8 @@ extern int slurm_persist_send_msg(persist_conn_t *persist_conn,
 	msg_size = get_buf_offset(buffer);
 	nw_size = htonl(msg_size);
 
-	msg_wrote = tls_g_send(persist_conn->tls_conn, &nw_size,
-			       sizeof(nw_size));
+	msg_wrote =
+		conn_g_send(persist_conn->tls_conn, &nw_size, sizeof(nw_size));
 	if (msg_wrote != sizeof(nw_size))
 		return EAGAIN;
 
@@ -961,7 +961,7 @@ extern int slurm_persist_send_msg(persist_conn_t *persist_conn,
 			goto re_open;
 		if (rc < 1)
 			return EAGAIN;
-		msg_wrote = tls_g_send(persist_conn->tls_conn, msg, msg_size);
+		msg_wrote = conn_g_send(persist_conn->tls_conn, msg, msg_size);
 		if (msg_wrote <= 0)
 			return EAGAIN;
 		msg += msg_wrote;

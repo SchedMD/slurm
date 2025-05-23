@@ -171,7 +171,7 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 
 	while (wr < in) {
 		if (tls_conn_out && *tls_conn_out) {
-			out = tls_g_send(*tls_conn_out, buf, in - wr);
+			out = conn_g_send(*tls_conn_out, buf, in - wr);
 		} else {
 			out = write(*fd_out, buf, in - wr);
 		}

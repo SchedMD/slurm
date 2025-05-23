@@ -206,8 +206,8 @@ extern void tls_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown);
  */
 extern timespec_t tls_g_get_delay(void *conn);
 
-extern ssize_t tls_g_send(void *conn, const void *buf, size_t n);
-extern ssize_t tls_g_sendv(void *conn, const struct iovec *bufs, int count);
+extern ssize_t conn_g_send(void *conn, const void *buf, size_t n);
+extern ssize_t conn_g_sendv(void *conn, const struct iovec *bufs, int count);
 extern uint32_t tls_g_peek(void *conn);
 extern ssize_t tls_g_recv(void *conn, void *buf, size_t n);
 

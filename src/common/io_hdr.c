@@ -231,7 +231,7 @@ io_init_msg_write_to_fd(int fd, void *tls_conn, io_init_msg_t *msg)
 		goto rwfail;
 
 	if (tls_enabled()) {
-		tls_g_send(tls_conn, buf->head, get_buf_offset(buf));
+		conn_g_send(tls_conn, buf->head, get_buf_offset(buf));
 	} else {
 		safe_write(fd, buf->head, get_buf_offset(buf));
 	}
