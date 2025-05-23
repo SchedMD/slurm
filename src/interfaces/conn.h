@@ -100,7 +100,7 @@ extern int conn_g_fini(void);
 /*
  * Get self signed public certificate pem.
  */
-extern char *tls_g_get_own_public_cert(void);
+extern char *conn_g_get_own_public_cert(void);
 
 /*
  * Load own certificate into store

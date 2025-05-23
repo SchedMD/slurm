@@ -202,7 +202,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	}
 
 	if (tls_enabled()) {
-		if (!(req->alloc_tls_cert = tls_g_get_own_public_cert())) {
+		if (!(req->alloc_tls_cert = conn_g_get_own_public_cert())) {
 			error("Could not get self signed certificate for allocation response");
 			return NULL;
 		}

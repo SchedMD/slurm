@@ -215,7 +215,7 @@ extern int tls_g_load_ca_cert(char *cert_file)
 	return (*(ops.load_ca_cert))(cert_file);
 }
 
-extern char *tls_g_get_own_public_cert(void)
+extern char *conn_g_get_own_public_cert(void)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.get_own_public_cert))();
