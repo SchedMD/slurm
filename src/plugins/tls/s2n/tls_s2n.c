@@ -360,10 +360,9 @@ static int _add_ca_cert_to_config(struct s2n_config *config, char *cert_file)
 	return SLURM_SUCCESS;
 }
 
-static int _add_own_cert_to_config(struct s2n_config *s2n_config,
-				   struct s2n_cert_chain_and_key **cert_and_key,
-				   char *cert_pem, uint32_t cert_pem_len,
-				   char *key_pem, uint32_t key_pem_len)
+static int _create_cert_and_key(struct s2n_cert_chain_and_key **cert_and_key,
+				char *cert_pem, uint32_t cert_pem_len,
+				char *key_pem, uint32_t key_pem_len)
 {
 	xassert(cert_and_key);
 
@@ -384,9 +383,15 @@ static int _add_own_cert_to_config(struct s2n_config *s2n_config,
 						  (uint8_t *) key_pem,
 						  key_pem_len) < 0) {
 		on_s2n_error(NULL, s2n_cert_chain_and_key_load_pem_bytes);
-		goto fail;
+		return SLURM_ERROR;
 	}
 
+	return SLURM_SUCCESS;
+}
+
+static int _add_own_cert_to_config(struct s2n_config *s2n_config,
+				   struct s2n_cert_chain_and_key **cert_and_key)
+{
 	/*
 	 * Per libs2n docs:
 	 *	It is not recommended to free or modify the `cert_key_pair` as
@@ -414,10 +419,14 @@ static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
 {
 	if (!own_cert_and_key) {
 		is_own_cert_loaded = true;
-		return _add_own_cert_to_config(server_config,
-					       &own_cert_and_key, cert_pem,
-					       cert_pem_len, key_pem,
-					       key_pem_len);
+
+		if (_create_cert_and_key(&own_cert_and_key, cert_pem,
+					 cert_pem_len, key_pem, key_pem_len))
+			return SLURM_ERROR;
+		if (_add_own_cert_to_config(server_config, &own_cert_and_key))
+			return SLURM_ERROR;
+
+		return SLURM_SUCCESS;
 	}
 
 	/* Stop new connections from using current server_config */
@@ -430,11 +439,9 @@ static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
 	if (s2n_conf_conn_cnt)
 		slurm_cond_wait(&s2n_conf_cnt_cond, &s2n_conf_cnt_lock);
 
-	if (own_cert_and_key &&
-	    s2n_cert_chain_and_key_free(own_cert_and_key)) {
-		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
-	}
-	own_cert_and_key = NULL;
+	if (_create_cert_and_key(&own_cert_and_key, cert_pem, cert_pem_len,
+				 key_pem, key_pem_len))
+		goto fail;
 
 	/*
 	 * s2n_config_free_cert_chain_and_key not enough to reset the
@@ -449,16 +456,9 @@ static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
 		error("Could not create new server_config");
 		goto fail;
 	}
-	if (_add_own_cert_to_config(server_config, &own_cert_and_key,
-				    cert_pem, cert_pem_len, key_pem,
-				    key_pem_len)) {
-		if (s2n_config_free(server_config)) {
-			on_s2n_error(NULL, s2n_config_free);
-		}
-		server_config = NULL;
-		error("Could not add cert to server_config");
+
+	if (_add_own_cert_to_config(server_config, &own_cert_and_key))
 		goto fail;
-	}
 
 	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 	log_flag(TLS, "%s: Successfully updated global server_conf with new certificate and key", plugin_type);
@@ -848,9 +848,14 @@ static int _set_conn_s2n_conf(tls_conn_t *conn,
 		      tls_conn_args->input_fd, tls_conn_args->output_fd);
 		return SLURM_ERROR;
 	}
-	if (_add_own_cert_to_config(conn->s2n_config, &conn->cert_and_key,
-				    own_cert, own_cert_len, own_key,
-				    own_key_len)) {
+
+	if (_create_cert_and_key(&conn->cert_and_key, own_cert, own_cert_len,
+				 own_key, own_key_len)) {
+		error("Could not cert and key pair for fd:%d->%d",
+		      tls_conn_args->input_fd, tls_conn_args->output_fd);
+		return SLURM_ERROR;
+	}
+	if (_add_own_cert_to_config(conn->s2n_config, &conn->cert_and_key)) {
 		error("Could not add certificate to s2n_config for fd:%d->%d",
 		      tls_conn_args->input_fd, tls_conn_args->output_fd);
 		return SLURM_ERROR;
