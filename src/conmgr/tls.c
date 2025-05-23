@@ -363,10 +363,10 @@ static int _send(void *io_context, const uint8_t *src, uint32_t len)
 /* WARNING: caller must not hold mgr->mutex lock */
 static void _negotiate(conmgr_fd_t *con, void *tls)
 {
-	int rc = tls_g_negotiate_conn(tls);
+	int rc = conn_g_negotiate_tls(tls);
 
 	if (rc == EWOULDBLOCK) {
-		log_flag(CONMGR, "%s: [%s] tls_g_negotiate_conn() requires more incoming data",
+		log_flag(CONMGR, "%s: [%s] conn_g_negotiate_tls() requires more incoming data",
 				 __func__, con->name);
 
 		slurm_mutex_lock(&mgr.mutex);
@@ -384,7 +384,7 @@ static void _negotiate(conmgr_fd_t *con, void *tls)
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	} else if (rc) {
-		log_flag(CONMGR, "%s: [%s] tls_g_negotiate_conn() failed: %s",
+		log_flag(CONMGR, "%s: [%s] conn_g_negotiate_tls() failed: %s",
 				 __func__, con->name, slurm_strerror(rc));
 		_wait_close(false, con);
 		return;

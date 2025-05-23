@@ -291,7 +291,7 @@ extern timespec_t tls_g_get_delay(void *conn)
 	return (*(ops.get_delay))(conn);
 }
 
-extern int tls_g_negotiate_conn(void *conn)
+extern int conn_g_negotiate_tls(void *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.negotiate))(conn);

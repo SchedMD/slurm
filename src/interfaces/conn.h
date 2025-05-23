@@ -77,7 +77,7 @@ typedef struct {
 	/*
          * False: Attempt TLS negotiation in conn_g_create()
          * True: Defer TLS negotiation in conn_g_create() to explicit call
-         *      to tls_g_nego_conn()
+         *      to conn_g_negotiate_tls()
          */
 	bool defer_negotiation;
 	/*
@@ -154,7 +154,7 @@ extern void conn_g_destroy(void *conn, bool close_fds);
  * NOTE: Only to be called at start of connection and if defer_negotiation=true
  * RET SLURM_SUCCESS or EWOULDBLOCK or error
  */
-extern int tls_g_negotiate_conn(void *conn);
+extern int conn_g_negotiate_tls(void *conn);
 
 /*
  * Retrieve connection read file descriptor.
