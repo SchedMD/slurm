@@ -587,7 +587,7 @@ extern void tls_adopt(conmgr_fd_t *con, void *tls_conn)
 	/* Can't finger print existing TLS connections */
 	con_unset_flag(con, FLAG_WAIT_ON_FINGERPRINT);
 
-	if ((rc = tls_g_set_conn_callbacks(tls_conn, &callbacks))) {
+	if ((rc = conn_g_set_callbacks(tls_conn, &callbacks))) {
 		log_flag(CONMGR, "%s: [%s] adopting TLS state failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
 

@@ -181,8 +181,7 @@ extern int conn_g_set_fds(void *conn, int input_fd, int output_fd);
  * IN output_fd - new write fd
  * RET SLURM_SUCCESS or error
  */
-extern int tls_g_set_conn_callbacks(void *conn,
-				    tls_conn_callbacks_t *callbacks);
+extern int conn_g_set_callbacks(void *conn, tls_conn_callbacks_t *callbacks);
 
 /*
  * Enable graceful TLS shutdown on connection
