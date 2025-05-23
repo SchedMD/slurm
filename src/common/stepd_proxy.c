@@ -279,12 +279,15 @@ extern void stepd_proxy_slurmd_init(char *spooldir)
 		.on_data = _on_data_local_socket,
 	};
 	static char *path = NULL;
+	static const conmgr_con_flags_t flags =
+		(CON_FLAG_WATCH_WRITE_TIMEOUT | CON_FLAG_WATCH_READ_TIMEOUT |
+		 CON_FLAG_WATCH_CONNECT_TIMEOUT);
 	int rc;
 
 	if (!path)
 		xstrfmtcat(path, "unix:%s/slurmd.socket", spooldir);
 
-	if ((rc = conmgr_create_listen_socket(CON_TYPE_RAW, CON_FLAG_NONE, path,
+	if ((rc = conmgr_create_listen_socket(CON_TYPE_RAW, flags, path,
 					      &events, NULL)))
 		fatal("%s: [%s] unable to create socket: %s",
 		      __func__, path, slurm_strerror(rc));
