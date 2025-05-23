@@ -64,6 +64,22 @@ static int _inspect_work(void *x, void *key);
 static void _update_timer(work_t *shortest, const timespec_t time);
 static bool _work_clear_time_delay(work_t *work);
 
+/*
+ * Remove delay dependency and release work back into work queue
+ *
+ * WARNING: caller must hold mgr.mutex
+ * IN x - work to release back to normal work handling.
+ *	takes ownership of pointer.
+ */
+static void _release_work(void *x)
+{
+	work_t *work = x;
+	xassert(work->magic == MAGIC_WORK);
+
+	(void) _work_clear_time_delay(work);
+	handle_work(true, work);
+}
+
 /* mgr.mutex must be locked when calling this function */
 extern void cancel_delayed_work(void)
 {
@@ -206,7 +222,7 @@ extern void init_delayed_work(void)
 {
 	int rc;
 
-	mgr.delayed_work = list_create(xfree_ptr);
+	mgr.delayed_work = list_create(_release_work);
 
 again:
 	slurm_mutex_lock(&mutex);
