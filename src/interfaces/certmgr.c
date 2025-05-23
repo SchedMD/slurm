@@ -217,7 +217,9 @@ extern int certmgr_get_cert_from_ctld(char *name)
 
 	cert_req = xmalloc(sizeof(*cert_req));
 
-	if (!(cert_req->token = certmgr_g_get_node_token(name))) {
+	if (conn_g_own_cert_loaded()) {
+		log_flag(AUDIT_TLS, "Using previously signed certificate to authenticate with slurmctld via mTLS");
+	} else if (!(cert_req->token = certmgr_g_get_node_token(name))) {
 		error("%s: Failed to get unique node token", __func__);
 		slurm_free_tls_cert_request_msg(cert_req);
 		return SLURM_ERROR;
