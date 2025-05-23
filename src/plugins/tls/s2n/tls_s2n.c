@@ -416,15 +416,26 @@ fail:
 
 static int _reset_global_conf(struct s2n_config **config)
 {
+	int rc = SLURM_ERROR;
+	char *cert_file = NULL;
+
 	if (*config && s2n_config_free(*config))
 		on_s2n_error(NULL, s2n_config_free);
 
 	if (!(*config = _create_config()))
-		return SLURM_ERROR;
+		goto end;
+	if (!(cert_file = _get_ca_cert_file_from_conf()))
+		goto end;
+	if (_add_ca_cert_to_config(*config, cert_file))
+		goto end;
 	if (_add_own_cert_to_config(*config, &own_cert_and_key))
-		return SLURM_ERROR;
+		goto end;
 
-	return SLURM_SUCCESS;
+	rc = SLURM_SUCCESS;
+end:
+	xfree(cert_file);
+
+	return rc;
 }
 
 static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
