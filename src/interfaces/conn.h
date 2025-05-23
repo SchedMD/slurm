@@ -143,10 +143,10 @@ extern int conn_g_load_ca_cert(char *cert_file);
 
 /*
  * Create new TLS connection
- * IN tls_conn_args - ptr to conn_args_t
+ * IN conn_args - ptr to conn_args_t
  * RET ptr to TLS state
  */
-extern void *conn_g_create(const conn_args_t *tls_conn_args);
+extern void *conn_g_create(const conn_args_t *conn_args);
 extern void conn_g_destroy(void *conn, bool close_fds);
 
 /*
