@@ -111,12 +111,15 @@ static void _set_cpu_affinity(node_config_load_t *node_conf, char *bus_id,
 	path = xstrdup_printf(NVIDIA_CPULIST_PREFIX, bus_id);
 	cpus_bitmap = bit_alloc(MAX_CPUS);
 
-	f = fopen(path, "r");
-	while (fgets(buffer, sizeof(buffer), f)) {
-		if (bit_unfmt(cpus_bitmap, buffer))
-			error("Unable to parse cpu list in %s", path);
+	if ((f = fopen(path, "r"))) {
+		while (fgets(buffer, sizeof(buffer), f)) {
+			if (bit_unfmt(cpus_bitmap, buffer))
+				error("Unable to parse cpu list in %s", path);
+		}
+		fclose(f);
+	} else {
+		error("Unable to open cpu list in %s: %m", path);
 	}
-	fclose(f);
 
 	if (enabled_cpus_bits) {
 		/*
