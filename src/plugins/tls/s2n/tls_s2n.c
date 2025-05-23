@@ -591,9 +591,8 @@ static int _add_cert_from_file_to_server(void)
 		 */
 		if ((rc == ENOENT) &&
 		    (running_in_slurmd() || running_in_sackd()))
-			return SLURM_SUCCESS;
+			rc = SLURM_SUCCESS;
 
-		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 	if (!(cert_buf = create_mmap_buf(cert_file))) {
