@@ -112,6 +112,8 @@ extern char *conn_g_get_own_public_cert(void);
  * relevant to Slurm daemons that have statically configured certificates.
  * If 'cert' is NULL, all other arguments will be ignored.
  *
+ * Note that this certificate must be trusted by the configured CA trust store.
+ *
  * IN cert - certificate PEM, or NULL if loading from file.
  * IN cert_len - length of cert
  * IN key - key PEM
@@ -155,6 +157,12 @@ extern void conn_g_destroy(void *conn, bool close_fds);
  * RET SLURM_SUCCESS or EWOULDBLOCK or error
  */
 extern int conn_g_negotiate_tls(void *conn);
+
+/*
+ * Return true if client is authenticated (mTLS)
+ * NOTE: Only to be called by server connections
+ */
+extern bool conn_g_is_client_authenticated(void *conn);
 
 /*
  * Retrieve connection read file descriptor.

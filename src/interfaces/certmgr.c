@@ -48,7 +48,8 @@ typedef struct {
 	char *(*get_node_cert_key)(char *node_name);
 	char *(*get_node_token)(char *node_name);
 	char *(*generate_csr)(char *node_name);
-	char *(*sign_csr)(char *csr, char *token, char *name);
+	char *(*sign_csr)(char *csr, bool is_client_auth, char *token,
+			  char *name);
 } certmgr_ops_t;
 
 /*
@@ -191,7 +192,8 @@ extern char *certmgr_g_generate_csr(char *node_name)
 	return (*(ops.generate_csr))(node_name);
 }
 
-extern char *certmgr_g_sign_csr(char *csr, char *token, char *name)
+extern char *certmgr_g_sign_csr(char *csr, bool is_client_auth, char *token,
+				char *name)
 {
 	xassert(running_in_slurmctld());
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -199,7 +201,7 @@ extern char *certmgr_g_sign_csr(char *csr, char *token, char *name)
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.sign_csr))(csr, token, name);
+	return (*(ops.sign_csr))(csr, is_client_auth, token, name);
 }
 
 extern int certmgr_get_cert_from_ctld(char *name)
@@ -215,7 +217,9 @@ extern int certmgr_get_cert_from_ctld(char *name)
 
 	cert_req = xmalloc(sizeof(*cert_req));
 
-	if (!(cert_req->token = certmgr_g_get_node_token(name))) {
+	if (conn_g_own_cert_loaded()) {
+		log_flag(AUDIT_TLS, "Using previously signed certificate to authenticate with slurmctld via mTLS");
+	} else if (!(cert_req->token = certmgr_g_get_node_token(name))) {
 		error("%s: Failed to get unique node token", __func__);
 		slurm_free_tls_cert_request_msg(cert_req);
 		return SLURM_ERROR;

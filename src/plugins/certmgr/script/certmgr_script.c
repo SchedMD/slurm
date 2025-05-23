@@ -372,7 +372,8 @@ fail:
 	return NULL;
 }
 
-extern char *certmgr_p_sign_csr(char *csr, char *token, char *name)
+extern char *certmgr_p_sign_csr(char *csr, bool is_client_auth, char *token,
+				char *name)
 {
 	char **script_argv;
 	int script_rc = SLURM_ERROR;
@@ -388,6 +389,11 @@ extern char *certmgr_p_sign_csr(char *csr, char *token, char *name)
 
 	if (!(node = find_node_record(name))) {
 		log_flag(TLS, "Could not find node record for '%s'.", name);
+	}
+
+	if (is_client_auth) {
+		log_flag(TLS, "Client '%s' connected via mTLS, skipping validation.", name);
+		goto skip_validation_script;
 	}
 
 	if (node && node->cert_token) {

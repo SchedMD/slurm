@@ -71,22 +71,24 @@ static struct s2n_config *client_config = NULL;
 static struct s2n_config *server_config = NULL;
 
 /*
- * If non-NULL, server_cert_and_key was successfully loaded into server_config
+ * If non-NULL, own_cert_and_key was successfully loaded into
+ * both server_config/client_config
  */
-static struct s2n_cert_chain_and_key *server_cert_and_key = NULL;
+static struct s2n_cert_chain_and_key *own_cert_and_key = NULL;
 
-static char *server_cert = NULL;
-static uint32_t server_cert_len = 0;
-static char *server_key = NULL;
-static uint32_t server_key_len = 0;
+static char *own_cert = NULL;
+static uint32_t own_cert_len = 0;
+static char *own_key = NULL;
+static uint32_t own_key_len = 0;
 
 static bool is_own_cert_loaded = false;
+static bool is_own_cert_trusted_by_ca = false;
 
-static pthread_rwlock_t server_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
+static pthread_rwlock_t s2n_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
 
-static uint32_t server_conf_conn_cnt = 0;
-static pthread_mutex_t server_conf_cnt_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t server_conf_cnt_cond = PTHREAD_COND_INITIALIZER;
+static uint32_t s2n_conf_conn_cnt = 0;
+static pthread_mutex_t s2n_conf_cnt_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t s2n_conf_cnt_cond = PTHREAD_COND_INITIALIZER;
 
 /*
  * These are defined here so when we link with something other than
@@ -109,7 +111,8 @@ typedef struct {
 	struct s2n_config *s2n_config;
 	struct s2n_cert_chain_and_key *cert_and_key;
 	bool do_graceful_shutdown;
-	bool using_global_server_conf;
+	bool using_global_s2n_conf;
+	bool is_client_authenticated;
 } tls_conn_t;
 
 /*
@@ -270,7 +273,7 @@ static uint8_t _verify_hostname(const char *host_name, size_t host_name_len,
 	return 1;
 }
 
-static struct s2n_config *_create_config_common(void)
+static struct s2n_config *_create_config(void)
 {
 	struct s2n_config *new_conf = NULL;
 	char *security_policy = NULL;
@@ -306,23 +309,6 @@ static struct s2n_config *_create_config_common(void)
 	}
 	xfree(security_policy);
 
-	/*
-	 * from s2n usage guide:
-	 *
-	 * When using client authentication, the server MUST implement the
-	 * s2n_verify_host_fn, because the default behavior will likely reject
-	 * all client certificates.
-	 */
-	return new_conf;
-}
-
-static struct s2n_config *_create_client_config(void)
-{
-	struct s2n_config *new_conf = NULL;
-
-	if (!(new_conf = _create_config_common()))
-		return NULL;
-
 	if (s2n_config_set_verify_host_callback(new_conf, _verify_hostname,
 						NULL) < 0) {
 		on_s2n_error(NULL, s2n_config_set_verify_host_callback);
@@ -330,15 +316,40 @@ static struct s2n_config *_create_client_config(void)
 		return NULL;
 	}
 
+	/*
+	 * Per libs2n docs:
+	 *   Server behavior:
+	 *   - Optional: Request the client's certificate and validate it. If no
+	 *     certificate is received then no validation is performed.
+	 *   Client behavior:
+	 *   - Optional (default): Sends the client certificate if the server
+	 *     requests client authentication. No certificate is sent if the
+	 *     application hasn't provided a certificate.
+	 */
+	if (s2n_config_set_client_auth_type(new_conf, S2N_CERT_AUTH_OPTIONAL)) {
+		on_s2n_error(NULL, s2n_config_set_client_auth_type);
+		return NULL;
+	}
+
 	return new_conf;
 }
 
-static struct s2n_config *_create_server_config(void)
+static char *_get_ca_cert_file_from_conf(void)
 {
-	return _create_config_common();
+	char *cert;
+
+	/* Get explicit path configuration */
+	if ((cert = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=")))
+		return cert;
+
+	/* Try to find default path */
+	if ((cert = get_extra_conf_path("ca_cert.pem")))
+		return cert;
+
+	return NULL;
 }
 
-static int _add_ca_cert_to_client(struct s2n_config *config, char* cert_file)
+static int _add_ca_cert_to_config(struct s2n_config *config, char *cert_file)
 {
 	buf_t *cert_buf;
 
@@ -366,10 +377,9 @@ static int _add_ca_cert_to_client(struct s2n_config *config, char* cert_file)
 	return SLURM_SUCCESS;
 }
 
-static int _add_cert_to_server(struct s2n_config *s2n_config,
-			       struct s2n_cert_chain_and_key **cert_and_key,
-			       char *cert_pem, uint32_t cert_pem_len,
-			       char *key_pem, uint32_t key_pem_len)
+static int _create_cert_and_key(struct s2n_cert_chain_and_key **cert_and_key,
+				char *cert_pem, uint32_t cert_pem_len,
+				char *key_pem, uint32_t key_pem_len)
 {
 	xassert(cert_and_key);
 
@@ -390,9 +400,15 @@ static int _add_cert_to_server(struct s2n_config *s2n_config,
 						  (uint8_t *) key_pem,
 						  key_pem_len) < 0) {
 		on_s2n_error(NULL, s2n_cert_chain_and_key_load_pem_bytes);
-		goto fail;
+		return SLURM_ERROR;
 	}
 
+	return SLURM_SUCCESS;
+}
+
+static int _add_own_cert_to_config(struct s2n_config *s2n_config,
+				   struct s2n_cert_chain_and_key **cert_and_key)
+{
 	/*
 	 * Per libs2n docs:
 	 *	It is not recommended to free or modify the `cert_key_pair` as
@@ -415,64 +431,82 @@ fail:
 	return SLURM_ERROR;
 }
 
-static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
-				      char *key_pem, uint32_t key_pem_len)
+static int _reset_global_conf(struct s2n_config **config)
 {
-	if (!server_cert_and_key) {
+	int rc = SLURM_ERROR;
+	char *cert_file = NULL;
+
+	if (*config && s2n_config_free(*config))
+		on_s2n_error(NULL, s2n_config_free);
+
+	if (!(*config = _create_config()))
+		goto end;
+	if (!(cert_file = _get_ca_cert_file_from_conf()))
+		goto end;
+	if (_add_ca_cert_to_config(*config, cert_file))
+		goto end;
+	if (_add_own_cert_to_config(*config, &own_cert_and_key))
+		goto end;
+
+	rc = SLURM_SUCCESS;
+end:
+	xfree(cert_file);
+
+	return rc;
+}
+
+static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
+				      char *key_pem, uint32_t key_pem_len,
+				      bool server_only)
+{
+	if (!own_cert_and_key) {
 		is_own_cert_loaded = true;
-		return _add_cert_to_server(server_config, &server_cert_and_key,
-					   cert_pem, cert_pem_len, key_pem,
-					   key_pem_len);
+
+		if (_create_cert_and_key(&own_cert_and_key, cert_pem,
+					 cert_pem_len, key_pem, key_pem_len))
+			return SLURM_ERROR;
+		if (_add_own_cert_to_config(server_config, &own_cert_and_key))
+			return SLURM_ERROR;
+		if (!server_only &&
+		    _add_own_cert_to_config(client_config, &own_cert_and_key))
+			return SLURM_ERROR;
+
+		return SLURM_SUCCESS;
 	}
 
 	/* Stop new connections from using current server_config */
-	slurm_rwlock_wrlock(&server_conf_lock);
+	slurm_rwlock_wrlock(&s2n_conf_lock);
 
 	log_flag(TLS, "%s: Updating global server_conf with new certificate and key now...", plugin_type);
 
 	/* Wait until connections using server_config are finished */
-	slurm_mutex_lock(&server_conf_cnt_lock);
-	if (server_conf_conn_cnt)
-		slurm_cond_wait(&server_conf_cnt_cond, &server_conf_cnt_lock);
+	slurm_mutex_lock(&s2n_conf_cnt_lock);
+	if (s2n_conf_conn_cnt)
+		slurm_cond_wait(&s2n_conf_cnt_cond, &s2n_conf_cnt_lock);
 
-	if (server_cert_and_key &&
-	    s2n_cert_chain_and_key_free(server_cert_and_key)) {
-		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
-	}
-	server_cert_and_key = NULL;
+	if (_create_cert_and_key(&own_cert_and_key, cert_pem, cert_pem_len,
+				 key_pem, key_pem_len))
+		goto fail;
 
 	/*
 	 * s2n_config_free_cert_chain_and_key not enough to reset the
 	 * certificate associated with server_config. server_config must be
 	 * recreated.
 	 */
-	if (server_config && s2n_config_free(server_config)) {
-		on_s2n_error(NULL, s2n_config_free);
-	}
-
-	if (!(server_config = _create_server_config())) {
-		error("Could not create new server_config");
+	if (_reset_global_conf(&server_config))
 		goto fail;
-	}
-	if (_add_cert_to_server(server_config, &server_cert_and_key, cert_pem,
-				cert_pem_len, key_pem, key_pem_len)) {
-		if (s2n_config_free(server_config)) {
-			on_s2n_error(NULL, s2n_config_free);
-		}
-		server_config = NULL;
-		error("Could not add cert to server_config");
+	if (!server_only && _reset_global_conf(&client_config))
 		goto fail;
-	}
 
-	slurm_mutex_unlock(&server_conf_cnt_lock);
+	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 	log_flag(TLS, "%s: Successfully updated global server_conf with new certificate and key", plugin_type);
-	slurm_rwlock_unlock(&server_conf_lock);
+	slurm_rwlock_unlock(&s2n_conf_lock);
 
 	return SLURM_SUCCESS;
 fail:
-	slurm_mutex_unlock(&server_conf_cnt_lock);
+	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 	log_flag(TLS, "%s: Failed to update global server_conf with new certificate and key", plugin_type);
-	slurm_rwlock_unlock(&server_conf_lock);
+	slurm_rwlock_unlock(&s2n_conf_lock);
 
 	return SLURM_ERROR;
 }
@@ -557,9 +591,8 @@ static int _add_cert_from_file_to_server(void)
 		 */
 		if ((rc == ENOENT) &&
 		    (running_in_slurmd() || running_in_sackd()))
-			return SLURM_SUCCESS;
+			rc = SLURM_SUCCESS;
 
-		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 	if (!(cert_buf = create_mmap_buf(cert_file))) {
@@ -591,8 +624,8 @@ static int _add_cert_from_file_to_server(void)
 		goto cleanup;
 	}
 
-	rc = _add_cert_to_global_server(cert_buf->head, cert_buf->size,
-					key_buf->head, key_buf->size);
+	rc = _add_cert_to_global_config(cert_buf->head, cert_buf->size,
+					key_buf->head, key_buf->size, false);
 
 cleanup:
 	xfree(key_file);
@@ -605,17 +638,18 @@ cleanup:
 
 extern int tls_p_load_self_signed_cert(void)
 {
-	if (certgen_g_self_signed(&server_cert, &server_key) ||
-	    !server_cert || !server_key) {
+	if (certgen_g_self_signed(&own_cert, &own_key) || !own_cert ||
+	    !own_key) {
 		error("Failed to generate self signed certificate and private key");
 		return SLURM_ERROR;
 	}
 
-	server_cert_len = strlen(server_cert);
-	server_key_len = strlen(server_key);
+	own_cert_len = strlen(own_cert);
+	own_key_len = strlen(own_key);
 
-	return _add_cert_to_global_server(server_cert, server_cert_len,
-					  server_key, server_key_len);
+	/* Don't add self-signed cert to client_config */
+	return _add_cert_to_global_config(own_cert, own_cert_len, own_key,
+					  own_key_len, true);
 }
 
 
@@ -632,13 +666,13 @@ extern int init(void)
 		s2n_stack_traces_enabled_set(true);
 
 	/* Create client s2n_config */
-	if (!(client_config = _create_client_config())) {
+	if (!(client_config = _create_config())) {
 		error("Could not create client configuration for s2n");
 		return errno;
 	}
 
 	/* Create server s2n_config */
-	if (!(server_config = _create_server_config())) {
+	if (!(server_config = _create_config())) {
 		error("Could not create server configuration for s2n");
 		return errno;
 	}
@@ -656,8 +690,8 @@ extern int fini(void)
 		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
 	}
 
-	if (server_cert_and_key &&
-	    (s2n_cert_chain_and_key_free(server_cert_and_key) != S2N_SUCCESS))
+	if (own_cert_and_key &&
+	    (s2n_cert_chain_and_key_free(own_cert_and_key) != S2N_SUCCESS))
 		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
 
 	if (s2n_config_free(server_config))
@@ -666,8 +700,8 @@ extern int fini(void)
 	if (s2n_cleanup_final())
 		on_s2n_error(NULL, s2n_cleanup_final);
 
-	xfree(server_cert);
-	xfree(server_key);
+	xfree(own_cert);
+	xfree(own_key);
 
 	return SLURM_SUCCESS;
 }
@@ -686,6 +720,9 @@ static int _negotiate(tls_conn_t *conn)
 		}
 	}
 
+	if (s2n_connection_client_cert_used(conn->s2n_conn) == 1)
+		conn->is_client_authenticated = true;
+
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
 		const char *cipher = NULL;
 		uint8_t first = 0, second = 0;
@@ -697,27 +734,15 @@ static int _negotiate(tls_conn_t *conn)
 			on_s2n_error(conn,
 				     s2n_connection_get_cipher_iana_value);
 		}
-		log_flag(TLS, "%s: cipher suite:%s, {0x%02X,0x%02X}. fd:%d->%d.",
-			 plugin_type, cipher, first, second, conn->input_fd,
-			 conn->output_fd);
+		log_flag(TLS, "%s: cipher suite:%s, {0x%02X,0x%02X}%s. fd:%d->%d.",
+			 plugin_type, cipher, first, second,
+			 conn->is_client_authenticated ?
+				 " Client is authenticated (mTLS)" :
+				 "",
+			 conn->input_fd, conn->output_fd);
 	}
 
 	return SLURM_SUCCESS;
-}
-
-static char *_get_ca_cert_file_from_conf(void)
-{
-	char *cert;
-
-	/* Get explicit path configuration */
-	if ((cert = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=")))
-		return cert;
-
-	/* Try to find default path */
-	if ((cert = get_extra_conf_path("ca_cert.pem")))
-		return cert;
-
-	return NULL;
 }
 
 extern int tls_p_load_ca_cert(char *cert_file)
@@ -731,7 +756,8 @@ extern int tls_p_load_ca_cert(char *cert_file)
 		free_cert = true;
 	}
 
-	rc = _add_ca_cert_to_client(client_config, cert_file);
+	rc = (_add_ca_cert_to_config(client_config, cert_file) ||
+	      _add_ca_cert_to_config(server_config, cert_file));
 
 	if (free_cert)
 		xfree(cert_file);
@@ -741,33 +767,39 @@ extern int tls_p_load_ca_cert(char *cert_file)
 
 extern char *tls_p_get_own_public_cert(void)
 {
-	log_flag(AUDIT_TLS, "Returning own public cert: \n%s", server_cert);
+	log_flag(AUDIT_TLS, "Returning own public cert: \n%s", own_cert);
 
-	return xstrdup(server_cert);
+	return xstrdup(own_cert);
 }
 
 extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
 			       uint32_t key_len)
 {
-	if (!cert)
-		return _add_cert_from_file_to_server();
+	if (!cert) {
+		if (_add_cert_from_file_to_server())
+			return SLURM_ERROR;
+		goto cert_loaded;
+	}
 
-	xfree(server_cert);
-	xfree(server_key);
+	xfree(own_cert);
+	xfree(own_key);
 
 	/* Save certificate details for later */
-	server_cert = xstrdup(cert);
-	server_cert_len = cert_len;
-	server_key = xstrdup(key);
-	server_key_len = key_len;
+	own_cert = xstrdup(cert);
+	own_cert_len = cert_len;
+	own_key = xstrdup(key);
+	own_key_len = key_len;
 
-	if (_add_cert_to_global_server(cert, cert_len, key, key_len)) {
+	if (_add_cert_to_global_config(cert, cert_len, key, key_len, false)) {
 		error("%s: Could not add certificate and private key to s2n_config.",
 		      plugin_type);
 		return SLURM_ERROR;
 	}
 
+cert_loaded:
 	log_flag(TLS, "Successfully loaded signed certificate into TLS store.");
+
+	is_own_cert_trusted_by_ca = true;
 
 	return SLURM_SUCCESS;
 }
@@ -777,28 +809,116 @@ extern bool tls_p_own_cert_loaded(void)
 	return is_own_cert_loaded;
 }
 
-static void _server_config_inc(tls_conn_t *conn)
+static void _s2n_config_inc(tls_conn_t *conn)
 {
-	slurm_mutex_lock(&server_conf_cnt_lock);
-	server_conf_conn_cnt++;
-	slurm_mutex_unlock(&server_conf_cnt_lock);
+	slurm_mutex_lock(&s2n_conf_cnt_lock);
+	s2n_conf_conn_cnt++;
+	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 }
 
-static void _server_config_dec(tls_conn_t *conn)
+static void _s2n_config_dec(tls_conn_t *conn)
 {
-	slurm_mutex_lock(&server_conf_cnt_lock);
+	slurm_mutex_lock(&s2n_conf_cnt_lock);
 
-	if (server_conf_conn_cnt > 0) {
-		server_conf_conn_cnt--;
+	if (s2n_conf_conn_cnt > 0) {
+		s2n_conf_conn_cnt--;
 	} else {
 		error("%s: unexpected underflow", __func__);
 	}
 
-	if (server_conf_conn_cnt == 0) {
-		slurm_cond_signal(&server_conf_cnt_cond);
+	if (s2n_conf_conn_cnt == 0) {
+		slurm_cond_signal(&s2n_conf_cnt_cond);
 	}
 
-	slurm_mutex_unlock(&server_conf_cnt_lock);
+	slurm_mutex_unlock(&s2n_conf_cnt_lock);
+}
+
+static void _cleanup_tls_conn(tls_conn_t *conn)
+{
+	if (conn->s2n_config && (conn->s2n_config != server_config) &&
+	    (conn->s2n_config != client_config))
+		if (s2n_config_free(conn->s2n_config))
+			on_s2n_error(NULL, s2n_config_free);
+
+	if (conn->cert_and_key &&
+	    (s2n_cert_chain_and_key_free(conn->cert_and_key) != S2N_SUCCESS))
+		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
+
+	if (conn->s2n_conn && s2n_connection_free(conn->s2n_conn) < 0)
+		on_s2n_error(conn, s2n_connection_free);
+
+	if (conn->using_global_s2n_conf)
+		_s2n_config_dec(conn);
+}
+
+static int _set_conn_s2n_conf(tls_conn_t *conn,
+			      const conn_args_t *tls_conn_args)
+{
+	char *cert_file = NULL;
+	bool is_server = (tls_conn_args->mode == TLS_CONN_SERVER);
+
+	if (!slurm_rwlock_tryrdlock(&s2n_conf_lock)) {
+		if (is_server && !own_cert_and_key) {
+			error("%s: No own certificate has been loaded yet, cannot create connection for fd:%d->%d",
+			      __func__, tls_conn_args->input_fd,
+			      tls_conn_args->output_fd);
+			slurm_rwlock_unlock(&s2n_conf_lock);
+			return SLURM_ERROR;
+		}
+		_s2n_config_inc(conn);
+
+		if (is_server)
+			conn->s2n_config = server_config;
+		else
+			conn->s2n_config = client_config;
+
+		conn->using_global_s2n_conf = true;
+		slurm_rwlock_unlock(&s2n_conf_lock);
+		return SLURM_SUCCESS;
+	}
+
+	/*
+	 * Create a new s2n_config with the same certificate while the
+	 * old one is getting updated.
+	 */
+	log_flag(TLS, "%s: global s2n_config is being updated, creating new s2n_config for conn to fd:%d->%d",
+		plugin_type, tls_conn_args->input_fd, tls_conn_args->output_fd);
+	if (!own_cert || !own_cert_len || !own_key || !own_key_len) {
+		error("%s: Global s2n_config is busy being updated and there's no saved certificate/key to create a temporary s2n_config for conn to fd:%d->%d",
+		      __func__, tls_conn_args->input_fd,
+		      tls_conn_args->output_fd);
+		return SLURM_ERROR;
+	}
+	if (!(conn->s2n_config = _create_config())) {
+		error("Could not create s2n_config for fd:%d->%d",
+		      tls_conn_args->input_fd, tls_conn_args->output_fd);
+		return SLURM_ERROR;
+	}
+
+	if (_create_cert_and_key(&conn->cert_and_key, own_cert, own_cert_len,
+				 own_key, own_key_len)) {
+		error("Could not cert and key pair for fd:%d->%d",
+		      tls_conn_args->input_fd, tls_conn_args->output_fd);
+		return SLURM_ERROR;
+	}
+	if (_add_own_cert_to_config(conn->s2n_config, &conn->cert_and_key)) {
+		error("Could not add certificate to s2n_config for fd:%d->%d",
+		      tls_conn_args->input_fd, tls_conn_args->output_fd);
+		return SLURM_ERROR;
+	}
+	if (!(cert_file = _get_ca_cert_file_from_conf())) {
+		error("Could not get CA certificate file for s2n_config for fd:%d->%d",
+		      tls_conn_args->input_fd, tls_conn_args->output_fd);
+		return SLURM_ERROR;
+	}
+	if (_add_ca_cert_to_config(conn->s2n_config, cert_file)) {
+		error("Could not add certificate to s2n_config for fd:%d->%d",
+		      tls_conn_args->input_fd, tls_conn_args->output_fd);
+		xfree(cert_file);
+		return SLURM_ERROR;
+	}
+	xfree(cert_file);
+	return SLURM_SUCCESS;
 }
 
 extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
@@ -818,49 +938,6 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	case TLS_CONN_SERVER:
 	{
 		s2n_conn_mode = S2N_SERVER;
-		if (!slurm_rwlock_tryrdlock(&server_conf_lock)) {
-			if (!server_cert_and_key) {
-				error("%s: No server certificate has been loaded yet, cannot create connection for fd:%d->%d",
-				      __func__, tls_conn_args->input_fd,
-				      tls_conn_args->output_fd);
-				slurm_rwlock_unlock(&server_conf_lock);
-				goto fail;
-			}
-			_server_config_inc(conn);
-			conn->s2n_config = server_config;
-			conn->using_global_server_conf = true;
-			slurm_rwlock_unlock(&server_conf_lock);
-			break;
-		}
-
-		/*
-		 * Create a new s2n_config with the same certificate while the
-		 * old one is getting updated.
-		 */
-		log_flag(TLS, "%s: server_conf is being updated, creating new s2n_config for conn to fd:%d->%d",
-			 plugin_type, tls_conn_args->input_fd,
-			 tls_conn_args->output_fd);
-		if (!server_cert || !server_cert_len || !server_key ||
-		    !server_key_len) {
-			error("%s: Global server s2n_config is busy being updated and there's no saved certificate/key to create a temporary server s2n_config for conn to fd:%d->%d",
-			      __func__, tls_conn_args->input_fd,
-			      tls_conn_args->output_fd);
-			goto fail;
-		}
-		if (!(conn->s2n_config = _create_server_config())) {
-			error("Could not create server config for fd:%d->%d",
-			      tls_conn_args->input_fd,
-			      tls_conn_args->output_fd);
-			goto fail;
-		}
-		if (_add_cert_to_server(conn->s2n_config, &conn->cert_and_key,
-					server_cert, server_cert_len,
-					server_key, server_key_len)) {
-			error("Could not add certificate to server config for fd:%d->%d",
-			      tls_conn_args->input_fd,
-			      tls_conn_args->output_fd);
-			goto fail;
-		}
 		break;
 	}
 	case TLS_CONN_CLIENT:
@@ -869,7 +946,6 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 		if (!tls_conn_args->cert) {
 			log_flag(TLS, "%s: no certificate provided for new connection. Using default trust store.",
 				 plugin_type);
-			conn->s2n_config = client_config;
 			break;
 		}
 
@@ -877,7 +953,7 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 			 plugin_type, tls_conn_args->cert);
 
 		/* Use new config with only "cert" loaded in trust store */
-		if (!(conn->s2n_config = _create_client_config())) {
+		if (!(conn->s2n_config = _create_config())) {
 			error("Failed to create new config for connection");
 			goto fail;
 		}
@@ -891,13 +967,15 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	}
 	default:
 		error("Invalid tls connection mode");
-		return NULL;
+		goto fail;
 	}
+
+	if (!conn->s2n_config && _set_conn_s2n_conf(conn, tls_conn_args))
+		goto fail;
 
 	if (!(conn->s2n_conn = s2n_connection_new(s2n_conn_mode))) {
 		on_s2n_error(conn, s2n_connection_new);
-		xfree(conn);
-		return NULL;
+		goto fail;
 	}
 
 	if (s2n_connection_set_config(conn->s2n_conn, conn->s2n_config) < 0) {
@@ -986,21 +1064,7 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	return conn;
 
 fail:
-	if (conn->s2n_config && (conn->s2n_config != server_config) &&
-	    (conn->s2n_config != client_config))
-		if (s2n_config_free(conn->s2n_config))
-			on_s2n_error(NULL, s2n_config_free);
-
-	if (conn->cert_and_key &&
-	    (s2n_cert_chain_and_key_free(conn->cert_and_key) != S2N_SUCCESS))
-		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
-
-	if (conn->s2n_conn && s2n_connection_free(conn->s2n_conn) < 0)
-		on_s2n_error(conn, s2n_connection_free);
-
-	if (conn->using_global_server_conf)
-		_server_config_dec(conn);
-
+	_cleanup_tls_conn(conn);
 	xfree(conn);
 
 	return NULL;
@@ -1016,9 +1080,7 @@ extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 		 plugin_type, conn->input_fd, conn->output_fd);
 
 	if (!conn->s2n_conn) {
-		if (conn->using_global_server_conf)
-			_server_config_dec(conn);
-
+		_cleanup_tls_conn(conn);
 		xfree(conn);
 		return;
 	}
@@ -1046,17 +1108,6 @@ extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 		}
 	}
 
-	if (s2n_connection_free(conn->s2n_conn) < 0)
-		on_s2n_error(conn, s2n_connection_free);
-
-	if (conn->s2n_config && (conn->s2n_config != server_config) &&
-	    (conn->s2n_config != client_config))
-		if (s2n_config_free(conn->s2n_config))
-			on_s2n_error(NULL, s2n_config_free);
-
-	if (conn->using_global_server_conf)
-		_server_config_dec(conn);
-
 	if (close_fds) {
 		if (conn->input_fd >= 0)
 			close(conn->input_fd);
@@ -1065,6 +1116,7 @@ extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 			close(conn->output_fd);
 	}
 
+	_cleanup_tls_conn(conn);
 	xfree(conn);
 }
 
@@ -1184,6 +1236,13 @@ extern int tls_p_negotiate_conn(tls_conn_t *conn)
 	xassert(conn);
 
 	return _negotiate(conn);
+}
+
+extern bool tls_p_is_client_authenticated(tls_conn_t *conn)
+{
+	xassert(conn);
+
+	return conn->is_client_authenticated;
 }
 
 extern int tls_p_get_conn_fd(tls_conn_t *conn)

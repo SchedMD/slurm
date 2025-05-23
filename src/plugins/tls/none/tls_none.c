@@ -165,6 +165,11 @@ extern int tls_p_negotiate_conn(void *conn)
 	return ESLURM_NOT_SUPPORTED;
 }
 
+extern bool tls_p_is_client_authenticated(void *conn)
+{
+	return false;
+}
+
 extern int tls_p_get_conn_fd(tls_conn_t *conn)
 {
 	xassert(conn);
