@@ -303,7 +303,7 @@ extern int conn_g_get_fd(void *conn)
 	return (*(ops.get_conn_fd))(conn);
 }
 
-extern int tls_g_set_conn_fds(void *conn, int input_fd, int output_fd)
+extern int conn_g_set_fds(void *conn, int input_fd, int output_fd)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_conn_fds))(conn, input_fd, output_fd);

@@ -171,7 +171,7 @@ extern int conn_g_get_fd(void *conn);
  * IN output_fd - new write fd
  * RET SLURM_SUCCESS or error
  */
-extern int tls_g_set_conn_fds(void *conn, int input_fd, int output_fd);
+extern int conn_g_set_fds(void *conn, int input_fd, int output_fd);
 
 /*
  * Set read/write fd's on TLS connection

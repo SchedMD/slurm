@@ -784,9 +784,8 @@ extern int tls_extract(conmgr_fd_t *con, extract_fd_t *extract)
 		return EBADF;
 	}
 
-	if ((rc = tls_g_set_conn_fds(con->tls, con->input_fd,
-				     con->output_fd))) {
-		log_flag(CONMGR, "%s: [%s] tls_g_set_conn_fds() failed: %s",
+	if ((rc = conn_g_set_fds(con->tls, con->input_fd, con->output_fd))) {
+		log_flag(CONMGR, "%s: [%s] conn_g_set_fds() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
 		close_con(true, con);
 		return rc;
