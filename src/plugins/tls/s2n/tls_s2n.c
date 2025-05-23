@@ -317,7 +317,7 @@ static struct s2n_config *_create_config(void)
 	return new_conf;
 }
 
-static int _add_ca_cert_to_client(struct s2n_config *config, char* cert_file)
+static int _add_ca_cert_to_config(struct s2n_config *config, char *cert_file)
 {
 	buf_t *cert_buf;
 
@@ -712,7 +712,7 @@ extern int tls_p_load_ca_cert(char *cert_file)
 		free_cert = true;
 	}
 
-	rc = _add_ca_cert_to_client(client_config, cert_file);
+	rc = _add_ca_cert_to_config(client_config, cert_file);
 
 	if (free_cert)
 		xfree(cert_file);
