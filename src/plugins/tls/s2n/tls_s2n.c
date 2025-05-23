@@ -779,6 +779,24 @@ static void _server_config_dec(tls_conn_t *conn)
 	slurm_mutex_unlock(&server_conf_cnt_lock);
 }
 
+static void _cleanup_tls_conn(tls_conn_t *conn)
+{
+	if (conn->s2n_config && (conn->s2n_config != server_config) &&
+	    (conn->s2n_config != client_config))
+		if (s2n_config_free(conn->s2n_config))
+			on_s2n_error(NULL, s2n_config_free);
+
+	if (conn->cert_and_key &&
+	    (s2n_cert_chain_and_key_free(conn->cert_and_key) != S2N_SUCCESS))
+		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
+
+	if (conn->s2n_conn && s2n_connection_free(conn->s2n_conn) < 0)
+		on_s2n_error(conn, s2n_connection_free);
+
+	if (conn->using_global_server_conf)
+		_server_config_dec(conn);
+}
+
 extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn;
@@ -964,21 +982,7 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	return conn;
 
 fail:
-	if (conn->s2n_config && (conn->s2n_config != server_config) &&
-	    (conn->s2n_config != client_config))
-		if (s2n_config_free(conn->s2n_config))
-			on_s2n_error(NULL, s2n_config_free);
-
-	if (conn->cert_and_key &&
-	    (s2n_cert_chain_and_key_free(conn->cert_and_key) != S2N_SUCCESS))
-		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
-
-	if (conn->s2n_conn && s2n_connection_free(conn->s2n_conn) < 0)
-		on_s2n_error(conn, s2n_connection_free);
-
-	if (conn->using_global_server_conf)
-		_server_config_dec(conn);
-
+	_cleanup_tls_conn(conn);
 	xfree(conn);
 
 	return NULL;
@@ -994,9 +998,7 @@ extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 		 plugin_type, conn->input_fd, conn->output_fd);
 
 	if (!conn->s2n_conn) {
-		if (conn->using_global_server_conf)
-			_server_config_dec(conn);
-
+		_cleanup_tls_conn(conn);
 		xfree(conn);
 		return;
 	}
@@ -1024,17 +1026,6 @@ extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 		}
 	}
 
-	if (s2n_connection_free(conn->s2n_conn) < 0)
-		on_s2n_error(conn, s2n_connection_free);
-
-	if (conn->s2n_config && (conn->s2n_config != server_config) &&
-	    (conn->s2n_config != client_config))
-		if (s2n_config_free(conn->s2n_config))
-			on_s2n_error(NULL, s2n_config_free);
-
-	if (conn->using_global_server_conf)
-		_server_config_dec(conn);
-
 	if (close_fds) {
 		if (conn->input_fd >= 0)
 			close(conn->input_fd);
@@ -1043,6 +1034,7 @@ extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 			close(conn->output_fd);
 	}
 
+	_cleanup_tls_conn(conn);
 	xfree(conn);
 }
 
