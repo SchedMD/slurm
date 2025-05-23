@@ -967,7 +967,7 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	}
 	default:
 		error("Invalid tls connection mode");
-		return NULL;
+		goto fail;
 	}
 
 	if (!conn->s2n_config && _set_conn_s2n_conf(conn, tls_conn_args))
@@ -975,8 +975,7 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 
 	if (!(conn->s2n_conn = s2n_connection_new(s2n_conn_mode))) {
 		on_s2n_error(conn, s2n_connection_new);
-		xfree(conn);
-		return NULL;
+		goto fail;
 	}
 
 	if (s2n_connection_set_config(conn->s2n_conn, conn->s2n_config) < 0) {
