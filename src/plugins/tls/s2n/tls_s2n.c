@@ -833,6 +833,7 @@ static void _cleanup_tls_conn(tls_conn_t *conn)
 static int _set_conn_s2n_conf(tls_conn_t *conn,
 			      const conn_args_t *tls_conn_args)
 {
+	char *cert_file = NULL;
 	bool is_server = (tls_conn_args->mode == TLS_CONN_SERVER);
 
 	if (!slurm_rwlock_tryrdlock(&s2n_conf_lock)) {
@@ -884,6 +885,18 @@ static int _set_conn_s2n_conf(tls_conn_t *conn,
 		      tls_conn_args->input_fd, tls_conn_args->output_fd);
 		return SLURM_ERROR;
 	}
+	if (!(cert_file = _get_ca_cert_file_from_conf())) {
+		error("Could not get CA certificate file for s2n_config for fd:%d->%d",
+		      tls_conn_args->input_fd, tls_conn_args->output_fd);
+		return SLURM_ERROR;
+	}
+	if (_add_ca_cert_to_config(conn->s2n_config, cert_file)) {
+		error("Could not add certificate to s2n_config for fd:%d->%d",
+		      tls_conn_args->input_fd, tls_conn_args->output_fd);
+		xfree(cert_file);
+		return SLURM_ERROR;
+	}
+	xfree(cert_file);
 	return SLURM_SUCCESS;
 }
 
