@@ -139,7 +139,7 @@ extern bool conn_g_own_cert_loaded(void);
  *	pem file from the configuration in slurm.conf or in the default path
  * RET SLURM_SUCCESS or error
  */
-extern int tls_g_load_ca_cert(char *cert_file);
+extern int conn_g_load_ca_cert(char *cert_file);
 
 /*
  * Create new TLS connection

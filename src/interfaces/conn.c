@@ -160,7 +160,7 @@ extern int conn_g_init(void)
 	if (tls_enabled_bool) {
 		/* Load CA cert now, wait until later in configless */
 		if (!running_in_slurmstepd() && slurm_conf.last_update &&
-		    tls_g_load_ca_cert(NULL)) {
+		    conn_g_load_ca_cert(NULL)) {
 			error("Could not load trusted certificates for s2n");
 			rc = SLURM_ERROR;
 			goto done;
@@ -209,7 +209,7 @@ extern int conn_g_fini(void)
 	return rc;
 }
 
-extern int tls_g_load_ca_cert(char *cert_file)
+extern int conn_g_load_ca_cert(char *cert_file)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.load_ca_cert))(cert_file);

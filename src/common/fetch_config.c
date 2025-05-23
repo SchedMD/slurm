@@ -143,7 +143,7 @@ static void _fetch_child(list_t *controllers, uint32_t flags, uint16_t port,
 			error("--ca-cert-file was specified but TLS plugin failed to load");
 			goto rwfail;
 		}
-		if (tls_g_load_ca_cert(ca_cert_file)) {
+		if (conn_g_load_ca_cert(ca_cert_file)) {
 			error("Failed to load certificate file '%s'", ca_cert_file);
 			goto rwfail;
 		}
