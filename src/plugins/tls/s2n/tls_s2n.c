@@ -809,6 +809,8 @@ static void _cleanup_tls_conn(tls_conn_t *conn)
 static int _set_conn_s2n_conf(tls_conn_t *conn,
 			      const conn_args_t *tls_conn_args)
 {
+	bool is_server = (tls_conn_args->mode == TLS_CONN_SERVER);
+
 	if (!slurm_rwlock_tryrdlock(&s2n_conf_lock)) {
 		if (!own_cert_and_key) {
 			error("%s: No own certificate has been loaded yet, cannot create connection for fd:%d->%d",
@@ -818,7 +820,12 @@ static int _set_conn_s2n_conf(tls_conn_t *conn,
 			return SLURM_ERROR;
 		}
 		_s2n_config_inc(conn);
-		conn->s2n_config = server_config;
+
+		if (is_server)
+			conn->s2n_config = server_config;
+		else
+			conn->s2n_config = client_config;
+
 		conn->using_global_s2n_conf = true;
 		slurm_rwlock_unlock(&s2n_conf_lock);
 		return SLURM_SUCCESS;
