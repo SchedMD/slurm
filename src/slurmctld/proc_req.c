@@ -5996,8 +5996,10 @@ static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 		node->cert_last_renewal = time(NULL);
 	}
 
-	log_flag(AUDIT_TLS, "Sending signed certificate back to node \'%s\':\n%s",
-		 req->node_name, resp->signed_cert);
+	if (resp->signed_cert) {
+		log_flag(AUDIT_TLS, "Sending signed certificate back to node \'%s\':\n%s",
+			 req->node_name, resp->signed_cert);
+	}
 
 	(void) send_msg_response(msg, RESPONSE_TLS_CERT, resp);
 	slurm_free_msg_data(RESPONSE_TLS_CERT, resp);
