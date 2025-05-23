@@ -21,11 +21,13 @@ of the \fB\-\-container\fR argument of \fBsalloc\fR, \fBsrun\fR, and \fBsbatch\f
 
 .TP
 \fBContainerPath\fR
-Override path pattern for placement of the generated OCI Container bundle
-directory. See the section \fBOCI Pattern\fR for details on pattern
-replacement.
+Specifies an override path pattern for placing the per-step spool directory.
+If this option is set, the resulting per-task OCI container bundle path will be
+created as a subdirectory of this path. Refer to the \fBOCI Pattern\fR section
+for details on pattern substitution.
 .sp
-Default is unique directory generated in \fBSlurmdSpoolDir\fR.
+By default, an uniquely generated subdirectory for each step is created under
+\fBSlurmdSpoolDir\fR.
 .IP
 
 .TP
@@ -82,7 +84,7 @@ Default does not exclude any environment variables.
 Override pattern for path inside of container to mount \fBContainerPath\fR. See
 the section \fBOCI Pattern\fR for details on pattern replacement.
 .sp
-Default: /var/run/slurm/
+Default: see \fBContainerPath\fR
 .IP
 
 .TP
@@ -235,9 +237,10 @@ Replace as numeric job id.
 
 .TP
 \fB%m\fR
-Replace as spool directory of container as patterned by \fBContainerPath\fR. If
-\fBContainerPath\fR is not configured or \fBContainerPath\fR contains \fB%m\fR,
-then replace with \fBSlurmdSpoolDir\fR from \fBslurm.conf\fR(5).
+Replace with the per-step spool directory path of the container as patterned by
+\fBContainerPath\fR. If \fBContainerPath\fR is not set, this is replaced with
+a uniquely generated subdirectory under \fBSlurmdSpoolDir\fR as defined in
+\fBslurm.conf\fR(5), or defaults to "/var/spool/slurmd".
 .IP
 
 .TP
