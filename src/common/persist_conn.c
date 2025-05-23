@@ -227,8 +227,8 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 	if (persist_conn->flags & PERSIST_FLAG_ALREADY_INITED)
 		first = false;
 
-	if (first && !(persist_conn->tls_conn = tls_g_create_conn(&tls_args))) {
-		error("%s: tls_g_create_conn() failed negotiation, closing connection %d(%s)",
+	if (first && !(persist_conn->tls_conn = conn_g_create(&tls_args))) {
+		error("%s: conn_g_create() failed negotiation, closing connection %d(%s)",
 		      __func__, fd, persist_conn->rem_host);
 		(void) close(fd);
 		return SLURM_ERROR;

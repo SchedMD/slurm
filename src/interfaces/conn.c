@@ -240,7 +240,7 @@ extern bool tls_g_own_cert_loaded(void)
 	return (*(ops.own_cert_loaded))();
 }
 
-extern void *tls_g_create_conn(const tls_conn_args_t *tls_conn_args)
+extern void *conn_g_create(const tls_conn_args_t *tls_conn_args)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 

@@ -530,9 +530,9 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_unlock(&mgr.mutex);
 
-	if (!(tls = tls_g_create_conn(&tls_args))) {
+	if (!(tls = conn_g_create(&tls_args))) {
 		rc = errno;
-		log_flag(CONMGR, "%s: [%s] tls_g_create_conn() failed: %s",
+		log_flag(CONMGR, "%s: [%s] conn_g_create() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
 
 		slurm_mutex_lock(&mgr.mutex);
@@ -549,7 +549,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		FREE_NULL_BUFFER(tls_in);
 		FREE_NULL_LIST(tls_out);
 	} else {
-		log_flag(CONMGR, "%s: [%s] tls_g_create_conn() success",
+		log_flag(CONMGR, "%s: [%s] conn_g_create() success",
 			 __func__, con->name);
 
 		slurm_mutex_lock(&mgr.mutex);

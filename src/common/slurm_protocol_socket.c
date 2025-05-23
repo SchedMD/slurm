@@ -618,7 +618,7 @@ extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 	tls_args.input_fd = tls_args.output_fd = sock;
 	net_set_nodelay(sock, true, NULL);
 
-	if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+	if (!(tls_conn = conn_g_create(&tls_args))) {
 		error("%s: Unable to create server TLS connection to address %pA: %m",
 		      __func__, addr);
 		(void) close(sock);

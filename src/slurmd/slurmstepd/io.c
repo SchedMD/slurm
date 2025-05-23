@@ -1743,7 +1743,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
 			.cert = srun->tls_cert,
 		};
 
-		if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+		if (!(tls_conn = conn_g_create(&tls_args))) {
 			error("Could not create client TLS connection for step IO");
 			return SLURM_ERROR;
 		}

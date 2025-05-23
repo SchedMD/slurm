@@ -75,8 +75,8 @@ typedef struct {
 	bool defer_blinding;
 	tls_conn_callbacks_t callbacks;
 	/*
-         * False: Attempt TLS negotiation in tls_g_create_conn()
-         * True: Defer TLS negotiation in tls_g_create_conn() to explicit call
+         * False: Attempt TLS negotiation in conn_g_create()
+         * True: Defer TLS negotiation in conn_g_create() to explicit call
          *      to tls_g_nego_conn()
          */
 	bool defer_negotiation;
@@ -146,7 +146,7 @@ extern int tls_g_load_ca_cert(char *cert_file);
  * IN tls_conn_args - ptr to tls_conn_args_t
  * RET ptr to TLS state
  */
-extern void *tls_g_create_conn(const tls_conn_args_t *tls_conn_args);
+extern void *conn_g_create(const tls_conn_args_t *tls_conn_args);
 extern void tls_g_destroy_conn(void *conn, bool close_fds);
 
 /*

@@ -1781,7 +1781,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 			.input_fd = input_fd,
 			.output_fd = input_fd,
 		};
-		msg->tls_conn = tls_g_create_conn(&tls_args);
+		msg->tls_conn = conn_g_create(&tls_args);
 	}
 
 	server_thread_incr();

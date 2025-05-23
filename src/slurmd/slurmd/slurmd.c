@@ -730,7 +730,7 @@ static void *_service_msg(void *arg)
 			.input_fd = args->fd,
 			.output_fd = args->fd,
 		};
-		msg->tls_conn = tls_g_create_conn(&tls_args);
+		msg->tls_conn = conn_g_create(&tls_args);
 	}
 	slurmd_req(msg);
 
