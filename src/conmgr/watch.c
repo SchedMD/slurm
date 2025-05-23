@@ -65,7 +65,7 @@
 #include "src/conmgr/signals.h"
 #include "src/conmgr/tls.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 /* Default watch() sleep to only 5 minutes */
 #define WATCH_DEFAULT_SLEEP    \

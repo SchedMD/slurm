@@ -106,6 +106,7 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/cgroup.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
@@ -120,7 +121,6 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
-#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmd/common/set_oomadj.h"
@@ -514,7 +514,7 @@ main (int argc, char **argv)
 
 	/* Periodically renew TLS certificate indefinitely */
 	if (tls_enabled()) {
-		if (tls_g_own_cert_loaded()) {
+		if (conn_g_own_cert_loaded()) {
 			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
 		} else if (certmgr_enabled()) {
 			conmgr_add_work_fifo(_get_tls_cert_work, NULL);
@@ -726,15 +726,15 @@ static void *_service_msg(void *arg)
 	if (args->tls_conn) {
 		msg->tls_conn = args->tls_conn;
 	} else {
-		tls_conn_args_t tls_args = {
+		conn_args_t tls_args = {
 			.input_fd = args->fd,
 			.output_fd = args->fd,
 		};
-		msg->tls_conn = tls_g_create_conn(&tls_args);
+		msg->tls_conn = conn_g_create(&tls_args);
 	}
 	slurmd_req(msg);
 
-	tls_g_destroy_conn(msg->tls_conn, true);
+	conn_g_destroy(msg->tls_conn, true);
 	msg->tls_conn = NULL;
 
 	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));
@@ -2631,7 +2631,7 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (certmgr_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	if (tls_g_init() != SLURM_SUCCESS)
+	if (conn_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	_dynamic_init();
@@ -2777,7 +2777,7 @@ _slurmd_fini(void)
 	topology_g_destroy_config();
 	topology_g_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
-	tls_g_fini();
+	conn_g_fini();
 	if ((rc = spank_slurmd_exit())) {
 		error("%s: SPANK slurmd exit failed: %s",
 		      __func__, slurm_strerror(rc));

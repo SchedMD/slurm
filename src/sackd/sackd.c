@@ -58,8 +58,8 @@
 
 #include "src/interfaces/auth.h"
 #include "src/interfaces/certmgr.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/hash.h"
-#include "src/interfaces/tls.h"
 
 #define DEFAULT_RUN_DIR "/run/slurm"
 
@@ -554,8 +554,8 @@ extern int main(int argc, char **argv)
 		fatal("auth_g_init() failed");
 	if (hash_g_init())
 		fatal("hash_g_init() failed");
-	if (tls_g_init())
-		fatal("tls_g_init() failed");
+	if (conn_g_init())
+		fatal("conn_g_init() failed");
 	if (certmgr_g_init())
 		fatal("certmgr_g_init() failed");
 
@@ -569,7 +569,7 @@ extern int main(int argc, char **argv)
 
 	/* Periodically renew TLS certificate indefinitely */
 	if (tls_enabled()) {
-		if (tls_g_own_cert_loaded()) {
+		if (conn_g_own_cert_loaded()) {
 			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
 		} else if (certmgr_enabled()) {
 			conmgr_add_work_fifo(_get_tls_cert_work, NULL);

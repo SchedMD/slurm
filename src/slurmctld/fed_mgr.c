@@ -60,7 +60,7 @@
 #include "src/slurmdbd/read_config.h"
 #include "src/stepmgr/srun_comm.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define FED_MGR_STATE_FILE       "fed_mgr_state"
 #define FED_MGR_CLUSTER_ID_BEGIN 26
@@ -380,7 +380,7 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 	} else {
 		log_flag(FEDR, "opened sibling conn to %s:%d",
 			 cluster->name,
-			 tls_g_get_conn_fd(persist_conn->tls_conn));
+			 conn_g_get_fd(persist_conn->tls_conn));
 	}
 
 	if (!locked)
@@ -3571,9 +3571,10 @@ extern int fed_mgr_add_sibling_conn(persist_conn_t *persist_conn,
 	 * timeout and resolved itself. */
 	cluster->fed.recv = persist_conn;
 
-	slurm_persist_conn_recv_thread_init(
-		persist_conn, tls_g_get_conn_fd(persist_conn->tls_conn), -1,
-		persist_conn);
+	slurm_persist_conn_recv_thread_init(persist_conn,
+					    conn_g_get_fd(persist_conn
+								  ->tls_conn),
+					    -1, persist_conn);
 	_q_send_job_sync(cluster->name);
 
 	unlock_slurmctld(fed_read_lock);

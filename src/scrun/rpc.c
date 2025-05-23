@@ -41,7 +41,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #include "src/scrun/scrun.h"
 
@@ -50,7 +50,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 {
 	int rc = SLURM_ERROR;
 	void *tls_conn = NULL;
-	tls_conn_args_t tls_args = { 0 };
+	conn_args_t tls_args = { 0 };
 	slurm_msg_t *resp_msg = NULL;
 	int fd = conn_fd ? *conn_fd : -1;
 	const char *sock = state.anchor_socket;
@@ -76,7 +76,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 	fd_set_close_on_exec(fd);
 
 	tls_args.input_fd = tls_args.output_fd = fd;
-	if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+	if (!(tls_conn = conn_g_create(&tls_args))) {
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
@@ -130,7 +130,7 @@ cleanup:
 		*ptr_resp = resp_msg;
 	}
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 
 	return rc;
 }

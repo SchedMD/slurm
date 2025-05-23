@@ -42,7 +42,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/certmgr.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 typedef struct {
 	char *(*get_node_cert_key)(char *node_name);
@@ -274,8 +274,8 @@ extern int certmgr_get_cert_from_ctld(char *name)
 	cert_len = strlen(cert_resp->signed_cert);
 	key_len = strlen(key);
 
-	if (tls_g_load_own_cert(cert_resp->signed_cert, cert_len, key,
-				key_len)) {
+	if (conn_g_load_own_cert(cert_resp->signed_cert, cert_len, key,
+				 key_len)) {
 		error("%s: Could not load signed certificate and private key into tls plugin",
 		      __func__);
 		return SLURM_ERROR;

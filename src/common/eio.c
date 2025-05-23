@@ -58,7 +58,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -197,7 +197,7 @@ int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 		return SLURM_SUCCESS;
 	}
 
-	fd = tls_g_get_conn_fd(tls_conn);
+	fd = conn_g_get_fd(tls_conn);
 	net_set_keep_alive(fd);
 	fd_set_blocking(fd);
 
@@ -221,7 +221,7 @@ again:
 cleanup:
 	/* may be adopted by the handle_msg routine */
 	if (msg->tls_conn)
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 	slurm_free_msg(msg);
 
 	return SLURM_SUCCESS;
@@ -536,7 +536,7 @@ void eio_obj_destroy(void *arg)
 		/* 	close(obj->fd); */
 		/* 	obj->fd = -1; */
 		/* } */
-		tls_g_destroy_conn(obj->tls_conn, false);
+		conn_g_destroy(obj->tls_conn, false);
 		xfree(obj->ops);
 		xfree(obj);
 	}

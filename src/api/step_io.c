@@ -59,8 +59,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
-#include "src/interfaces/tls.h"
 
 #define STDIO_MAX_FREE_BUF 1024
 
@@ -371,7 +371,7 @@ static int _server_read(eio_obj_t *obj, list_t *objs)
 		buf = s->in_msg->data + (s->in_msg->length - s->in_remaining);
 	again:
 		if (obj->tls_conn) {
-			n = tls_g_recv(obj->tls_conn, buf, s->in_remaining);
+			n = conn_g_recv(obj->tls_conn, buf, s->in_remaining);
 		} else {
 			n = read(obj->fd, buf, s->in_remaining);
 		}
@@ -500,7 +500,7 @@ static int _server_write(eio_obj_t *obj, list_t *objs)
 	buf = s->out_msg->data + (s->out_msg->length - s->out_remaining);
 again:
 	if (obj->tls_conn) {
-		n = tls_g_send(obj->tls_conn, buf, s->out_remaining);
+		n = conn_g_send(obj->tls_conn, buf, s->out_remaining);
 	} else {
 		n = write(obj->fd, buf, s->out_remaining);
 	}
@@ -894,7 +894,7 @@ static int _read_io_init_msg(int fd, void *tls_conn, client_io_t *cio,
 	return SLURM_SUCCESS;
 
     fail:
-	tls_g_destroy_conn(tls_conn, false);
+	conn_g_destroy(tls_conn, false);
 	xfree(msg.io_key);
 	if (fd > STDERR_FILENO)
 		close(fd);
@@ -947,7 +947,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 			return;
 		}
 
-		sd = tls_g_get_conn_fd(tls_conn);
+		sd = conn_g_get_fd(tls_conn);
 		debug3("Accepted IO connection: ip=%pA sd=%d", &addr, sd);
 
 		/*

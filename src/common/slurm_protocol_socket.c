@@ -71,7 +71,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define PORT_RETRIES    3
 #define MIN_USER_PORT   (IPPORT_RESERVED + 1)
@@ -160,7 +160,7 @@ static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
 	char temp[2];
 
 	if (tls_conn)
-		fd = tls_g_get_conn_fd(tls_conn);
+		fd = conn_g_get_fd(tls_conn);
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
@@ -178,7 +178,7 @@ static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
 		int rc;
 		int timeleft = timeout - timeval_tot_wait(&tstart);
 
-		if (tls_g_peek(tls_conn))
+		if (conn_g_peek(tls_conn))
 			goto ready;
 
 		if (timeleft <= 0) {
@@ -243,7 +243,7 @@ static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
 
 ready:
 		if (tls_conn) {
-			bytes_sent = tls_g_sendv(tls_conn, iov, iovcnt);
+			bytes_sent = conn_g_sendv(tls_conn, iov, iovcnt);
 		} else {
 			bytes_sent = writev(fd, iov, iovcnt);
 		}
@@ -427,7 +427,7 @@ extern int slurm_recv_timeout(void *tls_conn, char *buffer, size_t size,
 	struct timeval tstart;
 	int timeleft = timeout;
 
-	fd = tls_g_get_conn_fd(tls_conn);
+	fd = conn_g_get_fd(tls_conn);
 
 	ufds.fd     = fd;
 	ufds.events = POLLIN;
@@ -447,7 +447,7 @@ extern int slurm_recv_timeout(void *tls_conn, char *buffer, size_t size,
 			goto done;
 		}
 
-		if (tls_g_peek(tls_conn))
+		if (conn_g_peek(tls_conn))
 			goto ready;
 
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
@@ -499,7 +499,7 @@ extern int slurm_recv_timeout(void *tls_conn, char *buffer, size_t size,
 		}
 
 ready:
-		rc = tls_g_recv(tls_conn, &buffer[recvlen], (size - recvlen));
+		rc = conn_g_recv(tls_conn, &buffer[recvlen], (size - recvlen));
 
 		if (rc < 0)  {
 			if ((errno == EINTR) || (errno == EAGAIN)) {
@@ -603,7 +603,7 @@ extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 	socklen_t len = sizeof(*addr);
 	int sock = -1;
 	void *tls_conn = NULL;
-	tls_conn_args_t tls_args = {
+	conn_args_t tls_args = {
 		.mode = TLS_CONN_SERVER,
 	};
 
@@ -618,7 +618,7 @@ extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 	tls_args.input_fd = tls_args.output_fd = sock;
 	net_set_nodelay(sock, true, NULL);
 
-	if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+	if (!(tls_conn = conn_g_create(&tls_args))) {
 		error("%s: Unable to create server TLS connection to address %pA: %m",
 		      __func__, addr);
 		(void) close(sock);

@@ -39,7 +39,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
@@ -198,7 +198,7 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 		slurm_addr_t *cli_addr = &msg->address;
 
 		if (cli_addr->ss_family == AF_UNSPEC) {
-			int fd = tls_g_get_conn_fd(msg->tls_conn);
+			int fd = conn_g_get_fd(msg->tls_conn);
 			(void) slurm_get_peer_addr(fd, cli_addr);
 		}
 

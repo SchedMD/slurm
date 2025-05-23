@@ -95,6 +95,7 @@
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/cgroup.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/job_submit.h"
@@ -111,7 +112,6 @@
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/site_factor.h"
 #include "src/interfaces/switch.h"
-#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/acct_policy.h"
@@ -304,7 +304,7 @@ static void _send_reconfig_replies(void)
 	while ((msg = list_pop(reconfig_reqs))) {
 		/* Must avoid sending reply via msg->conmgr_fd */
 		(void) slurm_send_rc_msg(msg, reconfig_rc);
-		tls_g_destroy_conn(msg->tls_conn, true);
+		conn_g_destroy(msg->tls_conn, true);
 		slurm_free_msg(msg);
 	}
 }
@@ -682,7 +682,7 @@ int main(int argc, char **argv)
 		fatal("failed to initialize auth plugin");
 	if (hash_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize hash plugin");
-	if (tls_g_init() != SLURM_SUCCESS)
+	if (conn_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize tls plugin");
 	if (certmgr_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize certmgr plugin");
@@ -1127,7 +1127,7 @@ int main(int argc, char **argv)
 	topology_g_fini();
 	auth_g_fini();
 	hash_g_fini();
-	tls_g_fini();
+	conn_g_fini();
 	certmgr_g_fini();
 	switch_g_fini();
 	site_factor_g_fini();
@@ -1777,11 +1777,11 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	if (tls_conn) {
 		msg->tls_conn = tls_conn;
 	} else {
-		tls_conn_args_t tls_args = {
+		conn_args_t tls_args = {
 			.input_fd = input_fd,
 			.output_fd = input_fd,
 		};
-		msg->tls_conn = tls_g_create_conn(&tls_args);
+		msg->tls_conn = conn_g_create(&tls_args);
 	}
 
 	server_thread_incr();
@@ -1804,7 +1804,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	}
 
 	if (!this_rpc || !this_rpc->keep_msg) {
-		tls_g_destroy_conn(msg->tls_conn, true);
+		conn_g_destroy(msg->tls_conn, true);
 		msg->tls_conn = NULL;
 		log_flag(TLS, "Destroyed server TLS connection for incoming RPC on fd %d->%d",
 			 input_fd, output_fd);

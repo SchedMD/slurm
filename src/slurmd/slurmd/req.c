@@ -96,6 +96,7 @@
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cgroup.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/job_container.h"
@@ -105,7 +106,6 @@
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
-#include "src/interfaces/tls.h"
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/common/slurmd_common.h"
@@ -5071,7 +5071,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	if (rc != SLURM_SUCCESS)
 		return;
 
-	tls_g_destroy_conn(msg->tls_conn, true);
+	conn_g_destroy(msg->tls_conn, true);
 	msg->tls_conn = NULL;
 
 	/* now we can focus on performing the requested action,
@@ -5253,7 +5253,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	 *   a "success" reply to indicate that we've recvd the msg.
 	 */
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-	tls_g_destroy_conn(msg->tls_conn, true);
+	conn_g_destroy(msg->tls_conn, true);
 	msg->tls_conn = NULL;
 
 	if (_kill_all_active_steps(req->step_id.job_id, SIG_ABORT, 0,

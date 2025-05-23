@@ -51,7 +51,7 @@
 #include "pmixp_dconn.h"
 
 #include "src/interfaces/auth.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define PMIXP_DEBUG_SERVER 1
 
@@ -1109,7 +1109,7 @@ void pmixp_abort_propagate(int status)
 	}
 	xassert(status_net == htonl((uint32_t)status));
 close_fd:
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 }
 
 int pmixp_abort_code_get(void)

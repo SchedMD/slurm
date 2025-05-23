@@ -72,7 +72,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -377,7 +377,8 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 			(client->in_msg->length - client->in_remaining);
 	again:
 		if (obj->tls_conn) {
-			n = tls_g_recv(obj->tls_conn, buf, client->in_remaining);
+			n = conn_g_recv(obj->tls_conn, buf,
+					client->in_remaining);
 		} else {
 			n = read(obj->fd, buf, client->in_remaining);
 		}
@@ -484,7 +485,7 @@ static int _client_write(eio_obj_t *obj, list_t *objs)
 		(client->out_msg->length - client->out_remaining);
 again:
 	if (obj->tls_conn) {
-		n = tls_g_send(obj->tls_conn, buf, client->out_remaining);
+		n = conn_g_send(obj->tls_conn, buf, client->out_remaining);
 	} else {
 		n = write(obj->fd, buf, client->out_remaining);
 	}
@@ -833,7 +834,7 @@ static void *_window_manager(void *arg)
 	struct pollfd ufds;
 	char buf[4];
 
-	ufds.fd = tls_g_get_conn_fd(win_info->tls_conn);
+	ufds.fd = conn_g_get_fd(win_info->tls_conn);
 	ufds.events = POLLIN;
 
 	while (1) {
@@ -1676,7 +1677,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *step,
 		return SLURM_ERROR;
 	}
 
-	sock = tls_g_get_conn_fd(tls_conn);
+	sock = conn_g_get_fd(tls_conn);
 
 	fd_set_blocking(sock);  /* just in case... */
 	_send_io_init_msg(sock, tls_conn, srun, step, true);
@@ -1735,14 +1736,14 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
 	}
 
 	if (tls_enabled()) {
-		tls_conn_args_t tls_args = {
+		conn_args_t tls_args = {
 			.input_fd = sock,
 			.output_fd = sock,
 			.mode = TLS_CONN_CLIENT,
 			.cert = srun->tls_cert,
 		};
 
-		if (!(tls_conn = tls_g_create_conn(&tls_args))) {
+		if (!(tls_conn = conn_g_create(&tls_args))) {
 			error("Could not create client TLS connection for step IO");
 			return SLURM_ERROR;
 		}

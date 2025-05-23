@@ -53,7 +53,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 typedef struct {
 	int index;
@@ -444,7 +444,7 @@ extern char *auth_g_get_host(void *slurm_msg)
 
 	if (addr->ss_family == AF_UNSPEC) {
 		int rc;
-		int fd = tls_g_get_conn_fd(msg->tls_conn);
+		int fd = conn_g_get_fd(msg->tls_conn);
 
 		if ((rc = slurm_get_peer_addr(fd, addr))) {
 			error("%s: [fd:%d] unable to determine socket remote host: %s",

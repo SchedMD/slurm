@@ -55,7 +55,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #include "opt.h"
 #include "srun_job.h"
@@ -160,7 +160,7 @@ static void *_pty_thread(void *arg)
 	cfmakeraw(&term);
 	tcsetattr(job->input_fd, TCSANOW, &term);
 
-	fd = tls_g_get_conn_fd(tls_conn);
+	fd = conn_g_get_fd(tls_conn);
 
 	net_set_keep_alive(fd);
 	while (job->state <= SRUN_JOB_RUNNING) {
@@ -176,6 +176,6 @@ static void *_pty_thread(void *arg)
 		winch = 0;
 	}
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 	return NULL;
 }

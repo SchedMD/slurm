@@ -73,7 +73,7 @@
 #include "src/conmgr/polling.h"
 #include "src/conmgr/tls.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define T(type) { type, XSTRINGIFY(type) }
 static const struct {

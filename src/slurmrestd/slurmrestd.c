@@ -70,12 +70,12 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
-#include "src/interfaces/tls.h"
 
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
@@ -870,7 +870,7 @@ int main(int argc, char **argv)
 	acct_storage_g_fini();
 	slurm_fini();
 	hash_g_fini();
-	tls_g_fini();
+	conn_g_fini();
 	cred_g_fini();
 	auth_g_fini();
 	log_fini();

@@ -38,11 +38,11 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/certgen.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/select.h"
-#include "src/interfaces/tls.h"
 
 extern void slurm_init(const char *conf)
 {
@@ -57,7 +57,7 @@ extern void slurm_init(const char *conf)
 	if (hash_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize hash plugin");
 
-	if (tls_g_init() != SLURM_SUCCESS)
+	if (conn_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize tls plugin");
 
 	if (acct_storage_g_init() != SLURM_SUCCESS)
@@ -75,7 +75,7 @@ extern void slurm_fini(void)
 	cred_g_fini();
 	gres_fini();
 	acct_storage_g_fini();
-	tls_g_fini();
+	conn_g_fini();
 	hash_g_fini();
 	auth_g_fini();
 

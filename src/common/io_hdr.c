@@ -42,7 +42,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer)
 {
@@ -102,7 +102,7 @@ static int _full_read(int fd, void *tls_conn, void *buf, size_t count)
 	while (left > 0) {
 	again:
 		if (tls_conn) {
-			n = tls_g_recv(tls_conn, (void *) ptr, left);
+			n = conn_g_recv(tls_conn, (void *) ptr, left);
 		} else {
 			n = read(fd, (void *) ptr, left);
 		}
@@ -231,7 +231,7 @@ io_init_msg_write_to_fd(int fd, void *tls_conn, io_init_msg_t *msg)
 		goto rwfail;
 
 	if (tls_enabled()) {
-		tls_g_send(tls_conn, buf->head, get_buf_offset(buf));
+		conn_g_send(tls_conn, buf->head, get_buf_offset(buf));
 	} else {
 		safe_write(fd, buf->head, get_buf_offset(buf));
 	}
@@ -258,7 +258,7 @@ extern int io_init_msg_read_from_fd(int fd, void *tls_conn, io_init_msg_t *msg)
 	}
 
 	if (tls_enabled()) {
-		tls_g_recv(tls_conn, &len, sizeof(uint32_t));
+		conn_g_recv(tls_conn, &len, sizeof(uint32_t));
 	} else {
 		safe_read(fd, &len, sizeof(uint32_t));
 	}
@@ -266,7 +266,7 @@ extern int io_init_msg_read_from_fd(int fd, void *tls_conn, io_init_msg_t *msg)
 	buf = init_buf(len);
 
 	if (tls_enabled()) {
-		tls_g_recv(tls_conn, buf->head, len);
+		conn_g_recv(tls_conn, buf->head, len);
 	} else {
 		safe_read(fd, buf->head, len);
 	}

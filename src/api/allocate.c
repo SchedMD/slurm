@@ -66,7 +66,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/interfaces/auth.h"
 #include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define BUFFER_SIZE 1024
 #define MAX_ALLOC_WAIT 60	/* seconds */
@@ -202,7 +202,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	}
 
 	if (tls_enabled()) {
-		if (!(req->alloc_tls_cert = tls_g_get_own_public_cert())) {
+		if (!(req->alloc_tls_cert = conn_g_get_own_public_cert())) {
 			error("Could not get self signed certificate for allocation response");
 			return NULL;
 		}
@@ -1400,13 +1400,13 @@ static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 		slurm_free_msg(msg);
 
 		if (errno == EINTR) {
-			tls_g_destroy_conn(tls_conn, true);
+			conn_g_destroy(tls_conn, true);
 			*resp = NULL;
 			return 0;
 		}
 
 		error("%s[%pA]: %m", __func__, &cli_addr);
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 		return SLURM_ERROR;
 	}
 
@@ -1414,7 +1414,7 @@ static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 
 	slurm_free_msg(msg);
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 	return rc;
 }
 

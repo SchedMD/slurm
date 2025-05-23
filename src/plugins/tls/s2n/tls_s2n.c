@@ -55,7 +55,7 @@
 
 #include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 /* Set default security policy to FIPS-compliant version */
 #define DEFAULT_S2N_SECURITY_POLICY "20230317"
@@ -801,14 +801,14 @@ static void _server_config_dec(tls_conn_t *conn)
 	slurm_mutex_unlock(&server_conf_cnt_lock);
 }
 
-extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
+extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn;
 	s2n_mode s2n_conn_mode;
 
 	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%s",
 		 plugin_type, tls_conn_args->input_fd, tls_conn_args->output_fd,
-		 tls_conn_mode_to_str(tls_conn_args->mode));
+		 conn_mode_to_str(tls_conn_args->mode));
 
 	conn = xmalloc(sizeof(*conn));
 	conn->input_fd = tls_conn_args->input_fd;
@@ -981,7 +981,7 @@ extern void *tls_p_create_conn(const tls_conn_args_t *tls_conn_args)
 
 	log_flag(TLS, "%s: connection successfully created. fd:%d->%d. tls mode:%s",
 		 plugin_type, conn->input_fd, conn->output_fd,
-		 tls_conn_mode_to_str(tls_conn_args->mode));
+		 conn_mode_to_str(tls_conn_args->mode));
 
 	return conn;
 
@@ -1242,7 +1242,7 @@ extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
 }
 
 extern int tls_p_set_conn_callbacks(tls_conn_t *conn,
-				    tls_conn_callbacks_t *callbacks)
+				    conn_callbacks_t *callbacks)
 {
 	xassert(conn);
 	xassert(conn->s2n_conn);

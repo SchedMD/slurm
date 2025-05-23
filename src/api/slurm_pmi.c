@@ -51,7 +51,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/fd.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 #define DEFAULT_PMI_TIME 500
 #define MAX_RETRIES      5
@@ -312,7 +312,7 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 		if (errno == EINTR)
 			continue;
 		error("slurm_receive_msg: %m");
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 		return errno;
 	}
 	if (msg_rcv.auth_cred)
@@ -321,13 +321,13 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {
 		error("slurm_get_kvs_comm_set msg_type=%s",
 		      rpc_num2string(msg_rcv.msg_type));
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 		return SLURM_UNEXPECTED_MSG_ERROR;
 	}
 	if (slurm_send_rc_msg(&msg_rcv, SLURM_SUCCESS) < 0)
 		error("slurm_send_rc_msg: %m");
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 	*kvs_set_ptr = msg_rcv.data;
 
 	rc = _forward_comm_set(*kvs_set_ptr);

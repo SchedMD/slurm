@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  tls.c - tls API definitions
+ *  conn.c - connection API definitions
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -47,13 +47,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/tls.h"
 #include "src/interfaces/certmgr.h"
-
-typedef struct {
-	int index;
-	char data[];
-} tls_wrapper_t;
+#include "src/interfaces/conn.h"
 
 typedef struct {
 	uint32_t (*plugin_id);
@@ -63,7 +58,7 @@ typedef struct {
 			     uint32_t key_len);
 	int (*load_self_signed_cert)(void);
 	bool (*own_cert_loaded)(void);
-	void *(*create_conn)(const tls_conn_args_t *tls_conn_args);
+	void *(*create_conn)(const conn_args_t *conn_args);
 	void (*destroy_conn)(void *conn, bool close_fds);
 	ssize_t (*send)(void *conn, const void *buf, size_t n);
 	ssize_t (*sendv)(void *conn, const struct iovec *bufs, int count);
@@ -73,13 +68,13 @@ typedef struct {
 	int (*negotiate)(void *conn);
 	int (*get_conn_fd)(void *conn);
 	int (*set_conn_fds)(void *conn, int input_fd, int output_fd);
-	int (*set_conn_callbacks)(void *conn, tls_conn_callbacks_t *callbacks);
+	int (*set_conn_callbacks)(void *conn, conn_callbacks_t *callbacks);
 	void (*set_graceful_shutdown)(void *conn, bool do_graceful_shutdown);
-} tls_ops_t;
+} conn_ops_t;
 
 /*
  * These strings must be kept in the same order as the fields
- * declared for tls_ops_t.
+ * declared for conn_ops_t.
  */
 static const char *syms[] = {
 	"plugin_id",
@@ -102,14 +97,14 @@ static const char *syms[] = {
 	"tls_p_set_graceful_shutdown",
 };
 
-static tls_ops_t ops;
+static conn_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static bool tls_enabled_bool = false;
 
-extern char *tls_conn_mode_to_str(tls_conn_mode_t mode)
+extern char *conn_mode_to_str(conn_mode_t mode)
 {
 	switch (mode) {
 	case TLS_CONN_NULL:
@@ -128,7 +123,7 @@ extern bool tls_enabled(void)
 	return tls_enabled_bool;
 }
 
-extern int tls_g_init(void)
+extern int conn_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *plugin_type = "tls";
@@ -165,7 +160,7 @@ extern int tls_g_init(void)
 	if (tls_enabled_bool) {
 		/* Load CA cert now, wait until later in configless */
 		if (!running_in_slurmstepd() && slurm_conf.last_update &&
-		    tls_g_load_ca_cert(NULL)) {
+		    conn_g_load_ca_cert(NULL)) {
 			error("Could not load trusted certificates for s2n");
 			rc = SLURM_ERROR;
 			goto done;
@@ -176,14 +171,14 @@ extern int tls_g_init(void)
 		     running_in_slurmrestd() || running_in_slurmd() ||
 		     running_in_sackd()) &&
 		    slurm_conf.last_update &&
-		    tls_g_load_own_cert(NULL, 0, NULL, 0)) {
+		    conn_g_load_own_cert(NULL, 0, NULL, 0)) {
 			error("Could not load own TLS certificate from file");
 			rc = SLURM_ERROR;
 			goto done;
 		}
 
 		/* Load self-signed certificate in client commands */
-		if (!running_in_daemon() && tls_g_load_self_signed_cert()) {
+		if (!running_in_daemon() && conn_g_load_self_signed_cert()) {
 			error("Could not load self-signed TLS certificate");
 			rc = SLURM_ERROR;
 			goto done;
@@ -196,7 +191,7 @@ done:
 	return rc;
 }
 
-extern int tls_g_fini(void)
+extern int conn_g_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -214,49 +209,49 @@ extern int tls_g_fini(void)
 	return rc;
 }
 
-extern int tls_g_load_ca_cert(char *cert_file)
+extern int conn_g_load_ca_cert(char *cert_file)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.load_ca_cert))(cert_file);
 }
 
-extern char *tls_g_get_own_public_cert(void)
+extern char *conn_g_get_own_public_cert(void)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.get_own_public_cert))();
 }
 
-extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
-			       uint32_t key_len)
+extern int conn_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
+				uint32_t key_len)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.load_own_cert))(cert, cert_len, key, key_len);
 }
 
-extern int tls_g_load_self_signed_cert(void)
+extern int conn_g_load_self_signed_cert(void)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.load_self_signed_cert))();
 }
 
-extern bool tls_g_own_cert_loaded(void)
+extern bool conn_g_own_cert_loaded(void)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.own_cert_loaded))();
 }
 
-extern void *tls_g_create_conn(const tls_conn_args_t *tls_conn_args)
+extern void *conn_g_create(const conn_args_t *conn_args)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 
 	log_flag(TLS, "%s: fd:%d->%d mode:%d",
-		 __func__, tls_conn_args->input_fd, tls_conn_args->output_fd,
-		 tls_conn_args->mode);
+		 __func__, conn_args->input_fd, conn_args->output_fd,
+		 conn_args->mode);
 
-	return (*(ops.create_conn))(tls_conn_args);
+	return (*(ops.create_conn))(conn_args);
 }
 
-extern void tls_g_destroy_conn(void *conn, bool close_fds)
+extern void conn_g_destroy(void *conn, bool close_fds)
 {
 	if (!conn)
 		return;
@@ -266,62 +261,61 @@ extern void tls_g_destroy_conn(void *conn, bool close_fds)
 	(*(ops.destroy_conn))(conn, close_fds);
 }
 
-extern ssize_t tls_g_send(void *conn, const void *buf, size_t n)
+extern ssize_t conn_g_send(void *conn, const void *buf, size_t n)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.send))(conn, buf, n);
 }
 
-extern ssize_t tls_g_sendv(void *conn, const struct iovec *bufs, int count)
+extern ssize_t conn_g_sendv(void *conn, const struct iovec *bufs, int count)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.sendv))(conn, bufs, count);
 }
 
-extern uint32_t tls_g_peek(void *conn)
+extern uint32_t conn_g_peek(void *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.peek))(conn);
 }
 
-extern ssize_t tls_g_recv(void *conn, void *buf, size_t n)
+extern ssize_t conn_g_recv(void *conn, void *buf, size_t n)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.recv))(conn, buf, n);
 }
 
-extern timespec_t tls_g_get_delay(void *conn)
+extern timespec_t conn_g_get_delay(void *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.get_delay))(conn);
 }
 
-extern int tls_g_negotiate_conn(void *conn)
+extern int conn_g_negotiate_tls(void *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.negotiate))(conn);
 }
 
-extern int tls_g_get_conn_fd(void *conn)
+extern int conn_g_get_fd(void *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.get_conn_fd))(conn);
 }
 
-extern int tls_g_set_conn_fds(void *conn, int input_fd, int output_fd)
+extern int conn_g_set_fds(void *conn, int input_fd, int output_fd)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_conn_fds))(conn, input_fd, output_fd);
 }
 
-extern int tls_g_set_conn_callbacks(void *conn,
-				    tls_conn_callbacks_t *callbacks)
+extern int conn_g_set_callbacks(void *conn, conn_callbacks_t *callbacks)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_conn_callbacks))(conn, callbacks);
 }
 
-extern void tls_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown)
+extern void conn_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_graceful_shutdown))(conn, do_graceful_shutdown);

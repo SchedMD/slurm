@@ -77,6 +77,7 @@
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/cgroup.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/jobacct_gather.h"
@@ -89,7 +90,6 @@
 #include "src/interfaces/sched_plugin.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
-#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/acct_policy.h"
@@ -3120,7 +3120,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		tls_g_destroy_conn(msg->tls_conn, true);
+		conn_g_destroy(msg->tls_conn, true);
 		msg->tls_conn = NULL;
 		slurm_free_msg(msg);
 		return;
@@ -5918,7 +5918,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn->rem_port = persist_init->port;
 
 	persist_conn->rem_host = xmalloc(INET6_ADDRSTRLEN);
-	(void) slurm_get_peer_addr(tls_g_get_conn_fd(persist_conn->tls_conn),
+	(void) slurm_get_peer_addr(conn_g_get_fd(persist_conn->tls_conn),
 				   &rem_addr);
 	slurm_get_ip_str(&rem_addr, persist_conn->rem_host, INET6_ADDRSTRLEN);
 
@@ -5937,8 +5937,8 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	else if (persist_init->persist_type == PERSIST_TYPE_ACCT_UPDATE) {
 		persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
 		slurm_persist_conn_recv_thread_init(
-			persist_conn, tls_g_get_conn_fd(persist_conn->tls_conn),
-			-1, persist_conn);
+			persist_conn, conn_g_get_fd(persist_conn->tls_conn), -1,
+			persist_conn);
 	} else
 		rc = SLURM_ERROR;
 end_it:
@@ -5949,7 +5949,7 @@ end_it:
 	ret_buf = slurm_persist_make_rc_msg(&p_tmp, rc, comment, p_tmp.version);
 	if (slurm_persist_send_msg(&p_tmp, ret_buf) != SLURM_SUCCESS) {
 		debug("Problem sending response to connection %d uid(%u)",
-		      tls_g_get_conn_fd(p_tmp.tls_conn), msg->auth_uid);
+		      conn_g_get_fd(p_tmp.tls_conn), msg->auth_uid);
 	}
 
 	if (rc && persist_conn) {
@@ -6854,7 +6854,7 @@ extern slurmctld_rpc_t *find_rpc(uint16_t msg_type)
 extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 {
 	DEF_TIMERS;
-	int fd = tls_g_get_conn_fd(msg->tls_conn);
+	int fd = conn_g_get_fd(msg->tls_conn);
 
 	fd_set_nonblocking(fd);
 

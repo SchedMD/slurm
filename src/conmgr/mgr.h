@@ -143,7 +143,7 @@ typedef enum {
 	FLAG_TLS_SERVER = CON_FLAG_TLS_SERVER,
 	/* @see CON_FLAG_TLS_CLIENT */
 	FLAG_TLS_CLIENT = CON_FLAG_TLS_CLIENT,
-	/* True if tls_g_create_conn() completed */
+	/* True if conn_g_create() completed */
 	FLAG_IS_TLS_CONNECTED = SLURM_BIT(20),
 	/* True if on_fingerprint() pending */
 	FLAG_WAIT_ON_FINGERPRINT = SLURM_BIT(21),

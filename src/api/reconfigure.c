@@ -51,7 +51,7 @@
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 
-#include "src/interfaces/tls.h"
+#include "src/interfaces/conn.h"
 
 static int _send_message_controller(int dest, slurm_msg_t *req);
 
@@ -182,18 +182,18 @@ static int _send_message_controller(int dest, slurm_msg_t *req)
 
 	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
 	if (slurm_send_node_msg(tls_conn, req) < 0) {
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
 	}
 
 	slurm_msg_t_init(&resp_msg);
 	if ((rc = slurm_receive_msg(tls_conn, &resp_msg, 0)) != 0) {
 		slurm_free_msg_members(&resp_msg);
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 		return SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
 	}
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 
 	if (resp_msg.msg_type != RESPONSE_SLURM_RC)
 		rc = SLURM_UNEXPECTED_MSG_ERROR;

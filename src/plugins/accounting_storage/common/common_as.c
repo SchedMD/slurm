@@ -45,11 +45,13 @@
 #include "src/common/slurm_xlator.h"
 
 #include "src/common/env.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/interfaces/auth.h"
-#include "src/interfaces/tls.h"
 #include "src/common/slurm_time.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
+
 #include "src/slurmdbd/read_config.h"
 #include "common_as.h"
 
@@ -448,7 +450,7 @@ extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 		 * for an arbitrary fd or should these be fire
 		 * and forget?  For this, that we can probably
 		 * forget about it */
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 	}
 	return rc;
 }
