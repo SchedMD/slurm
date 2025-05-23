@@ -734,7 +734,7 @@ static void *_service_msg(void *arg)
 	}
 	slurmd_req(msg);
 
-	tls_g_destroy_conn(msg->tls_conn, true);
+	conn_g_destroy(msg->tls_conn, true);
 	msg->tls_conn = NULL;
 
 	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));

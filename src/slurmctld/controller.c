@@ -304,7 +304,7 @@ static void _send_reconfig_replies(void)
 	while ((msg = list_pop(reconfig_reqs))) {
 		/* Must avoid sending reply via msg->conmgr_fd */
 		(void) slurm_send_rc_msg(msg, reconfig_rc);
-		tls_g_destroy_conn(msg->tls_conn, true);
+		conn_g_destroy(msg->tls_conn, true);
 		slurm_free_msg(msg);
 	}
 }
@@ -1804,7 +1804,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	}
 
 	if (!this_rpc || !this_rpc->keep_msg) {
-		tls_g_destroy_conn(msg->tls_conn, true);
+		conn_g_destroy(msg->tls_conn, true);
 		msg->tls_conn = NULL;
 		log_flag(TLS, "Destroyed server TLS connection for incoming RPC on fd %d->%d",
 			 input_fd, output_fd);

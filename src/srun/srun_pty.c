@@ -176,6 +176,6 @@ static void *_pty_thread(void *arg)
 		winch = 0;
 	}
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 	return NULL;
 }

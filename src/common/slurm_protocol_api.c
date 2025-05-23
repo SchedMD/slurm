@@ -2087,7 +2087,7 @@ extern void slurm_send_msg_maybe(slurm_msg_t *req)
 
 	(void) slurm_send_node_msg(tls_conn, req);
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 }
 
 /*
@@ -2224,7 +2224,7 @@ tryagain:
 		rc = slurm_send_recv_msg(tls_conn, request_msg, response_msg,
 					 0);
 
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 
 		if (response_msg->auth_cred)
 			auth_g_destroy(response_msg->auth_cred);
@@ -2327,7 +2327,7 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 
 	rc = slurm_send_recv_msg(tls_conn, req, resp, timeout);
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 
 	return rc;
 }
@@ -2368,7 +2368,7 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 		rc = SLURM_SUCCESS;
 	}
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 
 cleanup:
 	if (rc != SLURM_SUCCESS)
@@ -2456,7 +2456,7 @@ again:
 		if (errno == EINTR)
 			goto again;
 		log_flag(NET, "%s: poll error: %m", __func__);
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 		return SLURM_ERROR;
 	}
 
@@ -2466,7 +2466,7 @@ again:
 				 __func__);
 		log_flag(NET, "%s: poll timed out with %d outstanding: %m",
 			 __func__, value);
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 		return SLURM_ERROR;
 	}
 
@@ -2485,11 +2485,11 @@ again:
 			log_flag(NET, "%s: poll error with %d outstanding: %s",
 				 __func__, value, slurm_strerror(err));
 
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 		return SLURM_ERROR;
 	}
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 
 	return rc;
 }
@@ -2583,7 +2583,7 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 
 	if (!ret_list) {
 		mark_as_failed_forward(&ret_list, name, errno);
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 		errno = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
 		return ret_list;
 	}
@@ -2591,7 +2591,7 @@ list_t *slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	(void) list_for_each(
 			ret_list, _foreach_ret_list_hostname_set, name);
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 
 	return ret_list;
 }

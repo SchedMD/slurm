@@ -85,7 +85,7 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 		/*
 		 * Ensure that both eio objects point to the same place in
 		 * memory for the remote TLS connection. This way, we avoid
-		 * calling tls_g_destroy_conn() twice.
+		 * calling conn_g_destroy() twice.
 		 *
 		 * Because eio_handle_mainloop loops over both eio objects in
 		 * the same thread, we don't have to worry about concurrency
@@ -126,7 +126,7 @@ static bool _half_duplex_readable(eio_obj_t *obj)
 
 		if (fd_out) {
 			if (tls_conn_out && *tls_conn_out) {
-				tls_g_destroy_conn(*tls_conn_out, false);
+				conn_g_destroy(*tls_conn_out, false);
 				*tls_conn_out = NULL;
 			} else if (tls_conn_out) {
 				xfree(tls_conn_out);
@@ -186,7 +186,7 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 shutdown:
 	obj->shutdown = true;
 	if (tls_conn_in && *tls_conn_in) {
-		tls_g_destroy_conn(*tls_conn_in, false);
+		conn_g_destroy(*tls_conn_in, false);
 		*tls_conn_in = NULL;
 	}
 	shutdown(obj->fd, SHUT_RD);
@@ -194,7 +194,7 @@ shutdown:
 	obj->fd = -1;
 	if (fd_out) {
 		if (tls_conn_out && *tls_conn_out) {
-			tls_g_destroy_conn(*tls_conn_out, false);
+			conn_g_destroy(*tls_conn_out, false);
 			*tls_conn_out = NULL;
 		} else if (tls_conn_out) {
 			xfree(tls_conn_out);

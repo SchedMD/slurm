@@ -553,7 +553,7 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 	xassert(persist_conn->cluster_name);
 
 	if (persist_conn->tls_conn) {
-		tls_g_destroy_conn(persist_conn->tls_conn, true);
+		conn_g_destroy(persist_conn->tls_conn, true);
 		persist_conn->tls_conn = NULL;
 	}
 
@@ -641,7 +641,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 	if (slurm_send_node_msg(persist_conn->tls_conn, &req_msg) < 0) {
 		error("%s: failed to send persistent connection init message to %s:%d",
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
-		tls_g_destroy_conn(persist_conn->tls_conn, true);
+		conn_g_destroy(persist_conn->tls_conn, true);
 		persist_conn->tls_conn = NULL;
 	} else {
 		buf_t *buffer = NULL;
@@ -656,7 +656,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 				      __func__);
 			}
 
-			tls_g_destroy_conn(persist_conn->tls_conn, true);
+			conn_g_destroy(persist_conn->tls_conn, true);
 			persist_conn->tls_conn = NULL;
 
 			if (!errno)
@@ -691,7 +691,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 				      persist_conn->rem_host,
 				      persist_conn->rem_port);
 			}
-			tls_g_destroy_conn(persist_conn->tls_conn, true);
+			conn_g_destroy(persist_conn->tls_conn, true);
 			persist_conn->tls_conn = NULL;
 		} else if (resp) {
 			persist_conn->version = resp->ret_info;
@@ -711,7 +711,7 @@ extern void slurm_persist_conn_close(persist_conn_t *persist_conn)
 	if (!persist_conn)
 		return;
 
-	tls_g_destroy_conn(persist_conn->tls_conn, true);
+	conn_g_destroy(persist_conn->tls_conn, true);
 	persist_conn->tls_conn = NULL;
 }
 

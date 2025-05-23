@@ -169,15 +169,14 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 	}
 
-	log_flag(CONMGR, "%s: [%s] closing via tls_g_destroy_conn()",
+	log_flag(CONMGR, "%s: [%s] closing via conn_g_destroy()",
 		 __func__, con->name);
 
 	errno = SLURM_SUCCESS;
-	tls_g_destroy_conn(tls, false);
+	conn_g_destroy(tls, false);
 	if ((rc = errno))
-		log_flag(CONMGR, "%s: [%s] tls_g_destroy_conn() failed: %s",
+		log_flag(CONMGR, "%s: [%s] conn_g_destroy() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
-
 
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(tls == con->tls);

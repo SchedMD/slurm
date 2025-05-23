@@ -5071,7 +5071,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	if (rc != SLURM_SUCCESS)
 		return;
 
-	tls_g_destroy_conn(msg->tls_conn, true);
+	conn_g_destroy(msg->tls_conn, true);
 	msg->tls_conn = NULL;
 
 	/* now we can focus on performing the requested action,
@@ -5253,7 +5253,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	 *   a "success" reply to indicate that we've recvd the msg.
 	 */
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-	tls_g_destroy_conn(msg->tls_conn, true);
+	conn_g_destroy(msg->tls_conn, true);
 	msg->tls_conn = NULL;
 
 	if (_kill_all_active_steps(req->step_id.job_id, SIG_ABORT, 0,

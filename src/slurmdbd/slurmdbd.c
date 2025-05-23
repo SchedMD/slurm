@@ -970,7 +970,7 @@ static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 
 	/* response is ignored */
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 
 	return SLURM_SUCCESS;
 }

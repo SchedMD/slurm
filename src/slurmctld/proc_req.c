@@ -3120,7 +3120,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		tls_g_destroy_conn(msg->tls_conn, true);
+		conn_g_destroy(msg->tls_conn, true);
 		msg->tls_conn = NULL;
 		slurm_free_msg(msg);
 		return;

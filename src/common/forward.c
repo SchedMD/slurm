@@ -218,7 +218,7 @@ static void *_forward_thread(void *arg)
 				FREE_NULL_BUFFER(buffer);
 				buffer = init_buf(fwd_struct->buf_len);
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
-				tls_g_destroy_conn(tls_conn, true);
+				conn_g_destroy(tls_conn, true);
 				tls_conn = NULL;
 				/* Abandon tree. This way if all the
 				 * nodes in the branch are down we
@@ -271,7 +271,7 @@ static void *_forward_thread(void *arg)
 				FREE_NULL_BUFFER(buffer);
 				buffer = init_buf(fwd_struct->buf_len);
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
-				tls_g_destroy_conn(tls_conn, true);
+				conn_g_destroy(tls_conn, true);
 				tls_conn = NULL;
 				continue;
 			}
@@ -341,7 +341,7 @@ static void *_forward_thread(void *arg)
 	}
 	free(name);
 cleanup:
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 	hostlist_destroy(hl);
 	fwd_ptr->alias_addrs.net_cred = NULL;
 	fwd_ptr->alias_addrs.node_addrs = NULL;

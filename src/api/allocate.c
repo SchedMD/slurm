@@ -1400,13 +1400,13 @@ static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 		slurm_free_msg(msg);
 
 		if (errno == EINTR) {
-			tls_g_destroy_conn(tls_conn, true);
+			conn_g_destroy(tls_conn, true);
 			*resp = NULL;
 			return 0;
 		}
 
 		error("%s[%pA]: %m", __func__, &cli_addr);
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 		return SLURM_ERROR;
 	}
 
@@ -1414,7 +1414,7 @@ static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 
 	slurm_free_msg(msg);
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 	return rc;
 }
 

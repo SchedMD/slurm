@@ -894,7 +894,7 @@ static int _read_io_init_msg(int fd, void *tls_conn, client_io_t *cio,
 	return SLURM_SUCCESS;
 
     fail:
-	tls_g_destroy_conn(tls_conn, false);
+	conn_g_destroy(tls_conn, false);
 	xfree(msg.io_key);
 	if (fd > STDERR_FILENO)
 		close(fd);

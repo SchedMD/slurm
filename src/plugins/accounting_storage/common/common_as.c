@@ -450,7 +450,7 @@ extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version)
 		 * for an arbitrary fd or should these be fire
 		 * and forget?  For this, that we can probably
 		 * forget about it */
-		tls_g_destroy_conn(tls_conn, true);
+		conn_g_destroy(tls_conn, true);
 	}
 	return rc;
 }

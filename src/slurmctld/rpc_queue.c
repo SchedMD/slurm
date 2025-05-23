@@ -175,7 +175,7 @@ static void *_rpc_queue_worker(void *arg)
 			}
 			msg->flags |= CTLD_QUEUE_PROCESSING;
 			q->func(msg);
-			tls_g_destroy_conn(msg->tls_conn, true);
+			conn_g_destroy(msg->tls_conn, true);
 			msg->tls_conn = NULL;
 
 			END_TIMER;

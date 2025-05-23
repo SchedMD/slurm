@@ -130,7 +130,7 @@ cleanup:
 		*ptr_resp = resp_msg;
 	}
 
-	tls_g_destroy_conn(tls_conn, true);
+	conn_g_destroy(tls_conn, true);
 
 	return rc;
 }

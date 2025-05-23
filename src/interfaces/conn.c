@@ -251,7 +251,7 @@ extern void *conn_g_create(const tls_conn_args_t *tls_conn_args)
 	return (*(ops.create_conn))(tls_conn_args);
 }
 
-extern void tls_g_destroy_conn(void *conn, bool close_fds)
+extern void conn_g_destroy(void *conn, bool close_fds)
 {
 	if (!conn)
 		return;
