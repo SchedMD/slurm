@@ -81,12 +81,13 @@ static char *server_key = NULL;
 static uint32_t server_key_len = 0;
 
 static bool is_own_cert_loaded = false;
+static bool is_own_cert_trusted_by_ca = false;
 
-static pthread_rwlock_t server_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
+static pthread_rwlock_t s2n_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
 
-static uint32_t server_conf_conn_cnt = 0;
-static pthread_mutex_t server_conf_cnt_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t server_conf_cnt_cond = PTHREAD_COND_INITIALIZER;
+static uint32_t s2n_conf_conn_cnt = 0;
+static pthread_mutex_t s2n_conf_cnt_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t s2n_conf_cnt_cond = PTHREAD_COND_INITIALIZER;
 
 /*
  * These are defined here so when we link with something other than
@@ -405,14 +406,14 @@ static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
 	}
 
 	/* Stop new connections from using current server_config */
-	slurm_rwlock_wrlock(&server_conf_lock);
+	slurm_rwlock_wrlock(&s2n_conf_lock);
 
 	log_flag(TLS, "%s: Updating global server_conf with new certificate and key now...", plugin_type);
 
 	/* Wait until connections using server_config are finished */
-	slurm_mutex_lock(&server_conf_cnt_lock);
-	if (server_conf_conn_cnt)
-		slurm_cond_wait(&server_conf_cnt_cond, &server_conf_cnt_lock);
+	slurm_mutex_lock(&s2n_conf_cnt_lock);
+	if (s2n_conf_conn_cnt)
+		slurm_cond_wait(&s2n_conf_cnt_cond, &s2n_conf_cnt_lock);
 
 	if (server_cert_and_key &&
 	    s2n_cert_chain_and_key_free(server_cert_and_key)) {
@@ -444,15 +445,15 @@ static int _add_cert_to_global_server(char *cert_pem, uint32_t cert_pem_len,
 		goto fail;
 	}
 
-	slurm_mutex_unlock(&server_conf_cnt_lock);
+	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 	log_flag(TLS, "%s: Successfully updated global server_conf with new certificate and key", plugin_type);
-	slurm_rwlock_unlock(&server_conf_lock);
+	slurm_rwlock_unlock(&s2n_conf_lock);
 
 	return SLURM_SUCCESS;
 fail:
-	slurm_mutex_unlock(&server_conf_cnt_lock);
+	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 	log_flag(TLS, "%s: Failed to update global server_conf with new certificate and key", plugin_type);
-	slurm_rwlock_unlock(&server_conf_lock);
+	slurm_rwlock_unlock(&s2n_conf_lock);
 
 	return SLURM_ERROR;
 }
@@ -729,8 +730,11 @@ extern char *tls_p_get_own_public_cert(void)
 extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
 			       uint32_t key_len)
 {
-	if (!cert)
-		return _add_cert_from_file_to_server();
+	if (!cert) {
+		if (_add_cert_from_file_to_server())
+			return SLURM_ERROR;
+		goto cert_loaded;
+	}
 
 	xfree(server_cert);
 	xfree(server_key);
@@ -747,7 +751,10 @@ extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
 		return SLURM_ERROR;
 	}
 
+cert_loaded:
 	log_flag(TLS, "Successfully loaded signed certificate into TLS store.");
+
+	is_own_cert_trusted_by_ca = true;
 
 	return SLURM_SUCCESS;
 }
@@ -757,28 +764,28 @@ extern bool tls_p_own_cert_loaded(void)
 	return is_own_cert_loaded;
 }
 
-static void _server_config_inc(tls_conn_t *conn)
+static void _s2n_config_inc(tls_conn_t *conn)
 {
-	slurm_mutex_lock(&server_conf_cnt_lock);
-	server_conf_conn_cnt++;
-	slurm_mutex_unlock(&server_conf_cnt_lock);
+	slurm_mutex_lock(&s2n_conf_cnt_lock);
+	s2n_conf_conn_cnt++;
+	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 }
 
-static void _server_config_dec(tls_conn_t *conn)
+static void _s2n_config_dec(tls_conn_t *conn)
 {
-	slurm_mutex_lock(&server_conf_cnt_lock);
+	slurm_mutex_lock(&s2n_conf_cnt_lock);
 
-	if (server_conf_conn_cnt > 0) {
-		server_conf_conn_cnt--;
+	if (s2n_conf_conn_cnt > 0) {
+		s2n_conf_conn_cnt--;
 	} else {
 		error("%s: unexpected underflow", __func__);
 	}
 
-	if (server_conf_conn_cnt == 0) {
-		slurm_cond_signal(&server_conf_cnt_cond);
+	if (s2n_conf_conn_cnt == 0) {
+		slurm_cond_signal(&s2n_conf_cnt_cond);
 	}
 
-	slurm_mutex_unlock(&server_conf_cnt_lock);
+	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 }
 
 static void _cleanup_tls_conn(tls_conn_t *conn)
@@ -796,7 +803,7 @@ static void _cleanup_tls_conn(tls_conn_t *conn)
 		on_s2n_error(conn, s2n_connection_free);
 
 	if (conn->using_global_server_conf)
-		_server_config_dec(conn);
+		_s2n_config_dec(conn);
 }
 
 extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
@@ -816,18 +823,18 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	case TLS_CONN_SERVER:
 	{
 		s2n_conn_mode = S2N_SERVER;
-		if (!slurm_rwlock_tryrdlock(&server_conf_lock)) {
+		if (!slurm_rwlock_tryrdlock(&s2n_conf_lock)) {
 			if (!server_cert_and_key) {
 				error("%s: No server certificate has been loaded yet, cannot create connection for fd:%d->%d",
 				      __func__, tls_conn_args->input_fd,
 				      tls_conn_args->output_fd);
-				slurm_rwlock_unlock(&server_conf_lock);
+				slurm_rwlock_unlock(&s2n_conf_lock);
 				goto fail;
 			}
-			_server_config_inc(conn);
+			_s2n_config_inc(conn);
 			conn->s2n_config = server_config;
 			conn->using_global_server_conf = true;
-			slurm_rwlock_unlock(&server_conf_lock);
+			slurm_rwlock_unlock(&s2n_conf_lock);
 			break;
 		}
 
