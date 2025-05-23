@@ -123,7 +123,7 @@ extern bool tls_enabled(void)
 	return tls_enabled_bool;
 }
 
-extern int tls_g_init(void)
+extern int conn_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *plugin_type = "tls";
@@ -191,7 +191,7 @@ done:
 	return rc;
 }
 
-extern int tls_g_fini(void)
+extern int conn_g_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 

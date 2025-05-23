@@ -870,7 +870,7 @@ int main(int argc, char **argv)
 	acct_storage_g_fini();
 	slurm_fini();
 	hash_g_fini();
-	tls_g_fini();
+	conn_g_fini();
 	cred_g_fini();
 	auth_g_fini();
 	log_fini();

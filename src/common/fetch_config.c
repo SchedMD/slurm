@@ -139,7 +139,7 @@ static void _fetch_child(list_t *controllers, uint32_t flags, uint16_t port,
 		slurm_conf.tls_type = xstrdup("tls/s2n");
 
 		/* certmgr plugin will be loaded after getting configuration */
-		if (tls_g_init()) {
+		if (conn_g_init()) {
 			error("--ca-cert-file was specified but TLS plugin failed to load");
 			goto rwfail;
 		}

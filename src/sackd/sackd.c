@@ -554,8 +554,8 @@ extern int main(int argc, char **argv)
 		fatal("auth_g_init() failed");
 	if (hash_g_init())
 		fatal("hash_g_init() failed");
-	if (tls_g_init())
-		fatal("tls_g_init() failed");
+	if (conn_g_init())
+		fatal("conn_g_init() failed");
 	if (certmgr_g_init())
 		fatal("certmgr_g_init() failed");
 

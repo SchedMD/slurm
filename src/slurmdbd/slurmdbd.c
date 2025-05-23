@@ -241,7 +241,7 @@ int main(int argc, char **argv)
 	if (hash_g_init() != SLURM_SUCCESS) {
 		fatal("failed to initialize hash plugin");
 	}
-	if (tls_g_init() != SLURM_SUCCESS) {
+	if (conn_g_init() != SLURM_SUCCESS) {
 		fatal("Failed to initialize tls plugin");
 	}
 	if (acct_storage_g_init() != SLURM_SUCCESS) {
@@ -380,7 +380,7 @@ end_it:
 	acct_storage_g_fini();
 	auth_g_fini();
 	hash_g_fini();
-	tls_g_fini();
+	conn_g_fini();
 	free_slurmdbd_conf();
 	slurm_mutex_lock(&rpc_mutex);
 	slurmdb_destroy_stats_rec(rpc_stats);

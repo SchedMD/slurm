@@ -94,8 +94,8 @@ extern char *conn_mode_to_str(conn_mode_t mode);
  */
 extern bool tls_enabled(void);
 
-extern int tls_g_init(void);
-extern int tls_g_fini(void);
+extern int conn_g_init(void);
+extern int conn_g_fini(void);
 
 /*
  * Get self signed public certificate pem.

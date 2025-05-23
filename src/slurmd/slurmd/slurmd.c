@@ -2631,7 +2631,7 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (certmgr_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	if (tls_g_init() != SLURM_SUCCESS)
+	if (conn_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	_dynamic_init();
@@ -2777,7 +2777,7 @@ _slurmd_fini(void)
 	topology_g_destroy_config();
 	topology_g_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
-	tls_g_fini();
+	conn_g_fini();
 	if ((rc = spank_slurmd_exit())) {
 		error("%s: SPANK slurmd exit failed: %s",
 		      __func__, slurm_strerror(rc));
