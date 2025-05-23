@@ -370,7 +370,9 @@ static void _listen_for_reconf(void)
 	static const conmgr_events_t events = {
 		.on_msg = _on_msg,
 	};
-	static conmgr_con_flags_t flags = CON_FLAG_NONE;
+	static conmgr_con_flags_t flags =
+		(CON_FLAG_WATCH_WRITE_TIMEOUT | CON_FLAG_WATCH_READ_TIMEOUT |
+		 CON_FLAG_WATCH_CONNECT_TIMEOUT);
 
 	if (getenv("SACKD_RECONF_LISTEN_FD")) {
 		listen_fd = atoi(getenv("SACKD_RECONF_LISTEN_FD"));
