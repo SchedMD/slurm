@@ -222,11 +222,15 @@ static list_t *_get_system_gpu_list_nvidia(node_config_load_t *node_conf)
 
 extern int init(void)
 {
+	debug("%s: loaded %s", __func__, plugin_name);
+
 	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
+	debug("%s: unloading %s", __func__, plugin_name);
+
 	return SLURM_SUCCESS;
 }
 
