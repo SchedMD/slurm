@@ -317,6 +317,21 @@ static struct s2n_config *_create_config(void)
 	return new_conf;
 }
 
+static char *_get_ca_cert_file_from_conf(void)
+{
+	char *cert;
+
+	/* Get explicit path configuration */
+	if ((cert = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=")))
+		return cert;
+
+	/* Try to find default path */
+	if ((cert = get_extra_conf_path("ca_cert.pem")))
+		return cert;
+
+	return NULL;
+}
+
 static int _add_ca_cert_to_config(struct s2n_config *config, char *cert_file)
 {
 	buf_t *cert_buf;
@@ -684,21 +699,6 @@ static int _negotiate(tls_conn_t *conn)
 	}
 
 	return SLURM_SUCCESS;
-}
-
-static char *_get_ca_cert_file_from_conf(void)
-{
-	char *cert;
-
-	/* Get explicit path configuration */
-	if ((cert = conf_get_opt_str(slurm_conf.tls_params, "ca_cert_file=")))
-		return cert;
-
-	/* Try to find default path */
-	if ((cert = get_extra_conf_path("ca_cert.pem")))
-		return cert;
-
-	return NULL;
 }
 
 extern int tls_p_load_ca_cert(char *cert_file)
