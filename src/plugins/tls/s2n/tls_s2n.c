@@ -306,13 +306,6 @@ static struct s2n_config *_create_config_common(void)
 	}
 	xfree(security_policy);
 
-	/*
-	 * from s2n usage guide:
-	 *
-	 * When using client authentication, the server MUST implement the
-	 * s2n_verify_host_fn, because the default behavior will likely reject
-	 * all client certificates.
-	 */
 	return new_conf;
 }
 
