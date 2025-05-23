@@ -718,10 +718,9 @@ int main(int argc, char **argv)
 	_check_user();
 
 	/* Load serializers if they are present */
-	(void) serializer_g_init(MIME_TYPE_JSON_PLUGIN,
-				 getenv("SLURMRESTD_JSON"));
-	(void) serializer_g_init(MIME_TYPE_YAML_PLUGIN,
-				 getenv("SLURMRESTD_YAML"));
+	serializer_required(MIME_TYPE_JSON);
+	if (getenv("SLURMRESTD_YAML"))
+		serializer_required(MIME_TYPE_YAML);
 	serializer_required(MIME_TYPE_URL_ENCODED);
 
 	/* This checks if slurmrestd is running in inetd mode */

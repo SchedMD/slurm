@@ -317,6 +317,7 @@ extern int serializer_g_init(const char *plugin_list, const char *config)
 	xrecalloc(mime_array, (plugins->count + 1), sizeof(*mime_array));
 
 	for (size_t i = 0; plugins && (i < plugins->count) && !rc; i++) {
+		const char *config = NULL;
 		const char **mime_types;
 		const funcs_t *func_ptr = plugins->functions[i];
 
@@ -333,18 +334,23 @@ extern int serializer_g_init(const char *plugin_list, const char *config)
 
 		_register_mime_types(mime_types_list, i, mime_types);
 
-		if (!config) {
-			if (!xstrcmp(plugins->types[i], MIME_TYPE_JSON_PLUGIN))
+		if (!xstrcmp(plugins->types[i], MIME_TYPE_JSON_PLUGIN)) {
+			if (running_in_slurmrestd())
+				config = getenv("SLURMRESTD_JSON");
+			if (!config)
 				config = getenv(ENV_CONFIG_JSON);
-			else if (!xstrcmp(plugins->types[i],
-					  MIME_TYPE_YAML_PLUGIN))
-				config = getenv(ENV_CONFIG_YAML);
-
-			if (config && config[0] &&
-			    (rc = _parse_config(config, &flags)))
-				fatal("Unable to parse serializer \"%s\" flags: %s",
-				      config, slurm_strerror(rc));
 		}
+
+		if (!xstrcmp(plugins->types[i], MIME_TYPE_YAML_PLUGIN)) {
+			if (running_in_slurmrestd())
+				config = getenv("SLURMRESTD_YAML");
+			if (!config)
+				config = getenv(ENV_CONFIG_YAML);
+		}
+
+		if (config && config[0] && (rc = _parse_config(config, &flags)))
+			fatal("Unable to parse serializer \"%s\" flags: %s",
+			      config, slurm_strerror(rc));
 
 		rc = (*func_ptr->init)(flags);
 	}
