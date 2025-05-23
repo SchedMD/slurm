@@ -70,11 +70,11 @@ typedef struct {
 	int (*set_conn_fds)(void *conn, int input_fd, int output_fd);
 	int (*set_conn_callbacks)(void *conn, tls_conn_callbacks_t *callbacks);
 	void (*set_graceful_shutdown)(void *conn, bool do_graceful_shutdown);
-} tls_ops_t;
+} conn_ops_t;
 
 /*
  * These strings must be kept in the same order as the fields
- * declared for tls_ops_t.
+ * declared for conn_ops_t.
  */
 static const char *syms[] = {
 	"plugin_id",
@@ -97,7 +97,7 @@ static const char *syms[] = {
 	"tls_p_set_graceful_shutdown",
 };
 
-static tls_ops_t ops;
+static conn_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
