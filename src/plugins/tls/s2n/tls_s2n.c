@@ -71,7 +71,8 @@ static struct s2n_config *client_config = NULL;
 static struct s2n_config *server_config = NULL;
 
 /*
- * If non-NULL, own_cert_and_key was successfully loaded into server_config
+ * If non-NULL, own_cert_and_key was successfully loaded into
+ * both server_config/client_config
  */
 static struct s2n_cert_chain_and_key *own_cert_and_key = NULL;
 
@@ -439,7 +440,8 @@ end:
 }
 
 static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
-				      char *key_pem, uint32_t key_pem_len)
+				      char *key_pem, uint32_t key_pem_len,
+				      bool server_only)
 {
 	if (!own_cert_and_key) {
 		is_own_cert_loaded = true;
@@ -448,6 +450,9 @@ static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
 					 cert_pem_len, key_pem, key_pem_len))
 			return SLURM_ERROR;
 		if (_add_own_cert_to_config(server_config, &own_cert_and_key))
+			return SLURM_ERROR;
+		if (!server_only &&
+		    _add_own_cert_to_config(client_config, &own_cert_and_key))
 			return SLURM_ERROR;
 
 		return SLURM_SUCCESS;
@@ -473,6 +478,8 @@ static int _add_cert_to_global_config(char *cert_pem, uint32_t cert_pem_len,
 	 * recreated.
 	 */
 	if (_reset_global_conf(&server_config))
+		goto fail;
+	if (!server_only && _reset_global_conf(&client_config))
 		goto fail;
 
 	slurm_mutex_unlock(&s2n_conf_cnt_lock);
@@ -603,7 +610,7 @@ static int _add_cert_from_file_to_server(void)
 	}
 
 	rc = _add_cert_to_global_config(cert_buf->head, cert_buf->size,
-					key_buf->head, key_buf->size);
+					key_buf->head, key_buf->size, false);
 
 cleanup:
 	xfree(key_file);
@@ -625,8 +632,9 @@ extern int tls_p_load_self_signed_cert(void)
 	own_cert_len = strlen(own_cert);
 	own_key_len = strlen(own_key);
 
+	/* Don't add self-signed cert to client_config */
 	return _add_cert_to_global_config(own_cert, own_cert_len, own_key,
-					  own_key_len);
+					  own_key_len, true);
 }
 
 
@@ -760,7 +768,7 @@ extern int tls_p_load_own_cert(char *cert, uint32_t cert_len, char *key,
 	own_key = xstrdup(key);
 	own_key_len = key_len;
 
-	if (_add_cert_to_global_config(cert, cert_len, key, key_len)) {
+	if (_add_cert_to_global_config(cert, cert_len, key, key_len, false)) {
 		error("%s: Could not add certificate and private key to s2n_config.",
 		      plugin_type);
 		return SLURM_ERROR;
