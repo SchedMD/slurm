@@ -102,33 +102,20 @@ extern void cancel_delayed_work(void)
 	(void) list_delete_all(mgr.delayed_work, _cancel_work, NULL);
 }
 
-static list_t *_inspect(void)
+static void _inspect(void)
 {
 	int count, total;
-	work_t *work;
-	list_t *elapsed = list_create(xfree_ptr);
 	foreach_delayed_work_t dargs = {
 		.magic = MAGIC_FOREACH_DELAYED_WORK,
 		.time = timespec_now(),
 	};
 
 	total = list_count(mgr.delayed_work);
-	count = list_transfer_match(mgr.delayed_work, elapsed,
-				    _inspect_work, &dargs);
-
+	count = list_delete_all(mgr.delayed_work, _inspect_work, &dargs);
 	_update_timer(dargs.shortest, dargs.time);
-
-	while ((work = list_pop(elapsed))) {
-		if (!_work_clear_time_delay(work))
-			fatal_abort("should never happen");
-
-		handle_work(true, work);
-	}
 
 	log_flag(CONMGR, "%s: checked all timers and triggered %d/%d delayed work",
 		 __func__, count, total);
-
-	return elapsed;
 }
 
 static struct itimerspec _calc_timer(work_t *shortest,
@@ -273,17 +260,13 @@ extern void free_delayed_work(void)
 
 static void _update_delayed_work(bool locked)
 {
-	list_t *elapsed = NULL;
-
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
-	elapsed = _inspect();
+	_inspect();
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
-
-	FREE_NULL_LIST(elapsed);
 }
 
 extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
