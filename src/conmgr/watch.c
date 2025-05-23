@@ -1642,6 +1642,9 @@ static bool _watch_loop(void)
 		 */
 		_quiesce_max_sleep();
 
+		/* Cancel any delayed connection work to avoid waiting on it */
+		cancel_delayed_work(true);
+
 		if (signal_mgr_has_incoming()) {
 			/*
 			 * Must wait for any outstanding incoming signals to be
