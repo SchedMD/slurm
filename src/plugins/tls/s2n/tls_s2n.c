@@ -806,6 +806,51 @@ static void _cleanup_tls_conn(tls_conn_t *conn)
 		_s2n_config_dec(conn);
 }
 
+static int _set_conn_s2n_conf(tls_conn_t *conn,
+			      const conn_args_t *tls_conn_args)
+{
+	if (!slurm_rwlock_tryrdlock(&s2n_conf_lock)) {
+		if (!own_cert_and_key) {
+			error("%s: No server certificate has been loaded yet, cannot create connection for fd:%d->%d",
+			      __func__, tls_conn_args->input_fd,
+			      tls_conn_args->output_fd);
+			slurm_rwlock_unlock(&s2n_conf_lock);
+			return SLURM_ERROR;
+		}
+		_s2n_config_inc(conn);
+		conn->s2n_config = server_config;
+		conn->using_global_server_conf = true;
+		slurm_rwlock_unlock(&s2n_conf_lock);
+		return SLURM_SUCCESS;
+	}
+
+	/*
+	 * Create a new s2n_config with the same certificate while the
+	 * old one is getting updated.
+	 */
+	log_flag(TLS, "%s: server_conf is being updated, creating new s2n_config for conn to fd:%d->%d",
+		plugin_type, tls_conn_args->input_fd, tls_conn_args->output_fd);
+	if (!own_cert || !own_cert_len || !own_key || !own_key_len) {
+		error("%s: Global server s2n_config is busy being updated and there's no saved certificate/key to create a temporary server s2n_config for conn to fd:%d->%d",
+		      __func__, tls_conn_args->input_fd,
+		      tls_conn_args->output_fd);
+		return SLURM_ERROR;
+	}
+	if (!(conn->s2n_config = _create_config())) {
+		error("Could not create server config for fd:%d->%d",
+		      tls_conn_args->input_fd, tls_conn_args->output_fd);
+		return SLURM_ERROR;
+	}
+	if (_add_own_cert_to_config(conn->s2n_config, &conn->cert_and_key,
+				    own_cert, own_cert_len, own_key,
+				    own_key_len)) {
+		error("Could not add certificate to server config for fd:%d->%d",
+		      tls_conn_args->input_fd, tls_conn_args->output_fd);
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
 extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn;
@@ -823,49 +868,8 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	case TLS_CONN_SERVER:
 	{
 		s2n_conn_mode = S2N_SERVER;
-		if (!slurm_rwlock_tryrdlock(&s2n_conf_lock)) {
-			if (!own_cert_and_key) {
-				error("%s: No server certificate has been loaded yet, cannot create connection for fd:%d->%d",
-				      __func__, tls_conn_args->input_fd,
-				      tls_conn_args->output_fd);
-				slurm_rwlock_unlock(&s2n_conf_lock);
-				goto fail;
-			}
-			_s2n_config_inc(conn);
-			conn->s2n_config = server_config;
-			conn->using_global_server_conf = true;
-			slurm_rwlock_unlock(&s2n_conf_lock);
-			break;
-		}
-
-		/*
-		 * Create a new s2n_config with the same certificate while the
-		 * old one is getting updated.
-		 */
-		log_flag(TLS, "%s: server_conf is being updated, creating new s2n_config for conn to fd:%d->%d",
-			 plugin_type, tls_conn_args->input_fd,
-			 tls_conn_args->output_fd);
-		if (!own_cert || !own_cert_len || !own_key ||
-		    !own_key_len) {
-			error("%s: Global server s2n_config is busy being updated and there's no saved certificate/key to create a temporary server s2n_config for conn to fd:%d->%d",
-			      __func__, tls_conn_args->input_fd,
-			      tls_conn_args->output_fd);
+		if (_set_conn_s2n_conf(conn, tls_conn_args))
 			goto fail;
-		}
-		if (!(conn->s2n_config = _create_config())) {
-			error("Could not create server config for fd:%d->%d",
-			      tls_conn_args->input_fd,
-			      tls_conn_args->output_fd);
-			goto fail;
-		}
-		if (_add_own_cert_to_config(
-			    conn->s2n_config, &conn->cert_and_key, own_cert,
-			    own_cert_len, own_key, own_key_len)) {
-			error("Could not add certificate to server config for fd:%d->%d",
-			      tls_conn_args->input_fd,
-			      tls_conn_args->output_fd);
-			goto fail;
-		}
 		break;
 	}
 	case TLS_CONN_CLIENT:
