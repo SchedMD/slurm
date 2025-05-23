@@ -50,6 +50,7 @@ strong_alias(serializer_g_init, slurm_serializer_g_init);
 strong_alias(serialize_g_data_to_string, slurm_serialize_g_data_to_string);
 strong_alias(serialize_g_string_to_data, slurm_serialize_g_string_to_data);
 strong_alias(serializer_g_fini, slurm_serializer_g_fini);
+strong_alias(serializer_required, slurm_serializer_required);
 
 #define SERIALIZER_MAJOR_TYPE "serializer"
 #define SERIALIZER_MIME_TYPES_SYM "mime_types"
@@ -351,6 +352,16 @@ extern int serializer_g_init(const char *plugin_list, const char *config)
 	slurm_mutex_unlock(&init_mutex);
 
 	return rc;
+}
+
+extern void serializer_required(const char *mime_type)
+{
+	serializer_g_init(NULL, NULL);
+
+	slurm_mutex_lock(&init_mutex);
+	if (!_find_serializer(mime_type))
+		fatal("%s: could not find plugin for %s", __func__, mime_type);
+	slurm_mutex_unlock(&init_mutex);
 }
 
 extern void serializer_g_fini(void)

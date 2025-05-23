@@ -103,6 +103,11 @@ extern const char *resolve_mime_type(const char *mime_type,
 extern const char **get_mime_type_array(void);
 
 /*
+ * Ensure a plugin is loaded that can handle mime_type.
+ */
+extern void serializer_required(const char *mime_type);
+
+/*
  * Load and initialize serializer plugins
  *
  * IN plugins - comma delimited list of plugins or "list"

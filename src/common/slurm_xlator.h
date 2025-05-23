@@ -543,6 +543,7 @@
 #define job_state_reason_check slurm_job_state_reason_check
 
 /* serializer.[ch] functions */
+#define serializer_required slurm_serializer_required
 #define serializer_g_init slurm_serializer_g_init
 #define serialize_g_data_to_string slurm_serialize_g_data_to_string
 #define serialize_g_string_to_data slurm_serialize_g_string_to_data
