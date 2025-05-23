@@ -2486,8 +2486,8 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 
 		/* If we have a assoc this has already been added to the mix */
 		xstrcat(cols, ", is_def");
-		xstrfmtcat(vals, ", %d", assoc_in->is_def);
-		xstrfmtcat(extra, ", is_def=%d", assoc_in->is_def);
+		xstrfmtcat(vals, ", %d", assoc->is_def);
+		xstrfmtcat(extra, ", is_def=%d", assoc->is_def);
 	} else
 		assoc->is_def = is_def;
 
