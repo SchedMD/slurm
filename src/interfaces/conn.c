@@ -315,7 +315,7 @@ extern int conn_g_set_callbacks(void *conn, tls_conn_callbacks_t *callbacks)
 	return (*(ops.set_conn_callbacks))(conn, callbacks);
 }
 
-extern void tls_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown)
+extern void conn_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_graceful_shutdown))(conn, do_graceful_shutdown);

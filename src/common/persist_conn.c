@@ -233,7 +233,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 		(void) close(fd);
 		return SLURM_ERROR;
 	}
-	tls_g_set_graceful_shutdown(persist_conn->tls_conn, true);
+	conn_g_set_graceful_shutdown(persist_conn->tls_conn, true);
 
 	while (!(*persist_conn->shutdown) && !fini) {
 		if (!_conn_readable(persist_conn))
@@ -428,7 +428,7 @@ extern void slurm_persist_conn_recv_server_fini(void)
 
 		if (persist_service_conn[i]->conn) {
 			void *tls = persist_service_conn[i]->conn->tls_conn;
-			tls_g_set_graceful_shutdown(tls, false);
+			conn_g_set_graceful_shutdown(tls, false);
 		}
 
 		_destroy_persist_service(persist_service_conn[i]);
@@ -590,7 +590,7 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 	 * Peer will be waiting on conn_g_recv(), and they will need to know if
 	 * connection was intentionally closed or if an error occurred.
 	 */
-	tls_g_set_graceful_shutdown(persist_conn->tls_conn, true);
+	conn_g_set_graceful_shutdown(persist_conn->tls_conn, true);
 
 	fd = conn_g_get_fd(persist_conn->tls_conn);
 
@@ -872,8 +872,8 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 				 __func__, ufds.fd);
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
-			tls_g_set_graceful_shutdown(persist_conn->tls_conn,
-						    false);
+			conn_g_set_graceful_shutdown(persist_conn->tls_conn,
+						     false);
 			return -1;
 		}
 		if (ufds.revents & POLLNVAL) {

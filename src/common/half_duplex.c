@@ -108,7 +108,7 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 		 * know if connection was intentionally closed or if an error
 		 * occurred.
 		 */
-		tls_g_set_graceful_shutdown(tls_conn, true);
+		conn_g_set_graceful_shutdown(tls_conn, true);
 	}
 
 	eio_new_obj(eio_handle, local_to_remote_eio);
