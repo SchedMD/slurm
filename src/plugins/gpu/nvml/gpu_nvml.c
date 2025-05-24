@@ -1536,6 +1536,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 		_nvml_print_freqs(&device, LOG_LEVEL_DEBUG2);
 
 		FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
+		xfree(gres_slurmd_conf.cpus);
 		xfree(cpu_aff_mac_range);
 		xfree(device_file);
 		xfree(nvlinks);
