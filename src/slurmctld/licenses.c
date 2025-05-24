@@ -486,6 +486,9 @@ static void _set_license_ids(void)
 static bool _sufficient_licenses(licenses_t *request, licenses_t *match,
 				 int resv_licenses)
 {
+	if (match->total == INFINITE)
+		return true;
+
 	return (request->total + match->used + match->last_deficit +
 		resv_licenses) <= match->total;
 }
@@ -1994,7 +1997,8 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 		bf_entry->remaining = license_entry->total;
 		bf_entry->id = license_entry->id;
 
-		if (!bf_running_job_reserve)
+		if (!bf_running_job_reserve &&
+		    (bf_entry->remaining != INFINITE))
 			bf_entry->remaining -= license_entry->used;
 
 		list_append(bf_list, bf_entry);
@@ -2081,7 +2085,9 @@ static int _foreach_hres_deduct(void *x, void *arg)
 
 		return 0;
 
-	if (bf_lic->remaining < args->license_entry->total) {
+	if (bf_lic->remaining == INFINITE) {
+		;
+	} else if (bf_lic->remaining < args->license_entry->total) {
 		error("%s: underflow on lic_id=%u", __func__, match->id.lic_id);
 		bf_lic->remaining = 0;
 	} else {

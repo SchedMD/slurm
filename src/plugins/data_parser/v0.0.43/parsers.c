@@ -10155,7 +10155,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(H_RESOURCE_MODE_FLAG)[] = {
 	add_parser(hierarchy_layer_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(H_LAYER)[] = {
 	add_parse(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
-	add_parse(UINT32, count, "count", "Resource quantity"),
+	add_parse(UINT32_NO_VAL, count, "count", "Resource quantity"),
 };
 #undef add_parse
 
