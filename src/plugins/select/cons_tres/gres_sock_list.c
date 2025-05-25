@@ -56,8 +56,8 @@ typedef struct {
 	list_t *gres_list_resv;
 } foreach_gres_sock_list_create_t;
 
-static bool _can_use_gres_exc_topo(resv_exc_t *resv_exc_ptr,
-				   int node_inx, int gres_bit)
+static bool _can_use_gres_exc_topo(resv_exc_t *resv_exc_ptr, int node_inx,
+				   int gres_bit, gres_node_state_t *gres_ns)
 {
 	gres_job_state_t *gres_js;
 	bool found = false;
@@ -68,11 +68,19 @@ static bool _can_use_gres_exc_topo(resv_exc_t *resv_exc_ptr,
 	gres_js = resv_exc_ptr->gres_js_exc ?
 		resv_exc_ptr->gres_js_exc : resv_exc_ptr->gres_js_inc;
 
-	if (!gres_js)
+	if (!gres_js && resv_exc_ptr->gres_list_inc) {
+		log_flag(SELECT_TYPE, "can't include!, it is excluded %d %d",
+		     node_inx, gres_bit);
+		return false;
+	} else if (!gres_js)
 		return true;
 
 	if (!gres_js->gres_bit_alloc || !gres_js->gres_bit_alloc[node_inx])
 		return resv_exc_ptr->gres_js_exc ? true : false;
+	if (bit_test(gres_ns->gres_bit_alloc, gres_bit)) {
+		log_flag(SELECT_TYPE, "Can't include, it is already used!");
+		return false;
+	}
 	found = bit_test(gres_js->gres_bit_alloc[node_inx], gres_bit);
 
 	if (resv_exc_ptr->gres_js_exc && found) {
@@ -85,7 +93,6 @@ static bool _can_use_gres_exc_topo(resv_exc_t *resv_exc_ptr,
 			 node_inx, gres_bit);
 		return false;
 	}
-
 	return true;
 }
 
@@ -155,6 +162,25 @@ static void _handle_gres_exc_basic(resv_exc_t *resv_exc_ptr,
 	return;
 }
 
+static void _handle_gres_exc_bit_and_not(resv_exc_t *resv_exc_ptr,
+					 bitstr_t *bits_by_sock, int node_inx)
+{
+	gres_job_state_t *gres_js;
+
+	if (!resv_exc_ptr)
+		return;
+
+	gres_js = resv_exc_ptr->gres_js_exc;
+
+	if (!gres_js || !gres_js->gres_bit_alloc ||
+	    !gres_js->gres_bit_alloc[node_inx])
+		return;
+
+	bit_and_not(bits_by_sock, gres_js->gres_bit_alloc[node_inx]);
+
+	return;
+}
+
 /*
  * Determine how many GRES of a given type can be used by this job on a
  * given node and return a structure with the details. Note that multiple
@@ -179,11 +205,11 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	uint32_t s_p_n = NO_VAL; /* No need to optimize socket */
 
 	gres_node_state_t *alt_gres_ns = NULL;
-	int i, j, s, c;
+	int i, j, s, c, gres_bit = 0;
 	uint32_t tot_cores;
 	sock_gres_t *sock_gres;
 	int64_t add_gres;
-	uint64_t avail_gres, min_gres = 0;
+	uint64_t avail_gres = 0, min_gres = 0;
 	bool match = false;
 	bool use_busy_dev = gres_use_busy_dev(gres_state_node, use_total_gres);
 
@@ -201,25 +227,35 @@ static sock_gres_t *_build_sock_gres_by_topo(
 
 	for (i = 0; i < gres_ns->topo_cnt; i++) {
 		bool use_all_sockets = false;
-		if (gres_js->type_name &&
-		    (gres_js->type_id != gres_ns->topo_type_id[i]))
-			continue;	/* Wrong type_model */
-		if (use_busy_dev &&
-		    (gres_ns->topo_gres_cnt_alloc[i] == 0))
+
+		/*
+		 * If we have the wrong type or we are busy otherwise or we have
+		 * no more GRES of this type available increment gres_bit and
+		 * continue.
+		 */
+		if ((gres_js->type_name &&
+		     (gres_js->type_id != gres_ns->topo_type_id[i])) ||
+		    (use_busy_dev && !gres_ns->topo_gres_cnt_alloc[i]) ||
+		    (!use_total_gres && !gres_ns->no_consume &&
+		     (gres_ns->topo_gres_cnt_alloc[i] >=
+		      gres_ns->topo_gres_cnt_avail[i]))) {
+			gres_bit += gres_ns->topo_gres_cnt_avail[i];
 			continue;
-		if (!use_total_gres && !gres_ns->no_consume &&
-		    (gres_ns->topo_gres_cnt_alloc[i] >=
-		     gres_ns->topo_gres_cnt_avail[i])) {
-			continue;	/* No GRES remaining */
 		}
 
-		if (!_can_use_gres_exc_topo(resv_exc_ptr,
-					    create_args->node_inx, i))
-			continue;   /* Not allowed in resv_exc_ptr */
-
 		if (!use_total_gres && !gres_ns->no_consume) {
-			avail_gres = gres_ns->topo_gres_cnt_avail[i] -
-				gres_ns->topo_gres_cnt_alloc[i];
+			int temp = gres_ns->topo_gres_cnt_avail[i] + gres_bit;
+			for (; gres_bit < temp; gres_bit++) {
+				if (!_can_use_gres_exc_topo(
+					    resv_exc_ptr,
+					    create_args->node_inx,
+					    gres_bit,
+					    gres_ns))
+					/* Not allowed in resv_exc_ptr */
+					continue;
+				else
+					avail_gres++;
+			}
 		} else {
 			avail_gres = gres_ns->topo_gres_cnt_avail[i];
 		}
@@ -351,6 +387,11 @@ static sock_gres_t *_build_sock_gres_by_topo(
 					bit_or(sock_gres->bits_by_sock[s],
 					       gres_ns->topo_gres_bitmap[i]);
 				}
+
+				_handle_gres_exc_bit_and_not(
+					resv_exc_ptr,
+					sock_gres->bits_by_sock[s],
+					create_args->node_inx);
 				sock_gres->cnt_by_sock[s] += avail_gres;
 				sock_gres->total_cnt += avail_gres;
 				avail_gres = 0;
