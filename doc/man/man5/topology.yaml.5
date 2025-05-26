@@ -132,7 +132,11 @@ Child Nodes of the named leaf switch.
   tree:
     switches:
       - switch: sw_root
-        nodes: node[01-04]
+        children: s[1-2]
+      - switch: s1
+        nodes: node[01-02]
+      - switch: s2
+        nodes: node[03-04]
 - topology: topo2
   cluster_default: false
   block:
