@@ -3410,7 +3410,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	}
 	xfree(job_ptr_pend->array_recs->task_id_str);
 	if (job_ptr_pend->array_recs->task_cnt) {
-		job_ptr_pend->array_recs->task_cnt--;
+		/* Note job_array_post_sched decrements task_cnt if non-zero */
 		if (job_ptr_pend->array_recs->task_cnt <= 1) {
 			/*
 			 * This is the last task of the job array, so we need to
@@ -3431,6 +3431,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 			}
 		} else {
 			/* Still have tasks left to split off in the array */
+			job_ptr_pend->array_recs->task_cnt--;
 			job_ptr_pend->array_task_id = NO_VAL;
 		}
 	} else {
