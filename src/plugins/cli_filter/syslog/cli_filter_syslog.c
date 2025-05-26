@@ -115,17 +115,12 @@ static char *_retrieve_data(int key)
  */
 extern int init(void)
 {
-	int rc;
 	stored_data = xcalloc(24, sizeof(char *));
 	stored_sz = 24;
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
-		error("%s: unable to load JSON serializer: %s", __func__,
-		      slurm_strerror(rc));
-		return rc;
-	}
+	serializer_required(MIME_TYPE_JSON);
 
-        return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
@@ -133,7 +128,7 @@ extern int fini(void)
 	for (int i = 0; i < stored_n; i++)
 		xfree(stored_data[i]);
 	xfree(stored_data);
-        return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*****************************************************************************\

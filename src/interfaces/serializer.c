@@ -50,6 +50,7 @@ strong_alias(serializer_g_init, slurm_serializer_g_init);
 strong_alias(serialize_g_data_to_string, slurm_serialize_g_data_to_string);
 strong_alias(serialize_g_string_to_data, slurm_serialize_g_string_to_data);
 strong_alias(serializer_g_fini, slurm_serializer_g_fini);
+strong_alias(serializer_required, slurm_serializer_required);
 
 #define SERIALIZER_MAJOR_TYPE "serializer"
 #define SERIALIZER_MIME_TYPES_SYM "mime_types"
@@ -284,31 +285,26 @@ extern const char **get_mime_type_array(void)
 	return mime_array;
 }
 
-extern int serializer_g_init(const char *plugin_list, const char *config)
+extern int serializer_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	serializer_flags_t flags = SER_FLAGS_NONE;
 
-	if (config && config[0] && (rc = _parse_config(config, &flags)))
-		fatal("Unable to parse serializer \"%s\" flags: %s",
-		      config, slurm_strerror(rc));
-
 	slurm_mutex_lock(&init_mutex);
+	if (plugins) {
+		slurm_mutex_unlock(&init_mutex);
+		return rc;
+	}
 
 	xassert(!should_not_change);
 
-	/*
-	 * There will be multiple calls to serializer_g_init() to load different
-	 * plugins as the code always calls serializer_g_init() to be safe.
-	 */
 	xassert(sizeof(funcs_t) == sizeof(void *) * ARRAY_SIZE(syms));
-	rc = load_plugins(&plugins, SERIALIZER_MAJOR_TYPE, plugin_list, NULL,
-			  syms, ARRAY_SIZE(syms));
+	rc = load_plugins(&plugins, SERIALIZER_MAJOR_TYPE, NULL, NULL, syms,
+			  ARRAY_SIZE(syms));
 
 	if (rc)
-		fatal("%s: Unable to load serializer plugins%s%s: %s",
-		      __func__, (plugin_list ? " " : ""), plugin_list,
-		      slurm_strerror(rc));
+		fatal("%s: Unable to load serializer plugins: %s",
+		      __func__, slurm_strerror(rc));
 
 	if (!mime_types_list)
 		mime_types_list = list_create(xfree_ptr);
@@ -316,6 +312,7 @@ extern int serializer_g_init(const char *plugin_list, const char *config)
 	xrecalloc(mime_array, (plugins->count + 1), sizeof(*mime_array));
 
 	for (size_t i = 0; plugins && (i < plugins->count) && !rc; i++) {
+		const char *config = NULL;
 		const char **mime_types;
 		const funcs_t *func_ptr = plugins->functions[i];
 
@@ -332,18 +329,23 @@ extern int serializer_g_init(const char *plugin_list, const char *config)
 
 		_register_mime_types(mime_types_list, i, mime_types);
 
-		if (!config) {
-			if (!xstrcmp(plugins->types[i], MIME_TYPE_JSON_PLUGIN))
+		if (!xstrcmp(plugins->types[i], MIME_TYPE_JSON_PLUGIN)) {
+			if (running_in_slurmrestd())
+				config = getenv("SLURMRESTD_JSON");
+			if (!config)
 				config = getenv(ENV_CONFIG_JSON);
-			else if (!xstrcmp(plugins->types[i],
-					  MIME_TYPE_YAML_PLUGIN))
-				config = getenv(ENV_CONFIG_YAML);
-
-			if (config && config[0] &&
-			    (rc = _parse_config(config, &flags)))
-				fatal("Unable to parse serializer \"%s\" flags: %s",
-				      config, slurm_strerror(rc));
 		}
+
+		if (!xstrcmp(plugins->types[i], MIME_TYPE_YAML_PLUGIN)) {
+			if (running_in_slurmrestd())
+				config = getenv("SLURMRESTD_YAML");
+			if (!config)
+				config = getenv(ENV_CONFIG_YAML);
+		}
+
+		if (config && config[0] && (rc = _parse_config(config, &flags)))
+			fatal("Unable to parse serializer \"%s\" flags: %s",
+			      config, slurm_strerror(rc));
 
 		rc = (*func_ptr->init)(flags);
 	}
@@ -351,6 +353,16 @@ extern int serializer_g_init(const char *plugin_list, const char *config)
 	slurm_mutex_unlock(&init_mutex);
 
 	return rc;
+}
+
+extern void serializer_required(const char *mime_type)
+{
+	serializer_g_init();
+
+	slurm_mutex_lock(&init_mutex);
+	if (!_find_serializer(mime_type))
+		fatal("%s: could not find plugin for %s", __func__, mime_type);
+	slurm_mutex_unlock(&init_mutex);
 }
 
 extern void serializer_g_fini(void)

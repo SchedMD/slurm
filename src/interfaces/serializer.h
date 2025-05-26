@@ -103,15 +103,17 @@ extern const char *resolve_mime_type(const char *mime_type,
 extern const char **get_mime_type_array(void);
 
 /*
+ * Ensure a plugin is loaded that can handle mime_type.
+ */
+extern void serializer_required(const char *mime_type);
+
+/*
  * Load and initialize serializer plugins
- *
- * IN plugins - comma delimited list of plugins or "list"
- * 	pass NULL to load all found or "" to load none of them
  *
  * IN config - string with configuration to parse or NULL
  * RET SLURM_SUCCESS or error
  */
-extern int serializer_g_init(const char *plugin_list, const char *config);
+extern int serializer_g_init(void);
 
 /*
  * Unload all serializer plugins

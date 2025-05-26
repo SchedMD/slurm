@@ -65,7 +65,7 @@
  * Example usage:
  *
  * //Global init requiring JSON serializer
- * if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)) fatal("failed");
+ * serializer_required(MIME_TYPE_JSON);
  * //Create root data entry:
  * data_t *ex = data_new();
  * //Set data entry to be a dictionary type

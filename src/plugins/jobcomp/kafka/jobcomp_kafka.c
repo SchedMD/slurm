@@ -115,11 +115,7 @@ extern int init(void)
 
 	log_flag(JOBCOMP, "loaded");
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
-		error("%s: unable to load JSON serializer: %s",
-		      plugin_type, slurm_strerror(rc));
-		return rc;
-	}
+	serializer_required(MIME_TYPE_JSON);
 
 	jobcomp_common_conf_init();
 	jobcomp_kafka_conf_init();

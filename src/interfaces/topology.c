@@ -208,7 +208,7 @@ static int _parse_yaml(char *topo_conf)
 		.tctx_num = -1,
 	};
 
-	serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL);
+	serializer_required(MIME_TYPE_YAML);
 
 	if (!(conf_buf = create_mmap_buf(topo_conf))) {
 		error("could not load %s, and thus cannot create topo contexts",

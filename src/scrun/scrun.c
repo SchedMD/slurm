@@ -684,9 +684,7 @@ extern int main(int argc, char **argv)
 	if (!state.root_dir || !state.root_dir[0])
 		_set_root();
 
-	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)))
-		fatal("%s: error loading JSON parser: %s", __func__,
-		      slurm_strerror(rc));
+	serializer_required(MIME_TYPE_JSON);
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG2) {
 		for (int i = 0; i < argc; i++)

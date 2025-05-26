@@ -777,11 +777,7 @@ extern int main(void)
 	close(fd);
 
 	/* force load of JSON and all others if present */
-	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL) ||
-	    serializer_g_init(NULL, NULL)) {
-		error("serializer_g_init() failed");
-		return EXIT_FAILURE;
-	}
+	serializer_required(MIME_TYPE_JSON);
 
 	if (log_opts.stderr_level >= LOG_LEVEL_DEBUG) {
 		/* automatically be gdb friendly when debug logging */

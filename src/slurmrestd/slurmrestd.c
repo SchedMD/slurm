@@ -367,8 +367,7 @@ static void dump_spec(int argc, char **argv)
 		      slurm_conf_filename, slurm_strerror(rc));
 	}
 
-	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
-		fatal("Unable to initialize JSON serializer");
+	serializer_required(MIME_TYPE_JSON);
 
 	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,
 						NULL, NULL, NULL,
@@ -719,11 +718,10 @@ int main(int argc, char **argv)
 	_check_user();
 
 	/* Load serializers if they are present */
-	(void) serializer_g_init(MIME_TYPE_JSON_PLUGIN,
-				 getenv("SLURMRESTD_JSON"));
-	(void) serializer_g_init(MIME_TYPE_YAML_PLUGIN,
-				 getenv("SLURMRESTD_YAML"));
-	(void) serializer_g_init(MIME_TYPE_URL_ENCODED_PLUGIN, NULL);
+	serializer_required(MIME_TYPE_JSON);
+	if (getenv("SLURMRESTD_YAML"))
+		serializer_required(MIME_TYPE_YAML);
+	serializer_required(MIME_TYPE_URL_ENCODED);
 
 	/* This checks if slurmrestd is running in inetd mode */
 	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),
