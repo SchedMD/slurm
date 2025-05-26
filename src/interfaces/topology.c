@@ -687,11 +687,12 @@ unpack_error:
 extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo)
 {
 	int rc = SLURM_SUCCESS;
-	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
 
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (topoinfo) {
+		int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
+
 		if (topoinfo->data)
 			rc = (*(ops[plugin_inx].topoinfo_free))(topoinfo->data);
 		xfree(topoinfo);
