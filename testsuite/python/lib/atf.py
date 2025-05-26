@@ -561,7 +561,7 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
                 logging.warning("process slurmctld not found")
             for pid in pids:
                 run_command(
-                    f'sudo gcore -o {os.path.dirname(get_config_parameter("SlurmctldLogFile"))}/slurmctld.core {pid}'
+                    f"sudo gcore -o {properties['slurm-logs-dir']}/slurmctld.core {pid}"
                 )
             pytest.fail("Slurmctld is not running")
         else:
@@ -673,7 +673,7 @@ def start_slurmdbd(clean=False, quiet=False):
                 logging.warning("process slurmdbd not found")
             for pid in pids:
                 run_command(
-                    f'sudo gcore -o {os.path.dirname(get_config_parameter("SlurmctldLogFile"))}/slurmdbd.core {pid}'
+                    f"sudo gcore -o {properties['slurm-logs-dir']}/slurmdbd.core {pid}"
                 )
             pytest.fail("Slurmdbd is not running")
         else:
@@ -776,7 +776,7 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
         logging.warning("Getting the core files of the still running slurmctld")
         for pid in pids:
             run_command(
-                f'sudo gcore -o {os.path.dirname(get_config_parameter("SlurmctldLogFile"))}/slurmctld.core {pid}'
+                f"sudo gcore -o {properties['slurm-logs-dir']}/slurmctld.core {pid}"
             )
     else:
         logging.debug("No slurmctld is running.")
@@ -811,7 +811,7 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
             logging.warning("Getting the core files of the still running slurmds")
             for pid in pids:
                 run_command(
-                    f'sudo gcore -o {os.path.dirname(get_config_parameter("SlurmctldLogFile"))}/slurmd.core {pid}'
+                    f"sudo gcore -o {properties['slurm-logs-dir']}/slurmd.core {pid}"
                 )
         else:
             logging.debug("No slurmd is running.")
@@ -992,6 +992,11 @@ def require_slurm_running():
     """
 
     global nodes
+
+    # Set the slurm-logs-dir property to be used to generate gcore files when necessary
+    properties["slurm-logs-dir"] = os.path.dirname(
+        get_config_parameter("SlurmctldLogFile", live=False, quiet=True)
+    )
 
     if properties["auto-config"]:
         if not is_slurmctld_running(quiet=True):
@@ -1958,12 +1963,13 @@ def start_slurmrestd():
     port = None
     attempts = 0
 
-    log_dir = os.path.dirname(
-        get_config_parameter("SlurmctldLogFile", live=False, quiet=True)
+    properties["slurmrestd_log"] = open(
+        f"{properties['slurm-logs-dir']}/slurmrestd.log", "w"
     )
-    properties["slurmrestd_log"] = open(f"{log_dir}/slurmrestd.log", "w")
     if not properties["slurmrestd_log"]:
-        pytest.fail(f"Unable to open slurmrestd log: {log_dir}/slurmrestd.log")
+        pytest.fail(
+            f"Unable to open slurmrestd log: {properties['slurm-logs-dir']}/slurmrestd.log"
+        )
 
     while not port and attempts < 15:
         port = get_open_port()
