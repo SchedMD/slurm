@@ -3866,6 +3866,27 @@ function __scontrol_show_steps() {
 	__slurm_compreply "$(__slurm_jobs) $(__slurm_jobsteps)"
 }
 
+# completion handler for: scontrol show topology *
+function __scontrol_show_topology() {
+	local parameters=(
+		"block="
+		"node="
+		"unit="
+		"switch="
+	)
+
+	param="$(__slurm_find_param "${parameters[*]}")"
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_debug "$(__func__): param='$param'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	if [[ -z $param ]]; then
+		__slurm_compreply "${parameters[*]}"
+	fi
+}
+
 # completion handler for: scontrol show *
 function __scontrol_show() {
 	local subcmds=(
