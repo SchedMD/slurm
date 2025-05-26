@@ -575,7 +575,7 @@ extern int topology_g_get(topology_data_t type, char *name, void *data)
 	if (type == TOPO_DATA_TCTX_IDX) {
 		int tmp_idx;
 		if (!name || ((tmp_idx = _get_tctx_index_by_name(name)) < 0))
-			return SLURM_ERROR;
+			return ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		else {
 			int *tctx_idx_ptr = data;
 			*tctx_idx_ptr = tmp_idx;
@@ -599,7 +599,7 @@ extern int topology_g_get(topology_data_t type, char *name, void *data)
 		tctx_idx = _get_tctx_index_by_name(name);
 		if (tctx_idx < 0) {
 			error("%s: topology %s not active", __func__, name);
-			tctx_idx = 0;
+			return ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		}
 	}
 
