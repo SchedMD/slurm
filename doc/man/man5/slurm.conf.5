@@ -706,6 +706,81 @@ Use built-in/configured scripts to generate certificate key pair.
 .IP
 
 .TP
+\fBCertificateManagerParameters\fR
+Used to define parameters for certmgr plugin.
+.IP
+.RS
+.TP
+\fBcertificate_renewal_period=\fR
+The period of time in minutes at which new certificate signing requests will be
+sent to slurmctld.
+
+Default is 1440 minutes (once per day).
+.IP
+
+.TP
+\fBgenerate_csr_script=\fR
+Path to script used to generate certificate signing requests.  The nodename is
+passed in as an argument to the script.  The script must print only the
+certificate signing request PEM file to stdout, and return with a non-zero exit
+code on success.
+
+Required with certmgr/script. Only run by daemons requesting cerfificates.
+.IP
+
+.TP
+\fBget_node_token_script=\fR
+Path to script used to get node's unique token which will be validated by
+slurmctld using the script set by \fBvalidate_node_token_script=\fR.
+The nodename is passed in as an argument to the script.  The script must print
+the node's unique token to stdout, and return with a non-zero exit code.
+
+Required with certmgr/script. Only run by daemons requesting cerfificates.
+.IP
+
+.TP
+\fBsign_csr_script=\fR
+Path to script used to sign incoming certificate signing requests.
+This script will only be called if \fBvalidate_node_token_script=\fR was
+already called on the accompanying unique node token and returned with a
+non-zero exit code.
+The certificate signing request (as given by \fBgenerate_csr_script=\fR) is
+passed as an argument to this script.
+The script must print the new signed certificate to stdout, and return with a
+non-zero exit code.
+
+Required with certmgr/script. Only run by daemons requesting cerfificates.
+.IP
+
+.TP
+\fBsingle_use_tokens\fR
+Unique node tokens that are dynamically set (e.g. set via scontrol) will be
+consumed upon successful certificate signing.
+.IP
+
+.TP
+\fBvalidate_node_token_script=\fR
+Path to script used to validate a unique node token.
+The unique node token is passed as an argument to this script.
+If the script finds the node token to be valid, return with a zero exit code.
+Otherwise, if the node token is invalid, return a non-zero exit code.
+
+Required with certmgr/script. Only run by daemons requesting cerfificates.
+.IP
+.RE
+
+.TP
+\fBCertificateManagerType\fR
+Plugin used to dynamically renew TLS certificates for slurmd/sackd.
+.RS
+.TP
+\fBcertmgr/script\fR
+Use script hooks to implement certificate management. See
+\fBCertificateManagerParameters\fR for details on how to setup these scripts.
+.IP
+.RE
+
+.TP
 \fBCliFilterPlugins\fR
 A comma\-delimited list of command line interface option filter/modification
 plugins. The specified plugins will be executed in the order listed.
