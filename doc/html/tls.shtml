@@ -23,7 +23,7 @@ fast, and with security as a priority.
 Build s2n-tls from their public GitHub repository:
 </p>
 <pre>
-git clone git@github.com:aws/s2n-tls.git
+git clone https://github.com/aws/s2n-tls.git
 cd s2n-tls/
 cmake . -B build/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
 cmake --build build/ -j $(nproc)
