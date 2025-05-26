@@ -70,12 +70,12 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
+#include "src/interfaces/tls.h"
 
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
@@ -726,6 +726,18 @@ int main(int argc, char **argv)
 	/* This checks if slurmrestd is running in inetd mode */
 	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),
 		    max_connections, callbacks);
+
+	/*
+	 * Check if TLS is available after conmgr_init() as it will attempt to
+	 * load the TLS plugin. If the TLS plugin fails to load the slurmrestd
+	 * daemon certificate, then unload the TLS plugin to avoid
+	 * tls_available() returning true but TLS not being possible.
+	 */
+	if (tls_available() && (rc = tls_g_load_own_cert(NULL, 0, NULL, 0))) {
+		warning("Disabling TLS support due to failure loading TLS certificate: %s",
+			slurm_strerror(rc));
+		(void) tls_g_fini();
+	}
 
 	conmgr_add_work_signal(SIGINT, _on_signal_interrupt, NULL);
 	conmgr_add_work_signal(SIGPIPE, _sigpipe_handler, NULL);

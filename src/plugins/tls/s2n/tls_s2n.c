@@ -655,6 +655,12 @@ extern int tls_p_load_self_signed_cert(void)
 
 extern int init(void)
 {
+	static bool init_run = false;
+
+	if (init_run)
+		return SLURM_SUCCESS;
+	init_run = true;
+
 	debug("%s loaded", plugin_type);
 
 	if (s2n_init() != S2N_SUCCESS) {

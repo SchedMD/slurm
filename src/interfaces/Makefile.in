@@ -167,7 +167,8 @@ am_libcommon_interfaces_la_OBJECTS = accounting_storage.lo \
 	certgen.lo certmgr.lo cgroup.lo cli_filter.lo conn.lo cred.lo \
 	data_parser.lo gpu.lo gres.lo hash.lo jobacct_gather.lo \
 	jobcomp.lo mcs.lo mpi.lo node_features.lo prep.lo priority.lo \
-	select.lo serializer.lo site_factor.lo switch.lo topology.lo
+	select.lo serializer.lo site_factor.lo switch.lo tls.lo \
+	topology.lo
 libcommon_interfaces_la_OBJECTS =  \
 	$(am_libcommon_interfaces_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -227,7 +228,8 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/sched_plugin.Plo \
 	./$(DEPDIR)/select.Plo ./$(DEPDIR)/serializer.Plo \
 	./$(DEPDIR)/site_factor.Plo ./$(DEPDIR)/switch.Plo \
-	./$(DEPDIR)/task.Plo ./$(DEPDIR)/topology.Plo
+	./$(DEPDIR)/task.Plo ./$(DEPDIR)/tls.Plo \
+	./$(DEPDIR)/topology.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -595,6 +597,8 @@ libcommon_interfaces_la_SOURCES = \
 	site_factor.h				\
 	switch.c				\
 	switch.h				\
+	tls.c				        \
+	tls.h				        \
 	topology.c				\
 	topology.h
 
@@ -732,6 +736,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/site_factor.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tls.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topology.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -893,6 +898,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/site_factor.Plo
 	-rm -f ./$(DEPDIR)/switch.Plo
 	-rm -f ./$(DEPDIR)/task.Plo
+	-rm -f ./$(DEPDIR)/tls.Plo
 	-rm -f ./$(DEPDIR)/topology.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -974,6 +980,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/site_factor.Plo
 	-rm -f ./$(DEPDIR)/switch.Plo
 	-rm -f ./$(DEPDIR)/task.Plo
+	-rm -f ./$(DEPDIR)/tls.Plo
 	-rm -f ./$(DEPDIR)/topology.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
