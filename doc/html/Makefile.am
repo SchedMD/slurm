@@ -85,6 +85,7 @@ generated_html = \
 	slinky.html \
 	slurm.html \
 	slurm_ug_agenda.html \
+	tls.html \
 	topology.html \
 	tres.html \
 	troubleshoot.html \
