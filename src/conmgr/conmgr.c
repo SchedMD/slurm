@@ -49,6 +49,8 @@
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/polling.h"
 
+#include "src/interfaces/tls.h"
+
 #define MAX_CONNECTIONS_DEFAULT 150
 
 conmgr_t mgr = CONMGR_DEFAULT;
@@ -214,6 +216,8 @@ extern void conmgr_fini(void)
 	/* slurm_mutex_destroy(&mgr.mutex); */
 
 	slurm_mutex_unlock(&mgr.mutex);
+
+	(void) tls_g_fini();
 }
 
 extern int conmgr_run(bool blocking)
