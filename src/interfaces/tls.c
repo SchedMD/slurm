@@ -196,3 +196,8 @@ extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.load_own_cert))(cert, cert_len, key, key_len);
 }
+
+extern bool tls_available(void)
+{
+	return (plugin_inited == PLUGIN_INITED);
+}

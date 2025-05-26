@@ -91,6 +91,7 @@ extern char *conn_mode_to_str(conn_mode_t mode);
 
 /*
  * Return true if TLS is enabled for Slurm communications
+ * WARNING: tls_enabled() is different than tls_available()
  */
 extern bool tls_enabled(void);
 
