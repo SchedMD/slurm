@@ -1,0 +1,157 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a id="top">TLS</a></h1>
+
+<h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
+
+<p>
+TLS can be enabled for internal Slurm cluster communications in environments
+via the <code>tls</code> plugin interface.
+</p>
+
+<h2 id="s2n">s2n<a class="slurm_link" href="#s2n"></a></h2>
+
+<p>
+The <code>tls/s2n</code> plugin uses Amazon's TLS implementation
+<a href="https://github.com/aws/s2n-tls">s2n-tls</a>, which is a C99
+implementation of the TLS/SSL protocols that is designed to be simple, small,
+fast, and with security as a priority.
+</p>
+
+<h3 id="s2n_setup">Install<a class="slurm_link" href="#s2n_install"></a></h3>
+<p>
+Build s2n-tls from their public GitHub repository:
+</p>
+<pre>
+git clone git@github.com:aws/s2n-tls.git
+cd s2n-tls/
+cmake . -B build/ -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
+cmake --build build/ -j $(nproc)
+cmake --install build/
+</pre>
+<p>
+Note that the cmake <code>-DBUILD_SHARED_LIBS=ON</code> flag
+is required in order to build the <code>libs2n.so</code>
+shared object that is used by Slurm.
+</p>
+
+<p>
+Follow s2n-tls build documentation for further guidance on different possible
+settings.
+</p>
+
+<h3 id="s2n_setup">Setup<a class="slurm_link" href="#s2n_setup"></a></h3>
+<p>
+To enable TLS for internal Slurm cluster communications, configure the
+<a href="slurm.conf.html#OPT_TLSType">TLSType</a> option in slurm.conf and
+slurmdbd.conf to use the <code>tls/s2n</code> plugin.
+</p>
+
+<p>
+All Slurm components are required to have access to a common CA certificate.
+slurmctld, slurmdbd, and slurmrestd are required to have their own unique
+certificate/key pair. These certificates must chain to the specified CA
+certificate. Note that these certificate/key pairs only needs to be accessible
+by their respective daemons. Only the CA certificate file needs to be
+accessible by Slurm components.
+</p>
+
+<p>
+slurmd and sackd can also have static predefined certificate/key pairs, or they
+can optionally use the <code>certmgr</code> plugin interface to dynamically
+retrieve and renew their certificate/key pairs. If the <code>certmgr</code>
+plugin interface is not configured, they are required to have a static
+predefined certificate/key pair. See the
+<a href="certmgr.html">TLS Certificate Management</a> page for more info.
+</p>
+
+<p>
+Here's a list of the default certificate/key PEM file names which are expected
+to be in Slurm's default etc directory. Different absolute file paths can be
+set for each of these files via <code>TLSParameters</code>.
+</p>
+<ul>
+<li><code>ca_cert.pem</code></li>
+<li><code>ctld_cert.pem</code></li>
+<li><code>ctld_cert_key.pem</code></li>
+<li><code>dbd_cert.pem</code></li>
+<li><code>dbd_cert_key.pem</code></li>
+<li><code>restd_cert.pem</code></li>
+<li><code>restd_cert_key.pem</code></li>
+<li><code>sackd_cert.pem</code></li>
+<li><code>sackd_cert_key.pem</code></li>
+<li><code>slurmd_cert.pem</code></li>
+<li><code>slurmd_cert_key.pem</code></li>
+</ul>
+
+<p>
+In some cases (e.g. step IO, waiting for step allocation, etc.) some client
+commands need to create listening socket servers. In order for other Slurm
+components to connect to these listening sockets, they need a TLS certificate
+they can trust. Client commands achieve this by ephemerally generating
+self-signed certificates via the <code>certgen</code> plugin interface and
+securely sharing these certificates in pre-established TLS connections.
+</p>
+<p>
+By default, the <code>certgen</code> plugin requires no configuration and will
+use the openssl cli to generate a self-signed certificate/key pair. It can
+optionally be configured to use different scripts to generate this pair via
+<a href="slurm.conf.html#CertgenParameters">CertgenParameters</a>.
+</p>
+
+<p>
+After configuring the <code>tls/s2n</code> plugin and certificates, the
+following debug log can be seen in the daemon logs:
+</p>
+<pre>
+debug:  tls/s2n: init: tls/s2n loaded
+</pre>
+Note that when tls/s2n is not configured, this line will always be seen:
+<pre>
+debug:  tls/none: init: tls/none loaded
+</pre>
+
+With <a href="slurm.conf.html#OPT_TLS">DebugFlags=TLS</a> configured, an extremely verbose view of RPC connections can be seen in the logs. For example, here's what appears for a connection between slurmctld and slurmdbd:
+</p>
+<pre>
+slurmctld: tls/s2n: tls_p_create_conn: TLS: tls/s2n: cipher suite:TLS_AES_128_GCM_SHA256, {0x13,0x01}. fd:17.
+slurmctld: tls/s2n: tls_p_create_conn: TLS: tls/s2n: connection successfully created. fd:17. tls mode:client
+</pre>
+
+<pre>
+slurmdbd: tls/s2n: tls_p_create_conn: TLS: tls/s2n: cipher suite:TLS_AES_128_GCM_SHA256, {0x13,0x01}. fd:13.
+slurmdbd: tls/s2n: tls_p_create_conn: TLS: tls/s2n: connection successfully created. fd:13. tls mode:server
+</pre>
+
+<h3 id="s2n_openssl_example">OpenSSL Example<a class="slurm_link" href="#s2n_openssl_example"></a></h3>
+
+<p>
+Here are some examples of how to generate the certificate key/pairs needed for
+the <code>tls/s2n</code> plugin. These examples are not intended to be used in
+a production environment.
+</p>
+
+<p>
+Generate a self-signed CA certificate key pair:
+</p>
+<pre>
+openssl ecparam -out ca_key.pem -name prime256v1 -genkey
+chmod 0400 ca_key.pem
+openssl req -x509 -key ca_key.pem -out ca_cert.pem -subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=my_slurm_ca"
+chmod 0444 ca_cert.pem
+</pre>
+
+<p>
+Generate a signed certificate from CA certificate:
+</p>
+<pre>
+openssl ecparam -out ctld_key.pem -name prime256v1 -genkey
+chmod 0400 ctld_key.pem # ensure that ownership of key matches user running daemon
+openssl req -new -key ctld_key.pem -out ctld_csr.pem -subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=ctld"
+openssl x509 -req -in ctld_csr.pem -CA ca_cert.pem -CAkey ca_key.pem -out ctld_cert.pem -sha384
+chmod 0444 ctld_cert.pem
+</pre>
+
+<p style="text-align:center;">Last modified 25 May 2025</p>
+
+<!--#include virtual="footer.txt"-->
