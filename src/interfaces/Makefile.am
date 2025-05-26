@@ -73,6 +73,8 @@ libcommon_interfaces_la_SOURCES =    \
 	site_factor.h				\
 	switch.c				\
 	switch.h				\
+	tls.c				        \
+	tls.h				        \
 	topology.c				\
 	topology.h
 
