@@ -31,12 +31,6 @@ source ./globals
 
 set matches     0
 
-# TODO: Remove this precondition check once 22.05 is no longer supported
-regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
-if {$major < 23} {
-	skip "This test is disabled in Slurm versions older than 23.02 (see bug 10314)"
-}
-
 #
 # Spawn initial program via srun
 # Send the signal while the srun is waiting for a resource allocation
