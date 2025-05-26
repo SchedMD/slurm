@@ -57,6 +57,15 @@ accessible by Slurm components.
 </p>
 
 <p>
+slurmd and sackd can also have static predefined certificate/key pairs, or they
+can optionally use the <code>certmgr</code> plugin interface to dynamically
+retrieve and renew their certificate/key pairs. If the <code>certmgr</code>
+plugin interface is not configured, they are required to have a static
+predefined certificate/key pair. See the
+<a href="certmgr.html">TLS Certificate Management</a> page for more info.
+</p>
+
+<p>
 Here's a list of the default certificate/key PEM file names which are expected
 to be in Slurm's default etc directory. Different absolute file paths can be
 set for each of these files via <code>TLSParameters</code>.
