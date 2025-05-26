@@ -7,6 +7,7 @@ import getpass
 import json
 import random
 import logging
+import time
 
 random.seed()
 
@@ -32,6 +33,7 @@ def setup():
     global local_cluster_name, partition_name
 
     atf.require_accounting(modify=True)
+    atf.require_nodes(10)
     atf.require_config_parameter("AllowNoDefAcct", "Yes", source="slurmdbd")
     atf.require_config_parameter("TrackWCKey", "Yes", source="slurmdbd")
     atf.require_config_parameter("TrackWCKey", "Yes")
@@ -1119,20 +1121,6 @@ def reservation(setup):
     )
 
 
-def test_resv(slurm, reservation):
-    resp = slurm.slurm_v0043_get_reservation(resv_name)
-    assert len(resp.warnings) == 0
-    assert len(resp.errors) == 0
-    assert resp.reservations
-    for resv in resp.reservations:
-        assert resv.name == resv_name
-
-    resp = slurm.slurm_v0043_get_reservations()
-    assert len(resp.warnings) == 0
-    assert len(resp.errors) == 0
-    assert resp.reservations
-
-
 def test_partitions(slurm):
     resp = slurm.slurm_v0043_get_partition(partition_name)
     assert len(resp.warnings) == 0
@@ -1249,3 +1237,99 @@ def test_diag(slurm):
 def test_licenses(slurm):
     resp = slurm.slurm_v0043_get_licenses()
     assert len(resp.errors) == 0
+
+
+def test_reservations(slurm):
+    from openapi_client.models.v0043_reservation_mod_req import V0043ReservationModReq
+    from openapi_client.models.v0043_reservation_desc_msg import V0043ReservationDescMsg
+    from openapi_client.models.v0043_uint64_no_val_struct import V0043Uint64NoValStruct
+    from openapi_client.models.v0043_uint32_no_val_struct import V0043Uint32NoValStruct
+
+    resv_name = "test_resv"
+    users = ["root", "atf"]
+    duration = V0043Uint32NoValStruct(number=300, set=True)
+    start_time = V0043Uint64NoValStruct(number=int(time.time()) + 60, set=True)
+    end_time = V0043Uint64NoValStruct(
+        number=start_time.number + duration.number * 60, set=True
+    )
+    partition = "primary"
+    node_list = ["node1", "node7"]
+
+    # Create a reservation
+    logging.debug(f"Creating reservation '{resv_name}'...")
+    reservation_info = V0043ReservationDescMsg(
+        name=resv_name,
+        users=users,
+        duration=duration,
+        start_time=start_time,
+        node_list=node_list,
+        partition=partition,
+    )
+    resp = slurm.slurm_v0043_post_reservations(
+        V0043ReservationModReq(reservations=[reservation_info])
+    )
+    assert resp.reservations, f"Reservation {resv_name} should be created"
+    assert not resp.warnings and not resp.errors
+
+    # Verify fields of reservation created
+    resp = slurm.slurm_v0043_get_reservation(resv_name)
+    assert len(resp.reservations) == 1, f"Reservation '{resv_name}' should be returned"
+
+    retrieved_reservation = resp.reservations[0]
+    assert (
+        retrieved_reservation.name == resv_name
+    ), f"Field 'name' should be {resv_name}"
+    assert (
+        retrieved_reservation.partition == partition
+    ), f"Field 'partition' should be {partition}"
+    assert (
+        atf.node_range_to_list(retrieved_reservation.node_list) == node_list
+    ), f"Field 'node_list' should be {node_list}"
+    assert (
+        retrieved_reservation.users.split(",") == users
+    ), f"Field 'users' should be {users}"
+    assert (
+        retrieved_reservation.start_time.number == start_time.number
+    ), f"Field 'start_time' should be {start_time}"
+    assert (
+        retrieved_reservation.end_time.number == end_time.number
+    ), f"Field 'end_time' should be {end_time}"
+
+    # Update reservation
+    new_end_time = retrieved_reservation.end_time.number + 300
+    new_users = ["root"]
+    new_node_list = ["node2"]
+    new_start_time = V0043Uint64NoValStruct(number=int(time.time()) + 90, set=True)
+
+    update_info = V0043ReservationDescMsg(
+        name=resv_name,
+        end_time=V0043Uint64NoValStruct(set=True, number=new_end_time),
+        users=new_users,
+        node_list=new_node_list,
+        start_time=new_start_time,
+    )
+    resp = slurm.slurm_v0043_post_reservation(update_info)
+    assert resp.reservations, "Reservation should be updated"
+    assert not resp.warnings and not resp.errors
+
+    # Validate update
+    resp = slurm.slurm_v0043_get_reservation(resv_name)
+    assert len(resp.reservations) == 1, f"Reservation '{resv_name}' should be returned"
+
+    updated = resp.reservations[0]
+
+    assert updated.end_time.number == new_end_time
+    assert updated.users.split(",") == new_users, f"Field 'users' should be {new_users}"
+    assert (
+        atf.node_range_to_list(updated.node_list) == new_node_list
+    ), f"Field 'node_list' should be {new_node_list}"
+    assert (
+        updated.start_time.number == new_start_time.number
+    ), f"Field 'start_time' should be {new_start_time}"
+
+    # Delete reservation
+    resp = slurm.slurm_v0043_delete_reservation(reservation_name=resv_name)
+    assert not resp.warnings and not resp.errors
+    assert resv_name not in [
+        r.name for r in slurm.slurm_v0043_get_reservations().reservations
+    ], f"Reservation {resv_name} should be deleted"
