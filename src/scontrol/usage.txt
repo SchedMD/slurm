@@ -111,7 +111,7 @@ scontrol [<OPTION>] [<COMMAND>]
   <ENTITY> may be "aliases", "assoc_mgr", "bbstat", "burstBuffer", "config",
        "daemons", "dwstat", "federation", "hostlist", "hostlistsorted",
        "hostnames", "job", "licenses", "node", "partition", "reservation",
-       "slurmd", "step", or "topology"
+       "slurmd", "step", "topoconf", or "topology"
 
   <ID> may be a configuration parameter name, job id, node name, partition
        name, reservation name, job step id, license name or hostlist or

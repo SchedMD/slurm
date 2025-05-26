@@ -1,4 +1,4 @@
-.TH "topology.yaml" "5" "Slurm Configuration File" "March 2025" "Slurm Configuration File"
+.TH "topology.yaml" "5" "Slurm Configuration File" "May 2025" "Slurm Configuration File"
 
 .SH "NAME"
 topology.yaml \-  Slurm configuration file for the topology plugins
@@ -6,51 +6,154 @@ topology.yaml \-  Slurm configuration file for the topology plugins
 .SH "DESCRIPTION"
 
 .LP
-\fBtopology.yaml\fR is a YAML-formatted configuration file that defines multiple
-network topologies for optimizing job resource allocation in Slurm.
-Each topology must have a unique \fBname\fR,
-which can be associated with a partition via the \fBTopology=<name>\fR
-parameter in the partition’s configuration.
+\fBtopology.yaml\fR is a YAML\-formatted configuration file that defines
+multiple network topologies for optimizing job resource allocation in Slurm.
+The file must be located in the same directory as \fBslurm.conf\fR. Any text
+following a "#" in this file is treated as a comment through the end of that
+line.
 
-Slurm supports three topology types: \fBblock\fR, \fBflat\fR, and \fBtree\fR.
-The first topology defined in the file with the \fBcluster_default: true\fR
-parameter will be used for partitions without an explicitly specified topology
-and cluster-wide operations not tied to a partition
-(e.g., slurmctld-to-slurmd communication).
-
-The file must be located in the same directory as \fBslurm.conf\fR.
+Additional details are available in \fBtopology.conf\fR(5) and in the
+Topology Guide: <https://slurm.schedmd.com/topology.html>
 
 \fBNOTE\fR: Slurm will first check for topology.yaml.
-If this file exists, topology.conf file will be ignored.
+If this file exists, topology.conf will be ignored.
 .LP
+
+.SH "PARAMETERS"
+.LP
+Each topology contains the following attributes:
+.LP
+
+.TP
+\fBtopology\fR
+Unique name of the topology, will be used to identify it on partition
+configurations. Must be the first attribute.
+.IP
+
+.TP
+\fBcluster_default\fR
+The first topology defined with \fBcluster_default: true\fR will be used for
+partitions without an explicitly specified topology and cluster-wide operations
+not tied to a partition (e.g., slurmctld-to-slurmd communication). Defaults to
+\fBfalse\fR.
+.IP
+
+.LP
+Each topology must also define exactly one of the following topology types:
+.RS
+.TP
+\fBblock\fR
+This topology will use the \fBtopology/block\fR plugin. Must contain additional
+fields, see below.
+.IP
+
+.TP
+\fBflat\fR
+If set to \fBtrue\fR, this topology will use the \fBtopology/flat\fR plugin,
+which is the default if no TopologyPlugin or topology.yaml is specified.
+.IP
+
+.TP
+\fBtree\fR
+This topology will use the \fBtopology/tree\fR plugin. Must contain additional
+fields, see below.
+.IP
+.RE
+
+.SS "Block definitions"
+.LP
+Each block topology contains the following attributes:
+.LP
+
+.TP
+\fBblock_sizes\fR
+List of the planning base block size, alongside any
+higher-level block sizes that would be enforced.
+Successive \fBBlockSizes\fR must be a power of two larger than the prior values.
+.IP
+
+.TP
+\fBblocks\fR
+List of blocks available in this topology. Each block contains the following
+attributes:
+
+.RS
+.TP
+\fBblock\fR
+The name of a block. This name is internal to Slurm and arbitrary.
+Each block should have a unique name.
+This field must be specified.
+.IP
+
+.TP
+\fBnodes\fR
+Child nodes of the named block.
+.IP
+.RE
+.IP
+
+.SS "Tree definitions"
+.LP
+Each tree topology contains the following attribute:
+.LP
+
+.TP
+\fBswitches\fR
+List of switches available in this topology. Each switch contains the following
+attributes:
+
+.RS
+.TP
+\fBswitch\fR
+The name of a switch. This name is internal to Slurm and arbitrary.
+Each switch should have a unique name.
+This field must be specified and cannot be longer than 64 characters.
+.IP
+
+.TP
+\fBchildren\fR
+Child switches of the named switch.
+.IP
+
+.TP
+\fBnodes\fR
+Child nodes of the named leaf switch.
+.IP
+
+.RE
+.IP
 
 .SH "EXAMPLE"
 .nf
+---
 - topology: topo1
-  cluster_default: True
+  cluster_default: true
   tree:
     switches:
-    - switch: sw_root
-      nodes: node[01-04]
+      - switch: sw_root
+        children: s[1-2]
+      - switch: s1
+        nodes: node[01-02]
+      - switch: s2
+        nodes: node[03-04]
 - topology: topo2
-  cluster_default: False
+  cluster_default: false
   block:
     block_sizes:
       - 4
       - 16
     blocks:
-    - block: b1
-      nodes: node[01-04]
-    - block: b2
-      nodes: node[05-08]
-    - block: b3
-      nodes: node[09-12]
-    - block: b4
-      nodes: node[13-16]
+      - block: b1
+        nodes: node[01-04]
+      - block: b2
+        nodes: node[05-08]
+      - block: b3
+        nodes: node[09-12]
+      - block: b4
+        nodes: node[13-16]
 - topology: topo3
-  cluster_default: False
-  flat: True
-
+  cluster_default: false
+  flat: true
 .fi
 
 .SH "COPYING"

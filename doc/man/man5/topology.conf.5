@@ -1,4 +1,4 @@
-.TH "topology.conf" "5" "Slurm Configuration File" "September 2024" "Slurm Configuration File"
+.TH "topology.conf" "5" "Slurm Configuration File" "May 2025" "Slurm Configuration File"
 
 .SH "NAME"
 topology.conf \-  Slurm configuration file for the topology plugins
@@ -8,7 +8,7 @@ topology.conf \-  Slurm configuration file for the topology plugins
 \fBtopology.conf\fP is an ASCII file which describes the
 cluster's network topology for optimized job resource allocation.
 The file will always be located in the same directory as the \fBslurm.conf\fR.
-\fBNOTE\fR: This file is ignored if topology.yaml exists.
+\fBNOTE\fR: This file is ignored if \fBtopology.yaml\fR(5) exists.
 .LP
 Parameter names are case insensitive.
 Any text following a "#" in the configuration file is treated
@@ -57,7 +57,7 @@ Child switches of the named switch.
 
 .TP
 \fBNodes\fR
-Child Nodes of the named leaf switch.
+Child nodes of the named leaf switch.
 .IP
 
 .TP
@@ -100,7 +100,7 @@ This field must be specified.
 
 .TP
 \fBNodes\fR
-Child Nodes of the named block.
+Child nodes of the named block.
 .IP
 
 .TP
