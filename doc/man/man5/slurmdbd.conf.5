@@ -941,6 +941,65 @@ Time permitted for TCP connection to be established. Default value is 2 seconds.
 .IP
 
 .TP
+\fBTLSParameters\fR
+Comma\-separated options identifying TLS options.
+Supported values include:
+.IP
+.RS
+.TP
+\fBca_cert_file=\fR
+Path of certificate authority (CA) certificate. Must exist on all hosts and be
+accessible by all Slurm components. File permissions must be 644, and owned by
+SlurmUser/root.
+
+Default path is "ca_cert.pem" in the Slurm configuration directory
+.IP
+
+.TP
+\fBdbd_cert_file=\fR
+Path of certificate used by slurmdbd. Must chain to \fBca_cert_file\fR. Should
+only exist on host running slurmdbd.  File permissions must be 600, and owned
+by SlurmUser.
+
+Default path is "dbd_cert.pem" in the Slurm configuration directory
+.IP
+
+.TP
+\fBdbd_cert_key_file=\fR
+Path of private key that accompanies \fBdbd_cert_file\fR. Should only exist on
+host running slurmdbd. File permissions must be 600, and owned by SlurmUser.
+
+Default path is "dbd_cert_key.pem" in the Slurm configuration directory
+.IP
+
+.TP
+\fBload_system_certificates\fR
+Load certificates found in default system locations (e.g. /etc/ssl) into trust store.
+
+Default is to not load system certificates, and to rely solely on
+\fBca_cert_file\fR to establish trust.
+.IP
+
+.TP
+\fBsecurity_policy_version=\fR
+Security policy version used by s2n. See s2n documentation for more details.
+Default security policy is "20230317", which is FIPS compliant and includes TLS 1.3.
+.RE
+.IP
+
+.TP
+\fBTLSType\fR
+Specify the TLS implementation that will be used.
+Acceptable values at present:
+.IP
+.RS
+.TP
+\fBtls/s2n\fR
+Use the s2n TLS plugin.
+.RE
+.IP
+
+.TP
 \fBTrackSlurmctldDown\fR
 Boolean yes or no. If set the slurmdbd will mark all idle resources on the
 cluster as down when a slurmctld disconnects or is no longer reachable. The
