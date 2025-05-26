@@ -10376,13 +10376,16 @@ static const parser_t PARSER_ARRAY(OPENAPI_STEP_INFO_MSG)[] = {
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_resp_accounts_add_cond_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(openapi_resp_accounts_add_cond_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNTS_ADD_COND_RESP)[] = {
-	add_parse(ACCOUNTS_ADD_COND_PTR, add_assoc, "association_condition", "CSV list of accounts, association limits and options, CSV list of clusters"),
+	add_parse_req(ACCOUNTS_ADD_COND_PTR, add_assoc, "association_condition", "CSV list of accounts, association limits and options, CSV list of clusters"),
 	add_parse(ACCOUNT_SHORT_PTR, acct, "account", "Account organization and description"),
 	add_openapi_response_meta(openapi_resp_accounts_add_cond_t),
 	add_openapi_response_errors(openapi_resp_accounts_add_cond_t),
 	add_openapi_response_warnings(openapi_resp_accounts_add_cond_t),
 };
+#undef add_parse_req
 #undef add_parse
 
 #define add_parse_req(mtype, field, path, desc)				\
