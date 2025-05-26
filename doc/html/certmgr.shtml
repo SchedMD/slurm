@@ -1,0 +1,270 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a id="top">TLS Certificate Manager</a></h1>
+
+<h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
+
+<p>
+The <code>certmgr</code> plugin interface can be used alongside the
+<code>tls</code> plugin interface to dynamically create and renew signed
+certificates for slurmd nodes.
+</p>
+
+<h2 id="script">certmgr/script<a class="slurm_link" href="#script"></a></h2>
+
+<p>
+The <code>certmgr/script</code> plugin allows scripts to be used to perform the
+necessary operations needed to validate node identity and generate signed
+certificates.
+</p>
+
+<h3 id="script_examples">OpenSSL Example<a class="slurm_link" href="#script_examples"></a></h3>
+
+<p>
+This is an example using the openssl cli to generate certificate signing
+requests and to sign such requests to create signed certificates. This example
+is not meant to be used in production, and is only mean to show the intended
+responsibilities of each script.
+</p>
+
+<p>
+In this example, there are a list of things that need to be preloaded on each
+machine before Slurm can do its certificate management.
+</p>
+
+<p>
+slurmctld will need access to the CA certificate, and the CA certificate/key
+pair must be owned by <code>SlurmUser</code> (this is NOT recommended in a
+production setting). See the <a href="tls.html#s2n_openssl_example">TLS</a>
+page for more info on how to generate this certificate/key pair.
+</p>
+
+<p>
+The following scripts need to be created and configured. See <a href="slurm.conf.html#OPT_CertificateManagerParameters">CertificateManagerParameters</a> for more details on each script.
+</p>
+
+<ul>
+<li><code>get_node_token_script</code></li>
+<li><code>generate_csr_script</code></li>
+<li><code>validate_node_token_script</code></li>
+<li><code>sign_csr_script</code></li>
+</ul>
+
+<p>
+slurmctld needs to be able to validate slurmd's certificate signing request.
+This is done via unique tokens that are retrieved on slurmd nodes using
+<code>get_node_token_script</code>, and validated on the slurmctld host using
+<code>validate_node_token_script</code>.
+</p>
+
+<p>
+A unique token will to be generated for each slurmd. Each token will be stored
+on its respective slurmd host, as well as in a comprehensive list that contains
+all node tokens on the slurmctld host. This token will be sent from slurmd to
+slurmctld along with the certificate signing request that slurmd will generate
+at runtime, and be validated by slurmctld before slurmctld creates a signed
+certificate.
+</p>
+
+This is a simple example of how these tokens can be generated and stored:
+<pre>
+# generate base64 32 character random token
+base64 /dev/urandom | head -c 32 > ${NODENAME}_token.txt
+
+# add token to token list
+echo "`cat ${NODENAME}_token.txt`" >> node_token_list.txt
+</pre>
+
+<p>
+Node "n1" needs to boot up with n1_token.txt and/or have n1_token.txt securely
+transferred to it. slurmctld needs to have secure access to node_token_list.txt
+in order to validate node tokens with the validate_node_token script.
+</p>
+
+<p>
+The get_node_token_script and generate_csr_script paths need to point to
+scripts that exist and are executable on slurmd nodes.
+</p>
+<h4 id="get_node_token_script_example">
+get_node_token_script example:<a class="slurm_link" href="#get_node_token_script_example"></a>
+</h4>
+<p>
+Print token to stdout. Return zero exit code for success, and non-zero exit
+code for error.
+</p>
+<pre>
+#!/bin/bash
+
+# Slurm node name is passed in as arg $1
+TOKEN_PATH=/etc/slurm/certmgr/$1_token.txt
+
+# Check if token file exists
+if [ ! -f $TOKEN_PATH ]
+then
+    echo "$BASH_SOURCE: Failed to resolve token path '$TOKEN_PATH'"
+    exit 1
+fi
+
+# Print token to stdout
+cat $TOKEN_PATH
+
+# Exit with exit code 0 to indicate success
+exit 0
+</pre>
+
+<h4 id="generate_csr_script_example">
+generate_csr_script example:<a class="slurm_link" href="#generate_csr_script_example"></a>
+</h4>
+<p>
+Print certificate signing request to stdout. Return zero exit code for success,
+and non-zero exit code for error.
+</p>
+<pre>
+#!/bin/bash
+
+# Slurm node name is passed in as arg $1
+NODE_PRIVATE_KEY=/etc/slurm/certmgr/$1_private_key.pem
+
+# Check if node private key file exists
+if [ ! -f $NODE_PRIVATE_KEY ]
+then
+    echo "$BASH_SOURCE: Failed to resolve node private key path '$NODE_PRIVATE_KEY'"
+    exit 1
+fi
+
+# Generate CSR using node private key and print CSR to stdout
+openssl req -new -key $NODE_PRIVATE_KEY \
+    -subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=$1"
+
+# Check exit code from openssl
+if [ $? -ne 0 ]
+then
+    echo "$BASH_SOURCE: Failed to generate CSR"
+    exit 1
+fi
+
+# Exit with exit code 0 to indicate success
+exit 0
+</pre>
+
+<p>
+The validate_node_token_script and sign_csr_script paths need to point to
+scripts that exist and are executable on slurmctld.
+</p>
+<h4 id="validate_node_token_script_example">
+validate_node_token_script example:<a class="slurm_link" href="#validate_node_token_script_example"></a>
+</h4>
+<p>
+Return zero exit code for valid node tokens, and non-zero exit code  for
+invalid node tokens or other errors.
+</p>
+<pre>
+#!/bin/bash
+
+# Node's unique token is passed in as arg $1
+NODE_TOKEN=$1
+NODE_TOKEN_LIST_FILE=/etc/slurm/certmgr/node_token_list.txt
+
+# Check if node token list file exists
+if [ ! -f $NODE_TOKEN_LIST ]
+then
+    echo "$BASH_SOURCE: Failed to resolve node token list path '$NODE_TOKEN_LIST'"
+    exit 1
+fi
+
+# Check if unique node token is in token list file
+grep $1 $NODE_TOKEN_LIST_FILE
+
+# Check exit code from grep to see if token was found
+if [ $? -ne 0 ]
+then
+    echo "$BASH_SOURCE: Failed to validate token '$NODE_TOKEN'"
+    exit 1
+fi
+
+# Exit with exit code 0 to indicate success (node token is valid)
+exit 0
+</pre>
+
+<h4 id="sign_csr_script_example">
+sign_csr_script example:<a class="slurm_link" href="#sign_csr_script_example"></a>
+</h4>
+<p>
+Print signed certificate to stdout. Return zero exit code for success, and non-zero exit code for error.
+</p>
+<pre>
+#!/bin/bash
+
+# Certificate signing request is passed in as arg $1
+CSR=$1
+CA_CERT=/etc/slurm/certmgr/root_cert.pem
+CA_KEY=/etc/slurm/certmgr/root_key.pem
+
+# Check if CA certificate file exists
+if [ ! -f $CA_CERT ]
+then
+    echo "$BASH_SOURCE: Failed to resolve CA certificate path '$CA_CERT'"
+    exit 1
+fi
+
+# Check CA private key permissions
+if [ `stat -c "%a" $CA_KEY` -ne $KEY_PERMISSIONS ]
+then
+    echo "$BASH_SOURCE: Bad permissions for CA private key at '$CA_KEY'. Permissions should be $KEY_PERMISSIONS"
+    exit 1
+fi
+
+# Sign CSR using CA certificate and CA private key and print signed cert to stdout
+openssl x509 -req -CA $CA_CERT -CAkey $CA_KEY 2>/dev/null <<< $CSR
+
+# Check exit code from openssl
+if [ $? -ne 0 ]
+then
+    echo "$BASH_SOURCE: Failed to generate signed certificate"
+    exit 1
+fi
+
+# Exit with exit code 0 to indicate success
+exit 0
+</pre>
+
+<p>
+If everything is configured correctly, the following lines should appear in the
+slurmd and slurmctld logs with the
+<a href="slurm.conf.html#OPT_TLS">DebugFlags=TLS</a> setting.
+</p>
+
+<p>slurmd:</p>
+<pre>
+slurmd: certmgr/script: certmgr_p_get_node_token: TLS: Successfully retrieved unique node token
+slurmd: certmgr/script: certmgr_p_generate_csr: TLS: Successfully generated csr:
+-----BEGIN CERTIFICATE REQUEST-----
+. . .
+-----END CERTIFICATE REQUEST-----
+</pre>
+
+<p>slurmctld:</p>
+<pre>
+slurmctld: certmgr/script: certmgr_p_sign_csr: TLS: Successfully validated node token
+slurmctld: certmgr/script: certmgr_p_sign_csr: TLS: Successfully generated signed certificate:
+-----BEGIN CERTIFICATE-----
+. . .
+-----END CERTIFICATE-----
+</pre>
+
+<p>slurmd:</p>
+<pre>
+slurmd: TLS: Successfully got signed certificate from slurmctld:
+-----BEGIN CERTIFICATE-----
+. . .
+-----END CERTIFICATE-----
+</pre>
+
+<p>
+<a href="slurm.conf.html#OPT_AuditTLS">DebugFlags=AuditTLS</a> can also be used
+to show less verbose logs of certificate renewal.
+</p>
+
+<p style="text-align:center;">Last modified 25 May 2025</p>
+
+<!--#include virtual="footer.txt"-->

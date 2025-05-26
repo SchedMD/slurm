@@ -8,6 +8,7 @@ generated_html = \
 	authentication.html \
 	big_sys.html \
 	burst_buffer.html \
+	certmgr.html \
 	cgroups.html \
 	cgroup_v2.html \
 	classic_fair_share.html \
