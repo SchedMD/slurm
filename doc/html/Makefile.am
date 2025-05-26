@@ -33,6 +33,7 @@ generated_html = \
 	hdf5_profile_user_guide.html \
 	heterogeneous_jobs.html \
 	high_throughput.html \
+	hres.html \
 	intel_knl.html \
 	jobcomp_kafka.html \
 	job_array.html \

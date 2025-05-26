@@ -1,0 +1,155 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Hierarchical Resource (HRES) Scheduling</h1>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+
+<p>Hierarchical Resources (HRES) were added in Slurm 25.05 in a <b>Beta</b>
+state. While in beta, the configuration file format and other aspects of this
+feature may undergo substantial changes in future versions and require major
+changes to avoid errors. Sites that utilize this feature while in a beta state
+should pay particularly close attention to changes noted in RELEASE_NOTES and
+the CHANGELOGs when <a href="upgrades.html">upgrading</a>.</p>
+
+<p>Hierarchical Resources allow for <a href="licenses.html">license</a>-like
+resources to be defined as part of independent hierarchical topologies and
+associated with specific nodes. Jobs may request any integer count of that
+resource. Multiple resources may be defined in the configuration (in a
+<b>resources.yaml</b> file), and will use independently defined hierarchies.</p>
+
+<p>Although these hierarchical topologies have some similarities to
+<a href="topology.html">network topologies</a>, the definitions for each are
+completely separate.</p>
+
+<h2 id="modes">Planning Modes<a class="slurm_link" href="#modes"></a></h2>
+
+<p>Two modes of resource planning are provided. In either case, a layer may be
+defined with a count of zero or infinite (<code>count: -1</code>) resources,
+with the impact of this depending on the mode used.</p>
+
+<h3 id="mode1">Mode 1<a class="slurm_link" href="#mode1"></a></h3>
+
+<p>In <b>Mode 1</b>, sufficient resources are only required on one layer that
+overlaps with job allocation. In many cases only a single level is needed.
+However, multiple levels may be defined if some additional flexibility in where
+resources are used is preferred, as described in the example below.</p>
+
+<p>A layer with a <b>zero</b> count of a resource will have no impact on
+scheduling. Since that layer will never satisfy the request, it will never alter
+the calculated list of nodes eligible to run a given job. It would be
+semantically equivalent to removing that layer definition.</p>
+
+<p>A layer with an <b>infinite</b> count of a resource will the always allow a
+new job allocation to succeed. Unless prevented due to other requirements, jobs
+will be able to execute immediately.</p>
+
+<p>For example, consider the <b>natural</b> resource defined in the example
+<a href="#resources_yaml">resources.yaml</a> file below. A job that requests
+this resource and is allocated <code>node[01-04]</code> will pull from the pool
+of 100 available to <code>node[01-16]</code>. With a count of 50 specified at
+the higher level (<code>node[01-32]</code>), they can be allocated in addition
+to the resources specified in each group of 16. That is, 100 each would be
+available to each group of 16, and 50 more would be available on any of them,
+for a total of 250 of this resource.</p>
+
+<h3 id="mode2">Mode 2<a class="slurm_link" href="#mode2"></a></h3>
+
+<p>In <b>Mode 2</b>, sufficient resources must be available on all layers on all
+levels that overlap with job allocation. Note that scheduling stalls are
+possible if higher levels do not make enough resources available.</p>
+
+<p>A layer with a <b>zero</b> count of a resource will have a significant impact
+on scheduling. All nodes underneath that layer would never be able to satisfy
+the allocation constraints. This could be used to mark that resource unavailable
+for a specific portion of the cluster, e.g., for hardware maintenance, without
+altering the individual lower-layer resource counts.</p>
+
+<p>A layer with an <b>infinite</b> count of a resource will have no impact on
+scheduling. Since that layer will always satisfy the request, it will never
+constrain execution and would be semantically equivalent to removing that layer
+definition.</p>
+
+<p>For example, consider the <b>flat</b> resource defined in the example
+<a href="#resources_yaml">resources.yaml</a> file below. A job that requests
+this resource and is allocated <code>node[01-04]</code> will pull from all
+levels that include those nodes. So it would pull from the 12 available on
+<code>node[01-08]</code>, from the 16 available on <code>node[01-16]</code>, and
+from the 24 available on <code>node[01-32]</code>. Since the highest level only
+contains 24, that is the maximum that can be allocated, even though a larger
+total is available on lower levels. This example allows a fixed set of resources
+to have some flexibility in where they are used.</p>
+
+<h2 id="limitations">Limitations<a class="slurm_link" href="#limitations"></a></h2>
+
+<ul>
+<li>The resource counts cannot be dynamically changed; all changes must be made
+	through <b>resources.yaml</b> and applied with a restart or reconfigure</li>
+<li>Dynamic nodes are not supported</li>
+<li>This implementation is in a <b>beta</b> state (see
+	<a href="#overview">overview</a>)</li>
+<li>Resource names defined through the hierarchical resources configuration must
+	not conflict with any cluster licenses</li>
+</ul>
+
+<h2 id="examples">Examples<a class="slurm_link" href="#examples"></a></h2>
+
+<p>After defining a resource hierarchy in <b>resources.yaml</b> (see below for
+example), you can interact with these resources in several ways, using the
+syntax already used for licenses:</p>
+
+<ul>
+<li>View HRES<pre>scontrol show license</pre></li>
+<li>Reserve HRES
+<pre>scontrol create reservation account=root licenses=natural(node[01-016]):30,flat(node[09-12]):4,flat(node[29-32]):2</pre>
+Note that the layer must be specified for each reserved HRES, identified by the
+node list present available through that layer</li>
+<li>Request HRES on a job
+<pre>sbatch --license=flat:2,natural:1 my_script.sh</pre></li>
+</ul>
+
+<h3 id="resources_yaml">resources.yaml<a class="slurm_link" href="#resources_yaml"></a></h3>
+
+<pre>
+---
+- resource: flat
+  mode: MODE_2
+  layers:
+    - nodes:			# highest level
+        - "node[01-32]"
+      count: 24
+    - nodes:			# middle levels
+        - "node[01-16]"
+      count: 16
+    - nodes:
+        - "node[17-32]"
+      count: 16
+    - nodes:			# lowest levels
+        - "node[01-08]"
+      count: 12
+    - nodes:
+        - "node[09-16]"
+      count: 12
+    - nodes:
+        - "node[17-24]"
+      count: 12
+    - nodes:
+        - "node[25-32]"
+      count: 12
+- resource: natural
+  mode: MODE_1
+  layers:
+    - nodes:			# highest level
+        - "node[01-32]"
+      count: 50
+    - nodes:			# lowest levels
+        - "node[01-16]"
+      count: 100
+    - nodes:
+        - "node[17-32]"
+      count: 100
+
+</pre>
+
+<p style="text-align: center;">Last modified 26 May 2025</p>
+
+<!--#include virtual="footer.txt"-->
