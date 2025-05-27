@@ -122,6 +122,14 @@ static int _load_reservations(reserve_info_msg_t **res_info_ptr,
 	return rc;
 }
 
+static int _zero_unused_flag(void *x, void *args)
+{
+	resv_desc_msg_t *resv_msg = x;
+	if (resv_msg->flags == NO_VAL64)
+		resv_msg->flags = 0;
+	return SLURM_SUCCESS;
+}
+
 static int _set_unused_flag(void *x, void *args)
 {
 	resv_desc_msg_t *resv_msg = x;
@@ -231,6 +239,7 @@ static int _mod_reservations(openapi_ctxt_t *ctxt)
 			      _create_or_update_each_resv, &args);
 
 	if (!rc && !ctxt->rc) {
+		list_for_each(resv_req.reservations, _zero_unused_flag, NULL);
 		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_MOD_RESP,
 					 resv_req.reservations, ctxt);
 	}
@@ -431,6 +440,7 @@ static int _mod_reservation(openapi_ctxt_t *ctxt)
 	if (!rc) {
 		list_t *resv_list = list_create(NULL);
 		list_append(resv_list, &resv_msg);
+		_zero_unused_flag(&resv_msg, NULL);
 		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_MOD_RESP,
 					 resv_list, ctxt);
 		FREE_NULL_LIST(resv_list);
