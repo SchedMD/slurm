@@ -94,13 +94,13 @@
 #define MAGIC_LIST_PER_TRES_TYPE_NCT 0xb1d8acd2
 #define MAGIC_FOREACH_DUMP_ASSOC_SHARES 0xaccc222b
 
-#define PARSER_ARRAY(type) _v44_parser_array_##type
-#define PARSER_FLAG_ARRAY(type) _v44_parser_flag_array_##type
-#define PARSE_FUNC(type) _v44_parse_##type
-#define DUMP_FUNC(type) _v44_dump_##type
-#define NEW_FUNC(type) _v44_openapi_new_##type
-#define FREE_FUNC(type) _v44_openapi_free_##type
-#define PARSE_DISABLED(type)                                            \
+#define PARSER_ARRAY(type) _parser_array_##type
+#define PARSER_FLAG_ARRAY(type) _parser_flag_array_##type
+#define PARSE_FUNC(type) _parse_##type
+#define DUMP_FUNC(type) _dump_##type
+#define NEW_FUNC(type) _openapi_new_##type
+#define FREE_FUNC(type) _openapi_free_##type
+#define PARSE_DISABLED(type)						\
 	static int PARSE_FUNC(type)(const parser_t *const parser, void *src, \
 				    data_t *dst, args_t *args,		\
 				    data_t *parent_path)		\
@@ -120,8 +120,8 @@ static int PARSE_FUNC(disabled)(const parser_t *const parser, void *src,
 
 	on_warn(PARSING, parser->type, args,
 		set_source_path(&path, args, parent_path), __func__,
-		"data_parser/v0.0.44 does not support parser %u for parsing. Output may be incomplete.",
-		parser->type);
+		"data_parser/%s does not support parser %u for parsing. Output may be incomplete.",
+		XSTRINGIFY(DATA_VERSION), parser->type);
 
 	xfree(path);
 	return SLURM_SUCCESS;
