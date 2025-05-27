@@ -1938,8 +1938,19 @@ _process_cmdline(int ac, char **av)
 	 * after an upgrade.
 	 */
 	if (conf->argv[0][0] != '/') {
-		if (readlink("/proc/self/exe", conf->binary, PATH_MAX) < 0)
+		int read_bytes = readlink("/proc/self/exe", conf->binary,
+					  PATH_MAX);
+		if (read_bytes < 0)
 			fatal("%s: readlink failed: %m", __func__);
+		if (read_bytes == PATH_MAX)
+			fatal("%s: readlink truncation may have occurred",
+			      __func__);
+		/*
+		 * readlink() does not set a terminating null character and
+		 * when running under valgrind, as it intercepts readlink()
+		 * calls, we can get a wrong path.
+		 */
+		conf->binary[read_bytes] = '\0';
 	} else {
 		strlcpy(conf->binary, conf->argv[0], PATH_MAX);
 	}
