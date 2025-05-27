@@ -1031,23 +1031,23 @@ enum node_states {
 /* CR_CPU, CR_SOCKET and CR_CORE are mutually exclusive
  * CR_MEMORY may be added to any of the above values or used by itself
  * CR_ONE_TASK_PER_CORE may also be added to any of the above values */
-#define CR_CPU		0x0001	/* Resources are shared down to the level of
-				 * logical processors which can be socket,
-				 * core, or thread depending on the system. */
-#define CR_SOCKET	0x0002	/* Resources are shared down to the socket
-				 * level. Jobs will not be co-allocated
-				 * within a socket. */
-#define CR_CORE		0x0004	/* Resources are shared down to the core level.
-				 * Jobs will not be co-allocated within a
-				 * core. */
-#define CR_BOARD	0x0008	/* Resources are shared down to the board
-				 * level. Jobs will not be co-allocated
-				 * within a board. */
-#define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
-				 * not over-committed when selected as a CR. */
-/* was CR_OTHER_CONS_RES    0x0020, removed v23.11 */
-#define ENFORCE_BINDING_GRES 0x0040
-#define ONE_TASK_PER_SHARING_GRES 0x0080
+#define CR_CPU SLURM_BIT(0) /* Resources are shared down to the level of
+			     * logical processors which can be socket,
+			     * core, or thread depending on the system. */
+#define CR_SOCKET SLURM_BIT(1) /* Resources are shared down to the socket
+				* level. Jobs will not be co-allocated
+				* within a socket. */
+#define CR_CORE	SLURM_BIT(2) /* Resources are shared down to the core level.
+			      * Jobs will not be co-allocated within a
+			      * core. */
+#define CR_BOARD SLURM_BIT(3) /* Resources are shared down to the board
+			       * level. Jobs will not be co-allocated
+			       * within a board. */
+#define CR_MEMORY SLURM_BIT(4) /* Memory as consumable resources. Memory is
+				* not over-committed when selected as a CR. */
+/* was CR_OTHER_CONS_RES SLURM_BIT(5), removed v23.11 */
+#define ENFORCE_BINDING_GRES SLURM_BIT(6)
+#define ONE_TASK_PER_SHARING_GRES SLURM_BIT(7)
 
 /* By default, schedule only one task per core.
  * Without this option, tasks would be allocated threads. */
