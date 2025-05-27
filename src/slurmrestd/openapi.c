@@ -126,6 +126,7 @@ typedef struct {
 #define MAGIC_OAS 0x1218eeee
 typedef struct {
 	int magic; /* MAGIC_OAS */
+	const char **mime_types;
 	data_t *spec;
 	data_t *tags;
 	data_t *paths;
@@ -1114,7 +1115,7 @@ static char *_get_method_operationId(openapi_spec_t *spec, path_t *path,
 static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
 			    const openapi_path_binding_method_t *method)
 {
-	const char **mime_types = get_mime_type_array();
+	const char **mime_types = spec->mime_types;
 	void *refs = &spec->references[_resolve_parser_index(path->parser)];
 	data_t *dmethod = data_set_dict(data_key_set(dpath,
 		get_http_method_string_lc(method->method)));
@@ -1257,6 +1258,7 @@ static int _foreach_count_path(void *x, void *arg)
 {
 	path_t *path = x;
 	openapi_spec_t *spec = arg;
+	const char **mime_types = spec->mime_types;
 	const openapi_path_binding_t *bound = path->bound;
 	void *refs;
 
@@ -1271,7 +1273,6 @@ static int _foreach_count_path(void *x, void *arg)
 	for (int i = 0; path->methods[i].method; i++) {
 		const openapi_path_binding_method_t *method =
 			path->methods[i].bound;
-		const char **mime_types = get_mime_type_array();
 
 		if (method->parameters &&
 		    data_parser_g_increment_reference(path->parser,
@@ -1310,11 +1311,12 @@ static int _foreach_count_path(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-extern int generate_spec(data_t *dst)
+extern int generate_spec(data_t *dst, const char **mime_types)
 {
 	openapi_spec_t spec = {
 		.magic = MAGIC_OAS,
 		.spec = dst,
+		.mime_types = mime_types,
 	};
 	data_t *security1, *security2, *security3;
 	data_t *openapi_plugins, *data_parsers, *slurm_version;
@@ -1467,7 +1469,7 @@ extern int generate_spec(data_t *dst)
 
 static int _op_handler_openapi(openapi_ctxt_t *ctxt)
 {
-	return generate_spec(ctxt->resp);
+	return generate_spec(ctxt->resp, get_mime_type_array());
 }
 
 static bool _on_error(void *arg, data_parser_type_t type, int error_code,

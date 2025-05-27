@@ -213,9 +213,10 @@ extern void openapi_resp_warn(openapi_ctxt_t *ctxt, const char *source,
 /*
  * Generate OpenAPI specification
  * IN/OUT dst - data_t to populate with specification
+ * IN mime_types - NULL terminated array of mime types to dump
  * RET SLURM_SUCCESS or error
  */
-extern int generate_spec(data_t *dst);
+extern int generate_spec(data_t *dst, const char **mime_types);
 
 /*
  * True if only generating an OAS
