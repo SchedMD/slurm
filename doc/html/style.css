@@ -797,12 +797,14 @@ input[type="checkbox"] {
 /* ---------------------------- */
 
 
-.tlist {
-	width: 100%;
-	border-collapse: collapse;
+.centered {
 	text-align: center;
 }
 
+.tlist {
+	width: 100%;
+	border-collapse: collapse;
+}
 
 .tlist tbody tr {
 	border: 1px solid #e8e8e8;

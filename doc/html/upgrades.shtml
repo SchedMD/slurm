@@ -72,7 +72,7 @@ instance of slurmdbd running these versions.</p>
 major releases to provide a similar support duration with the more frequent
 6-month release cycle:</p>
 
-<table class="tlist">
+<table class="tlist centered">
 <tbody>
 <tr>
 <td><strong>Slurm Release</strong></td>
@@ -265,7 +265,7 @@ the values parsed and dumped as JSON and YAML are handled by the data_parser
 and openapi plugins. Changes to the formats are tracked in the
 <a href="openapi_release_notes.html">OpenAPI release notes</a>.</p>
 
-<table class="tlist">
+<table class="tlist centered">
 <tbody>
 <tr>
 <td><strong>Release Notes</strong></td>
