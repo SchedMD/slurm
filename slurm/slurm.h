@@ -1031,38 +1031,45 @@ enum node_states {
 /* CR_CPU, CR_SOCKET and CR_CORE are mutually exclusive
  * CR_MEMORY may be added to any of the above values or used by itself
  * CR_ONE_TASK_PER_CORE may also be added to any of the above values */
-#define CR_CPU SLURM_BIT(0) /* Resources are shared down to the level of
-			     * logical processors which can be socket,
-			     * core, or thread depending on the system. */
-#define CR_SOCKET SLURM_BIT(1) /* Resources are shared down to the socket
-				* level. Jobs will not be co-allocated
-				* within a socket. */
-#define CR_CORE	SLURM_BIT(2) /* Resources are shared down to the core level.
-			      * Jobs will not be co-allocated within a
-			      * core. */
-#define CR_BOARD SLURM_BIT(3) /* Resources are shared down to the board
-			       * level. Jobs will not be co-allocated
-			       * within a board. */
-#define CR_MEMORY SLURM_BIT(4) /* Memory as consumable resources. Memory is
-				* not over-committed when selected as a CR. */
-/* was CR_OTHER_CONS_RES SLURM_BIT(5), removed v23.11 */
-#define ENFORCE_BINDING_GRES SLURM_BIT(6)
-#define ONE_TASK_PER_SHARING_GRES SLURM_BIT(7)
+enum {
+	CR_CPU = SLURM_BIT(0), /* Resources are shared down to the level of
+				* logical processors which can be socket,
+				* core, or thread depending on the system. */
+	CR_SOCKET = SLURM_BIT(1), /* Resources are shared down to the socket
+				   * level. Jobs will not be co-allocated
+				   * within a socket. */
+	CR_CORE = SLURM_BIT(2), /* Resources are shared down to the core level.
+				 * Jobs will not be co-allocated within a
+				 * core. */
+	CR_BOARD = SLURM_BIT(3), /* Resources are shared down to the board
+				  * level. Jobs will not be co-allocated
+				  * within a board. */
+	CR_MEMORY = SLURM_BIT(4), /* Memory as consumable resources. Memory is
+				   * not over-committed when selected as a CR.
+				   */
+	/* was CR_OTHER_CONS_RES = SLURM_BIT(5), removed v23.11 */
+	ENFORCE_BINDING_GRES = SLURM_BIT(6),
+	ONE_TASK_PER_SHARING_GRES = SLURM_BIT(7),
 
-/* By default, schedule only one task per core.
- * Without this option, tasks would be allocated threads. */
-#define CR_ONE_TASK_PER_CORE 0x0100
-
-/* Pack tasks tightly onto allocated nodes rather than distributing them evenly
- * across available nodes */
-#define CR_PACK_NODES  0x0200
-
-#define LL_SHARED_GRES 0x0400 /* Prefer least-loaded device for shared GRES */
-/* was CR_OTHER_CONS_TRES   0x0800, removed v24.05 */
-/* By default, distribute cores using a block approach inside the nodes */
-#define CR_CORE_DEFAULT_DIST_BLOCK 0x1000
-#define CR_LLN		0x4000  /* Select nodes by "least loaded." */
-#define MULTIPLE_SHARING_GRES_PJ 0x8000  /* Allow multiple sharing gres per job */
+	CR_ONE_TASK_PER_CORE = SLURM_BIT(8), /* By default, schedule only one
+					      * task per core. Without this
+					      * option, tasks would be allocated
+					      * threads. */
+	CR_PACK_NODES = SLURM_BIT(9), /* Pack tasks tightly onto allocated nodes
+				       * rather than distributing them evenly
+				       * across available nodes */
+	LL_SHARED_GRES = SLURM_BIT(10), /* Prefer least-loaded device for shared
+					 * GRES */
+	/* was CR_OTHER_CONS_TRES = SLURM_BIT(11), removed v24.05 */
+	CR_CORE_DEFAULT_DIST_BLOCK = SLURM_BIT(12), /* By default, distribute
+						     * cores using a block
+						     * approach inside the nodes
+						     */
+	/* SLURM_BIT(13), empty */
+	CR_LLN = SLURM_BIT(14), /* Select nodes by "least loaded." */
+	MULTIPLE_SHARING_GRES_PJ = SLURM_BIT(15), /* Allow multiple sharing gres
+						   * per job */
+};
 
 #define MEM_PER_CPU  0x8000000000000000
 #define SHARED_FORCE 0x8000
