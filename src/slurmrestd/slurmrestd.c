@@ -347,6 +347,7 @@ static void _usage(void)
 __attribute__((noreturn))
 static void dump_spec(int argc, char **argv)
 {
+	const char *dump_mime_types[] = { MIME_TYPE_JSON, NULL };
 	int rc = SLURM_SUCCESS;
 	data_t *spec = data_new();
 	char *output = NULL;
@@ -382,7 +383,7 @@ static void dump_spec(int argc, char **argv)
 	if (init_openapi(oas_specs, NULL, parsers, response_status_codes))
 		fatal("Unable to initialize OpenAPI structures");
 
-	if ((rc = generate_spec(spec)))
+	if ((rc = generate_spec(spec, dump_mime_types)))
 		fatal("Unable to generate OpenAPI Specification: %s",
 		      slurm_strerror(rc));
 
