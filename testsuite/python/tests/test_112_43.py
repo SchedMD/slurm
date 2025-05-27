@@ -1239,7 +1239,11 @@ def test_licenses(slurm):
     assert len(resp.errors) == 0
 
 
-def test_reservations(slurm):
+@pytest.mark.parametrize(
+    "flags",
+    [[], ["IGNORE_JOBS"], ["IGNORE_JOBS", "MAGNETIC"]],
+)
+def test_reservations(slurm, flags):
     from openapi_client.models.v0043_reservation_mod_req import V0043ReservationModReq
     from openapi_client.models.v0043_reservation_desc_msg import V0043ReservationDescMsg
     from openapi_client.models.v0043_uint64_no_val_struct import V0043Uint64NoValStruct
@@ -1264,12 +1268,37 @@ def test_reservations(slurm):
         start_time=start_time,
         node_list=node_list,
         partition=partition,
+        flags=flags,
     )
     resp = slurm.slurm_v0043_post_reservations(
         V0043ReservationModReq(reservations=[reservation_info])
     )
     assert resp.reservations, f"Reservation {resv_name} should be created"
     assert not resp.warnings and not resp.errors
+
+    # Verify the fields of the response
+    retrieved_reservation = resp.reservations[0]
+    assert (
+        retrieved_reservation.name == resv_name
+    ), f"Field 'name' should be {resv_name}"
+    assert (
+        retrieved_reservation.partition == partition
+    ), f"Field 'partition' should be {partition}"
+    assert (
+        retrieved_reservation.node_list == node_list
+    ), f"Field 'node_list' should be {node_list}"
+    assert retrieved_reservation.users == users, f"Field 'users' should be {users}"
+    assert (
+        retrieved_reservation.start_time.number == start_time.number
+    ), f"Field 'start_time' should be {start_time}"
+    assert (
+        retrieved_reservation.duration.number == duration.number
+    ), f"Field 'duration' should be {duration}"
+    assert (
+        # SPEC_NODES is automatically added
+        set([flag for flag in retrieved_reservation.flags if flag != "SPEC_NODES"])
+        == set(flags)
+    ), f"Field 'flags' should be {flags}"
 
     # Verify fields of reservation created
     resp = slurm.slurm_v0043_get_reservation(resv_name)
@@ -1294,12 +1323,18 @@ def test_reservations(slurm):
     assert (
         retrieved_reservation.end_time.number == end_time.number
     ), f"Field 'end_time' should be {end_time}"
+    assert (
+        # SPEC_NODES is automatically added
+        set([flag for flag in retrieved_reservation.flags if flag != "SPEC_NODES"])
+        == set(flags)
+    ), f"Field 'flags' should be {flags}"
 
     # Update reservation
     new_end_time = retrieved_reservation.end_time.number + 300
     new_users = ["root"]
     new_node_list = ["node2"]
     new_start_time = V0043Uint64NoValStruct(number=int(time.time()) + 90, set=True)
+    new_flags = ["IGNORE_JOBS", "MAGNETIC", "USER_DELETE"]
 
     update_info = V0043ReservationDescMsg(
         name=resv_name,
@@ -1307,6 +1342,7 @@ def test_reservations(slurm):
         users=new_users,
         node_list=new_node_list,
         start_time=new_start_time,
+        flags=new_flags,
     )
     resp = slurm.slurm_v0043_post_reservation(update_info)
     assert resp.reservations, "Reservation should be updated"
@@ -1326,6 +1362,11 @@ def test_reservations(slurm):
     assert (
         updated.start_time.number == new_start_time.number
     ), f"Field 'start_time' should be {new_start_time}"
+    assert (
+        # SPEC_NODES is automatically added
+        set([flag for flag in updated.flags if flag != "SPEC_NODES"])
+        == set(new_flags)
+    ), f"Field 'flags' should be {flags}"
 
     # Delete reservation
     resp = slurm.slurm_v0043_delete_reservation(reservation_name=resv_name)
