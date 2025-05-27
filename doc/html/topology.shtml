@@ -178,6 +178,34 @@ https://gitlab.com/jtfrey/opa2slurm</a></li>
 https://github.com/aws-samples/ec2-topology-aware-for-slurm</a></li>
 </ul>
 
+<h2 id="block">Block Topology<a class="slurm_link" href="#block"></a></h2>
+
+<p>Slurm can be configured to allocate resources to jobs within a strictly
+enforced, hierarchical block structure using
+<b>TopologyPlugin=topology/block</b>.
+This approach begins with "base blocks" (bblocks), which are fundamental,
+contiguous groups of nodes defined in
+<a href="topology.conf.html">topology.conf</a>.
+These base blocks can be combined with other adjacent base blocks to form
+"aggregated blocks". In turn, these higher-level blocks can be aggregated
+with other contiguous blocks of the same hierarchical level to construct
+progressively larger blocks. This hierarchical arrangement is designed to
+ensure optimized communication performance for jobs running within these blocks.
+The <b>BlockSizes</b> configuration parameter defines the specific, enforceable
+block sizes at each level of this hierarchy.</p>
+
+<p>The allocation algorithm operates as follows:</p>
+
+<ol>
+<li>Identify the smallest block level, as defined by <b>BlockSizes</b>, that can
+satisfy the job's resource request</li>
+<li>Select a suitable subset of "lower-level blocks" (llblocks) that are
+components of this chosen aggregating block</li>
+<li>Allocate resources from the underlying base blocks that constitute this
+selected subset of llblocks, employing a best-fit algorithm for the
+precise placement of the job.</li>
+</ol>
+
 <h2 id="user_opts">User Options<a class="slurm_link" href="#user_opts"></a></h2>
 
 <p>For use with the <b>topology/tree</b> plugin, user can also specify the
@@ -249,6 +277,6 @@ allocation for jobs submitted to that partition.
 If no topology is explicitly specified for a partition,
 Slurm will default to the cluster_default topology.</p>
 
-<p style="text-align:center;">Last modified 22 April 2025</p>
+<p style="text-align:center;">Last modified 30 May 2025</p>
 
 <!--#include virtual="footer.txt"-->
