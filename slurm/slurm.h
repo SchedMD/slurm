@@ -3432,9 +3432,9 @@ typedef struct {
 	list_t *user_list; /* list of slurmdb_user_rec_t */
 } assoc_mgr_info_msg_t;
 
-#define ASSOC_MGR_INFO_FLAG_ASSOC 0x00000001
-#define ASSOC_MGR_INFO_FLAG_USERS 0x00000002
-#define ASSOC_MGR_INFO_FLAG_QOS   0x00000004
+#define ASSOC_MGR_INFO_FLAG_ASSOC SLURM_BIT(0)
+#define ASSOC_MGR_INFO_FLAG_USERS SLURM_BIT(1)
+#define ASSOC_MGR_INFO_FLAG_QOS   SLURM_BIT(2)
 
 typedef struct {
 	list_t *acct_list; /* char * list of account names */
