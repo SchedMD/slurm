@@ -638,13 +638,17 @@ the given container-id will be displayed.
 \fBtopoconf\fR
 Displays running configurations of multiple topologies in the same format as
 \fItopology.yaml\fR.
-.RE
 .IP
 
 .TP
-\fBtopology\fR[=topology_name] [unit|node_name]
-Displays information about the selected topology layout. If a unit is
-specified, information about that unit will be shown.
+\fBtopology\fR [topology_name] [unit=NAME] [node=NAME]
+Displays information about the selected topology layout. If no arguments are
+provided, the default topology will be returned.
+
+If a unit is specified, information about that unit will be shown. The
+\fBunit\fR keyword can be replaced with \fBswitch\fR or \fBblock\fR (e.g.
+block=b2).
+
 If one node name is specified, all units connected to that node (and
 their parent switches) will be shown.
 If more than one node name is specified, only units that connect to all

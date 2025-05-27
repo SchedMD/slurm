@@ -240,7 +240,7 @@ extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 				    uint16_t protocol_version);
 
 extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
-				     char *nodes_list, char **out);
+				     char *nodes_list, char *unit, char **out);
 
 /* unpack a system topology from a buffer
  * OUT topoinfo - the system topology

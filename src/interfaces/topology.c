@@ -77,8 +77,8 @@ typedef struct slurm_topo_ops {
 	int (*get)(topology_data_t type, void *data, void *tctx);
 	int (*topoinfo_pack) (void *topoinfo_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
-	int (*topoinfo_print) (void *topoinfo_ptr, char *nodes_list,
-			       char **out);
+	int (*topoinfo_print)(void *topoinfo_ptr, char *nodes_list, char *unit,
+			      char **out);
 	int (*topoinfo_unpack) (void **topoinfo_pptr, buf_t *buffer,
 				uint16_t protocol_version);
 	uint32_t (*get_fragmentation)(bitstr_t *node_mask, void *tctx);
@@ -575,7 +575,7 @@ extern int topology_g_get(topology_data_t type, char *name, void *data)
 	if (type == TOPO_DATA_TCTX_IDX) {
 		int tmp_idx;
 		if (!name || ((tmp_idx = _get_tctx_index_by_name(name)) < 0))
-			return SLURM_ERROR;
+			return ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		else {
 			int *tctx_idx_ptr = data;
 			*tctx_idx_ptr = tmp_idx;
@@ -599,7 +599,7 @@ extern int topology_g_get(topology_data_t type, char *name, void *data)
 		tctx_idx = _get_tctx_index_by_name(name);
 		if (tctx_idx < 0) {
 			error("%s: topology %s not active", __func__, name);
-			tctx_idx = 0;
+			return ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		}
 	}
 
@@ -627,7 +627,7 @@ extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 }
 
 extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
-				     char *nodes_list, char **out)
+				     char *nodes_list, char *unit, char **out)
 {
 	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -636,7 +636,8 @@ extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
 		return SLURM_ERROR;
 
 	return (*(ops[tctx[plugin_inx].idx].topoinfo_print))(topoinfo->data,
-							     nodes_list, out);
+							     nodes_list, unit,
+							     out);
 }
 
 extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
@@ -686,11 +687,12 @@ unpack_error:
 extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo)
 {
 	int rc = SLURM_SUCCESS;
-	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
 
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (topoinfo) {
+		int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
+
 		if (topoinfo->data)
 			rc = (*(ops[plugin_inx].topoinfo_free))(topoinfo->data);
 		xfree(topoinfo);

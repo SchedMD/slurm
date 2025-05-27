@@ -4532,11 +4532,14 @@ extern void slurm_free_topo_request_msg(topo_info_request_msg_t *msg);
  * IN out - file to write to
  * IN topo_info_msg_ptr - switch topology information message pointer
  * IN node_list - NULL to print all topology information
+ * IN unit - NULL to print all topology information
  * IN one_liner - print as a single line if not zero
  */
 extern void slurm_print_topo_info_msg(FILE *out,
-				      topo_info_response_msg_t *topo_info_msg_ptr,
-				      char *node_list, int one_liner);
+				      topo_info_response_msg_t
+					      *topo_info_msg_ptr,
+				      char *node_list, char *unit,
+				      int one_liner);
 
 /*****************************************************************************\
  *	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

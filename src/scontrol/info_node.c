@@ -302,17 +302,51 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 
 /*
  * scontrol_print_topo - print the switch topology above the specified node
- * IN node_name - NULL to print all topology information
  */
-extern void scontrol_print_topo(char *node_list, char *name)
+extern void scontrol_print_topo(int argc, char **argv)
 {
 	static topo_info_response_msg_t *topo_info_msg = NULL;
+	char *name = NULL, *unit = NULL, *node_list = NULL;
 
+	for (int i = 0; i < argc; ++i) {
+		char *tag = argv[i];
+		int tag_len = strlen(tag);
+		char *val = strchr(argv[i], '=');
+
+		if (val) {
+			tag_len = val - argv[i];
+			val++;
+		} else if (i == 0) {
+			name = tag;
+			continue;
+		}
+
+		if (!val) {
+			if (name) {
+				fprintf(stderr,
+					"Too many arguments (%s), the topology name (%s) is already defined\n",
+					tag, name);
+				return;
+			}
+			name = tag;
+		} else if (!xstrncasecmp(tag, "node", MAX(tag_len, 1)) ||
+			   !xstrncasecmp(tag, "nodes", MAX(tag_len, 1))) {
+			node_list = val;
+		} else if (!xstrncasecmp(tag, "switch", MAX(tag_len, 1)) ||
+			   !xstrncasecmp(tag, "block", MAX(tag_len, 1)) ||
+			   !xstrncasecmp(tag, "unit", MAX(tag_len, 1))) {
+			unit = val;
+		} else {
+			fprintf(stderr, "Unknown argument %s\n", tag);
+			return;
+		}
+	}
 	if ((topo_info_msg == NULL) && slurm_load_topo(&topo_info_msg, name)) {
 		slurm_perror ("slurm_load_topo error");
 		return;
 	}
-	slurm_print_topo_info_msg(stdout, topo_info_msg, node_list, one_liner);
+	slurm_print_topo_info_msg(stdout, topo_info_msg, node_list, unit,
+				  one_liner);
 }
 
 extern void scontrol_print_topo_conf(void)

@@ -139,18 +139,20 @@ extern int slurm_load_topo_config(topo_config_response_msg_t **resp)
  * IN out - file to write to
  * IN topo_info_msg_ptr - switch topology information message pointer
  * IN node_list - NULL to print all topology information
+ * IN unit - NULL to print all topology information
  * IN one_liner - print as a single line if not zero
  */
-extern void slurm_print_topo_info_msg(
-	FILE * out,
-	topo_info_response_msg_t *topo_info_msg_ptr,
-	char *node_list, int one_liner)
+extern void slurm_print_topo_info_msg(FILE *out,
+				      topo_info_response_msg_t
+					      *topo_info_msg_ptr,
+				      char *node_list, char *unit,
+				      int one_liner)
 {
 	char *out_str = NULL;
 
 	topology_g_init();
 
-	topology_g_topology_print(topo_info_msg_ptr->topo_info, node_list,
+	topology_g_topology_print(topo_info_msg_ptr->topo_info, node_list, unit,
 				  &out_str);
 	if (out_str)
 		fprintf(out, "%s", out_str);

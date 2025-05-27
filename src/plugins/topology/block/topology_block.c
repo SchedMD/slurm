@@ -450,14 +450,15 @@ extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
 }
 
 extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
-				     char **out)
+				     char *unit, char **out)
 {
 	int i, match, match_cnt = 0;;
 	topoinfo_block_t *topoinfo = topoinfo_ptr;
 
 	*out = NULL;
 
-	if ((nodes_list == NULL) || (nodes_list[0] == '\0')) {
+	if ((!nodes_list || (nodes_list[0] == '\0')) &&
+	    (!unit || (unit[0] == '\0'))) {
 		if (topoinfo->record_count == 0) {
 			error("No topology information available");
 			return SLURM_SUCCESS;
@@ -469,35 +470,35 @@ extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
 		return SLURM_SUCCESS;
 	}
 
-	/* Search for matching block name */
-	for (i = 0; i < topoinfo->record_count; i++) {
-		if (xstrcmp(topoinfo->topo_array[i].name, nodes_list))
-			continue;
-		_print_topo_record(&topoinfo->topo_array[i], out);
-		return SLURM_SUCCESS;
-	}
-
-	/* Search for matching node name */
+	/* Search for matching node name and  block name */
 	for (i = 0; i < topoinfo->record_count; i++) {
 		hostset_t *hs;
 
-		if ((topoinfo->topo_array[i].nodes == NULL) ||
-		    (topoinfo->topo_array[i].nodes[0] == '\0'))
+		if (unit && xstrcmp(topoinfo->topo_array[i].name, unit))
 			continue;
-		hs = hostset_create(topoinfo->topo_array[i].nodes);
-		if (hs == NULL)
-			fatal("hostset_create: memory allocation failure");
-		match = hostset_within(hs, nodes_list);
-		hostset_destroy(hs);
-		if (!match)
-			continue;
+
+		if (nodes_list) {
+			if ((topoinfo->topo_array[i].nodes == NULL) ||
+			    (topoinfo->topo_array[i].nodes[0] == '\0'))
+				continue;
+			hs = hostset_create(topoinfo->topo_array[i].nodes);
+			if (hs == NULL)
+				fatal("hostset_create: memory allocation failure");
+			match = hostset_within(hs, nodes_list);
+			hostset_destroy(hs);
+			if (!match)
+				continue;
+		}
 		match_cnt++;
 		_print_topo_record(&topoinfo->topo_array[i], out);
 	}
 
 	if (match_cnt == 0) {
-		error("Topology information contains no block or "
-		      "node named %s", nodes_list);
+		error("Topology information contains no block%s%s%s%s",
+		      unit ? " named " : "",
+		      unit ? unit : "",
+		      nodes_list ? " with nodes " : "",
+		      nodes_list ? nodes_list : "");
 	}
 	return SLURM_SUCCESS;
 }

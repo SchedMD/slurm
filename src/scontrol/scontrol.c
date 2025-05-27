@@ -1755,8 +1755,9 @@ static void _show_it(int argc, char **argv)
 	}
 
 	if (!xstrncasecmp(argv[1], "assoc_mgr", MAX(tag_len, 2)) ||
-	    !xstrncasecmp(argv[1], "bbstat",    MAX(tag_len, 2)) ||
-	    !xstrncasecmp(argv[1], "dwstat",    MAX(tag_len, 2)))
+	    !xstrncasecmp(argv[1], "bbstat", MAX(tag_len, 2)) ||
+	    !xstrncasecmp(argv[1], "dwstat", MAX(tag_len, 2)) ||
+	    !xstrncasecmp(argv[1], "topology", MAX(tag_len, 4)))
 		allow_opt = true;
 
 	if ((argc > 3) && !allow_opt) {
@@ -1838,10 +1839,7 @@ static void _show_it(int argc, char **argv)
 	} else if (!xstrncasecmp(tag, "topoconf", MAX(tag_len, 5))) {
 		scontrol_print_topo_conf();
 	} else if (xstrncasecmp(tag, "topology", MAX(tag_len, 1)) == 0) {
-		if (val && ((argc < 3) || val != argv[2]))
-			scontrol_print_topo((argc > 2 ? argv[2] : NULL), val);
-		else
-			scontrol_print_topo(val, NULL);
+		scontrol_print_topo(argc - 2, argv + 2);
 	} else {
 		_printf_error("invalid entity:%s for keyword:%s", tag, argv[0]);
 	}
