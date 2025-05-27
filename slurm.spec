@@ -759,6 +759,16 @@ fi
 %systemd_preun slurmdbd.service
 %postun slurmdbd
 %systemd_postun_with_restart slurmdbd.service
+
+%if %{with slurmrestd}
+%post slurmrestd
+%systemd_post slurmrestd.service
+%preun slurmrestd
+%systemd_preun slurmrestd.service
+%postun slurmrestd
+%systemd_postun_with_restart slurmrestd.service
+%endif
+
 %if %{defined patch}
 %changelog
 * %(date "+%a %b %d %Y") %{?packager} - %{version}-%{release}
