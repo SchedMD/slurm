@@ -3174,9 +3174,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	 */
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_ANY_NODES) &&
 	    !total_node_cnt && !resv_select.core_bitmap && !resv_desc_ptr->burst_buffer &&
-	    (!license_list || list_is_empty(license_list)) &&
-	    !resv_desc_ptr->tres_str) {
-		info("%s: reservations without nodes and with ANY_NODES flag are expected to be one of Licenses, BurstBuffer, and/or TRES", __func__);
+	    (!license_list || list_is_empty(license_list))) {
+		info("%s: reservations without nodes and with ANY_NODES flag are expected to be one of Licenses, BurstBuffer, and/or TRES specification of a License or BurstBuffer", __func__);
 		rc = ESLURM_RESERVATION_INVALID;
 		goto bad_parse;
 	}
