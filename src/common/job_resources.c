@@ -1827,7 +1827,8 @@ extern uint16_t job_resources_get_node_cpu_cnt(job_resources_t *job_resrcs_ptr,
 	if ((job_resrcs_ptr->cr_type & (CR_CORE | CR_SOCKET | CR_LINEAR)) &&
 	    (job_resrcs_ptr->threads_per_core <
 	     node_record_table_ptr[sys_node_inx]->tpc)) {
-		cpu_count /= node_record_table_ptr[sys_node_inx]->tpc;
+		cpu_count = ROUNDUP(cpu_count,
+				    node_record_table_ptr[sys_node_inx]->tpc);
 		cpu_count *= job_resrcs_ptr->threads_per_core;
 	}
 
