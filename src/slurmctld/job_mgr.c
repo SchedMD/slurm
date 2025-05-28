@@ -7890,6 +7890,11 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	xstrtolower(job_desc->account);
 	xstrtolower(job_desc->wckey);
 
+	if (job_desc->wckey && (job_desc->wckey[0] == '*')) {
+		rc = ESLURM_INVALID_WCKEY;
+		goto fini;
+	}
+
 	/* Basic validation of some parameters */
 	if (job_desc->req_nodes && (job_desc->min_nodes == NO_VAL)) {
 		bitstr_t *node_bitmap = NULL;

@@ -635,8 +635,39 @@ static int _add_wckey_cond_user(void *x, void *arg)
 {
 	add_wckey_cond_t *add_wckey_cond = arg;
 	int rc;
+	bool set_def = false;
 
 	add_wckey_cond->wckey_user_name = x;
+
+	if (!add_wckey_cond->default_wckey) {
+		/*
+		 * Check to see if it is already in the assoc_mgr. If it isn't
+		 * use this first wckey as the default.
+		 *
+		 * We have to use uid = NO_VAL here to avoid potential issues
+		 * where a user is added to the system after it was originally
+		 * added to the Slurm database and the assoc_mgr hasn't updated
+		 * the uid yet.
+		 */
+		slurmdb_user_rec_t check_object = {
+			.name = add_wckey_cond->wckey_user_name,
+			.uid = NO_VAL,
+		};
+		(void) assoc_mgr_fill_in_user(add_wckey_cond->mysql_conn,
+					      &check_object,
+					      ACCOUNTING_ENFORCE_ASSOCS, NULL,
+					      false);
+		if (!check_object.default_wckey ||
+		    (check_object.default_wckey[0] == '\0')) {
+			add_wckey_cond->default_wckey = list_peek(
+				add_wckey_cond->wckey_list);
+			set_def = true;
+			DB_DEBUG(DB_WCKEY, add_wckey_cond->mysql_conn->conn,
+				 "No default wckey given for user User %s. Using %s.",
+				 add_wckey_cond->wckey_user_name,
+				 add_wckey_cond->default_wckey);
+		}
+	}
 
 	rc = list_for_each_ro(add_wckey_cond->wckey_list,
 			      _add_wckey_cond_wckey,
@@ -648,6 +679,9 @@ static int _add_wckey_cond_user(void *x, void *arg)
 		if (add_wckey_cond->rc != SLURM_SUCCESS)
 			rc = -1;
 	}
+
+	if (set_def)
+		add_wckey_cond->default_wckey = NULL;
 	add_wckey_cond->wckey_user_name = NULL;
 
 	return rc;
@@ -871,14 +905,7 @@ extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		use_cluster_list = as_mysql_cluster_list;
 
 	memset(&add_wckey_cond, 0, sizeof(add_wckey_cond));
-	if (user->default_wckey) {
-		add_wckey_cond.default_wckey = user->default_wckey;
-	} else {
-		add_wckey_cond.default_wckey = list_peek(add_assoc->wckey_list);
-		DB_DEBUG(DB_WCKEY, mysql_conn->conn,
-			 "Default wckey not given, using %s",
-			 add_wckey_cond.default_wckey);
-	}
+	add_wckey_cond.default_wckey = user->default_wckey;
 	add_wckey_cond.mysql_conn = mysql_conn;
 	add_wckey_cond.now = time(NULL);
 	add_wckey_cond.user_list = add_assoc->user_list;
