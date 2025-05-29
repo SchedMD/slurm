@@ -497,7 +497,7 @@ static void *_fwd_tree_thread(void *arg)
 					fwd_tree->tree_hl, NULL,
 					fwd_tree,
 					hostlist_count(fwd_tree->tree_hl));
-				continue;
+				break;
 			}
 		} else {
 			/* This should never happen (when this was
