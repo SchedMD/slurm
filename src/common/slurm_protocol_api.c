@@ -1499,6 +1499,8 @@ extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
 	if (!slurm_addr_is_unspec(&header.orig_addr)) {
 		memcpy(&msg->orig_addr, &header.orig_addr,
 		       sizeof(slurm_addr_t));
+	} else {
+		memcpy(&header.orig_addr, orig_addr, sizeof(slurm_addr_t));
 	}
 
 	/* Forward message to other nodes */
