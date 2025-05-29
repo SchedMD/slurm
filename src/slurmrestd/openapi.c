@@ -1131,6 +1131,9 @@ static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
 		data_set_string(data_key_set(dmethod, "description"),
 				method->description);
 
+	if (data_parser_g_is_deprecated(path->parser))
+		data_set_bool(data_key_set(dmethod, "deprecated"), true);
+
 	{
 		char *opid = _get_method_operationId(spec, path, method);
 		data_set_string_own(data_key_set(dmethod, "operationId"), opid);
