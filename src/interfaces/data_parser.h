@@ -1127,4 +1127,11 @@ extern bool data_parser_g_is_complex(data_parser_t *parser);
  */
 extern int data_parser_g_dump_flags(data_parser_t *parser, data_t *dst);
 
+/*
+ * Check if parser is deprecated
+ * IN parser - parser to query
+ * RET True if parser is deprecated
+ */
+extern bool data_parser_g_is_deprecated(data_parser_t *parser);
+
 #endif
