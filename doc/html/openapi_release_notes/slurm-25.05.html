@@ -80,7 +80,15 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_accounting"].properties.start.description = "When the record was started (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.43_acct_gather_energy"].properties.current_watts.description = "The instantaneous power consumption at the time of the last node energy accounting sample, in watts (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_acct_gather_energy"].properties.last_collected.description = "Time when energy data was last retrieved (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Removed</td>
@@ -204,39 +212,67 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.accruing.description = "MaxJobsAccrue (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.accruing.description = "MaxJobsAccrue - Maximum number of pending jobs able to accrue age priority at any given time in this association (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.active.description = "MaxJobs (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.active.description = "MaxJobs - Maximum number of running jobs per user in this association (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.per.properties.accruing.description = "GrpJobsAccrue (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.per.properties.accruing.description = "GrpJobsAccrue - Maximum number of pending jobs able to accrue age priority in this association and its children (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.per.properties.count.description = "GrpJobs (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.per.properties.count.description = "GrpJobs - Maximum number of running jobs in this association and its children (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.per.properties.submitted.description = "GrpSubmitJobs (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.per.properties.submitted.description = "GrpSubmitJobs - Maximum number of jobs in a pending or running state at any time in this association and its children (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.per.properties.wall_clock.description = "MaxWallDurationPerJob (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.per.properties.wall_clock.description = "MaxWallDurationPerJob - Maximum wall clock time in minutes each job can use in this association (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.total.description = "MaxSubmitJobs (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.jobs.properties.total.description = "MaxSubmitJobs - Maximum number of jobs in a pending or running state at any time in this association (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.per.properties.account.properties.wall_clock.description = "GrpWall (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.per.properties.account.properties.wall_clock.description = "GrpWall - Maximum wall clock time in minutes able to be allocated by running jobs in this association and its children (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.min.properties.priority_threshold.description = "MinPrioThreshold (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.tres.properties.group.properties.active.description = "GrpTRESRunMins - Maximum number of TRES minutes able to be allocated by running jobs in this association and its children";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.tres.properties.group.properties.minutes.description = "GrpTRESMins - Maximum number of TRES minutes that can possibly be used by past, present, and future jobs in this association and its children";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.tres.properties.minutes.properties.per.properties.job.description = "MaxTRESMinsPerJob - Maximum number of TRES minutes each job can use in this association";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.tres.properties.minutes.properties.total.description = "Not implemented";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.tres.properties.per.properties.job.description = "MaxTRESPerJob - Maximum number of TRES each job can use in this association";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.tres.properties.per.properties.node.description = "MaxTRESPerNode - Maximum number of TRES each node in a job allocation can use in this association";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.max.properties.tres.properties.total.description = "GrpTRES - Maximum number of TRES able to be allocated by running jobs in this association and its children";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc"].properties.min.properties.priority_threshold.description = "MinPrioThreshold - Minimum priority required to reserve resources when scheduling (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -288,39 +324,67 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.grpjobs.description = "Maximum number of running jobs in this association and its children (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.grpjobs.description = "GrpJobs - Maximum number of running jobs in this association and its children (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.grpjobsaccrue.description = "Maximum number of pending jobs able to accrue age priority in this association and its children (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.grpjobsaccrue.description = "GrpJobsAccrue - Maximum number of pending jobs able to accrue age priority in this association and its children (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.grpsubmitjobs.description = "Maximum number of jobs which can be in a pending or running state at any time in this association and its children (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.grpsubmitjobs.description = "GrpSubmitJobs - Maximum number of jobs in a pending or running state at any time in this association and its children (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.grpwall.description = "Maximum wall clock time in minutes able to be allocated by running jobs in this association and its children (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.grptres.description = "GrpTRES - Maximum number of TRES able to be allocated by running jobs in this association and its children";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxjobs.description = "Maximum number of running jobs per user in this association (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.grptresmins.description = "GrpTRESMins - Maximum number of TRES minutes that can possibly be used by past, present, and future jobs in this association and its children";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxjobsaccrue.description = "Maximum number of pending jobs able to accrue age priority at any given time in this association (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.grptresrunmins.description = "GrpTRESRunMins - Maximum number of TRES minutes able to be allocated by running jobs in this association and its children";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxsubmitjobs.description = "Maximum number of jobs which can be in a pending or running state at any time in this association (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.grpwall.description = "GrpWall - Maximum wall clock time in minutes able to be allocated by running jobs in this association and its children (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxwalldurationperjob.description = "Maximum wall clock time each job is able to use in this association (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxjobs.description = "MaxJobs - Maximum number of running jobs per user in this association (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.minpriothresh.description = "Minimum priority required to reserve resources when scheduling (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxjobsaccrue.description = "MaxJobsAccrue - Maximum number of pending jobs able to accrue age priority at any given time in this association (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxsubmitjobs.description = "MaxSubmitJobs - Maximum number of jobs in a pending or running state at any time in this association (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxtresminsperjob.description = "MaxTRESMinsPerJob - Maximum number of TRES minutes each job can use in this association";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxtresperjob.description = "MaxTRESPerJob - Maximum number of TRES each job can use in this association";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxtrespernode.description = "MaxTRESPerNode - Maximum number of TRES each node in a job allocation can use in this association";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxtresrunmins.description = "Not implemented";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.maxwalldurationperjob.description = "MaxWallDurationPerJob - Maximum wall clock time in minutes each job can use in this association (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_assoc_rec_set"].properties.minpriothresh.description = "MinPrioThreshold - Minimum priority required to reserve resources when scheduling (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -696,6 +760,14 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_instance"].properties.time.properties.time_end.description = "When the instance will end (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_instance"].properties.time.properties.time_start.description = "When the instance will start (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.43_job"].properties.array.properties.task_id.description = "Task ID of this task in job array (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
@@ -776,7 +848,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job"].properties.reservation.properties.requested.description = "Comma separated list of requested reservation names";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job"].properties.reservation.properties.requested.description = "Comma-separated list of requested reservation names";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -924,11 +996,27 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job"].properties.time.properties.eligible.description = "Time when the job became eligible to run (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job"].properties.time.properties.end.description = "End time (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.43_job"].properties.time.properties.limit.description = "Maximum run time in minutes (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.43_job"].properties.time.properties.planned.description = "Time required to start job after becoming eligible to run in seconds (64 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job"].properties.time.properties.start.description = "Time execution began (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job"].properties.time.properties.submission.description = "Time when the job was submitted (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -940,7 +1028,11 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.begin_time.description = "Defer the allocation of the job until the specified time (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.begin_time.description = "Defer the allocation of the job until the specified time (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.constraints.description = "Comma-separated list of features that are required";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -1016,7 +1108,19 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.deadline.description = "Latest time that the job may start (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.distribution_plane_size.description = "Plane size specification when distribution specifies plane (16 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.end_time.description = "Expected end time (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.excluded_nodes.description = "Comma-separated list of nodes that may not be used";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -1384,6 +1488,10 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.prefer.description = "Comma-separated list of features that are preferred but not required";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.priority.description = "Request specific job priority (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
@@ -1425,6 +1533,10 @@
 <tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.profile.type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.required_nodes.description = "Comma-separated list of required nodes";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -1517,6 +1629,22 @@
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.time_minimum.description = "Minimum run time in minutes (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.tres_per_job.description = "Comma-separated list of TRES=# values to be allocated for every job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.tres_per_node.description = "Comma-separated list of TRES=# values to be allocated for every node";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.tres_per_socket.description = "Comma-separated list of TRES=# values to be allocated for every socket";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.tres_per_task.description = "Comma-separated list of TRES=# values to be allocated for every task";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -1704,7 +1832,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.accrue_time.description = "When the job started accruing age priority (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.accrue_time.description = "When the job started accruing age priority (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -1748,7 +1876,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.deadline.description = "Latest time that the job may start (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.deadline.description = "Latest time that the job may start (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -1760,15 +1888,23 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.eligible_time.description = "Time when the job became eligible to run (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.eligible_time.description = "Time when the job became eligible to run (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.end_time.description = "End time, real or expected (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.end_time.description = "End time, real or expected (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.excluded_nodes.description = "Comma-separated list of nodes that may not be used";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.exit_code.description = "Exit code of the job (return code returned by process)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.features.description = "Comma-separated list of features that are required";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -2060,7 +2196,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.last_sched_evaluation.description = "Last time job was evaluated for scheduling (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.last_sched_evaluation.description = "Last time job was evaluated for scheduling (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -2164,15 +2300,15 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.pre_sus_time.description = "Total run time prior to last suspend in seconds (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.pre_sus_time.description = "Total run time prior to last suspend in seconds (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.preempt_time.description = "Time job received preemption signal (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.preempt_time.description = "Time job received preemption signal (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.preemptable_time.description = "Time job becomes eligible for preemption (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.preemptable_time.description = "Time job becomes eligible for preemption (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -2220,7 +2356,11 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.resize_time.description = "Time of last size change (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.required_nodes.description = "Comma-separated list of required nodes";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.resize_time.description = "Time of last size change (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -2280,7 +2420,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.start_time.description = "Time execution began, or is expected to begin (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.start_time.description = "Time execution began, or is expected to begin (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -2320,11 +2460,11 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.submit_time.description = "Time when the job was submitted (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.submit_time.description = "Time when the job was submitted (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.suspend_time.description = "Time the job was last suspended or resumed (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.suspend_time.description = "Time the job was last suspended or resumed (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -2361,6 +2501,22 @@
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.time_minimum.description = "Minimum run time in minutes (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.tres_per_job.description = "Comma-separated list of TRES=# values to be allocated per job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.tres_per_node.description = "Comma-separated list of TRES=# values to be allocated per node";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.tres_per_socket.description = "Comma-separated list of TRES=# values to be allocated per socket";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_info"].properties.tres_per_task.description = "Comma-separated list of TRES=# values to be allocated per task";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Removed</td>
@@ -2955,6 +3111,10 @@
 	<td class="tdchange">.components.schemas["v0.0.43_kill_jobs_resp_msg"].items.description = "List of jobs signal responses";</td>
 </tr>
 <tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_license"].properties.LastUpdate.description = "When the license information was last updated (UNIX Timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
+</tr>
+<tr class="trchange">
 	<td class="tdfield">Removed</td>
 	<td class="tdchange">.components.schemas["v0.0.43_memory_binding_type"] = {};</td>
 </tr>
@@ -3008,7 +3168,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.boot_time.description = "Time when the node booted (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.boot_time.description = "Time when the node booted (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -3044,7 +3204,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.last_busy.description = "Time when the node was last busy (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.last_busy.description = "Time when the node was last busy (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -3184,15 +3344,15 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.reason_changed_at.description = "When the reason changed (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.reason_changed_at.description = "When the reason changed (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.resume_after.description = "Number of seconds after the node's state is updated to \"DOWN\" or \"DRAIN\" before scheduling a node state resume (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.resume_after.description = "Number of seconds after the node's state is updated to \"DOWN\" or \"DRAIN\" before scheduling a node state resume (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.slurmd_start_time.description = "Time when the slurmd started (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.slurmd_start_time.description = "Time when the slurmd started (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -3340,7 +3500,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.tls_cert_last_renewal.description = "Time when TLS certificate was created (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_node"].properties.tls_cert_last_renewal.description = "Time when TLS certificate was created (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -3564,11 +3724,11 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_openapi_job_info_resp"].properties.last_backfill.description = "Time of last backfill scheduler run (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_openapi_job_info_resp"].properties.last_backfill.description = "Time of last backfill scheduler run (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_openapi_job_info_resp"].properties.last_update.description = "Time of last job change (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_openapi_job_info_resp"].properties.last_update.description = "Time of last job change (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -3584,15 +3744,15 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_openapi_licenses_resp"].properties.last_update.description = "Time of last licenses change (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_openapi_licenses_resp"].properties.last_update.description = "Time of last licenses change (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_openapi_nodes_resp"].properties.last_update.description = "Time of last node change (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_openapi_nodes_resp"].properties.last_update.description = "Time of last node change (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_openapi_partition_resp"].properties.last_update.description = "Time of last partition change (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_openapi_partition_resp"].properties.last_update.description = "Time of last partition change (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -3664,7 +3824,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_openapi_reservation_resp"].properties.last_update.description = "Time of last reservation change (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_openapi_reservation_resp"].properties.last_update.description = "Time of last reservation change (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -3696,31 +3856,71 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.defaults.properties.partition_memory_per_cpu.description = "DefMemPerCPU (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.accounts.properties.allowed.description = "AllowAccounts - Comma-separated list of accounts which may execute jobs in the partition";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.defaults.properties.partition_memory_per_node.description = "DefMemPerNode (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.accounts.properties.deny.description = "DenyAccounts - Comma-separated list of accounts which may not execute jobs in the partition";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.defaults.properties.time.description = "DefaultTime in minutes (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.alternate.description = "Alternate - Partition name of alternate partition to be used if the state of this partition is DRAIN or INACTIVE";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.cpus_per_node.description = "MaxCPUsPerNode (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.cpus.properties.task_binding.description = "CpuBind - Default method controlling how tasks are bound to allocated resources";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.cpus_per_socket.description = "MaxCPUsPerSocket (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.cpus.properties.total.description = "TotalCPUs - Number of CPUs available in this partition";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.nodes.description = "MaxNodes (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.defaults.properties.job.description = "JobDefaults - Comma-separated list of job default values (this field is only used to set new defaults)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.over_time_limit.description = "OverTimeLimit (16 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.defaults.properties.memory_per_cpu.description = "Raw value for DefMemPerCPU or DefMemPerNode";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.defaults.properties.partition_memory_per_cpu.description = "DefMemPerCPU - Default real memory size available per allocated CPU in megabytes (64 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.defaults.properties.partition_memory_per_node.description = "DefMemPerNode - Default real memory size available per allocated node in megabytes (64 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.defaults.properties.time.description = "DefaultTime - Run time limit in minutes used for jobs that don't specify a value (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.grace_time.description = "GraceTime - Grace time in seconds to be extended to a job which has been selected for preemption";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.groups.properties.allowed.description = "AllowGroups - Comma-separated list of group names which may execute jobs in this partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.cpus_per_node.description = "MaxCPUsPerNode - Maximum number of CPUs on any node available to all jobs from this partition (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.cpus_per_socket.description = "MaxCPUsPerSocket - Maximum number of CPUs on any node available on the all jobs from this partition (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.memory_per_cpu.description = "Raw value for MaxMemPerCPU or MaxMemPerNode";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.nodes.description = "MaxNodes - Maximum count of nodes which may be allocated to any single job (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.over_time_limit.description = "OverTimeLimit - Number of minutes by which a job can exceed its time limit before being canceled (16 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -3744,15 +3944,43 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.partition_memory_per_cpu.description = "MaxMemPerCPU (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.partition_memory_per_cpu.description = "MaxMemPerCPU - Maximum real memory size available per allocated CPU in megabytes (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.partition_memory_per_node.description = "MaxMemPerNode (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.partition_memory_per_node.description = "MaxMemPerNode - Maximum real memory size available per allocated node in a job allocation in megabytes (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.time.description = "MaxTime (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.shares.description = "OverSubscribe - Controls the ability of the partition to execute more than one job at a time on each resource";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.maximums.properties.time.description = "MaxTime - Maximum run time limit for jobs (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.minimums.properties.nodes.description = "MinNodes - Minimum count of nodes which may be allocated to any single job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.name.description = "PartitionName - Name by which the partition may be referenced";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.node_sets.description = "NodeSets - Comma-separated list of nodesets which are associated with this partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.nodes.properties.allowed_allocation.description = "AllocNodes - Comma-separated list of nodes from which users can submit jobs in the partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.nodes.properties.configured.description = "Nodes - Comma-separated list of nodes which are associated with this partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.nodes.properties.total.description = "TotalNodes - Number of nodes available in this partition";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -3789,6 +4017,26 @@
 <tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.partition.properties.state.type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.priority.properties.job_factor.description = "PriorityJobFactor - Partition factor used by priority/multifactor plugin in calculating job priority";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.priority.properties.tier.description = "PriorityTier - Controls the order in which the scheduler evaluates jobs from different partitions";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.qos.properties.allowed.description = "AllowQOS - Comma-separated list of Qos which may execute jobs in the partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.qos.properties.assigned.description = "QOS - QOS name containing limits that will apply to all jobs in this partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.qos.properties.deny.description = "DenyQOS - Comma-separated list of Qos which may not execute jobs in the partition";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -3848,15 +4096,15 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.suspend_time.description = "SuspendTime (GLOBAL if both set and infinite are false) (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.suspend_time.description = "SuspendTime - Nodes which remain idle or down for this number of seconds will be placed into power save mode (GLOBAL if both set and infinite are false) (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.timeouts.properties.resume.description = "ResumeTimeout (GLOBAL if both set and infinite are false) (16 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.timeouts.properties.resume.description = "ResumeTimeout - Resumed nodes which fail to respond in this time frame will be marked DOWN (GLOBAL if both set and infinite are false) (16 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.timeouts.properties.suspend.description = "SuspendTimeout (GLOBAL if both set and infinite are false) (16 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.timeouts.properties.suspend.description = "SuspendTimeout - Maximum time permitted (in seconds) between when a node suspend request is issued and when the node is shutdown (GLOBAL if both set and infinite are false) (16 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -3864,11 +4112,19 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.topology.description = "Name of the topology, defined in topology.yaml, used by jobs in this partition";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.topology.description = "Topology - Name of the topology, defined in topology.yaml, used by jobs in this partition";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.topology.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.tres.properties.billing_weights.description = "TRESBillingWeights - Billing weights of each tracked TRES type that will be used in calculating the usage of a job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_partition_info"].properties.tres.properties.configured.description = "TRES - Number of each applicable TRES type available in this partition";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Removed</td>
@@ -4084,62 +4340,118 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.factor.description = "LimitFactor (64 bit floating point number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.factor.description = "LimitFactor - A float that is factored into an association's [Grp|Max]TRES limits (64 bit floating point number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.accruing.properties.per.properties.account.description = "MaxJobsAccruePerAccount (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.grace_time.description = "GraceTime - Preemption grace time in seconds to be extended to a job which has been selected for preemption";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.accruing.properties.per.properties.user.description = "MaxJobsAccruePerUser (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.accruing.properties.per.properties.account.description = "MaxJobsAccruePerAccount - Maximum number of pending jobs an account (or subacct) can have accruing age priority (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.active_jobs.properties.accruing.description = "GrpJobsAccrue (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.accruing.properties.per.properties.user.description = "MaxJobsAccruePerUser - Maximum number of pending jobs a user can have accruing age priority (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.active_jobs.properties.count.description = "GrpJobs (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.active_jobs.properties.accruing.description = "GrpJobsAccrue - Maximum number of pending jobs able to accrue age priority (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.jobs.properties.active_jobs.properties.per.properties.account.description = "MaxJobsPerAccount (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.active_jobs.properties.count.description = "GrpJobs - Maximum number of running jobs (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.jobs.properties.active_jobs.properties.per.properties.user.description = "MaxJobsPerUser (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.jobs.properties.active_jobs.properties.per.properties.account.description = "MaxJobsPerAccount - Maximum number of running jobs per account (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.jobs.properties.count.description = "GrpSubmitJobs (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.jobs.properties.active_jobs.properties.per.properties.user.description = "MaxJobsPerUser - Maximum number of running jobs per user (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.jobs.properties.per.properties.account.description = "MaxSubmitJobsPerAccount (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.jobs.properties.count.description = "GrpSubmitJobs - Maximum number of jobs in a pending or running state at any time (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.jobs.properties.per.properties.user.description = "MaxSubmitJobsPerUser (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.jobs.properties.per.properties.account.description = "MaxSubmitJobsPerAccount - Maximum number of jobs in a pending or running state per account (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.wall_clock.properties.per.properties.job.description = "MaxWallDurationPerJob (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.jobs.properties.per.properties.user.description = "MaxSubmitJobsPerUser - Maximum number of jobs in a pending or running state per user (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.wall_clock.properties.per.properties.qos.description = "GrpWall (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.tres.properties.minutes.properties.per.properties.account.description = "MaxTRESRunMinsPerAccount - Maximum number of TRES minutes each account can use";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.min.properties.priority_threshold.description = "MinPrioThreshold (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.tres.properties.minutes.properties.per.properties.job.description = "MaxTRESMinsPerJob - Maximum number of TRES minutes each job can use";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.preempt.properties.exempt_time.description = "PreemptExemptTime (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.tres.properties.minutes.properties.per.properties.qos.description = "GrpTRESRunMins - Maximum number of TRES minutes able to be allocated by running jobs";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.tres.properties.minutes.properties.per.properties.user.description = "MaxTRESRunMinsPerUser - Maximum number of TRES minutes each user can use";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.tres.properties.minutes.properties.total.description = "GrpTRESMins - Maximum number of TRES minutes that can possibly be used by past, present, and future jobs";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.tres.properties.per.properties.account.description = "MaxTRESPerAccount - Maximum number of TRES each account can use";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.tres.properties.per.properties.job.description = "MaxTRESPerJob - Maximum number of TRES each job can use";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.tres.properties.per.properties.node.description = "MaxTRESPerNode - Maximum number of TRES each node in a job allocation can use";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.tres.properties.per.properties.user.description = "MaxTRESPerUser - Maximum number of TRES each user can use";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.tres.properties.total.description = "GrpTRES - Maximum number of TRES able to be allocated by running jobs";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.wall_clock.properties.per.properties.job.description = "MaxWallDurationPerJob - Maximum wall clock time in minutes each job can use (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.max.properties.wall_clock.properties.per.properties.qos.description = "GrpWall - Maximum wall clock time in minutes able to be allocated by running jobs (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.min.properties.priority_threshold.description = "MinPrioThreshold - Minimum priority required to reserve resources when scheduling (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.limits.properties.min.properties.tres.properties.per.properties.job.description = "MinTRESPerJob - Minimum number of TRES each job running under this QOS must request";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.preempt.properties.exempt_time.description = "PreemptExemptTime - Specifies a minimum run time for jobs before they are considered for preemption (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.preempt.properties.mode.$ref = "#/components/schemas/v0.0.43_qos_preempt_modes";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.preempt.properties.mode.description = "PreemptMode - Mechanism used to preempt jobs or enable gang scheduling";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.preempt.properties.mode.items = {};</td>
 </tr>
 <tr class="trchange">
@@ -4176,15 +4488,15 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.priority.description = "Priority (32 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.priority.description = "Priority - QOS priority factor (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.usage_factor.description = "UsageFactor (64 bit floating point number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.usage_factor.description = "UsageFactor - A float that is factored into a job's TRES usage (64 bit floating point number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.usage_threshold.description = "UsageThreshold (64 bit floating point number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_qos"].properties.usage_threshold.description = "UsageThreshold - A float representing the lowest fairshare of an association allowed to run a job (64 bit floating point number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Removed</td>
@@ -4544,7 +4856,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.43_reservation_desc_msg"].properties.end_time.description = "EndTime (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_desc_msg"].properties.end_time.description = "EndTime (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -4844,7 +5156,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.43_reservation_desc_msg"].properties.start_time.description = "StartTime (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_desc_msg"].properties.start_time.description = "StartTime (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -4896,7 +5208,23 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.end_time.description = "EndTime (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.accounts.description = "Comma-separated list of permitted accounts";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.burst_buffer.description = "BurstBuffer - Burst buffer resources reserved";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.core_count.description = "CoreCnt - Number of cores reserved";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.end_time.description = "EndTime (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.features.description = "Features - Expression describing the reservation's required node features";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -5060,11 +5388,47 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.groups.description = "Groups - Comma-separated list of permitted groups";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.licenses.description = "Licenses - Comma-separated list of licenses reserved";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.max_start_delay.description = "MaxStartDelay - Maximum time an eligible job not requesting this reservation can delay a job requesting it in seconds";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.name.description = "ReservationName - Name of the reservation";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.node_count.description = "NodeCnt - Number of nodes reserved";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.node_list.description = "Nodes - Comma-separated list of node names and/or node ranges reserved";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.partition.description = "PartitionName - Partition used to reserve nodes from";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.purge_completed.properties.time.description = "If PURGE_COMP flag is set, the number of seconds this reservation will sit idle until it is revoked (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.start_time.description = "StartTime (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.start_time.description = "StartTime (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.tres.description = "Comma-separated list of required TRES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_reservation_info"].properties.users.description = "Comma-separated list of permitted users";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -5093,6 +5457,18 @@
 <tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.43_reservation_mod_req"].type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_rollup_stats"].properties.daily.properties.last_run.description = "Last time daily rollup ran (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_rollup_stats"].properties.hourly.properties.last_run.description = "Last time hourly rollup ran (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_rollup_stats"].properties.monthly.properties.last_run.description = "Last time monthly rollup ran (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -5152,11 +5528,11 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_stats_msg"].properties.bf_when_last_cycle.description = "When the last backfill scheduling cycle happened (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_stats_msg"].properties.bf_when_last_cycle.description = "When the last backfill scheduling cycle happened (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_stats_msg"].properties.job_states_ts.description = "When the job state counts were gathered (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_stats_msg"].properties.job_states_ts.description = "When the job state counts were gathered (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -5168,11 +5544,11 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_stats_msg"].properties.req_time.description = "When the request was made (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_stats_msg"].properties.req_time.description = "When the request was made (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_stats_msg"].properties.req_time_start.description = "When the data in the report started (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_stats_msg"].properties.req_time_start.description = "When the data in the report started (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -5217,6 +5593,10 @@
 <tr class="trchange">
 	<td class="tdfield">Removed</td>
 	<td class="tdchange">.components.schemas["v0.0.43_stats_msg_rpcs_queue"].items.description = "Pending RPCs";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_stats_rec"].properties.time_start.description = "When data collection started (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'))";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -5436,7 +5816,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_step"].properties.time.properties.end.description = "End time (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_step"].properties.time.properties.end.description = "End time (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -5452,7 +5832,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.components.schemas["v0.0.43_step"].properties.time.properties.start.description = "Time execution began (UNIX timestamp) (64 bit integer number with flags)";</td>
+	<td class="tdchange">.components.schemas["v0.0.43_step"].properties.time.properties.start.description = "Time execution began (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]'); may also be infinite or unset) (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
@@ -6072,54 +6452,6 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters = [];</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters[0] = {};</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters[0].allowEmptyValue = false;</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters[0].allowReserved = false;</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters[0].description = "Reservation name";</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters[0].explode = false;</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters[0].name = "reservation_name";</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters[0].required = true;</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters[0].schema = {};</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters[0].schema.type = "string";</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters[0].style = "simple";</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.parameters[0]["in"] = "path";</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
 	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"].post.requestBody = {};</td>
 </tr>
 <tr class="trchange">
@@ -6208,123 +6540,123 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].operationId = "slurm_v0043_delete_reservation";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].operationId = "slurm_v0043_delete_reservation";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters = [];</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters = [];</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters[0] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters[0] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters[0].allowEmptyValue = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters[0].allowEmptyValue = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters[0].allowReserved = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters[0].allowReserved = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters[0].description = "Reservation name";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters[0].description = "Reservation name";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters[0].explode = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters[0].explode = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters[0].name = "reservation_name";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters[0].name = "reservation_name";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters[0].required = true;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters[0].required = true;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters[0].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters[0].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters[0].schema.type = "string";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters[0].schema.type = "string";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters[0].style = "simple";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters[0].style = "simple";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].parameters[0]["in"] = "path";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].parameters[0]["in"] = "path";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["200"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["200"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["200"].content = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["200"].content = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["200"].content["application/json"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["200"].content["application/json"].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.43_openapi_resp";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.43_openapi_resp";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["200"].description = "reservation delete request result";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["200"].description = "reservation delete request result";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["default"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["default"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["default"].content = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["default"].content = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["default"].content["application/json"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["default"].content["application/json"].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.43_openapi_resp";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.43_openapi_resp";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].responses["default"].description = "reservation delete request result";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].responses["default"].description = "reservation delete request result";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].summary = "delete a reservation";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].summary = "delete a reservation";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].tags = [];</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].tags = [];</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.43/reservation"]["delete"].tags[0] = "slurm";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.43/reservation/{reservation_name}"]["delete"].tags[0] = "slurm";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -6688,127 +7020,123 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].operationId = "slurm_v0042_delete_reservation";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].operationId = "slurm_v0042_delete_reservation";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters = [];</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters = [];</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters[0] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters[0] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters[0].allowEmptyValue = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters[0].allowEmptyValue = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters[0].allowReserved = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters[0].allowReserved = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters[0].description = "Reservation name";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters[0].description = "Reservation name";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters[0].explode = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters[0].explode = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters[0].name = "reservation_name";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters[0].name = "reservation_name";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters[0].required = true;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters[0].required = true;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters[0].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters[0].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters[0].schema.type = "string";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters[0].schema.type = "string";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters[0].style = "simple";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters[0].style = "simple";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].parameters[0]["in"] = "path";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].parameters[0]["in"] = "path";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["200"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["200"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["200"].content = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["200"].content = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["200"].content["application/json"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["200"].content["application/json"].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.42_openapi_resp";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.42_openapi_resp";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["200"].description = "reservation delete request result";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["200"].description = "reservation delete request result";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["default"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["default"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["default"].content = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["default"].content = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["default"].content["application/json"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["default"].content["application/json"].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.42_openapi_resp";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.42_openapi_resp";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].responses["default"].description = "reservation delete request result";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].responses["default"].description = "reservation delete request result";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].summary = "delete a reservation";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].summary = "delete a reservation";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].tags = [];</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].tags = [];</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.42/reservation"]["delete"].tags[0] = "slurm";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.42/reservation/{reservation_name}"]["delete"].tags[0] = "slurm";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Removed</td>
@@ -7032,127 +7360,123 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].operationId = "slurm_v0041_delete_reservation";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].operationId = "slurm_v0041_delete_reservation";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters = [];</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters = [];</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters[0] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters[0] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters[0].allowEmptyValue = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters[0].allowEmptyValue = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters[0].allowReserved = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters[0].allowReserved = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters[0].description = "Reservation name";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters[0].description = "Reservation name";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters[0].explode = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters[0].explode = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters[0].name = "reservation_name";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters[0].name = "reservation_name";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters[0].required = true;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters[0].required = true;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters[0].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters[0].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters[0].schema.type = "string";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters[0].schema.type = "string";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters[0].style = "simple";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters[0].style = "simple";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].parameters[0]["in"] = "path";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].parameters[0]["in"] = "path";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["200"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["200"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["200"].content = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["200"].content = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["200"].content["application/json"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["200"].content["application/json"].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.41_openapi_resp";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.41_openapi_resp";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["200"].description = "reservation delete request result";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["200"].description = "reservation delete request result";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["default"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["default"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["default"].content = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["default"].content = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["default"].content["application/json"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["default"].content["application/json"].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.41_openapi_resp";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.41_openapi_resp";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].responses["default"].description = "reservation delete request result";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].responses["default"].description = "reservation delete request result";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].summary = "delete a reservation";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].summary = "delete a reservation";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].tags = [];</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].tags = [];</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.41/reservation"]["delete"].tags[0] = "slurm";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/reservation/{reservation_name}"]["delete"].tags[0] = "slurm";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Removed</td>
@@ -7368,131 +7692,127 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Replaced</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].operationId = "slurm_v0040_delete_reservation";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].operationId = "slurm_v0040_delete_reservation";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters = [];</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters = [];</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0].allowEmptyValue = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0].allowEmptyValue = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0].allowReserved = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0].allowReserved = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0].deprecated = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0].deprecated = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0].description = "Reservation name";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0].description = "Reservation name";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0].explode = false;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0].explode = false;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0].name = "reservation_name";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0].name = "reservation_name";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0].required = true;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0].required = true;</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0].schema.type = "string";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0].schema.type = "string";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0].style = "simple";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0].style = "simple";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].parameters[0]["in"] = "path";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].parameters[0]["in"] = "path";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["200"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["200"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["200"].content = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["200"].content = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["200"].content["application/json"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["200"].content["application/json"].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.40_openapi_resp";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.40_openapi_resp";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["200"].description = "reservation delete request result";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["200"].description = "reservation delete request result";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["default"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["default"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["default"].content = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["default"].content = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"] = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["default"].content["application/json"] = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"].schema = {};</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["default"].content["application/json"].schema = {};</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.40_openapi_resp";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.40_openapi_resp";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].responses["default"].description = "reservation delete request result";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].responses["default"].description = "reservation delete request result";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].summary = "delete a reservation";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].summary = "delete a reservation";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].tags = [];</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].tags = [];</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.paths["/slurm/v0.0.40/reservation"]["delete"].tags[0] = "slurm";</td>
+	<td class="tdchange">.paths["/slurm/v0.0.40/reservation/{reservation_name}"]["delete"].tags[0] = "slurm";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Removed</td>

@@ -24,7 +24,7 @@
   <li><a href="#slurmV0043DeleteJob"><code><span class="http-method">delete</span> /slurm/v0.0.43/job/{job_id}</code></a></li>
   <li><a href="#slurmV0043DeleteJobs"><code><span class="http-method">delete</span> /slurm/v0.0.43/jobs/</code></a></li>
   <li><a href="#slurmV0043DeleteNode"><code><span class="http-method">delete</span> /slurm/v0.0.43/node/{node_name}</code></a></li>
-  <li><a href="#slurmV0043DeleteReservation"><code><span class="http-method">delete</span> /slurm/v0.0.43/reservation</code></a></li>
+  <li><a href="#slurmV0043DeleteReservation"><code><span class="http-method">delete</span> /slurm/v0.0.43/reservation/{reservation_name}</code></a></li>
   <li><a href="#slurmV0043GetDiag"><code><span class="http-method">get</span> /slurm/v0.0.43/diag/</code></a></li>
   <li><a href="#slurmV0043GetJob"><code><span class="http-method">get</span> /slurm/v0.0.43/job/{job_id}</code></a></li>
   <li><a href="#slurmV0043GetJobs"><code><span class="http-method">get</span> /slurm/v0.0.43/jobs/</code></a></li>
@@ -435,7 +435,7 @@
   <div class="method"><a name="slurmV0043DeleteReservation">
     </a><div class="method-path"><a name="slurmV0043DeleteReservation">
     </a><a class="up" href="#__Methods">Up</a>
-    <pre class="delete"><code class="huge"><span class="http-method">delete</span> /slurm/v0.0.43/reservation</code></pre></div>
+    <pre class="delete"><code class="huge"><span class="http-method">delete</span> /slurm/v0.0.43/reservation/{reservation_name}</code></pre></div>
     <div class="method-summary">delete a reservation (<span class="nickname">slurmV0043DeleteReservation</span>)</div>
     <div class="method-notes"></div>
 
@@ -6293,12 +6293,6 @@
     <div class="method-summary">create or update a reservation (<span class="nickname">slurmV0043PostReservation</span>)</div>
     <div class="method-notes"></div>
 
-    <h3 class="field-label">Path parameters</h3>
-    <div class="field-items">
-      <div class="param">reservation_name (required)</div>
-
-      <div class="param-desc"><span class="param-type">Path Parameter</span> — Reservation name default: null </div>
-    </div>  <!-- field-items -->
 
     <h3 class="field-label">Consumes</h3>
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
@@ -17050,7 +17044,7 @@
       <div class="param">allocated (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_accounting_allocated">v0_0_43_accounting_allocated</a></span>  </div>
 <div class="param">id (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Association ID or Workload characterization key ID format: int32</div>
 <div class="param">id_alt (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Alternate ID (not currently used) format: int32</div>
-<div class="param">start (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> When the record was started (UNIX timestamp) format: int64</div>
+<div class="param">start (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> When the record was started (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
 <div class="param">TRES (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_tres">v0.0.43_tres</a></span>  </div>
     </div>  <!-- field-items -->
   </div>
@@ -17072,7 +17066,7 @@
 <div class="param">consumed_energy (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> The energy consumed between the last time the node was registered by the slurmd daemon and the last node energy accounting sample, in joules format: int64</div>
 <div class="param">current_watts (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
 <div class="param">previous_consumed_energy (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Previous value of consumed_energy format: int64</div>
-<div class="param">last_collected (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Time when energy data was last retrieved (UNIX timestamp) format: int64</div>
+<div class="param">last_collected (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Time when energy data was last retrieved (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -17352,15 +17346,15 @@
 <div class="param">cpu_frequency (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Requested CPU frequency range <p1>[-p2][:p3] </p1></div>
 <div class="param">cpus_per_tres (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Semicolon delimited list of TRES=# values values indicating how many CPUs should be allocated for each specified TRES (currently only used for gres/gpu) </div>
 <div class="param">crontab (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_cron_entry">v0.0.43_cron_entry</a></span>  </div>
-<div class="param">deadline (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Latest time that the job may start (UNIX timestamp) format: int64</div>
+<div class="param">deadline (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Latest time that the job may start (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
 <div class="param">delay_boot (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of seconds after job eligible start that nodes will be rebooted to satisfy feature specification format: int32</div>
 <div class="param">dependency (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Other jobs that must meet certain criteria before this job can start </div>
-<div class="param">end_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Expected end time (UNIX timestamp) format: int64</div>
+<div class="param">end_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Expected end time (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
 <div class="param">environment (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">rlimits (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_job_desc_msg_rlimits">v0_0_43_job_desc_msg_rlimits</a></span>  </div>
 <div class="param">excluded_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">extra (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Arbitrary string used for node filtering if extra constraints are enabled </div>
-<div class="param">constraints (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of features that are required </div>
+<div class="param">constraints (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of features that are required </div>
 <div class="param">group_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Group ID of the user that owns the job </div>
 <div class="param">hetjob_group (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Unique sequence number applied to this component of the heterogeneous job format: int32</div>
 <div class="param">immediate (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> If true, exit if resources are not available within the time period specified </div>
@@ -17390,7 +17384,7 @@
 <div class="param">partition (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Partition assigned to the job </div>
 <div class="param">distribution_plane_size (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint16_no_val_struct">v0.0.43_uint16_no_val_struct</a></span>  </div>
 <div class="param">power_flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#AnyType">array[oas_any_type_not_mapped]</a></span>  </div>
-<div class="param">prefer (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of features that are preferred but not required </div>
+<div class="param">prefer (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of features that are preferred but not required </div>
 <div class="param">hold (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Hold (true) or release (false) job (Job held) </div>
 <div class="param">priority (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
 <div class="param">profile (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Profile used by the acct_gather_profile plugin </div>
@@ -17412,10 +17406,10 @@
 <div class="param">time_minimum (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
 <div class="param">tres_bind (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Task to TRES binding directives </div>
 <div class="param">tres_freq (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> TRES frequency directives </div>
-<div class="param">tres_per_job (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of TRES=# values to be allocated for every job </div>
-<div class="param">tres_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of TRES=# values to be allocated for every node </div>
-<div class="param">tres_per_socket (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of TRES=# values to be allocated for every socket </div>
-<div class="param">tres_per_task (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of TRES=# values to be allocated for every task </div>
+<div class="param">tres_per_job (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of TRES=# values to be allocated for every job </div>
+<div class="param">tres_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of TRES=# values to be allocated for every node </div>
+<div class="param">tres_per_socket (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of TRES=# values to be allocated for every socket </div>
+<div class="param">tres_per_task (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of TRES=# values to be allocated for every task </div>
 <div class="param">user_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> User ID that owns the job </div>
 <div class="param">wait_all_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> If true, wait to start until after all nodes have booted </div>
 <div class="param">kill_warning_flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Flags related to job signals </div>
@@ -17503,11 +17497,11 @@
 <div class="param">derived_exit_code (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_process_exit_code_verbose">v0.0.43_process_exit_code_verbose</a></span>  </div>
 <div class="param">eligible_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint64_no_val_struct">v0.0.43_uint64_no_val_struct</a></span>  </div>
 <div class="param">end_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint64_no_val_struct">v0.0.43_uint64_no_val_struct</a></span>  </div>
-<div class="param">excluded_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of nodes that may not be used </div>
+<div class="param">excluded_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of nodes that may not be used </div>
 <div class="param">exit_code (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_process_exit_code_verbose">v0.0.43_process_exit_code_verbose</a></span>  </div>
 <div class="param">extra (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Arbitrary string used for node filtering if extra constraints are enabled </div>
 <div class="param">failed_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name of node that caused job failure </div>
-<div class="param">features (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of features that are required </div>
+<div class="param">features (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of features that are required </div>
 <div class="param">federation_origin (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Origin cluster's name (when using federation) </div>
 <div class="param">federation_siblings_active (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Active sibling job names </div>
 <div class="param">federation_siblings_viable (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Viable sibling job names </div>
@@ -17564,7 +17558,7 @@
 
 <div class="param">qos (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Quality of Service assigned to the job, if pending the QOS requested </div>
 <div class="param">reboot (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Node reboot requested before start </div>
-<div class="param">required_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of required nodes </div>
+<div class="param">required_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of required nodes </div>
 <div class="param">required_switches (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Maximum number of switches format: int32</div>
 <div class="param">requeue (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Determines whether the job may be requeued </div>
 <div class="param">resize_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint64_no_val_struct">v0.0.43_uint64_no_val_struct</a></span>  </div>
@@ -17595,10 +17589,10 @@
 <div class="param">threads_per_core (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint16_no_val_struct">v0.0.43_uint16_no_val_struct</a></span>  </div>
 <div class="param">tres_bind (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Task to TRES binding directives </div>
 <div class="param">tres_freq (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> TRES frequency directives </div>
-<div class="param">tres_per_job (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of TRES=# values to be allocated per job </div>
-<div class="param">tres_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of TRES=# values to be allocated per node </div>
-<div class="param">tres_per_socket (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of TRES=# values to be allocated per socket </div>
-<div class="param">tres_per_task (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of TRES=# values to be allocated per task </div>
+<div class="param">tres_per_job (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of TRES=# values to be allocated per job </div>
+<div class="param">tres_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of TRES=# values to be allocated per node </div>
+<div class="param">tres_per_socket (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of TRES=# values to be allocated per socket </div>
+<div class="param">tres_per_task (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of TRES=# values to be allocated per task </div>
 <div class="param">tres_req_str (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> TRES requested by the job </div>
 <div class="param">tres_alloc_str (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> TRES used by the job </div>
 <div class="param">user_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> User ID that owns the job format: int32</div>
@@ -17703,7 +17697,7 @@
 <div class="param">Reserved (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of licenses reserved format: int32</div>
 <div class="param">LastConsumed (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Last known number of licenses that were consumed in the license manager (Remote Only) format: int32</div>
 <div class="param">LastDeficit (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of "missing licenses" from the cluster's perspective format: int32</div>
-<div class="param">LastUpdate (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> When the license information was last updated (UNIX Timestamp) format: int64</div>
+<div class="param">LastUpdate (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> When the license information was last updated (UNIX Timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -18199,7 +18193,7 @@
 <div class="param">accounts (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_accounts">v0_0_43_partition_info_accounts</a></span>  </div>
 <div class="param">groups (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_groups">v0_0_43_partition_info_groups</a></span>  </div>
 <div class="param">qos (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_qos">v0_0_43_partition_info_qos</a></span>  </div>
-<div class="param">alternate (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Alternate </div>
+<div class="param">alternate (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Alternate - Partition name of alternate partition to be used if the state of this partition is DRAIN or INACTIVE </div>
 <div class="param">tres (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_tres">v0_0_43_partition_info_tres</a></span>  </div>
 <div class="param">cluster (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Cluster name </div>
 <div class="param">select_type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Scheduler consumable resource selection type </div>
@@ -18207,14 +18201,14 @@
 
 <div class="param">cpus (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_cpus">v0_0_43_partition_info_cpus</a></span>  </div>
 <div class="param">defaults (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_defaults">v0_0_43_partition_info_defaults</a></span>  </div>
-<div class="param">grace_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> GraceTime format: int32</div>
+<div class="param">grace_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> GraceTime - Grace time in seconds to be extended to a job which has been selected for preemption format: int32</div>
 <div class="param">maximums (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_maximums">v0_0_43_partition_info_maximums</a></span>  </div>
 <div class="param">minimums (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_minimums">v0_0_43_partition_info_minimums</a></span>  </div>
-<div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> PartitionName </div>
-<div class="param">node_sets (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> NodeSets </div>
+<div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> PartitionName - Name by which the partition may be referenced </div>
+<div class="param">node_sets (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> NodeSets - Comma-separated list of nodesets which are associated with this partition </div>
 <div class="param">priority (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_priority">v0_0_43_partition_info_priority</a></span>  </div>
 <div class="param">timeouts (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_timeouts">v0_0_43_partition_info_timeouts</a></span>  </div>
-<div class="param">topology (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name of the topology, defined in topology.yaml, used by jobs in this partition </div>
+<div class="param">topology (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Topology - Name of the topology, defined in topology.yaml, used by jobs in this partition </div>
 <div class="param">partition (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_partition">v0_0_43_partition_info_partition</a></span>  </div>
 <div class="param">suspend_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
     </div>  <!-- field-items -->
@@ -18286,27 +18280,27 @@
     <h3><a name="v0.0.43_reservation_info"><code>v0.0.43_reservation_info</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">accounts (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of permitted accounts </div>
-<div class="param">burst_buffer (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> BurstBuffer </div>
-<div class="param">core_count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> CoreCnt format: int32</div>
+      <div class="param">accounts (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of permitted accounts </div>
+<div class="param">burst_buffer (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> BurstBuffer - Burst buffer resources reserved </div>
+<div class="param">core_count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> CoreCnt - Number of cores reserved format: int32</div>
 <div class="param">core_specializations (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_reservation_core_spec">array[v0.0.43_reservation_core_spec]</a></span>  </div>
 <div class="param">end_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint64_no_val_struct">v0.0.43_uint64_no_val_struct</a></span>  </div>
-<div class="param">features (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Features </div>
+<div class="param">features (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Features - Expression describing the reservation's required node features </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Flags associated with this reservation </div>
         <div class="param-enum-header">Enum:</div>
 
-<div class="param">groups (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Groups </div>
-<div class="param">licenses (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Licenses </div>
-<div class="param">max_start_delay (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> MaxStartDelay in seconds format: int32</div>
-<div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> ReservationName </div>
-<div class="param">node_count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> NodeCnt format: int32</div>
-<div class="param">node_list (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Nodes </div>
-<div class="param">partition (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> PartitionName </div>
+<div class="param">groups (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Groups - Comma-separated list of permitted groups </div>
+<div class="param">licenses (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Licenses - Comma-separated list of licenses reserved </div>
+<div class="param">max_start_delay (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> MaxStartDelay - Maximum time an eligible job not requesting this reservation can delay a job requesting it in seconds format: int32</div>
+<div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> ReservationName - Name of the reservation </div>
+<div class="param">node_count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> NodeCnt - Number of nodes reserved format: int32</div>
+<div class="param">node_list (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Nodes - Comma-separated list of node names and/or node ranges reserved </div>
+<div class="param">partition (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> PartitionName - Partition used to reserve nodes from </div>
 <div class="param">purge_completed (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_reservation_info_purge_completed">v0_0_43_reservation_info_purge_completed</a></span>  </div>
 <div class="param">start_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint64_no_val_struct">v0.0.43_uint64_no_val_struct</a></span>  </div>
 <div class="param">watts (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
-<div class="param">tres (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of required TRES </div>
-<div class="param">users (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of permitted users </div>
+<div class="param">tres (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of required TRES </div>
+<div class="param">users (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of permitted users </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -18479,7 +18473,7 @@
     <h3><a name="v0.0.43_stats_rec"><code>v0.0.43_stats_rec</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">time_start (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> When data collection started (UNIX timestamp) format: int64</div>
+      <div class="param">time_start (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> When data collection started (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
 <div class="param">rollups (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_rollup_stats">v0.0.43_rollup_stats</a></span>  </div>
 <div class="param">RPCs (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_stats_rpc">array[v0.0.43_stats_rpc]</a></span>  </div>
 <div class="param">users (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_stats_user">array[v0.0.43_stats_user]</a></span>  </div>
@@ -18790,8 +18784,8 @@
     <h3><a name="v0_0_43_instance_time"><code>v0_0_43_instance_time</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">time_end (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> When the instance will end (UNIX timestamp) format: int64</div>
-<div class="param">time_start (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> When the instance will start (UNIX timestamp) format: int64</div>
+      <div class="param">time_end (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> When the instance will end (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
+<div class="param">time_start (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> When the instance will start (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -18916,7 +18910,7 @@
     <div class="field-items">
       <div class="param">id (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Unique identifier of requested reservation format: int32</div>
 <div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name of reservation to use </div>
-<div class="param">requested (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of requested reservation names </div>
+<div class="param">requested (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma-separated list of requested reservation names </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -18934,11 +18928,11 @@
     <div class="model-description"></div>
     <div class="field-items">
       <div class="param">elapsed (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Elapsed time in seconds format: int32</div>
-<div class="param">eligible (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Time when the job became eligible to run (UNIX timestamp) format: int64</div>
-<div class="param">end (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> End time (UNIX timestamp) format: int64</div>
+<div class="param">eligible (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Time when the job became eligible to run (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
+<div class="param">end (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> End time (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
 <div class="param">planned (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint64_no_val_struct">v0.0.43_uint64_no_val_struct</a></span>  </div>
-<div class="param">start (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Time execution began (UNIX timestamp) format: int64</div>
-<div class="param">submission (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Time when the job was submitted (UNIX timestamp) format: int64</div>
+<div class="param">start (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Time execution began (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
+<div class="param">submission (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Time when the job was submitted (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
 <div class="param">suspended (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Total time in suspended state in seconds format: int32</div>
 <div class="param">system (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_job_time_system">v0_0_43_job_time_system</a></span>  </div>
 <div class="param">limit (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
@@ -19035,34 +19029,34 @@
     <h3><a name="v0_0_43_partition_info_accounts"><code>v0_0_43_partition_info_accounts</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">allowed (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> AllowAccounts </div>
-<div class="param">deny (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> DenyAccounts </div>
+      <div class="param">allowed (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> AllowAccounts - Comma-separated list of accounts which may execute jobs in the partition </div>
+<div class="param">deny (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> DenyAccounts - Comma-separated list of accounts which may not execute jobs in the partition </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
     <h3><a name="v0_0_43_partition_info_cpus"><code>v0_0_43_partition_info_cpus</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">task_binding (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> CpuBind format: int32</div>
-<div class="param">total (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> TotalCPUs format: int32</div>
+      <div class="param">task_binding (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> CpuBind - Default method controlling how tasks are bound to allocated resources format: int32</div>
+<div class="param">total (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> TotalCPUs - Number of CPUs available in this partition format: int32</div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
     <h3><a name="v0_0_43_partition_info_defaults"><code>v0_0_43_partition_info_defaults</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">memory_per_cpu (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> DefMemPerCPU or DefMemPerNode format: int64</div>
+      <div class="param">memory_per_cpu (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Raw value for DefMemPerCPU or DefMemPerNode format: int64</div>
 <div class="param">partition_memory_per_cpu (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint64_no_val_struct">v0.0.43_uint64_no_val_struct</a></span>  </div>
 <div class="param">partition_memory_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint64_no_val_struct">v0.0.43_uint64_no_val_struct</a></span>  </div>
 <div class="param">time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
-<div class="param">job (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> JobDefaults </div>
+<div class="param">job (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> JobDefaults - Comma-separated list of job default values (this field is only used to set new defaults) </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
     <h3><a name="v0_0_43_partition_info_groups"><code>v0_0_43_partition_info_groups</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">allowed (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> AllowGroups </div>
+      <div class="param">allowed (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> AllowGroups - Comma-separated list of group names which may execute jobs in this partition </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -19071,11 +19065,11 @@
     <div class="field-items">
       <div class="param">cpus_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
 <div class="param">cpus_per_socket (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
-<div class="param">memory_per_cpu (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> MaxMemPerCPU or MaxMemPerNode format: int64</div>
+<div class="param">memory_per_cpu (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Raw value for MaxMemPerCPU or MaxMemPerNode format: int64</div>
 <div class="param">partition_memory_per_cpu (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint64_no_val_struct">v0.0.43_uint64_no_val_struct</a></span>  </div>
 <div class="param">partition_memory_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint64_no_val_struct">v0.0.43_uint64_no_val_struct</a></span>  </div>
 <div class="param">nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
-<div class="param">shares (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> OverSubscribe format: int32</div>
+<div class="param">shares (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> OverSubscribe - Controls the ability of the partition to execute more than one job at a time on each resource format: int32</div>
 <div class="param">oversubscribe (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_partition_info_maximums_oversubscribe">v0_0_43_partition_info_maximums_oversubscribe</a></span>  </div>
 <div class="param">time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
 <div class="param">over_time_limit (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint16_no_val_struct">v0.0.43_uint16_no_val_struct</a></span>  </div>
@@ -19095,16 +19089,16 @@
     <h3><a name="v0_0_43_partition_info_minimums"><code>v0_0_43_partition_info_minimums</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> MinNodes format: int32</div>
+      <div class="param">nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> MinNodes - Minimum count of nodes which may be allocated to any single job format: int32</div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
     <h3><a name="v0_0_43_partition_info_nodes"><code>v0_0_43_partition_info_nodes</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">allowed_allocation (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> AllocNodes </div>
-<div class="param">configured (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Nodes </div>
-<div class="param">total (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> TotalNodes format: int32</div>
+      <div class="param">allowed_allocation (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> AllocNodes - Comma-separated list of nodes from which users can submit jobs in the partition </div>
+<div class="param">configured (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Nodes - Comma-separated list of nodes which are associated with this partition </div>
+<div class="param">total (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> TotalNodes - Number of nodes available in this partition format: int32</div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -19120,17 +19114,17 @@
     <h3><a name="v0_0_43_partition_info_priority"><code>v0_0_43_partition_info_priority</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">job_factor (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> PriorityJobFactor format: int32</div>
-<div class="param">tier (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> PriorityTier format: int32</div>
+      <div class="param">job_factor (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> PriorityJobFactor - Partition factor used by priority/multifactor plugin in calculating job priority format: int32</div>
+<div class="param">tier (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> PriorityTier - Controls the order in which the scheduler evaluates jobs from different partitions format: int32</div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
     <h3><a name="v0_0_43_partition_info_qos"><code>v0_0_43_partition_info_qos</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">allowed (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> AllowQOS </div>
-<div class="param">deny (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> DenyQOS </div>
-<div class="param">assigned (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> QOS </div>
+      <div class="param">allowed (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> AllowQOS - Comma-separated list of Qos which may execute jobs in the partition </div>
+<div class="param">deny (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> DenyQOS - Comma-separated list of Qos which may not execute jobs in the partition </div>
+<div class="param">assigned (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> QOS - QOS name containing limits that will apply to all jobs in this partition </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -19145,8 +19139,8 @@
     <h3><a name="v0_0_43_partition_info_tres"><code>v0_0_43_partition_info_tres</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">billing_weights (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> TRESBillingWeights </div>
-<div class="param">configured (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> TRES </div>
+      <div class="param">billing_weights (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> TRESBillingWeights - Billing weights of each tracked TRES type that will be used in calculating the usage of a job </div>
+<div class="param">configured (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> TRES - Number of each applicable TRES type available in this partition </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -19161,7 +19155,7 @@
     <h3><a name="v0_0_43_qos_limits"><code>v0_0_43_qos_limits</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">grace_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> GraceTime format: int32</div>
+      <div class="param">grace_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> GraceTime - Preemption grace time in seconds to be extended to a job which has been selected for preemption format: int32</div>
 <div class="param">max (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_qos_limits_max">v0_0_43_qos_limits_max</a></span>  </div>
 <div class="param">factor (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_float64_no_val_struct">v0.0.43_float64_no_val_struct</a></span>  </div>
 <div class="param">min (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_qos_limits_min">v0_0_43_qos_limits_min</a></span>  </div>
@@ -19289,7 +19283,7 @@
     <div class="model-description"></div>
     <div class="field-items">
       <div class="param">list (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
-<div class="param">mode (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> PreemptMode </div>
+<div class="param">mode (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> PreemptMode - Mechanism used to preempt jobs or enable gang scheduling </div>
         <div class="param-enum-header">Enum:</div>
 
 <div class="param">exempt_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.43_uint32_no_val_struct">v0.0.43_uint32_no_val_struct</a></span>  </div>
@@ -19307,7 +19301,7 @@
     <div class="model-description"></div>
     <div class="field-items">
       <div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of daily rollups since last_run format: int32</div>
-<div class="param">last_run (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Last time daily rollup ran (UNIX timestamp) format: int64</div>
+<div class="param">last_run (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Last time daily rollup ran (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
 <div class="param">duration (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_rollup_stats_daily_duration">v0_0_43_rollup_stats_daily_duration</a></span>  </div>
     </div>  <!-- field-items -->
   </div>
@@ -19325,7 +19319,7 @@
     <div class="model-description"></div>
     <div class="field-items">
       <div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of hourly rollups since last_run format: int32</div>
-<div class="param">last_run (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Last time hourly rollup ran (UNIX timestamp) format: int64</div>
+<div class="param">last_run (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Last time hourly rollup ran (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
 <div class="param">duration (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_rollup_stats_hourly_duration">v0_0_43_rollup_stats_hourly_duration</a></span>  </div>
     </div>  <!-- field-items -->
   </div>
@@ -19343,7 +19337,7 @@
     <div class="model-description"></div>
     <div class="field-items">
       <div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of monthly rollups since last_run format: int32</div>
-<div class="param">last_run (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Last time monthly rollup ran (UNIX timestamp) format: int64</div>
+<div class="param">last_run (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Last time monthly rollup ran (UNIX timestamp) (UNIX timestamp or time string recognized by Slurm (e.g., '[MM/DD[/YY]-]HH:MM[:SS]')) format: int64</div>
 <div class="param">duration (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_43_rollup_stats_monthly_duration">v0_0_43_rollup_stats_monthly_duration</a></span>  </div>
     </div>  <!-- field-items -->
   </div>
