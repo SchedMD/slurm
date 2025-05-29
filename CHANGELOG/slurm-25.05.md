@@ -1,3 +1,65 @@
+## Changes in 25.05.0
+
+* Prevent slurmctld from allocating to many MPI ports to jobs using the stepmgr.
+* Prevent slurmctld from crashing due to avoiding a deadlock in the assoc_mgr. The crash was triggered if slurmctld was started before slurmdbd, a partition had either AllowQOS or DenyQOS defined, and something triggered a message to the slurmdbd (like a job running).
+* Fix case where member users are not account coordinators when the account has MembersAreCoords set and there are multiple clusters in use.
+* Remove possible race conditions when pids are orphaned in a pam_slurm_adopt ssh session and another incoming RPC is trying to add a ssh session into the extern cgroup. In general the plugin was not thread safe and the only way threads can be created and conflict is with the handle_add_extern_pid API function, that pam_slurm_adopt is using. This caused segfaults in extern slurmstepd in some specific cases.
+* Fixed issue where slurmctld could segfault in specific cases of heavy controller load and job requeues.
+* Fix backwards compatibility for RESPONSE_BUILD_INFO RPC ("scontrol show config").
+* Fix sacctmgr ping to be able to connect to newer versioned slurmdbd.
+* Add 'scontrol show topoconf' command.
+* In a TLS-enabled cluster, incoming non-TLS wrapped connections are now rejected properly instead of causing a segfault.
+* Fix x11 forwarding not working with TLS enabled.
+* Improve slurmctld performance with SlurmctldParameters=enable_job_state_cache by favoring changes to the internal cache by the scheduling threads instead of servicing clients.
+* Fix double slash in logging message in cgroup/v1.
+* Remove cpuset and memory limits of slurmd cgroup at startup or reconfigure, in cgroup/v1.
+* openapi/slurmctld - Removed unused positional parameter {reservation_name} from the following endpoint: 'POST /slurm/v0.0.43/reservation'
+* openapi/slurmctld - Add required positional parameter {reservation_name} to the following endpoint: 'DELETE /slurm/v0.0.43/reservation/{reservation_name}'
+* switch/hpe_slingshot - Improve error handling for fm_mtls_{ca,cert,key} files by verifying they can be read by the SlurmUser.
+* Prevent srun from hanging while initializing MPI/PMIx if srun is used to launch a non heterogeneous step in an heterogeneous job.
+* squeue - Add field in Output Format for scron jobs
+* Allow intermediate switches to be dynamically created on node creation and update.
+* slurmdbd: when a QOS is deleted, remove it from the preempt lists of remaining QOSes
+* Consider DefMemPerGPU when setting job requested memory
+* Prevent slurmd segfault when starting in a container with no memory or cpuset controller in cgroup/v1.
+* Do not fail when the memory or cpuset controller are not available in cgroup/v1. This restores previous behavior but still tries to reset the limits of these controllers if found.
+* slurmrestd - Don't require script to be populated for external jobs.
+* Add rpc_queue.yaml option to exempt RPCs from rate limiting.
+* slurmrestd - Add missing systemd scriptlets to slurm.spec for updating systemd presets on install/uninstall/upgrade.
+* scontrol - Add support to update job MCS label
+* There were some informational warning messages printed by default directly to the user, but they are not important enough to be shown as they affect internal crun parameters, and the user can easily be spammed with those. Hide them under SCRUN_DEBUG=debug flag.
+* slurmdbd - Avoid crash while accessing RPC stats in slurmdbd
+* Empty reservations can no longer be created with the ANY_NODES flag.
+* Allow reservations with heirarchal resources.
+* slurmctld - Avoid waiting for TLS connection blinding to start reconfigure.
+* Activate timeouts for incoming stepd_proxy connections.
+* slurmd - Enable timeouts on incoming RPC requests.
+* sackd - Enable timeouts on incoming RPC requests.
+* Delay closing sockets in eio code which fixes issues in X11 forwarding when using applications such as Emacs or Matlab.
+* Change oci.conf ContainerPath and "%m" replacement pattern to set the pattern of the per-step container spool directory. Per-task and MPI container related resources will be automatically created as child directories of this path to avoid conflicts from per-step and per-task resources. For extern steps, the per-step spool directory name has changed from "oci-job%j-%s" to "oci-job%j-extern". The default value for MountSpoolDir has changed from /var/run/slurm/ to ContainerPath. This change fixes always mounting the task spool dir to "/var/run/slurm/", while PMIx needs the step (not only the task) spool directory mounted.
+* certmgr - Allow certificate renewals to proceed based on successful mTLS authentication, rather than re-sending the certmgr token.
+* Avoid logging connection errors when trying to send to srun client commands that have already exited at job/step termination.
+* slurmctld: Avoid crash causing by race condition when job state cache is enabled with a large number of jobs.
+* Fix storing dynanmic future node's instance id and type on registration.
+* Clear dynamic future node's InstanceID and InstanceType fields when setting back to future state.
+* Fix bad shard distribution staying after invalid gres.
+* Add ability to specify INFINITE hierarchical resources.
+* Validate topology switch and block names exist.
+* Add warning about ignoring children when both 'nodes' and 'children' are set in tree topologies.
+* Make typed GRES reservations work without having to also include the non-typed GRES
+* Gres reservations now work as expected when shard is not defined as a GresType in the slurm.conf.
+* slurmrestd - Only force YAML plugin to load if SLURMRESTD_YAML environment variable is set.
+* Add documentation for tls plugin
+* Add documentation for certgen plugin
+* Add documentation for certmgr plugin
+* Use first wckey as new default only when user has none already
+* Clear user's default wckey when the wckey is being deleted
+* Disallow '*' prefixed wckey on job submission
+* Adjust scontrol show topology args to be: scontrol topology [topology_name] [unit=NAME] [node=NAME]
+* openapi/slurmctld - Prevent dumping all reservation flags when none are set when posting reservations. This affects the following slurmrestd endpoints: 'POST /slurm/v0.0.43/reservation' 'POST /slurm/v0.0.43/reservations'
+* Fix slurmd not starting when run with memcheck tool of valgrind.
+* Fix regression in srun I/O forwarding that would lead to step launch failures across more than TreeWidth nodes. (Defaults to 16.)
+
 ## Changes in 25.05.0rc1
 
 * slurmstepd - Harden the initialization of I/O file descriptors.
