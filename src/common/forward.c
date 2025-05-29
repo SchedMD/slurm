@@ -485,6 +485,8 @@ static void *_fwd_tree_thread(void *arg)
 			FREE_NULL_LIST(ret_list);
 			/* try next node */
 			if (ret_cnt <= send_msg.forward.cnt) {
+				error("%s: Abandon tree forward by %s, ret_cnt:%u forward.cnt:%u",
+				      __func__, name, ret_cnt, send_msg.forward.cnt);
 				free(name);
 				/* Abandon tree. This way if all the
 				 * nodes in the branch are down we
