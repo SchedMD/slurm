@@ -1448,6 +1448,10 @@ take precedence over the environment.
 \fBNOTE\fR: A memory size specification of zero is treated as a special case and
 grants the job access to all of the memory on each node.
 
+\fBNOTE\fR: The memory used by each slurmstepd process is included in the job's
+total memory usage. It typically consumes between 20MiB and 200MiB, though this
+can vary depending on system configuration and any loaded plugins.
+
 \fBNOTE\fR: Memory requests will not be strictly enforced unless Slurm is
 configured to use an enforcement mechanism. See \fBConstrainRAMSpace\fR in
 the \fBcgroup.conf\fR(5) man page and \fBOverMemoryKill\fR in the
