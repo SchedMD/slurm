@@ -36,9 +36,10 @@ OTHER CHANGES
   On the other hand an uncontrolled slurmstepd can terminate the job completely
   instead of only the step. In both cases, if user processes consume too much
   memory and causes OOM to act in this cgroup, it can also kill slurmstepd which
-  would impede it to do the proper cleanup of the job. This is worked around as
-  in v1 with setting oom_score_adj to -1000 to make slurmstepd unkillable. It
-  can be discussed to use a -999 instead to make it killable but more unlikely.
+  would impede it to do the proper cleanup of the job. This is worked around by
+  giving a lower score to the stepd through oom_score_adj = -999. The process
+  will still be killable in extreme situations, otherwise it could get stuck
+  forever doing page faults.
 
 HOW TO START SLURM
 ------------------
