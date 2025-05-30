@@ -9238,7 +9238,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CR_TYPE)[] = {
 	add_flag_bit(CR_PACK_NODES, "PACK_NODES"),
 	add_flag_bit(CR_CORE_DEFAULT_DIST_BLOCK, "CORE_DEFAULT_DIST_BLOCK"),
 	add_flag_bit(CR_LLN, "LLN"),
-	add_flag_bit(CR_LINEAR, "LINEAR"),
+	add_flag_removed("LINEAR", SLURM_25_05_PROTOCOL_VERSION),
 };
 
 /* Descriptions from _node_state_str() */
