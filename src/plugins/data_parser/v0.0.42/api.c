@@ -42,6 +42,7 @@
 
 #include "api.h"
 #include "events.h"
+#include "openapi.h"
 #include "parsers.h"
 #include "parsing.h"
 
@@ -311,6 +312,12 @@ extern bool data_parser_p_is_complex(args_t *args)
 {
 	xassert(args->magic == MAGIC_ARGS);
 	return is_complex_mode(args);
+}
+
+extern bool data_parser_p_is_deprecated(args_t *args)
+{
+	xassert(args->magic == MAGIC_ARGS);
+	return IS_PLUGIN_DEPRECATED;
 }
 
 extern int data_parser_p_dump_flags(args_t *args, data_t *dst)

@@ -20,7 +20,7 @@ data_parser_v0_0_41_la_SOURCES = \
 data_parser_v0_0_41_la_DEPENDENCIES =
 data_parser_v0_0_41_la_LDFLAGS = $(PLUGIN_FLAGS)
 data_parser_v0_0_41_la_LIBADD =
-data_parser_v0_0_41_la_CFLAGS = -DDATA_VERSION=v0.0.41 -DPLUGIN_ID=12003
+data_parser_v0_0_41_la_CFLAGS = -DDATA_VERSION=v0.0.41 -DPLUGIN_ID=12003 -DPLUGIN_RELEASED=SLURM_24_05_PROTOCOL_VERSION
 
 force:
 $(data_parser_v0_0_41_la_LIBADD) : force

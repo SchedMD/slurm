@@ -49,8 +49,9 @@
 #define REF_PATH OPENAPI_PATH_REL OPENAPI_SCHEMAS_PATH
 #define TYPE_PREFIX "DATA_PARSER_"
 #define KEY_PREFIX XSTRINGIFY(DATA_VERSION) "_"
-#define IS_FLAG_BIT_DEPRECATED(bit) (bit->deprecated)
-#define IS_PARSER_DEPRECATED(parser) (parser->deprecated)
+#define IS_FLAG_BIT_DEPRECATED(bit) (bit->deprecated || IS_PLUGIN_DEPRECATED)
+#define IS_PARSER_DEPRECATED(parser) \
+	(parser->deprecated || IS_PLUGIN_DEPRECATED)
 
 typedef struct {
 	int magic; /* MAGIC_SPEC_ARGS */

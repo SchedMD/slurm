@@ -38,7 +38,16 @@
 
 #include "parsers.h"
 #include "src/common/openapi.h"
+#include "src/common/slurm_protocol_common.h"
 #include "src/interfaces/data_parser.h"
+
+#if !defined(PLUGIN_RELEASED)
+#error PLUGIN_RELEASED not defined
+#elif PLUGIN_RELEASED > SLURM_MIN_PROTOCOL_VERSION
+#define IS_PLUGIN_DEPRECATED false
+#else
+#define IS_PLUGIN_DEPRECATED true
+#endif
 
 /*
  * Populate dst with OpenAPI specification schema
