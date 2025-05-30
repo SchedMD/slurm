@@ -36,6 +36,7 @@
 
 #include "slurm/slurm_errno.h"
 #include "slurm/slurm.h"
+#include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
@@ -105,19 +106,7 @@ extern int task_cgroup_memory_init(void)
 	      (uint64_t) (max_swap / (1024 * 1024)),
 	      slurm_cgroup_conf.min_ram_space);
 
-        /*
-         *  Warning: OOM Killer must be disabled for slurmstepd
-         *  or it would be destroyed if the application use
-         *  more memory than permitted
-         *
-         *  If an env value is already set for slurmstepd
-         *  OOM killer behavior, keep it, otherwise set the
-         *  -1000 value, which means do not let OOM killer kill it
-         *
-         *  FYI, setting "export SLURMSTEPD_OOM_ADJ=-1000"
-         *  in /etc/sysconfig/slurm would be the same
-         */
-        setenv("SLURMSTEPD_OOM_ADJ", "-1000", 0);
+	set_oom_adj_env(STEPD_OOM_ADJ);
 
 	return SLURM_SUCCESS;
 }

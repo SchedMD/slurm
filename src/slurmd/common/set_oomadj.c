@@ -43,6 +43,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "src/common/log.h"
+#include "src/common/env.h"
 
 #if !defined(__FreeBSD__)
 extern int set_oom_adj(int adj)
@@ -88,6 +89,21 @@ extern int set_oom_adj(int adj)
 	return 0;
 }
 
+extern void set_oom_adj_env(int adj)
+{
+	/*
+	 * slurmstepd OOM score must be set to a lower value or the OOM Killer
+	 * might kill it if the application use more memory than permitted.
+	 * We want it to be killable but to be the last process to be chosen by
+	 * the kernel.
+	 *
+	 * Do not override the value if it was already set
+	 * (e.g. in /etc/sysconfig/slurm).
+	 */
+	if (!getenv("SLURMSTEPD_OOM_ADJ"))
+		setenvfs(NULL, "SLURMSTEPD_OOM_ADJ=%d", adj);
+}
+
 #else /* __FreeBSD__ */
 
 extern int set_oom_adj(int adj)
@@ -97,4 +113,8 @@ extern int set_oom_adj(int adj)
 	return 0;
 }
 
+extern void set_oom_adj_env(int adj)
+{
+	return;
+}
 #endif

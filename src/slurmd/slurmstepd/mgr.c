@@ -1616,8 +1616,9 @@ job_manager(stepd_step_rec_t *step)
 	 * cleanup would happen, leaving for example cgroup stray directories if
 	 * cgroup plugins were initialized.
 	 */
-	set_oom_adj(-1000);
-	debug("Setting slurmstepd(%d) oom_score_adj to -1000", getpid());
+	set_oom_adj(STEPD_OOM_ADJ);
+	debug("Setting slurmstepd(%d) oom_score_adj to %d", getpid(),
+	      STEPD_OOM_ADJ);
 
 	/*
 	 * Readjust this slurmstepd oom_score_adj now that we've loaded the
