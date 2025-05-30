@@ -1628,7 +1628,7 @@ job_manager(stepd_step_rec_t *step)
 	 */
 	if ((oom_val_str = getenv("SLURMSTEPD_OOM_ADJ"))) {
 		int oom_val = atoi(oom_val_str);
-		if ((oom_val > -1000) && (oom_val <= 1000)) {
+		if ((oom_val >= -1000) && (oom_val <= 1000)) {
 			debug("Setting slurmstepd oom_score_adj from env to %d",
 			      oom_val);
 			set_oom_adj(oom_val);
