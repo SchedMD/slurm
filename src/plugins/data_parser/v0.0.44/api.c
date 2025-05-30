@@ -96,7 +96,7 @@ extern int data_parser_p_dump(args_t *args, data_parser_type_t type, void *src,
 		return ESLURM_NOT_SUPPORTED;
 	}
 
-	return dump(src, src_bytes, parser, dst, args);
+	return dump(src, src_bytes, NULL, parser, dst, args);
 }
 
 extern int data_parser_p_parse(args_t *args, data_parser_type_t type, void *dst,
@@ -140,15 +140,19 @@ static void _parse_param(const char *param, args_t *args)
 		if (xstrcasecmp(bit->name, param))
 			continue;
 
-		log_flag(DATA, "parser(0x%"PRIxPTR") activated flag=%s",
-			 (uintptr_t) args, bit->flag_name);
+		if (bit->value == FLAG_PREFER_REFS) {
+			info("%s ignoring default flag %s",
+			     plugin_type, bit->flag_name);
+			return;
+		}
+
+		debug("%s activated flag %s", plugin_type, bit->flag_name);
 
 		args->flags |= bit->value;
 		return;
 	}
 
-	log_flag(DATA, "parser(0x%"PRIxPTR") ignoring param=%s",
-		 (uintptr_t) args, param);
+	warning("%s ignoring unknown flag %s", plugin_type, param);
 }
 
 extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
@@ -210,7 +214,6 @@ extern void data_parser_p_free(args_t *args)
 
 	FREE_NULL_LIST(args->tres_list);
 	FREE_NULL_LIST(args->qos_list);
-	FREE_NULL_LIST(args->assoc_list);
 	if (args->close_db_conn)
 		slurmdb_connection_close(&args->db_conn);
 

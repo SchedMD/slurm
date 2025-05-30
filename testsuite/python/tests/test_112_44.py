@@ -2,23 +2,12 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 import atf
-import getpass
-
-# import json
-# import logging
-# import math
-# import os
 import pytest
+import getpass
+import json
 import random
-
-# import re
-# import requests
-# import signal
-# import socket
-# import subprocess
-# import sys
-# import tempfile
-# import time
+import logging
+import time
 
 random.seed()
 
@@ -37,8 +26,6 @@ qos_name = f"test-qos-{random.randrange(0, 99999999999)}"
 qos2_name = f"{qos_name}-2"
 resv_name = f"test-reservation-{random.randrange(0, 99999999999)}"
 
-slurmrestd = None
-
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
@@ -46,12 +33,16 @@ def setup():
     global local_cluster_name, partition_name
 
     atf.require_accounting(modify=True)
-    atf.require_config_parameter("AllowNoDefAcct", "yes", source="slurmdbd")
-    atf.require_config_parameter("TrackWCKey", "yes", source="slurmdbd")
-    atf.require_config_parameter("TrackWCKey", "yes")
+    atf.require_nodes(10)
+    atf.require_config_parameter("AllowNoDefAcct", "Yes", source="slurmdbd")
+    atf.require_config_parameter("TrackWCKey", "Yes", source="slurmdbd")
+    atf.require_config_parameter("TrackWCKey", "Yes")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt", source="slurmdbd")
-    atf.require_slurmrestd("slurmctld,slurmdbd", "v0.0.40")
+    atf.require_slurmrestd("slurmctld,slurmdbd", "v0.0.44")
+    atf.require_version("25.11", "sbin/slurmdbd")
+    atf.require_version("25.11", "sbin/slurmctld")
+    atf.require_version("25.11", "sbin/slurmrestd")
     atf.require_slurm_running()
 
     # Setup OpenAPI client with OpenAPI-Generator once Slurm(restd) is running
@@ -170,6 +161,10 @@ def test_loaded_versions():
     spec = r.json()
 
     # verify older plugins are not loaded
+    assert "/slurm/v0.0.43/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.42/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.41/jobs" not in spec["paths"].keys()
+    assert "/slurm/v0.0.40/jobs" not in spec["paths"].keys()
     assert "/slurm/v0.0.39/jobs" not in spec["paths"].keys()
     assert "/slurm/v0.0.38/jobs" not in spec["paths"].keys()
     assert "/slurmdb/v0.0.38/jobs" not in spec["paths"].keys()
@@ -180,46 +175,39 @@ def test_loaded_versions():
     assert "/slurm/v0.0.35/jobs" not in spec["paths"].keys()
 
     # verify current plugins are loaded
-    # TODO: Ticket 22817
-    #       In 24.05+ we have trailing "/"
-    if atf.get_version("sbin/slurmrestd") >= (24, 5):
-        assert "/slurm/v0.0.40/jobs/" in spec["paths"].keys()
-        assert "/slurmdb/v0.0.40/jobs/" in spec["paths"].keys()
-    else:
-        assert "/slurm/v0.0.40/jobs" in spec["paths"].keys()
-        assert "/slurmdb/v0.0.40/jobs" in spec["paths"].keys()
+    assert "/slurm/v0.0.44/jobs/" in spec["paths"].keys()
+    assert "/slurmdb/v0.0.44/jobs/" in spec["paths"].keys()
 
 
 def test_db_accounts(slurm, slurmdb, create_wckeys):
-    # from openapi_client import ApiClient as Client  # noqa: F401
-    # from openapi_client import Configuration as Config  # noqa: F401
-    from openapi_client.models.v0040_openapi_accounts_resp import (
-        V0040OpenapiAccountsResp,
-    )  # noqa: F401
-    from openapi_client.models.v0040_account import V0040Account  # noqa: F401
-
-    # from openapi_client.models.v0040_assoc_short import V0040AssocShort  # noqa: F401
-    from openapi_client.models.v0040_coord import V0040Coord  # noqa: F401
+    from openapi_client import ApiClient as Client
+    from openapi_client import Configuration as Config
+    from openapi_client.models.v0044_openapi_accounts_resp import (
+        V0044OpenapiAccountsResp,
+    )
+    from openapi_client.models.v0044_account import V0044Account
+    from openapi_client.models.v0044_assoc_short import V0044AssocShort
+    from openapi_client.models.v0044_coord import V0044Coord
 
     # make sure account doesn't already exist
-    resp = slurmdb.slurmdb_v0040_get_account_with_http_info(account_name)
+    resp = slurmdb.slurmdb_v0044_get_account_with_http_info(account_name)
     assert resp.status_code == 200
     assert len(resp.data.accounts) == 0
-    resp = slurmdb.slurmdb_v0040_get_account_with_http_info(account2_name)
+    resp = slurmdb.slurmdb_v0044_get_account_with_http_info(account2_name)
     assert resp.status_code == 200
     assert len(resp.data.accounts) == 0
 
     # create account
-    accounts = V0040OpenapiAccountsResp(
+    accounts = V0044OpenapiAccountsResp(
         accounts=[
-            V0040Account(
+            V0044Account(
                 description="test description",
                 name=account_name,
                 organization="test organization",
             ),
-            V0040Account(
+            V0044Account(
                 coordinators=[
-                    V0040Coord(
+                    V0044Coord(
                         name=coord_name,
                     )
                 ],
@@ -229,23 +217,23 @@ def test_db_accounts(slurm, slurmdb, create_wckeys):
             ),
         ]
     )
-    resp = slurmdb.slurmdb_v0040_post_accounts_with_http_info(accounts)
+    resp = slurmdb.slurmdb_v0044_post_accounts_with_http_info(accounts)
     assert resp.status_code == 200
 
-    accounts = V0040OpenapiAccountsResp(
+    accounts = V0044OpenapiAccountsResp(
         accounts=[
-            V0040Account(
+            V0044Account(
                 name=account2_name,
                 description="fail description",
                 organization="fail organization",
             )
         ]
     )
-    resp = slurmdb.slurmdb_v0040_post_accounts_with_http_info(accounts)
+    resp = slurmdb.slurmdb_v0044_post_accounts_with_http_info(accounts)
     assert resp.status_code == 200
 
     # verify account matches modify request
-    resp = slurmdb.slurmdb_v0040_get_account(account2_name)
+    resp = slurmdb.slurmdb_v0044_get_account(account2_name)
     assert resp.accounts
     for account in resp.accounts:
         assert account.name == account2_name
@@ -253,10 +241,10 @@ def test_db_accounts(slurm, slurmdb, create_wckeys):
         assert account.organization == accounts.accounts[0].organization
         assert not account.flags
 
-        # change account desc and org
-    accounts = V0040OpenapiAccountsResp(
+    # change account desc and org
+    accounts = V0044OpenapiAccountsResp(
         accounts=[
-            V0040Account(
+            V0044Account(
                 coordinators=[],
                 description="test description modified",
                 name=account2_name,
@@ -264,10 +252,10 @@ def test_db_accounts(slurm, slurmdb, create_wckeys):
             )
         ]
     )
-    resp = slurmdb.slurmdb_v0040_post_accounts(accounts)
+    resp = slurmdb.slurmdb_v0044_post_accounts(accounts)
     assert not resp.warnings
     assert len(resp.errors) == 0
-    resp = slurmdb.slurmdb_v0040_get_account(account2_name)
+    resp = slurmdb.slurmdb_v0044_get_account(account2_name)
     assert resp.accounts
     for account in resp.accounts:
         assert account.name == account2_name
@@ -275,20 +263,20 @@ def test_db_accounts(slurm, slurmdb, create_wckeys):
         assert account.organization == accounts.accounts[0].organization
         assert not account.coordinators
 
-    resp = slurmdb.slurmdb_v0040_get_account(account_name)
+    resp = slurmdb.slurmdb_v0044_get_account(account_name)
     assert resp.accounts
     for account in resp.accounts:
         assert account.name == account_name
 
     # check full listing works
-    resp = slurmdb.slurmdb_v0040_get_accounts(with_deleted="true")
+    resp = slurmdb.slurmdb_v0044_get_accounts(deleted="true")
     assert resp.accounts
-    resp = slurmdb.slurmdb_v0040_get_accounts()
+    resp = slurmdb.slurmdb_v0044_get_accounts()
     assert resp.accounts
 
-    accounts = V0040OpenapiAccountsResp(
+    accounts = V0044OpenapiAccountsResp(
         accounts=[
-            V0040Account(
+            V0044Account(
                 coordinators=[],
                 description="test description modified",
                 name=account2_name,
@@ -297,51 +285,49 @@ def test_db_accounts(slurm, slurmdb, create_wckeys):
         ]
     )
 
-    resp = slurmdb.slurmdb_v0040_delete_account(account_name)
+    resp = slurmdb.slurmdb_v0044_delete_account(account_name)
     assert not resp.warnings
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_delete_account(account2_name)
+    resp = slurmdb.slurmdb_v0044_delete_account(account2_name)
     assert not resp.warnings
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_account(account_name)
+    resp = slurmdb.slurmdb_v0044_get_account(account_name)
     assert len(resp.warnings) > 0
     assert len(resp.errors) == 0
     assert not resp.accounts
 
-    resp = slurmdb.slurmdb_v0040_get_account(account2_name)
+    resp = slurmdb.slurmdb_v0044_get_account(account2_name)
     assert len(resp.warnings) > 0
     assert len(resp.errors) == 0
     assert not resp.accounts
 
 
 def test_db_diag(slurmdb):
-    resp = slurmdb.slurmdb_v0040_get_diag()
+    resp = slurmdb.slurmdb_v0044_get_diag()
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert resp.statistics.time_start > 0
 
 
 def test_db_wckeys(slurmdb, create_coords):
-    from openapi_client.models.v0040_wckey import V0040Wckey  # noqa: F401
-    from openapi_client.models.v0040_openapi_wckey_resp import (
-        V0040OpenapiWckeyResp,
-    )  # noqa: F401
+    from openapi_client.models.v0044_wckey import V0044Wckey
+    from openapi_client.models.v0044_openapi_wckey_resp import V0044OpenapiWckeyResp
 
-    wckeys = V0040OpenapiWckeyResp(
+    wckeys = V0044OpenapiWckeyResp(
         wckeys=[
-            V0040Wckey(
+            V0044Wckey(
                 cluster=local_cluster_name,
                 name=wckey_name,
                 user=user_name,
             ),
-            V0040Wckey(
+            V0044Wckey(
                 cluster=local_cluster_name,
                 name=wckey2_name,
                 user=user_name,
             ),
-            V0040Wckey(
+            V0044Wckey(
                 cluster=local_cluster_name,
                 name=wckey2_name,
                 user=coord_name,
@@ -349,17 +335,17 @@ def test_db_wckeys(slurmdb, create_coords):
         ]
     )
 
-    resp = slurmdb.slurmdb_v0040_post_wckeys_with_http_info(
-        v0040_openapi_wckey_resp=wckeys
+    resp = slurmdb.slurmdb_v0044_post_wckeys_with_http_info(
+        v0044_openapi_wckey_resp=wckeys
     )
     assert resp.status_code == 200
 
-    resp = slurmdb.slurmdb_v0040_get_wckeys()
+    resp = slurmdb.slurmdb_v0044_get_wckeys()
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert len(resp.wckeys) >= 1
 
-    resp = slurmdb.slurmdb_v0040_get_wckey(wckey_name)
+    resp = slurmdb.slurmdb_v0044_get_wckey(wckey_name)
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert resp.wckeys
@@ -367,7 +353,7 @@ def test_db_wckeys(slurmdb, create_coords):
         assert wckey.name == wckey_name or wckey.name == wckey2_name
         assert wckey.user == user_name or wckey.user == coord_name
 
-    resp = slurmdb.slurmdb_v0040_get_wckey(wckey2_name)
+    resp = slurmdb.slurmdb_v0044_get_wckey(wckey2_name)
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert resp.wckeys
@@ -375,52 +361,52 @@ def test_db_wckeys(slurmdb, create_coords):
         assert wckey.name == wckey2_name
         assert wckey.user == user_name or wckey.user == coord_name
 
-    resp = slurmdb.slurmdb_v0040_delete_wckey(wckey_name)
+    resp = slurmdb.slurmdb_v0044_delete_wckey(wckey_name)
     assert not resp.warnings
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_delete_wckey(wckey2_name)
+    resp = slurmdb.slurmdb_v0044_delete_wckey(wckey2_name)
     assert not resp.warnings
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_wckey(wckey_name)
+    resp = slurmdb.slurmdb_v0044_get_wckey(wckey_name)
     assert len(resp.warnings) > 0
     assert len(resp.errors) == 0
     assert len(resp.wckeys) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_wckey(wckey2_name)
+    resp = slurmdb.slurmdb_v0044_get_wckey(wckey2_name)
     assert len(resp.warnings) > 0
     assert len(resp.errors) == 0
     assert len(resp.wckeys) == 0
 
 
 def test_db_clusters(slurmdb):
-    from openapi_client.models.v0040_openapi_clusters_resp import (
-        V0040OpenapiClustersResp,
+    from openapi_client.models.v0044_openapi_clusters_resp import (
+        V0044OpenapiClustersResp,
     )
-    from openapi_client.models.v0040_cluster_rec import V0040ClusterRec
+    from openapi_client.models.v0044_cluster_rec import V0044ClusterRec
 
-    clusters = V0040OpenapiClustersResp(
+    clusters = V0044OpenapiClustersResp(
         clusters=[
-            V0040ClusterRec(
+            V0044ClusterRec(
                 name=cluster_name,
             ),
-            V0040ClusterRec(
+            V0044ClusterRec(
                 name=cluster2_name,
             ),
         ]
     )
 
-    resp = slurmdb.slurmdb_v0040_post_clusters(v0040_openapi_clusters_resp=clusters)
+    resp = slurmdb.slurmdb_v0044_post_clusters(v0044_openapi_clusters_resp=clusters)
     assert not resp.warnings
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_clusters()
+    resp = slurmdb.slurmdb_v0044_get_clusters()
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert resp.clusters
 
-    resp = slurmdb.slurmdb_v0040_get_cluster(cluster_name)
+    resp = slurmdb.slurmdb_v0044_get_cluster(cluster_name)
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert resp.clusters
@@ -428,7 +414,7 @@ def test_db_clusters(slurmdb):
         assert cluster.name == cluster_name
         assert not cluster.nodes
 
-    resp = slurmdb.slurmdb_v0040_get_cluster(cluster2_name)
+    resp = slurmdb.slurmdb_v0044_get_cluster(cluster2_name)
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert resp.clusters
@@ -436,56 +422,53 @@ def test_db_clusters(slurmdb):
         assert cluster.name == cluster2_name
         assert not cluster.nodes
 
-    resp = slurmdb.slurmdb_v0040_delete_cluster(cluster_name)
+    resp = slurmdb.slurmdb_v0044_delete_cluster(cluster_name)
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_delete_cluster(cluster2_name)
+    resp = slurmdb.slurmdb_v0044_delete_cluster(cluster2_name)
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_cluster(cluster_name)
+    resp = slurmdb.slurmdb_v0044_get_cluster(cluster_name)
     assert len(resp.warnings) > 0
     assert len(resp.errors) == 0
     assert not resp.clusters
 
-    resp = slurmdb.slurmdb_v0040_get_cluster(cluster2_name)
+    resp = slurmdb.slurmdb_v0044_get_cluster(cluster2_name)
     assert len(resp.warnings) > 0
     assert len(resp.errors) == 0
     assert not resp.clusters
 
 
 def test_db_users(slurmdb):
-    from openapi_client.models.v0040_openapi_users_resp import (
-        V0040OpenapiUsersResp,
-    )  # noqa: F401
+    from openapi_client.models.v0044_openapi_users_resp import V0044OpenapiUsersResp
+    from openapi_client.models.v0044_assoc_short import V0044AssocShort
+    from openapi_client.models.v0044_coord import V0044Coord
+    from openapi_client.models.v0044_user import V0044User
+    from openapi_client.models.v0044_user_default import V0044UserDefault
+    from openapi_client.models.v0044_wckey import V0044Wckey
 
-    # from openapi_client.models.v0040_assoc_short import V0040AssocShort
-    # from openapi_client.models.v0040_coord import V0040Coord
-    from openapi_client.models.v0040_user import V0040User  # noqa: F401
-    from openapi_client.models.v0040_user_default import V0040UserDefault  # noqa: F401
-    from openapi_client.models.v0040_wckey import V0040Wckey  # noqa: F401
-
-    users = V0040OpenapiUsersResp(
+    users = V0044OpenapiUsersResp(
         users=[
-            V0040User(
+            V0044User(
                 administrator_level=["None"],
                 default=dict(
                     wckey=wckey_name,
                 ),
                 name=user_name,
             ),
-            V0040User(
+            V0044User(
                 administrator_level=["Operator"],
                 wckeys=[
-                    V0040Wckey(
+                    V0044Wckey(
                         cluster=local_cluster_name, name=wckey_name, user=coord_name
                     ),
-                    V0040Wckey(
+                    V0044Wckey(
                         cluster=local_cluster_name,
                         name=wckey2_name,
                         user=coord_name,
                     ),
                 ],
-                default=V0040UserDefault(
+                default=V0044UserDefault(
                     wckey=wckey2_name,
                 ),
                 name=coord_name,
@@ -493,11 +476,11 @@ def test_db_users(slurmdb):
         ]
     )
 
-    resp = slurmdb.slurmdb_v0040_post_users(v0040_openapi_users_resp=users)
+    resp = slurmdb.slurmdb_v0044_post_users(v0044_openapi_users_resp=users)
     assert not resp.warnings
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_users()
+    resp = slurmdb.slurmdb_v0044_get_users()
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert resp.users
@@ -505,7 +488,7 @@ def test_db_users(slurmdb):
     # Using query parameters (i.e. with_wckeys/with_deleted) results in warnings
     # Slurmrestd expected OpenAPI type=boolean but got OpenAPI type=string
 
-    resp = slurmdb.slurmdb_v0040_get_user(user_name, with_wckeys="true")
+    resp = slurmdb.slurmdb_v0044_get_user(user_name, with_wckeys="true")
     if resp.warnings:
         assert len(resp.warnings) == 1
         assert resp.warnings[0].source == "#/with_wckeys/"
@@ -513,10 +496,9 @@ def test_db_users(slurmdb):
     assert resp.users
     for user in resp.users:
         assert user.name == user_name
-        # FIXME: bug#18939
         assert user.default.wckey == wckey_name
 
-    resp = slurmdb.slurmdb_v0040_get_user(coord_name, with_wckeys="true")
+    resp = slurmdb.slurmdb_v0044_get_user(coord_name, with_wckeys="true")
     if resp.warnings:
         assert len(resp.warnings) == 1
         assert resp.warnings[0].source == "#/with_wckeys/"
@@ -524,18 +506,17 @@ def test_db_users(slurmdb):
     assert resp.users
     for user in resp.users:
         assert user.name == coord_name
-        # FIXME: bug#18939
         assert user.default.wckey == wckey2_name
         for wckey in user.wckeys:
             assert wckey.name == wckey_name or wckey.name == wckey2_name
             assert wckey.user == coord_name
             assert wckey.cluster == local_cluster_name
 
-    resp = slurmdb.slurmdb_v0040_delete_user(coord_name)
+    resp = slurmdb.slurmdb_v0044_delete_user(coord_name)
     assert len(resp.errors) == 0
 
     user_exists = False
-    resp = slurmdb.slurmdb_v0040_get_user(coord_name, with_deleted="true")
+    resp = slurmdb.slurmdb_v0044_get_user(coord_name, with_deleted="true")
     assert len(resp.errors) == 0
     for user in resp.users:
         assert user.name == coord_name
@@ -543,9 +524,9 @@ def test_db_users(slurmdb):
         user_exists = True
 
     if not user_exists:
-        users = V0040OpenapiUsersResp(
+        users = V0044OpenapiUsersResp(
             users=[
-                V0040User(
+                V0044User(
                     administrator_level=["Administrator"],
                     default=dict(
                         wckey=wckey_name,
@@ -556,11 +537,11 @@ def test_db_users(slurmdb):
             ]
         )
 
-        resp = slurmdb.slurmdb_v0040_post_users(v0040_openapi_users_resp=users)
+        resp = slurmdb.slurmdb_v0044_post_users(v0044_openapi_users_resp=users)
         assert not resp.warnings
         assert len(resp.errors) == 0
 
-        resp = slurmdb.slurmdb_v0040_get_user(coord_name, with_wckeys="true")
+        resp = slurmdb.slurmdb_v0044_get_user(coord_name, with_wckeys="true")
         if resp.warnings:
             assert len(resp.warnings) == 1
             assert resp.warnings[0].source == "#/with_wckeys/"
@@ -569,37 +550,36 @@ def test_db_users(slurmdb):
         for user in resp.users:
             assert user.name == coord_name
             assert not user.old_name
-            # FIXME: bug#18939
             assert user.default.wckey == wckey_name
             for wckey in user.wckeys:
                 assert wckey.name == wckey_name
                 assert wckey.user == coord_name
                 assert wckey.cluster == local_cluster_name
 
-        resp = slurmdb.slurmdb_v0040_delete_user(coord_name)
+        resp = slurmdb.slurmdb_v0044_delete_user(coord_name)
         assert len(resp.errors) == 0
 
-        resp = slurmdb.slurmdb_v0040_get_user(coord_name)
+        resp = slurmdb.slurmdb_v0044_get_user(coord_name)
         assert len(resp.warnings) > 0
         assert len(resp.errors) == 0
         assert not resp.users
 
 
 def test_db_assoc(slurmdb, create_coords, create_qos):
-    from openapi_client.models.v0040_openapi_assocs_resp import (
-        V0040OpenapiAssocsResp,
-    )  # noqa: F401
-    from openapi_client.models.v0040_assoc import V0040Assoc  # noqa: F401
+    from openapi_client.models.v0044_openapi_assocs_resp import V0044OpenapiAssocsResp
+    from openapi_client.models.v0044_assoc import V0044Assoc
+    from openapi_client.models.v0044_assoc_short import V0044AssocShort
+    from openapi_client.models.v0044_coord import V0044Coord
+    from openapi_client.models.v0044_user import V0044User
+    from openapi_client.models.v0044_wckey import V0044Wckey
 
-    # from openapi_client.models.v0040_assoc_short import V0040AssocShort
-    # from openapi_client.models.v0040_coord import V0040Coord
-    # from openapi_client.models.v0040_user import V0040User
-    # from openapi_client.models.v0040_wckey import V0040Wckey
-    from openapi_client.models.v0040_uint32_no_val import V0040Uint32NoVal  # noqa: F401
+    from openapi_client.models.v0044_uint32_no_val_struct import (
+        V0044Uint32NoValStruct as V0044Uint32NoVal,
+    )
 
-    associations = V0040OpenapiAssocsResp(
+    associations = V0044OpenapiAssocsResp(
         associations=[
-            V0040Assoc(
+            V0044Assoc(
                 account=account_name,
                 cluster=local_cluster_name,
                 default=dict(
@@ -609,7 +589,7 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
                 max=dict(
                     jobs=dict(
                         per=dict(
-                            wall_clock=V0040Uint32NoVal(
+                            wall_clock=V0044Uint32NoVal(
                                 set=True,
                                 number=150,
                             )
@@ -617,18 +597,18 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
                     ),
                 ),
                 min=dict(
-                    priority_threshold=V0040Uint32NoVal(
+                    priority_threshold=V0044Uint32NoVal(
                         set=True,
                         number=10,
                     )
                 ),
                 partition=partition_name,
-                priority=V0040Uint32NoVal(number=9, set=True),
+                priority=V0044Uint32NoVal(number=9, set=True),
                 qos=[qos_name, qos2_name],
                 shares_raw=23,
                 user=user_name,
             ),
-            V0040Assoc(
+            V0044Assoc(
                 account=account_name,
                 cluster=local_cluster_name,
                 default=dict(
@@ -638,7 +618,7 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
                 max=dict(
                     jobs=dict(
                         per=dict(
-                            wall_clock=V0040Uint32NoVal(
+                            wall_clock=V0044Uint32NoVal(
                                 set=True,
                                 number=150,
                             )
@@ -646,17 +626,17 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
                     ),
                 ),
                 min=dict(
-                    priority_threshold=V0040Uint32NoVal(
+                    priority_threshold=V0044Uint32NoVal(
                         set=True,
                         number=10,
                     )
                 ),
-                priority=V0040Uint32NoVal(number=9, set=True),
+                priority=V0044Uint32NoVal(number=9, set=True),
                 qos=[qos_name, qos2_name],
                 shares_raw=23,
                 user=user_name,
             ),
-            V0040Assoc(
+            V0044Assoc(
                 account=account2_name,
                 cluster=local_cluster_name,
                 default=dict(
@@ -666,7 +646,7 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
                 max=dict(
                     jobs=dict(
                         per=dict(
-                            wall_clock=V0040Uint32NoVal(
+                            wall_clock=V0044Uint32NoVal(
                                 set=True,
                                 number=50,
                             )
@@ -674,13 +654,13 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
                     ),
                 ),
                 min=dict(
-                    priority_threshold=V0040Uint32NoVal(
+                    priority_threshold=V0044Uint32NoVal(
                         set=True,
                         number=4,
                     )
                 ),
                 partition=partition_name,
-                priority=V0040Uint32NoVal(number=90, set=True),
+                priority=V0044Uint32NoVal(number=90, set=True),
                 qos=[qos2_name],
                 shares_raw=1012,
                 user=user_name,
@@ -688,18 +668,18 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
         ]
     )
 
-    resp = slurmdb.slurmdb_v0040_post_associations(
-        v0040_openapi_assocs_resp=associations
+    resp = slurmdb.slurmdb_v0044_post_associations(
+        v0044_openapi_assocs_resp=associations
     )
     assert not resp.warnings
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_associations()
+    resp = slurmdb.slurmdb_v0044_get_associations()
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert resp.associations
 
-    resp = slurmdb.slurmdb_v0040_get_association(
+    resp = slurmdb.slurmdb_v0044_get_association(
         cluster=local_cluster_name,
         account=account_name,
         user=user_name,
@@ -725,9 +705,9 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
             assert qos == qos_name or qos == qos2_name
         assert assoc.shares_raw == 23
 
-    associations = V0040OpenapiAssocsResp(
+    associations = V0044OpenapiAssocsResp(
         associations=[
-            V0040Assoc(
+            V0044Assoc(
                 account=account_name,
                 cluster=local_cluster_name,
                 partition=partition_name,
@@ -738,25 +718,25 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
                 qos=[qos2_name],
                 max=dict(
                     jobs=dict(
-                        per=dict(wall_clock=V0040Uint32NoVal(set=True, number=250)),
+                        per=dict(wall_clock=V0044Uint32NoVal(set=True, number=250)),
                     ),
                 ),
                 min=dict(
-                    priority_threshold=V0040Uint32NoVal(set=True, number=100),
+                    priority_threshold=V0044Uint32NoVal(set=True, number=100),
                 ),
-                priority=V0040Uint32NoVal(number=848, set=True),
+                priority=V0044Uint32NoVal(number=848, set=True),
                 shares_raw=230,
             )
         ]
     )
 
-    resp = slurmdb.slurmdb_v0040_post_associations(
-        v0040_openapi_assocs_resp=associations
+    resp = slurmdb.slurmdb_v0044_post_associations(
+        v0044_openapi_assocs_resp=associations
     )
     assert not resp.warnings
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_association(
+    resp = slurmdb.slurmdb_v0044_get_association(
         cluster=local_cluster_name,
         account=account_name,
         user=user_name,
@@ -782,7 +762,7 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
             assert qos == qos2_name
         assert assoc.shares_raw == 230
 
-    resp = slurmdb.slurmdb_v0040_delete_association(
+    resp = slurmdb.slurmdb_v0044_delete_association(
         cluster=local_cluster_name,
         account=account_name,
         user=user_name,
@@ -790,7 +770,7 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
     )
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_association(
+    resp = slurmdb.slurmdb_v0044_get_association(
         cluster=local_cluster_name,
         account=account_name,
         user=user_name,
@@ -800,19 +780,19 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
     assert len(resp.errors) == 0
     assert not resp.associations
 
-    resp = slurmdb.slurmdb_v0040_delete_associations(
+    resp = slurmdb.slurmdb_v0044_delete_associations(
         cluster=local_cluster_name,
         user=user_name,
     )
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_delete_associations(
+    resp = slurmdb.slurmdb_v0044_delete_associations(
         cluster=local_cluster_name,
         account=account_name,
     )
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_association(
+    resp = slurmdb.slurmdb_v0044_get_association(
         cluster=local_cluster_name,
         account=account_name,
     )
@@ -820,13 +800,13 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
     assert len(resp.errors) == 0
     assert not resp.associations
 
-    resp = slurmdb.slurmdb_v0040_delete_associations(
+    resp = slurmdb.slurmdb_v0044_delete_associations(
         cluster=local_cluster_name,
         account=account2_name,
     )
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_association(
+    resp = slurmdb.slurmdb_v0044_get_association(
         cluster=local_cluster_name,
         account=account2_name,
     )
@@ -836,19 +816,22 @@ def test_db_assoc(slurmdb, create_coords, create_qos):
 
 
 def test_db_qos(slurmdb, create_coords):
-    from openapi_client.models.v0040_qos import V0040Qos  # noqa: F401
-    from openapi_client.models.v0040_tres import V0040Tres  # noqa: F401
-    from openapi_client.models.v0040_openapi_slurmdbd_qos_resp import (
-        V0040OpenapiSlurmdbdQosResp,
-    )  # noqa: F401
-    from openapi_client.models.v0040_float64_no_val import (
-        V0040Float64NoVal,
-    )  # noqa: F401
-    from openapi_client.models.v0040_uint32_no_val import V0040Uint32NoVal  # noqa: F401
+    from openapi_client.models.v0044_qos import V0044Qos
+    from openapi_client.models.v0044_tres import V0044Tres
+    from openapi_client.models.v0044_openapi_slurmdbd_qos_resp import (
+        V0044OpenapiSlurmdbdQosResp,
+    )
+    from openapi_client.models.v0044_float64_no_val_struct import (
+        V0044Float64NoValStruct as V0044Float64NoVal,
+    )
 
-    qos = V0040OpenapiSlurmdbdQosResp(
+    from openapi_client.models.v0044_uint32_no_val_struct import (
+        V0044Uint32NoValStruct as V0044Uint32NoVal,
+    )
+
+    qos = V0044OpenapiSlurmdbdQosResp(
         qos=[
-            V0040Qos(
+            V0044Qos(
                 description="test QOS",
                 flags=[
                     "PARTITION_MAXIMUM_NODE",
@@ -864,11 +847,11 @@ def test_db_qos(slurmdb, create_coords):
                         tres=dict(
                             per=dict(
                                 job=[
-                                    V0040Tres(
+                                    V0044Tres(
                                         type="cpu",
                                         count=100,
                                     ),
-                                    V0040Tres(
+                                    V0044Tres(
                                         type="memory",
                                         count=100000,
                                     ),
@@ -879,35 +862,35 @@ def test_db_qos(slurmdb, create_coords):
                 ),
                 name=qos_name,
                 preempt=dict(
-                    exempt_time=V0040Uint32NoVal(set=True, number=199),
+                    exempt_time=V0044Uint32NoVal(set=True, number=199),
                 ),
-                priority=V0040Uint32NoVal(number=180, set=True),
-                usage_factor=V0040Float64NoVal(
+                priority=V0044Uint32NoVal(number=180, set=True),
+                usage_factor=V0044Float64NoVal(
                     set=True,
                     number=82382.23823,
                 ),
-                usage_threshold=V0040Float64NoVal(
+                usage_threshold=V0044Float64NoVal(
                     set=True,
                     number=929392.33,
                 ),
             ),
-            V0040Qos(
+            V0044Qos(
                 description="test QOS 2",
                 name=qos2_name,
             ),
         ]
     )
 
-    resp = slurmdb.slurmdb_v0040_post_qos(v0040_openapi_slurmdbd_qos_resp=qos)
+    resp = slurmdb.slurmdb_v0044_post_qos(v0044_openapi_slurmdbd_qos_resp=qos)
     assert not resp.warnings
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_qos()
+    resp = slurmdb.slurmdb_v0044_get_qos()
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert resp.qos
 
-    resp = slurmdb.slurmdb_v0040_get_single_qos(qos_name)
+    resp = slurmdb.slurmdb_v0044_get_single_qos(qos_name)
     assert not resp.warnings
     assert len(resp.errors) == 0
     assert resp.qos
@@ -941,7 +924,7 @@ def test_db_qos(slurmdb, create_coords):
         assert qos.usage_threshold.set
         assert qos.usage_threshold.number == 929392.33
 
-    resp = slurmdb.slurmdb_v0040_get_single_qos(qos2_name)
+    resp = slurmdb.slurmdb_v0044_get_single_qos(qos2_name)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     assert resp.qos
@@ -957,56 +940,52 @@ def test_db_qos(slurmdb, create_coords):
         assert qos.usage_factor.number == 1
         assert not qos.usage_threshold.set
 
-    resp = slurmdb.slurmdb_v0040_delete_single_qos(qos_name)
+    resp = slurmdb.slurmdb_v0044_delete_single_qos(qos_name)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_single_qos(qos_name)
+    resp = slurmdb.slurmdb_v0044_get_single_qos(qos_name)
     assert len(resp.warnings) > 0
     assert len(resp.errors) == 0
     assert not resp.qos
 
-    resp = slurmdb.slurmdb_v0040_delete_single_qos(qos2_name)
+    resp = slurmdb.slurmdb_v0044_delete_single_qos(qos2_name)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
-    resp = slurmdb.slurmdb_v0040_get_single_qos(qos2_name)
+    resp = slurmdb.slurmdb_v0044_get_single_qos(qos2_name)
     assert len(resp.warnings) > 0
     assert len(resp.errors) == 0
     assert not resp.qos
 
 
 def test_db_tres(slurmdb):
-    resp = slurmdb.slurmdb_v0040_get_tres()
+    resp = slurmdb.slurmdb_v0044_get_tres()
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
 
 def test_db_config(slurmdb):
-    resp = slurmdb.slurmdb_v0040_get_config()
-    # FIXED: Ticket 22817 for 24.05+
-    if atf.get_version("sbin/slurmrestd") >= (24, 5):
-        assert len(resp.warnings) == 0
-    else:
-        assert len(resp.warnings) == 1
+    resp = slurmdb.slurmdb_v0044_get_config()
+    assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
 
 def test_jobs(slurm, slurmdb):
-    from openapi_client.models.v0040_job_submit_req import (
-        V0040JobSubmitReq,
-    )  # noqa: F401
-    from openapi_client.models.v0040_job_desc_msg import V0040JobDescMsg  # noqa: F401
+    from openapi_client.models.v0044_job_submit_req import V0044JobSubmitReq
+    from openapi_client.models.v0044_job_desc_msg import V0044JobDescMsg
+    from openapi_client.models.v0044_job_info import V0044JobInfo
 
-    # from openapi_client.models.v0040_job_info import V0040JobInfo  # noqa: F401
-    from openapi_client.models.v0040_uint32_no_val import V0040Uint32NoVal  # noqa: F401
+    from openapi_client.models.v0044_uint32_no_val_struct import (
+        V0044Uint32NoValStruct as V0044Uint32NoVal,
+    )
 
     script = "#!/bin/bash\n/bin/true"
     env = ["PATH=/bin/:/sbin/:/usr/bin/:/usr/sbin/"]
 
-    job = V0040JobSubmitReq(
+    job = V0044JobSubmitReq(
         script=script,
-        job=V0040JobDescMsg(
+        job=V0044JobDescMsg(
             partition=partition_name,
             name="test job",
             environment=env,
@@ -1014,18 +993,19 @@ def test_jobs(slurm, slurmdb):
         ),
     )
 
-    resp = slurm.slurm_v0040_post_job_submit(job)
+    resp = slurm.slurm_v0044_post_job_submit(job)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     assert resp.job_id
     assert resp.step_id
     jobid = int(resp.job_id)
 
-    resp = slurm.slurm_v0040_get_jobs()
+    resp = slurm.slurm_v0044_get_jobs()
+
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
-    resp = slurm.slurm_v0040_get_job(str(jobid))
+    resp = slurm.slurm_v0044_get_job(str(jobid))
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     for job in resp.jobs:
@@ -1034,39 +1014,40 @@ def test_jobs(slurm, slurmdb):
         assert job.partition == partition_name
 
     # submit a HELD job to be able to update it
-    job = V0040JobSubmitReq(
+    job = V0044JobSubmitReq(
         script=script,
-        job=V0040JobDescMsg(
+        job=V0044JobDescMsg(
             partition=partition_name,
             name="test job",
             environment=env,
-            priority=V0040Uint32NoVal(number=0, set=True),
+            priority=V0044Uint32NoVal(number=0, set=True),
             current_working_directory="/tmp/",
         ),
     )
 
-    resp = slurm.slurm_v0040_post_job_submit(job)
+    resp = slurm.slurm_v0044_post_job_submit(job)
     assert len(resp.warnings) > 0
     assert len(resp.errors) == 0
     assert resp.job_id
     assert resp.step_id
     jobid = int(resp.job_id)
 
-    job = V0040JobDescMsg(
+    job = V0044JobDescMsg(
         environment=env,
         partition=partition_name,
         name="updated test job",
-        priority=V0040Uint32NoVal(number=0, set=True),
+        priority=V0044Uint32NoVal(number=0, set=True),
     )
 
-    resp = slurm.slurm_v0040_post_job(str(jobid), v0040_job_desc_msg=job)
+    resp = slurm.slurm_v0044_post_job(str(jobid), v0044_job_desc_msg=job)
     assert not len(resp.warnings)
     assert not len(resp.errors)
-    for result in resp.results:
-        assert result.job_id == jobid
-        assert result.error_code == 0
+    if resp.results:
+        for result in resp.results:
+            assert result.job_id == jobid
+            assert result.error_code == 0
 
-    resp = slurm.slurm_v0040_get_job(str(jobid))
+    resp = slurm.slurm_v0044_get_job(str(jobid))
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     for job in resp.jobs:
@@ -1077,11 +1058,11 @@ def test_jobs(slurm, slurmdb):
         assert job.priority.number == 0
         assert job.user_name == local_user_name
 
-    resp = slurm.slurm_v0040_delete_job(str(jobid))
+    resp = slurm.slurm_v0044_delete_job(str(jobid))
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
-    resp = slurm.slurm_v0040_get_job(str(jobid))
+    resp = slurm.slurm_v0044_get_job(str(jobid))
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     for job in resp.jobs:
@@ -1094,12 +1075,12 @@ def test_jobs(slurm, slurmdb):
     # Ensure that job is in the DB before querying it
     atf.wait_for_job_accounted(jobid, fatal=True)
 
-    resp = slurmdb.slurmdb_v0040_get_jobs()
+    resp = slurmdb.slurmdb_v0044_get_jobs()
     assert len(resp.errors) == 0
 
     requery = True
     while requery:
-        resp = slurmdb.slurmdb_v0040_get_job(str(jobid))
+        resp = slurmdb.slurmdb_v0044_get_job(str(jobid))
         assert len(resp.warnings) == 0
         assert len(resp.errors) == 0
         assert resp.jobs
@@ -1113,7 +1094,7 @@ def test_jobs(slurm, slurmdb):
                 assert job.name == "updated test job"
                 assert job.partition == partition_name
 
-    resp = slurmdb.slurmdb_v0040_get_jobs(users=local_user_name)
+    resp = slurmdb.slurmdb_v0044_get_jobs(users=local_user_name)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     assert resp.jobs
@@ -1141,42 +1122,26 @@ def reservation(setup):
     )
 
 
-def test_resv(slurm, reservation):
-    resp = slurm.slurm_v0040_get_reservation(resv_name)
-    assert len(resp.warnings) == 0
-    assert len(resp.errors) == 0
-    assert resp.reservations
-    for resv in resp.reservations:
-        assert resv.name == resv_name
-
-    resp = slurm.slurm_v0040_get_reservations()
-    assert len(resp.warnings) == 0
-    assert len(resp.errors) == 0
-    assert resp.reservations
-
-
 def test_partitions(slurm):
-    resp = slurm.slurm_v0040_get_partition(partition_name)
+    resp = slurm.slurm_v0044_get_partition(partition_name)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     assert resp.partitions
     for part in resp.partitions:
         assert part.name == partition_name
 
-    resp = slurm.slurm_v0040_get_partitions()
+    resp = slurm.slurm_v0044_get_partitions()
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     assert resp.partitions
 
 
 def test_nodes(slurm):
-    from openapi_client.models.v0040_update_node_msg import (
-        V0040UpdateNodeMsg,
-    )  # noqa: F401
+    from openapi_client.models.v0044_update_node_msg import V0044UpdateNodeMsg
 
     node_name = None
     reasonuid = None
-    resp = slurm.slurm_v0040_get_nodes()
+    resp = slurm.slurm_v0044_get_nodes()
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     assert resp.nodes
@@ -1192,14 +1157,14 @@ def test_nodes(slurm):
             reasonuid = node.reason_set_by_user
             break
 
-        # skip if no idle nodes are found
+    # Skip if no idle nodes are found
     if node_name is None:
-        return
+        pytest.fail("No idle nodes are found")
 
     if reasonuid is None or len(reasonuid) <= 0:
         reasonuid = local_user_name
 
-    node = V0040UpdateNodeMsg(
+    node = V0044UpdateNodeMsg(
         comment="test node comment",
         extra="test node extra",
         features=[
@@ -1216,11 +1181,11 @@ def test_nodes(slurm):
         reason_uid=local_user_name,
     )
 
-    resp = slurm.slurm_v0040_post_node(node_name, v0040_update_node_msg=node)
+    resp = slurm.slurm_v0044_post_node(node_name, v0044_update_node_msg=node)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
-    resp = slurm.slurm_v0040_get_node(node_name)
+    resp = slurm.slurm_v0044_get_node(node_name)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     assert resp.nodes
@@ -1233,7 +1198,7 @@ def test_nodes(slurm):
         assert node.reason_set_by_user == local_user_name
 
     ncomment = "test comment comment 2"
-    node = V0040UpdateNodeMsg(
+    node = V0044UpdateNodeMsg(
         comment=ncomment,
         extra=extra,
         features=feat,
@@ -1243,11 +1208,11 @@ def test_nodes(slurm):
         reason_uid=reasonuid,
     )
 
-    resp = slurm.slurm_v0040_post_node(node_name, node)
+    resp = slurm.slurm_v0044_post_node(node_name, node)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
-    resp = slurm.slurm_v0040_get_node(node_name)
+    resp = slurm.slurm_v0044_get_node(node_name)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     assert resp.nodes
@@ -1258,18 +1223,155 @@ def test_nodes(slurm):
 
 
 def test_ping(slurm):
-    resp = slurm.slurm_v0040_get_ping()
+    resp = slurm.slurm_v0044_get_ping()
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
 
 
 def test_diag(slurm):
-    resp = slurm.slurm_v0040_get_diag()
+    resp = slurm.slurm_v0044_get_diag()
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     assert resp.statistics
 
 
 def test_licenses(slurm):
-    resp = slurm.slurm_v0040_get_licenses()
+    resp = slurm.slurm_v0044_get_licenses()
     assert len(resp.errors) == 0
+
+
+@pytest.mark.parametrize(
+    "flags",
+    [[], ["IGNORE_JOBS"], ["IGNORE_JOBS", "MAGNETIC"]],
+)
+def test_reservations(slurm, flags):
+    from openapi_client.models.v0044_reservation_mod_req import V0044ReservationModReq
+    from openapi_client.models.v0044_reservation_desc_msg import V0044ReservationDescMsg
+    from openapi_client.models.v0044_uint64_no_val_struct import V0044Uint64NoValStruct
+    from openapi_client.models.v0044_uint32_no_val_struct import V0044Uint32NoValStruct
+
+    resv_name = "test_resv"
+    users = ["root", "atf"]
+    duration = V0044Uint32NoValStruct(number=300, set=True)
+    start_time = V0044Uint64NoValStruct(number=int(time.time()) + 60, set=True)
+    end_time = V0044Uint64NoValStruct(
+        number=start_time.number + duration.number * 60, set=True
+    )
+    partition = "primary"
+    node_list = ["node1", "node7"]
+
+    # Create a reservation
+    logging.debug(f"Creating reservation '{resv_name}'...")
+    reservation_info = V0044ReservationDescMsg(
+        name=resv_name,
+        users=users,
+        duration=duration,
+        start_time=start_time,
+        node_list=node_list,
+        partition=partition,
+        flags=flags,
+    )
+    resp = slurm.slurm_v0044_post_reservations(
+        V0044ReservationModReq(reservations=[reservation_info])
+    )
+    assert resp.reservations, f"Reservation {resv_name} should be created"
+    assert not resp.warnings and not resp.errors
+
+    # Verify the fields of the response
+    retrieved_reservation = resp.reservations[0]
+    assert (
+        retrieved_reservation.name == resv_name
+    ), f"Field 'name' should be {resv_name}"
+    assert (
+        retrieved_reservation.partition == partition
+    ), f"Field 'partition' should be {partition}"
+    assert (
+        retrieved_reservation.node_list == node_list
+    ), f"Field 'node_list' should be {node_list}"
+    assert retrieved_reservation.users == users, f"Field 'users' should be {users}"
+    assert (
+        retrieved_reservation.start_time.number == start_time.number
+    ), f"Field 'start_time' should be {start_time}"
+    assert (
+        retrieved_reservation.duration.number == duration.number
+    ), f"Field 'duration' should be {duration}"
+    assert (
+        # SPEC_NODES is automatically added
+        set([flag for flag in retrieved_reservation.flags if flag != "SPEC_NODES"])
+        == set(flags)
+    ), f"Field 'flags' should be {flags}"
+
+    # Verify fields of reservation created
+    resp = slurm.slurm_v0044_get_reservation(resv_name)
+    assert len(resp.reservations) == 1, f"Reservation '{resv_name}' should be returned"
+
+    retrieved_reservation = resp.reservations[0]
+    assert (
+        retrieved_reservation.name == resv_name
+    ), f"Field 'name' should be {resv_name}"
+    assert (
+        retrieved_reservation.partition == partition
+    ), f"Field 'partition' should be {partition}"
+    assert (
+        atf.node_range_to_list(retrieved_reservation.node_list) == node_list
+    ), f"Field 'node_list' should be {node_list}"
+    assert (
+        retrieved_reservation.users.split(",") == users
+    ), f"Field 'users' should be {users}"
+    assert (
+        retrieved_reservation.start_time.number == start_time.number
+    ), f"Field 'start_time' should be {start_time}"
+    assert (
+        retrieved_reservation.end_time.number == end_time.number
+    ), f"Field 'end_time' should be {end_time}"
+    assert (
+        # SPEC_NODES is automatically added
+        set([flag for flag in retrieved_reservation.flags if flag != "SPEC_NODES"])
+        == set(flags)
+    ), f"Field 'flags' should be {flags}"
+
+    # Update reservation
+    new_end_time = retrieved_reservation.end_time.number + 300
+    new_users = ["root"]
+    new_node_list = ["node2"]
+    new_start_time = V0044Uint64NoValStruct(number=int(time.time()) + 90, set=True)
+    new_flags = ["IGNORE_JOBS", "MAGNETIC", "USER_DELETE"]
+
+    update_info = V0044ReservationDescMsg(
+        name=resv_name,
+        end_time=V0044Uint64NoValStruct(set=True, number=new_end_time),
+        users=new_users,
+        node_list=new_node_list,
+        start_time=new_start_time,
+        flags=new_flags,
+    )
+    resp = slurm.slurm_v0044_post_reservation(update_info)
+    assert resp.reservations, "Reservation should be updated"
+    assert not resp.warnings and not resp.errors
+
+    # Validate update
+    resp = slurm.slurm_v0044_get_reservation(resv_name)
+    assert len(resp.reservations) == 1, f"Reservation '{resv_name}' should be returned"
+
+    updated = resp.reservations[0]
+
+    assert updated.end_time.number == new_end_time
+    assert updated.users.split(",") == new_users, f"Field 'users' should be {new_users}"
+    assert (
+        atf.node_range_to_list(updated.node_list) == new_node_list
+    ), f"Field 'node_list' should be {new_node_list}"
+    assert (
+        updated.start_time.number == new_start_time.number
+    ), f"Field 'start_time' should be {new_start_time}"
+    assert (
+        # SPEC_NODES is automatically added
+        set([flag for flag in updated.flags if flag != "SPEC_NODES"])
+        == set(new_flags)
+    ), f"Field 'flags' should be {flags}"
+
+    # Delete reservation
+    resp = slurm.slurm_v0044_delete_reservation(reservation_name=resv_name)
+    assert not resp.warnings and not resp.errors
+    assert resv_name not in [
+        r.name for r in slurm.slurm_v0044_get_reservations().reservations
+    ], f"Reservation {resv_name} should be deleted"

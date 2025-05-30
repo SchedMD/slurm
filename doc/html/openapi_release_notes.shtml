@@ -49,6 +49,7 @@ any target slurmrestd daemon. Development of clients should always be designed
 to use the highest version of the plugins available to avoid needing to port
 clients sooner than would be otherwise required.</p>
 
+<!--#include virtual="openapi_release_notes/slurm-25.11.html"-->
 <!--#include virtual="openapi_release_notes/slurm-25.05.html"-->
 <!--#include virtual="openapi_release_notes/slurm-24.11.html"-->
 <!--#include virtual="openapi_release_notes/slurm-24.05.html"-->
@@ -61,6 +62,6 @@ clients sooner than would be otherwise required.</p>
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 13 May 2025</p>
+<p style="text-align:center;">Last modified 25 May 2025</p>
 
 <!--#include virtual="footer.txt"-->

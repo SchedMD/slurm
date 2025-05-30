@@ -1634,7 +1634,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr(&x11_magic_cookie, buffer);
 		safe_unpackstr(&x11_target, buffer);
 		safe_unpack16(&x11_target_port, buffer);
-	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -1702,74 +1702,6 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr(&script_hash, buffer);
 		safe_unpack16(&segment_size, buffer);
 		safe_unpack16(&resv_port_cnt, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint16_t plane_size;
-		safe_unpack32(&min_cpus, buffer);
-		safe_unpack32(&max_cpus, buffer);
-		safe_unpack32(&min_nodes, buffer);
-		safe_unpack32(&max_nodes, buffer);
-		safe_unpack32(&num_tasks, buffer);
-
-		safe_unpackstr(&acctg_freq, buffer);
-		safe_unpack16(&contiguous, buffer);
-		safe_unpack16(&core_spec, buffer);
-		safe_unpack16(&cpus_per_task, buffer);
-		safe_unpack32(&nice, buffer);
-		safe_unpack16(&ntasks_per_node, buffer);
-		safe_unpack16(&requeue, buffer);
-		safe_unpack32(&task_dist, buffer);
-
-		safe_unpack8(&share_res, buffer);
-		safe_unpack8(&whole_node, buffer);
-
-		safe_unpackstr(&cpu_bind, buffer);
-		safe_unpack16(&cpu_bind_type, buffer);
-		safe_unpackstr(&mem_bind, buffer);
-		safe_unpack16(&mem_bind_type, buffer);
-		safe_unpack16(&plane_size, buffer);
-
-		safe_unpack8(&open_mode, buffer);
-		safe_unpack8(&overcommit, buffer);
-		safe_unpack8(&prolog_running, buffer);
-
-		safe_unpack32(&pn_min_cpus, buffer);
-		safe_unpack64(&pn_min_memory, buffer);
-		safe_unpack32(&pn_min_tmp_disk, buffer);
-		safe_unpack32(&cpu_freq_min, buffer);
-		safe_unpack32(&cpu_freq_max, buffer);
-		safe_unpack32(&cpu_freq_gov, buffer);
-		safe_unpack_time(&begin_time, buffer);
-		safe_unpack_time(&accrue_time, buffer);
-		safe_unpack_time(&submit_time, buffer);
-
-		safe_unpackstr(&req_nodes, buffer);
-		safe_unpackstr(&exc_nodes, buffer);
-		safe_unpackstr(&features, buffer);
-		safe_unpackstr(&cluster_features, buffer);
-		safe_unpackstr(&prefer, buffer);
-		safe_unpack8(&features_use, buffer);
-		unpack_bit_str_hex(&job_size_bitmap, buffer);
-
-		unpack_dep_list(&depend_list, buffer, protocol_version);
-		safe_unpackstr(&dependency, buffer);
-		safe_unpackstr(&orig_dependency, buffer);
-
-		safe_unpackstr(&err, buffer);
-		safe_unpackstr(&in, buffer);
-		safe_unpackstr(&out, buffer);
-		safe_unpackstr(&submit_line, buffer);
-		safe_unpackstr(&work_dir, buffer);
-
-		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
-			goto unpack_error;
-		safe_unpackstr_array(&argv, &argc, buffer);
-		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
-
-		if (unpack_cron_entry((void **) &crontab_entry,
-				      protocol_version, buffer))
-			goto unpack_error;
-		safe_unpackstr(&env_hash, buffer);
-		safe_unpackstr(&script_hash, buffer);
 	} else {
 		error("_load_job_details: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -2720,7 +2652,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		} else {
 			packbool(false, buffer);
 		}
-	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* Dump basic job info */
 		pack32(dump_job_ptr->array_job_id, buffer);
 		pack32(dump_job_ptr->array_task_id, buffer);
@@ -3248,7 +3180,7 @@ extern int job_record_unpack(job_record_t **out,
 			assoc_mgr_set_uid(job_ptr->user_id,
 					  job_ptr->id->pw_name);
 		}
-	} else if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job_ptr->array_job_id, buffer);
 		safe_unpack32(&job_ptr->array_task_id, buffer);
 
@@ -3408,230 +3340,6 @@ extern int job_record_unpack(job_record_t **out,
 		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
 			goto unpack_error;
-		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
-					 protocol_version))
-			goto unpack_error;
-
-		safe_unpackstr_array(&job_ptr->spank_job_env,
-				     &job_ptr->spank_job_env_size, buffer);
-
-		if (gres_job_state_unpack(&job_ptr->gres_list_req, buffer,
-					  job_ptr->job_id, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-		gres_job_state_log(job_ptr->gres_list_req, job_ptr->job_id);
-
-		if (gres_job_state_unpack(&job_ptr->gres_list_alloc, buffer,
-					  job_ptr->job_id, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-		gres_job_state_log(job_ptr->gres_list_alloc, job_ptr->job_id);
-
-		safe_unpack16(&details, buffer);
-		if ((details == DETAILS_FLAG) &&
-		    (_load_job_details(job_ptr, buffer, protocol_version))) {
-			goto unpack_error;
-		}
-		safe_unpack16(&step_flag, buffer);
-
-		while (step_flag == STEP_FLAG) {
-			/*
-			 * No need to put these into accounting if they
-			 * haven't been since all information will be
-			 * put in when the job is finished.
-			 */
-			if ((error_code = load_step_state(job_ptr, buffer,
-							  protocol_version)))
-				goto unpack_error;
-			safe_unpack16(&step_flag, buffer);
-		}
-		safe_unpack64(&job_ptr->bit_flags, buffer);
-		job_ptr->bit_flags &= ~BACKFILL_TEST;
-		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
-		safe_unpackstr(&job_ptr->tres_alloc_str, buffer);
-		safe_unpackstr(&job_ptr->tres_fmt_alloc_str, buffer);
-		safe_unpackstr(&job_ptr->tres_req_str, buffer);
-		safe_unpackstr(&job_ptr->tres_fmt_req_str, buffer);
-		safe_unpackstr(&job_ptr->clusters, buffer);
-		if ((error_code = _load_job_fed_details(&job_ptr->fed_details,
-							buffer,
-							protocol_version)))
-			goto unpack_error;
-
-		safe_unpackstr(&job_ptr->origin_cluster, buffer);
-
-		safe_unpackstr(&job_ptr->cpus_per_tres, buffer);
-		safe_unpackstr(&job_ptr->mem_per_tres, buffer);
-		safe_unpackstr(&job_ptr->tres_bind, buffer);
-		safe_unpackstr(&job_ptr->tres_freq, buffer);
-		safe_unpackstr(&job_ptr->tres_per_job, buffer);
-		safe_unpackstr(&job_ptr->tres_per_node, buffer);
-		safe_unpackstr(&job_ptr->tres_per_socket, buffer);
-		safe_unpackstr(&job_ptr->tres_per_task, buffer);
-
-		safe_unpackstr(&job_ptr->selinux_context, buffer);
-
-		safe_unpack8(&identity_flag, buffer);
-		if (identity_flag) {
-			if (unpack_identity(&job_ptr->id, buffer,
-					    protocol_version))
-				goto unpack_error;
-			assoc_mgr_set_uid(job_ptr->user_id,
-					  job_ptr->id->pw_name);
-		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&job_ptr->array_job_id, buffer);
-		safe_unpack32(&job_ptr->array_task_id, buffer);
-
-		/* Job Array record */
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			job_ptr->array_recs =
-				xmalloc(sizeof(job_array_struct_t));
-			if (count) {
-				job_ptr->array_recs->task_id_bitmap =
-					bit_alloc(count);
-				safe_unpackstr(
-					&job_ptr->array_recs->task_id_str,
-					buffer);
-				if (job_ptr->array_recs->task_id_str) {
-					if (bit_unfmt_hexmask(
-						    job_ptr->array_recs->
-						    task_id_bitmap,
-						    job_ptr->array_recs->
-						    task_id_str) == -1)
-						error("%s: bit_unfmt_hexmask error on '%s'",
-						      __func__,
-						      job_ptr->array_recs->
-						      task_id_str);
-				}
-				job_ptr->array_recs->task_cnt =
-					bit_set_count(job_ptr->array_recs->
-						      task_id_bitmap);
-			}
-			safe_unpack32(&job_ptr->array_recs->array_flags,
-				      buffer);
-			safe_unpack32(&job_ptr->array_recs->max_run_tasks,
-				      buffer);
-			safe_unpack32(&job_ptr->array_recs->tot_run_tasks,
-				      buffer);
-			safe_unpack32(&job_ptr->array_recs->min_exit_code,
-				      buffer);
-			safe_unpack32(&job_ptr->array_recs->max_exit_code,
-				      buffer);
-			safe_unpack32(&job_ptr->array_recs->tot_comp_tasks,
-				      buffer);
-		}
-
-		safe_unpack32(&job_ptr->assoc_id, buffer);
-		safe_unpackstr(&job_ptr->batch_features, buffer);
-		safe_unpackstr(&job_ptr->container, buffer);
-		safe_unpackstr(&job_ptr->container_id, buffer);
-		safe_unpack32(&job_ptr->delay_boot, buffer);
-		safe_unpackstr(&job_ptr->failed_node, buffer);
-		safe_unpack32(&job_ptr->job_id, buffer);
-
-		/* validity test as possible */
-		if (job_ptr->job_id == 0) {
-			verbose("Invalid job_id %u", job_ptr->job_id);
-			goto unpack_error;
-		}
-
-		safe_unpack32(&job_ptr->user_id, buffer);
-		safe_unpack32(&job_ptr->group_id, buffer);
-		safe_unpack32(&job_ptr->time_limit, buffer);
-		safe_unpack32(&job_ptr->time_min, buffer);
-		safe_unpack32(&job_ptr->priority, buffer);
-		safe_unpack32(&job_ptr->alloc_sid, buffer);
-		safe_unpack32(&job_ptr->total_cpus, buffer);
-		safe_unpack32(&job_ptr->total_nodes, buffer);
-		safe_unpack32(&job_ptr->cpu_cnt, buffer);
-		safe_unpack32(&job_ptr->exit_code, buffer);
-		safe_unpack32(&job_ptr->derived_ec, buffer);
-		safe_unpack64(&job_ptr->db_index, buffer);
-		safe_unpack32(&job_ptr->resv_id, buffer);
-		safe_unpack32(&job_ptr->next_step_id, buffer);
-		safe_unpack32(&job_ptr->het_job_id, buffer);
-		safe_unpackstr(&job_ptr->het_job_id_set, buffer);
-		safe_unpack32(&job_ptr->het_job_offset, buffer);
-		safe_unpack32(&job_ptr->qos_id, buffer);
-		safe_unpack32(&job_ptr->req_switch, buffer);
-		safe_unpack32(&job_ptr->wait4switch, buffer);
-		safe_unpack32(&job_ptr->profile, buffer);
-		safe_unpack32(&job_ptr->db_flags, buffer);
-		if (job_ptr->db_index && (job_ptr->db_index != NO_VAL64))
-			job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
-
-		safe_unpack_time(&job_ptr->last_sched_eval, buffer);
-		safe_unpack_time(&job_ptr->preempt_time, buffer);
-		safe_unpack_time(&job_ptr->prolog_launch_time, buffer);
-		safe_unpack_time(&job_ptr->start_time, buffer);
-		safe_unpack_time(&job_ptr->end_time, buffer);
-		safe_unpack_time(&job_ptr->end_time_exp, buffer);
-		safe_unpack_time(&job_ptr->suspend_time, buffer);
-		safe_unpack_time(&job_ptr->pre_sus_time, buffer);
-		safe_unpack_time(&job_ptr->resize_time, buffer);
-		safe_unpack_time(&job_ptr->tot_sus_time, buffer);
-		safe_unpack_time(&job_ptr->deadline, buffer);
-
-		safe_unpack32(&job_ptr->site_factor, buffer);
-		safe_unpack16(&job_ptr->direct_set_prio, buffer);
-		safe_unpack32(&job_ptr->job_state, buffer);
-		safe_unpack16(&job_ptr->kill_on_node_fail, buffer);
-		safe_unpack16(&job_ptr->batch_flag, buffer);
-		safe_unpack16(&job_ptr->mail_type, buffer);
-		safe_unpack32(&job_ptr->state_reason, buffer);
-		safe_unpack32(&job_ptr->state_reason_prev_db, buffer);
-		safe_unpack8 (&job_ptr->reboot, buffer);
-		safe_unpack16(&job_ptr->restart_cnt, buffer);
-		safe_unpack16(&job_ptr->wait_all_nodes, buffer);
-		safe_unpack16(&job_ptr->warn_flags, buffer);
-		safe_unpack16(&job_ptr->warn_signal, buffer);
-		safe_unpack16(&job_ptr->warn_time, buffer);
-
-		_unpack_acct_policy_limit_members(&job_ptr->limit_set, tres_cnt,
-						  buffer, protocol_version);
-
-		safe_unpackstr(&job_ptr->state_desc, buffer);
-		safe_unpackstr(&job_ptr->resp_host, buffer);
-
-		safe_unpack16(&job_ptr->alloc_resp_port, buffer);
-		safe_unpack16(&job_ptr->other_port, buffer);
-		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
-		safe_unpack16(&job_ptr->start_protocol_ver, buffer);
-		safe_unpackdouble(&job_ptr->billable_tres, buffer);
-
-		if (job_ptr->job_state & JOB_COMPLETING)
-			safe_unpackstr(&job_ptr->nodes_completing, buffer);
-		if (job_ptr->state_reason == WAIT_PROLOG)
-			safe_unpackstr(&job_ptr->nodes_pr, buffer);
-		safe_unpackstr(&job_ptr->nodes, buffer);
-		safe_unpackstr(&job_ptr->partition, buffer);
-		if (job_ptr->partition == NULL) {
-			error("No partition for JobId=%u", job_ptr->job_id);
-			goto unpack_error;
-		}
-		safe_unpackstr(&job_ptr->name, buffer);
-		safe_unpackstr(&job_ptr->user_name, buffer);
-		safe_unpackstr(&job_ptr->wckey, buffer);
-		safe_unpackstr(&job_ptr->alloc_node, buffer);
-		safe_unpackstr(&job_ptr->account, buffer);
-		safe_unpackstr(&job_ptr->admin_comment, buffer);
-		safe_unpackstr(&job_ptr->comment, buffer);
-		safe_unpackstr(&job_ptr->extra, buffer);
-		safe_unpackstr(&job_ptr->gres_used, buffer);
-		safe_unpackstr(&job_ptr->network, buffer);
-		safe_unpackstr(&job_ptr->licenses, buffer);
-		safe_unpackstr(&job_ptr->lic_req, buffer);
-		safe_unpackstr(&job_ptr->mail_user, buffer);
-		safe_unpackstr(&job_ptr->mcs_label, buffer);
-		safe_unpackstr(&job_ptr->resv_name, buffer);
-		safe_unpackstr(&job_ptr->batch_host, buffer);
-		safe_unpackstr(&job_ptr->burst_buffer, buffer);
-		safe_unpackstr(&job_ptr->burst_buffer_state, buffer);
-		safe_unpackstr(&job_ptr->system_comment, buffer);
-
-		safe_unpack32(&uint32_tmp, buffer); /* was select_jobinfo */
 		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
 					 protocol_version))
 			goto unpack_error;

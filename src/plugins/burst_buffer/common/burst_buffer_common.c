@@ -805,7 +805,7 @@ extern void bb_pack_state(bb_state_t *state_ptr, buf_t *buffer,
 	int i;
 
 
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(config_ptr->allow_users_str, buffer);
 		packstr(config_ptr->create_buffer,   buffer);
 		packstr(config_ptr->default_pool,    buffer);
@@ -824,35 +824,6 @@ extern void bb_pack_state(bb_state_t *state_ptr, buf_t *buffer,
 			pack64(config_ptr->pool_ptr[i].used_space, buffer);
 		}
 		pack32(config_ptr->poll_interval, buffer);
-		pack32(config_ptr->other_timeout,    buffer);
-		packstr(config_ptr->start_stage_in,  buffer);
-		packstr(config_ptr->start_stage_out, buffer);
-		packstr(config_ptr->stop_stage_in,   buffer);
-		packstr(config_ptr->stop_stage_out,  buffer);
-		pack32(config_ptr->stage_in_timeout, buffer);
-		pack32(config_ptr->stage_out_timeout,buffer);
-		pack64(state_ptr->total_space,       buffer);
-		pack64(state_ptr->unfree_space,      buffer);
-		pack64(state_ptr->used_space,        buffer);
-		pack32(config_ptr->validate_timeout, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		packstr(config_ptr->allow_users_str, buffer);
-		packstr(config_ptr->create_buffer,   buffer);
-		packstr(config_ptr->default_pool,    buffer);
-		packstr(config_ptr->deny_users_str,  buffer);
-		packstr(config_ptr->destroy_buffer,  buffer);
-		pack32(config_ptr->flags,            buffer);
-		packstr(config_ptr->get_sys_state,   buffer);
-		packstr(config_ptr->get_sys_status,   buffer);
-		pack64(config_ptr->granularity,      buffer);
-		pack32(config_ptr->pool_cnt,         buffer);
-		for (i = 0; i < config_ptr->pool_cnt; i++) {
-			packstr(config_ptr->pool_ptr[i].name, buffer);
-			pack64(config_ptr->pool_ptr[i].total_space, buffer);
-			pack64(config_ptr->pool_ptr[i].granularity, buffer);
-			pack64(config_ptr->pool_ptr[i].unfree_space, buffer);
-			pack64(config_ptr->pool_ptr[i].used_space, buffer);
-		}
 		pack32(config_ptr->other_timeout,    buffer);
 		packstr(config_ptr->start_stage_in,  buffer);
 		packstr(config_ptr->start_stage_out, buffer);

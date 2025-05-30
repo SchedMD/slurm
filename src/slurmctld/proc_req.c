@@ -1862,14 +1862,7 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 		schedule_job_save();		/* Has own locking */
 	}
 
-	/*
-	 * Pre-24.05 no response was expected by the sender, and an error
-	 * would be printed if we attempted to send one here.
-	 * When 23.11 is no longer supported the if here can be removed leaving
-	 * a direct call to slurm_send_rc_msg.
-	 */
-	if (msg->protocol_version >= SLURM_24_05_PROTOCOL_VERSION)
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
 /* _slurm_rpc_job_step_kill - process RPC to cancel an entire job or
@@ -2966,14 +2959,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	}
 
 	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
-		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
-			error("rpc %s from non-supported client version %d for stepmgr job",
-			      rpc_num2string(msg->msg_type),
-			      msg->protocol_version);
-			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
-		} else {
-			slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
-		}
+		slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
 		unlock_slurmctld(job_read_lock);
 		return;
 	}
@@ -3446,14 +3432,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	}
 
 	if (job_ptr->bit_flags & STEPMGR_ENABLED) {
-		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
-			error("rpc %s from non-supported client version %d for stepmgr job",
-			      rpc_num2string(msg->msg_type),
-			      msg->protocol_version);
-			slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
-		} else {
-			slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
-		}
+		slurm_send_reroute_msg(msg, NULL, job_ptr->batch_host);
 		unlock_slurmctld(job_read_lock);
 		return;
 	}
@@ -5538,7 +5517,7 @@ static void _pack_rpc_stats(buf_t *buffer, uint16_t protocol_version)
 {
 	slurm_mutex_lock(&rpc_mutex);
 
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint32_t rpc_count = 0, user_count = 1;
 		uint8_t queue_enabled = rpc_queue_enabled();
 
@@ -5556,25 +5535,6 @@ static void _pack_rpc_stats(buf_t *buffer, uint16_t protocol_version)
 			pack16_array(rpc_type_cycle_last, rpc_count, buffer);
 			pack16_array(rpc_type_cycle_max, rpc_count, buffer);
 		}
-
-		/* user_count starts at 1 as root is in index 0 */
-		while (rpc_user_id[user_count])
-			user_count++;
-		pack32(user_count, buffer);
-		pack32_array(rpc_user_id, user_count, buffer);
-		pack32_array(rpc_user_cnt, user_count, buffer);
-		pack64_array(rpc_user_time, user_count, buffer);
-
-		agent_pack_pending_rpc_stats(buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint32_t rpc_count = 0, user_count = 1;
-
-		while (rpc_type_id[rpc_count])
-			rpc_count++;
-		pack32(rpc_count, buffer);
-		pack16_array(rpc_type_id, rpc_count, buffer);
-		pack32_array(rpc_type_cnt, rpc_count, buffer);
-		pack64_array(rpc_type_time, rpc_count, buffer);
 
 		/* user_count starts at 1 as root is in index 0 */
 		while (rpc_user_id[user_count])

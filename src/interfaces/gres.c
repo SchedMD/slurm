@@ -5061,7 +5061,7 @@ static int _foreach_step_state_pack(void *x, void *arg)
 	gres_step_state_t *gres_ss = gres_state_step->gres_data;
 	int i;
 
-	if (pack_state->protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (pack_state->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(pack_state->magic, pack_state->buffer);
 		pack32(gres_state_step->plugin_id, pack_state->buffer);
 		pack16(gres_ss->cpus_per_gres, pack_state->buffer);
@@ -5073,47 +5073,6 @@ static int _foreach_step_state_pack(void *x, void *arg)
 		pack64(gres_ss->mem_per_gres, pack_state->buffer);
 		pack64(gres_ss->total_gres, pack_state->buffer);
 		packstr(gres_ss->type_name, pack_state->buffer);
-		pack32(gres_ss->node_cnt, pack_state->buffer);
-		pack_bit_str_hex(gres_ss->node_in_use, pack_state->buffer);
-		if (gres_ss->gres_cnt_node_alloc) {
-			pack8((uint8_t) 1, pack_state->buffer);
-			pack64_array(gres_ss->gres_cnt_node_alloc,
-				     gres_ss->node_cnt, pack_state->buffer);
-		} else {
-			pack8((uint8_t) 0, pack_state->buffer);
-		}
-		if (gres_ss->gres_bit_alloc) {
-			pack8((uint8_t) 1, pack_state->buffer);
-			for (i = 0; i < gres_ss->node_cnt; i++)
-				pack_bit_str_hex(gres_ss->gres_bit_alloc[i],
-						 pack_state->buffer);
-		} else {
-			pack8((uint8_t) 0, pack_state->buffer);
-		}
-		for (i = 0; i < gres_ss->node_cnt; i++) {
-			if (!gres_ss->gres_per_bit_alloc ||
-			    !gres_ss->gres_per_bit_alloc[i] ||
-			    !gres_ss->gres_bit_alloc ||
-			    !gres_ss->gres_bit_alloc[i]) {
-				pack8((uint8_t)0, pack_state->buffer);
-				continue;
-			}
-			pack8((uint8_t)1, pack_state->buffer);
-			pack64_array(gres_ss->gres_per_bit_alloc[i],
-				     bit_size(gres_ss->gres_bit_alloc[i]),
-				     pack_state->buffer);
-		}
-	} else if (pack_state->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(pack_state->magic, pack_state->buffer);
-		pack32(gres_state_step->plugin_id, pack_state->buffer);
-		pack16(gres_ss->cpus_per_gres, pack_state->buffer);
-		pack16(gres_ss->flags, pack_state->buffer);
-		pack64(gres_ss->gres_per_step, pack_state->buffer);
-		pack64(gres_ss->gres_per_node, pack_state->buffer);
-		pack64(gres_ss->gres_per_socket, pack_state->buffer);
-		pack64(gres_ss->gres_per_task, pack_state->buffer);
-		pack64(gres_ss->mem_per_gres, pack_state->buffer);
-		pack64(gres_ss->total_gres, pack_state->buffer);
 		pack32(gres_ss->node_cnt, pack_state->buffer);
 		pack_bit_str_hex(gres_ss->node_in_use, pack_state->buffer);
 		if (gres_ss->gres_cnt_node_alloc) {
@@ -5324,7 +5283,7 @@ extern int gres_node_state_unpack(list_t **gres_list, buf_t *buffer,
 
 		gres_ns = _build_gres_node_state();
 
-		if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -5354,43 +5313,6 @@ extern int gres_node_state_unpack(list_t **gres_list, buf_t *buffer,
 					unpack_bit_str_hex(
 						&gres_ns->
 						topo_res_core_bitmap[i],
-						buffer);
-				}
-			}
-			safe_unpack64_array(&gres_ns->topo_gres_cnt_alloc,
-					    &tmp_uint32, buffer);
-			safe_unpack64_array(&gres_ns->topo_gres_cnt_avail,
-					    &tmp_uint32, buffer);
-			safe_unpack32_array(&gres_ns->topo_type_id, &tmp_uint32,
-					    buffer);
-			safe_unpackstr_array(&gres_ns->topo_type_name,
-					     &tmp_uint32, buffer);
-		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-			safe_unpack32(&magic, buffer);
-			if (magic != GRES_MAGIC)
-				goto unpack_error;
-			safe_unpack32(&plugin_id, buffer);
-			safe_unpack32(&config_flags, buffer);
-			safe_unpack64(&gres_ns->gres_cnt_avail, buffer);
-			safe_unpack16(&gres_bitmap_size, buffer);
-
-			safe_unpack16(&gres_ns->topo_cnt, buffer);
-			if (gres_ns->topo_cnt) {
-				gres_ns->topo_core_bitmap =
-					xcalloc(gres_ns->topo_cnt,
-						sizeof(bitstr_t *));
-				gres_ns->topo_gres_bitmap =
-					xcalloc(gres_ns->topo_cnt,
-						sizeof(bitstr_t *));
-				gres_ns->topo_res_core_bitmap =
-					xcalloc(gres_ns->topo_cnt,
-						sizeof(bitstr_t *));
-				for (int i = 0; i < gres_ns->topo_cnt; i++) {
-					unpack_bit_str_hex(
-						&gres_ns->topo_core_bitmap[i],
-						buffer);
-					unpack_bit_str_hex(
-						&gres_ns->topo_gres_bitmap[i],
 						buffer);
 				}
 			}
@@ -9477,7 +9399,7 @@ extern int gres_step_state_unpack(list_t **gres_list, buf_t *buffer,
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
-		if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -9493,54 +9415,6 @@ extern int gres_step_state_unpack(list_t **gres_list, buf_t *buffer,
 			safe_unpack64(&gres_ss->total_gres, buffer);
 			safe_unpackstr(&gres_ss->type_name, buffer);
 			gres_ss->type_id = gres_build_id(gres_ss->type_name);
-			safe_unpack32(&gres_ss->node_cnt, buffer);
-			if (gres_ss->node_cnt > NO_VAL)
-				goto unpack_error;
-			unpack_bit_str_hex(&gres_ss->node_in_use, buffer);
-			safe_unpack8(&data_flag, buffer);
-			if (data_flag) {
-				safe_unpack64_array(
-					&gres_ss->gres_cnt_node_alloc,
-					&uint32_tmp, buffer);
-			}
-			safe_unpack8(&data_flag, buffer);
-			if (data_flag) {
-				gres_ss->gres_bit_alloc =
-					xcalloc(gres_ss->node_cnt,
-						sizeof(bitstr_t *));
-				for (i = 0; i < gres_ss->node_cnt; i++) {
-					unpack_bit_str_hex(&gres_ss->
-							   gres_bit_alloc[i],
-							   buffer);
-				}
-			}
-			for (i = 0; i < gres_ss->node_cnt; i++) {
-				safe_unpack8(&data_flag, buffer);
-				if (!data_flag)
-					continue;
-				if (!gres_ss->gres_per_bit_alloc)
-					safe_xcalloc(
-						gres_ss->gres_per_bit_alloc,
-						gres_ss->node_cnt,
-						sizeof(uint64_t *));
-				safe_unpack64_array(
-					&gres_ss->gres_per_bit_alloc[i],
-					&uint32_tmp, buffer);
-			}
-		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-			safe_unpack32(&magic, buffer);
-			if (magic != GRES_MAGIC)
-				goto unpack_error;
-			safe_unpack32(&plugin_id, buffer);
-			gres_ss = xmalloc(sizeof(gres_step_state_t));
-			safe_unpack16(&gres_ss->cpus_per_gres, buffer);
-			safe_unpack16(&gres_ss->flags, buffer);
-			safe_unpack64(&gres_ss->gres_per_step, buffer);
-			safe_unpack64(&gres_ss->gres_per_node, buffer);
-			safe_unpack64(&gres_ss->gres_per_socket, buffer);
-			safe_unpack64(&gres_ss->gres_per_task, buffer);
-			safe_unpack64(&gres_ss->mem_per_gres, buffer);
-			safe_unpack64(&gres_ss->total_gres, buffer);
 			safe_unpack32(&gres_ss->node_cnt, buffer);
 			if (gres_ss->node_cnt > NO_VAL)
 				goto unpack_error;

@@ -45,10 +45,8 @@ typedef struct parser_s parser_t;
 
 typedef enum {
 	NEED_NONE = 0, /* parser has no pre-reqs for data */
-	NEED_AUTH = SLURM_BIT(0),
 	NEED_TRES = SLURM_BIT(1),
 	NEED_QOS = SLURM_BIT(2),
-	NEED_ASSOC = SLURM_BIT(3),
 } need_t;
 
 typedef enum {
@@ -92,6 +90,7 @@ typedef enum {
 	PARSER_MODEL_NT_PTR_ARRAY, /* parser for NULL terminated array of pointers */
 	/* NT_ARRAY objects must not require an special initializer */
 	PARSER_MODEL_NT_ARRAY, /* parser for NULL terminated array of objects */
+	PARSER_MODEL_REMOVED, /* parser for removed types */
 
 	/*
 	 * Alias for another parser.
@@ -160,20 +159,6 @@ typedef struct parser_s {
 	int (*parse)(const parser_t *const parser, void *dst, data_t *src,
 		     args_t *args, data_t *parent_path);
 	need_t needs;
-	/*
-	 * Populates OpenAPI specification.
-	 * 	For parsers where the normal OpenAPI specification generation is
-	 * 	insufficient. This allows the parser to explicitly set the
-	 * 	specification for the type. General goal is to not to need to
-	 * 	use this function but some output formats are just too different
-	 * 	the original data source.
-	 * IN parser - parser needing specification
-	 * IN args - parser args
-	 * IN spec - ptr to entire OpenAPI specification
-	 * IN dst - entry in specification needed to be populated
-	 */
-	void (*openapi_spec)(const parser_t *const parser, args_t *args,
-			     data_t *spec, data_t *dst);
 } parser_t;
 
 /*

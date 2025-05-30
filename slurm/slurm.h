@@ -698,12 +698,7 @@ enum tls_plugin_type {
 /* Select plugin (id) in use by cluster */
 enum select_plugin_type {
 	/* 100 unused (originally for BlueGene) */
-	/*
-	 * 101 cons_res was removed in 23.11. However, this is needed for
-	 * systems that are upgrading from an older version and were using
-	 * cons_res. This can be removed two versions after 23.11.
-	 */
-	SELECT_PLUGIN_CONS_RES = 101,
+	/* 101 unused (originally for cons_res) */
 	SELECT_PLUGIN_LINEAR         = 102, /* Linear on a normal system */
 	/* 103 unused (originally used for BGQ) */
 	/* 104 unused (originally used for Cray/ALPS with select/linear) */
@@ -1031,45 +1026,45 @@ enum node_states {
 /* CR_CPU, CR_SOCKET and CR_CORE are mutually exclusive
  * CR_MEMORY may be added to any of the above values or used by itself
  * CR_ONE_TASK_PER_CORE may also be added to any of the above values */
-#define CR_CPU		0x0001	/* Resources are shared down to the level of
-				 * logical processors which can be socket,
-				 * core, or thread depending on the system. */
-#define CR_SOCKET	0x0002	/* Resources are shared down to the socket
-				 * level. Jobs will not be co-allocated
-				 * within a socket. */
-#define CR_CORE		0x0004	/* Resources are shared down to the core level.
+enum {
+	CR_CPU = SLURM_BIT(0), /* Resources are shared down to the level of
+				* logical processors which can be socket,
+				* core, or thread depending on the system. */
+	CR_SOCKET = SLURM_BIT(1), /* Resources are shared down to the socket
+				   * level. Jobs will not be co-allocated
+				   * within a socket. */
+	CR_CORE = SLURM_BIT(2), /* Resources are shared down to the core level.
 				 * Jobs will not be co-allocated within a
 				 * core. */
-#define CR_BOARD	0x0008	/* Resources are shared down to the board
-				 * level. Jobs will not be co-allocated
-				 * within a board. */
-#define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
-				 * not over-committed when selected as a CR. */
-/* was CR_OTHER_CONS_RES    0x0020, removed v23.11 */
-#define ENFORCE_BINDING_GRES 0x0040
-#define ONE_TASK_PER_SHARING_GRES 0x0080
+	CR_BOARD = SLURM_BIT(3), /* Resources are shared down to the board
+				  * level. Jobs will not be co-allocated
+				  * within a board. */
+	CR_MEMORY = SLURM_BIT(4), /* Memory as consumable resources. Memory is
+				   * not over-committed when selected as a CR.
+				   */
+	/* unused SLURM_BIT(5) */
+	ENFORCE_BINDING_GRES = SLURM_BIT(6),
+	ONE_TASK_PER_SHARING_GRES = SLURM_BIT(7),
 
-/* By default, schedule only one task per core.
- * Without this option, tasks would be allocated threads. */
-#define CR_ONE_TASK_PER_CORE 0x0100
-
-/* Pack tasks tightly onto allocated nodes rather than distributing them evenly
- * across available nodes */
-#define CR_PACK_NODES  0x0200
-
-#define LL_SHARED_GRES 0x0400 /* Prefer least-loaded device for shared GRES */
-/* was CR_OTHER_CONS_TRES   0x0800, removed v24.05 */
-/* By default, distribute cores using a block approach inside the nodes */
-#define CR_CORE_DEFAULT_DIST_BLOCK 0x1000
-#define CR_LLN		0x4000  /* Select nodes by "least loaded." */
-#define MULTIPLE_SHARING_GRES_PJ 0x8000  /* Allow multiple sharing gres per job */
-
-
-/*
- * This is used internally to know whether the job was started with
- * cons_tres or linear. It is not a configuration option.
- */
-#define CR_LINEAR 0x8000
+	CR_ONE_TASK_PER_CORE = SLURM_BIT(8), /* By default, schedule only one
+					      * task per core. Without this
+					      * option, tasks would be allocated
+					      * threads. */
+	CR_PACK_NODES = SLURM_BIT(9), /* Pack tasks tightly onto allocated nodes
+				       * rather than distributing them evenly
+				       * across available nodes */
+	LL_SHARED_GRES = SLURM_BIT(10), /* Prefer least-loaded device for shared
+					 * GRES */
+	/* was CR_OTHER_CONS_TRES = SLURM_BIT(11), removed v24.05 */
+	CR_CORE_DEFAULT_DIST_BLOCK = SLURM_BIT(12), /* By default, distribute
+						     * cores using a block
+						     * approach inside the nodes
+						     */
+	/* SLURM_BIT(13), empty */
+	CR_LLN = SLURM_BIT(14), /* Select nodes by "least loaded." */
+	MULTIPLE_SHARING_GRES_PJ = SLURM_BIT(15), /* Allow multiple sharing gres
+						   * per job */
+};
 
 #define MEM_PER_CPU  0x8000000000000000
 #define SHARED_FORCE 0x8000
@@ -2637,7 +2632,7 @@ typedef struct will_run_response_msg {
 						  * nodes only flag */
 #define RESERVE_FLAG_OVERLAP	   SLURM_BIT(14) /* Permit to overlap others */
 #define RESERVE_FLAG_SPEC_NODES	   SLURM_BIT(15) /* Contains specific nodes */
-/* SLURM_BIT(16) Available 2 versions after 23.11 */
+/* SLURM_BIT(16) unused */
 #define RESERVE_FLAG_TIME_FLOAT	   SLURM_BIT(17) /* Time offset is relative */
 #define RESERVE_FLAG_REPLACE	   SLURM_BIT(18) /* Replace resources
 						  * as assigned to jobs */
@@ -3432,9 +3427,9 @@ typedef struct {
 	list_t *user_list; /* list of slurmdb_user_rec_t */
 } assoc_mgr_info_msg_t;
 
-#define ASSOC_MGR_INFO_FLAG_ASSOC 0x00000001
-#define ASSOC_MGR_INFO_FLAG_USERS 0x00000002
-#define ASSOC_MGR_INFO_FLAG_QOS   0x00000004
+#define ASSOC_MGR_INFO_FLAG_ASSOC SLURM_BIT(0)
+#define ASSOC_MGR_INFO_FLAG_USERS SLURM_BIT(1)
+#define ASSOC_MGR_INFO_FLAG_QOS   SLURM_BIT(2)
 
 typedef struct {
 	list_t *acct_list; /* char * list of account names */
@@ -3782,9 +3777,7 @@ typedef struct {
 #define KILL_NO_SIBS     SLURM_BIT(7) /* Don't kill other sibling jobs */
 #define KILL_JOB_RESV    SLURM_BIT(8) /* Job is willing to run on nodes in a
 				       * magnetic reservation. */
-#define KILL_NO_CRON     SLURM_BIT(9) /* Do not request killing cron Jobs.
-				       * Remove this two versions after 23.11.
-				       */
+/* SLURM_BIT(9) unused */
 #define KILL_NO_SIG_FAIL SLURM_BIT(10) /* Don't fail job due to signal (steps only) */
 #define KILL_JOBS_VERBOSE SLURM_BIT(11) /* Verbose response requested */
 #define KILL_CRON SLURM_BIT(12) /* Request killing cron jobs */

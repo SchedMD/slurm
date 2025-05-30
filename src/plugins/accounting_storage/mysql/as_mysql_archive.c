@@ -46,6 +46,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
 
+#define SLURM_23_11_PROTOCOL_VERSION ((40 << 8) | 0)
 #define SLURM_23_02_PROTOCOL_VERSION ((39 << 8) | 0)
 #define SLURM_22_05_PROTOCOL_VERSION ((38 << 8) | 0)
 #define SLURM_21_08_PROTOCOL_VERSION ((37 << 8) | 0)

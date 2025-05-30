@@ -2259,7 +2259,7 @@ static void _modify_cpus_alloc_for_tpc(uint16_t cr_type, uint16_t req_tpc,
 {
 	xassert(cpus_alloc);
 
-	if ((cr_type & (CR_CORE | CR_SOCKET | CR_LINEAR)) &&
+	if ((!running_cons_tres() || (cr_type & (CR_CORE | CR_SOCKET))) &&
 	    (req_tpc != NO_VAL16) && (req_tpc < vpus)) {
 		*cpus_alloc = ROUNDUP(*cpus_alloc, req_tpc);
 		*cpus_alloc *= vpus;
@@ -5077,21 +5077,11 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 
 	if (running_in_slurmctld() &&
 	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
-		if (msg->protocol_version < SLURM_24_05_PROTOCOL_VERSION) {
-			return_code_msg_t rc_msg = {
-				.return_code = ESLURM_NOT_SUPPORTED,
-			};
-			error("rpc %s from non-supported client version %d for stepmgr job",
-			      rpc_num2string(msg->msg_type),
-			      msg->protocol_version);
-			_send_msg(msg, slurmd_fd, RESPONSE_SLURM_RC, &rc_msg);
-		} else {
-			reroute_msg_t reroute_msg = {
-				.stepmgr = job_ptr->batch_host,
-			};
-			_send_msg(msg, slurmd_fd, RESPONSE_SLURM_REROUTE_MSG,
-				  &reroute_msg);
-		}
+		reroute_msg_t reroute_msg = {
+			.stepmgr = job_ptr->batch_host,
+		};
+		_send_msg(msg, slurmd_fd, RESPONSE_SLURM_REROUTE_MSG,
+			  &reroute_msg);
 		if (lock_func)
 			lock_func(false);
 		return SLURM_SUCCESS;
@@ -5216,7 +5206,7 @@ extern int pack_job_step_info_response_msg(pack_step_args_t *args)
 	uint32_t tmp_offset;
 	time_t now = time(NULL);
 
-	if (args->proto_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (args->proto_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* steps_packed placeholder */
 		pack32(args->steps_packed, args->buffer);
 		pack_time(now, args->buffer);
@@ -5231,24 +5221,6 @@ extern int pack_job_step_info_response_msg(pack_step_args_t *args)
 		slurm_pack_list(args->stepmgr_jobs,
 				slurm_pack_stepmgr_job_info, args->buffer,
 				args->proto_version);
-
-		/* put the real record count in the message body header */
-		tmp_offset = get_buf_offset(args->buffer);
-		set_buf_offset(args->buffer, 0);
-		pack32(args->steps_packed, args->buffer);
-
-		set_buf_offset(args->buffer, tmp_offset);
-	} else if (args->proto_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		/* steps_packed placeholder */
-		pack32(args->steps_packed, args->buffer);
-		pack_time(now, args->buffer);
-
-		list_for_each_ro(args->job_step_list,
-				 args->pack_job_step_list_func, args);
-
-		if (list_count(job_list) && !args->valid_job &&
-		    !args->steps_packed)
-			error_code = ESLURM_INVALID_JOB_ID;
 
 		/* put the real record count in the message body header */
 		tmp_offset = get_buf_offset(args->buffer);

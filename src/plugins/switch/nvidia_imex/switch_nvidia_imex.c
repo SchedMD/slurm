@@ -178,7 +178,7 @@ extern void switch_p_pack_jobinfo(switch_info_t *switch_info, buf_t *buffer,
 	log_flag(SWITCH, "channel %u",
 		 (switch_info ? switch_info->channel : NO_VAL));
 
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!switch_info) {
 			pack32(NO_VAL, buffer);
 			return;
@@ -196,7 +196,7 @@ extern int switch_p_unpack_jobinfo(switch_info_t **switch_info, buf_t *buffer,
 
 	*switch_info = NULL;
 
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&channel, buffer);
 	}
 

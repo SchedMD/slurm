@@ -49,11 +49,10 @@
 #define REF_PATH OPENAPI_PATH_REL OPENAPI_SCHEMAS_PATH
 #define TYPE_PREFIX "DATA_PARSER_"
 #define KEY_PREFIX XSTRINGIFY(DATA_VERSION) "_"
-#define OPENAPI_REF_PLACEHOLDER ((void *) 0xfa0b901301120040)
-
-#define IS_FLAG_BIT_DEPRECATED(bit) (bit->deprecated || IS_PLUGIN_DEPRECATED)
-#define IS_PARSER_DEPRECATED(parser) \
-	(parser->deprecated || IS_PLUGIN_DEPRECATED)
+#define IS_FLAG_BIT_DEPRECATED(bit, args) \
+	(bit->deprecated || data_parser_p_is_deprecated(args->args))
+#define IS_PARSER_DEPRECATED(parser, args) \
+	(parser->deprecated || data_parser_p_is_deprecated(args->args))
 
 typedef struct {
 	int magic; /* MAGIC_SPEC_ARGS */
@@ -66,14 +65,42 @@ typedef struct {
 	data_t *spec;
 	data_t *path_params; /* dict of each path param */
 	data_t *params; /* current parameters target */
+	int *references; /* references[i] = count(parsers[i]) */
 	bool disable_refs;
 } spec_args_t;
 
-static void _add_parser(const parser_t *parser, spec_args_t *sargs);
+#define MAGIC_REFS_PTR 0xaa910e8b
+
+typedef struct {
+	int magic; /* MAGIC_REFS_PTR */
+	int *references; /* references[i] = count(parsers[i]) */
+} refs_ptr_t;
+
 static void _replace_refs(data_t *data, spec_args_t *sargs);
+static void _count_refs(data_t *data, spec_args_t *sargs);
 extern void _set_ref(data_t *obj, const parser_t *parent,
 		     const parser_t *parser, spec_args_t *sargs);
 static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst);
+
+static uint32_t _resolve_parser_index(const parser_t *parser,
+				      spec_args_t *sargs)
+{
+	for (int i = 0; i < sargs->parser_count; i++)
+		if (parser->type == sargs->parsers[i].type)
+			return i;
+
+	xassert(false);
+	return NO_VAL;
+}
+
+static const parser_t *_resolve_parser(const char *type, spec_args_t *sargs)
+{
+	for (int i = 0; i < sargs->parser_count; i++)
+		if (!xstrcmp(sargs->parsers[i].type_string, type))
+			return &sargs->parsers[i];
+
+	return NULL;
+}
 
 static char *_get_parser_key(const parser_t *parser)
 {
@@ -103,8 +130,15 @@ static char *_get_parser_path(const parser_t *parser)
 	return path;
 }
 
-extern data_t *set_openapi_props(data_t *obj, openapi_type_format_t format,
-				 const char *desc)
+/*
+ * Populate OpenAPI specification field
+ * IN obj - data_t ptr to specific field in OpenAPI schema
+ * IN format - OpenAPI format to use
+ * IN desc - Description of field to use (will take ownership)
+ * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
+ */
+static data_t *_set_openapi_props(data_t *obj, openapi_type_format_t format,
+				  char *desc)
 {
 	data_t *dtype;
 	const char *format_str;
@@ -131,7 +165,7 @@ extern data_t *set_openapi_props(data_t *obj, openapi_type_format_t format,
 	}
 
 	if (desc)
-		data_set_string(data_key_set(obj, "description"), desc);
+		data_set_string_own(data_key_set(obj, "description"), desc);
 
 	if (format == OPENAPI_FORMAT_ARRAY)
 		return data_set_dict(data_key_set(obj, "items"));
@@ -142,10 +176,37 @@ extern data_t *set_openapi_props(data_t *obj, openapi_type_format_t format,
 	return NULL;
 }
 
-static bool _should_be_ref(const parser_t *parser)
+static bool _should_be_ref(const parser_t *parser, spec_args_t *sargs)
 {
+	uint32_t parser_index;
+
+	if (sargs->disable_refs)
+		return false;
+
+	/*
+	 * Removed parsers/fields are just place holders and using $ref will
+	 * result in an invalid $ref include path.
+	 */
+	if (parser->model == PARSER_MODEL_REMOVED)
+		return false;
+	if (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)
+		return false;
+
+	parser_index = _resolve_parser_index(parser, sargs);
+
+	/* parser with single reference doesn't need to be a $ref */
+	if ((parser_index != NO_VAL) && !is_prefer_refs_mode(sargs->args)) {
+		debug4("%s: %s references=%u",
+		       __func__, parser->type_string,
+		       sargs->references[parser_index]);
+
+		if (sargs->references[parser_index] <= 1)
+			return false;
+	}
+
 	if ((parser->obj_openapi == OPENAPI_FORMAT_OBJECT) ||
-	    (parser->obj_openapi == OPENAPI_FORMAT_ARRAY))
+	    ((parser->obj_openapi == OPENAPI_FORMAT_ARRAY) &&
+	     (parser->model != PARSER_MODEL_FLAG_ARRAY)))
 		return true;
 
 	if (parser->array_type || parser->pointer_type || parser->list_type ||
@@ -162,9 +223,13 @@ static void _add_eflags(data_t *props, const parser_t *parser,
 
 	for (int i = 0; i < parser->flag_bit_array_count; i++) {
 		const flag_bit_t *bit = &parser->flag_bit_array[i];
-		data_t *dchild = data_key_set(props, bit->name);
+		data_t *dchild;
 
-		set_openapi_props(dchild, OPENAPI_FORMAT_BOOL, NULL);
+		if (bit->hidden)
+			continue;
+
+		dchild = data_key_set(props, bit->name);
+		_set_openapi_props(dchild, OPENAPI_FORMAT_BOOL, NULL);
 	}
 }
 
@@ -203,19 +268,37 @@ static void _add_param_flag_enum(data_t *param, const parser_t *parser)
 					parser->flag_bit_array[i].name);
 }
 
+static void _gen_desc(char **desc_ptr, char **desc_at_ptr,
+		      const parser_t *parser)
+{
+	bool has_key = (parser && parser->key && parser->key[0]);
+	bool has_parser = (parser && parser->obj_desc && parser->obj_desc[0]);
+
+	xassert(parser);
+
+	if (!has_parser)
+		return;
+
+	if (has_key)
+		_xstrfmtcatat(desc_ptr, desc_at_ptr, "%s", parser->obj_desc);
+	else
+		_xstrfmtcatat(desc_ptr, desc_at_ptr, "%s%s%s",
+			      (*desc_ptr ? " (" : ""), parser->obj_desc,
+			      (*desc_ptr ? ")" : ""));
+}
+
 /*
  * Populate OpenAPI specification field using parser
  * IN obj - data_t ptr to specific field in OpenAPI schema
  * IN parser - populate field with info from parser
  * IN description - description from parent pointer parser or NULL
- *
- * If parser is an ARRAY or OBJECT, the openapi_spec() function will be called
- * from the parser to populate the child fields.
+ * IN deprecated - parser marked as deprecated
  *
  * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
  */
 static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
-				  spec_args_t *sargs, const char *desc)
+				  spec_args_t *sargs, char *desc,
+				  bool deprecated)
 {
 	data_t *props;
 	openapi_type_format_t format;
@@ -224,32 +307,12 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
-
-	if ((parser->model ==
-	     PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) ||
-	    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)) {
-		_set_ref(obj, parser, find_parser_by_type(parser->type), sargs);
-		return NULL;
-	} else if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
-		/* find all parsers that should be references */
-		_set_ref(obj, parser, find_parser_by_type(parser->type), sargs);
-		return NULL;
-	} else if (parser->pointer_type || parser->alias_type) {
-		_set_ref(obj, parser, parser, sargs);
-		return NULL;
-	}
-
-	/* parser explicitly overrides the specification */
-	if (parser->openapi_spec) {
-		parser->openapi_spec(parser, sargs->args, sargs->spec, obj);
-
-		/* the resultant type must match the obj_openapi type */
-		xassert(is_complex_mode(sargs->args) ||
-			!xstrcmp(data_get_string(data_key_get(obj, "type")),
-				 openapi_type_format_to_type_string(
-					 parser->obj_openapi)));
-		return NULL;
-	}
+	xassert(!parser->pointer_type);
+	xassert(!parser->alias_type);
+	xassert(parser->model != PARSER_MODEL_ARRAY_LINKED_FIELD);
+	xassert(parser->model !=
+		PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD);
+	xassert(parser->model != PARSER_MODEL_ARRAY_REMOVED_FIELD);
 
 	if (parser->array_type || parser->list_type ||
 	    (parser->flag_bit_array && !parser->single_flag))
@@ -264,10 +327,12 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(format > OPENAPI_FORMAT_INVALID);
 	xassert(format < OPENAPI_FORMAT_MAX);
 
-	if (parser->obj_desc)
-		desc = parser->obj_desc;
+	if (!desc) {
+		char *desc_at = NULL;
+		_gen_desc(&desc, &desc_at, parser);
+	}
 
-	if ((props = set_openapi_props(obj, format, desc))) {
+	if ((props = _set_openapi_props(obj, format, desc))) {
 		if (parser->array_type) {
 			_set_ref(props, parser,
 				 find_parser_by_type(parser->array_type),
@@ -284,71 +349,102 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 			for (int i = 0; i < parser->field_count; i++)
 				_add_field(obj, required, parser,
 					   &parser->fields[i], sargs);
+		} else if (parser->model == PARSER_MODEL_REMOVED) {
+			/* do nothing */
 		} else if (!is_complex_mode(sargs->args)) {
 			fatal("%s: parser %s need to provide openapi specification, array type or pointer type",
 			      __func__, parser->type_string);
 		}
 	}
 
+	if (deprecated)
+		data_set_bool(data_key_set(obj, "deprecated"), true);
+
 	return props;
-}
-
-extern void set_openapi_parse_ref(data_t *obj, const parser_t *parser,
-				  data_t *spec, args_t *args)
-{
-	spec_args_t sargs = {
-		.magic = MAGIC_SPEC_ARGS,
-		.args = args,
-		.spec = spec,
-	};
-
-	xassert(parser->magic == MAGIC_PARSER);
-	xassert(args->magic == MAGIC_ARGS);
-
-	sargs.schemas = data_resolve_dict_path(spec, OPENAPI_SCHEMAS_PATH);
-
-	_set_ref(obj, NULL, parser, &sargs);
 }
 
 extern void _set_ref(data_t *obj, const parser_t *parent,
 		     const parser_t *parser, spec_args_t *sargs)
 {
-	char *str;
-	const char *desc = NULL;
-
-	if (parser->obj_desc)
-		desc = parser->obj_desc;
-	else if (parent && parent->obj_desc)
-		desc = parent->obj_desc;
+	char *str, *key;
+	char *desc = NULL, *desc_at = NULL;
+	bool deprecated = (parent && parent->deprecated);
 
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
-	while (parser->pointer_type || parser->alias_type) {
-		/* Not possible to use unalias_parser() here */
+	while (true) {
+		_gen_desc(&desc, &desc_at, parser);
 
-		if (parser->obj_desc)
-			desc = parser->obj_desc;
+		/* All children are deprecated once the parent is */
+		if (parser->deprecated)
+			deprecated = true;
 
-		if (parser->pointer_type)
+		if (parser->model == PARSER_MODEL_REMOVED) {
+			if (is_complex_mode(sargs->args))
+				return;
+			break;
+		}
+
+		if ((parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) ||
+		    (parser->model ==
+		     PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) ||
+		    (parser->model == PARSER_MODEL_ARRAY_REMOVED_FIELD)) {
+			/* resolve to linked parser */
+			parent = parser;
+			parser = find_parser_by_type(parser->type);
+
+			continue;
+		}
+
+		if (parser->pointer_type) {
 			parser = find_parser_by_type(parser->pointer_type);
-		if (parser->alias_type)
+			continue;
+		}
+
+		if (parser->alias_type) {
 			parser = find_parser_by_type(parser->alias_type);
+			continue;
+		}
+
+		break;
 	}
 
-	if (sargs->disable_refs || !_should_be_ref(parser)) {
-		_set_openapi_parse(obj, parser, sargs, desc);
+	if (!_should_be_ref(parser, sargs)) {
+		_set_openapi_parse(obj, parser, sargs, desc, deprecated);
 		return;
 	}
 
-	data_set_dict(obj);
+	if (data_get_type(obj) == DATA_TYPE_NULL)
+		data_set_dict(obj);
+
+	xassert(data_get_type(obj) == DATA_TYPE_DICT);
+
 	str = _get_parser_path(parser);
 	data_set_string_own(data_key_set(obj, "$ref"), str);
 
-	if (desc)
-		data_set_string(data_key_set(obj, "description"), desc);
+	if (desc) {
+		xassert(!data_key_get(obj, "description"));
+		data_set_string_own(data_key_set(obj, "description"), desc);
+	}
 
-	_add_parser(parser, sargs);
+	if (deprecated)
+		data_set_bool(data_key_set(obj, "deprecated"), true);
+
+	/* Add schema for $ref target */
+
+	key = _get_parser_key(parser);
+	obj = data_key_set(sargs->schemas, key);
+
+	if (data_get_type(obj) == DATA_TYPE_NULL) {
+		debug4("%s: adding schema %s", __func__, key);
+		_set_openapi_parse(data_set_dict(obj), parser, sargs, NULL,
+				   parser->deprecated);
+	} else {
+		debug4("%s: skip adding duplicate schema %s", __func__, key);
+	}
+
+	xfree(key);
 }
 
 static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst)
@@ -403,39 +499,6 @@ static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst)
 	return dst;
 }
 
-static void _add_parser(const parser_t *parser, spec_args_t *sargs)
-{
-	data_t *obj;
-	char *key;
-
-	xassert(sargs->magic == MAGIC_SPEC_ARGS);
-	xassert(sargs->args->magic == MAGIC_ARGS);
-
-	if (!_should_be_ref(parser)) {
-	       debug3("%s: skip adding %s as simple type=%s format=%s",
-		      __func__, parser->type_string,
-		      openapi_type_format_to_type_string(
-			      parser->obj_openapi),
-		      openapi_type_format_to_format_string(
-			      parser->obj_openapi));
-	       return;
-	}
-
-	key = _get_parser_key(parser);
-	obj = data_key_set(sargs->schemas, key);
-
-	if (data_get_type(obj) != DATA_TYPE_NULL) {
-		debug3("%s: skip adding duplicate schema %s",
-		      __func__, key);
-		xfree(key);
-		return;
-	}
-	xfree(key);
-
-	data_set_dict(obj);
-	_set_openapi_parse(obj, parser, sargs, NULL);
-}
-
 static data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
 {
 	spec_args_t *sargs = arg;
@@ -458,33 +521,6 @@ static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
-	if (!xstrcmp(key, "$ref") &&
-	    (data_get_type(data) == DATA_TYPE_STRING) &&
-	    !xstrncmp(data_get_string(data), TYPE_PREFIX,
-		      strlen(TYPE_PREFIX))) {
-		const parser_t *parser = NULL;
-		char *str;
-
-		for (int i = 0; i < sargs->parser_count; i++) {
-			if (!xstrcmp(sargs->parsers[i].type_string,
-				     data_get_string(data))) {
-				parser = &sargs->parsers[i];
-				break;
-			}
-		}
-
-		if (!parser) {
-			debug("%s: skipping unknown %s",
-			      __func__, data_get_string(data));
-			data_set_null(data);
-			return DATA_FOR_EACH_CONT;
-		}
-
-		str = _get_parser_path(parser);
-		data_set_string_own(data, str);
-		_add_parser(parser, sargs);
-	}
-
 	if ((data_get_type(data) == DATA_TYPE_LIST) ||
 	    (data_get_type(data) == DATA_TYPE_DICT))
 		_replace_refs(data, sargs);
@@ -497,6 +533,106 @@ static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
  */
 static void _replace_refs(data_t *data, spec_args_t *sargs)
 {
+	data_t *ref;
+
+	xassert(sargs->magic == MAGIC_SPEC_ARGS);
+	xassert(sargs->args->magic == MAGIC_ARGS);
+	xassert(sargs->parsers);
+	xassert(sargs->parser_count > 0);
+
+	if (!data)
+		return;
+
+	if (data_get_type(data) == DATA_TYPE_LIST)
+		(void) data_list_for_each(data, _convert_list_entry, sargs);
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		return;
+
+	if ((ref = data_key_get(data, "$ref")) &&
+	     (data_get_type(ref) == DATA_TYPE_STRING) &&
+	     !xstrncmp(data_get_string(ref), TYPE_PREFIX,
+		       strlen(TYPE_PREFIX))) {
+		const parser_t *parser = NULL;
+
+		for (int i = 0; i < sargs->parser_count; i++) {
+			if (!xstrcmp(sargs->parsers[i].type_string,
+				     data_get_string(ref))) {
+				parser = &sargs->parsers[i];
+				break;
+			}
+		}
+
+		if (!parser) {
+			debug("%s: skipping unknown %s",
+			      __func__, data_get_string(data));
+			data_set_null(data);
+			return;
+		}
+
+		_set_ref(data, NULL, parser, sargs);
+	} else {
+		(void) data_dict_for_each(data, _convert_dict_entry, sargs);
+	}
+}
+
+static data_for_each_cmd_t _count_list_entry(data_t *data, void *arg)
+{
+	spec_args_t *sargs = arg;
+
+	xassert(sargs->magic == MAGIC_SPEC_ARGS);
+	xassert(sargs->args->magic == MAGIC_ARGS);
+
+	if ((data_get_type(data) == DATA_TYPE_LIST) ||
+	    (data_get_type(data) == DATA_TYPE_DICT))
+		_count_refs(data, sargs);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static void _increment_ref(const parser_t *parent, const parser_t *parser,
+			   spec_args_t *sargs)
+{
+	uint32_t parser_index;
+
+	parser = unalias_parser(parser);
+
+	if ((parser_index = _resolve_parser_index(parser, sargs)) != NO_VAL) {
+		sargs->references[parser_index]++;
+
+		debug4("%s: %s->%s incremented references=%u",
+		       __func__, (parent ? parent->type_string : "*" ),
+		       parser->type_string, sargs->references[parser_index]);
+	}
+}
+
+static data_for_each_cmd_t _count_dict_entry(const char *key, data_t *data,
+					     void *arg)
+{
+	spec_args_t *sargs = arg;
+
+	xassert(sargs->magic == MAGIC_SPEC_ARGS);
+	xassert(sargs->args->magic == MAGIC_ARGS);
+
+	if (!xstrcmp(key, "$ref") &&
+	    (data_get_type(data) == DATA_TYPE_STRING) &&
+	    !xstrncmp(data_get_string(data), TYPE_PREFIX,
+		      strlen(TYPE_PREFIX)))
+		_increment_ref(NULL, _resolve_parser(data_get_string(data),
+						     sargs), sargs);
+
+	if ((data_get_type(data) == DATA_TYPE_LIST) ||
+	    (data_get_type(data) == DATA_TYPE_DICT))
+		_count_refs(data, sargs);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+/*
+ * Find every $ref = DATA_PARSER_* and count references
+ */
+static void _count_refs(data_t *data, spec_args_t *sargs)
+{
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 	xassert(sargs->parsers);
@@ -506,9 +642,33 @@ static void _replace_refs(data_t *data, spec_args_t *sargs)
 		return;
 
 	if (data_get_type(data) == DATA_TYPE_DICT)
-		(void) data_dict_for_each(data, _convert_dict_entry, sargs);
+		(void) data_dict_for_each(data, _count_dict_entry, sargs);
 	else if (data_get_type(data) == DATA_TYPE_LIST)
-		(void) data_list_for_each(data, _convert_list_entry, sargs);
+		(void) data_list_for_each(data, _count_list_entry, sargs);
+}
+
+static void _count_parser_refs(spec_args_t *sargs)
+{
+	xassert(sargs->magic == MAGIC_SPEC_ARGS);
+	xassert(sargs->args->magic == MAGIC_ARGS);
+	xassert(sargs->parsers);
+	xassert(sargs->parser_count > 0);
+
+	for (int ip = 0; ip < sargs->parser_count; ip++) {
+		const parser_t *parser = &sargs->parsers[ip];
+
+		if ((parser->model != PARSER_MODEL_ARRAY) ||
+		    !parser->field_count)
+			continue;
+
+		for (int i = 0; i < parser->field_count; i++) {
+			const parser_t *pchild =
+				find_parser_by_type(parser->fields[i].type);
+
+			if (pchild)
+				_increment_ref(parser, pchild, sargs);
+		}
+	}
 }
 
 static data_t *_add_param(data_t *param, const char *name,
@@ -529,7 +689,8 @@ static data_t *_add_param(data_t *param, const char *name,
 	data_set_string(data_key_set(param, "style"),
 			(in_path ? "simple" : "form"));
 	data_set_bool(data_key_set(param, "explode"), false);
-	data_set_bool(data_key_set(param, "deprecated"), deprecated);
+	if (deprecated)
+		data_set_bool(data_key_set(param, "deprecated"), true);
 	data_set_bool(data_key_set(param, "allowEmptyValue"), allow_empty);
 	data_set_bool(data_key_set(param, "allowReserved"), false);
 	if (desc)
@@ -554,7 +715,8 @@ static void _add_param_eflags(data_t *params, const parser_t *parser,
 			_add_param(data_set_dict(data_list_append(params)),
 				   bit->name, OPENAPI_FORMAT_BOOL, true,
 				   bit->description,
-				   IS_FLAG_BIT_DEPRECATED(bit), false, args);
+				   IS_FLAG_BIT_DEPRECATED(bit, args),
+				   false, args);
 	}
 }
 
@@ -587,7 +749,7 @@ static void _add_param_linked(data_t *params, const parser_t *fp,
 	schema = _add_param(data_set_dict(data_list_append(params)), fp->key,
 			    OPENAPI_FORMAT_STRING,
 			    (p->obj_openapi == OPENAPI_FORMAT_BOOL),
-			    fp->obj_desc, IS_PARSER_DEPRECATED(fp),
+			    fp->obj_desc, IS_PARSER_DEPRECATED(fp, args),
 			    fp->required, args);
 
 	if (fp->model == PARSER_MODEL_ARRAY_LINKED_FIELD)
@@ -600,17 +762,9 @@ static void _add_param_linked(data_t *params, const parser_t *fp,
 static data_for_each_cmd_t _foreach_path_method_ref(data_t *ref, void *arg)
 {
 	spec_args_t *args = arg;
-	const parser_t *parser = NULL;
+	const parser_t *parser;
 
-	for (int i = 0; i < args->parser_count; i++) {
-		if (!xstrcmp(args->parsers[i].type_string,
-			     data_get_string(ref))) {
-			parser = &args->parsers[i];
-			break;
-		}
-	}
-
-	if (!parser) {
+	if (!(parser = _resolve_parser(data_get_string(ref), args))) {
 		error("%s: Unable to find parser for $ref = %s",
 		      __func__, data_get_string(ref));
 		return DATA_FOR_EACH_FAIL;
@@ -747,6 +901,8 @@ static data_for_each_cmd_t _foreach_join_path(const char *key, data_t *data,
 	data_t *path = data_key_set(args->paths, key);
 
 	data_move(path, data);
+	_count_refs(path, args);
+	_count_parser_refs(args);
 	_replace_refs(path, args);
 
 	return DATA_FOR_EACH_CONT;
@@ -773,10 +929,13 @@ extern int data_parser_p_specify(args_t *args, data_t *spec)
 			     OPENAPI_SCHEMAS_PATH);
 
 	get_parsers(&sargs.parsers, &sargs.parser_count);
+	sargs.references = xcalloc(sargs.parser_count,
+				   sizeof(*sargs.references));
 
 	(void) data_dict_for_each(sargs.paths, _foreach_path, &sargs);
 	(void) data_dict_for_each(sargs.new_paths, _foreach_join_path, &sargs);
 	FREE_NULL_DATA(sargs.new_paths);
+	xfree(sargs.references);
 
 	return SLURM_SUCCESS;
 }
@@ -798,37 +957,60 @@ extern void set_openapi_schema(data_t *dst, const parser_t *parser,
 
 	get_parsers(&sargs.parsers, &sargs.parser_count);
 
-	(void) _set_openapi_parse(dst, parser, &sargs, NULL);
+	(void) _set_openapi_parse(dst, parser, &sargs, NULL, false);
 }
 
 extern int data_parser_p_increment_reference(args_t *args,
 					     data_parser_type_t type,
-					     void **references_ptr)
+					     refs_ptr_t **references_ptr)
 {
+	spec_args_t sargs = {
+		.magic = MAGIC_SPEC_ARGS,
+		.args = args,
+	};
+	refs_ptr_t *refs = *references_ptr;
+	const parser_t *parser;
+
+	get_parsers(&sargs.parsers, &sargs.parser_count);
+
+	if (!refs) {
+		refs = *references_ptr = xmalloc(sizeof(*refs));
+		refs->magic = MAGIC_REFS_PTR;
+		refs->references =
+			xcalloc(sargs.parser_count, sizeof(*refs->references));
+	}
+
+	if (!(parser = find_parser_by_type(type)))
+		return ESLURM_DATA_INVALID_PARSER;
+
+	xassert(refs->magic == MAGIC_REFS_PTR);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(type > DATA_PARSER_TYPE_INVALID);
 	xassert(type < DATA_PARSER_TYPE_MAX);
-	xassert(!*references_ptr ||
-		(*references_ptr == OPENAPI_REF_PLACEHOLDER));
+	xassert(sargs.parser_count > 0);
 
-	/* refs are not tracked in v40 */
-	*references_ptr = OPENAPI_REF_PLACEHOLDER;
+	sargs.references = refs->references,
+	_increment_ref(NULL, parser, &sargs);
 
 	return SLURM_SUCCESS;
 }
 
 extern int data_parser_p_populate_schema(args_t *args, data_parser_type_t type,
-					 void **references_ptr, data_t *dst,
-					 data_t *schemas)
+					 refs_ptr_t **references_ptr,
+					 data_t *dst, data_t *schemas)
 {
+#ifndef NDEBUG
+	refs_ptr_t *refs = *references_ptr;
+#endif
 	spec_args_t sargs = {
 		.magic = MAGIC_SPEC_ARGS,
 		.args = args,
 		.schemas = schemas,
+		.references = (*references_ptr)->references,
 	};
 	const parser_t *parser;
 
-	xassert(*references_ptr == OPENAPI_REF_PLACEHOLDER);
+	xassert(refs && refs->magic == MAGIC_REFS_PTR);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(type > DATA_PARSER_TYPE_INVALID);
 	xassert(type < DATA_PARSER_TYPE_MAX);
@@ -846,17 +1028,21 @@ extern int data_parser_p_populate_schema(args_t *args, data_parser_type_t type,
 extern int data_parser_p_populate_parameters(args_t *args,
 					     data_parser_type_t parameter_type,
 					     data_parser_type_t query_type,
-					     void **references_ptr, data_t *dst,
-					     data_t *schemas)
+					     refs_ptr_t **references_ptr,
+					     data_t *dst, data_t *schemas)
 {
+#ifndef NDEBUG
+	refs_ptr_t *refs = *references_ptr;
+#endif
 	spec_args_t sargs = {
 		.magic = MAGIC_SPEC_ARGS,
 		.args = args,
 		.schemas = schemas,
+		.references = (*references_ptr)->references,
 	};
 	const parser_t *param_parser = NULL, *query_parser = NULL;
 
-	xassert(*references_ptr == OPENAPI_REF_PLACEHOLDER);
+	xassert(refs && refs->magic == MAGIC_REFS_PTR);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(!parameter_type || (parameter_type > DATA_PARSER_TYPE_INVALID));
 	xassert(!parameter_type || (parameter_type < DATA_PARSER_TYPE_MAX));
@@ -915,12 +1101,19 @@ extern int data_parser_p_populate_parameters(args_t *args,
 }
 
 extern void data_parser_p_release_references(args_t *args,
-					     void **references_ptr)
+					     refs_ptr_t **references_ptr)
 {
+	refs_ptr_t *refs = *references_ptr;
+
 	xassert(args->magic == MAGIC_ARGS);
 
-	/* refs are not tracked in v40 */
-	xassert(!*references_ptr ||
-		(*references_ptr == OPENAPI_REF_PLACEHOLDER));
+	if (!refs)
+		return;
+
 	*references_ptr = NULL;
+
+	xassert(refs->magic == MAGIC_REFS_PTR);
+	xfree(refs->references);
+	refs->magic = ~MAGIC_REFS_PTR;
+	xfree(refs);
 }
