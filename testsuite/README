@@ -848,10 +848,10 @@ test_111_3   /commands/sinfo/test_--json.py
 test_112_#   Testing of slurmrestd options.
 ===========================================
 test_112_1   /commands/slurmrestd/test_options.py
-test_112_40  Test slurmrestd v0.0.40 requests
 test_112_41  Test slurmrestd v0.0.41 requests
 test_112_42  Test slurmrestd v0.0.42 requests
 test_112_43  Test slurmrestd v0.0.43 requests
+test_112_44  Test slurmrestd v0.0.44 requests
 
 test_113_#   Testing of sprio options.
 ======================================

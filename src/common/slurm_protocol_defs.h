@@ -218,9 +218,9 @@
 #define RESV_FREE_STR_USER      SLURM_BIT(0)
 #define RESV_FREE_STR_ACCT      SLURM_BIT(1)
 #define RESV_FREE_STR_TRES_BB   SLURM_BIT(2)
-/* #define SLURM_BIT(3) reusable 2 versions after 23.11 */
+/* SLURM_BIT(3) unused */
 #define RESV_FREE_STR_TRES_LIC  SLURM_BIT(4)
-/* #define SLURM_BIT(5) reusable 2 versions after 23.11 */
+/* SLURM_BIT(5) unused */
 #define RESV_FREE_STR_GROUP     SLURM_BIT(6)
 #define RESV_FREE_STR_COMMENT   SLURM_BIT(7)
 #define RESV_FREE_STR_NODES     SLURM_BIT(8)
@@ -547,7 +547,7 @@ typedef struct shutdown_msg {
 
 typedef enum {
 	SLURMCTLD_SHUTDOWN_ALL = 0,	/* all slurm daemons are shutdown */
-	/* = 1 can be reused two versions after 23.11 */
+	/* 1 unused */
 	SLURMCTLD_SHUTDOWN_CTLD = 2,	/* slurmctld only (no core file) */
 } slurmctld_shutdown_type_t;
 

@@ -459,10 +459,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/cred/munge/Makefile
 		 src/plugins/cred/none/Makefile
 		 src/plugins/data_parser/Makefile
-		 src/plugins/data_parser/v0.0.40/Makefile
 		 src/plugins/data_parser/v0.0.41/Makefile
 		 src/plugins/data_parser/v0.0.42/Makefile
 		 src/plugins/data_parser/v0.0.43/Makefile
+		 src/plugins/data_parser/v0.0.44/Makefile
 		 src/plugins/gpu/Makefile
 		 src/plugins/gpu/common/Makefile
 		 src/plugins/gpu/generic/Makefile

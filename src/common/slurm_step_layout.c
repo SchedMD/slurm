@@ -392,15 +392,7 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 		xassert(uint32_tmp == step_layout->cpt_compact_cnt);
 
 		safe_unpackstr(&tmp_str, buffer);
-		if (running_in_slurmctld()) {
-			/*
-			 * Ignore alias_addrs from state file.
-			 * We dump alias_addrs only in slurm 23.11.0 and 23.11.1
-			 * When 23.11 is no longer supported this can be
-			 * removed.
-			 */
-			xfree(tmp_str);
-		} else if (tmp_str) {
+		if (tmp_str) {
 			step_layout->alias_addrs =
 				extract_net_cred(tmp_str, protocol_version);
 			if (!step_layout->alias_addrs) {

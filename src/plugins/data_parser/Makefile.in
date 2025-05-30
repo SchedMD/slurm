@@ -462,7 +462,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = v0.0.40 v0.0.41 v0.0.42 v0.0.43
+SUBDIRS = v0.0.41 v0.0.42 v0.0.43 v0.0.44
 all: all-recursive
 
 .SUFFIXES:

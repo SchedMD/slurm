@@ -698,12 +698,7 @@ enum tls_plugin_type {
 /* Select plugin (id) in use by cluster */
 enum select_plugin_type {
 	/* 100 unused (originally for BlueGene) */
-	/*
-	 * 101 cons_res was removed in 23.11. However, this is needed for
-	 * systems that are upgrading from an older version and were using
-	 * cons_res. This can be removed two versions after 23.11.
-	 */
-	SELECT_PLUGIN_CONS_RES = 101,
+	/* 101 unused (originally for cons_res) */
 	SELECT_PLUGIN_LINEAR         = 102, /* Linear on a normal system */
 	/* 103 unused (originally used for BGQ) */
 	/* 104 unused (originally used for Cray/ALPS with select/linear) */
@@ -1047,7 +1042,7 @@ enum {
 	CR_MEMORY = SLURM_BIT(4), /* Memory as consumable resources. Memory is
 				   * not over-committed when selected as a CR.
 				   */
-	/* was CR_OTHER_CONS_RES = SLURM_BIT(5), removed v23.11 */
+	/* unused SLURM_BIT(5) */
 	ENFORCE_BINDING_GRES = SLURM_BIT(6),
 	ONE_TASK_PER_SHARING_GRES = SLURM_BIT(7),
 
@@ -2637,7 +2632,7 @@ typedef struct will_run_response_msg {
 						  * nodes only flag */
 #define RESERVE_FLAG_OVERLAP	   SLURM_BIT(14) /* Permit to overlap others */
 #define RESERVE_FLAG_SPEC_NODES	   SLURM_BIT(15) /* Contains specific nodes */
-/* SLURM_BIT(16) Available 2 versions after 23.11 */
+/* SLURM_BIT(16) unused */
 #define RESERVE_FLAG_TIME_FLOAT	   SLURM_BIT(17) /* Time offset is relative */
 #define RESERVE_FLAG_REPLACE	   SLURM_BIT(18) /* Replace resources
 						  * as assigned to jobs */
@@ -3782,9 +3777,7 @@ typedef struct {
 #define KILL_NO_SIBS     SLURM_BIT(7) /* Don't kill other sibling jobs */
 #define KILL_JOB_RESV    SLURM_BIT(8) /* Job is willing to run on nodes in a
 				       * magnetic reservation. */
-#define KILL_NO_CRON     SLURM_BIT(9) /* Do not request killing cron Jobs.
-				       * Remove this two versions after 23.11.
-				       */
+/* SLURM_BIT(9) unused */
 #define KILL_NO_SIG_FAIL SLURM_BIT(10) /* Don't fail job due to signal (steps only) */
 #define KILL_JOBS_VERBOSE SLURM_BIT(11) /* Verbose response requested */
 #define KILL_CRON SLURM_BIT(12) /* Request killing cron jobs */

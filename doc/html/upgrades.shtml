@@ -68,7 +68,7 @@ daemons and commands with a version of 23.11.x, 23.02.x or 22.05.x. It is also
 capable of updating the records in the database that were recorded by an
 instance of slurmdbd running these versions.</p>
 
-<p>The Slurm 24.11 release will introduce compatibility with three previous
+<p>The Slurm 24.11 release introduces compatibility with three previous
 major releases to provide a similar support duration with the more frequent
 6-month release cycle:</p>
 
@@ -78,11 +78,6 @@ major releases to provide a similar support duration with the more frequent
 <td><strong>Slurm Release</strong></td>
 <td><strong>Revised End of Support</strong><br>(total length)</td>
 <td><strong>Compatible Prior Version</strong></td>
-</tr>
-<tr>
-<td>23.02</td>
-<td>November 2024 (21 months)</td>
-<td>22.05, 21.08</td>
 </tr>
 <tr>
 <td>23.11</td>
@@ -108,6 +103,11 @@ major releases to provide a similar support duration with the more frequent
 <td>25.11</td>
 <td>May 2027 (18 months)</td>
 <td>25.05, 24.11, 24.05</td>
+</tr>
+<tr>
+<td>26.05</td>
+<td>November 2028 (18 months)</td>
+<td>25.11, 25.05, 24.11</td>
 </tr>
 </tbody>
 </table>
@@ -274,42 +274,6 @@ and openapi plugins. Changes to the formats are tracked in the
 <td><strong>Removed in Release</strong></td>
 </tr>
 <tr>
-<td><a href="openapi_release_notes.html#20020">20.02</a></td>
-<td>v0.0.35,dbv0.0.35</td>
-<td></td>
-<td>22.05</td>
-</tr>
-<tr>
-<td><a href="openapi_release_notes.html#20110">20.11</a></td>
-<td>v0.0.36, dbv0.0.36</td>
-<td></td>
-<td>23.02</td>
-</tr>
-<tr>
-<td><a href="openapi_release_notes.html#21080">21.08</a></td>
-<td>v0.0.37, dbv0.0.37</td>
-<td></td>
-<td>23.11</td>
-</tr>
-<tr>
-<td><a href="openapi_release_notes.html#22050">22.05</a></td>
-<td>v0.0.38, dbv0.0.38</td>
-<td></td>
-<td>24.05</td>
-</tr>
-<tr>
-<td><a href="openapi_release_notes.html#23020">23.02</a></td>
-<td>v0.0.39, dbv0.0.39</td>
-<td>v0.0.39</td>
-<td>24.11</td>
-</tr>
-<tr>
-<td><a href="openapi_release_notes.html#23110">23.11</a></td>
-<td>slurmctld, slurmdbd</td>
-<td>v0.0.40</td>
-<td>25.11</td>
-</tr>
-<tr>
 <td><a href="openapi_release_notes.html#24050">24.05</a></td>
 <td></td>
 <td>v0.0.41</td>
@@ -322,10 +286,16 @@ and openapi plugins. Changes to the formats are tracked in the
 <td>26.11</td>
 </tr>
 <tr>
-<td><a href="openapi_release_notes.html#24110">25.05</a></td>
+<td><a href="openapi_release_notes.html#25050">25.05</a></td>
 <td></td>
 <td>v0.0.43</td>
-<td>26.11</td>
+<td>27.05</td>
+</tr>
+<tr>
+<td><a href="openapi_release_notes.html#25110">25.05</a></td>
+<td></td>
+<td>v0.0.44</td>
+<td>27.11</td>
 </tr>
 </tbody>
 </table>
@@ -632,6 +602,6 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p style="text-align:center;">Last modified 15 January 2025</p>
+<p style="text-align:center;">Last modified 29 May 2025</p>
 
 <!--#include virtual="footer.txt"-->

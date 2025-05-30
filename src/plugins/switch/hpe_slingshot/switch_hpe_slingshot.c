@@ -301,7 +301,7 @@ extern void switch_p_pack_jobinfo(void *switch_jobinfo, buf_t *buffer,
 
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!jobinfo) {
 			packbool(0, buffer);
 			return;
@@ -324,7 +324,7 @@ extern int switch_p_unpack_jobinfo(void **switch_jobinfo, buf_t *buffer,
 
 	*switch_jobinfo = jobinfo = xmalloc(sizeof(*jobinfo));
 
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackbool(&tmp_bool, buffer);
 		if (!tmp_bool) {
 			slingshot_free_jobinfo(*switch_jobinfo);

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  api.h - Slurm data parsing handlers
+ *  parsing.h - Slurm data parsing handlers
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -33,47 +33,43 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef DATA_PARSER_API
-#define DATA_PARSER_API
+#ifndef DATA_PARSER_PARSING
+#define DATA_PARSER_PARSING
 
 #include "src/interfaces/data_parser.h"
+#include "src/slurmrestd/openapi.h"
+#include "api.h"
+#include "parsers.h"
 
 /*
- * These macros are defined by the Makefile.am:
- * DATA_VERSION
- * PLUGIN_ID
+ * All parsing uses a parent path (list of path components) to track parsing
+ * path to provide client a useful error/warning message about issues. OpenAPI
+ * specifies how path strings are to be constructed.
  */
+#define set_source_path(path_ptr, args, parent_path)      \
+	(is_fast_mode(args) ? NULL :                      \
+	 openapi_fmt_rel_path_str(path_ptr, parent_path))
+#define clone_source_path_index(parent_path, index) \
+	openapi_fork_rel_path_list(parent_path, index)
 
-#define MAGIC_ARGS 0x2ea1bebb
-#define is_fast_mode(args) (args->flags & FLAG_FAST)
-#define is_complex_mode(args) (args->flags & FLAG_COMPLEX_VALUES)
+/*
+ * Remove macros to avoid calling them after this point since all calls should
+ * be done against PARSE() or DUMP() instead.
+ */
+#undef DATA_DUMP
+#undef DATA_PARSE
 
-typedef enum {
-	FLAG_NONE = 0,
-	/* only dump the OpenAPI Specification instead of the requested data */
-	FLAG_SPEC_ONLY = SLURM_BIT(0),
-	/* attempt to run as fast as possible, skipping more expensive checks */
-	FLAG_FAST = SLURM_BIT(1),
-	/* use null/false/Infinity/NaN for *_NO_VALs */
-	FLAG_COMPLEX_VALUES = SLURM_BIT(2),
-} data_parser_flags_t;
+extern int dump(void *src, ssize_t src_bytes,
+		const parser_t *const field_parser,
+		const parser_t *const parser, data_t *dst, args_t *args);
+#define DUMP(type, src, dst, args)                                            \
+	dump(&src, sizeof(src), NULL, find_parser_by_type(DATA_PARSER_##type), \
+	     dst, args)
 
-typedef struct {
-	int magic; /* MAGIC_ARGS */
-	data_parser_on_error_t on_parse_error;
-	data_parser_on_error_t on_dump_error;
-	data_parser_on_error_t on_query_error;
-	void *error_arg;
-	data_parser_on_warn_t on_parse_warn;
-	data_parser_on_warn_t on_dump_warn;
-	data_parser_on_warn_t on_query_warn;
-	void *warn_arg;
-	void *db_conn;
-	bool close_db_conn;
-	list_t *tres_list;
-	list_t *qos_list;
-	list_t *assoc_list;
-	data_parser_flags_t flags;
-} args_t;
+extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
+		 data_t *src, args_t *args, data_t *parent_path);
+#define PARSE(type, dst, src, parent_path, args)                               \
+	parse(&dst, sizeof(dst), find_parser_by_type(DATA_PARSER_##type), src, \
+	      args, parent_path)
 
 #endif

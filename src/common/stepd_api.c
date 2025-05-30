@@ -1122,38 +1122,13 @@ stepd_completion(int fd, uint16_t protocol_version, step_complete_msg_t *sent)
 	debug("Entering stepd_completion for %ps, range_first = %d, range_last = %d",
 	      &sent->step_id, sent->range_first, sent->range_last);
 
-	if (protocol_version >= SLURM_24_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int));
 		safe_write(fd, &sent->range_first, sizeof(int));
 		safe_write(fd, &sent->range_last, sizeof(int));
 		safe_write(fd, &sent->step_rc, sizeof(int));
 		safe_write(fd, &sent->step_id.step_id, sizeof(uint32_t));
 		safe_write(fd, &sent->send_to_stepmgr, sizeof(bool));
-
-		/*
-		 * We must not use setinfo over a pipe with slurmstepd here
-		 * Indeed, slurmd does a large use of getinfo over a pipe
-		 * with slurmstepd and doing the reverse can result in
-		 * a deadlock scenario with slurmstepd :
-		 * slurmd(lockforread,write)/slurmstepd(write,lockforread)
-		 * Do pack/unpack instead to be sure of independances of
-		 * slurmd and slurmstepd
-		 */
-		jobacctinfo_pack(sent->jobacct, protocol_version,
-				 PROTOCOL_TYPE_SLURM, buffer);
-		len = get_buf_offset(buffer);
-		safe_write(fd, &len, sizeof(int));
-		safe_write(fd, get_buf_data(buffer), len);
-		FREE_NULL_BUFFER(buffer);
-
-		/* Receive the return code and errno */
-		safe_read(fd, &rc, sizeof(int));
-		safe_read(fd, &errnum, sizeof(int));
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_write(fd, &req, sizeof(int));
-		safe_write(fd, &sent->range_first, sizeof(int));
-		safe_write(fd, &sent->range_last, sizeof(int));
-		safe_write(fd, &sent->step_rc, sizeof(int));
 
 		/*
 		 * We must not use setinfo over a pipe with slurmstepd here

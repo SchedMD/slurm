@@ -253,6 +253,7 @@ static void _cred_context_unpack(buf_t *buffer)
 
 	safe_unpack16(&version, buffer);
 
+	/* This can be removed when 24.05 is no longer supported */
 	if (version < SLURM_24_11_PROTOCOL_VERSION) {
 		/* rewind by 2 bytes */
 		buffer->processed -= 2;
