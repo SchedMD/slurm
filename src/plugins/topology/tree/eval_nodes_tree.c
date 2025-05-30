@@ -1242,6 +1242,14 @@ try_again:
 					rc = SLURM_SUCCESS;
 					goto fini;
 				}
+
+				if (topo_eval->max_nodes <= 0) {
+					rc = SLURM_ERROR;
+					log_flag(SELECT_TYPE,
+						 "%pJ reached maximum node limit",
+						 job_ptr);
+					goto fini;
+				}
 			}
 
 			_decrement_node_cnt(num_nodes_taken, i, switch_node_cnt,
@@ -1308,6 +1316,14 @@ try_again:
 			     gres_sched_test(job_ptr->gres_list_req,
 					     job_ptr->job_id))) {
 				rc = SLURM_SUCCESS;
+				goto fini;
+			}
+
+			if (topo_eval->max_nodes <= 0) {
+				rc = SLURM_ERROR;
+				log_flag(SELECT_TYPE,
+					 "%pJ reached maximum node limit",
+					 job_ptr);
 				goto fini;
 			}
 		}
