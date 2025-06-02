@@ -202,7 +202,7 @@ extern int gres_select_filter_remove_unusable(list_t *sock_gres_list,
 		else
 			mem_per_gres = gres_js->def_mem_per_gres;
 		if (mem_per_gres && (avail_mem != NO_VAL64)) {
-			/* NO_VAL64 is set by caller if CR_MEMORY not in use */
+			/* NO_VAL64 is set by caller if SELECT_MEMORY not in use */
 			if (mem_per_gres <= avail_mem) {
 				sock_gres->max_node_gres = avail_mem /
 					mem_per_gres;
@@ -273,7 +273,7 @@ extern int gres_select_filter_remove_unusable(list_t *sock_gres_list,
 			}
 		}
 		if (mem_per_gres && (avail_mem != NO_VAL64)) {
-			/* NO_VAL64 is set by caller if CR_MEMORY not in use */
+			/* NO_VAL64 is set by caller if SELECT_MEMORY not in use */
 			max_gres = avail_mem / mem_per_gres;
 			sock_gres->total_cnt = MIN(sock_gres->total_cnt,
 						   max_gres);
@@ -439,7 +439,7 @@ static void _pick_shared_gres(uint64_t *gres_needed, uint32_t *used_sock,
 		return;
 	}
 
-	if (slurm_conf.select_type_param & LL_SHARED_GRES) {
+	if (slurm_conf.select_type_param & SELECT_LL_SHARED_GRES) {
 		topo_index = _get_sorted_topo_by_least_loaded(
 			sock_gres->gres_state_node->gres_data);
 	}
@@ -547,7 +547,7 @@ static int _set_shared_node_bits(int node_inx, int job_node_inx,
 			  sock_with_res_cnt, &satisfy_res_gres);
 
 	if (gres_needed &&
-	    (slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ)) {
+	    (slurm_conf.select_type_param & SELECT_MULTIPLE_SHARING_GRES_PJ)) {
 		/* Select sharing gres with any available shared gres */
 		satisfy_res_gres = true;
 		_pick_shared_gres(&gres_needed, used_sock, sock_gres, node_inx,
@@ -601,7 +601,7 @@ static int _set_shared_task_bits(int node_inx,
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 
-	if (!(slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ)) {
+	if (!(slurm_conf.select_type_param & SELECT_MULTIPLE_SHARING_GRES_PJ)) {
 		/* Allow only one sharing gres for the entire job */
 		uint64_t gres_needed = gres_js->gres_per_task *
 			_get_task_cnt_node(tasks_per_socket,
@@ -1694,7 +1694,8 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 
 	if (gres_id_shared(sock_gres->gres_state_job->config_flags)) {
 		if (*sock_with_res_cnt > 1 &&
-		    !(slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ)){
+		    !(slurm_conf.select_type_param &
+		      SELECT_MULTIPLE_SHARING_GRES_PJ)) {
 			/*
 			 * Have to allocate gres across more then one socket.
 			 * This is assuming one socket per gres configuration

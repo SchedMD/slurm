@@ -1571,7 +1571,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	 * from the selected features.  This is to fulfill commit
 	 * 700e7b1d4e9.
 	 * If no memory is requested but we are running with
-	 * CR_*_MEMORY and the request is for
+	 * SELECT_*_MEMORY and the request is for
 	 * nodes of different memory sizes we need to reset the
 	 * pn_min_memory as select_g_job_test can
 	 * alter that making it so the order of constraints

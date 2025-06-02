@@ -314,7 +314,7 @@ static int _set_task_dist(job_record_t *job_ptr, const uint16_t cr_type)
 	 */
 	if (job_ptr->job_resrcs &&
 	    (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16) &&
-	    ((cr_type & CR_CORE) || (cr_type & CR_SOCKET))) {
+	    ((cr_type & SELECT_CORE) || (cr_type & SELECT_SOCKET))) {
 		job_resources_t *job_res = job_ptr->job_resrcs;
 		node_record_t *node_ptr;
 		int i = 0;
@@ -486,9 +486,9 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 	} else
 		return;
 
-	if (cr_type & CR_SOCKET)
+	if (cr_type & SELECT_SOCKET)
 		alloc_sockets = true;
-	else if (cr_type & CR_CORE)
+	else if (cr_type & SELECT_CORE)
 		alloc_cores = true;
 
 	if (job_ptr->details->mc_ptr) {
@@ -874,10 +874,9 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	sock_end   = xcalloc(sock_size, sizeof(uint32_t));
 	sock_used  = xcalloc(sock_size, sizeof(bool));
 
-
-	if (cr_type & CR_SOCKET)
+	if (cr_type & SELECT_SOCKET)
 		alloc_sockets = true;
-	else if (cr_type & CR_CORE)
+	else if (cr_type & SELECT_CORE)
 		alloc_cores = true;
 
 	core_map = job_res->core_bitmap;
@@ -1427,7 +1426,7 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 	 * now sync up the core_bitmap with the job_resources_t struct
 	 * based on the given distribution AND resource setting
 	 */
-	if (!(cr_type & CR_CORE) && !(cr_type & CR_SOCKET)) {
+	if (!(cr_type & SELECT_CORE) && !(cr_type & SELECT_SOCKET)) {
 		_block_sync_core_bitmap(job_ptr, cr_type);
 		return SLURM_SUCCESS;
 	}
@@ -1439,7 +1438,7 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 	 * Note : cyclic cores distribution, which is the default, is treated
 	 * by the next code block
 	 */
-	if (slurm_conf.select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
+	if (slurm_conf.select_type_param & SELECT_CORE_DEFAULT_DIST_BLOCK) {
 		switch (job_ptr->details->task_dist & SLURM_DIST_NODESOCKMASK) {
 		case SLURM_DIST_ARBITRARY:
 		case SLURM_DIST_BLOCK:

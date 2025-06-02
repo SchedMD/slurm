@@ -210,17 +210,17 @@ static void _print_jobs(struct gs_part *p_ptr)
 
 static uint16_t _get_gr_type(void)
 {
-	if (slurm_conf.select_type_param & CR_CORE)
+	if (slurm_conf.select_type_param & SELECT_CORE)
 		return GS_CORE;
-	if (slurm_conf.select_type_param & CR_CPU) {
+	if (slurm_conf.select_type_param & SELECT_CPU) {
 		if (!xstrcmp(slurm_conf.task_plugin, "task/none"))
 			return GS_CPU;
 		return GS_CPU2;
 	}
-	if (slurm_conf.select_type_param & CR_SOCKET)
+	if (slurm_conf.select_type_param & SELECT_SOCKET)
 		return GS_SOCKET;
 
-	/* note that CR_MEMORY is node-level scheduling with
+	/* note that SELECT_MEMORY is node-level scheduling with
 	 * memory management */
 	return GS_NODE;
 }
@@ -228,14 +228,14 @@ static uint16_t _get_gr_type(void)
 static uint16_t _get_part_gr_type(part_record_t *part_ptr)
 {
 	if (part_ptr) {
-		if (part_ptr->cr_type & CR_CORE)
+		if (part_ptr->cr_type & SELECT_CORE)
 			return GS_CORE;
-		if (part_ptr->cr_type & CR_CPU) {
+		if (part_ptr->cr_type & SELECT_CPU) {
 			if (!xstrcmp(slurm_conf.task_plugin, "task/none"))
 				return GS_CPU;
 			return GS_CPU2;
 		}
-		if (part_ptr->cr_type & CR_SOCKET)
+		if (part_ptr->cr_type & SELECT_SOCKET)
 			return GS_SOCKET;
 	}
 

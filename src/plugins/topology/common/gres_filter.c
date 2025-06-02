@@ -67,7 +67,8 @@ static uint64_t _shared_gres_task_limit(gres_job_state_t *gres_js,
 		else
 			task_cnt = cnt / gres_js->gres_per_task;
 
-		if ((slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ))
+		if (slurm_conf.select_type_param &
+		    SELECT_MULTIPLE_SHARING_GRES_PJ)
 			task_limit += task_cnt;
 		else
 			task_limit = MAX(task_limit, task_cnt);
@@ -346,7 +347,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 			continue;
 		gres_js = sock_gres->gres_state_job->gres_data;
 
-		if (!(cr_type & CR_SOCKET) &&
+		if (!(cr_type & SELECT_SOCKET) &&
 		    (sock_gres->gres_state_job->plugin_id ==
 		     gres_get_gpu_plugin_id()) &&
 		    res_cores_per_gpu && gres_js->res_gpu_cores &&
@@ -888,7 +889,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		 * up to required number of cores based on max_tasks_this_node.
 		 * In case of enforce-binding those are already cleared.
 		 */
-		if (!(cr_type & CR_SOCKET) &&
+		if (!(cr_type & SELECT_SOCKET) &&
 		    (avail_cores_tot > req_cores) &&
 		    !enforce_binding && !first_pass &&
 		    (req_sock_cnt != sockets)) {
@@ -925,7 +926,7 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		 * spread them out so that every socket has some cores
 		 * available to use with the nearby GRES that we do need.
 		 */
-		while (!(cr_type & CR_SOCKET) &&
+		while (!(cr_type & SELECT_SOCKET) &&
 		       (req_sock_cnt && (avail_cores_tot > req_cores))) {
 			int full_socket = -1;
 			int cnt;
@@ -1000,12 +1001,12 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 
 	if (!has_cpus_per_gres &&
 	    ((mc_ptr->cpus_per_task > 1) ||
-	     !(slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE))) {
+	     !(slurm_conf.select_type_param & SELECT_ONE_TASK_PER_CORE))) {
 		/*
 		 * Only adjust *avail_cpus for the maximum task count if
 		 * cpus_per_task is explicitly set. There is currently no way
 		 * to tell if cpus_per_task==1 is explicitly set by the job
-		 * when SelectTypeParameters includes CR_ONE_TASK_PER_CORE.
+		 * when SelectTypeParameters includes SELECT_ONE_TASK_PER_CORE.
 		 */
 
 		*avail_cpus =

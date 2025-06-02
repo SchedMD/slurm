@@ -933,7 +933,7 @@ static bool _opt_verify(void)
 	 * If they are requesting block without 'nopack' and the system
 	 * is setup to pack nodes set it here.
 	 */
-	if ((slurm_conf.select_type_param & CR_PACK_NODES) &&
+	if ((slurm_conf.select_type_param & SELECT_PACK_NODES) &&
 	    !(opt.distribution & SLURM_DIST_NO_PACK_NODES) &&
 	    ((opt.distribution & SLURM_DIST_BLOCK) ||
 	     (opt.distribution == SLURM_DIST_UNKNOWN)))

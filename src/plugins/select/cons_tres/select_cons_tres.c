@@ -154,7 +154,7 @@ static void _dump_job_res(struct job_resources *job)
 /*
  * Check if there are no allocatable sockets with the given configuration due to
  * core specialization.
- * NOTE: this assumes the caller already checked CR_SOCKET is configured and
+ * NOTE: this assumes the caller already checked SELECT_SOCKET is configured and
  *	 AllowSpecResourceUsage=NO.
  */
 static void _check_allocatable_sockets(node_record_t *node_ptr)
@@ -231,7 +231,8 @@ extern int select_p_node_init(void)
 	int i;
 	node_record_t *node_ptr;
 
-	if (!(slurm_conf.select_type_param & (CR_CPU | CR_CORE | CR_SOCKET))) {
+	if (!(slurm_conf.select_type_param &
+	      (SELECT_CPU | SELECT_CORE | SELECT_SOCKET))) {
 		fatal("Invalid SelectTypeParameters: %s (%u), "
 		      "You need at least CR_(CPU|CORE|SOCKET)*",
 		      select_type_param_string(slurm_conf.select_type_param),
@@ -301,7 +302,7 @@ extern int select_p_node_init(void)
 				     sizeof(node_use_record_t));
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if ((slurm_conf.select_type_param & CR_SOCKET) &&
+		if ((slurm_conf.select_type_param & SELECT_SOCKET) &&
 		    (slurm_conf.conf_flags & CONF_FLAG_ASRU) == 0)
 			_check_allocatable_sockets(node_ptr);
 

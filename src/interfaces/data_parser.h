@@ -452,8 +452,8 @@ typedef enum {
 	DATA_PARSER_JOB_SHARED, /* uint16_t - JOB_SHARED_* */
 	DATA_PARSER_JOB_EXCLUSIVE, /* uint16_t - JOB_SHARED_* */
 	DATA_PARSER_JOB_EXCLUSIVE_FLAGS, /* uint16_t - JOB_SHARED_* */
-	DATA_PARSER_ALLOCATED_CORES, /* DEPRECATED v41: uint32_t if slurm_conf.select_type_param & (CR_CORE|CR_SOCKET) */
-	DATA_PARSER_ALLOCATED_CPUS, /* DEPRECATED v41: uint32_t if slurm_conf.select_type_param & CR_CPU */
+	DATA_PARSER_ALLOCATED_CORES, /* DEPRECATED v41: uint32_t if slurm_conf.select_type_param & (SELECT_CORE|SELECT_SOCKET) */
+	DATA_PARSER_ALLOCATED_CPUS, /* DEPRECATED v41: uint32_t if slurm_conf.select_type_param & SELECT_CPU */
 	DATA_PARSER_HOSTLIST, /* hostlist_t* */
 	DATA_PARSER_HOSTLIST_STRING, /* char * - acts like hostlist_t* */
 	DATA_PARSER_POWER_FLAGS, /* REMOVED 24.05: uint8_t & SLURM_POWER_FLAGS_* */

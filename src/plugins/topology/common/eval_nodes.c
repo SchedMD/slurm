@@ -137,7 +137,7 @@ static void _reduce_res_cores(topology_eval_t *topo_eval,
 	uint16_t *actual_cores_p_s;
 	uint32_t tot_cores = 0;
 
-	if (topo_eval->cr_type & CR_SOCKET)
+	if (topo_eval->cr_type & SELECT_SOCKET)
 		return;
 
 	actual_cores_p_s = xcalloc(sockets, sizeof(uint16_t));
@@ -1766,8 +1766,7 @@ extern int eval_nodes(topology_eval_t *topo_eval)
 		return _eval_nodes_busy(topo_eval);
 	}
 
-
-	if ((topo_eval->cr_type & CR_LLN) ||
+	if ((topo_eval->cr_type & SELECT_LLN) ||
 	    (topo_eval->job_ptr->part_ptr &&
 	     (topo_eval->job_ptr->part_ptr->flags & PART_FLAG_LLN))) {
 		/* Select resource on the Least Loaded Node */
@@ -1808,7 +1807,7 @@ extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 
 	resv_cpus = MAX((rem_nodes - 1), 0);
 	resv_cpus *= job_mgr_determine_cpus_per_core(details_ptr, node_inx);
-	if (topo_eval->cr_type & CR_SOCKET)
+	if (topo_eval->cr_type & SELECT_SOCKET)
 		resv_cpus *= node_record_table_ptr[node_inx]->cores;
 	rem_max_cpus -= resv_cpus;
 	if (topo_eval->avail_cpus > rem_max_cpus) {
@@ -1942,7 +1941,7 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 	}
 	if (max_tasks_this_node == 0) {
 		*avail_cpus = 0;
-	} else if ((slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
+	} else if ((slurm_conf.select_type_param & SELECT_ONE_TASK_PER_CORE) &&
 		   ((mc_ptr->ntasks_per_core == INFINITE16) ||
 		    (mc_ptr->ntasks_per_core == 0)) &&
 		   details_ptr && (details_ptr->min_gres_cpu == 0)) {

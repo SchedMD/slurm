@@ -274,7 +274,7 @@ static gres_mc_data_t *_build_gres_mc_data(job_record_t *job_ptr)
 			_valid_uint16(job_mc_ptr->ntasks_per_core);
 	}
 	if ((tres_mc_ptr->ntasks_per_core == 0) &&
-	    (slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE))
+	    (slurm_conf.select_type_param & SELECT_ONE_TASK_PER_CORE))
 		tres_mc_ptr->ntasks_per_core = 1;
 
 	return tres_mc_ptr;
@@ -619,7 +619,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		return NULL;
 	}
 
-	if (cr_type & CR_MEMORY) {
+	if (cr_type & SELECT_MEMORY) {
 		avail_mem = node_ptr->real_memory - node_ptr->mem_spec_limit;
 		if (!test_only)
 			avail_mem -= node_usage[node_i].alloc_memory;
@@ -654,7 +654,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 
 	cpus = avail_res->avail_cpus;
 
-	if (cr_type & CR_MEMORY) {
+	if (cr_type & SELECT_MEMORY) {
 		/*
 		 * Memory Check: check pn_min_memory to see if:
 		 *          - this node has enough memory (MEM_PER_CPU == 0)
@@ -668,7 +668,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 			    (job_ptr->details->whole_node &
 			     WHOLE_NODE_REQUIRED)) {
 				cpus = 0;
-			} else if (!(cr_type & CR_CPU) &&
+			} else if (!(cr_type & SELECT_CPU) &&
 				   job_ptr->details->mc_ptr &&
 				   (job_ptr->details->mc_ptr->
 				    ntasks_per_core == 1) &&
@@ -1051,7 +1051,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		/* node-level memory check */
-		if (min_mem && (cr_type & CR_MEMORY)) {
+		if (min_mem && (cr_type & SELECT_MEMORY)) {
 			avail_mem = node_ptr->real_memory -
 				    node_ptr->mem_spec_limit;
 			if (avail_mem > node_usage[i].alloc_memory) {
@@ -1065,7 +1065,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 				       free_mem, min_mem, job_ptr);
 				goto clear_bit;
 			}
-		} else if (cr_type & CR_MEMORY) {   /* --mem=0 for all memory */
+		} else if (cr_type & SELECT_MEMORY) { /* mem=0 for all memory */
 			if (node_usage[i].alloc_memory) {
 				debug3("Not considering node %s, allocated memory = %"PRIu64" and all memory requested for %pJ",
 				       node_ptr->name,
@@ -2070,7 +2070,7 @@ alloc_job:
 			 */
 			job_ptr->total_cpus += node_ptr->cpus_efctv;
 		}
-	} else if (cr_type & CR_SOCKET) {
+	} else if (cr_type & SELECT_SOCKET) {
 		int ci = 0;
 		int s, last_s, sock_cnt = 0;
 
@@ -2126,7 +2126,7 @@ alloc_job:
 		return error_code;
 	}
 
-	if (!(cr_type & CR_MEMORY))
+	if (!(cr_type & SELECT_MEMORY))
 		return error_code;
 
 	if (!(job_ptr->bit_flags & JOB_MEM_SET) &&
@@ -2202,8 +2202,10 @@ static uint16_t _setup_cr_type(job_record_t *job_ptr)
 	uint16_t tmp_cr_type = slurm_conf.select_type_param;
 
 	if (job_ptr->part_ptr->cr_type) {
-		if ((tmp_cr_type & CR_SOCKET) || (tmp_cr_type & CR_CORE)) {
-			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
+		if ((tmp_cr_type & SELECT_SOCKET) ||
+		    (tmp_cr_type & SELECT_CORE)) {
+			tmp_cr_type &=
+				~(SELECT_SOCKET | SELECT_CORE | SELECT_MEMORY);
 			tmp_cr_type |= job_ptr->part_ptr->cr_type;
 		} else
 			info("%s: Can't use Partition SelectType unless using CR_Socket or CR_Core",
@@ -3214,7 +3216,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		/*
 		 * Socket CPUs restrictions:
 		 * 1. Partially allocated socket, but entire_sockets_only:
-		 *    Enabled when CR_SOCKET. This mode counts unusable CPUs as
+		 *    Enabled when SELECT_SOCKET. This mode counts unusable CPUs as
 		 *    allocated, so it also counts them against MaxCpusPerNode.
 		 * 2. Partially allocated socket, up/beyond MaxCPUsPerSocket:
 		 *    This mode does not count unusable CPUs as allocated, nor
@@ -3418,7 +3420,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		i = sockets;
 	}
 
-	if ((slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
+	if ((slurm_conf.select_type_param & SELECT_ONE_TASK_PER_CORE) &&
 	    (details_ptr->min_gres_cpu > 0)) {
 		use_tpc = true;
 	}
@@ -3559,7 +3561,7 @@ static avail_res_t *_allocate(job_record_t *job_ptr,
 {
 	bool alloc_sockets;
 
-	if (cr_type & CR_SOCKET) {
+	if (cr_type & SELECT_SOCKET) {
 		/* cpu_alloc_size = CPUs per socket */
 		alloc_sockets = true;
 		*cpu_alloc_size = node_record_table_ptr[node_i]->cores *
@@ -3567,7 +3569,7 @@ static avail_res_t *_allocate(job_record_t *job_ptr,
 	} else {
 		/* cpu_alloc_size = # of CPUs per core || 1 individual CPU */
 		alloc_sockets = false;
-		*cpu_alloc_size = (cr_type & CR_CORE) ?
+		*cpu_alloc_size = (cr_type & SELECT_CORE) ?
 			node_record_table_ptr[node_i]->tpc : 1;
 	}
 

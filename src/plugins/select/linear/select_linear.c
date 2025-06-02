@@ -413,7 +413,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 	job_resources_t *job_resrcs_ptr;
 	node_record_t *node_ptr;
 
-	if (job_ptr->details->pn_min_memory  && (cr_type & CR_MEMORY)) {
+	if (job_ptr->details->pn_min_memory && (cr_type & SELECT_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU)
 			job_memory_cpu = job_ptr->details->pn_min_memory &
 				(~MEM_PER_CPU);
@@ -431,7 +431,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 	job_resrcs_ptr->ncpus = job_ptr->total_cpus;
 	job_resrcs_ptr->threads_per_core =
 		job_ptr->details->mc_ptr->threads_per_core;
-	job_resrcs_ptr->cr_type = cr_type | CR_LINEAR;
+	job_resrcs_ptr->cr_type = cr_type | SELECT_LINEAR;
 
 	if (build_job_resources(job_resrcs_ptr))
 		error("_build_select_struct: build_job_resources: %m");
@@ -466,7 +466,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 		} else if (job_memory_cpu) {
 			job_resrcs_ptr->memory_allocated[j] =
 				job_memory_cpu * node_cpus;
-		} else if (cr_type & CR_MEMORY) {
+		} else if (cr_type & SELECT_MEMORY) {
 			job_resrcs_ptr->memory_allocated[j] =
 				node_ptr->config_ptr->real_memory;
 			if (!min_mem ||
@@ -481,7 +481,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 		}
 		j++;
 	}
-	if (cr_type & CR_MEMORY && !job_ptr->details->pn_min_memory)
+	if (cr_type & SELECT_MEMORY && !job_ptr->details->pn_min_memory)
 		job_ptr->details->pn_min_memory = min_mem;
 
 	if (job_resrcs_ptr->ncpus != total_cpus) {
@@ -513,8 +513,8 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 	xassert(cr_ptr->nodes);
 	if (mode != SELECT_MODE_TEST_ONLY) {
 		use_total_gres = false;
-		if (job_ptr->details->pn_min_memory  &&
-		    (cr_type & CR_MEMORY)) {
+		if (job_ptr->details->pn_min_memory &&
+		    (cr_type & SELECT_MEMORY)) {
 			if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 				job_memory_cpu = job_ptr->details->pn_min_memory
 					& (~MEM_PER_CPU);
@@ -559,7 +559,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 		}
 
 		if (!job_memory_cpu && !job_memory_node &&
-		    (cr_type & CR_MEMORY))
+		    (cr_type & SELECT_MEMORY))
 			job_memory_node = node_ptr->config_ptr->real_memory;
 
 		if (job_memory_cpu || job_memory_node) {
@@ -966,7 +966,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 		old_job = true;
 
 	if (remove_all && job_ptr->details &&
-	    job_ptr->details->pn_min_memory && (cr_type & CR_MEMORY)) {
+	    job_ptr->details->pn_min_memory && (cr_type & SELECT_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			job_memory_cpu = job_ptr->details->pn_min_memory &
 				(~MEM_PER_CPU);
@@ -994,7 +994,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 			job_memory = job_memory_cpu * cpu_cnt;
 		else if (job_memory_node)
 			job_memory = job_memory_node;
-		else if (cr_type & CR_MEMORY)
+		else if (cr_type & SELECT_MEMORY)
 			job_memory = node_ptr->config_ptr->real_memory;
 
 		if (cr_ptr->nodes[i].alloc_memory >= job_memory)
@@ -1360,7 +1360,7 @@ static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
 	}
 
 	if (job_ptr->details &&
-	    job_ptr->details->pn_min_memory && (cr_type & CR_MEMORY)) {
+	    job_ptr->details->pn_min_memory && (cr_type & SELECT_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			job_memory_cpu = job_ptr->details->pn_min_memory &
 				(~MEM_PER_CPU);
@@ -1401,7 +1401,7 @@ static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
 		job_memory = job_memory_cpu * cpu_cnt;
 	else if (job_memory_node)
 		job_memory = job_memory_node;
-	else if (cr_type & CR_MEMORY)
+	else if (cr_type & SELECT_MEMORY)
 		job_memory = node_ptr->config_ptr->real_memory;
 
 	if (cr_ptr->nodes[node_inx].alloc_memory >= job_memory)
@@ -1450,7 +1450,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	}
 
 	if (alloc_all && job_ptr->details &&
-	    job_ptr->details->pn_min_memory && (cr_type & CR_MEMORY)) {
+	    job_ptr->details->pn_min_memory && (cr_type & SELECT_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			job_memory_cpu = job_ptr->details->pn_min_memory &
 				(~MEM_PER_CPU);
@@ -1487,7 +1487,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 				cpu_cnt;
 		} else if (job_memory_node) {
 			cr_ptr->nodes[i].alloc_memory += job_memory_node;
-		} else if (cr_type & CR_MEMORY) {
+		} else if (cr_type & SELECT_MEMORY) {
 			cr_ptr->nodes[i].alloc_memory +=
 				node_ptr->config_ptr->real_memory;
 		}
@@ -1718,7 +1718,7 @@ static void _init_node_cr(void)
 		job_memory_cpu  = 0;
 		job_memory_node = 0;
 		if (job_ptr->details && job_ptr->details->pn_min_memory &&
-		    (cr_type & CR_MEMORY)) {
+		    (cr_type & SELECT_MEMORY)) {
 			if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 				job_memory_cpu = job_ptr->details->
 					pn_min_memory &
@@ -1753,7 +1753,8 @@ static void _init_node_cr(void)
 			if (exclusive)
 				cr_ptr->nodes[i].exclusive_cnt++;
 			if (job_memory_cpu == 0) {
-				if (!job_memory_node && (cr_type & CR_MEMORY))
+				if (!job_memory_node &&
+				    (cr_type & SELECT_MEMORY))
 					job_memory_node = node_ptr->config_ptr->
 						real_memory;
 				cr_ptr->nodes[i].alloc_memory +=

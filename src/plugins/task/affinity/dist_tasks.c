@@ -518,7 +518,8 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 	case SLURM_DIST_BLOCK:
 	case SLURM_DIST_CYCLIC:
 	case SLURM_DIST_UNKNOWN:
-		if (slurm_conf.select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
+		if (slurm_conf.select_type_param &
+		    SELECT_CORE_DEFAULT_DIST_BLOCK) {
 			debug2("JobId=%u will use lllp_block because of SelectTypeParameters",
 			       req->step_id.job_id);
 			rc = _task_layout_lllp_block(req, node_id, &masks);

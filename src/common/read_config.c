@@ -1440,13 +1440,13 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		if (s_p_get_string(&tmp, "SelectTypeParameters", tbl)) {
 			if (xstrncasecmp(tmp, "CR_Core_Memory", 14) == 0)
-				p->cr_type = CR_CORE | CR_MEMORY;
+				p->cr_type = SELECT_CORE | SELECT_MEMORY;
 			else if (xstrncasecmp(tmp, "CR_Core", 7) == 0)
-				p->cr_type = CR_CORE;
+				p->cr_type = SELECT_CORE;
 			else if (xstrncasecmp(tmp, "CR_Socket_Memory", 16) == 0)
-				p->cr_type = CR_SOCKET | CR_MEMORY;
+				p->cr_type = SELECT_SOCKET | SELECT_MEMORY;
 			else if (xstrncasecmp(tmp, "CR_Socket", 9) == 0)
-				p->cr_type = CR_SOCKET;
+				p->cr_type = SELECT_SOCKET;
 			else {
 				error("Bad value for SelectTypeParameters: %s",
 				      tmp);
@@ -3526,50 +3526,50 @@ static int _parse_select_type_param(
 	str_parameters = strtok(st_str,",");
 	while (str_parameters) {
 		if (!xstrcasecmp(str_parameters, "CR_Socket")) {
-			*param |= CR_SOCKET;
+			*param |= SELECT_SOCKET;
 			param_cnt++;
 		} else if (!xstrcasecmp(str_parameters, "CR_Socket_Memory")) {
-			*param |= CR_SOCKET;
-			*param |= CR_MEMORY;
+			*param |= SELECT_SOCKET;
+			*param |= SELECT_MEMORY;
 			param_cnt++;
 		} else if (!xstrcasecmp(str_parameters, "CR_Core")) {
-			*param |= CR_CORE;
+			*param |= SELECT_CORE;
 			param_cnt++;
 		} else if (!xstrcasecmp(str_parameters, "CR_Core_Memory")) {
-			*param |= CR_CORE;
-			*param |= CR_MEMORY;
+			*param |= SELECT_CORE;
+			*param |= SELECT_MEMORY;
 			param_cnt++;
 		} else if (!xstrcasecmp(str_parameters, "CR_Memory")) {
-			*param |= CR_MEMORY;
+			*param |= SELECT_MEMORY;
 			param_cnt++;
 		} else if (!xstrcasecmp(str_parameters, "CR_CPU")) {
-			*param |= CR_CPU;
+			*param |= SELECT_CPU;
 			param_cnt++;
 		} else if (!xstrcasecmp(str_parameters, "CR_CPU_Memory")) {
-			*param |= CR_CPU;
-			*param |= CR_MEMORY;
+			*param |= SELECT_CPU;
+			*param |= SELECT_MEMORY;
 			param_cnt++;
 		} else if (!xstrcasecmp(str_parameters,
 				       "CR_ONE_TASK_PER_CORE")) {
-			*param |= CR_ONE_TASK_PER_CORE;
+			*param |= SELECT_ONE_TASK_PER_CORE;
 		} else if (!xstrcasecmp(str_parameters,
 				       "CR_CORE_DEFAULT_DIST_BLOCK")) {
-			*param |= CR_CORE_DEFAULT_DIST_BLOCK;
+			*param |= SELECT_CORE_DEFAULT_DIST_BLOCK;
 		} else if (!xstrcasecmp(str_parameters, "CR_LLN")) {
-			*param |= CR_LLN;
+			*param |= SELECT_LLN;
 		} else if (!xstrcasecmp(str_parameters, "CR_PACK_NODES")) {
-			*param |= CR_PACK_NODES;
+			*param |= SELECT_PACK_NODES;
 		} else if (!xstrcasecmp(str_parameters, "LL_SHARED_GRES")) {
-			*param |= LL_SHARED_GRES;
+			*param |= SELECT_LL_SHARED_GRES;
 		} else if (!xstrcasecmp(str_parameters,
 					"MULTIPLE_SHARING_GRES_PJ")) {
-			*param |= MULTIPLE_SHARING_GRES_PJ;
+			*param |= SELECT_MULTIPLE_SHARING_GRES_PJ;
 		} else if (!xstrcasecmp(str_parameters,
 					"ENFORCE_BINDING_GRES")) {
-			*param |= ENFORCE_BINDING_GRES;
+			*param |= SELECT_ENFORCE_BINDING_GRES;
 		} else if (!xstrcasecmp(str_parameters,
 					"ONE_TASK_PER_SHARING_GRES")) {
-			*param |= ONE_TASK_PER_SHARING_GRES;
+			*param |= SELECT_ONE_TASK_PER_SHARING_GRES;
 		} else {
 			error("Bad SelectTypeParameter: %s", str_parameters);
 			rc = SLURM_ERROR;
@@ -3577,7 +3577,8 @@ static int _parse_select_type_param(
 			return rc;
 		}
 
-		if ((*param & CR_CPU) && (*param & CR_ONE_TASK_PER_CORE)) {
+		if ((*param & SELECT_CPU) &&
+		    (*param & SELECT_ONE_TASK_PER_CORE)) {
 			error("CR_ONE_TASK_PER_CORE is not compatible with CR_CPU*, please change to use CR_CORE* instead.");
 			rc = SLURM_ERROR;
 			xfree(st_str);
@@ -4849,7 +4850,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->select_type_param = type_param;
 		xfree(temp_str);
 	} else if (xstrstr(conf->select_type, "cons_tres")) {
-		slurm_conf.select_type_param = (CR_CORE | CR_MEMORY);
+		slurm_conf.select_type_param = (SELECT_CORE | SELECT_MEMORY);
 	} else {
 		conf->select_type_param = 0;
 	}

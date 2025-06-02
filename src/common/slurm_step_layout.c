@@ -693,7 +693,7 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 		pack_nodes = true;
 	else if (step_layout->task_dist & SLURM_DIST_NO_PACK_NODES)
 		pack_nodes = false;
-	else if (select_params & CR_PACK_NODES)
+	else if (select_params & SELECT_PACK_NODES)
 		pack_nodes = true;
 	else
 		pack_nodes = false;

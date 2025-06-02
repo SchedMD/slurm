@@ -387,9 +387,9 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		if (p[i].flags & PART_FLAG_ROOT_ONLY)
 	                fprintf(fp, " RootOnly=YES");
 
-		if (p[i].cr_type & CR_CORE)
+		if (p[i].cr_type & SELECT_CORE)
 			fprintf(fp, " SelectTypeParameters=CR_CORE");
-		else if (p[i].cr_type & CR_SOCKET)
+		else if (p[i].cr_type & SELECT_SOCKET)
 			fprintf(fp, " SelectTypeParameters=CR_SOCKET");
 
 		if (p[i].flags & PART_FLAG_PDOI)

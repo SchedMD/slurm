@@ -2245,7 +2245,7 @@ static bool _use_one_thread_per_core(step_record_t *step_ptr)
 	    ((step_ptr->threads_per_core == NO_VAL16) &&
 	     (job_ptr->details->mc_ptr->threads_per_core == 1)) ||
 	    (!(job_resrcs_ptr->whole_node & WHOLE_NODE_REQUIRED) &&
-	     (slurm_conf.select_type_param & (CR_CORE | CR_SOCKET)) &&
+	     (slurm_conf.select_type_param & (SELECT_CORE | SELECT_SOCKET)) &&
 	     (job_ptr->details &&
 	      (job_ptr->details->cpu_bind_type != NO_VAL16) &&
 	      (job_ptr->details->cpu_bind_type &
@@ -2259,7 +2259,7 @@ static void _modify_cpus_alloc_for_tpc(uint16_t cr_type, uint16_t req_tpc,
 {
 	xassert(cpus_alloc);
 
-	if ((cr_type & (CR_CORE | CR_SOCKET | CR_LINEAR)) &&
+	if ((cr_type & (SELECT_CORE | SELECT_SOCKET | SELECT_LINEAR)) &&
 	    (req_tpc != NO_VAL16) && (req_tpc < vpus)) {
 		*cpus_alloc = ROUNDUP(*cpus_alloc, req_tpc);
 		*cpus_alloc *= vpus;
@@ -2556,7 +2556,8 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		if (!(step_ptr->flags & SSF_OVERLAP_FORCE)) {
 			cpus_alloc = ROUNDUP(cpus_alloc, vpus);
 			cpus_alloc *= vpus;
-			if ((job_resrcs_ptr->cr_type & CR_CPU) && (vpus > 1) &&
+			if ((job_resrcs_ptr->cr_type & SELECT_CPU) &&
+			    (vpus > 1) &&
 			    (job_resrcs_ptr->cpus_used[job_node_inx] +
 			     cpus_alloc) > job_resrcs_ptr->cpus[job_node_inx])
 				job_resrcs_ptr->cpus_used[job_node_inx] =
@@ -2828,16 +2829,18 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		cpus_alloc = ROUNDUP(step_ptr->cpu_alloc_values[inx], vpus);
 		cpus_alloc *= vpus;
 
-		if ((job_resrcs_ptr->cr_type & CR_CPU) && (node_ptr->tpc > 1)) {
+		if ((job_resrcs_ptr->cr_type & SELECT_CPU) &&
+		    (node_ptr->tpc > 1)) {
 			int core_alloc = ROUNDUP(cpus_alloc, vpus);
 			int used_cores =
 				ROUNDUP(job_resrcs_ptr->cpus_used[job_node_inx],
 					vpus);
 
-			/* If CR_CPU is used with a thread count > 1 the cpus
-			 * recorded being allocated to a job don't have to be a
-			 * multiple of threads per core. Make sure to dealloc
-			 * full cores and not partial cores.
+			/*
+			 * If SELECT_CPU is used with a thread count > 1 the
+			 * cpus recorded being allocated to a job don't have to
+			 * be a multiple of threads per core. Make sure to
+			 * dealloc full cores and not partial cores.
 			 */
 
 			if (used_cores >= core_alloc) {
@@ -2851,7 +2854,8 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 					core_alloc * vpus, job_node_inx);
 				job_resrcs_ptr->cpus_used[job_node_inx] = 0;
 			}
-		} else if (job_resrcs_ptr->cpus_used[job_node_inx] >= cpus_alloc) {
+		} else if (job_resrcs_ptr->cpus_used[job_node_inx] >=
+			   cpus_alloc) {
 			job_resrcs_ptr->cpus_used[job_node_inx] -= cpus_alloc;
 		} else {
 			error("%s: CPU underflow for %pS (%u<%u on job node %d)",
@@ -4386,7 +4390,7 @@ static bool _is_mem_resv(void)
 
 	if (!mem_resv_tested) {
 		mem_resv_tested = true;
-		if (slurm_conf.select_type_param & CR_MEMORY)
+		if (slurm_conf.select_type_param & SELECT_MEMORY)
 			mem_resv_value = true;
 	}
 

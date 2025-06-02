@@ -9869,16 +9869,16 @@ static const flag_bit_t PARSER_FLAG_ARRAY(NEED_PREREQS_FLAGS)[] = {
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(CR_TYPE)[] = {
-	add_flag_equal(CR_CPU, (CR_CPU|CR_SOCKET|CR_CORE), "CPU"),
-	add_flag_equal(CR_SOCKET, (CR_CPU|CR_SOCKET|CR_CORE), "SOCKET"),
-	add_flag_equal(CR_CORE, (CR_CPU|CR_SOCKET|CR_CORE), "CORE"),
-	add_flag_bit(CR_BOARD, "BOARD"),
-	add_flag_bit(CR_MEMORY, "MEMORY"),
-	add_flag_bit(CR_ONE_TASK_PER_CORE, "ONE_TASK_PER_CORE"),
-	add_flag_bit(CR_PACK_NODES, "PACK_NODES"),
-	add_flag_bit(CR_CORE_DEFAULT_DIST_BLOCK, "CORE_DEFAULT_DIST_BLOCK"),
-	add_flag_bit(CR_LLN, "LLN"),
-	add_flag_bit(CR_LINEAR, "LINEAR"),
+	add_flag_equal(SELECT_CPU, (SELECT_CPU|SELECT_SOCKET|SELECT_CORE), "CPU"),
+	add_flag_equal(SELECT_SOCKET, (SELECT_CPU|SELECT_SOCKET|SELECT_CORE), "SOCKET"),
+	add_flag_equal(SELECT_CORE, (SELECT_CPU|SELECT_SOCKET|SELECT_CORE), "CORE"),
+	add_flag_bit(SELECT_BOARD, "BOARD"),
+	add_flag_bit(SELECT_MEMORY, "MEMORY"),
+	add_flag_bit(SELECT_ONE_TASK_PER_CORE, "ONE_TASK_PER_CORE"),
+	add_flag_bit(SELECT_PACK_NODES, "PACK_NODES"),
+	add_flag_bit(SELECT_CORE_DEFAULT_DIST_BLOCK, "CORE_DEFAULT_DIST_BLOCK"),
+	add_flag_bit(SELECT_LLN, "LLN"),
+	add_flag_bit(SELECT_LINEAR, "LINEAR"),
 };
 
 /* Descriptions from _node_state_str() */
