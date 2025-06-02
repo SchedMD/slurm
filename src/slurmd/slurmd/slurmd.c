@@ -3116,7 +3116,7 @@ static int _memory_spec_init(void)
 		return SLURM_SUCCESS;
 	}
 	if (!cgroup_memcg_job_confinement()) {
-		if (slurm_conf.select_type_param & CR_MEMORY) {
+		if (slurm_conf.select_type_param & SELECT_MEMORY) {
 			error("Resource spec: Limited MemSpecLimit support. "
 			     "Slurmd daemon not memory constrained. "
 			     "Reserved %"PRIu64" MB", conf->mem_spec_limit);

@@ -1768,7 +1768,7 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 	}
 
 	if ((opt->job_flags & GRES_ONE_TASK_PER_SHARING) &&
-	    !(slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ)) {
+	    !(slurm_conf.select_type_param & SELECT_MULTIPLE_SHARING_GRES_PJ)) {
 		error("In order to use --gres-flags=one-task-per-sharing you must also have SelectTypeParameters=MULTIPLE_SHARING_GRES_PJ in your slurm.conf");
 		return SLURM_ERROR;
 	}
@@ -4798,7 +4798,7 @@ static void _validate_memory_options(slurm_opt_t *opt)
 		fatal("SLURM_MEM_PER_CPU, SLURM_MEM_PER_GPU, and SLURM_MEM_PER_NODE are mutually exclusive.");
 	}
 
-	if (!(slurm_conf.select_type_param & CR_MEMORY) && opt->verbose) {
+	if (!(slurm_conf.select_type_param & SELECT_MEMORY) && opt->verbose) {
 		if (slurm_option_isset(opt, "mem-per-cpu"))
 			info("Configured SelectTypeParameters doesn't treat memory as a consumable resource. In this case value of --mem-per-cpu is only used to eliminate nodes with lower configured RealMemory value.");
 		else if (slurm_option_isset(opt, "mem-per-gpu"))
@@ -5515,7 +5515,7 @@ static void _validate_arbitrary(slurm_opt_t *opt)
 static void _validate_gres_flags(slurm_opt_t *opt)
 {
 	if (!(opt->job_flags & GRES_DISABLE_BIND) &&
-	    (slurm_conf.select_type_param & ENFORCE_BINDING_GRES))
+	    (slurm_conf.select_type_param & SELECT_ENFORCE_BINDING_GRES))
 		opt->job_flags |= GRES_ENFORCE_BIND;
 
 	if (opt->job_flags & GRES_ONE_TASK_PER_SHARING) {
@@ -5541,7 +5541,8 @@ static void _validate_gres_flags(slurm_opt_t *opt)
 			fatal("--gres-flags=one-task-per-sharing requested, but that shared gres needs to appear in --tres-per-task as well.");
 		}
 	} else if (!(opt->job_flags & GRES_MULT_TASKS_PER_SHARING) &&
-		   (slurm_conf.select_type_param & ONE_TASK_PER_SHARING_GRES))
+		   (slurm_conf.select_type_param &
+		    SELECT_ONE_TASK_PER_SHARING_GRES))
 		opt->job_flags |= GRES_ONE_TASK_PER_SHARING;
 }
 

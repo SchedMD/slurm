@@ -50,9 +50,6 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "src/interfaces/select.h"
-
 #include "src/slurmctld/slurmctld.h"
 
 
@@ -805,6 +802,18 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		error("unpack_job_resources: protocol_version %hu not "
 		      "supported", protocol_version);
 		goto unpack_error;
+	}
+
+	/*
+	 * SELECT_LINEAR overlapped with SELECT_MULTIPLE_SHARING_GRES_PJ until
+	 * 25.11. SELECT_MULTIPLE_SHARING_GRES_PJ was never put on
+	 * job_resrcs->cr_type so no real overlap happened, but it isn't good in
+	 * practice. We just need to set it to the correct value here.
+	 * Once 25.05 is no longer supported we can remove this 'if'.
+	 */
+	if (job_resrcs->cr_type & 0x8000) {
+		job_resrcs->cr_type &= ~(0x8000);
+		job_resrcs->cr_type |= SELECT_LINEAR;
 	}
 
 	*job_resrcs_pptr = job_resrcs;
@@ -1679,8 +1688,8 @@ extern uint16_t job_resources_get_node_cpu_cnt(job_resources_t *job_resrcs_ptr,
 {
 	uint16_t cpu_count = job_resrcs_ptr->cpus[job_node_inx];
 
-	if ((!running_cons_tres() ||
-	     (job_resrcs_ptr->cr_type & (CR_CORE | CR_SOCKET))) &&
+	if ((job_resrcs_ptr->cr_type &
+	     (SELECT_CORE | SELECT_SOCKET | SELECT_LINEAR)) &&
 	    (job_resrcs_ptr->threads_per_core <
 	     node_record_table_ptr[sys_node_inx]->tpc)) {
 		cpu_count = ROUNDUP(cpu_count,

@@ -44,7 +44,7 @@
  *	Filter out unusable GRES.
  * IN sock_gres_list - list of sock_gres_t entries built by
  *                     gres_job_test2()
- * IN avail_mem - memory available for the job or NO_VAL64 (when no CR_MEMORY)
+ * IN avail_mem - memory available for the job or NO_VAL64 (when no SELECT_MEMORY)
  * IN max_cpus - maximum CPUs available on this node (limited by specialized
  *               cores and partition CPUs-per-node)
  * IN enforce_binding - GRES must be co-allocated with cores

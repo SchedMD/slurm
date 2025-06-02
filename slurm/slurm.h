@@ -1023,48 +1023,80 @@ enum node_states {
 				      * Shows local info if not in federation */
 #define SHOW_FUTURE SLURM_BIT(7) /* Show future nodes */
 
-/* CR_CPU, CR_SOCKET and CR_CORE are mutually exclusive
- * CR_MEMORY may be added to any of the above values or used by itself
- * CR_ONE_TASK_PER_CORE may also be added to any of the above values */
-enum {
-	CR_CPU = SLURM_BIT(0), /* Resources are shared down to the level of
-				* logical processors which can be socket,
-				* core, or thread depending on the system. */
-	CR_SOCKET = SLURM_BIT(1), /* Resources are shared down to the socket
-				   * level. Jobs will not be co-allocated
-				   * within a socket. */
-	CR_CORE = SLURM_BIT(2), /* Resources are shared down to the core level.
-				 * Jobs will not be co-allocated within a
-				 * core. */
-	CR_BOARD = SLURM_BIT(3), /* Resources are shared down to the board
-				  * level. Jobs will not be co-allocated
-				  * within a board. */
-	CR_MEMORY = SLURM_BIT(4), /* Memory as consumable resources. Memory is
-				   * not over-committed when selected as a CR.
-				   */
-	/* unused SLURM_BIT(5) */
-	ENFORCE_BINDING_GRES = SLURM_BIT(6),
-	ONE_TASK_PER_SHARING_GRES = SLURM_BIT(7),
-
-	CR_ONE_TASK_PER_CORE = SLURM_BIT(8), /* By default, schedule only one
-					      * task per core. Without this
-					      * option, tasks would be allocated
-					      * threads. */
-	CR_PACK_NODES = SLURM_BIT(9), /* Pack tasks tightly onto allocated nodes
-				       * rather than distributing them evenly
-				       * across available nodes */
-	LL_SHARED_GRES = SLURM_BIT(10), /* Prefer least-loaded device for shared
-					 * GRES */
-	/* was CR_OTHER_CONS_TRES = SLURM_BIT(11), removed v24.05 */
-	CR_CORE_DEFAULT_DIST_BLOCK = SLURM_BIT(12), /* By default, distribute
-						     * cores using a block
-						     * approach inside the nodes
-						     */
+/*
+ * SELECT_CPU, SELECT_SOCKET and SELECT_CORE are mutually exclusive
+ * SELECT_MEMORY may be added to any of the above values or used by itself
+ * SELECT_ONE_TASK_PER_CORE may also be added to any of the above values
+ *
+ * uint16_t
+ */
+typedef enum {
+	/*
+	 * Resources are shared down to the level of logical processors which
+	 * can be socket, core, or thread depending on system.
+	 */
+	SELECT_CPU = SLURM_BIT(0),
+	/*
+	 * Resources are shared down to the socket level. Jobs will not be
+	 * co-allocated within a socket.
+	 */
+	SELECT_SOCKET = SLURM_BIT(1),
+	/*
+	 * Resources are shared down to the core level. Jobs will not be
+	 * co-allocated within a core.
+	 */
+	SELECT_CORE = SLURM_BIT(2),
+	/*
+	 * Resources are shared down to the board level. Jobs will not be
+	 * co-allocated within a board.
+	 */
+	SELECT_BOARD = SLURM_BIT(3),
+	/*
+	 * Memory as consumable resources. Memory is not over-committed when
+	 * selected as a consumable resource.
+	 */
+	SELECT_MEMORY = SLURM_BIT(4),
+	/*
+	 * This is used internally to know whether the job was started with
+	 * linear. It is not a configuration option. We can not use
+	 * running_cons_tres() since the select plugin does not get loaded in
+	 * the stepd.
+	 */
+	SELECT_LINEAR = SLURM_BIT(5),
+	/*
+	 * The only CPUs available to the job will be those bound to the
+	 * selected GRES.
+	 */
+	SELECT_ENFORCE_BINDING_GRES = SLURM_BIT(6),
+	/*
+	 * Do not allow different tasks in to be allocated shared (shard) gres
+	 * from the same sharing (GPU) gres.
+	 */
+	SELECT_ONE_TASK_PER_SHARING_GRES = SLURM_BIT(7),
+	/*
+	 * By default, schedule only one task per core. Without this option,
+	 * tasks would be allocated threads.
+	 */
+	SELECT_ONE_TASK_PER_CORE = SLURM_BIT(8),
+	/*
+	 * Pack tasks tightly onto allocated nodes rather than distributing them
+	 * evenly across available nodes
+	 */
+	SELECT_PACK_NODES = SLURM_BIT(9),
+	/* Prefer least-loaded device for shared GRES */
+	SELECT_LL_SHARED_GRES = SLURM_BIT(10),
+	/* was SELECT_OTHER_CONS_TRES = SLURM_BIT(11), removed v24.05 */
+	/*
+	 * By default, distribute cores using a block approach inside the
+	 * nodes
+	 */
+	SELECT_CORE_DEFAULT_DIST_BLOCK = SLURM_BIT(12),
 	/* SLURM_BIT(13), empty */
-	CR_LLN = SLURM_BIT(14), /* Select nodes by "least loaded." */
-	MULTIPLE_SHARING_GRES_PJ = SLURM_BIT(15), /* Allow multiple sharing gres
-						   * per job */
-};
+	/* Select nodes by "least loaded." */
+	SELECT_LLN = SLURM_BIT(14),
+	/* Allow multiple sharing gres per job */
+	SELECT_MULTIPLE_SHARING_GRES_PJ = SLURM_BIT(15),
+} select_type_flags_t;
 
 #define MEM_PER_CPU  0x8000000000000000
 #define SHARED_FORCE 0x8000
@@ -2503,7 +2535,7 @@ typedef struct partition_info {
 	char *alternate; 	/* name of alternate partition */
 	char *billing_weights_str;/* per TRES billing weights string */
 	char *cluster_name;	/* Cluster name ONLY set in federation */
-	uint16_t cr_type;	/* see CR_* values */
+	uint16_t cr_type;	/* see SELECT_* values */
 	uint32_t cpu_bind;	/* Default task binding */
 	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */

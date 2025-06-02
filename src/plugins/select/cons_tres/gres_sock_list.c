@@ -291,7 +291,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		/* By default only allow one sharing gres per job */
 		if (gres_id_shared(gres_state_node->config_flags) &&
 		    !(slurm_conf.select_type_param &
-		      MULTIPLE_SHARING_GRES_PJ) &&
+		      SELECT_MULTIPLE_SHARING_GRES_PJ) &&
 		    (avail_gres > sock_gres->max_node_gres) && !use_total_gres)
 			/*
 			 * Test use_total_gres so we don't reject shared gres
@@ -930,7 +930,7 @@ extern void gres_sock_list_create(gres_sock_list_create_t *create_args)
 		return;
 	(void) gres_init();
 
-	if (!(create_args->cr_type & CR_SOCKET))
+	if (!(create_args->cr_type & SELECT_SOCKET))
 		_gres_limit_reserved_cores(create_args);
 
 	if (create_args->resv_exc_ptr) {

@@ -945,7 +945,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			task_offset += job->ntasks;
 
 			/*
-			 * If packing nodes (CR_PACK_NODES, -mpack), the step
+			 * If packing nodes (SELECT_PACK_NODES, -mpack), the step
 			 * may have an updated layout. Need to update each
 			 * component's het_job_nnodes with the updated counts.
 			 */
@@ -1017,7 +1017,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 
 		if (het_job_id) {
 			/*
-			 * If packing nodes (CR_PACK_NODES, -mpack), the step
+			 * If packing nodes (SELECT_PACK_NODES, -mpack), the step
 			 * may have an updated layout.
 			 */
 			job->het_job_nnodes = job->nhosts;

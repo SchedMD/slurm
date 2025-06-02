@@ -7300,7 +7300,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	if ((job_desc->bitflags & GRES_ONE_TASK_PER_SHARING) &&
-	     (!(slurm_conf.select_type_param & MULTIPLE_SHARING_GRES_PJ))){
+	    (!(slurm_conf.select_type_param &
+	       SELECT_MULTIPLE_SHARING_GRES_PJ))) {
 		info("%s: one-task-per-sharing requires MULTIPLE_SHARING_GRES_PJ",
 		     __func__);
 		error_code = ESLURM_INVALID_GRES;
@@ -8347,7 +8348,7 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 		mc_ptr->ntasks_per_socket  = INFINITE16;
 	if (job_desc->ntasks_per_core != NO_VAL16)
 		mc_ptr->ntasks_per_core    = job_desc->ntasks_per_core;
-	else if (slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE)
+	else if (slurm_conf.select_type_param & SELECT_ONE_TASK_PER_CORE)
 		mc_ptr->ntasks_per_core    = 1;
 	else
 		mc_ptr->ntasks_per_core    = INFINITE16;
@@ -19405,7 +19406,7 @@ extern uint16_t job_mgr_determine_cpus_per_core(
 	uint16_t ncpus_per_core = INFINITE16;	/* Usable CPUs per core */
 	uint16_t threads_per_core = node_record_table_ptr[node_inx]->tpc;
 
-	if ((slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
+	if ((slurm_conf.select_type_param & SELECT_ONE_TASK_PER_CORE) &&
 	    (details->min_gres_cpu > 0)) {
 		/* May override default of 1 CPU per core */
 		return node_record_table_ptr[node_inx]->tpc;

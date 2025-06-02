@@ -7984,7 +7984,7 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 	bitstr_t *avail_core_bitmap = NULL;
 	bool use_single_dev = (gres_id_shared(gres_state_job->config_flags) &&
 			       !(slurm_conf.select_type_param &
-				 MULTIPLE_SHARING_GRES_PJ));
+				 SELECT_MULTIPLE_SHARING_GRES_PJ));
 	bool use_busy_dev;
 
 	if (gres_ns->no_consume)

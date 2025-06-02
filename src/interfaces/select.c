@@ -134,7 +134,7 @@ done:
 	slurm_mutex_unlock( &select_context_lock );
 	if (running_in_slurmctld() && !running_cons_tres()) {
 		uint16_t cr_type = slurm_conf.select_type_param;
-		if (cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) {
+		if (cr_type & (SELECT_CPU | SELECT_CORE | SELECT_SOCKET)) {
 			fatal("Invalid SelectTypeParameters for "
 			      "%s: %s (%u), it can't contain "
 			      "CR_(CPU|CORE|SOCKET).",
@@ -171,60 +171,60 @@ extern char *select_type_param_string(uint16_t select_type_param)
 	static char select_str[1024];
 
 	select_str[0] = '\0';
-	if ((select_type_param & CR_CPU) &&
-	    (select_type_param & CR_MEMORY))
+	if ((select_type_param & SELECT_CPU) &&
+	    (select_type_param & SELECT_MEMORY))
 		strcat(select_str, "CR_CPU_MEMORY");
-	else if ((select_type_param & CR_CORE) &&
-		 (select_type_param & CR_MEMORY))
+	else if ((select_type_param & SELECT_CORE) &&
+		 (select_type_param & SELECT_MEMORY))
 		strcat(select_str, "CR_CORE_MEMORY");
-	else if ((select_type_param & CR_SOCKET) &&
-		 (select_type_param & CR_MEMORY))
+	else if ((select_type_param & SELECT_SOCKET) &&
+		 (select_type_param & SELECT_MEMORY))
 		strcat(select_str, "CR_SOCKET_MEMORY");
-	else if (select_type_param & CR_CPU)
+	else if (select_type_param & SELECT_CPU)
 		strcat(select_str, "CR_CPU");
-	else if (select_type_param & CR_CORE)
+	else if (select_type_param & SELECT_CORE)
 		strcat(select_str, "CR_CORE");
-	else if (select_type_param & CR_SOCKET)
+	else if (select_type_param & SELECT_SOCKET)
 		strcat(select_str, "CR_SOCKET");
-	else if (select_type_param & CR_MEMORY)
+	else if (select_type_param & SELECT_MEMORY)
 		strcat(select_str, "CR_MEMORY");
 
-	if (select_type_param & CR_ONE_TASK_PER_CORE) {
+	if (select_type_param & SELECT_ONE_TASK_PER_CORE) {
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "CR_ONE_TASK_PER_CORE");
 	}
-	if (select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
+	if (select_type_param & SELECT_CORE_DEFAULT_DIST_BLOCK) {
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "CR_CORE_DEFAULT_DIST_BLOCK");
 	}
-	if (select_type_param & CR_LLN) {
+	if (select_type_param & SELECT_LLN) {
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "CR_LLN");
 	}
-	if (select_type_param & CR_PACK_NODES) {
+	if (select_type_param & SELECT_PACK_NODES) {
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "CR_PACK_NODES");
 	}
-	if (select_type_param & LL_SHARED_GRES) {
+	if (select_type_param & SELECT_LL_SHARED_GRES) {
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "LL_SHARED_GRES");
 	}
-	if (select_type_param & MULTIPLE_SHARING_GRES_PJ) {
+	if (select_type_param & SELECT_MULTIPLE_SHARING_GRES_PJ) {
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "MULTIPLE_SHARING_GRES_PJ");
 	}
-	if (select_type_param & ENFORCE_BINDING_GRES) {
+	if (select_type_param & SELECT_ENFORCE_BINDING_GRES) {
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "ENFORCE_BINDING_GRES");
 	}
-	if (select_type_param & ONE_TASK_PER_SHARING_GRES) {
+	if (select_type_param & SELECT_ONE_TASK_PER_SHARING_GRES) {
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "ONE_TASK_PER_SHARING_GRES");

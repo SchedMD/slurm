@@ -159,7 +159,7 @@ static void _gres_per_job_reduce_res_cores(bitstr_t *avail_core,
 	bool done = false;
 	int cnt;
 
-	if (cr_type & CR_SOCKET)
+	if (cr_type & SELECT_SOCKET)
 		return;
 	if (!gres_js->res_gpu_cores ||
 	    !gres_js->res_gpu_cores[node_i])
