@@ -804,6 +804,18 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		goto unpack_error;
 	}
 
+	/*
+	 * CR_LINEAR overlapped with MULTIPLE_SHARING_GRES_PJ until
+	 * 25.11. MULTIPLE_SHARING_GRES_PJ was never put on job_resrcs->cr_type
+	 * so no real overlap happened, but it isn't good in practice.
+	 * We just need to set it to the correct value here.
+	 * Once 25.05 is no longer supported we can remove this 'if'.
+	 */
+	if (job_resrcs->cr_type & 0x8000) {
+		job_resrcs->cr_type &= ~(0x8000);
+		job_resrcs->cr_type |= CR_LINEAR;
+	}
+
 	*job_resrcs_pptr = job_resrcs;
 	return SLURM_SUCCESS;
 

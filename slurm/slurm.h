@@ -1042,7 +1042,11 @@ enum {
 	CR_MEMORY = SLURM_BIT(4), /* Memory as consumable resources. Memory is
 				   * not over-committed when selected as a CR.
 				   */
-	/* unused SLURM_BIT(5) */
+	CR_LINEAR = SLURM_BIT(5), /* This is used internally to know whether the
+				   * job was started with cons_tres or
+				   * linear. It is not a configuration
+				   * option. We can not use running_cons_tres()
+				   * since that */
 	ENFORCE_BINDING_GRES = SLURM_BIT(6),
 	ONE_TASK_PER_SHARING_GRES = SLURM_BIT(7),
 
@@ -1065,13 +1069,6 @@ enum {
 	MULTIPLE_SHARING_GRES_PJ = SLURM_BIT(15), /* Allow multiple sharing gres
 						   * per job */
 };
-
-
-/*
- * This is used internally to know whether the job was started with
- * cons_tres or linear. It is not a configuration option.
- */
-#define CR_LINEAR 0x8000
 
 #define MEM_PER_CPU  0x8000000000000000
 #define SHARED_FORCE 0x8000
