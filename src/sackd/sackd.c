@@ -270,15 +270,15 @@ static void _establish_config_source(void)
 	config_response_msg_t *configs;
 	uint32_t fetch_type = CONFIG_REQUEST_SACKD;
 
-	if (!conf_server && _slurm_conf_file_exists()) {
-		debug("%s: config will load from file", __func__);
-		return;
-	}
-
 	/* Reconfigured child process does not need to fetch configs again. */
 	if (getenv("SACKD_RECONF_LISTEN_FD")) {
 		xstrfmtcat(conf_file, "%s/slurm.conf", dir);
 		registered = true;
+		return;
+	}
+
+	if (!conf_server && _slurm_conf_file_exists()) {
+		debug("%s: config will load from file", __func__);
 		return;
 	}
 
