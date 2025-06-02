@@ -6857,7 +6857,7 @@ extern slurmctld_rpc_t *find_rpc(uint16_t msg_type)
 extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 {
 	DEF_TIMERS;
-	int fd = conn_g_get_fd(msg->tls_conn);
+	int fd = -1;
 
 	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
@@ -6868,6 +6868,12 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	/* Debug the protocol layer.
 	 */
 	START_TIMER;
+
+	if (msg->tls_conn) {
+		fd = conn_g_get_fd(msg->tls_conn);
+		xassert(!msg->conmgr_con);
+	}
+
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		const char *p = rpc_num2string(msg->msg_type);
 		if (msg->conn) {
