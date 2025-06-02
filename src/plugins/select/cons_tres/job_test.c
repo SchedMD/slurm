@@ -551,7 +551,6 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		.req_sock_map = NULL,
 		.res_cores_per_gpu = node_ptr->res_cores_per_gpu,
 		.sockets = node_ptr->tot_sockets,
-		.s_p_n = s_p_n,
 		.use_total_gres = test_only,
 	};
 

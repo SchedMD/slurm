@@ -221,7 +221,6 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	uint32_t res_cores_per_gpu = create_args->res_cores_per_gpu;
 	char *node_name = create_args->node_name;
 	bool enforce_binding = create_args->enforce_binding;
-	uint32_t s_p_n = NO_VAL; /* No need to optimize socket */
 
 	gres_node_state_t *alt_gres_ns = NULL;
 	int i, j, s, c;
@@ -455,54 +454,6 @@ static sock_gres_t *_build_sock_gres_by_topo(
 				sock_gres->total_cnt -= i;
 			}
 		}
-	}
-
-	/* Maximize GRES per node */
-	if (gres_js->gres_per_job && !gres_js->gres_per_socket)
-		s_p_n = create_args->s_p_n;
-
-	/*
-	 * Satisfy sockets-per-node (s_p_n) limit by selecting the sockets with
-	 * the most GRES. Sockets with low GRES counts have their core_bitmap
-	 * cleared so that _allocate_sc() in cons_tres/job_test.c does not
-	 * remove sockets needed to satisfy the job's GRES specification.
-	 */
-	if (match && enforce_binding && core_bitmap && (s_p_n < sockets)) {
-		int avail_sock = 0;
-		bool *avail_sock_flag = xcalloc(sockets, sizeof(bool));
-		for (s = 0; s < sockets; s++) {
-			if (sock_gres->cnt_by_sock[s] == 0)
-				continue;
-			for (c = 0; c < cores_per_sock; c++) {
-				i = (s * cores_per_sock) + c;
-				if (!bit_test(core_bitmap, i))
-					continue;
-				avail_sock++;
-				avail_sock_flag[s] = true;
-				break;
-			}
-		}
-		while (avail_sock > s_p_n) {
-			int low_gres_sock_inx = -1;
-			for (s = 0; s < sockets; s++) {
-				if (!avail_sock_flag[s])
-					continue;
-				if ((low_gres_sock_inx == -1) ||
-				    (sock_gres->cnt_by_sock[s] <
-				     sock_gres->cnt_by_sock[low_gres_sock_inx]))
-					low_gres_sock_inx = s;
-			}
-			if (low_gres_sock_inx == -1)
-				break;
-			s = low_gres_sock_inx;
-			i = s * cores_per_sock;
-			bit_nclear(core_bitmap, i, i + cores_per_sock - 1);
-			sock_gres->total_cnt -= sock_gres->cnt_by_sock[s];
-			sock_gres->cnt_by_sock[s] = 0;
-			avail_sock--;
-			avail_sock_flag[s] = false;
-		}
-		xfree(avail_sock_flag);
 	}
 
 	if (match) {
