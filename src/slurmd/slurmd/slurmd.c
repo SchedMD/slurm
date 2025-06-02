@@ -1791,6 +1791,9 @@ _print_config(void)
 	hours = (conf->up_time / 3600) % 24;
 	days  = (conf->up_time / 86400);
 	printf("UpTime=%u-%2.2u:%2.2u:%2.2u\n", days, hours, mins, secs);
+
+	xfree(gres_str);
+	xfree(autodetect_str);
 }
 
 static void _print_gres(void)
