@@ -2929,6 +2929,14 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	}
 
 fini:
+	/*
+	 * We no longer need the gpu plugin unless this option is set:
+	 * AcctGatherEnergyType=acct_gather_energy/gpu
+	 * Note: slurmstepds may still load gpu plugin for gpu_g_usage_read()
+	 * unless JobAcctGatherParams=DisableGPUAcct is set
+	 */
+	if (!in_slurmd || !xstrstr(slurm_conf.acct_gather_energy_type, "gpu"))
+		gpu_plugin_fini();
 	xfree(gres_conf_file);
 	FREE_NULL_LIST(tmp_gres_conf_list);
 	_pack_context_buf();
