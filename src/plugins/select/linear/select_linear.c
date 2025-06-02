@@ -431,7 +431,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 	job_resrcs_ptr->ncpus = job_ptr->total_cpus;
 	job_resrcs_ptr->threads_per_core =
 		job_ptr->details->mc_ptr->threads_per_core;
-	job_resrcs_ptr->cr_type = cr_type;
+	job_resrcs_ptr->cr_type = cr_type | CR_LINEAR;
 
 	if (build_job_resources(job_resrcs_ptr))
 		error("_build_select_struct: build_job_resources: %m");

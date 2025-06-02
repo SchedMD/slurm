@@ -1066,6 +1066,13 @@ enum {
 						   * per job */
 };
 
+
+/*
+ * This is used internally to know whether the job was started with
+ * cons_tres or linear. It is not a configuration option.
+ */
+#define CR_LINEAR 0x8000
+
 #define MEM_PER_CPU  0x8000000000000000
 #define SHARED_FORCE 0x8000
 
