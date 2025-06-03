@@ -599,7 +599,7 @@ static char *_generate_spooldir_pattern(stepd_step_rec_t *step,
 {
 	const char *step_id = NULL;
 	const char *task_id = NULL;
-	char *parent = NULL;
+	char *parent = NULL, *pattern = NULL;
 
 	if (oci_conf->container_path) {
 		parent = xstrdup(oci_conf->container_path);
@@ -630,8 +630,10 @@ static char *_generate_spooldir_pattern(stepd_step_rec_t *step,
 	else
 		task_id = "";
 
-	return xstrdup_printf("%s%s%s%s%s", parent, (step_id[0] ? "/" : ""),
-			      step_id, (task_id[0] ? "/" : ""), task_id);
+	pattern = xstrdup_printf("%s%s%s%s%s", parent, (step_id[0] ? "/" : ""),
+				 step_id, (task_id[0] ? "/" : ""), task_id);
+	xfree(parent);
+	return pattern;
 }
 
 static char *_generate_spooldir(stepd_step_rec_t *step,
