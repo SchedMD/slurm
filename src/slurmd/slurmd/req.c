@@ -967,7 +967,10 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		_remove_starting_step(type, req);
 		return SLURM_ERROR;
 	} else if (pid > 0) {
-		int rc = SLURM_SUCCESS, rc2;
+		int rc = SLURM_SUCCESS;
+#if (SLURMSTEPD_MEMCHECK != 1)
+		int rc2;
+#endif
 		/*
 		 * Parent sends initialization data to the slurmstepd
 		 * over the to_stepd pipe, and waits for the return code
