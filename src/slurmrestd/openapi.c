@@ -45,6 +45,7 @@
 #include "src/slurmrestd/operations.h"
 
 #define OPENAPI_MAJOR_TYPE "openapi"
+#define DEPRECATED_PARSER "v0.0.40"
 
 typedef struct {
 	int (*init)(void);
@@ -1130,6 +1131,10 @@ static int _populate_method(path_t *path, openapi_spec_t *spec, data_t *dpath,
 	if (method->description)
 		data_set_string(data_key_set(dmethod, "description"),
 				method->description);
+
+	if (!xstrcmp(data_parser_get_plugin_version(path->parser),
+		     DEPRECATED_PARSER))
+		data_set_bool(data_key_set(dmethod, "deprecated"), true);
 
 	{
 		char *opid = _get_method_operationId(spec, path, method);
