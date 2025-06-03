@@ -15,7 +15,7 @@ See the [Upgrade Guide](https://slurm.schedmd.com/upgrades.html) for further det
 * Added support for an [OR operator](https://slurm.schedmd.com/sbatch.html#OPT_licenses) in license requests.
 * sacctmgr - Add support for [dumping and loading QOSes](https://slurm.schedmd.com/sacctmgr.html#SECTION_FLAT-FILE-DUMP-AND-LOAD).
 * slurmrestd - Add support for [TLS encryption](https://slurm.schedmd.com/tls.html) to listening sockets.
-* srun - Add new [\-\-wait-for-children](https://slurm.schedmd.com/srun.html#OPT_wait-for-children) option to keep the step running until all launched processes have been launched (cgroup/v2 only).
+* srun - Add new [\-\-wait-for-children](https://slurm.schedmd.com/srun.html#OPT_wait-for-children) option to keep the step running until all launched processes have exited (cgroup/v2 only).
 * topology/block - Permit gaps within the block definitions.
 * jobcomp/kafka - New [option](https://slurm.schedmd.com/slurm.conf.html#OPT_enable_job_start) to send job information at job start in addition to job completion.
 * switch/hpe_slingshot - Support for > 252 ranks per node.
