@@ -217,7 +217,6 @@ typedef enum {
 extern char *command_name;
 extern int exit_code;	/* sacctmgr's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */
-extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern int rollback_flag;/* immediate execute=0, else = 1 */
