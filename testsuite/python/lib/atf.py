@@ -4224,6 +4224,30 @@ def restore_accounting_database():
     run_command(f"rm -f {sql_dump_file}", fatal=True, quiet=False)
 
 
+def run_check_test(source_file, build_args=""):
+    """Compiles and runs a libcheck test
+    Args:
+        source_file (string): The name of the source file, relative to testsuite_check_dir.
+        build_args (string): Additional string to be appended to the build command.
+    """
+
+    check_test = (
+        f"{module_tmp_path}/{os.path.splitext(os.path.basename(source_file))[0]}.exe"
+    )
+
+    compile_against_libslurm(
+        f"{properties['testsuite_check_dir']}/{source_file}",
+        check_test,
+        full=True,
+        build_args=build_args + "-lcheck -lm -lsubunit",
+    )
+
+    result = run_command(check_test, quiet=True)
+    logging.info(f"{result['stdout']}")
+
+    assert not result["exit_code"]
+
+
 def compile_against_libslurm(
     source_file, dest_file, build_args="", full=False, shared=False
 ):
@@ -4565,6 +4589,7 @@ properties["slurm-prefix"] = "/usr/local"
 properties["testsuite_scripts_dir"] = (
     properties["testsuite_base_dir"] + "/python/scripts"
 )
+properties["testsuite_check_dir"] = properties["testsuite_base_dir"] + "/python/check"
 
 # Override directory properties with values from testsuite.conf file
 testsuite_config = {}
