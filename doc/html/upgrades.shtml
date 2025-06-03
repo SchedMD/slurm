@@ -212,10 +212,10 @@ strongly advised to assign a single core Slurm daemon to each system.</p>
 <h3 id="preparation">Preparation
 <a class="slurm_link" href="#preparation"></a></h3>
 
-<h4 id="release_notes">RELEASE_NOTES and NEWS
+<h4 id="release_notes">RELEASE_NOTES and CHANGELOG
 <a class="slurm_link" href="#release_notes"></a></h4>
 
-<p>Review relevant release notes in the <b>RELEASE_NOTES</b> file in root of
+<p>Review relevant release notes in the <b>RELEASE_NOTES.md</b> file in root of
 Slurm source directory for the target release and any major versions between
 what you're currently running and the target you are upgrading to. Pay
 particular attention to any entries in which items are <b>removed</b> or
@@ -225,12 +225,15 @@ that you are using. You may also notice new items added to Slurm that you wish
 to start using after the upgrade.</p>
 
 <p>Release notes for the latest major version are
-available <a href="release_notes.html">here</a>. Release notes for other
-versions can be found in the source, which can be viewed on
-<a href="https://github.com/SchedMD/slurm/blob/master/RELEASE_NOTES">GitHub</a>
-by selecting the branch or tag corresponding to the desired version. More
-detailed changes, including minor release changes, can be found in the
-<b>NEWS</b> file, but are usually not needed to prepare for upgrades.</p>
+available <a href="release_notes.html">here</a> or on GitHub
+(<a href="https://github.com/SchedMD/slurm/blob/master/RELEASE_NOTES.md">RELEASE_NOTES.md</a>).
+Release notes for other versions can be found in the source, which can be viewed
+on GitHub by selecting the branch or tag corresponding to the desired version.
+(Refer to
+<a href="https://github.com/SchedMD/slurm/blob/slurm-24.11/RELEASE_NOTES">
+RELEASE_NOTES</a> for Slurm 24.11 and older.) More detailed changes, including
+minor release changes, can be found in the <b>CHANGELOG</b> directory (formerly
+the NEWS file), but are usually not needed to prepare for upgrades.</p>
 
 <h4 id="config_changes">Configuration Changes
 <a class="slurm_link" href="#config_changes"></a></h4>
@@ -602,6 +605,6 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p style="text-align:center;">Last modified 29 May 2025</p>
+<p style="text-align:center;">Last modified 03 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
