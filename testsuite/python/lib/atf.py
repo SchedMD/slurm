@@ -1086,6 +1086,57 @@ def require_upgrades(
     )
 
 
+def upgrade_component(component, new_version=True):
+    """Upgrades a component creating the required links, and restarts it if necessary.
+
+    This function needs require_upgrades() to be already run to work properly.
+
+    Args:
+        component (string): The bin/ or sbin/ component of Slurm to check.
+        new_version (boolean): Set it false to downgrade to the older version instead.
+
+    Returns:
+        A tuple representing the version. E.g. (25.05.0).
+    """
+
+    if (
+        "old-slurm-prefix" not in properties.keys()
+        or "new-slurm-prefix" not in properties.keys()
+    ):
+        pytest.fail("To upgrade_components() first we need to call require_upgrades()")
+
+    if not os.path.exists(f"{properties['slurm-prefix']}/{component}"):
+        pytest.fail(f"Unknown or not existing {component}")
+
+    if new_version:
+        upgrade_prefix = properties["new-slurm-prefix"]
+    else:
+        upgrade_prefix = properties["old-slurm-prefix"]
+
+    # Stop components when necessary
+    if component == "sbin/slurmdbd":
+        stop_slurmdbd()
+    elif component == "sbin/slurmctld":
+        stop_slurmctld()
+
+    run_command(
+        f"sudo rm -f {properties['slurm-prefix']}/{component}",
+        quiet=True,
+        fatal=True,
+    )
+    run_command(
+        f"sudo ln -s {upgrade_prefix}/{component} {properties['slurm-prefix']}/{component}",
+        quiet=True,
+        fatal=True,
+    )
+
+    # Restart components when necessary
+    if component == "sbin/slurmdbd":
+        start_slurmdbd()
+    elif component == "sbin/slurmctld":
+        start_slurmctld()
+
+
 def get_version(component="sbin/slurmctld", slurm_prefix=""):
     """Returns the version of the Slurm component as a tuple.
 
