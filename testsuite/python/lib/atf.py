@@ -1021,25 +1021,46 @@ def require_slurm_running():
     nodes = get_nodes(quiet=True)
 
 
-def get_version(component="sbin/slurmctld"):
+def get_version(component="sbin/slurmctld", slurm_prefix=""):
+    """Returns the version of the Slurm component as a tuple.
+
+    It calls the component with -V and converts the output into a tuple.
+
+    Args:
+        component (string): The bin/ or sbin/ component of Slurm to check.
+        slurm_prefix (string): The path where the component is. By default the defined in testsuite.conf.
+
+    Returns:
+        A tuple representing the version. E.g. (25.05.0).
+    """
+    if slurm_prefix == "":
+        slurm_prefix = f"{properties['slurm-sbin-dir']}/.."
+
     return tuple(
         int(part) if part.isdigit() else 0
         for part in run_command_output(
-            f"sudo {properties['slurm-sbin-dir']}/../{component} -V"
+            f"sudo {slurm_prefix}/{component} -V", quiet=True
         )
         .replace("slurm ", "")
         .split(".")
     )
 
 
-def require_version(version, component="sbin/slurmctld"):
-    component_version = get_version(component)
-    required_version = tuple(
-        int(part) if part.isdigit() else 0 for part in version.split(".")
-    )
-    if component_version < required_version:
+def require_version(version, component="sbin/slurmctld", slurm_prefix=""):
+    """Checks if the component is at least the required version, or skips.
+
+    Args:
+        version (tuple): The tuple representing the version.
+        component (string): The bin/ or sbin/ component of Slurm to check.
+        slurm_prefix (string): The path where the component is. By default the defined in testsuite.conf.
+
+    Returns:
+        A tuple representing the version. E.g. (25.05.0).
+    """
+    component_version = get_version(component, slurm_prefix)
+    if component_version < version:
         pytest.skip(
-            f"The version of {component} is {component_version}, required is {required_version}"
+            f"The version of {component} is {component_version}, required is {version}"
         )
 
 
