@@ -3139,7 +3139,9 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		 * We need to make gpu_spec_bitmap now that we know the cores
 		 * used per gres.
 		 */
-		error_code = _set_gpu_spec(node_ptr, &reason_down);
+		if (_set_gpu_spec(node_ptr, &reason_down))
+			error_code = EINVAL;
+		/* reason_down set in function above */
 	} else {
 		FREE_NULL_BITMAP(node_ptr->gpu_spec_bitmap);
 	}
