@@ -206,11 +206,14 @@ upgrade or trying to use new features in the new version may cause problems.</p>
 <p><b>NOTE</b>: If RPM/DEB packages are used, all packages present on each
 system must be upgraded together instead of piecewise. This is because the
 packages that contain Slurm daemons and client commands depend on the general
-<b>slurm</b> package. After upgrading, daemons should be started in the order
-listed above. Please keep in mind that running multiple daemons on the same
-system is <b>not a recommended setup</b> for production, in part because of this
-restriction to piecewise upgrades. Sites are strongly advised to assign a single
-core Slurm daemon (slurmd, slurmctld, and slurmdbd) to each system.</p>
+<b>slurm</b> package. Avoid using low-level package managers like <code>rpm</code>
+or <code>dpkg</code> as they may not properly enforce these dependencies.
+After upgrading, daemons should be started in the order listed above.</p>
+
+<p>Running multiple daemons on the same system is <b>not a recommended setup</b>
+for production, in part because of the stated restriction to piecewise upgrades.
+Sites are strongly advised to assign a single Slurm daemon (slurmd, slurmctld,
+or slurmdbd) to each system.</p>
 
 <h3 id="preparation">Preparation
 <a class="slurm_link" href="#preparation"></a></h3>
