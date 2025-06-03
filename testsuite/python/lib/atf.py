@@ -1023,6 +1023,68 @@ def require_slurm_running():
     nodes = get_nodes(quiet=True)
 
 
+def require_upgrades(
+    old_slurm_prefix="/opt/slurm-old", new_slurm_prefix="/opt/slurm-new"
+):
+    """Checks if has two different versions installed.
+
+    If they are not, skip.
+    """
+    if not properties["auto-config"]:
+        require_auto_config("to change/upgrade Slurm setup")
+
+    if not os.path.exists(old_slurm_prefix):
+        pytest.skip(
+            f"This test needs the upgrade setup. Old prefix {old_slurm_prefix} not exists."
+        )
+
+    if not os.path.exists(new_slurm_prefix):
+        pytest.skip(
+            f"This test needs the upgrade setup. New prefix {new_slurm_prefix} not exists."
+        )
+
+    # Double-check that old_version <= new_version
+    old_version = get_version(slurm_prefix=old_slurm_prefix)
+    new_version = get_version(slurm_prefix=new_slurm_prefix)
+    if old_version > new_version:
+        pytest.skip(
+            f"Old version ({old_version}) has to be older than new version ({new_version})"
+        )
+    logging.info(f"Required upgrade setup found: {old_version} and {new_version}")
+
+    properties["old-slurm-prefix"] = old_slurm_prefix
+    properties["new-slurm-prefix"] = new_slurm_prefix
+
+    logging.debug(
+        "Setting bin/ and sbin/ pointing to old version and saving a backup..."
+    )
+    run_command(
+        f"sudo mv {properties['slurm-sbin-dir']} {module_tmp_path}/upgrade-sbin",
+        quiet=True,
+        fatal=True,
+    )
+    run_command(
+        f"sudo mv {properties['slurm-bin-dir']} {module_tmp_path}/upgrade-bin",
+        quiet=True,
+        fatal=True,
+    )
+    run_command(
+        f"sudo mkdir {properties['slurm-sbin-dir']} {properties['slurm-bin-dir']}",
+        quiet=True,
+        fatal=True,
+    )
+    run_command(
+        f"sudo ln -s {properties['old-slurm-prefix']}/sbin/* {properties['slurm-sbin-dir']}/",
+        quiet=True,
+        fatal=True,
+    )
+    run_command(
+        f"sudo ln -s {properties['old-slurm-prefix']}/bin/* {properties['slurm-bin-dir']}/",
+        quiet=True,
+        fatal=True,
+    )
+
+
 def get_version(component="sbin/slurmctld", slurm_prefix=""):
     """Returns the version of the Slurm component as a tuple.
 
