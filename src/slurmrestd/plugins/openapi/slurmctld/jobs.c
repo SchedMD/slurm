@@ -474,8 +474,8 @@ static void _job_post(ctxt_t *ctxt)
 		goto cleanup;
 
 	if (!req.jobs && (!req.script || !req.script[0]) &&
-	    (!req.job || !req.job->script) &&
-	    !(req.job->bitflags & EXTERNAL_JOB)) {
+	    (!req.job ||
+	     (!req.job->script && !(req.job->bitflags & EXTERNAL_JOB)))) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Populated \"script\" field is required for job submission");
 		goto cleanup;
