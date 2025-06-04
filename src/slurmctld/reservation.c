@@ -145,10 +145,10 @@ typedef struct {
 } resv_select_t;
 
 typedef struct {
-	char *assoc_list_pos;
 	char *prefix;
-	slurmctld_resv_t *resv_ptr;
-} foreach_set_assoc_t;
+	char **str;
+	char *str_pos;
+} foreach_set_allow_str_t;
 
 static int _advance_resv_time(slurmctld_resv_t *resv_ptr);
 static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt);
@@ -1100,17 +1100,21 @@ static int _append_acct_to_assoc_list(list_t *assoc_list,
 	return rc;
 }
 
-static int _foreach_set_assoc_list(void *x, void *arg)
+static void _addto_alloc_str(foreach_set_allow_str_t *set_allow_str,
+			     uint32_t id)
+{
+	xstrfmtcatat(*set_allow_str->str, &set_allow_str->str_pos, "%s%s%u,",
+		     *set_allow_str->str ? "" : ",",
+		     set_allow_str->prefix,
+		     id);
+}
+
+static int _foreach_set_assoc_allow_str(void *x, void *arg)
 {
 	slurmdb_assoc_rec_t *assoc_ptr = x;
-	foreach_set_assoc_t *set_assoc = arg;
+	foreach_set_allow_str_t *set_allow_str = arg;
 
-	xstrfmtcatat(set_assoc->resv_ptr->assoc_list,
-		     &set_assoc->assoc_list_pos,
-		     "%s%s%u,",
-		     set_assoc->resv_ptr->assoc_list ? "" : ",",
-		     set_assoc->prefix,
-		     assoc_ptr->id);
+	_addto_alloc_str(set_allow_str, assoc_ptr->id);
 	return 0;
 }
 
@@ -1122,8 +1126,8 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	list_t *assoc_list = NULL;
 	slurmdb_assoc_rec_t assoc;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
-	foreach_set_assoc_t set_assoc = {
-		.resv_ptr = resv_ptr,
+	foreach_set_allow_str_t set_allow_str = {
+		.str = &resv_ptr->assoc_list,
 	};
 
 	/* no need to do this if we can't ;) */
@@ -1249,18 +1253,18 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 
 	xfree(resv_ptr->assoc_list);	/* clear for modify */
 	if (list_count(assoc_list_allow)) {
-		set_assoc.prefix = "";
-		set_assoc.assoc_list_pos = NULL;
+		set_allow_str.prefix = "";
+		set_allow_str.str_pos = NULL;
 		(void) list_for_each(assoc_list_allow,
-				     _foreach_set_assoc_list,
-				     &set_assoc);
+				     _foreach_set_assoc_allow_str,
+				     &set_allow_str);
 	}
 	if (list_count(assoc_list_deny)) {
-		set_assoc.prefix = "-";
-		set_assoc.assoc_list_pos = NULL;
+		set_allow_str.prefix = "-";
+		set_allow_str.str_pos = NULL;
 		(void) list_for_each(assoc_list_deny,
-				     _foreach_set_assoc_list,
-				     &set_assoc);
+				     _foreach_set_assoc_allow_str,
+				     &set_allow_str);
 	}
 	debug("assoc_list:%s", resv_ptr->assoc_list);
 
