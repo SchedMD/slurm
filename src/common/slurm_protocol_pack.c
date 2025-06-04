@@ -1994,7 +1994,28 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		packstr(msg->name,         buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->end_time,   buffer);
+		pack32(msg->duration,      buffer);
+		pack64(msg->flags,         buffer);
+		pack32(msg->node_cnt, buffer);
+		pack32(msg->core_cnt, buffer);
+		packstr(msg->node_list,    buffer);
+		packstr(msg->features,     buffer);
+		packstr(msg->licenses,     buffer);
+		pack32(msg->max_start_delay, buffer);
+		packstr(msg->partition,    buffer);
+		pack32(msg->purge_comp_time, buffer);
+		pack32(NO_VAL, buffer); /* was resv_watts */
+		packstr(msg->users,        buffer);
+		packstr(msg->accounts,     buffer);
+		packstr(msg->burst_buffer, buffer);
+		packstr(msg->groups, buffer);
+		packstr(msg->comment, buffer);
+		packstr(msg->tres_str, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name,         buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->end_time,   buffer);
@@ -2031,7 +2052,30 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 	tmp_ptr = xmalloc(sizeof(resv_desc_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&tmp_ptr->name, buffer);
+		safe_unpack_time(&tmp_ptr->start_time, buffer);
+		safe_unpack_time(&tmp_ptr->end_time,   buffer);
+		safe_unpack32(&tmp_ptr->duration,      buffer);
+		safe_unpack64(&tmp_ptr->flags,         buffer);
+		safe_unpack32(&tmp_ptr->node_cnt, buffer);
+		safe_unpack32(&tmp_ptr->core_cnt, buffer);
+		safe_unpackstr(&tmp_ptr->node_list, buffer);
+		safe_unpackstr(&tmp_ptr->features, buffer);
+		safe_unpackstr(&tmp_ptr->licenses, buffer);
+
+		safe_unpack32(&tmp_ptr->max_start_delay, buffer);
+
+		safe_unpackstr(&tmp_ptr->partition, buffer);
+		safe_unpack32(&tmp_ptr->purge_comp_time, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was resv_watts */
+		safe_unpackstr(&tmp_ptr->users, buffer);
+		safe_unpackstr(&tmp_ptr->accounts, buffer);
+		safe_unpackstr(&tmp_ptr->burst_buffer, buffer);
+		safe_unpackstr(&tmp_ptr->groups, buffer);
+		safe_unpackstr(&tmp_ptr->comment, buffer);
+		safe_unpackstr(&tmp_ptr->tres_str, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->name, buffer);
 		safe_unpack_time(&tmp_ptr->start_time, buffer);
 		safe_unpack_time(&tmp_ptr->end_time,   buffer);
