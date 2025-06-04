@@ -101,7 +101,7 @@ extern void set_oom_adj_env(int adj)
 	 * (e.g. in /etc/sysconfig/slurm).
 	 */
 	if (!getenv("SLURMSTEPD_OOM_ADJ"))
-		setenvfs(NULL, "SLURMSTEPD_OOM_ADJ=%d", adj);
+		setenvfs("SLURMSTEPD_OOM_ADJ=%d", adj);
 }
 
 #else /* __FreeBSD__ */
