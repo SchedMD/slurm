@@ -2972,7 +2972,41 @@ static int
 _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 			     uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
+		safe_unpackstr(&resv->accounts, buffer);
+		safe_unpackstr(&resv->burst_buffer,buffer);
+		safe_unpackstr(&resv->comment, buffer);
+		safe_unpack32(&resv->core_cnt, buffer);
+		safe_unpack_time(&resv->end_time, buffer);
+		safe_unpackstr(&resv->features, buffer);
+		safe_unpack64(&resv->flags, buffer);
+		safe_unpackstr(&resv->licenses, buffer);
+		safe_unpack32(&resv->max_start_delay, buffer);
+		safe_unpackstr(&resv->name, buffer);
+		safe_unpack32(&resv->node_cnt, buffer);
+		safe_unpackstr(&resv->node_list, buffer);
+		safe_unpackstr(&resv->partition, buffer);
+		safe_unpack32(&resv->purge_comp_time, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was resv_watts */
+		safe_unpack_time(&resv->start_time, buffer);
+
+		safe_unpackstr(&resv->tres_str, buffer);
+		safe_unpackstr(&resv->users, buffer);
+		safe_unpackstr(&resv->groups, buffer);
+
+		unpack_bit_str_hex_as_inx(&resv->node_inx, buffer);
+
+		safe_unpack32(&resv->core_spec_cnt, buffer);
+		if (resv->core_spec_cnt > 0) {
+			safe_xcalloc(resv->core_spec, resv->core_spec_cnt,
+				     sizeof(resv_core_spec_t));
+		}
+		for (int i = 0; i < resv->core_spec_cnt; i++) {
+			safe_unpackstr(&resv->core_spec[i].node_name, buffer);
+			safe_unpackstr(&resv->core_spec[i].core_id, buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint32_t uint32_tmp;
 		safe_unpackstr(&resv->accounts, buffer);
 		safe_unpackstr(&resv->burst_buffer,buffer);
