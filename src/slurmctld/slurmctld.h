@@ -335,12 +335,12 @@ extern uint16_t part_max_priority;      /* max priority_job_factor in all parts 
  *  RESERVATION parameters and data structures
 \*****************************************************************************/
 
-#define RESV_CTLD_ACCT_NOT       0x00000001
-#define RESV_CTLD_USER_NOT       0x00000002
-#define RESV_CTLD_FULL_NODE      0x00000004
-#define RESV_CTLD_NODE_FLAGS_SET 0x00000008
-#define RESV_CTLD_EPILOG         0x00000010
-#define RESV_CTLD_PROLOG         0x00000020
+#define RESV_CTLD_ACCT_NOT SLURM_BIT(0)
+#define RESV_CTLD_USER_NOT SLURM_BIT(1)
+#define RESV_CTLD_FULL_NODE SLURM_BIT(2)
+#define RESV_CTLD_NODE_FLAGS_SET SLURM_BIT(3)
+#define RESV_CTLD_EPILOG SLURM_BIT(4)
+#define RESV_CTLD_PROLOG SLURM_BIT(5)
 
 typedef struct slurmctld_resv {
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
