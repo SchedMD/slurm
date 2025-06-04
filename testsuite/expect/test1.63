@@ -73,6 +73,11 @@ expect {
 		sleep 2
 
 		exec $bin_kill -INT $srun_pid
+		exp_continue
+	}
+	-re "srun: sending Ctrl-C to StepId" {
+		incr match_sig
+
 		exec $bin_kill -INT $srun_pid
 		exp_continue
 	}
