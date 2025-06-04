@@ -6149,8 +6149,9 @@ For allocating unique channels within an NVIDIA IMEX domain.
 
 .TP
 \fBTaskEpilog\fR
-Fully qualified pathname of a program to be executed as the slurm job's
-owner after termination of each task.
+Fully qualified pathname of a program to be executed as the slurm job's user
+after termination of each task. Will run inside of the job's container if
+configured. Should not be used for policy enforcement.
 See \fBTaskProlog\fR for execution order details.
 .IP
 
@@ -6264,8 +6265,9 @@ Set to Threads, Cores or Sockets (E.g. TaskPluginParam=autobind=threads).
 
 .TP
 \fBTaskProlog\fR
-Fully qualified pathname of a program to be executed as the slurm job's
-owner prior to initiation of each task.
+Fully qualified pathname of a program to be executed as the slurm job's user
+prior to initiation of each task. Will run inside of the job's container if
+configured. Should not be used for policy enforcement.
 Besides the normal environment variables, this has SLURM_TASK_PID
 available to identify the process ID of the task being started.
 Standard output from this program can be used to control the environment
