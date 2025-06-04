@@ -356,7 +356,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		}
 
 		/* Constrained by core */
-		for (s = 0; ((s < sockets) && avail_gres); s++) {
+		for (s = 0; (s < sockets); s++) {
 			if (enforce_binding && core_bitmap) {
 				for (c = 0; c < cores_per_sock; c++) {
 					j = (s * cores_per_sock) + c;
@@ -393,11 +393,13 @@ static sock_gres_t *_build_sock_gres_by_topo(
 					sock_gres->bits_by_sock[s],
 					create_args->node_inx);
 				sock_gres->cnt_by_sock[s] += avail_gres;
-				sock_gres->total_cnt += avail_gres;
-				avail_gres = 0;
 				match = true;
 				break;
 			}
+		}
+		if (match) {
+			sock_gres->total_cnt += avail_gres;
+			avail_gres = 0;
 		}
 	}
 
