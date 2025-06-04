@@ -1683,13 +1683,6 @@ job_manager(stepd_step_rec_t *step)
 	}
 
 	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
-	    (step->node_tasks <= 1) &&
-	    (step->accel_bind_type || step->tres_bind)) {
-		step->accel_bind_type = 0;
-		xfree(step->tres_bind);
-	}
-	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
-	    (step->node_tasks > 1) &&
 	    (step->accel_bind_type || step->tres_bind)) {
 		uint64_t gpu_cnt, nic_cnt;
 		gpu_cnt = gres_step_count(step->step_gres_list, "gpu");
