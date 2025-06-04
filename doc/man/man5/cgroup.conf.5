@@ -215,7 +215,9 @@ must be set to \fByes\fR in order for this parameter to be applied.
 Set a lower bound (in MB) on the memory limits defined by
 \fBAllowedRAMSpace\fR and \fBAllowedSwapSpace\fR. This prevents
 accidentally creating a memory cgroup with such a low limit that slurmstepd
-is immediately killed due to lack of RAM. The default limit is 30M.
+is immediately killed due to lack of RAM. If this happens, cleanup will not be
+performed and temporary files, sockets and directories can remain in the node.
+The default limit is 30M.
 .IP
 
 .SH "PROCTRACK/CGROUP PLUGIN"

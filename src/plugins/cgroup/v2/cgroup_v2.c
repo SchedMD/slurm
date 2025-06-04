@@ -1069,7 +1069,7 @@ static int _init_new_scope_dbus(char *scope_path)
 
 	/*
 	 * Assuming the scope is created, let's mkdir the /system dir which will
-	 * allocate the sleep inifnity pid. This way the slurmstepd scope won't
+	 * allocate the sleep infinity pid. This way the slurmstepd scope won't
 	 * be a leaf anymore and we'll be able to create more directories.
 	 * _init_new_scope here is simply used as a mkdir.
 	 */

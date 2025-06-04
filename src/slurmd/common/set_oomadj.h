@@ -39,5 +39,6 @@
 #define _SET_OOMADJ_H
 
 extern int set_oom_adj(int adj);
+extern void set_oom_adj_env(int adj);
 
 #endif /* _SET_OOMADJ_H */

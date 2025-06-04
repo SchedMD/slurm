@@ -789,7 +789,7 @@ static void _process_cmdline(int argc, char **argv)
 		exit(0);
 	}
 	if ((argc == 2) && !xstrcmp(argv[1], "infinity")) {
-		set_oom_adj(-1000);
+		set_oom_adj(STEPD_OOM_ADJ);
 		(void) poll(NULL, 0, -1);
 		exit(0);
 	}

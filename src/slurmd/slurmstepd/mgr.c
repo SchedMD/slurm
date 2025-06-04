@@ -1611,24 +1611,24 @@ job_manager(stepd_step_rec_t *step)
 #endif /* PR_SET_DUMPABLE */
 
 	/*
-	 * Set oom_score_adj of this slurmstepd to -1000 to avoid OOM killing
-	 * us. If we were killed at this point due to other steps OOMing, no
-	 * cleanup would happen, leaving for example cgroup stray directories if
-	 * cgroup plugins were initialized.
+	 * Set oom_score_adj of this slurmstepd to the minimum to avoid OOM
+	 * killing us before the user processes. If we were killed at this point
+	 * due to other steps OOMing, no cleanup would happen, leaving for
+	 * example cgroup stray directories if cgroup plugins were initialized.
 	 */
-	set_oom_adj(-1000);
-	debug("Setting slurmstepd(%d) oom_score_adj to -1000", getpid());
+	set_oom_adj(STEPD_OOM_ADJ);
+	debug("Setting slurmstepd(%d) oom_score_adj to %d", getpid(),
+	      STEPD_OOM_ADJ);
 
 	/*
 	 * Readjust this slurmstepd oom_score_adj now that we've loaded the
 	 * task plugin. If the environment variable SLURMSTEPD_OOM_ADJ is set
 	 * and is a valid number (from -1000 to 1000) set the score to that
-	 * value. Note that if the value is -1000 we will do nothing as that was
-	 * already done before.
+	 * value.
 	 */
 	if ((oom_val_str = getenv("SLURMSTEPD_OOM_ADJ"))) {
 		int oom_val = atoi(oom_val_str);
-		if ((oom_val > -1000) && (oom_val <= 1000)) {
+		if ((oom_val >= -1000) && (oom_val <= 1000)) {
 			debug("Setting slurmstepd oom_score_adj from env to %d",
 			      oom_val);
 			set_oom_adj(oom_val);

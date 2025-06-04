@@ -51,6 +51,7 @@
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/cgroup.h"
+#include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -68,27 +69,15 @@ extern int init_system_memory_cgroup(void)
 	if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-        /*
-         *  Warning: OOM Killer must be disabled for slurmstepd
-         *  or it would be destroyed if the application use
-         *  more memory than permitted
-         *
-         *  If an env value is already set for slurmstepd
-         *  OOM killer behavior, keep it, otherwise set the
-         *  -1000 value, which means do not let OOM killer kill it
-         *
-         *  FYI, setting "export SLURMSTEPD_OOM_ADJ=-1000"
-         *  in /etc/sysconfig/slurm would be the same
-         */
-	 setenv("SLURMSTEPD_OOM_ADJ", "-1000", 0);
+	set_oom_adj_env(STEPD_OOM_ADJ);
 
-	 if (cgroup_g_system_create(CG_MEMORY) != SLURM_SUCCESS)
-		 return SLURM_ERROR;
+	if (cgroup_g_system_create(CG_MEMORY) != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
-	 if (running_in_slurmd())
-		 debug("system cgroup: system memory cgroup initialized");
+	if (running_in_slurmd())
+		debug("system cgroup: system memory cgroup initialized");
 
-	 return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 extern void fini_system_cgroup(void)

@@ -50,6 +50,7 @@
 #include "src/interfaces/cred.h"
 
 #define MAX_CPU_CNT 1024
+#define STEPD_OOM_ADJ -999
 
 extern int devnull;
 extern bool get_reg_resp;
