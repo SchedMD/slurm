@@ -84,8 +84,8 @@ in order to validate node tokens with the validate_node_script.
 </p>
 
 <p>
-The get_node_token_script and generate_csr_script paths need to point to
-scripts that exist and are executable on slurmd nodes.
+The get_node_token_script, generate_csr_script, and get_node_cert_key_script
+paths need to point to scripts that exist and are executable on slurmd nodes.
 </p>
 <h4 id="get_node_token_script_example">
 get_node_token_script example:<a class="slurm_link" href="#get_node_token_script_example"></a>
@@ -144,6 +144,32 @@ then
     echo "$BASH_SOURCE: Failed to generate CSR"
     exit 1
 fi
+
+# Exit with exit code 0 to indicate success
+exit 0
+</pre>
+
+<h4 id="get_node_cert_key_script">
+get_node_cert_key_script example:<a class="slurm_link" href="#get_node_cert_key_script"></a>
+</h4>
+<p>
+Print private key used to generate CSR to stdout. Return zero exit code for
+success, and non-zero exit code for error.
+</p>
+<pre>
+#!/bin/bash
+
+# Slurm node name is passed in as arg $1
+NODE_PRIVATE_KEY=/etc/slurm/certmgr/$1_cert_key.pem
+
+# Check if node private key file exists
+if [ ! -f $NODE_PRIVATE_KEY ]
+then
+    echo "$BASH_SOURCE: Failed to resolve node private key path '$NODE_PRIVATE_KEY'"
+    exit 1
+fi
+
+cat $NODE_PRIVATE_KEY
 
 # Exit with exit code 0 to indicate success
 exit 0
