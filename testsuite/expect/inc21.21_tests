@@ -346,14 +346,10 @@ proc inc21_21_submit_test { limit } {
 		}
 		lappend job_list $job_id($inx)
 
-		# We need to sleep because of the way the scheduler works
-		# if we don't sleep then we could
-		sleep 1
-	}
-
-	# Wait for the allowed job arrays to start running
-	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_job)} {incr inx} {
-		wait_for_job -fail -timeout 10 -pollinterval .1 $job_id($inx) "RUNNING"
+		# Wait for the job to be scheduled, if it should be
+		if {$inx <  $acct_mod_assoc_test_vals($limit_job)} {
+			wait_for_job -fail -timeout 10 -pollinterval .1 $job_id($inx) "RUNNING"
+		}
 	}
 
 	# Then submit one more over the limit and it should fail
