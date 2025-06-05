@@ -40,7 +40,9 @@ page for more info on how to generate this certificate/key pair.
 </p>
 
 <p>
-The following scripts need to be created and configured. See <a href="slurm.conf.html#OPT_CertificateManagerParameters">CertificateManagerParameters</a> for more details on each script.
+The following scripts need to be created and configured.
+See <a href="slurm.conf.html#OPT_CertmgrParameters">CertmgrParameters</a> for
+more details on each script.
 </p>
 
 <ul>
@@ -265,6 +267,6 @@ slurmd: TLS: Successfully got signed certificate from slurmctld:
 to show less verbose logs of certificate renewal.
 </p>
 
-<p style="text-align:center;">Last modified 25 May 2025</p>
+<p style="text-align:center;">Last modified 09 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
