@@ -354,7 +354,7 @@ def test_parser(option, opt_str, value, parser):
     # each test, and add each tuple to the destination array.
     splitter = re.compile(r"[,\s]+")
     val = splitter.split(value)
-    test_re = re.compile(r"(test)?((\d+)|\*)\.((\d+)|\*)$")
+    test_re = re.compile(r"(test)?((\d+)|\*)[\._]((\d+)|\*)$")
     for v in val:
         m = test_re.match(v)
         if not m:
