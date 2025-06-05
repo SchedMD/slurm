@@ -722,8 +722,8 @@ Default is 1440 minutes (once per day).
 \fBgenerate_csr_script=\fR
 Path to script used to generate certificate signing requests.  The nodename is
 passed in as an argument to the script.  The script must print only the
-certificate signing request PEM file to stdout, and return with a non-zero exit
-code on success.
+certificate signing request PEM file to stdout, and return 0 on success. Must
+return non-zero on error.
 
 Required with certmgr/script. Only run by daemons requesting cerfificates.
 .IP
@@ -733,7 +733,8 @@ Required with certmgr/script. Only run by daemons requesting cerfificates.
 Path to script used to get node's unique token which will be validated by
 slurmctld using the script set by \fBvalidate_node_token_script=\fR.
 The nodename is passed in as an argument to the script.  The script must print
-the node's unique token to stdout, and return with a non-zero exit code.
+the node's unique token to stdout, and return 0 on success. Must return
+non-zero on error.
 
 Required with certmgr/script. Only run by daemons requesting cerfificates.
 .IP
@@ -746,8 +747,8 @@ already called on the accompanying unique node token and returned with a
 non-zero exit code.
 The certificate signing request (as given by \fBgenerate_csr_script=\fR) is
 passed as an argument to this script.
-The script must print the new signed certificate to stdout, and return with a
-non-zero exit code.
+The script must print the new signed certificate to stdout, and return 0 on
+success. Must return non-zero on error.
 
 Required with certmgr/script. Only run by daemons requesting cerfificates.
 .IP
@@ -762,8 +763,8 @@ consumed upon successful certificate signing.
 \fBvalidate_node_token_script=\fR
 Path to script used to validate a unique node token.
 The unique node token is passed as an argument to this script.
-If the script finds the node token to be valid, return with a zero exit code.
-Otherwise, if the node token is invalid, return a non-zero exit code.
+If the script finds the node token to be valid, return 0.
+Otherwise, if the node token is invalid, return non-zero.
 
 Required with certmgr/script. Only run by daemons requesting cerfificates.
 .IP
