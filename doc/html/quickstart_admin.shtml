@@ -358,6 +358,23 @@ optional functionality:</p>
 </table>
 <br>
 
+<h4 id="dependencies">Handling Dependencies
+<a class="slurm_link" href="#dependencies"></a>
+</h4>
+
+<p>The packages built as described above will have dependencies on external
+packages and on the general <b>slurm</b> package. However, we have observed
+gaps in the enforcement of these dependencies when using the low-level
+<code>dpkg</code> command. For this reason, we recommend avoiding low-level
+commands like <code>dpkg</code> and <code>rpm</code>, and instead using
+high-level commands like <code>dnf</code> and <code>apt</code> for all
+operations.</p>
+
+<p>Users on Debian-based systems should also know that <code>apt</code> is
+willing to automatically remove Slurm packages due to dependency conflicts after
+the transaction. Always read through the transaction summary before instructing
+it to continue.</p>
+
 <h3 id="manual_build">Building Manually
 <a class="slurm_link" href="#manual_build"></a>
 </h3>
@@ -898,6 +915,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 14 November 2024</p>
+<p style="text-align:center;">Last modified 05 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
