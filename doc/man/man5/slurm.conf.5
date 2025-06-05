@@ -750,7 +750,7 @@ passed as an argument to this script.
 The script must print the new signed certificate to stdout, and return 0 on
 success. Must return non-zero on error.
 
-Required with certmgr/script. Only run by daemons requesting cerfificates.
+Required with certmgr/script. Only run by slurmctld.
 .IP
 
 .TP
@@ -766,7 +766,7 @@ The unique node token is passed as an argument to this script.
 If the script finds the node token to be valid, return 0.
 Otherwise, if the node token is invalid, return non-zero.
 
-Required with certmgr/script. Only run by daemons requesting cerfificates.
+Required with certmgr/script. Only run by slurmctld.
 .IP
 .RE
 
