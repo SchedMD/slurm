@@ -614,26 +614,24 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name);
 /*
  * Validate a node's configuration and put a gres record onto a list
  * Called immediately after gres_node_config_unpack().
- * IN node_name - name of the node for which the gres information applies
- * IN orig_config - Gres information supplied from merged slurm.conf/gres.conf
- * IN/OUT new_config - Updated gres info from slurm.conf
- * IN/OUT gres_list - List of Gres records for this node to track usage
+ * IN node_ptr - With the relevant attributes for this function being:
+ *	->name - name of the node for which the gres information applies
+ *	->config_ptr->gres - Gres information supplied from merged
+ *			     slurm.conf/gres.conf
+ *	->gres - Updated gres info from slurm.conf
+ *	->gres_list - List of Gres records for this node to track usage
  * IN threads_per_core - Count of CPUs (threads) per core on this node
  * IN cores_per_sock - Count of cores per socket on this node
  * IN sock_cnt - Count of sockets on this node
  * IN config_overrides - true: Don't validate hardware, use slurm.conf
  *                             configuration
- *		         false: Validate hardware config, but use slurm.conf
+ *			 false: Validate hardware config, but use slurm.conf
  *                              config
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
-extern int gres_node_config_validate(char *node_name,
-				     char *orig_config,
-				     char **new_config,
-				     list_t **gres_list,
-				     int threads_per_core,
-				     int cores_per_sock, int sock_cnt,
-				     bool config_overrides,
+extern int gres_node_config_validate(node_record_t *node_ptr,
+				     int threads_per_core, int cores_per_sock,
+				     int sock_cnt, bool config_overrides,
 				     char **reason_down);
 
 /*

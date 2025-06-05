@@ -4006,10 +4006,9 @@ static int _foreach_add_gres_info(void *x, void *arg)
 	return 0;
 }
 
-static int _node_config_validate(char *node_name, char *orig_config,
-				 gres_state_t *gres_state_node,
-				 int cpu_cnt, int core_cnt, int sock_cnt,
-				 int cores_per_sock,
+static int _node_config_validate(node_record_t *node_ptr,
+				 gres_state_t *gres_state_node, int cpu_cnt,
+				 int core_cnt, int sock_cnt, int cores_per_sock,
 				 bool config_overrides, char **reason_down,
 				 slurm_gres_context_t *gres_ctx)
 {
@@ -4021,6 +4020,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	tot_from_slurmd_conf_t slurmd_conf_tot = {
 		.plugin_id = gres_ctx->plugin_id,
 	};
+	char *orig_config = node_ptr->config_ptr->gres;
+	char *node_name = node_ptr->name;
 	xassert(core_cnt);
 	if (gres_state_node->gres_data == NULL)
 		gres_state_node->gres_data = _build_gres_node_state();
@@ -4468,10 +4469,12 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
 /*
  * Validate a node's configuration and put a gres record onto a list
  * Called immediately after gres_node_config_unpack().
- * IN node_name - name of the node for which the gres information applies
- * IN orig_config - Gres information supplied from merged slurm.conf/gres.conf
- * IN/OUT new_config - Updated gres info from slurm.conf
- * IN/OUT gres_list - List of Gres records for this node to track usage
+ * IN node_ptr - With the relevant attributes for this function being:
+ *	->name - name of the node for which the gres information applies
+ *	->config_ptr->gres - Gres information supplied from merged
+ *			     slurm.conf/gres.conf
+ *	->gres - Updated gres info from slurm.conf
+ *	->gres_list - List of Gres records for this node to track usage
  * IN threads_per_core - Count of CPUs (threads) per core on this node
  * IN cores_per_sock - Count of cores per socket on this node
  * IN sock_cnt - Count of sockets on this node
@@ -4481,13 +4484,9 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
  *                              config
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
-extern int gres_node_config_validate(char *node_name,
-				     char *orig_config,
-				     char **new_config,
-				     list_t **gres_list,
-				     int threads_per_core,
-				     int cores_per_sock, int sock_cnt,
-				     bool config_overrides,
+extern int gres_node_config_validate(node_record_t *node_ptr,
+				     int threads_per_core, int cores_per_sock,
+				     int sock_cnt, bool config_overrides,
 				     char **reason_down)
 {
 	int i, rc = SLURM_SUCCESS, rc2;
@@ -4498,29 +4497,30 @@ extern int gres_node_config_validate(char *node_name,
 	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
-	if ((gres_context_cnt > 0) && (*gres_list == NULL))
-		*gres_list = list_create(_gres_node_list_delete);
+	if ((gres_context_cnt > 0) && (node_ptr->gres_list == NULL))
+		node_ptr->gres_list = list_create(_gres_node_list_delete);
 	for (i = 0; i < gres_context_cnt; i++) {
 		/* Find or create gres_state entry on the list */
-		gres_state_node = list_find_first(*gres_list, gres_find_id,
-						  &gres_context[i].plugin_id);
+		gres_state_node =
+			list_find_first(node_ptr->gres_list, gres_find_id,
+					&gres_context[i].plugin_id);
 		if (gres_state_node == NULL) {
 			gres_state_node = gres_create_state(
 				&gres_context[i], GRES_STATE_SRC_CONTEXT_PTR,
 				GRES_STATE_TYPE_NODE, _build_gres_node_state());
-			list_append(*gres_list, gres_state_node);
+			list_append(node_ptr->gres_list, gres_state_node);
 		}
-		rc2 = _node_config_validate(node_name, orig_config,
-					    gres_state_node, cpu_cnt, core_cnt,
-					    sock_cnt, cores_per_sock,
-					    config_overrides,
-					    reason_down, &gres_context[i]);
+		rc2 = _node_config_validate(node_ptr, gres_state_node, cpu_cnt,
+					    core_cnt, sock_cnt, cores_per_sock,
+					    config_overrides, reason_down,
+					    &gres_context[i]);
 		rc = MAX(rc, rc2);
 		if (gres_id_sharing(gres_state_node->plugin_id))
 			gres_gpu_ptr = gres_state_node;
 	}
 	_sync_node_shared_to_sharing(gres_gpu_ptr);
-	_build_node_gres_str(gres_list, new_config, cores_per_sock, sock_cnt);
+	_build_node_gres_str(&node_ptr->gres_list, &node_ptr->gres,
+			     cores_per_sock, sock_cnt);
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
