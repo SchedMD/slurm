@@ -6334,7 +6334,7 @@ Time permitted for TCP connection to be established. Default value is 2 seconds.
 
 .TP
 \fBTLSParameters\fR
-Comma\-separated options identifying TLS options.
+Comma\-separated options for the TLS plugin configured by \fBTLSType\fR.
 Supported values include:
 .IP
 .RS
@@ -6441,13 +6441,15 @@ Default security policy is "20230317", which is FIPS compliant and includes TLS 
 
 .TP
 \fBTLSType\fR
-Specify the TLS implementation that will be used.
+Specify the TLS implementation that will be used. Unset by default.
 Acceptable values at present:
 .IP
 .RS
 .TP
 \fBtls/s2n\fR
-Use the s2n TLS plugin.
+Use the s2n TLS plugin. Requires additional configuration and causes significant
+processing overhead, but allows all Slurm communication to be encrypted. Refer
+to the TLS guide for more details: <https://slurm.schedmd.com/tls.html>
 .RE
 .IP
 
