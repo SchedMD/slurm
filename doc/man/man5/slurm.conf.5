@@ -706,7 +706,7 @@ Use built-in/configured scripts to generate certificate key pair.
 .IP
 
 .TP
-\fBCertificateManagerParameters\fR
+\fBCertmgrParameters\fR
 Used to define parameters for certmgr plugin.
 .IP
 .RS
@@ -771,13 +771,13 @@ Required with certmgr/script. Only run by daemons requesting cerfificates.
 .RE
 
 .TP
-\fBCertificateManagerType\fR
+\fBCertmgrType\fR
 Plugin used to dynamically renew TLS certificates for slurmd/sackd.
 .RS
 .TP
 \fBcertmgr/script\fR
 Use script hooks to implement certificate management. See
-\fBCertificateManagerParameters\fR for details on how to setup these scripts.
+\fBCertmgrParameters\fR for details on how to setup these scripts.
 .IP
 .RE
 
