@@ -3523,22 +3523,25 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
 	/* On jobs that are held the priority_array isn't set up yet,
 	 * so check to see if it exists before copying. */
-	if (job_ptr->part_ptr_list &&
+	if ((job_ptr->part_ptr_list || job_ptr->qos_list) &&
 	    job_ptr->prio_mult) {
 		job_ptr_pend->prio_mult =
 			xmalloc(sizeof(*job_ptr_pend->prio_mult));
 
 		if (job_ptr->prio_mult->priority_array) {
-			i = list_count(job_ptr->part_ptr_list);
-			job_ptr_pend->prio_mult->priority_array =
-				xcalloc(i, sizeof(uint32_t));
+			i = xsize(job_ptr->prio_mult->priority_array);
+			job_ptr_pend->prio_mult->priority_array = xmalloc(i);
 			memcpy(job_ptr_pend->prio_mult->priority_array,
-			       job_ptr->prio_mult->priority_array,
-			       i * sizeof(uint32_t));
+			       job_ptr->prio_mult->priority_array, i);
 		}
 
 		job_ptr_pend->prio_mult->priority_array_names =
 			xstrdup(job_ptr->prio_mult->priority_array_names);
+	} else if (job_ptr->prio_mult) {
+		/* this should never happen */
+		error("%s: prio_mult is set without part_ptr_list or qos_list, setting prio_mult to NULL.",
+		      __func__);
+		job_ptr_pend->prio_mult = NULL;
 	}
 	if (job_ptr->qos_list)
 		job_ptr_pend->qos_list = list_shallow_copy(job_ptr->qos_list);
