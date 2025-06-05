@@ -70,57 +70,23 @@ source code.
 </p>
 Tested compatibility by OpenAPI plugins:
 <ul>
-	<li>openapi/v0.0.37:
+	<li>openapi/slurmctld:
 		<ul>
 			<li><a href="https://github.com/OpenAPITools/openapi-generator">
-					v4.x of OpenAPI-generator</a>
+					v7.3.0 of OpenAPI-generator</a>
 			</li>
-			<li><a href="https://github.com/OpenAPITools/openapi-generator">
-					v5.x of OpenAPI-generator</a>
+			<li><a href="https://github.com/oapi-codegen/oapi-codegen">
+					v2.4.1 of oapi-codegen</a>
 			</li>
 		</ul>
 	</li>
-	<li>openapi/v0.0.38:
+	<li>openapi/slurmdbd:
 		<ul>
 			<li><a href="https://github.com/OpenAPITools/openapi-generator">
-					v4.x of OpenAPI-generator</a>
+					v7.3.0 of OpenAPI-generator</a>
 			</li>
-			<li><a href="https://github.com/OpenAPITools/openapi-generator">
-					v5.x of OpenAPI-generator</a>
-			</li>
-		</ul>
-	</li>
-	<li>openapi/v0.0.39:
-		<ul>
-			<li><a href="https://github.com/OpenAPITools/openapi-generator">
-					v6.x of OpenAPI-generator</a>
-			</li>
-		</ul>
-	</li>
-	<li>openapi/dbv0.0.37:
-		<ul>
-			<li><a href="https://github.com/OpenAPITools/openapi-generator">
-					v4.x of OpenAPI-generator</a>
-			</li>
-			<li><a href="https://github.com/OpenAPITools/openapi-generator">
-					v5.x of OpenAPI-generator</a>
-			</li>
-		</ul>
-	</li>
-	<li>openapi/dbv0.0.38:
-		<ul>
-			<li><a href="https://github.com/OpenAPITools/openapi-generator">
-					v4.x of OpenAPI-generator</a>
-			</li>
-			<li><a href="https://github.com/OpenAPITools/openapi-generator">
-					v5.x of OpenAPI-generator</a>
-			</li>
-		</ul>
-	</li>
-	<li>openapi/dbv0.0.39:
-		<ul>
-			<li><a href="https://github.com/OpenAPITools/openapi-generator">
-					v6.x of OpenAPI-generator</a>
+			<li><a href="https://github.com/oapi-codegen/oapi-codegen">
+					v2.4.1 of oapi-codegen</a>
 			</li>
 		</ul>
 	</li>
@@ -286,6 +252,6 @@ confusing while looking at diffs. The example above shows the inlining of
 Depending on the generated client, that change may not change the
 resultant client code at all.</p>
 
-<p style="text-align:center;">Last modified 24 September 2024</p>
+<p style="text-align:center;">Last modified 05 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
