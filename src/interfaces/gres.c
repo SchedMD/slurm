@@ -4133,7 +4133,7 @@ static int _node_config_validate(node_record_t *node_ptr,
 		}
 	}
 
-	if (!updated_config)
+	if (!updated_config && !(IS_NODE_INVALID_REG(node_ptr)))
 		return rc;
 
 	if (gres_id_sharing(slurmd_conf_tot.plugin_id) && gres_ns->alt_gres) {
