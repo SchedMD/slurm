@@ -48,7 +48,7 @@ more details on each script.
 <ul>
 <li><code>get_node_token_script</code></li>
 <li><code>generate_csr_script</code></li>
-<li><code>validate_node_token_script</code></li>
+<li><code>validate_node_script</code></li>
 <li><code>sign_csr_script</code></li>
 </ul>
 
@@ -56,7 +56,7 @@ more details on each script.
 slurmctld needs to be able to validate slurmd's certificate signing request.
 This is done via unique tokens that are retrieved on slurmd nodes using
 <code>get_node_token_script</code>, and validated on the slurmctld host using
-<code>validate_node_token_script</code>.
+<code>validate_node_script</code>.
 </p>
 
 <p>
@@ -80,7 +80,7 @@ echo "`cat ${NODENAME}_token.txt`" >> node_token_list.txt
 <p>
 Node "n1" needs to boot up with n1_token.txt and/or have n1_token.txt securely
 transferred to it. slurmctld needs to have secure access to node_token_list.txt
-in order to validate node tokens with the validate_node_token script.
+in order to validate node tokens with the validate_node_script.
 </p>
 
 <p>
@@ -150,11 +150,11 @@ exit 0
 </pre>
 
 <p>
-The validate_node_token_script and sign_csr_script paths need to point to
+The validate_node_script and sign_csr_script paths need to point to
 scripts that exist and are executable on slurmctld.
 </p>
-<h4 id="validate_node_token_script_example">
-validate_node_token_script example:<a class="slurm_link" href="#validate_node_token_script_example"></a>
+<h4 id="validate_node_script_example">
+validate_node_script example:<a class="slurm_link" href="#validate_node_script_example"></a>
 </h4>
 <p>
 Return zero exit code for valid node tokens, and non-zero exit code  for
