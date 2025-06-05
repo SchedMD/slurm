@@ -648,6 +648,11 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 	} else if (!xstrcmp(name, "network")) {
 		lua_pushstring(L, job_desc->network);
 	} else if (!xstrcmp(name, "nice")) {
+		/*
+		 * nice will be NO_VAL when unset or offset by NICE_OFFSET.
+		 * Decrement nice by NICE_OFFSET in job_submit.lua if the value
+		 * needs to be human readable.
+		 */
 		lua_pushnumber(L, job_desc->nice);
 	} else if (!xstrcmp(name, "ntasks_per_board")) {
 		lua_pushnumber(L, job_desc->ntasks_per_board);
@@ -956,6 +961,10 @@ static int _set_job_req_field(lua_State *L)
 		if (strlen(value_str))
 			job_desc->name = xstrdup(value_str);
 	} else if (!xstrcmp(name, "nice")) {
+		/*
+		 * nice should be NO_VAL when unset or incremented by
+		 * NICE_OFFSET by the job_submit.lua script.
+		 */
 		job_desc->nice = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "ntasks_per_gpu")) {
 		job_desc->ntasks_per_tres = luaL_checknumber(L, 3);
