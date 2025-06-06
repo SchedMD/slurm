@@ -132,7 +132,7 @@ extern int select_g_init(void)
 
 done:
 	slurm_mutex_unlock( &select_context_lock );
-	if (running_in_slurmctld() && !running_cons_tres()) {
+	if (!retval && running_in_slurmctld() && !running_cons_tres()) {
 		uint16_t cr_type = slurm_conf.select_type_param;
 		if (cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) {
 			fatal("Invalid SelectTypeParameters for "
