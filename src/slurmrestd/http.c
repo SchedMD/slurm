@@ -994,5 +994,6 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 	FREE_NULL_REST_AUTH(context->auth);
 	conmgr_fd_free_ref(&context->ref);
 
+	context->magic = ~MAGIC;
 	xfree(context);
 }
