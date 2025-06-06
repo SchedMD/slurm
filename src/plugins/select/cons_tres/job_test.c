@@ -2485,7 +2485,11 @@ static int _is_job_relevant(void *x, void *key)
 	if (bit_overlap_any(effective_bitmap, running_job_ptr->node_bitmap))
 		return true;
 
-	/* Verify there are enough licenses without this job's licenses */
+	/*
+	* Verify there are enough licenses without this job's licenses.
+	* This is only dealing with normal licenses, not hierarchal resources.
+	* see the comment in _set_license_req() for more details.
+	*/
 	if (running_job_ptr->license_list && args->needed_licenses) {
 		for (uint32_t i = 0; i < args->license_cnt; i++) {
 			license_req_t *needed_lic = &args->needed_licenses[i];
@@ -2525,8 +2529,12 @@ static int _set_license_req(void *x, void *arg)
 	/*
 	 * Populate needed_licenses with the required # of licenses for the job
 	 * and the amount of licenses available to be used.
+	 * Hierarchal resource licenses are ignored. This logic is currently
+	 * only used by --test-only job option, which does not support checking
+	 * hierarchal resources.
 	 */
-	if ((future_license = _find_license_in_list(args->future_license_list,
+	if ((job_license->id.hres_id == NO_VAL16) &&
+	    (future_license = _find_license_in_list(args->future_license_list,
 						    &job_license->id))) {
 		args->needed_licenses[args->license_cnt].id =
 			&future_license->id;
