@@ -25,6 +25,8 @@ import traceback
 import requests
 import signal
 
+import json
+
 # This module will be (un)imported in require_openapi_generator()
 openapi_client = None
 import importlib
@@ -1013,25 +1015,159 @@ def require_slurm_running():
     nodes = get_nodes(quiet=True)
 
 
-def get_version(component="sbin/slurmctld"):
+def require_upgrades(
+    old_slurm_prefix="/opt/slurm-old", new_slurm_prefix="/opt/slurm-new"
+):
+    """Checks if has two different versions installed.
+
+    If they are not, skip.
+    """
+    if not properties["auto-config"]:
+        require_auto_config("to change/upgrade Slurm setup")
+
+    if not os.path.exists(old_slurm_prefix):
+        pytest.skip(
+            f"This test needs the upgrade setup. Old prefix {old_slurm_prefix} not exists."
+        )
+
+    if not os.path.exists(new_slurm_prefix):
+        pytest.skip(
+            f"This test needs the upgrade setup. New prefix {new_slurm_prefix} not exists."
+        )
+
+    # Double-check that old_version <= new_version
+    old_version = get_version(slurm_prefix=old_slurm_prefix)
+    new_version = get_version(slurm_prefix=new_slurm_prefix)
+    if old_version > new_version:
+        pytest.skip(
+            f"Old version ({old_version}) has to be older than new version ({new_version})"
+        )
+    logging.info(f"Required upgrade setup found: {old_version} and {new_version}")
+
+    properties["old-slurm-prefix"] = old_slurm_prefix
+    properties["new-slurm-prefix"] = new_slurm_prefix
+
+    logging.debug(
+        "Setting bin/ and sbin/ pointing to old version and saving a backup..."
+    )
+    run_command(
+        f"sudo mv {properties['slurm-sbin-dir']} {module_tmp_path}/upgrade-sbin",
+        quiet=True,
+        fatal=True,
+    )
+    run_command(
+        f"sudo mv {properties['slurm-bin-dir']} {module_tmp_path}/upgrade-bin",
+        quiet=True,
+        fatal=True,
+    )
+    run_command(
+        f"sudo mkdir {properties['slurm-sbin-dir']} {properties['slurm-bin-dir']}",
+        quiet=True,
+        fatal=True,
+    )
+    run_command(
+        f"sudo ln -s {properties['old-slurm-prefix']}/sbin/* {properties['slurm-sbin-dir']}/",
+        quiet=True,
+        fatal=True,
+    )
+    run_command(
+        f"sudo ln -s {properties['old-slurm-prefix']}/bin/* {properties['slurm-bin-dir']}/",
+        quiet=True,
+        fatal=True,
+    )
+
+
+def upgrade_component(component, new_version=True):
+    """Upgrades a component creating the required links, and restarts it if necessary.
+
+    This function needs require_upgrades() to be already run to work properly.
+
+    Args:
+        component (string): The bin/ or sbin/ component of Slurm to check.
+        new_version (boolean): Set it false to downgrade to the older version instead.
+
+    Returns:
+        A tuple representing the version. E.g. (25.05.0).
+    """
+
+    if (
+        "old-slurm-prefix" not in properties.keys()
+        or "new-slurm-prefix" not in properties.keys()
+    ):
+        pytest.fail("To upgrade_components() first we need to call require_upgrades()")
+
+    if not os.path.exists(f"{properties['slurm-prefix']}/{component}"):
+        pytest.fail(f"Unknown or not existing {component}")
+
+    if new_version:
+        upgrade_prefix = properties["new-slurm-prefix"]
+    else:
+        upgrade_prefix = properties["old-slurm-prefix"]
+
+    # Stop components when necessary
+    if component == "sbin/slurmdbd":
+        stop_slurmdbd()
+    elif component == "sbin/slurmctld":
+        stop_slurmctld()
+
+    run_command(
+        f"sudo rm -f {properties['slurm-prefix']}/{component}",
+        quiet=True,
+        fatal=True,
+    )
+    run_command(
+        f"sudo ln -s {upgrade_prefix}/{component} {properties['slurm-prefix']}/{component}",
+        quiet=True,
+        fatal=True,
+    )
+
+    # Restart components when necessary
+    if component == "sbin/slurmdbd":
+        start_slurmdbd()
+    elif component == "sbin/slurmctld":
+        start_slurmctld()
+
+
+def get_version(component="sbin/slurmctld", slurm_prefix=""):
+    """Returns the version of the Slurm component as a tuple.
+
+    It calls the component with -V and converts the output into a tuple.
+
+    Args:
+        component (string): The bin/ or sbin/ component of Slurm to check.
+        slurm_prefix (string): The path where the component is. By default the defined in testsuite.conf.
+
+    Returns:
+        A tuple representing the version. E.g. (25.05.0).
+    """
+    if slurm_prefix == "":
+        slurm_prefix = f"{properties['slurm-sbin-dir']}/.."
+
     return tuple(
         int(part) if part.isdigit() else 0
         for part in run_command_output(
-            f"sudo {properties['slurm-sbin-dir']}/../{component} -V"
+            f"sudo {slurm_prefix}/{component} -V", quiet=True
         )
         .replace("slurm ", "")
         .split(".")
     )
 
 
-def require_version(version, component="sbin/slurmctld"):
-    component_version = get_version(component)
-    required_version = tuple(
-        int(part) if part.isdigit() else 0 for part in version.split(".")
-    )
-    if component_version < required_version:
+def require_version(version, component="sbin/slurmctld", slurm_prefix=""):
+    """Checks if the component is at least the required version, or skips.
+
+    Args:
+        version (tuple): The tuple representing the version.
+        component (string): The bin/ or sbin/ component of Slurm to check.
+        slurm_prefix (string): The path where the component is. By default the defined in testsuite.conf.
+
+    Returns:
+        A tuple representing the version. E.g. (25.05.0).
+    """
+    component_version = get_version(component, slurm_prefix)
+    if component_version < version:
         pytest.skip(
-            f"The version of {component} is {component_version}, required is {required_version}"
+            f"The version of {component} is {component_version}, required is {version}"
         )
 
 
@@ -2829,11 +2965,37 @@ def run_job_nodes(srun_args, **run_command_kwargs):
     return node_list
 
 
-def get_jobs(job_id=None, **run_command_kwargs):
-    """Returns the job configuration as a dictionary of dictionaries.
+def get_qos(name=None, **run_command_kwargs):
+    """Returns the QOSes in the system as a dictionary of dictionaries.
+
+    Args:
+        name: The name of a specific QOS of which to get parameters.
+
+    Returns:
+        A dictionary of dictionaries where the first level keys are the QOSes names
+        and with their values being a dictionary of configuration parameters for
+        the respective QOS.
+    """
+
+    command = "sacctmgr --json show qos"
+    if id is not None:
+        command += f" {name}"
+    output = run_command_output(command, fatal=True, quiet=True, **run_command_kwargs)
+
+    qos_dict = {}
+    qos_list = json.loads(output)["qos"]
+    for qos in qos_list:
+        qos_dict[qos["name"]] = qos
+
+    return qos_dict
+
+
+def get_jobs(job_id=None, dbd=False, **run_command_kwargs):
+    """Returns the jobs in the system as a dictionary of dictionaries.
 
     Args:
         job_id (integer): The id of a specific job of which to get parameters.
+        dbd (boolean): If True, obtain the jobs from sacct instead of scontrol.
 
     Returns:
         A dictionary of dictionaries where the first level keys are the job ids
@@ -2850,39 +3012,52 @@ def get_jobs(job_id=None, **run_command_kwargs):
 
     jobs_dict = {}
 
-    command = "scontrol -d -o show jobs"
-    if job_id is not None:
-        command += f" {job_id}"
-    output = run_command_output(command, fatal=True, **run_command_kwargs)
+    if dbd:
+        command = "sacct --json -X"
+        if job_id is not None:
+            command += f" -j {job_id}"
+        output = run_command_output(
+            command, fatal=True, quiet=True, **run_command_kwargs
+        )
 
-    job_dict = {}
-    for line in output.splitlines():
-        if line == "":
-            continue
+        jobs_list = json.loads(output)["jobs"]
+        for job in jobs_list:
+            jobs_dict[job["job_id"]] = job
 
-        while match := re.search(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", line):
-            param_name, param_value = match.group(1), match.group(2)
+    else:
+        command = "scontrol -d -o show jobs"
+        if job_id is not None:
+            command += f" {job_id}"
+        output = run_command_output(command, fatal=True, **run_command_kwargs)
 
-            # Remove the consumed parameter from the line
-            line = re.sub(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", "", line)
+        job_dict = {}
+        for line in output.splitlines():
+            if line == "":
+                continue
 
-            # Reformat the value if necessary
-            if is_integer(param_value):
-                param_value = int(param_value)
-            elif is_float(param_value):
-                param_value = float(param_value)
-            elif param_value == "(null)":
-                param_value = None
+            while match := re.search(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", line):
+                param_name, param_value = match.group(1), match.group(2)
 
-            # Add it to the temporary job dictionary
-            job_dict[param_name] = param_value
+                # Remove the consumed parameter from the line
+                line = re.sub(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", "", line)
 
-        # Add the job dictionary to the jobs dictionary
-        if job_dict:
-            jobs_dict[job_dict["JobId"]] = job_dict
+                # Reformat the value if necessary
+                if is_integer(param_value):
+                    param_value = int(param_value)
+                elif is_float(param_value):
+                    param_value = float(param_value)
+                elif param_value == "(null)":
+                    param_value = None
 
-            # Clear the job dictionary for use by the next job
-            job_dict = {}
+                # Add it to the temporary job dictionary
+                job_dict[param_name] = param_value
+
+            # Add the job dictionary to the jobs dictionary
+            if job_dict:
+                jobs_dict[job_dict["JobId"]] = job_dict
+
+                # Clear the job dictionary for use by the next job
+                job_dict = {}
 
     return jobs_dict
 
