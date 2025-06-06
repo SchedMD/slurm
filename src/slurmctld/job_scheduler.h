@@ -131,7 +131,8 @@ extern void feature_list_delete(void *x);
  * Return a pointer to the dependency in job_ptr's dependency list that
  * matches dep_ptr, or NULL if none is found.
  *
- * A dependency "matches" when the job_id and depend_type are the same.
+ * A dependency "matches" when the array_task_id, job_id and depend_type
+ * are the same.
  */
 extern depend_spec_t *find_dependency(job_record_t *job_ptr,
 				      depend_spec_t *dep_ptr);
