@@ -42,6 +42,11 @@
 
 #include "src/interfaces/certgen.h"
 
+/* Define slurm-specific aliases for use by plugins, see slurm_xlator.h. */
+strong_alias(certgen_g_init, slurm_certgen_g_init);
+strong_alias(certgen_g_fini, slurm_certgen_g_fini);
+strong_alias(certgen_g_self_signed, slurm_certgen_g_self_signed);
+
 typedef struct {
 	int (*gen_self_signed)(char **cert_pem, char **key_pem);
 } certgen_ops_t;

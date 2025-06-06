@@ -549,6 +549,11 @@
 #define serialize_g_string_to_data slurm_serialize_g_string_to_data
 #define serializer_g_fini slurm_serializer_g_fini
 
+/* certgen.[ch] functions */
+#define certgen_g_init slurm_certgen_g_init
+#define certgen_g_fini slurm_certgen_g_fini
+#define certgen_g_self_signed slurm_certgen_g_self_signed
+
 #endif /* USE_ALIAS */
 
 #endif /*__SLURM_XLATOR_H__*/
