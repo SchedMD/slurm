@@ -554,6 +554,9 @@
 #define certgen_g_fini slurm_certgen_g_fini
 #define certgen_g_self_signed slurm_certgen_g_self_signed
 
+/* run_command.[ch] functions */
+#define run_command slurm_run_command
+
 #endif /* USE_ALIAS */
 
 #endif /*__SLURM_XLATOR_H__*/
