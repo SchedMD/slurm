@@ -266,86 +266,13 @@ assistance can be provided.</p>
 commands or running <code>slurmrestd</code> need to check for format
 compatibility and data_parser plugin removals before upgrading. The formats for
 the values parsed and dumped as JSON and YAML are handled by the data_parser
-and openapi plugins. Changes to the formats are tracked in the
-<a href="openapi_release_notes.html">OpenAPI release notes</a>.</p>
+plugins. Please see the following links for explanations of the changes in each
+release and how to account for them while upgrading:</p>
 
-<table class="tlist centered">
-<tbody>
-<tr>
-<td><strong>Release Notes</strong></td>
-<td><strong>Added OpenAPI plugins</strong></td>
-<td><strong>Added Data_Parser plugin</strong></td>
-<td><strong>Removed in Release</strong></td>
-</tr>
-<tr>
-<td><a href="openapi_release_notes.html#24050">24.05</a></td>
-<td></td>
-<td>v0.0.41</td>
-<td>26.05</td>
-</tr>
-<tr>
-<td><a href="openapi_release_notes.html#24110">24.11</a></td>
-<td></td>
-<td>v0.0.42</td>
-<td>26.11</td>
-</tr>
-<tr>
-<td><a href="openapi_release_notes.html#25050">25.05</a></td>
-<td></td>
-<td>v0.0.43</td>
-<td>27.05</td>
-</tr>
-<tr>
-<td><a href="openapi_release_notes.html#25110">25.05</a></td>
-<td></td>
-<td>v0.0.44</td>
-<td>27.11</td>
-</tr>
-</tbody>
-</table>
-
-<p><b>NOTE</b>: The unversioned openapi/slurmctld and openapi/slurmdbd plugins
-have no planned removal release.</p>
-
-<p>Any scripts or clients making use of <code>--json</code> or
-<code>--yaml</code> arguments with any CLI commands may need to pass the
-data_parser version explicitly to avoid issues after an upgrade. The default
-data_parser used is the latest version which may not have a compatible format
-with the prior versions. Sites can use the specification generation mode to
-compare formatting differences.
-<pre>
-$CLI_COMMAND --json=v0.0.41+spec_only &gt; /tmp/v41.json;
-$CLI_COMMAND --json=v0.0.40+spec_only &gt; /tmp/v40.json;
-json_diff /tmp/v40.json /tmp/v41.json;
-</pre></p>
-
-<p>In the event of a format incompatibility, the preferred data_parser can be
-requested explicitly starting with the v0.0.40 plugins in any release before
-the plugin's removal.
-<pre>
-$CLI_COMMAND --json=v0.0.41 $OTHER_ARGS | $SITE_SCRIPT;
-$CLI_COMMAND --json=v0.0.40 $OTHER_ARGS | $SITE_SCRIPT;
-$CLI_COMMAND --yaml=v0.0.41 $OTHER_ARGS | $SITE_SCRIPT;
-$CLI_COMMAND --yaml=v0.0.40 $OTHER_ARGS | $SITE_SCRIPT;
-</pre></p>
-
-<p>Any <code>slurmrestd</code> web clients can determine the relevant plugin
-being used by looking at the URL being queried. Example URLs:
-<pre>
-http://$HOST/slurmdb/v0.0.40/jobs
-http://$HOST/slurm/v0.0.40/jobs
-</pre></p>
-
-<p>The relevant data_parser plugin in the example URLs is "v0.0.40" which
-matches the <code>data_parser/v0.0.40</code> plugin. Plugin naming follows the
-naming schema of <code>vXX.XX.XX</code> where the XX are numbers. The naming
-schema matches the internal naming schema for Slurm's packed binary RPC layer
-but is not directly related. The URLs for each given data_parser plugins will
-remain a valid query target until the plugin is removed as part of SchedMD's
-commitment to ensure release limited backwards compatibility. While it should
-be possible to continue using any client from a prior release while the plugins
-are still supported, <b>sites should always recompile any generated OpenAPI
-clients and test thoroughly before upgrading.</b></p>
+<ul>
+<li><a href="rest_clients.html#openapi-changes">OpenAPI Specification (OAS) changes</a></li>
+<li><a href="openapi_release_notes.html">OpenAPI release notes</a></li>
+</ul>
 
 <h3 id="backups">Create Backups
 <a class="slurm_link" href="#backups"></a></h3>
@@ -606,6 +533,6 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p style="text-align:center;">Last modified 27 August 2025</p>
+<p style="text-align:center;">Last modified 19 September 2025</p>
 
 <!--#include virtual="footer.txt"-->

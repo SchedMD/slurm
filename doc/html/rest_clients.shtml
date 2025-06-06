@@ -9,7 +9,11 @@
 <li><a href="#generated-openapi-docs">
 		OpenAPI Specification (OAS) Documentation</a></li>
 <li><a href="#client-design">Client design</a></li>
-<li><a href="#openapi-changes">OpenAPI Specification (OAS) changes</a></li>
+<li><a href="#openapi-changes">OpenAPI Specification (OAS) changes</a>
+<ul>
+<li><a href="#data_parser_lifecycle">Data Parser Lifecycle</a></li>
+<li><a href="#format_changes">Handling Format Changes</a></li>
+</ul></li>
 </ul>
 
 <h2 id="openapi">OpenAPI Specification (OAS)
@@ -252,6 +256,136 @@ confusing while looking at diffs. The example above shows the inlining of
 Depending on the generated client, that change may not change the
 resultant client code at all.</p>
 
-<p style="text-align:center;">Last modified 05 June 2025</p>
+<h3 id="data_parser_lifecycle">Data Parser Lifecycle
+<a class="slurm_link" href="#data_parser_lifecycle"></a>
+</h3>
+<table class="tlist centered">
+<tbody>
+<tr>
+<td><strong>data_parser plugin</strong></td>
+<td><strong>Added in Release</strong></td>
+<td><strong>Removed in Release</strong></td>
+</tr>
+<tr>
+<td>v0.0.39</td>
+<td>23.02 (<a href="openapi_release_notes.html#23020">release notes</a>)</td>
+<td>24.11</td>
+</tr>
+<tr>
+<td>v0.0.40</td>
+<td>23.11 (<a href="openapi_release_notes.html#23110">release notes</a>)</td>
+<td>25.11</td>
+</tr>
+<tr>
+<td>v0.0.41</td>
+<td>24.05 (<a href="openapi_release_notes.html#24050">release notes</a>)</td>
+<td>26.05</td>
+</tr>
+<tr>
+<td>v0.0.42</td>
+<td>24.11 (<a href="openapi_release_notes.html#24110">release notes</a>)</td>
+<td>26.11</td>
+</tr>
+<tr>
+<td>v0.0.43</td>
+<td>25.05 (<a href="openapi_release_notes.html#25050">release notes</a>)</td>
+<td>27.05</td>
+</tr>
+<tr>
+<td>v0.0.44</td>
+<td>25.11 (<a href="openapi_release_notes.html#25110">release notes</a>)</td>
+<td>27.11</td>
+</tr>
+</tbody>
+</table>
+</p>
+
+<p>The data_parser plugins are explicitly versioned with scheduled release and
+removal dates in the above table. The data_parser plugins are purposefully kept
+the same between releases and instead a new incremented version is added for
+every major release. This new version will be the only version to receive any
+changes in any content, formatting, bug fixes, or any other behavior visible
+to clients. This allows developers to keep using the same client after a Slurm
+upgrade, as long as it was written for a data_parser plugin that still exists in
+the new Slurm version. The exception to this rule is that all plugins will
+always receive any security related fixes according to the
+<a href="https://www.schedmd.com/security-policy/">Slurm security policy</a> as
+with any part of Slurm. The data_parser plugins provided upstream with Slurm in
+any release are considered to have the same support as any other part of that
+release.</p>
+
+<p>The OpenAPI plugins (openapi/slurmctld and openapi/slurmdbd) are unversioned
+and drive the data_parser plugins to generate content. The OpenAPI plugins have
+no expected removal date and will have bug fixes applied as they will not change
+the presentation of the data to clients.</p>
+
+<p>Planned deprecation of plugins, endpoints, parameters, fields, and values
+is being documented via the
+<a href="https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md?plain=1#L861">
+OpenAPI standard method</a> of setting "Deprecated: True" in generated OpenAPI
+specification. Any plugin that is not marked as deprecated will continue to
+exist in the next major Slurm release pending any critical issues which will be
+announced separately. Any plugin marked for deprecation will be removed on the
+next major release. In general, the last three plugins have been retained in
+each major release with the oldest always getting marked as deprecated.</p>
+
+<p><b>NOTE</b>: Sites are always encouraged to use the latest stable plugin
+version available for code development. There is no guarantee of compatibility
+between different versions of the same plugin with clients. Clients should
+always make sure to validate their code when migrating to newer versions of
+plugins. Plugin versions will always be included in the path for every method
+provided by a given plugin to ensure no two plugins will provide the same
+path.</p>
+
+<p>As the data_parser plugins utilize the Slurm API internally, compatibility is
+entirely based on the Slurm version. Refer to the general
+<a href="upgrades.html#compatibility_window">compatibility window</a>
+explanation for details.</p>
+
+<h3 id="format_changes">Handling Format Changes
+<a class="slurm_link" href="#format_changes"></a>
+</h3>
+
+<p>Any scripts or clients making use of <code>--json</code> or
+<code>--yaml</code> arguments with any CLI commands may need to pass the
+data_parser version explicitly to avoid issues after an upgrade. The default
+data_parser used is the latest version which may not have a compatible format
+with the prior versions. Sites can use the specification generation mode to
+compare formatting differences.
+<pre>
+$CLI_COMMAND --json=v0.0.41+spec_only &gt; /tmp/v41.json;
+$CLI_COMMAND --json=v0.0.40+spec_only &gt; /tmp/v40.json;
+json_diff /tmp/v40.json /tmp/v41.json;
+</pre></p>
+
+<p>In the event of a format incompatibility, the preferred data_parser can be
+requested explicitly starting with the v0.0.40 plugins in any release before
+the plugin's removal.
+<pre>
+$CLI_COMMAND --json=v0.0.41 $OTHER_ARGS | $SITE_SCRIPT;
+$CLI_COMMAND --json=v0.0.40 $OTHER_ARGS | $SITE_SCRIPT;
+$CLI_COMMAND --yaml=v0.0.41 $OTHER_ARGS | $SITE_SCRIPT;
+$CLI_COMMAND --yaml=v0.0.40 $OTHER_ARGS | $SITE_SCRIPT;
+</pre></p>
+
+<p>Any <code>slurmrestd</code> web clients can determine the relevant plugin
+being used by looking at the URL being queried. Example URLs:
+<pre>
+http://$HOST/slurmdb/v0.0.40/jobs
+http://$HOST/slurm/v0.0.40/jobs
+</pre></p>
+
+<p>The relevant data_parser plugin in the example URLs is "v0.0.40" which
+matches the <code>data_parser/v0.0.40</code> plugin. Plugin naming follows the
+naming schema of <code>vX.X.XX</code> where each X is a number. The naming
+schema matches the internal naming schema for Slurm's packed binary RPC layer
+but is not directly related. The URLs for each given data_parser plugins will
+remain a valid query target until the plugin is removed as part of SchedMD's
+commitment to ensure release limited backwards compatibility. While it should
+be possible to continue using any client from a prior release while the plugins
+are still supported, sites should always <b>recompile</b> any generated OpenAPI
+clients and <b>test thoroughly</b> before upgrading.</p>
+
+<p style="text-align:center;">Last modified 19 September 2025</p>
 
 <!--#include virtual="footer.txt"-->
