@@ -554,6 +554,9 @@
 #define certgen_g_fini slurm_certgen_g_fini
 #define certgen_g_self_signed slurm_certgen_g_self_signed
 
+/* fetch_config.[ch] functions */
+#define dump_to_memfd slurm_dump_to_memfd
+
 /* run_command.[ch] functions */
 #define run_command slurm_run_command
 

@@ -53,6 +53,9 @@
 
 #include "src/interfaces/conn.h"
 
+/* Define slurm-specific aliases for use by plugins, see slurm_xlator.h. */
+strong_alias(dump_to_memfd, slurm_dump_to_memfd);
+
 static char *slurmd_config_files[] = {
 	"slurm.conf", "acct_gather.conf", "cgroup.conf",
 	"cli_filter.lua", "gres.conf", "helpers.conf",
