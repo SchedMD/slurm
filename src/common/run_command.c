@@ -62,6 +62,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+/* Define slurm-specific aliases for use by plugins, see slurm_xlator.h. */
+strong_alias(run_command, slurm_run_command);
+
 static char *script_launcher = NULL;
 static int script_launcher_fd = -1;
 static int command_shutdown = 0;
