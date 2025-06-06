@@ -1446,10 +1446,23 @@ x11_fail:
 
 	pid = fork();
 	if (pid == 0) {
+		sigset_t sigset;
 		setpgid(0, 0);
 		setsid();
 		set_oom_adj(0);	/* the tasks may be killed by OOM */
 		acct_gather_profile_g_child_forked();
+
+		/*
+		 * Mask all signals (except SIGTERM) to prevent the sleep
+		 * process from being inadvertently killed by sbatch or salloc
+		 * --signal options. If the sleep process dies then the extern
+		 * step terminates, which would break X11, pam_slurm_adopt or
+		 * stepmgr making the job to fail.
+		 */
+		sigfillset(&sigset);
+		sigdelset(&sigset, SIGTERM);
+		sigprocmask(SIG_BLOCK, &sigset, NULL);
+
 		/*
 		 * Need to exec() something for proctrack/linuxproc to
 		 * work, it will not keep a process named "slurmstepd"
