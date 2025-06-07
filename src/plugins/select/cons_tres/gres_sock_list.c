@@ -941,7 +941,6 @@ extern void gres_sock_list_create(gres_sock_list_create_t *create_args)
 	}
 	if (!create_args->node_gres_list) /* Node lacks GRES to match */
 		return;
-	(void) gres_init();
 
 	if (!(create_args->cr_type & SELECT_SOCKET))
 		_gres_limit_reserved_cores(create_args);
