@@ -44,8 +44,8 @@
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-static bool running_flag = false;
-static pthread_t tid;
+static bool signaled = false;
+static pthread_t tid = 0;
 static uint16_t timeout;
 static char *program_name;
 static uint32_t recorded_jobid = NO_VAL;
@@ -60,7 +60,7 @@ void step_terminate_monitor_start(stepd_step_rec_t *step)
 
 	slurm_mutex_lock(&lock);
 
-	if (running_flag) {
+	if (tid) {
 		slurm_mutex_unlock(&lock);
 		return;
 	}
@@ -70,7 +70,6 @@ void step_terminate_monitor_start(stepd_step_rec_t *step)
 	program_name = xstrdup(conf->unkillable_program);
 	slurm_conf_unlock();
 
-	running_flag = true;
 	slurm_thread_create(&tid, _monitor, step);
 
 	recorded_jobid = step->step_id.job_id;
@@ -83,17 +82,16 @@ void step_terminate_monitor_stop(void)
 {
 	slurm_mutex_lock(&lock);
 
-	if (!running_flag) {
+	if (!tid) {
 		error("%s: already stopped", __func__);
 		slurm_mutex_unlock(&lock);
 		return;
 	}
 
-	running_flag = false;
 	debug("signaling condition");
 	slurm_cond_signal(&cond);
+	signaled = true;
 	slurm_mutex_unlock(&lock);
-
 	slurm_thread_join(tid);
 
 	xfree(program_name);
@@ -104,17 +102,15 @@ static void *_monitor(void *arg)
 {
 	stepd_step_rec_t *step = (stepd_step_rec_t *)arg;
 	struct timespec ts = {0, 0};
-	int rc;
+	int rc = 0;
 
 	debug2("step_terminate_monitor will run for %d secs", timeout);
 
 	ts.tv_sec = time(NULL) + 1 + timeout;
 
 	slurm_mutex_lock(&lock);
-	if (!running_flag)
-		goto done;
-
-	rc = pthread_cond_timedwait(&cond, &lock, &ts);
+	if (!signaled)
+		rc = pthread_cond_timedwait(&cond, &lock, &ts);
 	if (rc == ETIMEDOUT) {
 		char entity[45], time_str[256];
 		char *drain_reason = NULL;
@@ -184,7 +180,6 @@ static void *_monitor(void *arg)
 		error("Error waiting on condition in _monitor: %m");
 	}
 
-done:
 	debug2("step_terminate_monitor is stopping");
 	slurm_mutex_unlock(&lock);
 	return NULL;
