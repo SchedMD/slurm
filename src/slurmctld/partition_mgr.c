@@ -573,10 +573,10 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 
 			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 			qos_rec.name = part_ptr->qos_char;
-			if (assoc_mgr_fill_in_qos(
-				    acct_db_conn, &qos_rec, accounting_enforce,
-				    (slurmdb_qos_rec_t **)&part_ptr->qos_ptr, 0)
-			    != SLURM_SUCCESS) {
+			if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+						  accounting_enforce,
+						  &part_ptr->qos_ptr,
+						  0) != SLURM_SUCCESS) {
 				error("Partition %s has an invalid qos (%s), "
 				      "please check your configuration",
 				      part_ptr->name, qos_rec.name);
