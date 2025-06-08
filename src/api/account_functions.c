@@ -59,7 +59,13 @@ extern char *slurmdb_accounts_add_cond(void *db_conn,
 				       slurmdb_add_assoc_cond_t *add_assoc,
 				       slurmdb_account_rec_t *acct)
 {
-	xassert(add_assoc);
+	if (!add_assoc) {
+		char *err_msg = xstrdup(
+			"Missing needed association condition to add accounts");
+		error("%s", err_msg);
+		errno = EINVAL;
+		return err_msg;
+	}
 
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
