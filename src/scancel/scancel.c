@@ -345,7 +345,7 @@ _proc_cluster(void)
 	 * TODO:
 	 * Remove sibling restriction once --ctld has this logic implemented.
 	 */
-	if (opt.ctld && !(opt.sibling || has_job_steps()))
+	if (opt.ctld && !(opt.sibling || has_job_steps() || has_fed_jobs()))
 		return _ctld_signal_jobs();
 
 	_load_job_records();
