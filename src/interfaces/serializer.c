@@ -104,6 +104,7 @@ static const struct {
 	{ "compact", SER_FLAGS_COMPACT },
 	{ "pretty", SER_FLAGS_PRETTY },
 	{ "complex", SER_FLAGS_COMPLEX },
+	{ "no_tag", SER_FLAGS_NO_TAG },
 };
 
 static serializer_flags_t _parse_flag(const char *flag)

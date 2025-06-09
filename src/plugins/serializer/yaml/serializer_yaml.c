@@ -737,8 +737,9 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 	yaml_emitter_t emitter;
 	buf_t *buf = init_buf(0);
 
-	if (_dump_yaml(src, &emitter, buf, _merge_flags(flags),
-		       (flags & SER_FLAGS_NO_TAG))) {
+	flags = _merge_flags(flags);
+
+	if (_dump_yaml(src, &emitter, buf, flags, (flags & SER_FLAGS_NO_TAG))) {
 		error("%s: dump yaml failed", __func__);
 
 		FREE_NULL_BUFFER(buf);
