@@ -688,6 +688,12 @@ extern int init(void)
 
 extern int fini(void)
 {
+	static bool fini_run = false;
+
+	if (fini_run)
+		return SLURM_SUCCESS;
+	fini_run = true;
+
 	if (s2n_config_free(client_config))
 		on_s2n_error(NULL, s2n_config_free);
 
