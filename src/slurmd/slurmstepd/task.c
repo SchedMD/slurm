@@ -192,6 +192,7 @@ _run_script_and_set_env(const char *name, const char *path,
 		.max_wait = -1,
 		.script_path = path,
 		.script_type = name,
+		.direct_exec = true,
 		.status = &status
 	};
 
