@@ -30,74 +30,89 @@
 source ./globals
 
 set file_prog   "$test_name.prog"
+set job_id  0
+set prefix "TEST_PROCESS"
 
 proc cleanup {} {
-	global file_prog
+	global file_prog job_id
 
+	cancel_job $job_id
 	file delete $file_prog
 }
 
 #
-# Delete left-over programs and rebuild them.
 # We use our own program to get ulimit values since the output
 # of the ulimit program is inconsistent across systems.
 #
-exec $bin_rm -f $file_prog
-exec $bin_cc -O ${file_prog}.c -o $file_prog
-exec $bin_chmod 700 $file_prog
+run_command -fail "$bin_cc -O ${file_prog}.c -o $file_prog"
+run_command -fail "$bin_chmod 700 $file_prog"
 
-#
-# Spawn initial program via srun and use SIGINT to status
-#
+# Submit srun job to send SIGINTs to verify correct behavior
 set timeout $max_job_delay
-set match_run   0
-set match_sig   0
-set match_abort 0
-set job_id  0
 set srun_pid [spawn $srun -v -N1 -t1 -X ./$file_prog]
+
+# Get job_id and wait until signal handlers are ready
 expect {
 	-re "launching ($number)\\.0" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "Hello World!" {
-		incr match_run
-		sleep 0.1
-		exec $bin_kill -INT $srun_pid
-		exp_continue
-	}
-	-re "OUCH!" {
-		incr match_sig
-
-		# Avoid the next SIGINTs being consecutive with initial SIGINT
-		sleep 2
-
-		exec $bin_kill -INT $srun_pid
-		exp_continue
-	}
-	-re "srun: sending Ctrl-C to StepId" {
-		incr match_sig
-
-		exec $bin_kill -INT $srun_pid
-		exp_continue
-	}
-	-re "forcing job termination" {
-		incr match_abort
-		exp_continue
+	-re "${prefix}: Signal handler ready" {
+		log_debug "Process is ready to receive signals"
 	}
 	timeout {
 		fail "srun not responding"
 	}
 	eof {
-		wait
+		fail "srun finished unexpectedly"
 	}
 }
-if {$match_run < 1} {
-	fail "srun failed to properly start"
+
+# Send a single SIGINT
+run_command -fail "$bin_kill -INT $srun_pid"
+expect {
+	-re "${prefix}: Signal received" {
+		subpass "Verify process received a single SIGINT"
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		fail "srun finished unexpectedly"
+	}
 }
-if {$match_sig < 1} {
-	fail "srun failed to properly process SIGINT"
+
+subpass "Verify job did not terminate with a single SIGINT"
+
+log_info "Waiting to avoid two conscutive SIGINTs"
+sleep 2
+
+# Send two consecutive SIGINTs
+# But wait until srun responds to the first one to avoid being "too consecutive".
+run_command -fail "$bin_kill -INT $srun_pid"
+expect {
+	-re "srun: sending Ctrl-C to StepId" {
+		subpass "Verify srun received the first of the consecutive SIGINTs"
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		fail "srun finished unexpectedly"
+	}
 }
-if {$match_abort < 1} {
-	fail "srun failed to properly process multiple SIGINT to abort"
+run_command -fail "$bin_kill -INT $srun_pid"
+
+# Validate that job is terminated
+expect {
+	-re "srun: forcing job termination" {
+		subpass "Verify job is terminating after two consecutive SIGINTs"
+		exp_continue
+	}
+	timeout {
+		fail "srun didn't terminate properly"
+	}
+	eof {
+		wait
+	}
 }
