@@ -473,8 +473,7 @@ extern void parse_command_line(int argc, char **argv)
 		params.name_list = _build_str_list( params.names );
 	}
 
-	if ( ( params.partitions == NULL ) &&
-	     ( env_val = getenv("SQUEUE_LICENSES") ) ) {
+	if (!params.licenses && (env_val = getenv("SQUEUE_LICENSES"))) {
 		params.licenses = xstrdup(env_val);
 		params.licenses_list = _build_str_list( params.licenses );
 	}

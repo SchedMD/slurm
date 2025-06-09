@@ -391,6 +391,7 @@ static void _opt_args(int argc, char **argv)
 			exit(1);
 			break;
 		case (int)'A':
+			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			xstrtolower(opt.account);
 			break;
@@ -416,22 +417,27 @@ static void _opt_args(int argc, char **argv)
 			_opt_clusters(optarg);
 			break;
 		case OPT_LONG_ME:
+			xfree(opt.user_name);
 			opt.user_name = xstrdup_printf("%u", getuid());
 			break;
 		case (int)'n':
+			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
 			break;
 		case (int)'p':
+			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
 			break;
 		case (int)'Q':
 			opt.verbose = -1;
 			break;
 		case (int)'q':
+			xfree(opt.qos);
 			opt.qos = xstrdup(optarg);
 			xstrtolower(opt.qos);
 			break;
 		case (int)'R':
+			xfree(opt.reservation);
 			opt.reservation = xstrdup(optarg);
 			break;
 		case (int)'s':
@@ -446,6 +452,7 @@ static void _opt_args(int argc, char **argv)
 			opt.state = _xlate_state_name(optarg, false);
 			break;
 		case (int)'u':
+			xfree(opt.user_name);
 			opt.user_name = xstrdup(optarg);
 			break;
 		case (int)'v':
@@ -455,12 +462,15 @@ static void _opt_args(int argc, char **argv)
 			print_slurm_version ();
 			exit(0);
 		case (int)'w':
+			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
 			break;
 		case OPT_LONG_SIBLING:
+			xfree(opt.sibling);
 			opt.sibling = xstrdup(optarg);
 			break;
 		case OPT_LONG_WCKEY:
+			xfree(opt.wckey);
 			opt.wckey = xstrdup(optarg);
 			break;
 		case OPT_LONG_HELP:

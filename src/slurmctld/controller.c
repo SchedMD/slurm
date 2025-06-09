@@ -1264,9 +1264,15 @@ static void  _init_config(void)
 	slurmctld_config.acct_update_list =
 		list_create(slurmdb_destroy_update_object);
 	slurm_mutex_init(&slurmctld_config.acct_update_lock);
+	slurm_mutex_init(&slurmctld_config.thread_count_lock);
+	slurm_mutex_init(&slurmctld_config.backup_finish_lock);
+	slurm_mutex_lock(&slurmctld_config.acct_update_lock);
+	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
+	slurm_mutex_lock(&slurmctld_config.backup_finish_lock);
+
 	slurm_cond_init(&slurmctld_config.acct_update_cond, NULL);
 	slurm_cond_init(&slurmctld_config.backup_finish_cond, NULL);
-	slurm_mutex_init(&slurmctld_config.backup_finish_lock);
+	slurm_cond_init(&slurmctld_config.thread_count_cond, NULL);
 	slurmctld_config.boot_time      = time(NULL);
 	slurmctld_config.resume_backup  = false;
 	slurmctld_config.server_thread_count = 0;
@@ -1275,9 +1281,10 @@ static void  _init_config(void)
 	slurmctld_config.scheduling_disabled  = false;
 	slurmctld_config.submissions_disabled = false;
 	track_script_init();
-	slurm_mutex_init(&slurmctld_config.thread_count_lock);
-	slurm_cond_init(&slurmctld_config.thread_count_cond, NULL);
 	slurmctld_config.thread_id_main    = (pthread_t) 0;
+	slurm_mutex_unlock(&slurmctld_config.backup_finish_lock);
+	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+	slurm_mutex_unlock(&slurmctld_config.acct_update_lock);
 }
 
 static int _try_to_reconfig(void)

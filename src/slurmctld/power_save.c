@@ -1159,9 +1159,9 @@ extern void power_save_init(void)
 		return;
 	}
 	power_save_started = true;
-	slurm_mutex_unlock(&power_mutex);
 
 	slurm_thread_create(&power_thread, _power_save_thread, NULL);
+	slurm_mutex_unlock(&power_mutex);
 }
 
 /* Report if node power saving is enabled */

@@ -757,7 +757,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	case SORTID_NICE:
 		temp_int = strtol(new_text, (char **)NULL, 10);
 		type = "nice";
-		if (abs(temp_int) > NICE_OFFSET) {
+		if (abs(temp_int) > (int) NICE_OFFSET) {
 			//error("Invalid nice value, must be between "
 			//      "-%d and %d", NICE_OFFSET, NICE_OFFSET);
 			goto return_error;
