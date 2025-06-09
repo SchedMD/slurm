@@ -155,6 +155,22 @@ extern bool has_job_steps(void)
 	return false;
 }
 
+/* Return true if the specified job id is federated */
+static bool _test_fed_job(uint32_t job_id)
+{
+	return job_id & (~MAX_JOB_ID);
+}
+
+/* Return true if any job is federated */
+extern bool has_fed_jobs(void)
+{
+	for (int i = 0; i < opt.job_cnt; i++) {
+		if (_test_fed_job(opt.job_id[i]))
+			return true;
+	}
+	return false;
+}
+
 static uint32_t
 _xlate_state_name(const char *state_name, bool env_var)
 {
