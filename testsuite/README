@@ -1052,6 +1052,10 @@ test_147_#   Testing SPANK.
 ===========================
 test_147_1   Test SPANK contained when SlurmdParameters=contain_spank
 
+test_148_#   Testing conmgr.
+============================
+test_148_1   Test conmgr
+
 test_200_#   Testing upgrades.
 ==============================
 test_200_1   Test upgrade of a basic running cluster
