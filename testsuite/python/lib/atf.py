@@ -516,6 +516,40 @@ def is_slurmctld_running(quiet=False):
     return False
 
 
+def gcore(component, sbin=True):
+    """Generates a gcore file for all pids running of a given Slurm component.
+
+    The gcore file will be save at slurm-logs-dir, where all the logs and kernel
+    coredumps should be generated too.
+
+    Args:
+        component (string): The name of the component. E.g. slurmctld, slurmdbd...
+        sbin: If True search for pids related to slurm-sbin-dir, or slurm-bin-dir otherwise.
+
+    Returns:
+        None
+    """
+    # Ensure that slurm-logs-dir is set.
+    if "slurm-logs-dir" not in properties:
+        properties["slurm-logs-dir"] = os.path.dirname(
+            get_config_parameter("SlurmctldLogFile", live=False, quiet=True)
+        )
+
+    if sbin:
+        prefix = properties["slurm-sbin-dir"]
+    else:
+        prefix = properties["slurm-bin-dir"]
+
+    pids = pids_from_exe(f"{prefix}/{component}")
+    if not pids:
+        logging.warning("Process {prefix}/{component} not found")
+    logging.debug(f"Getting gcores for PIDs: {pids}")
+    for pid in pids:
+        run_command(
+            f"sudo gcore -o {properties['slurm-logs-dir']}/slurmctld.core {pid}"
+        )
+
+
 def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
     """Starts the Slurm controller daemon (slurmctld).
 
@@ -557,13 +591,7 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
             logging.warning(
                 "scontrol ping is not responding, trying to get slurmctld core file..."
             )
-            pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
-            if not pids:
-                logging.warning("process slurmctld not found")
-            for pid in pids:
-                run_command(
-                    f"sudo gcore -o {properties['slurm-logs-dir']}/slurmctld.core {pid}"
-                )
+            gcore("slurmctld")
             pytest.fail("Slurmctld is not running")
         else:
             logging.debug("Slurmctld started successfully")
@@ -669,13 +697,7 @@ def start_slurmdbd(clean=False, quiet=False):
             logging.warning(
                 "sacctmgr show cluster is not responding, trying to get slurmdbd core file..."
             )
-            pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmdbd")
-            if not pids:
-                logging.warning("process slurmdbd not found")
-            for pid in pids:
-                run_command(
-                    f"sudo gcore -o {properties['slurm-logs-dir']}/slurmdbd.core {pid}"
-                )
+            gcore("slurmdbd")
             pytest.fail("Slurmdbd is not running")
         else:
             logging.debug("Slurmdbd started successfully")
@@ -772,13 +794,9 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
         lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"),
         lambda pids: len(pids) == 0,
     ):
-        pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
-        failures.append(f"Slurmctld is still running ({pids})")
+        failures.append("Slurmctld is still running")
         logging.warning("Getting the core files of the still running slurmctld")
-        for pid in pids:
-            run_command(
-                f"sudo gcore -o {properties['slurm-logs-dir']}/slurmctld.core {pid}"
-            )
+        gcore("slurmctld")
     else:
         logging.debug("No slurmctld is running.")
 
@@ -807,13 +825,9 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
             lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),
             lambda pids: len(pids) == 0,
         ):
-            pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd")
-            failures.append(f"Some slurmds are still running ({pids})")
+            failures.append("Some slurmds are still running")
             logging.warning("Getting the core files of the still running slurmds")
-            for pid in pids:
-                run_command(
-                    f"sudo gcore -o {properties['slurm-logs-dir']}/slurmd.core {pid}"
-                )
+            gcore("slurmd")
         else:
             logging.debug("No slurmd is running.")
 
@@ -993,11 +1007,6 @@ def require_slurm_running():
     """
 
     global nodes
-
-    # Set the slurm-logs-dir property to be used to generate gcore files when necessary
-    properties["slurm-logs-dir"] = os.path.dirname(
-        get_config_parameter("SlurmctldLogFile", live=False, quiet=True)
-    )
 
     if properties["auto-config"]:
         if not is_slurmctld_running(quiet=True):
@@ -1961,6 +1970,11 @@ def start_slurmrestd():
     port = None
     attempts = 0
 
+    if "slurm-logs-dir" not in properties:
+        properties["slurm-logs-dir"] = os.path.dirname(
+            get_config_parameter("SlurmctldLogFile", live=False, quiet=True)
+        )
+
     properties["slurmrestd_log"] = open(
         f"{properties['slurm-logs-dir']}/slurmrestd.log", "w"
     )
@@ -2209,13 +2223,7 @@ def get_nodes(live=True, quiet=False, **run_command_kwargs):
                 "Fatal failure of 'scontrol show nodes', probably due 'Unable to contact slurm controller' (t22858)"
             )
             logging.debug("Getting gcore from slurmctld before fatal.")
-            pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld")
-            if not pids:
-                logging.warning("process slurmctld not found")
-            for pid in pids:
-                run_command(
-                    f"sudo gcore -o {properties['slurm-logs-dir']}/slurmctld.core {pid}"
-                )
+            gcore("slurmctld")
             pytest.fail(
                 f"Command 'scontrol show nodes -oF' failed with rc={result['exit_code']}: {result['stderr']}"
             )
