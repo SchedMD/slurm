@@ -7,7 +7,7 @@ import pytest
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_version("24.11", "bin/sacctmgr")
+    atf.require_version((24, 11), "bin/sacctmgr")
     atf.require_accounting()
     atf.require_slurm_running()
 
