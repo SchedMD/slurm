@@ -46,6 +46,11 @@ typedef struct {
 	void *cb_arg;
 	char **env;
 	bool ignore_path_exec_check;
+	/*
+	 * if True, always execute script directly instead of using script
+	 * launcher even if available
+	 */
+	bool direct_exec;
 	uint32_t job_id;
 	int max_wait;
 	bool orphan_on_shutdown;
