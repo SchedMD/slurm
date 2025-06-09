@@ -3002,6 +3002,11 @@ int _print_step_tres_per_task(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+static int _find_any_resv(void *x, void *arg)
+{
+	return list_find_first(arg, slurm_find_char_exact_in_list, x) ? 1 : 0;
+}
+
 /*
  * Filter job records per input specifications.
  * Returns true if the job should be filtered out (not printed).
@@ -3169,10 +3174,29 @@ static bool _filter_job(job_info_t *job)
 	}
 
 	if (params.reservation) {
-		if ((job->resv_name == NULL) ||
-		    (xstrcmp(job->resv_name, params.reservation))) {
+		bool filter = false;
+		list_t *spec_resv_list = NULL, *job_resv_list = NULL;
+
+		if (!job->resv_name)
 			return true;
-		}
+
+		spec_resv_list = list_create(xfree_ptr);
+		slurm_addto_char_list_with_case(spec_resv_list,
+						params.reservation, false);
+
+		job_resv_list = list_create(xfree_ptr);
+		slurm_addto_char_list_with_case(job_resv_list, job->resv_name,
+						false);
+
+		if (!list_find_first(spec_resv_list, _find_any_resv,
+				     job_resv_list))
+			filter = true;
+
+		FREE_NULL_LIST(spec_resv_list);
+		FREE_NULL_LIST(job_resv_list);
+
+		if (filter)
+			return true;
 	}
 
 	if (params.name_list) {

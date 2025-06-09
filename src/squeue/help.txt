@@ -27,7 +27,7 @@ Usage: squeue [OPTIONS]
                                   to view, default is all partitions
   -q, --qos=qos(s)                comma separated list of qos's
                                   to view, default is all qos's
-  -R, --reservation=name          reservation to view, default is all
+  -R, --reservation=name(s)       comma separated list of reservations to view
   -r, --array                     display one job array element per line
       --sibling                   Report information about all sibling jobs
                                   on a federated cluster. Implies --federation.
