@@ -146,11 +146,6 @@ def update_tmp_path_exec_permissions():
                 os.chmod(os.path.join(root, d), 0o777)
 
 
-@pytest.fixture(scope="function", autouse=True)
-def tmp_path_setup(request):
-    update_tmp_path_exec_permissions()
-
-
 @pytest.fixture(scope="module", autouse=True)
 def module_setup(request, tmp_path_factory):
     atf.properties["slurm-started"] = False
@@ -158,6 +153,10 @@ def module_setup(request, tmp_path_factory):
     atf.properties["configurations-modified"] = set()
     atf.properties["orig-environment"] = dict(os.environ)
     atf.properties["orig-pypath"] = list(sys.path)
+    if "old-slurm-prefix" in atf.properties.keys():
+        del atf.properties["old-slurm-prefix"]
+    if "new-slurm-prefix" in atf.properties.keys():
+        del atf.properties["new-slurm-prefix"]
 
     # Creating a module level tmp_path mimicing what tmp_path does
     name = request.node.name
@@ -199,12 +198,39 @@ def module_setup(request, tmp_path_factory):
     # Teardown
     module_teardown()
 
-    # Restore StateSaveLocation for auto-config
     if atf.properties["auto-config"]:
+        # Restore StateSaveLocation for auto-config
         atf.run_command(f"rm -rf {statesaveloc}", user="root", quiet=True)
         if os.path.exists(statesaveloc + name):
             atf.run_command(
                 f"mv {statesaveloc+name} {statesaveloc}", user="root", quiet=True
+            )
+
+        # Restore upgrade setup
+        if "old-slurm-prefix" in atf.properties.keys():
+            logging.debug("Restoring upgrade setup...")
+            if not os.path.exists(f"{atf.module_tmp_path}/upgrade-sbin"):
+                pytest.fail(
+                    f"Can't restore upgrade setup, {atf.module_tmp_path}/upgrade-sbin doesn't exists."
+                )
+            if not os.path.exists(f"{atf.module_tmp_path}/upgrade-bin"):
+                pytest.fail(
+                    f"Can't restore upgrade setup, {atf.module_tmp_path}/upgrade-bin doesn't exists."
+                )
+            atf.run_command(
+                f"sudo rm -rf {atf.properties['slurm-sbin-dir']} {atf.properties['slurm-bin-dir']}",
+                quiet=True,
+                fatal=True,
+            )
+            atf.run_command(
+                f"sudo mv {atf.module_tmp_path}/upgrade-sbin {atf.properties['slurm-sbin-dir']}",
+                quiet=True,
+                fatal=True,
+            )
+            atf.run_command(
+                f"sudo mv {atf.module_tmp_path}/upgrade-bin {atf.properties['slurm-bin-dir']}",
+                quiet=True,
+                fatal=True,
             )
 
 
