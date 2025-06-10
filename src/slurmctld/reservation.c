@@ -1276,6 +1276,16 @@ end_it:
 	return rc;
 }
 
+static int _set_access(slurmctld_resv_t *resv_ptr)
+{
+	int rc = SLURM_SUCCESS;
+
+	if ((rc = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
+		return rc;
+
+	return rc;
+}
+
 /* Post reservation create */
 static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 {
@@ -3416,7 +3426,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		resv_ptr->ctld_flags &= (~RESV_CTLD_FULL_NODE);
 	}
 
-	if ((rc = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS) {
+	if ((rc = _set_access(resv_ptr)) != SLURM_SUCCESS) {
 		_del_resv_rec(resv_ptr);
 		goto bad_parse;
 	}
@@ -4036,13 +4046,13 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	}
 
 	/* This needs to be after checks for both account and user changes */
-	if ((error_code = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
+	if ((error_code = _set_access(resv_ptr)) != SLURM_SUCCESS)
 		goto update_failure;
 
 	/*
 	 * Reject reservation update if we have pending or running jobs using
 	 * the reservation, that lose access to the reservation by the update.
-	 * This has to happen after _set_assoc_list
+	 * This has to happen after _set_access
 	 */
 	if ((job_ptr = list_find_first(job_list,
 				       _validate_reservation_access_update,
@@ -4616,7 +4626,7 @@ static void _validate_all_reservations(void)
 			_clear_job_resv(resv_ptr);
 			list_delete_item(iter);
 		} else {
-			_set_assoc_list(resv_ptr);
+			_set_access(resv_ptr);
 			top_suffix = MAX(top_suffix, resv_ptr->resv_id);
 			_validate_node_choice(resv_ptr);
 		}
@@ -7209,7 +7219,7 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
 		tmp_uids = NULL;
 
 		/* Now update the associations to match */
-		(void)_set_assoc_list(resv_ptr);
+		(void) _set_access(resv_ptr);
 
 		/* Now see if something really did change */
 		if (!slurm_with_slurmdbd() ||
@@ -7759,7 +7769,7 @@ extern void update_assocs_in_resvs(void)
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter)))
-		_set_assoc_list(resv_ptr);
+		_set_access(resv_ptr);
 	list_iterator_destroy(iter);
 
 	unlock_slurmctld(node_write_lock);
