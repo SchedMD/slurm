@@ -78,22 +78,27 @@ echo "`cat ${NODENAME}_token.txt`" >> node_token_list.txt
 </pre>
 
 <p>
-Node "n1" needs to boot up with n1_token.txt and/or have n1_token.txt securely
-transferred to it. slurmctld needs to have secure access to node_token_list.txt
-in order to validate node tokens with the validate_node_script.
+Node <b>n1</b> needs to boot up with <code>n1_token.txt</code> and/or have it
+securely transferred to it. <b>slurmctld</b> needs to have secure access to
+<code>node_token_list.txt</code> in order to validate node tokens with the
+<code>validate_node_script</code>.
 </p>
 
 <p>
-The get_node_token_script, generate_csr_script, and get_node_cert_key_script
-paths need to point to scripts that exist and are executable on slurmd nodes.
+The <code>get_node_token_script</code>, <code>generate_csr_script</code>, and
+<code>get_node_cert_key_script</code> paths need to point to scripts that exist
+and are executable on slurmd nodes.
 </p>
+
 <h4 id="get_node_token_script_example">
 get_node_token_script example:<a class="slurm_link" href="#get_node_token_script_example"></a>
 </h4>
+
 <p>
 Print token to stdout. Return zero exit code for success, and non-zero exit
 code for error.
 </p>
+
 <pre>
 #!/bin/bash
 
@@ -117,10 +122,12 @@ exit 0
 <h4 id="generate_csr_script_example">
 generate_csr_script example:<a class="slurm_link" href="#generate_csr_script_example"></a>
 </h4>
+
 <p>
 Print certificate signing request to stdout. Return zero exit code for success,
 and non-zero exit code for error.
 </p>
+
 <pre>
 #!/bin/bash
 
@@ -152,10 +159,12 @@ exit 0
 <h4 id="get_node_cert_key_script">
 get_node_cert_key_script example:<a class="slurm_link" href="#get_node_cert_key_script"></a>
 </h4>
+
 <p>
 Print private key used to generate CSR to stdout. Return zero exit code for
 success, and non-zero exit code for error.
 </p>
+
 <pre>
 #!/bin/bash
 
@@ -176,16 +185,19 @@ exit 0
 </pre>
 
 <p>
-The validate_node_script and sign_csr_script paths need to point to
-scripts that exist and are executable on slurmctld.
+The <code>validate_node_script</code> and <code>sign_csr_script</code> paths
+need to point to scripts that exist and are executable on <b>slurmctld</b>.
 </p>
+
 <h4 id="validate_node_script_example">
 validate_node_script example:<a class="slurm_link" href="#validate_node_script_example"></a>
 </h4>
+
 <p>
 Return zero exit code for valid node tokens, and non-zero exit code  for
 invalid node tokens or other errors.
 </p>
+
 <pre>
 #!/bin/bash
 
@@ -217,9 +229,12 @@ exit 0
 <h4 id="sign_csr_script_example">
 sign_csr_script example:<a class="slurm_link" href="#sign_csr_script_example"></a>
 </h4>
+
 <p>
-Print signed certificate to stdout. Return zero exit code for success, and non-zero exit code for error.
+Print signed certificate to stdout. Return zero exit code for success, and
+non-zero exit code for error.
 </p>
+
 <pre>
 #!/bin/bash
 
