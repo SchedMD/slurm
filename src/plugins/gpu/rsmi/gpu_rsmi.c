@@ -120,22 +120,47 @@ static int gpuutil_pos = -1;
 static bool get_usage = true;
 
 static void _rsmi_get_version(char *version, unsigned int len);
+static void _rsmi_get_driver(char *driver, unsigned int len);
+
+/*
+ * Initialize the rsmi library.
+ */
+static void _rsmi_init()
+{
+	static pid_t init_pid = 0;
+	pid_t my_pid = conf->pid ? conf->pid : getpid();
+	rsmi_status_t rsmi_rc;
+	const char *status_string;
+	char version[RSMI_STRING_BUFFER_SIZE];
+	char driver[RSMI_STRING_BUFFER_SIZE];
+
+	if (init_pid == my_pid) /* Already inited */
+		return;
+
+	init_pid = my_pid;
+
+	DEF_TIMERS;
+	START_TIMER;
+	rsmi_rc = rsmi_init(0);
+	END_TIMER;
+	debug3("rsmi_init() took %ld microseconds", DELTA_TIMER);
+	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
+		rsmi_status_string(rsmi_rc, &status_string);
+		error("Failed to initialize rsmi: %s",
+		      status_string);
+	} else
+		debug2("Successfully initialized rsmi");
+
+	_rsmi_get_driver(driver, RSMI_STRING_BUFFER_SIZE);
+	_rsmi_get_version(version, RSMI_STRING_BUFFER_SIZE);
+	debug("AMD Graphics Driver Version: %s", driver);
+	debug("RSMI Library Version: %s", version);
+}
 
 extern int init(void)
 {
-	rsmi_init(0);
-
 	if (running_in_slurmstepd()) {
-		char version[RSMI_STRING_BUFFER_SIZE];
-
-		_rsmi_get_version(version, RSMI_STRING_BUFFER_SIZE);
-		/*
-		 * If version < RSMI_REQ_VERSION_USAGE get_usage will be set to
-		 * false, so we won't set gpumem_pos and gpuutil_pos which
-		 * effectively disables gpu accounting.
-		 */
-		if (get_usage)
-			gpu_get_tres_pos(&gpumem_pos, &gpuutil_pos);
+		gpu_get_tres_pos(&gpumem_pos, &gpuutil_pos);
 	}
 
 	debug("%s: %s loaded", __func__, plugin_name);
@@ -851,13 +876,8 @@ static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 {
 	uint32_t i, device_count = 0;
 	list_t *gres_list_system = list_create(destroy_gres_slurmd_conf);
-	char driver[RSMI_STRING_BUFFER_SIZE];
-	char version[RSMI_STRING_BUFFER_SIZE];
 
-	_rsmi_get_driver(driver, RSMI_STRING_BUFFER_SIZE);
-	_rsmi_get_version(version, RSMI_STRING_BUFFER_SIZE);
-	debug("AMD Graphics Driver Version: %s", driver);
-	debug("RSMI Library Version: %s", version);
+	_rsmi_init();
 
 	gpu_p_get_device_count(&device_count);
 	debug2("Device count: %d", device_count);
@@ -988,6 +1008,7 @@ extern void gpu_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 	FREE_NULL_BITMAP(saved_gpus);
 	saved_gpus = bit_copy(usable_gpus);
 
+	_rsmi_init();
 	// Set the frequency of each GPU index specified in the bitstr
 	_set_freq(usable_gpus, freq);
 	xfree(freq);
@@ -1049,6 +1070,18 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 
 	if (!track_gpuutil && !track_gpumem) {
 		debug2("%s: We are not tracking TRES gpuutil/gpumem", __func__);
+		return SLURM_SUCCESS;
+	}
+
+	_rsmi_init();
+
+	/*
+	 * If version < RSMI_REQ_VERSION_USAGE get_usage will be set to
+	 * false, so we won't set gpumem_pos and gpuutil_pos which
+	 * effectively disables gpu accounting.
+	 */
+	if (!get_usage) {
+		debug2("%s: ROCM release version is < 6.0.0 which is required for gathering usage. Not gathering usage.", __func__);
 		return SLURM_SUCCESS;
 	}
 
