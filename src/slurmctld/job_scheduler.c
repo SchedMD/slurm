@@ -3445,8 +3445,8 @@ static int _find_dependency(void *arg, void *key)
 	depend_spec_t *dep_ptr = (depend_spec_t *)arg;
 	depend_spec_t *new_dep = (depend_spec_t *)key;
 	return (dep_ptr->job_id == new_dep->job_id) &&
-		(dep_ptr->array_task_id == new_dep->array_task_id) &&
-		(dep_ptr->depend_type == new_dep->depend_type);
+	       (dep_ptr->array_task_id == new_dep->array_task_id) &&
+	       (dep_ptr->depend_type == new_dep->depend_type);
 }
 
 extern depend_spec_t *find_dependency(job_record_t *job_ptr,
@@ -3581,9 +3581,9 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 	char *tmp = NULL;
 	int depend_time = 0;
 
-	while (!(*rc)) {
+	while ((*rc) == SLURM_SUCCESS) {
 		job_id = strtol(sep_ptr, &tmp, 10);
-		if ((tmp != NULL) && (tmp[0] == '_')) {
+		if (tmp && (tmp[0] == '_')) {
 			if (tmp[1] == '*') {
 				array_task_id = INFINITE;
 				tmp += 2;	/* Past "_*" */
@@ -3593,10 +3593,9 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 			}
 		} else
 			array_task_id = NO_VAL;
-		if ((tmp == NULL) || (job_id == 0) ||
-		    ((tmp[0] != '\0') && (tmp[0] != ',') &&
-		     (tmp[0] != '?')  && (tmp[0] != ':') &&
-		     (tmp[0] != '+') && (tmp[0] != '('))) {
+		if (!tmp || (job_id == 0) ||
+		    ((tmp[0] != '\0') && (tmp[0] != ',') && (tmp[0] != '?') &&
+		     (tmp[0] != ':') && (tmp[0] != '+') && (tmp[0] != '('))) {
 			*rc = ESLURM_DEPENDENCY;
 			break;
 		}
@@ -3624,11 +3623,10 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 			break;
 		}
 		if ((depend_type == SLURM_DEPEND_EXPAND) &&
-		    ((expand_cnt++ > 0) || (dep_job_ptr == NULL) ||
-		     (!IS_JOB_RUNNING(dep_job_ptr))		||
-		     (dep_job_ptr->qos_id != job_ptr->qos_id)	||
-		     (dep_job_ptr->part_ptr == NULL)		||
-		     (job_ptr->part_ptr     == NULL)		||
+		    ((expand_cnt++ > 0) || (!dep_job_ptr) ||
+		     (!IS_JOB_RUNNING(dep_job_ptr)) ||
+		     (dep_job_ptr->qos_id != job_ptr->qos_id) ||
+		     (!dep_job_ptr->part_ptr) || (!job_ptr->part_ptr) ||
 		     (dep_job_ptr->part_ptr != job_ptr->part_ptr))) {
 			/*
 			 * Expand only jobs in the same QOS and partition
@@ -3756,7 +3754,7 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 	char *tmp = NULL;
 
 	job_id = strtol(tok, &tmp, 10);
-	if ((tmp != NULL) && (tmp[0] == '_')) {
+	if (tmp && (tmp[0] == '_')) {
 		if (tmp[1] == '*') {
 			array_task_id = INFINITE;
 			tmp += 2;	/* Past "_*" */
@@ -3767,8 +3765,7 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 		array_task_id = NO_VAL;
 	}
 	*sep_ptr = tmp;
-	if ((tmp == NULL) || (job_id == 0) ||
-	    ((tmp[0] != '\0') && (tmp[0] != ','))) {
+	if (!tmp || (job_id == 0) || ((tmp[0] != '\0') && (tmp[0] != ','))) {
 		*rc = ESLURM_DEPENDENCY;
 		return;
 	}
@@ -3971,7 +3968,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 	depend_spec_t *dep_ptr;
 	bool or_flag = false;
 
-	if (job_ptr->details == NULL)
+	if (!job_ptr->details)
 		return EINVAL;
 
 	if (select_hetero == -1) {
@@ -3987,12 +3984,11 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 
 	/* Clear dependencies on NULL, "0", or empty dependency input */
 	job_ptr->details->expanding_jobid = 0;
-	if ((new_depend == NULL) || (new_depend[0] == '\0') ||
+	if (!new_depend || (new_depend[0] == '\0') ||
 	    ((new_depend[0] == '0') && (new_depend[1] == '\0'))) {
 		xfree(job_ptr->details->dependency);
 		FREE_NULL_LIST(job_ptr->details->depend_list);
 		return rc;
-
 	}
 
 	new_depend_list = list_create(xfree_ptr);
@@ -4039,7 +4035,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 
 		/* Test for old format, just a job ID */
 		sep_ptr = strchr(tok, ':');
-		if ((sep_ptr == NULL) && (tok[0] >= '0') && (tok[0] <= '9')) {
+		if (!sep_ptr && (tok[0] >= '0') && (tok[0] <= '9')) {
 			_parse_dependency_jobid_old(job_ptr, new_depend_list,
 					      &sep_ptr, tok, &rc);
 			if (rc)
@@ -4050,7 +4046,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 			} else {
 				break;
 			}
-		} else if (sep_ptr == NULL) {
+		} else if (!sep_ptr) {
 			rc = ESLURM_DEPENDENCY;
 			break;
 		}
