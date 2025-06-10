@@ -3564,15 +3564,14 @@ static bool _depends_on_same_job(job_record_t *job_ptr,
  * <type:job_id[:job_id][,type:job_id[:job_id]]> or
  * <type:job_id[:job_id][?type:job_id[:job_id]]>
  *
- * This function parses the all job id's within a single dependency type.
- * One char past the end of valid job id's is returned in (*sep_ptr2).
- * Set (*rc) to ESLURM_DEPENDENCY for invalid job id's.
+ * This function parses the all job ids within a single dependency type.
+ * One char past the end of valid job ids is returned in (*sep_ptr).
+ * Set (*rc) to ESLURM_DEPENDENCY for invalid job ids.
  */
 static void _parse_dependency_jobid_new(job_record_t *job_ptr,
-					list_t *new_depend_list, char *sep_ptr,
-					char **sep_ptr2, char *tok,
-					uint16_t depend_type, int select_hetero,
-					int *rc)
+					list_t *new_depend_list, char **sep_ptr,
+					char *tok, uint16_t depend_type,
+					int select_hetero, int *rc)
 {
 	depend_spec_t *dep_ptr;
 	job_record_t *dep_job_ptr = NULL;
@@ -3582,7 +3581,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 	int depend_time = 0;
 
 	while ((*rc) == SLURM_SUCCESS) {
-		job_id = strtol(sep_ptr, &tmp, 10);
+		job_id = strtol(tok, &tmp, 10);
 		if (tmp && (tmp[0] == '_')) {
 			if (tmp[1] == '*') {
 				array_task_id = INFINITE;
@@ -3636,8 +3635,8 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 		}
 
 		if (tmp[0] == '+') {
-			sep_ptr = &tmp[1]; /* skip over "+" */
-			depend_time = strtol(sep_ptr, &tmp, 10);
+			tok = tmp + 1; /* skip over "+" */
+			depend_time = strtol(tok, &tmp, 10);
 
 			if (depend_time <= 0) {
 				*rc = ESLURM_DEPENDENCY;
@@ -3732,10 +3731,9 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 		_add_dependency_to_list(new_depend_list, dep_ptr);
 		if (tmp[0] != ':')
 			break;
-		sep_ptr = tmp + 1;	/* skip over ":" */
-
+		tok = tmp + 1; /* skip over ":" */
 	}
-	*sep_ptr2 = tmp;
+	*sep_ptr = tmp;
 }
 
 /*
@@ -3963,7 +3961,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 	static int select_hetero = -1;
 	int rc = SLURM_SUCCESS;
 	uint16_t depend_type = 0;
-	char *tok, *new_array_dep, *sep_ptr, *sep_ptr2 = NULL;
+	char *tok, *new_array_dep, *sep_ptr;
 	list_t *new_depend_list = NULL;
 	depend_spec_t *dep_ptr;
 	bool or_flag = false;
@@ -4074,15 +4072,15 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 			rc = ESLURM_DEPENDENCY;
 			break;
 		}
-		sep_ptr++;	/* skip over ":" */
-		_parse_dependency_jobid_new(job_ptr, new_depend_list, sep_ptr,
-				      &sep_ptr2, tok, depend_type,
-				      select_hetero, &rc);
+		tok = sep_ptr + 1; /* skip over ":" */
+		_parse_dependency_jobid_new(job_ptr, new_depend_list, &sep_ptr,
+					    tok, depend_type, select_hetero,
+					    &rc);
 
-		if (sep_ptr2 && (sep_ptr2[0] == ',')) {
-			tok = sep_ptr2 + 1;
-		} else if (sep_ptr2 && (sep_ptr2[0] == '?')) {
-			tok = sep_ptr2 + 1;
+		if (sep_ptr && (sep_ptr[0] == ',')) {
+			tok = sep_ptr + 1;
+		} else if (sep_ptr && (sep_ptr[0] == '?')) {
+			tok = sep_ptr + 1;
 			or_flag = true;
 		} else {
 			break;
