@@ -186,9 +186,11 @@ Read Slurm configuration from the specified file. See \fBNOTES\fR below.
 .TP
 \fB\-\-generate\-openapi\-spec\fR
 Dump JSON formatted OpenAPI specification to stdout and exit immediately.
-Loads minimal plugins required. Loading of \fBslurm.conf\fR(5) can be disabled
-by passing additional arguments \fB\-f /dev/null\fR or setting
-\fBSLURM_CONF\fR=/dev/null in the environment.
+Loads minimal plugins required. All "content" fields will only be in JSON
+format even if the \fIserializer/yaml\fR plugin is present and loadable.
+Loading of \fBslurm.conf\fR(5) can be disabled by passing additional
+arguments \fB\-f /dev/null\fR or setting \fBSLURM_CONF\fR=/dev/null in the
+environment.
 .IP
 
 .TP
