@@ -111,6 +111,7 @@ Note that when tls/s2n is not configured, this line will always be seen:
 debug:  tls/none: init: tls/none loaded
 </pre>
 
+<p>
 With <a href="slurm.conf.html#OPT_TLS">DebugFlags=TLS</a> configured, an extremely verbose view of RPC connections can be seen in the logs. For example, here's what appears for a connection between slurmctld and slurmdbd:
 </p>
 <pre>
@@ -152,6 +153,6 @@ openssl x509 -req -in ctld_csr.pem -CA ca_cert.pem -CAkey ca_key.pem -out ctld_c
 chmod 0444 ctld_cert.pem
 </pre>
 
-<p style="text-align:center;">Last modified 25 May 2025</p>
+<p style="text-align:center;">Last modified 09 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
