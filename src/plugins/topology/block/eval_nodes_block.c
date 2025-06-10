@@ -228,14 +228,6 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	topo_eval->gres_per_job = gres_sched_init(job_ptr->gres_list_req);
 	rem_nodes = MIN(min_nodes, req_nodes);
 
-	if (details_ptr->segment_size > ctx->bblock_node_cnt) {
-		info("%pJ segment (%u) > bblock_node_cnt (%u) is not supported",
-		     job_ptr, details_ptr->segment_size,
-		     ctx->bblock_node_cnt);
-		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-		goto fini;
-	}
-
 	if (details_ptr->segment_size &&
 	    (rem_nodes % details_ptr->segment_size)) {
 		info("%s: segment_size (%u) does not fit the job size (%d)",
@@ -893,6 +885,9 @@ fini:
 
 			FREE_NULL_LIST(best_gres);
 			FREE_NULL_LIST(node_weight_list);
+			if (nodes_on_llblock)
+				memset(nodes_on_llblock, 0,
+				       llblock_cnt * sizeof(uint32_t));
 			bit_copybits(topo_eval->node_map, orig_node_map);
 			bit_and_not(topo_eval->node_map, alloc_node_map);
 			log_flag(SELECT_TYPE, "%s: rem_segment_cnt:%d",
