@@ -30,7 +30,7 @@ force:
 $(srun_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-install-exec-local:
+install-exec-hook:
 	umask 022; \
 	if [ -x /usr/lib/rpm/debugedit ]; then \
 	  srcdir=`cd $(top_srcdir) && pwd`; \
