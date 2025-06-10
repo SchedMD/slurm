@@ -888,6 +888,15 @@ fini:
 			if (nodes_on_llblock)
 				memset(nodes_on_llblock, 0,
 				       llblock_cnt * sizeof(uint32_t));
+			if (job_ptr->bit_flags & SPREAD_SEGMENTS) {
+				for (i = 0; i < ctx->block_count; i++) {
+					if (!bit_test(bblock_required, i))
+						continue;
+					bit_and_not(orig_node_map,
+						    ctx->block_record_table[i].
+						    node_bitmap);
+				}
+			}
 			bit_copybits(topo_eval->node_map, orig_node_map);
 			bit_and_not(topo_eval->node_map, alloc_node_map);
 			log_flag(SELECT_TYPE, "%s: rem_segment_cnt:%d",
