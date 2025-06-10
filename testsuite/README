@@ -792,6 +792,7 @@ test_102_2   /commands/sacctmgr/test_--usage.py
 test_102_3   /commands/sacctmgr/test_--json.py
 test_102_4   /commands/sacctmgr/test_ping.py
 test_102_5   sacctmgr create qos/account job and then delete account/qos
+test_102_6   Test sacctmgr remove account
 
 test_103_#   Testing of salloc options.
 =======================================
