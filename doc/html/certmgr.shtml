@@ -40,13 +40,15 @@ page for more info on how to generate this certificate/key pair.
 </p>
 
 <p>
-The following scripts need to be created and configured. See <a href="slurm.conf.html#OPT_CertificateManagerParameters">CertificateManagerParameters</a> for more details on each script.
+The following scripts need to be created and configured.
+See <a href="slurm.conf.html#OPT_CertmgrParameters">CertmgrParameters</a> for
+more details on each script.
 </p>
 
 <ul>
 <li><code>get_node_token_script</code></li>
 <li><code>generate_csr_script</code></li>
-<li><code>validate_node_token_script</code></li>
+<li><code>validate_node_script</code></li>
 <li><code>sign_csr_script</code></li>
 </ul>
 
@@ -54,7 +56,7 @@ The following scripts need to be created and configured. See <a href="slurm.conf
 slurmctld needs to be able to validate slurmd's certificate signing request.
 This is done via unique tokens that are retrieved on slurmd nodes using
 <code>get_node_token_script</code>, and validated on the slurmctld host using
-<code>validate_node_token_script</code>.
+<code>validate_node_script</code>.
 </p>
 
 <p>
@@ -76,22 +78,27 @@ echo "`cat ${NODENAME}_token.txt`" >> node_token_list.txt
 </pre>
 
 <p>
-Node "n1" needs to boot up with n1_token.txt and/or have n1_token.txt securely
-transferred to it. slurmctld needs to have secure access to node_token_list.txt
-in order to validate node tokens with the validate_node_token script.
+Node <b>n1</b> needs to boot up with <code>n1_token.txt</code> and/or have it
+securely transferred to it. <b>slurmctld</b> needs to have secure access to
+<code>node_token_list.txt</code> in order to validate node tokens with the
+<code>validate_node_script</code>.
 </p>
 
 <p>
-The get_node_token_script and generate_csr_script paths need to point to
-scripts that exist and are executable on slurmd nodes.
+The <code>get_node_token_script</code>, <code>generate_csr_script</code>, and
+<code>get_node_cert_key_script</code> paths need to point to scripts that exist
+and are executable on slurmd nodes.
 </p>
+
 <h4 id="get_node_token_script_example">
 get_node_token_script example:<a class="slurm_link" href="#get_node_token_script_example"></a>
 </h4>
+
 <p>
 Print token to stdout. Return zero exit code for success, and non-zero exit
 code for error.
 </p>
+
 <pre>
 #!/bin/bash
 
@@ -115,10 +122,12 @@ exit 0
 <h4 id="generate_csr_script_example">
 generate_csr_script example:<a class="slurm_link" href="#generate_csr_script_example"></a>
 </h4>
+
 <p>
 Print certificate signing request to stdout. Return zero exit code for success,
 and non-zero exit code for error.
 </p>
+
 <pre>
 #!/bin/bash
 
@@ -147,17 +156,48 @@ fi
 exit 0
 </pre>
 
-<p>
-The validate_node_token_script and sign_csr_script paths need to point to
-scripts that exist and are executable on slurmctld.
-</p>
-<h4 id="validate_node_token_script_example">
-validate_node_token_script example:<a class="slurm_link" href="#validate_node_token_script_example"></a>
+<h4 id="get_node_cert_key_script">
+get_node_cert_key_script example:<a class="slurm_link" href="#get_node_cert_key_script"></a>
 </h4>
+
+<p>
+Print private key used to generate CSR to stdout. Return zero exit code for
+success, and non-zero exit code for error.
+</p>
+
+<pre>
+#!/bin/bash
+
+# Slurm node name is passed in as arg $1
+NODE_PRIVATE_KEY=/etc/slurm/certmgr/$1_cert_key.pem
+
+# Check if node private key file exists
+if [ ! -f $NODE_PRIVATE_KEY ]
+then
+    echo "$BASH_SOURCE: Failed to resolve node private key path '$NODE_PRIVATE_KEY'"
+    exit 1
+fi
+
+cat $NODE_PRIVATE_KEY
+
+# Exit with exit code 0 to indicate success
+exit 0
+</pre>
+
+<p>
+The <code>validate_node_script</code> and <code>sign_csr_script</code> paths
+need to point to scripts that exist and are executable on <b>slurmctld</b>.
+</p>
+
+<h4 id="validate_node_script_example">
+validate_node_script example:<a class="slurm_link" href="#validate_node_script_example"></a>
+</h4>
+
 <p>
 Return zero exit code for valid node tokens, and non-zero exit code  for
 invalid node tokens or other errors.
 </p>
+
 <pre>
 #!/bin/bash
 
@@ -189,9 +229,12 @@ exit 0
 <h4 id="sign_csr_script_example">
 sign_csr_script example:<a class="slurm_link" href="#sign_csr_script_example"></a>
 </h4>
+
 <p>
-Print signed certificate to stdout. Return zero exit code for success, and non-zero exit code for error.
+Print signed certificate to stdout. Return zero exit code for success, and
+non-zero exit code for error.
 </p>
+
 <pre>
 #!/bin/bash
 
@@ -265,6 +308,6 @@ slurmd: TLS: Successfully got signed certificate from slurmctld:
 to show less verbose logs of certificate renewal.
 </p>
 
-<p style="text-align:center;">Last modified 25 May 2025</p>
+<p style="text-align:center;">Last modified 09 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
