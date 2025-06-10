@@ -1085,8 +1085,8 @@ def test_jobs(slurm, slurmdb):
         assert len(resp.errors) == 0
         assert resp.jobs
         for job in resp.jobs:
-            if job.name == "allocation":
-                # job hasn't settled at slurmdbd yet
+            if job.name != "updated test job":
+                # job change hasn't settled at slurmdbd yet
                 requery = True
             else:
                 requery = False
