@@ -1266,7 +1266,9 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				     _foreach_set_assoc_allow_str,
 				     &set_allow_str);
 	}
-	debug("assoc_list:%s", resv_ptr->assoc_list);
+
+	if (resv_ptr->assoc_list)
+		debug("assoc_list:%s", resv_ptr->assoc_list);
 
 end_it:
 	FREE_NULL_LIST(assoc_list_allow);
