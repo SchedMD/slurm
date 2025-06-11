@@ -158,6 +158,14 @@ typedef struct {
 } het_job_env_t;
 
 typedef struct {
+	int expand_cnt;
+	job_record_t *job_ptr;
+	list_t *unique_depend_list;
+	int rc;
+	int select_hetero;
+} update_dependency_args_t;
+
+typedef struct {
 	job_record_t *job_ptr;
 	char *sep;
 	bool set_or_flag;
@@ -3458,18 +3466,6 @@ extern depend_spec_t *find_dependency(job_record_t *job_ptr,
 			       _find_dependency, dep_ptr);
 }
 
-/*
- * Add a new dependency to the list, ensuring that the list is unique.
- * Dependencies are uniquely identified by a combination of job_id and
- * depend_type.
- */
-static void _add_dependency_to_list(list_t *depend_list,
-				    depend_spec_t *dep_ptr)
-{
-	if (!list_find_first(depend_list, _find_dependency, dep_ptr))
-		list_append(depend_list, dep_ptr);
-}
-
 static int _parse_depend_state(char **str_ptr, uint32_t *depend_state)
 {
 	char *sep_ptr;
@@ -3637,23 +3633,19 @@ static char *_parse_dependency_job_array(char *tok, uint32_t *job_id,
 }
 
 /*
- * The new dependency format is:
+ * Parse one or more ':'-separated job dependency specs of the same depend type.
+ * The new job dependency spec includes optional depend_time and job_state:
  *
- * <type:job_id[:job_id][,type:job_id[:job_id]]> or
- * <type:job_id[:job_id][?type:job_id[:job_id]]>
+ * <job_id>[+<depend_time>][(<job_state>)]
  *
- * This function parses the all job ids within a single dependency type.
- * One char past the end of valid job ids is returned in (*sep_ptr).
- * Set (*rc) to ESLURM_DEPENDENCY for invalid job ids.
+ * One char past the end of the dependency specs is returned in (*sep_ptr).
+ * Set (*rc) to ESLURM_DEPENDENCY for invalid syntax.
  */
-static void _parse_dependency_jobid_new(job_record_t *job_ptr,
-					list_t *new_depend_list, char **sep_ptr,
+static void _parse_dependency_jobid_new(list_t *new_depend_list, char **sep_ptr,
 					char *tok, uint16_t depend_type,
-					int select_hetero, int *rc)
+					int *rc)
 {
 	depend_spec_t *dep_ptr;
-	job_record_t *dep_job_ptr = NULL;
-	int expand_cnt = 0;
 	uint32_t job_id, array_task_id, depend_state;
 	char *tmp = NULL;
 	int depend_time = 0;
@@ -3663,41 +3655,6 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 		if (!tmp || (job_id == 0) ||
 		    ((tmp[0] != '\0') && (tmp[0] != ',') && (tmp[0] != '?') &&
 		     (tmp[0] != ':') && (tmp[0] != '+') && (tmp[0] != '('))) {
-			*rc = ESLURM_DEPENDENCY;
-			break;
-		}
-
-		dep_job_ptr = _find_dependent_job_ptr(job_id, &array_task_id);
-
-		if (!dep_job_ptr && fed_mgr_is_origin_job_id(job_id) &&
-		    ((depend_type == SLURM_DEPEND_AFTER_OK) ||
-		     (depend_type == SLURM_DEPEND_AFTER_NOT_OK))) {
-			/*
-			 * Reject the job since we won't be able to check if
-			 * job dependency was fulfilled or not.
-			 */
-			*rc = ESLURM_DEPENDENCY;
-			break;
-		}
-
-		/*
-		 * _find_dependent_job_ptr() may modify array_task_id, so check
-		 * if the job is the same after that.
-		 */
-		if (_depends_on_same_job(job_ptr, dep_job_ptr, job_id,
-					 array_task_id)) {
-			*rc = ESLURM_DEPENDENCY;
-			break;
-		}
-		if ((depend_type == SLURM_DEPEND_EXPAND) &&
-		    ((expand_cnt++ > 0) || (!dep_job_ptr) ||
-		     (!IS_JOB_RUNNING(dep_job_ptr)) ||
-		     (dep_job_ptr->qos_id != job_ptr->qos_id) ||
-		     (!dep_job_ptr->part_ptr) || (!job_ptr->part_ptr) ||
-		     (dep_job_ptr->part_ptr != job_ptr->part_ptr))) {
-			/*
-			 * Expand only jobs in the same QOS and partition
-			 */
 			*rc = ESLURM_DEPENDENCY;
 			break;
 		}
@@ -3718,37 +3675,13 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 			break;
 		}
 
-		if (depend_type == SLURM_DEPEND_EXPAND) {
-			_update_job_expand_dep(job_ptr, dep_job_ptr, job_id,
-					       select_hetero);
-		}
-
 		dep_ptr = xmalloc(sizeof(depend_spec_t));
+		dep_ptr->job_id = job_id;
 		dep_ptr->array_task_id = array_task_id;
 		dep_ptr->depend_type = depend_type;
-		if (job_ptr->fed_details && !fed_mgr_is_origin_job_id(job_id)) {
-			if (depend_type == SLURM_DEPEND_EXPAND) {
-				error("%s: Job expansion not permitted for remote jobs",
-				      __func__);
-				*rc = ESLURM_DEPENDENCY;
-				xfree(dep_ptr);
-				break;
-			}
-			/* The dependency is on a remote cluster */
-			dep_ptr->depend_flags |= SLURM_FLAGS_REMOTE;
-			dep_job_ptr = NULL;
-		}
-		if (dep_job_ptr) {	/* job still active */
-			if (array_task_id == NO_VAL)
-				dep_ptr->job_id = dep_job_ptr->job_id;
-			else
-				dep_ptr->job_id = dep_job_ptr->array_job_id;
-		} else
-			dep_ptr->job_id = job_id;
-		dep_ptr->job_ptr = dep_job_ptr;
 		dep_ptr->depend_time = depend_time;
 		dep_ptr->depend_state = depend_state;
-		_add_dependency_to_list(new_depend_list, dep_ptr);
+		list_append(new_depend_list, dep_ptr);
 		if (tmp[0] != ':')
 			break;
 		tok = tmp + 1; /* skip over ":" */
@@ -3762,12 +3695,10 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
  * One char past the end of a valid job id will be returned in (*sep_ptr).
  * For an invalid job id, (*rc) will be set to ESLURM_DEPENDENCY.
  */
-static void _parse_dependency_jobid_old(job_record_t *job_ptr,
-					list_t *new_depend_list, char **sep_ptr,
+static void _parse_dependency_jobid_old(list_t *new_depend_list, char **sep_ptr,
 					char *tok, int *rc)
 {
 	depend_spec_t *dep_ptr;
-	job_record_t *dep_job_ptr = NULL;
 	uint32_t job_id, array_task_id;
 	char *tmp = NULL;
 
@@ -3776,36 +3707,14 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 		*rc = ESLURM_DEPENDENCY;
 		return;
 	}
-	/*
-	 * _find_dependent_job_ptr() may modify array_task_id, so check
-	 * if the job is the same after that.
-	 */
-	dep_job_ptr = _find_dependent_job_ptr(job_id, &array_task_id);
-	if (_depends_on_same_job(job_ptr, dep_job_ptr, job_id, array_task_id)) {
-		*rc = ESLURM_DEPENDENCY;
-		return;
-	}
 
 	dep_ptr = xmalloc(sizeof(depend_spec_t));
+	dep_ptr->job_id = job_id;
 	dep_ptr->array_task_id = array_task_id;
 	dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
-	if (job_ptr->fed_details &&
-	    !fed_mgr_is_origin_job_id(job_id)) {
-		/* The dependency is on a remote cluster */
-		dep_ptr->depend_flags |= SLURM_FLAGS_REMOTE;
-		dep_job_ptr = NULL;
-	}
-	if (dep_job_ptr) {
-		if (array_task_id == NO_VAL) {
-			dep_ptr->job_id = dep_job_ptr->job_id;
-		} else {
-			dep_ptr->job_id = dep_job_ptr->array_job_id;
-		}
-	} else
-		dep_ptr->job_id = job_id;
-	dep_ptr->job_ptr = dep_job_ptr; /* Can be NULL */
+
 	*sep_ptr = tmp;
-	_add_dependency_to_list(new_depend_list, dep_ptr);
+	list_append(new_depend_list, dep_ptr);
 }
 
 static int _foreach_update_job_depenency_list(void *x, void *arg)
@@ -3959,44 +3868,27 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 }
 
 /*
- * Parse a job dependency string and use it to establish a "depend_spec"
- * list of dependencies. We accept both old format (a single job ID) and
- * new format (e.g. "afterok:123:124,after:128").
- * IN job_ptr - job record to have dependency and depend_list updated
- * IN new_depend - new dependency description
- * RET returns an error code from slurm_errno.h
+ * Parse a dependency string and populate specified fields:
+ * job_id, array_task_id, depend_type, depend_time, and depend_state
+ *
+ * IN  dependency - Dependency string to parse.
+ * OUT rc - Set to an error code if the string could not be parsed.
+ * OUT or_flag - Set to true when separated by ORs, otherwise false.
+ * Returns a list of depend_spec_t or NULL to indicate empty input
+ * when rc is SLURM_SUCCESS. Caller must free.
  */
-extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
+static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 {
-	static int select_hetero = -1;
-	int rc = SLURM_SUCCESS;
 	uint16_t depend_type = 0;
 	char *tok, *new_array_dep, *sep_ptr;
 	list_t *new_depend_list = NULL;
 	depend_spec_t *dep_ptr;
-	bool or_flag = false;
+	bool has_or = false;
 
-	if (!job_ptr->details)
-		return EINVAL;
-
-	if (select_hetero == -1) {
-		/*
-		 * Determine if the select plugin supports heterogeneous
-		 * GRES allocations (count differ by node): 1=yes, 0=no
-		 */
-		if (xstrstr(slurm_conf.select_type, "cons_tres"))
-			select_hetero = 1;
-		else
-			select_hetero = 0;
-	}
-
-	/* Clear dependencies on NULL, "0", or empty dependency input */
-	job_ptr->details->expanding_jobid = 0;
+	/* Empty dependency input */
 	if (!new_depend || (new_depend[0] == '\0') ||
 	    ((new_depend[0] == '0') && (new_depend[1] == '\0'))) {
-		xfree(job_ptr->details->dependency);
-		FREE_NULL_LIST(job_ptr->details->depend_list);
-		return rc;
+		return NULL;
 	}
 
 	new_depend_list = list_create(xfree_ptr);
@@ -4004,49 +3896,45 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 		tok = new_array_dep;
 	else
 		tok = new_depend;
-	/* validate new dependency string */
-	while (rc == SLURM_SUCCESS) {
+
+	while ((*rc) == SLURM_SUCCESS) {
 		/* test singleton dependency flag */
 		if (xstrncasecmp(tok, "singleton", 9) == 0) {
 			uint32_t state;
 			tok += 9; /* skip past "singleton" */
 			depend_type = SLURM_DEPEND_SINGLETON;
 			if (_parse_depend_state(&tok, &state)) {
-				rc = ESLURM_DEPENDENCY;
+				*rc = ESLURM_DEPENDENCY;
 				break;
 			}
-			if (disable_remote_singleton &&
-			    !fed_mgr_is_origin_job(job_ptr)) {
-				/* Singleton disabled for non-origin cluster */
-			} else {
-				dep_ptr = xmalloc(sizeof(depend_spec_t));
-				dep_ptr->depend_state = state;
-				dep_ptr->depend_type = depend_type;
-				/* dep_ptr->job_id = 0;	set by xmalloc */
-				/* dep_ptr->job_ptr = NULL; set by xmalloc */
-				/* dep_ptr->singleton_bits = 0;set by xmalloc */
-				_add_dependency_to_list(new_depend_list,
-							dep_ptr);
-			}
+
+			dep_ptr = xmalloc(sizeof(depend_spec_t));
+			dep_ptr->depend_state = state;
+			dep_ptr->depend_type = depend_type;
+			/* dep_ptr->job_id = 0;	set by xmalloc */
+			/* dep_ptr->job_ptr = NULL; set by xmalloc */
+			/* dep_ptr->singleton_bits = 0;set by xmalloc */
+			list_append(new_depend_list, dep_ptr);
+
 			if (tok[0] == ',') {
 				tok++;
 				continue;
 			} else if (tok[0] == '?') {
 				tok++;
-				or_flag = true;
+				has_or = true;
 				continue;
 			}
 			if (tok[0] != '\0')
-				rc = ESLURM_DEPENDENCY;
+				*rc = ESLURM_DEPENDENCY;
 			break;
 		}
 
 		/* Test for old format, just a job ID */
 		sep_ptr = strchr(tok, ':');
 		if (!sep_ptr && (tok[0] >= '0') && (tok[0] <= '9')) {
-			_parse_dependency_jobid_old(job_ptr, new_depend_list,
-					      &sep_ptr, tok, &rc);
-			if (rc)
+			_parse_dependency_jobid_old(new_depend_list, &sep_ptr,
+						    tok, rc);
+			if (*rc)
 				break;
 			if (sep_ptr && (sep_ptr[0] == ',')) {
 				tok = sep_ptr + 1;
@@ -4055,7 +3943,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 				break;
 			}
 		} else if (!sep_ptr) {
-			rc = ESLURM_DEPENDENCY;
+			*rc = ESLURM_DEPENDENCY;
 			break;
 		}
 
@@ -4073,47 +3961,205 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 		else if (!xstrncasecmp(tok, "after:", 6))
 			depend_type = SLURM_DEPEND_AFTER;
 		else if (!xstrncasecmp(tok, "expand:", 7)) {
-			if (!permit_job_expansion()) {
-				rc = ESLURM_NOT_SUPPORTED;
-				break;
-			}
 			depend_type = SLURM_DEPEND_EXPAND;
 		} else {
-			rc = ESLURM_DEPENDENCY;
+			*rc = ESLURM_DEPENDENCY;
 			break;
 		}
 		tok = sep_ptr + 1; /* skip over ":" */
-		_parse_dependency_jobid_new(job_ptr, new_depend_list, &sep_ptr,
-					    tok, depend_type, select_hetero,
-					    &rc);
+		_parse_dependency_jobid_new(new_depend_list, &sep_ptr, tok,
+					    depend_type, rc);
 
 		if (sep_ptr && (sep_ptr[0] == ',')) {
 			tok = sep_ptr + 1;
 		} else if (sep_ptr && (sep_ptr[0] == '?')) {
 			tok = sep_ptr + 1;
-			or_flag = true;
+			has_or = true;
 		} else {
 			break;
 		}
 	}
+	xfree(new_array_dep);
+	*or_flag = has_or;
+	return new_depend_list;
+}
+
+/*
+ * Used by list_delete_all().
+ */
+static int _update_job_dependency(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+	update_dependency_args_t *update_args = arg;
+	slurm_depend_types_t dep_type;
+	job_record_t *dep_job_ptr, *job_ptr = update_args->job_ptr;
+	uint32_t job_id;
+	bool dep_is_remote;
+
+	/* Skip checks if we already have an error */
+	if (update_args->rc)
+		return 1;
+
+	job_id = dep_ptr->job_id;
+	dep_type = dep_ptr->depend_type;
+
+	dep_is_remote = update_args->job_ptr->fed_details &&
+			!fed_mgr_is_origin_job_id(job_id);
+
+	/* Finish populating fields */
+	dep_job_ptr = _find_dependent_job_ptr(job_id, &dep_ptr->array_task_id);
+
+	if (!dep_job_ptr && fed_mgr_is_origin_job_id(job_id) &&
+	    ((dep_type == SLURM_DEPEND_AFTER_OK) ||
+	     (dep_type == SLURM_DEPEND_AFTER_NOT_OK))) {
+		/*
+		 * Reject the job since we won't be able to check if
+		 * job dependency was fulfilled or not.
+		 */
+		update_args->rc = ESLURM_DEPENDENCY;
+		return 1;
+	}
+
+	/*
+	 * _find_dependent_job_ptr() may modify array_task_id, so check
+	 * if the job is the same after that.
+	 */
+	if (_depends_on_same_job(job_ptr, dep_job_ptr, job_id,
+				 dep_ptr->array_task_id)) {
+		update_args->rc = ESLURM_DEPENDENCY;
+		return 1;
+	}
+
+	if (dep_is_remote) {
+		dep_ptr->depend_flags |= SLURM_FLAGS_REMOTE;
+		dep_job_ptr = NULL;
+	}
+
+	if (dep_job_ptr) { /* job still active */
+		if (dep_ptr->array_task_id == NO_VAL)
+			dep_ptr->job_id = dep_job_ptr->job_id;
+		else
+			dep_ptr->job_id = dep_job_ptr->array_job_id;
+	}
+	dep_ptr->job_ptr = dep_job_ptr; /* Can be NULL */
+
+	/* Ignore duplicates */
+	if (list_find_first(update_args->unique_depend_list, _find_dependency,
+			    dep_ptr))
+		return 1;
+
+	/* Enforce policy */
+	if (dep_type == SLURM_DEPEND_SINGLETON) {
+		if (disable_remote_singleton &&
+		    !fed_mgr_is_origin_job(job_ptr)) {
+			/* Singleton disabled for non-origin cluster */
+			return 1;
+		}
+	} else if (dep_type == SLURM_DEPEND_EXPAND) {
+		if (!permit_job_expansion()) {
+			update_args->rc = ESLURM_NOT_SUPPORTED;
+			return 1;
+		}
+		if (dep_is_remote) {
+			error("%s: Job expansion not permitted for remote jobs",
+			      __func__);
+			update_args->rc = ESLURM_DEPENDENCY;
+			return 1;
+		}
+		if ((update_args->expand_cnt++ > 0) || (!dep_job_ptr) ||
+		    (!IS_JOB_RUNNING(dep_job_ptr)) ||
+		    (dep_job_ptr->qos_id != job_ptr->qos_id) ||
+		    (!dep_job_ptr->part_ptr) || (!job_ptr->part_ptr) ||
+		    (dep_job_ptr->part_ptr != job_ptr->part_ptr)) {
+			/*
+			 * Expand only jobs in the same QOS and partition
+			 */
+			update_args->rc = ESLURM_DEPENDENCY;
+			return 1;
+		}
+
+		_update_job_expand_dep(job_ptr, dep_job_ptr, job_id,
+				       update_args->select_hetero);
+	}
+
+	_foreach_depend_list_copy(dep_ptr, &update_args->unique_depend_list);
+	return 1;
+}
+
+/*
+ * Parse a job dependency string and use it to establish a "depend_spec"
+ * list of dependencies. We accept both old format (a single job ID) and
+ * new format (e.g. "afterok:123:124,after:128").
+ * IN job_ptr - job record to have dependency and depend_list updated
+ * IN new_depend - new dependency description
+ * RET returns an error code from slurm_errno.h
+ */
+extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
+{
+	static int select_hetero = -1;
+	int rc = SLURM_SUCCESS;
+	update_dependency_args_t update_args = {
+		.job_ptr = job_ptr,
+	};
+	list_t *new_depend_list, *unique_depend_list;
+	bool or_flag = false;
+
+	if (!job_ptr->details)
+		return EINVAL;
+	job_ptr->details->expanding_jobid = 0;
+
+	if (select_hetero == -1) {
+		/*
+		 * Determine if the select plugin supports heterogeneous
+		 * GRES allocations (count differ by node): 1=yes, 0=no
+		 */
+		if (xstrstr(slurm_conf.select_type, "cons_tres"))
+			select_hetero = 1;
+		else
+			select_hetero = 0;
+	}
+
+	new_depend_list = _parse_dependency_str(new_depend, &rc, &or_flag);
+
+	/* Invalid syntax */
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	/* Clear dependencies on empty dependency input */
+	if (!new_depend_list) {
+		xfree(job_ptr->details->dependency);
+		FREE_NULL_LIST(job_ptr->details->depend_list);
+		return rc;
+	}
+
+	/*
+	 * Enforce dependency policies and populate state-dependent fields.
+	 * Copy unique entries to unique_depend_list.
+	 */
+	update_args.select_hetero = select_hetero;
+	unique_depend_list = list_create(xfree_ptr);
+	update_args.unique_depend_list = unique_depend_list;
+	list_delete_all(new_depend_list, _update_job_dependency, &update_args);
+	FREE_NULL_LIST(new_depend_list);
+	rc = update_args.rc;
 
 	if (rc == SLURM_SUCCESS) {
 		/* test for circular dependencies (e.g. A -> B -> A) */
 		(void) _scan_depend(NULL, job_ptr);
-		if (_scan_depend(new_depend_list, job_ptr))
+		if (_scan_depend(unique_depend_list, job_ptr))
 			rc = ESLURM_CIRCULAR_DEPENDENCY;
 	}
 
 	if (rc == SLURM_SUCCESS) {
 		FREE_NULL_LIST(job_ptr->details->depend_list);
-		job_ptr->details->depend_list = new_depend_list;
+		job_ptr->details->depend_list = unique_depend_list;
 		_depend_list2str(job_ptr, or_flag);
 		if (slurm_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
 			print_job_dependency(job_ptr, __func__);
 	} else {
-		FREE_NULL_LIST(new_depend_list);
+		FREE_NULL_LIST(unique_depend_list);
 	}
-	xfree(new_array_dep);
+
 	return rc;
 }
 
