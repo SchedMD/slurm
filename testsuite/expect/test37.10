@@ -156,7 +156,6 @@ proc squeue { options regex } {
 proc scancel { options argument } {
 	global my_scancel
 
-	set matches 0
 	set command "$my_scancel "
 	append command $options
 	append command " $argument"
@@ -165,6 +164,45 @@ proc scancel { options argument } {
 	sleep 2
 }
 
+proc verify_scancel { options jobid regex } {
+	global fedc1 fedc2 fedc3
+
+	scancel $options $jobid
+
+	set rm [find_reg $jobid]
+	set regex [mod_regex $rm $regex]
+
+	squeue " -M$fedc1,$fedc2,$fedc3 " $regex
+
+	return $regex
+}
+
+proc make_regex { with_pd } {
+	global jid regs fedc1 fedc2 fedc3 eol
+
+	set regpd ""
+	set regs ""
+	if { $with_pd } {
+		set regpd "\\s*$jid(PD).+PD.+$eol"
+		set regs "$regpd "
+	}
+
+	set reg1a "\\s*$jid($fedc1).+R.+$eol"
+	set reg1b "\\s*$jid($fedc2).+RV.+$eol"
+	set reg1c "\\s*$jid($fedc3).+RV.+$eol"
+	set reg2 "\\s*$jid($fedc2).+R.+$eol"
+	set reg3 "\\s*$jid($fedc3).+R.+$eol"
+
+	set regs "$regs$reg1a $reg1b $reg1c $reg2 $reg3"
+
+	set regf1 "CLUSTER: $fedc1\\s*JOBID.*?$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
+	set regf2 "CLUSTER: $fedc2\\s*JOBID.*?$regpd$reg2$eol"
+	set regf3 "CLUSTER: $fedc3\\s*JOBID.*?$regpd$reg3"
+
+	set regex "$regf1$regf2$regf3"
+
+	return $regex
+}
 
 proc cancel_federation_jobs { } {
 	global scancel user_name fedc1 fedc2 fedc3
@@ -211,101 +249,6 @@ if {[setup_federation $fed_name]} {
 # Get number of nodes per cluster
 set node_count [llength [get_nodes_by_state idle,alloc,comp "[default_partition] --local"]]
 
-log_info "################################################################"
-log_info "Setup cluster features"
-log_info "################################################################"
-
-set matches 0
-spawn $sacctmgr -i modify cluster $fedc1 set features=fa
-expect {
-	-re "Setting$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s*Feature\\s*=\\s*fa" {
-		incr matches
-		exp_continue
-	}
-	-re "Modified cluster...$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s*$fedc1$eol" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr mod not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 4} {
-	fail "Unexpected error (got $matches)"
-}
-
-set matches 0
-spawn $sacctmgr -i modify cluster $fedc2 set features=fb
-expect {
-	-re "Setting$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s*Feature\\s*=\\s*fb" {
-		incr matches
-		exp_continue
-	}
-	-re "Modified cluster...$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s*$fedc2$eol" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr mod not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 4} {
-	fail "Unexpected error (got $matches)"
-}
-
-set matches 0
-spawn $sacctmgr -i modify cluster $fedc3 set features=fc
-expect {
-
-	-re "Setting$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s*Feature\\s*=\\s*fc" {
-		incr matches
-		exp_continue
-	}
-	-re "Modified cluster...$eol" {
-		incr matches
-		exp_continue
-	}
-	-re "^\\s*$fedc3$eol" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr mod not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 4} {
-	fail "Unexpected error (got $matches)"
-}
-
 make_bash_script $file_in "sleep 900"
 
 log_info "################################################################"
@@ -321,50 +264,62 @@ set jid([wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]) $ji2
 set jid(PD) [sbatch]
 wait_for_fed_job $jid(PD) PENDING $fedc1,$fedc2,$fedc3
 
-set regpd "\\s*$jid(PD).+PD.+$eol"
-set reg1a "\\s*$jid($fedc1).+R.+$eol"
-set reg1b "\\s*$jid($fedc2).+RV.+$eol"
-set reg1c "\\s*$jid($fedc3).+RV.+$eol"
-set reg2 "\\s*$jid($fedc2).+R.+$eol"
-set reg3 "\\s*$jid($fedc3).+R.+$eol"
-
-set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
-
-set regf1 "CLUSTER: $fedc1\\s*JOBID.*?$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
-set regf2 "CLUSTER: $fedc2\\s*JOBID.*?$regpd$reg2$eol"
-set regf3 "CLUSTER: $fedc3\\s*JOBID.*?$regpd$reg3"
-
-set regex "$regf1$regf2$regf3"
-
+set regex [make_regex 1]
 squeue " -M$fedc1,$fedc2,$fedc3 " $regex
 
-scancel "" $jid(PD)
+set regex [verify_scancel "" $jid(PD) $regex]
+set regex [verify_scancel "" $jid($fedc1) $regex]
+set regex [verify_scancel "" $jid($fedc2) $regex]
+set regex [verify_scancel "" $jid($fedc3) $regex]
 
-set rm [find_reg $jid(PD)]
-set regex [mod_regex $rm $regex]
+log_info "################################################################"
+log_info "Test scancel -M with non-origin, participant sibling clusters"
+log_info "################################################################"
 
+set ji0 [sbatch]
+set cid($ji0)  [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji0)) $ji0
+set ji1 [sbatch]
+set cid($ji1)  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji1)) $ji1
+set ji2 [sbatch]
+set cid($ji2)  [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji2)) $ji2
+set jid(PD) [sbatch]
+wait_for_fed_job $jid(PD) PENDING $fedc1,$fedc2,$fedc3
+
+set regex [make_regex 1]
 squeue " -M$fedc1,$fedc2,$fedc3 " $regex
 
-scancel "" $jid($fedc1)
+set regex [verify_scancel "-M$fedc3" $jid(PD) $regex]
+set regex [verify_scancel "-M$cid($ji0)" $ji0 $regex]
+set regex [verify_scancel "-M$cid($ji1)" $ji1 $regex]
+set regex [verify_scancel "-M$cid($ji2)" $ji2 $regex]
 
-set rm [find_reg $jid($fedc1)]
-set regex [mod_regex $rm $regex]
+log_info "################################################################"
+log_info "Test scancel -M with non-participant sibling clusters"
+log_info "################################################################"
 
+set ji0 [sbatch]
+set cid($ji0)  [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji0)) $ji0
+set ji1 [sbatch]
+set cid($ji1)  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji1)) $ji1
+set ji2 [sbatch]
+set cid($ji2)  [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji2)) $ji2
+
+set regex [make_regex 0]
 squeue " -M$fedc1,$fedc2,$fedc3 " $regex
 
-scancel "" $jid($fedc2)
+set regex [verify_scancel "-M$fedc3" $jid($fedc2) $regex]
+set regex [verify_scancel "-M$fedc2" $jid($fedc3) $regex]
+set regex [verify_scancel "-M$fedc2" $jid($fedc1) $regex]
 
-set rm [find_reg $jid($fedc2)]
-set regex [mod_regex $rm $regex]
-
-squeue " -M$fedc1,$fedc2,$fedc3 " $regex
-
-scancel "" $jid($fedc3)
-
-set rm [find_reg $jid($fedc3)]
-set regex [mod_regex $rm $regex]
-
-squeue " -M$fedc1,$fedc2,$fedc3 " $regex
+log_info "################################################################"
+log_info "Test scancel -u from sibling cluster"
+log_info "################################################################"
 
 set ji0 [sbatch]
 set cid($ji0)  [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
@@ -379,131 +334,11 @@ set ji3 [sbatch]
 set jid(PD) $ji3
 wait_for_fed_job $ji3 PENDING $fedc1,$fedc2,$fedc3
 
-set regpd "\\s*$jid(PD).+PD.+$eol"
-set reg1a "\\s*$jid($fedc1).+R.+$eol"
-set reg1b "\\s*$jid($fedc2).+RV.+$eol"
-set reg1c "\\s*$jid($fedc3).+RV.+$eol"
-set reg2 "\\s*$jid($fedc2).+R.+$eol"
-set reg3 "\\s*$jid($fedc3).+R.+$eol"
-
-set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
-
-set regf1 "CLUSTER: $fedc1\\s*JOBID.*?$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
-set regf2 "CLUSTER: $fedc2\\s*JOBID.*?$regpd$reg2$eol"
-set regf3 "CLUSTER: $fedc3\\s*JOBID.*?$regpd$reg3"
-
-set regex "$regf1$regf2$regf3"
-
-squeue " -M$fedc1,$fedc2,$fedc3 " $regex
-
-scancel "-M$fedc3" $ji3
-
-set rm [find_reg $ji3]
-set regex [mod_regex $rm $regex]
-
-squeue " -M$fedc1,$fedc2,$fedc3 " $regex
-
-scancel "-M$cid($ji0)" $ji0
-
-set rm [find_reg $ji0]
-set regex [mod_regex $rm $regex]
-
-squeue " -M$fedc1,$fedc2,$fedc3 " $regex
-
-scancel "-M$cid($ji1)" $ji1
-
-set rm [find_reg $ji1]
-set regex [mod_regex $rm $regex]
-
-squeue " -M$fedc1,$fedc2,$fedc3 " $regex
-
-scancel "-M$cid($ji2)" $ji2
-
-set rm [find_reg $ji2]
-set regex [mod_regex $rm $regex]
-
-squeue " -M$fedc1,$fedc2,$fedc3 " $regex
-
-set ji0 [sbatch]
-set cid($ji0)  [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
-set jid($cid($ji0)) $ji0
-set ji1 [sbatch]
-set cid($ji1)  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
-set jid($cid($ji1)) $ji1
-set ji2 [sbatch]
-set cid($ji2)  [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
-set jid($cid($ji2)) $ji2
-
-set reg1a "\\s*$jid($fedc1).+R.+$eol"
-set reg1b "\\s*$jid($fedc2).+RV.+$eol"
-set reg1c "\\s*$jid($fedc3).+RV.+$eol"
-set reg2 "\\s*$jid($fedc2).+R.+$eol"
-set reg3 "\\s*$jid($fedc3).+R.+$eol"
-
-set regs "$reg1a $reg1b $reg1c $reg2 $reg3"
-
-set regf1 "CLUSTER: $fedc1\\s*JOBID.*?$reg1a\\s*($reg1b|$reg1c){2}$eol"
-set regf2 "CLUSTER: $fedc2\\s*JOBID.*?$reg2$eol"
-set regf3 "CLUSTER: $fedc3\\s*JOBID.*?$reg3"
-
-set regex "$regf1$regf2$regf3"
-
-squeue " -M$fedc1,$fedc2,$fedc3 " $regex
-
-scancel "-M$fedc3" $jid($fedc2)
-
-set rm [find_reg $jid($fedc2)]
-set regex [mod_regex $rm $regex]
-
-squeue " -M$fedc1,$fedc2,$fedc3 " $regex
-
-scancel "-M$fedc2" $jid($fedc3)
-
-set rm [find_reg $jid($fedc3)]
-set regex [mod_regex $rm $regex]
-
-squeue " -M$fedc1,$fedc2,$fedc3 " $regex
-
-scancel "-M$fedc2" $jid($fedc1)
-
-set rm [find_reg $jid($fedc1)]
-set regex [mod_regex $rm $regex]
-
-squeue " -M$fedc1,$fedc2,$fedc3 " $regex
-
-set ji0 [sbatch]
-set cid($ji0)  [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
-set jid($cid($ji0)) $ji0
-set ji1 [sbatch]
-set cid($ji1)  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
-set jid($cid($ji1)) $ji1
-set ji2 [sbatch]
-set cid($ji2)  [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
-set jid($cid($ji2)) $ji2
-set ji3 [sbatch]
-set jid(PD) $ji3
-wait_for_fed_job $ji3 PENDING $fedc1,$fedc2,$fedc3
-
-set regpd "\\s*$jid(PD).+PD.+$eol"
-set reg1a "\\s*$jid($fedc1).+R.+$eol"
-set reg1b "\\s*$jid($fedc2).+RV.+$eol"
-set reg1c "\\s*$jid($fedc3).+RV.+$eol"
-set reg2 "\\s*$jid($fedc2).+R.+$eol"
-set reg3 "\\s*$jid($fedc3).+R.+$eol"
-
-set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
-
-set regf1 "CLUSTER: $fedc1\\s*JOBID.*?$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
-set regf2 "CLUSTER: $fedc2\\s*JOBID.*?$regpd$reg2$eol"
-set regf3 "CLUSTER: $fedc3\\s*JOBID.*?$regpd$reg3"
-
-set regex "$regf1$regf2$regf3"
-
+set regex [make_regex 1]
 squeue " -M$fedc1,$fedc2,$fedc3 " $regex
 
 set my_scancel "${fed_slurm_base}/$fedc3/bin/scancel"
-spawn $my_scancel -u $user_name
-log_trace "Here1"
+scancel "-u $user_name" ""
 
 wait_for_fed_job $ji0 DONE $cid($ji0)
 wait_for_fed_job $ji1 DONE $cid($ji1)
