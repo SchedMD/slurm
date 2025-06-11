@@ -53,6 +53,7 @@ enum mpi_plugin_type {
 	MPI_PLUGIN_PMIX3 = 105,
 	MPI_PLUGIN_PMIX4 = 106,
 	MPI_PLUGIN_PMIX5 = 107,
+	MPI_PLUGIN_PMIX6 = 108,
 };
 
 typedef struct slurm_mpi_context *slurm_mpi_context_t;

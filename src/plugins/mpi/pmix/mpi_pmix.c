@@ -92,6 +92,9 @@ const uint32_t plugin_id = MPI_PLUGIN_PMIX4;
 #elif (HAVE_PMIX_VER == 5)
 const char plugin_type[] = "mpi/pmix_v5";
 const uint32_t plugin_id = MPI_PLUGIN_PMIX5;
+#elif (HAVE_PMIX_VER == 6)
+const char plugin_type[] = "mpi/pmix_v6";
+const uint32_t plugin_id = MPI_PLUGIN_PMIX6;
 #endif
 
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
