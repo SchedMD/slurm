@@ -3123,14 +3123,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 				    node_ptr->name) != SLURM_SUCCESS) {
 		error_code = SLURM_ERROR;
 		xstrcat(reason_down, "Could not unpack gres data");
-	} else if (gres_node_config_validate(
-				node_ptr->name, config_ptr->gres,
-				&node_ptr->gres, &node_ptr->gres_list,
-				reg_msg->threads, reg_msg->cores,
-				reg_msg->sockets,
-				slurm_conf.conf_flags & CONF_FLAG_OR,
-				&reason_down)
-		   != SLURM_SUCCESS) {
+	} else if (gres_node_config_validate(node_ptr, reg_msg->threads,
+					     reg_msg->cores, reg_msg->sockets,
+					     (slurm_conf.conf_flags &
+					      CONF_FLAG_OR),
+					     &reason_down) != SLURM_SUCCESS) {
 		error_code = EINVAL;
 		/* reason_down set in function above */
 	}
@@ -4650,13 +4647,14 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 						  NULL)))
 			goto fini;
 
-		rc = gres_node_config_validate(
-			node_ptr->name, node_ptr->config_ptr->gres,
-			&node_ptr->gres, &node_ptr->gres_list,
-			node_ptr->config_ptr->threads,
-			node_ptr->config_ptr->cores,
-			node_ptr->config_ptr->tot_sockets,
-			(slurm_conf.conf_flags & CONF_FLAG_OR), NULL);
+		rc = gres_node_config_validate(node_ptr,
+					       node_ptr->config_ptr->threads,
+					       node_ptr->config_ptr->cores,
+					       node_ptr->config_ptr
+						       ->tot_sockets,
+					       (slurm_conf.conf_flags &
+						CONF_FLAG_OR),
+					       NULL);
 	}
 
 fini:
