@@ -280,7 +280,7 @@ static struct s2n_config *_create_config(void)
 
 	if (xstrstr(slurm_conf.tls_params, "load_system_certificates")) {
 		if (!(new_conf = s2n_config_new())) {
-			on_s2n_error(NULL, s2n_config_new_minimal);
+			on_s2n_error(NULL, s2n_config_new);
 			return NULL;
 		}
 	} else {
@@ -693,7 +693,7 @@ extern int fini(void)
 
 	if (server_config &&
 	    s2n_config_free_cert_chain_and_key(server_config)) {
-		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
+		on_s2n_error(NULL, s2n_config_free_cert_chain_and_key);
 	}
 
 	if (own_cert_and_key &&
@@ -844,11 +844,11 @@ static void _cleanup_tls_conn(tls_conn_t *conn)
 	if (conn->s2n_config && (conn->s2n_config != server_config) &&
 	    (conn->s2n_config != client_config))
 		if (s2n_config_free(conn->s2n_config))
-			on_s2n_error(NULL, s2n_config_free);
+			on_s2n_error(conn, s2n_config_free);
 
 	if (conn->cert_and_key &&
 	    (s2n_cert_chain_and_key_free(conn->cert_and_key) != S2N_SUCCESS))
-		on_s2n_error(NULL, s2n_cert_chain_and_key_free);
+		on_s2n_error(conn, s2n_cert_chain_and_key_free);
 
 	if (conn->s2n_conn && s2n_connection_free(conn->s2n_conn) < 0)
 		on_s2n_error(conn, s2n_connection_free);
