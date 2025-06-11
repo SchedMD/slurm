@@ -1187,7 +1187,7 @@ def reservation(setup):
     )
 
 
-def test_resv(slurm, reservation):
+def test_resv(slurm, reservation, admin_level):
     resp = slurm.slurm_v0040_get_reservation(resv_name)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
@@ -1199,6 +1199,13 @@ def test_resv(slurm, reservation):
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0
     assert resp.reservations
+
+    # Delete reservation
+    resp = slurm.slurm_v0040_delete_reservation(resv_name)
+    assert not resp.warnings and not resp.errors
+    assert resv_name not in [
+        r.name for r in slurm.slurm_v0040_get_reservations().reservations
+    ], f"Reservation {resv_name} should be deleted"
 
 
 def test_partitions(slurm):
