@@ -157,11 +157,12 @@ def assert_assoc_ctld(old_assoc_ctld):
             new_users.append(re.sub(r"DefWckey=\(null\)", "DefWckey=", new_line))
             continue
 
-        # TODO: Remove once t22851 is fixed
-        if re.search(r"ParentAccount=root\(1\) \S+ DefAssoc=No", old_line):
-            logging.info("Removing DefAssoc in account assoc due t22851")
-            old_line = re.sub(r"DefAssoc=\S+", "", old_line)
-            new_line = re.sub(r"DefAssoc=\S+", "", new_line)
+        # TODO: Remove once t22851 is fixed in old versions
+        if atf.get_version(slurm_prefix=atf.properties["old-slurm-prefix"]) < (25, 5):
+            if re.search(r"ParentAccount=root\(1\) \S+ DefAssoc=No", old_line):
+                logging.warning("Removing DefAssoc in account assoc due t22851")
+                old_line = re.sub(r"DefAssoc=\S+", "", old_line)
+                new_line = re.sub(r"DefAssoc=\S+", "", new_line)
 
         assert new_line == old_line
 
