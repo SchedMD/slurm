@@ -169,6 +169,29 @@ Both <i>AutoDetect=nvml</i> and <i>AutoDetect=nvidia</i> detect NVIDIA GPUs.
 <i>AutoDetect=nvidia</i> (added in Slurm 24.11) doesn't require the
 nvml library to be installed, but doesn't detect MIGs or NVlinks.</p>
 
+<p>When AutoDetect needs to load a GPU management library as stated above it
+will usually unload this library immediately after the slurmd is started
+allowing other processes to access the library afterwards. This is not the case
+when <i>AcctGatherEnergyType=acct_gather_energy/gpu</i> is set in the
+slurm.conf. In this configuration the slurmd will keep the GPU library specified
+by the AutoDetect option loaded to track GPU energy usage.</p>
+
+<p><i>AutoDetect=nvml</i> and <i>AutoDetect=rsmi</i> also cause the slurmstepd
+to load and hold open the library to perform accounting on GPU usage when the
+associated step has requested a gpu. If you do not want this to happen
+have <i>JobAcctGatherParams=DisableGPUAcct</i> in the slurm.conf.</p>
+
+<p><i>AutoDetect=nvml</i>, <i>AutoDetect=rsmi</i> and <i>AutoDetect=oneapi</i>
+will cause the slurmstepd to load and hold open the library to configure the gpu
+frequency when <i>--gpu-freq</i> is requested with the job.</p>
+
+<p>In the above situations when a GPU management library is held open by a
+process it makes it so any other process can not configure the GPU. If you are
+requiring to make changes in a Prolog or such you will want to not
+have <i>AcctGatherEnergyType=acct_gather_energy/gpu</i> in the slurm.conf. If
+jobs share gpus on the node, you may also need to set
+<i>JobAcctGatherParams=DisableGPUAcct</i> in the slurm.conf.</p>
+
 <P>By default, all system-detected devices are added to the node.
 However, if <i>Type</i> and <i>File</i> in gres.conf match a GPU on
 the system, any other properties explicitly specified (e.g.

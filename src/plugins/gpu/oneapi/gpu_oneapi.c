@@ -128,6 +128,37 @@ static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
 }
 
 /*
+ * Initialize the oneapi library.
+ */
+static ze_result_t _oneapi_init()
+{
+	static pid_t init_pid = 0;
+	pid_t my_pid = conf->pid ? conf->pid : getpid();
+	ze_result_t oneapi_rc;
+
+	if (init_pid == my_pid) /* Already inited */
+		return ZE_RESULT_SUCCESS;
+
+	init_pid = my_pid;
+
+	setenv("ZES_ENABLE_SYSMAN", "1", 1);
+	setenv("ZE_FLAT_DEVICE_HIERARCHY", "COMPOSITE", 1);
+	setenv("ZE_ENABLE_PCI_ID_DEVICE_ORDER", "1", 1);
+
+	DEF_TIMERS;
+	START_TIMER;
+	oneapi_rc = zeInit(0);
+	END_TIMER;
+	debug3("zeInit() took %ld microseconds", DELTA_TIMER);
+	if (oneapi_rc != ZE_RESULT_SUCCESS) {
+		error("Failed to initialize oneapi: 0x%x", oneapi_rc);
+	} else
+		debug2("Successfully initialized oneapi");
+
+	return oneapi_rc;
+}
+
+/*
  * Print GPU driver version and API version
  *
  * driver	(IN) The driver handle
@@ -966,16 +997,6 @@ extern int init(void)
 {
 	debug("loading");
 
-	/* Init oneAPI */
-	setenv("ZES_ENABLE_SYSMAN", "1", 1);
-	setenv("ZE_FLAT_DEVICE_HIERARCHY", "COMPOSITE", 1);
-	setenv("ZE_ENABLE_PCI_ID_DEVICE_ORDER", "1", 1);
-
-	if (zeInit(0) != ZE_RESULT_SUCCESS) {
-		error("zeInit failed");
-		return SLURM_ERROR;
-	}
-
 	return SLURM_SUCCESS;
 }
 
@@ -1011,6 +1032,10 @@ static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 	int i;
 
 	list_t *gres_list_system = list_create(destroy_gres_slurmd_conf);
+
+	if (_oneapi_init() != ZE_RESULT_SUCCESS) {
+		return gres_list_system;
+	}
 
 	/* Get all of device handles */
 	_oneapi_get_device_handles(all_devices, &gpu_num, true);
@@ -1163,6 +1188,10 @@ extern void gpu_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 	 */
 	FREE_NULL_BITMAP(saved_gpus);
 	saved_gpus = bit_copy(usable_gpus);
+
+	if (_oneapi_init() != ZE_RESULT_SUCCESS) {
+		return;
+	}
 
 	/* Set the frequency of each GPU index specified in the bitstr */
 	_set_freq(usable_gpus, freq);
