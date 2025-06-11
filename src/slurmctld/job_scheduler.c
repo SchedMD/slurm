@@ -3879,10 +3879,12 @@ extern int handle_job_dependency_updates(void *object, void *arg)
  * IN expected_sep - Which separator(s) will succeed if encountered
  * OUT sep_ptr - Set to one char past the separator if parsing succeeds
  * OUT sep_type - Set to SEP_DEPEND_OR or SEP_DEPEND_AND if parsing succeeds
+ * OUT rc - Set if an unexpected separator was encountered
  * Returns true when a separator was successfully parsed
  */
 static bool _parse_dependency_sep(char *tok, sep_depend_t expected_sep,
-				  char **sep_ptr, sep_depend_t *sep_type)
+				  char **sep_ptr, sep_depend_t *sep_type,
+				  int *rc)
 {
 	sep_depend_t parsed_sep = SEP_DEPEND_ANY;
 	if (tok) {
@@ -3896,6 +3898,7 @@ static bool _parse_dependency_sep(char *tok, sep_depend_t expected_sep,
 	}
 
 	if ((expected_sep != SEP_DEPEND_ANY) && (expected_sep != parsed_sep)) {
+		*rc = ESLURM_DEPENDENCY;
 		return false;
 	}
 	*sep_ptr = tok + 1;
@@ -3952,8 +3955,8 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 			/* dep_ptr->singleton_bits = 0;set by xmalloc */
 			list_append(new_depend_list, dep_ptr);
 
-			if (_parse_dependency_sep(tok, SEP_DEPEND_ANY, &tok,
-						  &sep_type))
+			if (_parse_dependency_sep(tok, sep_type, &tok,
+						  &sep_type, rc))
 				continue;
 			if (tok[0] != '\0')
 				*rc = ESLURM_DEPENDENCY;
@@ -3968,7 +3971,7 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 			if (*rc)
 				break;
 			if (_parse_dependency_sep(sep_ptr, SEP_DEPEND_AND, &tok,
-						  &sep_type))
+						  &sep_type, rc))
 				continue;
 			break;
 		} else if (!sep_ptr) {
@@ -3999,8 +4002,8 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 		_parse_dependency_jobid_new(new_depend_list, &sep_ptr, tok,
 					    depend_type, rc);
 
-		if (!_parse_dependency_sep(sep_ptr, SEP_DEPEND_ANY, &tok,
-					   &sep_type))
+		if (!_parse_dependency_sep(sep_ptr, sep_type, &tok, &sep_type,
+					   rc))
 			break;
 	}
 	xfree(new_array_dep);
