@@ -4921,8 +4921,14 @@ static void _validate_ntasks_per_gpu(slurm_opt_t *opt)
 	if (slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK))
 		fatal("--tres-per-task is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
 
-	if (slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK))
-		fatal("SLURM_TRES_PER_TASK is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+	/*
+	 * SLURM_TRES_PER_TASK can contain all sorts of TRES, namely CPUS. In
+	 * this check we are only concerned if it contains GPUS.
+	 */
+	if (slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK)) {
+		if (xstrstr(opt->tres_per_task, "gres/gpu"))
+			fatal("SLURM_TRES_PER_TASK is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+	}
 
 	if (slurm_option_set_by_cli(opt, LONG_OPT_GPUS_PER_TASK))
 		fatal("--gpus-per-task is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
