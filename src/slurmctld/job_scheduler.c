@@ -3695,6 +3695,7 @@ static void _parse_dependency_jobid_new(list_t *new_depend_list, char **sep_ptr,
 		dep_ptr->depend_type = depend_type;
 		dep_ptr->depend_time = depend_time;
 		dep_ptr->depend_state = depend_state;
+		dep_ptr->parsed_array_task_id = array_task_id;
 		list_append(new_depend_list, dep_ptr);
 		if (tmp[0] != ':')
 			break;
@@ -3726,6 +3727,7 @@ static void _parse_dependency_jobid_old(list_t *new_depend_list, char **sep_ptr,
 	dep_ptr->job_id = job_id;
 	dep_ptr->array_task_id = array_task_id;
 	dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
+	dep_ptr->parsed_array_task_id = array_task_id;
 
 	*sep_ptr = tmp;
 	list_append(new_depend_list, dep_ptr);

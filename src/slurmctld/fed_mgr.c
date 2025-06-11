@@ -2217,11 +2217,19 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 	return SLURM_SUCCESS;
 }
 
+static int _restore_array_task_id(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+	dep_ptr->array_task_id = dep_ptr->parsed_array_task_id;
+	return SLURM_SUCCESS;
+}
+
 static void _update_origin_job_dep(job_record_t *job_ptr,
 				   slurmdb_cluster_rec_t *origin)
 {
 	slurm_msg_t req_msg;
 	dep_update_origin_msg_t dep_update_msg = { 0 };
+	list_t *depend_list;
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
@@ -2234,7 +2242,11 @@ static void _update_origin_job_dep(job_record_t *job_ptr,
 		return;
 	}
 
-	dep_update_msg.depend_list = job_ptr->details->depend_list;
+	/* Respond with the original array_task_id */
+	depend_list = depended_list_copy(job_ptr->details->depend_list);
+	list_for_each(depend_list, _restore_array_task_id, NULL);
+
+	dep_update_msg.depend_list = depend_list;
 	dep_update_msg.job_id = job_ptr->job_id;
 
 	slurm_msg_t_init(&req_msg);
@@ -2244,6 +2256,8 @@ static void _update_origin_job_dep(job_record_t *job_ptr,
 	if (_queue_rpc(origin, &req_msg, 0, false))
 		error("%s: Failed to send dependency update for %pJ",
 		      __func__, job_ptr);
+
+	FREE_NULL_LIST(depend_list);
 }
 
 static int _find_local_dep(void *arg, void *key)
