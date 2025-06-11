@@ -587,6 +587,13 @@ the database, but you can choose to archive the data as it is being purged.
 Archived data will be placed in flat files that can later be loaded into a
 slurmdbd by sacctmgr.</p>
 
+<p>It is strongly recommended to <b>make a plan</b> for data retention shortly
+after setting up accounting. If purging is added after the database has already
+grown to an unwieldy size, it may difficult to catch up to the desired purge
+interval. Monitor table sizes and system utilization to decide how long you want
+to retain data, and try to set the relevant configuration options before you
+reach that time.</p>
+
 <p>Archive and Purge options come in the form of <b>Archive${*}</b> and
 <b>Purge${*}After</b>. See <a href="slurmdbd.conf.html">slurmdbd.conf</a>(5)
 for more details on the available configuration parameters.</p>
@@ -1027,6 +1034,6 @@ Profiling works similarly, and we provide
 and InfluxDB that can help to visualize accounting data in other ways.
 </p>
 
-<p style="text-align:center;">Last modified 29 January 2025</p>
+<p style="text-align:center;">Last modified 11 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
