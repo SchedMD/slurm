@@ -191,7 +191,7 @@ struct conmgr_fd_s {
 	/* input and output may be a different fd to inet mode */
 	int input_fd;
 	int output_fd;
-	/* arg handed to on_connection */
+	/* arg handed to on_connection() or on_connect_timeout() */
 	void *new_arg;
 	/* arg returned from on_connection */
 	void *arg;

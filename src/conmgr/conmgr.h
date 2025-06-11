@@ -193,7 +193,7 @@ typedef struct {
 	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
 	 *
 	 * IN con - connection handler
-	 * IN arg ptr to be handed return of on_connection() callback.
+	 * IN arg - arg ptr handed to fd processing functions
 	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
 	 */
 	int (*on_connect_timeout)(conmgr_fd_t *con, void *arg);
