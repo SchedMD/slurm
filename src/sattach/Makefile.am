@@ -29,7 +29,7 @@ $(convenience_libs) : force
 attach.o : attach.c
 	$(COMPILE) -c -g -o attach.o $(srcdir)/attach.c
 
-install-exec-local:
+install-exec-hook:
 	umask 022; \
 	if [ -x /usr/lib/rpm/debugedit ]; then \
 		srcdir=`cd $(top_srcdir) && pwd`; \
