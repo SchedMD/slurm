@@ -2973,7 +2973,6 @@ _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 			     uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		uint32_t uint32_tmp;
 		safe_unpackstr(&resv->accounts, buffer);
 		safe_unpackstr(&resv->burst_buffer,buffer);
 		safe_unpackstr(&resv->comment, buffer);
@@ -2988,7 +2987,6 @@ _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 		safe_unpackstr(&resv->node_list, buffer);
 		safe_unpackstr(&resv->partition, buffer);
 		safe_unpack32(&resv->purge_comp_time, buffer);
-		safe_unpack32(&uint32_tmp, buffer); /* was resv_watts */
 		safe_unpack_time(&resv->start_time, buffer);
 
 		safe_unpackstr(&resv->tres_str, buffer);

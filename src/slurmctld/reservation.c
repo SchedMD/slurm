@@ -2112,7 +2112,6 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		packstr(resv_ptr->node_list,	buffer);
 		packstr(resv_ptr->partition,	buffer);
 		pack32(resv_ptr->purge_comp_time, buffer);
-		pack32(NO_VAL, buffer); /* was resv_watts */
 		pack_time(start_relative,	buffer);
 		packstr(resv_ptr->tres_fmt_str,	buffer);
 		packstr(resv_ptr->users,	buffer);
@@ -2252,7 +2251,6 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	resv_ptr->magic = RESV_MAGIC;
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		uint32_t uint32_tmp;
 		safe_unpackstr(&resv_ptr->accounts, buffer);
 		safe_unpackstr(&resv_ptr->burst_buffer, buffer);
 		safe_unpackstr(&resv_ptr->comment, buffer);
@@ -2268,7 +2266,6 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		safe_unpackstr(&resv_ptr->node_list, buffer);
 		safe_unpackstr(&resv_ptr->partition, buffer);
 		safe_unpack32(&resv_ptr->purge_comp_time, buffer);
-		safe_unpack32(&uint32_tmp, buffer); /* was resv_watts */
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
 		safe_unpackstr(&resv_ptr->tres_fmt_str, buffer);
 		safe_unpackstr(&resv_ptr->users, buffer);
