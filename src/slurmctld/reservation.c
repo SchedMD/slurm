@@ -3158,7 +3158,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			rc = ESLURM_GROUP_ID_MISSING;
 			goto bad_parse;
 		}
-		info("processed groups %s", resv_desc_ptr->groups);
 	}
 
 	if (resv_desc_ptr->licenses) {
