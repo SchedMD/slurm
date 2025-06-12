@@ -6,27 +6,34 @@ import pytest
 import re
 
 
-# Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_accounting()
-    atf.require_nodes(1, [("CPUs", 4), ("RealMemory", 40)])
+    atf.require_nodes(3, [("CPUs", 8), ("RealMemory", 80)])
+
+    # only to make the test faster
+    atf.require_config_parameter("SchedulerParameters", "bf_interval=1")
+
     atf.require_slurm_running()
 
 
-def test_hetjob(tmp_path):
-    file_in = str(tmp_path / "hetjob.in")
+def test_hetjob():
+    file_in = "hetjob.in"
     atf.make_bash_script(
         file_in,
-        """#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1
+        """
+#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1
 #SBATCH hetjob
 #SBATCH --cpus-per-task=2 --mem-per-cpu=2  --ntasks=1 -t1
 #SBATCH hetjob
 #SBATCH --cpus-per-task=1 --mem-per-cpu=6  --ntasks=1 -t1
 
-$bin_sleep 300""",
+srun sleep 60
+        """,
     )
     leader_job_id = atf.submit_job_sbatch(f"-t1 {file_in}", fatal=True)
+    atf.wait_for_job_state(leader_job_id, "RUNNING", fatal=True)
+
     jobs_dict = atf.get_jobs()
 
     # Verify details about leader job
